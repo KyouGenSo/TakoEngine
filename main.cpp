@@ -21,6 +21,11 @@
 #include "xaudio2.h"
 #pragma comment(lib, "xaudio2.lib")
 
+#define DIRECTINPUT_VERSION 0x0800 // DirectInputのバージョン指定
+#include <dinput.h>
+#pragma comment(lib, "dinput8.lib")
+#pragma comment(lib, "dxguid.lib")
+
 #include"externals/imgui/imgui.h"
 #include"externals/imgui/imgui_impl_win32.h"
 #include"externals/imgui/imgui_impl_dx12.h"
@@ -39,7 +44,6 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 // ComPtrのエイリアス
 template<class T>
 using ComPtr = Microsoft::WRL::ComPtr<T>;
-
 
 //クライアント領域のサイズ
 const int32_t kClientWidth = 1280;
@@ -434,6 +438,29 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	HANDLE fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 	assert(fenceEvent != nullptr);
+
+	//-----------------------------------------Input初期化-----------------------------------------//
+
+	// DirectInputの初期化
+	ComPtr<IDirectInput8> directInput = nullptr;
+	hr = DirectInput8Create(GetModuleHandle(nullptr), DIRECTINPUT_VERSION, IID_IDirectInput8, reinterpret_cast<void**>(directInput.GetAddressOf()), nullptr);
+	assert(SUCCEEDED(hr));
+
+	
+	// KeyboardDeviceの生成
+	ComPtr<IDirectInputDevice8> keyboardDevice = nullptr;
+	hr = directInput->CreateDevice(GUID_SysKeyboard, keyboardDevice.GetAddressOf(), NULL);
+	assert(SUCCEEDED(hr));
+
+	// KeyboardDeviceのフォーマット設定
+	hr = keyboardDevice->SetDataFormat(&c_dfDIKeyboard);
+	assert(SUCCEEDED(hr));
+
+	// KeyboardDeviceの協調レベル設定
+	hr = keyboardDevice->SetCooperativeLevel(hWnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
+	assert(SUCCEEDED(hr));
+
+	//-----------------------------------------Input初期化-----------------------------------------//
 
 
 	//-----------------------------------------DXC初期化-----------------------------------------//
@@ -1249,9 +1276,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//-----------------------------------------Imgui-----------------------------------------//
 
 
-
 	//---------------------------------------------------GAMELOOP-----------------------------------------------------//
 	MSG msg{};
+
+	// キーボードの状態を取得するための変数
+	BYTE keys[256] = {};
+	BYTE prevKeys[256] = {};
 
 	while (msg.message != WM_QUIT)
 	{
@@ -1262,11 +1292,21 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			DispatchMessage(&msg);
 
 		} else {
+
 			//-------------imguiの初期化-------------//
 			ImGui_ImplDX12_NewFrame();
 			ImGui_ImplWin32_NewFrame();
 			ImGui::NewFrame();
 			//-------------imguiの初期化-------------//
+
+
+			//-------------Keybord入力の処理-------------//
+			// キーボード情報の取得
+			keyboardDevice->Acquire();
+			// キーボードの入力状態を取得
+			keyboardDevice->GetDeviceState(sizeof(keys), keys);
+			//-------------Keybord入力の処理-------------//
+
 
 			/// <summary>
 			/// 更新処理
@@ -1371,6 +1411,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 					ImGui::DragFloat3("Translate", &modelTransform.translate.x, 0.1f, -50.0f, 50.0f);
 					ImGui::ColorEdit4("Color", &materialData[0].color.x);
 
+					ImGui::Separator();
+
 					ImGui::EndTabItem();
 				}
 				if (ImGui::BeginTabItem("Sphere"))
@@ -1439,6 +1481,23 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			ImGui::Render();
 
 			//-------------------ImGui-------------------//
+
+			if (keys[DIK_RIGHT] && !prevKeys[DIK_RIGHT])
+			{
+				modelTransform.translate.x += 0.1f;
+			}
+			if (keys[DIK_LEFT] && !prevKeys[DIK_LEFT])
+			{
+				modelTransform.translate.x -= 0.1f;
+			}
+			if (keys[DIK_UP] && !prevKeys[DIK_UP])
+			{
+				modelTransform.translate.y += 0.1f;
+			}
+			if (keys[DIK_DOWN] && !prevKeys[DIK_DOWN])
+			{
+				modelTransform.translate.y -= 0.1f;
+			}
 
 			/// <summary>
 			/// 描画処理
@@ -1616,6 +1675,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			assert(SUCCEEDED(hr));
 			hr = commandList->Reset(commandAllocator.Get(), nullptr);
 			assert(SUCCEEDED(hr));
+
+			// キーボードの入力状態を保存
+			memcpy(prevKeys, keys, sizeof(keys));
 		}
 	}
 
