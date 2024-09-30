@@ -1251,9 +1251,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 	//-----------------------------------------Imgui-----------------------------------------//
 
-	//-----------------------------------------変数宣言-----------------------------------------//
+	//-----------------------------------------汎用機能初期化-----------------------------------------//
 	Input* input = new Input();
 	input->Initialize(wc.hInstance, hWnd);
+
+	//-----------------------------------------汎用機能初期化-----------------------------------------//
 
 
 	//---------------------------------------------------GAMELOOP-----------------------------------------------------//
@@ -1279,18 +1281,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			ImGui::NewFrame();
 			//-------------imguiの初期化-------------//
 
-
-			//-------------Keybord入力の処理-------------//
-			// キーボード情報の取得
-			keyboardDevice->Acquire();
-			// キーボードの入力状態を取得
-			keyboardDevice->GetDeviceState(sizeof(keys), keys);
-			//-------------Keybord入力の処理-------------//
-
-
 			/// <summary>
 			/// 更新処理
 			/// </summary>
+			
+			// 入力情報の更新
+			input->Update();
 
 			// modelの座標変換
 			Matrix4x4 worldMatrix = MakeAffineMatrix(modelTransform.scale, modelTransform.rotate, modelTransform.translate);
