@@ -21,23 +21,22 @@
 #include "xaudio2.h"
 #pragma comment(lib, "xaudio2.lib")
 
-#define DIRECTINPUT_VERSION 0x0800 // DirectInputのバージョン指定
-#include <dinput.h>
-#pragma comment(lib, "dinput8.lib")
-#pragma comment(lib, "dxguid.lib")
-
 #include"externals/imgui/imgui.h"
 #include"externals/imgui/imgui_impl_win32.h"
 #include"externals/imgui/imgui_impl_dx12.h"
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+#include"externals/DirectXTex/DirectXTex.h"
+
+// Function includes
 #include"Vector4.h"
 #include"Vector2.h"
 #include"Matrix4x4.h"
 #include"Matrix4x4Function.h"
 #include"Vector3Function.h"
 
-#include"externals/DirectXTex/DirectXTex.h"
+// Input include
+#include"Input.h"
 
 #define PI 3.14159265359f
 
@@ -438,29 +437,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	HANDLE fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 	assert(fenceEvent != nullptr);
-
-	//-----------------------------------------Input初期化-----------------------------------------//
-
-	// DirectInputの初期化
-	ComPtr<IDirectInput8> directInput = nullptr;
-	hr = DirectInput8Create(GetModuleHandle(nullptr), DIRECTINPUT_VERSION, IID_IDirectInput8, reinterpret_cast<void**>(directInput.GetAddressOf()), nullptr);
-	assert(SUCCEEDED(hr));
-
-	
-	// KeyboardDeviceの生成
-	ComPtr<IDirectInputDevice8> keyboardDevice = nullptr;
-	hr = directInput->CreateDevice(GUID_SysKeyboard, keyboardDevice.GetAddressOf(), NULL);
-	assert(SUCCEEDED(hr));
-
-	// KeyboardDeviceのフォーマット設定
-	hr = keyboardDevice->SetDataFormat(&c_dfDIKeyboard);
-	assert(SUCCEEDED(hr));
-
-	// KeyboardDeviceの協調レベル設定
-	hr = keyboardDevice->SetCooperativeLevel(hWnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
-	assert(SUCCEEDED(hr));
-
-	//-----------------------------------------Input初期化-----------------------------------------//
 
 
 	//-----------------------------------------DXC初期化-----------------------------------------//
@@ -1275,6 +1251,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 	//-----------------------------------------Imgui-----------------------------------------//
 
+	//-----------------------------------------変数宣言-----------------------------------------//
+	Input* input = new Input();
+	input->Initialize(wc.hInstance, hWnd);
+
 
 	//---------------------------------------------------GAMELOOP-----------------------------------------------------//
 	MSG msg{};
@@ -1699,6 +1679,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	pixelShaderBlob->Release();
 	vertexShaderBlob->Release();
 
+	// pointerの解放
+	delete input;
+
 	CloseHandle(fenceEvent);
 
 	// XAudio2の解放
@@ -1925,7 +1908,6 @@ ID3D12Resource* UploadTextureData(ID3D12Resource* texture, const DirectX::Scratc
 
 	return intermediateResource;
 }
-
 
 ID3D12Resource* CreateDepthStencilResource(ID3D12Device* device, int32_t width, int32_t height)
 {
@@ -2341,7 +2323,6 @@ ModelDataNoTex LoadObjFileNoTex(const std::string& directoryPath, const std::str
 
 	return modelData;
 }
-
 
 SoundData LoadWaveFile(const char* filename)
 {

@@ -19,6 +19,9 @@
     <Filter Include="Shader">
       <UniqueIdentifier>{e04ae378-74f7-4b44-945a-58cedf303ffd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ヘッダー ファイル\Function">
+      <UniqueIdentifier>{40811121-7059-4adf-8617-56b84521839a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -45,23 +48,11 @@
     <ClCompile Include="externals\ImGui\imgui_widgets.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
+    <ClCompile Include="Input.cpp">
+      <Filter>リソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Vector4.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Matrix4x4Function.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Vector3.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Matrix4x4.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Vector3Function.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="externals\ImGui\imconfig.h">
       <Filter>imgui</Filter>
     </ClInclude>
@@ -86,7 +77,25 @@
     <ClInclude Include="externals\ImGui\imstb_truetype.h">
       <Filter>imgui</Filter>
     </ClInclude>
+    <ClInclude Include="Matrix4x4.h">
+      <Filter>ヘッダー ファイル\Function</Filter>
+    </ClInclude>
+    <ClInclude Include="Matrix4x4Function.h">
+      <Filter>ヘッダー ファイル\Function</Filter>
+    </ClInclude>
     <ClInclude Include="Vector2.h">
+      <Filter>ヘッダー ファイル\Function</Filter>
+    </ClInclude>
+    <ClInclude Include="Vector3.h">
+      <Filter>ヘッダー ファイル\Function</Filter>
+    </ClInclude>
+    <ClInclude Include="Vector3Function.h">
+      <Filter>ヘッダー ファイル\Function</Filter>
+    </ClInclude>
+    <ClInclude Include="Vector4.h">
+      <Filter>ヘッダー ファイル\Function</Filter>
+    </ClInclude>
+    <ClInclude Include="Input.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
