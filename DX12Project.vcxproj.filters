@@ -47,20 +47,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Object3d.PS.hlsl">
-      <Filter>Shader</Filter>
-    </FxCompile>
-    <FxCompile Include="Object3d.VS.hlsl">
-      <Filter>Shader</Filter>
-    </FxCompile>
-    <FxCompile Include="NoTex.VS.hlsl">
-      <Filter>Shader</Filter>
-    </FxCompile>
-    <FxCompile Include="NoTex.PS.hlsl">
-      <Filter>Shader</Filter>
-    </FxCompile>
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="Vector4.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
@@ -110,11 +96,25 @@
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Object3d.hlsli">
+    <None Include="resources\shaders\NoTex.hlsli">
       <Filter>Shader</Filter>
     </None>
-    <None Include="NoTex.hlsli">
+    <None Include="resources\shaders\Object3d.hlsli">
       <Filter>Shader</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="resources\shaders\NoTex.PS.hlsl">
+      <Filter>Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="resources\shaders\NoTex.VS.hlsl">
+      <Filter>Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="resources\shaders\Object3d.PS.hlsl">
+      <Filter>Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="resources\shaders\Object3D.VS.hlsl">
+      <Filter>Shader</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

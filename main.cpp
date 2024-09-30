@@ -545,10 +545,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
 
 	// shaderのコンパイル
-	IDxcBlob* vertexShaderBlob = CompileShader(L"Object3d.VS.hlsl", L"vs_6_0", dxcUtils, dxcCompiler, includeHandler);
+	IDxcBlob* vertexShaderBlob = CompileShader(L"resources/shaders/Object3d.VS.hlsl", L"vs_6_0", dxcUtils, dxcCompiler, includeHandler);
 	assert(vertexShaderBlob != nullptr);
 
-	IDxcBlob* pixelShaderBlob = CompileShader(L"Object3d.PS.hlsl", L"ps_6_0", dxcUtils, dxcCompiler, includeHandler);
+	IDxcBlob* pixelShaderBlob = CompileShader(L"resources/shaders/Object3d.PS.hlsl", L"ps_6_0", dxcUtils, dxcCompiler, includeHandler);
 	assert(pixelShaderBlob != nullptr);
 
 	// DepthStencilState
@@ -655,10 +655,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	rasterizerDescNoTex.CullMode = D3D12_CULL_MODE_BACK;
 
 	// shaderのコンパイル
-	IDxcBlob* vertexShaderNoTexBlob = CompileShader(L"NoTex.VS.hlsl", L"vs_6_0", dxcUtils, dxcCompiler, includeHandler);
+	IDxcBlob* vertexShaderNoTexBlob = CompileShader(L"resources/shaders/NoTex.VS.hlsl", L"vs_6_0", dxcUtils, dxcCompiler, includeHandler);
 	assert(vertexShaderNoTexBlob != nullptr);
 
-	IDxcBlob* pixelShaderNoTexBlob = CompileShader(L"NoTex.PS.hlsl", L"ps_6_0", dxcUtils, dxcCompiler, includeHandler);
+	IDxcBlob* pixelShaderNoTexBlob = CompileShader(L"resources/shaders/NoTex.PS.hlsl", L"ps_6_0", dxcUtils, dxcCompiler, includeHandler);
 	assert(pixelShaderNoTexBlob != nullptr);
 
 	// DepthStencilState
