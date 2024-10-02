@@ -1,13 +1,15 @@
 #include "WinApp.h"
+
+#include <cassert>
 #include"externals/imgui/imgui.h"
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 void WinApp::Initialize()
 {
 	// COMの初期化
-	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+	HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+	assert(SUCCEEDED(hr));
 
-	WNDCLASS wc{};
 	//ウィンドウプロシージャ
 	wc.lpfnWndProc = WndProc;
 	//クラス名
@@ -20,10 +22,6 @@ void WinApp::Initialize()
 	//ウィンドウクラスを登録
 	RegisterClass(&wc);
 
-	//クライアント領域のサイズ
-	const int32_t kClientWidth = 1280;
-	const int32_t kClientHeight = 720;
-
 	//ウィンドウサイズを表す構造体にクライアント領域のサイズを入れる
 	RECT wrc = { 0, 0, kClientWidth, kClientHeight };
 
@@ -31,7 +29,7 @@ void WinApp::Initialize()
 	AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, FALSE);
 
 	//ウィンドウの生成
-	HWND hWnd = CreateWindow(
+	hWnd = CreateWindow(
 		wc.lpszClassName,	    //クラス名
 		L"TakoEngine",	        //タイトルバーの文字列
 		WS_OVERLAPPEDWINDOW,	//ウィンドウスタイル
