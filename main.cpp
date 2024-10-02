@@ -1216,17 +1216,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 
 	//---------------------------------------------------GAMELOOP-----------------------------------------------------//
-	MSG msg{};
 
-	while (msg.message != WM_QUIT)
+	// ウィンドウが閉じられるまでループ
+	while (true)
 	{
-		//メッセージがある場合は処理
-		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
-		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-
-		} else {
+		// ウィンドウメッセージの取得
+		if (winApp->ProcessMessage()) {
+			// ウィンドウが閉じられたらループを抜ける
+			break;
+		}
 
 			//-------------imguiの初期化-------------//
 			ImGui_ImplDX12_NewFrame();
@@ -1605,7 +1603,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			hr = commandList->Reset(commandAllocator.Get(), nullptr);
 			assert(SUCCEEDED(hr));
 
-		}
+		
 	}
 
 	//-------------------------------------------------GAMELOOP-----------------------------------------------------/

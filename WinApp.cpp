@@ -46,10 +46,28 @@ void WinApp::Initialize()
 	ShowWindow(hWnd_, SW_SHOW);
 }
 
-void WinApp::Update()
+bool WinApp::ProcessMessage()
 {
+	MSG msg;
 
+	//メッセージがある限りループ
+	while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+	{
+		//メッセージを処理
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
+
+	//ウィンドウが破棄されたらTrueを返す
+	if (msg.message == WM_QUIT)
+	{
+		return true;
+	}
+
+	return false;
 }
+
+
 
 void WinApp::Finalize()
 {

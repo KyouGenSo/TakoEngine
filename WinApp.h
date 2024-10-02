@@ -11,9 +11,9 @@ public:
 	void Initialize();
 
 	/// <summary>
-	/// 更新処理
+	/// メッセージの処理
 	/// </summary>
-	void Update();
+	bool ProcessMessage();
 
 	/// <summary>
 	/// 終了処理
