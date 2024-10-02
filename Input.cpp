@@ -28,6 +28,6 @@ void Input::Update() {
 	// キーボード情報の取得
 	keyboardDevice->Acquire();
 	// キーボードの入力状態を取得
-	keys[256] = {};
+	BYTE keys[256] = {};
 	keyboardDevice->GetDeviceState(sizeof(keys), keys);
 }

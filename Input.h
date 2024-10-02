@@ -25,8 +25,6 @@ public:
 
 private:
 	// キーボードデバイス
-	ComPtr<IDirectInputDevice8> keyboardDevice = nullptr;
-	// キーボードの入力状態
-	BYTE keys[256] = {};
+	ComPtr<IDirectInputDevice8> keyboardDevice;	
 
 };
