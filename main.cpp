@@ -1262,8 +1262,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	MSG msg{};
 
 	// キーボードの状態を取得するための変数
-	BYTE keys[256] = {};
-	BYTE prevKeys[256] = {};
+	//BYTE keys[256] = {};
+	//BYTE prevKeys[256] = {};
 
 	while (msg.message != WM_QUIT)
 	{
@@ -1458,22 +1458,22 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 			//-------------------ImGui-------------------//
 
-			if (keys[DIK_RIGHT] && !prevKeys[DIK_RIGHT])
-			{
-				modelTransform.translate.x += 0.1f;
-			}
-			if (keys[DIK_LEFT] && !prevKeys[DIK_LEFT])
-			{
-				modelTransform.translate.x -= 0.1f;
-			}
-			if (keys[DIK_UP] && !prevKeys[DIK_UP])
-			{
-				modelTransform.translate.y += 0.1f;
-			}
-			if (keys[DIK_DOWN] && !prevKeys[DIK_DOWN])
-			{
-				modelTransform.translate.y -= 0.1f;
-			}
+			//if (keys[DIK_RIGHT] && !prevKeys[DIK_RIGHT])
+			//{
+			//	modelTransform.translate.x += 0.1f;
+			//}
+			//if (keys[DIK_LEFT] && !prevKeys[DIK_LEFT])
+			//{
+			//	modelTransform.translate.x -= 0.1f;
+			//}
+			//if (keys[DIK_UP] && !prevKeys[DIK_UP])
+			//{
+			//	modelTransform.translate.y += 0.1f;
+			//}
+			//if (keys[DIK_DOWN] && !prevKeys[DIK_DOWN])
+			//{
+			//	modelTransform.translate.y -= 0.1f;
+			//}
 
 			/// <summary>
 			/// 描画処理
