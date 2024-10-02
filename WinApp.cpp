@@ -11,16 +11,16 @@ void WinApp::Initialize()
 	assert(SUCCEEDED(hr));
 
 	//ウィンドウプロシージャ
-	wc.lpfnWndProc = WndProc;
+	wc_.lpfnWndProc = WndProc;
 	//クラス名
-	wc.lpszClassName = L"TakoEngineWindowClass";
+	wc_.lpszClassName = L"TakoEngineWindowClass";
 	//インスタンスハンドル
-	wc.hInstance = GetModuleHandle(nullptr);
+	wc_.hInstance = GetModuleHandle(nullptr);
 	//カーソル
-	wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+	wc_.hCursor = LoadCursor(nullptr, IDC_ARROW);
 
 	//ウィンドウクラスを登録
-	RegisterClass(&wc);
+	RegisterClass(&wc_);
 
 	//ウィンドウサイズを表す構造体にクライアント領域のサイズを入れる
 	RECT wrc = { 0, 0, kClientWidth, kClientHeight };
@@ -29,8 +29,8 @@ void WinApp::Initialize()
 	AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, FALSE);
 
 	//ウィンドウの生成
-	hWnd = CreateWindow(
-		wc.lpszClassName,	    //クラス名
+	hWnd_ = CreateWindow(
+		wc_.lpszClassName,	    //クラス名
 		L"TakoEngine",	        //タイトルバーの文字列
 		WS_OVERLAPPEDWINDOW,	//ウィンドウスタイル
 		CW_USEDEFAULT,		    //表示X座標
@@ -39,16 +39,24 @@ void WinApp::Initialize()
 		wrc.bottom - wrc.top,	//ウィンドウ高さ
 		nullptr,		        //親ウィンドウハンドル
 		nullptr,		        //メニューハンドル
-		wc.hInstance,		    //インスタンスハンドル
+		wc_.hInstance,		    //インスタンスハンドル
 		nullptr);		        //追加パラメータ
 
 	//ウィンドウを表示
-	ShowWindow(hWnd, SW_SHOW);
+	ShowWindow(hWnd_, SW_SHOW);
 }
 
 void WinApp::Update()
 {
 
+}
+
+void WinApp::Finalize()
+{
+	//ウィンドウを破棄
+	CloseWindow(hWnd_);
+	// COMの終了処理
+	CoUninitialize();
 }
 
 LRESULT WinApp::WndProc(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam)

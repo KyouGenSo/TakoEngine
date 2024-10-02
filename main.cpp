@@ -1210,7 +1210,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//-----------------------------------------汎用機能初期化-----------------------------------------//
 	Input* input = new Input();
-	input->Initialize(winApp->GetHInstance(), winApp->GetHWnd());
+	input->Initialize(winApp);
 
 	//-----------------------------------------汎用機能初期化-----------------------------------------//
 
@@ -1610,8 +1610,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//-------------------------------------------------GAMELOOP-----------------------------------------------------/
 
-	CoUninitialize();
-
 	// 解放
 	ImGui_ImplDX12_Shutdown();
 	ImGui_ImplWin32_Shutdown();
@@ -1629,9 +1627,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	// pointerの解放
 	delete input;
 
-	// ウィンドウクラスの解放
-	delete winApp;
-
 	CloseHandle(fenceEvent);
 
 	// XAudio2の解放
@@ -1641,7 +1636,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 #ifdef _DEBUG
 	debugController->Release();
 #endif 
-	CloseWindow(winApp->GetHWnd());
+	
+	winApp->Finalize();
+
+	// ウィンドウクラスの解放
+	delete winApp;
 
 	return 0;
 }

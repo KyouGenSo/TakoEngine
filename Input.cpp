@@ -2,40 +2,42 @@
 #include <cassert>
 
 
-void Input::Initialize(HINSTANCE hInstance, HWND hWnd) {
+void Input::Initialize(WinApp* winApp) {
+	// WinAppクラスのインスタンスを取得
+	this->winApp_ = winApp;
 
 	HRESULT hr;
 
 // DirectInputの初期化
 	// DirectInputオブジェクトの生成
-	hr = DirectInput8Create(hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, reinterpret_cast<void**>(directInput.GetAddressOf()), nullptr);
+	hr = DirectInput8Create(winApp->GetHInstance(), DIRECTINPUT_VERSION, IID_IDirectInput8, reinterpret_cast<void**>(directInput_.GetAddressOf()), nullptr);
 	assert(SUCCEEDED(hr));
 
 	// KeyboardDeviceの生成
-	hr = directInput->CreateDevice(GUID_SysKeyboard, keyboardDevice.GetAddressOf(), NULL);
+	hr = directInput_->CreateDevice(GUID_SysKeyboard, keyboardDevice_.GetAddressOf(), NULL);
 	assert(SUCCEEDED(hr));
 
 	// KeyboardDeviceのフォーマット設定
-	hr = keyboardDevice->SetDataFormat(&c_dfDIKeyboard);
+	hr = keyboardDevice_->SetDataFormat(&c_dfDIKeyboard);
 	assert(SUCCEEDED(hr));
 
 	// KeyboardDeviceの協調レベル設定
-	hr = keyboardDevice->SetCooperativeLevel(hWnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
+	hr = keyboardDevice_->SetCooperativeLevel(winApp->GetHWnd(), DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
 	assert(SUCCEEDED(hr));
 }
 
 void Input::Update() {
 	// 前フレームのキーボード入力状態を保存
-	memcpy(prevKeys, keys, sizeof(keys));
+	memcpy(prevKeys_, keys_, sizeof(keys_));
 
 	// キーボード情報の取得
-	keyboardDevice->Acquire();
-	keyboardDevice->GetDeviceState(sizeof(keys), keys);
+	keyboardDevice_->Acquire();
+	keyboardDevice_->GetDeviceState(sizeof(keys_), keys_);
 }
 
 bool Input::PushKey(BYTE keyNum) const
 {
-	if (keys[keyNum]) 
+	if (keys_[keyNum])
 		return true;
 
 	return false;
@@ -43,7 +45,7 @@ bool Input::PushKey(BYTE keyNum) const
 
 bool Input::TriggerKey(BYTE keyNum) const
 {
-	if (keys[keyNum] && !prevKeys[keyNum])
+	if (keys_[keyNum] && !prevKeys_[keyNum])
 		return true;
 
 	return false;

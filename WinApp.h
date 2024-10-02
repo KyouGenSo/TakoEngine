@@ -16,6 +16,11 @@ public:
 	void Update();
 
 	/// <summary>
+	/// 終了処理
+	/// </summary>
+	void Finalize();
+
+	/// <summary>
 	/// ウィンドウプロシージャ
 	/// </summary>
 	static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam);
@@ -23,12 +28,12 @@ public:
 	/// <summary>
 	/// ウィンドウハンドルの取得
 	/// </summary>
-	HWND GetHWnd() const { return hWnd; }
+	HWND GetHWnd() const { return hWnd_; }
 
 	/// <summary>
 	/// hInstanceの取得
 	/// </summary>
-	HINSTANCE GetHInstance() const { return wc.hInstance; }
+	HINSTANCE GetHInstance() const { return wc_.hInstance; }
 
 public:
 	//クライアント領域のサイズ
@@ -37,8 +42,8 @@ public:
 
 private:
 	//ウィンドウハンドル
-	HWND hWnd = nullptr;
+	HWND hWnd_ = nullptr;
 
 	//ウィンドウクラス
-	WNDCLASS wc{};
+	WNDCLASS wc_{};
 };
