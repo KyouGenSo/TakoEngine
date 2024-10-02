@@ -1,4 +1,5 @@
 #include<Windows.h>
+#include "WinApp.h"
 #include<wrl.h>
 #include<cstdint>
 #include<string>
@@ -44,9 +45,6 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 template<class T>
 using ComPtr = Microsoft::WRL::ComPtr<T>;
 
-//クライアント領域のサイズ
-const int32_t kClientWidth = 1280;
-const int32_t kClientHeight = 720;
 
 struct VertexData
 {
@@ -215,23 +213,23 @@ void SoundPlay(IXAudio2* xAudio2, const SoundData& soundData);
 
 //------------------------------------------WINDOW------------------------------------------//
 //ウィンドウプロシージャ
-LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam)
-{
-	if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wparam, lparam))
-	{
-		return true;
-	}
-	//メッセージによって処理を分岐
-	switch (msg)
-	{
-		//ウィンドウが破棄されたとき
-	case WM_DESTROY:
-		//メッセージループを終了
-		PostQuitMessage(0);
-		break;
-	}
-	return DefWindowProc(hWnd, msg, wparam, lparam);
-}
+//LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam)
+//{
+//	if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wparam, lparam))
+//	{
+//		return true;
+//	}
+//	//メッセージによって処理を分岐
+//	switch (msg)
+//	{
+//		//ウィンドウが破棄されたとき
+//	case WM_DESTROY:
+//		//メッセージループを終了
+//		PostQuitMessage(0);
+//		break;
+//	}
+//	return DefWindowProc(hWnd, msg, wparam, lparam);
+//}
 
 
 
@@ -239,40 +237,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
 	D3DResourceLeakCheker leakChecker;
-	// COMの初期化
-	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 
-	WNDCLASS wc{};
-	//ウィンドウプロシージャ
-	wc.lpfnWndProc = WndProc;
-	//クラス名
-	wc.lpszClassName = L"CG2WindowClass";
-	//インスタンスハンドル
-	wc.hInstance = GetModuleHandle(nullptr);
-	//カーソル
-	wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
-	//ウィンドウクラスを登録
-	RegisterClass(&wc);
+	WinApp* winApp = nullptr;
 
-	//ウィンドウサイズを表す構造体にクライアント領域のサイズを入れる
-	RECT wrc = { 0, 0, kClientWidth, kClientHeight };
+	//ウィンドウクラスの初期化
+	winApp = new WinApp();
+	winApp->Initialize();
 
-	//ウィンドウの生成
-	HWND hWnd = CreateWindow(
-		wc.lpszClassName,	    //クラス名
-		L"CG2",	                //タイトルバーの文字列
-		WS_OVERLAPPEDWINDOW,	//ウィンドウスタイル
-		CW_USEDEFAULT,		    //表示X座標
-		CW_USEDEFAULT,		    //表示Y座標
-		wrc.right - wrc.left,	//ウィンドウ幅
-		wrc.bottom - wrc.top,	//ウィンドウ高さ
-		nullptr,		        //親ウィンドウハンドル
-		nullptr,		        //メニューハンドル
-		wc.hInstance,		    //インスタンスハンドル
-		nullptr);		        //追加パラメータ
-
-	//ウィンドウを表示
-	ShowWindow(hWnd, SW_SHOW);
 	//-----------------------------------------WINDOW-----------------------------------------//
 
 	//-----------------------------------------DebugLayer-----------------------------------------//
@@ -1671,6 +1642,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	// pointerの解放
 	delete input;
+
+	// ウィンドウクラスの解放
+	delete winApp;
 
 	CloseHandle(fenceEvent);
 
