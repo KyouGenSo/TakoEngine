@@ -1653,7 +1653,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			assert(SUCCEEDED(hr));
 
 			// キーボードの入力状態を保存
-			memcpy(prevKeys, keys, sizeof(keys));
+			//memcpy(prevKeys, keys, sizeof(keys));
 		}
 	}
 
