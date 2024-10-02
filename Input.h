@@ -23,8 +23,29 @@ public:
 	/// </summary>
 	void Update();
 
+	/// <summary>
+	/// キーの押下状態を取得
+	/// </summary>
+	/// <param name="key">取得したいキー</param>
+	bool PushKey(BYTE keyNum) const;
+
+	/// <summary>
+	/// キーのトリガー状態を取得
+	/// </summary>
+	/// <param name="key">取得したいキー</param>
+	bool TriggerKey(BYTE keyNum) const;
+
 private:
+	// DirectInputオブジェクト
+	ComPtr<IDirectInput8> directInput;
+
 	// キーボードデバイス
-	ComPtr<IDirectInputDevice8> keyboardDevice;	
+	ComPtr<IDirectInputDevice8> keyboardDevice;
+
+	// キーボードの入力状態
+	BYTE keys[256] = {};
+
+	// 前フレームのキーボード入力状態
+	BYTE prevKeys[256] = {};
 
 };

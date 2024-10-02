@@ -1261,10 +1261,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//---------------------------------------------------GAMELOOP-----------------------------------------------------//
 	MSG msg{};
 
-	// キーボードの状態を取得するための変数
-	//BYTE keys[256] = {};
-	//BYTE prevKeys[256] = {};
-
 	while (msg.message != WM_QUIT)
 	{
 		//メッセージがある場合は処理
@@ -1458,10 +1454,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 			//-------------------ImGui-------------------//
 
-			//if (keys[DIK_RIGHT] && !prevKeys[DIK_RIGHT])
-			//{
-			//	modelTransform.translate.x += 0.1f;
-			//}
+			if (input->TriggerKey(DIK_RIGHT))
+			{
+				modelTransform.translate.x += 0.1f;
+			}
 			//if (keys[DIK_LEFT] && !prevKeys[DIK_LEFT])
 			//{
 			//	modelTransform.translate.x -= 0.1f;
@@ -1652,8 +1648,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			hr = commandList->Reset(commandAllocator.Get(), nullptr);
 			assert(SUCCEEDED(hr));
 
-			// キーボードの入力状態を保存
-			//memcpy(prevKeys, keys, sizeof(keys));
 		}
 	}
 
