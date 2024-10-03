@@ -1,5 +1,6 @@
 #include<Windows.h>
 #include "WinApp.h"
+#include "DX12Basic.h"
 #include<wrl.h>
 #include<cstdint>
 #include<string>
@@ -240,6 +241,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 
 	//-----------------------------------------DirectX-----------------------------------------//
+	
+	DX12Basic* dx12 = new DX12Basic();
+	dx12->Initialize();
+
 	//DXGIファクトリの生成
 	ComPtr<IDXGIFactory7> dxgiFactory = nullptr;
 
@@ -1145,13 +1150,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	lightData[0].intensity = 1.0f;
 	//-------------------------------------------------------Light-------------------------------------------------------//
 
+
 	// DepthStencilResourceの作成---------------------------------------------------------------
 	ComPtr<ID3D12Resource> depthStencilResource = CreateDepthStencilResource(device.Get(), WinApp::kClientWidth, WinApp::kClientHeight);
-	//ID3D12Resource* depthStencilResource = CeateDepthStencilResource(device, kClientWidth, kClientHeight);
 
 	// DSVの作成、descriptorの数は1、shader内で触るものではないのでShaderVisibleはfalse
 	ComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap = CreateDescriptorHeap(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
-	//ID3D12DescriptorHeap* dsvDescriptorHeap = CreateDescriptorHeap(device, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
 
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
 	dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
@@ -1624,6 +1628,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	// pointerの解放
 	delete input;
+	delete winApp;
+	delete dx12;
 
 	CloseHandle(fenceEvent);
 
@@ -1879,7 +1885,7 @@ ID3D12Resource* CreateDepthStencilResource(ID3D12Device* device, int32_t width, 
 	depthClearValue.DepthStencil.Depth = 1.0f; // 1.0f(最大値)でクリア
 	depthClearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT; // フォーマット
 
-	// Resourceの設定
+	// Resourceの生成
 	ID3D12Resource* depthStencilResource = nullptr;
 	HRESULT hr = device->CreateCommittedResource(
 		&heapProperties, // ヒープの設定
