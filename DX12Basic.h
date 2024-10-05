@@ -18,6 +18,16 @@ public: // メンバー関数
 	void Initialize(WinApp* winApp);
 
 	/// <summary>
+	/// 描画前の処理
+	/// </summary> 
+	void BeginDraw();
+
+	/// <summary>
+	/// 描画後の処理
+	/// </summary>
+	void EndDraw();
+
+	/// <summary>
 	/// SRVの指定番号のCPUディスクリプタハンドルを取得
 	/// </summary>
 	D3D12_CPU_DESCRIPTOR_HANDLE GetSRVCpuDescriptorHandle(uint32_t index);
@@ -151,7 +161,7 @@ private: // メンバ変数
 	// RTVハンドルの要素数
 	static const UINT kRtvHandleCount_ = 2;
 
-	// RTVハンドルの要素数
+	// RTVハンドル
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle_[kRtvHandleCount_];
 
 	// フェンス
@@ -159,6 +169,9 @@ private: // メンバ変数
 
 	// フェンスイベント
 	HANDLE fenceEvent_;
+
+	// フェンスの値
+	UINT64 fenceValue_;
 
 	// ビューポート
 	D3D12_VIEWPORT viewport_;
