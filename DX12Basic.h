@@ -1,10 +1,14 @@
 #pragma once
-#include <d3d12.h>
-#include <dxgi1_6.h>
-#include<wrl.h>
 #include "WinApp.h"
 #include <array>
+#include<string>
+#include<fstream>
+#include<sstream>
+#include<wrl.h>
+#include <d3d12.h>
+#include <dxgi1_6.h>
 #include<dxcapi.h>
+#include"externals/DirectXTex/DirectXTex.h"
 
 class DX12Basic {
 public: // メンバー関数
@@ -31,11 +35,66 @@ public: // メンバー関数
 	/// SRVの指定番号のCPUディスクリプタハンドルを取得
 	/// </summary>
 	D3D12_CPU_DESCRIPTOR_HANDLE GetSRVCpuDescriptorHandle(uint32_t index);
- 
+
 	/// <summary>
 	/// SRVの指定番号のGPUディスクリプタハンドルを取得
 	/// </summary>
 	D3D12_GPU_DESCRIPTOR_HANDLE GetSRVGpuDescriptorHandle(uint32_t index);
+
+	/// <summary>
+	/// コンパイルシェーダー
+	/// </summary>
+	Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(const std::wstring& filePath, const wchar_t* profile);
+
+	/// <summary>
+	/// バッファリソースの生成
+	/// </summary>
+	Microsoft::WRL::ComPtr<ID3D12Resource> CreateBufferResource(size_t sizeInBytes);
+
+	/// <summary>
+	/// テクスチャリソースの生成
+	/// </summary>
+	Microsoft::WRL::ComPtr<ID3D12Resource> CreateTextureResource(const DirectX::TexMetadata& metaData);
+
+	/// <summary>
+	/// テクスチャリソースの転送
+	/// </summary>
+	[[nodiscard]]
+	Microsoft::WRL::ComPtr<ID3D12Resource> UploadTextureData(const Microsoft::WRL::ComPtr<ID3D12Resource>& texture, const DirectX::ScratchImage& mipImages);
+
+	/// <summary>
+	/// テクスチャファイルの読み込み
+	/// </summary>
+	static DirectX::ScratchImage LoadTexture(const std::string& filePath);
+
+	//-----------------------------------------getter-----------------------------------------//
+	/// <summary>
+	/// デバイスの取得
+	/// </summary>
+	ID3D12Device* GetDevice() {
+		return device_.Get();
+	}
+
+	/// <summary>
+	/// コマンドキューの取得
+	/// </summary>
+	ID3D12CommandQueue* GetCommandQueue() {
+		return commandQueue_.Get();
+	}
+
+	/// <summary>
+	/// コマンドアロケータの取得
+	/// </summary>
+	ID3D12CommandAllocator* GetCommandAllocator() {
+		return commandAllocator_.Get();
+	}
+
+	/// <summary>
+	/// コマンドリストの取得
+	/// </summary>
+	ID3D12GraphicsCommandList* GetCommandList() {
+		return commandList_.Get();
+	}
 
 private: // プライベート関数
 	/// <summary>

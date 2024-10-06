@@ -503,6 +503,159 @@ D3D12_GPU_DESCRIPTOR_HANDLE DX12Basic::GetSRVGpuDescriptorHandle(uint32_t index)
 	return GetGPUDescriptorHandle(srvHeap_.Get(), descriptorSizeSRV_, index);
 }
 
+Microsoft::WRL::ComPtr<IDxcBlob> DX12Basic::CompileShader(const std::wstring& filePath, const wchar_t* profile)
+{
+	//hlslファイルを読み込む
+	Logger::Log(StringUtility::ConvertString(std::format(L"Begin CompileShader, path:{}, prefile:{}\n", filePath, profile)));
+	IDxcBlobEncoding* shaderSource = nullptr;
+	HRESULT hr = dxcUtils_->LoadFile(filePath.c_str(), nullptr, &shaderSource);
+	assert(SUCCEEDED(hr));
+
+	DxcBuffer shaderSourceBuffer;
+	shaderSourceBuffer.Ptr = shaderSource->GetBufferPointer();
+	shaderSourceBuffer.Size = shaderSource->GetBufferSize();
+	shaderSourceBuffer.Encoding = DXC_CP_UTF8;
+
+	//コンパイルオプション
+	LPCWSTR arguments[] = {
+		filePath.c_str(),
+		L"-E", L"main",
+		L"-T", profile,
+		L"-Zi", //デバッグ情報を出力
+		L"-Qembed_debug", //デバッグ情報を埋め込む
+		L"-Od", //最適化なし
+		L"-Zpr", //行数情報を出力
+	};
+
+	//コンパイル
+	IDxcResult* shaderResult = nullptr;
+	hr = dxcCompiler_->Compile(
+		&shaderSourceBuffer,
+		arguments, _countof(arguments),
+		includeHandler_,
+		IID_PPV_ARGS(&shaderResult));
+	assert(SUCCEEDED(hr));
+
+	//エラーメッセージを取得
+	IDxcBlobUtf8* shaderError = nullptr;
+	shaderResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&shaderError), nullptr);
+	if (shaderError != nullptr && shaderError->GetStringLength() != 0)
+	{
+		Logger::Log(shaderError->GetStringPointer());
+		assert(false);
+	}
+
+	//コンパイル結果を取得
+	IDxcBlob* shaderBlob = nullptr;
+	hr = shaderResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&shaderBlob), nullptr);
+	assert(SUCCEEDED(hr));
+	Logger::Log(StringUtility::ConvertString(std::format(L"Compile Succeeded, path:{}, prefile:{}\n", filePath, profile)));
+	shaderSource->Release();
+	shaderResult->Release();
+	return shaderBlob;
+}
+
+Microsoft::WRL::ComPtr<ID3D12Resource> DX12Basic::CreateBufferResource(size_t sizeInBytes)
+{
+	// バッファの設定
+	D3D12_RESOURCE_DESC bufferDesc{};
+	bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	bufferDesc.Width = sizeInBytes;
+	bufferDesc.Height = 1;
+	bufferDesc.DepthOrArraySize = 1;
+	bufferDesc.MipLevels = 1;
+	bufferDesc.SampleDesc.Count = 1;
+	bufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+	// ヒープの設定
+	D3D12_HEAP_PROPERTIES heapProperties{};
+	heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+
+	// リソースの生成
+	ID3D12Resource* bufferResource = nullptr;
+	HRESULT hr = device_->CreateCommittedResource(
+		&heapProperties,
+		D3D12_HEAP_FLAG_NONE,
+		&bufferDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&bufferResource));
+	assert(SUCCEEDED(hr));
+	return bufferResource;
+}
+
+Microsoft::WRL::ComPtr<ID3D12Resource> DX12Basic::CreateTextureResource(const DirectX::TexMetadata& metaData)
+{
+	// テクスチャの設定
+	D3D12_RESOURCE_DESC resourceDesc{};
+	resourceDesc.Width = UINT(metaData.width); // テクスチャの幅
+	resourceDesc.Height = UINT(metaData.height); // テクスチャの高さ
+	resourceDesc.DepthOrArraySize = UINT16(metaData.arraySize); // 配列サイズ
+	resourceDesc.MipLevels = UINT16(metaData.mipLevels); // ミップマップレベル
+	resourceDesc.Format = metaData.format; // フォーマット
+	resourceDesc.SampleDesc.Count = 1; // サンプル数
+	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION(metaData.dimension); // テクスチャの次元
+
+	// ヒープの設定
+	D3D12_HEAP_PROPERTIES heapProperties{};
+	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT; // VRAM上に作る
+
+	// Resourceの設定
+	ID3D12Resource* textureResource = nullptr;
+	HRESULT hr = device_->CreateCommittedResource(
+		&heapProperties, // ヒープの設定
+		D3D12_HEAP_FLAG_NONE, // Heapの特殊な設定。特になし
+		&resourceDesc, // リソースの設定
+		D3D12_RESOURCE_STATE_COPY_DEST, // リソースの初期状態. データ転送される設定
+		nullptr, // クリア値の設定。今回は使わないのでnullptr
+		IID_PPV_ARGS(&textureResource)); // 生成したリソースのpointerへのpointerを取得
+	assert(SUCCEEDED(hr));
+
+	return textureResource;
+}
+
+Microsoft::WRL::ComPtr<ID3D12Resource> DX12Basic::UploadTextureData(const Microsoft::WRL::ComPtr<ID3D12Resource>& texture, const DirectX::ScratchImage& mipImages)
+{
+	std::vector<D3D12_SUBRESOURCE_DATA> subresources;
+	// subresourcesの配列を作る
+	DirectX::PrepareUpload(device_.Get(), mipImages.GetImages(), mipImages.GetImageCount(), mipImages.GetMetadata(), subresources);
+	// intermediateResourceに必要なサイズを取得
+	uint64_t intermediateSize = GetRequiredIntermediateSize(texture.Get(), 0, UINT(subresources.size()));
+	// intermediateResourceを作成
+	Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource = CreateBufferResource(intermediateSize);
+
+	// intermediateResourceにSubresourceのデータを書き込み、textureに転送するコマンドを積む
+	UpdateSubresources(commandList_.Get(), texture.Get(), intermediateResource.Get(), 0, 0, UINT(subresources.size()), subresources.data());
+
+	// ResourceBarrierを使ってResourceStateを変更
+	D3D12_RESOURCE_BARRIER barrier{};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	barrier.Transition.pResource = texture.Get();
+	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
+	commandList_->ResourceBarrier(1, &barrier);
+
+	return intermediateResource;
+}
+
+DirectX::ScratchImage DX12Basic::LoadTexture(const std::string& filePath)
+{
+	// テクスチャの読み込み
+	DirectX::ScratchImage image;
+	std::wstring filePathW = StringUtility::ConvertString(filePath);
+	HRESULT hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
+	assert(SUCCEEDED(hr));
+
+	// mipmapを生成
+	DirectX::ScratchImage mipImages{};
+	hr = DirectX::GenerateMipMaps(image.GetImages(), image.GetImageCount(), image.GetMetadata(), DirectX::TEX_FILTER_SRGB, 0, mipImages);
+	assert(SUCCEEDED(hr));
+
+	return mipImages;
+}
+
 D3D12_CPU_DESCRIPTOR_HANDLE DX12Basic::GetCPUDescriptorHandle(ID3D12DescriptorHeap* descriptorHeap, uint32_t descriptorSize, uint32_t index)
 {
 	D3D12_CPU_DESCRIPTOR_HANDLE handle = descriptorHeap->GetCPUDescriptorHandleForHeapStart();
