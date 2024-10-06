@@ -1,3 +1,5 @@
+#pragma comment(lib, "winmm.lib")
+
 #include "WinApp.h"
 
 #include <cassert>
@@ -6,6 +8,9 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 
 void WinApp::Initialize()
 {
+	// システムタイマーの分解能を上げる
+	timeBeginPeriod(1);
+
 	// COMの初期化
 	HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 	assert(SUCCEEDED(hr));

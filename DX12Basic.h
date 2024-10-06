@@ -4,6 +4,7 @@
 #include<string>
 #include<fstream>
 #include<sstream>
+#include<chrono>
 #include<wrl.h>
 #include <d3d12.h>
 #include <dxgi1_6.h>
@@ -15,6 +16,11 @@ public: // メンバー関数
 
 	// ComPtrのエイリアス
 	template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
+
+	/// <summary>
+	/// デストラクタ
+	/// </summary>
+	~DX12Basic();
 
 	/// <summary>
 	/// 初期化
@@ -76,36 +82,22 @@ public: // メンバー関数
 	}
 
 	/// <summary>
-	/// コマンドキューの取得
-	/// </summary>
-	ID3D12CommandQueue* GetCommandQueue() {
-		return commandQueue_.Get();
-	}
-
-	/// <summary>
-	/// コマンドアロケータの取得
-	/// </summary>
-	ID3D12CommandAllocator* GetCommandAllocator() {
-		return commandAllocator_.Get();
-	}
-
-	/// <summary>
 	/// コマンドリストの取得
 	/// </summary>
 	ID3D12GraphicsCommandList* GetCommandList() {
 		return commandList_.Get();
 	}
 
-private: // プライベート関数
+private: // プライベートメンバー関数
 	/// <summary>
 	/// deviceの初期化
 	/// </summary>
-	void DeviceInit();
+	void InitDevice();
 
 	/// <summary>
 	/// コマンド関連の初期化
 	/// </summary>
-	void CommandInit();
+	void InitCommand();
 
 	/// <summary>
 	/// スワップチェインの生成
@@ -120,32 +112,32 @@ private: // プライベート関数
 	/// <summary>
 	/// デスクリプタヒープの初期化
 	/// <summary>
-	void DescriptorHeapInit();
+	void InitDescriptorHeap();
 
 	/// <summary>
 	/// レンダーターゲットビューの初期化
 	/// <summary> 
-	void RTVInit();
+	void InitRTV();
 
 	/// <summary>
 	/// 深度ステンシルビューの初期化
 	/// <summary> 
-	void DSVInit();
+	void InitDSV();
 
 	/// <summary>
 	/// フェンスの初期化
 	/// <summary> 
-	void FenceInit();
+	void InitFence();
 
 	/// <summary>
 	///　ビューポート矩形の初期化
 	/// <summary> 
-	void ViewportInit();
+	void InitViewport();
 
 	/// <summary>
 	/// シザリング矩形の初期化
 	/// <summary> 
-	void ScissorRectInit();
+	void InitScissorRect();
 
 	/// <summary>
 	/// DXCコンパイラの生成
@@ -155,7 +147,17 @@ private: // プライベート関数
 	/// <summary>
 	/// ImGuiの初期化
 	/// <summary> 
-	void ImGuiInit();
+	void InitImGui();
+
+	/// <summary>
+	/// FPS制御初期化
+	/// <summary> 
+	void InitFPSLimiter();
+
+	/// <summary>
+	/// FPS制御更新
+	/// <summary> 
+	void UpdateFPSLimiter();
 
 	/// <summary>
 	/// デスクリプタヒープの生成
@@ -173,6 +175,10 @@ private: // プライベート関数
 	static D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(ID3D12DescriptorHeap* descriptorHeap, uint32_t descriptorSize, uint32_t index);
 
 private: // メンバ変数
+	
+	// 記録時間(FPS制御用)
+	std::chrono::steady_clock::time_point referenceTime_;
+
 	// ウィンドウクラスポインター
 	WinApp* winApp_ = nullptr;
 

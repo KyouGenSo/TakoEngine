@@ -3,6 +3,7 @@
 #include "Logger.h"
 #include "StringUtility.h"
 #include <format>
+#include <thread>
 
 #include"externals/imgui/imgui.h"
 #include"externals/imgui/imgui_impl_win32.h"
@@ -14,6 +15,23 @@
 #pragma comment(lib, "dxcompiler.lib")
 #pragma comment(lib, "dxguid.lib")
 
+DX12Basic::~DX12Basic()
+{
+	// イベントの破棄
+	CloseHandle(fenceEvent_);
+
+	// DXCコンパイラの破棄
+	dxcCompiler_->Release();
+	dxcUtils_->Release();
+	includeHandler_->Release();
+
+	// ImGuiの終了処理
+	ImGui_ImplDX12_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
+
+}
+
 void DX12Basic::Initialize(WinApp* winApp)
 {
 	assert(winApp);
@@ -23,11 +41,14 @@ void DX12Basic::Initialize(WinApp* winApp)
 	commandList_ = nullptr;
 	commandAllocator_ = nullptr;
 
+	// FPS制御の初期化
+	InitFPSLimiter();
+
 	// Deviceの初期化
-	DeviceInit();
+	InitDevice();
 
 	// Command関連の初期化
-	CommandInit();
+	InitCommand();
 
 	// スワップチェインの生成
 	CreateSwapChain();
@@ -36,28 +57,28 @@ void DX12Basic::Initialize(WinApp* winApp)
 	CreateDepthStencilResource();
 
 	// デスクリプタヒープの初期化
-	DescriptorHeapInit();
+	InitDescriptorHeap();
 
 	// レンダーターゲットビューの初期化
-	RTVInit();
+	InitRTV();
 
 	// 深度ステンシルビューの初期化
-	DSVInit();
+	InitDSV();
 
 	// Fenceの初期化
-	FenceInit();
+	InitFence();
 
 	// ビューポート矩形の初期化
-	ViewportInit();
+	InitViewport();
 
 	// シザー矩形の初期化
-	ScissorRectInit();
+	InitScissorRect();
 
 	// DXCコンパイラの生成
 	CreateDXCCompiler();
 
 	// ImGuiの初期化
-	ImGuiInit();
+	InitImGui();
 
 }
 
@@ -133,20 +154,21 @@ void DX12Basic::EndDraw()
 	ID3D12CommandList* commandLists[] = { commandList_.Get() };
 	commandQueue_->ExecuteCommandLists(_countof(commandLists), commandLists);
 
-	// GPUとOSに画面の交換を行うよう通知する
-	swapChain_->Present(1, 0);
-
-	//Fenceの値を更新
+	// コマンド完了まで待機
 	fenceValue_++;
 	// コマンドキューにFenceのシグナルを行う
 	commandQueue_->Signal(fence_.Get(), fenceValue_);
-
-	// コマンド完了まで待機
 	if (fence_->GetCompletedValue() < fenceValue_)
 	{
 		fence_->SetEventOnCompletion(fenceValue_, fenceEvent_);
 		WaitForSingleObject(fenceEvent_, INFINITE);
 	}
+
+	// FPS制御更新
+	UpdateFPSLimiter();
+
+	// GPUとOSに画面の交換を行うよう通知する
+	swapChain_->Present(1, 0);
 
 	// コマンドアロケータをリセット
 	hr = commandAllocator_->Reset();
@@ -158,7 +180,7 @@ void DX12Basic::EndDraw()
 
 }
 
-void DX12Basic::DeviceInit()
+void DX12Basic::InitDevice()
 {
 	HRESULT hr;
 
@@ -252,7 +274,7 @@ void DX12Basic::DeviceInit()
 
 }
 
-void DX12Basic::CommandInit()
+void DX12Basic::InitCommand()
 {
 	HRESULT hr;
 
@@ -339,7 +361,7 @@ void DX12Basic::CreateDepthStencilResource()
 
 }
 
-void DX12Basic::DescriptorHeapInit()
+void DX12Basic::InitDescriptorHeap()
 {
 	// ディスクリプタヒープのサイズを取得
 	descriptorSizeRTV_ = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
@@ -356,7 +378,7 @@ void DX12Basic::DescriptorHeapInit()
 	srvHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
 }
 
-void DX12Basic::RTVInit()
+void DX12Basic::InitRTV()
 {
 	// SwapChainからResourceを取得
 	for (UINT i = 0; i < 2; ++i)
@@ -388,7 +410,7 @@ void DX12Basic::RTVInit()
 
 }
 
-void DX12Basic::DSVInit()
+void DX12Basic::InitDSV()
 {
 	// DSVの設定
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
@@ -402,7 +424,7 @@ void DX12Basic::DSVInit()
 	device_->CreateDepthStencilView(depthStencilResource_.Get(), &dsvDesc, dsvHandle);
 }
 
-void DX12Basic::FenceInit()
+void DX12Basic::InitFence()
 {
 	// Fenceの初期値
 	fenceValue_ = 0;
@@ -416,7 +438,7 @@ void DX12Basic::FenceInit()
 	assert(fenceEvent_ != nullptr);
 }
 
-void DX12Basic::ViewportInit()
+void DX12Basic::InitViewport()
 {
 	// ビューポートの設定
 	viewport_.TopLeftX = 0;
@@ -427,7 +449,7 @@ void DX12Basic::ViewportInit()
 	viewport_.MaxDepth = 1.0f;
 }
 
-void DX12Basic::ScissorRectInit()
+void DX12Basic::InitScissorRect()
 {
 	// シザー矩形の設定
 	scissorRect_.left = 0;
@@ -453,7 +475,7 @@ void DX12Basic::CreateDXCCompiler()
 
 }
 
-void DX12Basic::ImGuiInit()
+void DX12Basic::InitImGui()
 {
 	// バージョンチェック
 	IMGUI_CHECKVERSION();
@@ -476,6 +498,40 @@ void DX12Basic::ImGuiInit()
 		srvHeap_->GetCPUDescriptorHandleForHeapStart(),  // SRVのCPUハンドルの開始位置
 		srvHeap_->GetGPUDescriptorHandleForHeapStart()); // SRVのGPUハンドルの開始位置
 
+}
+
+void DX12Basic::InitFPSLimiter()
+{
+	// 現在の時間を記録
+	referenceTime_ = std::chrono::steady_clock::now();
+
+}
+
+void DX12Basic::UpdateFPSLimiter()
+{
+	// 1/60秒
+	const std::chrono::microseconds kMinFrameTime(uint64_t(1000000.0 / 60.0));
+	// 1/65秒
+	const std::chrono::microseconds kMinCheckTime(uint64_t(1000000.0 / 65.0));
+
+	// 現在の時間を取得
+	auto currentTime = std::chrono::steady_clock::now();
+	// 経過時間を取得
+	auto elapsedTime = std::chrono::duration_cast<std::chrono::microseconds>(currentTime - referenceTime_);
+
+	// 経過時間が1/65秒未満の場合
+	if (elapsedTime < kMinCheckTime)
+	{
+		// 経過時間が1/60秒未満の間、処理を待機
+		while (std::chrono::steady_clock::now() - referenceTime_ < kMinFrameTime)
+		{
+			// 処理を待機
+			std::this_thread::sleep_for(std::chrono::microseconds(1));
+		}
+	}
+
+	// 現在の時間を更新
+	referenceTime_ = std::chrono::steady_clock::now();
 }
 
 ID3D12DescriptorHeap* DX12Basic::CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisible)
