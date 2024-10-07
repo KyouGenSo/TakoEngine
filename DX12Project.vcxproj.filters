@@ -22,6 +22,9 @@
     <Filter Include="ヘッダー ファイル\MathFunc">
       <UniqueIdentifier>{40811121-7059-4adf-8617-56b84521839a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="リソース ファイル\MathFunc">
+      <UniqueIdentifier>{4e17c94d-bb9c-468a-93ef-aabc256dac6d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -69,6 +72,15 @@
     <ClCompile Include="SpriteBasic.cpp">
       <Filter>リソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="Sprite.cpp">
+      <Filter>リソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Mat4x4Func.cpp">
+      <Filter>リソース ファイル\MathFunc</Filter>
+    </ClCompile>
+    <ClCompile Include="Vec3Func.cpp">
+      <Filter>リソース ファイル\MathFunc</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\ImGui\imconfig.h">
@@ -98,7 +110,7 @@
     <ClInclude Include="Matrix4x4.h">
       <Filter>ヘッダー ファイル\MathFunc</Filter>
     </ClInclude>
-    <ClInclude Include="Matrix4x4Function.h">
+    <ClInclude Include="Mat4x4Func.h">
       <Filter>ヘッダー ファイル\MathFunc</Filter>
     </ClInclude>
     <ClInclude Include="Vector2.h">
@@ -107,7 +119,7 @@
     <ClInclude Include="Vector3.h">
       <Filter>ヘッダー ファイル\MathFunc</Filter>
     </ClInclude>
-    <ClInclude Include="Vector3Function.h">
+    <ClInclude Include="Vec3Func.h">
       <Filter>ヘッダー ファイル\MathFunc</Filter>
     </ClInclude>
     <ClInclude Include="Vector4.h">
@@ -132,6 +144,9 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="SpriteBasic.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Sprite.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>

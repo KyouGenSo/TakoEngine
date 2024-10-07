@@ -104,8 +104,11 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Mat4x4Func.cpp" />
+    <ClCompile Include="Sprite.cpp" />
     <ClCompile Include="SpriteBasic.cpp" />
     <ClCompile Include="StringUtility.cpp" />
+    <ClCompile Include="Vec3Func.cpp" />
     <ClCompile Include="WinApp.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -122,12 +125,13 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="Input.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="Matrix4x4.h" />
-    <ClInclude Include="Matrix4x4Function.h" />
+    <ClInclude Include="Mat4x4Func.h" />
+    <ClInclude Include="Sprite.h" />
     <ClInclude Include="SpriteBasic.h" />
     <ClInclude Include="StringUtility.h" />
     <ClInclude Include="Vector2.h" />
     <ClInclude Include="Vector3.h" />
-    <ClInclude Include="Vector3Function.h" />
+    <ClInclude Include="Vec3Func.h" />
     <ClInclude Include="Vector4.h" />
     <ClInclude Include="WinApp.h" />
   </ItemGroup>

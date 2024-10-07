@@ -7,6 +7,10 @@
 class SpriteBasic {
 
 public: // メンバー関数
+
+	// ComPtrのエイリアス
+	template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
+
 	/// <summary>
 	/// 初期化
 	/// </summary>
@@ -37,8 +41,8 @@ private: // メンバー変数
 	DX12Basic* dx12_;
 
 	// ルートシグネチャ
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;
+	ComPtr<ID3D12RootSignature> rootSignature_;
 
 	// パイプラインステート
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;
+	ComPtr<ID3D12PipelineState> pipelineState_;
 };

@@ -50,23 +50,23 @@ public: // メンバー関数
 	/// <summary>
 	/// コンパイルシェーダー
 	/// </summary>
-	Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(const std::wstring& filePath, const wchar_t* profile);
+	ComPtr<IDxcBlob> CompileShader(const std::wstring& filePath, const wchar_t* profile);
 
 	/// <summary>
 	/// バッファリソースの生成
 	/// </summary>
-	Microsoft::WRL::ComPtr<ID3D12Resource> CreateBufferResource(size_t sizeInBytes);
+	ComPtr<ID3D12Resource> CreateBufferResource(size_t sizeInBytes);
 
 	/// <summary>
 	/// テクスチャリソースの生成
 	/// </summary>
-	Microsoft::WRL::ComPtr<ID3D12Resource> CreateTextureResource(const DirectX::TexMetadata& metaData);
+	ComPtr<ID3D12Resource> CreateTextureResource(const DirectX::TexMetadata& metaData);
 
 	/// <summary>
 	/// テクスチャリソースの転送
 	/// </summary>
 	[[nodiscard]]
-	Microsoft::WRL::ComPtr<ID3D12Resource> UploadTextureData(const Microsoft::WRL::ComPtr<ID3D12Resource>& texture, const DirectX::ScratchImage& mipImages);
+	ComPtr<ID3D12Resource> UploadTextureData(const ComPtr<ID3D12Resource>& texture, const DirectX::ScratchImage& mipImages);
 
 	/// <summary>
 	/// テクスチャファイルの読み込み
@@ -183,25 +183,25 @@ private: // メンバ変数
 	WinApp* winApp_ = nullptr;
 
 	// デバイス
-	Microsoft::WRL::ComPtr<ID3D12Device> device_;
+	ComPtr<ID3D12Device> device_;
 
 	// DXGIファクトリ
-	Microsoft::WRL::ComPtr<IDXGIFactory7> dxgiFactory;
+	ComPtr<IDXGIFactory7> dxgiFactory;
 
 	// コマンドキュー
-	Microsoft::WRL::ComPtr<ID3D12CommandQueue> commandQueue_;
+	ComPtr<ID3D12CommandQueue> commandQueue_;
 
 	// コマンドアロケータ
-	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocator_;
+	ComPtr<ID3D12CommandAllocator> commandAllocator_;
 
 	// コマンドリスト
-	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandList_;
+	ComPtr<ID3D12GraphicsCommandList> commandList_;
 
 	// スワップチェイン
-	Microsoft::WRL::ComPtr<IDXGISwapChain4> swapChain_;
+	ComPtr<IDXGISwapChain4> swapChain_;
 
 	// 深度バッファ
-	Microsoft::WRL::ComPtr<ID3D12Resource> depthStencilResource_;
+	ComPtr<ID3D12Resource> depthStencilResource_;
 
 	// デスクリプタヒープのサイズ
 	uint32_t descriptorSizeRTV_;
@@ -209,16 +209,16 @@ private: // メンバ変数
 	uint32_t descriptorSizeSRV_;
 
 	// レンダーターゲットビューのデスクリプタヒープ
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvHeap_;
+	ComPtr<ID3D12DescriptorHeap> rtvHeap_;
 
 	// 深度ステンシルビューのデスクリプタヒープ
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> dsvHeap_;
+	ComPtr<ID3D12DescriptorHeap> dsvHeap_;
 
 	// シェーダーリソースビューのデスクリプタヒープ
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvHeap_;
+	ComPtr<ID3D12DescriptorHeap> srvHeap_;
 
 	// スワップチェインのバッファ
-	std::array<Microsoft::WRL::ComPtr<ID3D12Resource>, 2> swapChainResources_;
+	std::array<ComPtr<ID3D12Resource>, 2> swapChainResources_;
 
 	// スワップチェインのバッファのカウント
 	UINT swapChainBufferCount_;
@@ -230,7 +230,7 @@ private: // メンバ変数
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle_[kRtvHandleCount_];
 
 	// フェンス
-	Microsoft::WRL::ComPtr<ID3D12Fence> fence_;
+	ComPtr<ID3D12Fence> fence_;
 
 	// フェンスイベント
 	HANDLE fenceEvent_;
