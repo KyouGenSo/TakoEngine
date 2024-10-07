@@ -76,7 +76,6 @@ struct VertexHash {
 	}
 };
 
-// 自定义相等比较函数
 struct VertexEqual {
 	bool operator()(const VertexData& lhs, const VertexData& rhs) const {
 		return lhs.position.x == rhs.position.x &&
@@ -1164,9 +1163,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 		//-------------------ImGui-------------------//
 
-
 		dx12->GetCommandList()->SetGraphicsRootSignature(rootSignature.Get()); // ルートシグネチャの設定
+
 		dx12->GetCommandList()->SetPipelineState(graphicsPipelineState.Get()); // パイプラインステートの設定
+
 		dx12->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // トポロジの設定
 
 		//-----------Modelの描画-----------//
@@ -1256,12 +1256,23 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 
 		//-----------Spriteの描画-----------//
-		dx12->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress()); // マテリアルCBufferの場所を設定
-		dx12->GetCommandList()->SetGraphicsRootConstantBufferView(1, TrasformationMatrixResourceSprite->GetGPUVirtualAddress()); // WVPのCBufferの場所を設定
-		dx12->GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU); // Textureの設定
-		dx12->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSprite); // 頂点バッファの設定
-		dx12->GetCommandList()->IASetIndexBuffer(&indexBufferViewSprite); // インデックスバッファの設定
-		dx12->GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0); // 描画
+		 // マテリアルCBufferの場所を設定
+		dx12->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress());
+
+		// WVPのCBufferの場所を設定
+		dx12->GetCommandList()->SetGraphicsRootConstantBufferView(1, TrasformationMatrixResourceSprite->GetGPUVirtualAddress());
+
+		// Textureの設定
+		dx12->GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
+
+		// 頂点バッファの設定
+		dx12->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
+
+		// インデックスバッファの設定
+		dx12->GetCommandList()->IASetIndexBuffer(&indexBufferViewSprite);
+
+		// 描画
+		dx12->GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0);
 		//-----------Spriteの描画-----------//
 
 		//-----------Suzanneの描画-----------//
@@ -1315,10 +1326,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//rootSignatureNoTex->Release();
 
 	// pointerの解放
-	delete input;
 	delete dx12;
-	delete winApp;
 	delete d3dResourceLeakCheker;
+	delete input;
 
 	//CloseHandle(fenceEvent);
 
