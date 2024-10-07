@@ -28,6 +28,11 @@ public: // メンバー関数
 	void Initialize(WinApp* winApp);
 
 	/// <summary>
+	/// 終了処理
+	/// </summary>
+	void Finalize();
+
+	/// <summary>
 	/// 描画前の処理
 	/// </summary> 
 	void BeginDraw();
@@ -56,11 +61,13 @@ public: // メンバー関数
 	/// バッファリソースの生成
 	/// </summary>
 	ComPtr<ID3D12Resource> CreateBufferResource(size_t sizeInBytes);
+	//void CreateBufferResource(ComPtr<ID3D12Resource>& bufferResource, size_t sizeInBytes);
 
 	/// <summary>
 	/// テクスチャリソースの生成
 	/// </summary>
 	ComPtr<ID3D12Resource> CreateTextureResource(const DirectX::TexMetadata& metaData);
+	//void CreateTextureResource(ComPtr<ID3D12Resource>& textureResource, const DirectX::TexMetadata& metaData);
 
 	/// <summary>
 	/// テクスチャリソースの転送
@@ -80,6 +87,7 @@ public: // メンバー関数
 	ID3D12Device* GetDevice() {
 		return device_.Get();
 	}
+	
 
 	/// <summary>
 	/// コマンドリストの取得
@@ -162,7 +170,7 @@ private: // プライベートメンバー関数
 	/// <summary>
 	/// デスクリプタヒープの生成
 	/// <summary>+
-	ID3D12DescriptorHeap* CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisible);
+	ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisible);
 
 	/// <summary>
 	/// 指定番号のCPUディスクリプタハンドルを取得
@@ -175,7 +183,7 @@ private: // プライベートメンバー関数
 	static D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(ID3D12DescriptorHeap* descriptorHeap, uint32_t descriptorSize, uint32_t index);
 
 private: // メンバ変数
-	
+
 	// 記録時間(FPS制御用)
 	std::chrono::steady_clock::time_point referenceTime_;
 
@@ -186,7 +194,7 @@ private: // メンバ変数
 	ComPtr<ID3D12Device> device_;
 
 	// DXGIファクトリ
-	ComPtr<IDXGIFactory7> dxgiFactory;
+	ComPtr<IDXGIFactory7> dxgiFactory_;
 
 	// コマンドキュー
 	ComPtr<ID3D12CommandQueue> commandQueue_;
@@ -245,12 +253,17 @@ private: // メンバ変数
 	D3D12_RECT scissorRect_;
 
 	// DXCUtility
-	IDxcUtils* dxcUtils_ = nullptr;
+	ComPtr<IDxcUtils> dxcUtils_ = nullptr;
 
 	// DXCコンパイラ
-	IDxcCompiler3* dxcCompiler_ = nullptr;
+	ComPtr<IDxcCompiler3> dxcCompiler_ = nullptr;
 
 	// デフォルトインクルードハンドラー
-	IDxcIncludeHandler* includeHandler_ = nullptr;
+	ComPtr<IDxcIncludeHandler> includeHandler_ = nullptr;
+
+	
+	//ComPtr<ID3D12Resource> bufferResource_;
+
+	//ComPtr<ID3D12Resource> textureResource_;
 
 };

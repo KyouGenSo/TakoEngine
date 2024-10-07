@@ -56,14 +56,30 @@ public: // メンバー関数
 	void Draw();
 
 	//-----------------------------------Getters-----------------------------------//
-	Transform& GetTransform() { return transform_; }
+	// Get Transform
+	const Transform& GetTransform() const { return transform_; }
 	// Get MaterialData
-	Material* GetMaterialData() { return materialData_; }
+	const Material* GetMaterialData() const { return materialData_; }
+	// Get Color
+	const Vector4& GetColor() const { return materialData_->color; }
+	// Get Position
+	const Vector2& GetPos() const { return pos_; }
+	// Get Rotation
+	const float GetRotation() const { return rotation_; }
+	// Get Size
+	const Vector2& GetSize() const { return size_; }
 
 	//-----------------------------------Setters-----------------------------------//
+	// Set Transform
 	void SetTransform(const Transform& transform) { transform_ = transform; }
-
+	// Set Color
 	void SetColor(const Vector4& color) { materialData_->color = color; }
+	// Set Position
+	void SetPos(const Vector2& pos) { pos_ = pos; }
+	// Set Rotation
+	void SetRotation(const float rotation) { rotation_ = rotation; }
+	// Set Size
+	void SetSize(const Vector2& size) { size_ = size; }
 
 private: // プライベートメンバー関数
 
@@ -83,8 +99,6 @@ private: // プライベートメンバー関数
 	void CreateTransformationMatrixData();
 
 private:// メンバー変数
-
-
 
 	// SpriteBasicクラスのインスタンス
 	SpriteBasic* spriteBasic_;
@@ -109,4 +123,13 @@ private:// メンバー変数
 
 	// インデックスバッファビュー
 	D3D12_INDEX_BUFFER_VIEW indexBufferView_;
+
+	// 座標
+	Vector2 pos_ = { 0.0f, 0.0f };
+
+	// 回転
+	float rotation_ = 0.0f;
+
+	// サイズ
+	Vector2 size_ = { 640.0f, 360.0f };
 };
