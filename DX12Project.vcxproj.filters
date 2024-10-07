@@ -25,6 +25,9 @@
     <Filter Include="リソース ファイル\MathFunc">
       <UniqueIdentifier>{4e17c94d-bb9c-468a-93ef-aabc256dac6d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ヘッダー ファイル\Math">
+      <UniqueIdentifier>{90ed12b1-d376-4b19-b4fb-168c6be4949a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -81,6 +84,9 @@
     <ClCompile Include="Vec3Func.cpp">
       <Filter>リソース ファイル\MathFunc</Filter>
     </ClCompile>
+    <ClCompile Include="TextureManager.cpp">
+      <Filter>リソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\ImGui\imconfig.h">
@@ -107,22 +113,10 @@
     <ClInclude Include="externals\ImGui\imstb_truetype.h">
       <Filter>imgui</Filter>
     </ClInclude>
-    <ClInclude Include="Matrix4x4.h">
-      <Filter>ヘッダー ファイル\MathFunc</Filter>
-    </ClInclude>
     <ClInclude Include="Mat4x4Func.h">
       <Filter>ヘッダー ファイル\MathFunc</Filter>
     </ClInclude>
-    <ClInclude Include="Vector2.h">
-      <Filter>ヘッダー ファイル\MathFunc</Filter>
-    </ClInclude>
-    <ClInclude Include="Vector3.h">
-      <Filter>ヘッダー ファイル\MathFunc</Filter>
-    </ClInclude>
     <ClInclude Include="Vec3Func.h">
-      <Filter>ヘッダー ファイル\MathFunc</Filter>
-    </ClInclude>
-    <ClInclude Include="Vector4.h">
       <Filter>ヘッダー ファイル\MathFunc</Filter>
     </ClInclude>
     <ClInclude Include="Input.h">
@@ -147,6 +141,21 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Sprite.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Matrix4x4.h">
+      <Filter>ヘッダー ファイル\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Vector4.h">
+      <Filter>ヘッダー ファイル\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Vector3.h">
+      <Filter>ヘッダー ファイル\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Vector2.h">
+      <Filter>ヘッダー ファイル\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureManager.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>

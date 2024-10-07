@@ -4,6 +4,7 @@
 #include"Vector3.h"
 #include"Mat4x4Func.h"
 #include<cstdint>
+#include<string>
 #include <d3d12.h>
 #include<wrl.h>
 
@@ -43,7 +44,7 @@ public: // メンバー関数
 	///<summary>
 	///初期化
 	/// </summary>
-	void Initialize(SpriteBasic* spriteBasic);
+	void Initialize(SpriteBasic* spriteBasic, std::string texturePath);
 
 	///<summary>
 	///更新
@@ -132,4 +133,7 @@ private:// メンバー変数
 
 	// サイズ
 	Vector2 size_ = { 640.0f, 360.0f };
+
+	// テクスチャ番号
+	uint32_t textureIndex_ = 0;
 };

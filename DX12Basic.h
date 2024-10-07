@@ -17,6 +17,9 @@ public: // メンバー関数
 	// ComPtrのエイリアス
 	template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
 
+	// 最大SRV数(テクスチャ数)
+	static const uint32_t kMaxSRVCount;
+
 	/// <summary>
 	/// デストラクタ
 	/// </summary>
@@ -60,14 +63,14 @@ public: // メンバー関数
 	/// <summary>
 	/// バッファリソースの生成
 	/// </summary>
-	ComPtr<ID3D12Resource> CreateBufferResource(size_t sizeInBytes);
-	//void CreateBufferResource(ComPtr<ID3D12Resource>& bufferResource, size_t sizeInBytes);
+	ComPtr<ID3D12Resource> MakeBufferResource(size_t sizeInBytes);
+	void CreateBufferResource(ComPtr<ID3D12Resource>& bufferResource, size_t sizeInBytes);
 
 	/// <summary>
 	/// テクスチャリソースの生成
 	/// </summary>
-	ComPtr<ID3D12Resource> CreateTextureResource(const DirectX::TexMetadata& metaData);
-	//void CreateTextureResource(ComPtr<ID3D12Resource>& textureResource, const DirectX::TexMetadata& metaData);
+	ComPtr<ID3D12Resource> MakeTextureResource(const DirectX::TexMetadata& metaData);
+	void CreateTextureResource(ComPtr<ID3D12Resource>& textureResource, const DirectX::TexMetadata& metaData);
 
 	/// <summary>
 	/// テクスチャリソースの転送
@@ -187,6 +190,9 @@ private: // メンバ変数
 	// 記録時間(FPS制御用)
 	std::chrono::steady_clock::time_point referenceTime_;
 
+	// RTVハンドルの要素数
+	static const UINT kRtvHandleCount = 2;
+
 	// ウィンドウクラスポインター
 	WinApp* winApp_ = nullptr;
 
@@ -231,11 +237,8 @@ private: // メンバ変数
 	// スワップチェインのバッファのカウント
 	UINT swapChainBufferCount_;
 
-	// RTVハンドルの要素数
-	static const UINT kRtvHandleCount_ = 2;
-
 	// RTVハンドル
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle_[kRtvHandleCount_];
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle_[kRtvHandleCount];
 
 	// フェンス
 	ComPtr<ID3D12Fence> fence_;
