@@ -17,6 +17,11 @@
 
 DX12Basic::~DX12Basic()
 {
+	// ImGuiの終了処理
+	ImGui_ImplDX12_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
+
 	// イベントの破棄
 	CloseHandle(fenceEvent_);
 
@@ -24,12 +29,6 @@ DX12Basic::~DX12Basic()
 	dxcCompiler_->Release();
 	dxcUtils_->Release();
 	includeHandler_->Release();
-
-	// ImGuiの終了処理
-	ImGui_ImplDX12_Shutdown();
-	ImGui_ImplWin32_Shutdown();
-	ImGui::DestroyContext();
-
 }
 
 void DX12Basic::Initialize(WinApp* winApp)
@@ -121,7 +120,6 @@ void DX12Basic::BeginDraw()
 	// ビューポートとシザリング矩形をセット
 	commandList_->RSSetViewports(1, &viewport_);
 	commandList_->RSSetScissorRects(1, &scissorRect_);
-
 
 }
 

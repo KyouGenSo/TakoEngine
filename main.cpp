@@ -1,6 +1,7 @@
 #include<Windows.h>
 #include "WinApp.h"
 #include "DX12Basic.h"
+#include "SpriteBasic.h"
 #include"D3DResourceLeakCheker.h"
 #include<wrl.h>
 #include<cstdint>
@@ -205,8 +206,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//-----------------------------------------汎用機能初期化-----------------------------------------//
 
 
-	//-----------------------------------------DirectXInitialize-----------------------------------------
+	//-----------------------------------------基盤システムの初期化-----------------------------------------
 
+	// DX12の初期化
 	DX12Basic* dx12 = new DX12Basic();
 	dx12->Initialize(winApp);
 
@@ -215,144 +217,148 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	HRESULT hr;
 
-	//-----------------------------------------DirectXInitialize-----------------------------------------//
+	// Sprite共通クラスの初期化
+	SpriteBasic* spriteBasic = new SpriteBasic();
+	spriteBasic->Initialize(dx12);
+
+	//-----------------------------------------基盤システムの初期化-----------------------------------------//
 
 
 	//-----------------------------------------PSO-----------------------------------------
-	// rootSignatureの生成
-	D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
-	descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+	//// rootSignatureの生成
+	//D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
+	//descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
-	// Samplerの設定
-	D3D12_STATIC_SAMPLER_DESC samplerDesc[1]{};
-	samplerDesc[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR; // テクスチャの補間方法
-	samplerDesc[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
-	samplerDesc[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
-	samplerDesc[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
-	samplerDesc[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER; // 比較しない
-	samplerDesc[0].MaxLOD = D3D12_FLOAT32_MAX; // ミップマップの最大LOD
-	samplerDesc[0].ShaderRegister = 0; // レジスタ番号
-	samplerDesc[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-	descriptionRootSignature.pStaticSamplers = samplerDesc;
-	descriptionRootSignature.NumStaticSamplers = _countof(samplerDesc);
+	//// Samplerの設定
+	//D3D12_STATIC_SAMPLER_DESC samplerDesc[1]{};
+	//samplerDesc[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR; // テクスチャの補間方法
+	//samplerDesc[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
+	//samplerDesc[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
+	//samplerDesc[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
+	//samplerDesc[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER; // 比較しない
+	//samplerDesc[0].MaxLOD = D3D12_FLOAT32_MAX; // ミップマップの最大LOD
+	//samplerDesc[0].ShaderRegister = 0; // レジスタ番号
+	//samplerDesc[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+	//descriptionRootSignature.pStaticSamplers = samplerDesc;
+	//descriptionRootSignature.NumStaticSamplers = _countof(samplerDesc);
 
-	// DescriptorRangeの設定。
-	D3D12_DESCRIPTOR_RANGE descriptorRange[1] = {};
-	descriptorRange[0].BaseShaderRegister = 0; // レジスタ番号
-	descriptorRange[0].NumDescriptors = 1; // ディスクリプタ数
-	descriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
-	descriptorRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+	//// DescriptorRangeの設定。
+	//D3D12_DESCRIPTOR_RANGE descriptorRange[1] = {};
+	//descriptorRange[0].BaseShaderRegister = 0; // レジスタ番号
+	//descriptorRange[0].NumDescriptors = 1; // ディスクリプタ数
+	//descriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
+	//descriptorRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
 
-	// RootParameterの設定。複数設定できるので配列
-	D3D12_ROOT_PARAMETER rootParameters[4] = {};
+	//// RootParameterの設定。複数設定できるので配列
+	//D3D12_ROOT_PARAMETER rootParameters[4] = {};
 
-	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-	rootParameters[0].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
+	//rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
+	//rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+	//rootParameters[0].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
 
-	rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // 頂点シェーダーで使う
-	rootParameters[1].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド 
+	//rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
+	//rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // 頂点シェーダーで使う
+	//rootParameters[1].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド 
 
-	rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-	rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-	rootParameters[2].DescriptorTable.pDescriptorRanges = descriptorRange; // ディスクリプタレンジを設定
-	rootParameters[2].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange); // レンジの数
+	//rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
+	//rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+	//rootParameters[2].DescriptorTable.pDescriptorRanges = descriptorRange; // ディスクリプタレンジを設定
+	//rootParameters[2].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange); // レンジの数
 
-	rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-	rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-	rootParameters[3].Descriptor.ShaderRegister = 1; // レジスタ番号とバインド
+	//rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
+	//rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+	//rootParameters[3].Descriptor.ShaderRegister = 1; // レジスタ番号とバインド
 
-	descriptionRootSignature.pParameters = rootParameters;
-	descriptionRootSignature.NumParameters = _countof(rootParameters);
+	//descriptionRootSignature.pParameters = rootParameters;
+	//descriptionRootSignature.NumParameters = _countof(rootParameters);
 
-	ComPtr<ID3DBlob> signatureBlob = nullptr;
-	ComPtr<ID3DBlob> errorBlob = nullptr;
+	//ComPtr<ID3DBlob> signatureBlob = nullptr;
+	//ComPtr<ID3DBlob> errorBlob = nullptr;
 
-	hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
-	if (FAILED(hr))
-	{
-		Logger::Log(reinterpret_cast<char*>(errorBlob->GetBufferPointer()));
-		assert(false);
-	}
+	//hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
+	//if (FAILED(hr))
+	//{
+	//	Logger::Log(reinterpret_cast<char*>(errorBlob->GetBufferPointer()));
+	//	assert(false);
+	//}
 
-	ComPtr<ID3D12RootSignature> rootSignature = nullptr;
-	hr = dx12->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature.GetAddressOf()));
-	signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature.GetAddressOf());
-	assert(SUCCEEDED(hr));
+	//ComPtr<ID3D12RootSignature> rootSignature = nullptr;
+	//hr = dx12->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature.GetAddressOf()));
+	//signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature.GetAddressOf());
+	//assert(SUCCEEDED(hr));
 
-	// InputLayout
-	D3D12_INPUT_ELEMENT_DESC inputElementDescs[3] = {};
-	inputElementDescs[0].SemanticName = "POSITION";
-	inputElementDescs[0].SemanticIndex = 0;
-	inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+	//// InputLayout
+	//D3D12_INPUT_ELEMENT_DESC inputElementDescs[3] = {};
+	//inputElementDescs[0].SemanticName = "POSITION";
+	//inputElementDescs[0].SemanticIndex = 0;
+	//inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	//inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
-	inputElementDescs[1].SemanticName = "TEXCOORD";
-	inputElementDescs[1].SemanticIndex = 0;
-	inputElementDescs[1].Format = DXGI_FORMAT_R32G32_FLOAT;
-	inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+	//inputElementDescs[1].SemanticName = "TEXCOORD";
+	//inputElementDescs[1].SemanticIndex = 0;
+	//inputElementDescs[1].Format = DXGI_FORMAT_R32G32_FLOAT;
+	//inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
-	inputElementDescs[2].SemanticName = "NORMAL";
-	inputElementDescs[2].SemanticIndex = 0;
-	inputElementDescs[2].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-	inputElementDescs[2].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+	//inputElementDescs[2].SemanticName = "NORMAL";
+	//inputElementDescs[2].SemanticIndex = 0;
+	//inputElementDescs[2].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	//inputElementDescs[2].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
-	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
-	inputLayoutDesc.pInputElementDescs = inputElementDescs;
-	inputLayoutDesc.NumElements = _countof(inputElementDescs);
+	//D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
+	//inputLayoutDesc.pInputElementDescs = inputElementDescs;
+	//inputLayoutDesc.NumElements = _countof(inputElementDescs);
 
-	// BlendState
-	D3D12_BLEND_DESC blendDesc{};
-	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+	//// BlendState
+	//D3D12_BLEND_DESC blendDesc{};
+	//blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
-	// RasterizerState
-	D3D12_RASTERIZER_DESC rasterizerDesc{};
-	// 三角形の中を塗りつぶす
-	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
-	// 裏面を表示しない
-	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
+	//// RasterizerState
+	//D3D12_RASTERIZER_DESC rasterizerDesc{};
+	//// 三角形の中を塗りつぶす
+	//rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
+	//// 裏面を表示しない
+	//rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
 
-	// shaderのコンパイル
-	ComPtr<IDxcBlob> vertexShaderBlob = dx12->CompileShader(L"resources/shaders/Object3d.VS.hlsl", L"vs_6_0");
-	assert(vertexShaderBlob != nullptr);
+	//// shaderのコンパイル
+	//ComPtr<IDxcBlob> vertexShaderBlob = dx12->CompileShader(L"resources/shaders/Object3d.VS.hlsl", L"vs_6_0");
+	//assert(vertexShaderBlob != nullptr);
 
-	ComPtr<IDxcBlob> pixelShaderBlob = dx12->CompileShader(L"resources/shaders/Object3d.PS.hlsl", L"ps_6_0");
-	assert(pixelShaderBlob != nullptr);
+	//ComPtr<IDxcBlob> pixelShaderBlob = dx12->CompileShader(L"resources/shaders/Object3d.PS.hlsl", L"ps_6_0");
+	//assert(pixelShaderBlob != nullptr);
 
-	// DepthStencilState
-	D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
-	// depthの機能を有効化にする
-	depthStencilDesc.DepthEnable = true;
-	// 書き込みします
-	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-	// 深度の比較方法
-	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+	//// DepthStencilState
+	//D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
+	//// depthの機能を有効化にする
+	//depthStencilDesc.DepthEnable = true;
+	//// 書き込みします
+	//depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	//// 深度の比較方法
+	//depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 
-	// PSOの生成
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
-	graphicsPipelineStateDesc.pRootSignature = rootSignature.Get();
-	graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
-	graphicsPipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() };
-	graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
-	graphicsPipelineStateDesc.BlendState = blendDesc;
-	graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
-	// 書き込むRTVの情報
-	graphicsPipelineStateDesc.NumRenderTargets = 1;
-	graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-	// 利用するトポロジ（形状）のタイプ。三角形
-	graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	// どのように画面に色を打ち込むかの設定
-	graphicsPipelineStateDesc.SampleDesc.Count = 1;
-	graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-	// DepthStencilの設定
-	graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
-	graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	//// PSOの生成
+	//D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
+	//graphicsPipelineStateDesc.pRootSignature = rootSignature.Get();
+	//graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
+	//graphicsPipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() };
+	//graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
+	//graphicsPipelineStateDesc.BlendState = blendDesc;
+	//graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
+	//// 書き込むRTVの情報
+	//graphicsPipelineStateDesc.NumRenderTargets = 1;
+	//graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+	//// 利用するトポロジ（形状）のタイプ。三角形
+	//graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	//// どのように画面に色を打ち込むかの設定
+	//graphicsPipelineStateDesc.SampleDesc.Count = 1;
+	//graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+	//// DepthStencilの設定
+	//graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
+	//graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
-	// 実際に生成
-	ComPtr<ID3D12PipelineState> graphicsPipelineState = nullptr;
-	hr = dx12->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPipelineState));
-	assert(SUCCEEDED(hr));
+	//// 実際に生成
+	//ComPtr<ID3D12PipelineState> graphicsPipelineState = nullptr;
+	//hr = dx12->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPipelineState));
+	//assert(SUCCEEDED(hr));
 
 	// textureがない場合のPSOを生成---------------------------------------------------------
 	
@@ -680,7 +686,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//------------------------------------------------------Material------------------------------------------------------
 	// マテリアル用のリソースを作る。--------------------------------------//
 	ComPtr<ID3D12Resource> materialResource = dx12->CreateBufferResource(sizeof(Material));
-	//ID3D12Resource* materialResource = CreateBufferResource(device.Get(), sizeof(Material));
 	// マテリアルにデータを書き込む
 	Material* materialData = nullptr;
 	// アドレスを取得
@@ -1163,11 +1168,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 		//-------------------ImGui-------------------//
 
-		dx12->GetCommandList()->SetGraphicsRootSignature(rootSignature.Get()); // ルートシグネチャの設定
+		//dx12->GetCommandList()->SetGraphicsRootSignature(rootSignature.Get()); // ルートシグネチャの設定
 
-		dx12->GetCommandList()->SetPipelineState(graphicsPipelineState.Get()); // パイプラインステートの設定
+		//dx12->GetCommandList()->SetPipelineState(graphicsPipelineState.Get()); // パイプラインステートの設定
 
-		dx12->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // トポロジの設定
+		//dx12->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // トポロジの設定
+
+		// 共通描画設定
+		spriteBasic->SetCommonRenderSetting();
 
 		//-----------Modelの描画-----------//
 		// マテリアルの設定。色を変える
@@ -1256,7 +1264,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 
 		//-----------Spriteの描画-----------//
-		 // マテリアルCBufferの場所を設定
+
+		// マテリアルCBufferの場所を設定
 		dx12->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress());
 
 		// WVPのCBufferの場所を設定
@@ -1312,25 +1321,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//-------------------------------------------------GAMELOOP-----------------------------------------------------/
 
-	// ImGui解放
-	//ImGui_ImplDX12_Shutdown();
-	//ImGui_ImplWin32_Shutdown();
-	//ImGui::DestroyContext();
-
 	// リソースの解放
-	vertexShaderBlob->Release();
-	pixelShaderBlob->Release();
+	//vertexShaderBlob->Release();
+	//pixelShaderBlob->Release();
 	vertexShaderNoTexBlob->Release();
 	pixelShaderNoTexBlob->Release();
 	//rootSignature->Release();
 	//rootSignatureNoTex->Release();
 
 	// pointerの解放
+	delete input;
 	delete dx12;
 	delete d3dResourceLeakCheker;
-	delete input;
-
-	//CloseHandle(fenceEvent);
+	delete spriteBasic;
 
 	// XAudio2の解放
 	xAudio2.Reset();
@@ -1350,206 +1353,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 
 // 関数の定義-------------------------------------------------------------------------------------------------------------------
-
-//CompileShader
-//IDxcBlob* CompileShader(
-//	const std::wstring& filePath,
-//	const wchar_t* profile,
-//	IDxcUtils* dxcUtils,
-//	IDxcCompiler3* dxcCompiler,
-//	IDxcIncludeHandler* includeHandler)
-//{
-//	//hlslファイルを読み込む
-//	Log(ConvertString(std::format(L"Begin CompileShader, path:{}, prefile:{}\n", filePath, profile)));
-//	IDxcBlobEncoding* shaderSource = nullptr;
-//	HRESULT hr = dxcUtils->LoadFile(filePath.c_str(), nullptr, &shaderSource);
-//	assert(SUCCEEDED(hr));
-//
-//	DxcBuffer shaderSourceBuffer;
-//	shaderSourceBuffer.Ptr = shaderSource->GetBufferPointer();
-//	shaderSourceBuffer.Size = shaderSource->GetBufferSize();
-//	shaderSourceBuffer.Encoding = DXC_CP_UTF8;
-//
-//	//コンパイルオプション
-//	LPCWSTR arguments[] = {
-//		filePath.c_str(),
-//		L"-E", L"main",
-//		L"-T", profile,
-//		L"-Zi", //デバッグ情報を出力
-//		L"-Qembed_debug", //デバッグ情報を埋め込む
-//		L"-Od", //最適化なし
-//		L"-Zpr", //行数情報を出力
-//	};
-//
-//	//コンパイル
-//	IDxcResult* shaderResult = nullptr;
-//	hr = dxcCompiler->Compile(
-//		&shaderSourceBuffer,
-//		arguments, _countof(arguments),
-//		includeHandler,
-//		IID_PPV_ARGS(&shaderResult));
-//	assert(SUCCEEDED(hr));
-//
-//	//エラーメッセージを取得
-//	IDxcBlobUtf8* shaderError = nullptr;
-//	shaderResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&shaderError), nullptr);
-//	if (shaderError != nullptr && shaderError->GetStringLength() != 0)
-//	{
-//		Log(shaderError->GetStringPointer());
-//		assert(false);
-//	}
-//
-//	//コンパイル結果を取得
-//	IDxcBlob* shaderBlob = nullptr;
-//	hr = shaderResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&shaderBlob), nullptr);
-//	assert(SUCCEEDED(hr));
-//	Log(ConvertString(std::format(L"Compile Succeeded, path:{}, prefile:{}\n", filePath, profile)));
-//	shaderSource->Release();
-//	shaderResult->Release();
-//	return shaderBlob;
-//
-//}
-
-//ID3D12Resource* CreateBufferResource(ID3D12Device* device, size_t sizeInBytes)
-//{
-//	// バッファの設定
-//	D3D12_RESOURCE_DESC bufferDesc{};
-//	bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-//	bufferDesc.Width = sizeInBytes;
-//	bufferDesc.Height = 1;
-//	bufferDesc.DepthOrArraySize = 1;
-//	bufferDesc.MipLevels = 1;
-//	bufferDesc.SampleDesc.Count = 1;
-//	bufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-//
-//	// ヒープの設定
-//	D3D12_HEAP_PROPERTIES heapProperties{};
-//	heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
-//
-//	// リソースの生成
-//	ID3D12Resource* bufferResource = nullptr;
-//	HRESULT hr = device->CreateCommittedResource(
-//		&heapProperties,
-//		D3D12_HEAP_FLAG_NONE,
-//		&bufferDesc,
-//		D3D12_RESOURCE_STATE_GENERIC_READ,
-//		nullptr,
-//		IID_PPV_ARGS(&bufferResource));
-//	assert(SUCCEEDED(hr));
-//	return bufferResource;
-//}
-
-//DirectX::ScratchImage LoadTexture(const std::string& filePath)
-//{
-//	// テクスチャの読み込み
-//	DirectX::ScratchImage image;
-//	std::wstring filePathW = ConvertString(filePath);
-//	HRESULT hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
-//	assert(SUCCEEDED(hr));
-//
-//	// mipmapを生成
-//	DirectX::ScratchImage mipImages{};
-//	hr = DirectX::GenerateMipMaps(image.GetImages(), image.GetImageCount(), image.GetMetadata(), DirectX::TEX_FILTER_SRGB, 0, mipImages);
-//	assert(SUCCEEDED(hr));
-//
-//	return mipImages;
-//
-//}
-
-//ID3D12Resource* CreateTextureResource(ID3D12Device* device, const DirectX::TexMetadata& metaData)
-//{
-//	// テクスチャの設定
-//	D3D12_RESOURCE_DESC resourceDesc{};
-//	resourceDesc.Width = UINT(metaData.width); // テクスチャの幅
-//	resourceDesc.Height = UINT(metaData.height); // テクスチャの高さ
-//	resourceDesc.DepthOrArraySize = UINT16(metaData.arraySize); // 配列サイズ
-//	resourceDesc.MipLevels = UINT16(metaData.mipLevels); // ミップマップレベル
-//	resourceDesc.Format = metaData.format; // フォーマット
-//	resourceDesc.SampleDesc.Count = 1; // サンプル数
-//	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION(metaData.dimension); // テクスチャの次元
-//
-//	// ヒープの設定
-//	D3D12_HEAP_PROPERTIES heapProperties{};
-//	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT; // VRAM上に作る
-//
-//	// Resourceの設定
-//	ID3D12Resource* textureResource = nullptr;
-//	HRESULT hr = device->CreateCommittedResource(
-//		&heapProperties, // ヒープの設定
-//		D3D12_HEAP_FLAG_NONE, // Heapの特殊な設定。特になし
-//		&resourceDesc, // リソースの設定
-//		D3D12_RESOURCE_STATE_COPY_DEST, // リソースの初期状態. データ転送される設定
-//		nullptr, // クリア値の設定。今回は使わないのでnullptr
-//		IID_PPV_ARGS(&textureResource)); // 生成したリソースのpointerへのpointerを取得
-//	assert(SUCCEEDED(hr));
-//
-//	return textureResource;
-//
-//}
-
-//[[nodiscard]]
-//ID3D12Resource* UploadTextureData(ID3D12Resource* texture, const DirectX::ScratchImage& mipImages, ID3D12Device* device, ID3D12GraphicsCommandList* commandList)
-//{
-//	std::vector<D3D12_SUBRESOURCE_DATA> subresources;
-//	// subresourcesの配列を作る
-//	DirectX::PrepareUpload(device, mipImages.GetImages(), mipImages.GetImageCount(), mipImages.GetMetadata(), subresources);
-//	// intermediateResourceに必要なサイズを取得
-//	uint64_t intermediateSize = GetRequiredIntermediateSize(texture, 0, UINT(subresources.size()));
-//	// intermediateResourceを作成
-//	ID3D12Resource* intermediateResource = CreateBufferResource(device, intermediateSize);
-//
-//	// intermediateResourceにSubresourceのデータを書き込み、textureに転送するコマンドを積む
-//	UpdateSubresources(commandList, texture, intermediateResource, 0, 0, UINT(subresources.size()), subresources.data());
-//
-//	// ResourceBarrierを使ってResourceStateを変更
-//	D3D12_RESOURCE_BARRIER barrier{};
-//	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-//	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-//	barrier.Transition.pResource = texture;
-//	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-//	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-//	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
-//	commandList->ResourceBarrier(1, &barrier);
-//
-//	return intermediateResource;
-//}
-
-//ID3D12Resource* CreateDepthStencilResource(ID3D12Device* device, int32_t width, int32_t height)
-//{
-//	// テクスチャの設定
-//	D3D12_RESOURCE_DESC resourceDesc{};
-//	resourceDesc.Width = width; // テクスチャの幅
-//	resourceDesc.Height = height; // テクスチャの高さ
-//	resourceDesc.MipLevels = 1; // ミップマップレベル
-//	resourceDesc.DepthOrArraySize = 1; // 奥行き or 配列サイズ
-//	resourceDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT; // フォーマット
-//	resourceDesc.SampleDesc.Count = 1; // サンプル数、１固定
-//	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D; // 2次元
-//	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL; // 深度ステンシルとして使う
-//
-//	// ヒープの設定
-//	D3D12_HEAP_PROPERTIES heapProperties{};
-//	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT; // VRAM上に作る
-//
-//	// 深度値のクリア設定
-//	D3D12_CLEAR_VALUE depthClearValue{};
-//	// クリア値
-//	depthClearValue.DepthStencil.Depth = 1.0f; // 1.0f(最大値)でクリア
-//	depthClearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT; // フォーマット
-//
-//	// Resourceの生成
-//	ID3D12Resource* depthStencilResource = nullptr;
-//	HRESULT hr = device->CreateCommittedResource(
-//		&heapProperties, // ヒープの設定
-//		D3D12_HEAP_FLAG_NONE, // Heapの特殊な設定。特になし
-//		&resourceDesc, // リソースの設定
-//		D3D12_RESOURCE_STATE_DEPTH_WRITE, // リソースの初期状態. DEPTH_WRITE
-//		&depthClearValue, // クリア値の設定.
-//		IID_PPV_ARGS(&depthStencilResource)); // 生成したリソースのpointerへのpointerを取得
-//	assert(SUCCEEDED(hr));
-//
-//	return depthStencilResource;
-//}
 
 ModelData LoadObjFile(const std::string& directoryPath, const std::string& fileName)
 {
