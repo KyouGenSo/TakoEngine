@@ -6,7 +6,7 @@
 
 TextureManager* TextureManager::instance_ = nullptr;
 
-uint32_t TextureManager::kSRVIndexStart = 1;
+uint32_t TextureManager::kSRVIndexStart = 7;
 
 TextureManager* TextureManager::GetInstance()
 {
@@ -61,7 +61,7 @@ void TextureManager::LoadTexture(const std::string& filePath)
 	assert(SUCCEEDED(hr));
 
 	// テクスチャデータを追加
-	textureDatas_.resize(textureDatas_.size() + 1 + kSRVIndexStart);
+	textureDatas_.resize(textureDatas_.size() + 1);
 
 	// 追加したテクスチャデータを取得
 	TextureData& textureData = textureDatas_.back();
@@ -69,9 +69,10 @@ void TextureManager::LoadTexture(const std::string& filePath)
 	textureData.filePath = filePath;
 	textureData.metadata = mipImages.GetMetadata();
 	textureData.resource = dx12_->MakeTextureResource(textureData.metadata);
+	Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource = dx12_->UploadTextureData(textureData.resource, mipImages);
 
 	// テクスチャデータの要素番号をSRVのインデックスとして使用
-	uint32_t srvIndex = static_cast<uint32_t>(textureDatas_.size());
+	uint32_t srvIndex = static_cast<uint32_t>(textureDatas_.size() - 1) + kSRVIndexStart;
 
 	// テクスチャデータのSRVハンドルを取得
 	textureData.srvCpuHandle = dx12_->GetSRVCpuDescriptorHandle(srvIndex);

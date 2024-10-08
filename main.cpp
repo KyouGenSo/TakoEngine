@@ -214,8 +214,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	// TextureManagerの初期化
 	TextureManager::GetInstance()->Initialize(dx12);
-	// textureの読み込み
-	TextureManager::GetInstance()->LoadTexture("resources/monsterBall.png");
 
 	// Sprite共通クラスの初期化
 	SpriteBasic* spriteBasic = new SpriteBasic();
@@ -597,118 +595,123 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	Transform sphereTransform{ {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} };
 
 	// ---------------------------------------------------Texture---------------------------------------------------
-	//// uvCheckerの読み込み
-	//DirectX::ScratchImage mipImages = dx12->LoadTexture("resources/uvChecker.png");
-	//const DirectX::TexMetadata& metaData = mipImages.GetMetadata();
-	//// Texture用のリソースを作成
-	//ComPtr<ID3D12Resource> textureResource = dx12->MakeTextureResource(metaData);
-	//// Textureのデータを転送
-	//ComPtr<ID3D12Resource> intermediateResource = dx12->UploadTextureData(textureResource.Get(), mipImages);
+	// uvCheckerの読み込み
+	DirectX::ScratchImage mipImages = dx12->LoadTexture("resources/uvChecker.png");
+	const DirectX::TexMetadata& metaData = mipImages.GetMetadata();
+	// Texture用のリソースを作成
+	ComPtr<ID3D12Resource> textureResource = dx12->MakeTextureResource(metaData);
+	// Textureのデータを転送
+	ComPtr<ID3D12Resource> intermediateResource = dx12->UploadTextureData(textureResource.Get(), mipImages);
 
-	//// uvChecker用のSRVを作成
-	//D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
-	//srvDesc.Format = metaData.format;
-	//srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D; // 2Dテクスチャ
-	//srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	//srvDesc.Texture2D.MipLevels = UINT(metaData.mipLevels);
+	// uvChecker用のSRVを作成
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+	srvDesc.Format = metaData.format;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D; // 2Dテクスチャ
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.Texture2D.MipLevels = UINT(metaData.mipLevels);
 
-	//// uvCheckerのSRVを作成するDescriptorの位置を決める
-	//D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU = dx12->GetSRVCpuDescriptorHandle(1);
-	//D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU = dx12->GetSRVGpuDescriptorHandle(1);
+	// uvCheckerのSRVを作成するDescriptorの位置を決める
+	D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU = dx12->GetSRVCpuDescriptorHandle(1);
+	D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU = dx12->GetSRVGpuDescriptorHandle(1);
 
-	//// uvCheckerのSRVを作成
-	//dx12->GetDevice()->CreateShaderResourceView(textureResource.Get(), &srvDesc, textureSrvHandleCPU);
+	// uvCheckerのSRVを作成
+	dx12->GetDevice()->CreateShaderResourceView(textureResource.Get(), &srvDesc, textureSrvHandleCPU);
 
-	////-------------------------------------------------------------------------------------------------------//
+	//-------------------------------------------------------------------------------------------------------//
 
-	//// planeのTextureの読み込み
-	//DirectX::ScratchImage planeMipImages = dx12->LoadTexture(planeData.material.texturePath);
-	//const DirectX::TexMetadata& metaData2 = planeMipImages.GetMetadata();
-	//// Texture用のリソースを作成
-	//ComPtr<ID3D12Resource> textureResource2 = dx12->MakeTextureResource(metaData2);
-	//// Textureのデータを転送
-	//ComPtr<ID3D12Resource> intermediateResource2 = dx12->UploadTextureData(textureResource2.Get(), planeMipImages);
+	// planeのTextureの読み込み
+	DirectX::ScratchImage planeMipImages = dx12->LoadTexture(planeData.material.texturePath);
+	const DirectX::TexMetadata& metaData2 = planeMipImages.GetMetadata();
+	// Texture用のリソースを作成
+	ComPtr<ID3D12Resource> textureResource2 = dx12->MakeTextureResource(metaData2);
+	// Textureのデータを転送
+	ComPtr<ID3D12Resource> intermediateResource2 = dx12->UploadTextureData(textureResource2.Get(), planeMipImages);
 
-	//// SRVを作成
-	//D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc2{};
-	//srvDesc2.Format = metaData2.format;
-	//srvDesc2.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D; // 2Dテクスチャ
-	//srvDesc2.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	//srvDesc2.Texture2D.MipLevels = UINT(metaData2.mipLevels);
+	// SRVを作成
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc2{};
+	srvDesc2.Format = metaData2.format;
+	srvDesc2.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D; // 2Dテクスチャ
+	srvDesc2.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc2.Texture2D.MipLevels = UINT(metaData2.mipLevels);
 
-	//// SRVを作成するDescriptorの位置を決める
-	//D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU2 = dx12->GetSRVCpuDescriptorHandle(2);
-	//D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU2 = dx12->GetSRVGpuDescriptorHandle(2);
+	// SRVを作成するDescriptorの位置を決める
+	D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU2 = dx12->GetSRVCpuDescriptorHandle(2);
+	D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU2 = dx12->GetSRVGpuDescriptorHandle(2);
 
-	//// SRVを作成
-	//dx12->GetDevice()->CreateShaderResourceView(textureResource2.Get(), &srvDesc2, textureSrvHandleCPU2);
+	// SRVを作成
+	dx12->GetDevice()->CreateShaderResourceView(textureResource2.Get(), &srvDesc2, textureSrvHandleCPU2);
 
-	////-------------------------------------------------------------------------------------------------------//
+	//-------------------------------------------------------------------------------------------------------//
 
-	//// teapotのTextureの読み込み
-	//DirectX::ScratchImage teapotMipImages = dx12->LoadTexture(teapotData.material.texturePath);
-	//const DirectX::TexMetadata& metaData3 = teapotMipImages.GetMetadata();
-	//// Texture用のリソースを作成
-	//ComPtr<ID3D12Resource> textureResource3 = dx12->MakeTextureResource(metaData3);
-	//// Textureのデータを転送
-	//ComPtr<ID3D12Resource> intermediateResource3 = dx12->UploadTextureData(textureResource3.Get(), teapotMipImages);
+	// teapotのTextureの読み込み
+	DirectX::ScratchImage teapotMipImages = dx12->LoadTexture(teapotData.material.texturePath);
+	const DirectX::TexMetadata& metaData3 = teapotMipImages.GetMetadata();
+	// Texture用のリソースを作成
+	ComPtr<ID3D12Resource> textureResource3 = dx12->MakeTextureResource(metaData3);
+	// Textureのデータを転送
+	ComPtr<ID3D12Resource> intermediateResource3 = dx12->UploadTextureData(textureResource3.Get(), teapotMipImages);
 
-	//// SRVを作成
-	//D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc3{};
-	//srvDesc3.Format = metaData3.format;
-	//srvDesc3.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D; // 2Dテクスチャ
-	//srvDesc3.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	//srvDesc3.Texture2D.MipLevels = UINT(metaData3.mipLevels);
+	// SRVを作成
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc3{};
+	srvDesc3.Format = metaData3.format;
+	srvDesc3.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D; // 2Dテクスチャ
+	srvDesc3.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc3.Texture2D.MipLevels = UINT(metaData3.mipLevels);
 
-	//// SRVを作成するDescriptorの位置を決める
-	//D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU3 = dx12->GetSRVCpuDescriptorHandle(3);
-	//D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU3 = dx12->GetSRVGpuDescriptorHandle(3);
+	// SRVを作成するDescriptorの位置を決める
+	D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU3 = dx12->GetSRVCpuDescriptorHandle(3);
+	D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU3 = dx12->GetSRVGpuDescriptorHandle(3);
 
-	//// SRVを作成
-	//dx12->GetDevice()->CreateShaderResourceView(textureResource3.Get(), &srvDesc3, textureSrvHandleCPU3);
+	// SRVを作成
+	dx12->GetDevice()->CreateShaderResourceView(textureResource3.Get(), &srvDesc3, textureSrvHandleCPU3);
 
-	////-------------------------------------------------------------------------------------------------------//
-	//// mutiMaterialのTextureの読み込み
-	//std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> textureSrvHandleCPUs;
-	//std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> textureSrvHandleGPUs;
+	//-------------------------------------------------------------------------------------------------------//
+	// mutiMaterialのTextureの読み込み
+	std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> textureSrvHandleCPUs;
+	std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> textureSrvHandleGPUs;
 
-	//for (int i = 0; i < multiMaterialModelDatas.size(); i++) {
-	//	DirectX::ScratchImage multiMateMipImages = dx12->LoadTexture(multiMaterialModelDatas[i].material.texturePath);
-	//	const DirectX::TexMetadata& multiMateMetaData = multiMateMipImages.GetMetadata();
-	//	// Texture用のリソースを作成
-	//	ComPtr<ID3D12Resource> multiMateTextureResource = dx12->MakeTextureResource(multiMateMetaData);
-	//	// Textureのデータを転送
-	//	ComPtr<ID3D12Resource> multiMateIntermediateResource = dx12->UploadTextureData(multiMateTextureResource.Get(), multiMateMipImages);
+	for (int i = 0; i < multiMaterialModelDatas.size(); i++) {
+		DirectX::ScratchImage multiMateMipImages = dx12->LoadTexture(multiMaterialModelDatas[i].material.texturePath);
+		const DirectX::TexMetadata& multiMateMetaData = multiMateMipImages.GetMetadata();
+		// Texture用のリソースを作成
+		ComPtr<ID3D12Resource> multiMateTextureResource = dx12->MakeTextureResource(multiMateMetaData);
+		// Textureのデータを転送
+		ComPtr<ID3D12Resource> multiMateIntermediateResource = dx12->UploadTextureData(multiMateTextureResource.Get(), multiMateMipImages);
 
-	//	// SRVを作成
-	//	D3D12_SHADER_RESOURCE_VIEW_DESC multiMateSrvDesc{};
-	//	multiMateSrvDesc.Format = multiMateMetaData.format;
-	//	multiMateSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D; // 2Dテクスチャ
-	//	multiMateSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	//	multiMateSrvDesc.Texture2D.MipLevels = UINT(multiMateMetaData.mipLevels);
+		// SRVを作成
+		D3D12_SHADER_RESOURCE_VIEW_DESC multiMateSrvDesc{};
+		multiMateSrvDesc.Format = multiMateMetaData.format;
+		multiMateSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D; // 2Dテクスチャ
+		multiMateSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		multiMateSrvDesc.Texture2D.MipLevels = UINT(multiMateMetaData.mipLevels);
 
-	//	// SRVを作成するDescriptorの位置を決める
-	//	D3D12_CPU_DESCRIPTOR_HANDLE multiMateTextureSrvHandleCPU = dx12->GetSRVCpuDescriptorHandle(4 + i);
-	//	D3D12_GPU_DESCRIPTOR_HANDLE multiMateTextureSrvHandleGPU = dx12->GetSRVGpuDescriptorHandle(4 + i);
+		// SRVを作成するDescriptorの位置を決める
+		D3D12_CPU_DESCRIPTOR_HANDLE multiMateTextureSrvHandleCPU = dx12->GetSRVCpuDescriptorHandle(4 + i);
+		D3D12_GPU_DESCRIPTOR_HANDLE multiMateTextureSrvHandleGPU = dx12->GetSRVGpuDescriptorHandle(4 + i);
 
-	//	// SRVを作成
-	//	dx12->GetDevice()->CreateShaderResourceView(multiMateTextureResource.Get(), &multiMateSrvDesc, multiMateTextureSrvHandleCPU);
+		// SRVを作成
+		dx12->GetDevice()->CreateShaderResourceView(multiMateTextureResource.Get(), &multiMateSrvDesc, multiMateTextureSrvHandleCPU);
 
-	//	textureSrvHandleCPUs.push_back(multiMateTextureSrvHandleCPU);
-	//	textureSrvHandleGPUs.push_back(multiMateTextureSrvHandleGPU);
-	//}
+		textureSrvHandleCPUs.push_back(multiMateTextureSrvHandleCPU);
+		textureSrvHandleGPUs.push_back(multiMateTextureSrvHandleGPU);
+	}
 
 	// ---------------------------------------------------Texture---------------------------------------------------//
 
 
 	//------------------------------------------------------Sprite------------------------------------------------------
-	
+	// textureの読み込み
+	TextureManager::GetInstance()->LoadTexture("resources/monsterBall.png");
+	TextureManager::GetInstance()->LoadTexture("resources/checkerBoard.png");
 	uint32_t spriteNum = 5;
 	std::vector<Sprite*> sprites;
 
 	for (uint32_t i = 0; i < spriteNum; i++) {
 		Sprite* sprite = new Sprite();
-		sprite->Initialize(spriteBasic, "resources/monsterBall.png");
+		if (i % 2 == 0)
+			sprite->Initialize(spriteBasic, "resources/monsterBall.png");
+		else
+			sprite->Initialize(spriteBasic, "resources/checkerBoard.png");
 		sprite->SetPos(Vector2(i * 150.0f, 0.0f));
 		sprite->SetSize(Vector2(100.0f, 100.0f));
 		sprites.push_back(sprite);
@@ -1100,7 +1103,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	delete input;
 	delete dx12;
 	delete spriteBasic;
-	
+
 	for (uint32_t i = 0; i < spriteNum; i++)
 	{
 		delete sprites[i];
