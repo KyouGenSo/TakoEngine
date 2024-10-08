@@ -106,11 +106,20 @@ uint32_t TextureManager::GetTextureIndex(const std::string& filePath)
 	return 0;
 }
 
-D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetSRVGpuHandle(uint32_t textureIndex)
+D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetSRVGpuHandle(uint32_t texIndex)
 {
 	// 範囲外指定チェック
-	assert(textureIndex < textureDatas_.size());
+	assert(texIndex < textureDatas_.size());
 
-	TextureData& textureData = textureDatas_[textureIndex];
+	TextureData& textureData = textureDatas_[texIndex];
 	return textureData.srvGpuHandle;
+}
+
+const DirectX::TexMetadata& TextureManager::GetMetaData(uint32_t texIndex)
+{
+	// 範囲外指定チェック
+	assert(texIndex < textureDatas_.size());
+
+	TextureData& textureData = textureDatas_[texIndex];
+	return textureData.metadata;
 }

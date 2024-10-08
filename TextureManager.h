@@ -63,7 +63,12 @@ public: // メンバー関数
 	/// <summary>
 	/// テクスチャのインデックスからGPUハンドルを取得
 	/// </summary>
-	D3D12_GPU_DESCRIPTOR_HANDLE GetSRVGpuHandle(uint32_t textureIndex);
+	D3D12_GPU_DESCRIPTOR_HANDLE GetSRVGpuHandle(uint32_t texIndex);
+
+	/// <summary>
+	/// メタデータを取得
+	/// </summary>
+	const DirectX::TexMetadata& GetMetaData(uint32_t texIndex);
 
 private: // メンバー変数
 

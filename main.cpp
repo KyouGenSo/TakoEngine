@@ -701,19 +701,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//------------------------------------------------------Sprite------------------------------------------------------
 	// textureの読み込み
-	TextureManager::GetInstance()->LoadTexture("resources/monsterBall.png");
+	TextureManager::GetInstance()->LoadTexture("resources/uvChecker.png");
 	TextureManager::GetInstance()->LoadTexture("resources/checkerBoard.png");
-	uint32_t spriteNum = 5;
+	uint32_t spriteNum = 2;
 	std::vector<Sprite*> sprites;
 
 	for (uint32_t i = 0; i < spriteNum; i++) {
 		Sprite* sprite = new Sprite();
 		if (i % 2 == 0)
-			sprite->Initialize(spriteBasic, "resources/monsterBall.png");
+			sprite->Initialize(spriteBasic, "resources/uvChecker.png");
 		else
 			sprite->Initialize(spriteBasic, "resources/checkerBoard.png");
-		sprite->SetPos(Vector2(i * 150.0f, 0.0f));
-		sprite->SetSize(Vector2(100.0f, 100.0f));
+		sprite->SetPos(Vector2(i * 500.0f, 0.0f));
 		sprites.push_back(sprite);
 	}
 

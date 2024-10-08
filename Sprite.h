@@ -69,6 +69,16 @@ public: // メンバー関数
 	const float GetRotation() const { return rotation_; }
 	// Get Size
 	const Vector2& GetSize() const { return size_; }
+	// Get AnchorPoint
+	const Vector2& GetAnchorPoint() const { return anchorPoint_; }
+	// Get isFlipX
+	const bool GetIsFlipX() const { return isFlipX_; }
+	// Get isFlipY
+	const bool GetIsFlipY() const { return isFlipY_; }
+	// Get TexLeftTop
+	const Vector2& GetTexLeftTop() const { return texTopLeft_; }
+	// Get TexCutSize
+	const Vector2& GetTexCutSize() const { return texCutSize_; }
 
 	//-----------------------------------Setters-----------------------------------//
 	// Set Transform
@@ -81,6 +91,16 @@ public: // メンバー関数
 	void SetRotation(const float rotation) { rotation_ = rotation; }
 	// Set Size
 	void SetSize(const Vector2& size) { size_ = size; }
+	// Set AnchorPoint
+	void SetAnchorPoint(const Vector2& anchorPoint) { anchorPoint_ = anchorPoint; }
+	// Set isFlipX
+	void SetIsFlipX(const bool isFlipX) { isFlipX_ = isFlipX; }
+	// Set isFlipY
+	void SetIsFlipY(const bool isFlipY) { isFlipY_ = isFlipY; }
+	// Set TexLeftTop
+	void SetTexLeftTop(const Vector2& texTopLeft) { texTopLeft_ = texTopLeft; }
+	// Set TexCutSize
+	void SetTexCutSize(const Vector2& texCutSize) { texCutSize_ = texCutSize; }
 
 private: // プライベートメンバー関数
 
@@ -98,6 +118,11 @@ private: // プライベートメンバー関数
 	/// 座標変換行列データを生成
 	/// </summary>
 	void CreateTransformationMatrixData();
+
+	///　<summary>
+	///　画像切り取り範囲をぴったりにする
+	/// </summary>
+	void FitTexCutSize();
 
 private:// メンバー変数
 
@@ -125,6 +150,9 @@ private:// メンバー変数
 	// インデックスバッファビュー
 	D3D12_INDEX_BUFFER_VIEW indexBufferView_;
 
+	// テクスチャ番号
+	uint32_t textureIndex_ = 0;
+
 	// 座標
 	Vector2 pos_ = { 0.0f, 0.0f };
 
@@ -134,6 +162,18 @@ private:// メンバー変数
 	// サイズ
 	Vector2 size_ = { 640.0f, 360.0f };
 
-	// テクスチャ番号
-	uint32_t textureIndex_ = 0;
+	// アンカーポイント
+	Vector2 anchorPoint_ = { 0.0f, 0.0f };
+
+	// テクスチャの左上座標
+	Vector2 texTopLeft_ = { 0.0f, 0.0f };
+
+	// テクスチャの切り出しサイズ
+	Vector2 texCutSize_ = { 0.0f, 0.0f };
+
+	// 左右反転
+	bool isFlipX_ = false;
+
+	// 上下反転
+	bool isFlipY_ = false;
 };
