@@ -957,7 +957,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		if (modelType == Plane)
 		{
 			// Textureの設定
-			//dx12->GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU2);
+			dx12->GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU2);
 
 			// 頂点バッファの設定
 			dx12->GetCommandList()->IASetVertexBuffers(0, 1, &planeVertexBufferView);
@@ -967,7 +967,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		} else if (modelType == Teapot)
 		{
 			// Textureの設定
-			//dx12->GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU3);
+			dx12->GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU3);
 
 			// 頂点バッファの設定
 			dx12->GetCommandList()->IASetVertexBuffers(0, 1, &teapotVertexBufferView);
@@ -977,7 +977,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		} else if (modelType == Bunny)
 		{
 			// Textureの設定
-			//dx12->GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
+			dx12->GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
 
 			// 頂点バッファの設定
 			dx12->GetCommandList()->IASetVertexBuffers(0, 1, &bunnyVertexBufferView);
@@ -988,7 +988,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			for (int i = 0; i < multiMeshModelDatas.size(); i++)
 			{
 				// Textureの設定
-				//dx12->GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
+				dx12->GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
 
 				// 頂点バッファの設定
 				dx12->GetCommandList()->IASetVertexBuffers(0, 1, &multiMeshVertexBufferViews[i]);
@@ -1000,7 +1000,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			for (int i = 0; i < multiMaterialModelDatas.size(); i++)
 			{
 				// Textureの設定
-				//dx12->GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPUs[i]);
+				dx12->GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPUs[i]);
 
 				// 頂点バッファの設定
 				dx12->GetCommandList()->IASetVertexBuffers(0, 1, &multiMaterialVertexBufferViews[i]);
@@ -1017,7 +1017,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		dx12->GetCommandList()->SetGraphicsRootConstantBufferView(1, sphereWvpResource->GetGPUVirtualAddress()); // WVPのCBufferの場所を設定
 
 		// Textureの設定
-		//dx12->GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
+		dx12->GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
 
 		// 頂点バッファの設定
 		dx12->GetCommandList()->IASetVertexBuffers(0, 1, &sphereVertexBufferView);
