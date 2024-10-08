@@ -33,6 +33,8 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 #include "Sprite.h"
 #include"D3DResourceLeakCheker.h"
 #include"TextureManager.h"
+#include"Object3d.h"
+#include"Object3dBasic.h"
 
 #include "xaudio2.h"
 #pragma comment(lib, "xaudio2.lib")
@@ -218,6 +220,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	// Sprite共通クラスの初期化
 	SpriteBasic* spriteBasic = new SpriteBasic();
 	spriteBasic->Initialize(dx12);
+
+	// Object共通クラスの初期化
+	Object3dBasic* object3dBasic = new Object3dBasic();
+	object3dBasic->Initialize(dx12);
 
 	//-----------------------------------------基盤システムの初期化-----------------------------------------//
 
@@ -698,26 +704,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	// ---------------------------------------------------Texture---------------------------------------------------//
 
-
-	//------------------------------------------------------Sprite------------------------------------------------------
-	// textureの読み込み
-	TextureManager::GetInstance()->LoadTexture("resources/uvChecker.png");
-	TextureManager::GetInstance()->LoadTexture("resources/checkerBoard.png");
-	uint32_t spriteNum = 2;
-	std::vector<Sprite*> sprites;
-
-	for (uint32_t i = 0; i < spriteNum; i++) {
-		Sprite* sprite = new Sprite();
-		if (i % 2 == 0)
-			sprite->Initialize(spriteBasic, "resources/uvChecker.png");
-		else
-			sprite->Initialize(spriteBasic, "resources/checkerBoard.png");
-		sprite->SetPos(Vector2(i * 500.0f, 0.0f));
-		sprites.push_back(sprite);
-	}
-
-	//------------------------------------------------------Sprite------------------------------------------------------//
-
 	//-------------------------------------------------------Light-------------------------------------------------------
 	// 平行光源のリソースを作成
 	ComPtr<ID3D12Resource> lightResource = dx12->MakeBufferResource(sizeof(DirectionalLight));
@@ -737,6 +723,31 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	lightData[0].intensity = 1.0f;
 	//-------------------------------------------------------Light-------------------------------------------------------//
 
+#pragma region Sprite初期化
+
+	// textureの読み込み
+	TextureManager::GetInstance()->LoadTexture("resources/uvChecker.png");
+	TextureManager::GetInstance()->LoadTexture("resources/checkerBoard.png");
+	uint32_t spriteNum = 2;
+	std::vector<Sprite*> sprites;
+
+	for (uint32_t i = 0; i < spriteNum; i++) {
+		Sprite* sprite = new Sprite();
+		if (i % 2 == 0)
+			sprite->Initialize(spriteBasic, "resources/uvChecker.png");
+		else
+			sprite->Initialize(spriteBasic, "resources/checkerBoard.png");
+		sprite->SetPos(Vector2(i * 500.0f, 0.0f));
+		sprites.push_back(sprite);
+	}
+
+#pragma endregion
+
+#pragma region OBject3d
+	Object3d* object3d = new Object3d();
+	object3d->Initialize();
+
+#pragma endregion
 
 
 	//---------------------------------------------------GAMELOOP-----------------------------------------------------//
@@ -934,8 +945,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 		//-------------------ImGui-------------------//
 
-		// 共通描画設定
-		spriteBasic->SetCommonRenderSetting();
+		// 3Dモデル共通描画設定
+		object3dBasic->SetCommonRenderSetting();
 
 		//-----------Modelの描画-----------//
 		// マテリアルの設定。色を変える
@@ -1022,20 +1033,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		dx12->GetCommandList()->DrawIndexedInstanced(kVertexCount, 1, 0, 0, 0);
 		//-----------Sphereの描画-----------//
 
-
-		//-----------Spriteの描画-----------//
-
-		// Textureの設定
-		//dx12->GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
-
-		for (uint32_t i = 0; i < spriteNum; i++)
-		{
-			// Spriteの描画
-			sprites[i]->Draw();
-		}
-
-		//-----------Spriteの描画-----------//
-
 		//-----------Suzanneの描画-----------//
 		if (modelType == Suzanne)
 		{
@@ -1061,6 +1058,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			dx12->GetCommandList()->DrawInstanced(UINT(suzanneData.vertices.size()), 1, 0, 0);
 		}
 		//-----------Suzanneの描画-----------//
+
+		//-----------Spriteの描画-----------//
+
+		// スプライト共通描画設定
+		spriteBasic->SetCommonRenderSetting();
+
+		for (uint32_t i = 0; i < spriteNum; i++)
+		{
+			// Spriteの描画
+			sprites[i]->Draw();
+		}
+
+		//-----------Spriteの描画-----------//
 
 
 		// commandListにimguiの描画コマンドを積む。描画処理の後、RTVからPRESENT Stateに戻す前に行う
@@ -1090,12 +1100,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	SoundUnload(&soundData);
 
 	// pointerの解放
-
-
-	// pointerの解放
 	delete input;
 	delete dx12;
 	delete spriteBasic;
+	delete object3d;
+	delete object3dBasic;
 
 	for (uint32_t i = 0; i < spriteNum; i++)
 	{
@@ -1110,8 +1119,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	// ウィンドウクラスの解放
 	delete winApp;
-
-
 
 	return 0;
 }
