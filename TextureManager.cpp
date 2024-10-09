@@ -6,7 +6,7 @@
 
 TextureManager* TextureManager::instance_ = nullptr;
 
-uint32_t TextureManager::kSRVIndexStart = 7;
+uint32_t TextureManager::kSRVIndexStart = 1;
 
 TextureManager* TextureManager::GetInstance()
 {
@@ -69,7 +69,7 @@ void TextureManager::LoadTexture(const std::string& filePath)
 	textureData.filePath = filePath;
 	textureData.metadata = mipImages.GetMetadata();
 	textureData.resource = dx12_->MakeTextureResource(textureData.metadata);
-	Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource = dx12_->UploadTextureData(textureData.resource, mipImages);
+	textureData.intermediateResource = dx12_->UploadTextureData(textureData.resource, mipImages);
 
 	// テクスチャデータの要素番号をSRVのインデックスとして使用
 	uint32_t srvIndex = static_cast<uint32_t>(textureDatas_.size() - 1) + kSRVIndexStart;

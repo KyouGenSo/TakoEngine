@@ -5,18 +5,22 @@
 void Object3dBasic::Initialize(DX12Basic* dx12)
 {
 	dx12_ = dx12;
+
+
+	// パイプラインステートの生成
+	CreatePSO();
 }
 
 void Object3dBasic::SetCommonRenderSetting()
 {
-	//// ルートシグネチャの設定
-	//dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
+	// ルートシグネチャの設定
+	dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
 
-	//// パイプラインステートの設定
-	//dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
+	// パイプラインステートの設定
+	dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
 
-	//// トポロジの設定
-	//dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	// トポロジの設定
+	dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
 
 void Object3dBasic::CreateRootSignature()

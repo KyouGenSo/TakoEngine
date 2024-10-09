@@ -25,6 +25,7 @@ private: // 構造体
 		std::string filePath;
 		DirectX::TexMetadata metadata;
 		Microsoft::WRL::ComPtr<ID3D12Resource> resource;
+		Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource;
 		D3D12_CPU_DESCRIPTOR_HANDLE srvCpuHandle;
 		D3D12_GPU_DESCRIPTOR_HANDLE srvGpuHandle;
 	};

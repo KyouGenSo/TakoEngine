@@ -46,6 +46,11 @@ public: // メンバー関数
 	void EndDraw();
 
 	/// <summary>
+	/// // コマンド完了まで待機
+	/// </summary>
+	void WaitForGPU();
+
+	/// <summary>
 	/// SRVの指定番号のCPUディスクリプタハンドルを取得
 	/// </summary>
 	D3D12_CPU_DESCRIPTOR_HANDLE GetSRVCpuDescriptorHandle(uint32_t index);
@@ -97,6 +102,13 @@ public: // メンバー関数
 	/// </summary>
 	ID3D12GraphicsCommandList* GetCommandList() {
 		return commandList_.Get();
+	}
+
+	/// <summary>
+	/// コマンドキューの取得
+	/// </summary>
+	ID3D12CommandQueue* GetCommandQueue() {
+		return commandQueue_.Get();
 	}
 
 private: // プライベートメンバー関数

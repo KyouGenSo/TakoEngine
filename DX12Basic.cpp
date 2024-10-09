@@ -166,14 +166,7 @@ void DX12Basic::EndDraw()
 	commandQueue_->ExecuteCommandLists(_countof(commandLists), commandLists->GetAddressOf());
 
 	// コマンド完了まで待機
-	fenceValue_++;
-	// コマンドキューにFenceのシグナルを行う
-	commandQueue_->Signal(fence_.Get(), fenceValue_);
-	if (fence_->GetCompletedValue() < fenceValue_)
-	{
-		fence_->SetEventOnCompletion(fenceValue_, fenceEvent_);
-		WaitForSingleObject(fenceEvent_, INFINITE);
-	}
+	WaitForGPU();
 
 	// FPS制御更新
 	UpdateFPSLimiter();
@@ -189,6 +182,19 @@ void DX12Basic::EndDraw()
 	hr = commandList_->Reset(commandAllocator_.Get(), nullptr);
 	assert(SUCCEEDED(hr));
 
+}
+
+void DX12Basic::WaitForGPU()
+{
+	// コマンド完了まで待機
+	fenceValue_++;
+	// コマンドキューにFenceのシグナルを行う
+	commandQueue_->Signal(fence_.Get(), fenceValue_);
+	if (fence_->GetCompletedValue() < fenceValue_)
+	{
+		fence_->SetEventOnCompletion(fenceValue_, fenceEvent_);
+		WaitForSingleObject(fenceEvent_, INFINITE);
+	}
 }
 
 void DX12Basic::InitDevice()
@@ -637,7 +643,8 @@ Microsoft::WRL::ComPtr<ID3D12Resource> DX12Basic::MakeBufferResource(size_t size
 	heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
 
 	// リソースの生成
-	ID3D12Resource* bufferResource = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12Resource> bufferResource = nullptr;
+	//Microsoft::WRL::ComPtr<ID3D12Resource>
 
 	HRESULT hr = device_->CreateCommittedResource(
 		&heapProperties,
@@ -695,14 +702,14 @@ Microsoft::WRL::ComPtr<ID3D12Resource> DX12Basic::MakeTextureResource(const Dire
 	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT; // VRAM上に作る
 
 	// Resourceの設定
-	ID3D12Resource* textureResource = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12Resource> textureResource = nullptr;
 
 	HRESULT hr = device_->CreateCommittedResource(
 		&heapProperties, // ヒープの設定
 		D3D12_HEAP_FLAG_NONE, // Heapの特殊な設定。特になし
 		&resourceDesc, // リソースの設定
 		D3D12_RESOURCE_STATE_COPY_DEST, // リソースの初期状態. データ転送される設定
-		nullptr, // クリア値の設定。今回は使わないのでnullptr
+		nullptr, // クリア値の設定。
 		IID_PPV_ARGS(&textureResource)); // 生成したリソースのpointerへのpointerを取得
 	assert(SUCCEEDED(hr));
 
@@ -736,24 +743,28 @@ void DX12Basic::CreateTextureResource(ComPtr<ID3D12Resource>& textureResource, c
 
 }
 
-Microsoft::WRL::ComPtr<ID3D12Resource> DX12Basic::UploadTextureData(const Microsoft::WRL::ComPtr<ID3D12Resource>& texture, const DirectX::ScratchImage& mipImages)
+Microsoft::WRL::ComPtr<ID3D12Resource> DX12Basic::UploadTextureData(const Microsoft::WRL::ComPtr<ID3D12Resource>& textureResource, const DirectX::ScratchImage& mipImages)
 {
 	std::vector<D3D12_SUBRESOURCE_DATA> subresources;
+
 	// subresourcesの配列を作る
 	DirectX::PrepareUpload(device_.Get(), mipImages.GetImages(), mipImages.GetImageCount(), mipImages.GetMetadata(), subresources);
+
 	// intermediateResourceに必要なサイズを取得
-	uint64_t intermediateSize = GetRequiredIntermediateSize(texture.Get(), 0, UINT(subresources.size()));
+	uint64_t intermediateSize = GetRequiredIntermediateSize(textureResource.Get(), 0, UINT(subresources.size()));
+
 	// intermediateResourceを作成
 	Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource = MakeBufferResource(intermediateSize);
+	intermediateResource->SetName(L"IntermediateResource");
 
 	// intermediateResourceにSubresourceのデータを書き込み、textureに転送するコマンドを積む
-	UpdateSubresources(commandList_.Get(), texture.Get(), intermediateResource.Get(), 0, 0, UINT(subresources.size()), subresources.data());
+	UpdateSubresources(commandList_.Get(), textureResource.Get(), intermediateResource.Get(), 0, 0, UINT(subresources.size()), subresources.data());
 
 	// ResourceBarrierを使ってResourceStateを変更
 	D3D12_RESOURCE_BARRIER barrier{};
 	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-	barrier.Transition.pResource = texture.Get();
+	barrier.Transition.pResource = textureResource.Get();
 	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
 	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
