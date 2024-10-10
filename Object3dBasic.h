@@ -17,7 +17,7 @@ public:
 	void SetCommonRenderSetting();
 
 	// -----------------------------------Getters-----------------------------------//
-	DX12Basic* GetDX12Basic() const { return dx12_; }
+	DX12Basic* GetDX12Basic() const { return m_dx12_; }
 
 private: // プライベートメンバー関数
 
@@ -32,7 +32,7 @@ private: // プライベートメンバー関数
 	void CreatePSO();
 
 private: // メンバー変数
-	DX12Basic* dx12_ = nullptr;
+	DX12Basic* m_dx12_ = nullptr;
 
 	// ルートシグネチャ
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;

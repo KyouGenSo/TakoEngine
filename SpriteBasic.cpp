@@ -4,7 +4,7 @@
 
 void SpriteBasic::Initialize(DX12Basic* dx12)
 {
-	dx12_ = dx12;
+	m_dx12_ = dx12;
 
 	// パイプラインステートの生成
 	CreatePSO();
@@ -13,13 +13,13 @@ void SpriteBasic::Initialize(DX12Basic* dx12)
 void SpriteBasic::SetCommonRenderSetting()
 {
 	// ルートシグネチャの設定
-	dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
+	m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
 
 	// パイプラインステートの設定
-	dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
+	m_dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
 
 	// トポロジの設定
-	dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
 
 void SpriteBasic::CreateRootSignature()
@@ -83,7 +83,7 @@ void SpriteBasic::CreateRootSignature()
 		assert(false);
 	}
 
-	hr = dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature_.GetAddressOf()));
+	hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature_.GetAddressOf()));
 	signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature_.GetAddressOf());
 	assert(SUCCEEDED(hr));
 }
@@ -129,10 +129,10 @@ void SpriteBasic::CreatePSO()
 	rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
 
 	// shaderのコンパイル
-	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = dx12_->CompileShader(L"resources/shaders/Object3d.VS.hlsl", L"vs_6_0");
+	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(L"resources/shaders/Object3d.VS.hlsl", L"vs_6_0");
 	assert(vertexShaderBlob != nullptr);
 
-	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = dx12_->CompileShader(L"resources/shaders/Object3d.PS.hlsl", L"ps_6_0");
+	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(L"resources/shaders/Object3d.PS.hlsl", L"ps_6_0");
 	assert(pixelShaderBlob != nullptr);
 
 	// DepthStencilState
@@ -165,6 +165,6 @@ void SpriteBasic::CreatePSO()
 	graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
 	// 実際に生成
-	hr = dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
+	hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
 	assert(SUCCEEDED(hr));
 }

@@ -74,7 +74,7 @@ public: // メンバー関数
 private: // メンバー変数
 
 	// DX12Basicクラスのインスタンス
-	DX12Basic* dx12_;
+	DX12Basic* m_dx12_;
 
 	// テクスチャデータ配列
 	std::vector<TextureData> textureDatas_;

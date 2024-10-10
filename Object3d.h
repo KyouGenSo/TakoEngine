@@ -10,38 +10,11 @@
 
 class Object3dBasic;
 
+class Model;
+
 class Object3d {
 
 public: // 構造体
-
-	// 頂点データ
-	struct VertexData
-	{
-		Vector4 position;
-		Vector2 texcoord;
-		Vector3 normal;
-	};
-
-	// マテリアルデータ
-	struct MaterialData {
-		std::string texturePath;
-		uint32_t textureIndex;
-	};
-
-	// モデルデータ
-	struct ModelData {
-		std::vector<VertexData> vertices;
-		MaterialData material;
-	};
-
-	// マテリアル
-	struct Material
-	{
-		Vector4 color;
-		bool enableLighting;
-		float padding[3];
-		Matrix4x4 uvTransform;
-	};
 
 	// 座標変換行列データ
 	struct TransformationMatrix
@@ -75,27 +48,19 @@ public: // メンバー関数
 	/// </summary>
 	void Draw();
 
-	///<summary>
-	///objファイルの読み込む
-	///	</summary>
-	void LoadObjFile(const std::string& directoryPath, const std::string& fileName);
 
-	///<summary>
-	///mtlファイルの読み込む
-	/// </summary>
-	void LoadMtlFile(const std::string& directoryPath, const std::string& fileName);
+	//-----------------------------------------Getter-----------------------------------------//
+	const Vector3& GetScale() const { return transform_.scale; }
+	const Vector3& GetRotate() const { return transform_.rotate; }
+	const Vector3& GetTranslate() const { return transform_.translate; }
+	
+	//-----------------------------------------Setter-----------------------------------------//
+	void SetModel(Model* model) { m_model_ = model; }
+	void SetScale(const Vector3& scale) { transform_.scale = scale; }
+	void SetRotate(const Vector3& rotate) { transform_.rotate = rotate; }
+	void SetTranslate(const Vector3& translate) { transform_.translate = translate; }
 
 private: // プライベートメンバー関数
-
-	///<summary>
-	///頂点データの生成
-	/// </summary>
-	void CreateVertexData();
-
-	///<summary>
-	///マテリアルデータの生成
-	/// </summary>
-	void CreateMaterialData();
 
 	///<summary>
 	///座標変換行列データの生成
@@ -110,10 +75,10 @@ private: // プライベートメンバー関数
 private: // メンバー変数
 
 	// 3dオブジェクトの基本クラス
-	Object3dBasic* obj3dBasic_ = nullptr;
+	Object3dBasic* m_obj3dBasic_ = nullptr;
 
-	// モデルデータ
-	ModelData modelData_;
+	// モデルクラス
+	Model* m_model_ = nullptr;
 
 	// トランスフォーム
 	Transform transform_;
@@ -122,18 +87,11 @@ private: // メンバー変数
 	Transform cameraTransform_;
 
 	// バッファリソース
-	Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource_;
-	Microsoft::WRL::ComPtr<ID3D12Resource> materialResource_;
 	Microsoft::WRL::ComPtr<ID3D12Resource> transformationMatResource_;
 	Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightResource_;
 
 	// バッファリソース内のデータを指すポインタ
-	VertexData* vertexData_ = nullptr;
-	Material* materialData_ = nullptr;
 	TransformationMatrix* transformationMatData_ = nullptr;
 	DirectionalLight* directionalLightData_ = nullptr;
-
-	// バッファビュー
-	D3D12_VERTEX_BUFFER_VIEW vertexBufferView_;
 
 };

@@ -22,7 +22,7 @@ public: // メンバー関数
 	void SetCommonRenderSetting();
 
 	//-----------------------------------Getters-----------------------------------//
-	DX12Basic* GetDX12Basic() { return dx12_; }
+	DX12Basic* GetDX12Basic() { return m_dx12_; }
 
 private: // プライベートメンバー関数
 	/// <summary>
@@ -38,7 +38,7 @@ private: // プライベートメンバー関数
 private: // メンバー変数
 
 	// DX12Basicクラスのインスタンス
-	DX12Basic* dx12_;
+	DX12Basic* m_dx12_;
 
 	// ルートシグネチャ
 	ComPtr<ID3D12RootSignature> rootSignature_;
