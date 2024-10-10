@@ -117,8 +117,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	DX12Basic* dx12 = new DX12Basic();
 	dx12->Initialize(winApp);
 
+	// SRVマネージャーの初期化
+	SrvManager* srvManager = new SrvManager();
+	srvManager->Initialize(dx12);
+
 	// TextureManagerの初期化
-	TextureManager::GetInstance()->Initialize(dx12);
+	TextureManager::GetInstance()->Initialize(dx12, srvManager);
 
 	// ModelManagerの初期化
 	ModelManager::GetInstance()->Initialize(dx12);
@@ -138,9 +142,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	// デフォルトカメラを設定
 	object3dBasic->SetDefaultCamera(defaultCamera);
 
-	// SRVマネージャーの初期化
-	SrvManager* srvManager = new SrvManager();
-	srvManager->Initialize(dx12);
+
 
 	//-----------------------------------------基盤システムの初期化-----------------------------------------//
 
