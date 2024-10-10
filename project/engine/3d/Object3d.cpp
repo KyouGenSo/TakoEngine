@@ -91,7 +91,7 @@ void Object3d::CreateDirectionalLightData()
 	
 	directionalLightData_->color = { 1.0f, 1.0f, 1.0f, 1.0f };     // ライトの色
 	
-	directionalLightData_->lightType = 0;                          // ライトのタイプ 0:Lambert 1:Half-Lambert
+	directionalLightData_->lightType = 1;                          // ライトのタイプ 0:Lambert 1:Half-Lambert
 	
 	directionalLightData_->intensity = 1.0f;                       // 輝度
 }

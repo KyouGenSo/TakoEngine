@@ -202,12 +202,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	Object3d* object3d = new Object3d();
 	object3d->Initialize(object3dBasic);
 	object3d->SetModel("bunny.obj");
-	object3d->SetTranslate(Vector3(-3.0f, 0.0f, 0.0f));
+	object3d->SetTranslate(Vector3(-2.0f, 0.0f, 0.0f));
 
 	Object3d* object3d2 = new Object3d();
 	object3d2->Initialize(object3dBasic);
 	object3d2->SetModel("plane.obj");
-	object3d2->SetTranslate(Vector3(3.0f, 0.0f, 0.0f));
+	object3d2->SetTranslate(Vector3(2.0f, 0.0f, 0.0f));
 
 #pragma endregion
 
@@ -256,6 +256,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 		// 描画前の処理
 		dx12->BeginDraw();
+		srvManager->BeginDraw();
 
 		//-------------------ImGui-------------------//
 
@@ -266,7 +267,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		//ImGui::Render();
 		//-------------------ImGui-------------------//
 
-		srvManager->BeginDraw();
 
 		//-------------------Modelの描画-------------------//
 		// 3Dモデル共通描画設定
