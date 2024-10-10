@@ -3,6 +3,7 @@
 #include "Object3dbasic.h"
 #include "Model.h"
 #include "TextureManager.h"
+#include"ModelManager.h"
 #include <cassert>
 #include<fstream>
 #include<sstream>
@@ -53,6 +54,11 @@ void Object3d::Draw()
 	{
 		m_model_->Draw();
 	}
+}
+
+void Object3d::SetModel(const std::string& fileName)
+{
+	m_model_ = ModelManager::GetInstance()->FindModel(fileName);
 }
 
 void Object3d::CreateTransformationMatrixData()

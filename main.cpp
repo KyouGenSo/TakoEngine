@@ -36,7 +36,8 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 #include"Object3d.h"
 #include"Object3dBasic.h"
 #include"Model.h"
-#include"ModelBasic.h"
+#include"ModelManager.h"
+
 
 #include "xaudio2.h"
 #pragma comment(lib, "xaudio2.lib")
@@ -184,6 +185,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	// TextureManagerの初期化
 	TextureManager::GetInstance()->Initialize(dx12);
 
+	// ModelManagerの初期化
+	ModelManager::GetInstance()->Initialize(dx12);
+
 	// Sprite共通クラスの初期化
 	SpriteBasic* spriteBasic = new SpriteBasic();
 	spriteBasic->Initialize(dx12);
@@ -191,10 +195,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	// Object共通クラスの初期化
 	Object3dBasic* object3dBasic = new Object3dBasic();
 	object3dBasic->Initialize(dx12);
-
-	// Model共通クラスの初期化
-	ModelBasic* modelBasic = new ModelBasic();
-	modelBasic->Initialize(dx12);
 
 	//-----------------------------------------基盤システムの初期化-----------------------------------------//
 
@@ -305,10 +305,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 #pragma endregion
 
 
-#pragma region Model初期化
+#pragma region Model読み込み
 
-	Model* teapotModel = new Model();
-	teapotModel->Initialize(modelBasic, "teapot.obj");
+	ModelManager::GetInstance()->LoadModel("teapot.obj");
+
+	ModelManager::GetInstance()->LoadModel("plane.obj");
 
 #pragma endregion
 
@@ -317,12 +318,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	Object3d* object3d = new Object3d();
 	object3d->Initialize(object3dBasic);
-	object3d->SetModel(teapotModel);
+	object3d->SetModel("teapot.obj");
 	object3d->SetTranslate(Vector3(-3.0f, 0.0f, 0.0f));
 
 	Object3d* object3d2 = new Object3d();
 	object3d2->Initialize(object3dBasic);
-	object3d2->SetModel(teapotModel);
+	object3d2->SetModel("plane.obj");
 	object3d2->SetTranslate(Vector3(3.0f, 0.0f, 0.0f));
 
 #pragma endregion
@@ -417,7 +418,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//-------------------------------------------------GAMELOOP-----------------------------------------------------/
 
-
+	ModelManager::GetInstance()->Finalize();
 	TextureManager::GetInstance()->Finalize();
 
 	dx12->Finalize();
@@ -431,6 +432,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	delete dx12;
 	delete spriteBasic;
 	delete object3d;
+	delete object3d2;
 	delete object3dBasic;
 
 	for (uint32_t i = 0; i < spriteNum; i++)

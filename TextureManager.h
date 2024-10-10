@@ -36,6 +36,7 @@ public: // 静的メンバー変数
 	static uint32_t kSRVIndexStart;
 
 public: // メンバー関数
+
 	/// <summary>
 	/// インスタンスの取得
 	/// </summary>

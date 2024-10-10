@@ -47,15 +47,13 @@ public: // メンバー関数
 	///描画
 	/// </summary>
 	void Draw();
-
-
 	//-----------------------------------------Getter-----------------------------------------//
 	const Vector3& GetScale() const { return transform_.scale; }
 	const Vector3& GetRotate() const { return transform_.rotate; }
 	const Vector3& GetTranslate() const { return transform_.translate; }
 	
 	//-----------------------------------------Setter-----------------------------------------//
-	void SetModel(Model* model) { m_model_ = model; }
+	void SetModel(const std::string& fileName);
 	void SetScale(const Vector3& scale) { transform_.scale = scale; }
 	void SetRotate(const Vector3& rotate) { transform_.rotate = rotate; }
 	void SetTranslate(const Vector3& translate) { transform_.translate = translate; }

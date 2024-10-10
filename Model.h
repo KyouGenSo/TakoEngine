@@ -55,8 +55,8 @@ public: // メンバー関数
 	void Draw();
 
 	///<summary>
-///objファイルの読み込む
-///	</summary>
+	///objファイルの読み込む
+	///	</summary>
 	void LoadObjFile(const std::string& directoryPath, const std::string& fileName);
 
 	///<summary>
