@@ -10,8 +10,12 @@ void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName)
 {
 	m_modelBasic_ = modelBasic;
 
+	directoryFolderName_ = m_modelBasic_->GetDirectoryFolderName();
+
+	ModelFolderName_ = m_modelBasic_->GetModelFolderName();
+
 	// objファイルの読み込み
-	LoadObjFile("resources", fileName);
+	LoadObjFile(directoryFolderName_ + "/" + ModelFolderName_, fileName);
 
 	// 頂点データの生成
 	CreateVertexData();
@@ -109,7 +113,7 @@ void Model::LoadObjFile(const std::string& directoryPath, const std::string& fil
 		} else if (identifier == "mtllib") {
 			std::string mtlFileName;
 			s >> mtlFileName;
-			LoadMtlFile(directoryPath, mtlFileName);
+			LoadMtlFile(directoryFolderName_, mtlFileName);
 		}
 	}
 
@@ -119,7 +123,7 @@ void Model::LoadMtlFile(const std::string& directoryPath, const std::string& fil
 {
 	std::string line;
 
-	std::ifstream file(directoryPath + "/" + fileName);
+	std::ifstream file(directoryPath + "/" + ModelFolderName_ + "/" + fileName);
 	assert(file.is_open());
 
 	while (std::getline(file, line))

@@ -79,6 +79,10 @@ private:
 	
 	ModelBasic* m_modelBasic_;
 
+	std::string directoryFolderName_;
+
+	std::string ModelFolderName_;
+
 	// モデルデータ
 	ModelData modelData_;
 
