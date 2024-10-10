@@ -104,52 +104,52 @@
     <ClCompile Include="externals\ImGui\imgui_widgets.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
-    <ClCompile Include="Mat4x4Func.cpp">
+    <ClCompile Include="engine\func\mathFunc\Mat4x4Func.cpp">
       <Filter>ソース ファイル\engine\func\MathFunc</Filter>
     </ClCompile>
-    <ClCompile Include="Vec3Func.cpp">
+    <ClCompile Include="engine\func\mathFunc\Vec3Func.cpp">
       <Filter>ソース ファイル\engine\func\MathFunc</Filter>
     </ClCompile>
-    <ClCompile Include="Model.cpp">
+    <ClCompile Include="engine\3d\Model.cpp">
       <Filter>ソース ファイル\engine\3d</Filter>
     </ClCompile>
-    <ClCompile Include="ModelBasic.cpp">
+    <ClCompile Include="engine\3d\ModelBasic.cpp">
       <Filter>ソース ファイル\engine\3d</Filter>
     </ClCompile>
-    <ClCompile Include="ModelManager.cpp">
+    <ClCompile Include="engine\3d\ModelManager.cpp">
       <Filter>ソース ファイル\engine\3d</Filter>
     </ClCompile>
-    <ClCompile Include="Object3d.cpp">
+    <ClCompile Include="engine\3d\Object3d.cpp">
       <Filter>ソース ファイル\engine\3d</Filter>
     </ClCompile>
-    <ClCompile Include="Object3dBasic.cpp">
+    <ClCompile Include="engine\3d\Object3dBasic.cpp">
       <Filter>ソース ファイル\engine\3d</Filter>
     </ClCompile>
-    <ClCompile Include="Sprite.cpp">
+    <ClCompile Include="engine\2d\Sprite.cpp">
       <Filter>ソース ファイル\engine\2d</Filter>
     </ClCompile>
-    <ClCompile Include="SpriteBasic.cpp">
+    <ClCompile Include="engine\2d\SpriteBasic.cpp">
       <Filter>ソース ファイル\engine\2d</Filter>
     </ClCompile>
-    <ClCompile Include="TextureManager.cpp">
+    <ClCompile Include="engine\2d\TextureManager.cpp">
       <Filter>ソース ファイル\engine\2d</Filter>
     </ClCompile>
-    <ClCompile Include="D3DResourceLeakCheker.cpp">
+    <ClCompile Include="engine\DX12\D3DResourceLeakCheker.cpp">
       <Filter>ソース ファイル\engine\DX12</Filter>
     </ClCompile>
-    <ClCompile Include="DX12Basic.cpp">
+    <ClCompile Include="engine\DX12\DX12Basic.cpp">
       <Filter>ソース ファイル\engine\DX12</Filter>
     </ClCompile>
-    <ClCompile Include="WinApp.cpp">
+    <ClCompile Include="engine\base\WinApp.cpp">
       <Filter>ソース ファイル\engine\base</Filter>
     </ClCompile>
-    <ClCompile Include="Input.cpp">
+    <ClCompile Include="engine\io\Input.cpp">
       <Filter>ソース ファイル\engine\io</Filter>
     </ClCompile>
-    <ClCompile Include="Logger.cpp">
+    <ClCompile Include="engine\func\commonFunc\Logger.cpp">
       <Filter>ソース ファイル\engine\func\commonFunc</Filter>
     </ClCompile>
-    <ClCompile Include="StringUtility.cpp">
+    <ClCompile Include="engine\func\commonFunc\StringUtility.cpp">
       <Filter>ソース ファイル\engine\func\commonFunc</Filter>
     </ClCompile>
   </ItemGroup>
@@ -178,64 +178,64 @@
     <ClInclude Include="externals\ImGui\imstb_truetype.h">
       <Filter>imgui</Filter>
     </ClInclude>
-    <ClInclude Include="Mat4x4Func.h">
+    <ClInclude Include="engine\func\mathFunc\Mat4x4Func.h">
       <Filter>ヘッダー ファイル\engine\func\MathFunc</Filter>
     </ClInclude>
-    <ClInclude Include="Vec3Func.h">
+    <ClInclude Include="engine\func\mathFunc\Vec3Func.h">
       <Filter>ヘッダー ファイル\engine\func\MathFunc</Filter>
     </ClInclude>
-    <ClInclude Include="Matrix4x4.h">
+    <ClInclude Include="engine\math\Matrix4x4.h">
       <Filter>ヘッダー ファイル\engine\math</Filter>
     </ClInclude>
-    <ClInclude Include="Vector4.h">
+    <ClInclude Include="engine\math\Vector4.h">
       <Filter>ヘッダー ファイル\engine\math</Filter>
     </ClInclude>
-    <ClInclude Include="Vector3.h">
+    <ClInclude Include="engine\math\Vector3.h">
       <Filter>ヘッダー ファイル\engine\math</Filter>
     </ClInclude>
-    <ClInclude Include="Vector2.h">
+    <ClInclude Include="engine\math\Vector2.h">
       <Filter>ヘッダー ファイル\engine\math</Filter>
     </ClInclude>
-    <ClInclude Include="Sprite.h">
+    <ClInclude Include="engine\2d\Sprite.h">
       <Filter>ヘッダー ファイル\engine\2d</Filter>
     </ClInclude>
-    <ClInclude Include="SpriteBasic.h">
+    <ClInclude Include="engine\2d\SpriteBasic.h">
       <Filter>ヘッダー ファイル\engine\2d</Filter>
     </ClInclude>
-    <ClInclude Include="Object3d.h">
+    <ClInclude Include="engine\3d\Object3d.h">
       <Filter>ヘッダー ファイル\engine\3d</Filter>
     </ClInclude>
-    <ClInclude Include="Object3dBasic.h">
+    <ClInclude Include="engine\3d\Object3dBasic.h">
       <Filter>ヘッダー ファイル\engine\3d</Filter>
     </ClInclude>
-    <ClInclude Include="Model.h">
+    <ClInclude Include="engine\3d\Model.h">
       <Filter>ヘッダー ファイル\engine\3d</Filter>
     </ClInclude>
-    <ClInclude Include="ModelBasic.h">
+    <ClInclude Include="engine\3d\ModelBasic.h">
       <Filter>ヘッダー ファイル\engine\3d</Filter>
     </ClInclude>
-    <ClInclude Include="ModelManager.h">
+    <ClInclude Include="engine\3d\ModelManager.h">
       <Filter>ヘッダー ファイル\engine\3d</Filter>
     </ClInclude>
-    <ClInclude Include="TextureManager.h">
+    <ClInclude Include="engine\2d\TextureManager.h">
       <Filter>ヘッダー ファイル\engine\2d</Filter>
     </ClInclude>
-    <ClInclude Include="D3DResourceLeakCheker.h">
+    <ClInclude Include="engine\DX12\D3DResourceLeakCheker.h">
       <Filter>ヘッダー ファイル\engine\DX12</Filter>
     </ClInclude>
-    <ClInclude Include="DX12Basic.h">
+    <ClInclude Include="engine\DX12\DX12Basic.h">
       <Filter>ヘッダー ファイル\engine\DX12</Filter>
     </ClInclude>
-    <ClInclude Include="WinApp.h">
+    <ClInclude Include="engine\base\WinApp.h">
       <Filter>ヘッダー ファイル\engine\base</Filter>
     </ClInclude>
-    <ClInclude Include="Input.h">
+    <ClInclude Include="engine\io\Input.h">
       <Filter>ヘッダー ファイル\engine\io</Filter>
     </ClInclude>
-    <ClInclude Include="Logger.h">
+    <ClInclude Include="engine\func\commonFunc\Logger.h">
       <Filter>ヘッダー ファイル\engine\func\commonFunc</Filter>
     </ClInclude>
-    <ClInclude Include="StringUtility.h">
+    <ClInclude Include="engine\func\commonFunc\StringUtility.h">
       <Filter>ヘッダー ファイル\engine\func\commonFunc</Filter>
     </ClInclude>
   </ItemGroup>
