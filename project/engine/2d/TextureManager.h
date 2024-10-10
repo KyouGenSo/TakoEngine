@@ -1,6 +1,7 @@
 #pragma once
 #include<string>
 #include<vector>
+#include<unordered_map>
 #include<wrl.h>
 #include <d3d12.h>
 #include"externals/DirectXTex/DirectXTex.h"
@@ -28,6 +29,7 @@ private: // 構造体
 		DirectX::TexMetadata metadata;
 		Microsoft::WRL::ComPtr<ID3D12Resource> resource;
 		Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource;
+		uint32_t srvIndex;
 		D3D12_CPU_DESCRIPTOR_HANDLE srvCpuHandle;
 		D3D12_GPU_DESCRIPTOR_HANDLE srvGpuHandle;
 	};
@@ -60,29 +62,29 @@ public: // メンバー関数
 	void LoadTexture(const std::string& filePath);
 
 	/// <summary>
-	/// テクスチャのインデックスを取得
-	/// </summary>
-	uint32_t GetTextureIndex(const std::string& filePath);
-
-	/// <summary>
 	/// テクスチャのインデックスからGPUハンドルを取得
 	/// </summary>
-	D3D12_GPU_DESCRIPTOR_HANDLE GetSRVGpuHandle(uint32_t texIndex);
+	D3D12_GPU_DESCRIPTOR_HANDLE GetSRVGPUHandle(const std::string& filePath);
 
 	/// <summary>
 	/// メタデータを取得
 	/// </summary>
-	const DirectX::TexMetadata& GetMetaData(uint32_t texIndex);
+	const DirectX::TexMetadata& GetMetaData(const std::string& filePath);
+
+	/// <summary>
+	/// srvIndexを取得
+	/// </summary>
+	uint32_t GetSRVIndex(const std::string& filePath);
 
 private: // メンバー変数
 
 	// DX12Basicクラスのインスタンス
-	DX12Basic* m_dx12_;
+	DX12Basic* m_dx12_ = nullptr;
 
 	// SrvManagerクラスのインスタンス
-	SrvManager* m_srvManager_;
+	SrvManager* m_srvManager_ = nullptr;
 
 	// テクスチャデータ配列
-	std::vector<TextureData> textureDatas_;
+	std::unordered_map<std::string, TextureData> textureDatas_;
 
 };

@@ -24,17 +24,16 @@ void SrvManager::BeginDraw()
 
 uint32_t SrvManager::Allocate()
 {
-	if (srvIndex >= kMaxSRVCount)
-	{
-		std::cerr << "SRVの確保に失敗しました" << std::endl;
-		return 0;
-	}
-
 	int index = srvIndex;
 
 	srvIndex++;
 
 	return index;
+}
+
+bool SrvManager::CanAllocate()
+{
+	return srvIndex < kMaxSRVCount;
 }
 
 void SrvManager::CreateSRVForTexture2D(uint32_t index, ID3D12Resource* pResource, DXGI_FORMAT format, UINT mipLevels)

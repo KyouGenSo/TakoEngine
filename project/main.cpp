@@ -142,8 +142,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	// デフォルトカメラを設定
 	object3dBasic->SetDefaultCamera(defaultCamera);
 
-
-
 	//-----------------------------------------基盤システムの初期化-----------------------------------------//
 
 
@@ -192,7 +190,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 #pragma region Model読み込み
 
-	ModelManager::GetInstance()->LoadModel("teapot.obj");
+	ModelManager::GetInstance()->LoadModel("bunny.obj");
 
 	ModelManager::GetInstance()->LoadModel("plane.obj");
 
@@ -203,7 +201,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	Object3d* object3d = new Object3d();
 	object3d->Initialize(object3dBasic);
-	object3d->SetModel("teapot.obj");
+	object3d->SetModel("bunny.obj");
 	object3d->SetTranslate(Vector3(-3.0f, 0.0f, 0.0f));
 
 	Object3d* object3d2 = new Object3d();
@@ -267,6 +265,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		// ImGuiの内部コマンドを生成。描画処理の前に行う
 		//ImGui::Render();
 		//-------------------ImGui-------------------//
+
+		srvManager->BeginDraw();
 
 		//-------------------Modelの描画-------------------//
 		// 3Dモデル共通描画設定

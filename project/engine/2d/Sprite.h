@@ -132,6 +132,9 @@ private:// メンバー変数
 	// Transform
 	Transform transform_;
 
+	// ファイルパス
+	std::string texturePath_;
+
 	// バッファリソース
 	ComPtr<ID3D12Resource> vertexResource_;
 	ComPtr<ID3D12Resource> indexResource_;

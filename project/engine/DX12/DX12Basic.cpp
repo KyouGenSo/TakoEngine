@@ -76,9 +76,9 @@ void DX12Basic::Initialize(WinApp* winApp)
 void DX12Basic::Finalize()
 {
 	// ImGuiの終了処理
-	ImGui_ImplDX12_Shutdown();
-	ImGui_ImplWin32_Shutdown();
-	ImGui::DestroyContext();
+	//ImGui_ImplDX12_Shutdown();
+	//ImGui_ImplWin32_Shutdown();
+	//ImGui::DestroyContext();
 
 	// コマンド完了まで待機
 	fenceValue_++;
@@ -125,10 +125,6 @@ void DX12Basic::BeginDraw()
 
 	// 深度ステンシルをクリア
 	commandList_->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-
-	// SRVのヒープを指定
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> heaps[] = { srvHeap_.Get() };
-	commandList_->SetDescriptorHeaps(_countof(heaps), heaps->GetAddressOf()); 
 
 	// ビューポートとシザリング矩形をセット
 	commandList_->RSSetViewports(1, &viewport_);
@@ -380,7 +376,6 @@ void DX12Basic::InitDescriptorHeap()
 {
 	// ディスクリプタヒープのサイズを取得
 	descriptorSizeRTV_ = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	descriptorSizeSRV_ = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	descriptorSizeDSV_ = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
 	// RTVのディスクリプタヒープの生成
@@ -388,9 +383,6 @@ void DX12Basic::InitDescriptorHeap()
 
 	// DSVのディスクリプタヒープの生成
 	dsvHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
-
-	// SRVのディスクリプタヒープの生成
-	srvHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, kMaxSRVCount, true);
 }
 
 void DX12Basic::InitRTV()
@@ -562,16 +554,6 @@ Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> DX12Basic::CreateDescriptorHeap(D3D
 	HRESULT hr = device_->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&descriptorHeap));
 	assert(SUCCEEDED(hr));
 	return descriptorHeap;
-}
-
-D3D12_CPU_DESCRIPTOR_HANDLE DX12Basic::GetSRVCpuDescriptorHandle(uint32_t index)
-{
-	return GetCPUDescriptorHandle(srvHeap_.Get(), descriptorSizeSRV_, index);
-}
-
-D3D12_GPU_DESCRIPTOR_HANDLE DX12Basic::GetSRVGpuDescriptorHandle(uint32_t index)
-{
-	return GetGPUDescriptorHandle(srvHeap_.Get(), descriptorSizeSRV_, index);
 }
 
 Microsoft::WRL::ComPtr<IDxcBlob> DX12Basic::CompileShader(const std::wstring& filePath, const wchar_t* profile)

@@ -21,8 +21,11 @@ void Sprite::Initialize(SpriteBasic* spriteBasic, std::string texturePath)
 	// 座標変換行列データを生成
 	CreateTransformationMatrixData();
 
+	// ファイルパスを保存
+	texturePath_ = texturePath;
+
 	// テクスチャインデックスを保存
-	textureIndex_ = TextureManager::GetInstance()->GetTextureIndex(texturePath);
+	textureIndex_ = TextureManager::GetInstance()->GetSRVIndex(texturePath_);
 
 	// 画像切り取り範囲をぴったりにする
 	FitTexCutSize();
@@ -58,7 +61,7 @@ void Sprite::Update()
 	}
 
 	// テクスチャ範囲指定
-	const DirectX::TexMetadata& metadata = TextureManager::GetInstance()->GetMetaData(textureIndex_);
+	const DirectX::TexMetadata& metadata = TextureManager::GetInstance()->GetMetaData(texturePath_);
 	float texLeft = texTopLeft_.x / metadata.width;
 	float texRight = (texTopLeft_.x + texCutSize_.x) / metadata.width;
 	float texTop = texTopLeft_.y / metadata.height;
@@ -110,7 +113,7 @@ void Sprite::Draw()
 	spriteBasic_->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResource_->GetGPUVirtualAddress());
 
 	// SRVのDescriptorTableを設定,テクスチャを指定
-	spriteBasic_->GetDX12Basic()->GetCommandList()->SetGraphicsRootDescriptorTable(2, TextureManager::GetInstance()->GetSRVGpuHandle(textureIndex_));
+	spriteBasic_->GetDX12Basic()->GetCommandList()->SetGraphicsRootDescriptorTable(2, TextureManager::GetInstance()->GetSRVGPUHandle(texturePath_));
 
 	// 描画
 	spriteBasic_->GetDX12Basic()->GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0);
@@ -174,7 +177,7 @@ void Sprite::CreateTransformationMatrixData()
 
 void Sprite::FitTexCutSize()
 {
-	const DirectX::TexMetadata& metadata = TextureManager::GetInstance()->GetMetaData(textureIndex_);
+	const DirectX::TexMetadata& metadata = TextureManager::GetInstance()->GetMetaData(texturePath_);
 
 	texCutSize_.x = static_cast<float>(metadata.width);
 	texCutSize_.y = static_cast<float>(metadata.height);

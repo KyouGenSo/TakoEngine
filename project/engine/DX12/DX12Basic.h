@@ -51,16 +51,6 @@ public: // メンバー関数
 	void WaitForGPU();
 
 	/// <summary>
-	/// SRVの指定番号のCPUディスクリプタハンドルを取得
-	/// </summary>
-	D3D12_CPU_DESCRIPTOR_HANDLE GetSRVCpuDescriptorHandle(uint32_t index);
-
-	/// <summary>
-	/// SRVの指定番号のGPUディスクリプタハンドルを取得
-	/// </summary>
-	D3D12_GPU_DESCRIPTOR_HANDLE GetSRVGpuDescriptorHandle(uint32_t index);
-
-	/// <summary>
 	/// コンパイルシェーダー
 	/// </summary>
 	ComPtr<IDxcBlob> CompileShader(const std::wstring& filePath, const wchar_t* profile);
@@ -232,16 +222,12 @@ private: // メンバ変数
 	// デスクリプタヒープのサイズ
 	uint32_t descriptorSizeRTV_;
 	uint32_t descriptorSizeDSV_;
-	uint32_t descriptorSizeSRV_;
 
 	// レンダーターゲットビューのデスクリプタヒープ
 	ComPtr<ID3D12DescriptorHeap> rtvHeap_;
 
 	// 深度ステンシルビューのデスクリプタヒープ
 	ComPtr<ID3D12DescriptorHeap> dsvHeap_;
-
-	// シェーダーリソースビューのデスクリプタヒープ
-	ComPtr<ID3D12DescriptorHeap> srvHeap_;
 
 	// スワップチェインのバッファ
 	std::array<ComPtr<ID3D12Resource>, 2> swapChainResources_;

@@ -27,6 +27,11 @@ public: // メンバー関数
 	uint32_t Allocate();
 
 	///<summary>
+	///確保可能チェック
+	/// </summary>
+	bool CanAllocate();
+
+	///<summary>
 	///SRV生成(テクスチャ用)
 	/// </summary>
 	void CreateSRVForTexture2D(uint32_t srvIndex, ID3D12Resource* pResource, DXGI_FORMAT format, UINT mipLevels);
