@@ -58,46 +58,6 @@ template<class T>
 using ComPtr = Microsoft::WRL::ComPtr<T>;
 
 
-struct VertexData
-{
-	Vector4 position;
-	Vector2 texcoord;
-	Vector3 normal;
-};
-
-struct VertexDataNoTex
-{
-	Vector4 position;
-	Vector3 normal;
-};
-
-struct VertexHash {
-	size_t operator()(const VertexData& vertex) const {
-		size_t h1 = std::hash<float>{}(vertex.position.x);
-		size_t h2 = std::hash<float>{}(vertex.position.y);
-		size_t h3 = std::hash<float>{}(vertex.position.z);
-		size_t h4 = std::hash<float>{}(vertex.position.w);
-		size_t h5 = std::hash<float>{}(vertex.texcoord.x);
-		size_t h6 = std::hash<float>{}(vertex.texcoord.y);
-		return h1 ^ h2 ^ h3 ^ h4 ^ h5 ^ h6;
-	}
-};
-
-struct VertexEqual {
-	bool operator()(const VertexData& lhs, const VertexData& rhs) const {
-		return lhs.position.x == rhs.position.x &&
-			lhs.position.y == rhs.position.y &&
-			lhs.position.z == rhs.position.z &&
-			lhs.position.w == rhs.position.w &&
-			lhs.texcoord.x == rhs.texcoord.x &&
-			lhs.texcoord.y == rhs.texcoord.y;
-	}
-};
-
-struct ModelDataNoTex {
-	std::vector<VertexDataNoTex> vertices;
-};
-
 struct ChunkHeader {
 	char id[4]; // チャンクのID
 	uint32_t size; // チャンクのサイズ
@@ -123,14 +83,6 @@ struct SoundData {
 };
 
 //-----------------------------------------FUNCTION-----------------------------------------//
-
-//std::vector<ModelData> LoadMutiMeshObjFile(const std::string& directoryPath, const std::string& fileName);
-
-//std::vector<ModelData> LoadMutiMaterialFile(const std::string& directoryPath, const std::string& fileName);
-
-//std::unordered_map<std::string, MaterialData> LoadMutiMaterialMtlFile(const std::string& directoryPath, const std::string& fileName);
-
-ModelDataNoTex LoadObjFileNoTex(const std::string& directoryPath, const std::string& fileName);
 
 SoundData LoadWaveFile(const char* filename);
 
@@ -197,87 +149,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	object3dBasic->Initialize(dx12);
 
 	//-----------------------------------------基盤システムの初期化-----------------------------------------//
-
-	
-
-	//// 球のリソースを作る----------------------------------------------------------------------------------------------
-	//const int kVertexCount = 16 * 16 * 6;
-
-	//ComPtr<ID3D12Resource> sphereVertexResource = dx12->MakeBufferResource(sizeof(VertexData) * kVertexCount);
-	//sphereVertexResource->SetName(L"SphereVertexResource");
-
-	////VertexBufferView
-	//D3D12_VERTEX_BUFFER_VIEW sphereVertexBufferView{};
-	//// リソースの先頭アドレスから使う
-	//sphereVertexBufferView.BufferLocation = sphereVertexResource->GetGPUVirtualAddress();
-	//// 使用するリソースのサイズは頂点三つ分のサイズ
-	//sphereVertexBufferView.SizeInBytes = sizeof(VertexData) * kVertexCount;
-	//// 一つの頂点のサイズ
-	//sphereVertexBufferView.StrideInBytes = sizeof(VertexData);
-
-	//// 頂点リソースにデータを書き込む
-	//VertexData* sphereVertexData = nullptr;
-	//// アドレスを取得
-	//sphereVertexResource->Map(0, nullptr, reinterpret_cast<void**>(&sphereVertexData));
-
-	// 球を作成(vertexIndex Version)-------------------------------------------------------------//
-	//ComPtr<ID3D12Resource> sphereIndexResource = dx12->MakeBufferResource(sizeof(uint32_t) * kVertexCount);
-
-	//D3D12_INDEX_BUFFER_VIEW sphereIndexBufferView{};
-	//sphereIndexBufferView.BufferLocation = sphereIndexResource->GetGPUVirtualAddress();
-	//sphereIndexBufferView.SizeInBytes = sizeof(uint32_t) * kVertexCount;
-	//sphereIndexBufferView.Format = DXGI_FORMAT_R32_UINT;
-
-	//uint32_t* indexData = nullptr;
-	//sphereIndexResource->Map(0, nullptr, reinterpret_cast<void**>(&indexData));
-
-
-	//const uint32_t kSubdivision = 16;
-	//const float kLonEvery = DirectX::XM_2PI / float(kSubdivision);
-	//const float kLatEvery = DirectX::XM_PI / float(kSubdivision);
-
-	//std::unordered_map<VertexData, uint32_t, VertexHash, VertexEqual> uniqueVertices;
-
-	//uint32_t uniqueVertexCount = 0;
-
-	//for (int latIndex = 0; latIndex < kSubdivision; latIndex++) {
-
-	//	float theta = -DirectX::XM_PIDIV2 + kLatEvery * latIndex;
-
-	//	for (int lonIndex = 0; lonIndex < kSubdivision; lonIndex++) {
-
-	//		uint32_t start = (latIndex * kSubdivision + lonIndex) * 6;
-	//		float phi = kLonEvery * lonIndex;
-
-	//		VertexData vertices[6];
-	//		vertices[0] = { cos(theta) * cos(phi), sin(theta), cos(theta) * sin(phi), 1.0f, float(lonIndex) / kSubdivision, 1.0f - float(latIndex) / kSubdivision };
-	//		vertices[1] = { cos(theta + kLatEvery) * cos(phi), sin(theta + kLatEvery), cos(theta + kLatEvery) * sin(phi), 1.0f, float(lonIndex) / kSubdivision, 1.0f - float(latIndex + 1) / kSubdivision };
-	//		vertices[2] = { cos(theta) * cos(phi + kLonEvery), sin(theta), cos(theta) * sin(phi + kLonEvery), 1.0f, float(lonIndex + 1) / kSubdivision, 1.0f - float(latIndex) / kSubdivision };
-	//		vertices[3] = { cos(theta) * cos(phi + kLonEvery), sin(theta), cos(theta) * sin(phi + kLonEvery), 1.0f, float(lonIndex + 1) / kSubdivision, 1.0f - float(latIndex) / kSubdivision };
-	//		vertices[4] = { cos(theta + kLatEvery) * cos(phi), sin(theta + kLatEvery), cos(theta + kLatEvery) * sin(phi), 1.0f, float(lonIndex) / kSubdivision, 1.0f - float(latIndex + 1) / kSubdivision };
-	//		vertices[5] = { cos(theta + kLatEvery) * cos(phi + kLonEvery), sin(theta + kLatEvery), cos(theta + kLatEvery) * sin(phi + kLonEvery), 1.0f, float(lonIndex + 1) / kSubdivision, 1.0f - float(latIndex + 1) / kSubdivision };
-
-	//		for (int i = 0; i < 6; i++) {
-	//			auto iter = uniqueVertices.find(vertices[i]);
-	//			if (iter != uniqueVertices.end()) {
-	//				indexData[start + i] = iter->second;
-	//			} else {
-	//				uniqueVertices[vertices[i]] = uniqueVertexCount;
-	//				sphereVertexData[uniqueVertexCount] = vertices[i];
-	//				indexData[start + i] = uniqueVertexCount;
-	//				uniqueVertexCount++;
-	//			}
-	//		}
-	//	}
-	//}
-
-	//for (int i = 0; i < kVertexCount; i++)
-	//{
-	//	sphereVertexData[i].normal = Vector3(sphereVertexData[i].position.x, sphereVertexData[i].position.y, sphereVertexData[i].position.z);
-	//}
-
-	//sphereVertexBufferView.SizeInBytes = sizeof(VertexData) * uniqueVertexCount;
-	//sphereIndexBufferView.SizeInBytes = sizeof(uint32_t) * kVertexCount;
 
 
 #pragma region Sprite初期化
@@ -377,9 +248,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 
 
+
 		// ImGuiの内部コマンドを生成。描画処理の前に行う
 		ImGui::Render();
-
 		//-------------------ImGui-------------------//
 		
 		//-------------------Modelの描画-------------------//
@@ -439,10 +310,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		delete sprites[i];
 	}
 
-#ifdef _DEBUG
-	//debugController->Release();
-#endif 
-
 	winApp->Finalize();
 
 	// ウィンドウクラスの解放
@@ -453,272 +320,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 
 // 関数の定義-------------------------------------------------------------------------------------------------------------------
-
-//std::vector<ModelData> LoadMutiMeshObjFile(const std::string& directoryPath, const std::string& fileName)
-//{
-//	std::vector<ModelData> modelDatas;
-//	ModelData modelData;
-//	VertexData triangleVertices[3];
-//	std::vector<Vector4> positions;
-//	std::vector<Vector2> texcoords;
-//	std::vector<Vector3> normals;
-//	std::string line;
-//
-//	std::ifstream file(directoryPath + "/" + fileName);
-//	assert(file.is_open());
-//
-//	while (std::getline(file, line))
-//	{
-//		std::string identifier;
-//		std::istringstream s(line);
-//		s >> identifier;
-//
-//		if (identifier == "v") {
-//			Vector4 position;
-//			s >> position.x >> position.y >> position.z;
-//			position.w = 1.0f;
-//			positions.push_back(position);
-//
-//		} else if (identifier == "vt") {
-//			Vector2 texcoord;
-//			s >> texcoord.x >> texcoord.y;
-//			texcoords.push_back(texcoord);
-//
-//		} else if (identifier == "vn") {
-//			Vector3 normal;
-//			s >> normal.x >> normal.y >> normal.z;
-//			normals.push_back(normal);
-//
-//		} else if (identifier == "f") {
-//
-//			for (int32_t facevertex = 0; facevertex < 3; facevertex++) {
-//				std::string vertexDefinition;
-//				s >> vertexDefinition;
-//
-//				std::istringstream v(vertexDefinition);
-//				uint32_t elementIndices[3];
-//
-//				for (int32_t element = 0; element < 3; element++) {
-//					std::string index;
-//					std::getline(v, index, '/');
-//					elementIndices[element] = std::stoi(index);
-//				}
-//
-//				Vector4 position = positions[elementIndices[0] - 1];
-//				Vector2 texcoord = texcoords[elementIndices[1] - 1];
-//				Vector3 normal = normals[elementIndices[2] - 1];
-//
-//				position.z *= -1.0f;
-//				normal.z *= -1.0f;
-//				texcoord.y = 1.0f - texcoord.y;
-//
-//				triangleVertices[facevertex] = { position, texcoord, normal };
-//
-//			}
-//
-//			// Add the triangle vertices in reverse order
-//			modelData.vertices.push_back(triangleVertices[2]);
-//			modelData.vertices.push_back(triangleVertices[1]);
-//			modelData.vertices.push_back(triangleVertices[0]);
-//
-//		} else if (identifier == "o" || identifier == "g") {
-//			if (!modelData.vertices.empty()) {
-//				modelDatas.push_back(modelData);
-//				modelData = ModelData();
-//			}
-//		} else if (identifier == "mtllib") {
-//			std::string mtlFileName;
-//			s >> mtlFileName;
-//			modelData.material = LoadMtlFile(directoryPath, mtlFileName);
-//		}
-//	}
-//
-//	if (!modelData.vertices.empty()) {
-//		modelDatas.push_back(modelData);
-//	}
-//
-//	return modelDatas;
-//}
-//
-//std::vector<ModelData> LoadMutiMaterialFile(const std::string& directoryPath, const std::string& fileName)
-//{
-//	std::vector<ModelData> modelDatas;
-//	ModelData modelData;
-//	VertexData triangleVertices[3];
-//	std::vector<Vector4> positions;
-//	std::vector<Vector2> texcoords;
-//	std::vector<Vector3> normals;
-//	std::unordered_map<std::string, MaterialData> materials;
-//	std::string currentMaterial;
-//	std::string line;
-//
-//	std::ifstream file(directoryPath + "/" + fileName);
-//	assert(file.is_open());
-//
-//	while (std::getline(file, line))
-//	{
-//		std::string identifier;
-//		std::istringstream s(line);
-//		s >> identifier;
-//
-//		if (identifier == "v") {
-//			Vector4 position;
-//			s >> position.x >> position.y >> position.z;
-//			position.w = 1.0f;
-//			positions.push_back(position);
-//
-//		} else if (identifier == "vt") {
-//			Vector2 texcoord;
-//			s >> texcoord.x >> texcoord.y;
-//			texcoords.push_back(texcoord);
-//
-//		} else if (identifier == "vn") {
-//			Vector3 normal;
-//			s >> normal.x >> normal.y >> normal.z;
-//			normals.push_back(normal);
-//
-//		} else if (identifier == "f") {
-//
-//			for (int32_t facevertex = 0; facevertex < 3; facevertex++) {
-//				std::string vertexDefinition;
-//				s >> vertexDefinition;
-//
-//				std::istringstream v(vertexDefinition);
-//				uint32_t elementIndices[3];
-//
-//				for (int32_t element = 0; element < 3; element++) {
-//					std::string index;
-//					std::getline(v, index, '/');
-//					elementIndices[element] = std::stoi(index);
-//				}
-//
-//				Vector4 position = positions[elementIndices[0] - 1];
-//				Vector2 texcoord = texcoords[elementIndices[1] - 1];
-//				Vector3 normal = normals[elementIndices[2] - 1];
-//
-//				position.z *= -1.0f;
-//				normal.z *= -1.0f;
-//				texcoord.y = 1.0f - texcoord.y;
-//
-//				triangleVertices[facevertex] = { position, texcoord, normal };
-//			}
-//
-//			modelData.vertices.push_back(triangleVertices[2]);
-//			modelData.vertices.push_back(triangleVertices[1]);
-//			modelData.vertices.push_back(triangleVertices[0]);
-//
-//		} else if (identifier == "o" || identifier == "g") {
-//			if (!modelData.vertices.empty()) {
-//				modelDatas.push_back(modelData);
-//				modelData = ModelData();
-//			}
-//		} else if (identifier == "usemtl") {
-//			s >> currentMaterial;
-//			if (!modelData.vertices.empty()) {
-//				modelDatas.push_back(modelData);
-//				modelData = ModelData();
-//			}
-//			modelData.material = materials[currentMaterial];
-//		} else if (identifier == "mtllib") {
-//			std::string mtlFileName;
-//			s >> mtlFileName;
-//			materials = LoadMutiMaterialMtlFile(directoryPath, mtlFileName);
-//		}
-//	}
-//
-//	if (!modelData.vertices.empty()) {
-//		modelDatas.push_back(modelData);
-//	}
-//
-//	return modelDatas;
-//}
-//
-//std::unordered_map<std::string, MaterialData> LoadMutiMaterialMtlFile(const std::string& directoryPath, const std::string& fileName)
-//{
-//	std::unordered_map<std::string, MaterialData> materials;
-//	std::ifstream file(directoryPath + "/" + fileName);
-//	assert(file.is_open());
-//
-//	std::string line, currentMaterialName;
-//
-//	while (std::getline(file, line))
-//	{
-//		std::string identifier;
-//		std::istringstream s(line);
-//		s >> identifier;
-//
-//		if (identifier == "newmtl") {
-//			s >> currentMaterialName;
-//			materials[currentMaterialName] = MaterialData(); // マテリアルを初期化
-//		} else if (identifier == "map_Kd") {
-//			std::string textureFileName;
-//			s >> textureFileName;
-//			materials[currentMaterialName].texturePath = directoryPath + "/" + textureFileName;
-//		}
-//	}
-//
-//	return materials;
-//}
-
-ModelDataNoTex LoadObjFileNoTex(const std::string& directoryPath, const std::string& fileName) {
-	ModelDataNoTex modelData;
-	VertexDataNoTex triangleVertices[3];
-	std::vector<Vector4> positions;
-	std::vector<Vector3> normals;
-	std::string line;
-
-	std::ifstream file(directoryPath + "/" + fileName);
-	assert(file.is_open());
-
-	while (std::getline(file, line)) {
-		std::string identifier;
-		std::istringstream s(line);
-		s >> identifier;
-
-		if (identifier == "v") {
-			Vector4 position;
-			s >> position.x >> position.y >> position.z;
-			position.w = 1.0f;
-			positions.push_back(position);
-
-		} else if (identifier == "vn") {
-			Vector3 normal;
-			s >> normal.x >> normal.y >> normal.z;
-			normals.push_back(normal);
-
-		} else if (identifier == "f") {
-
-			for (int32_t facevertex = 0; facevertex < 3; facevertex++) {
-				std::string vertexDefinition;
-				s >> vertexDefinition;
-
-				// 文字列を二つのスラッシュ "//" で分割する
-				size_t firstSlash = vertexDefinition.find("//");
-				size_t secondSlash = vertexDefinition.find("//", firstSlash + 2);
-
-				// 頂点位置と法線のインデックスを抽出する
-				uint32_t positionIndex = std::stoi(vertexDefinition.substr(0, firstSlash));
-				uint32_t normalIndex = std::stoi(vertexDefinition.substr(firstSlash + 2, secondSlash - (firstSlash + 2)));
-
-				Vector4 position = positions[positionIndex - 1];
-				Vector3 normal = normals[normalIndex - 1];
-
-				// 座標系変換を処理する
-				position.z *= -1.0f;
-				normal.z *= -1.0f;
-
-				triangleVertices[facevertex] = { position, normal };
-			}
-
-			// 三角形の頂点データを追加する
-			modelData.vertices.push_back(triangleVertices[2]);
-			modelData.vertices.push_back(triangleVertices[1]);
-			modelData.vertices.push_back(triangleVertices[0]);
-		}
-	}
-
-	return modelData;
-}
 
 SoundData LoadWaveFile(const char* filename)
 {
