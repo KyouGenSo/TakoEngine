@@ -102,7 +102,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="engine\3d\Camera.cpp" />
     <ClCompile Include="engine\DX12\D3DResourceLeakCheker.cpp" />
     <ClCompile Include="engine\DX12\DX12Basic.cpp" />
     <ClCompile Include="externals\ImGui\imgui.cpp" />
@@ -127,10 +127,10 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\2d\TextureManager.cpp" />
     <ClCompile Include="engine\func\mathFunc\Vec3Func.cpp" />
     <ClCompile Include="engine\base\WinApp.cpp" />
-    <ClCompile Include="SrvManager.cpp" />
+    <ClCompile Include="engine\DX12\SrvManager.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Camera.h" />
+    <ClInclude Include="engine\3d\Camera.h" />
     <ClInclude Include="engine\DX12\D3DResourceLeakCheker.h" />
     <ClInclude Include="engine\DX12\DX12Basic.h" />
     <ClInclude Include="externals\ImGui\imconfig.h" />
@@ -159,7 +159,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\func\mathFunc\Vec3Func.h" />
     <ClInclude Include="engine\math\Vector4.h" />
     <ClInclude Include="engine\base\WinApp.h" />
-    <ClInclude Include="SrvManager.h" />
+    <ClInclude Include="engine\DX12\SrvManager.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\ImGui\LICENSE.txt" />

@@ -152,10 +152,10 @@
     <ClCompile Include="engine\func\commonFunc\StringUtility.cpp">
       <Filter>ソース ファイル\engine\func\commonFunc</Filter>
     </ClCompile>
-    <ClCompile Include="Camera.cpp">
+    <ClCompile Include="engine\3d\Camera.cpp">
       <Filter>ソース ファイル\engine\3d</Filter>
     </ClCompile>
-    <ClCompile Include="SrvManager.cpp">
+    <ClCompile Include="engine\DX12\SrvManager.cpp">
       <Filter>ソース ファイル\engine\DX12</Filter>
     </ClCompile>
   </ItemGroup>
@@ -244,10 +244,10 @@
     <ClInclude Include="engine\func\commonFunc\StringUtility.h">
       <Filter>ヘッダー ファイル\engine\func\commonFunc</Filter>
     </ClInclude>
-    <ClInclude Include="Camera.h">
+    <ClInclude Include="engine\3d\Camera.h">
       <Filter>ヘッダー ファイル\engine\3d</Filter>
     </ClInclude>
-    <ClInclude Include="SrvManager.h">
+    <ClInclude Include="engine\DX12\SrvManager.h">
       <Filter>ヘッダー ファイル\engine\DX12</Filter>
     </ClInclude>
   </ItemGroup>
