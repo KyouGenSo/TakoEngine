@@ -17,9 +17,12 @@ TextureManager* TextureManager::GetInstance()
 	return instance_;
 }
 
-void TextureManager::Initialize(DX12Basic* dx12)
+void TextureManager::Initialize(DX12Basic* dx12, SrvManager* srvManager)
 {
 	m_dx12_ = dx12;
+
+	m_srvManager_ = srvManager;
+
 	textureDatas_.reserve(DX12Basic::kMaxSRVCount);
 }
 

@@ -69,7 +69,7 @@ void DX12Basic::Initialize(WinApp* winApp)
 	CreateDXCCompiler();
 
 	// ImGuiの初期化
-	InitImGui();
+	//InitImGui();
 
 }
 
@@ -490,30 +490,30 @@ void DX12Basic::CreateDXCCompiler()
 
 }
 
-void DX12Basic::InitImGui()
-{
-	// バージョンチェック
-	IMGUI_CHECKVERSION();
-
-	// コンテキストの生成
-	ImGui::CreateContext();
-
-	// スタイルの設定
-	ImGui::StyleColorsDark();
-
-	// Win32用の初期化
-	ImGui_ImplWin32_Init(winApp_->GetHWnd());
-
-	// DX12用の初期化
-	ImGui_ImplDX12_Init(
-		device_.Get(),                                   // デバイス
-		swapChainBufferCount_,                           // バッファ数
-		DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,                 // RTVのフォーマット
-		srvHeap_.Get(),                                  // SRVのヒープ
-		srvHeap_->GetCPUDescriptorHandleForHeapStart(),  // SRVのCPUハンドルの開始位置
-		srvHeap_->GetGPUDescriptorHandleForHeapStart()); // SRVのGPUハンドルの開始位置
-
-}
+//void DX12Basic::InitImGui()
+//{
+//	// バージョンチェック
+//	IMGUI_CHECKVERSION();
+//
+//	// コンテキストの生成
+//	ImGui::CreateContext();
+//
+//	// スタイルの設定
+//	ImGui::StyleColorsDark();
+//
+//	// Win32用の初期化
+//	ImGui_ImplWin32_Init(winApp_->GetHWnd());
+//
+//	// DX12用の初期化
+//	ImGui_ImplDX12_Init(
+//		device_.Get(),                                   // デバイス
+//		swapChainBufferCount_,                           // バッファ数
+//		DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,                 // RTVのフォーマット
+//		srvHeap_.Get(),                                  // SRVのヒープ
+//		srvHeap_->GetCPUDescriptorHandleForHeapStart(),  // SRVのCPUハンドルの開始位置
+//		srvHeap_->GetGPUDescriptorHandleForHeapStart()); // SRVのGPUハンドルの開始位置
+//
+//}
 
 void DX12Basic::InitFPSLimiter()
 {

@@ -38,6 +38,7 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 #include"Model.h"
 #include"ModelManager.h"
 #include"Camera.h"
+#include"SrvManager.h"
 
 
 #include "xaudio2.h"
@@ -109,25 +110,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//-----------------------------------------WINDOW-----------------------------------------//
 
-	//-----------------------------------------汎用機能初期化-----------------------------------------
-	HRESULT hr;
-
-	Input* input = new Input();
-	input->Initialize(winApp);
-
-	//XAudio2
-	ComPtr<IXAudio2> xAudio2;
-	IXAudio2MasteringVoice* masterVoice;
-
-	// XAudio2の初期化
-	hr = XAudio2Create(&xAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR);
-	hr = xAudio2->CreateMasteringVoice(&masterVoice);
-
-	// サウンドの読み込み
-	SoundData soundData = LoadWaveFile("resources/fanfare.wav");
-
-	//-----------------------------------------汎用機能初期化-----------------------------------------//
-
 
 	//-----------------------------------------基盤システムの初期化-----------------------------------------
 
@@ -156,8 +138,31 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	// デフォルトカメラを設定
 	object3dBasic->SetDefaultCamera(defaultCamera);
 
+	// SRVマネージャーの初期化
+	SrvManager* srvManager = new SrvManager();
+	srvManager->Initialize(dx12);
+
 	//-----------------------------------------基盤システムの初期化-----------------------------------------//
 
+
+	//-----------------------------------------汎用機能初期化-----------------------------------------
+	HRESULT hr;
+
+	Input* input = new Input();
+	input->Initialize(winApp);
+
+	//XAudio2
+	ComPtr<IXAudio2> xAudio2;
+	IXAudio2MasteringVoice* masterVoice;
+
+	// XAudio2の初期化
+	hr = XAudio2Create(&xAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR);
+	hr = xAudio2->CreateMasteringVoice(&masterVoice);
+
+	// サウンドの読み込み
+	SoundData soundData = LoadWaveFile("resources/fanfare.wav");
+
+	//-----------------------------------------汎用機能初期化-----------------------------------------//
 
 #pragma region Sprite初期化
 
@@ -219,9 +224,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		}
 
 		//-------------imguiの初期化-------------//
-		ImGui_ImplDX12_NewFrame();
-		ImGui_ImplWin32_NewFrame();
-		ImGui::NewFrame();
+		//ImGui_ImplDX12_NewFrame();
+		//ImGui_ImplWin32_NewFrame();
+		//ImGui::NewFrame();
 		//-------------imguiの初期化-------------//
 
 		/// <summary>
@@ -258,9 +263,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 
 		// ImGuiの内部コマンドを生成。描画処理の前に行う
-		ImGui::Render();
+		//ImGui::Render();
 		//-------------------ImGui-------------------//
-		
+
 		//-------------------Modelの描画-------------------//
 		// 3Dモデル共通描画設定
 		object3dBasic->SetCommonRenderSetting();
@@ -290,7 +295,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 
 		// commandListにimguiの描画コマンドを積む。描画処理の後、RTVからPRESENT Stateに戻す前に行う
-		ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), dx12->GetCommandList());
+		//ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), dx12->GetCommandList());
 
 		// 描画後の処理
 		dx12->EndDraw();
@@ -316,6 +321,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	delete object3d2;
 	delete defaultCamera;
 	delete object3dBasic;
+	delete srvManager;
 
 	for (uint32_t i = 0; i < spriteNum; i++)
 	{

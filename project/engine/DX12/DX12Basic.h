@@ -78,6 +78,11 @@ public: // メンバー関数
 	void CreateTextureResource(ComPtr<ID3D12Resource>& textureResource, const DirectX::TexMetadata& metaData);
 
 	/// <summary>
+	/// デスクリプタヒープの生成
+	/// <summary>+
+	ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisible);
+
+	/// <summary>
 	/// テクスチャリソースの転送
 	/// </summary>
 	[[nodiscard]]
@@ -170,7 +175,7 @@ private: // プライベートメンバー関数
 	/// <summary>
 	/// ImGuiの初期化
 	/// <summary> 
-	void InitImGui();
+	//void InitImGui();
 
 	/// <summary>
 	/// FPS制御初期化
@@ -181,11 +186,6 @@ private: // プライベートメンバー関数
 	/// FPS制御更新
 	/// <summary> 
 	void UpdateFPSLimiter();
-
-	/// <summary>
-	/// デスクリプタヒープの生成
-	/// <summary>+
-	ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisible);
 
 	/// <summary>
 	/// 指定番号のCPUディスクリプタハンドルを取得

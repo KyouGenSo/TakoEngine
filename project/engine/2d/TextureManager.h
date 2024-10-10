@@ -7,6 +7,8 @@
 
 class DX12Basic;
 
+class SrvManager;
+
 class TextureManager{
 private: // シングルトン設定
 
@@ -45,7 +47,7 @@ public: // メンバー関数
 	/// <summary>
 	/// 初期化
 	/// </summary>
-	void Initialize(DX12Basic* dx12);
+	void Initialize(DX12Basic* dx12, SrvManager* srvManager);
 
 	/// <summary>
 	/// 終了処理
@@ -76,6 +78,9 @@ private: // メンバー変数
 
 	// DX12Basicクラスのインスタンス
 	DX12Basic* m_dx12_;
+
+	// SrvManagerクラスのインスタンス
+	SrvManager* m_srvManager_;
 
 	// テクスチャデータ配列
 	std::vector<TextureData> textureDatas_;
