@@ -152,6 +152,9 @@
     <ClCompile Include="engine\func\commonFunc\StringUtility.cpp">
       <Filter>ソース ファイル\engine\func\commonFunc</Filter>
     </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>ソース ファイル\engine\3d</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\ImGui\imconfig.h">
@@ -237,6 +240,9 @@
     </ClInclude>
     <ClInclude Include="engine\func\commonFunc\StringUtility.h">
       <Filter>ヘッダー ファイル\engine\func\commonFunc</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>ヘッダー ファイル\engine\3d</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

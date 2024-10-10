@@ -37,6 +37,7 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 #include"Object3dBasic.h"
 #include"Model.h"
 #include"ModelManager.h"
+#include"Camera.h"
 
 
 #include "xaudio2.h"
@@ -148,6 +149,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	Object3dBasic* object3dBasic = new Object3dBasic();
 	object3dBasic->Initialize(dx12);
 
+	// デフォルトカメラの初期化
+	Camera* defaultCamera = new Camera();
+	defaultCamera->SetRotate(Vector3(0.3f, 0.0f, 0.0f));
+	defaultCamera->SetTranslate(Vector3(0.0f, 4.0f, -10.0f));
+	// デフォルトカメラを設定
+	object3dBasic->SetDefaultCamera(defaultCamera);
+
 	//-----------------------------------------基盤システムの初期化-----------------------------------------//
 
 
@@ -257,6 +265,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		// 3Dモデル共通描画設定
 		object3dBasic->SetCommonRenderSetting();
 
+		// カメラの更新
+		defaultCamera->Update();
+
 		// 3Dモデルの描画
 		object3d->Draw();
 		object3d2->Draw();
@@ -303,6 +314,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	delete spriteBasic;
 	delete object3d;
 	delete object3d2;
+	delete defaultCamera;
 	delete object3dBasic;
 
 	for (uint32_t i = 0; i < spriteNum; i++)

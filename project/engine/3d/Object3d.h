@@ -12,6 +12,8 @@ class Object3dBasic;
 
 class Model;
 
+class Camera;
+
 class Object3d {
 
 public: // 構造体
@@ -47,6 +49,7 @@ public: // メンバー関数
 	///描画
 	/// </summary>
 	void Draw();
+
 	//-----------------------------------------Getter-----------------------------------------//
 	const Vector3& GetScale() const { return transform_.scale; }
 	const Vector3& GetRotate() const { return transform_.rotate; }
@@ -54,6 +57,7 @@ public: // メンバー関数
 	
 	//-----------------------------------------Setter-----------------------------------------//
 	void SetModel(const std::string& fileName);
+	void SetCamera(Camera* camera) { m_camera_ = camera; }
 	void SetScale(const Vector3& scale) { transform_.scale = scale; }
 	void SetRotate(const Vector3& rotate) { transform_.rotate = rotate; }
 	void SetTranslate(const Vector3& translate) { transform_.translate = translate; }
@@ -72,17 +76,17 @@ private: // プライベートメンバー関数
 
 private: // メンバー変数
 
-	// 3dオブジェクトの基本クラス
+	// 3dオブジェクトの基本クラスポインター
 	Object3dBasic* m_obj3dBasic_ = nullptr;
+
+	// カメラのクラスポインター
+	Camera* m_camera_ = nullptr;
 
 	// モデルクラス
 	Model* m_model_ = nullptr;
 
 	// トランスフォーム
 	Transform transform_;
-	
-	//カメラのトランスフォーム
-	Transform cameraTransform_;
 
 	// バッファリソース
 	Microsoft::WRL::ComPtr<ID3D12Resource> transformationMatResource_;

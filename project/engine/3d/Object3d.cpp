@@ -4,6 +4,7 @@
 #include "Model.h"
 #include "TextureManager.h"
 #include"ModelManager.h"
+#include"Camera.h"
 #include <cassert>
 #include<fstream>
 #include<sstream>
@@ -13,9 +14,10 @@ void Object3d::Initialize(Object3dBasic* obj3dBasic)
 	// Object3dBasicクラスのインスタンスを参照
 	m_obj3dBasic_ = obj3dBasic;
 
+	m_camera_ = m_obj3dBasic_->GetDefaultCamera();
+
 	// トランスフォームに初期化値を設定
 	transform_ = { Vector3(1.0f, 1.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 0.0f) };
-	cameraTransform_ = { Vector3(1.0f, 1.0f, 1.0f), Vector3(0.3f, 0.0f, 0.0f), Vector3(0.0f, 4.0f, -10.0f) };
 
 	// 座標変換行列データの生成
 	CreateTransformationMatrixData();
@@ -29,15 +31,17 @@ void Object3d::Update()
 	// トランスフォームでワールド行列を作る
 	Matrix4x4 worldMatrix = Mat4x4::MakeAffine(transform_.scale, transform_.rotate, transform_.translate);
 
-	// ビュー行列を作る
-	Matrix4x4 cameraMatrix = Mat4x4::MakeAffine(cameraTransform_.scale, cameraTransform_.rotate, cameraTransform_.translate);
-	Matrix4x4 viewMatrix = Mat4x4::Inverse(cameraMatrix);
+	Matrix4x4 wvpMatrix;
 
-	// プロジェクション行列を作る
-	Matrix4x4 projectionMatrix = Mat4x4::MakePerspective(0.45f, static_cast<float>(WinApp::kClientWidth) / static_cast<float>(WinApp::kClientHeight), 0.1f, 100.0f);
+	if (m_camera_) {
+		const Matrix4x4& viewProjectionMatrix = m_camera_->GetViewProjectionMatrix();
+		wvpMatrix = Mat4x4::Multiply(worldMatrix, viewProjectionMatrix);
+	} else {
+		wvpMatrix = worldMatrix;
+	}
 
 	// 座標変換行列データに書き込む
-	transformationMatData_->WVP = Mat4x4::Multiply(worldMatrix, Mat4x4::Multiply(viewMatrix, projectionMatrix));
+	transformationMatData_->WVP = wvpMatrix;
 	transformationMatData_->world = worldMatrix;
 }
 
