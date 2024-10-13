@@ -190,7 +190,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 #pragma region Model読み込み
 
-	ModelManager::GetInstance()->LoadModel("bunny.obj");
+	ModelManager::GetInstance()->LoadModel("teapot.obj");
 
 	ModelManager::GetInstance()->LoadModel("plane.obj");
 
@@ -201,7 +201,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	Object3d* object3d = new Object3d();
 	object3d->Initialize(object3dBasic);
-	object3d->SetModel("bunny.obj");
+	object3d->SetModel("teapot.obj");
 	object3d->SetTranslate(Vector3(-2.0f, 0.0f, 0.0f));
 
 	Object3d* object3d2 = new Object3d();
