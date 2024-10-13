@@ -91,7 +91,6 @@ public: // メンバー関数
 		return device_.Get();
 	}
 	
-
 	/// <summary>
 	/// コマンドリストの取得
 	/// </summary>
@@ -104,6 +103,13 @@ public: // メンバー関数
 	/// </summary>
 	ID3D12CommandQueue* GetCommandQueue() {
 		return commandQueue_.Get();
+	}
+
+	/// <summary>
+	/// backBufferの数の取得
+	/// </summary>
+	size_t GetSwapChainBufferCount() {
+		return swapChainResources_.size();
 	}
 
 private: // プライベートメンバー関数

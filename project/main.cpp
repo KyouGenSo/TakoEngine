@@ -21,11 +21,6 @@
 #include"externals/DirectXTex/d3dx12.h"
 #include"externals/DirectXTex/DirectXTex.h"
 
-#include"externals/imgui/imgui.h"
-#include"externals/imgui/imgui_impl_win32.h"
-#include"externals/imgui/imgui_impl_dx12.h"
-extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
 #include"WinApp.h"
 #include"DX12Basic.h"
 #include"Input.h"
@@ -39,6 +34,7 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 #include"ModelManager.h"
 #include"Camera.h"
 #include"SrvManager.h"
+#include"ImGuiManager.h"
 
 
 #include "xaudio2.h"
@@ -116,6 +112,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	// DX12の初期化
 	DX12Basic* dx12 = new DX12Basic();
 	dx12->Initialize(winApp);
+
+	// ImGuiManagerの初期化
+	ImGuiManager* imguiManager = new ImGuiManager();
+	imguiManager->Initialize(winApp, dx12);
 
 	// SRVマネージャーの初期化
 	SrvManager* srvManager = new SrvManager();
@@ -259,12 +259,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		srvManager->BeginDraw();
 
 		//-------------------ImGui-------------------//
+		imguiManager->Begin();
+
+		ImGui::ShowDemoWindow();
 
 
 
-
-		// ImGuiの内部コマンドを生成。描画処理の前に行う
-		//ImGui::Render();
+		
+		imguiManager->End();
 		//-------------------ImGui-------------------//
 
 
@@ -296,8 +298,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		//-------------------Spriteの描画-------------------//
 
 
-		// commandListにimguiの描画コマンドを積む。描画処理の後、RTVからPRESENT Stateに戻す前に行う
-		//ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), dx12->GetCommandList());
+		//imguiの描画
+		imguiManager->Draw();
 
 		// 描画後の処理
 		dx12->EndDraw();
@@ -306,9 +308,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//-------------------------------------------------GAMELOOP-----------------------------------------------------/
 
+	// ModelManagerの終了処理
 	ModelManager::GetInstance()->Finalize();
+	
+	// TextureManagerの終了処理
 	TextureManager::GetInstance()->Finalize();
 
+	// ImGuiManagerの終了処理
+	imguiManager->Shutdown();
+
+	// DX12の終了処理
 	dx12->Finalize();
 
 	// XAudio2の解放
@@ -324,6 +333,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	delete defaultCamera;
 	delete object3dBasic;
 	delete srvManager;
+	delete imguiManager;
 
 	for (uint32_t i = 0; i < spriteNum; i++)
 	{

@@ -107,15 +107,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\3d\Camera.cpp" />
     <ClCompile Include="engine\DX12\D3DResourceLeakCheker.cpp" />
     <ClCompile Include="engine\DX12\DX12Basic.cpp" />
-    <ClCompile Include="externals\ImGui\imgui.cpp" />
-    <ClCompile Include="externals\ImGui\imgui_demo.cpp" />
-    <ClCompile Include="externals\ImGui\imgui_draw.cpp" />
-    <ClCompile Include="externals\ImGui\imgui_impl_dx12.cpp" />
-    <ClCompile Include="externals\ImGui\imgui_impl_win32.cpp" />
-    <ClCompile Include="externals\ImGui\imgui_tables.cpp" />
-    <ClCompile Include="externals\ImGui\imgui_widgets.cpp" />
     <ClCompile Include="engine\io\Input.cpp" />
     <ClCompile Include="engine\func\commonFunc\Logger.cpp" />
+    <ClCompile Include="ImGuiManager.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="engine\func\mathFunc\Mat4x4Func.cpp" />
     <ClCompile Include="engine\3d\Model.cpp" />
@@ -135,14 +129,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\3d\Camera.h" />
     <ClInclude Include="engine\DX12\D3DResourceLeakCheker.h" />
     <ClInclude Include="engine\DX12\DX12Basic.h" />
-    <ClInclude Include="externals\ImGui\imconfig.h" />
-    <ClInclude Include="externals\ImGui\imgui.h" />
-    <ClInclude Include="externals\ImGui\imgui_impl_dx12.h" />
-    <ClInclude Include="externals\ImGui\imgui_impl_win32.h" />
-    <ClInclude Include="externals\ImGui\imgui_internal.h" />
-    <ClInclude Include="externals\ImGui\imstb_rectpack.h" />
-    <ClInclude Include="externals\ImGui\imstb_textedit.h" />
-    <ClInclude Include="externals\ImGui\imstb_truetype.h" />
     <ClInclude Include="engine\io\Input.h" />
     <ClInclude Include="engine\func\commonFunc\Logger.h" />
     <ClInclude Include="engine\math\Matrix4x4.h" />
@@ -162,9 +148,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\math\Vector4.h" />
     <ClInclude Include="engine\base\WinApp.h" />
     <ClInclude Include="engine\DX12\SrvManager.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="externals\ImGui\LICENSE.txt" />
+    <ClInclude Include="ImGuiManager.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\NoTex.hlsli">

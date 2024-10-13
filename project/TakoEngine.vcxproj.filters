@@ -9,9 +9,6 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
-    <Filter Include="imgui">
-      <UniqueIdentifier>{55f807f8-7210-4d88-8043-c90c5481e946}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Shader">
       <UniqueIdentifier>{e04ae378-74f7-4b44-945a-58cedf303ffd}</UniqueIdentifier>
     </Filter>
@@ -78,31 +75,16 @@
     <Filter Include="ヘッダー ファイル\application">
       <UniqueIdentifier>{aa73cc4d-6520-41f1-82d5-797920f965e9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\engine\debug">
+      <UniqueIdentifier>{ecb11b3b-61d3-4e46-bdad-993c65b124f5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\engine\debug">
+      <UniqueIdentifier>{bc6db53e-c339-4623-ab40-a9a9adf5d39b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="externals\ImGui\imgui.cpp">
-      <Filter>imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="externals\ImGui\imgui_demo.cpp">
-      <Filter>imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="externals\ImGui\imgui_draw.cpp">
-      <Filter>imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="externals\ImGui\imgui_impl_dx12.cpp">
-      <Filter>imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="externals\ImGui\imgui_impl_win32.cpp">
-      <Filter>imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="externals\ImGui\imgui_tables.cpp">
-      <Filter>imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="externals\ImGui\imgui_widgets.cpp">
-      <Filter>imgui</Filter>
     </ClCompile>
     <ClCompile Include="engine\func\mathFunc\Mat4x4Func.cpp">
       <Filter>ソース ファイル\engine\func\MathFunc</Filter>
@@ -158,32 +140,11 @@
     <ClCompile Include="engine\DX12\SrvManager.cpp">
       <Filter>ソース ファイル\engine\DX12</Filter>
     </ClCompile>
+    <ClCompile Include="ImGuiManager.cpp">
+      <Filter>ソース ファイル\engine\debug</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="externals\ImGui\imconfig.h">
-      <Filter>imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="externals\ImGui\imgui.h">
-      <Filter>imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="externals\ImGui\imgui_impl_dx12.h">
-      <Filter>imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="externals\ImGui\imgui_impl_win32.h">
-      <Filter>imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="externals\ImGui\imgui_internal.h">
-      <Filter>imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="externals\ImGui\imstb_rectpack.h">
-      <Filter>imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="externals\ImGui\imstb_textedit.h">
-      <Filter>imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="externals\ImGui\imstb_truetype.h">
-      <Filter>imgui</Filter>
-    </ClInclude>
     <ClInclude Include="engine\func\mathFunc\Mat4x4Func.h">
       <Filter>ヘッダー ファイル\engine\func\MathFunc</Filter>
     </ClInclude>
@@ -250,11 +211,9 @@
     <ClInclude Include="engine\DX12\SrvManager.h">
       <Filter>ヘッダー ファイル\engine\DX12</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="externals\ImGui\LICENSE.txt">
-      <Filter>imgui</Filter>
-    </Text>
+    <ClInclude Include="ImGuiManager.h">
+      <Filter>ヘッダー ファイル\engine\debug</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\NoTex.hlsli">

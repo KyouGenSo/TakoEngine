@@ -5,9 +5,9 @@
 #include <format>
 #include <thread>
 
-#include"externals/imgui/imgui.h"
-#include"externals/imgui/imgui_impl_win32.h"
-#include"externals/imgui/imgui_impl_dx12.h"
+#include"imgui.h"
+#include"imgui_impl_win32.h"
+#include"imgui_impl_dx12.h"
 
 #include"externals/DirectXTex/d3dx12.h"
 #pragma comment(lib, "dxgi.lib")
@@ -118,7 +118,8 @@ void DX12Basic::BeginDraw()
 	commandList_->OMSetRenderTargets(1, &rtvHandle_[backBufferIndex], false, &dsvHandle);
 
 	// クリアカラー
-	float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f };
+	//float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f };
+	float clearColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
 	// 画面の色をクリア
 	commandList_->ClearRenderTargetView(rtvHandle_[backBufferIndex], clearColor, 0, nullptr);
