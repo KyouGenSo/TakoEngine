@@ -140,7 +140,7 @@
     <ClCompile Include="engine\DX12\SrvManager.cpp">
       <Filter>ソース ファイル\engine\DX12</Filter>
     </ClCompile>
-    <ClCompile Include="ImGuiManager.cpp">
+    <ClCompile Include="engine\debug\ImGuiManager.cpp">
       <Filter>ソース ファイル\engine\debug</Filter>
     </ClCompile>
   </ItemGroup>
@@ -211,7 +211,7 @@
     <ClInclude Include="engine\DX12\SrvManager.h">
       <Filter>ヘッダー ファイル\engine\DX12</Filter>
     </ClInclude>
-    <ClInclude Include="ImGuiManager.h">
+    <ClInclude Include="engine\debug\ImGuiManager.h">
       <Filter>ヘッダー ファイル\engine\debug</Filter>
     </ClInclude>
   </ItemGroup>

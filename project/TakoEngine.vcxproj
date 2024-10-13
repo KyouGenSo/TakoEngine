@@ -64,7 +64,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)engine\debug;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -89,7 +89,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)engine\debug;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -105,11 +105,11 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="engine\3d\Camera.cpp" />
+    <ClCompile Include="engine\debug\ImGuiManager.cpp" />
     <ClCompile Include="engine\DX12\D3DResourceLeakCheker.cpp" />
     <ClCompile Include="engine\DX12\DX12Basic.cpp" />
     <ClCompile Include="engine\io\Input.cpp" />
     <ClCompile Include="engine\func\commonFunc\Logger.cpp" />
-    <ClCompile Include="ImGuiManager.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="engine\func\mathFunc\Mat4x4Func.cpp" />
     <ClCompile Include="engine\3d\Model.cpp" />
@@ -127,6 +127,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\3d\Camera.h" />
+    <ClInclude Include="engine\debug\ImGuiManager.h" />
     <ClInclude Include="engine\DX12\D3DResourceLeakCheker.h" />
     <ClInclude Include="engine\DX12\DX12Basic.h" />
     <ClInclude Include="engine\io\Input.h" />
@@ -148,7 +149,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\math\Vector4.h" />
     <ClInclude Include="engine\base\WinApp.h" />
     <ClInclude Include="engine\DX12\SrvManager.h" />
-    <ClInclude Include="ImGuiManager.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\NoTex.hlsli">

@@ -34,8 +34,10 @@
 #include"ModelManager.h"
 #include"Camera.h"
 #include"SrvManager.h"
-#include"ImGuiManager.h"
 
+#ifdef _DEBUG
+#include"ImGuiManager.h"
+#endif
 
 #include "xaudio2.h"
 #pragma comment(lib, "xaudio2.lib")
@@ -94,28 +96,26 @@ void SoundPlay(IXAudio2* xAudio2, const SoundData& soundData);
 //Windowsプログラムのエントリーポイント
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
-
 	// リソースリークチェッカー
 	D3DResourceLeakCheker d3dResourceLeakCheker;
 
-	//------------------------------------------WINDOW------------------------------------------
-
+#pragma region ウィンドウの初期化-------------------------------------------------------------------------------------------------------------------
 	//ウィンドウクラスの初期化
-	WinApp* winApp = new WinApp();
+	WinApp * winApp = new WinApp();
 	winApp->Initialize();
+#pragma endregion
 
-	//-----------------------------------------WINDOW-----------------------------------------//
 
-
-	//-----------------------------------------基盤システムの初期化-----------------------------------------
-
+#pragma region 基盤システムの初期化-------------------------------------------------------------------------------------------------------------------
 	// DX12の初期化
-	DX12Basic* dx12 = new DX12Basic();
+	DX12Basic * dx12 = new DX12Basic();
 	dx12->Initialize(winApp);
 
 	// ImGuiManagerの初期化
+#ifdef _DEBUG
 	ImGuiManager* imguiManager = new ImGuiManager();
 	imguiManager->Initialize(winApp, dx12);
+#endif
 
 	// SRVマネージャーの初期化
 	SrvManager* srvManager = new SrvManager();
@@ -141,11 +141,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	defaultCamera->SetTranslate(Vector3(0.0f, 4.0f, -10.0f));
 	// デフォルトカメラを設定
 	object3dBasic->SetDefaultCamera(defaultCamera);
+#pragma endregion
 
-	//-----------------------------------------基盤システムの初期化-----------------------------------------//
 
-
-	//-----------------------------------------汎用機能初期化-----------------------------------------
+#pragma region 汎用機能初期化-------------------------------------------------------------------------------------------------------------------
 	HRESULT hr;
 
 	Input* input = new Input();
@@ -161,10 +160,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	// サウンドの読み込み
 	SoundData soundData = LoadWaveFile("resources/fanfare.wav");
+#pragma endregion
 
-	//-----------------------------------------汎用機能初期化-----------------------------------------//
 
-#pragma region Sprite初期化
+#pragma region Sprite初期化-------------------------------------------------------------------------------------------------------------------
 
 	// textureの読み込み
 	TextureManager::GetInstance()->LoadTexture("resources/uvChecker.png");
@@ -188,7 +187,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 #pragma endregion
 
 
-#pragma region Model読み込み
+#pragma region Model読み込み-------------------------------------------------------------------------------------------------------------------
 
 	ModelManager::GetInstance()->LoadModel("teapot.obj");
 
@@ -197,9 +196,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 #pragma endregion
 
 
-#pragma region OBject3d初期化
+#pragma region OBject3d初期化-------------------------------------------------------------------------------------------------------------------
 
-	Object3d* object3d = new Object3d();
+	Object3d * object3d = new Object3d();
 	object3d->Initialize(object3dBasic);
 	object3d->SetModel("teapot.obj");
 	object3d->SetTranslate(Vector3(-2.0f, 0.0f, 0.0f));
@@ -223,12 +222,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			break;
 		}
 
-		//-------------imguiの初期化-------------//
-		//ImGui_ImplDX12_NewFrame();
-		//ImGui_ImplWin32_NewFrame();
-		//ImGui::NewFrame();
-		//-------------imguiの初期化-------------//
-
 		/// <summary>
 		/// 更新処理
 		/// </summary>
@@ -251,6 +244,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		object3d2->Update();
 
 		/// <summary>
+		/// 更新処理
+		/// </summary>
+
+
+
+
+		/// <summary>
 		/// 描画処理
 		/// </summary>
 
@@ -259,14 +259,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		srvManager->BeginDraw();
 
 		//-------------------ImGui-------------------//
+#ifdef _DEBUG
 		imguiManager->Begin();
 
 		ImGui::ShowDemoWindow();
 
-
-
-		
 		imguiManager->End();
+#endif
 		//-------------------ImGui-------------------//
 
 
@@ -285,7 +284,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 
 		//-------------------Spriteの描画-------------------//
-
 		// スプライト共通描画設定
 		spriteBasic->SetCommonRenderSetting();
 
@@ -297,12 +295,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 		//-------------------Spriteの描画-------------------//
 
-
+#ifdef _DEBUG
 		//imguiの描画
 		imguiManager->Draw();
+#endif
 
 		// 描画後の処理
 		dx12->EndDraw();
+
+		/// <summary>
+		/// 描画処理
+		/// </summary>
 
 	}
 
@@ -310,12 +313,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	// ModelManagerの終了処理
 	ModelManager::GetInstance()->Finalize();
-	
+
 	// TextureManagerの終了処理
 	TextureManager::GetInstance()->Finalize();
 
+#ifdef _DEBUG
 	// ImGuiManagerの終了処理
 	imguiManager->Shutdown();
+	delete imguiManager;
+#endif
 
 	// DX12の終了処理
 	dx12->Finalize();
@@ -333,12 +339,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	delete defaultCamera;
 	delete object3dBasic;
 	delete srvManager;
-	delete imguiManager;
 
 	for (uint32_t i = 0; i < spriteNum; i++)
 	{
 		delete sprites[i];
 	}
+
+
 
 	winApp->Finalize();
 
