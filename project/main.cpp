@@ -9,18 +9,6 @@
 #include <cassert>
 #include <vector>
 
-#include <d3d12.h>
-#include <dxgi1_6.h>
-#include<dxcapi.h>
-#include <dxgidebug.h>
-#pragma comment(lib, "dxgi.lib")
-#pragma comment(lib, "d3d12.lib")
-#pragma comment(lib, "dxcompiler.lib")
-#pragma comment(lib, "dxguid.lib")
-
-#include"externals/DirectXTex/d3dx12.h"
-#include"externals/DirectXTex/DirectXTex.h"
-
 #include"WinApp.h"
 #include"DX12Basic.h"
 #include"Input.h"
@@ -50,8 +38,6 @@
 #include"Vector2.h"
 #include"Mat4x4Func.h"
 #include"Vec3Func.h"
-
-#define PI 3.14159265359f
 
 // ComPtrのエイリアス
 template<class T>

@@ -36,9 +36,6 @@
     <Filter Include="ソース ファイル\engine\base">
       <UniqueIdentifier>{df44120a-7912-46ec-b7f6-07f2eca7766c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ソース ファイル\engine\DX12">
-      <UniqueIdentifier>{490ed4b9-7dfe-4558-9e4b-941c092d8a86}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ソース ファイル\application">
       <UniqueIdentifier>{4441774c-178f-4b70-b674-5a730922255d}</UniqueIdentifier>
     </Filter>
@@ -56,9 +53,6 @@
     </Filter>
     <Filter Include="ヘッダー ファイル\engine\func\commonFunc">
       <UniqueIdentifier>{c93c3135-e38b-4a1e-ac9f-09d247c16f01}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ヘッダー ファイル\engine\DX12">
-      <UniqueIdentifier>{f0da5115-f16e-4374-8e36-6dfbc8576798}</UniqueIdentifier>
     </Filter>
     <Filter Include="ヘッダー ファイル\engine\base">
       <UniqueIdentifier>{41fbb578-8b95-4593-a8e6-2b542b84674a}</UniqueIdentifier>
@@ -80,6 +74,12 @@
     </Filter>
     <Filter Include="ヘッダー ファイル\engine\debug">
       <UniqueIdentifier>{bc6db53e-c339-4623-ab40-a9a9adf5d39b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\engine\base\DX12">
+      <UniqueIdentifier>{f0da5115-f16e-4374-8e36-6dfbc8576798}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\engine\base\DX12">
+      <UniqueIdentifier>{490ed4b9-7dfe-4558-9e4b-941c092d8a86}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -116,11 +116,11 @@
     <ClCompile Include="engine\2d\TextureManager.cpp">
       <Filter>ソース ファイル\engine\2d</Filter>
     </ClCompile>
-    <ClCompile Include="engine\DX12\D3DResourceLeakCheker.cpp">
-      <Filter>ソース ファイル\engine\DX12</Filter>
+    <ClCompile Include="engine\base\DX12\D3DResourceLeakCheker.cpp">
+      <Filter>ソース ファイル\engine\base\DX12</Filter>
     </ClCompile>
-    <ClCompile Include="engine\DX12\DX12Basic.cpp">
-      <Filter>ソース ファイル\engine\DX12</Filter>
+    <ClCompile Include="engine\base\DX12\DX12Basic.cpp">
+      <Filter>ソース ファイル\engine\base\DX12</Filter>
     </ClCompile>
     <ClCompile Include="engine\base\WinApp.cpp">
       <Filter>ソース ファイル\engine\base</Filter>
@@ -137,8 +137,8 @@
     <ClCompile Include="engine\3d\Camera.cpp">
       <Filter>ソース ファイル\engine\3d</Filter>
     </ClCompile>
-    <ClCompile Include="engine\DX12\SrvManager.cpp">
-      <Filter>ソース ファイル\engine\DX12</Filter>
+    <ClCompile Include="engine\base\DX12\SrvManager.cpp">
+      <Filter>ソース ファイル\engine\base\DX12</Filter>
     </ClCompile>
     <ClCompile Include="engine\debug\ImGuiManager.cpp">
       <Filter>ソース ファイル\engine\debug</Filter>
@@ -187,11 +187,11 @@
     <ClInclude Include="engine\2d\TextureManager.h">
       <Filter>ヘッダー ファイル\engine\2d</Filter>
     </ClInclude>
-    <ClInclude Include="engine\DX12\D3DResourceLeakCheker.h">
-      <Filter>ヘッダー ファイル\engine\DX12</Filter>
+    <ClInclude Include="engine\base\DX12\D3DResourceLeakCheker.h">
+      <Filter>ヘッダー ファイル\engine\base\DX12</Filter>
     </ClInclude>
-    <ClInclude Include="engine\DX12\DX12Basic.h">
-      <Filter>ヘッダー ファイル\engine\DX12</Filter>
+    <ClInclude Include="engine\base\DX12\DX12Basic.h">
+      <Filter>ヘッダー ファイル\engine\base\DX12</Filter>
     </ClInclude>
     <ClInclude Include="engine\base\WinApp.h">
       <Filter>ヘッダー ファイル\engine\base</Filter>
@@ -208,8 +208,8 @@
     <ClInclude Include="engine\3d\Camera.h">
       <Filter>ヘッダー ファイル\engine\3d</Filter>
     </ClInclude>
-    <ClInclude Include="engine\DX12\SrvManager.h">
-      <Filter>ヘッダー ファイル\engine\DX12</Filter>
+    <ClInclude Include="engine\base\DX12\SrvManager.h">
+      <Filter>ヘッダー ファイル\engine\base\DX12</Filter>
     </ClInclude>
     <ClInclude Include="engine\debug\ImGuiManager.h">
       <Filter>ヘッダー ファイル\engine\debug</Filter>
