@@ -137,9 +137,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//Audioの初期化
 	Audio* audio = new Audio();
-	audio->Initialize("resources/");
+	audio->Initialize("resources/Sound/");
+
+	// サウンドデータの読み込み
 	uint32_t soundDataHandle = audio->LoadWaveFile("fanfare.wav");
 	uint32_t voiceHandle = 0;
+
+	uint32_t bgmSH = audio->LoadWaveFile("playerBulletHit.wav");
+	uint32_t bgmVH = 0;
+
+
 	float volume = 1.0f;
 	bool loopFlag = false;
 #pragma endregion
@@ -245,16 +252,24 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		imguiManager->Begin();
 
 		ImGui::Begin("Audio");
-		if (ImGui::Button("Play")) {
+		if (ImGui::Button("Play Fanfare")) {
 			voiceHandle = audio->PlayWave(soundDataHandle, loopFlag, volume);
 		}
 
-		if (ImGui::Button("Stop")) {
+		if (ImGui::Button("Stop Fanfare")) {
 			audio->StopWave(voiceHandle);
 		}
 
+		if (ImGui::Button("Play BGM")) {
+			bgmVH = audio->PlayWave(bgmSH, true, volume);
+		}
+
+		if (ImGui::Button("Stop BGM")) {
+			audio->StopWave(bgmVH);
+		}
+
 		// set loop
-		ImGui::Checkbox("Loop", &loopFlag);
+		ImGui::Checkbox("Loop Flag", &loopFlag);
 
 		// set volume
 		ImGui::SliderFloat("Volume", &volume, 0.0f, 1.0f);

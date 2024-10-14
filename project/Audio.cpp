@@ -65,13 +65,13 @@ uint32_t Audio::LoadWaveFile(const char* filename)
 	ChunkHeader data;
 	file.read(reinterpret_cast<char*>(&data), sizeof(data));
 
-	if (strncmp(data.id, "JUNK ", 4) == 0)
+	if (strncmp(data.id, "JUNK", 4) == 0)
 	{
 		file.seekg(data.size, std::ios::cur);
 		file.read(reinterpret_cast<char*>(&data), sizeof(data));
 	}
 
-	if (strncmp(data.id, "data ", 4) != 0)
+	if (strncmp(data.id, "data", 4) != 0)
 	{
 		assert(false);
 	}
@@ -122,7 +122,7 @@ uint32_t Audio::PlayWave(uint32_t soundDataHandle, bool loopFlag, float volume)
 	XAUDIO2_BUFFER buffer = {};
 	buffer.pAudioData = soundData.pBuffer;
 	buffer.AudioBytes = soundData.bufferSize;
-	//buffer.Flags = loopFlag ? XAUDIO2_LOOP_INFINITE : XAUDIO2_END_OF_STREAM;
+	buffer.Flags = XAUDIO2_END_OF_STREAM;
 	buffer.LoopCount = loopFlag ? XAUDIO2_LOOP_INFINITE : 0;
 
 	// ボイスの再生
