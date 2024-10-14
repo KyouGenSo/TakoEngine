@@ -75,11 +75,6 @@ void DX12Basic::Initialize(WinApp* winApp)
 
 void DX12Basic::Finalize()
 {
-	// ImGuiの終了処理
-	//ImGui_ImplDX12_Shutdown();
-	//ImGui_ImplWin32_Shutdown();
-	//ImGui::DestroyContext();
-
 	// コマンド完了まで待機
 	fenceValue_++;
 	// コマンドキューにFenceのシグナルを行う

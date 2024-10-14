@@ -42,12 +42,20 @@ public: // メンバ関数
 	/// </summary>
 	void Draw();
 
+
+	//-----------------------------------------Getter-----------------------------------------//
+	// 終了フラグを取得
+	bool GetEndFlag() const { return endFlag_; }
+
 private: // メンバ変数
 	// リソースリークチェッカー
 	D3DResourceLeakCheker d3dResourceLeakCheker;
 
 	// ウィンドウクラス
 	WinApp* winApp_ = nullptr;
+
+	// 終了フラグ
+	bool endFlag_ = false;
 
 	// DX12
 	DX12Basic* dx12_ = nullptr;
