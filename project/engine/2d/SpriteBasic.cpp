@@ -2,12 +2,32 @@
 #include <cassert>
 #include "Logger.h"
 
+SpriteBasic* SpriteBasic::instance_ = nullptr;
+
+SpriteBasic* SpriteBasic::GetInstance()
+{
+	if (instance_ == nullptr)
+	{
+		instance_ = new SpriteBasic();
+	}
+	return instance_;
+}
+
 void SpriteBasic::Initialize(DX12Basic* dx12)
 {
 	m_dx12_ = dx12;
 
 	// パイプラインステートの生成
 	CreatePSO();
+}
+
+void SpriteBasic::Finalize()
+{
+	if (instance_ != nullptr)
+	{
+		delete instance_;
+		instance_ = nullptr;
+	}
 }
 
 void SpriteBasic::SetCommonRenderSetting()

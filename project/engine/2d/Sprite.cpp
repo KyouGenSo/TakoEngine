@@ -2,11 +2,8 @@
 #include"SpriteBasic.h"
 #include "TextureManager.h"
 
-void Sprite::Initialize(SpriteBasic* spriteBasic, std::string texturePath)
+void Sprite::Initialize(std::string texturePath)
 {
-	// SpriteBasicクラスのインスタンスを保持
-	spriteBasic_ = spriteBasic;
-
 	// Transformの初期化
 	transform_.scale = Vector3(size_.x, size_.y, 1.0f);
 	transform_.rotate = Vector3(0.0f, 0.0f, rotation_);
@@ -101,29 +98,34 @@ void Sprite::Update()
 void Sprite::Draw()
 {
 	// 頂点バッファビューの設定
-	spriteBasic_->GetDX12Basic()->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView_);
+	SpriteBasic::GetInstance()->GetDX12Basic()->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView_);
 
 	// インデックスバッファビューの設定
-	spriteBasic_->GetDX12Basic()->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
+	//spriteBasic_->GetDX12Basic()->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
+	SpriteBasic::GetInstance()->GetDX12Basic()->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
 
 	// マテリアルCBufferの場所を設定
-	spriteBasic_->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource_->GetGPUVirtualAddress());
+	//spriteBasic_->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource_->GetGPUVirtualAddress());
+	SpriteBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource_->GetGPUVirtualAddress());
 
 	// 座標変換行列CBufferの場所を設定
-	spriteBasic_->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResource_->GetGPUVirtualAddress());
+	//spriteBasic_->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResource_->GetGPUVirtualAddress());
+	SpriteBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResource_->GetGPUVirtualAddress());
 
 	// SRVのDescriptorTableを設定,テクスチャを指定
-	spriteBasic_->GetDX12Basic()->GetCommandList()->SetGraphicsRootDescriptorTable(2, TextureManager::GetInstance()->GetSRVGPUHandle(texturePath_));
+	//spriteBasic_->GetDX12Basic()->GetCommandList()->SetGraphicsRootDescriptorTable(2, TextureManager::GetInstance()->GetSRVGPUHandle(texturePath_));
+	SpriteBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootDescriptorTable(2, TextureManager::GetInstance()->GetSRVGPUHandle(texturePath_));
 
 	// 描画
-	spriteBasic_->GetDX12Basic()->GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0);
+	//spriteBasic_->GetDX12Basic()->GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0);
+	SpriteBasic::GetInstance()->GetDX12Basic()->GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0);
 }
 
 void Sprite::CreateVertexData()
 {
 	// 頂点リソースを生成
-	vertexResource_ = spriteBasic_->GetDX12Basic()->MakeBufferResource(sizeof(VertexData) * 4);
-	vertexResource_->SetName(L"VertexResource_");
+	//vertexResource_ = spriteBasic_->GetDX12Basic()->MakeBufferResource(sizeof(VertexData) * 4);
+	vertexResource_ = SpriteBasic::GetInstance()->GetDX12Basic()->MakeBufferResource(sizeof(VertexData) * 4);
 
 	// 頂点バッファビューを作成する
 	vertexBufferView_.BufferLocation = vertexResource_->GetGPUVirtualAddress();
@@ -134,8 +136,8 @@ void Sprite::CreateVertexData()
 	vertexResource_->Map(0, nullptr, reinterpret_cast<void**>(&vertexData_));
 
 	// インデックスリソースを生成
-	indexResource_ = spriteBasic_->GetDX12Basic()->MakeBufferResource(sizeof(uint32_t) * 6);
-	indexResource_->SetName(L"IndexBuffer");
+	//indexResource_ = spriteBasic_->GetDX12Basic()->MakeBufferResource(sizeof(uint32_t) * 6);
+	indexResource_ = SpriteBasic::GetInstance()->GetDX12Basic()->MakeBufferResource(sizeof(uint32_t) * 6);
 
 	// インデックスバッファビューを作成する
 	indexBufferView_.BufferLocation = indexResource_->GetGPUVirtualAddress();
@@ -149,8 +151,8 @@ void Sprite::CreateVertexData()
 void Sprite::CreateMaterialData()
 {
 	// マテリアルリソースを生成
-	materialResource_ = spriteBasic_->GetDX12Basic()->MakeBufferResource(sizeof(Material));
-	materialResource_->SetName(L"MaterialBuffer_");
+	//materialResource_ = spriteBasic_->GetDX12Basic()->MakeBufferResource(sizeof(Material));
+	materialResource_ = SpriteBasic::GetInstance()->GetDX12Basic()->MakeBufferResource(sizeof(Material));
 
 	// マテリアルリソースをマップ
 	materialResource_->Map(0, nullptr, reinterpret_cast<void**>(&materialData_));
@@ -164,8 +166,8 @@ void Sprite::CreateMaterialData()
 void Sprite::CreateTransformationMatrixData()
 {
 	// 座標変換行列リソースを生成
-	transformationMatrixResource_ = spriteBasic_->GetDX12Basic()->MakeBufferResource(sizeof(TransformationMatrix));
-	transformationMatrixResource_->SetName(L"TransformationMatrixBuffer_");
+	//transformationMatrixResource_ = spriteBasic_->GetDX12Basic()->MakeBufferResource(sizeof(TransformationMatrix));
+	transformationMatrixResource_ = SpriteBasic::GetInstance()->GetDX12Basic()->MakeBufferResource(sizeof(TransformationMatrix));
 
 	// 座標変換行列リソースをマップ
 	transformationMatrixResource_->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixData_));

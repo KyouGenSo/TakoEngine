@@ -8,8 +8,6 @@
 #include "vector4.h"
 #include "Mat4x4Func.h"
 
-class Object3dBasic;
-
 class Model;
 
 class Camera;
@@ -38,7 +36,7 @@ public: // メンバー関数
 	///<summary>
 	///初期化
 	/// </summary>
-	void Initialize(Object3dBasic* object3dBasic);
+	void Initialize();
 
 	///<summary>
 	///更新
@@ -75,9 +73,6 @@ private: // プライベートメンバー関数
 	void CreateDirectionalLightData();
 
 private: // メンバー変数
-
-	// 3dオブジェクトの基本クラスポインター
-	Object3dBasic* m_obj3dBasic_ = nullptr;
 
 	// カメラのクラスポインター
 	Camera* m_camera_ = nullptr;

@@ -5,6 +5,15 @@
 #include "DX12Basic.h"
 
 class SpriteBasic {
+private: // シングルトン設定
+
+	// インスタンス
+	static SpriteBasic* instance_;
+
+	SpriteBasic() = default;
+	~SpriteBasic() = default;
+	SpriteBasic(SpriteBasic&) = delete;
+	SpriteBasic& operator=(SpriteBasic&) = delete;
 
 public: // メンバー関数
 
@@ -12,9 +21,19 @@ public: // メンバー関数
 	template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
 
 	/// <summary>
+	/// インスタンスの取得
+	/// </summary>
+	static SpriteBasic* GetInstance();
+
+	/// <summary>
 	/// 初期化
 	/// </summary>
 	void Initialize(DX12Basic* dx12);
+
+	/// <summary>
+	/// 終了処理
+	/// </summary>
+	void Finalize();
 
 	/// <summary>
 	/// 共通描画設定

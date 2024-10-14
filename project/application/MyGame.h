@@ -1,9 +1,7 @@
 #pragma once
 #include"TakoFramework.h"
 #include"Input.h"
-#include"Audio.h"
-#include"Sprite.h"
-#include"Object3d.h"
+#include"GameScene.h"
 
 class MyGame : public TakoFramework
 {
@@ -34,24 +32,7 @@ private: // メンバ変数
 	// 入力クラス
 	Input* input_ = nullptr;
 
-	// オーディオクラス
-	Audio* audio_ = nullptr;
+	// ゲームシーン
+	GameScene* gameScene_ = nullptr;
 
-	float volume = 1.0f;
-	bool loopFlag = false;
-
-	// スプライトの数
-	uint32_t spriteNum_ = 2;
-
-	// スプライト
-	std::vector<Sprite*> sprites_;
-
-	Object3d* object3d_;
-	Object3d* object3d2_;
-
-	uint32_t soundDataHandle;
-	uint32_t voiceHandle;
-
-	uint32_t bgmSH;
-	uint32_t bgmVH;
 };

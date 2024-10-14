@@ -8,8 +8,6 @@
 #include <d3d12.h>
 #include<wrl.h>
 
-class SpriteBasic;
-
 class Sprite {
 private: // 構造体
 	// 頂点データ
@@ -44,7 +42,7 @@ public: // メンバー関数
 	///<summary>
 	///初期化
 	/// </summary>
-	void Initialize(SpriteBasic* spriteBasic, std::string texturePath);
+	void Initialize(std::string texturePath);
 
 	///<summary>
 	///更新
@@ -125,9 +123,6 @@ private: // プライベートメンバー関数
 	void FitTexCutSize();
 
 private:// メンバー変数
-
-	// SpriteBasicクラスのインスタンス
-	SpriteBasic* spriteBasic_;
 
 	// Transform
 	Transform transform_;

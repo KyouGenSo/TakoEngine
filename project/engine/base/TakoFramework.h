@@ -1,12 +1,7 @@
 #pragma once
 #include"WinApp.h"
 #include"DX12Basic.h"
-#include"SpriteBasic.h"
 #include"D3DResourceLeakCheker.h"
-#include"TextureManager.h"
-#include"Object3dBasic.h"
-#include"Model.h"
-#include"ModelManager.h"
 #include"Camera.h"
 #include"SrvManager.h"
 
@@ -55,12 +50,6 @@ protected: // メンバ変数
 
 	// SRVマネージャー
 	SrvManager* srvManager_ = nullptr;
-
-	// オブジェクト3D基本クラス
-	Object3dBasic* object3dBasic_ = nullptr;
-
-	// スプライト共通クラス
-	SpriteBasic* spriteBasic_ = nullptr;
 
 	// カメラ
 	Camera* defaultCamera_ = nullptr;

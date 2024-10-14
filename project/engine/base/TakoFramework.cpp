@@ -1,4 +1,9 @@
 #include "TakoFramework.h"
+#include"TextureManager.h"
+#include"Object3dBasic.h"
+#include"SpriteBasic.h"
+#include"Model.h"
+#include"ModelManager.h"
 
 void TakoFramework::Initialize()
 {
@@ -24,17 +29,16 @@ void TakoFramework::Initialize()
 
 	ModelManager::GetInstance()->Initialize(dx12_);
 
-	object3dBasic_ = new Object3dBasic();
-	object3dBasic_->Initialize(dx12_);
+	Object3dBasic::GetInstance()->Initialize(dx12_);
 
-	spriteBasic_ = new SpriteBasic();
-	spriteBasic_->Initialize(dx12_);
+	SpriteBasic::GetInstance()->Initialize(dx12_);
 
 	defaultCamera_ = new Camera();
 	defaultCamera_->SetRotate(Vector3(0.3f, 0.0f, 0.0f));
 	defaultCamera_->SetTranslate(Vector3(0.0f, 4.0f, -10.0f));
+
 	// デフォルトカメラを設定
-	object3dBasic_->SetDefaultCamera(defaultCamera_);
+	Object3dBasic::GetInstance()->SetDefaultCamera(defaultCamera_);
 #pragma endregion
 
 }
@@ -47,6 +51,12 @@ void TakoFramework::Finalize()
 	// TextureManagerの終了処理
 	TextureManager::GetInstance()->Finalize();
 
+	// SpriteBasicの終了処理
+	SpriteBasic::GetInstance()->Finalize();
+
+	// Object3dBasicの終了処理
+	Object3dBasic::GetInstance()->Finalize();
+
 #ifdef _DEBUG
 	// ImGuiManagerの終了処理
 	imguiManager_->Shutdown();
@@ -58,9 +68,7 @@ void TakoFramework::Finalize()
 
 	// pointerの解放
 	delete dx12_;
-	delete spriteBasic_;
 	delete defaultCamera_;
-	delete object3dBasic_;
 	delete srvManager_;
 
 	winApp_->Finalize();

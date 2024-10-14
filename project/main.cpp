@@ -1,7 +1,6 @@
 #include"TakoFramework.h"
 #include"MyGame.h"
 
-
 //Windowsプログラムのエントリーポイント
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
