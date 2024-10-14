@@ -9,6 +9,7 @@
 #include <cassert>
 #include <vector>
 
+// Engineのヘッダーファイル
 #include"WinApp.h"
 #include"DX12Basic.h"
 #include"Input.h"
@@ -28,57 +29,9 @@
 #include"ImGuiManager.h"
 #endif
 
-#include "xaudio2.h"
-#pragma comment(lib, "xaudio2.lib")
-
-#include "Logger.h"
-#include "StringUtility.h"
-
-// Function includes
-#include"Vector4.h"
-#include"Vector2.h"
-#include"Mat4x4Func.h"
-#include"Vec3Func.h"
-
 // ComPtrのエイリアス
 template<class T>
 using ComPtr = Microsoft::WRL::ComPtr<T>;
-
-
-struct ChunkHeader {
-	char id[4]; // チャンクのID
-	uint32_t size; // チャンクのサイズ
-};
-
-struct RiffHeader {
-	ChunkHeader chunk; // "RIFF"
-	char type[4]; // "WAVE"
-};
-
-struct FormatChunk {
-	ChunkHeader chunk; // "fmt "
-	WAVEFORMATEX fmt; // 波形フォーマット
-};
-
-struct SoundData {
-	// 波形フォーマット
-	WAVEFORMATEX wfex;
-	// バッファの先頭アドレス
-	BYTE* pBuffer;
-	// バッファのサイズ
-	unsigned int bufferSize;
-};
-
-//-----------------------------------------FUNCTION-----------------------------------------//
-
-SoundData LoadWaveFile(const char* filename);
-
-void SoundUnload(SoundData* soundData);
-
-void SoundPlay(IXAudio2* xAudio2, const SoundData& soundData);
-
-//-----------------------------------------FUNCTION-----------------------------------------//
-
 
 //Windowsプログラムのエントリーポイント
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
@@ -350,6 +303,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	delete defaultCamera;
 	delete object3dBasic;
 	delete srvManager;
+	delete audio;
 
 	for (uint32_t i = 0; i < spriteNum; i++)
 	{
@@ -364,88 +318,4 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	delete winApp;
 
 	return 0;
-}
-
-
-// 関数の定義-------------------------------------------------------------------------------------------------------------------
-
-SoundData LoadWaveFile(const char* filename)
-{
-	//HRESULT result;
-
-	std::ifstream file;
-	// バイナリモードで開く
-	file.open(filename, std::ios::binary);
-	assert(file.is_open());
-
-	// wavファイルのヘッダーを読み込む
-	RiffHeader riff;
-	file.read(reinterpret_cast<char*>(&riff), sizeof(riff));
-
-	if (strncmp(riff.chunk.id, "RIFF", 4) != 0 || strncmp(riff.type, "WAVE", 4) != 0)
-	{
-		assert(false);
-	}
-
-
-	FormatChunk format = {};
-	file.read(reinterpret_cast<char*>(&format), sizeof(ChunkHeader));
-
-	if (strncmp(format.chunk.id, "fmt ", 4) != 0)
-	{
-		assert(false);
-	}
-	assert(format.chunk.size <= sizeof(format.fmt));
-	file.read(reinterpret_cast<char*>(&format.fmt), format.chunk.size);
-
-
-	ChunkHeader data;
-	file.read(reinterpret_cast<char*>(&data), sizeof(data));
-
-	if (strncmp(data.id, "JUNK ", 4) == 0)
-	{
-		file.seekg(data.size, std::ios::cur);
-		file.read(reinterpret_cast<char*>(&data), sizeof(data));
-	}
-
-	if (strncmp(data.id, "data ", 4) != 0)
-	{
-		assert(false);
-	}
-
-	char* pBuffer = new char[data.size];
-	file.read(pBuffer, data.size);
-
-	file.close();
-
-	SoundData soundData = {};
-
-	soundData.wfex = format.fmt;
-	soundData.pBuffer = reinterpret_cast<BYTE*>(pBuffer);
-	soundData.bufferSize = data.size;
-
-	return soundData;
-}
-
-void SoundUnload(SoundData* soundData) {
-	delete[] soundData->pBuffer;
-	soundData->pBuffer = 0;
-	soundData->bufferSize = 0;
-	soundData->wfex = {};
-}
-
-void SoundPlay(IXAudio2* xAudio2, const SoundData& soundData) {
-	HRESULT result;
-
-	IXAudio2SourceVoice* pSourceVoice = nullptr;
-	result = xAudio2->CreateSourceVoice(&pSourceVoice, &soundData.wfex);
-	assert(SUCCEEDED(result));
-
-	XAUDIO2_BUFFER buffer = {};
-	buffer.pAudioData = soundData.pBuffer;
-	buffer.AudioBytes = soundData.bufferSize;
-	buffer.Flags = XAUDIO2_END_OF_STREAM;
-
-	result = pSourceVoice->SubmitSourceBuffer(&buffer);
-	result = pSourceVoice->Start();
 }
