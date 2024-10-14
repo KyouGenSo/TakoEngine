@@ -4,7 +4,7 @@
 #include"D3DResourceLeakCheker.h"
 #include"Camera.h"
 #include"SrvManager.h"
-#include "BaseScene.h"
+#include "SceneManager.h"
 
 #ifdef _DEBUG
 #include"ImGuiManager.h"

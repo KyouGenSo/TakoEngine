@@ -1,6 +1,5 @@
 #pragma once
 #include"TakoFramework.h"
-#include"Input.h"
 #include"GameScene.h"
 #include"TitleScene.h"
 
@@ -30,13 +29,6 @@ public: // メンバ関数
 
 private: // メンバ変数
 
-	// 入力クラス
-	Input* input_ = nullptr;
 
-	// ゲームシーン
-	//GameScene* gameScene_ = nullptr;
-
-	// タイトルシーン
-	TitleScene* titleScene_ = nullptr;
 
 };

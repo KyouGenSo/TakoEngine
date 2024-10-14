@@ -66,6 +66,9 @@ void TakoFramework::Finalize()
 	// DX12の終了処理
 	dx12_->Finalize();
 
+	// シーンマネージャーの終了処理
+	SceneManager::GetInstance()->Finalize();
+
 	// pointerの解放
 	delete dx12_;
 	delete defaultCamera_;
@@ -84,6 +87,9 @@ void TakoFramework::Update()
 		endFlag_ = true;
 		return;
 	}
+
+	// シーンマネージャーの更新
+	SceneManager::GetInstance()->Update();
 }
 
 void TakoFramework::Run()

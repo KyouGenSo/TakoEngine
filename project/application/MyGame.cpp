@@ -1,5 +1,6 @@
 #include "MyGame.h"
 #include"Audio.h"
+#include"Input.h"
 
 void MyGame::Initialize()
 {
@@ -7,10 +8,10 @@ void MyGame::Initialize()
 	TakoFramework::Initialize();
 
 #pragma region 汎用機能初期化-------------------------------------------------------------------------------------------------------------------
-	// 入力クラス
-	input_ = new Input();
-	input_->Initialize(winApp_);
+	// 入力クラスの初期化
+	Input::GetInstance()->Initialize(winApp_);
 
+	// オーディオの初期化
 	Audio::GetInstance()->Initialize("resources/Sound/");
 
 #pragma endregion
@@ -19,9 +20,9 @@ void MyGame::Initialize()
 	//gameScene_ = new GameScene();
 	//gameScene_->Initialize();
 
-	// タイトルシーンの初期化
-	titleScene_ = new TitleScene();
-	titleScene_->Initialize();
+	// シーンの初期化
+	BaseScene* titleScene = new TitleScene();
+	SceneManager::GetInstance()->SetNextScene(titleScene);
 
 }
 
@@ -30,12 +31,8 @@ void MyGame::Finalize()
 	// Audioの解放
 	Audio::GetInstance()->Finalize();
 
-	delete input_;
-
-	// ゲームシーンの終了処理
-	titleScene_->Finalize();
-	//delete gameScene_;
-	delete titleScene_;
+	// 入力クラスの解放
+	Input::GetInstance()->Finalize();
 
 	TakoFramework::Finalize();
 }
@@ -46,14 +43,11 @@ void MyGame::Update()
 	TakoFramework::Update();
 
 	// 入力情報の更新
-	input_->Update();
+	Input::GetInstance()->Update();
 
 	// カメラの更新
 	defaultCamera_->Update();
-
-	// ゲームシーンの更新
-	titleScene_->Update();
-
+	
 }
 
 void MyGame::Draw()
@@ -66,15 +60,15 @@ void MyGame::Draw()
 #ifdef _DEBUG
 	imguiManager_->Begin();
 
-	titleScene_->DrawImGui();
+	SceneManager::GetInstance()->DrawImGui();
 
 	imguiManager_->End();
 #endif
 	//-------------------ImGui-------------------//
 
 
-	// ゲームシーンの描画
-	titleScene_->Draw();
+	// シーンの描画
+	SceneManager::GetInstance()->Draw();
 
 
 #ifdef _DEBUG

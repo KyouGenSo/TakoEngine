@@ -170,7 +170,7 @@
     <ClCompile Include="application\TitleScene.cpp">
       <Filter>ソース ファイル\application\scene</Filter>
     </ClCompile>
-    <ClCompile Include="engine\base\BaseScene.cpp">
+    <ClCompile Include="engine\base\SceneManager.cpp">
       <Filter>ソース ファイル\engine\base</Filter>
     </ClCompile>
   </ItemGroup>
@@ -260,6 +260,9 @@
       <Filter>ヘッダー ファイル\application\scene</Filter>
     </ClInclude>
     <ClInclude Include="engine\base\BaseScene.h">
+      <Filter>ヘッダー ファイル\engine\base</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\base\SceneManager.h">
       <Filter>ヘッダー ファイル\engine\base</Filter>
     </ClInclude>
   </ItemGroup>

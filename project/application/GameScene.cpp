@@ -1,9 +1,12 @@
+#include "TitleScene.h"
 #include "GameScene.h"
+#include "SceneManager.h"
 #include"Audio.h"
 #include"ModelManager.h"
 #include"Object3dBasic.h"
 #include"TextureManager.h"
 #include"SpriteBasic.h"
+#include"Input.h"
 
 #ifdef _DEBUG
 #include"ImGui.h"
@@ -74,6 +77,13 @@ void GameScene::Update()
 	// Object3dの更新
 	object3d_->Update();
 	object3d2_->Update();
+
+	// シーン遷移
+	if (Input::GetInstance()->TriggerKey(DIK_SPACE))
+	{
+		BaseScene* titleScene = new TitleScene();
+		SceneManager::GetInstance()->SetNextScene(titleScene);
+	}
 }
 
 void GameScene::Draw()

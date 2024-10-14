@@ -1,6 +1,16 @@
 #include "Input.h"
 #include <cassert>
 
+Input* Input::instance_ = nullptr;
+
+Input* Input::GetInstance()
+{
+	if (instance_ == nullptr)
+	{
+		instance_ = new Input();
+	}
+	return instance_;
+}
 
 void Input::Initialize(WinApp* winApp) {
 	// WinAppクラスのインスタンスを取得
@@ -24,6 +34,15 @@ void Input::Initialize(WinApp* winApp) {
 	// KeyboardDeviceの協調レベル設定
 	hr = keyboardDevice_->SetCooperativeLevel(winApp->GetHWnd(), DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
 	assert(SUCCEEDED(hr));
+}
+
+void Input::Finalize()
+{
+	if (instance_ != nullptr)
+	{
+		delete instance_;
+		instance_ = nullptr;
+	}
 }
 
 void Input::Update() {

@@ -8,15 +8,33 @@
 #pragma comment(lib, "dxguid.lib")
 
 class Input {
+private: 	// シングルトン
+	// インスタンス
+	static Input* instance_;
+
+	Input() = default;
+	Input(const Input&) = delete;
+	Input& operator=(const Input&) = delete;
+	~Input() = default;
 public:
 	// ComPtrのエイリアス
 	template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
 
 public:
+	///<summary>
+	///インスタンスの取得
+	///	</summary>
+	static Input* GetInstance();
+
 	/// <summary>
 	/// 初期化
 	/// </summary>
 	void Initialize(WinApp* winApp);
+
+	/// <summary>
+	/// 終了処理
+	/// </summary>
+	void Finalize();
 
 	/// <summary>
 	/// 更新

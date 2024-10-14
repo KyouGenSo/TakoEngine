@@ -1,5 +1,6 @@
 #pragma once
 
+class SceneManager;
 
 class BaseScene
 {
@@ -31,4 +32,5 @@ public: // メンバ関数
 	/// ImGuiの描画
 	/// </summary>
 	virtual void DrawImGui() = 0;
+
 };

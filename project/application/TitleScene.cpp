@@ -1,6 +1,9 @@
 #include "TitleScene.h"
+#include "GameScene.h"
+#include "SceneManager.h"
 #include"TextureManager.h"
 #include"SpriteBasic.h"
+#include"Input.h"
 
 void TitleScene::Initialize()
 {
@@ -20,6 +23,12 @@ void TitleScene::Finalize()
 void TitleScene::Update()
 {
 	sprite_->Update();
+
+	if (Input::GetInstance()->TriggerKey(DIK_SPACE))
+	{
+		BaseScene* gameScene = new GameScene();
+		SceneManager::GetInstance()->SetNextScene(gameScene);
+	}
 }
 
 void TitleScene::Draw()
