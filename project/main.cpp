@@ -1,13 +1,3 @@
-#include<Windows.h>
-#include<wrl.h>
-#include<cstdint>
-#include<string>
-#include<fstream>
-#include<sstream>
-#include<format>
-#include <unordered_map>
-#include <cassert>
-#include <vector>
 
 // Engineのヘッダーファイル
 #include"WinApp.h"
@@ -37,118 +27,118 @@ using ComPtr = Microsoft::WRL::ComPtr<T>;
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
 	// リソースリークチェッカー
-	D3DResourceLeakCheker d3dResourceLeakCheker;
+	//D3DResourceLeakCheker d3dResourceLeakCheker;
 
 #pragma region ウィンドウの初期化-------------------------------------------------------------------------------------------------------------------
 	//ウィンドウクラスの初期化
-	WinApp * winApp = new WinApp();
-	winApp->Initialize();
+	//WinApp * winApp = new WinApp();
+	//winApp->Initialize();
 #pragma endregion
 
 
 #pragma region 基盤システムの初期化-------------------------------------------------------------------------------------------------------------------
 	// DX12の初期化
-	DX12Basic * dx12 = new DX12Basic();
-	dx12->Initialize(winApp);
+	//DX12Basic * dx12 = new DX12Basic();
+	//dx12->Initialize(winApp);
 
 	// ImGuiManagerの初期化
 #ifdef _DEBUG
-	ImGuiManager* imguiManager = new ImGuiManager();
-	imguiManager->Initialize(winApp, dx12);
+	//ImGuiManager* imguiManager = new ImGuiManager();
+	//imguiManager->Initialize(winApp, dx12);
 #endif
 
 	// SRVマネージャーの初期化
-	SrvManager* srvManager = new SrvManager();
-	srvManager->Initialize(dx12);
+	//SrvManager* srvManager = new SrvManager();
+	//srvManager->Initialize(dx12);
 
 	// TextureManagerの初期化
-	TextureManager::GetInstance()->Initialize(dx12, srvManager);
+	//TextureManager::GetInstance()->Initialize(dx12, srvManager);
 
 	// ModelManagerの初期化
-	ModelManager::GetInstance()->Initialize(dx12);
+	//ModelManager::GetInstance()->Initialize(dx12);
 
 	// Sprite共通クラスの初期化
-	SpriteBasic* spriteBasic = new SpriteBasic();
-	spriteBasic->Initialize(dx12);
+	//SpriteBasic* spriteBasic = new SpriteBasic();
+	//spriteBasic->Initialize(dx12);
 
 	// Object共通クラスの初期化
-	Object3dBasic* object3dBasic = new Object3dBasic();
-	object3dBasic->Initialize(dx12);
+	//Object3dBasic* object3dBasic = new Object3dBasic();
+	//object3dBasic->Initialize(dx12);
 
 	// デフォルトカメラの初期化
-	Camera* defaultCamera = new Camera();
-	defaultCamera->SetRotate(Vector3(0.3f, 0.0f, 0.0f));
-	defaultCamera->SetTranslate(Vector3(0.0f, 4.0f, -10.0f));
+	//Camera* defaultCamera = new Camera();
+	//defaultCamera->SetRotate(Vector3(0.3f, 0.0f, 0.0f));
+	//defaultCamera->SetTranslate(Vector3(0.0f, 4.0f, -10.0f));
 	// デフォルトカメラを設定
-	object3dBasic->SetDefaultCamera(defaultCamera);
+	//object3dBasic->SetDefaultCamera(defaultCamera);
 #pragma endregion
 
 
 #pragma region 汎用機能初期化-------------------------------------------------------------------------------------------------------------------
-	Input* input = new Input();
-	input->Initialize(winApp);
+	//Input* input = new Input();
+	//input->Initialize(winApp);
 
 	//Audioの初期化
-	Audio* audio = new Audio();
-	audio->Initialize("resources/Sound/");
+	//Audio* audio = new Audio();
+	//audio->Initialize("resources/Sound/");
 
-	// サウンドデータの読み込み
-	uint32_t soundDataHandle = audio->LoadWaveFile("fanfare.wav");
-	uint32_t voiceHandle = 0;
+	//// サウンドデータの読み込み
+	//uint32_t soundDataHandle = audio->LoadWaveFile("fanfare.wav");
+	//uint32_t voiceHandle = 0;
 
-	uint32_t bgmSH = audio->LoadWaveFile("playerBulletHit.wav");
-	uint32_t bgmVH = 0;
+	//uint32_t bgmSH = audio->LoadWaveFile("playerBulletHit.wav");
+	//uint32_t bgmVH = 0;
 
 
-	float volume = 1.0f;
-	bool loopFlag = false;
+	//float volume = 1.0f;
+	//bool loopFlag = false;
 #pragma endregion
 
 
 #pragma region Sprite初期化-------------------------------------------------------------------------------------------------------------------
 
-	// textureの読み込み
-	TextureManager::GetInstance()->LoadTexture("resources/uvChecker.png");
-	TextureManager::GetInstance()->LoadTexture("resources/checkerBoard.png");
+	//// textureの読み込み
+	//TextureManager::GetInstance()->LoadTexture("resources/uvChecker.png");
+	//TextureManager::GetInstance()->LoadTexture("resources/checkerBoard.png");
 
-	// スプライトの数
-	uint32_t spriteNum = 2;
+	//// スプライトの数
+	//uint32_t spriteNum = 2;
 
-	std::vector<Sprite*> sprites;
+	//std::vector<Sprite*> sprites;
 
-	for (uint32_t i = 0; i < spriteNum; i++) {
-		Sprite* sprite = new Sprite();
-		if (i % 2 == 0)
-			sprite->Initialize(spriteBasic, "resources/uvChecker.png");
-		else
-			sprite->Initialize(spriteBasic, "resources/checkerBoard.png");
-		sprite->SetPos(Vector2(i * 500.0f, 0.0f));
-		sprites.push_back(sprite);
-	}
+	//for (uint32_t i = 0; i < spriteNum; i++) {
+	//	Sprite* sprite = new Sprite();
+	//	if (i % 2 == 0)
+	//		sprite->Initialize(spriteBasic, "resources/uvChecker.png");
+	//	else
+	//		sprite->Initialize(spriteBasic, "resources/checkerBoard.png");
+	//	sprite->SetPos(Vector2(i * 500.0f, 0.0f));
+	//	sprites.push_back(sprite);
+	//}
 
 #pragma endregion
 
 
 #pragma region Model読み込み-------------------------------------------------------------------------------------------------------------------
 
-	ModelManager::GetInstance()->LoadModel("teapot.obj");
+	//ModelManager::GetInstance()->LoadModel("teapot.obj");
 
-	ModelManager::GetInstance()->LoadModel("plane.obj");
+	//ModelManager::GetInstance()->LoadModel("plane.obj");
 
 #pragma endregion
 
 
 #pragma region OBject3d初期化-------------------------------------------------------------------------------------------------------------------
 
-	Object3d * object3d = new Object3d();
-	object3d->Initialize(object3dBasic);
-	object3d->SetModel("teapot.obj");
-	object3d->SetTranslate(Vector3(-2.0f, 0.0f, 0.0f));
+	//Object3d * object3d = new Object3d();
+	//object3d->Initialize(object3dBasic);
+	//object3d->SetModel("teapot.obj");
+	//object3d->SetTranslate(Vector3(-2.0f, 0.0f, 0.0f));
 
-	Object3d* object3d2 = new Object3d();
-	object3d2->Initialize(object3dBasic);
-	object3d2->SetModel("plane.obj");
-	object3d2->SetTranslate(Vector3(2.0f, 0.0f, 0.0f));
+	//Object3d* object3d2 = new Object3d();
+	//object3d2->Initialize(object3dBasic);
+	//object3d2->SetModel("plane.obj");
+	//object3d2->SetTranslate(Vector3(2.0f, 0.0f, 0.0f));
 
 #pragma endregion
 
