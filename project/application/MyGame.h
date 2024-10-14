@@ -2,6 +2,7 @@
 #include"TakoFramework.h"
 #include"Input.h"
 #include"GameScene.h"
+#include"TitleScene.h"
 
 class MyGame : public TakoFramework
 {
@@ -33,6 +34,9 @@ private: // メンバ変数
 	Input* input_ = nullptr;
 
 	// ゲームシーン
-	GameScene* gameScene_ = nullptr;
+	//GameScene* gameScene_ = nullptr;
+
+	// タイトルシーン
+	TitleScene* titleScene_ = nullptr;
 
 };

@@ -1,7 +1,8 @@
 #include "GameScene.h"
+#include"Audio.h"
 #include"ModelManager.h"
-#include"TextureManager.h"
 #include"Object3dBasic.h"
+#include"TextureManager.h"
 #include"SpriteBasic.h"
 
 #ifdef _DEBUG
@@ -103,7 +104,7 @@ void GameScene::Draw()
 
 void GameScene::DrawImGui()
 {
-#ifdef DEBUG
+#ifdef _DEBUG
 	ImGui::Begin("Audio");
 	if (ImGui::Button("Play Fanfare")) {
 		voiceHandle = Audio::GetInstance()->PlayWave(soundDataHandle, loopFlag, volume);

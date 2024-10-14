@@ -16,8 +16,12 @@ void MyGame::Initialize()
 #pragma endregion
 
 	// ゲームシーンの初期化
-	gameScene_ = new GameScene();
-	gameScene_->Initialize();
+	//gameScene_ = new GameScene();
+	//gameScene_->Initialize();
+
+	// タイトルシーンの初期化
+	titleScene_ = new TitleScene();
+	titleScene_->Initialize();
 
 }
 
@@ -29,8 +33,9 @@ void MyGame::Finalize()
 	delete input_;
 
 	// ゲームシーンの終了処理
-	gameScene_->Finalize();
-	delete gameScene_;
+	titleScene_->Finalize();
+	//delete gameScene_;
+	delete titleScene_;
 
 	TakoFramework::Finalize();
 }
@@ -47,7 +52,7 @@ void MyGame::Update()
 	defaultCamera_->Update();
 
 	// ゲームシーンの更新
-	gameScene_->Update();
+	titleScene_->Update();
 
 }
 
@@ -61,7 +66,7 @@ void MyGame::Draw()
 #ifdef _DEBUG
 	imguiManager_->Begin();
 
-	gameScene_->DrawImGui();
+	titleScene_->DrawImGui();
 
 	imguiManager_->End();
 #endif
@@ -69,11 +74,11 @@ void MyGame::Draw()
 
 
 	// ゲームシーンの描画
-	gameScene_->Draw();
+	titleScene_->Draw();
 
 
 #ifdef _DEBUG
-		//imguiの描画
+	//imguiの描画
 	imguiManager_->Draw();
 #endif
 

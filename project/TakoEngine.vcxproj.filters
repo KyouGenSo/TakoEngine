@@ -167,6 +167,12 @@
     <ClCompile Include="application\GameScene.cpp">
       <Filter>ソース ファイル\application\scene</Filter>
     </ClCompile>
+    <ClCompile Include="application\TitleScene.cpp">
+      <Filter>ソース ファイル\application\scene</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\base\BaseScene.cpp">
+      <Filter>ソース ファイル\engine\base</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\func\mathFunc\Mat4x4Func.h">
@@ -249,6 +255,12 @@
     </ClInclude>
     <ClInclude Include="application\GameScene.h">
       <Filter>ヘッダー ファイル\application\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="application\TitleScene.h">
+      <Filter>ヘッダー ファイル\application\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\base\BaseScene.h">
+      <Filter>ヘッダー ファイル\engine\base</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -104,6 +104,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="engine\base\BaseScene.cpp" />
     <ClCompile Include="engine\audio\Audio.cpp" />
     <ClCompile Include="engine\3d\Camera.cpp" />
     <ClCompile Include="engine\debug\ImGuiManager.cpp" />
@@ -128,8 +129,10 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\base\DX12\SrvManager.cpp" />
     <ClCompile Include="application\MyGame.cpp" />
     <ClCompile Include="engine\base\TakoFramework.cpp" />
+    <ClCompile Include="application\TitleScene.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\base\BaseScene.h" />
     <ClInclude Include="engine\audio\Audio.h" />
     <ClInclude Include="engine\3d\Camera.h" />
     <ClInclude Include="engine\debug\ImGuiManager.h" />
@@ -157,6 +160,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\MyGame.h" />
     <ClInclude Include="engine\base\TakoFramework.h" />
     <ClInclude Include="application\GameScene.h" />
+    <ClInclude Include="application\TitleScene.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\NoTex.hlsli">

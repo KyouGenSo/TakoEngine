@@ -1,9 +1,9 @@
 #pragma once
 #include "BaseScene.h"
 #include"Sprite.h"
-#include"Object3d.h"
+#include <vector>
 
-class GameScene : public BaseScene
+class TitleScene : public BaseScene
 {
 public: // メンバ関数
 
@@ -33,21 +33,8 @@ public: // メンバ関数
 	void DrawImGui() override;
 
 private: // メンバ変数
-	float volume = 1.0f;
-	bool loopFlag = false;
-
-	// スプライトの数
-	uint32_t spriteNum_ = 2;
 
 	// スプライト
-	std::vector<Sprite*> sprites_;
+	Sprite* sprite_;
 
-	Object3d* object3d_;
-	Object3d* object3d2_;
-
-	uint32_t soundDataHandle;
-	uint32_t voiceHandle;
-
-	uint32_t bgmSH;
-	uint32_t bgmVH;
 };
