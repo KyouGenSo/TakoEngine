@@ -152,8 +152,11 @@
     <ClCompile Include="Audio.cpp">
       <Filter>ソース ファイル\engine\audio</Filter>
     </ClCompile>
-    <ClCompile Include="MyGame.cpp">
+    <ClCompile Include="application\MyGame.cpp">
       <Filter>ソース ファイル\application</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\base\TakoFramework.cpp">
+      <Filter>ソース ファイル\engine\base</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -229,8 +232,11 @@
     <ClInclude Include="Audio.h">
       <Filter>ヘッダー ファイル\engine\audio</Filter>
     </ClInclude>
-    <ClInclude Include="MyGame.h">
+    <ClInclude Include="application\MyGame.h">
       <Filter>ヘッダー ファイル\application</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\base\TakoFramework.h">
+      <Filter>ヘッダー ファイル\engine\base</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

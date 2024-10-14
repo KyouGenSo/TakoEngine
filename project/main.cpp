@@ -1,35 +1,16 @@
+#include"TakoFramework.h"
 #include"MyGame.h"
+
 
 //Windowsプログラムのエントリーポイント
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
 
-	// MyGameのインスタンス
-	MyGame myGame;
+	TakoFramework* game = new MyGame();
 
-	// 初期化
-	myGame.Initialize();
+	game->Run();
 
-	//---------------------------------------------------GAMELOOP-----------------------------------------------------//
-
-	// ウィンドウが閉じられるまでループ
-	while (true)
-	{
-		myGame.Update();
-
-		if (myGame.GetEndFlag()) {
-			// ループを抜ける
-			break;
-		}
-
-		myGame.Draw();
-
-	}
-
-	//-------------------------------------------------GAMELOOP-----------------------------------------------------/
-
-	// 終了処理
-	myGame.Finalize();
+	delete game;
 
 	return 0;
 }

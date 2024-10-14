@@ -1,13 +1,9 @@
 #pragma once
 #include"WinApp.h"
 #include"DX12Basic.h"
-#include"Input.h"
-#include"Audio.h"
 #include"SpriteBasic.h"
-#include"Sprite.h"
 #include"D3DResourceLeakCheker.h"
 #include"TextureManager.h"
-#include"Object3d.h"
 #include"Object3dBasic.h"
 #include"Model.h"
 #include"ModelManager.h"
@@ -18,44 +14,36 @@
 #include"ImGuiManager.h"
 #endif
 
-class MyGame
-{
+class TakoFramework {
 public: // メンバ関数
 
-	/// <summary>
-	/// 初期化
-	/// </summary>
-	void Initialize();
+	// デストラクタ
+	virtual ~TakoFramework() = default;
 
-	/// <summary>
-	/// 終了処理
-	/// </summary>
-	void Finalize();
+	// 初期化
+	virtual void Initialize();
 
-	/// <summary>
-	/// 更新
-	/// </summary>
-	void Update();
+	// 終了処理
+	virtual void Finalize();
 
-	/// <summary>
-	/// 描画
-	/// </summary>
-	void Draw();
+	// 更新
+	virtual void Update();
 
+	// 描画
+	virtual void Draw() = 0;
 
-	//-----------------------------------------Getter-----------------------------------------//
+	// 実行
+	void Run();
+
 	// 終了フラグを取得
 	bool GetEndFlag() const { return endFlag_; }
 
-private: // メンバ変数
+protected: // メンバ変数
 	// リソースリークチェッカー
 	D3DResourceLeakCheker d3dResourceLeakCheker;
 
 	// ウィンドウクラス
 	WinApp* winApp_ = nullptr;
-
-	// 終了フラグ
-	bool endFlag_ = false;
 
 	// DX12
 	DX12Basic* dx12_ = nullptr;
@@ -77,29 +65,6 @@ private: // メンバ変数
 	// カメラ
 	Camera* defaultCamera_ = nullptr;
 
-	// 入力クラス
-	Input* input_ = nullptr;
-
-	// オーディオクラス
-	Audio* audio_ = nullptr;
-
-	float volume = 1.0f;
-	bool loopFlag = false;
-
-
-	// スプライトの数
-	uint32_t spriteNum_ = 2;
-
-	// スプライト
-	std::vector<Sprite*> sprites_;
-
-	Object3d* object3d_;
-	Object3d* object3d2_;
-
-
-	uint32_t soundDataHandle;
-	uint32_t voiceHandle;
-
-	uint32_t bgmSH;
-	uint32_t bgmVH;
+	// 終了フラグ
+	bool endFlag_ = false;
 };
