@@ -81,6 +81,12 @@
     <Filter Include="ソース ファイル\engine\base\DX12">
       <UniqueIdentifier>{490ed4b9-7dfe-4558-9e4b-941c092d8a86}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\engine\audio">
+      <UniqueIdentifier>{e1c36650-29eb-4114-ab62-f4535a3c1ff5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\engine\audio">
+      <UniqueIdentifier>{76c1143d-30ac-4010-bae9-17667ebcb8c5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -142,6 +148,9 @@
     </ClCompile>
     <ClCompile Include="engine\debug\ImGuiManager.cpp">
       <Filter>ソース ファイル\engine\debug</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio.cpp">
+      <Filter>ソース ファイル\engine\audio</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -213,6 +222,9 @@
     </ClInclude>
     <ClInclude Include="engine\debug\ImGuiManager.h">
       <Filter>ヘッダー ファイル\engine\debug</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio.h">
+      <Filter>ヘッダー ファイル\engine\audio</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

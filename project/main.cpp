@@ -12,6 +12,7 @@
 #include"WinApp.h"
 #include"DX12Basic.h"
 #include"Input.h"
+#include"Audio.h"
 #include"SpriteBasic.h"
 #include"Sprite.h"
 #include"D3DResourceLeakCheker.h"
@@ -131,21 +132,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 
 #pragma region 汎用機能初期化-------------------------------------------------------------------------------------------------------------------
-	HRESULT hr;
-
 	Input* input = new Input();
 	input->Initialize(winApp);
 
-	//XAudio2
-	ComPtr<IXAudio2> xAudio2;
-	IXAudio2MasteringVoice* masterVoice;
-
-	// XAudio2の初期化
-	hr = XAudio2Create(&xAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR);
-	hr = xAudio2->CreateMasteringVoice(&masterVoice);
-
-	// サウンドの読み込み
-	SoundData soundData = LoadWaveFile("resources/fanfare.wav");
+	//Audioの初期化
+	Audio* audio = new Audio();
+	audio->Initialize("resources/");
+	uint32_t soundDataHandle = audio->LoadWaveFile("fanfare.wav");
+	uint32_t voiceHandle = 0;
+	float volume = 1.0f;
+	bool loopFlag = false;
 #pragma endregion
 
 
@@ -248,7 +244,22 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 #ifdef _DEBUG
 		imguiManager->Begin();
 
-		ImGui::ShowDemoWindow();
+		ImGui::Begin("Audio");
+		if (ImGui::Button("Play")) {
+			voiceHandle = audio->PlayWave(soundDataHandle, loopFlag, volume);
+		}
+
+		if (ImGui::Button("Stop")) {
+			audio->StopWave(voiceHandle);
+		}
+
+		// set loop
+		ImGui::Checkbox("Loop", &loopFlag);
+
+		// set volume
+		ImGui::SliderFloat("Volume", &volume, 0.0f, 1.0f);
+
+		ImGui::End();
 
 		imguiManager->End();
 #endif
@@ -312,9 +323,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	// DX12の終了処理
 	dx12->Finalize();
 
-	// XAudio2の解放
-	xAudio2.Reset();
-	SoundUnload(&soundData);
+	// Audioの解放
+	audio->Finalize();
 
 	// pointerの解放
 	delete input;
