@@ -1,8 +1,9 @@
 #include "TitleScene.h"
 #include "SceneManager.h"
-#include"TextureManager.h"
-#include"SpriteBasic.h"
-#include"Input.h"
+#include "TextureManager.h"
+#include "SpriteBasic.h"
+#include "Input.h"
+#include "Draw2D.h"
 
 void TitleScene::Initialize()
 {
@@ -32,7 +33,11 @@ void TitleScene::Update()
 void TitleScene::Draw()
 {
 	SpriteBasic::GetInstance()->SetCommonRenderSetting();
-	sprite_->Draw();
+	//sprite_->Draw();
+
+	Draw2D::GetInstance()->DrawTriangle(Vector2(0.0f, 0.0f), Vector2(0.3f, 0.3f), Vector2(0.0f, 0.4f), Vector4(1.0f, 0.0f, 0.0f, 1.0f));
+
+	Draw2D::GetInstance()->DrawTriangle(Vector2(0.0f, 0.0f), Vector2(-0.3f, -0.3f), Vector2(0.3f, 0.0f), Vector4(0.0f, 0.0f, 0.0f, 1.0f));
 }
 
 void TitleScene::DrawImGui()

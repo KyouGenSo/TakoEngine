@@ -182,6 +182,9 @@
     <ClCompile Include="application\SceneFactory.cpp">
       <Filter>ソース ファイル\application\scene</Filter>
     </ClCompile>
+    <ClCompile Include="Draw2D.cpp">
+      <Filter>ソース ファイル\engine\2d</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\func\mathFunc\Mat4x4Func.h">
@@ -280,6 +283,12 @@
     <ClInclude Include="application\SceneFactory.h">
       <Filter>ヘッダー ファイル\application\scene</Filter>
     </ClInclude>
+    <ClInclude Include="Draw2D.h">
+      <Filter>ヘッダー ファイル\engine\2d</Filter>
+    </ClInclude>
+    <ClInclude Include="Matrix3x3.h">
+      <Filter>ヘッダー ファイル\engine\math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\NoTex.hlsli">
@@ -300,6 +309,12 @@
       <Filter>Shader</Filter>
     </FxCompile>
     <FxCompile Include="resources\shaders\Object3D.VS.hlsl">
+      <Filter>Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="2D.VS.hlsl">
+      <Filter>Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="2D.PS.hlsl">
       <Filter>Shader</Filter>
     </FxCompile>
   </ItemGroup>

@@ -5,6 +5,7 @@
 #include "SpriteBasic.h"
 #include "Model.h"
 #include "ModelManager.h"
+#include "Draw2D.h"
 
 void TakoFramework::Initialize()
 {
@@ -34,6 +35,8 @@ void TakoFramework::Initialize()
 
 	SpriteBasic::GetInstance()->Initialize(dx12_);
 
+	Draw2D::GetInstance()->Initialize(dx12_);
+
 	defaultCamera_ = new Camera();
 	defaultCamera_->SetRotate(Vector3(0.3f, 0.0f, 0.0f));
 	defaultCamera_->SetTranslate(Vector3(0.0f, 4.0f, -10.0f));
@@ -60,6 +63,9 @@ void TakoFramework::Finalize()
 
 	// シーンマネージャーの終了処理
 	SceneManager::GetInstance()->Finalize();
+
+	// Draw2Dの終了処理
+	Draw2D::GetInstance()->Finalize();
 
 #ifdef _DEBUG
 	// ImGuiManagerの終了処理
