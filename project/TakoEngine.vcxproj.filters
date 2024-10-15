@@ -93,6 +93,12 @@
     <Filter Include="ヘッダー ファイル\application\scene">
       <UniqueIdentifier>{0f60ad74-3b4f-42b9-9eeb-44cb95263882}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ヘッダー ファイル\engine\scene">
+      <UniqueIdentifier>{385d1560-036a-41be-bad6-70e79ad8f1a2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\engine\scene">
+      <UniqueIdentifier>{8ac9a00b-0187-4fcf-87ab-9caa7503f86f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -170,8 +176,11 @@
     <ClCompile Include="application\TitleScene.cpp">
       <Filter>ソース ファイル\application\scene</Filter>
     </ClCompile>
-    <ClCompile Include="engine\base\SceneManager.cpp">
-      <Filter>ソース ファイル\engine\base</Filter>
+    <ClCompile Include="engine\scene\SceneManager.cpp">
+      <Filter>ソース ファイル\engine\scene</Filter>
+    </ClCompile>
+    <ClCompile Include="application\SceneFactory.cpp">
+      <Filter>ソース ファイル\application\scene</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -259,11 +268,17 @@
     <ClInclude Include="application\TitleScene.h">
       <Filter>ヘッダー ファイル\application\scene</Filter>
     </ClInclude>
-    <ClInclude Include="engine\base\BaseScene.h">
-      <Filter>ヘッダー ファイル\engine\base</Filter>
+    <ClInclude Include="engine\scene\SceneManager.h">
+      <Filter>ヘッダー ファイル\engine\scene</Filter>
     </ClInclude>
-    <ClInclude Include="engine\base\SceneManager.h">
-      <Filter>ヘッダー ファイル\engine\base</Filter>
+    <ClInclude Include="engine\scene\BaseScene.h">
+      <Filter>ヘッダー ファイル\engine\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\scene\AbstractSceneFactory.h">
+      <Filter>ヘッダー ファイル\engine\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="application\SceneFactory.h">
+      <Filter>ヘッダー ファイル\application\scene</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

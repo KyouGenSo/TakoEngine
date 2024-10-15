@@ -1,9 +1,10 @@
 #include "TakoFramework.h"
-#include"TextureManager.h"
-#include"Object3dBasic.h"
-#include"SpriteBasic.h"
-#include"Model.h"
-#include"ModelManager.h"
+#include "TextureManager.h"
+#include "SceneManager.h"
+#include "Object3dBasic.h"
+#include "SpriteBasic.h"
+#include "Model.h"
+#include "ModelManager.h"
 
 void TakoFramework::Initialize()
 {
@@ -57,6 +58,9 @@ void TakoFramework::Finalize()
 	// Object3dBasicの終了処理
 	Object3dBasic::GetInstance()->Finalize();
 
+	// シーンマネージャーの終了処理
+	SceneManager::GetInstance()->Finalize();
+
 #ifdef _DEBUG
 	// ImGuiManagerの終了処理
 	imguiManager_->Shutdown();
@@ -66,13 +70,11 @@ void TakoFramework::Finalize()
 	// DX12の終了処理
 	dx12_->Finalize();
 
-	// シーンマネージャーの終了処理
-	SceneManager::GetInstance()->Finalize();
-
 	// pointerの解放
 	delete dx12_;
 	delete defaultCamera_;
 	delete srvManager_;
+	delete sceneFactory_;
 
 	winApp_->Finalize();
 

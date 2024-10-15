@@ -1,4 +1,3 @@
-#include "TitleScene.h"
 #include "GameScene.h"
 #include "SceneManager.h"
 #include"Audio.h"
@@ -81,8 +80,7 @@ void GameScene::Update()
 	// シーン遷移
 	if (Input::GetInstance()->TriggerKey(DIK_SPACE))
 	{
-		BaseScene* titleScene = new TitleScene();
-		SceneManager::GetInstance()->SetNextScene(titleScene);
+		SceneManager::GetInstance()->ChangeScene("title");
 	}
 }
 

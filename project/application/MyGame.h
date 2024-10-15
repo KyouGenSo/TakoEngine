@@ -1,7 +1,5 @@
 #pragma once
 #include"TakoFramework.h"
-#include"GameScene.h"
-#include"TitleScene.h"
 
 class MyGame : public TakoFramework
 {

@@ -1,5 +1,5 @@
 #pragma once
-#include "BaseScene.h"
+#include "AbstractSceneFactory.h"
 
 class SceneManager
 {
@@ -44,7 +44,12 @@ public: // メンバ関数
 	/// 次のシーン予約
 	/// </summary>
 	/// <param name="scene">　次のシーン </param>
-	void SetNextScene(BaseScene* nextScene) { nextScene_ = nextScene; }
+	void ChangeScene(const std::string& sceneName);
+
+	/// <summary>
+	/// シーンファクトリーの設定
+	/// </summary>
+	void SetSceneFactory(AbstractSceneFactory* sceneFactory) { sceneFactory_ = sceneFactory; }
 
 private: // メンバ変数
 
@@ -53,4 +58,7 @@ private: // メンバ変数
 
 	// 次のシーン
 	BaseScene* nextScene_ = nullptr;
+
+	// シーンファクトリー
+	AbstractSceneFactory* sceneFactory_ = nullptr;
 };

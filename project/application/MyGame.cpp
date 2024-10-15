@@ -1,6 +1,8 @@
 #include "MyGame.h"
 #include"Audio.h"
 #include"Input.h"
+#include "SceneFactory.h"
+#include "SceneManager.h"
 
 void MyGame::Initialize()
 {
@@ -16,14 +18,10 @@ void MyGame::Initialize()
 
 #pragma endregion
 
-	// ゲームシーンの初期化
-	//gameScene_ = new GameScene();
-	//gameScene_->Initialize();
-
 	// シーンの初期化
-	BaseScene* titleScene = new TitleScene();
-	SceneManager::GetInstance()->SetNextScene(titleScene);
-
+	sceneFactory_ = new SceneFactory();
+	SceneManager::GetInstance()->SetSceneFactory(sceneFactory_);
+	SceneManager::GetInstance()->ChangeScene("title");
 }
 
 void MyGame::Finalize()

@@ -1,13 +1,13 @@
 #pragma once
-#include"WinApp.h"
-#include"DX12Basic.h"
-#include"D3DResourceLeakCheker.h"
-#include"Camera.h"
-#include"SrvManager.h"
-#include "SceneManager.h"
+#include "WinApp.h"
+#include "DX12Basic.h"
+#include "D3DResourceLeakCheker.h"
+#include "Camera.h"
+#include "SrvManager.h"
+#include "AbstractSceneFactory.h"
 
 #ifdef _DEBUG
-#include"ImGuiManager.h"
+#include "ImGuiManager.h"
 #endif
 
 class TakoFramework {
@@ -54,6 +54,9 @@ protected: // メンバ変数
 
 	// カメラ
 	Camera* defaultCamera_ = nullptr;
+
+	// シーンファクトリー
+	AbstractSceneFactory* sceneFactory_ = nullptr;
 
 	// 終了フラグ
 	bool endFlag_ = false;

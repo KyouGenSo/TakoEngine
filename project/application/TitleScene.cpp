@@ -1,5 +1,4 @@
 #include "TitleScene.h"
-#include "GameScene.h"
 #include "SceneManager.h"
 #include"TextureManager.h"
 #include"SpriteBasic.h"
@@ -26,8 +25,7 @@ void TitleScene::Update()
 
 	if (Input::GetInstance()->TriggerKey(DIK_SPACE))
 	{
-		BaseScene* gameScene = new GameScene();
-		SceneManager::GetInstance()->SetNextScene(gameScene);
+		SceneManager::GetInstance()->ChangeScene("game");
 	}
 }
 
