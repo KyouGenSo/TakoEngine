@@ -50,6 +50,8 @@ void TitleScene::Draw()
 	Draw2D::GetInstance()->DrawTriangle(triangle1Pos_[0], triangle1Pos_[1], triangle1Pos_[2], Vector4(1.0f, 0.0f, 0.0f, 1.0f));
 
 	Draw2D::GetInstance()->DrawTriangle(triangle2Pos_[0], triangle2Pos_[1], triangle2Pos_[2], Vector4(0.0f, 1.0f, 0.0f, 1.0f));
+
+	Draw2D::GetInstance()->DrawLine(Vector2(100.0f, 100.0f), Vector2(200.0f, 100.0f), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 }
 
 void TitleScene::DrawImGui()
@@ -103,7 +105,6 @@ void TitleScene::DrawImGui()
 	ImGui::DragFloat2("Position3", &triangle2Pos_[2].x, 0.1f);
 
 	ImGui::End();
-
 
 
 #endif // _DEBUG

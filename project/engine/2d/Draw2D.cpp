@@ -1,5 +1,6 @@
 #include "Draw2D.h"
 #include "Logger.h"
+#include "imgui.h"
 
 Draw2D* Draw2D::instance_ = nullptr;
 
@@ -17,7 +18,11 @@ void Draw2D::Initialize(DX12Basic* dx12)
 	m_dx12_ = dx12;
 
 	// パイプラインステートの生成
-	CreatePSO();
+	CreatePSO(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE, trianglePipelineState_);
+	CreatePSO(D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE, linePipelineState_);
+
+	// 座標変換行列データの生成
+	CreateTransformMatData();
 }
 
 void Draw2D::Finalize()
@@ -29,13 +34,39 @@ void Draw2D::Finalize()
 
 		triangleData->vertexBuffer->Release();
 		triangleData->colorBuffer->Release();
+
 	}
+
+	triangleDatas_.clear();
+
+	for (auto lineData : lineDatas_)
+	{
+		lineData->vertexBuffer->Unmap(0, nullptr);
+		lineData->colorBuffer->Unmap(0, nullptr);
+
+		lineData->vertexBuffer->Release();
+		lineData->colorBuffer->Release();
+	}
+
+	lineDatas_.clear();
 
 	if (instance_ != nullptr)
 	{
 		delete instance_;
 		instance_ = nullptr;
 	}
+}
+
+void Draw2D::ImGui()
+{
+
+	ImGui::Begin("Draw2D");
+
+	// triangleDatas_の要素数を表示
+	ImGui::Text("TriangleData Count : %d", triangleDatas_.size());
+
+	ImGui::End();
+
 }
 
 void Draw2D::DrawTriangle(const Vector2& pos1, const Vector2& pos2, const Vector2& pos3, const Vector4& color)
@@ -59,14 +90,62 @@ void Draw2D::DrawTriangle(const Vector2& pos1, const Vector2& pos2, const Vector
 	// 頂点バッファビューの設定
 	m_dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &triangleData->vertexBufferView);
 
+	// 座標変換行列の設定
+	m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixBuffer_->GetGPUVirtualAddress());
+
 	// カラーバッファの設定
 	m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, triangleData->colorBuffer->GetGPUVirtualAddress());
 
 	// 描画
 	m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
 
-	triangleDatas_.push_back(triangleData);
+	// 三角形データを保存
+	if (triangleData != nullptr)
+	{
+		triangleDatas_.push_back(triangleData);
+	}
+}
 
+void Draw2D::DrawLine(const Vector2& start, const Vector2& end, const Vector4& color)
+{
+	LineData* lineData = new LineData();
+
+	// 線の頂点データを生成
+	InitializeLineData(lineData);
+
+	// 頂点データの設定
+	lineData->vertexData[0].position = Vector2(start.x, start.y);
+	lineData->vertexData[1].position = Vector2(end.x, end.y);
+
+	// カラーデータの設定
+	lineData->color[0] = color;
+
+	// ルートシグネチャの設定
+	m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
+
+	// パイプラインステートの設定
+	m_dx12_->GetCommandList()->SetPipelineState(linePipelineState_.Get());
+
+	// トポロジの設定
+	m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
+
+	// 頂点バッファビューの設定
+	m_dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &lineData->vertexBufferView);
+
+	// 座標変換行列の設定
+	m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixBuffer_->GetGPUVirtualAddress());
+
+	// カラーバッファの設定
+	m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, lineData->colorBuffer->GetGPUVirtualAddress());
+
+	// 描画
+	m_dx12_->GetCommandList()->DrawInstanced(2, 1, 0, 0);
+
+	// 線データを保存
+	if (lineData != nullptr)
+	{
+		lineDatas_.push_back(lineData);
+	}
 }
 
 void Draw2D::SetCommonRenderSetting()
@@ -75,7 +154,7 @@ void Draw2D::SetCommonRenderSetting()
 	m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
 
 	// パイプラインステートの設定
-	m_dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
+	m_dx12_->GetCommandList()->SetPipelineState(trianglePipelineState_.Get());
 
 	// トポロジの設定
 	m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -90,11 +169,15 @@ void Draw2D::CreateRootSignature()
 	descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
 	// RootParameterの設定。複数設定できるので配列
-	D3D12_ROOT_PARAMETER rootParameters[1] = {};
+	D3D12_ROOT_PARAMETER rootParameters[2] = {};
 
 	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
 	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
 	rootParameters[0].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド 
+
+	rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
+	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // 頂点シェーダーで使う
+	rootParameters[1].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
 
 	descriptionRootSignature.pParameters = rootParameters;
 	descriptionRootSignature.NumParameters = _countof(rootParameters);
@@ -114,7 +197,7 @@ void Draw2D::CreateRootSignature()
 	assert(SUCCEEDED(hr));
 }
 
-void Draw2D::CreatePSO()
+void Draw2D::CreatePSO(D3D12_PRIMITIVE_TOPOLOGY_TYPE primitiveTopologyType, ComPtr<ID3D12PipelineState>& pipelineState)
 {
 
 	HRESULT hr;
@@ -163,13 +246,13 @@ void Draw2D::CreatePSO()
 	graphicsPipelineStateDesc.NumRenderTargets = 1;
 	graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 	// 利用するトポロジ（形状）のタイプ。三角形
-	graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	graphicsPipelineStateDesc.PrimitiveTopologyType = primitiveTopologyType;
 	// どのように画面に色を打ち込むかの設定
 	graphicsPipelineStateDesc.SampleDesc.Count = 1;
 	graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
 
 	// 実際に生成
-	hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
+	hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState));
 	assert(SUCCEEDED(hr));
 }
 
@@ -188,7 +271,21 @@ void Draw2D::CreateTriangleVertexData(TriangleData* triangleData)
 
 }
 
-void Draw2D::CreateTriangleColorData(TriangleData* triangleData)
+void Draw2D::CreateLineVertexData(LineData* lineData)
+{
+	// 頂点リソースを生成
+	lineData->vertexBuffer = m_dx12_->MakeBufferResource(sizeof(VertexData) * 2);
+
+	// 頂点バッファビューを作成する
+	lineData->vertexBufferView.BufferLocation = lineData->vertexBuffer->GetGPUVirtualAddress();
+	lineData->vertexBufferView.SizeInBytes = sizeof(VertexData) * 2;
+	lineData->vertexBufferView.StrideInBytes = sizeof(VertexData);
+
+	// 頂点リソースをマップ
+	lineData->vertexBuffer->Map(0, nullptr, reinterpret_cast<void**>(&lineData->vertexData));
+}
+
+void Draw2D::CreateColorData(TriangleData* triangleData)
 {
 	// カラーリソースを生成
 	triangleData->colorBuffer = m_dx12_->MakeBufferResource(sizeof(Vector4));
@@ -197,11 +294,45 @@ void Draw2D::CreateTriangleColorData(TriangleData* triangleData)
 	triangleData->colorBuffer->Map(0, nullptr, reinterpret_cast<void**>(&triangleData->color));
 }
 
+void Draw2D::CreateColorData(LineData* lineData)
+{
+	// カラーリソースを生成
+	lineData->colorBuffer = m_dx12_->MakeBufferResource(sizeof(Vector4));
+
+	// カラーリソースをマップ
+	lineData->colorBuffer->Map(0, nullptr, reinterpret_cast<void**>(&lineData->color));
+}
+
+void Draw2D::CreateTransformMatData()
+{
+	// 座標変換行列リソースを生成
+	transformationMatrixBuffer_ = m_dx12_->MakeBufferResource(sizeof(TransformationMatrix));
+
+	// 座標変換行列リソースをマップ
+	transformationMatrixBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixData_));
+
+	// 座標変換行列データの初期値を書き込む
+	Matrix4x4 worldMatrix = Mat4x4::MakeIdentity();
+	Matrix4x4 viewMatrix = Mat4x4::MakeIdentity();
+	Matrix4x4 projectionMatrix = Mat4x4::MakeOrtho(0.0f, 0.0f, float(WinApp::kClientWidth), float(WinApp::kClientHeight), 0.0f, 100.0f);
+	Matrix4x4 wvpMatrix = Mat4x4::Multiply(worldMatrix, Mat4x4::Multiply(viewMatrix, projectionMatrix));
+
+	transformationMatrixData_->WVP = wvpMatrix;
+	transformationMatrixData_->world = worldMatrix;
+}
+
 void Draw2D::InitializeTriangleData(TriangleData* triangleData)
 {
 	CreateTriangleVertexData(triangleData);
 
-	CreateTriangleColorData(triangleData);
+	CreateColorData(triangleData);
+}
+
+void Draw2D::InitializeLineData(LineData* lineData)
+{
+	CreateLineVertexData(lineData);
+
+	CreateColorData(lineData);
 }
 
 

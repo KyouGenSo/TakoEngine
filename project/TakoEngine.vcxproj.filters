@@ -182,7 +182,7 @@
     <ClCompile Include="application\SceneFactory.cpp">
       <Filter>ソース ファイル\application\scene</Filter>
     </ClCompile>
-    <ClCompile Include="Draw2D.cpp">
+    <ClCompile Include="engine\2d\Draw2D.cpp">
       <Filter>ソース ファイル\engine\2d</Filter>
     </ClCompile>
   </ItemGroup>
@@ -283,7 +283,7 @@
     <ClInclude Include="application\SceneFactory.h">
       <Filter>ヘッダー ファイル\application\scene</Filter>
     </ClInclude>
-    <ClInclude Include="Draw2D.h">
+    <ClInclude Include="engine\2d\Draw2D.h">
       <Filter>ヘッダー ファイル\engine\2d</Filter>
     </ClInclude>
     <ClInclude Include="Matrix3x3.h">

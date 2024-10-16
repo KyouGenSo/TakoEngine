@@ -3,6 +3,7 @@
 #include"Vector4.h"
 #include"Vector2.h"
 #include"Vector3.h"
+#include"Mat4x4Func.h"
 #include<vector>
 
 using namespace std;
@@ -32,6 +33,13 @@ public: // 構造体
 		Vector4 color;
 	};
 
+	// 座標変換行列データ
+	struct TransformationMatrix
+	{
+		Matrix4x4 WVP;
+		Matrix4x4 world;
+	};
+
 	// 三角形構造体
 	struct TriangleData
 	{
@@ -39,18 +47,18 @@ public: // 構造体
 		Vector4* color;
 		// 頂点バッファ
 		ComPtr<ID3D12Resource> vertexBuffer;
-		// 頂点バッファビュー
-		D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
 		// カラーバッファ
 		ComPtr<ID3D12Resource> colorBuffer;
+		// 頂点バッファビュー
+		D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
 	};
 
 	// 線分構造体
 	struct LineData
 	{
 		VertexData* vertexData;
+		Vector4* color;
 		float weight;
-		ColorData* colorData;
 		// 頂点バッファ
 		ComPtr<ID3D12Resource> vertexBuffer;
 		// 頂点バッファビュー
@@ -60,6 +68,7 @@ public: // 構造体
 	};
 
 public: // メンバ関数
+
 	/// <summary>
 	/// インスタンスの取得
 	/// </summary>
@@ -76,6 +85,11 @@ public: // メンバ関数
 	void Finalize();
 
 	/// <summary>
+	/// ImGuiの描画
+	/// </summary>
+	void ImGui();
+
+	/// <summary>
 	/// 三角形の描画
 	/// </summary>
 	void DrawTriangle(const Vector2& pos1, const Vector2& pos2, const Vector2& pos3, const Vector4& color);
@@ -83,7 +97,7 @@ public: // メンバ関数
 	/// <summary>
 	/// 線の描画
 	/// </summary>
-	//void DrawLine(const Vector2& start, const Vector2& end, float weight, const Vector4& color);
+	void DrawLine(const Vector2& start, const Vector2& end, const Vector4& color);
 
 private: // プライベートメンバ関数
 	/// <summary>
@@ -94,33 +108,38 @@ private: // プライベートメンバ関数
 	/// <summary>
 	/// パイプラインステートの生成
 	/// </summary>
-	void CreatePSO();
+	void CreatePSO(D3D12_PRIMITIVE_TOPOLOGY_TYPE primitiveTopologyType, ComPtr<ID3D12PipelineState>& pipelineState);
 
 	///<summary>
-	///三角形の頂点データを生成
+	/// 三角形の頂点データを生成
 	/// </summary>
 	void CreateTriangleVertexData(TriangleData* triangleData);
 
 	///<summary>
-	///三角形のカラーデータを生成
+	/// 線の頂点データを生成
 	/// </summary>
-	void CreateColorData(TriangleData* triangleData);
+	void CreateLineVertexData(LineData* lineData);
 
 	///<summary>
-	///三角形ーデータの初期化
+	/// カラーデータを生成
+	/// </summary>
+	void CreateColorData(TriangleData* triangleData);
+	void CreateColorData(LineData* lineData);
+
+	///<summary>
+	/// 座標変換行列データを生成
+	/// </summary>
+	void CreateTransformMatData();
+
+	///<summary>
+	/// 三角形データの初期化
 	/// </summary>
 	void InitializeTriangleData(TriangleData* triangleData);
 
 	///<summary>
-	///線の頂点データを生成
+	/// 線データの初期化
 	/// </summary>
-	//void CreateLineVertexData();
-
-
-	///<summary>
-	///線のカラーデータを生成
-	/// </summary>
-	void CreateLineColorData();
+	void InitializeLineData(LineData* lineData);
 
 	/// <summary>
 	/// 共通描画設定
@@ -136,8 +155,19 @@ private: // メンバ変数
 	ComPtr<ID3D12RootSignature> rootSignature_;
 
 	// パイプラインステート
-	ComPtr<ID3D12PipelineState> pipelineState_;
+	ComPtr<ID3D12PipelineState> trianglePipelineState_;
+	ComPtr<ID3D12PipelineState> linePipelineState_;
 
+	// 座標変換行列バッファ
+	ComPtr<ID3D12Resource> transformationMatrixBuffer_;
+
+	// 座標変換行列データ
+	TransformationMatrix* transformationMatrixData_;
+
+	// 三角形データ
 	vector<TriangleData*> triangleDatas_;
+
+	// 線データ
+	vector<LineData*> lineDatas_;
 
 };

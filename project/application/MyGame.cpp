@@ -3,6 +3,7 @@
 #include"Input.h"
 #include "SceneFactory.h"
 #include "SceneManager.h"
+#include "Draw2D.h"
 
 void MyGame::Initialize()
 {
@@ -66,7 +67,6 @@ void MyGame::Draw()
 	imguiManager_->End();
 #endif
 	//-------------------ImGui-------------------//
-
 
 	// シーンの描画
 	SceneManager::GetInstance()->Draw();
