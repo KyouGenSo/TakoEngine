@@ -51,7 +51,7 @@ void TitleScene::Draw()
 
 	Draw2D::GetInstance()->DrawTriangle(triangle2Pos_[0], triangle2Pos_[1], triangle2Pos_[2], Vector4(0.0f, 1.0f, 0.0f, 1.0f));
 
-	Draw2D::GetInstance()->DrawLine(Vector2(100.0f, 100.0f), Vector2(200.0f, 100.0f), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	Draw2D::GetInstance()->DrawLine(Vector2(100.0f, 100.0f), Vector2(600.0f, 100.0f), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 }
 
 void TitleScene::DrawImGui()

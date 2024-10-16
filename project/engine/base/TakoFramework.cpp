@@ -96,6 +96,9 @@ void TakoFramework::Update()
 		return;
 	}
 
+	//	Draw2Dの更新
+	Draw2D::GetInstance()->Update();
+
 	// シーンマネージャーの更新
 	SceneManager::GetInstance()->Update();
 }

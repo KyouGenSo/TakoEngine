@@ -42,6 +42,17 @@ void Audio::Finalize()
 		SoundUnload(&soundData);
 	}
 
+	// voiceDatas_の解放
+	for (auto& voiceData : voiceDatas_)
+	{
+		if (voiceData.second != nullptr)
+		{
+			voiceData.second->DestroyVoice();
+			voiceData.second = nullptr;
+		}
+	}
+
+	// インスタンスの解放
 	if (instance_ != nullptr)
 	{
 		delete instance_;

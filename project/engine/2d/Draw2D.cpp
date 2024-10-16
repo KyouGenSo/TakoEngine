@@ -50,11 +50,20 @@ void Draw2D::Finalize()
 
 	lineDatas_.clear();
 
+	transformationMatrixBuffer_->Unmap(0, nullptr);
+	transformationMatrixBuffer_->Release();
+
 	if (instance_ != nullptr)
 	{
 		delete instance_;
 		instance_ = nullptr;
 	}
+}
+
+void Draw2D::Update()
+{
+	triangleDatas_.clear();
+	lineDatas_.clear();
 }
 
 void Draw2D::ImGui()

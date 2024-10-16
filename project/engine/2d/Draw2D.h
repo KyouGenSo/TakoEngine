@@ -85,6 +85,11 @@ public: // メンバ関数
 	void Finalize();
 
 	/// <summary>
+	/// 更新
+	/// </summary>
+	void Update();
+
+	/// <summary>
 	/// ImGuiの描画
 	/// </summary>
 	void ImGui();
@@ -152,14 +157,14 @@ private: // メンバ変数
 	DX12Basic* m_dx12_;
 
 	// ルートシグネチャ
-	ComPtr<ID3D12RootSignature> rootSignature_;
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;
 
 	// パイプラインステート
-	ComPtr<ID3D12PipelineState> trianglePipelineState_;
-	ComPtr<ID3D12PipelineState> linePipelineState_;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> trianglePipelineState_;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> linePipelineState_;
 
 	// 座標変換行列バッファ
-	ComPtr<ID3D12Resource> transformationMatrixBuffer_;
+	Microsoft::WRL::ComPtr<ID3D12Resource> transformationMatrixBuffer_;
 
 	// 座標変換行列データ
 	TransformationMatrix* transformationMatrixData_;
