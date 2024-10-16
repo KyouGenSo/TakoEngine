@@ -68,14 +68,14 @@ void Draw2D::Update()
 
 void Draw2D::ImGui()
 {
-
+#ifdef _DEBUG
 	ImGui::Begin("Draw2D");
 
 	// triangleDatas_の要素数を表示
 	ImGui::Text("TriangleData Count : %d", triangleDatas_.size());
 
 	ImGui::End();
-
+#endif // _DEBUG
 }
 
 void Draw2D::DrawTriangle(const Vector2& pos1, const Vector2& pos2, const Vector2& pos3, const Vector4& color)
