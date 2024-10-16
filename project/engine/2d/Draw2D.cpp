@@ -18,9 +18,6 @@ void Draw2D::Initialize(DX12Basic* dx12)
 
 	// パイプラインステートの生成
 	CreatePSO();
-
-	// 座標変換行列データの生成
-	CreateTransformMatData();
 }
 
 void Draw2D::Finalize()
@@ -33,8 +30,6 @@ void Draw2D::Finalize()
 		triangleData->vertexBuffer->Release();
 		triangleData->colorBuffer->Release();
 	}
-
-	triangleDatas_.clear();
 
 	if (instance_ != nullptr)
 	{
@@ -64,20 +59,14 @@ void Draw2D::DrawTriangle(const Vector2& pos1, const Vector2& pos2, const Vector
 	// 頂点バッファビューの設定
 	m_dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &triangleData->vertexBufferView);
 
-	// 座標変換行列の設定
-	m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixBuffer_->GetGPUVirtualAddress());
-
 	// カラーバッファの設定
 	m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, triangleData->colorBuffer->GetGPUVirtualAddress());
 
 	// 描画
 	m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
 
-	// 三角形データを保存
-	if (triangleData != nullptr)
-	{
-		triangleDatas_.push_back(triangleData);
-	}
+	triangleDatas_.push_back(triangleData);
+
 }
 
 void Draw2D::SetCommonRenderSetting()
@@ -101,15 +90,11 @@ void Draw2D::CreateRootSignature()
 	descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
 	// RootParameterの設定。複数設定できるので配列
-	D3D12_ROOT_PARAMETER rootParameters[2] = {};
+	D3D12_ROOT_PARAMETER rootParameters[1] = {};
 
 	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
 	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
 	rootParameters[0].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド 
-
-	rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // 頂点シェーダーで使う
-	rootParameters[1].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
 
 	descriptionRootSignature.pParameters = rootParameters;
 	descriptionRootSignature.NumParameters = _countof(rootParameters);
@@ -203,7 +188,7 @@ void Draw2D::CreateTriangleVertexData(TriangleData* triangleData)
 
 }
 
-void Draw2D::CreateColorData(TriangleData* triangleData)
+void Draw2D::CreateTriangleColorData(TriangleData* triangleData)
 {
 	// カラーリソースを生成
 	triangleData->colorBuffer = m_dx12_->MakeBufferResource(sizeof(Vector4));
@@ -212,29 +197,11 @@ void Draw2D::CreateColorData(TriangleData* triangleData)
 	triangleData->colorBuffer->Map(0, nullptr, reinterpret_cast<void**>(&triangleData->color));
 }
 
-void Draw2D::CreateTransformMatData()
-{
-	// 座標変換行列リソースを生成
-	transformationMatrixBuffer_ = m_dx12_->MakeBufferResource(sizeof(TransformationMatrix));
-
-	// 座標変換行列リソースをマップ
-	transformationMatrixBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixData_));
-
-	// 座標変換行列データの初期値を書き込む
-	Matrix4x4 worldMatrix = Mat4x4::MakeIdentity();
-	Matrix4x4 viewMatrix = Mat4x4::MakeIdentity();
-	Matrix4x4 projectionMatrix = Mat4x4::MakeOrtho(0.0f, 0.0f, float(WinApp::kClientWidth), float(WinApp::kClientHeight), 0.0f, 100.0f);
-	Matrix4x4 wvpMatrix = Mat4x4::Multiply(worldMatrix, Mat4x4::Multiply(viewMatrix, projectionMatrix));
-
-	transformationMatrixData_->WVP = wvpMatrix;
-	transformationMatrixData_->world = worldMatrix;
-}
-
 void Draw2D::InitializeTriangleData(TriangleData* triangleData)
 {
 	CreateTriangleVertexData(triangleData);
 
-	CreateColorData(triangleData);
+	CreateTriangleColorData(triangleData);
 }
 
 

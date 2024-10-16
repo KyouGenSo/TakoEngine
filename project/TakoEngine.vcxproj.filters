@@ -311,10 +311,10 @@
     <FxCompile Include="resources\shaders\Object3D.VS.hlsl">
       <Filter>Shader</Filter>
     </FxCompile>
-    <FxCompile Include="2D.VS.hlsl">
+    <FxCompile Include="resources\shaders\2D.PS.hlsl">
       <Filter>Shader</Filter>
     </FxCompile>
-    <FxCompile Include="2D.PS.hlsl">
+    <FxCompile Include="resources\shaders\2D.VS.hlsl">
       <Filter>Shader</Filter>
     </FxCompile>
   </ItemGroup>

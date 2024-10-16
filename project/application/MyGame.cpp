@@ -43,6 +43,9 @@ void MyGame::Update()
 	// 入力情報の更新
 	Input::GetInstance()->Update();
 
+	//　サウンドの更新
+	Audio::GetInstance()->Update();
+
 	// カメラの更新
 	defaultCamera_->Update();
 	

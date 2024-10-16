@@ -64,6 +64,11 @@ public:
 	void Finalize();
 
 	/// <summary>
+	/// 更新
+	/// </summary>
+	void Update();
+
+	/// <summary>
 	/// サウンドの読み込み
 	/// </summary>
 	uint32_t LoadWaveFile(const char* filename);

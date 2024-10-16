@@ -2,6 +2,7 @@
 #include "BaseScene.h"
 #include"Sprite.h"
 #include <vector>
+#include"Vector2.h"
 
 class TitleScene : public BaseScene
 {
@@ -36,5 +37,11 @@ private: // メンバ変数
 
 	// スプライト
 	Sprite* sprite_;
+
+	// 三角形1の頂点座標
+	Vector2 triangle1Pos_[3];
+
+	// 三角形2の頂点座標
+	Vector2 triangle2Pos_[3];
 
 };

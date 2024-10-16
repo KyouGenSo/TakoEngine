@@ -49,6 +49,25 @@ void Audio::Finalize()
 	}
 }
 
+void Audio::Update()
+{
+	// 再生終了したボイスの解放
+	for (auto& voiceData : voiceDatas_)
+	{
+		if (voiceData.second != nullptr)
+		{
+			XAUDIO2_VOICE_STATE state;
+			voiceData.second->GetState(&state);
+
+			if (state.BuffersQueued == 0)
+			{
+				voiceData.second->DestroyVoice();
+				voiceData.second = nullptr;
+			}
+		}
+	}
+}
+
 uint32_t Audio::LoadWaveFile(const char* filename)
 {	
 	// サウンドデータの取得
@@ -119,6 +138,8 @@ void Audio::SoundUnload(SoundData* soundData)
 		soundData->bufferSize = 0;
 		soundData->wfex = {};
 	}
+
+	soundData = nullptr;
 }
 
 uint32_t Audio::PlayWave(uint32_t soundDataHandle, bool loopFlag, float volume)
