@@ -49,9 +49,6 @@ protected: // メンバ変数
 	ImGuiManager* imguiManager_ = nullptr;
 #endif
 
-	// SRVマネージャー
-	SrvManager* srvManager_ = nullptr;
-
 	// カメラ
 	Camera* defaultCamera_ = nullptr;
 

@@ -1,4 +1,5 @@
 #include "TakoFramework.h"
+#include "SrvManager.h"
 #include "TextureManager.h"
 #include "SceneManager.h"
 #include "Object3dBasic.h"
@@ -24,10 +25,9 @@ void TakoFramework::Initialize()
 	imguiManager_->Initialize(winApp_, dx12_);
 #endif
 
-	srvManager_ = new SrvManager();
-	srvManager_->Initialize(dx12_);
+	SrvManager::GetInstance()->Initialize(dx12_);
 
-	TextureManager::GetInstance()->Initialize(dx12_, srvManager_);
+	TextureManager::GetInstance()->Initialize(dx12_);
 
 	ModelManager::GetInstance()->Initialize(dx12_);
 
@@ -49,6 +49,9 @@ void TakoFramework::Initialize()
 
 void TakoFramework::Finalize()
 {
+	// SRVマネージャーの終了処理
+	SrvManager::GetInstance()->Finalize();
+
 	// ModelManagerの終了処理
 	ModelManager::GetInstance()->Finalize();
 
@@ -79,7 +82,6 @@ void TakoFramework::Finalize()
 	// pointerの解放
 	delete dx12_;
 	delete defaultCamera_;
-	delete srvManager_;
 	delete sceneFactory_;
 
 	winApp_->Finalize();

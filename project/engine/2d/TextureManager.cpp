@@ -18,11 +18,9 @@ TextureManager* TextureManager::GetInstance()
 	return instance_;
 }
 
-void TextureManager::Initialize(DX12Basic* dx12, SrvManager* srvManager)
+void TextureManager::Initialize(DX12Basic* dx12)
 {
 	m_dx12_ = dx12;
-
-	m_srvManager_ = srvManager;
 
 	textureDatas_.reserve(DX12Basic::kMaxSRVCount);
 }
@@ -46,7 +44,7 @@ void TextureManager::LoadTexture(const std::string& filePath)
 	}
 
 	// テクスチャ枚数上限チェック
-	assert(m_srvManager_->CanAllocate());
+	assert(SrvManager::GetInstance()->CanAllocate());
 	
 	// テクスチャの読み込み
 	DirectX::ScratchImage image;
@@ -68,11 +66,11 @@ void TextureManager::LoadTexture(const std::string& filePath)
 	textureData.intermediateResource = m_dx12_->UploadTextureData(textureData.resource, mipImages);
 
 	// テクスチャデータのSRVインデックスを設定
-	textureData.srvIndex = m_srvManager_->Allocate();
+	textureData.srvIndex = SrvManager::GetInstance()->Allocate();
 
 	// テクスチャデータのSRVハンドルを取得
-	textureData.srvCpuHandle = m_srvManager_->GetCPUDescriptorHandle(textureData.srvIndex);
-	textureData.srvGpuHandle = m_srvManager_->GetGPUDescriptorHandle(textureData.srvIndex);
+	textureData.srvCpuHandle = SrvManager::GetInstance()->GetCPUDescriptorHandle(textureData.srvIndex);
+	textureData.srvGpuHandle = SrvManager::GetInstance()->GetGPUDescriptorHandle(textureData.srvIndex);
 
 	// SRVの作成
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};

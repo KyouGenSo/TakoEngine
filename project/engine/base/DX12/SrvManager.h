@@ -6,15 +6,35 @@
 class DX12Basic;
 
 class SrvManager {
+private: // シングルトン設定
+
+	// インスタンス
+	static SrvManager* instance_;
+
+	SrvManager() = default;
+	~SrvManager() = default;
+	SrvManager(SrvManager&) = delete;
+	SrvManager& operator=(SrvManager&) = delete;
+
 public: // メンバー関数
 
 	// 最大SRV数(テクスチャ数)
 	static const uint32_t kMaxSRVCount;
 
 	///<summary>
+	/// インスタンスの取得
+	/// </summary>
+	static SrvManager* GetInstance();
+
+	///<summary>
 	///初期化
 	/// </summary>
 	void Initialize(DX12Basic* dx12);
+
+	///<summary>
+	/// 終了処理
+	/// </summary>
+	void Finalize();
 
 	/// <summary>
 	/// 描画前の処理

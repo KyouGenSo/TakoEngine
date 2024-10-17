@@ -1,8 +1,18 @@
 #include"SrvManager.h"
 #include"DX12Basic.h"
 
+SrvManager* SrvManager::instance_ = nullptr;
+
 const uint32_t SrvManager::kMaxSRVCount = 512;
 
+SrvManager* SrvManager::GetInstance()
+{
+	if (instance_ == nullptr)
+	{
+		instance_ = new SrvManager();
+	}
+	return instance_;
+}
 
 void SrvManager::Initialize(DX12Basic* dx12)
 {
@@ -13,6 +23,15 @@ void SrvManager::Initialize(DX12Basic* dx12)
 
 	// SRVのディスクリプタヒープの生成
 	descriptorHeap_ = m_dx12_->CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, kMaxSRVCount, true);
+}
+
+void SrvManager::Finalize()
+{
+	if (instance_ != nullptr)
+	{
+		delete instance_;
+		instance_ = nullptr;
+	}
 }
 
 void SrvManager::BeginDraw()

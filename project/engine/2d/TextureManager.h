@@ -49,7 +49,7 @@ public: // メンバー関数
 	/// <summary>
 	/// 初期化
 	/// </summary>
-	void Initialize(DX12Basic* dx12, SrvManager* srvManager);
+	void Initialize(DX12Basic* dx12);
 
 	/// <summary>
 	/// 終了処理
@@ -80,9 +80,6 @@ private: // メンバー変数
 
 	// DX12Basicクラスのインスタンス
 	DX12Basic* m_dx12_ = nullptr;
-
-	// SrvManagerクラスのインスタンス
-	SrvManager* m_srvManager_ = nullptr;
 
 	// テクスチャデータ配列
 	std::unordered_map<std::string, TextureData> textureDatas_;

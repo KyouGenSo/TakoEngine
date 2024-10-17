@@ -2,6 +2,7 @@
 #include "ModelBasic.h"
 #include "DX12Basic.h"
 #include "TextureManager.h"
+#include "SrvManager.h"
 #include <cassert>
 #include<fstream>
 #include<sstream>
@@ -39,7 +40,7 @@ void Model::Draw()
 	m_modelBasic_->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource_->GetGPUVirtualAddress());
 
 	// SRVのDescriptorTableを設定,テクスチャを指定
-	m_modelBasic_->GetDX12Basic()->GetCommandList()->SetGraphicsRootDescriptorTable(2, TextureManager::GetInstance()->GetSRVGPUHandle(modelData_.material.texturePath));
+	SrvManager::GetInstance()->SetRootDescriptorTable(2, modelData_.material.textureIndex);
 
 	// 描画
 	m_modelBasic_->GetDX12Basic()->GetCommandList()->DrawInstanced(UINT(modelData_.vertices.size()), 1, 0, 0);

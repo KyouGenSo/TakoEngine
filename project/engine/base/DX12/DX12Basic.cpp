@@ -721,6 +721,42 @@ void DX12Basic::CreateTextureResource(ComPtr<ID3D12Resource>& textureResource, c
 
 }
 
+void DX12Basic::CreateRenderTextureResource(ComPtr<ID3D12Resource>& rendertextureResource, uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4& clearColor)
+{
+	// テクスチャの設定
+	D3D12_RESOURCE_DESC resourceDesc{};
+	resourceDesc.Width = width; // テクスチャの幅
+	resourceDesc.Height = height; // テクスチャの高さ
+	resourceDesc.DepthOrArraySize = 1; // 配列サイズ
+	resourceDesc.MipLevels = 1; // ミップマップレベル
+	resourceDesc.Format = format; // フォーマット
+	resourceDesc.SampleDesc.Count = 1; // サンプル数
+	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D; // 2Dテクスチャ
+	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET; // レンダーターゲットとして使う
+
+	// ヒープの設定
+	D3D12_HEAP_PROPERTIES heapProperties{};
+	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT; // VRAM上に作る
+
+	// クリア値の設定
+	D3D12_CLEAR_VALUE clearValue{};
+	clearValue.Format = format;
+	clearValue.Color[0] = clearColor.x;
+	clearValue.Color[1] = clearColor.y;
+	clearValue.Color[2] = clearColor.z;
+	clearValue.Color[3] = clearColor.w;
+
+	// Resourceの生成
+	HRESULT hr = device_->CreateCommittedResource(
+		&heapProperties, // ヒープの設定
+		D3D12_HEAP_FLAG_NONE, // Heapの特殊な設定。特になし
+		&resourceDesc, // リソースの設定
+		D3D12_RESOURCE_STATE_RENDER_TARGET, // リソースの初期状態. レンダーターゲットとして使う
+		&clearValue, // クリア値の設定
+		IID_PPV_ARGS(&rendertextureResource)); // 生成したリソースのpointerへのpointerを取得
+	assert(SUCCEEDED(hr));
+}
+
 Microsoft::WRL::ComPtr<ID3D12Resource> DX12Basic::UploadTextureData(const Microsoft::WRL::ComPtr<ID3D12Resource>& textureResource, const DirectX::ScratchImage& mipImages)
 {
 	std::vector<D3D12_SUBRESOURCE_DATA> subresources;

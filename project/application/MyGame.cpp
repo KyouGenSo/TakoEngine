@@ -56,7 +56,6 @@ void MyGame::Draw()
 {
 	// 描画前の処理
 	dx12_->BeginDraw();
-	srvManager_->BeginDraw();
 
 	//-------------------ImGui-------------------//
 #ifdef _DEBUG
@@ -69,6 +68,9 @@ void MyGame::Draw()
 	imguiManager_->End();
 #endif
 	//-------------------ImGui-------------------//
+
+	// テクスチャ用のsrvヒープの設定
+	SrvManager::GetInstance()->BeginDraw();
 
 	// シーンの描画
 	SceneManager::GetInstance()->Draw();

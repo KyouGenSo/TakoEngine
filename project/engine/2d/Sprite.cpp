@@ -1,6 +1,7 @@
 #include"Sprite.h"
 #include"SpriteBasic.h"
 #include "TextureManager.h"
+#include "SrvManager.h"
 
 void Sprite::Initialize(std::string texturePath)
 {
@@ -110,7 +111,7 @@ void Sprite::Draw()
 	SpriteBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResource_->GetGPUVirtualAddress());
 
 	// SRVのDescriptorTableを設定,テクスチャを指定
-	SpriteBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootDescriptorTable(2, TextureManager::GetInstance()->GetSRVGPUHandle(texturePath_));
+	SrvManager::GetInstance()->SetRootDescriptorTable(2, textureIndex_);
 
 	// 描画
 	SpriteBasic::GetInstance()->GetDX12Basic()->GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0);

@@ -11,6 +11,8 @@
 #include<dxcapi.h>
 #include"externals/DirectXTex/DirectXTex.h"
 
+#include"Vector4.h"
+
 class DX12Basic {
 public: // メンバー関数
 
@@ -66,6 +68,11 @@ public: // メンバー関数
 	/// </summary>
 	ComPtr<ID3D12Resource> MakeTextureResource(const DirectX::TexMetadata& metaData);
 	void CreateTextureResource(ComPtr<ID3D12Resource>& textureResource, const DirectX::TexMetadata& metaData);
+
+	/// <summary>
+	/// レンダーテクスチャリソースの生成
+	/// </summary>
+	void CreateRenderTextureResource(ComPtr<ID3D12Resource>& rendertextureResource, uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4& clearColor);
 
 	/// <summary>
 	/// デスクリプタヒープの生成
