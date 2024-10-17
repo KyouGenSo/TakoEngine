@@ -124,6 +124,20 @@ public: // メンバー関数
 		return swapChainResources_.size();
 	}
 
+	/// <summary>
+	/// レンダーテクスチャのcpuハンドルの取得
+	/// </summary>
+	D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTextureRTVHandle() {
+		return GetCPUDescriptorHandle(rtvHeap_.Get(), descriptorSizeRTV_, 2);
+	}
+
+	/// <summary>
+	/// DSVHeapの先頭のハンドルの取得
+	///	</summary>
+	D3D12_CPU_DESCRIPTOR_HANDLE GetDSVHeapHandleStart() {
+		return dsvHeap_->GetCPUDescriptorHandleForHeapStart();
+	}
+
 private: // プライベートメンバー関数
 	/// <summary>
 	/// deviceの初期化
@@ -205,6 +219,12 @@ private: // プライベートメンバー関数
 	/// </summary>
 	static D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(ID3D12DescriptorHeap* descriptorHeap, uint32_t descriptorSize, uint32_t index);
 
+	/// <summary>
+	/// バリアの設定
+	/// </summary>
+	void SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
+
+
 private: // メンバ変数
 
 	// 記録時間(FPS制御用)
@@ -256,14 +276,14 @@ private: // メンバ変数
 	// RTVハンドル
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle_[kRtvHandleCount];
 
-	// レンダーテクスチャリソース
-	ComPtr<ID3D12Resource> renderTextureResource_;
+	//// レンダーテクスチャリソース
+	//ComPtr<ID3D12Resource> renderTextureResource_;
 
-	// レンダーテクスチャの RTV ハンドル
-	D3D12_CPU_DESCRIPTOR_HANDLE renderTextureRTVHandle_;
+	//// レンダーテクスチャの RTV ハンドル
+	//D3D12_CPU_DESCRIPTOR_HANDLE renderTextureRTVHandle_;
 
-	// レンダーテクスチャのclearColor
-	const Vector4 kRenderTextureClearColor_ = { 1.0f, 0.0f, 0.0f, 1.0f };
+	//// レンダーテクスチャのclearColor
+	//const Vector4 kRenderTextureClearColor_ = { 1.0f, 0.0f, 0.0f, 1.0f };
 
 	// フェンス
 	ComPtr<ID3D12Fence> fence_;

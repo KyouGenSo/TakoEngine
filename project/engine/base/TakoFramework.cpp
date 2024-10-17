@@ -7,6 +7,7 @@
 #include "Model.h"
 #include "ModelManager.h"
 #include "Draw2D.h"
+#include "PostEffect.h"
 
 void TakoFramework::Initialize()
 {
@@ -25,9 +26,13 @@ void TakoFramework::Initialize()
 	imguiManager_->Initialize(winApp_, dx12_);
 #endif
 
+	SrvManager::GetInstance()->Initialize(dx12_);
+
 	TextureManager::GetInstance()->Initialize(dx12_);
 
 	ModelManager::GetInstance()->Initialize(dx12_);
+
+	PostEffect::GetInstance()->Initialize(dx12_);
 
 	Object3dBasic::GetInstance()->Initialize(dx12_);
 
@@ -49,6 +54,9 @@ void TakoFramework::Finalize()
 {
 	// SRVマネージャーの終了処理
 	SrvManager::GetInstance()->Finalize();
+
+	// PostEffectの終了処理
+	PostEffect::GetInstance()->Finalize();
 
 	// ModelManagerの終了処理
 	ModelManager::GetInstance()->Finalize();

@@ -99,6 +99,12 @@
     <Filter Include="ソース ファイル\engine\scene">
       <UniqueIdentifier>{8ac9a00b-0187-4fcf-87ab-9caa7503f86f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ヘッダー ファイル\engine\effect">
+      <UniqueIdentifier>{79b0bbb2-8f54-4bcc-9adc-ff15e7645b28}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\engine\effect">
+      <UniqueIdentifier>{c5a029d3-ed5d-4985-b29d-9cab459f774c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -184,6 +190,9 @@
     </ClCompile>
     <ClCompile Include="engine\2d\Draw2D.cpp">
       <Filter>ソース ファイル\engine\2d</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\effect\PostEffect.cpp">
+      <Filter>ソース ファイル\engine\effect</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -289,12 +298,18 @@
     <ClInclude Include="Matrix3x3.h">
       <Filter>ヘッダー ファイル\engine\math</Filter>
     </ClInclude>
+    <ClInclude Include="engine\effect\PostEffect.h">
+      <Filter>ヘッダー ファイル\engine\effect</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\NoTex.hlsli">
       <Filter>Shader</Filter>
     </None>
     <None Include="resources\shaders\Object3d.hlsli">
+      <Filter>Shader</Filter>
+    </None>
+    <None Include="resources\shaders\CopyImage.hlsli">
       <Filter>Shader</Filter>
     </None>
   </ItemGroup>
@@ -315,6 +330,12 @@
       <Filter>Shader</Filter>
     </FxCompile>
     <FxCompile Include="resources\shaders\2D.VS.hlsl">
+      <Filter>Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="resources\shaders\CopyImage.VS.hlsl">
+      <Filter>Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="resources\shaders\CopyImage.PS.hlsl">
       <Filter>Shader</Filter>
     </FxCompile>
   </ItemGroup>
