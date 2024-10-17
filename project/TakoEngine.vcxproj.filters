@@ -309,7 +309,7 @@
     <None Include="resources\shaders\Object3d.hlsli">
       <Filter>Shader</Filter>
     </None>
-    <None Include="resources\shaders\CopyImage.hlsli">
+    <None Include="resources\shaders\FullScreen.hlsli">
       <Filter>Shader</Filter>
     </None>
   </ItemGroup>
@@ -332,10 +332,10 @@
     <FxCompile Include="resources\shaders\2D.VS.hlsl">
       <Filter>Shader</Filter>
     </FxCompile>
-    <FxCompile Include="resources\shaders\CopyImage.VS.hlsl">
+    <FxCompile Include="resources\shaders\FullScreen.VS.hlsl">
       <Filter>Shader</Filter>
     </FxCompile>
-    <FxCompile Include="resources\shaders\CopyImage.PS.hlsl">
+    <FxCompile Include="resources\shaders\GrayScale.PS.hlsl">
       <Filter>Shader</Filter>
     </FxCompile>
   </ItemGroup>
