@@ -54,20 +54,8 @@ void MyGame::Update()
 
 void MyGame::Draw()
 {
-	// 描画前の処理
+	// 描画前の処理(レンダーテクスチャを描画対象に設定)
 	dx12_->BeginDraw();
-
-	//-------------------ImGui-------------------//
-#ifdef _DEBUG
-	imguiManager_->Begin();
-
-	SceneManager::GetInstance()->DrawImGui();
-
-	Draw2D::GetInstance()->ImGui();
-
-	imguiManager_->End();
-#endif
-	//-------------------ImGui-------------------//
 
 	// テクスチャ用のsrvヒープの設定
 	SrvManager::GetInstance()->BeginDraw();
@@ -75,11 +63,25 @@ void MyGame::Draw()
 	// シーンの描画
 	SceneManager::GetInstance()->Draw();
 
+	// SwapChainを描画対象に設定
+	dx12_->SetSwapChain();
 
+	//-------------------ImGui-------------------//
 #ifdef _DEBUG
+
+	imguiManager_->Begin();
+
+	SceneManager::GetInstance()->DrawImGui();
+
+	Draw2D::GetInstance()->ImGui();
+
+	imguiManager_->End();
+
 	//imguiの描画
 	imguiManager_->Draw();
 #endif
+	//-------------------ImGui-------------------//
+
 
 	// 描画後の処理
 	dx12_->EndDraw();

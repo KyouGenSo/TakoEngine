@@ -87,6 +87,9 @@ void Draw2D::ImGui()
 	// triangleDatas_の要素数を表示
 	ImGui::Text("TriangleData Count : %d", triangleDatas_.size());
 
+	// lineDatas_の要素数を表示
+	ImGui::Text("LineData Count : %d", lineDatas_.size());
+
 	ImGui::End();
 #endif // _DEBUG
 }

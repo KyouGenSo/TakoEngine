@@ -25,8 +25,6 @@ void TakoFramework::Initialize()
 	imguiManager_->Initialize(winApp_, dx12_);
 #endif
 
-	SrvManager::GetInstance()->Initialize(dx12_);
-
 	TextureManager::GetInstance()->Initialize(dx12_);
 
 	ModelManager::GetInstance()->Initialize(dx12_);

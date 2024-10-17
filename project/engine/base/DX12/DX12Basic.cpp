@@ -1,9 +1,10 @@
 #include "DX12Basic.h"
 #include <cassert>
-#include "Logger.h"
-#include "StringUtility.h"
 #include <format>
 #include <thread>
+#include "Logger.h"
+#include "StringUtility.h"
+#include "SrvManager.h"
 
 #include"imgui.h"
 #include"imgui_impl_win32.h"
@@ -50,6 +51,12 @@ void DX12Basic::Initialize(WinApp* winApp)
 	// デスクリプタヒープの初期化
 	InitDescriptorHeap();
 
+	// SrvManagerの初期化
+	SrvManager::GetInstance()->Initialize(this);
+
+	// レンダーテクスチャの初期化
+	InitRenderTexture();
+
 	// レンダーターゲットビューの初期化
 	InitRTV();
 
@@ -67,9 +74,6 @@ void DX12Basic::Initialize(WinApp* winApp)
 
 	// DXCコンパイラの生成
 	CreateDXCCompiler();
-
-	// ImGuiの初期化
-	//InitImGui();
 
 }
 
@@ -91,6 +95,32 @@ void DX12Basic::Finalize()
 
 void DX12Basic::BeginDraw()
 {
+	/// ==================================== ///
+	/// レンダーテクスチャを描画先に設定
+	/// ==================================== ///
+
+	// DSVのハンドルを取得
+	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvHeap_->GetCPUDescriptorHandleForHeapStart();
+
+	// 描画先のRTVを設定
+	commandList_->OMSetRenderTargets(1, &renderTextureRTVHandle_, false, &dsvHandle);
+
+	float clearColor[] = { kRenderTextureClearColor_.x, kRenderTextureClearColor_.y, kRenderTextureClearColor_.z, kRenderTextureClearColor_.w };
+
+	// 画面の色をクリア
+	commandList_->ClearRenderTargetView(renderTextureRTVHandle_, clearColor, 0, nullptr);
+
+	// 深度ステンシルをクリア
+	commandList_->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+
+	// ビューポートとシザリング矩形をセット
+	commandList_->RSSetViewports(1, &viewport_);
+	commandList_->RSSetScissorRects(1, &scissorRect_);
+}
+
+void DX12Basic::SetSwapChain()
+{
+
 	// バッグバッファのインデックスを取得
 	UINT backBufferIndex = swapChain_->GetCurrentBackBufferIndex();
 
@@ -108,9 +138,9 @@ void DX12Basic::BeginDraw()
 	commandList_->ResourceBarrier(1, &barrier);
 	// ---PRESENTからRTV用のStateにするTransitionBarrierを張る--- //
 
-	// 描画先のRTVとDSVを設定
-	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvHeap_->GetCPUDescriptorHandleForHeapStart();
-	commandList_->OMSetRenderTargets(1, &rtvHandle_[backBufferIndex], false, &dsvHandle);
+
+	// 描画先のRTVを設定
+	commandList_->OMSetRenderTargets(1, &rtvHandle_[backBufferIndex], false, nullptr);
 
 	// クリアカラー
 	float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f };
@@ -119,13 +149,9 @@ void DX12Basic::BeginDraw()
 	// 画面の色をクリア
 	commandList_->ClearRenderTargetView(rtvHandle_[backBufferIndex], clearColor, 0, nullptr);
 
-	// 深度ステンシルをクリア
-	commandList_->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-
 	// ビューポートとシザリング矩形をセット
 	commandList_->RSSetViewports(1, &viewport_);
 	commandList_->RSSetScissorRects(1, &scissorRect_);
-
 }
 
 void DX12Basic::EndDraw()
@@ -375,10 +401,30 @@ void DX12Basic::InitDescriptorHeap()
 	descriptorSizeDSV_ = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
 	// RTVのディスクリプタヒープの生成
-	rtvHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 2, false);
+	rtvHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 3, false);
 
 	// DSVのディスクリプタヒープの生成
 	dsvHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
+}
+
+void DX12Basic::InitRenderTexture()
+{
+	// レンダーテクスチャリソースの生成
+	CreateRenderTextureResource(renderTextureResource_, WinApp::kClientWidth, WinApp::kClientHeight, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, kRenderTextureClearColor_);
+
+	// RTVの設定
+	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
+	rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB; // 出力結果をSRGBに変換して書き込む
+	rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D; // 2Dテクスチャとして書き込む
+
+	renderTextureRTVHandle_ = GetCPUDescriptorHandle(rtvHeap_.Get(), descriptorSizeRTV_, 2);
+	
+	// RTVの生成
+	device_->CreateRenderTargetView(renderTextureResource_.Get(), &rtvDesc, renderTextureRTVHandle_);
+
+	// SRVの生成
+	SrvManager::GetInstance()->CreateSRVForTexture2D(0, renderTextureResource_.Get(), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, 1);
+
 }
 
 void DX12Basic::InitRTV()
@@ -478,30 +524,6 @@ void DX12Basic::CreateDXCCompiler()
 
 }
 
-//void DX12Basic::InitImGui()
-//{
-//	// バージョンチェック
-//	IMGUI_CHECKVERSION();
-//
-//	// コンテキストの生成
-//	ImGui::CreateContext();
-//
-//	// スタイルの設定
-//	ImGui::StyleColorsDark();
-//
-//	// Win32用の初期化
-//	ImGui_ImplWin32_Init(winApp_->GetHWnd());
-//
-//	// DX12用の初期化
-//	ImGui_ImplDX12_Init(
-//		device_.Get(),                                   // デバイス
-//		swapChainBufferCount_,                           // バッファ数
-//		DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,                 // RTVのフォーマット
-//		srvHeap_.Get(),                                  // SRVのヒープ
-//		srvHeap_->GetCPUDescriptorHandleForHeapStart(),  // SRVのCPUハンドルの開始位置
-//		srvHeap_->GetGPUDescriptorHandleForHeapStart()); // SRVのGPUハンドルの開始位置
-//
-//}
 
 void DX12Basic::InitFPSLimiter()
 {

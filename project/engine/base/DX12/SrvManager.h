@@ -88,5 +88,5 @@ private: // メンバー変数
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeap_;
 
 	// 次に使用するsrvのインデックス
-	uint32_t srvIndex = 0;
+	uint32_t srvIndex = 1;
 };

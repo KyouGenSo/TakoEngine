@@ -43,6 +43,11 @@ public: // メンバー関数
 	void BeginDraw();
 
 	/// <summary>
+	/// swapChainを設定
+	/// </summary> 
+	void SetSwapChain();
+
+	/// <summary>
 	/// 描画後の処理
 	/// </summary>
 	void EndDraw();
@@ -146,6 +151,11 @@ private: // プライベートメンバー関数
 	void InitDescriptorHeap();
 
 	/// <summary>
+	/// レンダーテクスチャの初期化
+	/// <summary>
+	void InitRenderTexture();
+
+	/// <summary>
 	/// レンダーターゲットビューの初期化
 	/// <summary> 
 	void InitRTV();
@@ -174,11 +184,6 @@ private: // プライベートメンバー関数
 	/// DXCコンパイラの生成
 	/// <summary> 
 	void CreateDXCCompiler();
-
-	/// <summary>
-	/// ImGuiの初期化
-	/// <summary> 
-	//void InitImGui();
 
 	/// <summary>
 	/// FPS制御初期化
@@ -250,6 +255,15 @@ private: // メンバ変数
 
 	// RTVハンドル
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle_[kRtvHandleCount];
+
+	// レンダーテクスチャリソース
+	ComPtr<ID3D12Resource> renderTextureResource_;
+
+	// レンダーテクスチャの RTV ハンドル
+	D3D12_CPU_DESCRIPTOR_HANDLE renderTextureRTVHandle_;
+
+	// レンダーテクスチャのclearColor
+	const Vector4 kRenderTextureClearColor_ = { 1.0f, 0.0f, 0.0f, 1.0f };
 
 	// フェンス
 	ComPtr<ID3D12Fence> fence_;
