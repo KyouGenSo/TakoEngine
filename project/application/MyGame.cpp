@@ -3,7 +3,6 @@
 #include"Input.h"
 #include "SceneFactory.h"
 #include "SceneManager.h"
-#include "PostEffect.h"
 #include "Draw2D.h"
 
 void MyGame::Initialize()
@@ -68,14 +67,14 @@ void MyGame::Draw()
 	// シーンの描画
 	SceneManager::GetInstance()->Draw();
 
-
+	// SwapChainを描画対象に設定
+	dx12_->SetSwapChain();
 
 	/// ============================================= ///
 	/// ------------------シーン描画-------------------///
 	/// ============================================= ///
 
-	// SwapChainを描画対象に設定
-	dx12_->SetSwapChain();
+
 
 	/// ========================================= ///
 	///-------------------ImGui-------------------///

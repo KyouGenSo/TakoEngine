@@ -105,7 +105,6 @@ void DX12Basic::BeginDraw()
 	commandList_->RSSetViewports(1, &viewport_);
 	commandList_->RSSetScissorRects(1, &scissorRect_);
 
-
 }
 
 void DX12Basic::SetSwapChain()
@@ -375,26 +374,6 @@ void DX12Basic::InitDescriptorHeap()
 	// DSVのディスクリプタヒープの生成
 	dsvHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
 }
-
-//void DX12Basic::InitRenderTexture()
-//{
-//	// レンダーテクスチャリソースの生成
-//	CreateRenderTextureResource(renderTextureResource_, WinApp::kClientWidth, WinApp::kClientHeight, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, kRenderTextureClearColor_);
-//
-//	// RTVの設定
-//	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
-//	rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB; // 出力結果をSRGBに変換して書き込む
-//	rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D; // 2Dテクスチャとして書き込む
-//
-//	renderTextureRTVHandle_ = GetCPUDescriptorHandle(rtvHeap_.Get(), descriptorSizeRTV_, 2);
-//	
-//	// RTVの生成
-//	device_->CreateRenderTargetView(renderTextureResource_.Get(), &rtvDesc, renderTextureRTVHandle_);
-//
-//	// SRVの生成
-//	//SrvManager::GetInstance()->CreateSRVForTexture2D(0, renderTextureResource_.Get(), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, 1);
-//
-//}
 
 void DX12Basic::InitRTV()
 {

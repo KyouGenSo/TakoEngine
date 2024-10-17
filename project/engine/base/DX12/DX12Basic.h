@@ -276,15 +276,6 @@ private: // メンバ変数
 	// RTVハンドル
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle_[kRtvHandleCount];
 
-	//// レンダーテクスチャリソース
-	//ComPtr<ID3D12Resource> renderTextureResource_;
-
-	//// レンダーテクスチャの RTV ハンドル
-	//D3D12_CPU_DESCRIPTOR_HANDLE renderTextureRTVHandle_;
-
-	//// レンダーテクスチャのclearColor
-	//const Vector4 kRenderTextureClearColor_ = { 1.0f, 0.0f, 0.0f, 1.0f };
-
 	// フェンス
 	ComPtr<ID3D12Fence> fence_;
 
