@@ -62,8 +62,21 @@ void Draw2D::Finalize()
 
 void Draw2D::Update()
 {
+	for (auto triangleData : triangleDatas_)
+	{
+		triangleData->colorBuffer->Release();
+		triangleData->vertexBuffer->Release();
+	}
+
+	for (auto lineData : lineDatas_)
+	{
+		lineData->colorBuffer->Release();
+		lineData->vertexBuffer->Release();
+	}
+
 	triangleDatas_.clear();
 	lineDatas_.clear();
+
 }
 
 void Draw2D::ImGui()

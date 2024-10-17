@@ -61,10 +61,10 @@ public: // 構造体
 		float weight;
 		// 頂点バッファ
 		ComPtr<ID3D12Resource> vertexBuffer;
-		// 頂点バッファビュー
-		D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
 		// カラーバッファ
 		ComPtr<ID3D12Resource> colorBuffer;
+		// 頂点バッファビュー
+		D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
 	};
 
 public: // メンバ関数
