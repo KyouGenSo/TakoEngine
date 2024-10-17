@@ -108,12 +108,12 @@ private: // プライベートメンバ関数
 	/// <summary>
 	/// ルートシグネチャの作成
 	/// </summary>
-	void CreateRootSignature();
+	void CreateRootSignature(ComPtr<ID3D12RootSignature>& rootSignature);
 
 	/// <summary>
 	/// パイプラインステートの生成
 	/// </summary>
-	void CreatePSO(D3D12_PRIMITIVE_TOPOLOGY_TYPE primitiveTopologyType, ComPtr<ID3D12PipelineState>& pipelineState);
+	void CreatePSO(D3D12_PRIMITIVE_TOPOLOGY_TYPE primitiveTopologyType, ComPtr<ID3D12PipelineState>& pipelineState, ComPtr<ID3D12RootSignature>& rootSignature);
 
 	///<summary>
 	/// 三角形の頂点データを生成
@@ -146,18 +146,14 @@ private: // プライベートメンバ関数
 	/// </summary>
 	void InitializeLineData(LineData* lineData);
 
-	/// <summary>
-	/// 共通描画設定
-	/// <summary>
-	void SetCommonRenderSetting();
-
 private: // メンバ変数
 
 	// DX12Basicクラスのインスタンス
 	DX12Basic* m_dx12_;
 
 	// ルートシグネチャ
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> triangleRootSignature_;
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> lineRootSignature_;
 
 	// パイプラインステート
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> trianglePipelineState_;

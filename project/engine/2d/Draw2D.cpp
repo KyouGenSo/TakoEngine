@@ -18,8 +18,8 @@ void Draw2D::Initialize(DX12Basic* dx12)
 	m_dx12_ = dx12;
 
 	// パイプラインステートの生成
-	CreatePSO(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE, trianglePipelineState_);
-	CreatePSO(D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE, linePipelineState_);
+	CreatePSO(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE, trianglePipelineState_, triangleRootSignature_);
+	CreatePSO(D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE, linePipelineState_, lineRootSignature_);
 
 	// 座標変換行列データの生成
 	CreateTransformMatData();
@@ -27,6 +27,9 @@ void Draw2D::Initialize(DX12Basic* dx12)
 
 void Draw2D::Finalize()
 {
+	transformationMatrixBuffer_->Unmap(0, nullptr);
+	transformationMatrixBuffer_->Release();
+
 	for (auto triangleData : triangleDatas_)
 	{
 		triangleData->vertexBuffer->Unmap(0, nullptr);
@@ -49,9 +52,6 @@ void Draw2D::Finalize()
 	}
 
 	lineDatas_.clear();
-
-	transformationMatrixBuffer_->Unmap(0, nullptr);
-	transformationMatrixBuffer_->Release();
 
 	if (instance_ != nullptr)
 	{
@@ -106,8 +106,14 @@ void Draw2D::DrawTriangle(const Vector2& pos1, const Vector2& pos2, const Vector
 	// カラーデータの設定
 	triangleData->color[0] = color;
 
-	// 共通の描画設定
-	SetCommonRenderSetting();
+	// ルートシグネチャの設定
+	m_dx12_->GetCommandList()->SetGraphicsRootSignature(triangleRootSignature_.Get());
+
+	// パイプラインステートの設定
+	m_dx12_->GetCommandList()->SetPipelineState(trianglePipelineState_.Get());
+
+	// トポロジの設定
+	m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// 頂点バッファビューの設定
 	m_dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &triangleData->vertexBufferView);
@@ -143,7 +149,7 @@ void Draw2D::DrawLine(const Vector2& start, const Vector2& end, const Vector4& c
 	lineData->color[0] = color;
 
 	// ルートシグネチャの設定
-	m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
+	m_dx12_->GetCommandList()->SetGraphicsRootSignature(lineRootSignature_.Get());
 
 	// パイプラインステートの設定
 	m_dx12_->GetCommandList()->SetPipelineState(linePipelineState_.Get());
@@ -170,19 +176,7 @@ void Draw2D::DrawLine(const Vector2& start, const Vector2& end, const Vector4& c
 	}
 }
 
-void Draw2D::SetCommonRenderSetting()
-{
-	// ルートシグネチャの設定
-	m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
-
-	// パイプラインステートの設定
-	m_dx12_->GetCommandList()->SetPipelineState(trianglePipelineState_.Get());
-
-	// トポロジの設定
-	m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-}
-
-void Draw2D::CreateRootSignature()
+void Draw2D::CreateRootSignature(ComPtr<ID3D12RootSignature>& rootSignature)
 {
 	HRESULT hr;
 
@@ -214,18 +208,18 @@ void Draw2D::CreateRootSignature()
 		assert(false);
 	}
 
-	hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature_.GetAddressOf()));
-	signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature_.GetAddressOf());
+	hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature.GetAddressOf()));
+	signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature.GetAddressOf());
 	assert(SUCCEEDED(hr));
 }
 
-void Draw2D::CreatePSO(D3D12_PRIMITIVE_TOPOLOGY_TYPE primitiveTopologyType, ComPtr<ID3D12PipelineState>& pipelineState)
+void Draw2D::CreatePSO(D3D12_PRIMITIVE_TOPOLOGY_TYPE primitiveTopologyType, ComPtr<ID3D12PipelineState>& pipelineState, ComPtr<ID3D12RootSignature>& rootSignature)
 {
 
 	HRESULT hr;
 
 	// RootSignatureの生成
-	CreateRootSignature();
+	CreateRootSignature(rootSignature);
 
 	// InputLayout
 	D3D12_INPUT_ELEMENT_DESC inputElementDescs[1] = {};
@@ -258,7 +252,7 @@ void Draw2D::CreatePSO(D3D12_PRIMITIVE_TOPOLOGY_TYPE primitiveTopologyType, ComP
 
 	// PSOの生成
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
-	graphicsPipelineStateDesc.pRootSignature = rootSignature_.Get();
+	graphicsPipelineStateDesc.pRootSignature = triangleRootSignature_.Get();
 	graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
 	graphicsPipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() };
 	graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
