@@ -74,6 +74,8 @@ void Audio::Update()
 			{
 				voiceData.second->DestroyVoice();
 				voiceData.second = nullptr;
+				
+				voiceDatas_.erase(voiceData.first);
 			}
 		}
 	}
