@@ -90,7 +90,7 @@ void DX12Basic::Finalize()
 	CloseHandle(fenceEvent_);
 }
 
-void DX12Basic::BeginDraw()
+void DX12Basic::SetRenderTexture()
 {
 	// DSVのハンドルを取得
 	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvHeap_->GetCPUDescriptorHandleForHeapStart();
@@ -122,7 +122,6 @@ void DX12Basic::SetSwapChain()
 
 	// クリアカラー
 	float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f };
-	//float clearColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
 	// 画面の色をクリア
 	commandList_->ClearRenderTargetView(rtvHandle_[backBufferIndex], clearColor, 0, nullptr);

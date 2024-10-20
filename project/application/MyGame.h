@@ -27,5 +27,7 @@ public: // メンバ関数
 
 private: // メンバ変数
 
+	float vignetteIntensity = 1.0f;
+	float vignettePower = 0.8f;
 
 };

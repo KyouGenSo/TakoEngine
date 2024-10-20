@@ -38,9 +38,9 @@ public: // メンバー関数
 	void Finalize();
 
 	/// <summary>
-	/// 描画前の処理
+	/// renderTextureを設定
 	/// </summary> 
-	void BeginDraw();
+	void SetRenderTexture();
 
 	/// <summary>
 	/// swapChainを設定
@@ -163,11 +163,6 @@ private: // プライベートメンバー関数
 	/// デスクリプタヒープの初期化
 	/// <summary>
 	void InitDescriptorHeap();
-
-	/// <summary>
-	/// レンダーテクスチャの初期化
-	/// <summary>
-	void InitRenderTexture();
 
 	/// <summary>
 	/// レンダーターゲットビューの初期化

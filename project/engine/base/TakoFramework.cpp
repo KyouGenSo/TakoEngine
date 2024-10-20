@@ -33,8 +33,6 @@ void TakoFramework::Initialize()
 
 	ModelManager::GetInstance()->Initialize(dx12_);
 
-	DebugCamera::GetInstance()->Initialize();
-
 	PostEffect::GetInstance()->Initialize(dx12_);
 
 	Object3dBasic::GetInstance()->Initialize(dx12_);
@@ -42,6 +40,8 @@ void TakoFramework::Initialize()
 	SpriteBasic::GetInstance()->Initialize(dx12_);
 
 	Draw2D::GetInstance()->Initialize(dx12_);
+
+	DebugCamera::GetInstance()->Initialize();
 
 	defaultCamera_ = new Camera();
 	defaultCamera_->SetRotate(Vector3(0.3f, 0.0f, 0.0f));
@@ -76,11 +76,11 @@ void TakoFramework::Finalize()
 	// シーンマネージャーの終了処理
 	SceneManager::GetInstance()->Finalize();
 
-	// デバッグカメラの解放
-	DebugCamera::GetInstance()->Finalize();
-
 	// Draw2Dの終了処理
 	Draw2D::GetInstance()->Finalize();
+
+	// デバッグカメラの解放
+	DebugCamera::GetInstance()->Finalize();
 
 #ifdef _DEBUG
 	// ImGuiManagerの終了処理

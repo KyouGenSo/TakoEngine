@@ -5,7 +5,7 @@
 #include "SceneManager.h"
 #include "Draw2D.h"
 #include "Object3dBasic.h"
-#include "DebugCamera.h"
+#include "PostEffect.h"
 
 void MyGame::Initialize()
 {
@@ -51,15 +51,13 @@ void MyGame::Update()
 
 	// カメラの更新
 	defaultCamera_->Update();
-
-
 	
 }
 
 void MyGame::Draw()
 {
 	// 描画前の処理(レンダーテクスチャを描画対象に設定)
-	dx12_->BeginDraw();
+	dx12_->SetRenderTexture();
 
 	/// ============================================= ///
 	/// ------------------シーン描画-------------------///
@@ -90,6 +88,13 @@ void MyGame::Draw()
 	SceneManager::GetInstance()->DrawImGui();
 
 	Draw2D::GetInstance()->ImGui();
+
+	ImGui::Begin("Vignette");
+	ImGui::DragFloat("Intensity", &vignetteIntensity, 0.01f, 0.0f, 5.0f);
+	ImGui::DragFloat("Power", &vignettePower, 0.01f, 0.0f, 5.0f);
+	ImGui::End();
+
+	PostEffect::GetInstance()->SetVignetteParam(vignetteIntensity, vignettePower);
 
 	imguiManager_->End();
 

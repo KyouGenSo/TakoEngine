@@ -1,6 +1,8 @@
 #pragma once
 #include <d3d12.h>
 #include <dxgi1_6.h>
+#include<unordered_map>
+#include<string>
 #include<wrl.h>
 #include"Vector4.h"
 #include "numbers"
@@ -18,6 +20,12 @@ private:
 	PostEffect& operator=(PostEffect&) = delete;
 
 public: // メンバ関数
+
+	struct VignetteParam
+	{
+		float intensity;
+		float power;
+	};
 
 	// ComPtrのエイリアス
 	template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
@@ -43,6 +51,8 @@ public: // メンバ関数
 	// レンダーテクスチャの取得
 	ID3D12Resource* GetRenderTextureResource() { return renderTextureResource_.Get(); }
 
+	void SetVignetteParam(float intensity, float power);
+
 private: // プライベートメンバー関数
 
 	// レンダーテクスチャの初期化
@@ -52,7 +62,10 @@ private: // プライベートメンバー関数
 	void CreateRootSignature();
 
 	// パイプラインステートの生成
-	void CreatePSO();
+	void CreatePSO(const std::string& effectName);
+
+	// VignetteParamを生成
+	void CreateVignetteParam();
 
 private: // メンバ変数
 
@@ -73,6 +86,11 @@ private: // メンバ変数
 
 	// パイプラインステート
 	ComPtr<ID3D12PipelineState> pipelineState_;
+	std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> pipelineStates_;
+
+	Microsoft::WRL::ComPtr<ID3D12Resource> vignetteParamResource_;
+
+	VignetteParam* vignetteParam_;
 
 	uint32_t srvIndex_ = 0;
 

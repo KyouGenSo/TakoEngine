@@ -2,6 +2,7 @@
 #include "DX12Basic.h"
 #include "SrvManager.h"
 #include "Logger.h"
+#include "StringUtility.h"
 
 PostEffect* PostEffect::instance_ = nullptr;
 
@@ -20,7 +21,9 @@ void PostEffect::Initialize(DX12Basic* dx12)
 
 	InitRenderTexture();
 
-	CreatePSO();
+	CreatePSO("VignetteRed");
+
+	CreateVignetteParam();
 }
 
 void PostEffect::Finalize()
@@ -57,6 +60,9 @@ void PostEffect::Draw()
 	// トポロジの設定
 	m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
+	// 定数バッファの設定
+	m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, vignetteParamResource_->GetGPUVirtualAddress());
+
 	// テクスチャ用のsrvヒープの設定
 	SrvManager::GetInstance()->BeginDraw();
 
@@ -78,6 +84,12 @@ void PostEffect::SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_ST
 	barrier.Transition.StateAfter = stateAfter;
 
 	m_dx12_->GetCommandList()->ResourceBarrier(1, &barrier);
+}
+
+void PostEffect::SetVignetteParam(float intensity, float power)
+{
+	vignetteParam_->intensity = intensity;
+	vignetteParam_->power = power;
 }
 
 void PostEffect::InitRenderTexture()
@@ -131,12 +143,16 @@ void PostEffect::CreateRootSignature()
 	descriptorRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
 
 	// RootParameterの設定。複数設定できるので配列
-	D3D12_ROOT_PARAMETER rootParameters[1] = {};
+	D3D12_ROOT_PARAMETER rootParameters[2] = {};
 
 	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
 	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
 	rootParameters[0].DescriptorTable.pDescriptorRanges = descriptorRange; // ディスクリプタレンジを設定
 	rootParameters[0].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange); // レンジの数
+
+	rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
+	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+	rootParameters[1].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
 
 	descriptionRootSignature.pParameters = rootParameters;
 	descriptionRootSignature.NumParameters = _countof(rootParameters);
@@ -156,9 +172,8 @@ void PostEffect::CreateRootSignature()
 	assert(SUCCEEDED(hr));
 }
 
-void PostEffect::CreatePSO()
+void PostEffect::CreatePSO(const std::string& effectName)
 {
-
 	HRESULT hr;
 
 	// RootSignatureの生成
@@ -181,10 +196,12 @@ void PostEffect::CreatePSO()
 	rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
 
 	// shaderのコンパイル
+	std::wstring psPath = L"resources/shaders/" + StringUtility::ConvertString(effectName) + L".PS.hlsl";
+
 	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(L"resources/shaders/FullScreen.VS.hlsl", L"vs_6_0");
 	assert(vertexShaderBlob != nullptr);
 
-	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(L"resources/shaders/VignetteRed.PS.hlsl", L"ps_6_0");
+	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(psPath, L"ps_6_0");
 	assert(pixelShaderBlob != nullptr);
 
 	// DepthStencilState
@@ -215,4 +232,17 @@ void PostEffect::CreatePSO()
 	// 実際に生成
 	hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
 	assert(SUCCEEDED(hr));
+}
+
+void PostEffect::CreateVignetteParam()
+{
+	// VignetteParamのリソース生成
+	vignetteParamResource_ = m_dx12_->MakeBufferResource(sizeof(VignetteParam));
+
+	// データの設定
+	vignetteParamResource_->Map(0, nullptr, reinterpret_cast<void**>(&vignetteParam_));
+
+	// データの初期化
+	vignetteParam_->intensity = 1.0f;
+	vignetteParam_->power = 0.8f;
 }
