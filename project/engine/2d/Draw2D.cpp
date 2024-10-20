@@ -30,28 +30,22 @@ void Draw2D::Initialize(DX12Basic* dx12)
 
 void Draw2D::Finalize()
 {
-	transformationMatrixBuffer_->Unmap(0, nullptr);
 	transformationMatrixBuffer_->Release();
 
 	for (auto triangleData : triangleDatas_)
 	{
-		triangleData->vertexBuffer->Unmap(0, nullptr);
-		triangleData->colorBuffer->Unmap(0, nullptr);
-
 		triangleData->vertexBuffer->Release();
 		triangleData->colorBuffer->Release();
-
+		delete triangleData;
 	}
 
 	triangleDatas_.clear();
 
 	for (auto lineData : lineDatas_)
 	{
-		lineData->vertexBuffer->Unmap(0, nullptr);
-		lineData->colorBuffer->Unmap(0, nullptr);
-
 		lineData->vertexBuffer->Release();
 		lineData->colorBuffer->Release();
+		delete lineData;
 	}
 
 	lineDatas_.clear();
@@ -294,7 +288,8 @@ void Draw2D::CreatePSO(D3D12_PRIMITIVE_TOPOLOGY_TYPE primitiveTopologyType, ComP
 void Draw2D::CreateTriangleVertexData(TriangleData* triangleData)
 {
 	// 頂点リソースを生成
-	triangleData->vertexBuffer = m_dx12_->MakeBufferResource(sizeof(VertexData) * 3);
+	//triangleData->vertexBuffer = m_dx12_->MakeBufferResource(sizeof(VertexData) * 3);
+	m_dx12_->CreateBufferResource(triangleData->vertexBuffer, sizeof(VertexData) * 3);
 
 	// 頂点バッファビューを作成する
 	triangleData->vertexBufferView.BufferLocation = triangleData->vertexBuffer->GetGPUVirtualAddress();
@@ -309,7 +304,8 @@ void Draw2D::CreateTriangleVertexData(TriangleData* triangleData)
 void Draw2D::CreateLineVertexData(LineData* lineData)
 {
 	// 頂点リソースを生成
-	lineData->vertexBuffer = m_dx12_->MakeBufferResource(sizeof(VertexData) * 2);
+	//lineData->vertexBuffer = m_dx12_->MakeBufferResource(sizeof(VertexData) * 2);
+	m_dx12_->CreateBufferResource(lineData->vertexBuffer, sizeof(VertexData) * 2);
 
 	// 頂点バッファビューを作成する
 	lineData->vertexBufferView.BufferLocation = lineData->vertexBuffer->GetGPUVirtualAddress();
@@ -323,7 +319,8 @@ void Draw2D::CreateLineVertexData(LineData* lineData)
 void Draw2D::CreateColorData(TriangleData* triangleData)
 {
 	// カラーリソースを生成
-	triangleData->colorBuffer = m_dx12_->MakeBufferResource(sizeof(Vector4));
+	//triangleData->colorBuffer = m_dx12_->MakeBufferResource(sizeof(Vector4));
+	m_dx12_->CreateBufferResource(triangleData->colorBuffer, sizeof(Vector4));
 
 	// カラーリソースをマップ
 	triangleData->colorBuffer->Map(0, nullptr, reinterpret_cast<void**>(&triangleData->color));
@@ -332,7 +329,8 @@ void Draw2D::CreateColorData(TriangleData* triangleData)
 void Draw2D::CreateColorData(LineData* lineData)
 {
 	// カラーリソースを生成
-	lineData->colorBuffer = m_dx12_->MakeBufferResource(sizeof(Vector4));
+	//lineData->colorBuffer = m_dx12_->MakeBufferResource(sizeof(Vector4));
+	m_dx12_->CreateBufferResource(lineData->colorBuffer, sizeof(Vector4));
 
 	// カラーリソースをマップ
 	lineData->colorBuffer->Map(0, nullptr, reinterpret_cast<void**>(&lineData->color));
@@ -341,7 +339,8 @@ void Draw2D::CreateColorData(LineData* lineData)
 void Draw2D::CreateTransformMatData()
 {
 	// 座標変換行列リソースを生成
-	transformationMatrixBuffer_ = m_dx12_->MakeBufferResource(sizeof(TransformationMatrix));
+	//transformationMatrixBuffer_ = m_dx12_->MakeBufferResource(sizeof(TransformationMatrix));
+	m_dx12_->CreateBufferResource(transformationMatrixBuffer_, sizeof(TransformationMatrix));
 
 	// 座標変換行列リソースをマップ
 	transformationMatrixBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixData_));
@@ -361,6 +360,7 @@ void Draw2D::InitializeTriangleData(TriangleData* triangleData)
 	CreateTriangleVertexData(triangleData);
 
 	CreateColorData(triangleData);
+
 }
 
 void Draw2D::InitializeLineData(LineData* lineData)
@@ -368,6 +368,7 @@ void Draw2D::InitializeLineData(LineData* lineData)
 	CreateLineVertexData(lineData);
 
 	CreateColorData(lineData);
+
 }
 
 

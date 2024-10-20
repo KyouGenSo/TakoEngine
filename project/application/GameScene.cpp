@@ -30,7 +30,6 @@ void GameScene::Initialize()
 	soundDataHandle = Audio::GetInstance()->LoadWaveFile("fanfare.wav");
 	voiceHandle = 0;
 
-
 	// spriteの初期化
 	sprite_ = new Sprite();
 	sprite_->Initialize("resources/uvChecker.png");

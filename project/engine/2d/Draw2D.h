@@ -5,6 +5,7 @@
 #include"Vector3.h"
 #include"Mat4x4Func.h"
 #include<vector>
+#include <list>
 
 using namespace std;
 
@@ -176,10 +177,10 @@ private: // メンバ変数
 	TransformationMatrix* transformationMatrixData_;
 
 	// 三角形データ
-	vector<TriangleData*> triangleDatas_;
+	list<TriangleData*> triangleDatas_;
 
 	// 線データ
-	vector<LineData*> lineDatas_;
+	list<LineData*> lineDatas_;
 
 	// debug用
 	bool isDebug_ = false;
