@@ -39,7 +39,7 @@ void GameScene::Initialize()
 	object3d_ = new Object3d();
 	object3d_->Initialize();
 	object3d_->SetModel("teapot.obj");
-	object3d_->SetTranslate(Vector3(-2.0f, 0.0f, 0.0f));
+	object3d_->SetTranslate(Vector3(0.0f, 0.0f, 0.0f));
 }
 
 void GameScene::Finalize()
