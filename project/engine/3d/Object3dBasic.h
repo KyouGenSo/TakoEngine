@@ -1,6 +1,7 @@
 #pragma once
 #include <d3d12.h>
 #include<wrl.h>
+#include "Matrix4x4.h"
 
 class DX12Basic;
 
@@ -20,14 +21,19 @@ private: // シングルトン設定
 public: // メンバー関数
 
 	///<summary>
-	///インスタンスの取得
+	///　インスタンスの取得
 	///	</summary>
 	static Object3dBasic* GetInstance();
 
 	///<summary>
-	///初期化
+	///　初期化
 	/// </summary>
 	void Initialize(DX12Basic* dx12);
+
+	///<summary>
+	///　更新
+	/// </summary>
+	void Update();
 
 	/// <summary>
 	/// 終了処理
@@ -35,16 +41,18 @@ public: // メンバー関数
 	void Finalize();
 
 	///<summary>
-	///共通描画設定
+	///　共通描画設定
 	/// </summary>
 	void SetCommonRenderSetting();
 
 	// -----------------------------------Getters-----------------------------------//
 	DX12Basic* GetDX12Basic() const { return m_dx12_; }
-	Camera* GetDefaultCamera() const { return defaultCamera_; }
+	Camera* GetCamera() const { return camera_; }
+	bool GetDebug() const { return isDebug_; }
 
 	// -----------------------------------Getters-----------------------------------//
-	void SetDefaultCamera(Camera* camera) { defaultCamera_ = camera; }
+	void SetCamera(Camera* camera) { camera_ = camera; }
+	void SetDebug(bool isDebug) { isDebug_ = isDebug; }
 
 private: // プライベートメンバー関数
 
@@ -63,7 +71,13 @@ private: // メンバー変数
 	DX12Basic* m_dx12_ = nullptr;
 
 	// デフォルトカメラ
-	Camera* defaultCamera_ = nullptr;
+	Camera* camera_ = nullptr;
+
+	// ビュープロジェクション行列
+	Matrix4x4 viewProjectionMatrix_;
+
+	// デバッグフラグ
+	bool isDebug_ = false;
 
 	// ルートシグネチャ
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;

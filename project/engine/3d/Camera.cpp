@@ -26,5 +26,5 @@ void Camera::Update()
 	projectionMatrix_ = Mat4x4::MakePerspective(fovY_, aspect_, nearZ_, farZ_);
 
 	// ビュープロジェクション行列を作る
-	viewProjectionMatrix_ = Mat4x4::Multiply(viewMatrix_, projectionMatrix_);
+	//viewProjectionMatrix_ = Mat4x4::Multiply(viewMatrix_, projectionMatrix_);
 }

@@ -7,10 +7,16 @@
 
 #ifdef _DEBUG
 #include"ImGui.h"
+#include "DebugCamera.h"
 #endif
 
 void TitleScene::Initialize()
 {
+#ifdef _DEBUG
+	DebugCamera::GetInstance()->Initialize();
+	DebugCamera::GetInstance()->Set2D();
+#endif
+
 	TextureManager::GetInstance()->LoadTexture("resources/uvChecker.png");
 
 	sprite_ = new Sprite();
@@ -34,6 +40,16 @@ void TitleScene::Finalize()
 
 void TitleScene::Update()
 {
+#ifdef _DEBUG
+	if (Input::GetInstance()->TriggerKey(DIK_F1)) {
+		Draw2D::GetInstance()->SetDebug(!Draw2D::GetInstance()->GetDebug());
+		isDebug_ = !isDebug_;
+	}
+
+	if (isDebug_) {
+		DebugCamera::GetInstance()->Update();
+	}
+#endif
 	sprite_->Update();
 
 	if (Input::GetInstance()->TriggerKey(DIK_SPACE))

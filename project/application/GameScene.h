@@ -50,4 +50,6 @@ private: // メンバ変数
 
 	uint32_t bgmSH;
 	uint32_t bgmVH;
+
+	bool isDebug_ = false;
 };

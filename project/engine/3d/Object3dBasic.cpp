@@ -1,6 +1,11 @@
 #include "Object3dBasic.h"
 #include "DX12Basic.h"
 #include "Logger.h"
+#include "Camera.h"
+
+#ifdef _DEBUG
+#include "DebugCamera.h"
+#endif
 
 Object3dBasic* Object3dBasic::instance_ = nullptr;
 
@@ -17,9 +22,24 @@ void Object3dBasic::Initialize(DX12Basic* dx12)
 {
 	m_dx12_ = dx12;
 
+	isDebug_ = false;
 
 	// パイプラインステートの生成
 	CreatePSO();
+}
+
+void Object3dBasic::Update()
+{
+	
+	if (isDebug_)
+	{
+		viewProjectionMatrix_ = DebugCamera::GetInstance()->GetViewProjectionMat();
+	} else
+	{
+		viewProjectionMatrix_ = camera_->GetViewMatrix() * camera_->GetProjectionMatrix();
+	}
+
+	camera_->SetViewProjectionMatrix(viewProjectionMatrix_);
 }
 
 void Object3dBasic::Finalize()

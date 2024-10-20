@@ -1,6 +1,7 @@
 #include "Draw2D.h"
 #include "Logger.h"
 #include "imgui.h"
+#include "DebugCamera.h"
 
 Draw2D* Draw2D::instance_ = nullptr;
 
@@ -16,6 +17,8 @@ Draw2D* Draw2D::GetInstance()
 void Draw2D::Initialize(DX12Basic* dx12)
 {
 	m_dx12_ = dx12;
+
+	isDebug_ = false;
 
 	// パイプラインステートの生成
 	CreatePSO(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE, trianglePipelineState_, triangleRootSignature_);
@@ -62,6 +65,19 @@ void Draw2D::Finalize()
 
 void Draw2D::Update()
 {
+	if (isDebug_)
+	{
+		Matrix4x4 viewMatrix = DebugCamera::GetInstance()->GetViewMat();
+
+		transformationMatrixData_->WVP = Mat4x4::Multiply(transformationMatrixData_->world, Mat4x4::Multiply(viewMatrix, Mat4x4::MakeOrtho(0.0f, 0.0f, float(WinApp::kClientWidth), float(WinApp::kClientHeight), 0.0f, 100.0f)));
+	} else
+	{
+		Matrix4x4 viewMatrix = Mat4x4::MakeIdentity();
+
+		transformationMatrixData_->WVP = Mat4x4::Multiply(transformationMatrixData_->world, Mat4x4::Multiply(viewMatrix, Mat4x4::MakeOrtho(0.0f, 0.0f, float(WinApp::kClientWidth), float(WinApp::kClientHeight), 0.0f, 100.0f)));
+
+	}
+
 	for (auto triangleData : triangleDatas_)
 	{
 		triangleData->colorBuffer->Release();

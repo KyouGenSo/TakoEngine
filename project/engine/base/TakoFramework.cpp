@@ -8,6 +8,7 @@
 #include "ModelManager.h"
 #include "Draw2D.h"
 #include "PostEffect.h"
+#include "DebugCamera.h"
 
 void TakoFramework::Initialize()
 {
@@ -32,6 +33,8 @@ void TakoFramework::Initialize()
 
 	ModelManager::GetInstance()->Initialize(dx12_);
 
+	DebugCamera::GetInstance()->Initialize();
+
 	PostEffect::GetInstance()->Initialize(dx12_);
 
 	Object3dBasic::GetInstance()->Initialize(dx12_);
@@ -45,7 +48,7 @@ void TakoFramework::Initialize()
 	defaultCamera_->SetTranslate(Vector3(0.0f, 4.0f, -10.0f));
 
 	// デフォルトカメラを設定
-	Object3dBasic::GetInstance()->SetDefaultCamera(defaultCamera_);
+	Object3dBasic::GetInstance()->SetCamera(defaultCamera_);
 #pragma endregion
 
 }
@@ -72,6 +75,9 @@ void TakoFramework::Finalize()
 
 	// シーンマネージャーの終了処理
 	SceneManager::GetInstance()->Finalize();
+
+	// デバッグカメラの解放
+	DebugCamera::GetInstance()->Finalize();
 
 	// Draw2Dの終了処理
 	Draw2D::GetInstance()->Finalize();
@@ -109,6 +115,10 @@ void TakoFramework::Update()
 
 	// シーンマネージャーの更新
 	SceneManager::GetInstance()->Update();
+
+	// Object3dBasicの更新
+	Object3dBasic::GetInstance()->Update();
+
 }
 
 void TakoFramework::Run()

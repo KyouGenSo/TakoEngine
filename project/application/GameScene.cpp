@@ -6,13 +6,20 @@
 #include"TextureManager.h"
 #include"SpriteBasic.h"
 #include"Input.h"
+#include "DebugCamera.h"
 
 #ifdef _DEBUG
 #include"ImGui.h"
+#include "DebugCamera.h"
 #endif
 
 void GameScene::Initialize()
 {
+#ifdef _DEBUG
+	DebugCamera::GetInstance()->Initialize();
+	DebugCamera::GetInstance()->Set3D();
+#endif
+
 	// textureの読み込み
 	TextureManager::GetInstance()->LoadTexture("resources/uvChecker.png");
 	TextureManager::GetInstance()->LoadTexture("resources/checkerBoard.png");
@@ -64,6 +71,19 @@ void GameScene::Finalize()
 
 void GameScene::Update()
 {
+#ifdef _DEBUG
+	if (Input::GetInstance()->TriggerKey(DIK_F1))
+	{
+		Object3dBasic::GetInstance()->SetDebug(!Object3dBasic::GetInstance()->GetDebug());
+		isDebug_ = !isDebug_;
+	}
+
+	if (isDebug_)
+	{
+		DebugCamera::GetInstance()->Update();
+	}
+#endif
+	
 	// Spriteの更新
 	for (uint32_t i = 0; i < spriteNum_; i++) {
 		sprites_[i]->Update();

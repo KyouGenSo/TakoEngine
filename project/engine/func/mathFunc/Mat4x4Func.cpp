@@ -178,6 +178,13 @@ namespace Mat4x4 {
 		return result;
 	}
 
+	Matrix4x4 MakeRotateXYZ(const Vector3& rotate)
+	{
+		Matrix4x4 result = MakeRotateXYZ(MakeRotateX(rotate.x), MakeRotateY(rotate.y), MakeRotateZ(rotate.z));
+
+		return result;
+	}
+
 	Matrix4x4 MakeAffine(const Vector3& scale, const Vector3& rotate, const Vector3& translate) {
 		Matrix4x4 result = MakeScale(scale);
 		result = Multiply(result, MakeRotateXYZ(MakeRotateX(rotate.x), MakeRotateY(rotate.y), MakeRotateZ(rotate.z)));

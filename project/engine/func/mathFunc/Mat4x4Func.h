@@ -38,6 +38,8 @@ namespace Mat4x4 {
 
 	Matrix4x4 MakeRotateXYZ(Matrix4x4 mX, Matrix4x4 mY, Matrix4x4 mZ);
 
+	Matrix4x4 MakeRotateXYZ(const Vector3& rotate);
+
 	Matrix4x4 MakeAffine(const Vector3& scale, const Vector3& rotate, const Vector3& translate);
 
 	Vector3 TransForm(const Matrix4x4& m, const Vector3& v);

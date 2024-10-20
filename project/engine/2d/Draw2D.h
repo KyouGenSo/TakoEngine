@@ -104,6 +104,16 @@ public: // メンバ関数
 	/// </summary>
 	void DrawLine(const Vector2& start, const Vector2& end, const Vector4& color);
 
+	/// <summary>
+	/// デバッグフラグtrueでデバッグモード
+	/// <summary>
+	void SetDebug(bool isDebug) { isDebug_ = isDebug; }
+
+	/// <summary>
+	/// デバッグフラグを取得
+	/// <summary>
+	const bool GetDebug() const { return isDebug_; }
+
 private: // プライベートメンバ関数
 	/// <summary>
 	/// ルートシグネチャの作成
@@ -171,4 +181,6 @@ private: // メンバ変数
 	// 線データ
 	vector<LineData*> lineDatas_;
 
+	// debug用
+	bool isDebug_ = false;
 };

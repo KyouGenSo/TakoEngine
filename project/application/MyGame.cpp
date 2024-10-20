@@ -4,6 +4,8 @@
 #include "SceneFactory.h"
 #include "SceneManager.h"
 #include "Draw2D.h"
+#include "Object3dBasic.h"
+#include "DebugCamera.h"
 
 void MyGame::Initialize()
 {
@@ -49,6 +51,8 @@ void MyGame::Update()
 
 	// カメラの更新
 	defaultCamera_->Update();
+
+
 	
 }
 

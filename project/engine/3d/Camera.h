@@ -33,6 +33,7 @@ public: // メンバー関数
 	void SetAspect(float aspect) { aspect_ = aspect; }
 	void SetNearClip(float nearZ) { nearZ_ = nearZ; }
 	void SetFarClip(float farZ) { farZ_ = farZ; }
+	void SetViewProjectionMatrix(const Matrix4x4& viewProjectionMatrix) { viewProjectionMatrix_ = viewProjectionMatrix; }
 
 private: // メンバー変数
 

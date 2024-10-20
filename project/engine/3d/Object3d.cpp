@@ -8,11 +8,11 @@
 #include <cassert>
 #include<fstream>
 #include<sstream>
+#include "Input.h"
 
 void Object3d::Initialize()
 {
-	//m_camera_ = m_obj3dBasic_->GetDefaultCamera();
-	m_camera_ = Object3dBasic::GetInstance()->GetDefaultCamera();
+	m_camera_ = Object3dBasic::GetInstance()->GetCamera();
 
 	// トランスフォームに初期化値を設定
 	transform_ = { Vector3(1.0f, 1.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 0.0f) };
@@ -26,6 +26,9 @@ void Object3d::Initialize()
 
 void Object3d::Update()
 {
+
+	m_camera_ = Object3dBasic::GetInstance()->GetCamera();
+
 	// トランスフォームでワールド行列を作る
 	Matrix4x4 worldMatrix = Mat4x4::MakeAffine(transform_.scale, transform_.rotate, transform_.translate);
 
@@ -46,11 +49,9 @@ void Object3d::Update()
 void Object3d::Draw()
 {
 	// 座標変換行列CBufferの場所を設定
-	//m_obj3dBasic_->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatResource_->GetGPUVirtualAddress());
 	Object3dBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatResource_->GetGPUVirtualAddress());
 
 	// 平行光源CBufferの場所を設定
-	//m_obj3dBasic_->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource_->GetGPUVirtualAddress());
 	Object3dBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource_->GetGPUVirtualAddress());
 
 	// モデルの描画
@@ -68,7 +69,6 @@ void Object3d::SetModel(const std::string& fileName)
 void Object3d::CreateTransformationMatrixData()
 {
 	// 座標変換行列リソースを生成
-	//transformationMatResource_ = m_obj3dBasic_->GetDX12Basic()->MakeBufferResource(sizeof(TransformationMatrix));
 	transformationMatResource_ = Object3dBasic::GetInstance()->GetDX12Basic()->MakeBufferResource(sizeof(TransformationMatrix));
 
 	// 座標変換行列リソースをマップ
@@ -82,7 +82,6 @@ void Object3d::CreateTransformationMatrixData()
 void Object3d::CreateDirectionalLightData()
 {
 	// 平行光源リソースを生成
-	//directionalLightResource_ = m_obj3dBasic_->GetDX12Basic()->MakeBufferResource(sizeof(DirectionalLight));
 	directionalLightResource_ = Object3dBasic::GetInstance()->GetDX12Basic()->MakeBufferResource(sizeof(DirectionalLight));
 
 	// 平行光源リソースをマップ

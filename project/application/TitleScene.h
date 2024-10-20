@@ -44,4 +44,5 @@ private: // メンバ変数
 	// 三角形2の頂点座標
 	Vector2 triangle2Pos_[3];
 
+	bool isDebug_ = false;
 };
