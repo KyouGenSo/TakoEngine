@@ -17,12 +17,6 @@ void TitleScene::Initialize()
 	DebugCamera::GetInstance()->Set2D();
 #endif
 
-	TextureManager::GetInstance()->LoadTexture("resources/uvChecker.png");
-
-	sprite_ = new Sprite();
-	sprite_->Initialize("resources/uvChecker.png");
-	sprite_->SetPos(Vector2(0.0f, 0.0f));
-
 	triangle1Pos_[0] = Vector2(200.0f, 200.0f);
 	triangle1Pos_[1] = Vector2(300.0f, 300.0f);
 	triangle1Pos_[2] = Vector2(100.0f, 300.0f);
@@ -35,7 +29,7 @@ void TitleScene::Initialize()
 
 void TitleScene::Finalize()
 {
-	delete sprite_;
+
 }
 
 void TitleScene::Update()
@@ -50,7 +44,6 @@ void TitleScene::Update()
 		DebugCamera::GetInstance()->Update();
 	}
 #endif
-	sprite_->Update();
 
 	if (Input::GetInstance()->TriggerKey(DIK_SPACE))
 	{
@@ -60,8 +53,6 @@ void TitleScene::Update()
 
 void TitleScene::Draw()
 {
-	SpriteBasic::GetInstance()->SetCommonRenderSetting();
-	//sprite_->Draw();
 
 	Draw2D::GetInstance()->DrawTriangle(triangle1Pos_[0], triangle1Pos_[1], triangle1Pos_[2], Vector4(1.0f, 0.0f, 0.0f, 1.0f));
 
@@ -73,34 +64,6 @@ void TitleScene::Draw()
 void TitleScene::DrawImGui()
 {
 #ifdef _DEBUG
-
-	ImGui::Begin("Sprite");
-
-	// set sprite position
-	ImGui::Text("Sprite Position");
-	Vector2 spritePos = sprite_->GetPos();
-	ImGui::DragFloat2("Position", &spritePos.x, 0.1f);
-	sprite_->SetPos(spritePos);
-
-	// set sprite size
-	ImGui::Text("Sprite Size");
-	Vector2 spriteSize = sprite_->GetSize();
-	ImGui::DragFloat2("Size", &spriteSize.x, 0.1f);
-	sprite_->SetSize(spriteSize);
-
-	// set sprite rotation
-	ImGui::Text("Sprite Rotation");
-	float spriteRotation = sprite_->GetRotation();
-	ImGui::DragFloat("Rotation", &spriteRotation, 0.1f);
-	sprite_->SetRotation(spriteRotation);
-
-	// set sprite color
-	ImGui::Text("Sprite Color");
-	Vector4 spriteColor = sprite_->GetColor();
-	ImGui::ColorEdit4("Color", &spriteColor.x);
-	sprite_->SetColor(spriteColor);
-
-	ImGui::End();
 
 	ImGui::Begin("Triangle1");
 

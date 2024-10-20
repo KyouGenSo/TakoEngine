@@ -68,6 +68,26 @@ void GameScene::Update()
 
 	object3d_->SetRotate(Vector3(0.0f, object3d_->GetRotate().y + 0.01f, 0.0f));
 
+	if (Input::GetInstance()->PushKey(DIK_UP))
+	{
+		object3d_->SetTranslate(Vector3(object3d_->GetTranslate().x, object3d_->GetTranslate().y, object3d_->GetTranslate().z + 0.05f));
+	}
+
+	if (Input::GetInstance()->PushKey(DIK_DOWN))
+	{
+		object3d_->SetTranslate(Vector3(object3d_->GetTranslate().x, object3d_->GetTranslate().y, object3d_->GetTranslate().z - 0.05f));
+	}
+
+	if (Input::GetInstance()->PushKey(DIK_LEFT))
+	{
+		object3d_->SetTranslate(Vector3(object3d_->GetTranslate().x - 0.05f, object3d_->GetTranslate().y, object3d_->GetTranslate().z));
+	}
+
+	if (Input::GetInstance()->PushKey(DIK_RIGHT))
+	{
+		object3d_->SetTranslate(Vector3(object3d_->GetTranslate().x + 0.05f, object3d_->GetTranslate().y, object3d_->GetTranslate().z));
+	}
+
 	// Object3dの更新
 	object3d_->Update();
 
@@ -103,6 +123,34 @@ void GameScene::Draw()
 void GameScene::DrawImGui()
 {
 #ifdef _DEBUG
+	ImGui::Begin("Sprite");
+
+	// set sprite position
+	ImGui::Text("Sprite Position");
+	Vector2 spritePos = sprite_->GetPos();
+	ImGui::DragFloat2("Position", &spritePos.x, 0.1f);
+	sprite_->SetPos(spritePos);
+
+	// set sprite size
+	ImGui::Text("Sprite Size");
+	Vector2 spriteSize = sprite_->GetSize();
+	ImGui::DragFloat2("Size", &spriteSize.x, 0.1f);
+	sprite_->SetSize(spriteSize);
+
+	// set sprite rotation
+	ImGui::Text("Sprite Rotation");
+	float spriteRotation = sprite_->GetRotation();
+	ImGui::DragFloat("Rotation", &spriteRotation, 0.1f);
+	sprite_->SetRotation(spriteRotation);
+
+	// set sprite color
+	ImGui::Text("Sprite Color");
+	Vector4 spriteColor = sprite_->GetColor();
+	ImGui::ColorEdit4("Color", &spriteColor.x);
+	sprite_->SetColor(spriteColor);
+
+	ImGui::End();
+
 	ImGui::Begin("Audio");
 	if (ImGui::Button("Play Fanfare")) {
 		voiceHandle = Audio::GetInstance()->PlayWave(soundDataHandle, loopFlag, volume);

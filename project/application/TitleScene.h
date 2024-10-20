@@ -35,9 +35,6 @@ public: // メンバ関数
 
 private: // メンバ変数
 
-	// スプライト
-	Sprite* sprite_;
-
 	// 三角形1の頂点座標
 	Vector2 triangle1Pos_[3];
 
