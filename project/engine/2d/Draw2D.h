@@ -27,10 +27,6 @@ public: // 構造体
 	struct VertexData
 	{
 		Vector2 position;
-	};
-
-	struct ColorData
-	{
 		Vector4 color;
 	};
 
@@ -45,11 +41,8 @@ public: // 構造体
 	struct TriangleData
 	{
 		VertexData* vertexData;
-		Vector4* color;
 		// 頂点バッファ
 		ComPtr<ID3D12Resource> vertexBuffer;
-		// カラーバッファ
-		ComPtr<ID3D12Resource> colorBuffer;
 		// 頂点バッファビュー
 		D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
 	};
@@ -58,12 +51,8 @@ public: // 構造体
 	struct LineData
 	{
 		VertexData* vertexData;
-		Vector4* color;
-		float weight;
 		// 頂点バッファ
 		ComPtr<ID3D12Resource> vertexBuffer;
-		// カラーバッファ
-		ComPtr<ID3D12Resource> colorBuffer;
 		// 頂点バッファビュー
 		D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
 	};
@@ -106,6 +95,11 @@ public: // メンバ関数
 	void DrawLine(const Vector2& start, const Vector2& end, const Vector4& color);
 
 	/// <summary>
+	/// リセット
+	/// </summary>
+	void Reset();
+
+	/// <summary>
 	/// デバッグフラグtrueでデバッグモード
 	/// <summary>
 	void SetDebug(bool isDebug) { isDebug_ = isDebug; }
@@ -137,12 +131,6 @@ private: // プライベートメンバ関数
 	void CreateLineVertexData(LineData* lineData);
 
 	///<summary>
-	/// カラーデータを生成
-	/// </summary>
-	void CreateColorData(TriangleData* triangleData);
-	void CreateColorData(LineData* lineData);
-
-	///<summary>
 	/// 座標変換行列データを生成
 	/// </summary>
 	void CreateTransformMatData();
@@ -162,6 +150,17 @@ private: // メンバ変数
 	// DX12Basicクラスのインスタンス
 	DX12Basic* m_dx12_;
 
+	const uint32_t kTrriangleMaxCount = 4096;
+	const uint32_t kVertexCountTrriangle = 3;
+	const uint32_t kLineMaxCount = 4096;
+	const uint32_t kVertexCountLine = 2;
+
+	// 三角形のインデクス
+	uint32_t triangleIndex_ = 0;
+
+	// 線のインデクス
+	uint32_t lineIndex_ = 0;
+
 	// ルートシグネチャ
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> triangleRootSignature_;
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> lineRootSignature_;
@@ -177,10 +176,10 @@ private: // メンバ変数
 	TransformationMatrix* transformationMatrixData_;
 
 	// 三角形データ
-	list<TriangleData*> triangleDatas_;
+	TriangleData* triangleData_;
 
 	// 線データ
-	list<LineData*> lineDatas_;
+	LineData* lineData_;
 
 	// debug用
 	bool isDebug_ = false;

@@ -20,10 +20,13 @@ void TitleScene::Initialize()
 	triangle1Pos_[0] = Vector2(200.0f, 200.0f);
 	triangle1Pos_[1] = Vector2(300.0f, 300.0f);
 	triangle1Pos_[2] = Vector2(100.0f, 300.0f);
+	triangle1Color_ = Vector4(1.0f, 0.0f, 0.0f, 1.0f);
+
 
 	triangle2Pos_[0] = Vector2(500.0f, 200.0f);
 	triangle2Pos_[1] = Vector2(600.0f, 300.0f);
 	triangle2Pos_[2] = Vector2(400.0f, 300.0f);
+	triangle2Color_ = Vector4(0.0f, 1.0f, 0.0f, 1.0f);
 
 }
 
@@ -54,11 +57,13 @@ void TitleScene::Update()
 void TitleScene::Draw()
 {
 
-	Draw2D::GetInstance()->DrawTriangle(triangle1Pos_[0], triangle1Pos_[1], triangle1Pos_[2], Vector4(1.0f, 0.0f, 0.0f, 1.0f));
+	Draw2D::GetInstance()->DrawTriangle(triangle1Pos_[0], triangle1Pos_[1], triangle1Pos_[2], triangle1Color_);
 
-	Draw2D::GetInstance()->DrawTriangle(triangle2Pos_[0], triangle2Pos_[1], triangle2Pos_[2], Vector4(0.0f, 1.0f, 0.0f, 1.0f));
+	Draw2D::GetInstance()->DrawTriangle(triangle2Pos_[0], triangle2Pos_[1], triangle2Pos_[2], triangle2Color_);
 
 	Draw2D::GetInstance()->DrawLine(Vector2(100.0f, 100.0f), Vector2(600.0f, 100.0f), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+
+	Draw2D::GetInstance()->DrawLine(Vector2(100.0f, 200.0f), Vector2(600.0f, 200.0f), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 }
 
 void TitleScene::DrawImGui()
@@ -72,6 +77,9 @@ void TitleScene::DrawImGui()
 	ImGui::DragFloat2("Position1", &triangle1Pos_[0].x, 0.1f);
 	ImGui::DragFloat2("Position2", &triangle1Pos_[1].x, 0.1f);
 	ImGui::DragFloat2("Position3", &triangle1Pos_[2].x, 0.1f);
+	// set triangle1 color
+	ImGui::Text("Triangle1 Color");
+	ImGui::ColorEdit4("Color", &triangle1Color_.x);
 
 	ImGui::End();
 
@@ -82,6 +90,9 @@ void TitleScene::DrawImGui()
 	ImGui::DragFloat2("Position1", &triangle2Pos_[0].x, 0.1f);
 	ImGui::DragFloat2("Position2", &triangle2Pos_[1].x, 0.1f);
 	ImGui::DragFloat2("Position3", &triangle2Pos_[2].x, 0.1f);
+	// set triangle2 color
+	ImGui::Text("Triangle2 Color");
+	ImGui::ColorEdit4("Color", &triangle2Color_.x);
 
 	ImGui::End();
 
