@@ -125,7 +125,7 @@ private: // メンバー変数
 	float moveSpeed_ = 1.0f;
 
 	// カメラの回転速度
-	float rotateSpeed_ = 0.1f;
+	float rotateSpeed_ = 0.01f;
 
 	// 2Dカメラかどうか
 	bool is2D_ = false;

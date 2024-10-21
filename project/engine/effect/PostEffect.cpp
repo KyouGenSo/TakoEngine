@@ -23,11 +23,20 @@ void PostEffect::Initialize(DX12Basic* dx12)
 
 	CreatePSO("VignetteRed");
 
+	CreatePSO("GrayScale");
+
+	CreatePSO("VigRedGrayScale");
+
 	CreateVignetteParam();
 }
 
 void PostEffect::Finalize()
 {
+	for (auto& pso : pipelineStates_)
+	{
+		pso.second.ReleaseAndGetAddressOf();
+	}
+
 	if (instance_ != nullptr)
 	{
 		delete instance_;
@@ -48,14 +57,14 @@ void PostEffect::BeginDraw()
 	m_dx12_->GetCommandList()->ClearRenderTargetView(renderTextureRTVHandle_, clearColor, 0, nullptr);
 }
 
-void PostEffect::Draw()
+void PostEffect::Draw(const std::string& effectName)
 {
 
 	// ルートシグネチャの設定
-	m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
+	m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_[effectName].Get());
 
 	// パイプラインステートの設定
-	m_dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
+	m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_[effectName].Get());
 
 	// トポロジの設定
 	m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -114,7 +123,7 @@ void PostEffect::InitRenderTexture()
 	SrvManager::GetInstance()->CreateSRVForTexture2D(srvIndex_, renderTextureResource_.Get(), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, 1);
 }
 
-void PostEffect::CreateRootSignature()
+void PostEffect::CreateRootSignature(const std::string& effectName)
 {
 	HRESULT hr;
 
@@ -167,8 +176,8 @@ void PostEffect::CreateRootSignature()
 		assert(false);
 	}
 
-	hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature_.GetAddressOf()));
-	signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature_.GetAddressOf());
+	hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignatures_[effectName].GetAddressOf()));
+	signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignatures_[effectName].GetAddressOf());
 	assert(SUCCEEDED(hr));
 }
 
@@ -177,7 +186,7 @@ void PostEffect::CreatePSO(const std::string& effectName)
 	HRESULT hr;
 
 	// RootSignatureの生成
-	CreateRootSignature();
+	CreateRootSignature(effectName);
 
 	// InputLayout
 	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
@@ -211,7 +220,7 @@ void PostEffect::CreatePSO(const std::string& effectName)
 
 	// PSOの生成
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
-	graphicsPipelineStateDesc.pRootSignature = rootSignature_.Get();
+	graphicsPipelineStateDesc.pRootSignature = rootSignatures_[effectName].Get();
 	graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
 	graphicsPipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() };
 	graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
@@ -230,7 +239,7 @@ void PostEffect::CreatePSO(const std::string& effectName)
 	graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
 	// 実際に生成
-	hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
+	hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineStates_[effectName]));
 	assert(SUCCEEDED(hr));
 }
 

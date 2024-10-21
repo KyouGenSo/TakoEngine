@@ -43,7 +43,7 @@ public: // メンバ関数
 	void BeginDraw();
 
 	// 描画
-	void Draw();
+	void Draw(const std::string& effectName);
 
 	// バリアの設定
 	void SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
@@ -59,7 +59,7 @@ private: // プライベートメンバー関数
 	void InitRenderTexture();
 
 	// ルートシグネチャの生成
-	void CreateRootSignature();
+	void CreateRootSignature(const std::string& effectName);
 
 	// パイプラインステートの生成
 	void CreatePSO(const std::string& effectName);
@@ -82,16 +82,16 @@ private: // メンバ変数
 	const Vector4 kRenderTextureClearColor_ = { 0.1f, 0.25f, 0.5f, 1.0f };
 
 	// ルートシグネチャ
-	ComPtr<ID3D12RootSignature> rootSignature_;
+	std::unordered_map < std::string, ComPtr<ID3D12RootSignature>> rootSignatures_;
 
 	// パイプラインステート
-	ComPtr<ID3D12PipelineState> pipelineState_;
 	std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> pipelineStates_;
+
+	// シェーダーリソースビューのインデックス
+	uint32_t srvIndex_ = 0;
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> vignetteParamResource_;
 
 	VignetteParam* vignetteParam_;
-
-	uint32_t srvIndex_ = 0;
 
 };

@@ -353,5 +353,8 @@
     <FxCompile Include="resources\shaders\NoEffect.PS.hlsl">
       <Filter>Shader</Filter>
     </FxCompile>
+    <FxCompile Include="resources\shaders\VigRedGrayScale.PS.hlsl">
+      <Filter>Shader</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

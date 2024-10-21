@@ -135,16 +135,6 @@ private: // プライベートメンバ関数
 	/// </summary>
 	void CreateTransformMatData();
 
-	///<summary>
-	/// 三角形データの初期化
-	/// </summary>
-	void InitializeTriangleData(TriangleData* triangleData);
-
-	///<summary>
-	/// 線データの初期化
-	/// </summary>
-	void InitializeLineData(LineData* lineData);
-
 private: // メンバ変数
 
 	// DX12Basicクラスのインスタンス

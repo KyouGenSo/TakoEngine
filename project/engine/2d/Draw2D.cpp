@@ -32,10 +32,10 @@ void Draw2D::Initialize(DX12Basic* dx12)
 	lineData_ = new LineData();
 	
 	// 三角形の頂点データを生成
-	InitializeTriangleData(triangleData_);
+	CreateTriangleVertexData(triangleData_);
 
 	// 線の頂点データを生成
-	InitializeLineData(lineData_);
+	CreateLineVertexData(lineData_);
 }
 
 void Draw2D::Finalize()
@@ -302,17 +302,6 @@ void Draw2D::CreateTransformMatData()
 	transformationMatrixData_->world = worldMatrix;
 }
 
-void Draw2D::InitializeTriangleData(TriangleData* triangleData)
-{
-	CreateTriangleVertexData(triangleData);
-
-}
-
-void Draw2D::InitializeLineData(LineData* lineData)
-{
-	CreateLineVertexData(lineData);
-
-}
 
 
 

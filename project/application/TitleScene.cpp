@@ -48,7 +48,7 @@ void TitleScene::Update()
 	}
 #endif
 
-	if (Input::GetInstance()->TriggerKey(DIK_SPACE))
+	if (Input::GetInstance()->TriggerKey(DIK_RETURN))
 	{
 		SceneManager::GetInstance()->ChangeScene("game");
 	}

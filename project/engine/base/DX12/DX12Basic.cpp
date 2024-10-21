@@ -130,8 +130,6 @@ void DX12Basic::SetSwapChain()
 	commandList_->RSSetViewports(1, &viewport_);
 	commandList_->RSSetScissorRects(1, &scissorRect_);
 
-	PostEffect::GetInstance()->Draw();
-
 }
 
 void DX12Basic::EndDraw()

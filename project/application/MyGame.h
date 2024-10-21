@@ -30,4 +30,13 @@ private: // メンバ変数
 	float vignetteIntensity = 1.0f;
 	float vignettePower = 0.f;
 
+	enum PostEffectType
+	{
+		VignetteRed,
+		GrayScale,
+		VigRedGrayScale
+	};
+
+	PostEffectType postEffectType = VignetteRed;
+
 };

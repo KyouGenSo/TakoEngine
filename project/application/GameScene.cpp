@@ -67,31 +67,11 @@ void GameScene::Update()
 
 	object3d_->SetRotate(Vector3(0.0f, object3d_->GetRotate().y + 0.01f, 0.0f));
 
-	if (Input::GetInstance()->PushKey(DIK_UP))
-	{
-		object3d_->SetTranslate(Vector3(object3d_->GetTranslate().x, object3d_->GetTranslate().y, object3d_->GetTranslate().z + 0.05f));
-	}
-
-	if (Input::GetInstance()->PushKey(DIK_DOWN))
-	{
-		object3d_->SetTranslate(Vector3(object3d_->GetTranslate().x, object3d_->GetTranslate().y, object3d_->GetTranslate().z - 0.05f));
-	}
-
-	if (Input::GetInstance()->PushKey(DIK_LEFT))
-	{
-		object3d_->SetTranslate(Vector3(object3d_->GetTranslate().x - 0.05f, object3d_->GetTranslate().y, object3d_->GetTranslate().z));
-	}
-
-	if (Input::GetInstance()->PushKey(DIK_RIGHT))
-	{
-		object3d_->SetTranslate(Vector3(object3d_->GetTranslate().x + 0.05f, object3d_->GetTranslate().y, object3d_->GetTranslate().z));
-	}
-
 	// Object3dの更新
 	object3d_->Update();
 
 	// シーン遷移
-	if (Input::GetInstance()->TriggerKey(DIK_SPACE))
+	if (Input::GetInstance()->TriggerKey(DIK_RETURN))
 	{
 		SceneManager::GetInstance()->ChangeScene("title");
 	}
