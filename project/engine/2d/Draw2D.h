@@ -150,9 +150,9 @@ private: // メンバ変数
 	// DX12Basicクラスのインスタンス
 	DX12Basic* m_dx12_;
 
-	const uint32_t kTrriangleMaxCount = 4096;
+	const uint32_t kTrriangleMaxCount = 30096;
 	const uint32_t kVertexCountTrriangle = 3;
-	const uint32_t kLineMaxCount = 4096;
+	const uint32_t kLineMaxCount = 30096;
 	const uint32_t kVertexCountLine = 2;
 
 	// 三角形のインデクス
