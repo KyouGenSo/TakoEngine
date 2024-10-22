@@ -80,14 +80,17 @@ void Transition::Start(TransitionState state, TransitionType type, float duratio
 
 	duration_ = duration;
 
-	if (state_ == FADE_IN)
+	if (type_ == FADE)
 	{
-		alpha_ = 1.0f;
-		transitionTime_ = duration_;
-	} else if (state_ == FADE_OUT)
-	{
-		alpha_ = 0.0f;
-		transitionTime_ = 0.0f;
+		if (state_ == FADE_IN)
+		{
+			alpha_ = 1.0f;
+			transitionTime_ = duration_;
+		} else if (state_ == FADE_OUT)
+		{
+			alpha_ = 0.0f;
+			transitionTime_ = 0.0f;
+		}
 	}
 }
 

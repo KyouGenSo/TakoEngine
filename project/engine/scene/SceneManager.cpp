@@ -36,7 +36,7 @@ void SceneManager::Update()
 			scene_->Initialize();
 
 			// シーン遷移アニメーションの開始
-			Transition::GetInstance()->Start(Transition::FADE_IN, Transition::FADE, 0.5f);
+			Transition::GetInstance()->Start(Transition::FADE_IN, Transition::FADE, transitionTime_);
 
 			// 次のシーンの予約を解除
 			nextScene_ = nullptr;
@@ -94,7 +94,7 @@ void SceneManager::ChangeScene(const std::string& sceneName)
 	assert(m_sceneFactory_);
 	assert(nextScene_ == nullptr);
 
-	Transition::GetInstance()->Start(Transition::FADE_OUT, Transition::FADE, 0.5f);
+	Transition::GetInstance()->Start(Transition::FADE_OUT, Transition::FADE, transitionTime_);
 
 	// 次のシーンを生成
 	nextScene_ = m_sceneFactory_->CreateScene(sceneName); 

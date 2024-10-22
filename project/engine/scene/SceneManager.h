@@ -63,4 +63,7 @@ private: // メンバ変数
 
 	// シーンファクトリー
 	AbstractSceneFactory* m_sceneFactory_ = nullptr;
+
+	// シーン遷移アニメーション時間
+	float transitionTime_ = 0.5f;
 };
