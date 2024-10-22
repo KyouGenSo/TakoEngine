@@ -90,9 +90,8 @@ void PostEffect::SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_ST
 	m_dx12_->GetCommandList()->ResourceBarrier(1, &barrier);
 }
 
-void PostEffect::SetVignetteParam(float intensity, float power)
+void PostEffect::SetVignettePower(float power)
 {
-	vignetteParam_->intensity = intensity;
 	vignetteParam_->power = power;
 }
 
@@ -247,6 +246,5 @@ void PostEffect::CreateVignetteParam()
 	vignetteParamResource_->Map(0, nullptr, reinterpret_cast<void**>(&vignetteParam_));
 
 	// データの初期化
-	vignetteParam_->intensity = 1.0f;
 	vignetteParam_->power = 0.0f;
 }

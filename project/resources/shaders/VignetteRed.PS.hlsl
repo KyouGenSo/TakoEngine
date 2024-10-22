@@ -2,7 +2,6 @@
 
 struct VignetteParam
 {
-    float intensity;
     float power;
 };
 
@@ -20,7 +19,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     PixelShaderOutput output;
     output.color = gTexture.Sample(gSampler, input.texCoord);
     
-    float32_t2 correct = input.texCoord * (gVignetteParam.intensity - input.texCoord.xy);
+    float32_t2 correct = input.texCoord * (1.0f - input.texCoord.xy);
     
     float32_t vignette = correct.x * correct.y * 15.0f;
     

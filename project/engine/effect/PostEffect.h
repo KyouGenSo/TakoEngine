@@ -23,7 +23,6 @@ public: // メンバ関数
 
 	struct VignetteParam
 	{
-		float intensity;
 		float power;
 	};
 
@@ -51,7 +50,7 @@ public: // メンバ関数
 	// レンダーテクスチャの取得
 	ID3D12Resource* GetRenderTextureResource() { return renderTextureResource_.Get(); }
 
-	void SetVignetteParam(float intensity, float power);
+	void SetVignettePower(float power);
 
 private: // プライベートメンバー関数
 
