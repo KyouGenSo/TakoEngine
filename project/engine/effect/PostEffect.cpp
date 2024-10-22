@@ -248,5 +248,5 @@ void PostEffect::CreateVignetteParam()
 
 	// データの初期化
 	vignetteParam_->intensity = 1.0f;
-	vignetteParam_->power = 0.8f;
+	vignetteParam_->power = 0.0f;
 }
