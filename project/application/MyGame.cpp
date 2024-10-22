@@ -113,40 +113,6 @@ void MyGame::Draw()
 
 	Draw2D::GetInstance()->ImGui();
 
-	ImGui::Begin("PostEffect");
-
-	ImGui::BeginTabBar("PostEffectType");
-	if (ImGui::BeginTabItem("PostEffectType"))
-	{
-		if (ImGui::Selectable("VignetteRed", postEffectType == VignetteRed))
-		{
-			postEffectType = VignetteRed;
-		}
-		if (ImGui::Selectable("GrayScale", postEffectType == GrayScale))
-		{
-			postEffectType = GrayScale;
-		}
-		if (ImGui::Selectable("VigRedGrayScale", postEffectType == VigRedGrayScale))
-		{
-			postEffectType = VigRedGrayScale;
-		}
-		ImGui::EndTabItem();
-	}
-	ImGui::EndTabBar();
-
-	ImGui::Separator();
-
-	if (postEffectType == VigRedGrayScale || postEffectType == VignetteRed)
-	{
-		ImGui::Text("VignetteParam");
-		ImGui::DragFloat("Intensity", &vignetteIntensity, 0.01f, 0.0f, 5.0f);
-		ImGui::DragFloat("Power", &vignettePower, 0.01f, 0.0f, 5.0f);
-	}
-
-	ImGui::End();
-
-	PostEffect::GetInstance()->SetVignetteParam(vignetteIntensity, vignettePower);
-
 	imguiManager_->End();
 
 	//imguiの描画
