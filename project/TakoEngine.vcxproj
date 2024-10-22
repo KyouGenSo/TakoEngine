@@ -134,7 +134,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\TitleScene.cpp" />
     <ClCompile Include="engine\scene\SceneManager.cpp" />
     <ClCompile Include="application\SceneFactory.cpp" />
-    <ClCompile Include="Transition.cpp" />
+    <ClCompile Include="engine\scene\Transition.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\2d\DebugCamera.h" />
@@ -172,8 +172,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\TitleScene.h" />
     <ClInclude Include="engine\scene\SceneManager.h" />
     <ClInclude Include="application\SceneFactory.h" />
-    <ClInclude Include="Matrix3x3.h" />
-    <ClInclude Include="Transition.h" />
+    <ClInclude Include="engine\math\Matrix3x3.h" />
+    <ClInclude Include="engine\scene\Transition.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\FullScreen.hlsli">

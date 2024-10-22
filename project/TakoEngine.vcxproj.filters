@@ -197,7 +197,7 @@
     <ClCompile Include="engine\2d\DebugCamera.cpp">
       <Filter>ソース ファイル\engine\3d</Filter>
     </ClCompile>
-    <ClCompile Include="Transition.cpp">
+    <ClCompile Include="engine\scene\Transition.cpp">
       <Filter>ソース ファイル\engine\scene</Filter>
     </ClCompile>
   </ItemGroup>
@@ -301,7 +301,7 @@
     <ClInclude Include="engine\2d\Draw2D.h">
       <Filter>ヘッダー ファイル\engine\2d</Filter>
     </ClInclude>
-    <ClInclude Include="Matrix3x3.h">
+    <ClInclude Include="engine\math\Matrix3x3.h">
       <Filter>ヘッダー ファイル\engine\math</Filter>
     </ClInclude>
     <ClInclude Include="engine\effect\PostEffect.h">
@@ -310,7 +310,7 @@
     <ClInclude Include="engine\2d\DebugCamera.h">
       <Filter>ヘッダー ファイル\engine\3d</Filter>
     </ClInclude>
-    <ClInclude Include="Transition.h">
+    <ClInclude Include="engine\scene\Transition.h">
       <Filter>ヘッダー ファイル\engine\scene</Filter>
     </ClInclude>
   </ItemGroup>
