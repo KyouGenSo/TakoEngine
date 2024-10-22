@@ -1,6 +1,7 @@
 #pragma once
 #include "AbstractSceneFactory.h"
 
+
 class SceneManager
 {
 private: // シングルトン設定
@@ -45,11 +46,12 @@ public: // メンバ関数
 	/// </summary>
 	/// <param name="scene">　次のシーン </param>
 	void ChangeScene(const std::string& sceneName);
+	void ChangeScene(const std::string& sceneName, float duration);
 
 	/// <summary>
 	/// シーンファクトリーの設定
 	/// </summary>
-	void SetSceneFactory(AbstractSceneFactory* sceneFactory) { sceneFactory_ = sceneFactory; }
+	void SetSceneFactory(AbstractSceneFactory* sceneFactory) { m_sceneFactory_ = sceneFactory; }
 
 private: // メンバ変数
 
@@ -60,5 +62,5 @@ private: // メンバ変数
 	BaseScene* nextScene_ = nullptr;
 
 	// シーンファクトリー
-	AbstractSceneFactory* sceneFactory_ = nullptr;
+	AbstractSceneFactory* m_sceneFactory_ = nullptr;
 };

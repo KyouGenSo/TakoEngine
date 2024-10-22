@@ -197,6 +197,9 @@
     <ClCompile Include="engine\2d\DebugCamera.cpp">
       <Filter>ソース ファイル\engine\3d</Filter>
     </ClCompile>
+    <ClCompile Include="Transition.cpp">
+      <Filter>ソース ファイル\engine\scene</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\func\mathFunc\Mat4x4Func.h">
@@ -306,6 +309,9 @@
     </ClInclude>
     <ClInclude Include="engine\2d\DebugCamera.h">
       <Filter>ヘッダー ファイル\engine\3d</Filter>
+    </ClInclude>
+    <ClInclude Include="Transition.h">
+      <Filter>ヘッダー ファイル\engine\scene</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

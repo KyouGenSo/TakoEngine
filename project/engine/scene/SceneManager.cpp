@@ -1,4 +1,5 @@
 #include "SceneManager.h"
+#include "Transition.h"
 #include <cassert>
 
 SceneManager* SceneManager::instance_ = nullptr;
@@ -17,22 +18,29 @@ void SceneManager::Update()
 	// 次のシーンが予約されている場合
 	if (nextScene_)
 	{
-		// 現在のシーンがある場合
-		if (scene_)
+		// シーン遷移アニメーションが終了している場合
+		if (Transition::GetInstance()->IsFinished())
 		{
-			// 現在のシーンの終了処理
-			scene_->Finalize();
-			delete scene_;
+			// 現在のシーンがある場合
+			if (scene_)
+			{
+				// 現在のシーンの終了処理
+				scene_->Finalize();
+				delete scene_;
+			}
+
+			// シーンの切り替え
+			scene_ = nextScene_;
+
+			// シーンの初期化
+			scene_->Initialize();
+
+			// シーン遷移アニメーションの開始
+			Transition::GetInstance()->Start(Transition::FADE_IN, Transition::FADE, 0.5f);
+
+			// 次のシーンの予約を解除
+			nextScene_ = nullptr;
 		}
-
-		// シーンの切り替え
-		scene_ = nextScene_;
-
-		// シーンの初期化
-		scene_->Initialize();
-
-		// 次のシーンの予約を解除
-		nextScene_ = nullptr;
 	}
 
 	if (scene_)
@@ -40,6 +48,8 @@ void SceneManager::Update()
 		// シーンの更新
 		scene_->Update();
 	}
+
+	Transition::GetInstance()->Update();
 }
 
 void SceneManager::Draw()
@@ -48,6 +58,8 @@ void SceneManager::Draw()
 	{
 		scene_->Draw();
 	}
+
+	Transition::GetInstance()->Draw();
 }
 
 void SceneManager::DrawImGui()
@@ -69,13 +81,32 @@ void SceneManager::Finalize()
 	{
 		delete nextScene_;
 	}
+
+	if (instance_)
+	{
+		delete instance_;
+		instance_ = nullptr;
+	}
 }
 
 void SceneManager::ChangeScene(const std::string& sceneName)
 {
-	assert(sceneFactory_);
+	assert(m_sceneFactory_);
 	assert(nextScene_ == nullptr);
 
+	Transition::GetInstance()->Start(Transition::FADE_OUT, Transition::FADE, 0.5f);
+
 	// 次のシーンを生成
-	nextScene_ = sceneFactory_->CreateScene(sceneName);
+	nextScene_ = m_sceneFactory_->CreateScene(sceneName); 
+}
+
+void SceneManager::ChangeScene(const std::string& sceneName, float duration)
+{
+	assert(m_sceneFactory_);
+	assert(nextScene_ == nullptr);
+
+	Transition::GetInstance()->Start(Transition::FADE_OUT, Transition::FADE, duration);
+
+	// 次のシーンを生成
+	nextScene_ = m_sceneFactory_->CreateScene(sceneName);
 }

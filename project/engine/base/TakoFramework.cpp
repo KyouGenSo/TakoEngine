@@ -9,6 +9,7 @@
 #include "Draw2D.h"
 #include "PostEffect.h"
 #include "DebugCamera.h"
+#include "Transition.h"
 
 void TakoFramework::Initialize()
 {
@@ -40,6 +41,8 @@ void TakoFramework::Initialize()
 	SpriteBasic::GetInstance()->Initialize(dx12_);
 
 	Draw2D::GetInstance()->Initialize(dx12_);
+
+	Transition::GetInstance()->Initialize();
 
 	DebugCamera::GetInstance()->Initialize();
 
@@ -81,6 +84,9 @@ void TakoFramework::Finalize()
 
 	// デバッグカメラの解放
 	DebugCamera::GetInstance()->Finalize();
+
+	// トランジションの解放
+	Transition::GetInstance()->Finalize();
 
 #ifdef _DEBUG
 	// ImGuiManagerの終了処理
