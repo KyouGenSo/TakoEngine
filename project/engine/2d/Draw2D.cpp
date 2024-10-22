@@ -167,6 +167,77 @@ void Draw2D::DrawBox(const Vector2& pos, const Vector2& size, const Vector4& col
 	boxVertexIndex_ += kVertexCountBox + 1;
 }
 
+void Draw2D::DrawBox(const Vector2& pos, const Vector2& size, const float angle, const Vector4& color)
+{
+	// 回転行列の生成
+	Matrix4x4 rotationMatrix = Mat4x4::MakeRotateZ(angle);
+
+	float left = 0.0f;
+	float right = size.x;
+	float top = 0.0f;
+	float bottom = size.y;
+
+	std::array<Vector2, 4> vertexPos =
+	{
+		Vector2(left, top),    // 左上
+		Vector2(right, top),   // 右上
+		Vector2(right, bottom),// 右下
+		Vector2(left, bottom), // 左下
+	};
+
+	// 回転
+	for (auto& vertex : vertexPos)
+	{
+		Vector3 pos2D = { vertex.x, vertex.y, 0.0f };
+		pos2D = Mat4x4::TransForm(rotationMatrix, Vector3(pos2D.x, pos2D.y, 0.0f));
+		vertex = Vector2(pos2D.x, pos2D.y);
+	}
+
+	// 頂点データの設定
+	boxData_->vertexData[boxVertexIndex_].position = Vector2(pos.x + vertexPos[0].x, pos.y + vertexPos[0].y);
+	boxData_->vertexData[boxVertexIndex_ + 1].position = Vector2(pos.x + vertexPos[1].x, pos.y + vertexPos[1].y);
+	boxData_->vertexData[boxVertexIndex_ + 2].position = Vector2(pos.x + vertexPos[2].x, pos.y  + vertexPos[2].y);
+	boxData_->vertexData[boxVertexIndex_ + 3].position = Vector2(pos.x + vertexPos[3].x, pos.y  + vertexPos[3].y);
+
+	// インデックスデータの設定
+	boxData_->indexData[boxIndexIndex_] = 0;
+	boxData_->indexData[boxIndexIndex_ + 1] = 1;
+	boxData_->indexData[boxIndexIndex_ + 2] = 2;
+	boxData_->indexData[boxIndexIndex_ + 3] = 0;
+	boxData_->indexData[boxIndexIndex_ + 4] = 2;
+	boxData_->indexData[boxIndexIndex_ + 5] = 3;
+
+	// カラーデータの設定
+	boxData_->vertexData[boxVertexIndex_].color = color;
+	boxData_->vertexData[boxVertexIndex_ + 1].color = color;
+	boxData_->vertexData[boxVertexIndex_ + 2].color = color;
+	boxData_->vertexData[boxVertexIndex_ + 3].color = color;
+
+	// ルートシグネチャの設定
+	m_dx12_->GetCommandList()->SetGraphicsRootSignature(triangleRootSignature_.Get());
+
+	// パイプラインステートの設定
+	m_dx12_->GetCommandList()->SetPipelineState(trianglePipelineState_.Get());
+
+	// トポロジの設定
+	m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	// 頂点バッファビューの設定
+	m_dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &boxData_->vertexBufferView);
+
+	// インデックスバッファビューの設定
+	m_dx12_->GetCommandList()->IASetIndexBuffer(&boxData_->indexBufferView);
+
+	// 座標変換行列の設定
+	m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, transformationMatrixBuffer_->GetGPUVirtualAddress());
+
+	// 描画
+	m_dx12_->GetCommandList()->DrawIndexedInstanced(kIndexCountBox, 1, static_cast<UINT>(boxIndexIndex_), static_cast<INT>(boxVertexIndex_), 0);
+
+	boxIndexIndex_ += kIndexCountBox + 1;
+	boxVertexIndex_ += kVertexCountBox + 1;
+}
+
 void Draw2D::DrawLine(const Vector2& start, const Vector2& end, const Vector4& color)
 {
 

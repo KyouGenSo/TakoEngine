@@ -38,6 +38,7 @@ private: // メンバ変数
 	// 三角形1の頂点座標
 	Vector2 triangle1Pos_[3];
 	Vector4 triangle1Color_;
+	float angle_ = 0.0f;
 
 	// 三角形2の頂点座標
 	Vector2 triangle2Pos_[3];

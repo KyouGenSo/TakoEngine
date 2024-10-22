@@ -108,6 +108,7 @@ public: // メンバ関数
 	/// 矩形の描画
 	/// </summary>
 	void DrawBox(const Vector2& pos, const Vector2& size, const Vector4& color);
+	void DrawBox(const Vector2& pos, const Vector2& size, const float angle, const Vector4& color);
 
 	/// <summary>
 	/// 線の描画
