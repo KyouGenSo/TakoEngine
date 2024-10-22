@@ -1,6 +1,7 @@
 #include "TitleScene.h"
 #include "SceneManager.h"
 #include "TextureManager.h"
+#include "Object3dBasic.h"
 #include "SpriteBasic.h"
 #include "Input.h"
 #include "Draw2D.h"
@@ -17,16 +18,11 @@ void TitleScene::Initialize()
 	DebugCamera::GetInstance()->Set2D();
 #endif
 
-	triangle1Pos_[0] = Vector2(200.0f, 200.0f);
-	triangle1Pos_[1] = Vector2(300.0f, 300.0f);
-	triangle1Pos_[2] = Vector2(100.0f, 300.0f);
-	triangle1Color_ = Vector4(1.0f, 0.0f, 0.0f, 1.0f);
+	/// ================================== ///
+	///              初期化処理              ///
+	/// ================================== ///
 
 
-	triangle2Pos_[0] = Vector2(500.0f, 200.0f);
-	triangle2Pos_[1] = Vector2(600.0f, 300.0f);
-	triangle2Pos_[2] = Vector2(400.0f, 300.0f);
-	triangle2Color_ = Vector4(0.0f, 1.0f, 0.0f, 1.0f);
 
 }
 
@@ -43,10 +39,20 @@ void TitleScene::Update()
 		isDebug_ = !isDebug_;
 	}
 
+	/// ================================== ///
+	///              更新処理               ///
+	/// ================================== ///
+
+
+
+
+
 	if (isDebug_) {
 		DebugCamera::GetInstance()->Update();
 	}
 #endif
+
+
 
 	if (Input::GetInstance()->TriggerKey(DIK_RETURN))
 	{
@@ -56,58 +62,39 @@ void TitleScene::Update()
 
 void TitleScene::Draw()
 {
+	/// ================================== ///
+	///              描画処理               ///
+	/// ================================== ///
+	//------------------背景Spriteの描画------------------//
+	// スプライト共通描画設定
+	SpriteBasic::GetInstance()->SetCommonRenderSetting();
 
-	Draw2D::GetInstance()->DrawTriangle(triangle1Pos_[0], triangle1Pos_[1], triangle1Pos_[2], triangle1Color_);
 
-	Draw2D::GetInstance()->DrawTriangle(triangle2Pos_[0], triangle2Pos_[1], triangle2Pos_[2], triangle2Color_);
 
-	Draw2D::GetInstance()->DrawLine(Vector2(100.0f, 100.0f), Vector2(600.0f, 100.0f), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	//--------------------------------------------------//
 
-	Draw2D::GetInstance()->DrawLine(Vector2(100.0f, 200.0f), Vector2(600.0f, 200.0f), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 
-	Draw2D::GetInstance()->DrawBox(Vector2(800.0f, 200.0f), Vector2(100.0f, 100.0f), angle_, Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	//-------------------Modelの描画-------------------//
+	// 3Dモデル共通描画設定
+	Object3dBasic::GetInstance()->SetCommonRenderSetting();
 
-	Draw2D::GetInstance()->DrawBox(Vector2(800.0f, 400.0f), Vector2(100.0f, 100.0f), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+
+
+	//------------------------------------------------//
+
+
+	//------------------前景Spriteの描画------------------//
+	// スプライト共通描画設定
+	SpriteBasic::GetInstance()->SetCommonRenderSetting();
+
+
+
+	//--------------------------------------------------//
 }
 
 void TitleScene::DrawImGui()
 {
 #ifdef _DEBUG
-
-	ImGui::Begin("Triangle1");
-
-	// set triangle1 position
-	ImGui::Text("Triangle1 Position");
-	ImGui::DragFloat2("Position1", &triangle1Pos_[0].x, 0.1f);
-	ImGui::DragFloat2("Position2", &triangle1Pos_[1].x, 0.1f);
-	ImGui::DragFloat2("Position3", &triangle1Pos_[2].x, 0.1f);
-	// set triangle1 color
-	ImGui::Text("Triangle1 Color");
-	ImGui::ColorEdit4("Color", &triangle1Color_.x);
-
-	ImGui::End();
-
-	ImGui::Begin("Triangle2");
-
-	// set triangle2 position
-	ImGui::Text("Triangle2 Position");
-	ImGui::DragFloat2("Position1", &triangle2Pos_[0].x, 0.1f);
-	ImGui::DragFloat2("Position2", &triangle2Pos_[1].x, 0.1f);
-	ImGui::DragFloat2("Position3", &triangle2Pos_[2].x, 0.1f);
-	// set triangle2 color
-	ImGui::Text("Triangle2 Color");
-	ImGui::ColorEdit4("Color", &triangle2Color_.x);
-
-	ImGui::End();
-
-	ImGui::Begin("Box");
-
-	// set box position
-	ImGui::Text("Box rotation");
-	ImGui::DragFloat("Angle", &angle_, 0.1f);
-
-	ImGui::End();
-
 
 
 #endif // _DEBUG

@@ -33,16 +33,7 @@ public: // メンバ関数
 	void DrawImGui() override;
 
 private: // メンバ変数
-	float volume = 1.0f;
-	bool loopFlag = false;
 
-	// スプライト
-	Sprite* sprite_;
-
-	Object3d* object3d_;
-
-	uint32_t soundDataHandle;
-	uint32_t voiceHandle;
 
 	bool isDebug_ = false;
 };
