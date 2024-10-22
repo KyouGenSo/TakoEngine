@@ -29,10 +29,14 @@ void Draw2D::Initialize(DX12Basic* dx12)
 	CreateTransformMatData();
 
 	triangleData_ = new TriangleData();
+	boxData_ = new BoxData();
 	lineData_ = new LineData();
 	
 	// 三角形の頂点データを生成
 	CreateTriangleVertexData(triangleData_);
+
+	// 矩形の頂点データを生成
+	CreateBoxVertexData(boxData_);
 
 	// 線の頂点データを生成
 	CreateLineVertexData(lineData_);
@@ -43,6 +47,10 @@ void Draw2D::Finalize()
 	transformationMatrixBuffer_->Release();
 
 	triangleData_->vertexBuffer->Release();
+
+	boxData_->vertexBuffer->Release();
+
+	boxData_->indexBuffer->Release();
 
 	lineData_->vertexBuffer->Release();
 
@@ -112,6 +120,53 @@ void Draw2D::DrawTriangle(const Vector2& pos1, const Vector2& pos2, const Vector
 
 }
 
+void Draw2D::DrawBox(const Vector2& pos, const Vector2& size, const Vector4& color)
+{
+	// 頂点データの設定
+	boxData_->vertexData[boxVertexIndex_].position = Vector2(pos.x, pos.y);
+	boxData_->vertexData[boxVertexIndex_ + 1].position = Vector2(pos.x + size.x, pos.y);
+	boxData_->vertexData[boxVertexIndex_ + 2].position = Vector2(pos.x + size.x, pos.y + size.y);
+	boxData_->vertexData[boxVertexIndex_ + 3].position = Vector2(pos.x, pos.y + size.y);
+
+	// インデックスデータの設定
+	boxData_->indexData[boxIndexIndex_] = 0;
+	boxData_->indexData[boxIndexIndex_ + 1] = 1;
+	boxData_->indexData[boxIndexIndex_ + 2] = 2;
+	boxData_->indexData[boxIndexIndex_ + 3] = 0;
+	boxData_->indexData[boxIndexIndex_ + 4] = 2;
+	boxData_->indexData[boxIndexIndex_ + 5] = 3;
+
+	// カラーデータの設定
+	boxData_->vertexData[boxVertexIndex_].color = color;
+	boxData_->vertexData[boxVertexIndex_ + 1].color = color;
+	boxData_->vertexData[boxVertexIndex_ + 2].color = color;
+	boxData_->vertexData[boxVertexIndex_ + 3].color = color;
+
+	// ルートシグネチャの設定
+	m_dx12_->GetCommandList()->SetGraphicsRootSignature(triangleRootSignature_.Get());
+
+	// パイプラインステートの設定
+	m_dx12_->GetCommandList()->SetPipelineState(trianglePipelineState_.Get());
+
+	// トポロジの設定
+	m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	// 頂点バッファビューの設定
+	m_dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &boxData_->vertexBufferView);
+
+	// インデックスバッファビューの設定
+	m_dx12_->GetCommandList()->IASetIndexBuffer(&boxData_->indexBufferView);
+
+	// 座標変換行列の設定
+	m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, transformationMatrixBuffer_->GetGPUVirtualAddress());
+
+	// 描画
+	m_dx12_->GetCommandList()->DrawIndexedInstanced(kIndexCountBox, 1, static_cast<UINT>(boxIndexIndex_), static_cast<INT>(boxVertexIndex_), 0);
+
+	boxIndexIndex_ += kIndexCountBox + 1;
+	boxVertexIndex_ += kVertexCountBox + 1;
+}
+
 void Draw2D::DrawLine(const Vector2& start, const Vector2& end, const Vector4& color)
 {
 
@@ -148,6 +203,8 @@ void Draw2D::DrawLine(const Vector2& start, const Vector2& end, const Vector4& c
 void Draw2D::Reset()
 {
 	triangleIndex_ = 0;
+	boxVertexIndex_ = 0;
+	boxIndexIndex_ = 0;
 	lineIndex_ = 0;
 }
 
@@ -271,6 +328,34 @@ void Draw2D::CreateTriangleVertexData(TriangleData* triangleData)
 	// 頂点リソースをマップ
 	triangleData->vertexBuffer->Map(0, nullptr, reinterpret_cast<void**>(&triangleData->vertexData));
 
+}
+
+void Draw2D::CreateBoxVertexData(BoxData* boxData)
+{
+	UINT vertexBufferSize = sizeof(VertexData) * kVertexCountBox * kBoxMaxCount;
+	UINT indexBufferSize = sizeof(uint32_t) * kIndexCountBox * kBoxMaxCount;
+
+	// 頂点リソースを生成
+	boxData->vertexBuffer = m_dx12_->MakeBufferResource(vertexBufferSize);
+
+	// インデックスリソースを生成
+	boxData->indexBuffer = m_dx12_->MakeBufferResource(indexBufferSize);
+
+	// 頂点バッファビューを作成する
+	boxData->vertexBufferView.BufferLocation = boxData->vertexBuffer->GetGPUVirtualAddress();
+	boxData->vertexBufferView.SizeInBytes = vertexBufferSize;
+	boxData->vertexBufferView.StrideInBytes = sizeof(VertexData);
+
+	// インデックスバッファビューを作成する
+	boxData->indexBufferView.BufferLocation = boxData->indexBuffer->GetGPUVirtualAddress();
+	boxData->indexBufferView.SizeInBytes = indexBufferSize;
+	boxData->indexBufferView.Format = DXGI_FORMAT_R32_UINT;
+
+	// 頂点リソースをマップ
+	boxData->vertexBuffer->Map(0, nullptr, reinterpret_cast<void**>(&boxData->vertexData));
+
+	// インデックスリソースをマップ
+	boxData->indexBuffer->Map(0, nullptr, reinterpret_cast<void**>(&boxData->indexData));
 }
 
 void Draw2D::CreateLineVertexData(LineData* lineData)

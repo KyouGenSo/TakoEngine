@@ -64,6 +64,10 @@ void TitleScene::Draw()
 	Draw2D::GetInstance()->DrawLine(Vector2(100.0f, 100.0f), Vector2(600.0f, 100.0f), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 
 	Draw2D::GetInstance()->DrawLine(Vector2(100.0f, 200.0f), Vector2(600.0f, 200.0f), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+
+	Draw2D::GetInstance()->DrawBox(Vector2(800.0f, 200.0f), Vector2(100.0f, 100.0f), Vector4(0.0f, 1.0f, 1.0f, 1.0f));
+
+	Draw2D::GetInstance()->DrawBox(Vector2(800.0f, 400.0f), Vector2(100.0f, 100.0f), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 }
 
 void TitleScene::DrawImGui()

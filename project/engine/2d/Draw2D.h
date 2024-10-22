@@ -47,6 +47,21 @@ public: // 構造体
 		D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
 	};
 
+	// 矩形構造体
+	struct BoxData
+	{
+		VertexData* vertexData;
+		uint32_t* indexData;
+		// 頂点バッファ
+		ComPtr<ID3D12Resource> vertexBuffer;
+		// インデックスバッファ
+		ComPtr<ID3D12Resource> indexBuffer;
+		// 頂点バッファビュー
+		D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
+		// インデックスバッファビュー
+		D3D12_INDEX_BUFFER_VIEW indexBufferView;
+	};
+
 	// 線分構造体
 	struct LineData
 	{
@@ -90,6 +105,11 @@ public: // メンバ関数
 	void DrawTriangle(const Vector2& pos1, const Vector2& pos2, const Vector2& pos3, const Vector4& color);
 
 	/// <summary>
+	/// 矩形の描画
+	/// </summary>
+	void DrawBox(const Vector2& pos, const Vector2& size, const Vector4& color);
+
+	/// <summary>
 	/// 線の描画
 	/// </summary>
 	void DrawLine(const Vector2& start, const Vector2& end, const Vector4& color);
@@ -120,10 +140,15 @@ private: // プライベートメンバ関数
 	/// </summary>
 	void CreatePSO(D3D12_PRIMITIVE_TOPOLOGY_TYPE primitiveTopologyType, ComPtr<ID3D12PipelineState>& pipelineState, ComPtr<ID3D12RootSignature>& rootSignature);
 
-	///<summary>
+	/// <summary>
 	/// 三角形の頂点データを生成
 	/// </summary>
 	void CreateTriangleVertexData(TriangleData* triangleData);
+
+	/// <summary>
+	/// 矩形の頂点データを生成
+	/// </summary>
+	void CreateBoxVertexData(BoxData* boxData);
 
 	///<summary>
 	/// 線の頂点データを生成
@@ -142,11 +167,20 @@ private: // メンバ変数
 
 	const uint32_t kTrriangleMaxCount = 30096;
 	const uint32_t kVertexCountTrriangle = 3;
+
+	const uint32_t kBoxMaxCount = 30096;
+	const uint32_t kVertexCountBox = 4;
+	const uint32_t kIndexCountBox = 6;
+
 	const uint32_t kLineMaxCount = 30096;
 	const uint32_t kVertexCountLine = 2;
 
 	// 三角形のインデクス
 	uint32_t triangleIndex_ = 0;
+
+	// 矩形のインデクス
+	uint32_t boxIndexIndex_ = 0;
+	uint32_t boxVertexIndex_ = 0;
 
 	// 線のインデクス
 	uint32_t lineIndex_ = 0;
@@ -167,6 +201,9 @@ private: // メンバ変数
 
 	// 三角形データ
 	TriangleData* triangleData_;
+
+	// 矩形データ
+	BoxData* boxData_;
 
 	// 線データ
 	LineData* lineData_;
