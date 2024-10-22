@@ -101,14 +101,14 @@ void SceneManager::ChangeScene(const std::string& sceneName)
 
 }
 
-void SceneManager::ChangeScene(const std::string& sceneName, float duration)
+void SceneManager::ChangeScene(const std::string& sceneName, float transitionTime)
 {
 	assert(m_sceneFactory_);
 
 	// 次のシーンを生成
 	if (nextScene_ == nullptr)
 	{
-		Transition::GetInstance()->Start(Transition::FADE_OUT, Transition::FADE, duration);
+		Transition::GetInstance()->Start(Transition::FADE_OUT, Transition::FADE, transitionTime);
 		nextScene_ = m_sceneFactory_->CreateScene(sceneName);
 	}
 }

@@ -46,7 +46,7 @@ public: // メンバ関数
 	/// </summary>
 	/// <param name="scene">　次のシーン </param>
 	void ChangeScene(const std::string& sceneName);
-	void ChangeScene(const std::string& sceneName, float duration);
+	void ChangeScene(const std::string& sceneName, float transitionTime);
 
 	/// <summary>
 	/// シーンファクトリーの設定
