@@ -92,21 +92,23 @@ void SceneManager::Finalize()
 void SceneManager::ChangeScene(const std::string& sceneName)
 {
 	assert(m_sceneFactory_);
-	assert(nextScene_ == nullptr);
-
-	Transition::GetInstance()->Start(Transition::FADE_OUT, Transition::FADE, transitionTime_);
 
 	// 次のシーンを生成
-	nextScene_ = m_sceneFactory_->CreateScene(sceneName); 
+	if (nextScene_ == nullptr) {
+		Transition::GetInstance()->Start(Transition::FADE_OUT, Transition::FADE, transitionTime_);
+		nextScene_ = m_sceneFactory_->CreateScene(sceneName);
+	}
+
 }
 
 void SceneManager::ChangeScene(const std::string& sceneName, float duration)
 {
 	assert(m_sceneFactory_);
-	assert(nextScene_ == nullptr);
-
-	Transition::GetInstance()->Start(Transition::FADE_OUT, Transition::FADE, duration);
 
 	// 次のシーンを生成
-	nextScene_ = m_sceneFactory_->CreateScene(sceneName);
+	if (nextScene_ == nullptr)
+	{
+		Transition::GetInstance()->Start(Transition::FADE_OUT, Transition::FADE, duration);
+		nextScene_ = m_sceneFactory_->CreateScene(sceneName);
+	}
 }
