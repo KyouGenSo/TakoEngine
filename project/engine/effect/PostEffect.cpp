@@ -32,11 +32,6 @@ void PostEffect::Initialize(DX12Basic* dx12)
 
 void PostEffect::Finalize()
 {
-	for (auto& pso : pipelineStates_)
-	{
-		pso.second.ReleaseAndGetAddressOf();
-	}
-
 	if (instance_ != nullptr)
 	{
 		delete instance_;
