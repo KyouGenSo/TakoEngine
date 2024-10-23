@@ -107,7 +107,7 @@ void MyGame::Draw()
 
 	Draw2D::GetInstance()->ImGui();
 
-	// vignettePowerの調整
+	// PostEffectのパラメータ調整
 	ImGui::Begin("PostEffect");
 	if (ImGui::BeginTabBar("PostEffectTab"))
 	{
