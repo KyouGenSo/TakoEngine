@@ -29,13 +29,13 @@ void MyGame::Initialize()
 
 void MyGame::Finalize()
 {
+	TakoFramework::Finalize();
+
 	// Audioの解放
 	Audio::GetInstance()->Finalize();
 
 	// 入力クラスの解放
 	Input::GetInstance()->Finalize();
-
-	TakoFramework::Finalize();
 }
 
 void MyGame::Update()
