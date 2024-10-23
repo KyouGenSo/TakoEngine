@@ -20,6 +20,8 @@ void Draw2D::Initialize(DX12Basic* dx12)
 
 	isDebug_ = false;
 
+	viewMatrix_ = Mat4x4::MakeIdentity();
+
 	// パイプラインステートの生成
 	CreatePSO(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE, trianglePipelineState_, triangleRootSignature_);
 	CreatePSO(D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE, linePipelineState_, lineRootSignature_);
@@ -72,9 +74,8 @@ void Draw2D::Update()
 		transformationMatrixData_->WVP = Mat4x4::Multiply(transformationMatrixData_->world, Mat4x4::Multiply(viewMatrix, Mat4x4::MakeOrtho(0.0f, 0.0f, float(WinApp::kClientWidth), float(WinApp::kClientHeight), 0.0f, 100.0f)));
 	} else
 	{
-		Matrix4x4 viewMatrix = Mat4x4::MakeIdentity();
 
-		transformationMatrixData_->WVP = Mat4x4::Multiply(transformationMatrixData_->world, Mat4x4::Multiply(viewMatrix, Mat4x4::MakeOrtho(0.0f, 0.0f, float(WinApp::kClientWidth), float(WinApp::kClientHeight), 0.0f, 100.0f)));
+		transformationMatrixData_->WVP = Mat4x4::Multiply(transformationMatrixData_->world, Mat4x4::Multiply(viewMatrix_, Mat4x4::MakeOrtho(0.0f, 0.0f, float(WinApp::kClientWidth), float(WinApp::kClientHeight), 0.0f, 100.0f)));
 
 	}
 

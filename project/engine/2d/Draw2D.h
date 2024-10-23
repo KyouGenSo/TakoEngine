@@ -110,6 +110,11 @@ public: // メンバ関数
 	void SetDebug(bool isDebug) { isDebug_ = isDebug; }
 
 	/// <summary>
+	/// ビューマトリックスを設定
+	/// <summary>
+	void SetViewMatrix(const Matrix4x4& viewMatrix) { viewMatrix_ = viewMatrix; }
+
+	/// <summary>
 	/// デバッグフラグを取得
 	/// <summary>
 	const bool GetDebug() const { return isDebug_; }
@@ -174,6 +179,9 @@ private: // メンバ変数
 
 	// 座標変換行列データ
 	TransformationMatrix* transformationMatrixData_;
+
+	// ビューマトリックス
+	Matrix4x4 viewMatrix_;
 
 	// 三角形データ
 	vector<TriangleData*> triangleDatas_;
