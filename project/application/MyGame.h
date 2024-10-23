@@ -1,5 +1,6 @@
 #pragma once
 #include"TakoFramework.h"
+#include"Vector2.h"
 
 class MyGame : public TakoFramework
 {
@@ -27,16 +28,18 @@ public: // メンバ関数
 
 private: // メンバ変数
 
-	float vignetteIntensity = 1.0f;
 	float vignettePower = 0.f;
+	float bloomThreshold = 1.0f;
+	Vector2 bloomSize = { 3.0f, 3.0f };
 
 	enum PostEffectType
 	{
 		VignetteRed,
+		VignetteRedBloom,
 		GrayScale,
 		VigRedGrayScale
 	};
 
-	PostEffectType postEffectType = VignetteRed;
+	PostEffectType postEffectType = VignetteRedBloom;
 
 };

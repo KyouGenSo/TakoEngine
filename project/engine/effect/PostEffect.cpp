@@ -23,11 +23,15 @@ void PostEffect::Initialize(DX12Basic* dx12)
 
 	CreatePSO("VignetteRed");
 
+	CreatePSO("VignetteRedBloom");
+
 	CreatePSO("GrayScale");
 
 	CreatePSO("VigRedGrayScale");
 
 	CreateVignetteParam();
+
+	CreateVignetteRedBloomParam();
 }
 
 void PostEffect::Finalize()
@@ -65,7 +69,10 @@ void PostEffect::Draw(const std::string& effectName)
 	m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// 定数バッファの設定
-	m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, vignetteParamResource_->GetGPUVirtualAddress());
+	if (effectName == "VignetteRed" || effectName == "VigRedGrayScale")
+		m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, vignetteParamResource_->GetGPUVirtualAddress());
+	else if(effectName == "VignetteRedBloom")
+		m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, vignetteRedBloomParamResource_->GetGPUVirtualAddress());
 
 	// テクスチャ用のsrvヒープの設定
 	SrvManager::GetInstance()->BeginDraw();
@@ -93,6 +100,17 @@ void PostEffect::SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_ST
 void PostEffect::SetVignettePower(float power)
 {
 	vignetteParam_->power = power;
+	vignetteRedBloomParam_->power = power;
+}
+
+void PostEffect::SetBloomThreshold(float threshold)
+{
+	vignetteRedBloomParam_->threshold = threshold;
+}
+
+void PostEffect::SetBloomSize(Vector2 size)
+{
+	vignetteRedBloomParam_->blurSize = size;
 }
 
 void PostEffect::InitRenderTexture()
@@ -247,4 +265,19 @@ void PostEffect::CreateVignetteParam()
 
 	// データの初期化
 	vignetteParam_->power = 0.0f;
+}
+
+void PostEffect::CreateVignetteRedBloomParam()
+{
+	// VignetteRedBloomParamのリソース生成
+	vignetteRedBloomParamResource_ = m_dx12_->MakeBufferResource(sizeof(VignetteRedBloomParam));
+
+	// データの設定
+	vignetteRedBloomParamResource_->Map(0, nullptr, reinterpret_cast<void**>(&vignetteRedBloomParam_));
+
+	// データの初期化
+	vignetteRedBloomParam_->power = 0.0f;
+	vignetteRedBloomParam_->threshold = 1.0f;
+	vignetteRedBloomParam_->blurSize.x = 3.0f;
+	vignetteRedBloomParam_->blurSize.y = 3.0f;
 }

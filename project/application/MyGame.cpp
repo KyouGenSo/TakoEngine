@@ -84,6 +84,9 @@ void MyGame::Draw()
 	case::MyGame::VignetteRed:
 		PostEffect::GetInstance()->Draw("VignetteRed");
 		break;
+	case::MyGame::VignetteRedBloom:
+		PostEffect::GetInstance()->Draw("VignetteRedBloom");
+		break;
 	case::MyGame::GrayScale:
 		PostEffect::GetInstance()->Draw("GrayScale");
 		break;
@@ -103,6 +106,49 @@ void MyGame::Draw()
 	SceneManager::GetInstance()->DrawImGui();
 
 	Draw2D::GetInstance()->ImGui();
+
+	// vignettePowerの調整
+	ImGui::Begin("PostEffect");
+	if (ImGui::BeginTabBar("PostEffectTab"))
+	{
+
+		if (ImGui::BeginTabItem("PostEffectType"))
+		{
+			ImGui::RadioButton("VignetteRed", (int*)&postEffectType, VignetteRed);
+			ImGui::RadioButton("VignetteRedBloom", (int*)&postEffectType, VignetteRedBloom);
+			ImGui::RadioButton("GrayScale", (int*)&postEffectType, GrayScale);
+			ImGui::RadioButton("VigRedGrayScale", (int*)&postEffectType, VigRedGrayScale);
+
+			ImGui::EndTabItem();
+		}
+
+		//ImGui::Separator();
+		if (ImGui::BeginTabItem("PostEffect"))
+		{
+			if (postEffectType == VignetteRed || postEffectType == VignetteRedBloom || postEffectType == VigRedGrayScale)
+			{
+				ImGui::DragFloat("VignettePower", &vignettePower, 0.01f, 0.0f, 10.0f);
+				PostEffect::GetInstance()->SetVignettePower(vignettePower);
+			}
+
+			if (postEffectType == VignetteRedBloom)
+			{
+				ImGui::DragFloat("BloomThreshold", &bloomThreshold, 0.01f, 0.0f, 1.0f);
+				ImGui::DragFloat2("BloomSize", &bloomSize.x, 0.01f, 0.0f, 10.0f);
+				PostEffect::GetInstance()->SetBloomThreshold(bloomThreshold);
+				PostEffect::GetInstance()->SetBloomSize(bloomSize);
+			}
+
+			ImGui::EndTabItem();
+		}
+
+		ImGui::EndTabBar();
+	}
+
+
+	ImGui::End();
+
+	PostEffect::GetInstance()->SetVignettePower(vignettePower);
 
 	imguiManager_->End();
 

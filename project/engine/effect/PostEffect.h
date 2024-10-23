@@ -4,6 +4,7 @@
 #include<unordered_map>
 #include<string>
 #include<wrl.h>
+#include"Vector2.h"
 #include"Vector4.h"
 #include "numbers"
 
@@ -24,6 +25,13 @@ public: // メンバ関数
 	struct VignetteParam
 	{
 		float power;
+	};
+
+	struct VignetteRedBloomParam
+	{
+		float power;
+		float threshold;
+		Vector2 blurSize;
 	};
 
 	// ComPtrのエイリアス
@@ -52,6 +60,10 @@ public: // メンバ関数
 
 	void SetVignettePower(float power);
 
+	void SetBloomThreshold(float threshold);
+
+	void SetBloomSize(Vector2 size);
+
 private: // プライベートメンバー関数
 
 	// レンダーテクスチャの初期化
@@ -66,6 +78,9 @@ private: // プライベートメンバー関数
 	// VignetteParamを生成
 	void CreateVignetteParam();
 
+	// VignetteRedBloomParamを生成
+	void CreateVignetteRedBloomParam();
+
 private: // メンバ変数
 
 	// DX12の基本情報
@@ -78,7 +93,7 @@ private: // メンバ変数
 	D3D12_CPU_DESCRIPTOR_HANDLE renderTextureRTVHandle_;
 
 	// レンダーテクスチャのclearColor
-	const Vector4 kRenderTextureClearColor_ = { 0.1f, 0.25f, 0.5f, 1.0f };
+	const Vector4 kRenderTextureClearColor_ = { 0.05f, 0.05f, 0.05f, 1.0f };
 
 	// ルートシグネチャ
 	std::unordered_map < std::string, ComPtr<ID3D12RootSignature>> rootSignatures_;
@@ -89,8 +104,12 @@ private: // メンバ変数
 	// シェーダーリソースビューのインデックス
 	uint32_t srvIndex_ = 0;
 
+	// パラメーターリソース
 	Microsoft::WRL::ComPtr<ID3D12Resource> vignetteParamResource_;
+	Microsoft::WRL::ComPtr<ID3D12Resource> vignetteRedBloomParamResource_;
 
+	// パラメーターデータ
 	VignetteParam* vignetteParam_;
+	VignetteRedBloomParam* vignetteRedBloomParam_;
 
 };

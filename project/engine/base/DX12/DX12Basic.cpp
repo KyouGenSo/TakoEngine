@@ -121,7 +121,7 @@ void DX12Basic::SetSwapChain()
 	commandList_->OMSetRenderTargets(1, &rtvHandle_[backBufferIndex], false, nullptr);
 
 	// クリアカラー
-	float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f };
+	float clearColor[] = { 0.05f, 0.05f, 0.05f, 1.0f };
 
 	// 画面の色をクリア
 	commandList_->ClearRenderTargetView(rtvHandle_[backBufferIndex], clearColor, 0, nullptr);
