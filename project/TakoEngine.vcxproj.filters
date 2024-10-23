@@ -69,12 +69,6 @@
     <Filter Include="ヘッダー ファイル\application">
       <UniqueIdentifier>{aa73cc4d-6520-41f1-82d5-797920f965e9}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ソース ファイル\engine\debug">
-      <UniqueIdentifier>{ecb11b3b-61d3-4e46-bdad-993c65b124f5}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ヘッダー ファイル\engine\debug">
-      <UniqueIdentifier>{bc6db53e-c339-4623-ab40-a9a9adf5d39b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ヘッダー ファイル\engine\base\DX12">
       <UniqueIdentifier>{f0da5115-f16e-4374-8e36-6dfbc8576798}</UniqueIdentifier>
     </Filter>
@@ -104,6 +98,12 @@
     </Filter>
     <Filter Include="ソース ファイル\engine\effect">
       <UniqueIdentifier>{c5a029d3-ed5d-4985-b29d-9cab459f774c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\engine\imgui">
+      <UniqueIdentifier>{ecb11b3b-61d3-4e46-bdad-993c65b124f5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\engine\imgui">
+      <UniqueIdentifier>{bc6db53e-c339-4623-ab40-a9a9adf5d39b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -164,8 +164,8 @@
     <ClCompile Include="engine\base\DX12\SrvManager.cpp">
       <Filter>ソース ファイル\engine\base\DX12</Filter>
     </ClCompile>
-    <ClCompile Include="engine\debug\ImGuiManager.cpp">
-      <Filter>ソース ファイル\engine\debug</Filter>
+    <ClCompile Include="engine\imgui\ImGuiManager.cpp">
+      <Filter>ソース ファイル\engine\imgui</Filter>
     </ClCompile>
     <ClCompile Include="engine\audio\Audio.cpp">
       <Filter>ソース ファイル\engine\audio</Filter>
@@ -268,8 +268,8 @@
     <ClInclude Include="engine\base\DX12\SrvManager.h">
       <Filter>ヘッダー ファイル\engine\base\DX12</Filter>
     </ClInclude>
-    <ClInclude Include="engine\debug\ImGuiManager.h">
-      <Filter>ヘッダー ファイル\engine\debug</Filter>
+    <ClInclude Include="engine\imgui\ImGuiManager.h">
+      <Filter>ヘッダー ファイル\engine\imgui</Filter>
     </ClInclude>
     <ClInclude Include="engine\audio\Audio.h">
       <Filter>ヘッダー ファイル\engine\audio</Filter>
