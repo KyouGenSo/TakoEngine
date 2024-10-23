@@ -9,7 +9,7 @@
 
 class Audio
 {
-	
+
 private: // シングルトン設定
 
 	// インスタンス
@@ -51,7 +51,7 @@ public:
 	static Audio* GetInstance();
 
 	// サウンドの最大数
-	static const int kMaxSoundNum = 256;
+	static const int kMaxSoundNum = 3000;
 
 	/// <summary>
 	/// 初期化
@@ -71,7 +71,7 @@ public:
 	/// <summary>
 	/// サウンドの読み込み
 	/// </summary>
-	uint32_t LoadWaveFile(const char* filename);
+	uint32_t LoadWaveFile(const std::string& filename);
 
 	/// <summary>
 	/// サウンドの解放
@@ -113,8 +113,11 @@ private: // メンバー変数
 	// マスターボイス
 	IXAudio2MasteringVoice* masterVoice_ = nullptr;
 
+	std::array<std::string, kMaxSoundNum> soundNames_;
+
 	// サウンドデータ
 	std::array<SoundData, kMaxSoundNum> soundDatas_;
+	//std::unordered_map<std::string, SoundData> soundDatas_;
 
 	// ボイスデータ
 	std::unordered_map<uint32_t, IXAudio2SourceVoice*> voiceDatas_;
