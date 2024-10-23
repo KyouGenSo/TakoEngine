@@ -69,3 +69,11 @@ bool Input::TriggerKey(BYTE keyNum) const
 
 	return false;
 }
+
+bool Input::ReleaseKey(BYTE keyNum) const
+{
+	if (!keys_[keyNum] && prevKeys_[keyNum])
+		return true;
+
+	return false;
+}

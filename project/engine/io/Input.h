@@ -53,6 +53,13 @@ public:
 	/// <param name="key">取得したいキー</param>
 	bool TriggerKey(BYTE keyNum) const;
 
+	/// <summary>
+	/// キーのリリース状態を取得
+	/// </summary>
+	/// <param name="key">取得したいキー</param>
+	bool ReleaseKey(BYTE keyNum) const;
+
+
 private:
 	// WinAppクラスのインスタンス
 	WinApp* winApp_ = nullptr;
