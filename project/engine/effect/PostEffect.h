@@ -25,13 +25,14 @@ public: // メンバ関数
 	struct VignetteParam
 	{
 		float power;
+		float range;
 	};
 
 	struct VignetteRedBloomParam
 	{
 		float power;
+		float range;
 		float threshold;
-		Vector2 blurSize;
 	};
 
 	// ComPtrのエイリアス
@@ -60,9 +61,9 @@ public: // メンバ関数
 
 	void SetVignettePower(float power);
 
-	void SetBloomThreshold(float threshold);
+	void SetVignetteRange(float range);
 
-	void SetBloomSize(Vector2 size);
+	void SetBloomThreshold(float threshold);
 
 private: // プライベートメンバー関数
 

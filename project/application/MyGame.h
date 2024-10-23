@@ -29,8 +29,8 @@ public: // メンバ関数
 private: // メンバ変数
 
 	float vignettePower = 0.f;
+	float vignetteRange = 20.0f;
 	float bloomThreshold = 1.0f;
-	Vector2 bloomSize = { 3.0f, 3.0f };
 
 	enum PostEffectType
 	{

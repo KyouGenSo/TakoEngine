@@ -103,14 +103,16 @@ void PostEffect::SetVignettePower(float power)
 	vignetteRedBloomParam_->power = power;
 }
 
+void PostEffect::SetVignetteRange(float range)
+{
+	vignetteParam_->range = range;
+	vignetteRedBloomParam_->range = range;
+
+}
+
 void PostEffect::SetBloomThreshold(float threshold)
 {
 	vignetteRedBloomParam_->threshold = threshold;
-}
-
-void PostEffect::SetBloomSize(Vector2 size)
-{
-	vignetteRedBloomParam_->blurSize = size;
 }
 
 void PostEffect::InitRenderTexture()
@@ -265,6 +267,7 @@ void PostEffect::CreateVignetteParam()
 
 	// データの初期化
 	vignetteParam_->power = 0.0f;
+	vignetteParam_->range = 20.0f;
 }
 
 void PostEffect::CreateVignetteRedBloomParam()
@@ -278,6 +281,5 @@ void PostEffect::CreateVignetteRedBloomParam()
 	// データの初期化
 	vignetteRedBloomParam_->power = 0.0f;
 	vignetteRedBloomParam_->threshold = 1.0f;
-	vignetteRedBloomParam_->blurSize.x = 3.0f;
-	vignetteRedBloomParam_->blurSize.y = 3.0f;
+	vignetteRedBloomParam_->range = 20.0f;
 }

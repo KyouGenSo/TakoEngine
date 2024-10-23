@@ -3,6 +3,7 @@
 struct VignetteParam
 {
     float power;
+    float range;
 };
 
 ConstantBuffer<VignetteParam> gVignetteParam : register(b0);
@@ -21,7 +22,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     
     float32_t2 correct = input.texCoord * (1.0f - input.texCoord.xy);
     
-    float32_t vignette = correct.x * correct.y * 15.0f;
+    float32_t vignette = correct.x * correct.y * gVignetteParam.range;
     
     vignette = saturate(pow(vignette, gVignetteParam.power));
     
