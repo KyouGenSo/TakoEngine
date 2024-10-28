@@ -78,6 +78,14 @@ void Audio::Update()
 			}
 		}
 	}
+
+	for (auto it = voiceDatas_.begin(); it != voiceDatas_.end(); ) {
+		if (it->second == nullptr) {
+			it = voiceDatas_.erase(it);
+		} else {
+			++it;
+		}
+	}
 }
 
 uint32_t Audio::LoadWaveFile(const std::string& filename)
