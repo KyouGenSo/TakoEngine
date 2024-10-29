@@ -122,7 +122,8 @@ private: // メンバー変数
 	Matrix4x4 viewProjectionMat_;
 
 	// カメラの移動速度
-	float moveSpeed_ = 1.0f;
+	float moveSpeed2D_ = 1.0f;
+	float moveSpeed3D_ = 0.5f;
 
 	// カメラの回転速度
 	float rotateSpeed_ = 0.01f;

@@ -23,13 +23,16 @@ void GameScene::Initialize()
 	///              初期化処理              ///
 	/// ================================== ///
 
+	ModelManager::GetInstance()->LoadModel("teapot.obj");
 
-
+	object3d_ = new Object3d();
+	object3d_->Initialize();
+	object3d_->SetModel("teapot.obj");
 }
 
 void GameScene::Finalize()
 {
-
+	delete object3d_;
 }
 
 void GameScene::Update()
@@ -51,6 +54,7 @@ void GameScene::Update()
 	/// ================================== ///
 
 
+	object3d_->Update();
 
 
 	// シーン遷移
@@ -78,7 +82,7 @@ void GameScene::Draw()
 	// 3Dモデル共通描画設定
 	Object3dBasic::GetInstance()->SetCommonRenderSetting();
 
-
+	object3d_->Draw();
 
 	//-------------------Modelの描画-------------------//
 

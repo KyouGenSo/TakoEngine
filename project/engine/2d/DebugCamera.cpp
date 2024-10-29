@@ -83,7 +83,7 @@ void DebugCamera::Move2D()
 	if (Input::GetInstance()->PushKey(DIK_W))
 	{
 
-		Vector3 move = Vector3(0.0f, moveSpeed_, 0.0f);
+		Vector3 move = Vector3(0.0f, moveSpeed2D_, 0.0f);
 		// 移動ベクトルを角度分だけ回転させる
 		move = Mat4x4::TransForm(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
 
@@ -94,7 +94,7 @@ void DebugCamera::Move2D()
 	if (Input::GetInstance()->PushKey(DIK_S))
 	{
 
-		Vector3 move = Vector3(0.0f, -moveSpeed_, 0.0f);
+		Vector3 move = Vector3(0.0f, -moveSpeed2D_, 0.0f);
 		// 移動ベクトルを角度分だけ回転させる
 		move = Mat4x4::TransForm(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
 
@@ -104,7 +104,7 @@ void DebugCamera::Move2D()
 	if (Input::GetInstance()->PushKey(DIK_A))
 	{
 
-		Vector3 move = Vector3(moveSpeed_, 0.0f, 0.0f);
+		Vector3 move = Vector3(moveSpeed2D_, 0.0f, 0.0f);
 		// 移動ベクトルを角度分だけ回転させる
 		move = Mat4x4::TransForm(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
 
@@ -114,7 +114,7 @@ void DebugCamera::Move2D()
 	if (Input::GetInstance()->PushKey(DIK_D))
 	{
 
-		Vector3 move = Vector3(-moveSpeed_, 0.0f, 0.0f);
+		Vector3 move = Vector3(-moveSpeed2D_, 0.0f, 0.0f);
 		// 移動ベクトルを角度分だけ回転させる
 		move = Mat4x4::TransForm(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
 
@@ -128,7 +128,7 @@ void DebugCamera::Move3D()
 	if (Input::GetInstance()->PushKey(DIK_W))
 	{
 
-		Vector3 move = Vector3(0.0f, 0.0f, moveSpeed_);
+		Vector3 move = Vector3(0.0f, 0.0f, moveSpeed3D_);
 		// 移動ベクトルを角度分だけ回転させる
 		move = Mat4x4::TransForm(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
 
@@ -139,7 +139,7 @@ void DebugCamera::Move3D()
 	if (Input::GetInstance()->PushKey(DIK_S))
 	{
 
-		Vector3 move = Vector3(0.0f, 0.0f, -moveSpeed_);
+		Vector3 move = Vector3(0.0f, 0.0f, -moveSpeed3D_);
 		// 移動ベクトルを角度分だけ回転させ
 		move = Mat4x4::TransForm(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
 
@@ -149,7 +149,7 @@ void DebugCamera::Move3D()
 	if (Input::GetInstance()->PushKey(DIK_A))
 	{
 
-		Vector3 move = Vector3(-moveSpeed_, 0.0f, 0.0f);
+		Vector3 move = Vector3(-moveSpeed3D_, 0.0f, 0.0f);
 		// 移動ベクトルを角度分だけ回転させる
 		move = Mat4x4::TransForm(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
 
@@ -159,7 +159,7 @@ void DebugCamera::Move3D()
 	if (Input::GetInstance()->PushKey(DIK_D))
 	{
 
-		Vector3 move = Vector3(moveSpeed_, 0.0f, 0.0f);
+		Vector3 move = Vector3(moveSpeed3D_, 0.0f, 0.0f);
 		// 移動ベクトルを角度分だけ回転させる
 		move = Mat4x4::TransForm(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
 
@@ -169,7 +169,7 @@ void DebugCamera::Move3D()
 	if (Input::GetInstance()->PushKey(DIK_LSHIFT))
 	{
 
-		Vector3 move = Vector3(0.0f, -moveSpeed_, 0.0f);
+		Vector3 move = Vector3(0.0f, -moveSpeed3D_, 0.0f);
 		// 移動ベクトルを角度分だけ回転させる
 		move = Mat4x4::TransForm(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
 
@@ -179,7 +179,7 @@ void DebugCamera::Move3D()
 	if (Input::GetInstance()->PushKey(DIK_SPACE))
 	{
 
-		Vector3 move = Vector3(0.0f, moveSpeed_, 0.0f);
+		Vector3 move = Vector3(0.0f, moveSpeed3D_, 0.0f);
 		// 移動ベクトルを角度分だけ回転させる
 		move = Mat4x4::TransForm(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
 
