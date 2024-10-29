@@ -79,6 +79,7 @@ void Audio::Update()
 		}
 	}
 
+	// 再生終了したボイスの削除
 	for (auto it = voiceDatas_.begin(); it != voiceDatas_.end(); ) {
 		if (it->second == nullptr) {
 			it = voiceDatas_.erase(it);

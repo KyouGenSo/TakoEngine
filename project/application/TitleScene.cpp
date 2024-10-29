@@ -23,7 +23,6 @@ void TitleScene::Initialize()
 	/// ================================== ///
 
 
-
 }
 
 void TitleScene::Finalize()
@@ -46,6 +45,7 @@ void TitleScene::Update()
 	/// ================================== ///
 	///              更新処理               ///
 	/// ================================== ///
+
 
 
 
@@ -82,9 +82,11 @@ void TitleScene::Draw()
 	// スプライト共通描画設定
 	SpriteBasic::GetInstance()->SetCommonRenderSetting();
 
-	Draw2D::GetInstance()->DrawBox(Vector2(500.0f, 500.0f), Vector2(100.0f, 100.0f), Vector4(1.0f, 0.0f, 0.0f, 1.0f));
+	
 
 	//--------------------------------------------------//
+
+	Draw2D::GetInstance()->DrawBox(Vector2(500.0f, 500.0f), Vector2(100.0f, 100.0f), Vector4(1.0f, 0.0f, 0.0f, 1.0f));
 }
 
 void TitleScene::DrawImGui()
@@ -93,5 +95,4 @@ void TitleScene::DrawImGui()
 
 
 #endif // _DEBUG
-
 }

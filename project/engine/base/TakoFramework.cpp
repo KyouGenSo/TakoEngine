@@ -30,7 +30,7 @@ void TakoFramework::Initialize()
 
 	SrvManager::GetInstance()->Initialize(dx12_);
 
-	TextureManager::GetInstance()->Initialize(dx12_);
+	TextureManager::GetInstance()->Initialize(dx12_, "resources/Texture/");
 
 	ModelManager::GetInstance()->Initialize(dx12_);
 

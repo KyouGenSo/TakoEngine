@@ -18,9 +18,11 @@ TextureManager* TextureManager::GetInstance()
 	return instance_;
 }
 
-void TextureManager::Initialize(DX12Basic* dx12)
+void TextureManager::Initialize(DX12Basic* dx12, std::string directoryPath)
 {
 	m_dx12_ = dx12;
+
+	directoryPath_ = directoryPath;
 
 	textureDatas_.reserve(DX12Basic::kMaxSRVCount);
 }
@@ -34,10 +36,10 @@ void TextureManager::Finalize()
 	}
 }
 
-void TextureManager::LoadTexture(const std::string& filePath)
+void TextureManager::LoadTexture(const std::string& fileName)
 {
 	// 読み込み済みのテクスチャを検索
-	if (textureDatas_.contains(filePath))
+	if (textureDatas_.contains(fileName))
 	{
 		// すでに読み込まれている場合は何もしない
 		return;
@@ -48,7 +50,7 @@ void TextureManager::LoadTexture(const std::string& filePath)
 	
 	// テクスチャの読み込み
 	DirectX::ScratchImage image;
-	std::wstring filePathW = StringUtility::ConvertString(filePath);
+	std::wstring filePathW = StringUtility::ConvertString(directoryPath_ + fileName);
 	HRESULT hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
 	assert(SUCCEEDED(hr));
 
@@ -58,9 +60,9 @@ void TextureManager::LoadTexture(const std::string& filePath)
 	assert(SUCCEEDED(hr));
 
 	// 追加したテクスチャデータを取得
-	TextureData& textureData = textureDatas_[filePath];
+	TextureData& textureData = textureDatas_[fileName];
 
-	textureData.filePath = filePath;
+	textureData.fileName = fileName;
 	textureData.metadata = mipImages.GetMetadata();
 	textureData.resource = m_dx12_->MakeTextureResource(textureData.metadata);
 	textureData.intermediateResource = m_dx12_->UploadTextureData(textureData.resource, mipImages);
@@ -76,26 +78,26 @@ void TextureManager::LoadTexture(const std::string& filePath)
 	SrvManager::GetInstance()->CreateSRVForTexture2D(textureData.srvIndex, textureData.resource.Get(), textureData.metadata.format, UINT(textureData.metadata.mipLevels));
 }
 
-D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetSRVGPUHandle(const std::string& filePath)
+D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetSRVGPUHandle(const std::string& fileName)
 {
 	// クスチャデータを取得
-	TextureData& textureData = textureDatas_[filePath];
+	TextureData& textureData = textureDatas_[fileName];
 
 	return textureData.srvGpuHandle;
 }
 
-const DirectX::TexMetadata& TextureManager::GetMetaData(const std::string& filePath)
+const DirectX::TexMetadata& TextureManager::GetMetaData(const std::string& fileName)
 {
 	// クスチャデータを取得
-	TextureData& textureData = textureDatas_[filePath];
+	TextureData& textureData = textureDatas_[fileName];
 
 	return textureData.metadata;
 }
 
-uint32_t TextureManager::GetSRVIndex(const std::string& filePath)
+uint32_t TextureManager::GetSRVIndex(const std::string& fileName)
 {
 	// クスチャデータを取得
-	TextureData& textureData = textureDatas_[filePath];
+	TextureData& textureData = textureDatas_[fileName];
 
 	return textureData.srvIndex;
 }

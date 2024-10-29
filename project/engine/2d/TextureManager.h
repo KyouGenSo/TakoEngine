@@ -25,7 +25,7 @@ private: // 構造体
 
 	struct TextureData
 	{
-		std::string filePath;
+		std::string fileName;
 		DirectX::TexMetadata metadata;
 		Microsoft::WRL::ComPtr<ID3D12Resource> resource;
 		Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource;
@@ -49,7 +49,7 @@ public: // メンバー関数
 	/// <summary>
 	/// 初期化
 	/// </summary>
-	void Initialize(DX12Basic* dx12);
+	void Initialize(DX12Basic* dx12, std::string directoryPath);
 
 	/// <summary>
 	/// 終了処理
@@ -59,27 +59,30 @@ public: // メンバー関数
 	/// <summary>
 	/// テクスチャファイルの読み込み
 	/// </summary>
-	void LoadTexture(const std::string& filePath);
+	void LoadTexture(const std::string& fileName);
 
 	/// <summary>
 	/// テクスチャのインデックスからGPUハンドルを取得
 	/// </summary>
-	D3D12_GPU_DESCRIPTOR_HANDLE GetSRVGPUHandle(const std::string& filePath);
+	D3D12_GPU_DESCRIPTOR_HANDLE GetSRVGPUHandle(const std::string& fileName);
 
 	/// <summary>
 	/// メタデータを取得
 	/// </summary>
-	const DirectX::TexMetadata& GetMetaData(const std::string& filePath);
+	const DirectX::TexMetadata& GetMetaData(const std::string& fileName);
 
 	/// <summary>
 	/// srvIndexを取得
 	/// </summary>
-	uint32_t GetSRVIndex(const std::string& filePath);
+	uint32_t GetSRVIndex(const std::string& fileName);
 
 private: // メンバー変数
 
 	// DX12Basicクラスのインスタンス
 	DX12Basic* m_dx12_ = nullptr;
+
+	// テクスチャ格納ディレクトリ
+	std::string directoryPath_;
 
 	// テクスチャデータ配列
 	std::unordered_map<std::string, TextureData> textureDatas_;
