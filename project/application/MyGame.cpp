@@ -81,6 +81,9 @@ void MyGame::Draw()
 	// PostEffectの描画
 	switch (postEffectType)
 	{
+	case::MyGame::NoEffect:
+		PostEffect::GetInstance()->Draw("NoEffect");
+		break;
 	case::MyGame::VignetteRed:
 		PostEffect::GetInstance()->Draw("VignetteRed");
 		break;
@@ -114,6 +117,7 @@ void MyGame::Draw()
 
 		if (ImGui::BeginTabItem("PostEffectType"))
 		{
+			ImGui::RadioButton("NoEffect", (int*)&postEffectType, NoEffect);
 			ImGui::RadioButton("VignetteRed", (int*)&postEffectType, VignetteRed);
 			ImGui::RadioButton("VignetteRedBloom", (int*)&postEffectType, VignetteRedBloom);
 			ImGui::RadioButton("GrayScale", (int*)&postEffectType, GrayScale);
@@ -147,8 +151,6 @@ void MyGame::Draw()
 
 
 	ImGui::End();
-
-	PostEffect::GetInstance()->SetVignettePower(vignettePower);
 
 	imguiManager_->End();
 

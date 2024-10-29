@@ -21,6 +21,8 @@ void PostEffect::Initialize(DX12Basic* dx12)
 
 	InitRenderTexture();
 
+	CreatePSO("NoEffect");
+
 	CreatePSO("VignetteRed");
 
 	CreatePSO("VignetteRedBloom");
@@ -69,10 +71,19 @@ void PostEffect::Draw(const std::string& effectName)
 	m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// 定数バッファの設定
-	if (effectName == "VignetteRed" || effectName == "VigRedGrayScale")
+	if (effectName == "VignetteRed" || effectName == "VigRedGrayScale") 
+	{
 		m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, vignetteParamResource_->GetGPUVirtualAddress());
-	else if(effectName == "VignetteRedBloom")
+	}
+	else if (effectName == "VignetteRedBloom") 
+	{
 		m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, vignetteRedBloomParamResource_->GetGPUVirtualAddress());
+	}
+	else if (effectName == "GrayScale" || effectName == "NoEffect")
+	{
+		// グレースケール, ノーエフェクトの場合は何もしない
+	}
+
 
 	// テクスチャ用のsrvヒープの設定
 	SrvManager::GetInstance()->BeginDraw();

@@ -34,12 +34,13 @@ private: // メンバ変数
 
 	enum PostEffectType
 	{
+		NoEffect,
 		VignetteRed,
 		VignetteRedBloom,
 		GrayScale,
 		VigRedGrayScale
 	};
 
-	PostEffectType postEffectType = VignetteRedBloom;
+	PostEffectType postEffectType = NoEffect;
 
 };
