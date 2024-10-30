@@ -60,6 +60,9 @@ void DebugCamera::Update()
 	{
 		Move3D();
 
+		// 更新された角度を元に回転行列を再生成する
+		rotMat_ = Mat4x4::MakeRotateXYZ(transform_.rotate);
+
 		Matrix4x4 transMat = Mat4x4::MakeTranslate(transform_.translate);
 		
 		//  rotMatとtransMatでワールド行列を作る
@@ -189,37 +192,22 @@ void DebugCamera::Move3D()
 	// カメラの回転
 	if (Input::GetInstance()->PushKey(DIK_UP))
 	{
-		transform_.rotate.x += rotateSpeed_;
-		Matrix4x4 rotMatDelta = Mat4x4::MakeIdentity();
-		rotMatDelta *= Mat4x4::MakeRotateX(transform_.rotate.x);
-
-		rotMat_ = Mat4x4::Multiply(rotMatDelta, rotMat_);
+		transform_.rotate.x -= rotateSpeed_;
 	}
 
 	if (Input::GetInstance()->PushKey(DIK_DOWN))
 	{
-		transform_.rotate.x -= rotateSpeed_;
-		Matrix4x4 rotMatDelta = Mat4x4::MakeIdentity();
-		rotMatDelta *= Mat4x4::MakeRotateX(transform_.rotate.x);
-
-		rotMat_ = Mat4x4::Multiply(rotMatDelta, rotMat_);
+		transform_.rotate.x += rotateSpeed_;
 	}
 
 	if (Input::GetInstance()->PushKey(DIK_LEFT))
 	{
-		transform_.rotate.y += rotateSpeed_;
-		Matrix4x4 rotMatDelta = Mat4x4::MakeIdentity();
-		rotMatDelta *= Mat4x4::MakeRotateY(transform_.rotate.y);
-
-		rotMat_ = Mat4x4::Multiply(rotMatDelta, rotMat_);
+		transform_.rotate.y -= rotateSpeed_;
 	}
 
 	if (Input::GetInstance()->PushKey(DIK_RIGHT))
 	{
-		transform_.rotate.y -= rotateSpeed_;
-		Matrix4x4 rotMatDelta = Mat4x4::MakeIdentity();
-		rotMatDelta *= Mat4x4::MakeRotateY(transform_.rotate.y);
-
-		rotMat_ = Mat4x4::Multiply(rotMatDelta, rotMat_);
+		transform_.rotate.y += rotateSpeed_;
 	}
+	
 }
