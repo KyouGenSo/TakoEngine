@@ -82,6 +82,7 @@ void GameScene::Draw()
 	// 3Dモデル共通描画設定
 	Object3dBasic::GetInstance()->SetCommonRenderSetting();
 
+	// モデル描画
 	object3d_->Draw();
 
 	//-------------------Modelの描画-------------------//
