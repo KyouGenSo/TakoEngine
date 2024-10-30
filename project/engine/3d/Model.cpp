@@ -136,7 +136,7 @@ void Model::LoadMtlFile(const std::string& directoryPath, const std::string& fil
 		if (identifier == "map_Kd") {
 			std::string textureFileName;
 			s >> textureFileName;
-			modelData_.material.texturePath = directoryPath + "/" + textureFileName;
+			modelData_.material.texturePath = textureFileName;
 		}
 	}
 }

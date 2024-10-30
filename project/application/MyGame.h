@@ -31,6 +31,8 @@ private: // メンバ変数
 	float vignettePower = 0.f;
 	float vignetteRange = 20.0f;
 	float bloomThreshold = 1.0f;
+	float bloomIntensity = 1.0f;
+	float bloomSigma = 2.0f;
 
 	enum PostEffectType
 	{
@@ -38,7 +40,8 @@ private: // メンバ変数
 		VignetteRed,
 		VignetteRedBloom,
 		GrayScale,
-		VigRedGrayScale
+		VigRedGrayScale,
+		Bloom,
 	};
 
 	PostEffectType postEffectType = NoEffect;

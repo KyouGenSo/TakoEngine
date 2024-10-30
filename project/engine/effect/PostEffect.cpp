@@ -31,9 +31,13 @@ void PostEffect::Initialize(DX12Basic* dx12)
 
 	CreatePSO("VigRedGrayScale");
 
+	CreatePSO("Bloom");
+
 	CreateVignetteParam();
 
 	CreateVignetteRedBloomParam();
+
+	CreateBloomParam();
 }
 
 void PostEffect::Finalize()
@@ -78,6 +82,9 @@ void PostEffect::Draw(const std::string& effectName)
 	else if (effectName == "VignetteRedBloom") 
 	{
 		m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, vignetteRedBloomParamResource_->GetGPUVirtualAddress());
+	} else if (effectName == "Bloom")
+	{
+		m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, bloomParamResource_->GetGPUVirtualAddress());
 	}
 	else if (effectName == "GrayScale" || effectName == "NoEffect")
 	{
@@ -124,6 +131,17 @@ void PostEffect::SetVignetteRange(float range)
 void PostEffect::SetBloomThreshold(float threshold)
 {
 	vignetteRedBloomParam_->threshold = threshold;
+	bloomParam_->threshold = threshold;
+}
+
+void PostEffect::SetBloomIntensity(float intensity)
+{
+	bloomParam_->intensity = intensity;
+}
+
+void PostEffect::SetBloomSigma(float sigma)
+{
+	bloomParam_->sigma = sigma;
 }
 
 void PostEffect::InitRenderTexture()
@@ -293,4 +311,18 @@ void PostEffect::CreateVignetteRedBloomParam()
 	vignetteRedBloomParam_->power = 0.0f;
 	vignetteRedBloomParam_->threshold = 1.0f;
 	vignetteRedBloomParam_->range = 20.0f;
+}
+
+void PostEffect::CreateBloomParam()
+{
+	// BloomParamのリソース生成
+	bloomParamResource_ = m_dx12_->MakeBufferResource(sizeof(BloomParam));
+
+	// データの設定
+	bloomParamResource_->Map(0, nullptr, reinterpret_cast<void**>(&bloomParam_));
+
+	// データの初期化
+	bloomParam_->intensity = 1.0f;
+	bloomParam_->threshold = 0.9f;
+	bloomParam_->sigma = 2.0f;
 }

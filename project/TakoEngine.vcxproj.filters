@@ -365,5 +365,8 @@
     <FxCompile Include="resources\shaders\VignetteRedBloom.PS.hlsl">
       <Filter>Shader</Filter>
     </FxCompile>
+    <FxCompile Include="resources\shaders\Bloom.PS.hlsl">
+      <Filter>Shader</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

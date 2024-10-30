@@ -96,6 +96,9 @@ void MyGame::Draw()
 	case::MyGame::VigRedGrayScale:
 		PostEffect::GetInstance()->Draw("VigRedGrayScale");
 		break;
+	case::MyGame::Bloom:
+		PostEffect::GetInstance()->Draw("Bloom");
+		break;
 	}
 
 
@@ -122,6 +125,7 @@ void MyGame::Draw()
 			ImGui::RadioButton("VignetteRedBloom", (int*)&postEffectType, VignetteRedBloom);
 			ImGui::RadioButton("GrayScale", (int*)&postEffectType, GrayScale);
 			ImGui::RadioButton("VigRedGrayScale", (int*)&postEffectType, VigRedGrayScale);
+			ImGui::RadioButton("Bloom", (int*)&postEffectType, Bloom);
 
 			ImGui::EndTabItem();
 		}
@@ -141,6 +145,16 @@ void MyGame::Draw()
 			{
 				ImGui::DragFloat("BloomThreshold", &bloomThreshold, 0.01f, 0.0f, 1.0f);
 				PostEffect::GetInstance()->SetBloomThreshold(bloomThreshold);
+			}
+
+			if (postEffectType == Bloom)
+			{
+				ImGui::DragFloat("BloomIntensity", &bloomIntensity, 0.01f, 0.0f, 10.0f);
+				PostEffect::GetInstance()->SetBloomIntensity(bloomIntensity);
+				ImGui::DragFloat("BloomThreshold", &bloomThreshold, 0.01f, 0.0f, 1.0f);
+				PostEffect::GetInstance()->SetBloomThreshold(bloomThreshold);
+				ImGui::DragFloat("BloomSigma", &bloomSigma, 0.01f, 0.0f, 10.0f);
+				PostEffect::GetInstance()->SetBloomSigma(bloomSigma);
 			}
 
 			ImGui::EndTabItem();

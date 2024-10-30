@@ -35,6 +35,13 @@ public: // メンバ関数
 		float threshold;
 	};
 
+	struct BloomParam
+	{
+		float intensity;
+		float threshold;
+		float sigma;
+	};
+
 	// ComPtrのエイリアス
 	template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
 
@@ -65,6 +72,10 @@ public: // メンバ関数
 
 	void SetBloomThreshold(float threshold);
 
+	void SetBloomIntensity(float intensity);
+
+	void SetBloomSigma(float sigma);
+
 private: // プライベートメンバー関数
 
 	// レンダーテクスチャの初期化
@@ -81,6 +92,9 @@ private: // プライベートメンバー関数
 
 	// VignetteRedBloomParamを生成
 	void CreateVignetteRedBloomParam();
+
+	// BloomParamを生成
+	void CreateBloomParam();
 
 private: // メンバ変数
 
@@ -108,9 +122,11 @@ private: // メンバ変数
 	// パラメーターリソース
 	Microsoft::WRL::ComPtr<ID3D12Resource> vignetteParamResource_;
 	Microsoft::WRL::ComPtr<ID3D12Resource> vignetteRedBloomParamResource_;
+	Microsoft::WRL::ComPtr<ID3D12Resource> bloomParamResource_;
 
 	// パラメーターデータ
 	VignetteParam* vignetteParam_;
 	VignetteRedBloomParam* vignetteRedBloomParam_;
+	BloomParam* bloomParam_;
 
 };
