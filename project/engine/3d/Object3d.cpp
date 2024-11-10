@@ -8,6 +8,7 @@
 #include <cassert>
 #include<fstream>
 #include<sstream>
+#include <numbers>
 #include "Input.h"
 
 void Object3d::Initialize()
@@ -25,6 +26,9 @@ void Object3d::Initialize()
 
 	// 点光源データの生成
 	CreatePointLightData();
+
+	// スポットライトデータの生成
+	CreateSpotLightData();
 
 	// シェーダー用カメラデータの生成
 	CreateCameraForGPUData();
@@ -63,6 +67,9 @@ void Object3d::Draw()
 
 	// ポイントライトCBufferの場所を設定
 	Object3dBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(5, pointLightResource_->GetGPUVirtualAddress());
+
+	// スポットライトCBufferの場所を設定
+	Object3dBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(6, spotLightResource_->GetGPUVirtualAddress());
 
 	// シェーダー用カメラデータの場所を設定
 	Object3dBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(4, cameraForGPUResource_->GetGPUVirtualAddress());
@@ -163,4 +170,24 @@ void Object3d::CreateCameraForGPUData()
 
 	// カメラデータの初期値を書き込む
 	cameraForGPUData_->worldPos = m_camera_->GetTranslate();
+}
+
+void Object3d::CreateSpotLightData()
+{
+	// スポットライトリソースを生成
+	spotLightResource_ = Object3dBasic::GetInstance()->GetDX12Basic()->MakeBufferResource(sizeof(SpotLight));
+
+	// スポットライトリソースをマップ
+	spotLightResource_->Map(0, nullptr, reinterpret_cast<void**>(&spotLightData_));
+
+	// スポットライトデータの初期値を書き込む
+	spotLightData_->position = Vector3(0.0f, 0.0f, 0.0f); // ライトの位置
+	spotLightData_->direction = Vector3(-1.0f, -1.0f, 0.0f); // ライトの方向
+	spotLightData_->color = { 1.0f, 1.0f, 1.0f, 1.0f };     // ライトの色
+	spotLightData_->intensity = 1.0f;                       // 輝度
+	spotLightData_->distance = 10.0f;                        // 距離
+	spotLightData_->decay = 1.0f;                           // 減衰
+	spotLightData_->cosAngle = std::cos(std::numbers::pi_v<float> / 3.0f); // 角度
+	spotLightData_->enable = true;                         // スポットライトの有効無効
+
 }

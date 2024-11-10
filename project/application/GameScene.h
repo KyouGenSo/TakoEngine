@@ -34,6 +34,19 @@ public: // メンバ関数
 
 private: // メンバ変数
 
+	// スポットライトデータ
+	struct SpotLight
+	{
+		Vector4 color;
+		Vector3 position;
+		float intensity;
+		Vector3 direction;
+		float distance;
+		float decay;
+		float cosAngle;
+		bool enable;
+	};
+
 	Object3d* object3d_ = nullptr;
 
 	bool isDebug_ = false;
@@ -55,5 +68,9 @@ private: // メンバ変数
 	float pointLightIntensity_ = 1.0f;
 	float pointLightRadius_ = 10.0f;
 	float pointLightDecay_ = 1.0f;
-	bool isPointLightEnable_ = true;
+	bool isPointLightEnable_ = false;
+
+	// スポットライトの設定
+	SpotLight spotLight_;
+
 };

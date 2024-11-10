@@ -27,6 +27,19 @@ struct PointLight
     int32_t enable;
 };
 
+struct SpotLight
+{
+    float32_t4 color;
+    float32_t3 position;
+    float intensity;
+    float32_t3 direction;
+    float radius;
+    float decay;
+    float cosAngle;
+    int32_t enable;
+
+};
+
 struct Camera
 {
     float32_t3 worldPos;
@@ -41,6 +54,7 @@ ConstantBuffer<Material> gMaterial : register(b0);
 ConstantBuffer<DirectionalLight> gDirectionalLight : register(b1);
 ConstantBuffer<Camera> gCamera : register(b2);
 ConstantBuffer<PointLight> gPointLight : register(b3);
+ConstantBuffer<SpotLight> gSpotLight : register(b4);
 Texture2D<float32_t4> gTexture : register(t0);
 SamplerState gSampler : register(s0);
 
@@ -92,7 +106,7 @@ PixelShaderOutput main(VertexShaderOutput input)
         float32_t3 pointLightDiffuse;
         float32_t3 pointLightSpecular;
         
-        if(gPointLight.enable != 0)
+        if (gPointLight.enable != 0)
         {
             float32_t3 pointLightDir = normalize(input.worldPos - gPointLight.position);
             
@@ -111,20 +125,56 @@ PixelShaderOutput main(VertexShaderOutput input)
             // ãæñ îΩéÀ
             pointLightSpecular = gPointLight.color.rgb * gPointLight.intensity * specularPow * float32_t3(1.0f, 1.0f, 1.0f);
             
-        }else
+        }
+        else
         {
             pointLightDiffuse = float32_t3(0.0f, 0.0f, 0.0f);
             pointLightSpecular = float32_t3(0.0f, 0.0f, 0.0f);
         }
         
+        //---------------------------------- Spot Light ----------------------------------
+        float32_t3 spotLightDiffuse;
+        float32_t3 spotLightSpecular;
+        
+        if (gSpotLight.enable != 0)
+        {
+            float32_t3 spotLightDirOnSurface = normalize(input.worldPos - gSpotLight.position);
+            
+            float32_t3 halfVector = normalize(-spotLightDirOnSurface + toEye);
+            float NdotH = dot(normalize(input.normal), halfVector);
+            float specularPow = pow(saturate(NdotH), gMaterial.shininess); // îΩéÀã≠ìx
+            
+            float32_t distance = length(gSpotLight.position - input.worldPos);
+            float32_t factor = pow(saturate(-distance / gSpotLight.radius + 1.0f), gSpotLight.decay); // ãóó£Ç…ÇÊÇÈå∏êä(0.0f ~ 1.0f
+            
+            float32_t cosAngle = dot(spotLightDirOnSurface, gSpotLight.direction);
+            float32_t falloffFactor = saturate((cosAngle - gSpotLight.cosAngle) / (1.0f - gSpotLight.cosAngle));
+            
+            float32_t3 spotLightColor = gSpotLight.color.rgb * gSpotLight.intensity * factor * falloffFactor;
+            
+            // ägéUîΩéÀ
+            float NdotL = saturate(dot(normalize(input.normal), -spotLightDirOnSurface));
+            spotLightDiffuse = texColor.rgb * gMaterial.color.rgb * spotLightColor * NdotL;
+            
+            // ãæñ îΩéÀ
+            spotLightSpecular = gSpotLight.color.rgb * gSpotLight.intensity * specularPow * float32_t3(1.0f, 1.0f, 1.0f);
+        }
+        else
+        {
+            spotLightDiffuse = float32_t3(0.0f, 0.0f, 0.0f);
+            spotLightSpecular = float32_t3(0.0f, 0.0f, 0.0f);
+        }
+        
+        
+        
         if (gMaterial.enableHighlight != 0)
         {
-            output.color.rgb = directionalLightDiffuse + pointLightDiffuse + directionalLightSpecular + pointLightSpecular;
+            output.color.rgb = directionalLightDiffuse + pointLightDiffuse + spotLightDiffuse + directionalLightSpecular + pointLightSpecular + spotLightSpecular;
 
         }
         else
         {
-            output.color.rgb = directionalLightDiffuse + pointLightDiffuse;
+            output.color.rgb = directionalLightDiffuse + pointLightDiffuse + spotLightDiffuse;
         }
         
         output.color.a = gMaterial.color.a * texColor.a;

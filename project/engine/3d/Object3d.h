@@ -44,6 +44,20 @@ public: // 構造体
 		bool enable;
 	};
 
+	// スポットライトデータ
+	struct SpotLight
+	{
+		Vector4 color;
+		Vector3 position;
+		float intensity;
+		Vector3 direction;
+		float distance;
+		float decay;
+		float cosAngle;
+		//float padding[2];
+		bool enable;
+	};
+
 	// Shader用のカメラ
 	struct CameraForGPU
 	{
@@ -78,6 +92,8 @@ public: // メンバー関数
 	void SetScale(const Vector3& scale) { transform_.scale = scale; }
 	void SetRotate(const Vector3& rotate) { transform_.rotate = rotate; }
 	void SetTranslate(const Vector3& translate) { transform_.translate = translate; }
+
+	// DirectionalLight
 	void SetShininess(float shininess);
 	void SetEnableLighting(bool enableLighting);
 	void SetEnableHighlight(bool enableHighlight);
@@ -85,6 +101,8 @@ public: // メンバー関数
 	void SetLightColor(const Vector4& color) { directionalLightData_->color = color; }
 	void SetLightType(int32_t lightType) { directionalLightData_->lightType = lightType; }
 	void SetLightIntensity(float intensity) { directionalLightData_->intensity = intensity; }
+
+	// PointLight
 	void SetPointLightColor(const Vector4& color) { pointLightData_->color = color; }
 	void SetPointLightPosition(const Vector3& position) { pointLightData_->position = position; }
 	void SetPointLightIntensity(float intensity) { pointLightData_->intensity = intensity; }
@@ -92,20 +110,30 @@ public: // メンバー関数
 	void SetPointLightDecay(float decay) { pointLightData_->decay = decay; }
 	void SetPointLightEnable(bool enable) { pointLightData_->enable = enable; }
 
+	// SpotLight
+	void SetSpotLightColor(const Vector4& color) { spotLightData_->color = color; }
+	void SetSpotLightPosition(const Vector3& position) { spotLightData_->position = position; }
+	void SetSpotLightIntensity(float intensity) { spotLightData_->intensity = intensity; }
+	void SetSpotLightDirection(const Vector3& direction) { spotLightData_->direction = direction; }
+	void SetSpotLightDistance(float distance) { spotLightData_->distance = distance; }
+	void SetSpotLightDecay(float decay) { spotLightData_->decay = decay; }
+	void SetSpotLightCosAngle(float cosAngle) { spotLightData_->cosAngle = cosAngle; }
+	void SetSpotLightEnable(bool enable) { spotLightData_->enable = enable; }
+
 private: // プライベートメンバー関数
 
 	///<summary>
-	///座標変換行列データの生成
+	///　座標変換行列データの生成
 	/// </summary>
 	void CreateTransformationMatrixData();
 
 	///<summary>
-	///平行光源データの生成
+	///　平行光源データの生成
 	/// </summary>
 	void CreateDirectionalLightData();
 
 	///<summary>
-	///点光源データの生成
+	///　点光源データの生成
 	/// </summary>
 	void CreatePointLightData();
 
@@ -113,6 +141,11 @@ private: // プライベートメンバー関数
 	/// シェーダー用カメラデータの生成
 	/// </summary>
 	void CreateCameraForGPUData();
+
+	///<summary>
+	///　スポットライトデータの生成
+	///</summary>
+	void CreateSpotLightData();
 
 private: // メンバー変数
 
@@ -129,12 +162,14 @@ private: // メンバー変数
 	Microsoft::WRL::ComPtr<ID3D12Resource> transformationMatResource_;
 	Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightResource_;
 	Microsoft::WRL::ComPtr<ID3D12Resource> pointLightResource_;
+	Microsoft::WRL::ComPtr<ID3D12Resource> spotLightResource_;
 	Microsoft::WRL::ComPtr<ID3D12Resource> cameraForGPUResource_;
 
 	// バッファリソース内のデータを指すポインタ
 	TransformationMatrix* transformationMatData_ = nullptr;
 	DirectionalLight* directionalLightData_ = nullptr;
 	PointLight* pointLightData_ = nullptr;
+	SpotLight* spotLightData_ = nullptr;
 	CameraForGPU* cameraForGPUData_ = nullptr;
 
 };

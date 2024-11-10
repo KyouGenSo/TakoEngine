@@ -7,6 +7,7 @@
 #include"SpriteBasic.h"
 #include"Input.h"
 #include "DebugCamera.h"
+#include <numbers>
 
 #ifdef _DEBUG
 #include"ImGui.h"
@@ -33,6 +34,15 @@ void GameScene::Initialize()
 	object3d_->SetRotate(rotate);
 
 	modelPos_ = Vector3(0.0f, -7.37f, 22.28f);
+
+	spotLight_.color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+	spotLight_.position = Vector3(0.0f, -6.0f, 22.0f);
+	spotLight_.intensity = 1.0f;
+	spotLight_.direction = Vector3(-1.0f, -1.0f, 0.0f);
+	spotLight_.distance = 7.0f;
+	spotLight_.decay = 1.0f;
+	spotLight_.cosAngle = std::cos(std::numbers::pi_v<float> / 3.0f);
+	spotLight_.enable = true;
 }
 
 void GameScene::Finalize()
@@ -143,5 +153,23 @@ void GameScene::DrawImGui()
 	object3d_->SetPointLightEnable(isPointLightEnable_);
 	ImGui::End();
 
+	ImGui::Begin("Spot Light");
+	ImGui::DragFloat3("Position", &spotLight_.position.x, 0.01f, -50.0f, 50.0f);
+	ImGui::DragFloat3("Direction", &spotLight_.direction.x, 0.01f, -1.0f, 1.0f);
+	ImGui::DragFloat("Intensity", &spotLight_.intensity, 0.01f, 0.0f, 10.0f);
+	ImGui::DragFloat("Distance", &spotLight_.distance, 0.01f, 0.0f, 100.0f);
+	ImGui::DragFloat("Decay", &spotLight_.decay, 0.01f, 0.0f, 10.0f);
+	ImGui::DragFloat("CosAngle", &spotLight_.cosAngle, 0.01f, 0.0f, 1.0f);
+	ImGui::ColorEdit4("Color", &spotLight_.color.x);
+	ImGui::Checkbox("Enable", &spotLight_.enable);
+	object3d_->SetSpotLightPosition(spotLight_.position);
+	object3d_->SetSpotLightDirection(spotLight_.direction);
+	object3d_->SetSpotLightIntensity(spotLight_.intensity);
+	object3d_->SetSpotLightDistance(spotLight_.distance);
+	object3d_->SetSpotLightDecay(spotLight_.decay);
+	object3d_->SetSpotLightCosAngle(spotLight_.cosAngle);
+	object3d_->SetSpotLightColor(spotLight_.color);
+	object3d_->SetSpotLightEnable(spotLight_.enable);
+	ImGui::End();
 #endif // DEBUG
 }
