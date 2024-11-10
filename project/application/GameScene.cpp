@@ -23,11 +23,16 @@ void GameScene::Initialize()
 	///              初期化処理              ///
 	/// ================================== ///
 
-	ModelManager::GetInstance()->LoadModel("teapot.obj");
+	ModelManager::GetInstance()->LoadModel("terrain.obj");
 
 	object3d_ = new Object3d();
 	object3d_->Initialize();
-	object3d_->SetModel("teapot.obj");
+	object3d_->SetModel("terrain.obj");
+	// y軸90度回転
+	Vector3 rotate = Vector3(0.0f, DirectX::XMConvertToRadians(90.0f), 0.0f);
+	object3d_->SetRotate(rotate);
+
+	modelPos_ = Vector3(0.0f, -7.37f, 22.28f);
 }
 
 void GameScene::Finalize()
@@ -85,6 +90,7 @@ void GameScene::Draw()
 	// モデル描画
 	object3d_->Draw();
 
+
 	//-------------------Modelの描画-------------------//
 
 
@@ -100,16 +106,27 @@ void GameScene::Draw()
 void GameScene::DrawImGui()
 {
 #ifdef _DEBUG
-	ImGui::Begin("Light");
-	ImGui::DragFloat("Shininess", &shininess_, 0.01f, 1.0f, 50.0f);
+	ImGui::Begin("object3d");
+	ImGui::DragFloat3("Scale", &modelScale_.x, 0.01f, 0.1f, 50.0f);
+	ImGui::DragFloat3("Position", &modelPos_.x, 0.01f, -50.0f, 50.0f);
+	object3d_->SetScale(modelScale_);
+	object3d_->SetTranslate(modelPos_);
+	// Lightの設定
+	ImGui::Text("Light");
+	ImGui::Separator();
+	ImGui::DragFloat3("Direction", &lightDirection_.x, 0.01f, -1.0f, 1.0f);
+	ImGui::DragFloat("Intensity", &lightIntensity_, 0.01f, 0.0f, 10.0f);
+	ImGui::SliderFloat("Shininess", &shininess_, 1.0f, 1000.0f);
+	ImGui::ColorEdit4("Color", &lightColor_.x);
 	ImGui::Checkbox("Lighting", &isLighting_);
+	ImGui::Checkbox("Highlight", &isHighlight_);
 	object3d_->SetShininess(shininess_);
 	object3d_->SetEnableLighting(isLighting_);
+	object3d_->SetEnableHighlight(isHighlight_);
+	object3d_->SetLightDirection(lightDirection_);
+	object3d_->SetLightColor(lightColor_);
+	object3d_->SetLightIntensity(lightIntensity_);
 	ImGui::End();
 
-	ImGui::Begin("Model");
-	ImGui::DragFloat3("Scale", &modelScale_.x, 0.01f, 0.1f, 50.0f);
-	object3d_->SetScale(modelScale_);
-	ImGui::End();
 #endif // DEBUG
 }

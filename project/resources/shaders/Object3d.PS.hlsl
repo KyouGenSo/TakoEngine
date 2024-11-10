@@ -6,6 +6,7 @@ struct Material
     int32_t enableLighting;
     float32_t4x4 uvTransform;
     float32_t shininess;
+    int32_t enableHighlight;
 };
 
 struct DirectionalLight
@@ -60,7 +61,16 @@ PixelShaderOutput main(VertexShaderOutput input)
             // ‹¾–Ê”½ŽË
             specular = gDirectionalLight.color.rgb * gDirectionalLight.intensity * specularPow * float32_t3(1.0f, 1.0f, 1.0f);
             
-            output.color.rgb = diffuse + specular;
+            if (gMaterial.enableHighlight != 0)
+            {
+                output.color.rgb = diffuse + specular;
+            }
+            else
+            {
+                output.color.rgb = diffuse;
+
+            }
+
             output.color.a = gMaterial.color.a * texColor.a;
         }
         else if (gDirectionalLight.lightType == 1) // half-Lambertian reflection
@@ -72,7 +82,15 @@ PixelShaderOutput main(VertexShaderOutput input)
             // ‹¾–Ê”½ŽË
             specular = gDirectionalLight.color.rgb * gDirectionalLight.intensity * specularPow * float32_t3(1.0f, 1.0f, 1.0f);
             
-            output.color.rgb = diffuse + specular;
+            if (gMaterial.enableHighlight != 0)
+            {
+                output.color.rgb = diffuse + specular;
+            }
+            else
+            {
+                output.color.rgb = diffuse;
+            }
+            
             output.color.a = gMaterial.color.a * texColor.a;
         }
     }

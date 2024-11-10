@@ -89,6 +89,14 @@ void Object3d::SetEnableLighting(bool enableLighting)
 	}
 }
 
+void Object3d::SetEnableHighlight(bool enableHighlight)
+{
+	if (m_model_)
+	{
+		m_model_->SetEnableHighlight(enableHighlight);
+	}
+}
+
 void Object3d::CreateTransformationMatrixData()
 {
 	// 座標変換行列リソースを生成

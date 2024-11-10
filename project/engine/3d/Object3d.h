@@ -69,6 +69,11 @@ public: // メンバー関数
 	void SetTranslate(const Vector3& translate) { transform_.translate = translate; }
 	void SetShininess(float shininess);
 	void SetEnableLighting(bool enableLighting);
+	void SetEnableHighlight(bool enableHighlight);
+	void SetLightDirection(const Vector3& direction) { directionalLightData_->direction = direction; }
+	void SetLightColor(const Vector4& color) { directionalLightData_->color = color; }
+	void SetLightType(int32_t lightType) { directionalLightData_->lightType = lightType; }
+	void SetLightIntensity(float intensity) { directionalLightData_->intensity = intensity; }
 
 private: // プライベートメンバー関数
 

@@ -40,8 +40,13 @@ private: // メンバ変数
 
 	// モデルの設定
 	Vector3 modelScale_ = Vector3(1.0f, 1.0f, 1.0f);
+	Vector3 modelPos_ = Vector3(0.0f, 0.0f, 0.0f);
 
 	// ライトの設定
-	float shininess_ = 15.0f;
+	float shininess_ = 100.0f;
 	bool isLighting_ = true;
+	bool isHighlight_ = true;
+	Vector4 lightColor_ = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+	Vector3 lightDirection_ = Vector3(0.0f, -1.0f, 0.0f);
+	float lightIntensity_ = 1.0f;
 };
