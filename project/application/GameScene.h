@@ -38,5 +38,5 @@ private: // メンバ変数
 
 	bool isDebug_ = false;
 
-	float shininess_ = 3.5f;
+	float shininess_ = 15.0f;
 };
