@@ -48,5 +48,12 @@ private: // メンバ変数
 	bool isHighlight_ = true;
 	Vector4 lightColor_ = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 	Vector3 lightDirection_ = Vector3(0.0f, -1.0f, 0.0f);
-	float lightIntensity_ = 1.0f;
+	float lightIntensity_ = 0.0f;
+
+	Vector3 pointLightPos_ = Vector3(0.0f, -5.37f, 22.0f);
+	Vector4 pointLightColor_ = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+	float pointLightIntensity_ = 1.0f;
+	float pointLightRadius_ = 10.0f;
+	float pointLightDecay_ = 1.0f;
+	bool isPointLightEnable_ = true;
 };

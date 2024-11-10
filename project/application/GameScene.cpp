@@ -112,7 +112,7 @@ void GameScene::DrawImGui()
 	object3d_->SetScale(modelScale_);
 	object3d_->SetTranslate(modelPos_);
 	// Lightの設定
-	ImGui::Text("Light");
+	ImGui::Text("Directional Light");
 	ImGui::Separator();
 	ImGui::DragFloat3("Direction", &lightDirection_.x, 0.01f, -1.0f, 1.0f);
 	ImGui::DragFloat("Intensity", &lightIntensity_, 0.01f, 0.0f, 10.0f);
@@ -126,6 +126,21 @@ void GameScene::DrawImGui()
 	object3d_->SetLightDirection(lightDirection_);
 	object3d_->SetLightColor(lightColor_);
 	object3d_->SetLightIntensity(lightIntensity_);
+	ImGui::End();
+
+	ImGui::Begin("Point Light");
+	ImGui::DragFloat3("Position", &pointLightPos_.x, 0.01f, -50.0f, 50.0f);
+	ImGui::DragFloat("Intensity", &pointLightIntensity_, 0.01f, 0.0f, 10.0f);
+	ImGui::DragFloat("Radius", &pointLightRadius_, 0.01f, 0.0f, 100.0f);
+	ImGui::DragFloat("Decay", &pointLightDecay_, 0.01f, 0.0f, 10.0f);
+	ImGui::ColorEdit4("Color", &pointLightColor_.x);
+	ImGui::Checkbox("Enable", &isPointLightEnable_);
+	object3d_->SetPointLightPosition(pointLightPos_);
+	object3d_->SetPointLightColor(pointLightColor_);
+	object3d_->SetPointLightIntensity(pointLightIntensity_);
+	object3d_->SetPointLightRadius(pointLightRadius_);
+	object3d_->SetPointLightDecay(pointLightDecay_);
+	object3d_->SetPointLightEnable(isPointLightEnable_);
 	ImGui::End();
 
 #endif // DEBUG

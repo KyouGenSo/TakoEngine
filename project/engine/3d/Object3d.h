@@ -33,6 +33,17 @@ public: // 構造体
 		float intensity;
 	};
 
+	// 点光源データ
+	struct PointLight
+	{
+		Vector4 color;
+		Vector3 position;
+		float intensity;
+		float radius;
+		float decay;
+		bool enable;
+	};
+
 	// Shader用のカメラ
 	struct CameraForGPU
 	{
@@ -74,6 +85,12 @@ public: // メンバー関数
 	void SetLightColor(const Vector4& color) { directionalLightData_->color = color; }
 	void SetLightType(int32_t lightType) { directionalLightData_->lightType = lightType; }
 	void SetLightIntensity(float intensity) { directionalLightData_->intensity = intensity; }
+	void SetPointLightColor(const Vector4& color) { pointLightData_->color = color; }
+	void SetPointLightPosition(const Vector3& position) { pointLightData_->position = position; }
+	void SetPointLightIntensity(float intensity) { pointLightData_->intensity = intensity; }
+	void SetPointLightRadius(float radius) { pointLightData_->radius = radius; }
+	void SetPointLightDecay(float decay) { pointLightData_->decay = decay; }
+	void SetPointLightEnable(bool enable) { pointLightData_->enable = enable; }
 
 private: // プライベートメンバー関数
 
@@ -86,6 +103,11 @@ private: // プライベートメンバー関数
 	///平行光源データの生成
 	/// </summary>
 	void CreateDirectionalLightData();
+
+	///<summary>
+	///点光源データの生成
+	/// </summary>
+	void CreatePointLightData();
 
 	/// <summary>
 	/// シェーダー用カメラデータの生成
@@ -106,11 +128,13 @@ private: // メンバー変数
 	// バッファリソース
 	Microsoft::WRL::ComPtr<ID3D12Resource> transformationMatResource_;
 	Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightResource_;
+	Microsoft::WRL::ComPtr<ID3D12Resource> pointLightResource_;
 	Microsoft::WRL::ComPtr<ID3D12Resource> cameraForGPUResource_;
 
 	// バッファリソース内のデータを指すポインタ
 	TransformationMatrix* transformationMatData_ = nullptr;
 	DirectionalLight* directionalLightData_ = nullptr;
+	PointLight* pointLightData_ = nullptr;
 	CameraForGPU* cameraForGPUData_ = nullptr;
 
 };

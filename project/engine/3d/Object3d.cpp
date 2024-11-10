@@ -23,6 +23,9 @@ void Object3d::Initialize()
 	// 平行光源データの生成
 	CreateDirectionalLightData();
 
+	// 点光源データの生成
+	CreatePointLightData();
+
 	// シェーダー用カメラデータの生成
 	CreateCameraForGPUData();
 }
@@ -57,6 +60,9 @@ void Object3d::Draw()
 
 	// 平行光源CBufferの場所を設定
 	Object3dBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource_->GetGPUVirtualAddress());
+
+	// ポイントライトCBufferの場所を設定
+	Object3dBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(5, pointLightResource_->GetGPUVirtualAddress());
 
 	// シェーダー用カメラデータの場所を設定
 	Object3dBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(4, cameraForGPUResource_->GetGPUVirtualAddress());
@@ -127,6 +133,24 @@ void Object3d::CreateDirectionalLightData()
 	directionalLightData_->lightType = 1;                          // ライトのタイプ 0:Lambert 1:Half-Lambert
 	
 	directionalLightData_->intensity = 1.0f;                       // 輝度
+}
+
+void Object3d::CreatePointLightData()
+{
+	// 点光源リソースを生成
+	pointLightResource_ = Object3dBasic::GetInstance()->GetDX12Basic()->MakeBufferResource(sizeof(PointLight));
+
+	// 点光源リソースをマップ
+	pointLightResource_->Map(0, nullptr, reinterpret_cast<void**>(&pointLightData_));
+
+	// 点光源データの初期値を書き込む
+	pointLightData_->position = Vector3(0.0f, 2.0f, 0.0f); // ライトの位置
+	pointLightData_->color = { 1.0f, 1.0f, 1.0f, 1.0f };     // ライトの色
+	pointLightData_->intensity = 1.0f;                       // 輝度
+	pointLightData_->radius = 10.0f;                         // 半径
+	pointLightData_->decay = 1.0f;                           // 減衰
+	pointLightData_->enable = true;                         // 点光源の有効無効
+
 }
 
 void Object3d::CreateCameraForGPUData()
