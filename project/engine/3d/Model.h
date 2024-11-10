@@ -67,6 +67,7 @@ public: // メンバー関数
 
 	// -----------------------------------Setters-----------------------------------//
 	void SetShininess(float shininess) { materialData_->shininess = shininess; }
+	void SetEnableLighting(bool enableLighting) { materialData_->enableLighting = enableLighting; }
 
 private: // プライベートメンバー関数
 

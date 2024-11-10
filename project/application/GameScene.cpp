@@ -102,7 +102,9 @@ void GameScene::DrawImGui()
 #ifdef _DEBUG
 	ImGui::Begin("Light");
 	ImGui::DragFloat("Shininess", &shininess_, 0.01f, 1.0f, 50.0f);
+	ImGui::Checkbox("Lighting", &isLighting_);
 	object3d_->SetShininess(shininess_);
+	object3d_->SetEnableLighting(isLighting_);
 	ImGui::End();
 #endif // DEBUG
 }

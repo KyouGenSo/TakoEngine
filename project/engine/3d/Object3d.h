@@ -67,6 +67,7 @@ public: // メンバー関数
 	void SetRotate(const Vector3& rotate) { transform_.rotate = rotate; }
 	void SetTranslate(const Vector3& translate) { transform_.translate = translate; }
 	void SetShininess(float shininess);
+	void SetEnableLighting(bool enableLighting);
 
 private: // プライベートメンバー関数
 

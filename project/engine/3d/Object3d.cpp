@@ -80,6 +80,14 @@ void Object3d::SetShininess(float shininess)
 	}
 }
 
+void Object3d::SetEnableLighting(bool enableLighting)
+{
+	if (m_model_)
+	{
+		m_model_->SetEnableLighting(enableLighting);
+	}
+}
+
 void Object3d::CreateTransformationMatrixData()
 {
 	// 座標変換行列リソースを生成

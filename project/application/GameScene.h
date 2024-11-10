@@ -38,5 +38,7 @@ private: // メンバ変数
 
 	bool isDebug_ = false;
 
+	// ライトの設定
 	float shininess_ = 15.0f;
+	bool isLighting_ = true;
 };
