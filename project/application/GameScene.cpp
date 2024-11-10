@@ -100,6 +100,9 @@ void GameScene::Draw()
 void GameScene::DrawImGui()
 {
 #ifdef _DEBUG
-
+	ImGui::Begin("Light");
+	ImGui::DragFloat("Shininess", &shininess_, 0.01f, 0.1f, 10.0f);
+	object3d_->SetShininess(shininess_);
+	ImGui::End();
 #endif // DEBUG
 }

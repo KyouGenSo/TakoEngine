@@ -50,7 +50,7 @@ public: // メンバー関数
 	Camera* GetCamera() const { return camera_; }
 	bool GetDebug() const { return isDebug_; }
 
-	// -----------------------------------Getters-----------------------------------//
+	// -----------------------------------Setters-----------------------------------//
 	void SetCamera(Camera* camera) { camera_ = camera; }
 	void SetDebug(bool isDebug) { isDebug_ = isDebug; }
 

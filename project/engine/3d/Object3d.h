@@ -32,6 +32,13 @@ public: // 構造体
 		float intensity;
 	};
 
+	// Shader用のカメラ
+	struct CameraForGPU
+	{
+		Vector3 worldPos;
+	};
+
+
 public: // メンバー関数
 	///<summary>
 	///初期化
@@ -52,13 +59,14 @@ public: // メンバー関数
 	const Vector3& GetScale() const { return transform_.scale; }
 	const Vector3& GetRotate() const { return transform_.rotate; }
 	const Vector3& GetTranslate() const { return transform_.translate; }
-	
+
 	//-----------------------------------------Setter-----------------------------------------//
 	void SetModel(const std::string& fileName);
 	void SetCamera(Camera* camera) { m_camera_ = camera; }
 	void SetScale(const Vector3& scale) { transform_.scale = scale; }
 	void SetRotate(const Vector3& rotate) { transform_.rotate = rotate; }
 	void SetTranslate(const Vector3& translate) { transform_.translate = translate; }
+	void SetShininess(float shininess);
 
 private: // プライベートメンバー関数
 
@@ -71,6 +79,11 @@ private: // プライベートメンバー関数
 	///平行光源データの生成
 	/// </summary>
 	void CreateDirectionalLightData();
+
+	/// <summary>
+	/// シェーダー用カメラデータの生成
+	/// </summary>
+	void CreateCameraForGPUData();
 
 private: // メンバー変数
 
@@ -86,9 +99,11 @@ private: // メンバー変数
 	// バッファリソース
 	Microsoft::WRL::ComPtr<ID3D12Resource> transformationMatResource_;
 	Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightResource_;
+	Microsoft::WRL::ComPtr<ID3D12Resource> cameraForGPUResource_;
 
 	// バッファリソース内のデータを指すポインタ
 	TransformationMatrix* transformationMatData_ = nullptr;
 	DirectionalLight* directionalLightData_ = nullptr;
+	CameraForGPU* cameraForGPUData_ = nullptr;
 
 };

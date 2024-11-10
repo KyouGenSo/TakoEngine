@@ -37,4 +37,6 @@ private: // メンバ変数
 	Object3d* object3d_ = nullptr;
 
 	bool isDebug_ = false;
+
+	float shininess_ = 3.5f;
 };

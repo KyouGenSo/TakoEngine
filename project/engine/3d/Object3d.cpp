@@ -22,6 +22,9 @@ void Object3d::Initialize()
 
 	// 平行光源データの生成
 	CreateDirectionalLightData();
+
+	// シェーダー用カメラデータの生成
+	CreateCameraForGPUData();
 }
 
 void Object3d::Update()
@@ -54,6 +57,9 @@ void Object3d::Draw()
 	// 平行光源CBufferの場所を設定
 	Object3dBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource_->GetGPUVirtualAddress());
 
+	// シェーダー用カメラデータの場所を設定
+	Object3dBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(4, cameraForGPUResource_->GetGPUVirtualAddress());
+
 	// モデルの描画
 	if (m_model_)
 	{
@@ -64,6 +70,14 @@ void Object3d::Draw()
 void Object3d::SetModel(const std::string& fileName)
 {
 	m_model_ = ModelManager::GetInstance()->FindModel(fileName);
+}
+
+void Object3d::SetShininess(float shininess)
+{
+	if (m_model_)
+	{
+		m_model_->SetShininess(shininess);
+	}
 }
 
 void Object3d::CreateTransformationMatrixData()
@@ -95,4 +109,16 @@ void Object3d::CreateDirectionalLightData()
 	directionalLightData_->lightType = 1;                          // ライトのタイプ 0:Lambert 1:Half-Lambert
 	
 	directionalLightData_->intensity = 1.0f;                       // 輝度
+}
+
+void Object3d::CreateCameraForGPUData()
+{
+	// カメラリソースを生成
+	cameraForGPUResource_ = Object3dBasic::GetInstance()->GetDX12Basic()->MakeBufferResource(sizeof(CameraForGPU));
+
+	// カメラリソースをマップ
+	cameraForGPUResource_->Map(0, nullptr, reinterpret_cast<void**>(&cameraForGPUData_));
+
+	// カメラデータの初期値を書き込む
+	cameraForGPUData_->worldPos = m_camera_->GetTranslate();
 }

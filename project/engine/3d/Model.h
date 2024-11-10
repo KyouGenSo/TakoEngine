@@ -41,6 +41,7 @@ public: // 構造体
 		bool enableLighting;
 		float padding[3];
 		Matrix4x4 uvTransform;
+		float shininess;
 	};
 
 public: // メンバー関数
@@ -63,6 +64,9 @@ public: // メンバー関数
 	///mtlファイルの読み込む
 	/// </summary>
 	void LoadMtlFile(const std::string& directoryPath, const std::string& fileName);
+
+	// -----------------------------------Setters-----------------------------------//
+	void SetShininess(float shininess) { materialData_->shininess = shininess; }
 
 private: // プライベートメンバー関数
 
