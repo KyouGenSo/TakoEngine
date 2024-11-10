@@ -291,4 +291,11 @@ namespace Mat4x4 {
 
 		return result;
 	}
+
+	Matrix4x4 InverseTranspose(const Matrix4x4& m)
+	{
+		Matrix4x4 result = Transpose(Inverse(m));
+
+		return result;
+	}
 }

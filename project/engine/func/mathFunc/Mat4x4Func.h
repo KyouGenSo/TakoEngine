@@ -49,6 +49,8 @@ namespace Mat4x4 {
 	Matrix4x4 MakeOrtho(float left, float top, float right, float bottom, float nearClip, float farClip);
 
 	Matrix4x4 MakeViewport(float left, float top, float width, float height, float minDepth, float maxDepth);
+
+	Matrix4x4 InverseTranspose(const Matrix4x4& m);
 }
 
 

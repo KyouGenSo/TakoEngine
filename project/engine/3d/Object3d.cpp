@@ -47,6 +47,7 @@ void Object3d::Update()
 	// 座標変換行列データに書き込む
 	transformationMatData_->WVP = wvpMatrix;
 	transformationMatData_->world = worldMatrix;
+	transformationMatData_->worldInvTranspose = Mat4x4::InverseTranspose(worldMatrix);
 }
 
 void Object3d::Draw()
@@ -99,6 +100,7 @@ void Object3d::CreateTransformationMatrixData()
 	// 座標変換行列データの初期値を書き込む
 	transformationMatData_->WVP = Mat4x4::MakeIdentity();
 	transformationMatData_->world = Mat4x4::MakeIdentity();
+	transformationMatData_->worldInvTranspose = Mat4x4::MakeIdentity();
 }
 
 void Object3d::CreateDirectionalLightData()

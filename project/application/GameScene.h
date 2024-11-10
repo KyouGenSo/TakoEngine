@@ -38,6 +38,9 @@ private: // メンバ変数
 
 	bool isDebug_ = false;
 
+	// モデルの設定
+	Vector3 modelScale_ = Vector3(1.0f, 1.0f, 1.0f);
+
 	// ライトの設定
 	float shininess_ = 15.0f;
 	bool isLighting_ = true;

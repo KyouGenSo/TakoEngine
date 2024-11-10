@@ -106,5 +106,10 @@ void GameScene::DrawImGui()
 	object3d_->SetShininess(shininess_);
 	object3d_->SetEnableLighting(isLighting_);
 	ImGui::End();
+
+	ImGui::Begin("Model");
+	ImGui::DragFloat3("Scale", &modelScale_.x, 0.01f, 0.1f, 50.0f);
+	object3d_->SetScale(modelScale_);
+	ImGui::End();
 #endif // DEBUG
 }
