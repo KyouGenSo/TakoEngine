@@ -37,7 +37,6 @@ struct SpotLight
     float decay;
     float cosAngle;
     int32_t enable;
-
 };
 
 struct Camera
@@ -165,16 +164,12 @@ PixelShaderOutput main(VertexShaderOutput input)
             spotLightSpecular = float32_t3(0.0f, 0.0f, 0.0f);
         }
         
-        
+        output.color.rgb = directionalLightDiffuse + pointLightDiffuse + spotLightDiffuse;
         
         if (gMaterial.enableHighlight != 0)
         {
-            output.color.rgb = directionalLightDiffuse + pointLightDiffuse + spotLightDiffuse + directionalLightSpecular + pointLightSpecular + spotLightSpecular;
+            output.color.rgb += directionalLightSpecular + pointLightSpecular + spotLightSpecular;
 
-        }
-        else
-        {
-            output.color.rgb = directionalLightDiffuse + pointLightDiffuse + spotLightDiffuse;
         }
         
         output.color.a = gMaterial.color.a * texColor.a;

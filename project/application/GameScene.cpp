@@ -35,6 +35,14 @@ void GameScene::Initialize()
 
 	modelPos_ = Vector3(0.0f, -7.37f, 22.28f);
 
+	object3d2_ = new Object3d();
+	object3d2_->Initialize();
+	object3d2_->SetModel("terrain.obj");
+
+	// y軸90度回転
+	Vector3 rotate2 = Vector3(0.0f, DirectX::XMConvertToRadians(90.0f), 0.0f);
+	object3d2_->SetRotate(rotate2);
+
 	spotLight_.color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 	spotLight_.position = Vector3(0.0f, -6.0f, 22.0f);
 	spotLight_.intensity = 1.0f;
@@ -48,6 +56,7 @@ void GameScene::Initialize()
 void GameScene::Finalize()
 {
 	delete object3d_;
+	delete object3d2_;
 }
 
 void GameScene::Update()
@@ -70,6 +79,7 @@ void GameScene::Update()
 
 
 	object3d_->Update();
+	object3d2_->Update();
 
 
 	// シーン遷移
@@ -99,6 +109,7 @@ void GameScene::Draw()
 
 	// モデル描画
 	object3d_->Draw();
+	object3d2_->Draw();
 
 
 	//-------------------Modelの描画-------------------//
@@ -119,8 +130,10 @@ void GameScene::DrawImGui()
 	ImGui::Begin("object3d");
 	ImGui::DragFloat3("Scale", &modelScale_.x, 0.01f, 0.1f, 50.0f);
 	ImGui::DragFloat3("Position", &modelPos_.x, 0.01f, -50.0f, 50.0f);
+	ImGui::DragFloat3("Rotate", &modelRotate_.x, 0.01f, DirectX::XMConvertToRadians(-180.0f), DirectX::XMConvertToRadians(180.0f));
 	object3d_->SetScale(modelScale_);
 	object3d_->SetTranslate(modelPos_);
+	object3d_->SetRotate(modelRotate_);
 	// Lightの設定
 	ImGui::Text("Directional Light");
 	ImGui::Separator();
@@ -136,6 +149,12 @@ void GameScene::DrawImGui()
 	object3d_->SetLightDirection(lightDirection_);
 	object3d_->SetLightColor(lightColor_);
 	object3d_->SetLightIntensity(lightIntensity_);
+	object3d2_->SetShininess(shininess_);
+	object3d2_->SetEnableLighting(isLighting_);
+	object3d2_->SetEnableHighlight(isHighlight_);
+	object3d2_->SetLightDirection(lightDirection_);
+	object3d2_->SetLightColor(lightColor_);
+	object3d2_->SetLightIntensity(lightIntensity_);
 	ImGui::End();
 
 	ImGui::Begin("Point Light");
@@ -151,6 +170,12 @@ void GameScene::DrawImGui()
 	object3d_->SetPointLightRadius(pointLightRadius_);
 	object3d_->SetPointLightDecay(pointLightDecay_);
 	object3d_->SetPointLightEnable(isPointLightEnable_);
+	object3d2_->SetPointLightPosition(pointLightPos_);
+	object3d2_->SetPointLightColor(pointLightColor_);
+	object3d2_->SetPointLightIntensity(pointLightIntensity_);
+	object3d2_->SetPointLightRadius(pointLightRadius_);
+	object3d2_->SetPointLightDecay(pointLightDecay_);
+	object3d2_->SetPointLightEnable(isPointLightEnable_);
 	ImGui::End();
 
 	ImGui::Begin("Spot Light");
@@ -170,6 +195,14 @@ void GameScene::DrawImGui()
 	object3d_->SetSpotLightCosAngle(spotLight_.cosAngle);
 	object3d_->SetSpotLightColor(spotLight_.color);
 	object3d_->SetSpotLightEnable(spotLight_.enable);
+	object3d2_->SetSpotLightPosition(spotLight_.position);
+	object3d2_->SetSpotLightDirection(spotLight_.direction);
+	object3d2_->SetSpotLightIntensity(spotLight_.intensity);
+	object3d2_->SetSpotLightDistance(spotLight_.distance);
+	object3d2_->SetSpotLightDecay(spotLight_.decay);
+	object3d2_->SetSpotLightCosAngle(spotLight_.cosAngle);
+	object3d2_->SetSpotLightColor(spotLight_.color);
+	object3d2_->SetSpotLightEnable(spotLight_.enable);
 	ImGui::End();
 #endif // DEBUG
 }

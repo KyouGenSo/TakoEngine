@@ -75,6 +75,7 @@ private: // メンバー変数
 
 	// ビュープロジェクション行列
 	Matrix4x4 viewProjectionMatrix_;
+	Matrix4x4 debugViewProjectionMatrix_;
 
 	// デバッグフラグ
 	bool isDebug_ = false;

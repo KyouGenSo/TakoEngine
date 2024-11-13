@@ -54,7 +54,6 @@ public: // 構造体
 		float distance;
 		float decay;
 		float cosAngle;
-		//float padding[2];
 		bool enable;
 	};
 

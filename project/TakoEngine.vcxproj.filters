@@ -200,6 +200,9 @@
     <ClCompile Include="engine\scene\Transition.cpp">
       <Filter>ソース ファイル\engine\scene</Filter>
     </ClCompile>
+    <ClCompile Include="Light.cpp">
+      <Filter>ソース ファイル\engine\3d</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\func\mathFunc\Mat4x4Func.h">
@@ -313,6 +316,9 @@
     <ClInclude Include="engine\scene\Transition.h">
       <Filter>ヘッダー ファイル\engine\scene</Filter>
     </ClInclude>
+    <ClInclude Include="Light.h">
+      <Filter>ヘッダー ファイル\engine\3d</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\NoTex.hlsli">
@@ -335,7 +341,7 @@
     <FxCompile Include="resources\shaders\Object3d.PS.hlsl">
       <Filter>Shader</Filter>
     </FxCompile>
-    <FxCompile Include="resources\shaders\Object3D.VS.hlsl">
+    <FxCompile Include="resources\shaders\Object3d.VS.hlsl">
       <Filter>Shader</Filter>
     </FxCompile>
     <FxCompile Include="resources\shaders\2D.PS.hlsl">

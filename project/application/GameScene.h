@@ -48,12 +48,15 @@ private: // メンバ変数
 	};
 
 	Object3d* object3d_ = nullptr;
+	Object3d* object3d2_ = nullptr;
+
 
 	bool isDebug_ = false;
 
 	// モデルの設定
 	Vector3 modelScale_ = Vector3(1.0f, 1.0f, 1.0f);
 	Vector3 modelPos_ = Vector3(0.0f, 0.0f, 0.0f);
+	Vector3 modelRotate_ = Vector3(0.0f, 0.0f, 0.0f);
 
 	// ライトの設定
 	float shininess_ = 100.0f;

@@ -30,16 +30,15 @@ void Object3dBasic::Initialize(DX12Basic* dx12)
 
 void Object3dBasic::Update()
 {
-	
 	if (isDebug_)
 	{
-		viewProjectionMatrix_ = DebugCamera::GetInstance()->GetViewProjectionMat();
+		debugViewProjectionMatrix_ = DebugCamera::GetInstance()->GetViewProjectionMat();
+		camera_->SetViewProjectionMatrix(debugViewProjectionMatrix_);
 	} else
 	{
 		viewProjectionMatrix_ = camera_->GetViewMatrix() * camera_->GetProjectionMatrix();
+		camera_->SetViewProjectionMatrix(viewProjectionMatrix_);
 	}
-
-	camera_->SetViewProjectionMatrix(viewProjectionMatrix_);
 }
 
 void Object3dBasic::Finalize()
