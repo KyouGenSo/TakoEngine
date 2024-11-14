@@ -146,15 +146,11 @@ void GameScene::DrawImGui()
 	object3d_->SetShininess(shininess_);
 	object3d_->SetEnableLighting(isLighting_);
 	object3d_->SetEnableHighlight(isHighlight_);
-	object3d_->SetLightDirection(lightDirection_);
-	object3d_->SetLightColor(lightColor_);
-	object3d_->SetLightIntensity(lightIntensity_);
+	object3d_->SetDirectionalLight(lightDirection_, lightColor_, 1, lightIntensity_);
 	object3d2_->SetShininess(shininess_);
 	object3d2_->SetEnableLighting(isLighting_);
 	object3d2_->SetEnableHighlight(isHighlight_);
-	object3d2_->SetLightDirection(lightDirection_);
-	object3d2_->SetLightColor(lightColor_);
-	object3d2_->SetLightIntensity(lightIntensity_);
+	object3d2_->SetDirectionalLight(lightDirection_, lightColor_, 1, lightIntensity_);
 	ImGui::End();
 
 	ImGui::Begin("Point Light");
@@ -164,18 +160,8 @@ void GameScene::DrawImGui()
 	ImGui::DragFloat("Decay", &pointLightDecay_, 0.01f, 0.0f, 10.0f);
 	ImGui::ColorEdit4("Color", &pointLightColor_.x);
 	ImGui::Checkbox("Enable", &isPointLightEnable_);
-	object3d_->SetPointLightPosition(pointLightPos_);
-	object3d_->SetPointLightColor(pointLightColor_);
-	object3d_->SetPointLightIntensity(pointLightIntensity_);
-	object3d_->SetPointLightRadius(pointLightRadius_);
-	object3d_->SetPointLightDecay(pointLightDecay_);
-	object3d_->SetPointLightEnable(isPointLightEnable_);
-	object3d2_->SetPointLightPosition(pointLightPos_);
-	object3d2_->SetPointLightColor(pointLightColor_);
-	object3d2_->SetPointLightIntensity(pointLightIntensity_);
-	object3d2_->SetPointLightRadius(pointLightRadius_);
-	object3d2_->SetPointLightDecay(pointLightDecay_);
-	object3d2_->SetPointLightEnable(isPointLightEnable_);
+	object3d_->SetPointLight(pointLightPos_, pointLightColor_, pointLightIntensity_, pointLightRadius_, pointLightDecay_, isPointLightEnable_);
+	object3d2_->SetPointLight(pointLightPos_, pointLightColor_, pointLightIntensity_, pointLightRadius_, pointLightDecay_, isPointLightEnable_);
 	ImGui::End();
 
 	ImGui::Begin("Spot Light");
@@ -187,22 +173,8 @@ void GameScene::DrawImGui()
 	ImGui::DragFloat("CosAngle", &spotLight_.cosAngle, 0.01f, 0.0f, 1.0f);
 	ImGui::ColorEdit4("Color", &spotLight_.color.x);
 	ImGui::Checkbox("Enable", &spotLight_.enable);
-	object3d_->SetSpotLightPosition(spotLight_.position);
-	object3d_->SetSpotLightDirection(spotLight_.direction);
-	object3d_->SetSpotLightIntensity(spotLight_.intensity);
-	object3d_->SetSpotLightDistance(spotLight_.distance);
-	object3d_->SetSpotLightDecay(spotLight_.decay);
-	object3d_->SetSpotLightCosAngle(spotLight_.cosAngle);
-	object3d_->SetSpotLightColor(spotLight_.color);
-	object3d_->SetSpotLightEnable(spotLight_.enable);
-	object3d2_->SetSpotLightPosition(spotLight_.position);
-	object3d2_->SetSpotLightDirection(spotLight_.direction);
-	object3d2_->SetSpotLightIntensity(spotLight_.intensity);
-	object3d2_->SetSpotLightDistance(spotLight_.distance);
-	object3d2_->SetSpotLightDecay(spotLight_.decay);
-	object3d2_->SetSpotLightCosAngle(spotLight_.cosAngle);
-	object3d2_->SetSpotLightColor(spotLight_.color);
-	object3d2_->SetSpotLightEnable(spotLight_.enable);
+	object3d_->SetSpotLight(spotLight_.position, spotLight_.direction, spotLight_.color, spotLight_.intensity, spotLight_.distance, spotLight_.decay, spotLight_.cosAngle, spotLight_.enable);
+	object3d2_->SetSpotLight(spotLight_.position, spotLight_.direction, spotLight_.color, spotLight_.intensity, spotLight_.distance, spotLight_.decay, spotLight_.cosAngle, spotLight_.enable);
 	ImGui::End();
 #endif // DEBUG
 }

@@ -200,7 +200,7 @@
     <ClCompile Include="engine\scene\Transition.cpp">
       <Filter>ソース ファイル\engine\scene</Filter>
     </ClCompile>
-    <ClCompile Include="Light.cpp">
+    <ClCompile Include="engine\3d\Light.cpp">
       <Filter>ソース ファイル\engine\3d</Filter>
     </ClCompile>
   </ItemGroup>
@@ -316,7 +316,7 @@
     <ClInclude Include="engine\scene\Transition.h">
       <Filter>ヘッダー ファイル\engine\scene</Filter>
     </ClInclude>
-    <ClInclude Include="Light.h">
+    <ClInclude Include="engine\3d\Light.h">
       <Filter>ヘッダー ファイル\engine\3d</Filter>
     </ClInclude>
   </ItemGroup>

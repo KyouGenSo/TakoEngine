@@ -75,5 +75,4 @@ private: // メンバ変数
 
 	// スポットライトの設定
 	SpotLight spotLight_;
-
 };

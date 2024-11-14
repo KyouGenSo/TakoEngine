@@ -7,6 +7,7 @@
 #include "vector3.h"
 #include "vector4.h"
 #include "Mat4x4Func.h"
+#include "Light.h"
 
 class Model;
 
@@ -15,7 +16,6 @@ class Camera;
 class Object3d {
 
 public: // 構造体
-
 	// 座標変換行列データ
 	struct TransformationMatrix
 	{
@@ -66,17 +66,22 @@ public: // 構造体
 
 public: // メンバー関数
 	///<summary>
-	///初期化
+	/// デストラクタ
+	/// </summary>
+	~Object3d();
+
+	///<summary>
+	/// 初期化
 	/// </summary>
 	void Initialize();
 
 	///<summary>
-	///更新
+	/// 更新
 	/// </summary>
 	void Update();
 
 	///<summary>
-	///描画
+	/// 描画
 	/// </summary>
 	void Draw();
 
@@ -92,83 +97,67 @@ public: // メンバー関数
 	void SetRotate(const Vector3& rotate) { transform_.rotate = rotate; }
 	void SetTranslate(const Vector3& translate) { transform_.translate = translate; }
 
-	// DirectionalLight
+	// ライト全体の設定
 	void SetShininess(float shininess);
 	void SetEnableLighting(bool enableLighting);
 	void SetEnableHighlight(bool enableHighlight);
-	void SetLightDirection(const Vector3& direction) { directionalLightData_->direction = direction; }
-	void SetLightColor(const Vector4& color) { directionalLightData_->color = color; }
-	void SetLightType(int32_t lightType) { directionalLightData_->lightType = lightType; }
-	void SetLightIntensity(float intensity) { directionalLightData_->intensity = intensity; }
+
+	// DirectionalLight
+	void SetDirectionalLight(const Vector3& direction, const Vector4& color, int32_t lightType, float intensity);
+	void SetDirectionalLightDirection(const Vector3& direction) { light_->SetDirectionalLightDirection(direction); }
+	void SetDirectionalLightColor(const Vector4& color) { light_->SetDirectionalLightColor(color); }
+	void SetDirectionalLightType(int32_t lightType) { light_->SetDirectionalLightType(lightType); }
+	void SetDirectionalLightIntensity(float intensity) { light_->SetDirectionalLightIntensity(intensity); }
 
 	// PointLight
-	void SetPointLightColor(const Vector4& color) { pointLightData_->color = color; }
-	void SetPointLightPosition(const Vector3& position) { pointLightData_->position = position; }
-	void SetPointLightIntensity(float intensity) { pointLightData_->intensity = intensity; }
-	void SetPointLightRadius(float radius) { pointLightData_->radius = radius; }
-	void SetPointLightDecay(float decay) { pointLightData_->decay = decay; }
-	void SetPointLightEnable(bool enable) { pointLightData_->enable = enable; }
+	void SetPointLight(const Vector3& position, const Vector4& color, float intensity, float radius, float decay, bool enable);
+	void SetPointLightColor(const Vector4& color) { light_->SetPointLightColor(color); }
+	void SetPointLightPosition(const Vector3& position) { light_->SetPointLightPosition(position); }
+	void SetPointLightIntensity(float intensity) { light_->SetPointLightIntensity(intensity); }
+	void SetPointLightRadius(float radius) { light_->SetPointLightRadius(radius); }
+	void SetPointLightDecay(float decay) { light_->SetPointLightDecay(decay); }
+	void SetPointLightEnable(bool enable) { light_->SetPointLightEnable(enable); }
 
 	// SpotLight
-	void SetSpotLightColor(const Vector4& color) { spotLightData_->color = color; }
-	void SetSpotLightPosition(const Vector3& position) { spotLightData_->position = position; }
-	void SetSpotLightIntensity(float intensity) { spotLightData_->intensity = intensity; }
-	void SetSpotLightDirection(const Vector3& direction) { spotLightData_->direction = direction; }
-	void SetSpotLightDistance(float distance) { spotLightData_->distance = distance; }
-	void SetSpotLightDecay(float decay) { spotLightData_->decay = decay; }
-	void SetSpotLightCosAngle(float cosAngle) { spotLightData_->cosAngle = cosAngle; }
-	void SetSpotLightEnable(bool enable) { spotLightData_->enable = enable; }
+	void SetSpotLight(const Vector3& position, const Vector3& direction, const Vector4& color, float intensity, float distance, float decay, float cosAngle, bool enable);
+	void SetSpotLightColor(const Vector4& color) { light_->SetSpotLightColor(color); }
+	void SetSpotLightPosition(const Vector3& position) { light_->SetSpotLightPosition(position); }
+	void SetSpotLightIntensity(float intensity) { light_->SetSpotLightIntensity(intensity); }
+	void SetSpotLightDirection(const Vector3& direction) { light_->SetSpotLightDirection(direction); }
+	void SetSpotLightDistance(float distance) { light_->SetSpotLightDistance(distance); }
+	void SetSpotLightDecay(float decay) { light_->SetSpotLightDecay(decay); }
+	void SetSpotLightCosAngle(float cosAngle) { light_->SetSpotLightCosAngle(cosAngle); }
+	void SetSpotLightEnable(bool enable) { light_->SetSpotLightEnable(enable); }
 
 private: // プライベートメンバー関数
-
 	///<summary>
 	///　座標変換行列データの生成
 	/// </summary>
 	void CreateTransformationMatrixData();
-
-	///<summary>
-	///　平行光源データの生成
-	/// </summary>
-	void CreateDirectionalLightData();
-
-	///<summary>
-	///　点光源データの生成
-	/// </summary>
-	void CreatePointLightData();
 
 	/// <summary>
 	/// シェーダー用カメラデータの生成
 	/// </summary>
 	void CreateCameraForGPUData();
 
-	///<summary>
-	///　スポットライトデータの生成
-	///</summary>
-	void CreateSpotLightData();
-
 private: // メンバー変数
-
 	// カメラのクラスポインター
 	Camera* m_camera_ = nullptr;
 
 	// モデルクラス
 	Model* m_model_ = nullptr;
 
+	// ライトクラス
+	Light* light_ = nullptr;
+
 	// トランスフォーム
 	Transform transform_;
 
 	// バッファリソース
 	Microsoft::WRL::ComPtr<ID3D12Resource> transformationMatResource_;
-	Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightResource_;
-	Microsoft::WRL::ComPtr<ID3D12Resource> pointLightResource_;
-	Microsoft::WRL::ComPtr<ID3D12Resource> spotLightResource_;
 	Microsoft::WRL::ComPtr<ID3D12Resource> cameraForGPUResource_;
 
 	// バッファリソース内のデータを指すポインタ
 	TransformationMatrix* transformationMatData_ = nullptr;
-	DirectionalLight* directionalLightData_ = nullptr;
-	PointLight* pointLightData_ = nullptr;
-	SpotLight* spotLightData_ = nullptr;
 	CameraForGPU* cameraForGPUData_ = nullptr;
-
 };
