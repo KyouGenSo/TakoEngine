@@ -91,10 +91,6 @@ void PostEffect::Draw(const std::string& effectName)
 		// グレースケール, ノーエフェクトの場合は何もしない
 	}
 
-
-	// テクスチャ用のsrvヒープの設定
-	SrvManager::GetInstance()->BeginDraw();
-
 	SrvManager::GetInstance()->SetRootDescriptorTable(0, srvIndex_);
 
 	// 描画
