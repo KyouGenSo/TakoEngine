@@ -47,6 +47,17 @@ private: // メンバ変数
 		bool enable;
 	};
 
+	// 点光源データ
+	struct PointLight
+	{
+		Vector4 color;
+		Vector3 position;
+		float intensity;
+		float radius;
+		float decay;
+		bool enable;
+	};
+
 	Object3d* object3d_ = nullptr;
 	Object3d* object3d2_ = nullptr;
 
@@ -66,12 +77,16 @@ private: // メンバ変数
 	Vector3 lightDirection_ = Vector3(0.0f, -1.0f, 0.0f);
 	float lightIntensity_ = 0.0f;
 
-	Vector3 pointLightPos_ = Vector3(0.0f, -5.37f, 22.0f);
-	Vector4 pointLightColor_ = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-	float pointLightIntensity_ = 1.0f;
-	float pointLightRadius_ = 10.0f;
-	float pointLightDecay_ = 1.0f;
-	bool isPointLightEnable_ = false;
+	//Vector3 pointLightPos_ = Vector3(0.0f, -5.37f, 22.0f);
+	//Vector4 pointLightColor_ = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+	//float pointLightIntensity_ = 1.0f;
+	//float pointLightRadius_ = 10.0f;
+	//float pointLightDecay_ = 1.0f;
+	//bool isPointLightEnable_ = false;
+
+	// 点光源の設定
+	PointLight pointLight_;
+	PointLight pointLight2_;
 
 	// スポットライトの設定
 	SpotLight spotLight_;

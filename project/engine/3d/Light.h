@@ -50,6 +50,12 @@ public: // 構造体
 		bool enable;
 	};
 
+	struct LightConsteants
+	{
+		int numPointLights;
+		float padding[3];
+	};
+
 public: // メンバ関数
 	/// <summary>
 	/// 初期化
@@ -70,7 +76,7 @@ public: // メンバ関数
 	void SetDirectionalLightIntensity(float intensity) { directionalLightData_->intensity = intensity; }
 
 	// PointLight
-	void SetPointLight(const Vector3& position, const Vector4& color, float intensity, float radius, float decay, bool enable);
+	void SetPointLight(const Vector3& position, const Vector4& color, float intensity, float radius, float decay, bool enable, int index);
 	void SetPointLightColor(const Vector4& color) { pointLightDatas_->color = color; }
 	void SetPointLightPosition(const Vector3& position) { pointLightDatas_->position = position; }
 	void SetPointLightIntensity(float intensity) { pointLightDatas_->intensity = intensity; }
@@ -105,6 +111,11 @@ private: // プライベートメンバ関数
 	///</summary>
 	void CreateSpotLightData();
 
+	/// <summary>
+	/// LightConstantsの生成
+	/// </summary>
+	void CreateLightConstants();
+
 private: // メンバ変数
 	// DX12
 	DX12Basic* m_dx12_;
@@ -118,6 +129,9 @@ private: // メンバ変数
 	// スポットライトデータ
 	SpotLight* spotLightData_;
 
+	// LightConstants
+	LightConsteants* lightConstantsData_;
+
 	// 平行光源リソース
 	Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightResource_;
 
@@ -126,4 +140,10 @@ private: // メンバ変数
 
 	// スポットライトリソース
 	Microsoft::WRL::ComPtr<ID3D12Resource> spotLightResource_;
+
+	// LightConstantsリソース
+	Microsoft::WRL::ComPtr<ID3D12Resource> lightConstantsResource_;
+
+	// 点光源のsrvIndex
+	int pointLightSrvIndex_;
 };

@@ -39,6 +39,11 @@ struct SpotLight
     int32_t enable;
 };
 
+cbuffer LightConstants : register(b3)
+{
+    int gNumPointLights;
+};
+
 struct Camera
 {
     float32_t3 worldPos;
@@ -52,10 +57,12 @@ struct PixelShaderOutput
 ConstantBuffer<Material> gMaterial : register(b0);
 ConstantBuffer<DirectionalLight> gDirectionalLight : register(b1);
 ConstantBuffer<Camera> gCamera : register(b2);
-ConstantBuffer<PointLight> gPointLight : register(b3);
 ConstantBuffer<SpotLight> gSpotLight : register(b4);
+
 Texture2D<float32_t4> gTexture : register(t0);
 SamplerState gSampler : register(s0);
+
+StructuredBuffer<PointLight> gPointLights : register(t1);
 
 PixelShaderOutput main(VertexShaderOutput input)
 {
@@ -102,33 +109,30 @@ PixelShaderOutput main(VertexShaderOutput input)
         }
         
         //---------------------------------- Point Light ----------------------------------
-        float32_t3 pointLightDiffuse;
-        float32_t3 pointLightSpecular;
+        float32_t3 totalPointLightDiffuse = float32_t3(0.0f, 0.0f, 0.0f);
+        float32_t3 totalPointLightSpecular = float32_t3(0.0f, 0.0f, 0.0f);
+
+        for (int i = 0; i < gNumPointLights; i++)
+        {
+            if (gPointLights[i].enable != 0)
+            {
+                float32_t3 pointLightDir = normalize(input.worldPos - gPointLights[i].position);
         
-        if (gPointLight.enable != 0)
-        {
-            float32_t3 pointLightDir = normalize(input.worldPos - gPointLight.position);
-            
-            float32_t3 halfVector = normalize(-pointLightDir + toEye);
-            float NdotH = dot(normalize(input.normal), halfVector);
-            float specularPow = pow(saturate(NdotH), gMaterial.shininess); // ”½ŽË‹­“x
-            
-            float32_t distance = length(gPointLight.position - input.worldPos);
-            float32_t factor = pow(saturate(-distance / gPointLight.radius + 1.0f), gPointLight.decay); // ‹——£‚É‚æ‚éŒ¸Š(0.0f ~ 1.0f
-            float32_t3 pointLightColor = gPointLight.color.rgb * gPointLight.intensity * factor;
-            
-            // ŠgŽU”½ŽË
-            float NdotL = saturate(dot(normalize(input.normal), -pointLightDir));
-            pointLightDiffuse = texColor.rgb * gMaterial.color.rgb * pointLightColor * NdotL;
-            
-            // ‹¾–Ê”½ŽË
-            pointLightSpecular = gPointLight.color.rgb * gPointLight.intensity * specularPow * float32_t3(1.0f, 1.0f, 1.0f);
-            
-        }
-        else
-        {
-            pointLightDiffuse = float32_t3(0.0f, 0.0f, 0.0f);
-            pointLightSpecular = float32_t3(0.0f, 0.0f, 0.0f);
+                float32_t3 halfVector = normalize(-pointLightDir + toEye);
+                float NdotH = dot(normalize(input.normal), halfVector);
+                float specularPow = pow(saturate(NdotH), gMaterial.shininess);
+        
+                float32_t distance = length(gPointLights[i].position - input.worldPos);
+                float32_t factor = pow(saturate(-distance / gPointLights[i].radius + 1.0f), gPointLights[i].decay);
+                float32_t3 pointLightColor = gPointLights[i].color.rgb * gPointLights[i].intensity * factor;
+        
+                // ŠgŽU”½ŽË
+                float NdotL = saturate(dot(normalize(input.normal), -pointLightDir));
+                totalPointLightDiffuse += texColor.rgb * gMaterial.color.rgb * pointLightColor * NdotL;
+        
+                // ‹¾–Ê”½ŽË
+                totalPointLightSpecular += gPointLights[i].color.rgb * gPointLights[i].intensity * specularPow * float32_t3(1.0f, 1.0f, 1.0f);
+            }
         }
         
         //---------------------------------- Spot Light ----------------------------------
@@ -164,11 +168,11 @@ PixelShaderOutput main(VertexShaderOutput input)
             spotLightSpecular = float32_t3(0.0f, 0.0f, 0.0f);
         }
         
-        output.color.rgb = directionalLightDiffuse + pointLightDiffuse + spotLightDiffuse;
+        output.color.rgb = directionalLightDiffuse + totalPointLightDiffuse + spotLightDiffuse;
         
         if (gMaterial.enableHighlight != 0)
         {
-            output.color.rgb += directionalLightSpecular + pointLightSpecular + spotLightSpecular;
+            output.color.rgb += directionalLightSpecular + totalPointLightSpecular + spotLightSpecular;
 
         }
         

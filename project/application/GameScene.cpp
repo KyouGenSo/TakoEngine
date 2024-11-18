@@ -51,6 +51,20 @@ void GameScene::Initialize()
 	spotLight_.decay = 1.0f;
 	spotLight_.cosAngle = std::cos(std::numbers::pi_v<float> / 3.0f);
 	spotLight_.enable = true;
+
+	pointLight_.position = Vector3(0.0f, -5.37f, 22.0f); // ライトの位置
+	pointLight_.color = { 1.0f, 1.0f, 1.0f, 1.0f };     // ライトの色
+	pointLight_.intensity = 1.0f;                       // 輝度
+	pointLight_.radius = 10.0f;                         // 半径
+	pointLight_.decay = 1.0f;                           // 減衰
+	pointLight_.enable = false;                         // 点光源の有効無効
+
+	pointLight2_.position = Vector3(0.0f, -5.37f, 22.0f); // ライトの位置
+	pointLight2_.color = { 1.0f, 1.0f, 1.0f, 1.0f };     // ライトの色
+	pointLight2_.intensity = 1.0f;                       // 輝度
+	pointLight2_.radius = 10.0f;                         // 半径
+	pointLight2_.decay = 1.0f;                           // 減衰
+	pointLight2_.enable = false;                         // 点光源の有効無効
 }
 
 void GameScene::Finalize()
@@ -154,14 +168,27 @@ void GameScene::DrawImGui()
 	ImGui::End();
 
 	ImGui::Begin("Point Light");
-	ImGui::DragFloat3("Position", &pointLightPos_.x, 0.01f, -50.0f, 50.0f);
-	ImGui::DragFloat("Intensity", &pointLightIntensity_, 0.01f, 0.0f, 10.0f);
-	ImGui::DragFloat("Radius", &pointLightRadius_, 0.01f, 0.0f, 100.0f);
-	ImGui::DragFloat("Decay", &pointLightDecay_, 0.01f, 0.0f, 10.0f);
-	ImGui::ColorEdit4("Color", &pointLightColor_.x);
-	ImGui::Checkbox("Enable", &isPointLightEnable_);
-	object3d_->SetPointLight(pointLightPos_, pointLightColor_, pointLightIntensity_, pointLightRadius_, pointLightDecay_, isPointLightEnable_);
-	object3d2_->SetPointLight(pointLightPos_, pointLightColor_, pointLightIntensity_, pointLightRadius_, pointLightDecay_, isPointLightEnable_);
+	ImGui::Text("Point Light1");
+	ImGui::DragFloat3("Position", &pointLight_.position.x, 0.01f, -50.0f, 50.0f);
+	ImGui::DragFloat("Intensity", &pointLight_.intensity, 0.01f, 0.0f, 10.0f);
+	ImGui::DragFloat("Radius", &pointLight_.radius, 0.01f, 0.0f, 100.0f);
+	ImGui::DragFloat("Decay", &pointLight_.decay, 0.01f, 0.0f, 10.0f);
+	ImGui::ColorEdit4("Color", &pointLight_.color.x);
+	ImGui::Checkbox("Enable", &pointLight_.enable);
+	object3d_->SetPointLight(pointLight_.position, pointLight_.color, pointLight_.intensity, pointLight_.radius, pointLight_.decay, pointLight_.enable, 0);
+	object3d2_->SetPointLight(pointLight_.position, pointLight_.color, pointLight_.intensity, pointLight_.radius, pointLight_.decay, pointLight_.enable, 0);
+	ImGui::End();
+
+	ImGui::Begin("Point Light2");
+	ImGui::Text("Point Light2");
+	ImGui::DragFloat3("Position", &pointLight2_.position.x, 0.01f, -50.0f, 50.0f);
+	ImGui::DragFloat("Intensity", &pointLight2_.intensity, 0.01f, 0.0f, 10.0f);
+	ImGui::DragFloat("Radius", &pointLight2_.radius, 0.01f, 0.0f, 100.0f);
+	ImGui::DragFloat("Decay", &pointLight2_.decay, 0.01f, 0.0f, 10.0f);
+	ImGui::ColorEdit4("Color", &pointLight2_.color.x);
+	ImGui::Checkbox("Enable", &pointLight2_.enable);
+	object3d_->SetPointLight(pointLight2_.position, pointLight2_.color, pointLight2_.intensity, pointLight2_.radius, pointLight2_.decay, pointLight2_.enable, 1);
+	object3d2_->SetPointLight(pointLight2_.position, pointLight2_.color, pointLight2_.intensity, pointLight2_.radius, pointLight2_.decay, pointLight2_.enable, 1);
 	ImGui::End();
 
 	ImGui::Begin("Spot Light");

@@ -110,7 +110,7 @@ public: // メンバー関数
 	void SetDirectionalLightIntensity(float intensity) { light_->SetDirectionalLightIntensity(intensity); }
 
 	// PointLight
-	void SetPointLight(const Vector3& position, const Vector4& color, float intensity, float radius, float decay, bool enable);
+	void SetPointLight(const Vector3& position, const Vector4& color, float intensity, float radius, float decay, bool enable, int index);
 	void SetPointLightColor(const Vector4& color) { light_->SetPointLightColor(color); }
 	void SetPointLightPosition(const Vector3& position) { light_->SetPointLightPosition(position); }
 	void SetPointLightIntensity(float intensity) { light_->SetPointLightIntensity(intensity); }

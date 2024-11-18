@@ -108,9 +108,9 @@ void Object3d::SetDirectionalLight(const Vector3& direction, const Vector4& colo
 	light_->SetDirectionalLight(direction, color, lightType, intensity);
 }
 
-void Object3d::SetPointLight(const Vector3& position, const Vector4& color, float intensity, float radius, float decay, bool enable)
+void Object3d::SetPointLight(const Vector3& position, const Vector4& color, float intensity, float radius, float decay, bool enable, int index)
 {
-	light_->SetPointLight(position, color, intensity, radius, decay, enable);
+	light_->SetPointLight(position, color, intensity, radius, decay, enable, index);
 }
 
 void Object3d::SetSpotLight(const Vector3& position, const Vector3& direction, const Vector4& color, float intensity, float distance, float decay, float cosAngle, bool enable)
