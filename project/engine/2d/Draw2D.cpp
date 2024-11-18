@@ -21,7 +21,9 @@ void Draw2D::Initialize(DX12Basic* dx12)
 
     isDebug_ = false;
 
+	worldMatrix_ = Mat4x4::MakeIdentity();
     viewMatrix_ = Mat4x4::MakeIdentity();
+	projectionMatrix_ = Mat4x4::MakeOrtho(0.0f, 0.0f, float(WinApp::kClientWidth), float(WinApp::kClientHeight), 0.0f, 100.0f);
 
     // パイプラインステートの生成
     CreatePSO(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE, trianglePipelineState_, triangleRootSignature_);
@@ -67,12 +69,12 @@ void Draw2D::Update()
 {
     if (isDebug_)
     {
-        Matrix4x4 viewMatrix = DebugCamera::GetInstance()->GetViewMat();
+        debugViewMatrix_ = DebugCamera::GetInstance()->GetViewMat();
 
-        transformationMatrixData_->WVP = Mat4x4::Multiply(transformationMatrixData_->world, Mat4x4::Multiply(viewMatrix, Mat4x4::MakeOrtho(0.0f, 0.0f, float(WinApp::kClientWidth), float(WinApp::kClientHeight), 0.0f, 100.0f)));
+		transformationMatrixData_->WVP = Mat4x4::Multiply(transformationMatrixData_->world, Mat4x4::Multiply(debugViewMatrix_, projectionMatrix_));
     } else
     {
-        transformationMatrixData_->WVP = Mat4x4::Multiply(transformationMatrixData_->world, Mat4x4::Multiply(viewMatrix_, Mat4x4::MakeOrtho(0.0f, 0.0f, float(WinApp::kClientWidth), float(WinApp::kClientHeight), 0.0f, 100.0f)));
+		transformationMatrixData_->WVP = Mat4x4::Multiply(transformationMatrixData_->world, Mat4x4::Multiply(viewMatrix_, projectionMatrix_));
     }
 }
 
@@ -454,13 +456,10 @@ void Draw2D::CreateTransformMatData()
     transformationMatrixBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixData_));
 
     // 座標変換行列データの初期値を書き込む
-    Matrix4x4 worldMatrix = Mat4x4::MakeIdentity();
-    Matrix4x4 viewMatrix = Mat4x4::MakeIdentity();
-    Matrix4x4 projectionMatrix = Mat4x4::MakeOrtho(0.0f, 0.0f, float(WinApp::kClientWidth), float(WinApp::kClientHeight), 0.0f, 100.0f);
-    Matrix4x4 wvpMatrix = Mat4x4::Multiply(worldMatrix, Mat4x4::Multiply(viewMatrix, projectionMatrix));
+    wvpMatrix_ = Mat4x4::Multiply(worldMatrix_, Mat4x4::Multiply(viewMatrix_, projectionMatrix_));
 
-    transformationMatrixData_->WVP = wvpMatrix;
-    transformationMatrixData_->world = worldMatrix;
+    transformationMatrixData_->WVP = wvpMatrix_;
+    transformationMatrixData_->world = worldMatrix_;
 }
 
 

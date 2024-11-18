@@ -22,7 +22,7 @@ VertexShaderOutput main(VertexShaderInput input)
 {
     VertexShaderOutput output;
     
-    output.pos = mul(float32_t4(input.pos, 0.0f, 1.0f), gTransformationMatrix.WVP);
+    output.pos = mul(float4(input.pos, 0.0f, 1.0f), gTransformationMatrix.WVP);
     output.color = input.color;
 
     return output;
