@@ -11,11 +11,6 @@
 #include <numbers>
 #include "Input.h"
 
-Object3d::~Object3d()
-{
-	delete light_;
-}
-
 void Object3d::Initialize()
 {
 	m_camera_ = Object3dBasic::GetInstance()->GetCamera();
@@ -28,10 +23,6 @@ void Object3d::Initialize()
 
 	// カメラデータの生成
 	CreateCameraForGPUData();
-
-	// ライトの生成と初期化
-	light_ = new Light();
-	light_->Initialize(Object3dBasic::GetInstance()->GetDX12Basic());
 }
 
 void Object3d::Update()
@@ -63,9 +54,6 @@ void Object3d::Draw()
 
 	// シェーダー用カメラデータの場所を設定
 	Object3dBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(4, cameraForGPUResource_->GetGPUVirtualAddress());
-
-	// ライトの描画設定
-	light_->PreDraw();
 
 	// モデルの描画
 	if (m_model_)
@@ -101,21 +89,6 @@ void Object3d::SetEnableHighlight(bool enableHighlight)
 	{
 		m_model_->SetEnableHighlight(enableHighlight);
 	}
-}
-
-void Object3d::SetDirectionalLight(const Vector3& direction, const Vector4& color, int32_t lightType, float intensity)
-{
-	light_->SetDirectionalLight(direction, color, lightType, intensity);
-}
-
-void Object3d::SetPointLight(const Vector3& position, const Vector4& color, float intensity, float radius, float decay, bool enable, int index)
-{
-	light_->SetPointLight(position, color, intensity, radius, decay, enable, index);
-}
-
-void Object3d::SetSpotLight(const Vector3& position, const Vector3& direction, const Vector4& color, float intensity, float distance, float decay, float cosAngle, bool enable)
-{
-	light_->SetSpotLight(position, direction, color, intensity, distance, decay, cosAngle, enable);
 }
 
 void Object3d::CreateTransformationMatrixData()

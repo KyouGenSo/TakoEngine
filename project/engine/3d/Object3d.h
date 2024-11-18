@@ -7,7 +7,6 @@
 #include "vector3.h"
 #include "vector4.h"
 #include "Mat4x4Func.h"
-#include "Light.h"
 
 class Model;
 
@@ -24,39 +23,6 @@ public: // 構造体
 		Matrix4x4 worldInvTranspose;
 	};
 
-	// 平行光源データ
-	struct DirectionalLight
-	{
-		Vector4 color;
-		Vector3 direction;
-		int32_t lightType;
-		float intensity;
-	};
-
-	// 点光源データ
-	struct PointLight
-	{
-		Vector4 color;
-		Vector3 position;
-		float intensity;
-		float radius;
-		float decay;
-		bool enable;
-	};
-
-	// スポットライトデータ
-	struct SpotLight
-	{
-		Vector4 color;
-		Vector3 position;
-		float intensity;
-		Vector3 direction;
-		float distance;
-		float decay;
-		float cosAngle;
-		bool enable;
-	};
-
 	// Shader用のカメラ
 	struct CameraForGPU
 	{
@@ -65,11 +31,6 @@ public: // 構造体
 
 
 public: // メンバー関数
-	///<summary>
-	/// デストラクタ
-	/// </summary>
-	~Object3d();
-
 	///<summary>
 	/// 初期化
 	/// </summary>
@@ -97,37 +58,10 @@ public: // メンバー関数
 	void SetRotate(const Vector3& rotate) { transform_.rotate = rotate; }
 	void SetTranslate(const Vector3& translate) { transform_.translate = translate; }
 
-	// ライト全体の設定
+	// ライトの設定
 	void SetShininess(float shininess);
 	void SetEnableLighting(bool enableLighting);
 	void SetEnableHighlight(bool enableHighlight);
-
-	// DirectionalLight
-	void SetDirectionalLight(const Vector3& direction, const Vector4& color, int32_t lightType, float intensity);
-	void SetDirectionalLightDirection(const Vector3& direction) { light_->SetDirectionalLightDirection(direction); }
-	void SetDirectionalLightColor(const Vector4& color) { light_->SetDirectionalLightColor(color); }
-	void SetDirectionalLightType(int32_t lightType) { light_->SetDirectionalLightType(lightType); }
-	void SetDirectionalLightIntensity(float intensity) { light_->SetDirectionalLightIntensity(intensity); }
-
-	// PointLight
-	void SetPointLight(const Vector3& position, const Vector4& color, float intensity, float radius, float decay, bool enable, int index);
-	void SetPointLightColor(const Vector4& color) { light_->SetPointLightColor(color); }
-	void SetPointLightPosition(const Vector3& position) { light_->SetPointLightPosition(position); }
-	void SetPointLightIntensity(float intensity) { light_->SetPointLightIntensity(intensity); }
-	void SetPointLightRadius(float radius) { light_->SetPointLightRadius(radius); }
-	void SetPointLightDecay(float decay) { light_->SetPointLightDecay(decay); }
-	void SetPointLightEnable(bool enable) { light_->SetPointLightEnable(enable); }
-
-	// SpotLight
-	void SetSpotLight(const Vector3& position, const Vector3& direction, const Vector4& color, float intensity, float distance, float decay, float cosAngle, bool enable);
-	void SetSpotLightColor(const Vector4& color) { light_->SetSpotLightColor(color); }
-	void SetSpotLightPosition(const Vector3& position) { light_->SetSpotLightPosition(position); }
-	void SetSpotLightIntensity(float intensity) { light_->SetSpotLightIntensity(intensity); }
-	void SetSpotLightDirection(const Vector3& direction) { light_->SetSpotLightDirection(direction); }
-	void SetSpotLightDistance(float distance) { light_->SetSpotLightDistance(distance); }
-	void SetSpotLightDecay(float decay) { light_->SetSpotLightDecay(decay); }
-	void SetSpotLightCosAngle(float cosAngle) { light_->SetSpotLightCosAngle(cosAngle); }
-	void SetSpotLightEnable(bool enable) { light_->SetSpotLightEnable(enable); }
 
 private: // プライベートメンバー関数
 	///<summary>
@@ -146,9 +80,6 @@ private: // メンバー変数
 
 	// モデルクラス
 	Model* m_model_ = nullptr;
-
-	// ライトクラス
-	Light* light_ = nullptr;
 
 	// トランスフォーム
 	Transform transform_;

@@ -3,6 +3,7 @@
 #include "Logger.h"
 #include "Camera.h"
 
+
 #ifdef _DEBUG
 #include "DebugCamera.h"
 #endif
@@ -26,6 +27,10 @@ void Object3dBasic::Initialize(DX12Basic* dx12)
 
 	// パイプラインステートの生成
 	CreatePSO();
+
+	// ライトの生成と初期化
+	light_ = new Light();
+	light_->Initialize(m_dx12_);
 }
 
 void Object3dBasic::Update()
@@ -45,6 +50,8 @@ void Object3dBasic::Update()
 
 void Object3dBasic::Finalize()
 {
+	delete light_;
+
 	if (instance_ != nullptr)
 	{
 		delete instance_;
@@ -62,6 +69,24 @@ void Object3dBasic::SetCommonRenderSetting()
 
 	// トポロジの設定
 	m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	// ライトの描画設定
+	light_->PreDraw();
+}
+
+void Object3dBasic::SetDirectionalLight(const Vector3& direction, const Vector4& color, int32_t lightType, float intensity)
+{
+	light_->SetDirectionalLight(direction, color, lightType, intensity);
+}
+
+void Object3dBasic::SetPointLight(const Vector3& position, const Vector4& color, float intensity, float radius, float decay, bool enable, int index)
+{
+	light_->SetPointLight(position, color, intensity, radius, decay, enable, index);
+}
+
+void Object3dBasic::SetSpotLight(const Vector3& position, const Vector3& direction, const Vector4& color, float intensity, float distance, float decay, float cosAngle, bool enable)
+{
+	light_->SetSpotLight(position, direction, color, intensity, distance, decay, cosAngle, enable);
 }
 
 void Object3dBasic::CreateRootSignature()
