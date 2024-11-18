@@ -67,6 +67,8 @@ void Draw2D::Finalize()
 
 void Draw2D::Update()
 {
+	transformationMatrixData_->world = worldMatrix_;
+
     if (isDebug_)
     {
         debugViewMatrix_ = DebugCamera::GetInstance()->GetViewMat();
