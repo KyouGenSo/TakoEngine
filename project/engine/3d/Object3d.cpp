@@ -27,13 +27,19 @@ void Object3d::Initialize()
 
 void Object3d::Update()
 {
-	m_camera_ = Object3dBasic::GetInstance()->GetCamera();
+	// モデルのローカル行列　
+	Matrix4x4 modelLocalMatrix = Mat4x4::MakeIdentity();
+	if (m_model_)
+	{
+		modelLocalMatrix = m_model_->GetLocalMatrix();
+	}
 
 	// トランスフォームでワールド行列を作る
 	Matrix4x4 worldMatrix = Mat4x4::MakeAffine(transform_.scale, transform_.rotate, transform_.translate);
 
 	Matrix4x4 wvpMatrix;
 
+	m_camera_ = Object3dBasic::GetInstance()->GetCamera();
 	if (m_camera_) {
 		const Matrix4x4& viewProjectionMatrix = m_camera_->GetViewProjectionMatrix();
 		wvpMatrix = Mat4x4::Multiply(worldMatrix, viewProjectionMatrix);
@@ -42,9 +48,9 @@ void Object3d::Update()
 	}
 
 	// 座標変換行列データに書き込む
-	transformationMatData_->WVP = wvpMatrix;
-	transformationMatData_->world = worldMatrix;
-	transformationMatData_->worldInvTranspose = Mat4x4::InverseTranspose(worldMatrix);
+	transformationMatData_->WVP = wvpMatrix * modelLocalMatrix;
+	transformationMatData_->world = worldMatrix * modelLocalMatrix;
+	transformationMatData_->worldInvTranspose = Mat4x4::InverseTranspose(worldMatrix * modelLocalMatrix);
 }
 
 void Object3d::Draw()

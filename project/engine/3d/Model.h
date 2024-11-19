@@ -8,11 +8,22 @@
 #include "vector4.h"
 #include "Mat4x4Func.h"
 
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
 class ModelBasic;
 
 class Model
 {
 public: // 構造体
+	// ノードデータ
+	struct Node
+	{
+		Matrix4x4 localMatrix;
+		std::string name;
+		std::vector<Node> children;
+	};
 
 	// 頂点データ
 	struct VertexData
@@ -32,6 +43,7 @@ public: // 構造体
 	struct ModelData {
 		std::vector<VertexData> vertices;
 		MaterialData material;
+		Node rootNode;
 	};
 
 	// マテリアル
@@ -59,12 +71,16 @@ public: // メンバー関数
 	///<summary>
 	///objファイルの読み込む
 	///	</summary>
-	void LoadObjFile(const std::string& directoryPath, const std::string& fileName);
+	void LoadModelFile(const std::string& directoryPath, const std::string& fileName);
 
 	///<summary>
 	///mtlファイルの読み込む
 	/// </summary>
 	void LoadMtlFile(const std::string& directoryPath, const std::string& fileName);
+
+	// -----------------------------------Getters-----------------------------------//
+	// nodeのlocalMatrixを取得
+	const Matrix4x4& GetLocalMatrix() const;
 
 	// -----------------------------------Setters-----------------------------------//
 	void SetShininess(float shininess) { materialData_->shininess = shininess; }
@@ -72,16 +88,21 @@ public: // メンバー関数
 	void SetEnableHighlight(bool enableHighlight) { materialData_->enableHighlight = enableHighlight; }
 
 private: // プライベートメンバー関数
-
-	///<summary>
-	///頂点データの生成
+	/// <summary>
+	/// 頂点データの生成
 	/// </summary>
 	void CreateVertexData();
 
-	///<summary>
-	///マテリアルデータの生成
+	/// <summary>
+	/// マテリアルデータの生成
 	/// </summary>
 	void CreateMaterialData();
+
+	/// <summary>
+	/// ノード読み込み
+	/// <summary>
+	Node ReadNode(aiNode* node);
+
 private:
 	
 	ModelBasic* m_modelBasic_;

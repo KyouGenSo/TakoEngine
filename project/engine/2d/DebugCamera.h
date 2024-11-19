@@ -123,10 +123,10 @@ private: // メンバー変数
 
 	// カメラの移動速度
 	float moveSpeed2D_ = 1.0f;
-	float moveSpeed3D_ = 0.5f;
+	float moveSpeed3D_ = 0.35f;
 
 	// カメラの回転速度
-	float rotateSpeed_ = 0.01f;
+	float rotateSpeed_ = 0.02f;
 
 	// 2Dカメラかどうか
 	bool is2D_ = false;

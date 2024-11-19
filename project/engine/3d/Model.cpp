@@ -6,9 +6,6 @@
 #include <cassert>
 #include <fstream>
 #include <sstream>
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
 
 void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName)
 {
@@ -19,7 +16,7 @@ void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName)
 	ModelFolderName_ = m_modelBasic_->GetModelFolderName();
 
 	// objファイルの読み込み
-	LoadObjFile(directoryFolderName_ + "/" + ModelFolderName_, fileName);
+	LoadModelFile(directoryFolderName_ + "/" + ModelFolderName_, fileName);
 
 	// 頂点データの生成
 	CreateVertexData();
@@ -49,7 +46,7 @@ void Model::Draw()
 	m_modelBasic_->GetDX12Basic()->GetCommandList()->DrawInstanced(UINT(modelData_.vertices.size()), 1, 0, 0);
 }
 
-void Model::LoadObjFile(const std::string& directoryPath, const std::string& fileName)
+void Model::LoadModelFile(const std::string& directoryPath, const std::string& fileName)
 {
 	Assimp::Importer importer;
 	std::string filePath = directoryPath + "/" + fileName;
@@ -99,6 +96,9 @@ void Model::LoadObjFile(const std::string& directoryPath, const std::string& fil
 			modelData_.material.texturePath = texturePath.C_Str();
 		}
 	}
+
+	// ノードの読み込み
+	modelData_.rootNode = ReadNode(scene->mRootNode);
 }
 
 void Model::LoadMtlFile(const std::string& directoryPath, const std::string& fileName)
@@ -120,6 +120,11 @@ void Model::LoadMtlFile(const std::string& directoryPath, const std::string& fil
 			modelData_.material.texturePath = textureFileName;
 		}
 	}
+}
+
+const Matrix4x4& Model::GetLocalMatrix() const
+{
+	return modelData_.rootNode.localMatrix;
 }
 
 void Model::CreateVertexData()
@@ -151,4 +156,42 @@ void Model::CreateMaterialData()
 	materialData_->enableHighlight = true;
 	materialData_->uvTransform = Mat4x4::MakeIdentity();
 	materialData_->shininess = 15.0f;
+}
+
+Model::Node Model::ReadNode(aiNode* node)
+{
+	Node result;
+
+	aiMatrix4x4 aiLocalMatrix = node->mTransformation; // ノードのローカル変換行列を取得
+	aiLocalMatrix.Transpose(); // 列ベクトルを行ベクトルに変換
+
+	result.localMatrix.m[0][0] = aiLocalMatrix[0][0];
+	result.localMatrix.m[0][1] = aiLocalMatrix[0][1];
+	result.localMatrix.m[0][2] = aiLocalMatrix[0][2];
+	result.localMatrix.m[0][3] = aiLocalMatrix[0][3];
+
+	result.localMatrix.m[1][0] = aiLocalMatrix[1][0];
+	result.localMatrix.m[1][1] = aiLocalMatrix[1][1];
+	result.localMatrix.m[1][2] = aiLocalMatrix[1][2];
+	result.localMatrix.m[1][3] = aiLocalMatrix[1][3];
+
+	result.localMatrix.m[2][0] = aiLocalMatrix[2][0];
+	result.localMatrix.m[2][1] = aiLocalMatrix[2][1];
+	result.localMatrix.m[2][2] = aiLocalMatrix[2][2];
+	result.localMatrix.m[2][3] = aiLocalMatrix[2][3];
+
+	result.localMatrix.m[3][0] = aiLocalMatrix[3][0];
+	result.localMatrix.m[3][1] = aiLocalMatrix[3][1];
+	result.localMatrix.m[3][2] = aiLocalMatrix[3][2];
+	result.localMatrix.m[3][3] = aiLocalMatrix[3][3];
+
+	result.name = node->mName.C_Str(); // ノードの名前を取得
+
+	result.children.resize(node->mNumChildren); // 子ノードの数だけリサイズ
+	for (uint32_t childIndex = 0; childIndex < node->mNumChildren; ++childIndex)
+	{
+		result.children[childIndex] = ReadNode(node->mChildren[childIndex]); // 再帰的に子ノードを読み込む
+	}
+
+	return result;
 }
