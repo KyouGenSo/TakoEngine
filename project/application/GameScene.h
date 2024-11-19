@@ -6,7 +6,6 @@
 class GameScene : public BaseScene
 {
 public: // メンバ関数
-
 	/// <summary>
 	/// 初期化
 	/// </summary>

@@ -74,8 +74,6 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
 				vertex.texcoord = Vector2(texcoord.x, texcoord.y);
 				vertex.normal = Vector3(normal.x, normal.y, normal.z);
 
-				//vertex.position.x *= -1.0f;
-				//vertex.normal.x *= -1.0f;
 				vertex.position.z *= -1.0f;
 				vertex.normal.z *= -1.0f;
 
@@ -120,11 +118,6 @@ void Model::LoadMtlFile(const std::string& directoryPath, const std::string& fil
 			modelData_.material.texturePath = textureFileName;
 		}
 	}
-}
-
-const Matrix4x4& Model::GetLocalMatrix() const
-{
-	return modelData_.rootNode.localMatrix;
 }
 
 void Model::CreateVertexData()

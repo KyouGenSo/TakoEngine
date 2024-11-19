@@ -57,6 +57,7 @@ public: // 構造体
 		bool enableHighlight;
 		float padding2[3];
 	};
+
 public: // メンバー関数
 	/// <summary>
 	/// 初期化
@@ -80,7 +81,7 @@ public: // メンバー関数
 
 	// -----------------------------------Getters-----------------------------------//
 	// nodeのlocalMatrixを取得
-	const Matrix4x4& GetLocalMatrix() const;
+	const Matrix4x4& GetLocalMatrix() const { return modelData_.rootNode.localMatrix; }
 
 	// -----------------------------------Setters-----------------------------------//
 	void SetShininess(float shininess) { materialData_->shininess = shininess; }
@@ -103,7 +104,7 @@ private: // プライベートメンバー関数
 	/// <summary>
 	Node ReadNode(aiNode* node);
 
-private:
+private: // メンバ変数
 	
 	ModelBasic* m_modelBasic_;
 
