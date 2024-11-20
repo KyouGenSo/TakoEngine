@@ -27,7 +27,13 @@ void Object3d::Initialize()
 
 void Object3d::Update()
 {
-	// モデルのローカル行列　
+	// モデルのアニメーション更新
+	if (m_model_ && m_model_->HasAnimation())
+	{
+		m_model_->UpdateAnimation(1.0f / 60.0f);
+	}
+
+	// モデルのローカル行列を取得
 	Matrix4x4 modelLocalMatrix = Mat4x4::MakeIdentity();
 	if (m_model_)
 	{
@@ -48,9 +54,9 @@ void Object3d::Update()
 	}
 
 	// 座標変換行列データに書き込む
-	transformationMatData_->WVP = wvpMatrix * modelLocalMatrix;
-	transformationMatData_->world = worldMatrix * modelLocalMatrix;
-	transformationMatData_->worldInvTranspose = Mat4x4::InverseTranspose(worldMatrix * modelLocalMatrix);
+	transformationMatData_->WVP = modelLocalMatrix * wvpMatrix;
+	transformationMatData_->world = modelLocalMatrix * worldMatrix;
+	transformationMatData_->worldInvTranspose = Mat4x4::InverseTranspose(modelLocalMatrix * worldMatrix);
 }
 
 void Object3d::Draw()

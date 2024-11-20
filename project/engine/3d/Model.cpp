@@ -4,6 +4,7 @@
 #include "TextureManager.h"
 #include "SrvManager.h"
 #include "Mat4x4Func.h"
+#include "QuatFunc.h"
 #include <cassert>
 #include <fstream>
 #include <sstream>
@@ -183,6 +184,24 @@ Animation Model::LoadAnimationFile(const std::string& directoryPath, const std::
 	return animation;
 }
 
+void Model::UpdateAnimation(float deltaTime)
+{
+	animationTime_ += deltaTime; // アニメーション時間を更新
+	animationTime_ = std::fmod(animationTime_, animationData_.duration); // アニメーション時間がアニメーションの長さを超えたらループ
+	NodeAnimetion& nodeAnimetion = animationData_.nodeAnimations[modelData_.rootNode.name]; // ルートノードのアニメーションを取得
+
+	// 位置アニメーションの計算
+	Vector3 translate = CalcKeyFrameValue(nodeAnimetion.translate.keyFrames, animationTime_);
+	// 回転アニメーションの計算
+	Quaternion rotate = CalcKeyFrameValue(nodeAnimetion.rotate.keyFrames, animationTime_);
+	// スケールアニメーションの計算
+	Vector3 scale = CalcKeyFrameValue(nodeAnimetion.scale.keyFrames, animationTime_);
+
+	// ローカル変換行列を生成
+	Matrix4x4 localMatrix = Mat4x4::MakeAffine(scale, rotate, translate);
+	modelData_.rootNode.localMatrix = localMatrix; // ルートノードのローカル変換行列を更新
+}
+
 void Model::CreateVertexData()
 {
 	// 頂点リソースを生成
@@ -218,28 +237,15 @@ Node Model::ReadNode(aiNode* node)
 {
 	Node result;
 
-	aiMatrix4x4 aiLocalMatrix = node->mTransformation; // ノードのローカル変換行列を取得
-	aiLocalMatrix.Transpose(); // 列ベクトルを行ベクトルに変換
+	aiVector3D scale, position;
+	aiQuaternion rotate;
+	node->mTransformation.Decompose(scale, rotate, position); // スケール,回転,平行移動を取得
+	
+	result.transform.scale = { scale.x, scale.y, scale.z }; // スケールを取得
+	result.transform.rotate = { rotate.x, -rotate.y, -rotate.z, rotate.w }; // 回転を取得,右手系から左手系に変換
+	result.transform.translate = { -position.x, position.y, position.z }; // 平行移動を取得,x軸を反転
 
-	result.localMatrix.m[0][0] = aiLocalMatrix[0][0];
-	result.localMatrix.m[0][1] = aiLocalMatrix[0][1];
-	result.localMatrix.m[0][2] = aiLocalMatrix[0][2];
-	result.localMatrix.m[0][3] = aiLocalMatrix[0][3];
-
-	result.localMatrix.m[1][0] = aiLocalMatrix[1][0];
-	result.localMatrix.m[1][1] = aiLocalMatrix[1][1];
-	result.localMatrix.m[1][2] = aiLocalMatrix[1][2];
-	result.localMatrix.m[1][3] = aiLocalMatrix[1][3];
-
-	result.localMatrix.m[2][0] = aiLocalMatrix[2][0];
-	result.localMatrix.m[2][1] = aiLocalMatrix[2][1];
-	result.localMatrix.m[2][2] = aiLocalMatrix[2][2];
-	result.localMatrix.m[2][3] = aiLocalMatrix[2][3];
-
-	result.localMatrix.m[3][0] = aiLocalMatrix[3][0];
-	result.localMatrix.m[3][1] = aiLocalMatrix[3][1];
-	result.localMatrix.m[3][2] = aiLocalMatrix[3][2];
-	result.localMatrix.m[3][3] = aiLocalMatrix[3][3];
+	result.localMatrix = Mat4x4::MakeAffine(result.transform.scale, result.transform.rotate, result.transform.translate); // ローカル変換行列を生成
 
 	result.name = node->mName.C_Str(); // ノードの名前を取得
 
@@ -250,4 +256,46 @@ Node Model::ReadNode(aiNode* node)
 	}
 
 	return result;
+}
+
+Vector3 Model::CalcKeyFrameValue(const std::vector<KeyFrameVector3>& keyFrames, float time)
+{
+	assert(!keyFrames.empty()); // キーフレームがない場合はエラー
+	if (keyFrames.size() == 1 || time <= keyFrames[0].time)
+	{
+		return keyFrames[0].value; // 最初のキーフレームの値を返す
+	}
+
+	for (uint32_t keyIndex = 0; keyIndex < keyFrames.size() - 1; ++keyIndex)
+	{
+		uint32_t nextKeyIndex = keyIndex + 1;
+		if ( keyFrames[keyIndex].time <= time && time <= keyFrames[nextKeyIndex].time)
+		{
+			float t = (time - keyFrames[keyIndex].time) / (keyFrames[nextKeyIndex].time - keyFrames[keyIndex].time); // 補間係数を計算
+			return Vec3::Lerp(keyFrames[keyIndex].value, keyFrames[nextKeyIndex].value, t); // 線形補間
+		}
+	}
+
+	return (*keyFrames.rbegin()).value; // 最後のキーフレームの値を返す
+}
+
+Quaternion Model::CalcKeyFrameValue(const std::vector<KeyFrameQuaternion>& keyFrames, float time)
+{
+	assert(!keyFrames.empty()); // キーフレームがない場合はエラー
+	if (keyFrames.size() == 1 || time <= keyFrames[0].time)
+	{
+		return keyFrames[0].value; // 最初のキーフレームの値を返す
+	}
+
+	for (uint32_t keyIndex = 0; keyIndex < keyFrames.size() - 1; ++keyIndex)
+	{
+		uint32_t nextKeyIndex = keyIndex + 1;
+		if (keyFrames[keyIndex].time <= time && time <= keyFrames[nextKeyIndex].time)
+		{
+			float t = (time - keyFrames[keyIndex].time) / (keyFrames[nextKeyIndex].time - keyFrames[keyIndex].time); // 補間係数を計算
+			return Quat::Slerp(keyFrames[keyIndex].value, keyFrames[nextKeyIndex].value, t); // 球面線形補間
+		}
+	}
+
+	return (*keyFrames.rbegin()).value; // 最後のキーフレームの値を返す
 }

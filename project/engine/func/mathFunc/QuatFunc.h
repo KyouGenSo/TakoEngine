@@ -1,6 +1,7 @@
 #pragma once
 #include "Quaternion.h"
 #include "Vector3.h"
+#include "Matrix4x4.h"
 
 namespace Quat {
 	Quaternion Add(const Quaternion& q1, const Quaternion& q2);
@@ -21,5 +22,7 @@ namespace Quat {
 
 	Quaternion Slerp(const Quaternion& q1, const Quaternion& q2, float t);
 
-	Vector3 QuaternionToEuler(const Quaternion& q);
+	Vector3 ToVec3(const Quaternion& q);
+
+	Matrix4x4 ToMatrix(const Quaternion& q);
 }

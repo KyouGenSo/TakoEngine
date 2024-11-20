@@ -37,9 +37,16 @@ public: // メンバー関数
 	/// </summary>
 	Animation LoadAnimationFile(const std::string& directoryPath, const std::string& fileName);
 
+	/// <summary>
+	/// アニメーションの更新
+	/// </summary>
+	void UpdateAnimation(float deltaTime);
+
 	// -----------------------------------Getters-----------------------------------//
 	// nodeのlocalMatrixを取得
 	const Matrix4x4& GetLocalMatrix() const { return modelData_.rootNode.localMatrix; }
+	// アニメーションの有無を取得
+	bool HasAnimation() const { return hasAnimation_; }
 
 	// -----------------------------------Setters-----------------------------------//
 	void SetShininess(float shininess) { materialData_->shininess = shininess; }
@@ -62,6 +69,12 @@ private: // プライベートメンバー関数
 	/// <summary>
 	Node ReadNode(aiNode* node);
 
+	/// <summary>
+	/// キーフレームの値を計算
+	/// <summary>
+	Vector3 CalcKeyFrameValue(const std::vector<KeyFrameVector3>& keyFrames, float time);
+	Quaternion CalcKeyFrameValue(const std::vector<KeyFrameQuaternion>& keyFrames, float time);
+
 private: // メンバ変数
 	
 	ModelBasic* m_modelBasic_;
@@ -76,6 +89,7 @@ private: // メンバ変数
 	Animation animationData_;
 
 	bool hasAnimation_ = false;
+	float animationTime_ = 0.0f;
 
 	// バッファリソース
 	Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource_;

@@ -1,6 +1,6 @@
 #pragma once
 #include "Mat4x4Func.h"
-
+#include "Transform.h"
 
 class Camera
 {

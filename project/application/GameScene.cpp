@@ -25,7 +25,7 @@ void GameScene::Initialize()
 	/// ================================== ///
 
 	ModelManager::GetInstance()->LoadModel("terrain.obj"); 
-	ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
+	ModelManager::GetInstance()->LoadModel("AnimatedCube.gltf", true);
 
 	object3d_ = new Object3d();
 	object3d_->Initialize();
@@ -38,7 +38,7 @@ void GameScene::Initialize()
 
 	object3d2_ = new Object3d();
 	object3d2_->Initialize();
-	object3d2_->SetModel("uvChecker.gltf");
+	object3d2_->SetModel("AnimatedCube.gltf");
 
 	// y軸90度回転
 	Vector3 rotate2 = Vector3(0.0f, DirectX::XMConvertToRadians(90.0f), 0.0f);
@@ -99,6 +99,9 @@ void GameScene::Update()
 	object3d_->SetEnableLighting(isLighting_);
 	object3d_->SetEnableHighlight(isHighlight_);
 
+	object3d2_->SetScale(modelScale2_);
+	object3d2_->SetTranslate(modelPos2_);
+	object3d2_->SetRotate(modelRotate2_);
 	object3d2_->SetShininess(shininess_);
 	object3d2_->SetEnableLighting(isLighting_);
 	object3d2_->SetEnableHighlight(isHighlight_);
@@ -161,8 +164,16 @@ void GameScene::DrawImGui()
 	ImGui::DragFloat3("Scale", &modelScale_.x, 0.01f, 0.1f, 50.0f);
 	ImGui::DragFloat3("Position", &modelPos_.x, 0.01f, -50.0f, 50.0f);
 	ImGui::DragFloat3("Rotate", &modelRotate_.x, 0.01f, DirectX::XMConvertToRadians(-180.0f), DirectX::XMConvertToRadians(180.0f));
+	ImGui::End();
+
+	ImGui::Begin("object3d2");
+	ImGui::DragFloat3("Scale", &modelScale2_.x, 0.01f, 0.1f, 50.0f);
+	ImGui::DragFloat3("Position", &modelPos2_.x, 0.01f, -50.0f, 50.0f);
+	ImGui::DragFloat3("Rotate", &modelRotate2_.x, 0.01f, DirectX::XMConvertToRadians(-180.0f), DirectX::XMConvertToRadians(180.0f));
+	ImGui::End();
+
 	// Lightの設定
-	ImGui::Text("Directional Light");
+	ImGui::Begin("Directional Light");
 	ImGui::Separator();
 	ImGui::DragFloat3("Direction", &lightDirection_.x, 0.01f, -1.0f, 1.0f);
 	ImGui::DragFloat("Intensity", &lightIntensity_, 0.01f, 0.0f, 10.0f);

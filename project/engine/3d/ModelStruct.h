@@ -7,10 +7,12 @@
 #include "vector4.h"
 #include "Matrix4x4.h"
 #include "Quaternion.h"
+#include "Transform.h"
 
 // ノードデータ
 struct Node
 {
+	QuatTransform transform;
 	Matrix4x4 localMatrix;
 	std::string name;
 	std::vector<Node> children;

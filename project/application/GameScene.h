@@ -67,6 +67,10 @@ private: // メンバ変数
 	Vector3 modelPos_ = Vector3(0.0f, 0.0f, 0.0f);
 	Vector3 modelRotate_ = Vector3(0.0f, 0.0f, 0.0f);
 
+	Vector3 modelScale2_ = Vector3(1.0f, 1.0f, 1.0f);
+	Vector3 modelPos2_ = Vector3(0.0f, 0.0f, 0.0f);
+	Vector3 modelRotate2_ = Vector3(0.0f, 0.0f, 0.0f);
+
 	// 平行光源の設定
 	float shininess_ = 100.0f;
 	bool isLighting_ = true;

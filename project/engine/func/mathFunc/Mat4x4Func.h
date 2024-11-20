@@ -8,12 +8,6 @@
 const int kRowHeight = 20;
 const int kColumnWidth = 60;
 
-struct Transform {
-	Vector3 scale;
-	Vector3 rotate;
-	Vector3 translate;
-};
-
 namespace Mat4x4 {
 	Matrix4x4 Add(const Matrix4x4& m1, const Matrix4x4& m2);
 
@@ -53,8 +47,6 @@ namespace Mat4x4 {
 	Matrix4x4 MakeViewport(float left, float top, float width, float height, float minDepth, float maxDepth);
 
 	Matrix4x4 InverseTranspose(const Matrix4x4& m);
-
-	Matrix4x4 QuaternionToMatrix(const Quaternion& q);
 }
 
 

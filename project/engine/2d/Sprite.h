@@ -3,6 +3,7 @@
 #include"Vector2.h"
 #include"Vector3.h"
 #include"Mat4x4Func.h"
+#include "Transform.h"
 #include<cstdint>
 #include<string>
 #include <d3d12.h>
