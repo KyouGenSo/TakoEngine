@@ -49,7 +49,7 @@ public: // 構造体
 	// マテリアル
 	struct Material
 	{
-		Vector4 color;          // 16 bytes (aligned to 16 bytes)
+		Vector4 color;
 		bool enableLighting;
 		float padding1[3];
 		Matrix4x4 uvTransform;
@@ -109,7 +109,6 @@ private: // メンバ変数
 	ModelBasic* m_modelBasic_;
 
 	std::string directoryFolderName_;
-
 	std::string ModelFolderName_;
 
 	// モデルデータ
