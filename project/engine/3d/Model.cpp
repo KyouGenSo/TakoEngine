@@ -3,11 +3,12 @@
 #include "DX12Basic.h"
 #include "TextureManager.h"
 #include "SrvManager.h"
+#include "Mat4x4Func.h"
 #include <cassert>
 #include <fstream>
 #include <sstream>
 
-void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName)
+void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool hasAnimation)
 {
 	m_modelBasic_ = modelBasic;
 
@@ -15,8 +16,16 @@ void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName)
 
 	ModelFolderName_ = m_modelBasic_->GetModelFolderName();
 
+	hasAnimation_ = hasAnimation;
+
 	// objファイルの読み込み
 	LoadModelFile(directoryFolderName_ + "/" + ModelFolderName_, fileName);
+
+	// アニメーションの読み込み
+	if (hasAnimation_)
+	{
+		animationData_ = LoadAnimationFile(directoryFolderName_ + "/" + ModelFolderName_, fileName); 
+	}
 
 	// 頂点データの生成
 	CreateVertexData();
@@ -120,6 +129,60 @@ void Model::LoadMtlFile(const std::string& directoryPath, const std::string& fil
 	}
 }
 
+Animation Model::LoadAnimationFile(const std::string& directoryPath, const std::string& fileName)
+{
+	Animation animation;
+	Assimp::Importer importer;
+	std::string filePath = directoryPath + "/" + fileName;
+	const aiScene* scene = importer.ReadFile(filePath.c_str(), 0);
+
+	// アニメーションがない場合はエラー
+	assert(scene->HasAnimations());
+
+	// アニメーションの解析
+	aiAnimation* aiAnimation = scene->mAnimations[0]; // 一旦最初のアニメーションだけ対応
+	animation.duration = float(aiAnimation->mDuration / aiAnimation->mTicksPerSecond); // アニメーションの長さを取得,秒に変換
+
+	// ノードアニメーションの解析
+	for (uint32_t channelIndex = 0; channelIndex < aiAnimation->mNumChannels; ++channelIndex)
+	{
+		aiNodeAnim* aiNodeAnim = aiAnimation->mChannels[channelIndex];
+		NodeAnimetion& nodeAnimetion = animation.nodeAnimations[aiNodeAnim->mNodeName.C_Str()]; // ノード名をキーにしてノードアニメーションを取得
+
+		// 位置アニメーションの解析
+		for (uint32_t keyIndex = 0; keyIndex < aiNodeAnim->mNumPositionKeys; ++keyIndex)
+		{
+			aiVectorKey& aiKey = aiNodeAnim->mPositionKeys[keyIndex];
+			KeyFrameVector3 keyFrame;
+			keyFrame.time = float(aiKey.mTime / aiAnimation->mTicksPerSecond); // 時間を秒に変換
+			keyFrame.value = Vector3(-aiKey.mValue.x, aiKey.mValue.y, aiKey.mValue.z);
+			nodeAnimetion.translate.keyFrames.push_back(keyFrame);
+		}
+
+		// 回転アニメーションの解析
+		for (uint32_t keyIndex = 0; keyIndex < aiNodeAnim->mNumRotationKeys; ++keyIndex)
+		{
+			aiQuatKey& aiKey = aiNodeAnim->mRotationKeys[keyIndex];
+			KeyFrameQuaternion keyFrame;
+			keyFrame.time = float(aiKey.mTime / aiAnimation->mTicksPerSecond); // 時間を秒に変換
+			keyFrame.value = Quaternion(aiKey.mValue.x, -aiKey.mValue.y, -aiKey.mValue.z, aiKey.mValue.w); // クォータニオンのy,z成分を反転,右手系から左手系に変換
+			nodeAnimetion.rotate.keyFrames.push_back(keyFrame);
+		}
+
+		// スケールアニメーションの解析
+		for (uint32_t keyIndex = 0; keyIndex < aiNodeAnim->mNumScalingKeys; ++keyIndex)
+		{
+			aiVectorKey& aiKey = aiNodeAnim->mScalingKeys[keyIndex];
+			KeyFrameVector3 keyFrame;
+			keyFrame.time = float(aiKey.mTime / aiAnimation->mTicksPerSecond); // 時間を秒に変換
+			keyFrame.value = Vector3(aiKey.mValue.x, aiKey.mValue.y, aiKey.mValue.z);
+			nodeAnimetion.scale.keyFrames.push_back(keyFrame);
+		}
+	}
+
+	return animation;
+}
+
 void Model::CreateVertexData()
 {
 	// 頂点リソースを生成
@@ -151,7 +214,7 @@ void Model::CreateMaterialData()
 	materialData_->shininess = 15.0f;
 }
 
-Model::Node Model::ReadNode(aiNode* node)
+Node Model::ReadNode(aiNode* node)
 {
 	Node result;
 

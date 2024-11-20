@@ -30,5 +30,44 @@ namespace Vec3 {
 	Vector3 Cross(const Vector3& v1, const Vector3& v2) {
 		return Vector3(v1.y * v2.z - v1.z * v2.y, v1.z * v2.x - v1.x * v2.z, v1.x * v2.y - v1.y * v2.x);
 	}
+
+	float Lerp(float a, float b, float t)
+	{
+		return a + (b - a) * t;
+	}
+
+	Vector3 Lerp(const Vector3& a, const Vector3& b, float t)
+	{
+		return Vector3(Lerp(a.x, b.x, t), Lerp(a.y, b.y, t), Lerp(a.z, b.z, t));
+	}
+
+	Vector3 Slerp(const Vector3& v1, const Vector3& v2, float t)
+	{
+		float dot = Dot(v1, v2);
+
+		dot = dot > 1.0f ? 1.0f : dot;
+		dot = dot < -1.0f ? -1.0f : dot;
+
+		float theta = (float)acos(dot) * t;
+
+		float sinTheta = (float)sin(theta);
+
+		float sinThetaFrom = (float)sin((1.0f - t) * theta);
+		float sinThetaTo = (float)sin(t * theta);
+
+		float length1 = (float)Length(v1);
+		float length2 = (float)Length(v2);
+
+		float length = Lerp(length1, length2, t);
+
+		if (sinTheta < 1.0e-5) {
+
+			return v1;
+
+		} else {
+
+			return Multiply(Add(Multiply(v1, sinThetaFrom / sinTheta), Multiply(v2, sinThetaTo / sinTheta)), length);
+		}
+	}
 }
 

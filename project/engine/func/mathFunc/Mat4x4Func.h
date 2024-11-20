@@ -3,6 +3,7 @@
 
 #include "Matrix4x4.h"
 #include "Vector3.h"
+#include "Quaternion.h"
 
 const int kRowHeight = 20;
 const int kColumnWidth = 60;
@@ -41,6 +42,7 @@ namespace Mat4x4 {
 	Matrix4x4 MakeRotateXYZ(const Vector3& rotate);
 
 	Matrix4x4 MakeAffine(const Vector3& scale, const Vector3& rotate, const Vector3& translate);
+	Matrix4x4 MakeAffine(const Vector3& scale, const Quaternion& rotate, const Vector3& translate);
 
 	Vector3 TransForm(const Matrix4x4& m, const Vector3& v);
 
@@ -51,6 +53,8 @@ namespace Mat4x4 {
 	Matrix4x4 MakeViewport(float left, float top, float width, float height, float minDepth, float maxDepth);
 
 	Matrix4x4 InverseTranspose(const Matrix4x4& m);
+
+	Matrix4x4 QuaternionToMatrix(const Quaternion& q);
 }
 
 

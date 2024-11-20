@@ -1,12 +1,7 @@
 #pragma once
 #include <d3d12.h>
 #include<wrl.h>
-#include <string>
-#include <vector>
-#include "vector2.h"
-#include "vector3.h"
-#include "vector4.h"
-#include "Mat4x4Func.h"
+#include "ModelStruct.h"
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -16,68 +11,31 @@ class ModelBasic;
 
 class Model
 {
-public: // 構造体
-	// ノードデータ
-	struct Node
-	{
-		Matrix4x4 localMatrix;
-		std::string name;
-		std::vector<Node> children;
-	};
-
-	// 頂点データ
-	struct VertexData
-	{
-		Vector4 position;
-		Vector2 texcoord;
-		Vector3 normal;
-	};
-
-	// マテリアルデータ
-	struct MaterialData {
-		std::string texturePath;
-		uint32_t textureIndex;
-	};
-
-	// モデルデータ
-	struct ModelData {
-		std::vector<VertexData> vertices;
-		MaterialData material;
-		Node rootNode;
-	};
-
-	// マテリアル
-	struct Material
-	{
-		Vector4 color;
-		bool enableLighting;
-		float padding1[3];
-		Matrix4x4 uvTransform;
-		float shininess;
-		bool enableHighlight;
-		float padding2[3];
-	};
-
 public: // メンバー関数
 	/// <summary>
 	/// 初期化
 	/// </summary>
-	void Initialize(ModelBasic* modelBasic, const std::string& fileName);
+	void Initialize(ModelBasic* modelBasic, const std::string& fileName, bool hasAnimation);
 
 	/// <summary>
 	/// 描画
 	/// </summary>
 	void Draw();
 
-	///<summary>
-	///objファイルの読み込む
+	/// <summary>
+	/// objファイルの読み込む
 	///	</summary>
 	void LoadModelFile(const std::string& directoryPath, const std::string& fileName);
 
-	///<summary>
-	///mtlファイルの読み込む
+	/// <summary>
+	/// mtlファイルの読み込み
 	/// </summary>
 	void LoadMtlFile(const std::string& directoryPath, const std::string& fileName);
+
+	/// <summary>
+	/// アニメーションの読み込み
+	/// </summary>
+	Animation LoadAnimationFile(const std::string& directoryPath, const std::string& fileName);
 
 	// -----------------------------------Getters-----------------------------------//
 	// nodeのlocalMatrixを取得
@@ -113,6 +71,11 @@ private: // メンバ変数
 
 	// モデルデータ
 	ModelData modelData_;
+
+	// アニメーションデータ
+	Animation animationData_;
+
+	bool hasAnimation_ = false;
 
 	// バッファリソース
 	Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource_;

@@ -203,6 +203,9 @@
     <ClCompile Include="engine\3d\Light.cpp">
       <Filter>ソース ファイル\engine\3d</Filter>
     </ClCompile>
+    <ClCompile Include="engine\func\mathFunc\QuatFunc.cpp">
+      <Filter>ソース ファイル\engine\func\MathFunc</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\func\mathFunc\Mat4x4Func.h">
@@ -321,6 +324,12 @@
     </ClInclude>
     <ClInclude Include="engine\math\Quaternion.h">
       <Filter>ヘッダー ファイル\engine\math</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\ModelStruct.h">
+      <Filter>ヘッダー ファイル\engine\3d</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\func\mathFunc\QuatFunc.h">
+      <Filter>ヘッダー ファイル\engine\func\MathFunc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

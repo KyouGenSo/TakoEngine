@@ -43,6 +43,7 @@ public: // メンバー関数
 	///モデルの読み込む
 	///	</summary>
 	void LoadModel(const std::string& fileName);
+	void LoadModel(const std::string& fileName, bool hasAnimation);
 
 	///<summary>
 	///モデルの検索
