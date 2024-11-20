@@ -24,7 +24,8 @@ void GameScene::Initialize()
 	///              初期化処理              ///
 	/// ================================== ///
 
-	ModelManager::GetInstance()->LoadModel("terrain.obj");
+	ModelManager::GetInstance()->LoadModel("terrain.obj"); 
+	ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
 
 	object3d_ = new Object3d();
 	object3d_->Initialize();
@@ -37,11 +38,11 @@ void GameScene::Initialize()
 
 	object3d2_ = new Object3d();
 	object3d2_->Initialize();
-	object3d2_->SetModel("terrain.obj");
+	object3d2_->SetModel("uvChecker.gltf");
 
 	// y軸90度回転
 	Vector3 rotate2 = Vector3(0.0f, DirectX::XMConvertToRadians(90.0f), 0.0f);
-	object3d2_->SetRotate(rotate2);
+	//object3d2_->SetRotate(rotate2);
 
 	spotLight_.color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 	spotLight_.position = Vector3(0.0f, -6.0f, 22.0f);

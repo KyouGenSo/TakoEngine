@@ -6,7 +6,6 @@
 class GameScene : public BaseScene
 {
 public: // メンバ関数
-
 	/// <summary>
 	/// 初期化
 	/// </summary>
@@ -61,7 +60,6 @@ private: // メンバ変数
 	Object3d* object3d_ = nullptr;
 	Object3d* object3d2_ = nullptr;
 
-
 	bool isDebug_ = false;
 
 	// モデルの設定
@@ -69,20 +67,13 @@ private: // メンバ変数
 	Vector3 modelPos_ = Vector3(0.0f, 0.0f, 0.0f);
 	Vector3 modelRotate_ = Vector3(0.0f, 0.0f, 0.0f);
 
-	// ライトの設定
+	// 平行光源の設定
 	float shininess_ = 100.0f;
 	bool isLighting_ = true;
 	bool isHighlight_ = true;
 	Vector4 lightColor_ = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 	Vector3 lightDirection_ = Vector3(0.0f, -1.0f, 0.0f);
-	float lightIntensity_ = 0.0f;
-
-	//Vector3 pointLightPos_ = Vector3(0.0f, -5.37f, 22.0f);
-	//Vector4 pointLightColor_ = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-	//float pointLightIntensity_ = 1.0f;
-	//float pointLightRadius_ = 10.0f;
-	//float pointLightDecay_ = 1.0f;
-	//bool isPointLightEnable_ = false;
+	float lightIntensity_ = 0.5f;
 
 	// 点光源の設定
 	PointLight pointLight_;

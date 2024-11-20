@@ -8,11 +8,22 @@
 #include "vector4.h"
 #include "Mat4x4Func.h"
 
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
 class ModelBasic;
 
 class Model
 {
 public: // 構造体
+	// ノードデータ
+	struct Node
+	{
+		Matrix4x4 localMatrix;
+		std::string name;
+		std::vector<Node> children;
+	};
 
 	// 頂点データ
 	struct VertexData
@@ -32,12 +43,13 @@ public: // 構造体
 	struct ModelData {
 		std::vector<VertexData> vertices;
 		MaterialData material;
+		Node rootNode;
 	};
 
 	// マテリアル
 	struct Material
 	{
-		Vector4 color;          // 16 bytes (aligned to 16 bytes)
+		Vector4 color;
 		bool enableLighting;
 		float padding1[3];
 		Matrix4x4 uvTransform;
@@ -45,6 +57,7 @@ public: // 構造体
 		bool enableHighlight;
 		float padding2[3];
 	};
+
 public: // メンバー関数
 	/// <summary>
 	/// 初期化
@@ -59,12 +72,16 @@ public: // メンバー関数
 	///<summary>
 	///objファイルの読み込む
 	///	</summary>
-	void LoadObjFile(const std::string& directoryPath, const std::string& fileName);
+	void LoadModelFile(const std::string& directoryPath, const std::string& fileName);
 
 	///<summary>
 	///mtlファイルの読み込む
 	/// </summary>
 	void LoadMtlFile(const std::string& directoryPath, const std::string& fileName);
+
+	// -----------------------------------Getters-----------------------------------//
+	// nodeのlocalMatrixを取得
+	const Matrix4x4& GetLocalMatrix() const { return modelData_.rootNode.localMatrix; }
 
 	// -----------------------------------Setters-----------------------------------//
 	void SetShininess(float shininess) { materialData_->shininess = shininess; }
@@ -72,22 +89,26 @@ public: // メンバー関数
 	void SetEnableHighlight(bool enableHighlight) { materialData_->enableHighlight = enableHighlight; }
 
 private: // プライベートメンバー関数
-
-	///<summary>
-	///頂点データの生成
+	/// <summary>
+	/// 頂点データの生成
 	/// </summary>
 	void CreateVertexData();
 
-	///<summary>
-	///マテリアルデータの生成
+	/// <summary>
+	/// マテリアルデータの生成
 	/// </summary>
 	void CreateMaterialData();
-private:
+
+	/// <summary>
+	/// ノード読み込み
+	/// <summary>
+	Node ReadNode(aiNode* node);
+
+private: // メンバ変数
 	
 	ModelBasic* m_modelBasic_;
 
 	std::string directoryFolderName_;
-
 	std::string ModelFolderName_;
 
 	// モデルデータ

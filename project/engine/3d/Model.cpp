@@ -4,8 +4,8 @@
 #include "TextureManager.h"
 #include "SrvManager.h"
 #include <cassert>
-#include<fstream>
-#include<sstream>
+#include <fstream>
+#include <sstream>
 
 void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName)
 {
@@ -16,7 +16,7 @@ void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName)
 	ModelFolderName_ = m_modelBasic_->GetModelFolderName();
 
 	// objファイルの読み込み
-	LoadObjFile(directoryFolderName_ + "/" + ModelFolderName_, fileName);
+	LoadModelFile(directoryFolderName_ + "/" + ModelFolderName_, fileName);
 
 	// 頂点データの生成
 	CreateVertexData();
@@ -46,78 +46,57 @@ void Model::Draw()
 	m_modelBasic_->GetDX12Basic()->GetCommandList()->DrawInstanced(UINT(modelData_.vertices.size()), 1, 0, 0);
 }
 
-void Model::LoadObjFile(const std::string& directoryPath, const std::string& fileName)
+void Model::LoadModelFile(const std::string& directoryPath, const std::string& fileName)
 {
-	VertexData triangleVertices[3];
-	std::vector<Vector4> positions;
-	std::vector<Vector2> texcoords;
-	std::vector<Vector3> normals;
-	std::string line;
+	Assimp::Importer importer;
+	std::string filePath = directoryPath + "/" + fileName;
+	const aiScene* scene = importer.ReadFile(filePath.c_str(), aiProcess_FlipWindingOrder | aiProcess_FlipUVs );
+	assert(scene->HasMeshes()); // メッシュがない場合はエラー
 
-	std::ifstream file(directoryPath + "/" + fileName);
-	assert(file.is_open());
-
-	while (std::getline(file, line))
+	// メッシュの解析
+	for (uint32_t meshIndex = 0; meshIndex < scene->mNumMeshes; meshIndex++)
 	{
-		std::string identifier;
-		std::istringstream s(line);
-		s >> identifier;
+		aiMesh* mesh = scene->mMeshes[meshIndex];
+		assert(mesh->HasTextureCoords(0) && mesh->HasNormals()); // テクスチャ座標と法線がない場合はエラー
 
-		if (identifier == "v") {
-			Vector4 position;
-			s >> position.x >> position.y >> position.z;
-			position.w = 1.0f;
-			positions.push_back(position);
+		for (uint32_t faceIndex = 0; faceIndex < mesh->mNumFaces; ++faceIndex) {
+			aiFace& face = mesh->mFaces[faceIndex];
+			assert(face.mNumIndices == 3); // 三角形以外はエラー
 
-		} else if (identifier == "vt") {
-			Vector2 texcoord;
-			s >> texcoord.x >> texcoord.y;
-			texcoords.push_back(texcoord);
+			for (uint32_t element = 0; element < face.mNumIndices; ++element) {
+				uint32_t vertexIndex = face.mIndices[element];
+				aiVector3D position = mesh->mVertices[vertexIndex];
+				aiVector3D texcoord = mesh->mTextureCoords[0][vertexIndex];
+				aiVector3D normal = mesh->mNormals[vertexIndex];
 
-		} else if (identifier == "vn") {
-			Vector3 normal;
-			s >> normal.x >> normal.y >> normal.z;
-			normals.push_back(normal);
+				VertexData vertex;
+				vertex.position = Vector4(position.x, position.y, position.z, 1.0f);
+				vertex.texcoord = Vector2(texcoord.x, texcoord.y);
+				vertex.normal = Vector3(normal.x, normal.y, normal.z);
 
-		} else if (identifier == "f") {
+				vertex.position.z *= -1.0f;
+				vertex.normal.z *= -1.0f;
 
-			for (int32_t facevertex = 0; facevertex < 3; facevertex++) {
-				std::string vertexDefiniton;
-				s >> vertexDefiniton;
-
-				std::istringstream v(vertexDefiniton);
-				uint32_t elementIndices[3];
-
-				for (int32_t element = 0; element < 3; element++) {
-					std::string index;
-					std::getline(v, index, '/');
-					elementIndices[element] = std::stoi(index);
-				}
-
-				Vector4 position = positions[elementIndices[0] - 1];
-				Vector2 texcoord = texcoords[elementIndices[1] - 1];
-				Vector3 normal = normals[elementIndices[2] - 1];
-
-				position.z *= -1.0f;
-				normal.z *= -1.0f;
-				texcoord.y = 1.0f - texcoord.y;
-
-				triangleVertices[facevertex] = { position, texcoord, normal };
-
+				modelData_.vertices.push_back(vertex);
 			}
+		}
 
-			// 三角形の頂点データを追加
-			modelData_.vertices.push_back(triangleVertices[2]);
-			modelData_.vertices.push_back(triangleVertices[1]);
-			modelData_.vertices.push_back(triangleVertices[0]);
+	}
 
-		} else if (identifier == "mtllib") {
-			std::string mtlFileName;
-			s >> mtlFileName;
-			LoadMtlFile(directoryFolderName_, mtlFileName);
+	// マテリアルファイルの読み込み
+	for (uint32_t materialIndex = 0; materialIndex < scene->mNumMaterials; materialIndex++)
+	{
+		aiMaterial* material = scene->mMaterials[materialIndex];
+		if (material->GetTextureCount(aiTextureType_DIFFUSE) != 0)
+		{
+			aiString texturePath;
+			material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath);
+			modelData_.material.texturePath = texturePath.C_Str();
 		}
 	}
 
+	// ノードの読み込み
+	modelData_.rootNode = ReadNode(scene->mRootNode);
 }
 
 void Model::LoadMtlFile(const std::string& directoryPath, const std::string& fileName)
@@ -170,4 +149,42 @@ void Model::CreateMaterialData()
 	materialData_->enableHighlight = true;
 	materialData_->uvTransform = Mat4x4::MakeIdentity();
 	materialData_->shininess = 15.0f;
+}
+
+Model::Node Model::ReadNode(aiNode* node)
+{
+	Node result;
+
+	aiMatrix4x4 aiLocalMatrix = node->mTransformation; // ノードのローカル変換行列を取得
+	aiLocalMatrix.Transpose(); // 列ベクトルを行ベクトルに変換
+
+	result.localMatrix.m[0][0] = aiLocalMatrix[0][0];
+	result.localMatrix.m[0][1] = aiLocalMatrix[0][1];
+	result.localMatrix.m[0][2] = aiLocalMatrix[0][2];
+	result.localMatrix.m[0][3] = aiLocalMatrix[0][3];
+
+	result.localMatrix.m[1][0] = aiLocalMatrix[1][0];
+	result.localMatrix.m[1][1] = aiLocalMatrix[1][1];
+	result.localMatrix.m[1][2] = aiLocalMatrix[1][2];
+	result.localMatrix.m[1][3] = aiLocalMatrix[1][3];
+
+	result.localMatrix.m[2][0] = aiLocalMatrix[2][0];
+	result.localMatrix.m[2][1] = aiLocalMatrix[2][1];
+	result.localMatrix.m[2][2] = aiLocalMatrix[2][2];
+	result.localMatrix.m[2][3] = aiLocalMatrix[2][3];
+
+	result.localMatrix.m[3][0] = aiLocalMatrix[3][0];
+	result.localMatrix.m[3][1] = aiLocalMatrix[3][1];
+	result.localMatrix.m[3][2] = aiLocalMatrix[3][2];
+	result.localMatrix.m[3][3] = aiLocalMatrix[3][3];
+
+	result.name = node->mName.C_Str(); // ノードの名前を取得
+
+	result.children.resize(node->mNumChildren); // 子ノードの数だけリサイズ
+	for (uint32_t childIndex = 0; childIndex < node->mNumChildren; ++childIndex)
+	{
+		result.children[childIndex] = ReadNode(node->mChildren[childIndex]); // 再帰的に子ノードを読み込む
+	}
+
+	return result;
 }
