@@ -40,92 +40,27 @@ void DebugCamera::Finalize()
 
 void DebugCamera::Update()
 {
-	if (is2D_)
-	{
-		Move2D();
+	Move();
 
-		// トランスフォームでワールド行列を作る
-		worldMat_ = Mat4x4::MakeAffine(transform_.scale, transform_.rotate, transform_.translate);
+	// 更新された角度を元に回転行列を再生成する
+	rotMat_ = Mat4x4::MakeRotateXYZ(transform_.rotate);
 
-		// ビュー行列を作る
-		viewMat_ = Mat4x4::Inverse(worldMat_);
+	Matrix4x4 transMat = Mat4x4::MakeTranslate(transform_.translate);
 
-		// プロジェクション行列を作る
-		projectionMat_ = Mat4x4::MakePerspective(fovY_, aspect_, nearZ_, farZ_);
+	//  rotMatとtransMatでワールド行列を作る
+	worldMat_ = Mat4x4::Multiply(rotMat_, transMat);
 
-		// ビュープロジェクション行列を作る
-		viewProjectionMat_ = Mat4x4::Multiply(viewMat_, projectionMat_);
-	}
-	else if (is3D_)
-	{
-		Move3D();
+	// ビュー行列を作る
+	viewMat_ = Mat4x4::Inverse(worldMat_);
 
-		// 更新された角度を元に回転行列を再生成する
-		rotMat_ = Mat4x4::MakeRotateXYZ(transform_.rotate);
+	// プロジェクション行列を作る
+	projectionMat_ = Mat4x4::MakePerspective(fovY_, aspect_, nearZ_, farZ_);
 
-		Matrix4x4 transMat = Mat4x4::MakeTranslate(transform_.translate);
-		
-		//  rotMatとtransMatでワールド行列を作る
-		worldMat_ = Mat4x4::Multiply(rotMat_, transMat);
-
-		// ビュー行列を作る
-		viewMat_ = Mat4x4::Inverse(worldMat_);
-
-		// プロジェクション行列を作る
-		projectionMat_ = Mat4x4::MakePerspective(fovY_, aspect_, nearZ_, farZ_);
-
-		// ビュープロジェクション行列を作る
-		viewProjectionMat_ = Mat4x4::Multiply(viewMat_, projectionMat_);
-	}
-
+	// ビュープロジェクション行列を作る
+	viewProjectionMat_ = Mat4x4::Multiply(viewMat_, projectionMat_);
 }
 
-void DebugCamera::Move2D()
-{
-	// カメラの移動
-	if (Input::GetInstance()->PushKey(DIK_W))
-	{
-
-		Vector3 move = Vector3(0.0f, moveSpeed2D_, 0.0f);
-		// 移動ベクトルを角度分だけ回転させる
-		move = Mat4x4::TransForm(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
-
-		transform_.translate += move;
-
-	}
-
-	if (Input::GetInstance()->PushKey(DIK_S))
-	{
-
-		Vector3 move = Vector3(0.0f, -moveSpeed2D_, 0.0f);
-		// 移動ベクトルを角度分だけ回転させる
-		move = Mat4x4::TransForm(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
-
-		transform_.translate += move;
-	}
-
-	if (Input::GetInstance()->PushKey(DIK_A))
-	{
-
-		Vector3 move = Vector3(moveSpeed2D_, 0.0f, 0.0f);
-		// 移動ベクトルを角度分だけ回転させる
-		move = Mat4x4::TransForm(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
-
-		transform_.translate += move;
-	}
-
-	if (Input::GetInstance()->PushKey(DIK_D))
-	{
-
-		Vector3 move = Vector3(-moveSpeed2D_, 0.0f, 0.0f);
-		// 移動ベクトルを角度分だけ回転させる
-		move = Mat4x4::TransForm(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
-
-		transform_.translate += move;
-	}
-}
-
-void DebugCamera::Move3D()
+void DebugCamera::Move()
 {
 	// カメラの移動
 	if (Input::GetInstance()->PushKey(DIK_W))

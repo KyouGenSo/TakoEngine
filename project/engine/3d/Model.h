@@ -15,7 +15,12 @@ public: // メンバー関数
 	/// <summary>
 	/// 初期化
 	/// </summary>
-	void Initialize(ModelBasic* modelBasic, const std::string& fileName, bool hasAnimation);
+	void Initialize(ModelBasic* modelBasic, const std::string& fileName, bool hasAnimation, bool hasSkeleton);
+
+	/// <summary>
+	/// 更新
+	/// </summary>
+	void Update();
 
 	/// <summary>
 	/// 描画
@@ -41,6 +46,11 @@ public: // メンバー関数
 	/// アニメーションの更新
 	/// </summary>
 	void UpdateAnimation(float deltaTime);
+
+	/// <summary>
+	/// skeletonの更新
+	/// </summary>
+	void UpdateSkeleton();
 
 	// -----------------------------------Getters-----------------------------------//
 	// nodeのlocalMatrixを取得
@@ -70,6 +80,16 @@ private: // プライベートメンバー関数
 	Node ReadNode(aiNode* node);
 
 	/// <summary>
+	/// Jointの生成
+	/// </summary>
+	int32_t CreateJoint(const Node& node, const std::optional<int32_t>& parentIndex, std::vector<Joint>& joints);
+
+	/// <summary>
+	/// Skeletonの生成
+	/// </summary>
+	Skeleton CreateSkeleton(const Node& rootNode);
+
+	/// <summary>
 	/// キーフレームの値を計算
 	/// <summary>
 	Vector3 CalcKeyFrameValue(const std::vector<KeyFrameVector3>& keyFrames, float time);
@@ -87,9 +107,12 @@ private: // メンバ変数
 
 	// アニメーションデータ
 	Animation animationData_;
-
 	bool hasAnimation_ = false;
 	float animationTime_ = 0.0f;
+
+	// skeleton
+	Skeleton skeleton_;
+	bool hasSkeleton_ = false;
 
 	// バッファリソース
 	Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource_;

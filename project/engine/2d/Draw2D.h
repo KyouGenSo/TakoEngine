@@ -34,7 +34,6 @@ public: // 構造体
 	struct TransformationMatrix
 	{
 		Matrix4x4 WVP;
-		Matrix4x4 world;
 	};
 
 	// 三角形構造体
@@ -70,6 +69,11 @@ public: // 構造体
 		ComPtr<ID3D12Resource> vertexBuffer;
 		// 頂点バッファビュー
 		D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
+	};
+
+	struct Sphere {
+		Vector3 center;
+		float radius;
 	};
 
 public: // メンバ関数
@@ -115,6 +119,8 @@ public: // メンバ関数
 	/// </summary>
 	void DrawLine(const Vector2& start, const Vector2& end, const Vector4& color);
 
+	void DrawSphere(const Vector3& center, const float radius, const Vector4& color, const Matrix4x4& viewProjectionMatrix);
+
 	/// <summary>
 	/// リセット
 	/// </summary>
@@ -122,41 +128,11 @@ public: // メンバ関数
 
 	// -----------------------------------Getters-----------------------------------//
 	/// <summary>
-	/// デバッグフラグを取得
-	/// <summary>
-	const bool GetDebug() const { return isDebug_; }
-
-	/// <summary>
-	/// デバッグ用ビューマトリックスを取得
-	/// <summary>
-	const Matrix4x4& GetWorldMatrix() const { return worldMatrix_; }
-
-	/// <summary>
-	/// デバッグ用ビューマトリックスを取得
-	/// <summary>
-	const Matrix4x4& GetViewMatrix() const { return viewMatrix_; }
-
-	/// <summary>
 	/// デバッグ用ビューマトリックスを取得
 	/// <summary>
 	const Matrix4x4& GetProjectionMatrix() const { return projectionMatrix_; }
 
 	// -----------------------------------Setters-----------------------------------//
-	/// <summary>
-	/// デバッグフラグtrueでデバッグモード
-	/// <summary>
-	void SetDebug(bool isDebug) { isDebug_ = isDebug; }
-
-	/// <summary>
-	/// ワールドマトリックスを設定
-	/// <summary>
-	void SetWorldMatrix(const Matrix4x4& worldMatrix) { worldMatrix_ = worldMatrix; }
-
-	/// <summary>
-	/// ビューマトリックスを設定
-	/// <summary>
-	void SetViewMatrix(const Matrix4x4& viewMatrix) { viewMatrix_ = viewMatrix; }
-
 	/// <summary>
 	/// プロジェクションマトリックスを設定
 	/// <summary>
@@ -219,11 +195,11 @@ private: // メンバ変数
 	uint32_t lineIndex_ = 0;
 
 	// マトリックス
-	Matrix4x4 worldMatrix_;
-	Matrix4x4 viewMatrix_;
 	Matrix4x4 projectionMatrix_;
-	Matrix4x4 wvpMatrix_;
+	Matrix4x4 viewPortMatrix_;
+
 	Matrix4x4 debugViewMatrix_;
+	Matrix4x4 debugProjectionMatrix_;
 
 	// ルートシグネチャ
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> triangleRootSignature_;
@@ -247,7 +223,4 @@ private: // メンバ変数
 
 	// 線データ
 	LineData* lineData_;
-
-	// debug用
-	bool isDebug_ = false;
 };

@@ -36,4 +36,12 @@ public: // メンバ関数
 private: // メンバ変数
 
 	bool isDebug_ = false;
+
+	Vector3 center;
+
+	Vector3 cameraPosition = { 0.0f, 1.9f, -6.49f};
+	Vector3 cameraRotation = { 0.26f, 0.0f, 0.0f };
+
+	float windowX = 1280.0f;
+	float windowY = 720.0f;
 };

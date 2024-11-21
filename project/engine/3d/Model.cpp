@@ -9,7 +9,7 @@
 #include <fstream>
 #include <sstream>
 
-void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool hasAnimation)
+void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool hasAnimation, bool hasSkeleton)
 {
 	m_modelBasic_ = modelBasic;
 
@@ -19,6 +19,8 @@ void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool
 
 	hasAnimation_ = hasAnimation;
 
+	hasSkeleton_ = hasSkeleton;
+
 	// objファイルの読み込み
 	LoadModelFile(directoryFolderName_ + "/" + ModelFolderName_, fileName);
 
@@ -26,6 +28,12 @@ void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool
 	if (hasAnimation_)
 	{
 		animationData_ = LoadAnimationFile(directoryFolderName_ + "/" + ModelFolderName_, fileName); 
+	}
+
+	// skeletonの生成
+	if (hasSkeleton_)
+	{
+		skeleton_ = CreateSkeleton(modelData_.rootNode);
 	}
 
 	// 頂点データの生成
@@ -39,6 +47,14 @@ void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool
 
 	// テクスチャインデックスを保存
 	modelData_.material.textureIndex = TextureManager::GetInstance()->GetSRVIndex(modelData_.material.texturePath);
+}
+
+void Model::Update()
+{
+	if (hasAnimation_)
+	{
+		UpdateAnimation(1.0f / 60.0f);
+	}
 }
 
 void Model::Draw()
@@ -202,6 +218,22 @@ void Model::UpdateAnimation(float deltaTime)
 	modelData_.rootNode.localMatrix = localMatrix; // ルートノードのローカル変換行列を更新
 }
 
+void Model::UpdateSkeleton()
+{
+	for (Joint& joint : skeleton_.joints)
+	{
+		joint.localMatrix = Mat4x4::MakeAffine(joint.transform.scale, joint.transform.rotate, joint.transform.translate); // ローカル変換行列を生成
+		
+		if (joint.parentIndex) {
+			joint.skeletonSpaceMatrix = joint.localMatrix * skeleton_.joints[*joint.parentIndex].skeletonSpaceMatrix; // 親がいる場合は親のスケルトン空間行列を掛ける
+		}
+		else
+		{
+			joint.skeletonSpaceMatrix = joint.localMatrix; // 親がいない場合はローカル変換行列がスケルトン空間行列
+		}
+	}
+}
+
 void Model::CreateVertexData()
 {
 	// 頂点リソースを生成
@@ -256,6 +288,40 @@ Node Model::ReadNode(aiNode* node)
 	}
 
 	return result;
+}
+
+int32_t Model::CreateJoint(const Node& node, const std::optional<int32_t>& parentIndex, std::vector<Joint>& joints)
+{
+	Joint joint;
+	joint.name = node.name;
+	joint.localMatrix = node.localMatrix;
+	joint.skeletonSpaceMatrix = Mat4x4::MakeIdentity();
+	joint.transform = node.transform;
+	joint.index = int32_t(joints.size());              // 現在登録されている数をindexとして設定
+	joint.parentIndex = parentIndex;
+	joints.push_back(joint);                           // skeletonのjoint列に追加
+
+	for (const Node& child : node.children)
+	{
+		int32_t childIndex = CreateJoint(child, joint.index, joints); // 再帰的に子Jointを生成
+		joints[joint.index].childrenIndex.push_back(childIndex);      // 子Jointのindexを追加
+	}
+
+	return joint.index;
+}
+
+Skeleton Model::CreateSkeleton(const Node& rootNode)
+{
+	Skeleton skeleton;
+	skeleton.root = CreateJoint(rootNode, {}, skeleton.joints); // ルートノードからジョイントを生成
+
+	// 名前とindexのマップを作る
+	for (const Joint& joint : skeleton.joints)
+	{
+		skeleton.jointMap.emplace(joint.name, joint.index);
+	}
+
+	return skeleton;
 }
 
 Vector3 Model::CalcKeyFrameValue(const std::vector<KeyFrameVector3>& keyFrames, float time)

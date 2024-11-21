@@ -27,10 +27,10 @@ void Object3d::Initialize()
 
 void Object3d::Update()
 {
-	// モデルのアニメーション更新
-	if (m_model_ && m_model_->HasAnimation())
+	// モデルの更新
+	if (m_model_)
 	{
-		m_model_->UpdateAnimation(1.0f / 60.0f);
+		m_model_->Update();
 	}
 
 	// モデルのローカル行列を取得

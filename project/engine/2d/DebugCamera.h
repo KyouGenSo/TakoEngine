@@ -37,27 +37,9 @@ public: // メンバー関数
 	void Update();
 
 	///<summary>
-	/// 2Dカメラの移動操作
-	/// </summary>
-	void Move2D();
-
-	///<summary>
 	/// 3Dカメラの移動操作
 	/// </summary>
-	void Move3D();
-
-	///<summary>
-	/// カメラの2d,3d設定
-	/// </summary>
-	void Set2D() { 
-		is2D_ = true;
-		is3D_ = false;
-	}
-	void Set3D() {
-		is3D_ = true;
-		is2D_ = false;
-	}
-
+	void Move();
 
 	//-----------------------------------------Getter-----------------------------------------//
 	///<summary>
@@ -128,11 +110,4 @@ private: // メンバー変数
 
 	// カメラの回転速度
 	float rotateSpeed_ = 0.02f;
-
-	// 2Dカメラかどうか
-	bool is2D_ = false;
-
-	// 3Dカメラかどうか
-	bool is3D_ = true;
-
 };

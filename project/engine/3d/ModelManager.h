@@ -44,6 +44,7 @@ public: // メンバー関数
 	///	</summary>
 	void LoadModel(const std::string& fileName);
 	void LoadModel(const std::string& fileName, bool hasAnimation);
+	void LoadModel(const std::string& fileName, bool hasAnimation, bool hasSkeleton);
 
 	///<summary>
 	///モデルの検索
