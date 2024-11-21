@@ -331,7 +331,7 @@
     <ClInclude Include="engine\func\mathFunc\QuatFunc.h">
       <Filter>ヘッダー ファイル\engine\func\MathFunc</Filter>
     </ClInclude>
-    <ClInclude Include="Transform.h">
+    <ClInclude Include="engine\3d\Transform.h">
       <Filter>ヘッダー ファイル\engine\math</Filter>
     </ClInclude>
   </ItemGroup>

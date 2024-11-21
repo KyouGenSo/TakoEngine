@@ -87,6 +87,8 @@ void TitleScene::Draw()
 
 	//--------------------------------------------------//
 
+	Draw2D::GetInstance()->DrawBox(Vector2(0.0f, 0.0f), Vector2(100.0f, 100.0f), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+
 	Matrix4x4 viewProjectionMatrix = Object3dBasic::GetInstance()->GetCamera()->GetViewProjectionMatrix();
 
 	Draw2D::GetInstance()->DrawSphere(center, 5.0f, Vector4(1.0f, 1.0f, 1.0f, 1.0f), viewProjectionMatrix);
