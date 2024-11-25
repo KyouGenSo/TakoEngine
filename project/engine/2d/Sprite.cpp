@@ -68,19 +68,15 @@ void Sprite::Update()
 	// 頂点リソースにデータを書き込む
 	vertexData_[0].position = { left, bottom, 0.0f, 1.0f }; // 左下
 	vertexData_[0].texcoord = { texLeft, texBottom };
-	vertexData_[0].normal = { 0.0f, 0.0f, -1.0f };
 
 	vertexData_[1].position = { left, top, 0.0f, 1.0f }; // 左上
 	vertexData_[1].texcoord = { texLeft, texTop };
-	vertexData_[1].normal = { 0.0f, 0.0f, -1.0f };
 
 	vertexData_[2].position = { right, bottom, 0.0f, 1.0f }; // 右下
 	vertexData_[2].texcoord = { texRight, texBottom };
-	vertexData_[2].normal = { 0.0f, 0.0f, -1.0f };
 
 	vertexData_[3].position = { right, top, 0.0f, 1.0f }; // 右上
 	vertexData_[3].texcoord = { texRight, texTop };
-	vertexData_[3].normal = { 0.0f, 0.0f, -1.0f };
 
 	// 三角形のインデックスデータを作成
 	indexData_[0] = 0; indexData_[1] = 1; indexData_[2] = 2;
@@ -152,7 +148,6 @@ void Sprite::CreateMaterialData()
 
 	// マテリアルデータの初期値を書き込む
 	materialData_->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-	materialData_->enableLighting = false;
 	materialData_->uvTransform = Mat4x4::MakeIdentity();
 }
 

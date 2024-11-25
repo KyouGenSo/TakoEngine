@@ -24,11 +24,19 @@ void TitleScene::Initialize()
 
 	center = { 0.0f, 0.0f, 0.0f };
 
+	// スプライトの初期化
+	TextureManager::GetInstance()->LoadTexture("uvChecker.png");
+
+	sprite_ = new Sprite();
+	sprite_->Initialize("uvChecker.png");
+	sprite_->SetPos(Vector2(0.0f, 0.0f));
+
+
 }
 
 void TitleScene::Finalize()
 {
-
+	delete sprite_;
 }
 
 void TitleScene::Update()
@@ -47,7 +55,7 @@ void TitleScene::Update()
 	///              更新処理               ///
 	/// ================================== ///
 
-
+	sprite_->Update();
 
 
 	if (Input::GetInstance()->TriggerKey(DIK_RETURN))
@@ -83,7 +91,7 @@ void TitleScene::Draw()
 	// スプライト共通描画設定
 	SpriteBasic::GetInstance()->SetCommonRenderSetting();
 
-	
+	sprite_->Draw();
 
 	//--------------------------------------------------//
 

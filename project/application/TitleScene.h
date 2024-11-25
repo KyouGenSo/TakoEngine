@@ -44,4 +44,6 @@ private: // メンバ変数
 
 	float windowX = 1280.0f;
 	float windowY = 720.0f;
+
+	Sprite* sprite_ = nullptr;
 };

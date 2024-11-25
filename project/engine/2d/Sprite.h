@@ -16,15 +16,12 @@ private: // 構造体
 	{
 		Vector4 position;
 		Vector2 texcoord;
-		Vector3 normal;
 	};
 
 	// マテリアルデータ
 	struct Material
 	{
 		Vector4 color;
-		bool enableLighting;
-		float padding[3];
 		Matrix4x4 uvTransform;
 	};
 

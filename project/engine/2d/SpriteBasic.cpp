@@ -71,13 +71,13 @@ void SpriteBasic::CreateRootSignature()
 	descriptorRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
 
 	D3D12_DESCRIPTOR_RANGE descriptorRangeForPointLight[1] = {};
-	descriptorRangeForPointLight[0].BaseShaderRegister = 1; // レジスタ番号
+	descriptorRangeForPointLight[0].BaseShaderRegister = 0; // レジスタ番号
 	descriptorRangeForPointLight[0].NumDescriptors = 1; // ディスクリプタ数
 	descriptorRangeForPointLight[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
 	descriptorRangeForPointLight[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
 
 	// RootParameterの設定。複数設定できるので配列
-	D3D12_ROOT_PARAMETER rootParameters[8] = {};
+	D3D12_ROOT_PARAMETER rootParameters[3] = {};
 
 	// Material
 	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
@@ -94,32 +94,6 @@ void SpriteBasic::CreateRootSignature()
 	rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
 	rootParameters[2].DescriptorTable.pDescriptorRanges = descriptorRange; // ディスクリプタレンジを設定
 	rootParameters[2].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange); // レンジの数
-
-	// DirectionalLight
-	rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-	rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-	rootParameters[3].Descriptor.ShaderRegister = 1; // レジスタ番号とバインド
-
-	// GPU Camera
-	rootParameters[4].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-	rootParameters[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-	rootParameters[4].Descriptor.ShaderRegister = 2; // レジスタ番号とバインド
-
-	// PointLight
-	rootParameters[5].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-	rootParameters[5].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-	rootParameters[5].DescriptorTable.pDescriptorRanges = descriptorRangeForPointLight; // ディスクリプタレンジを設定
-	rootParameters[5].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForPointLight); // レンジの数
-
-	// SpotLight
-	rootParameters[6].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-	rootParameters[6].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-	rootParameters[6].Descriptor.ShaderRegister = 4; // レジスタ番号とバインド
-
-	// LightNum
-	rootParameters[7].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-	rootParameters[7].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-	rootParameters[7].Descriptor.ShaderRegister = 3; // レジスタ番号とバインド
 
 	descriptionRootSignature.pParameters = rootParameters;
 	descriptionRootSignature.NumParameters = _countof(rootParameters);
@@ -148,7 +122,7 @@ void SpriteBasic::CreatePSO()
 	CreateRootSignature();
 
 	// InputLayout
-	D3D12_INPUT_ELEMENT_DESC inputElementDescs[3] = {};
+	D3D12_INPUT_ELEMENT_DESC inputElementDescs[2] = {};
 	inputElementDescs[0].SemanticName = "POSITION";
 	inputElementDescs[0].SemanticIndex = 0;
 	inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
@@ -158,11 +132,6 @@ void SpriteBasic::CreatePSO()
 	inputElementDescs[1].SemanticIndex = 0;
 	inputElementDescs[1].Format = DXGI_FORMAT_R32G32_FLOAT;
 	inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-
-	inputElementDescs[2].SemanticName = "NORMAL";
-	inputElementDescs[2].SemanticIndex = 0;
-	inputElementDescs[2].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-	inputElementDescs[2].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
 	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
 	inputLayoutDesc.pInputElementDescs = inputElementDescs;
@@ -187,10 +156,10 @@ void SpriteBasic::CreatePSO()
 	rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
 
 	// shaderのコンパイル
-	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(L"resources/shaders/Object3d.VS.hlsl", L"vs_6_0");
+	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(L"resources/shaders/Sprite.VS.hlsl", L"vs_6_0");
 	assert(vertexShaderBlob != nullptr);
 
-	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(L"resources/shaders/Object3d.PS.hlsl", L"ps_6_0");
+	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(L"resources/shaders/Sprite.PS.hlsl", L"ps_6_0");
 	assert(pixelShaderBlob != nullptr);
 
 	// DepthStencilState
