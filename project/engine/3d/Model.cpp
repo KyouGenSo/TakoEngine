@@ -246,28 +246,61 @@ void Model::ApplyAnimation(float time)
 	}
 }
 
+//void Model::DrawSkeleton(Matrix4x4 world, Matrix4x4 viewProjection)
+//{
+//	 Draw2DのDrawSphere関数を使ってジョイントを描画、親子関係を考慮してジョイントの間にDrawLineで線を引く
+//	for (const Joint& joint : skeleton_.joints)
+//	{
+//		Matrix4x4 m = joint.skeletonSpaceMatrix * world;
+//
+//		Vector3 position = Mat4x4::TransForm(m, Vector3(0.0f, 0.0f, 0.0f));
+//
+//		float radius = 0.001f;
+//
+//		Draw2D::GetInstance()->DrawSphere(position, radius, Vector4(1.0f, 1.0f, 1.0f, 1.0f), viewProjection);
+//
+//		if (joint.parentIndex)
+//		{
+//			Vector3 parentPosition;
+//
+//			Matrix4x4 pm = skeleton_.joints[*joint.parentIndex].skeletonSpaceMatrix * world;
+//			
+//			parentPosition = Mat4x4::TransForm(pm, position);
+//
+//			Draw2D::GetInstance()->DrawLine(Vector2(position.x, position.y), Vector2(parentPosition.x, parentPosition.y), Vector4(1.0f, 1.0f, 1.0f, 1.0f), viewProjection);
+//		}
+//	}
+//}
+
 void Model::DrawSkeleton(Matrix4x4 world, Matrix4x4 viewProjection)
 {
-	// Draw2DのDrawSphere関数を使ってジョイントを描画、親子関係を考慮してジョイントの間にDrawLineで線を引く
+	// Draw each joint as a sphere and draw lines between joints to represent bones
 	for (const Joint& joint : skeleton_.joints)
 	{
-		Matrix4x4 m = joint.skeletonSpaceMatrix * world;
+		// Calculate the position of the joint in world space
+		Matrix4x4 jointWorldMatrix = joint.skeletonSpaceMatrix * world;
+		Vector3 jointPosition = Mat4x4::TransForm(jointWorldMatrix, Vector3(0.0f, 0.0f, 0.0f));
 
-		Vector3 position = Mat4x4::TransForm(m, Vector3(0.0f, 0.0f, 0.0f));
+		// Draw the joint as a sphere
+		float radius = 0.01f; // Sphere radius
+		Draw2D::GetInstance()->DrawSphere(jointPosition, radius, Vector4(1.0f, 1.0f, 1.0f, 1.0f), viewProjection);
 
-		float radius = 0.0001f;
-
-		Draw2D::GetInstance()->DrawSphere(position, radius, Vector4(1.0f, 1.0f, 1.0f, 1.0f), viewProjection);
-
+		// Draw line to parent joint if it exists
 		if (joint.parentIndex)
 		{
-			Vector3 parentPosition;
+			const Joint& parentJoint = skeleton_.joints[*joint.parentIndex];
 
-			Matrix4x4 pm = skeleton_.joints[*joint.parentIndex].skeletonSpaceMatrix * world;
-			
-			parentPosition = Mat4x4::TransForm(pm, position);
+			// Calculate the position of the parent joint in world space
+			Matrix4x4 parentWorldMatrix = parentJoint.skeletonSpaceMatrix * world;
+			Vector3 parentPosition = Mat4x4::TransForm(parentWorldMatrix, Vector3(0.0f, 0.0f, 0.0f));
 
-			Draw2D::GetInstance()->DrawLine(Vector2(position.x, position.y), Vector2(parentPosition.x, parentPosition.y), Vector4(1.0f, 1.0f, 1.0f, 1.0f), viewProjection);
+			// Draw a line between the current joint and its parent
+			Draw2D::GetInstance()->DrawLine(
+				Vector2(jointPosition.x, jointPosition.y),
+				Vector2(parentPosition.x, parentPosition.y),
+				Vector4(1.0f, 1.0f, 1.0f, 1.0f),
+				viewProjection
+			);
 		}
 	}
 }

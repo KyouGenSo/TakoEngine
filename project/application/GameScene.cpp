@@ -28,6 +28,7 @@ void GameScene::Initialize()
 	ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
 	ModelManager::GetInstance()->LoadModel("walk.gltf", true, true);
 	ModelManager::GetInstance()->LoadModel("simpleSkin.gltf", true, true);
+	ModelManager::GetInstance()->LoadModel("sneakWalk.gltf", true, true);
 
 	object3d_ = new Object3d();
 	object3d_->Initialize();
@@ -40,7 +41,7 @@ void GameScene::Initialize()
 
 	object3d2_ = new Object3d();
 	object3d2_->Initialize();
-	object3d2_->SetModel("walk.gltf");
+	object3d2_->SetModel("sneakWalk.gltf");
 
 	//modelPos2_ = Vector3(0.0f, 1.87f, -6.39f);
 	//modelRotate2_ = Vector3(1.65f, 0.0f, 0.0f);

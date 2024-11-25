@@ -54,9 +54,20 @@ void Object3d::Update()
 	}
 
 	// 座標変換行列データに書き込む
-	transformationMatData_->WVP = modelLocalMatrix * wvpMatrix;
-	transformationMatData_->world = modelLocalMatrix * worldMatrix;
-	transformationMatData_->worldInvTranspose = Mat4x4::InverseTranspose(modelLocalMatrix * worldMatrix);
+	if (m_model_)
+	{
+		if (m_model_->HasSkeleton())
+		{
+			transformationMatData_->WVP = wvpMatrix;
+			transformationMatData_->world = worldMatrix;
+			transformationMatData_->worldInvTranspose = Mat4x4::InverseTranspose(worldMatrix);
+		} else
+		{
+			transformationMatData_->WVP = modelLocalMatrix * wvpMatrix;
+			transformationMatData_->world = modelLocalMatrix * worldMatrix;
+			transformationMatData_->worldInvTranspose = Mat4x4::InverseTranspose(modelLocalMatrix * worldMatrix);
+		}
+	}
 }
 
 void Object3d::Draw()

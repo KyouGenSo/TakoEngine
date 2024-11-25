@@ -47,6 +47,8 @@ public: // メンバー関数
 	const Matrix4x4& GetLocalMatrix() const { return modelData_.rootNode.localMatrix; }
 	// アニメーションの有無を取得
 	bool HasAnimation() const { return hasAnimation_; }
+	// Skeletonの有無を取得
+	bool HasSkeleton() const { return hasSkeleton_; }
 
 	// -----------------------------------Setters-----------------------------------//
 	void SetShininess(float shininess) { materialData_->shininess = shininess; }
