@@ -25,7 +25,12 @@ public: // メンバー関数
 	/// <summary>
 	/// 描画
 	/// </summary>
-	void Draw();
+	void Draw(Matrix4x4 world, Matrix4x4 viewProjection);
+
+	/// <summary>
+	/// Skeletonのデバグ用描画
+	/// </summary>
+	void DrawSkeleton(Matrix4x4 world, Matrix4x4 viewProjection);
 
 	/// <summary>
 	/// objファイルの読み込む
@@ -33,24 +38,9 @@ public: // メンバー関数
 	void LoadModelFile(const std::string& directoryPath, const std::string& fileName);
 
 	/// <summary>
-	/// mtlファイルの読み込み
-	/// </summary>
-	void LoadMtlFile(const std::string& directoryPath, const std::string& fileName);
-
-	/// <summary>
 	/// アニメーションの読み込み
 	/// </summary>
 	Animation LoadAnimationFile(const std::string& directoryPath, const std::string& fileName);
-
-	/// <summary>
-	/// アニメーションの更新
-	/// </summary>
-	void UpdateAnimation(float deltaTime);
-
-	/// <summary>
-	/// skeletonの更新
-	/// </summary>
-	void UpdateSkeleton();
 
 	// -----------------------------------Getters-----------------------------------//
 	// nodeのlocalMatrixを取得
@@ -95,8 +85,23 @@ private: // プライベートメンバー関数
 	Vector3 CalcKeyFrameValue(const std::vector<KeyFrameVector3>& keyFrames, float time);
 	Quaternion CalcKeyFrameValue(const std::vector<KeyFrameQuaternion>& keyFrames, float time);
 
+	/// <summary>
+	/// アニメーションの更新
+	/// </summary>
+	void UpdateAnimation(float deltaTime);
+
+	/// <summary>
+	/// skeletonの更新
+	/// </summary>
+	void UpdateSkeleton();
+
+	/// <summary>
+	/// アニメーションを適用
+	/// </summary>
+	void ApplyAnimation(float time);
+
 private: // メンバ変数
-	
+
 	ModelBasic* m_modelBasic_;
 
 	std::string directoryFolderName_;

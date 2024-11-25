@@ -24,7 +24,7 @@ void MyGame::Initialize()
 	// シーンの初期化
 	sceneFactory_ = new SceneFactory();
 	SceneManager::GetInstance()->SetSceneFactory(sceneFactory_);
-	SceneManager::GetInstance()->ChangeScene("game", 0.0f);
+	SceneManager::GetInstance()->ChangeScene("title", 0.0f);
 }
 
 void MyGame::Finalize()
@@ -40,17 +40,16 @@ void MyGame::Finalize()
 
 void MyGame::Update()
 {
-
-	TakoFramework::Update();
+	// カメラの更新
+	defaultCamera_->Update();
 
 	// 入力情報の更新
 	Input::GetInstance()->Update();
 
+	TakoFramework::Update();
+
 	//　サウンドの更新
 	Audio::GetInstance()->Update();
-
-	// カメラの更新
-	defaultCamera_->Update();
 
 }
 

@@ -3,6 +3,7 @@
 #include "DX12Basic.h"
 #include "TextureManager.h"
 #include "SrvManager.h"
+#include "Draw2D.h"
 #include "Mat4x4Func.h"
 #include "QuatFunc.h"
 #include <cassert>
@@ -51,13 +52,21 @@ void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool
 
 void Model::Update()
 {
-	if (hasAnimation_)
+	if (hasAnimation_ && !hasSkeleton_)
 	{
 		UpdateAnimation(1.0f / 60.0f);
 	}
+
+	if (hasSkeleton_ && hasAnimation_)
+	{
+		animationTime_ += 1.0f / 60.0f; // アニメーション時間を更新
+		animationTime_ = std::fmod(animationTime_, animationData_.duration); // アニメーション時間がアニメーションの長さを超えたらループ
+		ApplyAnimation(animationTime_);
+		UpdateSkeleton();
+	}
 }
 
-void Model::Draw()
+void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
 {
 	// 頂点バッファビューを設定
 	m_modelBasic_->GetDX12Basic()->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView_);
@@ -70,6 +79,12 @@ void Model::Draw()
 
 	// 描画
 	m_modelBasic_->GetDX12Basic()->GetCommandList()->DrawInstanced(UINT(modelData_.vertices.size()), 1, 0, 0);
+
+	// skeletonの描画
+	if (hasSkeleton_)
+	{
+		DrawSkeleton(world, viewProjection);
+	}
 }
 
 void Model::LoadModelFile(const std::string& directoryPath, const std::string& fileName)
@@ -123,27 +138,6 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
 
 	// ノードの読み込み
 	modelData_.rootNode = ReadNode(scene->mRootNode);
-}
-
-void Model::LoadMtlFile(const std::string& directoryPath, const std::string& fileName)
-{
-	std::string line;
-
-	std::ifstream file(directoryPath + "/" + ModelFolderName_ + "/" + fileName);
-	assert(file.is_open());
-
-	while (std::getline(file, line))
-	{
-		std::string identifier;
-		std::istringstream s(line);
-		s >> identifier;
-
-		if (identifier == "map_Kd") {
-			std::string textureFileName;
-			s >> textureFileName;
-			modelData_.material.texturePath = textureFileName;
-		}
-	}
 }
 
 Animation Model::LoadAnimationFile(const std::string& directoryPath, const std::string& fileName)
@@ -234,6 +228,50 @@ void Model::UpdateSkeleton()
 	}
 }
 
+void Model::ApplyAnimation(float time)
+{
+	for (Joint& joint : skeleton_.joints) {
+		if (auto it = animationData_.nodeAnimations.find(joint.name); it != animationData_.nodeAnimations.end())
+		{
+			const NodeAnimetion& rootAnimetion = (*it).second; // ルートノードのアニメーションを取得
+
+			// 位置アニメーションの計算
+			joint.transform.translate = CalcKeyFrameValue(rootAnimetion.translate.keyFrames, time);
+			// 回転アニメーションの計算
+			joint.transform.rotate = CalcKeyFrameValue(rootAnimetion.rotate.keyFrames, time);
+			// スケールアニメーションの計算
+			joint.transform.scale = CalcKeyFrameValue(rootAnimetion.scale.keyFrames, time);
+		}
+
+	}
+}
+
+void Model::DrawSkeleton(Matrix4x4 world, Matrix4x4 viewProjection)
+{
+	// Draw2DのDrawSphere関数を使ってジョイントを描画、親子関係を考慮してジョイントの間にDrawLineで線を引く
+	for (const Joint& joint : skeleton_.joints)
+	{
+		Matrix4x4 m = joint.skeletonSpaceMatrix * world;
+
+		Vector3 position = Mat4x4::TransForm(m, Vector3(0.0f, 0.0f, 0.0f));
+
+		float radius = 0.0001f;
+
+		Draw2D::GetInstance()->DrawSphere(position, radius, Vector4(1.0f, 1.0f, 1.0f, 1.0f), viewProjection);
+
+		if (joint.parentIndex)
+		{
+			Vector3 parentPosition;
+
+			Matrix4x4 pm = skeleton_.joints[*joint.parentIndex].skeletonSpaceMatrix * world;
+			
+			parentPosition = Mat4x4::TransForm(pm, position);
+
+			Draw2D::GetInstance()->DrawLine(Vector2(position.x, position.y), Vector2(parentPosition.x, parentPosition.y), Vector4(1.0f, 1.0f, 1.0f, 1.0f), viewProjection);
+		}
+	}
+}
+
 void Model::CreateVertexData()
 {
 	// 頂点リソースを生成
@@ -320,6 +358,8 @@ Skeleton Model::CreateSkeleton(const Node& rootNode)
 	{
 		skeleton.jointMap.emplace(joint.name, joint.index);
 	}
+
+	UpdateSkeleton(); // スケルトンの更新
 
 	return skeleton;
 }

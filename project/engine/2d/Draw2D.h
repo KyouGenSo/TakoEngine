@@ -118,6 +118,7 @@ public: // メンバ関数
 	/// 線の描画
 	/// </summary>
 	void DrawLine(const Vector2& start, const Vector2& end, const Vector4& color);
+	void DrawLine(const Vector2& start, const Vector2& end, const Vector4& color, const Matrix4x4& viewProjectionMatrix);
 
 	void DrawSphere(const Vector3& center, const float radius, const Vector4& color, const Matrix4x4& viewProjectionMatrix);
 
@@ -169,6 +170,11 @@ private: // プライベートメンバ関数
 	/// </summary>
 	void CreateTransformMatData();
 
+	/// <summary>
+	/// 球の頂点位置を計算
+	/// </summary>
+	void CalcSphereVertexData();
+
 private: // メンバ変数
 
 	// DX12Basicクラスのインスタンス
@@ -181,7 +187,7 @@ private: // メンバ変数
 	const uint32_t kVertexCountBox = 4;
 	const uint32_t kIndexCountBox = 6;
 
-	const uint32_t kLineMaxCount = 30096;
+	const uint32_t kLineMaxCount = 100000;
 	const uint32_t kVertexCountLine = 2;
 
 	// 三角形のインデクス
@@ -223,4 +229,7 @@ private: // メンバ変数
 
 	// 線データ
 	LineData* lineData_;
+
+	// 球のデータ
+	std::vector<Vector3> spheres_;
 };

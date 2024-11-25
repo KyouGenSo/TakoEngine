@@ -70,7 +70,7 @@ void Object3d::Draw()
 	// モデルの描画
 	if (m_model_)
 	{
-		m_model_->Draw();
+		m_model_->Draw(transformationMatData_->world, Object3dBasic::GetInstance()->GetCamera()->GetViewProjectionMatrix());
 	}
 }
 
