@@ -42,6 +42,8 @@ void GameScene::Initialize()
 	object3d2_ = new Object3d();
 	object3d2_->Initialize();
 	object3d2_->SetModel("walk.gltf");
+	modelRotate2_ = Vector3(0.0f, DirectX::XMConvertToRadians(180.0f), 0.0f);
+	object3d2_->SetRotate(rotate);
 
 	spotLight_.color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 	spotLight_.position = Vector3(0.0f, -6.0f, 22.0f);

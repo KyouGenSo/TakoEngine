@@ -118,8 +118,8 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
 			vertex.texcoord = Vector2(texcoord.x, texcoord.y);
 			vertex.normal = Vector3(normal.x, normal.y, normal.z);
 
-			vertex.position.z *= -1.0f;
-			vertex.normal.z *= -1.0f;
+			vertex.position.x *= -1.0f;
+			vertex.normal.x *= -1.0f;
 
 			modelData_.vertices[vertexIndex] = vertex;
 		}
