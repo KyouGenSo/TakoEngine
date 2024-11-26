@@ -45,7 +45,6 @@ void Object3d::Update()
 
 	Matrix4x4 wvpMatrix;
 
-	m_camera_ = Object3dBasic::GetInstance()->GetCamera();
 	if (m_camera_) {
 		const Matrix4x4& viewProjectionMatrix = m_camera_->GetViewProjectionMatrix();
 		wvpMatrix = Mat4x4::Multiply(worldMatrix, viewProjectionMatrix);

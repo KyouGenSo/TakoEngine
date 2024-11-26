@@ -41,7 +41,7 @@ void GameScene::Initialize()
 
 	object3d2_ = new Object3d();
 	object3d2_->Initialize();
-	object3d2_->SetModel("sneakWalk.gltf");
+	object3d2_->SetModel("walk.gltf");
 
 	//modelPos2_ = Vector3(0.0f, 1.87f, -6.39f);
 	//modelRotate2_ = Vector3(1.65f, 0.0f, 0.0f);

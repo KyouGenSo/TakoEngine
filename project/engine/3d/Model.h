@@ -62,6 +62,11 @@ private: // プライベートメンバー関数
 	void CreateVertexData();
 
 	/// <summary>
+	/// 頂点インデクスの生成
+	/// </summary>
+	void CreateIndexData();
+
+	/// <summary>
 	/// マテリアルデータの生成
 	/// </summary>
 	void CreateMaterialData();
@@ -123,6 +128,7 @@ private: // メンバ変数
 
 	// バッファリソース
 	Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource_;
+	Microsoft::WRL::ComPtr<ID3D12Resource> indexResource_;
 	Microsoft::WRL::ComPtr<ID3D12Resource> materialResource_;
 
 	// バッファリソース内のデータを指すポインタ
@@ -131,5 +137,6 @@ private: // メンバ変数
 
 	// バッファビュー
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView_;
+	D3D12_INDEX_BUFFER_VIEW indexBufferView_;
 
 };

@@ -40,6 +40,9 @@ void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool
 	// 頂点データの生成
 	CreateVertexData();
 
+	// インデックスデータの生成
+	CreateIndexData();
+
 	// マテリアルデータの生成
 	CreateMaterialData();
 
@@ -71,6 +74,9 @@ void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
 	// 頂点バッファビューを設定
 	m_modelBasic_->GetDX12Basic()->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView_);
 
+	// インデックスバッファビューを設定
+	m_modelBasic_->GetDX12Basic()->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
+
 	// マテリアルデータを設定
 	m_modelBasic_->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource_->GetGPUVirtualAddress());
 
@@ -78,7 +84,7 @@ void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
 	SrvManager::GetInstance()->SetRootDescriptorTable(2, modelData_.material.textureIndex);
 
 	// 描画
-	m_modelBasic_->GetDX12Basic()->GetCommandList()->DrawInstanced(UINT(modelData_.vertices.size()), 1, 0, 0);
+	m_modelBasic_->GetDX12Basic()->GetCommandList()->DrawIndexedInstanced(UINT(modelData_.indices.size()), 1, 0, 0, 0);
 
 	// skeletonの描画
 	if (hasSkeleton_)
@@ -99,6 +105,24 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
 	{
 		aiMesh* mesh = scene->mMeshes[meshIndex];
 		assert(mesh->HasTextureCoords(0) && mesh->HasNormals()); // テクスチャ座標と法線がない場合はエラー
+		modelData_.vertices.resize(mesh->mNumVertices); // 頂点数だけリサイズ
+
+		for (uint32_t vertexIndex = 0; vertexIndex < mesh->mNumVertices; ++vertexIndex)
+		{
+			aiVector3D position = mesh->mVertices[vertexIndex];
+			aiVector3D texcoord = mesh->mTextureCoords[0][vertexIndex];
+			aiVector3D normal = mesh->mNormals[vertexIndex];
+
+			VertexData vertex;
+			vertex.position = Vector4(position.x, position.y, position.z, 1.0f);
+			vertex.texcoord = Vector2(texcoord.x, texcoord.y);
+			vertex.normal = Vector3(normal.x, normal.y, normal.z);
+
+			vertex.position.z *= -1.0f;
+			vertex.normal.z *= -1.0f;
+
+			modelData_.vertices[vertexIndex] = vertex;
+		}
 
 		for (uint32_t faceIndex = 0; faceIndex < mesh->mNumFaces; ++faceIndex) {
 			aiFace& face = mesh->mFaces[faceIndex];
@@ -106,19 +130,7 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
 
 			for (uint32_t element = 0; element < face.mNumIndices; ++element) {
 				uint32_t vertexIndex = face.mIndices[element];
-				aiVector3D position = mesh->mVertices[vertexIndex];
-				aiVector3D texcoord = mesh->mTextureCoords[0][vertexIndex];
-				aiVector3D normal = mesh->mNormals[vertexIndex];
-
-				VertexData vertex;
-				vertex.position = Vector4(position.x, position.y, position.z, 1.0f);
-				vertex.texcoord = Vector2(texcoord.x, texcoord.y);
-				vertex.normal = Vector3(normal.x, normal.y, normal.z);
-
-				vertex.position.z *= -1.0f;
-				vertex.normal.z *= -1.0f;
-
-				modelData_.vertices.push_back(vertex);
+				modelData_.indices.push_back(vertexIndex);
 			}
 		}
 
@@ -282,7 +294,7 @@ void Model::DrawSkeleton(Matrix4x4 world, Matrix4x4 viewProjection)
 		Vector3 jointPosition = Mat4x4::TransForm(jointWorldMatrix, Vector3(0.0f, 0.0f, 0.0f));
 
 		// Draw the joint as a sphere
-		float radius = 0.01f; // Sphere radius
+		float radius = 0.001f; // Sphere radius
 		Draw2D::GetInstance()->DrawSphere(jointPosition, radius, Vector4(1.0f, 1.0f, 1.0f, 1.0f), viewProjection);
 
 		// Draw line to parent joint if it exists
@@ -318,6 +330,24 @@ void Model::CreateVertexData()
 	// 頂点リソースをマップ
 	vertexResource_->Map(0, nullptr, reinterpret_cast<void**>(&vertexData_));
 	memcpy(vertexData_, modelData_.vertices.data(), sizeof(VertexData) * modelData_.vertices.size());
+}
+
+void Model::CreateIndexData()
+{
+	// インデックスリソースを生成
+	indexResource_ = m_modelBasic_->GetDX12Basic()->MakeBufferResource(sizeof(uint32_t) * modelData_.indices.size());
+
+	// インデックスバッファビューを作る
+	indexBufferView_.BufferLocation = indexResource_->GetGPUVirtualAddress();
+	indexBufferView_.SizeInBytes = UINT(sizeof(uint32_t) * modelData_.indices.size());
+	indexBufferView_.Format = DXGI_FORMAT_R32_UINT;
+
+	// インデックスリソースをマップ
+	uint32_t* indexData = nullptr;
+	indexResource_->Map(0, nullptr, reinterpret_cast<void**>(&indexData));
+	memcpy(indexData, modelData_.indices.data(), sizeof(uint32_t) * modelData_.indices.size());
+
+	indexResource_->Unmap(0, nullptr);
 }
 
 void Model::CreateMaterialData()
