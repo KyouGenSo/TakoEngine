@@ -263,20 +263,17 @@ void Draw2D::DrawLine(const Vector2& start, const Vector2& end, const Vector4& c
 
 }
 
-void Draw2D::DrawLine(const Vector2& start, const Vector2& end, const Vector4& color, const Matrix4x4& viewProjectionMatrix)
+void Draw2D::DrawLine(const Vector3& start, const Vector3& end, const Vector4& color, const Matrix4x4& viewProjectionMatrix)
 {
-	// 3D座標を2D座標に変換
-	Vector3 start3D = Vector3(start.x, start.y, 0.0f);
-	Vector3 end3D = Vector3(end.x, end.y, 0.0f);
-
-	Vector3 start2D = Mat4x4::TransForm(viewProjectionMatrix, start3D);
-	Vector3 end2D = Mat4x4::TransForm(viewProjectionMatrix, end3D);
+	// 3座標変換
+	Vector3 start3D = Mat4x4::TransForm(viewProjectionMatrix, start);
+	Vector3 end3D = Mat4x4::TransForm(viewProjectionMatrix, end);
 
 	// ビューポート
-	start2D = Mat4x4::TransForm(viewPortMatrix_, start2D);
-	end2D = Mat4x4::TransForm(viewPortMatrix_, end2D);
+	start3D = Mat4x4::TransForm(viewPortMatrix_, start3D);
+	end3D = Mat4x4::TransForm(viewPortMatrix_, end3D);
 
-	DrawLine(Vector2(start2D.x, start2D.y), Vector2(end2D.x, end2D.y), color);
+	DrawLine(Vector2(start3D.x, start3D.y), Vector2(end3D.x, end3D.y), color);
 }
 
 void Draw2D::DrawSphere(const Vector3& center, const float radius, const Vector4& color, const Matrix4x4& viewProjectionMatrix)
@@ -494,7 +491,7 @@ void Draw2D::CreateTransformMatData()
 
 void Draw2D::CalcSphereVertexData()
 {
-	const uint32_t kSubdivision = 2; // 1分割数
+	const uint32_t kSubdivision = 3; // 1分割数
 	const float kLonEvery = 2.0f * 3.14159265359f / float(kSubdivision); // 経度の1分割の角度 phi
 	const float kLatEvery = 3.14159265359f / float(kSubdivision); // 緯度の1分割の角度 theta
 

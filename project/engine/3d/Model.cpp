@@ -281,8 +281,8 @@ void Model::DrawSkeleton(Matrix4x4 world, Matrix4x4 viewProjection)
 
 			// Draw a line between the current joint and its parent
 			Draw2D::GetInstance()->DrawLine(
-				Vector2(jointPosition.x, jointPosition.y),
-				Vector2(parentPosition.x, parentPosition.y),
+				jointPosition,
+				parentPosition,
 				Vector4(1.0f, 1.0f, 1.0f, 1.0f),
 				viewProjection
 			);

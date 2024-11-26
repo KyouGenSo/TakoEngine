@@ -118,7 +118,7 @@ public: // メンバ関数
 	/// 線の描画
 	/// </summary>
 	void DrawLine(const Vector2& start, const Vector2& end, const Vector4& color);
-	void DrawLine(const Vector2& start, const Vector2& end, const Vector4& color, const Matrix4x4& viewProjectionMatrix);
+	void DrawLine(const Vector3& start, const Vector3& end, const Vector4& color, const Matrix4x4& viewProjectionMatrix);
 
 	void DrawSphere(const Vector3& center, const float radius, const Vector4& color, const Matrix4x4& viewProjectionMatrix);
 
