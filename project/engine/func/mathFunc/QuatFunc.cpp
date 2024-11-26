@@ -123,17 +123,17 @@ Matrix4x4 Quat::ToMatrix(const Quaternion& q)
 	float wz = q.w * q.z;
 
 	mat.m[0][0] = 1.0f - 2.0f * (yy + zz);
-	mat.m[0][1] = 2.0f * (xy - wz);
-	mat.m[0][2] = 2.0f * (xz + wy);
+	mat.m[0][1] = 2.0f * (xy + wz);
+	mat.m[0][2] = 2.0f * (xz - wy);
 	mat.m[0][3] = 0.0f;
 
-	mat.m[1][0] = 2.0f * (xy + wz);
+	mat.m[1][0] = 2.0f * (xy - wz);
 	mat.m[1][1] = 1.0f - 2.0f * (xx + zz);
-	mat.m[1][2] = 2.0f * (yz - wx);
+	mat.m[1][2] = 2.0f * (yz + wx);
 	mat.m[1][3] = 0.0f;
 
-	mat.m[2][0] = 2.0f * (xz - wy);
-	mat.m[2][1] = 2.0f * (yz + wx);
+	mat.m[2][0] = 2.0f * (xz + wy);
+	mat.m[2][1] = 2.0f * (yz - wx);
 	mat.m[2][2] = 1.0f - 2.0f * (xx + yy);
 	mat.m[2][3] = 0.0f;
 
