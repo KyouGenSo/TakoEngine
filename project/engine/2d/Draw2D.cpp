@@ -494,7 +494,7 @@ void Draw2D::CreateTransformMatData()
 
 void Draw2D::CalcSphereVertexData()
 {
-	const uint32_t kSubdivision = 3; // 1分割数
+	const uint32_t kSubdivision = 2; // 1分割数
 	const float kLonEvery = 2.0f * 3.14159265359f / float(kSubdivision); // 経度の1分割の角度 phi
 	const float kLatEvery = 3.14159265359f / float(kSubdivision); // 緯度の1分割の角度 theta
 

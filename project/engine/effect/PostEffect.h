@@ -42,6 +42,11 @@ public: // メンバ関数
 		float sigma;
 	};
 
+	struct PixelateParam
+	{
+		float pixelSize;
+	};
+
 	// ComPtrのエイリアス
 	template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
 

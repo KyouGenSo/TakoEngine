@@ -24,10 +24,10 @@ void GameScene::Initialize()
 	/// ================================== ///
 
 	ModelManager::GetInstance()->LoadModel("terrain.obj");
-	ModelManager::GetInstance()->LoadModel("AnimatedCube.gltf", true); 
 	ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
-	ModelManager::GetInstance()->LoadModel("walk.gltf", true, true);
+	ModelManager::GetInstance()->LoadModel("AnimatedCube.gltf", true); 
 	ModelManager::GetInstance()->LoadModel("simpleSkin.gltf", true, true);
+	ModelManager::GetInstance()->LoadModel("walk.gltf", true, true);
 	ModelManager::GetInstance()->LoadModel("sneakWalk.gltf", true, true);
 
 	object3d_ = new Object3d();
@@ -42,9 +42,6 @@ void GameScene::Initialize()
 	object3d2_ = new Object3d();
 	object3d2_->Initialize();
 	object3d2_->SetModel("walk.gltf");
-
-	//modelPos2_ = Vector3(0.0f, 1.87f, -6.39f);
-	//modelRotate2_ = Vector3(1.65f, 0.0f, 0.0f);
 
 	spotLight_.color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 	spotLight_.position = Vector3(0.0f, -6.0f, 22.0f);
