@@ -113,7 +113,9 @@ void DX12Basic::SetSwapChain()
 	// バッグバッファのインデックスを取得
 	UINT backBufferIndex = swapChain_->GetCurrentBackBufferIndex();
 
-	SetBarrier(D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	SetBarrier(D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET, swapChainResources_[backBufferIndex].Get());
+
+	SetBarrier(D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, depthStencilResource_.Get());
 
 	PostEffect::GetInstance()->SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
@@ -136,7 +138,12 @@ void DX12Basic::EndDraw()
 {
 	HRESULT	hr;
 
-	SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+	// バッグバッファのインデックスを取得
+	UINT backBufferIndex = swapChain_->GetCurrentBackBufferIndex();
+
+	SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT, swapChainResources_[backBufferIndex].Get());
+
+	SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE, depthStencilResource_.Get());
 
 	PostEffect::GetInstance()->SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
@@ -332,7 +339,7 @@ void DX12Basic::CreateDepthStencilResource()
 	resourceDesc.Height = WinApp::kClientHeight; // テクスチャの高さ
 	resourceDesc.MipLevels = 1; // ミップマップレベル
 	resourceDesc.DepthOrArraySize = 1; // 奥行き or 配列サイズ
-	resourceDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT; // フォーマット
+	resourceDesc.Format = DXGI_FORMAT_D32_FLOAT; // フォーマット
 	resourceDesc.SampleDesc.Count = 1; // サンプル数、１固定
 	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D; // 2次元
 	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL; // 深度ステンシルとして使う
@@ -345,7 +352,7 @@ void DX12Basic::CreateDepthStencilResource()
 	D3D12_CLEAR_VALUE depthClearValue{};
 	// クリア値
 	depthClearValue.DepthStencil.Depth = 1.0f; // 1.0f(最大値)でクリア
-	depthClearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT; // フォーマット
+	depthClearValue.Format = DXGI_FORMAT_D32_FLOAT; // フォーマット
 
 	// Resourceの生成
 	HRESULT hr = device_->CreateCommittedResource(
@@ -401,14 +408,14 @@ void DX12Basic::InitRTV()
 		// RTVの作成
 		device_->CreateRenderTargetView(swapChainResources_[i].Get(), &rtvDesc, rtvHandle_[i]);
 	}
-
 }
 
 void DX12Basic::InitDSV()
 {
 	// DSVの設定
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
-	dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT; // フォーマット
+	//dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT; // フォーマット
+	dsvDesc.Format = DXGI_FORMAT_D32_FLOAT; // フォーマット
 	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D; // 2Dテクスチャとして書き込む
 
 	// DSVのハンドルを取得
@@ -796,5 +803,16 @@ void DX12Basic::SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STA
 	barrier.Transition.StateAfter = stateAfter;
 	commandList_->ResourceBarrier(1, &barrier);
 
+}
+
+void DX12Basic::SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter, ID3D12Resource* resource)
+{
+	D3D12_RESOURCE_BARRIER barrier{};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	barrier.Transition.pResource = resource;
+	barrier.Transition.StateBefore = stateBefore;
+	barrier.Transition.StateAfter = stateAfter;
+	commandList_->ResourceBarrier(1, &barrier);
 }
 

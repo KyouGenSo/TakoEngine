@@ -98,6 +98,9 @@ void MyGame::Draw()
 	case::MyGame::Bloom:
 		PostEffect::GetInstance()->Draw("Bloom");
 		break;
+	case::MyGame::BloomFog:
+		PostEffect::GetInstance()->Draw("BloomFog");
+		break;
 	}
 
 
@@ -125,6 +128,7 @@ void MyGame::Draw()
 			ImGui::RadioButton("GrayScale", (int*)&postEffectType, GrayScale);
 			ImGui::RadioButton("VigRedGrayScale", (int*)&postEffectType, VigRedGrayScale);
 			ImGui::RadioButton("Bloom", (int*)&postEffectType, Bloom);
+			ImGui::RadioButton("BloomFog", (int*)&postEffectType, BloomFog);
 
 			ImGui::EndTabItem();
 		}
@@ -146,7 +150,7 @@ void MyGame::Draw()
 				PostEffect::GetInstance()->SetBloomThreshold(bloomThreshold);
 			}
 
-			if (postEffectType == Bloom)
+			if (postEffectType == Bloom || postEffectType == BloomFog)
 			{
 				ImGui::DragFloat("BloomIntensity", &bloomIntensity, 0.01f, 0.0f, 10.0f);
 				PostEffect::GetInstance()->SetBloomIntensity(bloomIntensity);
@@ -154,6 +158,14 @@ void MyGame::Draw()
 				PostEffect::GetInstance()->SetBloomThreshold(bloomThreshold);
 				ImGui::DragFloat("BloomSigma", &bloomSigma, 0.01f, 0.0f, 10.0f);
 				PostEffect::GetInstance()->SetBloomSigma(bloomSigma);
+			}
+
+			if (postEffectType == BloomFog)
+			{
+				ImGui::ColorEdit4("FogColor", &fogColor.x);
+				PostEffect::GetInstance()->SetFogColor(fogColor);
+				ImGui::DragFloat("FogDensity", &fogDensity, 0.01f, 0.0f, 1.0f);
+				PostEffect::GetInstance()->SetFogDensity(fogDensity);
 			}
 
 			ImGui::EndTabItem();

@@ -34,8 +34,6 @@ void TakoFramework::Initialize()
 
 	ModelManager::GetInstance()->Initialize(dx12_);
 
-	PostEffect::GetInstance()->Initialize(dx12_);
-
 	Object3dBasic::GetInstance()->Initialize(dx12_);
 
 	SpriteBasic::GetInstance()->Initialize(dx12_);
@@ -52,6 +50,8 @@ void TakoFramework::Initialize()
 
 	// デフォルトカメラを設定
 	Object3dBasic::GetInstance()->SetCamera(defaultCamera_);
+
+	PostEffect::GetInstance()->Initialize(dx12_);
 #pragma endregion
 
 }

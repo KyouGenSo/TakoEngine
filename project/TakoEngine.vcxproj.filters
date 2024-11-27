@@ -398,5 +398,8 @@
     <FxCompile Include="resources\shaders\Sprite.PS.hlsl">
       <Filter>Shader</Filter>
     </FxCompile>
+    <FxCompile Include="resources\shaders\BloomFog.PS.hlsl">
+      <Filter>Shader</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

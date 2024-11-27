@@ -3,6 +3,8 @@
 #include "SrvManager.h"
 #include "Logger.h"
 #include "StringUtility.h"
+#include "Object3dbasic.h"
+#include "Camera.h"
 
 PostEffect* PostEffect::instance_ = nullptr;
 
@@ -21,6 +23,8 @@ void PostEffect::Initialize(DX12Basic* dx12)
 
 	InitRenderTexture();
 
+	CreateDepthBufferSRV();
+
 	CreatePSO("NoEffect");
 
 	CreatePSO("VignetteRed");
@@ -33,11 +37,17 @@ void PostEffect::Initialize(DX12Basic* dx12)
 
 	CreatePSO("Bloom");
 
+	CreatePSO("BloomFog");
+
 	CreateVignetteParam();
 
 	CreateVignetteRedBloomParam();
 
 	CreateBloomParam();
+
+	CreateFogParam();
+
+	CreateCameraForGPU();
 }
 
 void PostEffect::Finalize()
@@ -54,17 +64,16 @@ void PostEffect::BeginDraw()
 	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
 
 	// 描画先のRTVを設定
-	m_dx12_->GetCommandList()->OMSetRenderTargets(1, &renderTextureRTVHandle_, false, &dsvHandle);
+	m_dx12_->GetCommandList()->OMSetRenderTargets(1, &renderTextureRTVHandleA_, false, &dsvHandle);
 
 	float clearColor[] = { kRenderTextureClearColor_.x, kRenderTextureClearColor_.y, kRenderTextureClearColor_.z, kRenderTextureClearColor_.w };
 
 	// 画面の色をクリア
-	m_dx12_->GetCommandList()->ClearRenderTargetView(renderTextureRTVHandle_, clearColor, 0, nullptr);
+	m_dx12_->GetCommandList()->ClearRenderTargetView(renderTextureRTVHandleA_, clearColor, 0, nullptr);
 }
 
 void PostEffect::Draw(const std::string& effectName)
 {
-
 	// ルートシグネチャの設定
 	m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_[effectName].Get());
 
@@ -75,23 +84,10 @@ void PostEffect::Draw(const std::string& effectName)
 	m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// 定数バッファの設定
-	if (effectName == "VignetteRed" || effectName == "VigRedGrayScale") 
-	{
-		m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, vignetteParamResource_->GetGPUVirtualAddress());
-	}
-	else if (effectName == "VignetteRedBloom") 
-	{
-		m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, vignetteRedBloomParamResource_->GetGPUVirtualAddress());
-	} else if (effectName == "Bloom")
-	{
-		m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, bloomParamResource_->GetGPUVirtualAddress());
-	}
-	else if (effectName == "GrayScale" || effectName == "NoEffect")
-	{
-		// グレースケール, ノーエフェクトの場合は何もしない
-	}
+	SetParamResource(effectName);
 
-	SrvManager::GetInstance()->SetRootDescriptorTable(0, srvIndex_);
+	SrvManager::GetInstance()->SetRootDescriptorTable(0, rtvSrvIndex_);
+	SrvManager::GetInstance()->SetRootDescriptorTable(4, dsvSrvIndex_);
 
 	// 描画
 	m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
@@ -103,8 +99,20 @@ void PostEffect::SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_ST
 	D3D12_RESOURCE_BARRIER barrier{};
 	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-	barrier.Transition.pResource = renderTextureResource_.Get();
+	barrier.Transition.pResource = renderTextureResourceA_.Get();
 
+	barrier.Transition.StateBefore = stateBefore;
+	barrier.Transition.StateAfter = stateAfter;
+
+	m_dx12_->GetCommandList()->ResourceBarrier(1, &barrier);
+}
+
+void PostEffect::SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter, ID3D12Resource* resource)
+{
+	D3D12_RESOURCE_BARRIER barrier{};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	barrier.Transition.pResource = resource;
 	barrier.Transition.StateBefore = stateBefore;
 	barrier.Transition.StateAfter = stateAfter;
 
@@ -140,26 +148,44 @@ void PostEffect::SetBloomSigma(float sigma)
 	bloomParam_->sigma = sigma;
 }
 
+void PostEffect::SetFogColor(const Vector4& color)
+{
+	fogParam_->color = color;
+}
+
+void PostEffect::SetFogDensity(float density)
+{
+	fogParam_->density = density;
+}
+
 void PostEffect::InitRenderTexture()
 {
 	// レンダーテクスチャリソースの生成
-	m_dx12_->CreateRenderTextureResource(renderTextureResource_, WinApp::kClientWidth, WinApp::kClientHeight, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, kRenderTextureClearColor_);
-	renderTextureResource_->SetName(L"PostEffectRenderTexture");
+	m_dx12_->CreateRenderTextureResource(renderTextureResourceA_, WinApp::kClientWidth, WinApp::kClientHeight, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, kRenderTextureClearColor_);
+	renderTextureResourceA_->SetName(L"PostEffectRenderTexture");
 
 	// RTVの設定
 	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
 	rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB; // 出力結果をSRGBに変換して書き込む
 	rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D; // 2Dテクスチャとして書き込む
 
-	renderTextureRTVHandle_ = m_dx12_->GetRenderTextureRTVHandle();
+	renderTextureRTVHandleA_ = m_dx12_->GetRenderTextureRTVHandle();
 
 	// RTVの生成
-	m_dx12_->GetDevice()->CreateRenderTargetView(renderTextureResource_.Get(), &rtvDesc, renderTextureRTVHandle_);
+	m_dx12_->GetDevice()->CreateRenderTargetView(renderTextureResourceA_.Get(), &rtvDesc, renderTextureRTVHandleA_);
 
-	srvIndex_ = SrvManager::GetInstance()->Allocate();
+	rtvSrvIndex_ = SrvManager::GetInstance()->Allocate();
 
 	// SRVの生成
-	SrvManager::GetInstance()->CreateSRVForTexture2D(srvIndex_, renderTextureResource_.Get(), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, 1);
+	SrvManager::GetInstance()->CreateSRVForTexture2D(rtvSrvIndex_, renderTextureResourceA_.Get(), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, 1);
+}
+
+void PostEffect::CreateDepthBufferSRV()
+{
+	// SRVの生成
+	dsvSrvIndex_ = SrvManager::GetInstance()->Allocate();
+
+	SrvManager::GetInstance()->CreateSRVForTexture2D(dsvSrvIndex_, m_dx12_->GetDepthStencilResource(), DXGI_FORMAT_R32_FLOAT, 1);
 }
 
 void PostEffect::CreateRootSignature(const std::string& effectName)
@@ -190,17 +216,41 @@ void PostEffect::CreateRootSignature(const std::string& effectName)
 	descriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
 	descriptorRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
 
-	// RootParameterの設定。複数設定できるので配列
-	D3D12_ROOT_PARAMETER rootParameters[2] = {};
+	D3D12_DESCRIPTOR_RANGE descriptorRange2[1] = {};
+	descriptorRange2[0].BaseShaderRegister = 1; // レジスタ番号
+	descriptorRange2[0].NumDescriptors = 1; // ディスクリプタ数
+	descriptorRange2[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
+	descriptorRange2[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
 
+	// RootParameterの設定。複数設定できるので配列
+	D3D12_ROOT_PARAMETER rootParameters[5] = {};
+
+	// Texture
 	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
 	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
 	rootParameters[0].DescriptorTable.pDescriptorRanges = descriptorRange; // ディスクリプタレンジを設定
 	rootParameters[0].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange); // レンジの数
 
+	// Param
 	rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
 	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
 	rootParameters[1].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
+
+	// Param
+	rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
+	rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+	rootParameters[2].Descriptor.ShaderRegister = 1; // レジスタ番号とバインド
+
+	// Param
+	rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
+	rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+	rootParameters[3].Descriptor.ShaderRegister = 2; // レジスタ番号とバインド
+
+	// 深度バッファテクスチャ
+	rootParameters[4].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
+	rootParameters[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+	rootParameters[4].DescriptorTable.pDescriptorRanges = descriptorRange2; // ディスクリプタレンジを設定
+	rootParameters[4].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange2); // レンジの数
 
 	descriptionRootSignature.pParameters = rootParameters;
 	descriptionRootSignature.NumParameters = _countof(rootParameters);
@@ -321,4 +371,56 @@ void PostEffect::CreateBloomParam()
 	bloomParam_->intensity = 1.0f;
 	bloomParam_->threshold = 0.9f;
 	bloomParam_->sigma = 2.0f;
+}
+
+void PostEffect::CreateFogParam()
+{
+	// FogParamのリソース生成
+	fogParamResource_ = m_dx12_->MakeBufferResource(sizeof(FogParam));
+
+	// データの設定
+	fogParamResource_->Map(0, nullptr, reinterpret_cast<void**>(&fogParam_));
+
+	// データの初期化
+	fogParam_->color = { 1.0f, 1.0f, 1.0f, 1.0f };
+	fogParam_->density = 0.05f;
+}
+
+void PostEffect::CreateCameraForGPU()
+{
+	// CameraForGPUのリソース生成
+	cameraForGPUResource_ = m_dx12_->MakeBufferResource(sizeof(CameraForGPU));
+
+	// データの設定
+	cameraForGPUResource_->Map(0, nullptr, reinterpret_cast<void**>(&cameraForGPU_));
+
+	// データの初期化
+	cameraForGPU_->farPlane = Object3dBasic::GetInstance()->GetCamera()->GetFarClip();
+	cameraForGPU_->nearPlane = Object3dBasic::GetInstance()->GetCamera()->GetNearClip();
+}
+
+void PostEffect::SetParamResource(const std::string& effectName)
+{
+	if (effectName == "VignetteRed" || effectName == "VigRedGrayScale")
+	{
+		m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, vignetteParamResource_->GetGPUVirtualAddress());
+	} 
+	else if (effectName == "VignetteRedBloom")
+	{
+		m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, vignetteRedBloomParamResource_->GetGPUVirtualAddress());
+	} 
+	else if (effectName == "Bloom")
+	{
+		m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, bloomParamResource_->GetGPUVirtualAddress());
+	} 
+	else if (effectName == "BloomFog")
+	{
+		m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, bloomParamResource_->GetGPUVirtualAddress());
+		m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(2, cameraForGPUResource_->GetGPUVirtualAddress());
+		m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(3, fogParamResource_->GetGPUVirtualAddress());
+	} 
+	else if (effectName == "GrayScale" || effectName == "NoEffect")
+	{
+		// グレースケール, ノーエフェクトの場合は何もしない
+	}
 }

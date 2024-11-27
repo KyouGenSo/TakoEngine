@@ -24,6 +24,10 @@ public: // メンバー関数
 	const Matrix4x4& GetViewProjectionMatrix() const { return viewProjectionMatrix_; }
 	const Vector3& GetRotate() const { return transform_.rotate; }
 	const Vector3& GetTranslate() const { return transform_.translate; }
+	const float GetFovY() const { return fovY_; }
+	const float GetAspect() const { return aspect_; }
+	const float GetNearClip() const { return nearZ_; }
+	const float GetFarClip() const { return farZ_; }
 
 
 	//-----------------------------------------Setter-----------------------------------------//

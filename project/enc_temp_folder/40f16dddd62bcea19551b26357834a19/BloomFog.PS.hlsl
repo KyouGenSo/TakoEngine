@@ -11,10 +11,23 @@ struct BloomParam
     float sigma;
 };
 
+struct Camera
+{
+    float nearPlane;
+    float farPlane;
+};
 
+struct FogParam
+{
+    float4 color;
+    float density;
+};
 
 ConstantBuffer<BloomParam> gBloomParam : register(b0);
-Texture2D<float4> gTexture : register(t0);
+ConstantBuffer<Camera> gCamera : register(b1);
+ConstantBuffer<FogParam> gFogParam : register(b2);
+Texture2D<float4> gTexture : register(t0);            // シーンのカラーテクスチャ
+Texture2D gDepthTexture : register(t1);               // シーンの深度テクスチャ
 SamplerState gSampler : register(s0);
 
 struct PixelShaderOutput
@@ -37,39 +50,6 @@ float4 BloomExtract(float2 texcoord)
     float brightness = max(color.r, max(color.g, color.b));
     float factor = smoothstep(minThreshold, maxThreshold, brightness);
     return color * factor;
-}
-
-float4 GaussianBlur(float2 texcoord, float2 texSize, float2 dir)
-{
-    // 1ピクセルの長さ
-    float2 uvOffset;
-    
-    // 1ピクセルの長さ
-    const float2 texOffset = float2(rcp(texSize.x), rcp(texSize.y));
-    
-    float4 result = BloomExtract(texcoord);
-    
-    float sum;
-    
-    float weight;
-    
-    for (int karnelStep = -KERNEL_SIZE / 2; karnelStep <= KERNEL_SIZE / 2; ++karnelStep)
-    {
-        uvOffset = texcoord;
-        uvOffset.x += karnelStep * texOffset.x * dir.x;
-        uvOffset.y += karnelStep * texOffset.y * dir.y;
-        
-        weight = Gaussian(karnelStep, gBloomParam.sigma);
-        
-        result.xyz += BloomExtract(uvOffset).xyz * weight;
-        
-        sum += weight;
-        
-    }
-    
-    result *= (1.0f / sum);
-    
-    return result;
 }
 
 float4 SquareGaussianBlur(float2 texcoord, float2 texSize)
@@ -111,6 +91,27 @@ float4 SquareGaussianBlur(float2 texcoord, float2 texSize)
     return result;
 }
 
+float4 FogColor(float2 texcoord)
+{
+    // シーンカラーを取得
+    float4 sceneColor = gTexture.Sample(gSampler, texcoord);
+
+    // 深度バッファからの深度値を取得
+    float depth = gDepthTexture.Sample(gSampler, texcoord).r;
+
+    // 深度値をリニア化
+    float linearDepth = gCamera.nearPlane * gCamera.farPlane / (gCamera.farPlane - depth * (gCamera.farPlane - gCamera.nearPlane));
+
+    // 体積フォグのファクターを計算
+    float fogFactor = exp(-linearDepth * gFogParam.density);
+    fogFactor = saturate(fogFactor); // [0, 1]の範囲にクランプ
+
+    // シーンのカラーとフォグの色を補間
+    float4 finalColor = lerp(gFogParam.color, sceneColor, fogFactor);
+
+    return finalColor;
+}
+
 float4 main(VertexShaderOutput input) : SV_TARGET
 {
     PixelShaderOutput output;
@@ -120,13 +121,14 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     float2 texSize;
     gTexture.GetDimensions(texSize.x, texSize.y);
     
-    //float4 bloomColor = GaussianBlur(input.texCoord, texSize, float2(1.0f, 0.0f)) + GaussianBlur(input.texCoord, texSize, float2(0.0f, 1.0f));
-    
     float4 bloomColor = SquareGaussianBlur(input.texCoord, texSize);
     
     bloomColor.rgb *= gBloomParam.intensity;
     
-    bloomColor.rgb += output.color.rgb;
+    float4 fogColor = FogColor(input.texCoord);
+    
+    bloomColor.rgb += fogColor.rgb;
+    
     
     return bloomColor;
 

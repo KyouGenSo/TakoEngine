@@ -33,6 +33,8 @@ private: // メンバ変数
 	float bloomThreshold = 1.0f;
 	float bloomIntensity = 1.0f;
 	float bloomSigma = 2.0f;
+	Vector4 fogColor = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+	float fogDensity = 0.05f;
 
 	enum PostEffectType
 	{
@@ -42,6 +44,7 @@ private: // メンバ変数
 		GrayScale,
 		VigRedGrayScale,
 		Bloom,
+		BloomFog,
 	};
 
 	PostEffectType postEffectType = NoEffect;
