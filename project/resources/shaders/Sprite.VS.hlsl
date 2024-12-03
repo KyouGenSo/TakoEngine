@@ -2,16 +2,16 @@
 
 struct TransformationMatrix
 {
-    float32_t4x4 WVP;
-    float32_t4x4 World;
+    float4x4 WVP;
+    float4x4 World;
 };
 
 ConstantBuffer<TransformationMatrix> gTransformationMatrix : register(b0);
 
 struct VertexShaderInput
 {
-    float32_t4 pos : POSITION;
-    float32_t2 texcoord : TEXCOORD0;
+    float4 pos : POSITION;
+    float2 texcoord : TEXCOORD0;
 };
 
 VertexShaderOutput main(VertexShaderInput input)

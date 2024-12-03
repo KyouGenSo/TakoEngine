@@ -2,18 +2,18 @@
 
 struct Material
 {
-    float32_t4 color;
-    float32_t4x4 uvTransform;
+    float4 color;
+    float4x4 uvTransform;
 };
 
 ConstantBuffer<Material> gMaterial : register(b0);
 
-Texture2D<float32_t4> gTexture : register(t0);
+Texture2D<float4> gTexture : register(t0);
 SamplerState gSampler : register(s0);
 
 struct PixelShaderOutput
 {
-    float32_t4 color : SV_TARGET0;
+    float4 color : SV_TARGET0;
 };
 
 PixelShaderOutput main(VertexShaderOutput input)
