@@ -1,8 +1,9 @@
 #pragma once
 #include "BaseScene.h"
 #include"Sprite.h"
+#include"Object3d.h"
 #include <vector>
-#include"Vector2.h"
+#include <memory>
 
 class TitleScene : public BaseScene
 {
@@ -37,13 +38,9 @@ private: // メンバ変数
 
 	bool isDebug_ = false;
 
-	Vector3 center;
+	Vector3 emitterPos_;
+	Vector3 particleScale;
 
-	Vector3 cameraPosition = { 0.0f, 1.9f, -6.49f};
-	Vector3 cameraRotation = { 0.26f, 0.0f, 0.0f };
+	bool isRandomColor_ = false;
 
-	float windowX = 1280.0f;
-	float windowY = 720.0f;
-
-	Sprite* sprite_ = nullptr;
 };

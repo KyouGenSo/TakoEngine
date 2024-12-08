@@ -3,6 +3,8 @@
 #include "TextureManager.h"
 #include "Object3dBasic.h"
 #include "SpriteBasic.h"
+#include"ModelManager.h"
+#include "ParticleManager.h"
 #include "Input.h"
 #include "Draw2D.h"
 #include "Camera.h"
@@ -22,21 +24,15 @@ void TitleScene::Initialize()
 	///              初期化処理              ///
 	/// ================================== ///
 
-	center = { 0.0f, 0.0f, 0.0f };
+	TextureManager::GetInstance()->LoadTexture("white.png");
+	ParticleManager::GetInstance()->CreateParticleGroup("white", "white.png");
 
-	// スプライトの初期化
-	TextureManager::GetInstance()->LoadTexture("uvChecker.png");
-
-	sprite_ = new Sprite();
-	sprite_->Initialize("uvChecker.png");
-	sprite_->SetPos(Vector2(0.0f, 0.0f));
-
-
+	particleScale = Vector3(0.1f, 0.1f, 0.1f);
 }
 
 void TitleScene::Finalize()
 {
-	delete sprite_;
+
 }
 
 void TitleScene::Update()
@@ -55,7 +51,6 @@ void TitleScene::Update()
 	///              更新処理               ///
 	/// ================================== ///
 
-	sprite_->Update();
 
 
 	if (Input::GetInstance()->TriggerKey(DIK_RETURN))
@@ -83,7 +78,6 @@ void TitleScene::Draw()
 	Object3dBasic::GetInstance()->SetCommonRenderSetting();
 
 
-
 	//------------------------------------------------//
 
 
@@ -91,30 +85,25 @@ void TitleScene::Draw()
 	// スプライト共通描画設定
 	SpriteBasic::GetInstance()->SetCommonRenderSetting();
 
-	sprite_->Draw();
+
 
 	//--------------------------------------------------//
 
-	Draw2D::GetInstance()->DrawBox(Vector2(0.0f, 0.0f), Vector2(100.0f, 100.0f), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
-
-	Matrix4x4 viewProjectionMatrix = Object3dBasic::GetInstance()->GetCamera()->GetViewProjectionMatrix();
-
-	Draw2D::GetInstance()->DrawSphere(center, 5.0f, Vector4(1.0f, 1.0f, 1.0f, 1.0f), viewProjectionMatrix);
+	ParticleManager::GetInstance()->Draw();
 }
 
 void TitleScene::DrawImGui()
 {
 #ifdef _DEBUG
 
-	ImGui::Begin("Sphere");
-	ImGui::DragFloat3("Center", &center.x, 0.01f, -50.0f, 50.0f);
-	ImGui::End();
-
-	ImGui::Begin("Camera");
-	ImGui::DragFloat3("Position", &cameraPosition.x, 0.01f, -50.0f, 50.0f);
-	ImGui::DragFloat3("Rotation", &cameraRotation.x, 0.01f, -50.0f, 50.0f);
-	Object3dBasic::GetInstance()->GetCamera()->SetTranslate(cameraPosition);
-	Object3dBasic::GetInstance()->GetCamera()->SetRotate(cameraRotation);
+	ImGui::Begin("particle");
+	ImGui::DragFloat3("emitterPos", &emitterPos_.x, 0.1f);
+	ImGui::DragFloat3("particleScale", &particleScale.x, 0.1f);
+	ImGui::Checkbox("isRandomColor", &isRandomColor_);
+	if (ImGui::Button("Create"))
+	{
+		ParticleManager::GetInstance()->Emit("white", emitterPos_, particleScale, 10, isRandomColor_);
+	}
 	ImGui::End();
 
 #endif // _DEBUG

@@ -206,6 +206,9 @@
     <ClCompile Include="engine\func\mathFunc\QuatFunc.cpp">
       <Filter>ソース ファイル\engine\func\MathFunc</Filter>
     </ClCompile>
+    <ClCompile Include="engine\effect\ParticleManager.cpp">
+      <Filter>ソース ファイル\engine\effect</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\func\mathFunc\Mat4x4Func.h">
@@ -334,6 +337,9 @@
     <ClInclude Include="engine\3d\Transform.h">
       <Filter>ヘッダー ファイル\engine\math</Filter>
     </ClInclude>
+    <ClInclude Include="engine\effect\ParticleManager.h">
+      <Filter>ヘッダー ファイル\engine\effect</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\NoTex.hlsli">
@@ -346,6 +352,9 @@
       <Filter>Shader</Filter>
     </None>
     <None Include="resources\shaders\Sprite.hlsli">
+      <Filter>Shader</Filter>
+    </None>
+    <None Include="resources\shaders\Particle.hlsli">
       <Filter>Shader</Filter>
     </None>
   </ItemGroup>
@@ -399,6 +408,12 @@
       <Filter>Shader</Filter>
     </FxCompile>
     <FxCompile Include="resources\shaders\BloomFog.PS.hlsl">
+      <Filter>Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="resources\shaders\Particle.VS.hlsl">
+      <Filter>Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="resources\shaders\Particle.PS.hlsl">
       <Filter>Shader</Filter>
     </FxCompile>
   </ItemGroup>

@@ -2,10 +2,11 @@
 #include "SrvManager.h"
 #include "TextureManager.h"
 #include "SceneManager.h"
+#include "ModelManager.h"
+#include "ParticleManager.h"
 #include "Object3dBasic.h"
 #include "SpriteBasic.h"
 #include "Model.h"
-#include "ModelManager.h"
 #include "Draw2D.h"
 #include "PostEffect.h"
 #include "DebugCamera.h"
@@ -52,12 +53,18 @@ void TakoFramework::Initialize()
 	Object3dBasic::GetInstance()->SetCamera(defaultCamera_);
 
 	PostEffect::GetInstance()->Initialize(dx12_);
+
+	ParticleManager::GetInstance()->Initialize(dx12_, defaultCamera_);
+
 #pragma endregion
 
 }
 
 void TakoFramework::Finalize()
 {
+	// パーティクルマネージャーの終了処理
+	ParticleManager::GetInstance()->Finalize();
+
 	// SRVマネージャーの終了処理
 	SrvManager::GetInstance()->Finalize();
 
@@ -124,6 +131,9 @@ void TakoFramework::Update()
 
 	// Object3dBasicの更新
 	Object3dBasic::GetInstance()->Update();
+
+	// パーティクルマネージャーの更新
+	ParticleManager::GetInstance()->Update();
 
 }
 
