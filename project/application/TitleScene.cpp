@@ -86,6 +86,7 @@ void TitleScene::Draw()
 
 	//--------------------------------------------------//
 
+	// パーティクルの描画
 	ParticleManager::GetInstance()->Draw();
 }
 

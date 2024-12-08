@@ -70,6 +70,7 @@ public: // メンバー関数
 
     // -----------------------------------Setters-----------------------------------//
     void SetCamera(Camera* camera) { m_camera_ = camera; }
+	void SetIsBillboard(bool isBillboard) { isBillboard_ = isBillboard; }
 
 public: // 構造体
     struct Transform
