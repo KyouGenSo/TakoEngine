@@ -154,8 +154,12 @@ void ParticleManager::Finalize()
 
 void ParticleManager::CreateParticleGroup(const std::string name, const std::string textureFilePath)
 {
-	// 登録済みの名前かチェックして assert
-	assert(particleGroups.find(name) == particleGroups.end());
+	// 登録済みの名前かチェック
+	if (particleGroups.find(name) != particleGroups.end())
+	{
+		Logger::Log("ParticleGroup is already exist");
+		assert(false);
+	}
 
 	// パーティクルグループを作成
 	ParticleGroup newParticleGroup{};
