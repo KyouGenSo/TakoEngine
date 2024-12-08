@@ -3,6 +3,8 @@
 #include"Input.h"
 #include "SceneFactory.h"
 #include "SceneManager.h"
+#include "TextureManager.h"
+#include "ParticleManager.h"
 #include "Draw2D.h"
 #include "Object3dBasic.h"
 #include "PostEffect.h"
@@ -25,6 +27,9 @@ void MyGame::Initialize()
 	sceneFactory_ = new SceneFactory();
 	SceneManager::GetInstance()->SetSceneFactory(sceneFactory_);
 	SceneManager::GetInstance()->ChangeScene("game", 0.0f);
+
+	TextureManager::GetInstance()->LoadTexture("white.png");
+	ParticleManager::GetInstance()->CreateParticleGroup("white", "white.png");
 }
 
 void MyGame::Finalize()

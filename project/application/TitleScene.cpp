@@ -24,9 +24,6 @@ void TitleScene::Initialize()
 	///              初期化処理              ///
 	/// ================================== ///
 
-	TextureManager::GetInstance()->LoadTexture("white.png");
-	ParticleManager::GetInstance()->CreateParticleGroup("white", "white.png");
-
 	particleScale = Vector3(0.1f, 0.1f, 0.1f);
 }
 
