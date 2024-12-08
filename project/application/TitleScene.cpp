@@ -28,6 +28,12 @@ void TitleScene::Initialize()
 	ParticleManager::GetInstance()->CreateParticleGroup("white", "white.png");
 
 	particleScale = Vector3(0.1f, 0.1f, 0.1f);
+
+	emitterPos_ = Vector3(0.0f, 0.0f, 0.0f);
+
+	isRandomColor_ = false;
+
+	particleNum_ = 10;
 }
 
 void TitleScene::Finalize()
@@ -99,10 +105,12 @@ void TitleScene::DrawImGui()
 	ImGui::Begin("particle");
 	ImGui::DragFloat3("emitterPos", &emitterPos_.x, 0.1f);
 	ImGui::DragFloat3("particleScale", &particleScale.x, 0.1f);
-	ImGui::Checkbox("isRandomColor", &isRandomColor_);
+	// particle num max 256
+	ImGui::DragInt("particleNum", (int*)&particleNum_, 1, 1, 256);
+	ImGui::Checkbox("RandomColor", &isRandomColor_);
 	if (ImGui::Button("Create"))
 	{
-		ParticleManager::GetInstance()->Emit("white", emitterPos_, particleScale, 10, isRandomColor_);
+		ParticleManager::GetInstance()->Emit("white", emitterPos_, particleScale, particleNum_, isRandomColor_);
 	}
 	ImGui::End();
 

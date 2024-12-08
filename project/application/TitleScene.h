@@ -40,6 +40,7 @@ private: // メンバ変数
 
 	Vector3 emitterPos_;
 	Vector3 particleScale;
+	uint32_t particleNum_;
 
 	bool isRandomColor_ = false;
 
