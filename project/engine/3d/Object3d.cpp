@@ -1,7 +1,6 @@
 #include "Object3d.h"
 #include "DX12Basic.h"
 #include "Object3dbasic.h"
-#include "Model.h"
 #include "TextureManager.h"
 #include"ModelManager.h"
 #include"Camera.h"

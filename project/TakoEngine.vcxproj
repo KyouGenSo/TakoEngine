@@ -64,7 +64,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(ProjectDir)externals\assimp\include;$(ProjectDir)application;$(ProjectDir)engine\effect;$(ProjectDir)engine\scene;$(ProjectDir)engine\audio;$(ProjectDir)engine\imgui;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)application\collision;$(ProjectDir)application\objects;$(ProjectDir)application\scenes;$(ProjectDir)externals\assimp\include;$(ProjectDir)application;$(ProjectDir)engine\effect;$(ProjectDir)engine\scene;$(ProjectDir)engine\audio;$(ProjectDir)engine\imgui;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -91,7 +91,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)externals\assimp\include;$(ProjectDir)application;$(ProjectDir)engine\effect;$(ProjectDir)engine\scene;$(ProjectDir)engine\audio;$(ProjectDir)engine\debug;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)application\collision;$(ProjectDir)application\objects;$(ProjectDir)application\scenes;$(ProjectDir)externals\assimp\include;$(ProjectDir)application;$(ProjectDir)engine\effect;$(ProjectDir)engine\scene;$(ProjectDir)engine\audio;$(ProjectDir)engine\debug;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -108,6 +108,12 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="application\collision\collider.cpp" />
+    <ClCompile Include="application\collision\collisionManager.cpp" />
+    <ClCompile Include="application\collision\collisionRecord.cpp" />
+    <ClCompile Include="application\objects\BaseCharacter.cpp" />
+    <ClCompile Include="application\objects\Ground.cpp" />
+    <ClCompile Include="application\objects\Skydome.cpp" />
     <ClCompile Include="engine\2d\DebugCamera.cpp" />
     <ClCompile Include="engine\2d\Draw2D.cpp" />
     <ClCompile Include="engine\audio\Audio.cpp" />
@@ -118,7 +124,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\effect\PostEffect.cpp" />
     <ClCompile Include="engine\io\Input.cpp" />
     <ClCompile Include="engine\func\commonFunc\Logger.cpp" />
-    <ClCompile Include="application\GameScene.cpp" />
+    <ClCompile Include="application\scenes\GameScene.cpp" />
     <ClCompile Include="engine\3d\Light.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="engine\func\mathFunc\Mat4x4Func.cpp" />
@@ -136,14 +142,21 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\base\DX12\SrvManager.cpp" />
     <ClCompile Include="application\MyGame.cpp" />
     <ClCompile Include="engine\base\TakoFramework.cpp" />
-    <ClCompile Include="application\TitleScene.cpp" />
+    <ClCompile Include="application\scenes\TitleScene.cpp" />
     <ClCompile Include="engine\scene\SceneManager.cpp" />
-    <ClCompile Include="application\SceneFactory.cpp" />
+    <ClCompile Include="application\scenes\SceneFactory.cpp" />
     <ClCompile Include="engine\scene\Transition.cpp" />
     <ClCompile Include="engine\func\mathFunc\QuatFunc.cpp" />
     <ClCompile Include="engine\effect\ParticleManager.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="application\collision\collider.h" />
+    <ClInclude Include="application\collision\collisionManager.h" />
+    <ClInclude Include="application\collision\collisionRecord.h" />
+    <ClInclude Include="application\collision\collisionTypeIdDef.h" />
+    <ClInclude Include="application\objects\BaseCharacter.h" />
+    <ClInclude Include="application\objects\ground.h" />
+    <ClInclude Include="application\objects\Skydome.h" />
     <ClInclude Include="engine\2d\DebugCamera.h" />
     <ClInclude Include="engine\2d\Draw2D.h" />
     <ClInclude Include="engine\effect\PostEffect.h" />
@@ -176,10 +189,10 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\base\DX12\SrvManager.h" />
     <ClInclude Include="application\MyGame.h" />
     <ClInclude Include="engine\base\TakoFramework.h" />
-    <ClInclude Include="application\GameScene.h" />
-    <ClInclude Include="application\TitleScene.h" />
+    <ClInclude Include="application\scenes\GameScene.h" />
+    <ClInclude Include="application\scenes\TitleScene.h" />
     <ClInclude Include="engine\scene\SceneManager.h" />
-    <ClInclude Include="application\SceneFactory.h" />
+    <ClInclude Include="application\scenes\SceneFactory.h" />
     <ClInclude Include="engine\math\Matrix3x3.h" />
     <ClInclude Include="engine\scene\Transition.h" />
     <ClInclude Include="engine\3d\Light.h" />

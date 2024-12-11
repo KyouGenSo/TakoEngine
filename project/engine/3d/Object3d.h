@@ -8,6 +8,7 @@
 #include "vector4.h"
 #include "Mat4x4Func.h"
 #include "Transform.h"
+#include "Model.h"
 
 class Model;
 
@@ -55,9 +56,11 @@ public: // メンバー関数
 	//-----------------------------------------Setter-----------------------------------------//
 	void SetModel(const std::string& fileName);
 	void SetCamera(Camera* camera) { m_camera_ = camera; }
+	void SetTransform(const Transform& transform) { transform_ = transform; }
 	void SetScale(const Vector3& scale) { transform_.scale = scale; }
 	void SetRotate(const Vector3& rotate) { transform_.rotate = rotate; }
 	void SetTranslate(const Vector3& translate) { transform_.translate = translate; }
+	void SetAlpha(float alpha) { m_model_->SetAlpha(alpha); }
 
 	// ライトの設定
 	void SetShininess(float shininess);

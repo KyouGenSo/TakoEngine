@@ -105,6 +105,18 @@
     <Filter Include="ヘッダー ファイル\engine\imgui">
       <UniqueIdentifier>{bc6db53e-c339-4623-ab40-a9a9adf5d39b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\application\collision">
+      <UniqueIdentifier>{c6344a63-10d9-4b11-85ad-ca7b84e89da0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\application\objects">
+      <UniqueIdentifier>{09d9a0d2-1701-450e-aa42-546cf980d179}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\application\collision">
+      <UniqueIdentifier>{82e93aaa-751b-413b-98e6-4d5749947071}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\application\objects">
+      <UniqueIdentifier>{73fa0928-0f07-4bee-814f-7e1fe3a2ae4b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -176,16 +188,16 @@
     <ClCompile Include="engine\base\TakoFramework.cpp">
       <Filter>ソース ファイル\engine\base</Filter>
     </ClCompile>
-    <ClCompile Include="application\GameScene.cpp">
+    <ClCompile Include="application\scenes\GameScene.cpp">
       <Filter>ソース ファイル\application\scene</Filter>
     </ClCompile>
-    <ClCompile Include="application\TitleScene.cpp">
+    <ClCompile Include="application\scenes\TitleScene.cpp">
       <Filter>ソース ファイル\application\scene</Filter>
     </ClCompile>
     <ClCompile Include="engine\scene\SceneManager.cpp">
       <Filter>ソース ファイル\engine\scene</Filter>
     </ClCompile>
-    <ClCompile Include="application\SceneFactory.cpp">
+    <ClCompile Include="application\scenes\SceneFactory.cpp">
       <Filter>ソース ファイル\application\scene</Filter>
     </ClCompile>
     <ClCompile Include="engine\2d\Draw2D.cpp">
@@ -208,6 +220,24 @@
     </ClCompile>
     <ClCompile Include="engine\effect\ParticleManager.cpp">
       <Filter>ソース ファイル\engine\effect</Filter>
+    </ClCompile>
+    <ClCompile Include="application\collision\collider.cpp">
+      <Filter>ソース ファイル\application\collision</Filter>
+    </ClCompile>
+    <ClCompile Include="application\collision\collisionManager.cpp">
+      <Filter>ソース ファイル\application\collision</Filter>
+    </ClCompile>
+    <ClCompile Include="application\collision\collisionRecord.cpp">
+      <Filter>ソース ファイル\application\collision</Filter>
+    </ClCompile>
+    <ClCompile Include="application\objects\BaseCharacter.cpp">
+      <Filter>ソース ファイル\application\objects</Filter>
+    </ClCompile>
+    <ClCompile Include="application\objects\Ground.cpp">
+      <Filter>ソース ファイル\application\objects</Filter>
+    </ClCompile>
+    <ClCompile Include="application\objects\Skydome.cpp">
+      <Filter>ソース ファイル\application\objects</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -289,10 +319,10 @@
     <ClInclude Include="engine\base\TakoFramework.h">
       <Filter>ヘッダー ファイル\engine\base</Filter>
     </ClInclude>
-    <ClInclude Include="application\GameScene.h">
+    <ClInclude Include="application\scenes\GameScene.h">
       <Filter>ヘッダー ファイル\application\scene</Filter>
     </ClInclude>
-    <ClInclude Include="application\TitleScene.h">
+    <ClInclude Include="application\scenes\TitleScene.h">
       <Filter>ヘッダー ファイル\application\scene</Filter>
     </ClInclude>
     <ClInclude Include="engine\scene\SceneManager.h">
@@ -304,7 +334,7 @@
     <ClInclude Include="engine\scene\AbstractSceneFactory.h">
       <Filter>ヘッダー ファイル\engine\scene</Filter>
     </ClInclude>
-    <ClInclude Include="application\SceneFactory.h">
+    <ClInclude Include="application\scenes\SceneFactory.h">
       <Filter>ヘッダー ファイル\application\scene</Filter>
     </ClInclude>
     <ClInclude Include="engine\2d\Draw2D.h">
@@ -339,6 +369,27 @@
     </ClInclude>
     <ClInclude Include="engine\effect\ParticleManager.h">
       <Filter>ヘッダー ファイル\engine\effect</Filter>
+    </ClInclude>
+    <ClInclude Include="application\collision\collider.h">
+      <Filter>ヘッダー ファイル\application\collision</Filter>
+    </ClInclude>
+    <ClInclude Include="application\collision\collisionManager.h">
+      <Filter>ヘッダー ファイル\application\collision</Filter>
+    </ClInclude>
+    <ClInclude Include="application\collision\collisionRecord.h">
+      <Filter>ヘッダー ファイル\application\collision</Filter>
+    </ClInclude>
+    <ClInclude Include="application\collision\collisionTypeIdDef.h">
+      <Filter>ヘッダー ファイル\application\collision</Filter>
+    </ClInclude>
+    <ClInclude Include="application\objects\BaseCharacter.h">
+      <Filter>ヘッダー ファイル\application\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="application\objects\ground.h">
+      <Filter>ヘッダー ファイル\application\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="application\objects\Skydome.h">
+      <Filter>ヘッダー ファイル\application\objects</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
