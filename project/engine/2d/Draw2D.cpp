@@ -520,7 +520,3 @@ void Draw2D::CalcSphereVertexData()
 		}
 	}
 }
-
-
-
-
