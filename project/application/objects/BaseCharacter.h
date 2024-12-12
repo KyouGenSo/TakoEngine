@@ -8,7 +8,7 @@
 
 class BaseCharacter : public Collider{
 protected:
-	std::vector<Object3d*> models_;
+	std::vector<Object3d*> m_models_;
 	Transform transform_;
 
 public:

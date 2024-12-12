@@ -3,7 +3,7 @@
 void BaseCharacter::Initialize(const std::vector<Object3d*> models) {
 	Collider::Initialize();
 
-	models_ = models;
+	m_models_ = models;
 
 	transform_.scale = Vector3(1.0f, 1.0f, 1.0f);
 	transform_.rotate = Vector3(0.0f, 0.0f, 0.0f);
@@ -11,14 +11,14 @@ void BaseCharacter::Initialize(const std::vector<Object3d*> models) {
 }
 
 void BaseCharacter::Update() {
-	for (auto& model : models_) {
+	for (auto& model : m_models_) {
 		model->SetTransform(transform_);
 		model->Update();
 	}
 }
 
 void BaseCharacter::Draw() {
-	for (auto& model : models_) {
+	for (auto& model : m_models_) {
 		model->Draw();
 	}
 }
