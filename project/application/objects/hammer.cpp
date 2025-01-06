@@ -16,6 +16,7 @@ void Hammer::Initialize(Object3d* model, Object3d* effectModel) {
 	Collider::Initialize();
 
 	SetRadius(3.5f);
+	Collider::SetRadius(3.5f);
 
 	//hammerWorldTransform_.Initialize();
 	//effectWorldTransform_.Initialize();
@@ -40,7 +41,6 @@ void Hammer::Update() {
 
 
 	hammerWorldTransform_.Update();
-	effectWorldTransform_.Update();
 
 	model_->SetTransform(hammerWorldTransform_);
 	effectModel_->SetTransform(effectWorldTransform_);
@@ -109,7 +109,10 @@ void Hammer::OnCollision([[maybe_unused]] Collider* other) {
 
 Vector3 Hammer::GetCenter() const {
 	Vector3 offset = {0.0f, 5.0f, 0.0f};
-	Matrix4x4 worldMatrix = Mat4x4::MakeAffine(hammerWorldTransform_.translate, hammerWorldTransform_.rotate, hammerWorldTransform_.scale);
+	Matrix4x4 worldMatrix = Mat4x4::MakeAffine(hammerWorldTransform_.scale, hammerWorldTransform_.rotate, hammerWorldTransform_.translate);
+	if (hammerWorldTransform_.HasParent()) {
+		worldMatrix = worldMatrix * hammerWorldTransform_.parentWorldMatrix_;
+	}
 	Vector3 worldPos = Mat4x4::TransForm(worldMatrix, offset);
 
 	return worldPos;

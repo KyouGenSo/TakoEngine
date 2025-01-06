@@ -55,7 +55,7 @@ void GameOverScene::Update() {
 	pressButtonText_->Update();
 
 
-	if (Input::GetInstance()->TriggerKey(DIK_RETURN))
+	if (Input::GetInstance()->TriggerKey(DIK_SPACE))
 	{
 		SceneManager::GetInstance()->ChangeScene("title");
 	}

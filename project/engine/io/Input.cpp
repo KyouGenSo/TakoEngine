@@ -85,9 +85,7 @@ void Input::Update() {
 	// マウスの座標を取得
 	UpdateMousePos();
 
-	// 前フレームのジョイスティック状態を保存
 	prevJoyState_ = joyState_;
-
 }
 
 void Input::UpdateMousePos()
@@ -164,6 +162,7 @@ void Input::SetMousePos(int x, int y)
 
 bool Input::GetJoystickState(int32_t stickNo, XINPUT_STATE& out)
 {
+
 	ZeroMemory(&out, sizeof(out));
 
 	DWORD result = XInputGetState(stickNo, &out);
@@ -172,6 +171,7 @@ bool Input::GetJoystickState(int32_t stickNo, XINPUT_STATE& out)
 	{
 		return true;
 	}
+
 
 	return false;
 }

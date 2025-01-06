@@ -64,6 +64,9 @@ private:
 	// player
 	const Player* player_ = nullptr;
 
+	// ロックオン中かどうか
+	bool isLockOn_ = false;
+
 	// 最小距離
 	float minDis_ = 10.0f;
 	// 最大距離

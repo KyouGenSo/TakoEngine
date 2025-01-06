@@ -91,7 +91,7 @@ void Enemy::Initialize(const std::vector<Object3d*> models) {
 	// SEの読み込み
 	seHitPlayer_ = audio_->LoadWaveFile("playerDamaged.wav");
 
-	Collider::SetRadius(5.f);
+	Collider::SetRadius(6.f);
 
 	BaseCharacter::Initialize(models);
 

@@ -67,4 +67,6 @@ private: // メンバ変数
 	// ロックオン
 	const LockOn* lockOn_ = nullptr;
 
+	bool isRotating_ = false;
+
 };

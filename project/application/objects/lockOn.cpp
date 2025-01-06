@@ -15,6 +15,7 @@ void LockOn::Update(const std::unique_ptr<Enemy>& enemy, const Camera& camera) {
 	if (target_) {
 		if (!IsOutDistance(camera)) {
 			target_ = nullptr;
+			isLockOn_ = false;
 		}
 	}
 
@@ -26,6 +27,16 @@ void LockOn::Update(const std::unique_ptr<Enemy>& enemy, const Camera& camera) {
 		} else {
 			target_ = nullptr;
 		}
+	}
+
+	if (input_->TriggerKey(DIK_F) && player_->GetBehavior() != 1) {
+		isLockOn_ = !isLockOn_;
+	}
+
+	if (isLockOn_) {
+		SearchTarget(enemy, camera);
+	} else {
+		target_ = nullptr;
 	}
 
 	if (target_) { // ロックオンマークの座標計算
@@ -59,6 +70,8 @@ void LockOn::SearchTarget(const std::unique_ptr<Enemy>& enemy, const Camera& cam
 	// 角度条件チェック
 	if (IsOutDistance(enemy, camera)) {
 		target_ = enemy.get();
+	} else {
+		isLockOn_ = false;
 	}
 }
 

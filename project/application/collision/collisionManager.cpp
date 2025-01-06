@@ -4,9 +4,11 @@
 
 void CollisionManager::Initialize() {
 	// モデルの読み込み
-	//ModelManager::GetInstance()->LoadModel("collisionBall");
-	//collBallModel_.get()->SetModel("collisionBall");
-	//collBallModel_.get()->SetAlpha(0.7f);
+	ModelManager::GetInstance()->LoadModel("collisionBall.obj");
+	//collBallModel_ = std::make_unique<Object3d>();
+	//collBallModel_->Initialize();
+	//collBallModel_->SetModel("collisionBall.obj");
+	//collBallModel_->SetAlpha(0.7f);
 }
 
 void CollisionManager::UpdateWorldTransform() {
@@ -17,6 +19,10 @@ void CollisionManager::UpdateWorldTransform() {
 	for (Collider* collider : colliders_) {
 		collider->UpdateTransform();
 	}
+
+	for (Object3d* object3d : collBallModels_) {
+		object3d->Update();
+	}
 }
 
 void CollisionManager::Draw() {
@@ -24,9 +30,15 @@ void CollisionManager::Draw() {
 		return;
 	}
 
-	/*for (Collider* collider : colliders_) {
-		collider->Draw(collBallModel_.get());
-	}*/
+	for (Collider* collider : colliders_) {
+		Object3d* object3d = new Object3d();
+		object3d->Initialize();
+		object3d->SetModel("collisionBall.obj");
+		object3d->SetAlpha(0.5f);
+		collBallModels_.push_back(object3d);
+
+		collider->Draw(object3d);
+	}
 }
 
 void CollisionManager::Reset() { colliders_.clear(); }

@@ -39,6 +39,13 @@ void FollowCamera::Update() {
 		XINPUT_STATE joyState;
 		if (input_->GetJoystickState(0, joyState)) {
 
+			if (joyState.Gamepad.sThumbRX / 32767.0f > 0.3f || joyState.Gamepad.sThumbRX / 32767.0f < -0.3f) {
+				isRotating_ = true;
+			} else {
+				isRotating_ = false;
+			}
+
+			if(isRotating_)
 			destinationAngleY_ += (float)joyState.Gamepad.sThumbRX * rotateSpeed * 0.0001f;
 
 			// 右スティック押し込みで角度をターゲットの後ろにリセット
@@ -49,21 +56,17 @@ void FollowCamera::Update() {
 
 		// キーボードによる回転
 		if (input_->PushKey(DIK_LEFT)) {
-			float newAngle = camera_->GetRotate().y - rotateSpeed;
-			camera_->SetRotate(Vector3(0.0f, newAngle, 0.0f));
-			
+			destinationAngleY_ -= rotateSpeed;		
 		}
 		if (input_->PushKey(DIK_RIGHT)) {
-			float newAngle = camera_->GetRotate().y + rotateSpeed;
-			camera_->SetRotate(Vector3(0.0f, newAngle, 0.0f));
+			destinationAngleY_ += rotateSpeed;
 		}
 
 		// offset
-		offset_.z = Vec3::Lerp(offset_.z, -13.0f, 0.08f);
+		offset_.z = Vec3::Lerp(offset_.z, -15.0f, 0.08f);
 	}
 
 	// カメラの角度を目標角度に向けて補間
-	//m_camera_.rotation_.y = Vec3::LerpShortAngle(m_camera_.rotation_.y, destinationAngleY_, 0.15f);
 	float angle = Vec3::LerpShortAngle(camera_->GetRotate().y, destinationAngleY_, 0.15f);
 	camera_->SetRotate(Vector3(0.0f, angle, 0.0f));
 
@@ -95,7 +98,7 @@ void FollowCamera::Reset() {
 	//destinationAngleY_ = m_camera_.rotation_.y;
 	destinationAngleY_ = camera_->GetRotate().y;
 
-	offset_ = {0.0f, 3.0f, -13.0f};
+	offset_ = {0.0f, 3.0f, -15.0f};
 
 	Vector3 offset = CalculateOffset();
 

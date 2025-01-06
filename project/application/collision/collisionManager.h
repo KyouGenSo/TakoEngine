@@ -9,7 +9,7 @@ class CollisionManager {
 private:
 	std::list<Collider*> colliders_;
 
-	std::unique_ptr<Object3d> collBallModel_;
+	std::list<Object3d*> collBallModels_;
 
 	bool collBallVisibility_ = false;
 

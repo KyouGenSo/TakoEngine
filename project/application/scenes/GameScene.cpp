@@ -22,9 +22,9 @@ void GameScene::Initialize()
 	/// ================================== ///
 	///              初期化処理              ///
 	/// ================================== ///
-	
+
 	// uiの初期化
-	//InitializeUI();
+	InitializeUI();
 
 	input_ = Input::GetInstance();
 	audio_ = Audio::GetInstance();
@@ -32,7 +32,7 @@ void GameScene::Initialize()
 	// collisionMnagerの生成と初期化
 	collisionManager_ = std::make_unique<CollisionManager>();
 	collisionManager_->Initialize();
-	
+
 	ModelManager::GetInstance()->LoadModel("ground_black.gltf");
 	ModelManager::GetInstance()->LoadModel("skydome.obj");
 
@@ -147,8 +147,8 @@ void GameScene::Initialize()
 void GameScene::InitializeUI()
 {
 	// textureの読み込み
-	TextureManager::GetInstance()->LoadTexture("white1x1.png");
-	TextureManager::GetInstance()->LoadTexture("red1x1.png");
+	TextureManager::GetInstance()->LoadTexture("white.png");
+	TextureManager::GetInstance()->LoadTexture("red.png");
 	TextureManager::GetInstance()->LoadTexture("player_Text.png");
 	TextureManager::GetInstance()->LoadTexture("enemy_Text.png");
 	TextureManager::GetInstance()->LoadTexture("A_Icon.png");
@@ -164,12 +164,12 @@ void GameScene::InitializeUI()
 
 	// UIの初期化
 	playerHP_ = std::make_unique<Sprite>();
-	playerHP_->Initialize("white1x1.png");
+	playerHP_->Initialize("white.png");
 	playerHP_->SetPos(playerHP_Pos_);
 	playerHP_->SetSize(playerHP_Size_);
 
 	enemyHP_ = std::make_unique<Sprite>();
-	enemyHP_->Initialize("red1x1.png");
+	enemyHP_->Initialize("red.png");
 	enemyHP_->SetPos(enemyHP_Pos_);
 	enemyHP_->SetSize(enemyHP_Size_);
 
@@ -270,14 +270,17 @@ void GameScene::Update()
 	// デバッグ表示用にトランスフォームを更新
 	collisionManager_->UpdateWorldTransform();
 
-	//UpdateUI();
+	UpdateUI();
 
 	// 衝突判定と応答
 	CheckAllCollisions();
 
 
 	// シーン遷移
-	if (Input::GetInstance()->TriggerKey(DIK_RETURN))
+	if (player_->GetHP() <= 0) {
+		SceneManager::GetInstance()->ChangeScene("over");
+	}
+	if (enemy_->GetHp() <= 0)
 	{
 		SceneManager::GetInstance()->ChangeScene("clear");
 	}
@@ -285,6 +288,11 @@ void GameScene::Update()
 
 void GameScene::UpdateUI()
 {
+	float playerHP = player_->GetHP();
+	float enemyHP = enemy_->GetHp();
+	playerHP_->SetSize({ playerHP * 5.0f, 30.0f });
+	enemyHP_->SetSize({ enemyHP * 5.0f, 40.0f });
+
 	playerHP_->Update();
 	enemyHP_->Update();
 	player_Text_->Update();
@@ -342,33 +350,30 @@ void GameScene::Draw()
 	// スプライト共通描画設定
 	SpriteBasic::GetInstance()->SetCommonRenderSetting();
 
-	//lockOn_->Draw();
+	lockOn_->Draw();
 
-	//// UIの描画
-	//A_Icon_->Draw();
-	//B_Icon_->Draw();
-	//X_Icon_->Draw();
-	//LT_Icon_->Draw();
-	//RT_Icon_->Draw();
-	//dash_Text_->Draw();
-	//jump_Text_->Draw();
-	//attack_Text_->Draw();
-	//aim_Text_->Draw();
-	//shoot_Text_->Draw();
-	//player_Text_->Draw();
-	//enemy_Text_->Draw();
+	// HPの描画
+	DrawHP();
+
+	// UIの描画
+	A_Icon_->Draw();
+	B_Icon_->Draw();
+	X_Icon_->Draw();
+	LT_Icon_->Draw();
+	RT_Icon_->Draw();
+	dash_Text_->Draw();
+	jump_Text_->Draw();
+	attack_Text_->Draw();
+	aim_Text_->Draw();
+	shoot_Text_->Draw();
+	player_Text_->Draw();
+	enemy_Text_->Draw();
 
 	//--------------------------------------------------//
 }
 
 void GameScene::DrawHP()
 {
-	float playerHP = player_->GetHP();
-	float enemyHP = enemy_->GetHp();
-
-	playerHP_->SetSize({ playerHP * 5.0f, 30.0f });
-	enemyHP_->SetSize({ enemyHP * 5.0f, 40.0f });
-
 	// プレイヤーのHPの描画
 	playerHP_->Draw();
 	// 敵のHPの描画
@@ -379,11 +384,11 @@ void GameScene::DrawImGui()
 {
 #ifdef _DEBUG
 	// プレイヤーのデバッグ表示
-	//player_->ImGuiDraw();
-	// 敵のデバッグ表示
-	//enemy_->ImGuiDraw();
-	// 当たり判定のデバッグ表示
-	//collisionManager_->ImGuiDraw();
+	player_->ImGuiDraw();
+	//敵のデバッグ表示
+	enemy_->ImGuiDraw();
+	//当たり判定のデバッグ表示
+	collisionManager_->ImGuiDraw();
 #endif // DEBUG
 }
 

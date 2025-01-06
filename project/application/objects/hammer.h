@@ -54,7 +54,7 @@ public:
 	/// </summary>
 	void SetRotation(const Vector3& rotation) { hammerWorldTransform_.rotate = rotation; }
 	void SetTranslation(const Vector3& translation) { hammerWorldTransform_.translate = translation; }
-	void SetParent(const Transform& parent) { hammerWorldTransform_.parent_ = &parent; }
+	void SetParent(const Transform& parent) { hammerWorldTransform_.SetParent(&parent); }
 	void SetEnable(bool enable) { enable_ = enable; }
 
 private:

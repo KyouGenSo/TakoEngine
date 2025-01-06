@@ -13,5 +13,6 @@ void Collider::UpdateTransform() {
 
 void Collider::Draw(Object3d* object3d) {
 	object3d->SetTransform(transform_);
+	object3d->Update();
 	object3d->Draw();
 }
