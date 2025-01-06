@@ -222,6 +222,17 @@ namespace Mat4x4 {
 		return result;
 	}
 
+	Vector3 TransFormNormal(const Vector3& v, const Matrix4x4& m)
+	{
+		Vector3 result;
+
+		result.x = m.m[0][0] * v.x + m.m[1][0] * v.y + m.m[2][0] * v.z;
+		result.y = m.m[0][1] * v.x + m.m[1][1] * v.y + m.m[2][1] * v.z;
+		result.z = m.m[0][2] * v.x + m.m[1][2] * v.y + m.m[2][2] * v.z;
+
+		return result;
+	}
+
 	Matrix4x4 MakePerspective(float fovY, float aspectRatio, float nearClip, float farClip) {
 		Matrix4x4 result;
 

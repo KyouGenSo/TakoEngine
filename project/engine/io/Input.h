@@ -2,6 +2,7 @@
 #include "WinApp.h"
 #include<wrl.h>
 #include "Vector2.h"
+#include "Xinput.h"
 
 #define DIRECTINPUT_VERSION 0x0800 // DirectInputのバージョン指定
 #include <dinput.h>
@@ -99,6 +100,15 @@ public:
 	/// <param name="y"></param>
 	void SetMousePos(int x, int y);
 
+	/// <summary>
+	/// joystickの状態を取得
+	/// </summary>
+	bool GetJoystickState(int32_t stickNo, XINPUT_STATE& out);
+
+	/// <summary>
+	/// 前回のジョイスティック状態を取得する
+	/// </summary>
+	bool GetJoystickStatePrevious(XINPUT_STATE& out) const;
 
 private:
 	// WinAppクラスのインスタンス
@@ -127,5 +137,11 @@ private:
 
 	// 前フレームのキーボード入力状態
 	BYTE prevKeys_[256] = {};
+
+	// ジョイスティックの状態
+	XINPUT_STATE joyState_;
+
+	// 前フレームのジョイスティックの状態
+	XINPUT_STATE prevJoyState_;
 
 };

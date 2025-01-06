@@ -117,6 +117,18 @@
     <Filter Include="ヘッダー ファイル\application\objects">
       <UniqueIdentifier>{73fa0928-0f07-4bee-814f-7e1fe3a2ae4b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\application\objects\Player">
+      <UniqueIdentifier>{c805745d-8e51-4cf3-be60-fd9c3f1b1379}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\application\objects\Player">
+      <UniqueIdentifier>{3bfa32fd-1572-48e4-9bbe-b8575b333172}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\application\objects\Enemy">
+      <UniqueIdentifier>{f0433f74-8986-450c-9edf-bdcb4c992aef}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\application\objects\Enemy">
+      <UniqueIdentifier>{58405051-49a7-4dbe-b28a-3f3d8ff50c3c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -237,6 +249,33 @@
       <Filter>ソース ファイル\application\objects</Filter>
     </ClCompile>
     <ClCompile Include="application\objects\Skydome.cpp">
+      <Filter>ソース ファイル\application\objects</Filter>
+    </ClCompile>
+    <ClCompile Include="application\scenes\GameClearScene.cpp">
+      <Filter>ソース ファイル\application\scene</Filter>
+    </ClCompile>
+    <ClCompile Include="application\scenes\GameOverScene.cpp">
+      <Filter>ソース ファイル\application\scene</Filter>
+    </ClCompile>
+    <ClCompile Include="application\objects\Player.cpp">
+      <Filter>ソース ファイル\application\objects\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="application\objects\playerBullet.cpp">
+      <Filter>ソース ファイル\application\objects\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="application\objects\Enemy.cpp">
+      <Filter>ソース ファイル\application\objects\Enemy</Filter>
+    </ClCompile>
+    <ClCompile Include="application\objects\enemyBlock.cpp">
+      <Filter>ソース ファイル\application\objects\Enemy</Filter>
+    </ClCompile>
+    <ClCompile Include="application\objects\lockOn.cpp">
+      <Filter>ソース ファイル\application\objects\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="application\objects\hammer.cpp">
+      <Filter>ソース ファイル\application\objects\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="application\objects\followCamera.cpp">
       <Filter>ソース ファイル\application\objects</Filter>
     </ClCompile>
   </ItemGroup>
@@ -390,6 +429,33 @@
     </ClInclude>
     <ClInclude Include="application\objects\Skydome.h">
       <Filter>ヘッダー ファイル\application\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="application\scenes\GameClearScene.h">
+      <Filter>ヘッダー ファイル\application\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="application\scenes\GameOverScene.h">
+      <Filter>ヘッダー ファイル\application\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="application\objects\followCamera.h">
+      <Filter>ヘッダー ファイル\application\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="application\objects\Player.h">
+      <Filter>ヘッダー ファイル\application\objects\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="application\objects\playerBullet.h">
+      <Filter>ヘッダー ファイル\application\objects\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="application\objects\hammer.h">
+      <Filter>ヘッダー ファイル\application\objects\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="application\objects\Enemy.h">
+      <Filter>ヘッダー ファイル\application\objects\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="application\objects\enemyBlock.h">
+      <Filter>ヘッダー ファイル\application\objects\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="application\objects\lockOn.h">
+      <Filter>ヘッダー ファイル\application\objects\Player</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

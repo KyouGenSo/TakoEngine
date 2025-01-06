@@ -69,5 +69,31 @@ namespace Vec3 {
 			return Multiply(Add(Multiply(v1, sinThetaFrom / sinTheta), Multiply(v2, sinThetaTo / sinTheta)), length);
 		}
 	}
+
+	float LerpShortAngle(float thetaA, float thetaB, float t)
+	{
+		float diff = thetaB - thetaA;
+		float pi = 3.14159265358979323846f;
+
+		// 2πから-2πに補正
+		if (diff > pi * 2) {
+			diff = std::fmod(diff, pi * 2);
+		} else if (diff < -pi * 2) {
+			diff = std::fmod(diff, pi * 2);
+		}
+
+		// 180度以上の差がある場合は、逆回転する方向に補間する
+		if (diff > pi) {
+			diff -= pi * 2;
+		} else if (diff < -pi) {
+			diff += pi * 2;
+		}
+
+		return thetaA + diff * t;
+	}
+	float Rand(float min, float max)
+	{
+		return min + (float)rand() / ((float)RAND_MAX / (max - min));
+	}
 }
 

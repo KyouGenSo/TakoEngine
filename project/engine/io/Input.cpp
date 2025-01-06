@@ -84,6 +84,10 @@ void Input::Update() {
 
 	// マウスの座標を取得
 	UpdateMousePos();
+
+	// 前フレームのジョイスティック状態を保存
+	prevJoyState_ = joyState_;
+
 }
 
 void Input::UpdateMousePos()
@@ -156,6 +160,27 @@ void Input::SetMousePos(int x, int y)
 	point.y = y;
 	ClientToScreen(winApp_->GetHWnd(), &point);
 	SetCursorPos(point.x, point.y);
+}
+
+bool Input::GetJoystickState(int32_t stickNo, XINPUT_STATE& out)
+{
+	ZeroMemory(&out, sizeof(out));
+
+	DWORD result = XInputGetState(stickNo, &out);
+
+	if (result == ERROR_SUCCESS)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+bool Input::GetJoystickStatePrevious(XINPUT_STATE& out) const
+{
+	out = prevJoyState_;
+
+	return true;
 }
 
 

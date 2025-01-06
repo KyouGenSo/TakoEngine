@@ -15,7 +15,7 @@ void Object3d::Initialize()
 	m_camera_ = Object3dBasic::GetInstance()->GetCamera();
 
 	// トランスフォームに初期化値を設定
-	transform_ = { Vector3(1.0f, 1.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 0.0f) };
+	//transform_ = { Vector3(1.0f, 1.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 0.0f) };
 
 	// 座標変換行列データの生成
 	CreateTransformationMatrixData();
@@ -39,8 +39,17 @@ void Object3d::Update()
 		modelLocalMatrix = m_model_->GetLocalMatrix();
 	}
 
+	Matrix4x4 parentWorldMatrix = Mat4x4::MakeIdentity();
+	Matrix4x4 worldMatrix = Mat4x4::MakeIdentity();
 	// トランスフォームでワールド行列を作る
-	Matrix4x4 worldMatrix = Mat4x4::MakeAffine(transform_.scale, transform_.rotate, transform_.translate);
+	if (transform_.HasParent())
+	{
+		parentWorldMatrix = transform_.parentWorldMatrix_;
+		worldMatrix = Mat4x4::Multiply(Mat4x4::MakeAffine(transform_.scale, transform_.rotate, transform_.translate), parentWorldMatrix);
+	} else
+	{
+		worldMatrix = Mat4x4::MakeAffine(transform_.scale, transform_.rotate, transform_.translate);
+	}
 
 	Matrix4x4 wvpMatrix;
 

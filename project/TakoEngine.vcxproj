@@ -71,7 +71,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
       <AdditionalLibraryDirectories>$(ProjectDir)externals\assimp\lib\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>assimp-vc143-mtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>assimp-vc143-mtd.lib;XInput.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxcompiler.dll" "$(TargetDir)dxcompiler.dll"
@@ -99,7 +99,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(ProjectDir)externals\assimp\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>assimp-vc143-mt.lib;XInput.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxcompiler.dll" "$(TargetDir)dxcompiler.dll"
@@ -112,8 +112,17 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\collision\collisionManager.cpp" />
     <ClCompile Include="application\collision\collisionRecord.cpp" />
     <ClCompile Include="application\objects\BaseCharacter.cpp" />
+    <ClCompile Include="application\objects\Enemy.cpp" />
+    <ClCompile Include="application\objects\enemyBlock.cpp" />
+    <ClCompile Include="application\objects\followCamera.cpp" />
     <ClCompile Include="application\objects\Ground.cpp" />
+    <ClCompile Include="application\objects\hammer.cpp" />
+    <ClCompile Include="application\objects\lockOn.cpp" />
+    <ClCompile Include="application\objects\Player.cpp" />
+    <ClCompile Include="application\objects\playerBullet.cpp" />
     <ClCompile Include="application\objects\Skydome.cpp" />
+    <ClCompile Include="application\scenes\GameClearScene.cpp" />
+    <ClCompile Include="application\scenes\GameOverScene.cpp" />
     <ClCompile Include="engine\2d\DebugCamera.cpp" />
     <ClCompile Include="engine\2d\Draw2D.cpp" />
     <ClCompile Include="engine\audio\Audio.cpp" />
@@ -155,8 +164,17 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\collision\collisionRecord.h" />
     <ClInclude Include="application\collision\collisionTypeIdDef.h" />
     <ClInclude Include="application\objects\BaseCharacter.h" />
+    <ClInclude Include="application\objects\Enemy.h" />
+    <ClInclude Include="application\objects\enemyBlock.h" />
+    <ClInclude Include="application\objects\followCamera.h" />
     <ClInclude Include="application\objects\ground.h" />
+    <ClInclude Include="application\objects\hammer.h" />
+    <ClInclude Include="application\objects\lockOn.h" />
+    <ClInclude Include="application\objects\Player.h" />
+    <ClInclude Include="application\objects\playerBullet.h" />
     <ClInclude Include="application\objects\Skydome.h" />
+    <ClInclude Include="application\scenes\GameClearScene.h" />
+    <ClInclude Include="application\scenes\GameOverScene.h" />
     <ClInclude Include="engine\2d\DebugCamera.h" />
     <ClInclude Include="engine\2d\Draw2D.h" />
     <ClInclude Include="engine\effect\PostEffect.h" />

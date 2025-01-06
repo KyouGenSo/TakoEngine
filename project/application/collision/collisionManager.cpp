@@ -4,9 +4,9 @@
 
 void CollisionManager::Initialize() {
 	// モデルの読み込み
-	ModelManager::GetInstance()->LoadModel("collisionBall");
-	collBallModel_.get()->SetModel("collisionBall");
-	collBallModel_.get()->SetAlpha(0.7f);
+	//ModelManager::GetInstance()->LoadModel("collisionBall");
+	//collBallModel_.get()->SetModel("collisionBall");
+	//collBallModel_.get()->SetAlpha(0.7f);
 }
 
 void CollisionManager::UpdateWorldTransform() {
@@ -24,9 +24,9 @@ void CollisionManager::Draw() {
 		return;
 	}
 
-	for (Collider* collider : colliders_) {
+	/*for (Collider* collider : colliders_) {
 		collider->Draw(collBallModel_.get());
-	}
+	}*/
 }
 
 void CollisionManager::Reset() { colliders_.clear(); }

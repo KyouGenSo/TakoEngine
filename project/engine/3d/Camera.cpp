@@ -2,11 +2,11 @@
 #include "WinApp.h"
 
 Camera::Camera() : 
-	transform_({ Vector3(1.0f, 1.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 0.0f) }),
+	//transform_({ Vector3(1.0f, 1.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 0.0f) }),
 	fovY_(0.45f), 
 	aspect_(float(WinApp::kClientWidth) / float(WinApp::kClientHeight)),
 	nearZ_(0.1f), 
-	farZ_(100.0f), 
+	farZ_(1000.0f), 
 	worldMatrix_(Mat4x4::MakeAffine(transform_.scale, transform_.rotate, transform_.translate)),
 	viewMatrix_(Mat4x4::Inverse(worldMatrix_)),
 	projectionMatrix_(Mat4x4::MakePerspective(fovY_, aspect_, nearZ_, farZ_)),

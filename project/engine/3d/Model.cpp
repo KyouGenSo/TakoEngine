@@ -126,7 +126,7 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
 
 		for (uint32_t faceIndex = 0; faceIndex < mesh->mNumFaces; ++faceIndex) {
 			aiFace& face = mesh->mFaces[faceIndex];
-			assert(face.mNumIndices == 3); // 三角形以外はエラー
+			//assert(face.mNumIndices == 3); // 三角形以外はエラー
 
 			for (uint32_t element = 0; element < face.mNumIndices; ++element) {
 				uint32_t vertexIndex = face.mIndices[element];
