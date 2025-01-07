@@ -8,6 +8,7 @@
 #include "Input.h"
 #include "Draw2D.h"
 #include "Camera.h"
+#include "Xinput.h"
 
 #ifdef _DEBUG
 #include"ImGui.h"
@@ -24,7 +25,11 @@ void TitleScene::Initialize()
 	///              初期化処理              ///
 	/// ================================== ///
 
-
+	// 背景Spriteの初期化
+	TextureManager::GetInstance()->LoadTexture("title.png");
+	bgSprite_ = std::make_unique<Sprite>();
+	bgSprite_->Initialize("title.png");
+	bgSprite_->SetPos({ 0.0f, 0.0f });
 }
 
 void TitleScene::Finalize()
@@ -49,11 +54,22 @@ void TitleScene::Update()
 	/// ================================== ///
 
 
+	bgSprite_->Update();
 
+	// シーン遷移
 	if (Input::GetInstance()->TriggerKey(DIK_SPACE))
 	{
 		SceneManager::GetInstance()->ChangeScene("game");
 	}
+
+	XINPUT_STATE joyState_;
+	if (Input::GetInstance()->GetJoystickState(0, joyState_)) {
+		if (joyState_.Gamepad.wButtons & XINPUT_GAMEPAD_A) {
+			SceneManager::GetInstance()->ChangeScene("game");
+		}
+	}
+
+
 }
 
 void TitleScene::Draw()
@@ -83,6 +99,7 @@ void TitleScene::Draw()
 	SpriteBasic::GetInstance()->SetCommonRenderSetting();
 
 
+	bgSprite_->Draw();
 
 	//--------------------------------------------------//
 

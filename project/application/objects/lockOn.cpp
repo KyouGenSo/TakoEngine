@@ -23,15 +23,17 @@ void LockOn::Update(const std::unique_ptr<Enemy>& enemy, const Camera& camera) {
 		// ロックオンボタンが押されたら
 		if (joyState_.Gamepad.bLeftTrigger > 0 && player_->GetBehavior() != 1) {
 			// ロックオン対象の検索
-			SearchTarget(enemy, camera);
+			isLockOnByController_ = true;
 		} else {
-			target_ = nullptr;
+			isLockOnByController_ = false;
 		}
 	}
 
 	if (input_->TriggerKey(DIK_F) && player_->GetBehavior() != 1) {
-		isLockOn_ = !isLockOn_;
+		isLockOnByKeyboard_ = !isLockOnByKeyboard_;
 	}
+
+	isLockOn_ = isLockOnByController_ || isLockOnByKeyboard_;
 
 	if (isLockOn_) {
 		SearchTarget(enemy, camera);

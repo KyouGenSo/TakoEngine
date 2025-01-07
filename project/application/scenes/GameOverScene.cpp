@@ -8,6 +8,8 @@
 #include "Input.h"
 #include "Draw2D.h"
 #include "Camera.h"
+#include "PostEffect.h"
+#include "Xinput.h"
 
 #ifdef _DEBUG
 #include"ImGui.h"
@@ -25,9 +27,13 @@ void GameOverScene::Initialize() {
 	///              初期化処理              ///
 	/// ================================== ///
 
+	PostEffect::GetInstance()->SetBloomThreshold(1.f);
+	PostEffect::GetInstance()->SetVignettePower(0.f);
+	PostEffect::GetInstance()->SetVignetteRange(60.f);
+
 	TextureManager::GetInstance()->LoadTexture("black_BG.png");
 	TextureManager::GetInstance()->LoadTexture("gameOver_Text.png");
-	TextureManager::GetInstance()->LoadTexture("title_text.png");
+	TextureManager::GetInstance()->LoadTexture("press_text.png");
 
 	// sprite
 	backGround_ = std::make_unique<Sprite>();
@@ -40,7 +46,7 @@ void GameOverScene::Initialize() {
 	titleText_->SetPos(title_Pos_);
 
 	pressButtonText_ = std::make_unique<Sprite>();
-	pressButtonText_.get()->Initialize("title_text.png");
+	pressButtonText_.get()->Initialize("press_text.png");
 	pressButtonText_->SetPos(pressButton_Pos_);
 	pressButtonText_->SetSize({250.0f, 50.0f});
 }
@@ -58,6 +64,13 @@ void GameOverScene::Update() {
 	if (Input::GetInstance()->TriggerKey(DIK_SPACE))
 	{
 		SceneManager::GetInstance()->ChangeScene("title");
+	}
+
+	XINPUT_STATE joyState_;
+	if (Input::GetInstance()->GetJoystickState(0, joyState_)) {
+		if (joyState_.Gamepad.wButtons & XINPUT_GAMEPAD_A) {
+			SceneManager::GetInstance()->ChangeScene("title");
+		}
 	}
 }
 

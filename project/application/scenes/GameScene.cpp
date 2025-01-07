@@ -8,6 +8,7 @@
 #include"Input.h"
 #include "DebugCamera.h"
 #include <numbers>
+#include "PostEffect.h"
 
 #ifdef _DEBUG
 #include"ImGui.h"
@@ -24,6 +25,10 @@ void GameScene::Initialize()
 	/// ================================== ///
 
 	Object3dBasic::GetInstance()->SetDirectionalLightIntensity(3.0f);
+
+	PostEffect::GetInstance()->SetBloomIntensity(0.f);
+	PostEffect::GetInstance()->SetBloomThreshold(0.75f);
+	PostEffect::GetInstance()->SetBloomSigma(2.0f);
 
 	// uiの初期化
 	InitializeUI();
@@ -163,6 +168,8 @@ void GameScene::InitializeUI()
 	TextureManager::GetInstance()->LoadTexture("attack_Text.png");
 	TextureManager::GetInstance()->LoadTexture("aim_Text.png");
 	TextureManager::GetInstance()->LoadTexture("shoot_Text.png");
+	TextureManager::GetInstance()->LoadTexture("key_text.png");
+	TextureManager::GetInstance()->LoadTexture("manual.png");
 
 	// UIの初期化
 	playerHP_ = std::make_unique<Sprite>();
@@ -229,6 +236,15 @@ void GameScene::InitializeUI()
 	shoot_Text_->Initialize("shoot_Text.png");
 	shoot_Text_->SetPos(shoot_Text_Pos_);
 	shoot_Text_->SetSize(textSize_);
+
+	key_Text_ = std::make_unique<Sprite>();
+	key_Text_->Initialize("key_text.png");
+	key_Text_->SetPos(key_Text_Pos_);
+	key_Text_->SetSize(key_Text_Size_);
+
+	manual_Text_ = std::make_unique<Sprite>();
+	manual_Text_->Initialize("manual.png");
+	manual_Text_->SetPos(manual_Text_Pos_);
 }
 
 void GameScene::Finalize()
@@ -250,6 +266,19 @@ void GameScene::Update()
 	/// ================================== ///
 	///              更新処理               ///
 	/// ================================== ///
+
+	if (input_->TriggerKey(DIK_TAB))
+	{
+		isPause_ = !isPause_;
+	}
+
+	key_Text_->SetPos(key_Text_Pos_);
+	manual_Text_->SetPos(manual_Text_Pos_);
+
+	if (isPause_)
+	{
+		return;
+	}
 
 	// プレイヤーの更新
 	player_->Update();
@@ -277,8 +306,15 @@ void GameScene::Update()
 	// 衝突判定と応答
 	CheckAllCollisions();
 
+	// ビネットエフェクト
+	vignetteAlpha_ = (1.0f - std::clamp(player_->GetHP() / 100.0f, 0.0f, 1.0f)) * 0.55f;
+	PostEffect::GetInstance()->SetVignettePower(vignetteAlpha_);
 
-	// シーン遷移
+	// vignetteRadius根據player的HP從60到20變化
+	vignetteRadius_ = 10.0f + (player_->GetHP() / 100.0f) * 50.0f;
+	PostEffect::GetInstance()->SetVignetteRange(vignetteRadius_);
+
+	 //シーン遷移
 	//if (player_->GetHP() <= 0) {
 	//	SceneManager::GetInstance()->ChangeScene("over");
 	//}
@@ -309,6 +345,8 @@ void GameScene::UpdateUI()
 	attack_Text_->Update();
 	aim_Text_->Update();
 	shoot_Text_->Update();
+	key_Text_->Update();
+	manual_Text_->Update();
 }
 
 void GameScene::Draw()
@@ -370,6 +408,12 @@ void GameScene::Draw()
 	shoot_Text_->Draw();
 	player_Text_->Draw();
 	enemy_Text_->Draw();
+	key_Text_->Draw();
+
+	if (isPause_)
+	{
+		manual_Text_->Draw();
+	}
 
 	//--------------------------------------------------//
 }
@@ -391,6 +435,21 @@ void GameScene::DrawImGui()
 	enemy_->ImGuiDraw();
 	//当たり判定のデバッグ表示
 	collisionManager_->ImGuiDraw();
+
+	// vignetteのデバッグ表示
+	ImGui::Begin("Vignette");
+	ImGui::DragFloat("VignetteAlpha", &vignetteAlpha_, 0.01f, 0.0f, 1.0f);
+	ImGui::DragFloat("VignetteRadius", &vignetteRadius_, 0.01f, 0.0f, 60.0f);
+	ImGui::End();
+
+	// デバッグ表示用のUI
+	ImGui::Begin("GameScene");
+	// key_Text_Pos_
+	ImGui::DragFloat2("key_Text_Pos", &key_Text_Pos_.x, 1.0f, 0.0f, 1280.0f);
+	// manual_Text_Pos_
+	ImGui::DragFloat2("manual_Text_Pos", &manual_Text_Pos_.x, 1.0f, 0.0f, 1280.0f);
+	ImGui::End();
+
 #endif // DEBUG
 }
 

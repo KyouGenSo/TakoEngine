@@ -67,6 +67,9 @@ private:
 	// ロックオン中かどうか
 	bool isLockOn_ = false;
 
+	bool isLockOnByController_ = false;
+	bool isLockOnByKeyboard_ = false;
+
 	// 最小距離
 	float minDis_ = 10.0f;
 	// 最大距離

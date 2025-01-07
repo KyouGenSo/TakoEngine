@@ -38,4 +38,6 @@ private: // メンバ変数
 
 	bool isDebug_ = false;
 
+	std::unique_ptr<Sprite> bgSprite_;
+
 };

@@ -141,11 +141,13 @@ void PostEffect::SetBloomThreshold(float threshold)
 void PostEffect::SetBloomIntensity(float intensity)
 {
 	bloomParam_->intensity = intensity;
+	vignetteRedBloomParam_->intensity = intensity;
 }
 
 void PostEffect::SetBloomSigma(float sigma)
 {
 	bloomParam_->sigma = sigma;
+	vignetteRedBloomParam_->sigma = sigma;
 }
 
 void PostEffect::SetFogColor(const Vector4& color)
@@ -356,6 +358,8 @@ void PostEffect::CreateVignetteRedBloomParam()
 	// データの初期化
 	vignetteRedBloomParam_->power = 0.0f;
 	vignetteRedBloomParam_->threshold = 1.0f;
+	vignetteRedBloomParam_->intensity = 1.0f;
+	vignetteRedBloomParam_->sigma = 2.0f;
 	vignetteRedBloomParam_->range = 20.0f;
 }
 

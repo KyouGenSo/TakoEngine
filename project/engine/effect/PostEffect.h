@@ -33,7 +33,9 @@ public: // メンバ関数
 	{
 		float power;
 		float range;
+		float intensity;
 		float threshold;
+		float sigma;
 	};
 
 	struct BloomParam

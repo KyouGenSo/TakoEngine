@@ -127,12 +127,23 @@ private: // メンバ変数
 	std::unique_ptr<Sprite> shoot_Text_ = nullptr;
 	Vector2 shoot_Text_Pos_ = { 1142.6f, 394.1f };
 
+	std::unique_ptr<Sprite> key_Text_ = nullptr;
+	Vector2 key_Text_Pos_ = { 1066.0f, 324.0f };
+	Vector2 key_Text_Size_ = { 150.0f, 50.0f };
+	std::unique_ptr<Sprite> manual_Text_ = nullptr;
+	Vector2 manual_Text_Pos_ = { 218.0f, 50.0f };
+
 	/// <summary>
 	/// ゲームシーン用
 	/// </summary>
 
 	bool isGameClear_ = false;
 	bool isGameOver_ = false;
+
+	float vignetteAlpha_ = 0.0f;
+	float vignetteRadius_ = 60.0f;
+
+	bool isPause_ = false;
 
 	// 追従カメラ
 	std::unique_ptr<FollowCamera> followCamera_ = nullptr;

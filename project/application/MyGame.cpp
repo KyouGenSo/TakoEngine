@@ -94,6 +94,10 @@ void MyGame::Draw()
 	case::MyGame::BloomFog:
 		PostEffect::GetInstance()->Draw("BloomFog");
 		break;
+	case::MyGame::VignetteRedBloom:
+		PostEffect::GetInstance()->Draw("VignetteRedBloom");
+		break;
+
 	}
 
 
@@ -118,6 +122,7 @@ void MyGame::Draw()
 			ImGui::RadioButton("NoEffect", (int*)&postEffectType, NoEffect);
 			ImGui::RadioButton("Bloom", (int*)&postEffectType, Bloom);
 			ImGui::RadioButton("BloomFog", (int*)&postEffectType, BloomFog);
+			ImGui::RadioButton("VignetteRedBloom", (int*)&postEffectType, VignetteRedBloom);
 
 			ImGui::EndTabItem();
 		}
@@ -125,23 +130,32 @@ void MyGame::Draw()
 		//ImGui::Separator();
 		if (ImGui::BeginTabItem("PostEffect"))
 		{
-			if (postEffectType == Bloom || postEffectType == BloomFog)
-			{
-				ImGui::DragFloat("BloomIntensity", &bloomIntensity, 0.01f, 0.0f, 10.0f);
-				PostEffect::GetInstance()->SetBloomIntensity(bloomIntensity);
-				ImGui::DragFloat("BloomThreshold", &bloomThreshold, 0.01f, 0.0f, 1.0f);
-				PostEffect::GetInstance()->SetBloomThreshold(bloomThreshold);
-				ImGui::DragFloat("BloomSigma", &bloomSigma, 0.01f, 0.0f, 10.0f);
-				PostEffect::GetInstance()->SetBloomSigma(bloomSigma);
-			}
 
-			if (postEffectType == BloomFog)
-			{
-				ImGui::ColorEdit4("FogColor", &fogColor.x);
-				PostEffect::GetInstance()->SetFogColor(fogColor);
-				ImGui::DragFloat("FogDensity", &fogDensity, 0.01f, 0.0f, 1.0f);
-				PostEffect::GetInstance()->SetFogDensity(fogDensity);
-			}
+			//if (postEffectType == VignetteRedBloom)
+			//{
+			//	ImGui::DragFloat("VignettePower", &vignettePower, 0.01f, 0.0f, 10.0f);
+			//	PostEffect::GetInstance()->SetVignettePower(vignettePower);
+			//	ImGui::DragFloat("VignetteRange", &vignetteRange, 0.01f, 0.0f, 100.0f);
+			//	PostEffect::GetInstance()->SetVignetteRange(vignetteRange);
+			//}
+
+			//if (postEffectType == Bloom || postEffectType == BloomFog || postEffectType == VignetteRedBloom)
+			//{
+			//	ImGui::DragFloat("BloomIntensity", &bloomIntensity, 0.01f, 0.0f, 10.0f);
+			//	PostEffect::GetInstance()->SetBloomIntensity(bloomIntensity);
+			//	ImGui::DragFloat("BloomThreshold", &bloomThreshold, 0.01f, 0.0f, 1.0f);
+			//	PostEffect::GetInstance()->SetBloomThreshold(bloomThreshold);
+			//	ImGui::DragFloat("BloomSigma", &bloomSigma, 0.01f, 0.0f, 10.0f);
+			//	PostEffect::GetInstance()->SetBloomSigma(bloomSigma);
+			//}
+
+			//if (postEffectType == BloomFog)
+			//{
+			//	ImGui::ColorEdit4("FogColor", &fogColor.x);
+			//	PostEffect::GetInstance()->SetFogColor(fogColor);
+			//	ImGui::DragFloat("FogDensity", &fogDensity, 0.01f, 0.0f, 1.0f);
+			//	PostEffect::GetInstance()->SetFogDensity(fogDensity);
+			//}
 
 			ImGui::EndTabItem();
 		}
