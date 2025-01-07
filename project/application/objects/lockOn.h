@@ -70,7 +70,7 @@ private:
 	// 最小距離
 	float minDis_ = 10.0f;
 	// 最大距離
-	float maxDis_ = 90.0f;
+	float maxDis_ = 120.0f;
 	// 角度範囲
 	float angleRange_ = 30.0f * kDeg2Rad;
 };

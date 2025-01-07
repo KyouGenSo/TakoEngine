@@ -277,13 +277,13 @@ void GameScene::Update()
 
 
 	// シーン遷移
-	if (player_->GetHP() <= 0) {
-		SceneManager::GetInstance()->ChangeScene("over");
-	}
-	if (enemy_->GetHp() <= 0)
-	{
-		SceneManager::GetInstance()->ChangeScene("clear");
-	}
+	//if (player_->GetHP() <= 0) {
+	//	SceneManager::GetInstance()->ChangeScene("over");
+	//}
+	//if (enemy_->GetHp() <= 0)
+	//{
+	//	SceneManager::GetInstance()->ChangeScene("clear");
+	//}
 }
 
 void GameScene::UpdateUI()

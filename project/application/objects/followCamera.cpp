@@ -28,11 +28,10 @@ void FollowCamera::Update() {
 		Vector3 lockOnPos = lockOn_->GetTargetPos();
 		Vector3 sub = lockOnPos - target_->translate;
 		float angle = std::atan2(sub.x, sub.z);
-		camera_->SetRotate(Vector3(0.0f, angle, 0.0f));
 		destinationAngleY_ = angle;
 
 		// offset
-		offset_.z = Vec3::Lerp(offset_.z, -7.0f, 0.1f);
+		offset_.z = Vec3::Lerp(offset_.z, -14.0f, 0.1f);
 	}
 	else {
 		// ゲームパッドによる回転
@@ -63,7 +62,7 @@ void FollowCamera::Update() {
 		}
 
 		// offset
-		offset_.z = Vec3::Lerp(offset_.z, -15.0f, 0.08f);
+		offset_.z = Vec3::Lerp(offset_.z, offsetOrigin_.z, 0.08f);
 	}
 
 	// カメラの角度を目標角度に向けて補間
@@ -98,7 +97,7 @@ void FollowCamera::Reset() {
 	//destinationAngleY_ = m_camera_.rotation_.y;
 	destinationAngleY_ = camera_->GetRotate().y;
 
-	offset_ = {0.0f, 3.0f, -15.0f};
+	offset_ = { offsetOrigin_.x, offsetOrigin_.y, offsetOrigin_.z };
 
 	Vector3 offset = CalculateOffset();
 

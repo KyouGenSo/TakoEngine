@@ -185,6 +185,7 @@ private: // メンバ変数
 
 	XINPUT_STATE joyState_;
 	XINPUT_STATE preJoyState_;
+
 	// LockOn
 	const LockOn* lockOn_ = nullptr;
 

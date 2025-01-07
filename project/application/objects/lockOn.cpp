@@ -8,7 +8,7 @@ void LockOn::Initialize() {
 
 	lockOnMark_ = std::make_unique<Sprite>();
 	lockOnMark_->Initialize("aim_sphere.png");
-	lockOnMark_->SetSize({100.0f, 100.0f});
+	lockOnMark_->SetSize({50.0f, 50.0f});
 }
 
 void LockOn::Update(const std::unique_ptr<Enemy>& enemy, const Camera& camera) {
@@ -49,7 +49,7 @@ void LockOn::Update(const std::unique_ptr<Enemy>& enemy, const Camera& camera) {
 		Matrix4x4 matViewport = Mat4x4::MakeViewport(0.f, 0.f, WinApp::kClientWidth, WinApp::kClientHeight, 0.f, 1.f);
 		screenPos = Mat4x4::TransForm(matViewport, screenPos);
 		// スクリーン2D座標
-		Vector3 offset = {100.f / 2.0f, 100.f / 2.0f, 0.f};
+		Vector3 offset = {50.f / 2.0f, 50.f / 2.0f, 0.f};
 		screenPos -= offset;
 		Vector2 screenPos2D = {screenPos.x, screenPos.y};
 		// ロックオンマークの座標設定

@@ -81,8 +81,6 @@ void PlayerBullet::Update() {
 		worldTransform_.scale += Vector3(0.1f, 0.1f, 0.1f);
 	}
 
-	//worldTransform_.UpdateMatrix();
-
 	model_->SetTransform(worldTransform_);
 	model_->Update();
 }

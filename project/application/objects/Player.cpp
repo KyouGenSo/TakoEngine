@@ -21,12 +21,6 @@ Player::~Player() {
 }
 
 void Player::ReSet() {
-	// ワールド変換データの初期化
-	//transform_.Initialize();
-	//worldTransformHead_.Initialize();
-	//worldTransformBody_.Initialize();
-	//worldTransformL_arm_.Initialize();
-	//worldTransformR_arm_.Initialize();
 
 	// モデルの初期位置を設定
 	transform_.translate = { 0.0f, 0.0f, -80.0f };
