@@ -1,6 +1,10 @@
 #include "collisionManager.h"
-#include "ImGuiManager.h"
 #include "ModelManager.h"
+
+#ifdef _DEBUG
+#include "ImGuiManager.h"
+#endif // DEBUG
+
 
 void CollisionManager::Initialize() {
 	// モデルの読み込み

@@ -48,6 +48,8 @@ public:
 	const Transform& GetWorldTransform() const { return hammerWorldTransform_; }
 	const uint32_t GetSerialNumber() const { return serialNumber_; }
 	const bool IsEnable() const { return enable_; }
+	// get damege
+	bool GetDamege() const { return damege_; }
 
 	/// <summary>
 	/// Setter
@@ -56,6 +58,8 @@ public:
 	void SetTranslation(const Vector3& translation) { hammerWorldTransform_.translate = translation; }
 	void SetParent(const Transform& parent) { hammerWorldTransform_.SetParent(&parent); }
 	void SetEnable(bool enable) { enable_ = enable; }
+	// set damege
+	void SetDamege(float damege) { damege_ = damege; }
 
 private:
 	Audio* audio_ = nullptr;
@@ -73,6 +77,8 @@ private:
 	Transform effectWorldTransform_;
 
 	CollisionRecord collisionRecord_;
+
+	float damege_ = 5.0f;
 
 	bool isHit_ = false;
 	bool enable_ = false;

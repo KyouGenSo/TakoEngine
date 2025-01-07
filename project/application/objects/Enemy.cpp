@@ -1,8 +1,12 @@
 #include "Enemy.h"
-#include "ImGuiManager.h"
 #include "Player.h"
 #include "followCamera.h"
 #include "hammer.h"
+
+#ifdef DEBUG
+#include "ImGuiManager.h"
+#endif // DEBUG
+
 
 // global serial number
 uint32_t Enemy::nextSerialNumber_ = 0;
@@ -45,7 +49,7 @@ Vector3 Enemy::GetCenter() const {
 }
 
 void Enemy::PosRange() {
-	Vector3 range = {500.0f, 500.0f, 500.0f};
+	Vector3 range = { 500.0f, 500.0f, 500.0f };
 
 	// 範囲を超えたら逆方向に移動
 	if (transform_.translate.x > range.x) {
@@ -88,6 +92,9 @@ void Enemy::CreateBlock(const Vector3& position, const Vector3& scale, const Vec
 void Enemy::Initialize(const std::vector<Object3d*> models) {
 	audio_ = Audio::GetInstance();
 
+	// ランダムエンジンの初期化
+	randomEngine_.seed(seedGenerator());
+
 	// SEの読み込み
 	seHitPlayer_ = audio_->LoadWaveFile("playerDamaged.wav");
 
@@ -129,7 +136,7 @@ void Enemy::Update() {
 			return true;
 		}
 		return false;
-	});
+		});
 
 	if (hp_ <= 0) {
 		hp_ = 0;
@@ -475,7 +482,7 @@ void Enemy::BehaviorRootUpdate() {
 		else {
 			switch (randIndex_) {
 			case 0:
-				 behaviorRequest_ = Behavior::kNear;
+				behaviorRequest_ = Behavior::kNear;
 				break;
 			case 1:
 				if (!attackRecord_.farAttack1) {
@@ -584,7 +591,7 @@ void Enemy::BehaviorAwayUpdate() {
 
 	// playerの逆方向に進む
 	if (toPlayerDis_ < 50.0f && transform_.translate.x > -500.0f && transform_.translate.x < 500.0f && transform_.translate.z > -500.0f &&
-	    transform_.translate.z < 500.0f) {
+		transform_.translate.z < 500.0f) {
 
 		transform_.translate.x -= toPlayerV_.normalize().x * speed;
 		transform_.translate.z -= toPlayerV_.normalize().z * speed;
@@ -676,20 +683,20 @@ void Enemy::BehaviorFarAttack2Initialize() {
 
 	int blockNum = 3;
 
-	Vector3 offset = {-3.0f, 5.0f, 0.0f};
+	Vector3 offset = { -3.0f, 5.0f, 0.0f };
 
 	for (int i = 0; i < blockNum; i++) {
 
 		if (i == 0) {
-			offset = {0.0f, 6.0f, 0.0f};
+			offset = { 0.0f, 6.0f, 0.0f };
 		} else if (i == 1) {
-			offset = {6.0f, 0.0f, 0.0f};
+			offset = { 6.0f, 0.0f, 0.0f };
 		} else if (i == 2) {
-			offset = {-6.0f, 0.0f, 0.0f};
+			offset = { -6.0f, 0.0f, 0.0f };
 		}
 
 		Vector3 position = GetCenter() + offset;
-		Vector3 scale = {0.0f, 0.0f, 0.0f};
+		Vector3 scale = { 0.0f, 0.0f, 0.0f };
 
 		CreateBlock(position, scale, offset);
 	}
@@ -770,113 +777,91 @@ void Enemy::BehaviorFarAttack3Initialize() {
 	rand_ = Vec3::Rand(0.0f, 4.0f);
 	randIndex_ = int(std::floor(rand_));
 
-	int blockNum = 60;
+	workFarAttack3_.speed = 2.6f;
+	workFarAttack3_.rotationSpeed = 0.01f;
+	workFarAttack3_.rotationSpeedMax = 0.25f;
+	workFarAttack3_.rotationSpeedInc = 0.0015f;
+	workFarAttack3_.scaleMax = { 0.3f, 0.3f, 0.3f };
+	workFarAttack3_.scaleIncSpeed = 0.005f;
+	workFarAttack3_.attackTime = 60 * 8;
+	workFarAttack3_.isAttack = false;
 
-	Vector3 offset = {0.0f, 0.0f, 0.0f};
 
-	for (int i = 0; i < blockNum / 2; i++) {
-		offset = {6.0f + i * 4, -2.0f, 0.0f};
-
-		Vector3 position = GetCenter() + offset;
-		Vector3 scale = {0.0f, 0.0f, 0.0f};
-
-		CreateBlock(position, scale, offset);
-	}
-
-	for (int i = 0; i < blockNum / 2; i++) {
-		offset = {-6.0f - i * 4, -2.0f, 0.0f};
-
-		Vector3 position = GetCenter() + offset;
-		Vector3 scale = {0.0f, 0.0f, 0.0f};
-
-		CreateBlock(position, scale, offset);
-	}
-
-	workFarAttack3_.rotationSpeed = 0.000001f;
-	workFarAttack3_.rotationSpeedMax = 0.0012f;
-	workFarAttack3_.rotationSpeedMin = 0.000001f;
-	workFarAttack3_.rotationSpeedInc = 0.00000005f;
-
-	workFarAttack3_.scaleIncSpeed = 0.01f;
-	workFarAttack3_.scaleMax = 1.0f;
-
-	workFarAttack3_.prepareTime = 60 * 2;
-	workFarAttack3_.attackTime = 60 * 13;
-
-	workFarAttack3_.isBegin = false;
-	workFarAttack3_.isFar = false;
-
-	for (auto& block : blocks_) {
-		block->SetRadius(3.5f);
-
-		block->SetDamage(20.0f);
-
-		block->SetColliVanish(true); // 衝突時に消えないように設定
-
-		block->SetDeathTimer(60.0f * 25.0f);
-	}
 }
 void Enemy::BehaviorFarAttack3Update() {
-	float speed = 1.0f;
 
-	workFarAttack3_.attackTime--;
-	workFarAttack3_.prepareTime--;
+	if (--workFarAttack3_.attackTime <= 0) {
+		behaviorCD_ = 60 * 1.5f;
+		behaviorRequest_ = Behavior::kRoot;
+	}
 
-	// playerの逆方向に進む
-	if (toPlayerDis_ < 90.0f && !workFarAttack3_.isFar &&
-		transform_.translate.x > -500.0f && 
-		transform_.translate.x < 500.0f && 
-		transform_.translate.z > -500.0f &&
-	    transform_.translate.z < 500.0f) {
+	// 常にplayerに向かう
+	transform_.rotate.y = std::atan2(toPlayerV_.x, toPlayerV_.z);
 
-		transform_.translate.x -= toPlayerV_.normalize().x * speed;
-		transform_.translate.z -= toPlayerV_.normalize().z * speed;
+	Vector3 offset = { 0.0f, 0.0f, 0.0f };
 
-	} else {
-		workFarAttack3_.isFar = true;
+	std::uniform_real_distribution<float> randomX(-8.f, 8.f);
+	std::uniform_real_distribution<float> randomY(6.f, 8.f);
+
+	if (workFarAttack3_.attackTime % 15 == 0) {
+		offset = { randomX(randomEngine_), randomY(randomEngine_), 0.0f };
+
+		Vector3 position = GetCenter() + offset;
+		Vector3 scale = { 0.0f, 0.0f, 0.0f };
+
+		CreateBlock(position, scale, offset);
 	}
 
 	for (auto& block : blocks_) {
 
-		block->SetRotationZ(block->GetRotation().z + 0.01f);
-		block->SetRotationY(block->GetRotation().y + 0.01f);
-
-		Matrix4x4 yRotMat = Mat4x4::MakeRotateY(transform_.rotate.y);
-		Vector3 offset = Mat4x4::TransForm(yRotMat, block->GetOffset());
-		block->SetPosition(GetCenter() + offset);
-
-		if (workFarAttack3_.attackTime <= 0) {
-
-			workFarAttack3_.isBegin = false;
-
-			if (block->GetScale().x > 0.0f) {
-				block->SetScale(block->GetScale() - Vector3(workFarAttack3_.scaleIncSpeed, workFarAttack3_.scaleIncSpeed, workFarAttack3_.scaleIncSpeed));
-			} else if (block->GetScale().x <= 0.0f) {
-				behaviorCD_ = 60 * 1.f;
-				behaviorRequest_ = Behavior::kRoot;
-			}
-		}else {
-
-			if (block->GetScale().x < workFarAttack3_.scaleMax && workFarAttack3_.isFar){ 
-				block->SetScale(block->GetScale() + Vector3(workFarAttack3_.scaleIncSpeed, workFarAttack3_.scaleIncSpeed, workFarAttack3_.scaleIncSpeed));
-			} else {
-				if (workFarAttack3_.prepareTime <= 0) {
-					workFarAttack3_.isBegin = true;
-				}
-			}
-
-			if (workFarAttack3_.isBegin) {
-				if (workFarAttack3_.rotationSpeed <= workFarAttack3_.rotationSpeedMax) {
-					workFarAttack3_.rotationSpeed += workFarAttack3_.rotationSpeedInc;
-				}
-
-				transform_.rotate.y += workFarAttack3_.rotationSpeed;
-			} else {
-				// 常にplayerに向かう
-				transform_.rotate.y = std::atan2(toPlayerV_.x, toPlayerV_.z);
-			}
+		if (block->IsHit()) {
+			followCamera_->ShakeScreen(0.5f);
 		}
+
+		block->SetRadius(3.5f);
+
+		block->SetDamage(10.0f);
+
+		block->SetColliVanish(true);
+
+		// 回転
+		block->SetRotationZ(block->GetRotation().z + workFarAttack3_.rotationSpeed);
+
+		if (workFarAttack3_.rotationSpeed <= workFarAttack3_.rotationSpeedMax) {
+			workFarAttack3_.rotationSpeed += workFarAttack3_.rotationSpeedInc;
+		}
+
+		// 拡大
+		block->SetScale(Vector3(block->GetScale().x + workFarAttack3_.scaleIncSpeed, block->GetScale().y + workFarAttack3_.scaleIncSpeed, block->GetScale().z + workFarAttack3_.scaleIncSpeed));
+
+		if (block->GetScale().x >= workFarAttack3_.scaleMax.x) {
+			block->SetScale(workFarAttack3_.scaleMax);
+		}
+
+		if (block->GetScale().y >= workFarAttack3_.scaleMax.y) {
+			block->SetScale(workFarAttack3_.scaleMax);
+		}
+
+		if (block->GetScale().z >= workFarAttack3_.scaleMax.z) {
+			block->SetScale(workFarAttack3_.scaleMax);
+		}
+
+		if (workFarAttack3_.rotationSpeed >= workFarAttack3_.rotationSpeedMax &&
+			block->GetScale().x >= workFarAttack3_.scaleMax.x &&
+			block->GetScale().y >= workFarAttack3_.scaleMax.y &&
+			block->GetScale().z >= workFarAttack3_.scaleMax.z) {
+
+			block->SetIsShot(true);
+		}
+
+		if (block->IsShot()) {
+			block->SetPosition(block->GetTranslation() + workFarAttack3_.velocity.normalize() * workFarAttack3_.speed);
+		} else {
+			workFarAttack3_.velocity = player_->GetCenter() - block->GetCenter();
+		}
+
 	}
+
 }
 // ----------------------------------------------------Near1
 void Enemy::BehaviorNearAttack1Initialize() {
@@ -890,10 +875,10 @@ void Enemy::BehaviorNearAttack1Initialize() {
 
 	workNearAttack1_.attackTime = 60 * 5;
 
-	Vector3 offset = {-9.0f, -0.5f, 0.0f};
+	Vector3 offset = { -9.0f, -0.5f, 0.0f };
 
 	Vector3 position = GetCenter() + offset;
-	Vector3 scale = {0.0f, 0.0f, 0.0f};
+	Vector3 scale = { 0.0f, 0.0f, 0.0f };
 
 	CreateBlock(position, scale, offset);
 
@@ -915,6 +900,10 @@ void Enemy::BehaviorNearAttack1Update() {
 	// workNearAttack1_.attackTime--;
 
 	for (auto& block : blocks_) {
+
+		if (block->IsHit()) {
+			followCamera_->ShakeScreen(0.5f);
+		}
 
 		if (block->GetScale().x < 2.5f) {
 			block->SetScaleX(block->GetScale().x + 0.07f);
@@ -969,10 +958,10 @@ void Enemy::BehaviorNearAttack2Initialize() {
 
 	workNearAttack1_.prepareTime = 60 * 1.5;
 
-	Vector3 offset = {0.0f, 6.5f, 0.0f};
+	Vector3 offset = { 0.0f, 6.5f, 0.0f };
 
 	Vector3 position = player_->GetCenter() + offset;
-	Vector3 scale = {0.0f, 0.0f, 0.0f};
+	Vector3 scale = { 0.0f, 0.0f, 0.0f };
 
 	CreateBlock(position, scale, offset);
 
@@ -991,6 +980,10 @@ void Enemy::BehaviorNearAttack2Initialize() {
 void Enemy::BehaviorNearAttack2Update() {
 
 	for (auto& block : blocks_) {
+
+		if (block->IsHit()) {
+			followCamera_->ShakeScreen(0.5f);
+		}
 
 		if (block->GetScale().x < 2.f) {
 			block->SetScaleX(block->GetScale().x + 0.05f);
@@ -1064,7 +1057,7 @@ void Enemy::BehaviorNearAttack3Update() {
 
 	// playerの逆方向に進む
 	if (workNearAttack3_.awayDistanceCount < 100.0f && transform_.translate.x > -500.0f && transform_.translate.x < 500.0f && transform_.translate.z > -500.0f &&
-	    transform_.translate.z < 500.0f) {
+		transform_.translate.z < 500.0f) {
 
 		toPlayerVOnce_ = toPlayerV_;
 

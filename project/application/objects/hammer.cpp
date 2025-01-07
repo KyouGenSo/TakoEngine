@@ -1,6 +1,9 @@
 #include "hammer.h"
-#include "ImGuiManager.h"
 #include "enemy.h"
+
+#ifdef _DEBUG
+#include "ImGuiManager.h"
+#endif
 
 void Hammer::Initialize(Object3d* model, Object3d* effectModel) {
 	audio_ = Audio::GetInstance();
@@ -97,7 +100,7 @@ void Hammer::OnCollision([[maybe_unused]] Collider* other) {
 		isHit_ = true;
 
 		// 衝突した敵にダメージを与える
-		enemy->Damage(5.0f);
+		enemy->Damage(damege_);
 
 		// 敵をヒットストップさせる
 		enemy->HitStop(10);

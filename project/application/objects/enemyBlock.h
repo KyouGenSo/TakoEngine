@@ -45,6 +45,9 @@ public:
 	bool IsHit() const { return isHit_; }
 	// get isColliVanish
 	bool IsColliVanish() const { return isColliVanish_; }
+	// get isShot
+	bool IsShot() const { return isShot_; }
+
 
 	bool IsDead() const { return isDead_; }
 	float GetDeathTimer() const { return deathTimer_; }
@@ -56,7 +59,7 @@ public:
 	void SetPositionX(float positionX) { worldTransform_.translate.x = positionX; }
 	void SetPositionY(float positionY) { worldTransform_.translate.y = positionY; }
 	void SetPositionZ(float positionZ) { worldTransform_.translate.z = positionZ; }
-	void SetRotation(const Vector3& rotation) { worldTransform_.rotate = rotation; }
+	void SetRotation(const Vector3& rotation) { worldTransform_.rotate = rotation;}
 	void SetRotationX(float rotationX) { worldTransform_.rotate.x = rotationX; }
 	void SetRotationY(float rotationY) { worldTransform_.rotate.y = rotationY; }
 	void SetRotationZ(float rotationZ) { worldTransform_.rotate.z = rotationZ; }
@@ -76,6 +79,8 @@ public:
 	void SetHitOnce(bool hitOnce) { hitOnce_ = hitOnce; }
 	// set follow camera
 	void SetFollowCamera(FollowCamera* followCamera) { followCamera_ = followCamera; }
+	// set isShot
+	void SetIsShot(bool isShot) { isShot_ = isShot; }
 
 private:
 	Audio* audio_ = nullptr;
@@ -98,6 +103,7 @@ private:
 	bool isHited_ = false;
 	bool hitOnce_ = false;
 	bool isHit_ = false;
+	bool isShot_ = false;
 
 	CollisionRecord collisionRecord_;
 

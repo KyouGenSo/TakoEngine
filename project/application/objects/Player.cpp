@@ -1,16 +1,20 @@
 #include "Player.h"
-#include "ImGuiManager.h"
 #include "enemy.h"
 #include "lockOn.h"
+
+#ifdef DEBUG
+#include "ImGuiManager.h"
+#endif // DEBUG
+
 
 // コンボの定数表
 const std::array<Player::ConstAttack, Player::kComboNum> Player::kConstAttacks_ = {
 	{// 1コンボ目 {振りかぶり、溜め、攻撃、硬直時間 振りかぶり、溜め、攻撃の移動速さ}
-	 {10, 5, 20, 5, 0.0f, 0.0f, 0.7f},
+	 {5, 5, 10, 0, 0.0f, 0.0f, 0.8f},
 	 // 2コンボ目
-	 {0, 0, 30, 10, 0.0f, 0.0f, 0.3f},
+	 {0, 0, 20, 15, 0.0f, 0.0f, 0.8f},
 	 // 3コンボ目
-	 {0, 0, 30, 10, 0.0f, 0.0f, 0.3f}}
+	 {0, 0, 35, 10, 0.0f, 0.0f, 0.3f}}
 };
 
 Player::Player() {}
@@ -723,6 +727,8 @@ void Player::BehaviorAttackUpdate() {
 	// コンボ段階によってモーション分岐
 	switch (workAttack_.comboIndex) {
 	case 0:
+		hammer_->SetDamege(4.0f);
+
 		R_armAngleY = 1.5f;
 		hammerAngleX = 1.6f;
 		hammerPosZ = -0.4f;
@@ -774,6 +780,8 @@ void Player::BehaviorAttackUpdate() {
 		break;
 
 	case 1:
+		hammer_->SetDamege(4.0f);
+
 		BodyAngleY = 6.3f;
 		hammerAngleZ = 1.6f;
 
@@ -814,6 +822,8 @@ void Player::BehaviorAttackUpdate() {
 		break;
 
 	case 2:
+		hammer_->SetDamege(9.0f);
+
 		BodyAngleY = 0.0f;
 		hammerAngleY = 3.2f;
 

@@ -5,13 +5,16 @@
 #include "Mat4x4Func.h"
 #include <Vec3Func.h>
 #include <cassert>
-#include "ImGuiManager.h"
 #include <algorithm>
 #include "TextureManager.h"
 #include "Collider.h"
 #include "collisionTypeIdDef.h"
 #include "collisionRecord.h"
 #include <random>
+
+#ifdef _DEBUG
+#include "ImGuiManager.h"
+#endif
 
 class Enemy;
 

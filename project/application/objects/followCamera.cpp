@@ -1,7 +1,10 @@
 #include "followCamera.h"
-#include "ImGuiManager.h"
 #include "lockOn.h"
+#ifdef DEBUG
 #include "ImGuiManager.h"
+#endif // DEBUG
+
+
 
 FollowCamera::FollowCamera() {}
 
@@ -31,7 +34,7 @@ void FollowCamera::Update() {
 		destinationAngleY_ = angle;
 
 		// offset
-		offset_.z = Vec3::Lerp(offset_.z, -14.0f, 0.1f);
+		offset_.z = Vec3::Lerp(offset_.z, -17.1f, 0.1f);
 	}
 	else {
 		// ゲームパッドによる回転

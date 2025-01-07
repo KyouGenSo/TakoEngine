@@ -40,7 +40,7 @@ void GameScene::Initialize()
 	collisionManager_ = std::make_unique<CollisionManager>();
 	collisionManager_->Initialize();
 
-	ModelManager::GetInstance()->LoadModel("ground_black.gltf");
+	ModelManager::GetInstance()->LoadModel("ground.obj");
 	ModelManager::GetInstance()->LoadModel("skydome.obj");
 
 	// プレイヤーのモデルの読み込み
@@ -51,6 +51,7 @@ void GameScene::Initialize()
 	ModelManager::GetInstance()->LoadModel("weapon.obj");
 	ModelManager::GetInstance()->LoadModel("playerBullet.obj");
 	ModelManager::GetInstance()->LoadModel("efffect_ball.obj");
+
 	playerHeadModel_ = std::make_unique<Object3d>();
 	playerHeadModel_->Initialize();
 	playerHeadModel_->SetModel("float_Head.obj");
@@ -108,7 +109,7 @@ void GameScene::Initialize()
 	ground_ = std::make_unique<Ground>();
 	groundModel_ = std::make_unique<Object3d>();
 	groundModel_->Initialize();
-	groundModel_->SetModel("ground_black.gltf");
+	groundModel_->SetModel("ground.obj");
 	ground_->Initialize(groundModel_.get());
 
 	// LockOn system
@@ -315,13 +316,13 @@ void GameScene::Update()
 	PostEffect::GetInstance()->SetVignetteRange(vignetteRadius_);
 
 	 //シーン遷移
-	//if (player_->GetHP() <= 0) {
-	//	SceneManager::GetInstance()->ChangeScene("over");
-	//}
-	//if (enemy_->GetHp() <= 0)
-	//{
-	//	SceneManager::GetInstance()->ChangeScene("clear");
-	//}
+	if (player_->GetHP() <= 0) {
+		SceneManager::GetInstance()->ChangeScene("over");
+	}
+	if (enemy_->GetHp() <= 0)
+	{
+		SceneManager::GetInstance()->ChangeScene("clear");
+	}
 }
 
 void GameScene::UpdateUI()

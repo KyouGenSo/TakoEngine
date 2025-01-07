@@ -10,6 +10,7 @@
 #include "memory"
 #include <cmath>
 #include <optional>
+#include <random>
 
 // 親クラス
 #include "BaseCharacter.h"
@@ -241,16 +242,17 @@ private: // メンバ変数
 	WorkFarAttack2 workFarAttack2_;
 
 	struct WorkFarAttack3 {
+
+		Vector3 velocity;
+		Vector3 toPlayer;
+		float speed;
 		float rotationSpeed;
 		float rotationSpeedMax;
-		float rotationSpeedMin;
 		float rotationSpeedInc;
 		float scaleIncSpeed;
-		float scaleMax;
-		float prepareTime;
-		float attackTime;
-		bool isBegin;
-		bool isFar;
+		Vector3 scaleMax;
+		bool isAttack;
+		int attackTime;
 	};
 	WorkFarAttack3 workFarAttack3_;
 
@@ -272,7 +274,7 @@ private: // メンバ変数
 		float awayDistanceCount;
 		float attackDistanceCount;
 		float attackTime;
-		bool isAttack;
+		bool  isAttack;
 	};
 	WorkNearAttack3 workNearAttack3_;
 
@@ -293,4 +295,8 @@ private: // メンバ変数
 	float period = 120.0f; // 60フレームで1周期
 	// 振幅
 	float amplitude = 0.04f;
+
+	// ランダムエンジン
+	std::random_device seedGenerator;
+	std::mt19937 randomEngine_;
 };
