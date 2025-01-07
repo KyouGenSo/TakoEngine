@@ -9,7 +9,6 @@
 #include "WinApp.h"
 #include <numbers>
 
-
 ParticleManager* ParticleManager::instance_ = nullptr;
 
 ParticleManager* ParticleManager::GetInstance()

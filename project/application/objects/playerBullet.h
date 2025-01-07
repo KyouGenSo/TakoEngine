@@ -11,6 +11,7 @@
 #include "Collider.h"
 #include "collisionTypeIdDef.h"
 #include "collisionRecord.h"
+#include <random>
 
 class Enemy;
 
@@ -57,6 +58,12 @@ private:
 	Object3d* model_ = nullptr;
 
 	Vector3 velocity_;
+
+	// ランダムエンジン
+	std::random_device seedGenerator;
+	std::mt19937 randomEngine_;
+
+	Vector3 maxScale_ = { 0.3f, 0.3f, 3.5f };
 
 	float t_ = 0.1f;
 

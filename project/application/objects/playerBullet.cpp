@@ -14,7 +14,7 @@ PlayerBullet::~PlayerBullet() {
 }
 
 Vector3 PlayerBullet::GetCenter() const {
-	Vector3 offset = {-0.8f, 0.0f, 1.5f};
+	Vector3 offset = { -0.8f, 0.0f, 1.5f };
 	Matrix4x4 wordMat = Mat4x4::MakeAffine(worldTransform_.scale, worldTransform_.rotate, worldTransform_.translate);
 	Vector3 worldPos = Mat4x4::TransForm(wordMat, offset);
 
@@ -38,8 +38,39 @@ void PlayerBullet::Initialize(Object3d* model, const Vector3& position, const Ve
 	Vector3 velocityZ = Mat4x4::TransForm(thetaYRotationMatrix, velocity);
 	worldTransform_.rotate.x = std::atan2(-velocityZ.y, velocityZ.z);
 
+	// ランダムエンジンの初期化
+	randomEngine_.seed(seedGenerator());
+
+	std::uniform_real_distribution<float> random(0.f, 5.f);
+
 	// offset
-	Vector3 offset = {-0.8f, 0.0f, 1.5f};
+	Vector3 offset;
+
+	switch (static_cast<int>(random(randomEngine_))) {
+	case 0:
+		offset = Vector3(-2.f, 0.2f, 0.0f);
+		break;
+
+	case 1:
+		offset = Vector3(-1.2f, 0.5f, 0.0f);
+		break;
+
+	case 2:
+		offset = Vector3(0.0f, 1.2f, 0.0f);
+		break;
+
+	case 3:
+		offset = Vector3(1.2f, 0.5f, 0.0f);
+		break;
+
+	case 4:
+		offset = Vector3(2.0f, 0.2f, 0.0f);
+		break;
+
+	default:
+		offset = Vector3(0.0f, 0.8f, 0.0f);
+		break;
+	}
 
 	Matrix4x4 yRotMat = Mat4x4::MakeRotateY(worldTransform_.rotate.y);
 	Matrix4x4 xRotMat = Mat4x4::MakeRotateX(worldTransform_.rotate.x);
@@ -66,19 +97,27 @@ void PlayerBullet::Update() {
 
 	float speed = 1.2f;
 
-	Vector3 toEnemy = enemy_->GetCenter() - GetCenter();
+	worldTransform_.scale += Vector3(0.1f, 0.1f, 0.2f);
 
-	velocity_ = Vec3::Slerp(velocity_.normalize(), toEnemy.normalize(), t_) * speed;
+	worldTransform_.scale.x = std::min(worldTransform_.scale.x, maxScale_.x);
+	worldTransform_.scale.y = std::min(worldTransform_.scale.y, maxScale_.y);
+	worldTransform_.scale.z = std::min(worldTransform_.scale.z, maxScale_.z);
 
-	if (worldTransform_.scale.x >= 1.0f) {
+	if (worldTransform_.scale.x >= maxScale_.x && worldTransform_.scale.y >= maxScale_.y && worldTransform_.scale.z >= maxScale_.z) {
 		worldTransform_.translate += velocity_;
-
-		Matrix4x4 yRotMat = Mat4x4::MakeRotateY(atan2f(velocity_.x, velocity_.z));
-		Vector3 velocityZ = Mat4x4::TransForm(yRotMat, velocity_);
-		worldTransform_.rotate.x = atan2f(-velocityZ.y, velocityZ.z);
-		worldTransform_.rotate.y = atan2f(velocityZ.x, velocityZ.z);
 	} else {
-		worldTransform_.scale += Vector3(0.1f, 0.1f, 0.1f);
+		//velocity_ = Vec3::Slerp(velocity_.normalize(), toEnemy.normalize(), t_) * speed;
+		//Vector3 toEnemy = enemy_->GetCenter() - GetCenter();
+
+		Vector3 toEnemy = (enemy_->GetCenter() - GetCenter()).normalize();
+		velocity_ = toEnemy * speed;
+
+		float yaw = atan2f(toEnemy.x, toEnemy.z);
+
+		float pitch = atan2f(-toEnemy.y, sqrtf(toEnemy.x * toEnemy.x + toEnemy.z * toEnemy.z));
+
+		worldTransform_.rotate.y = yaw;
+		worldTransform_.rotate.x = pitch;
 	}
 
 	model_->SetTransform(worldTransform_);

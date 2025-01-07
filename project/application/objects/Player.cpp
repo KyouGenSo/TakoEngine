@@ -183,6 +183,9 @@ void Player::Update() {
 			isShooting_ = false;
 			worldTransformL_arm_.rotate.y = Vec3::Lerp(worldTransformL_arm_.rotate.y, 0.0f, 0.1f);
 		}
+	} else {
+		isShooting_ = false;
+		worldTransformL_arm_.rotate.y = Vec3::Lerp(worldTransformL_arm_.rotate.y, 0.0f, 0.1f);
 	}
 
 	// 弾の更新
