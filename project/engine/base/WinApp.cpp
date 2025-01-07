@@ -36,7 +36,7 @@ void WinApp::Initialize()
 	//ウィンドウの生成
 	hWnd_ = CreateWindow(
 		wc_.lpszClassName,	    //クラス名
-		L"TakoEngine",	        //タイトルバーの文字列
+		L"LE2B_10_キョウ_ゲンソ_白方",	        //タイトルバーの文字列
 		WS_OVERLAPPEDWINDOW,	//ウィンドウスタイル
 		CW_USEDEFAULT,		    //表示X座標
 		CW_USEDEFAULT,		    //表示Y座標
