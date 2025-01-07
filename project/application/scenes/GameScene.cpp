@@ -23,6 +23,8 @@ void GameScene::Initialize()
 	///              初期化処理              ///
 	/// ================================== ///
 
+	Object3dBasic::GetInstance()->SetDirectionalLightIntensity(3.0f);
+
 	// uiの初期化
 	InitializeUI();
 

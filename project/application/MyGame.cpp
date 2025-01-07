@@ -88,18 +88,6 @@ void MyGame::Draw()
 	case::MyGame::NoEffect:
 		PostEffect::GetInstance()->Draw("NoEffect");
 		break;
-	case::MyGame::VignetteRed:
-		PostEffect::GetInstance()->Draw("VignetteRed");
-		break;
-	case::MyGame::VignetteRedBloom:
-		PostEffect::GetInstance()->Draw("VignetteRedBloom");
-		break;
-	case::MyGame::GrayScale:
-		PostEffect::GetInstance()->Draw("GrayScale");
-		break;
-	case::MyGame::VigRedGrayScale:
-		PostEffect::GetInstance()->Draw("VigRedGrayScale");
-		break;
 	case::MyGame::Bloom:
 		PostEffect::GetInstance()->Draw("Bloom");
 		break;
@@ -128,10 +116,6 @@ void MyGame::Draw()
 		if (ImGui::BeginTabItem("PostEffectType"))
 		{
 			ImGui::RadioButton("NoEffect", (int*)&postEffectType, NoEffect);
-			ImGui::RadioButton("VignetteRed", (int*)&postEffectType, VignetteRed);
-			ImGui::RadioButton("VignetteRedBloom", (int*)&postEffectType, VignetteRedBloom);
-			ImGui::RadioButton("GrayScale", (int*)&postEffectType, GrayScale);
-			ImGui::RadioButton("VigRedGrayScale", (int*)&postEffectType, VigRedGrayScale);
 			ImGui::RadioButton("Bloom", (int*)&postEffectType, Bloom);
 			ImGui::RadioButton("BloomFog", (int*)&postEffectType, BloomFog);
 
@@ -141,20 +125,6 @@ void MyGame::Draw()
 		//ImGui::Separator();
 		if (ImGui::BeginTabItem("PostEffect"))
 		{
-			if (postEffectType == VignetteRed || postEffectType == VignetteRedBloom || postEffectType == VigRedGrayScale)
-			{
-				ImGui::DragFloat("VignettePower", &vignettePower, 0.01f, 0.0f, 10.0f);
-				PostEffect::GetInstance()->SetVignettePower(vignettePower);
-				ImGui::DragFloat("VignetteRange", &vignetteRange, 0.01f, 0.0f, 100.0f);
-				PostEffect::GetInstance()->SetVignetteRange(vignetteRange);
-			}
-
-			if (postEffectType == VignetteRedBloom)
-			{
-				ImGui::DragFloat("BloomThreshold", &bloomThreshold, 0.01f, 0.0f, 1.0f);
-				PostEffect::GetInstance()->SetBloomThreshold(bloomThreshold);
-			}
-
 			if (postEffectType == Bloom || postEffectType == BloomFog)
 			{
 				ImGui::DragFloat("BloomIntensity", &bloomIntensity, 0.01f, 0.0f, 10.0f);

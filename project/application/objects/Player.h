@@ -213,6 +213,7 @@ private: // メンバ変数
 	// bullet
 	std::list<PlayerBullet*> bullets_;
 	float shotCD_ = 0.0f;
+	bool isShooting_ = false;
 
 	Vector3 velocity_ = {};
 

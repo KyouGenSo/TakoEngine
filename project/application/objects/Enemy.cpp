@@ -323,7 +323,7 @@ void Enemy::UpdateFloatAnimation() {
 
 void Enemy::ShakeEffect() {
 	// ランダムな値を生成
-	float random = Vec3::Rand(-0.3f, 0.3f);
+	float random = Vec3::Rand(-0.5f, 0.5f);
 
 	worldTransformBody_.translate.x += random;
 	worldTransformBody_.translate.z += random;

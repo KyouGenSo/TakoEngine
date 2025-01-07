@@ -159,13 +159,29 @@ void Player::Update() {
 	// ロックオンしてる時に右トリガーで弾を撃つ
 	if (lockOn_->isTargetExist()) {
 		if (input_->GetJoystickState(0, joyState_)) {
-			if (joyState_.Gamepad.bRightTrigger > 0 && --shotCD_ <= 0.0f) {
-				Shot();
+			if (joyState_.Gamepad.bRightTrigger > 0) {
+				if (--shotCD_ <= 0.0f) {
+					Shot();
+				}
+				isShooting_ = true;
+				worldTransformL_arm_.rotate.x = Vec3::Lerp(worldTransformL_arm_.rotate.x, 1.6f, 0.1f);
+				worldTransformL_arm_.rotate.y = Vec3::Lerp(worldTransformL_arm_.rotate.y, 2.0f, 0.1f);
+			} else {
+				isShooting_ = false;
+				worldTransformL_arm_.rotate.y = Vec3::Lerp(worldTransformL_arm_.rotate.y, 0.0f, 0.1f);
 			}
 		}
 
-		if (input_->PushKey(DIK_UP) && --shotCD_ <= 0.0f) {
-			Shot();
+		if (input_->PushKey(DIK_UP)) {
+			if (--shotCD_ <= 0.0f) {
+				Shot();
+			}
+			isShooting_ = true;
+			worldTransformL_arm_.rotate.x = Vec3::Lerp(worldTransformL_arm_.rotate.x, 1.6f, 0.1f);
+			worldTransformL_arm_.rotate.y = Vec3::Lerp(worldTransformL_arm_.rotate.y, 2.0f, 0.1f);
+		} else {
+			isShooting_ = false;
+			worldTransformL_arm_.rotate.y = Vec3::Lerp(worldTransformL_arm_.rotate.y, 0.0f, 0.1f);
 		}
 	}
 
@@ -474,13 +490,9 @@ void Player::UpdateFloatAnimation() {
 	worldTransformBody_.translate.y = std::sin(floatingParam_) * amplitude;
 
 	// 腕を揺らす
-	if (!lockOn_->isTargetExist()) {
-		worldTransformL_arm_.rotate.x = std::sin(floatingParam_) * amplitude;
-		worldTransformL_arm_.rotate.y = Vec3::Lerp(worldTransformL_arm_.rotate.y, 0.0f, 0.1f);
-	} else {
-		worldTransformL_arm_.rotate.x = Vec3::Lerp(worldTransformL_arm_.rotate.x, 1.6f, 0.1f);
-		worldTransformL_arm_.rotate.y = Vec3::Lerp(worldTransformL_arm_.rotate.y, 2.0f, 0.1f);
-	}
+	if(!isShooting_)
+	worldTransformL_arm_.rotate.x = std::sin(floatingParam_) * amplitude;
+
 	worldTransformR_arm_.rotate.x = std::sin(floatingParam_) * amplitude;
 }
 
@@ -582,7 +594,7 @@ void Player::BehaviorRootUpdate() {
 
 	if (input_->GetJoystickState(0, joyState_) /*&& input_->GetJoystickStatePrevious(preJoyState_)*/) {
 		if (joyState_.Gamepad.wButtons & XINPUT_GAMEPAD_X /*&& !(preJoyState_.Gamepad.wButtons & XINPUT_GAMEPAD_X)*/) {
-			if (attackRecovryTime_ <= 0.0f && !lockOn_->isTargetExist()) {
+			if (attackRecovryTime_ <= 0.0f) {
 				behaviorRequest_ = Behavior::kAttack;
 			}
 		}
@@ -602,7 +614,7 @@ void Player::BehaviorRootUpdate() {
 	}
 
 	if (input_->PushKey(DIK_Z)) {
-		if (attackRecovryTime_ <= 0.0f && !lockOn_->isTargetExist())
+		if (attackRecovryTime_ <= 0.0f)
 		behaviorRequest_ = Behavior::kAttack;
 	}
 
