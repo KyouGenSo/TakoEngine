@@ -38,9 +38,8 @@ private: // メンバ変数
 
 	bool isDebug_ = false;
 
-	Vector3 emitterPos_;
-	Vector3 particleScale;
-
-	bool isRandomColor_ = false;
+	Vector3 aixs_;
+	float angle_;
+	Matrix4x4 rotMat_;
 
 };

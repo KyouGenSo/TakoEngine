@@ -48,7 +48,7 @@ namespace Mat4x4 {
 
 	Matrix4x4 InverseTranspose(const Matrix4x4& m);
 
-	Matrix4x4 MakeRotateAxixAngle(const Vector3& axis, float angle);
+	Matrix4x4 MakeRotateAxisAngle(const Vector3& axis, float angle);
 }
 
 

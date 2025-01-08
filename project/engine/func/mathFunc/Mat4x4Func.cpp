@@ -314,28 +314,31 @@ namespace Mat4x4 {
 	{
 		Matrix4x4 result = MakeIdentity();
 
-		// 軸を正規化
-		Vector3 normAxis = axis.Normalize();
-
 		float s = std::sin(angle);
 		float c = std::cos(angle);
 		float t = 1.0f - c;
 
-		float x = normAxis.x;
-		float y = normAxis.y;
-		float z = normAxis.z;
+		Vector3 nAxis = axis.Normalize();
 
-		result.m[0][0] = t * x * x + c;
-		result.m[0][1] = t * x * y - s * z;
-		result.m[0][2] = t * x * z + s * y;
+		result.m[0][0] = t * nAxis.x * nAxis.x + c;
+		result.m[0][1] = t * nAxis.x * nAxis.y + s * nAxis.z;
+		result.m[0][2] = t * nAxis.x * nAxis.z - s * nAxis.y;
+		result.m[0][3] = 0.0f;
 
-		result.m[1][0] = t * x * y + s * z;
-		result.m[1][1] = t * y * y + c;
-		result.m[1][2] = t * y * z - s * x;
+		result.m[1][0] = t * nAxis.x * nAxis.y - s * nAxis.z;
+		result.m[1][1] = t * nAxis.y * nAxis.y + c;
+		result.m[1][2] = t * nAxis.y * nAxis.z + s * nAxis.x;
+		result.m[1][3] = 0.0f;
 
-		result.m[2][0] = t * x * z - s * y;
-		result.m[2][1] = t * y * z + s * x;
-		result.m[2][2] = t * z * z + c;
+		result.m[2][0] = t * nAxis.x * nAxis.z + s * nAxis.y;
+		result.m[2][1] = t * nAxis.y * nAxis.z - s * nAxis.x;
+		result.m[2][2] = t * nAxis.z * nAxis.z + c;
+		result.m[2][3] = 0.0f;
+
+		result.m[3][0] = 0.0f;
+		result.m[3][1] = 0.0f;
+		result.m[3][2] = 0.0f;
+		result.m[3][3] = 1.0f;
 
 		return result;
 	}

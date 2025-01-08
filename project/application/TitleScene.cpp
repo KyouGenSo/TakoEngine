@@ -24,7 +24,10 @@ void TitleScene::Initialize()
 	///              初期化処理              ///
 	/// ================================== ///
 
-	particleScale = Vector3(0.1f, 0.1f, 0.1f);
+	aixs_ = Vector3(1.0f, 1.0f, 1.0f);
+	angle_ = 0.44f;
+	rotMat_ = Mat4x4::MakeRotateAxisAngle(aixs_, angle_);
+
 }
 
 void TitleScene::Finalize()
@@ -86,23 +89,23 @@ void TitleScene::Draw()
 
 	//--------------------------------------------------//
 
-	// パーティクルの描画
-	ParticleManager::GetInstance()->Draw();
 }
 
 void TitleScene::DrawImGui()
 {
 #ifdef _DEBUG
 
-	ImGui::Begin("particle");
-	ImGui::DragFloat3("emitterPos", &emitterPos_.x, 0.1f);
-	ImGui::DragFloat3("particleScale", &particleScale.x, 0.1f);
-	ImGui::Checkbox("isRandomColor", &isRandomColor_);
-	if (ImGui::Button("Create"))
-	{
-		ParticleManager::GetInstance()->Emit("white", emitterPos_, particleScale, 10, isRandomColor_);
-	}
+	// display rotMat_
+	ImGui::Begin("Display");
+
+	ImGui::Text("rotMat_");
+	ImGui::Text("rotMat_[0][0]: %.3f , rotMat_[0][1]: %.3f , rotMat_[0][2]: %.3f , rotMat_[0][3]: %.3f", rotMat_.m[0][0], rotMat_.m[0][1], rotMat_.m[0][2], rotMat_.m[0][3]);
+	ImGui::Text("rotMat_[1][0]: %.3f , rotMat_[1][1]: %.3f , rotMat_[1][2]: %.3f , rotMat_[1][3]: %.3f", rotMat_.m[1][0], rotMat_.m[1][1], rotMat_.m[1][2], rotMat_.m[1][3]);
+	ImGui::Text("rotMat_[2][0]: %.3f , rotMat_[2][1]: %.3f , rotMat_[2][2]: %.3f , rotMat_[2][3]: %.3f", rotMat_.m[2][0], rotMat_.m[2][1], rotMat_.m[2][2], rotMat_.m[2][3]);
+	ImGui::Text("rotMat_[3][0]: %.3f , rotMat_[3][1]: %.3f , rotMat_[3][2]: %.3f , rotMat_[3][3]: %.3f", rotMat_.m[3][0], rotMat_.m[3][1], rotMat_.m[3][2], rotMat_.m[3][3]);
+
 	ImGui::End();
+
 
 #endif // _DEBUG
 }
