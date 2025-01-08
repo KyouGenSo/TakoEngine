@@ -47,6 +47,8 @@ namespace Mat4x4 {
 	Matrix4x4 MakeViewport(float left, float top, float width, float height, float minDepth, float maxDepth);
 
 	Matrix4x4 InverseTranspose(const Matrix4x4& m);
+
+	Matrix4x4 MakeRotateAxixAngle(const Vector3& axis, float angle);
 }
 
 
