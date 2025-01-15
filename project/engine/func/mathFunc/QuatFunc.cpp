@@ -88,12 +88,7 @@ Quaternion Quat::Slerp(const Quaternion& q1, const Quaternion& q2, float t)
         result.y = q1.y + t * (q2Modified.y - q1.y);
         result.z = q1.z + t * (q2Modified.z - q1.z);
         result.w = q1.w + t * (q2Modified.w - q1.w);
-        float length = sqrt(result.x * result.x + result.y * result.y + result.z * result.z + result.w * result.w);
-        result.x /= length;
-        result.y /= length;
-        result.z /= length;
-        result.w /= length;
-        return result;
+		return Normalize(result);
     }
 
     float theta = acos(dot);
