@@ -4,6 +4,7 @@
 #include"Object3d.h"
 #include <vector>
 #include <memory>
+#include "QuatFunc.h"
 
 class TitleScene : public BaseScene
 {
@@ -38,4 +39,14 @@ private: // メンバ変数
 
 	bool isDebug_ = false;
 
+	Quaternion q1;
+	Quaternion q2;
+	Quaternion identity;
+	Quaternion conj;
+	Quaternion inv;
+	Quaternion normal;
+	Quaternion mul1;
+	Quaternion mul2;
+
+	float norm;
 };
