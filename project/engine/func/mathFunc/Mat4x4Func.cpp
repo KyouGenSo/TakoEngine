@@ -340,4 +340,17 @@ namespace Mat4x4 {
 		return result;
 	}
 
+	Matrix4x4 DirectionToDirection(const Vector3& from, const Vector3& to)
+	{
+		Vector3 fromNorm = from.Normalize();
+		Vector3 toNorm = to.Normalize();
+
+		Vector3 axis = Vec3::Cross(fromNorm, toNorm).Normalize();
+		float angle = std::acos(Vec3::Dot(fromNorm, toNorm));
+
+		Matrix4x4 result = MakeRotateAxisAngle(axis, angle);
+
+		return result;
+	}
+
 }

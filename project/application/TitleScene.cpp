@@ -24,12 +24,10 @@ void TitleScene::Initialize()
 	///              初期化処理              ///
 	/// ================================== ///
 
-	particleScale = Vector3(0.1f, 0.1f, 0.1f);
 }
 
 void TitleScene::Finalize()
 {
-
 }
 
 void TitleScene::Update()
@@ -86,23 +84,12 @@ void TitleScene::Draw()
 
 	//--------------------------------------------------//
 
-	// パーティクルの描画
-	ParticleManager::GetInstance()->Draw();
 }
 
 void TitleScene::DrawImGui()
 {
 #ifdef _DEBUG
 
-	ImGui::Begin("particle");
-	ImGui::DragFloat3("emitterPos", &emitterPos_.x, 0.1f);
-	ImGui::DragFloat3("particleScale", &particleScale.x, 0.1f);
-	ImGui::Checkbox("isRandomColor", &isRandomColor_);
-	if (ImGui::Button("Create"))
-	{
-		ParticleManager::GetInstance()->Emit("white", emitterPos_, particleScale, 10, isRandomColor_);
-	}
-	ImGui::End();
 
 #endif // _DEBUG
 }
