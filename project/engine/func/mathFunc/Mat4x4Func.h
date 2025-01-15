@@ -32,8 +32,8 @@ namespace Mat4x4 {
 	Matrix4x4 MakeRotateZ(float angle);
 
 	Matrix4x4 MakeRotateXYZ(Matrix4x4 mX, Matrix4x4 mY, Matrix4x4 mZ);
-
 	Matrix4x4 MakeRotateXYZ(const Vector3& rotate);
+	Matrix4x4 MakeRotateXYZ(const Quaternion& rotate);
 
 	Matrix4x4 MakeAffine(const Vector3& scale, const Vector3& rotate, const Vector3& translate);
 	Matrix4x4 MakeAffine(const Vector3& scale, const Quaternion& rotate, const Vector3& translate);

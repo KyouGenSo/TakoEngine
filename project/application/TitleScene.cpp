@@ -24,6 +24,12 @@ void TitleScene::Initialize()
 	///              初期化処理              ///
 	/// ================================== ///
 
+	rotation = Quat::MakeRotateAxisAngle(Vector3(1.0f, 0.4f, -0.2f), 0.45f);
+	pointY = Vector3(2.1f, -0.9f, 1.3f);
+	rotMat = Mat4x4::MakeRotateXYZ(rotation);
+	rotateByQuat = Quat::RotateVec3(pointY, rotation);
+	rotateByMat = Mat4x4::TransForm(rotMat, pointY);
+
 }
 
 void TitleScene::Finalize()
@@ -89,6 +95,36 @@ void TitleScene::Draw()
 void TitleScene::DrawImGui()
 {
 #ifdef _DEBUG
+
+	/// ================================== ///
+	///              ImGui描画               ///
+		/// ================================== ///
+
+	ImGui::Begin("TitleScene");
+
+	// rotation quat
+	ImGui::Text("rotation quat");
+	ImGui::Text("%.2f, %.2f, %.2f, %.2f", rotation.x, rotation.y, rotation.z, rotation.w);
+	ImGui::Separator();
+
+	// rotate matrix
+	ImGui::Text("rotate matrix");
+	ImGui::Text("%.3f, %.3f, %.3f, %.3f", rotMat.m[0][0], rotMat.m[0][1], rotMat.m[0][2], rotMat.m[0][3]);
+	ImGui::Text("%.3f, %.3f, %.3f, %.3f", rotMat.m[1][0], rotMat.m[1][1], rotMat.m[1][2], rotMat.m[1][3]);
+	ImGui::Text("%.3f, %.3f, %.3f, %.3f", rotMat.m[2][0], rotMat.m[2][1], rotMat.m[2][2], rotMat.m[2][3]);
+	ImGui::Text("%.3f, %.3f, %.3f, %.3f", rotMat.m[3][0], rotMat.m[3][1], rotMat.m[3][2], rotMat.m[3][3]);
+	ImGui::Separator();
+
+	// rotate point by quat
+	ImGui::Text("rotate by quat");
+	ImGui::Text("%.2f, %.2f, %.2f", rotateByQuat.x, rotateByQuat.y, rotateByQuat.z);
+	ImGui::Separator();
+
+	// rotate point by matrix
+	ImGui::Text("rotate by matrix");
+	ImGui::Text("%.2f, %.2f, %.2f", rotateByMat.x, rotateByMat.y, rotateByMat.z);
+
+	ImGui::End();
 
 
 #endif // _DEBUG

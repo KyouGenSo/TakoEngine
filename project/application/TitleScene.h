@@ -2,6 +2,9 @@
 #include "BaseScene.h"
 #include"Sprite.h"
 #include"Object3d.h"
+#include"QuatFunc.h"
+#include"Vec3Func.h"
+#include"Mat4x4Func.h"
 #include <vector>
 #include <memory>
 
@@ -38,4 +41,9 @@ private: // メンバ変数
 
 	bool isDebug_ = false;
 
+	Quaternion rotation;
+	Vector3 pointY;
+	Matrix4x4 rotMat;
+	Vector3 rotateByQuat;
+	Vector3 rotateByMat;
 };
