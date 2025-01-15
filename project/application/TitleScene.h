@@ -38,4 +38,12 @@ private: // メンバ変数
 
 	bool isDebug_ = false;
 
+	Vector3 from0;
+	Vector3 to0;
+	Vector3 from1;
+	Vector3 to1;
+
+	Matrix4x4 rotMat0;
+	Matrix4x4 rotMat1;
+	Matrix4x4 rotMat2;
 };
