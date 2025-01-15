@@ -111,6 +111,23 @@ Quaternion Quat::Slerp(const Quaternion& q1, const Quaternion& q2, float t)
     return result;
 }
 
+Quaternion Quat::MakeRotateAxisAngle(const Vector3& axis, float angle)
+{
+    // 軸を正規化
+    Vector3 normAxis = axis.Normalize();
+
+    float halfAngle = angle * 0.5f;
+    float sinHalfAngle = sin(halfAngle);
+    float cosHalfAngle = cos(halfAngle);
+
+    return Quaternion{
+        normAxis.x * sinHalfAngle,
+        normAxis.y * sinHalfAngle,
+        normAxis.z * sinHalfAngle,
+        cosHalfAngle
+    };
+}
+
 Vector3 Quat::ToVec3(const Quaternion& q)
 {
     float sinY = 2 * (q.w * q.y - q.z * q.x);
@@ -157,4 +174,15 @@ Matrix4x4 Quat::ToMatrix(const Quaternion& q)
 	mat.m[3][3] = 1.0f;
 
 	return mat;
+}
+
+Vector3 Quat::RotateVec3(const Vector3& v, const Quaternion& q)
+{
+    // クォータニオンを正規化（必要なら）
+	Quaternion normQ = Normalize(q);
+
+    Quaternion vQuat{ v.x, v.y, v.z, 0 };
+    Quaternion result = Multiply(Multiply(normQ, vQuat), Conjugate(normQ));
+
+    return Vector3{ result.x, result.y, result.z };
 }

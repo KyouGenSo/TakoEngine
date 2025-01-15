@@ -24,7 +24,11 @@ namespace Quat {
 
 	Quaternion Slerp(const Quaternion& q1, const Quaternion& q2, float t);
 
+	Quaternion MakeRotateAxisAngle(const Vector3& axis, float angle);
+
 	Vector3 ToVec3(const Quaternion& q);
 
 	Matrix4x4 ToMatrix(const Quaternion& q);
+
+	Vector3 RotateVec3(const Vector3& v, const Quaternion& q);
 }
