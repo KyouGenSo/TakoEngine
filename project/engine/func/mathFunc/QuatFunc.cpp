@@ -50,13 +50,22 @@ Quaternion Quat::Conjugate(const Quaternion& q)
 
 Quaternion Quat::Inverse(const Quaternion& q)
 {
-	float norm = Norm(q);
-	if (norm == 0.0f) // Normがゼロの場合は単位クォータニオンを返す
-	{
-		return Quaternion{ 0, 0, 0, 1 };
-	}
-	Quaternion conjugate = Conjugate(q);
-	return Quaternion{ conjugate.x / norm, conjugate.y / norm, conjugate.z / norm, conjugate.w / norm };
+    float normSquared = q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w;
+
+    // ゼロ除算を防ぐ
+    if (normSquared < 1e-6f) {
+        return Quaternion{ 0, 0, 0, 1 };  // またはエラー処理
+    }
+
+    Quaternion conjugate = Conjugate(q);
+    float invNorm = 1.0f / normSquared;
+
+    return Quaternion{
+        conjugate.x * invNorm,
+        conjugate.y * invNorm,
+        conjugate.z * invNorm,
+        conjugate.w * invNorm
+    };
 }
 
 Quaternion Quat::Slerp(const Quaternion& q1, const Quaternion& q2, float t)
