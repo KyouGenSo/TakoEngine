@@ -4,6 +4,8 @@
 #include "Matrix4x4.h"
 
 namespace Quat {
+	Quaternion Identity();
+
 	Quaternion Add(const Quaternion& q1, const Quaternion& q2);
 
 	Quaternion Subtract(const Quaternion& q1, const Quaternion& q2);
