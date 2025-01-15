@@ -2,6 +2,7 @@
 #include "BaseScene.h"
 #include"Sprite.h"
 #include"Object3d.h"
+#include"QuatFunc.h"
 #include <vector>
 #include <memory>
 
@@ -38,4 +39,12 @@ private: // メンバ変数
 
 	bool isDebug_ = false;
 
+	Quaternion rotation0;
+	Quaternion rotation1;
+
+	Quaternion interpolate0;
+	Quaternion interpolate1;
+	Quaternion interpolate2;
+	Quaternion interpolate3;
+	Quaternion interpolate4;
 };
