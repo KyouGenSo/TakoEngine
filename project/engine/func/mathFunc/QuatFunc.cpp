@@ -178,7 +178,7 @@ Matrix4x4 Quat::ToMatrix(const Quaternion& q)
 
 Vector3 Quat::RotateVec3(const Vector3& v, const Quaternion& q)
 {
-    // クォータニオンを正規化（必要なら）
+    // クォータニオンを正規化
 	Quaternion normQ = Normalize(q);
 
     Quaternion vQuat{ v.x, v.y, v.z, 0 };
