@@ -141,6 +141,14 @@ public: // 構造体
         UINT instanceCount = 0;
     };
 
+    // エミッター構造体
+    struct Emitter {
+        Transform transform;
+        uint32_t count;
+        float frequency;
+        float frequencyTime;
+    };
+
 private: // プライベートメンバー関数
 
     ///<summary>
