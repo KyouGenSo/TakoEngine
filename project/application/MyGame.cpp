@@ -56,6 +56,7 @@ void MyGame::Update()
 	//　サウンドの更新
 	Audio::GetInstance()->Update();
 
+	Input::GetInstance()->RefreshGamePadState();
 }
 
 void MyGame::Draw()
