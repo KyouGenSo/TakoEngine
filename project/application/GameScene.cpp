@@ -8,6 +8,7 @@
 #include"Input.h"
 #include "DebugCamera.h"
 #include <numbers>
+#include "Draw2D.h"
 
 #ifdef _DEBUG
 #include"ImGui.h"
@@ -81,6 +82,7 @@ void GameScene::Update()
 	if (Input::GetInstance()->TriggerKey(DIK_F1))
 	{
 		Object3dBasic::GetInstance()->SetDebug(!Object3dBasic::GetInstance()->GetDebug());
+		Draw2D::GetInstance()->SetDebug(!Draw2D::GetInstance()->GetDebug());
 		isDebug_ = !isDebug_;
 	}
 

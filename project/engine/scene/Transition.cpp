@@ -121,5 +121,5 @@ void Transition::Draw()
 	if (state_ == NONE) {
 		return;
 	}
-	Draw2D::GetInstance()->DrawBox(Vector2(0.0f, 0.0f), Vector2(WinApp::kClientWidth, WinApp::kClientHeight), Vector4(0.0f, 0.0f, 0.0f, alpha_));
+	Draw2D::GetInstance()->DrawBox(Vector3(0.0f, 0.0f, 0.0f), Vector3(WinApp::kClientWidth, WinApp::kClientHeight, 0.0f), Vector4(0.0f, 0.0f, 0.0f, alpha_));
 }
