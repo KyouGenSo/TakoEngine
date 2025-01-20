@@ -209,6 +209,9 @@
     <ClCompile Include="engine\effect\ParticleManager.cpp">
       <Filter>ソース ファイル\engine\effect</Filter>
     </ClCompile>
+    <ClCompile Include="ParticleEmitter.cpp">
+      <Filter>ソース ファイル\engine\effect</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\func\mathFunc\Mat4x4Func.h">
@@ -338,6 +341,9 @@
       <Filter>ヘッダー ファイル\engine\math</Filter>
     </ClInclude>
     <ClInclude Include="engine\effect\ParticleManager.h">
+      <Filter>ヘッダー ファイル\engine\effect</Filter>
+    </ClInclude>
+    <ClInclude Include="ParticleEmitter.h">
       <Filter>ヘッダー ファイル\engine\effect</Filter>
     </ClInclude>
   </ItemGroup>

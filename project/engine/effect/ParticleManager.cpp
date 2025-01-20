@@ -189,7 +189,7 @@ void ParticleManager::Emit(const std::string name, const Vector3& position, cons
 	// パーティクルグループが存在するかをチェック
 	if (particleGroups.find(name) == particleGroups.end())
 	{
-		Logger::Log("ParticleGroupが存在しません");
+		Logger::Log("ParticleGroup not exist");
 		assert(false);
 	}
 
@@ -213,7 +213,7 @@ void ParticleManager::Emit(const std::string name, const Vector3& position, cons
 {
 	if (particleGroups.find(name) == particleGroups.end())
 	{
-		Logger::Log("ParticleGroupが存在しません");
+		Logger::Log("ParticleGroup not exist");
 		assert(false);
 	}
 
@@ -233,7 +233,7 @@ void ParticleManager::Emit(const std::string name, const Vector3& position, cons
 {
 	if (particleGroups.find(name) == particleGroups.end())
 	{
-		Logger::Log("ParticleGroupが存在しません");
+		Logger::Log("ParticleGroup not exist");
 		assert(false);
 	}
 
