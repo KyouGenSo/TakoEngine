@@ -35,6 +35,7 @@ void TitleScene::Update()
 #ifdef _DEBUG
 	if (Input::GetInstance()->TriggerKey(DIK_F1)) {
 		Object3dBasic::GetInstance()->SetDebug(!Object3dBasic::GetInstance()->GetDebug());
+		Draw2D::GetInstance()->SetDebug(!Draw2D::GetInstance()->GetDebug());
 		isDebug_ = !isDebug_;
 	}
 
@@ -83,7 +84,6 @@ void TitleScene::Draw()
 
 
 	//--------------------------------------------------//
-
 }
 
 void TitleScene::DrawImGui()

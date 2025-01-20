@@ -39,8 +39,6 @@ void TakoFramework::Initialize()
 
 	SpriteBasic::GetInstance()->Initialize(dx12_);
 
-	Draw2D::GetInstance()->Initialize(dx12_);
-
 	Transition::GetInstance()->Initialize();
 
 	DebugCamera::GetInstance()->Initialize();
@@ -51,6 +49,9 @@ void TakoFramework::Initialize()
 
 	// デフォルトカメラを設定
 	Object3dBasic::GetInstance()->SetCamera(defaultCamera_);
+	Draw2D::GetInstance()->SetCamera(defaultCamera_);
+
+	Draw2D::GetInstance()->Initialize(dx12_);
 
 	PostEffect::GetInstance()->Initialize(dx12_);
 
