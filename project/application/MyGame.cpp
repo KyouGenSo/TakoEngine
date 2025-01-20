@@ -74,6 +74,8 @@ void MyGame::Draw()
 	// シーンの描画
 	SceneManager::GetInstance()->Draw();
 
+	Draw2D::GetInstance()->Draw();
+
 	Draw2D::GetInstance()->Reset();
 
 
