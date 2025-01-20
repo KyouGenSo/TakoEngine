@@ -7,7 +7,5 @@ public:
 
 	ParticleEmitter();
 
-	~ParticleEmitter();
-
 	void Emit();
 };
