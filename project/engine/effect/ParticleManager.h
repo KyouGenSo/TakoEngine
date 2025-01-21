@@ -26,54 +26,6 @@ private: // シングルトン設定
     ParticleManager(ParticleManager&) = delete;
     ParticleManager& operator=(ParticleManager&) = delete;
 
-public: // メンバー関数
-
-    /// <summary>
-    ///　インスタンスの取得
-        ///	</summary>
-    static ParticleManager* GetInstance();
-
-    /// <summary>
-    ///　初期化
-    /// </summary>
-    void Initialize(DX12Basic* dx12, Camera* camera);
-
-    /// <summary>
-    ///　更新
-    /// </summary>
-    void Update();
-
-    /// <summary>
-    ///　描画
-    /// </summary>
-    void Draw();
-
-    /// <summary>
-    /// 終了処理
-    /// </summary>
-    void Finalize();
-
-    /// <summary>
-    /// パーティクルグループの生成
-    /// </summary>
-    void CreateParticleGroup(const std::string name, const std::string textureFilePath);
-
-    /// <summary>
-    /// エミッター
-    /// </summary>
-    void Emit(const std::string name, const Vector3& position, const Vector3& scale, uint32_t count);
-	void Emit(const std::string name, const Vector3& position, const Vector3& scale, uint32_t count, bool isRandomColor);
-	void Emit(const std::string name, const Vector3& position, const Vector3& scale, uint32_t count, Vector4 color);
-    void Emit(const std::string name, const Vector3& position, uint32_t count);
-
-
-    // -----------------------------------Getters-----------------------------------//
-
-
-    // -----------------------------------Setters-----------------------------------//
-    void SetCamera(Camera* camera) { m_camera_ = camera; }
-	void SetIsBillboard(bool isBillboard) { isBillboard_ = isBillboard; }
-
 public: // 構造体
     struct Transform
     {
@@ -150,6 +102,54 @@ public: // 構造体
         float frequency;
         float frequencyTime;
     };
+
+public: // メンバー関数
+
+    /// <summary>
+    ///　インスタンスの取得
+        ///	</summary>
+    static ParticleManager* GetInstance();
+
+    /// <summary>
+    ///　初期化
+    /// </summary>
+    void Initialize(DX12Basic* dx12, Camera* camera);
+
+    /// <summary>
+    ///　更新
+    /// </summary>
+    void Update();
+
+    /// <summary>
+    ///　描画
+    /// </summary>
+    void Draw();
+
+    /// <summary>
+    /// 終了処理
+    /// </summary>
+    void Finalize();
+
+    /// <summary>
+    /// パーティクルグループの生成
+    /// </summary>
+    void CreateParticleGroup(const std::string name, const std::string textureFilePath);
+
+    /// <summary>
+    /// エミッター
+    /// </summary>
+    void Emit(const std::string name, const Vector3& position, const Vector3& scale, uint32_t count);
+	void Emit(const std::string name, const Vector3& position, const Vector3& scale, uint32_t count, bool isRandomColor);
+	void Emit(const std::string name, const Vector3& position, const Vector3& scale, uint32_t count, Vector4 color);
+    void Emit(const std::string name, const Vector3& position, uint32_t count);
+
+
+    // -----------------------------------Getters-----------------------------------//
+	const std::unordered_map<std::string, ParticleGroup>& GetParticleGroups() const { return particleGroups; }
+
+    // -----------------------------------Setters-----------------------------------//
+    void SetCamera(Camera* camera) { m_camera_ = camera; }
+	void SetIsBillboard(bool isBillboard) { isBillboard_ = isBillboard; }
 
 private: // プライベートメンバー関数
 
