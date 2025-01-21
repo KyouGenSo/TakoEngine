@@ -186,7 +186,7 @@ private: // メンバー変数
     std::unordered_map<std::string, ParticleGroup> particleGroups;
 
     // パーティクルの最大出力数
-    const uint32_t kNumMaxInstance_ = 256;
+    const uint32_t kNumMaxInstance_ = 1024;
 
     //とりあえず60fps固定してあるが、実時間を計測して可変fpsで動かせるようにしておくとなおよい
     const float kDeltaTime_ = 1.0f / 60.0f;
