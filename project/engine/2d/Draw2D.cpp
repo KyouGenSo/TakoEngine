@@ -212,6 +212,39 @@ void Draw2D::DrawSphere(const Vector3& center, const float radius, const Vector4
 	}
 }
 
+void Draw2D::DrawAABB(const AABB& aabb, const Vector4& color)
+{
+	Vector3 min = aabb.min;
+	Vector3 max = aabb.max;
+
+	Vector3 p1 = Vector3(min.x, min.y, min.z);
+	Vector3 p2 = Vector3(max.x, min.y, min.z);
+	Vector3 p3 = Vector3(max.x, max.y, min.z);
+	Vector3 p4 = Vector3(min.x, max.y, min.z);
+	Vector3 p5 = Vector3(min.x, min.y, max.z);
+	Vector3 p6 = Vector3(max.x, min.y, max.z);
+	Vector3 p7 = Vector3(max.x, max.y, max.z);
+	Vector3 p8 = Vector3(min.x, max.y, max.z);
+
+	// 底面
+	DrawLine(p1, p2, color);
+	DrawLine(p2, p3, color);
+	DrawLine(p3, p4, color);
+	DrawLine(p4, p1, color);
+
+	// 上面
+	DrawLine(p5, p6, color);
+	DrawLine(p6, p7, color);
+	DrawLine(p7, p8, color);
+	DrawLine(p8, p5, color);
+
+	// 側面
+	DrawLine(p1, p5, color);
+	DrawLine(p2, p6, color);
+	DrawLine(p3, p7, color);
+	DrawLine(p4, p8, color);
+}
+
 void Draw2D::Draw()
 {
 	/// ================================== ///

@@ -29,7 +29,9 @@ void MyGame::Initialize()
 	SceneManager::GetInstance()->ChangeScene("title", 0.0f);
 
 	TextureManager::GetInstance()->LoadTexture("white.png");
+	TextureManager::GetInstance()->LoadTexture("circle.png");
 	ParticleManager::GetInstance()->CreateParticleGroup("white", "white.png");
+	ParticleManager::GetInstance()->CreateParticleGroup("circle", "circle.png");
 }
 
 void MyGame::Finalize()
@@ -73,6 +75,8 @@ void MyGame::Draw()
 
 	// シーンの描画
 	SceneManager::GetInstance()->Draw();
+
+	ParticleManager::GetInstance()->Draw();
 
 	Draw2D::GetInstance()->Draw();
 

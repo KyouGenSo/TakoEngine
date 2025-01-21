@@ -7,6 +7,7 @@
 #include<vector>
 #include <list>
 #include "Camera.h"
+#include "AABB.h"
 
 using namespace std;
 
@@ -121,6 +122,8 @@ public: // メンバ関数
 	void DrawLine(const Vector3& start, const Vector3& end, const Vector4& color);
 
 	void DrawSphere(const Vector3& center, const float radius, const Vector4& color);
+
+	void DrawAABB(const AABB& aabb, const Vector4& color);
 
 	/// <summary>
 	/// 描画

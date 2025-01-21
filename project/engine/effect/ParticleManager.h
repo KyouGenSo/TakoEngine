@@ -11,6 +11,7 @@
 #include "vector3.h"
 #include "vector4.h"
 #include "Transform.h"
+#include "AABB.h"
 
 class DX12Basic;
 
@@ -27,13 +28,6 @@ private: // シングルトン設定
     ParticleManager& operator=(ParticleManager&) = delete;
 
 public: // 構造体
-    struct Transform
-    {
-        Vector3 scale;
-        Vector3 rotate;
-        Vector3 translate;
-
-    };
 
     // 頂点データ
     struct VertexData
@@ -136,15 +130,13 @@ public: // メンバー関数
     void CreateParticleGroup(const std::string name, const std::string textureFilePath);
 
     /// <summary>
-    /// エミッター
+    /// エミット
     /// </summary>
-    void Emit(const std::string name, const Vector3& position, const Vector3& scale, uint32_t count);
-	void Emit(const std::string name, const Vector3& position, const Vector3& scale, uint32_t count, bool isRandomColor);
-	void Emit(const std::string name, const Vector3& position, const Vector3& scale, uint32_t count, Vector4 color);
-
+	void Emit(const std::string name, const Vector3& position, const Vector3& scale, const Vector3& velocity, const AABB& range, uint32_t count, const Vector4& color, const float lifeTime, bool isRandomColor);
 
     // -----------------------------------Getters-----------------------------------//
 	const std::unordered_map<std::string, ParticleGroup>& GetParticleGroups() const { return particleGroups; }
+	const float GetDeltaTime() const { return kDeltaTime_; }
 
     // -----------------------------------Setters-----------------------------------//
     void SetCamera(Camera* camera) { m_camera_ = camera; }
@@ -173,11 +165,9 @@ private: // プライベートメンバー関数
     void CreateMaterialData();
 
     /// <summary>
-    /// パーティクル生成器
+    /// パーティクル生成
     /// </summary>
-	Particle MakeNewParticle(std::mt19937& randomEngine, const Vector3& translate, const Vector3& scale);
-	Particle MakeNewParticle(std::mt19937& randomEngine, const Vector3& translate, const Vector3& scale, bool isRandomColor);
-	Particle MakeNewParticle(std::mt19937& randomEngine, const Vector3& translate, const Vector3& scale, Vector4 color);
+    Particle MakeNewParticle(std::mt19937& randomEngine, const Vector3& translate, const Vector3& scale, const Vector3& velocity, const AABB& range, const Vector4& color, const float lifeTime, bool isRandomColor);
 
 private: // メンバー変数
 
@@ -191,6 +181,18 @@ private: // メンバー変数
 
     // モデル
     ModelData modelData_;
+
+    // パーティクルグループ
+    std::unordered_map<std::string, ParticleGroup> particleGroups;
+
+    // パーティクルの最大出力数
+    const uint32_t kNumMaxInstance_ = 256;
+
+    //とりあえず60fps固定してあるが、実時間を計測して可変fpsで動かせるようにしておくとなおよい
+    const float kDeltaTime_ = 1.0f / 60.0f;
+
+    // billboardMatrixのフラグ
+    bool isBillboard_ = true;
 
     // ルートシグネチャ
     Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;
@@ -214,17 +216,4 @@ private: // メンバー変数
 
     // マテリアルデータ
     Material* materialData_;
-
-    // パーティクルグループ
-    std::unordered_map<std::string, ParticleGroup> particleGroups;
-
-    // パーティクルの最大出力数
-    const uint32_t kNumMaxInstance_ = 256;
-
-    //とりあえず60fps固定してあるが、実時間を計測して可変fpsで動かせるようにしておくとなおよい
-    const float kDeltaTime_ = 1.0f / 60.0f;
-
-    // billboardMatrixのフラグ
-    bool isBillboard_ = true;
-
 };

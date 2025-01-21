@@ -346,6 +346,9 @@
     <ClInclude Include="engine\effect\ParticleEmitter.h">
       <Filter>ヘッダー ファイル\engine\effect</Filter>
     </ClInclude>
+    <ClInclude Include="engine\math\AABB.h">
+      <Filter>ヘッダー ファイル\engine\math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\NoTex.hlsli">
