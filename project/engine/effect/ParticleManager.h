@@ -141,7 +141,6 @@ public: // メンバー関数
     void Emit(const std::string name, const Vector3& position, const Vector3& scale, uint32_t count);
 	void Emit(const std::string name, const Vector3& position, const Vector3& scale, uint32_t count, bool isRandomColor);
 	void Emit(const std::string name, const Vector3& position, const Vector3& scale, uint32_t count, Vector4 color);
-    void Emit(const std::string name, const Vector3& position, uint32_t count);
 
 
     // -----------------------------------Getters-----------------------------------//
