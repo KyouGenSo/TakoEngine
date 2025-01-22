@@ -57,6 +57,9 @@ public: // メンバー関数
 	/// </summary>
 	Matrix4x4 GetViewProjectionMat() const { return viewProjectionMat_; }
 
+	Vector3 GetRotate() const { return transform_.rotate; }
+	Vector3 GetTranslate() const { return transform_.translate; }
+
 	//-----------------------------------------Setter-----------------------------------------//
 	///<summary>
 	///ビュー行列の設定

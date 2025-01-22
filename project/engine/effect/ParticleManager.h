@@ -137,10 +137,12 @@ public: // メンバー関数
     // -----------------------------------Getters-----------------------------------//
 	const std::unordered_map<std::string, ParticleGroup>& GetParticleGroups() const { return particleGroups; }
 	const float GetDeltaTime() const { return kDeltaTime_; }
+	const bool GetIsDebug() const { return isDebug_; }
 
     // -----------------------------------Setters-----------------------------------//
     void SetCamera(Camera* camera) { m_camera_ = camera; }
 	void SetIsBillboard(bool isBillboard) { isBillboard_ = isBillboard; }
+	void SetIsDebug(bool isDebug) { isDebug_ = isDebug; }
 
 private: // プライベートメンバー関数
 
@@ -170,6 +172,8 @@ private: // プライベートメンバー関数
     Particle MakeNewParticle(std::mt19937& randomEngine, const Vector3& translate, const Vector3& scale, const Vector3& velocity, const AABB& range, const Vector4& color, const float lifeTime, bool isRandomColor);
 
 private: // メンバー変数
+
+	bool isDebug_ = false;
 
     // DX12Basic
     DX12Basic* m_dx12_  = nullptr;

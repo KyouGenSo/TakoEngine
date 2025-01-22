@@ -67,6 +67,7 @@ void TitleScene::Update()
 	if (Input::GetInstance()->TriggerKey(DIK_F1)) {
 		Object3dBasic::GetInstance()->SetDebug(!Object3dBasic::GetInstance()->GetDebug());
 		Draw2D::GetInstance()->SetDebug(!Draw2D::GetInstance()->GetDebug());
+		ParticleManager::GetInstance()->SetIsDebug(!ParticleManager::GetInstance()->GetIsDebug());
 		isDebug_ = !isDebug_;
 	}
 

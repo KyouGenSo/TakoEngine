@@ -8,6 +8,7 @@
 #include "Mat4x4Func.h"
 #include "WinApp.h"
 #include <numbers>
+#include "DebugCamera.h"
 
 
 ParticleManager* ParticleManager::instance_ = nullptr;
@@ -50,6 +51,11 @@ void ParticleManager::Update()
 	Matrix4x4 viewMatrix = Mat4x4::Inverse(cameraMatrix);
 	Matrix4x4 projectionMatrix = m_camera_->GetProjectionMatrix();
 	Matrix4x4 viewProjectionMatrix = Mat4x4::Multiply(viewMatrix, projectionMatrix);
+
+	if (isDebug_) {
+		cameraMatrix = Mat4x4::MakeAffine({ 1.0f,1.0f,1.0f }, DebugCamera::GetInstance()->GetRotate(), DebugCamera::GetInstance()->GetTranslate());
+		viewProjectionMatrix = DebugCamera::GetInstance()->GetViewProjectionMat();
+	}
 
 	// ビルボード行列の生成
 	Matrix4x4 backToFrontMatrix = Mat4x4::MakeRotateY(std::numbers::pi_v<float>);
