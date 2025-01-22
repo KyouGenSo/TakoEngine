@@ -125,6 +125,8 @@ public: // メンバ関数
 
 	void DrawAABB(const AABB& aabb, const Vector4& color);
 
+	void DrawGrid(const float size, const float subdivision, const Vector4& color);
+
 	/// <summary>
 	/// 描画
 	/// </summary>
@@ -188,6 +190,11 @@ private: // プライベートメンバ関数
 	/// </summary>
 	void CalcSphereVertexData();
 
+	/// <summary>
+	/// グリッドの頂点位置を計算
+	/// </summary>
+	void CalcGridVertexData();
+
 private: // メンバ変数
 
 	// DX12Basicクラスのインスタンス
@@ -248,5 +255,8 @@ private: // メンバ変数
 	LineData* lineData_;
 
 	// 球のデータ
-	std::vector<Vector3> spheres_;
+	std::vector<Vector3> sphereVerties_;
+
+	// グリッドのデータ
+	std::vector<Vector3> gridVerties_;
 };

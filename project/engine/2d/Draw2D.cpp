@@ -196,11 +196,11 @@ void Draw2D::DrawSphere(const Vector3& center, const float radius, const Vector4
 {
 	Matrix4x4 worldMatrix = Mat4x4::MakeAffine(Vector3(radius, radius, radius), Vector3(0.0f, 0.0f, 0.0f), center);
 
-	for (uint32_t i = 0; i < spheres_.size(); i += 3)
+	for (uint32_t i = 0; i < sphereVerties_.size(); i += 3)
 	{
-		Vector3 a = spheres_[i];
-		Vector3 b = spheres_[i + 1];
-		Vector3 c = spheres_[i + 2];
+		Vector3 a = sphereVerties_[i];
+		Vector3 b = sphereVerties_[i + 1];
+		Vector3 c = sphereVerties_[i + 2];
 
 		a = Mat4x4::TransForm(worldMatrix, a);
 		b = Mat4x4::TransForm(worldMatrix, b);
@@ -243,6 +243,36 @@ void Draw2D::DrawAABB(const AABB& aabb, const Vector4& color)
 	DrawLine(p2, p6, color);
 	DrawLine(p3, p7, color);
 	DrawLine(p4, p8, color);
+}
+
+void Draw2D::DrawGrid(const float size, const float subdivision, const Vector4& color)
+{
+	float halfWidth = size * 0.5f;
+	float every = size / subdivision;
+
+	for (uint32_t xIndex = 0; xIndex <= subdivision; xIndex++)
+	{
+		Vector3 worldStart = Vector3(-halfWidth + every * xIndex, 0.0f, halfWidth);
+		Vector3 worldEnd = Vector3(-halfWidth + every * xIndex, 0.0f, -halfWidth);
+
+		DrawLine(worldStart, worldEnd, color);
+	}
+
+	for (uint32_t zIndex = 0; zIndex <= subdivision; zIndex++)
+	{
+		Vector3 worldStart = Vector3(halfWidth, 0.0f, -halfWidth + every * zIndex);
+		Vector3 worldEnd = Vector3(-halfWidth, 0.0f, -halfWidth + every * zIndex);
+
+		DrawLine(worldStart, worldEnd, color);
+	}
+
+	// X軸
+	DrawLine(Vector3(-halfWidth, 0.0f, 0.0f), Vector3(halfWidth, 0.0f, 0.0f), Vector4(1.0f, 0.0f, 0.0f, 1.0f));
+	// Z軸
+	DrawLine(Vector3(0.0f, 0.0f, -halfWidth), Vector3(0.0f, 0.0f, halfWidth), Vector4(0.0f, 0.0f, 1.0f, 1.0f));
+	// Y軸
+	DrawLine(Vector3(0.0f, -halfWidth, 0.0f), Vector3(0.0f, halfWidth, 0.0f), Vector4(0.0f, 1.0f, 0.0f, 1.0f));
+
 }
 
 void Draw2D::Draw()
@@ -517,10 +547,39 @@ void Draw2D::CalcSphereVertexData()
 			c.z = 0.0f + 1.0f * cosf(lat) * sinf(lon + kLonEvery);
 
 			// 座標を保存
-			spheres_.push_back(a);
-			spheres_.push_back(b);
-			spheres_.push_back(c);
+			sphereVerties_.push_back(a);
+			sphereVerties_.push_back(b);
+			sphereVerties_.push_back(c);
 		}
+	}
+}
+
+void Draw2D::CalcGridVertexData()
+{
+	const float kGridHalfWidth = 2.0f; // グリッドの半分の幅
+	const uint32_t kSubdivision = 10; // 1分割数
+	const float kGridEvery = (kGridHalfWidth * 2.0f) / float(kSubdivision); // 1分割の長さ
+
+	// 奥から手前への線を順々に引いていく
+	for (uint32_t xIndex = 0; xIndex <= kSubdivision; xIndex++) {
+		// 上の情報を使ってワールド座標系上の始点と終点を求める
+		Vector3 worldStart(-kGridHalfWidth + kGridEvery * float(xIndex), 0.0f, kGridHalfWidth);
+		Vector3 worldEnd(-kGridHalfWidth + kGridEvery * float(xIndex), 0.0f, -kGridHalfWidth);
+
+		// 座標を保存
+		gridVerties_.push_back(worldStart);
+		gridVerties_.push_back(worldEnd);
+	}
+
+	// 左から右への線を順々に引いていく
+	for (uint32_t zIndex = 0; zIndex <= kSubdivision; zIndex++) {
+		// 上の情報を使ってワールド座標系上の始点と終点を求める
+		Vector3 worldStart(-kGridHalfWidth, 0.0f, kGridHalfWidth - kGridEvery * float(zIndex));
+		Vector3 worldEnd(kGridHalfWidth, 0.0f, kGridHalfWidth - kGridEvery * float(zIndex));
+
+		// 座標を保存
+		gridVerties_.push_back(worldStart);
+		gridVerties_.push_back(worldEnd);
 	}
 }
 
