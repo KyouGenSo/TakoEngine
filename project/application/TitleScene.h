@@ -4,7 +4,7 @@
 #include"Object3d.h"
 #include <vector>
 #include <memory>
-#include "AABB.h"
+#include "Camera.h"
 #include "ParticleEmitter.h"
 
 class TitleScene : public BaseScene
@@ -36,26 +36,27 @@ public: // メンバ関数
 	/// </summary>
 	void DrawImGui() override;
 
-	struct EmitterParam {
-		std::string name_;
-		Transform transform_;
-		Vector3 velocity_;
-		AABB range_;
-		Vector4 color_;
-		float lifeTime;
-		int count_;
-		float frequency_;
-		bool isRandomColor_;
-		bool isVisualize_;
-	};
 
 private: // メンバ変数
 
 	bool isDebug_ = false;
 
-	EmitterParam emitterParam_;
-	EmitterParam emitterParam2_;
+	Object3d* plane_;
+	Vector3 planePos_ = Vector3(0.0f, 0.0f, 0.0f);
+	Vector3 planeScale_ = Vector3(1.0f, 1.0f, 1.0f);
+	Vector3 planeRotate_ = Vector3(0.0f, 0.0f, 0.0f);
 
-	std::unique_ptr<ParticleEmitter> particleEmitter_;
-	std::unique_ptr<ParticleEmitter> particleEmitter2_;
+	Object3d* plane2_;
+	Vector3 plane2Pos_ = Vector3(0.0f, 0.0f, 0.0f);
+	Vector3 plane2Scale_ = Vector3(1.0f, 1.0f, 1.0f);
+	Vector3 plane2Rotate_ = Vector3(0.0f, 0.0f, 0.0f);
+
+	Object3d* terrain_;
+	Vector3 terrainPos_ = Vector3(0.0f, 1.0f, 0.0f);
+	Vector3 terrainScale_ = Vector3(1.0f, 1.0f, 1.0f);
+	Vector3 terrainRotate_ = Vector3(0.0f, 0.0f, 0.0f);
+
+	Camera* camera_;
+	Vector3 cameraPos_ = Vector3(0.0f, 9.0f, -34.0f);
+	Vector3 cameraRot_ = Vector3(0.2f, 0.0f, 0.0f);
 };

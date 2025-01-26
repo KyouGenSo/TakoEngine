@@ -8,6 +8,7 @@
 #include "Input.h"
 #include "Draw2D.h"
 #include "Camera.h"
+#include "DirectXMath.h"
 
 #ifdef _DEBUG
 #include"ImGui.h"
@@ -23,42 +24,44 @@ void TitleScene::Initialize()
 	/// ================================== ///
 	///              初期化処理              ///
 	/// ================================== ///
+	ModelManager::GetInstance()->LoadModel("plane.obj", false);
+	ModelManager::GetInstance()->LoadModel("uvChecker.gltf", false);
+	ModelManager::GetInstance()->LoadModel("terrain.obj", false);
 
-	// エミッターの設定
-	emitterParam_.name_ = "circle";
-	emitterParam_.transform_.translate = Vector3(-1.0f, 0.0f, 0.0f);
-	emitterParam_.transform_.scale = Vector3(0.1f, 0.1f, 0.1f);
-	emitterParam_.velocity_ = Vector3(0.0f, 1.0f, 0.0f);
-	emitterParam_.range_.min = Vector3(-0.5f, -0.5f, -0.5f);
-	emitterParam_.range_.max = Vector3(0.5f, 0.5f, 0.5f);
-	emitterParam_.color_ = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-	emitterParam_.count_ = 1;
-	emitterParam_.lifeTime = 1.0f;
-	emitterParam_.frequency_ = 0.1f;
-	emitterParam_.isRandomColor_ = false;
-	emitterParam_.isVisualize_ = true;
+	camera_ = new Camera();
+	camera_->SetTranslate(cameraPos_);
+	camera_->SetRotate(cameraRot_);
 
-	particleEmitter_ = std::make_unique<ParticleEmitter>(emitterParam_.name_, emitterParam_.transform_, emitterParam_.velocity_, emitterParam_.range_, emitterParam_.lifeTime, emitterParam_.count_, emitterParam2_.color_, emitterParam_.frequency_, emitterParam_.isRandomColor_);
+	Object3dBasic::GetInstance()->SetCamera(camera_);
+	Draw2D::GetInstance()->SetCamera(camera_);
 
-	// エミッターの設定2
-	emitterParam2_.name_ = "white";
-	emitterParam2_.transform_.translate = Vector3(1.0f, 0.0f, 0.0f);
-	emitterParam2_.transform_.scale = Vector3(0.1f, 0.1f, 0.1f);
-	emitterParam2_.velocity_ = Vector3(0.0f, 1.0f, 0.0f);
-	emitterParam2_.range_.min = Vector3(-0.5f, -0.5f, -0.5f);
-	emitterParam2_.range_.max = Vector3(0.5f, 0.5f, 0.5f);
-	emitterParam2_.color_ = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-	emitterParam2_.count_ = 1;
-	emitterParam2_.lifeTime = 1.0f;
-	emitterParam2_.frequency_ = 0.1f;
-	emitterParam2_.isRandomColor_ = false;
-	emitterParam2_.isVisualize_ = true;
+	plane_ = new Object3d();
+	plane_->Initialize();
+	plane_->SetModel("plane.obj");
+	planePos_ = Vector3(1.8f, 2.6f, -11.8f);
+	planeRotate_ = Vector3(0.0f, DirectX::XMConvertToRadians(180.0f), 0.0f);
 
-	particleEmitter2_ = std::make_unique<ParticleEmitter>(emitterParam2_.name_, emitterParam2_.transform_, emitterParam2_.velocity_, emitterParam2_.range_, emitterParam2_.lifeTime, emitterParam2_.count_, emitterParam2_.color_, emitterParam2_.frequency_, emitterParam2_.isRandomColor_);
+	plane2_ = new Object3d();
+	plane2_->Initialize();
+	plane2_->SetModel("uvChecker.gltf");
+	plane2Pos_ = Vector3(-5.3f, 2.6f, -11.8f);
+	plane2Rotate_ = Vector3(0.0f, DirectX::XMConvertToRadians(180.0f), 0.0f);
+
+	terrain_ = new Object3d();
+	terrain_->Initialize();
+	terrain_->SetModel("terrain.obj");
+
 }
 
 void TitleScene::Finalize()
 {
+	/// ================================== ///
+	///              終了処理               ///
+ 	/// ================================== ///
+ 	delete plane_;
+ 	delete plane2_;
+	delete terrain_;
+	delete camera_;
 }
 
 void TitleScene::Update()
@@ -79,37 +82,25 @@ void TitleScene::Update()
 	///              更新処理               ///
 	/// ================================== ///
 
-	particleEmitter_->SetIsVisualize(emitterParam_.isVisualize_);
-	particleEmitter_->SetTranslate(emitterParam_.transform_.translate);
-	particleEmitter_->SetScale(emitterParam_.transform_.scale);
-	particleEmitter_->SetFrequency(emitterParam_.frequency_);
-	particleEmitter_->SetCount(emitterParam_.count_);
-	particleEmitter_->SetVelocity(emitterParam_.velocity_);
-	particleEmitter_->SetRange(emitterParam_.range_);
-	particleEmitter_->SetColor(emitterParam_.color_);
-	particleEmitter_->SetLifeTime(emitterParam_.lifeTime);
-	particleEmitter_->SetIsRandomColor(emitterParam_.isRandomColor_);
+	camera_->SetTranslate(cameraPos_);
+	camera_->SetRotate(cameraRot_);
+	camera_->Update();
+	
+	plane_->SetTranslate(planePos_);
+	plane_->SetScale(planeScale_);
+	plane_->SetRotate(planeRotate_);
+	plane_->Update();
 
-	particleEmitter_->Update();
+	
+	plane2_->SetTranslate(plane2Pos_);
+	plane2_->SetScale(plane2Scale_);
+	plane2_->SetRotate(plane2Rotate_);
+	plane2_->Update();
 
-	particleEmitter2_->SetIsVisualize(emitterParam2_.isVisualize_);
-	particleEmitter2_->SetTranslate(emitterParam2_.transform_.translate);
-	particleEmitter2_->SetScale(emitterParam2_.transform_.scale);
-	particleEmitter2_->SetFrequency(emitterParam2_.frequency_);
-	particleEmitter2_->SetCount(emitterParam2_.count_);
-	particleEmitter2_->SetVelocity(emitterParam2_.velocity_);
-	particleEmitter2_->SetRange(emitterParam2_.range_);
-	particleEmitter2_->SetColor(emitterParam2_.color_);
-	particleEmitter2_->SetLifeTime(emitterParam2_.lifeTime);
-	particleEmitter2_->SetIsRandomColor(emitterParam2_.isRandomColor_);
-
-	particleEmitter2_->Update();
-
-
-	if (Input::GetInstance()->TriggerKey(DIK_RETURN))
-	{
-		SceneManager::GetInstance()->ChangeScene("game");
-	}
+	terrain_->SetTranslate(terrainPos_);
+	terrain_->SetScale(terrainScale_);
+	terrain_->SetRotate(terrainRotate_);
+	terrain_->Update();
 }
 
 void TitleScene::Draw()
@@ -117,6 +108,11 @@ void TitleScene::Draw()
 	/// ================================== ///
 	///              描画処理               ///
 	/// ================================== ///
+	
+	Draw2D::GetInstance()->DrawGrid(100.0f, 20.0f, Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	
+	Draw2D::GetInstance()->Draw();
+
 	//------------------背景Spriteの描画------------------//
 	// スプライト共通描画設定
 	SpriteBasic::GetInstance()->SetCommonRenderSetting();
@@ -130,6 +126,10 @@ void TitleScene::Draw()
 	// 3Dモデル共通描画設定
 	Object3dBasic::GetInstance()->SetCommonRenderSetting();
 
+	// モデルの描画
+	plane_->Draw();
+	plane2_->Draw();
+	terrain_->Draw();
 
 	//------------------------------------------------//
 
@@ -141,11 +141,6 @@ void TitleScene::Draw()
 
 
 	//--------------------------------------------------//
-
-	particleEmitter_->Draw();
-	particleEmitter2_->Draw();
-
-	Draw2D::GetInstance()->DrawGrid(100.0f, 20.0f, Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 }
 
 void TitleScene::DrawImGui()
@@ -156,35 +151,30 @@ void TitleScene::DrawImGui()
 	///             ImGuiの描画              ///
 	/// ================================== ///
 
-	ImGui::Begin("EmitterParam1");
-	ImGui::DragFloat3("translate", &emitterParam_.transform_.translate.x, 0.1f);
-	ImGui::DragFloat3("scale", &emitterParam_.transform_.scale.x, 0.1f);
-	ImGui::DragFloat3("velocity", &emitterParam_.velocity_.x, 0.1f);
-	ImGui::DragFloat3("range min", &emitterParam_.range_.min.x, 0.1f);
-	ImGui::DragFloat3("range max", &emitterParam_.range_.max.x, 0.1f);
-	ImGui::DragFloat("lifeTime", &emitterParam_.lifeTime, 0.1f);
-	ImGui::DragInt("count", &emitterParam_.count_, 1, 1, 1024);
-	ImGui::DragFloat("frequency", &emitterParam_.frequency_, 0.1f);
-	ImGui::Checkbox("isRandomColor", &emitterParam_.isRandomColor_);
-	ImGui::Checkbox("isVisualize", &emitterParam_.isVisualize_);
-	// color picker
-	ImGui::ColorEdit4("color", &emitterParam_.color_.x);
+
+	ImGui::Begin("plane");
+	ImGui::DragFloat3("planePos", &planePos_.x, 0.1f);
+	ImGui::DragFloat3("planeScale", &planeScale_.x, 0.1f);
+	ImGui::DragFloat3("planeRotate", &planeRotate_.x, 0.1f);
 	ImGui::End();
 
-	ImGui::Begin("EmitterParam2");
-	ImGui::DragFloat3("translate", &emitterParam2_.transform_.translate.x, 0.1f);
-	ImGui::DragFloat3("scale", &emitterParam2_.transform_.scale.x, 0.1f);
-	ImGui::DragFloat3("velocity", &emitterParam2_.velocity_.x, 0.1f);
-	ImGui::DragFloat3("range min", &emitterParam2_.range_.min.x, 0.1f);
-	ImGui::DragFloat3("range max", &emitterParam2_.range_.max.x, 0.1f);
-	ImGui::DragFloat("lifeTime", &emitterParam2_.lifeTime, 0.1f);
-	ImGui::DragInt("count", &emitterParam2_.count_, 1, 1, 1024);
-	ImGui::DragFloat("frequency", &emitterParam2_.frequency_, 0.1f);
-	ImGui::Checkbox("isRandomColor", &emitterParam2_.isRandomColor_);
-	ImGui::Checkbox("isVisualize", &emitterParam2_.isVisualize_);
-	// color picker
-	ImGui::ColorEdit4("color", &emitterParam2_.color_.x);
+	ImGui::Begin("plane2");
+	ImGui::DragFloat3("plane2Pos", &plane2Pos_.x, 0.1f);
+	ImGui::DragFloat3("plane2Scale", &plane2Scale_.x, 0.1f);
+	ImGui::DragFloat3("plane2Rotate", &plane2Rotate_.x, 0.1f);
 	ImGui::End();
+
+	ImGui::Begin("terrain");
+	ImGui::DragFloat3("terrainPos", &terrainPos_.x, 0.1f);
+	ImGui::DragFloat3("terrainScale", &terrainScale_.x, 0.1f);
+	ImGui::DragFloat3("terrainRotate", &terrainRotate_.x, 0.1f);
+	ImGui::End();
+
+	ImGui::Begin("camera");
+	ImGui::DragFloat3("cameraPos", &cameraPos_.x, 0.1f);
+	ImGui::DragFloat3("cameraRotate", &cameraRot_.x, 0.1f);
+	ImGui::End();
+
 
 #endif // _DEBUG
 }

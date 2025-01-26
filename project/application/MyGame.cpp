@@ -76,9 +76,8 @@ void MyGame::Draw()
 	// シーンの描画
 	SceneManager::GetInstance()->Draw();
 
-	ParticleManager::GetInstance()->Draw();
 
-	Draw2D::GetInstance()->Draw();
+	ParticleManager::GetInstance()->Draw();
 
 	Draw2D::GetInstance()->Reset();
 
