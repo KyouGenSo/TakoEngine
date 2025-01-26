@@ -42,6 +42,7 @@ struct SpotLight
 cbuffer LightConstants : register(b3)
 {
     int gNumPointLights;
+    int gNumSpotLights;
 };
 
 struct Camera
@@ -57,12 +58,13 @@ struct PixelShaderOutput
 ConstantBuffer<Material> gMaterial : register(b0);
 ConstantBuffer<DirectionalLight> gDirectionalLight : register(b1);
 ConstantBuffer<Camera> gCamera : register(b2);
-ConstantBuffer<SpotLight> gSpotLight : register(b4);
+//ConstantBuffer<SpotLight> gSpotLight : register(b4);
 
 Texture2D<float4> gTexture : register(t0);
 SamplerState gSampler : register(s0);
 
 StructuredBuffer<PointLight> gPointLights : register(t1);
+StructuredBuffer<SpotLight> gSpotLight : register(t2);
 
 PixelShaderOutput main(VertexShaderOutput input)
 {
@@ -136,37 +138,37 @@ PixelShaderOutput main(VertexShaderOutput input)
         }
         
         //---------------------------------- Spot Light ----------------------------------
-        float3 spotLightDiffuse;
-        float3 spotLightSpecular;
+        float3 spotLightDiffuse = float3(0.0f, 0.0f, 0.0f);
+        float3 spotLightSpecular = float3(0.0f, 0.0f, 0.0f);
         
-        if (gSpotLight.enable != 0)
+        for (int j = 0; j < gNumSpotLights; j++)
         {
-            float3 spotLightDirOnSurface = normalize(input.worldPos - gSpotLight.position);
-            
-            float3 halfVector = normalize(-spotLightDirOnSurface + toEye);
-            float NdotH = dot(normalize(input.normal), halfVector);
-            float specularPow = pow(saturate(NdotH), gMaterial.shininess); // ”½ŽË‹­“x
-            
-            float distance = length(gSpotLight.position - input.worldPos);
-            float factor = pow(saturate(-distance / gSpotLight.radius + 1.0f), gSpotLight.decay); // ‹——£‚É‚æ‚éŒ¸Š(0.0f ~ 1.0f
-            
-            float cosAngle = dot(spotLightDirOnSurface, gSpotLight.direction);
-            float falloffFactor = saturate((cosAngle - gSpotLight.cosAngle) / (1.0f - gSpotLight.cosAngle));
-            
-            float3 spotLightColor = gSpotLight.color.rgb * gSpotLight.intensity * factor * falloffFactor;
-            
-            // ŠgŽU”½ŽË
-            float NdotL = saturate(dot(normalize(input.normal), -spotLightDirOnSurface));
-            spotLightDiffuse = texColor.rgb * gMaterial.color.rgb * spotLightColor * NdotL;
-            
-            // ‹¾–Ê”½ŽË
-            spotLightSpecular = gSpotLight.color.rgb * gSpotLight.intensity * specularPow * float3(1.0f, 1.0f, 1.0f);
+            if (gSpotLight[j].enable != 0)
+            {
+                float3 spotLightDirOnSurface = normalize(input.worldPos - gSpotLight[j].position);
+                
+                float3 halfVector = normalize(-spotLightDirOnSurface + toEye);
+                float NdotH = dot(normalize(input.normal), halfVector);
+                float specularPow = pow(saturate(NdotH), gMaterial.shininess); // ”½ŽË‹­“x
+                
+                float distance = length(gSpotLight[j].position - input.worldPos);
+                float factor = pow(saturate(-distance / gSpotLight[j].radius + 1.0f), gSpotLight[j].decay); // ‹——£‚É‚æ‚éŒ¸Š(0.0f ~ 1.0f
+                
+                float cosAngle = dot(spotLightDirOnSurface, gSpotLight[j].direction);
+                float falloffFactor = saturate((cosAngle - gSpotLight[j].cosAngle) / (1.0f - gSpotLight[j].cosAngle));
+                
+                float3 spotLightColor = gSpotLight[j].color.rgb * gSpotLight[j].intensity * factor * falloffFactor;
+                
+                // ŠgŽU”½ŽË
+                float NdotL = saturate(dot(normalize(input.normal), -spotLightDirOnSurface));
+                spotLightDiffuse += texColor.rgb * gMaterial.color.rgb * spotLightColor * NdotL;
+                
+                // ‹¾–Ê”½ŽË
+                spotLightSpecular += gSpotLight[j].color.rgb * gSpotLight[j].intensity * specularPow * float3(1.0f, 1.0f, 1.0f);
+            }
         }
-        else
-        {
-            spotLightDiffuse = float3(0.0f, 0.0f, 0.0f);
-            spotLightSpecular = float3(0.0f, 0.0f, 0.0f);
-        }
+        
+        //-----------------------------------------------------------------------------------------------------------------------------
         
         output.color.rgb = directionalLightDiffuse + totalPointLightDiffuse + spotLightDiffuse;
         

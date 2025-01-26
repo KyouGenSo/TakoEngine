@@ -127,66 +127,66 @@ void MyGame::Draw()
 	Draw2D::GetInstance()->ImGui();
 
 	// PostEffectのパラメータ調整
-	ImGui::Begin("PostEffect");
-	if (ImGui::BeginTabBar("PostEffectTab"))
-	{
+	//ImGui::Begin("PostEffect");
+	//if (ImGui::BeginTabBar("PostEffectTab"))
+	//{
 
-		if (ImGui::BeginTabItem("PostEffectType"))
-		{
-			ImGui::RadioButton("NoEffect", (int*)&postEffectType, NoEffect);
-			ImGui::RadioButton("VignetteRed", (int*)&postEffectType, VignetteRed);
-			ImGui::RadioButton("VignetteRedBloom", (int*)&postEffectType, VignetteRedBloom);
-			ImGui::RadioButton("GrayScale", (int*)&postEffectType, GrayScale);
-			ImGui::RadioButton("VigRedGrayScale", (int*)&postEffectType, VigRedGrayScale);
-			ImGui::RadioButton("Bloom", (int*)&postEffectType, Bloom);
-			ImGui::RadioButton("BloomFog", (int*)&postEffectType, BloomFog);
+	//	if (ImGui::BeginTabItem("PostEffectType"))
+	//	{
+	//		ImGui::RadioButton("NoEffect", (int*)&postEffectType, NoEffect);
+	//		ImGui::RadioButton("VignetteRed", (int*)&postEffectType, VignetteRed);
+	//		ImGui::RadioButton("VignetteRedBloom", (int*)&postEffectType, VignetteRedBloom);
+	//		ImGui::RadioButton("GrayScale", (int*)&postEffectType, GrayScale);
+	//		ImGui::RadioButton("VigRedGrayScale", (int*)&postEffectType, VigRedGrayScale);
+	//		ImGui::RadioButton("Bloom", (int*)&postEffectType, Bloom);
+	//		ImGui::RadioButton("BloomFog", (int*)&postEffectType, BloomFog);
 
-			ImGui::EndTabItem();
-		}
+	//		ImGui::EndTabItem();
+	//	}
 
-		//ImGui::Separator();
-		if (ImGui::BeginTabItem("PostEffect"))
-		{
-			if (postEffectType == VignetteRed || postEffectType == VignetteRedBloom || postEffectType == VigRedGrayScale)
-			{
-				ImGui::DragFloat("VignettePower", &vignettePower, 0.01f, 0.0f, 10.0f);
-				PostEffect::GetInstance()->SetVignettePower(vignettePower);
-				ImGui::DragFloat("VignetteRange", &vignetteRange, 0.01f, 0.0f, 100.0f);
-				PostEffect::GetInstance()->SetVignetteRange(vignetteRange);
-			}
+	//	//ImGui::Separator();
+	//	if (ImGui::BeginTabItem("PostEffect"))
+	//	{
+	//		if (postEffectType == VignetteRed || postEffectType == VignetteRedBloom || postEffectType == VigRedGrayScale)
+	//		{
+	//			ImGui::DragFloat("VignettePower", &vignettePower, 0.01f, 0.0f, 10.0f);
+	//			PostEffect::GetInstance()->SetVignettePower(vignettePower);
+	//			ImGui::DragFloat("VignetteRange", &vignetteRange, 0.01f, 0.0f, 100.0f);
+	//			PostEffect::GetInstance()->SetVignetteRange(vignetteRange);
+	//		}
 
-			if (postEffectType == VignetteRedBloom)
-			{
-				ImGui::DragFloat("BloomThreshold", &bloomThreshold, 0.01f, 0.0f, 1.0f);
-				PostEffect::GetInstance()->SetBloomThreshold(bloomThreshold);
-			}
+	//		if (postEffectType == VignetteRedBloom)
+	//		{
+	//			ImGui::DragFloat("BloomThreshold", &bloomThreshold, 0.01f, 0.0f, 1.0f);
+	//			PostEffect::GetInstance()->SetBloomThreshold(bloomThreshold);
+	//		}
 
-			if (postEffectType == Bloom || postEffectType == BloomFog)
-			{
-				ImGui::DragFloat("BloomIntensity", &bloomIntensity, 0.01f, 0.0f, 10.0f);
-				PostEffect::GetInstance()->SetBloomIntensity(bloomIntensity);
-				ImGui::DragFloat("BloomThreshold", &bloomThreshold, 0.01f, 0.0f, 1.0f);
-				PostEffect::GetInstance()->SetBloomThreshold(bloomThreshold);
-				ImGui::DragFloat("BloomSigma", &bloomSigma, 0.01f, 0.0f, 10.0f);
-				PostEffect::GetInstance()->SetBloomSigma(bloomSigma);
-			}
+	//		if (postEffectType == Bloom || postEffectType == BloomFog)
+	//		{
+	//			ImGui::DragFloat("BloomIntensity", &bloomIntensity, 0.01f, 0.0f, 10.0f);
+	//			PostEffect::GetInstance()->SetBloomIntensity(bloomIntensity);
+	//			ImGui::DragFloat("BloomThreshold", &bloomThreshold, 0.01f, 0.0f, 1.0f);
+	//			PostEffect::GetInstance()->SetBloomThreshold(bloomThreshold);
+	//			ImGui::DragFloat("BloomSigma", &bloomSigma, 0.01f, 0.0f, 10.0f);
+	//			PostEffect::GetInstance()->SetBloomSigma(bloomSigma);
+	//		}
 
-			if (postEffectType == BloomFog)
-			{
-				ImGui::ColorEdit4("FogColor", &fogColor.x);
-				PostEffect::GetInstance()->SetFogColor(fogColor);
-				ImGui::DragFloat("FogDensity", &fogDensity, 0.01f, 0.0f, 1.0f);
-				PostEffect::GetInstance()->SetFogDensity(fogDensity);
-			}
+	//		if (postEffectType == BloomFog)
+	//		{
+	//			ImGui::ColorEdit4("FogColor", &fogColor.x);
+	//			PostEffect::GetInstance()->SetFogColor(fogColor);
+	//			ImGui::DragFloat("FogDensity", &fogDensity, 0.01f, 0.0f, 1.0f);
+	//			PostEffect::GetInstance()->SetFogDensity(fogDensity);
+	//		}
 
-			ImGui::EndTabItem();
-		}
+	//		ImGui::EndTabItem();
+	//	}
 
-		ImGui::EndTabBar();
-	}
+	//	ImGui::EndTabBar();
+	//}
 
 
-	ImGui::End();
+	//ImGui::End();
 
 	imguiManager_->End();
 

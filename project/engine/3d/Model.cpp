@@ -28,7 +28,7 @@ void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool
 	// アニメーションの読み込み
 	if (hasAnimation_)
 	{
-		animationData_ = LoadAnimationFile(directoryFolderName_ + "/" + ModelFolderName_, fileName); 
+		animationData_ = LoadAnimationFile(directoryFolderName_ + "/" + ModelFolderName_, fileName);
 	}
 
 	// skeletonの生成
@@ -97,21 +97,32 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
 {
 	Assimp::Importer importer;
 	std::string filePath = directoryPath + "/" + fileName;
-	const aiScene* scene = importer.ReadFile(filePath.c_str(), aiProcess_FlipWindingOrder | aiProcess_FlipUVs );
+	const aiScene* scene = importer.ReadFile(filePath.c_str(), aiProcess_FlipWindingOrder | aiProcess_FlipUVs);
 	assert(scene->HasMeshes()); // メッシュがない場合はエラー
 
 	// メッシュの解析
 	for (uint32_t meshIndex = 0; meshIndex < scene->mNumMeshes; meshIndex++)
 	{
 		aiMesh* mesh = scene->mMeshes[meshIndex];
-		assert(mesh->HasTextureCoords(0) && mesh->HasNormals()); // テクスチャ座標と法線がない場合はエラー
+		//assert(mesh->HasTextureCoords(0) && mesh->HasNormals()); // テクスチャ座標と法線がない場合はエラー
 		modelData_.vertices.resize(mesh->mNumVertices); // 頂点数だけリサイズ
 
 		for (uint32_t vertexIndex = 0; vertexIndex < mesh->mNumVertices; ++vertexIndex)
 		{
 			aiVector3D position = mesh->mVertices[vertexIndex];
-			aiVector3D texcoord = mesh->mTextureCoords[0][vertexIndex];
-			aiVector3D normal = mesh->mNormals[vertexIndex];
+			aiVector3D texcoord;
+			aiVector3D normal;
+			if (mesh->HasTextureCoords(0)) {
+				texcoord = mesh->mTextureCoords[0][vertexIndex];
+			} else {
+				texcoord = aiVector3D(0.0f, 0.0f, 0.0f);
+			}
+
+			if (mesh->HasNormals()) {
+				normal = mesh->mNormals[vertexIndex];
+			} else {
+				normal = aiVector3D(0.0f, 0.0f, 0.0f);
+			}
 
 			VertexData vertex;
 			vertex.position = Vector4(position.x, position.y, position.z, 1.0f);
@@ -229,11 +240,10 @@ void Model::UpdateSkeleton()
 	for (Joint& joint : skeleton_.joints)
 	{
 		joint.localMatrix = Mat4x4::MakeAffine(joint.transform.scale, joint.transform.rotate, joint.transform.translate); // ローカル変換行列を生成
-		
+
 		if (joint.parentIndex) {
 			joint.skeletonSpaceMatrix = joint.localMatrix * skeleton_.joints[*joint.parentIndex].skeletonSpaceMatrix; // 親がいる場合は親のスケルトン空間行列を掛ける
-		}
-		else
+		} else
 		{
 			joint.skeletonSpaceMatrix = joint.localMatrix; // 親がいない場合はローカル変換行列がスケルトン空間行列
 		}
@@ -345,7 +355,7 @@ Node Model::ReadNode(aiNode* node)
 	aiVector3D scale, position;
 	aiQuaternion rotate;
 	node->mTransformation.Decompose(scale, rotate, position); // スケール,回転,平行移動を取得
-	
+
 	result.transform.scale = { scale.x, scale.y, scale.z }; // スケールを取得
 	result.transform.rotate = { rotate.x, -rotate.y, -rotate.z, rotate.w }; // 回転を取得,右手系から左手系に変換
 	result.transform.translate = { -position.x, position.y, position.z }; // 平行移動を取得,x軸を反転
@@ -410,7 +420,7 @@ Vector3 Model::CalcKeyFrameValue(const std::vector<KeyFrameVector3>& keyFrames, 
 	for (uint32_t keyIndex = 0; keyIndex < keyFrames.size() - 1; ++keyIndex)
 	{
 		uint32_t nextKeyIndex = keyIndex + 1;
-		if ( keyFrames[keyIndex].time <= time && time <= keyFrames[nextKeyIndex].time)
+		if (keyFrames[keyIndex].time <= time && time <= keyFrames[nextKeyIndex].time)
 		{
 			float t = (time - keyFrames[keyIndex].time) / (keyFrames[nextKeyIndex].time - keyFrames[keyIndex].time); // 補間係数を計算
 			return Vec3::Lerp(keyFrames[keyIndex].value, keyFrames[nextKeyIndex].value, t); // 線形補間

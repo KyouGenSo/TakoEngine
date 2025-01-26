@@ -14,7 +14,7 @@ public: // 定数
 	// ライトの最大数
 	static const int32_t MAX_DIRECTIONAL_LIGHT = 1;
 	static const int32_t MAX_POINT_LIGHT = 256;
-	static const int32_t MAX_SPOT_LIGHT = 1;
+	static const int32_t MAX_SPOT_LIGHT = 256;
 
 public: // 構造体
 	// 平行光源データ
@@ -53,7 +53,9 @@ public: // 構造体
 	struct LightConsteants
 	{
 		int numPointLights;
-		float padding[3];
+		int numSpotLights;
+		int pad1;
+		int pad2;
 	};
 
 public: // メンバ関数
@@ -85,7 +87,7 @@ public: // メンバ関数
 	void SetPointLightEnable(bool enable) { pointLightDatas_->enable = enable; }
 
 	// SpotLight
-	void SetSpotLight(const Vector3& position, const Vector3& direction, const Vector4& color, float intensity, float distance, float decay, float cosAngle, bool enable);
+	void SetSpotLight(const Vector3& position, const Vector3& direction, const Vector4& color, float intensity, float distance, float decay, float cosAngle, bool enable, int index);
 	void SetSpotLightColor(const Vector4& color) { spotLightData_->color = color; }
 	void SetSpotLightPosition(const Vector3& position) { spotLightData_->position = position; }
 	void SetSpotLightIntensity(float intensity) { spotLightData_->intensity = intensity; }
@@ -146,4 +148,7 @@ private: // メンバ変数
 
 	// 点光源のsrvIndex
 	int pointLightSrvIndex_;
+
+	// スポットライトのsrvIndex
+	int spotLightSrvIndex_;
 };
