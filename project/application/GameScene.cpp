@@ -38,7 +38,7 @@ void GameScene::Initialize()
 	Vector3 rotate = Vector3(0.0f, DirectX::XMConvertToRadians(90.0f), 0.0f);
 	object3d_->SetRotate(rotate);
 
-	modelPos_ = Vector3(0.0f, -7.37f, 22.28f);
+	modelPos_ = Vector3(0.0f, 0.f, 0.0f);
 
 	object3d2_ = new Object3d();
 	object3d2_->Initialize();
@@ -46,8 +46,10 @@ void GameScene::Initialize()
 	modelRotate2_ = Vector3(0.0f, DirectX::XMConvertToRadians(180.0f), 0.0f);
 	object3d2_->SetRotate(rotate);
 
+	modelPos2_ = Vector3(0.0f, 6.7f, -24.0f);
+
 	spotLight_.color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-	spotLight_.position = Vector3(0.0f, -6.0f, 22.0f);
+	spotLight_.position = Vector3(0.0f, 1.0f, 0.0f);
 	spotLight_.intensity = 1.0f;
 	spotLight_.direction = Vector3(-1.0f, -1.0f, 0.0f);
 	spotLight_.distance = 7.0f;
@@ -55,14 +57,14 @@ void GameScene::Initialize()
 	spotLight_.cosAngle = std::cos(std::numbers::pi_v<float> / 3.0f);
 	spotLight_.enable = true;
 
-	pointLight_.position = Vector3(0.0f, -5.37f, 22.0f); // ライトの位置
+	pointLight_.position = Vector3(0.0f, 1.f, 0.0f); // ライトの位置
 	pointLight_.color = { 1.0f, 1.0f, 1.0f, 1.0f };     // ライトの色
 	pointLight_.intensity = 1.0f;                       // 輝度
 	pointLight_.radius = 10.0f;                         // 半径
 	pointLight_.decay = 1.0f;                           // 減衰
 	pointLight_.enable = false;                         // 点光源の有効無効
 
-	pointLight2_.position = Vector3(0.0f, -5.37f, 22.0f); // ライトの位置
+	pointLight2_.position = Vector3(0.0f, 1.f, 0.0f); // ライトの位置
 	pointLight2_.color = { 1.0f, 1.0f, 1.0f, 1.0f };     // ライトの色
 	pointLight2_.intensity = 1.0f;                       // 輝度
 	pointLight2_.radius = 10.0f;                         // 半径
@@ -114,7 +116,7 @@ void GameScene::Update()
 
 	// ライトの設定
 	Object3dBasic::GetInstance()->SetDirectionalLight(lightDirection_, lightColor_, 1, lightIntensity_);
-	Object3dBasic::GetInstance()->SetSpotLight(spotLight_.position, spotLight_.direction, spotLight_.color, spotLight_.intensity, spotLight_.distance, spotLight_.decay, spotLight_.cosAngle, spotLight_.enable);
+	Object3dBasic::GetInstance()->SetSpotLight(spotLight_.position, spotLight_.direction, spotLight_.color, spotLight_.intensity, spotLight_.distance, spotLight_.decay, spotLight_.cosAngle, spotLight_.enable, 0);
 	Object3dBasic::GetInstance()->SetPointLight(pointLight_.position, pointLight_.color, pointLight_.intensity, pointLight_.radius, pointLight_.decay, pointLight_.enable, 0);
 	Object3dBasic::GetInstance()->SetPointLight(pointLight2_.position, pointLight2_.color, pointLight2_.intensity, pointLight2_.radius, pointLight2_.decay, pointLight2_.enable, 1);
 

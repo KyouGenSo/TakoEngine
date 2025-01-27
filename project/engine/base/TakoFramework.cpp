@@ -44,8 +44,8 @@ void TakoFramework::Initialize()
 	DebugCamera::GetInstance()->Initialize();
 
 	defaultCamera_ = new Camera();
-	defaultCamera_->SetRotate(Vector3(0.3f, 0.0f, 0.0f));
-	defaultCamera_->SetTranslate(Vector3(0.0f, 4.0f, -10.0f));
+	defaultCamera_->SetRotate(Vector3(0.2f, 0.0f, 0.0f));
+	defaultCamera_->SetTranslate(Vector3(0.0f, 9.0f, -34.0f));
 
 	// デフォルトカメラを設定
 	Object3dBasic::GetInstance()->SetCamera(defaultCamera_);
