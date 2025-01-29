@@ -219,6 +219,7 @@ public:
 	/// <param name="leftMotor"></param>
 	/// <param name="rightMotor"></param>
 	void SetVibration(float leftMotor, float rightMotor);
+	void SetVibration(float leftMotor, float rightMotor, float time);
 
 	/// <summary>
 	/// ゲームパッドの振動を停止
@@ -269,6 +270,8 @@ private:
 	// ゲームパッドのトリガーの状態
 	bool buttonsTriger_[GAMEPAD_BUTTON_NUM];
 
+	// 振動時間
+	float vibrationTime_ = 0.0f;
 };
 
 extern XButtonIDs XButtons;

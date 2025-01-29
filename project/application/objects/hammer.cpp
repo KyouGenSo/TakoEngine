@@ -1,5 +1,6 @@
 #include "hammer.h"
 #include "enemy.h"
+#include "Input.h"
 
 #ifdef _DEBUG
 #include "ImGuiManager.h"
@@ -107,6 +108,8 @@ void Hammer::OnCollision([[maybe_unused]] Collider* other) {
 
 		// SEを再生
 		audio_->PlayWave(seHit_);
+
+		Input::GetInstance()->SetVibration(0.5f, 0.5f, 0.2f);
 	}
 }
 

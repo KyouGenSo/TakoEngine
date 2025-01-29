@@ -126,6 +126,16 @@ void Input::Update() {
 		buttonStates_[i] = (state_.Gamepad.wButtons & XINPUT_Buttons[i]) == XINPUT_Buttons[i];
 		buttonsTriger_[i] = !prevButtonStates_[i] && buttonStates_[i];
 	}
+
+	// 振動時間の計測
+	if (vibrationTime_ > 0.0f)
+	{
+		vibrationTime_ -= 1.0f / 60.0f;
+		if (vibrationTime_ <= 0.0f)
+		{
+			StopVibration();
+		}
+	}
 }
 
 void Input::UpdateMousePos()
@@ -346,6 +356,21 @@ void Input::SetVibration(float leftMotor, float rightMotor)
 	vibration.wRightMotorSpeed = static_cast<WORD>(rightMotor * 65535.0f);
 
 	XInputSetState(0, &vibration);
+}
+
+void Input::SetVibration(float leftMotor, float rightMotor, float time)
+{
+	// モーターの振動設定
+	XINPUT_VIBRATION vibration;
+	ZeroMemory(&vibration, sizeof(XINPUT_VIBRATION));
+
+	vibration.wLeftMotorSpeed = static_cast<WORD>(leftMotor * 65535.0f);
+	vibration.wRightMotorSpeed = static_cast<WORD>(rightMotor * 65535.0f);
+
+	XInputSetState(0, &vibration);
+
+	// 振動時間の計測
+	vibrationTime_ = time;
 }
 
 void Input::StopVibration()
