@@ -84,9 +84,9 @@ void Object3dBasic::SetPointLight(const Vector3& position, const Vector4& color,
 	light_->SetPointLight(position, color, intensity, radius, decay, enable, index);
 }
 
-void Object3dBasic::SetSpotLight(const Vector3& position, const Vector3& direction, const Vector4& color, float intensity, float distance, float decay, float cosAngle, bool enable)
+void Object3dBasic::SetSpotLight(const Vector3& position, const Vector3& direction, const Vector4& color, float intensity, float distance, float decay, float cosAngle, bool enable, int index)
 {
-	light_->SetSpotLight(position, direction, color, intensity, distance, decay, cosAngle, enable);
+	light_->SetSpotLight(position, direction, color, intensity, distance, decay, cosAngle, enable, index);
 }
 
 void Object3dBasic::CreateRootSignature()
@@ -122,6 +122,12 @@ void Object3dBasic::CreateRootSignature()
 	descriptorRangeForPointLight[0].NumDescriptors = 1; // ディスクリプタ数
 	descriptorRangeForPointLight[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
 	descriptorRangeForPointLight[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+
+	D3D12_DESCRIPTOR_RANGE descriptorRangeForSpotLight[1] = {};
+	descriptorRangeForSpotLight[0].BaseShaderRegister = 2; // レジスタ番号
+	descriptorRangeForSpotLight[0].NumDescriptors = 1; // ディスクリプタ数
+	descriptorRangeForSpotLight[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
+	descriptorRangeForSpotLight[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
 
 	// RootParameterの設定。複数設定できるので配列
 	D3D12_ROOT_PARAMETER rootParameters[8] = {};
@@ -159,9 +165,10 @@ void Object3dBasic::CreateRootSignature()
 	rootParameters[5].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForPointLight); // レンジの数
 
 	// SpotLight
-	rootParameters[6].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
+	rootParameters[6].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
 	rootParameters[6].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-	rootParameters[6].Descriptor.ShaderRegister = 4; // レジスタ番号とバインド
+	rootParameters[6].DescriptorTable.pDescriptorRanges = descriptorRangeForSpotLight; // ディスクリプタレンジを設定
+	rootParameters[6].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForSpotLight); // レンジの数
 
 	// LightNum
 	rootParameters[7].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う

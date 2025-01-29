@@ -3,11 +3,52 @@
 #include<wrl.h>
 #include "Vector2.h"
 #include "Xinput.h"
+#pragma comment(lib, "XInput.lib")
 
 #define DIRECTINPUT_VERSION 0x0800 // DirectInputのバージョン指定
 #include <dinput.h>
 #pragma comment(lib, "dinput8.lib")
 #pragma comment(lib, "dxguid.lib")
+
+// XINPUT_ButtonのGUID
+static const WORD XINPUT_Buttons[] = {
+	  XINPUT_GAMEPAD_A,
+	  XINPUT_GAMEPAD_B,
+	  XINPUT_GAMEPAD_X,
+	  XINPUT_GAMEPAD_Y,
+	  XINPUT_GAMEPAD_DPAD_UP,
+	  XINPUT_GAMEPAD_DPAD_DOWN,
+	  XINPUT_GAMEPAD_DPAD_LEFT,
+	  XINPUT_GAMEPAD_DPAD_RIGHT,
+	  XINPUT_GAMEPAD_LEFT_SHOULDER,
+	  XINPUT_GAMEPAD_RIGHT_SHOULDER,
+	  XINPUT_GAMEPAD_LEFT_THUMB,
+	  XINPUT_GAMEPAD_RIGHT_THUMB,
+	  XINPUT_GAMEPAD_START,
+	  XINPUT_GAMEPAD_BACK
+};
+
+// XButtonIDs構造体
+struct XButtonIDs
+{
+	XButtonIDs(); // コンストラクタ
+
+	// メンバー変数
+	//---------------------//
+	int A, B, X, Y; // 'Action'ボタン
+
+	// Directional Pad(DPad) ボタン
+	int DPad_Up, DPad_Down, DPad_Left, DPad_Right;
+
+	// Shoulder ボタン
+	int L_Shoulder, R_Shoulder;
+
+	// Thumbstick ボタン
+	int L_Thumbstick, R_Thumbstick;
+
+	int Start; // 'START' ボタン
+	int Back;  // 'BACK' ボタン
+};
 
 class Input {
 private: 	// シングルトン
@@ -101,14 +142,88 @@ public:
 	void SetMousePos(int x, int y);
 
 	/// <summary>
-	/// joystickの状態を取得
+	/// ゲームパッドの状態を取得
 	/// </summary>
-	bool GetJoystickState(int32_t stickNo, XINPUT_STATE& out);
+	XINPUT_STATE GetGamePadState();
 
 	/// <summary>
-	/// 前回のジョイスティック状態を取得する
+	/// ゲームパッドの接続状態を取得
 	/// </summary>
-	bool GetJoystickStatePrevious(XINPUT_STATE& out) const;
+	/// <returns></returns>
+	bool IsConnect();
+
+	/// <summary>
+	/// ゲームパッドの状態を更新
+	/// </summary>
+	void RefreshGamePadState();
+
+	/// <summary>
+	/// ゲームパッドの押下状態を取得
+	/// </summary>
+	/// <param name="button"></param>
+	/// <returns></returns>
+	bool PushButton(int button) const;
+
+	/// <summary>
+	/// ゲームパッドのトリガー状態を取得
+	/// </summary>
+	/// <param name="button"></param>
+	/// <returns></returns>
+	bool TriggerButton(int button) const;
+
+	/// <summary>
+	/// ゲームパッドのリリース状態を取得
+	/// </summary>
+	/// <param name="button"></param>
+	/// <returns></returns>
+	bool ReleaseButton(int button) const;
+
+	/// <summary>
+	/// ゲームパッドの左スティックがデッドゾーン内かどうか
+	/// </summary>
+	/// <returns></returns>
+	bool LStickInDeadZone() const;
+
+	/// <summary>
+	/// ゲームパッドの右スティックがデッドゾーン内かどうか
+	/// </summary>
+	/// <returns></returns>
+	bool RStickInDeadZone() const;
+
+	/// <summary>
+	/// ゲームパッドの左スティックの値を取得
+	/// </summary>
+	/// <returns></returns>
+	Vector2 GetLeftStick();
+
+	/// <summary>
+	/// ゲームパッドの右スティックの値を取得
+	/// </summary>
+	/// <returns></returns>
+	Vector2 GetRightStick();
+
+	/// <summary>
+	/// ゲームパッドの左トリガーの値を取得
+	/// </summary>
+	/// <returns></returns>
+	float GetLeftTrigger();
+
+	/// <summary>
+	/// ゲームパッドの右トリガーの値を取得
+	/// </summary>
+	float GetRightTrigger();
+
+	/// <summary>
+	/// ゲームパッドの振動
+	/// </summary>
+	/// <param name="leftMotor"></param>
+	/// <param name="rightMotor"></param>
+	void SetVibration(float leftMotor, float rightMotor);
+
+	/// <summary>
+	/// ゲームパッドの振動を停止
+	/// </summary>
+	void StopVibration();
 
 private:
 	// WinAppクラスのインスタンス
@@ -138,10 +253,22 @@ private:
 	// 前フレームのキーボード入力状態
 	BYTE prevKeys_[256] = {};
 
-	// ジョイスティックの状態
-	XINPUT_STATE joyState_;
+	// -----------------------------------------------ゲームパット-----------------------------------------------//
+	// ゲームパッドの状態
+	XINPUT_STATE state_;
 
-	// 前フレームのジョイスティックの状態
-	XINPUT_STATE prevJoyState_;
+	// ゲームパッドボタンの数
+	static const int GAMEPAD_BUTTON_NUM = 14;
+
+	// ゲームパッドのボタンの状態
+	bool buttonStates_[GAMEPAD_BUTTON_NUM];
+
+	// 前フレームのゲームパッドのボタンの状態
+	bool prevButtonStates_[GAMEPAD_BUTTON_NUM];
+
+	// ゲームパッドのトリガーの状態
+	bool buttonsTriger_[GAMEPAD_BUTTON_NUM];
 
 };
+
+extern XButtonIDs XButtons;

@@ -4,6 +4,8 @@
 #include"Object3d.h"
 #include <vector>
 #include <memory>
+#include "AABB.h"
+#include "ParticleEmitter.h"
 
 class TitleScene : public BaseScene
 {

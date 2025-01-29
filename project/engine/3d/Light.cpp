@@ -22,7 +22,7 @@ void Light::PreDraw()
 	SrvManager::GetInstance()->SetRootDescriptorTable(5, pointLightSrvIndex_);
 
 	// スポットライトCBufferの場所を設定
-	m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(6, spotLightResource_->GetGPUVirtualAddress());
+	SrvManager::GetInstance()->SetRootDescriptorTable(6, spotLightSrvIndex_);
 
 	// ライト定数CBufferの場所を設定
 	m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(7, lightConstantsResource_->GetGPUVirtualAddress());
@@ -46,16 +46,16 @@ void Light::SetPointLight(const Vector3& position, const Vector4& color, float i
 	pointLightDatas_[index].enable = enable;
 }
 
-void Light::SetSpotLight(const Vector3& position, const Vector3& direction, const Vector4& color, float intensity, float distance, float decay, float cosAngle, bool enable)
+void Light::SetSpotLight(const Vector3& position, const Vector3& direction, const Vector4& color, float intensity, float distance, float decay, float cosAngle, bool enable, int index)
 {
-	spotLightData_->position = position;
-	spotLightData_->direction = direction;
-	spotLightData_->color = color;
-	spotLightData_->intensity = intensity;
-	spotLightData_->distance = distance;
-	spotLightData_->decay = decay;
-	spotLightData_->cosAngle = cosAngle;
-	spotLightData_->enable = enable;
+	spotLightData_[index].color = color;
+	spotLightData_[index].position = position;
+	spotLightData_[index].intensity = intensity;
+	spotLightData_[index].direction = direction;
+	spotLightData_[index].distance = distance;
+	spotLightData_[index].decay = decay;
+	spotLightData_[index].cosAngle = cosAngle;
+	spotLightData_[index].enable = enable;
 }
 
 void Light::CreateDirectionalLightData()
@@ -106,14 +106,18 @@ void Light::CreateSpotLightData()
 	spotLightResource_->Map(0, nullptr, reinterpret_cast<void**>(&spotLightData_));
 
 	// スポットライトデータの初期値を書き込む
-	spotLightData_->position = Vector3(0.0f, 0.0f, 0.0f); // ライトの位置
-	spotLightData_->direction = Vector3(-1.0f, -1.0f, 0.0f); // ライトの方向
-	spotLightData_->color = { 1.0f, 1.0f, 1.0f, 1.0f };     // ライトの色
-	spotLightData_->intensity = 1.0f;                       // 輝度
-	spotLightData_->distance = 10.0f;                        // 距離
-	spotLightData_->decay = 1.0f;                           // 減衰
-	spotLightData_->cosAngle = std::cos(std::numbers::pi_v<float> / 3.0f); // 角度
-	spotLightData_->enable = true;                         // スポットライトの有効無効
+	spotLightData_[0].position = Vector3(0.0f, 0.0f, 0.0f); // ライトの位置
+	spotLightData_[0].direction = Vector3(-1.0f, -1.0f, 0.0f); // ライトの方向
+	spotLightData_[0].color = { 1.0f, 1.0f, 1.0f, 1.0f };     // ライトの色
+	spotLightData_[0].intensity = 1.0f;                       // 輝度
+	spotLightData_[0].distance = 10.0f;                        // 距離
+	spotLightData_[0].decay = 1.0f;                           // 減衰
+	spotLightData_[0].cosAngle = std::cos(std::numbers::pi_v<float> / 3.0f); // 角度
+	spotLightData_[0].enable = true;                         // スポットライトの有効無効
+
+	// SRVの生成
+	spotLightSrvIndex_ = SrvManager::GetInstance()->Allocate();
+	SrvManager::GetInstance()->CreateSRVForStructuredBuffer(spotLightSrvIndex_, spotLightResource_.Get(), Light::MAX_SPOT_LIGHT, sizeof(SpotLight));
 }
 
 void Light::CreateLightConstants()
@@ -126,4 +130,6 @@ void Light::CreateLightConstants()
 
 	// ライト定数データの初期値を書き込む
 	lightConstantsData_->numPointLights = Light::MAX_POINT_LIGHT;
+
+	lightConstantsData_->numSpotLights = Light::MAX_SPOT_LIGHT;
 }

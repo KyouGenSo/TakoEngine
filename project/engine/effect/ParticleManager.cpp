@@ -8,6 +8,7 @@
 #include "Mat4x4Func.h"
 #include "WinApp.h"
 #include <numbers>
+#include "DebugCamera.h"
 
 ParticleManager* ParticleManager::instance_ = nullptr;
 
@@ -49,6 +50,11 @@ void ParticleManager::Update()
 	Matrix4x4 viewMatrix = Mat4x4::Inverse(cameraMatrix);
 	Matrix4x4 projectionMatrix = m_camera_->GetProjectionMatrix();
 	Matrix4x4 viewProjectionMatrix = Mat4x4::Multiply(viewMatrix, projectionMatrix);
+
+	if (isDebug_) {
+		cameraMatrix = Mat4x4::MakeAffine({ 1.0f,1.0f,1.0f }, DebugCamera::GetInstance()->GetRotate(), DebugCamera::GetInstance()->GetTranslate());
+		viewProjectionMatrix = DebugCamera::GetInstance()->GetViewProjectionMat();
+	}
 
 	// ビルボード行列の生成
 	Matrix4x4 backToFrontMatrix = Mat4x4::MakeRotateY(std::numbers::pi_v<float>);
@@ -183,12 +189,12 @@ void ParticleManager::CreateParticleGroup(const std::string name, const std::str
 	particleGroups.emplace(name, newParticleGroup);
 }
 
-void ParticleManager::Emit(const std::string name, const Vector3& position, const Vector3& scale, uint32_t count)
+void ParticleManager::Emit(const std::string name, const Vector3& position, const Vector3& scale, const Vector3& velocity, const AABB& range, uint32_t count, const Vector4& color, const float lifeTime, bool isRandomColor)
 {
 	// パーティクルグループが存在するかをチェック
 	if (particleGroups.find(name) == particleGroups.end())
 	{
-		Logger::Log("ParticleGroupが存在しません");
+		Logger::Log("ParticleGroup not exist");
 		assert(false);
 	}
 
@@ -201,79 +207,31 @@ void ParticleManager::Emit(const std::string name, const Vector3& position, cons
 	}
 
 	// パーティクルの生成
-	for (uint32_t index = 0; index < count; ++index)
-	{
+	//for (uint32_t index = 0; index < count; ++index)
+	//{
 		// パーティクルの生成と追加
-		particleGroup.particleList.push_back(MakeNewParticle(randomEngine_, position, scale));
-	}
+		particleGroup.particleList.push_back(MakeNewParticle(randomEngine_, position, scale, velocity, range, color, lifeTime, isRandomColor));
+	//}
 }
 
-void ParticleManager::Emit(const std::string name, const Vector3& position, const Vector3& scale, uint32_t count, bool isRandomColor)
+ParticleManager::Particle ParticleManager::MakeNewParticle(std::mt19937& randomEngine, const Vector3& translate, const Vector3& scale, const Vector3& velocity, const AABB& range, const Vector4& color, const float lifeTime, bool isRandomColor)
 {
-	if (particleGroups.find(name) == particleGroups.end())
-	{
-		Logger::Log("ParticleGroupが存在しません");
-		assert(false);
-	}
-
-	ParticleGroup& particleGroup = particleGroups[name];
-
-	if (particleGroup.particleList.size() >= count) {
-		return;
-	}
-
-	for (uint32_t index = 0; index < count; ++index)
-	{
-		particleGroup.particleList.push_back(MakeNewParticle(randomEngine_, position, scale, isRandomColor));
-	}
-}
-
-void ParticleManager::Emit(const std::string name, const Vector3& position, const Vector3& scale, uint32_t count, Vector4 color)
-{
-	if (particleGroups.find(name) == particleGroups.end())
-	{
-		Logger::Log("ParticleGroupが存在しません");
-		assert(false);
-	}
-
-	ParticleGroup& particleGroup = particleGroups[name];
-
-	if (particleGroup.particleList.size() >= count) {
-		return;
-	}
-
-	for (uint32_t index = 0; index < count; ++index)
-	{
-		particleGroup.particleList.push_back(MakeNewParticle(randomEngine_, position, scale, color));
-	}
-}
-
-ParticleManager::Particle ParticleManager::MakeNewParticle(std::mt19937& randomEngine, const Vector3& translate, const Vector3& scale)
-{
-	//一様分布生成器を使って乱数を生成
 	std::uniform_real_distribution<float> random(-1.0f, 1.0f);
-	std::uniform_real_distribution<float> randomColor(0.0f, 1.0f);
-	std::uniform_real_distribution<float> randomTime(1.0f, 3.0f);
+	std::uniform_real_distribution<float> randomX(range.min.x, range.max.x);
+	std::uniform_real_distribution<float> randomY(range.min.y, range.max.y);
+	std::uniform_real_distribution<float> randomZ(range.min.z, range.max.z);
 
 	Particle particle;
 
-	// パーティクルの初期値を設定
 	particle.transform.scale = scale;
 	particle.transform.rotate = { 0.0f, 0.0f, 0.0f };
-	Vector3 randomPosVec = { random(randomEngine), random(randomEngine), random(randomEngine) };
+	Vector3 randomPosVec = { randomX(randomEngine), randomY(randomEngine), randomZ(randomEngine) };
 	particle.transform.translate = translate + randomPosVec;
 
-	particle.velocity = { random(randomEngine), random(randomEngine), random(randomEngine) };
-	particle.color = { 1.0f, 1.0f, 1.0f, 1.0f };
-	particle.lifeTime = randomTime(randomEngine);
+	particle.velocity = velocity;
+	particle.color = color;
+	particle.lifeTime = lifeTime;
 	particle.currentTime = 0.0f;
-
-	return particle;
-}
-
-ParticleManager::Particle ParticleManager::MakeNewParticle(std::mt19937& randomEngine, const Vector3& translate, const Vector3& scale, bool isRandomColor)
-{
-	Particle particle = MakeNewParticle(randomEngine, translate, scale);
 
 	if (isRandomColor)
 	{
@@ -281,14 +239,26 @@ ParticleManager::Particle ParticleManager::MakeNewParticle(std::mt19937& randomE
 		particle.color = { randomColor(randomEngine), randomColor(randomEngine), randomColor(randomEngine), 1.0f };
 	}
 
-	return particle;
-}
+	if (velocity.x == 0.f)
+	{
+		particle.velocity.x = random(randomEngine);
+	}
 
-ParticleManager::Particle ParticleManager::MakeNewParticle(std::mt19937& randomEngine, const Vector3& translate, const Vector3& scale, Vector4 color)
-{
-	Particle particle = MakeNewParticle(randomEngine, translate, scale);
+	if (velocity.y == 0.f)
+	{
+		particle.velocity.y = random(randomEngine);
+	}
 
-	particle.color = color;
+	if (velocity.z == 0.f)
+	{
+		particle.velocity.z = random(randomEngine);
+	}
+
+	if (lifeTime == 0.0f)
+	{
+		std::uniform_real_distribution<float> randomTime(1.0f, 3.0f);
+		particle.lifeTime = randomTime(randomEngine);
+	}
 
 	return particle;
 
@@ -405,7 +375,8 @@ void ParticleManager::CreatePSO()
 	blendDesc.RenderTarget[0].BlendEnable = TRUE;
 	blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
 	blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
-	blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+	//blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+	blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
 	blendDesc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
 	blendDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
 	blendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;

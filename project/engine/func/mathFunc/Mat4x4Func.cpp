@@ -186,6 +186,13 @@ namespace Mat4x4 {
 		return result;
 	}
 
+	Matrix4x4 MakeRotateXYZ(const Quaternion& rotate)
+	{
+		Matrix4x4 result = Quat::ToMatrix(rotate);
+
+		return result;
+	}
+
 	Matrix4x4 MakeAffine(const Vector3& scale, const Vector3& rotate, const Vector3& translate) {
 		Matrix4x4 result = MakeScale(scale);
 		result = Multiply(result, MakeRotateXYZ(MakeRotateX(rotate.x), MakeRotateY(rotate.y), MakeRotateZ(rotate.z)));
@@ -320,4 +327,72 @@ namespace Mat4x4 {
 
 		return result;
 	}
+
+	Matrix4x4 MakeRotateAxisAngle(const Vector3& axis, float angle)
+	{
+		if (std::abs(angle) < 1e-6f) {
+			return MakeIdentity();
+		}
+
+		Matrix4x4 result = MakeIdentity();
+
+		// 正規化
+		Vector3 normAxis = axis.Normalize();
+
+		float s = std::sin(angle);
+		float c = std::cos(angle);
+		float t = 1.0f - c;
+
+		float x = normAxis.x;
+		float y = normAxis.y;
+		float z = normAxis.z;
+
+		result.m[0][0] = t * x * x + c;
+		result.m[0][1] = t * x * y + s * z;
+		result.m[0][2] = t * x * z - s * y;
+		result.m[0][3] = 0.0f;
+
+		result.m[1][0] = t * x * y - s * z;
+		result.m[1][1] = t * y * y + c;
+		result.m[1][2] = t * y * z + s * x;
+		result.m[1][3] = 0.0f;
+
+		result.m[2][0] = t * x * z + s * y;
+		result.m[2][1] = t * y * z - s * x;
+		result.m[2][2] = t * z * z + c;
+		result.m[2][3] = 0.0f;
+
+		result.m[3][0] = 0.0f;
+		result.m[3][1] = 0.0f;
+		result.m[3][2] = 0.0f;
+		result.m[3][3] = 1.0f;
+
+		return result;
+	}
+
+	Matrix4x4 DirectionToDirection(const Vector3& from, const Vector3& to)
+	{
+		Vector3 fromNorm = from.Normalize();
+		Vector3 toNorm = to.Normalize();
+
+		float dot = Vec3::Dot(fromNorm, toNorm);
+
+		if (std::abs(dot - 1.0f) < 1e-6f) {
+			return MakeIdentity();
+		}
+
+		Vector3 axis;
+		if (std::abs(dot + 1.0f) < 1e-6f) {
+			// from と to が完全に逆方向なら、適当な回転軸を選ぶ
+			axis = (std::abs(fromNorm.x) < std::abs(fromNorm.y))
+				? Vector3(1.0f, 0.0f, 0.0f)
+				: Vector3(0.0f, 1.0f, 0.0f);
+		} else {
+			axis = Vec3::Cross(fromNorm, toNorm).Normalize();
+		}
+
+		float angle = std::acos(dot);
+		return MakeRotateAxisAngle(axis, angle);
+	}
+
 }

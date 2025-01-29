@@ -6,6 +6,8 @@
 #include"Mat4x4Func.h"
 #include<vector>
 #include <list>
+#include "Camera.h"
+#include "AABB.h"
 
 using namespace std;
 
@@ -26,7 +28,7 @@ private: // シングルトン設定
 public: // 構造体
 	struct VertexData
 	{
-		Vector2 position;
+		Vector3 position;
 		Vector4 color;
 	};
 
@@ -106,21 +108,29 @@ public: // メンバ関数
 	/// <summary>
 	/// 三角形の描画
 	/// </summary>
-	void DrawTriangle(const Vector2& pos1, const Vector2& pos2, const Vector2& pos3, const Vector4& color);
+	void DrawTriangle(const Vector3& pos1, const Vector3& pos2, const Vector3& pos3, const Vector4& color);
 
 	/// <summary>
 	/// 矩形の描画
 	/// </summary>
-	void DrawBox(const Vector2& pos, const Vector2& size, const Vector4& color);
-	void DrawBox(const Vector2& pos, const Vector2& size, const float angle, const Vector4& color);
+	void DrawBox(const Vector3& pos, const Vector3& size, const Vector4& color);
+	void DrawBox(const Vector3& pos, const Vector3& size, const float angle, const Vector4& color);
 
 	/// <summary>
 	/// 線の描画
 	/// </summary>
-	void DrawLine(const Vector2& start, const Vector2& end, const Vector4& color);
-	void DrawLine(const Vector3& start, const Vector3& end, const Vector4& color, const Matrix4x4& viewProjectionMatrix);
+	void DrawLine(const Vector3& start, const Vector3& end, const Vector4& color);
 
-	void DrawSphere(const Vector3& center, const float radius, const Vector4& color, const Matrix4x4& viewProjectionMatrix);
+	void DrawSphere(const Vector3& center, const float radius, const Vector4& color);
+
+	void DrawAABB(const AABB& aabb, const Vector4& color);
+
+	void DrawGrid(const float size, const float subdivision, const Vector4& color);
+
+	/// <summary>
+	/// 描画
+	/// </summary>
+	void Draw();
 
 	/// <summary>
 	/// リセット
@@ -132,12 +142,17 @@ public: // メンバ関数
 	/// デバッグ用ビューマトリックスを取得
 	/// <summary>
 	const Matrix4x4& GetProjectionMatrix() const { return projectionMatrix_; }
+	const bool GetDebug() const { return isDebug_; }
+
 
 	// -----------------------------------Setters-----------------------------------//
 	/// <summary>
 	/// プロジェクションマトリックスを設定
 	/// <summary>
 	void SetProjectionMatrix(const Matrix4x4& projectionMatrix) { projectionMatrix_ = projectionMatrix; }
+	void SetCamera(Camera* camera) { m_camera_ = camera; }
+	void SetDebug(bool isDebug) { isDebug_ = isDebug; }
+	
 
 private: // プライベートメンバ関数
 	/// <summary>
@@ -175,10 +190,19 @@ private: // プライベートメンバ関数
 	/// </summary>
 	void CalcSphereVertexData();
 
+	/// <summary>
+	/// グリッドの頂点位置を計算
+	/// </summary>
+	void CalcGridVertexData();
+
 private: // メンバ変数
 
 	// DX12Basicクラスのインスタンス
 	DX12Basic* m_dx12_;
+
+	Camera* m_camera_;
+
+	bool isDebug_;
 
 	const uint32_t kTrriangleMaxCount = 30096;
 	const uint32_t kVertexCountTrriangle = 3;
@@ -231,5 +255,8 @@ private: // メンバ変数
 	LineData* lineData_;
 
 	// 球のデータ
-	std::vector<Vector3> spheres_;
+	std::vector<Vector3> sphereVerties_;
+
+	// グリッドのデータ
+	std::vector<Vector3> gridVerties_;
 };

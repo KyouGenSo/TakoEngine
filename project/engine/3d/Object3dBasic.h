@@ -72,7 +72,7 @@ public: // メンバー関数
 	void SetPointLightEnable(bool enable) { light_->SetPointLightEnable(enable); }
 
 	// SpotLight
-	void SetSpotLight(const Vector3& position, const Vector3& direction, const Vector4& color, float intensity, float distance, float decay, float cosAngle, bool enable);
+	void SetSpotLight(const Vector3& position, const Vector3& direction, const Vector4& color, float intensity, float distance, float decay, float cosAngle, bool enable, int index);
 	void SetSpotLightColor(const Vector4& color) { light_->SetSpotLightColor(color); }
 	void SetSpotLightPosition(const Vector3& position) { light_->SetSpotLightPosition(position); }
 	void SetSpotLightIntensity(float intensity) { light_->SetSpotLightIntensity(intensity); }

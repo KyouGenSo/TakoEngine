@@ -32,8 +32,8 @@ namespace Mat4x4 {
 	Matrix4x4 MakeRotateZ(float angle);
 
 	Matrix4x4 MakeRotateXYZ(Matrix4x4 mX, Matrix4x4 mY, Matrix4x4 mZ);
-
 	Matrix4x4 MakeRotateXYZ(const Vector3& rotate);
+	Matrix4x4 MakeRotateXYZ(const Quaternion& rotate);
 
 	Matrix4x4 MakeAffine(const Vector3& scale, const Vector3& rotate, const Vector3& translate);
 	Matrix4x4 MakeAffine(const Vector3& scale, const Quaternion& rotate, const Vector3& translate);
@@ -49,6 +49,10 @@ namespace Mat4x4 {
 	Matrix4x4 MakeViewport(float left, float top, float width, float height, float minDepth, float maxDepth);
 
 	Matrix4x4 InverseTranspose(const Matrix4x4& m);
+
+	Matrix4x4 MakeRotateAxisAngle(const Vector3& axis, float angle);
+
+	Matrix4x4 DirectionToDirection(const Vector3& from, const Vector3& to);
 }
 
 

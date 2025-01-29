@@ -267,8 +267,8 @@ void Model::DrawSkeleton(Matrix4x4 world, Matrix4x4 viewProjection)
 		Vector3 jointPosition = Mat4x4::TransForm(jointWorldMatrix, Vector3(0.0f, 0.0f, 0.0f));
 
 		// Draw the joint as a sphere
-		//float radius = 0.003f; // Sphere radius
-		//Draw2D::GetInstance()->DrawSphere(jointPosition, radius, Vector4(1.0f, 1.0f, 1.0f, 1.0f), viewProjection);
+		float radius = 0.01f; // Sphere radius
+		Draw2D::GetInstance()->DrawSphere(jointPosition, radius, Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 
 		// Draw line to parent joint if it exists
 		if (joint.parentIndex)
@@ -278,13 +278,12 @@ void Model::DrawSkeleton(Matrix4x4 world, Matrix4x4 viewProjection)
 			// Calculate the position of the parent joint in world space
 			Matrix4x4 parentWorldMatrix = parentJoint.skeletonSpaceMatrix * world;
 			Vector3 parentPosition = Mat4x4::TransForm(parentWorldMatrix, Vector3(0.0f, 0.0f, 0.0f));
-
+			viewProjection;
 			// Draw a line between the current joint and its parent
 			Draw2D::GetInstance()->DrawLine(
 				jointPosition,
 				parentPosition,
-				Vector4(1.0f, 1.0f, 1.0f, 1.0f),
-				viewProjection
+				Vector4(1.0f, 1.0f, 1.0f, 1.0f)
 			);
 		}
 	}
