@@ -162,19 +162,18 @@ void Player::Update() {
 
 	// ロックオンしてる時に右トリガーで弾を撃つ
 	if (lockOn_->isTargetExist()) {
-		if (input_->GetJoystickState(0, joyState_)) {
-			if (joyState_.Gamepad.bRightTrigger > 0) {
-				if (--shotCD_ <= 0.0f) {
-					Shot();
-				}
-				isShooting_ = true;
-				worldTransformL_arm_.rotate.x = Vec3::Lerp(worldTransformL_arm_.rotate.x, 1.6f, 0.1f);
-				worldTransformL_arm_.rotate.y = Vec3::Lerp(worldTransformL_arm_.rotate.y, 2.0f, 0.1f);
-			} else {
-				isShooting_ = false;
-				worldTransformL_arm_.rotate.y = Vec3::Lerp(worldTransformL_arm_.rotate.y, 0.0f, 0.1f);
+		if (input_->GetRightTrigger() != 0.0f) {
+			if (--shotCD_ <= 0.0f) {
+				Shot();
 			}
+			isShooting_ = true;
+			worldTransformL_arm_.rotate.x = Vec3::Lerp(worldTransformL_arm_.rotate.x, 1.6f, 0.1f);
+			worldTransformL_arm_.rotate.y = Vec3::Lerp(worldTransformL_arm_.rotate.y, 2.0f, 0.1f);
+		} else {
+			isShooting_ = false;
+			worldTransformL_arm_.rotate.y = Vec3::Lerp(worldTransformL_arm_.rotate.y, 0.0f, 0.1f);
 		}
+
 
 		if (input_->PushKey(DIK_UP)) {
 			if (--shotCD_ <= 0.0f) {
@@ -349,18 +348,13 @@ void Player::Move() {
 	float targetAngle = 0.0f;
 	bool isMoving = false;
 
-	if (input_->GetJoystickState(0, joyState_)) { // ゲームパッドによる移動
-		const float deadzone = 0.30f;
-
-		velocity_ = { (float)joyState_.Gamepad.sThumbLX, 0.0f, (float)joyState_.Gamepad.sThumbLY };
-
-		velocity_ /= 32767.0f;
-
-		if (Vec3::Length(velocity_) > deadzone) {
-			isMoving = true;
-		}
-
+	// ゲームパッドによる移動
+	if (!input_->LStickInDeadZone()) {
+		velocity_.x = input_->GetLeftStick().x;
+		velocity_.z = input_->GetLeftStick().y;
+		isMoving = true;
 	}
+
 
 	if (isMoving) {
 		velocity_ = velocity_.normalize() * speed;
@@ -497,8 +491,8 @@ void Player::UpdateFloatAnimation() {
 	worldTransformBody_.translate.y = std::sin(floatingParam_) * amplitude;
 
 	// 腕を揺らす
-	if(!isShooting_)
-	worldTransformL_arm_.rotate.x = std::sin(floatingParam_) * amplitude;
+	if (!isShooting_)
+		worldTransformL_arm_.rotate.x = std::sin(floatingParam_) * amplitude;
 
 	worldTransformR_arm_.rotate.x = std::sin(floatingParam_) * amplitude;
 }
@@ -508,10 +502,8 @@ bool Player::IsMoveInput() {
 		return true;
 	}
 
-	if (input_->GetJoystickState(0, joyState_)) {
-		if (joyState_.Gamepad.sThumbLX != 0 || joyState_.Gamepad.sThumbLY != 0) {
-			return true;
-		}
+	if (!input_->LStickInDeadZone()) {
+		return true;
 	}
 
 	return false;
@@ -599,22 +591,21 @@ void Player::BehaviorRootUpdate() {
 
 	attackRecovryTime_ -= 1.0f;
 
-	if (input_->GetJoystickState(0, joyState_) /*&& input_->GetJoystickStatePrevious(preJoyState_)*/) {
-		if (joyState_.Gamepad.wButtons & XINPUT_GAMEPAD_X /*&& !(preJoyState_.Gamepad.wButtons & XINPUT_GAMEPAD_X)*/) {
-			if (attackRecovryTime_ <= 0.0f) {
-				behaviorRequest_ = Behavior::kAttack;
-			}
-		}
-
-		if (joyState_.Gamepad.wButtons & XINPUT_GAMEPAD_B /*&& !(preJoyState_.Gamepad.wButtons & XINPUT_GAMEPAD_B)*/) {
-			if (workDash_.dashCD <= 0.0f)
-				behaviorRequest_ = Behavior::kDash;
-		}
-
-		if (joyState_.Gamepad.wButtons & XINPUT_GAMEPAD_A /*&& !(preJoyState_.Gamepad.wButtons & XINPUT_GAMEPAD_A)*/) {
-			behaviorRequest_ = Behavior::kJump;
+	if (input_->TriggerButton(XButtons.X)) {
+		if (attackRecovryTime_ <= 0.0f) {
+			behaviorRequest_ = Behavior::kAttack;
 		}
 	}
+
+	if (input_->TriggerButton(XButtons.B)) {
+		if (workDash_.dashCD <= 0.0f)
+			behaviorRequest_ = Behavior::kDash;
+	}
+
+	if (input_->TriggerButton(XButtons.A)) {
+		behaviorRequest_ = Behavior::kJump;
+	}
+
 
 	if (input_->TriggerKey(DIK_SPACE)) {
 		behaviorRequest_ = Behavior::kJump;
@@ -622,12 +613,12 @@ void Player::BehaviorRootUpdate() {
 
 	if (input_->PushKey(DIK_Z)) {
 		if (attackRecovryTime_ <= 0.0f)
-		behaviorRequest_ = Behavior::kAttack;
+			behaviorRequest_ = Behavior::kAttack;
 	}
 
 	if (input_->TriggerKey(DIK_LSHIFT)) {
 		if (workDash_.dashCD <= 0.0f)
-		behaviorRequest_ = Behavior::kDash;
+			behaviorRequest_ = Behavior::kDash;
 	}
 
 	// 移動
@@ -683,17 +674,11 @@ void Player::BehaviorAttackInitialize() {
 void Player::BehaviorAttackUpdate() {
 	enableWeapon_ = true;
 
-	XINPUT_STATE joyStatePrev;
-	XINPUT_STATE joyState;
-
 	// コンボの上限に達していない
 	if (workAttack_.comboIndex < kComboNum - 1) {
-		// ゲームパットの状態を取得
-		if (input_->GetJoystickState(0, joyState) && input_->GetJoystickStatePrevious(joyStatePrev)) {
-			// Xボタンをトリガーしたら
-			if (joyState.Gamepad.wButtons & XINPUT_GAMEPAD_X && !(joyStatePrev.Gamepad.wButtons & XINPUT_GAMEPAD_X)) {
-				workAttack_.comboNext = true;
-			}
+
+		if (input_->TriggerButton(XButtons.X)) {
+			workAttack_.comboNext = true;
 		}
 
 		// キーボードの状態を取得
@@ -884,9 +869,10 @@ void Player::BehaviorDashUpdate() {
 
 	if (lockOn_->isTargetExist()) {
 		// 今移動してる方向に移動する
-		if (input_->GetJoystickState(0, joyState_)) { // ゲームパッドによる移動
-
-			velocity_ = { (float)joyState_.Gamepad.sThumbLX, 0.0f, (float)joyState_.Gamepad.sThumbLY };
+		
+		// ゲームパッドによる移動
+		if (!input_->LStickInDeadZone()) {
+			velocity_ = { input_->GetLeftStick().x, 0.0f, input_->GetLeftStick().y};
 
 			velocity_ = velocity_.normalize() * speed;
 
@@ -895,98 +881,100 @@ void Player::BehaviorDashUpdate() {
 			velocity_ = Mat4x4::TransFormNormal(velocity_, rotationMatrix);
 
 			transform_.translate += velocity_;
-		} else {
-			// キーボードによる移動
-			if (input_->PushKey(DIK_W) && input_->PushKey(DIK_A)) {
-				velocity_ = { -speed, 0.0f, speed };
 
-				rotationMatrix = Mat4x4::MakeRotateXYZ(cameraViewProjection_->GetRotate());
-
-				velocity_ = Mat4x4::TransFormNormal(velocity_, rotationMatrix);
-
-				transform_.translate += velocity_ * speed;
-
-				targetAngle = std::atan2(velocity_.x, velocity_.z);
-
-			} else if (input_->PushKey(DIK_W) && input_->PushKey(DIK_D)) {
-				velocity_ = { speed, 0.0f, speed };
-
-				rotationMatrix = Mat4x4::MakeRotateXYZ(cameraViewProjection_->GetRotate());
-
-				velocity_ = Mat4x4::TransFormNormal(velocity_, rotationMatrix);
-
-				transform_.translate += velocity_ * speed;
-
-				targetAngle = std::atan2(velocity_.x, velocity_.z);
-
-			} else if (input_->PushKey(DIK_S) && input_->PushKey(DIK_A)) {
-				velocity_ = { -speed, 0.0f, -speed };
-
-				rotationMatrix = Mat4x4::MakeRotateXYZ(cameraViewProjection_->GetRotate());
-
-				velocity_ = Mat4x4::TransFormNormal(velocity_, rotationMatrix);
-
-				transform_.translate += velocity_ * speed;
-
-				targetAngle = std::atan2(velocity_.x, velocity_.z);
-
-			} else if (input_->PushKey(DIK_S) && input_->PushKey(DIK_D)) {
-				velocity_ = { speed, 0.0f, -speed };
-
-				rotationMatrix = Mat4x4::MakeRotateXYZ(cameraViewProjection_->GetRotate());
-
-				velocity_ = Mat4x4::TransFormNormal(velocity_, rotationMatrix);
-
-				transform_.translate += velocity_ * speed;
-
-				targetAngle = std::atan2(velocity_.x, velocity_.z);
-
-			} else if (input_->PushKey(DIK_W)) {
-				velocity_ = { 0.0f, 0.0f, speed };
-
-				rotationMatrix = Mat4x4::MakeRotateXYZ(cameraViewProjection_->GetRotate());
-
-				velocity_ = Mat4x4::TransFormNormal(velocity_, rotationMatrix);
-
-				transform_.translate += velocity_ * speed;
-
-				targetAngle = std::atan2(velocity_.x, velocity_.z);
-
-			} else if (input_->PushKey(DIK_S)) {
-				velocity_ = { 0.0f, 0.0f, -speed };
-
-				rotationMatrix = Mat4x4::MakeRotateXYZ(cameraViewProjection_->GetRotate());
-
-				velocity_ = Mat4x4::TransFormNormal(velocity_, rotationMatrix);
-
-				transform_.translate += velocity_ * speed;
-
-				targetAngle = std::atan2(velocity_.x, velocity_.z);
-
-			} else if (input_->PushKey(DIK_A)) {
-				velocity_ = { -speed, 0.0f, 0.0f };
-
-				rotationMatrix = Mat4x4::MakeRotateXYZ(cameraViewProjection_->GetRotate());
-
-				velocity_ = Mat4x4::TransFormNormal(velocity_, rotationMatrix);
-
-				transform_.translate += velocity_ * speed;
-
-				targetAngle = std::atan2(velocity_.x, velocity_.z);
-
-			} else if (input_->PushKey(DIK_D)) {
-				velocity_ = { speed, 0.0f, 0.0f };
-
-				rotationMatrix = Mat4x4::MakeRotateXYZ(cameraViewProjection_->GetRotate());
-
-				velocity_ = Mat4x4::TransFormNormal(velocity_, rotationMatrix);
-
-				transform_.translate += velocity_ * speed;
-
-				targetAngle = std::atan2(velocity_.x, velocity_.z);
-
-			}
 		}
+
+		// キーボードによる移動
+		if (input_->PushKey(DIK_W) && input_->PushKey(DIK_A)) {
+			velocity_ = { -speed, 0.0f, speed };
+
+			rotationMatrix = Mat4x4::MakeRotateXYZ(cameraViewProjection_->GetRotate());
+
+			velocity_ = Mat4x4::TransFormNormal(velocity_, rotationMatrix);
+
+			transform_.translate += velocity_ * speed;
+
+			targetAngle = std::atan2(velocity_.x, velocity_.z);
+
+		} else if (input_->PushKey(DIK_W) && input_->PushKey(DIK_D)) {
+			velocity_ = { speed, 0.0f, speed };
+
+			rotationMatrix = Mat4x4::MakeRotateXYZ(cameraViewProjection_->GetRotate());
+
+			velocity_ = Mat4x4::TransFormNormal(velocity_, rotationMatrix);
+
+			transform_.translate += velocity_ * speed;
+
+			targetAngle = std::atan2(velocity_.x, velocity_.z);
+
+		} else if (input_->PushKey(DIK_S) && input_->PushKey(DIK_A)) {
+			velocity_ = { -speed, 0.0f, -speed };
+
+			rotationMatrix = Mat4x4::MakeRotateXYZ(cameraViewProjection_->GetRotate());
+
+			velocity_ = Mat4x4::TransFormNormal(velocity_, rotationMatrix);
+
+			transform_.translate += velocity_ * speed;
+
+			targetAngle = std::atan2(velocity_.x, velocity_.z);
+
+		} else if (input_->PushKey(DIK_S) && input_->PushKey(DIK_D)) {
+			velocity_ = { speed, 0.0f, -speed };
+
+			rotationMatrix = Mat4x4::MakeRotateXYZ(cameraViewProjection_->GetRotate());
+
+			velocity_ = Mat4x4::TransFormNormal(velocity_, rotationMatrix);
+
+			transform_.translate += velocity_ * speed;
+
+			targetAngle = std::atan2(velocity_.x, velocity_.z);
+
+		} else if (input_->PushKey(DIK_W)) {
+			velocity_ = { 0.0f, 0.0f, speed };
+
+			rotationMatrix = Mat4x4::MakeRotateXYZ(cameraViewProjection_->GetRotate());
+
+			velocity_ = Mat4x4::TransFormNormal(velocity_, rotationMatrix);
+
+			transform_.translate += velocity_ * speed;
+
+			targetAngle = std::atan2(velocity_.x, velocity_.z);
+
+		} else if (input_->PushKey(DIK_S)) {
+			velocity_ = { 0.0f, 0.0f, -speed };
+
+			rotationMatrix = Mat4x4::MakeRotateXYZ(cameraViewProjection_->GetRotate());
+
+			velocity_ = Mat4x4::TransFormNormal(velocity_, rotationMatrix);
+
+			transform_.translate += velocity_ * speed;
+
+			targetAngle = std::atan2(velocity_.x, velocity_.z);
+
+		} else if (input_->PushKey(DIK_A)) {
+			velocity_ = { -speed, 0.0f, 0.0f };
+
+			rotationMatrix = Mat4x4::MakeRotateXYZ(cameraViewProjection_->GetRotate());
+
+			velocity_ = Mat4x4::TransFormNormal(velocity_, rotationMatrix);
+
+			transform_.translate += velocity_ * speed;
+
+			targetAngle = std::atan2(velocity_.x, velocity_.z);
+
+		} else if (input_->PushKey(DIK_D)) {
+			velocity_ = { speed, 0.0f, 0.0f };
+
+			rotationMatrix = Mat4x4::MakeRotateXYZ(cameraViewProjection_->GetRotate());
+
+			velocity_ = Mat4x4::TransFormNormal(velocity_, rotationMatrix);
+
+			transform_.translate += velocity_ * speed;
+
+			targetAngle = std::atan2(velocity_.x, velocity_.z);
+
+		}
+
 	} else {
 		// 今向いてる方向に移動する
 		transform_.translate.x += std::sin(transform_.rotate.y) * speed;

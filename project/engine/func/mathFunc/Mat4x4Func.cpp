@@ -337,7 +337,7 @@ namespace Mat4x4 {
 		Matrix4x4 result = MakeIdentity();
 
 		// 正規化
-		Vector3 normAxis = axis.Normalize();
+		Vector3 normAxis = axis.normalize();
 
 		float s = std::sin(angle);
 		float c = std::cos(angle);
@@ -372,8 +372,8 @@ namespace Mat4x4 {
 
 	Matrix4x4 DirectionToDirection(const Vector3& from, const Vector3& to)
 	{
-		Vector3 fromNorm = from.Normalize();
-		Vector3 toNorm = to.Normalize();
+		Vector3 fromNorm = from.normalize();
+		Vector3 toNorm = to.normalize();
 
 		float dot = Vec3::Dot(fromNorm, toNorm);
 
@@ -388,7 +388,7 @@ namespace Mat4x4 {
 				? Vector3(1.0f, 0.0f, 0.0f)
 				: Vector3(0.0f, 1.0f, 0.0f);
 		} else {
-			axis = Vec3::Cross(fromNorm, toNorm).Normalize();
+			axis = Vec3::Cross(fromNorm, toNorm).normalize();
 		}
 
 		float angle = std::acos(dot);

@@ -109,7 +109,7 @@ Quaternion Quat::Slerp(const Quaternion& q1, const Quaternion& q2, float t)
 Quaternion Quat::MakeRotateAxisAngle(const Vector3& axis, float angle)
 {
     // 軸を正規化
-    Vector3 normAxis = axis.Normalize();
+    Vector3 normAxis = axis.normalize();
 
     float halfAngle = angle * 0.5f;
     float sinHalfAngle = sin(halfAngle);

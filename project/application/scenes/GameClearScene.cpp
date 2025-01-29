@@ -37,7 +37,7 @@ void GameClearScene::Initialize() {
 	backGround_ = std::make_unique<Sprite>();
 	backGround_->Initialize("black_BG.png");
 	backGround_->SetPos(backGround_Pos_);
-	backGround_->SetSize({1280.0f, 720.0f});
+	backGround_->SetSize({ 1280.0f, 720.0f });
 
 	titleText_ = std::make_unique<Sprite>();
 	titleText_->Initialize("gameClear_Text.png");
@@ -47,7 +47,7 @@ void GameClearScene::Initialize() {
 	pressButtonText_ = std::make_unique<Sprite>();
 	pressButtonText_->Initialize("press_text.png");
 	pressButtonText_->SetPos(pressButton_Pos_);
-	pressButtonText_->SetSize({250.0f, 50.0f});
+	pressButtonText_->SetSize({ 250.0f, 50.0f });
 }
 
 void GameClearScene::Finalize()
@@ -81,21 +81,18 @@ void GameClearScene::Update() {
 		SceneManager::GetInstance()->ChangeScene("title");
 	}
 
-	XINPUT_STATE joyState_;
-	if (Input::GetInstance()->GetJoystickState(0, joyState_)) {
-		if (joyState_.Gamepad.wButtons & XINPUT_GAMEPAD_A) {
-			SceneManager::GetInstance()->ChangeScene("title");
-		}
+	if (Input::GetInstance()->TriggerButton(XButtons.A)) {
+		SceneManager::GetInstance()->ChangeScene("title");
 	}
 }
 
 void GameClearScene::Draw() {
 
-/// ================================== ///
-///              描画処理               ///
-/// ================================== ///
-//------------------背景Spriteの描画------------------//
-// スプライト共通描画設定
+	/// ================================== ///
+	///              描画処理               ///
+	/// ================================== ///
+	//------------------背景Spriteの描画------------------//
+	// スプライト共通描画設定
 	SpriteBasic::GetInstance()->SetCommonRenderSetting();
 
 

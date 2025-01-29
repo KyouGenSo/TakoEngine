@@ -250,6 +250,8 @@ void GameScene::InitializeUI()
 
 void GameScene::Finalize()
 {
+	playerModels_.clear();
+	enemyModels_.clear();
 }
 
 void GameScene::Update()

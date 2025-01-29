@@ -8,7 +8,7 @@ void LockOn::Initialize() {
 
 	lockOnMark_ = std::make_unique<Sprite>();
 	lockOnMark_->Initialize("aim_sphere.png");
-	lockOnMark_->SetSize({50.0f, 50.0f});
+	lockOnMark_->SetSize({ 50.0f, 50.0f });
 }
 
 void LockOn::Update(const std::unique_ptr<Enemy>& enemy, const Camera& camera) {
@@ -19,14 +19,12 @@ void LockOn::Update(const std::unique_ptr<Enemy>& enemy, const Camera& camera) {
 		}
 	}
 
-	if (input_->GetJoystickState(0, joyState_)) {
-		// ロックオンボタンが押されたら
-		if (joyState_.Gamepad.bLeftTrigger > 0 && player_->GetBehavior() != 1) {
-			// ロックオン対象の検索
-			isLockOnByController_ = true;
-		} else {
-			isLockOnByController_ = false;
-		}
+	// ロックオンボタンが押されたら
+	if (input_->GetLeftTrigger() > 0 && player_->GetBehavior() != 1) {
+		// ロックオン対象の検索
+		isLockOnByController_ = true;
+	} else {
+		isLockOnByController_ = false;
 	}
 
 	if (input_->TriggerKey(DIK_F) && player_->GetBehavior() != 1) {
@@ -51,9 +49,9 @@ void LockOn::Update(const std::unique_ptr<Enemy>& enemy, const Camera& camera) {
 		Matrix4x4 matViewport = Mat4x4::MakeViewport(0.f, 0.f, WinApp::kClientWidth, WinApp::kClientHeight, 0.f, 1.f);
 		screenPos = Mat4x4::TransForm(matViewport, screenPos);
 		// スクリーン2D座標
-		Vector3 offset = {50.f / 2.0f, 50.f / 2.0f, 0.f};
+		Vector3 offset = { 50.f / 2.0f, 50.f / 2.0f, 0.f };
 		screenPos -= offset;
-		Vector2 screenPos2D = {screenPos.x, screenPos.y};
+		Vector2 screenPos2D = { screenPos.x, screenPos.y };
 		// ロックオンマークの座標設定
 		lockOnMark_->SetPos(screenPos2D);
 	}

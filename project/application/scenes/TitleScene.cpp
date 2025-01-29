@@ -63,11 +63,8 @@ void TitleScene::Update()
 		SceneManager::GetInstance()->ChangeScene("game");
 	}
 
-	XINPUT_STATE joyState_;
-	if (Input::GetInstance()->GetJoystickState(0, joyState_)) {
-		if (joyState_.Gamepad.wButtons & XINPUT_GAMEPAD_A) {
-			SceneManager::GetInstance()->ChangeScene("game");
-		}
+	if (Input::GetInstance()->TriggerButton(XButtons.A)) {
+		SceneManager::GetInstance()->ChangeScene("game");
 	}
 
 

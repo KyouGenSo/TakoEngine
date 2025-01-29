@@ -24,7 +24,7 @@ void FollowCamera::Finalize()
 
 void FollowCamera::Update() {
 
-	float rotateSpeed = 0.03f;
+	float rotateSpeed = 0.05f;
 
 	if (lockOn_->isTargetExist()) {
 		// ロックオン中はロックオン対象に向く
@@ -35,30 +35,26 @@ void FollowCamera::Update() {
 
 		// offset
 		offset_.z = Vec3::Lerp(offset_.z, -17.1f, 0.1f);
-	}
-	else {
+	} else {
 		// ゲームパッドによる回転
-		XINPUT_STATE joyState;
-		if (input_->GetJoystickState(0, joyState)) {
 
-			if (joyState.Gamepad.sThumbRX / 32767.0f > 0.3f || joyState.Gamepad.sThumbRX / 32767.0f < -0.3f) {
-				isRotating_ = true;
-			} else {
-				isRotating_ = false;
-			}
+		if (!Input::GetInstance()->RStickInDeadZone()) {
+			isRotating_ = true;
+		} else {
+			isRotating_ = false;
+		}
 
-			if(isRotating_)
-			destinationAngleY_ += (float)joyState.Gamepad.sThumbRX * rotateSpeed * 0.0001f;
+		if (isRotating_)
+			destinationAngleY_ += Input::GetInstance()->GetRightStick().x * rotateSpeed /** 0.0001f*/;
 
-			// 右スティック押し込みで角度をターゲットの後ろにリセット
-			if (joyState.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) {
-				destinationAngleY_ = target_->rotate.y;
-			}
+		// 右スティック押し込みで角度をターゲットの後ろにリセット
+		if (Input::GetInstance()->TriggerButton(XButtons.R_Thumbstick)) {
+			destinationAngleY_ = target_->rotate.y;
 		}
 
 		// キーボードによる回転
 		if (input_->PushKey(DIK_LEFT)) {
-			destinationAngleY_ -= rotateSpeed;		
+			destinationAngleY_ -= rotateSpeed;
 		}
 		if (input_->PushKey(DIK_RIGHT)) {
 			destinationAngleY_ += rotateSpeed;
@@ -90,7 +86,7 @@ void FollowCamera::Update() {
 
 }
 
-void FollowCamera::Reset() { 
+void FollowCamera::Reset() {
 	if (target_) {
 		interTargetPos_ = target_->translate;
 		//m_camera_.rotation_.y = target_->rotate.y;
@@ -106,10 +102,10 @@ void FollowCamera::Reset() {
 
 	//m_camera_.translation_ = interTargetPos_ + offset;
 	camera_->SetTranslate(interTargetPos_ + offset);
-	
+
 }
 
-void FollowCamera::ResetOffset() { 
+void FollowCamera::ResetOffset() {
 	offset_.x = offsetOrigin_.x;
 	offset_.y = offsetOrigin_.y;
 }
@@ -125,7 +121,7 @@ Vector3 FollowCamera::CalculateOffset() const {
 	return offset;
 }
 
-void FollowCamera::ShakeScreen(float power) { 
+void FollowCamera::ShakeScreen(float power) {
 	float randomX = Vec3::Rand(-power, power);
 	float randomY = Vec3::Rand(-power, power);
 
@@ -133,7 +129,7 @@ void FollowCamera::ShakeScreen(float power) {
 	offset_.y += randomY;
 }
 
-void FollowCamera::SetTarget(const Transform* target) { 
+void FollowCamera::SetTarget(const Transform* target) {
 	target_ = target;
 	Reset();
 }
