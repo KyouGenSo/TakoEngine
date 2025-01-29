@@ -16,6 +16,10 @@ Enemy::Enemy() {}
 Enemy::~Enemy() {
 	serialNumber_ = nextSerialNumber_;
 	nextSerialNumber_++;
+
+	for (auto& block : blocks_) {
+		delete block;
+	}
 }
 
 void Enemy::ReSet() {
