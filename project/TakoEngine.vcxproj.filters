@@ -278,6 +278,9 @@
     <ClCompile Include="application\objects\followCamera.cpp">
       <Filter>ソース ファイル\application\objects</Filter>
     </ClCompile>
+    <ClCompile Include="engine\effect\ParticleEmitter.cpp">
+      <Filter>ソース ファイル\engine\effect</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\func\mathFunc\Mat4x4Func.h">
@@ -456,6 +459,12 @@
     </ClInclude>
     <ClInclude Include="application\objects\lockOn.h">
       <Filter>ヘッダー ファイル\application\objects\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\ParticleEmitter.h">
+      <Filter>ヘッダー ファイル\engine\effect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\math\AABB.h">
+      <Filter>ヘッダー ファイル\engine\math</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
