@@ -10,6 +10,7 @@
 #include <numbers>
 #include "PostEffect.h"
 
+
 #ifdef _DEBUG
 #include"ImGui.h"
 #include "DebugCamera.h"
@@ -24,21 +25,41 @@ void GameScene::Initialize()
 	///              初期化処理              ///
 	/// ================================== ///
 
+	// 入力クラスの取得
+	input_ = Input::GetInstance();
+
+	// BGMの再生
 	audio_ = Audio::GetInstance();
 	bgmSH_ = audio_->LoadWaveFile("BGM/battle_bgm.wav");
 	bgmVH_ = audio_->PlayWave(bgmSH_, true, 0.5f);
 
+	// エミッターの設定
+	emitterParam_.name_ = "circle";
+	emitterParam_.transform_.translate = Vector3(-1.0f, 0.0f, 0.0f);
+	emitterParam_.transform_.scale = Vector3(0.5f, 0.5f, 0.5f);
+	emitterParam_.velocity_ = Vector3(0.0f, 15.0f, 0.0f);
+	emitterParam_.range_.min = Vector3(-0.5f, -0.5f, -0.5f);
+	emitterParam_.range_.max = Vector3(0.5f, 0.5f, 0.5f);
+	emitterParam_.color_ = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+	emitterParam_.count_ = 0;
+	emitterParam_.lifeTime = 1.0f;
+	emitterParam_.frequency_ = 0.0f;
+	emitterParam_.isRandomColor_ = false;
+	emitterParam_.isVisualize_ = false;
+
+	// particleの初期化
+	particleEmitter_ = std::make_unique<ParticleEmitter>(emitterParam_.name_, emitterParam_.transform_, emitterParam_.velocity_, emitterParam_.range_, emitterParam_.lifeTime, emitterParam_.count_, emitterParam_.color_, emitterParam_.frequency_, emitterParam_.isRandomColor_);
+
+	// LIGHTの設定
 	Object3dBasic::GetInstance()->SetDirectionalLightIntensity(3.0f);
 
+	// PostEffectの設定
 	PostEffect::GetInstance()->SetBloomIntensity(0.f);
 	PostEffect::GetInstance()->SetBloomThreshold(0.75f);
 	PostEffect::GetInstance()->SetBloomSigma(2.0f);
 
 	// uiの初期化
 	InitializeUI();
-
-	input_ = Input::GetInstance();
-	audio_ = Audio::GetInstance();
 
 	// collisionMnagerの生成と初期化
 	collisionManager_ = std::make_unique<CollisionManager>();
@@ -307,6 +328,18 @@ void GameScene::Update()
 	// 地面の更新
 	ground_->Update();
 
+	// パーティクルの更新
+	particleEmitter_->SetTranslate(enemy_->GetCenter());
+
+	if (player_->GetHammerIsHit())
+	{
+		particleEmitter_->SetCount(50);
+	} else {
+		particleEmitter_->SetCount(0);
+	}
+
+	particleEmitter_->Update();
+
 	// デバッグ表示用にトランスフォームを更新
 	collisionManager_->UpdateWorldTransform();
 
@@ -425,6 +458,9 @@ void GameScene::Draw()
 	}
 
 	//--------------------------------------------------//
+
+	// particleの描画
+	particleEmitter_->Draw();
 }
 
 void GameScene::DrawHP()

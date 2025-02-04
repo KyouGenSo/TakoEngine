@@ -216,7 +216,7 @@ void ParticleManager::Emit(const std::string name, const Vector3& position, cons
 
 ParticleManager::Particle ParticleManager::MakeNewParticle(std::mt19937& randomEngine, const Vector3& translate, const Vector3& scale, const Vector3& velocity, const AABB& range, const Vector4& color, const float lifeTime, bool isRandomColor)
 {
-	std::uniform_real_distribution<float> random(-1.0f, 1.0f);
+	std::uniform_real_distribution<float> random(-100.0f, 100.0f);
 	std::uniform_real_distribution<float> randomX(range.min.x, range.max.x);
 	std::uniform_real_distribution<float> randomY(range.min.y, range.max.y);
 	std::uniform_real_distribution<float> randomZ(range.min.z, range.max.z);

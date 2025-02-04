@@ -153,6 +153,7 @@ public:
 	// get hp
 	const float GetHP() const { return hp_; }
 	const bool GetEnableWeapon() const { return enableWeapon_; }
+	const bool GetHammerIsHit() const { return hammer_->IsHit(); }
 	// ----------------------浮遊アニメーション用---------------------
 	float GetFloatingParam() const { return floatingParam_; }
 	float GetPeriod() const { return period; }

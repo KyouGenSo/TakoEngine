@@ -13,6 +13,9 @@
 #include "Ground.h"
 #include "followCamera.h"
 #include "lockOn.h"
+#include "ParticleEmitter.h"
+#include "AABB.h"
+#include <memory>
 
 class GameScene : public BaseScene
 {
@@ -75,6 +78,19 @@ public: // メンバ関数
 	const bool GetIsGameOver() const { return isGameOver_; }
 	// set isGameOver_
 	void SetIsGameOver(bool isGameOver) { isGameOver_ = isGameOver; }
+
+	struct EmitterParam {
+		std::string name_;
+		Transform transform_;
+		Vector3 velocity_;
+		AABB range_;
+		Vector4 color_;
+		float lifeTime;
+		int count_;
+		float frequency_;
+		bool isRandomColor_;
+		bool isVisualize_;
+	};
 
 private: // メンバ変数
 
@@ -185,4 +201,8 @@ private: // メンバ変数
 	// 地面
 	std::unique_ptr<Ground> ground_ = nullptr;
 	std::unique_ptr<Object3d> groundModel_ = nullptr;
+
+	// ----------------------Emitter---------------------
+	EmitterParam emitterParam_;
+	std::unique_ptr<ParticleEmitter> particleEmitter_;
 };
