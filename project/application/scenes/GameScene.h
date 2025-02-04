@@ -83,6 +83,10 @@ private: // メンバ変数
 	Input* input_ = nullptr;
 	Audio* audio_ = nullptr;
 
+	// BGM
+	uint32_t bgmSH_ = 0;
+	uint32_t bgmVH_ = 0;
+
 	// UI
 	std::unique_ptr<Sprite> playerHP_ = nullptr;
 	Vector2 playerHP_Pos_ = { 400.0f, 650.0f };

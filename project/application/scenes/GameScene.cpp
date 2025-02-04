@@ -24,6 +24,10 @@ void GameScene::Initialize()
 	///              初期化処理              ///
 	/// ================================== ///
 
+	audio_ = Audio::GetInstance();
+	bgmSH_ = audio_->LoadWaveFile("BGM/battle_bgm.wav");
+	bgmVH_ = audio_->PlayWave(bgmSH_, true, 0.5f);
+
 	Object3dBasic::GetInstance()->SetDirectionalLightIntensity(3.0f);
 
 	PostEffect::GetInstance()->SetBloomIntensity(0.f);
