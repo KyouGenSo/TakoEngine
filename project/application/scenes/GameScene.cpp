@@ -256,6 +256,8 @@ void GameScene::Finalize()
 {
 	playerModels_.clear();
 	enemyModels_.clear();
+
+	audio_->StopWave(bgmVH_);
 }
 
 void GameScene::Update()

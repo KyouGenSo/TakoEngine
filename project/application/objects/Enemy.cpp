@@ -2,6 +2,7 @@
 #include "Player.h"
 #include "followCamera.h"
 #include "hammer.h"
+#include "Input.h"
 
 #ifdef DEBUG
 #include "ImGuiManager.h"
@@ -381,6 +382,7 @@ void Enemy::OnCollision([[maybe_unused]] Collider* other) {
 		if (isDamegeOn_) {
 			player->Damage(30);
 			followCamera_->ShakeScreen(0.5f);
+			Input::GetInstance()->SetVibration(1.0f, 1.0f, 0.2f);
 			workFarAttack1_.isHit = true;
 			audio_->PlayWave(seHitPlayer_);
 		} else {

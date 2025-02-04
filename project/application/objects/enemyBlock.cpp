@@ -1,6 +1,7 @@
 #include "enemyBlock.h"
 #include "Player.h"
 #include "followCamera.h"
+#include "Input.h"
 
 EnemyBlock::EnemyBlock() {}
 
@@ -75,6 +76,7 @@ void EnemyBlock::OnCollision([[maybe_unused]] Collider* other) {
 		if (!isHited_) {
 			player->Damage(damage_);
 			audio_->PlayWave(seHandle_);
+			Input::GetInstance()->SetVibration(0.0f, 1.0f, 0.1f);
 		}
 
 		if (hitOnce_)

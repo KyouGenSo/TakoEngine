@@ -109,7 +109,7 @@ void Hammer::OnCollision([[maybe_unused]] Collider* other) {
 		// SEを再生
 		audio_->PlayWave(seHit_);
 
-		Input::GetInstance()->SetVibration(0.5f, 0.5f, 0.2f);
+		Input::GetInstance()->SetVibration(0.3f, 0.5f, 0.2f);
 	}
 }
 
