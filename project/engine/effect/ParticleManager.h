@@ -140,7 +140,7 @@ public: // メンバー関数
 	const bool GetIsDebug() const { return isDebug_; }
 
     // -----------------------------------Setters-----------------------------------//
-    void SetCamera(Camera* camera) { m_camera_ = camera; }
+  void SetCamera(Camera* camera) { m_camera_ = camera; }
 	void SetIsBillboard(bool isBillboard) { isBillboard_ = isBillboard; }
 	void SetIsDebug(bool isDebug) { isDebug_ = isDebug; }
 
