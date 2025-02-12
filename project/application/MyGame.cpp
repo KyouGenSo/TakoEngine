@@ -132,7 +132,7 @@ void MyGame::Draw()
   ImGui::Begin("FPS");
   ImGui::ProgressBar(FrameTimer::GetInstance()->GetFPS() / 60.0f, ImVec2(0.0f, 0.0f), "");
   ImGui::SameLine();
-  ImGui::Text("FPS : %.2f", FrameTimer::GetInstance()->GetFPS());
+  ImGui::Text("FPS : %.0f", FrameTimer::GetInstance()->GetFPS());
   ImGui::End();
 
 	// PostEffectのパラメータ調整
