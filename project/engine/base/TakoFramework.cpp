@@ -11,6 +11,7 @@
 #include "PostEffect.h"
 #include "DebugCamera.h"
 #include "Transition.h"
+#include "FrameTimer.h"
 
 void TakoFramework::Initialize()
 {
@@ -57,12 +58,17 @@ void TakoFramework::Initialize()
 
 	ParticleManager::GetInstance()->Initialize(dx12_, defaultCamera_);
 
+  FrameTimer::GetInstance()->Initialize();
+
 #pragma endregion
 
 }
 
 void TakoFramework::Finalize()
 {
+  // フレームタイマーの終了処理
+  FrameTimer::GetInstance()->Finalize();
+
 	// パーティクルマネージャーの終了処理
 	ParticleManager::GetInstance()->Finalize();
 
@@ -123,6 +129,9 @@ void TakoFramework::Update()
 		endFlag_ = true;
 		return;
 	}
+
+  // フレームタイマーの更新
+  FrameTimer::GetInstance()->Update();
 
 	//	Draw2Dの更新
 	Draw2D::GetInstance()->Update();

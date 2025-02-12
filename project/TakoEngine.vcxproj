@@ -120,6 +120,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\func\commonFunc\Logger.cpp" />
     <ClCompile Include="application\GameScene.cpp" />
     <ClCompile Include="engine\3d\Light.cpp" />
+    <ClCompile Include="engine\time\FrameTimer.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="engine\func\mathFunc\Mat4x4Func.cpp" />
     <ClCompile Include="engine\3d\Model.cpp" />
@@ -190,6 +191,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\3d\Transform.h" />
     <ClInclude Include="engine\effect\ParticleManager.h" />
     <ClInclude Include="engine\effect\ParticleEmitter.h" />
+    <ClInclude Include="engine\time\FrameTimer.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\Particle.hlsli">

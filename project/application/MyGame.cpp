@@ -8,6 +8,7 @@
 #include "Draw2D.h"
 #include "Object3dBasic.h"
 #include "PostEffect.h"
+#include "FrameTimer.h"
 
 void MyGame::Initialize()
 {
@@ -126,6 +127,13 @@ void MyGame::Draw()
 	SceneManager::GetInstance()->DrawImGui();
 
 	Draw2D::GetInstance()->ImGui();
+
+  // fpsの表示
+  ImGui::Begin("FPS");
+  ImGui::ProgressBar(FrameTimer::GetInstance()->GetFPS() / 60.0f, ImVec2(0.0f, 0.0f), "");
+  ImGui::SameLine();
+  ImGui::Text("FPS : %.2f", FrameTimer::GetInstance()->GetFPS());
+  ImGui::End();
 
 	// PostEffectのパラメータ調整
 	ImGui::Begin("PostEffect");

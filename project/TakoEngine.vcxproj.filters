@@ -105,6 +105,9 @@
     <Filter Include="ヘッダー ファイル\engine\imgui">
       <UniqueIdentifier>{bc6db53e-c339-4623-ab40-a9a9adf5d39b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ヘッダー ファイル\engine\time">
+      <UniqueIdentifier>{da7bb2e7-0b3d-4cc0-ab85-5e6381bc6953}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -211,6 +214,9 @@
     </ClCompile>
     <ClCompile Include="engine\effect\ParticleEmitter.cpp">
       <Filter>ソース ファイル\engine\effect</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\time\FrameTimer.cpp">
+      <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -348,6 +354,9 @@
     </ClInclude>
     <ClInclude Include="engine\math\AABB.h">
       <Filter>ヘッダー ファイル\engine\math</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\time\FrameTimer.h">
+      <Filter>ヘッダー ファイル\engine\time</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
