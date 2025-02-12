@@ -1,7 +1,5 @@
 #pragma once
 
-class SceneManager;
-
 class BaseScene
 {
 public: // メンバ関数
