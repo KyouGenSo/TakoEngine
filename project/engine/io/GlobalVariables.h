@@ -35,6 +35,16 @@ public: // メンバ関数
   /// </summary>
   void SaveFile(const std::string& groupName);
 
+  /// <summary>
+  /// ディレクトリの全ファイルを読み込む
+  /// </summary>
+  void LoadFile();
+
+  /// <summary>
+  /// ファイルから読み込む
+  /// </summary>
+  void LoadFile(const std::string& groupName);
+
 	//-----------------------------------------Setter-----------------------------------------//
 	// 値の設定(int)
 	void SetValue(const std::string& groupName, const std::string& key, int32_t value);

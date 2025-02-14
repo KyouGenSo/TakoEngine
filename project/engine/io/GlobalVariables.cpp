@@ -149,6 +149,28 @@ void GlobalVariables::SaveFile(const std::string& groupName)
 
 }
 
+void GlobalVariables::LoadFile()
+{
+
+}
+
+void GlobalVariables::LoadFile(const std::string& groupName)
+{
+  // ディレクトリが存在しない場合はスキップ
+  if (!std::filesystem::exists(kDirectoryPath))
+  {
+    return;
+  }
+
+  std::filesystem::directory_iterator dir_it(kDirectoryPath);
+  for(const std::filesystem::directory_entry& entry : dir_it)
+  {
+    // f
+    const std::filesystem::path& filePath = entry.path();
+  }
+
+}
+
 void GlobalVariables::SetValue(const std::string& groupName, const std::string& key, int32_t value)
 {
   // グループが存在しない場合はエラー
