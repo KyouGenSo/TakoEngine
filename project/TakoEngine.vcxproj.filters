@@ -108,6 +108,9 @@
     <Filter Include="ヘッダー ファイル\engine\time">
       <UniqueIdentifier>{da7bb2e7-0b3d-4cc0-ab85-5e6381bc6953}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\engine\time">
+      <UniqueIdentifier>{82f0a61f-51b5-420c-b928-570308f740dd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -216,7 +219,7 @@
       <Filter>ソース ファイル\engine\effect</Filter>
     </ClCompile>
     <ClCompile Include="engine\time\FrameTimer.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>ソース ファイル\engine\time</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -357,6 +360,9 @@
     </ClInclude>
     <ClInclude Include="engine\time\FrameTimer.h">
       <Filter>ヘッダー ファイル\engine\time</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\audio\miniaudio.h">
+      <Filter>ヘッダー ファイル\engine\audio</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

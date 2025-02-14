@@ -146,6 +146,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\effect\ParticleEmitter.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\audio\miniaudio.h" />
     <ClInclude Include="engine\math\AABB.h" />
     <ClInclude Include="engine\2d\DebugCamera.h" />
     <ClInclude Include="engine\2d\Draw2D.h" />
