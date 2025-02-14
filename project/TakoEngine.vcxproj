@@ -116,6 +116,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\base\DX12\D3DResourceLeakCheker.cpp" />
     <ClCompile Include="engine\base\DX12\DX12Basic.cpp" />
     <ClCompile Include="engine\effect\PostEffect.cpp" />
+    <ClCompile Include="engine\io\GlobalVariables.cpp" />
     <ClCompile Include="engine\io\Input.cpp" />
     <ClCompile Include="engine\func\commonFunc\Logger.cpp" />
     <ClCompile Include="application\GameScene.cpp" />
@@ -147,6 +148,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\audio\miniaudio.h" />
+    <ClInclude Include="engine\io\GlobalVariables.h" />
     <ClInclude Include="engine\math\AABB.h" />
     <ClInclude Include="engine\2d\DebugCamera.h" />
     <ClInclude Include="engine\2d\Draw2D.h" />

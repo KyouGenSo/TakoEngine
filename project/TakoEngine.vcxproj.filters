@@ -221,6 +221,9 @@
     <ClCompile Include="engine\time\FrameTimer.cpp">
       <Filter>ソース ファイル\engine\time</Filter>
     </ClCompile>
+    <ClCompile Include="engine\io\GlobalVariables.cpp">
+      <Filter>ソース ファイル\engine\io</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\func\mathFunc\Mat4x4Func.h">
@@ -363,6 +366,9 @@
     </ClInclude>
     <ClInclude Include="engine\audio\miniaudio.h">
       <Filter>ヘッダー ファイル\engine\audio</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\io\GlobalVariables.h">
+      <Filter>ヘッダー ファイル\engine\io</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
