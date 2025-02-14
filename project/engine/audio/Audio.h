@@ -73,6 +73,11 @@ public:
 	/// </summary>
 	uint32_t LoadWaveFile(const std::string& filename);
 
+  /// <summary>
+  /// MP3ファイルの読み込み（miniaudio使用）
+  /// </summary>
+  uint32_t LoadMP3File(const std::string& filename);
+
 	/// <summary>
 	/// サウンドの解放
 	/// </summary>
@@ -81,10 +86,10 @@ public:
 	/// <summary>
 	/// サウンドの再生
 	/// </summary>
-	uint32_t PlayWave(uint32_t soundDataHandle, bool loopFlag, float volume);
-	uint32_t PlayWave(uint32_t soundDataHandle);
-	uint32_t PlayWave(uint32_t soundDataHandle, bool loopFlag);
-	uint32_t PlayWave(uint32_t soundDataHandle, float volume);
+	uint32_t Play(uint32_t soundDataHandle, bool loopFlag, float volume);
+	uint32_t Play(uint32_t soundDataHandle);
+	uint32_t Play(uint32_t soundDataHandle, bool loopFlag);
+	uint32_t Play(uint32_t soundDataHandle, float volume);
 
 	/// <summary>
 	/// サウンド停止

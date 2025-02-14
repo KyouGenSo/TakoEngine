@@ -8,6 +8,7 @@
 #include "Input.h"
 #include "Draw2D.h"
 #include "Camera.h"
+#include "Audio.h"
 
 #ifdef _DEBUG
 #include"ImGui.h"
