@@ -140,12 +140,12 @@ void MyGame::Draw()
 
   ImGui::Begin("Option");
   // buttonでFPSの表示を切り替え
-  if (ImGui::Button("FPSWindow"))
+  if (ImGui::Button("Display FPS"))
   {
     FPSWindowVisible = !FPSWindowVisible;
   }
   ImGui::SameLine();
-  if (ImGui::Button("PostEffectWindow"))
+  if (ImGui::Button("PostEffect Option"))
   {
     PostEffectWindowVisible = !PostEffectWindowVisible;
   }
