@@ -46,12 +46,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)..\Generated\outputs\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Generated\obj\$(ProjectName)\$(Configuration)\</IntDir>
-    <IncludePath>$(SolutionDir)externals\imgui;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)externals\assimp\include;$(SolutionDir)externals\nlohmann;$(SolutionDir)externals\imgui;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)..\Generated\outputs\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Generated\obj\$(ProjectName)\$(Configuration)\</IntDir>
-    <IncludePath>$(SolutionDir)externals\imgui;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)externals\assimp\include;$(SolutionDir)externals\nlohmann;$(SolutionDir)externals\imgui;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -64,7 +64,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(ProjectDir)engine\time;$(ProjectDir)externals\assimp\include;$(ProjectDir)application;$(ProjectDir)engine\effect;$(ProjectDir)engine\scene;$(ProjectDir)engine\audio;$(ProjectDir)engine\imgui;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)engine\time;$(ProjectDir)application;$(ProjectDir)engine\effect;$(ProjectDir)engine\scene;$(ProjectDir)engine\audio;$(ProjectDir)engine\imgui;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -91,7 +91,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)engine\time;$(ProjectDir)externals\assimp\include;$(ProjectDir)application;$(ProjectDir)engine\effect;$(ProjectDir)engine\scene;$(ProjectDir)engine\audio;$(ProjectDir)engine\debug;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)engine\time;$(ProjectDir)application;$(ProjectDir)engine\effect;$(ProjectDir)engine\scene;$(ProjectDir)engine\audio;$(ProjectDir)engine\debug;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

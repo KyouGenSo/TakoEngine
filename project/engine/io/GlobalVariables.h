@@ -30,6 +30,11 @@ public: // メンバ関数
 	/// </summary>
 	void Update();
 
+  /// <summary>
+  /// ファイルに書き出す
+  /// </summary>
+  void SaveFile(const std::string& groupName);
+
 	//-----------------------------------------Setter-----------------------------------------//
 	// 値の設定(int)
 	void SetValue(const std::string& groupName, const std::string& key, int32_t value);
@@ -48,5 +53,9 @@ public: // 構造体
 	};
 
 private: // メンバ変数
+
+  // 保存先のファイルパス
+  const std::string kDirectoryPath = "resources/Json/GlobalVariables/";
+
 	std::map<std::string, Group> datas_;
 };
