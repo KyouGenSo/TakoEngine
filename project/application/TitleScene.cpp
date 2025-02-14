@@ -9,6 +9,7 @@
 #include "Draw2D.h"
 #include "Camera.h"
 #include "Audio.h"
+#include "GlobalVariables.h"
 
 #ifdef _DEBUG
 #include"ImGui.h"
@@ -56,6 +57,31 @@ void TitleScene::Initialize()
 	emitterParam2_.isVisualize_ = true;
 
 	particleEmitter2_ = std::make_unique<ParticleEmitter>(emitterParam2_.name_, emitterParam2_.transform_, emitterParam2_.velocity_, emitterParam2_.range_, emitterParam2_.lifeTime, emitterParam2_.count_, emitterParam2_.color_, emitterParam2_.frequency_, emitterParam2_.isRandomColor_);
+
+  GlobalVariables::GetInstance()->CreateGroup("EmitterParam1");
+  GlobalVariables::GetInstance()->CreateGroup("EmitterParam2");
+
+  GlobalVariables::GetInstance()->SetValue("EmitterParam1", "translate", emitterParam_.transform_.translate);
+  GlobalVariables::GetInstance()->SetValue("EmitterParam1", "scale", emitterParam_.transform_.scale);
+  GlobalVariables::GetInstance()->SetValue("EmitterParam1", "velocity", emitterParam_.velocity_);
+  GlobalVariables::GetInstance()->SetValue("EmitterParam1", "range min", emitterParam_.range_.min);
+  GlobalVariables::GetInstance()->SetValue("EmitterParam1", "range max", emitterParam_.range_.max);
+  GlobalVariables::GetInstance()->SetValue("EmitterParam1", "lifeTime", emitterParam_.lifeTime);
+  GlobalVariables::GetInstance()->SetValue("EmitterParam1", "count", emitterParam_.count_);
+  GlobalVariables::GetInstance()->SetValue("EmitterParam1", "frequency", emitterParam_.frequency_);
+  GlobalVariables::GetInstance()->SetValue("EmitterParam1", "isRandomColor", emitterParam_.isRandomColor_);
+  GlobalVariables::GetInstance()->SetValue("EmitterParam1", "isVisualize", emitterParam_.isVisualize_);
+
+  GlobalVariables::GetInstance()->SetValue("EmitterParam2", "translate", emitterParam2_.transform_.translate);
+  GlobalVariables::GetInstance()->SetValue("EmitterParam2", "scale", emitterParam2_.transform_.scale);
+  GlobalVariables::GetInstance()->SetValue("EmitterParam2", "velocity", emitterParam2_.velocity_);
+  GlobalVariables::GetInstance()->SetValue("EmitterParam2", "range min", emitterParam2_.range_.min);
+  GlobalVariables::GetInstance()->SetValue("EmitterParam2", "range max", emitterParam2_.range_.max);
+  GlobalVariables::GetInstance()->SetValue("EmitterParam2", "lifeTime", emitterParam2_.lifeTime);
+  GlobalVariables::GetInstance()->SetValue("EmitterParam2", "count", emitterParam2_.count_);
+  GlobalVariables::GetInstance()->SetValue("EmitterParam2", "frequency", emitterParam2_.frequency_);
+  GlobalVariables::GetInstance()->SetValue("EmitterParam2", "isRandomColor", emitterParam2_.isRandomColor_);
+  GlobalVariables::GetInstance()->SetValue("EmitterParam2", "isVisualize", emitterParam2_.isVisualize_);
 }
 
 void TitleScene::Finalize()
@@ -103,6 +129,9 @@ void TitleScene::Update()
 	particleEmitter2_->SetColor(emitterParam2_.color_);
 	particleEmitter2_->SetLifeTime(emitterParam2_.lifeTime);
 	particleEmitter2_->SetIsRandomColor(emitterParam2_.isRandomColor_);
+
+
+
 
 	particleEmitter2_->Update();
 

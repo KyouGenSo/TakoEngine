@@ -7,33 +7,38 @@ class GlobalVariables
 {
 	
 
-private: // ƒVƒ“ƒOƒ‹ƒgƒ“İ’è
+private: // ã‚·ãƒ³ã‚°ãƒ«ãƒˆãƒ³è¨­å®š
 	static GlobalVariables* instance_;
 	GlobalVariables() = default;
 	GlobalVariables(const GlobalVariables&) = delete;
 	GlobalVariables& operator=(const GlobalVariables&) = delete;
 	~GlobalVariables() = default;
 
-public: // ƒƒ“ƒoŠÖ”
+public: // ãƒ¡ãƒ³ãƒé–¢æ•°
 	/// <summary>
-	/// ƒCƒ“ƒXƒ^ƒ“ƒX‚Ìæ“¾
+	/// ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹ã®å–å¾—
 	/// </summary>
 	static GlobalVariables* GetInstance();
 
 	/// <summary>
-	/// ƒOƒ‹[ƒv‚Ìì¬
+	/// ã‚°ãƒ«ãƒ¼ãƒ—ã®ä½œæˆ
 	/// </summary>
 	void CreateGroup(const std::string& groupName);
 
+	/// <summary>
+	/// æ›´æ–°å‡¦ç†
+	/// </summary>
+	void Update();
+
 	//-----------------------------------------Setter-----------------------------------------//
-	// ’l‚Ìİ’è(int)
+	// å€¤ã®è¨­å®š(int)
 	void SetValue(const std::string& groupName, const std::string& key, int32_t value);
-	// ’l‚Ìİ’è(float)
+	// å€¤ã®è¨­å®š(float)
 	void SetValue(const std::string& groupName, const std::string& key, float value);
-	// ’l‚Ìİ’è(Vector3)
+	// å€¤ã®è¨­å®š(Vector3)
 	void SetValue(const std::string& groupName, const std::string& key, const Vector3& value);
 
-public: // \‘¢‘Ì
+public: // æ§‹é€ ä½“
 	struct Item {
 		std::variant<int32_t, float, Vector3> value;
 	};
@@ -42,6 +47,6 @@ public: // \‘¢‘Ì
 		std::map<std::string, Item> items;
 	};
 
-private: // ƒƒ“ƒo•Ï”
+private: // ãƒ¡ãƒ³ãƒå¤‰æ•°
 	std::map<std::string, Group> datas_;
 };

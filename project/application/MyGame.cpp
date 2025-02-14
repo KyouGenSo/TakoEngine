@@ -9,6 +9,7 @@
 #include "Object3dBasic.h"
 #include "PostEffect.h"
 #include "FrameTimer.h"
+#include "GlobalVariables.h"
 
 void MyGame::Initialize()
 {
@@ -69,6 +70,7 @@ void MyGame::Update()
 	//　サウンドの更新
 	Audio::GetInstance()->Update();
 
+  // ゲームパッドの状態をリスレッシュ
 	Input::GetInstance()->RefreshGamePadState();
 }
 
@@ -137,6 +139,9 @@ void MyGame::Draw()
 	SceneManager::GetInstance()->DrawImGui();
 
 	Draw2D::GetInstance()->ImGui();
+
+  // GlobalVariablesの更新
+  GlobalVariables::GetInstance()->Update();
 
   ImGui::Begin("Option");
   // buttonでFPSの表示を切り替え

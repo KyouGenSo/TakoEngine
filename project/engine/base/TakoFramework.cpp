@@ -130,8 +130,8 @@ void TakoFramework::Update()
 		return;
 	}
 
-  // フレームタイマーの更新
-  FrameTimer::GetInstance()->Update();
+	// フレームタイマーの更新
+	FrameTimer::GetInstance()->Update();
 
 	//	Draw2Dの更新
 	Draw2D::GetInstance()->Update();
