@@ -155,7 +155,7 @@ void MyGame::Draw()
   // fpsの表示
   if (FPSWindowVisible)
   {
-    ImGui::Begin("FPS");
+    ImGui::Begin("FPS", &FPSWindowVisible);
     ImGui::ProgressBar(FrameTimer::GetInstance()->GetFPS() / 60.0f, ImVec2(0.0f, 0.0f), "");
     ImGui::SameLine();
     ImGui::Text("FPS : %.0f", FrameTimer::GetInstance()->GetFPS());
@@ -165,7 +165,7 @@ void MyGame::Draw()
 
 	// PostEffectのパラメータ調整
   if (PostEffectWindowVisible) {
-    ImGui::Begin("PostEffect");
+    ImGui::Begin("PostEffect", &PostEffectWindowVisible);
     if (ImGui::BeginTabBar("PostEffectTab"))
     {
 
