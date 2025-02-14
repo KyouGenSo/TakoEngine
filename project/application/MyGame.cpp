@@ -33,6 +33,16 @@ void MyGame::Initialize()
 	TextureManager::GetInstance()->LoadTexture("circle.png");
 	ParticleManager::GetInstance()->CreateParticleGroup("white", "white.png");
 	ParticleManager::GetInstance()->CreateParticleGroup("circle", "circle.png");
+
+  // PostEffectParamの設定
+  postEffectParam.vignettePower = 0.f;
+  postEffectParam.vignetteRange = 20.0f;
+  postEffectParam.bloomThreshold = 1.0f;
+  postEffectParam.bloomIntensity = 1.0f;
+  postEffectParam.bloomSigma = 2.0f;
+  postEffectParam.fogColor = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+  postEffectParam.fogDensity = 0.01f;
+
 }
 
 void MyGame::Finalize()
@@ -128,74 +138,94 @@ void MyGame::Draw()
 
 	Draw2D::GetInstance()->ImGui();
 
-  // fpsの表示
-  ImGui::Begin("FPS");
-  ImGui::ProgressBar(FrameTimer::GetInstance()->GetFPS() / 60.0f, ImVec2(0.0f, 0.0f), "");
+  ImGui::Begin("Option");
+  // buttonでFPSの表示を切り替え
+  if (ImGui::Button("FPSWindow"))
+  {
+    FPSWindowVisible = !FPSWindowVisible;
+  }
   ImGui::SameLine();
-  ImGui::Text("FPS : %.0f", FrameTimer::GetInstance()->GetFPS());
+  if (ImGui::Button("PostEffectWindow"))
+  {
+    PostEffectWindowVisible = !PostEffectWindowVisible;
+  }
+
   ImGui::End();
 
+  // fpsの表示
+  if (FPSWindowVisible)
+  {
+    ImGui::Begin("FPS");
+    ImGui::ProgressBar(FrameTimer::GetInstance()->GetFPS() / 60.0f, ImVec2(0.0f, 0.0f), "");
+    ImGui::SameLine();
+    ImGui::Text("FPS : %.0f", FrameTimer::GetInstance()->GetFPS());
+    ImGui::End();
+  }
+
+
 	// PostEffectのパラメータ調整
-	ImGui::Begin("PostEffect");
-	if (ImGui::BeginTabBar("PostEffectTab"))
-	{
+  if (PostEffectWindowVisible) {
+    ImGui::Begin("PostEffect");
+    if (ImGui::BeginTabBar("PostEffectTab"))
+    {
 
-		if (ImGui::BeginTabItem("PostEffectType"))
-		{
-			ImGui::RadioButton("NoEffect", (int*)&postEffectType, NoEffect);
-			ImGui::RadioButton("VignetteRed", (int*)&postEffectType, VignetteRed);
-			ImGui::RadioButton("VignetteRedBloom", (int*)&postEffectType, VignetteRedBloom);
-			ImGui::RadioButton("GrayScale", (int*)&postEffectType, GrayScale);
-			ImGui::RadioButton("VigRedGrayScale", (int*)&postEffectType, VigRedGrayScale);
-			ImGui::RadioButton("Bloom", (int*)&postEffectType, Bloom);
-			ImGui::RadioButton("BloomFog", (int*)&postEffectType, BloomFog);
+      if (ImGui::BeginTabItem("PostEffectType"))
+      {
+        ImGui::RadioButton("NoEffect", (int*)&postEffectType, NoEffect);
+        ImGui::RadioButton("VignetteRed", (int*)&postEffectType, VignetteRed);
+        ImGui::RadioButton("VignetteRedBloom", (int*)&postEffectType, VignetteRedBloom);
+        ImGui::RadioButton("GrayScale", (int*)&postEffectType, GrayScale);
+        ImGui::RadioButton("VigRedGrayScale", (int*)&postEffectType, VigRedGrayScale);
+        ImGui::RadioButton("Bloom", (int*)&postEffectType, Bloom);
+        ImGui::RadioButton("BloomFog", (int*)&postEffectType, BloomFog);
 
-			ImGui::EndTabItem();
-		}
+        ImGui::EndTabItem();
+      }
 
-		//ImGui::Separator();
-		if (ImGui::BeginTabItem("PostEffect"))
-		{
-			if (postEffectType == VignetteRed || postEffectType == VignetteRedBloom || postEffectType == VigRedGrayScale)
-			{
-				ImGui::DragFloat("VignettePower", &vignettePower, 0.01f, 0.0f, 10.0f);
-				PostEffect::GetInstance()->SetVignettePower(vignettePower);
-				ImGui::DragFloat("VignetteRange", &vignetteRange, 0.01f, 0.0f, 100.0f);
-				PostEffect::GetInstance()->SetVignetteRange(vignetteRange);
-			}
+      //ImGui::Separator();
+      if (ImGui::BeginTabItem("PostEffect"))
+      {
+        if (postEffectType == VignetteRed || postEffectType == VignetteRedBloom || postEffectType == VigRedGrayScale)
+        {
+          ImGui::DragFloat("VignettePower", &postEffectParam.vignettePower, 0.01f, 0.0f, 10.0f);
+          PostEffect::GetInstance()->SetVignettePower(postEffectParam.vignettePower);
+          ImGui::DragFloat("VignetteRange", &postEffectParam.vignetteRange, 0.01f, 0.0f, 100.0f);
+          PostEffect::GetInstance()->SetVignetteRange(postEffectParam.vignetteRange);
+        }
 
-			if (postEffectType == VignetteRedBloom)
-			{
-				ImGui::DragFloat("BloomThreshold", &bloomThreshold, 0.01f, 0.0f, 1.0f);
-				PostEffect::GetInstance()->SetBloomThreshold(bloomThreshold);
-			}
+        if (postEffectType == VignetteRedBloom)
+        {
+          ImGui::DragFloat("BloomThreshold", &postEffectParam.bloomThreshold, 0.01f, 0.0f, 1.0f);
+          PostEffect::GetInstance()->SetBloomThreshold(postEffectParam.bloomThreshold);
+        }
 
-			if (postEffectType == Bloom || postEffectType == BloomFog)
-			{
-				ImGui::DragFloat("BloomIntensity", &bloomIntensity, 0.01f, 0.0f, 10.0f);
-				PostEffect::GetInstance()->SetBloomIntensity(bloomIntensity);
-				ImGui::DragFloat("BloomThreshold", &bloomThreshold, 0.01f, 0.0f, 1.0f);
-				PostEffect::GetInstance()->SetBloomThreshold(bloomThreshold);
-				ImGui::DragFloat("BloomSigma", &bloomSigma, 0.01f, 0.0f, 10.0f);
-				PostEffect::GetInstance()->SetBloomSigma(bloomSigma);
-			}
+        if (postEffectType == Bloom || postEffectType == BloomFog)
+        {
+          ImGui::DragFloat("BloomIntensity", &postEffectParam.bloomIntensity, 0.01f, 0.0f, 10.0f);
+          PostEffect::GetInstance()->SetBloomIntensity(postEffectParam.bloomIntensity);
+          ImGui::DragFloat("BloomThreshold", &postEffectParam.bloomThreshold, 0.01f, 0.0f, 1.0f);
+          PostEffect::GetInstance()->SetBloomThreshold(postEffectParam.bloomThreshold);
+          ImGui::DragFloat("BloomSigma", &postEffectParam.bloomSigma, 0.01f, 0.0f, 10.0f);
+          PostEffect::GetInstance()->SetBloomSigma(postEffectParam.bloomSigma);
+        }
 
-			if (postEffectType == BloomFog)
-			{
-				ImGui::ColorEdit4("FogColor", &fogColor.x);
-				PostEffect::GetInstance()->SetFogColor(fogColor);
-				ImGui::DragFloat("FogDensity", &fogDensity, 0.01f, 0.0f, 1.0f);
-				PostEffect::GetInstance()->SetFogDensity(fogDensity);
-			}
+        if (postEffectType == BloomFog)
+        {
+          ImGui::ColorEdit4("FogColor", &postEffectParam.fogColor.x);
+          PostEffect::GetInstance()->SetFogColor(postEffectParam.fogColor);
+          ImGui::DragFloat("FogDensity", &postEffectParam.fogDensity, 0.01f, 0.0f, 1.0f);
+          PostEffect::GetInstance()->SetFogDensity(postEffectParam.fogDensity);
+        }
 
-			ImGui::EndTabItem();
-		}
+        ImGui::EndTabItem();
+      }
 
-		ImGui::EndTabBar();
-	}
+      ImGui::EndTabBar();
+    }
 
 
-	ImGui::End();
+    ImGui::End();
+  }
 
 	imguiManager_->End();
 

@@ -26,15 +26,23 @@ public: // メンバ関数
 	/// </summary>
 	void Draw() override;
 
+  struct PostEffectParam
+  {
+    float vignettePower;
+    float vignetteRange;
+    float bloomThreshold;
+    float bloomIntensity;
+    float bloomSigma;
+    Vector4 fogColor;
+    float fogDensity;
+  };
+
 private: // メンバ変数
 
-	float vignettePower = 0.f;
-	float vignetteRange = 20.0f;
-	float bloomThreshold = 1.0f;
-	float bloomIntensity = 1.0f;
-	float bloomSigma = 2.0f;
-	Vector4 fogColor = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-	float fogDensity = 0.05f;
+  PostEffectParam postEffectParam;
+
+  bool FPSWindowVisible = false;
+  bool PostEffectWindowVisible = false;
 
 	enum PostEffectType
 	{
