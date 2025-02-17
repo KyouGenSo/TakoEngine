@@ -3,6 +3,8 @@
 #include <vector>
 #include <map>
 #include <optional>
+#include <span>
+
 #include "vector2.h"
 #include "vector3.h"
 #include "vector4.h"
@@ -35,8 +37,8 @@ struct MaterialData {
 
 struct VertexWeightData
 {
-  uint32_t vertexIndex;
   float weight;
+  uint32_t vertexIndex;
 };
 
 struct JointWeightData
@@ -115,4 +117,29 @@ struct Skeleton
     int32_t root;
     std::map<std::string, int32_t> jointMap;
     std::vector<Joint> joints;
+};
+
+const uint32_t MAX_INFLUENCE = 4;
+struct VertexInfluence
+{
+  std::array<float, MAX_INFLUENCE> weights;
+  std::array<uint32_t, MAX_INFLUENCE> jointIndices;
+};
+
+struct WellForGPU
+{
+  Matrix4x4 skeletonSpaceMat;                     // 位置用
+  Matrix4x4 skeletonSpaceMatrixInvTransposeMat;   // 法線用
+};
+
+struct SkinCluster
+{
+  std::vector<Matrix4x4> inverseBindMatrices;
+  ComPtr<ID3D12Resource> influenceResource;
+  D3D12_VERTEX_BUFFER_VIEW influenceBufferView;
+  std::span<VertexInfluence> mappedInfluences;
+  ComPtr<ID3D12Resource> paletteResource;
+  std::span<WellForGPU> mappedPalette;
+  uint32_t paletteSrvIndex;
+  std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> paletteSrvHandle;
 };

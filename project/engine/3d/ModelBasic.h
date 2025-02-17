@@ -11,6 +11,10 @@ public:
 	/// </summary>
 	void Initialize(DX12Basic* dx12);
 
+  ///<summary>
+  ///　描画設定
+  /// </summary>
+  void PreDraw();
 
 	//-----------------------------------------Getter-----------------------------------------//
 	DX12Basic* GetDX12Basic() { return m_dx12_; }
@@ -20,6 +24,17 @@ public:
 	//-----------------------------------------Setter-----------------------------------------//
 	void SetDirectoryFolderName(const std::string& directoryFolderName) { directoryFolderName_ = directoryFolderName; }
 	void SetModelFolderName(const std::string& ModelFolderName) { ModelFolderName_ = ModelFolderName; }
+
+private: // プライベートメンバー関数
+  ///<summary>
+  /// ルートシグネチャの作成
+  /// </summary>
+  void CreateRootSignature();
+
+  ///<summary>
+  /// パイプラインステートの生成
+  /// </summary>
+  void CreatePSO();
 
 private:
 	DX12Basic* m_dx12_;

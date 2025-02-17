@@ -8,6 +8,7 @@
 #include <assimp/postprocess.h>
 
 class ModelBasic;
+class DX12Basic;
 
 class Model
 {
@@ -86,6 +87,11 @@ private: // プライベートメンバー関数
 	/// </summary>
 	Skeleton CreateSkeleton(const Node& rootNode);
 
+  /// <summary>
+  /// SkinClusterの生成
+  /// </summary>
+  SkinCluster CreateSkinCluster();
+
 	/// <summary>
 	/// キーフレームの値を計算
 	/// <summary>
@@ -102,6 +108,11 @@ private: // プライベートメンバー関数
 	/// </summary>
 	void UpdateSkeleton();
 
+  /// <summary>
+  /// SkinClusterの更新
+  /// </summary>
+  void UpdateSkinCluster();
+
 	/// <summary>
 	/// アニメーションを適用
 	/// </summary>
@@ -110,6 +121,7 @@ private: // プライベートメンバー関数
 private: // メンバ変数
 
 	ModelBasic* m_modelBasic_;
+  DX12Basic* m_dx12_;
 
 	std::string directoryFolderName_;
 	std::string ModelFolderName_;
@@ -125,6 +137,9 @@ private: // メンバ変数
 	// skeleton
 	Skeleton skeleton_;
 	bool hasSkeleton_ = false;
+
+  // skinCluster
+  SkinCluster skinCluster_;
 
 	// バッファリソース
 	Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource_;
