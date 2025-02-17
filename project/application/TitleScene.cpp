@@ -3,7 +3,7 @@
 #include "TextureManager.h"
 #include "Object3dBasic.h"
 #include "SpriteBasic.h"
-#include"ModelManager.h"
+#include "ModelManager.h"
 #include "ParticleManager.h"
 #include "Input.h"
 #include "Draw2D.h"
@@ -20,44 +20,62 @@ void TitleScene::Initialize()
 {
 #ifdef _DEBUG
 	DebugCamera::GetInstance()->Initialize();
+  Object3dBasic::GetInstance()->SetDebug(false);
+  Draw2D::GetInstance()->SetDebug(false);
+  ParticleManager::GetInstance()->SetIsDebug(false);
 #endif
 
 	/// ================================== ///
 	///              初期化処理              ///
 	/// ================================== ///
 
-	// エミッターの設定
-	emitterParam_.name_ = "circle";
-	emitterParam_.transform_.translate = Vector3(-1.0f, 0.0f, 0.0f);
-	emitterParam_.transform_.scale = Vector3(0.1f, 0.1f, 0.1f);
-	emitterParam_.velocity_ = Vector3(0.0f, 1.0f, 0.0f);
-	emitterParam_.range_.min = Vector3(-0.5f, -0.5f, -0.5f);
-	emitterParam_.range_.max = Vector3(0.5f, 0.5f, 0.5f);
-	emitterParam_.color_ = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-	emitterParam_.count_ = 1;
-	emitterParam_.lifeTime = 1.0f;
-	emitterParam_.frequency_ = 0.1f;
-	emitterParam_.isRandomColor_ = false;
-	emitterParam_.isVisualize_ = true;
+  InitParticle();
 
-	particleEmitter_ = std::make_unique<ParticleEmitter>(emitterParam_.name_, emitterParam_.transform_, emitterParam_.velocity_, emitterParam_.range_, emitterParam_.lifeTime, emitterParam_.count_, emitterParam2_.color_, emitterParam_.frequency_, emitterParam_.isRandomColor_);
+  InitVariables();
+}
 
-	// エミッターの設定2
-	emitterParam2_.name_ = "white";
-	emitterParam2_.transform_.translate = Vector3(1.0f, 0.0f, 0.0f);
-	emitterParam2_.transform_.scale = Vector3(0.1f, 0.1f, 0.1f);
-	emitterParam2_.velocity_ = Vector3(0.0f, 1.0f, 0.0f);
-	emitterParam2_.range_.min = Vector3(-0.5f, -0.5f, -0.5f);
-	emitterParam2_.range_.max = Vector3(0.5f, 0.5f, 0.5f);
-	emitterParam2_.color_ = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-	emitterParam2_.count_ = 1;
-	emitterParam2_.lifeTime = 1.0f;
-	emitterParam2_.frequency_ = 0.1f;
-	emitterParam2_.isRandomColor_ = false;
-	emitterParam2_.isVisualize_ = true;
+void TitleScene::InitParticle()
+{
+  TextureManager::GetInstance()->LoadTexture("white.png");
+  TextureManager::GetInstance()->LoadTexture("circle.png");
+  ParticleManager::GetInstance()->CreateParticleGroup("white", "white.png");
+  ParticleManager::GetInstance()->CreateParticleGroup("circle", "circle.png");
 
-	particleEmitter2_ = std::make_unique<ParticleEmitter>(emitterParam2_.name_, emitterParam2_.transform_, emitterParam2_.velocity_, emitterParam2_.range_, emitterParam2_.lifeTime, emitterParam2_.count_, emitterParam2_.color_, emitterParam2_.frequency_, emitterParam2_.isRandomColor_);
+  // エミッターの設定
+  emitterParam_.name_ = "circle";
+  emitterParam_.transform_.translate = Vector3(-1.0f, 0.0f, 0.0f);
+  emitterParam_.transform_.scale = Vector3(0.1f, 0.1f, 0.1f);
+  emitterParam_.velocity_ = Vector3(0.0f, 1.0f, 0.0f);
+  emitterParam_.range_.min = Vector3(-0.5f, -0.5f, -0.5f);
+  emitterParam_.range_.max = Vector3(0.5f, 0.5f, 0.5f);
+  emitterParam_.color_ = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+  emitterParam_.count_ = 1;
+  emitterParam_.lifeTime = 1.0f;
+  emitterParam_.frequency_ = 0.1f;
+  emitterParam_.isRandomColor_ = false;
+  emitterParam_.isVisualize_ = true;
 
+  particleEmitter_ = std::make_unique<ParticleEmitter>(emitterParam_.name_, emitterParam_.transform_, emitterParam_.velocity_, emitterParam_.range_, emitterParam_.lifeTime, emitterParam_.count_, emitterParam2_.color_, emitterParam_.frequency_, emitterParam_.isRandomColor_);
+
+  // エミッターの設定2
+  emitterParam2_.name_ = "white";
+  emitterParam2_.transform_.translate = Vector3(1.0f, 0.0f, 0.0f);
+  emitterParam2_.transform_.scale = Vector3(0.1f, 0.1f, 0.1f);
+  emitterParam2_.velocity_ = Vector3(0.0f, 1.0f, 0.0f);
+  emitterParam2_.range_.min = Vector3(-0.5f, -0.5f, -0.5f);
+  emitterParam2_.range_.max = Vector3(0.5f, 0.5f, 0.5f);
+  emitterParam2_.color_ = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+  emitterParam2_.count_ = 1;
+  emitterParam2_.lifeTime = 1.0f;
+  emitterParam2_.frequency_ = 0.1f;
+  emitterParam2_.isRandomColor_ = false;
+  emitterParam2_.isVisualize_ = true;
+
+  particleEmitter2_ = std::make_unique<ParticleEmitter>(emitterParam2_.name_, emitterParam2_.transform_, emitterParam2_.velocity_, emitterParam2_.range_, emitterParam2_.lifeTime, emitterParam2_.count_, emitterParam2_.color_, emitterParam2_.frequency_, emitterParam2_.isRandomColor_);
+}
+
+void TitleScene::InitVariables()
+{
   GlobalVariables::GetInstance()->CreateGroup("EmitterParam1");
   GlobalVariables::GetInstance()->CreateGroup("EmitterParam2");
 
@@ -90,6 +108,8 @@ void TitleScene::Initialize()
 
 void TitleScene::Finalize()
 {
+  ParticleManager::GetInstance()->DestroyParticle(emitterParam_.name_);
+  ParticleManager::GetInstance()->DestroyParticle(emitterParam2_.name_);
 }
 
 void TitleScene::Update()

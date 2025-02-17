@@ -1,15 +1,16 @@
 #include "GameScene.h"
 #include "SceneManager.h"
-#include"Audio.h"
-#include"ModelManager.h"
-#include"Object3dBasic.h"
-#include"TextureManager.h"
-#include"SpriteBasic.h"
-#include"Input.h"
+#include "Audio.h"
+#include "ModelManager.h"
+#include "Object3dBasic.h"
+#include "TextureManager.h"
+#include "SpriteBasic.h"
+#include "Input.h"
 #include "DebugCamera.h"
 #include <numbers>
 #include "Draw2D.h"
 #include "GlobalVariables.h"
+#include "ParticleManager.h"
 
 #ifdef _DEBUG
 #include"ImGui.h"
@@ -20,6 +21,9 @@ void GameScene::Initialize()
 {
 #ifdef _DEBUG
 	DebugCamera::GetInstance()->Initialize();
+  Object3dBasic::GetInstance()->SetDebug(false);
+  Draw2D::GetInstance()->SetDebug(false);
+  ParticleManager::GetInstance()->SetIsDebug(false);
 #endif
 	/// ================================== ///
 	///              初期化処理              ///

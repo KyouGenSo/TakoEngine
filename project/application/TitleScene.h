@@ -38,6 +38,10 @@ public: // メンバ関数
 
   void ApplyGlobalVariables();
 
+  void InitParticle();
+
+  void InitVariables();
+
 	struct EmitterParam {
 		std::string name_;
 		Transform transform_;

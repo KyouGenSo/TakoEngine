@@ -190,6 +190,19 @@ void ParticleManager::CreateParticleGroup(const std::string name, const std::str
 	particleGroups.emplace(name, newParticleGroup);
 }
 
+void ParticleManager::DestroyParticle(const std::string name)
+{
+  // パーティクルグループが存在するかをチェック
+  if (particleGroups.find(name) == particleGroups.end())
+  {
+    Logger::Log("ParticleGroup not exist");
+    assert(false);
+  }
+
+  // パーティクルグループを削除
+  particleGroups.erase(name);
+}
+
 void ParticleManager::Emit(const std::string name, const Vector3& position, const Vector3& scale, const Vector3& velocity, const AABB& range, uint32_t count, const Vector4& color, const float lifeTime, bool isRandomColor)
 {
 	// パーティクルグループが存在するかをチェック

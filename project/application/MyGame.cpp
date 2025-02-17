@@ -30,11 +30,6 @@ void MyGame::Initialize()
 	SceneManager::GetInstance()->SetSceneFactory(sceneFactory_);
 	SceneManager::GetInstance()->ChangeScene("title", 0.0f);
 
-	TextureManager::GetInstance()->LoadTexture("white.png");
-	TextureManager::GetInstance()->LoadTexture("circle.png");
-	ParticleManager::GetInstance()->CreateParticleGroup("white", "white.png");
-	ParticleManager::GetInstance()->CreateParticleGroup("circle", "circle.png");
-
   // PostEffectParamの設定
   postEffectParam.vignettePower = 0.f;
   postEffectParam.vignetteRange = 20.0f;

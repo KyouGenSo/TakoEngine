@@ -130,9 +130,14 @@ public: // メンバー関数
     void CreateParticleGroup(const std::string name, const std::string textureFilePath);
 
     /// <summary>
+    ///　パーティクルを削除
+    /// </summary>
+    void DestroyParticle(const std::string name);
+
+    /// <summary>
     /// エミット
     /// </summary>
-	void Emit(const std::string name, const Vector3& position, const Vector3& scale, const Vector3& velocity, const AABB& range, uint32_t count, const Vector4& color, const float lifeTime, bool isRandomColor);
+	  void Emit(const std::string name, const Vector3& position, const Vector3& scale, const Vector3& velocity, const AABB& range, uint32_t count, const Vector4& color, const float lifeTime, bool isRandomColor);
 
     // -----------------------------------Getters-----------------------------------//
 	const std::unordered_map<std::string, ParticleGroup>& GetParticleGroups() const { return particleGroups; }
