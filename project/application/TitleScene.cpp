@@ -110,6 +110,9 @@ void TitleScene::Finalize()
 {
   ParticleManager::GetInstance()->DestroyParticle(emitterParam_.name_);
   ParticleManager::GetInstance()->DestroyParticle(emitterParam2_.name_);
+
+  GlobalVariables::GetInstance()->DeleteGroup("EmitterParam1");
+  GlobalVariables::GetInstance()->DeleteGroup("EmitterParam2");
 }
 
 void TitleScene::Update()

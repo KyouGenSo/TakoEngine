@@ -29,9 +29,6 @@ void GameScene::Initialize()
 	///              初期化処理              ///
 	/// ================================== ///
 
-  GlobalVariables::GetInstance()->DeleteGroup("EmitterParam1");
-  GlobalVariables::GetInstance()->DeleteGroup("EmitterParam2");
-
 	ModelManager::GetInstance()->LoadModel("terrain.obj");
 	ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
 	ModelManager::GetInstance()->LoadModel("AnimatedCube.gltf", true); 
