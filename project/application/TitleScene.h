@@ -36,6 +36,8 @@ public: // メンバ関数
 	/// </summary>
 	void DrawImGui() override;
 
+  void ApplyGlobalVariables();
+
 	struct EmitterParam {
 		std::string name_;
 		Transform transform_;

@@ -41,7 +41,7 @@ private: // メンバ変数
 
   PostEffectParam postEffectParam;
 
-  bool FPSWindowVisible = false;
+  bool FPSWindowVisible = true;
   bool PostEffectWindowVisible = false;
 
 	enum PostEffectType

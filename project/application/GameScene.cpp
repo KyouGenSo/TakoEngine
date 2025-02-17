@@ -9,6 +9,7 @@
 #include "DebugCamera.h"
 #include <numbers>
 #include "Draw2D.h"
+#include "GlobalVariables.h"
 
 #ifdef _DEBUG
 #include"ImGui.h"
@@ -23,6 +24,9 @@ void GameScene::Initialize()
 	/// ================================== ///
 	///              初期化処理              ///
 	/// ================================== ///
+
+  GlobalVariables::GetInstance()->DeleteGroup("EmitterParam1");
+  GlobalVariables::GetInstance()->DeleteGroup("EmitterParam2");
 
 	ModelManager::GetInstance()->LoadModel("terrain.obj");
 	ModelManager::GetInstance()->LoadModel("uvChecker.gltf");

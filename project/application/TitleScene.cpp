@@ -61,27 +61,31 @@ void TitleScene::Initialize()
   GlobalVariables::GetInstance()->CreateGroup("EmitterParam1");
   GlobalVariables::GetInstance()->CreateGroup("EmitterParam2");
 
-  GlobalVariables::GetInstance()->SetValue("EmitterParam1", "translate", emitterParam_.transform_.translate);
-  GlobalVariables::GetInstance()->SetValue("EmitterParam1", "scale", emitterParam_.transform_.scale);
-  GlobalVariables::GetInstance()->SetValue("EmitterParam1", "velocity", emitterParam_.velocity_);
-  GlobalVariables::GetInstance()->SetValue("EmitterParam1", "range min", emitterParam_.range_.min);
-  GlobalVariables::GetInstance()->SetValue("EmitterParam1", "range max", emitterParam_.range_.max);
-  GlobalVariables::GetInstance()->SetValue("EmitterParam1", "lifeTime", emitterParam_.lifeTime);
-  GlobalVariables::GetInstance()->SetValue("EmitterParam1", "count", emitterParam_.count_);
-  GlobalVariables::GetInstance()->SetValue("EmitterParam1", "frequency", emitterParam_.frequency_);
-  GlobalVariables::GetInstance()->SetValue("EmitterParam1", "isRandomColor", emitterParam_.isRandomColor_);
-  GlobalVariables::GetInstance()->SetValue("EmitterParam1", "isVisualize", emitterParam_.isVisualize_);
+  GlobalVariables::GetInstance()->AddItem("EmitterParam1", "color", emitterParam_.color_);
+  GlobalVariables::GetInstance()->AddItem("EmitterParam1", "isVisualize", emitterParam_.isVisualize_);
+  GlobalVariables::GetInstance()->AddItem("EmitterParam1", "isRandomColor", emitterParam_.isRandomColor_);
+  GlobalVariables::GetInstance()->AddItem("EmitterParam1", "frequency", emitterParam_.frequency_);
+  GlobalVariables::GetInstance()->AddItem("EmitterParam1", "count", emitterParam_.count_);
+  GlobalVariables::GetInstance()->AddItem("EmitterParam1", "lifeTime", emitterParam_.lifeTime);
+  GlobalVariables::GetInstance()->AddItem("EmitterParam1", "range max", emitterParam_.range_.max);
+  GlobalVariables::GetInstance()->AddItem("EmitterParam1", "range min", emitterParam_.range_.min);
+  GlobalVariables::GetInstance()->AddItem("EmitterParam1", "velocity", emitterParam_.velocity_);
+  GlobalVariables::GetInstance()->AddItem("EmitterParam1", "scale", emitterParam_.transform_.scale);
+  GlobalVariables::GetInstance()->AddItem("EmitterParam1", "translate", emitterParam_.transform_.translate);
 
-  GlobalVariables::GetInstance()->SetValue("EmitterParam2", "translate", emitterParam2_.transform_.translate);
-  GlobalVariables::GetInstance()->SetValue("EmitterParam2", "scale", emitterParam2_.transform_.scale);
-  GlobalVariables::GetInstance()->SetValue("EmitterParam2", "velocity", emitterParam2_.velocity_);
-  GlobalVariables::GetInstance()->SetValue("EmitterParam2", "range min", emitterParam2_.range_.min);
-  GlobalVariables::GetInstance()->SetValue("EmitterParam2", "range max", emitterParam2_.range_.max);
-  GlobalVariables::GetInstance()->SetValue("EmitterParam2", "lifeTime", emitterParam2_.lifeTime);
-  GlobalVariables::GetInstance()->SetValue("EmitterParam2", "count", emitterParam2_.count_);
-  GlobalVariables::GetInstance()->SetValue("EmitterParam2", "frequency", emitterParam2_.frequency_);
-  GlobalVariables::GetInstance()->SetValue("EmitterParam2", "isRandomColor", emitterParam2_.isRandomColor_);
-  GlobalVariables::GetInstance()->SetValue("EmitterParam2", "isVisualize", emitterParam2_.isVisualize_);
+  GlobalVariables::GetInstance()->AddItem("EmitterParam2", "color", emitterParam2_.color_);
+  GlobalVariables::GetInstance()->AddItem("EmitterParam2", "isVisualize", emitterParam2_.isVisualize_);
+  GlobalVariables::GetInstance()->AddItem("EmitterParam2", "isRandomColor", emitterParam2_.isRandomColor_);
+  GlobalVariables::GetInstance()->AddItem("EmitterParam2", "frequency", emitterParam2_.frequency_);
+  GlobalVariables::GetInstance()->AddItem("EmitterParam2", "count", emitterParam2_.count_);
+  GlobalVariables::GetInstance()->AddItem("EmitterParam2", "lifeTime", emitterParam2_.lifeTime);
+  GlobalVariables::GetInstance()->AddItem("EmitterParam2", "range max", emitterParam2_.range_.max);
+  GlobalVariables::GetInstance()->AddItem("EmitterParam2", "range min", emitterParam2_.range_.min);
+  GlobalVariables::GetInstance()->AddItem("EmitterParam2", "velocity", emitterParam2_.velocity_);
+  GlobalVariables::GetInstance()->AddItem("EmitterParam2", "scale", emitterParam2_.transform_.scale);
+  GlobalVariables::GetInstance()->AddItem("EmitterParam2", "translate", emitterParam2_.transform_.translate);
+
+  GlobalVariables::GetInstance()->LoadFiles();
 }
 
 void TitleScene::Finalize()
@@ -106,32 +110,9 @@ void TitleScene::Update()
 	///              更新処理               ///
 	/// ================================== ///
 
-	particleEmitter_->SetIsVisualize(emitterParam_.isVisualize_);
-	particleEmitter_->SetTranslate(emitterParam_.transform_.translate);
-	particleEmitter_->SetScale(emitterParam_.transform_.scale);
-	particleEmitter_->SetFrequency(emitterParam_.frequency_);
-	particleEmitter_->SetCount(emitterParam_.count_);
-	particleEmitter_->SetVelocity(emitterParam_.velocity_);
-	particleEmitter_->SetRange(emitterParam_.range_);
-	particleEmitter_->SetColor(emitterParam_.color_);
-	particleEmitter_->SetLifeTime(emitterParam_.lifeTime);
-	particleEmitter_->SetIsRandomColor(emitterParam_.isRandomColor_);
+  ApplyGlobalVariables();
 
 	particleEmitter_->Update();
-
-	particleEmitter2_->SetIsVisualize(emitterParam2_.isVisualize_);
-	particleEmitter2_->SetTranslate(emitterParam2_.transform_.translate);
-	particleEmitter2_->SetScale(emitterParam2_.transform_.scale);
-	particleEmitter2_->SetFrequency(emitterParam2_.frequency_);
-	particleEmitter2_->SetCount(emitterParam2_.count_);
-	particleEmitter2_->SetVelocity(emitterParam2_.velocity_);
-	particleEmitter2_->SetRange(emitterParam2_.range_);
-	particleEmitter2_->SetColor(emitterParam2_.color_);
-	particleEmitter2_->SetLifeTime(emitterParam2_.lifeTime);
-	particleEmitter2_->SetIsRandomColor(emitterParam2_.isRandomColor_);
-
-
-
 
 	particleEmitter2_->Update();
 
@@ -186,35 +167,41 @@ void TitleScene::DrawImGui()
 	///             ImGuiの描画              ///
 	/// ================================== ///
 
-	ImGui::Begin("EmitterParam1");
-	ImGui::DragFloat3("translate", &emitterParam_.transform_.translate.x, 0.1f);
-	ImGui::DragFloat3("scale", &emitterParam_.transform_.scale.x, 0.1f);
-	ImGui::DragFloat3("velocity", &emitterParam_.velocity_.x, 0.1f);
-	ImGui::DragFloat3("range min", &emitterParam_.range_.min.x, 0.1f);
-	ImGui::DragFloat3("range max", &emitterParam_.range_.max.x, 0.1f);
-	ImGui::DragFloat("lifeTime", &emitterParam_.lifeTime, 0.1f);
-	ImGui::DragInt("count", &emitterParam_.count_, 1, 1, 1024);
-	ImGui::DragFloat("frequency", &emitterParam_.frequency_, 0.1f);
-	ImGui::Checkbox("isRandomColor", &emitterParam_.isRandomColor_);
-	ImGui::Checkbox("isVisualize", &emitterParam_.isVisualize_);
-	// color picker
-	ImGui::ColorEdit4("color", &emitterParam_.color_.x);
-	ImGui::End();
-
-	ImGui::Begin("EmitterParam2");
-	ImGui::DragFloat3("translate", &emitterParam2_.transform_.translate.x, 0.1f);
-	ImGui::DragFloat3("scale", &emitterParam2_.transform_.scale.x, 0.1f);
-	ImGui::DragFloat3("velocity", &emitterParam2_.velocity_.x, 0.1f);
-	ImGui::DragFloat3("range min", &emitterParam2_.range_.min.x, 0.1f);
-	ImGui::DragFloat3("range max", &emitterParam2_.range_.max.x, 0.1f);
-	ImGui::DragFloat("lifeTime", &emitterParam2_.lifeTime, 0.1f);
-	ImGui::DragInt("count", &emitterParam2_.count_, 1, 1, 1024);
-	ImGui::DragFloat("frequency", &emitterParam2_.frequency_, 0.1f);
-	ImGui::Checkbox("isRandomColor", &emitterParam2_.isRandomColor_);
-	ImGui::Checkbox("isVisualize", &emitterParam2_.isVisualize_);
-	// color picker
-	ImGui::ColorEdit4("color", &emitterParam2_.color_.x);
-	ImGui::End();
 
 #endif // _DEBUG
+}
+
+void TitleScene::ApplyGlobalVariables()
+{
+  GlobalVariables* globalVariables = GlobalVariables::GetInstance();
+  const char* group1 = "EmitterParam1";
+  const char* group2 = "EmitterParam2";
+
+  particleEmitter_->SetTranslate(globalVariables->GetValueVec3(group1, "translate"));
+  particleEmitter_->SetScale(globalVariables->GetValueVec3(group1, "scale"));
+  particleEmitter_->SetVelocity(globalVariables->GetValueVec3(group1, "velocity"));
+  AABB range1;
+  range1.min = globalVariables->GetValueVec3(group1, "range min");
+  range1.max = globalVariables->GetValueVec3(group1, "range max");
+  particleEmitter_->SetRange(range1);
+  particleEmitter_->SetLifeTime(globalVariables->GetValueFloat(group1, "lifeTime"));
+  particleEmitter_->SetCount(globalVariables->GetValueInt(group1, "count"));
+  particleEmitter_->SetFrequency(globalVariables->GetValueFloat(group1, "frequency"));
+  particleEmitter_->SetIsRandomColor(globalVariables->GetValueBool(group1, "isRandomColor"));
+  particleEmitter_->SetIsVisualize(globalVariables->GetValueBool(group1, "isVisualize"));
+  particleEmitter_->SetColor(globalVariables->GetValueVec4(group1, "color"));
+
+  particleEmitter2_->SetTranslate(globalVariables->GetValueVec3(group2, "translate"));
+  particleEmitter2_->SetScale(globalVariables->GetValueVec3(group2, "scale"));
+  particleEmitter2_->SetVelocity(globalVariables->GetValueVec3(group2, "velocity"));
+  AABB range2;
+  range2.min = globalVariables->GetValueVec3(group2, "range min");
+  range2.max = globalVariables->GetValueVec3(group2, "range max");
+  particleEmitter2_->SetRange(range2);
+  particleEmitter2_->SetLifeTime(globalVariables->GetValueFloat(group2, "lifeTime"));
+  particleEmitter2_->SetCount(globalVariables->GetValueInt(group2, "count"));
+  particleEmitter2_->SetFrequency(globalVariables->GetValueFloat(group2, "frequency"));
+  particleEmitter2_->SetIsRandomColor(globalVariables->GetValueBool(group2, "isRandomColor"));
+  particleEmitter2_->SetIsVisualize(globalVariables->GetValueBool(group2, "isVisualize"));
+  particleEmitter2_->SetColor(globalVariables->GetValueVec4(group2, "color"));
 }
