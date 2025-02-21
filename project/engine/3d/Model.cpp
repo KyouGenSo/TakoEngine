@@ -70,7 +70,7 @@ void Model::Update()
 		animationTime_ = std::fmod(animationTime_, animationData_.duration); // アニメーション時間がアニメーションの長さを超えたらループ
 		ApplyAnimation(animationTime_);
 		UpdateSkeleton();
-    UpdateSkinCluster();
+    //UpdateSkinCluster();
 	}
 }
 
