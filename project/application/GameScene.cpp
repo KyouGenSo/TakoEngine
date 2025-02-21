@@ -40,36 +40,36 @@ void GameScene::Initialize()
 	object3d_->Initialize();
 	object3d_->SetModel("terrain.obj");
 	// y軸90度回転
-	Vector3 rotate = Vector3(0.0f, DirectX::XMConvertToRadians(90.0f), 0.0f);
+  Vector3 rotate = { 0.0f, DirectX::XMConvertToRadians(90.0f), 0.0f };
 	object3d_->SetRotate(rotate);
 
-	modelPos_ = Vector3(0.0f, 0.f, 0.0f);
+  modelPos_ = { 0.0f, 0.0f, 0.0f };
 
 	object3d2_ = new Object3d();
 	object3d2_->Initialize();
 	object3d2_->SetModel("walk.gltf");
-	modelRotate2_ = Vector3(0.0f, DirectX::XMConvertToRadians(180.0f), 0.0f);
+  modelRotate2_ = { 0.0f, DirectX::XMConvertToRadians(180.0f), 0.0f };
 	object3d2_->SetRotate(rotate);
 
-	modelPos2_ = Vector3(0.0f, 6.7f, -24.0f);
+  modelPos2_ = { 0.0f, 6.7f, -24.0f };
 
-	spotLight_.color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-	spotLight_.position = Vector3(0.0f, 1.0f, 0.0f);
+  spotLight_.color = { 1.0f, 1.0f, 1.0f, 1.0f };
+  spotLight_.position = { 0.0f, 1.0f, 0.0f };
 	spotLight_.intensity = 1.0f;
-	spotLight_.direction = Vector3(-1.0f, -1.0f, 0.0f);
+  spotLight_.direction = { 0.0f, -1.0f, 0.0f };
 	spotLight_.distance = 7.0f;
 	spotLight_.decay = 1.0f;
-	spotLight_.cosAngle = std::cos(std::numbers::pi_v<float> / 3.0f);
+  spotLight_.cosAngle = std::cos(DirectX::XM_PI / 3.0f);
 	spotLight_.enable = true;
 
-	pointLight_.position = Vector3(0.0f, 1.f, 0.0f); // ライトの位置
+  pointLight_.position = { 0.0f, 1.f, 0.0f };         // ライトの位置
 	pointLight_.color = { 1.0f, 1.0f, 1.0f, 1.0f };     // ライトの色
 	pointLight_.intensity = 1.0f;                       // 輝度
 	pointLight_.radius = 10.0f;                         // 半径
 	pointLight_.decay = 1.0f;                           // 減衰
 	pointLight_.enable = false;                         // 点光源の有効無効
 
-	pointLight2_.position = Vector3(0.0f, 1.f, 0.0f); // ライトの位置
+  pointLight2_.position = { 0.0f, 1.f, 0.0f };         // ライトの位置
 	pointLight2_.color = { 1.0f, 1.0f, 1.0f, 1.0f };     // ライトの色
 	pointLight2_.intensity = 1.0f;                       // 輝度
 	pointLight2_.radius = 10.0f;                         // 半径

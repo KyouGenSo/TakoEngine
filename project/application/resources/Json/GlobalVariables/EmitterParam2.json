@@ -1,0 +1,40 @@
+{
+    "EmitterParam2": {
+        "color": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+        ],
+        "count": 111,
+        "frequency": 0.0,
+        "isRandomColor": false,
+        "isVisualize": true,
+        "lifeTime": 1.0,
+        "range max": [
+            0.5,
+            0.5,
+            0.5
+        ],
+        "range min": [
+            -0.5,
+            -0.5,
+            -0.5
+        ],
+        "scale": [
+            0.10000000149011612,
+            0.10000000149011612,
+            0.10000000149011612
+        ],
+        "translate": [
+            1.0,
+            0.0,
+            0.0
+        ],
+        "velocity": [
+            0.0,
+            1.0,
+            0.0
+        ]
+    }
+}

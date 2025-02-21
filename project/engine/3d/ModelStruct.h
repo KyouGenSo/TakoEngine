@@ -4,6 +4,7 @@
 #include <map>
 #include <optional>
 #include <span>
+#include <array>
 
 #include "vector2.h"
 #include "vector3.h"
@@ -135,10 +136,10 @@ struct WellForGPU
 struct SkinCluster
 {
   std::vector<Matrix4x4> inverseBindMatrices;
-  ComPtr<ID3D12Resource> influenceResource;
+  Microsoft::WRL::ComPtr<ID3D12Resource> influenceResource;
   D3D12_VERTEX_BUFFER_VIEW influenceBufferView;
   std::span<VertexInfluence> mappedInfluences;
-  ComPtr<ID3D12Resource> paletteResource;
+  Microsoft::WRL::ComPtr<ID3D12Resource> paletteResource;
   std::span<WellForGPU> mappedPalette;
   uint32_t paletteSrvIndex;
   std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> paletteSrvHandle;

@@ -10,6 +10,7 @@
 #include <cassert>
 #include <fstream>
 #include <sstream>
+#include <algorithm>
 
 void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool hasAnimation, bool hasSkeleton)
 {
@@ -472,7 +473,7 @@ SkinCluster Model::CreateSkinCluster()
 
   // InverseBindMatricesを格納する場所を確保し、単位行列で埋める
   skinCluster.inverseBindMatrices.resize(skeleton_.joints.size());
-  std::generate(skinCluster.inverseBindMatrices.begin(), skinCluster.inverseBindMatrices.end(), Mat4x4::MakeIdentity());
+  std::generate(skinCluster.inverseBindMatrices.begin(), skinCluster.inverseBindMatrices.end(), []() { return Mat4x4::MakeIdentity(); });
 
 
   // ModelDataを解析して、influenceを埋める

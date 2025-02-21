@@ -10,6 +10,7 @@
 #include "PostEffect.h"
 #include "FrameTimer.h"
 #include "GlobalVariables.h"
+#include "Vector4.h"
 
 void MyGame::Initialize()
 {
@@ -36,7 +37,7 @@ void MyGame::Initialize()
   postEffectParam.bloomThreshold = 1.0f;
   postEffectParam.bloomIntensity = 1.0f;
   postEffectParam.bloomSigma = 2.0f;
-  postEffectParam.fogColor = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+  postEffectParam.fogColor = {1.0f, 1.0f, 1.0f, 1.0f};
   postEffectParam.fogDensity = 0.01f;
 
 }

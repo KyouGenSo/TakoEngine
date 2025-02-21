@@ -83,15 +83,20 @@ struct Vector3 final {
 	}
 
 	Vector3 Normalize() const {
+    Vector3 result;
 		float length = std::sqrt(x * x + y * y + z * z);
 
 		// ゼロベクトルの場合はそのまま返す
 		if (length <= std::numeric_limits<float>::epsilon()) {
-			return Vector3(0.0f, 0.0f, 0.0f);  // そのままゼロベクトルを返す
+      result.x = 0.0f;
+      result.y = 0.0f;
+      result.z = 0.0f;
+			return result;  // そのままゼロベクトルを返す
 		}
 
 		float invLength = 1.0f / length; // 除算回数を減らして最適化
-		return Vector3(x * invLength, y * invLength, z * invLength);
+    result = {x * invLength, y * invLength, z * invLength };
+		return result;
 	}
 
 	float Length() const {
