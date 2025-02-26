@@ -40,6 +40,8 @@ namespace Mat4x4 {
 
 	Vector3 TransForm(const Matrix4x4& m, const Vector3& v);
 
+  Vector3 TransFormNormal(const Matrix4x4& m, const Vector3& v);
+
 	Matrix4x4 MakePerspective(float fovY, float aspectRatio, float nearClip, float farClip);
 
 	Matrix4x4 MakeOrtho(float left, float top, float right, float bottom, float nearClip, float farClip);
