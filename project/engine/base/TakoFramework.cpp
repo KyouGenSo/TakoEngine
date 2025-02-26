@@ -69,6 +69,9 @@ void TakoFramework::Finalize()
   // フレームタイマーの終了処理
   FrameTimer::GetInstance()->Finalize();
 
+  // シーンマネージャーの終了処理
+  SceneManager::GetInstance()->Finalize();
+
 	// パーティクルマネージャーの終了処理
 	ParticleManager::GetInstance()->Finalize();
 
@@ -89,9 +92,6 @@ void TakoFramework::Finalize()
 
 	// Object3dBasicの終了処理
 	Object3dBasic::GetInstance()->Finalize();
-
-	// シーンマネージャーの終了処理
-	SceneManager::GetInstance()->Finalize();
 
 	// Draw2Dの終了処理
 	Draw2D::GetInstance()->Finalize();
