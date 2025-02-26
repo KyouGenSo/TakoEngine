@@ -29,7 +29,7 @@ void GameScene::Initialize()
 	///              初期化処理              ///
 	/// ================================== ///
 
-	//ModelManager::GetInstance()->LoadModel("terrain.obj");
+	ModelManager::GetInstance()->LoadModel("terrain.obj");
 	//ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
 	//ModelManager::GetInstance()->LoadModel("AnimatedCube.gltf", true); 
 	//ModelManager::GetInstance()->LoadModel("simpleSkin.gltf", true, true);
@@ -38,7 +38,7 @@ void GameScene::Initialize()
 
 	object3d_ = new Object3d();
 	object3d_->Initialize();
-	object3d_->SetModel("walk.gltf");
+	object3d_->SetModel("terrain.obj");
 	// y軸90度回転
   Vector3 rotate = { 0.0f, DirectX::XMConvertToRadians(90.0f), 0.0f };
 	object3d_->SetRotate(rotate);

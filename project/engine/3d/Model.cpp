@@ -82,10 +82,12 @@ void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
   if (hasSkeleton_)
   {
     m_dx12_->GetCommandList()->IASetVertexBuffers(0, 2, vbvs);
+    SrvManager::GetInstance()->SetRootDescriptorTable(8, skinCluster_.paletteSrvIndex);
   } else
   {
     m_dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView_);
   }
+
 
 	// インデックスバッファビューを設定
   m_dx12_->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
@@ -481,7 +483,11 @@ SkinCluster Model::CreateSkinCluster()
 
   // InverseBindMatricesを格納する場所を確保し、単位行列で埋める
   skinCluster.inverseBindMatrices.resize(skeleton_.joints.size());
-  std::generate(skinCluster.inverseBindMatrices.begin(), skinCluster.inverseBindMatrices.end(), []() { return Mat4x4::MakeIdentity(); });
+  // 単位行列で埋める
+  for (Matrix4x4& inverseBindMatrix : skinCluster.inverseBindMatrices)
+  {
+    inverseBindMatrix = Mat4x4::MakeIdentity();
+  }
 
 
   // ModelDataを解析して、influenceを埋める
@@ -493,7 +499,7 @@ SkinCluster Model::CreateSkinCluster()
       continue; // Jointが見つからない場合はスキップ
     }
 
-    skinCluster_.inverseBindMatrices[(*it).second] = jointWeight.second.inverseBindMatrix; // InverseBindMatricesを格納
+    skinCluster.inverseBindMatrices[(*it).second] = jointWeight.second.inverseBindMatrix; // InverseBindMatricesを格納
 
     for (const auto& vertexWeight : jointWeight.second.vertexWeights)
     {
