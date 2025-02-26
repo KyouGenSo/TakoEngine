@@ -29,16 +29,16 @@ void GameScene::Initialize()
 	///              初期化処理              ///
 	/// ================================== ///
 
-	ModelManager::GetInstance()->LoadModel("terrain.obj");
-	ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
-	ModelManager::GetInstance()->LoadModel("AnimatedCube.gltf", true); 
-	ModelManager::GetInstance()->LoadModel("simpleSkin.gltf", true, true);
+	//ModelManager::GetInstance()->LoadModel("terrain.obj");
+	//ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
+	//ModelManager::GetInstance()->LoadModel("AnimatedCube.gltf", true); 
+	//ModelManager::GetInstance()->LoadModel("simpleSkin.gltf", true, true);
 	ModelManager::GetInstance()->LoadModel("walk.gltf", true, true);
-	ModelManager::GetInstance()->LoadModel("sneakWalk.gltf", true, true);
+	//ModelManager::GetInstance()->LoadModel("sneakWalk.gltf", true, true);
 
 	object3d_ = new Object3d();
 	object3d_->Initialize();
-	object3d_->SetModel("terrain.obj");
+	object3d_->SetModel("walk.gltf");
 	// y軸90度回転
   Vector3 rotate = { 0.0f, DirectX::XMConvertToRadians(90.0f), 0.0f };
 	object3d_->SetRotate(rotate);
@@ -152,8 +152,12 @@ void GameScene::Draw()
 
 	// モデル描画
 	object3d_->Draw();
-	object3d2_->Draw();
+	
 
+  // Skinned3Dモデル描画設定
+  Object3dBasic::GetInstance()->SetSkinningRenderSetting();
+
+  object3d2_->Draw();
 
 	//-------------------Modelの描画-------------------//
 

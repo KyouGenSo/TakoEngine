@@ -39,6 +39,7 @@ void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool
 	if (hasSkeleton_)
 	{
 		skeleton_ = CreateSkeleton(modelData_.rootNode);
+    skinCluster_ = CreateSkinCluster();
 	}
 
 	// 頂点データの生成
@@ -70,14 +71,21 @@ void Model::Update()
 		animationTime_ = std::fmod(animationTime_, animationData_.duration); // アニメーション時間がアニメーションの長さを超えたらループ
 		ApplyAnimation(animationTime_);
 		UpdateSkeleton();
-    //UpdateSkinCluster();
+    UpdateSkinCluster();
 	}
 }
 
 void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
 {
 	// 頂点バッファビューを設定
-  m_dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView_);
+  D3D12_VERTEX_BUFFER_VIEW vbvs[2] = { vertexBufferView_, skinCluster_.influenceBufferView };
+  if (hasSkeleton_)
+  {
+    m_dx12_->GetCommandList()->IASetVertexBuffers(0, 2, vbvs);
+  } else
+  {
+    m_dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView_);
+  }
 
 	// インデックスバッファビューを設定
   m_dx12_->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
@@ -146,7 +154,7 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
     {
       aiBone* bone = mesh->mBones[boneIndex];
       std::string jointName = bone->mName.C_Str();
-      JointWeightData jointWeightData = modelData_.skinClusterData[jointName];
+      JointWeightData& jointWeightData = modelData_.skinClusterData[jointName];
 
       aiMatrix4x4 bindPoseMatrixAssimp = bone->mOffsetMatrix.Inverse();
       aiVector3D scale, tanslate;
@@ -275,7 +283,7 @@ void Model::UpdateSkinCluster()
     assert(jointIndex < skinCluster_.inverseBindMatrices.size());
     skinCluster_.mappedPalette[jointIndex].skeletonSpaceMat = skinCluster_.inverseBindMatrices[jointIndex] * skeleton_.joints[jointIndex].skeletonSpaceMatrix;
     skinCluster_.mappedPalette[jointIndex].skeletonSpaceMatrixInvTransposeMat =
-      Mat4x4::Transpose(Mat4x4::Inverse(skinCluster_.mappedPalette[jointIndex].skeletonSpaceMat));
+    Mat4x4::Transpose(Mat4x4::Inverse(skinCluster_.mappedPalette[jointIndex].skeletonSpaceMat));
   }
 }
 
