@@ -197,6 +197,7 @@
     <ClInclude Include="engine\effect\ParticleManager.h" />
     <ClInclude Include="engine\effect\ParticleEmitter.h" />
     <ClInclude Include="engine\time\FrameTimer.h" />
+    <ClInclude Include="engine\base\IWndProcHandler.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\Particle.hlsli">

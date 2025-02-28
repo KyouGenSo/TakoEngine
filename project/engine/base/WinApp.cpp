@@ -84,6 +84,12 @@ void WinApp::Finalize()
 
 LRESULT WinApp::WndProc(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
+  // handlerがあれば関数を呼び出す
+  for (auto handler : m_handlers_)
+  {
+    handler->OnWndProc(hWnd, msg, wparam, lparam);
+  }
+
 	if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wparam, lparam))
 	{
 		return true;

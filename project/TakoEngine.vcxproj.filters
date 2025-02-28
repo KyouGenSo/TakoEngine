@@ -325,6 +325,9 @@
     <ClInclude Include="engine\io\GlobalVariables.h">
       <Filter>ヘッダー ファイル\io</Filter>
     </ClInclude>
+    <ClInclude Include="engine\base\IWndProcHandler.h">
+      <Filter>ヘッダー ファイル\base</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\NoTex.hlsli">

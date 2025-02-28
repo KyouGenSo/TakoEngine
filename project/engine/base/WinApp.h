@@ -1,6 +1,8 @@
 #pragma once
 #include<Windows.h>
 #include<cstdint>
+#include "IWndProcHandler.h"
+#include <vector>
 
 
 class WinApp {
@@ -35,6 +37,12 @@ public:
 	/// </summary>
 	HINSTANCE GetHInstance() const { return wc_.hInstance; }
 
+  /// <summary>
+  /// ハンドラの設定
+  /// </summary>
+  /// <param name="handler"></param>
+  void SetWndProcHandler(IWndProcHandler* handler) { m_handlers_.push_back(handler); }
+
 public:
 	//クライアント領域のサイズ
 	static const int32_t kClientWidth = 1280;
@@ -46,4 +54,7 @@ private:
 
 	//ウィンドウクラス
 	WNDCLASS wc_{};
+
+  // handlers
+  static std::vector<IWndProcHandler*> m_handlers_;
 };
