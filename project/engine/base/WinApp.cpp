@@ -6,6 +6,8 @@
 #include"imgui_impl_win32.h"
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+std::vector<IWndProcHandler*> WinApp::m_handlers_;
+
 void WinApp::Initialize()
 {
 	// システムタイマーの分解能を上げる
