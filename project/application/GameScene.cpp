@@ -29,12 +29,7 @@ void GameScene::Initialize()
 	///              初期化処理              ///
 	/// ================================== ///
 
-	ModelManager::GetInstance()->LoadModel("terrain.obj");
-	//ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
-	//ModelManager::GetInstance()->LoadModel("AnimatedCube.gltf", true); 
-	//ModelManager::GetInstance()->LoadModel("simpleSkin.gltf", true, true);
-	ModelManager::GetInstance()->LoadModel("walk.gltf", true, true);
-	//ModelManager::GetInstance()->LoadModel("sneakWalk.gltf", true, true);
+
 
 	object3d_ = new Object3d();
 	object3d_->Initialize();

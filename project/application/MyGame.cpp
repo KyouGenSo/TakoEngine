@@ -10,7 +10,7 @@
 #include "PostEffect.h"
 #include "FrameTimer.h"
 #include "GlobalVariables.h"
-#include "Vector4.h"
+#include "ModelManager.h"
 
 void MyGame::Initialize()
 {
@@ -30,6 +30,13 @@ void MyGame::Initialize()
 	sceneFactory_ = new SceneFactory();
 	SceneManager::GetInstance()->SetSceneFactory(sceneFactory_);
 	SceneManager::GetInstance()->ChangeScene("title", 0.0f);
+
+  ModelManager::GetInstance()->LoadModel("terrain.obj");
+  //ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
+  //ModelManager::GetInstance()->LoadModel("AnimatedCube.gltf", true); 
+  //ModelManager::GetInstance()->LoadModel("simpleSkin.gltf", true, true);
+  ModelManager::GetInstance()->LoadModel("walk.gltf", true, true);
+  //ModelManager::GetInstance()->LoadModel("sneakWalk.gltf", true, true);
 
   // PostEffectParamの設定
   postEffectParam.vignettePower = 0.f;

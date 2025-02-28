@@ -19,11 +19,11 @@ StructuredBuffer<Well> gMatrixPalette : register(t0);
 
 struct VertexShaderInput
 {
-    float4 pos : POSITION;
+    float4 pos : POSITION0;
     float2 texcoord : TEXCOORD0;
     float3 normal : NORMAL0;
     float4 weight : WEIGHT0;
-    int4 index : INDEX0;
+    int32_t4 index : INDEX0;
 };
 
 struct Skinned
@@ -59,8 +59,9 @@ VertexShaderOutput main(VertexShaderInput input)
     Skinned skinned = Skinning(input);
     
     output.pos = mul(skinned.pos, gTransformationMatrix.WVP);
+    output.worldPos = mul(skinned.pos, gTransformationMatrix.World).xyz;
     output.texcoord = input.texcoord;
     output.normal = normalize(mul(skinned.normal, (float3x3) gTransformationMatrix.WorldIT));
-    output.worldPos = mul(skinned.pos, gTransformationMatrix.World).xyz;
+    
     return output;
 }

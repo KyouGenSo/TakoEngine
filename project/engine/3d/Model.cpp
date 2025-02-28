@@ -82,9 +82,9 @@ void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
   m_dx12_->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
 
   // 頂点バッファビューを設定
-  D3D12_VERTEX_BUFFER_VIEW vbvs[2] = { vertexBufferView_, skinCluster_.influenceBufferView };
   if (hasSkeleton_)
   {
+    D3D12_VERTEX_BUFFER_VIEW vbvs[2] = { vertexBufferView_, skinCluster_.influenceBufferView };
     m_dx12_->GetCommandList()->IASetVertexBuffers(0, 2, vbvs);
     SrvManager::GetInstance()->SetRootDescriptorTable(8, skinCluster_.paletteSrvIndex);
   }
