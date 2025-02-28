@@ -77,20 +77,21 @@ void Model::Update()
 
 void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
 {
-	// 頂点バッファビューを設定
+
+	// インデックスバッファビューを設定
+  m_dx12_->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
+
+  // 頂点バッファビューを設定
   D3D12_VERTEX_BUFFER_VIEW vbvs[2] = { vertexBufferView_, skinCluster_.influenceBufferView };
   if (hasSkeleton_)
   {
     m_dx12_->GetCommandList()->IASetVertexBuffers(0, 2, vbvs);
     SrvManager::GetInstance()->SetRootDescriptorTable(8, skinCluster_.paletteSrvIndex);
-  } else
+  }
+  else
   {
     m_dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView_);
   }
-
-
-	// インデックスバッファビューを設定
-  m_dx12_->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
 
 	// マテリアルデータを設定
   m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource_->GetGPUVirtualAddress());
@@ -125,19 +126,21 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
     // 頂点の解析
 		for (uint32_t vertexIndex = 0; vertexIndex < mesh->mNumVertices; ++vertexIndex)
 		{
-			aiVector3D position = mesh->mVertices[vertexIndex];
-			aiVector3D texcoord = mesh->mTextureCoords[0][vertexIndex];
-			aiVector3D normal = mesh->mNormals[vertexIndex];
+			aiVector3D& position = mesh->mVertices[vertexIndex];
+			aiVector3D& texcoord = mesh->mTextureCoords[0][vertexIndex];
+			aiVector3D& normal = mesh->mNormals[vertexIndex];
 
-			VertexData vertex;
-			vertex.position = Vector4(position.x, position.y, position.z, 1.0f);
-			vertex.texcoord = Vector2(texcoord.x, texcoord.y);
-			vertex.normal = Vector3(normal.x, normal.y, normal.z);
+			//VertexData vertex;
+			//vertex.position = Vector4(position.x, position.y, position.z, 1.0f);
+			//vertex.texcoord = Vector2(texcoord.x, texcoord.y);
+			//vertex.normal = Vector3(normal.x, normal.y, normal.z);
 
-			vertex.position.x *= -1.0f;
-			vertex.normal.x *= -1.0f;
+			//vertex.position.x *= -1.0f;
+			//vertex.normal.x *= -1.0f;
 
-			modelData_.vertices[vertexIndex] = vertex;
+      modelData_.vertices[vertexIndex].position = { -position.x, position.y, position.z, 1.0f };
+      modelData_.vertices[vertexIndex].texcoord = { texcoord.x, texcoord.y };
+      modelData_.vertices[vertexIndex].normal = { -normal.x, normal.y, normal.z };
 		}
 
     // インデックスの解析
