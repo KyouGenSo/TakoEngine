@@ -29,8 +29,6 @@ void GameScene::Initialize()
 	///              初期化処理              ///
 	/// ================================== ///
 
-
-
 	object3d_ = new Object3d();
 	object3d_->Initialize();
 	object3d_->SetModel("terrain.obj");

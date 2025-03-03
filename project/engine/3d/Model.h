@@ -116,7 +116,7 @@ private: // プライベートメンバー関数
 	/// <summary>
 	/// アニメーションを適用
 	/// </summary>
-	void ApplyAnimation(float time);
+	void UpdateSkeletonAnimation(float time);
 
 private: // メンバ変数
 

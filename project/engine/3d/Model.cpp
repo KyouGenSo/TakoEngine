@@ -69,7 +69,7 @@ void Model::Update()
 	{
 		animationTime_ += 1.0f / 60.0f; // アニメーション時間を更新
 		animationTime_ = std::fmod(animationTime_, animationData_.duration); // アニメーション時間がアニメーションの長さを超えたらループ
-		ApplyAnimation(animationTime_);
+		UpdateSkeletonAnimation(animationTime_);
 		UpdateSkeleton();
     UpdateSkinCluster();
 	}
@@ -77,9 +77,6 @@ void Model::Update()
 
 void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
 {
-
-	// インデックスバッファビューを設定
-  m_dx12_->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
 
   // 頂点バッファビューを設定
   if (hasSkeleton_)
@@ -92,6 +89,9 @@ void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
   {
     m_dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView_);
   }
+
+  // インデックスバッファビューを設定
+  m_dx12_->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
 
 	// マテリアルデータを設定
   m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource_->GetGPUVirtualAddress());
@@ -166,7 +166,7 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
       aiQuaternion rotate;
       bindPoseMatrixAssimp.Decompose(scale, rotate, tanslate);
       // 左手系のBindPoseMatrixを作る
-      Matrix4x4 bindPoseMatrix = Mat4x4::MakeAffine(Vector3(scale.x, scale.y, scale.z), Quaternion(rotate.x, -rotate.y, -rotate.z, rotate.w), Vector3(-tanslate.x, tanslate.y, tanslate.z));
+      Matrix4x4 bindPoseMatrix = Mat4x4::MakeAffine({ scale.x, scale.y, scale.z }, { rotate.x, -rotate.y, -rotate.z, rotate.w }, { -tanslate.x, tanslate.y, tanslate.z });
       jointWeightData.inverseBindMatrix = Mat4x4::Inverse(bindPoseMatrix);
 
       for (uint32_t weightIndex = 0; weightIndex < bone->mNumWeights; ++weightIndex)
@@ -292,7 +292,7 @@ void Model::UpdateSkinCluster()
   }
 }
 
-void Model::ApplyAnimation(float time)
+void Model::UpdateSkeletonAnimation(float time)
 {
 	for (Joint& joint : skeleton_.joints) {
 		if (auto it = animationData_.nodeAnimations.find(joint.name); it != animationData_.nodeAnimations.end())

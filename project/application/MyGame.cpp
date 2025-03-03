@@ -36,7 +36,7 @@ void MyGame::Initialize()
   //ModelManager::GetInstance()->LoadModel("AnimatedCube.gltf", true); 
   //ModelManager::GetInstance()->LoadModel("simpleSkin.gltf", true, true);
   ModelManager::GetInstance()->LoadModel("walk.gltf", true, true);
-  //ModelManager::GetInstance()->LoadModel("sneakWalk.gltf", true, true);
+  ModelManager::GetInstance()->LoadModel("sneakWalk.gltf", true, true);
 
   // PostEffectParamの設定
   postEffectParam.vignettePower = 0.f;
