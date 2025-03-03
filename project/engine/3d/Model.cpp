@@ -130,14 +130,6 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
 			aiVector3D& texcoord = mesh->mTextureCoords[0][vertexIndex];
 			aiVector3D& normal = mesh->mNormals[vertexIndex];
 
-			//VertexData vertex;
-			//vertex.position = Vector4(position.x, position.y, position.z, 1.0f);
-			//vertex.texcoord = Vector2(texcoord.x, texcoord.y);
-			//vertex.normal = Vector3(normal.x, normal.y, normal.z);
-
-			//vertex.position.x *= -1.0f;
-			//vertex.normal.x *= -1.0f;
-
       modelData_.vertices[vertexIndex].position = { -position.x, position.y, position.z, 1.0f };
       modelData_.vertices[vertexIndex].texcoord = { texcoord.x, texcoord.y };
       modelData_.vertices[vertexIndex].normal = { -normal.x, normal.y, normal.z };
@@ -319,8 +311,8 @@ void Model::DrawSkeleton(Matrix4x4 world, Matrix4x4 viewProjection)
 		Vector3 jointPosition = Mat4x4::TransForm(jointWorldMatrix, Vector3(0.0f, 0.0f, 0.0f));
 
 		// Draw the joint as a sphere
-		float radius = 0.01f; // Sphere radius
-		Draw2D::GetInstance()->DrawSphere(jointPosition, radius, Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+		//float radius = 0.01f; // Sphere radius
+		//Draw2D::GetInstance()->DrawSphere(jointPosition, radius, Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 
 		// Draw line to parent joint if it exists
 		if (joint.parentIndex)
