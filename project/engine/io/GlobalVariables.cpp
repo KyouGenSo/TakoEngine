@@ -1,8 +1,12 @@
 #include "GlobalVariables.h"
-#include "ImGuiManager.h"
 #include <json.hpp>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
+
+#ifdef _DEBUG
+#include "ImGuiManager.h"
+#endif
 
 GlobalVariables* GlobalVariables::instance_ = nullptr;
 
@@ -29,6 +33,7 @@ void GlobalVariables::DeleteGroup(const std::string& groupName)
 
 void GlobalVariables::Update()
 {
+#ifdef _DEBUG
   // グループが存在しない場合は早期リターン
   if (datas_.empty()) return;
 
@@ -100,6 +105,7 @@ void GlobalVariables::Update()
   
   ImGui::EndMenuBar();
   ImGui::End();
+#endif
 }
 
 void GlobalVariables::SaveFile(const std::string& groupName)
@@ -162,7 +168,9 @@ void GlobalVariables::SaveFile(const std::string& groupName)
   if (ofs.fail())
   {
     std::string erroeMessage = "file to opne json file";
+#ifdef _DEBUG
     MessageBoxA(nullptr, erroeMessage.c_str(), "GlobalVariables", 0);
+#endif
     assert(false);
     return;
   }
@@ -218,7 +226,9 @@ void GlobalVariables::LoadFile(const std::string& groupName)
   if (ifs.fail())
   {
     std::string erroeMessage = "fail to opne json file";
-    MessageBoxA(nullptr, erroeMessage.c_str(), "GlobalVariables", 0); 
+#ifdef _DEBUG
+    MessageBoxA(nullptr, erroeMessage.c_str(), "GlobalVariables", 0);
+#endif
     assert(false);
     return;
   }
