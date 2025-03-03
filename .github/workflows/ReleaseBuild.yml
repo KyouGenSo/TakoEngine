@@ -2,7 +2,7 @@ name: ReleaseBuild
 on:
   push:
    branches:
-    - master
+    - Ver1.1_Devlop
 
 env: 
  SOLUTION_FILE_PATH: project/TakoEngine.sln
