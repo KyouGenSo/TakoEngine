@@ -39,6 +39,7 @@ void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool
 	if (hasSkeleton_)
 	{
 		skeleton_ = CreateSkeleton(modelData_.rootNode);
+    skinCluster_ = CreateSkinCluster();
 	}
 
 	// 頂点データの生成
@@ -68,18 +69,28 @@ void Model::Update()
 	{
 		animationTime_ += 1.0f / 60.0f; // アニメーション時間を更新
 		animationTime_ = std::fmod(animationTime_, animationData_.duration); // アニメーション時間がアニメーションの長さを超えたらループ
-		ApplyAnimation(animationTime_);
+		UpdateSkeletonAnimation(animationTime_);
 		UpdateSkeleton();
-    //UpdateSkinCluster();
+    UpdateSkinCluster();
 	}
 }
 
 void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
 {
-	// 頂点バッファビューを設定
-  m_dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView_);
 
-	// インデックスバッファビューを設定
+  // 頂点バッファビューを設定
+  if (hasSkeleton_)
+  {
+    D3D12_VERTEX_BUFFER_VIEW vbvs[2] = { vertexBufferView_, skinCluster_.influenceBufferView };
+    m_dx12_->GetCommandList()->IASetVertexBuffers(0, 2, vbvs);
+    SrvManager::GetInstance()->SetRootDescriptorTable(8, skinCluster_.paletteSrvIndex);
+  }
+  else
+  {
+    m_dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView_);
+  }
+
+  // インデックスバッファビューを設定
   m_dx12_->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
 
 	// マテリアルデータを設定
@@ -115,19 +126,21 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
     // 頂点の解析
 		for (uint32_t vertexIndex = 0; vertexIndex < mesh->mNumVertices; ++vertexIndex)
 		{
-			aiVector3D position = mesh->mVertices[vertexIndex];
-			aiVector3D texcoord = mesh->mTextureCoords[0][vertexIndex];
-			aiVector3D normal = mesh->mNormals[vertexIndex];
+			aiVector3D& position = mesh->mVertices[vertexIndex];
+			aiVector3D& texcoord = mesh->mTextureCoords[0][vertexIndex];
+			aiVector3D& normal = mesh->mNormals[vertexIndex];
 
-			VertexData vertex;
-			vertex.position = Vector4(position.x, position.y, position.z, 1.0f);
-			vertex.texcoord = Vector2(texcoord.x, texcoord.y);
-			vertex.normal = Vector3(normal.x, normal.y, normal.z);
+			//VertexData vertex;
+			//vertex.position = Vector4(position.x, position.y, position.z, 1.0f);
+			//vertex.texcoord = Vector2(texcoord.x, texcoord.y);
+			//vertex.normal = Vector3(normal.x, normal.y, normal.z);
 
-			vertex.position.x *= -1.0f;
-			vertex.normal.x *= -1.0f;
+			//vertex.position.x *= -1.0f;
+			//vertex.normal.x *= -1.0f;
 
-			modelData_.vertices[vertexIndex] = vertex;
+      modelData_.vertices[vertexIndex].position = { -position.x, position.y, position.z, 1.0f };
+      modelData_.vertices[vertexIndex].texcoord = { texcoord.x, texcoord.y };
+      modelData_.vertices[vertexIndex].normal = { -normal.x, normal.y, normal.z };
 		}
 
     // インデックスの解析
@@ -146,14 +159,14 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
     {
       aiBone* bone = mesh->mBones[boneIndex];
       std::string jointName = bone->mName.C_Str();
-      JointWeightData jointWeightData = modelData_.skinClusterData[jointName];
+      JointWeightData& jointWeightData = modelData_.skinClusterData[jointName];
 
       aiMatrix4x4 bindPoseMatrixAssimp = bone->mOffsetMatrix.Inverse();
       aiVector3D scale, tanslate;
       aiQuaternion rotate;
       bindPoseMatrixAssimp.Decompose(scale, rotate, tanslate);
       // 左手系のBindPoseMatrixを作る
-      Matrix4x4 bindPoseMatrix = Mat4x4::MakeAffine(Vector3(scale.x, scale.y, scale.z), Quaternion(rotate.x, -rotate.y, -rotate.z, rotate.w), Vector3(-tanslate.x, tanslate.y, tanslate.z));
+      Matrix4x4 bindPoseMatrix = Mat4x4::MakeAffine({ scale.x, scale.y, scale.z }, { rotate.x, -rotate.y, -rotate.z, rotate.w }, { -tanslate.x, tanslate.y, tanslate.z });
       jointWeightData.inverseBindMatrix = Mat4x4::Inverse(bindPoseMatrix);
 
       for (uint32_t weightIndex = 0; weightIndex < bone->mNumWeights; ++weightIndex)
@@ -275,11 +288,11 @@ void Model::UpdateSkinCluster()
     assert(jointIndex < skinCluster_.inverseBindMatrices.size());
     skinCluster_.mappedPalette[jointIndex].skeletonSpaceMat = skinCluster_.inverseBindMatrices[jointIndex] * skeleton_.joints[jointIndex].skeletonSpaceMatrix;
     skinCluster_.mappedPalette[jointIndex].skeletonSpaceMatrixInvTransposeMat =
-      Mat4x4::Transpose(Mat4x4::Inverse(skinCluster_.mappedPalette[jointIndex].skeletonSpaceMat));
+    Mat4x4::Transpose(Mat4x4::Inverse(skinCluster_.mappedPalette[jointIndex].skeletonSpaceMat));
   }
 }
 
-void Model::ApplyAnimation(float time)
+void Model::UpdateSkeletonAnimation(float time)
 {
 	for (Joint& joint : skeleton_.joints) {
 		if (auto it = animationData_.nodeAnimations.find(joint.name); it != animationData_.nodeAnimations.end())
@@ -473,7 +486,11 @@ SkinCluster Model::CreateSkinCluster()
 
   // InverseBindMatricesを格納する場所を確保し、単位行列で埋める
   skinCluster.inverseBindMatrices.resize(skeleton_.joints.size());
-  std::generate(skinCluster.inverseBindMatrices.begin(), skinCluster.inverseBindMatrices.end(), []() { return Mat4x4::MakeIdentity(); });
+  // 単位行列で埋める
+  for (Matrix4x4& inverseBindMatrix : skinCluster.inverseBindMatrices)
+  {
+    inverseBindMatrix = Mat4x4::MakeIdentity();
+  }
 
 
   // ModelDataを解析して、influenceを埋める
@@ -485,7 +502,7 @@ SkinCluster Model::CreateSkinCluster()
       continue; // Jointが見つからない場合はスキップ
     }
 
-    skinCluster_.inverseBindMatrices[(*it).second] = jointWeight.second.inverseBindMatrix; // InverseBindMatricesを格納
+    skinCluster.inverseBindMatrices[(*it).second] = jointWeight.second.inverseBindMatrix; // InverseBindMatricesを格納
 
     for (const auto& vertexWeight : jointWeight.second.vertexWeights)
     {

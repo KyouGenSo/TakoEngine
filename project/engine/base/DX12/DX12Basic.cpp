@@ -528,7 +528,7 @@ Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> DX12Basic::CreateDescriptorHeap(D3D
 Microsoft::WRL::ComPtr<IDxcBlob> DX12Basic::CompileShader(const std::wstring& filePath, const wchar_t* profile)
 {
 	//hlslファイルを読み込む
-	Logger::Log(StringUtility::ConvertString(std::format(L"Begin CompileShader, path:{}, prefile:{}\n", filePath, profile)));
+	Logger::Log(StringUtility::ConvertString(std::format(L"Begin CompileShader, path:{}, profile:{}\n", filePath, profile)));
 	Microsoft::WRL::ComPtr<IDxcBlobEncoding> shaderSource = nullptr;
 	HRESULT hr = dxcUtils_->LoadFile(filePath.c_str(), nullptr, &shaderSource);
 	assert(SUCCEEDED(hr));
