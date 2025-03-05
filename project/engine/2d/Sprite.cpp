@@ -107,7 +107,7 @@ void Sprite::Draw()
 	SpriteBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResource_->GetGPUVirtualAddress());
 
 	// SRVのDescriptorTableを設定,テクスチャを指定
-	SrvManager::GetInstance()->SetRootDescriptorTable(2, textureIndex_);
+	SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, textureIndex_);
 
 	// 描画
 	SpriteBasic::GetInstance()->GetDX12Basic()->GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0);

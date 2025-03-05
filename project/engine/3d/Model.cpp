@@ -51,6 +51,10 @@ void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool
 	// マテリアルデータの生成
 	CreateMaterialData();
 
+  m_dx12_->CreateUAVResource(uavVertexOutputResource_, modelData_.vertices.size() * sizeof(VertexData));
+  uavIndex_ = SrvManager::GetInstance()->Allocate();
+  SrvManager::GetInstance()->CreateUAV(uavIndex_, uavVertexOutputResource_.Get(), modelData_.vertices.size(), sizeof(VertexData));
+
 	// テクスチャの読み込み
 	TextureManager::GetInstance()->LoadTexture(modelData_.material.texturePath);
 
@@ -81,9 +85,14 @@ void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
   // 頂点バッファビューを設定
   if (hasSkeleton_)
   {
-    D3D12_VERTEX_BUFFER_VIEW vbvs[2] = { vertexBufferView_, skinCluster_.influenceBufferView };
-    m_dx12_->GetCommandList()->IASetVertexBuffers(0, 2, vbvs);
-    SrvManager::GetInstance()->SetRootDescriptorTable(8, skinCluster_.paletteSrvIndex);
+    //D3D12_VERTEX_BUFFER_VIEW vbvs[2] = { vertexBufferView_, skinCluster_.influenceBufferView };
+    //m_dx12_->GetCommandList()->IASetVertexBuffers(0, 2, vbvs);
+    //SrvManager::GetInstance()->SetRootDescriptorTable(8, skinCluster_.paletteSrvIndex);
+
+    m_modelBasic_->SetSkinningCSSetting();
+    SrvManager::GetInstance()->SetComputeRootDescriptorTable(0, skinCluster_.paletteSrvIndex);
+    SrvManager::GetInstance()->SetComputeRootDescriptorTable(1, vertexSrvIndex_);
+    SrvManager::GetInstance()->SetComputeRootDescriptorTable(2, skinCluster_.
   }
   else
   {
@@ -97,7 +106,7 @@ void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
   m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource_->GetGPUVirtualAddress());
 
 	// SRVのDescriptorTableを設定,テクスチャを指定
-	SrvManager::GetInstance()->SetRootDescriptorTable(2, modelData_.material.textureIndex);
+	SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, modelData_.material.textureIndex);
 
 	// 描画
   m_dx12_->GetCommandList()->DrawIndexedInstanced(UINT(modelData_.indices.size()), 1, 0, 0, 0);
@@ -346,6 +355,9 @@ void Model::CreateVertexData()
 	// 頂点リソースをマップ
 	vertexResource_->Map(0, nullptr, reinterpret_cast<void**>(&vertexData_));
 	memcpy(vertexData_, modelData_.vertices.data(), sizeof(VertexData) * modelData_.vertices.size());
+
+  vertexSrvIndex_ = SrvManager::GetInstance()->Allocate();
+  SrvManager::GetInstance()->CreateSRVForStructuredBuffer(vertexSrvIndex_, vertexResource_.Get(), modelData_.vertices.size(), sizeof(VertexData));
 }
 
 void Model::CreateIndexData()

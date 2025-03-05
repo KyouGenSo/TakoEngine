@@ -19,10 +19,10 @@ void Light::PreDraw()
 	m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource_->GetGPUVirtualAddress());
 
 	// ポイントライトsrvの場所を設定
-	SrvManager::GetInstance()->SetRootDescriptorTable(5, pointLightSrvIndex_);
+	SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(5, pointLightSrvIndex_);
 
 	// スポットライトCBufferの場所を設定
-	SrvManager::GetInstance()->SetRootDescriptorTable(6, spotLightSrvIndex_);
+	SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(6, spotLightSrvIndex_);
 
 	// ライト定数CBufferの場所を設定
 	m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(7, lightConstantsResource_->GetGPUVirtualAddress());

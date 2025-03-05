@@ -69,6 +69,11 @@ public: // メンバー関数
 	ComPtr<ID3D12Resource> MakeBufferResource(size_t sizeInBytes);
 	void CreateBufferResource(ComPtr<ID3D12Resource>& bufferResource, size_t sizeInBytes);
 
+  /// <summary>
+  /// UAVリソースの生成
+  /// </summary>
+  void CreateUAVResource(ComPtr<ID3D12Resource>& uavResource, UINT sizeInBytes);
+
 	/// <summary>
 	/// テクスチャリソースの生成
 	/// </summary>

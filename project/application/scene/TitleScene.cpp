@@ -151,6 +151,9 @@ void TitleScene::Draw()
 	/// ================================== ///
 	///              描画処理               ///
 	/// ================================== ///
+
+  Draw2D::GetInstance()->DrawGrid(100.0f, 20.0f, Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+
 	//------------------背景Spriteの描画------------------//
 	// スプライト共通描画設定
 	SpriteBasic::GetInstance()->SetCommonRenderSetting();
@@ -178,8 +181,6 @@ void TitleScene::Draw()
 
 	particleEmitter_->Draw();
 	particleEmitter2_->Draw();
-
-	Draw2D::GetInstance()->DrawGrid(100.0f, 20.0f, Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 }
 
 void TitleScene::DrawImGui()

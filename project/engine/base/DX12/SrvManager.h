@@ -61,10 +61,20 @@ public: // メンバー関数
 	/// </summary>
 	void CreateSRVForStructuredBuffer(uint32_t srvIndex, ID3D12Resource* pResource, UINT numElements, UINT structureByteStride);
 
+  ///<summary>
+  ///UAV生成(ComputeShader用)
+  /// </summary>
+  void CreateUAV(uint32_t index, ID3D12Resource* pResource, UINT numElements, UINT structureByteStride);
+
 	///<summary>
-	///RootDescriptorTableにSRVをセット
+	///GraphicsRootDescriptorTableにSRVをセット
 	/// </summary>
-	void SetRootDescriptorTable(UINT rootParameterIndex, uint32_t srvIndex);
+	void SetGraphicsRootDescriptorTable(UINT rootParameterIndex, uint32_t srvIndex);
+
+  ///<summary>
+  ///ComputeRootDescriptorTableにSRVをセット
+  /// </summary>
+  void SetComputeRootDescriptorTable(UINT rootParameterIndex, uint32_t index);
 
 	/// <summary>
 	/// 指定番号のCPUディスクリプタハンドルを取得

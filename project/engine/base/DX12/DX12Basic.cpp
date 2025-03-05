@@ -636,6 +636,31 @@ void DX12Basic::CreateBufferResource(ComPtr<ID3D12Resource>& buffer, size_t size
 
 }
 
+void DX12Basic::CreateUAVResource(ComPtr<ID3D12Resource>& uavResource, UINT sizeInBytes)
+{
+  D3D12_RESOURCE_DESC bufferDesc = {};
+  bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+  bufferDesc.Width = sizeInBytes;
+  bufferDesc.Height = 1;
+  bufferDesc.DepthOrArraySize = 1;
+  bufferDesc.MipLevels = 1;
+  bufferDesc.SampleDesc.Count = 1;
+  bufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+  bufferDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+
+  D3D12_HEAP_PROPERTIES heapProperties = {};
+  heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+
+  HRESULT hr = device_->CreateCommittedResource(
+    &heapProperties,
+    D3D12_HEAP_FLAG_NONE,
+    &bufferDesc,
+    D3D12_RESOURCE_STATE_COMMON,
+    nullptr,
+    IID_PPV_ARGS(&uavResource));
+
+}
+
 Microsoft::WRL::ComPtr<ID3D12Resource> DX12Basic::MakeTextureResource(const DirectX::TexMetadata& metaData)
 {
 	// テクスチャの設定

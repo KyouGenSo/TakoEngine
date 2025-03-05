@@ -3,7 +3,6 @@
 #include "Logger.h"
 #include "Camera.h"
 
-
 #ifdef _DEBUG
 #include "DebugCamera.h"
 #endif

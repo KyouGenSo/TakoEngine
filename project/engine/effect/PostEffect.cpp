@@ -86,8 +86,8 @@ void PostEffect::Draw(const std::string& effectName)
 	// 定数バッファの設定
 	SetParamResource(effectName);
 
-	SrvManager::GetInstance()->SetRootDescriptorTable(0, rtvSrvIndex_);
-	SrvManager::GetInstance()->SetRootDescriptorTable(4, dsvSrvIndex_);
+	SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, rtvSrvIndex_);
+	SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(4, dsvSrvIndex_);
 
 	// 描画
 	m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);

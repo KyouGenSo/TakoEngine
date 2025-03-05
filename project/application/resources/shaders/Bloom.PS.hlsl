@@ -11,8 +11,6 @@ struct BloomParam
     float sigma;
 };
 
-
-
 ConstantBuffer<BloomParam> gBloomParam : register(b0);
 Texture2D<float4> gTexture : register(t0);
 SamplerState gSampler : register(s0);

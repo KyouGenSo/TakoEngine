@@ -14,7 +14,7 @@ public:
   ///<summary>
   ///　描画設定
   /// </summary>
-  void PreDraw();
+  void SetSkinningCSSetting();
 
 	//-----------------------------------------Getter-----------------------------------------//
 	DX12Basic* GetDX12Basic() { return m_dx12_; }
@@ -29,12 +29,12 @@ private: // プライベートメンバー関数
   ///<summary>
   /// ルートシグネチャの作成
   /// </summary>
-  void CreateRootSignature();
+  void CreateCSRootSignature();
 
   ///<summary>
   /// パイプラインステートの生成
   /// </summary>
-  void CreatePSO();
+  void CreateCSPSO();
 
 private:
 	DX12Basic* m_dx12_;
@@ -42,4 +42,8 @@ private:
 	std::string directoryFolderName_;
 
 	std::string ModelFolderName_;
+
+  Microsoft::WRL::ComPtr<ID3D12RootSignature> csRootSignature_;
+  Microsoft::WRL::ComPtr<ID3D12PipelineState> csPipelineState_;
+
 };

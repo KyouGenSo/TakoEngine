@@ -94,10 +94,9 @@ void MyGame::Draw()
 
 	ParticleManager::GetInstance()->Draw();
 
-	Draw2D::GetInstance()->Draw();
+  Draw2D::GetInstance()->Draw();
 
-	Draw2D::GetInstance()->Reset();
-
+  Draw2D::GetInstance()->Reset();
 
 	/// ===================================================== ///
 	/// ------------------ポストエフェクト描画-------------------///

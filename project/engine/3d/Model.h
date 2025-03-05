@@ -145,6 +145,10 @@ private: // メンバ変数
 	Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource_;
 	Microsoft::WRL::ComPtr<ID3D12Resource> indexResource_;
 	Microsoft::WRL::ComPtr<ID3D12Resource> materialResource_;
+  Microsoft::WRL::ComPtr<ID3D12Resource> uavVertexOutputResource_;
+
+  uint32_t vertexSrvIndex_ = 0;
+  uint32_t uavIndex_ = 0;
 
 	// バッファリソース内のデータを指すポインタ
 	VertexData* vertexData_ = nullptr;
