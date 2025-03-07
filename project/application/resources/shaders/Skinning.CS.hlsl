@@ -34,7 +34,7 @@ ConstantBuffer<SkinningInfo> gSkinningInfo : register(b0);
 void main( uint3 DTid : SV_DispatchThreadID )
 {
     uint vertexIndex = DTid.x;
-    if (vertexIndex <= gSkinningInfo.numVertices)
+    if (vertexIndex < gSkinningInfo.numVertices)
     {
         Vertex inputVertex = gInputVertices[vertexIndex];
         VertexInfluence influence = gInfluences[vertexIndex];
@@ -45,6 +45,7 @@ void main( uint3 DTid : SV_DispatchThreadID )
         skinned.pos = mul(inputVertex.pos, gMatrixPalette[influence.index.x].skeletonSpaceMatrix) * influence.weight.x;
         skinned.pos += mul(inputVertex.pos, gMatrixPalette[influence.index.y].skeletonSpaceMatrix) * influence.weight.y;
         skinned.pos += mul(inputVertex.pos, gMatrixPalette[influence.index.z].skeletonSpaceMatrix) * influence.weight.z;
+        skinned.pos += mul(inputVertex.pos, gMatrixPalette[influence.index.w].skeletonSpaceMatrix) * influence.weight.w;
         skinned.pos.w = 1.0f;
         
         skinned.normal = mul(inputVertex.normal, (float3x3) gMatrixPalette[influence.index.x].skeletonSpaceMatrixIT) * influence.weight.x;

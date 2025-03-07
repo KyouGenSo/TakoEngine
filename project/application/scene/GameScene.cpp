@@ -40,7 +40,7 @@ void GameScene::Initialize()
 
 	object3d2_ = new Object3d();
 	object3d2_->Initialize();
-	object3d2_->SetModel("walk.gltf");
+	object3d2_->SetModel("sneakWalk.gltf");
   modelRotate2_ = { 0.0f, DirectX::XMConvertToRadians(180.0f), 0.0f };
 	object3d2_->SetRotate(rotate);
 
