@@ -52,12 +52,12 @@ public: // メンバー関数
 	Model* FindModel(const std::string& fileName);
 
 	//-----------------------------------------Getter-----------------------------------------//
-	ModelBasic* GetModelBasic() { return m_modelBasic_; }
+	ModelBasic* GetModelBasic() { return pModelBasic_; }
 
 private: // メンバー変数
 
 	// モデル基本クラス
-	ModelBasic* m_modelBasic_;
+	ModelBasic* pModelBasic_;
 
 	// モデルデータ
 	std::map<std::string, std::unique_ptr<Model>> models_;

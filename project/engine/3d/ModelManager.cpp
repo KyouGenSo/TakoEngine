@@ -15,12 +15,14 @@ ModelManager* ModelManager::GetInstance()
 
 void ModelManager::Initialize(DX12Basic* dx12)
 {
-	m_modelBasic_ = new ModelBasic();
-	m_modelBasic_->Initialize(dx12);
+	pModelBasic_ = new ModelBasic();
+	pModelBasic_->Initialize(dx12);
 }
 
 void ModelManager::Finalize()
 {
+  delete pModelBasic_;
+
 	if (instance_ != nullptr)
 	{
 		delete instance_;
@@ -38,7 +40,7 @@ void ModelManager::LoadModel(const std::string& fileName)
 
 	// モデルの読み込み、初期化
 	std::unique_ptr<Model> model = std::make_unique<Model>();
-	model->Initialize(m_modelBasic_, fileName, false, false);
+	model->Initialize(pModelBasic_, fileName, false, false);
 
 	// モデルデータの登録
 	models_.insert(std::make_pair(fileName, std::move(model)));
@@ -54,7 +56,7 @@ void ModelManager::LoadModel(const std::string& fileName, bool hasAnimation)
 
 	// モデルの読み込み、初期化
 	std::unique_ptr<Model> model = std::make_unique<Model>();
-	model->Initialize(m_modelBasic_, fileName, hasAnimation, false);
+	model->Initialize(pModelBasic_, fileName, hasAnimation, false);
 
 	// モデルデータの登録
 	models_.insert(std::make_pair(fileName, std::move(model)));
@@ -70,7 +72,7 @@ void ModelManager::LoadModel(const std::string& fileName, bool hasAnimation, boo
 
 	// モデルの読み込み、初期化
 	std::unique_ptr<Model> model = std::make_unique<Model>();
-	model->Initialize(m_modelBasic_, fileName, hasAnimation, hasSkeleton);
+	model->Initialize(pModelBasic_, fileName, hasAnimation, hasSkeleton);
 
 	// モデルデータの登録
 	models_.insert(std::make_pair(fileName, std::move(model)));
