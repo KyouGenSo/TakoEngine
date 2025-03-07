@@ -51,7 +51,7 @@ void main( uint3 DTid : SV_DispatchThreadID )
         skinned.normal += mul(inputVertex.normal, (float3x3) gMatrixPalette[influence.index.y].skeletonSpaceMatrixIT) * influence.weight.y;
         skinned.normal += mul(inputVertex.normal, (float3x3) gMatrixPalette[influence.index.z].skeletonSpaceMatrixIT) * influence.weight.z;
         skinned.normal += mul(inputVertex.normal, (float3x3) gMatrixPalette[influence.index.w].skeletonSpaceMatrixIT) * influence.weight.w;
-        skinned.normal = normalize(skinned.normal);mm
+        skinned.normal = normalize(skinned.normal);
         
         gOutputVertices[vertexIndex] = skinned;
     }

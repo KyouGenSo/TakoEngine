@@ -62,6 +62,11 @@ private: // プライベートメンバー関数
 	/// </summary>
 	void CreateVertexData();
 
+  /// <summary>
+  /// 頂点バッファビューの生成
+  /// </summary>
+  void CreateVertexBufferView();
+
 	/// <summary>
 	/// 頂点インデクスの生成
 	/// </summary>
@@ -71,6 +76,16 @@ private: // プライベートメンバー関数
 	/// マテリアルデータの生成
 	/// </summary>
 	void CreateMaterialData();
+
+  /// <summary>
+  /// skinning用UAVの生成
+  /// </summary>
+  void CreateUAV();
+
+  /// <summary>
+  /// skinningInfoResourceの生成
+  /// </summary>
+  void CreateSkinningInfoResource();
 
 	/// <summary>
 	/// ノード読み込み
@@ -145,7 +160,9 @@ private: // メンバ変数
 	Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource_;
 	Microsoft::WRL::ComPtr<ID3D12Resource> indexResource_;
 	Microsoft::WRL::ComPtr<ID3D12Resource> materialResource_;
+
   Microsoft::WRL::ComPtr<ID3D12Resource> uavVertexOutputResource_;
+  Microsoft::WRL::ComPtr<ID3D12Resource> skinningInfoResource_;
 
   uint32_t vertexSrvIndex_ = 0;
   uint32_t uavIndex_ = 0;
@@ -153,6 +170,7 @@ private: // メンバ変数
 	// バッファリソース内のデータを指すポインタ
 	VertexData* vertexData_ = nullptr;
 	Material* materialData_ = nullptr;
+  SkinningInfo* skinningInfoData_ = nullptr;
 
 	// バッファビュー
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView_;

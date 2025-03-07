@@ -146,12 +146,9 @@ void GameScene::Draw()
 
 	// モデル描画
 	object3d_->Draw();
-	
-
-  // Skinned3Dモデル描画設定
-  Object3dBasic::GetInstance()->SetSkinningRenderSetting();
-
   object3d2_->Draw();
+
+  
 
 	//-------------------Modelの描画-------------------//
 

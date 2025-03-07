@@ -96,7 +96,7 @@ void ModelBasic::CreateCSRootSignature()
     assert(false);
   }
 
-  hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(csRootSignature_.GetAddressOf());
+  hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(csRootSignature_.GetAddressOf()));
   signatureBlob->GetBufferSize(), IID_PPV_ARGS(csRootSignature_.GetAddressOf());
   assert(SUCCEEDED(hr));
 
@@ -115,5 +115,5 @@ void ModelBasic::CreateCSPSO()
   computePipelineStateDesc.CS = { .pShaderBytecode = csBlob->GetBufferPointer(), .BytecodeLength = csBlob->GetBufferSize() };
 
   HRESULT hr = m_dx12_->GetDevice()->CreateComputePipelineState(&computePipelineStateDesc, IID_PPV_ARGS(&csPipelineState_));
-
+  assert(SUCCEEDED(hr));
 }

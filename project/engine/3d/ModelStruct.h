@@ -133,12 +133,17 @@ struct WellForGPU
   Matrix4x4 skeletonSpaceMatrixInvTransposeMat;   // 法線用
 };
 
+struct SkinningInfo
+{
+  uint32_t numVertices;
+};
+
 struct SkinCluster
 {
   std::vector<Matrix4x4> inverseBindMatrices;
   Microsoft::WRL::ComPtr<ID3D12Resource> influenceResource;
-  D3D12_VERTEX_BUFFER_VIEW influenceBufferView;
   std::span<VertexInfluence> mappedInfluences;
+  uint32_t influenceSrvIndex;
   Microsoft::WRL::ComPtr<ID3D12Resource> paletteResource;
   std::span<WellForGPU> mappedPalette;
   uint32_t paletteSrvIndex;

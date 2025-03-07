@@ -46,11 +46,6 @@ public: // メンバー関数
 	/// </summary>
 	void SetCommonRenderSetting();
 
-  ///<summary>
-  ///　Skinning描画設定
-  /// </summary>
-  void SetSkinningRenderSetting();
-
 	// -----------------------------------Getters-----------------------------------//
 	DX12Basic* GetDX12Basic() const { return m_dx12_; }
 	Camera* GetCamera() const { return camera_; }
@@ -99,16 +94,6 @@ private: // プライベートメンバー関数
 	/// </summary>
 	void CreatePSO();
 
-  ///<summary>
-  /// スキンニングルートシグネチャの作成
-  /// 	/// </summary>
-  void CreateSkinningRootSignature();
-
-  ///<summary>
-  /// スキンニングパイプラインステートの生成
-  /// </summary>
-  void CreateSkinningPSO();
-
 private: // メンバー変数
 	// DX12Basicクラスのインスタンス
 	DX12Basic* m_dx12_ = nullptr;
@@ -128,9 +113,7 @@ private: // メンバー変数
 
 	// ルートシグネチャ
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;
-  Microsoft::WRL::ComPtr<ID3D12RootSignature> skinningRootSignature_;
 
 	// パイプラインステート
   Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;
-  Microsoft::WRL::ComPtr<ID3D12PipelineState> skinningPipelineState_;
 };

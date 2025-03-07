@@ -101,6 +101,11 @@ public: // メンバー関数
 	/// </summary>
 	static DirectX::ScratchImage LoadTexture(const std::string& filePath);
 
+  /// <summary>
+  /// バリアの設定
+  /// </summary>
+  void SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter, ID3D12Resource* resource);
+
 	//-----------------------------------------Getter-----------------------------------------//
 	/// <summary>
 	/// デバイスの取得
@@ -227,11 +232,10 @@ private: // プライベートメンバー関数
 	/// </summary>
 	static D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(ID3D12DescriptorHeap* descriptorHeap, uint32_t descriptorSize, uint32_t index);
 
-	/// <summary>
-	/// バリアの設定
-	/// </summary>
-	void SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
-	void SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter, ID3D12Resource* resource);
+  /// <summary>
+  /// バックバッファのバリアを設定
+  /// </summary>
+  void SetBackBufferBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
 
 private: // メンバ変数
 

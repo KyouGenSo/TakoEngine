@@ -6,6 +6,7 @@
 #include "Draw2D.h"
 #include "Mat4x4Func.h"
 #include "QuatFunc.h"
+#include "Object3dBasic.h"
 
 #include <cassert>
 #include <fstream>
@@ -51,9 +52,14 @@ void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool
 	// マテリアルデータの生成
 	CreateMaterialData();
 
-  m_dx12_->CreateUAVResource(uavVertexOutputResource_, modelData_.vertices.size() * sizeof(VertexData));
-  uavIndex_ = SrvManager::GetInstance()->Allocate();
-  SrvManager::GetInstance()->CreateUAV(uavIndex_, uavVertexOutputResource_.Get(), modelData_.vertices.size(), sizeof(VertexData));
+  // UAVの生成
+  CreateUAV();
+
+  // SkinningInfoResourceの生成
+  CreateSkinningInfoResource();
+
+  // VBVの生成
+  CreateVertexBufferView();
 
 	// テクスチャの読み込み
 	TextureManager::GetInstance()->LoadTexture(modelData_.material.texturePath);
@@ -82,22 +88,36 @@ void Model::Update()
 void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
 {
 
-  // 頂点バッファビューを設定
   if (hasSkeleton_)
   {
-    //D3D12_VERTEX_BUFFER_VIEW vbvs[2] = { vertexBufferView_, skinCluster_.influenceBufferView };
-    //m_dx12_->GetCommandList()->IASetVertexBuffers(0, 2, vbvs);
-    //SrvManager::GetInstance()->SetRootDescriptorTable(8, skinCluster_.paletteSrvIndex);
-
+    // ComputeShaderのPSOとRootSignatureの設定
     m_modelBasic_->SetSkinningCSSetting();
+
+    // palette(StructuredBuffer SRV)の設定
     SrvManager::GetInstance()->SetComputeRootDescriptorTable(0, skinCluster_.paletteSrvIndex);
+
+    // InputVertex(StructuredBuffer SRV)の設定
     SrvManager::GetInstance()->SetComputeRootDescriptorTable(1, vertexSrvIndex_);
-    SrvManager::GetInstance()->SetComputeRootDescriptorTable(2, skinCluster_.
+
+    // Influence(StructuredBuffer SRV)の設定
+    SrvManager::GetInstance()->SetComputeRootDescriptorTable(2, skinCluster_.influenceSrvIndex);
+
+    // OutputVertex(UAV)の設定
+    SrvManager::GetInstance()->SetComputeRootDescriptorTable(3, uavIndex_);
+
+    // SkinningInfo(CBuffer)の設定
+    m_dx12_->GetCommandList()->SetComputeRootConstantBufferView(4, skinningInfoResource_->GetGPUVirtualAddress());
+
+    // ComputeShaderの実行
+    m_dx12_->GetCommandList()->Dispatch(UINT(modelData_.vertices.size() + 1023) / 1024, 1, 1);
+
+    m_dx12_->SetBarrier(D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, uavVertexOutputResource_.Get());
+
+    Object3dBasic::GetInstance()->SetCommonRenderSetting();
   }
-  else
-  {
-    m_dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView_);
-  }
+
+  // 頂点バッファビューを設定
+  m_dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView_);
 
   // インデックスバッファビューを設定
   m_dx12_->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
@@ -347,17 +367,27 @@ void Model::CreateVertexData()
 	// 頂点リソースを生成
 	vertexResource_ = m_dx12_->MakeBufferResource(sizeof(VertexData) * modelData_.vertices.size());
 
-	// 頂点バッファビューを作る
-	vertexBufferView_.BufferLocation = vertexResource_->GetGPUVirtualAddress();
-	vertexBufferView_.SizeInBytes = UINT(sizeof(VertexData) * modelData_.vertices.size());
-	vertexBufferView_.StrideInBytes = sizeof(VertexData);
-
 	// 頂点リソースをマップ
 	vertexResource_->Map(0, nullptr, reinterpret_cast<void**>(&vertexData_));
 	memcpy(vertexData_, modelData_.vertices.data(), sizeof(VertexData) * modelData_.vertices.size());
 
   vertexSrvIndex_ = SrvManager::GetInstance()->Allocate();
-  SrvManager::GetInstance()->CreateSRVForStructuredBuffer(vertexSrvIndex_, vertexResource_.Get(), modelData_.vertices.size(), sizeof(VertexData));
+  SrvManager::GetInstance()->CreateSRVForStructuredBuffer(vertexSrvIndex_, vertexResource_.Get(), UINT(modelData_.vertices.size()), sizeof(VertexData));
+}
+
+void Model::CreateVertexBufferView()
+{
+  if (hasSkeleton_) {
+    // VertexBufferViewを作成
+    vertexBufferView_.BufferLocation = uavVertexOutputResource_->GetGPUVirtualAddress();
+    vertexBufferView_.SizeInBytes = UINT(sizeof(VertexData) * modelData_.vertices.size());
+    vertexBufferView_.StrideInBytes = sizeof(VertexData);
+  } else {
+    // VertexBufferViewを作成
+    vertexBufferView_.BufferLocation = vertexResource_->GetGPUVirtualAddress();
+    vertexBufferView_.SizeInBytes = UINT(sizeof(VertexData) * modelData_.vertices.size());
+    vertexBufferView_.StrideInBytes = sizeof(VertexData);
+  }
 }
 
 void Model::CreateIndexData()
@@ -392,6 +422,21 @@ void Model::CreateMaterialData()
 	materialData_->enableHighlight = true;
 	materialData_->uvTransform = Mat4x4::MakeIdentity();
 	materialData_->shininess = 15.0f;
+}
+
+void Model::CreateUAV()
+{
+  m_dx12_->CreateUAVResource(uavVertexOutputResource_, UINT(modelData_.vertices.size() * sizeof(VertexData)));
+  uavIndex_ = SrvManager::GetInstance()->Allocate();
+  SrvManager::GetInstance()->CreateUAV(uavIndex_, uavVertexOutputResource_.Get(), UINT(modelData_.vertices.size()), sizeof(VertexData));
+}
+
+void Model::CreateSkinningInfoResource()
+{
+  m_dx12_->CreateBufferResource(skinningInfoResource_, sizeof(SkinningInfo));
+  skinningInfoResource_->Map(0, nullptr, reinterpret_cast<void**>(&skinningInfoData_));
+
+  skinningInfoData_->numVertices = uint32_t(modelData_.vertices.size());
 }
 
 Node Model::ReadNode(aiNode* node)
@@ -469,7 +514,6 @@ SkinCluster Model::CreateSkinCluster()
   skinCluster.paletteSrvHandle.first = srvManager->GetCPUDescriptorHandle(skinCluster.paletteSrvIndex);
   skinCluster.paletteSrvHandle.second = srvManager->GetGPUDescriptorHandle(skinCluster.paletteSrvIndex);
 
-
   // palette用のsrvを作成
   srvManager->CreateSRVForStructuredBuffer(skinCluster.paletteSrvIndex, skinCluster.paletteResource.Get(), UINT(skeleton_.joints.size()), sizeof(WellForGPU));
 
@@ -481,11 +525,9 @@ SkinCluster Model::CreateSkinCluster()
   std::memset(mappedInfluences, 0, sizeof(VertexInfluence) * modelData_.vertices.size()); // 0で初期化
   skinCluster.mappedInfluences = { mappedInfluences, modelData_.vertices.size() };
 
-
-  // influence用のVBVを作成
-  skinCluster.influenceBufferView.BufferLocation = skinCluster.influenceResource->GetGPUVirtualAddress();
-  skinCluster.influenceBufferView.SizeInBytes = UINT(sizeof(VertexInfluence) * modelData_.vertices.size());
-  skinCluster.influenceBufferView.StrideInBytes = sizeof(VertexInfluence);
+  // influence用のsrvを作成
+  skinCluster.influenceSrvIndex = srvManager->Allocate();
+  srvManager->CreateSRVForStructuredBuffer(skinCluster.influenceSrvIndex, skinCluster.influenceResource.Get(), UINT(modelData_.vertices.size()), sizeof(VertexInfluence));
 
 
   // InverseBindMatricesを格納する場所を確保し、単位行列で埋める

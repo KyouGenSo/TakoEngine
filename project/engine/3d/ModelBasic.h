@@ -1,5 +1,7 @@
 #pragma once
 #include <string>
+#include <d3d12.h>
+#include<wrl.h>
 
 class DX12Basic;
 

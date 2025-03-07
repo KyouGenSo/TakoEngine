@@ -658,7 +658,7 @@ void DX12Basic::CreateUAVResource(ComPtr<ID3D12Resource>& uavResource, UINT size
     D3D12_RESOURCE_STATE_COMMON,
     nullptr,
     IID_PPV_ARGS(&uavResource));
-
+  assert(SUCCEEDED(hr));
 }
 
 Microsoft::WRL::ComPtr<ID3D12Resource> DX12Basic::MakeTextureResource(const DirectX::TexMetadata& metaData)
@@ -815,7 +815,7 @@ D3D12_GPU_DESCRIPTOR_HANDLE DX12Basic::GetGPUDescriptorHandle(ID3D12DescriptorHe
 	return handle;
 }
 
-void DX12Basic::SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter)
+void DX12Basic::SetBackBufferBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter)
 {
 	// バッグバッファのインデックスを取得
 	UINT backBufferIndex = swapChain_->GetCurrentBackBufferIndex();
