@@ -312,8 +312,8 @@ void DX12Basic::CreateSwapChain()
 	swapChainBufferCount_ = 2;
 
 	DXGI_SWAP_CHAIN_DESC1 swapChainDesc{};
-	swapChainDesc.Width = WinApp::kClientWidth; // 画面の幅
-	swapChainDesc.Height = WinApp::kClientHeight; // 画面の高さ
+	swapChainDesc.Width = WinApp::clientWidth; // 画面の幅
+	swapChainDesc.Height = WinApp::clientHeight; // 画面の高さ
 	swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // 色の形式(バックバッファのフォーマット)
 	swapChainDesc.SampleDesc.Count = 1; // マルチサンプルしない
 	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT; // バックバッファとして使用
@@ -335,8 +335,8 @@ void DX12Basic::CreateDepthStencilResource()
 {
 	// テクスチャの設定
 	D3D12_RESOURCE_DESC resourceDesc{};
-	resourceDesc.Width = WinApp::kClientWidth; // テクスチャの幅
-	resourceDesc.Height = WinApp::kClientHeight; // テクスチャの高さ
+	resourceDesc.Width = WinApp::clientWidth; // テクスチャの幅
+	resourceDesc.Height = WinApp::clientHeight; // テクスチャの高さ
 	resourceDesc.MipLevels = 1; // ミップマップレベル
 	resourceDesc.DepthOrArraySize = 1; // 奥行き or 配列サイズ
 	resourceDesc.Format = DXGI_FORMAT_D32_FLOAT; // フォーマット
@@ -444,8 +444,8 @@ void DX12Basic::InitViewport()
 	// ビューポートの設定
 	viewport_.TopLeftX = 0;
 	viewport_.TopLeftY = 0;
-	viewport_.Width = static_cast<float>(WinApp::kClientWidth);
-	viewport_.Height = static_cast<float>(WinApp::kClientHeight);
+	viewport_.Width = static_cast<float>(WinApp::clientWidth);
+	viewport_.Height = static_cast<float>(WinApp::clientHeight);
 	viewport_.MinDepth = 0.0f;
 	viewport_.MaxDepth = 1.0f;
 }
@@ -454,9 +454,9 @@ void DX12Basic::InitScissorRect()
 {
 	// シザー矩形の設定
 	scissorRect_.left = 0;
-	scissorRect_.right = WinApp::kClientWidth;
+	scissorRect_.right = WinApp::clientWidth;
 	scissorRect_.top = 0;
-	scissorRect_.bottom = WinApp::kClientHeight;
+	scissorRect_.bottom = WinApp::clientHeight;
 }
 
 void DX12Basic::CreateDXCCompiler()

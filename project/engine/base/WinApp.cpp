@@ -8,6 +8,10 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 
 std::vector<IWndProcHandler*> WinApp::m_handlers_;
 
+int32_t WinApp::clientWidth = 1280;
+
+int32_t WinApp::clientHeight = 720;
+
 void WinApp::Initialize()
 {
 	// システムタイマーの分解能を上げる
@@ -30,7 +34,7 @@ void WinApp::Initialize()
 	RegisterClass(&wc_);
 
 	//ウィンドウサイズを表す構造体にクライアント領域のサイズを入れる
-	RECT wrc = { 0, 0, kClientWidth, kClientHeight };
+	RECT wrc = { 0, 0, clientWidth, clientHeight };
 
 	//ウィンドウサイズを補正してウィンドウのサイズを計算
 	AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, FALSE);

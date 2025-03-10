@@ -21,8 +21,8 @@ void Draw2D::Initialize(DX12Basic* dx12)
 
 	isDebug_ = false;
 
-	projectionMatrix_ = Mat4x4::MakeOrtho(0.0f, 0.0f, float(WinApp::kClientWidth), float(WinApp::kClientHeight), 0.0f, 1.0f);
-	viewPortMatrix_ = Mat4x4::MakeViewport(0.0f, 0.0f, float(WinApp::kClientWidth), float(WinApp::kClientHeight), 0.0f, 1.0f);
+	projectionMatrix_ = Mat4x4::MakeOrtho(0.0f, 0.0f, float(WinApp::clientWidth), float(WinApp::clientHeight), 0.0f, 1.0f);
+	viewPortMatrix_ = Mat4x4::MakeViewport(0.0f, 0.0f, float(WinApp::clientWidth), float(WinApp::clientHeight), 0.0f, 1.0f);
 
 	// パイプラインステートの生成
 	CreatePSO(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE, trianglePipelineState_, triangleRootSignature_);

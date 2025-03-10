@@ -79,6 +79,10 @@ private: // メンバ変数
   Vector3 lightDirection_ = { 0.0f, -1.0f, 0.0f };
 	float lightIntensity_ = 0.5f;
 
+  // マテリアルの設定
+  Vector4 materialColor1_ = { 1.0f, 1.0f, 1.0f, 1.0f };
+  Vector4 materialColor2_ = { 1.0f, 1.0f, 1.0f, 1.0f };
+
 	// 点光源の設定
 	PointLight pointLight_;
 	PointLight pointLight2_;

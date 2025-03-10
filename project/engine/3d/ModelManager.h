@@ -61,4 +61,5 @@ private: // メンバー変数
 
 	// モデルデータ
 	std::map<std::string, std::unique_ptr<Model>> models_;
+
 };

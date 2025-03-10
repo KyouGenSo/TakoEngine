@@ -161,7 +161,7 @@ void PostEffect::SetFogDensity(float density)
 void PostEffect::InitRenderTexture()
 {
 	// レンダーテクスチャリソースの生成
-	m_dx12_->CreateRenderTextureResource(renderTextureResourceA_, WinApp::kClientWidth, WinApp::kClientHeight, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, kRenderTextureClearColor_);
+	m_dx12_->CreateRenderTextureResource(renderTextureResourceA_, WinApp::clientWidth, WinApp::clientHeight, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, kRenderTextureClearColor_);
 	renderTextureResourceA_->SetName(L"PostEffectRenderTexture");
 
 	// RTVの設定

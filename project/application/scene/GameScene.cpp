@@ -101,6 +101,7 @@ void GameScene::Update()
 	object3d_->SetShininess(shininess_);
 	object3d_->SetEnableLighting(isLighting_);
 	object3d_->SetEnableHighlight(isHighlight_);
+  object3d_->SetMaterialColor(materialColor1_);
 
 	object3d2_->SetScale(modelScale2_);
 	object3d2_->SetTranslate(modelPos2_);
@@ -108,6 +109,7 @@ void GameScene::Update()
 	object3d2_->SetShininess(shininess_);
 	object3d2_->SetEnableLighting(isLighting_);
 	object3d2_->SetEnableHighlight(isHighlight_);
+  object3d2_->SetMaterialColor(materialColor2_);
 
 	object3d_->Update();
 	object3d2_->Update();
@@ -169,12 +171,14 @@ void GameScene::DrawImGui()
 	ImGui::DragFloat3("Scale", &modelScale_.x, 0.01f, 0.1f, 50.0f);
 	ImGui::DragFloat3("Position", &modelPos_.x, 0.01f, -50.0f, 50.0f);
 	ImGui::DragFloat3("Rotate", &modelRotate_.x, 0.01f, DirectX::XMConvertToRadians(-180.0f), DirectX::XMConvertToRadians(180.0f));
+  ImGui::ColorEdit4("MaterialColor1", &materialColor1_.x);
 	ImGui::End();
 
 	ImGui::Begin("object3d2");
 	ImGui::DragFloat3("Scale", &modelScale2_.x, 0.01f, 0.1f, 50.0f);
 	ImGui::DragFloat3("Position", &modelPos2_.x, 0.01f, -50.0f, 50.0f);
 	ImGui::DragFloat3("Rotate", &modelRotate2_.x, 0.01f, DirectX::XMConvertToRadians(-180.0f), DirectX::XMConvertToRadians(180.0f));
+  ImGui::ColorEdit4("MaterialColor2", &materialColor2_.x);
 	ImGui::End();
 
 	// Lightの設定

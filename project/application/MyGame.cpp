@@ -15,6 +15,8 @@
 void MyGame::Initialize()
 {
 
+  winApp_->SetWindowSize(720, 500);
+
 	TakoFramework::Initialize();
 
 #pragma region 汎用機能初期化-------------------------------------------------------------------------------------------------------------------
@@ -23,6 +25,8 @@ void MyGame::Initialize()
 
 	// オーディオの初期化
 	Audio::GetInstance()->Initialize("resources/Sound/");
+
+
 
 #pragma endregion
 
@@ -36,6 +40,7 @@ void MyGame::Initialize()
   //ModelManager::GetInstance()->LoadModel("AnimatedCube.gltf", true); 
   //ModelManager::GetInstance()->LoadModel("simpleSkin.gltf", true, true);
   ModelManager::GetInstance()->LoadModel("walk.gltf", true, true);
+  ModelManager::GetInstance()->LoadModel("sneakWalk.gltf", true, true);
   ModelManager::GetInstance()->LoadModel("sneakWalk.gltf", true, true);
 
   // PostEffectParamの設定

@@ -43,10 +43,15 @@ public:
   /// <param name="handler"></param>
   void SetWndProcHandler(IWndProcHandler* handler) { m_handlers_.push_back(handler); }
 
+  /// <summary>
+  /// ウィンドウのサイズを設定
+  /// </summary>
+  void SetWindowSize(int32_t width, int32_t height) { clientWidth = width; clientHeight = height; }
+
 public:
 	//クライアント領域のサイズ
-	static const int32_t kClientWidth = 1280;
-	static const int32_t kClientHeight = 720;
+  static int32_t clientWidth;
+	static int32_t clientHeight;
 
 private:
 	//ウィンドウハンドル
