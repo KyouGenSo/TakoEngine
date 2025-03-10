@@ -15,7 +15,7 @@
 void MyGame::Initialize()
 {
 
-  winApp_->SetWindowSize(720, 500);
+  winApp_->SetWindowSize(1280, 720);
 
 	TakoFramework::Initialize();
 
