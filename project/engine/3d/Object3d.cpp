@@ -89,6 +89,14 @@ void Object3d::SetModel(const std::string& fileName)
 	m_model_ = ModelManager::GetInstance()->FindModel(fileName);
 }
 
+void Object3d::SetMaterialColor(const Vector4& color)
+{
+  if (m_model_)
+  {
+    m_model_->SetMaterialColor(color);
+  }
+}
+
 void Object3d::SetShininess(float shininess)
 {
 	if (m_model_)
