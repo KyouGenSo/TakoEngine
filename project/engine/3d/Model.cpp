@@ -426,7 +426,7 @@ void Model::CreateMaterialData()
 
 void Model::CreateUAV()
 {
-  m_dx12_->CreateUAVResource(uavVertexOutputResource_, UINT(modelData_.vertices.size() * sizeof(VertexData)));
+  m_dx12_->CreateResourceForUAV(uavVertexOutputResource_, UINT(modelData_.vertices.size() * sizeof(VertexData)));
   uavIndex_ = SrvManager::GetInstance()->Allocate();
   SrvManager::GetInstance()->CreateUAV(uavIndex_, uavVertexOutputResource_.Get(), UINT(modelData_.vertices.size()), sizeof(VertexData));
 }

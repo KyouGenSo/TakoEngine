@@ -72,7 +72,7 @@ public: // メンバー関数
   /// <summary>
   /// UAVリソースの生成
   /// </summary>
-  void CreateUAVResource(ComPtr<ID3D12Resource>& uavResource, UINT sizeInBytes);
+  void CreateResourceForUAV(ComPtr<ID3D12Resource>& uavResource, UINT sizeInBytes);
 
 	/// <summary>
 	/// テクスチャリソースの生成

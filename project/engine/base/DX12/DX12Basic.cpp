@@ -636,7 +636,7 @@ void DX12Basic::CreateBufferResource(ComPtr<ID3D12Resource>& buffer, size_t size
 
 }
 
-void DX12Basic::CreateUAVResource(ComPtr<ID3D12Resource>& uavResource, UINT sizeInBytes)
+void DX12Basic::CreateResourceForUAV(ComPtr<ID3D12Resource>& uavResource, UINT sizeInBytes)
 {
   D3D12_RESOURCE_DESC bufferDesc = {};
   bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
