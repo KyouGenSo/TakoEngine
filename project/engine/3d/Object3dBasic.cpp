@@ -44,6 +44,8 @@ void Object3dBasic::Update()
 		viewProjectionMatrix_ = camera_->GetViewMatrix() * camera_->GetProjectionMatrix();
 		camera_->SetViewProjectionMatrix(viewProjectionMatrix_);
 	}
+
+  light_->Update();
 }
 
 void Object3dBasic::Finalize()

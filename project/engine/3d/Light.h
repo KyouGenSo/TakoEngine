@@ -64,6 +64,11 @@ public: // メンバ関数
 	/// </summary>
 	void Initialize(DX12Basic* dx12);
 
+  /// <summary>
+  /// 更新処理
+  /// </summary>
+  void Update();
+
 	/// <summary>
 	/// 描画設定
 	/// </summary>
@@ -79,23 +84,24 @@ public: // メンバ関数
 
 	// PointLight
 	void SetPointLight(const Vector3& position, const Vector4& color, float intensity, float radius, float decay, bool enable, int index);
-	void SetPointLightColor(const Vector4& color) { pointLightDatas_->color = color; }
-	void SetPointLightPosition(const Vector3& position) { pointLightDatas_->position = position; }
-	void SetPointLightIntensity(float intensity) { pointLightDatas_->intensity = intensity; }
-	void SetPointLightRadius(float radius) { pointLightDatas_->radius = radius; }
-	void SetPointLightDecay(float decay) { pointLightDatas_->decay = decay; }
-	void SetPointLightEnable(bool enable) { pointLightDatas_->enable = enable; }
+  void SetPointLightColor(const Vector4& color, int index) { pointLightDatas_[index].color = color; }
+  void SetPointLightPos(const Vector3& position, int index) { pointLightDatas_[index].position = position; }
+  void SetPointLightIntensity(float intensity, int index) { pointLightDatas_[index].intensity = intensity; }
+  void SetPointLightRadius(float radius, int index) { pointLightDatas_[index].radius = radius; }
+  void SetPointLightDecay(float decay, int index) { pointLightDatas_[index].decay = decay; }
+  void SetPointLightEnable(bool enable, int index) { pointLightDatas_[index].enable = enable; }
 
 	// SpotLight
 	void SetSpotLight(const Vector3& position, const Vector3& direction, const Vector4& color, float intensity, float distance, float decay, float cosAngle, bool enable, int index);
-	void SetSpotLightColor(const Vector4& color) { spotLightData_->color = color; }
-	void SetSpotLightPosition(const Vector3& position) { spotLightData_->position = position; }
-	void SetSpotLightIntensity(float intensity) { spotLightData_->intensity = intensity; }
-	void SetSpotLightDirection(const Vector3& direction) { spotLightData_->direction = direction; }
-	void SetSpotLightDistance(float distance) { spotLightData_->distance = distance; }
-	void SetSpotLightDecay(float decay) { spotLightData_->decay = decay; }
-	void SetSpotLightCosAngle(float cosAngle) { spotLightData_->cosAngle = cosAngle; }
-	void SetSpotLightEnable(bool enable) { spotLightData_->enable = enable; }
+  void SetSpotLightColor(const Vector4& color, int index) { spotLightData_[index].color = color; }
+  void SetSpotLightPos(const Vector3& position, int index) { spotLightData_[index].position = position; }
+  void SetSpotLightIntensity(float intensity, int index) { spotLightData_[index].intensity = intensity; }
+  void SetSpotLightDirection(const Vector3& direction, int index) { spotLightData_[index].direction = direction; }
+  void SetSpotLightDistance(float distance, int index) { spotLightData_[index].distance = distance; }
+  void SetSpotLightDecay(float decay, int index) { spotLightData_[index].decay = decay; }
+  void SetSpotLightCosAngle(float cosAngle, int index) { spotLightData_[index].cosAngle = cosAngle; }
+  void SetSpotLightEnable(bool enable, int index) { spotLightData_[index].enable = enable; }
+
 
 private: // プライベートメンバ関数
 	///<summary>
@@ -151,4 +157,10 @@ private: // メンバ変数
 
 	// スポットライトのsrvIndex
 	int spotLightSrvIndex_;
+
+  // pointLightのindexのリスト
+  std::vector<uint32_t> pointLightIndexList_;
+
+  // spotLightのindexのリスト
+  std::vector<uint32_t> spotLightIndexList_;
 };

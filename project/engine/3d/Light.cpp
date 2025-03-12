@@ -13,6 +13,12 @@ void Light::Initialize(DX12Basic* dx12)
 	CreateLightConstants();
 }
 
+void Light::Update()
+{
+  lightConstantsData_->numPointLights = static_cast<int>(pointLightIndexList_.size());
+  lightConstantsData_->numSpotLights = static_cast<int>(spotLightIndexList_.size());
+}
+
 void Light::PreDraw()
 {
 	// 平行光源CBufferの場所を設定
@@ -38,6 +44,18 @@ void Light::SetDirectionalLight(const Vector3& direction, const Vector4& color, 
 
 void Light::SetPointLight(const Vector3& position, const Vector4& color, float intensity, float radius, float decay, bool enable, int index)
 {
+  // indexをチェック
+  if (index >= Light::MAX_POINT_LIGHT)
+  {
+    return;
+  }
+
+  // indexの配列にこの値がないなら、新しい値を追加
+  if (pointLightIndexList_.size() <= index && index <= Light::MAX_POINT_LIGHT)
+  {
+    pointLightIndexList_.resize(index + 1);
+  }
+
 	pointLightDatas_[index].position = position;
 	pointLightDatas_[index].color = color;
 	pointLightDatas_[index].intensity = intensity;
@@ -48,6 +66,17 @@ void Light::SetPointLight(const Vector3& position, const Vector4& color, float i
 
 void Light::SetSpotLight(const Vector3& position, const Vector3& direction, const Vector4& color, float intensity, float distance, float decay, float cosAngle, bool enable, int index)
 {
+  // indexをチェック
+  if (index >= Light::MAX_SPOT_LIGHT)
+  {
+    return;
+  }
+  // indexの配列にこの値がないなら、新しい値を追加
+  if (spotLightIndexList_.size() <= index && index <= Light::MAX_SPOT_LIGHT)
+  {
+    spotLightIndexList_.resize(index + 1);
+  }
+
 	spotLightData_[index].color = color;
 	spotLightData_[index].position = position;
 	spotLightData_[index].intensity = intensity;
@@ -129,7 +158,7 @@ void Light::CreateLightConstants()
 	lightConstantsResource_->Map(0, nullptr, reinterpret_cast<void**>(&lightConstantsData_));
 
 	// ライト定数データの初期値を書き込む
-	lightConstantsData_->numPointLights = Light::MAX_POINT_LIGHT;
+	lightConstantsData_->numPointLights = 0;
 
-	lightConstantsData_->numSpotLights = Light::MAX_SPOT_LIGHT;
+	lightConstantsData_->numSpotLights = 0;
 }

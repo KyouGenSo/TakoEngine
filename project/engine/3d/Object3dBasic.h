@@ -64,23 +64,23 @@ public: // メンバー関数
 
 	// PointLight
 	void SetPointLight(const Vector3& position, const Vector4& color, float intensity, float radius, float decay, bool enable, int index);
-	void SetPointLightColor(const Vector4& color) { light_->SetPointLightColor(color); }
-	void SetPointLightPosition(const Vector3& position) { light_->SetPointLightPosition(position); }
-	void SetPointLightIntensity(float intensity) { light_->SetPointLightIntensity(intensity); }
-	void SetPointLightRadius(float radius) { light_->SetPointLightRadius(radius); }
-	void SetPointLightDecay(float decay) { light_->SetPointLightDecay(decay); }
-	void SetPointLightEnable(bool enable) { light_->SetPointLightEnable(enable); }
+  void SetPointLightColor(const Vector4& color, int index) { light_->SetPointLightColor(color, index); }
+  void SetPointLightPos(const Vector3& position, int index) { light_->SetPointLightPos(position, index); }
+  void SetPointLightIntensity(float intensity, int index) { light_->SetPointLightIntensity(intensity, index); }
+  void SetPointLightRadius(float radius, int index) { light_->SetPointLightRadius(radius, index); }
+  void SetPointLightDecay(float decay, int index) { light_->SetPointLightDecay(decay, index); }
+  void SetPointLightEnable(bool enable, int index) { light_->SetPointLightEnable(enable, index); }
+
 
 	// SpotLight
 	void SetSpotLight(const Vector3& position, const Vector3& direction, const Vector4& color, float intensity, float distance, float decay, float cosAngle, bool enable, int index);
-	void SetSpotLightColor(const Vector4& color) { light_->SetSpotLightColor(color); }
-	void SetSpotLightPosition(const Vector3& position) { light_->SetSpotLightPosition(position); }
-	void SetSpotLightIntensity(float intensity) { light_->SetSpotLightIntensity(intensity); }
-	void SetSpotLightDirection(const Vector3& direction) { light_->SetSpotLightDirection(direction); }
-	void SetSpotLightDistance(float distance) { light_->SetSpotLightDistance(distance); }
-	void SetSpotLightDecay(float decay) { light_->SetSpotLightDecay(decay); }
-	void SetSpotLightCosAngle(float cosAngle) { light_->SetSpotLightCosAngle(cosAngle); }
-	void SetSpotLightEnable(bool enable) { light_->SetSpotLightEnable(enable); }
+  void SetSpotLightColor(const Vector4& color, int index) { light_->SetSpotLightColor(color, index); }
+  void SetSpotLightPos(const Vector3& position, int index) { light_->SetSpotLightPos(position, index); }
+  void SetSpotLightIntensity(float intensity, int index) { light_->SetSpotLightIntensity(intensity, index); }
+  void SetSpotLightDistance(float distance, int index) { light_->SetSpotLightDistance(distance, index); }
+  void SetSpotLightDecay(float decay, int index) { light_->SetSpotLightDecay(decay, index); }
+  void SetSpotLightCosAngle(float cosAngle, int index) { light_->SetSpotLightCosAngle(cosAngle, index); }
+  void SetSpotLightEnable(bool enable, int index) { light_->SetSpotLightEnable(enable, index); }
 
 private: // プライベートメンバー関数
 
