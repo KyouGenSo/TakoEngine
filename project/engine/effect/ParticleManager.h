@@ -46,13 +46,15 @@ public: // 構造体
     };
 
     // マテリアルデータ
-    struct MaterialData {
+    struct MaterialData
+    {
         std::string texturePath;
         uint32_t textureIndex;
     };
 
     // モデルデータ
-    struct ModelData {
+    struct ModelData
+    {
         std::vector<VertexData> vertices;
         MaterialData material;
     };
@@ -65,7 +67,8 @@ public: // 構造体
     };
 
     //Particle構造体
-    struct Particle {
+    struct Particle
+    {
         Transform transform;
         Vector3 velocity;
         Vector4 color;
@@ -73,8 +76,20 @@ public: // 構造体
         float currentTime;
     };
 
+    // CS用のパーティクルデータ
+    struct ParticleCS
+    {
+      Vector3 translate;
+      Vector3 scale;
+      Vector3 velocity;
+      Vector4 color;
+      float lifeTime;
+      float currentTime;
+    };
+
     // パーティクルグループ構造体
-    struct ParticleGroup {
+    struct ParticleGroup
+    {
         // texture
         MaterialData texture;
         // パーティクルのリスト
@@ -90,7 +105,8 @@ public: // 構造体
     };
 
     // エミッター構造体
-    struct Emitter {
+    struct Emitter
+    {
         Transform transform;
         uint32_t count;
         float frequency;
@@ -152,14 +168,24 @@ public: // メンバー関数
 private: // プライベートメンバー関数
 
     ///<summary>
-    ///ルートシグネチャの作成
+    /// ルートシグネチャの作成
     /// 	/// </summary>
     void CreateRootSignature();
 
     ///<summary>
-    ///パイプラインステートの生成
+    /// パイプラインステートの生成
     /// </summary>
     void CreatePSO();
+
+    ///<summary>
+    /// CSルートシグネチャの作成
+    /// 	/// </summary>
+    void CreateRootSignatureForCS();
+
+    ///<summary>
+    /// CSパイプラインステートの生成
+    /// </summary>
+    void CreatePSOForCS();
 
     /// <summary>
     /// 頂点データの生成
@@ -170,6 +196,11 @@ private: // プライベートメンバー関数
     /// マテリアルデータの初期化
     /// </summary>
     void CreateMaterialData();
+
+    /// <summary>
+    /// CSパーティクルリソースの生成
+    /// </summary>
+    void CreateParticleResourceForCS();
 
     /// <summary>
     /// パーティクル生成
@@ -205,13 +236,19 @@ private: // メンバー変数
 
     // ルートシグネチャ
     Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;
+    Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignatureCS_;
 
     // パイプラインステート
     Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineStateCS_;
 
     // ランダムエンジン
     std::random_device seedGenerator;
     std::mt19937 randomEngine_;
+
+    // CS用のパーティクルリソース
+    Microsoft::WRL::ComPtr<ID3D12Resource> particleResource_;
+    uint32_t particleCSUavIndex_;
 
     // 頂点バッファ
     Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource_;

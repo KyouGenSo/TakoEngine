@@ -478,3 +478,14 @@ void ParticleManager::CreateMaterialData()
 	materialData_->color = { 1.0f, 1.0f, 1.0f, 1.0f };
 	materialData_->uvTransform = Mat4x4::MakeIdentity();
 }
+
+void ParticleManager::CreateParticleResourceForCS()
+{
+  // ParticleCSのリソースを生成
+  m_dx12_->CreateResourceForUAV(particleResource_, sizeof(ParticleCS) * kNumMaxInstance_);
+
+  // ParticleCSのUAVを生成
+  particleCSUavIndex_ = srvManager_->Allocate();
+  srvManager_->CreateUAV(particleCSUavIndex_, particleResource_.Get(), kNumMaxInstance_, sizeof(ParticleCS));
+
+}
