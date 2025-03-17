@@ -358,7 +358,7 @@ void ParticleManager::CreatePSO()
 	CreateRootSignature();
 
 	// InputLayout
-	D3D12_INPUT_ELEMENT_DESC inputElementDescs[4] = {};
+	D3D12_INPUT_ELEMENT_DESC inputElementDescs[3] = {};
 	inputElementDescs[0].SemanticName = "POSITION";
 	inputElementDescs[0].SemanticIndex = 0;
 	inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
@@ -369,15 +369,10 @@ void ParticleManager::CreatePSO()
 	inputElementDescs[1].Format = DXGI_FORMAT_R32G32_FLOAT;
 	inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
-	inputElementDescs[2].SemanticName = "NORMAL";
+	inputElementDescs[2].SemanticName = "COLOR";
 	inputElementDescs[2].SemanticIndex = 0;
-	inputElementDescs[2].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	inputElementDescs[2].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	inputElementDescs[2].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-
-	inputElementDescs[3].SemanticName = "COLOR";
-	inputElementDescs[3].SemanticIndex = 0;
-	inputElementDescs[3].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	inputElementDescs[3].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
 	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
 	inputLayoutDesc.pInputElementDescs = inputElementDescs;
@@ -469,7 +464,7 @@ void ParticleManager::CreateVertexData()
 void ParticleManager::CreateMaterialData()
 {
 	// マテリアルリソース生成
-	materialResource_ = m_dx12_->MakeBufferResource(sizeof(Material));
+	materialResource_ = m_dx12_->MakeBufferResource(sizeof(ParticleMaterial));
 
 	// マテリアルリソースをマップ
 	materialResource_->Map(0, nullptr, reinterpret_cast<void**>(&materialData_));

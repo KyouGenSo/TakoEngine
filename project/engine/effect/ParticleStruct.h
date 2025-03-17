@@ -14,6 +14,13 @@
 #include "AABB.h"
 #include "ModelStruct.h"
 
+// マテリアル
+struct ParticleMaterial
+{
+  Vector4 color;
+  Matrix4x4 uvTransform;
+};
+
 // GPU用のParticleデータ
 struct ParticleDataForGPU
 {

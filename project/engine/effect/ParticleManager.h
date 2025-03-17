@@ -165,5 +165,5 @@ private: // メンバー変数
   VertexData* vertexData_;
 
   // マテリアルデータ
-  Material* materialData_;
+  ParticleMaterial* materialData_;
 };
