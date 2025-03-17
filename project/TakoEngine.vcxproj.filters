@@ -141,6 +141,9 @@
     <ClCompile Include="engine\io\GlobalVariables.cpp">
       <Filter>io</Filter>
     </ClCompile>
+    <ClCompile Include="engine\effect\GPUParticle.cpp">
+      <Filter>effect</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\math\Matrix4x4.h">
@@ -277,6 +280,12 @@
     </ClInclude>
     <ClInclude Include="engine\time\FrameTimer.h">
       <Filter>time</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\ParticleStruct.h">
+      <Filter>effect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\GPUParticle.h">
+      <Filter>effect</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

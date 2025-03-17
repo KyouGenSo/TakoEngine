@@ -35,6 +35,9 @@ void MyGame::Initialize()
 	SceneManager::GetInstance()->SetSceneFactory(sceneFactory_);
 	SceneManager::GetInstance()->ChangeScene("game", 0.0f);
 
+  TextureManager::GetInstance()->LoadTexture("white.png");
+  TextureManager::GetInstance()->LoadTexture("circle.png");
+
   ModelManager::GetInstance()->LoadModel("terrain.obj");
   //ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
   //ModelManager::GetInstance()->LoadModel("AnimatedCube.gltf", true); 

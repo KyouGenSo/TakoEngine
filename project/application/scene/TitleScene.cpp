@@ -36,8 +36,7 @@ void TitleScene::Initialize()
 
 void TitleScene::InitParticle()
 {
-  TextureManager::GetInstance()->LoadTexture("white.png");
-  TextureManager::GetInstance()->LoadTexture("circle.png");
+
   ParticleManager::GetInstance()->CreateParticleGroup("white", "white.png");
   ParticleManager::GetInstance()->CreateParticleGroup("circle", "circle.png");
 

@@ -81,7 +81,7 @@ private: // プライベートメンバー関数
   /// <summary>
   /// skinning用UAVの生成
   /// </summary>
-  void CreateUAV();
+  void CreateSkinningUAV();
 
   /// <summary>
   /// skinningInfoResourceの生成
@@ -143,7 +143,7 @@ private: // メンバ変数
 	std::string ModelFolderName_;
 
 	// モデルデータ
-	ModelData modelData_;
+	SkinnigModelData modelData_;
 
 	// アニメーションデータ
 	Animation animationData_;

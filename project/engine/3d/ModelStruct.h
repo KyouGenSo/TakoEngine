@@ -31,7 +31,7 @@ struct VertexData
 };
 
 // マテリアルデータ
-struct MaterialData {
+struct TextureData {
     std::string texturePath;
     uint32_t textureIndex;
 };
@@ -48,12 +48,20 @@ struct JointWeightData
   std::vector<VertexWeightData> vertexWeights;
 };
 
+
 // モデルデータ
-struct ModelData {
+struct ModelData
+{
+  std::vector<VertexData> vertices;
+  TextureData textureData;
+};
+
+// モデルデータ
+struct SkinnigModelData {
   std::map<std::string, JointWeightData> skinClusterData;
   std::vector<VertexData> vertices;
 	std::vector<uint32_t> indices;
-  MaterialData material;
+  TextureData textureData;
   Node rootNode;
 };
 

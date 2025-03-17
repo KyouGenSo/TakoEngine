@@ -119,6 +119,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="engine\effect\GPUParticle.cpp" />
     <ClCompile Include="engine\2d\DebugCamera.cpp" />
     <ClCompile Include="engine\2d\Draw2D.cpp" />
     <ClCompile Include="engine\audio\Audio.cpp" />
@@ -153,6 +154,7 @@
     <ClCompile Include="engine\effect\ParticleEmitter.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\effect\GPUParticle.h" />
     <ClInclude Include="engine\audio\miniaudio.h" />
     <ClInclude Include="engine\io\GlobalVariables.h" />
     <ClInclude Include="engine\math\AABB.h" />
@@ -198,6 +200,7 @@
     <ClInclude Include="engine\effect\ParticleEmitter.h" />
     <ClInclude Include="engine\time\FrameTimer.h" />
     <ClInclude Include="engine\base\IWndProcHandler.h" />
+    <ClInclude Include="engine\effect\ParticleStruct.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">

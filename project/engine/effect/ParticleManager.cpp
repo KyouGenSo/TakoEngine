@@ -228,7 +228,7 @@ void ParticleManager::Emit(const std::string name, const Vector3& position, cons
 	//}
 }
 
-ParticleManager::Particle ParticleManager::MakeNewParticle(std::mt19937& randomEngine, const Vector3& translate, const Vector3& scale, const Vector3& velocity, const AABB& range, const Vector4& color, const float lifeTime, bool isRandomColor)
+Particle ParticleManager::MakeNewParticle(std::mt19937& randomEngine, const Vector3& translate, const Vector3& scale, const Vector3& velocity, const AABB& range, const Vector4& color, const float lifeTime, bool isRandomColor)
 {
 	std::uniform_real_distribution<float> random(-1.0f, 1.0f);
 	std::uniform_real_distribution<float> randomX(range.min.x, range.max.x);
@@ -479,13 +479,13 @@ void ParticleManager::CreateMaterialData()
 	materialData_->uvTransform = Mat4x4::MakeIdentity();
 }
 
-void ParticleManager::CreateParticleResourceForCS()
-{
-  // ParticleCSのリソースを生成
-  m_dx12_->CreateResourceForUAV(particleResource_, sizeof(ParticleCS) * kNumMaxInstance_);
-
-  // ParticleCSのUAVを生成
-  particleCSUavIndex_ = srvManager_->Allocate();
-  srvManager_->CreateUAV(particleCSUavIndex_, particleResource_.Get(), kNumMaxInstance_, sizeof(ParticleCS));
-
-}
+//void ParticleManager::CreateParticleResourceForCS()
+//{
+//  // ParticleCSのリソースを生成
+//  m_dx12_->CreateResourceForUAV(particleResource_, sizeof(ParticleCS) * kNumMaxInstance_);
+//
+//  // ParticleCSのUAVを生成
+//  particleCSUavIndex_ = srvManager_->Allocate();
+//  srvManager_->CreateUAV(particleCSUavIndex_, particleResource_.Get(), kNumMaxInstance_, sizeof(ParticleCS));
+//
+//}

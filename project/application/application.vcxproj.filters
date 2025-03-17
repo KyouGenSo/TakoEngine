@@ -12,19 +12,31 @@
     <Filter Include="Shader">
       <UniqueIdentifier>{64167f85-a8cd-4567-90a7-df2d0873a9cc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shader\2d">
+      <UniqueIdentifier>{16b7213b-4241-449e-9d1a-eb0e9a6ff2e1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shader\3d">
+      <UniqueIdentifier>{509cd823-b63f-4fde-88cd-4de4d786dd5d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shader\PostEffect">
+      <UniqueIdentifier>{43fc11b1-2926-41f8-8a3c-aa3cd274a5d2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shader\Particle">
+      <UniqueIdentifier>{496a4138-bfff-47ec-93ef-b4bb85e62bea}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MyGame.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="scene\GameScene.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
     <ClCompile Include="scene\SceneFactory.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="scene\TitleScene.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="scene\GameScene.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
@@ -43,85 +55,91 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="resources\shaders\2D.PS.hlsl">
-      <Filter>Shader</Filter>
-    </FxCompile>
     <FxCompile Include="resources\shaders\2D.VS.hlsl">
-      <Filter>Shader</Filter>
+      <Filter>Shader\2d</Filter>
     </FxCompile>
-    <FxCompile Include="resources\shaders\Bloom.PS.hlsl">
-      <Filter>Shader</Filter>
-    </FxCompile>
-    <FxCompile Include="resources\shaders\BloomFog.PS.hlsl">
-      <Filter>Shader</Filter>
-    </FxCompile>
-    <FxCompile Include="resources\shaders\FullScreen.VS.hlsl">
-      <Filter>Shader</Filter>
-    </FxCompile>
-    <FxCompile Include="resources\shaders\GrayScale.PS.hlsl">
-      <Filter>Shader</Filter>
-    </FxCompile>
-    <FxCompile Include="resources\shaders\NoEffect.PS.hlsl">
-      <Filter>Shader</Filter>
-    </FxCompile>
-    <FxCompile Include="resources\shaders\NoTex.PS.hlsl">
-      <Filter>Shader</Filter>
-    </FxCompile>
-    <FxCompile Include="resources\shaders\NoTex.VS.hlsl">
-      <Filter>Shader</Filter>
-    </FxCompile>
-    <FxCompile Include="resources\shaders\Object3d.PS.hlsl">
-      <Filter>Shader</Filter>
-    </FxCompile>
-    <FxCompile Include="resources\shaders\Object3D.VS.hlsl">
-      <Filter>Shader</Filter>
-    </FxCompile>
-    <FxCompile Include="resources\shaders\Particle.PS.hlsl">
-      <Filter>Shader</Filter>
-    </FxCompile>
-    <FxCompile Include="resources\shaders\Particle.VS.hlsl">
-      <Filter>Shader</Filter>
-    </FxCompile>
-    <FxCompile Include="resources\shaders\SkinningObject3d.VS.hlsl">
-      <Filter>Shader</Filter>
+    <FxCompile Include="resources\shaders\2D.PS.hlsl">
+      <Filter>Shader\2d</Filter>
     </FxCompile>
     <FxCompile Include="resources\shaders\Sprite.PS.hlsl">
-      <Filter>Shader</Filter>
+      <Filter>Shader\2d</Filter>
     </FxCompile>
     <FxCompile Include="resources\shaders\Sprite.VS.hlsl">
-      <Filter>Shader</Filter>
+      <Filter>Shader\2d</Filter>
+    </FxCompile>
+    <FxCompile Include="resources\shaders\Object3d.PS.hlsl">
+      <Filter>Shader\3d</Filter>
+    </FxCompile>
+    <FxCompile Include="resources\shaders\Object3D.VS.hlsl">
+      <Filter>Shader\3d</Filter>
+    </FxCompile>
+    <FxCompile Include="resources\shaders\NoTex.PS.hlsl">
+      <Filter>Shader\3d</Filter>
+    </FxCompile>
+    <FxCompile Include="resources\shaders\NoTex.VS.hlsl">
+      <Filter>Shader\3d</Filter>
+    </FxCompile>
+    <FxCompile Include="resources\shaders\Bloom.PS.hlsl">
+      <Filter>Shader\PostEffect</Filter>
+    </FxCompile>
+    <FxCompile Include="resources\shaders\BloomFog.PS.hlsl">
+      <Filter>Shader\PostEffect</Filter>
+    </FxCompile>
+    <FxCompile Include="resources\shaders\FullScreen.VS.hlsl">
+      <Filter>Shader\PostEffect</Filter>
+    </FxCompile>
+    <FxCompile Include="resources\shaders\GrayScale.PS.hlsl">
+      <Filter>Shader\PostEffect</Filter>
+    </FxCompile>
+    <FxCompile Include="resources\shaders\NoEffect.PS.hlsl">
+      <Filter>Shader\PostEffect</Filter>
     </FxCompile>
     <FxCompile Include="resources\shaders\Vignette.PS.hlsl">
-      <Filter>Shader</Filter>
+      <Filter>Shader\PostEffect</Filter>
     </FxCompile>
     <FxCompile Include="resources\shaders\VignetteRed.PS.hlsl">
-      <Filter>Shader</Filter>
+      <Filter>Shader\PostEffect</Filter>
     </FxCompile>
     <FxCompile Include="resources\shaders\VignetteRedBloom.PS.hlsl">
-      <Filter>Shader</Filter>
+      <Filter>Shader\PostEffect</Filter>
     </FxCompile>
     <FxCompile Include="resources\shaders\VigRedGrayScale.PS.hlsl">
-      <Filter>Shader</Filter>
+      <Filter>Shader\PostEffect</Filter>
     </FxCompile>
     <FxCompile Include="resources\shaders\Skinning.CS.hlsl">
-      <Filter>Shader</Filter>
+      <Filter>Shader\3d</Filter>
+    </FxCompile>
+    <FxCompile Include="resources\shaders\SkinningObject3d.VS.hlsl">
+      <Filter>Shader\3d</Filter>
+    </FxCompile>
+    <FxCompile Include="resources\shaders\InitParicle.CS.hlsl">
+      <Filter>Shader\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="resources\shaders\Particle.PS.hlsl">
+      <Filter>Shader\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="resources\shaders\Particle.VS.hlsl">
+      <Filter>Shader\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="resources\shaders\GPUParticle.VS.hlsl">
+      <Filter>Shader\Particle</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="resources\shaders\FullScreen.hlsli">
-      <Filter>Shader</Filter>
-    </None>
-    <None Include="resources\shaders\NoTex.hlsli">
-      <Filter>Shader</Filter>
-    </None>
     <None Include="resources\shaders\Object3d.hlsli">
-      <Filter>Shader</Filter>
-    </None>
-    <None Include="resources\shaders\Particle.hlsli">
-      <Filter>Shader</Filter>
+      <Filter>Shader\3d</Filter>
     </None>
     <None Include="resources\shaders\Sprite.hlsli">
-      <Filter>Shader</Filter>
+      <Filter>Shader\2d</Filter>
+    </None>
+    <None Include="resources\shaders\NoTex.hlsli">
+      <Filter>Shader\3d</Filter>
+    </None>
+    <None Include="resources\shaders\FullScreen.hlsli">
+      <Filter>Shader\PostEffect</Filter>
+    </None>
+    <None Include="resources\shaders\Particle.hlsli">
+      <Filter>Shader\Particle</Filter>
     </None>
   </ItemGroup>
 </Project>

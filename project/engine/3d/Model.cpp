@@ -46,7 +46,7 @@ void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool
     CreateSkinningInfoResource();
 
     // UAVの生成
-    CreateUAV();
+    CreateSkinningUAV();
 	}
 
 	// 頂点データの生成
@@ -62,10 +62,10 @@ void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool
 	CreateMaterialData();
 
 	// テクスチャの読み込み
-	TextureManager::GetInstance()->LoadTexture(modelData_.material.texturePath);
+	TextureManager::GetInstance()->LoadTexture(modelData_.textureData.texturePath);
 
 	// テクスチャインデックスを保存
-	modelData_.material.textureIndex = TextureManager::GetInstance()->GetSRVIndex(modelData_.material.texturePath);
+	modelData_.textureData.textureIndex = TextureManager::GetInstance()->GetSRVIndex(modelData_.textureData.texturePath);
 }
 
 void Model::Update()
@@ -126,7 +126,7 @@ void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
   m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource_->GetGPUVirtualAddress());
 
 	// SRVのDescriptorTableを設定,テクスチャを指定
-	SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, modelData_.material.textureIndex);
+	SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, modelData_.textureData.textureIndex);
 
 	// 描画
   m_dx12_->GetCommandList()->DrawIndexedInstanced(UINT(modelData_.indices.size()), 1, 0, 0, 0);
@@ -206,7 +206,7 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
 		{
 			aiString texturePath;
 			material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath);
-			modelData_.material.texturePath = texturePath.C_Str();
+			modelData_.textureData.texturePath = texturePath.C_Str();
 		}
 	}
 
@@ -424,7 +424,7 @@ void Model::CreateMaterialData()
 	materialData_->shininess = 15.0f;
 }
 
-void Model::CreateUAV()
+void Model::CreateSkinningUAV()
 {
   m_dx12_->CreateResourceForUAV(uavVertexOutputResource_, UINT(modelData_.vertices.size() * sizeof(VertexData)));
   uavIndex_ = SrvManager::GetInstance()->Allocate();
