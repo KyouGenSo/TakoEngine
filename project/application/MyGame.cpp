@@ -11,6 +11,7 @@
 #include "FrameTimer.h"
 #include "GlobalVariables.h"
 #include "ModelManager.h"
+#include "GPUParticle.h"
 
 void MyGame::Initialize()
 {
@@ -46,6 +47,9 @@ void MyGame::Initialize()
   ModelManager::GetInstance()->LoadModel("sneakWalk.gltf", true, true);
   ModelManager::GetInstance()->LoadModel("sneakWalk.gltf", true, true);
 
+  // GPUパーティクルの初期化
+  GPUParticle::GetInstance()->Initialize(dx12_, defaultCamera_);
+
   // PostEffectParamの設定
   postEffectParam.vignettePower = 0.f;
   postEffectParam.vignetteRange = 20.0f;
@@ -66,6 +70,9 @@ void MyGame::Finalize()
 
 	// 入力クラスの解放
 	Input::GetInstance()->Finalize();
+
+  // GPUパーティクルの解放
+  GPUParticle::GetInstance()->Finalize();
 }
 
 void MyGame::Update()
@@ -75,6 +82,9 @@ void MyGame::Update()
 
 	// 入力情報の更新
 	Input::GetInstance()->Update();
+
+  // GPUパーティクルの更新
+  GPUParticle::GetInstance()->Update();
 
 	TakoFramework::Update();
 
@@ -99,6 +109,9 @@ void MyGame::Draw()
 
 	// シーンの描画
 	SceneManager::GetInstance()->Draw();
+
+  // GPUパーティクルの描画
+  GPUParticle::GetInstance()->Draw();
 
 	ParticleManager::GetInstance()->Draw();
 

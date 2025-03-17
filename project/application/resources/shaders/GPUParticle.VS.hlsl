@@ -16,14 +16,13 @@ struct PerView
     float4x4 billboardMat;
 };
 
-StructuredBuffer<Particle> gParticles : register(t1);
+StructuredBuffer<Particle> gParticles : register(t0);
 ConstantBuffer<PerView> gPerView : register(b0);
 
 struct VertexShaderInput
 {
     float4 pos : POSITION;
     float2 texcoord : TEXCOORD0;
-    float3 normal : NORMAL0;
 };
 
 VertexShaderOutput main(VertexShaderInput input, uint instanceID : SV_InstanceID)

@@ -4,7 +4,6 @@
 #include "SrvManager.h"
 #include "ParticleStruct.h"
 
-
 class DX12Basic;
 class Camera;
 
@@ -61,12 +60,12 @@ private: // プライベートメンバー関数
   ///<summary>
   /// ルートシグネチャの作成
   /// 	/// </summary>
-  void CreateInitRS();
+  void CreateInitComputeRS();
 
   ///<summary>
   /// パイプラインステートの生成
   /// </summary>
-  void CreateInitPSO();
+  void CreateInitComputePSO();
 
   /// <summary>
   /// 頂点データの生成
@@ -74,9 +73,9 @@ private: // プライベートメンバー関数
   void CreateVertexData();
 
   /// <summary>
-  /// マテリアルデータの初期化
+  /// PerViewデータの生成
   /// </summary>
-  void CreateMaterialData();
+  void CreatePerViewData();
 
   /// <summary>
   /// CSパーティクルリソースの生成
@@ -104,21 +103,22 @@ private: //メンバー変数
 
   // ルートシグネチャ
   Microsoft::WRL::ComPtr<ID3D12RootSignature> RS_;
-  Microsoft::WRL::ComPtr<ID3D12RootSignature> initCSRS_;
+  Microsoft::WRL::ComPtr<ID3D12RootSignature> initComputeRS_;
 
   // パイプラインステート
   Microsoft::WRL::ComPtr<ID3D12PipelineState> PSO_;
-  Microsoft::WRL::ComPtr<ID3D12PipelineState> initCSPSO_;
+  Microsoft::WRL::ComPtr<ID3D12PipelineState> initComputePSO_;
 
   // CS用のパーティクルリソース
   Microsoft::WRL::ComPtr<ID3D12Resource> particleResourceForCS_;
   uint32_t initParticleCSUavIndex_;
   uint32_t initParticleCSSrvIndex_;
 
+  // PerViewの定数バッファ
+  Microsoft::WRL::ComPtr<ID3D12Resource> perViewResource_;
+
   // 頂点バッファ
   Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource_;
-  // マテリアルデータリソース
-  Microsoft::WRL::ComPtr<ID3D12Resource> materialResource_;
 
   // 頂点バッファビュー
   D3D12_VERTEX_BUFFER_VIEW vertexBufferView_;
@@ -126,8 +126,8 @@ private: //メンバー変数
   // 頂点データ
   VertexData* vertexData_;
 
-  // マテリアルデータ
-  Material* material_;
+  // PerViewのデータ
+  PerView* perViewData_;
 
 };
 
