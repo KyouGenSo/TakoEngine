@@ -27,7 +27,7 @@ void TakoFramework::Initialize()
 
 #ifdef _DEBUG
 	imguiManager_ = new ImGuiManager();
-	imguiManager_->Initialize(winApp_, dx12_);
+  imguiManager_->Initialize(winApp_, dx12_, true);
 #endif
 
 	SrvManager::GetInstance()->Initialize(dx12_);
