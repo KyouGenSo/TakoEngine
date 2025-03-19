@@ -124,6 +124,12 @@
     <FxCompile Include="resources\shaders\GPUParticle.VS.hlsl">
       <Filter>Shader\Particle</Filter>
     </FxCompile>
+    <FxCompile Include="resources\shaders\GPUParticle.PS.hlsl">
+      <Filter>Shader\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="resources\shaders\EmitParticle.CS.hlsl">
+      <Filter>Shader\Particle</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\Object3d.hlsli">

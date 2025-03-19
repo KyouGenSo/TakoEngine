@@ -1,5 +1,6 @@
 #pragma once
 #include <random>
+#include <string>
 
 #include "SrvManager.h"
 #include "ParticleStruct.h"
@@ -44,8 +45,29 @@ public: // メンバー関数
   /// </summary>
   void Finalize();
 
+  //-------------------------Getter-------------------------//
+  bool GetIsDebug() const { return isDebug_; }
+
+  //-------------------------Setter-------------------------//
+  void SetCamera(Camera* camera) { m_camera_ = camera; }
+  void SetIsDebug(bool isDebug) { isDebug_ = isDebug; }
 
 private: // プライベートメンバー関数
+
+  /// <summary>
+  ///　emitterの更新
+  /// </summary>
+  void UpdateEmitter();
+
+  /// <summary>
+  /// PerViewの更新
+  /// </summary>
+  void UpdatePerView();
+
+  /// <summary>
+  /// PerFrameの更新
+  /// </summary>
+  void UpdatePerFrame();
 
   ///<summary>
   /// ルートシグネチャの作成
@@ -58,14 +80,19 @@ private: // プライベートメンバー関数
   void CreatePSO();
 
   ///<summary>
-  /// ルートシグネチャの作成
-  /// 	/// </summary>
+  /// InitCSルートシグネチャの作成
+  ///</summary>
   void CreateInitComputeRS();
+
+  ///<summary>
+  /// EmitParticleCSルートシグネチャの作成
+  ///</summary>
+  void CreateEmitParticleComputeRS();
 
   ///<summary>
   /// パイプラインステートの生成
   /// </summary>
-  void CreateInitComputePSO();
+  void CreateComputeShaderPSO(Microsoft::WRL::ComPtr<ID3D12RootSignature>& RS, Microsoft::WRL::ComPtr<ID3D12PipelineState>& PSO, const std::wstring& shaderName);
 
   /// <summary>
   /// 頂点データの生成
@@ -78,16 +105,37 @@ private: // プライベートメンバー関数
   void CreatePerViewData();
 
   /// <summary>
+  /// PerFrameデータの生成
+  /// </summary>
+  void CreatePerFrameData();
+
+  /// <summary>
+  /// EmitterSphereデータの生成
+  /// </summary>
+  void CreateEmitterSphereData();
+
+  /// <summary>
   /// CSパーティクルリソースの生成
   /// </summary>
-  void CreateParticleResourceForCS();
+  void CreateParticleResource();
+
+  /// <summary>
+  /// FreeCounterリソースの生成
+  /// </summary>
+  void CreateFreeCounterResource();
 
 private: //メンバー変数
 
   // パーティクルの最大出力数
-  const uint32_t kNumMaxInstance_ = 1024;
+  static const uint32_t kNumMaxInstance_;
 
-  bool isDebug_ = false;
+  // emitterの最大数
+  static const uint32_t kNumMaxEmitter_;
+
+
+  bool isInited_;
+
+  bool isDebug_;
 
   // DX12Basic
   DX12Basic* m_dx12_ = nullptr;
@@ -104,30 +152,39 @@ private: //メンバー変数
   // ルートシグネチャ
   Microsoft::WRL::ComPtr<ID3D12RootSignature> RS_;
   Microsoft::WRL::ComPtr<ID3D12RootSignature> initComputeRS_;
+  Microsoft::WRL::ComPtr<ID3D12RootSignature> emitParticleRS_;
 
   // パイプラインステート
   Microsoft::WRL::ComPtr<ID3D12PipelineState> PSO_;
   Microsoft::WRL::ComPtr<ID3D12PipelineState> initComputePSO_;
+  Microsoft::WRL::ComPtr<ID3D12PipelineState> emitParticlePSO_;
 
-  // CS用のパーティクルリソース
-  Microsoft::WRL::ComPtr<ID3D12Resource> particleResourceForCS_;
-  uint32_t initParticleCSUavIndex_;
-  uint32_t initParticleCSSrvIndex_;
+  // パーティクルリソース
+  Microsoft::WRL::ComPtr<ID3D12Resource> particleResource_;
+  uint32_t particleUavIndex_;
+  uint32_t particleSrvIndex_;
 
   // PerViewの定数バッファ
   Microsoft::WRL::ComPtr<ID3D12Resource> perViewResource_;
+  PerView* perViewData_;
+
+  // EmitterSphereの定数バッファ
+  Microsoft::WRL::ComPtr<ID3D12Resource> emitterSphereResource_;
+  EmitterSphere* emitterSphereData_;
+
+  // PerFrameの定数バッファ
+  Microsoft::WRL::ComPtr<ID3D12Resource> perFrameResource_;
+  PerFrame* perFrameData_;
+
+  // FreeCounterリソース
+  Microsoft::WRL::ComPtr<ID3D12Resource> freeCounterResource_;
+  uint32_t freeCounterUavIndex_;
 
   // 頂点バッファ
   Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource_;
+  VertexData* vertexData_;
 
   // 頂点バッファビュー
   D3D12_VERTEX_BUFFER_VIEW vertexBufferView_;
-
-  // 頂点データ
-  VertexData* vertexData_;
-
-  // PerViewのデータ
-  PerView* perViewData_;
-
 };
 

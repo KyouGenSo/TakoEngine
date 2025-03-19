@@ -7,9 +7,8 @@
 #include "ParticleManager.h"
 #include "Input.h"
 #include "Draw2D.h"
-#include "Camera.h"
-#include "Audio.h"
 #include "GlobalVariables.h"
+#include "GPUParticle.h"
 
 #ifdef _DEBUG
 #include"ImGui.h"
@@ -23,6 +22,7 @@ void TitleScene::Initialize()
   Object3dBasic::GetInstance()->SetDebug(false);
   Draw2D::GetInstance()->SetDebug(false);
   ParticleManager::GetInstance()->SetIsDebug(false);
+  GPUParticle::GetInstance()->SetIsDebug(false);
 #endif
 
 	/// ================================== ///
@@ -121,6 +121,7 @@ void TitleScene::Update()
 		Object3dBasic::GetInstance()->SetDebug(!Object3dBasic::GetInstance()->GetDebug());
 		Draw2D::GetInstance()->SetDebug(!Draw2D::GetInstance()->GetDebug());
 		ParticleManager::GetInstance()->SetIsDebug(!ParticleManager::GetInstance()->GetIsDebug());
+    GPUParticle::GetInstance()->SetIsDebug(!GPUParticle::GetInstance()->GetIsDebug());
 		isDebug_ = !isDebug_;
 	}
 

@@ -42,23 +42,24 @@ void TakoFramework::Initialize()
 
 	Transition::GetInstance()->Initialize();
 
-	DebugCamera::GetInstance()->Initialize();
+  DebugCamera::GetInstance()->Initialize();
 
+  FrameTimer::GetInstance()->Initialize();
+
+  // デフォルトカメラを生成
 	defaultCamera_ = new Camera();
 	defaultCamera_->SetRotate(Vector3(0.2f, 0.0f, 0.0f));
 	defaultCamera_->SetTranslate(Vector3(0.0f, 9.0f, -34.0f));
 
 	// デフォルトカメラを設定
 	Object3dBasic::GetInstance()->SetCamera(defaultCamera_);
-	Draw2D::GetInstance()->SetCamera(defaultCamera_);
 
-	Draw2D::GetInstance()->Initialize(dx12_);
-
-	PostEffect::GetInstance()->Initialize(dx12_);
+  Draw2D::GetInstance()->SetCamera(defaultCamera_);
+  Draw2D::GetInstance()->Initialize(dx12_);
 
 	ParticleManager::GetInstance()->Initialize(dx12_, defaultCamera_);
 
-  FrameTimer::GetInstance()->Initialize();
+  PostEffect::GetInstance()->Initialize(dx12_);
 
 #pragma endregion
 

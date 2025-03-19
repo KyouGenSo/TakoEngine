@@ -1,16 +1,18 @@
 #include "GameScene.h"
-#include "SceneManager.h"
-#include "Audio.h"
 #include "ModelManager.h"
 #include "Object3dBasic.h"
 #include "TextureManager.h"
 #include "SpriteBasic.h"
 #include "Input.h"
 #include "DebugCamera.h"
-#include <numbers>
 #include "Draw2D.h"
 #include "GlobalVariables.h"
 #include "ParticleManager.h"
+#include "FrameTimer.h"
+#include "GPUParticle.h"
+#include "SceneManager.h"
+
+#include <numbers>
 
 #ifdef _DEBUG
 #include"ImGui.h"
@@ -24,6 +26,7 @@ void GameScene::Initialize()
   Object3dBasic::GetInstance()->SetDebug(false);
   Draw2D::GetInstance()->SetDebug(false);
   ParticleManager::GetInstance()->SetIsDebug(false);
+  GPUParticle::GetInstance()->SetIsDebug(false);
 #endif
 	/// ================================== ///
 	///              初期化処理              ///
@@ -83,6 +86,7 @@ void GameScene::Update()
 	{
 		Object3dBasic::GetInstance()->SetDebug(!Object3dBasic::GetInstance()->GetDebug());
 		Draw2D::GetInstance()->SetDebug(!Draw2D::GetInstance()->GetDebug());
+    GPUParticle::GetInstance()->SetIsDebug(!GPUParticle::GetInstance()->GetIsDebug());
 		isDebug_ = !isDebug_;
 	}
 
@@ -115,10 +119,10 @@ void GameScene::Update()
 	object3d2_->Update();
 
 	// ライトの設定
-	//Object3dBasic::GetInstance()->SetDirectionalLight(lightDirection_, lightColor_, 1, lightIntensity_);
-	//Object3dBasic::GetInstance()->SetSpotLight(spotLight_.position, spotLight_.direction, spotLight_.color, spotLight_.intensity, spotLight_.distance, spotLight_.decay, spotLight_.cosAngle, spotLight_.enable, 0);
-	//Object3dBasic::GetInstance()->SetPointLight(pointLight_.position, pointLight_.color, pointLight_.intensity, pointLight_.radius, pointLight_.decay, pointLight_.enable, 0);
-	//Object3dBasic::GetInstance()->SetPointLight(pointLight2_.position, pointLight2_.color, pointLight2_.intensity, pointLight2_.radius, pointLight2_.decay, pointLight2_.enable, 1);
+	Object3dBasic::GetInstance()->SetDirectionalLight(lightDirection_, lightColor_, 1, lightIntensity_);
+	Object3dBasic::GetInstance()->SetSpotLight(spotLight_.position, spotLight_.direction, spotLight_.color, spotLight_.intensity, spotLight_.distance, spotLight_.decay, spotLight_.cosAngle, spotLight_.enable, 0);
+	Object3dBasic::GetInstance()->SetPointLight(pointLight_.position, pointLight_.color, pointLight_.intensity, pointLight_.radius, pointLight_.decay, pointLight_.enable, 0);
+	Object3dBasic::GetInstance()->SetPointLight(pointLight2_.position, pointLight2_.color, pointLight2_.intensity, pointLight2_.radius, pointLight2_.decay, pointLight2_.enable, 1);
 
 	// シーン遷移
 	if (Input::GetInstance()->TriggerKey(DIK_RETURN))
@@ -222,5 +226,10 @@ void GameScene::DrawImGui()
 	ImGui::ColorEdit4("Color", &spotLight_.color.x);
 	ImGui::Checkbox("Enable", &spotLight_.enable);
 	ImGui::End();
+
+  ImGui::Begin("GameTime");
+  ImGui::Text("GameTime : %f", FrameTimer::GetInstance()->GetGameTime());
+  ImGui::End();
+
 #endif // DEBUG
 }

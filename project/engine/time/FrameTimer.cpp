@@ -35,6 +35,17 @@ void FrameTimer::Finalize()
 
 void FrameTimer::Update()
 {
+  // deltaTimeとFPSの更新
+  UpdateDeltaTimeAndFPS();
+
+  // gameTimeの更新
+  UpdateGameTime();
+}
+
+//----------------------------private----------------------------//
+
+void FrameTimer::UpdateDeltaTimeAndFPS()
+{
   // 現在の時間を取得
   auto nowTime = std::chrono::system_clock::now();
 
@@ -49,16 +60,27 @@ void FrameTimer::Update()
   timeAccumulator_ += frameDelta;
   frameCount_++;
 
+  // 平均deltaTimeは累積時間をフレーム数で割った値
+  deltaTime_ = timeAccumulator_ / frameCount_;
+  // FPSはフレーム数を累積時間で割った値
+  fps_ = static_cast<float>(frameCount_) / timeAccumulator_;
+
   // 蓄積時間が1秒以上になったら更新
   if (timeAccumulator_ >= 1.0f)
   {
-    // 平均deltaTimeは累積時間をフレーム数で割った値
-    deltaTime_ = timeAccumulator_ / frameCount_;
-    // FPSはフレーム数を累積時間で割った値
-    fps_ = static_cast<float>(frameCount_) / timeAccumulator_;
+    displayFPS_ = fps_;
 
     // 蓄積変数をリセット
     timeAccumulator_ = 0.0f;
     frameCount_ = 0;
   }
+}
+
+void FrameTimer::UpdateGameTime()
+{
+  // システム時間の取得
+  auto nowTime = std::chrono::system_clock::now();
+  // ゲーム起動からの経過時間を取得
+  std::chrono::duration<float> elapsedTime = nowTime - startTime_;
+  gameTime_ = elapsedTime.count();
 }

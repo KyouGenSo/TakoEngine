@@ -24,7 +24,7 @@ public: // メンバー関数
 	///<summary>
 	/// 初期化
 	/// </summary>
-	void Initialize();
+  void Initialize();
 
 	///<summary>
 	/// 終了処理

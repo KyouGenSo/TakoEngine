@@ -20,10 +20,23 @@ public:
   void Finalize();
   // 更新
   void Update();
+
+  //----------------------------Getter----------------------------//
   // deltaTimeの取得
   float GetDeltaTime() const { return deltaTime_; }
-  // FPSの取得
+  // 実際のFPSの取得
   float GetFPS() const { return fps_; }
+  // 表示用FPSの取得
+  float GetDisplayFPS() const { return displayFPS_; }
+  // ゲーム起動からの経過時間の取得
+  float GetGameTime() const { return gameTime_; }
+
+private:
+  // deltaTimeとFPSの更新
+  void UpdateDeltaTimeAndFPS();
+
+  // gameTimeの更新
+  void UpdateGameTime();
 
 private:
   // システム時間
@@ -34,6 +47,12 @@ private:
   float deltaTime_;
   // FPS
   float fps_;
+
+  // 表示用FPS
+  float displayFPS_;
+
+  // ゲーム起動からの経過時間
+  float gameTime_;
 
   // 1秒間の計測用
   float timeAccumulator_;

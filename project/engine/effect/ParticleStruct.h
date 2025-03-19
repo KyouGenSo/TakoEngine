@@ -56,6 +56,12 @@ struct PerView
   Matrix4x4 billboardMatrix;
 };
 
+struct PerFrame
+{
+  float time;
+  float deltaTime;
+};
+
 // パーティクルグループ構造体
 struct ParticleGroup
 {
@@ -80,4 +86,14 @@ struct Emitter
   uint32_t count;
   float frequency;
   float frequencyTime;
+};
+
+struct EmitterSphere
+{
+  Vector3 center;
+  float radius;
+  uint32_t count;
+  float frequency;
+  float frequencyTime;
+  uint32_t isEmit;
 };

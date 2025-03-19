@@ -1,15 +1,5 @@
 #include "Particle.hlsli"
 
-struct Particle
-{
-    float3 translate;
-    float3 scale;
-    float3 velocity;
-    float4 color;
-    float lifeTime;
-    float currentTime;
-};
-
 struct PerView
 {
     float4x4 viewProj;
