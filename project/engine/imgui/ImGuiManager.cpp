@@ -5,12 +5,14 @@
 #include"DX12Basic.h"
 #include <cassert>
 
-void ImGuiManager::Initialize(WinApp* winApp, DX12Basic* dx12)
+void ImGuiManager::Initialize(WinApp* winApp, DX12Basic* dx12, bool isDocking)
 {
 
 	m_winApp_ = winApp;
 
 	m_dx12_ = dx12;
+
+  isDocking_ = isDocking;
 
 	ImGui::CreateContext();
 
@@ -25,6 +27,9 @@ void ImGuiManager::Initialize(WinApp* winApp, DX12Basic* dx12)
 
 	// DX12用の初期化
 	InitializeForDX12();
+
+  // Dockingの設定
+  SetDocking(isDocking_);
 
 }
 
@@ -45,6 +50,10 @@ void ImGuiManager::Begin()
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
 
+  if (isDocking_)
+  {
+    SetDockSpaceViewPort();
+  }
 }
 
 void ImGuiManager::Draw()
@@ -270,6 +279,25 @@ void ImGuiManager::SetStyleMoonLight()
 	style.Colors[ImGuiCol_NavWindowingHighlight] = ImVec4(0.4980392158031464f, 0.5137255191802979f, 1.0f, 1.0f);
 	style.Colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.196078434586525f, 0.1764705926179886f, 0.5450980663299561f, 0.501960813999176f);
 	style.Colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.196078434586525f, 0.1764705926179886f, 0.5450980663299561f, 0.501960813999176f);
+}
+
+void ImGuiManager::SetDocking(bool isDocking)
+{
+  if (isDocking)
+  {
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+  } else
+  {
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags &= ~ImGuiConfigFlags_DockingEnable;
+  }
+}
+
+void ImGuiManager::SetDockSpaceViewPort()
+{
+  ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+  ImGui::DockSpaceOverViewport(dockspace_id, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 }
 
 
