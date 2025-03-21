@@ -114,6 +114,11 @@ void GPUParticle::Draw()
 
     isInited_ = true;
   }
+
+  m_dx12_->SetUAVBarrier(particleResource_.Get());
+  m_dx12_->SetUAVBarrier(freeListIndexResource_.Get());
+  m_dx12_->SetUAVBarrier(freeListResource_.Get());
+
   //--------------------------------------射出--------------------------------------//
   // ルートシグネチャの設定
   commandList->SetComputeRootSignature(emitParticleRS_.Get());
@@ -141,6 +146,8 @@ void GPUParticle::Draw()
 
   // リソースバリア
   m_dx12_->SetUAVBarrier(particleResource_.Get());
+  m_dx12_->SetUAVBarrier(freeListIndexResource_.Get());
+  m_dx12_->SetUAVBarrier(freeListResource_.Get());
 
   //--------------------------------------更新--------------------------------------//
 
@@ -164,6 +171,8 @@ void GPUParticle::Draw()
 
   // ディスパッチ
   commandList->Dispatch(1024, 1, 1);
+
+  m_dx12_->SetUAVBarrier(particleResource_.Get());
 
   /// ======================== ///
   ///           描画    　     ///
