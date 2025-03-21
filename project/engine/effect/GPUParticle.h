@@ -90,6 +90,11 @@ private: // プライベートメンバー関数
   void CreateEmitParticleComputeRS();
 
   ///<summary>
+  /// UpdateParticleCSルートシグネチャの作成
+  ///</summary>
+  void CreateUpdateParticleComputeRS();
+
+  ///<summary>
   /// パイプラインステートの生成
   /// </summary>
   void CreateComputeShaderPSO(Microsoft::WRL::ComPtr<ID3D12RootSignature>& RS, Microsoft::WRL::ComPtr<ID3D12PipelineState>& PSO, const std::wstring& shaderName);
@@ -120,14 +125,14 @@ private: // プライベートメンバー関数
   void CreateParticleResource();
 
   /// <summary>
-  /// FreeCounterリソースの生成
+  /// FreeListリソースの生成
   /// </summary>
-  void CreateFreeCounterResource();
+  void CreateFreeListResource();
 
 private: //メンバー変数
 
   // パーティクルの最大出力数
-  static const uint32_t kNumMaxInstance_;
+  static const uint32_t kNumMaxParticle_;
 
   // emitterの最大数
   static const uint32_t kNumMaxEmitter_;
@@ -153,11 +158,13 @@ private: //メンバー変数
   Microsoft::WRL::ComPtr<ID3D12RootSignature> RS_;
   Microsoft::WRL::ComPtr<ID3D12RootSignature> initComputeRS_;
   Microsoft::WRL::ComPtr<ID3D12RootSignature> emitParticleRS_;
+  Microsoft::WRL::ComPtr<ID3D12RootSignature> updateParticleRS_;
 
   // パイプラインステート
   Microsoft::WRL::ComPtr<ID3D12PipelineState> PSO_;
   Microsoft::WRL::ComPtr<ID3D12PipelineState> initComputePSO_;
   Microsoft::WRL::ComPtr<ID3D12PipelineState> emitParticlePSO_;
+  Microsoft::WRL::ComPtr<ID3D12PipelineState> updateParticlePSO_;
 
   // パーティクルリソース
   Microsoft::WRL::ComPtr<ID3D12Resource> particleResource_;
@@ -176,9 +183,11 @@ private: //メンバー変数
   Microsoft::WRL::ComPtr<ID3D12Resource> perFrameResource_;
   PerFrame* perFrameData_;
 
-  // FreeCounterリソース
-  Microsoft::WRL::ComPtr<ID3D12Resource> freeCounterResource_;
-  uint32_t freeCounterUavIndex_;
+  // FreeListリソース
+  Microsoft::WRL::ComPtr<ID3D12Resource> freeListIndexResource_;
+  uint32_t freeListIndexUavIndex_;
+  Microsoft::WRL::ComPtr<ID3D12Resource> freeListResource_;
+  uint32_t freeListUavIndex_;
 
   // 頂点バッファ
   Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource_;

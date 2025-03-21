@@ -113,9 +113,9 @@ void DX12Basic::SetSwapChain()
 	// バッグバッファのインデックスを取得
 	UINT backBufferIndex = swapChain_->GetCurrentBackBufferIndex();
 
-	SetBarrier(D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET, swapChainResources_[backBufferIndex].Get());
+	TransitionResourceState(D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET, swapChainResources_[backBufferIndex].Get());
 
-	SetBarrier(D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, depthStencilResource_.Get());
+	TransitionResourceState(D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, depthStencilResource_.Get());
 
 	PostEffect::GetInstance()->SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
@@ -141,9 +141,9 @@ void DX12Basic::EndDraw()
 	// バッグバッファのインデックスを取得
 	UINT backBufferIndex = swapChain_->GetCurrentBackBufferIndex();
 
-	SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT, swapChainResources_[backBufferIndex].Get());
+	TransitionResourceState(D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT, swapChainResources_[backBufferIndex].Get());
 
-	SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE, depthStencilResource_.Get());
+	TransitionResourceState(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE, depthStencilResource_.Get());
 
 	PostEffect::GetInstance()->SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
@@ -830,7 +830,7 @@ void DX12Basic::SetBackBufferBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RE
 
 }
 
-void DX12Basic::SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter, ID3D12Resource* resource)
+void DX12Basic::TransitionResourceState(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter, ID3D12Resource* resource)
 {
 	D3D12_RESOURCE_BARRIER barrier{};
 	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -839,5 +839,14 @@ void DX12Basic::SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STA
 	barrier.Transition.StateBefore = stateBefore;
 	barrier.Transition.StateAfter = stateAfter;
 	commandList_->ResourceBarrier(1, &barrier);
+}
+
+void DX12Basic::SetUAVBarrier(ID3D12Resource* resource)
+{
+  D3D12_RESOURCE_BARRIER barrier{};
+  barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+  barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+  barrier.UAV.pResource = resource;
+  commandList_->ResourceBarrier(1, &barrier);
 }
 

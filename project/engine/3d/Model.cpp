@@ -111,7 +111,7 @@ void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
     // ComputeShaderの実行
     m_dx12_->GetCommandList()->Dispatch(UINT(modelData_.vertices.size() + 1023) / 1024, 1, 1);
 
-    m_dx12_->SetBarrier(D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, uavVertexOutputResource_.Get());
+    m_dx12_->TransitionResourceState(D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, uavVertexOutputResource_.Get());
 
     Object3dBasic::GetInstance()->SetCommonRenderSetting();
   }

@@ -102,9 +102,14 @@ public: // メンバー関数
 	static DirectX::ScratchImage LoadTexture(const std::string& filePath);
 
   /// <summary>
-  /// バリアの設定
+  /// トランジションバリアの設定
   /// </summary>
-  void SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter, ID3D12Resource* resource);
+  void TransitionResourceState(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter, ID3D12Resource* resource);
+
+  /// <summary>
+  /// UAVリソースバリアの設定
+  /// </summary>
+  void SetUAVBarrier(ID3D12Resource* resource);
 
 	//-----------------------------------------Getter-----------------------------------------//
 	/// <summary>
