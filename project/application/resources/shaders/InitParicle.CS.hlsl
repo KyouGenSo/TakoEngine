@@ -11,6 +11,7 @@ void main( uint3 DTid : SV_DispatchThreadID )
     if (particleIndex < kMaxParticles)
     {
         gParticles[particleIndex] = (Particle)0;
+        gParticles[particleIndex].color.a = 0.0f;
         
         gFreeList[particleIndex] = particleIndex;
     }

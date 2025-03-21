@@ -45,6 +45,8 @@ public: // メンバー関数
   /// </summary>
   void Finalize();
 
+  void DebugInfo();
+
   //-------------------------Getter-------------------------//
   bool GetIsDebug() const { return isDebug_; }
 

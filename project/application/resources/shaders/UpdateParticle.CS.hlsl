@@ -33,13 +33,13 @@ void main( uint3 DTid : SV_DispatchThreadID )
             int freeListIndex;
             InterlockedAdd(gFreeListIndex[0], 1, freeListIndex);
             
-            if ((freeListIndex + 1) < kMaxParticles)
+            if (freeListIndex >= 0 && (freeListIndex + 1) < kMaxParticles)
             {
                 gFreeList[freeListIndex + 1] = particleIndex;
             }
             else
             {
-                InterlockedAdd(gFreeListIndex[0], -1, freeListIndex);
+                InterlockedAdd(gFreeListIndex[0], -1);
             }
 
         }

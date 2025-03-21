@@ -5,6 +5,7 @@
 #include "Logger.h"
 #include "FrameTimer.h"
 #include "DebugCamera.h"
+#include "ImGuiManager.h"
 
 #include <numbers>
 
@@ -203,18 +204,40 @@ void GPUParticle::Finalize()
   }
 }
 
+void GPUParticle::DebugInfo()
+{
+#ifdef _DEBUG
+  // CPU側でFreeListの状態を取得して表示
+  //int freeListIndex = 0;
+  //freeListIndexResource_->Map(0, nullptr, reinterpret_cast<void**>(&freeListIndex));
+  ImGui::Begin("GPU Particle");
+
+  //ImGui::Text("現在のFreeListIndex: %d", freeListIndex);
+
+  ImGui::Text("frequency: %f, frequencyTime: %f, isEmit: %d",
+    emitterSphereData_->frequency,
+    emitterSphereData_->frequencyTime,
+    emitterSphereData_->isEmit);
+
+  ImGui::End();
+#endif
+}
+
 //--------------------------------------Private--------------------------------------//
 
 void GPUParticle::UpdateEmitter()
 {
-  emitterSphereData_->frequencyTime += FrameTimer::GetInstance()->GetDeltaTime();
+  // 前回の射出からの経過時間を計算
+  float deltaTime = FrameTimer::GetInstance()->GetDeltaTime();
+  emitterSphereData_->frequencyTime += deltaTime;
+
   // 射出間隔を超えたら射出許可を出して時間を調整
   if (emitterSphereData_->frequency <= emitterSphereData_->frequencyTime)
   {
     emitterSphereData_->isEmit = 1;
-    emitterSphereData_->frequencyTime -= emitterSphereData_->frequency;
-  }
-  else
+    // 余剰時間を正確に調整（蓄積誤差を防ぐ）
+    emitterSphereData_->frequencyTime = fmodf(emitterSphereData_->frequencyTime, emitterSphereData_->frequency);
+  } else
   {
     emitterSphereData_->isEmit = 0;
   }
@@ -671,7 +694,7 @@ void GPUParticle::CreateEmitterSphereData()
   emitterSphereResource_->Map(0, nullptr, reinterpret_cast<void**>(&emitterSphereData_));
 
   // EmitterSphereのデータを設定
-  emitterSphereData_->count = 10;
+  emitterSphereData_->count = 100;
   emitterSphereData_->frequency = 1.0f;
   emitterSphereData_->frequencyTime = 0.0f;
   emitterSphereData_->center = { 0.0f, 0.0f, 0.0f };

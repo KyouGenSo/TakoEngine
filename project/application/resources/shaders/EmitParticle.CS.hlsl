@@ -28,7 +28,7 @@ ConstantBuffer<PerFrame> gPerFrame : register(b1);
 void main( uint3 DTid : SV_DispatchThreadID )
 {
     RandomGenerator generator;
-    generator.seed = (DTid + gPerFrame.time) * gPerFrame.time;
+    generator.seed = DTid + float3(gPerFrame.time, gPerFrame.time * 0.5, gPerFrame.time * 0.25);
     
     if(gEmitter.isEmit != 0)
     {
@@ -37,7 +37,7 @@ void main( uint3 DTid : SV_DispatchThreadID )
             int freeListIndex;
             InterlockedAdd(gFreeListIndex[0], -1, freeListIndex);
             
-            if (0 <= freeListIndex && freeListIndex < kMaxParticles)
+            if (freeListIndex >= 0 && freeListIndex < kMaxParticles && gFreeList[freeListIndex] < kMaxParticles)
             {
                 uint particleIndex = gFreeList[freeListIndex];
                 gParticles[particleIndex].scale = float3(1.0f, 1.0f, 1.0f);
