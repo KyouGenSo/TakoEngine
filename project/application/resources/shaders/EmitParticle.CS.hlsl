@@ -195,8 +195,8 @@ void main(uint3 DTid : SV_DispatchThreadID)
             gParticles[particleID].currentTime = 0.0f;
             
             // Fİ’è
-            float3 baseColor = generator.Generate3d() * 0.6f + 0.4f; // –¾‚é‚ß‚ÌF
-            gParticles[particleID].color.rgb = baseColor * gEmitters[emitterIndex].colorTint.rgb;
+            //float3 baseColor = generator.Generate3d() * 0.6f + 0.4f; // –¾‚é‚ß‚ÌF
+            gParticles[particleID].color.rgb = gEmitters[emitterIndex].colorTint.rgb;
             gParticles[particleID].color.a = 1.0f;
         }
         else

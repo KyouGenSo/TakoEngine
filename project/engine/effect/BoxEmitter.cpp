@@ -26,7 +26,7 @@ void BoxEmitter::SetSize(const Vector3& size)
   size_ = size;
 
   if (particleSystem_) {
-    EmitterData params;
+    EmitterData params = particleSystem_->GetEmitterData(emitterId_);
     params.type = EmitterType::Box;
     params.box.size = size_;
     particleSystem_->UpdateEmitterParameters(emitterId_, params);
@@ -38,7 +38,7 @@ void BoxEmitter::SetRotation(const Vector3& rotation)
   rotation_ = rotation;
 
   if (particleSystem_) {
-    EmitterData params;
+    EmitterData params = particleSystem_->GetEmitterData(emitterId_);
     params.type = EmitterType::Box;
     params.box.rotation = rotation_;
     particleSystem_->UpdateEmitterParameters(emitterId_, params);

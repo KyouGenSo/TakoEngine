@@ -29,7 +29,7 @@ void TriangleEmitter::SetVertices(const Vector3& v1, const Vector3& v2, const Ve
   vertex3_ = v3;
 
   if (particleSystem_) {
-    EmitterData params;
+    EmitterData params = particleSystem_->GetEmitterData(emitterId_);
     params.type = EmitterType::Triangle;
     params.triangle.v1 = vertex1_;
     params.triangle.v2 = vertex2_;

@@ -166,7 +166,7 @@ void MyGame::Draw()
   // GlobalVariablesの更新
   GlobalVariables::GetInstance()->Update();
 
-  GPUParticle::GetInstance()->DebugInfo();
+  //GPUParticle::GetInstance()->DebugInfo();
 
   ImGui::Begin("Option");
   // buttonでFPSの表示を切り替え

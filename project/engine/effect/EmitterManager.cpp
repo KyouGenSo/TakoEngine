@@ -46,6 +46,11 @@ std::shared_ptr<BoxEmitter> EmitterManager::CreateBoxEmitter(const std::string& 
   // エミッター作成
   std::shared_ptr<BoxEmitter> emitter = particleSystem_->CreateBoxEmitter(position, size, rotation, count, frequency);
 
+  // デバッグログ
+  Logger::Log("Created BoxEmitter '%s' - Pos:(%.2f,%.2f,%.2f) Size:(%.2f,%.2f,%.2f) Rot:(%.2f,%.2f,%.2f)",
+    name.c_str(), position.x, position.y, position.z,
+    size.x, size.y, size.z, rotation.x, rotation.y, rotation.z);
+
   // マップに追加
   emitterMap_[name] = emitter;
 

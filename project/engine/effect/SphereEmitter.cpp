@@ -24,7 +24,7 @@ void SphereEmitter::SetRadius(float radius)
   radius_ = radius;
 
   if (particleSystem_) {
-    EmitterData params;
+    EmitterData params = particleSystem_->GetEmitterData(emitterId_);
     params.type = EmitterType::Sphere;
     params.sphere.radius = radius_;
     particleSystem_->UpdateEmitterParameters(emitterId_, params);

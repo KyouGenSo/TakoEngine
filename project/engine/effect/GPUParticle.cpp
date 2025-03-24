@@ -231,7 +231,51 @@ void GPUParticle::Finalize()
 void GPUParticle::DebugInfo()
 {
 #ifdef _DEBUG
+  ImGui::Begin("GPUParticle Debug");
 
+  ImGui::Text("Active Emitters: %d", activeEmitterCount_);
+
+  if (ImGui::TreeNode("Emitters")) {
+    for (uint32_t i = 0; i < activeEmitterCount_; i++) {
+      EmitterData& emitter = emitters_[i];
+      char label[128];
+      sprintf_s(label, "Emitter %d (%s)", i,
+        emitter.type == EmitterType::Sphere ? "Sphere" :
+        emitter.type == EmitterType::Box ? "Box" : "Triangle");
+
+      if (ImGui::TreeNode(label)) {
+        ImGui::Text("Position: (%.2f, %.2f, %.2f)",
+          emitter.position.x, emitter.position.y, emitter.position.z);
+        ImGui::ColorEdit4("Color", &emitter.colorTint.x, ImGuiColorEditFlags_NoInputs);
+        ImGui::Text("Active: %s", emitter.isActive ? "Yes" : "No");
+        ImGui::Text("Count: %d", emitter.count);
+        ImGui::Text("Frequency: %.2f", emitter.frequency);
+
+        // エミッタータイプ固有の情報
+        switch (emitter.type) {
+        case EmitterType::Sphere:
+          ImGui::Text("Radius: %.2f", emitter.sphere.radius);
+          break;
+
+        case EmitterType::Box:
+          ImGui::Text("Size: (%.2f, %.2f, %.2f)",
+            emitter.box.size.x, emitter.box.size.y, emitter.box.size.z);
+          ImGui::Text("Rotation: (%.2f, %.2f, %.2f)",
+            emitter.box.rotation.x, emitter.box.rotation.y, emitter.box.rotation.z);
+          break;
+
+        case EmitterType::Triangle:
+          // 三角形の情報
+          break;
+        }
+
+        ImGui::TreePop();
+      }
+    }
+    ImGui::TreePop();
+  }
+
+  ImGui::End();
 #endif
 }
 
@@ -497,37 +541,27 @@ void GPUParticle::SyncEmitterData()
     dst.emitterID = src.emitterID;
 
     dst.position = src.position;
-    dst.pad1 = 0.0f;
     dst.colorTint = src.colorTint;
 
     dst.count = src.count;
     dst.frequency = src.frequency;
     dst.frequencyTime = src.frequencyTime;
-    dst.pad2 = 0.0f;
 
     // 形状固有のデータ
     switch (src.type) {
     case EmitterType::Sphere:
       dst.radius = src.sphere.radius;
-      dst.spherePad1 = 0.0f;
-      dst.spherePad2 = 0.0f;
-      dst.spherePad3 = 0.0f;
       break;
 
     case EmitterType::Box:
       dst.boxSize = src.box.size;
-      dst.boxPad1 = 0.0f;
       dst.boxRotation = src.box.rotation;
-      dst.boxPad2 = 0.0f;
       break;
 
     case EmitterType::Triangle:
       dst.triangleV1 = src.triangle.v1;
-      dst.triPad1 = 0.0f;
       dst.triangleV2 = src.triangle.v2;
-      dst.triPad2 = 0.0f;
       dst.triangleV3 = src.triangle.v3;
-      dst.triPad3 = 0.0f;
       break;
     }
   }
