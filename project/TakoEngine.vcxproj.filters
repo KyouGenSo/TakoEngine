@@ -43,6 +43,12 @@
     <Filter Include="time">
       <UniqueIdentifier>{82f0a61f-51b5-420c-b928-570308f740dd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="effect\Particle">
+      <UniqueIdentifier>{f27ead38-a954-4a6d-90db-60ec2aa89ebb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="effect\Particle\Emitter">
+      <UniqueIdentifier>{c6bddca8-d205-4146-b590-37ba9f6556a0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\func\mathFunc\Mat4x4Func.cpp">
@@ -129,12 +135,6 @@
     <ClCompile Include="engine\func\mathFunc\QuatFunc.cpp">
       <Filter>func\MathFunc</Filter>
     </ClCompile>
-    <ClCompile Include="engine\effect\ParticleManager.cpp">
-      <Filter>effect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\ParticleEmitter.cpp">
-      <Filter>effect</Filter>
-    </ClCompile>
     <ClCompile Include="engine\time\FrameTimer.cpp">
       <Filter>time</Filter>
     </ClCompile>
@@ -142,7 +142,28 @@
       <Filter>io</Filter>
     </ClCompile>
     <ClCompile Include="engine\effect\GPUParticle.cpp">
-      <Filter>effect</Filter>
+      <Filter>effect\Particle</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\effect\ParticleManager.cpp">
+      <Filter>effect\Particle</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\effect\GPUParticleEmitter.cpp">
+      <Filter>effect\Particle\Emitter</Filter>
+    </ClCompile>
+    <ClCompile Include="BoxEmitter.cpp">
+      <Filter>effect\Particle\Emitter</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\effect\ParticleEmitter.cpp">
+      <Filter>effect\Particle\Emitter</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\effect\SphereEmitter.cpp">
+      <Filter>effect\Particle\Emitter</Filter>
+    </ClCompile>
+    <ClCompile Include="TriangleEmitter.cpp">
+      <Filter>effect\Particle\Emitter</Filter>
+    </ClCompile>
+    <ClCompile Include="EmitterManager.cpp">
+      <Filter>effect\Particle\Emitter</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -233,12 +254,6 @@
     <ClInclude Include="engine\base\DX12\SrvManager.h">
       <Filter>base\DX12</Filter>
     </ClInclude>
-    <ClInclude Include="engine\effect\ParticleEmitter.h">
-      <Filter>effect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\ParticleManager.h">
-      <Filter>effect</Filter>
-    </ClInclude>
     <ClInclude Include="engine\effect\PostEffect.h">
       <Filter>effect</Filter>
     </ClInclude>
@@ -281,11 +296,32 @@
     <ClInclude Include="engine\time\FrameTimer.h">
       <Filter>time</Filter>
     </ClInclude>
-    <ClInclude Include="engine\effect\ParticleStruct.h">
-      <Filter>effect</Filter>
-    </ClInclude>
     <ClInclude Include="engine\effect\GPUParticle.h">
-      <Filter>effect</Filter>
+      <Filter>effect\Particle</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\ParticleManager.h">
+      <Filter>effect\Particle</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\ParticleStruct.h">
+      <Filter>effect\Particle</Filter>
+    </ClInclude>
+    <ClInclude Include="BoxEmitter.h">
+      <Filter>effect\Particle\Emitter</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\GPUParticleEmitter.h">
+      <Filter>effect\Particle\Emitter</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\ParticleEmitter.h">
+      <Filter>effect\Particle\Emitter</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\SphereEmitter.h">
+      <Filter>effect\Particle\Emitter</Filter>
+    </ClInclude>
+    <ClInclude Include="TriangleEmitter.h">
+      <Filter>effect\Particle\Emitter</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\EmitterManager.h">
+      <Filter>effect\Particle\Emitter</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

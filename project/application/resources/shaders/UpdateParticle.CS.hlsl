@@ -1,10 +1,6 @@
 #include "Particle.hlsli"
-struct PerFrame
-{
-    float time;
-    float deltaTime;
-};
 
+// リソースバインディング
 RWStructuredBuffer<Particle> gParticles : register(u0);
 RWStructuredBuffer<int> gFreeListIndex : register(u1);
 RWStructuredBuffer<uint> gFreeList : register(u2);
@@ -12,40 +8,94 @@ RWStructuredBuffer<uint> gFreeList : register(u2);
 ConstantBuffer<PerFrame> gPerFrame : register(b0);
 
 [numthreads(1024, 1, 1)]
-void main( uint3 DTid : SV_DispatchThreadID )
+void main(uint3 DTid : SV_DispatchThreadID)
 {
     uint particleIndex = DTid.x;
     
+    // 有効な範囲のパーティクルのみ処理
     if (particleIndex < kMaxParticles)
-    { 
+    {
+        // アルファ値が0より大きい＝アクティブなパーティクルのみ更新
         if (gParticles[particleIndex].color.a > 0.0f)
         {
-            gParticles[particleIndex].translate += gParticles[particleIndex].velocity;
+            // 位置の更新
+            gParticles[particleIndex].translate += gParticles[particleIndex].velocity * gPerFrame.deltaTime * 60.0f;
+            
+            // 経過時間の更新
             gParticles[particleIndex].currentTime += gPerFrame.deltaTime;
             
+            // 寿命に基づいてアルファ値を計算
             float alpha = 1.0f - (gParticles[particleIndex].currentTime / gParticles[particleIndex].lifeTime);
-            gParticles[particleIndex].color.a = saturate(alpha);
+            gParticles[particleIndex].color.a = saturate(alpha); // 0～1の範囲に制限
             
-            
-            // 寿命が尽きた場合のみFreeListに追加処理を行う
+            // 寿命切れならフリーリストに戻す処理
             if (alpha <= 0.0f)
             {
-                gParticles[particleIndex].color.a = 0.0f;
-                gParticles[particleIndex].scale = float3(0.0f, 0.0f, 0.0f); // 非表示に
+                gParticles[particleIndex].color.a = 0.0f; // 完全に透明に
+                gParticles[particleIndex].scale = float3(0.0f, 0.0f, 0.0f); // サイズを0に
                 
+                // フリーリストに追加
                 int freeListIndex;
                 InterlockedAdd(gFreeListIndex[0], 1, freeListIndex);
                 
+                // 範囲チェック
                 if (freeListIndex >= 0 && (freeListIndex + 1) < kMaxParticles)
                 {
                     gFreeList[freeListIndex + 1] = particleIndex;
                 }
                 else
                 {
+                    // エラーケースの処理
                     InterlockedAdd(gFreeListIndex[0], -1);
                 }
             }
         }
-        
     }
 }
+
+//#include "Particle.hlsli"
+
+//RWStructuredBuffer<Particle> gParticles : register(u0);
+//RWStructuredBuffer<int> gFreeListIndex : register(u1);
+//RWStructuredBuffer<uint> gFreeList : register(u2);
+
+//ConstantBuffer<PerFrame> gPerFrame : register(b0);
+
+//[numthreads(1024, 1, 1)]
+//void main( uint3 DTid : SV_DispatchThreadID )
+//{
+//    uint particleIndex = DTid.x;
+    
+//    if (particleIndex < kMaxParticles)
+//    { 
+//        if (gParticles[particleIndex].color.a > 0.0f)
+//        {
+//            gParticles[particleIndex].translate += gParticles[particleIndex].velocity;
+//            gParticles[particleIndex].currentTime += gPerFrame.deltaTime;
+            
+//            float alpha = 1.0f - (gParticles[particleIndex].currentTime / gParticles[particleIndex].lifeTime);
+//            gParticles[particleIndex].color.a = saturate(alpha);
+            
+            
+//            // 寿命が尽きた場合のみFreeListに追加処理を行う
+//            if (alpha <= 0.0f)
+//            {
+//                gParticles[particleIndex].color.a = 0.0f;
+//                gParticles[particleIndex].scale = float3(0.0f, 0.0f, 0.0f); // 非表示に
+                
+//                int freeListIndex;
+//                InterlockedAdd(gFreeListIndex[0], 1, freeListIndex);
+                
+//                if (freeListIndex >= 0 && (freeListIndex + 1) < kMaxParticles)
+//                {
+//                    gFreeList[freeListIndex + 1] = particleIndex;
+//                }
+//                else
+//                {
+//                    InterlockedAdd(gFreeListIndex[0], -1);
+//                }
+//            }
+//        }
+        
+//    }
+//}

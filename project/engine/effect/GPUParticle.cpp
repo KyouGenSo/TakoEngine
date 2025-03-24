@@ -1,4 +1,8 @@
 #include "GPUParticle.h"
+#include "GPUParticleEmitter.h"
+#include "SphereEmitter.h"
+#include "BoxEmitter.h"
+#include "TriangleEmitter.h"
 #include "DX12Basic.h"
 #include "Camera.h"
 #include "TextureManager.h"
@@ -11,9 +15,9 @@
 
 GPUParticle* GPUParticle::instance_ = nullptr;
 
-const uint32_t GPUParticle::kNumMaxParticle_ = 1024;
+const uint32_t GPUParticle::kNumMaxParticle_ = 20480;
 
-const uint32_t GPUParticle::kNumMaxEmitter_ = 100;
+const uint32_t GPUParticle::kNumMaxEmitter_ = 80;
 
 GPUParticle* GPUParticle::GetInstance()
 {
@@ -62,7 +66,7 @@ void GPUParticle::Initialize(DX12Basic* dx12, Camera* camera)
   CreateParticleResource();
 
   // EmitterSphereデータの生成
-  CreateEmitterSphereData();
+  CreateEmitterData();
 
   // 頂点データの生成
   CreateVertexData();
@@ -115,38 +119,42 @@ void GPUParticle::Draw()
     isInited_ = true;
   }
 
-  if (isInited_) {
-    m_dx12_->SetUAVBarrier(particleResource_.Get());
-    m_dx12_->SetUAVBarrier(freeListIndexResource_.Get());
-    m_dx12_->SetUAVBarrier(freeListResource_.Get());
-  }
+  // リソースバリアの設定（UAV同期）
+  m_dx12_->SetUAVBarrier(particleResource_.Get());
+  m_dx12_->SetUAVBarrier(freeListIndexResource_.Get());
+  m_dx12_->SetUAVBarrier(freeListResource_.Get());
 
   //--------------------------------------射出--------------------------------------//
-  // ルートシグネチャの設定
-  commandList->SetComputeRootSignature(emitParticleRS_.Get());
+    // アクティブなエミッターがある場合のみ実行
+  if (activeEmitterCount_ > 0)
+  {
+    // ルートシグネチャの設定
+    commandList->SetComputeRootSignature(emitParticleRS_.Get());
 
-  // パイプラインステートの設定
-  commandList->SetPipelineState(emitParticlePSO_.Get());
+    // パイプラインステートの設定
+    commandList->SetPipelineState(emitParticlePSO_.Get());
 
-  // ParticleDataのUAVの設定
-  m_srvManager_->SetComputeRootDescriptorTable(0, particleUavIndex_);
+    // ParticleDataのUAVの設定
+    m_srvManager_->SetComputeRootDescriptorTable(0, particleUavIndex_);
 
-  // FreeListIndexrのUAVの設定
-  m_srvManager_->SetComputeRootDescriptorTable(3, freeListIndexUavIndex_);
+    // FreeListIndexのUAVの設定
+    m_srvManager_->SetComputeRootDescriptorTable(3, freeListIndexUavIndex_);
 
-  // FreeListのUAVの設定
-  m_srvManager_->SetComputeRootDescriptorTable(4, freeListUavIndex_);
+    // FreeListのUAVの設定
+    m_srvManager_->SetComputeRootDescriptorTable(4, freeListUavIndex_);
 
-  // EmitterSphereの設定
-  commandList->SetComputeRootConstantBufferView(1, emitterSphereResource_->GetGPUVirtualAddress());
+    // エミッターリストのSRVの設定
+    m_srvManager_->SetComputeRootDescriptorTable(1, emitterSrvIndex_);
 
-  // PerFrameの設定
-  commandList->SetComputeRootConstantBufferView(2, perFrameResource_->GetGPUVirtualAddress());
+    // PerFrameの設定
+    commandList->SetComputeRootConstantBufferView(2, perFrameResource_->GetGPUVirtualAddress());
 
-  // ディスパッチ
-  commandList->Dispatch(1, 1, 1);
+    // ディスパッチ（16スレッドごとにグループ化）
+    uint32_t threadGroupsX = (activeEmitterCount_ + 15) / 16;
+    commandList->Dispatch(threadGroupsX, 1, 1);
+  }
 
-  // リソースバリア
+  // リソースバリアの設定（UAV同期）
   m_dx12_->SetUAVBarrier(particleResource_.Get());
   m_dx12_->SetUAVBarrier(freeListIndexResource_.Get());
   m_dx12_->SetUAVBarrier(freeListResource_.Get());
@@ -180,7 +188,7 @@ void GPUParticle::Draw()
   ///           描画    　     ///
   /// ======================= ///
 
-  // ルートシグネチャの設定
+    // ルートシグネチャの設定
   commandList->SetGraphicsRootSignature(RS_.Get());
 
   // パイプラインステートの設定
@@ -192,18 +200,23 @@ void GPUParticle::Draw()
   // VBVを設定
   commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
 
-  // ParticleDataの設定
+  // ParticleDataをSRVに変更
   m_dx12_->TransitionResourceState(D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, particleResource_.Get());
+
+  // ParticleDataのSRVを設定
   m_srvManager_->SetGraphicsRootDescriptorTable(0, particleSrvIndex_);
 
   // PerViewの設定
-  m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, perViewResource_->GetGPUVirtualAddress());
+  commandList->SetGraphicsRootConstantBufferView(1, perViewResource_->GetGPUVirtualAddress());
 
-  // textureの設定
+  // テクスチャの設定
   m_srvManager_->SetGraphicsRootDescriptorTable(2, modelData_.textureData.textureIndex);
 
-  // 描画
+  // 描画（インスタンス描画）
   commandList->DrawInstanced(UINT(modelData_.vertices.size()), kNumMaxParticle_, 0, 0);
+
+  // ParticleDataをUAVに戻す
+  m_dx12_->TransitionResourceState(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, particleResource_.Get());
 }
 
 void GPUParticle::Finalize()
@@ -218,35 +231,219 @@ void GPUParticle::Finalize()
 void GPUParticle::DebugInfo()
 {
 #ifdef _DEBUG
-  ImGui::Begin("GPU Particle");
 
-  ImGui::Text("frequency: %.2f, frequencyTime: %.2f, isEmit: %d",
-    emitterSphereData_->frequency,
-    emitterSphereData_->frequencyTime,
-    emitterSphereData_->isEmit);
-
-  ImGui::End();
 #endif
+}
+
+std::shared_ptr<SphereEmitter> GPUParticle::CreateSphereEmitter(const Vector3& position, float radius, uint32_t count, float frequency)
+{
+  return std::make_shared<SphereEmitter>(this, position, radius, count, frequency);
+}
+
+std::shared_ptr<BoxEmitter> GPUParticle::CreateBoxEmitter(const Vector3& position, const Vector3& size, const Vector3& rotation, uint32_t count, float frequency)
+{
+  return std::make_shared<BoxEmitter>(this, position, size, rotation, count, frequency);
+}
+
+std::shared_ptr<TriangleEmitter> GPUParticle::CreateTriangleEmitter(const Vector3& position, const Vector3& v1, const Vector3& v2, const Vector3& v3, uint32_t count, float frequency)
+{
+  return std::make_shared<TriangleEmitter>(this, position, v1, v2, v3, count, frequency);
+}
+
+void GPUParticle::UpdateEmitterParameters(uint32_t emitterId, const EmitterData& params)
+{
+  if (emitterId >= activeEmitterCount_) {
+    return;
+  }
+
+  // 既存のエミッターデータを取得
+  EmitterData& currentData = emitters_[emitterId];
+
+  // 型情報は維持
+  EmitterType originalType = currentData.type;
+
+  // 共通パラメータの更新
+  currentData.position = params.position;
+  currentData.colorTint = params.colorTint;
+  if (params.count != 0) currentData.count = params.count;
+  if (params.frequency != 0.0f) currentData.frequency = params.frequency;
+  if (params.isActive != currentData.isActive) currentData.isActive = params.isActive;
+
+  // 型固有のパラメータ更新
+  switch (originalType) {
+  case EmitterType::Sphere:
+    if (params.sphere.radius != 0.0f) currentData.sphere.radius = params.sphere.radius;
+    break;
+
+  case EmitterType::Box:
+    currentData.box.size = params.box.size;
+    currentData.box.rotation = params.box.rotation;
+    break;
+
+  case EmitterType::Triangle:
+    currentData.triangle.v1 = params.triangle.v1;
+    currentData.triangle.v2 = params.triangle.v2;
+    currentData.triangle.v3 = params.triangle.v3;
+    break;
+  }
+
+  // GPU側データと同期
+  SyncEmitterData();
+}
+
+void GPUParticle::RemoveEmitterById(uint32_t emitterId)
+{
+  if (emitterId >= activeEmitterCount_) {
+    return;
+  }
+
+  // emitterId 以降の要素を一つずつ前に移動
+  for (uint32_t i = emitterId; i < activeEmitterCount_ - 1; i++) {
+    emitters_[i] = emitters_[i + 1];
+    emitters_[i].emitterID = i;  // IDを更新
+  }
+
+  // 最後の要素を削除
+  emitters_.pop_back();
+  activeEmitterCount_--;
+
+  // GPU側データと同期
+  SyncEmitterData();
 }
 
 //--------------------------------------Private--------------------------------------//
 
+uint32_t GPUParticle::CreateSphereEmitterInternal(const Vector3& position, float radius, uint32_t count, float frequency)
+{
+  // エミッターが最大数を超えないかチェック
+  if (activeEmitterCount_ >= kNumMaxEmitter_) {
+    return UINT32_MAX;
+  }
+
+  // 新しいエミッターID
+  uint32_t newEmitterId = activeEmitterCount_;
+
+  // エミッターデータを作成
+  EmitterData emitter;
+  emitter.type = EmitterType::Sphere;
+  emitter.isActive = true;
+  emitter.isEmitting = false;
+  emitter.emitterID = newEmitterId;
+  emitter.position = position;
+  emitter.colorTint = { 1.0f, 1.0f, 1.0f, 1.0f };
+  emitter.count = count;
+  emitter.frequency = frequency;
+  emitter.frequencyTime = 0.0f;
+
+  // 球体固有パラメータ
+  emitter.sphere.radius = radius;
+
+  // エミッターリストに追加
+  emitters_.push_back(emitter);
+
+  // アクティブエミッター数を増加
+  activeEmitterCount_++;
+
+  // GPU側データを同期
+  SyncEmitterData();
+
+  return newEmitterId;
+}
+
+uint32_t GPUParticle::CreateBoxEmitterInternal(const Vector3& position, const Vector3& size, const Vector3& rotation, uint32_t count, float frequency)
+{
+  if (activeEmitterCount_ >= kNumMaxEmitter_) {
+    return UINT32_MAX;
+  }
+
+  uint32_t newEmitterId = activeEmitterCount_;
+
+  EmitterData emitter;
+  emitter.type = EmitterType::Box;
+  emitter.isActive = true;
+  emitter.isEmitting = false;
+  emitter.emitterID = newEmitterId;
+  emitter.position = position;
+  emitter.colorTint = { 1.0f, 1.0f, 1.0f, 1.0f };
+  emitter.count = count;
+  emitter.frequency = frequency;
+  emitter.frequencyTime = 0.0f;
+
+  // 箱型固有パラメータ
+  emitter.box.size = size;
+  emitter.box.rotation = rotation;
+
+  emitters_.push_back(emitter);
+  activeEmitterCount_++;
+  SyncEmitterData();
+
+  return newEmitterId;
+}
+
+uint32_t GPUParticle::CreateTriangleEmitterInternal(const Vector3& position, const Vector3& v1, const Vector3& v2, const Vector3& v3, uint32_t count, float frequency)
+{
+  if (activeEmitterCount_ >= kNumMaxEmitter_) {
+    return UINT32_MAX;
+  }
+
+  uint32_t newEmitterId = activeEmitterCount_;
+
+  EmitterData emitter;
+  emitter.type = EmitterType::Triangle;
+  emitter.isActive = true;
+  emitter.isEmitting = false;
+  emitter.emitterID = newEmitterId;
+  emitter.position = position;
+  emitter.colorTint = { 1.0f, 1.0f, 1.0f, 1.0f };
+  emitter.count = count;
+  emitter.frequency = frequency;
+  emitter.frequencyTime = 0.0f;
+
+  // 三角形固有パラメータ
+  emitter.triangle.v1 = v1;
+  emitter.triangle.v2 = v2;
+  emitter.triangle.v3 = v3;
+
+  emitters_.push_back(emitter);
+  activeEmitterCount_++;
+  SyncEmitterData();
+
+  return newEmitterId;
+}
+
 void GPUParticle::UpdateEmitter()
 {
-  // 前回の射出からの経過時間を計算
+  // 経過時間を取得
   float deltaTime = FrameTimer::GetInstance()->GetDeltaTime();
-  emitterSphereData_->frequencyTime += deltaTime;
 
-  // 射出間隔を超えたら射出許可を出して時間を調整
-  if (emitterSphereData_->frequency <= emitterSphereData_->frequencyTime)
-  {
-    emitterSphereData_->isEmit = 1;
-    // 余剰時間を正確に調整（蓄積誤差を防ぐ）
-    emitterSphereData_->frequencyTime = fmodf(emitterSphereData_->frequencyTime, emitterSphereData_->frequency);
-  } else
-  {
-    emitterSphereData_->isEmit = 0;
+  // すべてのエミッターを更新
+  for (uint32_t i = 0; i < activeEmitterCount_; i++) {
+    EmitterData& emitter = emitters_[i];
+
+    // 非アクティブならスキップ
+    if (!emitter.isActive) {
+      emitter.isEmitting = false;
+      continue;
+    }
+
+    // 射出タイマーを更新
+    emitter.frequencyTime += deltaTime;
+
+    // 射出間隔を超えたら射出許可を出して時間を調整
+    if (emitter.frequency <= emitter.frequencyTime) {
+      emitter.isEmitting = true;
+      // 余剰時間を調整（蓄積誤差を防ぐ）
+      emitter.frequencyTime = fmodf(emitter.frequencyTime, emitter.frequency);
+    } else {
+      emitter.isEmitting = false;
+    }
   }
+
+  // GPU側のデータを同期
+  SyncEmitterData();
+
+  // PerFrameデータにアクティブエミッター数を格納
+  perFrameData_->activeEmitterCount = activeEmitterCount_;
 }
 
 void GPUParticle::UpdatePerView()
@@ -279,6 +476,64 @@ void GPUParticle::UpdatePerFrame()
 {
   perFrameData_->time = FrameTimer::GetInstance()->GetGameTime();
   perFrameData_->deltaTime = FrameTimer::GetInstance()->GetDeltaTime();
+}
+
+// CPU→GPU同期
+void GPUParticle::SyncEmitterData()
+{
+  // GPU側のエミッターバッファにマップ
+  EmitterGPUData* gpuEmitters = nullptr;
+  emitterResource_->Map(0, nullptr, reinterpret_cast<void**>(&gpuEmitters));
+
+  // 各エミッターのデータをコピー
+  for (uint32_t i = 0; i < activeEmitterCount_; i++) {
+    EmitterGPUData& dst = gpuEmitters[i];
+    const EmitterData& src = emitters_[i];
+
+    // 共通データ
+    dst.type = static_cast<uint32_t>(src.type);
+    dst.isActive = src.isActive ? 1u : 0u;
+    dst.isEmit = src.isEmitting ? 1u : 0u;
+    dst.emitterID = src.emitterID;
+
+    dst.position = src.position;
+    dst.pad1 = 0.0f;
+    dst.colorTint = src.colorTint;
+
+    dst.count = src.count;
+    dst.frequency = src.frequency;
+    dst.frequencyTime = src.frequencyTime;
+    dst.pad2 = 0.0f;
+
+    // 形状固有のデータ
+    switch (src.type) {
+    case EmitterType::Sphere:
+      dst.radius = src.sphere.radius;
+      dst.spherePad1 = 0.0f;
+      dst.spherePad2 = 0.0f;
+      dst.spherePad3 = 0.0f;
+      break;
+
+    case EmitterType::Box:
+      dst.boxSize = src.box.size;
+      dst.boxPad1 = 0.0f;
+      dst.boxRotation = src.box.rotation;
+      dst.boxPad2 = 0.0f;
+      break;
+
+    case EmitterType::Triangle:
+      dst.triangleV1 = src.triangle.v1;
+      dst.triPad1 = 0.0f;
+      dst.triangleV2 = src.triangle.v2;
+      dst.triPad2 = 0.0f;
+      dst.triangleV3 = src.triangle.v3;
+      dst.triPad3 = 0.0f;
+      break;
+    }
+  }
+
+  // アンマップ
+  emitterResource_->Unmap(0, nullptr);
 }
 
 void GPUParticle::CreateRS()
@@ -505,53 +760,60 @@ void GPUParticle::CreateEmitParticleComputeRS()
   descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
   // DescriptorRangeの設定。
-  D3D12_DESCRIPTOR_RANGE descriptorRangeForParticle[1] = {}; // Particle
-  descriptorRangeForParticle[0].BaseShaderRegister = 0; // レジスタ番号
-  descriptorRangeForParticle[0].NumDescriptors = 1; // ディスクリプタ数
-  descriptorRangeForParticle[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // UAVを使う
-  descriptorRangeForParticle[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+  D3D12_DESCRIPTOR_RANGE descriptorRange_Particle[1] = {}; // Particle
+  descriptorRange_Particle[0].BaseShaderRegister = 0; // レジスタ番号
+  descriptorRange_Particle[0].NumDescriptors = 1; // ディスクリプタ数
+  descriptorRange_Particle[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // UAVを使う
+  descriptorRange_Particle[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
 
-  D3D12_DESCRIPTOR_RANGE descriptorRangeForFreeListIndex[1] = {}; // FreeListIndex
-  descriptorRangeForFreeListIndex[0].BaseShaderRegister = 1; // レジスタ番号
-  descriptorRangeForFreeListIndex[0].NumDescriptors = 1; // ディスクリプタ数
-  descriptorRangeForFreeListIndex[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // UAVを使う
-  descriptorRangeForFreeListIndex[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+  D3D12_DESCRIPTOR_RANGE descriptorRange_FreeListIndex[1] = {}; // FreeListIndex
+  descriptorRange_FreeListIndex[0].BaseShaderRegister = 1; // レジスタ番号
+  descriptorRange_FreeListIndex[0].NumDescriptors = 1; // ディスクリプタ数
+  descriptorRange_FreeListIndex[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // UAVを使う
+  descriptorRange_FreeListIndex[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
 
-  D3D12_DESCRIPTOR_RANGE descriptorRangeForFreeList[1] = {}; // FreeList
-  descriptorRangeForFreeList[0].BaseShaderRegister = 2; // レジスタ番号
-  descriptorRangeForFreeList[0].NumDescriptors = 1; // ディスクリプタ数
-  descriptorRangeForFreeList[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // UAVを使う
-  descriptorRangeForFreeList[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+  D3D12_DESCRIPTOR_RANGE descriptorRange_FreeList[1] = {}; // FreeList
+  descriptorRange_FreeList[0].BaseShaderRegister = 2; // レジスタ番号
+  descriptorRange_FreeList[0].NumDescriptors = 1; // ディスクリプタ数
+  descriptorRange_FreeList[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // UAVを使う
+  descriptorRange_FreeList[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+
+  D3D12_DESCRIPTOR_RANGE descriptorRange_Emitter[1] = {}; // Emitter
+  descriptorRange_Emitter[0].BaseShaderRegister = 0; // レジスタ番号
+  descriptorRange_Emitter[0].NumDescriptors = 1; // ディスクリプタ数
+  descriptorRange_Emitter[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
+  descriptorRange_Emitter[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
 
   // RootParameterの設定。複数設定できるので配列
   D3D12_ROOT_PARAMETER rootParameters[5] = {};
   // Particle
   rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
   rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
-  rootParameters[0].DescriptorTable.pDescriptorRanges = descriptorRangeForParticle; // ディスクリプタレンジを設定
-  rootParameters[0].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForParticle); // レンジの数
+  rootParameters[0].DescriptorTable.pDescriptorRanges = descriptorRange_Particle; // ディスクリプタレンジを設定
+  rootParameters[0].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange_Particle); // レンジの数
 
   // EmitterSphere
-  rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
+  rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
   rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
-  rootParameters[1].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
+  rootParameters[1].DescriptorTable.pDescriptorRanges = descriptorRange_Emitter; // ディスクリプタレンジを設定
+  rootParameters[1].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange_Emitter); // レンジの数
 
   // PerFrame
   rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
   rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
-  rootParameters[2].Descriptor.ShaderRegister = 1; // レジスタ番号とバインド
+  rootParameters[2].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
 
   // FreeListIndex
   rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
   rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
-  rootParameters[3].DescriptorTable.pDescriptorRanges = descriptorRangeForFreeListIndex; // ディスクリプタレンジを設定
-  rootParameters[3].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForFreeListIndex); // レンジの数
+  rootParameters[3].DescriptorTable.pDescriptorRanges = descriptorRange_FreeListIndex; // ディスクリプタレンジを設定
+  rootParameters[3].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange_FreeListIndex); // レンジの数
 
   // FreeList
   rootParameters[4].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
   rootParameters[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
-  rootParameters[4].DescriptorTable.pDescriptorRanges = descriptorRangeForFreeList; // ディスクリプタレンジを設定
-  rootParameters[4].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForFreeList); // レンジの数
+  rootParameters[4].DescriptorTable.pDescriptorRanges = descriptorRange_FreeList; // ディスクリプタレンジを設定
+  rootParameters[4].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange_FreeList); // レンジの数
 
   descriptionRootSignature.pParameters = rootParameters;
   descriptionRootSignature.NumParameters = _countof(rootParameters);
@@ -691,21 +953,24 @@ void GPUParticle::CreatePerFrameData()
   perFrameData_->deltaTime = 0.0f;
 }
 
-void GPUParticle::CreateEmitterSphereData()
+void GPUParticle::CreateEmitterData()
 {
-  // EmitterSphereのリソースを生成
-  m_dx12_->CreateBufferResource(emitterSphereResource_, sizeof(EmitterSphere));
+  // エミッターリソースの作成
+  m_dx12_->CreateResourceForUAV(emitterResource_, sizeof(EmitterGPUData) * kNumMaxEmitter_);
 
-  // EmitterSphereのデータをマップ
-  emitterSphereResource_->Map(0, nullptr, reinterpret_cast<void**>(&emitterSphereData_));
+  // エミッターリソースのSRVを作成
+  emitterSrvIndex_ = m_srvManager_->Allocate();
+  m_srvManager_->CreateSRVForStructuredBuffer(emitterSrvIndex_, emitterResource_.Get(), kNumMaxEmitter_, sizeof(EmitterGPUData));
 
-  // EmitterSphereのデータを設定
-  emitterSphereData_->count = 100;
-  emitterSphereData_->frequency = 0.5f;
-  emitterSphereData_->frequencyTime = 0.0f;
-  emitterSphereData_->radius = 0.5f;
-  emitterSphereData_->center = { 0.0f, 0.0f, 0.0f };
-  emitterSphereData_->isEmit = 0;
+  // エミッター配列の初期化
+  emitters_.clear();
+  activeEmitterCount_ = 0;
+
+  // GPU側の初期化
+  EmitterGPUData* gpuEmitters = nullptr;
+  emitterResource_->Map(0, nullptr, reinterpret_cast<void**>(&gpuEmitters));
+  ZeroMemory(gpuEmitters, sizeof(EmitterGPUData) * kNumMaxEmitter_);
+  emitterResource_->Unmap(0, nullptr);
 }
 
 void GPUParticle::CreateParticleResource()

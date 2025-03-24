@@ -1,10 +1,19 @@
 #pragma once
 #include <random>
 #include <string>
+#include <vector>
+#include <memory>
+#include <unordered_map>
 
 #include "SrvManager.h"
 #include "ParticleStruct.h"
 
+// 前方宣言
+class GPUParticleEmitter;
+class SphereEmitter;
+class BoxEmitter;
+class TriangleEmitter;
+class EmitterManager;
 class DX12Basic;
 class Camera;
 
@@ -45,16 +54,62 @@ public: // メンバー関数
   /// </summary>
   void Finalize();
 
+  /// <summary>
+  /// デバッグ情報表示
+  /// </summary>
   void DebugInfo();
 
-  //-------------------------Getter-------------------------//
-  bool GetIsDebug() const { return isDebug_; }
+  //-------------------------エミッター管理-------------------------//
 
-  //-------------------------Setter-------------------------//
+  /// <summary>
+  /// 球体エミッター作成
+  /// </summary>
+  std::shared_ptr<SphereEmitter> CreateSphereEmitter(const Vector3& position, float radius, uint32_t count, float frequency);
+
+  /// <summary>
+  /// 箱型エミッター作成
+  /// </summary>
+  std::shared_ptr<BoxEmitter> CreateBoxEmitter(const Vector3& position, const Vector3& size, const Vector3& rotation, uint32_t count, float frequency);
+
+  /// <summary>
+  /// 三角形エミッター作成
+  /// </summary>
+  std::shared_ptr<TriangleEmitter> CreateTriangleEmitter(const Vector3& position, const Vector3& v1, const Vector3& v2, const Vector3& v3, uint32_t count, float frequency);
+
+  /// <summary>
+  /// エミッターパラメータ更新
+  /// </summary>
+  void UpdateEmitterParameters(uint32_t emitterId, const EmitterData& params);
+
+  /// <summary>
+  /// エミッターのID取得
+  /// </summary>
+  uint32_t GetEmitterCount() const { return activeEmitterCount_; }
+
+  /// <summary>
+  /// エミッター削除
+  /// </summary>
+  void RemoveEmitterById(uint32_t emitterId);
+
+  //-------------------------Getter/Setter-------------------------//
+  bool GetIsDebug() const { return isDebug_; }
   void SetCamera(Camera* camera) { m_camera_ = camera; }
   void SetIsDebug(bool isDebug) { isDebug_ = isDebug; }
 
+  // フレンドクラス宣言
+  friend class GPUParticleEmitter;
+  friend class SphereEmitter;
+  friend class BoxEmitter;
+  friend class TriangleEmitter;
+  friend class EmitterManager;
+
 private: // プライベートメンバー関数
+  /// <summary>
+  /// エミッター内部作成関数
+  /// </summary>
+  uint32_t CreateSphereEmitterInternal(const Vector3& position, float radius, uint32_t count, float frequency);
+  uint32_t CreateBoxEmitterInternal(const Vector3& position, const Vector3& size, const Vector3& rotation, uint32_t count, float frequency);
+  uint32_t CreateTriangleEmitterInternal(const Vector3& position, const Vector3& v1, const Vector3& v2, const Vector3& v3, uint32_t count, float frequency);
 
   /// <summary>
   ///　emitterの更新
@@ -71,6 +126,12 @@ private: // プライベートメンバー関数
   /// </summary>
   void UpdatePerFrame();
 
+  /// <summary>
+  /// CPU側からGPU側へのエミッターデータ同期
+  /// </summary>
+  void SyncEmitterData();
+
+  ///-----------リソース作成関連------------///
   ///<summary>
   /// ルートシグネチャの作成
   /// 	/// </summary>
@@ -119,7 +180,7 @@ private: // プライベートメンバー関数
   /// <summary>
   /// EmitterSphereデータの生成
   /// </summary>
-  void CreateEmitterSphereData();
+  void CreateEmitterData();
 
   /// <summary>
   /// CSパーティクルリソースの生成
@@ -140,9 +201,9 @@ private: //メンバー変数
   static const uint32_t kNumMaxEmitter_;
 
 
-  bool isInited_;
-
-  bool isDebug_;
+  // 初期化フラグ
+  bool isInited_ = false;
+  bool isDebug_ = false;
 
   // DX12Basic
   DX12Basic* m_dx12_ = nullptr;
@@ -177,13 +238,15 @@ private: //メンバー変数
   Microsoft::WRL::ComPtr<ID3D12Resource> perViewResource_;
   PerView* perViewData_;
 
-  // EmitterSphereの定数バッファ
-  Microsoft::WRL::ComPtr<ID3D12Resource> emitterSphereResource_;
-  EmitterSphere* emitterSphereData_;
-
   // PerFrameの定数バッファ
   Microsoft::WRL::ComPtr<ID3D12Resource> perFrameResource_;
   PerFrame* perFrameData_;
+
+  // エミッターリソース
+  Microsoft::WRL::ComPtr<ID3D12Resource> emitterResource_;
+  uint32_t emitterSrvIndex_;
+  std::vector<EmitterData> emitters_;
+  uint32_t activeEmitterCount_ = 0;
 
   // FreeListリソース
   Microsoft::WRL::ComPtr<ID3D12Resource> freeListIndexResource_;

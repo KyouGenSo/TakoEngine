@@ -4,4 +4,6 @@
 namespace Logger
 {
 	void Log(const std::string& messege);
+
+  void Log(const char* format, ...);
 }
