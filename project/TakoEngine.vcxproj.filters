@@ -150,7 +150,7 @@
     <ClCompile Include="engine\effect\GPUParticleEmitter.cpp">
       <Filter>effect\Particle\Emitter</Filter>
     </ClCompile>
-    <ClCompile Include="BoxEmitter.cpp">
+    <ClCompile Include="engine\effect\BoxEmitter.cpp">
       <Filter>effect\Particle\Emitter</Filter>
     </ClCompile>
     <ClCompile Include="engine\effect\ParticleEmitter.cpp">
@@ -159,10 +159,10 @@
     <ClCompile Include="engine\effect\SphereEmitter.cpp">
       <Filter>effect\Particle\Emitter</Filter>
     </ClCompile>
-    <ClCompile Include="TriangleEmitter.cpp">
+    <ClCompile Include="engine\effect\TriangleEmitter.cpp">
       <Filter>effect\Particle\Emitter</Filter>
     </ClCompile>
-    <ClCompile Include="EmitterManager.cpp">
+    <ClCompile Include="engine\effect\EmitterManager.cpp">
       <Filter>effect\Particle\Emitter</Filter>
     </ClCompile>
   </ItemGroup>
@@ -305,7 +305,7 @@
     <ClInclude Include="engine\effect\ParticleStruct.h">
       <Filter>effect\Particle</Filter>
     </ClInclude>
-    <ClInclude Include="BoxEmitter.h">
+    <ClInclude Include="engine\effect\BoxEmitter.h">
       <Filter>effect\Particle\Emitter</Filter>
     </ClInclude>
     <ClInclude Include="engine\effect\GPUParticleEmitter.h">
@@ -317,7 +317,7 @@
     <ClInclude Include="engine\effect\SphereEmitter.h">
       <Filter>effect\Particle\Emitter</Filter>
     </ClInclude>
-    <ClInclude Include="TriangleEmitter.h">
+    <ClInclude Include="engine\effect\TriangleEmitter.h">
       <Filter>effect\Particle\Emitter</Filter>
     </ClInclude>
     <ClInclude Include="engine\effect\EmitterManager.h">

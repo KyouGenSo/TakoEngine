@@ -119,8 +119,8 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="BoxEmitter.cpp" />
-    <ClCompile Include="EmitterManager.cpp" />
+    <ClCompile Include="engine\effect\BoxEmitter.cpp" />
+    <ClCompile Include="engine\effect\EmitterManager.cpp" />
     <ClCompile Include="engine\effect\GPUParticle.cpp" />
     <ClCompile Include="engine\2d\DebugCamera.cpp" />
     <ClCompile Include="engine\2d\Draw2D.cpp" />
@@ -156,10 +156,10 @@
     <ClCompile Include="engine\func\mathFunc\QuatFunc.cpp" />
     <ClCompile Include="engine\effect\ParticleManager.cpp" />
     <ClCompile Include="engine\effect\ParticleEmitter.cpp" />
-    <ClCompile Include="TriangleEmitter.cpp" />
+    <ClCompile Include="engine\effect\TriangleEmitter.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BoxEmitter.h" />
+    <ClInclude Include="engine\effect\BoxEmitter.h" />
     <ClInclude Include="engine\effect\EmitterManager.h" />
     <ClInclude Include="engine\effect\GPUParticle.h" />
     <ClInclude Include="engine\audio\miniaudio.h" />
@@ -210,7 +210,7 @@
     <ClInclude Include="engine\time\FrameTimer.h" />
     <ClInclude Include="engine\base\IWndProcHandler.h" />
     <ClInclude Include="engine\effect\ParticleStruct.h" />
-    <ClInclude Include="TriangleEmitter.h" />
+    <ClInclude Include="engine\effect\TriangleEmitter.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">
