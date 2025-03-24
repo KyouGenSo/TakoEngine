@@ -115,9 +115,11 @@ void GPUParticle::Draw()
     isInited_ = true;
   }
 
-  m_dx12_->SetUAVBarrier(particleResource_.Get());
-  m_dx12_->SetUAVBarrier(freeListIndexResource_.Get());
-  m_dx12_->SetUAVBarrier(freeListResource_.Get());
+  if (isInited_) {
+    m_dx12_->SetUAVBarrier(particleResource_.Get());
+    m_dx12_->SetUAVBarrier(freeListIndexResource_.Get());
+    m_dx12_->SetUAVBarrier(freeListResource_.Get());
+  }
 
   //--------------------------------------射出--------------------------------------//
   // ルートシグネチャの設定
@@ -216,14 +218,9 @@ void GPUParticle::Finalize()
 void GPUParticle::DebugInfo()
 {
 #ifdef _DEBUG
-  // CPU側でFreeListの状態を取得して表示
-  //int freeListIndex = 0;
-  //freeListIndexResource_->Map(0, nullptr, reinterpret_cast<void**>(&freeListIndex));
   ImGui::Begin("GPU Particle");
 
-  //ImGui::Text("現在のFreeListIndex: %d", freeListIndex);
-
-  ImGui::Text("frequency: %f, frequencyTime: %f, isEmit: %d",
+  ImGui::Text("frequency: %.2f, frequencyTime: %.2f, isEmit: %d",
     emitterSphereData_->frequency,
     emitterSphereData_->frequencyTime,
     emitterSphereData_->isEmit);
@@ -704,8 +701,9 @@ void GPUParticle::CreateEmitterSphereData()
 
   // EmitterSphereのデータを設定
   emitterSphereData_->count = 100;
-  emitterSphereData_->frequency = 1.0f;
+  emitterSphereData_->frequency = 0.5f;
   emitterSphereData_->frequencyTime = 0.0f;
+  emitterSphereData_->radius = 0.5f;
   emitterSphereData_->center = { 0.0f, 0.0f, 0.0f };
   emitterSphereData_->isEmit = 0;
 }

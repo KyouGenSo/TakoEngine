@@ -40,11 +40,17 @@ void main( uint3 DTid : SV_DispatchThreadID )
             if (freeListIndex >= 0 && freeListIndex < kMaxParticles && gFreeList[freeListIndex] < kMaxParticles)
             {
                 uint particleIndex = gFreeList[freeListIndex];
+                
                 gParticles[particleIndex].scale = float3(1.0f, 1.0f, 1.0f);
+                
                 gParticles[particleIndex].translate = gEmitter.center + generator.Generate3d() * gEmitter.radius;
-                gParticles[particleIndex].velocity = generator.Generate3d();
-                gParticles[particleIndex].lifeTime = 1.0f;
-                gParticles[particleIndex].color.rgb = generator.Generate3d();
+                
+                gParticles[particleIndex].velocity = (generator.Generate3d() * 2.0f - 1.0f) * 0.1f;
+                
+                gParticles[particleIndex].lifeTime = 1.0f + generator.Generate1d() * 0.5f;
+                gParticles[particleIndex].currentTime = 0.0f;
+                
+                gParticles[particleIndex].color.rgb = generator.Generate3d() * 0.5f + 0.5f;
                 gParticles[particleIndex].color.a = 1.0f;
             }
             else
