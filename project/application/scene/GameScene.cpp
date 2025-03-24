@@ -56,12 +56,12 @@ void GameScene::Initialize()
   emitterManager_ = std::make_unique<EmitterManager>(particleSystem);
 
   // 球体エミッターの作成
-  sphereEmitter_ = emitterManager_->CreateSphereEmitter("player", { 0.0f, 100.0f, 0.0f }, 10.0f, 10, 1.0f);
-  sphereEmitter_->SetColor({ 1.0f, 1.0f, 1.0f, 1.0f });
+  sphereEmitter_ = emitterManager_->CreateSphereEmitter("player", { 10.0f, 0.0f, 0.0f }, 10.0f, 10, 1.0f);
+  sphereEmitter_->SetColor({ 1.0f, 0.0f, 1.0f, 1.0f });
   sphereEmitter_->SetActive(true);
 
   // 箱エミッターの作成
-  boxEmitter_ = emitterManager_->CreateBoxEmitter("box", { 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, 10, 0.1f);
+  boxEmitter_ = emitterManager_->CreateBoxEmitter("box", { 0.0f, 5.0f, 0.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, 1, 0.5f);
   boxEmitter_->SetColor({ 1.0f, 1.0f, 1.0f, 1.0f });
   boxEmitter_->SetActive(true);
 

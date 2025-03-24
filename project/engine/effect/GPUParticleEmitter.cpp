@@ -25,7 +25,7 @@ void GPUParticleEmitter::SetPosition(const Vector3& position)
   position_ = position;
 
   if (particleSystem_) {
-    EmitterData params;
+    EmitterData params = particleSystem_->GetEmitterData(emitterId_);
     params.position = position_;
     particleSystem_->UpdateEmitterParameters(emitterId_, params);
   }
@@ -36,7 +36,7 @@ void GPUParticleEmitter::SetActive(bool isActive)
   isActive_ = isActive;
 
   if (particleSystem_) {
-    EmitterData params;
+    EmitterData params = particleSystem_->GetEmitterData(emitterId_);
     params.isActive = isActive_;
     particleSystem_->UpdateEmitterParameters(emitterId_, params);
   }
@@ -47,7 +47,7 @@ void GPUParticleEmitter::SetColor(const Vector4& color)
   color_ = color;
 
   if (particleSystem_) {
-    EmitterData params;
+    EmitterData params = particleSystem_->GetEmitterData(emitterId_);
     params.colorTint = color_;
     particleSystem_->UpdateEmitterParameters(emitterId_, params);
   }
@@ -58,7 +58,7 @@ void GPUParticleEmitter::SetParticleCount(uint32_t count)
   particleCount_ = count;
 
   if (particleSystem_) {
-    EmitterData params;
+    EmitterData params = particleSystem_->GetEmitterData(emitterId_);
     params.count = particleCount_;
     particleSystem_->UpdateEmitterParameters(emitterId_, params);
   }
@@ -69,7 +69,7 @@ void GPUParticleEmitter::SetFrequency(float frequency)
   frequency_ = frequency;
 
   if (particleSystem_) {
-    EmitterData params;
+    EmitterData params = particleSystem_->GetEmitterData(emitterId_);
     params.frequency = frequency_;
     particleSystem_->UpdateEmitterParameters(emitterId_, params);
   }
