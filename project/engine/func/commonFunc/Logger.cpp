@@ -6,7 +6,7 @@
 
 namespace Logger
 {
-  void Log(const std::string& message, ...)
+  void Log(const std::string& message)
   {
     OutputDebugStringA(message.c_str());
   }
@@ -31,6 +31,6 @@ namespace Logger
     va_end(args);
 
     // 既存のログ関数を呼び出す
-    Log(buffer.data());
+    Log(std::string(buffer.data()));
   }
 }

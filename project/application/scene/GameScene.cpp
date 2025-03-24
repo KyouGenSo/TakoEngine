@@ -11,6 +11,7 @@
 #include "FrameTimer.h"
 #include "GPUParticle.h"
 #include "SceneManager.h"
+#include "SphereEmitter.h"
 
 #include <numbers>
 
@@ -49,28 +50,15 @@ void GameScene::Initialize()
 
   modelPos2_ = { 0.0f, 6.7f, -24.0f };
 
-  spotLight_.color = { 1.0f, 1.0f, 1.0f, 1.0f };
-  spotLight_.position = { 0.0f, 1.0f, 0.0f };
-	spotLight_.intensity = 1.0f;
-  spotLight_.direction = { 0.0f, -1.0f, 0.0f };
-	spotLight_.distance = 7.0f;
-	spotLight_.decay = 1.0f;
-  spotLight_.cosAngle = std::cos(DirectX::XM_PI / 3.0f);
-	spotLight_.enable = true;
+  GPUParticle* particleSystem = GPUParticle::GetInstance();
 
-  pointLight_.position = { 0.0f, 1.f, 0.0f };         // ライトの位置
-	pointLight_.color = { 1.0f, 1.0f, 1.0f, 1.0f };     // ライトの色
-	pointLight_.intensity = 1.0f;                       // 輝度
-	pointLight_.radius = 10.0f;                         // 半径
-	pointLight_.decay = 1.0f;                           // 減衰
-	pointLight_.enable = false;                         // 点光源の有効無効
+  emitterManager_ = std::make_unique<EmitterManager>(particleSystem);
 
-  pointLight2_.position = { 0.0f, 1.f, 0.0f };         // ライトの位置
-	pointLight2_.color = { 1.0f, 1.0f, 1.0f, 1.0f };     // ライトの色
-	pointLight2_.intensity = 1.0f;                       // 輝度
-	pointLight2_.radius = 10.0f;                         // 半径
-	pointLight2_.decay = 1.0f;                           // 減衰
-	pointLight2_.enable = false;                         // 点光源の有効無効
+  // 球体エミッターの作成
+  emitter_ = emitterManager_->CreateSphereEmitter("player", { 0.0f, 0.0f, 0.0f }, 1.0f, 100, 0.1f);
+  emitter_->SetColor({ 1.0f, 1.0f, 1.0f, 1.0f });
+  emitter_->SetActive(true);
+
 }
 
 void GameScene::Finalize()
@@ -118,11 +106,11 @@ void GameScene::Update()
 	object3d_->Update();
 	object3d2_->Update();
 
+  emitterManager_->Update();
+
 	// ライトの設定
 	Object3dBasic::GetInstance()->SetDirectionalLight(lightDirection_, lightColor_, 1, lightIntensity_);
-	Object3dBasic::GetInstance()->SetSpotLight(spotLight_.position, spotLight_.direction, spotLight_.color, spotLight_.intensity, spotLight_.distance, spotLight_.decay, spotLight_.cosAngle, spotLight_.enable, 0);
-	Object3dBasic::GetInstance()->SetPointLight(pointLight_.position, pointLight_.color, pointLight_.intensity, pointLight_.radius, pointLight_.decay, pointLight_.enable, 0);
-	Object3dBasic::GetInstance()->SetPointLight(pointLight2_.position, pointLight2_.color, pointLight2_.intensity, pointLight2_.radius, pointLight2_.decay, pointLight2_.enable, 1);
+
 
 	// シーン遷移
 	if (Input::GetInstance()->TriggerKey(DIK_RETURN))
@@ -194,37 +182,6 @@ void GameScene::DrawImGui()
 	ImGui::ColorEdit4("Color", &lightColor_.x);
 	ImGui::Checkbox("Lighting", &isLighting_);
 	ImGui::Checkbox("Highlight", &isHighlight_);
-	ImGui::End();
-
-	ImGui::Begin("Point Light");
-	ImGui::Text("Point Light1");
-	ImGui::DragFloat3("Position", &pointLight_.position.x, 0.01f, -50.0f, 50.0f);
-	ImGui::DragFloat("Intensity", &pointLight_.intensity, 0.01f, 0.0f, 10.0f);
-	ImGui::DragFloat("Radius", &pointLight_.radius, 0.01f, 0.0f, 100.0f);
-	ImGui::DragFloat("Decay", &pointLight_.decay, 0.01f, 0.0f, 10.0f);
-	ImGui::ColorEdit4("Color", &pointLight_.color.x);
-	ImGui::Checkbox("Enable", &pointLight_.enable);
-	ImGui::End();
-
-	ImGui::Begin("Point Light2");
-	ImGui::Text("Point Light2");
-	ImGui::DragFloat3("Position", &pointLight2_.position.x, 0.01f, -50.0f, 50.0f);
-	ImGui::DragFloat("Intensity", &pointLight2_.intensity, 0.01f, 0.0f, 10.0f);
-	ImGui::DragFloat("Radius", &pointLight2_.radius, 0.01f, 0.0f, 100.0f);
-	ImGui::DragFloat("Decay", &pointLight2_.decay, 0.01f, 0.0f, 10.0f);
-	ImGui::ColorEdit4("Color", &pointLight2_.color.x);
-	ImGui::Checkbox("Enable", &pointLight2_.enable);
-	ImGui::End();
-
-	ImGui::Begin("Spot Light");
-	ImGui::DragFloat3("Position", &spotLight_.position.x, 0.01f, -50.0f, 50.0f);
-	ImGui::DragFloat3("Direction", &spotLight_.direction.x, 0.01f, -1.0f, 1.0f);
-	ImGui::DragFloat("Intensity", &spotLight_.intensity, 0.01f, 0.0f, 10.0f);
-	ImGui::DragFloat("Distance", &spotLight_.distance, 0.01f, 0.0f, 100.0f);
-	ImGui::DragFloat("Decay", &spotLight_.decay, 0.01f, 0.0f, 10.0f);
-	ImGui::DragFloat("CosAngle", &spotLight_.cosAngle, 0.01f, 0.0f, 1.0f);
-	ImGui::ColorEdit4("Color", &spotLight_.color.x);
-	ImGui::Checkbox("Enable", &spotLight_.enable);
 	ImGui::End();
 
   ImGui::Begin("GameTime");

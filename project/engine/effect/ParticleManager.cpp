@@ -87,14 +87,14 @@ void ParticleManager::Update()
 			if (group.second.instanceCount < kNumMaxInstance_) {
 
 				//　速度の更新
-				(*particleIterator).transform.translate = (*particleIterator).transform.translate + (*particleIterator).velocity * kDeltaTime_;
+				//(*particleIterator).transform.translate = (*particleIterator).transform.translate + (*particleIterator).velocity * kDeltaTime_;
 				(*particleIterator).currentTime += kDeltaTime_;
 
-				Matrix4x4 worldMatrix = Mat4x4::Multiply(billboardMatrix, Mat4x4::MakeAffine((*particleIterator).transform.scale, (*particleIterator).transform.rotate, (*particleIterator).transform.translate));
-				Matrix4x4 worldviewProjectionMatrix = Mat4x4::Multiply(worldMatrix, viewProjectionMatrix);
+				//Matrix4x4 worldMatrix = Mat4x4::Multiply(billboardMatrix, Mat4x4::MakeAffine((*particleIterator).transform.scale, (*particleIterator).transform.rotate, (*particleIterator).transform.translate));
+				//Matrix4x4 worldviewProjectionMatrix = Mat4x4::Multiply(worldMatrix, viewProjectionMatrix);
 
-				group.second.pParticleDataForGPU[group.second.instanceCount].WVP = worldviewProjectionMatrix;
-				group.second.pParticleDataForGPU[group.second.instanceCount].world = worldMatrix;
+				//group.second.pParticleDataForGPU[group.second.instanceCount].WVP = worldviewProjectionMatrix;
+				//group.second.pParticleDataForGPU[group.second.instanceCount].world = worldMatrix;
 
 				//　色の設定
 				group.second.pParticleDataForGPU[group.second.instanceCount].color = (*particleIterator).color;
@@ -237,10 +237,12 @@ Particle ParticleManager::MakeNewParticle(std::mt19937& randomEngine, const Vect
 
 	Particle particle;
 
-	particle.transform.scale = scale;
-	particle.transform.rotate = { 0.0f, 0.0f, 0.0f };
+	//particle.transform.scale = scale;
+	//particle.transform.rotate = { 0.0f, 0.0f, 0.0f };
 	Vector3 randomPosVec = { randomX(randomEngine), randomY(randomEngine), randomZ(randomEngine) };
-	particle.transform.translate = translate + randomPosVec;
+	//particle.transform.translate = translate + randomPosVec;
+  scale;
+  translate;
 
 	particle.velocity = velocity;
 	particle.color = color;

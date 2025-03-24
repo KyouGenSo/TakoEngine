@@ -4,6 +4,7 @@
 #include "BoxEmitter.h"
 #include "TriangleEmitter.h"
 #include "Logger.h"
+#include "FrameTimer.h"
 
 EmitterManager::EmitterManager(GPUParticle* particleSystem)
   : particleSystem_(particleSystem)
@@ -354,8 +355,10 @@ void EmitterManager::CreateTrailEffect(const std::string& name, const Vector3& s
 }
 
 // 更新処理
-void EmitterManager::Update(float deltaTime)
+void EmitterManager::Update()
 {
+  float deltaTime = FrameTimer::GetInstance()->GetDeltaTime();
+
   // タイマー付きエフェクトの更新
   for (auto it = timedEffects_.begin(); it != timedEffects_.end();) {
     // 時間を更新
@@ -368,4 +371,186 @@ void EmitterManager::Update(float deltaTime)
         RemoveEmitter(emitterName);
       }
 
-      //
+      // リストから削除
+      it = timedEffects_.erase(it);
+    } else {
+      // 次のエフェクトへ
+      ++it;
+    }
+  }
+}
+
+// 爆発エフェクト作成
+std::vector<std::shared_ptr<GPUParticleEmitter>> EmitterManager::CreateExplosionEffect(const std::string& baseName, const Vector3& position, float scale)
+{
+  baseName;
+
+  std::vector<std::shared_ptr<GPUParticleEmitter>> emitters;
+
+  // 1. 中心の球体エミッター（メインの爆発）
+  auto mainEmitter = particleSystem_->CreateSphereEmitter(
+    position,
+    0.5f * scale,
+    50,
+    0.05f
+  );
+  mainEmitter->SetColor(Vector4(1.0f, 0.7f, 0.3f, 1.0f));  // オレンジ色
+  emitters.push_back(mainEmitter);
+
+  // 2. 外側の球体エミッター（衝撃波）
+  auto shockwaveEmitter = particleSystem_->CreateSphereEmitter(
+    position,
+    1.0f * scale,
+    30,
+    0.1f
+  );
+  shockwaveEmitter->SetColor(Vector4(0.9f, 0.9f, 0.9f, 0.8f));  // 白っぽい
+  emitters.push_back(shockwaveEmitter);
+
+  // 3. 破片エミッター
+  auto debrisEmitter = particleSystem_->CreateSphereEmitter(
+    position,
+    0.8f * scale,
+    20,
+    0.2f
+  );
+  debrisEmitter->SetColor(Vector4(0.6f, 0.6f, 0.6f, 1.0f));  // グレー
+  emitters.push_back(debrisEmitter);
+
+  return emitters;
+}
+
+// 炎エフェクト作成
+std::vector<std::shared_ptr<GPUParticleEmitter>> EmitterManager::CreateFireEffect(const std::string& baseName, const Vector3& position, float scale)
+{
+  baseName;
+
+  std::vector<std::shared_ptr<GPUParticleEmitter>> emitters;
+
+  // 1. 下部の炎（三角形）
+  Vector3 v1 = { -0.5f * scale, 0.0f, -0.5f * scale };
+  Vector3 v2 = { 0.5f * scale, 0.0f, -0.5f * scale };
+  Vector3 v3 = { 0.0f, 0.0f, 0.5f * scale };
+
+  auto baseFireEmitter = particleSystem_->CreateTriangleEmitter(
+    position,
+    v1, v2, v3,
+    15,
+    0.05f
+  );
+  baseFireEmitter->SetColor(Vector4(1.0f, 0.5f, 0.2f, 1.0f));  // オレンジ色
+  emitters.push_back(baseFireEmitter);
+
+  // 2. 中部の炎（球体）
+  auto midFireEmitter = particleSystem_->CreateSphereEmitter(
+    Vector3(position.x, position.y + 0.5f * scale, position.z),
+    0.4f * scale,
+    10,
+    0.1f
+  );
+  midFireEmitter->SetColor(Vector4(1.0f, 0.7f, 0.3f, 0.9f));  // オレンジ色
+  emitters.push_back(midFireEmitter);
+
+  // 3. 上部の煙（球体）
+  auto smokeEmitter = particleSystem_->CreateSphereEmitter(
+    Vector3(position.x, position.y + 1.2f * scale, position.z),
+    0.6f * scale,
+    5,
+    0.2f
+  );
+  smokeEmitter->SetColor(Vector4(0.5f, 0.5f, 0.5f, 0.7f));  // グレー
+  emitters.push_back(smokeEmitter);
+
+  return emitters;
+}
+
+// 煙エフェクト作成
+std::vector<std::shared_ptr<GPUParticleEmitter>> EmitterManager::CreateSmokeEffect(const std::string& baseName, const Vector3& position, float scale)
+{
+  baseName;
+
+  std::vector<std::shared_ptr<GPUParticleEmitter>> emitters;
+
+  // 1. 下部の煙（小さい球体）
+  auto baseSmoke = particleSystem_->CreateSphereEmitter(
+    position,
+    0.3f * scale,
+    10,
+    0.1f
+  );
+  baseSmoke->SetColor(Vector4(0.7f, 0.7f, 0.7f, 0.9f));  // グレー
+  emitters.push_back(baseSmoke);
+
+  // 2. 中部の煙（中間サイズの球体）
+  auto midSmoke = particleSystem_->CreateSphereEmitter(
+    Vector3(position.x, position.y + 0.5f * scale, position.z),
+    0.5f * scale,
+    7,
+    0.15f
+  );
+  midSmoke->SetColor(Vector4(0.6f, 0.6f, 0.6f, 0.8f));  // グレー
+  emitters.push_back(midSmoke);
+
+  // 3. 上部の煙（大きい球体）
+  auto topSmoke = particleSystem_->CreateSphereEmitter(
+    Vector3(position.x, position.y + 1.0f * scale, position.z),
+    0.8f * scale,
+    5,
+    0.2f
+  );
+  topSmoke->SetColor(Vector4(0.5f, 0.5f, 0.5f, 0.6f));  // グレー
+  emitters.push_back(topSmoke);
+
+  return emitters;
+}
+
+// 魔法エフェクト作成
+std::vector<std::shared_ptr<GPUParticleEmitter>> EmitterManager::CreateMagicEffect(const std::string& baseName, const Vector3& position, float scale)
+{
+  baseName;
+
+  std::vector<std::shared_ptr<GPUParticleEmitter>> emitters;
+
+  // 1. 中心の輝き（小さい球体）
+  auto coreEmitter = particleSystem_->CreateSphereEmitter(
+    position,
+    0.2f * scale,
+    20,
+    0.05f
+  );
+  coreEmitter->SetColor(Vector4(0.5f, 0.8f, 1.0f, 1.0f));  // 淡い青色
+  emitters.push_back(coreEmitter);
+
+  // 2. 周囲のオーラ（中間サイズの球体）
+  auto auraEmitter = particleSystem_->CreateSphereEmitter(
+    position,
+    0.6f * scale,
+    15,
+    0.1f
+  );
+  auraEmitter->SetColor(Vector4(0.4f, 0.6f, 1.0f, 0.8f));  // 青色
+  emitters.push_back(auraEmitter);
+
+  // 3. 外側の粒子（大きい球体）
+  auto outerEmitter = particleSystem_->CreateSphereEmitter(
+    position,
+    1.2f * scale,
+    10,
+    0.15f
+  );
+  outerEmitter->SetColor(Vector4(0.3f, 0.5f, 1.0f, 0.6f));  // 青色
+  emitters.push_back(outerEmitter);
+
+  // 4. 回転する粒子リング（箱型をリング状に）
+  auto ringEmitter = particleSystem_->CreateBoxEmitter(
+    position,
+    Vector3(1.0f * scale, 0.1f * scale, 1.0f * scale),  // 薄いリング状
+    Vector3(0.0f, 45.0f, 0.0f),  // 少し傾ける
+    15,
+    0.1f
+  );
+  ringEmitter->SetColor(Vector4(0.7f, 0.9f, 1.0f, 0.7f));  // 明るい青色
+  emitters.push_back(ringEmitter);
+
+  return emitters;
+}

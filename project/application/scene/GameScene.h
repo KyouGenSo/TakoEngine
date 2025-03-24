@@ -2,6 +2,8 @@
 #include "BaseScene.h"
 #include"Sprite.h"
 #include"Object3d.h"
+#include "GPUParticleEmitter.h"
+#include "EmitterManager.h"
 
 class GameScene : public BaseScene
 {
@@ -89,4 +91,10 @@ private: // メンバ変数
 
 	// スポットライトの設定
 	SpotLight spotLight_;
+
+  // エミッター管理
+  std::unique_ptr<EmitterManager> emitterManager_;
+
+  // プレイヤーエフェクト用エミッター
+  std::shared_ptr<SphereEmitter> emitter_;
 };

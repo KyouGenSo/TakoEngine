@@ -60,7 +60,7 @@ public:
   void CreateTrailEffect(const std::string& name, const Vector3& startPosition, const Vector3& direction, float length, float width, float duration);
 
   // 更新処理
-  void Update(float deltaTime);
+  void Update();
 
 private:
   // エフェクトグループ内部実装
