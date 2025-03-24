@@ -955,6 +955,10 @@ void GPUParticle::CreatePerFrameData()
 
 void GPUParticle::CreateEmitterData()
 {
+
+  // エミッターリソースの生成
+  m_dx12_->CreateBufferResource(emitterResource_, sizeof(EmitterGPUData) * kNumMaxEmitter_);
+
   // エミッターリソースのSRVを作成
   emitterSrvIndex_ = m_srvManager_->Allocate();
   m_srvManager_->CreateSRVForStructuredBuffer(emitterSrvIndex_, emitterResource_.Get(), kNumMaxEmitter_, sizeof(EmitterGPUData));

@@ -12,6 +12,7 @@
 #include "GPUParticle.h"
 #include "SceneManager.h"
 #include "SphereEmitter.h"
+#include "BoxEmitter.h"
 
 #include <numbers>
 
@@ -55,9 +56,14 @@ void GameScene::Initialize()
   emitterManager_ = std::make_unique<EmitterManager>(particleSystem);
 
   // 球体エミッターの作成
-  emitter_ = emitterManager_->CreateSphereEmitter("player", { 0.0f, 0.0f, 0.0f }, 1.0f, 100, 0.1f);
-  emitter_->SetColor({ 1.0f, 1.0f, 1.0f, 1.0f });
-  emitter_->SetActive(true);
+  sphereEmitter_ = emitterManager_->CreateSphereEmitter("player", { 0.0f, 100.0f, 0.0f }, 10.0f, 10, 1.0f);
+  sphereEmitter_->SetColor({ 1.0f, 1.0f, 1.0f, 1.0f });
+  sphereEmitter_->SetActive(true);
+
+  // 箱エミッターの作成
+  boxEmitter_ = emitterManager_->CreateBoxEmitter("box", { 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, 10, 0.1f);
+  boxEmitter_->SetColor({ 1.0f, 1.0f, 1.0f, 1.0f });
+  boxEmitter_->SetActive(true);
 
 }
 

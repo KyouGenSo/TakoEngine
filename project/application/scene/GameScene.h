@@ -95,6 +95,9 @@ private: // メンバ変数
   // エミッター管理
   std::unique_ptr<EmitterManager> emitterManager_;
 
-  // プレイヤーエフェクト用エミッター
-  std::shared_ptr<SphereEmitter> emitter_;
+  // 球体エミッター
+  std::shared_ptr<SphereEmitter> sphereEmitter_;
+
+  // 箱型エミッター
+  std::shared_ptr<BoxEmitter> boxEmitter_;
 };
