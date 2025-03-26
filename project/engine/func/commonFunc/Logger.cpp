@@ -36,6 +36,6 @@ namespace Logger
     va_end(args);
 
     // std::string版のLogを呼び出す
-    Log(formattedMessage);
+    Log(formattedMessage + "\n");
   }
 }

@@ -88,49 +88,6 @@ std::shared_ptr<TriangleEmitter> EmitterManager::CreateTriangleEmitter(const std
   return emitter;
 }
 
-// 一時的な球体エミッター作成
-void EmitterManager::MakeTimedSphereEmitter(const std::string& name, const Vector3& position, float radius,
-  uint32_t count, float frequency, float duration)
-{
-  // 通常のエミッター作成関数を利用
-  std::shared_ptr<SphereEmitter> emitter = CreateSphereEmitter(name, position, radius, count, frequency);
-
-  if (emitter) {
-    // タイマー付きエミッターとして登録
-    RegisterTimedEmitter(name, name, duration);
-    Logger::Log("Registered sphere emitter '%s' as timed (%.2f seconds)", name.c_str(), duration);
-  }
-}
-
-// 一時的な箱型エミッター作成
-void EmitterManager::MakeTimedBoxEmitter(const std::string& name, const Vector3& position, const Vector3& size,
-  const Vector3& rotation, uint32_t count, float frequency, float duration)
-{
-  // 通常のエミッター作成関数を利用
-  std::shared_ptr<BoxEmitter> emitter = CreateBoxEmitter(name, position, size, rotation, count, frequency);
-
-  if (emitter) {
-    // タイマー付きエミッターとして登録
-    RegisterTimedEmitter(name, name, duration);
-    Logger::Log("Registered box emitter '%s' as timed (%.2f seconds)", name.c_str(), duration);
-  }
-}
-
-// 一時的な三角形エミッター作成
-void EmitterManager::MakeTimedTriangleEmitter(const std::string& name, const Vector3& position,
-  const Vector3& v1, const Vector3& v2, const Vector3& v3,
-  uint32_t count, float frequency, float duration)
-{
-  // 通常のエミッター作成関数を利用
-  std::shared_ptr<TriangleEmitter> emitter = CreateTriangleEmitter(name, position, v1, v2, v3, count, frequency);
-
-  if (emitter) {
-    // タイマー付きエミッターとして登録
-    RegisterTimedEmitter(name, name, duration);
-    Logger::Log("Registered triangle emitter '%s' as timed (%.2f seconds)", name.c_str(), duration);
-  }
-}
-
 // エミッター管理
 std::shared_ptr<GPUParticleEmitter> EmitterManager::GetEmitterByName(const std::string& name)
 {
@@ -154,35 +111,18 @@ void EmitterManager::RemoveEmitter(const std::string& name)
     // エミッターをマップから削除（shared_ptrなので自動解放）
     emitterMap_.erase(it);
 
-    // タイマー付きエフェクトからも削除
-    for (auto& effect : timedEffects_) {
-      auto& emitterNames = effect.emitterNames;
-      auto nameIt = std::find(emitterNames.begin(), emitterNames.end(), name);
-      if (nameIt != emitterNames.end()) {
-        emitterNames.erase(nameIt);
-        Logger::Log("Removed emitter '%s' from timed effect '%s'", name.c_str(), effect.name.c_str());
+    // グループからも安全に削除
+    for (auto& [groupName, group] : groupMap_) {
+      auto& emitterNames = group.emitterNames;
+
+      // 安全に要素を削除（remove-eraseイディオム）
+      auto newEnd = std::remove(emitterNames.begin(), emitterNames.end(), name);
+      if (newEnd != emitterNames.end()) {
+        emitterNames.erase(newEnd, emitterNames.end());
+        Logger::Log("Removed emitter '%s' from group '%s'", name.c_str(), groupName.c_str());
       }
     }
 
-    // グループからも削除
-    for (auto& group : groupMap_) {
-      auto& emitterNames = group.second.emitterNames;
-      auto nameIt = std::find(emitterNames.begin(), emitterNames.end(), name);
-      if (nameIt != emitterNames.end()) {
-        emitterNames.erase(nameIt);
-        Logger::Log("Removed emitter '%s' from group '%s'", name.c_str(), group.first.c_str());
-      }
-    }
-
-    // 空になったタイマー付きエフェクトを削除
-    for (auto timedIt = timedEffects_.begin(); timedIt != timedEffects_.end();) {
-      if (timedIt->emitterNames.empty()) {
-        Logger::Log("Removing empty timed effect '%s'", timedIt->name.c_str());
-        timedIt = timedEffects_.erase(timedIt);
-      } else {
-        ++timedIt;
-      }
-    }
   } else {
     Logger::Log("RemoveEmitter: Emitter '%s' not found", name.c_str());
   }
@@ -190,8 +130,8 @@ void EmitterManager::RemoveEmitter(const std::string& name)
 
 void EmitterManager::RemoveAllEmitters()
 {
-  Logger::Log("RemoveAllEmitters: Removing all emitters (%zu emitters, %zu timed effects)",
-    emitterMap_.size(), timedEffects_.size());
+  Logger::Log("RemoveAllEmitters: Removing all emitters (%zu emitters)",
+    emitterMap_.size());
 
   // エミッターを1つずつ明示的に削除（GPUParticleシステムに通知するため）
   for (auto& pair : emitterMap_) {
@@ -207,9 +147,6 @@ void EmitterManager::RemoveAllEmitters()
   for (auto& group : groupMap_) {
     group.second.emitterNames.clear();
   }
-
-  // タイマー付きエフェクトのリストもクリア
-  timedEffects_.clear();
 }
 
 // グループ機能
@@ -351,15 +288,6 @@ void EmitterManager::RemoveGroup(const std::string& groupName)
     // グループをマップから削除
     groupMap_.erase(it);
 
-    // タイマー付きエフェクトも確認
-    for (auto effIt = timedEffects_.begin(); effIt != timedEffects_.end();) {
-      if (effIt->name + "_group" == groupName) {
-        Logger::Log("RemoveGroup: Removing associated timed effect '%s'", effIt->name.c_str());
-        effIt = timedEffects_.erase(effIt);
-      } else {
-        ++effIt;
-      }
-    }
   } else {
     Logger::Log("RemoveGroup: Group '%s' not found", groupName.c_str());
   }
@@ -368,65 +296,5 @@ void EmitterManager::RemoveGroup(const std::string& groupName)
 // 更新処理
 void EmitterManager::Update()
 {
-  float deltaTime = FrameTimer::GetInstance()->GetDeltaTime();
 
-  // タイマー付きエフェクトの更新
-  for (auto it = timedEffects_.begin(); it != timedEffects_.end();) {
-    // 時間を更新
-    it->currentTime += deltaTime;
-
-    // 時間切れならエフェクトを削除
-    if (it->currentTime >= it->duration) {
-      Logger::Log("Timed effect '%s' expired (%.2f/%.2f seconds)",
-        it->name.c_str(), it->currentTime, it->duration);
-
-      // エミッターを削除
-      for (const auto& emitterName : it->emitterNames) {
-        RemoveEmitter(emitterName);
-      }
-
-      // リストから削除
-      it = timedEffects_.erase(it);
-    } else {
-      ++it;
-    }
-  }
-}
-
-float EmitterManager::GetRemainingTime(const std::string& name) const
-{
-  for (const auto& effect : timedEffects_) {
-    if (effect.name == name) {
-      return (std::max)(0.0f, effect.duration - effect.currentTime);
-    }
-  }
-  return 0.0f;  // 見つからない場合は0を返す
-}
-
-// エミッターをタイマー付きで登録する内部関数
-void EmitterManager::RegisterTimedEmitter(const std::string& name, const std::string& emitterName, float duration)
-{
-  // 同名の既存エフェクトを探す
-  for (auto it = timedEffects_.begin(); it != timedEffects_.end(); ++it) {
-    if (it->name == name) {
-      // 既存のエフェクトにエミッターを追加
-      auto& emitterNames = it->emitterNames;
-      // 重複がないか確認
-      if (std::find(emitterNames.begin(), emitterNames.end(), emitterName) == emitterNames.end()) {
-        emitterNames.push_back(emitterName);
-        Logger::Log("Added emitter '%s' to existing timed effect '%s'", emitterName.c_str(), name.c_str());
-      }
-      return;
-    }
-  }
-
-  // 新しいタイマー付きエフェクトを作成
-  TimedEffect effect;
-  effect.name = name;
-  effect.duration = duration;
-  effect.currentTime = 0.0f;
-  effect.emitterNames.push_back(emitterName);
-  timedEffects_.push_back(effect);
-
-  Logger::Log("Created new timed effect '%s' with duration %.2f seconds", name.c_str(), duration);
 }

@@ -323,5 +323,8 @@
     <ClInclude Include="engine\effect\EmitterManager.h">
       <Filter>effect\Particle\Emitter</Filter>
     </ClInclude>
+    <ClInclude Include="engine\effect\EmitterStruct.h">
+      <Filter>effect\Particle\Emitter</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

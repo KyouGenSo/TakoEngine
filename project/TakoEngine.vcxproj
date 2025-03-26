@@ -159,6 +159,7 @@
     <ClCompile Include="engine\effect\TriangleEmitter.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\effect\EmitterStruct.h" />
     <ClInclude Include="engine\effect\BoxEmitter.h" />
     <ClInclude Include="engine\effect\EmitterManager.h" />
     <ClInclude Include="engine\effect\GPUParticle.h" />

@@ -5,6 +5,7 @@
 #include "GPUParticleEmitter.h"
 #include "EmitterManager.h"
 
+
 class GameScene : public BaseScene
 {
 public: // メンバ関数
@@ -59,36 +60,6 @@ private: // メンバ変数
 		bool enable;
 	};
 
-  // sphereEmitterの設定
-  struct SphereEmitterSetting
-  {
-    Vector3 position;
-    float radius;
-    uint32_t count;
-    float frequency;
-  };
-
-  // boxEmitterの設定
-  struct BoxEmitterSetting
-  {
-    Vector3 position;
-    Vector3 size;
-    Vector3 rotation;
-    uint32_t count;
-    float frequency;
-  };
-
-  // triangleEmitterの設定
-  struct TriangleEmitterSetting
-  {
-    Vector3 position;
-    Vector3 v1;
-    Vector3 v2;
-    Vector3 v3;
-    uint32_t count;
-    float frequency;
-  };
-
 	Object3d* object3d_ = nullptr;
 	Object3d* object3d2_ = nullptr;
 
@@ -135,7 +106,9 @@ private: // メンバ変数
   std::shared_ptr<TriangleEmitter> triangleEmitter_;
 
   // エミッター設定
-  SphereEmitterSetting spEmitterSett_;
-  BoxEmitterSetting boxEmitterSett_;
-  TriangleEmitterSetting triEmitterSett_;
+  SphereEmitterParams spEmitterSett_;
+  BoxEmitterParams boxEmitterSett_;
+  TriangleEmitterParams triEmitterSett_;
+  Vector3 groupPosition_ = { 0.0f, 0.0f, 0.0f };
+  bool isActive_ = true;
 };
