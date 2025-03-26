@@ -308,6 +308,12 @@ void GPUParticle::UpdateEmitterParameters(uint32_t emitterId, const EmitterData&
 
   // 共通パラメータの更新
   currentData.position = params.position;
+  currentData.scaleRangeX = params.scaleRangeX;
+  currentData.scaleRangeY = params.scaleRangeY;
+  currentData.velRangeX = params.velRangeX;
+  currentData.velRangeY = params.velRangeY;
+  currentData.velRangeZ = params.velRangeZ;
+  currentData.lifeTimeRange = params.lifeTimeRange;
   currentData.colorTint = params.colorTint;
   if (params.count != 0) currentData.count = params.count;
   if (params.frequency != 0.0f) currentData.frequency = params.frequency;
@@ -374,6 +380,12 @@ uint32_t GPUParticle::CreateSphereEmitterInternal(const Vector3& position, float
   emitter.isEmitting = false;
   emitter.emitterID = newEmitterId;
   emitter.position = position;
+  emitter.scaleRangeX = { 0.0f, 0.0f };
+  emitter.scaleRangeY = { 0.0f, 0.0f };
+  emitter.velRangeX = { 0.0f, 0.0f };
+  emitter.velRangeY = { 0.0f, 0.0f };
+  emitter.velRangeZ = { 0.0f, 0.0f };
+  emitter.lifeTimeRange = { 0.0f, 0.0f };
   emitter.colorTint = { 1.0f, 1.0f, 1.0f, 1.0f };
   emitter.count = count;
   emitter.frequency = frequency;
@@ -408,6 +420,12 @@ uint32_t GPUParticle::CreateBoxEmitterInternal(const Vector3& position, const Ve
   emitter.isEmitting = false;
   emitter.emitterID = newEmitterId;
   emitter.position = position;
+  emitter.scaleRangeX = { 0.0f, 0.0f };
+  emitter.scaleRangeY = { 0.0f, 0.0f };
+  emitter.velRangeX = { 0.0f, 0.0f };
+  emitter.velRangeY = { 0.0f, 0.0f };
+  emitter.velRangeZ = { 0.0f, 0.0f };
+  emitter.lifeTimeRange = { 0.0f, 0.0f };
   emitter.colorTint = { 1.0f, 1.0f, 1.0f, 1.0f };
   emitter.count = count;
   emitter.frequency = frequency;
@@ -438,6 +456,12 @@ uint32_t GPUParticle::CreateTriangleEmitterInternal(const Vector3& position, con
   emitter.isEmitting = false;
   emitter.emitterID = newEmitterId;
   emitter.position = position;
+  emitter.scaleRangeX = { 0.0f, 0.0f };
+  emitter.scaleRangeY = { 0.0f, 0.0f };
+  emitter.velRangeX = { 0.0f, 0.0f };
+  emitter.velRangeY = { 0.0f, 0.0f };
+  emitter.velRangeZ = { 0.0f, 0.0f };
+  emitter.lifeTimeRange = { 0.0f, 0.0f };
   emitter.colorTint = { 1.0f, 1.0f, 1.0f, 1.0f };
   emitter.count = count;
   emitter.frequency = frequency;
@@ -541,6 +565,12 @@ void GPUParticle::SyncEmitterData()
     dst.emitterID = src.emitterID;
 
     dst.position = src.position;
+    dst.scaleRangeX = src.scaleRangeX;
+    dst.scaleRangeY = src.scaleRangeY;
+    dst.velRangeX = src.velRangeX;
+    dst.velRangeY = src.velRangeY;
+    dst.velRangeZ = src.velRangeZ;
+    dst.lifeTimeRange = src.lifeTimeRange;
     dst.colorTint = src.colorTint;
 
     dst.count = src.count;

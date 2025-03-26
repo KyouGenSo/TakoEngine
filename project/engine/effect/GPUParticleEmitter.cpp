@@ -5,6 +5,12 @@ GPUParticleEmitter::GPUParticleEmitter(GPUParticle* particleSystem, uint32_t emi
   : particleSystem_(particleSystem)
   , emitterId_(emitterId)
   , position_(Vector3(0.0f, 0.0f, 0.0f))
+  , scaleRangeX_(Vector2(0.0f, 0.0f))
+  , scaleRangeY_(Vector2(0.0f, 0.0f))
+  , velRangeX_(Vector2(0.0f, 0.0f))
+  , velRangeY_(Vector2(0.0f, 0.0f))
+  , velRangeZ_(Vector2(0.0f, 0.0f))
+  , lifeTimeRange_(Vector2(0.0f, 0.0f))
   , color_(Vector4(1.0f, 1.0f, 1.0f, 1.0f))
   , particleCount_(20)
   , frequency_(0.5f)
@@ -71,6 +77,79 @@ void GPUParticleEmitter::SetFrequency(float frequency)
   if (particleSystem_) {
     EmitterData params = particleSystem_->GetEmitterData(emitterId_);
     params.frequency = frequency_;
+    particleSystem_->UpdateEmitterParameters(emitterId_, params);
+  }
+}
+
+void GPUParticleEmitter::SetScaleRange(const Vector2& rangeX, const Vector2& rangeY)
+{
+  SetScaleRangeX(rangeX);
+  SetScaleRangeY(rangeY);
+}
+
+void GPUParticleEmitter::SetScaleRangeX(const Vector2& range)
+{
+  scaleRangeX_ = range;
+  if (particleSystem_) {
+    EmitterData params = particleSystem_->GetEmitterData(emitterId_);
+    params.scaleRangeX = scaleRangeX_;
+    particleSystem_->UpdateEmitterParameters(emitterId_, params);
+  }
+}
+
+void GPUParticleEmitter::SetScaleRangeY(const Vector2& range)
+{
+  scaleRangeY_ = range;
+  if (particleSystem_) {
+    EmitterData params = particleSystem_->GetEmitterData(emitterId_);
+    params.scaleRangeY = scaleRangeY_;
+    particleSystem_->UpdateEmitterParameters(emitterId_, params);
+  }
+}
+
+void GPUParticleEmitter::SetVelRange(const Vector2& rangeX, const Vector2& rangeY, const Vector2& rangeZ)
+{
+  SetVelRangeX(rangeX);
+  SetVelRangeY(rangeY);
+  SetVelRangeZ(rangeZ);
+}
+
+void GPUParticleEmitter::SetVelRangeX(const Vector2& range)
+{
+  velRangeX_ = range;
+  if (particleSystem_) {
+    EmitterData params = particleSystem_->GetEmitterData(emitterId_);
+    params.velRangeX = velRangeX_;
+    particleSystem_->UpdateEmitterParameters(emitterId_, params);
+  }
+}
+
+void GPUParticleEmitter::SetVelRangeY(const Vector2& range)
+{
+  velRangeY_ = range;
+  if (particleSystem_) {
+    EmitterData params = particleSystem_->GetEmitterData(emitterId_);
+    params.velRangeY = velRangeY_;
+    particleSystem_->UpdateEmitterParameters(emitterId_, params);
+  }
+}
+
+void GPUParticleEmitter::SetVelRangeZ(const Vector2& range)
+{
+  velRangeZ_ = range;
+  if (particleSystem_) {
+    EmitterData params = particleSystem_->GetEmitterData(emitterId_);
+    params.velRangeZ = velRangeZ_;
+    particleSystem_->UpdateEmitterParameters(emitterId_, params);
+  }
+}
+
+void GPUParticleEmitter::SetLifeTimeRange(const Vector2& range)
+{
+  lifeTimeRange_ = range;
+  if (particleSystem_) {
+    EmitterData params = particleSystem_->GetEmitterData(emitterId_);
+    params.lifeTimeRange = lifeTimeRange_;
     particleSystem_->UpdateEmitterParameters(emitterId_, params);
   }
 }

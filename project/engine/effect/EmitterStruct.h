@@ -8,6 +8,13 @@ struct SphereEmitterParams
   float radius;
   uint32_t count;
   float frequency;
+
+  Vector2 scaleRangeX = { 0.0f, 0.0f };
+  Vector2 scaleRangeY = { 0.0f, 0.0f };
+  Vector2 velRangeX = { 0.0f, 0.0f };
+  Vector2 velRangeY = { 0.0f, 0.0f };
+  Vector2 velRangeZ = { 0.0f, 0.0f };
+  Vector2 lifeTimeRange = { 0.0f, 0.0f };
 };
 
 // boxEmitterの設定
@@ -18,6 +25,13 @@ struct BoxEmitterParams
   Vector3 rotation;
   uint32_t count;
   float frequency;
+
+  Vector2 scaleRangeX = { 0.0f, 0.0f };
+  Vector2 scaleRangeY = { 0.0f, 0.0f };
+  Vector2 velRangeX = { 0.0f, 0.0f };
+  Vector2 velRangeY = { 0.0f, 0.0f };
+  Vector2 velRangeZ = { 0.0f, 0.0f };
+  Vector2 lifeTimeRange = { 0.0f, 0.0f };
 };
 
 // triangleEmitterの設定
@@ -29,4 +43,11 @@ struct TriangleEmitterParams
   Vector3 v3;
   uint32_t count;
   float frequency;
+
+  Vector2 scaleRangeX = { 0.0f, 0.0f };
+  Vector2 scaleRangeY = { 0.0f, 0.0f };
+  Vector2 velRangeX = { 0.0f, 0.0f };
+  Vector2 velRangeY = { 0.0f, 0.0f };
+  Vector2 velRangeZ = { 0.0f, 0.0f };
+  Vector2 lifeTimeRange = { 0.0f, 0.0f };
 };

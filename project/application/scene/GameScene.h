@@ -96,15 +96,6 @@ private: // メンバ変数
   // エミッター管理
   std::unique_ptr<EmitterManager> emitterManager_;
 
-  // 球体エミッター
-  std::shared_ptr<SphereEmitter> sphereEmitter_;
-
-  // 箱型エミッター
-  std::shared_ptr<BoxEmitter> boxEmitter_;
-
-  // 三角形エミッター
-  std::shared_ptr<TriangleEmitter> triangleEmitter_;
-
   // エミッター設定
   SphereEmitterParams spEmitterSett_;
   BoxEmitterParams boxEmitterSett_;

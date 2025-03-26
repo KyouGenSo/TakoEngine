@@ -32,7 +32,13 @@ struct Emitter
     uint emitterID;         // エミッターID
     
     float3 position;        // 中心/基準位置
-    float4 colorTint;       // パーティクルの色補正
+    float2 scaleRangeX;     // パーティクルのXサイズ範囲（最小、最大）
+    float2 scaleRangeY;     // パーティクルのYサイズ範囲（最小、最大）
+    float2 velRangeX;       // パーティクルのX速度範囲（最小、最大）
+    float2 velRangeY;       // パーティクルのY速度範囲（最小、最大）
+    float2 velRangeZ;       // パーティクルのZ速度範囲（最小、最大）
+    float2 lifeTimeRange;   // パーティクルの寿命範囲（最小、最大）
+    float4 colorTint; // パーティクルの色補正
     
     uint count;             // 1回の射出で生成するパーティクル数
     float frequency;        // 射出頻度（秒）

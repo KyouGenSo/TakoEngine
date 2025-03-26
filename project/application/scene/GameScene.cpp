@@ -11,9 +11,6 @@
 #include "FrameTimer.h"
 #include "GPUParticle.h"
 #include "SceneManager.h"
-#include "SphereEmitter.h"
-#include "BoxEmitter.h"
-#include "TriangleEmitter.h"
 
 #include <numbers>
 
@@ -61,16 +58,16 @@ void GameScene::Initialize()
   triEmitterSett_ = { { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 10, 0.1f };
 
   // 球体エミッターの作成
-  sphereEmitter_ = emitterManager_->CreateSphereEmitter("player", spEmitterSett_.position, spEmitterSett_.radius, spEmitterSett_.count, spEmitterSett_.frequency);
-  sphereEmitter_->SetColor({ 0.0f, 0.0f, 1.0f, 1.0f });
+  emitterManager_->CreateSphereEmitter("player", spEmitterSett_.position, spEmitterSett_.radius, spEmitterSett_.count, spEmitterSett_.frequency);
+  emitterManager_->SetEmitterColor("player", { 1.0f, 0.0f, 0.0f, 1.0f });
 
   //箱エミッターの作成
-  boxEmitter_ = emitterManager_->CreateBoxEmitter("box", boxEmitterSett_.position, boxEmitterSett_.size, boxEmitterSett_.rotation, boxEmitterSett_.count, boxEmitterSett_.frequency);
-  boxEmitter_->SetColor({ 1.0f, 0.0f, 0.0f, 1.0f });
+  emitterManager_->CreateBoxEmitter("box", boxEmitterSett_.position, boxEmitterSett_.size, boxEmitterSett_.rotation, boxEmitterSett_.count, boxEmitterSett_.frequency);
+  emitterManager_->SetEmitterColor("box", { 0.0f, 1.0f, 0.0f, 1.0f });
 
   //三角形エミッターの作成
-  triangleEmitter_ = emitterManager_->CreateTriangleEmitter("triangle", triEmitterSett_.position, triEmitterSett_.v1, triEmitterSett_.v2, triEmitterSett_.v3, triEmitterSett_.count, triEmitterSett_.frequency);
-  triangleEmitter_->SetColor({ 0.0f, 1.0f, 1.0f, 1.0f });
+  emitterManager_->CreateTriangleEmitter("triangle", triEmitterSett_.position, triEmitterSett_.v1, triEmitterSett_.v2, triEmitterSett_.v3, triEmitterSett_.count, triEmitterSett_.frequency);
+  emitterManager_->SetEmitterColor("triangle", { 0.0f, 0.0f, 1.0f, 1.0f });
 
   emitterManager_->CreateGroup("group1");
   emitterManager_->AddToGroup("group1", "player");
@@ -78,8 +75,6 @@ void GameScene::Initialize()
   emitterManager_->AddToGroup("group1", "triangle");
 
   emitterManager_->SetGroupActive("group1", true);
-
-
 }
 
 void GameScene::Finalize()
@@ -129,27 +124,24 @@ void GameScene::Update()
   object3d_->Update();
   object3d2_->Update();
 
+  emitterManager_->UpdateSphereEmitter("player", spEmitterSett_.position, spEmitterSett_.radius, spEmitterSett_.count, spEmitterSett_.frequency);
+  emitterManager_->UpdateBoxEmitter("box", boxEmitterSett_.position, boxEmitterSett_.size, boxEmitterSett_.rotation, boxEmitterSett_.count, boxEmitterSett_.frequency);
+  emitterManager_->UpdateTriangleEmitter("triangle", triEmitterSett_.position, triEmitterSett_.v1, triEmitterSett_.v2, triEmitterSett_.v3, triEmitterSett_.count, triEmitterSett_.frequency);
 
-  sphereEmitter_->SetPosition(spEmitterSett_.position);
-  sphereEmitter_->SetRadius(spEmitterSett_.radius);
-  sphereEmitter_->SetParticleCount(spEmitterSett_.count);
-  sphereEmitter_->SetFrequency(spEmitterSett_.frequency);
+  emitterManager_->SetEmitterScaleRange("player", spEmitterSett_.scaleRangeX, spEmitterSett_.scaleRangeY);
+  emitterManager_->SetEmitterScaleRange("box", boxEmitterSett_.scaleRangeX, boxEmitterSett_.scaleRangeY);
+  emitterManager_->SetEmitterScaleRange("triangle", triEmitterSett_.scaleRangeX, triEmitterSett_.scaleRangeY);
 
-  boxEmitter_->SetPosition(boxEmitterSett_.position);
-  boxEmitter_->SetSize(boxEmitterSett_.size);
-  boxEmitter_->SetRotation(boxEmitterSett_.rotation);
-  boxEmitter_->SetParticleCount(boxEmitterSett_.count);
-  boxEmitter_->SetFrequency(boxEmitterSett_.frequency);
+  emitterManager_->SetEmitterVelocityRange("player", spEmitterSett_.velRangeX, spEmitterSett_.velRangeY, spEmitterSett_.velRangeZ);
+  emitterManager_->SetEmitterVelocityRange("box", boxEmitterSett_.velRangeX, boxEmitterSett_.velRangeY, boxEmitterSett_.velRangeZ);
+  emitterManager_->SetEmitterVelocityRange("triangle", triEmitterSett_.velRangeX, triEmitterSett_.velRangeY, triEmitterSett_.velRangeZ);
 
-  triangleEmitter_->SetPosition(triEmitterSett_.position);
-  triangleEmitter_->SetVertices(triEmitterSett_.v1, triEmitterSett_.v2, triEmitterSett_.v3);
-  triangleEmitter_->SetParticleCount(triEmitterSett_.count);
-  triangleEmitter_->SetFrequency(triEmitterSett_.frequency);
+  emitterManager_->SetEmitterLifeTimeRange("player", spEmitterSett_.lifeTimeRange);
+  emitterManager_->SetEmitterLifeTimeRange("box", boxEmitterSett_.lifeTimeRange);
+  emitterManager_->SetEmitterLifeTimeRange("triangle", triEmitterSett_.lifeTimeRange);
 
   emitterManager_->SetGroupPosition("group1", groupPosition_);
   emitterManager_->SetGroupActive("group1", isActive_);
-
-  emitterManager_->Update();
 
   // ライトの設定
   Object3dBasic::GetInstance()->SetDirectionalLight(lightDirection_, lightColor_, 1, lightIntensity_);
@@ -244,6 +236,12 @@ void GameScene::DrawImGui()
       ImGui::DragInt("Count", count, 1, 1, 100);
       ImGui::DragFloat("Frequency", &spEmitterSett_.frequency, 0.01f, 0.1f, 10.0f);
 
+      ImGui::DragFloat2("ScaleRangeX", &spEmitterSett_.scaleRangeX.x, 0.01f, -10.0f, 10.0f);
+      ImGui::DragFloat2("ScaleRangeY", &spEmitterSett_.scaleRangeY.x, 0.01f, -10.0f, 10.0f);
+      ImGui::DragFloat2("VelRangeX", &spEmitterSett_.velRangeX.x, 0.01f, -10.0f, 10.0f);
+      ImGui::DragFloat2("VelRangeY", &spEmitterSett_.velRangeY.x, 0.01f, -10.0f, 10.0f);
+      ImGui::DragFloat2("VelRangeZ", &spEmitterSett_.velRangeZ.x, 0.01f, -10.0f, 10.0f);
+      ImGui::DragFloat2("LifeTimeRange", &spEmitterSett_.lifeTimeRange.x, 0.01f, 0.1f, 10.0f);
 
       ImGui::EndTabItem();
     }

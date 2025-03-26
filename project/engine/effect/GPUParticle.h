@@ -95,6 +95,7 @@ public: // メンバー関数
   // EmitterDataの取得
   EmitterData GetEmitterData(uint32_t emitterId) const { return emitters_[emitterId]; }
   bool GetIsDebug() const { return isDebug_; }
+
   void SetCamera(Camera* camera) { m_camera_ = camera; }
   void SetIsDebug(bool isDebug) { isDebug_ = isDebug; }
 

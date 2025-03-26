@@ -22,7 +22,7 @@ EmitterManager::~EmitterManager()
 }
 
 // エミッター作成（名前付き）
-std::shared_ptr<SphereEmitter> EmitterManager::CreateSphereEmitter(const std::string& name, const Vector3& position, float radius, uint32_t count, float frequency)
+void EmitterManager::CreateSphereEmitter(const std::string& name, const Vector3& position, float radius, uint32_t count, float frequency)
 {
   // 名前の重複チェック
   if (emitterMap_.find(name) != emitterMap_.end()) {
@@ -33,18 +33,12 @@ std::shared_ptr<SphereEmitter> EmitterManager::CreateSphereEmitter(const std::st
   // エミッター作成
   std::shared_ptr<SphereEmitter> emitter = particleSystem_->CreateSphereEmitter(position, radius, count, frequency);
 
-  if (!emitter) {
-    Logger::Log("Error: Failed to create sphere emitter '%s'", name.c_str());
-    return nullptr;
-  }
-
   // マップに追加
   emitterMap_[name] = emitter;
 
-  return emitter;
 }
 
-std::shared_ptr<BoxEmitter> EmitterManager::CreateBoxEmitter(const std::string& name, const Vector3& position, const Vector3& size, const Vector3& rotation, uint32_t count, float frequency)
+void EmitterManager::CreateBoxEmitter(const std::string& name, const Vector3& position, const Vector3& size, const Vector3& rotation, uint32_t count, float frequency)
 {
   // 名前の重複チェック
   if (emitterMap_.find(name) != emitterMap_.end()) {
@@ -55,18 +49,12 @@ std::shared_ptr<BoxEmitter> EmitterManager::CreateBoxEmitter(const std::string& 
   // エミッター作成
   std::shared_ptr<BoxEmitter> emitter = particleSystem_->CreateBoxEmitter(position, size, rotation, count, frequency);
 
-  if (!emitter) {
-    Logger::Log("Error: Failed to create box emitter '%s'", name.c_str());
-    return nullptr;
-  }
-
   // マップに追加
   emitterMap_[name] = emitter;
 
-  return emitter;
 }
 
-std::shared_ptr<TriangleEmitter> EmitterManager::CreateTriangleEmitter(const std::string& name, const Vector3& position, const Vector3& v1, const Vector3& v2, const Vector3& v3, uint32_t count, float frequency)
+void EmitterManager::CreateTriangleEmitter(const std::string& name, const Vector3& position, const Vector3& v1, const Vector3& v2, const Vector3& v3, uint32_t count, float frequency)
 {
   // 名前の重複チェック
   if (emitterMap_.find(name) != emitterMap_.end()) {
@@ -77,15 +65,113 @@ std::shared_ptr<TriangleEmitter> EmitterManager::CreateTriangleEmitter(const std
   // エミッター作成
   std::shared_ptr<TriangleEmitter> emitter = particleSystem_->CreateTriangleEmitter(position, v1, v2, v3, count, frequency);
 
-  if (!emitter) {
-    Logger::Log("Error: Failed to create triangle emitter '%s'", name.c_str());
-    return nullptr;
-  }
-
   // マップに追加
   emitterMap_[name] = emitter;
 
-  return emitter;
+}
+
+void EmitterManager::UpdateSphereEmitter(const std::string& name, const Vector3& position, float radius,
+  uint32_t count, float frequency)
+{
+  auto it = emitterMap_.find(name);
+  if (it != emitterMap_.end()) {
+    auto sphereEmitter = std::dynamic_pointer_cast<SphereEmitter>(it->second);
+    if (sphereEmitter) {
+      sphereEmitter->SetPosition(position);
+      sphereEmitter->SetRadius(radius);
+      if (count > 0) sphereEmitter->SetParticleCount(count);
+      if (frequency > 0.0f) sphereEmitter->SetFrequency(frequency);
+    } else {
+      Logger::Log("UpdateSphereEmitter: Emitter '%s' is not a SphereEmitter", name.c_str());
+    }
+  } else {
+    Logger::Log("UpdateSphereEmitter: Emitter '%s' not found", name.c_str());
+  }
+}
+
+void EmitterManager::UpdateBoxEmitter(const std::string& name, const Vector3& position, const Vector3& size, const Vector3& rotation, uint32_t count, float frequency)
+{
+  auto it = emitterMap_.find(name);
+  if (it != emitterMap_.end()) {
+    auto boxEmitter = std::dynamic_pointer_cast<BoxEmitter>(it->second);
+    if (boxEmitter) {
+      boxEmitter->SetPosition(position);
+      boxEmitter->SetSize(size);
+      boxEmitter->SetRotation(rotation);
+      if (count > 0) boxEmitter->SetParticleCount(count);
+      if (frequency > 0.0f) boxEmitter->SetFrequency(frequency);
+    } else {
+      Logger::Log("UpdateBoxEmitter: Emitter '%s' is not a BoxEmitter", name.c_str());
+    }
+  } else {
+    Logger::Log("UpdateBoxEmitter: Emitter '%s' not found", name.c_str());
+  }
+}
+
+void EmitterManager::UpdateTriangleEmitter(const std::string& name, const Vector3& position, const Vector3& v1, const Vector3& v2, const Vector3& v3, uint32_t count, float frequency)
+{
+  auto it = emitterMap_.find(name);
+  if (it != emitterMap_.end()) {
+    auto triangleEmitter = std::dynamic_pointer_cast<TriangleEmitter>(it->second);
+    if (triangleEmitter) {
+      triangleEmitter->SetPosition(position);
+      triangleEmitter->SetVertices(v1, v2, v3);
+      if (count > 0) triangleEmitter->SetParticleCount(count);
+      if (frequency > 0.0f) triangleEmitter->SetFrequency(frequency);
+    } else {
+      Logger::Log("UpdateTriangleEmitter: Emitter '%s' is not a TriangleEmitter", name.c_str());
+    }
+  } else {
+    Logger::Log("UpdateTriangleEmitter: Emitter '%s' not found", name.c_str());
+  }
+}
+
+void EmitterManager::SetEmitterPosition(const std::string& name, const Vector3& position)
+{
+  auto it = emitterMap_.find(name);
+  if (it != emitterMap_.end()) {
+    it->second->SetPosition(position);
+  }
+}
+
+void EmitterManager::SetEmitterScaleRange(const std::string& name, const Vector2& scaleRangeX, const Vector2& scaleRangeY)
+{
+  auto it = emitterMap_.find(name);
+  if (it != emitterMap_.end()) {
+    it->second->SetScaleRange(scaleRangeX, scaleRangeY);
+  }
+}
+
+void EmitterManager::SetEmitterVelocityRange(const std::string& name, const Vector2& velRangeX, const Vector2& velRangeY, const Vector2& velRangeZ)
+{
+  auto it = emitterMap_.find(name);
+  if (it != emitterMap_.end()) {
+    it->second->SetVelRange(velRangeX, velRangeY, velRangeZ);
+  }
+}
+
+void EmitterManager::SetEmitterLifeTimeRange(const std::string& name, const Vector2& lifeTimeRange)
+{
+  auto it = emitterMap_.find(name);
+  if (it != emitterMap_.end()) {
+    it->second->SetLifeTimeRange(lifeTimeRange);
+  }
+}
+
+void EmitterManager::SetEmitterActive(const std::string& name, bool isActive)
+{
+  auto it = emitterMap_.find(name);
+  if (it != emitterMap_.end()) {
+    it->second->SetActive(isActive);
+  }
+}
+
+void EmitterManager::SetEmitterColor(const std::string& name, const Vector4& color)
+{
+  auto it = emitterMap_.find(name);
+  if (it != emitterMap_.end()) {
+    it->second->SetColor(color);
+  }
 }
 
 // エミッター管理
@@ -291,10 +377,4 @@ void EmitterManager::RemoveGroup(const std::string& groupName)
   } else {
     Logger::Log("RemoveGroup: Group '%s' not found", groupName.c_str());
   }
-}
-
-// 更新処理
-void EmitterManager::Update()
-{
-
 }

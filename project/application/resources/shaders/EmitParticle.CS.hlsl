@@ -179,23 +179,78 @@ void main(uint3 DTid : SV_DispatchThreadID)
                     break;
             }
             
-            // パーティクルの初期化
-            // サイズ設定
-            float particleSize = 0.7f + generator.Generate1d() * 0.6f; // 0.7～1.3のランダムサイズ
-            gParticles[particleID].scale = float3(particleSize, particleSize, particleSize);
+            // -----------------------------パーティクルの初期化----------------------------- //
             
-            // 位置設定
+            // サイズ設定---------------------------------------------------------------------------------
+            float3 particleScale;
+            
+            // X軸方向のスケール
+            if (all(gEmitters[emitterIndex].scaleRangeX != float2(0.0f, 0.0f)))
+            {
+                particleScale.x = generator.Generate1d() * (gEmitters[emitterIndex].scaleRangeX.y - gEmitters[emitterIndex].scaleRangeX.x) + gEmitters[emitterIndex].scaleRangeX.x;
+            }
+            else
+            {
+                particleScale.x = 1.0f;
+            }
+            
+            // Y軸方向のスケール
+            if (all(gEmitters[emitterIndex].scaleRangeY != float2(0.0f, 0.0f)))
+            {
+                particleScale.y = generator.Generate1d() * (gEmitters[emitterIndex].scaleRangeY.y - gEmitters[emitterIndex].scaleRangeY.x) + gEmitters[emitterIndex].scaleRangeY.x;
+            }
+            else
+            {
+                particleScale.y = 1.0f;
+            }
+            
+            // Z軸方向のスケール
+            particleScale.z = 1.0f;
+            
+            // パーティクルのスケールを設定
+            gParticles[particleID].scale.x = particleScale.x;
+            gParticles[particleID].scale.y = particleScale.y;
+            
+            // 位置設定---------------------------------------------------------------------------------
             gParticles[particleID].translate = particlePosition;
             
-            // 速度設定（軽いランダム性）
-            gParticles[particleID].velocity = (generator.Generate3d() * 2.0f - 1.0f) * 0.1f;
             
-            // 寿命設定
-            gParticles[particleID].lifeTime = 1.0f + generator.Generate1d() * 0.5f; // 1.0～1.5秒
+            // 速度設定---------------------------------------------------------------------------------
+            float3 particleVelocity;
+            
+            // X軸方向の速度
+            if (all(gEmitters[emitterIndex].velRangeX != float2(0.0f, 0.0f)) ||
+                all(gEmitters[emitterIndex].velRangeY != float2(0.0f, 0.0f)) || 
+                all(gEmitters[emitterIndex].velRangeZ != float2(0.0f, 0.0f)))
+            {
+                particleVelocity.x = generator.Generate1d() * (gEmitters[emitterIndex].velRangeX.y - gEmitters[emitterIndex].velRangeX.x) + gEmitters[emitterIndex].velRangeX.x;
+                particleVelocity.y = generator.Generate1d() * (gEmitters[emitterIndex].velRangeY.y - gEmitters[emitterIndex].velRangeY.x) + gEmitters[emitterIndex].velRangeY.x;
+                particleVelocity.z = generator.Generate1d() * (gEmitters[emitterIndex].velRangeZ.y - gEmitters[emitterIndex].velRangeZ.x) + gEmitters[emitterIndex].velRangeZ.x;
+            }
+            else
+            {
+                particleVelocity = (generator.Generate3d() * 2.0f - 1.0f) * 0.1f;
+            }
+
+            // パーティクルの速度を設定
+            gParticles[particleID].velocity.x = particleVelocity.x;
+            gParticles[particleID].velocity.y = particleVelocity.y;
+            gParticles[particleID].velocity.z = particleVelocity.z;
+            
+            
+            // 寿命設定---------------------------------------------------------------------------------
+            if (all(gEmitters[emitterIndex].lifeTimeRange != float2(0.0f, 0.0f)))
+            {
+                gParticles[particleID].lifeTime = generator.Generate1d() * (gEmitters[emitterIndex].lifeTimeRange.y - gEmitters[emitterIndex].lifeTimeRange.x) + gEmitters[emitterIndex].lifeTimeRange.x;
+            }
+            else
+            {
+                gParticles[particleID].lifeTime = 1.0f + generator.Generate1d() * 0.5f; // 1.0～1.5秒
+            }
+            
             gParticles[particleID].currentTime = 0.0f;
             
-            // 色設定
-            //float3 baseColor = generator.Generate3d() * 0.6f + 0.4f; // 明るめの色
+            // 色設定---------------------------------------------------------------------------------
             gParticles[particleID].color.rgb = gEmitters[emitterIndex].colorTint.rgb;
             gParticles[particleID].color.a = 1.0f;
         }
@@ -207,63 +262,3 @@ void main(uint3 DTid : SV_DispatchThreadID)
         }
     }
 }
-
-
-//#include "Particle.hlsli"
-//#include "Random.hlsli"
-
-//struct EmitterSphere
-//{
-//    float3 center;
-//    float radius;
-//    uint count;
-//    float frequency;
-//    float frequencyTime;
-//    uint isEmit;
-//};
-
-//RWStructuredBuffer<Particle> gParticles : register(u0);
-//RWStructuredBuffer<int> gFreeListIndex : register(u1);
-//RWStructuredBuffer<uint> gFreeList : register(u2);
-
-//ConstantBuffer<EmitterSphere> gEmitter : register(b0);
-//ConstantBuffer<PerFrame> gPerFrame : register(b1);
-
-//[numthreads(1, 1, 1)]
-//void main( uint3 DTid : SV_DispatchThreadID )
-//{
-//    RandomGenerator generator;
-//    generator.seed = DTid + float3(gPerFrame.time, gPerFrame.time * 0.5, gPerFrame.time * 0.25);
-    
-//    if(gEmitter.isEmit != 0)
-//    {
-//        for (uint countIndex = 0; countIndex < gEmitter.count; ++countIndex)
-//        {
-//            int freeListIndex;
-//            InterlockedAdd(gFreeListIndex[0], -1, freeListIndex);
-            
-//            if (freeListIndex >= 0 && freeListIndex < kMaxParticles && gFreeList[freeListIndex] < kMaxParticles)
-//            {
-//                uint particleIndex = gFreeList[freeListIndex];
-                
-//                gParticles[particleIndex].scale = float3(1.0f, 1.0f, 1.0f);
-                
-//                gParticles[particleIndex].translate = gEmitter.center + generator.Generate3d() * gEmitter.radius;
-                
-//                gParticles[particleIndex].velocity = (generator.Generate3d() * 2.0f - 1.0f) * 0.1f;
-                
-//                gParticles[particleIndex].lifeTime = 1.0f + generator.Generate1d() * 0.5f;
-//                gParticles[particleIndex].currentTime = 0.0f;
-                
-//                gParticles[particleIndex].color.rgb = generator.Generate3d() * 0.5f + 0.5f;
-//                gParticles[particleIndex].color.a = 1.0f;
-//            }
-//            else
-//            {
-//                InterlockedAdd(gFreeListIndex[0], 1);
-//                break;
-//            }
-            
-//        }
-//    }
-//}

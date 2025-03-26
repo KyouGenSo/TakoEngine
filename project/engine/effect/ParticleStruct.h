@@ -100,6 +100,12 @@ struct EmitterData {
   uint32_t emitterID;       // エミッターID
 
   Vector3 position;         // 中心/基準位置
+  Vector2 scaleRangeX;      // Xスケール範囲
+  Vector2 scaleRangeY;      // Yスケール範囌
+  Vector2 velRangeX;        // X速度範囲
+  Vector2 velRangeY;        // Y速度範囌
+  Vector2 velRangeZ;        // Z速度範囌
+  Vector2 lifeTimeRange;   // 寿命範囲
   Vector4 colorTint;        // 色補正
 
   uint32_t count;           // 1回の射出で生成するパーティクル数
@@ -115,7 +121,7 @@ struct EmitterData {
 
   // デフォルトコンストラクタ
   EmitterData() : type(EmitterType::Sphere), isActive(true), isEmitting(false),
-    emitterID(0), position(0.0f, 0.0f, 0.0f), colorTint(1, 1, 1, 1),
+    emitterID(0), position({ 0.0f, 0.0f, 0.0f }), colorTint({ 1, 1, 1, 1 }),
     count(20), frequency(0.5f), frequencyTime(0.0f) {
     // 球体パラメータの初期化
     sphere.radius = 1.0f;
@@ -132,6 +138,12 @@ struct EmitterGPUData
   uint32_t emitterID;      // エミッターID
 
   Vector3 position;        // 中心/基準位置
+  Vector2 scaleRangeX;     // Xスケール範囲
+  Vector2 scaleRangeY;     // Yスケール範囲
+  Vector2 velRangeX;       // X速度範囲
+  Vector2 velRangeY;       // Y速度範囲
+  Vector2 velRangeZ;       // Z速度範囲
+  Vector2 lifeTimeRange;   // 寿命範囲
   Vector4 colorTint;       // 色補正
 
   uint32_t count;          // パーティクル数
@@ -150,22 +162,3 @@ struct EmitterGPUData
   Vector3 triangleV2;      // 三角形の頂点2
   Vector3 triangleV3;      // 三角形の頂点3
 };
-
-//// エミッター構造体
-//struct Emitter
-//{
-//  Transform transform;
-//  uint32_t count;
-//  float frequency;
-//  float frequencyTime;
-//};
-//
-//struct EmitterSphere
-//{
-//  Vector3 center;
-//  float radius;
-//  uint32_t count;
-//  float frequency;
-//  float frequencyTime;
-//  uint32_t isEmit;
-//};
