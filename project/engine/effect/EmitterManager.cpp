@@ -91,29 +91,98 @@ void EmitterManager::RemoveEmitter(const std::string& name)
 {
   auto it = emitterMap_.find(name);
   if (it != emitterMap_.end()) {
+    Logger::Log("RemoveEmitter: Removing emitter '%s'", name.c_str());
+
+    // エミッターの参照を保持
+    auto emitter = it->second;
+
+    // エミッターを非アクティブにする（即時効果）
+    emitter->SetActive(false);
+
     // エミッターをマップから削除（shared_ptrなので自動解放）
     emitterMap_.erase(it);
+
+    // タイマー付きエフェクトからもエミッターを削除
+    for (auto& effect : timedEffects_) {
+      auto& effectEmitters = effect.emitterNames;
+      effectEmitters.erase(
+        std::remove(effectEmitters.begin(), effectEmitters.end(), name),
+        effectEmitters.end()
+      );
+    }
 
     // グループからも削除
     for (auto& group : groupMap_) {
       auto& emitterNames = group.second.emitterNames;
+      size_t beforeSize = emitterNames.size();
       emitterNames.erase(
         std::remove(emitterNames.begin(), emitterNames.end(), name),
         emitterNames.end()
       );
+
+      if (beforeSize != emitterNames.size()) {
+        Logger::Log("RemoveEmitter: Removed '%s' from group '%s'",
+          name.c_str(), group.first.c_str());
+      }
     }
+
+    // 空のタイマー付きエフェクトを削除
+    for (auto timedIt = timedEffects_.begin(); timedIt != timedEffects_.end();) {
+      if (timedIt->emitterNames.empty()) {
+        Logger::Log("RemoveEmitter: Removing empty timed effect '%s'", timedIt->name.c_str());
+        timedIt = timedEffects_.erase(timedIt);
+      } else {
+        ++timedIt;
+      }
+    }
+  } else {
+    Logger::Log("RemoveEmitter: Emitter '%s' not found", name.c_str());
   }
 }
 
 void EmitterManager::RemoveAllEmitters()
 {
-  // すべてのエミッターを削除
+  Logger::Log("EmitterManager: Removing ALL emitters (%zu emitters, %zu timed effects)",
+    emitterMap_.size(), timedEffects_.size());
+
+  // エミッターを1つずつ明示的に削除（GPUParticleシステムに通知するため）
+  for (auto& pair : emitterMap_) {
+    auto& emitter = pair.second;
+    // エミッターを非アクティブ化して即時効果を得る
+    emitter->SetActive(false);
+    // GPUParticleシステムに削除を通知
+    if (particleSystem_) {
+      uint32_t emitterId = emitter->GetEmitterId();
+      particleSystem_->RemoveEmitterById(emitterId);
+    }
+  }
+
+  // エミッターマップをクリア
   emitterMap_.clear();
 
-  // すべてのグループを空にする
+  // グループを空にする
   for (auto& group : groupMap_) {
     group.second.emitterNames.clear();
   }
+
+  // タイマー付きエフェクトのリストもクリア（これが重要！）
+  timedEffects_.clear();
+}
+
+void EmitterManager::ClearAllTimedEffects()
+{
+  Logger::Log("EmitterManager: Clearing all timed effects (%zu items)", timedEffects_.size());
+
+  // すべてのタイマー付きエフェクトを処理
+  for (auto& effect : timedEffects_) {
+    // 関連するすべてのエミッターを削除
+    for (const auto& emitterName : effect.emitterNames) {
+      RemoveEmitter(emitterName);
+    }
+  }
+
+  // リストをクリア
+  timedEffects_.clear();
 }
 
 // グループ機能
@@ -234,8 +303,39 @@ void EmitterManager::SetGroupPosition(const std::string& groupName, const Vector
 
 void EmitterManager::RemoveGroup(const std::string& groupName)
 {
-  // グループをマップから削除
-  groupMap_.erase(groupName);
+  auto it = groupMap_.find(groupName);
+  if (it != groupMap_.end()) {
+    Logger::Log("RemoveGroup: Removing group '%s'", groupName.c_str());
+
+    // グループ内のすべてのエミッターの名前をコピー（ループ中に変更されるため）
+    std::vector<std::string> emitterNames = it->second.emitterNames;
+
+    // グループに属するすべてのエミッターを削除（オプション、コメントアウト可能）
+    if (!emitterNames.empty()) {
+      Logger::Log("RemoveGroup: Removing %zu emitters in group '%s'",
+        emitterNames.size(), groupName.c_str());
+
+      // エミッターを一つずつ削除
+      for (const auto& name : emitterNames) {
+        RemoveEmitter(name);
+      }
+    }
+
+    // グループをマップから削除
+    groupMap_.erase(it);
+
+    // タイマー付きエフェクトも確認
+    for (auto effIt = timedEffects_.begin(); effIt != timedEffects_.end();) {
+      if (effIt->name + "_group" == groupName) {
+        Logger::Log("RemoveGroup: Removing associated timed effect '%s'", effIt->name.c_str());
+        effIt = timedEffects_.erase(effIt);
+      } else {
+        ++effIt;
+      }
+    }
+  } else {
+    Logger::Log("RemoveGroup: Group '%s' not found", groupName.c_str());
+  }
 }
 
 // エフェクトプリセット
@@ -280,28 +380,58 @@ void EmitterManager::CreateEffectPreset(EffectPresetType type, const std::string
 // 特殊エフェクト
 void EmitterManager::TriggerExplosion(const std::string& name, const Vector3& position, float radius, float duration)
 {
-  // エミッター群を作成
+  // 同名の既存エフェクトをまず削除
+  for (auto it = timedEffects_.begin(); it != timedEffects_.end();) {
+    if (it->name == name) {
+      // 関連エミッターを削除
+      for (const auto& emitterName : it->emitterNames) {
+        RemoveEmitter(emitterName);
+      }
+      it = timedEffects_.erase(it);
+    } else {
+      ++it;
+    }
+  }
+
   std::vector<std::shared_ptr<GPUParticleEmitter>> emitters = CreateExplosionEffect(name, position, radius);
 
-  // 一時エフェクト情報を作成
   TimedEffect effect;
   effect.name = name;
   effect.duration = duration;
   effect.currentTime = 0.0f;
 
-  // エミッターを登録
   for (size_t i = 0; i < emitters.size(); i++) {
     std::string emitterName = name + "_" + std::to_string(i);
     emitterMap_[emitterName] = emitters[i];
     effect.emitterNames.push_back(emitterName);
   }
 
-  // タイマー付きエフェクトリストに追加
   timedEffects_.push_back(effect);
 }
 
 void EmitterManager::CreateTrailEffect(const std::string& name, const Vector3& startPosition, const Vector3& direction, float length, float width, float duration)
 {
+  // 同名の既存エフェクトをまず削除（重要）
+  for (auto it = timedEffects_.begin(); it != timedEffects_.end();) {
+    if (it->name == name) {
+      Logger::Log("CreateTrailEffect: Removing existing effect with same name: %s", name.c_str());
+      // 関連エミッターを削除
+      for (const auto& emitterName : it->emitterNames) {
+        RemoveEmitter(emitterName);
+      }
+      it = timedEffects_.erase(it);
+    } else {
+      ++it;
+    }
+  }
+
+  // グループがすでに存在する場合は削除
+  std::string groupName = name + "_group";
+  if (groupMap_.find(groupName) != groupMap_.end()) {
+    Logger::Log("CreateTrailEffect: Removing existing group: %s", groupName.c_str());
+    RemoveGroup(groupName);
+  }
+
   // 方向ベクトルを正規化
   Vector3 normalizedDir = direction;
   float dirLength = std::sqrt(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z);
@@ -309,46 +439,51 @@ void EmitterManager::CreateTrailEffect(const std::string& name, const Vector3& s
     normalizedDir = direction * (1.0f / dirLength);
   }
 
-  // トレイル用のエミッターを作成
+  // トレイルエミッターの名前を配列で管理（コード管理を簡略化）
+  std::vector<std::string> emitterNames;
+
   // 1. 主要なトレイル部分（中央線）
+  std::string trailMainName = name + "_main";
   auto trailMain = CreateBoxEmitter(
-    name + "_main",
-    startPosition + normalizedDir * (length * 0.5f),  // 中央に配置
-    Vector3(width, width, length),                    // 長さ方向に伸ばす
-    Vector3(0, 0, 0),                                // 回転なし
-    30,                                              // パーティクル数
-    0.05f                                            // 高頻度で射出
+    trailMainName,
+    startPosition + normalizedDir * (length * 0.5f),
+    Vector3(width, width, length),
+    Vector3(0, 0, 0),
+    30,
+    0.05f
   );
+  trailMain->SetColor(Vector4(0.8f, 0.8f, 1.0f, 0.8f));
+  emitterNames.push_back(trailMainName);
 
-  // トレイルの色を設定
-  trailMain->SetColor(Vector4(0.8f, 0.8f, 1.0f, 0.8f));  // 淡い青色
-
-  // 2. トレイルの開始位置（やや大きめ）
+  // 2. トレイルの開始位置
+  std::string trailStartName = name + "_start";
   auto trailStart = CreateSphereEmitter(
-    name + "_start",
+    trailStartName,
     startPosition,
     width * 1.2f,
     15,
     0.1f
   );
-  trailStart->SetColor(Vector4(1.0f, 0.8f, 0.5f, 0.9f));  // オレンジがかった色
+  trailStart->SetColor(Vector4(1.0f, 0.8f, 0.5f, 0.9f));
+  emitterNames.push_back(trailStartName);
 
   // 3. トレイルの終端
+  std::string trailEndName = name + "_end";
   auto trailEnd = CreateSphereEmitter(
-    name + "_end",
+    trailEndName,
     startPosition + normalizedDir * length,
     width * 0.8f,
     10,
     0.15f
   );
-  trailEnd->SetColor(Vector4(0.5f, 0.8f, 1.0f, 0.7f));  // 青色
+  trailEnd->SetColor(Vector4(0.5f, 0.8f, 1.0f, 0.7f));
+  emitterNames.push_back(trailEndName);
 
   // グループ作成
-  std::string groupName = name + "_group";
   CreateGroup(groupName);
-  AddToGroup(groupName, name + "_main");
-  AddToGroup(groupName, name + "_start");
-  AddToGroup(groupName, name + "_end");
+  for (const auto& emitterName : emitterNames) {
+    AddToGroup(groupName, emitterName);
+  }
 
   // タイマー付きエフェクト
   if (duration > 0.0f) {
@@ -356,8 +491,14 @@ void EmitterManager::CreateTrailEffect(const std::string& name, const Vector3& s
     effect.name = name;
     effect.duration = duration;
     effect.currentTime = 0.0f;
-    effect.emitterNames = { name + "_main", name + "_start", name + "_end" };
+    effect.emitterNames = emitterNames;
     timedEffects_.push_back(effect);
+
+    Logger::Log("CreateTrailEffect: Created trail '%s' with %zu emitters, duration: %.2f seconds",
+      name.c_str(), emitterNames.size(), duration);
+  } else {
+    Logger::Log("CreateTrailEffect: Created permanent trail '%s' with %zu emitters",
+      name.c_str(), emitterNames.size());
   }
 }
 

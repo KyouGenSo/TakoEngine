@@ -43,6 +43,7 @@ public:
   std::shared_ptr<GPUParticleEmitter> GetEmitterByName(const std::string& name);
   void RemoveEmitter(const std::string& name);
   void RemoveAllEmitters();
+  void ClearAllTimedEffects();
 
   // グループ機能
   void CreateGroup(const std::string& groupName);

@@ -61,16 +61,16 @@ void GameScene::Initialize()
   triEmitterSett_ = { { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 10, 0.1f };
 
   // 球体エミッターの作成
-  sphereEmitter_ = emitterManager_->CreateSphereEmitter("player", spEmitterSett_.position, spEmitterSett_.radius, spEmitterSett_.count, spEmitterSett_.frequency);
-  sphereEmitter_->SetColor({ 0.0f, 0.0f, 1.0f, 1.0f });
+  //sphereEmitter_ = emitterManager_->CreateSphereEmitter("player", spEmitterSett_.position, spEmitterSett_.radius, spEmitterSett_.count, spEmitterSett_.frequency);
+  //sphereEmitter_->SetColor({ 0.0f, 0.0f, 1.0f, 1.0f });
 
   // 箱エミッターの作成
-  boxEmitter_ = emitterManager_->CreateBoxEmitter("box", boxEmitterSett_.position, boxEmitterSett_.size, boxEmitterSett_.rotation, boxEmitterSett_.count, boxEmitterSett_.frequency);
-  boxEmitter_->SetColor({ 1.0f, 0.0f, 0.0f, 1.0f });
+  //boxEmitter_ = emitterManager_->CreateBoxEmitter("box", boxEmitterSett_.position, boxEmitterSett_.size, boxEmitterSett_.rotation, boxEmitterSett_.count, boxEmitterSett_.frequency);
+  //boxEmitter_->SetColor({ 1.0f, 0.0f, 0.0f, 1.0f });
 
   // 三角形エミッターの作成
-  triangleEmitter_ = emitterManager_->CreateTriangleEmitter("triangle", triEmitterSett_.position, triEmitterSett_.v1, triEmitterSett_.v2, triEmitterSett_.v3, triEmitterSett_.count, triEmitterSett_.frequency);
-  triangleEmitter_->SetColor({ 0.0f, 1.0f, 1.0f, 1.0f });
+  //triangleEmitter_ = emitterManager_->CreateTriangleEmitter("triangle", triEmitterSett_.position, triEmitterSett_.v1, triEmitterSett_.v2, triEmitterSett_.v3, triEmitterSett_.count, triEmitterSett_.frequency);
+  //triangleEmitter_->SetColor({ 0.0f, 1.0f, 1.0f, 1.0f });
 
 }
 
@@ -122,21 +122,21 @@ void GameScene::Update()
   object3d2_->Update();
 
 
-  sphereEmitter_->SetPosition(spEmitterSett_.position);
-  sphereEmitter_->SetRadius(spEmitterSett_.radius);
-  sphereEmitter_->SetParticleCount(spEmitterSett_.count);
-  sphereEmitter_->SetFrequency(spEmitterSett_.frequency);
+  //sphereEmitter_->SetPosition(spEmitterSett_.position);
+  //sphereEmitter_->SetRadius(spEmitterSett_.radius);
+  //sphereEmitter_->SetParticleCount(spEmitterSett_.count);
+  //sphereEmitter_->SetFrequency(spEmitterSett_.frequency);
 
-  boxEmitter_->SetPosition(boxEmitterSett_.position);
-  boxEmitter_->SetSize(boxEmitterSett_.size);
-  boxEmitter_->SetRotation(boxEmitterSett_.rotation);
-  boxEmitter_->SetParticleCount(boxEmitterSett_.count);
-  boxEmitter_->SetFrequency(boxEmitterSett_.frequency);
+  //boxEmitter_->SetPosition(boxEmitterSett_.position);
+  //boxEmitter_->SetSize(boxEmitterSett_.size);
+  //boxEmitter_->SetRotation(boxEmitterSett_.rotation);
+  //boxEmitter_->SetParticleCount(boxEmitterSett_.count);
+  //boxEmitter_->SetFrequency(boxEmitterSett_.frequency);
 
-  triangleEmitter_->SetPosition(triEmitterSett_.position);
-  triangleEmitter_->SetVertices(triEmitterSett_.v1, triEmitterSett_.v2, triEmitterSett_.v3);
-  triangleEmitter_->SetParticleCount(triEmitterSett_.count);
-  triangleEmitter_->SetFrequency(triEmitterSett_.frequency);
+  //triangleEmitter_->SetPosition(triEmitterSett_.position);
+  //triangleEmitter_->SetVertices(triEmitterSett_.v1, triEmitterSett_.v2, triEmitterSett_.v3);
+  //triangleEmitter_->SetParticleCount(triEmitterSett_.count);
+  //triangleEmitter_->SetFrequency(triEmitterSett_.frequency);
 
 
   emitterManager_->Update();
@@ -221,53 +221,78 @@ void GameScene::DrawImGui()
   ImGui::Text("GameTime : %f", FrameTimer::GetInstance()->GetGameTime());
   ImGui::End();
 
-  // ImGui TabでEmitterの設定
-  ImGui::Begin("Emitter Setting");
+  //// ImGui TabでEmitterの設定
+  //ImGui::Begin("Emitter Setting");
 
-  if (ImGui::BeginTabBar("EmitterTab"))
+  //if (ImGui::BeginTabBar("EmitterTab"))
+  //{
+  //  if (ImGui::BeginTabItem("SphereEmitter"))
+  //  {
+  //    ImGui::DragFloat3("Position", &spEmitterSett_.position.x, 0.01f, -50.0f, 50.0f);
+  //    ImGui::DragFloat("Radius", &spEmitterSett_.radius, 0.01f, 0.1f, 50.0f);
+  //    int* count = reinterpret_cast<int*>(&spEmitterSett_.count);
+  //    ImGui::DragInt("Count", count, 1, 1, 100);
+  //    ImGui::DragFloat("Frequency", &spEmitterSett_.frequency, 0.01f, 0.1f, 10.0f);
+
+
+  //    ImGui::EndTabItem();
+  //  }
+  //  if (ImGui::BeginTabItem("BoxEmitter"))
+  //  {
+  //    ImGui::DragFloat3("Position", &boxEmitterSett_.position.x, 0.01f, -50.0f, 50.0f);
+  //    ImGui::DragFloat3("Size", &boxEmitterSett_.size.x, 0.01f, 0.1f, 50.0f);
+  //    ImGui::DragFloat3("Rotation", &boxEmitterSett_.rotation.x, 0.01f, DirectX::XMConvertToRadians(-180.0f), DirectX::XMConvertToRadians(180.0f));
+  //    int* count = reinterpret_cast<int*>(&boxEmitterSett_.count);
+  //    ImGui::DragInt("Count", count, 1, 1, 100);
+  //    ImGui::DragFloat("Frequency", &boxEmitterSett_.frequency, 0.01f, 0.1f, 10.0f);
+
+
+  //    ImGui::EndTabItem();
+  //  }
+  //  if (ImGui::BeginTabItem("TriangleEmitter"))
+  //  {
+  //    ImGui::DragFloat3("Position", &triEmitterSett_.position.x, 0.01f, -50.0f, 50.0f);
+  //    ImGui::DragFloat3("V1", &triEmitterSett_.v1.x, 0.01f, -50.0f, 50.0f);
+  //    ImGui::DragFloat3("V2", &triEmitterSett_.v2.x, 0.01f, -50.0f, 50.0f);
+  //    ImGui::DragFloat3("V3", &triEmitterSett_.v3.x, 0.01f, -50.0f, 50.0f);
+  //    int* count = reinterpret_cast<int*>(&triEmitterSett_.count);
+  //    ImGui::DragInt("Count", count, 1, 1, 100);
+  //    ImGui::DragFloat("Frequency", &triEmitterSett_.frequency, 0.01f, 0.1f, 10.0f);
+
+
+
+  //    ImGui::EndTabItem();
+  //  }
+  //  ImGui::EndTabBar();
+  //}
+
+  //ImGui::End();
+
+  ImGui::Begin("Particle");
+
+  // Button to create a new ExplosionEffect
+  if (ImGui::Button("Create Explosion Emitter"))
   {
-    if (ImGui::BeginTabItem("SphereEmitter"))
-    {
-      ImGui::DragFloat3("Position", &spEmitterSett_.position.x, 0.01f, -50.0f, 50.0f);
-      ImGui::DragFloat("Radius", &spEmitterSett_.radius, 0.01f, 0.1f, 50.0f);
-      int* count = reinterpret_cast<int*>(&spEmitterSett_.count);
-      ImGui::DragInt("Count", count, 1, 1, 100);
-      ImGui::DragFloat("Frequency", &spEmitterSett_.frequency, 0.01f, 0.1f, 10.0f);
+    // Create a new ExplosionEmitter
+    emitterManager_->TriggerExplosion("explosion", { 0.0f, 0.0f, 0.0f }, 1.0f, 0.5f);
+  }
 
+  // Button to create a new TrailEffect
+  if (ImGui::Button("Create Trail Emitter"))
+  {
+    // Create a new TrailEmitter
+    emitterManager_->CreateTrailEffect("trail", { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, 100.0f, 0.1f, 0.5f);
+  }
 
-      ImGui::EndTabItem();
-    }
-    if (ImGui::BeginTabItem("BoxEmitter"))
-    {
-      ImGui::DragFloat3("Position", &boxEmitterSett_.position.x, 0.01f, -50.0f, 50.0f);
-      ImGui::DragFloat3("Size", &boxEmitterSett_.size.x, 0.01f, 0.1f, 50.0f);
-      ImGui::DragFloat3("Rotation", &boxEmitterSett_.rotation.x, 0.01f, DirectX::XMConvertToRadians(-180.0f), DirectX::XMConvertToRadians(180.0f));
-      int* count = reinterpret_cast<int*>(&boxEmitterSett_.count);
-      ImGui::DragInt("Count", count, 1, 1, 100);
-      ImGui::DragFloat("Frequency", &boxEmitterSett_.frequency, 0.01f, 0.1f, 10.0f);
-
-
-      ImGui::EndTabItem();
-    }
-    if (ImGui::BeginTabItem("TriangleEmitter"))
-    {
-      ImGui::DragFloat3("Position", &triEmitterSett_.position.x, 0.01f, -50.0f, 50.0f);
-      ImGui::DragFloat3("V1", &triEmitterSett_.v1.x, 0.01f, -50.0f, 50.0f);
-      ImGui::DragFloat3("V2", &triEmitterSett_.v2.x, 0.01f, -50.0f, 50.0f);
-      ImGui::DragFloat3("V3", &triEmitterSett_.v3.x, 0.01f, -50.0f, 50.0f);
-      int* count = reinterpret_cast<int*>(&triEmitterSett_.count);
-      ImGui::DragInt("Count", count, 1, 1, 100);
-      ImGui::DragFloat("Frequency", &triEmitterSett_.frequency, 0.01f, 0.1f, 10.0f);
-
-
-
-      ImGui::EndTabItem();
-    }
-    ImGui::EndTabBar();
+  // Button to remove all TimedEmitters
+  if (ImGui::Button("Remove All Timed Emitters"))
+  {
+    // Remove all TimedEmitters
+    //emitterManager_->ClearAllTimedEffects();
+    emitterManager_->RemoveAllEmitters();
   }
 
   ImGui::End();
-
 
 #endif // DEBUG
 }
