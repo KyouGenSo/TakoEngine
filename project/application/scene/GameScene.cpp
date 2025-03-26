@@ -60,15 +60,15 @@ void GameScene::Initialize()
   boxEmitterSett_ = { { 0.0f, 5.0f, 0.0f }, { 0.3f, 0.0f, 0.1f }, { 0.0f, 0.0f, 0.0f }, 10, 0.5f };
   triEmitterSett_ = { { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 10, 0.1f };
 
-  // 球体エミッターの作成
+  //// 球体エミッターの作成
   //sphereEmitter_ = emitterManager_->CreateSphereEmitter("player", spEmitterSett_.position, spEmitterSett_.radius, spEmitterSett_.count, spEmitterSett_.frequency);
   //sphereEmitter_->SetColor({ 0.0f, 0.0f, 1.0f, 1.0f });
 
-  // 箱エミッターの作成
+  ////箱エミッターの作成
   //boxEmitter_ = emitterManager_->CreateBoxEmitter("box", boxEmitterSett_.position, boxEmitterSett_.size, boxEmitterSett_.rotation, boxEmitterSett_.count, boxEmitterSett_.frequency);
   //boxEmitter_->SetColor({ 1.0f, 0.0f, 0.0f, 1.0f });
 
-  // 三角形エミッターの作成
+  ////三角形エミッターの作成
   //triangleEmitter_ = emitterManager_->CreateTriangleEmitter("triangle", triEmitterSett_.position, triEmitterSett_.v1, triEmitterSett_.v2, triEmitterSett_.v3, triEmitterSett_.count, triEmitterSett_.frequency);
   //triangleEmitter_->SetColor({ 0.0f, 1.0f, 1.0f, 1.0f });
 
@@ -270,18 +270,11 @@ void GameScene::DrawImGui()
 
   ImGui::Begin("Particle");
 
-  // Button to create a new ExplosionEffect
-  if (ImGui::Button("Create Explosion Emitter"))
+  // Button to create a new Timed SphereEmitter
+  if (ImGui::Button("Create Sphere Emitter"))
   {
-    // Create a new ExplosionEmitter
-    emitterManager_->TriggerExplosion("explosion", { 0.0f, 0.0f, 0.0f }, 1.0f, 0.5f);
-  }
-
-  // Button to create a new TrailEffect
-  if (ImGui::Button("Create Trail Emitter"))
-  {
-    // Create a new TrailEmitter
-    emitterManager_->CreateTrailEffect("trail", { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, 100.0f, 0.1f, 0.5f);
+    // Create a new SphereEmitter
+    emitterManager_->MakeTimedSphereEmitter("timedSphere", spEmitterSett_.position, spEmitterSett_.radius, spEmitterSett_.count, spEmitterSett_.frequency, 1.0f);
   }
 
   // Button to remove all TimedEmitters
