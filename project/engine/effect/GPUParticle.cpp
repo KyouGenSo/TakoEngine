@@ -15,9 +15,9 @@
 
 GPUParticle* GPUParticle::instance_ = nullptr;
 
-const uint32_t GPUParticle::kNumMaxParticle_ = 20480;
+const uint32_t GPUParticle::kNumMaxParticle = 20480;
 
-const uint32_t GPUParticle::kNumMaxEmitter_ = 80;
+const uint32_t GPUParticle::kNumMaxEmitter = 80;
 
 GPUParticle* GPUParticle::GetInstance()
 {
@@ -213,7 +213,7 @@ void GPUParticle::Draw()
   m_srvManager_->SetGraphicsRootDescriptorTable(2, modelData_.textureData.textureIndex);
 
   // 描画（インスタンス描画）
-  commandList->DrawInstanced(static_cast<UINT>(modelData_.vertices.size()), kNumMaxParticle_, 0, 0);
+  commandList->DrawInstanced(static_cast<UINT>(modelData_.vertices.size()), kNumMaxParticle, 0, 0);
 
   // ParticleDataをUAVに戻す
   m_dx12_->TransitionResourceState(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, particleResource_.Get());
@@ -366,7 +366,7 @@ void GPUParticle::RemoveEmitterById(uint32_t emitterId)
 uint32_t GPUParticle::CreateSphereEmitterInternal(const Vector3& position, float radius, uint32_t count, float frequency)
 {
   // エミッターが最大数を超えないかチェック
-  if (activeEmitterCount_ >= kNumMaxEmitter_) {
+  if (activeEmitterCount_ >= kNumMaxEmitter) {
     return UINT32_MAX;
   }
 
@@ -408,7 +408,7 @@ uint32_t GPUParticle::CreateSphereEmitterInternal(const Vector3& position, float
 
 uint32_t GPUParticle::CreateBoxEmitterInternal(const Vector3& position, const Vector3& size, const Vector3& rotation, uint32_t count, float frequency)
 {
-  if (activeEmitterCount_ >= kNumMaxEmitter_) {
+  if (activeEmitterCount_ >= kNumMaxEmitter) {
     return UINT32_MAX;
   }
 
@@ -444,7 +444,7 @@ uint32_t GPUParticle::CreateBoxEmitterInternal(const Vector3& position, const Ve
 
 uint32_t GPUParticle::CreateTriangleEmitterInternal(const Vector3& position, const Vector3& v1, const Vector3& v2, const Vector3& v3, uint32_t count, float frequency)
 {
-  if (activeEmitterCount_ >= kNumMaxEmitter_) {
+  if (activeEmitterCount_ >= kNumMaxEmitter) {
     return UINT32_MAX;
   }
 
@@ -1022,11 +1022,11 @@ void GPUParticle::CreateEmitterData()
 {
 
   // エミッターリソースの生成
-  m_dx12_->CreateBufferResource(emitterResource_, sizeof(EmitterGPUData) * kNumMaxEmitter_);
+  m_dx12_->CreateBufferResource(emitterResource_, sizeof(EmitterGPUData) * kNumMaxEmitter);
 
   // エミッターリソースのSRVを作成
   emitterSrvIndex_ = m_srvManager_->Allocate();
-  m_srvManager_->CreateSRVForStructuredBuffer(emitterSrvIndex_, emitterResource_.Get(), kNumMaxEmitter_, sizeof(EmitterGPUData));
+  m_srvManager_->CreateSRVForStructuredBuffer(emitterSrvIndex_, emitterResource_.Get(), kNumMaxEmitter, sizeof(EmitterGPUData));
 
   // エミッター配列の初期化
   emitters_.clear();
@@ -1035,22 +1035,22 @@ void GPUParticle::CreateEmitterData()
   // GPU側の初期化
   EmitterGPUData* gpuEmitters = nullptr;
   emitterResource_->Map(0, nullptr, reinterpret_cast<void**>(&gpuEmitters));
-  ZeroMemory(gpuEmitters, sizeof(EmitterGPUData) * kNumMaxEmitter_);
+  ZeroMemory(gpuEmitters, sizeof(EmitterGPUData) * kNumMaxEmitter);
   emitterResource_->Unmap(0, nullptr);
 }
 
 void GPUParticle::CreateParticleResource()
 {
   // ParticleCSのリソースを生成
-  m_dx12_->CreateResourceForUAV(particleResource_, sizeof(ParticleCS) * kNumMaxParticle_);
+  m_dx12_->CreateResourceForUAV(particleResource_, sizeof(ParticleCS) * kNumMaxParticle);
 
   // ParticleCSのUAVを生成
   particleUavIndex_ = m_srvManager_->Allocate();
-  m_srvManager_->CreateUAV(particleUavIndex_, particleResource_.Get(), kNumMaxParticle_, sizeof(ParticleCS));
+  m_srvManager_->CreateUAV(particleUavIndex_, particleResource_.Get(), kNumMaxParticle, sizeof(ParticleCS));
 
   // ParticleCSのSRVを生成
   particleSrvIndex_ = m_srvManager_->Allocate();
-  m_srvManager_->CreateSRVForStructuredBuffer(particleSrvIndex_, particleResource_.Get(), kNumMaxParticle_, sizeof(ParticleCS));
+  m_srvManager_->CreateSRVForStructuredBuffer(particleSrvIndex_, particleResource_.Get(), kNumMaxParticle, sizeof(ParticleCS));
 }
 
 void GPUParticle::CreateFreeListResource()
@@ -1064,9 +1064,9 @@ void GPUParticle::CreateFreeListResource()
 
 
   // FreeListのリソースを生成
-  m_dx12_->CreateResourceForUAV(freeListResource_, sizeof(uint32_t) * kNumMaxParticle_);
+  m_dx12_->CreateResourceForUAV(freeListResource_, sizeof(uint32_t) * kNumMaxParticle);
 
   // FreeListのUAVを生成
   freeListUavIndex_ = m_srvManager_->Allocate();
-  m_srvManager_->CreateUAV(freeListUavIndex_, freeListResource_.Get(), kNumMaxParticle_, sizeof(uint32_t));
+  m_srvManager_->CreateUAV(freeListUavIndex_, freeListResource_.Get(), kNumMaxParticle, sizeof(uint32_t));
 }

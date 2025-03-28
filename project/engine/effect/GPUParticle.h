@@ -197,10 +197,10 @@ private: // プライベートメンバー関数
 private: //メンバー変数
 
   // パーティクルの最大出力数
-  static const uint32_t kNumMaxParticle_;
+  static const uint32_t kNumMaxParticle;
 
   // emitterの最大数
-  static const uint32_t kNumMaxEmitter_;
+  static const uint32_t kNumMaxEmitter;
 
 
   // 初期化フラグ
