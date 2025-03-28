@@ -193,7 +193,7 @@ void PostEffect::CreateRootSignature(const std::string& effectName)
 	HRESULT hr;
 
 	// rootSignatureの生成
-	D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
+	D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature;
 	descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
 	// Samplerの設定

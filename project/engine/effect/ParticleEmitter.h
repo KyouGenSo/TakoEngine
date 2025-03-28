@@ -1,4 +1,5 @@
 #pragma once
+#include "AABB.h"
 #include "ParticleManager.h"
 
 class ParticleEmitter {

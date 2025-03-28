@@ -1,5 +1,4 @@
 #pragma once
-#include <memory>
 #include "Vector3.h"
 #include "Vector4.h"
 #include "ParticleStruct.h"

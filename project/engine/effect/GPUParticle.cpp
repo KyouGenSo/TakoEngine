@@ -52,7 +52,7 @@ void GPUParticle::Initialize(DX12Basic* dx12, Camera* camera)
 
   // PSOの生成
   CreatePSO();
-  CreateComputeShaderPSO(initComputeRS_, initComputePSO_, L"InitParicle.CS.hlsl");
+  CreateComputeShaderPSO(initComputeRS_, initComputePSO_, L"InitParticle.CS.hlsl");
   CreateComputeShaderPSO(emitParticleRS_, emitParticlePSO_, L"EmitParticle.CS.hlsl");
   CreateComputeShaderPSO(updateParticleRS_, updateParticlePSO_, L"UpdateParticle.CS.hlsl");
 
@@ -213,7 +213,7 @@ void GPUParticle::Draw()
   m_srvManager_->SetGraphicsRootDescriptorTable(2, modelData_.textureData.textureIndex);
 
   // 描画（インスタンス描画）
-  commandList->DrawInstanced(UINT(modelData_.vertices.size()), kNumMaxParticle_, 0, 0);
+  commandList->DrawInstanced(static_cast<UINT>(modelData_.vertices.size()), kNumMaxParticle_, 0, 0);
 
   // ParticleDataをUAVに戻す
   m_dx12_->TransitionResourceState(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, particleResource_.Get());
@@ -380,13 +380,13 @@ uint32_t GPUParticle::CreateSphereEmitterInternal(const Vector3& position, float
   emitter.isEmitting = false;
   emitter.emitterID = newEmitterId;
   emitter.position = position;
-  emitter.scaleRangeX = { 0.0f, 0.0f };
-  emitter.scaleRangeY = { 0.0f, 0.0f };
-  emitter.velRangeX = { 0.0f, 0.0f };
-  emitter.velRangeY = { 0.0f, 0.0f };
-  emitter.velRangeZ = { 0.0f, 0.0f };
-  emitter.lifeTimeRange = { 0.0f, 0.0f };
-  emitter.colorTint = { 1.0f, 1.0f, 1.0f, 1.0f };
+  emitter.scaleRangeX = { .x = 0.0f, .y = 0.0f };
+  emitter.scaleRangeY = { .x = 0.0f, .y = 0.0f };
+  emitter.velRangeX = { .x = 0.0f, .y = 0.0f };
+  emitter.velRangeY = { .x = 0.0f, .y = 0.0f };
+  emitter.velRangeZ = { .x = 0.0f, .y = 0.0f };
+  emitter.lifeTimeRange = { .x = 0.0f, .y = 0.0f };
+  emitter.colorTint = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
   emitter.count = count;
   emitter.frequency = frequency;
   emitter.frequencyTime = 0.0f;
@@ -420,13 +420,13 @@ uint32_t GPUParticle::CreateBoxEmitterInternal(const Vector3& position, const Ve
   emitter.isEmitting = false;
   emitter.emitterID = newEmitterId;
   emitter.position = position;
-  emitter.scaleRangeX = { 0.0f, 0.0f };
-  emitter.scaleRangeY = { 0.0f, 0.0f };
-  emitter.velRangeX = { 0.0f, 0.0f };
-  emitter.velRangeY = { 0.0f, 0.0f };
-  emitter.velRangeZ = { 0.0f, 0.0f };
-  emitter.lifeTimeRange = { 0.0f, 0.0f };
-  emitter.colorTint = { 1.0f, 1.0f, 1.0f, 1.0f };
+  emitter.scaleRangeX = { .x = 0.0f, .y = 0.0f };
+  emitter.scaleRangeY = { .x = 0.0f, .y = 0.0f };
+  emitter.velRangeX = { .x = 0.0f, .y = 0.0f };
+  emitter.velRangeY = { .x = 0.0f, .y = 0.0f };
+  emitter.velRangeZ = { .x = 0.0f, .y = 0.0f };
+  emitter.lifeTimeRange = { .x = 0.0f, .y = 0.0f };
+  emitter.colorTint = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
   emitter.count = count;
   emitter.frequency = frequency;
   emitter.frequencyTime = 0.0f;
@@ -456,13 +456,13 @@ uint32_t GPUParticle::CreateTriangleEmitterInternal(const Vector3& position, con
   emitter.isEmitting = false;
   emitter.emitterID = newEmitterId;
   emitter.position = position;
-  emitter.scaleRangeX = { 0.0f, 0.0f };
-  emitter.scaleRangeY = { 0.0f, 0.0f };
-  emitter.velRangeX = { 0.0f, 0.0f };
-  emitter.velRangeY = { 0.0f, 0.0f };
-  emitter.velRangeZ = { 0.0f, 0.0f };
-  emitter.lifeTimeRange = { 0.0f, 0.0f };
-  emitter.colorTint = { 1.0f, 1.0f, 1.0f, 1.0f };
+  emitter.scaleRangeX = { .x = 0.0f, .y = 0.0f };
+  emitter.scaleRangeY = { .x = 0.0f, .y = 0.0f };
+  emitter.velRangeX = { .x = 0.0f, .y = 0.0f };
+  emitter.velRangeY = { .x = 0.0f, .y = 0.0f };
+  emitter.velRangeZ = { .x = 0.0f, .y = 0.0f };
+  emitter.lifeTimeRange = { .x = 0.0f, .y = 0.0f };
+  emitter.colorTint = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
   emitter.count = count;
   emitter.frequency = frequency;
   emitter.frequencyTime = 0.0f;
@@ -517,20 +517,19 @@ void GPUParticle::UpdateEmitter()
 void GPUParticle::UpdatePerView()
 {
 
-  Matrix4x4 cameraMatrix = Mat4x4::MakeAffine({ 1.0f,1.0f,1.0f }, m_camera_->GetRotate(), m_camera_->GetTranslate());
+  Matrix4x4 cameraMatrix = Mat4x4::MakeAffine({ .x = 1.0f,.y = 1.0f,.z = 1.0f }, m_camera_->GetRotate(), m_camera_->GetTranslate());
 
   if (isDebug_)
   {
-    cameraMatrix = Mat4x4::MakeAffine({ 1.0f,1.0f,1.0f }, DebugCamera::GetInstance()->GetRotate(), DebugCamera::GetInstance()->GetTranslate());
+    cameraMatrix = Mat4x4::MakeAffine({ .x = 1.0f,.y = 1.0f,.z = 1.0f }, DebugCamera::GetInstance()->GetRotate(), DebugCamera::GetInstance()->GetTranslate());
   }
 
-  Matrix4x4 viewProjectionMatrix = Mat4x4::Multiply(Mat4x4::Inverse(cameraMatrix), m_camera_->GetProjectionMatrix());
+  const Matrix4x4 viewProjectionMatrix = Mat4x4::Multiply(Mat4x4::Inverse(cameraMatrix), m_camera_->GetProjectionMatrix());
 
   // ビルボード行列の生成
-  Matrix4x4 backToFrontMatrix = Mat4x4::MakeRotateY(std::numbers::pi_v<float>);
-  Matrix4x4 billboardMatrix{};
+  const Matrix4x4 backToFrontMatrix = Mat4x4::MakeRotateY(std::numbers::pi_v<float>);
 
-  billboardMatrix = Mat4x4::Multiply(backToFrontMatrix, cameraMatrix);
+  Matrix4x4 billboardMatrix = Mat4x4::Multiply(backToFrontMatrix, cameraMatrix);
   billboardMatrix.m[3][0] = 0.0f;  //平行移動成分はいらない
   billboardMatrix.m[3][1] = 0.0f;
   billboardMatrix.m[3][2] = 0.0f;
@@ -551,7 +550,7 @@ void GPUParticle::SyncEmitterData()
 {
   // GPU側のエミッターバッファにマップ
   EmitterGPUData* gpuEmitters = nullptr;
-  emitterResource_->Map(0, nullptr, reinterpret_cast<void**>(&gpuEmitters));
+  [[maybe_unused]] HRESULT hr = emitterResource_->Map(0, nullptr, reinterpret_cast<void**>(&gpuEmitters));
 
   // 各エミッターのデータをコピー
   for (uint32_t i = 0; i < activeEmitterCount_; i++) {
@@ -605,7 +604,7 @@ void GPUParticle::CreateRS()
   HRESULT hr;
 
   // rootSignatureの生成
-  D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
+  D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature;
   descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
   // Samplerの設定
@@ -663,7 +662,7 @@ void GPUParticle::CreateRS()
   hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
   if (FAILED(hr))
   {
-    Logger::Log(reinterpret_cast<char*>(errorBlob->GetBufferPointer()));
+    Logger::Log(static_cast<char*>(errorBlob->GetBufferPointer()));
     assert(false);
   }
 
@@ -887,7 +886,7 @@ void GPUParticle::CreateEmitParticleComputeRS()
   hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
   if (FAILED(hr))
   {
-    Logger::Log(reinterpret_cast<char*>(errorBlob->GetBufferPointer()));
+    Logger::Log(static_cast<char*>(errorBlob->GetBufferPointer()));
     assert(false);
   }
   hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(emitParticleRS_.GetAddressOf()));
@@ -973,23 +972,23 @@ void GPUParticle::CreateComputeShaderPSO(Microsoft::WRL::ComPtr<ID3D12RootSignat
 
 void GPUParticle::CreateVertexData()
 {
-  modelData_.vertices.push_back({ .position = {1.0f, 1.0f, 0.0f, 1.0f}, .texcoord = {0.0f, 0.0f}, .normal = {0.0f, 0.0f, 1.0f} });
-  modelData_.vertices.push_back({ .position = {-1.0f, 1.0f, 0.0f, 1.0f}, .texcoord = {1.0f, 0.0f}, .normal = {0.0f, 0.0f, 1.0f} });
-  modelData_.vertices.push_back({ .position = {1.0f, -1.0f, 0.0f, 1.0f}, .texcoord = {0.0f, 1.0f}, .normal = {0.0f, 0.0f, 1.0f} });
-  modelData_.vertices.push_back({ .position = {1.0f, -1.0f, 0.0f, 1.0f}, .texcoord = {0.0f, 1.0f}, .normal = {0.0f, 0.0f, 1.0f} });
-  modelData_.vertices.push_back({ .position = {-1.0f, 1.0f, 0.0f, 1.0f}, .texcoord = {1.0f, 0.0f}, .normal = {0.0f, 0.0f, 1.0f} });
-  modelData_.vertices.push_back({ .position = {-1.0f, -1.0f, 0.0f, 1.0f}, .texcoord = {1.0f, 1.0f}, .normal = {0.0f, 0.0f, 1.0f} });
+  modelData_.vertices.push_back({ .position = {.x = 1.0f, .y = 1.0f, .z = 0.0f, .w = 1.0f}, .texcoord = {.x = 0.0f, .y = 0.0f}, .normal = {.x = 0.0f, .y = 0.0f, .z = 1.0f} });
+  modelData_.vertices.push_back({ .position = {.x = -1.0f, .y = 1.0f, .z = 0.0f, .w = 1.0f}, .texcoord = {.x = 1.0f, .y = 0.0f}, .normal = {.x = 0.0f, .y = 0.0f, .z = 1.0f} });
+  modelData_.vertices.push_back({ .position = {.x = 1.0f, .y = -1.0f, .z = 0.0f, .w = 1.0f}, .texcoord = {.x = 0.0f, .y = 1.0f}, .normal = {.x = 0.0f, .y = 0.0f, .z = 1.0f} });
+  modelData_.vertices.push_back({ .position = {.x = 1.0f, .y = -1.0f, .z = 0.0f, .w = 1.0f}, .texcoord = {.x = 0.0f, .y = 1.0f}, .normal = {.x = 0.0f, .y = 0.0f, .z = 1.0f} });
+  modelData_.vertices.push_back({ .position = {.x = -1.0f, .y = 1.0f, .z = 0.0f, .w = 1.0f}, .texcoord = {.x = 1.0f, .y = 0.0f}, .normal = {.x = 0.0f, .y = 0.0f, .z = 1.0f} });
+  modelData_.vertices.push_back({ .position = {.x = -1.0f, .y = -1.0f, .z = 0.0f, .w = 1.0f}, .texcoord = {.x = 1.0f, .y = 1.0f}, .normal = {.x = 0.0f, .y = 0.0f, .z = 1.0f} });
 
   // 頂点リソース生成
   vertexResource_ = m_dx12_->MakeBufferResource(sizeof(VertexData) * modelData_.vertices.size());
 
   // VertexBufferViewの作成
-  vertexBufferView_.BufferLocation = vertexResource_->GetGPUVirtualAddress();				// リソースの先頭のアドレスから使う
-  vertexBufferView_.SizeInBytes = UINT(sizeof(VertexData) * modelData_.vertices.size());	// 使用するリソースのサイズは頂点のサイズ
-  vertexBufferView_.StrideInBytes = sizeof(VertexData);									// 1頂点あたりのサイズ
+  vertexBufferView_.BufferLocation = vertexResource_->GetGPUVirtualAddress(); // リソースの先頭のアドレスから使う
+  vertexBufferView_.SizeInBytes = static_cast<UINT>(sizeof(VertexData) * modelData_.vertices.size());	// 使用するリソースのサイズは頂点のサイズ
+  vertexBufferView_.StrideInBytes = sizeof(VertexData); // 1頂点あたりのサイズ
 
   // 頂点リソースをマップ
-  vertexResource_->Map(0, nullptr, reinterpret_cast<void**>(&vertexData_));
+  [[maybe_unused]] HRESULT hr = vertexResource_->Map(0, nullptr, reinterpret_cast<void**>(&vertexData_));
   // 頂点データをリソースにコピー
   std::memcpy(vertexData_, modelData_.vertices.data(), sizeof(VertexData) * modelData_.vertices.size());
 }

@@ -18,7 +18,7 @@ void DebugCamera::Initialize()
 {
 	transform_ = { Vector3(1.0f, 1.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, -30.0f) };
 	fovY_ = 0.45f;
-	aspect_ = float(WinApp::clientWidth) / float(WinApp::clientHeight);
+	aspect_ = static_cast<float>(WinApp::clientWidth) / static_cast<float>(WinApp::clientHeight);
 	nearZ_ = 0.1f;
 	farZ_ = 1000.0f;
 	worldMat_ = Mat4x4::MakeAffine(transform_.scale, transform_.rotate, transform_.translate);

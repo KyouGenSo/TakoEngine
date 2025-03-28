@@ -85,7 +85,7 @@ void Sprite::Update()
 	// Spriteの座標変換
 	Matrix4x4 worldMatrixSprite = Mat4x4::MakeAffine(transform_.scale, transform_.rotate, transform_.translate);
 	Matrix4x4 viewMatrixSprite = Mat4x4::MakeIdentity();
-	Matrix4x4 projectionMatrixSprite = Mat4x4::MakeOrtho(0.0f, 0.0f, float(WinApp::clientWidth), float(WinApp::clientHeight), 0.0f, 100.0f);
+	Matrix4x4 projectionMatrixSprite = Mat4x4::MakeOrtho(0.0f, 0.0f, static_cast<float>(WinApp::clientWidth), static_cast<float>(WinApp::clientHeight), 0.0f, 100.0f);
 	Matrix4x4 wvpMatrixSprite = Mat4x4::Multiply(worldMatrixSprite, Mat4x4::Multiply(viewMatrixSprite, projectionMatrixSprite));
 
 	transformationMatrixData_->WVP = wvpMatrixSprite;

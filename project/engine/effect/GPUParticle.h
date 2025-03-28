@@ -3,7 +3,6 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include <unordered_map>
 
 #include "SrvManager.h"
 #include "ParticleStruct.h"
@@ -137,7 +136,7 @@ private: // プライベートメンバー関数
   ///-----------リソース作成関連------------///
   ///<summary>
   /// ルートシグネチャの作成
-  /// 	/// </summary>
+  /// </summary>
   void CreateRS();
 
   ///<summary>

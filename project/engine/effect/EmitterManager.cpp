@@ -7,8 +7,6 @@
 #include "FrameTimer.h"
 
 #include <algorithm>
-#include <iterator>
-#include <minmax.h>
 
 EmitterManager::EmitterManager(GPUParticle* particleSystem)
   : particleSystem_(particleSystem)

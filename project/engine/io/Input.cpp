@@ -188,7 +188,7 @@ bool Input::ReleaseMouse(int button) const
 
 Vector2 Input::GetMousePos()
 {
-	return Vector2(float(mousePos_.x), float(mousePos_.y));
+	return Vector2(static_cast<float>(mousePos_.x), static_cast<float>(mousePos_.y));
 }
 
 void Input::SetMousePos(int x, int y)

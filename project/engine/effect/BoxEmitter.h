@@ -5,11 +5,11 @@ class BoxEmitter : public GPUParticleEmitter
 {
 public:
   BoxEmitter(GPUParticle* particleSystem,
-    const Vector3& position,
-    const Vector3& size,
-    const Vector3& rotation,
-    uint32_t count,
-    float frequency);
+             const Vector3& position,
+             const Vector3& size,
+             const Vector3& rotation,
+             uint32_t count,
+             float frequency);
 
   ~BoxEmitter() override = default;
 

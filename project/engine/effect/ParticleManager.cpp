@@ -453,7 +453,7 @@ void ParticleManager::CreateVertexData()
 
 	// VertexBufferViewの作成
 	vertexBufferView_.BufferLocation = vertexResource_->GetGPUVirtualAddress();				// リソースの先頭のアドレスから使う
-	vertexBufferView_.SizeInBytes = UINT(sizeof(VertexData) * modelData_.vertices.size());	// 使用するリソースのサイズは頂点のサイズ
+	vertexBufferView_.SizeInBytes = static_cast<UINT>(sizeof(VertexData) * modelData_.vertices.size());	// 使用するリソースのサイズは頂点のサイズ
 	vertexBufferView_.StrideInBytes = sizeof(VertexData);									// 1頂点あたりのサイズ
 
 	// 頂点リソースをマップ

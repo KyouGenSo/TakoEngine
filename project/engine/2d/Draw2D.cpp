@@ -21,8 +21,8 @@ void Draw2D::Initialize(DX12Basic* dx12)
 
 	isDebug_ = false;
 
-	projectionMatrix_ = Mat4x4::MakeOrtho(0.0f, 0.0f, float(WinApp::clientWidth), float(WinApp::clientHeight), 0.0f, 1.0f);
-	viewPortMatrix_ = Mat4x4::MakeViewport(0.0f, 0.0f, float(WinApp::clientWidth), float(WinApp::clientHeight), 0.0f, 1.0f);
+	projectionMatrix_ = Mat4x4::MakeOrtho(0.0f, 0.0f, static_cast<float>(WinApp::clientWidth), static_cast<float>(WinApp::clientHeight), 0.0f, 1.0f);
+	viewPortMatrix_ = Mat4x4::MakeViewport(0.0f, 0.0f, static_cast<float>(WinApp::clientWidth), static_cast<float>(WinApp::clientHeight), 0.0f, 1.0f);
 
 	// パイプラインステートの生成
 	CreatePSO(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE, trianglePipelineState_, triangleRootSignature_);
@@ -525,15 +525,15 @@ void Draw2D::CreateTransformMatData()
 void Draw2D::CalcSphereVertexData()
 {
 	const uint32_t kSubdivision = 4; // 1分割数
-	const float kLonEvery = 2.0f * 3.14159265359f / float(kSubdivision); // 経度の1分割の角度 phi
-	const float kLatEvery = 3.14159265359f / float(kSubdivision); // 緯度の1分割の角度 theta
+	const float kLonEvery = 2.0f * 3.14159265359f / static_cast<float>(kSubdivision); // 経度の1分割の角度 phi
+	const float kLatEvery = 3.14159265359f / static_cast<float>(kSubdivision); // 緯度の1分割の角度 theta
 
 	// 緯度方向のループ
 	for (uint32_t latIndex = 0; latIndex < kSubdivision; latIndex++) {
-		float lat = -3.14159265359f / 2.0f + kLatEvery * float(latIndex);
+		float lat = -3.14159265359f / 2.0f + kLatEvery * static_cast<float>(latIndex);
 		// 経度方向のループ
 		for (uint32_t lonIndex = 0; lonIndex < kSubdivision; lonIndex++) {
-			float lon = kLonEvery * float(lonIndex);
+			float lon = kLonEvery * static_cast<float>(lonIndex);
 			// 球の表面上の点を求める
 			Vector3 a, b, c;
 			a.x = 0.0f + 1.0f * cosf(lat) * cosf(lon);
@@ -558,13 +558,13 @@ void Draw2D::CalcGridVertexData()
 {
 	const float kGridHalfWidth = 2.0f; // グリッドの半分の幅
 	const uint32_t kSubdivision = 10; // 1分割数
-	const float kGridEvery = (kGridHalfWidth * 2.0f) / float(kSubdivision); // 1分割の長さ
+	const float kGridEvery = (kGridHalfWidth * 2.0f) / static_cast<float>(kSubdivision); // 1分割の長さ
 
 	// 奥から手前への線を順々に引いていく
 	for (uint32_t xIndex = 0; xIndex <= kSubdivision; xIndex++) {
 		// 上の情報を使ってワールド座標系上の始点と終点を求める
-		Vector3 worldStart(-kGridHalfWidth + kGridEvery * float(xIndex), 0.0f, kGridHalfWidth);
-		Vector3 worldEnd(-kGridHalfWidth + kGridEvery * float(xIndex), 0.0f, -kGridHalfWidth);
+		Vector3 worldStart(-kGridHalfWidth + kGridEvery * static_cast<float>(xIndex), 0.0f, kGridHalfWidth);
+		Vector3 worldEnd(-kGridHalfWidth + kGridEvery * static_cast<float>(xIndex), 0.0f, -kGridHalfWidth);
 
 		// 座標を保存
 		gridVerties_.push_back(worldStart);
@@ -574,8 +574,8 @@ void Draw2D::CalcGridVertexData()
 	// 左から右への線を順々に引いていく
 	for (uint32_t zIndex = 0; zIndex <= kSubdivision; zIndex++) {
 		// 上の情報を使ってワールド座標系上の始点と終点を求める
-		Vector3 worldStart(-kGridHalfWidth, 0.0f, kGridHalfWidth - kGridEvery * float(zIndex));
-		Vector3 worldEnd(kGridHalfWidth, 0.0f, kGridHalfWidth - kGridEvery * float(zIndex));
+		Vector3 worldStart(-kGridHalfWidth, 0.0f, kGridHalfWidth - kGridEvery * static_cast<float>(zIndex));
+		Vector3 worldEnd(kGridHalfWidth, 0.0f, kGridHalfWidth - kGridEvery * static_cast<float>(zIndex));
 
 		// 座標を保存
 		gridVerties_.push_back(worldStart);

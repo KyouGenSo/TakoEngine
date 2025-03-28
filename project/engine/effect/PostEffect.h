@@ -1,13 +1,9 @@
 #pragma once
 #include <d3d12.h>
-#include <dxgi1_6.h>
 #include<unordered_map>
 #include<string>
 #include<wrl.h>
-#include"Vector2.h"
-#include"Vector3.h"
 #include"Vector4.h"
-#include "numbers"
 
 class DX12Basic;
 

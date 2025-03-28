@@ -109,7 +109,7 @@ void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
     m_dx12_->GetCommandList()->SetComputeRootConstantBufferView(4, skinningInfoResource_->GetGPUVirtualAddress());
 
     // ComputeShaderの実行
-    m_dx12_->GetCommandList()->Dispatch(UINT(modelData_.vertices.size() + 1023) / 1024, 1, 1);
+    m_dx12_->GetCommandList()->Dispatch(static_cast<UINT>(modelData_.vertices.size() + 1023) / 1024, 1, 1);
 
     m_dx12_->TransitionResourceState(D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, uavVertexOutputResource_.Get());
 
@@ -129,7 +129,7 @@ void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
 	SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, modelData_.textureData.textureIndex);
 
 	// 描画
-  m_dx12_->GetCommandList()->DrawIndexedInstanced(UINT(modelData_.indices.size()), 1, 0, 0, 0);
+  m_dx12_->GetCommandList()->DrawIndexedInstanced(static_cast<UINT>(modelData_.indices.size()), 1, 0, 0, 0);
 
 	// skeletonの描画
 	if (hasSkeleton_)
@@ -226,7 +226,7 @@ Animation Model::LoadAnimationFile(const std::string& directoryPath, const std::
 
 	// アニメーションの解析
 	aiAnimation* aiAnimation = scene->mAnimations[0]; // 一旦最初のアニメーションだけ対応
-	animation.duration = float(aiAnimation->mDuration / aiAnimation->mTicksPerSecond); // アニメーションの長さを取得,秒に変換
+	animation.duration = static_cast<float>(aiAnimation->mDuration / aiAnimation->mTicksPerSecond); // アニメーションの長さを取得,秒に変換
 
 	// ノードアニメーションの解析
 	for (uint32_t channelIndex = 0; channelIndex < aiAnimation->mNumChannels; ++channelIndex)
@@ -239,7 +239,7 @@ Animation Model::LoadAnimationFile(const std::string& directoryPath, const std::
 		{
 			aiVectorKey& aiKey = aiNodeAnim->mPositionKeys[keyIndex];
 			KeyFrameVector3 keyFrame;
-			keyFrame.time = float(aiKey.mTime / aiAnimation->mTicksPerSecond); // 時間を秒に変換
+			keyFrame.time = static_cast<float>(aiKey.mTime / aiAnimation->mTicksPerSecond); // 時間を秒に変換
 			keyFrame.value = Vector3(-aiKey.mValue.x, aiKey.mValue.y, aiKey.mValue.z);
 			nodeAnimetion.translate.keyFrames.push_back(keyFrame);
 		}
@@ -249,7 +249,7 @@ Animation Model::LoadAnimationFile(const std::string& directoryPath, const std::
 		{
 			aiQuatKey& aiKey = aiNodeAnim->mRotationKeys[keyIndex];
 			KeyFrameQuaternion keyFrame;
-			keyFrame.time = float(aiKey.mTime / aiAnimation->mTicksPerSecond); // 時間を秒に変換
+			keyFrame.time = static_cast<float>(aiKey.mTime / aiAnimation->mTicksPerSecond); // 時間を秒に変換
 			keyFrame.value = Quaternion(aiKey.mValue.x, -aiKey.mValue.y, -aiKey.mValue.z, aiKey.mValue.w); // クォータニオンのy,z成分を反転,右手系から左手系に変換
 			nodeAnimetion.rotate.keyFrames.push_back(keyFrame);
 		}
@@ -259,7 +259,7 @@ Animation Model::LoadAnimationFile(const std::string& directoryPath, const std::
 		{
 			aiVectorKey& aiKey = aiNodeAnim->mScalingKeys[keyIndex];
 			KeyFrameVector3 keyFrame;
-			keyFrame.time = float(aiKey.mTime / aiAnimation->mTicksPerSecond); // 時間を秒に変換
+			keyFrame.time = static_cast<float>(aiKey.mTime / aiAnimation->mTicksPerSecond); // 時間を秒に変換
 			keyFrame.value = Vector3(aiKey.mValue.x, aiKey.mValue.y, aiKey.mValue.z);
 			nodeAnimetion.scale.keyFrames.push_back(keyFrame);
 		}
@@ -372,7 +372,7 @@ void Model::CreateVertexData()
 	memcpy(vertexData_, modelData_.vertices.data(), sizeof(VertexData) * modelData_.vertices.size());
 
   vertexSrvIndex_ = SrvManager::GetInstance()->Allocate();
-  SrvManager::GetInstance()->CreateSRVForStructuredBuffer(vertexSrvIndex_, vertexResource_.Get(), UINT(modelData_.vertices.size()), sizeof(VertexData));
+  SrvManager::GetInstance()->CreateSRVForStructuredBuffer(vertexSrvIndex_, vertexResource_.Get(), static_cast<UINT>(modelData_.vertices.size()), sizeof(VertexData));
 }
 
 void Model::CreateVertexBufferView()
@@ -380,12 +380,12 @@ void Model::CreateVertexBufferView()
   if (hasSkeleton_) {
     // VertexBufferViewを作成
     vertexBufferView_.BufferLocation = uavVertexOutputResource_->GetGPUVirtualAddress();
-    vertexBufferView_.SizeInBytes = UINT(sizeof(VertexData) * modelData_.vertices.size());
+    vertexBufferView_.SizeInBytes = static_cast<UINT>(sizeof(VertexData) * modelData_.vertices.size());
     vertexBufferView_.StrideInBytes = sizeof(VertexData);
   } else {
     // VertexBufferViewを作成
     vertexBufferView_.BufferLocation = vertexResource_->GetGPUVirtualAddress();
-    vertexBufferView_.SizeInBytes = UINT(sizeof(VertexData) * modelData_.vertices.size());
+    vertexBufferView_.SizeInBytes = static_cast<UINT>(sizeof(VertexData) * modelData_.vertices.size());
     vertexBufferView_.StrideInBytes = sizeof(VertexData);
   }
 }
@@ -397,7 +397,7 @@ void Model::CreateIndexData()
 
 	// インデックスバッファビューを作る
 	indexBufferView_.BufferLocation = indexResource_->GetGPUVirtualAddress();
-	indexBufferView_.SizeInBytes = UINT(sizeof(uint32_t) * modelData_.indices.size());
+	indexBufferView_.SizeInBytes = static_cast<UINT>(sizeof(uint32_t) * modelData_.indices.size());
 	indexBufferView_.Format = DXGI_FORMAT_R32_UINT;
 
 	// インデックスリソースをマップ
@@ -426,9 +426,9 @@ void Model::CreateMaterialData()
 
 void Model::CreateSkinningUAV()
 {
-  m_dx12_->CreateResourceForUAV(uavVertexOutputResource_, UINT(modelData_.vertices.size() * sizeof(VertexData)));
+  m_dx12_->CreateResourceForUAV(uavVertexOutputResource_, static_cast<UINT>(modelData_.vertices.size() * sizeof(VertexData)));
   uavIndex_ = SrvManager::GetInstance()->Allocate();
-  SrvManager::GetInstance()->CreateUAV(uavIndex_, uavVertexOutputResource_.Get(), UINT(modelData_.vertices.size()), sizeof(VertexData));
+  SrvManager::GetInstance()->CreateUAV(uavIndex_, uavVertexOutputResource_.Get(), static_cast<UINT>(modelData_.vertices.size()), sizeof(VertexData));
 }
 
 void Model::CreateSkinningInfoResource()
@@ -436,7 +436,7 @@ void Model::CreateSkinningInfoResource()
   m_dx12_->CreateBufferResource(skinningInfoResource_, sizeof(SkinningInfo));
   skinningInfoResource_->Map(0, nullptr, reinterpret_cast<void**>(&skinningInfoData_));
 
-  skinningInfoData_->numVertices = uint32_t(modelData_.vertices.size());
+  skinningInfoData_->numVertices = static_cast<uint32_t>(modelData_.vertices.size());
 }
 
 Node Model::ReadNode(aiNode* node)
@@ -471,7 +471,7 @@ int32_t Model::CreateJoint(const Node& node, const std::optional<int32_t>& paren
 	joint.localMatrix = node.localMatrix;
 	joint.skeletonSpaceMatrix = Mat4x4::MakeIdentity();
 	joint.transform = node.transform;
-	joint.index = int32_t(joints.size());              // 現在登録されている数をindexとして設定
+	joint.index = static_cast<int32_t>(joints.size());              // 現在登録されている数をindexとして設定
 	joint.parentIndex = parentIndex;
 	joints.push_back(joint);                           // skeletonのjoint列に追加
 
@@ -515,7 +515,7 @@ SkinCluster Model::CreateSkinCluster()
   skinCluster.paletteSrvHandle.second = srvManager->GetGPUDescriptorHandle(skinCluster.paletteSrvIndex);
 
   // palette用のsrvを作成
-  srvManager->CreateSRVForStructuredBuffer(skinCluster.paletteSrvIndex, skinCluster.paletteResource.Get(), UINT(skeleton_.joints.size()), sizeof(WellForGPU));
+  srvManager->CreateSRVForStructuredBuffer(skinCluster.paletteSrvIndex, skinCluster.paletteResource.Get(), static_cast<UINT>(skeleton_.joints.size()), sizeof(WellForGPU));
 
 
   // influence用のリソースを生成
@@ -527,7 +527,7 @@ SkinCluster Model::CreateSkinCluster()
 
   // influence用のsrvを作成
   skinCluster.influenceSrvIndex = srvManager->Allocate();
-  srvManager->CreateSRVForStructuredBuffer(skinCluster.influenceSrvIndex, skinCluster.influenceResource.Get(), UINT(modelData_.vertices.size()), sizeof(VertexInfluence));
+  srvManager->CreateSRVForStructuredBuffer(skinCluster.influenceSrvIndex, skinCluster.influenceResource.Get(), static_cast<UINT>(modelData_.vertices.size()), sizeof(VertexInfluence));
 
 
   // InverseBindMatricesを格納する場所を確保し、単位行列で埋める

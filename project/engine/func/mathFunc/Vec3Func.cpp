@@ -24,7 +24,7 @@ namespace Vec3 {
 
 	Vector3 Normalize(const Vector3& v) {
 		double length = Length(v);
-		return Vector3(v.x / (float)length, v.y / (float)length, v.z / (float)length);
+		return Vector3(v.x / static_cast<float>(length), v.y / static_cast<float>(length), v.z / static_cast<float>(length));
 	}
 
 	Vector3 Cross(const Vector3& v1, const Vector3& v2) {
@@ -55,8 +55,8 @@ namespace Vec3 {
 		float sinThetaFrom = (float)sin((1.0f - t) * theta);
 		float sinThetaTo = (float)sin(t * theta);
 
-		float length1 = (float)Length(v1);
-		float length2 = (float)Length(v2);
+		float length1 = static_cast<float>(Length(v1));
+		float length2 = static_cast<float>(Length(v2));
 
 		float length = Lerp(length1, length2, t);
 

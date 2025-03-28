@@ -112,7 +112,7 @@
     <FxCompile Include="resources\shaders\SkinningObject3d.VS.hlsl">
       <Filter>Shader\3d</Filter>
     </FxCompile>
-    <FxCompile Include="resources\shaders\InitParicle.CS.hlsl">
+    <FxCompile Include="resources\shaders\InitParticle.CS.hlsl">
       <Filter>Shader\Particle</Filter>
     </FxCompile>
     <FxCompile Include="resources\shaders\Particle.PS.hlsl">

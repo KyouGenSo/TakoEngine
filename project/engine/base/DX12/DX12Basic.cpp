@@ -486,9 +486,9 @@ void DX12Basic::InitFPSLimiter()
 void DX12Basic::UpdateFPSLimiter()
 {
 	// 1/60秒
-	const std::chrono::microseconds kMinFrameTime(uint64_t(1000000.0 / 60.0));
+	const std::chrono::microseconds kMinFrameTime(static_cast<uint64_t>(1000000.0 / 60.0));
 	// 1/65秒
-	const std::chrono::microseconds kMinCheckTime(uint64_t(1000000.0 / 65.0));
+	const std::chrono::microseconds kMinCheckTime(static_cast<uint64_t>(1000000.0 / 65.0));
 
 	// 現在の時間を取得
 	auto currentTime = std::chrono::steady_clock::now();
@@ -665,13 +665,13 @@ Microsoft::WRL::ComPtr<ID3D12Resource> DX12Basic::MakeTextureResource(const Dire
 {
 	// テクスチャの設定
 	D3D12_RESOURCE_DESC resourceDesc{};
-	resourceDesc.Width = UINT(metaData.width); // テクスチャの幅
-	resourceDesc.Height = UINT(metaData.height); // テクスチャの高さ
-	resourceDesc.DepthOrArraySize = UINT16(metaData.arraySize); // 配列サイズ
-	resourceDesc.MipLevels = UINT16(metaData.mipLevels); // ミップマップレベル
+	resourceDesc.Width = static_cast<UINT>(metaData.width); // テクスチャの幅
+	resourceDesc.Height = static_cast<UINT>(metaData.height); // テクスチャの高さ
+	resourceDesc.DepthOrArraySize = static_cast<UINT16>(metaData.arraySize); // 配列サイズ
+	resourceDesc.MipLevels = static_cast<UINT16>(metaData.mipLevels); // ミップマップレベル
 	resourceDesc.Format = metaData.format; // フォーマット
 	resourceDesc.SampleDesc.Count = 1; // サンプル数
-	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION(metaData.dimension); // テクスチャの次元
+	resourceDesc.Dimension = static_cast<D3D12_RESOURCE_DIMENSION>(metaData.dimension); // テクスチャの次元
 
 	// ヒープの設定
 	D3D12_HEAP_PROPERTIES heapProperties{};
@@ -696,13 +696,13 @@ void DX12Basic::CreateTextureResource(ComPtr<ID3D12Resource>& textureResource, c
 {
 	// テクスチャの設定
 	D3D12_RESOURCE_DESC resourceDesc{};
-	resourceDesc.Width = UINT(metaData.width); // テクスチャの幅
-	resourceDesc.Height = UINT(metaData.height); // テクスチャの高さ
-	resourceDesc.DepthOrArraySize = UINT16(metaData.arraySize); // 配列サイズ
-	resourceDesc.MipLevels = UINT16(metaData.mipLevels); // ミップマップレベル
+	resourceDesc.Width = static_cast<UINT>(metaData.width); // テクスチャの幅
+	resourceDesc.Height = static_cast<UINT>(metaData.height); // テクスチャの高さ
+	resourceDesc.DepthOrArraySize = static_cast<UINT16>(metaData.arraySize); // 配列サイズ
+	resourceDesc.MipLevels = static_cast<UINT16>(metaData.mipLevels); // ミップマップレベル
 	resourceDesc.Format = metaData.format; // フォーマット
 	resourceDesc.SampleDesc.Count = 1; // サンプル数
-	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION(metaData.dimension); // テクスチャの次元
+	resourceDesc.Dimension = static_cast<D3D12_RESOURCE_DIMENSION>(metaData.dimension); // テクスチャの次元
 
 	// ヒープの設定
 	D3D12_HEAP_PROPERTIES heapProperties{};
@@ -763,14 +763,14 @@ Microsoft::WRL::ComPtr<ID3D12Resource> DX12Basic::UploadTextureData(const Micros
 	DirectX::PrepareUpload(device_.Get(), mipImages.GetImages(), mipImages.GetImageCount(), mipImages.GetMetadata(), subresources);
 
 	// intermediateResourceに必要なサイズを取得
-	uint64_t intermediateSize = GetRequiredIntermediateSize(textureResource.Get(), 0, UINT(subresources.size()));
+	uint64_t intermediateSize = GetRequiredIntermediateSize(textureResource.Get(), 0, static_cast<UINT>(subresources.size()));
 
 	// intermediateResourceを作成
 	Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource = MakeBufferResource(intermediateSize);
 	intermediateResource->SetName(L"IntermediateResource");
 
 	// intermediateResourceにSubresourceのデータを書き込み、textureに転送するコマンドを積む
-	UpdateSubresources(commandList_.Get(), textureResource.Get(), intermediateResource.Get(), 0, 0, UINT(subresources.size()), subresources.data());
+	UpdateSubresources(commandList_.Get(), textureResource.Get(), intermediateResource.Get(), 0, 0, static_cast<UINT>(subresources.size()), subresources.data());
 
 	// ResourceBarrierを使ってResourceStateを変更
 	D3D12_RESOURCE_BARRIER barrier{};

@@ -1,8 +1,5 @@
 #pragma once
-#include <string>
-#include <vector>
 #include <list>
-#include <unordered_map>
 #include <d3d12.h>
 #include <wrl.h>
 
@@ -10,8 +7,6 @@
 #include "vector3.h"
 #include "vector4.h"
 #include "Matrix4x4.h"
-#include "Transform.h"
-#include "AABB.h"
 #include "ModelStruct.h"
 
 // エミッタータイプの列挙型
