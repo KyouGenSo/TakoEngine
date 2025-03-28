@@ -76,6 +76,11 @@ public: // メンバー関数
   std::shared_ptr<TriangleEmitter> CreateTriangleEmitter(const Vector3& position, const Vector3& v1, const Vector3& v2, const Vector3& v3, uint32_t count, float frequency);
 
   /// <summary>
+  /// 既存のエミッターからコピーして一時的なエミッターを作成
+  /// </summary>
+  std::shared_ptr<GPUParticleEmitter> CreateTemporaryEmitterFrom(GPUParticleEmitter* sourceEmitter, float lifeTime);
+
+  /// <summary>
   /// エミッターパラメータ更新
   /// </summary>
   void UpdateEmitterParameters(uint32_t emitterId, const EmitterData& params);
@@ -92,11 +97,12 @@ public: // メンバー関数
 
   //-------------------------Getter/Setter-------------------------//
   // EmitterDataの取得
-  EmitterData GetEmitterData(uint32_t emitterId) const { return emitters_[emitterId]; }
-  bool GetIsDebug() const { return isDebug_; }
+  [[nodiscard]] EmitterData GetEmitterData(uint32_t emitterId) const { return emitters_[emitterId]; }
+  [[nodiscard]] bool GetIsDebug() const { return isDebug_; }
 
   void SetCamera(Camera* camera) { m_camera_ = camera; }
   void SetIsDebug(bool isDebug) { isDebug_ = isDebug; }
+  //-------------------------Getter/Setter-------------------------//
 
   // フレンドクラス宣言
   friend class GPUParticleEmitter;
@@ -112,6 +118,7 @@ private: // プライベートメンバー関数
   uint32_t CreateSphereEmitterInternal(const Vector3& position, float radius, uint32_t count, float frequency);
   uint32_t CreateBoxEmitterInternal(const Vector3& position, const Vector3& size, const Vector3& rotation, uint32_t count, float frequency);
   uint32_t CreateTriangleEmitterInternal(const Vector3& position, const Vector3& v1, const Vector3& v2, const Vector3& v3, uint32_t count, float frequency);
+  uint32_t CopyEmitterParameters(uint32_t sourceEmitterId, float lifeTime = 0.0f);
 
   /// <summary>
   ///　emitterの更新

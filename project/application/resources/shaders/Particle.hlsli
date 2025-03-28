@@ -26,35 +26,39 @@ struct Particle
 struct Emitter
 {
     // 基本情報
-    uint type;              // エミッタータイプ
-    uint isActive;          // アクティブ状態（1=有効、0=無効）
-    uint isEmit;            // 射出フラグ（1=射出する、0=射出しない）
-    uint emitterID;         // エミッターID
+    uint type;                // エミッタータイプ
+    uint isActive;            // アクティブ状態（1=有効、0=無効）
+    uint isEmit;              // 射出フラグ（1=射出する、0=射出しない）
+    uint emitterID;           // エミッターID
     
-    float3 position;        // 中心/基準位置
-    float2 scaleRangeX;     // パーティクルのXサイズ範囲（最小、最大）
-    float2 scaleRangeY;     // パーティクルのYサイズ範囲（最小、最大）
-    float2 velRangeX;       // パーティクルのX速度範囲（最小、最大）
-    float2 velRangeY;       // パーティクルのY速度範囲（最小、最大）
-    float2 velRangeZ;       // パーティクルのZ速度範囲（最小、最大）
-    float2 lifeTimeRange;   // パーティクルの寿命範囲（最小、最大）
-    float4 colorTint; // パーティクルの色補正
+    float3 position;          // 中心/基準位置
+    float2 scaleRangeX;       // パーティクルのXサイズ範囲（最小、最大）
+    float2 scaleRangeY;       // パーティクルのYサイズ範囲（最小、最大）
+    float2 velRangeX;         // パーティクルのX速度範囲（最小、最大）
+    float2 velRangeY;         // パーティクルのY速度範囲（最小、最大）
+    float2 velRangeZ;         // パーティクルのZ速度範囲（最小、最大）
+    float2 lifeTimeRange;     // パーティクルの寿命範囲（最小、最大）
+    float4 colorTint;         // パーティクルの色補正
     
-    uint count;             // 1回の射出で生成するパーティクル数
-    float frequency;        // 射出頻度（秒）
-    float frequencyTime;    // 経過時間カウンター
+    uint  count;              // 1回の射出で生成するパーティクル数
+    float frequency;          // 射出頻度（秒）
+    float frequencyTime;      // 経過時間カウンター
+
+    uint isTemp;              // 一時的なエミッターかどうか（1=一時的、0=永続）
+    float emitterLifeTime;    // エミッターの寿命（秒）
+    float emitterCurrentTime; // エミッターの経過時間
 
     // 球体用パラメータ
-    float radius;           // 球体の半径
+    float radius;             // 球体の半径
     
     // 箱型用パラメータ
-    float3 boxSize;         // 箱の大きさ（幅、高さ、奥行き）
-    float3 boxRotation;     // 箱の回転（X,Y,Z軸、度数法）
+    float3 boxSize;           // 箱の大きさ（幅、高さ、奥行き）
+    float3 boxRotation;       // 箱の回転（X,Y,Z軸、度数法）
     
     // 三角形用パラメータ
-    float3 triangleV1;      // 三角形の頂点1（相対座標）
-    float3 triangleV2;      // 三角形の頂点2（相対座標）
-    float3 triangleV3;      // 三角形の頂点3（相対座標）
+    float3 triangleV1;        // 三角形の頂点1（相対座標）
+    float3 triangleV2;        // 三角形の頂点2（相対座標）
+    float3 triangleV3;        // 三角形の頂点3（相対座標）
 };
 
 // パーフレーム情報構造体

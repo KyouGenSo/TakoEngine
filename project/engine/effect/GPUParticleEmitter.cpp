@@ -153,3 +153,31 @@ void GPUParticleEmitter::SetLifeTimeRange(const Vector2& range)
     particleSystem_->UpdateEmitterParameters(emitterId_, params);
   }
 }
+
+void GPUParticleEmitter::SetTemporary(bool isTemporary, float lifeTime)
+{
+  isTemp_ = isTemporary;
+  emitterLifeTime_ = lifeTime;
+  emitterCurrentTime_ = 0.0f;
+
+  if (particleSystem_) {
+    EmitterData params = particleSystem_->GetEmitterData(emitterId_);
+    params.isTemp = isTemporary;
+    params.emitterLifeTime = lifeTime;
+    params.emitterCurrentTime = 0.0f;
+    particleSystem_->UpdateEmitterParameters(emitterId_, params);
+  }
+}
+
+void GPUParticleEmitter::UpdateTemporaryLifeTime(const float deltaTime)
+{
+  if (!isTemp_ || emitterLifeTime_ <= 0.0f) return;
+
+  emitterCurrentTime_ += deltaTime;
+
+  if (particleSystem_) {
+    EmitterData params = particleSystem_->GetEmitterData(emitterId_);
+    params.emitterCurrentTime = emitterCurrentTime_;
+    particleSystem_->UpdateEmitterParameters(emitterId_, params);
+  }
+}

@@ -100,6 +100,7 @@ LRESULT WinApp::WndProc(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	{
 		return true;
 	}
+
 	//メッセージによって処理を分岐
 	switch (msg)
 	{
@@ -108,6 +109,9 @@ LRESULT WinApp::WndProc(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		//メッセージループを終了
 		PostQuitMessage(0);
 		break;
-	}
+
+  default: ;
+  }
+
 	return DefWindowProc(hWnd, msg, wparam, lparam);
 }

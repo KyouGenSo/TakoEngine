@@ -100,12 +100,16 @@ struct EmitterData {
   Vector2 velRangeX;        // X速度範囲
   Vector2 velRangeY;        // Y速度範囌
   Vector2 velRangeZ;        // Z速度範囌
-  Vector2 lifeTimeRange;   // 寿命範囲
+  Vector2 lifeTimeRange;    // 寿命範囲
   Vector4 colorTint;        // 色補正
 
   uint32_t count;           // 1回の射出で生成するパーティクル数
   float frequency;          // 射出頻度（秒）
   float frequencyTime;      // 経過時間
+
+  bool isTemp;              // 一時的なエミッターかどうか
+  float emitterLifeTime;    // エミッターの寿命
+  float emitterCurrentTime; // エミッターの経過時間
 
   // 型固有のパラメータ
   union {
@@ -147,6 +151,10 @@ struct EmitterGPUData
   uint32_t count;          // パーティクル数
   float frequency;         // 射出頻度
   float frequencyTime;     // 経過時間
+
+  uint32_t isTemp;          // 一時的なエミッターかどうか
+  float emitterLifeTime;    // エミッターの寿命
+  float emitterCurrentTime; // エミッターの経過時間
 
   // 球体用パラメータ
   float radius;            // 球体の半径
