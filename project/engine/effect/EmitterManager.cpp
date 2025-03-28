@@ -7,6 +7,7 @@
 #include "FrameTimer.h"
 
 #include <algorithm>
+#include <ranges>
 
 EmitterManager::EmitterManager(GPUParticle* particleSystem)
   : particleSystem_(particleSystem)
@@ -23,7 +24,7 @@ EmitterManager::~EmitterManager()
 void EmitterManager::CreateSphereEmitter(const std::string& name, const Vector3& position, float radius, uint32_t count, float frequency)
 {
   // 名前の重複チェック
-  if (emitterMap_.find(name) != emitterMap_.end()) {
+  if (emitterMap_.contains(name)) {
     Logger::Log("Warning: Emitter name '%s' already exists. Overwriting.", name.c_str());
     RemoveEmitter(name);
   }
@@ -39,7 +40,7 @@ void EmitterManager::CreateSphereEmitter(const std::string& name, const Vector3&
 void EmitterManager::CreateBoxEmitter(const std::string& name, const Vector3& position, const Vector3& size, const Vector3& rotation, uint32_t count, float frequency)
 {
   // 名前の重複チェック
-  if (emitterMap_.find(name) != emitterMap_.end()) {
+  if (emitterMap_.contains(name)) {
     Logger::Log("Warning: Emitter name '%s' already exists. Overwriting.", name.c_str());
     RemoveEmitter(name);
   }
@@ -55,7 +56,7 @@ void EmitterManager::CreateBoxEmitter(const std::string& name, const Vector3& po
 void EmitterManager::CreateTriangleEmitter(const std::string& name, const Vector3& position, const Vector3& v1, const Vector3& v2, const Vector3& v3, uint32_t count, float frequency)
 {
   // 名前の重複チェック
-  if (emitterMap_.find(name) != emitterMap_.end()) {
+  if (emitterMap_.contains(name)) {
     Logger::Log("Warning: Emitter name '%s' already exists. Overwriting.", name.c_str());
     RemoveEmitter(name);
   }
@@ -92,6 +93,7 @@ void EmitterManager::UpdateBoxEmitter(const std::string& name, const Vector3& po
   auto it = emitterMap_.find(name);
   if (it != emitterMap_.end()) {
     auto boxEmitter = std::dynamic_pointer_cast<BoxEmitter>(it->second);
+
     if (boxEmitter) {
       boxEmitter->SetPosition(position);
       boxEmitter->SetSize(size);
@@ -101,6 +103,7 @@ void EmitterManager::UpdateBoxEmitter(const std::string& name, const Vector3& po
     } else {
       Logger::Log("UpdateBoxEmitter: Emitter '%s' is not a BoxEmitter", name.c_str());
     }
+
   } else {
     Logger::Log("UpdateBoxEmitter: Emitter '%s' not found", name.c_str());
   }
@@ -111,6 +114,7 @@ void EmitterManager::UpdateTriangleEmitter(const std::string& name, const Vector
   auto it = emitterMap_.find(name);
   if (it != emitterMap_.end()) {
     auto triangleEmitter = std::dynamic_pointer_cast<TriangleEmitter>(it->second);
+
     if (triangleEmitter) {
       triangleEmitter->SetPosition(position);
       triangleEmitter->SetVertices(v1, v2, v3);
@@ -119,6 +123,7 @@ void EmitterManager::UpdateTriangleEmitter(const std::string& name, const Vector
     } else {
       Logger::Log("UpdateTriangleEmitter: Emitter '%s' is not a TriangleEmitter", name.c_str());
     }
+
   } else {
     Logger::Log("UpdateTriangleEmitter: Emitter '%s' not found", name.c_str());
   }
@@ -200,8 +205,7 @@ void EmitterManager::RemoveEmitter(const std::string& name)
       auto& emitterNames = group.emitterNames;
 
       // 安全に要素を削除（remove-eraseイディオム）
-      auto newEnd = std::remove(emitterNames.begin(), emitterNames.end(), name);
-      if (newEnd != emitterNames.end()) {
+      if (auto newEnd = std::ranges::remove(emitterNames, name).begin(); newEnd != emitterNames.end()) {
         emitterNames.erase(newEnd, emitterNames.end());
         Logger::Log("Removed emitter '%s' from group '%s'", name.c_str(), groupName.c_str());
       }
@@ -218,8 +222,8 @@ void EmitterManager::RemoveAllEmitters()
     emitterMap_.size());
 
   // エミッターを1つずつ明示的に削除（GPUParticleシステムに通知するため）
-  for (auto& pair : emitterMap_) {
-    auto& emitter = pair.second;
+  for (auto& val : emitterMap_ | std::views::values) {
+    auto& emitter = val;
     // エミッターを非アクティブ化して即時効果を得る
     emitter->SetActive(false);
   }
@@ -228,8 +232,8 @@ void EmitterManager::RemoveAllEmitters()
   emitterMap_.clear();
 
   // グループを空にする
-  for (auto& group : groupMap_) {
-    group.second.emitterNames.clear();
+  for (auto& val : groupMap_ | std::views::values) {
+    val.emitterNames.clear();
   }
 }
 
@@ -237,7 +241,7 @@ void EmitterManager::RemoveAllEmitters()
 void EmitterManager::CreateGroup(const std::string& groupName)
 {
   // グループの重複チェック
-  if (groupMap_.find(groupName) != groupMap_.end()) {
+  if (groupMap_.contains(groupName)) {
     Logger::Log("Warning: Group name '%s' already exists.", groupName.c_str());
     return;
   }
@@ -262,14 +266,14 @@ void EmitterManager::AddToGroup(const std::string& groupName, const std::string&
   }
 
   // エミッターの存在チェック
-  if (emitterMap_.find(emitterName) == emitterMap_.end()) {
+  if (!emitterMap_.contains(emitterName)) {
     Logger::Log("Warning: Emitter '%s' not found. Cannot add to group.", emitterName.c_str());
     return;
   }
 
   // 既に追加済みかチェック
   auto& emitterNames = groupIt->second.emitterNames;
-  if (std::find(emitterNames.begin(), emitterNames.end(), emitterName) != emitterNames.end()) {
+  if (std::ranges::find(emitterNames, emitterName) != emitterNames.end()) {
     return; // 既に追加済み
   }
 
@@ -288,7 +292,7 @@ void EmitterManager::RemoveFromGroup(const std::string& groupName, const std::st
   // グループからエミッターを削除
   auto& emitterNames = groupIt->second.emitterNames;
   emitterNames.erase(
-    std::remove(emitterNames.begin(), emitterNames.end(), emitterName),
+    std::ranges::remove(emitterNames, emitterName).begin(),
     emitterNames.end()
   );
 }

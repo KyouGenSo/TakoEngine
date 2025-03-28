@@ -1,7 +1,6 @@
 #include "GameScene.h"
 #include "ModelManager.h"
 #include "Object3dBasic.h"
-#include "TextureManager.h"
 #include "SpriteBasic.h"
 #include "Input.h"
 #include "DebugCamera.h"
@@ -36,38 +35,40 @@ void GameScene::Initialize()
   object3d_->Initialize();
   object3d_->SetModel("terrain.obj");
   // y軸90度回転
-  Vector3 rotate = { 0.0f, DirectX::XMConvertToRadians(90.0f), 0.0f };
+  Vector3 rotate = { .x= 0.0f, .y= DirectX::XMConvertToRadians(90.0f), .z= 0.0f };
   object3d_->SetRotate(rotate);
 
-  modelPos_ = { 0.0f, 0.0f, 0.0f };
+  modelPos_ = { .x= 0.0f, .y= 0.0f, .z= 0.0f };
 
   object3d2_ = new Object3d();
   object3d2_->Initialize();
   object3d2_->SetModel("sneakWalk.gltf");
-  modelRotate2_ = { 0.0f, DirectX::XMConvertToRadians(180.0f), 0.0f };
+  modelRotate2_ = { .x= 0.0f, .y= DirectX::XMConvertToRadians(180.0f), .z= 0.0f };
   object3d2_->SetRotate(rotate);
 
-  modelPos2_ = { 0.0f, 6.7f, -24.0f };
+  modelPos2_ = { .x= 0.0f, .y= 6.7f, .z= -24.0f };
 
   GPUParticle* particleSystem = GPUParticle::GetInstance();
 
   emitterManager_ = std::make_unique<EmitterManager>(particleSystem);
 
-  spEmitterSett_ = { { 0.0f, 0.0f, 0.0f }, 10.0f,  10, 1.0f };
-  boxEmitterSett_ = { { 0.0f, 5.0f, 0.0f }, { 0.3f, 0.0f, 0.1f }, { 0.0f, 0.0f, 0.0f }, 10, 0.5f };
-  triEmitterSett_ = { { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 10, 0.1f };
+  spEmitterSett_ = { .position= {.x = 0.0f, .y= 0.0f, .z= 0.0f }, .radius= 10.0f, .count= 10, .frequency= 1.0f};
+  boxEmitterSett_ = { .position= {.x = 0.0f, .y= 5.0f, .z= 0.0f }, .size= {.x = 0.3f, .y= 0.0f, .z= 0.1f }, .rotation= {.x = 0.0f, .y= 0.0f, .z= 0.0f }, .count= 10, .frequency= 0.5f};
+  triEmitterSett_ = { .position= {.x = 0.0f, .y= 0.0f, .z= 0.0f }, .v1= {.x = 0.0f, .y= 0.0f, .z= 1.0f }, .v2= {.x = 1.0f, .y= 0.0f, .z= 0.0f }, .v3= {.x = 0.0f, .y= 1.0f, .z= 0.0f }, .count= 10,
+    .frequency= 0.1f
+  };
 
   // 球体エミッターの作成
   emitterManager_->CreateSphereEmitter("player", spEmitterSett_.position, spEmitterSett_.radius, spEmitterSett_.count, spEmitterSett_.frequency);
-  emitterManager_->SetEmitterColor("player", { 1.0f, 0.0f, 0.0f, 1.0f });
+  emitterManager_->SetEmitterColor("player", { .x= 1.0f, .y= 0.0f, .z= 0.0f, .w= 1.0f });
 
   //箱エミッターの作成
   emitterManager_->CreateBoxEmitter("box", boxEmitterSett_.position, boxEmitterSett_.size, boxEmitterSett_.rotation, boxEmitterSett_.count, boxEmitterSett_.frequency);
-  emitterManager_->SetEmitterColor("box", { 0.0f, 1.0f, 0.0f, 1.0f });
+  emitterManager_->SetEmitterColor("box", { .x= 0.0f, .y= 1.0f, .z= 0.0f, .w= 1.0f });
 
   //三角形エミッターの作成
   emitterManager_->CreateTriangleEmitter("triangle", triEmitterSett_.position, triEmitterSett_.v1, triEmitterSett_.v2, triEmitterSett_.v3, triEmitterSett_.count, triEmitterSett_.frequency);
-  emitterManager_->SetEmitterColor("triangle", { 0.0f, 0.0f, 1.0f, 1.0f });
+  emitterManager_->SetEmitterColor("triangle", { .x= 0.0f, .y= 0.0f, .z= 1.0f, .w= 1.0f });
 
   emitterManager_->CreateGroup("group1");
   emitterManager_->AddToGroup("group1", "player");
@@ -111,7 +112,6 @@ void GameScene::Update()
   object3d_->SetShininess(shininess_);
   object3d_->SetEnableLighting(isLighting_);
   object3d_->SetEnableHighlight(isHighlight_);
-  object3d_->SetMaterialColor(materialColor1_);
 
   object3d2_->SetScale(modelScale2_);
   object3d2_->SetTranslate(modelPos2_);
@@ -119,7 +119,6 @@ void GameScene::Update()
   object3d2_->SetShininess(shininess_);
   object3d2_->SetEnableLighting(isLighting_);
   object3d2_->SetEnableHighlight(isHighlight_);
-  object3d2_->SetMaterialColor(materialColor2_);
 
   object3d_->Update();
   object3d2_->Update();
@@ -198,14 +197,12 @@ void GameScene::DrawImGui()
   ImGui::DragFloat3("Scale", &modelScale_.x, 0.01f, 0.1f, 50.0f);
   ImGui::DragFloat3("Position", &modelPos_.x, 0.01f, -50.0f, 50.0f);
   ImGui::DragFloat3("Rotate", &modelRotate_.x, 0.01f, DirectX::XMConvertToRadians(-180.0f), DirectX::XMConvertToRadians(180.0f));
-  ImGui::ColorEdit4("MaterialColor1", &materialColor1_.x);
   ImGui::End();
 
   ImGui::Begin("object3d2");
   ImGui::DragFloat3("Scale", &modelScale2_.x, 0.01f, 0.1f, 50.0f);
   ImGui::DragFloat3("Position", &modelPos2_.x, 0.01f, -50.0f, 50.0f);
   ImGui::DragFloat3("Rotate", &modelRotate2_.x, 0.01f, DirectX::XMConvertToRadians(-180.0f), DirectX::XMConvertToRadians(180.0f));
-  ImGui::ColorEdit4("MaterialColor2", &materialColor2_.x);
   ImGui::End();
 
   // Lightの設定

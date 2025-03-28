@@ -161,7 +161,7 @@ void ParticleManager::Finalize()
 void ParticleManager::CreateParticleGroup(const std::string name, const std::string textureFilePath)
 {
 	// 登録済みの名前かチェック
-	if (particleGroups.find(name) != particleGroups.end())
+	if (particleGroups.contains(name))
 	{
 		Logger::Log("This ParticleGroup is already exist");
 		assert(false);
@@ -193,7 +193,7 @@ void ParticleManager::CreateParticleGroup(const std::string name, const std::str
 void ParticleManager::DestroyParticle(const std::string name)
 {
   // パーティクルグループが存在するかをチェック
-  if (particleGroups.find(name) == particleGroups.end())
+  if (!particleGroups.contains(name))
   {
     Logger::Log("ParticleGroup not exist");
     assert(false);
@@ -206,7 +206,7 @@ void ParticleManager::DestroyParticle(const std::string name)
 void ParticleManager::Emit(const std::string name, const Vector3& position, const Vector3& scale, const Vector3& velocity, const AABB& range, uint32_t count, const Vector4& color, const float lifeTime, bool isRandomColor)
 {
 	// パーティクルグループが存在するかをチェック
-	if (particleGroups.find(name) == particleGroups.end())
+	if (!particleGroups.contains(name))
 	{
 		Logger::Log("ParticleGroup not exist");
 		assert(false);
