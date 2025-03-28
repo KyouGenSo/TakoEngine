@@ -41,17 +41,17 @@ void WinApp::Initialize()
 
 	//ウィンドウの生成
 	hWnd_ = CreateWindow(
-		wc_.lpszClassName,	    //クラス名
-		L"TakoEngine",	        //タイトルバーの文字列
-		WS_OVERLAPPEDWINDOW,	//ウィンドウスタイル
-		CW_USEDEFAULT,		    //表示X座標
-		CW_USEDEFAULT,		    //表示Y座標
-		wrc.right - wrc.left,	//ウィンドウ幅
-		wrc.bottom - wrc.top,	//ウィンドウ高さ
-		nullptr,		        //親ウィンドウハンドル
-		nullptr,		        //メニューハンドル
-		wc_.hInstance,		    //インスタンスハンドル
-		nullptr);		        //追加パラメータ
+		wc_.lpszClassName,             //クラス名
+		L"TakoEngine",                //タイトルバーの文字列
+    WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,  // サイズ変更不可のウィンドウスタイル
+		CW_USEDEFAULT,               //表示X座標
+		CW_USEDEFAULT,              //表示Y座標
+		wrc.right - wrc.left,      //ウィンドウ幅
+		wrc.bottom - wrc.top,      //ウィンドウ高さ
+		nullptr,                  //親ウィンドウハンドル
+		nullptr,                  //メニューハンドル
+		wc_.hInstance,            //インスタンスハンドル
+		nullptr);                //追加パラメータ
 
 	//ウィンドウを表示
 	ShowWindow(hWnd_, SW_SHOW);
