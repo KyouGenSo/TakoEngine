@@ -32,15 +32,15 @@ public:
   void SetLifeTimeRange(const Vector2& range);
 
   // ゲッター
-  const Vector3& GetPosition() const { return position_; }
-  bool IsActive() const { return isActive_; }
-  const Vector4& GetColor() const { return color_; }
-  uint32_t GetParticleCount() const { return particleCount_; }
-  float GetFrequency() const { return frequency_; }
-  uint32_t GetEmitterId() const { return emitterId_; }
+  [[nodiscard]] const Vector3& GetPosition() const { return position_; }
+  [[nodiscard]] bool IsActive() const { return isActive_; }
+  [[nodiscard]] const Vector4& GetColor() const { return color_; }
+  [[nodiscard]] uint32_t GetParticleCount() const { return particleCount_; }
+  [[nodiscard]] float GetFrequency() const { return frequency_; }
+  [[nodiscard]] uint32_t GetEmitterId() const { return emitterId_; }
 
   // 仮想関数
-  virtual EmitterType GetType() const = 0;
+  [[nodiscard]] virtual EmitterType GetType() const = 0;
 
 protected:
   // 共通パラメータ

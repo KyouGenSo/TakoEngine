@@ -621,12 +621,14 @@ void GPUParticle::CreateRS()
   descriptionRootSignature.NumStaticSamplers = _countof(samplerDesc);
 
   // DescriptorRangeの設定。
+  // Texture
   D3D12_DESCRIPTOR_RANGE descriptorRange_tex[1] = {};
   descriptorRange_tex[0].BaseShaderRegister = 0; // レジスタ番号
   descriptorRange_tex[0].NumDescriptors = 1; // ディスクリプタ数
   descriptorRange_tex[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
   descriptorRange_tex[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
 
+  // Particle
   D3D12_DESCRIPTOR_RANGE descriptorRangeForParticle[1] = {};
   descriptorRangeForParticle[0].BaseShaderRegister = 0; // レジスタ番号
   descriptorRangeForParticle[0].NumDescriptors = 1; // ディスクリプタ数

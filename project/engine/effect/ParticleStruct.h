@@ -116,8 +116,11 @@ struct EmitterData {
 
   // デフォルトコンストラクタ
   EmitterData() : type(EmitterType::Sphere), isActive(true), isEmitting(false),
-    emitterID(0), position({ 0.0f, 0.0f, 0.0f }), colorTint({ 1, 1, 1, 1 }),
-    count(20), frequency(0.5f), frequencyTime(0.0f) {
+    emitterID(0), position({ .x = 0.0f, .y = 0.0f, .z = 0.0f }),
+    scaleRangeX(), scaleRangeY(), velRangeX(), velRangeY(), velRangeZ(), lifeTimeRange(),
+    colorTint({ .x = 1, .y = 1, .z = 1, .w = 1 }),
+    count(20), frequency(0.5f), frequencyTime(0.0f)
+  {
     // 球体パラメータの初期化
     sphere.radius = 1.0f;
   }

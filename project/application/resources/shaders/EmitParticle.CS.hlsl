@@ -185,7 +185,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
             float3 particleScale;
             
             // X軸方向のスケール
-            if (all(gEmitters[emitterIndex].scaleRangeX != float2(0.0f, 0.0f)))
+            if (any(gEmitters[emitterIndex].scaleRangeX != float2(0.0f, 0.0f)))
             {
                 particleScale.x = generator.Generate1d() * (gEmitters[emitterIndex].scaleRangeX.y - gEmitters[emitterIndex].scaleRangeX.x) + gEmitters[emitterIndex].scaleRangeX.x;
             }
@@ -195,7 +195,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
             }
             
             // Y軸方向のスケール
-            if (all(gEmitters[emitterIndex].scaleRangeY != float2(0.0f, 0.0f)))
+            if (any(gEmitters[emitterIndex].scaleRangeY != float2(0.0f, 0.0f)))
             {
                 particleScale.y = generator.Generate1d() * (gEmitters[emitterIndex].scaleRangeY.y - gEmitters[emitterIndex].scaleRangeY.x) + gEmitters[emitterIndex].scaleRangeY.x;
             }
@@ -219,9 +219,9 @@ void main(uint3 DTid : SV_DispatchThreadID)
             float3 particleVelocity;
             
             // X軸方向の速度
-            if (all(gEmitters[emitterIndex].velRangeX != float2(0.0f, 0.0f)) ||
-                all(gEmitters[emitterIndex].velRangeY != float2(0.0f, 0.0f)) || 
-                all(gEmitters[emitterIndex].velRangeZ != float2(0.0f, 0.0f)))
+            if (any(gEmitters[emitterIndex].velRangeX != float2(0.0f, 0.0f)) ||
+                any(gEmitters[emitterIndex].velRangeY != float2(0.0f, 0.0f)) ||
+                any(gEmitters[emitterIndex].velRangeZ != float2(0.0f, 0.0f)))
             {
                 particleVelocity.x = generator.Generate1d() * (gEmitters[emitterIndex].velRangeX.y - gEmitters[emitterIndex].velRangeX.x) + gEmitters[emitterIndex].velRangeX.x;
                 particleVelocity.y = generator.Generate1d() * (gEmitters[emitterIndex].velRangeY.y - gEmitters[emitterIndex].velRangeY.x) + gEmitters[emitterIndex].velRangeY.x;
@@ -239,7 +239,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
             
             
             // 寿命設定---------------------------------------------------------------------------------
-            if (all(gEmitters[emitterIndex].lifeTimeRange != float2(0.0f, 0.0f)))
+            if (any(gEmitters[emitterIndex].lifeTimeRange != float2(0.0f, 0.0f)))
             {
                 gParticles[particleID].lifeTime = generator.Generate1d() * (gEmitters[emitterIndex].lifeTimeRange.y - gEmitters[emitterIndex].lifeTimeRange.x) + gEmitters[emitterIndex].lifeTimeRange.x;
             }
