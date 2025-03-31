@@ -73,8 +73,10 @@ void EmitterManager::UpdateSphereEmitter(const std::string& name, const Vector3&
   uint32_t count, float frequency)
 {
   auto it = emitterMap_.find(name);
+
   if (it != emitterMap_.end()) {
     auto sphereEmitter = std::dynamic_pointer_cast<SphereEmitter>(it->second);
+
     if (sphereEmitter) {
       sphereEmitter->SetPosition(position);
       sphereEmitter->SetRadius(radius);
@@ -83,6 +85,7 @@ void EmitterManager::UpdateSphereEmitter(const std::string& name, const Vector3&
     } else {
       Logger::Log("UpdateSphereEmitter: Emitter '%s' is not a SphereEmitter", name.c_str());
     }
+
   } else {
     Logger::Log("UpdateSphereEmitter: Emitter '%s' not found", name.c_str());
   }
@@ -91,6 +94,7 @@ void EmitterManager::UpdateSphereEmitter(const std::string& name, const Vector3&
 void EmitterManager::UpdateBoxEmitter(const std::string& name, const Vector3& position, const Vector3& size, const Vector3& rotation, uint32_t count, float frequency)
 {
   auto it = emitterMap_.find(name);
+
   if (it != emitterMap_.end()) {
     auto boxEmitter = std::dynamic_pointer_cast<BoxEmitter>(it->second);
 
@@ -112,6 +116,7 @@ void EmitterManager::UpdateBoxEmitter(const std::string& name, const Vector3& po
 void EmitterManager::UpdateTriangleEmitter(const std::string& name, const Vector3& position, const Vector3& v1, const Vector3& v2, const Vector3& v3, uint32_t count, float frequency)
 {
   auto it = emitterMap_.find(name);
+
   if (it != emitterMap_.end()) {
     auto triangleEmitter = std::dynamic_pointer_cast<TriangleEmitter>(it->second);
 
@@ -127,6 +132,67 @@ void EmitterManager::UpdateTriangleEmitter(const std::string& name, const Vector
   } else {
     Logger::Log("UpdateTriangleEmitter: Emitter '%s' not found", name.c_str());
   }
+}
+
+void EmitterManager::CreateTemporaryEmitterFrom(const std::string& sourceName, const std::string& newName, float lifeTime)
+{
+  // ソースエミッターを取得
+  auto sourceIt = emitterMap_.find(sourceName);
+
+  // ソースエミッターの存在チェック
+  if (sourceIt == emitterMap_.end()) {
+    Logger::Log("CreateTemporaryEmitterFrom: Source emitter '%s' not found", sourceName.c_str());
+    return;
+  }
+
+  // 名前の重複チェック
+  if (emitterMap_.contains(newName)) {
+    Logger::Log("Warning: Emitter name '%s' already exists. Overwriting.", newName.c_str());
+    RemoveEmitter(newName);
+  }
+
+  // 一時的なエミッターを作成
+  std::shared_ptr<GPUParticleEmitter> sourceEmitter = sourceIt->second;
+  std::shared_ptr<GPUParticleEmitter> newEmitter =
+    particleSystem_->CreateTemporaryEmitterFrom(sourceEmitter.get(), lifeTime);
+
+  if (newEmitter) {
+    // マップに追加
+    emitterMap_[newName] = newEmitter;
+    Logger::Log("CreateTemporaryEmitterFrom: Created temporary emitter '%s' from '%s' with lifetime %.2f seconds",
+      newName.c_str(), sourceName.c_str(), lifeTime);
+  } else {
+    Logger::Log("CreateTemporaryEmitterFrom: Failed to create emitter from '%s'", sourceName.c_str());
+  }
+}
+
+void EmitterManager::UpdateTemporaryEmitters()
+{
+  float deltaTime = FrameTimer::GetInstance()->GetDeltaTime();
+  std::vector<std::string> emittersToRemove;
+
+  // 一時的なエミッターの寿命を更新
+  for (auto& [name, emitter] : emitterMap_) {
+    if (emitter->IsTemporary()) {
+      emitter->UpdateTemporaryLifeTime(deltaTime);
+
+      // 寿命が尽きたらリストに追加
+      if (emitter->IsLifeTimeExpired()) {
+        emittersToRemove.push_back(name);
+      }
+    }
+  }
+
+  // 寿命が尽きたエミッターを削除
+  for (const auto& name : emittersToRemove) {
+    Logger::Log("UpdateTemporaryEmitters: Removing expired emitter '%s'", name.c_str());
+    RemoveEmitter(name);
+  }
+}
+
+void EmitterManager::Update()
+{
+  UpdateTemporaryEmitters();
 }
 
 void EmitterManager::SetEmitterPosition(const std::string& name, const Vector3& position)
@@ -200,7 +266,7 @@ void EmitterManager::RemoveEmitter(const std::string& name)
     // エミッターをマップから削除（shared_ptrなので自動解放）
     emitterMap_.erase(it);
 
-    // グループからも安全に削除
+    // グループから安全に削除
     for (auto& [groupName, group] : groupMap_) {
       auto& emitterNames = group.emitterNames;
 

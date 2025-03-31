@@ -181,3 +181,9 @@ void GPUParticleEmitter::UpdateTemporaryLifeTime(const float deltaTime)
     particleSystem_->UpdateEmitterParameters(emitterId_, params);
   }
 }
+
+bool GPUParticleEmitter::IsLifeTimeExpired() const
+{
+  if (!isTemp_ || emitterLifeTime_ <= 0.0f) return false;
+  return emitterCurrentTime_ >= emitterLifeTime_;
+}

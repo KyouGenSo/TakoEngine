@@ -75,7 +75,7 @@ void GameScene::Initialize()
   emitterManager_->AddToGroup("group1", "box");
   emitterManager_->AddToGroup("group1", "triangle");
 
-  emitterManager_->SetGroupActive("group1", true);
+  emitterManager_->SetGroupActive("group1", false);
 }
 
 void GameScene::Finalize()
@@ -122,6 +122,8 @@ void GameScene::Update()
 
   object3d_->Update();
   object3d2_->Update();
+
+  emitterManager_->Update();
 
   emitterManager_->UpdateSphereEmitter("player", spEmitterSett_.position, spEmitterSett_.radius, spEmitterSett_.count, spEmitterSett_.frequency);
   emitterManager_->UpdateBoxEmitter("box", boxEmitterSett_.position, boxEmitterSett_.size, boxEmitterSett_.rotation, boxEmitterSett_.count, boxEmitterSett_.frequency);
@@ -269,6 +271,26 @@ void GameScene::DrawImGui()
       ImGui::EndTabItem();
     }
     ImGui::EndTabBar();
+  }
+
+  ImGui::Separator();
+
+  // Button to Create Temp Emitter
+  if (ImGui::Button("Create Sphere Temp Emitter"))
+  {
+    emitterManager_->CreateTemporaryEmitterFrom("player", "spTemp", 1.0f);
+  }
+
+  if (ImGui::Button("Create Box Temp Emitter"))
+  {
+    emitterManager_->CreateTemporaryEmitterFrom("box", "boxTemp", 1.0f);
+  }
+
+  if (ImGui::Button("Create Triangle Temp Emitter"))
+  {
+    emitterManager_->CreateTemporaryEmitterFrom("triangle", "triTemp", 1.0f);
+    auto emitter = emitterManager_->GetEmitterByName("triTemp");
+    emitter->SetPosition({ .x = 0.0f, .y = 0.0f, .z = 0.0f });
   }
 
   ImGui::End();

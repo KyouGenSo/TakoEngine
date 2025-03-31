@@ -36,6 +36,7 @@ public:
     const Vector3& v1, const Vector3& v2, const Vector3& v3,
     uint32_t count, float frequency);
 
+  // エミッターの更新
   void UpdateSphereEmitter(const std::string& name, const Vector3& position, float radius,
     uint32_t count = 0, float frequency = 0.0f);
 
@@ -45,6 +46,13 @@ public:
   void UpdateTriangleEmitter(const std::string& name, const Vector3& position,
     const Vector3& v1, const Vector3& v2, const Vector3& v3,
     uint32_t count = 0, float frequency = 0.0f);
+
+
+  // 一時的なエミッター作成
+  void CreateTemporaryEmitterFrom(const std::string& sourceName, const std::string& newName, float lifeTime);
+
+  // 更新
+  void Update();
 
   void SetEmitterPosition(const std::string& name, const Vector3& position);
   void SetEmitterScaleRange(const std::string& name, const Vector2& scaleRangeX, const Vector2& scaleRangeY);
@@ -69,6 +77,11 @@ public:
   // デバッグ情報
   void DebugInfo();
   size_t GetActiveEmitterCount() const { return emitterMap_.size(); }
+
+private: // プライベートメンバー関数
+
+  // 一時的なエミッターの更新
+  void UpdateTemporaryEmitters(); // Update関数内で呼び出す
 
 private:
   GPUParticle* particleSystem_;

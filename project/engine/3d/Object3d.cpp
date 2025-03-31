@@ -2,21 +2,15 @@
 #include "DX12Basic.h"
 #include "Object3dbasic.h"
 #include "Model.h"
-#include "TextureManager.h"
 #include"ModelManager.h"
 #include"Camera.h"
-#include <cassert>
-#include<fstream>
-#include<sstream>
-#include <numbers>
-#include "Input.h"
 
 void Object3d::Initialize()
 {
 	m_camera_ = Object3dBasic::GetInstance()->GetCamera();
 
 	// トランスフォームに初期化値を設定
-	transform_ = { Vector3(1.0f, 1.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 0.0f) };
+	transform_ = { .scale= Vector3(1.0f, 1.0f, 1.0f), .rotate= Vector3(0.0f, 0.0f, 0.0f), .translate= Vector3(0.0f, 0.0f, 0.0f) };
 
 	// 座標変換行列データの生成
 	CreateTransformationMatrixData();

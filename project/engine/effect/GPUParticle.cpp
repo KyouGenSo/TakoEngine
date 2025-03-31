@@ -294,6 +294,66 @@ std::shared_ptr<TriangleEmitter> GPUParticle::CreateTriangleEmitter(const Vector
   return std::make_shared<TriangleEmitter>(this, position, v1, v2, v3, count, frequency);
 }
 
+std::shared_ptr<GPUParticleEmitter> GPUParticle::CreateTemporaryEmitterFrom(GPUParticleEmitter* sourceEmitter, float lifeTime)
+{
+  if (!sourceEmitter) return nullptr;
+
+  uint32_t sourceId = sourceEmitter->GetEmitterId();
+  uint32_t newId = CopyEmitterParameters(sourceId, lifeTime);
+
+  // 無効なIDが返された場合
+  if (newId == UINT32_MAX) return nullptr;
+
+  // エミッタータイプに応じて適切なエミッターオブジェクトを作成して返す
+  EmitterData& emitterData = emitters_[newId];
+  std::shared_ptr<GPUParticleEmitter> newEmitter;
+
+  switch (emitterData.type) {
+  case EmitterType::Sphere:
+    newEmitter = std::make_shared<SphereEmitter>(
+      this,
+      emitterData.position,
+      emitterData.sphere.radius,
+      emitterData.count,
+      emitterData.frequency);
+    break;
+
+  case EmitterType::Box:
+    newEmitter = std::make_shared<BoxEmitter>(
+      this,
+      emitterData.position,
+      emitterData.box.size,
+      emitterData.box.rotation,
+      emitterData.count,
+      emitterData.frequency);
+    break;
+
+  case EmitterType::Triangle:
+    newEmitter = std::make_shared<TriangleEmitter>(
+      this,
+      emitterData.position,
+      emitterData.triangle.v1,
+      emitterData.triangle.v2,
+      emitterData.triangle.v3,
+      emitterData.count,
+      emitterData.frequency);
+    break;
+
+  default:
+    return nullptr;
+  }
+
+  newEmitter->SetColor(emitterData.colorTint);
+  newEmitter->SetLifeTimeRange(emitterData.lifeTimeRange);
+  newEmitter->SetVelRange(emitterData.velRangeX, emitterData.velRangeY, emitterData.velRangeZ);
+  newEmitter->SetScaleRange(emitterData.scaleRangeX, emitterData.scaleRangeY);
+
+  // エミッターを一時的に設定
+  newEmitter->SetTemporary(true, lifeTime);
+
+  return newEmitter;
+}
+
 void GPUParticle::UpdateEmitterParameters(uint32_t emitterId, const EmitterData& params)
 {
   if (emitterId >= activeEmitterCount_) {
@@ -479,10 +539,45 @@ uint32_t GPUParticle::CreateTriangleEmitterInternal(const Vector3& position, con
   return newEmitterId;
 }
 
+uint32_t GPUParticle::CopyEmitterParameters(uint32_t sourceEmitterId, float lifeTime)
+{
+  // エミッターが最大数を超えないかチェック
+  if (activeEmitterCount_ >= kNumMaxEmitter || sourceEmitterId >= activeEmitterCount_) {
+    return UINT32_MAX;
+  }
+
+  // 新しいエミッターID
+  uint32_t newEmitterId = activeEmitterCount_;
+
+  // コピー元のエミッターデータを取得
+  EmitterData sourceEmitter = emitters_[sourceEmitterId];
+
+  // 新しいエミッターデータを作成（コピー元をベースに）
+  EmitterData newEmitter = sourceEmitter;
+  newEmitter.emitterID = newEmitterId;
+  newEmitter.isTemp = (lifeTime > 0.0f);
+  newEmitter.emitterLifeTime = lifeTime;
+  newEmitter.emitterCurrentTime = 0.0f;
+
+  // エミッターリストに追加
+  emitters_.push_back(newEmitter);
+
+  // アクティブエミッター数を増加
+  activeEmitterCount_++;
+
+  // GPU側データを同期
+  SyncEmitterData();
+
+  return newEmitterId;
+}
+
 void GPUParticle::UpdateEmitter()
 {
   // 経過時間を取得
   float deltaTime = FrameTimer::GetInstance()->GetDeltaTime();
+
+  // 削除予定のエミッターIDを格納するリスト
+  std::vector<uint32_t> emittersToRemove;
 
   // すべてのエミッターを更新
   for (uint32_t i = 0; i < activeEmitterCount_; i++) {
@@ -492,6 +587,17 @@ void GPUParticle::UpdateEmitter()
     if (!emitter.isActive) {
       emitter.isEmitting = false;
       continue;
+    }
+
+    // 一時的なエミッターの場合、寿命を更新
+    if (emitter.isTemp && emitter.emitterLifeTime > 0.0f) {
+      emitter.emitterCurrentTime += deltaTime;
+
+      // 寿命が尽きたら削除予定リストに追加
+      if (emitter.emitterCurrentTime >= emitter.emitterLifeTime) {
+        emittersToRemove.push_back(i);
+        continue;
+      }
     }
 
     // 射出タイマーを更新
@@ -505,6 +611,12 @@ void GPUParticle::UpdateEmitter()
     } else {
       emitter.isEmitting = false;
     }
+  }
+
+  // 寿命が尽きたエミッターを削除（IDの大きい順に削除）
+  std::sort(emittersToRemove.begin(), emittersToRemove.end(), std::greater<uint32_t>());
+  for (uint32_t id : emittersToRemove) {
+    RemoveEmitterById(id);
   }
 
   // GPU側のデータを同期
@@ -575,6 +687,11 @@ void GPUParticle::SyncEmitterData()
     dst.count = src.count;
     dst.frequency = src.frequency;
     dst.frequencyTime = src.frequencyTime;
+
+    // 一時的なエミッター用のデータをコピー
+    dst.isTemp = src.isTemp ? 1u : 0u;
+    dst.emitterLifeTime = src.emitterLifeTime;
+    dst.emitterCurrentTime = src.emitterCurrentTime;
 
     // 形状固有のデータ
     switch (src.type) {
