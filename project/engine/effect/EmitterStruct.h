@@ -9,12 +9,12 @@ struct SphereEmitterParams
   uint32_t count;
   float frequency;
 
-  Vector2 scaleRangeX = { 0.0f, 0.0f };
-  Vector2 scaleRangeY = { 0.0f, 0.0f };
-  Vector2 velRangeX = { 0.0f, 0.0f };
-  Vector2 velRangeY = { 0.0f, 0.0f };
-  Vector2 velRangeZ = { 0.0f, 0.0f };
-  Vector2 lifeTimeRange = { 0.0f, 0.0f };
+  Vector2 scaleRangeX = { .x = 0.0f, .y = 0.0f };
+  Vector2 scaleRangeY = { .x = 0.0f, .y = 0.0f };
+  Vector2 velRangeX = { .x = 0.0f, .y = 0.0f };
+  Vector2 velRangeY = { .x = 0.0f, .y = 0.0f };
+  Vector2 velRangeZ = { .x = 0.0f, .y = 0.0f };
+  Vector2 lifeTimeRange = { .x = 0.0f, .y = 0.0f };
 };
 
 // boxEmitterの設定
@@ -26,12 +26,12 @@ struct BoxEmitterParams
   uint32_t count;
   float frequency;
 
-  Vector2 scaleRangeX = { 0.0f, 0.0f };
-  Vector2 scaleRangeY = { 0.0f, 0.0f };
-  Vector2 velRangeX = { 0.0f, 0.0f };
-  Vector2 velRangeY = { 0.0f, 0.0f };
-  Vector2 velRangeZ = { 0.0f, 0.0f };
-  Vector2 lifeTimeRange = { 0.0f, 0.0f };
+  Vector2 scaleRangeX = { .x = 0.0f, .y = 0.0f };
+  Vector2 scaleRangeY = { .x = 0.0f, .y = 0.0f };
+  Vector2 velRangeX = { .x = 0.0f, .y = 0.0f };
+  Vector2 velRangeY = { .x = 0.0f, .y = 0.0f };
+  Vector2 velRangeZ = { .x = 0.0f, .y = 0.0f };
+  Vector2 lifeTimeRange = { .x = 0.0f, .y = 0.0f };
 };
 
 // triangleEmitterの設定
@@ -44,10 +44,10 @@ struct TriangleEmitterParams
   uint32_t count;
   float frequency;
 
-  Vector2 scaleRangeX = { 0.0f, 0.0f };
-  Vector2 scaleRangeY = { 0.0f, 0.0f };
-  Vector2 velRangeX = { 0.0f, 0.0f };
-  Vector2 velRangeY = { 0.0f, 0.0f };
-  Vector2 velRangeZ = { 0.0f, 0.0f };
-  Vector2 lifeTimeRange = { 0.0f, 0.0f };
+  Vector2 scaleRangeX = { .x = 0.0f, .y = 0.0f };
+  Vector2 scaleRangeY = { .x = 0.0f, .y = 0.0f };
+  Vector2 velRangeX = { .x = 0.0f, .y = 0.0f };
+  Vector2 velRangeY = { .x = 0.0f, .y = 0.0f };
+  Vector2 velRangeZ = { .x = 0.0f, .y = 0.0f };
+  Vector2 lifeTimeRange = { .x = 0.0f, .y = 0.0f };
 };
