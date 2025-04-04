@@ -26,6 +26,11 @@ public: // メンバ関数
 	/// </summary>
 	void Draw() override;
 
+  /// <summary>
+  /// フルスクリーンモードの切り替え
+  /// <summary>
+  void ToggleFullScreen();
+
   struct PostEffectParam
   {
     float vignettePower;

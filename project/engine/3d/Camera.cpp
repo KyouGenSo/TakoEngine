@@ -28,3 +28,9 @@ void Camera::Update()
 	// ビュープロジェクション行列を作る
 	//viewProjectionMatrix_ = Mat4x4::Multiply(viewMatrix_, projectionMatrix_);
 }
+
+void Camera::UpdateProjectionMatrix()
+{
+  float aspectRatio = static_cast<float>(WinApp::clientWidth) / static_cast<float>(WinApp::clientHeight);
+  projectionMatrix_ = Mat4x4::MakePerspective(fovY_, aspectRatio, nearZ_, farZ_);
+}

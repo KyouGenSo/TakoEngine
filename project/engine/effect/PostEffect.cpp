@@ -94,6 +94,29 @@ void PostEffect::Draw(const std::string& effectName)
 
 }
 
+void PostEffect::RecreateRenderTexture(uint32_t width, uint32_t height)
+{
+  // 既存のリソースを解放
+  renderTextureResourceA_.Reset();
+
+  // 新しいレンダーテクスチャを作成
+  m_dx12_->CreateRenderTextureResource(renderTextureResourceA_, width, height, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, kRenderTextureClearColor_);
+  renderTextureResourceA_->SetName(L"PostEffectRenderTexture");
+
+  // RTVの設定
+  D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
+  rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+  rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+
+  renderTextureRTVHandleA_ = m_dx12_->GetRenderTextureRTVHandle();
+
+  // RTVの作成
+  m_dx12_->GetDevice()->CreateRenderTargetView(renderTextureResourceA_.Get(), &rtvDesc, renderTextureRTVHandleA_);
+
+  // SRVを更新
+  SrvManager::GetInstance()->CreateSRVForTexture2D(rtvSrvIndex_, renderTextureResourceA_.Get(), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, 1);
+}
+
 void PostEffect::SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter)
 {
 	D3D12_RESOURCE_BARRIER barrier{};

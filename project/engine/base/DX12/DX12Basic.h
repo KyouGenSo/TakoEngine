@@ -96,7 +96,7 @@ public: // メンバー関数
 	[[nodiscard]]
 	ComPtr<ID3D12Resource> UploadTextureData(const ComPtr<ID3D12Resource>& texture, const DirectX::ScratchImage& mipImages);
 
-	/// <summary>
+  /// <summary>
 	/// テクスチャファイルの読み込み
 	/// </summary>
 	static DirectX::ScratchImage LoadTexture(const std::string& filePath);
@@ -110,6 +110,19 @@ public: // メンバー関数
   /// UAVリソースバリアの設定
   /// </summary>
   void SetUAVBarrier(ID3D12Resource* resource);
+
+  /// <summary>
+  /// RTV,DepthBufferのリサイズ
+  /// </summary>
+  void ResizeBuffers(uint32_t width, uint32_t height);
+
+  /// <summary>
+  /// ビューポートとシザー矩形の更新
+  /// </summary>
+  void UpdateViewportAndScissorRect() {
+    InitViewport();
+    InitScissorRect();
+  }
 
 	//-----------------------------------------Getter-----------------------------------------//
 	/// <summary>
@@ -160,6 +173,13 @@ public: // メンバー関数
 	ID3D12Resource* GetDepthStencilResource() {
 		return depthStencilResource_.Get();
 	}
+
+  /// <summary>
+  /// スワップチェインの取得
+  ///	</summary>
+  IDXGISwapChain4* GetSwapChain() {
+    return swapChain_.Get();
+  }
 
 private: // プライベートメンバー関数
 	/// <summary>
@@ -226,6 +246,16 @@ private: // プライベートメンバー関数
 	/// FPS制御更新
 	/// <summary> 
 	void UpdateFPSLimiter();
+
+  /// <summary>
+  /// RTVの再作成
+  /// <summary> 
+  void RecreateRTV();
+
+  /// <summary>
+  /// 深度バッファの再作成
+  /// <summary> 
+  void RecreateDepthBuffer();
 
 	/// <summary>
 	/// 指定番号のCPUディスクリプタハンドルを取得

@@ -16,6 +16,10 @@ void ImGuiManager::Initialize(WinApp* winApp, DX12Basic* dx12, bool isDocking)
 
 	ImGui::CreateContext();
 
+  // スケールの調整（DPIスケーリングに対応）
+  ImGuiIO& io = ImGui::GetIO();
+  io.FontGlobalScale = 1.0f;
+
 	// スタイルの設定
 	//ImGui::StyleColorsDark();
 	SetStyleMoonLight();
@@ -80,6 +84,25 @@ void ImGuiManager::Shutdown()
 	{
 		srvHeap_.Reset();
 	}
+}
+
+void ImGuiManager::OnWindowResize()
+{
+  // ImGuiの終了処理と再初期化
+  ImGui_ImplDX12_Shutdown();
+  ImGui_ImplWin32_Shutdown();
+  ImGui_ImplWin32_Init(m_winApp_->GetHWnd());
+  InitializeForDX12();
+
+  // イベント処理を強制的に更新
+  ImGuiIO& io = ImGui::GetIO();
+  io.DisplaySize = ImVec2(
+    static_cast<float>(WinApp::clientWidth),
+    static_cast<float>(WinApp::clientHeight)
+  );
+
+  // Dockingの再設定
+  SetDocking(isDocking_);
 }
 
 void ImGuiManager::CreateImGuiSrvHeap()

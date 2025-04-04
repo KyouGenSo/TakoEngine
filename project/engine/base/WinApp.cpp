@@ -115,3 +115,49 @@ LRESULT WinApp::WndProc(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
 	return DefWindowProc(hWnd, msg, wparam, lparam);
 }
+
+void WinApp::ToggleFullScreen()
+{
+  if (!isFullScreen_)
+  {
+    // ウィンドウスタイルを保存
+    LONG currentStyle = GetWindowLong(hWnd_, GWL_STYLE);
+
+    // 現在のウィンドウ位置とサイズを保存
+    GetWindowRect(hWnd_, &windowedRect_);
+
+    // フルスクリーン用のウィンドウスタイルに変更（ボーダーなし）
+    SetWindowLong(hWnd_, GWL_STYLE, currentStyle & ~(WS_CAPTION | WS_THICKFRAME));
+
+    // モニターのサイズを取得
+    HMONITOR monitor = MonitorFromWindow(hWnd_, MONITOR_DEFAULTTONEAREST);
+    MONITORINFO mi = { sizeof(mi) };
+    GetMonitorInfo(monitor, &mi);
+
+    // ウィンドウをモニターサイズに合わせる
+    SetWindowPos(hWnd_, HWND_TOP,
+      mi.rcMonitor.left, mi.rcMonitor.top,
+      mi.rcMonitor.right - mi.rcMonitor.left,
+      mi.rcMonitor.bottom - mi.rcMonitor.top,
+      SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+
+    // 状態を更新
+    isFullScreen_ = true;
+  }
+  else
+  {
+    // 元のサイズ変更不可のウィンドウスタイルに戻す
+    LONG currentStyle = GetWindowLong(hWnd_, GWL_STYLE);
+    SetWindowLong(hWnd_, GWL_STYLE, currentStyle | (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX));
+
+    // 保存していた位置とサイズに戻す
+    SetWindowPos(hWnd_, HWND_TOP,
+      windowedRect_.left, windowedRect_.top,
+      windowedRect_.right - windowedRect_.left,
+      windowedRect_.bottom - windowedRect_.top,
+      SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+
+    // 状態を更新
+    isFullScreen_ = false;
+  }
+}

@@ -42,6 +42,11 @@ public: // メンバ関数
   void Shutdown();
 
   /// <summary>
+  /// ウィンドウサイズ変更時の更新処理
+  /// </summary>
+  void OnWindowResize();
+
+  /// <summary>
   /// SRV用のディスクリプタヒープの生成
   /// </summary>
   void CreateImGuiSrvHeap();

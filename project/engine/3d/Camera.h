@@ -2,33 +2,38 @@
 #include "Mat4x4Func.h"
 #include "Transform.h"
 
+
 class Camera
 {
 public: // メンバー関数
 
-	///<summary>
-	///コンストラクタ
+	/// <summary>
+	/// コンストラクタ
 	/// </summary>
 	Camera();
 
-	///<summary>
-	///更新
+	/// <summary>
+	/// 更新
 	/// </summary>
 	void Update();
 
+  /// <summary>
+  /// プロジェクション行列の更新
+  /// </summary>
+  void UpdateProjectionMatrix();
 
 	//-----------------------------------------Getter-----------------------------------------//
-	const Matrix4x4& GetWorldMatrix() const { return worldMatrix_; }
-	const Matrix4x4& GetViewMatrix() const { return viewMatrix_; }
-	const Matrix4x4& GetProjectionMatrix() const { return projectionMatrix_; }
-	const Matrix4x4& GetViewProjectionMatrix() const { return viewProjectionMatrix_; }
-	const Vector3& GetRotate() const { return transform_.rotate; }
-	const Vector3& GetTranslate() const { return transform_.translate; }
-  const Transform& GetTransform() const { return transform_; }
-	const float GetFovY() const { return fovY_; }
-	const float GetAspect() const { return aspect_; }
-	const float GetNearClip() const { return nearZ_; }
-	const float GetFarClip() const { return farZ_; }
+	[[nodiscard]] const Matrix4x4& GetWorldMatrix() const { return worldMatrix_; }
+	[[nodiscard]] const Matrix4x4& GetViewMatrix() const { return viewMatrix_; }
+	[[nodiscard]] const Matrix4x4& GetProjectionMatrix() const { return projectionMatrix_; }
+	[[nodiscard]] const Matrix4x4& GetViewProjectionMatrix() const { return viewProjectionMatrix_; }
+	[[nodiscard]] const Vector3& GetRotate() const { return transform_.rotate; }
+	[[nodiscard]] const Vector3& GetTranslate() const { return transform_.translate; }
+  [[nodiscard]] const Transform& GetTransform() const { return transform_; }
+	[[nodiscard]] float GetFovY() const { return fovY_; }
+	[[nodiscard]] float GetAspect() const { return aspect_; }
+	[[nodiscard]] float GetNearClip() const { return nearZ_; }
+	[[nodiscard]] float GetFarClip() const { return farZ_; }
 
 
 	//-----------------------------------------Setter-----------------------------------------//

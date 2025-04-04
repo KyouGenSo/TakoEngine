@@ -76,6 +76,9 @@ public: // メンバ関数
 	void Draw(const std::string& effectName);
 	//void DrawWithMultipleEffects(const std::vector<std::string>& effectNames);
 
+  // レンダーテクスチャの再作成
+  void RecreateRenderTexture(uint32_t width, uint32_t height);
+
 	// バリアの設定
 	void SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
 	void SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter, ID3D12Resource* resource);

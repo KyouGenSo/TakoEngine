@@ -510,6 +510,79 @@ void DX12Basic::UpdateFPSLimiter()
 	referenceTime_ = std::chrono::steady_clock::now();
 }
 
+void DX12Basic::RecreateRTV()
+{
+  // SwapChainからResourceを取得
+  for (UINT i = 0; i < swapChainBufferCount_; ++i)
+  {
+    HRESULT hr = swapChain_->GetBuffer(i, IID_PPV_ARGS(&swapChainResources_[i]));
+    assert(SUCCEEDED(hr));
+  }
+
+  // RTVの設定
+  D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
+  rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+  rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+
+  // DescriptorHeapの先頭を取得
+  D3D12_CPU_DESCRIPTOR_HANDLE rtvStartHandle = GetCPUDescriptorHandle(rtvHeap_.Get(), descriptorSizeRTV_, 0);
+
+  for (UINT i = 0; i < kRtvHandleCount; ++i)
+  {
+    // RTVのハンドルを取得
+    if (i == 0) {
+      rtvHandle_[i] = rtvStartHandle;
+    } else {
+      rtvHandle_[i].ptr = rtvStartHandle.ptr + descriptorSizeRTV_ * i;
+    }
+
+    // RTVの作成
+    device_->CreateRenderTargetView(swapChainResources_[i].Get(), &rtvDesc, rtvHandle_[i]);
+  }
+}
+
+void DX12Basic::RecreateDepthBuffer()
+{
+  // テクスチャの設定
+  D3D12_RESOURCE_DESC resourceDesc{};
+  resourceDesc.Width = WinApp::clientWidth;
+  resourceDesc.Height = WinApp::clientHeight;
+  resourceDesc.MipLevels = 1;
+  resourceDesc.DepthOrArraySize = 1;
+  resourceDesc.Format = DXGI_FORMAT_D32_FLOAT;
+  resourceDesc.SampleDesc.Count = 1;
+  resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+  resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+
+  // ヒープの設定
+  D3D12_HEAP_PROPERTIES heapProperties{};
+  heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+
+  // 深度値のクリア設定
+  D3D12_CLEAR_VALUE depthClearValue{};
+  depthClearValue.DepthStencil.Depth = 1.0f;
+  depthClearValue.Format = DXGI_FORMAT_D32_FLOAT;
+
+  // Resourceの生成
+  HRESULT hr = device_->CreateCommittedResource(
+    &heapProperties,
+    D3D12_HEAP_FLAG_NONE,
+    &resourceDesc,
+    D3D12_RESOURCE_STATE_DEPTH_WRITE,
+    &depthClearValue,
+    IID_PPV_ARGS(&depthStencilResource_));
+  assert(SUCCEEDED(hr));
+
+  // DSVの設定
+  D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
+  dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
+  dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+
+  // DSVを作成
+  D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvHeap_->GetCPUDescriptorHandleForHeapStart();
+  device_->CreateDepthStencilView(depthStencilResource_.Get(), &dsvDesc, dsvHandle);
+}
+
 Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> DX12Basic::CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisible)
 {
 	// ヒープの設定
@@ -848,5 +921,38 @@ void DX12Basic::SetUAVBarrier(ID3D12Resource* resource)
   barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
   barrier.UAV.pResource = resource;
   commandList_->ResourceBarrier(1, &barrier);
+}
+
+void DX12Basic::ResizeBuffers(uint32_t width, uint32_t height)
+{
+  // GPUの処理が完了するまで待機
+  WaitForGPU();
+
+  // RTVに関連するリソースをクリア
+  for (UINT i = 0; i < swapChainBufferCount_; i++) {
+    swapChainResources_[i].Reset();
+  }
+
+  // 深度バッファをクリア
+  depthStencilResource_.Reset();
+
+  // スワップチェインのリサイズ
+  HRESULT hr = swapChain_->ResizeBuffers(
+    swapChainBufferCount_,
+    width,
+    height,
+    DXGI_FORMAT_UNKNOWN,  // 既存のフォーマットを使用
+    0
+  );
+  assert(SUCCEEDED(hr));
+
+  // RTVを再作成
+  RecreateRTV();
+
+  // 深度バッファを再作成
+  RecreateDepthBuffer();
+
+  // ビューポートとシザー矩形を更新
+  UpdateViewportAndScissorRect();
 }
 

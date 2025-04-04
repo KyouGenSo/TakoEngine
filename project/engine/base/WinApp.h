@@ -48,6 +48,15 @@ public:
   /// </summary>
   void SetWindowSize(int32_t width, int32_t height) { clientWidth = width; clientHeight = height; }
 
+  /// <summary>
+  /// フルスクリーン切り替え
+  /// </summary>
+  void ToggleFullScreen();
+
+
+  // フルスクリーン状態の取得
+  bool IsFullScreen() const { return isFullScreen_; }
+
 public:
 	//クライアント領域のサイズ
   static int32_t clientWidth;
@@ -62,4 +71,10 @@ private:
 
   // handlers
   static std::vector<IWndProcHandler*> m_handlers_;
+
+  // フルスクリーン状態を保持
+  bool isFullScreen_ = false;
+
+  // ウィンドウモード時の位置とサイズを保存
+  RECT windowedRect_ = {};
 };
