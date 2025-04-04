@@ -283,6 +283,9 @@ void MyGame::ToggleFullScreen()
   uint32_t width = WinApp::clientWidth;
   uint32_t height = WinApp::clientHeight;
 
+  // GPUの処理を待機
+  dx12_->WaitForGPU();
+
   // バッファのリサイズ
   dx12_->ResizeBuffers(width, height);
 
@@ -295,4 +298,5 @@ void MyGame::ToggleFullScreen()
 #ifdef _DEBUG
   imguiManager_->OnWindowResize();
 #endif
+
 }

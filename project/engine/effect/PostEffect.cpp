@@ -113,8 +113,11 @@ void PostEffect::RecreateRenderTexture(uint32_t width, uint32_t height)
   // RTVの作成
   m_dx12_->GetDevice()->CreateRenderTargetView(renderTextureResourceA_.Get(), &rtvDesc, renderTextureRTVHandleA_);
 
-  // SRVを更新
+  // レンダーテクスチャのSRVを更新
   SrvManager::GetInstance()->CreateSRVForTexture2D(rtvSrvIndex_, renderTextureResourceA_.Get(), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, 1);
+
+  // 深度バッファのSRVを更新
+  SrvManager::GetInstance()->CreateSRVForTexture2D(dsvSrvIndex_, m_dx12_->GetDepthStencilResource(), DXGI_FORMAT_R32_FLOAT, 1);
 }
 
 void PostEffect::SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter)
