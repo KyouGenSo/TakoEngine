@@ -35,40 +35,40 @@ void GameScene::Initialize()
   object3d_->Initialize();
   object3d_->SetModel("terrain.obj");
   // y軸90度回転
-  Vector3 rotate = { .x= 0.0f, .y= DirectX::XMConvertToRadians(90.0f), .z= 0.0f };
+  Vector3 rotate = { .x = 0.0f, .y = DirectX::XMConvertToRadians(90.0f), .z = 0.0f };
   object3d_->SetRotate(rotate);
 
-  modelPos_ = { .x= 0.0f, .y= 0.0f, .z= 0.0f };
+  modelPos_ = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
 
   object3d2_ = new Object3d();
   object3d2_->Initialize();
   object3d2_->SetModel("sneakWalk.gltf");
-  modelRotate2_ = { .x= 0.0f, .y= DirectX::XMConvertToRadians(180.0f), .z= 0.0f };
+  modelRotate2_ = { .x = 0.0f, .y = DirectX::XMConvertToRadians(180.0f), .z = 0.0f };
   object3d2_->SetRotate(rotate);
 
-  modelPos2_ = { .x= 0.0f, .y= 6.7f, .z= -24.0f };
+  modelPos2_ = { .x = 0.0f, .y = 6.7f, .z = -24.0f };
 
   GPUParticle* particleSystem = GPUParticle::GetInstance();
 
   emitterManager_ = std::make_unique<EmitterManager>(particleSystem);
 
-  spEmitterSett_ = { .position= {.x = 0.0f, .y= 0.0f, .z= 0.0f }, .radius= 10.0f, .count= 10, .frequency= 1.0f};
-  boxEmitterSett_ = { .position= {.x = 0.0f, .y= 5.0f, .z= 0.0f }, .size= {.x = 0.3f, .y= 0.0f, .z= 0.1f }, .rotation= {.x = 0.0f, .y= 0.0f, .z= 0.0f }, .count= 10, .frequency= 0.5f};
-  triEmitterSett_ = { .position= {.x = 0.0f, .y= 0.0f, .z= 0.0f }, .v1= {.x = 0.0f, .y= 0.0f, .z= 1.0f }, .v2= {.x = 1.0f, .y= 0.0f, .z= 0.0f }, .v3= {.x = 0.0f, .y= 1.0f, .z= 0.0f }, .count= 10,
-    .frequency= 0.1f
+  spEmitterSett_ = { .position = {.x = 0.0f, .y = 0.0f, .z = 0.0f }, .radius = 10.0f, .count = 10, .frequency = 1.0f };
+  boxEmitterSett_ = { .position = {.x = 0.0f, .y = 5.0f, .z = 0.0f }, .size = {.x = 0.3f, .y = 0.0f, .z = 0.1f }, .rotation = {.x = 0.0f, .y = 0.0f, .z = 0.0f }, .count = 10, .frequency = 0.5f };
+  triEmitterSett_ = { .position = {.x = 0.0f, .y = 0.0f, .z = 0.0f }, .v1 = {.x = 0.0f, .y = 0.0f, .z = 1.0f }, .v2 = {.x = 1.0f, .y = 0.0f, .z = 0.0f }, .v3 = {.x = 0.0f, .y = 1.0f, .z = 0.0f }, .count = 10,
+    .frequency = 0.1f
   };
 
   // 球体エミッターの作成
   emitterManager_->CreateSphereEmitter("player", spEmitterSett_.position, spEmitterSett_.radius, spEmitterSett_.count, spEmitterSett_.frequency);
-  emitterManager_->SetEmitterColor("player", { .x= 1.0f, .y= 0.0f, .z= 0.0f, .w= 1.0f });
+  emitterManager_->SetEmitterColor("player", { .x = 1.0f, .y = 0.0f, .z = 0.0f, .w = 1.0f });
 
   //箱エミッターの作成
   emitterManager_->CreateBoxEmitter("box", boxEmitterSett_.position, boxEmitterSett_.size, boxEmitterSett_.rotation, boxEmitterSett_.count, boxEmitterSett_.frequency);
-  emitterManager_->SetEmitterColor("box", { .x= 0.0f, .y= 1.0f, .z= 0.0f, .w= 1.0f });
+  emitterManager_->SetEmitterColor("box", { .x = 0.0f, .y = 1.0f, .z = 0.0f, .w = 1.0f });
 
   //三角形エミッターの作成
   emitterManager_->CreateTriangleEmitter("triangle", triEmitterSett_.position, triEmitterSett_.v1, triEmitterSett_.v2, triEmitterSett_.v3, triEmitterSett_.count, triEmitterSett_.frequency);
-  emitterManager_->SetEmitterColor("triangle", { .x= 0.0f, .y= 0.0f, .z= 1.0f, .w= 1.0f });
+  emitterManager_->SetEmitterColor("triangle", { .x = 0.0f, .y = 0.0f, .z = 1.0f, .w = 1.0f });
 
   emitterManager_->CreateGroup("group1");
   emitterManager_->AddToGroup("group1", "player");
