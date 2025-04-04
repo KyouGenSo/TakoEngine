@@ -3,7 +3,6 @@
 #include "TextureManager.h"
 #include "SceneManager.h"
 #include "ModelManager.h"
-#include "ParticleManager.h"
 #include "Object3dBasic.h"
 #include "SpriteBasic.h"
 #include "Model.h"
@@ -57,7 +56,6 @@ void TakoFramework::Initialize()
   Draw2D::GetInstance()->SetCamera(defaultCamera_);
   Draw2D::GetInstance()->Initialize(dx12_);
 
-	ParticleManager::GetInstance()->Initialize(dx12_, defaultCamera_);
 
   PostEffect::GetInstance()->Initialize(dx12_);
 
@@ -72,9 +70,6 @@ void TakoFramework::Finalize()
 
   // シーンマネージャーの終了処理
   SceneManager::GetInstance()->Finalize();
-
-	// パーティクルマネージャーの終了処理
-	ParticleManager::GetInstance()->Finalize();
 
 	// SRVマネージャーの終了処理
 	SrvManager::GetInstance()->Finalize();
@@ -142,9 +137,6 @@ void TakoFramework::Update()
 
 	// Object3dBasicの更新
 	Object3dBasic::GetInstance()->Update();
-
-	// パーティクルマネージャーの更新
-	ParticleManager::GetInstance()->Update();
 
 }
 

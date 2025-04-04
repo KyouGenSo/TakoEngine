@@ -154,8 +154,6 @@
     <ClCompile Include="engine\scene\SceneManager.cpp" />
     <ClCompile Include="engine\scene\Transition.cpp" />
     <ClCompile Include="engine\func\mathFunc\QuatFunc.cpp" />
-    <ClCompile Include="engine\effect\ParticleManager.cpp" />
-    <ClCompile Include="engine\effect\ParticleEmitter.cpp" />
     <ClCompile Include="engine\effect\TriangleEmitter.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -206,8 +204,6 @@
     <ClInclude Include="engine\3d\ModelStruct.h" />
     <ClInclude Include="engine\func\mathFunc\QuatFunc.h" />
     <ClInclude Include="engine\3d\Transform.h" />
-    <ClInclude Include="engine\effect\ParticleManager.h" />
-    <ClInclude Include="engine\effect\ParticleEmitter.h" />
     <ClInclude Include="engine\time\FrameTimer.h" />
     <ClInclude Include="engine\base\IWndProcHandler.h" />
     <ClInclude Include="engine\effect\ParticleStruct.h" />

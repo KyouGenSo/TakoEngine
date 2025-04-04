@@ -6,7 +6,6 @@
 #include "DebugCamera.h"
 #include "Draw2D.h"
 #include "GlobalVariables.h"
-#include "ParticleManager.h"
 #include "FrameTimer.h"
 #include "GPUParticle.h"
 #include "SceneManager.h"
@@ -24,7 +23,6 @@ void GameScene::Initialize()
   DebugCamera::GetInstance()->Initialize();
   Object3dBasic::GetInstance()->SetDebug(false);
   Draw2D::GetInstance()->SetDebug(false);
-  ParticleManager::GetInstance()->SetIsDebug(false);
   GPUParticle::GetInstance()->SetIsDebug(false);
 #endif
   /// ================================== ///

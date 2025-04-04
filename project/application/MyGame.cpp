@@ -4,7 +4,6 @@
 #include "SceneFactory.h"
 #include "SceneManager.h"
 #include "TextureManager.h"
-#include "ParticleManager.h"
 #include "Draw2D.h"
 #include "Object3dBasic.h"
 #include "PostEffect.h"
@@ -118,8 +117,6 @@ void MyGame::Draw()
 
   // GPUパーティクルの描画
   GPUParticle::GetInstance()->Draw();
-
-	ParticleManager::GetInstance()->Draw();
 
   Draw2D::GetInstance()->Draw();
 
@@ -298,5 +295,4 @@ void MyGame::ToggleFullScreen()
 #ifdef _DEBUG
   imguiManager_->OnWindowResize();
 #endif
-
 }

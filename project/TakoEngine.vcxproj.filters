@@ -144,16 +144,10 @@
     <ClCompile Include="engine\effect\GPUParticle.cpp">
       <Filter>effect\Particle</Filter>
     </ClCompile>
-    <ClCompile Include="engine\effect\ParticleManager.cpp">
-      <Filter>effect\Particle</Filter>
-    </ClCompile>
     <ClCompile Include="engine\effect\GPUParticleEmitter.cpp">
       <Filter>effect\Particle\Emitter</Filter>
     </ClCompile>
     <ClCompile Include="engine\effect\BoxEmitter.cpp">
-      <Filter>effect\Particle\Emitter</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\ParticleEmitter.cpp">
       <Filter>effect\Particle\Emitter</Filter>
     </ClCompile>
     <ClCompile Include="engine\effect\SphereEmitter.cpp">
@@ -299,9 +293,6 @@
     <ClInclude Include="engine\effect\GPUParticle.h">
       <Filter>effect\Particle</Filter>
     </ClInclude>
-    <ClInclude Include="engine\effect\ParticleManager.h">
-      <Filter>effect\Particle</Filter>
-    </ClInclude>
     <ClInclude Include="engine\effect\ParticleStruct.h">
       <Filter>effect\Particle</Filter>
     </ClInclude>
@@ -309,9 +300,6 @@
       <Filter>effect\Particle\Emitter</Filter>
     </ClInclude>
     <ClInclude Include="engine\effect\GPUParticleEmitter.h">
-      <Filter>effect\Particle\Emitter</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\ParticleEmitter.h">
       <Filter>effect\Particle\Emitter</Filter>
     </ClInclude>
     <ClInclude Include="engine\effect\SphereEmitter.h">

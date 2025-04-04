@@ -5,7 +5,6 @@
 #include <vector>
 #include <memory>
 #include "AABB.h"
-#include "ParticleEmitter.h"
 
 class TitleScene : public BaseScene
 {
@@ -62,6 +61,4 @@ private: // メンバ変数
 	EmitterParam emitterParam_;
 	EmitterParam emitterParam2_;
 
-	std::unique_ptr<ParticleEmitter> particleEmitter_;
-	std::unique_ptr<ParticleEmitter> particleEmitter2_;
 };
