@@ -87,6 +87,6 @@ private: // メンバ変数
   SphereEmitterParams spEmitterSett_ = {};
   BoxEmitterParams boxEmitterSett_ = {};
   TriangleEmitterParams triEmitterSett_ = {};
-  Vector3 groupPosition_ = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
+  Vector3 groupPosition_ = {};
   bool isActive_ = true;
 };

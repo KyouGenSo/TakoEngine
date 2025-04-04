@@ -51,30 +51,79 @@ void GameScene::Initialize()
 
   emitterManager_ = std::make_unique<EmitterManager>(particleSystem);
 
-  spEmitterSett_ = { .position = {.x = 0.0f, .y = 0.0f, .z = 0.0f }, .radius = 10.0f, .count = 10, .frequency = 1.0f };
-  boxEmitterSett_ = { .position = {.x = 0.0f, .y = 5.0f, .z = 0.0f }, .size = {.x = 0.3f, .y = 0.0f, .z = 0.1f }, .rotation = {.x = 0.0f, .y = 0.0f, .z = 0.0f }, .count = 10, .frequency = 0.5f };
-  triEmitterSett_ = { .position = {.x = 0.0f, .y = 0.0f, .z = 0.0f }, .v1 = {.x = 0.0f, .y = 0.0f, .z = 1.0f }, .v2 = {.x = 1.0f, .y = 0.0f, .z = 0.0f }, .v3 = {.x = 0.0f, .y = 1.0f, .z = 0.0f }, .count = 10,
-    .frequency = 0.1f
+  // 構造体をすべてのフィールドを明示的に初期化
+  spEmitterSett_ = {
+    .position = {.x = 0.0f, .y = 0.0f, .z = 0.0f },
+    .radius = 10.0f,
+    .count = 10,
+    .frequency = 1.0f,
+    .scaleRangeX = {.x = 0.0f, .y = 0.0f},
+    .scaleRangeY = {.x = 0.0f, .y = 0.0f},
+    .velRangeX = {.x = -0.0f, .y = 0.0f},
+    .velRangeY = {.x = -0.0f, .y = 0.0f},
+    .velRangeZ = {.x = -0.0f, .y = 0.0f},
+    .lifeTimeRange = {.x = 0.0f, .y = 0.0f}
+  };
+
+  boxEmitterSett_ = {
+    .position = {.x = 0.0f, .y = 5.0f, .z = 0.0f },
+    .size = {.x = 0.3f, .y = 0.3f, .z = 0.3f }, // y値をしっかり初期化
+    .rotation = {.x = 0.0f, .y = 0.0f, .z = 0.0f },
+    .count = 10,
+    .frequency = 0.5f,
+    .scaleRangeX = {.x = 0.0f, .y = 0.0f},
+    .scaleRangeY = {.x = 0.0f, .y = 0.0f},
+    .velRangeX = {.x = -0.0f, .y = 0.0f},
+    .velRangeY = {.x = -0.0f, .y = 0.0f},
+    .velRangeZ = {.x = -0.0f, .y = 0.0f},
+    .lifeTimeRange = {.x = 1.0f, .y = 3.0f}
+
+  };
+
+  triEmitterSett_ = {
+    .position = {.x = 0.0f, .y = 0.0f, .z = 0.0f },
+    .v1 = {.x = 0.0f, .y = 0.0f, .z = 1.0f },
+    .v2 = {.x = 1.0f, .y = 0.0f, .z = 0.0f },
+    .v3 = {.x = 0.0f, .y = 1.0f, .z = 0.0f },
+    .count = 10,
+    .frequency = 0.1f,
+    .scaleRangeX = {.x = 0.0f, .y = 0.0f},
+    .scaleRangeY = {.x = 0.0f, .y = 0.0f},
+    .velRangeX = {.x = -0.0f, .y = 0.0f},
+    .velRangeY = {.x = -0.0f, .y = 0.0f},
+    .velRangeZ = {.x = -0.0f, .y = 0.0f},
+    .lifeTimeRange = {.x = 1.0f, .y = 3.0f}
   };
 
   // 球体エミッターの作成
   emitterManager_->CreateSphereEmitter("player", spEmitterSett_.position, spEmitterSett_.radius, spEmitterSett_.count, spEmitterSett_.frequency);
   emitterManager_->SetEmitterColors("player", { .x = 1.0f, .y = 0.0f, .z = 0.0f, .w = 1.0f }, { .x = 0.0f, .y = 1.0f, .z = 0.0f, .w = 1.0f });
+  emitterManager_->SetEmitterScaleRange("player", spEmitterSett_.scaleRangeX, spEmitterSett_.scaleRangeY);
+  emitterManager_->SetEmitterVelocityRange("player", spEmitterSett_.velRangeX, spEmitterSett_.velRangeY, spEmitterSett_.velRangeZ);
+  emitterManager_->SetEmitterLifeTimeRange("player", spEmitterSett_.lifeTimeRange);
 
-  //箱エミッターの作成
+  // 箱エミッターの作成 - すべてのプロパティを明示的に設定
   emitterManager_->CreateBoxEmitter("box", boxEmitterSett_.position, boxEmitterSett_.size, boxEmitterSett_.rotation, boxEmitterSett_.count, boxEmitterSett_.frequency);
   emitterManager_->SetEmitterColor("box", { .x = 0.0f, .y = 1.0f, .z = 0.0f, .w = 1.0f });
+  emitterManager_->SetEmitterScaleRange("box", boxEmitterSett_.scaleRangeX, boxEmitterSett_.scaleRangeY);
+  emitterManager_->SetEmitterVelocityRange("box", boxEmitterSett_.velRangeX, boxEmitterSett_.velRangeY, boxEmitterSett_.velRangeZ);
+  emitterManager_->SetEmitterLifeTimeRange("box", boxEmitterSett_.lifeTimeRange);
 
-  //三角形エミッターの作成
+  // 三角形エミッターの作成 - すべてのプロパティを明示的に設定
   emitterManager_->CreateTriangleEmitter("triangle", triEmitterSett_.position, triEmitterSett_.v1, triEmitterSett_.v2, triEmitterSett_.v3, triEmitterSett_.count, triEmitterSett_.frequency);
   emitterManager_->SetEmitterColor("triangle", { .x = 0.0f, .y = 0.0f, .z = 1.0f, .w = 1.0f });
+  emitterManager_->SetEmitterScaleRange("triangle", triEmitterSett_.scaleRangeX, triEmitterSett_.scaleRangeY);
+  emitterManager_->SetEmitterVelocityRange("triangle", triEmitterSett_.velRangeX, triEmitterSett_.velRangeY, triEmitterSett_.velRangeZ);
+  emitterManager_->SetEmitterLifeTimeRange("triangle", triEmitterSett_.lifeTimeRange);
 
   emitterManager_->CreateGroup("group1");
   emitterManager_->AddToGroup("group1", "player");
   emitterManager_->AddToGroup("group1", "box");
   emitterManager_->AddToGroup("group1", "triangle");
 
-  emitterManager_->SetGroupActive("group1", false);
+  emitterManager_->SetGroupActive("group1", true);
+
+  groupPosition_ = { .x = 0.0f, .y = -10.0f, .z = 0.0f };
 }
 
 void GameScene::Finalize()
@@ -141,7 +190,6 @@ void GameScene::Update()
   emitterManager_->SetEmitterLifeTimeRange("triangle", triEmitterSett_.lifeTimeRange);
 
   emitterManager_->SetGroupPosition("group1", groupPosition_);
-  emitterManager_->SetGroupActive("group1", isActive_);
 
   // ライトの設定
   Object3dBasic::GetInstance()->SetDirectionalLight(lightDirection_, lightColor_, 1, lightIntensity_);
