@@ -49,8 +49,6 @@ void Draw2D::Initialize(DX12Basic* dx12)
 
 void Draw2D::Finalize()
 {
-	transformationMatrixBuffer_->Release();
-
 	triangleData_->vertexBuffer->Release();
 
 	boxData_->vertexBuffer->Release();
