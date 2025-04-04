@@ -32,6 +32,7 @@ void GameScene::Initialize()
   object3d_ = new Object3d();
   object3d_->Initialize();
   object3d_->SetModel("terrain.obj");
+
   // y軸90度回転
   Vector3 rotate = { .x = 0.0f, .y = DirectX::XMConvertToRadians(90.0f), .z = 0.0f };
   object3d_->SetRotate(rotate);

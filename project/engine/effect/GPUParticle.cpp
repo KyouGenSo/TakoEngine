@@ -9,7 +9,10 @@
 #include "Logger.h"
 #include "FrameTimer.h"
 #include "DebugCamera.h"
+
+#ifdef _DEBUG
 #include "ImGuiManager.h"
+#endif // DEBUG
 
 #include <numbers>
 
@@ -226,58 +229,6 @@ void GPUParticle::Finalize()
     delete instance_;
     instance_ = nullptr;
   }
-}
-
-void GPUParticle::DebugInfo()
-{
-#ifdef _DEBUG
-  ImGui::Begin("GPUParticle Debug");
-
-  ImGui::Text("Active Emitters: %d", activeEmitterCount_);
-
-  if (ImGui::TreeNode("Emitters")) {
-    for (uint32_t i = 0; i < activeEmitterCount_; i++) {
-      EmitterData& emitter = emitters_[i];
-      char label[128];
-      sprintf_s(label, "Emitter %d (%s)", i,
-        emitter.type == EmitterType::Sphere ? "Sphere" :
-        emitter.type == EmitterType::Box ? "Box" : "Triangle");
-
-      if (ImGui::TreeNode(label)) {
-        ImGui::Text("Position: (%.2f, %.2f, %.2f)",
-        emitter.position.x, emitter.position.y, emitter.position.z);
-        ImGui::ColorEdit4("Start Color", &emitter.startColorTint.x);
-        ImGui::ColorEdit4("End Color", &emitter.endColorTint.x);
-        ImGui::Text("Active: %s", emitter.isActive ? "Yes" : "No");
-        ImGui::Text("Count: %d", emitter.count);
-        ImGui::Text("Frequency: %.2f", emitter.frequency);
-
-        // エミッタータイプ固有の情報
-        switch (emitter.type) {
-        case EmitterType::Sphere:
-          ImGui::Text("Radius: %.2f", emitter.sphere.radius);
-          break;
-
-        case EmitterType::Box:
-          ImGui::Text("Size: (%.2f, %.2f, %.2f)",
-            emitter.box.size.x, emitter.box.size.y, emitter.box.size.z);
-          ImGui::Text("Rotation: (%.2f, %.2f, %.2f)",
-            emitter.box.rotation.x, emitter.box.rotation.y, emitter.box.rotation.z);
-          break;
-
-        case EmitterType::Triangle:
-          // 三角形の情報
-          break;
-        }
-
-        ImGui::TreePop();
-      }
-    }
-    ImGui::TreePop();
-  }
-
-  ImGui::End();
-#endif
 }
 
 std::shared_ptr<SphereEmitter> GPUParticle::CreateSphereEmitter(const Vector3& position, float radius, uint32_t count, float frequency)
@@ -1083,9 +1034,9 @@ void GPUParticle::CreateUpdateParticleComputeRS()
 
 }
 
-void GPUParticle::CreateComputeShaderPSO(Microsoft::WRL::ComPtr<ID3D12RootSignature>& RS, Microsoft::WRL::ComPtr<ID3D12PipelineState>& PSO, const std::wstring& shaderPath)
+void GPUParticle::CreateComputeShaderPSO(Microsoft::WRL::ComPtr<ID3D12RootSignature>& RS, Microsoft::WRL::ComPtr<ID3D12PipelineState>& PSO, const std::wstring& shaderName)
 {
-  Microsoft::WRL::ComPtr<IDxcBlob> csBlob = m_dx12_->CompileShader(L"resources/shaders/" + shaderPath, L"cs_6_0");
+  Microsoft::WRL::ComPtr<IDxcBlob> csBlob = m_dx12_->CompileShader(L"resources/shaders/" + shaderName, L"cs_6_0");
 
   D3D12_COMPUTE_PIPELINE_STATE_DESC computePipelineStateDesc{};
   computePipelineStateDesc.pRootSignature = RS.Get();

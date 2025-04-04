@@ -38,10 +38,9 @@ void TextureManager::Finalize()
 
 void TextureManager::LoadTexture(const std::string& fileName)
 {
-	// 読み込み済みのテクスチャを検索
+	// 重複チェック
 	if (textureDatas_.contains(fileName))
 	{
-		// すでに読み込まれている場合は何もしない
 		return;
 	}
 
