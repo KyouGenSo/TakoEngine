@@ -60,6 +60,9 @@ public:
   void SetEmitterLifeTimeRange(const std::string& name, const Vector2& lifeTimeRange);
   void SetEmitterActive(const std::string& name, bool isActive);
   void SetEmitterColor(const std::string& name, const Vector4& color);
+  void SetEmitterStartColor(const std::string& name, const Vector4& color);
+  void SetEmitterEndColor(const std::string& name, const Vector4& color);
+  void SetEmitterColors(const std::string& name, const Vector4& startColor, const Vector4& endColor);
 
   // エミッター管理
   std::shared_ptr<GPUParticleEmitter> GetEmitterByName(const std::string& name);

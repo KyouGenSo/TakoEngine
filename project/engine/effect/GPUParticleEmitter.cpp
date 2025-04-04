@@ -11,7 +11,8 @@ GPUParticleEmitter::GPUParticleEmitter(GPUParticle* particleSystem, uint32_t emi
   , velRangeY_(Vector2(0.0f, 0.0f))
   , velRangeZ_(Vector2(0.0f, 0.0f))
   , lifeTimeRange_(Vector2(0.0f, 0.0f))
-  , color_(Vector4(1.0f, 1.0f, 1.0f, 1.0f))
+  , startColor_(Vector4(1.0f, 1.0f, 1.0f, 1.0f))
+  , endColor_(Vector4(1.0f, 1.0f, 1.0f, 1.0f))
   , particleCount_(20)
   , frequency_(0.5f)
   , isActive_(true)
@@ -50,11 +51,40 @@ void GPUParticleEmitter::SetActive(bool isActive)
 
 void GPUParticleEmitter::SetColor(const Vector4& color)
 {
-  color_ = color;
+  SetColors(color, color);
+}
+
+void GPUParticleEmitter::SetStartColor(const Vector4& color)
+{
+  startColor_ = color;
 
   if (particleSystem_) {
     EmitterData params = particleSystem_->GetEmitterData(emitterId_);
-    params.colorTint = color_;
+    params.startColorTint = startColor_;
+    particleSystem_->UpdateEmitterParameters(emitterId_, params);
+  }
+}
+
+void GPUParticleEmitter::SetEndColor(const Vector4& color)
+{
+  endColor_ = color;
+
+  if (particleSystem_) {
+    EmitterData params = particleSystem_->GetEmitterData(emitterId_);
+    params.endColorTint = endColor_;
+    particleSystem_->UpdateEmitterParameters(emitterId_, params);
+  }
+}
+
+void GPUParticleEmitter::SetColors(const Vector4& startColor, const Vector4& endColor)
+{
+  startColor_ = startColor;
+  endColor_ = endColor;
+
+  if (particleSystem_) {
+    EmitterData params = particleSystem_->GetEmitterData(emitterId_);
+    params.startColorTint = startColor_;
+    params.endColorTint = endColor_;
     particleSystem_->UpdateEmitterParameters(emitterId_, params);
   }
 }

@@ -245,8 +245,9 @@ void GPUParticle::DebugInfo()
 
       if (ImGui::TreeNode(label)) {
         ImGui::Text("Position: (%.2f, %.2f, %.2f)",
-          emitter.position.x, emitter.position.y, emitter.position.z);
-        ImGui::ColorEdit4("Color", &emitter.colorTint.x, ImGuiColorEditFlags_NoInputs);
+        emitter.position.x, emitter.position.y, emitter.position.z);
+        ImGui::ColorEdit4("Start Color", &emitter.startColorTint.x);
+        ImGui::ColorEdit4("End Color", &emitter.endColorTint.x);
         ImGui::Text("Active: %s", emitter.isActive ? "Yes" : "No");
         ImGui::Text("Count: %d", emitter.count);
         ImGui::Text("Frequency: %.2f", emitter.frequency);
@@ -343,7 +344,7 @@ std::shared_ptr<GPUParticleEmitter> GPUParticle::CreateTemporaryEmitterFrom(GPUP
     return nullptr;
   }
 
-  newEmitter->SetColor(emitterData.colorTint);
+  newEmitter->SetColors(emitterData.startColorTint, emitterData.endColorTint);
   newEmitter->SetLifeTimeRange(emitterData.lifeTimeRange);
   newEmitter->SetVelRange(emitterData.velRangeX, emitterData.velRangeY, emitterData.velRangeZ);
   newEmitter->SetScaleRange(emitterData.scaleRangeX, emitterData.scaleRangeY);
@@ -374,7 +375,8 @@ void GPUParticle::UpdateEmitterParameters(uint32_t emitterId, const EmitterData&
   currentData.velRangeY = params.velRangeY;
   currentData.velRangeZ = params.velRangeZ;
   currentData.lifeTimeRange = params.lifeTimeRange;
-  currentData.colorTint = params.colorTint;
+  currentData.startColorTint = params.startColorTint;
+  currentData.endColorTint = params.endColorTint;
   if (params.count != 0) currentData.count = params.count;
   if (params.frequency != 0.0f) currentData.frequency = params.frequency;
   if (params.isActive != currentData.isActive) currentData.isActive = params.isActive;
@@ -446,7 +448,8 @@ uint32_t GPUParticle::CreateSphereEmitterInternal(const Vector3& position, float
   emitter.velRangeY = { .x = 0.0f, .y = 0.0f };
   emitter.velRangeZ = { .x = 0.0f, .y = 0.0f };
   emitter.lifeTimeRange = { .x = 0.0f, .y = 0.0f };
-  emitter.colorTint = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
+  emitter.startColorTint = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
+  emitter.endColorTint = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
   emitter.count = count;
   emitter.frequency = frequency;
   emitter.frequencyTime = 0.0f;
@@ -486,7 +489,8 @@ uint32_t GPUParticle::CreateBoxEmitterInternal(const Vector3& position, const Ve
   emitter.velRangeY = { .x = 0.0f, .y = 0.0f };
   emitter.velRangeZ = { .x = 0.0f, .y = 0.0f };
   emitter.lifeTimeRange = { .x = 0.0f, .y = 0.0f };
-  emitter.colorTint = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
+  emitter.startColorTint = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
+  emitter.endColorTint = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
   emitter.count = count;
   emitter.frequency = frequency;
   emitter.frequencyTime = 0.0f;
@@ -522,7 +526,8 @@ uint32_t GPUParticle::CreateTriangleEmitterInternal(const Vector3& position, con
   emitter.velRangeY = { .x = 0.0f, .y = 0.0f };
   emitter.velRangeZ = { .x = 0.0f, .y = 0.0f };
   emitter.lifeTimeRange = { .x = 0.0f, .y = 0.0f };
-  emitter.colorTint = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
+  emitter.startColorTint = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
+  emitter.endColorTint = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
   emitter.count = count;
   emitter.frequency = frequency;
   emitter.frequencyTime = 0.0f;
@@ -682,7 +687,8 @@ void GPUParticle::SyncEmitterData()
     dst.velRangeY = src.velRangeY;
     dst.velRangeZ = src.velRangeZ;
     dst.lifeTimeRange = src.lifeTimeRange;
-    dst.colorTint = src.colorTint;
+    dst.startColorTint = src.startColorTint;
+    dst.endColorTint = src.endColorTint;
 
     dst.count = src.count;
     dst.frequency = src.frequency;

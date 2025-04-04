@@ -37,7 +37,9 @@ VertexShaderOutput main(VertexShaderInput input, uint instanceID : SV_InstanceID
     output.texcoord = input.texcoord;
     
     // 色情報を出力
-    output.color = particle.color;
+    // 寿命に基づいて色を線形補間
+    float lifeRatio = particle.currentTime / particle.lifeTime;
+    output.color = lerp(particle.startColor, particle.endColor, lifeRatio);
     
     return output;
 }

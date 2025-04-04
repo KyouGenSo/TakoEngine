@@ -251,8 +251,12 @@ void main(uint3 DTid : SV_DispatchThreadID)
             gParticles[particleID].currentTime = 0.0f;
             
             // êFê›íË---------------------------------------------------------------------------------
-            gParticles[particleID].color.rgb = gEmitters[emitterIndex].colorTint.rgb;
-            gParticles[particleID].color.a = 1.0f;
+            gParticles[particleID].startColor.rgb = gEmitters[emitterIndex].startColorTint.rgb;
+            gParticles[particleID].startColor.a = 1.0f;
+
+            gParticles[particleID].endColor.rgb = gEmitters[emitterIndex].endColorTint.rgb;
+            gParticles[particleID].endColor.a = 1.0f;
+
         }
         else
         {

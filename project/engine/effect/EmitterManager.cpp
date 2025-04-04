@@ -243,6 +243,30 @@ void EmitterManager::SetEmitterColor(const std::string& name, const Vector4& col
   }
 }
 
+void EmitterManager::SetEmitterStartColor(const std::string& name, const Vector4& color)
+{
+  auto it = emitterMap_.find(name);
+  if (it != emitterMap_.end()) {
+    it->second->SetStartColor(color);
+  }
+}
+
+void EmitterManager::SetEmitterEndColor(const std::string& name, const Vector4& color)
+{
+  auto it = emitterMap_.find(name);
+  if (it != emitterMap_.end()) {
+    it->second->SetEndColor(color);
+  }
+}
+
+void EmitterManager::SetEmitterColors(const std::string& name, const Vector4& startColor, const Vector4& endColor)
+{
+  auto it = emitterMap_.find(name);
+  if (it != emitterMap_.end()) {
+    it->second->SetColors(startColor, endColor);
+  }
+}
+
 // エミッター管理
 std::shared_ptr<GPUParticleEmitter> EmitterManager::GetEmitterByName(const std::string& name)
 {

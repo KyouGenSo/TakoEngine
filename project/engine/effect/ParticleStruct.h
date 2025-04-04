@@ -37,7 +37,8 @@ struct Particle
   Vector3 translate;    // 位置
   Vector3 scale;        // スケール
   Vector3 velocity;     // 速度
-  Vector4 color;        // 色（アルファ値含む）
+  Vector4 startColor;   // 開始色（アルファ値含む）
+  Vector4 endColor;     // 終了色（アルファ値含む）
   float lifeTime;       // 寿命（秒）
   float currentTime;    // 経過時間
 };
@@ -48,7 +49,8 @@ struct ParticleCS
   Vector3 translate;    // 位置
   Vector3 scale;        // スケール
   Vector3 velocity;     // 速度
-  Vector4 color;        // 色（アルファ値含む）
+  Vector4 startColor;   // 開始色（アルファ値含む）
+  Vector4 endColor;     // 終了色（アルファ値含む）
   float lifeTime;       // 寿命（秒）
   float currentTime;    // 経過時間
 };
@@ -101,7 +103,8 @@ struct EmitterData {
   Vector2 velRangeY;        // Y速度範囌
   Vector2 velRangeZ;        // Z速度範囌
   Vector2 lifeTimeRange;    // 寿命範囲
-  Vector4 colorTint;        // 色補正
+  Vector4 startColorTint;   // 開始色補正
+  Vector4 endColorTint;     // 終了色補正
 
   uint32_t count;           // 1回の射出で生成するパーティクル数
   float frequency;          // 射出頻度（秒）
@@ -122,7 +125,8 @@ struct EmitterData {
   EmitterData() : type(EmitterType::Sphere), isActive(true), isEmitting(false),
     emitterID(0), position({ .x = 0.0f, .y = 0.0f, .z = 0.0f }),
     scaleRangeX(), scaleRangeY(), velRangeX(), velRangeY(), velRangeZ(), lifeTimeRange(),
-    colorTint({ .x = 1, .y = 1, .z = 1, .w = 1 }),
+    startColorTint({ .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f }),
+    endColorTint({ .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f }),
     count(20), frequency(0.5f), frequencyTime(0.0f)
   {
     // 球体パラメータの初期化
@@ -146,7 +150,8 @@ struct EmitterGPUData
   Vector2 velRangeY;       // Y速度範囲
   Vector2 velRangeZ;       // Z速度範囲
   Vector2 lifeTimeRange;   // 寿命範囲
-  Vector4 colorTint;       // 色補正
+  Vector4 startColorTint;  // 開始色補正
+  Vector4 endColorTint;    // 終了色補正
 
   uint32_t count;          // パーティクル数
   float frequency;         // 射出頻度

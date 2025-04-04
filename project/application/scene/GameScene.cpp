@@ -58,7 +58,7 @@ void GameScene::Initialize()
 
   // 球体エミッターの作成
   emitterManager_->CreateSphereEmitter("player", spEmitterSett_.position, spEmitterSett_.radius, spEmitterSett_.count, spEmitterSett_.frequency);
-  emitterManager_->SetEmitterColor("player", { .x = 1.0f, .y = 0.0f, .z = 0.0f, .w = 1.0f });
+  emitterManager_->SetEmitterColors("player", { .x = 1.0f, .y = 0.0f, .z = 0.0f, .w = 1.0f }, { .x = 0.0f, .y = 1.0f, .z = 0.0f, .w = 1.0f });
 
   //箱エミッターの作成
   emitterManager_->CreateBoxEmitter("box", boxEmitterSett_.position, boxEmitterSett_.size, boxEmitterSett_.rotation, boxEmitterSett_.count, boxEmitterSett_.frequency);

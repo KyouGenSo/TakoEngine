@@ -17,7 +17,8 @@ struct Particle
     float3 translate;
     float3 scale;
     float3 velocity;
-    float4 color;
+    float4 startColor;
+    float4 endColor;
     float lifeTime;
     float currentTime;
 };
@@ -38,7 +39,8 @@ struct Emitter
     float2 velRangeY;         // パーティクルのY速度範囲（最小、最大）
     float2 velRangeZ;         // パーティクルのZ速度範囲（最小、最大）
     float2 lifeTimeRange;     // パーティクルの寿命範囲（最小、最大）
-    float4 colorTint;         // パーティクルの色補正
+    float4 startColorTint;    // パーティクルの開始色（RGBA）
+    float4 endColorTint;      // パーティクルの終了色（RGBA）
     
     uint  count;              // 1回の射出で生成するパーティクル数
     float frequency;          // 射出頻度（秒）

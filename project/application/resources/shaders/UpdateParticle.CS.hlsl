@@ -16,7 +16,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
     if (particleIndex < kMaxParticles)
     {
         // アルファ値が0より大きい＝アクティブなパーティクルのみ更新
-        if (gParticles[particleIndex].color.a > 0.0f)
+        if (any(gParticles[particleIndex].startColor > 0.0f && gParticles[particleIndex].endColor > 0.0f))
         {
             // 位置の更新
             gParticles[particleIndex].translate += gParticles[particleIndex].velocity * gPerFrame.deltaTime * 60.0f;
@@ -26,13 +26,15 @@ void main(uint3 DTid : SV_DispatchThreadID)
             
             // 寿命に基づいてアルファ値を計算
             float alpha = 1.0f - (gParticles[particleIndex].currentTime / gParticles[particleIndex].lifeTime);
-            gParticles[particleIndex].color.a = saturate(alpha); // 0～1の範囲に制限
+            gParticles[particleIndex].startColor.a = saturate(alpha);
+            gParticles[particleIndex].endColor.a = saturate(alpha);
             
             // 寿命切れならフリーリストに戻す処理
             if (alpha <= 0.0f)
             {
-                gParticles[particleIndex].color.a = 0.0f; // 完全に透明に
-                gParticles[particleIndex].scale = float3(0.0f, 0.0f, 0.0f); // サイズを0に
+                gParticles[particleIndex].startColor.a = 0.0f;
+                gParticles[particleIndex].endColor.a = 0.0f;
+                gParticles[particleIndex].scale = float3(0.0f, 0.0f, 0.0f);
                 
                 // フリーリストに追加
                 int freeListIndex;

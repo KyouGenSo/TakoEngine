@@ -17,9 +17,14 @@ public:
   // 共通の設定メソッド
   void SetPosition(const Vector3& position);
   void SetActive(bool isActive);
-  void SetColor(const Vector4& color);
   void SetParticleCount(uint32_t count);
   void SetFrequency(float frequency);
+
+  // 色の設定メソッド
+  void SetColor(const Vector4& color); // 両方の色を同じ値に設定
+  void SetStartColor(const Vector4& color);
+  void SetEndColor(const Vector4& color);
+  void SetColors(const Vector4& startColor, const Vector4& endColor);
 
   // 乱数生成範囲の設定
   void SetScaleRange(const Vector2& rangeX, const Vector2& rangeY);
@@ -38,7 +43,8 @@ public:
   // ゲッター
   [[nodiscard]] const Vector3& GetPosition() const { return position_; }
   [[nodiscard]] bool IsActive() const { return isActive_; }
-  [[nodiscard]] const Vector4& GetColor() const { return color_; }
+  [[nodiscard]] const Vector4& GetStartColor() const { return startColor_; }
+  [[nodiscard]] const Vector4& GetEndColor() const { return endColor_; }
   [[nodiscard]] uint32_t GetParticleCount() const { return particleCount_; }
   [[nodiscard]] float GetFrequency() const { return frequency_; }
   [[nodiscard]] uint32_t GetEmitterId() const { return emitterId_; }
@@ -46,6 +52,7 @@ public:
   [[nodiscard]] float GetEmitterLifeTime() const { return emitterLifeTime_; }
   [[nodiscard]] float GetEmitterCurrentTime() const { return emitterCurrentTime_; }
   [[nodiscard]] bool IsLifeTimeExpired() const;
+
 
   // 仮想関数
   [[nodiscard]] virtual EmitterType GetType() const = 0;
@@ -61,7 +68,8 @@ protected:
   Vector2 velRangeY_;              // Y速度範囲
   Vector2 velRangeZ_;              // Z速度範囲
   Vector2 lifeTimeRange_;          // 寿命範囲
-  Vector4 color_;                  // カラーティント
+  Vector4 startColor_;           // 開始色
+  Vector4 endColor_;             // 終了色
   uint32_t particleCount_;         // 1回の射出で生成するパーティクル数
   float frequency_;                // 射出頻度（秒）
   bool isActive_;                  // アクティブ状態
