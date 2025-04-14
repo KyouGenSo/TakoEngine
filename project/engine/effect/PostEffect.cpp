@@ -161,12 +161,12 @@ void PostEffect::SetFogDensity(float density)
 void PostEffect::InitRenderTexture()
 {
 	// レンダーテクスチャリソースの生成
-	m_dx12_->CreateRenderTextureResource(renderTextureResourceA_, WinApp::clientWidth, WinApp::clientHeight, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, kRenderTextureClearColor_);
+	m_dx12_->CreateRenderTextureResource(renderTextureResourceA_, WinApp::clientWidth, WinApp::clientHeight, DXGI_FORMAT_R8G8B8A8_UNORM, kRenderTextureClearColor_);
 	renderTextureResourceA_->SetName(L"PostEffectRenderTexture");
 
 	// RTVの設定
 	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
-	rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB; // 出力結果をSRGBに変換して書き込む
+  rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // フォーマット
 	rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D; // 2Dテクスチャとして書き込む
 
 	renderTextureRTVHandleA_ = m_dx12_->GetRenderTextureRTVHandle();
@@ -177,7 +177,7 @@ void PostEffect::InitRenderTexture()
 	rtvSrvIndex_ = SrvManager::GetInstance()->Allocate();
 
 	// SRVの生成
-	SrvManager::GetInstance()->CreateSRVForTexture2D(rtvSrvIndex_, renderTextureResourceA_.Get(), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, 1);
+	SrvManager::GetInstance()->CreateSRVForTexture2D(rtvSrvIndex_, renderTextureResourceA_.Get(), DXGI_FORMAT_R8G8B8A8_UNORM, 1);
 }
 
 void PostEffect::CreateDepthBufferSRV()
@@ -317,7 +317,7 @@ void PostEffect::CreatePSO(const std::string& effectName)
 	graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
 	// 書き込むRTVの情報
 	graphicsPipelineStateDesc.NumRenderTargets = 1;
-	graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+	graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	// 利用するトポロジ（形状）のタイプ。三角形
 	graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	// どのように画面に色を打ち込むかの設定
