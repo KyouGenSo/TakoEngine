@@ -121,9 +121,9 @@ void GameScene::Initialize()
   emitterManager_->AddToGroup("group1", "box");
   emitterManager_->AddToGroup("group1", "triangle");
 
-  emitterManager_->SetGroupActive("group1", true);
+  emitterManager_->SetGroupActive("group1", false);
 
-  groupPosition_ = { .x = 0.0f, .y = -10.0f, .z = 0.0f };
+  groupPosition_ = { .x = 0.0f, .y = 10.0f, .z = 0.0f };
 }
 
 void GameScene::Finalize()
