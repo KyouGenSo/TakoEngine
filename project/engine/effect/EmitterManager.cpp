@@ -32,6 +32,9 @@ void EmitterManager::CreateSphereEmitter(const std::string& name, const Vector3&
   // エミッター作成
   std::shared_ptr<SphereEmitter> emitter = std::make_shared<SphereEmitter>(particleSystem_, position, radius, count, frequency);
 
+  // GPUParticleにエミッターを登録
+  particleSystem_->RegisterEmitter(emitter);
+
   // マップに追加
   emitterMap_[name] = emitter;
 
@@ -48,6 +51,9 @@ void EmitterManager::CreateBoxEmitter(const std::string& name, const Vector3& po
   // エミッター作成
   std::shared_ptr<BoxEmitter> emitter = std::make_shared<BoxEmitter>(particleSystem_, position, size, rotation, count, frequency);
 
+  // GPUParticleにエミッターを登録
+  particleSystem_->RegisterEmitter(emitter);
+
   // マップに追加
   emitterMap_[name] = emitter;
 
@@ -63,6 +69,9 @@ void EmitterManager::CreateTriangleEmitter(const std::string& name, const Vector
 
   // エミッター作成
   std::shared_ptr<TriangleEmitter> emitter = std::make_shared<TriangleEmitter>(particleSystem_, position, v1, v2, v3, count, frequency);
+
+  // GPUParticleにエミッターを登録
+  particleSystem_->RegisterEmitter(emitter);
 
   // マップに追加
   emitterMap_[name] = emitter;

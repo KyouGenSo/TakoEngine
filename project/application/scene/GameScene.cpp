@@ -121,9 +121,10 @@ void GameScene::Initialize()
   emitterManager_->AddToGroup("group1", "box");
   emitterManager_->AddToGroup("group1", "triangle");
 
-  emitterManager_->SetGroupActive("group1", false);
+  isActive_ = true;
+  emitterManager_->SetGroupActive("group1", isActive_);
 
-  groupPosition_ = { .x = 0.0f, .y = 10.0f, .z = 0.0f };
+  groupPosition_ = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
 }
 
 void GameScene::Finalize()
@@ -190,6 +191,7 @@ void GameScene::Update()
   emitterManager_->SetEmitterLifeTimeRange("triangle", triEmitterSett_.lifeTimeRange);
 
   emitterManager_->SetGroupPosition("group1", groupPosition_);
+  emitterManager_->SetGroupActive("group1", isActive_);
 
   // ライトの設定
   Object3dBasic::GetInstance()->SetDirectionalLight(lightDirection_, lightColor_, 1, lightIntensity_);

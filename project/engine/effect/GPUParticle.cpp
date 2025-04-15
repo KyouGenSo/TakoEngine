@@ -83,6 +83,9 @@ void GPUParticle::Update()
   // PerFrameの更新
   UpdatePerFrame();
 
+  // エミッターの更新
+  UpdateEmitter();
+
   // PerViewの更新
   UpdatePerView();
 }
@@ -240,7 +243,7 @@ std::shared_ptr<GPUParticleEmitter> GPUParticle::CreateTemporaryEmitterFrom(GPUP
   newEmitter->SetTemporary(true, lifeTime);
 
   // アクティブリストに追加
-  activeEmitters_.push_back(newEmitter);
+  RegisterEmitter(newEmitter);
 
   return newEmitter;
 }

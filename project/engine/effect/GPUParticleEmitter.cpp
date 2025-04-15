@@ -23,11 +23,6 @@ GPUParticleEmitter::GPUParticleEmitter(GPUParticle* particleSystem, uint32_t emi
   data_.endColorTint = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
   data_.count = 0;
   data_.frequency = 0.0f;
-
-  // パーティクルシステムに自分自身を登録
-  if (particleSystem_) {
-    particleSystem_->RegisterEmitter(shared_from_this());
-  }
 }
 
 GPUParticleEmitter::~GPUParticleEmitter()
