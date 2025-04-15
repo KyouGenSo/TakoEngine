@@ -78,7 +78,7 @@ private: // メンバ変数
   bool isHighlight_ = true;
   Vector4 lightColor_ = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
   Vector3 lightDirection_ = { .x = 0.0f, .y = -1.0f, .z = 0.0f };
-  float lightIntensity_ = 0.5f;
+  float lightIntensity_ = 1.0f;
 
     // エミッター管理
   std::unique_ptr<EmitterManager> emitterManager_;
