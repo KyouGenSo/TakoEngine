@@ -88,6 +88,8 @@ void GPUParticle::Update()
 
   // PerViewの更新
   UpdatePerView();
+
+  SyncEmitterData();
 }
 
 void GPUParticle::Draw()

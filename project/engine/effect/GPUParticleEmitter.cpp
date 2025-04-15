@@ -27,10 +27,9 @@ GPUParticleEmitter::GPUParticleEmitter(GPUParticle* particleSystem, uint32_t emi
 
 GPUParticleEmitter::~GPUParticleEmitter()
 {
-  // パーティクルシステムから登録解除
-  if (particleSystem_) {
-    particleSystem_->UnregisterEmitter(shared_from_this());
-  }
+  // デストラクタで特に何もしない
+  // 必要なリソースはGPUParticleクラスが管理しているため
+  // ここで解放する必要はない
 }
 
 void GPUParticleEmitter::SetupGPUData(EmitterGPUData& gpuData) const

@@ -338,8 +338,6 @@ void GameScene::DrawImGui()
   if (ImGui::Button("Create Triangle Temp Emitter"))
   {
     emitterManager_->CreateTemporaryEmitterFrom("triangle", "triTemp", 1.0f);
-    auto emitter = emitterManager_->GetEmitterByName("triTemp");
-    emitter->SetPosition({ .x = 0.0f, .y = 0.0f, .z = 0.0f });
   }
 
   ImGui::End();

@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <ranges>
+#include <memory>
 
 EmitterManager::EmitterManager(GPUParticle* particleSystem)
   : particleSystem_(particleSystem)
@@ -296,6 +297,11 @@ void EmitterManager::RemoveEmitter(const std::string& name)
 
     // エミッターをマップから削除（shared_ptrなので自動解放）
     emitterMap_.erase(it);
+
+    // GPUParticleシステムから登録解除
+    if (particleSystem_) {
+      particleSystem_->UnregisterEmitter(it->second);
+    }
 
     // グループから安全に削除
     for (auto& [groupName, group] : groupMap_) {
