@@ -166,9 +166,14 @@ void EmitterManager::CreateTemporaryEmitterFrom(const std::string& sourceName, c
   std::shared_ptr<GPUParticleEmitter> newEmitter = particleSystem_->CreateTemporaryEmitterFrom(sourceEmitter.get(), lifeTime);
 
   if (newEmitter) {
-    // マップに追加
+    // マップに追加（グループには追加しない）
     emitterMap_[newName] = newEmitter;
-    Logger::Log("CreateTemporaryEmitterFrom: Created temporary emitter '%s' from '%s' with lifetime %.2f seconds", newName.c_str(), sourceName.c_str(), lifeTime);
+
+    // 即座にパーティクルを発生させるように設定
+    newEmitter->SetFrequencyTime(newEmitter->GetFrequency());
+
+    Logger::Log("CreateTemporaryEmitterFrom: Created temporary emitter '%s' from '%s' with lifetime %.2f seconds",
+      newName.c_str(), sourceName.c_str(), lifeTime);
   } else {
     Logger::Log("CreateTemporaryEmitterFrom: Failed to create emitter from '%s'", sourceName.c_str());
   }
@@ -295,25 +300,26 @@ void EmitterManager::RemoveEmitter(const std::string& name)
     // エミッターを非アクティブにして即時効果を得る
     it->second->SetActive(false);
 
-    // エミッターをマップから削除（shared_ptrなので自動解放）
+    // エミッターをマップから削除
+    std::shared_ptr<GPUParticleEmitter> emitter = it->second;
     emitterMap_.erase(it);
 
     // GPUParticleシステムから登録解除
     if (particleSystem_) {
-      particleSystem_->UnregisterEmitter(it->second);
+      particleSystem_->UnregisterEmitter(emitter);
     }
 
-    // グループから安全に削除
+    // グループからの削除処理を別の方法で実装
     for (auto& [groupName, group] : groupMap_) {
-      auto& emitterNames = group.emitterNames;
+      auto& names = group.emitterNames;
 
-      // 安全に要素を削除（remove-eraseイディオム）
-      if (auto newEnd = std::ranges::remove(emitterNames, name).begin(); newEnd != emitterNames.end()) {
-        emitterNames.erase(newEnd, emitterNames.end());
+      // erase-removeイディオムの安全な実装
+      auto removeIt = std::find(names.begin(), names.end(), name);
+      if (removeIt != names.end()) {
+        names.erase(removeIt);
         Logger::Log("Removed emitter '%s' from group '%s'", name.c_str(), groupName.c_str());
       }
     }
-
   } else {
     Logger::Log("RemoveEmitter: Emitter '%s' not found", name.c_str());
   }

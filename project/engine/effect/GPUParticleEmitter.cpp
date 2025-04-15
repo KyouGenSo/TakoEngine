@@ -108,6 +108,11 @@ void GPUParticleEmitter::SetActive(bool isActive)
   data_.isActive = isActive;
 }
 
+void GPUParticleEmitter::SetEmitting(bool cond)
+{
+  data_.isEmitting = cond;
+}
+
 void GPUParticleEmitter::SetColor(const Vector4& color)
 {
   SetColors(color, color);

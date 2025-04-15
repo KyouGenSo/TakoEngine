@@ -27,6 +27,7 @@ public:
   // 共通の設定メソッド
   void SetPosition(const Vector3& position);
   void SetActive(bool isActive);
+  void SetEmitting(bool cond);
   void SetParticleCount(uint32_t count);
   void SetFrequency(float frequency);
   void SetFrequencyTime(float frequencyTime);
@@ -54,6 +55,7 @@ public:
   // ゲッター
   [[nodiscard]] const Vector3& GetPosition() const { return data_.position; }
   [[nodiscard]] bool IsActive() const { return data_.isActive; }
+  [[nodiscard]] bool IsEmitting() const { return data_.isEmitting; }
   [[nodiscard]] const Vector2& GetScaleRangeX() const { return data_.scaleRangeX; }
   [[nodiscard]] const Vector2& GetScaleRangeY() const { return data_.scaleRangeY; }
   [[nodiscard]] const Vector2& GetVelRangeX() const { return data_.velRangeX; }

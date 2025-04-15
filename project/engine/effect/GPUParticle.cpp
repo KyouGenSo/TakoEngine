@@ -241,11 +241,28 @@ std::shared_ptr<GPUParticleEmitter> GPUParticle::CreateTemporaryEmitterFrom(GPUP
   auto newEmitter = sourceEmitter->Clone();
   if (!newEmitter) return nullptr;
 
+  // 重要なパラメータを強制的に設定
+  newEmitter->SetActive(true);  // 明示的にアクティブ化
+
+  // 射出をすぐに行うための設定
+  newEmitter->SetFrequencyTime(newEmitter->GetFrequency());
+
+  // 強制的に射出フラグを設定する
+  newEmitter->SetEmitting(true);
+
   // 一時エミッター設定
   newEmitter->SetTemporary(true, lifeTime);
 
   // アクティブリストに追加
   RegisterEmitter(newEmitter);
+
+  // デバッグ情報
+  Logger::Log("CreateTempEmitter: ID=%u, Active=%d, Emit=%d, FreqTime=%.2f/%.2f",
+    newEmitter->GetEmitterId(),
+    newEmitter->IsActive() ? 1 : 0,
+    newEmitter->IsEmitting() ? 1 : 0,
+    newEmitter->GetFrequencyTime(),
+    newEmitter->GetFrequency());
 
   return newEmitter;
 }
