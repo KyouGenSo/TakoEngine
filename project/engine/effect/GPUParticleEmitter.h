@@ -29,6 +29,7 @@ public:
   void SetActive(bool isActive);
   void SetParticleCount(uint32_t count);
   void SetFrequency(float frequency);
+  void SetFrequencyTime(float frequencyTime);
 
   // 色の設定メソッド
   void SetColor(const Vector4& color); // 両方の色を同じ値に設定

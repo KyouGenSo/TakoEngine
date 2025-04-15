@@ -27,6 +27,7 @@ std::shared_ptr<GPUParticleEmitter> SphereEmitter::Clone() const
   clone->SetLifeTimeRange(GetLifeTimeRange());
   clone->SetScaleRange(GetScaleRangeX(), GetScaleRangeY());
   clone->SetActive(IsActive());
+  clone->SetFrequencyTime(GetFrequency());
 
   return clone;
 }

@@ -140,6 +140,11 @@ void GPUParticleEmitter::SetFrequency(float frequency)
   data_.frequency = frequency;
 }
 
+void GPUParticleEmitter::SetFrequencyTime(float frequencyTime)
+{
+  data_.frequencyTime = frequencyTime;
+}
+
 void GPUParticleEmitter::SetScaleRange(const Vector2& rangeX, const Vector2& rangeY)
 {
   SetScaleRangeX(rangeX);
