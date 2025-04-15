@@ -17,6 +17,32 @@ BoxEmitter::BoxEmitter(GPUParticle* particleSystem, const Vector3& position,
   data_.type = EmitterType::Box;
 }
 
+std::shared_ptr<GPUParticleEmitter> BoxEmitter::Clone() const
+{
+  // 新しいインスタンスを作成し、現在のデータをコピー
+  auto clone = std::make_shared<BoxEmitter>(
+    particleSystem_, GetPosition(), GetSize(), GetRotation(), GetParticleCount(), GetFrequency());
+  // 他のプロパティも転送
+
+  clone->SetColors(GetStartColor(), GetEndColor());
+  clone->SetVelRange(GetVelRangeX(), GetVelRangeY(), GetVelRangeZ());
+  clone->SetLifeTimeRange(GetLifeTimeRange());
+  clone->SetScaleRange(GetScaleRangeX(), GetScaleRangeY());
+  clone->SetActive(IsActive());
+
+  return clone;
+}
+
+void BoxEmitter::SetupGPUData(EmitterGPUData& gpuData) const
+{
+  GPUParticleEmitter::SetupGPUData(gpuData);
+
+  // 箱型固有のデータを設定
+  gpuData.boxSize = data_.box.size;
+  gpuData.boxRotation = data_.box.rotation;
+  gpuData.type = static_cast<uint32_t>(data_.type);
+}
+
 void BoxEmitter::SetSize(const Vector3& size)
 {
   data_.box.size = size;

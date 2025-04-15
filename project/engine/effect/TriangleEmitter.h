@@ -13,6 +13,12 @@ public:
 
   ~TriangleEmitter() override = default;
 
+  // クローンメソッド
+  std::shared_ptr<GPUParticleEmitter> Clone() const override;
+
+  // GPUデータの設定
+  void SetupGPUData(EmitterGPUData& gpuData) const override;
+
   // 三角形固有の設定
   void SetVertices(const Vector3& v1, const Vector3& v2, const Vector3& v3);
   const Vector3& GetVertex1() const { return data_.triangle.v1; }

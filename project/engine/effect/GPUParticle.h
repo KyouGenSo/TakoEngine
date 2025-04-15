@@ -56,21 +56,6 @@ public: // メンバー関数
   //-------------------------エミッター管理-------------------------//
 
   /// <summary>
-  /// 球体エミッター作成
-  /// </summary>
-  std::shared_ptr<SphereEmitter> CreateSphereEmitter(const Vector3& position, float radius, uint32_t count, float frequency);
-
-  /// <summary>
-  /// 箱型エミッター作成
-  /// </summary>
-  std::shared_ptr<BoxEmitter> CreateBoxEmitter(const Vector3& position, const Vector3& size, const Vector3& rotation, uint32_t count, float frequency);
-
-  /// <summary>
-  /// 三角形エミッター作成
-  /// </summary>
-  std::shared_ptr<TriangleEmitter> CreateTriangleEmitter(const Vector3& position, const Vector3& v1, const Vector3& v2, const Vector3& v3, uint32_t count, float frequency);
-
-  /// <summary>
   /// 既存のエミッターからコピーして一時的なエミッターを作成
   /// </summary>
   std::shared_ptr<GPUParticleEmitter> CreateTemporaryEmitterFrom(GPUParticleEmitter* sourceEmitter, float lifeTime);
@@ -83,26 +68,26 @@ public: // メンバー関数
   /// <summary>
   /// エミッターの登録解除
   /// </summary>
-  void UnregisterEmitter(std::shared_ptr<GPUParticleEmitter> emitter)
+  void UnregisterEmitter(std::shared_ptr<GPUParticleEmitter> emitter);
 
   /// <summary>
   /// エミッターパラメータ更新
   /// </summary>
-  void UpdateEmitterParameters(uint32_t emitterId, const EmitterData& params);
+  //void UpdateEmitterParameters(uint32_t emitterId, const EmitterData& params);
 
   /// <summary>
   /// エミッターのID取得
   /// </summary>
-  uint32_t GetEmitterCount() const { return activeEmitterCount_; }
+  [[nodiscard]] uint32_t GetEmitterCount() const { return static_cast<uint32_t>(activeEmitters_.size()); }
 
   /// <summary>
   /// エミッター削除
   /// </summary>
-  void RemoveEmitterById(uint32_t emitterId);
+  //void RemoveEmitterById(uint32_t emitterId);
 
   //-------------------------Getter/Setter-------------------------//
-  // EmitterDataの取得
-  [[nodiscard]] EmitterData GetEmitterData(uint32_t emitterId) const { return emitters_[emitterId]; }
+  std::shared_ptr<GPUParticleEmitter> FindEmitterByIndex(size_t index);
+
   [[nodiscard]] bool GetIsDebug() const { return isDebug_; }
 
   void SetCamera(Camera* camera) { m_camera_ = camera; }
@@ -120,10 +105,10 @@ private: // プライベートメンバー関数
   /// <summary>
   /// エミッター内部作成関数
   /// </summary>
-  uint32_t CreateSphereEmitterInternal(const Vector3& position, float radius, uint32_t count, float frequency);
-  uint32_t CreateBoxEmitterInternal(const Vector3& position, const Vector3& size, const Vector3& rotation, uint32_t count, float frequency);
-  uint32_t CreateTriangleEmitterInternal(const Vector3& position, const Vector3& v1, const Vector3& v2, const Vector3& v3, uint32_t count, float frequency);
-  uint32_t CopyEmitterParameters(uint32_t sourceEmitterId, float lifeTime = 0.0f);
+  //uint32_t CreateSphereEmitterInternal(const Vector3& position, float radius, uint32_t count, float frequency);
+  //uint32_t CreateBoxEmitterInternal(const Vector3& position, const Vector3& size, const Vector3& rotation, uint32_t count, float frequency);
+  //uint32_t CreateTriangleEmitterInternal(const Vector3& position, const Vector3& v1, const Vector3& v2, const Vector3& v3, uint32_t count, float frequency);
+  //uint32_t CopyEmitterParameters(uint32_t sourceEmitterId, float lifeTime = 0.0f);
 
   /// <summary>
   ///　emitterの更新
@@ -260,8 +245,8 @@ private: //メンバー変数
   Microsoft::WRL::ComPtr<ID3D12Resource> emitterResource_;
   uint32_t emitterSrvIndex_;
   //std::vector<EmitterData> emitters_;
+  //uint32_t activeEmitterCount_ = 0;
   std::vector<std::shared_ptr<GPUParticleEmitter>> activeEmitters_;
-  uint32_t activeEmitterCount_ = 0;
 
   // FreeListリソース
   Microsoft::WRL::ComPtr<ID3D12Resource> freeListIndexResource_;

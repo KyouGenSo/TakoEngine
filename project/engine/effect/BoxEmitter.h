@@ -13,6 +13,12 @@ public:
 
   ~BoxEmitter() override = default;
 
+  // クローンメソッド
+  std::shared_ptr<GPUParticleEmitter> Clone() const override;
+
+  // GPUデータの設定
+  void SetupGPUData(EmitterGPUData& gpuData) const override;
+
   // 箱型固有の設定
   void SetSize(const Vector3& size);
   void SetRotation(const Vector3& rotation);

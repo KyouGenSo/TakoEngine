@@ -15,8 +15,14 @@ public:
   GPUParticleEmitter(GPUParticle* particleSystem, uint32_t emitterId);
   virtual ~GPUParticleEmitter();
 
-  // エミッターの初期化
-  void SetupGPUData(EmitterGPUData& gpuData);
+  // クローンメソッド
+  virtual std::shared_ptr<GPUParticleEmitter> Clone() const = 0;
+
+  // GPUデータの設定
+  virtual void SetupGPUData(EmitterGPUData& gpuData) const;
+
+  // エミッターの射出更新
+  void UpdateEmission(float deltaTime);
 
   // 共通の設定メソッド
   void SetPosition(const Vector3& position);

@@ -38,12 +38,13 @@ GPUParticleEmitter::~GPUParticleEmitter()
   }
 }
 
-void GPUParticleEmitter::SetupGPUData(EmitterGPUData& gpuData)
+void GPUParticleEmitter::SetupGPUData(EmitterGPUData& gpuData) const
 {
   gpuData.type = static_cast<uint32_t>(data_.type);
   gpuData.isActive = data_.isActive ? 1u : 0u;
   gpuData.isEmit = data_.isEmitting ? 1u : 0u;
   gpuData.emitterID = data_.emitterID;
+
   gpuData.position = data_.position;
   gpuData.scaleRangeX = data_.scaleRangeX;
   gpuData.scaleRangeY = data_.scaleRangeY;
@@ -51,11 +52,14 @@ void GPUParticleEmitter::SetupGPUData(EmitterGPUData& gpuData)
   gpuData.velRangeY = data_.velRangeY;
   gpuData.velRangeZ = data_.velRangeZ;
   gpuData.lifeTimeRange = data_.lifeTimeRange;
+
   gpuData.startColorTint = data_.startColorTint;
   gpuData.endColorTint = data_.endColorTint;
+
   gpuData.count = data_.count;
   gpuData.frequency = data_.frequency;
   gpuData.frequencyTime = data_.frequencyTime;
+
   // 一時的なエミッター用のデータをコピー
   gpuData.isTemp = data_.isTemp ? 1u : 0u;
   gpuData.emitterLifeTime = data_.emitterLifeTime;
@@ -75,6 +79,28 @@ void GPUParticleEmitter::SetupGPUData(EmitterGPUData& gpuData)
     gpuData.triangleV2 = data_.triangle.v2;
     gpuData.triangleV3 = data_.triangle.v3;
     break;
+  }
+}
+
+void GPUParticleEmitter::UpdateEmission(float deltaTime)
+{
+  // 非アクティブならスキップ
+  if (!data_.isActive) {
+    data_.isEmitting = false;
+    return;
+  }
+
+  // 射出タイマーを更新
+  data_.frequencyTime += deltaTime;
+
+  // 射出間隔を超えたら射出許可を出して時間を調整
+  if(data_.frequency <= data_.frequencyTime) {
+    data_.isEmitting = true;
+
+    // 余剰時間を調整（蓄積誤差を防ぐ）
+    data_.frequencyTime = fmodf(data_.frequencyTime, data_.frequency);
+  } else {
+    data_.isEmitting = false;
   }
 }
 

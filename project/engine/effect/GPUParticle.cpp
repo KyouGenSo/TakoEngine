@@ -83,9 +83,6 @@ void GPUParticle::Update()
   // PerFrameの更新
   UpdatePerFrame();
 
-  // Emitterの更新
-  UpdateEmitter();
-
   // PerViewの更新
   UpdatePerView();
 }
@@ -129,7 +126,7 @@ void GPUParticle::Draw()
 
   //--------------------------------------射出--------------------------------------//
     // アクティブなエミッターがある場合のみ実行
-  if (activeEmitterCount_ > 0)
+  if (!activeEmitters_.empty())
   {
     // ルートシグネチャの設定
     commandList->SetComputeRootSignature(emitParticleRS_.Get());
@@ -153,7 +150,7 @@ void GPUParticle::Draw()
     commandList->SetComputeRootConstantBufferView(2, perFrameResource_->GetGPUVirtualAddress());
 
     // ディスパッチ（16スレッドごとにグループ化）
-    uint32_t threadGroupsX = (activeEmitterCount_ + 15) / 16;
+    uint32_t threadGroupsX = (static_cast<uint32_t>(activeEmitters_.size()) + 15) / 16;
     commandList->Dispatch(threadGroupsX, 1, 1);
   }
 
@@ -231,84 +228,26 @@ void GPUParticle::Finalize()
   }
 }
 
-std::shared_ptr<SphereEmitter> GPUParticle::CreateSphereEmitter(const Vector3& position, float radius, uint32_t count, float frequency)
-{
-  return std::make_shared<SphereEmitter>(this, position, radius, count, frequency);
-}
-
-std::shared_ptr<BoxEmitter> GPUParticle::CreateBoxEmitter(const Vector3& position, const Vector3& size, const Vector3& rotation, uint32_t count, float frequency)
-{
-  return std::make_shared<BoxEmitter>(this, position, size, rotation, count, frequency);
-}
-
-std::shared_ptr<TriangleEmitter> GPUParticle::CreateTriangleEmitter(const Vector3& position, const Vector3& v1, const Vector3& v2, const Vector3& v3, uint32_t count, float frequency)
-{
-  return std::make_shared<TriangleEmitter>(this, position, v1, v2, v3, count, frequency);
-}
-
 std::shared_ptr<GPUParticleEmitter> GPUParticle::CreateTemporaryEmitterFrom(GPUParticleEmitter* sourceEmitter, float lifeTime)
 {
   if (!sourceEmitter) return nullptr;
 
-  uint32_t sourceId = sourceEmitter->GetEmitterId();
-  uint32_t newId = CopyEmitterParameters(sourceId, lifeTime);
+  // ソースエミッターのクローンを作成
+  auto newEmitter = sourceEmitter->Clone();
+  if (!newEmitter) return nullptr;
 
-  // 無効なIDが返された場合
-  if (newId == UINT32_MAX) return nullptr;
-
-  // エミッタータイプに応じて適切なエミッターオブジェクトを作成して返す
-  EmitterData& emitterData = emitters_[newId];
-  std::shared_ptr<GPUParticleEmitter> newEmitter;
-
-  switch (emitterData.type) {
-  case EmitterType::Sphere:
-    newEmitter = std::make_shared<SphereEmitter>(
-      this,
-      emitterData.position,
-      emitterData.sphere.radius,
-      emitterData.count,
-      emitterData.frequency);
-    break;
-
-  case EmitterType::Box:
-    newEmitter = std::make_shared<BoxEmitter>(
-      this,
-      emitterData.position,
-      emitterData.box.size,
-      emitterData.box.rotation,
-      emitterData.count,
-      emitterData.frequency);
-    break;
-
-  case EmitterType::Triangle:
-    newEmitter = std::make_shared<TriangleEmitter>(
-      this,
-      emitterData.position,
-      emitterData.triangle.v1,
-      emitterData.triangle.v2,
-      emitterData.triangle.v3,
-      emitterData.count,
-      emitterData.frequency);
-    break;
-
-  default:
-    return nullptr;
-  }
-
-  newEmitter->SetColors(emitterData.startColorTint, emitterData.endColorTint);
-  newEmitter->SetLifeTimeRange(emitterData.lifeTimeRange);
-  newEmitter->SetVelRange(emitterData.velRangeX, emitterData.velRangeY, emitterData.velRangeZ);
-  newEmitter->SetScaleRange(emitterData.scaleRangeX, emitterData.scaleRangeY);
-
-  // エミッターを一時的に設定
+  // 一時エミッター設定
   newEmitter->SetTemporary(true, lifeTime);
+
+  // アクティブリストに追加
+  activeEmitters_.push_back(newEmitter);
 
   return newEmitter;
 }
 
 void GPUParticle::RegisterEmitter(std::shared_ptr<GPUParticleEmitter> emitter)
 {
-  if (activeEmitterCount_ >= kNumMaxEmitter) {
+  if (activeEmitters_.size() >= kNumMaxEmitter) {
     return;
   }
 
@@ -327,280 +266,51 @@ void GPUParticle::UnregisterEmitter(std::shared_ptr<GPUParticleEmitter> emitter)
   }
 }
 
-void GPUParticle::UpdateEmitterParameters(uint32_t emitterId, const EmitterData& params)
-{
-  if (emitterId >= activeEmitterCount_) {
-    return;
+std::shared_ptr<GPUParticleEmitter> GPUParticle::FindEmitterByIndex(size_t index) {
+  if (index < activeEmitters_.size()) {
+    return activeEmitters_[index];
   }
-
-  // 既存のエミッターデータを取得
-  EmitterData& currentData = emitters_[emitterId];
-
-  // 型情報は維持
-  EmitterType originalType = currentData.type;
-
-  // 共通パラメータの更新
-  currentData.position = params.position;
-  currentData.scaleRangeX = params.scaleRangeX;
-  currentData.scaleRangeY = params.scaleRangeY;
-  currentData.velRangeX = params.velRangeX;
-  currentData.velRangeY = params.velRangeY;
-  currentData.velRangeZ = params.velRangeZ;
-  currentData.lifeTimeRange = params.lifeTimeRange;
-  currentData.startColorTint = params.startColorTint;
-  currentData.endColorTint = params.endColorTint;
-  if (params.count != 0) currentData.count = params.count;
-  if (params.frequency != 0.0f) currentData.frequency = params.frequency;
-  if (params.isActive != currentData.isActive) currentData.isActive = params.isActive;
-
-  // 型固有のパラメータ更新
-  switch (originalType) {
-  case EmitterType::Sphere:
-    if (params.sphere.radius != 0.0f) currentData.sphere.radius = params.sphere.radius;
-    break;
-
-  case EmitterType::Box:
-    currentData.box.size = params.box.size;
-    currentData.box.rotation = params.box.rotation;
-    break;
-
-  case EmitterType::Triangle:
-    currentData.triangle.v1 = params.triangle.v1;
-    currentData.triangle.v2 = params.triangle.v2;
-    currentData.triangle.v3 = params.triangle.v3;
-    break;
-  }
-
-  // GPU側データと同期
-  SyncEmitterData();
-}
-
-void GPUParticle::RemoveEmitterById(uint32_t emitterId)
-{
-  if (emitterId >= activeEmitterCount_) {
-    return;
-  }
-
-  // emitterId 以降の要素を一つずつ前に移動
-  for (uint32_t i = emitterId; i < activeEmitterCount_ - 1; i++) {
-    emitters_[i] = emitters_[i + 1];
-    emitters_[i].emitterID = i;  // IDを更新
-  }
-
-  // 最後の要素を削除
-  emitters_.pop_back();
-  activeEmitterCount_--;
-
-  // GPU側データと同期
-  SyncEmitterData();
+  return nullptr;
 }
 
 //--------------------------------------Private--------------------------------------//
 
-uint32_t GPUParticle::CreateSphereEmitterInternal(const Vector3& position, float radius, uint32_t count, float frequency)
-{
-  // エミッターが最大数を超えないかチェック
-  if (activeEmitterCount_ >= kNumMaxEmitter) {
-    return UINT32_MAX;
-  }
-
-  // 新しいエミッターID
-  uint32_t newEmitterId = activeEmitterCount_;
-
-  // エミッターデータを作成
-  EmitterData emitter;
-  emitter.type = EmitterType::Sphere;
-  emitter.isActive = true;
-  emitter.isEmitting = false;
-  emitter.emitterID = newEmitterId;
-  emitter.position = position;
-  emitter.scaleRangeX = { .x = 0.0f, .y = 0.0f };
-  emitter.scaleRangeY = { .x = 0.0f, .y = 0.0f };
-  emitter.velRangeX = { .x = 0.0f, .y = 0.0f };
-  emitter.velRangeY = { .x = 0.0f, .y = 0.0f };
-  emitter.velRangeZ = { .x = 0.0f, .y = 0.0f };
-  emitter.lifeTimeRange = { .x = 0.0f, .y = 0.0f };
-  emitter.startColorTint = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
-  emitter.endColorTint = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
-  emitter.count = count;
-  emitter.frequency = frequency;
-  emitter.frequencyTime = 0.0f;
-
-  // 球体固有パラメータ
-  emitter.sphere.radius = radius;
-
-  // エミッターリストに追加
-  emitters_.push_back(emitter);
-
-  // アクティブエミッター数を増加
-  activeEmitterCount_++;
-
-  // GPU側データを同期
-  SyncEmitterData();
-
-  return newEmitterId;
-}
-
-uint32_t GPUParticle::CreateBoxEmitterInternal(const Vector3& position, const Vector3& size, const Vector3& rotation, uint32_t count, float frequency)
-{
-  if (activeEmitterCount_ >= kNumMaxEmitter) {
-    return UINT32_MAX;
-  }
-
-  uint32_t newEmitterId = activeEmitterCount_;
-
-  EmitterData emitter;
-  emitter.type = EmitterType::Box;
-  emitter.isActive = true;
-  emitter.isEmitting = false;
-  emitter.emitterID = newEmitterId;
-  emitter.position = position;
-  emitter.scaleRangeX = { .x = 0.0f, .y = 0.0f };
-  emitter.scaleRangeY = { .x = 0.0f, .y = 0.0f };
-  emitter.velRangeX = { .x = 0.0f, .y = 0.0f };
-  emitter.velRangeY = { .x = 0.0f, .y = 0.0f };
-  emitter.velRangeZ = { .x = 0.0f, .y = 0.0f };
-  emitter.lifeTimeRange = { .x = 0.0f, .y = 0.0f };
-  emitter.startColorTint = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
-  emitter.endColorTint = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
-  emitter.count = count;
-  emitter.frequency = frequency;
-  emitter.frequencyTime = 0.0f;
-
-  // 箱型固有パラメータ
-  emitter.box.size = size;
-  emitter.box.rotation = rotation;
-
-  emitters_.push_back(emitter);
-  activeEmitterCount_++;
-  SyncEmitterData();
-
-  return newEmitterId;
-}
-
-uint32_t GPUParticle::CreateTriangleEmitterInternal(const Vector3& position, const Vector3& v1, const Vector3& v2, const Vector3& v3, uint32_t count, float frequency)
-{
-  if (activeEmitterCount_ >= kNumMaxEmitter) {
-    return UINT32_MAX;
-  }
-
-  uint32_t newEmitterId = activeEmitterCount_;
-
-  EmitterData emitter;
-  emitter.type = EmitterType::Triangle;
-  emitter.isActive = true;
-  emitter.isEmitting = false;
-  emitter.emitterID = newEmitterId;
-  emitter.position = position;
-  emitter.scaleRangeX = { .x = 0.0f, .y = 0.0f };
-  emitter.scaleRangeY = { .x = 0.0f, .y = 0.0f };
-  emitter.velRangeX = { .x = 0.0f, .y = 0.0f };
-  emitter.velRangeY = { .x = 0.0f, .y = 0.0f };
-  emitter.velRangeZ = { .x = 0.0f, .y = 0.0f };
-  emitter.lifeTimeRange = { .x = 0.0f, .y = 0.0f };
-  emitter.startColorTint = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
-  emitter.endColorTint = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
-  emitter.count = count;
-  emitter.frequency = frequency;
-  emitter.frequencyTime = 0.0f;
-
-  // 三角形固有パラメータ
-  emitter.triangle.v1 = v1;
-  emitter.triangle.v2 = v2;
-  emitter.triangle.v3 = v3;
-
-  emitters_.push_back(emitter);
-  activeEmitterCount_++;
-  SyncEmitterData();
-
-  return newEmitterId;
-}
-
-uint32_t GPUParticle::CopyEmitterParameters(uint32_t sourceEmitterId, float lifeTime)
-{
-  // エミッターが最大数を超えないかチェック
-  if (activeEmitterCount_ >= kNumMaxEmitter || sourceEmitterId >= activeEmitterCount_) {
-    return UINT32_MAX;
-  }
-
-  // 新しいエミッターID
-  uint32_t newEmitterId = activeEmitterCount_;
-
-  // コピー元のエミッターデータを取得
-  EmitterData sourceEmitter = emitters_[sourceEmitterId];
-
-  // 新しいエミッターデータを作成（コピー元をベースに）
-  EmitterData newEmitter = sourceEmitter;
-  newEmitter.emitterID = newEmitterId;
-  newEmitter.isTemp = (lifeTime > 0.0f);
-  newEmitter.emitterLifeTime = lifeTime;
-  newEmitter.emitterCurrentTime = 0.0f;
-
-  // エミッターリストに追加
-  emitters_.push_back(newEmitter);
-
-  // アクティブエミッター数を増加
-  activeEmitterCount_++;
-
-  // GPU側データを同期
-  SyncEmitterData();
-
-  return newEmitterId;
-}
-
 void GPUParticle::UpdateEmitter()
 {
-  // 経過時間を取得
   float deltaTime = FrameTimer::GetInstance()->GetDeltaTime();
 
-  // 削除予定のエミッターIDを格納するリスト
-  std::vector<uint32_t> emittersToRemove;
+  // 削除予定のエミッターを格納するリスト
+  std::vector<std::shared_ptr<GPUParticleEmitter>> emittersToRemove;
 
   // すべてのエミッターを更新
-  for (uint32_t i = 0; i < activeEmitterCount_; i++) {
-    EmitterData& emitter = emitters_[i];
-
+  for (auto& emitter : activeEmitters_) {
     // 非アクティブならスキップ
-    if (!emitter.isActive) {
-      emitter.isEmitting = false;
+    if (!emitter->IsActive()) {
       continue;
     }
 
     // 一時的なエミッターの場合、寿命を更新
-    if (emitter.isTemp && emitter.emitterLifeTime > 0.0f) {
-      emitter.emitterCurrentTime += deltaTime;
+    if (emitter->IsTemporary()) {
+      emitter->UpdateTemporaryLifeTime(deltaTime);
 
       // 寿命が尽きたら削除予定リストに追加
-      if (emitter.emitterCurrentTime >= emitter.emitterLifeTime) {
-        emittersToRemove.push_back(i);
+      if (emitter->IsLifeTimeExpired()) {
+        emittersToRemove.push_back(emitter);
         continue;
       }
     }
 
     // 射出タイマーを更新
-    emitter.frequencyTime += deltaTime;
-
-    // 射出間隔を超えたら射出許可を出して時間を調整
-    if (emitter.frequency <= emitter.frequencyTime) {
-      emitter.isEmitting = true;
-      // 余剰時間を調整（蓄積誤差を防ぐ）
-      emitter.frequencyTime = fmodf(emitter.frequencyTime, emitter.frequency);
-    } else {
-      emitter.isEmitting = false;
-    }
+    emitter->UpdateEmission(deltaTime);
   }
 
-  // 寿命が尽きたエミッターを削除（IDの大きい順に削除）
-  std::sort(emittersToRemove.begin(), emittersToRemove.end(), std::greater<uint32_t>());
-  for (uint32_t id : emittersToRemove) {
-    RemoveEmitterById(id);
+  // 寿命が尽きたエミッターを削除
+  for (auto& emitter : emittersToRemove) {
+    UnregisterEmitter(emitter);
   }
 
   // GPU側のデータを同期
   SyncEmitterData();
-
-  // PerFrameデータにアクティブエミッター数を格納
-  perFrameData_->activeEmitterCount = activeEmitterCount_;
 }
 
 void GPUParticle::UpdatePerView()
@@ -641,15 +351,26 @@ void GPUParticle::SyncEmitterData()
   EmitterGPUData* gpuEmitters = nullptr;
   emitterResource_->Map(0, nullptr, reinterpret_cast<void**>(&gpuEmitters));
 
-  // 各エミッターが自身のGPUデータをセットアップ
-  for (size_t i = 0; i < activeEmitters_.size(); i++) {
+  // バッファサイズが足りるか確認
+  if (activeEmitters_.size() > kNumMaxEmitter) {
+    Logger::Log("Warning: Too many active emitters! Max: %u, Current: %zu",
+      kNumMaxEmitter, activeEmitters_.size());
+  }
+
+  // 各エミッターのGPUデータを更新
+  size_t emitterCount = min(activeEmitters_.size(), static_cast<size_t>(kNumMaxEmitter));
+  for (size_t i = 0; i < emitterCount; i++) {
     if (activeEmitters_[i]) {
+      // エミッターにGPUデータのセットアップを依頼
       activeEmitters_[i]->SetupGPUData(gpuEmitters[i]);
     }
   }
 
   // アンマップ
   emitterResource_->Unmap(0, nullptr);
+
+  // PerFrameデータにアクティブエミッター数を格納
+  perFrameData_->activeEmitterCount = static_cast<uint32_t>(emitterCount);
 }
 
 void GPUParticle::CreateRS()
@@ -1082,8 +803,7 @@ void GPUParticle::CreateEmitterData()
   m_srvManager_->CreateSRVForStructuredBuffer(emitterSrvIndex_, emitterResource_.Get(), kNumMaxEmitter, sizeof(EmitterGPUData));
 
   // エミッター配列の初期化
-  emitters_.clear();
-  activeEmitterCount_ = 0;
+  activeEmitters_.clear();
 
   // GPU側の初期化
   EmitterGPUData* gpuEmitters = nullptr;

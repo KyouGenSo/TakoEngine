@@ -30,7 +30,7 @@ void EmitterManager::CreateSphereEmitter(const std::string& name, const Vector3&
   }
 
   // エミッター作成
-  std::shared_ptr<SphereEmitter> emitter = particleSystem_->CreateSphereEmitter(position, radius, count, frequency);
+  std::shared_ptr<SphereEmitter> emitter = std::make_shared<SphereEmitter>(particleSystem_, position, radius, count, frequency);
 
   // マップに追加
   emitterMap_[name] = emitter;
@@ -46,7 +46,7 @@ void EmitterManager::CreateBoxEmitter(const std::string& name, const Vector3& po
   }
 
   // エミッター作成
-  std::shared_ptr<BoxEmitter> emitter = particleSystem_->CreateBoxEmitter(position, size, rotation, count, frequency);
+  std::shared_ptr<BoxEmitter> emitter = std::make_shared<BoxEmitter>(particleSystem_, position, size, rotation, count, frequency);
 
   // マップに追加
   emitterMap_[name] = emitter;
@@ -62,7 +62,7 @@ void EmitterManager::CreateTriangleEmitter(const std::string& name, const Vector
   }
 
   // エミッター作成
-  std::shared_ptr<TriangleEmitter> emitter = particleSystem_->CreateTriangleEmitter(position, v1, v2, v3, count, frequency);
+  std::shared_ptr<TriangleEmitter> emitter = std::make_shared<TriangleEmitter>(particleSystem_, position, v1, v2, v3, count, frequency);
 
   // マップに追加
   emitterMap_[name] = emitter;
@@ -153,14 +153,12 @@ void EmitterManager::CreateTemporaryEmitterFrom(const std::string& sourceName, c
 
   // 一時的なエミッターを作成
   std::shared_ptr<GPUParticleEmitter> sourceEmitter = sourceIt->second;
-  std::shared_ptr<GPUParticleEmitter> newEmitter =
-    particleSystem_->CreateTemporaryEmitterFrom(sourceEmitter.get(), lifeTime);
+  std::shared_ptr<GPUParticleEmitter> newEmitter = particleSystem_->CreateTemporaryEmitterFrom(sourceEmitter.get(), lifeTime);
 
   if (newEmitter) {
     // マップに追加
     emitterMap_[newName] = newEmitter;
-    Logger::Log("CreateTemporaryEmitterFrom: Created temporary emitter '%s' from '%s' with lifetime %.2f seconds",
-      newName.c_str(), sourceName.c_str(), lifeTime);
+    Logger::Log("CreateTemporaryEmitterFrom: Created temporary emitter '%s' from '%s' with lifetime %.2f seconds", newName.c_str(), sourceName.c_str(), lifeTime);
   } else {
     Logger::Log("CreateTemporaryEmitterFrom: Failed to create emitter from '%s'", sourceName.c_str());
   }
