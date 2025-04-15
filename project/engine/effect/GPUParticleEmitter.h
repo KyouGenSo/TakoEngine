@@ -2,17 +2,21 @@
 #include "Vector3.h"
 #include "Vector4.h"
 #include "ParticleStruct.h"
+#include <memory>
 
 // 前方宣言
 class GPUParticle;
 
 // エミッターの基底クラス
-class GPUParticleEmitter
+class GPUParticleEmitter : public std::enable_shared_from_this<GPUParticleEmitter>
 {
 public:
   // コンストラクタ・デストラクタ
   GPUParticleEmitter(GPUParticle* particleSystem, uint32_t emitterId);
   virtual ~GPUParticleEmitter();
+
+  // エミッターの初期化
+  void SetupGPUData(EmitterGPUData& gpuData);
 
   // 共通の設定メソッド
   void SetPosition(const Vector3& position);
@@ -41,16 +45,23 @@ public:
   void UpdateTemporaryLifeTime(float deltaTime);
 
   // ゲッター
-  [[nodiscard]] const Vector3& GetPosition() const { return position_; }
-  [[nodiscard]] bool IsActive() const { return isActive_; }
-  [[nodiscard]] const Vector4& GetStartColor() const { return startColor_; }
-  [[nodiscard]] const Vector4& GetEndColor() const { return endColor_; }
-  [[nodiscard]] uint32_t GetParticleCount() const { return particleCount_; }
-  [[nodiscard]] float GetFrequency() const { return frequency_; }
-  [[nodiscard]] uint32_t GetEmitterId() const { return emitterId_; }
-  [[nodiscard]] bool IsTemporary() const { return isTemp_; }
-  [[nodiscard]] float GetEmitterLifeTime() const { return emitterLifeTime_; }
-  [[nodiscard]] float GetEmitterCurrentTime() const { return emitterCurrentTime_; }
+  [[nodiscard]] const Vector3& GetPosition() const { return data_.position; }
+  [[nodiscard]] bool IsActive() const { return data_.isActive; }
+  [[nodiscard]] const Vector2& GetScaleRangeX() const { return data_.scaleRangeX; }
+  [[nodiscard]] const Vector2& GetScaleRangeY() const { return data_.scaleRangeY; }
+  [[nodiscard]] const Vector2& GetVelRangeX() const { return data_.velRangeX; }
+  [[nodiscard]] const Vector2& GetVelRangeY() const { return data_.velRangeY; }
+  [[nodiscard]] const Vector2& GetVelRangeZ() const { return data_.velRangeZ; }
+  [[nodiscard]] const Vector2& GetLifeTimeRange() const { return data_.lifeTimeRange; }
+  [[nodiscard]] const Vector4& GetStartColor() const { return data_.startColorTint; }
+  [[nodiscard]] const Vector4& GetEndColor() const { return data_.endColorTint; }
+  [[nodiscard]] uint32_t GetParticleCount() const { return data_.count; }
+  [[nodiscard]] float GetFrequencyTime() const { return data_.frequencyTime; }
+  [[nodiscard]] float GetFrequency() const { return data_.frequency; }
+  [[nodiscard]] uint32_t GetEmitterId() const { return data_.emitterID; }
+  [[nodiscard]] bool IsTemporary() const { return data_.isTemp; }
+  [[nodiscard]] float GetEmitterLifeTime() const { return data_.emitterLifeTime; }
+  [[nodiscard]] float GetEmitterCurrentTime() const { return data_.emitterCurrentTime; }
   [[nodiscard]] bool IsLifeTimeExpired() const;
 
 
@@ -60,22 +71,6 @@ public:
 protected:
   // 共通パラメータ
   GPUParticle* particleSystem_;    // パーティクルシステムへの参照
-  uint32_t emitterId_;             // エミッターID
-  Vector3 position_;               // エミッターの位置
-  Vector2 scaleRangeX_;            // Xスケール範囲
-  Vector2 scaleRangeY_;            // Yスケール範囲
-  Vector2 velRangeX_;              // X速度範囲
-  Vector2 velRangeY_;              // Y速度範囲
-  Vector2 velRangeZ_;              // Z速度範囲
-  Vector2 lifeTimeRange_;          // 寿命範囲
-  Vector4 startColor_;           // 開始色
-  Vector4 endColor_;             // 終了色
-  uint32_t particleCount_;         // 1回の射出で生成するパーティクル数
-  float frequency_;                // 射出頻度（秒）
-  bool isActive_;                  // アクティブ状態
 
-  // 一時的なエミッター用の変数
-  bool isTemp_ = false;            // 一時的なエミッターかどうか
-  float emitterLifeTime_ = 0.0f;   // エミッターの寿命
-  float emitterCurrentTime_ = 0.0f;// エミッターの経過時間
+  EmitterData data_;               // エミッターデータ
 };

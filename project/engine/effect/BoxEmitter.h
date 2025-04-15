@@ -16,13 +16,9 @@ public:
   // 箱型固有の設定
   void SetSize(const Vector3& size);
   void SetRotation(const Vector3& rotation);
-  const Vector3& GetSize() const { return size_; }
-  const Vector3& GetRotation() const { return rotation_; }
+  const Vector3& GetSize() const { return data_.box.size; }
+  const Vector3 & GetRotation() const { return data_.box.rotation; }
 
   // 型情報
   EmitterType GetType() const override { return EmitterType::Box; }
-
-private:
-  Vector3 size_;
-  Vector3 rotation_;
 };

@@ -15,12 +15,9 @@ public:
 
   // 球体固有の設定
   void SetRadius(float radius);
-  float GetRadius() const { return radius_; }
+  float GetRadius() const { return data_.sphere.radius; }
 
   // 型情報
   EmitterType GetType() const override { return EmitterType::Sphere; }
-
-private:
-  float radius_;
 };
 

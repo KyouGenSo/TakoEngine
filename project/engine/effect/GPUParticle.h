@@ -76,6 +76,16 @@ public: // メンバー関数
   std::shared_ptr<GPUParticleEmitter> CreateTemporaryEmitterFrom(GPUParticleEmitter* sourceEmitter, float lifeTime);
 
   /// <summary>
+  /// エミッターの登録
+  /// </summary>
+  void RegisterEmitter(std::shared_ptr<GPUParticleEmitter> emitter);
+
+  /// <summary>
+  /// エミッターの登録解除
+  /// </summary>
+  void UnregisterEmitter(std::shared_ptr<GPUParticleEmitter> emitter)
+
+  /// <summary>
   /// エミッターパラメータ更新
   /// </summary>
   void UpdateEmitterParameters(uint32_t emitterId, const EmitterData& params);
@@ -249,7 +259,8 @@ private: //メンバー変数
   // エミッターリソース
   Microsoft::WRL::ComPtr<ID3D12Resource> emitterResource_;
   uint32_t emitterSrvIndex_;
-  std::vector<EmitterData> emitters_;
+  //std::vector<EmitterData> emitters_;
+  std::vector<std::shared_ptr<GPUParticleEmitter>> activeEmitters_;
   uint32_t activeEmitterCount_ = 0;
 
   // FreeListリソース

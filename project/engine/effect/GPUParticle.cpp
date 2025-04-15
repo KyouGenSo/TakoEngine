@@ -306,6 +306,27 @@ std::shared_ptr<GPUParticleEmitter> GPUParticle::CreateTemporaryEmitterFrom(GPUP
   return newEmitter;
 }
 
+void GPUParticle::RegisterEmitter(std::shared_ptr<GPUParticleEmitter> emitter)
+{
+  if (activeEmitterCount_ >= kNumMaxEmitter) {
+    return;
+  }
+
+  if (!emitter) {
+    return;
+  }
+
+  activeEmitters_.push_back(emitter);
+}
+
+void GPUParticle::UnregisterEmitter(std::shared_ptr<GPUParticleEmitter> emitter)
+{
+  auto it = std::find(activeEmitters_.begin(), activeEmitters_.end(), emitter);
+  if (it != activeEmitters_.end()) {
+    activeEmitters_.erase(it);
+  }
+}
+
 void GPUParticle::UpdateEmitterParameters(uint32_t emitterId, const EmitterData& params)
 {
   if (emitterId >= activeEmitterCount_) {
@@ -618,54 +639,12 @@ void GPUParticle::SyncEmitterData()
 {
   // GPU側のエミッターバッファにマップ
   EmitterGPUData* gpuEmitters = nullptr;
-  [[maybe_unused]] HRESULT hr = emitterResource_->Map(0, nullptr, reinterpret_cast<void**>(&gpuEmitters));
+  emitterResource_->Map(0, nullptr, reinterpret_cast<void**>(&gpuEmitters));
 
-  // 各エミッターのデータをコピー
-  for (uint32_t i = 0; i < activeEmitterCount_; i++) {
-    EmitterGPUData& dst = gpuEmitters[i];
-    const EmitterData& src = emitters_[i];
-
-    // 共通データ
-    dst.type = static_cast<uint32_t>(src.type);
-    dst.isActive = src.isActive ? 1u : 0u;
-    dst.isEmit = src.isEmitting ? 1u : 0u;
-    dst.emitterID = src.emitterID;
-
-    dst.position = src.position;
-    dst.scaleRangeX = src.scaleRangeX;
-    dst.scaleRangeY = src.scaleRangeY;
-    dst.velRangeX = src.velRangeX;
-    dst.velRangeY = src.velRangeY;
-    dst.velRangeZ = src.velRangeZ;
-    dst.lifeTimeRange = src.lifeTimeRange;
-    dst.startColorTint = src.startColorTint;
-    dst.endColorTint = src.endColorTint;
-
-    dst.count = src.count;
-    dst.frequency = src.frequency;
-    dst.frequencyTime = src.frequencyTime;
-
-    // 一時的なエミッター用のデータをコピー
-    dst.isTemp = src.isTemp ? 1u : 0u;
-    dst.emitterLifeTime = src.emitterLifeTime;
-    dst.emitterCurrentTime = src.emitterCurrentTime;
-
-    // 形状固有のデータ
-    switch (src.type) {
-    case EmitterType::Sphere:
-      dst.radius = src.sphere.radius;
-      break;
-
-    case EmitterType::Box:
-      dst.boxSize = src.box.size;
-      dst.boxRotation = src.box.rotation;
-      break;
-
-    case EmitterType::Triangle:
-      dst.triangleV1 = src.triangle.v1;
-      dst.triangleV2 = src.triangle.v2;
-      dst.triangleV3 = src.triangle.v3;
-      break;
+  // 各エミッターが自身のGPUデータをセットアップ
+  for (size_t i = 0; i < activeEmitters_.size(); i++) {
+    if (activeEmitters_[i]) {
+      activeEmitters_[i]->SetupGPUData(gpuEmitters[i]);
     }
   }
 
