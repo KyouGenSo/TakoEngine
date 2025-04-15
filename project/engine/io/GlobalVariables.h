@@ -1,9 +1,11 @@
+#pragma once
 #include <variant>
 #include <map>
 #include <cassert>
 #include <string>
 #include "Vec3Func.h"
 #include "Vector4.h"
+#include "Vector2.h"
 
 class GlobalVariables
 {
@@ -57,6 +59,8 @@ public: // メンバ関数
   void SetValue(const std::string& groupName, const std::string& key, int32_t value);
   // 値の設定(float)
   void SetValue(const std::string& groupName, const std::string& key, float value);
+  // 値の設定(Vector2)
+  void SetValue(const std::string& groupName, const std::string& key, const Vector2& value);
   // 値の設定(Vector3)
   void SetValue(const std::string& groupName, const std::string& key, const Vector3& value);
   // 値の設定(Vector4)
@@ -68,6 +72,8 @@ public: // メンバ関数
   void AddItem(const std::string& groupName, const std::string& key, int32_t value);
   // 項目の追加(float)
   void AddItem(const std::string& groupName, const std::string& key, float value);
+  // 項目の追加(Vector2)
+  void AddItem(const std::string& groupName, const std::string& key, const Vector2& value);
   // 項目の追加(Vector3)
   void AddItem(const std::string& groupName, const std::string& key, const Vector3& value);
   // 項目の追加(Vector4)
@@ -80,6 +86,8 @@ public: // メンバ関数
   int32_t GetValueInt(const std::string& groupName, const std::string& key);
   // 値の取得(float)
   float GetValueFloat(const std::string& groupName, const std::string& key);
+  // 値の取得(Vector2)
+  Vector2 GetValueVec2(const std::string& groupName, const std::string& key);
   // 値の取得(Vector3)
   Vector3 GetValueVec3(const std::string& groupName, const std::string& key);
   // 値の取得(Vector4)
@@ -89,7 +97,7 @@ public: // メンバ関数
 
 public: // 構造体
   struct Item {
-    std::variant<bool, int32_t, float, Vector3, Vector4> value;
+    std::variant<bool, int32_t, float, Vector2, Vector3, Vector4> value;
   };
 
   struct Group {
