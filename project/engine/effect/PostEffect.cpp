@@ -100,12 +100,12 @@ void PostEffect::RecreateRenderTexture(uint32_t width, uint32_t height)
   renderTextureResourceA_.Reset();
 
   // 新しいレンダーテクスチャを作成
-  m_dx12_->CreateRenderTextureResource(renderTextureResourceA_, width, height, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, kRenderTextureClearColor_);
+  m_dx12_->CreateRenderTextureResource(renderTextureResourceA_, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, kRenderTextureClearColor_);
   renderTextureResourceA_->SetName(L"PostEffectRenderTexture");
 
   // RTVの設定
   D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
-  rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+  rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
   rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 
   renderTextureRTVHandleA_ = m_dx12_->GetRenderTextureRTVHandle();
@@ -114,7 +114,7 @@ void PostEffect::RecreateRenderTexture(uint32_t width, uint32_t height)
   m_dx12_->GetDevice()->CreateRenderTargetView(renderTextureResourceA_.Get(), &rtvDesc, renderTextureRTVHandleA_);
 
   // レンダーテクスチャのSRVを更新
-  SrvManager::GetInstance()->CreateSRVForTexture2D(rtvSrvIndex_, renderTextureResourceA_.Get(), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, 1);
+  SrvManager::GetInstance()->CreateSRVForTexture2D(rtvSrvIndex_, renderTextureResourceA_.Get(), DXGI_FORMAT_R8G8B8A8_UNORM, 1);
 
   // 深度バッファのSRVを更新
   SrvManager::GetInstance()->CreateSRVForTexture2D(dsvSrvIndex_, m_dx12_->GetDepthStencilResource(), DXGI_FORMAT_R32_FLOAT, 1);
