@@ -34,6 +34,9 @@ public: // メンバ関数
 	// 終了フラグを取得
 	bool GetEndFlag() const { return endFlag_; }
 
+  // フルスクリーンモードの切り替え
+  void ToggleFullScreen();
+
 protected: // メンバ変数
 	// リソースリークチェッカー
 	D3DResourceLeakCheker d3dResourceLeakCheker;

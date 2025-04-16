@@ -270,29 +270,3 @@ void MyGame::Draw()
 	// 描画後の処理
 	dx12_->EndDraw();
 }
-
-void MyGame::ToggleFullScreen()
-{
-  // ウィンドウの状態を切り替え
-  winApp_->ToggleFullScreen();
-
-  // 画面サイズを取得
-  uint32_t width = WinApp::clientWidth;
-  uint32_t height = WinApp::clientHeight;
-
-  // GPUの処理を待機
-  dx12_->WaitForGPU();
-
-  // バッファのリサイズ
-  dx12_->ResizeBuffers(width, height);
-
-  // レンダーテクスチャの再作成（PostEffect用）
-  PostEffect::GetInstance()->RecreateRenderTexture(width, height);
-
-  // カメラのアスペクト比を更新
-  defaultCamera_->UpdateProjectionMatrix();
-
-#ifdef _DEBUG
-  imguiManager_->OnWindowResize();
-#endif
-}
