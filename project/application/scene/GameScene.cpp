@@ -9,6 +9,8 @@
 #include "FrameTimer.h"
 #include "GPUParticle.h"
 #include "SceneManager.h"
+#include "EmitterManager.h"
+#include "Object3d.h"
 
 #include <numbers>
 
@@ -337,6 +339,14 @@ void GameScene::DrawImGui()
 
   if (ImGui::Button("Create Triangle Temp Emitter"))
   {
+    emitterManager_->CreateTemporaryEmitterFrom("triangle", "triTemp", 1.0f);
+  }
+
+  // Button to Create Temp Emitter
+  if (ImGui::Button("Create all 3 Temp Emitter"))
+  {
+    emitterManager_->CreateTemporaryEmitterFrom("player", "spTemp", 1.0f);
+    emitterManager_->CreateTemporaryEmitterFrom("box", "boxTemp", 1.0f);
     emitterManager_->CreateTemporaryEmitterFrom("triangle", "triTemp", 1.0f);
   }
 
