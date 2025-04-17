@@ -16,7 +16,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
     if (particleIndex < kMaxParticles)
     {
         // アルファ値が0より大きい＝アクティブなパーティクルのみ更新
-        if (any((gParticles[particleIndex].startColor > 0.0f) & (gParticles[particleIndex].endColor > 0.0f)))
+        if (any((gParticles[particleIndex].startColor.a > 0.0f) && (gParticles[particleIndex].endColor.a > 0.0f)))
         {
             // 位置の更新
             gParticles[particleIndex].translate += gParticles[particleIndex].velocity * gPerFrame.deltaTime * 60.0f;
