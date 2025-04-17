@@ -15,6 +15,11 @@ struct SphereEmitterParams
   Vector2 velRangeY = { .x = 0.0f, .y = 0.0f };
   Vector2 velRangeZ = { .x = 0.0f, .y = 0.0f };
   Vector2 lifeTimeRange = { .x = 0.0f, .y = 0.0f };
+
+  Vector4 startColor = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
+  Vector4 endColor = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
+
+  bool isActive = true;
 };
 
 // boxEmitterの設定
@@ -32,6 +37,11 @@ struct BoxEmitterParams
   Vector2 velRangeY = { .x = 0.0f, .y = 0.0f };
   Vector2 velRangeZ = { .x = 0.0f, .y = 0.0f };
   Vector2 lifeTimeRange = { .x = 0.0f, .y = 0.0f };
+
+  Vector4 startColor = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
+  Vector4 endColor = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
+
+  bool isActive = true;
 };
 
 // triangleEmitterの設定
@@ -50,4 +60,9 @@ struct TriangleEmitterParams
   Vector2 velRangeY = { .x = 0.0f, .y = 0.0f };
   Vector2 velRangeZ = { .x = 0.0f, .y = 0.0f };
   Vector2 lifeTimeRange = { .x = 0.0f, .y = 0.0f };
+
+  Vector4 startColor = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
+  Vector4 endColor = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
+
+  bool isActive = true;
 };
