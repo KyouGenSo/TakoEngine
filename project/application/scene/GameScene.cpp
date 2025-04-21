@@ -160,6 +160,11 @@ void GameScene::Update()
   emitterManager_->SetEmitterActive("box", boxEmitterSett_.isActive);
   emitterManager_->SetEmitterActive("triangle", triEmitterSett_.isActive);
 
+  // 正規化フラグの更新
+  emitterManager_->SetEmitterNormalize("player", spEmitterSett_.isNormalize);
+  emitterManager_->SetEmitterNormalize("box", boxEmitterSett_.isNormalize);
+  emitterManager_->SetEmitterNormalize("triangle", triEmitterSett_.isNormalize);
+
   // シーン遷移
   if (Input::GetInstance()->TriggerKey(DIK_RETURN))
   {
@@ -226,6 +231,7 @@ void GameScene::DrawImGui()
       ImGui::ColorEdit4("StartColor", &spEmitterSett_.startColor.x);
       ImGui::ColorEdit4("EndColor", &spEmitterSett_.endColor.x);
       ImGui::Checkbox("IsActive", &spEmitterSett_.isActive);
+      ImGui::Checkbox("IsNormalize", &spEmitterSett_.isNormalize);
 
       ImGui::EndTabItem();
     }
@@ -245,6 +251,7 @@ void GameScene::DrawImGui()
       ImGui::DragFloat2("LifeTimeRange", &boxEmitterSett_.lifeTimeRange.x, 0.01f, 0.1f, 50.0f);
       ImGui::ColorEdit4("Color", &boxEmitterSett_.startColor.x);
       ImGui::Checkbox("IsActive", &boxEmitterSett_.isActive);
+      ImGui::Checkbox("IsNormalize", &boxEmitterSett_.isNormalize);
 
       ImGui::EndTabItem();
     }
@@ -265,6 +272,7 @@ void GameScene::DrawImGui()
       ImGui::DragFloat2("LifeTimeRange", &triEmitterSett_.lifeTimeRange.x, 0.01f, 0.1f, 50.0f);
       ImGui::ColorEdit4("Color", &triEmitterSett_.startColor.x);
       ImGui::Checkbox("IsActive", &triEmitterSett_.isActive);
+      ImGui::Checkbox("IsNormalize", &triEmitterSett_.isNormalize);
 
       ImGui::EndTabItem();
     }
