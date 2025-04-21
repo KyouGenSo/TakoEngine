@@ -28,6 +28,7 @@ public:
   void SetPosition(const Vector3& position);
   void SetActive(bool isActive);
   void SetEmitting(bool cond);
+  void SetNormalize(bool isNormalize);
   void SetParticleCount(uint32_t count);
   void SetFrequency(float frequency);
   void SetFrequencyTime(float frequencyTime);
@@ -72,6 +73,7 @@ public:
   [[nodiscard]] float GetEmitterLifeTime() const { return data_.emitterLifeTime; }
   [[nodiscard]] float GetEmitterCurrentTime() const { return data_.emitterCurrentTime; }
   [[nodiscard]] bool IsLifeTimeExpired() const;
+  [[nodiscard]] bool IsNormalize() const { return data_.isNormalize; }
 
 
   // 仮想関数

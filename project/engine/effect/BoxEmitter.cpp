@@ -29,6 +29,7 @@ std::shared_ptr<GPUParticleEmitter> BoxEmitter::Clone() const
   clone->SetLifeTimeRange(GetLifeTimeRange());
   clone->SetScaleRange(GetScaleRangeX(), GetScaleRangeY());
   clone->SetActive(IsActive());
+  clone->SetNormalize(IsNormalize());
   clone->SetFrequencyTime(GetFrequency());
 
   return clone;

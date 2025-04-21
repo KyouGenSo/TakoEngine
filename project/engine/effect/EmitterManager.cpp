@@ -248,6 +248,14 @@ void EmitterManager::SetEmitterActive(const std::string& name, bool isActive)
   }
 }
 
+void EmitterManager::SetEmitterNormalize(const std::string& name, bool isNormalize)
+{
+  auto it = emitterMap_.find(name);
+  if (it != emitterMap_.end()) {
+    it->second->SetNormalize(isNormalize);
+  }
+}
+
 void EmitterManager::SetEmitterColor(const std::string& name, const Vector4& color)
 {
   auto it = emitterMap_.find(name);

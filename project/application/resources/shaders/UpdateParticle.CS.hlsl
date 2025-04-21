@@ -19,7 +19,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
         if (any((gParticles[particleIndex].startColor.a > 0.0f) && (gParticles[particleIndex].endColor.a > 0.0f)))
         {
             // 位置の更新
-            gParticles[particleIndex].translate += gParticles[particleIndex].velocity * gPerFrame.deltaTime * 60.0f;
+            gParticles[particleIndex].translate += gParticles[particleIndex].velocity;
             
             // 経過時間の更新
             gParticles[particleIndex].currentTime += gPerFrame.deltaTime;

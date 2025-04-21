@@ -59,6 +59,7 @@ public:
   void SetEmitterVelocityRange(const std::string& name, const Vector2& velRangeX, const Vector2& velRangeY, const Vector2& velRangeZ);
   void SetEmitterLifeTimeRange(const std::string& name, const Vector2& lifeTimeRange);
   void SetEmitterActive(const std::string& name, bool isActive);
+  void SetEmitterNormalize(const std::string& name, bool isNormalize);
   void SetEmitterColor(const std::string& name, const Vector4& color);
   void SetEmitterStartColor(const std::string& name, const Vector4& color);
   void SetEmitterEndColor(const std::string& name, const Vector4& color);

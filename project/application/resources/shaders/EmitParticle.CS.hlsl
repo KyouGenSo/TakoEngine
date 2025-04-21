@@ -217,19 +217,45 @@ void main(uint3 DTid : SV_DispatchThreadID)
             
             // 速度設定---------------------------------------------------------------------------------
             float3 particleVelocity;
-            
+
+            float3 randomVel = (generator.Generate3d() * 2.0f - 1.0f) * 0.1f;
+
             // X軸方向の速度
-            if (any(gEmitters[emitterIndex].velRangeX != float2(0.0f, 0.0f)) ||
-                any(gEmitters[emitterIndex].velRangeY != float2(0.0f, 0.0f)) ||
-                any(gEmitters[emitterIndex].velRangeZ != float2(0.0f, 0.0f)))
+            if (any(gEmitters[emitterIndex].velRangeX != float2(0.0f, 0.0f)))
             {
                 particleVelocity.x = generator.Generate1d() * (gEmitters[emitterIndex].velRangeX.y - gEmitters[emitterIndex].velRangeX.x) + gEmitters[emitterIndex].velRangeX.x;
+            }
+            else
+            {
+                particleVelocity.x = randomVel.x;
+            }
+
+            // Y軸方向の速度
+            if (any(gEmitters[emitterIndex].velRangeY != float2(0.0f, 0.0f)))
+            {
                 particleVelocity.y = generator.Generate1d() * (gEmitters[emitterIndex].velRangeY.y - gEmitters[emitterIndex].velRangeY.x) + gEmitters[emitterIndex].velRangeY.x;
+            }
+			else
+			{
+                particleVelocity.y = randomVel.y;
+            }
+
+            // Z軸方向の速度
+            if (any(gEmitters[emitterIndex].velRangeZ != float2(0.0f, 0.0f)))
+            {
                 particleVelocity.z = generator.Generate1d() * (gEmitters[emitterIndex].velRangeZ.y - gEmitters[emitterIndex].velRangeZ.x) + gEmitters[emitterIndex].velRangeZ.x;
             }
             else
             {
-                particleVelocity = (generator.Generate3d() * 2.0f - 1.0f) * 0.1f;
+                particleVelocity.z = randomVel.z;
+
+            }
+
+            // 正規化
+            if (gEmitters[emitterIndex].isNormalize == 1)
+            {
+                // 正規化フラグが立っている場合、速度を正規化
+                particleVelocity = normalize(particleVelocity);
             }
 
             // パーティクルの速度を設定
