@@ -30,6 +30,7 @@ struct Emitter
     uint type;                // エミッタータイプ
     uint isActive;            // アクティブ状態（1=有効、0=無効）
     uint isEmit;              // 射出フラグ（1=射出する、0=射出しない）
+    uint isNormalize;         // 正規化フラグ
     uint emitterID;           // エミッターID
     
     float3 position;          // 中心/基準位置
