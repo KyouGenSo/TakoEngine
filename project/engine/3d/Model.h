@@ -175,6 +175,7 @@ private: // メンバ変数
   std::span<WellForGPU> mappedPalette_;
   uint32_t paletteSrvIndex_;
   std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> paletteSrvHandle_;
+  std::map<std::string, JointWeightData> skinClusterData_;
 
   // skinCluster
   //SkinCluster skinCluster_;

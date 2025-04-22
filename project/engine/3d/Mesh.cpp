@@ -24,6 +24,12 @@ void Mesh::Initialize(ModelBasic* modelBasic, const std::vector<VertexData>& ver
 
 void Mesh::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
 {
+  // スキニング対応版の描画処理
+  D3D12_VERTEX_BUFFER_VIEW vbvToUse = hasSkinning_ ? skinnedVertexBufferView_ : vertexBufferView_;
+
+  // 頂点バッファビューを設定
+  dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &vbvToUse);
+
   // 頂点バッファビューを設定
   dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView_);
 
@@ -39,6 +45,172 @@ void Mesh::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
   // 描画
   dx12_->GetCommandList()->DrawIndexedInstanced(static_cast<UINT>(indices_.size()), 1, 0, 0, 0);
 
+}
+
+void Mesh::InitializeSkinning(const std::map<std::string, JointWeightData>& skinClusterData, const std::map<std::string, int32_t>& jointMap)
+{
+  // スキニングフラグを設定
+  hasSkinning_ = true;
+
+  // 全頂点の影響度配列を初期化（MAX_INFLUENCE個の要素を持つ配列）
+  vertexInfluences_.resize(vertices_.size());
+
+  // すべての頂点影響度を0で初期化
+  for (auto& influence : vertexInfluences_) {
+    for (uint32_t i = 0; i < MAX_INFLUENCE; ++i) {
+      influence.weights[i] = 0.0f;
+      influence.jointIndices[i] = 0;
+    }
+  }
+
+  // スキンクラスターデータから頂点影響度データを構築
+  for (const auto& [jointName, jointWeightData] : skinClusterData) {
+    // ジョイント名からインデックスを検索
+    auto it = jointMap.find(jointName);
+    if (it == jointMap.end()) {
+      continue; // ジョイントが見つからない場合はスキップ
+    }
+
+    int32_t jointIndex = it->second;
+
+    // このジョイントの影響を受ける頂点を処理
+    for (const auto& vertexWeight : jointWeightData.vertexWeights) {
+      uint32_t vertexIndex = vertexWeight.vertexIndex;
+      float weight = vertexWeight.weight;
+
+      // 頂点インデックスが範囲内かチェック
+      if (vertexIndex >= vertexInfluences_.size()) {
+        continue;
+      }
+
+      // この頂点の影響度データに追加
+      auto& influence = vertexInfluences_[vertexIndex];
+
+      // 空きスロットを探して重みとインデックスを設定
+      for (uint32_t i = 0; i < MAX_INFLUENCE; ++i) {
+        if (influence.weights[i] == 0.0f) {
+          influence.weights[i] = weight;
+          influence.jointIndices[i] = jointIndex;
+          break;
+        }
+      }
+    }
+  }
+
+  // 各頂点の重みを正規化（合計が1になるように）
+  for (auto& influence : vertexInfluences_) {
+    float totalWeight = 0.0f;
+    for (uint32_t i = 0; i < MAX_INFLUENCE; ++i) {
+      totalWeight += influence.weights[i];
+    }
+
+    // 重みの合計が0より大きい場合のみ正規化
+    if (totalWeight > 0.0f) {
+      float invTotalWeight = 1.0f / totalWeight;
+      for (uint32_t i = 0; i < MAX_INFLUENCE; ++i) {
+        influence.weights[i] *= invTotalWeight;
+      }
+    }
+  }
+
+  // 影響度リソースを生成
+  SetupSkinningUAV();
+}
+
+void Mesh::SetupSkinningUAV()
+{
+  // スキニングがない場合は何もしない
+  if (!hasSkinning_) {
+    return;
+  }
+
+  DX12Basic* dx12 = modelBasic_->GetDX12Basic();
+  SrvManager* srvManager = SrvManager::GetInstance();
+
+  // 1. 頂点バッファのSRVを作成
+  if (vertexSrvIndex_ == 0) {
+    vertexSrvIndex_ = srvManager->Allocate();
+    srvManager->CreateSRVForStructuredBuffer(
+      vertexSrvIndex_,
+      vertexResource_.Get(),
+      static_cast<UINT>(vertices_.size()),
+      sizeof(VertexData)
+    );
+  }
+
+  // 2. 影響度バッファのリソースを生成
+  influenceResource_ = dx12->MakeBufferResource(sizeof(VertexInfluence) * vertexInfluences_.size());
+
+  // 3. 影響度バッファに頂点影響度データをコピー
+  VertexInfluence* mappedInfluences = nullptr;
+  influenceResource_->Map(0, nullptr, reinterpret_cast<void**>(&mappedInfluences));
+  std::memcpy(mappedInfluences, vertexInfluences_.data(), sizeof(VertexInfluence) * vertexInfluences_.size());
+  influenceResource_->Unmap(0, nullptr);
+
+  // 4. 影響度バッファのSRVを作成
+  influenceSrvIndex_ = srvManager->Allocate();
+  srvManager->CreateSRVForStructuredBuffer(
+    influenceSrvIndex_,
+    influenceResource_.Get(),
+    static_cast<UINT>(vertexInfluences_.size()),
+    sizeof(VertexInfluence)
+  );
+
+  // 5. 出力頂点バッファ（UAV）を生成
+  dx12->CreateResourceForUAV(
+    uavVertexOutputResource_,
+    static_cast<UINT>(vertices_.size() * sizeof(VertexData))
+  );
+
+  // 6. UAVの作成
+  uavIndex_ = srvManager->Allocate();
+  srvManager->CreateUAV(
+    uavIndex_,
+    uavVertexOutputResource_.Get(),
+    static_cast<UINT>(vertices_.size()),
+    sizeof(VertexData)
+  );
+
+  // 7. スキニング情報リソースの生成
+  dx12->CreateBufferResource(skinningInfoResource_, sizeof(SkinningInfo));
+  skinningInfoResource_->Map(0, nullptr, reinterpret_cast<void**>(&skinningInfoData_));
+
+  // 8. スキニング情報の初期化
+  skinningInfoData_->numVertices = static_cast<uint32_t>(vertices_.size());
+
+  // 9. スキニング用の頂点バッファビューを設定
+  skinnedVertexBufferView_.BufferLocation = uavVertexOutputResource_->GetGPUVirtualAddress();
+  skinnedVertexBufferView_.SizeInBytes = static_cast<UINT>(sizeof(VertexData) * vertices_.size());
+  skinnedVertexBufferView_.StrideInBytes = sizeof(VertexData);
+}
+
+void Mesh::SetupSkinningCompute(uint32_t paletteSrvIndex)
+{
+  if (!hasSkinning_) return;
+
+  SrvManager* srvManager = SrvManager::GetInstance();
+
+  // 入力頂点バッファのSRV設定
+  srvManager->SetComputeRootDescriptorTable(1, vertexSrvIndex_);
+
+  // 頂点影響度データのSRV設定
+  srvManager->SetComputeRootDescriptorTable(2, influenceSrvIndex_);
+
+  // 出力頂点バッファのUAV設定
+  srvManager->SetComputeRootDescriptorTable(3, uavIndex_);
+
+  // スキニング情報の設定
+  dx12_->GetCommandList()->SetComputeRootConstantBufferView(4, skinningInfoResource_->GetGPUVirtualAddress());
+
+  // ComputeShaderの実行
+  dx12_->GetCommandList()->Dispatch(
+    static_cast<UINT>(vertices_.size() + 1023) / 1024, 1, 1);
+
+  // バリア設定
+  dx12_->TransitionResourceState(
+    D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+    D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,
+    uavVertexOutputResource_.Get());
 }
 
 ///-----------------------------------------------///

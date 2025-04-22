@@ -192,7 +192,7 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
     {
       aiBone* bone = mesh->mBones[boneIndex];
       std::string jointName = bone->mName.C_Str();
-      JointWeightData& jointWeightData = modelData_.skinClusterData[jointName];
+      JointWeightData& jointWeightData = skinClusterData_[jointName];
 
       aiMatrix4x4 bindPoseMatrixAssimp = bone->mOffsetMatrix.Inverse();
       aiVector3D scale, tanslate;
@@ -378,11 +378,6 @@ void Model::UpdateSkinning()
       mappedPalette_[jointIndex].skeletonSpaceMatrixInvTransposeMat =
         Mat4x4::Transpose(Mat4x4::Inverse(mappedPalette_[jointIndex].skeletonSpaceMat));
     }
-
-    // 各メッシュの頂点影響データの更新
-    for (auto& mesh : meshes_) {
-      mesh.UpdateSkinning(skeleton_.joints);
-    }
   }
 }
 
@@ -434,7 +429,7 @@ void Model::ExecuteSkinning()
   m_modelBasic_->SetSkinningCSSetting();
 
   // 共有パレット（ボーン行列）のSRVを設定
-  SrvManager::GetInstance()->SetComputeRootDescriptorTable(0, skinClFGFuster_.paletteSrvIndex);
+  SrvManager::GetInstance()->SetComputeRootDescriptorTable(0, paletteSrvIndex_);
 
   // 各メッシュごとにスキニング計算を実行
   for (auto& mesh : meshes_) {
@@ -473,21 +468,6 @@ void Model::ExecuteSkinning()
   Object3dBasic::GetInstance()->SetCommonRenderSetting();
 }
 
-void Model::CreateSkinningUAV()
-{
-  m_dx12_->CreateResourceForUAV(uavVertexOutputResource_, static_cast<UINT>(modelData_.vertices.size() * sizeof(VertexData)));
-  uavIndex_ = SrvManager::GetInstance()->Allocate();
-  SrvManager::GetInstance()->CreateUAV(uavIndex_, uavVertexOutputResource_.Get(), static_cast<UINT>(modelData_.vertices.size()), sizeof(VertexData));
-}
-
-void Model::CreateSkinningInfoResource()
-{
-  m_dx12_->CreateBufferResource(skinningInfoResource_, sizeof(SkinningInfo));
-  skinningInfoResource_->Map(0, nullptr, reinterpret_cast<void**>(&skinningInfoData_));
-
-  skinningInfoData_->numVertices = static_cast<uint32_t>(modelData_.vertices.size());
-}
-
 int32_t Model::CreateJoint(const Node& node, const std::optional<int32_t>& parentIndex, std::vector<Joint>& joints)
 {
   Joint joint;
@@ -522,76 +502,6 @@ Skeleton Model::CreateSkeleton(const Node& rootNode)
   UpdateSkeleton(); // スケルトンの更新
 
   return skeleton;
-}
-
-SkinCluster Model::CreateSkinCluster()
-{
-  SkinCluster skinCluster;
-  SrvManager* srvManager = SrvManager::GetInstance();
-
-  // palette用のリソースを生成
-  skinCluster.paletteResource = m_dx12_->MakeBufferResource(sizeof(WellForGPU) * skeleton_.joints.size());
-  WellForGPU* mappedPalette = nullptr;
-  skinCluster.paletteResource->Map(0, nullptr, reinterpret_cast<void**>(&mappedPalette));
-  skinCluster.mappedPalette = { mappedPalette, skeleton_.joints.size() };
-  skinCluster.paletteSrvIndex = srvManager->Allocate();
-  skinCluster.paletteSrvHandle.first = srvManager->GetCPUDescriptorHandle(skinCluster.paletteSrvIndex);
-  skinCluster.paletteSrvHandle.second = srvManager->GetGPUDescriptorHandle(skinCluster.paletteSrvIndex);
-
-  // palette用のsrvを作成
-  srvManager->CreateSRVForStructuredBuffer(skinCluster.paletteSrvIndex, skinCluster.paletteResource.Get(), static_cast<UINT>(skeleton_.joints.size()), sizeof(WellForGPU));
-
-
-  // influence用のリソースを生成
-  skinCluster.influenceResource = m_dx12_->MakeBufferResource(sizeof(VertexInfluence) * modelData_.vertices.size());
-  VertexInfluence* mappedInfluences = nullptr;
-  skinCluster.influenceResource->Map(0, nullptr, reinterpret_cast<void**>(&mappedInfluences));
-  std::memset(mappedInfluences, 0, sizeof(VertexInfluence) * modelData_.vertices.size()); // 0で初期化
-  skinCluster.mappedInfluences = { mappedInfluences, modelData_.vertices.size() };
-
-  // influence用のsrvを作成
-  skinCluster.influenceSrvIndex = srvManager->Allocate();
-  srvManager->CreateSRVForStructuredBuffer(skinCluster.influenceSrvIndex, skinCluster.influenceResource.Get(), static_cast<UINT>(modelData_.vertices.size()), sizeof(VertexInfluence));
-
-
-  // InverseBindMatricesを格納する場所を確保し、単位行列で埋める
-  skinCluster.inverseBindMatrices.resize(skeleton_.joints.size());
-  // 単位行列で埋める
-  for (Matrix4x4& inverseBindMatrix : skinCluster.inverseBindMatrices)
-  {
-    inverseBindMatrix = Mat4x4::MakeIdentity();
-  }
-
-
-  // ModelDataを解析して、influenceを埋める
-  for (const auto& jointWeight : modelData_.skinClusterData)
-  {
-    auto it = skeleton_.jointMap.find(jointWeight.first); // Jointの名前からindexを取得
-    if (it == skeleton_.jointMap.end())
-    {
-      continue; // Jointが見つからない場合はスキップ
-    }
-
-    skinCluster.inverseBindMatrices[(*it).second] = jointWeight.second.inverseBindMatrix; // InverseBindMatricesを格納
-
-    for (const auto& vertexWeight : jointWeight.second.vertexWeights)
-    {
-      auto& currentInfluence = skinCluster.mappedInfluences[vertexWeight.vertexIndex]; // 対象の頂点のInfluenceを取得
-
-      for (uint32_t influenceIndex = 0; influenceIndex < MAX_INFLUENCE; ++influenceIndex)
-      {
-        if (currentInfluence.weights[influenceIndex] == 0.0f) // 未使用のInfluenceを見つけたら
-        {
-          currentInfluence.weights[influenceIndex] = vertexWeight.weight; // Influenceの重みを設定
-          currentInfluence.jointIndices[influenceIndex] = (*it).second; // Jointのindexを設定
-          break;
-        }
-      }
-    }
-  }
-
-
-  return skinCluster;
 }
 
 Node Model::ReadNode(aiNode* node)
@@ -656,10 +566,10 @@ void Model::UpdateSkinCluster()
 {
   for (size_t jointIndex = 0; jointIndex < skeleton_.joints.size(); ++jointIndex)
   {
-    assert(jointIndex < skinCluster_.inverseBindMatrices.size());
-    skinCluster_.mappedPalette[jointIndex].skeletonSpaceMat = skinCluster_.inverseBindMatrices[jointIndex] * skeleton_.joints[jointIndex].skeletonSpaceMatrix;
-    skinCluster_.mappedPalette[jointIndex].skeletonSpaceMatrixInvTransposeMat =
-      Mat4x4::Transpose(Mat4x4::Inverse(skinCluster_.mappedPalette[jointIndex].skeletonSpaceMat));
+    assert(jointIndex < inverseBindMatrices_.size());
+    mappedPalette_[jointIndex].skeletonSpaceMat = inverseBindMatrices_[jointIndex] * skeleton_.joints[jointIndex].skeletonSpaceMatrix;
+    mappedPalette_[jointIndex].skeletonSpaceMatrixInvTransposeMat =
+      Mat4x4::Transpose(Mat4x4::Inverse(mappedPalette_[jointIndex].skeletonSpaceMat));
   }
 }
 

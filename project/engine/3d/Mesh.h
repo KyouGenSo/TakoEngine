@@ -10,7 +10,8 @@ class ModelBasic;
 class Mesh {
 public:
   // 初期化
-  void Initialize(ModelBasic* modelBasic,
+  void Initialize(
+    ModelBasic* modelBasic,
     const std::vector<VertexData>& vertices,
     const std::vector<uint32_t>& indices,
     const TextureData& textureData);
@@ -20,16 +21,16 @@ public:
 
   //------------------------------スキニング関連-------------------------------//
   // スキンニングの初期化
-  void InitializeSkinning(const std::map<std::string,
+  void InitializeSkinning(
+    const std::map<std::string,
     JointWeightData>& skinClusterData,
     const std::map<std::string,
     int32_t>& jointMap);
 
-  // スキンニングの更新
-  void UpdateSkinning(const std::vector<Joint>& joints);
-
   // スキンニングの描画
   void SetupSkinningUAV();
+
+  void SetupSkinningCompute(uint32_t paletteSrvIndex);
 
   //-----------------------------Getters/Setters------------------------------//
   void SetShininess(float shininess) { materialData_->shininess = shininess; }
@@ -38,7 +39,11 @@ public:
   void SetMaterialColor(const Vector4& color) { materialData_->color = color; }
   bool HasSkinning() const { return hasSkinning_; }
   ID3D12Resource* GetUAVVertexResource() { return uavVertexOutputResource_.Get(); }
-  uint32_t GetVertexSrvIndex();
+  uint32_t GetVertexSrvIndex() { return vertexSrvIndex_; }
+  uint32_t GetInfluenceSrvIndex() { return influenceSrvIndex_; }
+  uint32_t GetUAVIndex() { return uavIndex_; }
+  D3D12_GPU_VIRTUAL_ADDRESS GetSkinningInfoResourceGPUAddress() { return skinningInfoResource_->GetGPUVirtualAddress(); }
+  UINT GetVertexCount() { return static_cast<UINT>(vertices_.size()); }
 
 private:
   // リソース生成メソッド
@@ -62,6 +67,7 @@ private:
 
   // バッファビュー
   D3D12_VERTEX_BUFFER_VIEW vertexBufferView_;
+  D3D12_VERTEX_BUFFER_VIEW skinnedVertexBufferView_;
   D3D12_INDEX_BUFFER_VIEW indexBufferView_;
 
   // バッファリソース内のデータを指すポインタ
