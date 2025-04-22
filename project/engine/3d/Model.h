@@ -67,38 +67,9 @@ private: // プライベートメンバー関数
   void UpdateSkinning();
   void PrepareSkinning();
   void ExecuteSkinning();
-
-	/// <summary>
-	/// 頂点データの生成
-	/// </summary>
-	//void CreateVertexData();
+  void InitializeMatrixPalette();
 
   /// <summary>
-  /// 頂点バッファビューの生成
-  /// </summary>
-  //void CreateVertexBufferView();
-
-	/// <summary>
-	/// 頂点インデクスの生成
-	/// </summary>
-	//void CreateIndexData();
-
-	/// <summary>
-	/// マテリアルデータの生成
-	/// </summary>
-	//void CreateMaterialData();
-
-  /// <summary>
-  /// skinning用UAVの生成
-  /// </summary>
-  //void CreateSkinningUAV();
-
-  /// <summary>
-  /// skinningInfoResourceの生成
-  /// </summary>
-  //void CreateSkinningInfoResource();
-
-	/// <summary>
 	/// ノード読み込み
 	/// <summary>
 	Node ReadNode(aiNode* node);

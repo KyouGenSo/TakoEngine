@@ -44,6 +44,7 @@ void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool
   if (hasSkeleton_)
   {
     skeleton_ = CreateSkeleton(rootNode_);
+    InitializeMatrixPalette();
     //skinCluster_ = CreateSkinCluster();
 
     // SkinningInfoResourceの生成
@@ -53,23 +54,7 @@ void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool
     //CreateSkinningUAV();
   }
 
-  //// 頂点データの生成
-  //CreateVertexData();
 
-  //// VBVの生成
-  //CreateVertexBufferView();
-
-  //// インデックスデータの生成
-  //CreateIndexData();
-
-  //// マテリアルデータの生成
-  //CreateMaterialData();
-
-  //// テクスチャの読み込み
-  //TextureManager::GetInstance()->LoadTexture(modelData_.textureData.texturePath);
-
-  //// テクスチャインデックスを保存
-  //modelData_.textureData.textureIndex = TextureManager::GetInstance()->GetSRVIndex(modelData_.textureData.texturePath);
 }
 
 void Model::Update()
@@ -79,50 +64,24 @@ void Model::Update()
     UpdateAnimation(1.0f / 60.0f);
   }
 
-  if (hasSkeleton_ && hasAnimation_)
-  {
-    animationTime_ += 1.0f / 60.0f; // アニメーション時間を更新
-    animationTime_ = std::fmod(animationTime_, animationData_.duration); // アニメーション時間がアニメーションの長さを超えたらループ
-    UpdateSkeletonAnimation(animationTime_);
-    UpdateSkeleton();
-    UpdateSkinCluster();
+  if (hasSkeleton_ && hasAnimation_) {
+    // スケルトンアニメーションの場合
+
+    // スキニング処理の準備（ボーン行列の更新など）
+    PrepareSkinning();
+
   }
 }
 
 void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
 {
 
-  if (hasSkeleton_)
-  {
-    // ComputeShaderのPSOとRootSignatureの設定
-    m_modelBasic_->SetSkinningCSSetting();
-
-    // palette(StructuredBuffer SRV)の設定
-    SrvManager::GetInstance()->SetComputeRootDescriptorTable(0, skinCluster_.paletteSrvIndex);
-
-    // InputVertex(StructuredBuffer SRV)の設定
-    SrvManager::GetInstance()->SetComputeRootDescriptorTable(1, vertexSrvIndex_);
-
-    // Influence(StructuredBuffer SRV)の設定
-    SrvManager::GetInstance()->SetComputeRootDescriptorTable(2, skinCluster_.influenceSrvIndex);
-
-    // OutputVertex(UAV)の設定
-    SrvManager::GetInstance()->SetComputeRootDescriptorTable(3, uavIndex_);
-
-    // SkinningInfo(CBuffer)の設定
-    m_dx12_->GetCommandList()->SetComputeRootConstantBufferView(4, skinningInfoResource_->GetGPUVirtualAddress());
-
-    // ComputeShaderの実行
-    m_dx12_->GetCommandList()->Dispatch(static_cast<UINT>(modelData_.vertices.size() + 1023) / 1024, 1, 1);
-
-    m_dx12_->TransitionResourceState(D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, uavVertexOutputResource_.Get());
-
-    Object3dBasic::GetInstance()->SetCommonRenderSetting();
-  }
+  // スキニング処理の実行（ComputeShaderによる頂点変形）
+  ExecuteSkinning();
 
   // 全メッシュの描画
   for (auto& mesh : meshes_) {
-    mesh.Draw(world, viewProjection);
+    mesh.Draw();
   }
 
   // skeletonの描画
@@ -130,21 +89,6 @@ void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
   {
     DrawSkeleton(world, viewProjection);
   }
-
-  //// 頂点バッファビューを設定
-  //m_dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView_);
-
-  //// インデックスバッファビューを設定
-  //m_dx12_->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
-
-  //// マテリアルデータを設定
-  //m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource_->GetGPUVirtualAddress());
-
-  //// SRVのDescriptorTableを設定,テクスチャを指定
-  //SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, modelData_.textureData.textureIndex);
-
-  //// 描画
-  //m_dx12_->GetCommandList()->DrawIndexedInstanced(static_cast<UINT>(modelData_.indices.size()), 1, 0, 0, 0);
 
 }
 
@@ -232,6 +176,13 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
     Mesh newMesh;
     newMesh.Initialize(m_modelBasic_, vertices, indices, textureData);
     meshes_.push_back(newMesh);
+  }
+
+  if (hasSkeleton_) {
+    for (auto& mesh : meshes_) {
+      // 各メッシュにスキニングデータを設定
+      mesh.InitializeSkinning(skinClusterData_, skeleton_.jointMap);
+    }
   }
 }
 
@@ -438,34 +389,61 @@ void Model::ExecuteSkinning()
       continue;
     }
 
-    // Input Vertex（StructuredBuffer SRV）の設定
-    SrvManager::GetInstance()->SetComputeRootDescriptorTable(1, mesh.GetVertexSrvIndex());
-
-    // Influence（StructuredBuffer SRV）の設定
-    SrvManager::GetInstance()->SetComputeRootDescriptorTable(2, mesh.GetInfluenceSrvIndex());
-
-    // Output Vertex（UAV）の設定
-    SrvManager::GetInstance()->SetComputeRootDescriptorTable(3, mesh.GetUAVIndex());
-
-    // SkinningInfo（CBuffer）の設定
-    m_dx12_->GetCommandList()->SetComputeRootConstantBufferView(
-      4, mesh.GetSkinningInfoResourceGPUAddress());
-
-    // ComputeShaderの実行
-    // 頂点数に応じてスレッド数を計算（1024スレッドのグループを使用）
-    UINT numVertices = mesh.GetVertexCount();
-    UINT numThreadGroups = (numVertices + 1023) / 1024;
-    m_dx12_->GetCommandList()->Dispatch(numThreadGroups, 1, 1);
-
-    // バリアを設定（ComputeShader処理後のUAVリソースをVertexBufferとして使用可能に）
-    m_dx12_->TransitionResourceState(
-      D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-      D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,
-      mesh.GetUAVVertexResource());
+    // この部分を SetupSkinningCompute に置き換え
+    mesh.SetupSkinningCompute();
   }
 
   // 共通レンダリング設定に戻す
   Object3dBasic::GetInstance()->SetCommonRenderSetting();
+}
+
+void Model::InitializeMatrixPalette() {
+  // スケルトンがない場合は何もしない
+  if (!hasSkeleton_) {
+    return;
+  }
+
+  // 1. インバースバインドマトリクスの準備
+  inverseBindMatrices_.resize(skeleton_.joints.size());
+
+  // 各ジョイントに対応するインバースバインドマトリクスを設定
+  for (const auto& [jointName, jointWeightData] : skinClusterData_) {
+    auto it = skeleton_.jointMap.find(jointName);
+    if (it != skeleton_.jointMap.end()) {
+      int32_t jointIndex = it->second;
+      if (jointIndex < static_cast<int32_t>(inverseBindMatrices_.size())) {
+        inverseBindMatrices_[jointIndex] = jointWeightData.inverseBindMatrix;
+      }
+    }
+  }
+
+  // 2. パレットリソースの作成
+  DX12Basic* dx12 = m_dx12_;
+  UINT paletteSize = static_cast<UINT>(sizeof(WellForGPU) * skeleton_.joints.size());
+
+  // パレットバッファの生成
+  paletteResource_ = dx12->MakeBufferResource(paletteSize);
+
+  // パレットバッファをマップ
+  WellForGPU* mappedData = nullptr;
+  paletteResource_->Map(0, nullptr, reinterpret_cast<void**>(&mappedData));
+  mappedPalette_ = std::span<WellForGPU>(mappedData, skeleton_.joints.size());
+
+  // 初期状態の設定（単位行列など）
+  for (size_t i = 0; i < skeleton_.joints.size(); ++i) {
+    mappedPalette_[i].skeletonSpaceMat = Mat4x4::MakeIdentity();
+    mappedPalette_[i].skeletonSpaceMatrixInvTransposeMat = Mat4x4::MakeIdentity();
+  }
+
+  // 3. パレットのSRVを作成
+  SrvManager* srvManager = SrvManager::GetInstance();
+  paletteSrvIndex_ = srvManager->Allocate();
+  srvManager->CreateSRVForStructuredBuffer(
+    paletteSrvIndex_,
+    paletteResource_.Get(),
+    static_cast<UINT>(skeleton_.joints.size()),
+    sizeof(WellForGPU)
+  );
 }
 
 int32_t Model::CreateJoint(const Node& node, const std::optional<int32_t>& parentIndex, std::vector<Joint>& joints)

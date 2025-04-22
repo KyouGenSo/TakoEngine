@@ -44,7 +44,6 @@ void MyGame::Initialize()
   //ModelManager::GetInstance()->LoadModel("simpleSkin.gltf", true, true);
   ModelManager::GetInstance()->LoadModel("walk.gltf", true, true);
   ModelManager::GetInstance()->LoadModel("sneakWalk.gltf", true, true);
-  ModelManager::GetInstance()->LoadModel("sneakWalk.gltf", true, true);
 
   // GPUパーティクルの初期化
   GPUParticle::GetInstance()->Initialize(dx12_, defaultCamera_);

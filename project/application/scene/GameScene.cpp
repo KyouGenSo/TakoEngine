@@ -43,7 +43,7 @@ void GameScene::Initialize()
 
   object3d2_ = new Object3d();
   object3d2_->Initialize();
-  object3d2_->SetModel("AnimatedCube.gltf");
+  object3d2_->SetModel("sneakWalk.gltf");
   modelRotate2_ = { .x = 0.0f, .y = DirectX::XMConvertToRadians(180.0f), .z = 0.0f };
   object3d2_->SetRotate(rotate);
 

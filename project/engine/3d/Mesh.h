@@ -17,7 +17,7 @@ public:
     const TextureData& textureData);
 
   // 描画
-  void Draw(Matrix4x4 world, Matrix4x4 viewProjection);
+  void Draw();
 
   //------------------------------スキニング関連-------------------------------//
   // スキンニングの初期化
@@ -27,10 +27,7 @@ public:
     const std::map<std::string,
     int32_t>& jointMap);
 
-  // スキンニングの描画
-  void SetupSkinningUAV();
-
-  void SetupSkinningCompute(uint32_t paletteSrvIndex);
+  void SetupSkinningCompute();
 
   //-----------------------------Getters/Setters------------------------------//
   void SetShininess(float shininess) { materialData_->shininess = shininess; }
@@ -51,6 +48,8 @@ private:
   void CreateVertexBufferView();
   void CreateIndexData();
   void CreateMaterialData();
+  // スキニング関連のリソース生成
+  void SetupSkinningUAV();
 
   // メンバ変数
   ModelBasic* modelBasic_ = nullptr;
