@@ -159,6 +159,9 @@
     <ClCompile Include="engine\effect\EmitterManager.cpp">
       <Filter>effect\Particle\Emitter</Filter>
     </ClCompile>
+    <ClCompile Include="engine\3d\Mesh.cpp">
+      <Filter>3d</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\math\Matrix4x4.h">
@@ -313,6 +316,9 @@
     </ClInclude>
     <ClInclude Include="engine\effect\EmitterStruct.h">
       <Filter>effect\Particle\Emitter</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\Mesh.h">
+      <Filter>3d</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

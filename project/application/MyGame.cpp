@@ -40,7 +40,7 @@ void MyGame::Initialize()
 
   ModelManager::GetInstance()->LoadModel("terrain.obj");
   //ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
-  //ModelManager::GetInstance()->LoadModel("AnimatedCube.gltf", true); 
+  ModelManager::GetInstance()->LoadModel("AnimatedCube.gltf", true); 
   //ModelManager::GetInstance()->LoadModel("simpleSkin.gltf", true, true);
   ModelManager::GetInstance()->LoadModel("walk.gltf", true, true);
   ModelManager::GetInstance()->LoadModel("sneakWalk.gltf", true, true);

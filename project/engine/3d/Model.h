@@ -1,11 +1,14 @@
 #pragma once
 #include <d3d12.h>
+#include <unordered_map>
 #include<wrl.h>
 #include "ModelStruct.h"
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+
+#include "Mesh.h"
 
 class ModelBasic;
 class DX12Basic;
@@ -29,54 +32,61 @@ public: // メンバー関数
 	void Draw(Matrix4x4 world, Matrix4x4 viewProjection);
 
 	/// <summary>
-	/// Skeletonのデバグ用描画
-	/// </summary>
-	void DrawSkeleton(Matrix4x4 world, Matrix4x4 viewProjection);
-
-	/// <summary>
 	/// objファイルの読み込む
 	///	</summary>
 	void LoadModelFile(const std::string& directoryPath, const std::string& fileName);
 
-	/// <summary>
-	/// アニメーションの読み込み
-	/// </summary>
-	Animation LoadAnimationFile(const std::string& directoryPath, const std::string& fileName);
-
 	// -----------------------------------Getters-----------------------------------//
 	// nodeのlocalMatrixを取得
-	const Matrix4x4& GetLocalMatrix() const { return modelData_.rootNode.localMatrix; }
+	const Matrix4x4& GetLocalMatrix() const { return rootNode_.localMatrix; }
 	// アニメーションの有無を取得
 	bool HasAnimation() const { return hasAnimation_; }
 	// Skeletonの有無を取得
 	bool HasSkeleton() const { return hasSkeleton_; }
 
 	// -----------------------------------Setters-----------------------------------//
-	void SetShininess(float shininess) { materialData_->shininess = shininess; }
-	void SetEnableLighting(bool enableLighting) { materialData_->enableLighting = enableLighting; }
-	void SetEnableHighlight(bool enableHighlight) { materialData_->enableHighlight = enableHighlight; }
-  void SetMaterialColor(const Vector4& color) { materialData_->color = color; }
+  void SetShininess(float shininess);
+  void SetEnableLighting(bool enableLighting);
+  void SetEnableHighlight(bool enableHighlight);
+  void SetMaterialColor(const Vector4& color);
 
 private: // プライベートメンバー関数
+  /// <summary>
+  /// Skeletonのデバグ用描画
+  /// </summary>
+  void DrawSkeleton(Matrix4x4 world, Matrix4x4 viewProjection);
+
+  /// <summary>
+  /// アニメーションの読み込み
+  /// </summary>
+  Animation LoadAnimationFile(const std::string& directoryPath, const std::string& fileName);
+
+  /// <summary>
+  /// スキニング処理
+  /// </summary>
+  void UpdateSkinning();
+  void PrepareSkinning();
+  void ExecuteSkinning();
+
 	/// <summary>
 	/// 頂点データの生成
 	/// </summary>
-	void CreateVertexData();
+	//void CreateVertexData();
 
   /// <summary>
   /// 頂点バッファビューの生成
   /// </summary>
-  void CreateVertexBufferView();
+  //void CreateVertexBufferView();
 
 	/// <summary>
 	/// 頂点インデクスの生成
 	/// </summary>
-	void CreateIndexData();
+	//void CreateIndexData();
 
 	/// <summary>
 	/// マテリアルデータの生成
 	/// </summary>
-	void CreateMaterialData();
+	//void CreateMaterialData();
 
   /// <summary>
   /// skinning用UAVの生成
@@ -143,38 +153,50 @@ private: // メンバ変数
 	std::string ModelFolderName_;
 
 	// モデルデータ
-	SkinnigModelData modelData_;
+	//SkinnigModelData modelData_;
+  std::vector<Mesh> meshes_;
 
-	// アニメーションデータ
+  // ノードデータ
+  Node rootNode_;
+
+  // テクスチャキャッシュ
+  std::unordered_map<std::string, TextureData> textureCache_;
+
+	// スケルトン・アニメーション関連
 	Animation animationData_;
+  Skeleton skeleton_;
 	bool hasAnimation_ = false;
 	float animationTime_ = 0.0f;
+  bool hasSkeleton_ = false;
 
-	// skeleton
-	Skeleton skeleton_;
-	bool hasSkeleton_ = false;
+  // スキニング関連
+  std::vector<Matrix4x4> inverseBindMatrices_;
+  Microsoft::WRL::ComPtr<ID3D12Resource> paletteResource_;
+  std::span<WellForGPU> mappedPalette_;
+  uint32_t paletteSrvIndex_;
+  std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> paletteSrvHandle_;
 
   // skinCluster
-  SkinCluster skinCluster_;
+  //SkinCluster skinCluster_;
 
 	// バッファリソース
-	Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource_;
-	Microsoft::WRL::ComPtr<ID3D12Resource> indexResource_;
-	Microsoft::WRL::ComPtr<ID3D12Resource> materialResource_;
+	//Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource_;
+	//Microsoft::WRL::ComPtr<ID3D12Resource> indexResource_;
+	//Microsoft::WRL::ComPtr<ID3D12Resource> materialResource_;
 
-  Microsoft::WRL::ComPtr<ID3D12Resource> uavVertexOutputResource_;
-  Microsoft::WRL::ComPtr<ID3D12Resource> skinningInfoResource_;
+  //Microsoft::WRL::ComPtr<ID3D12Resource> uavVertexOutputResource_;
+  //Microsoft::WRL::ComPtr<ID3D12Resource> skinningInfoResource_;
 
-  uint32_t vertexSrvIndex_ = 0;
-  uint32_t uavIndex_ = 0;
+  //uint32_t vertexSrvIndex_ = 0;
+  //uint32_t uavIndex_ = 0;
 
 	// バッファリソース内のデータを指すポインタ
-	VertexData* vertexData_ = nullptr;
-	Material* materialData_ = nullptr;
-  SkinningInfo* skinningInfoData_ = nullptr;
+	//VertexData* vertexData_ = nullptr;
+	//Material* materialData_ = nullptr;
+  //SkinningInfo* skinningInfoData_ = nullptr;
 
 	// バッファビュー
-	D3D12_VERTEX_BUFFER_VIEW vertexBufferView_;
-	D3D12_INDEX_BUFFER_VIEW indexBufferView_;
+	//D3D12_VERTEX_BUFFER_VIEW vertexBufferView_;
+	//D3D12_INDEX_BUFFER_VIEW indexBufferView_;
 
 };

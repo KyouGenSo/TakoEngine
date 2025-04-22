@@ -13,33 +13,37 @@
 #include <sstream>
 #include <algorithm>
 
+///------------------------------------------------///
+///                 PUBLIC METHODS                ///
+///-----------------------------------------------///
+
 void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool hasAnimation, bool hasSkeleton)
 {
-	m_modelBasic_ = modelBasic;
+  m_modelBasic_ = modelBasic;
 
   m_dx12_ = m_modelBasic_->GetDX12Basic();
 
-	directoryFolderName_ = m_modelBasic_->GetDirectoryFolderName();
+  directoryFolderName_ = m_modelBasic_->GetDirectoryFolderName();
 
-	ModelFolderName_ = m_modelBasic_->GetModelFolderName();
+  ModelFolderName_ = m_modelBasic_->GetModelFolderName();
 
-	hasAnimation_ = hasAnimation;
+  hasAnimation_ = hasAnimation;
 
-	hasSkeleton_ = hasSkeleton;
+  hasSkeleton_ = hasSkeleton;
 
-	// objファイルの読み込み
-	LoadModelFile(directoryFolderName_ + "/" + ModelFolderName_, fileName);
+  // objファイルの読み込み
+  LoadModelFile(directoryFolderName_ + "/" + ModelFolderName_, fileName);
 
-	// アニメーションの読み込み
-	if (hasAnimation_)
-	{
-		animationData_ = LoadAnimationFile(directoryFolderName_ + "/" + ModelFolderName_, fileName); 
-	}
+  // アニメーションの読み込み
+  if (hasAnimation_)
+  {
+    animationData_ = LoadAnimationFile(directoryFolderName_ + "/" + ModelFolderName_, fileName);
+  }
 
-	// skeletonの生成
-	if (hasSkeleton_)
-	{
-		skeleton_ = CreateSkeleton(modelData_.rootNode);
+  // skeletonの生成
+  if (hasSkeleton_)
+  {
+    skeleton_ = CreateSkeleton(rootNode_);
     skinCluster_ = CreateSkinCluster();
 
     // SkinningInfoResourceの生成
@@ -47,42 +51,42 @@ void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool
 
     // UAVの生成
     CreateSkinningUAV();
-	}
+  }
 
-	// 頂点データの生成
-	CreateVertexData();
+  // 頂点データの生成
+  CreateVertexData();
 
   // VBVの生成
   CreateVertexBufferView();
 
-	// インデックスデータの生成
-	CreateIndexData();
+  // インデックスデータの生成
+  CreateIndexData();
 
-	// マテリアルデータの生成
-	CreateMaterialData();
+  // マテリアルデータの生成
+  CreateMaterialData();
 
-	// テクスチャの読み込み
-	TextureManager::GetInstance()->LoadTexture(modelData_.textureData.texturePath);
+  //// テクスチャの読み込み
+  //TextureManager::GetInstance()->LoadTexture(modelData_.textureData.texturePath);
 
-	// テクスチャインデックスを保存
-	modelData_.textureData.textureIndex = TextureManager::GetInstance()->GetSRVIndex(modelData_.textureData.texturePath);
+  //// テクスチャインデックスを保存
+  //modelData_.textureData.textureIndex = TextureManager::GetInstance()->GetSRVIndex(modelData_.textureData.texturePath);
 }
 
 void Model::Update()
 {
-	if (hasAnimation_ && !hasSkeleton_)
-	{
-		UpdateAnimation(1.0f / 60.0f);
-	}
+  if (hasAnimation_ && !hasSkeleton_)
+  {
+    UpdateAnimation(1.0f / 60.0f);
+  }
 
-	if (hasSkeleton_ && hasAnimation_)
-	{
-		animationTime_ += 1.0f / 60.0f; // アニメーション時間を更新
-		animationTime_ = std::fmod(animationTime_, animationData_.duration); // アニメーション時間がアニメーションの長さを超えたらループ
-		UpdateSkeletonAnimation(animationTime_);
-		UpdateSkeleton();
+  if (hasSkeleton_ && hasAnimation_)
+  {
+    animationTime_ += 1.0f / 60.0f; // アニメーション時間を更新
+    animationTime_ = std::fmod(animationTime_, animationData_.duration); // アニメーション時間がアニメーションの長さを超えたらループ
+    UpdateSkeletonAnimation(animationTime_);
+    UpdateSkeleton();
     UpdateSkinCluster();
-	}
+  }
 }
 
 void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
@@ -116,67 +120,75 @@ void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
     Object3dBasic::GetInstance()->SetCommonRenderSetting();
   }
 
-  // 頂点バッファビューを設定
-  m_dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView_);
+  // 全メッシュの描画
+  for (auto& mesh : meshes_) {
+    mesh.Draw(world, viewProjection);
+  }
 
-  // インデックスバッファビューを設定
-  m_dx12_->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
+  // skeletonの描画
+  if (hasSkeleton_)
+  {
+    DrawSkeleton(world, viewProjection);
+  }
 
-	// マテリアルデータを設定
-  m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource_->GetGPUVirtualAddress());
+  //// 頂点バッファビューを設定
+  //m_dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView_);
 
-	// SRVのDescriptorTableを設定,テクスチャを指定
-	SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, modelData_.textureData.textureIndex);
+  //// インデックスバッファビューを設定
+  //m_dx12_->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
 
-	// 描画
-  m_dx12_->GetCommandList()->DrawIndexedInstanced(static_cast<UINT>(modelData_.indices.size()), 1, 0, 0, 0);
+  //// マテリアルデータを設定
+  //m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource_->GetGPUVirtualAddress());
 
-	// skeletonの描画
-	if (hasSkeleton_)
-	{
-		DrawSkeleton(world, viewProjection);
-	}
+  //// SRVのDescriptorTableを設定,テクスチャを指定
+  //SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, modelData_.textureData.textureIndex);
+
+  //// 描画
+  //m_dx12_->GetCommandList()->DrawIndexedInstanced(static_cast<UINT>(modelData_.indices.size()), 1, 0, 0, 0);
+
 }
 
 void Model::LoadModelFile(const std::string& directoryPath, const std::string& fileName)
 {
-	Assimp::Importer importer;
-	std::string filePath = directoryPath + "/" + fileName;
-	const aiScene* scene = importer.ReadFile(filePath.c_str(), aiProcess_FlipWindingOrder | aiProcess_FlipUVs );
-	assert(scene->HasMeshes()); // メッシュがない場合はエラー
+  Assimp::Importer importer;
+  std::string filePath = directoryPath + "/" + fileName;
+  const aiScene* scene = importer.ReadFile(filePath.c_str(), aiProcess_FlipWindingOrder | aiProcess_FlipUVs);
+  assert(scene->HasMeshes()); // メッシュがない場合はエラー
 
-	// メッシュの解析
-	for (uint32_t meshIndex = 0; meshIndex < scene->mNumMeshes; meshIndex++)
-	{
-		aiMesh* mesh = scene->mMeshes[meshIndex];
-		assert(mesh->HasTextureCoords(0) && mesh->HasNormals()); // テクスチャ座標と法線がない場合はエラー
-		modelData_.vertices.resize(mesh->mNumVertices); // 頂点数だけリサイズ
+  // ルートノードの読み込み
+  rootNode_ = ReadNode(scene->mRootNode);
+
+  // メッシュの解析
+  for (uint32_t meshIndex = 0; meshIndex < scene->mNumMeshes; meshIndex++)
+  {
+    aiMesh* mesh = scene->mMeshes[meshIndex];
+    assert(mesh->HasTextureCoords(0) && mesh->HasNormals());
 
     // 頂点の解析
-		for (uint32_t vertexIndex = 0; vertexIndex < mesh->mNumVertices; ++vertexIndex)
-		{
-			aiVector3D& position = mesh->mVertices[vertexIndex];
-			aiVector3D& texcoord = mesh->mTextureCoords[0][vertexIndex];
-			aiVector3D& normal = mesh->mNormals[vertexIndex];
+    std::vector<VertexData> vertices(mesh->mNumVertices);
+    for (uint32_t vertexIndex = 0; vertexIndex < mesh->mNumVertices; ++vertexIndex) {
+      aiVector3D& position = mesh->mVertices[vertexIndex];
+      aiVector3D& texcoord = mesh->mTextureCoords[0][vertexIndex];
+      aiVector3D& normal = mesh->mNormals[vertexIndex];
 
-      modelData_.vertices[vertexIndex].position = { -position.x, position.y, position.z, 1.0f };
-      modelData_.vertices[vertexIndex].texcoord = { texcoord.x, texcoord.y };
-      modelData_.vertices[vertexIndex].normal = { -normal.x, normal.y, normal.z };
-		}
+      vertices[vertexIndex].position = { -position.x, position.y, position.z, 1.0f };
+      vertices[vertexIndex].texcoord = { texcoord.x, texcoord.y };
+      vertices[vertexIndex].normal = { -normal.x, normal.y, normal.z };
+    }
 
     // インデックスの解析
-		for (uint32_t faceIndex = 0; faceIndex < mesh->mNumFaces; ++faceIndex) {
-			aiFace& face = mesh->mFaces[faceIndex];
-			assert(face.mNumIndices == 3); // 三角形以外はエラー
+    std::vector<uint32_t> indices;
+    for (uint32_t faceIndex = 0; faceIndex < mesh->mNumFaces; ++faceIndex) {
+      aiFace& face = mesh->mFaces[faceIndex];
+      assert(face.mNumIndices == 3);  // 三角形のみ対応
 
-			for (uint32_t element = 0; element < face.mNumIndices; ++element) {
-				uint32_t vertexIndex = face.mIndices[element];
-				modelData_.indices.push_back(vertexIndex);
-			}
-		}
+      for (uint32_t element = 0; element < face.mNumIndices; ++element) {
+        indices.push_back(face.mIndices[element]);
+      }
+    }
 
     // スキンクラスターデータの解析
-    for(uint32_t boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex)
+    for (uint32_t boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex)
     {
       aiBone* bone = mesh->mBones[boneIndex];
       std::string jointName = bone->mName.C_Str();
@@ -196,232 +208,269 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
       }
     }
 
-	}
+    // マテリアルファイルの読み込み
+    TextureData textureData;
+    if (mesh->mMaterialIndex < scene->mNumMaterials) {
+      aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+      if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
+        aiString texturePath;
+        material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath);
+        textureData.texturePath = texturePath.C_Str();
 
-	// マテリアルファイルの読み込み
-	for (uint32_t materialIndex = 0; materialIndex < scene->mNumMaterials; materialIndex++)
-	{
-		aiMaterial* material = scene->mMaterials[materialIndex];
-		if (material->GetTextureCount(aiTextureType_DIFFUSE) != 0)
-		{
-			aiString texturePath;
-			material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath);
-			modelData_.textureData.texturePath = texturePath.C_Str();
-		}
-	}
+        // テクスチャ管理
+        if (textureCache_.find(textureData.texturePath) == textureCache_.end()) {
+          TextureManager::GetInstance()->LoadTexture(textureData.texturePath);
+          textureData.textureIndex = TextureManager::GetInstance()->GetSRVIndex(textureData.texturePath);
+          textureCache_[textureData.texturePath] = textureData;
+        } else {
+          textureData = textureCache_[textureData.texturePath];
+        }
+      }
+    }
 
-	// ノードの読み込み
-	modelData_.rootNode = ReadNode(scene->mRootNode);
+    // メッシュデータの保存
+    Mesh newMesh;
+    newMesh.Initialize(m_modelBasic_, vertices, indices, textureData);
+    meshes_.push_back(newMesh);
+  }
+}
+
+void Model::SetShininess(float shininess)
+{
+  for (auto& mesh : meshes_)
+  {
+    mesh.SetShininess(shininess);
+  }
+}
+
+void Model::SetEnableLighting(bool enableLighting)
+{
+  for (auto& mesh : meshes_)
+  {
+    mesh.SetEnableLighting(enableLighting);
+  }
+}
+
+void Model::SetEnableHighlight(bool enableHighlight)
+{
+  for (auto& mesh : meshes_)
+  {
+    mesh.SetEnableHighlight(enableHighlight);
+  }
+}
+
+void Model::SetMaterialColor(const Vector4& color)
+{
+  for (auto& mesh : meshes_)
+  {
+    mesh.SetMaterialColor(color);
+  }
+}
+
+///-----------------------------------------------///
+///                PRIVATE METHODS                ///
+///-----------------------------------------------///
+
+void Model::DrawSkeleton(Matrix4x4 world, Matrix4x4 viewProjection)
+{
+  // Draw each joint as a sphere and draw lines between joints to represent bones
+  for (const Joint& joint : skeleton_.joints)
+  {
+    // Calculate the position of the joint in world space
+    Matrix4x4 jointWorldMatrix = joint.skeletonSpaceMatrix * world;
+    Vector3 jointPosition = Mat4x4::TransForm(jointWorldMatrix, Vector3(0.0f, 0.0f, 0.0f));
+
+    // Draw the joint as a sphere
+    //float radius = 0.01f; // Sphere radius
+    //Draw2D::GetInstance()->DrawSphere(jointPosition, radius, Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+
+    // Draw line to parent joint if it exists
+    if (joint.parentIndex)
+    {
+      const Joint& parentJoint = skeleton_.joints[*joint.parentIndex];
+
+      // Calculate the position of the parent joint in world space
+      Matrix4x4 parentWorldMatrix = parentJoint.skeletonSpaceMatrix * world;
+      Vector3 parentPosition = Mat4x4::TransForm(parentWorldMatrix, Vector3(0.0f, 0.0f, 0.0f));
+      viewProjection;
+      // Draw a line between the current joint and its parent
+      Draw2D::GetInstance()->DrawLine(
+        jointPosition,
+        parentPosition,
+        Vector4(1.0f, 1.0f, 1.0f, 1.0f)
+      );
+    }
+  }
 }
 
 Animation Model::LoadAnimationFile(const std::string& directoryPath, const std::string& fileName)
 {
-	Animation animation;
-	Assimp::Importer importer;
-	std::string filePath = directoryPath + "/" + fileName;
-	const aiScene* scene = importer.ReadFile(filePath.c_str(), 0);
+  Animation animation;
+  Assimp::Importer importer;
+  std::string filePath = directoryPath + "/" + fileName;
+  const aiScene* scene = importer.ReadFile(filePath.c_str(), 0);
 
-	// アニメーションがない場合はエラー
-	assert(scene->HasAnimations());
+  // アニメーションがない場合はエラー
+  assert(scene->HasAnimations());
 
-	// アニメーションの解析
-	aiAnimation* aiAnimation = scene->mAnimations[0]; // 一旦最初のアニメーションだけ対応
-	animation.duration = static_cast<float>(aiAnimation->mDuration / aiAnimation->mTicksPerSecond); // アニメーションの長さを取得,秒に変換
+  // アニメーションの解析
+  aiAnimation* aiAnimation = scene->mAnimations[0]; // 一旦最初のアニメーションだけ対応
+  animation.duration = static_cast<float>(aiAnimation->mDuration / aiAnimation->mTicksPerSecond); // アニメーションの長さを取得,秒に変換
 
-	// ノードアニメーションの解析
-	for (uint32_t channelIndex = 0; channelIndex < aiAnimation->mNumChannels; ++channelIndex)
-	{
-		aiNodeAnim* aiNodeAnim = aiAnimation->mChannels[channelIndex];
-		NodeAnimetion& nodeAnimetion = animation.nodeAnimations[aiNodeAnim->mNodeName.C_Str()]; // ノード名をキーにしてノードアニメーションを取得
-
-		// 位置アニメーションの解析
-		for (uint32_t keyIndex = 0; keyIndex < aiNodeAnim->mNumPositionKeys; ++keyIndex)
-		{
-			aiVectorKey& aiKey = aiNodeAnim->mPositionKeys[keyIndex];
-			KeyFrameVector3 keyFrame;
-			keyFrame.time = static_cast<float>(aiKey.mTime / aiAnimation->mTicksPerSecond); // 時間を秒に変換
-			keyFrame.value = Vector3(-aiKey.mValue.x, aiKey.mValue.y, aiKey.mValue.z);
-			nodeAnimetion.translate.keyFrames.push_back(keyFrame);
-		}
-
-		// 回転アニメーションの解析
-		for (uint32_t keyIndex = 0; keyIndex < aiNodeAnim->mNumRotationKeys; ++keyIndex)
-		{
-			aiQuatKey& aiKey = aiNodeAnim->mRotationKeys[keyIndex];
-			KeyFrameQuaternion keyFrame;
-			keyFrame.time = static_cast<float>(aiKey.mTime / aiAnimation->mTicksPerSecond); // 時間を秒に変換
-			keyFrame.value = Quaternion(aiKey.mValue.x, -aiKey.mValue.y, -aiKey.mValue.z, aiKey.mValue.w); // クォータニオンのy,z成分を反転,右手系から左手系に変換
-			nodeAnimetion.rotate.keyFrames.push_back(keyFrame);
-		}
-
-		// スケールアニメーションの解析
-		for (uint32_t keyIndex = 0; keyIndex < aiNodeAnim->mNumScalingKeys; ++keyIndex)
-		{
-			aiVectorKey& aiKey = aiNodeAnim->mScalingKeys[keyIndex];
-			KeyFrameVector3 keyFrame;
-			keyFrame.time = static_cast<float>(aiKey.mTime / aiAnimation->mTicksPerSecond); // 時間を秒に変換
-			keyFrame.value = Vector3(aiKey.mValue.x, aiKey.mValue.y, aiKey.mValue.z);
-			nodeAnimetion.scale.keyFrames.push_back(keyFrame);
-		}
-	}
-
-	return animation;
-}
-
-void Model::UpdateAnimation(float deltaTime)
-{
-	animationTime_ += deltaTime; // アニメーション時間を更新
-	animationTime_ = std::fmod(animationTime_, animationData_.duration); // アニメーション時間がアニメーションの長さを超えたらループ
-	NodeAnimetion& nodeAnimetion = animationData_.nodeAnimations[modelData_.rootNode.name]; // ルートノードのアニメーションを取得
-
-	// 位置アニメーションの計算
-	Vector3 translate = CalcKeyFrameValue(nodeAnimetion.translate.keyFrames, animationTime_);
-	// 回転アニメーションの計算
-	Quaternion rotate = CalcKeyFrameValue(nodeAnimetion.rotate.keyFrames, animationTime_);
-	// スケールアニメーションの計算
-	Vector3 scale = CalcKeyFrameValue(nodeAnimetion.scale.keyFrames, animationTime_);
-
-	// ローカル変換行列を生成
-	Matrix4x4 localMatrix = Mat4x4::MakeAffine(scale, rotate, translate);
-	modelData_.rootNode.localMatrix = localMatrix; // ルートノードのローカル変換行列を更新
-}
-
-void Model::UpdateSkeleton()
-{
-	for (Joint& joint : skeleton_.joints)
-	{
-		joint.localMatrix = Mat4x4::MakeAffine(joint.transform.scale, joint.transform.rotate, joint.transform.translate); // ローカル変換行列を生成
-		
-		if (joint.parentIndex) {
-			joint.skeletonSpaceMatrix = joint.localMatrix * skeleton_.joints[*joint.parentIndex].skeletonSpaceMatrix; // 親がいる場合は親のスケルトン空間行列を掛ける
-		}
-		else
-		{
-			joint.skeletonSpaceMatrix = joint.localMatrix; // 親がいない場合はローカル変換行列がスケルトン空間行列
-		}
-	}
-}
-
-void Model::UpdateSkinCluster()
-{
-  for(size_t jointIndex = 0; jointIndex < skeleton_.joints.size(); ++jointIndex)
+  // ノードアニメーションの解析
+  for (uint32_t channelIndex = 0; channelIndex < aiAnimation->mNumChannels; ++channelIndex)
   {
-    assert(jointIndex < skinCluster_.inverseBindMatrices.size());
-    skinCluster_.mappedPalette[jointIndex].skeletonSpaceMat = skinCluster_.inverseBindMatrices[jointIndex] * skeleton_.joints[jointIndex].skeletonSpaceMatrix;
-    skinCluster_.mappedPalette[jointIndex].skeletonSpaceMatrixInvTransposeMat =
-    Mat4x4::Transpose(Mat4x4::Inverse(skinCluster_.mappedPalette[jointIndex].skeletonSpaceMat));
+    aiNodeAnim* aiNodeAnim = aiAnimation->mChannels[channelIndex];
+    NodeAnimetion& nodeAnimetion = animation.nodeAnimations[aiNodeAnim->mNodeName.C_Str()]; // ノード名をキーにしてノードアニメーションを取得
+
+    // 位置アニメーションの解析
+    for (uint32_t keyIndex = 0; keyIndex < aiNodeAnim->mNumPositionKeys; ++keyIndex)
+    {
+      aiVectorKey& aiKey = aiNodeAnim->mPositionKeys[keyIndex];
+      KeyFrameVector3 keyFrame;
+      keyFrame.time = static_cast<float>(aiKey.mTime / aiAnimation->mTicksPerSecond); // 時間を秒に変換
+      keyFrame.value = Vector3(-aiKey.mValue.x, aiKey.mValue.y, aiKey.mValue.z);
+      nodeAnimetion.translate.keyFrames.push_back(keyFrame);
+    }
+
+    // 回転アニメーションの解析
+    for (uint32_t keyIndex = 0; keyIndex < aiNodeAnim->mNumRotationKeys; ++keyIndex)
+    {
+      aiQuatKey& aiKey = aiNodeAnim->mRotationKeys[keyIndex];
+      KeyFrameQuaternion keyFrame;
+      keyFrame.time = static_cast<float>(aiKey.mTime / aiAnimation->mTicksPerSecond); // 時間を秒に変換
+      keyFrame.value = Quaternion(aiKey.mValue.x, -aiKey.mValue.y, -aiKey.mValue.z, aiKey.mValue.w); // クォータニオンのy,z成分を反転,右手系から左手系に変換
+      nodeAnimetion.rotate.keyFrames.push_back(keyFrame);
+    }
+
+    // スケールアニメーションの解析
+    for (uint32_t keyIndex = 0; keyIndex < aiNodeAnim->mNumScalingKeys; ++keyIndex)
+    {
+      aiVectorKey& aiKey = aiNodeAnim->mScalingKeys[keyIndex];
+      KeyFrameVector3 keyFrame;
+      keyFrame.time = static_cast<float>(aiKey.mTime / aiAnimation->mTicksPerSecond); // 時間を秒に変換
+      keyFrame.value = Vector3(aiKey.mValue.x, aiKey.mValue.y, aiKey.mValue.z);
+      nodeAnimetion.scale.keyFrames.push_back(keyFrame);
+    }
+  }
+
+  return animation;
+}
+
+void Model::UpdateSkinning()
+{
+  if (hasAnimation_ && hasSkeleton_) {
+    // アニメーション時間の更新
+    animationTime_ += 1.0f / 60.0f;
+    animationTime_ = std::fmod(animationTime_, animationData_.duration);
+
+    // アニメーションの適用
+    UpdateSkeletonAnimation(animationTime_);
+
+    // スケルトン行列の更新
+    UpdateSkeleton();
+
+    // パレットの更新（ボーン変換行列）
+    for (size_t jointIndex = 0; jointIndex < skeleton_.joints.size(); ++jointIndex) {
+      mappedPalette_[jointIndex].skeletonSpaceMat =
+        inverseBindMatrices_[jointIndex] * skeleton_.joints[jointIndex].skeletonSpaceMatrix;
+
+      mappedPalette_[jointIndex].skeletonSpaceMatrixInvTransposeMat =
+        Mat4x4::Transpose(Mat4x4::Inverse(mappedPalette_[jointIndex].skeletonSpaceMat));
+    }
+
+    // 各メッシュの頂点影響データの更新
+    for (auto& mesh : meshes_) {
+      mesh.UpdateSkinning(skeleton_.joints);
+    }
   }
 }
 
-void Model::UpdateSkeletonAnimation(float time)
+void Model::PrepareSkinning()
 {
-	for (Joint& joint : skeleton_.joints) {
-		if (auto it = animationData_.nodeAnimations.find(joint.name); it != animationData_.nodeAnimations.end())
-		{
-			const NodeAnimetion& rootAnimetion = (*it).second; // ルートノードのアニメーションを取得
+  // スケルトンやアニメーションがない場合は何もしない
+  if (!hasSkeleton_ || !hasAnimation_) {
+    return;
+  }
 
-			// 位置アニメーションの計算
-			joint.transform.translate = CalcKeyFrameValue(rootAnimetion.translate.keyFrames, time);
-			// 回転アニメーションの計算
-			joint.transform.rotate = CalcKeyFrameValue(rootAnimetion.rotate.keyFrames, time);
-			// スケールアニメーションの計算
-			joint.transform.scale = CalcKeyFrameValue(rootAnimetion.scale.keyFrames, time);
-		}
-	}
-}
+  // アニメーション時間の更新
+  animationTime_ += 1.0f / 60.0f; // 固定フレームレート（必要に応じてdeltaTimeに変更可能）
+  animationTime_ = std::fmod(animationTime_, animationData_.duration); // ループ処理
 
-void Model::DrawSkeleton(Matrix4x4 world, Matrix4x4 viewProjection)
-{
-	// Draw each joint as a sphere and draw lines between joints to represent bones
-	for (const Joint& joint : skeleton_.joints)
-	{
-		// Calculate the position of the joint in world space
-		Matrix4x4 jointWorldMatrix = joint.skeletonSpaceMatrix * world;
-		Vector3 jointPosition = Mat4x4::TransForm(jointWorldMatrix, Vector3(0.0f, 0.0f, 0.0f));
+  // アニメーションの適用（ポーズの更新）
+  UpdateSkeletonAnimation(animationTime_);
 
-		// Draw the joint as a sphere
-		//float radius = 0.01f; // Sphere radius
-		//Draw2D::GetInstance()->DrawSphere(jointPosition, radius, Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+  // スケルトン行列の更新
+  UpdateSkeleton();
 
-		// Draw line to parent joint if it exists
-		if (joint.parentIndex)
-		{
-			const Joint& parentJoint = skeleton_.joints[*joint.parentIndex];
+  // パレット（ボーン変換行列）の更新
+  for (size_t jointIndex = 0; jointIndex < skeleton_.joints.size(); ++jointIndex) {
+    // 各ジョイントの最終的な変換行列を計算
+    // InverseBindMatrix（初期ポーズの逆行列）* 現在のスケルトン空間行列
+    mappedPalette_[jointIndex].skeletonSpaceMat =
+      inverseBindMatrices_[jointIndex] * skeleton_.joints[jointIndex].skeletonSpaceMatrix;
 
-			// Calculate the position of the parent joint in world space
-			Matrix4x4 parentWorldMatrix = parentJoint.skeletonSpaceMatrix * world;
-			Vector3 parentPosition = Mat4x4::TransForm(parentWorldMatrix, Vector3(0.0f, 0.0f, 0.0f));
-			viewProjection;
-			// Draw a line between the current joint and its parent
-			Draw2D::GetInstance()->DrawLine(
-				jointPosition,
-				parentPosition,
-				Vector4(1.0f, 1.0f, 1.0f, 1.0f)
-			);
-		}
-	}
-}
+    // 法線変換用の逆転置行列も計算
+    mappedPalette_[jointIndex].skeletonSpaceMatrixInvTransposeMat =
+      Mat4x4::Transpose(Mat4x4::Inverse(mappedPalette_[jointIndex].skeletonSpaceMat));
+  }
 
-void Model::CreateVertexData()
-{
-	// 頂点リソースを生成
-	vertexResource_ = m_dx12_->MakeBufferResource(sizeof(VertexData) * modelData_.vertices.size());
-
-	// 頂点リソースをマップ
-	vertexResource_->Map(0, nullptr, reinterpret_cast<void**>(&vertexData_));
-	memcpy(vertexData_, modelData_.vertices.data(), sizeof(VertexData) * modelData_.vertices.size());
-
-  vertexSrvIndex_ = SrvManager::GetInstance()->Allocate();
-  SrvManager::GetInstance()->CreateSRVForStructuredBuffer(vertexSrvIndex_, vertexResource_.Get(), static_cast<UINT>(modelData_.vertices.size()), sizeof(VertexData));
-}
-
-void Model::CreateVertexBufferView()
-{
-  if (hasSkeleton_) {
-    // VertexBufferViewを作成
-    vertexBufferView_.BufferLocation = uavVertexOutputResource_->GetGPUVirtualAddress();
-    vertexBufferView_.SizeInBytes = static_cast<UINT>(sizeof(VertexData) * modelData_.vertices.size());
-    vertexBufferView_.StrideInBytes = sizeof(VertexData);
-  } else {
-    // VertexBufferViewを作成
-    vertexBufferView_.BufferLocation = vertexResource_->GetGPUVirtualAddress();
-    vertexBufferView_.SizeInBytes = static_cast<UINT>(sizeof(VertexData) * modelData_.vertices.size());
-    vertexBufferView_.StrideInBytes = sizeof(VertexData);
+  // UAVバリアを設定（前回の計算結果が確実に完了するよう保証）
+  for (auto& mesh : meshes_) {
+    if (mesh.HasSkinning()) {
+      m_dx12_->SetUAVBarrier(mesh.GetUAVVertexResource());
+    }
   }
 }
 
-void Model::CreateIndexData()
+void Model::ExecuteSkinning()
 {
-	// インデックスリソースを生成
-	indexResource_ = m_dx12_->MakeBufferResource(sizeof(uint32_t) * modelData_.indices.size());
+  // スケルトンがない場合は何もしない
+  if (!hasSkeleton_) {
+    return;
+  }
 
-	// インデックスバッファビューを作る
-	indexBufferView_.BufferLocation = indexResource_->GetGPUVirtualAddress();
-	indexBufferView_.SizeInBytes = static_cast<UINT>(sizeof(uint32_t) * modelData_.indices.size());
-	indexBufferView_.Format = DXGI_FORMAT_R32_UINT;
+  // ComputeShaderの設定
+  m_modelBasic_->SetSkinningCSSetting();
 
-	// インデックスリソースをマップ
-	uint32_t* indexData = nullptr;
-	indexResource_->Map(0, nullptr, reinterpret_cast<void**>(&indexData));
-	memcpy(indexData, modelData_.indices.data(), sizeof(uint32_t) * modelData_.indices.size());
+  // 共有パレット（ボーン行列）のSRVを設定
+  SrvManager::GetInstance()->SetComputeRootDescriptorTable(0, skinClFGFuster_.paletteSrvIndex);
 
-	indexResource_->Unmap(0, nullptr);
-}
+  // 各メッシュごとにスキニング計算を実行
+  for (auto& mesh : meshes_) {
+    // メッシュがスキニングを使用しない場合はスキップ
+    if (!mesh.HasSkinning()) {
+      continue;
+    }
 
-void Model::CreateMaterialData()
-{
-	// マテリアルリソースを生成
-	materialResource_ = m_dx12_->MakeBufferResource(sizeof(Material));
+    // Input Vertex（StructuredBuffer SRV）の設定
+    SrvManager::GetInstance()->SetComputeRootDescriptorTable(1, mesh.GetVertexSrvIndex());
 
-	// マテリアルリソースをマップ
-	materialResource_->Map(0, nullptr, reinterpret_cast<void**>(&materialData_));
+    // Influence（StructuredBuffer SRV）の設定
+    SrvManager::GetInstance()->SetComputeRootDescriptorTable(2, mesh.GetInfluenceSrvIndex());
 
-	// マテリアルデータの初期値を書き込む
-	materialData_->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-	materialData_->enableLighting = true;
-	materialData_->enableHighlight = true;
-	materialData_->uvTransform = Mat4x4::MakeIdentity();
-	materialData_->shininess = 15.0f;
+    // Output Vertex（UAV）の設定
+    SrvManager::GetInstance()->SetComputeRootDescriptorTable(3, mesh.GetUAVIndex());
+
+    // SkinningInfo（CBuffer）の設定
+    m_dx12_->GetCommandList()->SetComputeRootConstantBufferView(
+      4, mesh.GetSkinningInfoResourceGPUAddress());
+
+    // ComputeShaderの実行
+    // 頂点数に応じてスレッド数を計算（1024スレッドのグループを使用）
+    UINT numVertices = mesh.GetVertexCount();
+    UINT numThreadGroups = (numVertices + 1023) / 1024;
+    m_dx12_->GetCommandList()->Dispatch(numThreadGroups, 1, 1);
+
+    // バリアを設定（ComputeShader処理後のUAVリソースをVertexBufferとして使用可能に）
+    m_dx12_->TransitionResourceState(
+      D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+      D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,
+      mesh.GetUAVVertexResource());
+  }
+
+  // 共通レンダリング設定に戻す
+  Object3dBasic::GetInstance()->SetCommonRenderSetting();
 }
 
 void Model::CreateSkinningUAV()
@@ -439,65 +488,40 @@ void Model::CreateSkinningInfoResource()
   skinningInfoData_->numVertices = static_cast<uint32_t>(modelData_.vertices.size());
 }
 
-Node Model::ReadNode(aiNode* node)
-{
-	Node result;
-
-	aiVector3D scale, position;
-	aiQuaternion rotate;
-	node->mTransformation.Decompose(scale, rotate, position); // スケール,回転,平行移動を取得
-	
-	result.transform.scale = { scale.x, scale.y, scale.z }; // スケールを取得
-	result.transform.rotate = { rotate.x, -rotate.y, -rotate.z, rotate.w }; // 回転を取得,右手系から左手系に変換
-	result.transform.translate = { -position.x, position.y, position.z }; // 平行移動を取得,x軸を反転
-
-	result.localMatrix = Mat4x4::MakeAffine(result.transform.scale, result.transform.rotate, result.transform.translate); // ローカル変換行列を生成
-
-	result.name = node->mName.C_Str(); // ノードの名前を取得
-
-	result.children.resize(node->mNumChildren); // 子ノードの数だけリサイズ
-	for (uint32_t childIndex = 0; childIndex < node->mNumChildren; ++childIndex)
-	{
-		result.children[childIndex] = ReadNode(node->mChildren[childIndex]); // 再帰的に子ノードを読み込む
-	}
-
-	return result;
-}
-
 int32_t Model::CreateJoint(const Node& node, const std::optional<int32_t>& parentIndex, std::vector<Joint>& joints)
 {
-	Joint joint;
-	joint.name = node.name;
-	joint.localMatrix = node.localMatrix;
-	joint.skeletonSpaceMatrix = Mat4x4::MakeIdentity();
-	joint.transform = node.transform;
-	joint.index = static_cast<int32_t>(joints.size());              // 現在登録されている数をindexとして設定
-	joint.parentIndex = parentIndex;
-	joints.push_back(joint);                           // skeletonのjoint列に追加
+  Joint joint;
+  joint.name = node.name;
+  joint.localMatrix = node.localMatrix;
+  joint.skeletonSpaceMatrix = Mat4x4::MakeIdentity();
+  joint.transform = node.transform;
+  joint.index = static_cast<int32_t>(joints.size());              // 現在登録されている数をindexとして設定
+  joint.parentIndex = parentIndex;
+  joints.push_back(joint);                           // skeletonのjoint列に追加
 
-	for (const Node& child : node.children)
-	{
-		int32_t childIndex = CreateJoint(child, joint.index, joints); // 再帰的に子Jointを生成
-		joints[joint.index].childrenIndex.push_back(childIndex);      // 子Jointのindexを追加
-	}
+  for (const Node& child : node.children)
+  {
+    int32_t childIndex = CreateJoint(child, joint.index, joints); // 再帰的に子Jointを生成
+    joints[joint.index].childrenIndex.push_back(childIndex);      // 子Jointのindexを追加
+  }
 
-	return joint.index;
+  return joint.index;
 }
 
 Skeleton Model::CreateSkeleton(const Node& rootNode)
 {
-	Skeleton skeleton;
-	skeleton.root = CreateJoint(rootNode, {}, skeleton.joints); // ルートノードからジョイントを生成
+  Skeleton skeleton;
+  skeleton.root = CreateJoint(rootNode, {}, skeleton.joints); // ルートノードからジョイントを生成
 
-	// 名前とindexのマップを作る
-	for (const Joint& joint : skeleton.joints)
-	{
-		skeleton.jointMap.emplace(joint.name, joint.index);
-	}
+  // 名前とindexのマップを作る
+  for (const Joint& joint : skeleton.joints)
+  {
+    skeleton.jointMap.emplace(joint.name, joint.index);
+  }
 
-	UpdateSkeleton(); // スケルトンの更新
+  UpdateSkeleton(); // スケルトンの更新
 
-	return skeleton;
+  return skeleton;
 }
 
 SkinCluster Model::CreateSkinCluster()
@@ -543,7 +567,7 @@ SkinCluster Model::CreateSkinCluster()
   for (const auto& jointWeight : modelData_.skinClusterData)
   {
     auto it = skeleton_.jointMap.find(jointWeight.first); // Jointの名前からindexを取得
-    if (it == skeleton_.jointMap.end()) 
+    if (it == skeleton_.jointMap.end())
     {
       continue; // Jointが見つからない場合はスキップ
     }
@@ -570,44 +594,130 @@ SkinCluster Model::CreateSkinCluster()
   return skinCluster;
 }
 
+Node Model::ReadNode(aiNode* node)
+{
+  Node result;
+
+  aiVector3D scale, position;
+  aiQuaternion rotate;
+  node->mTransformation.Decompose(scale, rotate, position); // スケール,回転,平行移動を取得
+
+  result.transform.scale = { scale.x, scale.y, scale.z }; // スケールを取得
+  result.transform.rotate = { rotate.x, -rotate.y, -rotate.z, rotate.w }; // 回転を取得,右手系から左手系に変換
+  result.transform.translate = { -position.x, position.y, position.z }; // 平行移動を取得,x軸を反転
+
+  result.localMatrix = Mat4x4::MakeAffine(result.transform.scale, result.transform.rotate, result.transform.translate); // ローカル変換行列を生成
+
+  result.name = node->mName.C_Str(); // ノードの名前を取得
+
+  result.children.resize(node->mNumChildren); // 子ノードの数だけリサイズ
+  for (uint32_t childIndex = 0; childIndex < node->mNumChildren; ++childIndex)
+  {
+    result.children[childIndex] = ReadNode(node->mChildren[childIndex]); // 再帰的に子ノードを読み込む
+  }
+
+  return result;
+}
+
+void Model::UpdateAnimation(float deltaTime)
+{
+  animationTime_ += deltaTime; // アニメーション時間を更新
+  animationTime_ = std::fmod(animationTime_, animationData_.duration); // アニメーション時間がアニメーションの長さを超えたらループ
+  NodeAnimetion& nodeAnimetion = animationData_.nodeAnimations[rootNode_.name]; // ルートノードのアニメーションを取得
+
+  // 位置アニメーションの計算
+  Vector3 translate = CalcKeyFrameValue(nodeAnimetion.translate.keyFrames, animationTime_);
+  // 回転アニメーションの計算
+  Quaternion rotate = CalcKeyFrameValue(nodeAnimetion.rotate.keyFrames, animationTime_);
+  // スケールアニメーションの計算
+  Vector3 scale = CalcKeyFrameValue(nodeAnimetion.scale.keyFrames, animationTime_);
+
+  // ローカル変換行列を生成
+  Matrix4x4 localMatrix = Mat4x4::MakeAffine(scale, rotate, translate);
+  rootNode_.localMatrix = localMatrix; // ルートノードのローカル変換行列を更新
+}
+
+void Model::UpdateSkeleton()
+{
+  for (Joint& joint : skeleton_.joints)
+  {
+    joint.localMatrix = Mat4x4::MakeAffine(joint.transform.scale, joint.transform.rotate, joint.transform.translate); // ローカル変換行列を生成
+
+    if (joint.parentIndex) {
+      joint.skeletonSpaceMatrix = joint.localMatrix * skeleton_.joints[*joint.parentIndex].skeletonSpaceMatrix; // 親がいる場合は親のスケルトン空間行列を掛ける
+    } else
+    {
+      joint.skeletonSpaceMatrix = joint.localMatrix; // 親がいない場合はローカル変換行列がスケルトン空間行列
+    }
+  }
+}
+
+void Model::UpdateSkinCluster()
+{
+  for (size_t jointIndex = 0; jointIndex < skeleton_.joints.size(); ++jointIndex)
+  {
+    assert(jointIndex < skinCluster_.inverseBindMatrices.size());
+    skinCluster_.mappedPalette[jointIndex].skeletonSpaceMat = skinCluster_.inverseBindMatrices[jointIndex] * skeleton_.joints[jointIndex].skeletonSpaceMatrix;
+    skinCluster_.mappedPalette[jointIndex].skeletonSpaceMatrixInvTransposeMat =
+      Mat4x4::Transpose(Mat4x4::Inverse(skinCluster_.mappedPalette[jointIndex].skeletonSpaceMat));
+  }
+}
+
+void Model::UpdateSkeletonAnimation(float time)
+{
+  for (Joint& joint : skeleton_.joints) {
+    if (auto it = animationData_.nodeAnimations.find(joint.name); it != animationData_.nodeAnimations.end())
+    {
+      const NodeAnimetion& rootAnimetion = (*it).second; // ルートノードのアニメーションを取得
+
+      // 位置アニメーションの計算
+      joint.transform.translate = CalcKeyFrameValue(rootAnimetion.translate.keyFrames, time);
+      // 回転アニメーションの計算
+      joint.transform.rotate = CalcKeyFrameValue(rootAnimetion.rotate.keyFrames, time);
+      // スケールアニメーションの計算
+      joint.transform.scale = CalcKeyFrameValue(rootAnimetion.scale.keyFrames, time);
+    }
+  }
+}
+
 Vector3 Model::CalcKeyFrameValue(const std::vector<KeyFrameVector3>& keyFrames, float time)
 {
-	assert(!keyFrames.empty()); // キーフレームがない場合はエラー
-	if (keyFrames.size() == 1 || time <= keyFrames[0].time)
-	{
-		return keyFrames[0].value; // 最初のキーフレームの値を返す
-	}
+  assert(!keyFrames.empty()); // キーフレームがない場合はエラー
+  if (keyFrames.size() == 1 || time <= keyFrames[0].time)
+  {
+    return keyFrames[0].value; // 最初のキーフレームの値を返す
+  }
 
-	for (uint32_t keyIndex = 0; keyIndex < keyFrames.size() - 1; ++keyIndex)
-	{
-		uint32_t nextKeyIndex = keyIndex + 1;
-		if ( keyFrames[keyIndex].time <= time && time <= keyFrames[nextKeyIndex].time)
-		{
-			float t = (time - keyFrames[keyIndex].time) / (keyFrames[nextKeyIndex].time - keyFrames[keyIndex].time); // 補間係数を計算
-			return Vec3::Lerp(keyFrames[keyIndex].value, keyFrames[nextKeyIndex].value, t); // 線形補間
-		}
-	}
+  for (uint32_t keyIndex = 0; keyIndex < keyFrames.size() - 1; ++keyIndex)
+  {
+    uint32_t nextKeyIndex = keyIndex + 1;
+    if (keyFrames[keyIndex].time <= time && time <= keyFrames[nextKeyIndex].time)
+    {
+      float t = (time - keyFrames[keyIndex].time) / (keyFrames[nextKeyIndex].time - keyFrames[keyIndex].time); // 補間係数を計算
+      return Vec3::Lerp(keyFrames[keyIndex].value, keyFrames[nextKeyIndex].value, t); // 線形補間
+    }
+  }
 
-	return (*keyFrames.rbegin()).value; // 最後のキーフレームの値を返す
+  return (*keyFrames.rbegin()).value; // 最後のキーフレームの値を返す
 }
 
 Quaternion Model::CalcKeyFrameValue(const std::vector<KeyFrameQuaternion>& keyFrames, float time)
 {
-	assert(!keyFrames.empty()); // キーフレームがない場合はエラー
-	if (keyFrames.size() == 1 || time <= keyFrames[0].time)
-	{
-		return keyFrames[0].value; // 最初のキーフレームの値を返す
-	}
+  assert(!keyFrames.empty()); // キーフレームがない場合はエラー
+  if (keyFrames.size() == 1 || time <= keyFrames[0].time)
+  {
+    return keyFrames[0].value; // 最初のキーフレームの値を返す
+  }
 
-	for (uint32_t keyIndex = 0; keyIndex < keyFrames.size() - 1; ++keyIndex)
-	{
-		uint32_t nextKeyIndex = keyIndex + 1;
-		if (keyFrames[keyIndex].time <= time && time <= keyFrames[nextKeyIndex].time)
-		{
-			float t = (time - keyFrames[keyIndex].time) / (keyFrames[nextKeyIndex].time - keyFrames[keyIndex].time); // 補間係数を計算
-			return Quat::Slerp(keyFrames[keyIndex].value, keyFrames[nextKeyIndex].value, t); // 球面線形補間
-		}
-	}
+  for (uint32_t keyIndex = 0; keyIndex < keyFrames.size() - 1; ++keyIndex)
+  {
+    uint32_t nextKeyIndex = keyIndex + 1;
+    if (keyFrames[keyIndex].time <= time && time <= keyFrames[nextKeyIndex].time)
+    {
+      float t = (time - keyFrames[keyIndex].time) / (keyFrames[nextKeyIndex].time - keyFrames[keyIndex].time); // 補間係数を計算
+      return Quat::Slerp(keyFrames[keyIndex].value, keyFrames[nextKeyIndex].value, t); // 球面線形補間
+    }
+  }
 
-	return (*keyFrames.rbegin()).value; // 最後のキーフレームの値を返す
+  return (*keyFrames.rbegin()).value; // 最後のキーフレームの値を返す
 }
