@@ -30,9 +30,6 @@ void Mesh::Draw()
   // 頂点バッファビューを設定
   dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &vbvToUse);
 
-  // 頂点バッファビューを設定
-  dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView_);
-
   // インデックスバッファビューを設定
   dx12_->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
 
