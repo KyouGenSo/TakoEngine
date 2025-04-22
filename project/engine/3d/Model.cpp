@@ -44,26 +44,26 @@ void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool
   if (hasSkeleton_)
   {
     skeleton_ = CreateSkeleton(rootNode_);
-    skinCluster_ = CreateSkinCluster();
+    //skinCluster_ = CreateSkinCluster();
 
     // SkinningInfoResourceの生成
-    CreateSkinningInfoResource();
+    //CreateSkinningInfoResource();
 
     // UAVの生成
-    CreateSkinningUAV();
+    //CreateSkinningUAV();
   }
 
-  // 頂点データの生成
-  CreateVertexData();
+  //// 頂点データの生成
+  //CreateVertexData();
 
-  // VBVの生成
-  CreateVertexBufferView();
+  //// VBVの生成
+  //CreateVertexBufferView();
 
-  // インデックスデータの生成
-  CreateIndexData();
+  //// インデックスデータの生成
+  //CreateIndexData();
 
-  // マテリアルデータの生成
-  CreateMaterialData();
+  //// マテリアルデータの生成
+  //CreateMaterialData();
 
   //// テクスチャの読み込み
   //TextureManager::GetInstance()->LoadTexture(modelData_.textureData.texturePath);

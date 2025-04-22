@@ -91,12 +91,12 @@ private: // プライベートメンバー関数
   /// <summary>
   /// skinning用UAVの生成
   /// </summary>
-  void CreateSkinningUAV();
+  //void CreateSkinningUAV();
 
   /// <summary>
   /// skinningInfoResourceの生成
   /// </summary>
-  void CreateSkinningInfoResource();
+  //void CreateSkinningInfoResource();
 
 	/// <summary>
 	/// ノード読み込み
@@ -116,7 +116,7 @@ private: // プライベートメンバー関数
   /// <summary>
   /// SkinClusterの生成
   /// </summary>
-  SkinCluster CreateSkinCluster();
+  //SkinCluster CreateSkinCluster();
 
 	/// <summary>
 	/// キーフレームの値を計算
