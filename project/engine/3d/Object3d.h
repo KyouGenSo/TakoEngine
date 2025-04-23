@@ -59,6 +59,7 @@ public: // メンバー関数
 	void SetRotate(const Vector3& rotate) { transform_.rotate = rotate; }
 	void SetTranslate(const Vector3& translate) { transform_.translate = translate; }
   void SetMaterialColor(const Vector4& color);
+  void SetUvTransform(const Transform& uvTransform);
 
 	// ライトの設定
 	void SetShininess(float shininess);

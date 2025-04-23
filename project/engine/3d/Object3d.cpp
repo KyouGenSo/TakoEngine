@@ -91,6 +91,14 @@ void Object3d::SetMaterialColor(const Vector4& color)
   }
 }
 
+void Object3d::SetUvTransform(const Transform& uvTransform)
+{
+  if (m_model_)
+  {
+    m_model_->SetUvTransform(uvTransform);
+  }
+}
+
 void Object3d::SetShininess(float shininess)
 {
 	if (m_model_)
