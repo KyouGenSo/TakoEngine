@@ -39,6 +39,7 @@ void MyGame::Initialize()
   TextureManager::GetInstance()->LoadTexture("circle.png");
 
   ModelManager::GetInstance()->LoadModel("terrain.obj");
+  ModelManager::GetInstance()->LoadModel("player.gltf");
   //ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
   ModelManager::GetInstance()->LoadModel("AnimatedCube.gltf", true); 
   //ModelManager::GetInstance()->LoadModel("simpleSkin.gltf", true, true);
