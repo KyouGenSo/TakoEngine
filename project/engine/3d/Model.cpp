@@ -362,6 +362,11 @@ void Model::DrawSkeleton(Matrix4x4 world, Matrix4x4 viewProjection)
 	}
 }
 
+void Model::SetUvTransform(const Transform& uvTransform)
+{
+  materialData_->uvTransform = Mat4x4::MakeAffine(uvTransform.scale, uvTransform.rotate, uvTransform.translate);
+}
+
 void Model::CreateVertexData()
 {
 	// 頂点リソースを生成

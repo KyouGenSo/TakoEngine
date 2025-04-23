@@ -56,6 +56,7 @@ public: // メンバー関数
 	void SetEnableLighting(bool enableLighting) { materialData_->enableLighting = enableLighting; }
 	void SetEnableHighlight(bool enableHighlight) { materialData_->enableHighlight = enableHighlight; }
   void SetMaterialColor(const Vector4& color) { materialData_->color = color; }
+  void SetUvTransform(const Transform& uvTransform);
 
 private: // プライベートメンバー関数
 	/// <summary>
