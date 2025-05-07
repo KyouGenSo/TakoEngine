@@ -182,9 +182,10 @@ void PostEffect::RecreateRenderTexture(uint32_t width, uint32_t height)
   rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
   rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 
-  renderTextureRTVHandleA_ = m_dx12_->GetNextRenderTextureRTVHandle();
-  renderTextureRTVHandleB_ = m_dx12_->GetNextRenderTextureRTVHandle();
-  renderTextureRTVHandleC_ = m_dx12_->GetNextRenderTextureRTVHandle();
+  // RTVHandleのを取得
+  renderTextureRTVHandleA_ = m_dx12_->GetRenderTextureRTVHandle(2);
+  renderTextureRTVHandleB_ = m_dx12_->GetRenderTextureRTVHandle(3);
+  renderTextureRTVHandleC_ = m_dx12_->GetRenderTextureRTVHandle(4);
 
   // RTVの作成
   m_dx12_->GetDevice()->CreateRenderTargetView(renderTextureResourceA_.Get(), &rtvDesc, renderTextureRTVHandleA_);
@@ -282,14 +283,10 @@ void PostEffect::InitRenderTexture()
   rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // フォーマット
   rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D; // 2Dテクスチャとして書き込む
 
-  // renderTextureA用のRTVハンドル取得
-  renderTextureRTVHandleA_ = m_dx12_->GetNextRenderTextureRTVHandle();
-
-  //renderTextureB用のRTVハンドル取得
-  renderTextureRTVHandleB_ = m_dx12_->GetNextRenderTextureRTVHandle();
-
-  // renderTextureC用のRTVハンドル取得
-  renderTextureRTVHandleC_ = m_dx12_->GetNextRenderTextureRTVHandle();
+  // RTVHandleのを取得
+  renderTextureRTVHandleA_ = m_dx12_->GetRenderTextureRTVHandle(2);
+  renderTextureRTVHandleB_ = m_dx12_->GetRenderTextureRTVHandle(3);
+  renderTextureRTVHandleC_ = m_dx12_->GetRenderTextureRTVHandle(4); 
 
   // RTVの生成
   m_dx12_->GetDevice()->CreateRenderTargetView(renderTextureResourceA_.Get(), &rtvDesc, renderTextureRTVHandleA_);

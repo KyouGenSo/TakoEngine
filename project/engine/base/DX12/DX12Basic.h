@@ -157,9 +157,8 @@ public: // メンバー関数
   /// <summary>
   /// レンダーテクスチャのcpuハンドルの取得
   /// </summary>
-  D3D12_CPU_DESCRIPTOR_HANDLE GetNextRenderTextureRTVHandle() {
-    nextRtvHandleIndex_ = nextRtvHandleIndex_ + 1;
-    return GetCPUDescriptorHandle(rtvHeap_.Get(), descriptorSizeRTV_, nextRtvHandleIndex_);
+  D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTextureRTVHandle(uint32_t index) {
+    return GetCPUDescriptorHandle(rtvHeap_.Get(), descriptorSizeRTV_, index);
   }
 
   /// <summary>
@@ -302,8 +301,6 @@ private: // メンバ変数
 
   // RTVハンドルの要素数
   static const UINT kRtvHandleCount = 2;
-
-  static int nextRtvHandleIndex_;
 
   // ウィンドウクラスポインター
   WinApp* winApp_ = nullptr;

@@ -3,7 +3,7 @@ Texture2D<float4> effectTexture : register(t0); // ポストエフェクト適用済み
 Texture2D<float4> nonEffectTexture : register(t1); // ポストエフェクト非適用
 SamplerState smp : register(s0);
 
-float4 main(float2 uv : TEXCOORD) : SV_TARGET
+float4 main(float2 uv : TEXCOORD0) : SV_TARGET
 {
     float4 effectColor = effectTexture.Sample(smp, uv);
     float4 nonEffectColor = nonEffectTexture.Sample(smp, uv);

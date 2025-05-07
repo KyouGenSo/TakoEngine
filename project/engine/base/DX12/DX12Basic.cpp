@@ -19,8 +19,6 @@
 // 最大のSRV数
 const uint32_t DX12Basic::kMaxSRVCount = 512;
 
-int DX12Basic::nextRtvHandleIndex_ = DX12Basic::kRtvHandleCount - 1;
-
 DX12Basic::~DX12Basic()
 {
 
@@ -387,7 +385,7 @@ void DX12Basic::InitDescriptorHeap()
 	descriptorSizeDSV_ = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
 	// RTVのディスクリプタヒープの生成
-	rtvHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 3, false);
+	rtvHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 5, false);
 
 	// DSVのディスクリプタヒープの生成
 	dsvHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
