@@ -11,7 +11,6 @@
 #include <cassert>
 #include <fstream>
 #include <sstream>
-#include <algorithm>
 
 ///------------------------------------------------///
 ///                 PUBLIC METHODS                ///
@@ -45,16 +44,17 @@ void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool
   {
     skeleton_ = CreateSkeleton(rootNode_);
     InitializeMatrixPalette();
-    //skinCluster_ = CreateSkinCluster();
-
-    // SkinningInfoResourceの生成
-    //CreateSkinningInfoResource();
-
-    // UAVの生成
-    //CreateSkinningUAV();
   }
+}
 
-
+void Model::Finalize()
+{
+  // メッシュの解放
+  for (auto& mesh : meshes_)
+  {
+    delete mesh;
+  }
+  meshes_.clear();
 }
 
 void Model::Update()
@@ -80,8 +80,15 @@ void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
   ExecuteSkinning();
 
   // 全メッシュの描画
-  for (auto& mesh : meshes_) {
-    mesh.Draw();
+  if (meshes_.size() <= 1)
+  {
+    for (auto& mesh : meshes_) {
+      mesh->Draw();
+    }
+  }
+  else
+  {
+    ProcessNodeHierarchy(rootNode_, Mat4x4::MakeIdentity(), world, viewProjection);
   }
 
   // skeletonの描画
@@ -173,15 +180,15 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
     }
 
     // メッシュデータの保存
-    Mesh newMesh;
-    newMesh.Initialize(m_modelBasic_, vertices, indices, textureData);
+    Mesh* newMesh = new Mesh();
+    newMesh->Initialize(m_modelBasic_, vertices, indices, textureData);
     meshes_.push_back(newMesh);
   }
 
   if (hasSkeleton_) {
     for (auto& mesh : meshes_) {
       // 各メッシュにスキニングデータを設定
-      mesh.InitializeSkinning(skinClusterData_, skeleton_.jointMap);
+      mesh->InitializeSkinning(skinClusterData_, skeleton_.jointMap);
     }
   }
 }
@@ -190,7 +197,7 @@ void Model::SetShininess(float shininess)
 {
   for (auto& mesh : meshes_)
   {
-    mesh.SetShininess(shininess);
+    mesh->SetShininess(shininess);
   }
 }
 
@@ -198,7 +205,7 @@ void Model::SetEnableLighting(bool enableLighting)
 {
   for (auto& mesh : meshes_)
   {
-    mesh.SetEnableLighting(enableLighting);
+    mesh->SetEnableLighting(enableLighting);
   }
 }
 
@@ -206,7 +213,7 @@ void Model::SetEnableHighlight(bool enableHighlight)
 {
   for (auto& mesh : meshes_)
   {
-    mesh.SetEnableHighlight(enableHighlight);
+    mesh->SetEnableHighlight(enableHighlight);
   }
 }
 
@@ -214,7 +221,32 @@ void Model::SetMaterialColor(const Vector4& color)
 {
   for (auto& mesh : meshes_)
   {
-    mesh.SetMaterialColor(color);
+    mesh->SetMaterialColor(color);
+  }
+}
+
+void Model::ProcessNodeHierarchy(const Node& node, const Matrix4x4& parentGlobalMatrix, Matrix4x4 world, Matrix4x4 viewProjection)
+{
+  // このノードのグローバル行列を計算（親の変換を適用）
+  Matrix4x4 globalMatrix = Mat4x4::Multiply(node.localMatrix, parentGlobalMatrix);
+
+  // このノードに関連付けられたメッシュを処理
+  for (int meshIndex : node.meshIndices) {
+    if (meshIndex < static_cast<int>(meshes_.size())) {
+      // メッシュのワールド変換行列を計算
+      Matrix4x4 meshWorldMatrix = Mat4x4::Multiply(globalMatrix, world);
+
+      // メッシュのトランスフォーム情報を更新
+      meshes_[meshIndex]->UpdateTransformation(meshWorldMatrix, viewProjection);
+
+      // 更新されたトランスフォーム情報で描画
+      meshes_[meshIndex]->DrawWithCurrentTransform();
+    }
+  }
+
+  // 子ノードを再帰的に処理
+  for (const Node& child : node.children) {
+    ProcessNodeHierarchy(child, globalMatrix, world, viewProjection);
   }
 }
 
@@ -363,8 +395,8 @@ void Model::PrepareSkinning()
 
   // UAVバリアを設定（前回の計算結果が確実に完了するよう保証）
   for (auto& mesh : meshes_) {
-    if (mesh.HasSkinning()) {
-      m_dx12_->SetUAVBarrier(mesh.GetUAVVertexResource());
+    if (mesh->HasSkinning()) {
+      m_dx12_->SetUAVBarrier(mesh->GetUAVVertexResource());
     }
   }
 }
@@ -385,12 +417,12 @@ void Model::ExecuteSkinning()
   // 各メッシュごとにスキニング計算を実行
   for (auto& mesh : meshes_) {
     // メッシュがスキニングを使用しない場合はスキップ
-    if (!mesh.HasSkinning()) {
+    if (!mesh->HasSkinning()) {
       continue;
     }
 
     // この部分を SetupSkinningCompute に置き換え
-    mesh.SetupSkinningCompute();
+    mesh->SetupSkinningCompute();
   }
 
   // 共通レンダリング設定に戻す
@@ -488,17 +520,25 @@ Node Model::ReadNode(aiNode* node)
 
   aiVector3D scale, position;
   aiQuaternion rotate;
-  node->mTransformation.Decompose(scale, rotate, position); // スケール,回転,平行移動を取得
+  node->mTransformation.Decompose(scale, rotate, position);         // スケール,回転,平行移動を取得
 
-  result.transform.scale = { scale.x, scale.y, scale.z }; // スケールを取得
-  result.transform.rotate = { rotate.x, -rotate.y, -rotate.z, rotate.w }; // 回転を取得,右手系から左手系に変換
-  result.transform.translate = { -position.x, position.y, position.z }; // 平行移動を取得,x軸を反転
+  result.transform.scale = { scale.x, scale.y, scale.z };                         // スケールを取得
+  result.transform.rotate = { rotate.x, -rotate.y, -rotate.z, rotate.w };         // 回転を取得,右手系から左手系に変換
+  result.transform.translate = { -position.x, position.y, position.z };           // 平行移動を取得,x軸を反転
 
-  result.localMatrix = Mat4x4::MakeAffine(result.transform.scale, result.transform.rotate, result.transform.translate); // ローカル変換行列を生成
+  result.localMatrix = Mat4x4::MakeAffine(
+    result.transform.scale, result.transform.rotate, result.transform.translate);   // ローカル変換行列を生成
 
-  result.name = node->mName.C_Str(); // ノードの名前を取得
+  result.name = node->mName.C_Str();                                                // ノードの名前を取得
+
+  // メッシュインデックスの読み込み
+  result.meshIndices.resize(node->mNumMeshes);
+  for (uint32_t i = 0; i < node->mNumMeshes; i++) {
+    result.meshIndices[i] = node->mMeshes[i];
+  }
 
   result.children.resize(node->mNumChildren); // 子ノードの数だけリサイズ
+
   for (uint32_t childIndex = 0; childIndex < node->mNumChildren; ++childIndex)
   {
     result.children[childIndex] = ReadNode(node->mChildren[childIndex]); // 再帰的に子ノードを読み込む

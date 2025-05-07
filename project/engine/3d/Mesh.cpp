@@ -20,6 +20,7 @@ void Mesh::Initialize(ModelBasic* modelBasic, const std::vector<VertexData>& ver
   CreateVertexBufferView();
   CreateIndexData();
   CreateMaterialData();
+  CreateTransformation();
 }
 
 void Mesh::Draw()
@@ -42,6 +43,41 @@ void Mesh::Draw()
   // 描画
   dx12_->GetCommandList()->DrawIndexedInstanced(static_cast<UINT>(indices_.size()), 1, 0, 0, 0);
 
+}
+
+void Mesh::DrawWithCurrentTransform()
+{
+  // スキニング対応版の描画処理
+  D3D12_VERTEX_BUFFER_VIEW vbvToUse = hasSkinning_ ? skinnedVertexBufferView_ : vertexBufferView_;
+
+  // 頂点バッファビューを設定
+  dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &vbvToUse);
+
+  // インデックスバッファビューを設定
+  dx12_->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
+
+  // マテリアルデータを設定
+  dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource_->GetGPUVirtualAddress());
+
+  // 座標変換行列データを設定
+  dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationResource_->GetGPUVirtualAddress());
+
+  // テクスチャを設定
+  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, textureData_.textureIndex);
+
+  // 描画
+  dx12_->GetCommandList()->DrawIndexedInstanced(static_cast<UINT>(indices_.size()), 1, 0, 0, 0);
+}
+
+void Mesh::UpdateTransformation(const Matrix4x4& world, const Matrix4x4& viewProjection)
+{
+  // ワールド変換行列とビュープロジェクション行列からWVP行列を計算
+  Matrix4x4 wvpMatrix = Mat4x4::Multiply(world, viewProjection);
+
+  // 変換行列データを更新
+  transformationData_->WVP = wvpMatrix;
+  transformationData_->world = world;
+  transformationData_->worldInvTranspose = Mat4x4::InverseTranspose(world);
 }
 
 void Mesh::InitializeSkinning(const std::map<std::string, JointWeightData>& skinClusterData, const std::map<std::string, int32_t>& jointMap)
@@ -198,6 +234,19 @@ void Mesh::CreateMaterialData()
   materialData_->enableHighlight = true;
   materialData_->uvTransform = Mat4x4::MakeIdentity();
   materialData_->shininess = 15.0f;
+}
+
+void Mesh::CreateTransformation()
+{
+  // 座標変換行列リソースを生成
+  transformationResource_ = dx12_->MakeBufferResource(sizeof(Object3d::TransformationMatrix));
+  // 座標変換行列リソースをマップ
+  transformationResource_->Map(0, nullptr, reinterpret_cast<void**>(&transformationData_));
+
+  // 座標変換行列データの初期値を書き込む
+  transformationData_->WVP = Mat4x4::MakeIdentity();
+  transformationData_->world = Mat4x4::MakeIdentity();
+  transformationData_->worldInvTranspose = Mat4x4::MakeIdentity();
 }
 
 void Mesh::SetupSkinningUAV()

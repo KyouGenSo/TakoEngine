@@ -1,4 +1,7 @@
 #include"ModelManager.h"
+
+#include <ranges>
+
 #include"Model.h"
 #include"DX12Basic.h"
 
@@ -22,6 +25,11 @@ void ModelManager::Initialize(DX12Basic* dx12)
 void ModelManager::Finalize()
 {
   delete pModelBasic_;
+
+  for (auto& val : models_ | std::views::values)
+  {
+    val->Finalize();
+  }
 
 	if (instance_ != nullptr)
 	{

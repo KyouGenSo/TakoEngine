@@ -20,6 +20,7 @@ struct Node
     Matrix4x4 localMatrix;
     std::string name;
     std::vector<Node> children;
+    std::vector<int> meshIndices;
 };
 
 // 頂点データ

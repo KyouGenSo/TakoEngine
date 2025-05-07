@@ -3,6 +3,7 @@
 #include <d3d12.h>
 #include <wrl.h>
 #include "ModelStruct.h"
+#include "Object3d.h"
 
 class DX12Basic;
 class ModelBasic;
@@ -18,6 +19,10 @@ public:
 
   // 描画
   void Draw();
+  void DrawWithCurrentTransform();
+
+  // 座標変換行列の更新
+  void UpdateTransformation(const Matrix4x4& world, const Matrix4x4& viewProjection);
 
   //------------------------------スキニング関連-------------------------------//
   // スキンニングの初期化
@@ -34,6 +39,7 @@ public:
   void SetEnableLighting(bool enableLighting) { materialData_->enableLighting = enableLighting; }
   void SetEnableHighlight(bool enableHighlight) { materialData_->enableHighlight = enableHighlight; }
   void SetMaterialColor(const Vector4& color) { materialData_->color = color; }
+
   bool HasSkinning() const { return hasSkinning_; }
   ID3D12Resource* GetUAVVertexResource() { return uavVertexOutputResource_.Get(); }
   uint32_t GetVertexSrvIndex() { return vertexSrvIndex_; }
@@ -48,6 +54,7 @@ private:
   void CreateVertexBufferView();
   void CreateIndexData();
   void CreateMaterialData();
+  void CreateTransformation();
   // スキニング関連のリソース生成
   void SetupSkinningUAV();
 
@@ -63,6 +70,7 @@ private:
   Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource_;
   Microsoft::WRL::ComPtr<ID3D12Resource> indexResource_;
   Microsoft::WRL::ComPtr<ID3D12Resource> materialResource_;
+  Microsoft::WRL::ComPtr<ID3D12Resource> transformationResource_;
 
   // バッファビュー
   D3D12_VERTEX_BUFFER_VIEW vertexBufferView_;
@@ -72,6 +80,7 @@ private:
   // バッファリソース内のデータを指すポインタ
   VertexData* vertexData_ = nullptr;
   Material* materialData_ = nullptr;
+  Object3d::TransformationMatrix* transformationData_ = nullptr;
 
   // SRVインデックス
   uint32_t vertexSrvIndex_ = 0;

@@ -21,6 +21,11 @@ public: // メンバー関数
 	/// </summary>
 	void Initialize(ModelBasic* modelBasic, const std::string& fileName, bool hasAnimation, bool hasSkeleton);
 
+  /// <summary>
+  /// 終了処理
+  /// </summary>
+  void Finalize();
+
 	/// <summary>
 	/// 更新
 	/// </summary>
@@ -51,6 +56,11 @@ public: // メンバー関数
   void SetMaterialColor(const Vector4& color);
 
 private: // プライベートメンバー関数
+  /// <summary>
+  /// ノードの階層を処理
+  /// </summary>
+  void ProcessNodeHierarchy(const Node& node, const Matrix4x4& parentGlobalMatrix, Matrix4x4 world, Matrix4x4 viewProjection);
+
   /// <summary>
   /// Skeletonのデバグ用描画
   /// </summary>
@@ -124,8 +134,7 @@ private: // メンバ変数
 	std::string ModelFolderName_;
 
 	// モデルデータ
-	//SkinnigModelData modelData_;
-  std::vector<Mesh> meshes_;
+  std::vector<Mesh*> meshes_;
 
   // ノードデータ
   Node rootNode_;
@@ -147,28 +156,4 @@ private: // メンバ変数
   uint32_t paletteSrvIndex_;
   std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> paletteSrvHandle_;
   std::map<std::string, JointWeightData> skinClusterData_;
-
-  // skinCluster
-  //SkinCluster skinCluster_;
-
-	// バッファリソース
-	//Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource_;
-	//Microsoft::WRL::ComPtr<ID3D12Resource> indexResource_;
-	//Microsoft::WRL::ComPtr<ID3D12Resource> materialResource_;
-
-  //Microsoft::WRL::ComPtr<ID3D12Resource> uavVertexOutputResource_;
-  //Microsoft::WRL::ComPtr<ID3D12Resource> skinningInfoResource_;
-
-  //uint32_t vertexSrvIndex_ = 0;
-  //uint32_t uavIndex_ = 0;
-
-	// バッファリソース内のデータを指すポインタ
-	//VertexData* vertexData_ = nullptr;
-	//Material* materialData_ = nullptr;
-  //SkinningInfo* skinningInfoData_ = nullptr;
-
-	// バッファビュー
-	//D3D12_VERTEX_BUFFER_VIEW vertexBufferView_;
-	//D3D12_INDEX_BUFFER_VIEW indexBufferView_;
-
 };
