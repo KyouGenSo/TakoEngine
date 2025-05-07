@@ -9,7 +9,9 @@ class DX12Basic;
 class ModelBasic;
 
 class Mesh {
-public:
+
+public: // メンバー関数
+
   // 初期化
   void Initialize(
     ModelBasic* modelBasic,
@@ -52,7 +54,8 @@ public:
   D3D12_GPU_VIRTUAL_ADDRESS GetSkinningInfoResourceGPUAddress() { return skinningInfoResource_->GetGPUVirtualAddress(); }
   UINT GetVertexCount() { return static_cast<UINT>(vertices_.size()); }
 
-private:
+private: // プライベートメンバー関数
+
   // リソース生成メソッド
   void CreateVertexData();
   void CreateVertexBufferView();
