@@ -50,10 +50,10 @@ public: // メンバー関数
 	bool HasSkeleton() const { return hasSkeleton_; }
 
 	// -----------------------------------Setters-----------------------------------//
-	void SetShininess(float shininess) { materialData_->shininess = shininess; }
-	void SetEnableLighting(bool enableLighting) { materialData_->enableLighting = enableLighting; }
-	void SetEnableHighlight(bool enableHighlight) { materialData_->enableHighlight = enableHighlight; }
-  void SetMaterialColor(const Vector4& color) { materialData_->color = color; }
+  void SetShininess(float shininess);
+  void SetEnableLighting(bool enableLighting);
+  void SetEnableHighlight(bool enableHighlight);
+  void SetMaterialColor(const Vector4& color);
   void SetUvTransform(const Transform& uvTransform);
 
 private: // プライベートメンバー関数

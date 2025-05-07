@@ -39,6 +39,10 @@ public:
   void SetEnableLighting(bool enableLighting) { materialData_->enableLighting = enableLighting; }
   void SetEnableHighlight(bool enableHighlight) { materialData_->enableHighlight = enableHighlight; }
   void SetMaterialColor(const Vector4& color) { materialData_->color = color; }
+  void SetUvTransform(const Transform& transform)
+  {
+    materialData_->uvTransform = Mat4x4::MakeAffine(transform.scale, transform.rotate, transform.translate);
+  }
 
   bool HasSkinning() const { return hasSkinning_; }
   ID3D12Resource* GetUAVVertexResource() { return uavVertexOutputResource_.Get(); }
@@ -55,7 +59,7 @@ private:
   void CreateIndexData();
   void CreateMaterialData();
   void CreateTransformation();
-  // スキニング関連のリソース生成
+  // スキニング関連のUAVリソース生成
   void SetupSkinningUAV();
 
   // メンバ変数
