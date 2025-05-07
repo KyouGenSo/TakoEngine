@@ -225,9 +225,7 @@ void GameScene::DrawWithEffect()
   // 3Dモデル共通描画設定
   Object3dBasic::GetInstance()->SetCommonRenderSetting();
 
-  // モデル描画
-  object3d_->Draw();
-  object3d2_->Draw();
+
 
 
 
@@ -261,7 +259,9 @@ void GameScene::DrawWithoutEffect()
   //-------------------Modelの描画-------------------//
   // 3Dモデル共通描画設定
   Object3dBasic::GetInstance()->SetCommonRenderSetting();
-
+  // モデル描画
+  object3d_->Draw();
+  object3d2_->Draw();
 
   //------------------------------------------------//
 

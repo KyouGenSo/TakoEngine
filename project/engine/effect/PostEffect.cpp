@@ -88,78 +88,78 @@ void PostEffect::BegineDrawNonEffectTarget()
 
 void PostEffect::Draw(const std::string& effectName)
 {
-  // バリアを張る
-  SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-
-  // ルートシグネチャの設定
-  m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_[effectName].Get());
-
-  // パイプラインステートの設定
-  m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_[effectName].Get());
-
-  // トポロジの設定
-  m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-  // 定数バッファの設定
-  SetParamResource(effectName);
-
-  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, rtvSrvIndexA_);
-  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(4, dsvSrvIndex_);
-
-  // 描画
-  m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
-
-  SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
-
-  //// レンダーテクスチャのStateをPIXEL_SHADER_RESOURCEに変更
-  //SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, renderTextureResourceA_.Get());
-  //SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, renderTextureResourceB_.Get());
-
-  //// 一時的なレンダーテクスチャCに描画開始（エフェクト適用結果用）
-  //m_dx12_->GetCommandList()->OMSetRenderTargets(1, &renderTextureRTVHandleC_, false, nullptr);
-
-  //// クリアカラー
-  //float clearColor[] = { kRenderTextureClearColor_.x, kRenderTextureClearColor_.y, kRenderTextureClearColor_.z, kRenderTextureClearColor_.w };
-  //m_dx12_->GetCommandList()->ClearRenderTargetView(renderTextureRTVHandleC_, clearColor, 0, nullptr);
-
-  //// viewportとシザー矩形の設定
-  //m_dx12_->SetViewPort();
+  //// バリアを張る
+  //SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
   //// ルートシグネチャの設定
   //m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_[effectName].Get());
+
+  //// パイプラインステートの設定
   //m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_[effectName].Get());
 
-  //// パラメータリソースの設定
+  //// トポロジの設定
+  //m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+  //// 定数バッファの設定
   //SetParamResource(effectName);
 
-  //// レンダーテクスチャAをシェーダーリソースとして設定
   //SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, rtvSrvIndexA_);
   //SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(4, dsvSrvIndex_);
 
-  //// 描画（フルスクリーン三角形）- エフェクト適用
+  //// 描画
   //m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
 
-  //// レンダーテクスチャCをシェーダーリソースに変更
-  //SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, renderTextureResourceC_.Get());
+  //SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
-  //// スワップチェーンに描画開始
-  //m_dx12_->SetSwapChain();
+  // レンダーテクスチャのStateをPIXEL_SHADER_RESOURCEに変更
+  SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, renderTextureResourceA_.Get());
+  SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, renderTextureResourceB_.Get());
 
-  //// 合成用パイプライン設定
-  //m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_["Composite"].Get());
-  //m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_["Composite"].Get());
+  // 一時的なレンダーテクスチャCに描画開始（エフェクト適用結果用）
+  m_dx12_->GetCommandList()->OMSetRenderTargets(1, &renderTextureRTVHandleC_, false, nullptr);
 
-  //// レンダーテクスチャCとBを合成
-  //SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, rtvSrvIndexC_);
-  //SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(1, rtvSrvIndexB_);
+  // クリアカラー
+  float clearColor[] = { kRenderTextureClearColor_.x, kRenderTextureClearColor_.y, kRenderTextureClearColor_.z, kRenderTextureClearColor_.w };
+  m_dx12_->GetCommandList()->ClearRenderTargetView(renderTextureRTVHandleC_, clearColor, 0, nullptr);
 
-  //// 描画（フルスクリーン三角形）- 合成
-  //m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+  // viewportとシザー矩形の設定
+  m_dx12_->SetViewPort();
 
-  //// 状態を元に戻す
-  //SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET, renderTextureResourceA_.Get());
-  //SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET, renderTextureResourceB_.Get());
-  //SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET, renderTextureResourceC_.Get());
+  // ルートシグネチャの設定
+  m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_[effectName].Get());
+  m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_[effectName].Get());
+
+  // パラメータリソースの設定
+  SetParamResource(effectName);
+
+  // レンダーテクスチャAをシェーダーリソースとして設定
+  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, rtvSrvIndexA_);
+  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(4, dsvSrvIndex_);
+
+  // 描画（フルスクリーン三角形）- エフェクト適用
+  m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+
+  // レンダーテクスチャCをシェーダーリソースに変更
+  SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, renderTextureResourceC_.Get());
+
+  // スワップチェーンに描画開始
+  m_dx12_->SetSwapChain();
+
+  // 合成用パイプライン設定
+  m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_["Composite"].Get());
+  m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_["Composite"].Get());
+
+  // レンダーテクスチャCとBを合成
+  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, rtvSrvIndexC_);
+  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(1, rtvSrvIndexB_);
+
+  // 描画（フルスクリーン三角形）- 合成
+  m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+
+  // 状態を元に戻す
+  SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET, renderTextureResourceA_.Get());
+  SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET, renderTextureResourceB_.Get());
+  SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET, renderTextureResourceC_.Get());
 
 }
 
