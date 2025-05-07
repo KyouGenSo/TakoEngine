@@ -23,7 +23,7 @@ struct VertexShaderInput
     float2 texcoord : TEXCOORD0;
     float3 normal : NORMAL0;
     float4 weight : WEIGHT0;
-    int32_t4 index : INDEX0;
+    int4 index : INDEX0;
 };
 
 struct Skinned

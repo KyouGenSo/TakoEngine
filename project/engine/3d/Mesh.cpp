@@ -146,11 +146,11 @@ void Mesh::InitializeSkinning(const std::map<std::string, JointWeightData>& skin
     }
   }
 
-  // 影響度リソースを生成
+  // UAVリソースを生成
   SetupSkinningUAV();
 }
 
-void Mesh::SetupSkinningCompute()
+void Mesh::SkinningCompute()
 {
   if (!hasSkinning_) return;
 

@@ -32,7 +32,7 @@ public:
     const std::map<std::string,
     int32_t>& jointMap);
 
-  void SetupSkinningCompute();
+  void SkinningCompute();
 
   //-----------------------------Getters/Setters------------------------------//
   void SetShininess(float shininess) { materialData_->shininess = shininess; }

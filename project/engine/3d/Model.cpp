@@ -39,11 +39,16 @@ void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool
     animationData_ = LoadAnimationFile(directoryFolderName_ + "/" + ModelFolderName_, fileName);
   }
 
-  // skeletonの生成
+  // skeletonの生成とメッシュのスキンニングデータの初期化
   if (hasSkeleton_)
   {
     skeleton_ = CreateSkeleton(rootNode_);
     InitializeMatrixPalette();
+
+    for (auto& mesh : meshes_) {
+      // 各メッシュにスキニングデータを設定
+      mesh->InitializeSkinning(skinClusterData_, skeleton_.jointMap);
+    }
   }
 }
 
@@ -150,12 +155,17 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
       aiQuaternion rotate;
       bindPoseMatrixAssimp.Decompose(scale, rotate, tanslate);
       // 左手系のBindPoseMatrixを作る
-      Matrix4x4 bindPoseMatrix = Mat4x4::MakeAffine({ scale.x, scale.y, scale.z }, { rotate.x, -rotate.y, -rotate.z, rotate.w }, { -tanslate.x, tanslate.y, tanslate.z });
+      Matrix4x4 bindPoseMatrix = Mat4x4::MakeAffine(
+        { scale.x, scale.y, scale.z },
+        { rotate.x, -rotate.y, -rotate.z, rotate.w },
+        { -tanslate.x, tanslate.y, tanslate.z });
       jointWeightData.inverseBindMatrix = Mat4x4::Inverse(bindPoseMatrix);
 
       for (uint32_t weightIndex = 0; weightIndex < bone->mNumWeights; ++weightIndex)
       {
-        jointWeightData.vertexWeights.push_back({ bone->mWeights[weightIndex].mWeight , bone->mWeights[weightIndex].mVertexId });
+        jointWeightData.vertexWeights.push_back({
+          .weight= bone->mWeights[weightIndex].mWeight ,
+          .vertexIndex= bone->mWeights[weightIndex].mVertexId });
       }
     }
 
@@ -183,13 +193,6 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
     Mesh* newMesh = new Mesh();
     newMesh->Initialize(m_modelBasic_, vertices, indices, textureData);
     meshes_.push_back(newMesh);
-  }
-
-  if (hasSkeleton_) {
-    for (auto& mesh : meshes_) {
-      // 各メッシュにスキニングデータを設定
-      mesh->InitializeSkinning(skinClusterData_, skeleton_.jointMap);
-    }
   }
 }
 
@@ -383,7 +386,6 @@ void Model::PrepareSkinning()
 
   // パレット（ボーン変換行列）の更新
   for (size_t jointIndex = 0; jointIndex < skeleton_.joints.size(); ++jointIndex) {
-    // 各ジョイントの最終的な変換行列を計算
     // InverseBindMatrix（初期ポーズの逆行列）* 現在のスケルトン空間行列
     mappedPalette_[jointIndex].skeletonSpaceMat =
       inverseBindMatrices_[jointIndex] * skeleton_.joints[jointIndex].skeletonSpaceMatrix;
@@ -393,7 +395,7 @@ void Model::PrepareSkinning()
       Mat4x4::Transpose(Mat4x4::Inverse(mappedPalette_[jointIndex].skeletonSpaceMat));
   }
 
-  // UAVバリアを設定（前回の計算結果が確実に完了するよう保証）
+  // UAVバリアを設定
   for (auto& mesh : meshes_) {
     if (mesh->HasSkinning()) {
       m_dx12_->SetUAVBarrier(mesh->GetUAVVertexResource());
@@ -421,8 +423,8 @@ void Model::ExecuteSkinning()
       continue;
     }
 
-    // この部分を SetupSkinningCompute に置き換え
-    mesh->SetupSkinningCompute();
+    // スキニング計算を実行
+    mesh->SkinningCompute();
   }
 
   // 共通レンダリング設定に戻す
