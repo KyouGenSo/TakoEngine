@@ -42,7 +42,7 @@ public: // メンバー関数
   /// renderTextureを設定
   /// </summary> 
   void SetEffectRenderTexture();
-  void SetNonEffectRenderTecture();
+  void SetNonEffectRenderTexture();
 
   /// <summary>
   /// swapChainを設定
@@ -111,6 +111,11 @@ public: // メンバー関数
   /// UAVリソースバリアの設定
   /// </summary>
   void SetUAVBarrier(ID3D12Resource* resource);
+
+  /// <summary>
+  /// // ビューポートとシザリング矩形をセット
+  /// </summary>
+  void SetViewPort();
 
   /// <summary>
   /// RTV,DepthBufferのリサイズ

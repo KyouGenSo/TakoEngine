@@ -24,7 +24,8 @@ public: // メンバ関数
 	/// <summary>
 	/// 描画
 	/// </summary>
-	virtual void Draw() = 0;
+	virtual void DrawWithEffect() = 0;
+  virtual void DrawWithoutEffect() = 0;
 
 	/// <summary>
 	/// ImGuiの描画

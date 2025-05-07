@@ -101,13 +101,11 @@ void DX12Basic::SetEffectRenderTexture()
 	// 深度ステンシルをクリア
 	commandList_->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
-	// ビューポートとシザリング矩形をセット
-	commandList_->RSSetViewports(1, &viewport_);
-	commandList_->RSSetScissorRects(1, &scissorRect_);
+  SetViewPort();
 
 }
 
-void DX12Basic::SetNonEffectRenderTecture()
+void DX12Basic::SetNonEffectRenderTexture()
 {
   // DSVのハンドルを取得
   D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvHeap_->GetCPUDescriptorHandleForHeapStart();
@@ -118,9 +116,7 @@ void DX12Basic::SetNonEffectRenderTecture()
   // 深度ステンシルをクリア
   commandList_->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
-  // ビューポートとシザリング矩形をセット
-  commandList_->RSSetViewports(1, &viewport_);
-  commandList_->RSSetScissorRects(1, &scissorRect_);
+  SetViewPort();
 }
 
 void DX12Basic::SetSwapChain()
@@ -142,9 +138,7 @@ void DX12Basic::SetSwapChain()
 	// 画面の色をクリア
 	commandList_->ClearRenderTargetView(rtvHandle_[backBufferIndex], clearColor, 0, nullptr);
 
-	// ビューポートとシザリング矩形をセット
-	commandList_->RSSetViewports(1, &viewport_);
-	commandList_->RSSetScissorRects(1, &scissorRect_);
+	SetViewPort();
 
 }
 
@@ -593,6 +587,12 @@ void DX12Basic::RecreateDepthBuffer()
   // DSVを作成
   D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvHeap_->GetCPUDescriptorHandleForHeapStart();
   device_->CreateDepthStencilView(depthStencilResource_.Get(), &dsvDesc, dsvHandle);
+}
+
+void DX12Basic::SetViewPort()
+{
+  commandList_->RSSetViewports(1, &viewport_);
+  commandList_->RSSetScissorRects(1, &scissorRect_);
 }
 
 Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> DX12Basic::CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisible)

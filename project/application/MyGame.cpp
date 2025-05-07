@@ -104,14 +104,14 @@ void MyGame::Draw()
 	/// ------------------シーン描画-------------------///
 	/// ============================================= ///
 
-	// 描画前の処理(レンダーテクスチャを描画対象に設定)
+	//ポストエフェクト適用対象の描画
 	dx12_->SetEffectRenderTexture();
 
 	// テクスチャ用のsrvヒープの設定
 	SrvManager::GetInstance()->BeginDraw();
 
 	// シーンの描画
-	SceneManager::GetInstance()->Draw();
+	SceneManager::GetInstance()->DrawWithEffect();
 
   // GPUパーティクルの描画
   GPUParticle::GetInstance()->Draw();
@@ -120,11 +120,17 @@ void MyGame::Draw()
 
   Draw2D::GetInstance()->Reset();
 
+  // ポストエフェクト非適用対象の描画
+  dx12_->SetNonEffectRenderTexture();
+
+  // シーンの描画
+  SceneManager::GetInstance()->DrawWithoutEffect();
+
 	/// ===================================================== ///
 	/// ------------------ポストエフェクト描画-------------------///
 	/// ===================================================== ///
 	// SwapChainを描画対象に設定
-	dx12_->SetSwapChain();
+	//dx12_->SetSwapChain();
 
 	// PostEffectの描画
 	switch (postEffectType)

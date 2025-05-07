@@ -52,14 +52,22 @@ void SceneManager::Update()
 	Transition::GetInstance()->Update();
 }
 
-void SceneManager::Draw()
+void SceneManager::DrawWithEffect()
 {
 	if (scene_)
 	{
-		scene_->Draw();
+		scene_->DrawWithEffect();
 	}
 
 	Transition::GetInstance()->Draw();
+}
+
+void SceneManager::DrawWithoutEffect()
+{
+  if (scene_)
+  {
+    scene_->DrawWithoutEffect();
+  }
 }
 
 void SceneManager::DrawImGui()
