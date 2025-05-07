@@ -19,6 +19,8 @@
 // 最大のSRV数
 const uint32_t DX12Basic::kMaxSRVCount = 512;
 
+int DX12Basic::nextRtvHandleIndex_ = DX12Basic::kRtvHandleCount - 1;
+
 DX12Basic::~DX12Basic()
 {
 
@@ -90,13 +92,13 @@ void DX12Basic::Finalize()
 	CloseHandle(fenceEvent_);
 }
 
-void DX12Basic::SetRenderTexture()
+void DX12Basic::SetEffectRenderTexture()
 {
 	// DSVのハンドルを取得
 	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvHeap_->GetCPUDescriptorHandleForHeapStart();
 
 	// レンダーテクスチャを描画先に設定
-	PostEffect::GetInstance()->BeginDraw();
+	PostEffect::GetInstance()->BeginDrawEffectTarget();
 
 	// 深度ステンシルをクリア
 	commandList_->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
@@ -105,6 +107,22 @@ void DX12Basic::SetRenderTexture()
 	commandList_->RSSetViewports(1, &viewport_);
 	commandList_->RSSetScissorRects(1, &scissorRect_);
 
+}
+
+void DX12Basic::SetNonEffectRenderTecture()
+{
+  // DSVのハンドルを取得
+  D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvHeap_->GetCPUDescriptorHandleForHeapStart();
+
+  // レンダーテクスチャを描画先に設定
+  PostEffect::GetInstance()->BegineDrawNonEffectTarget();
+
+  // 深度ステンシルをクリア
+  commandList_->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+
+  // ビューポートとシザリング矩形をセット
+  commandList_->RSSetViewports(1, &viewport_);
+  commandList_->RSSetScissorRects(1, &scissorRect_);
 }
 
 void DX12Basic::SetSwapChain()
@@ -116,8 +134,6 @@ void DX12Basic::SetSwapChain()
 	TransitionResourceState(D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET, swapChainResources_[backBufferIndex].Get());
 
 	TransitionResourceState(D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, depthStencilResource_.Get());
-
-	PostEffect::GetInstance()->SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
 	// 描画先のRTVを設定
 	commandList_->OMSetRenderTargets(1, &rtvHandle_[backBufferIndex], false, nullptr);
@@ -144,8 +160,6 @@ void DX12Basic::EndDraw()
 	TransitionResourceState(D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT, swapChainResources_[backBufferIndex].Get());
 
 	TransitionResourceState(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE, depthStencilResource_.Get());
-
-	PostEffect::GetInstance()->SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 	// コマンドリストのクローズ
 	hr = commandList_->Close();

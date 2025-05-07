@@ -133,6 +133,9 @@
     <FxCompile Include="resources\shaders\UpdateParticle.CS.hlsl">
       <Filter>Shader\Particle</Filter>
     </FxCompile>
+    <FxCompile Include="resources\shaders\Composite.PS.hlsl">
+      <Filter>Shader\PostEffect</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\Object3d.hlsli">

@@ -17,89 +17,90 @@
 class DX12Basic {
 public: // メンバー関数
 
-	// ComPtrのエイリアス
-	template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
+  // ComPtrのエイリアス
+  template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
 
-	// 最大SRV数(テクスチャ数)
-	static const uint32_t kMaxSRVCount;
+  // 最大SRV数(テクスチャ数)
+  static const uint32_t kMaxSRVCount;
 
-	/// <summary>
-	/// デストラクタ
-	/// </summary>
-	~DX12Basic();
+  /// <summary>
+  /// デストラクタ
+  /// </summary>
+  ~DX12Basic();
 
-	/// <summary>
-	/// 初期化
-	/// </summary>
-	void Initialize(WinApp* winApp);
+  /// <summary>
+  /// 初期化
+  /// </summary>
+  void Initialize(WinApp* winApp);
 
-	/// <summary>
-	/// 終了処理
-	/// </summary>
-	void Finalize();
+  /// <summary>
+  /// 終了処理
+  /// </summary>
+  void Finalize();
 
-	/// <summary>
-	/// renderTextureを設定
-	/// </summary> 
-	void SetRenderTexture();
+  /// <summary>
+  /// renderTextureを設定
+  /// </summary> 
+  void SetEffectRenderTexture();
+  void SetNonEffectRenderTecture();
 
-	/// <summary>
-	/// swapChainを設定
-	/// </summary> 
-	void SetSwapChain();
+  /// <summary>
+  /// swapChainを設定
+  /// </summary> 
+  void SetSwapChain();
 
-	/// <summary>
-	/// 描画後の処理
-	/// </summary>
-	void EndDraw();
+  /// <summary>
+  /// 描画後の処理
+  /// </summary>
+  void EndDraw();
 
-	/// <summary>
-	/// // コマンド完了まで待機
-	/// </summary>
-	void WaitForGPU();
+  /// <summary>
+  /// // コマンド完了まで待機
+  /// </summary>
+  void WaitForGPU();
 
-	/// <summary>
-	/// コンパイルシェーダー
-	/// </summary>
-	ComPtr<IDxcBlob> CompileShader(const std::wstring& filePath, const wchar_t* profile);
+  /// <summary>
+  /// コンパイルシェーダー
+  /// </summary>
+  ComPtr<IDxcBlob> CompileShader(const std::wstring& filePath, const wchar_t* profile);
 
-	/// <summary>
-	/// バッファリソースの生成
-	/// </summary>
-	ComPtr<ID3D12Resource> MakeBufferResource(size_t sizeInBytes);
-	void CreateBufferResource(ComPtr<ID3D12Resource>& bufferResource, size_t sizeInBytes);
+  /// <summary>
+  /// バッファリソースの生成
+  /// </summary>
+  ComPtr<ID3D12Resource> MakeBufferResource(size_t sizeInBytes);
+  void CreateBufferResource(ComPtr<ID3D12Resource>& bufferResource, size_t sizeInBytes);
 
   /// <summary>
   /// UAVリソースの生成
   /// </summary>
   void CreateResourceForUAV(ComPtr<ID3D12Resource>& uavResource, UINT sizeInBytes);
 
-	/// <summary>
-	/// テクスチャリソースの生成
-	/// </summary>
-	ComPtr<ID3D12Resource> MakeTextureResource(const DirectX::TexMetadata& metaData);
-	void CreateTextureResource(ComPtr<ID3D12Resource>& textureResource, const DirectX::TexMetadata& metaData);
-
-	/// <summary>
-	/// レンダーテクスチャリソースの生成
-	/// </summary>
-	void CreateRenderTextureResource(ComPtr<ID3D12Resource>& rendertextureResource, uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4& clearColor);
-
-	/// <summary>
-	/// デスクリプタヒープの生成
-	/// <summary>+
-	ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisible);
-
-	/// <summary>
-	/// テクスチャリソースの転送
-	/// </summary>
-	[[nodiscard]]
-	ComPtr<ID3D12Resource> UploadTextureData(const ComPtr<ID3D12Resource>& texture, const DirectX::ScratchImage& mipImages);
+  /// <summary>
+  /// テクスチャリソースの生成
+  /// </summary>
+  ComPtr<ID3D12Resource> MakeTextureResource(const DirectX::TexMetadata& metaData);
+  void CreateTextureResource(ComPtr<ID3D12Resource>& textureResource, const DirectX::TexMetadata& metaData);
 
   /// <summary>
-	/// テクスチャファイルの読み込み
-	/// </summary>
-	static DirectX::ScratchImage LoadTexture(const std::string& filePath);
+  /// レンダーテクスチャリソースの生成
+  /// </summary>
+  void CreateRenderTextureResource(ComPtr<ID3D12Resource>& rendertextureResource, uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4& clearColor);
+
+  /// <summary>
+  /// デスクリプタヒープの生成
+  /// <summary>+
+  ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisible);
+
+  /// <summary>
+  /// テクスチャリソースの転送
+  /// </summary>
+  [[nodiscard]]
+  ComPtr<ID3D12Resource> UploadTextureData(const ComPtr<ID3D12Resource>& texture, const DirectX::ScratchImage& mipImages);
+
+  /// <summary>
+  /// テクスチャファイルの読み込み
+  /// </summary>
+  static DirectX::ScratchImage LoadTexture(const std::string& filePath);
 
   /// <summary>
   /// トランジションバリアの設定
@@ -124,55 +125,56 @@ public: // メンバー関数
     InitScissorRect();
   }
 
-	//-----------------------------------------Getter-----------------------------------------//
-	/// <summary>
-	/// デバイスの取得
-	/// </summary>
-	ID3D12Device* GetDevice() {
-		return device_.Get();
-	}
-	
-	/// <summary>
-	/// コマンドリストの取得
-	/// </summary>
-	ID3D12GraphicsCommandList* GetCommandList() {
-		return commandList_.Get();
-	}
+  //-----------------------------------------Getter-----------------------------------------//
+  /// <summary>
+  /// デバイスの取得
+  /// </summary>
+  ID3D12Device* GetDevice() {
+    return device_.Get();
+  }
 
-	/// <summary>
-	/// コマンドキューの取得
-	/// </summary>
-	ID3D12CommandQueue* GetCommandQueue() {
-		return commandQueue_.Get();
-	}
+  /// <summary>
+  /// コマンドリストの取得
+  /// </summary>
+  ID3D12GraphicsCommandList* GetCommandList() {
+    return commandList_.Get();
+  }
 
-	/// <summary>
-	/// backBufferの数の取得
-	/// </summary>
-	size_t GetSwapChainBufferCount() {
-		return swapChainResources_.size();
-	}
+  /// <summary>
+  /// コマンドキューの取得
+  /// </summary>
+  ID3D12CommandQueue* GetCommandQueue() {
+    return commandQueue_.Get();
+  }
 
-	/// <summary>
-	/// レンダーテクスチャのcpuハンドルの取得
-	/// </summary>
-	D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTextureRTVHandle() {
-		return GetCPUDescriptorHandle(rtvHeap_.Get(), descriptorSizeRTV_, 2);
-	}
+  /// <summary>
+  /// backBufferの数の取得
+  /// </summary>
+  size_t GetSwapChainBufferCount() {
+    return swapChainResources_.size();
+  }
 
-	/// <summary>
-	/// DSVHeapの先頭のハンドルの取得
-	///	</summary>
-	D3D12_CPU_DESCRIPTOR_HANDLE GetDSVHeapHandleStart() {
-		return dsvHeap_->GetCPUDescriptorHandleForHeapStart();
-	}
+  /// <summary>
+  /// レンダーテクスチャのcpuハンドルの取得
+  /// </summary>
+  D3D12_CPU_DESCRIPTOR_HANDLE GetNextRenderTextureRTVHandle() {
+    nextRtvHandleIndex_ = nextRtvHandleIndex_ + 1;
+    return GetCPUDescriptorHandle(rtvHeap_.Get(), descriptorSizeRTV_, nextRtvHandleIndex_);
+  }
 
-	/// <summary>
-	/// 深度バッファのリソースの取得
-	///	</summary>
-	ID3D12Resource* GetDepthStencilResource() {
-		return depthStencilResource_.Get();
-	}
+  /// <summary>
+  /// DSVHeapの先頭のハンドルの取得
+  ///	</summary>
+  D3D12_CPU_DESCRIPTOR_HANDLE GetDSVHeapHandleStart() {
+    return dsvHeap_->GetCPUDescriptorHandleForHeapStart();
+  }
+
+  /// <summary>
+  /// 深度バッファのリソースの取得
+  ///	</summary>
+  ID3D12Resource* GetDepthStencilResource() {
+    return depthStencilResource_.Get();
+  }
 
   /// <summary>
   /// スワップチェインの取得
@@ -181,71 +183,92 @@ public: // メンバー関数
     return swapChain_.Get();
   }
 
+  /// <summary>
+  /// スワップチェインのRTVHandleを取得
+  ///	</summary>
+  D3D12_CPU_DESCRIPTOR_HANDLE GetSwapChainRTVHandle() {
+    UINT backBufferIndex = swapChain_->GetCurrentBackBufferIndex();
+    return rtvHandle_[backBufferIndex];
+  }
+
+  /// <summary>
+  /// Viewportの取得
+  ///	</summary>
+  D3D12_VIEWPORT GetViewport() {
+    return viewport_;
+  }
+
+  /// <summary>
+  /// ScissorRectの取得
+  ///	</summary>
+  D3D12_RECT GetScissorRect() {
+    return scissorRect_;
+  }
 private: // プライベートメンバー関数
-	/// <summary>
-	/// deviceの初期化
-	/// </summary>
-	void InitDevice();
+  /// <summary>
+  /// deviceの初期化
+  /// </summary>
+  void InitDevice();
 
-	/// <summary>
-	/// コマンド関連の初期化
-	/// </summary>
-	void InitCommand();
+  /// <summary>
+  /// コマンド関連の初期化
+  /// </summary>
+  void InitCommand();
 
-	/// <summary>
-	/// スワップチェインの生成
-	/// </summary>
-	void CreateSwapChain();
+  /// <summary>
+  /// スワップチェインの生成
+  /// </summary>
+  void CreateSwapChain();
 
-	/// <summary>
-	/// 深度バッファの生成
-	/// </summary>
-	void CreateDepthStencilResource();
+  /// <summary>
+  /// 深度バッファの生成
+  /// </summary>
+  void CreateDepthStencilResource();
 
-	/// <summary>
-	/// デスクリプタヒープの初期化
-	/// <summary>
-	void InitDescriptorHeap();
+  /// <summary>
+  /// デスクリプタヒープの初期化
+  /// <summary>
+  void InitDescriptorHeap();
 
-	/// <summary>
-	/// レンダーターゲットビューの初期化
-	/// <summary> 
-	void InitRTV();
+  /// <summary>
+  /// レンダーターゲットビューの初期化
+  /// <summary> 
+  void InitRTV();
 
-	/// <summary>
-	/// 深度ステンシルビューの初期化
-	/// <summary> 
-	void InitDSV();
+  /// <summary>
+  /// 深度ステンシルビューの初期化
+  /// <summary> 
+  void InitDSV();
 
-	/// <summary>
-	/// フェンスの初期化
-	/// <summary> 
-	void InitFence();
+  /// <summary>
+  /// フェンスの初期化
+  /// <summary> 
+  void InitFence();
 
-	/// <summary>
-	///　ビューポート矩形の初期化
-	/// <summary> 
-	void InitViewport();
+  /// <summary>
+  ///　ビューポート矩形の初期化
+  /// <summary> 
+  void InitViewport();
 
-	/// <summary>
-	/// シザリング矩形の初期化
-	/// <summary> 
-	void InitScissorRect();
+  /// <summary>
+  /// シザリング矩形の初期化
+  /// <summary> 
+  void InitScissorRect();
 
-	/// <summary>
-	/// DXCコンパイラの生成
-	/// <summary> 
-	void CreateDXCCompiler();
+  /// <summary>
+  /// DXCコンパイラの生成
+  /// <summary> 
+  void CreateDXCCompiler();
 
-	/// <summary>
-	/// FPS制御初期化
-	/// <summary> 
-	void InitFPSLimiter();
+  /// <summary>
+  /// FPS制御初期化
+  /// <summary> 
+  void InitFPSLimiter();
 
-	/// <summary>
-	/// FPS制御更新
-	/// <summary> 
-	void UpdateFPSLimiter();
+  /// <summary>
+  /// FPS制御更新
+  /// <summary> 
+  void UpdateFPSLimiter();
 
   /// <summary>
   /// RTVの再作成
@@ -257,15 +280,15 @@ private: // プライベートメンバー関数
   /// <summary> 
   void RecreateDepthBuffer();
 
-	/// <summary>
-	/// 指定番号のCPUディスクリプタハンドルを取得
-	/// </summary>
-	static D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle(ID3D12DescriptorHeap* descriptorHeap, uint32_t descriptorSize, uint32_t index);
+  /// <summary>
+  /// 指定番号のCPUディスクリプタハンドルを取得
+  /// </summary>
+  static D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle(ID3D12DescriptorHeap* descriptorHeap, uint32_t descriptorSize, uint32_t index);
 
-	/// <summary>
-	/// 指定番号のGPUディスクリプタハンドルを取得
-	/// </summary>
-	static D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(ID3D12DescriptorHeap* descriptorHeap, uint32_t descriptorSize, uint32_t index);
+  /// <summary>
+  /// 指定番号のGPUディスクリプタハンドルを取得
+  /// </summary>
+  static D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(ID3D12DescriptorHeap* descriptorHeap, uint32_t descriptorSize, uint32_t index);
 
   /// <summary>
   /// バックバッファのバリアを設定
@@ -274,77 +297,79 @@ private: // プライベートメンバー関数
 
 private: // メンバ変数
 
-	// 記録時間(FPS制御用)
-	std::chrono::steady_clock::time_point referenceTime_;
+  // 記録時間(FPS制御用)
+  std::chrono::steady_clock::time_point referenceTime_;
 
-	// RTVハンドルの要素数
-	static const UINT kRtvHandleCount = 2;
+  // RTVハンドルの要素数
+  static const UINT kRtvHandleCount = 2;
 
-	// ウィンドウクラスポインター
-	WinApp* winApp_ = nullptr;
+  static int nextRtvHandleIndex_;
 
-	// デバイス
-	ComPtr<ID3D12Device> device_;
+  // ウィンドウクラスポインター
+  WinApp* winApp_ = nullptr;
 
-	// DXGIファクトリ
-	ComPtr<IDXGIFactory7> dxgiFactory_;
+  // デバイス
+  ComPtr<ID3D12Device> device_;
 
-	// コマンドキュー
-	ComPtr<ID3D12CommandQueue> commandQueue_;
+  // DXGIファクトリ
+  ComPtr<IDXGIFactory7> dxgiFactory_;
 
-	// コマンドアロケータ
-	ComPtr<ID3D12CommandAllocator> commandAllocator_;
+  // コマンドキュー
+  ComPtr<ID3D12CommandQueue> commandQueue_;
 
-	// コマンドリスト
-	ComPtr<ID3D12GraphicsCommandList> commandList_;
+  // コマンドアロケータ
+  ComPtr<ID3D12CommandAllocator> commandAllocator_;
 
-	// スワップチェイン
-	ComPtr<IDXGISwapChain4> swapChain_;
+  // コマンドリスト
+  ComPtr<ID3D12GraphicsCommandList> commandList_;
 
-	// 深度バッファ
-	ComPtr<ID3D12Resource> depthStencilResource_;
+  // スワップチェイン
+  ComPtr<IDXGISwapChain4> swapChain_;
 
-	// デスクリプタヒープのサイズ
-	uint32_t descriptorSizeRTV_;
-	uint32_t descriptorSizeDSV_;
+  // 深度バッファ
+  ComPtr<ID3D12Resource> depthStencilResource_;
 
-	// レンダーターゲットビューのデスクリプタヒープ
-	ComPtr<ID3D12DescriptorHeap> rtvHeap_;
+  // デスクリプタヒープのサイズ
+  uint32_t descriptorSizeRTV_;
+  uint32_t descriptorSizeDSV_;
 
-	// 深度ステンシルビューのデスクリプタヒープ
-	ComPtr<ID3D12DescriptorHeap> dsvHeap_;
+  // レンダーターゲットビューのデスクリプタヒープ
+  ComPtr<ID3D12DescriptorHeap> rtvHeap_;
 
-	// スワップチェインのバッファ
-	std::array<ComPtr<ID3D12Resource>, 2> swapChainResources_;
+  // 深度ステンシルビューのデスクリプタヒープ
+  ComPtr<ID3D12DescriptorHeap> dsvHeap_;
 
-	// スワップチェインのバッファのカウント
-	UINT swapChainBufferCount_;
+  // スワップチェインのバッファ
+  std::array<ComPtr<ID3D12Resource>, 2> swapChainResources_;
 
-	// RTVハンドル
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle_[kRtvHandleCount];
+  // スワップチェインのバッファのカウント
+  UINT swapChainBufferCount_;
 
-	// フェンス
-	ComPtr<ID3D12Fence> fence_;
+  // RTVハンドル
+  D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle_[kRtvHandleCount];
 
-	// フェンスイベント
-	HANDLE fenceEvent_;
+  // フェンス
+  ComPtr<ID3D12Fence> fence_;
 
-	// フェンスの値
-	UINT64 fenceValue_;
+  // フェンスイベント
+  HANDLE fenceEvent_;
 
-	// ビューポート
-	D3D12_VIEWPORT viewport_;
+  // フェンスの値
+  UINT64 fenceValue_;
 
-	// シザリング矩形
-	D3D12_RECT scissorRect_;
+  // ビューポート
+  D3D12_VIEWPORT viewport_;
 
-	// DXCUtility
-	ComPtr<IDxcUtils> dxcUtils_ = nullptr;
+  // シザリング矩形
+  D3D12_RECT scissorRect_;
 
-	// DXCコンパイラ
-	ComPtr<IDxcCompiler3> dxcCompiler_ = nullptr;
+  // DXCUtility
+  ComPtr<IDxcUtils> dxcUtils_ = nullptr;
 
-	// デフォルトインクルードハンドラー
-	ComPtr<IDxcIncludeHandler> includeHandler_ = nullptr;
+  // DXCコンパイラ
+  ComPtr<IDxcCompiler3> dxcCompiler_ = nullptr;
+
+  // デフォルトインクルードハンドラー
+  ComPtr<IDxcIncludeHandler> includeHandler_ = nullptr;
 
 };

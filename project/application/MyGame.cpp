@@ -26,8 +26,6 @@ void MyGame::Initialize()
 	// オーディオの初期化
 	Audio::GetInstance()->Initialize("resources/Sound/");
 
-
-
 #pragma endregion
 
 	// シーンの初期化
@@ -107,7 +105,7 @@ void MyGame::Draw()
 	/// ============================================= ///
 
 	// 描画前の処理(レンダーテクスチャを描画対象に設定)
-	dx12_->SetRenderTexture();
+	dx12_->SetEffectRenderTexture();
 
 	// テクスチャ用のsrvヒープの設定
 	SrvManager::GetInstance()->BeginDraw();
