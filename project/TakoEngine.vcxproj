@@ -155,6 +155,7 @@
     <ClCompile Include="engine\scene\Transition.cpp" />
     <ClCompile Include="engine\func\mathFunc\QuatFunc.cpp" />
     <ClCompile Include="engine\effect\TriangleEmitter.cpp" />
+    <ClCompile Include="engine\3d\Mesh.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\effect\EmitterStruct.h" />
@@ -208,6 +209,7 @@
     <ClInclude Include="engine\base\IWndProcHandler.h" />
     <ClInclude Include="engine\effect\ParticleStruct.h" />
     <ClInclude Include="engine\effect\TriangleEmitter.h" />
+    <ClInclude Include="engine\3d\Mesh.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">

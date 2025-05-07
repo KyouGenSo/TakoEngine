@@ -20,6 +20,7 @@ struct Node
     Matrix4x4 localMatrix;
     std::string name;
     std::vector<Node> children;
+    std::vector<int> meshIndices;
 };
 
 // 頂点データ
@@ -48,15 +49,13 @@ struct JointWeightData
   std::vector<VertexWeightData> vertexWeights;
 };
 
-
-// モデルデータ
 struct ModelData
 {
   std::vector<VertexData> vertices;
   TextureData textureData;
 };
 
-// モデルデータ
+// スキンニングありのモデルデータ
 struct SkinnigModelData {
   std::map<std::string, JointWeightData> skinClusterData;
   std::vector<VertexData> vertices;
