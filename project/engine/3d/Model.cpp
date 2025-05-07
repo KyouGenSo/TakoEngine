@@ -343,30 +343,6 @@ Animation Model::LoadAnimationFile(const std::string& directoryPath, const std::
   return animation;
 }
 
-void Model::UpdateSkinning()
-{
-  if (hasAnimation_ && hasSkeleton_) {
-    // アニメーション時間の更新
-    animationTime_ += 1.0f / 60.0f;
-    animationTime_ = std::fmod(animationTime_, animationData_.duration);
-
-    // アニメーションの適用
-    UpdateSkeletonAnimation(animationTime_);
-
-    // スケルトン行列の更新
-    UpdateSkeleton();
-
-    // パレットの更新（ボーン変換行列）
-    for (size_t jointIndex = 0; jointIndex < skeleton_.joints.size(); ++jointIndex) {
-      mappedPalette_[jointIndex].skeletonSpaceMat =
-        inverseBindMatrices_[jointIndex] * skeleton_.joints[jointIndex].skeletonSpaceMatrix;
-
-      mappedPalette_[jointIndex].skeletonSpaceMatrixInvTransposeMat =
-        Mat4x4::Transpose(Mat4x4::Inverse(mappedPalette_[jointIndex].skeletonSpaceMat));
-    }
-  }
-}
-
 void Model::PrepareSkinning()
 {
   // スケルトンやアニメーションがない場合は何もしない
@@ -390,9 +366,13 @@ void Model::PrepareSkinning()
     mappedPalette_[jointIndex].skeletonSpaceMat =
       inverseBindMatrices_[jointIndex] * skeleton_.joints[jointIndex].skeletonSpaceMatrix;
 
+    //// 法線変換用の逆転置行列も計算
+    //mappedPalette_[jointIndex].skeletonSpaceMatrixInvTransposeMat =
+    //  Mat4x4::Transpose(Mat4x4::Inverse(mappedPalette_[jointIndex].skeletonSpaceMat));
+
     // 法線変換用の逆転置行列も計算
-    mappedPalette_[jointIndex].skeletonSpaceMatrixInvTransposeMat =
-      Mat4x4::Transpose(Mat4x4::Inverse(mappedPalette_[jointIndex].skeletonSpaceMat));
+    Matrix4x4 normalMatrix = Mat4x4::Transpose(Mat4x4::Inverse(mappedPalette_[jointIndex].skeletonSpaceMat));
+    mappedPalette_[jointIndex].skeletonSpaceMatrixInvTransposeMat = normalMatrix;
   }
 
   // UAVバリアを設定
@@ -440,6 +420,11 @@ void Model::InitializeMatrixPalette() {
   // 1. インバースバインドマトリクスの準備
   inverseBindMatrices_.resize(skeleton_.joints.size());
 
+  // すべての行列を単位行列で初期化
+  for (size_t i = 0; i < inverseBindMatrices_.size(); ++i) {
+    inverseBindMatrices_[i] = Mat4x4::MakeIdentity();
+  }
+
   // 各ジョイントに対応するインバースバインドマトリクスを設定
   for (const auto& [jointName, jointWeightData] : skinClusterData_) {
     auto it = skeleton_.jointMap.find(jointName);
@@ -463,7 +448,7 @@ void Model::InitializeMatrixPalette() {
   paletteResource_->Map(0, nullptr, reinterpret_cast<void**>(&mappedData));
   mappedPalette_ = std::span<WellForGPU>(mappedData, skeleton_.joints.size());
 
-  // 初期状態の設定（単位行列など）
+  // 初期状態の設定（単位行列）
   for (size_t i = 0; i < skeleton_.joints.size(); ++i) {
     mappedPalette_[i].skeletonSpaceMat = Mat4x4::MakeIdentity();
     mappedPalette_[i].skeletonSpaceMatrixInvTransposeMat = Mat4x4::MakeIdentity();
@@ -579,17 +564,6 @@ void Model::UpdateSkeleton()
     {
       joint.skeletonSpaceMatrix = joint.localMatrix; // 親がいない場合はローカル変換行列がスケルトン空間行列
     }
-  }
-}
-
-void Model::UpdateSkinCluster()
-{
-  for (size_t jointIndex = 0; jointIndex < skeleton_.joints.size(); ++jointIndex)
-  {
-    assert(jointIndex < inverseBindMatrices_.size());
-    mappedPalette_[jointIndex].skeletonSpaceMat = inverseBindMatrices_[jointIndex] * skeleton_.joints[jointIndex].skeletonSpaceMatrix;
-    mappedPalette_[jointIndex].skeletonSpaceMatrixInvTransposeMat =
-      Mat4x4::Transpose(Mat4x4::Inverse(mappedPalette_[jointIndex].skeletonSpaceMat));
   }
 }
 

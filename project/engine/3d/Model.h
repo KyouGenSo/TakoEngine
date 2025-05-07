@@ -57,7 +57,7 @@ public: // メンバー関数
 
 private: // プライベートメンバー関数
   /// <summary>
-  /// ノードの階層を処理
+  /// ノード階層で座標変換行列を処理して描画
   /// </summary>
   void ProcessNodeHierarchy(const Node& node, const Matrix4x4& parentGlobalMatrix, Matrix4x4 world, Matrix4x4 viewProjection);
 
@@ -72,12 +72,11 @@ private: // プライベートメンバー関数
   Animation LoadAnimationFile(const std::string& directoryPath, const std::string& fileName);
 
   /// <summary>
-  /// スキニング処理
+  /// スキニング処理関連
   /// </summary>
-  void UpdateSkinning();
+  void InitializeMatrixPalette();
   void PrepareSkinning();
   void ExecuteSkinning();
-  void InitializeMatrixPalette();
 
   /// <summary>
 	/// ノード読み込み
@@ -114,11 +113,6 @@ private: // プライベートメンバー関数
 	/// skeletonの更新
 	/// </summary>
 	void UpdateSkeleton();
-
-  /// <summary>
-  /// SkinClusterの更新
-  /// </summary>
-  void UpdateSkinCluster();
 
 	/// <summary>
 	/// アニメーションを適用
