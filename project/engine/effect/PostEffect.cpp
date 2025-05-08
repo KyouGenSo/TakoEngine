@@ -85,6 +85,10 @@ void PostEffect::DrawPostEffect(const std::string& effectName)
   // レンダーテクスチャAの状態をシェーダーリソースに変更
   SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, renderTextureResourceA_.Get());
 
+  if (effectName == "BloomFog") {
+    m_dx12_->TransitionResourceState(D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, m_dx12_->GetDepthStencilResource());
+  }
+
   // レンダーテクスチャBを描画先に設定
   D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
   m_dx12_->GetCommandList()->OMSetRenderTargets(1, &renderTextureRTVHandleB_, false, &dsvHandle);
@@ -109,6 +113,10 @@ void PostEffect::DrawPostEffect(const std::string& effectName)
 
   // フルスクリーン三角形描画
   m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+
+  if (effectName == "BloomFog") {
+    m_dx12_->TransitionResourceState(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE, m_dx12_->GetDepthStencilResource());
+  }
 
   // レンダーテクスチャAの状態を元に戻す
   SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET, renderTextureResourceA_.Get());
