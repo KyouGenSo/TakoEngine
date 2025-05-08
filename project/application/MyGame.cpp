@@ -112,7 +112,6 @@ void MyGame::Draw()
 	SrvManager::GetInstance()->BeginDraw();
 
 	SceneManager::GetInstance()->Draw();
-  GPUParticle::GetInstance()->Draw();
   Draw2D::GetInstance()->Draw();
 
 	/// ===================================================== ///
@@ -152,6 +151,8 @@ void MyGame::Draw()
 
   // シーンの描画
   SceneManager::GetInstance()->DrawWithoutEffect();
+
+  GPUParticle::GetInstance()->Draw();
 
   Draw2D::GetInstance()->Reset();
 
