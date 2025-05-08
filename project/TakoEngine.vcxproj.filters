@@ -162,6 +162,9 @@
     <ClCompile Include="engine\3d\Mesh.cpp">
       <Filter>3d</Filter>
     </ClCompile>
+    <ClCompile Include="engine\3d\SkyBox.cpp">
+      <Filter>3d</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\math\Matrix4x4.h">
@@ -318,6 +321,9 @@
       <Filter>effect\Particle\Emitter</Filter>
     </ClInclude>
     <ClInclude Include="engine\3d\Mesh.h">
+      <Filter>3d</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\SkyBox.h">
       <Filter>3d</Filter>
     </ClInclude>
   </ItemGroup>

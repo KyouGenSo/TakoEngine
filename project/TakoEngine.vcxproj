@@ -119,6 +119,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="engine\3d\SkyBox.cpp" />
     <ClCompile Include="engine\effect\BoxEmitter.cpp" />
     <ClCompile Include="engine\effect\EmitterManager.cpp" />
     <ClCompile Include="engine\effect\GPUParticle.cpp" />
@@ -158,6 +159,7 @@
     <ClCompile Include="engine\3d\Mesh.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\3d\SkyBox.h" />
     <ClInclude Include="engine\effect\EmitterStruct.h" />
     <ClInclude Include="engine\effect\BoxEmitter.h" />
     <ClInclude Include="engine\effect\EmitterManager.h" />

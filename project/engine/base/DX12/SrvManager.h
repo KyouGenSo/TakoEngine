@@ -66,6 +66,11 @@ public: // メンバー関数
   /// </summary>
   void CreateUAV(uint32_t index, ID3D12Resource* pResource, UINT numElements, UINT structureByteStride);
 
+  ///<summary>
+  ///　SRV生成(CubeMap用)
+  /// </summary>
+  void CreateSRVForCubeMap(uint32_t srvIndex, ID3D12Resource* pResource, DXGI_FORMAT format, UINT mipLevels);
+
 	///<summary>
 	///GraphicsRootDescriptorTableにSRVをセット
 	/// </summary>
