@@ -212,7 +212,7 @@ void GameScene::Update()
   }
 }
 
-void GameScene::DrawWithEffect()
+void GameScene::Draw()
 {
   /// ================================== ///
   ///              描画処理               ///

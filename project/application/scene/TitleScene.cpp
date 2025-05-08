@@ -105,7 +105,7 @@ void TitleScene::Update()
 	}
 }
 
-void TitleScene::DrawWithEffect()
+void TitleScene::Draw()
 {
 	/// ================================== ///
 	///              描画処理               ///

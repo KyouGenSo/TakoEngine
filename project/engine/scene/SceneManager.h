@@ -29,7 +29,7 @@ public: // メンバ関数
 	/// <summary>
 	/// 描画
 	/// </summary>
-	void DrawWithEffect();
+	void Draw();
   void DrawWithoutEffect();
 
 	/// <summary>

@@ -105,23 +105,20 @@ void MyGame::Draw()
 	/// ------------------シーン描画-------------------///
 	/// ============================================= ///
 
-	//ポストエフェクト適用対象の描画
+  //ポストエフェクト適用対象のレンダーテクスチャを描画先に設定
 	dx12_->SetEffectRenderTexture();
 
 	// テクスチャ用のsrvヒープの設定
 	SrvManager::GetInstance()->BeginDraw();
 
-	SceneManager::GetInstance()->DrawWithEffect();
+	SceneManager::GetInstance()->Draw();
   GPUParticle::GetInstance()->Draw();
   Draw2D::GetInstance()->Draw();
 
 	/// ===================================================== ///
 	/// ------------------ポストエフェクト描画-------------------///
 	/// ===================================================== ///
-	// SwapChainを描画対象に設定
-	//dx12_->SetSwapChain();
 
-	// PostEffectの描画
 	switch (postEffectType)
 	{
 	case::MyGame::NoEffect:
@@ -162,6 +159,7 @@ void MyGame::Draw()
   /// ---------最終結果をスワップチェーンに描画---------///
   /// ============================================= ///
   PostEffect::GetInstance()->DrawFinalResult();
+
 
 	/// ========================================= ///
 	///-------------------ImGui-------------------///

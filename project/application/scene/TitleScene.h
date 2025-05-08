@@ -28,7 +28,7 @@ public: // メンバ関数
 	/// <summary>
 	/// 描画
 	/// </summary>
-  void DrawWithEffect() override;
+  void Draw() override;
   void DrawWithoutEffect() override;
 
 	/// <summary>

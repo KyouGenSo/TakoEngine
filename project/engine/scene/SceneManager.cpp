@@ -52,11 +52,11 @@ void SceneManager::Update()
 	Transition::GetInstance()->Update();
 }
 
-void SceneManager::DrawWithEffect()
+void SceneManager::Draw()
 {
 	if (scene_)
 	{
-		scene_->DrawWithEffect();
+		scene_->Draw();
 	}
 
 	Transition::GetInstance()->Draw();

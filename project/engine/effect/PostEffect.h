@@ -146,7 +146,8 @@ private: // メンバ変数
   D3D12_CPU_DESCRIPTOR_HANDLE renderTextureRTVHandleA_;
   D3D12_CPU_DESCRIPTOR_HANDLE renderTextureRTVHandleB_;
   // レンダーテクスチャのclearColor
-  const Vector4 kRenderTextureClearColor_ = { 0.17f, 0.17f, 0.17f, 1.0f };
+  const Vector4 kRenderTextureAClearColor_ = { 0.17f, 0.17f, 0.17f, 1.0f };
+  Vector4 renderTextureBClearColor_ = { 0.0, 0.0, 0.0, 0.0 };
 
   // ルートシグネチャ
   std::unordered_map <std::string, ComPtr<ID3D12RootSignature>> rootSignatures_;

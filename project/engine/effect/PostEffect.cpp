@@ -66,7 +66,7 @@ void PostEffect::BeginDrawEffectTarget()
   // 描画先のRTVを設定
   m_dx12_->GetCommandList()->OMSetRenderTargets(1, &renderTextureRTVHandleA_, false, &dsvHandle);
 
-  float clearColor[] = { kRenderTextureClearColor_.x, kRenderTextureClearColor_.y, kRenderTextureClearColor_.z, kRenderTextureClearColor_.w };
+  float clearColor[] = { kRenderTextureAClearColor_.x, kRenderTextureAClearColor_.y, kRenderTextureAClearColor_.z, kRenderTextureAClearColor_.w };
 
   // 画面の色をクリア
   m_dx12_->GetCommandList()->ClearRenderTargetView(renderTextureRTVHandleA_, clearColor, 0, nullptr);
@@ -90,7 +90,7 @@ void PostEffect::DrawPostEffect(const std::string& effectName)
   m_dx12_->GetCommandList()->OMSetRenderTargets(1, &renderTextureRTVHandleB_, false, &dsvHandle);
 
   // レンダーテクスチャBをクリア
-  float clearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };  // 完全に透明にクリア
+  float clearColor[] = { renderTextureBClearColor_.x, renderTextureBClearColor_.y, renderTextureBClearColor_.z, renderTextureBClearColor_.w };
   m_dx12_->GetCommandList()->ClearRenderTargetView(renderTextureRTVHandleB_, clearColor, 0, nullptr);
 
   // ビューポート設定
@@ -143,10 +143,10 @@ void PostEffect::RecreateRenderTexture(uint32_t width, uint32_t height)
   renderTextureResourceB_.Reset();
 
   // 新しいレンダーテクスチャを作成
-  m_dx12_->CreateRenderTextureResource(renderTextureResourceA_, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, kRenderTextureClearColor_);
+  m_dx12_->CreateRenderTextureResource(renderTextureResourceA_, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, kRenderTextureAClearColor_);
   renderTextureResourceA_->SetName(L"PostEffectRenderTexture");
 
-  m_dx12_->CreateRenderTextureResource(renderTextureResourceB_, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, kRenderTextureClearColor_);
+  m_dx12_->CreateRenderTextureResource(renderTextureResourceB_, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, renderTextureBClearColor_);
   renderTextureResourceB_->SetName(L"PostEffectRenderTextureB");
 
   // RTVの設定
@@ -233,12 +233,11 @@ void PostEffect::SetFogDensity(float density)
 void PostEffect::InitRenderTexture()
 {
   // レンダーテクスチャリソースの生成
-  m_dx12_->CreateRenderTextureResource(renderTextureResourceA_, WinApp::clientWidth, WinApp::clientHeight, DXGI_FORMAT_R8G8B8A8_UNORM, kRenderTextureClearColor_);
+  m_dx12_->CreateRenderTextureResource(renderTextureResourceA_, WinApp::clientWidth, WinApp::clientHeight, DXGI_FORMAT_R8G8B8A8_UNORM, kRenderTextureAClearColor_);
   renderTextureResourceA_->SetName(L"PostEffectRenderTexture");
 
-  Vector4 clearColorB = { 0.0, 0.0, 0.0, 0.0 };
   m_dx12_->CreateRenderTextureResource(renderTextureResourceB_, WinApp::clientWidth, WinApp::clientHeight,
-    DXGI_FORMAT_R8G8B8A8_UNORM, clearColorB);
+    DXGI_FORMAT_R8G8B8A8_UNORM, renderTextureBClearColor_);
   renderTextureResourceB_->SetName(L"PostEffectRenderTextureB");
 
   // RTVの設定
