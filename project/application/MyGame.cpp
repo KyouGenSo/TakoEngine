@@ -35,6 +35,7 @@ void MyGame::Initialize()
 
   TextureManager::GetInstance()->LoadTexture("white.png");
   TextureManager::GetInstance()->LoadTexture("circle.png");
+  TextureManager::GetInstance()->LoadTexture("uvChecker.png");
 
   ModelManager::GetInstance()->LoadModel("terrain.obj");
   ModelManager::GetInstance()->LoadModel("player.gltf");
@@ -110,21 +111,9 @@ void MyGame::Draw()
 	// テクスチャ用のsrvヒープの設定
 	SrvManager::GetInstance()->BeginDraw();
 
-	// シーンの描画
 	SceneManager::GetInstance()->DrawWithEffect();
-
-  // GPUパーティクルの描画
   GPUParticle::GetInstance()->Draw();
-
   Draw2D::GetInstance()->Draw();
-
-  Draw2D::GetInstance()->Reset();
-
-  // ポストエフェクト非適用対象の描画
-  dx12_->SetNonEffectRenderTexture();
-
-  // シーンの描画
-  SceneManager::GetInstance()->DrawWithoutEffect();
 
 	/// ===================================================== ///
 	/// ------------------ポストエフェクト描画-------------------///
@@ -136,28 +125,43 @@ void MyGame::Draw()
 	switch (postEffectType)
 	{
 	case::MyGame::NoEffect:
-		PostEffect::GetInstance()->Draw("NoEffect");
+		PostEffect::GetInstance()->DrawPostEffect("NoEffect");
 		break;
 	case::MyGame::VignetteRed:
-		PostEffect::GetInstance()->Draw("VignetteRed");
+		PostEffect::GetInstance()->DrawPostEffect("VignetteRed");
 		break;
 	case::MyGame::VignetteRedBloom:
-		PostEffect::GetInstance()->Draw("VignetteRedBloom");
+		PostEffect::GetInstance()->DrawPostEffect("VignetteRedBloom");
 		break;
 	case::MyGame::GrayScale:
-		PostEffect::GetInstance()->Draw("GrayScale");
+		PostEffect::GetInstance()->DrawPostEffect("GrayScale");
 		break;
 	case::MyGame::VigRedGrayScale:
-		PostEffect::GetInstance()->Draw("VigRedGrayScale");
+		PostEffect::GetInstance()->DrawPostEffect("VigRedGrayScale");
 		break;
 	case::MyGame::Bloom:
-		PostEffect::GetInstance()->Draw("Bloom");
+		PostEffect::GetInstance()->DrawPostEffect("Bloom");
 		break;
 	case::MyGame::BloomFog:
-		PostEffect::GetInstance()->Draw("BloomFog");
+		PostEffect::GetInstance()->DrawPostEffect("BloomFog");
 		break;
 	}
 
+  /// ===================================================== ///
+  /// ------------ポストエフェクト非適用対象の描画---------------///
+  /// ===================================================== ///
+  // ポストエフェクト非適用対象のレンダーテクスチャを描画先に設定
+  dx12_->SetNonEffectRenderTexture();
+
+  // シーンの描画
+  SceneManager::GetInstance()->DrawWithoutEffect();
+
+  Draw2D::GetInstance()->Reset();
+
+  /// ============================================= ///
+  /// ---------最終結果をスワップチェーンに描画---------///
+  /// ============================================= ///
+  PostEffect::GetInstance()->DrawFinalResult();
 
 	/// ========================================= ///
 	///-------------------ImGui-------------------///

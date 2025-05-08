@@ -80,52 +80,29 @@ void PostEffect::BegineDrawNonEffectTarget()
 
   // 描画先のRTVを設定
   m_dx12_->GetCommandList()->OMSetRenderTargets(1, &renderTextureRTVHandleB_, false, &dsvHandle);
-  float clearColor[] = { kRenderTextureClearColor_.x, kRenderTextureClearColor_.y, kRenderTextureClearColor_.z, kRenderTextureClearColor_.w };
 
-  // 画面の色をクリア
-  m_dx12_->GetCommandList()->ClearRenderTargetView(renderTextureRTVHandleB_, clearColor, 0, nullptr);
+  //float clearColor[] = { kRenderTextureClearColor_.x, kRenderTextureClearColor_.y, kRenderTextureClearColor_.z, kRenderTextureClearColor_.w };
+  //// 画面の色をクリア
+  //m_dx12_->GetCommandList()->ClearRenderTargetView(renderTextureRTVHandleB_, clearColor, 0, nullptr);
 }
 
-void PostEffect::Draw(const std::string& effectName)
+void PostEffect::DrawPostEffect(const std::string& effectName)
 {
-  //// バリアを張る
-  //SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-
-  //// ルートシグネチャの設定
-  //m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_[effectName].Get());
-
-  //// パイプラインステートの設定
-  //m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_[effectName].Get());
-
-  //// トポロジの設定
-  //m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-  //// 定数バッファの設定
-  //SetParamResource(effectName);
-
-  //SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, rtvSrvIndexA_);
-  //SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(4, dsvSrvIndex_);
-
-  //// 描画
-  //m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
-
-  //SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
-
-  // レンダーテクスチャのStateをPIXEL_SHADER_RESOURCEに変更
+  // レンダーテクスチャAの状態をシェーダーリソースに変更
   SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, renderTextureResourceA_.Get());
-  SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, renderTextureResourceB_.Get());
 
-  // 一時的なレンダーテクスチャCに描画開始（エフェクト適用結果用）
-  m_dx12_->GetCommandList()->OMSetRenderTargets(1, &renderTextureRTVHandleC_, false, nullptr);
+  // レンダーテクスチャBを描画先に設定
+  D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
+  m_dx12_->GetCommandList()->OMSetRenderTargets(1, &renderTextureRTVHandleB_, false, &dsvHandle);
 
-  // クリアカラー
-  float clearColor[] = { kRenderTextureClearColor_.x, kRenderTextureClearColor_.y, kRenderTextureClearColor_.z, kRenderTextureClearColor_.w };
-  m_dx12_->GetCommandList()->ClearRenderTargetView(renderTextureRTVHandleC_, clearColor, 0, nullptr);
+  // レンダーテクスチャBをクリア
+  float clearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };  // 完全に透明にクリア
+  m_dx12_->GetCommandList()->ClearRenderTargetView(renderTextureRTVHandleB_, clearColor, 0, nullptr);
 
-  // viewportとシザー矩形の設定
+  // ビューポート設定
   m_dx12_->SetViewPort();
 
-  // ルートシグネチャの設定
+  // エフェクト適用シェーダーの設定
   m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_[effectName].Get());
   m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_[effectName].Get());
 
@@ -136,31 +113,33 @@ void PostEffect::Draw(const std::string& effectName)
   SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, rtvSrvIndexA_);
   SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(4, dsvSrvIndex_);
 
-  // 描画（フルスクリーン三角形）- エフェクト適用
+  // フルスクリーン三角形描画
   m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
 
-  // レンダーテクスチャCをシェーダーリソースに変更
-  SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, renderTextureResourceC_.Get());
+  // レンダーテクスチャAの状態を元に戻す
+  SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET, renderTextureResourceA_.Get());
+}
 
-  // スワップチェーンに描画開始
+void PostEffect::DrawFinalResult()
+{
+  // レンダーテクスチャBの状態をシェーダーリソースに変更
+  SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, renderTextureResourceB_.Get());
+
+  // スワップチェーンを描画先に設定
   m_dx12_->SetSwapChain();
 
-  // 合成用パイプライン設定
-  m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_["Composite"].Get());
-  m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_["Composite"].Get());
+  // NoEffectシェーダーを使ってレンダーテクスチャBをそのまま表示
+  m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_["NoEffect"].Get());
+  m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_["NoEffect"].Get());
 
-  // レンダーテクスチャCとBを合成
-  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, rtvSrvIndexC_);
-  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(1, rtvSrvIndexB_);
+  // レンダーテクスチャBをシェーダーリソースとして設定
+  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, rtvSrvIndexB_);
 
-  // 描画（フルスクリーン三角形）- 合成
+  // フルスクリーン三角形描画
   m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
 
-  // 状態を元に戻す
-  SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET, renderTextureResourceA_.Get());
+  // レンダーテクスチャBの状態を元に戻す
   SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET, renderTextureResourceB_.Get());
-  SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET, renderTextureResourceC_.Get());
-
 }
 
 void PostEffect::RecreateRenderTexture(uint32_t width, uint32_t height)
@@ -168,7 +147,6 @@ void PostEffect::RecreateRenderTexture(uint32_t width, uint32_t height)
   // 既存のリソースを解放
   renderTextureResourceA_.Reset();
   renderTextureResourceB_.Reset();
-  renderTextureResourceC_.Reset();
 
   // 新しいレンダーテクスチャを作成
   m_dx12_->CreateRenderTextureResource(renderTextureResourceA_, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, kRenderTextureClearColor_);
@@ -176,9 +154,6 @@ void PostEffect::RecreateRenderTexture(uint32_t width, uint32_t height)
 
   m_dx12_->CreateRenderTextureResource(renderTextureResourceB_, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, kRenderTextureClearColor_);
   renderTextureResourceB_->SetName(L"PostEffectRenderTextureB");
-
-  m_dx12_->CreateRenderTextureResource(renderTextureResourceC_, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, kRenderTextureClearColor_);
-  renderTextureResourceC_->SetName(L"PostEffectRenderTextureC");
 
   // RTVの設定
   D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
@@ -188,12 +163,10 @@ void PostEffect::RecreateRenderTexture(uint32_t width, uint32_t height)
   // RTVの作成
   m_dx12_->GetDevice()->CreateRenderTargetView(renderTextureResourceA_.Get(), &rtvDesc, renderTextureRTVHandleA_);
   m_dx12_->GetDevice()->CreateRenderTargetView(renderTextureResourceB_.Get(), &rtvDesc, renderTextureRTVHandleB_);
-  m_dx12_->GetDevice()->CreateRenderTargetView(renderTextureResourceC_.Get(), &rtvDesc, renderTextureRTVHandleC_);
 
   // レンダーテクスチャのSRVを更新
   SrvManager::GetInstance()->CreateSRVForTexture2D(rtvSrvIndexA_, renderTextureResourceA_.Get(), DXGI_FORMAT_R8G8B8A8_UNORM, 1);
   SrvManager::GetInstance()->CreateSRVForTexture2D(rtvSrvIndexB_, renderTextureResourceB_.Get(), DXGI_FORMAT_R8G8B8A8_UNORM, 1);
-  SrvManager::GetInstance()->CreateSRVForTexture2D(rtvSrvIndexC_, renderTextureResourceC_.Get(), DXGI_FORMAT_R8G8B8A8_UNORM, 1);
 
   // 深度バッファのSRVを更新
   SrvManager::GetInstance()->CreateSRVForTexture2D(dsvSrvIndex_, m_dx12_->GetDepthStencilResource(), DXGI_FORMAT_R32_FLOAT, 1);
@@ -269,12 +242,10 @@ void PostEffect::InitRenderTexture()
   m_dx12_->CreateRenderTextureResource(renderTextureResourceA_, WinApp::clientWidth, WinApp::clientHeight, DXGI_FORMAT_R8G8B8A8_UNORM, kRenderTextureClearColor_);
   renderTextureResourceA_->SetName(L"PostEffectRenderTexture");
 
+  Vector4 clearColorB = { 0.0, 0.0, 0.0, 0.0 };
   m_dx12_->CreateRenderTextureResource(renderTextureResourceB_, WinApp::clientWidth, WinApp::clientHeight,
-    DXGI_FORMAT_R8G8B8A8_UNORM, kRenderTextureClearColor_);
+    DXGI_FORMAT_R8G8B8A8_UNORM, clearColorB);
   renderTextureResourceB_->SetName(L"PostEffectRenderTextureB");
-
-  m_dx12_->CreateRenderTextureResource(renderTextureResourceC_, WinApp::clientWidth, WinApp::clientHeight,
-    DXGI_FORMAT_R8G8B8A8_UNORM, kRenderTextureClearColor_);
 
   // RTVの設定
   D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
@@ -284,22 +255,18 @@ void PostEffect::InitRenderTexture()
   // RTVHandleのを取得
   renderTextureRTVHandleA_ = m_dx12_->GetRenderTextureRTVHandle(2);
   renderTextureRTVHandleB_ = m_dx12_->GetRenderTextureRTVHandle(3);
-  renderTextureRTVHandleC_ = m_dx12_->GetRenderTextureRTVHandle(4); 
 
   // RTVの生成
   m_dx12_->GetDevice()->CreateRenderTargetView(renderTextureResourceA_.Get(), &rtvDesc, renderTextureRTVHandleA_);
   m_dx12_->GetDevice()->CreateRenderTargetView(renderTextureResourceB_.Get(), &rtvDesc, renderTextureRTVHandleB_);
-  m_dx12_->GetDevice()->CreateRenderTargetView(renderTextureResourceC_.Get(), &rtvDesc, renderTextureRTVHandleC_);
 
   // SRVのインデックスを取得
   rtvSrvIndexA_ = SrvManager::GetInstance()->Allocate();
   rtvSrvIndexB_ = SrvManager::GetInstance()->Allocate();
-  rtvSrvIndexC_ = SrvManager::GetInstance()->Allocate();
 
   // SRVの生成
   SrvManager::GetInstance()->CreateSRVForTexture2D(rtvSrvIndexA_, renderTextureResourceA_.Get(), DXGI_FORMAT_R8G8B8A8_UNORM, 1);
   SrvManager::GetInstance()->CreateSRVForTexture2D(rtvSrvIndexB_, renderTextureResourceB_.Get(), DXGI_FORMAT_R8G8B8A8_UNORM, 1);
-  SrvManager::GetInstance()->CreateSRVForTexture2D(rtvSrvIndexC_, renderTextureResourceC_.Get(), DXGI_FORMAT_R8G8B8A8_UNORM, 1);
 }
 
 void PostEffect::CreateDepthBufferSRV()
@@ -530,6 +497,10 @@ void PostEffect::CreateCompositePSO()
 
   // ブレンド設定
   D3D12_BLEND_DESC blendDesc{};
+  blendDesc.AlphaToCoverageEnable = FALSE;
+  blendDesc.IndependentBlendEnable = FALSE;
+  blendDesc.RenderTarget[0].BlendEnable = FALSE;
+  blendDesc.RenderTarget[0].LogicOpEnable = FALSE;
   blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
   // ラスタライザ設定

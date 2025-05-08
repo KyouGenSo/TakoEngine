@@ -9,10 +9,9 @@ float4 main(VertexShaderOutput input) : SV_TARGET
 {
     float4 effectColor = effectTexture.Sample(smp, input.texCoord);
     float4 nonEffectColor = nonEffectTexture.Sample(smp, input.texCoord);
+
+    // 各色チャンネルごとに、より大きい値を採用
+    float3 finalColor = max(effectColor.rgb, nonEffectColor.rgb);
     
-    // アルファブレンディングによる合成
-    return float4(
-        lerp(effectColor.rgb, nonEffectColor.rgb, nonEffectColor.a),
-        max(effectColor.a, nonEffectColor.a)
-    );
+    return float4(effectColor.rgb + nonEffectColor.rgb, 1.0);
 }

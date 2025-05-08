@@ -2,6 +2,7 @@
 #include "BaseScene.h"
 #include"Object3d.h"
 #include "EmitterManager.h"
+#include "Sprite.h"
 
 
 class GameScene : public BaseScene
@@ -90,4 +91,7 @@ private: // メンバ変数
   TriangleEmitterParams triEmitterSett_ = {};
   Vector3 groupPosition_ = {};
   bool isActive_ = true;
+
+  // スプライト
+  std::unique_ptr<Sprite> sprite_;
 };

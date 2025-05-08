@@ -77,7 +77,8 @@ public: // メンバ関数
   void ApplyAndCompositeWithNonEffect();
 
   // 描画
-  void Draw(const std::string& effectName);
+  void DrawPostEffect(const std::string& effectName);
+  void DrawFinalResult();
 
   // レンダーテクスチャの再作成
   void RecreateRenderTexture(uint32_t width, uint32_t height);
@@ -144,13 +145,10 @@ private: // メンバ変数
   // レンダーテクスチャリソース
   ComPtr<ID3D12Resource> renderTextureResourceA_;
   ComPtr<ID3D12Resource> renderTextureResourceB_;
-  ComPtr<ID3D12Resource> renderTextureResourceC_;
 
   // レンダーテクスチャの RTV ハンドル
   D3D12_CPU_DESCRIPTOR_HANDLE renderTextureRTVHandleA_;
   D3D12_CPU_DESCRIPTOR_HANDLE renderTextureRTVHandleB_;
-  D3D12_CPU_DESCRIPTOR_HANDLE renderTextureRTVHandleC_;
-
   // レンダーテクスチャのclearColor
   const Vector4 kRenderTextureClearColor_ = { 0.17f, 0.17f, 0.17f, 1.0f };
 
@@ -163,7 +161,6 @@ private: // メンバ変数
   // シェーダーリソースビューのインデックス
   uint32_t rtvSrvIndexA_ = 0;
   uint32_t rtvSrvIndexB_ = 0;
-  uint32_t rtvSrvIndexC_ = 0;
   uint32_t dsvSrvIndex_ = 0;
 
   // パラメーターリソース

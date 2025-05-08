@@ -127,6 +127,10 @@ void GameScene::Initialize()
   emitterManager_->SetGroupActive("group1", isActive_);
 
   groupPosition_ = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
+
+  //spriteの初期化
+  sprite_ = std::make_unique<Sprite>();
+  sprite_->Initialize("uvChecker.png");
 }
 
 void GameScene::Finalize()
@@ -195,6 +199,8 @@ void GameScene::Update()
   emitterManager_->SetGroupPosition("group1", groupPosition_);
   emitterManager_->SetGroupActive("group1", isActive_);
 
+  sprite_->Update();
+
   // ライトの設定
   Object3dBasic::GetInstance()->SetDirectionalLight(lightDirection_, lightColor_, 1, lightIntensity_);
 
@@ -224,7 +230,8 @@ void GameScene::DrawWithEffect()
   //-------------------Modelの描画-------------------//
   // 3Dモデル共通描画設定
   Object3dBasic::GetInstance()->SetCommonRenderSetting();
-
+  // モデル描画
+  object3d2_->Draw();
 
 
 
@@ -251,7 +258,7 @@ void GameScene::DrawWithoutEffect()
 // スプライト共通描画設定
   SpriteBasic::GetInstance()->SetCommonRenderSetting();
 
-
+  sprite_->Draw();
 
   //--------------------------------------------------//
 
@@ -259,9 +266,8 @@ void GameScene::DrawWithoutEffect()
   //-------------------Modelの描画-------------------//
   // 3Dモデル共通描画設定
   Object3dBasic::GetInstance()->SetCommonRenderSetting();
-  // モデル描画
+
   object3d_->Draw();
-  object3d2_->Draw();
 
   //------------------------------------------------//
 
