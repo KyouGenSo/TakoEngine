@@ -113,9 +113,6 @@ void DX12Basic::SetNonEffectRenderTexture()
   // レンダーテクスチャを描画先に設定
   PostEffect::GetInstance()->BegineDrawNonEffectTarget();
 
-  // 深度ステンシルをクリア
-  commandList_->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-
   SetViewPort();
 }
 

@@ -73,9 +73,6 @@ public: // メンバ関数
   void BeginDrawEffectTarget();
   void BegineDrawNonEffectTarget();
 
-  // エフェクト適用と合成
-  void ApplyAndCompositeWithNonEffect();
-
   // 描画
   void DrawPostEffect(const std::string& effectName);
   void DrawFinalResult();
@@ -117,7 +114,6 @@ private: // プライベートメンバー関数
 
   // パイプラインステートの生成
   void CreatePSO(const std::string& effectName);
-  void CreateCompositePSO();
 
   // VignetteParamを生成
   void CreateVignetteParam();
