@@ -318,6 +318,10 @@ void Audio::StopWave(uint32_t voiceHandle)
 bool Audio::IsPlaying(uint32_t voiceHandle)
 {
   XAUDIO2_VOICE_STATE state;
+  if (!voiceDatas_.contains(voiceHandle)) {
+    return false;
+  }
+
   voiceDatas_.at(voiceHandle)->GetState(&state);
 
   return state.BuffersQueued > 0;
