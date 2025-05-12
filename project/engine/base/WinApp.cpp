@@ -141,6 +141,12 @@ void WinApp::ToggleFullScreen()
       mi.rcMonitor.bottom - mi.rcMonitor.top,
       SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
 
+    // ウィンドウのサイズを取得
+    RECT clientRect;
+    GetClientRect(hWnd_, &clientRect);
+    // クライアント領域のサイズを保存
+    SetWindowSize(clientRect.right - clientRect.left, clientRect.bottom - clientRect.top);
+
     // 状態を更新
     isFullScreen_ = true;
   }
@@ -156,6 +162,12 @@ void WinApp::ToggleFullScreen()
       windowedRect_.right - windowedRect_.left,
       windowedRect_.bottom - windowedRect_.top,
       SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+
+    // ウィンドウのサイズを取得
+    RECT clientRect;
+    GetClientRect(hWnd_, &clientRect);
+    // クライアント領域のサイズを保存
+    SetWindowSize(clientRect.right - clientRect.left, clientRect.bottom - clientRect.top);
 
     // 状態を更新
     isFullScreen_ = false;
