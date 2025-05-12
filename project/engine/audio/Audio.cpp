@@ -98,9 +98,11 @@ void Audio::Update()
 uint32_t Audio::LoadWaveFile(const std::string& filename)
 {
   // ファイル名の重複チェック
-  if (std::find(soundNames_.begin(), soundNames_.end(), filename) != soundNames_.end())
-  {
-    return 0;
+  for (uint32_t i = 0; i < nextSoundIndex_; ++i) {
+    if (soundNames_[i] == filename) {
+      // すでに読み込まれている場合はそのハンドルを返す
+      return i;
+    }
   }
 
   // サウンドデータの取得
@@ -112,11 +114,10 @@ uint32_t Audio::LoadWaveFile(const std::string& filename)
   file.open(directoryPath_ + filename, std::ios::binary);
   assert(file.is_open());
 
-  // wavファイルのヘッダーを読み込む
   RiffHeader riff;
-  //file.read(reinterpret_cast<char*>(&riff), sizeof(riff));
 
   do {
+    // wavファイルのヘッダーを読み込む
     file.read(reinterpret_cast<char*>(&riff), sizeof(riff));
 
     if (strncmp(riff.chunk.id, "RIFF", 4) == 0 && strncmp(riff.type, "WAVE", 4) == 0) {
@@ -182,6 +183,9 @@ uint32_t Audio::LoadWaveFile(const std::string& filename)
   soundData.pBuffer = reinterpret_cast<BYTE*>(pBuffer);
   soundData.bufferSize = data.size;
 
+  // 名前の登録
+  soundNames_[nextSoundIndex_] = filename;
+
   // ハンドルの返却
   uint32_t handle = nextSoundIndex_;
   nextSoundIndex_++;
@@ -192,10 +196,13 @@ uint32_t Audio::LoadWaveFile(const std::string& filename)
 uint32_t Audio::LoadMP3File(const std::string& filename)
 {
   // ファイル名の重複チェック
-  if (std::find(soundNames_.begin(), soundNames_.end(), filename) != soundNames_.end())
-  {
-    return 0;
+  for (uint32_t i = 0; i < nextSoundIndex_; ++i) {
+    if (soundNames_[i] == filename) {
+      // すでに読み込まれている場合はそのハンドルを返す
+      return i;
+    }
   }
+
   SoundData& soundData = soundDatas_[nextSoundIndex_];
   // フルパス（ディレクトリパスと連結）
   std::string fullPath = directoryPath_ + filename;
