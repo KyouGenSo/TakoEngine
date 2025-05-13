@@ -54,7 +54,7 @@ public: // メンバー関数
 
 	//-----------------------------------------Setter-----------------------------------------//
 	void SetModel(const std::string& fileName);
-	void SetCamera(Camera* camera) { m_camera_ = camera; }
+	void SetCamera(Camera** camera) { m_camera_ = camera; }
 	void SetScale(const Vector3& scale) { transform_.scale = scale; }
 	void SetRotate(const Vector3& rotate) { transform_.rotate = rotate; }
 	void SetTranslate(const Vector3& translate) { transform_.translate = translate; }
@@ -79,7 +79,7 @@ private: // プライベートメンバー関数
 
 private: // メンバー変数
 	// カメラのクラスポインター
-	Camera* m_camera_ = nullptr;
+	Camera** m_camera_ = nullptr;
 
 	// モデルクラス
 	Model* m_model_ = nullptr;

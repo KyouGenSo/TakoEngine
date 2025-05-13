@@ -493,8 +493,8 @@ void PostEffect::CreateCameraForGPU()
   cameraForGPUResource_->Map(0, nullptr, reinterpret_cast<void**>(&cameraForGPU_));
 
   // データの初期化
-  cameraForGPU_->farPlane = Object3dBasic::GetInstance()->GetCamera()->GetFarClip();
-  cameraForGPU_->nearPlane = Object3dBasic::GetInstance()->GetCamera()->GetNearClip();
+  cameraForGPU_->farPlane = (*Object3dBasic::GetInstance()->GetCamera())->GetFarClip();
+  cameraForGPU_->nearPlane = (*Object3dBasic::GetInstance()->GetCamera())->GetNearClip();
 }
 
 void PostEffect::SetParamResource(const std::string& effectName)

@@ -48,7 +48,7 @@ public: // メンバー関数
 
 	// -----------------------------------Getters-----------------------------------//
 	DX12Basic* GetDX12Basic() const { return m_dx12_; }
-	Camera* GetCamera() const { return camera_; }
+	Camera** GetCamera() { return &camera_; }
 	bool GetDebug() const { return isDebug_; }
 
 	// -----------------------------------Setters-----------------------------------//
