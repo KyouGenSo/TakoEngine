@@ -2,12 +2,10 @@
 #include<Windows.h>
 #include<cstdint>
 #include <functional>
-
-#include "IWndProcHandler.h"
 #include <vector>
 
+#include "IWndProcHandler.h"
 #include "Vector2.h"
-
 
 class WinApp {
 private: // シングルトン設定
@@ -15,6 +13,7 @@ private: // シングルトン設定
   static WinApp* instance_;
   WinApp() = default;
   ~WinApp() = default;
+
 public:
   // コピーコンストラクタと代入演算子を削除
   WinApp(const WinApp&) = delete;
@@ -27,7 +26,8 @@ public:
     }
     return instance_;
   }
-public:
+
+public: // メンバ関数
   /// <summary>
   /// 初期化
   /// </summary>
@@ -83,13 +83,13 @@ public:
   /// OnResize関数の登録
   /// <summary>
   /// <param name="onResizeFunc"></param>
-  void RegisterOnResizeFunc(const std::function<void(Vector2)>& onResizeFunc) { onResizeFuncs_.push_back(onResizeFunc); }
+  void RegisterOnResizeFunc(void(*onResizeFunc)(Vector2));
 
   /// <summary>
   /// OnResize関数の削除
   /// <summary>
   /// <param name="onResizeFunc"></param>
-  void UnregisterOnResizeFunc(const std::function<void(Vector2)>& onResizeFunc);
+  void UnregisterOnResizeFunc(void(*onResizeFunc)(Vector2));
 
 public:
   //クライアント領域のサイズ
@@ -112,6 +112,6 @@ private:
   // ウィンドウモード時の位置とサイズを保存
   RECT windowedRect_ = {};
 
-  // Onresize関数ポインターの配列
-  std::vector<std::function<void(Vector2)>> onResizeFuncs_;
+  // OnResize関数ポインターの配列
+  std::vector<void(*)(Vector2)> onResizeFuncs_;
 };
