@@ -74,6 +74,7 @@ public: // メンバ関数
   void BegineDrawNonEffectTarget();
 
   // 描画
+  void Draw();
   void DrawPostEffect(const std::string& effectName);
   void DrawFinalResult();
 
@@ -86,6 +87,8 @@ public: // メンバ関数
 
   // レンダーテクスチャの取得
   ID3D12Resource* GetRenderTextureResource() { return renderTextureResourceA_.Get(); }
+
+  void SetEffectType(std::string effectName) { currentEffectName_ = effectName; }
 
   void SetVignettePower(float power);
 
@@ -135,6 +138,8 @@ private: // プライベートメンバー関数
 
 private: // メンバ変数
 
+  std::string currentEffectName_;
+
   // DX12の基本情報
   DX12Basic* m_dx12_ = nullptr;
 
@@ -145,6 +150,7 @@ private: // メンバ変数
   // レンダーテクスチャの RTV ハンドル
   D3D12_CPU_DESCRIPTOR_HANDLE renderTextureRTVHandleA_;
   D3D12_CPU_DESCRIPTOR_HANDLE renderTextureRTVHandleB_;
+
   // レンダーテクスチャのclearColor
   const Vector4 kRenderTextureAClearColor_ = { 0.17f, 0.17f, 0.17f, 1.0f };
   Vector4 renderTextureBClearColor_ = { 0.0, 0.0, 0.0, 0.0 };

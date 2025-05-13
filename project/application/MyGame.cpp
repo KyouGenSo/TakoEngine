@@ -97,6 +97,31 @@ void MyGame::Update()
 
   // ゲームパッドの状態をリスレッシュ
 	Input::GetInstance()->RefreshGamePadState();
+
+  switch (postEffectType)
+  {
+  case NoEffect:
+    PostEffect::GetInstance()->SetEffectType("NoEffect");
+    break;
+  case VignetteRed:
+    PostEffect::GetInstance()->SetEffectType("VignetteRed");
+    break;
+  case VignetteRedBloom:
+    PostEffect::GetInstance()->SetEffectType("VignetteRedBloom");
+    break;
+  case GrayScale:
+    PostEffect::GetInstance()->SetEffectType("GrayScale");
+    break;
+  case VigRedGrayScale:
+    PostEffect::GetInstance()->SetEffectType("VigRedGrayScale");
+    break;
+  case Bloom:
+    PostEffect::GetInstance()->SetEffectType("Bloom");
+    break;
+  case BloomFog:
+    PostEffect::GetInstance()->SetEffectType("BloomFog");
+    break;
+  }
 }
 
 void MyGame::Draw()
@@ -112,36 +137,13 @@ void MyGame::Draw()
 	SrvManager::GetInstance()->BeginDraw();
 
 	SceneManager::GetInstance()->Draw();
-  Draw2D::GetInstance()->Draw();
 
 	/// ===================================================== ///
 	/// ------------------ポストエフェクト描画-------------------///
 	/// ===================================================== ///
 
-	switch (postEffectType)
-	{
-	case::MyGame::NoEffect:
-		PostEffect::GetInstance()->DrawPostEffect("NoEffect");
-		break;
-	case::MyGame::VignetteRed:
-		PostEffect::GetInstance()->DrawPostEffect("VignetteRed");
-		break;
-	case::MyGame::VignetteRedBloom:
-		PostEffect::GetInstance()->DrawPostEffect("VignetteRedBloom");
-		break;
-	case::MyGame::GrayScale:
-		PostEffect::GetInstance()->DrawPostEffect("GrayScale");
-		break;
-	case::MyGame::VigRedGrayScale:
-		PostEffect::GetInstance()->DrawPostEffect("VigRedGrayScale");
-		break;
-	case::MyGame::Bloom:
-		PostEffect::GetInstance()->DrawPostEffect("Bloom");
-		break;
-	case::MyGame::BloomFog:
-		PostEffect::GetInstance()->DrawPostEffect("BloomFog");
-		break;
-	}
+    // ポストエフェクトの描画
+  PostEffect::GetInstance()->Draw();
 
   /// ===================================================== ///
   /// ------------ポストエフェクト非適用対象の描画---------------///
@@ -153,6 +155,8 @@ void MyGame::Draw()
   SceneManager::GetInstance()->DrawWithoutEffect();
 
   GPUParticle::GetInstance()->Draw();
+
+  Draw2D::GetInstance()->Draw();
 
   Draw2D::GetInstance()->Reset();
 

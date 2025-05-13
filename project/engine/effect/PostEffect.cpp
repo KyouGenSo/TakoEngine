@@ -21,6 +21,8 @@ void PostEffect::Initialize(DX12Basic* dx12)
 {
   m_dx12_ = dx12;
 
+  currentEffectName_ = "NoEffect";
+
   InitRenderTexture();
 
   CreateDepthBufferSRV();
@@ -78,6 +80,12 @@ void PostEffect::BegineDrawNonEffectTarget()
 
   // 描画先のRTVを設定
   m_dx12_->GetCommandList()->OMSetRenderTargets(1, &renderTextureRTVHandleB_, false, &dsvHandle);
+}
+
+void PostEffect::Draw()
+{
+  // エフェクトの描画
+  DrawPostEffect(currentEffectName_);
 }
 
 void PostEffect::DrawPostEffect(const std::string& effectName)
