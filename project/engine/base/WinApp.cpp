@@ -2,9 +2,13 @@
 
 #include "WinApp.h"
 
+#include <algorithm>
 #include <cassert>
 #include"imgui_impl_win32.h"
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+// instanceの初期化
+WinApp* WinApp::instance_ = nullptr;
 
 std::vector<IWndProcHandler*> WinApp::m_handlers_;
 
@@ -78,14 +82,19 @@ bool WinApp::ProcessMessage()
 	return false;
 }
 
-
-
 void WinApp::Finalize()
 {
 	//ウィンドウを破棄
 	CloseWindow(hWnd_);
 	// COMの終了処理
 	CoUninitialize();
+
+  // instance_削除
+  if (instance_ != nullptr)
+  {
+    delete instance_;
+    instance_ = nullptr;
+  }
 }
 
 LRESULT WinApp::WndProc(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam)
@@ -171,5 +180,37 @@ void WinApp::ToggleFullScreen()
 
     // 状態を更新
     isFullScreen_ = false;
+  }
+
+  // OnResize関数があれば呼び出す
+  if (!onResizeFuncs_.empty())
+  {
+    Vector2 newSize = { .x= static_cast<float>(clientWidth), .y= static_cast<float>(clientHeight) };
+    for (const auto& onResizeFunc : onResizeFuncs_)
+    {
+      onResizeFunc(newSize);
+    }
+  }
+}
+
+void WinApp::RegisterOnResizeFunc(void(* onResizeFunc)(Vector2))
+{
+  // 重複登録を防ぐために、すでに登録されているか確認
+  auto it = std::ranges::find(onResizeFuncs_, onResizeFunc);
+  if (it != onResizeFuncs_.end())
+  {
+    // すでに登録されている場合は何もしない
+    return;
+  }
+  onResizeFuncs_.push_back(onResizeFunc);
+}
+
+void WinApp::UnregisterOnResizeFunc(void(*onResizeFunc)(Vector2))
+{
+  // 指定された関数ポインタを削除
+  auto it = std::ranges::find(onResizeFuncs_, onResizeFunc);
+  if (it != onResizeFuncs_.end())
+  {
+    onResizeFuncs_.erase(it);
   }
 }
