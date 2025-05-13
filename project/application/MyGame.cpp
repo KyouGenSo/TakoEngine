@@ -98,6 +98,7 @@ void MyGame::Update()
   // ゲームパッドの状態をリスレッシュ
 	Input::GetInstance()->RefreshGamePadState();
 
+#ifdef _DEBUG
   switch (postEffectType)
   {
   case NoEffect:
@@ -122,6 +123,7 @@ void MyGame::Update()
     PostEffect::GetInstance()->SetEffectType("BloomFog");
     break;
   }
+#endif // _DEBUG
 }
 
 void MyGame::Draw()
@@ -179,8 +181,6 @@ void MyGame::Draw()
 
   // GlobalVariablesの更新
   GlobalVariables::GetInstance()->Update();
-
-  //GPUParticle::GetInstance()->DebugInfo();
 
   ImGui::Begin("Option");
   // buttonでFPSの表示を切り替え
