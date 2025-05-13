@@ -15,7 +15,7 @@
 void TakoFramework::Initialize()
 {
 #pragma region ウィンドウの初期化-------------------------------------------------------------------------------------------------------------------
-	winApp_ = new WinApp();
+  winApp_ = WinApp::GetInstance();
 	winApp_->Initialize();
 #pragma endregion
 
@@ -113,9 +113,6 @@ void TakoFramework::Finalize()
 	delete sceneFactory_;
 
 	winApp_->Finalize();
-
-	// ウィンドウクラスの解放
-	delete winApp_;
 }
 
 void TakoFramework::Update()

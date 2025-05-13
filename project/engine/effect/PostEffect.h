@@ -14,6 +14,8 @@ private:
 
   PostEffect() = default;
   ~PostEffect() = default;
+
+public:
   PostEffect(PostEffect&) = delete;
   PostEffect& operator=(PostEffect&) = delete;
 

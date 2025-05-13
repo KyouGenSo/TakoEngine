@@ -1,41 +1,62 @@
 #pragma once
 #include<Windows.h>
 #include<cstdint>
+#include <functional>
+
 #include "IWndProcHandler.h"
 #include <vector>
 
+#include "Vector2.h"
+
 
 class WinApp {
+private: // シングルトン設定
+  // シングルトンインスタンス
+  static WinApp* instance_;
+  WinApp() = default;
+  ~WinApp() = default;
 public:
-	/// <summary>
-	/// 初期化
-	/// </summary>
-	void Initialize();
+  // コピーコンストラクタと代入演算子を削除
+  WinApp(const WinApp&) = delete;
+  WinApp& operator=(const WinApp&) = delete;
 
-	/// <summary>
-	/// メッセージの処理
-	/// </summary>
-	bool ProcessMessage();
+  // シングルトンインスタンスの取得
+  static WinApp* GetInstance() {
+    if (instance_ == nullptr) {
+      instance_ = new WinApp();
+    }
+    return instance_;
+  }
+public:
+  /// <summary>
+  /// 初期化
+  /// </summary>
+  void Initialize();
 
-	/// <summary>
-	/// 終了処理
-	/// </summary>
-	void Finalize();
+  /// <summary>
+  /// メッセージの処理
+  /// </summary>
+  bool ProcessMessage();
 
-	/// <summary>
-	/// ウィンドウプロシージャ
-	/// </summary>
-	static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam);
+  /// <summary>
+  /// 終了処理
+  /// </summary>
+  void Finalize();
 
-	/// <summary>
-	/// ウィンドウハンドルの取得
-	/// </summary>
-	HWND GetHWnd() const { return hWnd_; }
+  /// <summary>
+  /// ウィンドウプロシージャ
+  /// </summary>
+  static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam);
 
-	/// <summary>
-	/// hInstanceの取得
-	/// </summary>
-	HINSTANCE GetHInstance() const { return wc_.hInstance; }
+  /// <summary>
+  /// ウィンドウハンドルの取得
+  /// </summary>
+  HWND GetHWnd() const { return hWnd_; }
+
+  /// <summary>
+  /// hInstanceの取得
+  /// </summary>
+  HINSTANCE GetHInstance() const { return wc_.hInstance; }
 
   /// <summary>
   /// ハンドラの設定
@@ -53,21 +74,34 @@ public:
   /// </summary>
   void ToggleFullScreen();
 
-
-  // フルスクリーン状態の取得
+  /// <summary>
+  /// フルスクリーン状態の取得
+  /// </summary>
   bool IsFullScreen() const { return isFullScreen_; }
 
+  /// <summary>
+  /// OnResize関数の登録
+  /// <summary>
+  /// <param name="onResizeFunc"></param>
+  void RegisterOnResizeFunc(const std::function<void(Vector2)>& onResizeFunc) { onResizeFuncs_.push_back(onResizeFunc); }
+
+  /// <summary>
+  /// OnResize関数の削除
+  /// <summary>
+  /// <param name="onResizeFunc"></param>
+  void UnregisterOnResizeFunc(const std::function<void(Vector2)>& onResizeFunc);
+
 public:
-	//クライアント領域のサイズ
+  //クライアント領域のサイズ
   static int32_t clientWidth;
-	static int32_t clientHeight;
+  static int32_t clientHeight;
 
 private:
-	//ウィンドウハンドル
-	HWND hWnd_ = nullptr;
+  //ウィンドウハンドル
+  HWND hWnd_ = nullptr;
 
-	//ウィンドウクラス
-	WNDCLASS wc_{};
+  //ウィンドウクラス
+  WNDCLASS wc_{};
 
   // handlers
   static std::vector<IWndProcHandler*> m_handlers_;
@@ -77,4 +111,7 @@ private:
 
   // ウィンドウモード時の位置とサイズを保存
   RECT windowedRect_ = {};
+
+  // Onresize関数ポインターの配列
+  std::vector<std::function<void(Vector2)>> onResizeFuncs_;
 };
