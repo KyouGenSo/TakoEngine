@@ -35,6 +35,9 @@ public: // メンバ関数
     float bloomSigma;
     Vector4 fogColor;
     float fogDensity;
+    Vector2 radialBlurCenter;
+    float radialBlurWidth;
+    int32_t radialBlurSampleCount;
   };
 
 private: // メンバ変数
@@ -53,6 +56,7 @@ private: // メンバ変数
 		VigRedGrayScale,
 		Bloom,
 		BloomFog,
+    RadialBlur,
 	};
 
 	PostEffectType postEffectType = NoEffect;

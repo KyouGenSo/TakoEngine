@@ -3,6 +3,8 @@
 #include<unordered_map>
 #include<string>
 #include<wrl.h>
+
+#include "Vector2.h"
 #include"Vector4.h"
 
 class DX12Basic;
@@ -59,6 +61,13 @@ public: // メンバ関数
     float density;
   };
 
+  struct RadialBlurParam
+  {
+    Vector2 center;
+    float blurWidth;
+    int32_t sampleCount;
+  };
+
   // ComPtrのエイリアス
   template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
 
@@ -106,6 +115,12 @@ public: // メンバ関数
 
   void SetFogDensity(float density);
 
+  void SetRadialBlurCenter(const Vector2& center);
+
+  void SetRadialBlurWidth(float width);
+
+  void SetRadialBlurSampleCount(int32_t count);
+
 private: // プライベートメンバー関数
 
   // レンダーテクスチャの初期化
@@ -131,6 +146,9 @@ private: // プライベートメンバー関数
 
   // FogParamを生成
   void CreateFogParam();
+
+  // RadialBlurParamを生成
+  void CreateRadialBlurParam();
 
   // CameraForGPUを生成
   void CreateCameraForGPU();
@@ -173,6 +191,7 @@ private: // メンバ変数
   Microsoft::WRL::ComPtr<ID3D12Resource> vignetteRedBloomParamResource_;
   Microsoft::WRL::ComPtr<ID3D12Resource> bloomParamResource_;
   Microsoft::WRL::ComPtr<ID3D12Resource> fogParamResource_;
+  Microsoft::WRL::ComPtr<ID3D12Resource> radialBlurParamResource_;
   Microsoft::WRL::ComPtr<ID3D12Resource> cameraForGPUResource_;
 
   // パラメーターデータ
@@ -180,6 +199,6 @@ private: // メンバ変数
   VignetteRedBloomParam* vignetteRedBloomParam_;
   BloomParam* bloomParam_;
   FogParam* fogParam_;
+  RadialBlurParam* radialBlurParam_;
   CameraForGPU* cameraForGPU_;
-
 };

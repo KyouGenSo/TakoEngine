@@ -222,7 +222,7 @@ void GameScene::Draw()
   // スプライト共通描画設定
   SpriteBasic::GetInstance()->SetCommonRenderSetting();
 
-
+  
 
   //--------------------------------------------------//
 
@@ -232,7 +232,7 @@ void GameScene::Draw()
   Object3dBasic::GetInstance()->SetCommonRenderSetting();
   // モデル描画
   object3d2_->Draw();
-
+  object3d_->Draw();
 
 
 
@@ -258,7 +258,7 @@ void GameScene::DrawWithoutEffect()
 // スプライト共通描画設定
   SpriteBasic::GetInstance()->SetCommonRenderSetting();
 
-  sprite_->Draw();
+  //sprite_->Draw();
 
   //--------------------------------------------------//
 
@@ -267,7 +267,7 @@ void GameScene::DrawWithoutEffect()
   // 3Dモデル共通描画設定
   Object3dBasic::GetInstance()->SetCommonRenderSetting();
 
-  object3d_->Draw();
+  
 
   //------------------------------------------------//
 
