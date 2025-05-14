@@ -200,10 +200,8 @@ uint32_t WinApp::RegisterOnResizeFunc(const std::function<void(Vector2)>& onResi
 
 void WinApp::UnregisterOnResizeFunc(uint32_t id)
 {
-  auto it = std::remove_if(onResizeFuncs_.begin(), onResizeFuncs_.end(),
-    [id](const ResizeCallbackEntry& entry) { return entry.id == id; });
-
-  if (it != onResizeFuncs_.end()) {
-    onResizeFuncs_.erase(it, onResizeFuncs_.end());
-  }
+  onResizeFuncs_.erase(
+    std::remove_if(onResizeFuncs_.begin(), onResizeFuncs_.end(),
+                   [id](const ResizeCallbackEntry& entry) { return entry.id == id; }),
+    onResizeFuncs_.end());
 }
