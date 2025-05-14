@@ -83,18 +83,24 @@ public: // メンバ関数
   /// OnResize関数の登録
   /// <summary>
   /// <param name="onResizeFunc"></param>
-  void RegisterOnResizeFunc(void(*onResizeFunc)(Vector2));
+  uint32_t RegisterOnResizeFunc(const std::function<void(Vector2)>& onResizeFunc);
 
   /// <summary>
   /// OnResize関数の削除
   /// <summary>
-  /// <param name="onResizeFunc"></param>
-  void UnregisterOnResizeFunc(void(*onResizeFunc)(Vector2));
+  /// <param name="id"></param>
+  void UnregisterOnResizeFunc(uint32_t id);
 
 public:
   //クライアント領域のサイズ
   static int32_t clientWidth;
   static int32_t clientHeight;
+
+private:
+  struct ResizeCallbackEntry {
+    std::function<void(Vector2)> callback;
+    uint32_t id;
+  };
 
 private:
   //ウィンドウハンドル
@@ -112,6 +118,8 @@ private:
   // ウィンドウモード時の位置とサイズを保存
   RECT windowedRect_ = {};
 
-  // OnResize関数ポインターの配列
-  std::vector<void(*)(Vector2)> onResizeFuncs_;
+  // コールバック関数のリスト
+  std::vector<ResizeCallbackEntry> onResizeFuncs_;
+  // コールバック関数のID
+  uint32_t nextId_ = 1u;
 };
