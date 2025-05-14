@@ -27,7 +27,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
         outputColor.rgb += gTexture.Sample(gSampler, sampleOffset).rgb;
     }
 
-    outputColor *= rcp(gParam.sampleCount);
+    outputColor *= rcp(float(gParam.sampleCount));
 
     PixelShaderOutput output;
     output.color.rgb = outputColor;
