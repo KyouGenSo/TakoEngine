@@ -41,6 +41,8 @@ void PostEffect::Initialize(DX12Basic* dx12)
 
   CreatePSO("BloomFog");
 
+  CreatePSO("RadialBlur");
+
   CreateVignetteParam();
 
   CreateVignetteRedBloomParam();
@@ -50,6 +52,8 @@ void PostEffect::Initialize(DX12Basic* dx12)
   CreateFogParam();
 
   CreateCameraForGPU();
+
+  CreateRadialBlurParam();
 }
 
 void PostEffect::Finalize()
@@ -244,6 +248,21 @@ void PostEffect::SetFogColor(const Vector4& color)
 void PostEffect::SetFogDensity(float density)
 {
   fogParam_->density = density;
+}
+
+void PostEffect::SetRadialBlurCenter(const Vector2& center)
+{
+  radialBlurParam_->center = center;
+}
+
+void PostEffect::SetRadialBlurWidth(float width)
+{
+  radialBlurParam_->blurWidth = width;
+}
+
+void PostEffect::SetRadialBlurSampleCount(int32_t count)
+{
+  radialBlurParam_->sampleCount = count;
 }
 
 void PostEffect::InitRenderTexture()
@@ -484,6 +503,18 @@ void PostEffect::CreateFogParam()
   fogParam_->density = 0.05f;
 }
 
+void PostEffect::CreateRadialBlurParam()
+{
+  // RadialBlurParamのリソース生成
+  radialBlurParamResource_ = m_dx12_->MakeBufferResource(sizeof(RadialBlurParam));
+  // データの設定
+  radialBlurParamResource_->Map(0, nullptr, reinterpret_cast<void**>(&radialBlurParam_));
+  // データの初期化
+  radialBlurParam_->center = { .x= 0.5f, .y= 0.5f };
+  radialBlurParam_->blurWidth = 0.01f;
+  radialBlurParam_->sampleCount = 10;
+}
+
 void PostEffect::CreateCameraForGPU()
 {
   // CameraForGPUのリソース生成
@@ -513,6 +544,9 @@ void PostEffect::SetParamResource(const std::string& effectName)
     m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, bloomParamResource_->GetGPUVirtualAddress());
     m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(2, cameraForGPUResource_->GetGPUVirtualAddress());
     m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(3, fogParamResource_->GetGPUVirtualAddress());
+  } else if (effectName == "RadialBlur")
+  {
+    m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, radialBlurParamResource_->GetGPUVirtualAddress());
   } else if (effectName == "GrayScale" || effectName == "NoEffect")
   {
     // グレースケール, ノーエフェクトの場合は何もしない
