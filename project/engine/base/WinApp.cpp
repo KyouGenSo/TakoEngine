@@ -194,7 +194,7 @@ void WinApp::ToggleFullScreen()
 uint32_t WinApp::RegisterOnResizeFunc(const std::function<void(Vector2)>& onResizeFunc)
 {
   uint32_t id = nextId_++;
-  onResizeFuncs_.push_back({ onResizeFunc, id });
+  onResizeFuncs_.push_back({ .callback= onResizeFunc, .id= id});
   return id;
 }
 
