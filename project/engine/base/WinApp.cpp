@@ -183,34 +183,27 @@ void WinApp::ToggleFullScreen()
   }
 
   // OnResize関数があれば呼び出す
-  if (!onResizeFuncs_.empty())
-  {
-    Vector2 newSize = { .x= static_cast<float>(clientWidth), .y= static_cast<float>(clientHeight) };
-    for (const auto& onResizeFunc : onResizeFuncs_)
-    {
-      onResizeFunc(newSize);
+  if (!onResizeFuncs_.empty()) {
+    Vector2 newSize = { .x = static_cast<float>(clientWidth), .y = static_cast<float>(clientHeight) };
+    for (const auto& entry : onResizeFuncs_) {
+      entry.callback(newSize);
     }
   }
 }
 
-void WinApp::RegisterOnResizeFunc(void(* onResizeFunc)(Vector2))
+uint32_t WinApp::RegisterOnResizeFunc(const std::function<void(Vector2)>& onResizeFunc)
 {
-  // 重複登録を防ぐために、すでに登録されているか確認
-  auto it = std::ranges::find(onResizeFuncs_, onResizeFunc);
-  if (it != onResizeFuncs_.end())
-  {
-    // すでに登録されている場合は何もしない
-    return;
-  }
-  onResizeFuncs_.push_back(onResizeFunc);
+  uint32_t id = nextId_++;
+  onResizeFuncs_.push_back({ onResizeFunc, id });
+  return id;
 }
 
-void WinApp::UnregisterOnResizeFunc(void(*onResizeFunc)(Vector2))
+void WinApp::UnregisterOnResizeFunc(uint32_t id)
 {
-  // 指定された関数ポインタを削除
-  auto it = std::ranges::find(onResizeFuncs_, onResizeFunc);
-  if (it != onResizeFuncs_.end())
-  {
-    onResizeFuncs_.erase(it);
+  auto it = std::remove_if(onResizeFuncs_.begin(), onResizeFuncs_.end(),
+    [id](const ResizeCallbackEntry& entry) { return entry.id == id; });
+
+  if (it != onResizeFuncs_.end()) {
+    onResizeFuncs_.erase(it, onResizeFuncs_.end());
   }
 }
