@@ -52,6 +52,7 @@ void TextureManager::LoadTexture(const std::string& fileName)
 	// テクスチャの読み込み
 	DirectX::ScratchImage image;
 	std::wstring filePathW = StringUtility::ConvertString(directoryPath_ + fileName);
+
   if (filePathW.ends_with(L".dds"))
   {
     // DDSファイルの読み込み
@@ -74,7 +75,7 @@ void TextureManager::LoadTexture(const std::string& fileName)
   else
   {
     // 非圧縮テクスチャの場合
-    hr = DirectX::GenerateMipMaps(image.GetImages(), image.GetImageCount(), image.GetMetadata(), DirectX::TEX_FILTER_SRGB, 0, mipImages);
+    hr = DirectX::GenerateMipMaps(image.GetImages(), image.GetImageCount(), image.GetMetadata(), DirectX::TEX_FILTER_SRGB, 4, mipImages);
   }
 	assert(SUCCEEDED(hr));
 

@@ -36,6 +36,7 @@ void MyGame::Initialize()
   TextureManager::GetInstance()->LoadTexture("white.png");
   TextureManager::GetInstance()->LoadTexture("circle.png");
   TextureManager::GetInstance()->LoadTexture("uvChecker.png");
+  TextureManager::GetInstance()->LoadTexture("rostock_laage_airport_4k.dds");
 
   ModelManager::GetInstance()->LoadModel("terrain.obj");
   ModelManager::GetInstance()->LoadModel("player.gltf");

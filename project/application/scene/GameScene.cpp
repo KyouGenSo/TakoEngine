@@ -31,6 +31,10 @@ void GameScene::Initialize()
   ///              初期化処理              ///
   /// ================================== ///
 
+  // SkyBoxの初期化
+  skyBox_ = std::make_unique<SkyBox>();
+  skyBox_->Initialize("rostock_laage_airport_4k.dds");
+
   object3d_ = new Object3d();
   object3d_->Initialize();
   object3d_->SetModel("terrain.obj");
@@ -161,6 +165,8 @@ void GameScene::Update()
   ///              更新処理               ///
   /// ================================== ///
 
+  skyBox_->Update();
+
   object3d_->SetScale(modelScale_);
   object3d_->SetTranslate(modelPos_);
   object3d_->SetRotate(modelRotate_);
@@ -217,6 +223,8 @@ void GameScene::Draw()
   /// ================================== ///
   ///              描画処理               ///
   /// ================================== ///
+
+  skyBox_->Draw();
 
   //------------------背景Spriteの描画------------------//
   // スプライト共通描画設定

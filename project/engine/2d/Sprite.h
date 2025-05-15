@@ -40,7 +40,7 @@ public: // メンバー関数
   ///<summary>
   ///初期化
   /// </summary>
-  void Initialize(std::string texturePath);
+  void Initialize(const std::string& texturePath);
 
   ///<summary>
   ///更新

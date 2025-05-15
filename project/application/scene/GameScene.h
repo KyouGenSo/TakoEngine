@@ -3,7 +3,7 @@
 #include"Object3d.h"
 #include "EmitterManager.h"
 #include "Sprite.h"
-
+#include "SkyBox.h"
 
 class GameScene : public BaseScene
 {
@@ -59,6 +59,9 @@ private: // メンバ変数
     float decay;
     bool enable;
   };
+
+  // SkyBox
+  std::unique_ptr<SkyBox> skyBox_;
 
   Object3d* object3d_ = nullptr;
   Object3d* object3d2_ = nullptr;

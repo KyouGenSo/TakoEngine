@@ -139,6 +139,12 @@
     <FxCompile Include="resources\shaders\RadialBlur.PS.hlsl">
       <Filter>Shader\PostEffect</Filter>
     </FxCompile>
+    <FxCompile Include="resources\shaders\SkyBox.PS.hlsl">
+      <Filter>Shader\3d</Filter>
+    </FxCompile>
+    <FxCompile Include="resources\shaders\SkyBox.VS.hlsl">
+      <Filter>Shader\3d</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\Object3d.hlsli">
@@ -158,6 +164,9 @@
     </None>
     <None Include="resources\shaders\Random.hlsli">
       <Filter>Shader</Filter>
+    </None>
+    <None Include="resources\shaders\SkyBox.hlsli">
+      <Filter>Shader\3d</Filter>
     </None>
   </ItemGroup>
 </Project>

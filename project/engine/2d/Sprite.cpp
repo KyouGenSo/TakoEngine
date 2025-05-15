@@ -1,9 +1,11 @@
 #include"Sprite.h"
+
+#include <utility>
 #include"SpriteBasic.h"
 #include "TextureManager.h"
 #include "SrvManager.h"
 
-void Sprite::Initialize(std::string texturePath)
+void Sprite::Initialize(const std::string& texturePath)
 {
 	// Transformの初期化
 	transform_.scale = Vector3(size_.x, size_.y, 1.0f);
@@ -26,9 +28,9 @@ void Sprite::Initialize(std::string texturePath)
 	CreateTransformationMatrixData();
 
 	// ファイルパスを保存
-	texturePath_ = texturePath;
+	texturePath_ = std::move(texturePath);
 
-	// テクスチャインデックスを保存
+  // テクスチャインデックスを保存
 	textureIndex_ = TextureManager::GetInstance()->GetSRVIndex(texturePath_);
 
 	// 画像切り取り範囲をぴったりにする
