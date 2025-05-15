@@ -10,13 +10,12 @@
 void SkyBox::Initialize(const std::string& texturePath)
 {
   // Transformの初期化
-  transform_.scale = { 50.0f, 50.0f, 50.0f };
+  transform_.scale = { 500.0f, 500.0f, 500.0f };
   transform_.rotate = { 0.0f, 0.0f, 0.0f };
   transform_.translate = { 0.0f, 0.0f, 0.0f };
 
   // 行列の初期化
-  viewMatrix_ = Mat4x4::MakeIdentity();
-  projectionMatrix_ = Mat4x4::MakeIdentity();
+  viewProjectionMatrix_ = Mat4x4::MakeIdentity();
   worldMatrix_ = Mat4x4::MakeIdentity();
   wvpMatrix_ = Mat4x4::MakeIdentity();
 
@@ -40,9 +39,9 @@ void SkyBox::Initialize(const std::string& texturePath)
 
 void SkyBox::Update()
 {
-  viewMatrix_ = (*Object3dBasic::GetInstance()->GetCamera())->GetViewProjectionMatrix();
+  viewProjectionMatrix_ = (*Object3dBasic::GetInstance()->GetCamera())->GetViewProjectionMatrix();
   worldMatrix_ = Mat4x4::MakeAffine(transform_.scale, transform_.rotate, transform_.translate);
-  wvpMatrix_ = Mat4x4::Multiply(worldMatrix_, viewMatrix_);
+  wvpMatrix_ = Mat4x4::Multiply(worldMatrix_, viewProjectionMatrix_);
 
   // リソースにデータを書き込む
   transformationMatrixData_->WVP = wvpMatrix_;
@@ -180,13 +179,7 @@ void SkyBox::CreatePSO()
   D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
   depthStencilDesc.DepthEnable = true;                           // 深度バッファを有効にする
   depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO; // 深度値を書き込まない
-  depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;       // 深度比較関数
-
-  // DepthStencilViewの設定
-  D3D12_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc{};
-  depthStencilViewDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT; // 深度バッファのフォーマット
-  depthStencilViewDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D; // 2Dテクスチャ
-  depthStencilViewDesc.Flags = D3D12_DSV_FLAG_READ_ONLY_DEPTH; // 読み取り専用
+  depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL; // 深度比較関数
 
   // PSOの設定
   D3D12_GRAPHICS_PIPELINE_STATE_DESC pipelineStateDesc{};

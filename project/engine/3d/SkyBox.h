@@ -4,6 +4,7 @@
 #include <wrl/client.h>
 
 #include "Matrix4x4.h"
+#include "TextureManager.h"
 #include "Transform.h"
 #include "Vector2.h"
 #include "Vector4.h"
@@ -43,6 +44,16 @@ public: // メンバ変数
   // 描画
   void Draw();
 
+  //---------------------Setter---------------------//
+  void SetScale(const Vector3& scale) { transform_.scale = scale; }
+  void SetRotate(const Vector3& rotate) { transform_.rotate = rotate; }
+  void SetTranslate(const Vector3& translate) { transform_.translate = translate; }
+  void SetTexture(const std::string& texturePath) {
+    textureIndex_ = TextureManager::GetInstance()->GetSRVIndex(texturePath);
+  }
+
+
+
 private: // プライベートメンバー関数
   // RootSignatureを生成
   void CreateRootSignature();
@@ -58,13 +69,11 @@ private: // プライベートメンバー関数
   void CreateTransformationMatrixData();
 
 private: // メンバ変数
-
   // Transform
   Transform transform_ = {};
 
   // 座標変換行列
-  Matrix4x4 viewMatrix_ = {};
-  Matrix4x4 projectionMatrix_ = {};
+  Matrix4x4 viewProjectionMatrix_ = {};
   Matrix4x4 worldMatrix_ = {};
   Matrix4x4 wvpMatrix_ = {};
 
