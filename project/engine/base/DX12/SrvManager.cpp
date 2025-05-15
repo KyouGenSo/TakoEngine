@@ -3,7 +3,7 @@
 
 SrvManager* SrvManager::instance_ = nullptr;
 
-const uint32_t SrvManager::kMaxSRVCount = 512;
+const uint32_t SrvManager::kMaxSRVCount = 2048;
 
 SrvManager* SrvManager::GetInstance()
 {
