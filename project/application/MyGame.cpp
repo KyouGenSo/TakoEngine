@@ -37,14 +37,6 @@ void MyGame::Initialize()
   TextureManager::GetInstance()->LoadTexture("circle.png");
   TextureManager::GetInstance()->LoadTexture("uvChecker.png");
 
-  ModelManager::GetInstance()->LoadModel("terrain.obj");
-  ModelManager::GetInstance()->LoadModel("player.gltf");
-  //ModelManager::GetInstance()->LoadModel("uvChecker.gltf");
-  ModelManager::GetInstance()->LoadModel("AnimatedCube.gltf", true); 
-  //ModelManager::GetInstance()->LoadModel("simpleSkin.gltf", true, true);
-  ModelManager::GetInstance()->LoadModel("walk.gltf", true, true);
-  ModelManager::GetInstance()->LoadModel("sneakWalk.gltf", true, true);
-
   // GPUパーティクルの初期化
   GPUParticle::GetInstance()->Initialize(dx12_, defaultCamera_);
 
