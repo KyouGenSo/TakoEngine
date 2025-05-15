@@ -27,6 +27,12 @@ void ModelManager::Finalize()
 {
   delete pModelBasic_;
 
+  // 各モデルインスタンスに対してFinalize呼び出し
+  for (auto& model : modelInstances_) {
+    if (model) {
+      model->Finalize();
+    }
+  }
   // モデルインスタンスの解放
   modelInstances_.clear();
 
@@ -34,6 +40,8 @@ void ModelManager::Finalize()
   {
     val->Finalize();
   }
+  // モデルデータの解放
+  models_.clear();
 
 	if (instance_ != nullptr)
 	{
