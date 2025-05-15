@@ -101,7 +101,7 @@ void SrvManager::CreateUAV(uint32_t index, ID3D12Resource* pResource, UINT numEl
   m_dx12_->GetDevice()->CreateUnorderedAccessView(pResource, nullptr, &uavDesc, GetCPUDescriptorHandle(index));
 }
 
-void SrvManager::CreateSRVForCubeMap(uint32_t srvIndex, ID3D12Resource* pResource, DXGI_FORMAT format, UINT mipLevels)
+void SrvManager::CreateSRVForCubeMap(uint32_t _srvIndex, ID3D12Resource* pResource, DXGI_FORMAT format, UINT mipLevels)
 {
   D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
   srvDesc.Format = format;
@@ -110,7 +110,7 @@ void SrvManager::CreateSRVForCubeMap(uint32_t srvIndex, ID3D12Resource* pResourc
   srvDesc.TextureCube.MostDetailedMip = 0;
   srvDesc.TextureCube.MipLevels = mipLevels;
   srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
-  m_dx12_->GetDevice()->CreateShaderResourceView(pResource, &srvDesc, GetCPUDescriptorHandle(srvIndex));
+  m_dx12_->GetDevice()->CreateShaderResourceView(pResource, &srvDesc, GetCPUDescriptorHandle(_srvIndex));
 }
 
 void SrvManager::SetGraphicsRootDescriptorTable(UINT rootParameterIndex, uint32_t index)

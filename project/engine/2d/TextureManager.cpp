@@ -67,7 +67,15 @@ void TextureManager::LoadTexture(const std::string& fileName)
 
 	// mipmapを生成
 	DirectX::ScratchImage mipImages{};
-	hr = DirectX::GenerateMipMaps(image.GetImages(), image.GetImageCount(), image.GetMetadata(), DirectX::TEX_FILTER_SRGB, 0, mipImages);
+  if (DirectX::IsCompressed(image.GetMetadata().format))
+  {
+    mipImages = std::move(image);
+  }
+  else
+  {
+    // 非圧縮テクスチャの場合
+    hr = DirectX::GenerateMipMaps(image.GetImages(), image.GetImageCount(), image.GetMetadata(), DirectX::TEX_FILTER_SRGB, 0, mipImages);
+  }
 	assert(SUCCEEDED(hr));
 
 	// 追加したテクスチャデータを取得

@@ -69,7 +69,7 @@ public: // メンバー関数
   ///<summary>
   ///　SRV生成(CubeMap用)
   /// </summary>
-  void CreateSRVForCubeMap(uint32_t srvIndex, ID3D12Resource* pResource, DXGI_FORMAT format, UINT mipLevels);
+  void CreateSRVForCubeMap(uint32_t _srvIndex, ID3D12Resource* pResource, DXGI_FORMAT format, UINT mipLevels);
 
 	///<summary>
 	///GraphicsRootDescriptorTableにSRVをセット

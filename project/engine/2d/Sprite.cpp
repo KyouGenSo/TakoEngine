@@ -10,6 +10,12 @@ void Sprite::Initialize(std::string texturePath)
 	transform_.rotate = Vector3(0.0f, 0.0f, rotation_);
 	transform_.translate = { pos_.x, pos_.y, 0.0f };
 
+  viewMatrixSprite_ = Mat4x4::MakeIdentity();
+  projectionMatrixSprite_ = Mat4x4::MakeOrtho(
+    0.0f, 0.0f,
+    static_cast<float>(WinApp::clientWidth), static_cast<float>(WinApp::clientHeight),
+    0.0f, 100.0f);
+
 	// 頂点データを生成
 	CreateVertexData();
 
@@ -55,7 +61,6 @@ void Sprite::Update()
 	{
 		top = -top;
 		bottom = -bottom;
-		
 	}
 
 	// テクスチャ範囲指定
@@ -78,15 +83,9 @@ void Sprite::Update()
 	vertexData_[3].position = { right, top, 0.0f, 1.0f }; // 右上
 	vertexData_[3].texcoord = { texRight, texTop };
 
-	// 三角形のインデックスデータを作成
-	indexData_[0] = 0; indexData_[1] = 1; indexData_[2] = 2;
-	indexData_[3] = 3; indexData_[4] = 2; indexData_[5] = 1;
-
 	// Spriteの座標変換
 	Matrix4x4 worldMatrixSprite = Mat4x4::MakeAffine(transform_.scale, transform_.rotate, transform_.translate);
-	Matrix4x4 viewMatrixSprite = Mat4x4::MakeIdentity();
-	Matrix4x4 projectionMatrixSprite = Mat4x4::MakeOrtho(0.0f, 0.0f, static_cast<float>(WinApp::clientWidth), static_cast<float>(WinApp::clientHeight), 0.0f, 100.0f);
-	Matrix4x4 wvpMatrixSprite = Mat4x4::Multiply(worldMatrixSprite, Mat4x4::Multiply(viewMatrixSprite, projectionMatrixSprite));
+	Matrix4x4 wvpMatrixSprite = Mat4x4::Multiply(worldMatrixSprite, Mat4x4::Multiply(viewMatrixSprite_, projectionMatrixSprite_));
 
 	transformationMatrixData_->WVP = wvpMatrixSprite;
 	transformationMatrixData_->world = worldMatrixSprite;
@@ -136,6 +135,10 @@ void Sprite::CreateVertexData()
 
 	// インデックスリソースをマップ
 	indexResource_->Map(0, nullptr, reinterpret_cast<void**>(&indexData_));
+
+  // 三角形のインデックスデータを作成
+  indexData_[0] = 0; indexData_[1] = 1; indexData_[2] = 2;
+  indexData_[3] = 3; indexData_[4] = 2; indexData_[5] = 1;
 }
 
 void Sprite::CreateMaterialData()
