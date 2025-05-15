@@ -36,12 +36,8 @@ void ModelManager::Finalize()
   // モデルインスタンスの解放
   modelInstances_.clear();
 
-  for (auto& val : models_ | std::views::values)
-  {
-    val->Finalize();
-  }
-  // モデルデータの解放
-  models_.clear();
+  // ロード済みファイルリストをクリア
+  loadedFiles_.clear();
 
 	if (instance_ != nullptr)
 	{
@@ -50,53 +46,53 @@ void ModelManager::Finalize()
 	}
 }
 
-void ModelManager::LoadModel(const std::string& fileName)
-{
-	// 読み込み済みの場合は何もしない
-	if (models_.contains(fileName))
-	{
-		return;
-	}
+//void ModelManager::LoadModel(const std::string& fileName)
+//{
+//	// 読み込み済みの場合は何もしない
+//	if (models_.contains(fileName))
+//	{
+//		return;
+//	}
+//
+//	// モデルの読み込み、初期化
+//	std::unique_ptr<Model> model = std::make_unique<Model>();
+//	model->Initialize(pModelBasic_, fileName, false, false);
+//
+//	// モデルデータの登録
+//	models_.insert(std::make_pair(fileName, std::move(model)));
+//}
 
-	// モデルの読み込み、初期化
-	std::unique_ptr<Model> model = std::make_unique<Model>();
-	model->Initialize(pModelBasic_, fileName, false, false);
+//void ModelManager::LoadModel(const std::string& fileName, bool hasAnimation)
+//{
+//	// 読み込み済みの場合は何もしない
+//	if (models_.contains(fileName))
+//	{
+//		return;
+//	}
+//
+//	// モデルの読み込み、初期化
+//	std::unique_ptr<Model> model = std::make_unique<Model>();
+//	model->Initialize(pModelBasic_, fileName, hasAnimation, false);
+//
+//	// モデルデータの登録
+//	models_.insert(std::make_pair(fileName, std::move(model)));
+//}
 
-	// モデルデータの登録
-	models_.insert(std::make_pair(fileName, std::move(model)));
-}
-
-void ModelManager::LoadModel(const std::string& fileName, bool hasAnimation)
-{
-	// 読み込み済みの場合は何もしない
-	if (models_.contains(fileName))
-	{
-		return;
-	}
-
-	// モデルの読み込み、初期化
-	std::unique_ptr<Model> model = std::make_unique<Model>();
-	model->Initialize(pModelBasic_, fileName, hasAnimation, false);
-
-	// モデルデータの登録
-	models_.insert(std::make_pair(fileName, std::move(model)));
-}
-
-void ModelManager::LoadModel(const std::string& fileName, bool hasAnimation, bool hasSkeleton)
-{
-	// 読み込み済みの場合は何もしない
-	if (models_.contains(fileName))
-	{
-		return;
-	}
-
-	// モデルの読み込み、初期化
-	std::unique_ptr<Model> model = std::make_unique<Model>();
-	model->Initialize(pModelBasic_, fileName, hasAnimation, hasSkeleton);
-
-	// モデルデータの登録
-	models_.insert(std::make_pair(fileName, std::move(model)));
-}
+//void ModelManager::LoadModel(const std::string& fileName, bool hasAnimation, bool hasSkeleton)
+//{
+//	// 読み込み済みの場合は何もしない
+//	if (models_.contains(fileName))
+//	{
+//		return;
+//	}
+//
+//	// モデルの読み込み、初期化
+//	std::unique_ptr<Model> model = std::make_unique<Model>();
+//	model->Initialize(pModelBasic_, fileName, hasAnimation, hasSkeleton);
+//
+//	// モデルデータの登録
+//	models_.insert(std::make_pair(fileName, std::move(model)));
+//}
 
 Model* ModelManager::CreateModelInstance(const std::string& fileName)
 {
@@ -105,10 +101,9 @@ Model* ModelManager::CreateModelInstance(const std::string& fileName)
 
 Model* ModelManager::CreateModelInstance(const std::string& fileName, bool hasAnimation, bool hasSkeleton)
 {
-  // モデルファイルが読み込まれていなければ先に読み込む
-  if (!models_.contains(fileName))
-  {
-    LoadModel(fileName, hasAnimation, hasSkeleton);
+  // ファイルが未ロードの場合はロード済みとしてマーク
+  if (loadedFiles_.find(fileName) == loadedFiles_.end()) {
+    loadedFiles_.insert(fileName);
   }
 
   // 新しいModelインスタンスを作成
@@ -121,17 +116,17 @@ Model* ModelManager::CreateModelInstance(const std::string& fileName, bool hasAn
   return modelPtr;
 }
 
-Model* ModelManager::FindModel(const std::string& fileName)
-{
-	// モデルが存在する場合はポインタを返す
-	if (models_.contains(fileName))
-	{
-    return models_.at(fileName).get();
-	}
-
-  // エラーログを出力
-  Logger::Log("ModelManager::FindModel: Model not found: " + fileName);
-
-	// モデルが存在しない場合はnullptrを返す
-	return nullptr;
-}
+//Model* ModelManager::FindModel(const std::string& fileName)
+//{
+//	// モデルが存在する場合はポインタを返す
+//	if (models_.contains(fileName))
+//	{
+//    return models_.at(fileName).get();
+//	}
+//
+//  // エラーログを出力
+//  Logger::Log("ModelManager::FindModel: Model not found: " + fileName);
+//
+//	// モデルが存在しない場合はnullptrを返す
+//	return nullptr;
+//}

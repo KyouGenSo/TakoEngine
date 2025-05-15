@@ -2,6 +2,7 @@
 #include <string>
 #include <map>
 #include <memory>
+#include <unordered_set>
 #include <vector>
 
 #include"ModelBasic.h"
@@ -68,8 +69,10 @@ private: // メンバー変数
 	ModelBasic* pModelBasic_;
 
 	// モデルデータ
-	std::map<std::string, std::unique_ptr<Model>> models_;
+  // models_の代わりにロード済みファイル名のセットを使用
+  std::unordered_set<std::string> loadedFiles_;
 
+  // modelInstancesは保持
   std::vector<std::unique_ptr<Model>> modelInstances_;
 
 };
