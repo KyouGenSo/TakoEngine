@@ -4,6 +4,7 @@
 
 #include"Model.h"
 #include"DX12Basic.h"
+#include "Logger.h"
 
 ModelManager* ModelManager::instance_ = nullptr;
 
@@ -25,6 +26,9 @@ void ModelManager::Initialize(DX12Basic* dx12)
 void ModelManager::Finalize()
 {
   delete pModelBasic_;
+
+  // モデルインスタンスの解放
+  modelInstances_.clear();
 
   for (auto& val : models_ | std::views::values)
   {
@@ -86,13 +90,39 @@ void ModelManager::LoadModel(const std::string& fileName, bool hasAnimation, boo
 	models_.insert(std::make_pair(fileName, std::move(model)));
 }
 
+Model* ModelManager::CreateModelInstance(const std::string& fileName)
+{
+  return CreateModelInstance(fileName, false, false);
+}
+
+Model* ModelManager::CreateModelInstance(const std::string& fileName, bool hasAnimation, bool hasSkeleton)
+{
+  // モデルファイルが読み込まれていなければ先に読み込む
+  if (!models_.contains(fileName))
+  {
+    LoadModel(fileName, hasAnimation, hasSkeleton);
+  }
+
+  // 新しいModelインスタンスを作成
+  std::unique_ptr<Model> newModel = std::make_unique<Model>();
+  newModel->Initialize(pModelBasic_, fileName, hasAnimation, hasSkeleton);
+
+  // ポインタを保存してから返す
+  Model* modelPtr = newModel.get();
+  modelInstances_.push_back(std::move(newModel));
+  return modelPtr;
+}
+
 Model* ModelManager::FindModel(const std::string& fileName)
 {
 	// モデルが存在する場合はポインタを返す
 	if (models_.contains(fileName))
 	{
-		return models_.at(fileName).get();
+    return models_.at(fileName).get();
 	}
+
+  // エラーログを出力
+  Logger::Log("ModelManager::FindModel: Model not found: " + fileName);
 
 	// モデルが存在しない場合はnullptrを返す
 	return nullptr;

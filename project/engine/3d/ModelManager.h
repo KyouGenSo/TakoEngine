@@ -2,6 +2,8 @@
 #include <string>
 #include <map>
 #include <memory>
+#include <vector>
+
 #include"ModelBasic.h"
 
 class Model;
@@ -39,15 +41,21 @@ public: // メンバー関数
 	/// </summary>
 	void Finalize();
 
-	///<summary>
-	///モデルの読み込む
+	/// <summary>
+	/// モデルの読み込む
 	///	</summary>
 	void LoadModel(const std::string& fileName);
 	void LoadModel(const std::string& fileName, bool hasAnimation);
 	void LoadModel(const std::string& fileName, bool hasAnimation, bool hasSkeleton);
 
-	///<summary>
-	///モデルの検索
+  /// <summary>
+  /// モデルのインスタンスを生成
+  ///	</summary>
+  Model* CreateModelInstance(const std::string& fileName);
+  Model* CreateModelInstance(const std::string& fileName, bool hasAnimation, bool hasSkeleton);
+
+	/// <summary>
+	/// モデルの検索
 	///	</summary>
 	Model* FindModel(const std::string& fileName);
 
@@ -61,5 +69,7 @@ private: // メンバー変数
 
 	// モデルデータ
 	std::map<std::string, std::unique_ptr<Model>> models_;
+
+  std::vector<std::unique_ptr<Model>> modelInstances_;
 
 };
