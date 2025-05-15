@@ -80,7 +80,12 @@ void Object3d::Draw()
 
 void Object3d::SetModel(const std::string& fileName)
 {
-	m_model_ = ModelManager::GetInstance()->FindModel(fileName);
+  m_model_ = ModelManager::GetInstance()->CreateModelInstance(fileName);
+}
+
+void Object3d::SetModel(const std::string& fileName, bool hasAnimation, bool hasSkeleton)
+{
+  m_model_ = ModelManager::GetInstance()->CreateModelInstance(fileName, hasAnimation, hasSkeleton);
 }
 
 void Object3d::SetMaterialColor(const Vector4& color)
