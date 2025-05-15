@@ -2,6 +2,7 @@
 #include "BaseScene.h"
 #include"Object3d.h"
 #include "EmitterManager.h"
+#include "Sprite.h"
 
 
 class GameScene : public BaseScene
@@ -26,6 +27,7 @@ public: // メンバ関数
   /// 描画
   /// </summary>
   void Draw() override;
+  void DrawWithoutEffect() override;
 
   /// <summary>
   /// ImGuiの描画
@@ -89,4 +91,7 @@ private: // メンバ変数
   TriangleEmitterParams triEmitterSett_ = {};
   Vector3 groupPosition_ = {};
   bool isActive_ = true;
+
+  // スプライト
+  std::unique_ptr<Sprite> sprite_;
 };

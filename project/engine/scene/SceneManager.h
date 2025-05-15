@@ -30,6 +30,7 @@ public: // メンバ関数
 	/// 描画
 	/// </summary>
 	void Draw();
+  void DrawWithoutEffect();
 
 	/// <summary>
 	/// imguiの描画

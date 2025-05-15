@@ -26,8 +26,6 @@ void MyGame::Initialize()
 	// オーディオの初期化
 	Audio::GetInstance()->Initialize("resources/Sound/");
 
-
-
 #pragma endregion
 
 	// シーンの初期化
@@ -37,6 +35,7 @@ void MyGame::Initialize()
 
   TextureManager::GetInstance()->LoadTexture("white.png");
   TextureManager::GetInstance()->LoadTexture("circle.png");
+  TextureManager::GetInstance()->LoadTexture("uvChecker.png");
 
   ModelManager::GetInstance()->LoadModel("terrain.obj");
   ModelManager::GetInstance()->LoadModel("player.gltf");
@@ -98,6 +97,33 @@ void MyGame::Update()
 
   // ゲームパッドの状態をリスレッシュ
 	Input::GetInstance()->RefreshGamePadState();
+
+#ifdef _DEBUG
+  switch (postEffectType)
+  {
+  case NoEffect:
+    PostEffect::GetInstance()->SetEffectType("NoEffect");
+    break;
+  case VignetteRed:
+    PostEffect::GetInstance()->SetEffectType("VignetteRed");
+    break;
+  case VignetteRedBloom:
+    PostEffect::GetInstance()->SetEffectType("VignetteRedBloom");
+    break;
+  case GrayScale:
+    PostEffect::GetInstance()->SetEffectType("GrayScale");
+    break;
+  case VigRedGrayScale:
+    PostEffect::GetInstance()->SetEffectType("VigRedGrayScale");
+    break;
+  case Bloom:
+    PostEffect::GetInstance()->SetEffectType("Bloom");
+    break;
+  case BloomFog:
+    PostEffect::GetInstance()->SetEffectType("BloomFog");
+    break;
+  }
+#endif // _DEBUG
 }
 
 void MyGame::Draw()
@@ -106,53 +132,40 @@ void MyGame::Draw()
 	/// ------------------シーン描画-------------------///
 	/// ============================================= ///
 
-	// 描画前の処理(レンダーテクスチャを描画対象に設定)
-	dx12_->SetRenderTexture();
+  //ポストエフェクト適用対象のレンダーテクスチャを描画先に設定
+	dx12_->SetEffectRenderTexture();
 
 	// テクスチャ用のsrvヒープの設定
 	SrvManager::GetInstance()->BeginDraw();
 
-	// シーンの描画
 	SceneManager::GetInstance()->Draw();
 
-  // GPUパーティクルの描画
+	/// ===================================================== ///
+	/// ------------------ポストエフェクト描画-------------------///
+	/// ===================================================== ///
+
+    // ポストエフェクトの描画
+  PostEffect::GetInstance()->Draw();
+
+  /// ===================================================== ///
+  /// ------------ポストエフェクト非適用対象の描画---------------///
+  /// ===================================================== ///
+  // ポストエフェクト非適用対象のレンダーテクスチャを描画先に設定
+  dx12_->SetNonEffectRenderTexture();
+
+  // シーンの描画
+  SceneManager::GetInstance()->DrawWithoutEffect();
+
   GPUParticle::GetInstance()->Draw();
 
   Draw2D::GetInstance()->Draw();
 
   Draw2D::GetInstance()->Reset();
 
-	/// ===================================================== ///
-	/// ------------------ポストエフェクト描画-------------------///
-	/// ===================================================== ///
-	// SwapChainを描画対象に設定
-	dx12_->SetSwapChain();
-
-	// PostEffectの描画
-	switch (postEffectType)
-	{
-	case::MyGame::NoEffect:
-		PostEffect::GetInstance()->Draw("NoEffect");
-		break;
-	case::MyGame::VignetteRed:
-		PostEffect::GetInstance()->Draw("VignetteRed");
-		break;
-	case::MyGame::VignetteRedBloom:
-		PostEffect::GetInstance()->Draw("VignetteRedBloom");
-		break;
-	case::MyGame::GrayScale:
-		PostEffect::GetInstance()->Draw("GrayScale");
-		break;
-	case::MyGame::VigRedGrayScale:
-		PostEffect::GetInstance()->Draw("VigRedGrayScale");
-		break;
-	case::MyGame::Bloom:
-		PostEffect::GetInstance()->Draw("Bloom");
-		break;
-	case::MyGame::BloomFog:
-		PostEffect::GetInstance()->Draw("BloomFog");
-		break;
-	}
+  /// ============================================= ///
+  /// ---------最終結果をスワップチェーンに描画---------///
+  /// ============================================= ///
+  PostEffect::GetInstance()->DrawFinalResult();
 
 
 	/// ========================================= ///
@@ -168,8 +181,6 @@ void MyGame::Draw()
 
   // GlobalVariablesの更新
   GlobalVariables::GetInstance()->Update();
-
-  //GPUParticle::GetInstance()->DebugInfo();
 
   ImGui::Begin("Option");
   // buttonでFPSの表示を切り替え

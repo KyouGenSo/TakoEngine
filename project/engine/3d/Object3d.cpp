@@ -39,8 +39,8 @@ void Object3d::Update()
 
 	Matrix4x4 wvpMatrix;
 
-	if (m_camera_) {
-		const Matrix4x4& viewProjectionMatrix = m_camera_->GetViewProjectionMatrix();
+	if ((*m_camera_)) {
+		const Matrix4x4& viewProjectionMatrix = (*m_camera_)->GetViewProjectionMatrix();
 		wvpMatrix = Mat4x4::Multiply(worldMatrix, viewProjectionMatrix);
 	} else {
 		wvpMatrix = worldMatrix;
@@ -74,7 +74,7 @@ void Object3d::Draw()
 	// モデルの描画
 	if (m_model_)
 	{
-		m_model_->Draw(transformationMatData_->world, Object3dBasic::GetInstance()->GetCamera()->GetViewProjectionMatrix());
+		m_model_->Draw(transformationMatData_->world, (*Object3dBasic::GetInstance()->GetCamera())->GetViewProjectionMatrix());
 	}
 }
 
@@ -146,5 +146,5 @@ void Object3d::CreateCameraForGPUData()
 	cameraForGPUResource_->Map(0, nullptr, reinterpret_cast<void**>(&cameraForGPUData_));
 
 	// カメラデータの初期値を書き込む
-	cameraForGPUData_->worldPos = m_camera_->GetTranslate();
+	cameraForGPUData_->worldPos = (*m_camera_)->GetTranslate();
 }

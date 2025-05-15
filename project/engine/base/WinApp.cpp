@@ -2,9 +2,13 @@
 
 #include "WinApp.h"
 
+#include <algorithm>
 #include <cassert>
 #include"imgui_impl_win32.h"
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+// instanceの初期化
+WinApp* WinApp::instance_ = nullptr;
 
 std::vector<IWndProcHandler*> WinApp::m_handlers_;
 
@@ -78,14 +82,19 @@ bool WinApp::ProcessMessage()
 	return false;
 }
 
-
-
 void WinApp::Finalize()
 {
 	//ウィンドウを破棄
 	CloseWindow(hWnd_);
 	// COMの終了処理
 	CoUninitialize();
+
+  // instance_削除
+  if (instance_ != nullptr)
+  {
+    delete instance_;
+    instance_ = nullptr;
+  }
 }
 
 LRESULT WinApp::WndProc(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam)
@@ -141,6 +150,12 @@ void WinApp::ToggleFullScreen()
       mi.rcMonitor.bottom - mi.rcMonitor.top,
       SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
 
+    // ウィンドウのサイズを取得
+    RECT clientRect;
+    GetClientRect(hWnd_, &clientRect);
+    // クライアント領域のサイズを保存
+    SetWindowSize(clientRect.right - clientRect.left, clientRect.bottom - clientRect.top);
+
     // 状態を更新
     isFullScreen_ = true;
   }
@@ -157,7 +172,36 @@ void WinApp::ToggleFullScreen()
       windowedRect_.bottom - windowedRect_.top,
       SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
 
+    // ウィンドウのサイズを取得
+    RECT clientRect;
+    GetClientRect(hWnd_, &clientRect);
+    // クライアント領域のサイズを保存
+    SetWindowSize(clientRect.right - clientRect.left, clientRect.bottom - clientRect.top);
+
     // 状態を更新
     isFullScreen_ = false;
   }
+
+  // OnResize関数があれば呼び出す
+  if (!onResizeFuncs_.empty()) {
+    Vector2 newSize = { .x = static_cast<float>(clientWidth), .y = static_cast<float>(clientHeight) };
+    for (const auto& entry : onResizeFuncs_) {
+      entry.callback(newSize);
+    }
+  }
+}
+
+uint32_t WinApp::RegisterOnResizeFunc(const std::function<void(Vector2)>& onResizeFunc)
+{
+  uint32_t id = nextId_++;
+  onResizeFuncs_.push_back({ .callback= onResizeFunc, .id= id});
+  return id;
+}
+
+void WinApp::UnregisterOnResizeFunc(uint32_t id)
+{
+  onResizeFuncs_.erase(
+    std::remove_if(onResizeFuncs_.begin(), onResizeFuncs_.end(),
+                   [id](const ResizeCallbackEntry& entry) { return entry.id == id; }),
+    onResizeFuncs_.end());
 }
