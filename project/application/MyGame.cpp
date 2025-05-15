@@ -122,6 +122,9 @@ void MyGame::Update()
   case BloomFog:
     PostEffect::GetInstance()->SetEffectType("BloomFog");
     break;
+  case RadialBlur:
+    PostEffect::GetInstance()->SetEffectType("RadialBlur");
+    break;
   }
 #endif // _DEBUG
 }
@@ -222,6 +225,7 @@ void MyGame::Draw()
         ImGui::RadioButton("VigRedGrayScale", (int*)&postEffectType, VigRedGrayScale);
         ImGui::RadioButton("Bloom", (int*)&postEffectType, Bloom);
         ImGui::RadioButton("BloomFog", (int*)&postEffectType, BloomFog);
+        ImGui::RadioButton("RadialBlur", (int*)&postEffectType, RadialBlur);
 
         ImGui::EndTabItem();
       }
@@ -259,6 +263,16 @@ void MyGame::Draw()
           PostEffect::GetInstance()->SetFogColor(postEffectParam.fogColor);
           ImGui::DragFloat("FogDensity", &postEffectParam.fogDensity, 0.01f, 0.0f, 1.0f);
           PostEffect::GetInstance()->SetFogDensity(postEffectParam.fogDensity);
+        }
+
+        if (postEffectType == RadialBlur)
+        {
+          ImGui::DragFloat2("RadialBlurCenter", &postEffectParam.radialBlurCenter.x, 0.01f, 0.0f, 1.0f);
+          PostEffect::GetInstance()->SetRadialBlurCenter(postEffectParam.radialBlurCenter);
+          ImGui::DragFloat("RadialBlurWidth", &postEffectParam.radialBlurWidth, 0.01f, 0.0f, 1.0f);
+          PostEffect::GetInstance()->SetRadialBlurWidth(postEffectParam.radialBlurWidth);
+          ImGui::DragInt("RadialBlurSampleCount", &postEffectParam.radialBlurSampleCount, 1.0f, 1, 100);
+          PostEffect::GetInstance()->SetRadialBlurSampleCount(postEffectParam.radialBlurSampleCount);
         }
 
         ImGui::EndTabItem();
