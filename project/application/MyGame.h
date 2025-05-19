@@ -61,4 +61,5 @@ private: // メンバ変数
 
 	PostEffectType postEffectType = NoEffect;
 
+  uint32_t spriteBasicOnresizeId = 0;
 };

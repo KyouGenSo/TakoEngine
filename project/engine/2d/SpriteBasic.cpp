@@ -1,6 +1,7 @@
 #include "SpriteBasic.h"
 #include <cassert>
 #include "Logger.h"
+#include "Mat4x4Func.h"
 
 SpriteBasic* SpriteBasic::instance_ = nullptr;
 
@@ -16,6 +17,12 @@ SpriteBasic* SpriteBasic::GetInstance()
 void SpriteBasic::Initialize(DX12Basic* dx12)
 {
 	m_dx12_ = dx12;
+
+  viewMatrixSprite_ = Mat4x4::MakeIdentity();
+  projectionMatrixSprite_ = Mat4x4::MakeOrtho(
+    0.0f, 0.0f,
+    static_cast<float>(WinApp::clientWidth), static_cast<float>(WinApp::clientHeight),
+    0.0f, 100.0f);
 
 	// パイプラインステートの生成
 	CreatePSO();
@@ -40,6 +47,14 @@ void SpriteBasic::SetCommonRenderSetting()
 
 	// トポロジの設定
 	m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+}
+
+void SpriteBasic::OnResize(Vector2 size)
+{
+  projectionMatrixSprite_ = Mat4x4::MakeOrtho(
+    0.0f, 0.0f,
+    static_cast<float>(size.x), static_cast<float>(size.y),
+    0.0f, 100.0f);
 }
 
 void SpriteBasic::CreateRootSignature()

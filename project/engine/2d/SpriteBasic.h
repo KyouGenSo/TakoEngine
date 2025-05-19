@@ -3,6 +3,7 @@
 #include <dxgi1_6.h>
 #include<wrl.h>
 #include "DX12Basic.h"
+#include "Matrix4x4.h"
 
 class SpriteBasic {
 private: // シングルトン設定
@@ -40,8 +41,15 @@ public: // メンバー関数
 	/// <summary>
 	void SetCommonRenderSetting();
 
+  /// <summary>
+  /// 画面サイズが変わったときに呼び出すコールバック関数
+  /// <summary>
+  void OnResize(Vector2 size);
+
 	//-----------------------------------Getters-----------------------------------//
 	DX12Basic* GetDX12Basic() { return m_dx12_; }
+  Matrix4x4 GetViewMatrix() { return viewMatrixSprite_; }
+  Matrix4x4 GetProjectionMatrix() { return projectionMatrixSprite_; }
 
 private: // プライベートメンバー関数
 	/// <summary>
@@ -64,4 +72,10 @@ private: // メンバー変数
 
 	// パイプラインステート
 	ComPtr<ID3D12PipelineState> pipelineState_;
+
+  // ビュー行列
+  Matrix4x4 viewMatrixSprite_ = {};
+
+  // プロジェクション行列
+  Matrix4x4 projectionMatrixSprite_ = {};
 };

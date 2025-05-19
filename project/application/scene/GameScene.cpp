@@ -266,7 +266,7 @@ void GameScene::DrawWithoutEffect()
 // スプライト共通描画設定
   SpriteBasic::GetInstance()->SetCommonRenderSetting();
 
-  //sprite_->Draw();
+  sprite_->Draw();
 
   //--------------------------------------------------//
 

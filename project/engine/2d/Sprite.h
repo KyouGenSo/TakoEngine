@@ -125,12 +125,6 @@ private:// メンバー変数
   // Transform
   Transform transform_ = {};
 
-  // ビュー行列
-  Matrix4x4 viewMatrixSprite_ = {};
-
-  // プロジェクション行列
-  Matrix4x4 projectionMatrixSprite_ = {};
-
   // ファイルパス
   std::string texturePath_;
 

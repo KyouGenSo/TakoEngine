@@ -12,12 +12,6 @@ void Sprite::Initialize(const std::string& texturePath)
 	transform_.rotate = Vector3(0.0f, 0.0f, rotation_);
 	transform_.translate = { pos_.x, pos_.y, 0.0f };
 
-  viewMatrixSprite_ = Mat4x4::MakeIdentity();
-  projectionMatrixSprite_ = Mat4x4::MakeOrtho(
-    0.0f, 0.0f,
-    static_cast<float>(WinApp::clientWidth), static_cast<float>(WinApp::clientHeight),
-    0.0f, 100.0f);
-
 	// 頂点データを生成
 	CreateVertexData();
 
@@ -35,7 +29,6 @@ void Sprite::Initialize(const std::string& texturePath)
 
 	// 画像切り取り範囲をぴったりにする
 	FitTexCutSize();
-
 }
 
 void Sprite::Update()
@@ -87,7 +80,9 @@ void Sprite::Update()
 
 	// Spriteの座標変換
 	Matrix4x4 worldMatrixSprite = Mat4x4::MakeAffine(transform_.scale, transform_.rotate, transform_.translate);
-	Matrix4x4 wvpMatrixSprite = Mat4x4::Multiply(worldMatrixSprite, Mat4x4::Multiply(viewMatrixSprite_, projectionMatrixSprite_));
+  Matrix4x4 viewMat = SpriteBasic::GetInstance()->GetViewMatrix();
+  Matrix4x4 projectionMat = SpriteBasic::GetInstance()->GetProjectionMatrix();
+	Matrix4x4 wvpMatrixSprite = Mat4x4::Multiply(worldMatrixSprite, Mat4x4::Multiply(viewMat, projectionMat));
 
 	transformationMatrixData_->WVP = wvpMatrixSprite;
 	transformationMatrixData_->world = worldMatrixSprite;

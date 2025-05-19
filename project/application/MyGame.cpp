@@ -11,6 +11,7 @@
 #include "GlobalVariables.h"
 #include "ModelManager.h"
 #include "GPUParticle.h"
+#include "SpriteBasic.h"
 
 void MyGame::Initialize()
 {
@@ -38,6 +39,8 @@ void MyGame::Initialize()
   TextureManager::GetInstance()->LoadTexture("uvChecker.png");
   TextureManager::GetInstance()->LoadTexture("rostock_laage_airport_4k.dds");
 
+  spriteBasicOnresizeId = winApp_->RegisterOnResizeFunc(std::bind(&SpriteBasic::OnResize, SpriteBasic::GetInstance(), std::placeholders::_1));
+
   // GPUパーティクルの初期化
   GPUParticle::GetInstance()->Initialize(dx12_, defaultCamera_);
 
@@ -54,6 +57,8 @@ void MyGame::Initialize()
 
 void MyGame::Finalize()
 {
+  winApp_->UnregisterOnResizeFunc(spriteBasicOnresizeId);
+
 	TakoFramework::Finalize();
 
 	// Audioの解放
