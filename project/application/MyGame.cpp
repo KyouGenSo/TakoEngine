@@ -51,7 +51,7 @@ void MyGame::Initialize()
   postEffectParam.bloomIntensity = 1.0f;
   postEffectParam.bloomSigma = 2.0f;
   postEffectParam.bloomSampleCount = 10;
-  postEffectParam.downSampleFactor = 4;
+  postEffectParam.downSampleFactor = 8;
   postEffectParam.fogColor = {1.0f, 1.0f, 1.0f, 1.0f};
   postEffectParam.fogDensity = 0.01f;
 
@@ -146,6 +146,8 @@ void MyGame::Draw()
 
 	SceneManager::GetInstance()->Draw();
 
+  Draw2D::GetInstance()->Draw();
+
 	/// ===================================================== ///
 	/// ------------------ポストエフェクト描画-------------------///
 	/// ===================================================== ///
@@ -164,7 +166,7 @@ void MyGame::Draw()
 
   GPUParticle::GetInstance()->Draw();
 
-  Draw2D::GetInstance()->Draw();
+
 
   Draw2D::GetInstance()->Reset();
 

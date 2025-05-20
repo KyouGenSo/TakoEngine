@@ -33,8 +33,10 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     float brightness = dot(color.rgb, float3(0.299, 0.587, 0.114));
     
     // è‡’lˆÈã‚Ì–¾‚é‚³‚Ì‚İ’Šo
-    float contribution = max(0, brightness - threshold);
+	// output.highLum = brightness > 0.9 ? output.color : 0.0f;
+    float4 output = brightness > threshold ? color : float4(0.0f, 0.0f, 0.0f, 0.0f);
     
     // Œ‹‰Ê‚ğo—Í
-    return float4(color.rgb * contribution, 1.0);
+    return output;
+
 }

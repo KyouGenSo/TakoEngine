@@ -51,6 +51,9 @@ public: // メンバ関数
     Vector2 direction;
     Vector2 texelSize;
     int sampleCount;
+    int padding2;        // パディング追加
+    int padding3;        // パディング追加
+    int padding4;        // パディング追加
   };
 
   struct PixelateParam
@@ -214,7 +217,7 @@ private: // メンバ変数
   uint32_t dsvSrvIndex_ = 0;
 
   // ダウンサンプル倍率（1/N）
-  int downSampleFactor_ = 4; // 1/4サイズ
+  int downSampleFactor_ = 8; // 1/4サイズ
 
   uint32_t downSampleWidth_ = 0;
   uint32_t downSampleHeight_ = 0;

@@ -224,7 +224,7 @@ void GameScene::Draw()
   ///              描画処理               ///
   /// ================================== ///
 
-  skyBox_->Draw();
+  //skyBox_->Draw();
 
   //------------------背景Spriteの描画------------------//
   // スプライト共通描画設定
@@ -251,7 +251,7 @@ void GameScene::Draw()
   // スプライト共通描画設定
   SpriteBasic::GetInstance()->SetCommonRenderSetting();
 
-
+  sprite_->Draw();
 
   //--------------------------------------------------//
 }
@@ -266,7 +266,7 @@ void GameScene::DrawWithoutEffect()
 // スプライト共通描画設定
   SpriteBasic::GetInstance()->SetCommonRenderSetting();
 
-  sprite_->Draw();
+
 
   //--------------------------------------------------//
 

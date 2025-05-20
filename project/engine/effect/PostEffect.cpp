@@ -308,6 +308,13 @@ void PostEffect::DrawMultiPassBloom()
   SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
     D3D12_RESOURCE_STATE_RENDER_TARGET,
     upSampleTextureResource_.Get());
+
+  SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+    D3D12_RESOURCE_STATE_RENDER_TARGET,
+    horizontalBlurTextureResource_.Get());
+
+// レンダーテクスチャAの状態を元に戻す
+  SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET, renderTextureResourceA_.Get());
 }
 
 void PostEffect::DrawFinalResult()
