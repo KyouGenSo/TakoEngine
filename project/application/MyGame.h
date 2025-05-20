@@ -33,6 +33,8 @@ public: // メンバ関数
     float bloomThreshold;
     float bloomIntensity;
     float bloomSigma;
+    int bloomSampleCount;
+    int downSampleFactor;
     Vector4 fogColor;
     float fogDensity;
     Vector2 radialBlurCenter;
@@ -55,6 +57,7 @@ private: // メンバ変数
 		GrayScale,
 		VigRedGrayScale,
 		Bloom,
+    NewBloom,
 		BloomFog,
     RadialBlur,
 	};

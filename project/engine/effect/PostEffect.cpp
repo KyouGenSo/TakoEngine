@@ -27,6 +27,17 @@ void PostEffect::Initialize(DX12Basic* dx12)
 
   CreateDepthBufferSRV();
 
+  // ダウンサンプル用テクスチャの作成
+  CreateDownSampleTextures();
+
+  // 横ブラー用テクスチャの作成
+  CreateHorizontalBlurTexture();
+
+  // マルチパスブルーム用のシェーダー作成
+  CreatePSO("ThresholdExtract"); // 明るい部分抽出用
+  CreatePSO("GaussianBlur");     // ブラー用
+  CreatePSO("BloomCombine");     // 最終合成用
+
   CreatePSO("NoEffect");
 
   CreatePSO("VignetteRed");
@@ -48,6 +59,8 @@ void PostEffect::Initialize(DX12Basic* dx12)
   CreateVignetteRedBloomParam();
 
   CreateBloomParam();
+
+  CreateNewBloomParam();
 
   CreateFogParam();
 
@@ -94,6 +107,11 @@ void PostEffect::Draw()
 
 void PostEffect::DrawPostEffect(const std::string& effectName)
 {
+  if (effectName == "NewBloom") {
+    DrawMultiPassBloom();
+    return;
+  }
+
   // レンダーテクスチャAの状態をシェーダーリソースに変更
   SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, renderTextureResourceA_.Get());
 
@@ -121,7 +139,9 @@ void PostEffect::DrawPostEffect(const std::string& effectName)
 
   // レンダーテクスチャAをシェーダーリソースとして設定
   SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, rtvSrvIndexA_);
-  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(4, dsvSrvIndex_);
+  if (effectName == "BloomFog") {
+    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(4, dsvSrvIndex_);
+  }
 
   // フルスクリーン三角形描画
   m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
@@ -132,6 +152,162 @@ void PostEffect::DrawPostEffect(const std::string& effectName)
 
   // レンダーテクスチャAの状態を元に戻す
   SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET, renderTextureResourceA_.Get());
+}
+
+void PostEffect::DrawMultiPassBloom()
+{
+  newBloomParam_->texelSize = {
+    1.0f / static_cast<float>(downSampleWidth_),
+    1.0f / static_cast<float>(downSampleHeight_)
+  };
+
+  D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
+
+  // 1. 明るい部分の抽出（閾値以上の部分を取り出す）
+  // レンダーテクスチャAをシェーダリソースに変更
+  SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET,
+    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+    renderTextureResourceA_.Get());
+
+  // ダウンサンプルテクスチャを描画先に設定
+  m_dx12_->GetCommandList()->OMSetRenderTargets(1, &downSampleRTVHandle_, false, &dsvHandle);
+
+  // テクスチャクリア
+  float clearColor[] = { kRenderTextureAClearColor_.x, kRenderTextureAClearColor_.y, kRenderTextureAClearColor_.z, kRenderTextureAClearColor_.w };
+  m_dx12_->GetCommandList()->ClearRenderTargetView(downSampleRTVHandle_, clearColor, 0, nullptr);
+
+  // ダウンサンプル用のビューポート設定
+  D3D12_VIEWPORT viewport{};
+  viewport.Width = static_cast<float>(downSampleWidth_);
+  viewport.Height = static_cast<float>(downSampleHeight_);
+  viewport.TopLeftX = 0;
+  viewport.TopLeftY = 0;
+  viewport.MinDepth = 0.0f;
+  viewport.MaxDepth = 1.0f;
+  m_dx12_->GetCommandList()->RSSetViewports(1, &viewport);
+
+  // シザー矩形
+  D3D12_RECT scissorRect{};
+  scissorRect.left = 0;
+  scissorRect.top = 0;
+  scissorRect.right = static_cast<LONG>(viewport.Width);
+  scissorRect.bottom = static_cast<LONG>(viewport.Height);
+  m_dx12_->GetCommandList()->RSSetScissorRects(1, &scissorRect);
+
+  // 明るい部分を抽出するシェーダー設定
+  m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_["ThresholdExtract"].Get());
+  m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_["ThresholdExtract"].Get());
+
+  // BloomParamをセット
+  m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(
+    1, newBloomParamResource_->GetGPUVirtualAddress());
+
+  // 元画像をシェーダーリソースとして設定
+  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, rtvSrvIndexA_);
+
+  // 描画
+  m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+
+  // 2. 横方向ガウスブラー
+  // ダウンサンプルテクスチャをシェーダーリソースに変更
+  SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET,
+    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+    downSampleTextureResource_.Get());
+
+  // 横方向ブラーテクスチャを描画先に設定
+  m_dx12_->GetCommandList()->OMSetRenderTargets(1, &horizontalBlurRTVHandle_, false, &dsvHandle);
+
+  // テクスチャクリア
+  m_dx12_->GetCommandList()->ClearRenderTargetView(horizontalBlurRTVHandle_, clearColor, 0, nullptr);
+
+  // ガウスブラーシェーダー設定
+  m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_["GaussianBlur"].Get());
+  m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_["GaussianBlur"].Get());
+
+  // BloomParamをセット
+  // 横方向ブラーを指定
+  newBloomParam_->direction = { 1.0f, 0.0f };
+  m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(
+    1, newBloomParamResource_->GetGPUVirtualAddress());
+
+  // ダウンサンプルテクスチャをシェーダーリソースとして設定
+  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, downSampleSrvIndex_);
+
+  // 描画
+  m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+
+  // 3. 縦方向ガウスブラー
+  // 横方向ブラーテクスチャをシェーダーリソースに変更
+  SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET,
+    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+    horizontalBlurTextureResource_.Get());
+
+  // アップサンプルテクスチャを描画先に設定
+  m_dx12_->GetCommandList()->OMSetRenderTargets(1, &upSampleRTVHandle_, false, &dsvHandle);
+
+  // テクスチャクリア
+  m_dx12_->GetCommandList()->ClearRenderTargetView(upSampleRTVHandle_, clearColor, 0, nullptr);
+
+  // 元のビューポートに戻す（アップサンプリング）
+  m_dx12_->SetViewPort();
+
+  // ガウスブラーシェーダー設定
+  m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_["GaussianBlur"].Get());
+  m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_["GaussianBlur"].Get());
+
+  // BloomParamをセット
+  // 縦方向ブラーを指定
+  newBloomParam_->direction = { 0.0f, 1.0f };
+  m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(
+    1, newBloomParamResource_->GetGPUVirtualAddress());
+
+  // 横方向ブラーテクスチャをシェーダーリソースとして設定
+  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, horizontalBlurSrvIndex_);
+
+  // 描画
+  m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+
+  // 3. 元画像とブルーム画像を合成
+   // アップサンプルテクスチャをシェーダーリソースに変更
+  SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET,
+    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+    upSampleTextureResource_.Get());
+
+  // レンダーテクスチャBを描画先に設定
+  m_dx12_->GetCommandList()->OMSetRenderTargets(1, &renderTextureRTVHandleB_, false, &dsvHandle);
+
+  // テクスチャクリア
+  clearColor[0] = renderTextureBClearColor_.x;
+  clearColor[1] = renderTextureBClearColor_.y;
+  clearColor[2] = renderTextureBClearColor_.z;
+  clearColor[3] = renderTextureBClearColor_.w;
+  m_dx12_->GetCommandList()->ClearRenderTargetView(renderTextureRTVHandleB_, clearColor, 0, nullptr);
+
+  // 合成シェーダー設定
+  m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_["BloomCombine"].Get());
+  m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_["BloomCombine"].Get());
+
+  // BloomParamをセット
+  m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(
+    1, newBloomParamResource_->GetGPUVirtualAddress());
+
+  // 元画像をシェーダーリソースとして設定（スロット0）
+  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, rtvSrvIndexA_);
+
+  // ブラー画像をシェーダーリソースとして設定（スロット2）
+  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, upSampleSrvIndex_);
+
+  // 描画
+  m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+
+  // 各テクスチャの状態を元に戻す
+  SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+    D3D12_RESOURCE_STATE_RENDER_TARGET,
+    downSampleTextureResource_.Get());
+
+  SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+    D3D12_RESOURCE_STATE_RENDER_TARGET,
+    upSampleTextureResource_.Get());
 }
 
 void PostEffect::DrawFinalResult()
@@ -228,16 +404,36 @@ void PostEffect::SetBloomThreshold(float threshold)
 {
   vignetteRedBloomParam_->threshold = threshold;
   bloomParam_->threshold = threshold;
+  newBloomParam_->threshold = threshold;
 }
 
 void PostEffect::SetBloomIntensity(float intensity)
 {
   bloomParam_->intensity = intensity;
+  newBloomParam_->intensity = intensity;
 }
 
 void PostEffect::SetBloomSigma(float sigma)
 {
   bloomParam_->sigma = sigma;
+  newBloomParam_->sigma = sigma;
+}
+
+void PostEffect::SetBloomSampleCount(int32_t count)
+{
+  newBloomParam_->sampleCount = count;
+}
+
+void PostEffect::SetDownSampleFactor(int factor)
+{
+  if (factor < 1) factor = 1;
+  if (factor > 8) factor = 8; // 最大1/8まで
+
+  // 前回と異なる場合のみテクスチャを再作成
+  if (downSampleFactor_ != factor) {
+    downSampleFactor_ = factor;
+    CreateDownSampleTextures();
+  }
 }
 
 void PostEffect::SetFogColor(const Vector4& color)
@@ -258,11 +454,6 @@ void PostEffect::SetRadialBlurCenter(const Vector2& center)
 void PostEffect::SetRadialBlurWidth(float width)
 {
   radialBlurParam_->blurWidth = width;
-}
-
-void PostEffect::SetRadialBlurSampleCount(int32_t count)
-{
-  radialBlurParam_->sampleCount = count;
 }
 
 void PostEffect::InitRenderTexture()
@@ -297,6 +488,74 @@ void PostEffect::InitRenderTexture()
   SrvManager::GetInstance()->CreateSRVForTexture2D(rtvSrvIndexB_, renderTextureResourceB_.Get(), DXGI_FORMAT_R8G8B8A8_UNORM, 1);
 }
 
+void PostEffect::CreateDownSampleTextures()
+{
+  downSampleWidth_ = WinApp::clientWidth / downSampleFactor_;
+  downSampleHeight_ = WinApp::clientHeight / downSampleFactor_;
+
+  // ダウンサンプル用テクスチャ
+  m_dx12_->CreateRenderTextureResource(downSampleTextureResource_,
+    downSampleWidth_, downSampleHeight_, DXGI_FORMAT_R8G8B8A8_UNORM, kRenderTextureAClearColor_);
+  downSampleTextureResource_->SetName(L"DownSampleTexture");
+
+  // アップサンプル用テクスチャ
+  m_dx12_->CreateRenderTextureResource(upSampleTextureResource_,
+    WinApp::clientWidth, WinApp::clientHeight,
+    DXGI_FORMAT_R8G8B8A8_UNORM, kRenderTextureAClearColor_);
+  upSampleTextureResource_->SetName(L"UpSampleTexture");
+
+  // RTVの設定
+  D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
+  rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+  rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+
+  // RTVハンドル取得
+  downSampleRTVHandle_ = m_dx12_->GetRenderTextureRTVHandle(4);
+  upSampleRTVHandle_ = m_dx12_->GetRenderTextureRTVHandle(5);
+
+  // RTV作成
+  m_dx12_->GetDevice()->CreateRenderTargetView(
+    downSampleTextureResource_.Get(), &rtvDesc, downSampleRTVHandle_);
+  m_dx12_->GetDevice()->CreateRenderTargetView(
+    upSampleTextureResource_.Get(), &rtvDesc, upSampleRTVHandle_);
+
+  // SRV用インデックス取得
+  downSampleSrvIndex_ = SrvManager::GetInstance()->Allocate();
+  upSampleSrvIndex_ = SrvManager::GetInstance()->Allocate();
+
+  // SRV作成
+  SrvManager::GetInstance()->CreateSRVForTexture2D(
+    downSampleSrvIndex_, downSampleTextureResource_.Get(),
+    DXGI_FORMAT_R8G8B8A8_UNORM, 1);
+  SrvManager::GetInstance()->CreateSRVForTexture2D(
+    upSampleSrvIndex_, upSampleTextureResource_.Get(),
+    DXGI_FORMAT_R8G8B8A8_UNORM, 1);
+}
+
+void PostEffect::CreateHorizontalBlurTexture()
+{
+  // 横ブラー用テクスチャ作成
+  m_dx12_->CreateRenderTextureResource(horizontalBlurTextureResource_,
+    downSampleWidth_, downSampleHeight_, DXGI_FORMAT_R8G8B8A8_UNORM, kRenderTextureAClearColor_);
+  horizontalBlurTextureResource_->SetName(L"HorizontalBlurTexture");
+
+  // RTVの設定
+  D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
+  rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+  rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+
+  // RTVハンドル取得と作成
+  horizontalBlurRTVHandle_ = m_dx12_->GetRenderTextureRTVHandle(6);
+  m_dx12_->GetDevice()->CreateRenderTargetView(
+    horizontalBlurTextureResource_.Get(), &rtvDesc, horizontalBlurRTVHandle_);
+
+  // SRV作成
+  horizontalBlurSrvIndex_ = SrvManager::GetInstance()->Allocate();
+  SrvManager::GetInstance()->CreateSRVForTexture2D(
+    horizontalBlurSrvIndex_, horizontalBlurTextureResource_.Get(),
+    DXGI_FORMAT_R8G8B8A8_UNORM, 1);
+}
+
 void PostEffect::CreateDepthBufferSRV()
 {
   // SRVの生成
@@ -327,11 +586,11 @@ void PostEffect::CreateRootSignature(const std::string& effectName)
   descriptionRootSignature.NumStaticSamplers = _countof(samplerDesc);
 
   // DescriptorRangeの設定。
-  D3D12_DESCRIPTOR_RANGE descriptorRange[1] = {};
-  descriptorRange[0].BaseShaderRegister = 0; // レジスタ番号
-  descriptorRange[0].NumDescriptors = 1; // ディスクリプタ数
-  descriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
-  descriptorRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+  D3D12_DESCRIPTOR_RANGE descriptorRanges[1] = {};
+  descriptorRanges[0].BaseShaderRegister = 0; // レジスタ番号
+  descriptorRanges[0].NumDescriptors = 1; // ディスクリプタ数
+  descriptorRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
+  descriptorRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
 
   D3D12_DESCRIPTOR_RANGE descriptorRange2[1] = {};
   descriptorRange2[0].BaseShaderRegister = 1; // レジスタ番号
@@ -341,12 +600,11 @@ void PostEffect::CreateRootSignature(const std::string& effectName)
 
   // RootParameterの設定。複数設定できるので配列
   D3D12_ROOT_PARAMETER rootParameters[5] = {};
-
   // Texture
   rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
   rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-  rootParameters[0].DescriptorTable.pDescriptorRanges = descriptorRange; // ディスクリプタレンジを設定
-  rootParameters[0].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange); // レンジの数
+  rootParameters[0].DescriptorTable.pDescriptorRanges = descriptorRanges; // ディスクリプタレンジを設定
+  rootParameters[0].DescriptorTable.NumDescriptorRanges = _countof(descriptorRanges); // レンジの数
 
   // Param
   rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
@@ -354,9 +612,24 @@ void PostEffect::CreateRootSignature(const std::string& effectName)
   rootParameters[1].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
 
   // Param
-  rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-  rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-  rootParameters[2].Descriptor.ShaderRegister = 1; // レジスタ番号とバインド
+  if (effectName == "BloomCombine") {
+    D3D12_DESCRIPTOR_RANGE bloomTexRanges[1] = {};
+    bloomTexRanges[0].BaseShaderRegister = 1; // レジスタ番号
+    bloomTexRanges[0].NumDescriptors = 1; // ディスクリプタ数
+    bloomTexRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
+    bloomTexRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+
+    // BloomTex
+    rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
+    rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+    rootParameters[2].DescriptorTable.pDescriptorRanges = bloomTexRanges; // ディスクリプタレンジを設定
+    rootParameters[2].DescriptorTable.NumDescriptorRanges = _countof(bloomTexRanges); // レンジの数
+  }else
+  {
+    rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
+    rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+    rootParameters[2].Descriptor.ShaderRegister = 1; // レジスタ番号とバインド
+  }
 
   // Param
   rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
@@ -364,11 +637,16 @@ void PostEffect::CreateRootSignature(const std::string& effectName)
   rootParameters[3].Descriptor.ShaderRegister = 2; // レジスタ番号とバインド
 
   // 深度バッファテクスチャ
-  rootParameters[4].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-  rootParameters[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-  rootParameters[4].DescriptorTable.pDescriptorRanges = descriptorRange2; // ディスクリプタレンジを設定
-  rootParameters[4].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange2); // レンジの数
-
+  if (effectName == "BloomFog") {
+    rootParameters[4].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
+    rootParameters[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+    rootParameters[4].DescriptorTable.pDescriptorRanges = descriptorRange2; // ディスクリプタレンジを設定
+    rootParameters[4].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange2); // レンジの数
+  } else {
+    rootParameters[4].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
+    rootParameters[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+    rootParameters[4].Descriptor.ShaderRegister = 3; // レジスタ番号とバインド
+  }
   descriptionRootSignature.pParameters = rootParameters;
   descriptionRootSignature.NumParameters = _countof(rootParameters);
 
@@ -488,6 +766,21 @@ void PostEffect::CreateBloomParam()
   bloomParam_->intensity = 1.0f;
   bloomParam_->threshold = 0.9f;
   bloomParam_->sigma = 2.0f;
+}
+
+void PostEffect::CreateNewBloomParam()
+{
+  // NewBloomParamのリソース生成
+  newBloomParamResource_ = m_dx12_->MakeBufferResource(sizeof(NewBloomParam));
+  // データの設定
+  newBloomParamResource_->Map(0, nullptr, reinterpret_cast<void**>(&newBloomParam_));
+  // データの初期化
+  newBloomParam_->intensity = 1.0f;
+  newBloomParam_->threshold = 0.9f;
+  newBloomParam_->sigma = 2.0f;
+  newBloomParam_->direction = { 1.0f, 0.0f };
+  newBloomParam_->texelSize = { 1.0f / downSampleWidth_, 1.0f / downSampleHeight_ };
+  newBloomParam_->sampleCount = 10;
 }
 
 void PostEffect::CreateFogParam()

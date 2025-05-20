@@ -50,6 +50,8 @@ void MyGame::Initialize()
   postEffectParam.bloomThreshold = 1.0f;
   postEffectParam.bloomIntensity = 1.0f;
   postEffectParam.bloomSigma = 2.0f;
+  postEffectParam.bloomSampleCount = 10;
+  postEffectParam.downSampleFactor = 4;
   postEffectParam.fogColor = {1.0f, 1.0f, 1.0f, 1.0f};
   postEffectParam.fogDensity = 0.01f;
 
@@ -116,6 +118,9 @@ void MyGame::Update()
     break;
   case Bloom:
     PostEffect::GetInstance()->SetEffectType("Bloom");
+    break;
+  case NewBloom:
+    PostEffect::GetInstance()->SetEffectType("NewBloom");
     break;
   case BloomFog:
     PostEffect::GetInstance()->SetEffectType("BloomFog");
@@ -222,6 +227,7 @@ void MyGame::Draw()
         ImGui::RadioButton("GrayScale", (int*)&postEffectType, GrayScale);
         ImGui::RadioButton("VigRedGrayScale", (int*)&postEffectType, VigRedGrayScale);
         ImGui::RadioButton("Bloom", (int*)&postEffectType, Bloom);
+        ImGui::RadioButton("NewBloom", (int*)&postEffectType, NewBloom);
         ImGui::RadioButton("BloomFog", (int*)&postEffectType, BloomFog);
         ImGui::RadioButton("RadialBlur", (int*)&postEffectType, RadialBlur);
 
@@ -245,7 +251,7 @@ void MyGame::Draw()
           PostEffect::GetInstance()->SetBloomThreshold(postEffectParam.bloomThreshold);
         }
 
-        if (postEffectType == Bloom || postEffectType == BloomFog)
+        if (postEffectType == Bloom || postEffectType == BloomFog || postEffectType == NewBloom)
         {
           ImGui::DragFloat("BloomIntensity", &postEffectParam.bloomIntensity, 0.01f, 0.0f, 10.0f);
           PostEffect::GetInstance()->SetBloomIntensity(postEffectParam.bloomIntensity);
@@ -270,7 +276,15 @@ void MyGame::Draw()
           ImGui::DragFloat("RadialBlurWidth", &postEffectParam.radialBlurWidth, 0.01f, 0.0f, 1.0f);
           PostEffect::GetInstance()->SetRadialBlurWidth(postEffectParam.radialBlurWidth);
           ImGui::DragInt("RadialBlurSampleCount", &postEffectParam.radialBlurSampleCount, 1.0f, 1, 100);
-          PostEffect::GetInstance()->SetRadialBlurSampleCount(postEffectParam.radialBlurSampleCount);
+          PostEffect::GetInstance()->SetBloomSampleCount(postEffectParam.radialBlurSampleCount);
+        }
+
+        if (postEffectType == NewBloom)
+        {
+          ImGui::DragInt("BloomSampleCount", &postEffectParam.bloomSampleCount, 1, 1, 100);
+          PostEffect::GetInstance()->SetBloomSampleCount(postEffectParam.bloomSampleCount);
+          ImGui::DragInt("DownSampleFactor", &postEffectParam.downSampleFactor, 1, 1, 8);
+          PostEffect::GetInstance()->SetDownSampleFactor(postEffectParam.downSampleFactor);
         }
 
         ImGui::EndTabItem();

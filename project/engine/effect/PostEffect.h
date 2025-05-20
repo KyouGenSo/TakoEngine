@@ -43,6 +43,16 @@ public: // メンバ関数
     float sigma;
   };
 
+  struct NewBloomParam
+  {
+    float intensity;
+    float threshold;
+    float sigma;
+    Vector2 direction;
+    Vector2 texelSize;
+    int sampleCount;
+  };
+
   struct PixelateParam
   {
     float pixelSize;
@@ -87,6 +97,7 @@ public: // メンバ関数
   // 描画
   void Draw();
   void DrawPostEffect(const std::string& effectName);
+  void DrawMultiPassBloom(); // マルチパスブルーム描画用
   void DrawFinalResult();
 
   // レンダーテクスチャの再作成
@@ -111,6 +122,10 @@ public: // メンバ関数
 
   void SetBloomSigma(float sigma);
 
+  void SetBloomSampleCount(int32_t count);
+
+  void SetDownSampleFactor(int factor);
+
   void SetFogColor(const Vector4& color);
 
   void SetFogDensity(float density);
@@ -119,12 +134,16 @@ public: // メンバ関数
 
   void SetRadialBlurWidth(float width);
 
-  void SetRadialBlurSampleCount(int32_t count);
-
 private: // プライベートメンバー関数
 
   // レンダーテクスチャの初期化
   void InitRenderTexture();
+
+  // DownSample用のテクスチャを生成
+  void CreateDownSampleTextures();
+
+  // HorizontalBlur用のテクスチャを生成
+  void CreateHorizontalBlurTexture();
 
   // 深度バッファのSRVを生成
   void CreateDepthBufferSRV();
@@ -143,6 +162,9 @@ private: // プライベートメンバー関数
 
   // BloomParamを生成
   void CreateBloomParam();
+
+  // NewBloomParamを生成
+  void CreateNewBloomParam();
 
   // FogParamを生成
   void CreateFogParam();
@@ -163,13 +185,39 @@ private: // メンバ変数
   // DX12の基本情報
   DX12Basic* m_dx12_ = nullptr;
 
-  // レンダーテクスチャリソース
+  // Effect用のレンダーテクスチャ
   ComPtr<ID3D12Resource> renderTextureResourceA_;
-  ComPtr<ID3D12Resource> renderTextureResourceB_;
-
-  // レンダーテクスチャの RTV ハンドル
   D3D12_CPU_DESCRIPTOR_HANDLE renderTextureRTVHandleA_;
+  uint32_t rtvSrvIndexA_ = 0;
+
+  // 最終結果用のレンダーテクスチャ
+  ComPtr<ID3D12Resource> renderTextureResourceB_;
   D3D12_CPU_DESCRIPTOR_HANDLE renderTextureRTVHandleB_;
+  uint32_t rtvSrvIndexB_ = 0;
+
+  // ダウンサンプル用のレンダーテクスチャ
+  ComPtr<ID3D12Resource> downSampleTextureResource_;
+  D3D12_CPU_DESCRIPTOR_HANDLE downSampleRTVHandle_;
+  uint32_t downSampleSrvIndex_ = 0;
+
+  // アップサンプル用のレンダーテクスチャ
+  ComPtr<ID3D12Resource> upSampleTextureResource_;
+  D3D12_CPU_DESCRIPTOR_HANDLE upSampleRTVHandle_;
+  uint32_t upSampleSrvIndex_ = 0;
+
+  // 中間テクスチャ（横ブラー用）
+  ComPtr<ID3D12Resource> horizontalBlurTextureResource_;
+  D3D12_CPU_DESCRIPTOR_HANDLE horizontalBlurRTVHandle_;
+  uint32_t horizontalBlurSrvIndex_ = 0;
+
+  // 深度バッファのSRV
+  uint32_t dsvSrvIndex_ = 0;
+
+  // ダウンサンプル倍率（1/N）
+  int downSampleFactor_ = 4; // 1/4サイズ
+
+  uint32_t downSampleWidth_ = 0;
+  uint32_t downSampleHeight_ = 0;
 
   // レンダーテクスチャのclearColor
   const Vector4 kRenderTextureAClearColor_ = { 0.17f, 0.17f, 0.17f, 1.0f };
@@ -181,15 +229,11 @@ private: // メンバ変数
   // パイプラインステート
   std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> pipelineStates_;
 
-  // シェーダーリソースビューのインデックス
-  uint32_t rtvSrvIndexA_ = 0;
-  uint32_t rtvSrvIndexB_ = 0;
-  uint32_t dsvSrvIndex_ = 0;
-
   // パラメーターリソース
   Microsoft::WRL::ComPtr<ID3D12Resource> vignetteParamResource_;
   Microsoft::WRL::ComPtr<ID3D12Resource> vignetteRedBloomParamResource_;
   Microsoft::WRL::ComPtr<ID3D12Resource> bloomParamResource_;
+  Microsoft::WRL::ComPtr<ID3D12Resource> newBloomParamResource_;
   Microsoft::WRL::ComPtr<ID3D12Resource> fogParamResource_;
   Microsoft::WRL::ComPtr<ID3D12Resource> radialBlurParamResource_;
   Microsoft::WRL::ComPtr<ID3D12Resource> cameraForGPUResource_;
@@ -198,6 +242,7 @@ private: // メンバ変数
   VignetteParam* vignetteParam_;
   VignetteRedBloomParam* vignetteRedBloomParam_;
   BloomParam* bloomParam_;
+  NewBloomParam* newBloomParam_;
   FogParam* fogParam_;
   RadialBlurParam* radialBlurParam_;
   CameraForGPU* cameraForGPU_;
