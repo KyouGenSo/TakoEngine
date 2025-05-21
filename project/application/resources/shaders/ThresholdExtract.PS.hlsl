@@ -8,22 +8,23 @@ cbuffer BloomParam : register(b0)
     float2 direction; // x方向: float2(1,0), y方向: float2(0,1)
     float2 texelSize; // 1/width, 1/height
     int sampleCount; // サンプル数
+    int iteration;
 };
 
 Texture2D<float4> gTexture : register(t0);
 SamplerState gSampler : register(s0);
 
-float4 BloomExtract(float2 texcoord)
-{
-    float4 color = gTexture.Sample(gSampler, texcoord);
-    // 閾値の範囲を定義
-    float minThreshold = threshold - 0.1f;
-    float maxThreshold = threshold;
-    // smoothstepで滑らかな閾値適用
-    float brightness = max(color.r, max(color.g, color.b));
-    float factor = smoothstep(minThreshold, maxThreshold, brightness);
-    return color * factor;
-}
+//float4 BloomExtract(float2 texcoord)
+//{
+//    float4 color = gTexture.Sample(gSampler, texcoord);
+//    // 閾値の範囲を定義
+//    float minThreshold = threshold - 0.1f;
+//    float maxThreshold = threshold;
+//    // smoothstepで滑らかな閾値適用
+//    float brightness = max(color.r, max(color.g, color.b));
+//    float factor = smoothstep(minThreshold, maxThreshold, brightness);
+//    return color * factor;
+//}
 
 float4 main(VertexShaderOutput input) : SV_TARGET
 {

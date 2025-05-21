@@ -237,7 +237,7 @@ private: // プライベートメンバー関数
   /// <summary>
   /// レンダーターゲットビューの初期化
   /// <summary> 
-  void InitRTV();
+  void InitSwapChainRTV();
 
   /// <summary>
   /// 深度ステンシルビューの初期化
@@ -277,7 +277,7 @@ private: // プライベートメンバー関数
   /// <summary>
   /// RTVの再作成
   /// <summary> 
-  void RecreateRTV();
+  void RecreateSwapChainRTV();
 
   /// <summary>
   /// 深度バッファの再作成

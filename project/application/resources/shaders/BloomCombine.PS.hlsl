@@ -8,6 +8,7 @@ cbuffer BloomParam : register(b0)
     float2 direction; // x•ûŒü: float2(1,0), y•ûŒü: float2(0,1)
     float2 texelSize; // 1/width, 1/height
     int sampleCount; // ƒTƒ“ƒvƒ‹”
+    int iteration;
 };
 
 Texture2D<float4> baseTex : register(t0); // Œ³‰æ‘œ

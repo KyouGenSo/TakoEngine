@@ -51,7 +51,7 @@ public: // メンバ関数
     Vector2 direction;
     Vector2 texelSize;
     int sampleCount;
-    int padding2;        // パディング追加
+    int iteration;
     int padding3;        // パディング追加
     int padding4;        // パディング追加
   };
@@ -111,7 +111,7 @@ public: // メンバ関数
   void SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter, ID3D12Resource* resource);
 
   // レンダーテクスチャの取得
-  ID3D12Resource* GetRenderTextureResource() { return renderTextureResourceA_.Get(); }
+  ID3D12Resource* GetRenderTextureResource() { return originRenderTexResource_.Get(); }
 
   void SetEffectType(std::string effectName) { currentEffectName_ = effectName; }
 
@@ -129,6 +129,8 @@ public: // メンバ関数
 
   void SetDownSampleFactor(int factor);
 
+  void SetBloomIteration(int iteration) { bloomIteration_ = iteration; }
+
   void SetFogColor(const Vector4& color);
 
   void SetFogDensity(float density);
@@ -140,13 +142,13 @@ public: // メンバ関数
 private: // プライベートメンバー関数
 
   // レンダーテクスチャの初期化
-  void InitRenderTexture();
+  void CreateRenderTexture();
 
   // DownSample用のテクスチャを生成
-  void CreateDownSampleTextures();
+  void CreateBloomTextures();
 
   // HorizontalBlur用のテクスチャを生成
-  void CreateHorizontalBlurTexture();
+  //void CreateHorizontalBlurTexture();
 
   // 深度バッファのSRVを生成
   void CreateDepthBufferSRV();
@@ -188,30 +190,30 @@ private: // メンバ変数
   // DX12の基本情報
   DX12Basic* m_dx12_ = nullptr;
 
-  // Effect用のレンダーテクスチャ
-  ComPtr<ID3D12Resource> renderTextureResourceA_;
-  D3D12_CPU_DESCRIPTOR_HANDLE renderTextureRTVHandleA_;
-  uint32_t rtvSrvIndexA_ = 0;
+  // Effect適用するオブジェクト用レンダーテクスチャ
+  ComPtr<ID3D12Resource> originRenderTexResource_;
+  D3D12_CPU_DESCRIPTOR_HANDLE originRenderTexRTVHandle_;
+  uint32_t originRtvSrvIndex_ = 0;
 
   // 最終結果用のレンダーテクスチャ
-  ComPtr<ID3D12Resource> renderTextureResourceB_;
-  D3D12_CPU_DESCRIPTOR_HANDLE renderTextureRTVHandleB_;
-  uint32_t rtvSrvIndexB_ = 0;
+  ComPtr<ID3D12Resource> resultRenderTexResource_;
+  D3D12_CPU_DESCRIPTOR_HANDLE resultRenderTexRTVHandle_;
+  uint32_t resultRtvSrvIndex_ = 0;
 
-  // ダウンサンプル用のレンダーテクスチャ
-  ComPtr<ID3D12Resource> downSampleTextureResource_;
-  D3D12_CPU_DESCRIPTOR_HANDLE downSampleRTVHandle_;
-  uint32_t downSampleSrvIndex_ = 0;
+  // 高輝度部分抽出用のレンダーテクスチャ
+  ComPtr<ID3D12Resource> highLumResource_;
+  D3D12_CPU_DESCRIPTOR_HANDLE highLumRTVHandle_;
+  uint32_t highLumSrvIndex_ = 0;
 
-  // アップサンプル用のレンダーテクスチャ
-  ComPtr<ID3D12Resource> upSampleTextureResource_;
-  D3D12_CPU_DESCRIPTOR_HANDLE upSampleRTVHandle_;
-  uint32_t upSampleSrvIndex_ = 0;
+  // 高輝度部分のダウンサンプル用のレンダーテクスチャ
+  ComPtr<ID3D12Resource> highLumShrinkResource_;
+  D3D12_CPU_DESCRIPTOR_HANDLE highLumShrinkRTVHandle_;
+  uint32_t highLumShrinkSrvIndex_ = 0;
 
-  // 中間テクスチャ（横ブラー用）
-  ComPtr<ID3D12Resource> horizontalBlurTextureResource_;
-  D3D12_CPU_DESCRIPTOR_HANDLE horizontalBlurRTVHandle_;
-  uint32_t horizontalBlurSrvIndex_ = 0;
+  // Bloomの結果用のレンダーテクスチャ
+  ComPtr<ID3D12Resource> bloomResultResource_;
+  D3D12_CPU_DESCRIPTOR_HANDLE bloomResultRTVHandle_;
+  uint32_t bloomResultSrvIndex_ = 0;
 
   // 深度バッファのSRV
   uint32_t dsvSrvIndex_ = 0;
@@ -222,9 +224,12 @@ private: // メンバ変数
   uint32_t downSampleWidth_ = 0;
   uint32_t downSampleHeight_ = 0;
 
+  // bloomのイテレーション数
+  int bloomIteration_ = 8;
+
   // レンダーテクスチャのclearColor
-  const Vector4 kRenderTextureAClearColor_ = { 0.17f, 0.17f, 0.17f, 1.0f };
-  Vector4 renderTextureBClearColor_ = { 0.0, 0.0, 0.0, 0.0 };
+  const Vector4 kOriginRenderTexClearColor_ = { 0.17f, 0.17f, 0.17f, 1.0f };
+  Vector4 resultRenderTexClearColor_ = { 0.0, 0.0, 0.0, 0.0 };
 
   // ルートシグネチャ
   std::unordered_map <std::string, ComPtr<ID3D12RootSignature>> rootSignatures_;

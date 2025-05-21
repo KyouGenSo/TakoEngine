@@ -17,7 +17,7 @@
 #pragma comment(lib, "dxguid.lib")
 
 // 最大のSRV数
-const uint32_t DX12Basic::kMaxSRVCount = 512;
+const uint32_t DX12Basic::kMaxSRVCount = 2048;
 
 DX12Basic::~DX12Basic()
 {
@@ -55,7 +55,7 @@ void DX12Basic::Initialize(WinApp* winApp)
 	//InitRenderTexture();
 
 	// レンダーターゲットビューの初期化
-	InitRTV();
+	InitSwapChainRTV();
 
 	// 深度ステンシルビューの初期化
 	InitDSV();
@@ -382,7 +382,7 @@ void DX12Basic::InitDescriptorHeap()
 	dsvHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
 }
 
-void DX12Basic::InitRTV()
+void DX12Basic::InitSwapChainRTV()
 {
 	// SwapChainからResourceを取得
 	for (UINT i = 0; i < 2; ++i)
@@ -513,7 +513,7 @@ void DX12Basic::UpdateFPSLimiter()
 	referenceTime_ = std::chrono::steady_clock::now();
 }
 
-void DX12Basic::RecreateRTV()
+void DX12Basic::RecreateSwapChainRTV()
 {
   // SwapChainからResourceを取得
   for (UINT i = 0; i < swapChainBufferCount_; ++i)
@@ -956,7 +956,7 @@ void DX12Basic::ResizeBuffers(uint32_t width, uint32_t height)
   assert(SUCCEEDED(hr));
 
   // RTVを再作成
-  RecreateRTV();
+  RecreateSwapChainRTV();
 
   // 深度バッファを再作成
   RecreateDepthBuffer();

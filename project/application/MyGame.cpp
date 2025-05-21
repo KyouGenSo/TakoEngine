@@ -285,8 +285,6 @@ void MyGame::Draw()
         {
           ImGui::DragInt("BloomSampleCount", &postEffectParam.bloomSampleCount, 1, 1, 100);
           PostEffect::GetInstance()->SetBloomSampleCount(postEffectParam.bloomSampleCount);
-          ImGui::DragInt("DownSampleFactor", &postEffectParam.downSampleFactor, 1, 1, 8);
-          PostEffect::GetInstance()->SetDownSampleFactor(postEffectParam.downSampleFactor);
         }
 
         ImGui::EndTabItem();
