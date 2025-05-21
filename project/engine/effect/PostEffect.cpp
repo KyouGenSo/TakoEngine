@@ -362,6 +362,9 @@ void PostEffect::RecreateRenderTexture(uint32_t width, uint32_t height)
   // 既存のリソースを解放
   originRenderTexResource_.Reset();
   resultRenderTexResource_.Reset();
+  highLumResource_.Reset();
+  highLumShrinkResource_.Reset();
+  bloomResultResource_.Reset();
 
   // 新しいレンダーテクスチャを作成
   m_dx12_->CreateRenderTextureResource(originRenderTexResource_, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, kOriginRenderTexClearColor_);
@@ -369,6 +372,18 @@ void PostEffect::RecreateRenderTexture(uint32_t width, uint32_t height)
 
   m_dx12_->CreateRenderTextureResource(resultRenderTexResource_, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, resultRenderTexClearColor_);
   resultRenderTexResource_->SetName(L"PostEffectRenderTextureB");
+
+  // 高輝度部分抽出用テクスチャの生成
+  m_dx12_->CreateRenderTextureResource(highLumResource_, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, kOriginRenderTexClearColor_);
+  highLumResource_->SetName(L"HighLumExtractTexture");
+
+  // 高輝度部分をダウンサンプル用テクスチャの生成
+  m_dx12_->CreateRenderTextureResource(highLumShrinkResource_, width / 2, height, DXGI_FORMAT_R8G8B8A8_UNORM, kOriginRenderTexClearColor_);
+  highLumShrinkResource_->SetName(L"HighLumShrinkTexture");
+
+  // Bloom結果用テクスチャの生成
+  m_dx12_->CreateRenderTextureResource(bloomResultResource_, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, kOriginRenderTexClearColor_);
+  bloomResultResource_->SetName(L"BloomResultTexture");
 
   // RTVの設定
   D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
@@ -378,10 +393,16 @@ void PostEffect::RecreateRenderTexture(uint32_t width, uint32_t height)
   // RTVの作成
   m_dx12_->GetDevice()->CreateRenderTargetView(originRenderTexResource_.Get(), &rtvDesc, originRenderTexRTVHandle_);
   m_dx12_->GetDevice()->CreateRenderTargetView(resultRenderTexResource_.Get(), &rtvDesc, resultRenderTexRTVHandle_);
+  m_dx12_->GetDevice()->CreateRenderTargetView(highLumResource_.Get(), &rtvDesc, highLumRTVHandle_);
+  m_dx12_->GetDevice()->CreateRenderTargetView(highLumShrinkResource_.Get(), &rtvDesc, highLumShrinkRTVHandle_);
+  m_dx12_->GetDevice()->CreateRenderTargetView(bloomResultResource_.Get(), &rtvDesc, bloomResultRTVHandle_);
 
   // レンダーテクスチャのSRVを更新
   SrvManager::GetInstance()->CreateSRVForTexture2D(originRtvSrvIndex_, originRenderTexResource_.Get(), DXGI_FORMAT_R8G8B8A8_UNORM, 1);
   SrvManager::GetInstance()->CreateSRVForTexture2D(resultRtvSrvIndex_, resultRenderTexResource_.Get(), DXGI_FORMAT_R8G8B8A8_UNORM, 1);
+  SrvManager::GetInstance()->CreateSRVForTexture2D(highLumSrvIndex_, highLumResource_.Get(), DXGI_FORMAT_R8G8B8A8_UNORM, 1);
+  SrvManager::GetInstance()->CreateSRVForTexture2D(highLumShrinkSrvIndex_, highLumShrinkResource_.Get(), DXGI_FORMAT_R8G8B8A8_UNORM, 1);
+  SrvManager::GetInstance()->CreateSRVForTexture2D(bloomResultSrvIndex_, bloomResultResource_.Get(), DXGI_FORMAT_R8G8B8A8_UNORM, 1);
 
   // 深度バッファのSRVを更新
   SrvManager::GetInstance()->CreateSRVForTexture2D(dsvSrvIndex_, m_dx12_->GetDepthStencilResource(), DXGI_FORMAT_R32_FLOAT, 1);
