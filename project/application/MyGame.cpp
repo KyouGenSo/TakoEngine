@@ -146,8 +146,6 @@ void MyGame::Draw()
 
 	SceneManager::GetInstance()->Draw();
 
-  Draw2D::GetInstance()->Draw();
-
 	/// ===================================================== ///
 	/// ------------------ポストエフェクト描画-------------------///
 	/// ===================================================== ///
@@ -166,7 +164,7 @@ void MyGame::Draw()
 
   GPUParticle::GetInstance()->Draw();
 
-
+  Draw2D::GetInstance()->Draw();
 
   Draw2D::GetInstance()->Reset();
 
