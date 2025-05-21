@@ -50,6 +50,7 @@ void MyGame::Initialize()
   postEffectParam.bloomThreshold = 1.0f;
   postEffectParam.bloomIntensity = 1.0f;
   postEffectParam.bloomSigma = 2.0f;
+  postEffectParam.bloomKernelSize = 10;
   postEffectParam.bloomSampleCount = 10;
   postEffectParam.downSampleFactor = 8;
   postEffectParam.fogColor = {1.0f, 1.0f, 1.0f, 1.0f};
@@ -261,6 +262,8 @@ void MyGame::Draw()
           PostEffect::GetInstance()->SetBloomThreshold(postEffectParam.bloomThreshold);
           ImGui::DragFloat("BloomSigma", &postEffectParam.bloomSigma, 0.01f, 0.0f, 10.0f);
           PostEffect::GetInstance()->SetBloomSigma(postEffectParam.bloomSigma);
+          ImGui::DragInt("BloomKernelSize", &postEffectParam.bloomKernelSize, 1, 1, 100);
+          PostEffect::GetInstance()->SetBloomKernelSize(postEffectParam.bloomKernelSize);
         }
 
         if (postEffectType == BloomFog)

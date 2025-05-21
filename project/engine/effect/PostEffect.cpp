@@ -104,8 +104,13 @@ void PostEffect::Draw()
 
 void PostEffect::DrawPostEffect(const std::string& effectName)
 {
+  //if (effectName == "Bloom") {
+  //  DrawMultiPassBloom();
+  //  return;
+  //}
+
   if (effectName == "NewBloom") {
-    DrawMultiPassBloom();
+    DrawMultiPassNewBloom();
     return;
   }
 
@@ -151,7 +156,7 @@ void PostEffect::DrawPostEffect(const std::string& effectName)
   SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET, originRenderTexResource_.Get());
 }
 
-void PostEffect::DrawMultiPassBloom()
+void PostEffect::DrawMultiPassNewBloom()
 {
   newBloomParam_->texelSize = {
     1.0f / static_cast<float>(downSampleWidth_),
@@ -326,6 +331,82 @@ void PostEffect::DrawMultiPassBloom()
     D3D12_RESOURCE_STATE_RENDER_TARGET,
     highLumShrinkResource_.Get());
 
+  SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+    D3D12_RESOURCE_STATE_RENDER_TARGET,
+    bloomResultResource_.Get());
+
+  SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+    D3D12_RESOURCE_STATE_RENDER_TARGET,
+    originRenderTexResource_.Get());
+}
+
+void PostEffect::DrawMultiPassBloom()
+{
+  // レンダーテクスチャAをシェーダリソースに変更
+  SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET,
+    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+    originRenderTexResource_.Get());
+
+  D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
+
+  // ダウンサンプルテクスチャを描画先に設定
+  m_dx12_->GetCommandList()->OMSetRenderTargets(1, &bloomResultRTVHandle_, false, &dsvHandle);
+
+  // テクスチャクリア
+  float clearColor[] = { kOriginRenderTexClearColor_.x, kOriginRenderTexClearColor_.y, kOriginRenderTexClearColor_.z, kOriginRenderTexClearColor_.w };
+  m_dx12_->GetCommandList()->ClearRenderTargetView(bloomResultRTVHandle_, clearColor, 0, nullptr);
+
+  // ビューポート設定
+  m_dx12_->SetViewPort();
+
+  m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_["Bloom"].Get());
+  m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_["Bloom"].Get());
+
+  // BloomParamをセット
+  m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(
+    1, bloomParamResource_->GetGPUVirtualAddress());
+
+  // 元画像をシェーダーリソースとして設定
+  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, originRtvSrvIndex_);
+
+  // 描画
+  m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+
+
+  SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET,
+    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+    bloomResultResource_.Get());
+
+  // 最終結果レンダーテクスチャを描画先に設定
+  m_dx12_->GetCommandList()->OMSetRenderTargets(1, &resultRenderTexRTVHandle_, false, &dsvHandle);
+
+  // テクスチャクリア
+  clearColor[0] = resultRenderTexClearColor_.x;
+  clearColor[1] = resultRenderTexClearColor_.y;
+  clearColor[2] = resultRenderTexClearColor_.z;
+  clearColor[3] = resultRenderTexClearColor_.w;
+  m_dx12_->GetCommandList()->ClearRenderTargetView(resultRenderTexRTVHandle_, clearColor, 0, nullptr);
+
+  // ビューポート設定
+  m_dx12_->SetViewPort();
+
+  // 合成シェーダー設定
+  m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_["Bloom"].Get());
+  m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_["Bloom"].Get());
+
+  // BloomParamをセット
+  bloomParam_->direction.x = 0.0f;
+  bloomParam_->direction.y = 1.0f;
+  m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(
+    1, bloomParamResource_->GetGPUVirtualAddress());
+
+  // ブラー画像をシェーダーリソースとして設定（スロット0）
+  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, bloomResultSrvIndex_);
+
+  // 描画
+  m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+
+  // 各テクスチャの状態を元に戻す
   SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
     D3D12_RESOURCE_STATE_RENDER_TARGET,
     bloomResultResource_.Get());
@@ -799,8 +880,10 @@ void PostEffect::CreateBloomParam()
 
   // データの初期化
   bloomParam_->intensity = 1.0f;
-  bloomParam_->threshold = 0.9f;
+  bloomParam_->threshold = 1.0f;
   bloomParam_->sigma = 2.0f;
+  bloomParam_->direction = { 1.0f, 0.0f };
+  bloomParam_->kernelSize = 10;
 }
 
 void PostEffect::CreateNewBloomParam()

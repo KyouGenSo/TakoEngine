@@ -2,13 +2,13 @@
 
 static const float PI = 3.14159265f;
 
-static const int KERNEL_SIZE = 30;
-
 struct BloomParam
 {
     float intensity;
     float threshold;
     float sigma;
+    float direction;
+    int kernelSize;
 };
 
 ConstantBuffer<BloomParam> gBloomParam : register(b0);
@@ -29,8 +29,8 @@ float4 BloomExtract(float2 texcoord)
 {
     float4 color = gTexture.Sample(gSampler, texcoord);
     // 閾値の範囲を定義
-    float minThreshold = gBloomParam.threshold - 0.1f;
-    float maxThreshold = gBloomParam.threshold;
+    float minThreshold = gBloomParam.threshold;
+    float maxThreshold = gBloomParam.threshold + 0.1f;
     // smoothstepで滑らかな閾値適用
     float brightness = max(color.r, max(color.g, color.b));
     float factor = smoothstep(minThreshold, maxThreshold, brightness);
@@ -47,11 +47,11 @@ float4 GaussianBlur(float2 texcoord, float2 texSize, float2 dir)
     
     float4 result = BloomExtract(texcoord);
     
-    float sum;
+    float sum = 0.0f; // 重みの合計
     
-    float weight;
+    float weight = 0.0f; // 重みの初期化
     
-    for (int karnelStep = -KERNEL_SIZE / 2; karnelStep <= KERNEL_SIZE / 2; ++karnelStep)
+    for (int karnelStep = -gBloomParam.kernelSize / 2; karnelStep <= gBloomParam.kernelSize / 2; ++karnelStep)
     {
         uvOffset = texcoord;
         uvOffset.x += karnelStep * texOffset.x * dir.x;
@@ -127,12 +127,10 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     
     float2 texSize;
     gTexture.GetDimensions(texSize.x, texSize.y);
-
-    float2 uvSize = float2(1.0f, 0.5f);
     
-    //float4 bloomColor = GaussianBlur(input.texCoord, texSize, float2(1.0f, 0.0f)) + GaussianBlur(input.texCoord, texSize, float2(0.0f, 1.0f));
+    float4 bloomColor = GaussianBlur(input.texCoord, texSize, float2(1.0f, 0.0f)) + GaussianBlur(input.texCoord, texSize, float2(0.0f, 1.0f));
     
-    float4 bloomColor = SquareGaussianBlur(input.texCoord, texSize);
+    //float4 bloomColor = SquareGaussianBlur(input.texCoord, texSize);
     
     bloomColor.rgb *= gBloomParam.intensity;
     
