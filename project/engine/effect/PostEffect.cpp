@@ -395,8 +395,8 @@ void PostEffect::DrawMultiPassBloom()
   m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_["Bloom"].Get());
 
   // BloomParamをセット
-  bloomParam_->direction.x = 0.0f;
-  bloomParam_->direction.y = 1.0f;
+  //bloomParam_->direction.x = 0.0f;
+  //bloomParam_->direction.y = 1.0f;
   m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(
     1, bloomParamResource_->GetGPUVirtualAddress());
 
@@ -882,7 +882,7 @@ void PostEffect::CreateBloomParam()
   bloomParam_->intensity = 1.0f;
   bloomParam_->threshold = 1.0f;
   bloomParam_->sigma = 2.0f;
-  bloomParam_->direction = { 1.0f, 0.0f };
+  //bloomParam_->direction = { 1.0f, 0.0f };
   bloomParam_->kernelSize = 10;
 }
 

@@ -4,11 +4,10 @@ static const float PI = 3.14159265f;
 
 struct BloomParam
 {
-    float intensity;
-    float threshold;
-    float sigma;
-    float direction;
-    int kernelSize;
+    float32_t intensity;
+    float32_t threshold;
+    float32_t sigma;
+    int32_t kernelSize;
 };
 
 ConstantBuffer<BloomParam> gBloomParam : register(b0);
@@ -47,9 +46,9 @@ float4 GaussianBlur(float2 texcoord, float2 texSize, float2 dir)
     
     float4 result = BloomExtract(texcoord);
     
-    float sum = 0.0f; // 重みの合計
+    float sum; // 重みの合計
     
-    float weight = 0.0f; // 重みの初期化
+    float weight; // 重みの初期化
     
     for (int karnelStep = -gBloomParam.kernelSize / 2; karnelStep <= gBloomParam.kernelSize / 2; ++karnelStep)
     {

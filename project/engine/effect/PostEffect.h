@@ -41,10 +41,7 @@ public: // メンバ関数
     float intensity;
     float threshold;
     float sigma;
-    Vector2 direction;
     int kernelSize;
-    int padding1;        // パディング追加
-    int padding2;        // パディング追加
   };
 
   struct NewBloomParam
@@ -131,8 +128,6 @@ public: // メンバ関数
   void SetBloomSigma(float sigma);
 
   void SetBloomKernelSize(int kernelSize) { bloomParam_->kernelSize = kernelSize; }
-
-  void SetBloomDirection(const Vector2& direction) { bloomParam_->direction = direction; }
 
   void SetBloomSampleCount(int32_t count);
 
