@@ -703,6 +703,12 @@ void PostEffect::CreateRootSignature(const std::string& effectName)
   descriptorRange2[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
   descriptorRange2[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
 
+  D3D12_DESCRIPTOR_RANGE bloomTexRanges[1] = {};
+  bloomTexRanges[0].BaseShaderRegister = 1; // レジスタ番号
+  bloomTexRanges[0].NumDescriptors = 1; // ディスクリプタ数
+  bloomTexRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
+  bloomTexRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+
   // RootParameterの設定。複数設定できるので配列
   D3D12_ROOT_PARAMETER rootParameters[5] = {};
   // Texture
@@ -718,12 +724,6 @@ void PostEffect::CreateRootSignature(const std::string& effectName)
 
   // Param
   if (effectName == "BloomCombine" || effectName == "GaussianBlur") {
-    D3D12_DESCRIPTOR_RANGE bloomTexRanges[1] = {};
-    bloomTexRanges[0].BaseShaderRegister = 1; // レジスタ番号
-    bloomTexRanges[0].NumDescriptors = 1; // ディスクリプタ数
-    bloomTexRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
-    bloomTexRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
-
     // BloomTex
     rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
     rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
