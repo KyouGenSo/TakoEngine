@@ -81,6 +81,7 @@ void Transition::Update()
 
   blackBoxsp_->Update();
   blackBoxsp_->SetAlpha(alpha_);
+  blackBoxsp_->SetSize(Vector2(static_cast<float>(WinApp::clientWidth), static_cast<float>(WinApp::clientHeight)));
 }
 
 void Transition::Start(TransitionState state, TransitionType type, float duration)
