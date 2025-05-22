@@ -12,6 +12,7 @@
 #include "ModelManager.h"
 #include "GPUParticle.h"
 #include "SpriteBasic.h"
+#include "Transition.h"
 
 void MyGame::Initialize()
 {
@@ -50,6 +51,7 @@ void MyGame::Initialize()
   postEffectParam.bloomThreshold = 1.0f;
   postEffectParam.bloomIntensity = 1.0f;
   postEffectParam.bloomSigma = 2.0f;
+  postEffectParam.bloomKernelSize = 10;
   postEffectParam.bloomSampleCount = 10;
   postEffectParam.downSampleFactor = 8;
   postEffectParam.fogColor = {1.0f, 1.0f, 1.0f, 1.0f};
@@ -146,6 +148,8 @@ void MyGame::Draw()
 
 	SceneManager::GetInstance()->Draw();
 
+  　Draw2D::GetInstance()->Draw();
+
 	/// ===================================================== ///
 	/// ------------------ポストエフェクト描画-------------------///
 	/// ===================================================== ///
@@ -164,7 +168,7 @@ void MyGame::Draw()
 
   GPUParticle::GetInstance()->Draw();
 
-  Draw2D::GetInstance()->Draw();
+  Transition::GetInstance()->Draw();
 
   Draw2D::GetInstance()->Reset();
 
@@ -257,8 +261,10 @@ void MyGame::Draw()
           PostEffect::GetInstance()->SetBloomIntensity(postEffectParam.bloomIntensity);
           ImGui::DragFloat("BloomThreshold", &postEffectParam.bloomThreshold, 0.01f, 0.0f, 1.0f);
           PostEffect::GetInstance()->SetBloomThreshold(postEffectParam.bloomThreshold);
-          ImGui::DragFloat("BloomSigma", &postEffectParam.bloomSigma, 0.01f, 0.0f, 10.0f);
+          ImGui::DragFloat("BloomSigma", &postEffectParam.bloomSigma, 0.01f, 0.1f, 50.0f);
           PostEffect::GetInstance()->SetBloomSigma(postEffectParam.bloomSigma);
+          ImGui::DragInt("BloomKernelSize", &postEffectParam.bloomKernelSize, 1, 1, 100);
+          PostEffect::GetInstance()->SetBloomKernelSize(postEffectParam.bloomKernelSize);
         }
 
         if (postEffectType == BloomFog)

@@ -41,6 +41,10 @@ public: // メンバ関数
     float intensity;
     float threshold;
     float sigma;
+    int kernelSize;
+    Vector2 direction;
+    int padding1;        // パディング追加
+    int padding2;        // パディング追加
   };
 
   struct NewBloomParam
@@ -100,7 +104,8 @@ public: // メンバ関数
   // 描画
   void Draw();
   void DrawPostEffect(const std::string& effectName);
-  void DrawMultiPassBloom(); // マルチパスブルーム描画用
+  void DrawMultiPassNewBloom(); // マルチパスブルーム描画用
+  void DrawMultiPassBloom();
   void DrawFinalResult();
 
   // レンダーテクスチャの再作成
@@ -124,6 +129,8 @@ public: // メンバ関数
   void SetBloomIntensity(float intensity);
 
   void SetBloomSigma(float sigma);
+
+  void SetBloomKernelSize(int kernelSize);
 
   void SetBloomSampleCount(int32_t count);
 
@@ -200,6 +207,8 @@ private: // メンバ変数
   D3D12_CPU_DESCRIPTOR_HANDLE resultRenderTexRTVHandle_;
   uint32_t resultRtvSrvIndex_ = 0;
 
+
+
   // 高輝度部分抽出用のレンダーテクスチャ
   ComPtr<ID3D12Resource> highLumResource_;
   D3D12_CPU_DESCRIPTOR_HANDLE highLumRTVHandle_;
@@ -241,6 +250,7 @@ private: // メンバ変数
   Microsoft::WRL::ComPtr<ID3D12Resource> vignetteParamResource_;
   Microsoft::WRL::ComPtr<ID3D12Resource> vignetteRedBloomParamResource_;
   Microsoft::WRL::ComPtr<ID3D12Resource> bloomParamResource_;
+  Microsoft::WRL::ComPtr<ID3D12Resource> bloomParamResource2_;
   Microsoft::WRL::ComPtr<ID3D12Resource> newBloomParamResource_;
   Microsoft::WRL::ComPtr<ID3D12Resource> fogParamResource_;
   Microsoft::WRL::ComPtr<ID3D12Resource> radialBlurParamResource_;
@@ -250,6 +260,7 @@ private: // メンバ変数
   VignetteParam* vignetteParam_;
   VignetteRedBloomParam* vignetteRedBloomParam_;
   BloomParam* bloomParam_;
+  BloomParam* bloomParam2_;
   NewBloomParam* newBloomParam_;
   FogParam* fogParam_;
   RadialBlurParam* radialBlurParam_;

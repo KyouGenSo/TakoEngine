@@ -39,8 +39,6 @@ void TakoFramework::Initialize()
 
 	SpriteBasic::GetInstance()->Initialize(dx12_);
 
-	Transition::GetInstance()->Initialize();
-
   DebugCamera::GetInstance()->Initialize();
 
   FrameTimer::GetInstance()->Initialize();
@@ -59,8 +57,11 @@ void TakoFramework::Initialize()
 
   PostEffect::GetInstance()->Initialize(dx12_);
 
-#pragma endregion
+  TextureManager::GetInstance()->LoadTexture("black.png");
 
+  Transition::GetInstance()->Initialize();
+
+#pragma endregion
 }
 
 void TakoFramework::Finalize()

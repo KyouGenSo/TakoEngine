@@ -81,6 +81,8 @@ public: // メンバー関数
   void SetTransform(const Transform& transform) { transform_ = transform; }
   // Set Color
   void SetColor(const Vector4& color) { materialData_->color = color; }
+  // Set Alpha
+  void SetAlpha(const float alpha) { materialData_->color.w = alpha; }
   // Set Position
   void SetPos(const Vector2& pos) { pos_ = pos; }
   // Set Rotation

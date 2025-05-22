@@ -33,6 +33,7 @@ public: // メンバ関数
     float bloomThreshold;
     float bloomIntensity;
     float bloomSigma;
+    int bloomKernelSize;
     int bloomSampleCount;
     int downSampleFactor;
     Vector4 fogColor;

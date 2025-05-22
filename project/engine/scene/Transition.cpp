@@ -2,6 +2,8 @@
 #include "Draw2D.h"
 #include "WinApp.h"
 #include <algorithm>
+#include "Sprite.h"
+#include "SpriteBasic.h"
 
 Transition* Transition::instance_ = nullptr;
 
@@ -27,6 +29,12 @@ void Transition::Initialize()
 	transitionSpeed_ = 1.0f / 60.0f;
 
 	alpha_ = 0.0f;
+
+  // spriteの初期化
+  blackBoxsp_ = std::make_unique<Sprite>();
+  blackBoxsp_->Initialize("black.png");
+  blackBoxsp_->SetSize(Vector2(static_cast<float>(WinApp::clientWidth), static_cast<float>(WinApp::clientHeight)));
+  blackBoxsp_->SetPos(Vector2(0.0f, 0.0f));
 }
 
 void Transition::Finalize()
@@ -70,6 +78,9 @@ void Transition::Update()
 			break;
 		}
 	}
+
+  blackBoxsp_->Update();
+  blackBoxsp_->SetAlpha(alpha_);
 }
 
 void Transition::Start(TransitionState state, TransitionType type, float duration)
@@ -121,5 +132,6 @@ void Transition::Draw()
 	if (state_ == NONE) {
 		return;
 	}
-  Draw2D::GetInstance()->DrawBox(Vector3(-100.f, -100.f, 0.0f), Vector3(static_cast<float>(WinApp::clientWidth), static_cast<float>(WinApp::clientHeight), 0.0f), Vector4(0.0f, 0.0f, 0.0f, alpha_));
+  SpriteBasic::GetInstance()->SetCommonRenderSetting();
+  blackBoxsp_->Draw();
 }

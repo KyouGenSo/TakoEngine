@@ -104,8 +104,13 @@ void PostEffect::Draw()
 
 void PostEffect::DrawPostEffect(const std::string& effectName)
 {
-  if (effectName == "NewBloom") {
+  if (effectName == "Bloom") {
     DrawMultiPassBloom();
+    return;
+  }
+
+  if (effectName == "NewBloom") {
+    DrawMultiPassNewBloom();
     return;
   }
 
@@ -151,7 +156,7 @@ void PostEffect::DrawPostEffect(const std::string& effectName)
   SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET, originRenderTexResource_.Get());
 }
 
-void PostEffect::DrawMultiPassBloom()
+void PostEffect::DrawMultiPassNewBloom()
 {
   newBloomParam_->texelSize = {
     1.0f / static_cast<float>(downSampleWidth_),
@@ -335,6 +340,62 @@ void PostEffect::DrawMultiPassBloom()
     originRenderTexResource_.Get());
 }
 
+void PostEffect::DrawMultiPassBloom()
+{
+  // レンダーテクスチャAをシェーダリソースに変更
+  SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET,
+    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+    originRenderTexResource_.Get());
+
+  D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
+
+  // ダウンサンプルテクスチャを描画先に設定
+  m_dx12_->GetCommandList()->OMSetRenderTargets(1, &bloomResultRTVHandle_, false, &dsvHandle);
+
+  // ビューポート設定
+  m_dx12_->SetViewPort();
+
+  m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_["Bloom"].Get());
+  m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_["Bloom"].Get());
+
+  // BloomParamをセット
+  m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(
+    1, bloomParamResource_->GetGPUVirtualAddress());
+
+  // 元画像をシェーダーリソースとして設定
+  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, originRtvSrvIndex_);
+
+  // 描画
+  m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+
+
+  SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET,
+    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+    bloomResultResource_.Get());
+
+  // 最終結果レンダーテクスチャを描画先に設定
+  m_dx12_->GetCommandList()->OMSetRenderTargets(1, &resultRenderTexRTVHandle_, false, &dsvHandle);
+
+  // BloomParamをセット
+  m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(
+    1, bloomParamResource2_->GetGPUVirtualAddress());
+
+  // ブラー画像をシェーダーリソースとして設定（スロット0）
+  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, bloomResultSrvIndex_);
+
+  // 描画
+  m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+
+  // 各テクスチャの状態を元に戻す
+  SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+    D3D12_RESOURCE_STATE_RENDER_TARGET,
+    bloomResultResource_.Get());
+
+  SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+    D3D12_RESOURCE_STATE_RENDER_TARGET,
+    originRenderTexResource_.Get());
+}
+
 void PostEffect::DrawFinalResult()
 {
   // レンダーテクスチャBの状態をシェーダーリソースに変更
@@ -450,19 +511,28 @@ void PostEffect::SetBloomThreshold(float threshold)
 {
   vignetteRedBloomParam_->threshold = threshold;
   bloomParam_->threshold = threshold;
+  bloomParam2_->threshold = threshold;
   newBloomParam_->threshold = threshold;
 }
 
 void PostEffect::SetBloomIntensity(float intensity)
 {
   bloomParam_->intensity = intensity;
+  bloomParam2_->intensity = intensity;
   newBloomParam_->intensity = intensity;
 }
 
 void PostEffect::SetBloomSigma(float sigma)
 {
   bloomParam_->sigma = sigma;
+  bloomParam2_->sigma = sigma;
   newBloomParam_->sigma = sigma;
+}
+
+void PostEffect::SetBloomKernelSize(int kernelSize)
+{
+  bloomParam_->kernelSize = kernelSize;
+  bloomParam2_->kernelSize = kernelSize;
 }
 
 void PostEffect::SetBloomSampleCount(int32_t count)
@@ -633,6 +703,12 @@ void PostEffect::CreateRootSignature(const std::string& effectName)
   descriptorRange2[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
   descriptorRange2[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
 
+  D3D12_DESCRIPTOR_RANGE bloomTexRanges[1] = {};
+  bloomTexRanges[0].BaseShaderRegister = 1; // レジスタ番号
+  bloomTexRanges[0].NumDescriptors = 1; // ディスクリプタ数
+  bloomTexRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
+  bloomTexRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+
   // RootParameterの設定。複数設定できるので配列
   D3D12_ROOT_PARAMETER rootParameters[5] = {};
   // Texture
@@ -648,12 +724,6 @@ void PostEffect::CreateRootSignature(const std::string& effectName)
 
   // Param
   if (effectName == "BloomCombine" || effectName == "GaussianBlur") {
-    D3D12_DESCRIPTOR_RANGE bloomTexRanges[1] = {};
-    bloomTexRanges[0].BaseShaderRegister = 1; // レジスタ番号
-    bloomTexRanges[0].NumDescriptors = 1; // ディスクリプタ数
-    bloomTexRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
-    bloomTexRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
-
     // BloomTex
     rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
     rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
@@ -793,14 +863,24 @@ void PostEffect::CreateBloomParam()
 {
   // BloomParamのリソース生成
   bloomParamResource_ = m_dx12_->MakeBufferResource(sizeof(BloomParam));
+  bloomParamResource2_ = m_dx12_->MakeBufferResource(sizeof(BloomParam));
 
   // データの設定
   bloomParamResource_->Map(0, nullptr, reinterpret_cast<void**>(&bloomParam_));
+  bloomParamResource2_->Map(0, nullptr, reinterpret_cast<void**>(&bloomParam2_));
 
   // データの初期化
   bloomParam_->intensity = 1.0f;
-  bloomParam_->threshold = 0.9f;
+  bloomParam_->threshold = 1.0f;
   bloomParam_->sigma = 2.0f;
+  bloomParam_->direction = { 1.0f, 0.0f };
+  bloomParam_->kernelSize = 10;
+
+  bloomParam2_->intensity = 1.0f;
+  bloomParam2_->threshold = 1.0f;
+  bloomParam2_->sigma = 2.0f;
+  bloomParam2_->direction = { 0.0f, 1.0f };
+  bloomParam2_->kernelSize = 10;
 }
 
 void PostEffect::CreateNewBloomParam()
