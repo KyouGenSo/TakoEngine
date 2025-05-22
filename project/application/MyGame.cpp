@@ -148,7 +148,7 @@ void MyGame::Draw()
 
 	SceneManager::GetInstance()->Draw();
 
-  　Draw2D::GetInstance()->Draw();
+  Draw2D::GetInstance()->Draw();
 
 	/// ===================================================== ///
 	/// ------------------ポストエフェクト描画-------------------///
