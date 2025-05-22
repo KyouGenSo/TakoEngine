@@ -58,8 +58,6 @@ void SceneManager::Draw()
 	{
 		scene_->Draw();
 	}
-
-	Transition::GetInstance()->Draw();
 }
 
 void SceneManager::DrawWithoutEffect()

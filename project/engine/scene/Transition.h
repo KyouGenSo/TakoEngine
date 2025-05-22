@@ -1,5 +1,7 @@
 #pragma once
+#include <memory>
 
+class Sprite;
 
 class Transition
 {
@@ -81,4 +83,7 @@ private: // メンバ変数
     float transitionSpeed_;
 
     float alpha_;
+
+    // スプライト
+    std::unique_ptr<Sprite> blackBoxsp_;
 };

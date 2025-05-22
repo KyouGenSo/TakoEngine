@@ -104,10 +104,10 @@ void PostEffect::Draw()
 
 void PostEffect::DrawPostEffect(const std::string& effectName)
 {
-  //if (effectName == "Bloom") {
-  //  DrawMultiPassBloom();
-  //  return;
-  //}
+  if (effectName == "Bloom") {
+    DrawMultiPassBloom();
+    return;
+  }
 
   if (effectName == "NewBloom") {
     DrawMultiPassNewBloom();
@@ -352,10 +352,6 @@ void PostEffect::DrawMultiPassBloom()
   // ダウンサンプルテクスチャを描画先に設定
   m_dx12_->GetCommandList()->OMSetRenderTargets(1, &bloomResultRTVHandle_, false, &dsvHandle);
 
-  // テクスチャクリア
-  float clearColor[] = { kOriginRenderTexClearColor_.x, kOriginRenderTexClearColor_.y, kOriginRenderTexClearColor_.z, kOriginRenderTexClearColor_.w };
-  m_dx12_->GetCommandList()->ClearRenderTargetView(bloomResultRTVHandle_, clearColor, 0, nullptr);
-
   // ビューポート設定
   m_dx12_->SetViewPort();
 
@@ -380,25 +376,9 @@ void PostEffect::DrawMultiPassBloom()
   // 最終結果レンダーテクスチャを描画先に設定
   m_dx12_->GetCommandList()->OMSetRenderTargets(1, &resultRenderTexRTVHandle_, false, &dsvHandle);
 
-  // テクスチャクリア
-  clearColor[0] = resultRenderTexClearColor_.x;
-  clearColor[1] = resultRenderTexClearColor_.y;
-  clearColor[2] = resultRenderTexClearColor_.z;
-  clearColor[3] = resultRenderTexClearColor_.w;
-  m_dx12_->GetCommandList()->ClearRenderTargetView(resultRenderTexRTVHandle_, clearColor, 0, nullptr);
-
-  // ビューポート設定
-  m_dx12_->SetViewPort();
-
-  // 合成シェーダー設定
-  m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_["Bloom"].Get());
-  m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_["Bloom"].Get());
-
   // BloomParamをセット
-  //bloomParam_->direction.x = 0.0f;
-  //bloomParam_->direction.y = 1.0f;
   m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(
-    1, bloomParamResource_->GetGPUVirtualAddress());
+    1, bloomParamResource2_->GetGPUVirtualAddress());
 
   // ブラー画像をシェーダーリソースとして設定（スロット0）
   SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, bloomResultSrvIndex_);
@@ -531,19 +511,28 @@ void PostEffect::SetBloomThreshold(float threshold)
 {
   vignetteRedBloomParam_->threshold = threshold;
   bloomParam_->threshold = threshold;
+  bloomParam2_->threshold = threshold;
   newBloomParam_->threshold = threshold;
 }
 
 void PostEffect::SetBloomIntensity(float intensity)
 {
   bloomParam_->intensity = intensity;
+  bloomParam2_->intensity = intensity;
   newBloomParam_->intensity = intensity;
 }
 
 void PostEffect::SetBloomSigma(float sigma)
 {
   bloomParam_->sigma = sigma;
+  bloomParam2_->sigma = sigma;
   newBloomParam_->sigma = sigma;
+}
+
+void PostEffect::SetBloomKernelSize(int kernelSize)
+{
+  bloomParam_->kernelSize = kernelSize;
+  bloomParam2_->kernelSize = kernelSize;
 }
 
 void PostEffect::SetBloomSampleCount(int32_t count)
@@ -874,16 +863,24 @@ void PostEffect::CreateBloomParam()
 {
   // BloomParamのリソース生成
   bloomParamResource_ = m_dx12_->MakeBufferResource(sizeof(BloomParam));
+  bloomParamResource2_ = m_dx12_->MakeBufferResource(sizeof(BloomParam));
 
   // データの設定
   bloomParamResource_->Map(0, nullptr, reinterpret_cast<void**>(&bloomParam_));
+  bloomParamResource2_->Map(0, nullptr, reinterpret_cast<void**>(&bloomParam2_));
 
   // データの初期化
   bloomParam_->intensity = 1.0f;
   bloomParam_->threshold = 1.0f;
   bloomParam_->sigma = 2.0f;
-  //bloomParam_->direction = { 1.0f, 0.0f };
+  bloomParam_->direction = { 1.0f, 0.0f };
   bloomParam_->kernelSize = 10;
+
+  bloomParam2_->intensity = 1.0f;
+  bloomParam2_->threshold = 1.0f;
+  bloomParam2_->sigma = 2.0f;
+  bloomParam2_->direction = { 0.0f, 1.0f };
+  bloomParam2_->kernelSize = 10;
 }
 
 void PostEffect::CreateNewBloomParam()

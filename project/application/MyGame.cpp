@@ -12,6 +12,7 @@
 #include "ModelManager.h"
 #include "GPUParticle.h"
 #include "SpriteBasic.h"
+#include "Transition.h"
 
 void MyGame::Initialize()
 {
@@ -167,7 +168,7 @@ void MyGame::Draw()
 
   GPUParticle::GetInstance()->Draw();
 
-
+  Transition::GetInstance()->Draw();
 
   Draw2D::GetInstance()->Reset();
 
@@ -260,7 +261,7 @@ void MyGame::Draw()
           PostEffect::GetInstance()->SetBloomIntensity(postEffectParam.bloomIntensity);
           ImGui::DragFloat("BloomThreshold", &postEffectParam.bloomThreshold, 0.01f, 0.0f, 1.0f);
           PostEffect::GetInstance()->SetBloomThreshold(postEffectParam.bloomThreshold);
-          ImGui::DragFloat("BloomSigma", &postEffectParam.bloomSigma, 0.01f, 0.0f, 10.0f);
+          ImGui::DragFloat("BloomSigma", &postEffectParam.bloomSigma, 0.01f, 0.1f, 50.0f);
           PostEffect::GetInstance()->SetBloomSigma(postEffectParam.bloomSigma);
           ImGui::DragInt("BloomKernelSize", &postEffectParam.bloomKernelSize, 1, 1, 100);
           PostEffect::GetInstance()->SetBloomKernelSize(postEffectParam.bloomKernelSize);
