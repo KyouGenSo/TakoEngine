@@ -2,6 +2,8 @@
 #include <d3d12.h>
 #include<wrl.h>
 #include <iostream>
+#include <queue>
+#include <unordered_set>
 
 class DX12Basic;
 
@@ -46,10 +48,25 @@ public: // メンバー関数
 	/// </summary>
 	uint32_t Allocate();
 
+  ///<summary>
+  ///SRVの解放
+  /// </summary>
+  void Free(uint32_t index);
+
 	///<summary>
 	///確保可能チェック
 	/// </summary>
 	bool CanAllocate();
+
+  ///<summary>
+  ///使用中かどうかチェック
+  /// </summary>
+  bool IsAllocated(uint32_t index) const;
+
+  ///<summary>
+  ///使用中のSRV数を取得
+  /// </summary>
+  uint32_t GetAllocatedCount() const { return allocatedCount_; }
 
 	///<summary>
 	///SRV生成(テクスチャ用)
@@ -102,6 +119,18 @@ private: // メンバー変数
 	// SRVのディスクリプタヒープ
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeap_;
 
+  // 解放されたインデックスを管理するキュー（フリーリスト）
+  std::priority_queue<uint32_t, std::vector<uint32_t>, std::greater<uint32_t>> freeIndices_;
+
+  // 使用中のインデックスを管理するセット
+  std::unordered_set<uint32_t> usedIndices_;
+
+  // 次に使用する新しいインデックス（フリーリストが空の場合に使用）
+  uint32_t nextNewIndex_ = 0;
+
+  // 現在使用中のSRV数
+  uint32_t allocatedCount_ = 0;
+
 	// 次に使用するsrvのインデックス
-	uint32_t srvIndex = 0;
+	//uint32_t srvIndex = 0;
 };

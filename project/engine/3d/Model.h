@@ -120,6 +120,11 @@ private: // プライベートメンバー関数
 	/// </summary>
 	void UpdateSkeletonAnimation(float time);
 
+  /// <summary>
+  /// スキニング関連リソースの解放
+  /// </summary>
+  void ReleaseSkinningSRVIndex();
+
 private: // メンバ変数
 
 	ModelBasic* m_modelBasic_;

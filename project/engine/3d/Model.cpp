@@ -54,6 +54,9 @@ void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool
 
 void Model::Finalize()
 {
+  // スキニング関連リソースの解放
+  ReleaseSkinningSRVIndex();
+
   // メッシュの解放
   for (auto& mesh : meshes_)
   {
@@ -589,6 +592,16 @@ void Model::UpdateSkeletonAnimation(float time)
       // スケールアニメーションの計算
       joint.transform.scale = CalcKeyFrameValue(rootAnimetion.scale.keyFrames, time);
     }
+  }
+}
+
+void Model::ReleaseSkinningSRVIndex()
+{
+  // パレットSRVの解放
+  if (paletteSrvIndex_ != 0)
+  {
+    SrvManager::GetInstance()->Free(paletteSrvIndex_);
+    paletteSrvIndex_ = 0;
   }
 }
 

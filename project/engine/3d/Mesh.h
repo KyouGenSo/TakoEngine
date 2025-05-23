@@ -12,6 +12,9 @@ class Mesh {
 
 public: // メンバー関数
 
+  // デストラクタ
+  ~Mesh();
+
   // 初期化
   void Initialize(
     ModelBasic* modelBasic,
@@ -64,6 +67,9 @@ private: // プライベートメンバー関数
   void CreateTransformation();
   // スキニング関連のUAVリソース生成
   void SetupSkinningUAV();
+
+  // リソースの解放
+  void ReleaseSRVIndex();
 
   // メンバ変数
   ModelBasic* modelBasic_ = nullptr;

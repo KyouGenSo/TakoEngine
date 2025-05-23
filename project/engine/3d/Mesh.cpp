@@ -4,6 +4,13 @@
 #include "ModelBasic.h"
 #include "SrvManager.h"
 
+//　デストラクタ
+Mesh::~Mesh()
+{
+  // リソースの解放
+  ReleaseSRVIndex();
+}
+
 ///------------------------------------------------///
 ///                 PUBLIC METHODS                ///
 ///-----------------------------------------------///
@@ -78,6 +85,28 @@ void Mesh::UpdateTransformation(const Matrix4x4& world, const Matrix4x4& viewPro
   transformationData_->WVP = wvpMatrix;
   transformationData_->world = world;
   transformationData_->worldInvTranspose = Mat4x4::InverseTranspose(world);
+}
+
+void Mesh::ReleaseSRVIndex()
+{
+  // SRVインデックスの解放
+  if (vertexSrvIndex_ != 0)
+  {
+    SrvManager::GetInstance()->Free(vertexSrvIndex_);
+    vertexSrvIndex_ = 0;
+  }
+
+  if (influenceSrvIndex_ != 0)
+  {
+    SrvManager::GetInstance()->Free(influenceSrvIndex_);
+    influenceSrvIndex_ = 0;
+  }
+
+  if (uavIndex_ != 0)
+  {
+    SrvManager::GetInstance()->Free(uavIndex_);
+    uavIndex_ = 0;
+  }
 }
 
 void Mesh::InitializeSkinning(const std::map<std::string, JointWeightData>& skinClusterData, const std::map<std::string, int32_t>& jointMap)

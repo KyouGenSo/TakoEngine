@@ -23,6 +23,11 @@ void SrvManager::Initialize(DX12Basic* dx12)
 
 	// SRVのディスクリプタヒープの生成
 	descriptorHeap_ = m_dx12_->CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, kMaxSRVCount, true);
+
+
+  nextNewIndex_ = 0;
+  allocatedCount_ = 0;
+  usedIndices_.clear();
 }
 
 void SrvManager::Finalize()
@@ -43,24 +48,65 @@ void SrvManager::BeginDraw()
 
 uint32_t SrvManager::Allocate()
 {
-	int index = srvIndex;
+  uint32_t index;
 
-  if (CanAllocate())
+  // フリーリストから優先的に取得
+  if (!freeIndices_.empty())
   {
-    srvIndex++;
-  }
-  else
+    index = freeIndices_.top();
+    freeIndices_.pop();
+  } else
   {
-    // SRVのインデックスが上限に達した場合、エラーメッセージを表示
-    assert(false && "SRV index limit reached");
+    // フリーリストが空の場合は新しいインデックスを使用
+    if (nextNewIndex_ >= kMaxSRVCount)
+    {
+      assert(false && "SRV index limit reached");
+      return UINT32_MAX; // エラー値
+    }
+    index = nextNewIndex_++;
   }
 
-	return index;
+  // 使用中として記録
+  usedIndices_.insert(index);
+  allocatedCount_++;
+
+  return index;
+}
+
+void SrvManager::Free(uint32_t index)
+{
+  // 無効なインデックスのチェック
+  if (index >= kMaxSRVCount)
+  {
+    assert(false && "Invalid SRV index");
+    return;
+  }
+
+  // 使用中かチェック
+  auto it = usedIndices_.find(index);
+  if (it == usedIndices_.end())
+  {
+    assert(false && "Trying to free an SRV index that is not allocated");
+    return;
+  }
+
+  // 使用中リストから削除
+  usedIndices_.erase(it);
+  allocatedCount_--;
+
+  // フリーリストに追加
+  freeIndices_.push(index);
 }
 
 bool SrvManager::CanAllocate()
 {
-	return srvIndex < kMaxSRVCount;
+  // フリーリストに空きがあるか、新しいインデックスが使えるかチェック
+  return !freeIndices_.empty() || nextNewIndex_ < kMaxSRVCount;
+}
+
+bool SrvManager::IsAllocated(uint32_t index) const
+{
+  return usedIndices_.find(index) != usedIndices_.end();
 }
 
 void SrvManager::CreateSRVForTexture2D(uint32_t index, ID3D12Resource* pResource, DXGI_FORMAT format, UINT mipLevels)
