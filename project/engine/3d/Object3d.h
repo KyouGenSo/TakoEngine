@@ -32,6 +32,9 @@ public: // 構造体
 
 
 public: // メンバー関数
+
+  ~Object3d();
+
 	///<summary>
 	/// 初期化
 	/// </summary>

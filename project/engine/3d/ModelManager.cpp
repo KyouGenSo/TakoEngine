@@ -28,13 +28,13 @@ void ModelManager::Finalize()
   delete pModelBasic_;
 
   // 各モデルインスタンスに対してFinalize呼び出し
-  for (auto& model : modelInstances_) {
-    if (model) {
-      model->Finalize();
+  for (auto& model : models_) {
+    if (model.second) {
+      model.second->Finalize();
     }
   }
   // モデルインスタンスの解放
-  modelInstances_.clear();
+  models_.clear();
 
   // ロード済みファイルリストをクリア
   loadedFiles_.clear();
@@ -94,26 +94,28 @@ void ModelManager::Finalize()
 //	models_.insert(std::make_pair(fileName, std::move(model)));
 //}
 
-Model* ModelManager::CreateModelInstance(const std::string& fileName)
+Model* ModelManager::GetModel(const std::string& fileName)
 {
-  return CreateModelInstance(fileName, false, false);
+  return GetModel(fileName, false, false);
 }
 
-Model* ModelManager::CreateModelInstance(const std::string& fileName, bool hasAnimation, bool hasSkeleton)
+Model* ModelManager::GetModel(const std::string& fileName, bool hasAnimation, bool hasSkeleton)
 {
-  // ファイルが未ロードの場合はロード済みとしてマーク
-  if (loadedFiles_.find(fileName) == loadedFiles_.end()) {
-    loadedFiles_.insert(fileName);
+  if (models_.contains(fileName))
+  {
+    // モデルがすでに存在する場合はそのポインタを返す
+    return models_.at(fileName).get()->Clone();
   }
 
   // 新しいModelインスタンスを作成
   std::unique_ptr<Model> newModel = std::make_unique<Model>();
   newModel->Initialize(pModelBasic_, fileName, hasAnimation, hasSkeleton);
 
-  // ポインタを保存してから返す
+  // モデルデータの登録
   Model* modelPtr = newModel.get();
-  modelInstances_.push_back(std::move(newModel));
-  return modelPtr;
+  models_.insert(std::make_pair(fileName, std::move(newModel)));
+
+  return modelPtr->Clone();
 }
 
 //Model* ModelManager::FindModel(const std::string& fileName)

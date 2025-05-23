@@ -41,6 +41,11 @@ public: // メンバー関数
 	///	</summary>
 	void LoadModelFile(const std::string& directoryPath, const std::string& fileName);
 
+  /// <summary>
+  /// クローン
+  ///	</summary>
+  Model* Clone() const;
+
 	// -----------------------------------Getters-----------------------------------//
 	// nodeのlocalMatrixを取得
 	const Matrix4x4& GetLocalMatrix() const { return rootNode_.localMatrix; }
@@ -153,7 +158,7 @@ private: // メンバ変数
   std::vector<Matrix4x4> inverseBindMatrices_;
   Microsoft::WRL::ComPtr<ID3D12Resource> paletteResource_;
   std::span<WellForGPU> mappedPalette_;
-  uint32_t paletteSrvIndex_;
+  uint32_t paletteSrvIndex_ = 0;
   std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> paletteSrvHandle_;
   std::map<std::string, JointWeightData> skinClusterData_;
 };

@@ -293,6 +293,8 @@ void GameScene::DrawImGui()
 {
 #ifdef _DEBUG
   ImGui::Begin("object3d");
+  SrvAllocateCount_ = SrvManager::GetInstance()->GetAllocatedCount();
+  ImGui::Text("SRV Allocate Count : %d", SrvAllocateCount_);
   ImGui::DragFloat3("Scale", &modelScale_.x, 0.01f, 0.1f, 50.0f);
   ImGui::DragFloat3("Position", &modelPos_.x, 0.01f, -50.0f, 50.0f);
   ImGui::DragFloat3("Rotate", &modelRotate_.x, 0.01f, DirectX::XMConvertToRadians(-180.0f), DirectX::XMConvertToRadians(180.0f));

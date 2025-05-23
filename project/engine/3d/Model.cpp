@@ -30,6 +30,8 @@ void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool
 
   hasSkeleton_ = hasSkeleton;
 
+  paletteSrvIndex_ = 0;
+
   // objファイルの読み込み
   LoadModelFile(directoryFolderName_ + "/" + ModelFolderName_, fileName);
 
@@ -93,8 +95,7 @@ void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
     for (auto& mesh : meshes_) {
       mesh->Draw();
     }
-  }
-  else
+  } else
   {
     ProcessNodeHierarchy(rootNode_, Mat4x4::MakeIdentity(), world, viewProjection);
   }
@@ -167,8 +168,8 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
       for (uint32_t weightIndex = 0; weightIndex < bone->mNumWeights; ++weightIndex)
       {
         jointWeightData.vertexWeights.push_back({
-          .weight= bone->mWeights[weightIndex].mWeight ,
-          .vertexIndex= bone->mWeights[weightIndex].mVertexId });
+          .weight = bone->mWeights[weightIndex].mWeight ,
+          .vertexIndex = bone->mWeights[weightIndex].mVertexId });
       }
     }
 
@@ -197,6 +198,48 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
     newMesh->Initialize(m_modelBasic_, vertices, indices, textureData);
     meshes_.push_back(newMesh);
   }
+}
+
+Model* Model::Clone() const
+{
+
+  Model* newModel = new Model();
+  newModel->m_modelBasic_ = this->m_modelBasic_;
+  newModel->m_dx12_ = this->m_dx12_;
+  newModel->directoryFolderName_ = this->directoryFolderName_;
+  newModel->ModelFolderName_ = this->ModelFolderName_;
+  newModel->hasAnimation_ = this->hasAnimation_;
+  newModel->hasSkeleton_ = this->hasSkeleton_;
+  newModel->rootNode_ = this->rootNode_;
+  newModel->textureCache_ = this->textureCache_;
+
+  if (this->hasSkeleton_)
+  {
+    newModel->skeleton_ = this->skeleton_;
+    newModel->skinClusterData_ = this->skinClusterData_;
+    newModel->inverseBindMatrices_ = this->inverseBindMatrices_;
+    newModel->paletteSrvIndex_ = this->paletteSrvIndex_;
+    newModel->InitializeMatrixPalette();
+  }
+
+  if (this->hasAnimation_)
+  {
+    newModel->animationData_ = this->animationData_;
+  }
+
+  // Meshのクローンを作成
+  for (const auto& mesh : meshes_)
+  {
+    Mesh* newMesh = mesh->Clone();
+    if (this->hasSkeleton_)
+    {
+      // スキニングデータをクローン
+      newMesh->InitializeSkinning(this->skinClusterData_, this->skeleton_.jointMap);
+    }
+    newModel->meshes_.push_back(newMesh);
+  }
+
+  return newModel;
 }
 
 void Model::SetShininess(float shininess)
@@ -600,7 +643,11 @@ void Model::ReleaseSkinningSRVIndex()
   // パレットSRVの解放
   if (paletteSrvIndex_ != 0)
   {
-    SrvManager::GetInstance()->Free(paletteSrvIndex_);
+    // アロケートされているか確認してから解放
+    if (SrvManager::GetInstance()->IsAllocated(paletteSrvIndex_))
+    {
+      SrvManager::GetInstance()->Free(paletteSrvIndex_);
+    }
     paletteSrvIndex_ = 0;
   }
 }

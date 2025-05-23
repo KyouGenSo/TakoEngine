@@ -2,6 +2,7 @@
 #include <string>
 #include <map>
 #include <memory>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -50,15 +51,10 @@ public: // メンバー関数
 	void LoadModel(const std::string& fileName, bool hasAnimation, bool hasSkeleton);
 
   /// <summary>
-  /// モデルのインスタンスを生成
+  /// モデルの検索
   ///	</summary>
-  Model* CreateModelInstance(const std::string& fileName);
-  Model* CreateModelInstance(const std::string& fileName, bool hasAnimation, bool hasSkeleton);
-
-	/// <summary>
-	/// モデルの検索
-	///	</summary>
-	Model* FindModel(const std::string& fileName);
+  Model* GetModel(const std::string& fileName);
+  Model* GetModel(const std::string& fileName, bool hasAnimation, bool hasSkeleton);
 
 	//-----------------------------------------Getter-----------------------------------------//
 	ModelBasic* GetModelBasic() { return pModelBasic_; }
@@ -73,6 +69,6 @@ private: // メンバー変数
   std::unordered_set<std::string> loadedFiles_;
 
   // modelInstancesは保持
-  std::vector<std::unique_ptr<Model>> modelInstances_;
+  std::unordered_map<std::string, std::unique_ptr<Model>> models_;
 
 };

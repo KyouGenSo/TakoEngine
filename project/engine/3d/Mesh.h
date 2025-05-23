@@ -29,6 +29,9 @@ public: // メンバー関数
   // 座標変換行列の更新
   void UpdateTransformation(const Matrix4x4& world, const Matrix4x4& viewProjection);
 
+  // クローン
+  Mesh* Clone() const;
+
   //------------------------------スキニング関連-------------------------------//
   // スキンニングの初期化
   void InitializeSkinning(

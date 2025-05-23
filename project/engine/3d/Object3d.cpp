@@ -5,6 +5,12 @@
 #include"ModelManager.h"
 #include"Camera.h"
 
+Object3d::~Object3d()
+{
+  m_model_->Finalize();
+  delete m_model_;
+}
+
 void Object3d::Initialize()
 {
 	m_camera_ = Object3dBasic::GetInstance()->GetCamera();
@@ -80,12 +86,12 @@ void Object3d::Draw()
 
 void Object3d::SetModel(const std::string& fileName)
 {
-  m_model_ = ModelManager::GetInstance()->CreateModelInstance(fileName);
+  m_model_ = ModelManager::GetInstance()->GetModel(fileName);
 }
 
 void Object3d::SetModel(const std::string& fileName, bool hasAnimation, bool hasSkeleton)
 {
-  m_model_ = ModelManager::GetInstance()->CreateModelInstance(fileName, hasAnimation, hasSkeleton);
+  m_model_ = ModelManager::GetInstance()->GetModel(fileName, hasAnimation, hasSkeleton);
 }
 
 void Object3d::SetMaterialColor(const Vector4& color)

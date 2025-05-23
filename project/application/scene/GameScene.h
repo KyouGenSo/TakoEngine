@@ -68,6 +68,8 @@ private: // メンバ変数
 
   bool isDebug_ = false;
 
+  uint32_t SrvAllocateCount_ = 0;
+
   // モデルの設定
   Vector3 modelScale_ = { .x = 1.0f, .y = 1.0f, .z = 1.0f };
   Vector3 modelPos_ = { .x = 0.0f, .y = 0.0f, .z = 0.0f };

@@ -23,6 +23,10 @@ void Mesh::Initialize(ModelBasic* modelBasic, const std::vector<VertexData>& ver
   indices_ = indices;
   textureData_ = textureData;
 
+  vertexSrvIndex_ = 0;
+  influenceSrvIndex_ = 0;
+  uavIndex_ = 0;
+
   CreateVertexData();
   CreateVertexBufferView();
   CreateIndexData();
@@ -87,24 +91,42 @@ void Mesh::UpdateTransformation(const Matrix4x4& world, const Matrix4x4& viewPro
   transformationData_->worldInvTranspose = Mat4x4::InverseTranspose(world);
 }
 
+Mesh* Mesh::Clone() const
+{
+  // メッシュのクローンを作成
+  Mesh* newMesh = new Mesh();
+  newMesh->Initialize(modelBasic_, vertices_, indices_, textureData_);
+  return newMesh;
+}
+
 void Mesh::ReleaseSRVIndex()
 {
   // SRVインデックスの解放
   if (vertexSrvIndex_ != 0)
   {
-    SrvManager::GetInstance()->Free(vertexSrvIndex_);
+    // 解放前にアロケートされているか確認
+    if (SrvManager::GetInstance()->IsAllocated(vertexSrvIndex_))
+    {
+      SrvManager::GetInstance()->Free(vertexSrvIndex_);
+    }
     vertexSrvIndex_ = 0;
   }
 
   if (influenceSrvIndex_ != 0)
   {
-    SrvManager::GetInstance()->Free(influenceSrvIndex_);
+    if (SrvManager::GetInstance()->IsAllocated(influenceSrvIndex_))
+    {
+      SrvManager::GetInstance()->Free(influenceSrvIndex_);
+    }
     influenceSrvIndex_ = 0;
   }
 
   if (uavIndex_ != 0)
   {
-    SrvManager::GetInstance()->Free(uavIndex_);
+    if (SrvManager::GetInstance()->IsAllocated(uavIndex_))
+    {
+      SrvManager::GetInstance()->Free(uavIndex_);
+    }
     uavIndex_ = 0;
   }
 }
