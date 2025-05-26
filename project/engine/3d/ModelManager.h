@@ -47,7 +47,6 @@ public: // メンバー関数
 	/// モデルの読み込む
 	///	</summary>
 	void LoadModel(const std::string& fileName);
-	void LoadModel(const std::string& fileName, bool hasAnimation);
 	void LoadModel(const std::string& fileName, bool hasAnimation, bool hasSkeleton);
 
   /// <summary>
@@ -64,11 +63,8 @@ private: // メンバー変数
 	// モデル基本クラス
 	ModelBasic* pModelBasic_;
 
-	// モデルデータ
-  // models_の代わりにロード済みファイル名のセットを使用
-  std::unordered_set<std::string> loadedFiles_;
-
-  // modelInstancesは保持
+  // モデルのマップ
+  // キーはファイル名、値はモデルインスタンス
   std::unordered_map<std::string, std::unique_ptr<Model>> models_;
 
 };

@@ -36,9 +36,6 @@ void ModelManager::Finalize()
   // モデルインスタンスの解放
   models_.clear();
 
-  // ロード済みファイルリストをクリア
-  loadedFiles_.clear();
-
 	if (instance_ != nullptr)
 	{
 		delete instance_;
@@ -46,53 +43,27 @@ void ModelManager::Finalize()
 	}
 }
 
-//void ModelManager::LoadModel(const std::string& fileName)
-//{
-//	// 読み込み済みの場合は何もしない
-//	if (models_.contains(fileName))
-//	{
-//		return;
-//	}
-//
-//	// モデルの読み込み、初期化
-//	std::unique_ptr<Model> model = std::make_unique<Model>();
-//	model->Initialize(pModelBasic_, fileName, false, false);
-//
-//	// モデルデータの登録
-//	models_.insert(std::make_pair(fileName, std::move(model)));
-//}
+void ModelManager::LoadModel(const std::string& fileName)
+{
+  LoadModel(fileName, false, false);
+}
 
-//void ModelManager::LoadModel(const std::string& fileName, bool hasAnimation)
-//{
-//	// 読み込み済みの場合は何もしない
-//	if (models_.contains(fileName))
-//	{
-//		return;
-//	}
-//
-//	// モデルの読み込み、初期化
-//	std::unique_ptr<Model> model = std::make_unique<Model>();
-//	model->Initialize(pModelBasic_, fileName, hasAnimation, false);
-//
-//	// モデルデータの登録
-//	models_.insert(std::make_pair(fileName, std::move(model)));
-//}
+void ModelManager::LoadModel(const std::string& fileName, bool hasAnimation, bool hasSkeleton)
+{
+  // すでにロード済みのファイル名をチェック
+  if (models_.contains(fileName))
+  {
+    Logger::Log("ModelManager: Model already loaded: " + fileName);
+    return;
+  }
 
-//void ModelManager::LoadModel(const std::string& fileName, bool hasAnimation, bool hasSkeleton)
-//{
-//	// 読み込み済みの場合は何もしない
-//	if (models_.contains(fileName))
-//	{
-//		return;
-//	}
-//
-//	// モデルの読み込み、初期化
-//	std::unique_ptr<Model> model = std::make_unique<Model>();
-//	model->Initialize(pModelBasic_, fileName, hasAnimation, hasSkeleton);
-//
-//	// モデルデータの登録
-//	models_.insert(std::make_pair(fileName, std::move(model)));
-//}
+  // 新しいModelインスタンスを作成
+  std::unique_ptr<Model> newModel = std::make_unique<Model>();
+  newModel->Initialize(pModelBasic_, fileName, hasAnimation, hasSkeleton);
+
+  models_.insert(std::make_pair(fileName, std::move(newModel)));
+}
+
 
 Model* ModelManager::GetModel(const std::string& fileName)
 {
@@ -117,18 +88,3 @@ Model* ModelManager::GetModel(const std::string& fileName, bool hasAnimation, bo
 
   return modelPtr->Clone();
 }
-
-//Model* ModelManager::FindModel(const std::string& fileName)
-//{
-//	// モデルが存在する場合はポインタを返す
-//	if (models_.contains(fileName))
-//	{
-//    return models_.at(fileName).get();
-//	}
-//
-//  // エラーログを出力
-//  Logger::Log("ModelManager::FindModel: Model not found: " + fileName);
-//
-//	// モデルが存在しない場合はnullptrを返す
-//	return nullptr;
-//}
