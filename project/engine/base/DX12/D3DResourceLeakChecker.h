@@ -1,9 +1,9 @@
 #pragma once
 
-class D3DResourceLeakCheker {
+class D3DResourceLeakChecker {
 public:
 	/// <summary>
 	/// デストラクタ
 	/// </summary>
-	~D3DResourceLeakCheker();
+	~D3DResourceLeakChecker();
 };

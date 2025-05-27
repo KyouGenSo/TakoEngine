@@ -1,7 +1,7 @@
 #pragma once
 #include "WinApp.h"
 #include "DX12Basic.h"
-#include "D3DResourceLeakCheker.h"
+#include "D3DResourceLeakChecker.h"
 #include "Camera.h"
 #include "SrvManager.h"
 #include "AbstractSceneFactory.h"
@@ -39,7 +39,7 @@ public: // メンバ関数
 
 protected: // メンバ変数
 	// リソースリークチェッカー
-	D3DResourceLeakCheker d3dResourceLeakCheker;
+	D3DResourceLeakChecker d3dResourceLeakCheker;
 
 	// ウィンドウクラス
 	WinApp* winApp_ = nullptr;

@@ -1,10 +1,10 @@
-#include"D3DResourceLeakCheker.h"
+#include"D3DResourceLeakChecker.h"
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <dxgidebug.h>
 #include <wrl.h>
 
-D3DResourceLeakCheker::~D3DResourceLeakCheker()
+D3DResourceLeakChecker::~D3DResourceLeakChecker()
 {
 	// リソースリークのチェック
 	Microsoft::WRL::ComPtr<IDXGIDebug1> dxgiDebug;

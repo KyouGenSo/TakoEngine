@@ -81,7 +81,7 @@
     <ClCompile Include="engine\2d\TextureManager.cpp">
       <Filter>2d</Filter>
     </ClCompile>
-    <ClCompile Include="engine\base\DX12\D3DResourceLeakCheker.cpp">
+    <ClCompile Include="engine\base\DX12\D3DResourceLeakChecker.cpp">
       <Filter>base\DX12</Filter>
     </ClCompile>
     <ClCompile Include="engine\base\DX12\DX12Basic.cpp">
@@ -245,7 +245,7 @@
     <ClInclude Include="engine\base\WinApp.h">
       <Filter>base</Filter>
     </ClInclude>
-    <ClInclude Include="engine\base\DX12\D3DResourceLeakCheker.h">
+    <ClInclude Include="engine\base\DX12\D3DResourceLeakChecker.h">
       <Filter>base\DX12</Filter>
     </ClInclude>
     <ClInclude Include="engine\base\DX12\DX12Basic.h">
