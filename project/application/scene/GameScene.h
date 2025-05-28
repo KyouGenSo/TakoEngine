@@ -84,5 +84,6 @@ private: // メンバ変数
   BoxEmitterParams boxEmitterSett_ = {};
   TriangleEmitterParams triEmitterSett_ = {};
   bool isRandomRotateZ = false;
+  bool isActive = true;
 
 };
