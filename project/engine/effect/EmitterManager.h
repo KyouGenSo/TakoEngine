@@ -60,6 +60,7 @@ public:
   void SetEmitterLifeTimeRange(const std::string& name, const Vector2& lifeTimeRange);
   void SetEmitterActive(const std::string& name, bool isActive);
   void SetEmitterNormalize(const std::string& name, bool isNormalize);
+  void SetEmitterRandomRotateZ(const std::string& name, bool isRandomRotateZ);
   void SetEmitterColor(const std::string& name, const Vector4& color);
   void SetEmitterStartColor(const std::string& name, const Vector4& color);
   void SetEmitterEndColor(const std::string& name, const Vector4& color);

@@ -60,9 +60,6 @@ private: // メンバ変数
     bool enable;
   };
 
-  // SkyBox
-  std::unique_ptr<SkyBox> skyBox_;
-
   Object3d* object3d_ = nullptr;
   Object3d* object3d2_ = nullptr;
 
@@ -79,14 +76,6 @@ private: // メンバ変数
   Vector3 modelPos2_ = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
   Vector3 modelRotate2_ = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
 
-  // 平行光源の設定
-  float shininess_ = 100.0f;
-  bool isLighting_ = true;
-  bool isHighlight_ = true;
-  Vector4 lightColor_ = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
-  Vector3 lightDirection_ = { .x = 0.0f, .y = -1.0f, .z = 0.0f };
-  float lightIntensity_ = 1.0f;
-
     // エミッター管理
   std::unique_ptr<EmitterManager> emitterManager_;
 
@@ -94,9 +83,6 @@ private: // メンバ変数
   SphereEmitterParams spEmitterSett_ = {};
   BoxEmitterParams boxEmitterSett_ = {};
   TriangleEmitterParams triEmitterSett_ = {};
-  Vector3 groupPosition_ = {};
-  bool isActive_ = true;
+  bool isRandomRotateZ = false;
 
-  // スプライト
-  std::unique_ptr<Sprite> sprite_;
 };

@@ -9,6 +9,7 @@ GPUParticleEmitter::GPUParticleEmitter(GPUParticle* particleSystem, uint32_t emi
   data_.isActive = true;
   data_.isEmitting = false;
   data_.isNormalize = false;
+  data_.isRandomRotateZ = false;
   data_.isTemp = false;
   data_.emitterLifeTime = 0.0f;
   data_.emitterCurrentTime = 0.0f;
@@ -39,6 +40,7 @@ void GPUParticleEmitter::SetupGPUData(EmitterGPUData& gpuData) const
   gpuData.isActive = data_.isActive ? 1u : 0u;
   gpuData.isEmit = data_.isEmitting ? 1u : 0u;
   gpuData.isNormalize = data_.isNormalize ? 1u : 0u;
+  gpuData.isRandomRotateZ = data_.isRandomRotateZ ? 1u : 0u;
   gpuData.emitterID = data_.emitterID;
 
   gpuData.position = data_.position;
@@ -118,6 +120,11 @@ void GPUParticleEmitter::SetEmitting(bool cond)
 void GPUParticleEmitter::SetNormalize(bool isNormalize)
 {
   data_.isNormalize = isNormalize;
+}
+
+void GPUParticleEmitter::SetRandomRotateZ(bool isRandomRotateZ)
+{
+  data_.isRandomRotateZ = isRandomRotateZ;
 }
 
 void GPUParticleEmitter::SetColor(const Vector4& color)

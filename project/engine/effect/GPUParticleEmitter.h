@@ -29,6 +29,7 @@ public:
   void SetActive(bool isActive);
   void SetEmitting(bool cond);
   void SetNormalize(bool isNormalize);
+  void SetRandomRotateZ(bool isRandomRotateZ);
   void SetParticleCount(uint32_t count);
   void SetFrequency(float frequency);
   void SetFrequencyTime(float frequencyTime);
@@ -57,6 +58,9 @@ public:
   [[nodiscard]] const Vector3& GetPosition() const { return data_.position; }
   [[nodiscard]] bool IsActive() const { return data_.isActive; }
   [[nodiscard]] bool IsEmitting() const { return data_.isEmitting; }
+  [[nodiscard]] bool IsRandomRotateZ() const { return data_.isRandomRotateZ; }
+  [[nodiscard]] uint32_t GetEmitterType() const { return static_cast<uint32_t>(data_.type); }
+  [[nodiscard]] uint32_t GetEmitterID() const { return data_.emitterID; }
   [[nodiscard]] const Vector2& GetScaleRangeX() const { return data_.scaleRangeX; }
   [[nodiscard]] const Vector2& GetScaleRangeY() const { return data_.scaleRangeY; }
   [[nodiscard]] const Vector2& GetVelRangeX() const { return data_.velRangeX; }

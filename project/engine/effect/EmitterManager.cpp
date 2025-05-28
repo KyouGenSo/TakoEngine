@@ -256,6 +256,14 @@ void EmitterManager::SetEmitterNormalize(const std::string& name, bool isNormali
   }
 }
 
+void EmitterManager::SetEmitterRandomRotateZ(const std::string& name, bool isRandomRotateZ)
+{
+  auto it = emitterMap_.find(name);
+  if (it != emitterMap_.end()) {
+    it->second->SetRandomRotateZ(isRandomRotateZ);
+  }
+}
+
 void EmitterManager::SetEmitterColor(const std::string& name, const Vector4& color)
 {
   auto it = emitterMap_.find(name);
