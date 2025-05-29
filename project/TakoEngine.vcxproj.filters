@@ -49,6 +49,9 @@
     <Filter Include="effect\Particle\Emitter">
       <UniqueIdentifier>{c6bddca8-d205-4146-b590-37ba9f6556a0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="effect\PostEffect">
+      <UniqueIdentifier>{eb1443d2-13b9-455a-bd1f-aaae4a057d07}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\func\mathFunc\Mat4x4Func.cpp">
@@ -120,9 +123,6 @@
     <ClCompile Include="engine\2d\Draw2D.cpp">
       <Filter>2d</Filter>
     </ClCompile>
-    <ClCompile Include="engine\effect\PostEffect.cpp">
-      <Filter>effect</Filter>
-    </ClCompile>
     <ClCompile Include="engine\2d\DebugCamera.cpp">
       <Filter>3d</Filter>
     </ClCompile>
@@ -164,6 +164,9 @@
     </ClCompile>
     <ClCompile Include="engine\3d\SkyBox.cpp">
       <Filter>3d</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\effect\PostEffect.cpp">
+      <Filter>effect\PostEffect</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -254,9 +257,6 @@
     <ClInclude Include="engine\base\DX12\SrvManager.h">
       <Filter>base\DX12</Filter>
     </ClInclude>
-    <ClInclude Include="engine\effect\PostEffect.h">
-      <Filter>effect</Filter>
-    </ClInclude>
     <ClInclude Include="engine\func\commonFunc\Logger.h">
       <Filter>func\commonFunc</Filter>
     </ClInclude>
@@ -325,6 +325,12 @@
     </ClInclude>
     <ClInclude Include="engine\3d\SkyBox.h">
       <Filter>3d</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\PostEffect.h">
+      <Filter>effect\PostEffect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\PostEffectStruct.h">
+      <Filter>effect\PostEffect</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

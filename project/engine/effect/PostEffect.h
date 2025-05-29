@@ -6,6 +6,7 @@
 
 #include "Vector2.h"
 #include"Vector4.h"
+#include "PostEffectStruct.h"
 
 class DX12Basic;
 
@@ -22,68 +23,6 @@ public:
   PostEffect& operator=(PostEffect&) = delete;
 
 public: // メンバ関数
-
-  struct VignetteParam
-  {
-    float power;
-    float range;
-  };
-
-  struct VignetteRedBloomParam
-  {
-    float power;
-    float range;
-    float threshold;
-  };
-
-  struct BloomParam
-  {
-    float intensity;
-    float threshold;
-    float sigma;
-    int kernelSize;
-    Vector2 direction;
-    int padding1;        // パディング追加
-    int padding2;        // パディング追加
-  };
-
-  struct NewBloomParam
-  {
-    float intensity;
-    float threshold;
-    float sigma;
-    Vector2 direction;
-    Vector2 texelSize;
-    int sampleCount;
-    int iteration;
-    int padding3;        // パディング追加
-    int padding4;        // パディング追加
-  };
-
-  struct PixelateParam
-  {
-    float pixelSize;
-  };
-
-  // Shader用のカメラ
-  struct CameraForGPU
-  {
-    float nearPlane;
-    float farPlane;
-  };
-
-  struct FogParam
-  {
-    Vector4 color;
-    float density;
-  };
-
-  struct RadialBlurParam
-  {
-    Vector2 center;
-    float blurWidth;
-    int32_t sampleCount;
-  };
 
   // ComPtrのエイリアス
   template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
@@ -146,6 +85,8 @@ public: // メンバ関数
 
   void SetRadialBlurWidth(float width);
 
+  void SetBWFilterThreshold(float bwFilterThreshold) { BWFilterParam_->threshold = bwFilterThreshold; }
+
 private: // プライベートメンバー関数
 
   // レンダーテクスチャの初期化
@@ -187,6 +128,9 @@ private: // プライベートメンバー関数
   // CameraForGPUを生成
   void CreateCameraForGPU();
 
+  // BWFilterParamを生成
+  void CreateBWFilterParam();
+
   // パラメーターリソースの設定
   void SetParamResource(const std::string& effectName);
 
@@ -206,8 +150,6 @@ private: // メンバ変数
   ComPtr<ID3D12Resource> resultRenderTexResource_;
   D3D12_CPU_DESCRIPTOR_HANDLE resultRenderTexRTVHandle_;
   uint32_t resultRtvSrvIndex_ = 0;
-
-
 
   // 高輝度部分抽出用のレンダーテクスチャ
   ComPtr<ID3D12Resource> highLumResource_;
@@ -255,6 +197,7 @@ private: // メンバ変数
   Microsoft::WRL::ComPtr<ID3D12Resource> fogParamResource_;
   Microsoft::WRL::ComPtr<ID3D12Resource> radialBlurParamResource_;
   Microsoft::WRL::ComPtr<ID3D12Resource> cameraForGPUResource_;
+  Microsoft::WRL::ComPtr<ID3D12Resource> BWFilterParamResource_;
 
   // パラメーターデータ
   VignetteParam* vignetteParam_;
@@ -265,4 +208,5 @@ private: // メンバ変数
   FogParam* fogParam_;
   RadialBlurParam* radialBlurParam_;
   CameraForGPU* cameraForGPU_;
+  BWFilterParam* BWFilterParam_;
 };

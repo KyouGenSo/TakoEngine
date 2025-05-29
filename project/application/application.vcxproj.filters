@@ -160,6 +160,9 @@
     <FxCompile Include="resources\shaders\BloomCombine.PS.hlsl">
       <Filter>Shader\PostEffect</Filter>
     </FxCompile>
+    <FxCompile Include="resources\shaders\BWFilter.PS.hlsl">
+      <Filter>Shader\PostEffect</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\Object3d.hlsli">

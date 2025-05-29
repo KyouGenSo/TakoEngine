@@ -51,6 +51,8 @@ void PostEffect::Initialize(DX12Basic* dx12)
 
   CreatePSO("RadialBlur");
 
+  CreatePSO("BWFilter");
+
   CreateVignetteParam();
 
   CreateVignetteRedBloomParam();
@@ -64,6 +66,8 @@ void PostEffect::Initialize(DX12Basic* dx12)
   CreateCameraForGPU();
 
   CreateRadialBlurParam();
+
+  CreateBWFilterParam();
 }
 
 void PostEffect::Finalize()
@@ -936,6 +940,15 @@ void PostEffect::CreateCameraForGPU()
   cameraForGPU_->nearPlane = (*Object3dBasic::GetInstance()->GetCamera())->GetNearClip();
 }
 
+void PostEffect::CreateBWFilterParam()
+{
+  BWFilterParamResource_ = m_dx12_->MakeBufferResource(sizeof(BWFilterParam));
+
+  BWFilterParamResource_->Map(0, nullptr, reinterpret_cast<void**>(&BWFilterParam_));
+
+  BWFilterParam_->threshold = 0.5f;
+}
+
 void PostEffect::SetParamResource(const std::string& effectName)
 {
   if (effectName == "VignetteRed" || effectName == "VigRedGrayScale")
@@ -955,7 +968,12 @@ void PostEffect::SetParamResource(const std::string& effectName)
   } else if (effectName == "RadialBlur")
   {
     m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, radialBlurParamResource_->GetGPUVirtualAddress());
-  } else if (effectName == "GrayScale" || effectName == "NoEffect")
+  }
+  else if (effectName == "BWFilter")
+  {
+    m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, BWFilterParamResource_->GetGPUVirtualAddress());
+  }
+  else if (effectName == "GrayScale" || effectName == "NoEffect")
   {
     // グレースケール, ノーエフェクトの場合は何もしない
   }

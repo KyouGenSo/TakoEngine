@@ -41,6 +41,7 @@ public: // メンバ関数
     Vector2 radialBlurCenter;
     float radialBlurWidth;
     int32_t radialBlurSampleCount;
+    float bwFilterThreshold;
   };
 
 private: // メンバ変数
@@ -61,6 +62,7 @@ private: // メンバ変数
     NewBloom,
 		BloomFog,
     RadialBlur,
+    BWFilter,
 	};
 
 	PostEffectType postEffectType = NoEffect;

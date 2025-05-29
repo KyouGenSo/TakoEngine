@@ -56,6 +56,7 @@ void MyGame::Initialize()
   postEffectParam.downSampleFactor = 8;
   postEffectParam.fogColor = {1.0f, 1.0f, 1.0f, 1.0f};
   postEffectParam.fogDensity = 0.01f;
+  postEffectParam.bwFilterThreshold = 0.5f;
 
 }
 
@@ -129,6 +130,9 @@ void MyGame::Update()
     break;
   case RadialBlur:
     PostEffect::GetInstance()->SetEffectType("RadialBlur");
+    break;
+  case BWFilter:
+    PostEffect::GetInstance()->SetEffectType("BWFilter");
     break;
   }
 #endif // _DEBUG
@@ -234,6 +238,7 @@ void MyGame::Draw()
         ImGui::RadioButton("NewBloom", (int*)&postEffectType, NewBloom);
         ImGui::RadioButton("BloomFog", (int*)&postEffectType, BloomFog);
         ImGui::RadioButton("RadialBlur", (int*)&postEffectType, RadialBlur);
+        ImGui::RadioButton("BWFilter", (int*)&postEffectType, BWFilter);
 
         ImGui::EndTabItem();
       }
@@ -289,6 +294,12 @@ void MyGame::Draw()
         {
           ImGui::DragInt("BloomSampleCount", &postEffectParam.bloomSampleCount, 1, 1, 100);
           PostEffect::GetInstance()->SetBloomSampleCount(postEffectParam.bloomSampleCount);
+        }
+
+        if (postEffectType == BWFilter)
+        {
+          ImGui::DragFloat("BWFilterThreshold", &postEffectParam.bwFilterThreshold, 0.01f, 0.0f, 1.0f);
+          PostEffect::GetInstance()->SetBWFilterThreshold(postEffectParam.bwFilterThreshold);
         }
 
         ImGui::EndTabItem();
