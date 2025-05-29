@@ -16,7 +16,7 @@ struct PixelShaderOutput
     float4 color : SV_TARGET0;
 };
 
-float4 BrightColorExtract(float2 texcoord)
+float4 ExtractBrightColor(float2 texcoord)
 {
     float4 color = gTexture.Sample(gSampler, texcoord);
 
@@ -29,7 +29,7 @@ float4 BrightColorExtract(float2 texcoord)
 
 float4 BWFilter(float2 texcoord)
 {
-    float4 result = BrightColorExtract(texcoord);
+    float4 result = ExtractBrightColor(texcoord);
     
     float sum = 0.0f; // èdÇ›ÇÃçáåv
     
