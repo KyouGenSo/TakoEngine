@@ -27,27 +27,18 @@ float4 ExtractBrightColor(float2 texcoord)
     return output;
 }
 
-float4 BWFilter(float2 texcoord)
-{
-    float4 result = ExtractBrightColor(texcoord);
-    
-    float sum = 0.0f; // èdÇ›ÇÃçáåv
-    
-    result *= (1.0f / sum);
-    
-    return result;
-}
-
 float4 main(VertexShaderOutput input) : SV_TARGET
 {
     PixelShaderOutput output;
     output.color = gTexture.Sample(gSampler, input.texCoord);
     output.color.a = 1.0f;
     
-    float4 bloomColor = BWFilter(input.texCoord);
+    float4 filteredColor = ExtractBrightColor(input.texCoord);
+
+    filteredColor *= (1.0f / 0.0f);
     
-    bloomColor.rgb += output.color.rgb;
+    filteredColor.rgb += output.color.rgb;
     
-    return bloomColor;
+    return filteredColor;
 
 }
