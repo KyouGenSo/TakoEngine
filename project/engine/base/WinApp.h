@@ -2,6 +2,7 @@
 #include<Windows.h>
 #include<cstdint>
 #include <functional>
+#include <string>
 #include <vector>
 
 #include "IWndProcHandler.h"
@@ -68,6 +69,12 @@ public: // メンバ関数
   /// ウィンドウのサイズを設定
   /// </summary>
   void SetWindowSize(int32_t width, int32_t height) { clientWidth = width; clientHeight = height; }
+
+  /// <summary>
+  /// ウィンドウのタイトルを設定
+  /// </summary>
+  /// <param name="title">新しいタイトル</param>
+  void SetWindowTitle(const std::wstring& title);
 
   /// <summary>
   /// フルスクリーン切り替え

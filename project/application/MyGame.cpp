@@ -17,9 +17,10 @@
 void MyGame::Initialize()
 {
 
-  winApp_->SetWindowSize(1280, 720);
-
 	TakoFramework::Initialize();
+
+  winApp_->SetWindowSize(1280, 720);
+  winApp_->SetWindowTitle(L"TakoEngine Sample Game");
 
 #pragma region 汎用機能初期化-------------------------------------------------------------------------------------------------------------------
 	// 入力クラスの初期化
