@@ -53,6 +53,8 @@ void PostEffect::Initialize(DX12Basic* dx12)
 
   CreatePSO("BWFilter");
 
+  CreatePSO("RGBSplit");
+
   CreateVignetteParam();
 
   CreateVignetteRedBloomParam();
@@ -68,6 +70,8 @@ void PostEffect::Initialize(DX12Basic* dx12)
   CreateRadialBlurParam();
 
   CreateBWFilterParam();
+
+  CreateRGBSplitParam();
 }
 
 void PostEffect::Finalize()
@@ -576,6 +580,13 @@ void PostEffect::SetRadialBlurWidth(float width)
   radialBlurParam_->blurWidth = width;
 }
 
+void PostEffect::SetRGBSplitOffsets(const Vector2& red, const Vector2& green, const Vector2& blue)
+{
+  rgbSplitParam_->redOffset = red;
+  rgbSplitParam_->greenOffset = green;
+  rgbSplitParam_->blueOffset = blue;
+}
+
 void PostEffect::CreateRenderTexture()
 {
   // レンダーテクスチャリソースの生成
@@ -949,29 +960,52 @@ void PostEffect::CreateBWFilterParam()
   BWFilterParam_->threshold = 0.5f;
 }
 
+void PostEffect::CreateRGBSplitParam()
+{
+  // RGBSplitParamのリソース生成
+  rgbSplitParamResource_ = m_dx12_->MakeBufferResource(sizeof(RGBSplitParam));
+
+  // データの設定
+  rgbSplitParamResource_->Map(0, nullptr, reinterpret_cast<void**>(&rgbSplitParam_));
+
+  // データの初期化
+  rgbSplitParam_->redOffset = { 0.005f, 0.0f };
+  rgbSplitParam_->greenOffset = { -0.005f, 0.0f };
+  rgbSplitParam_->blueOffset = { 0.0f, 0.0f };
+  rgbSplitParam_->intensity = 1.0f;
+}
+
 void PostEffect::SetParamResource(const std::string& effectName)
 {
   if (effectName == "VignetteRed" || effectName == "VigRedGrayScale")
   {
     m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, vignetteParamResource_->GetGPUVirtualAddress());
-  } else if (effectName == "VignetteRedBloom")
+  }
+  else if (effectName == "VignetteRedBloom")
   {
     m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, vignetteRedBloomParamResource_->GetGPUVirtualAddress());
-  } else if (effectName == "Bloom")
+  }
+  else if (effectName == "Bloom")
   {
     m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, bloomParamResource_->GetGPUVirtualAddress());
-  } else if (effectName == "BloomFog")
+  }
+  else if (effectName == "BloomFog")
   {
     m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, bloomParamResource_->GetGPUVirtualAddress());
     m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(2, cameraForGPUResource_->GetGPUVirtualAddress());
     m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(3, fogParamResource_->GetGPUVirtualAddress());
-  } else if (effectName == "RadialBlur")
+  }
+  else if (effectName == "RadialBlur")
   {
     m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, radialBlurParamResource_->GetGPUVirtualAddress());
   }
   else if (effectName == "BWFilter")
   {
     m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, BWFilterParamResource_->GetGPUVirtualAddress());
+  }
+  else if(effectName == "RGBSplit")
+  {
+    m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, rgbSplitParamResource_->GetGPUVirtualAddress());
   }
   else if (effectName == "GrayScale" || effectName == "NoEffect")
   {

@@ -70,3 +70,11 @@ struct BWFilterParam
 {
   float threshold;
 };
+
+struct RGBSplitParam
+{
+  Vector2 redOffset;   // Rチャンネルのオフセット
+  Vector2 greenOffset; // Gチャンネルのオフセット
+  Vector2 blueOffset;  // Bチャンネルのオフセット
+  float intensity;     // エフェクトの強度
+};

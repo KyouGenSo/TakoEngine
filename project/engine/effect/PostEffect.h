@@ -87,6 +87,10 @@ public: // メンバ関数
 
   void SetBWFilterThreshold(float bwFilterThreshold) { BWFilterParam_->threshold = bwFilterThreshold; }
 
+  void SetRGBSplitOffsets(const Vector2& red, const Vector2& green, const Vector2& blue);
+
+  void SetRGBSplitIntensity(float intensity) { rgbSplitParam_->intensity = intensity; }
+
 private: // プライベートメンバー関数
 
   // レンダーテクスチャの初期化
@@ -130,6 +134,9 @@ private: // プライベートメンバー関数
 
   // BWFilterParamを生成
   void CreateBWFilterParam();
+
+  // RGBSplitParamを生成
+  void CreateRGBSplitParam();
 
   // パラメーターリソースの設定
   void SetParamResource(const std::string& effectName);
@@ -198,6 +205,7 @@ private: // メンバ変数
   Microsoft::WRL::ComPtr<ID3D12Resource> radialBlurParamResource_;
   Microsoft::WRL::ComPtr<ID3D12Resource> cameraForGPUResource_;
   Microsoft::WRL::ComPtr<ID3D12Resource> BWFilterParamResource_;
+  Microsoft::WRL::ComPtr<ID3D12Resource> rgbSplitParamResource_;
 
   // パラメーターデータ
   VignetteParam* vignetteParam_;
@@ -209,4 +217,5 @@ private: // メンバ変数
   RadialBlurParam* radialBlurParam_;
   CameraForGPU* cameraForGPU_;
   BWFilterParam* BWFilterParam_;
+  RGBSplitParam* rgbSplitParam_;
 };
