@@ -49,8 +49,10 @@ private: // メンバ変数
 
   bool FPSWindowVisible = true;
   bool PostEffectWindowVisible = false;
+  Vector3 cameraPos{ 0.0f, 0.0f, 0.0f };
+  Vector3 cameraRotate{ 0.0f, 0.0f, 0.0f };
 
-	enum PostEffectType
+  enum PostEffectType
 	{
 		NoEffect,
 		VignetteRed,

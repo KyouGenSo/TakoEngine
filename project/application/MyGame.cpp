@@ -216,7 +216,14 @@ void MyGame::Draw()
     ImGui::End();
   }
 
-
+  ImGui::Begin("Cemera");
+  ImGui::Text("Camera Settings");
+  ImGui::DragFloat3("CameraPosition", &cameraPos.x, 0.01f);
+  ImGui::DragFloat3("CameraRotation", &cameraRotate.x, 0.01);
+  defaultCamera_->SetTranslate(cameraPos);
+  defaultCamera_->SetRotate(cameraRotate);
+  ImGui::End();
+  
 	// PostEffectのパラメータ調整
   if (PostEffectWindowVisible) {
     ImGui::Begin("PostEffect", &PostEffectWindowVisible);
