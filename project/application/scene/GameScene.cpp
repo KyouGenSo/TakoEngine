@@ -31,23 +31,7 @@ void GameScene::Initialize()
   ///              初期化処理              ///
   /// ================================== ///
 
-  object3d_ = new Object3d();
-  object3d_->Initialize();
-  object3d_->SetModel("terrain.obj");
 
-  // y軸90度回転
-  Vector3 rotate = { .x = 0.0f, .y = DirectX::XMConvertToRadians(90.0f), .z = 0.0f };
-  object3d_->SetRotate(rotate);
-
-  modelPos_ = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
-
-  object3d2_ = new Object3d();
-  object3d2_->Initialize();
-  object3d2_->SetModel("sneakWalk.gltf", true, true);
-  modelRotate2_ = { .x = 0.0f, .y = DirectX::XMConvertToRadians(180.0f), .z = 0.0f };
-  object3d2_->SetRotate(rotate);
-
-  modelPos2_ = { .x = 0.0f, .y = 6.7f, .z = -24.0f };
 
   GPUParticle* particleSystem = GPUParticle::GetInstance();
 
@@ -67,35 +51,6 @@ void GameScene::Initialize()
     .lifeTimeRange = {.x = 0.0f, .y = 0.0f}
   };
 
-  boxEmitterSett_ = {
-    .position = {.x = 0.0f, .y = 5.0f, .z = 0.0f },
-    .size = {.x = 0.3f, .y = 0.3f, .z = 0.3f }, // y値をしっかり初期化
-    .rotation = {.x = 0.0f, .y = 0.0f, .z = 0.0f },
-    .count = 10,
-    .frequency = 0.5f,
-    .scaleRangeX = {.x = 0.0f, .y = 0.0f},
-    .scaleRangeY = {.x = 0.0f, .y = 0.0f},
-    .velRangeX = {.x = -0.0f, .y = 0.0f},
-    .velRangeY = {.x = -0.0f, .y = 0.0f},
-    .velRangeZ = {.x = -0.0f, .y = 0.0f},
-    .lifeTimeRange = {.x = 1.0f, .y = 3.0f}
-
-  };
-
-  triEmitterSett_ = {
-    .position = {.x = 0.0f, .y = 0.0f, .z = 0.0f },
-    .v1 = {.x = 0.0f, .y = 0.0f, .z = 1.0f },
-    .v2 = {.x = 1.0f, .y = 0.0f, .z = 0.0f },
-    .v3 = {.x = 0.0f, .y = 1.0f, .z = 0.0f },
-    .count = 10,
-    .frequency = 0.1f,
-    .scaleRangeX = {.x = 0.0f, .y = 0.0f},
-    .scaleRangeY = {.x = 0.0f, .y = 0.0f},
-    .velRangeX = {.x = -0.0f, .y = 0.0f},
-    .velRangeY = {.x = -0.0f, .y = 0.0f},
-    .velRangeZ = {.x = -0.0f, .y = 0.0f},
-    .lifeTimeRange = {.x = 1.0f, .y = 3.0f}
-  };
 
   isRandomRotateZ = true;
   isActive = true;
@@ -139,16 +94,10 @@ void GameScene::Update()
   ///              更新処理               ///
   /// ================================== ///
 
-  object3d_->SetScale(modelScale_);
-  object3d_->SetTranslate(modelPos_);
-  object3d_->SetRotate(modelRotate_);
 
-  object3d2_->SetScale(modelScale2_);
-  object3d2_->SetTranslate(modelPos2_);
-  object3d2_->SetRotate(modelRotate2_);
 
-  object3d_->Update();
-  object3d2_->Update();
+
+
 
   emitterManager_->Update();
 
@@ -178,28 +127,19 @@ void GameScene::Draw()
 
   
 
-  //--------------------------------------------------//
-
 
   //-------------------Modelの描画-------------------//
   // 3Dモデル共通描画設定
   Object3dBasic::GetInstance()->SetCommonRenderSetting();
-  // モデル描画
-  //object3d2_->Draw();
-  //object3d_->Draw();
 
 
 
-  //-------------------Modelの描画-------------------//
 
 
   //------------------前景Spriteの描画------------------//
   // スプライト共通描画設定
   SpriteBasic::GetInstance()->SetCommonRenderSetting();
 
-
-
-  //--------------------------------------------------//
 }
 
 void GameScene::DrawWithoutEffect()
@@ -238,23 +178,9 @@ void GameScene::DrawWithoutEffect()
 void GameScene::DrawImGui()
 {
 #ifdef _DEBUG
-  ImGui::Begin("object3d");
-  SrvAllocateCount_ = SrvManager::GetInstance()->GetAllocatedCount();
-  ImGui::Text("SRV Allocate Count : %d", SrvAllocateCount_);
-  ImGui::DragFloat3("Scale", &modelScale_.x, 0.01f, 0.1f, 50.0f);
-  ImGui::DragFloat3("Position", &modelPos_.x, 0.01f, -50.0f, 50.0f);
-  ImGui::DragFloat3("Rotate", &modelRotate_.x, 0.01f, DirectX::XMConvertToRadians(-180.0f), DirectX::XMConvertToRadians(180.0f));
-  ImGui::End();
 
-  ImGui::Begin("object3d2");
-  ImGui::DragFloat3("Scale", &modelScale2_.x, 0.01f, 0.1f, 50.0f);
-  ImGui::DragFloat3("Position", &modelPos2_.x, 0.01f, -50.0f, 50.0f);
-  ImGui::DragFloat3("Rotate", &modelRotate2_.x, 0.01f, DirectX::XMConvertToRadians(-180.0f), DirectX::XMConvertToRadians(180.0f));
-  ImGui::End();
 
-  ImGui::Begin("GameTime");
-  ImGui::Text("GameTime : %f", FrameTimer::GetInstance()->GetGameTime());
-  ImGui::End();
+
 
   // ImGui TabでEmitterの設定
   ImGui::Begin("Emitter Setting");
@@ -293,14 +219,7 @@ void GameScene::DrawImGui()
   ImGui::End();
 
 
-  ImGui::Begin("Particle");
-  // Button to remove all TimedEmitters
-  if (ImGui::Button("Remove AllEmitters"))
-  {
-    // Remove all TimedEmitters
-    //emitterManager_->ClearAllTimedEffects();
-    emitterManager_->RemoveAllEmitters();
-  }
+
   ImGui::End();
 
 #endif // DEBUG

@@ -166,6 +166,7 @@
     <ClInclude Include="engine\effect\GPUParticle.h" />
     <ClInclude Include="engine\audio\miniaudio.h" />
     <ClInclude Include="engine\effect\GPUParticleEmitter.h" />
+    <ClInclude Include="engine\effect\PostEffectStruct.h" />
     <ClInclude Include="engine\effect\SphereEmitter.h" />
     <ClInclude Include="engine\io\GlobalVariables.h" />
     <ClInclude Include="engine\math\AABB.h" />

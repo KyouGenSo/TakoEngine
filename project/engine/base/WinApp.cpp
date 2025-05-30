@@ -125,6 +125,15 @@ LRESULT WinApp::WndProc(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	return DefWindowProc(hWnd, msg, wparam, lparam);
 }
 
+void WinApp::SetWindowTitle(const std::wstring& title)
+{
+  // ウィンドウハンドルが有効な場合のみタイトルを変更
+  if (hWnd_ != nullptr)
+  {
+    SetWindowText(hWnd_, title.c_str());
+  }
+}
+
 void WinApp::ToggleFullScreen()
 {
   if (!isFullScreen_)
