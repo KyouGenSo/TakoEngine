@@ -85,6 +85,8 @@ public: // メンバ関数
 
   void SetRadialBlurWidth(float width);
 
+  void SetRadialBlurSampleCount(int32_t count);
+
   void SetBWFilterThreshold(float bwFilterThreshold) { BWFilterParam_->threshold = bwFilterThreshold; }
 
   void SetRGBSplitOffsets(const Vector2& red, const Vector2& green, const Vector2& blue);

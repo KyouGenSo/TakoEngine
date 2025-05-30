@@ -17,9 +17,10 @@
 void MyGame::Initialize()
 {
 
+  winApp_->SetWindowSize(1600, 900);
+
 	TakoFramework::Initialize();
 
-  winApp_->SetWindowSize(1280, 720);
   winApp_->SetWindowTitle(L"TakoEngine Sample Game");
 
 #pragma region 汎用機能初期化-------------------------------------------------------------------------------------------------------------------
@@ -57,10 +58,15 @@ void MyGame::Initialize()
   postEffectParam.downSampleFactor = 8;
   postEffectParam.fogColor = {1.0f, 1.0f, 1.0f, 1.0f};
   postEffectParam.fogDensity = 0.01f;
+
+  postEffectParam.radialBlurCenter = { 0.5f, 0.5f };
+  postEffectParam.radialBlurWidth = 0.01f;
+  postEffectParam.radialBlurSampleCount = 10;
+
   postEffectParam.bwFilterThreshold = 0.5f;
   postEffectParam.rgbSplitIntensity = 1.0f;
-  postEffectParam.redOffset = { 0.005f, 0.0f };
-  postEffectParam.greenOffset = { -0.005f, 0.0f };
+  postEffectParam.redOffset = { 0.01f, 0.0f };
+  postEffectParam.greenOffset = { -0.01f, 0.0f };
   postEffectParam.blueOffset = { 0.0f, 0.0f };
 }
 
@@ -106,42 +112,42 @@ void MyGame::Update()
 	Input::GetInstance()->RefreshGamePadState();
 
 #ifdef _DEBUG
-  switch (postEffectType)
-  {
-  case NoEffect:
-    PostEffect::GetInstance()->SetEffectType("NoEffect");
-    break;
-  case VignetteRed:
-    PostEffect::GetInstance()->SetEffectType("VignetteRed");
-    break;
-  case VignetteRedBloom:
-    PostEffect::GetInstance()->SetEffectType("VignetteRedBloom");
-    break;
-  case GrayScale:
-    PostEffect::GetInstance()->SetEffectType("GrayScale");
-    break;
-  case VigRedGrayScale:
-    PostEffect::GetInstance()->SetEffectType("VigRedGrayScale");
-    break;
-  case Bloom:
-    PostEffect::GetInstance()->SetEffectType("Bloom");
-    break;
-  case NewBloom:
-    PostEffect::GetInstance()->SetEffectType("NewBloom");
-    break;
-  case BloomFog:
-    PostEffect::GetInstance()->SetEffectType("BloomFog");
-    break;
-  case RadialBlur:
-    PostEffect::GetInstance()->SetEffectType("RadialBlur");
-    break;
-  case BWFilter:
-    PostEffect::GetInstance()->SetEffectType("BWFilter");
-    break;
-  case RGBSplit:
-    PostEffect::GetInstance()->SetEffectType("RGBSplit");
-    break;
-  }
+  //switch (postEffectType)
+  //{
+  //case NoEffect:
+  //  PostEffect::GetInstance()->SetEffectType("NoEffect");
+  //  break;
+  //case VignetteRed:
+  //  PostEffect::GetInstance()->SetEffectType("VignetteRed");
+  //  break;
+  //case VignetteRedBloom:
+  //  PostEffect::GetInstance()->SetEffectType("VignetteRedBloom");
+  //  break;
+  //case GrayScale:
+  //  PostEffect::GetInstance()->SetEffectType("GrayScale");
+  //  break;
+  //case VigRedGrayScale:
+  //  PostEffect::GetInstance()->SetEffectType("VigRedGrayScale");
+  //  break;
+  //case Bloom:
+  //  PostEffect::GetInstance()->SetEffectType("Bloom");
+  //  break;
+  //case NewBloom:
+  //  PostEffect::GetInstance()->SetEffectType("NewBloom");
+  //  break;
+  //case BloomFog:
+  //  PostEffect::GetInstance()->SetEffectType("BloomFog");
+  //  break;
+  //case RadialBlur:
+  //  PostEffect::GetInstance()->SetEffectType("RadialBlur");
+  //  break;
+  //case BWFilter:
+  //  PostEffect::GetInstance()->SetEffectType("BWFilter");
+  //  break;
+  //case RGBSplit:
+  //  PostEffect::GetInstance()->SetEffectType("RGBSplit");
+  //  break;
+  //}
 #endif // _DEBUG
 }
 
@@ -161,6 +167,8 @@ void MyGame::Draw()
 
   Draw2D::GetInstance()->Draw();
 
+  GPUParticle::GetInstance()->Draw();
+
 	/// ===================================================== ///
 	/// ------------------ポストエフェクト描画-------------------///
 	/// ===================================================== ///
@@ -176,8 +184,6 @@ void MyGame::Draw()
 
   // シーンの描画
   SceneManager::GetInstance()->DrawWithoutEffect();
-
-  GPUParticle::GetInstance()->Draw();
 
   Transition::GetInstance()->Draw();
 
@@ -227,115 +233,115 @@ void MyGame::Draw()
     ImGui::End();
   }
 
-  ImGui::Begin("Cemera");
-  ImGui::Text("Camera Settings");
-  ImGui::DragFloat3("CameraPosition", &cameraPos.x, 0.01f);
-  ImGui::DragFloat3("CameraRotation", &cameraRotate.x, 0.01);
-  defaultCamera_->SetTranslate(cameraPos);
-  defaultCamera_->SetRotate(cameraRotate);
-  ImGui::End();
+  //ImGui::Begin("Cemera");
+  //ImGui::Text("Camera Settings");
+  //ImGui::DragFloat3("CameraPosition", &cameraPos.x, 0.01f);
+  //ImGui::DragFloat3("CameraRotation", &cameraRotate.x, 0.01);
+  //defaultCamera_->SetTranslate(cameraPos);
+  //defaultCamera_->SetRotate(cameraRotate);
+  //ImGui::End();
   
 	// PostEffectのパラメータ調整
-  if (PostEffectWindowVisible) {
-    ImGui::Begin("PostEffect", &PostEffectWindowVisible);
-    if (ImGui::BeginTabBar("PostEffectTab"))
-    {
+  //if (PostEffectWindowVisible) {
+  //  ImGui::Begin("PostEffect", &PostEffectWindowVisible);
+  //  if (ImGui::BeginTabBar("PostEffectTab"))
+  //  {
 
-      if (ImGui::BeginTabItem("PostEffectType"))
-      {
-        ImGui::RadioButton("NoEffect", (int*)&postEffectType, NoEffect);
-        ImGui::RadioButton("VignetteRed", (int*)&postEffectType, VignetteRed);
-        ImGui::RadioButton("VignetteRedBloom", (int*)&postEffectType, VignetteRedBloom);
-        ImGui::RadioButton("GrayScale", (int*)&postEffectType, GrayScale);
-        ImGui::RadioButton("VigRedGrayScale", (int*)&postEffectType, VigRedGrayScale);
-        ImGui::RadioButton("Bloom", (int*)&postEffectType, Bloom);
-        ImGui::RadioButton("NewBloom", (int*)&postEffectType, NewBloom);
-        ImGui::RadioButton("BloomFog", (int*)&postEffectType, BloomFog);
-        ImGui::RadioButton("RadialBlur", (int*)&postEffectType, RadialBlur);
-        ImGui::RadioButton("BWFilter", (int*)&postEffectType, BWFilter);
-        ImGui::RadioButton("RGBSplit", (int*)&postEffectType, RGBSplit);
+  //    if (ImGui::BeginTabItem("PostEffectType"))
+  //    {
+  //      ImGui::RadioButton("NoEffect", (int*)&postEffectType, NoEffect);
+  //      ImGui::RadioButton("VignetteRed", (int*)&postEffectType, VignetteRed);
+  //      ImGui::RadioButton("VignetteRedBloom", (int*)&postEffectType, VignetteRedBloom);
+  //      ImGui::RadioButton("GrayScale", (int*)&postEffectType, GrayScale);
+  //      ImGui::RadioButton("VigRedGrayScale", (int*)&postEffectType, VigRedGrayScale);
+  //      ImGui::RadioButton("Bloom", (int*)&postEffectType, Bloom);
+  //      ImGui::RadioButton("NewBloom", (int*)&postEffectType, NewBloom);
+  //      ImGui::RadioButton("BloomFog", (int*)&postEffectType, BloomFog);
+  //      ImGui::RadioButton("RadialBlur", (int*)&postEffectType, RadialBlur);
+  //      ImGui::RadioButton("BWFilter", (int*)&postEffectType, BWFilter);
+  //      ImGui::RadioButton("RGBSplit", (int*)&postEffectType, RGBSplit);
 
-        ImGui::EndTabItem();
-      }
+  //      ImGui::EndTabItem();
+  //    }
 
-      //ImGui::Separator();
-      if (ImGui::BeginTabItem("PostEffect"))
-      {
-        if (postEffectType == VignetteRed || postEffectType == VignetteRedBloom || postEffectType == VigRedGrayScale)
-        {
-          ImGui::DragFloat("VignettePower", &postEffectParam.vignettePower, 0.01f, 0.0f, 10.0f);
-          PostEffect::GetInstance()->SetVignettePower(postEffectParam.vignettePower);
-          ImGui::DragFloat("VignetteRange", &postEffectParam.vignetteRange, 0.01f, 0.0f, 100.0f);
-          PostEffect::GetInstance()->SetVignetteRange(postEffectParam.vignetteRange);
-        }
+  //    //ImGui::Separator();
+  //    if (ImGui::BeginTabItem("PostEffect"))
+  //    {
+  //      if (postEffectType == VignetteRed || postEffectType == VignetteRedBloom || postEffectType == VigRedGrayScale)
+  //      {
+  //        ImGui::DragFloat("VignettePower", &postEffectParam.vignettePower, 0.01f, 0.0f, 10.0f);
+  //        PostEffect::GetInstance()->SetVignettePower(postEffectParam.vignettePower);
+  //        ImGui::DragFloat("VignetteRange", &postEffectParam.vignetteRange, 0.01f, 0.0f, 100.0f);
+  //        PostEffect::GetInstance()->SetVignetteRange(postEffectParam.vignetteRange);
+  //      }
 
-        if (postEffectType == VignetteRedBloom)
-        {
-          ImGui::DragFloat("BloomThreshold", &postEffectParam.bloomThreshold, 0.01f, 0.0f, 1.0f);
-          PostEffect::GetInstance()->SetBloomThreshold(postEffectParam.bloomThreshold);
-        }
+  //      if (postEffectType == VignetteRedBloom)
+  //      {
+  //        ImGui::DragFloat("BloomThreshold", &postEffectParam.bloomThreshold, 0.01f, 0.0f, 1.0f);
+  //        PostEffect::GetInstance()->SetBloomThreshold(postEffectParam.bloomThreshold);
+  //      }
 
-        if (postEffectType == Bloom || postEffectType == BloomFog || postEffectType == NewBloom)
-        {
-          ImGui::DragFloat("BloomIntensity", &postEffectParam.bloomIntensity, 0.01f, 0.0f, 10.0f);
-          PostEffect::GetInstance()->SetBloomIntensity(postEffectParam.bloomIntensity);
-          ImGui::DragFloat("BloomThreshold", &postEffectParam.bloomThreshold, 0.01f, 0.0f, 1.0f);
-          PostEffect::GetInstance()->SetBloomThreshold(postEffectParam.bloomThreshold);
-          ImGui::DragFloat("BloomSigma", &postEffectParam.bloomSigma, 0.01f, 0.1f, 50.0f);
-          PostEffect::GetInstance()->SetBloomSigma(postEffectParam.bloomSigma);
-          ImGui::DragInt("BloomKernelSize", &postEffectParam.bloomKernelSize, 1, 1, 100);
-          PostEffect::GetInstance()->SetBloomKernelSize(postEffectParam.bloomKernelSize);
-        }
+  //      if (postEffectType == Bloom || postEffectType == BloomFog || postEffectType == NewBloom)
+  //      {
+  //        ImGui::DragFloat("BloomIntensity", &postEffectParam.bloomIntensity, 0.01f, 0.0f, 10.0f);
+  //        PostEffect::GetInstance()->SetBloomIntensity(postEffectParam.bloomIntensity);
+  //        ImGui::DragFloat("BloomThreshold", &postEffectParam.bloomThreshold, 0.01f, 0.0f, 1.0f);
+  //        PostEffect::GetInstance()->SetBloomThreshold(postEffectParam.bloomThreshold);
+  //        ImGui::DragFloat("BloomSigma", &postEffectParam.bloomSigma, 0.01f, 0.1f, 50.0f);
+  //        PostEffect::GetInstance()->SetBloomSigma(postEffectParam.bloomSigma);
+  //        ImGui::DragInt("BloomKernelSize", &postEffectParam.bloomKernelSize, 1, 1, 100);
+  //        PostEffect::GetInstance()->SetBloomKernelSize(postEffectParam.bloomKernelSize);
+  //      }
 
-        if (postEffectType == BloomFog)
-        {
-          ImGui::ColorEdit4("FogColor", &postEffectParam.fogColor.x);
-          PostEffect::GetInstance()->SetFogColor(postEffectParam.fogColor);
-          ImGui::DragFloat("FogDensity", &postEffectParam.fogDensity, 0.01f, 0.0f, 1.0f);
-          PostEffect::GetInstance()->SetFogDensity(postEffectParam.fogDensity);
-        }
+  //      if (postEffectType == BloomFog)
+  //      {
+  //        ImGui::ColorEdit4("FogColor", &postEffectParam.fogColor.x);
+  //        PostEffect::GetInstance()->SetFogColor(postEffectParam.fogColor);
+  //        ImGui::DragFloat("FogDensity", &postEffectParam.fogDensity, 0.01f, 0.0f, 1.0f);
+  //        PostEffect::GetInstance()->SetFogDensity(postEffectParam.fogDensity);
+  //      }
 
-        if (postEffectType == RadialBlur)
-        {
-          ImGui::DragFloat2("RadialBlurCenter", &postEffectParam.radialBlurCenter.x, 0.01f, 0.0f, 1.0f);
-          PostEffect::GetInstance()->SetRadialBlurCenter(postEffectParam.radialBlurCenter);
-          ImGui::DragFloat("RadialBlurWidth", &postEffectParam.radialBlurWidth, 0.01f, 0.0f, 1.0f);
-          PostEffect::GetInstance()->SetRadialBlurWidth(postEffectParam.radialBlurWidth);
-          ImGui::DragInt("RadialBlurSampleCount", &postEffectParam.radialBlurSampleCount, 1.0f, 1, 100);
-          PostEffect::GetInstance()->SetBloomSampleCount(postEffectParam.radialBlurSampleCount);
-        }
+  //      if (postEffectType == RadialBlur)
+  //      {
+  //        ImGui::DragFloat2("RadialBlurCenter", &postEffectParam.radialBlurCenter.x, 0.01f, 0.0f, 1.0f);
+  //        PostEffect::GetInstance()->SetRadialBlurCenter(postEffectParam.radialBlurCenter);
+  //        ImGui::DragFloat("RadialBlurWidth", &postEffectParam.radialBlurWidth, 0.01f, 0.0f, 1.0f);
+  //        PostEffect::GetInstance()->SetRadialBlurWidth(postEffectParam.radialBlurWidth);
+  //        ImGui::DragInt("RadialBlurSampleCount", &postEffectParam.radialBlurSampleCount, 1.0f, 1, 100);
+  //        PostEffect::GetInstance()->SetRadialBlurSampleCount(postEffectParam.radialBlurSampleCount);
+  //      }
 
-        if (postEffectType == NewBloom)
-        {
-          ImGui::DragInt("BloomSampleCount", &postEffectParam.bloomSampleCount, 1, 1, 100);
-          PostEffect::GetInstance()->SetBloomSampleCount(postEffectParam.bloomSampleCount);
-        }
+  //      if (postEffectType == NewBloom)
+  //      {
+  //        ImGui::DragInt("BloomSampleCount", &postEffectParam.bloomSampleCount, 1, 1, 100);
+  //        PostEffect::GetInstance()->SetBloomSampleCount(postEffectParam.bloomSampleCount);
+  //      }
 
-        if (postEffectType == BWFilter)
-        {
-          ImGui::DragFloat("BWFilterThreshold", &postEffectParam.bwFilterThreshold, 0.01f, 0.0f, 1.0f);
-          PostEffect::GetInstance()->SetBWFilterThreshold(postEffectParam.bwFilterThreshold);
-        }
+  //      if (postEffectType == BWFilter)
+  //      {
+  //        ImGui::DragFloat("BWFilterThreshold", &postEffectParam.bwFilterThreshold, 0.01f, 0.0f, 1.0f);
+  //        PostEffect::GetInstance()->SetBWFilterThreshold(postEffectParam.bwFilterThreshold);
+  //      }
 
-        if (postEffectType == RGBSplit)
-        {
-          ImGui::DragFloat("RGBSplitIntensity", &postEffectParam.rgbSplitIntensity, 0.01f, 0.0f, 1.0f);
-          PostEffect::GetInstance()->SetRGBSplitIntensity(postEffectParam.rgbSplitIntensity);
-          ImGui::DragFloat2("RedOffset", &postEffectParam.redOffset.x, 0.001f, -1.0f, 1.0f);
-          ImGui::DragFloat2("GreenOffset", &postEffectParam.greenOffset.x, 0.001f, -1.0f, 1.0f);
-          ImGui::DragFloat2("BlueOffset", &postEffectParam.blueOffset.x, 0.001f, -1.0f, 1.0f);
-          PostEffect::GetInstance()->SetRGBSplitOffsets(postEffectParam.redOffset, postEffectParam.greenOffset, postEffectParam.blueOffset);
-        }
+  //      if (postEffectType == RGBSplit)
+  //      {
+  //        ImGui::DragFloat("RGBSplitIntensity", &postEffectParam.rgbSplitIntensity, 0.01f, 0.0f, 1.0f);
+  //        PostEffect::GetInstance()->SetRGBSplitIntensity(postEffectParam.rgbSplitIntensity);
+  //        ImGui::DragFloat2("RedOffset", &postEffectParam.redOffset.x, 0.001f, -1.0f, 1.0f);
+  //        ImGui::DragFloat2("GreenOffset", &postEffectParam.greenOffset.x, 0.001f, -1.0f, 1.0f);
+  //        ImGui::DragFloat2("BlueOffset", &postEffectParam.blueOffset.x, 0.001f, -1.0f, 1.0f);
+  //        PostEffect::GetInstance()->SetRGBSplitOffsets(postEffectParam.redOffset, postEffectParam.greenOffset, postEffectParam.blueOffset);
+  //      }
 
-        ImGui::EndTabItem();
-      }
+  //      ImGui::EndTabItem();
+  //    }
 
-      ImGui::EndTabBar();
-    }
+  //    ImGui::EndTabBar();
+  //  }
 
 
-    ImGui::End();
-  }
+  //  ImGui::End();
+  //}
 
 	imguiManager_->End();
 

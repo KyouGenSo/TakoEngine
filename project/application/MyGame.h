@@ -57,7 +57,7 @@ private: // メンバ変数
 
   PostEffectParam postEffectParam;
 
-  bool FPSWindowVisible = true;
+  bool FPSWindowVisible = false;
   bool PostEffectWindowVisible = false;
   Vector3 cameraPos{ 0.0f, 0.0f, 0.0f };
   Vector3 cameraRotate{ 0.0f, 0.0f, 0.0f };

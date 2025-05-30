@@ -20,7 +20,8 @@ struct SphereEmitterParams
   Vector4 endColor = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
 
   bool isActive = true;
-  bool isNormalize;
+  bool isNormalize = false;
+  bool isRandomRotateZ = false;
 };
 
 // boxEmitterの設定

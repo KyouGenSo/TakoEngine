@@ -580,6 +580,11 @@ void PostEffect::SetRadialBlurWidth(float width)
   radialBlurParam_->blurWidth = width;
 }
 
+void PostEffect::SetRadialBlurSampleCount(int32_t count)
+{
+  radialBlurParam_->sampleCount = count;
+}
+
 void PostEffect::SetRGBSplitOffsets(const Vector2& red, const Vector2& green, const Vector2& blue)
 {
   rgbSplitParam_->redOffset = red;

@@ -36,54 +36,43 @@ public: // メンバ関数
 
 private: // メンバ変数
 
-  // スポットライトデータ
-  struct SpotLight
-  {
-    Vector4 color;
-    Vector3 position;
-    float intensity;
-    Vector3 direction;
-    float distance;
-    float decay;
-    float cosAngle;
-    bool enable;
-  };
-
-  // 点光源データ
-  struct PointLight
-  {
-    Vector4 color;
-    Vector3 position;
-    float intensity;
-    float radius;
-    float decay;
-    bool enable;
-  };
-
-  Object3d* object3d_ = nullptr;
-  Object3d* object3d2_ = nullptr;
+  std::unique_ptr <Object3d> object3d_ = nullptr;
 
   bool isDebug_ = false;
-
-  uint32_t SrvAllocateCount_ = 0;
 
   // モデルの設定
   Vector3 modelScale_ = { .x = 1.0f, .y = 1.0f, .z = 1.0f };
   Vector3 modelPos_ = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
   Vector3 modelRotate_ = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
 
-  Vector3 modelScale2_ = { .x = 1.0f, .y = 1.0f, .z = 1.0f };
-  Vector3 modelPos2_ = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
-  Vector3 modelRotate2_ = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
-
-    // エミッター管理
+  // エミッター管理
   std::unique_ptr<EmitterManager> emitterManager_;
 
   // エミッター設定
-  SphereEmitterParams spEmitterSett_ = {};
-  BoxEmitterParams boxEmitterSett_ = {};
-  TriangleEmitterParams triEmitterSett_ = {};
-  bool isRandomRotateZ = false;
-  bool isActive = true;
+  SphereEmitterParams hitEffect1Sett_ = {};
+  SphereEmitterParams hitEffect2Sett_ = {};
+
+  bool isHitEffect2_ = false;
+  bool isRGBSplt_ = false;
+  bool isRadialBlur_ = false;
+  bool isBWFilter_ = false;
+
+  Vector2 radialBlurCenter{ 0.5f, 0.5f };
+  float radialBlurWidth = 0.0f;
+  int32_t radialBlurSampleCount = 5;
+  float radialBlurWidthSpeed = 0.001f;
+  float radialBlurWidthMax = 0.1f;
+  float radialBlurDuration = 0.5f;
+
+  float bwFilterThreshold = 0.5f;
+  // 白黒フィルターの継続時間
+  float bwFilterDuration = 0.15f;
+
+  float rgbSplitIntensity = 0.f;
+  Vector2 redOffset = { 0.01f, 0.0f };
+  Vector2 greenOffset = { -0.01f, 0.0f };
+  Vector2 blueOffset = { 0.0f, 0.0f };
+  float rgbSplitIntensitySpeed = 0.02f;
+  float rgbSplitIntensityMax = 0.5f;
 
 };
