@@ -21,7 +21,7 @@ void MyGame::Initialize()
 
 	TakoFramework::Initialize();
 
-  winApp_->SetWindowTitle(L"TakoEngine Sample Game");
+  winApp_->SetWindowTitle(L"LE3C_09_キョウ_ゲンソ");
 
 #pragma region 汎用機能初期化-------------------------------------------------------------------------------------------------------------------
 	// 入力クラスの初期化
