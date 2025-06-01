@@ -74,6 +74,7 @@ private: // メンバ変数
   Vector3 modelScale_ = { .x = 1.0f, .y = 1.0f, .z = 1.0f };
   Vector3 modelPos_ = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
   Vector3 modelRotate_ = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
+  Vector4 modelColor_ = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
 
   Vector3 modelScale2_ = { .x = 1.0f, .y = 1.0f, .z = 1.0f };
   Vector3 modelPos2_ = { .x = 0.0f, .y = 0.0f, .z = 0.0f };

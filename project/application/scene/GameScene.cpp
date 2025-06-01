@@ -173,6 +173,7 @@ void GameScene::Update()
   object3d_->SetShininess(shininess_);
   object3d_->SetEnableLighting(isLighting_);
   object3d_->SetEnableHighlight(isHighlight_);
+  object3d_->SetMaterialColor(modelColor_);
 
   object3d2_->SetScale(modelScale2_);
   object3d2_->SetTranslate(modelPos2_);
@@ -298,6 +299,8 @@ void GameScene::DrawImGui()
   ImGui::DragFloat3("Scale", &modelScale_.x, 0.01f, 0.1f, 50.0f);
   ImGui::DragFloat3("Position", &modelPos_.x, 0.01f, -50.0f, 50.0f);
   ImGui::DragFloat3("Rotate", &modelRotate_.x, 0.01f, DirectX::XMConvertToRadians(-180.0f), DirectX::XMConvertToRadians(180.0f));
+  ImGui::ColorEdit4("Model Color", &modelColor_.x);
+
   ImGui::End();
 
   ImGui::Begin("object3d2");
