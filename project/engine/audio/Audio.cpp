@@ -339,6 +339,15 @@ void Audio::SetVolume(uint32_t voiceHandle, float volume)
   voiceDatas_.at(voiceHandle)->SetVolume(volume);
 }
 
+void Audio::SetAllVolume(float volume)
+{
+  // マスターボイスの音量を設定（全ての音声出力に影響）
+  if (masterVoice_ != nullptr)
+  {
+    masterVoice_->SetVolume(volume);
+  }
+}
+
 void Audio::SetPitch(uint32_t voiceHandle, float pitch)
 {
   voiceDatas_.at(voiceHandle)->SetFrequencyRatio(pitch);

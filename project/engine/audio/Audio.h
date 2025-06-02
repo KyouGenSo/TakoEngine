@@ -105,6 +105,7 @@ public:
 	/// 音量の設定
 	/// </summary>
 	void SetVolume(uint32_t voiceHandle, float volume);
+  void SetAllVolume(float volume);
 
 	/// <summary>
 	/// ピッチの設定
