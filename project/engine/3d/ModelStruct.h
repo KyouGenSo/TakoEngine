@@ -74,6 +74,8 @@ struct Material
     float shininess;
     bool enableHighlight;
     float padding2[3];
+    bool enableEnvMap;
+    float padding3[3];
 };
 
 // アニメーションデータたち

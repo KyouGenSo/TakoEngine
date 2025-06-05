@@ -3,6 +3,7 @@
 #include<wrl.h>
 #include "Matrix4x4.h"
 #include "Light.h"
+#include "SkyBox.h"
 
 class DX12Basic;
 
@@ -70,7 +71,6 @@ public: // メンバー関数
   void SetPointLightRadius(float radius, int index) { light_->SetPointLightRadius(radius, index); }
   void SetPointLightDecay(float decay, int index) { light_->SetPointLightDecay(decay, index); }
   void SetPointLightEnable(bool enable, int index) { light_->SetPointLightEnable(enable, index); }
-
 
 	// SpotLight
 	void SetSpotLight(const Vector3& position, const Vector3& direction, const Vector4& color, float intensity, float distance, float decay, float cosAngle, bool enable, int index);

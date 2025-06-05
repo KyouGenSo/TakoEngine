@@ -127,7 +127,7 @@ void GameScene::Initialize()
   emitterManager_->AddToGroup("group1", "box");
   emitterManager_->AddToGroup("group1", "triangle");
 
-  isActive_ = true;
+  isActive_ = false;
   emitterManager_->SetGroupActive("group1", isActive_);
 
   groupPosition_ = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
@@ -203,7 +203,7 @@ void GameScene::Update()
   emitterManager_->SetEmitterLifeTimeRange("box", boxEmitterSett_.lifeTimeRange);
   emitterManager_->SetEmitterLifeTimeRange("triangle", triEmitterSett_.lifeTimeRange);
 
-  emitterManager_->SetGroupPosition("group1", groupPosition_);
+  //emitterManager_->SetGroupPosition("group1", groupPosition_);
   emitterManager_->SetGroupActive("group1", isActive_);
 
   sprite_->Update();
@@ -225,7 +225,7 @@ void GameScene::Draw()
   ///              描画処理               ///
   /// ================================== ///
 
-  //skyBox_->Draw();
+  skyBox_->Draw();
 
   //------------------背景Spriteの描画------------------//
   // スプライト共通描画設定

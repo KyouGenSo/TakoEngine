@@ -282,6 +282,22 @@ void Model::SetUvTransform(const Transform& uvTransform)
   }
 }
 
+void Model::SetEnvironmentTexture(uint32_t textureIndex)
+{
+  for (auto& mesh : meshes_)
+  {
+    mesh->SetEnvironmentTexture(textureIndex);
+  }
+}
+
+void Model::SetEnableEnvMap(bool enableEnvMap)
+{
+  for (auto& mesh : meshes_)
+  {
+    mesh->SetEnableEnvMap(enableEnvMap);
+  }
+}
+
 void Model::ProcessNodeHierarchy(const Node& node, const Matrix4x4& parentGlobalMatrix, Matrix4x4 world, Matrix4x4 viewProjection)
 {
   // このノードのグローバル行列を計算（親の変換を適用）

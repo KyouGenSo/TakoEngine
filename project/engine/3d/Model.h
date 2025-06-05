@@ -60,6 +60,8 @@ public: // メンバー関数
   void SetEnableHighlight(bool enableHighlight);
   void SetMaterialColor(const Vector4& color);
   void SetUvTransform(const Transform& uvTransform);
+  void SetEnvironmentTexture(uint32_t textureIndex);
+  void SetEnableEnvMap(bool enableEnvMap);
 
 private: // プライベートメンバー関数
   /// <summary>

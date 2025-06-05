@@ -47,6 +47,8 @@ public: // メンバー関数
   void SetEnableLighting(bool enableLighting) { materialData_->enableLighting = enableLighting; }
   void SetEnableHighlight(bool enableHighlight) { materialData_->enableHighlight = enableHighlight; }
   void SetMaterialColor(const Vector4& color) { materialData_->color = color; }
+  void SetEnvironmentTexture(uint32_t envTextureIndex) { envTextureIndex_ = envTextureIndex; }
+  void SetEnableEnvMap(bool enableEnvMap) { materialData_->enableEnvMap = enableEnvMap; }
   void SetUvTransform(const Transform& transform)
   {
     materialData_->uvTransform = Mat4x4::MakeAffine(transform.scale, transform.rotate, transform.translate);
@@ -100,6 +102,7 @@ private: // プライベートメンバー関数
 
   // SRVインデックス
   uint32_t vertexSrvIndex_ = 0;
+  uint32_t envTextureIndex_ = 0;
 
   //-----------------スキニング関連--------------------//
       // スキニング関連のメンバ変数

@@ -7,6 +7,7 @@ struct Material
     float4x4 uvTransform;
     float shininess;
     int enableHighlight;
+    int enableEnvMap;
 };
 
 struct DirectionalLight
@@ -58,13 +59,14 @@ struct PixelShaderOutput
 ConstantBuffer<Material> gMaterial : register(b0);
 ConstantBuffer<DirectionalLight> gDirectionalLight : register(b1);
 ConstantBuffer<Camera> gCamera : register(b2);
-//ConstantBuffer<SpotLight> gSpotLight : register(b4);
 
 Texture2D<float4> gTexture : register(t0);
 SamplerState gSampler : register(s0);
 
 StructuredBuffer<PointLight> gPointLights : register(t1);
 StructuredBuffer<SpotLight> gSpotLight : register(t2);
+
+TextureCube<float4> gEnvironmentMap : register(t3); // Optional, if environment mapping is used
 
 PixelShaderOutput main(VertexShaderOutput input)
 {

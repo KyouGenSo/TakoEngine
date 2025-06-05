@@ -52,7 +52,8 @@ public: // メンバ変数
     textureIndex_ = TextureManager::GetInstance()->GetSRVIndex(texturePath);
   }
 
-
+  //---------------------Getter---------------------//
+  uint32_t GetTextureIndex() const { return textureIndex_; }
 
 private: // プライベートメンバー関数
   // RootSignatureを生成

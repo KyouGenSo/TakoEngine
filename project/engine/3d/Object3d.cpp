@@ -4,6 +4,7 @@
 #include "Model.h"
 #include"ModelManager.h"
 #include"Camera.h"
+#include "SrvManager.h"
 
 Object3d::~Object3d()
 {
@@ -77,6 +78,13 @@ void Object3d::Draw()
 	// シェーダー用カメラデータの場所を設定
 	Object3dBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(4, cameraForGPUResource_->GetGPUVirtualAddress());
 
+  if (Object3dBasic::GetInstance()->GetHasSkyBox())
+  {
+    // スカイボックスの描画
+    uint32_t skyBoxIndex = Object3dBasic::GetInstance()->GetSkyBoxTextureIndex();
+    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(8, skyBoxIndex);
+  }
+
 	// モデルの描画
 	if (m_model_)
 	{
@@ -132,6 +140,22 @@ void Object3d::SetEnableHighlight(bool enableHighlight)
 	{
 		m_model_->SetEnableHighlight(enableHighlight);
 	}
+}
+
+void Object3d::SetEnableEnvMap(bool enableEnvMap)
+{
+  if (m_model_)
+  {
+    m_model_->SetEnableEnvMap(enableEnvMap);
+  }
+}
+
+void Object3d::SetEnvironmentTexture(uint32_t textureIndex)
+{
+  if (m_model_)
+  {
+    m_model_->SetEnvironmentTexture(textureIndex);
+  }
 }
 
 void Object3d::CreateTransformationMatrixData()

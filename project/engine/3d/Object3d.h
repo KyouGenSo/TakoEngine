@@ -64,11 +64,13 @@ public: // メンバー関数
 	void SetTranslate(const Vector3& translate) { transform_.translate = translate; }
   void SetMaterialColor(const Vector4& color);
   void SetUvTransform(const Transform& uvTransform);
+  void SetEnvironmentTexture(uint32_t textureIndex);
 
 	// ライトの設定
 	void SetShininess(float shininess);
 	void SetEnableLighting(bool enableLighting);
 	void SetEnableHighlight(bool enableHighlight);
+  void SetEnableEnvMap(bool enableEnvMap);
 
 private: // プライベートメンバー関数
 	///<summary>

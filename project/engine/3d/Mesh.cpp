@@ -285,6 +285,7 @@ void Mesh::CreateMaterialData()
   materialData_->enableHighlight = true;
   materialData_->uvTransform = Mat4x4::MakeIdentity();
   materialData_->shininess = 15.0f;
+  materialData_->enableEnvMap = false;
 }
 
 void Mesh::CreateTransformation()

@@ -111,26 +111,37 @@ void Object3dBasic::CreateRootSignature()
 	descriptionRootSignature.NumStaticSamplers = _countof(samplerDesc);
 
 	// DescriptorRangeの設定。
+  // Texture
 	D3D12_DESCRIPTOR_RANGE descriptorRange[1] = {};
 	descriptorRange[0].BaseShaderRegister = 0; // レジスタ番号
 	descriptorRange[0].NumDescriptors = 1; // ディスクリプタ数
 	descriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
 	descriptorRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
 
+  // PointLight
 	D3D12_DESCRIPTOR_RANGE descriptorRangeForPointLight[1] = {};
 	descriptorRangeForPointLight[0].BaseShaderRegister = 1; // レジスタ番号
 	descriptorRangeForPointLight[0].NumDescriptors = 1; // ディスクリプタ数
 	descriptorRangeForPointLight[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
 	descriptorRangeForPointLight[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
 
+  // SpotLight
 	D3D12_DESCRIPTOR_RANGE descriptorRangeForSpotLight[1] = {};
 	descriptorRangeForSpotLight[0].BaseShaderRegister = 2; // レジスタ番号
 	descriptorRangeForSpotLight[0].NumDescriptors = 1; // ディスクリプタ数
 	descriptorRangeForSpotLight[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
 	descriptorRangeForSpotLight[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
 
+  // EnvironmentMap
+  D3D12_DESCRIPTOR_RANGE descriptorRangeForEnvironmentMap[1] = {};
+  descriptorRangeForEnvironmentMap[0].BaseShaderRegister = 3; // レジスタ番号
+  descriptorRangeForEnvironmentMap[0].NumDescriptors = 1; // ディスクリプタ数
+  descriptorRangeForEnvironmentMap[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
+  descriptorRangeForEnvironmentMap[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+
+
 	// RootParameterの設定。複数設定できるので配列
-	D3D12_ROOT_PARAMETER rootParameters[8] = {};
+	D3D12_ROOT_PARAMETER rootParameters[9] = {};
 
 	// Material
 	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
@@ -174,6 +185,12 @@ void Object3dBasic::CreateRootSignature()
 	rootParameters[7].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
 	rootParameters[7].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
 	rootParameters[7].Descriptor.ShaderRegister = 3; // レジスタ番号とバインド
+
+  // EnvironmentMap
+  rootParameters[8].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
+  rootParameters[8].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+  rootParameters[8].DescriptorTable.pDescriptorRanges = descriptorRangeForEnvironmentMap; // ディスクリプタレンジを設定
+  rootParameters[8].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForEnvironmentMap); // レンジの数
 
 	descriptionRootSignature.pParameters = rootParameters;
 	descriptionRootSignature.NumParameters = _countof(rootParameters);
