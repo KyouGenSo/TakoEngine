@@ -65,6 +65,7 @@ public: // メンバー関数
   void SetMaterialColor(const Vector4& color);
   void SetUvTransform(const Transform& uvTransform);
   void SetEnvironmentTexture(uint32_t textureIndex);
+  void SetEnvMapCoefficient(float coefficient);
 
 	// ライトの設定
 	void SetShininess(float shininess);

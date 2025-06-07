@@ -68,14 +68,13 @@ struct SkinnigModelData {
 struct Material
 {
     Vector4 color;
-    bool enableLighting;
+    int32_t enableLighting;
     float padding1[3];
     Matrix4x4 uvTransform;
     float shininess;
-    bool enableHighlight;
-    float padding2[3];
-    bool enableEnvMap;
-    float padding3[3];
+    float envMapCoefficient;
+    int32_t enableHighlight;
+    int32_t enableEnvMap;
 };
 
 // アニメーションデータたち

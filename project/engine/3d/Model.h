@@ -62,6 +62,7 @@ public: // メンバー関数
   void SetUvTransform(const Transform& uvTransform);
   void SetEnvironmentTexture(uint32_t textureIndex);
   void SetEnableEnvMap(bool enableEnvMap);
+  void SetEnvMapCoefficient(float coefficient);
 
 private: // プライベートメンバー関数
   /// <summary>

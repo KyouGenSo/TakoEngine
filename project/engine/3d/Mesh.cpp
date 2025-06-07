@@ -51,6 +51,12 @@ void Mesh::Draw()
   // テクスチャを設定
   SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, textureData_.textureIndex);
 
+  // 環境マップを使用する場合の設定
+  if (materialData_->enableEnvMap) {
+    // 環境マップのテクスチャを設定
+    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(8, envTextureIndex_);
+  }
+
   // 描画
   dx12_->GetCommandList()->DrawIndexedInstanced(static_cast<UINT>(indices_.size()), 1, 0, 0, 0);
 
@@ -285,6 +291,7 @@ void Mesh::CreateMaterialData()
   materialData_->enableHighlight = true;
   materialData_->uvTransform = Mat4x4::MakeIdentity();
   materialData_->shininess = 15.0f;
+  materialData_->envMapCoefficient = 1.f;
   materialData_->enableEnvMap = false;
 }
 

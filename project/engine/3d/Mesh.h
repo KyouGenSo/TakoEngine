@@ -48,7 +48,8 @@ public: // メンバー関数
   void SetEnableHighlight(bool enableHighlight) { materialData_->enableHighlight = enableHighlight; }
   void SetMaterialColor(const Vector4& color) { materialData_->color = color; }
   void SetEnvironmentTexture(uint32_t envTextureIndex) { envTextureIndex_ = envTextureIndex; }
-  void SetEnableEnvMap(bool enableEnvMap) { materialData_->enableEnvMap = enableEnvMap; }
+  void SetEnableEnvMap(bool enableEnvMap) { materialData_->enableEnvMap = static_cast<int32_t>(enableEnvMap); }
+  void SetEnvMapCoefficient(float coefficient) { materialData_->envMapCoefficient = coefficient; }
   void SetUvTransform(const Transform& transform)
   {
     materialData_->uvTransform = Mat4x4::MakeAffine(transform.scale, transform.rotate, transform.translate);

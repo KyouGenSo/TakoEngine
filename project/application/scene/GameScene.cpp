@@ -50,6 +50,7 @@ void GameScene::Initialize()
   object3d2_->SetModel("sneakWalk.gltf", true, true);
   modelRotate2_ = { .x = 0.0f, .y = DirectX::XMConvertToRadians(180.0f), .z = 0.0f };
   object3d2_->SetRotate(rotate);
+  object3d2_->SetEnvironmentTexture(skyBox_->GetTextureIndex());
 
   modelPos2_ = { .x = 0.0f, .y = 6.7f, .z = -24.0f };
 
@@ -181,6 +182,8 @@ void GameScene::Update()
   object3d2_->SetShininess(shininess_);
   object3d2_->SetEnableLighting(isLighting_);
   object3d2_->SetEnableHighlight(isHighlight_);
+  object3d2_->SetEnableEnvMap(enableEnvMap);
+  object3d2_->SetEnvMapCoefficient(envMapCoefficient_);
 
   object3d_->Update();
   object3d2_->Update();
@@ -318,6 +321,11 @@ void GameScene::DrawImGui()
   ImGui::ColorEdit4("Color", &lightColor_.x);
   ImGui::Checkbox("Lighting", &isLighting_);
   ImGui::Checkbox("Highlight", &isHighlight_);
+  ImGui::Checkbox("EnvMap", &enableEnvMap);
+  if (enableEnvMap)
+  {
+    ImGui::DragFloat("EnvMap Coefficient", &envMapCoefficient_, 0.01f, 0.0f, 1.0f);
+  }
   ImGui::End();
 
   ImGui::Begin("GameTime");

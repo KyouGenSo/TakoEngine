@@ -6,6 +6,7 @@ struct Material
     int enableLighting;
     float4x4 uvTransform;
     float shininess;
+    float envMapCoefficient;
     int enableHighlight;
     int enableEnvMap;
 };
@@ -74,7 +75,6 @@ PixelShaderOutput main(VertexShaderOutput input)
     
     float4 transformedUV = mul(float4(input.texcoord, 0, 1), gMaterial.uvTransform);
     float4 texColor = gTexture.Sample(gSampler, transformedUV.xy);
-    
     
     if (gMaterial.enableLighting != 0)
     {
@@ -181,10 +181,29 @@ PixelShaderOutput main(VertexShaderOutput input)
         }
         
         output.color.a = gMaterial.color.a * texColor.a;
+
+        if (gMaterial.enableEnvMap != 0)
+        {
+        // 環境マッピングを適用
+            float3 cameraToPos = normalize(input.worldPos - gCamera.worldPos);
+            float3 refelectedVector = reflect(cameraToPos, normalize(input.normal));
+            float4 environmentColor = gEnvironmentMap.Sample(gSampler, refelectedVector);
+
+            output.color.rgb += environmentColor.rgb * gMaterial.envMapCoefficient;
+        }
     }
     else
     {
         output.color = texColor * gMaterial.color;
+        if (gMaterial.enableEnvMap != 0)
+        {
+        // 環境マッピングを適用
+            float3 cameraToPos = normalize(input.worldPos - gCamera.worldPos);
+            float3 refelectedVector = reflect(cameraToPos, normalize(input.normal));
+            float4 environmentColor = gEnvironmentMap.Sample(gSampler, refelectedVector);
+
+            output.color.rgb += environmentColor.rgb * gMaterial.envMapCoefficient;
+        }
     }
     
     return output;

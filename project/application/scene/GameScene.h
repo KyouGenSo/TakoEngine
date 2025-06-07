@@ -82,8 +82,10 @@ private: // メンバ変数
 
   // 平行光源の設定
   float shininess_ = 100.0f;
+  float envMapCoefficient_ = 1.0f;
   bool isLighting_ = true;
   bool isHighlight_ = true;
+  bool enableEnvMap = true;
   Vector4 lightColor_ = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
   Vector3 lightDirection_ = { .x = 0.0f, .y = -1.0f, .z = 0.0f };
   float lightIntensity_ = 1.0f;
