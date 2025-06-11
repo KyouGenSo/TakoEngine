@@ -55,6 +55,8 @@ void PostEffect::Initialize(DX12Basic* dx12)
 
   CreatePSO("RGBSplit");
 
+  CreatePSO("LuminanceBasedOutline");
+
   CreateVignetteParam();
 
   CreateVignetteRedBloomParam();
@@ -1007,7 +1009,7 @@ void PostEffect::SetParamResource(const std::string& effectName)
   {
     m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, rgbSplitParamResource_->GetGPUVirtualAddress());
   }
-  else if (effectName == "GrayScale" || effectName == "NoEffect")
+  else if (effectName == "GrayScale" || effectName == "NoEffect" || effectName == "LuminanceBasedOutline")
   {
     // グレースケール, ノーエフェクトの場合は何もしない
   }

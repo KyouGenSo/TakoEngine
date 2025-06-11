@@ -73,6 +73,7 @@ private: // メンバ変数
     RadialBlur,
     BWFilter,
     RGBSplit,
+    LuminanceBasedOutline,
 	};
 
 	PostEffectType postEffectType = NoEffect;

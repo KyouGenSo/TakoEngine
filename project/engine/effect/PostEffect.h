@@ -50,95 +50,49 @@ public: // メンバ関数
   // レンダーテクスチャの再作成
   void RecreateRenderTexture(uint32_t width, uint32_t height);
 
+  // -----------------------------------Getters-----------------------------------//
+  // レンダーテクスチャの取得
+  ID3D12Resource* GetRenderTextureResource() { return originRenderTexResource_.Get(); }
+
+  // -----------------------------------Setters-----------------------------------//
+  void SetEffectType(std::string effectName) { currentEffectName_ = effectName; }
+  void SetVignettePower(float power);
+  void SetVignetteRange(float range);
+  void SetBloomThreshold(float threshold);
+  void SetBloomIntensity(float intensity);
+  void SetBloomSigma(float sigma);
+  void SetBloomKernelSize(int kernelSize);
+  void SetBloomSampleCount(int32_t count);
+  void SetDownSampleFactor(int factor);
+  void SetBloomIteration(int iteration) { bloomIteration_ = iteration; }
+  void SetFogColor(const Vector4& color);
+  void SetFogDensity(float density);
+  void SetRadialBlurCenter(const Vector2& center);
+  void SetRadialBlurWidth(float width);
+  void SetBWFilterThreshold(float bwFilterThreshold) { BWFilterParam_->threshold = bwFilterThreshold; }
+  void SetRGBSplitOffsets(const Vector2& red, const Vector2& green, const Vector2& blue);
+  void SetRGBSplitIntensity(float intensity) { rgbSplitParam_->intensity = intensity; }
+
   // バリアの設定
   void SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
   void SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter, ID3D12Resource* resource);
 
-  // レンダーテクスチャの取得
-  ID3D12Resource* GetRenderTextureResource() { return originRenderTexResource_.Get(); }
-
-  void SetEffectType(std::string effectName) { currentEffectName_ = effectName; }
-
-  void SetVignettePower(float power);
-
-  void SetVignetteRange(float range);
-
-  void SetBloomThreshold(float threshold);
-
-  void SetBloomIntensity(float intensity);
-
-  void SetBloomSigma(float sigma);
-
-  void SetBloomKernelSize(int kernelSize);
-
-  void SetBloomSampleCount(int32_t count);
-
-  void SetDownSampleFactor(int factor);
-
-  void SetBloomIteration(int iteration) { bloomIteration_ = iteration; }
-
-  void SetFogColor(const Vector4& color);
-
-  void SetFogDensity(float density);
-
-  void SetRadialBlurCenter(const Vector2& center);
-
-  void SetRadialBlurWidth(float width);
-
-  void SetBWFilterThreshold(float bwFilterThreshold) { BWFilterParam_->threshold = bwFilterThreshold; }
-
-  void SetRGBSplitOffsets(const Vector2& red, const Vector2& green, const Vector2& blue);
-
-  void SetRGBSplitIntensity(float intensity) { rgbSplitParam_->intensity = intensity; }
-
 private: // プライベートメンバー関数
 
-  // レンダーテクスチャの初期化
   void CreateRenderTexture();
-
-  // DownSample用のテクスチャを生成
   void CreateBloomTextures();
-
-  // HorizontalBlur用のテクスチャを生成
-  //void CreateHorizontalBlurTexture();
-
-  // 深度バッファのSRVを生成
   void CreateDepthBufferSRV();
-
-  // ルートシグネチャの生成
   void CreateRootSignature(const std::string& effectName);
-
-  // パイプラインステートの生成
   void CreatePSO(const std::string& effectName);
-
-  // VignetteParamを生成
   void CreateVignetteParam();
-
-  // VignetteRedBloomParamを生成
   void CreateVignetteRedBloomParam();
-
-  // BloomParamを生成
   void CreateBloomParam();
-
-  // NewBloomParamを生成
   void CreateNewBloomParam();
-
-  // FogParamを生成
   void CreateFogParam();
-
-  // RadialBlurParamを生成
   void CreateRadialBlurParam();
-
-  // CameraForGPUを生成
   void CreateCameraForGPU();
-
-  // BWFilterParamを生成
   void CreateBWFilterParam();
-
-  // RGBSplitParamを生成
   void CreateRGBSplitParam();
-
-  // パラメーターリソースの設定
   void SetParamResource(const std::string& effectName);
 
 private: // メンバ変数

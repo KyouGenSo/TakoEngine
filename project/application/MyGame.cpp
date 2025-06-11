@@ -141,6 +141,9 @@ void MyGame::Update()
   case RGBSplit:
     PostEffect::GetInstance()->SetEffectType("RGBSplit");
     break;
+  case LuminanceBasedOutline:
+    PostEffect::GetInstance()->SetEffectType("LuminanceBasedOutline");
+    break;
   }
 #endif // _DEBUG
 }
@@ -247,6 +250,7 @@ void MyGame::Draw()
         ImGui::RadioButton("RadialBlur", (int*)&postEffectType, RadialBlur);
         ImGui::RadioButton("BWFilter", (int*)&postEffectType, BWFilter);
         ImGui::RadioButton("RGBSplit", (int*)&postEffectType, RGBSplit);
+        ImGui::RadioButton("LuminanceBasedOutline", (int*)&postEffectType, LuminanceBasedOutline);
 
         ImGui::EndTabItem();
       }
