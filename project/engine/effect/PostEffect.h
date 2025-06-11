@@ -73,6 +73,10 @@ public: // メンバ関数
   void SetRGBSplitOffsets(const Vector2& red, const Vector2& green, const Vector2& blue);
   void SetRGBSplitIntensity(float intensity) { rgbSplitParam_->intensity = intensity; }
   void SetLuminanceOutlineThickness(float thickness) { luminanceOutlineParam_->outlineThickness = thickness; }
+  void SetDepthOutlineProjectionInverse(const Matrix4x4& projectionInv) { 
+    depthOutlineParam_->projectionInverse = projectionInv; 
+  }
+  void SetDepthOutlineThickness(float thickness) { depthOutlineParam_->outlineThickness = thickness; }
 
   // バリアの設定
   void SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
@@ -83,8 +87,8 @@ private: // プライベートメンバー関数
   void CreateRenderTexture();
   void CreateBloomTextures();
   void CreateDepthBufferSRV();
-  void CreateRootSignature(const std::string& effectName);
-  void CreatePSO(const std::string& effectName);
+  void CreateRootSignature(const std::string& effectName, const D3D12_FILTER filter);
+  void CreatePSO(const std::string& effectName, const D3D12_FILTER filter);
   void CreateVignetteParam();
   void CreateVignetteRedBloomParam();
   void CreateBloomParam();
@@ -95,6 +99,7 @@ private: // プライベートメンバー関数
   void CreateBWFilterParam();
   void CreateRGBSplitParam();
   void CreateLuminanceOutlineParam();
+  void CreateDepthOutlineParam();
   void SetParamResource(const std::string& effectName);
 
 private: // メンバ変数
@@ -163,6 +168,7 @@ private: // メンバ変数
   Microsoft::WRL::ComPtr<ID3D12Resource> BWFilterParamResource_;
   Microsoft::WRL::ComPtr<ID3D12Resource> rgbSplitParamResource_;
   Microsoft::WRL::ComPtr<ID3D12Resource> luminanceOutlineParamResource_;
+  Microsoft::WRL::ComPtr<ID3D12Resource> depthOutlineParamResource_;
 
   // パラメーターデータ
   VignetteParam* vignetteParam_;
@@ -176,4 +182,5 @@ private: // メンバ変数
   BWFilterParam* BWFilterParam_;
   RGBSplitParam* rgbSplitParam_;
   LuminanceOutlineParam* luminanceOutlineParam_;
+  DepthOutlineParam* depthOutlineParam_;
 };

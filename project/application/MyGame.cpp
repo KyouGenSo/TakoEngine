@@ -144,6 +144,9 @@ void MyGame::Update()
   case LuminanceBasedOutline:
     PostEffect::GetInstance()->SetEffectType("LuminanceBasedOutline");
     break;
+  case DepthBasedOutline:
+    PostEffect::GetInstance()->SetEffectType("DepthBasedOutline");
+    break;
   }
 #endif // _DEBUG
 }
@@ -251,6 +254,7 @@ void MyGame::Draw()
         ImGui::RadioButton("BWFilter", (int*)&postEffectType, BWFilter);
         ImGui::RadioButton("RGBSplit", (int*)&postEffectType, RGBSplit);
         ImGui::RadioButton("LuminanceBasedOutline", (int*)&postEffectType, LuminanceBasedOutline);
+        ImGui::RadioButton("DepthBasedOutline", (int*)&postEffectType, DepthBasedOutline);
 
         ImGui::EndTabItem();
       }
@@ -324,10 +328,12 @@ void MyGame::Draw()
           PostEffect::GetInstance()->SetRGBSplitOffsets(postEffectParam.redOffset, postEffectParam.greenOffset, postEffectParam.blueOffset);
         }
 
-        if (postEffectType == LuminanceBasedOutline)
+        if (postEffectType == LuminanceBasedOutline || postEffectType == DepthBasedOutline)
         {
           ImGui::DragFloat("OutlineThickness", &postEffectParam.outlineThickness, 0.1f, 0.0f, 100.0f);
           PostEffect::GetInstance()->SetLuminanceOutlineThickness(postEffectParam.outlineThickness);
+          PostEffect::GetInstance()->SetDepthOutlineThickness(postEffectParam.outlineThickness);
+          PostEffect::GetInstance()->SetDepthOutlineProjectionInverse(Mat4x4::Inverse(defaultCamera_->GetProjectionMatrix()));
         }
 
         ImGui::EndTabItem();

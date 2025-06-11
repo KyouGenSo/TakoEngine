@@ -76,6 +76,7 @@ private: // メンバ変数
     BWFilter,
     RGBSplit,
     LuminanceBasedOutline,
+    DepthBasedOutline,
 	};
 
 	PostEffectType postEffectType = NoEffect;

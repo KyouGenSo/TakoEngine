@@ -31,31 +31,33 @@ void PostEffect::Initialize(DX12Basic* dx12)
   CreateBloomTextures();
 
   // マルチパスブルーム用のシェーダー作成
-  CreatePSO("ThresholdExtract"); // 明るい部分抽出用
-  CreatePSO("GaussianBlur");     // ブラー用
-  CreatePSO("BloomCombine");     // 最終合成用
+  CreatePSO("ThresholdExtract", D3D12_FILTER_MIN_MAG_MIP_LINEAR); // 明るい部分抽出用
+  CreatePSO("GaussianBlur", D3D12_FILTER_MIN_MAG_MIP_LINEAR);     // ブラー用
+  CreatePSO("BloomCombine", D3D12_FILTER_MIN_MAG_MIP_LINEAR);     // 最終合成用
 
-  CreatePSO("NoEffect");
+  CreatePSO("NoEffect", D3D12_FILTER_MIN_MAG_MIP_LINEAR);
 
-  CreatePSO("VignetteRed");
+  CreatePSO("VignetteRed", D3D12_FILTER_MIN_MAG_MIP_LINEAR);
 
-  CreatePSO("VignetteRedBloom");
+  CreatePSO("VignetteRedBloom", D3D12_FILTER_MIN_MAG_MIP_LINEAR);
 
-  CreatePSO("GrayScale");
+  CreatePSO("GrayScale", D3D12_FILTER_MIN_MAG_MIP_LINEAR);
 
-  CreatePSO("VigRedGrayScale");
+  CreatePSO("VigRedGrayScale", D3D12_FILTER_MIN_MAG_MIP_LINEAR);
 
-  CreatePSO("Bloom");
+  CreatePSO("Bloom", D3D12_FILTER_MIN_MAG_MIP_LINEAR);
 
-  CreatePSO("BloomFog");
+  CreatePSO("BloomFog", D3D12_FILTER_MIN_MAG_MIP_POINT);
 
-  CreatePSO("RadialBlur");
+  CreatePSO("RadialBlur", D3D12_FILTER_MIN_MAG_MIP_LINEAR);
 
-  CreatePSO("BWFilter");
+  CreatePSO("BWFilter", D3D12_FILTER_MIN_MAG_MIP_LINEAR);
 
-  CreatePSO("RGBSplit");
+  CreatePSO("RGBSplit", D3D12_FILTER_MIN_MAG_MIP_LINEAR);
 
-  CreatePSO("LuminanceBasedOutline");
+  CreatePSO("LuminanceBasedOutline", D3D12_FILTER_MIN_MAG_MIP_LINEAR);
+
+  CreatePSO("DepthBasedOutline", D3D12_FILTER_MIN_MAG_MIP_POINT);
 
   CreateVignetteParam();
 
@@ -76,6 +78,8 @@ void PostEffect::Initialize(DX12Basic* dx12)
   CreateRGBSplitParam();
 
   CreateLuminanceOutlineParam();
+
+  CreateDepthOutlineParam();
 }
 
 void PostEffect::Finalize()
@@ -129,7 +133,7 @@ void PostEffect::DrawPostEffect(const std::string& effectName)
   // レンダーテクスチャAの状態をシェーダーリソースに変更
   SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, originRenderTexResource_.Get());
 
-  if (effectName == "BloomFog") {
+  if (effectName == "BloomFog" || effectName == "DepthBasedOutline") {
     m_dx12_->TransitionResourceState(D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, m_dx12_->GetDepthStencilResource());
   }
 
@@ -153,14 +157,14 @@ void PostEffect::DrawPostEffect(const std::string& effectName)
 
   // レンダーテクスチャAをシェーダーリソースとして設定
   SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, originRtvSrvIndex_);
-  if (effectName == "BloomFog") {
+  if (effectName == "BloomFog" || effectName == "DepthBasedOutline") {
     SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(4, dsvSrvIndex_);
   }
 
   // フルスクリーン三角形描画
   m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
 
-  if (effectName == "BloomFog") {
+  if (effectName == "BloomFog" || effectName == "DepthBasedOutline") {
     m_dx12_->TransitionResourceState(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE, m_dx12_->GetDepthStencilResource());
   }
 
@@ -688,7 +692,7 @@ void PostEffect::CreateDepthBufferSRV()
   SrvManager::GetInstance()->CreateSRVForTexture2D(dsvSrvIndex_, m_dx12_->GetDepthStencilResource(), DXGI_FORMAT_R32_FLOAT, 1);
 }
 
-void PostEffect::CreateRootSignature(const std::string& effectName)
+void PostEffect::CreateRootSignature(const std::string& effectName, const D3D12_FILTER filter)
 {
   HRESULT hr;
 
@@ -698,7 +702,7 @@ void PostEffect::CreateRootSignature(const std::string& effectName)
 
   // Samplerの設定
   D3D12_STATIC_SAMPLER_DESC samplerDesc[1]{};
-  samplerDesc[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR; // テクスチャの補間方法
+  samplerDesc[0].Filter = filter; // テクスチャの補間方法
   samplerDesc[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
   samplerDesc[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
   samplerDesc[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
@@ -761,7 +765,7 @@ void PostEffect::CreateRootSignature(const std::string& effectName)
   rootParameters[3].Descriptor.ShaderRegister = 2; // レジスタ番号とバインド
 
   // 深度バッファテクスチャ
-  if (effectName == "BloomFog") {
+  if (effectName == "BloomFog" || effectName == "DepthBasedOutline") {
     rootParameters[4].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
     rootParameters[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
     rootParameters[4].DescriptorTable.pDescriptorRanges = descriptorRange2; // ディスクリプタレンジを設定
@@ -789,12 +793,12 @@ void PostEffect::CreateRootSignature(const std::string& effectName)
   assert(SUCCEEDED(hr));
 }
 
-void PostEffect::CreatePSO(const std::string& effectName)
+void PostEffect::CreatePSO(const std::string& effectName, const D3D12_FILTER filter)
 {
   HRESULT hr;
 
   // RootSignatureの生成
-  CreateRootSignature(effectName);
+  CreateRootSignature(effectName, filter);
 
   // InputLayout
   D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
@@ -989,6 +993,18 @@ void PostEffect::CreateLuminanceOutlineParam()
   luminanceOutlineParam_->outlineThickness = 5.0f;
 }
 
+void PostEffect::CreateDepthOutlineParam()
+{
+  depthOutlineParamResource_ = m_dx12_->MakeBufferResource(sizeof(DepthOutlineParam));
+
+  depthOutlineParamResource_->Map(0, nullptr, reinterpret_cast<void**>(&depthOutlineParam_));
+
+  // データの初期化
+  Camera* camera = (*Object3dBasic::GetInstance()->GetCamera());
+  depthOutlineParam_->projectionInverse = Mat4x4::Inverse(camera->GetProjectionMatrix());
+  depthOutlineParam_->outlineThickness = 1.0f;
+}
+
 void PostEffect::SetParamResource(const std::string& effectName)
 {
   if (effectName == "VignetteRed" || effectName == "VigRedGrayScale")
@@ -998,8 +1014,7 @@ void PostEffect::SetParamResource(const std::string& effectName)
   else if (effectName == "VignetteRedBloom")
   {
     m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, vignetteRedBloomParamResource_->GetGPUVirtualAddress());
-  }
-  else if (effectName == "Bloom")
+  } else if (effectName == "Bloom")
   {
     m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, bloomParamResource_->GetGPUVirtualAddress());
   }
@@ -1017,13 +1032,17 @@ void PostEffect::SetParamResource(const std::string& effectName)
   {
     m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, BWFilterParamResource_->GetGPUVirtualAddress());
   }
-  else if(effectName == "RGBSplit")
+  else if (effectName == "RGBSplit")
   {
     m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, rgbSplitParamResource_->GetGPUVirtualAddress());
   }
   else if (effectName == "LuminanceBasedOutline")
   {
     m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, luminanceOutlineParamResource_->GetGPUVirtualAddress());
+  }
+  else if (effectName == "DepthBasedOutline")
+  {
+    m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, depthOutlineParamResource_->GetGPUVirtualAddress());
   }
   else if (effectName == "GrayScale" || effectName == "NoEffect")
   {

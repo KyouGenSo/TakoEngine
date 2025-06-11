@@ -2,12 +2,14 @@
 
 struct DepthBasedOutlineParams
 {
-    float outlineThickness; // Thickness of the outline
+    float4x4 projectionInverse;
+    float outlineThickness;
 };
 
 ConstantBuffer<DepthBasedOutlineParams> gParams : register(b0);
 
 Texture2D<float4> gTexture : register(t0);
+Texture2D<float> gDepthTexture : register(t1); // シーンの深度テクスチャ
 SamplerState gSampler : register(s0);
 
 static const float kPrewittHorizontalKernel[3][3] =
@@ -31,11 +33,6 @@ static const float2 kIndex3x3[3][3] =
     { { -1.0f, 1.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f } },
 };
 
-float GetLuminance(float3 color)
-{
-    return dot(color, float3(0.2125f, 0.7154f, 0.0721f));
-}
-
 struct PixelShaderOutput
 {
     float4 color : SV_TARGET0;
@@ -53,15 +50,16 @@ float4 main(VertexShaderOutput input) : SV_TARGET
         for (int y = 0; y < 3; ++y)
         {
             float2 texcoord = input.texCoord + kIndex3x3[x][y] * uvStepSize;
-            float3 fetchColor = gTexture.Sample(gSampler, texcoord).rgb;
-            float luminance = GetLuminance(fetchColor);
-            difference.x += luminance * kPrewittHorizontalKernel[x][y];
-            difference.y += luminance * kPreWittVerticalKernel[x][y];
+            float ndcDepth = gDepthTexture.Sample(gSampler, texcoord); // NDC座標系の深度値を取得
+            float4 viewSpace = mul(float4(0.0f, 0.0f, ndcDepth, 1.0f), gParams.projectionInverse);
+            float viewZ = viewSpace.z * rcp(viewSpace.w); // 同次座標系からデカルト座標系に変換
+            difference.x += viewZ * kPrewittHorizontalKernel[x][y];
+            difference.y += viewZ * kPreWittVerticalKernel[x][y];
         }
     }
 
     float weight = length(difference);
-    weight = saturate(weight * gParams.outlineThickness); // Adjust the weight to control the outline thickness
+    weight = saturate(weight * gParams.outlineThickness); // アウトラインの太さを調整
 
     PixelShaderOutput output;
     output.color.rgb = (1.0f - weight) * gTexture.Sample(gSampler, input.texCoord).rgb;

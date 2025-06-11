@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 
+#include "Matrix4x4.h"
 #include "Vector2.h"
 #include "Vector4.h"
 
@@ -81,5 +82,11 @@ struct RGBSplitParam
 
 struct LuminanceOutlineParam
 {
+  float outlineThickness;
+};
+
+struct DepthOutlineParam
+{
+  Matrix4x4 projectionInverse;
   float outlineThickness;
 };
