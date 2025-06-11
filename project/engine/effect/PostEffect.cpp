@@ -74,6 +74,8 @@ void PostEffect::Initialize(DX12Basic* dx12)
   CreateBWFilterParam();
 
   CreateRGBSplitParam();
+
+  CreateLuminanceOutlineParam();
 }
 
 void PostEffect::Finalize()
@@ -977,6 +979,16 @@ void PostEffect::CreateRGBSplitParam()
   rgbSplitParam_->intensity = 1.0f;
 }
 
+void PostEffect::CreateLuminanceOutlineParam()
+{
+  luminanceOutlineParamResource_ = m_dx12_->MakeBufferResource(sizeof(LuminanceOutlineParam));
+
+  luminanceOutlineParamResource_->Map(0, nullptr, reinterpret_cast<void**>(&luminanceOutlineParam_));
+
+  // データの初期化
+  luminanceOutlineParam_->outlineThickness = 5.0f;
+}
+
 void PostEffect::SetParamResource(const std::string& effectName)
 {
   if (effectName == "VignetteRed" || effectName == "VigRedGrayScale")
@@ -1009,7 +1021,11 @@ void PostEffect::SetParamResource(const std::string& effectName)
   {
     m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, rgbSplitParamResource_->GetGPUVirtualAddress());
   }
-  else if (effectName == "GrayScale" || effectName == "NoEffect" || effectName == "LuminanceBasedOutline")
+  else if (effectName == "LuminanceBasedOutline")
+  {
+    m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, luminanceOutlineParamResource_->GetGPUVirtualAddress());
+  }
+  else if (effectName == "GrayScale" || effectName == "NoEffect")
   {
     // グレースケール, ノーエフェクトの場合は何もしない
   }

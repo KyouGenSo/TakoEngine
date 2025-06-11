@@ -78,3 +78,8 @@ struct RGBSplitParam
   Vector2 blueOffset;  // Bチャンネルのオフセット
   float intensity;     // エフェクトの強度
 };
+
+struct LuminanceOutlineParam
+{
+  float outlineThickness;
+};

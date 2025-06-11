@@ -1,5 +1,12 @@
 #include "FullScreen.hlsli"
 
+struct LuminanceBasedOutlineParams
+{
+    float outlineThickness; // Thickness of the outline
+};
+
+ConstantBuffer<LuminanceBasedOutlineParams> gParams : register(b0);
+
 Texture2D<float4> gTexture : register(t0);
 SamplerState gSampler : register(s0);
 
@@ -54,7 +61,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     }
 
     float weight = length(difference);
-    weight = saturate(weight * 6.0f); // Adjust the weight to control the outline thickness
+    weight = saturate(weight * gParams.outlineThickness); // Adjust the weight to control the outline thickness
 
     PixelShaderOutput output;
     output.color.rgb = (1.0f - weight) * gTexture.Sample(gSampler, input.texCoord).rgb;

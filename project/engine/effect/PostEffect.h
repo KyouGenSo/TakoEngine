@@ -72,6 +72,7 @@ public: // メンバ関数
   void SetBWFilterThreshold(float bwFilterThreshold) { BWFilterParam_->threshold = bwFilterThreshold; }
   void SetRGBSplitOffsets(const Vector2& red, const Vector2& green, const Vector2& blue);
   void SetRGBSplitIntensity(float intensity) { rgbSplitParam_->intensity = intensity; }
+  void SetLuminanceOutlineThickness(float thickness) { luminanceOutlineParam_->outlineThickness = thickness; }
 
   // バリアの設定
   void SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
@@ -93,6 +94,7 @@ private: // プライベートメンバー関数
   void CreateCameraForGPU();
   void CreateBWFilterParam();
   void CreateRGBSplitParam();
+  void CreateLuminanceOutlineParam();
   void SetParamResource(const std::string& effectName);
 
 private: // メンバ変数
@@ -160,6 +162,7 @@ private: // メンバ変数
   Microsoft::WRL::ComPtr<ID3D12Resource> cameraForGPUResource_;
   Microsoft::WRL::ComPtr<ID3D12Resource> BWFilterParamResource_;
   Microsoft::WRL::ComPtr<ID3D12Resource> rgbSplitParamResource_;
+  Microsoft::WRL::ComPtr<ID3D12Resource> luminanceOutlineParamResource_;
 
   // パラメーターデータ
   VignetteParam* vignetteParam_;
@@ -172,4 +175,5 @@ private: // メンバ変数
   CameraForGPU* cameraForGPU_;
   BWFilterParam* BWFilterParam_;
   RGBSplitParam* rgbSplitParam_;
+  LuminanceOutlineParam* luminanceOutlineParam_;
 };

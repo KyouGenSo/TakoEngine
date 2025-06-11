@@ -51,6 +51,8 @@ public: // メンバ関数
     Vector2 redOffset;
     Vector2 blueOffset;
     Vector2 greenOffset;
+
+    float outlineThickness;
   };
 
 private: // メンバ変数

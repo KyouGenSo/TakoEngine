@@ -324,6 +324,12 @@ void MyGame::Draw()
           PostEffect::GetInstance()->SetRGBSplitOffsets(postEffectParam.redOffset, postEffectParam.greenOffset, postEffectParam.blueOffset);
         }
 
+        if (postEffectType == LuminanceBasedOutline)
+        {
+          ImGui::DragFloat("OutlineThickness", &postEffectParam.outlineThickness, 0.1f, 0.0f, 100.0f);
+          PostEffect::GetInstance()->SetLuminanceOutlineThickness(postEffectParam.outlineThickness);
+        }
+
         ImGui::EndTabItem();
       }
 
