@@ -1,4 +1,4 @@
-static const int kMaxParticles = 20480;
+static const int kMaxParticles = 1000000;
 
 // エミッタータイプの定義
 #define EMITTER_TYPE_SPHERE 0

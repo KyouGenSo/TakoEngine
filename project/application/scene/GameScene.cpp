@@ -104,7 +104,7 @@ void GameScene::Initialize()
 
   // 球体エミッターの作成
   emitterManager_->CreateSphereEmitter("player", spEmitterSett_.position, spEmitterSett_.radius, spEmitterSett_.count, spEmitterSett_.frequency);
-  emitterManager_->SetEmitterColors("player", { .x = 1.0f, .y = 0.0f, .z = 0.0f, .w = 1.0f }, { .x = 0.0f, .y = 1.0f, .z = 0.0f, .w = 1.0f });
+  emitterManager_->SetEmitterColors("player", { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f }, { .x = 1.0f, .y = 0.0f, .z = 0.0f, .w = 1.0f });
   emitterManager_->SetEmitterScaleRange("player", spEmitterSett_.scaleRangeX, spEmitterSett_.scaleRangeY);
   emitterManager_->SetEmitterVelocityRange("player", spEmitterSett_.velRangeX, spEmitterSett_.velRangeY, spEmitterSett_.velRangeZ);
   emitterManager_->SetEmitterLifeTimeRange("player", spEmitterSett_.lifeTimeRange);
@@ -130,6 +130,10 @@ void GameScene::Initialize()
 
   isActive_ = false;
   emitterManager_->SetGroupActive("group1", isActive_);
+
+  emitterManager_->SetEmitterActive("player", true);
+  emitterManager_->SetEmitterActive("box", false);
+  emitterManager_->SetEmitterActive("triangle", false);
 
   groupPosition_ = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
 
@@ -207,7 +211,7 @@ void GameScene::Update()
   emitterManager_->SetEmitterLifeTimeRange("triangle", triEmitterSett_.lifeTimeRange);
 
   //emitterManager_->SetGroupPosition("group1", groupPosition_);
-  emitterManager_->SetGroupActive("group1", isActive_);
+  //emitterManager_->SetGroupActive("group1", isActive_);
 
   sprite_->Update();
 

@@ -18,7 +18,7 @@
 
 GPUParticle* GPUParticle::instance_ = nullptr;
 
-const uint32_t GPUParticle::kNumMaxParticle = 20480;
+const uint32_t GPUParticle::kNumMaxParticle = 1000000;
 
 const uint32_t GPUParticle::kNumMaxEmitter = 80;
 
