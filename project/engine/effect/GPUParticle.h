@@ -71,19 +71,9 @@ public: // メンバー関数
   void UnregisterEmitter(std::shared_ptr<GPUParticleEmitter> emitter);
 
   /// <summary>
-  /// エミッターパラメータ更新
-  /// </summary>
-  //void UpdateEmitterParameters(uint32_t emitterId, const EmitterData& params);
-
-  /// <summary>
   /// エミッターのID取得
   /// </summary>
   [[nodiscard]] uint32_t GetEmitterCount() const { return static_cast<uint32_t>(activeEmitters_.size()); }
-
-  /// <summary>
-  /// エミッター削除
-  /// </summary>
-  //void RemoveEmitterById(uint32_t emitterId);
 
   //-------------------------Getter/Setter-------------------------//
   std::shared_ptr<GPUParticleEmitter> FindEmitterByIndex(size_t index);
@@ -102,14 +92,6 @@ public: // メンバー関数
   friend class EmitterManager;
 
 private: // プライベートメンバー関数
-  /// <summary>
-  /// エミッター内部作成関数
-  /// </summary>
-  //uint32_t CreateSphereEmitterInternal(const Vector3& position, float radius, uint32_t count, float frequency);
-  //uint32_t CreateBoxEmitterInternal(const Vector3& position, const Vector3& size, const Vector3& rotation, uint32_t count, float frequency);
-  //uint32_t CreateTriangleEmitterInternal(const Vector3& position, const Vector3& v1, const Vector3& v2, const Vector3& v3, uint32_t count, float frequency);
-  //uint32_t CopyEmitterParameters(uint32_t sourceEmitterId, float lifeTime = 0.0f);
-
   /// <summary>
   ///　emitterの更新
   /// </summary>
