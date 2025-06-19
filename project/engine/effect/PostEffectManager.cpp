@@ -1,4 +1,4 @@
-#include "PostEffect.h"
+#include "PostEffectManager.h"
 #include "DX12Basic.h"
 #include "SrvManager.h"
 #include "Logger.h"
@@ -6,18 +6,18 @@
 #include "Object3dbasic.h"
 #include "Camera.h"
 
-PostEffect* PostEffect::instance_ = nullptr;
+PostEffectManager* PostEffectManager::instance_ = nullptr;
 
-PostEffect* PostEffect::GetInstance()
+PostEffectManager* PostEffectManager::GetInstance()
 {
   if (instance_ == nullptr)
   {
-    instance_ = new PostEffect();
+    instance_ = new PostEffectManager();
   }
   return instance_;
 }
 
-void PostEffect::Initialize(DX12Basic* dx12)
+void PostEffectManager::Initialize(DX12Basic* dx12)
 {
   m_dx12_ = dx12;
 
@@ -82,7 +82,7 @@ void PostEffect::Initialize(DX12Basic* dx12)
   CreateDepthOutlineParam();
 }
 
-void PostEffect::Finalize()
+void PostEffectManager::Finalize()
 {
   if (instance_ != nullptr)
   {
@@ -91,7 +91,7 @@ void PostEffect::Finalize()
   }
 }
 
-void PostEffect::BeginDrawEffectTarget()
+void PostEffectManager::BeginDrawEffectTarget()
 {
   D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
 
@@ -104,7 +104,7 @@ void PostEffect::BeginDrawEffectTarget()
   m_dx12_->GetCommandList()->ClearRenderTargetView(originRenderTexRTVHandle_, clearColor, 0, nullptr);
 }
 
-void PostEffect::BegineDrawNonEffectTarget()
+void PostEffectManager::BegineDrawNonEffectTarget()
 {
   D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
 
@@ -112,13 +112,13 @@ void PostEffect::BegineDrawNonEffectTarget()
   m_dx12_->GetCommandList()->OMSetRenderTargets(1, &resultRenderTexRTVHandle_, false, &dsvHandle);
 }
 
-void PostEffect::Draw()
+void PostEffectManager::Draw()
 {
   // エフェクトの描画
   DrawPostEffect(currentEffectName_);
 }
 
-void PostEffect::DrawPostEffect(const std::string& effectName)
+void PostEffectManager::DrawPostEffect(const std::string& effectName)
 {
   if (effectName == "Bloom") {
     DrawMultiPassBloom();
@@ -172,7 +172,7 @@ void PostEffect::DrawPostEffect(const std::string& effectName)
   SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET, originRenderTexResource_.Get());
 }
 
-void PostEffect::DrawMultiPassNewBloom()
+void PostEffectManager::DrawMultiPassNewBloom()
 {
   newBloomParam_->texelSize = {
     1.0f / static_cast<float>(downSampleWidth_),
@@ -356,7 +356,7 @@ void PostEffect::DrawMultiPassNewBloom()
     originRenderTexResource_.Get());
 }
 
-void PostEffect::DrawMultiPassBloom()
+void PostEffectManager::DrawMultiPassBloom()
 {
   // レンダーテクスチャAをシェーダリソースに変更
   SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET,
@@ -412,7 +412,7 @@ void PostEffect::DrawMultiPassBloom()
     originRenderTexResource_.Get());
 }
 
-void PostEffect::DrawFinalResult()
+void PostEffectManager::DrawFinalResult()
 {
   // レンダーテクスチャBの状態をシェーダーリソースに変更
   SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, resultRenderTexResource_.Get());
@@ -434,7 +434,7 @@ void PostEffect::DrawFinalResult()
   SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET, resultRenderTexResource_.Get());
 }
 
-void PostEffect::RecreateRenderTexture(uint32_t width, uint32_t height)
+void PostEffectManager::RecreateRenderTexture(uint32_t width, uint32_t height)
 {
   // 既存のリソースを解放
   originRenderTexResource_.Reset();
@@ -485,7 +485,7 @@ void PostEffect::RecreateRenderTexture(uint32_t width, uint32_t height)
   SrvManager::GetInstance()->CreateSRVForTexture2D(dsvSrvIndex_, m_dx12_->GetDepthStencilResource(), DXGI_FORMAT_R32_FLOAT, 1);
 }
 
-void PostEffect::SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter)
+void PostEffectManager::SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter)
 {
   D3D12_RESOURCE_BARRIER barrier{};
   barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -498,7 +498,7 @@ void PostEffect::SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_ST
   m_dx12_->GetCommandList()->ResourceBarrier(1, &barrier);
 }
 
-void PostEffect::SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter, ID3D12Resource* resource)
+void PostEffectManager::SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter, ID3D12Resource* resource)
 {
   D3D12_RESOURCE_BARRIER barrier{};
   barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -510,20 +510,20 @@ void PostEffect::SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_ST
   m_dx12_->GetCommandList()->ResourceBarrier(1, &barrier);
 }
 
-void PostEffect::SetVignettePower(float power)
+void PostEffectManager::SetVignettePower(float power)
 {
   vignetteParam_->power = power;
   vignetteRedBloomParam_->power = power;
 }
 
-void PostEffect::SetVignetteRange(float range)
+void PostEffectManager::SetVignetteRange(float range)
 {
   vignetteParam_->range = range;
   vignetteRedBloomParam_->range = range;
 
 }
 
-void PostEffect::SetBloomThreshold(float threshold)
+void PostEffectManager::SetBloomThreshold(float threshold)
 {
   vignetteRedBloomParam_->threshold = threshold;
   bloomParam_->threshold = threshold;
@@ -531,32 +531,32 @@ void PostEffect::SetBloomThreshold(float threshold)
   newBloomParam_->threshold = threshold;
 }
 
-void PostEffect::SetBloomIntensity(float intensity)
+void PostEffectManager::SetBloomIntensity(float intensity)
 {
   bloomParam_->intensity = intensity;
   bloomParam2_->intensity = intensity;
   newBloomParam_->intensity = intensity;
 }
 
-void PostEffect::SetBloomSigma(float sigma)
+void PostEffectManager::SetBloomSigma(float sigma)
 {
   bloomParam_->sigma = sigma;
   bloomParam2_->sigma = sigma;
   newBloomParam_->sigma = sigma;
 }
 
-void PostEffect::SetBloomKernelSize(int kernelSize)
+void PostEffectManager::SetBloomKernelSize(int kernelSize)
 {
   bloomParam_->kernelSize = kernelSize;
   bloomParam2_->kernelSize = kernelSize;
 }
 
-void PostEffect::SetBloomSampleCount(int32_t count)
+void PostEffectManager::SetBloomSampleCount(int32_t count)
 {
   newBloomParam_->sampleCount = count;
 }
 
-void PostEffect::SetDownSampleFactor(int factor)
+void PostEffectManager::SetDownSampleFactor(int factor)
 {
   if (factor < 1) factor = 1;
   if (factor > 8) factor = 8; // 最大1/8まで
@@ -568,34 +568,34 @@ void PostEffect::SetDownSampleFactor(int factor)
   }
 }
 
-void PostEffect::SetFogColor(const Vector4& color)
+void PostEffectManager::SetFogColor(const Vector4& color)
 {
   fogParam_->color = color;
 }
 
-void PostEffect::SetFogDensity(float density)
+void PostEffectManager::SetFogDensity(float density)
 {
   fogParam_->density = density;
 }
 
-void PostEffect::SetRadialBlurCenter(const Vector2& center)
+void PostEffectManager::SetRadialBlurCenter(const Vector2& center)
 {
   radialBlurParam_->center = center;
 }
 
-void PostEffect::SetRadialBlurWidth(float width)
+void PostEffectManager::SetRadialBlurWidth(float width)
 {
   radialBlurParam_->blurWidth = width;
 }
 
-void PostEffect::SetRGBSplitOffsets(const Vector2& red, const Vector2& green, const Vector2& blue)
+void PostEffectManager::SetRGBSplitOffsets(const Vector2& red, const Vector2& green, const Vector2& blue)
 {
   rgbSplitParam_->redOffset = red;
   rgbSplitParam_->greenOffset = green;
   rgbSplitParam_->blueOffset = blue;
 }
 
-void PostEffect::CreateRenderTexture()
+void PostEffectManager::CreateRenderTexture()
 {
   // レンダーテクスチャリソースの生成
   m_dx12_->CreateRenderTextureResource(originRenderTexResource_, WinApp::clientWidth, WinApp::clientHeight, DXGI_FORMAT_R8G8B8A8_UNORM, kOriginRenderTexClearColor_);
@@ -627,7 +627,7 @@ void PostEffect::CreateRenderTexture()
   SrvManager::GetInstance()->CreateSRVForTexture2D(resultRtvSrvIndex_, resultRenderTexResource_.Get(), DXGI_FORMAT_R8G8B8A8_UNORM, 1);
 }
 
-void PostEffect::CreateBloomTextures()
+void PostEffectManager::CreateBloomTextures()
 {
   downSampleWidth_ = WinApp::clientWidth / downSampleFactor_;
   downSampleHeight_ = WinApp::clientHeight / downSampleFactor_;
@@ -684,7 +684,7 @@ void PostEffect::CreateBloomTextures()
     DXGI_FORMAT_R8G8B8A8_UNORM, 1);
 }
 
-void PostEffect::CreateDepthBufferSRV()
+void PostEffectManager::CreateDepthBufferSRV()
 {
   // SRVの生成
   dsvSrvIndex_ = SrvManager::GetInstance()->Allocate();
@@ -692,7 +692,7 @@ void PostEffect::CreateDepthBufferSRV()
   SrvManager::GetInstance()->CreateSRVForTexture2D(dsvSrvIndex_, m_dx12_->GetDepthStencilResource(), DXGI_FORMAT_R32_FLOAT, 1);
 }
 
-void PostEffect::CreateRootSignature(const std::string& effectName, const D3D12_FILTER filter)
+void PostEffectManager::CreateRootSignature(const std::string& effectName, const D3D12_FILTER filter)
 {
   HRESULT hr;
 
@@ -793,7 +793,7 @@ void PostEffect::CreateRootSignature(const std::string& effectName, const D3D12_
   assert(SUCCEEDED(hr));
 }
 
-void PostEffect::CreatePSO(const std::string& effectName, const D3D12_FILTER filter)
+void PostEffectManager::CreatePSO(const std::string& effectName, const D3D12_FILTER filter)
 {
   HRESULT hr;
 
@@ -855,7 +855,7 @@ void PostEffect::CreatePSO(const std::string& effectName, const D3D12_FILTER fil
   assert(SUCCEEDED(hr));
 }
 
-void PostEffect::CreateVignetteParam()
+void PostEffectManager::CreateVignetteParam()
 {
   // VignetteParamのリソース生成
   vignetteParamResource_ = m_dx12_->MakeBufferResource(sizeof(VignetteParam));
@@ -868,7 +868,7 @@ void PostEffect::CreateVignetteParam()
   vignetteParam_->range = 20.0f;
 }
 
-void PostEffect::CreateVignetteRedBloomParam()
+void PostEffectManager::CreateVignetteRedBloomParam()
 {
   // VignetteRedBloomParamのリソース生成
   vignetteRedBloomParamResource_ = m_dx12_->MakeBufferResource(sizeof(VignetteRedBloomParam));
@@ -882,7 +882,7 @@ void PostEffect::CreateVignetteRedBloomParam()
   vignetteRedBloomParam_->range = 20.0f;
 }
 
-void PostEffect::CreateBloomParam()
+void PostEffectManager::CreateBloomParam()
 {
   // BloomParamのリソース生成
   bloomParamResource_ = m_dx12_->MakeBufferResource(sizeof(BloomParam));
@@ -906,7 +906,7 @@ void PostEffect::CreateBloomParam()
   bloomParam2_->kernelSize = 10;
 }
 
-void PostEffect::CreateNewBloomParam()
+void PostEffectManager::CreateNewBloomParam()
 {
   // NewBloomParamのリソース生成
   newBloomParamResource_ = m_dx12_->MakeBufferResource(sizeof(NewBloomParam));
@@ -921,7 +921,7 @@ void PostEffect::CreateNewBloomParam()
   newBloomParam_->sampleCount = 10;
 }
 
-void PostEffect::CreateFogParam()
+void PostEffectManager::CreateFogParam()
 {
   // FogParamのリソース生成
   fogParamResource_ = m_dx12_->MakeBufferResource(sizeof(FogParam));
@@ -934,7 +934,7 @@ void PostEffect::CreateFogParam()
   fogParam_->density = 0.05f;
 }
 
-void PostEffect::CreateRadialBlurParam()
+void PostEffectManager::CreateRadialBlurParam()
 {
   // RadialBlurParamのリソース生成
   radialBlurParamResource_ = m_dx12_->MakeBufferResource(sizeof(RadialBlurParam));
@@ -946,7 +946,7 @@ void PostEffect::CreateRadialBlurParam()
   radialBlurParam_->sampleCount = 10;
 }
 
-void PostEffect::CreateCameraForGPU()
+void PostEffectManager::CreateCameraForGPU()
 {
   // CameraForGPUのリソース生成
   cameraForGPUResource_ = m_dx12_->MakeBufferResource(sizeof(CameraForGPU));
@@ -959,7 +959,7 @@ void PostEffect::CreateCameraForGPU()
   cameraForGPU_->nearPlane = (*Object3dBasic::GetInstance()->GetCamera())->GetNearClip();
 }
 
-void PostEffect::CreateBWFilterParam()
+void PostEffectManager::CreateBWFilterParam()
 {
   BWFilterParamResource_ = m_dx12_->MakeBufferResource(sizeof(BWFilterParam));
 
@@ -968,7 +968,7 @@ void PostEffect::CreateBWFilterParam()
   BWFilterParam_->threshold = 0.5f;
 }
 
-void PostEffect::CreateRGBSplitParam()
+void PostEffectManager::CreateRGBSplitParam()
 {
   // RGBSplitParamのリソース生成
   rgbSplitParamResource_ = m_dx12_->MakeBufferResource(sizeof(RGBSplitParam));
@@ -983,7 +983,7 @@ void PostEffect::CreateRGBSplitParam()
   rgbSplitParam_->intensity = 1.0f;
 }
 
-void PostEffect::CreateLuminanceOutlineParam()
+void PostEffectManager::CreateLuminanceOutlineParam()
 {
   luminanceOutlineParamResource_ = m_dx12_->MakeBufferResource(sizeof(LuminanceOutlineParam));
 
@@ -993,7 +993,7 @@ void PostEffect::CreateLuminanceOutlineParam()
   luminanceOutlineParam_->outlineThickness = 5.0f;
 }
 
-void PostEffect::CreateDepthOutlineParam()
+void PostEffectManager::CreateDepthOutlineParam()
 {
   depthOutlineParamResource_ = m_dx12_->MakeBufferResource(sizeof(DepthOutlineParam));
 
@@ -1005,7 +1005,7 @@ void PostEffect::CreateDepthOutlineParam()
   depthOutlineParam_->outlineThickness = 1.0f;
 }
 
-void PostEffect::SetParamResource(const std::string& effectName)
+void PostEffectManager::SetParamResource(const std::string& effectName)
 {
   if (effectName == "VignetteRed" || effectName == "VigRedGrayScale")
   {

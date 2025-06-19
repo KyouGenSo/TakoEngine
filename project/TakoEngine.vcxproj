@@ -132,7 +132,7 @@
     <ClCompile Include="engine\imgui\ImGuiManager.cpp" />
     <ClCompile Include="engine\base\DX12\D3DResourceLeakChecker.cpp" />
     <ClCompile Include="engine\base\DX12\DX12Basic.cpp" />
-    <ClCompile Include="engine\effect\PostEffect.cpp" />
+    <ClCompile Include="engine\effect\PostEffectManager.cpp" />
     <ClCompile Include="engine\io\GlobalVariables.cpp" />
     <ClCompile Include="engine\io\Input.cpp" />
     <ClCompile Include="engine\func\commonFunc\Logger.cpp" />
@@ -172,7 +172,7 @@
     <ClInclude Include="engine\math\AABB.h" />
     <ClInclude Include="engine\2d\DebugCamera.h" />
     <ClInclude Include="engine\2d\Draw2D.h" />
-    <ClInclude Include="engine\effect\PostEffect.h" />
+    <ClInclude Include="engine\effect\PostEffectManager.h" />
     <ClInclude Include="engine\math\Quaternion.h" />
     <ClInclude Include="engine\scene\AbstractSceneFactory.h" />
     <ClInclude Include="engine\scene\BaseScene.h" />

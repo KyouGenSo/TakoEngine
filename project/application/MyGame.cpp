@@ -6,7 +6,7 @@
 #include "TextureManager.h"
 #include "Draw2D.h"
 #include "Object3dBasic.h"
-#include "PostEffect.h"
+#include "PostEffectManager.h"
 #include "FrameTimer.h"
 #include "GlobalVariables.h"
 #include "ModelManager.h"
@@ -109,43 +109,43 @@ void MyGame::Update()
   switch (postEffectType)
   {
   case NoEffect:
-    PostEffect::GetInstance()->SetEffectType("NoEffect");
+    PostEffectManager::GetInstance()->SetEffectType("NoEffect");
     break;
   case VignetteRed:
-    PostEffect::GetInstance()->SetEffectType("VignetteRed");
+    PostEffectManager::GetInstance()->SetEffectType("VignetteRed");
     break;
   case VignetteRedBloom:
-    PostEffect::GetInstance()->SetEffectType("VignetteRedBloom");
+    PostEffectManager::GetInstance()->SetEffectType("VignetteRedBloom");
     break;
   case GrayScale:
-    PostEffect::GetInstance()->SetEffectType("GrayScale");
+    PostEffectManager::GetInstance()->SetEffectType("GrayScale");
     break;
   case VigRedGrayScale:
-    PostEffect::GetInstance()->SetEffectType("VigRedGrayScale");
+    PostEffectManager::GetInstance()->SetEffectType("VigRedGrayScale");
     break;
   case Bloom:
-    PostEffect::GetInstance()->SetEffectType("Bloom");
+    PostEffectManager::GetInstance()->SetEffectType("Bloom");
     break;
   case NewBloom:
-    PostEffect::GetInstance()->SetEffectType("NewBloom");
+    PostEffectManager::GetInstance()->SetEffectType("NewBloom");
     break;
   case BloomFog:
-    PostEffect::GetInstance()->SetEffectType("BloomFog");
+    PostEffectManager::GetInstance()->SetEffectType("BloomFog");
     break;
   case RadialBlur:
-    PostEffect::GetInstance()->SetEffectType("RadialBlur");
+    PostEffectManager::GetInstance()->SetEffectType("RadialBlur");
     break;
   case BWFilter:
-    PostEffect::GetInstance()->SetEffectType("BWFilter");
+    PostEffectManager::GetInstance()->SetEffectType("BWFilter");
     break;
   case RGBSplit:
-    PostEffect::GetInstance()->SetEffectType("RGBSplit");
+    PostEffectManager::GetInstance()->SetEffectType("RGBSplit");
     break;
   case LuminanceBasedOutline:
-    PostEffect::GetInstance()->SetEffectType("LuminanceBasedOutline");
+    PostEffectManager::GetInstance()->SetEffectType("LuminanceBasedOutline");
     break;
   case DepthBasedOutline:
-    PostEffect::GetInstance()->SetEffectType("DepthBasedOutline");
+    PostEffectManager::GetInstance()->SetEffectType("DepthBasedOutline");
     break;
   }
 #endif // _DEBUG
@@ -172,7 +172,7 @@ void MyGame::Draw()
 	/// ===================================================== ///
 
     // ポストエフェクトの描画
-  PostEffect::GetInstance()->Draw();
+  PostEffectManager::GetInstance()->Draw();
 
   /// ===================================================== ///
   /// ------------ポストエフェクト非適用対象の描画---------------///
@@ -192,7 +192,7 @@ void MyGame::Draw()
   /// ============================================= ///
   /// ---------最終結果をスワップチェーンに描画---------///
   /// ============================================= ///
-  PostEffect::GetInstance()->DrawFinalResult();
+  PostEffectManager::GetInstance()->DrawFinalResult();
 
 
 	/// ========================================= ///
@@ -265,75 +265,75 @@ void MyGame::Draw()
         if (postEffectType == VignetteRed || postEffectType == VignetteRedBloom || postEffectType == VigRedGrayScale)
         {
           ImGui::DragFloat("VignettePower", &postEffectParam.vignettePower, 0.01f, 0.0f, 10.0f);
-          PostEffect::GetInstance()->SetVignettePower(postEffectParam.vignettePower);
+          PostEffectManager::GetInstance()->SetVignettePower(postEffectParam.vignettePower);
           ImGui::DragFloat("VignetteRange", &postEffectParam.vignetteRange, 0.01f, 0.0f, 100.0f);
-          PostEffect::GetInstance()->SetVignetteRange(postEffectParam.vignetteRange);
+          PostEffectManager::GetInstance()->SetVignetteRange(postEffectParam.vignetteRange);
         }
 
         if (postEffectType == VignetteRedBloom)
         {
           ImGui::DragFloat("BloomThreshold", &postEffectParam.bloomThreshold, 0.01f, 0.0f, 1.0f);
-          PostEffect::GetInstance()->SetBloomThreshold(postEffectParam.bloomThreshold);
+          PostEffectManager::GetInstance()->SetBloomThreshold(postEffectParam.bloomThreshold);
         }
 
         if (postEffectType == Bloom || postEffectType == BloomFog || postEffectType == NewBloom)
         {
           ImGui::DragFloat("BloomIntensity", &postEffectParam.bloomIntensity, 0.01f, 0.0f, 10.0f);
-          PostEffect::GetInstance()->SetBloomIntensity(postEffectParam.bloomIntensity);
+          PostEffectManager::GetInstance()->SetBloomIntensity(postEffectParam.bloomIntensity);
           ImGui::DragFloat("BloomThreshold", &postEffectParam.bloomThreshold, 0.01f, 0.0f, 1.0f);
-          PostEffect::GetInstance()->SetBloomThreshold(postEffectParam.bloomThreshold);
+          PostEffectManager::GetInstance()->SetBloomThreshold(postEffectParam.bloomThreshold);
           ImGui::DragFloat("BloomSigma", &postEffectParam.bloomSigma, 0.01f, 0.1f, 50.0f);
-          PostEffect::GetInstance()->SetBloomSigma(postEffectParam.bloomSigma);
+          PostEffectManager::GetInstance()->SetBloomSigma(postEffectParam.bloomSigma);
           ImGui::DragInt("BloomKernelSize", &postEffectParam.bloomKernelSize, 1, 1, 100);
-          PostEffect::GetInstance()->SetBloomKernelSize(postEffectParam.bloomKernelSize);
+          PostEffectManager::GetInstance()->SetBloomKernelSize(postEffectParam.bloomKernelSize);
         }
 
         if (postEffectType == BloomFog)
         {
           ImGui::ColorEdit4("FogColor", &postEffectParam.fogColor.x);
-          PostEffect::GetInstance()->SetFogColor(postEffectParam.fogColor);
+          PostEffectManager::GetInstance()->SetFogColor(postEffectParam.fogColor);
           ImGui::DragFloat("FogDensity", &postEffectParam.fogDensity, 0.01f, 0.0f, 1.0f);
-          PostEffect::GetInstance()->SetFogDensity(postEffectParam.fogDensity);
+          PostEffectManager::GetInstance()->SetFogDensity(postEffectParam.fogDensity);
         }
 
         if (postEffectType == RadialBlur)
         {
           ImGui::DragFloat2("RadialBlurCenter", &postEffectParam.radialBlurCenter.x, 0.01f, 0.0f, 1.0f);
-          PostEffect::GetInstance()->SetRadialBlurCenter(postEffectParam.radialBlurCenter);
+          PostEffectManager::GetInstance()->SetRadialBlurCenter(postEffectParam.radialBlurCenter);
           ImGui::DragFloat("RadialBlurWidth", &postEffectParam.radialBlurWidth, 0.01f, 0.0f, 1.0f);
-          PostEffect::GetInstance()->SetRadialBlurWidth(postEffectParam.radialBlurWidth);
+          PostEffectManager::GetInstance()->SetRadialBlurWidth(postEffectParam.radialBlurWidth);
           ImGui::DragInt("RadialBlurSampleCount", &postEffectParam.radialBlurSampleCount, 1.0f, 1, 100);
-          PostEffect::GetInstance()->SetBloomSampleCount(postEffectParam.radialBlurSampleCount);
+          PostEffectManager::GetInstance()->SetBloomSampleCount(postEffectParam.radialBlurSampleCount);
         }
 
         if (postEffectType == NewBloom)
         {
           ImGui::DragInt("BloomSampleCount", &postEffectParam.bloomSampleCount, 1, 1, 100);
-          PostEffect::GetInstance()->SetBloomSampleCount(postEffectParam.bloomSampleCount);
+          PostEffectManager::GetInstance()->SetBloomSampleCount(postEffectParam.bloomSampleCount);
         }
 
         if (postEffectType == BWFilter)
         {
           ImGui::DragFloat("BWFilterThreshold", &postEffectParam.bwFilterThreshold, 0.01f, 0.0f, 1.0f);
-          PostEffect::GetInstance()->SetBWFilterThreshold(postEffectParam.bwFilterThreshold);
+          PostEffectManager::GetInstance()->SetBWFilterThreshold(postEffectParam.bwFilterThreshold);
         }
 
         if (postEffectType == RGBSplit)
         {
           ImGui::DragFloat("RGBSplitIntensity", &postEffectParam.rgbSplitIntensity, 0.01f, 0.0f, 1.0f);
-          PostEffect::GetInstance()->SetRGBSplitIntensity(postEffectParam.rgbSplitIntensity);
+          PostEffectManager::GetInstance()->SetRGBSplitIntensity(postEffectParam.rgbSplitIntensity);
           ImGui::DragFloat2("RedOffset", &postEffectParam.redOffset.x, 0.001f, -1.0f, 1.0f);
           ImGui::DragFloat2("GreenOffset", &postEffectParam.greenOffset.x, 0.001f, -1.0f, 1.0f);
           ImGui::DragFloat2("BlueOffset", &postEffectParam.blueOffset.x, 0.001f, -1.0f, 1.0f);
-          PostEffect::GetInstance()->SetRGBSplitOffsets(postEffectParam.redOffset, postEffectParam.greenOffset, postEffectParam.blueOffset);
+          PostEffectManager::GetInstance()->SetRGBSplitOffsets(postEffectParam.redOffset, postEffectParam.greenOffset, postEffectParam.blueOffset);
         }
 
         if (postEffectType == LuminanceBasedOutline || postEffectType == DepthBasedOutline)
         {
           ImGui::DragFloat("OutlineThickness", &postEffectParam.outlineThickness, 0.1f, 0.0f, 100.0f);
-          PostEffect::GetInstance()->SetLuminanceOutlineThickness(postEffectParam.outlineThickness);
-          PostEffect::GetInstance()->SetDepthOutlineThickness(postEffectParam.outlineThickness);
-          PostEffect::GetInstance()->SetDepthOutlineProjectionInverse(Mat4x4::Inverse(defaultCamera_->GetProjectionMatrix()));
+          PostEffectManager::GetInstance()->SetLuminanceOutlineThickness(postEffectParam.outlineThickness);
+          PostEffectManager::GetInstance()->SetDepthOutlineThickness(postEffectParam.outlineThickness);
+          PostEffectManager::GetInstance()->SetDepthOutlineProjectionInverse(Mat4x4::Inverse(defaultCamera_->GetProjectionMatrix()));
         }
 
         ImGui::EndTabItem();

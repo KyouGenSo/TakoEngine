@@ -165,7 +165,7 @@
     <ClCompile Include="engine\3d\SkyBox.cpp">
       <Filter>3d</Filter>
     </ClCompile>
-    <ClCompile Include="engine\effect\PostEffect.cpp">
+    <ClCompile Include="engine\effect\PostEffectManager.cpp">
       <Filter>effect\PostEffect</Filter>
     </ClCompile>
   </ItemGroup>
@@ -326,7 +326,7 @@
     <ClInclude Include="engine\3d\SkyBox.h">
       <Filter>3d</Filter>
     </ClInclude>
-    <ClInclude Include="engine\effect\PostEffect.h">
+    <ClInclude Include="engine\effect\PostEffectManager.h">
       <Filter>effect\PostEffect</Filter>
     </ClInclude>
     <ClInclude Include="engine\effect\PostEffectStruct.h">

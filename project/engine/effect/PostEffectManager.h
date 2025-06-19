@@ -10,17 +10,17 @@
 
 class DX12Basic;
 
-class PostEffect {
+class PostEffectManager {
 private:
   // シングルトン設定
-  static PostEffect* instance_;
+  static PostEffectManager* instance_;
 
-  PostEffect() = default;
-  ~PostEffect() = default;
+  PostEffectManager() = default;
+  ~PostEffectManager() = default;
 
 public:
-  PostEffect(PostEffect&) = delete;
-  PostEffect& operator=(PostEffect&) = delete;
+  PostEffectManager(PostEffectManager&) = delete;
+  PostEffectManager& operator=(PostEffectManager&) = delete;
 
 public: // メンバ関数
 
@@ -28,7 +28,7 @@ public: // メンバ関数
   template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
 
   // インスタンスの取得
-  static PostEffect* GetInstance();
+  static PostEffectManager* GetInstance();
 
   // 初期化
   void Initialize(DX12Basic* dx12);

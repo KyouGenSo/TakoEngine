@@ -7,7 +7,7 @@
 #include "SpriteBasic.h"
 #include "Model.h"
 #include "Draw2D.h"
-#include "PostEffect.h"
+#include "PostEffectManager.h"
 #include "DebugCamera.h"
 #include "Transition.h"
 #include "FrameTimer.h"
@@ -55,7 +55,7 @@ void TakoFramework::Initialize()
   Draw2D::GetInstance()->Initialize(dx12_);
 
 
-  PostEffect::GetInstance()->Initialize(dx12_);
+  PostEffectManager::GetInstance()->Initialize(dx12_);
 
   TextureManager::GetInstance()->LoadTexture("black.png");
 
@@ -76,7 +76,7 @@ void TakoFramework::Finalize()
 	SrvManager::GetInstance()->Finalize();
 
 	// PostEffectの終了処理
-	PostEffect::GetInstance()->Finalize();
+	PostEffectManager::GetInstance()->Finalize();
 
 	// ModelManagerの終了処理
 	ModelManager::GetInstance()->Finalize();
@@ -172,7 +172,7 @@ void TakoFramework::ToggleFullScreen()
   dx12_->ResizeBuffers(width, height);
 
   // レンダーテクスチャの再作成（PostEffect用）
-  PostEffect::GetInstance()->RecreateRenderTexture(width, height);
+  PostEffectManager::GetInstance()->RecreateRenderTexture(width, height);
 
   // カメラのアスペクト比を更新
   defaultCamera_->UpdateProjectionMatrix();

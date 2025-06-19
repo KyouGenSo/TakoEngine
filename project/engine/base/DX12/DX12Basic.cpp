@@ -4,7 +4,7 @@
 #include <thread>
 #include "Logger.h"
 #include "StringUtility.h"
-#include "PostEffect.h"
+#include "PostEffectManager.h"
 
 #include"imgui.h"
 #include"imgui_impl_win32.h"
@@ -96,7 +96,7 @@ void DX12Basic::SetEffectRenderTexture()
 	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvHeap_->GetCPUDescriptorHandleForHeapStart();
 
 	// レンダーテクスチャを描画先に設定
-	PostEffect::GetInstance()->BeginDrawEffectTarget();
+	PostEffectManager::GetInstance()->BeginDrawEffectTarget();
 
 	// 深度ステンシルをクリア
 	commandList_->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
@@ -111,7 +111,7 @@ void DX12Basic::SetNonEffectRenderTexture()
   D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvHeap_->GetCPUDescriptorHandleForHeapStart();
 
   // レンダーテクスチャを描画先に設定
-  PostEffect::GetInstance()->BegineDrawNonEffectTarget();
+  PostEffectManager::GetInstance()->BegineDrawNonEffectTarget();
 
   SetViewPort();
 }
