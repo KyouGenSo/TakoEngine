@@ -39,7 +39,7 @@ void MyGame::Initialize()
   TextureManager::GetInstance()->LoadTexture("white.png");
   TextureManager::GetInstance()->LoadTexture("circle.png");
   TextureManager::GetInstance()->LoadTexture("uvChecker.png");
-  TextureManager::GetInstance()->LoadTexture("rostock_laage_airport_4k.dds");
+  TextureManager::GetInstance()->LoadTexture("my_skybox.dds");
 
   spriteBasicOnresizeId = winApp_->RegisterOnResizeFunc(std::bind(&SpriteBasic::OnResize, SpriteBasic::GetInstance(), std::placeholders::_1));
 

@@ -33,7 +33,7 @@ void GameScene::Initialize()
 
   // SkyBoxの初期化
   skyBox_ = std::make_unique<SkyBox>();
-  skyBox_->Initialize("rostock_laage_airport_4k.dds");
+  skyBox_->Initialize("my_skybox.dds");
 
   object3d_ = new Object3d();
   object3d_->Initialize();
