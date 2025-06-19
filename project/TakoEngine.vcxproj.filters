@@ -168,6 +168,10 @@
     <ClCompile Include="engine\effect\PostEffectManager.cpp">
       <Filter>effect\PostEffect</Filter>
     </ClCompile>
+    <ClCompile Include="engine\effect\IPostEffect.cpp">
+      <Filter>effect\PostEffect</Filter>
+    </ClCompile>
+    <ClCompile Include="GrayScale.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\math\Matrix4x4.h">
@@ -332,5 +336,9 @@
     <ClInclude Include="engine\effect\PostEffectStruct.h">
       <Filter>effect\PostEffect</Filter>
     </ClInclude>
+    <ClInclude Include="engine\effect\IPostEffect.h">
+      <Filter>effect\PostEffect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\GrayScale.h" />
   </ItemGroup>
 </Project>

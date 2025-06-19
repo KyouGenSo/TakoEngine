@@ -157,18 +157,18 @@ private: // メンバ変数
   std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> pipelineStates_;
 
   // パラメーターリソース
-  Microsoft::WRL::ComPtr<ID3D12Resource> vignetteParamResource_;
-  Microsoft::WRL::ComPtr<ID3D12Resource> vignetteRedBloomParamResource_;
-  Microsoft::WRL::ComPtr<ID3D12Resource> bloomParamResource_;
-  Microsoft::WRL::ComPtr<ID3D12Resource> bloomParamResource2_;
-  Microsoft::WRL::ComPtr<ID3D12Resource> newBloomParamResource_;
-  Microsoft::WRL::ComPtr<ID3D12Resource> fogParamResource_;
-  Microsoft::WRL::ComPtr<ID3D12Resource> radialBlurParamResource_;
-  Microsoft::WRL::ComPtr<ID3D12Resource> cameraForGPUResource_;
-  Microsoft::WRL::ComPtr<ID3D12Resource> BWFilterParamResource_;
-  Microsoft::WRL::ComPtr<ID3D12Resource> rgbSplitParamResource_;
-  Microsoft::WRL::ComPtr<ID3D12Resource> luminanceOutlineParamResource_;
-  Microsoft::WRL::ComPtr<ID3D12Resource> depthOutlineParamResource_;
+  ComPtr<ID3D12Resource> vignetteParamResource_;
+  ComPtr<ID3D12Resource> vignetteRedBloomParamResource_;
+  ComPtr<ID3D12Resource> bloomParamResource_;
+  ComPtr<ID3D12Resource> bloomParamResource2_;
+  ComPtr<ID3D12Resource> newBloomParamResource_;
+  ComPtr<ID3D12Resource> fogParamResource_;
+  ComPtr<ID3D12Resource> radialBlurParamResource_;
+  ComPtr<ID3D12Resource> cameraForGPUResource_;
+  ComPtr<ID3D12Resource> BWFilterParamResource_;
+  ComPtr<ID3D12Resource> rgbSplitParamResource_;
+  ComPtr<ID3D12Resource> luminanceOutlineParamResource_;
+  ComPtr<ID3D12Resource> depthOutlineParamResource_;
 
   // パラメーターデータ
   VignetteParam* vignetteParam_;
