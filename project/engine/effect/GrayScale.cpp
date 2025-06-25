@@ -4,6 +4,7 @@
 
 #include "DX12Basic.h"
 #include "Logger.h"
+#include "SrvManager.h"
 #include "StringUtility.h"
 
 void GrayScale::Initialize(DX12Basic* dx12, std::string shaderName)
@@ -11,16 +12,33 @@ void GrayScale::Initialize(DX12Basic* dx12, std::string shaderName)
   IPostEffect::Initialize(dx12, shaderName);
 }
 
-void GrayScale::Draw()
+void GrayScale::Apply(uint32_t inputSrvIndex,
+  D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle,
+  uint32_t depthSrvIndex, // 深度バッファが必要なエフェクト用
+  Vector4 clearColor)
 {
+  depthSrvIndex; // 深度バッファはGrayScaleエフェクトでは使用しないため、引数として受け取るが無視する
+  clearColor;    // ClearColorもGrayScaleエフェクトでは使用しないため、引数として受け取るが無視する
 
-}
+  // レンダーテクスチャBを描画先に設定
+  D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
+  m_dx12_->GetCommandList()->OMSetRenderTargets(1,
+    &outputRtvHandle,
+    false,
+    &dsvHandle);
 
-void GrayScale::SetDrawSetting()
-{
   // エフェクト適用シェーダーの設定
   m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
   m_dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
+
+  // パラメータリソースの設定
+  // GrayScaleエフェクトではパラメータは使用しないため、設定は行わない
+
+  // レンダーテクスチャAをシェーダーリソースとして設定
+  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, inputSrvIndex);
+
+  // フルスクリーン三角形描画
+  m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
 }
 
 void GrayScale::DrawImgui()

@@ -1,12 +1,10 @@
 #include "IPostEffect.h"
 
-#include <utility>
-
 void IPostEffect::Initialize(DX12Basic* dx12, std::string shaderName)
 {
   m_dx12_ = dx12;
 
-  shaderName_ = std::move(shaderName);
+  shaderName_ = shaderName;
 
   CreateRootSignature();
   CreatePSO();

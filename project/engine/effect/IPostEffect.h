@@ -3,43 +3,32 @@
 #include <string>
 #include<wrl.h>
 
+struct Vector4;
 class DX12Basic;
 
 class IPostEffect
 {
 public: // メンバー関数
 
+  // デストラクタ
+  virtual ~IPostEffect() = default;
+
   // 初期化
   virtual void Initialize(DX12Basic* dx12, std::string shaderName);
 
-  // 描画
-  virtual void Draw() = 0;
-
-  // 描画設定
-  virtual void SetDrawSetting() = 0;
+  // エフェクト適用
+  virtual void Apply(
+    uint32_t inputSrvIndex,
+    D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle,
+    uint32_t depthSrvIndex, // 深度バッファが必要なエフェクト用
+    Vector4 clearColor
+  ) = 0;
 
   // Debug用のパラメータを設定
   virtual void DrawImgui() = 0;
 
-  // 入力画像のRTVハンドルを設定
-  void SetInputRtvHandle(uint32_t rtvHandle) {
-    inputImageRtvHandle_ = rtvHandle;
-  }
-
-  // 出力画像のRTVハンドルを設定
-  void SetOutputRtvHandle(uint32_t rtvHandle) {
-    outputImageRtvHandle_ = rtvHandle;
-  }
-
-  // 入力画像のRTVハンドルを取得
-  uint32_t GetInputRtvHandle() const {
-    return inputImageRtvHandle_;
-  }
-
-  // 出力画像のRTVハンドルを取得
-  uint32_t GetOutputRtvHandle() const {
-    return outputImageRtvHandle_;
-  }
+  // 深度バッファが必要か
+  virtual bool RequiresDepthBuffer() const { return false; }
 
 protected: // プライベートメンバー関数
 
@@ -55,20 +44,13 @@ protected: // メンバー変数
   // DX12の基本情報
   DX12Basic* m_dx12_ = nullptr;
 
-  uint32_t inputImageRtvHandle_ = 0; // 入力画像のRTVハンドル
-
-  uint32_t outputImageRtvHandle_ = 0; // 出力画像のRTVハンドル
+  // シェーダー名
+  std::string shaderName_;
 
   // ルートシグネチャ
   ComPtr<ID3D12RootSignature> rootSignature_;
 
   // パイプラインステート
   ComPtr<ID3D12PipelineState> pipelineState_;
-
-  // パラメーターリソース
-  ComPtr<ID3D12Resource> paramResource_;
-
-  // Shaderの名前
-  std::string shaderName_ = "DefaultShader";
 };
 

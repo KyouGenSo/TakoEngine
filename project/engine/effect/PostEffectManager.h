@@ -34,7 +34,7 @@ public: // メンバ関数
   void Initialize(DX12Basic* dx12);
 
   // 終了処理
-  void Finalize();
+  static void Finalize();
 
   // 描画前の処理
   void BeginDrawEffectTarget();

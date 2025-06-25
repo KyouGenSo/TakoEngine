@@ -9,10 +9,12 @@ public:
   void Initialize(DX12Basic* dx12, std::string shaderName) override;
 
   // 描画
-  void Draw() override;
-
-  // 描画設定
-  void SetDrawSetting() override;
+  void Apply(
+    uint32_t inputSrvIndex,
+    D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle,
+    uint32_t depthSrvIndex, // 深度バッファが必要なエフェクト用
+    Vector4 clearColor
+  ) override;
 
   // Debug描画
   void DrawImgui() override;
