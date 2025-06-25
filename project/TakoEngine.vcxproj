@@ -128,6 +128,7 @@
     <ClCompile Include="engine\audio\Audio.cpp" />
     <ClCompile Include="engine\3d\Camera.cpp" />
     <ClCompile Include="engine\effect\GPUParticleEmitter.cpp" />
+    <ClCompile Include="engine\effect\GrayScale.cpp" />
     <ClCompile Include="engine\effect\IPostEffect.cpp" />
     <ClCompile Include="engine\effect\SphereEmitter.cpp" />
     <ClCompile Include="engine\imgui\ImGuiManager.cpp" />
@@ -158,7 +159,6 @@
     <ClCompile Include="engine\func\mathFunc\QuatFunc.cpp" />
     <ClCompile Include="engine\effect\TriangleEmitter.cpp" />
     <ClCompile Include="engine\3d\Mesh.cpp" />
-    <ClCompile Include="GrayScale.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\3d\SkyBox.h" />

@@ -13,9 +13,19 @@ void GrayScale::Initialize(DX12Basic* dx12, std::string shaderName)
 
 void GrayScale::Draw()
 {
+
+}
+
+void GrayScale::SetDrawSetting()
+{
   // エフェクト適用シェーダーの設定
   m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
   m_dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
+}
+
+void GrayScale::DrawImgui()
+{
+
 }
 
 void GrayScale::CreateRootSignature()
@@ -93,11 +103,10 @@ void GrayScale::CreatePSO()
   rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
 
   // shaderのコンパイル
-  std::wstring psPath = L"resources/shaders/" + StringUtility::ConvertString(shaderName_) + L".PS.hlsl";
-
   Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(L"resources/shaders/FullScreen.VS.hlsl", L"vs_6_0");
   assert(vertexShaderBlob != nullptr);
 
+  std::wstring psPath = L"resources/shaders/" + StringUtility::ConvertString(shaderName_) + L".PS.hlsl";
   Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(psPath, L"ps_6_0");
   assert(pixelShaderBlob != nullptr);
 

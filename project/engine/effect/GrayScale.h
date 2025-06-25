@@ -11,6 +11,12 @@ public:
   // 描画
   void Draw() override;
 
+  // 描画設定
+  void SetDrawSetting() override;
+
+  // Debug描画
+  void DrawImgui() override;
+
 private:
 
   void CreateRootSignature() override;

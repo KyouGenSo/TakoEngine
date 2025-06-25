@@ -120,21 +120,25 @@ void PostEffectManager::Draw()
 
 void PostEffectManager::DrawPostEffect(const std::string& effectName)
 {
-  if (effectName == "Bloom") {
-    DrawMultiPassBloom();
-    return;
-  }
+  //if (effectName == "Bloom") {
+  //  DrawMultiPassBloom();
+  //  return;
+  //}
 
-  if (effectName == "NewBloom") {
-    DrawMultiPassNewBloom();
-    return;
-  }
+  //if (effectName == "NewBloom") {
+  //  DrawMultiPassNewBloom();
+  //  return;
+  //}
 
   // レンダーテクスチャAの状態をシェーダーリソースに変更
-  SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, originRenderTexResource_.Get());
+  SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET,
+    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+    originRenderTexResource_.Get());
 
   if (effectName == "BloomFog" || effectName == "DepthBasedOutline") {
-    m_dx12_->TransitionResourceState(D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, m_dx12_->GetDepthStencilResource());
+    m_dx12_->TransitionResourceState(D3D12_RESOURCE_STATE_DEPTH_WRITE,
+      D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+      m_dx12_->GetDepthStencilResource());
   }
 
   // レンダーテクスチャBを描画先に設定
@@ -145,9 +149,6 @@ void PostEffectManager::DrawPostEffect(const std::string& effectName)
   float clearColor[] = { resultRenderTexClearColor_.x, resultRenderTexClearColor_.y, resultRenderTexClearColor_.z, resultRenderTexClearColor_.w };
   m_dx12_->GetCommandList()->ClearRenderTargetView(resultRenderTexRTVHandle_, clearColor, 0, nullptr);
 
-  // ビューポート設定
-  m_dx12_->SetViewPort();
-
   // エフェクト適用シェーダーの設定
   m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_[effectName].Get());
   m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_[effectName].Get());
@@ -157,6 +158,7 @@ void PostEffectManager::DrawPostEffect(const std::string& effectName)
 
   // レンダーテクスチャAをシェーダーリソースとして設定
   SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, originRtvSrvIndex_);
+
   if (effectName == "BloomFog" || effectName == "DepthBasedOutline") {
     SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(4, dsvSrvIndex_);
   }
@@ -165,11 +167,15 @@ void PostEffectManager::DrawPostEffect(const std::string& effectName)
   m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
 
   if (effectName == "BloomFog" || effectName == "DepthBasedOutline") {
-    m_dx12_->TransitionResourceState(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE, m_dx12_->GetDepthStencilResource());
+    m_dx12_->TransitionResourceState(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+      D3D12_RESOURCE_STATE_DEPTH_WRITE,
+      m_dx12_->GetDepthStencilResource());
   }
 
   // レンダーテクスチャAの状態を元に戻す
-  SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET, originRenderTexResource_.Get());
+  SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+    D3D12_RESOURCE_STATE_RENDER_TARGET,
+    originRenderTexResource_.Get());
 }
 
 void PostEffectManager::DrawMultiPassNewBloom()
@@ -415,7 +421,9 @@ void PostEffectManager::DrawMultiPassBloom()
 void PostEffectManager::DrawFinalResult()
 {
   // レンダーテクスチャBの状態をシェーダーリソースに変更
-  SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, resultRenderTexResource_.Get());
+  SetBarrier(D3D12_RESOURCE_STATE_RENDER_TARGET,
+    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+    resultRenderTexResource_.Get());
 
   // スワップチェーンを描画先に設定
   m_dx12_->SetSwapChain();
@@ -431,7 +439,9 @@ void PostEffectManager::DrawFinalResult()
   m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
 
   // レンダーテクスチャBの状態を元に戻す
-  SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET, resultRenderTexResource_.Get());
+  SetBarrier(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+    D3D12_RESOURCE_STATE_RENDER_TARGET,
+    resultRenderTexResource_.Get());
 }
 
 void PostEffectManager::RecreateRenderTexture(uint32_t width, uint32_t height)
