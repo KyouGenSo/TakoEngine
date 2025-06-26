@@ -3,12 +3,14 @@
 
 #include "Matrix4x4.h"
 #include "Vector2.h"
+#include "vector3.h"
 #include "Vector4.h"
 
 struct VignetteParam
 {
   float power;
   float range;
+  Vector3 color;
 };
 
 struct VignetteRedBloomParam

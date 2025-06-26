@@ -1,5 +1,13 @@
 #include "FullScreen.hlsli"
 
+struct VignetteParam
+{
+    float power;
+    float range;
+    float3 color;
+};
+
+ConstantBuffer<VignetteParam> gVignetteParam : register(b0);
 Texture2D<float4> gTexture : register(t0);
 SamplerState gSampler : register(s0);
 
@@ -15,11 +23,11 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     
     float2 correct = input.texCoord * (1.0f - input.texCoord.xy);
     
-    float vignette = correct.x * correct.y * 15.0f;
+    float vignette = correct.x * correct.y * gVignetteParam.range;
     
-    vignette = saturate(pow(vignette, 0.8f));
-    
-    output.color.rgb *= vignette;
+    vignette = saturate(pow(vignette, gVignetteParam.power));
+
+    output.color.rgb = lerp(output.color.rgb, gVignetteParam.color, 1.0f - vignette); // vignette‚ÅF‚ğ•âŠÔ
     
     return output.color;
 
