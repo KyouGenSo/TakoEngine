@@ -11,10 +11,10 @@ class DX12Basic;
 
 class IPostEffect  
 {
-public: // エフェクトパラメーターのvariant型定義
+protected: // エフェクトパラメーターのvariant型定義
+
   using EffectParam = std::variant<
     VignetteParam,
-    VignetteRedBloomParam,
     BloomParam,
     NewBloomParam,
     FogParam,

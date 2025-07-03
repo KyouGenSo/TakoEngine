@@ -131,6 +131,7 @@
     <ClCompile Include="engine\effect\GrayScale.cpp" />
     <ClCompile Include="engine\effect\IPostEffect.cpp" />
     <ClCompile Include="engine\effect\NoEffect.cpp" />
+    <ClCompile Include="engine\effect\RadialBlur.cpp" />
     <ClCompile Include="engine\effect\SphereEmitter.cpp" />
     <ClCompile Include="engine\effect\Vignette.cpp" />
     <ClCompile Include="engine\imgui\ImGuiManager.cpp" />
@@ -174,6 +175,7 @@
     <ClInclude Include="engine\effect\IPostEffect.h" />
     <ClInclude Include="engine\effect\NoEffect.h" />
     <ClInclude Include="engine\effect\PostEffectStruct.h" />
+    <ClInclude Include="engine\effect\RadialBlur.h" />
     <ClInclude Include="engine\effect\SphereEmitter.h" />
     <ClInclude Include="engine\effect\Vignette.h" />
     <ClInclude Include="engine\io\GlobalVariables.h" />

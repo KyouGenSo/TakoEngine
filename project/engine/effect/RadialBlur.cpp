@@ -1,6 +1,4 @@
-#include "Vignette.h"
-
-#include <cassert>
+#include "RadialBlur.h"
 
 #include "DX12Basic.h"
 #include "Logger.h"
@@ -11,16 +9,16 @@
 #include "imgui.h"
 #endif
 
-void Vignette::Initialize(DX12Basic* dx12, const std::string shaderName)
+void RadialBlur::Initialize(DX12Basic* dx12, std::string shaderName)
 {
-  power_ = 0.0f;
-  range_ = 20.0f;
-  color_ = Vector3(0.0f, 0.0f, 0.0f);
+  center_ = Vector2(0.5f, 0.5f);
+  blurWidth_ = 0.0f;
+  sampleCount_ = 8;
 
   IPostEffect::Initialize(dx12, shaderName);
 }
 
-void Vignette::Apply(const uint32_t inputSrvIndex, const D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, const uint32_t depthSrvIndex, const Vector4 clearColor)
+void RadialBlur::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, uint32_t depthSrvIndex, Vector4 clearColor)
 {
   depthSrvIndex; // 深度バッファはVignetteエフェクトでは使用しないため、引数として受け取るが無視する
   clearColor;    // ClearColorもVignetteエフェクトでは使用しないため、引数として受け取るが無視する
@@ -46,42 +44,40 @@ void Vignette::Apply(const uint32_t inputSrvIndex, const D3D12_CPU_DESCRIPTOR_HA
   m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
 }
 
-void Vignette::DrawImgui()
+void RadialBlur::DrawImgui()
 {
 #ifdef _DEBUG
-  ImGui::DragFloat("VignettePower", &power_, 0.01f, 0.0f, 10.0f);
-  cBufferData_->power = power_;
-  ImGui::DragFloat("VignetteRange", &range_, 0.01f, 0.0f, 100.0f);
-  cBufferData_->range = range_;
-  ImGui::ColorEdit3("VignetteColor", &color_.x);
-  cBufferData_->color.x = color_.x;
+  ImGui::DragFloat2("Center", &center_.x, 0.01f, 0.0f, 1.0f, "%.3f");
+  cBufferData_->center = center_;
+  ImGui::DragFloat("Blur Width", &blurWidth_, 0.001f, 0.0f, 1.0f, "%.3f");
+  cBufferData_->blurWidth = blurWidth_;
+  ImGui::DragInt("Sample Count", reinterpret_cast<int*>(&sampleCount_), 1, 1, 1024, "%d");
+  cBufferData_->sampleCount = sampleCount_;
 #endif
 }
 
-bool Vignette::SetGenericParam(const EffectParam& param)
+bool RadialBlur::SetGenericParam(const EffectParam& param)
 {
-  if (auto* vignetteParam = std::get_if<VignetteParam>(&param)) {
-    SetParam(*vignetteParam);
+  if (auto* radialBlurParam = std::get_if<RadialBlurParam>(&param)) {
+    SetParam(*radialBlurParam);
     return true;
   }
   return false;
 }
 
-void Vignette::SetParam(const VignetteParam& param)
+void RadialBlur::SetParam(const RadialBlurParam& param)
 {
   if (cBufferData_ == nullptr)
   {
     return; // cBufferData_が初期化されていない場合は何もしない
   }
   // パラメータの設定
-  cBufferData_->power = param.power;
-  cBufferData_->range = param.range;
-  cBufferData_->color.x = param.color.x;
-  cBufferData_->color.y = param.color.y;
-  cBufferData_->color.z = param.color.z;
+  cBufferData_->center = param.center;
+  cBufferData_->blurWidth = param.blurWidth;
+  cBufferData_->sampleCount = param.sampleCount;
 }
 
-void Vignette::CreateRootSignature()
+void RadialBlur::CreateRootSignature()
 {
   HRESULT hr;
 
@@ -140,7 +136,7 @@ void Vignette::CreateRootSignature()
   assert(SUCCEEDED(hr));
 }
 
-void Vignette::CreatePSO()
+void RadialBlur::CreatePSO()
 {
   HRESULT hr;
 
@@ -198,16 +194,16 @@ void Vignette::CreatePSO()
   assert(SUCCEEDED(hr));
 }
 
-void Vignette::CreateCBV()
+void RadialBlur::CreateCBV()
 {
-  // VignetteParamのリソース生成
-  cBufferResource_ = m_dx12_->MakeBufferResource(sizeof(VignetteParam));
+  // RadialBlurの定数バッファの生成
+  cBufferResource_ = m_dx12_->MakeBufferResource(sizeof(RadialBlurParam));
 
-  // データの設定
+  //　map
   cBufferResource_->Map(0, nullptr, reinterpret_cast<void**>(&cBufferData_));
 
-  // データの初期化
-  cBufferData_->power = power_;
-  cBufferData_->range = range_;
-  cBufferData_->color = color_;
+  // 初期値の設定
+  cBufferData_->center = center_;
+  cBufferData_->blurWidth = blurWidth_;
+  cBufferData_->sampleCount = sampleCount_;
 }

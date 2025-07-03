@@ -31,7 +31,6 @@ public:
 public: // エフェクトパラメーターのvariant型定義
   using EffectParam = std::variant<
     VignetteParam,
-    VignetteRedBloomParam,
     BloomParam,
     NewBloomParam,
     FogParam,

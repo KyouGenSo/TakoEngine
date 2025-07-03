@@ -1,8 +1,7 @@
 #pragma once
 #include "IPostEffect.h"
-#include "PostEffectStruct.h"
 
-class Vignette : public IPostEffect
+class RadialBlur : public IPostEffect
 {
 public:
 
@@ -22,7 +21,7 @@ public:
 
   // パラメータ設定
   bool SetGenericParam(const EffectParam& param) override;
-  void SetParam(const VignetteParam& param);
+  void SetParam(const RadialBlurParam& param);
 
 private:
 
@@ -33,9 +32,10 @@ private:
 private:
 
   ComPtr<ID3D12Resource> cBufferResource_;
-  VignetteParam* cBufferData_ = nullptr;
+  RadialBlurParam* cBufferData_ = nullptr;
 
-  float power_ = 0.5f; // 効果の強さ
-  float range_ = 0.0f; // 効果の範囲
-  Vector3 color_{ .x= 0.0f, .y= 0.0f, .z= 0.0f }; // 効果の色
+  Vector2 center_ = { .x = 0.5f, .y = 0.5f }; // 中心位置
+  float blurWidth_ = 0.0f;                // ブラーの幅
+  int32_t sampleCount_ = 8;              // サンプル数
 };
+

@@ -9,6 +9,7 @@
 #include "NoEffect.h"
 #include "GrayScale.h"
 #include "Vignette.h"
+#include "RadialBlur.h"
 
 #include <algorithm>
 
@@ -38,6 +39,7 @@ void PostEffectManager::Initialize(DX12Basic* dx12)
   RegisterEffect("NoEffect", std::make_unique<NoEffect>());
   RegisterEffect("GrayScale", std::make_unique<GrayScale>());
   RegisterEffect("Vignette", std::make_unique<Vignette>());
+  RegisterEffect("RadialBlur", std::make_unique<RadialBlur>());
 
   // 深度バッファのSRV作成
   depthSrvIndex_ = SrvManager::GetInstance()->Allocate();
@@ -426,7 +428,7 @@ void PostEffectManager::SetBarrier(ID3D12Resource* resource, D3D12_RESOURCE_STAT
   m_dx12_->GetCommandList()->ResourceBarrier(1, &barrier);
 }
 
-bool PostEffectManager::SetEffectParam(const std::string& effectName, const EffectParam& param)
+  bool PostEffectManager::SetEffectParam(const std::string& effectName, const EffectParam& param)
 {
   // エフェクトが存在するかチェック
   auto it = effectRegistry_.find(effectName);
