@@ -1,13 +1,19 @@
 #pragma once
 #include <d3d12.h>
-#include<unordered_map>
-#include<string>
-#include<wrl.h>
+#include <memory>
+#include <unordered_map>
+#include <string>
+#include <wrl.h>
 
+#include "IPostEffect.h"
 #include "Vector2.h"
 #include"Vector4.h"
 #include "PostEffectStruct.h"
+#include <variant>
+#include <string>
 
+
+class IPostEffect;
 class DX12Basic;
 
 class PostEffectManager {
@@ -21,6 +27,20 @@ private:
 public:
   PostEffectManager(PostEffectManager&) = delete;
   PostEffectManager& operator=(PostEffectManager&) = delete;
+
+public: // エフェクトパラメーターのvariant型定義
+  using EffectParam = std::variant<
+    VignetteParam,
+    VignetteRedBloomParam,
+    BloomParam,
+    NewBloomParam,
+    FogParam,
+    RadialBlurParam,
+    BWFilterParam,
+    RGBSplitParam,
+    LuminanceOutlineParam,
+    DepthOutlineParam
+  >;
 
 public: // メンバ関数
 
@@ -36,151 +56,103 @@ public: // メンバ関数
   // 終了処理
   static void Finalize();
 
+  // エフェクトチェーンの管理
+  void AddEffectToChain(const std::string& name);
+  void RemoveEffectFromChain(const std::string& name);
+  void ClearEffectChain();
+
   // 描画前の処理
   void BeginDrawEffectTarget();
   void BegineDrawNonEffectTarget();
 
   // 描画
   void Draw();
-  void DrawPostEffect(const std::string& effectName);
-  void DrawMultiPassNewBloom(); // マルチパスブルーム描画用
-  void DrawMultiPassBloom();
   void DrawFinalResult();
+  void DrawImgui();
 
   // レンダーテクスチャの再作成
-  void RecreateRenderTexture(uint32_t width, uint32_t height);
-
-  // -----------------------------------Getters-----------------------------------//
-  // レンダーテクスチャの取得
-  ID3D12Resource* GetRenderTextureResource() { return originRenderTexResource_.Get(); }
-
-  // -----------------------------------Setters-----------------------------------//
-  void SetEffectType(std::string effectName) { currentEffectName_ = effectName; }
-  void SetVignettePower(float power);
-  void SetVignetteRange(float range);
-  void SetBloomThreshold(float threshold);
-  void SetBloomIntensity(float intensity);
-  void SetBloomSigma(float sigma);
-  void SetBloomKernelSize(int kernelSize);
-  void SetBloomSampleCount(int32_t count);
-  void SetDownSampleFactor(int factor);
-  void SetBloomIteration(int iteration) { bloomIteration_ = iteration; }
-  void SetFogColor(const Vector4& color);
-  void SetFogDensity(float density);
-  void SetRadialBlurCenter(const Vector2& center);
-  void SetRadialBlurWidth(float width);
-  void SetBWFilterThreshold(float bwFilterThreshold) { BWFilterParam_->threshold = bwFilterThreshold; }
-  void SetRGBSplitOffsets(const Vector2& red, const Vector2& green, const Vector2& blue);
-  void SetRGBSplitIntensity(float intensity) { rgbSplitParam_->intensity = intensity; }
-  void SetLuminanceOutlineThickness(float thickness) { luminanceOutlineParam_->outlineThickness = thickness; }
-  void SetDepthOutlineProjectionInverse(const Matrix4x4& projectionInv) { 
-    depthOutlineParam_->projectionInverse = projectionInv; 
-  }
-  void SetDepthOutlineThickness(float thickness) { depthOutlineParam_->outlineThickness = thickness; }
+  void RecreateRenderTexture();
 
   // バリアの設定
   void SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
-  void SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter, ID3D12Resource* resource);
+  void SetBarrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
+
+  // 汎用パラメーター設定関数
+  bool SetEffectParam(const std::string& effectName, const EffectParam& param);
+
+  template<typename ParamType>
+  bool SetEffectParam(const std::string& effectName, const ParamType& param) {
+    return SetEffectParam(effectName, EffectParam(param));
+  }
+
+  // エフェクト順序変更関数
+  bool MoveEffectUp(const std::string& effectName);
+  bool MoveEffectDown(const std::string& effectName);
+  bool MoveEffectToPosition(const std::string& effectName, int newPosition);
+  bool SwapEffects(const std::string& effectName1, const std::string& effectName2);
+  bool SwapEffectsByIndex(int index1, int index2);
+
+  // エフェクト位置取得
+  int GetEffectPosition(const std::string& effectName) const;
+  bool IsEffectInChain(const std::string& effectName) const;
+
+  // エフェクトチェーン情報取得
+  size_t GetEffectChainSize() const;
+  std::string GetEffectAtPosition(int position) const;
+  std::vector<std::string> GetEffectChain() const;
 
 private: // プライベートメンバー関数
+  // レンダーターゲットの作成
+  void CreateRenderTextures();
 
-  void CreateRenderTexture();
-  void CreateBloomTextures();
-  void CreateDepthBufferSRV();
-  void CreateRootSignature(const std::string& effectName, const D3D12_FILTER filter);
-  void CreatePSO(const std::string& effectName, const D3D12_FILTER filter);
-  void CreateVignetteParam();
-  void CreateVignetteRedBloomParam();
-  void CreateBloomParam();
-  void CreateNewBloomParam();
-  void CreateFogParam();
-  void CreateRadialBlurParam();
-  void CreateCameraForGPU();
-  void CreateBWFilterParam();
-  void CreateRGBSplitParam();
-  void CreateLuminanceOutlineParam();
-  void CreateDepthOutlineParam();
-  void SetParamResource(const std::string& effectName);
+  // エフェクトの登録
+  void RegisterEffect(const std::string& name, std::unique_ptr<IPostEffect> effect);
+
+  // エフェクトを適用
+  void ApplyEffectChain();
+
+  // ImGuiヘルパー関数
+  void DrawEffectParametersTab();
 
 private: // メンバ変数
-
-  std::string currentEffectName_;
 
   // DX12の基本情報
   DX12Basic* m_dx12_ = nullptr;
 
-  // Effect適用するオブジェクト用レンダーテクスチャ
-  ComPtr<ID3D12Resource> originRenderTexResource_;
-  D3D12_CPU_DESCRIPTOR_HANDLE originRenderTexRTVHandle_;
-  uint32_t originRtvSrvIndex_ = 0;
+  // レンダーターゲット構造体
+  struct RenderTarget {
+    ComPtr<ID3D12Resource> resource;
+    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;
+    uint32_t srvIndex;
+  };
 
-  // 最終結果用のレンダーテクスチャ
-  ComPtr<ID3D12Resource> resultRenderTexResource_;
-  D3D12_CPU_DESCRIPTOR_HANDLE resultRenderTexRTVHandle_;
-  uint32_t resultRtvSrvIndex_ = 0;
+  // UI用の選択状態
+  std::string selectedAvailableEffect_ = "";    // 利用可能エフェクトの選択
+  std::string selectedActiveEffect_ = "";       // アクティブエフェクトの選択
 
-  // 高輝度部分抽出用のレンダーテクスチャ
-  ComPtr<ID3D12Resource> highLumResource_;
-  D3D12_CPU_DESCRIPTOR_HANDLE highLumRTVHandle_;
-  uint32_t highLumSrvIndex_ = 0;
+  // エフェクト適用対象用RT
+  RenderTarget effectTargetRT_;
 
-  // 高輝度部分のダウンサンプル用のレンダーテクスチャ
-  ComPtr<ID3D12Resource> highLumShrinkResource_;
-  D3D12_CPU_DESCRIPTOR_HANDLE highLumShrinkRTVHandle_;
-  uint32_t highLumShrinkSrvIndex_ = 0;
+  // 非適用対象用RT
+  RenderTarget nonEffectTargetRT_;
 
-  // Bloomの結果用のレンダーテクスチャ
-  ComPtr<ID3D12Resource> bloomResultResource_;
-  D3D12_CPU_DESCRIPTOR_HANDLE bloomResultRTVHandle_;
-  uint32_t bloomResultSrvIndex_ = 0;
+  // 中間バッファ（複数エフェクト用）
+  std::vector<RenderTarget> intermediateRTs_;
+
+  // エフェクトのレジストリ
+  std::unordered_map<std::string, std::unique_ptr<IPostEffect>> effectRegistry_;
+
+  // エフェクトチェーン
+  std::vector<std::string> effectChain_;
+
+  // 利用可能なエフェクトのリスト（ImGui用）
+  std::vector<std::string> availableEffects_;
 
   // 深度バッファのSRV
-  uint32_t dsvSrvIndex_ = 0;
+  uint32_t depthSrvIndex_ = 0;
 
-  // ダウンサンプル倍率（1/N）
-  int downSampleFactor_ = 8; // 1/4サイズ
+  // クリアカラー
+  const Vector4 kEffectTargetClearColor_ = { 0.17f, 0.17f, 0.17f, 1.0f };
+  Vector4 nonEffectTargetClearColor_ = { 0.0f, 0.0f, 0.0f, 0.0f };
 
-  uint32_t downSampleWidth_ = 0;
-  uint32_t downSampleHeight_ = 0;
-
-  // bloomのイテレーション数
-  int bloomIteration_ = 8;
-
-  // レンダーテクスチャのclearColor
-  const Vector4 kOriginRenderTexClearColor_ = { 0.17f, 0.17f, 0.17f, 1.0f };
-  Vector4 resultRenderTexClearColor_ = { 0.0, 0.0, 0.0, 0.0 };
-
-  // ルートシグネチャ
-  std::unordered_map <std::string, ComPtr<ID3D12RootSignature>> rootSignatures_;
-
-  // パイプラインステート
-  std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> pipelineStates_;
-
-  // パラメーターリソース
-  ComPtr<ID3D12Resource> vignetteParamResource_;
-  ComPtr<ID3D12Resource> vignetteRedBloomParamResource_;
-  ComPtr<ID3D12Resource> bloomParamResource_;
-  ComPtr<ID3D12Resource> bloomParamResource2_;
-  ComPtr<ID3D12Resource> newBloomParamResource_;
-  ComPtr<ID3D12Resource> fogParamResource_;
-  ComPtr<ID3D12Resource> radialBlurParamResource_;
-  ComPtr<ID3D12Resource> cameraForGPUResource_;
-  ComPtr<ID3D12Resource> BWFilterParamResource_;
-  ComPtr<ID3D12Resource> rgbSplitParamResource_;
-  ComPtr<ID3D12Resource> luminanceOutlineParamResource_;
-  ComPtr<ID3D12Resource> depthOutlineParamResource_;
-
-  // パラメーターデータ
-  VignetteParam* vignetteParam_;
-  VignetteRedBloomParam* vignetteRedBloomParam_;
-  BloomParam* bloomParam_;
-  BloomParam* bloomParam2_;
-  NewBloomParam* newBloomParam_;
-  FogParam* fogParam_;
-  RadialBlurParam* radialBlurParam_;
-  CameraForGPU* cameraForGPU_;
-  BWFilterParam* BWFilterParam_;
-  RGBSplitParam* rgbSplitParam_;
-  LuminanceOutlineParam* luminanceOutlineParam_;
-  DepthOutlineParam* depthOutlineParam_;
 };

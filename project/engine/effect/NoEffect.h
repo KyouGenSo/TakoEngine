@@ -1,7 +1,6 @@
 #pragma once
 #include "IPostEffect.h"
-
-class GrayScale : public IPostEffect
+class NoEffect : public IPostEffect
 {
 public:
 
@@ -16,6 +15,8 @@ public:
     Vector4                     clearColor       // 出力先のRTVのクリアカラー
   ) override;
 
+  void ApplyToBackBuffer(uint32_t inputSrvIndex);
+
   // Debug描画
   void DrawImgui() override;
 
@@ -24,5 +25,6 @@ private:
   void CreateRootSignature() override;
   void CreatePSO() override;
   void CreateCBV() override;
+
 };
 

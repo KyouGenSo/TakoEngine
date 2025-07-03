@@ -172,7 +172,7 @@ void TakoFramework::ToggleFullScreen()
   dx12_->ResizeBuffers(width, height);
 
   // レンダーテクスチャの再作成（PostEffect用）
-  PostEffectManager::GetInstance()->RecreateRenderTexture(width, height);
+  PostEffectManager::GetInstance()->RecreateRenderTexture();
 
   // カメラのアスペクト比を更新
   defaultCamera_->UpdateProjectionMatrix();

@@ -1,4 +1,4 @@
-#include "Vignette.h"
+#include "NoEffect.h"
 
 #include <cassert>
 
@@ -7,23 +7,18 @@
 #include "SrvManager.h"
 #include "StringUtility.h"
 
-#ifdef _DEBUG
-#include "imgui.h"
-#endif
-
-void Vignette::Initialize(DX12Basic* dx12, const std::string shaderName)
+void NoEffect::Initialize(DX12Basic* dx12, std::string shaderName)
 {
   IPostEffect::Initialize(dx12, shaderName);
-
-  power_ = 0.0f;
-  range_ = 20.0f;
-  color_ = Vector3(0.0f, 0.0f, 0.0f);
 }
 
-void Vignette::Apply(const uint32_t inputSrvIndex, const D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, const uint32_t depthSrvIndex, const Vector4 clearColor)
+void NoEffect::Apply(uint32_t inputSrvIndex,
+  D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle,
+  uint32_t depthSrvIndex, // 深度バッファが必要なエフェクト用
+  Vector4 clearColor)
 {
-  depthSrvIndex; // 深度バッファはVignetteエフェクトでは使用しないため、引数として受け取るが無視する
-  clearColor;    // ClearColorもVignetteエフェクトでは使用しないため、引数として受け取るが無視する
+  depthSrvIndex; // 深度バッファはNoEffectエフェクトでは使用しないため、引数として受け取るが無視する
+  clearColor;    // ClearColorもNoEffectエフェクトでは使用しないため、引数として受け取るが無視する
 
   // レンダーテクスチャBを描画先に設定
   D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
@@ -32,12 +27,10 @@ void Vignette::Apply(const uint32_t inputSrvIndex, const D3D12_CPU_DESCRIPTOR_HA
     false,
     &dsvHandle);
 
+
   // エフェクト適用シェーダーの設定
   m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
   m_dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
-
-  // パラメータリソースの設定
-  m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, cBufferResource_->GetGPUVirtualAddress());
 
   // レンダーテクスチャAをシェーダーリソースとして設定
   SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, inputSrvIndex);
@@ -46,75 +39,25 @@ void Vignette::Apply(const uint32_t inputSrvIndex, const D3D12_CPU_DESCRIPTOR_HA
   m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
 }
 
-void Vignette::DrawImgui()
+void NoEffect::ApplyToBackBuffer(uint32_t inputSrvIndex)
 {
-#ifdef _DEBUG
-  ImGui::DragFloat("VignettePower", &power_, 0.01f, 0.0f, 10.0f);
-  SetPower(power_);
-  ImGui::DragFloat("VignetteRange", &range_, 0.01f, 0.0f, 100.0f);
-  SetRange(range_);
-  ImGui::ColorEdit3("VignetteColor", &color_.x);
-  SetColor(color_);
-#endif
+  // エフェクト適用シェーダーの設定
+  m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
+  m_dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
+
+  // レンダーテクスチャAをシェーダーリソースとして設定
+  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, inputSrvIndex);
+
+  // フルスクリーン三角形描画
+  m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
 }
 
-bool Vignette::SetGenericParam(const EffectParam& param)
+void NoEffect::DrawImgui()
 {
-  if (auto* vignetteParam = std::get_if<VignetteParam>(&param)) {
-    SetParam(*vignetteParam);
-    return true;
-  }
-  return false;
+
 }
 
-void Vignette::SetParam(const VignetteParam& param)
-{
-  if (cBufferData_ == nullptr)
-  {
-    return; // cBufferData_が初期化されていない場合は何もしない
-  }
-  // パラメータの設定
-  cBufferData_->power = param.power;
-  cBufferData_->range = param.range;
-  cBufferData_->color.x = param.color.x;
-  cBufferData_->color.y = param.color.y;
-  cBufferData_->color.z = param.color.z;
-}
-
-void Vignette::SetPower(const float power)
-{
-  if (cBufferData_ == nullptr)
-  {
-    return; // cBufferData_が初期化されていない場合は何もしない
-  }
-  // パラメータの設定
-  cBufferData_->power = power;
-}
-
-void Vignette::SetRange(const float range)
-{
-  if (cBufferData_ == nullptr)
-  {
-    return; // cBufferData_が初期化されていない場合は何もしない
-  }
-  // パラメータの設定
-  cBufferData_->range = range;
-}
-
-void Vignette::SetColor(const Vector3& color)
-{
-  if (cBufferData_ == nullptr)
-  {
-    return; // cBufferData_が初期化されていない場合は何もしない
-  }
-
-  // パラメータの設定
-  cBufferData_->color.x = color.x;
-  cBufferData_->color.y = color.y;
-  cBufferData_->color.z = color.z;
-}
-
-void Vignette::CreateRootSignature()
+void NoEffect::CreateRootSignature()
 {
   HRESULT hr;
 
@@ -136,24 +79,19 @@ void Vignette::CreateRootSignature()
   descriptionRootSignature.NumStaticSamplers = _countof(samplerDesc);
 
   // DescriptorRangeの設定。
-  D3D12_DESCRIPTOR_RANGE descriptorRangesForTex[1] = {};
-  descriptorRangesForTex[0].BaseShaderRegister = 0; // レジスタ番号
-  descriptorRangesForTex[0].NumDescriptors = 1; // ディスクリプタ数
-  descriptorRangesForTex[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
-  descriptorRangesForTex[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+  D3D12_DESCRIPTOR_RANGE descriptorRanges[1] = {};
+  descriptorRanges[0].BaseShaderRegister = 0; // レジスタ番号
+  descriptorRanges[0].NumDescriptors = 1; // ディスクリプタ数
+  descriptorRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
+  descriptorRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
 
   // RootParameterの設定。複数設定できるので配列
-  D3D12_ROOT_PARAMETER rootParameters[2] = {};
+  D3D12_ROOT_PARAMETER rootParameters[1] = {};
   // Texture
   rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
   rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-  rootParameters[0].DescriptorTable.pDescriptorRanges = descriptorRangesForTex; // ディスクリプタレンジを設定
-  rootParameters[0].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangesForTex); // レンジの数
-
-  // Param
-  rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-  rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-  rootParameters[1].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
+  rootParameters[0].DescriptorTable.pDescriptorRanges = descriptorRanges; // ディスクリプタレンジを設定
+  rootParameters[0].DescriptorTable.NumDescriptorRanges = _countof(descriptorRanges); // レンジの数
 
   descriptionRootSignature.pParameters = rootParameters;
   descriptionRootSignature.NumParameters = _countof(rootParameters);
@@ -173,7 +111,7 @@ void Vignette::CreateRootSignature()
   assert(SUCCEEDED(hr));
 }
 
-void Vignette::CreatePSO()
+void NoEffect::CreatePSO()
 {
   HRESULT hr;
 
@@ -231,15 +169,6 @@ void Vignette::CreatePSO()
   assert(SUCCEEDED(hr));
 }
 
-void Vignette::CreateCBV()
+void NoEffect::CreateCBV()
 {
-  // VignetteParamのリソース生成
-  cBufferResource_ = m_dx12_->MakeBufferResource(sizeof(VignetteParam));
-
-  // データの設定
-  cBufferResource_->Map(0, nullptr, reinterpret_cast<void**>(&cBufferData_));
-
-  // データの初期化
-  cBufferData_->power = 0.0f;
-  cBufferData_->range = 20.0f;
 }

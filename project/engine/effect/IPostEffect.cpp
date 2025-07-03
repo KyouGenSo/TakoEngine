@@ -10,7 +10,3 @@ void IPostEffect::Initialize(DX12Basic* dx12, std::string shaderName)
   CreatePSO();
   CreateCBV();
 }
-
-void IPostEffect::DrawImgui()
-{
-}

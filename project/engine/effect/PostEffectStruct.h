@@ -10,7 +10,9 @@ struct VignetteParam
 {
   float power;
   float range;
+  float padding[2];
   Vector3 color;
+  float padding2;
 };
 
 struct VignetteRedBloomParam
@@ -42,11 +44,6 @@ struct NewBloomParam
   int iteration;
   int padding3;        // パディング追加
   int padding4;        // パディング追加
-};
-
-struct PixelateParam
-{
-  float pixelSize;
 };
 
 // Shader用のカメラ

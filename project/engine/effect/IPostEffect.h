@@ -1,56 +1,75 @@
-#pragma once
-#include <d3d12.h>
-#include <string>
-#include<wrl.h>
+#pragma once  
+#include <d3d12.h>  
+#include <string>  
+#include <variant>
+#include <wrl.h>  
 
-struct Vector4;
-class DX12Basic;
+#include "PostEffectStruct.h"
 
-class IPostEffect
+struct Vector4;  
+class DX12Basic;  
+
+class IPostEffect  
 {
-public: // メンバー関数
+public: // エフェクトパラメーターのvariant型定義
+  using EffectParam = std::variant<
+    VignetteParam,
+    VignetteRedBloomParam,
+    BloomParam,
+    NewBloomParam,
+    FogParam,
+    RadialBlurParam,
+    BWFilterParam,
+    RGBSplitParam,
+    LuminanceOutlineParam,
+    DepthOutlineParam
+  >;
 
-  // デストラクタ
-  virtual ~IPostEffect() = default;
+public: // メンバー関数  
 
-  // 初期化
-  virtual void Initialize(DX12Basic* dx12, std::string shaderName);
+  // デストラクタ  
+  virtual ~IPostEffect() = default;  
 
-  // エフェクト適用
-  virtual void Apply(
-    uint32_t inputSrvIndex,
-    D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle,
-    uint32_t depthSrvIndex, // 深度バッファが必要なエフェクト用
-    Vector4 clearColor
-  ) = 0;
+  // 初期化  
+  virtual void Initialize(DX12Basic* dx12, std::string shaderName);  
 
-  // Debug用のパラメータを設定
+  // エフェクト適用  
+  virtual void Apply(  
+    uint32_t                    inputSrvIndex,   // 入力テクスチャのSRVインデックス  
+    D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, // 出力先のRTVハンドル  
+    uint32_t                    depthSrvIndex,   // 深度バッファが必要なエフェクト用  
+    Vector4                     clearColor       // 出力先のRTVのクリアカラー  
+  ) = 0;  
+
+  // Debug用のパラメータを設定  
   virtual void DrawImgui() = 0;
 
-  // 深度バッファが必要か
-  virtual bool RequiresDepthBuffer() const { return false; }
+  // 汎用パラメーター設定用の仮想関数
+  virtual bool SetGenericParam(const EffectParam& param) { param; return false; }
 
-protected: // プライベートメンバー関数
+  // 深度バッファが必要か  
+  virtual bool RequiresDepthBuffer() const { return false; }  
 
-  // ComPtrのエイリアス
-  template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
+protected: // プライベートメンバー関数  
 
-  virtual void CreateRootSignature() = 0;
-  virtual void CreatePSO() = 0;
-  virtual void CreateCBV() = 0;
+  // ComPtrのエイリアス  
+  template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;  
 
-protected: // メンバー変数
+  virtual void CreateRootSignature() = 0;  
+  virtual void CreatePSO() = 0;  
+  virtual void CreateCBV() = 0;  
 
-  // DX12の基本情報
-  DX12Basic* m_dx12_ = nullptr;
+protected: // メンバー変数  
 
-  // シェーダー名
-  std::string shaderName_;
+  // DX12の基本情報  
+  DX12Basic* m_dx12_ = nullptr;  
 
-  // ルートシグネチャ
-  ComPtr<ID3D12RootSignature> rootSignature_;
+  // シェーダー名  
+  std::string shaderName_;  
 
-  // パイプラインステート
-  ComPtr<ID3D12PipelineState> pipelineState_;
+  // ルートシグネチャ  
+  ComPtr<ID3D12RootSignature> rootSignature_;  
+
+  // パイプラインステート  
+  ComPtr<ID3D12PipelineState> pipelineState_;  
 };
-

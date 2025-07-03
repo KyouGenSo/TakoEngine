@@ -45,23 +45,6 @@ void MyGame::Initialize()
 
   // GPUパーティクルの初期化
   GPUParticle::GetInstance()->Initialize(dx12_, defaultCamera_);
-
-  // PostEffectParamの設定
-  postEffectParam.vignettePower = 0.f;
-  postEffectParam.vignetteRange = 20.0f;
-  postEffectParam.bloomThreshold = 1.0f;
-  postEffectParam.bloomIntensity = 1.0f;
-  postEffectParam.bloomSigma = 2.0f;
-  postEffectParam.bloomKernelSize = 10;
-  postEffectParam.bloomSampleCount = 10;
-  postEffectParam.downSampleFactor = 8;
-  postEffectParam.fogColor = {1.0f, 1.0f, 1.0f, 1.0f};
-  postEffectParam.fogDensity = 0.01f;
-  postEffectParam.bwFilterThreshold = 0.5f;
-  postEffectParam.rgbSplitIntensity = 1.0f;
-  postEffectParam.redOffset = { 0.005f, 0.0f };
-  postEffectParam.greenOffset = { -0.005f, 0.0f };
-  postEffectParam.blueOffset = { 0.0f, 0.0f };
 }
 
 void MyGame::Finalize()
@@ -104,51 +87,6 @@ void MyGame::Update()
 
   // ゲームパッドの状態をリスレッシュ
 	Input::GetInstance()->RefreshGamePadState();
-
-#ifdef _DEBUG
-  switch (postEffectType)
-  {
-  case NoEffect:
-    PostEffectManager::GetInstance()->SetEffectType("NoEffect");
-    break;
-  case VignetteRed:
-    PostEffectManager::GetInstance()->SetEffectType("VignetteRed");
-    break;
-  case VignetteRedBloom:
-    PostEffectManager::GetInstance()->SetEffectType("VignetteRedBloom");
-    break;
-  case GrayScale:
-    PostEffectManager::GetInstance()->SetEffectType("GrayScale");
-    break;
-  case VigRedGrayScale:
-    PostEffectManager::GetInstance()->SetEffectType("VigRedGrayScale");
-    break;
-  case Bloom:
-    PostEffectManager::GetInstance()->SetEffectType("Bloom");
-    break;
-  case NewBloom:
-    PostEffectManager::GetInstance()->SetEffectType("NewBloom");
-    break;
-  case BloomFog:
-    PostEffectManager::GetInstance()->SetEffectType("BloomFog");
-    break;
-  case RadialBlur:
-    PostEffectManager::GetInstance()->SetEffectType("RadialBlur");
-    break;
-  case BWFilter:
-    PostEffectManager::GetInstance()->SetEffectType("BWFilter");
-    break;
-  case RGBSplit:
-    PostEffectManager::GetInstance()->SetEffectType("RGBSplit");
-    break;
-  case LuminanceBasedOutline:
-    PostEffectManager::GetInstance()->SetEffectType("LuminanceBasedOutline");
-    break;
-  case DepthBasedOutline:
-    PostEffectManager::GetInstance()->SetEffectType("DepthBasedOutline");
-    break;
-  }
-#endif // _DEBUG
 }
 
 void MyGame::Draw()
@@ -236,114 +174,7 @@ void MyGame::Draw()
 
 	// PostEffectのパラメータ調整
   if (PostEffectWindowVisible) {
-    ImGui::Begin("PostEffect", &PostEffectWindowVisible);
-    if (ImGui::BeginTabBar("PostEffectTab"))
-    {
-
-      if (ImGui::BeginTabItem("PostEffectType"))
-      {
-        ImGui::RadioButton("NoEffect", (int*)&postEffectType, NoEffect);
-        ImGui::RadioButton("VignetteRed", (int*)&postEffectType, VignetteRed);
-        ImGui::RadioButton("VignetteRedBloom", (int*)&postEffectType, VignetteRedBloom);
-        ImGui::RadioButton("GrayScale", (int*)&postEffectType, GrayScale);
-        ImGui::RadioButton("VigRedGrayScale", (int*)&postEffectType, VigRedGrayScale);
-        ImGui::RadioButton("Bloom", (int*)&postEffectType, Bloom);
-        ImGui::RadioButton("NewBloom", (int*)&postEffectType, NewBloom);
-        ImGui::RadioButton("BloomFog", (int*)&postEffectType, BloomFog);
-        ImGui::RadioButton("RadialBlur", (int*)&postEffectType, RadialBlur);
-        ImGui::RadioButton("BWFilter", (int*)&postEffectType, BWFilter);
-        ImGui::RadioButton("RGBSplit", (int*)&postEffectType, RGBSplit);
-        ImGui::RadioButton("LuminanceBasedOutline", (int*)&postEffectType, LuminanceBasedOutline);
-        ImGui::RadioButton("DepthBasedOutline", (int*)&postEffectType, DepthBasedOutline);
-
-        ImGui::EndTabItem();
-      }
-
-      //ImGui::Separator();
-      if (ImGui::BeginTabItem("PostEffect"))
-      {
-        if (postEffectType == VignetteRed || postEffectType == VignetteRedBloom || postEffectType == VigRedGrayScale)
-        {
-          ImGui::DragFloat("VignettePower", &postEffectParam.vignettePower, 0.01f, 0.0f, 10.0f);
-          PostEffectManager::GetInstance()->SetVignettePower(postEffectParam.vignettePower);
-          ImGui::DragFloat("VignetteRange", &postEffectParam.vignetteRange, 0.01f, 0.0f, 100.0f);
-          PostEffectManager::GetInstance()->SetVignetteRange(postEffectParam.vignetteRange);
-        }
-
-        if (postEffectType == VignetteRedBloom)
-        {
-          ImGui::DragFloat("BloomThreshold", &postEffectParam.bloomThreshold, 0.01f, 0.0f, 1.0f);
-          PostEffectManager::GetInstance()->SetBloomThreshold(postEffectParam.bloomThreshold);
-        }
-
-        if (postEffectType == Bloom || postEffectType == BloomFog || postEffectType == NewBloom)
-        {
-          ImGui::DragFloat("BloomIntensity", &postEffectParam.bloomIntensity, 0.01f, 0.0f, 10.0f);
-          PostEffectManager::GetInstance()->SetBloomIntensity(postEffectParam.bloomIntensity);
-          ImGui::DragFloat("BloomThreshold", &postEffectParam.bloomThreshold, 0.01f, 0.0f, 1.0f);
-          PostEffectManager::GetInstance()->SetBloomThreshold(postEffectParam.bloomThreshold);
-          ImGui::DragFloat("BloomSigma", &postEffectParam.bloomSigma, 0.01f, 0.1f, 50.0f);
-          PostEffectManager::GetInstance()->SetBloomSigma(postEffectParam.bloomSigma);
-          ImGui::DragInt("BloomKernelSize", &postEffectParam.bloomKernelSize, 1, 1, 100);
-          PostEffectManager::GetInstance()->SetBloomKernelSize(postEffectParam.bloomKernelSize);
-        }
-
-        if (postEffectType == BloomFog)
-        {
-          ImGui::ColorEdit4("FogColor", &postEffectParam.fogColor.x);
-          PostEffectManager::GetInstance()->SetFogColor(postEffectParam.fogColor);
-          ImGui::DragFloat("FogDensity", &postEffectParam.fogDensity, 0.01f, 0.0f, 1.0f);
-          PostEffectManager::GetInstance()->SetFogDensity(postEffectParam.fogDensity);
-        }
-
-        if (postEffectType == RadialBlur)
-        {
-          ImGui::DragFloat2("RadialBlurCenter", &postEffectParam.radialBlurCenter.x, 0.01f, 0.0f, 1.0f);
-          PostEffectManager::GetInstance()->SetRadialBlurCenter(postEffectParam.radialBlurCenter);
-          ImGui::DragFloat("RadialBlurWidth", &postEffectParam.radialBlurWidth, 0.01f, 0.0f, 1.0f);
-          PostEffectManager::GetInstance()->SetRadialBlurWidth(postEffectParam.radialBlurWidth);
-          ImGui::DragInt("RadialBlurSampleCount", &postEffectParam.radialBlurSampleCount, 1.0f, 1, 100);
-          PostEffectManager::GetInstance()->SetBloomSampleCount(postEffectParam.radialBlurSampleCount);
-        }
-
-        if (postEffectType == NewBloom)
-        {
-          ImGui::DragInt("BloomSampleCount", &postEffectParam.bloomSampleCount, 1, 1, 100);
-          PostEffectManager::GetInstance()->SetBloomSampleCount(postEffectParam.bloomSampleCount);
-        }
-
-        if (postEffectType == BWFilter)
-        {
-          ImGui::DragFloat("BWFilterThreshold", &postEffectParam.bwFilterThreshold, 0.01f, 0.0f, 1.0f);
-          PostEffectManager::GetInstance()->SetBWFilterThreshold(postEffectParam.bwFilterThreshold);
-        }
-
-        if (postEffectType == RGBSplit)
-        {
-          ImGui::DragFloat("RGBSplitIntensity", &postEffectParam.rgbSplitIntensity, 0.01f, 0.0f, 1.0f);
-          PostEffectManager::GetInstance()->SetRGBSplitIntensity(postEffectParam.rgbSplitIntensity);
-          ImGui::DragFloat2("RedOffset", &postEffectParam.redOffset.x, 0.001f, -1.0f, 1.0f);
-          ImGui::DragFloat2("GreenOffset", &postEffectParam.greenOffset.x, 0.001f, -1.0f, 1.0f);
-          ImGui::DragFloat2("BlueOffset", &postEffectParam.blueOffset.x, 0.001f, -1.0f, 1.0f);
-          PostEffectManager::GetInstance()->SetRGBSplitOffsets(postEffectParam.redOffset, postEffectParam.greenOffset, postEffectParam.blueOffset);
-        }
-
-        if (postEffectType == LuminanceBasedOutline || postEffectType == DepthBasedOutline)
-        {
-          ImGui::DragFloat("OutlineThickness", &postEffectParam.outlineThickness, 0.1f, 0.0f, 100.0f);
-          PostEffectManager::GetInstance()->SetLuminanceOutlineThickness(postEffectParam.outlineThickness);
-          PostEffectManager::GetInstance()->SetDepthOutlineThickness(postEffectParam.outlineThickness);
-          PostEffectManager::GetInstance()->SetDepthOutlineProjectionInverse(Mat4x4::Inverse(defaultCamera_->GetProjectionMatrix()));
-        }
-
-        ImGui::EndTabItem();
-      }
-
-      ImGui::EndTabBar();
-    }
-
-
-    ImGui::End();
+    PostEffectManager::GetInstance()->DrawImgui();
   }
 
 	imguiManager_->End();

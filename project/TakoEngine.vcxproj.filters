@@ -177,6 +177,9 @@
     <ClCompile Include="engine\effect\Vignette.cpp">
       <Filter>effect\PostEffect</Filter>
     </ClCompile>
+    <ClCompile Include="engine\effect\NoEffect.cpp">
+      <Filter>effect\PostEffect</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\math\Matrix4x4.h">
@@ -348,6 +351,9 @@
       <Filter>effect\PostEffect</Filter>
     </ClInclude>
     <ClInclude Include="engine\effect\Vignette.h">
+      <Filter>effect\PostEffect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\NoEffect.h">
       <Filter>effect\PostEffect</Filter>
     </ClInclude>
   </ItemGroup>
