@@ -8,6 +8,7 @@
 #ifdef _DEBUG
 #include "imgui.h"
 #endif
+
 void RGBSplit::Initialize(DX12Basic* dx12, std::string shaderName)
 {
   IPostEffect::Initialize(dx12, shaderName);
