@@ -13,6 +13,8 @@
 
 #include <algorithm>
 
+#include "RGBSplit.h"
+
 #ifdef _DEBUG
 #include "ImGuiManager.h"
 #endif
@@ -40,6 +42,7 @@ void PostEffectManager::Initialize(DX12Basic* dx12)
   RegisterEffect("GrayScale", std::make_unique<GrayScale>());
   RegisterEffect("Vignette", std::make_unique<Vignette>());
   RegisterEffect("RadialBlur", std::make_unique<RadialBlur>());
+  RegisterEffect("RGBSplit", std::make_unique<RGBSplit>());
 
   // 深度バッファのSRV作成
   depthSrvIndex_ = SrvManager::GetInstance()->Allocate();

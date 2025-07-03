@@ -1,8 +1,6 @@
 #pragma once
 #include "IPostEffect.h"
-#include "PostEffectStruct.h"
-
-class Vignette : public IPostEffect
+class RGBSplit : public IPostEffect
 {
 public:
 
@@ -22,7 +20,7 @@ public:
 
   // パラメータ設定
   bool SetGenericParam(const EffectParam& param) override;
-  void SetParam(const VignetteParam& param);
+  void SetParam(const RGBSplitParam& param);
 
 private:
 
@@ -33,6 +31,6 @@ private:
 private:
 
   ComPtr<ID3D12Resource> cBufferResource_;
-  VignetteParam* cBufferData_ = nullptr;
-
+  RGBSplitParam* cBufferData_ = nullptr;
 };
+

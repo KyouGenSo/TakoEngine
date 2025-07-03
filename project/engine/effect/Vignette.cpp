@@ -13,10 +13,6 @@
 
 void Vignette::Initialize(DX12Basic* dx12, const std::string shaderName)
 {
-  power_ = 0.0f;
-  range_ = 20.0f;
-  color_ = Vector3(0.0f, 0.0f, 0.0f);
-
   IPostEffect::Initialize(dx12, shaderName);
 }
 
@@ -49,12 +45,9 @@ void Vignette::Apply(const uint32_t inputSrvIndex, const D3D12_CPU_DESCRIPTOR_HA
 void Vignette::DrawImgui()
 {
 #ifdef _DEBUG
-  ImGui::DragFloat("VignettePower", &power_, 0.01f, 0.0f, 10.0f);
-  cBufferData_->power = power_;
-  ImGui::DragFloat("VignetteRange", &range_, 0.01f, 0.0f, 100.0f);
-  cBufferData_->range = range_;
-  ImGui::ColorEdit3("VignetteColor", &color_.x);
-  cBufferData_->color.x = color_.x;
+  ImGui::DragFloat("VignettePower", &cBufferData_->power, 0.01f, 0.0f, 10.0f);
+  ImGui::DragFloat("VignetteRange", &cBufferData_->range, 0.01f, 0.0f, 100.0f);
+  ImGui::ColorEdit3("VignetteColor", &cBufferData_->color.x);
 #endif
 }
 
@@ -207,7 +200,7 @@ void Vignette::CreateCBV()
   cBufferResource_->Map(0, nullptr, reinterpret_cast<void**>(&cBufferData_));
 
   // データの初期化
-  cBufferData_->power = power_;
-  cBufferData_->range = range_;
-  cBufferData_->color = color_;
+  cBufferData_->power = 0.0f;
+  cBufferData_->range = 20.0f;
+  cBufferData_->color = Vector3(0.0f, 0.0f, 0.0f);
 }

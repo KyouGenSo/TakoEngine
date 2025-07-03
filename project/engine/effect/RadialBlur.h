@@ -33,9 +33,5 @@ private:
 
   ComPtr<ID3D12Resource> cBufferResource_;
   RadialBlurParam* cBufferData_ = nullptr;
-
-  Vector2 center_ = { .x = 0.5f, .y = 0.5f }; // 中心位置
-  float blurWidth_ = 0.0f;                // ブラーの幅
-  int32_t sampleCount_ = 8;              // サンプル数
 };
 

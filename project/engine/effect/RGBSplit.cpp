@@ -1,4 +1,4 @@
-#include "RadialBlur.h"
+#include "RGBSplit.h"
 
 #include "DX12Basic.h"
 #include "Logger.h"
@@ -8,13 +8,12 @@
 #ifdef _DEBUG
 #include "imgui.h"
 #endif
-
-void RadialBlur::Initialize(DX12Basic* dx12, std::string shaderName)
+void RGBSplit::Initialize(DX12Basic* dx12, std::string shaderName)
 {
   IPostEffect::Initialize(dx12, shaderName);
 }
 
-void RadialBlur::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, uint32_t depthSrvIndex, Vector4 clearColor)
+void RGBSplit::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, uint32_t depthSrvIndex, Vector4 clearColor)
 {
   depthSrvIndex; // 深度バッファはVignetteエフェクトでは使用しないため、引数として受け取るが無視する
   clearColor;    // ClearColorもVignetteエフェクトでは使用しないため、引数として受け取るが無視する
@@ -40,37 +39,39 @@ void RadialBlur::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outpu
   m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
 }
 
-void RadialBlur::DrawImgui()
+void RGBSplit::DrawImgui()
 {
 #ifdef _DEBUG
-  ImGui::DragFloat2("Center", &cBufferData_->center.x, 0.01f, 0.0f, 1.0f, "%.3f");
-  ImGui::DragFloat("Blur Width", &cBufferData_->blurWidth, 0.001f, 0.0f, 1.0f, "%.3f");
-  ImGui::DragInt("Sample Count", reinterpret_cast<int*>(&cBufferData_->sampleCount), 1, 1, 1024, "%d");
+  ImGui::DragFloat2("Red Offset", &cBufferData_->redOffset.x, 0.01f, -1.0f, 1.0f);
+  ImGui::DragFloat2("Green Offset", &cBufferData_->greenOffset.x, 0.01f, -1.0f, 1.0f);
+  ImGui::DragFloat2("Blue Offset", &cBufferData_->blueOffset.x, 0.01f, -1.0f, 1.0f);
+  ImGui::DragFloat("Intensity", &cBufferData_->intensity, 0.01f, 0.0f, 1.0f);
 #endif
 }
 
-bool RadialBlur::SetGenericParam(const EffectParam& param)
+bool RGBSplit::SetGenericParam(const EffectParam& param)
 {
-  if (auto* radialBlurParam = std::get_if<RadialBlurParam>(&param)) {
-    SetParam(*radialBlurParam);
+  if (auto* rgbSplitParam = std::get_if<RGBSplitParam>(&param)) {
+    SetParam(*rgbSplitParam);
     return true;
   }
   return false;
 }
 
-void RadialBlur::SetParam(const RadialBlurParam& param)
+void RGBSplit::SetParam(const RGBSplitParam& param)
 {
   if (cBufferData_ == nullptr)
   {
     return; // cBufferData_が初期化されていない場合は何もしない
   }
-  // パラメータの設定
-  cBufferData_->center = param.center;
-  cBufferData_->blurWidth = param.blurWidth;
-  cBufferData_->sampleCount = param.sampleCount;
+  // パラメータを設定
+  cBufferData_->redOffset = param.redOffset;
+  cBufferData_->greenOffset = param.greenOffset;
+  cBufferData_->blueOffset = param.blueOffset;
+  cBufferData_->intensity = param.intensity;
 }
 
-void RadialBlur::CreateRootSignature()
+void RGBSplit::CreateRootSignature()
 {
   HRESULT hr;
 
@@ -129,7 +130,7 @@ void RadialBlur::CreateRootSignature()
   assert(SUCCEEDED(hr));
 }
 
-void RadialBlur::CreatePSO()
+void RGBSplit::CreatePSO()
 {
   HRESULT hr;
 
@@ -187,16 +188,17 @@ void RadialBlur::CreatePSO()
   assert(SUCCEEDED(hr));
 }
 
-void RadialBlur::CreateCBV()
+void RGBSplit::CreateCBV()
 {
   // RadialBlurの定数バッファの生成
-  cBufferResource_ = m_dx12_->MakeBufferResource(sizeof(RadialBlurParam));
+  cBufferResource_ = m_dx12_->MakeBufferResource(sizeof(RGBSplitParam));
 
   //　map
   cBufferResource_->Map(0, nullptr, reinterpret_cast<void**>(&cBufferData_));
 
-  // 初期値の設定
-  cBufferData_->center = Vector2(0.5f, 0.5f);
-  cBufferData_->blurWidth = 0.0f;
-  cBufferData_->sampleCount = 8;
+  // 初期化
+  cBufferData_->redOffset = Vector2(0.0f, 0.0f);
+  cBufferData_->greenOffset = Vector2(0.0f, 0.0f);
+  cBufferData_->blueOffset = Vector2(0.0f, 0.0f);
+  cBufferData_->intensity = 0.0f;
 }
