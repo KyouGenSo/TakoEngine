@@ -1,4 +1,4 @@
-#include "RadialBlur.h"
+#include "Bloom.h"
 
 #include "DX12Basic.h"
 #include "Logger.h"
@@ -9,20 +9,22 @@
 #include "imgui.h"
 #endif
 
-void RadialBlur::Initialize(DX12Basic* dx12, std::string shaderName)
+void Bloom::Initialize(DX12Basic* dx12, std::string shaderName)
 {
   IPostEffect::Initialize(dx12, shaderName);
   CreateCBV();
+  CreateRenderTexture();
 }
 
-void RadialBlur::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, uint32_t depthSrvIndex, Vector4 clearColor)
+void Bloom::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, uint32_t depthSrvIndex, Vector4 clearColor)
 {
   depthSrvIndex; // 深度バッファはこのエフェクトでは使用しないため、引数として受け取るが無視する
   clearColor;    // ClearColorもこのエフェクトでは使用しないため、引数として受け取るが無視する
 
   D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
+
   m_dx12_->GetCommandList()->OMSetRenderTargets(1,
-    &outputRtvHandle,
+    &resultRT_.rtvHandle,
     false,
     &dsvHandle);
 
@@ -31,46 +33,72 @@ void RadialBlur::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outpu
   m_dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
 
   // パラメータリソースの設定
-  m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, cBufferResource_->GetGPUVirtualAddress());
+  m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, cBufferResource1_->GetGPUVirtualAddress());
 
   // レンダーテクスチャAをシェーダーリソースとして設定
   SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, inputSrvIndex);
 
-  // フルスクリーン三角形描画
+  // 描画
   m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+
+
+  SetBarrier(resultRT_.resource.Get(),
+    D3D12_RESOURCE_STATE_RENDER_TARGET,
+    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+  // 最終結果レンダーテクスチャを描画先に設定
+  m_dx12_->GetCommandList()->OMSetRenderTargets(1,
+    &outputRtvHandle,
+    false,
+    &dsvHandle);
+
+  // BloomParamをセット
+  m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, cBufferResource2_->GetGPUVirtualAddress());
+
+  // ブラー画像をシェーダーリソースとして設定（スロット0）
+  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, resultRT_.srvIndex);
+
+  // 描画
+  m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+
+  SetBarrier(resultRT_.resource.Get(),
+    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+    D3D12_RESOURCE_STATE_RENDER_TARGET);
 }
 
-void RadialBlur::DrawImgui()
+void Bloom::DrawImgui()
 {
 #ifdef _DEBUG
-  ImGui::DragFloat2("Center", &cBufferData_->center.x, 0.01f, 0.0f, 1.0f, "%.3f");
-  ImGui::DragFloat("Blur Width", &cBufferData_->blurWidth, 0.001f, 0.0f, 1.0f, "%.3f");
-  ImGui::DragInt("Sample Count", reinterpret_cast<int*>(&cBufferData_->sampleCount), 1, 1, 1024, "%d");
+  ImGui::DragFloat("Intensity", &cBufferData1_->intensity, 0.01f, 0.0f, 10.0f);
+  ImGui::DragFloat("Threshold", &cBufferData1_->threshold, 0.01f, 0.0f, 1.0f);
+  ImGui::DragFloat("Sigma", &cBufferData1_->sigma, 0.01f, 0.0f, 50.0f);
+  ImGui::DragInt("Kernel Size", reinterpret_cast<int*>(&cBufferData1_->kernelSize), 1.0f, 1, 100);
 #endif
 }
 
-bool RadialBlur::SetGenericParam(const EffectParam& param)
+bool Bloom::SetGenericParam(const EffectParam& param)
 {
-  if (auto* radialBlurParam = std::get_if<RadialBlurParam>(&param)) {
-    SetParam(*radialBlurParam);
+  if (auto* bloomParam = std::get_if<BloomParam>(&param)) {
+    SetParam(*bloomParam);
     return true;
   }
   return false;
 }
 
-void RadialBlur::SetParam(const RadialBlurParam& param)
+void Bloom::SetParam(const BloomParam& param)
 {
-  if (cBufferData_ == nullptr)
+  if (cBufferData1_ == nullptr)
   {
     return; // cBufferData_が初期化されていない場合は何もしない
   }
-  // パラメータの設定
-  cBufferData_->center = param.center;
-  cBufferData_->blurWidth = param.blurWidth;
-  cBufferData_->sampleCount = param.sampleCount;
+  // パラメータを設定する
+  cBufferData1_->intensity = param.intensity;
+  cBufferData1_->threshold = param.threshold;
+  cBufferData1_->sigma = param.sigma;
+  cBufferData1_->kernelSize = param.kernelSize;
 }
 
-void RadialBlur::CreateRootSignature()
+void Bloom::CreateRootSignature()
 {
   HRESULT hr;
 
@@ -100,6 +128,7 @@ void RadialBlur::CreateRootSignature()
 
   // RootParameterの設定。複数設定できるので配列
   D3D12_ROOT_PARAMETER rootParameters[2] = {};
+
   // Texture
   rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
   rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
@@ -129,7 +158,7 @@ void RadialBlur::CreateRootSignature()
   assert(SUCCEEDED(hr));
 }
 
-void RadialBlur::CreatePSO()
+void Bloom::CreatePSO()
 {
   HRESULT hr;
 
@@ -187,16 +216,69 @@ void RadialBlur::CreatePSO()
   assert(SUCCEEDED(hr));
 }
 
-void RadialBlur::CreateCBV()
+void Bloom::CreateCBV()
 {
-  // RadialBlurの定数バッファの生成
-  cBufferResource_ = m_dx12_->MakeBufferResource(sizeof(RadialBlurParam));
+  // BloomParamのリソース生成
+  cBufferResource1_ = m_dx12_->MakeBufferResource(sizeof(BloomParam));
+  cBufferResource2_ = m_dx12_->MakeBufferResource(sizeof(BloomParam));
 
-  //　map
-  cBufferResource_->Map(0, nullptr, reinterpret_cast<void**>(&cBufferData_));
+  // データの設定
+  cBufferResource1_->Map(0, nullptr, reinterpret_cast<void**>(&cBufferData1_));
+  cBufferResource2_->Map(0, nullptr, reinterpret_cast<void**>(&cBufferData2_));
 
-  // 初期値の設定
-  cBufferData_->center = Vector2(0.5f, 0.5f);
-  cBufferData_->blurWidth = 0.0f;
-  cBufferData_->sampleCount = 8;
+  // データの初期化
+  cBufferData1_->intensity = 1.0f;
+  cBufferData1_->threshold = 1.0f;
+  cBufferData1_->sigma = 2.0f;
+  cBufferData1_->direction = { 1.0f, 0.0f };
+  cBufferData1_->kernelSize = 10;
+
+  cBufferData2_->intensity = 1.0f;
+  cBufferData2_->threshold = 1.0f;
+  cBufferData2_->sigma = 2.0f;
+  cBufferData2_->direction = { 0.0f, 1.0f };
+  cBufferData2_->kernelSize = 10;
+}
+
+void Bloom::CreateRenderTexture()
+{
+  auto createRT = [this](RenderTexture& rt, int rtvIndex, const Vector4& clearColor) {
+    // リソース作成
+    m_dx12_->CreateRenderTextureResource(
+      rt.resource,
+      WinApp::clientWidth,
+      WinApp::clientHeight,
+      DXGI_FORMAT_R8G8B8A8_UNORM,
+      clearColor
+    );
+
+    // RTV作成
+    rt.rtvHandle = m_dx12_->GetRenderTextureRTVHandle(rtvIndex);
+    D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
+    rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+    m_dx12_->GetDevice()->CreateRenderTargetView(
+      rt.resource.Get(), &rtvDesc, rt.rtvHandle
+    );
+
+    // SRV作成
+    rt.srvIndex = SrvManager::GetInstance()->Allocate();
+    SrvManager::GetInstance()->CreateSRVForTexture2D(
+      rt.srvIndex, rt.resource.Get(), DXGI_FORMAT_R8G8B8A8_UNORM, 1
+    );
+    };
+
+  createRT(resultRT_, 6, Vector4(0.0f, 0.0f, 0.0f, 1.0f));
+}
+
+void Bloom::SetBarrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter)
+{
+  D3D12_RESOURCE_BARRIER barrier{};
+  barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+  barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+  barrier.Transition.pResource = resource;
+  barrier.Transition.StateBefore = stateBefore;
+  barrier.Transition.StateAfter = stateAfter;
+
+  m_dx12_->GetCommandList()->ResourceBarrier(1, &barrier);
 }

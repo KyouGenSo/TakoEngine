@@ -15,6 +15,7 @@
 #include "LuminanceBasedOutline.h"
 #include "DepthBasedOutline.h"
 #include "Fog.h"
+#include "Bloom.h"
 
 #include <algorithm>
 
@@ -37,7 +38,6 @@ void PostEffectManager::Initialize(DX12Basic* dx12)
 {
   m_dx12_ = dx12;
 
-
   CreateRenderTextures();
 
   // デフォルトエフェクトの登録
@@ -50,8 +50,9 @@ void PostEffectManager::Initialize(DX12Basic* dx12)
   RegisterEffect("LuminanceBasedOutline", std::make_unique<LuminanceBasedOutline>());
   RegisterEffect("DepthBasedOutline", std::make_unique<DepthBasedOutline>());
   RegisterEffect("Fog", std::make_unique<Fog>());
+  RegisterEffect("Bloom", std::make_unique<Bloom>());
 
-  // 深度バッファのSRV作成
+  // 深度バッファテクスチャのSRV作成
   depthSrvIndex_ = SrvManager::GetInstance()->Allocate();
   SrvManager::GetInstance()->CreateSRVForTexture2D(
     depthSrvIndex_,
@@ -561,7 +562,7 @@ std::vector<std::string> PostEffectManager::GetEffectChain() const
 //------------------------------- プライベート関数 -------------------------------//
 
 void PostEffectManager::CreateRenderTextures() {
-  auto createRT = [this](RenderTarget& rt, int rtvIndex, const Vector4& clearColor) {
+  auto createRT = [this](RenderTexture& rt, int rtvIndex, const Vector4& clearColor) {
     // リソース作成
     m_dx12_->CreateRenderTextureResource(
       rt.resource,

@@ -108,13 +108,6 @@ private: // プライベートメンバー関数
   void SetBarrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
 
 private: // メンバ変数
-  // レンダーターゲット構造体
-  struct RenderTarget {
-    ComPtr<ID3D12Resource> resource;
-    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;
-    uint32_t srvIndex;
-  };
-
   // DX12の基本情報
   DX12Basic* m_dx12_ = nullptr;
 
@@ -125,13 +118,13 @@ private: // メンバ変数
   std::string selectedActiveEffect_ = "";       // アクティブエフェクトの選択
 
   // エフェクト適用対象用RT
-  RenderTarget effectTargetRT_;
+  RenderTexture effectTargetRT_;
 
   // 非適用対象用RT
-  RenderTarget nonEffectTargetRT_;
+  RenderTexture nonEffectTargetRT_;
 
   // 中間バッファ（複数エフェクト用）
-  std::vector<RenderTarget> intermediateRTs_;
+  std::vector<RenderTexture> intermediateRTs_;
 
   // エフェクトのレジストリ
   std::unordered_map<std::string, std::unique_ptr<IPostEffect>> effectRegistry_;

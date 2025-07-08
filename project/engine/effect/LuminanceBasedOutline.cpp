@@ -20,7 +20,6 @@ void LuminanceBasedOutline::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_H
   depthSrvIndex; // 深度バッファはこのエフェクトでは使用しないため、引数として受け取るが無視する
   clearColor;    // ClearColorもこのエフェクトでは使用しないため、引数として受け取るが無視する
 
-  // レンダーテクスチャBを描画先に設定
   D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
   m_dx12_->GetCommandList()->OMSetRenderTargets(1,
     &outputRtvHandle,

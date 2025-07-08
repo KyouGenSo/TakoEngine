@@ -6,6 +6,13 @@
 #include "vector3.h"
 #include "Vector4.h"
 
+// レンダーターゲット構造体
+struct RenderTexture {
+  Microsoft::WRL::ComPtr<ID3D12Resource> resource;
+  D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;
+  uint32_t srvIndex;
+};
+
 struct VignetteParam
 {
   float power;

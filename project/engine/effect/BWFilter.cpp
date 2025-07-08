@@ -19,7 +19,6 @@ void BWFilter::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputR
   depthSrvIndex; // 深度バッファはこのエフェクトでは使用しないため、引数として受け取るが無視する
   clearColor;    // ClearColorもこのエフェクトでは使用しないため、引数として受け取るが無視する
 
-  // レンダーテクスチャBを描画先に設定
   D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
   m_dx12_->GetCommandList()->OMSetRenderTargets(1,
     &outputRtvHandle,
@@ -96,6 +95,7 @@ void BWFilter::CreateRootSignature()
 
   // RootParameterの設定。複数設定できるので配列
   D3D12_ROOT_PARAMETER rootParameters[2] = {};
+
   // Texture
   rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
   rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う

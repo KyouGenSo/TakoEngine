@@ -198,6 +198,9 @@
     <ClCompile Include="engine\effect\Fog.cpp">
       <Filter>effect\PostEffect</Filter>
     </ClCompile>
+    <ClCompile Include="engine\effect\Bloom.cpp">
+      <Filter>effect\PostEffect</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\math\Matrix4x4.h">
@@ -390,6 +393,9 @@
       <Filter>effect\PostEffect</Filter>
     </ClInclude>
     <ClInclude Include="engine\effect\Fog.h">
+      <Filter>effect\PostEffect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\Bloom.h">
       <Filter>effect\PostEffect</Filter>
     </ClInclude>
   </ItemGroup>

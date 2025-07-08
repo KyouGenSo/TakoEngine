@@ -25,7 +25,6 @@ void Fog::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHan
     D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
     m_dx12_->GetDepthStencilResource());
 
-  // レンダーテクスチャBを描画先に設定
   D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
   m_dx12_->GetCommandList()->OMSetRenderTargets(1,
     &outputRtvHandle,
@@ -92,7 +91,7 @@ void Fog::CreateRootSignature()
 
   // Samplerの設定
   D3D12_STATIC_SAMPLER_DESC samplerDesc[1]{};
-  samplerDesc[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR; // テクスチャの補間方法
+  samplerDesc[0].Filter = D3D12_FILTER_MIN_MAG_MIP_POINT; // テクスチャの補間方法
   samplerDesc[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
   samplerDesc[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
   samplerDesc[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
