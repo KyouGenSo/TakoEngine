@@ -12,6 +12,7 @@
 #include "RadialBlur.h"
 #include "RGBSplit.h"
 #include "BWFilter.h"
+#include "LuminanceBasedOutline.h"
 
 #include <algorithm>
 
@@ -44,6 +45,7 @@ void PostEffectManager::Initialize(DX12Basic* dx12)
   RegisterEffect("RadialBlur", std::make_unique<RadialBlur>());
   RegisterEffect("RGBSplit", std::make_unique<RGBSplit>());
   RegisterEffect("BWFilter", std::make_unique<BWFilter>());
+  RegisterEffect("LuminanceBasedOutline", std::make_unique<LuminanceBasedOutline>());
 
   // 深度バッファのSRV作成
   depthSrvIndex_ = SrvManager::GetInstance()->Allocate();
@@ -551,7 +553,6 @@ std::vector<std::string> PostEffectManager::GetEffectChain() const
 {
   return effectChain_; // コピーを返す
 }
-
 
 //------------------------------- プライベート関数 -------------------------------//
 

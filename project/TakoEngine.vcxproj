@@ -131,6 +131,7 @@
     <ClCompile Include="engine\effect\GPUParticleEmitter.cpp" />
     <ClCompile Include="engine\effect\GrayScale.cpp" />
     <ClCompile Include="engine\effect\IPostEffect.cpp" />
+    <ClCompile Include="engine\effect\LuminanceBasedOutline.cpp" />
     <ClCompile Include="engine\effect\NoEffect.cpp" />
     <ClCompile Include="engine\effect\RadialBlur.cpp" />
     <ClCompile Include="engine\effect\RGBSplit.cpp" />
@@ -176,6 +177,7 @@
     <ClInclude Include="engine\effect\GPUParticleEmitter.h" />
     <ClInclude Include="engine\effect\GrayScale.h" />
     <ClInclude Include="engine\effect\IPostEffect.h" />
+    <ClInclude Include="engine\effect\LuminanceBasedOutline.h" />
     <ClInclude Include="engine\effect\NoEffect.h" />
     <ClInclude Include="engine\effect\PostEffectStruct.h" />
     <ClInclude Include="engine\effect\RadialBlur.h" />
