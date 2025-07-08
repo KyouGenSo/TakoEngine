@@ -13,6 +13,7 @@
 #include <string>
 
 
+class Camera;
 class IPostEffect;
 class DX12Basic;
 
@@ -80,6 +81,12 @@ public: // メンバ関数
     return SetEffectParam(effectName, EffectParam(param));
   }
 
+  void SetCamera(Camera* camera) {
+    if (camera) {
+      camera_ = camera;
+    }
+  }
+
   // エフェクト順序変更関数
   bool MoveEffectUp(const std::string& effectName);
   bool MoveEffectDown(const std::string& effectName);
@@ -114,16 +121,17 @@ private: // プライベートメンバー関数
   void SetBarrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
 
 private: // メンバ変数
-
-  // DX12の基本情報
-  DX12Basic* m_dx12_ = nullptr;
-
   // レンダーターゲット構造体
   struct RenderTarget {
     ComPtr<ID3D12Resource> resource;
     D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;
     uint32_t srvIndex;
   };
+
+  // DX12の基本情報
+  DX12Basic* m_dx12_ = nullptr;
+
+  Camera* camera_ = nullptr; // カメラ情報
 
   // UI用の選択状態
   std::string selectedAvailableEffect_ = "";    // 利用可能エフェクトの選択

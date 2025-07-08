@@ -57,6 +57,8 @@ void TakoFramework::Initialize()
 
   PostEffectManager::GetInstance()->Initialize(dx12_);
 
+  PostEffectManager::GetInstance()->SetCamera(defaultCamera_);
+
   TextureManager::GetInstance()->LoadTexture("black.png");
 
   Transition::GetInstance()->Initialize();

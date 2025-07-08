@@ -13,6 +13,7 @@
 #include "RGBSplit.h"
 #include "BWFilter.h"
 #include "LuminanceBasedOutline.h"
+#include "DepthBasedOutline.h"
 
 #include <algorithm>
 
@@ -46,6 +47,7 @@ void PostEffectManager::Initialize(DX12Basic* dx12)
   RegisterEffect("RGBSplit", std::make_unique<RGBSplit>());
   RegisterEffect("BWFilter", std::make_unique<BWFilter>());
   RegisterEffect("LuminanceBasedOutline", std::make_unique<LuminanceBasedOutline>());
+  RegisterEffect("DepthBasedOutline", std::make_unique<DepthBasedOutline>());
 
   // 深度バッファのSRV作成
   depthSrvIndex_ = SrvManager::GetInstance()->Allocate();
@@ -611,6 +613,7 @@ void PostEffectManager::RegisterEffect(const std::string& name, std::unique_ptr<
   if (name != "NoEffect") {
     availableEffects_.push_back(name);
   }
+
 }
 
 void PostEffectManager::ApplyEffectChain()
@@ -683,6 +686,16 @@ void PostEffectManager::ApplyEffectChain()
       dstRtvHandle = intermediateRT.rtvHandle;
     }
 
+    if (effectName == "DepthBasedOutline") {
+      auto it = effectRegistry_.find(effectName);
+      if (it != effectRegistry_.end()) {
+        // DepthBasedOutlineの初期化
+        auto depthEffect = dynamic_cast<DepthBasedOutline*>(it->second.get());
+        if (depthEffect) {
+          depthEffect->SetInvProjectionMatrix(Mat4x4::Inverse(camera_->GetProjectionMatrix()));
+        }
+      }
+    }
     effect->Apply(srcSrvIndex, dstRtvHandle, depthSrvIndex_, nonEffectTargetClearColor_);
 
     if (!isLastEffect) {
