@@ -17,8 +17,8 @@ void RadialBlur::Initialize(DX12Basic* dx12, std::string shaderName)
 
 void RadialBlur::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, uint32_t depthSrvIndex, Vector4 clearColor)
 {
-  depthSrvIndex; // 深度バッファはVignetteエフェクトでは使用しないため、引数として受け取るが無視する
-  clearColor;    // ClearColorもVignetteエフェクトでは使用しないため、引数として受け取るが無視する
+  depthSrvIndex; // 深度バッファはこのエフェクトでは使用しないため、引数として受け取るが無視する
+  clearColor;    // ClearColorもこのエフェクトでは使用しないため、引数として受け取るが無視する
 
   // レンダーテクスチャBを描画先に設定
   D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();

@@ -1,6 +1,4 @@
-#include "Vignette.h"
-
-#include <cassert>
+#include "BWFilter.h"
 
 #include "DX12Basic.h"
 #include "Logger.h"
@@ -10,14 +8,13 @@
 #ifdef _DEBUG
 #include "imgui.h"
 #endif
-
-void Vignette::Initialize(DX12Basic* dx12, const std::string shaderName)
+void BWFilter::Initialize(DX12Basic* dx12, std::string shaderName)
 {
   IPostEffect::Initialize(dx12, shaderName);
   CreateCBV();
 }
 
-void Vignette::Apply(const uint32_t inputSrvIndex, const D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, const uint32_t depthSrvIndex, const Vector4 clearColor)
+void BWFilter::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, uint32_t depthSrvIndex, Vector4 clearColor)
 {
   depthSrvIndex; // 深度バッファはこのエフェクトでは使用しないため、引数として受け取るが無視する
   clearColor;    // ClearColorもこのエフェクトでは使用しないため、引数として受け取るが無視する
@@ -43,39 +40,33 @@ void Vignette::Apply(const uint32_t inputSrvIndex, const D3D12_CPU_DESCRIPTOR_HA
   m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
 }
 
-void Vignette::DrawImgui()
+void BWFilter::DrawImgui()
 {
 #ifdef _DEBUG
-  ImGui::DragFloat("VignettePower", &cBufferData_->power, 0.01f, 0.0f, 10.0f);
-  ImGui::DragFloat("VignetteRange", &cBufferData_->range, 0.01f, 0.0f, 100.0f);
-  ImGui::ColorEdit3("VignetteColor", &cBufferData_->color.x);
+  ImGui::DragFloat("Threshold", &cBufferData_->threshold, 0.01f, 0.0f, 1.0f, "%.2f");
 #endif
 }
 
-bool Vignette::SetGenericParam(const EffectParam& param)
+bool BWFilter::SetGenericParam(const EffectParam& param)
 {
-  if (auto* vignetteParam = std::get_if<VignetteParam>(&param)) {
-    SetParam(*vignetteParam);
+  if (auto* bwFilterParam = std::get_if<BWFilterParam>(&param)) {
+    SetParam(*bwFilterParam);
     return true;
   }
   return false;
 }
 
-void Vignette::SetParam(const VignetteParam& param)
+void BWFilter::SetParam(const BWFilterParam& param)
 {
   if (cBufferData_ == nullptr)
   {
     return; // cBufferData_が初期化されていない場合は何もしない
   }
   // パラメータの設定
-  cBufferData_->power = param.power;
-  cBufferData_->range = param.range;
-  cBufferData_->color.x = param.color.x;
-  cBufferData_->color.y = param.color.y;
-  cBufferData_->color.z = param.color.z;
+  cBufferData_->threshold = param.threshold;
 }
 
-void Vignette::CreateRootSignature()
+void BWFilter::CreateRootSignature()
 {
   HRESULT hr;
 
@@ -134,7 +125,7 @@ void Vignette::CreateRootSignature()
   assert(SUCCEEDED(hr));
 }
 
-void Vignette::CreatePSO()
+void BWFilter::CreatePSO()
 {
   HRESULT hr;
 
@@ -192,16 +183,13 @@ void Vignette::CreatePSO()
   assert(SUCCEEDED(hr));
 }
 
-void Vignette::CreateCBV()
+void BWFilter::CreateCBV()
 {
-  // VignetteParamのリソース生成
-  cBufferResource_ = m_dx12_->MakeBufferResource(sizeof(VignetteParam));
+  cBufferResource_ = m_dx12_->MakeBufferResource(sizeof(BWFilterParam));
 
-  // データの設定
+  // map
   cBufferResource_->Map(0, nullptr, reinterpret_cast<void**>(&cBufferData_));
 
-  // データの初期化
-  cBufferData_->power = 0.0f;
-  cBufferData_->range = 20.0f;
-  cBufferData_->color = Vector3(0.0f, 0.0f, 0.0f);
+  // 初期値の設定
+  cBufferData_->threshold = 0.5f;
 }

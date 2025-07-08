@@ -186,6 +186,9 @@
     <ClCompile Include="engine\effect\RGBSplit.cpp">
       <Filter>effect\PostEffect</Filter>
     </ClCompile>
+    <ClCompile Include="engine\effect\BWFilter.cpp">
+      <Filter>effect\PostEffect</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\math\Matrix4x4.h">
@@ -366,6 +369,9 @@
       <Filter>effect\PostEffect</Filter>
     </ClInclude>
     <ClInclude Include="engine\effect\RGBSplit.h">
+      <Filter>effect\PostEffect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\BWFilter.h">
       <Filter>effect\PostEffect</Filter>
     </ClInclude>
   </ItemGroup>

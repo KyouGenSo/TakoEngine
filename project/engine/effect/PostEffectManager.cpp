@@ -11,6 +11,7 @@
 #include "Vignette.h"
 #include "RadialBlur.h"
 #include "RGBSplit.h"
+#include "BWFilter.h"
 
 #include <algorithm>
 
@@ -42,6 +43,7 @@ void PostEffectManager::Initialize(DX12Basic* dx12)
   RegisterEffect("Vignette", std::make_unique<Vignette>());
   RegisterEffect("RadialBlur", std::make_unique<RadialBlur>());
   RegisterEffect("RGBSplit", std::make_unique<RGBSplit>());
+  RegisterEffect("BWFilter", std::make_unique<BWFilter>());
 
   // 深度バッファのSRV作成
   depthSrvIndex_ = SrvManager::GetInstance()->Allocate();
