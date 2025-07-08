@@ -14,6 +14,7 @@
 #include "BWFilter.h"
 #include "LuminanceBasedOutline.h"
 #include "DepthBasedOutline.h"
+#include "Fog.h"
 
 #include <algorithm>
 
@@ -48,6 +49,7 @@ void PostEffectManager::Initialize(DX12Basic* dx12)
   RegisterEffect("BWFilter", std::make_unique<BWFilter>());
   RegisterEffect("LuminanceBasedOutline", std::make_unique<LuminanceBasedOutline>());
   RegisterEffect("DepthBasedOutline", std::make_unique<DepthBasedOutline>());
+  RegisterEffect("Fog", std::make_unique<Fog>());
 
   // 深度バッファのSRV作成
   depthSrvIndex_ = SrvManager::GetInstance()->Allocate();

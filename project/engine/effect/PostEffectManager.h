@@ -29,19 +29,6 @@ public:
   PostEffectManager(PostEffectManager&) = delete;
   PostEffectManager& operator=(PostEffectManager&) = delete;
 
-public: // エフェクトパラメーターのvariant型定義
-  using EffectParam = std::variant<
-    VignetteParam,
-    BloomParam,
-    NewBloomParam,
-    FogParam,
-    RadialBlurParam,
-    BWFilterParam,
-    RGBSplitParam,
-    LuminanceOutlineParam,
-    DepthOutlineParam
-  >;
-
 public: // メンバ関数
 
   // ComPtrのエイリアス

@@ -89,3 +89,16 @@ struct DepthOutlineParam
   Matrix4x4 projectionInverse;
   float outlineThickness;
 };
+
+using EffectParam = std::variant<
+  VignetteParam,
+  BloomParam,
+  NewBloomParam,
+  FogParam,
+  RadialBlurParam,
+  BWFilterParam,
+  RGBSplitParam,
+  LuminanceOutlineParam,
+  DepthOutlineParam,
+  CameraForGPU
+>;

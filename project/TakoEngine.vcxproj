@@ -124,6 +124,7 @@
     <ClCompile Include="engine\effect\BWFilter.cpp" />
     <ClCompile Include="engine\effect\DepthBasedOutline.cpp" />
     <ClCompile Include="engine\effect\EmitterManager.cpp" />
+    <ClCompile Include="engine\effect\Fog.cpp" />
     <ClCompile Include="engine\effect\GPUParticle.cpp" />
     <ClCompile Include="engine\2d\DebugCamera.cpp" />
     <ClCompile Include="engine\2d\Draw2D.cpp" />
@@ -174,6 +175,7 @@
     <ClInclude Include="engine\effect\EmitterStruct.h" />
     <ClInclude Include="engine\effect\BoxEmitter.h" />
     <ClInclude Include="engine\effect\EmitterManager.h" />
+    <ClInclude Include="engine\effect\Fog.h" />
     <ClInclude Include="engine\effect\GPUParticle.h" />
     <ClInclude Include="engine\audio\miniaudio.h" />
     <ClInclude Include="engine\effect\GPUParticleEmitter.h" />
