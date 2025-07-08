@@ -8,5 +8,4 @@ void IPostEffect::Initialize(DX12Basic* dx12, std::string shaderName)
 
   CreateRootSignature();
   CreatePSO();
-  CreateCBV();
 }

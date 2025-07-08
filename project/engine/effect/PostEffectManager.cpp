@@ -10,10 +10,9 @@
 #include "GrayScale.h"
 #include "Vignette.h"
 #include "RadialBlur.h"
+#include "RGBSplit.h"
 
 #include <algorithm>
-
-#include "RGBSplit.h"
 
 #ifdef _DEBUG
 #include "ImGuiManager.h"
@@ -406,31 +405,6 @@ void PostEffectManager::RecreateRenderTexture()
   );
 }
 
-void PostEffectManager::SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter)
-{
-  D3D12_RESOURCE_BARRIER barrier{};
-  barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-  barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-  barrier.Transition.pResource = effectTargetRT_.resource.Get();
-
-  barrier.Transition.StateBefore = stateBefore;
-  barrier.Transition.StateAfter = stateAfter;
-
-  m_dx12_->GetCommandList()->ResourceBarrier(1, &barrier);
-}
-
-void PostEffectManager::SetBarrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter)
-{
-  D3D12_RESOURCE_BARRIER barrier{};
-  barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-  barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-  barrier.Transition.pResource = resource;
-  barrier.Transition.StateBefore = stateBefore;
-  barrier.Transition.StateAfter = stateAfter;
-
-  m_dx12_->GetCommandList()->ResourceBarrier(1, &barrier);
-}
-
   bool PostEffectManager::SetEffectParam(const std::string& effectName, const EffectParam& param)
 {
   // エフェクトが存在するかチェック
@@ -775,4 +749,29 @@ void PostEffectManager::DrawEffectParametersTab()
       }
     }
   }
+}
+
+void PostEffectManager::SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter)
+{
+  D3D12_RESOURCE_BARRIER barrier{};
+  barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+  barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+  barrier.Transition.pResource = effectTargetRT_.resource.Get();
+
+  barrier.Transition.StateBefore = stateBefore;
+  barrier.Transition.StateAfter = stateAfter;
+
+  m_dx12_->GetCommandList()->ResourceBarrier(1, &barrier);
+}
+
+void PostEffectManager::SetBarrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter)
+{
+  D3D12_RESOURCE_BARRIER barrier{};
+  barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+  barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+  barrier.Transition.pResource = resource;
+  barrier.Transition.StateBefore = stateBefore;
+  barrier.Transition.StateAfter = stateAfter;
+
+  m_dx12_->GetCommandList()->ResourceBarrier(1, &barrier);
 }

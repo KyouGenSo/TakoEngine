@@ -12,6 +12,7 @@
 void RadialBlur::Initialize(DX12Basic* dx12, std::string shaderName)
 {
   IPostEffect::Initialize(dx12, shaderName);
+  CreateCBV();
 }
 
 void RadialBlur::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, uint32_t depthSrvIndex, Vector4 clearColor)

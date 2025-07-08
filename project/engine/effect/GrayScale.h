@@ -23,6 +23,5 @@ private:
 
   void CreateRootSignature() override;
   void CreatePSO() override;
-  void CreateCBV() override;
 };
 

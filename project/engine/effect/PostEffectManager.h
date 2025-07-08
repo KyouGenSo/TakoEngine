@@ -72,10 +72,6 @@ public: // メンバ関数
   // レンダーテクスチャの再作成
   void RecreateRenderTexture();
 
-  // バリアの設定
-  void SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
-  void SetBarrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
-
   // 汎用パラメーター設定関数
   bool SetEffectParam(const std::string& effectName, const EffectParam& param);
 
@@ -112,6 +108,10 @@ private: // プライベートメンバー関数
 
   // ImGuiヘルパー関数
   void DrawEffectParametersTab();
+
+  // バリアの設定
+  void SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
+  void SetBarrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
 
 private: // メンバ変数
 

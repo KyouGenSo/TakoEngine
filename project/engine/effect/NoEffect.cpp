@@ -168,7 +168,3 @@ void NoEffect::CreatePSO()
   hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
   assert(SUCCEEDED(hr));
 }
-
-void NoEffect::CreateCBV()
-{
-}

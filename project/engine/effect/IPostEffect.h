@@ -57,7 +57,6 @@ protected: // プライベートメンバー関数
 
   virtual void CreateRootSignature() = 0;  
   virtual void CreatePSO() = 0;  
-  virtual void CreateCBV() = 0;  
 
 protected: // メンバー変数  
 
