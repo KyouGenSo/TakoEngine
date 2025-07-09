@@ -22,12 +22,13 @@ float4 main(VertexShaderOutput input) : SV_TARGET
 {
     PixelShaderOutput output;
 
-	// マスクの値が閾値を超えている場合、下地の色を使用
+	// 下地の色を取得
     float4 baseColor = gBaseTexture.Sample(gSampler, input.texCoord);
 
 	// マスクの値を取得
     float mask = gMaskTexture.Sample(gSampler, input.texCoord);
 
+    // マスクの値が閾値を超えている場合、下地の色を使用
     if (mask <= gParam.threshold)
     {
         return baseColor;
