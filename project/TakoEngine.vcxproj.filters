@@ -10,12 +10,6 @@
     <Filter Include="audio">
       <UniqueIdentifier>{e1c36650-29eb-4114-ab62-f4535a3c1ff5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="base">
-      <UniqueIdentifier>{df44120a-7912-46ec-b7f6-07f2eca7766c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="base\DX12">
-      <UniqueIdentifier>{490ed4b9-7dfe-4558-9e4b-941c092d8a86}</UniqueIdentifier>
-    </Filter>
     <Filter Include="effect">
       <UniqueIdentifier>{c5a029d3-ed5d-4985-b29d-9cab459f774c}</UniqueIdentifier>
     </Filter>
@@ -51,6 +45,12 @@
     </Filter>
     <Filter Include="effect\PostEffect">
       <UniqueIdentifier>{eb1443d2-13b9-455a-bd1f-aaae4a057d07}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="base">
+      <UniqueIdentifier>{df44120a-7912-46ec-b7f6-07f2eca7766c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="base\DX12">
+      <UniqueIdentifier>{490ed4b9-7dfe-4558-9e4b-941c092d8a86}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -202,6 +202,9 @@
       <Filter>effect\PostEffect</Filter>
     </ClCompile>
     <ClCompile Include="engine\effect\Dissolve.cpp">
+      <Filter>effect\PostEffect</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\effect\WhiteNoise.cpp">
       <Filter>effect\PostEffect</Filter>
     </ClCompile>
   </ItemGroup>
@@ -402,6 +405,9 @@
       <Filter>effect\PostEffect</Filter>
     </ClInclude>
     <ClInclude Include="engine\effect\Dissolve.h">
+      <Filter>effect\PostEffect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\WhiteNoise.h">
       <Filter>effect\PostEffect</Filter>
     </ClInclude>
   </ItemGroup>

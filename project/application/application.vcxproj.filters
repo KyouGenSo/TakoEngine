@@ -172,6 +172,9 @@
     <FxCompile Include="resources\shaders\Dissolve.PS.hlsl">
       <Filter>Shader\PostEffect</Filter>
     </FxCompile>
+    <FxCompile Include="resources\shaders\WhiteNoise.PS.hlsl">
+      <Filter>Shader\PostEffect</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\Object3d.hlsli">

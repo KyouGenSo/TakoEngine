@@ -105,6 +105,11 @@ struct DissolveParam
   Vector4 edgeColor;
 };
 
+struct WhiteNoiseParam
+{
+  float time;
+};
+
 using EffectParam = std::variant<
   VignetteParam,
   BloomParam,
@@ -116,5 +121,6 @@ using EffectParam = std::variant<
   LuminanceOutlineParam,
   DepthOutlineParam,
   CameraForGPU,
-  DissolveParam
+  DissolveParam,
+  WhiteNoiseParam
 >;
