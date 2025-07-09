@@ -43,9 +43,9 @@ void RadialBlur::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outpu
 void RadialBlur::DrawImgui()
 {
 #ifdef _DEBUG
-  ImGui::DragFloat2("Center", &cBufferData_->center.x, 0.01f, 0.0f, 1.0f, "%.3f");
-  ImGui::DragFloat("Blur Width", &cBufferData_->blurWidth, 0.001f, 0.0f, 1.0f, "%.3f");
-  ImGui::DragInt("Sample Count", reinterpret_cast<int*>(&cBufferData_->sampleCount), 1, 1, 1024, "%d");
+  ImGui::DragFloat2("RadialBlur Center", &cBufferData_->center.x, 0.01f, 0.0f, 1.0f, "%.3f");
+  ImGui::DragFloat("RadialBlur Width", &cBufferData_->blurWidth, 0.001f, 0.0f, 1.0f, "%.3f");
+  ImGui::DragInt("RadialBlur Sample Count", reinterpret_cast<int*>(&cBufferData_->sampleCount), 1, 1, 1024, "%d");
 #endif
 }
 

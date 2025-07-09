@@ -72,10 +72,10 @@ void Bloom::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvH
 void Bloom::DrawImgui()
 {
 #ifdef _DEBUG
-  ImGui::DragFloat("Intensity", &cBufferData1_->intensity, 0.01f, 0.0f, 10.0f);
-  ImGui::DragFloat("Threshold", &cBufferData1_->threshold, 0.01f, 0.0f, 1.0f);
-  ImGui::DragFloat("Sigma", &cBufferData1_->sigma, 0.01f, 0.0f, 50.0f);
-  ImGui::DragInt("Kernel Size", reinterpret_cast<int*>(&cBufferData1_->kernelSize), 1.0f, 1, 100);
+  ImGui::DragFloat("Bloom Intensity", &cBufferData1_->intensity, 0.01f, 0.0f, 10.0f);
+  ImGui::DragFloat("Bloom Threshold", &cBufferData1_->threshold, 0.01f, 0.0f, 1.0f);
+  ImGui::DragFloat("Bloom Sigma", &cBufferData1_->sigma, 0.01f, 0.0f, 50.0f);
+  ImGui::DragInt("Bloom Kernel Size", reinterpret_cast<int*>(&cBufferData1_->kernelSize), 1.0f, 1, 100);
 #endif
 }
 

@@ -45,9 +45,9 @@ void Vignette::Apply(const uint32_t inputSrvIndex, const D3D12_CPU_DESCRIPTOR_HA
 void Vignette::DrawImgui()
 {
 #ifdef _DEBUG
-  ImGui::DragFloat("VignettePower", &cBufferData_->power, 0.01f, 0.0f, 10.0f);
-  ImGui::DragFloat("VignetteRange", &cBufferData_->range, 0.01f, 0.0f, 100.0f);
-  ImGui::ColorEdit3("VignetteColor", &cBufferData_->color.x);
+  ImGui::DragFloat("Vignette Power", &cBufferData_->power, 0.01f, 0.0f, 10.0f);
+  ImGui::DragFloat("Vignette Range", &cBufferData_->range, 0.01f, 0.0f, 100.0f);
+  ImGui::ColorEdit3("Vignette Color", &cBufferData_->color.x);
 #endif
 }
 

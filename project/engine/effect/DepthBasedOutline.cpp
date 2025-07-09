@@ -54,7 +54,7 @@ void DepthBasedOutline::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDL
 void DepthBasedOutline::DrawImgui()
 {
 #ifdef _DEBUG
-  ImGui::DragFloat("OutlineThickness", &cBufferData_->outlineThickness, 0.01f, 0.0f, 100.0f, "%.2f");
+  ImGui::DragFloat("DepthBasedOutline Thickness", &cBufferData_->outlineThickness, 0.01f, 0.0f, 100.0f, "%.2f");
 #endif
 }
 

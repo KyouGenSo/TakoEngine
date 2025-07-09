@@ -46,7 +46,7 @@ void RGBSplit::DrawImgui()
   ImGui::DragFloat2("Red Offset", &cBufferData_->redOffset.x, 0.01f, -1.0f, 1.0f);
   ImGui::DragFloat2("Green Offset", &cBufferData_->greenOffset.x, 0.01f, -1.0f, 1.0f);
   ImGui::DragFloat2("Blue Offset", &cBufferData_->blueOffset.x, 0.01f, -1.0f, 1.0f);
-  ImGui::DragFloat("Intensity", &cBufferData_->intensity, 0.01f, 0.0f, 1.0f);
+  ImGui::DragFloat("RGBSplit Intensity", &cBufferData_->intensity, 0.01f, 0.0f, 1.0f);
 #endif
 }
 

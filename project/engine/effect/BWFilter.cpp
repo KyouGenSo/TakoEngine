@@ -42,7 +42,7 @@ void BWFilter::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputR
 void BWFilter::DrawImgui()
 {
 #ifdef _DEBUG
-  ImGui::DragFloat("Threshold", &cBufferData_->threshold, 0.01f, 0.0f, 1.0f, "%.2f");
+  ImGui::DragFloat("BWFilter Threshold", &cBufferData_->threshold, 0.01f, 0.0f, 1.0f, "%.2f");
 #endif
 }
 
