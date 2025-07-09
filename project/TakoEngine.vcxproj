@@ -124,6 +124,7 @@
     <ClCompile Include="engine\effect\BoxEmitter.cpp" />
     <ClCompile Include="engine\effect\BWFilter.cpp" />
     <ClCompile Include="engine\effect\DepthBasedOutline.cpp" />
+    <ClCompile Include="engine\effect\Dissolve.cpp" />
     <ClCompile Include="engine\effect\EmitterManager.cpp" />
     <ClCompile Include="engine\effect\Fog.cpp" />
     <ClCompile Include="engine\effect\GPUParticle.cpp" />
@@ -174,6 +175,7 @@
     <ClInclude Include="engine\effect\Bloom.h" />
     <ClInclude Include="engine\effect\BWFilter.h" />
     <ClInclude Include="engine\effect\DepthBasedOutline.h" />
+    <ClInclude Include="engine\effect\Dissolve.h" />
     <ClInclude Include="engine\effect\EmitterStruct.h" />
     <ClInclude Include="engine\effect\BoxEmitter.h" />
     <ClInclude Include="engine\effect\EmitterManager.h" />

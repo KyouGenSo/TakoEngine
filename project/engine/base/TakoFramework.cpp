@@ -54,12 +54,12 @@ void TakoFramework::Initialize()
   Draw2D::GetInstance()->SetCamera(defaultCamera_);
   Draw2D::GetInstance()->Initialize(dx12_);
 
+  TextureManager::GetInstance()->LoadTexture("black.png");
+  TextureManager::GetInstance()->LoadTexture("noise0.png");
 
   PostEffectManager::GetInstance()->Initialize(dx12_);
 
   PostEffectManager::GetInstance()->SetCamera(defaultCamera_);
-
-  TextureManager::GetInstance()->LoadTexture("black.png");
 
   Transition::GetInstance()->Initialize();
 

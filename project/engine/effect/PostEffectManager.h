@@ -12,6 +12,9 @@
 #include <variant>
 #include <string>
 
+#include "Dissolve.h"
+#include "TextureManager.h"
+
 
 class Camera;
 class IPostEffect;
@@ -73,6 +76,14 @@ public: // メンバ関数
       camera_ = camera;
     }
   }
+
+  void SetDissolveMaskTex(const std::string& textureName) {
+    if (!textureName.empty()) {
+      dissolveMaskSrvIndex_ = TextureManager::GetInstance()->GetSRVIndex(textureName);
+    }
+  }
+
+  void SetDissolveBaseTex(const std::string& textureName);
 
   // エフェクト順序変更関数
   bool MoveEffectUp(const std::string& effectName);
@@ -137,6 +148,9 @@ private: // メンバ変数
 
   // 深度バッファのSRV
   uint32_t depthSrvIndex_ = 0;
+
+  // DissolveマスクテクスチャのSRV
+  uint32_t dissolveMaskSrvIndex_ = 0;
 
   // クリアカラー
   const Vector4 kEffectTargetClearColor_ = { 0.17f, 0.17f, 0.17f, 1.0f };

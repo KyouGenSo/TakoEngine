@@ -1,25 +1,25 @@
-#include "Vignette.h"
+#include "Dissolve.h"
 
 #include "DX12Basic.h"
 #include "Logger.h"
 #include "SrvManager.h"
 #include "StringUtility.h"
-
-#include <cassert>
+#include "TextureManager.h"
 
 #ifdef _DEBUG
 #include "imgui.h"
 #endif
 
-void Vignette::Initialize(DX12Basic* dx12, const std::string shaderName)
+void Dissolve::Initialize(DX12Basic* dx12, std::string shaderName)
 {
   IPostEffect::Initialize(dx12, shaderName);
   CreateCBV();
+
+  baseTexSrvIndex_ = TextureManager::GetInstance()->GetSRVIndex("black.png");
 }
 
-void Vignette::Apply(const uint32_t inputSrvIndex, const D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, const uint32_t depthSrvIndex, const Vector4 clearColor)
+void Dissolve::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, uint32_t maskSrvIndex, Vector4 clearColor)
 {
-  depthSrvIndex; // 深度バッファはこのエフェクトでは使用しないため、引数として受け取るが無視する
   clearColor;    // ClearColorもこのエフェクトでは使用しないため、引数として受け取るが無視する
 
   D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
@@ -38,43 +38,47 @@ void Vignette::Apply(const uint32_t inputSrvIndex, const D3D12_CPU_DESCRIPTOR_HA
   // レンダーテクスチャAをシェーダーリソースとして設定
   SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, inputSrvIndex);
 
+  // マスクテクスチャをシェーダーリソースとして設定
+  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, maskSrvIndex);
+
+  // ベーステクスチャをシェーダーリソースとして設定
+  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(3, baseTexSrvIndex_);
+
   // フルスクリーン三角形描画
   m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
 }
 
-void Vignette::DrawImgui()
+void Dissolve::DrawImgui()
 {
 #ifdef _DEBUG
-  ImGui::DragFloat("VignettePower", &cBufferData_->power, 0.01f, 0.0f, 10.0f);
-  ImGui::DragFloat("VignetteRange", &cBufferData_->range, 0.01f, 0.0f, 100.0f);
-  ImGui::ColorEdit3("VignetteColor", &cBufferData_->color.x);
+  ImGui::DragFloat("Dissolve Threshold", &cBufferData_->threshold, 0.01f, 0.0f, 1.0f);
+  ImGui::DragFloat("Edge Thickness", &cBufferData_->edgeThickness, 0.01f, 0.0f, 1.0f);
+  ImGui::ColorEdit4("Edge Color", &cBufferData_->edgeColor.x);
 #endif
 }
 
-bool Vignette::SetGenericParam(const EffectParam& param)
+bool Dissolve::SetGenericParam(const EffectParam& param)
 {
-  if (auto* vignetteParam = std::get_if<VignetteParam>(&param)) {
-    SetParam(*vignetteParam);
+  if (auto* dissolveParam = std::get_if<DissolveParam>(&param)) {
+    SetParam(*dissolveParam);
     return true;
   }
   return false;
 }
 
-void Vignette::SetParam(const VignetteParam& param)
+void Dissolve::SetParam(const DissolveParam& param)
 {
   if (cBufferData_ == nullptr)
   {
     return; // cBufferData_が初期化されていない場合は何もしない
   }
   // パラメータの設定
-  cBufferData_->power = param.power;
-  cBufferData_->range = param.range;
-  cBufferData_->color.x = param.color.x;
-  cBufferData_->color.y = param.color.y;
-  cBufferData_->color.z = param.color.z;
+  cBufferData_->threshold = param.threshold;
+  cBufferData_->edgeThickness = param.edgeThickness;
+  cBufferData_->edgeColor = param.edgeColor;
 }
 
-void Vignette::CreateRootSignature()
+void Dissolve::CreateRootSignature()
 {
   HRESULT hr;
 
@@ -102,18 +106,45 @@ void Vignette::CreateRootSignature()
   descriptorRangesForTex[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
   descriptorRangesForTex[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
 
+  // mask texture用のDescriptorRangeの設定。
+  D3D12_DESCRIPTOR_RANGE descriptorRangeForMask[1] = {};
+  descriptorRangeForMask[0].BaseShaderRegister = 1; // レジスタ番号
+  descriptorRangeForMask[0].NumDescriptors = 1; // ディスクリプタ数
+  descriptorRangeForMask[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
+  descriptorRangeForMask[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+
+  // base texture用のDescriptorRangeの設定。
+  D3D12_DESCRIPTOR_RANGE descriptorRangeForBaseTex[1] = {};
+  descriptorRangeForBaseTex[0].BaseShaderRegister = 2; // レジスタ番号
+  descriptorRangeForBaseTex[0].NumDescriptors = 1; // ディスクリプタ数
+  descriptorRangeForBaseTex[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
+  descriptorRangeForBaseTex[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+
   // RootParameterの設定。複数設定できるので配列
-  D3D12_ROOT_PARAMETER rootParameters[2] = {};
+  D3D12_ROOT_PARAMETER rootParameters[4] = {};
   // Texture
   rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
   rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
   rootParameters[0].DescriptorTable.pDescriptorRanges = descriptorRangesForTex; // ディスクリプタレンジを設定
   rootParameters[0].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangesForTex); // レンジの数
 
-  // Param
+  // param
   rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
   rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
   rootParameters[1].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
+
+  // Mask Texture
+  rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
+  rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+  rootParameters[2].DescriptorTable.pDescriptorRanges = descriptorRangeForMask; // ディスクリプタレンジを設定
+  rootParameters[2].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForMask); // レンジの数
+
+  // Base Texture
+  rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
+  rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+  rootParameters[3].DescriptorTable.pDescriptorRanges = descriptorRangeForBaseTex; // ディスクリプタレンジを設定
+  rootParameters[3].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForBaseTex); // レンジの数
+
 
   descriptionRootSignature.pParameters = rootParameters;
   descriptionRootSignature.NumParameters = _countof(rootParameters);
@@ -133,7 +164,7 @@ void Vignette::CreateRootSignature()
   assert(SUCCEEDED(hr));
 }
 
-void Vignette::CreatePSO()
+void Dissolve::CreatePSO()
 {
   HRESULT hr;
 
@@ -191,16 +222,16 @@ void Vignette::CreatePSO()
   assert(SUCCEEDED(hr));
 }
 
-void Vignette::CreateCBV()
+void Dissolve::CreateCBV()
 {
   // VignetteParamのリソース生成
-  cBufferResource_ = m_dx12_->MakeBufferResource(sizeof(VignetteParam));
+  cBufferResource_ = m_dx12_->MakeBufferResource(sizeof(DissolveParam));
 
   // データの設定
   cBufferResource_->Map(0, nullptr, reinterpret_cast<void**>(&cBufferData_));
 
   // データの初期化
-  cBufferData_->power = 0.0f;
-  cBufferData_->range = 20.0f;
-  cBufferData_->color = Vector3(0.0f, 0.0f, 0.0f);
+  cBufferData_->threshold = 0.0f; // デフォルト値を設定
+  cBufferData_->edgeThickness = 0.0f;
+  cBufferData_->edgeColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f); // デフォルト値を設定
 }

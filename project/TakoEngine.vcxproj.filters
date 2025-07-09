@@ -195,10 +195,13 @@
     <ClCompile Include="engine\effect\DepthBasedOutline.cpp">
       <Filter>effect\PostEffect</Filter>
     </ClCompile>
+    <ClCompile Include="engine\effect\Bloom.cpp">
+      <Filter>effect\PostEffect</Filter>
+    </ClCompile>
     <ClCompile Include="engine\effect\Fog.cpp">
       <Filter>effect\PostEffect</Filter>
     </ClCompile>
-    <ClCompile Include="engine\effect\Bloom.cpp">
+    <ClCompile Include="engine\effect\Dissolve.cpp">
       <Filter>effect\PostEffect</Filter>
     </ClCompile>
   </ItemGroup>
@@ -396,6 +399,9 @@
       <Filter>effect\PostEffect</Filter>
     </ClInclude>
     <ClInclude Include="engine\effect\Bloom.h">
+      <Filter>effect\PostEffect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\Dissolve.h">
       <Filter>effect\PostEffect</Filter>
     </ClInclude>
   </ItemGroup>

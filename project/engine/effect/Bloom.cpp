@@ -21,6 +21,8 @@ void Bloom::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvH
   depthSrvIndex; // 深度バッファはこのエフェクトでは使用しないため、引数として受け取るが無視する
   clearColor;    // ClearColorもこのエフェクトでは使用しないため、引数として受け取るが無視する
 
+
+  //---------------------------Pass1---------------------------//
   D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
 
   m_dx12_->GetCommandList()->OMSetRenderTargets(1,
@@ -42,6 +44,7 @@ void Bloom::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvH
   m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
 
 
+  //---------------------------Pass2---------------------------//
   SetBarrier(resultRT_.resource.Get(),
     D3D12_RESOURCE_STATE_RENDER_TARGET,
     D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);

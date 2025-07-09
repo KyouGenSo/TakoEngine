@@ -97,6 +97,14 @@ struct DepthOutlineParam
   float outlineThickness;
 };
 
+struct DissolveParam
+{
+  float threshold; // 溶解のしきい値
+  float edgeThickness;
+  float padding[2]; // パディング追加
+  Vector4 edgeColor;
+};
+
 using EffectParam = std::variant<
   VignetteParam,
   BloomParam,
@@ -107,5 +115,6 @@ using EffectParam = std::variant<
   RGBSplitParam,
   LuminanceOutlineParam,
   DepthOutlineParam,
-  CameraForGPU
+  CameraForGPU,
+  DissolveParam
 >;

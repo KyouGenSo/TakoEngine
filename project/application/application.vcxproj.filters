@@ -103,13 +103,7 @@
     <FxCompile Include="resources\shaders\Vignette.PS.hlsl">
       <Filter>Shader\PostEffect</Filter>
     </FxCompile>
-    <FxCompile Include="resources\shaders\VignetteRed.PS.hlsl">
-      <Filter>Shader\PostEffect</Filter>
-    </FxCompile>
     <FxCompile Include="resources\shaders\VignetteRedBloom.PS.hlsl">
-      <Filter>Shader\PostEffect</Filter>
-    </FxCompile>
-    <FxCompile Include="resources\shaders\VigRedGrayScale.PS.hlsl">
       <Filter>Shader\PostEffect</Filter>
     </FxCompile>
     <FxCompile Include="resources\shaders\Skinning.CS.hlsl">
@@ -173,6 +167,9 @@
       <Filter>Shader\PostEffect</Filter>
     </FxCompile>
     <FxCompile Include="resources\shaders\Fog.PS.hlsl">
+      <Filter>Shader\PostEffect</Filter>
+    </FxCompile>
+    <FxCompile Include="resources\shaders\Dissolve.PS.hlsl">
       <Filter>Shader\PostEffect</Filter>
     </FxCompile>
   </ItemGroup>

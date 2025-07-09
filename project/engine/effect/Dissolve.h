@@ -1,7 +1,6 @@
 #pragma once
 #include "IPostEffect.h"
-
-class Bloom : public IPostEffect
+class Dissolve : public IPostEffect
 {
 public:
 
@@ -12,7 +11,7 @@ public:
   void Apply(
     uint32_t                    inputSrvIndex,   // 入力テクスチャのSRVインデックス
     D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, // 出力先のRTVハンドル
-    uint32_t                    depthSrvIndex,   // 深度バッファが必要なエフェクト用
+    uint32_t                    maskSrvIndex,   // 深度バッファが必要なエフェクト用
     Vector4                     clearColor       // 出力先のRTVのクリアカラー
   ) override;
 
@@ -21,25 +20,22 @@ public:
 
   // パラメータ設定
   bool SetGenericParam(const EffectParam& param) override;
-  void SetParam(const BloomParam& param);
+  void SetParam(const DissolveParam& param);
+  void SetBaseTextureSrvIndex(uint32_t srvIndex){
+    baseTexSrvIndex_ = srvIndex;
+  }
 
 private:
 
   void CreateRootSignature() override;
   void CreatePSO() override;
   void CreateCBV();
-  void CreateRenderTexture();
-
-  void SetBarrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
 
 private:
+  ComPtr<ID3D12Resource> cBufferResource_;
+  DissolveParam* cBufferData_ = nullptr;
 
-  ComPtr<ID3D12Resource> cBufferResource1_;
-  BloomParam* cBufferData1_ = nullptr;
+  uint32_t baseTexSrvIndex_ = 0; // 背景テクスチャのSRVインデックス
 
-  ComPtr<ID3D12Resource> cBufferResource2_;
-  BloomParam* cBufferData2_ = nullptr;
-
-  RenderTexture resultRT_{};
 };
 

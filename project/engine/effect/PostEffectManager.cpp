@@ -16,6 +16,7 @@
 #include "DepthBasedOutline.h"
 #include "Fog.h"
 #include "Bloom.h"
+#include "Dissolve.h"
 
 #include <algorithm>
 
@@ -51,6 +52,7 @@ void PostEffectManager::Initialize(DX12Basic* dx12)
   RegisterEffect("DepthBasedOutline", std::make_unique<DepthBasedOutline>());
   RegisterEffect("Fog", std::make_unique<Fog>());
   RegisterEffect("Bloom", std::make_unique<Bloom>());
+  RegisterEffect("Dissolve", std::make_unique<Dissolve>());
 
   // 深度バッファテクスチャのSRV作成
   depthSrvIndex_ = SrvManager::GetInstance()->Allocate();
@@ -60,6 +62,9 @@ void PostEffectManager::Initialize(DX12Basic* dx12)
     DXGI_FORMAT_R32_FLOAT,
     1
   );
+
+  // DissolveマスクテクスチャのデフォルトSRV作成
+  dissolveMaskSrvIndex_ = TextureManager::GetInstance()->GetSRVIndex("noise0.png");
 }
 
 void PostEffectManager::Finalize()
@@ -414,7 +419,7 @@ void PostEffectManager::RecreateRenderTexture()
   );
 }
 
-  bool PostEffectManager::SetEffectParam(const std::string& effectName, const EffectParam& param)
+bool PostEffectManager::SetEffectParam(const std::string& effectName, const EffectParam& param)
 {
   // エフェクトが存在するかチェック
   auto it = effectRegistry_.find(effectName);
@@ -436,6 +441,17 @@ void PostEffectManager::RecreateRenderTexture()
 #endif
 
   return success;
+}
+
+void PostEffectManager::SetDissolveBaseTex(const std::string& textureName)
+{
+  auto it = effectRegistry_.find("Dissolve");
+  if (it != effectRegistry_.end()) {
+    auto dissolveEffect = dynamic_cast<Dissolve*>(it->second.get());
+    if (dissolveEffect) {
+      dissolveEffect->SetBaseTextureSrvIndex(TextureManager::GetInstance()->GetSRVIndex(textureName));
+    }
+  }
 }
 
 bool PostEffectManager::MoveEffectUp(const std::string& effectName)
@@ -699,7 +715,15 @@ void PostEffectManager::ApplyEffectChain()
         }
       }
     }
-    effect->Apply(srcSrvIndex, dstRtvHandle, depthSrvIndex_, nonEffectTargetClearColor_);
+
+    if (effectName == "Dissolve")
+    {
+      effect->Apply(srcSrvIndex, dstRtvHandle, dissolveMaskSrvIndex_, nonEffectTargetClearColor_);
+    } else
+    {
+      effect->Apply(srcSrvIndex, dstRtvHandle, depthSrvIndex_, nonEffectTargetClearColor_);
+    }
+
 
     if (!isLastEffect) {
       int bufferIndex = i % 2;
