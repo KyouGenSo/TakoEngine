@@ -10,6 +10,7 @@
 
 #include <cassert>
 #include <fstream>
+#include <set>
 #include <sstream>
 
 ///------------------------------------------------///
@@ -88,18 +89,25 @@ void Model::Update()
 
 void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
 {
-
   // スキニング処理の実行（ComputeShaderによる頂点変形）
   ExecuteSkinning();
 
-  // 全メッシュの描画
-  if (meshes_.size() <= 1)
+  // スキニングモデルの場合
+  if (hasSkeleton_)
   {
+    // スキニングモデルは各メッシュを直接描画（スキニング済みの頂点を使用）
+    for (auto& mesh : meshes_) {
+      mesh->Draw();
+    }
+  } else if (meshes_.size() <= 1)
+  {
+    // 単一メッシュモデルの場合
     for (auto& mesh : meshes_) {
       mesh->Draw();
     }
   } else
   {
+    // マルチメッシュモデル（スキニングなし）の場合はノード階層で描画
     ProcessNodeHierarchy(rootNode_, Mat4x4::MakeIdentity(), world, viewProjection);
   }
 
@@ -120,23 +128,25 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
   const aiScene* scene = importer.ReadFile(filePath.c_str(),
     aiProcess_FlipWindingOrder |
     aiProcess_FlipUVs |
-    aiProcess_CalcTangentSpace |    // 接線空間を計算
-    aiProcess_GenSmoothNormals |     // 法線がない場合は生成
-    aiProcess_GenUVCoords |          // UV座標がない場合は生成
-    aiProcess_JoinIdenticalVertices | // 同一頂点を結合
-    aiProcess_Triangulate            // すべてのポリゴンを三角形に変換
+    aiProcess_CalcTangentSpace |
+    aiProcess_GenSmoothNormals |
+    aiProcess_GenUVCoords |
+    aiProcess_JoinIdenticalVertices |
+    aiProcess_Triangulate
   );
-  assert(scene->HasMeshes()); // メッシュがない場合はエラー
+  assert(scene->HasMeshes());
 
   // ルートノードの読み込み
   rootNode_ = ReadNode(scene->mRootNode);
+
+  // メッシュごとのボーン名を保存するマップ
+  std::map<uint32_t, set<std::string>> meshBoneMap;
 
   // メッシュの解析
   for (uint32_t meshIndex = 0; meshIndex < scene->mNumMeshes; meshIndex++)
   {
     aiMesh* mesh = scene->mMeshes[meshIndex];
 
-    // テクスチャ座標と法線の存在を個別にチェック
     bool hasTexCoords = mesh->HasTextureCoords(0);
     bool hasNormals = mesh->HasNormals();
 
@@ -144,25 +154,19 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
     std::vector<VertexData> vertices(mesh->mNumVertices);
     for (uint32_t vertexIndex = 0; vertexIndex < mesh->mNumVertices; ++vertexIndex) {
       aiVector3D& position = mesh->mVertices[vertexIndex];
-
-      // 位置は常に存在
       vertices[vertexIndex].position = { -position.x, position.y, position.z, 1.0f };
 
-      // テクスチャ座標が存在する場合のみ読み込み、存在しない場合はデフォルト値
       if (hasTexCoords) {
         aiVector3D& texcoord = mesh->mTextureCoords[0][vertexIndex];
         vertices[vertexIndex].texcoord = { texcoord.x, texcoord.y };
       } else {
-        // デフォルトのテクスチャ座標を設定（例：0,0）
         vertices[vertexIndex].texcoord = { 0.0f, 0.0f };
       }
 
-      // 法線が存在する場合のみ読み込み、存在しない場合はデフォルト値
       if (hasNormals) {
         aiVector3D& normal = mesh->mNormals[vertexIndex];
         vertices[vertexIndex].normal = { -normal.x, normal.y, normal.z };
       } else {
-        // デフォルトの法線を設定（例：上向き）
         vertices[vertexIndex].normal = { 0.0f, 1.0f, 0.0f };
       }
     }
@@ -171,40 +175,51 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
     std::vector<uint32_t> indices;
     for (uint32_t faceIndex = 0; faceIndex < mesh->mNumFaces; ++faceIndex) {
       aiFace& face = mesh->mFaces[faceIndex];
-      assert(face.mNumIndices == 3);  // 三角形のみ対応
+      assert(face.mNumIndices == 3);
 
       for (uint32_t element = 0; element < face.mNumIndices; ++element) {
         indices.push_back(face.mIndices[element]);
       }
     }
 
-    // スキンクラスターデータの解析
+    // このメッシュのボーン情報を収集
     for (uint32_t boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex)
     {
       aiBone* bone = mesh->mBones[boneIndex];
       std::string jointName = bone->mName.C_Str();
+
+      // グローバルなスキンクラスターデータに追加（まだ存在しない場合）
+      if (skinClusterData_.find(jointName) == skinClusterData_.end()) {
+        JointWeightData& jointWeightData = skinClusterData_[jointName];
+
+        aiMatrix4x4 bindPoseMatrixAssimp = bone->mOffsetMatrix.Inverse();
+        aiVector3D scale, translate;
+        aiQuaternion rotate;
+        bindPoseMatrixAssimp.Decompose(scale, rotate, translate);
+
+        Matrix4x4 bindPoseMatrix = Mat4x4::MakeAffine(
+          { scale.x, scale.y, scale.z },
+          { rotate.x, -rotate.y, -rotate.z, rotate.w },
+          { -translate.x, translate.y, translate.z });
+        jointWeightData.inverseBindMatrix = Mat4x4::Inverse(bindPoseMatrix);
+      }
+
+      // このメッシュ用の頂点ウェイトデータを追加
       JointWeightData& jointWeightData = skinClusterData_[jointName];
-
-      aiMatrix4x4 bindPoseMatrixAssimp = bone->mOffsetMatrix.Inverse();
-      aiVector3D scale, tanslate;
-      aiQuaternion rotate;
-      bindPoseMatrixAssimp.Decompose(scale, rotate, tanslate);
-      // 左手系のBindPoseMatrixを作る
-      Matrix4x4 bindPoseMatrix = Mat4x4::MakeAffine(
-        { scale.x, scale.y, scale.z },
-        { rotate.x, -rotate.y, -rotate.z, rotate.w },
-        { -tanslate.x, tanslate.y, tanslate.z });
-      jointWeightData.inverseBindMatrix = Mat4x4::Inverse(bindPoseMatrix);
-
       for (uint32_t weightIndex = 0; weightIndex < bone->mNumWeights; ++weightIndex)
       {
+        // メッシュごとに頂点インデックスをオフセットする必要がある場合は調整
         jointWeightData.vertexWeights.push_back({
-          .weight = bone->mWeights[weightIndex].mWeight ,
-          .vertexIndex = bone->mWeights[weightIndex].mVertexId });
+          .weight = bone->mWeights[weightIndex].mWeight,
+          .vertexIndex = bone->mWeights[weightIndex].mVertexId
+          });
       }
+
+      // このメッシュが使用するボーンを記録
+      meshBoneMap[meshIndex].insert(jointName);
     }
 
-    // マテリアルファイルの読み込み
+    // マテリアルの読み込み（省略）
     TextureData textureData;
     if (mesh->mMaterialIndex < scene->mNumMaterials) {
       aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
@@ -213,7 +228,6 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
         material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath);
         textureData.texturePath = texturePath.C_Str();
 
-        // テクスチャ管理
         if (textureCache_.find(textureData.texturePath) == textureCache_.end()) {
           TextureManager::GetInstance()->LoadTexture(textureData.texturePath);
           textureData.textureIndex = TextureManager::GetInstance()->GetSRVIndex(textureData.texturePath);
@@ -222,9 +236,8 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
           textureData = textureCache_[textureData.texturePath];
         }
       } else {
-        // テクスチャがない場合のデフォルト処理
         textureData.texturePath = "";
-        textureData.textureIndex = TextureManager::GetInstance()->GetSRVIndex("white.png"); // デフォルトの白テクスチャなどのインデックス
+        textureData.textureIndex = TextureManager::GetInstance()->GetSRVIndex("white.png");
       }
     }
 
