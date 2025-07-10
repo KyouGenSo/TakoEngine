@@ -210,14 +210,10 @@ void GameScene::Update()
   emitterManager_->SetEmitterLifeTimeRange("box", boxEmitterSett_.lifeTimeRange);
   emitterManager_->SetEmitterLifeTimeRange("triangle", triEmitterSett_.lifeTimeRange);
 
-  //emitterManager_->SetGroupPosition("group1", groupPosition_);
-  //emitterManager_->SetGroupActive("group1", isActive_);
-
   sprite_->Update();
 
   // ライトの設定
   Object3dBasic::GetInstance()->SetDirectionalLight(lightDirection_, lightColor_, 1, lightIntensity_);
-
 
   // シーン遷移
   if (Input::GetInstance()->TriggerKey(DIK_RETURN))

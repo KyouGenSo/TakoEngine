@@ -101,11 +101,12 @@ void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
   }
 
   // skeletonの描画
+#ifdef _DEBUG
   if (hasSkeleton_)
   {
     DrawSkeleton(world, viewProjection);
   }
-
+#endif
 }
 
 void Model::LoadModelFile(const std::string& directoryPath, const std::string& fileName)

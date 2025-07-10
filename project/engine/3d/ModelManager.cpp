@@ -51,11 +51,13 @@ void ModelManager::LoadModel(const std::string& fileName)
 void ModelManager::LoadModel(const std::string& fileName, bool hasAnimation, bool hasSkeleton)
 {
   // すでにロード済みのファイル名をチェック
+#ifdef _DEBUG
   if (models_.contains(fileName))
   {
     Logger::Log("ModelManager: Model already loaded: " + fileName);
     return;
   }
+#endif
 
   // 新しいModelインスタンスを作成
   std::unique_ptr<Model> newModel = std::make_unique<Model>();
