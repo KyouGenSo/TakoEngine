@@ -3,6 +3,7 @@
 #include "Mat4x4Func.h"
 #include "ModelBasic.h"
 #include "SrvManager.h"
+#include "TextureManager.h"
 
 //　デストラクタ
 Mesh::~Mesh()
@@ -52,9 +53,12 @@ void Mesh::Draw()
   SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, textureData_.textureIndex);
 
   // 環境マップを使用する場合の設定
-  if (materialData_->enableEnvMap) {
-    // 環境マップのテクスチャを設定
+  if (materialData_->enableEnvMap && envTextureIndex_ != 0) {
     SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(8, envTextureIndex_);
+  } else {
+    // 環境マップが無効またはテクスチャが設定されていない場合は、デフォルトテクスチャを設定
+    uint32_t defaultTextureIndex = TextureManager::GetInstance()->GetSRVIndex("white.png");
+    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(8, defaultTextureIndex);
   }
 
   // 描画
@@ -81,6 +85,16 @@ void Mesh::DrawWithCurrentTransform()
 
   // テクスチャを設定
   SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, textureData_.textureIndex);
+
+  // 環境マップテクスチャを設定
+  if (materialData_->enableEnvMap && envTextureIndex_ != 0) {
+    // 環境マップが有効で、テクスチャが設定されている場合
+    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(8, envTextureIndex_);
+  } else {
+    // 環境マップが無効またはテクスチャが設定されていない場合は、デフォルトテクスチャを設定
+    uint32_t defaultTextureIndex = TextureManager::GetInstance()->GetSRVIndex("white.png");
+    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(8, defaultTextureIndex);
+  }
 
   // 描画
   dx12_->GetCommandList()->DrawIndexedInstanced(static_cast<UINT>(indices_.size()), 1, 0, 0, 0);
