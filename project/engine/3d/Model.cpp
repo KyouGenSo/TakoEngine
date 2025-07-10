@@ -223,8 +223,23 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
 
     // マテリアルの読み込み
     TextureData textureData;
+    // デフォルトのベースカラーを白に設定
+    textureData.baseColor = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+
     if (mesh->mMaterialIndex < scene->mNumMaterials) {
       aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+
+      // ベースカラーの読み込み
+      aiColor4D baseColor;
+      if (material->Get(AI_MATKEY_COLOR_DIFFUSE, baseColor) == AI_SUCCESS) {
+        textureData.baseColor = Vector4(baseColor.r, baseColor.g, baseColor.b, baseColor.a);
+      }
+      // PBRマテリアルの場合はBASE_COLORも試す
+      else if (material->Get(AI_MATKEY_BASE_COLOR, baseColor) == AI_SUCCESS) {
+        textureData.baseColor = Vector4(baseColor.r, baseColor.g, baseColor.b, baseColor.a);
+      }
+
+      // テクスチャの読み込み
       if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
         aiString texturePath;
         material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath);

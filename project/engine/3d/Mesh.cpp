@@ -300,7 +300,7 @@ void Mesh::CreateMaterialData()
   materialResource_->Map(0, nullptr, reinterpret_cast<void**>(&materialData_));
 
   // マテリアルデータの初期値を書き込む
-  materialData_->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+  materialData_->color = textureData_.baseColor;
   materialData_->enableLighting = true;
   materialData_->enableHighlight = true;
   materialData_->uvTransform = Mat4x4::MakeIdentity();

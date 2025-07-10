@@ -35,6 +35,7 @@ struct VertexData
 struct TextureData {
     std::string texturePath;
     uint32_t textureIndex;
+    Vector4 baseColor;
 };
 
 struct VertexWeightData
