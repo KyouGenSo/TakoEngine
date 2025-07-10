@@ -157,3 +157,7 @@ struct SkinCluster
   uint32_t paletteSrvIndex;
   std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> paletteSrvHandle;
 };
+
+struct MeshSkinClusterData {
+  std::map<std::string, JointWeightData> skinClusterData;
+};

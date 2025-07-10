@@ -123,11 +123,6 @@ void GameScene::Initialize()
   emitterManager_->SetEmitterVelocityRange("triangle", triEmitterSett_.velRangeX, triEmitterSett_.velRangeY, triEmitterSett_.velRangeZ);
   emitterManager_->SetEmitterLifeTimeRange("triangle", triEmitterSett_.lifeTimeRange);
 
-  emitterManager_->CreateGroup("group1");
-  emitterManager_->AddToGroup("group1", "player");
-  emitterManager_->AddToGroup("group1", "box");
-  emitterManager_->AddToGroup("group1", "triangle");
-
   isActive_ = false;
   emitterManager_->SetGroupActive("group1", isActive_);
 

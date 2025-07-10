@@ -771,6 +771,7 @@ void PostEffectManager::ApplyEffectChain()
 
 void PostEffectManager::DrawEffectParametersTab()
 {
+#ifdef _DEBUG
   size_t chainSize = GetEffectChainSize();
 
   if (chainSize == 0) {
@@ -794,6 +795,7 @@ void PostEffectManager::DrawEffectParametersTab()
       }
     }
   }
+#endif
 }
 
 void PostEffectManager::SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter)

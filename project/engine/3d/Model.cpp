@@ -20,17 +20,11 @@
 void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool hasAnimation, bool hasSkeleton)
 {
   m_modelBasic_ = modelBasic;
-
   m_dx12_ = m_modelBasic_->GetDX12Basic();
-
   directoryFolderName_ = m_modelBasic_->GetDirectoryFolderName();
-
   ModelFolderName_ = m_modelBasic_->GetModelFolderName();
-
   hasAnimation_ = hasAnimation;
-
   hasSkeleton_ = hasSkeleton;
-
   paletteSrvIndex_ = 0;
 
   // objファイルの読み込み
@@ -48,9 +42,11 @@ void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool
     skeleton_ = CreateSkeleton(rootNode_);
     InitializeMatrixPalette();
 
-    for (auto& mesh : meshes_) {
-      // 各メッシュにスキニングデータを設定
-      mesh->InitializeSkinning(skinClusterData_, skeleton_.jointMap);
+    for (size_t i = 0; i < meshes_.size(); ++i) {
+      if (i < meshSkinClusterData_.size() && !meshSkinClusterData_[i].skinClusterData.empty()) {
+        // 各メッシュに専用のスキンクラスターデータを設定
+        meshes_[i]->InitializeSkinning(meshSkinClusterData_[i].skinClusterData, skeleton_.jointMap);
+      }
     }
   }
 }
@@ -139,8 +135,8 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
   // ルートノードの読み込み
   rootNode_ = ReadNode(scene->mRootNode);
 
-  // メッシュごとのボーン名を保存するマップ
-  std::map<uint32_t, set<std::string>> meshBoneMap;
+  // メッシュごとのスキンクラスターデータを準備
+  meshSkinClusterData_.resize(scene->mNumMeshes);
 
   // メッシュの解析
   for (uint32_t meshIndex = 0; meshIndex < scene->mNumMeshes; meshIndex++)
@@ -188,9 +184,12 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
       aiBone* bone = mesh->mBones[boneIndex];
       std::string jointName = bone->mName.C_Str();
 
-      // グローバルなスキンクラスターデータに追加（まだ存在しない場合）
-      if (skinClusterData_.find(jointName) == skinClusterData_.end()) {
-        JointWeightData& jointWeightData = skinClusterData_[jointName];
+      // このメッシュ専用のスキンクラスターデータをチェック
+      auto& meshSkinData = meshSkinClusterData_[meshIndex].skinClusterData;
+
+      // まだこのジョイントが存在しない場合は逆バインド行列を設定
+      if (meshSkinData.find(jointName) == meshSkinData.end()) {
+        JointWeightData& jointWeightData = meshSkinData[jointName];
 
         aiMatrix4x4 bindPoseMatrixAssimp = bone->mOffsetMatrix.Inverse();
         aiVector3D scale, translate;
@@ -204,22 +203,25 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
         jointWeightData.inverseBindMatrix = Mat4x4::Inverse(bindPoseMatrix);
       }
 
-      // このメッシュ用の頂点ウェイトデータを追加
-      JointWeightData& jointWeightData = skinClusterData_[jointName];
+      // 頂点ウェイトデータを追加
+      JointWeightData& jointWeightData = meshSkinData[jointName];
       for (uint32_t weightIndex = 0; weightIndex < bone->mNumWeights; ++weightIndex)
       {
-        // メッシュごとに頂点インデックスをオフセットする必要がある場合は調整
         jointWeightData.vertexWeights.push_back({
           .weight = bone->mWeights[weightIndex].mWeight,
           .vertexIndex = bone->mWeights[weightIndex].mVertexId
           });
       }
-
-      // このメッシュが使用するボーンを記録
-      meshBoneMap[meshIndex].insert(jointName);
     }
 
-    // マテリアルの読み込み（省略）
+    // グローバルなスキンクラスターデータも更新（スケルトン生成用）
+    for (const auto& [jointName, jointData] : meshSkinClusterData_[meshIndex].skinClusterData) {
+      if (skinClusterData_.find(jointName) == skinClusterData_.end()) {
+        skinClusterData_[jointName] = jointData;
+      }
+    }
+
+    // マテリアルの読み込み
     TextureData textureData;
     if (mesh->mMaterialIndex < scene->mNumMaterials) {
       aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
@@ -250,7 +252,6 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
 
 Model* Model::Clone() const
 {
-
   Model* newModel = new Model();
   newModel->m_modelBasic_ = this->m_modelBasic_;
   newModel->m_dx12_ = this->m_dx12_;
@@ -260,6 +261,7 @@ Model* Model::Clone() const
   newModel->hasSkeleton_ = this->hasSkeleton_;
   newModel->rootNode_ = this->rootNode_;
   newModel->textureCache_ = this->textureCache_;
+  newModel->meshSkinClusterData_ = this->meshSkinClusterData_;  // 追加
 
   if (this->hasSkeleton_)
   {
@@ -276,13 +278,13 @@ Model* Model::Clone() const
   }
 
   // Meshのクローンを作成
-  for (const auto& mesh : meshes_)
+  for (size_t i = 0; i < meshes_.size(); ++i)
   {
-    Mesh* newMesh = mesh->Clone();
-    if (this->hasSkeleton_)
+    Mesh* newMesh = meshes_[i]->Clone();
+    if (this->hasSkeleton_ && i < this->meshSkinClusterData_.size() && !this->meshSkinClusterData_[i].skinClusterData.empty())
     {
-      // スキニングデータをクローン
-      newMesh->InitializeSkinning(this->skinClusterData_, this->skeleton_.jointMap);
+      // 各メッシュに専用のスキンクラスターデータを設定
+      newMesh->InitializeSkinning(this->meshSkinClusterData_[i].skinClusterData, this->skeleton_.jointMap);
     }
     newModel->meshes_.push_back(newMesh);
   }

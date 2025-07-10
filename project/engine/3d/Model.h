@@ -164,4 +164,5 @@ private: // メンバ変数
   uint32_t paletteSrvIndex_ = 0;
   std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> paletteSrvHandle_;
   std::map<std::string, JointWeightData> skinClusterData_;
+  std::vector<MeshSkinClusterData> meshSkinClusterData_;
 };
