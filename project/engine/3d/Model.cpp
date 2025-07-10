@@ -69,17 +69,20 @@ void Model::Finalize()
 
 void Model::Update()
 {
-  if (hasAnimation_ && !hasSkeleton_)
+  // アニメーションがある場合
+  if (hasAnimation_)
   {
+    // アニメーション時間の更新
     UpdateAnimation(1.0f / 60.0f);
+
+    // ノード階層のアニメーション更新（スキニングの有無に関わらず実行）
+    UpdateNodeHierarchyAnimation(rootNode_, animationTime_);
   }
 
+  // スケルトンアニメーションの場合
   if (hasSkeleton_ && hasAnimation_) {
-    // スケルトンアニメーションの場合
-
     // スキニング処理の準備（ボーン行列の更新など）
     PrepareSkinning();
-
   }
 }
 
@@ -113,7 +116,16 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
 {
   Assimp::Importer importer;
   std::string filePath = directoryPath + "/" + fileName;
-  const aiScene* scene = importer.ReadFile(filePath.c_str(), aiProcess_FlipWindingOrder | aiProcess_FlipUVs);
+
+  const aiScene* scene = importer.ReadFile(filePath.c_str(),
+    aiProcess_FlipWindingOrder |
+    aiProcess_FlipUVs |
+    aiProcess_CalcTangentSpace |    // 接線空間を計算
+    aiProcess_GenSmoothNormals |     // 法線がない場合は生成
+    aiProcess_GenUVCoords |          // UV座標がない場合は生成
+    aiProcess_JoinIdenticalVertices | // 同一頂点を結合
+    aiProcess_Triangulate            // すべてのポリゴンを三角形に変換
+  );
   assert(scene->HasMeshes()); // メッシュがない場合はエラー
 
   // ルートノードの読み込み
@@ -123,18 +135,36 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
   for (uint32_t meshIndex = 0; meshIndex < scene->mNumMeshes; meshIndex++)
   {
     aiMesh* mesh = scene->mMeshes[meshIndex];
-    assert(mesh->HasTextureCoords(0) && mesh->HasNormals());
+
+    // テクスチャ座標と法線の存在を個別にチェック
+    bool hasTexCoords = mesh->HasTextureCoords(0);
+    bool hasNormals = mesh->HasNormals();
 
     // 頂点の解析
     std::vector<VertexData> vertices(mesh->mNumVertices);
     for (uint32_t vertexIndex = 0; vertexIndex < mesh->mNumVertices; ++vertexIndex) {
       aiVector3D& position = mesh->mVertices[vertexIndex];
-      aiVector3D& texcoord = mesh->mTextureCoords[0][vertexIndex];
-      aiVector3D& normal = mesh->mNormals[vertexIndex];
 
+      // 位置は常に存在
       vertices[vertexIndex].position = { -position.x, position.y, position.z, 1.0f };
-      vertices[vertexIndex].texcoord = { texcoord.x, texcoord.y };
-      vertices[vertexIndex].normal = { -normal.x, normal.y, normal.z };
+
+      // テクスチャ座標が存在する場合のみ読み込み、存在しない場合はデフォルト値
+      if (hasTexCoords) {
+        aiVector3D& texcoord = mesh->mTextureCoords[0][vertexIndex];
+        vertices[vertexIndex].texcoord = { texcoord.x, texcoord.y };
+      } else {
+        // デフォルトのテクスチャ座標を設定（例：0,0）
+        vertices[vertexIndex].texcoord = { 0.0f, 0.0f };
+      }
+
+      // 法線が存在する場合のみ読み込み、存在しない場合はデフォルト値
+      if (hasNormals) {
+        aiVector3D& normal = mesh->mNormals[vertexIndex];
+        vertices[vertexIndex].normal = { -normal.x, normal.y, normal.z };
+      } else {
+        // デフォルトの法線を設定（例：上向き）
+        vertices[vertexIndex].normal = { 0.0f, 1.0f, 0.0f };
+      }
     }
 
     // インデックスの解析
@@ -191,6 +221,10 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
         } else {
           textureData = textureCache_[textureData.texturePath];
         }
+      } else {
+        // テクスチャがない場合のデフォルト処理
+        textureData.texturePath = "";
+        textureData.textureIndex = TextureManager::GetInstance()->GetSRVIndex("white.png"); // デフォルトの白テクスチャなどのインデックス
       }
     }
 
@@ -425,16 +459,15 @@ Animation Model::LoadAnimationFile(const std::string& directoryPath, const std::
 void Model::PrepareSkinning()
 {
   // スケルトンやアニメーションがない場合は何もしない
-  if (!hasSkeleton_ || !hasAnimation_) {
+  if (!hasSkeleton_) {
     return;
   }
 
-  // アニメーション時間の更新
-  animationTime_ += 1.0f / 60.0f; // 固定フレームレート（必要に応じてdeltaTimeに変更可能）
-  animationTime_ = std::fmod(animationTime_, animationData_.duration); // ループ処理
-
-  // アニメーションの適用（ポーズの更新）
-  UpdateSkeletonAnimation(animationTime_);
+  // アニメーションがある場合のみ時間を更新
+  if (hasAnimation_) {
+    // アニメーションの適用（ポーズの更新）
+    UpdateSkeletonAnimation(animationTime_);
+  }
 
   // スケルトン行列の更新
   UpdateSkeleton();
@@ -444,10 +477,6 @@ void Model::PrepareSkinning()
     // InverseBindMatrix（初期ポーズの逆行列）* 現在のスケルトン空間行列
     mappedPalette_[jointIndex].skeletonSpaceMat =
       inverseBindMatrices_[jointIndex] * skeleton_.joints[jointIndex].skeletonSpaceMatrix;
-
-    //// 法線変換用の逆転置行列も計算
-    //mappedPalette_[jointIndex].skeletonSpaceMatrixInvTransposeMat =
-    //  Mat4x4::Transpose(Mat4x4::Inverse(mappedPalette_[jointIndex].skeletonSpaceMat));
 
     // 法線変換用の逆転置行列も計算
     Matrix4x4 normalMatrix = Mat4x4::Transpose(Mat4x4::Inverse(mappedPalette_[jointIndex].skeletonSpaceMat));
@@ -617,18 +646,34 @@ void Model::UpdateAnimation(float deltaTime)
 {
   animationTime_ += deltaTime; // アニメーション時間を更新
   animationTime_ = std::fmod(animationTime_, animationData_.duration); // アニメーション時間がアニメーションの長さを超えたらループ
-  NodeAnimetion& nodeAnimetion = animationData_.nodeAnimations[rootNode_.name]; // ルートノードのアニメーションを取得
+}
 
-  // 位置アニメーションの計算
-  Vector3 translate = CalcKeyFrameValue(nodeAnimetion.translate.keyFrames, animationTime_);
-  // 回転アニメーションの計算
-  Quaternion rotate = CalcKeyFrameValue(nodeAnimetion.rotate.keyFrames, animationTime_);
-  // スケールアニメーションの計算
-  Vector3 scale = CalcKeyFrameValue(nodeAnimetion.scale.keyFrames, animationTime_);
+void Model::UpdateNodeHierarchyAnimation(Node& node, float time)
+{
+  // このノードのアニメーションを検索
+  if (auto it = animationData_.nodeAnimations.find(node.name); it != animationData_.nodeAnimations.end())
+  {
+    const NodeAnimetion& nodeAnimation = it->second;
 
-  // ローカル変換行列を生成
-  Matrix4x4 localMatrix = Mat4x4::MakeAffine(scale, rotate, translate);
-  rootNode_.localMatrix = localMatrix; // ルートノードのローカル変換行列を更新
+    // 位置アニメーションの計算
+    Vector3 translate = CalcKeyFrameValue(nodeAnimation.translate.keyFrames, time);
+    // 回転アニメーションの計算
+    Quaternion rotate = CalcKeyFrameValue(nodeAnimation.rotate.keyFrames, time);
+    // スケールアニメーションの計算
+    Vector3 scale = CalcKeyFrameValue(nodeAnimation.scale.keyFrames, time);
+
+    // ローカル変換行列を更新
+    node.transform.translate = translate;
+    node.transform.rotate = rotate;
+    node.transform.scale = scale;
+    node.localMatrix = Mat4x4::MakeAffine(scale, rotate, translate);
+  }
+
+  // 子ノードも再帰的に更新
+  for (Node& child : node.children)
+  {
+    UpdateNodeHierarchyAnimation(child, time);
+  }
 }
 
 void Model::UpdateSkeleton()

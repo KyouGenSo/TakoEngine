@@ -47,7 +47,7 @@ void GameScene::Initialize()
 
   object3d2_ = new Object3d();
   object3d2_->Initialize();
-  object3d2_->SetModel("sneakWalk.gltf", true, true);
+  object3d2_->SetModel("BrainStem.gltf", true, true);
   modelRotate2_ = { .x = 0.0f, .y = DirectX::XMConvertToRadians(180.0f), .z = 0.0f };
   object3d2_->SetRotate(rotate);
   object3d2_->SetEnvironmentTexture(skyBox_->GetTextureIndex());
