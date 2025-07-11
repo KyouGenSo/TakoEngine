@@ -51,7 +51,7 @@ public:
     const Vector3& offset = Vector3(0.0f, 0.0f, 0.0f));
 
   // 更新（ボーン位置を取得してエミッター位置を更新）
-  void Update(const Matrix4x4& worldMatrix);
+  void Update(const Transform& transform);
 
   // リンクの有効/無効切り替え
   void SetLinkActive(const std::string& linkName, bool active);

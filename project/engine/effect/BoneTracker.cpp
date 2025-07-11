@@ -70,7 +70,7 @@ void BoneTracker::CreateAndLinkSphereEmitter(const std::string& linkName,
     return;
   }
 
-  // エミッター名を生成（linkNameと同じにする）
+  // エミッター名を生成
   std::string emitterName = linkName + "_emitter";
 
   // エミッターを作成
@@ -103,7 +103,7 @@ void BoneTracker::CreateAndLinkBoxEmitter(const std::string& linkName,
   LinkBoneToEmitter(linkName, boneName, emitterName, offset);
 }
 
-void BoneTracker::Update(const Matrix4x4& worldMatrix)
+void BoneTracker::Update(const Transform& transform)
 {
   if (!model_ || !emitterManager_ || !model_->HasSkeleton()) {
     return;
@@ -126,6 +126,11 @@ void BoneTracker::Update(const Matrix4x4& worldMatrix)
     const Joint& targetJoint = skeleton.joints[link.boneIndex];
 
     // ボーンのワールド座標を計算
+    Matrix4x4 worldMatrix = Mat4x4::MakeAffine(
+      transform.scale,
+      transform.rotate,
+      transform.translate
+    );
     Matrix4x4 boneWorldMatrix = targetJoint.skeletonSpaceMatrix * worldMatrix;
     Vector3 bonePosition = Mat4x4::TransForm(boneWorldMatrix, Vector3(0.0f, 0.0f, 0.0f));
 
@@ -170,7 +175,7 @@ void BoneTracker::RemoveLink(const std::string& linkName)
 {
   auto it = links_.find(linkName);
   if (it != links_.end()) {
-    // エミッターも削除（オプション：エミッターは残してリンクだけ削除することも可能）
+    // エミッターも削除
     if (emitterManager_) {
       emitterManager_->RemoveEmitter(it->second.emitterName);
     }

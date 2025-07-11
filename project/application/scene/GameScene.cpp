@@ -114,9 +114,7 @@ void GameScene::Update()
   object3d_->SetEnableHighlight(isHighlight_);
   object3d_->SetMaterialColor(modelColor_);
 
-  characterModel_->SetScale(characterTransform_.scale);
-  characterModel_->SetTranslate(characterTransform_.translate);
-  characterModel_->SetRotate(characterTransform_.rotate);
+  characterModel_->SetTransform(characterTransform_);
   characterModel_->SetShininess(shininess_);
   characterModel_->SetEnableLighting(isLighting_);
   characterModel_->SetEnableHighlight(isHighlight_);
@@ -126,15 +124,8 @@ void GameScene::Update()
   object3d_->Update();
   characterModel_->Update();
 
-  // キャラクターのワールド行列を計算
-  Matrix4x4 worldMatrix = Mat4x4::MakeAffine(
-    characterTransform_.scale,
-    characterTransform_.rotate,
-    characterTransform_.translate
-  );
-
   // ボーントラッカーの更新（エミッター位置をボーンに追従）
-  boneTracker_->Update(worldMatrix);
+  boneTracker_->Update(characterTransform_);
 
   emitterManager_->Update();
 

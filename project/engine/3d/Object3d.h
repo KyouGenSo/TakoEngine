@@ -54,6 +54,7 @@ public: // メンバー関数
 	const Vector3& GetScale() const { return transform_.scale; }
 	const Vector3& GetRotate() const { return transform_.rotate; }
 	const Vector3& GetTranslate() const { return transform_.translate; }
+  const Transform& GetTransform() const { return transform_; }
   // モデルのポインタを取得
   Model* GetModel() const
 	{
@@ -67,6 +68,7 @@ public: // メンバー関数
 	void SetModel(const std::string& fileName);
   void SetModel(const std::string& fileName, bool hasAnimation, bool hasSkeleton);
 	void SetCamera(Camera** camera) { m_camera_ = camera; }
+  void SetTransform(const Transform& transform) { transform_ = transform; }
 	void SetScale(const Vector3& scale) { transform_.scale = scale; }
 	void SetRotate(const Vector3& rotate) { transform_.rotate = rotate; }
 	void SetTranslate(const Vector3& translate) { transform_.translate = translate; }
