@@ -38,22 +38,25 @@ void GameScene::Initialize()
   object3d_ = new Object3d();
   object3d_->Initialize();
   object3d_->SetModel("terrain.obj");
-
   // y軸90度回転
-  Vector3 rotate = { .x = 0.0f, .y = DirectX::XMConvertToRadians(90.0f), .z = 0.0f };
-  object3d_->SetRotate(rotate);
+  object3dTransform_.translate = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
+  object3dTransform_.scale = { .x = 1.0f, .y = 1.0f, .z = 1.0f };
+  object3dTransform_.rotate = { .x = 0.0f, .y = DirectX::XMConvertToRadians(90.0f), .z = 0.0f };
+  object3d_->SetTransform(object3dTransform_);
 
-  modelPos_ = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
+  characterTransform_.translate = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
+  characterTransform_.scale = { .x = 1.0f, .y = 1.0f, .z = 1.0f };
+  characterTransform_.rotate = { .x = 0.0f, .y = DirectX::XMConvertToRadians(180.0f), .z = 0.0f };
 
   characterModel_ = new Object3d();
   characterModel_->Initialize();
   characterModel_->SetModel("BrainStem.gltf", true, true);
-  characterTransform_.rotate = { .x = 0.0f, .y = DirectX::XMConvertToRadians(180.0f), .z = 0.0f };
-  characterModel_->SetRotate(rotate);
   characterModel_->SetEnvironmentTexture(skyBox_->GetTextureIndex());
 
-  characterTransform_.translate = { .x = 0.0f, .y = 6.7f, .z = -24.0f };
-  characterTransform_.scale = { .x = 1.0f, .y = 1.0f, .z = 1.0f };
+  followCamera_ = std::make_unique<FollowCamera>();
+  followCamera_->Initialize((*Object3dBasic::GetInstance()->GetCamera()));
+  followCamera_->SetTarget(&characterTransform_);
+  followCamera_->SetOffset(Vector3(0.0f, 1.6f, -7.5f));
 
   GPUParticle* particleSystem = GPUParticle::GetInstance();
 
@@ -104,11 +107,11 @@ void GameScene::Update()
   ///              更新処理               ///
   /// ================================== ///
 
+  CharacterMove();
+
   skyBox_->Update();
 
-  object3d_->SetScale(modelScale_);
-  object3d_->SetTranslate(modelPos_);
-  object3d_->SetRotate(modelRotate_);
+  object3d_->SetTransform(object3dTransform_);
   object3d_->SetShininess(shininess_);
   object3d_->SetEnableLighting(isLighting_);
   object3d_->SetEnableHighlight(isHighlight_);
@@ -128,6 +131,8 @@ void GameScene::Update()
   boneTracker_->Update(characterTransform_);
 
   emitterManager_->Update();
+
+  followCamera_->Update();
 
   // ライトの設定
   Object3dBasic::GetInstance()->SetDirectionalLight(lightDirection_, lightColor_, 1, lightIntensity_);
@@ -151,7 +156,7 @@ void GameScene::Draw()
   // スプライト共通描画設定
   SpriteBasic::GetInstance()->SetCommonRenderSetting();
 
-  
+
 
   //--------------------------------------------------//
 
@@ -196,7 +201,7 @@ void GameScene::DrawWithoutEffect()
   // 3Dモデル共通描画設定
   Object3dBasic::GetInstance()->SetCommonRenderSetting();
 
-  
+
 
   //------------------------------------------------//
 
@@ -214,11 +219,9 @@ void GameScene::DrawImGui()
 {
 #ifdef _DEBUG
   ImGui::Begin("object3d");
-  SrvAllocateCount_ = SrvManager::GetInstance()->GetAllocatedCount();
-  ImGui::Text("SRV Allocate Count : %d", SrvAllocateCount_);
-  ImGui::DragFloat3("Scale", &modelScale_.x, 0.01f, 0.1f, 50.0f);
-  ImGui::DragFloat3("Position", &modelPos_.x, 0.01f, -50.0f, 50.0f);
-  ImGui::DragFloat3("Rotate", &modelRotate_.x, 0.01f, DirectX::XMConvertToRadians(-180.0f), DirectX::XMConvertToRadians(180.0f));
+  ImGui::DragFloat3("Scale", &object3dTransform_.scale.x, 0.01f, 0.1f, 50.0f);
+  ImGui::DragFloat3("Position", &object3dTransform_.translate.x, 0.01f, -50.0f, 50.0f);
+  ImGui::DragFloat3("Rotate", &object3dTransform_.rotate.x, 0.01f, DirectX::XMConvertToRadians(-180.0f), DirectX::XMConvertToRadians(180.0f));
   ImGui::ColorEdit4("Model Color", &modelColor_.x);
 
   ImGui::End();
@@ -245,6 +248,33 @@ void GameScene::DrawImGui()
   }
   ImGui::End();
 
+  followCamera_->ImGuiDraw();
+
 
 #endif // DEBUG
+}
+
+void GameScene::CharacterMove()
+{
+  // gamepadでキャラクターを移動
+  Vector3 velocity = { 0.0f, 0.0f, 0.0f };
+  Camera* camera = followCamera_->GetCamera();
+  bool isMoving = false;
+  if (Input::GetInstance()->IsConnect() && !Input::GetInstance()->LStickInDeadZone())
+  {
+    velocity.x = Input::GetInstance()->GetLeftStick().x * 0.1f;
+    velocity.z = Input::GetInstance()->GetLeftStick().y * 0.1f;
+
+    isMoving = true;
+  }
+
+  if (isMoving)
+  {
+    velocity = velocity.Normalize() * 0.1f; // 移動速度を調整Mat4x4::MakeRotateXYZ(cameraViewProjection_->GetRotate());
+    Matrix4x4 rotateMatrix = Mat4x4::MakeRotateXYZ(camera->GetRotate());
+    velocity = Mat4x4::TransFormNormal(rotateMatrix, velocity);
+    characterTransform_.translate += velocity;
+  }
+
+
 }

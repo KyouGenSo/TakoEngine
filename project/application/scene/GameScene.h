@@ -5,7 +5,7 @@
 #include "Sprite.h"
 #include "SkyBox.h"
 #include "BoneTracker.h"
-#include "CharacterEffectPresets.h"
+#include "FollowCamera.h"
 
 class GameScene : public BaseScene
 {
@@ -36,6 +36,8 @@ public: // メンバ関数
   /// </summary>
   void DrawImGui() override;
 
+  void CharacterMove();
+
 private: // メンバ変数
 
   // SkyBox
@@ -44,16 +46,16 @@ private: // メンバ変数
   Object3d* object3d_ = nullptr;
   Object3d* characterModel_ = nullptr;
 
+  std::unique_ptr<FollowCamera> followCamera_;
+
   bool isDebug_ = false;
 
   uint32_t SrvAllocateCount_ = 0;
 
   // モデルの設定
-  Vector3 modelScale_ = { .x = 1.0f, .y = 1.0f, .z = 1.0f };
-  Vector3 modelPos_ = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
-  Vector3 modelRotate_ = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
   Vector4 modelColor_ = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
 
+  Transform object3dTransform_{};
   Transform characterTransform_{};
 
   // 平行光源の設定
