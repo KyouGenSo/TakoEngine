@@ -270,7 +270,7 @@ void GameScene::CharacterMove()
 
   if (isMoving)
   {
-    velocity = velocity.Normalize() * 0.1f; // 移動速度を調整Mat4x4::MakeRotateXYZ(cameraViewProjection_->GetRotate());
+    velocity = velocity.Normalize() * 0.1f;
     Matrix4x4 rotateMatrix = Mat4x4::MakeRotateXYZ(camera->GetRotate());
     velocity = Mat4x4::TransFormNormal(rotateMatrix, velocity);
     characterTransform_.translate += velocity;
