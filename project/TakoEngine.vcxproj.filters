@@ -207,6 +207,9 @@
     <ClCompile Include="engine\effect\WhiteNoise.cpp">
       <Filter>effect\PostEffect</Filter>
     </ClCompile>
+    <ClCompile Include="engine\effect\BoneTracker.cpp">
+      <Filter>effect</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\math\Matrix4x4.h">
@@ -409,6 +412,12 @@
     </ClInclude>
     <ClInclude Include="engine\effect\WhiteNoise.h">
       <Filter>effect\PostEffect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\BoneTracker.h">
+      <Filter>effect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\CharacterEffectPresets.h">
+      <Filter>effect</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

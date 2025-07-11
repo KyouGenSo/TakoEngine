@@ -121,6 +121,7 @@
   <ItemGroup>
     <ClCompile Include="engine\3d\SkyBox.cpp" />
     <ClCompile Include="engine\effect\Bloom.cpp" />
+    <ClCompile Include="engine\effect\BoneTracker.cpp" />
     <ClCompile Include="engine\effect\BoxEmitter.cpp" />
     <ClCompile Include="engine\effect\BWFilter.cpp" />
     <ClCompile Include="engine\effect\DepthBasedOutline.cpp" />
@@ -174,7 +175,9 @@
   <ItemGroup>
     <ClInclude Include="engine\3d\SkyBox.h" />
     <ClInclude Include="engine\effect\Bloom.h" />
+    <ClInclude Include="engine\effect\BoneTracker.h" />
     <ClInclude Include="engine\effect\BWFilter.h" />
+    <ClInclude Include="engine\effect\CharacterEffectPresets.h" />
     <ClInclude Include="engine\effect\DepthBasedOutline.h" />
     <ClInclude Include="engine\effect\Dissolve.h" />
     <ClInclude Include="engine\effect\EmitterStruct.h" />

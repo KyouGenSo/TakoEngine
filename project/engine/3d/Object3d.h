@@ -54,6 +54,14 @@ public: // メンバー関数
 	const Vector3& GetScale() const { return transform_.scale; }
 	const Vector3& GetRotate() const { return transform_.rotate; }
 	const Vector3& GetTranslate() const { return transform_.translate; }
+  // モデルのポインタを取得
+  Model* GetModel() const
+	{
+    if (m_model_) {
+      return m_model_;
+    }
+
+	}
 
 	//-----------------------------------------Setter-----------------------------------------//
 	void SetModel(const std::string& fileName);

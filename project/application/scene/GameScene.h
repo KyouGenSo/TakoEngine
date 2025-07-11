@@ -4,6 +4,8 @@
 #include "EmitterManager.h"
 #include "Sprite.h"
 #include "SkyBox.h"
+#include "BoneTracker.h"
+#include "CharacterEffectPresets.h"
 
 class GameScene : public BaseScene
 {
@@ -36,35 +38,11 @@ public: // メンバ関数
 
 private: // メンバ変数
 
-  // スポットライトデータ
-  struct SpotLight
-  {
-    Vector4 color;
-    Vector3 position;
-    float intensity;
-    Vector3 direction;
-    float distance;
-    float decay;
-    float cosAngle;
-    bool enable;
-  };
-
-  // 点光源データ
-  struct PointLight
-  {
-    Vector4 color;
-    Vector3 position;
-    float intensity;
-    float radius;
-    float decay;
-    bool enable;
-  };
-
   // SkyBox
   std::unique_ptr<SkyBox> skyBox_;
 
   Object3d* object3d_ = nullptr;
-  Object3d* object3d2_ = nullptr;
+  Object3d* characterModel_ = nullptr;
 
   bool isDebug_ = false;
 
@@ -76,9 +54,7 @@ private: // メンバ変数
   Vector3 modelRotate_ = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
   Vector4 modelColor_ = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
 
-  Vector3 modelScale2_ = { .x = 1.0f, .y = 1.0f, .z = 1.0f };
-  Vector3 modelPos2_ = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
-  Vector3 modelRotate2_ = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
+  Transform characterTransform_{};
 
   // 平行光源の設定
   float shininess_ = 100.0f;
@@ -93,13 +69,6 @@ private: // メンバ変数
     // エミッター管理
   std::unique_ptr<EmitterManager> emitterManager_;
 
-  // エミッター設定
-  SphereEmitterParams spEmitterSett_ = {};
-  BoxEmitterParams boxEmitterSett_ = {};
-  TriangleEmitterParams triEmitterSett_ = {};
-  Vector3 groupPosition_ = {};
-  bool isActive_ = true;
-
-  // スプライト
-  std::unique_ptr<Sprite> sprite_;
+  // ボーントラッカー
+  std::unique_ptr<BoneTracker> boneTracker_;
 };

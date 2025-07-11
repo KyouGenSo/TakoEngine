@@ -49,6 +49,8 @@ public: // メンバー関数
   // -----------------------------------Getters-----------------------------------//
   // nodeのlocalMatrixを取得
   const Matrix4x4& GetLocalMatrix() const { return rootNode_.localMatrix; }
+  // skeletonを取得
+  const Skeleton& GetSkeleton() const { return skeleton_; }
   // アニメーションの有無を取得
   bool HasAnimation() const { return hasAnimation_; }
   // Skeletonの有無を取得
