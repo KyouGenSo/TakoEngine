@@ -36,7 +36,7 @@ public:
     const std::string& emitterName,
     const Vector3& offset = Vector3(0.0f, 0.0f, 0.0f));
 
-  // エミッターを作成してボーンにリンク（便利関数）
+  // エミッターを作成してボーンにリンク
   // 球体エミッター
   void CreateAndLinkSphereEmitter(const std::string& linkName,
     const std::string& boneName,
