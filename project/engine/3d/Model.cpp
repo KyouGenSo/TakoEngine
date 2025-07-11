@@ -276,7 +276,7 @@ Model* Model::Clone() const
   newModel->hasSkeleton_ = this->hasSkeleton_;
   newModel->rootNode_ = this->rootNode_;
   newModel->textureCache_ = this->textureCache_;
-  newModel->meshSkinClusterData_ = this->meshSkinClusterData_;  // 追加
+  newModel->meshSkinClusterData_ = this->meshSkinClusterData_;
 
   if (this->hasSkeleton_)
   {
