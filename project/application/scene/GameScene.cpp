@@ -138,10 +138,10 @@ void GameScene::Update()
   Object3dBasic::GetInstance()->SetDirectionalLight(lightDirection_, lightColor_, 1, lightIntensity_);
 
   // シーン遷移
-  if (Input::GetInstance()->TriggerKey(DIK_RETURN))
-  {
-    SceneManager::GetInstance()->ChangeScene("title");
-  }
+  //if (Input::GetInstance()->TriggerKey(DIK_RETURN))
+  //{
+  //  SceneManager::GetInstance()->ChangeScene("title");
+  //}
 }
 
 void GameScene::Draw()
