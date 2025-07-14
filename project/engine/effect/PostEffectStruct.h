@@ -110,6 +110,13 @@ struct WhiteNoiseParam
   float time;
 };
 
+struct HalfToneParam
+{
+  float dotSize;      // ドットのサイズ
+  float contrast;     // コントラスト
+  Vector2 screenSize; // スクリーンサイズ
+};
+
 using EffectParam = std::variant<
   VignetteParam,
   BloomParam,
@@ -122,5 +129,6 @@ using EffectParam = std::variant<
   DepthOutlineParam,
   CameraForGPU,
   DissolveParam,
-  WhiteNoiseParam
+  WhiteNoiseParam,
+  HalfToneParam
 >;

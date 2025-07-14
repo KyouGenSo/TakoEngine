@@ -210,6 +210,9 @@
     <ClCompile Include="engine\effect\BoneTracker.cpp">
       <Filter>effect</Filter>
     </ClCompile>
+    <ClCompile Include="engine\effect\HalfTone.cpp">
+      <Filter>effect\PostEffect</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\math\Matrix4x4.h">
@@ -418,6 +421,9 @@
     </ClInclude>
     <ClInclude Include="engine\effect\CharacterEffectPresets.h">
       <Filter>effect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\HalfTone.h">
+      <Filter>effect\PostEffect</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

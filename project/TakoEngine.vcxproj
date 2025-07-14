@@ -135,6 +135,7 @@
     <ClCompile Include="engine\3d\Camera.cpp" />
     <ClCompile Include="engine\effect\GPUParticleEmitter.cpp" />
     <ClCompile Include="engine\effect\GrayScale.cpp" />
+    <ClCompile Include="engine\effect\HalfTone.cpp" />
     <ClCompile Include="engine\effect\IPostEffect.cpp" />
     <ClCompile Include="engine\effect\LuminanceBasedOutline.cpp" />
     <ClCompile Include="engine\effect\NoEffect.cpp" />
@@ -188,6 +189,7 @@
     <ClInclude Include="engine\audio\miniaudio.h" />
     <ClInclude Include="engine\effect\GPUParticleEmitter.h" />
     <ClInclude Include="engine\effect\GrayScale.h" />
+    <ClInclude Include="engine\effect\HalfTone.h" />
     <ClInclude Include="engine\effect\IPostEffect.h" />
     <ClInclude Include="engine\effect\LuminanceBasedOutline.h" />
     <ClInclude Include="engine\effect\NoEffect.h" />

@@ -18,6 +18,7 @@
 #include "Bloom.h"
 #include "Dissolve.h"
 #include "WhiteNoise.h"
+#include "HalfTone.h"
 
 #include <algorithm>
 
@@ -55,6 +56,7 @@ void PostEffectManager::Initialize(DX12Basic* dx12)
   RegisterEffect("Bloom", std::make_unique<Bloom>());
   RegisterEffect("Dissolve", std::make_unique<Dissolve>());
   RegisterEffect("WhiteNoise", std::make_unique<WhiteNoise>());
+  RegisterEffect("HalfTone", std::make_unique<HalfTone>());
 
   // 深度バッファテクスチャのSRV作成
   depthSrvIndex_ = SrvManager::GetInstance()->Allocate();

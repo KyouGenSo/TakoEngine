@@ -324,3 +324,9 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Claude Code generated files
+CLAUDE.md
+
+# Temporary null files
+nul
