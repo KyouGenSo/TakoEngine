@@ -119,8 +119,8 @@ float4 main(VertexShaderOutput input) : SV_TARGET
         float gridLuminance = dot(gTexture.Sample(gSampler, gridTexCoord).rgb, float3(0.299, 0.587, 0.114));
         gridLuminance = saturate((gridLuminance - threshold) / (1.0 - threshold));
         
-        // 明度に基づいてドットのサイズを決定
-        float dotRadius = (dotSize * 0.5) * gridLuminance * contrast;
+        // 明度に基づいてドットのサイズを決定（暗い部分ほど大きなドット）
+        float dotRadius = (dotSize * 0.5) * (1.0 - gridLuminance) * contrast;
         
         // ドットパターンに応じてアルファ値を計算
         float alpha;
@@ -138,7 +138,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
         }
         
         // 最終的な色を計算（ハーフトーンのドットパターン）
-        float3 finalColor = lerp(float3(1.0, 1.0, 1.0), originalColor.rgb, alpha);
+        float3 finalColor = lerp(originalColor.rgb, float3(0.0, 0.0, 0.0), alpha);
         
         return float4(finalColor, originalColor.a);
     }
