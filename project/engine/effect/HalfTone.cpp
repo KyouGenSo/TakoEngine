@@ -51,6 +51,17 @@ void HalfTone::DrawImgui()
 #ifdef _DEBUG
   ImGui::DragFloat("Dot Size", &cBufferData_->dotSize, 1.0f, 1.0f, 50.0f);
   ImGui::DragFloat("Contrast", &cBufferData_->contrast, 0.01f, 0.1f, 3.0f);
+  ImGui::DragFloat("Angle", &cBufferData_->angle, 0.01f, 0.0f, 6.28f);
+  ImGui::DragFloat("Threshold", &cBufferData_->threshold, 0.01f, 0.0f, 1.0f);
+  
+  // ドットパターン選択
+  const char* patterns[] = { "Circle", "Square", "Diamond" };
+  ImGui::Combo("Dot Pattern", &cBufferData_->dotPattern, patterns, 3);
+  
+  // カラーモード選択
+  const char* colorModes[] = { "Monochrome", "CMYK" };
+  ImGui::Combo("Color Mode", &cBufferData_->colorMode, colorModes, 2);
+  
   ImGui::Text("Screen Size: %.0f x %.0f", cBufferData_->screenSize.x, cBufferData_->screenSize.y);
 #endif
 }
@@ -73,6 +84,10 @@ void HalfTone::SetParam(const HalfToneParam& param)
   // パラメータの設定
   cBufferData_->dotSize = param.dotSize;
   cBufferData_->contrast = param.contrast;
+  cBufferData_->angle = param.angle;
+  cBufferData_->dotPattern = param.dotPattern;
+  cBufferData_->colorMode = param.colorMode;
+  cBufferData_->threshold = param.threshold;
   // screenSizeは自動更新されるため、ここでは設定しない
 }
 
@@ -209,8 +224,13 @@ void HalfTone::CreateCBV()
   cBufferResource_->Map(0, nullptr, reinterpret_cast<void**>(&cBufferData_));
 
   // データの初期化
-  cBufferData_->dotSize = 8.0f;      // デフォルトのドットサイズ
-  cBufferData_->contrast = 1.0f;     // デフォルトのコントラスト
+  cBufferData_->dotSize = 8.0f;       // デフォルトのドットサイズ
+  cBufferData_->contrast = 1.0f;      // デフォルトのコントラスト
+  cBufferData_->angle = 0.0f;         // デフォルトの角度
+  cBufferData_->dotPattern = 0;       // デフォルトは円形
+  cBufferData_->colorMode = 0;        // デフォルトはモノクロ
+  cBufferData_->threshold = 0.0f;     // デフォルトの閾値
+  cBufferData_->padding = 0.0f;       // パディング
   
   // スクリーンサイズをWinAppから取得
   UpdateScreenSize();

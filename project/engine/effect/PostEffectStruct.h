@@ -112,9 +112,14 @@ struct WhiteNoiseParam
 
 struct HalfToneParam
 {
-  float dotSize;      // ドットのサイズ
-  float contrast;     // コントラスト
-  Vector2 screenSize; // スクリーンサイズ
+  float dotSize;          // ドットのサイズ
+  float contrast;         // コントラスト
+  float angle;            // ドットグリッドの回転角度（ラジアン）
+  int32_t dotPattern;     // ドットパターン (0=円, 1=四角, 2=ダイヤモンド)
+  Vector2 screenSize;     // スクリーンサイズ
+  int32_t colorMode;      // カラーモード (0=モノクロ, 1=CMYK風)
+  float threshold;        // 閾値調整
+  float padding;          // パディング
 };
 
 using EffectParam = std::variant<
