@@ -53,6 +53,12 @@ void GameScene::Initialize()
   characterModel_->SetRotate(rotate);
   characterModel_->SetEnvironmentTexture(skyBox_->GetTextureIndex());
 
+  characterModel2_ = new Object3d();
+  characterModel2_->Initialize();
+  characterModel2_->SetModel("BrainStem.gltf", true, true);
+  characterModel2_->SetRotate(rotate);
+  characterModel2_->SetEnvironmentTexture(skyBox_->GetTextureIndex());
+
   characterTransform_.translate = { .x = 0.0f, .y = 6.7f, .z = -24.0f };
   characterTransform_.scale = { .x = 1.0f, .y = 1.0f, .z = 1.0f };
 
@@ -81,6 +87,7 @@ void GameScene::Finalize()
 {
   delete object3d_;
   delete characterModel_;
+  delete characterModel2_;
 
   emitterManager_->RemoveAllEmitters();
 }
@@ -122,8 +129,15 @@ void GameScene::Update()
   characterModel_->SetEnableEnvMap(enableEnvMap);
   characterModel_->SetEnvMapCoefficient(envMapCoefficient_);
 
+  characterModel2_->SetShininess(shininess_);
+  characterModel2_->SetEnableLighting(isLighting_);
+  characterModel2_->SetEnableHighlight(isHighlight_);
+  characterModel2_->SetEnableEnvMap(enableEnvMap);
+  characterModel2_->SetEnvMapCoefficient(envMapCoefficient_);
+
   object3d_->Update();
   characterModel_->Update();
+  characterModel2_->Update();
 
   // ボーントラッカーの更新（エミッター位置をボーンに追従）
   boneTracker_->Update(characterTransform_);
@@ -162,6 +176,7 @@ void GameScene::Draw()
   Object3dBasic::GetInstance()->SetCommonRenderSetting();
   // モデル描画
   characterModel_->Draw();
+  characterModel2_->Draw();
   object3d_->Draw();
 
 
@@ -233,6 +248,10 @@ void GameScene::DrawImGui()
   // Draw skeleton debug UI for the character model
   if (characterModel_ && characterModel_->GetModel()) {
     characterModel_->GetModel()->DrawSkeletonDebugUI();
+  }
+
+  if (characterModel2_ && characterModel2_->GetModel()) {
+    characterModel2_->GetModel()->DrawSkeletonDebugUI();
   }
 
   // Lightの設定

@@ -43,6 +43,7 @@ private: // メンバ変数
 
   Object3d* object3d_ = nullptr;
   Object3d* characterModel_ = nullptr;
+  Object3d* characterModel2_ = nullptr;
 
   bool isDebug_ = false;
 
