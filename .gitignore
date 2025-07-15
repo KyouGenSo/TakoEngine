@@ -328,5 +328,9 @@ FodyWeavers.xsd
 # Claude Code generated files
 CLAUDE.md
 
+# Claude Code settings
+settings.local.json
+.mcp.json
+
 # Temporary null files
 nul
