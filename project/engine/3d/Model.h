@@ -42,6 +42,11 @@ public: // メンバー関数
   void LoadModelFile(const std::string& directoryPath, const std::string& fileName);
 
   /// <summary>
+  /// SkeletonのデバッグUIを表示
+  /// </summary>
+  void DrawSkeletonDebugUI();
+
+  /// <summary>
   /// クローン
   ///	</summary>
   Model* Clone() const;
@@ -65,6 +70,9 @@ public: // メンバー関数
   void SetEnvironmentTexture(uint32_t textureIndex);
   void SetEnableEnvMap(bool enableEnvMap);
   void SetEnvMapCoefficient(float coefficient);
+  // デバッグ表示の有効/無効を設定
+  static void SetShowSkeletonDebug(bool show) { s_showSkeletonDebug = show; }
+  static bool GetShowSkeletonDebug() { return s_showSkeletonDebug; }
 
 private: // プライベートメンバー関数
   /// <summary>
@@ -135,6 +143,11 @@ private: // プライベートメンバー関数
   /// </summary>
   void ReleaseSkinningSRVIndex();
 
+  /// <summary>
+  /// ジョイント階層を再帰的に表示（ImGui用）
+  /// </summary>
+  void DrawJointHierarchy(int32_t jointIndex, int depth = 0);
+
 private: // メンバ変数
 
   ModelBasic* m_modelBasic_;
@@ -142,6 +155,7 @@ private: // メンバ変数
 
   std::string directoryFolderName_;
   std::string ModelFolderName_;
+  std::string modelFileName_;  // モデルファイル名を保存
 
   // モデルデータ
   std::vector<Mesh*> meshes_;
@@ -167,4 +181,9 @@ private: // メンバ変数
   std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> paletteSrvHandle_;
   std::map<std::string, JointWeightData> skinClusterData_;
   std::vector<MeshSkinClusterData> meshSkinClusterData_;
+
+  // デバッグ表示用
+  static bool s_showSkeletonDebug;
+  static int s_expandState;  // 0: normal, 1: expand all, 2: collapse all
+  static int32_t s_hoveredJointIndex;  // ホバー中のジョイントインデックス（-1: なし）
 };

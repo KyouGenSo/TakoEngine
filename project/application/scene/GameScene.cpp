@@ -11,6 +11,7 @@
 #include "SceneManager.h"
 #include "EmitterManager.h"
 #include "Object3d.h"
+#include "Model.h"
 
 #include <numbers>
 
@@ -47,7 +48,7 @@ void GameScene::Initialize()
 
   characterModel_ = new Object3d();
   characterModel_->Initialize();
-  characterModel_->SetModel("BrainStem.gltf", true, true);
+  characterModel_->SetModel("sneakwalk.gltf", true, true);
   characterTransform_.rotate = { .x = 0.0f, .y = DirectX::XMConvertToRadians(180.0f), .z = 0.0f };
   characterModel_->SetRotate(rotate);
   characterModel_->SetEnvironmentTexture(skyBox_->GetTextureIndex());
@@ -72,7 +73,7 @@ void GameScene::Initialize()
     Vector4(1.0f, 0.1f, 0.0f, 0.0f)   // 赤から透明へ
   );
 
-  boneTracker_->LinkBoneToEmitter("fire_left_link", "nodes[15]", "fire_left");
+  boneTracker_->LinkBoneToEmitter("fire_left_link", "nodes[16]", "fire_left");
 
 }
 
@@ -228,6 +229,11 @@ void GameScene::DrawImGui()
   ImGui::DragFloat3("Position", &characterTransform_.translate.x, 0.01f, -50.0f, 50.0f);
   ImGui::DragFloat3("Rotate", &characterTransform_.rotate.x, 0.01f, DirectX::XMConvertToRadians(-180.0f), DirectX::XMConvertToRadians(180.0f));
   ImGui::End();
+
+  // Draw skeleton debug UI for the character model
+  if (characterModel_ && characterModel_->GetModel()) {
+    characterModel_->GetModel()->DrawSkeletonDebugUI();
+  }
 
   // Lightの設定
   ImGui::Begin("Directional Light");

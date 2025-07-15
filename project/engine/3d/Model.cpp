@@ -14,6 +14,12 @@
 #include <sstream>
 
 #include "Logger.h"
+#include <imgui.h>
+
+// 静的メンバー変数の定義
+bool Model::s_showSkeletonDebug = false;
+int Model::s_expandState = 0;
+int32_t Model::s_hoveredJointIndex = -1;
 
 ///------------------------------------------------///
 ///                 PUBLIC METHODS                ///
@@ -25,6 +31,7 @@ void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool
   m_dx12_ = m_modelBasic_->GetDX12Basic();
   directoryFolderName_ = m_modelBasic_->GetDirectoryFolderName();
   ModelFolderName_ = m_modelBasic_->GetModelFolderName();
+  modelFileName_ = fileName;  // ファイル名を保存
   hasAnimation_ = hasAnimation;
   hasSkeleton_ = hasSkeleton;
   paletteSrvIndex_ = 0;
@@ -111,7 +118,7 @@ void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
 
   // skeletonの描画
 #ifdef _DEBUG
-  if (hasSkeleton_)
+  if (hasSkeleton_ && s_showSkeletonDebug)
   {
     DrawSkeleton(world, viewProjection);
   }
@@ -274,6 +281,7 @@ Model* Model::Clone() const
   newModel->m_dx12_ = this->m_dx12_;
   newModel->directoryFolderName_ = this->directoryFolderName_;
   newModel->ModelFolderName_ = this->ModelFolderName_;
+  newModel->modelFileName_ = this->modelFileName_;
   newModel->hasAnimation_ = this->hasAnimation_;
   newModel->hasSkeleton_ = this->hasSkeleton_;
   newModel->rootNode_ = this->rootNode_;
@@ -424,14 +432,174 @@ void Model::DrawSkeleton(Matrix4x4 world, Matrix4x4 viewProjection)
       Matrix4x4 parentWorldMatrix = parentJoint.skeletonSpaceMatrix * world;
       Vector3 parentPosition = Mat4x4::TransForm(parentWorldMatrix, Vector3(0.0f, 0.0f, 0.0f));
       viewProjection;
+      // ホバー中のジョイントに関連する線は赤色で表示
+      Vector4 lineColor = Vector4(1.0f, 1.0f, 1.0f, 1.0f);  // デフォルト: 白
+      if (s_hoveredJointIndex == joint.index || s_hoveredJointIndex == *joint.parentIndex)
+      {
+        lineColor = Vector4(1.0f, 0.0f, 0.0f, 1.0f);  // 赤色
+      }
+      
       // Draw a line between the current joint and its parent
       Draw2D::GetInstance()->DrawLine(
         jointPosition,
         parentPosition,
-        Vector4(1.0f, 1.0f, 1.0f, 1.0f)
+        lineColor
       );
     }
   }
+}
+
+void Model::DrawSkeletonDebugUI()
+{
+  if (!hasSkeleton_) return;
+
+  // ホバー中のジョイントインデックスをリセット
+  s_hoveredJointIndex = -1;
+
+  // ウィンドウタイトルにモデル名を含める
+  std::string windowTitle = "[" + modelFileName_ + "] Skeleton Debug";
+  ImGui::Begin(windowTitle.c_str());
+  
+  // 3Dビジュアライゼーションのトグル
+  ImGui::Checkbox("Show 3D Skeleton", &s_showSkeletonDebug);
+  ImGui::Separator();
+  
+  ImGui::Text("Total Joints: %zu", skeleton_.joints.size());
+  ImGui::Text("Root Joint Index: %d", skeleton_.root);
+  
+  // 全展開/全折りたたみボタン
+  if (ImGui::Button("Expand All"))
+  {
+    s_expandState = 1;  // expand all
+  }
+  ImGui::SameLine();
+  if (ImGui::Button("Collapse All"))
+  {
+    s_expandState = 2;  // collapse all
+  }
+  ImGui::SameLine();
+  if (ImGui::Button("Reset"))
+  {
+    s_expandState = 0;  // normal
+  }
+  
+  ImGui::Separator();
+
+  // スクロール可能な子ウィンドウを作成（横スクロールバー付き）
+  ImGui::BeginChild("JointHierarchy", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
+  
+  // ルートジョイントから再帰的に表示
+  if (skeleton_.root >= 0 && skeleton_.root < skeleton_.joints.size())
+  {
+    DrawJointHierarchy(skeleton_.root);
+  }
+  
+  ImGui::EndChild();
+  ImGui::End();
+}
+
+void Model::DrawJointHierarchy(int32_t jointIndex, int depth)
+{
+  if (jointIndex < 0 || jointIndex >= skeleton_.joints.size()) return;
+
+  const Joint& joint = skeleton_.joints[jointIndex];
+  
+  // ジョイントタイプを判定
+  bool isRoot = (jointIndex == skeleton_.root);
+  bool isLeaf = joint.childrenIndex.empty();
+  
+  // アイコンと色の設定
+  const char* icon = isRoot ? "[ROOT]" : (isLeaf ? "[LEAF]" : "");
+  ImVec4 textColor = isRoot ? ImVec4(0.2f, 1.0f, 0.2f, 1.0f) :  // 緑
+                     isLeaf ? ImVec4(0.7f, 0.7f, 0.7f, 1.0f) :  // 灰色
+                              ImVec4(1.0f, 1.0f, 1.0f, 1.0f);   // 白
+  
+  // 階層に応じたインデントを適用（固定の小さめの値を使用）
+  const float indentAmount = 12.0f;
+  ImGui::Indent(indentAmount * depth);
+  
+  // 展開状態を設定
+  if (s_expandState == 1)  // expand all
+  {
+    ImGui::SetNextItemOpen(true, ImGuiCond_Always);
+  }
+  else if (s_expandState == 2)  // collapse all
+  {
+    ImGui::SetNextItemOpen(false, ImGuiCond_Always);
+  }
+  
+  // ツリーノードの表示
+  ImGui::PushStyleColor(ImGuiCol_Text, textColor);
+  bool nodeOpen = ImGui::TreeNode((void*)(intptr_t)jointIndex, "%s %s [%d]", 
+                                   icon, joint.name.c_str(), joint.index);
+  ImGui::PopStyleColor();
+  
+  // ツリーノードがホバーされているかチェック
+  if (ImGui::IsItemHovered())
+  {
+    s_hoveredJointIndex = jointIndex;
+  }
+  
+  // ノードが開いている場合、詳細情報を表示
+  if (nodeOpen)
+  {
+    ImGui::Indent();
+    
+    // 親子関係の情報
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
+    if (joint.parentIndex.has_value())
+    {
+      const Joint& parentJoint = skeleton_.joints[*joint.parentIndex];
+      ImGui::Text("Parent: %s [%d]", parentJoint.name.c_str(), *joint.parentIndex);
+    }
+    else
+    {
+      ImGui::Text("Parent: None (Root)");
+    }
+    ImGui::Text("Children: %zu", joint.childrenIndex.size());
+    
+    // 位置情報をコンパクトに表示
+    Vector3 position = {
+      joint.skeletonSpaceMatrix.m[3][0],
+      joint.skeletonSpaceMatrix.m[3][1],
+      joint.skeletonSpaceMatrix.m[3][2]
+    };
+    ImGui::Text("Pos: (%.2f, %.2f, %.2f)", position.x, position.y, position.z);
+    ImGui::PopStyleColor();
+    
+    // ホバー時に詳細情報をツールチップで表示
+    if (ImGui::IsItemHovered())
+    {
+      ImGui::BeginTooltip();
+      ImGui::Text("Joint Details:");
+      ImGui::Separator();
+      ImGui::Text("Index: %d", joint.index);
+      ImGui::Text("Name: %s", joint.name.c_str());
+      ImGui::Text("Position: (%.4f, %.4f, %.4f)", position.x, position.y, position.z);
+      if (!joint.childrenIndex.empty())
+      {
+        ImGui::Text("Child Indices:");
+        for (int32_t childIdx : joint.childrenIndex)
+        {
+          ImGui::Text("  - [%d] %s", childIdx, skeleton_.joints[childIdx].name.c_str());
+        }
+      }
+      ImGui::EndTooltip();
+    }
+    
+    ImGui::Unindent();
+    
+    // 子ジョイントを再帰的に表示
+    for (int32_t childIndex : joint.childrenIndex)
+    {
+      DrawJointHierarchy(childIndex, depth + 1);
+    }
+    
+    ImGui::TreePop();
+  }
+  
+  // インデントを元に戻す
+  ImGui::Unindent(indentAmount * depth);
 }
 
 Animation Model::LoadAnimationFile(const std::string& directoryPath, const std::string& fileName)
