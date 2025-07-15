@@ -183,7 +183,7 @@ private: // メンバ変数
   std::vector<MeshSkinClusterData> meshSkinClusterData_;
 
   // デバッグ表示用
-  static bool s_showSkeletonDebug;
-  static int s_expandState;  // 0: normal, 1: expand all, 2: collapse all
-  static int32_t s_hoveredJointIndex;  // ホバー中のジョイントインデックス（-1: なし）
+  static bool s_showSkeletonDebug;  // 全体的なスケルトン表示ON/OFF
+  int expandState_ = 0;  // 0: normal, 1: expand all, 2: collapse all
+  int32_t hoveredJointIndex_ = -1;  // ホバー中のジョイントインデックス（-1: なし）
 };

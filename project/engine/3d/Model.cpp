@@ -18,8 +18,6 @@
 
 // 静的メンバー変数の定義
 bool Model::s_showSkeletonDebug = false;
-int Model::s_expandState = 0;
-int32_t Model::s_hoveredJointIndex = -1;
 
 ///------------------------------------------------///
 ///                 PUBLIC METHODS                ///
@@ -35,6 +33,8 @@ void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool
   hasAnimation_ = hasAnimation;
   hasSkeleton_ = hasSkeleton;
   paletteSrvIndex_ = 0;
+  expandState_ = 0;
+  hoveredJointIndex_ = -1;
 
   // objファイルの読み込み
   LoadModelFile(directoryFolderName_ + "/" + ModelFolderName_, fileName);
@@ -287,6 +287,8 @@ Model* Model::Clone() const
   newModel->rootNode_ = this->rootNode_;
   newModel->textureCache_ = this->textureCache_;
   newModel->meshSkinClusterData_ = this->meshSkinClusterData_;
+  newModel->expandState_ = this->expandState_;
+  newModel->hoveredJointIndex_ = this->hoveredJointIndex_;
 
   if (this->hasSkeleton_)
   {
@@ -434,7 +436,7 @@ void Model::DrawSkeleton(Matrix4x4 world, Matrix4x4 viewProjection)
       viewProjection;
       // ホバー中のジョイントに関連する線は赤色で表示
       Vector4 lineColor = Vector4(1.0f, 1.0f, 1.0f, 1.0f);  // デフォルト: 白
-      if (s_hoveredJointIndex == joint.index || s_hoveredJointIndex == *joint.parentIndex)
+      if (hoveredJointIndex_ == joint.index || hoveredJointIndex_ == *joint.parentIndex)
       {
         lineColor = Vector4(1.0f, 0.0f, 0.0f, 1.0f);  // 赤色
       }
@@ -454,7 +456,7 @@ void Model::DrawSkeletonDebugUI()
   if (!hasSkeleton_) return;
 
   // ホバー中のジョイントインデックスをリセット
-  s_hoveredJointIndex = -1;
+  hoveredJointIndex_ = -1;
 
   // ウィンドウタイトルにモデル名を含める
   std::string windowTitle = "[" + modelFileName_ + "] Skeleton Debug";
@@ -470,17 +472,17 @@ void Model::DrawSkeletonDebugUI()
   // 全展開/全折りたたみボタン
   if (ImGui::Button("Expand All"))
   {
-    s_expandState = 1;  // expand all
+    expandState_ = 1;  // expand all
   }
   ImGui::SameLine();
   if (ImGui::Button("Collapse All"))
   {
-    s_expandState = 2;  // collapse all
+    expandState_ = 2;  // collapse all
   }
   ImGui::SameLine();
   if (ImGui::Button("Reset"))
   {
-    s_expandState = 0;  // normal
+    expandState_ = 0;  // normal
   }
   
   ImGui::Separator();
@@ -519,11 +521,11 @@ void Model::DrawJointHierarchy(int32_t jointIndex, int depth)
   ImGui::Indent(indentAmount * depth);
   
   // 展開状態を設定
-  if (s_expandState == 1)  // expand all
+  if (expandState_ == 1)  // expand all
   {
     ImGui::SetNextItemOpen(true, ImGuiCond_Always);
   }
-  else if (s_expandState == 2)  // collapse all
+  else if (expandState_ == 2)  // collapse all
   {
     ImGui::SetNextItemOpen(false, ImGuiCond_Always);
   }
@@ -537,7 +539,7 @@ void Model::DrawJointHierarchy(int32_t jointIndex, int depth)
   // ツリーノードがホバーされているかチェック
   if (ImGui::IsItemHovered())
   {
-    s_hoveredJointIndex = jointIndex;
+    hoveredJointIndex_ = jointIndex;
   }
   
   // ノードが開いている場合、詳細情報を表示
