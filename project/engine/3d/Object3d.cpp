@@ -64,16 +64,15 @@ void Object3d::Update()
 			);
 			
 			// 最終的なワールド行列を計算（オフセット行列 × Joint行列）
-			Matrix4x4 finalWorldMatrix = Mat4x4::Multiply(offsetMatrix, jointWorldMatrix);
-			
-			// 行列から位置、回転、スケールを分解
-			Vector3 extractedPosition, extractedRotation, extractedScale;
-			Mat4x4::Decompose(finalWorldMatrix, extractedPosition, extractedRotation, extractedScale);
-			
-			// 抽出した位置と回転を適用
-			transform_.translate = extractedPosition;
-			transform_.rotate = extractedRotation;
+			finalWorldMatrix_ = Mat4x4::Multiply(offsetMatrix, jointWorldMatrix);
+
+      worldMatrix_ = finalWorldMatrix_;
 		}
+	}
+  else
+	{
+    // トランスフォームでワールド行列を作る
+    worldMatrix_ = Mat4x4::MakeAffine(transform_.scale, transform_.rotate, transform_.translate);
 	}
 
 	// モデルのローカル行列を取得
@@ -83,16 +82,13 @@ void Object3d::Update()
 		modelLocalMatrix = m_model_->GetLocalMatrix();
 	}
 
-	// トランスフォームでワールド行列を作る
-	Matrix4x4 worldMatrix = Mat4x4::MakeAffine(transform_.scale, transform_.rotate, transform_.translate);
-
 	Matrix4x4 wvpMatrix;
 
 	if ((*m_camera_)) {
 		const Matrix4x4& viewProjectionMatrix = (*m_camera_)->GetViewProjectionMatrix();
-		wvpMatrix = Mat4x4::Multiply(worldMatrix, viewProjectionMatrix);
+		wvpMatrix = Mat4x4::Multiply(worldMatrix_, viewProjectionMatrix);
 	} else {
-		wvpMatrix = worldMatrix;
+		wvpMatrix = worldMatrix_;
 	}
 
 	// 座標変換行列データに書き込む
@@ -101,13 +97,13 @@ void Object3d::Update()
 		if (m_model_->HasSkeleton())
 		{
 			transformationMatData_->WVP = wvpMatrix;
-			transformationMatData_->world = worldMatrix;
-			transformationMatData_->worldInvTranspose = Mat4x4::InverseTranspose(worldMatrix);
+			transformationMatData_->world = worldMatrix_;
+			transformationMatData_->worldInvTranspose = Mat4x4::InverseTranspose(worldMatrix_);
 		} else
 		{
 			transformationMatData_->WVP = modelLocalMatrix * wvpMatrix;
-			transformationMatData_->world = modelLocalMatrix * worldMatrix;
-			transformationMatData_->worldInvTranspose = Mat4x4::InverseTranspose(modelLocalMatrix * worldMatrix);
+			transformationMatData_->world = modelLocalMatrix * worldMatrix_;
+			transformationMatData_->worldInvTranspose = Mat4x4::InverseTranspose(modelLocalMatrix * worldMatrix_);
 		}
 	}
 }

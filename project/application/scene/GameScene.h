@@ -41,7 +41,7 @@ private: // メンバ変数
   // SkyBox
   std::unique_ptr<SkyBox> skyBox_;
 
-  Object3d* object3d_ = nullptr;
+  Object3d* terrain_ = nullptr;
   Object3d* characterModel_ = nullptr;
   Object3d* characterModel2_ = nullptr;
   Object3d* weaponModel_ = nullptr;
@@ -50,15 +50,12 @@ private: // メンバ変数
 
   uint32_t SrvAllocateCount_ = 0;
 
-  // モデルの設定
-  Vector3 modelScale_ = { .x = 1.0f, .y = 1.0f, .z = 1.0f };
-  Vector3 modelPos_ = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
-  Vector3 modelRotate_ = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
-  Vector4 modelColor_ = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
-
-  Vector3 weaponRotate_ = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
-
+  // モデルのトランスフォーム
+  Transform terrainTransform_ = {};
+  Vector4 terrainColor_ = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };
+  Transform weaponOffset_ = {};
   Transform characterTransform_{};
+  Transform characterTransform2_{};
 
   // 平行光源の設定
   float shininess_ = 100.0f;

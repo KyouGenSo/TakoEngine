@@ -137,6 +137,9 @@ private: // メンバー変数
 	Microsoft::WRL::ComPtr<ID3D12Resource> transformationMatResource_;
 	Microsoft::WRL::ComPtr<ID3D12Resource> cameraForGPUResource_;
 
+  Matrix4x4 finalWorldMatrix_;
+  Matrix4x4 worldMatrix_;
+
 	// バッファリソース内のデータを指すポインタ
 	TransformationMatrix* transformationMatData_ = nullptr;
 	CameraForGPU* cameraForGPUData_ = nullptr;

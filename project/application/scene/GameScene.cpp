@@ -36,31 +36,31 @@ void GameScene::Initialize()
   skyBox_ = std::make_unique<SkyBox>();
   skyBox_->Initialize("my_skybox.dds");
 
-  object3d_ = new Object3d();
-  object3d_->Initialize();
-  object3d_->SetModel("terrain.obj");
-
-  // y軸90度回転
-  Vector3 rotate = { .x = 0.0f, .y = DirectX::XMConvertToRadians(90.0f), .z = 0.0f };
-  object3d_->SetRotate(rotate);
-
-  modelPos_ = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
+  terrain_ = new Object3d();
+  terrain_->Initialize();
+  terrain_->SetModel("terrain.obj");
+  terrainTransform_.translate = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
+  terrainTransform_.scale = { .x = 1.0f, .y = 1.0f, .z = 1.0f };
+  terrainTransform_.rotate = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
+  terrain_->SetTransform(terrainTransform_);
 
   characterModel_ = new Object3d();
   characterModel_->Initialize();
-  characterModel_->SetModel("sneakwalk.gltf", true, true);
+  characterModel_->SetModel("BrainStem.gltf", true, true);
+  characterTransform_.translate = { .x = -1.0f, .y = 6.7f, .z = -24.0f };
+  characterTransform_.scale = { .x = 1.0f, .y = 1.0f, .z = 1.0f };
   characterTransform_.rotate = { .x = 0.0f, .y = DirectX::XMConvertToRadians(180.0f), .z = 0.0f };
-  characterModel_->SetRotate(rotate);
+  characterModel_->SetTransform(characterTransform_);
   characterModel_->SetEnvironmentTexture(skyBox_->GetTextureIndex());
 
   characterModel2_ = new Object3d();
   characterModel2_->Initialize();
-  characterModel2_->SetModel("BrainStem.gltf", true, true);
-  characterModel2_->SetRotate(rotate);
+  characterModel2_->SetModel("sneakwalk.gltf", true, true);
+  characterTransform2_.translate = { .x = 1.0f, .y = 6.7f, .z = -24.0f };
+  characterTransform2_.scale = { .x = 1.0f, .y = 1.0f, .z = 1.0f };
+  characterTransform2_.rotate = { .x = 0.0f, .y = DirectX::XMConvertToRadians(180.0f), .z = 0.0f };
+  characterModel2_->SetTransform(characterTransform2_);
   characterModel2_->SetEnvironmentTexture(skyBox_->GetTextureIndex());
-
-  characterTransform_.translate = { .x = 0.0f, .y = 6.7f, .z = -24.0f };
-  characterTransform_.scale = { .x = 1.0f, .y = 1.0f, .z = 1.0f };
 
   GPUParticle* particleSystem = GPUParticle::GetInstance();
 
@@ -80,21 +80,24 @@ void GameScene::Initialize()
   );
 
   boneTracker_->LinkBoneToEmitter("fire_left_link", "nodes[16]", "fire_left");
-  
+
   // 武器モデルの初期化
   weaponModel_ = new Object3d();
   weaponModel_->Initialize();
-  weaponModel_->SetModel("axis.obj"); // 仮のモデル、実際には剣などのモデルを使用
-  weaponModel_->SetScale(Vector3(0.3f, 0.3f, 0.3f)); // サイズ調整
-  
-  // キャラクターにアタッチ
-  weaponModel_->AttachToJoint(characterModel_, "mixamorig:LeftHand", Vector3(0.1f, 0.0f, 0.0f)); // 仮のJoint名
+  weaponModel_->SetModel("Sword.gltf"); // 仮のモデル、実際には剣などのモデルを使用
+  weaponOffset_.translate = Vector3(0.0f, 0.0f, 0.0f); // アタッチメントオフセット
+  weaponOffset_.scale = Vector3(0.3f, 0.3f, 0.3f); // アタッチメントスケール
+  weaponOffset_.rotate = Vector3(0.0f, 0.0f, 0.0f); // アタッチメント回転
+  weaponModel_->SetAttachmentTransform(weaponOffset_);
+
+  // キャラクターにアタッチ　mixamorig:LeftHand　nodes[17]
+  weaponModel_->AttachToJoint(characterModel_, "nodes[17]", weaponOffset_.translate); // 仮のJoint名
 
 }
 
 void GameScene::Finalize()
 {
-  delete object3d_;
+  delete terrain_;
   delete characterModel_;
   delete characterModel2_;
   delete weaponModel_;
@@ -124,13 +127,11 @@ void GameScene::Update()
 
   skyBox_->Update();
 
-  object3d_->SetScale(modelScale_);
-  object3d_->SetTranslate(modelPos_);
-  object3d_->SetRotate(modelRotate_);
-  object3d_->SetShininess(shininess_);
-  object3d_->SetEnableLighting(isLighting_);
-  object3d_->SetEnableHighlight(isHighlight_);
-  object3d_->SetMaterialColor(modelColor_);
+  terrain_->SetTransform(terrainTransform_);
+  terrain_->SetShininess(shininess_);
+  terrain_->SetEnableLighting(isLighting_);
+  terrain_->SetEnableHighlight(isHighlight_);
+  terrain_->SetMaterialColor(terrainColor_);
 
   characterModel_->SetTransform(characterTransform_);
   characterModel_->SetShininess(shininess_);
@@ -139,15 +140,16 @@ void GameScene::Update()
   characterModel_->SetEnableEnvMap(enableEnvMap);
   characterModel_->SetEnvMapCoefficient(envMapCoefficient_);
 
+  characterModel2_->SetTransform(characterTransform2_);
   characterModel2_->SetShininess(shininess_);
   characterModel2_->SetEnableLighting(isLighting_);
   characterModel2_->SetEnableHighlight(isHighlight_);
   characterModel2_->SetEnableEnvMap(enableEnvMap);
   characterModel2_->SetEnvMapCoefficient(envMapCoefficient_);
 
-  weaponModel_->SetAttachmentRotate(weaponRotate_);
+  weaponModel_->SetAttachmentTransform(weaponOffset_);
 
-  object3d_->Update();
+  terrain_->Update();
   characterModel_->Update();
   characterModel2_->Update();
   weaponModel_->Update();
@@ -179,7 +181,7 @@ void GameScene::Draw()
   // スプライト共通描画設定
   SpriteBasic::GetInstance()->SetCommonRenderSetting();
 
-  
+
 
   //--------------------------------------------------//
 
@@ -190,7 +192,7 @@ void GameScene::Draw()
   // モデル描画
   characterModel_->Draw();
   characterModel2_->Draw();
-  object3d_->Draw();
+  terrain_->Draw();
   weaponModel_->Draw(); // 武器の描画
 
 
@@ -226,7 +228,7 @@ void GameScene::DrawWithoutEffect()
   // 3Dモデル共通描画設定
   Object3dBasic::GetInstance()->SetCommonRenderSetting();
 
-  
+
 
   //------------------------------------------------//
 
@@ -243,40 +245,44 @@ void GameScene::DrawWithoutEffect()
 void GameScene::DrawImGui()
 {
 #ifdef _DEBUG
-  ImGui::Begin("object3d");
+  ImGui::Begin("terrain");
   SrvAllocateCount_ = SrvManager::GetInstance()->GetAllocatedCount();
   ImGui::Text("SRV Allocate Count : %d", SrvAllocateCount_);
-  ImGui::DragFloat3("Scale", &modelScale_.x, 0.01f, 0.1f, 50.0f);
-  ImGui::DragFloat3("Position", &modelPos_.x, 0.01f, -50.0f, 50.0f);
-  ImGui::DragFloat3("Rotate", &modelRotate_.x, 0.01f, DirectX::XMConvertToRadians(-180.0f), DirectX::XMConvertToRadians(180.0f));
-  ImGui::ColorEdit4("Model Color", &modelColor_.x);
-
+  ImGui::DragFloat3("Scale", &terrainTransform_.scale.x, 0.01f, 0.1f, 50.0f);
+  ImGui::DragFloat3("Position", &terrainTransform_.translate.x, 0.01f, -50.0f, 50.0f);
+  ImGui::DragFloat3("Rotate", &terrainTransform_.rotate.x, 0.01f, DirectX::XMConvertToRadians(-180.0f), DirectX::XMConvertToRadians(180.0f));
+  ImGui::ColorEdit4("Model Color", &terrainColor_.x);
   ImGui::End();
 
-  ImGui::Begin("object3d2");
+  ImGui::Begin("character1");
   ImGui::DragFloat3("Scale", &characterTransform_.scale.x, 0.01f, 0.1f, 50.0f);
   ImGui::DragFloat3("Position", &characterTransform_.translate.x, 0.01f, -50.0f, 50.0f);
   ImGui::DragFloat3("Rotate", &characterTransform_.rotate.x, 0.01f, DirectX::XMConvertToRadians(-180.0f), DirectX::XMConvertToRadians(180.0f));
   ImGui::End();
-  
+
+  ImGui::Begin("character2");
+  ImGui::DragFloat3("Scale", &characterTransform2_.scale.x, 0.01f, 0.1f, 50.0f);
+  ImGui::DragFloat3("Position", &characterTransform2_.translate.x, 0.01f, -50.0f, 50.0f);
+  ImGui::DragFloat3("Rotate", &characterTransform2_.rotate.x, 0.01f, DirectX::XMConvertToRadians(-180.0f), DirectX::XMConvertToRadians(180.0f));
+  ImGui::End();
+
   // 武器アタッチメントのデバッグUI
   ImGui::Begin("Weapon Attachment");
-  
+
   // アタッチメント状態の表示
   bool isAttached = weaponModel_->IsAttached();
   ImGui::Text("Attachment Status: %s", isAttached ? "Attached" : "Detached");
-  
+
   // Joint選択用のドロップダウン（実際のJoint名はモデルによって異なる）
   static int selectedJoint = 0;
-  const char* jointNames[] = { "mixamorig:LeftHand", "mixamorig:RightHand"}; // 仮のJoint名リスト
+  const char* jointNames[] = { "mixamorig:LeftHand", "mixamorig:RightHand" }; // 仮のJoint名リスト
   ImGui::Combo("Target Joint", &selectedJoint, jointNames, IM_ARRAYSIZE(jointNames));
-  
-  // オフセット調整
-  static Vector3 attachmentOffset = Vector3(0.1f, 0.0f, 0.0f);
-  ImGui::DragFloat3("Attachment Translate", &attachmentOffset.x, 0.01f, -1.0f, 1.0f);
 
-  ImGui::DragFloat3("Weapon Rotate", &weaponRotate_.x, 0.01f, DirectX::XMConvertToRadians(-180.0f), DirectX::XMConvertToRadians(180.0f));
-  
+  // オフセット調整
+  ImGui::DragFloat3("Attachment Translate", &weaponOffset_.translate.x, 0.01f, -1.0f, 1.0f);
+  ImGui::DragFloat3("Attachment Scale", &weaponOffset_.scale.x, 0.01f, 0.1f, 5.0f);
+  ImGui::DragFloat3("Attachment Rotate", &weaponOffset_.rotate.x, 0.01f, DirectX::XMConvertToRadians(-180.0f), DirectX::XMConvertToRadians(180.0f));
+
   // アタッチ/デタッチボタン
   if (isAttached)
   {
@@ -284,15 +290,14 @@ void GameScene::DrawImGui()
     {
       weaponModel_->DetachFromJoint();
     }
-  }
-  else
+  } else
   {
     if (ImGui::Button("Attach Weapon"))
     {
-      weaponModel_->AttachToJoint(characterModel_, jointNames[selectedJoint], attachmentOffset);
+      weaponModel_->AttachToJoint(characterModel2_, jointNames[selectedJoint], weaponOffset_.translate);
     }
   }
-  
+
   // 武器のローカル変換（デタッチ時のみ有効）
   if (!isAttached)
   {
@@ -301,21 +306,20 @@ void GameScene::DrawImGui()
     static Vector3 weaponPos = Vector3(0.0f, 0.0f, 0.0f);
     static Vector3 weaponRot = Vector3(0.0f, 0.0f, 0.0f);
     static Vector3 weaponScale = Vector3(0.3f, 0.3f, 0.3f);
-    
+
     ImGui::DragFloat3("Weapon Position", &weaponPos.x, 0.01f, -50.0f, 50.0f);
     ImGui::DragFloat3("Weapon Rotation", &weaponRot.x, 0.01f, DirectX::XMConvertToRadians(-180.0f), DirectX::XMConvertToRadians(180.0f));
     ImGui::DragFloat3("Weapon Scale", &weaponScale.x, 0.01f, 0.1f, 5.0f);
-    
+
     weaponModel_->SetTranslate(weaponPos);
     weaponModel_->SetRotate(weaponRot);
     weaponModel_->SetScale(weaponScale);
-  }
-  else
+  } else
   {
     // アタッチ中はオフセットを更新
-    weaponModel_->SetAttachmentTranslate(attachmentOffset);
+    weaponModel_->SetAttachmentTranslate(weaponOffset_.translate);
   }
-  
+
   ImGui::End();
 
   // Draw skeleton debug UI for the character model
