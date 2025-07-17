@@ -565,4 +565,75 @@ namespace Mat4x4 {
 		return MakeRotateAxisAngle(axis, angle);
 	}
 
+	void Decompose(const Matrix4x4& matrix, Vector3& position, Vector3& rotation, Vector3& scale)
+	{
+		// 位置を抽出（行列の第4列）
+		position.x = matrix.m[3][0];
+		position.y = matrix.m[3][1];
+		position.z = matrix.m[3][2];
+
+		// スケールを抽出（各軸のベクトルの長さ）
+		scale.x = std::sqrt(matrix.m[0][0] * matrix.m[0][0] + matrix.m[0][1] * matrix.m[0][1] + matrix.m[0][2] * matrix.m[0][2]);
+		scale.y = std::sqrt(matrix.m[1][0] * matrix.m[1][0] + matrix.m[1][1] * matrix.m[1][1] + matrix.m[1][2] * matrix.m[1][2]);
+		scale.z = std::sqrt(matrix.m[2][0] * matrix.m[2][0] + matrix.m[2][1] * matrix.m[2][1] + matrix.m[2][2] * matrix.m[2][2]);
+
+		// スケールが0の場合の処理
+		if (scale.x == 0.0f || scale.y == 0.0f || scale.z == 0.0f)
+		{
+			rotation = Vector3(0.0f, 0.0f, 0.0f);
+			return;
+		}
+
+		// 回転行列を抽出（スケールで正規化）
+		Matrix4x4 rotMatrix;
+		rotMatrix.m[0][0] = matrix.m[0][0] / scale.x;
+		rotMatrix.m[0][1] = matrix.m[0][1] / scale.x;
+		rotMatrix.m[0][2] = matrix.m[0][2] / scale.x;
+		rotMatrix.m[0][3] = 0.0f;
+
+		rotMatrix.m[1][0] = matrix.m[1][0] / scale.y;
+		rotMatrix.m[1][1] = matrix.m[1][1] / scale.y;
+		rotMatrix.m[1][2] = matrix.m[1][2] / scale.y;
+		rotMatrix.m[1][3] = 0.0f;
+
+		rotMatrix.m[2][0] = matrix.m[2][0] / scale.z;
+		rotMatrix.m[2][1] = matrix.m[2][1] / scale.z;
+		rotMatrix.m[2][2] = matrix.m[2][2] / scale.z;
+		rotMatrix.m[2][3] = 0.0f;
+
+		rotMatrix.m[3][0] = 0.0f;
+		rotMatrix.m[3][1] = 0.0f;
+		rotMatrix.m[3][2] = 0.0f;
+		rotMatrix.m[3][3] = 1.0f;
+
+		// 回転行列からオイラー角を抽出
+		rotation = ExtractEulerAngles(rotMatrix);
+	}
+
+	Vector3 ExtractEulerAngles(const Matrix4x4& matrix)
+	{
+		Vector3 rotation;
+
+		// XYZ順序での抽出
+		float sy = std::sqrt(matrix.m[0][0] * matrix.m[0][0] + matrix.m[1][0] * matrix.m[1][0]);
+		
+		bool singular = sy < 1e-6; // ジンバルロック判定
+		
+		if (!singular)
+		{
+			rotation.x = std::atan2(matrix.m[2][1], matrix.m[2][2]);
+			rotation.y = std::atan2(-matrix.m[2][0], sy);
+			rotation.z = std::atan2(matrix.m[1][0], matrix.m[0][0]);
+		}
+		else
+		{
+			// ジンバルロックの場合
+			rotation.x = std::atan2(-matrix.m[1][2], matrix.m[1][1]);
+			rotation.y = std::atan2(-matrix.m[2][0], sy);
+			rotation.z = 0.0f;
+		}
+
+		return rotation;
+	}
+
 }

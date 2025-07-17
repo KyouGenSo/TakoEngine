@@ -58,10 +58,7 @@ public: // メンバー関数
   // モデルのポインタを取得
   Model* GetModel() const
 	{
-    if (m_model_) {
       return m_model_;
-    }
-
 	}
 
 	//-----------------------------------------Setter-----------------------------------------//
@@ -82,6 +79,38 @@ public: // メンバー関数
 	void SetEnableLighting(bool enableLighting);
 	void SetEnableHighlight(bool enableHighlight);
   void SetEnableEnvMap(bool enableEnvMap);
+
+	// Jointアタッチメント機能
+	/// <summary>
+	/// 親Object3dの特定のJointにアタッチ
+	/// </summary>
+	/// <param name="parent">親となるObject3d</param>
+	/// <param name="jointName">アタッチするJoint名</param>
+	/// <param name="offset">Jointからのオフセット</param>
+	void AttachToJoint(Object3d* parent, const std::string& jointName, const Vector3& offset = Vector3(0.0f, 0.0f, 0.0f));
+
+	/// <summary>
+	/// 親Jointからデタッチ
+	/// </summary>
+	void DetachFromJoint();
+
+	/// <summary>
+	/// 親Jointのアタッチメント状態を取得
+	/// </summary>
+	bool IsAttached() const { return parentObject_ != nullptr && !parentJointName_.empty(); }
+
+	/// <summary>
+	/// アタッチメントのオフセットを設定
+	/// </summary>
+	void SetAttachmentTranslate(const Vector3& offset) { attachmentOffset_.translate = offset; }
+  void SetAttachmentRotate(const Vector3& offset) { attachmentOffset_.rotate = offset; }
+  void SetAttachmentScale(const Vector3& offset) { attachmentOffset_.scale = offset; }
+  void SetAttachmentTransform(const Transform& transform) { attachmentOffset_ = transform; }
+
+	/// <summary>
+	/// ワールド行列を取得
+	/// </summary>
+	Matrix4x4 GetWorldMatrix() const;
 
 private: // プライベートメンバー関数
 	///<summary>
@@ -111,4 +140,9 @@ private: // メンバー変数
 	// バッファリソース内のデータを指すポインタ
 	TransformationMatrix* transformationMatData_ = nullptr;
 	CameraForGPU* cameraForGPUData_ = nullptr;
+
+	// Jointアタッチメント用変数
+	Object3d* parentObject_ = nullptr; // 親となるObject3d
+	std::string parentJointName_;      // アタッチするJoint名
+  Transform attachmentOffset_{};     // Jointからのオフセット
 };

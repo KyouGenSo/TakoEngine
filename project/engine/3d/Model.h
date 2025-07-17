@@ -60,6 +60,14 @@ public: // メンバー関数
   bool HasAnimation() const { return hasAnimation_; }
   // Skeletonの有無を取得
   bool HasSkeleton() const { return hasSkeleton_; }
+  
+  /// <summary>
+  /// 指定したJointのワールド座標変換行列を取得
+  /// </summary>
+  /// <param name="jointName">Joint名</param>
+  /// <param name="worldMatrix">モデルのワールド行列</param>
+  /// <returns>Jointのワールド座標変換行列</returns>
+  Matrix4x4 GetJointWorldMatrix(const std::string& jointName, const Matrix4x4& worldMatrix) const;
 
   // -----------------------------------Setters-----------------------------------//
   void SetShininess(float shininess);

@@ -80,6 +80,15 @@ void GameScene::Initialize()
   );
 
   boneTracker_->LinkBoneToEmitter("fire_left_link", "nodes[16]", "fire_left");
+  
+  // 武器モデルの初期化
+  weaponModel_ = new Object3d();
+  weaponModel_->Initialize();
+  weaponModel_->SetModel("axis.obj"); // 仮のモデル、実際には剣などのモデルを使用
+  weaponModel_->SetScale(Vector3(0.3f, 0.3f, 0.3f)); // サイズ調整
+  
+  // キャラクターにアタッチ
+  weaponModel_->AttachToJoint(characterModel_, "mixamorig:LeftHand", Vector3(0.1f, 0.0f, 0.0f)); // 仮のJoint名
 
 }
 
@@ -88,6 +97,7 @@ void GameScene::Finalize()
   delete object3d_;
   delete characterModel_;
   delete characterModel2_;
+  delete weaponModel_;
 
   emitterManager_->RemoveAllEmitters();
 }
@@ -135,9 +145,12 @@ void GameScene::Update()
   characterModel2_->SetEnableEnvMap(enableEnvMap);
   characterModel2_->SetEnvMapCoefficient(envMapCoefficient_);
 
+  weaponModel_->SetAttachmentRotate(weaponRotate_);
+
   object3d_->Update();
   characterModel_->Update();
   characterModel2_->Update();
+  weaponModel_->Update();
 
   // ボーントラッカーの更新（エミッター位置をボーンに追従）
   boneTracker_->Update(characterTransform_);
@@ -178,6 +191,7 @@ void GameScene::Draw()
   characterModel_->Draw();
   characterModel2_->Draw();
   object3d_->Draw();
+  weaponModel_->Draw(); // 武器の描画
 
 
 
@@ -243,6 +257,65 @@ void GameScene::DrawImGui()
   ImGui::DragFloat3("Scale", &characterTransform_.scale.x, 0.01f, 0.1f, 50.0f);
   ImGui::DragFloat3("Position", &characterTransform_.translate.x, 0.01f, -50.0f, 50.0f);
   ImGui::DragFloat3("Rotate", &characterTransform_.rotate.x, 0.01f, DirectX::XMConvertToRadians(-180.0f), DirectX::XMConvertToRadians(180.0f));
+  ImGui::End();
+  
+  // 武器アタッチメントのデバッグUI
+  ImGui::Begin("Weapon Attachment");
+  
+  // アタッチメント状態の表示
+  bool isAttached = weaponModel_->IsAttached();
+  ImGui::Text("Attachment Status: %s", isAttached ? "Attached" : "Detached");
+  
+  // Joint選択用のドロップダウン（実際のJoint名はモデルによって異なる）
+  static int selectedJoint = 0;
+  const char* jointNames[] = { "mixamorig:LeftHand", "mixamorig:RightHand"}; // 仮のJoint名リスト
+  ImGui::Combo("Target Joint", &selectedJoint, jointNames, IM_ARRAYSIZE(jointNames));
+  
+  // オフセット調整
+  static Vector3 attachmentOffset = Vector3(0.1f, 0.0f, 0.0f);
+  ImGui::DragFloat3("Attachment Translate", &attachmentOffset.x, 0.01f, -1.0f, 1.0f);
+
+  ImGui::DragFloat3("Weapon Rotate", &weaponRotate_.x, 0.01f, DirectX::XMConvertToRadians(-180.0f), DirectX::XMConvertToRadians(180.0f));
+  
+  // アタッチ/デタッチボタン
+  if (isAttached)
+  {
+    if (ImGui::Button("Detach Weapon"))
+    {
+      weaponModel_->DetachFromJoint();
+    }
+  }
+  else
+  {
+    if (ImGui::Button("Attach Weapon"))
+    {
+      weaponModel_->AttachToJoint(characterModel_, jointNames[selectedJoint], attachmentOffset);
+    }
+  }
+  
+  // 武器のローカル変換（デタッチ時のみ有効）
+  if (!isAttached)
+  {
+    ImGui::Separator();
+    ImGui::Text("Weapon Transform (when detached)");
+    static Vector3 weaponPos = Vector3(0.0f, 0.0f, 0.0f);
+    static Vector3 weaponRot = Vector3(0.0f, 0.0f, 0.0f);
+    static Vector3 weaponScale = Vector3(0.3f, 0.3f, 0.3f);
+    
+    ImGui::DragFloat3("Weapon Position", &weaponPos.x, 0.01f, -50.0f, 50.0f);
+    ImGui::DragFloat3("Weapon Rotation", &weaponRot.x, 0.01f, DirectX::XMConvertToRadians(-180.0f), DirectX::XMConvertToRadians(180.0f));
+    ImGui::DragFloat3("Weapon Scale", &weaponScale.x, 0.01f, 0.1f, 5.0f);
+    
+    weaponModel_->SetTranslate(weaponPos);
+    weaponModel_->SetRotate(weaponRot);
+    weaponModel_->SetScale(weaponScale);
+  }
+  else
+  {
+    // アタッチ中はオフセットを更新
+    weaponModel_->SetAttachmentTranslate(attachmentOffset);
+  }
+  
   ImGui::End();
 
   // Draw skeleton debug UI for the character model

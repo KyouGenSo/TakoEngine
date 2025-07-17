@@ -383,6 +383,34 @@ void Model::SetEnvMapCoefficient(float coefficient)
   }
 }
 
+Matrix4x4 Model::GetJointWorldMatrix(const std::string& jointName, const Matrix4x4& worldMatrix) const
+{
+  // スケルトンがない場合は単位行列を返す
+  if (!hasSkeleton_)
+  {
+    return Mat4x4::MakeIdentity();
+  }
+
+  // Joint名からインデックスを検索
+  auto it = skeleton_.jointMap.find(jointName);
+  if (it == skeleton_.jointMap.end())
+  {
+    // Jointが見つからない場合は単位行列を返す
+    Logger::Log("Warning: Joint '%s' not found in skeleton\n", jointName.c_str());
+    return Mat4x4::MakeIdentity();
+  }
+
+  int32_t jointIndex = it->second;
+  if (jointIndex < 0 || jointIndex >= static_cast<int32_t>(skeleton_.joints.size()))
+  {
+    return Mat4x4::MakeIdentity();
+  }
+
+  // JointのskeletonSpaceMatrixとワールド行列を掛け合わせて返す
+  const Joint& joint = skeleton_.joints[jointIndex];
+  return joint.skeletonSpaceMatrix * worldMatrix;
+}
+
 void Model::ProcessNodeHierarchy(const Node& node, const Matrix4x4& parentGlobalMatrix, Matrix4x4 world, Matrix4x4 viewProjection)
 {
   // このノードのグローバル行列を計算（親の変換を適用）

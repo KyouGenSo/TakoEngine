@@ -53,6 +53,22 @@ namespace Mat4x4 {
 	Matrix4x4 MakeRotateAxisAngle(const Vector3& axis, float angle);
 
 	Matrix4x4 DirectionToDirection(const Vector3& from, const Vector3& to);
+
+	/// <summary>
+	/// 行列から位置、回転、スケールを分解
+	/// </summary>
+	/// <param name="matrix">分解する行列</param>
+	/// <param name="position">出力: 位置</param>
+	/// <param name="rotation">出力: 回転（オイラー角）</param>
+	/// <param name="scale">出力: スケール</param>
+	void Decompose(const Matrix4x4& matrix, Vector3& position, Vector3& rotation, Vector3& scale);
+
+	/// <summary>
+	/// 行列から回転成分を抽出（オイラー角として）
+	/// </summary>
+	/// <param name="matrix">回転を抽出する行列</param>
+	/// <returns>回転（オイラー角）</returns>
+	Vector3 ExtractEulerAngles(const Matrix4x4& matrix);
 }
 
 

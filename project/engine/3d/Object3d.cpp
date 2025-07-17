@@ -5,6 +5,7 @@
 #include"ModelManager.h"
 #include"Camera.h"
 #include "SrvManager.h"
+#include "Logger.h"
 
 Object3d::~Object3d()
 {
@@ -17,7 +18,16 @@ void Object3d::Initialize()
 	m_camera_ = Object3dBasic::GetInstance()->GetCamera();
 
 	// トランスフォームに初期化値を設定
-	transform_ = { .scale= Vector3(1.0f, 1.0f, 1.0f), .rotate= Vector3(0.0f, 0.0f, 0.0f), .translate= Vector3(0.0f, 0.0f, 0.0f) };
+	transform_ = {
+	  .scale= Vector3(1.0f, 1.0f, 1.0f),
+	  .rotate= Vector3(0.0f, 0.0f, 0.0f),
+	  .translate= Vector3(0.0f, 0.0f, 0.0f) };
+
+  attachmentOffset_ = {
+    .scale = Vector3(1.0f, 1.0f, 1.0f),
+    .rotate = Vector3(0.0f, 0.0f, 0.0f),
+    .translate = Vector3(0.0f, 0.0f, 0.0f)
+  };
 
 	// 座標変換行列データの生成
 	CreateTransformationMatrixData();
@@ -32,6 +42,38 @@ void Object3d::Update()
 	if (m_model_)
 	{
 		m_model_->Update();
+	}
+
+	// 親Jointへのアタッチメント処理
+	if (IsAttached() && parentObject_ && parentObject_->GetModel())
+	{
+		Model* parentModel = parentObject_->GetModel();
+		if (parentModel->HasSkeleton())
+		{
+			// 親のワールド行列を取得
+			Matrix4x4 parentWorldMatrix = parentObject_->GetWorldMatrix();
+			
+			// 親のJointのワールド行列を取得
+			Matrix4x4 jointWorldMatrix = parentModel->GetJointWorldMatrix(parentJointName_, parentWorldMatrix);
+			
+			// オフセットのアフィン変換行列を作成
+			Matrix4x4 offsetMatrix = Mat4x4::MakeAffine(
+				attachmentOffset_.scale,
+				attachmentOffset_.rotate,
+				attachmentOffset_.translate
+			);
+			
+			// 最終的なワールド行列を計算（オフセット行列 × Joint行列）
+			Matrix4x4 finalWorldMatrix = Mat4x4::Multiply(offsetMatrix, jointWorldMatrix);
+			
+			// 行列から位置、回転、スケールを分解
+			Vector3 extractedPosition, extractedRotation, extractedScale;
+			Mat4x4::Decompose(finalWorldMatrix, extractedPosition, extractedRotation, extractedScale);
+			
+			// 抽出した位置と回転を適用
+			transform_.translate = extractedPosition;
+			transform_.rotate = extractedRotation;
+		}
 	}
 
 	// モデルのローカル行列を取得
@@ -157,6 +199,36 @@ void Object3d::SetEnvMapCoefficient(float coefficient)
   {
     m_model_->SetEnvMapCoefficient(coefficient);
   }
+}
+
+void Object3d::AttachToJoint(Object3d* parent, const std::string& jointName, const Vector3& offset)
+{
+	// 親オブジェクトとJoint名を設定
+	parentObject_ = parent;
+	parentJointName_ = jointName;
+  attachmentOffset_.translate = offset;
+}
+
+void Object3d::DetachFromJoint()
+{
+	// 親オブジェクトとJoint名をクリア
+	parentObject_ = nullptr;
+	parentJointName_.clear();
+  attachmentOffset_.translate = Vector3(0.0f, 0.0f, 0.0f);
+}
+
+Matrix4x4 Object3d::GetWorldMatrix() const
+{
+	// トランスフォームからワールド行列を作成
+	Matrix4x4 worldMatrix = Mat4x4::MakeAffine(transform_.scale, transform_.rotate, transform_.translate);
+	
+	// モデルのローカル行列を考慮
+	if (m_model_ && !m_model_->HasSkeleton())
+	{
+		worldMatrix = m_model_->GetLocalMatrix() * worldMatrix;
+	}
+	
+	return worldMatrix;
 }
 
 void Object3d::CreateTransformationMatrixData()
