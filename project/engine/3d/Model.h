@@ -1,6 +1,7 @@
 #pragma once
 #include <d3d12.h>
 #include <unordered_map>
+#include <map>
 #include<wrl.h>
 #include "ModelStruct.h"
 
@@ -82,6 +83,25 @@ public: // メンバー関数
   static void SetShowSkeletonDebug(bool show) { s_showSkeletonDebug = show; }
   static bool GetShowSkeletonDebug() { return s_showSkeletonDebug; }
 
+  // -----------------------------------Animation Control-----------------------------------//
+  /// <summary>
+  /// アニメーションを切り替える
+  /// </summary>
+  /// <param name="animationName">アニメーション名</param>
+  void SetAnimation(const std::string& animationName);
+
+  /// <summary>
+  /// 登録されているアニメーション名のリストを取得
+  /// </summary>
+  /// <returns>アニメーション名のリスト</returns>
+  std::vector<std::string> GetAnimationNames() const;
+
+  /// <summary>
+  /// 現在のアニメーション名を取得
+  /// </summary>
+  /// <returns>現在のアニメーション名</returns>
+  const std::string& GetCurrentAnimationName() const { return currentAnimationName_; }
+
 private: // プライベートメンバー関数
   /// <summary>
   /// ノード階層で座標変換行列を処理して描画
@@ -96,7 +116,7 @@ private: // プライベートメンバー関数
   /// <summary>
   /// アニメーションの読み込み
   /// </summary>
-  Animation LoadAnimationFile(const std::string& directoryPath, const std::string& fileName);
+  void LoadAnimationFile(const std::string& directoryPath, const std::string& fileName);
 
   /// <summary>
   /// スキニング処理関連
@@ -175,10 +195,11 @@ private: // メンバ変数
   std::unordered_map<std::string, TextureData> textureCache_;
 
   // スケルトン・アニメーション関連
-  Animation animationData_;
+  std::map<std::string, Animation> animations_;  // 複数アニメーション対応
+  std::string currentAnimationName_;              // 現在のアニメーション名
+  std::map<std::string, float> animationTimes_;  // 各アニメーションの再生時間
   Skeleton skeleton_;
   bool hasAnimation_ = false;
-  float animationTime_ = 0.0f;
   bool hasSkeleton_ = false;
 
   // スキニング関連

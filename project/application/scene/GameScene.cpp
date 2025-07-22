@@ -46,7 +46,7 @@ void GameScene::Initialize()
 
   characterModel_ = new Object3d();
   characterModel_->Initialize();
-  characterModel_->SetModel("BrainStem.gltf", true, true);
+  characterModel_->SetModel("BrainStem2.gltf", true, true);
   characterTransform_.translate = { .x = -1.0f, .y = 6.7f, .z = -24.0f };
   characterTransform_.scale = { .x = 1.0f, .y = 1.0f, .z = 1.0f };
   characterTransform_.rotate = { .x = 0.0f, .y = DirectX::XMConvertToRadians(180.0f), .z = 0.0f };
@@ -79,7 +79,7 @@ void GameScene::Initialize()
     Vector4(1.0f, 0.1f, 0.0f, 0.0f)   // 赤から透明へ
   );
 
-  boneTracker_->LinkBoneToEmitter("fire_left_link", "nodes[16]", "fire_left");
+  boneTracker_->LinkBoneToEmitter("fire_left_link", "Node_16", "fire_left");
 
   // 武器モデルの初期化
   weaponModel_ = new Object3d();
@@ -91,7 +91,7 @@ void GameScene::Initialize()
   weaponModel_->SetAttachmentTransform(weaponOffset_);
 
   // キャラクターにアタッチ　mixamorig:LeftHand　nodes[17]
-  weaponModel_->AttachToJoint(characterModel_, "nodes[17]", weaponOffset_.translate); // 仮のJoint名
+  weaponModel_->AttachToJoint(characterModel_, "Node_16", weaponOffset_.translate); // 仮のJoint名
 
 }
 
@@ -124,6 +124,14 @@ void GameScene::Update()
   /// ================================== ///
   ///              更新処理               ///
   /// ================================== ///
+
+  if (Input::GetInstance()->TriggerKey(DIK_1))
+  {
+    characterModel_->GetModel()->SetAnimation("Anim_0");
+  } else if (Input::GetInstance()->TriggerKey(DIK_2))
+  {
+    characterModel_->GetModel()->SetAnimation("Anim_1");
+  }
 
   skyBox_->Update();
 

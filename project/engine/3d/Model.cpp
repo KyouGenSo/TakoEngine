@@ -42,7 +42,7 @@ void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool
   // アニメーションの読み込み
   if (hasAnimation_)
   {
-    animationData_ = LoadAnimationFile(directoryFolderName_ + "/" + ModelFolderName_, fileName);
+    LoadAnimationFile(directoryFolderName_ + "/" + ModelFolderName_, fileName);
   }
 
   // skeletonの生成とメッシュのスキンニングデータの初期化
@@ -82,7 +82,10 @@ void Model::Update()
     UpdateAnimation(1.0f / 60.0f);
 
     // ノード階層のアニメーション更新（スキニングの有無に関わらず実行）
-    UpdateNodeHierarchyAnimation(rootNode_, animationTime_);
+    if (!currentAnimationName_.empty() && animationTimes_.find(currentAnimationName_) != animationTimes_.end())
+    {
+      UpdateNodeHierarchyAnimation(rootNode_, animationTimes_[currentAnimationName_]);
+    }
   }
 
   // スケルトンアニメーションの場合
@@ -301,7 +304,13 @@ Model* Model::Clone() const
 
   if (this->hasAnimation_)
   {
-    newModel->animationData_ = this->animationData_;
+    newModel->animations_ = this->animations_;
+    newModel->currentAnimationName_ = this->currentAnimationName_;
+    // 各アニメーションの時間をリセット
+    for (const auto& [name, animation] : this->animations_)
+    {
+      newModel->animationTimes_[name] = 0.0f;
+    }
   }
 
   // Meshのクローンを作成
@@ -632,25 +641,38 @@ void Model::DrawJointHierarchy(int32_t jointIndex, int depth)
   ImGui::Unindent(indentAmount * depth);
 }
 
-Animation Model::LoadAnimationFile(const std::string& directoryPath, const std::string& fileName)
+void Model::LoadAnimationFile(const std::string& directoryPath, const std::string& fileName)
 {
-  Animation animation;
   Assimp::Importer importer;
   std::string filePath = directoryPath + "/" + fileName;
   const aiScene* scene = importer.ReadFile(filePath.c_str(), 0);
 
-  // アニメーションがない場合はエラー
-  assert(scene->HasAnimations());
-
-  // アニメーションの解析
-  aiAnimation* aiAnimation = scene->mAnimations[0]; // 一旦最初のアニメーションだけ対応
-  animation.duration = static_cast<float>(aiAnimation->mDuration / aiAnimation->mTicksPerSecond); // アニメーションの長さを取得,秒に変換
-
-  // ノードアニメーションの解析
-  for (uint32_t channelIndex = 0; channelIndex < aiAnimation->mNumChannels; ++channelIndex)
+  // アニメーションがない場合は早期リターン
+  if (!scene->HasAnimations())
   {
-    aiNodeAnim* aiNodeAnim = aiAnimation->mChannels[channelIndex];
-    NodeAnimetion& nodeAnimetion = animation.nodeAnimations[aiNodeAnim->mNodeName.C_Str()]; // ノード名をキーにしてノードアニメーションを取得
+    hasAnimation_ = false;
+    return;
+  }
+
+  // すべてのアニメーションを読み込む
+  for (uint32_t animIndex = 0; animIndex < scene->mNumAnimations; ++animIndex)
+  {
+    Animation animation;
+    aiAnimation* aiAnimation = scene->mAnimations[animIndex];
+    animation.duration = static_cast<float>(aiAnimation->mDuration / aiAnimation->mTicksPerSecond); // アニメーションの長さを取得,秒に変換
+
+    // アニメーション名を取得（空の場合はデフォルト名を付ける）
+    std::string animName = aiAnimation->mName.C_Str();
+    if (animName.empty())
+    {
+      animName = "Animation_" + std::to_string(animIndex);
+    }
+
+    // ノードアニメーションの解析
+    for (uint32_t channelIndex = 0; channelIndex < aiAnimation->mNumChannels; ++channelIndex)
+    {
+      aiNodeAnim* aiNodeAnim = aiAnimation->mChannels[channelIndex];
+      NodeAnimetion& nodeAnimetion = animation.nodeAnimations[aiNodeAnim->mNodeName.C_Str()]; // ノード名をキーにしてノードアニメーションを取得
 
     // 位置アニメーションの解析
     for (uint32_t keyIndex = 0; keyIndex < aiNodeAnim->mNumPositionKeys; ++keyIndex)
@@ -683,7 +705,16 @@ Animation Model::LoadAnimationFile(const std::string& directoryPath, const std::
     }
   }
 
-  return animation;
+    // アニメーションをマップに追加
+    animations_[animName] = animation;
+    animationTimes_[animName] = 0.0f;
+  }
+
+  // 最初のアニメーションをデフォルトに設定
+  if (!animations_.empty())
+  {
+    currentAnimationName_ = animations_.begin()->first;
+  }
 }
 
 void Model::PrepareSkinning()
@@ -694,9 +725,9 @@ void Model::PrepareSkinning()
   }
 
   // アニメーションがある場合のみ時間を更新
-  if (hasAnimation_) {
+  if (hasAnimation_ && !currentAnimationName_.empty() && animationTimes_.find(currentAnimationName_) != animationTimes_.end()) {
     // アニメーションの適用（ポーズの更新）
-    UpdateSkeletonAnimation(animationTime_);
+    UpdateSkeletonAnimation(animationTimes_[currentAnimationName_]);
   }
 
   // スケルトン行列の更新
@@ -874,14 +905,29 @@ Node Model::ReadNode(aiNode* node)
 
 void Model::UpdateAnimation(float deltaTime)
 {
-  animationTime_ += deltaTime; // アニメーション時間を更新
-  animationTime_ = std::fmod(animationTime_, animationData_.duration); // アニメーション時間がアニメーションの長さを超えたらループ
+  if (!hasAnimation_ || animations_.empty() || currentAnimationName_.empty())
+  {
+    return;
+  }
+
+  // 現在のアニメーションの時間を更新
+  float& animTime = animationTimes_[currentAnimationName_];
+  animTime += deltaTime;
+  animTime = std::fmod(animTime, animations_[currentAnimationName_].duration);
 }
 
 void Model::UpdateNodeHierarchyAnimation(Node& node, float time)
 {
+  if (!hasAnimation_ || animations_.empty() || currentAnimationName_.empty())
+  {
+    return;
+  }
+
+  // 現在のアニメーションを取得
+  const Animation& currentAnimation = animations_[currentAnimationName_];
+
   // このノードのアニメーションを検索
-  if (auto it = animationData_.nodeAnimations.find(node.name); it != animationData_.nodeAnimations.end())
+  if (auto it = currentAnimation.nodeAnimations.find(node.name); it != currentAnimation.nodeAnimations.end())
   {
     const NodeAnimetion& nodeAnimation = it->second;
 
@@ -923,8 +969,16 @@ void Model::UpdateSkeleton()
 
 void Model::UpdateSkeletonAnimation(float time)
 {
+  if (!hasAnimation_ || animations_.empty() || currentAnimationName_.empty())
+  {
+    return;
+  }
+
+  // 現在のアニメーションを取得
+  const Animation& currentAnimation = animations_[currentAnimationName_];
+
   for (Joint& joint : skeleton_.joints) {
-    if (auto it = animationData_.nodeAnimations.find(joint.name); it != animationData_.nodeAnimations.end())
+    if (auto it = currentAnimation.nodeAnimations.find(joint.name); it != currentAnimation.nodeAnimations.end())
     {
       const NodeAnimetion& rootAnimetion = (*it).second; // ルートノードのアニメーションを取得
 
@@ -992,4 +1046,32 @@ Quaternion Model::CalcKeyFrameValue(const std::vector<KeyFrameQuaternion>& keyFr
   }
 
   return (*keyFrames.rbegin()).value; // 最後のキーフレームの値を返す
+}
+
+// アニメーション制御メソッドの実装
+void Model::SetAnimation(const std::string& animationName)
+{
+  if (animations_.find(animationName) != animations_.end())
+  {
+    currentAnimationName_ = animationName;
+    animationTimes_[animationName] = 0.0f;  // アニメーション時間をリセット
+  }else
+  {
+#ifdef  _DEBUG
+    Logger::Log("Warning: Animation '%s' not found in model '%s'\n", animationName.c_str(), modelFileName_.c_str());
+#endif
+  }
+}
+
+std::vector<std::string> Model::GetAnimationNames() const
+{
+  std::vector<std::string> names;
+  names.reserve(animations_.size());
+  
+  for (const auto& [name, animation] : animations_)
+  {
+    names.push_back(name);
+  }
+  
+  return names;
 }
