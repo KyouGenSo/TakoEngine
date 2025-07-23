@@ -123,6 +123,14 @@ void Object3d::Draw()
 	}
 }
 
+void Object3d::DrawImGui()
+{
+  if (m_model_)
+  {
+    m_model_->DrawImGui();
+  }
+}
+
 void Object3d::SetModel(const std::string& fileName)
 {
   m_model_ = ModelManager::GetInstance()->GetModel(fileName);

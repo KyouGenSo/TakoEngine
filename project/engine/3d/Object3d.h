@@ -50,6 +50,11 @@ public: // メンバー関数
 	/// </summary>
 	void Draw();
 
+  /// <summary>
+  /// デバッグUIを表示
+  /// </summary>
+  void DrawImGui();
+
 	//-----------------------------------------Getter-----------------------------------------//
 	const Vector3& GetScale() const { return transform_.scale; }
 	const Vector3& GetRotate() const { return transform_.rotate; }

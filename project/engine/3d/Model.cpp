@@ -35,6 +35,8 @@ void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool
   paletteSrvIndex_ = 0;
   expandState_ = 0;
   hoveredJointIndex_ = -1;
+  animationSpeed_ = 1.0f;
+  isPaused_ = false;
 
   // objファイルの読み込み
   LoadModelFile(directoryFolderName_ + "/" + ModelFolderName_, fileName);
@@ -78,10 +80,15 @@ void Model::Update()
   // アニメーションがある場合
   if (hasAnimation_)
   {
-    // アニメーション時間の更新
-    UpdateAnimation(1.0f / 60.0f);
+    // 一時停止中でない場合のみアニメーション時間を更新
+    if (!isPaused_)
+    {
+      // アニメーション時間の更新（再生速度を適用）
+      UpdateAnimation(animationSpeed_ / 60.0f);
+    }
 
     // ノード階層のアニメーション更新（スキニングの有無に関わらず実行）
+    // 一時停止中でも現在のポーズは表示する必要があるため、この処理は実行する
     if (!currentAnimationName_.empty() && animationTimes_.find(currentAnimationName_) != animationTimes_.end())
     {
       UpdateNodeHierarchyAnimation(rootNode_, animationTimes_[currentAnimationName_]);
@@ -292,6 +299,8 @@ Model* Model::Clone() const
   newModel->meshSkinClusterData_ = this->meshSkinClusterData_;
   newModel->expandState_ = this->expandState_;
   newModel->hoveredJointIndex_ = this->hoveredJointIndex_;
+  newModel->animationSpeed_ = this->animationSpeed_;
+  newModel->isPaused_ = this->isPaused_;
 
   if (this->hasSkeleton_)
   {
@@ -491,52 +500,130 @@ void Model::DrawSkeleton(Matrix4x4 world)
   }
 }
 
-void Model::DrawSkeletonDebugUI()
+void Model::DrawImGui()
 {
-  if (!hasSkeleton_) return;
-
   // ホバー中のジョイントインデックスをリセット
   hoveredJointIndex_ = -1;
 
   // ウィンドウタイトルにモデル名を含める
-  std::string windowTitle = "[" + modelFileName_ + "] Skeleton Debug";
+  std::string windowTitle = "[" + modelFileName_ + "] Info";
   ImGui::Begin(windowTitle.c_str());
-  
-  // 3Dビジュアライゼーションのトグル
-  ImGui::Checkbox("Show 3D Skeleton", &s_showSkeletonDebug);
-  ImGui::Separator();
-  
-  ImGui::Text("Total Joints: %zu", skeleton_.joints.size());
-  ImGui::Text("Root Joint Index: %d", skeleton_.root);
-  
-  // 全展開/全折りたたみボタン
-  if (ImGui::Button("Expand All"))
-  {
-    expandState_ = 1;  // expand all
-  }
-  ImGui::SameLine();
-  if (ImGui::Button("Collapse All"))
-  {
-    expandState_ = 2;  // collapse all
-  }
-  ImGui::SameLine();
-  if (ImGui::Button("Reset"))
-  {
-    expandState_ = 0;  // normal
-  }
-  
-  ImGui::Separator();
 
-  // スクロール可能な子ウィンドウを作成（横スクロールバー付き）
-  ImGui::BeginChild("JointHierarchy", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
-  
-  // ルートジョイントから再帰的に表示
-  if (skeleton_.root >= 0 && skeleton_.root < skeleton_.joints.size())
+  // アニメーション制御
+  if (hasAnimation_)
   {
-    DrawJointHierarchy(skeleton_.root);
+    ImGui::Text("Animation Control");
+    ImGui::Separator();
+
+    // 再生/一時停止ボタン
+    if (isPaused_)
+    {
+      if (ImGui::Button("Resume"))
+      {
+        isPaused_ = false;
+      }
+    }
+    else
+    {
+      if (ImGui::Button("Pause"))
+      {
+        isPaused_ = true;
+      }
+    }
+
+    // 再生速度スライダー
+    ImGui::SliderFloat("Speed", &animationSpeed_, -10.0f, 10.0f, "%.2f");
+    ImGui::SameLine();
+    if (ImGui::Button("Reset Speed"))
+    {
+      animationSpeed_ = 1.0f;
+    }
+
+    // アニメーション時間の表示
+    if (!currentAnimationName_.empty() && animations_.find(currentAnimationName_) != animations_.end())
+    {
+      float currentTime = animationTimes_[currentAnimationName_];
+      float duration = animations_.at(currentAnimationName_).duration;
+      ImGui::Text("Time: %.2f / %.2f", currentTime, duration);
+      
+      // プログレスバー
+      float progress = currentTime / duration;
+      ImGui::ProgressBar(progress, ImVec2(-1, 0));
+    }
+
+    // 全アニメーション一覧表示
+    ImGui::Separator();
+    ImGui::Text("Available Animations (%zu):", animations_.size());
+    
+    // スクロール可能な子ウィンドウでアニメーションリストを表示
+    ImGui::BeginChild("AnimationList", ImVec2(0, 100), true);
+    for (const auto& [name, animation] : animations_)
+    {
+      bool isCurrentAnimation = (name == currentAnimationName_);
+      
+      // 現在のアニメーションは異なる色で表示
+      if (isCurrentAnimation)
+      {
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.2f, 1.0f, 0.2f, 1.0f)); // 緑色
+      }
+      
+      // アニメーション名と長さを表示
+      if (ImGui::Selectable(name.c_str(), isCurrentAnimation))
+      {
+        SetAnimation(name, 0.3f); // クリックで切り替え
+      }
+      ImGui::SameLine();
+      ImGui::TextDisabled("(%.2fs)", animation.duration);
+      
+      if (isCurrentAnimation)
+      {
+        ImGui::PopStyleColor();
+      }
+    }
+    ImGui::EndChild();
+
+    ImGui::Separator();
   }
-  
-  ImGui::EndChild();
+
+  if (hasSkeleton_)
+  {
+    // 3Dビジュアライゼーションのトグル
+    ImGui::Checkbox("Show 3D Skeleton", &s_showSkeletonDebug);
+    ImGui::Separator();
+
+    ImGui::Text("Total Joints: %zu", skeleton_.joints.size());
+    ImGui::Text("Root Joint Index: %d", skeleton_.root);
+
+    // 全展開/全折りたたみボタン
+    if (ImGui::Button("Expand All"))
+    {
+      expandState_ = 1;  // expand all
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Collapse All"))
+    {
+      expandState_ = 2;  // collapse all
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Reset"))
+    {
+      expandState_ = 0;  // normal
+    }
+
+    ImGui::Separator();
+
+    // スクロール可能な子ウィンドウを作成（横スクロールバー付き）
+    ImGui::BeginChild("JointHierarchy", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
+
+    // ルートジョイントから再帰的に表示
+    if (skeleton_.root >= 0 && skeleton_.root < skeleton_.joints.size())
+    {
+      DrawJointHierarchy(skeleton_.root);
+    }
+
+    ImGui::EndChild();
+  }
+
   ImGui::End();
 }
 

@@ -128,11 +128,11 @@ void GameScene::Update()
   // アニメーション切り替えテスト（遷移時間付き）
   if (Input::GetInstance()->TriggerKey(DIK_1))
   {
-    // 0.5秒かけてAnim_0へ遷移
+    // 0.3秒の補間してAnim_0へ遷移
     characterModel_->GetModel()->SetAnimation("Anim_0", 0.3f);
   } else if (Input::GetInstance()->TriggerKey(DIK_2))
   {
-    // 0.5秒かけてAnim_1へ遷移
+    // 0.3秒の補間してAnim_1へ遷移
     characterModel_->GetModel()->SetAnimation("Anim_1", 0.3f);
   } else if (Input::GetInstance()->TriggerKey(DIK_3))
   {
@@ -341,15 +341,6 @@ void GameScene::DrawImGui()
 
   ImGui::End();
 
-  // Draw skeleton debug UI for the character model
-  if (characterModel_ && characterModel_->GetModel()) {
-    characterModel_->GetModel()->DrawSkeletonDebugUI();
-  }
-
-  if (characterModel2_ && characterModel2_->GetModel()) {
-    characterModel2_->GetModel()->DrawSkeletonDebugUI();
-  }
-
   // Lightの設定
   ImGui::Begin("Directional Light");
   ImGui::Separator();
@@ -366,6 +357,8 @@ void GameScene::DrawImGui()
   }
   ImGui::End();
 
+  characterModel_->DrawImGui();
+  characterModel2_->DrawImGui();
 
 #endif // DEBUG
 }

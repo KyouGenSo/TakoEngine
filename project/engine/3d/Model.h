@@ -43,9 +43,9 @@ public: // メンバー関数
   void LoadModelFile(const std::string& directoryPath, const std::string& fileName);
 
   /// <summary>
-  /// SkeletonのデバッグUIを表示
+  /// デバッグUIを表示
   /// </summary>
-  void DrawSkeletonDebugUI();
+  void DrawImGui();
 
   /// <summary>
   /// クローン
@@ -108,6 +108,34 @@ public: // メンバー関数
   /// </summary>
   /// <returns>現在のアニメーション名</returns>
   const std::string& GetCurrentAnimationName() const { return currentAnimationName_; }
+
+  /// <summary>
+  /// アニメーション再生速度を設定
+  /// </summary>
+  /// <param name="speed">再生速度（1.0fが通常速度、負の値で逆再生）</param>
+  void SetAnimationSpeed(float speed) { animationSpeed_ = speed; }
+
+  /// <summary>
+  /// アニメーション再生速度を取得
+  /// </summary>
+  /// <returns>現在の再生速度</returns>
+  float GetAnimationSpeed() const { return animationSpeed_; }
+
+  /// <summary>
+  /// アニメーションを一時停止
+  /// </summary>
+  void PauseAnimation() { isPaused_ = true; }
+
+  /// <summary>
+  /// アニメーションを再生再開
+  /// </summary>
+  void ResumeAnimation() { isPaused_ = false; }
+
+  /// <summary>
+  /// アニメーションが一時停止中かを取得
+  /// </summary>
+  /// <returns>一時停止中ならtrue</returns>
+  bool IsAnimationPaused() const { return isPaused_; }
 
 private: // プライベートメンバー関数
   /// <summary>
@@ -244,4 +272,8 @@ private: // メンバ変数
   float transitionDuration_ = 0.0f;          // 遷移時間（秒）
   float transitionTime_ = 0.0f;              // 現在の遷移経過時間
   bool isTransitioning_ = false;             // 遷移中フラグ
+
+  // アニメーション再生制御
+  float animationSpeed_ = 1.0f;             // アニメーション再生速度（1.0fが通常速度）
+  bool isPaused_ = false;                   // アニメーション一時停止フラグ
 };
