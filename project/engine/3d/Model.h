@@ -91,6 +91,13 @@ public: // メンバー関数
   void SetAnimation(const std::string& animationName);
 
   /// <summary>
+  /// アニメーションを補間付きで切り替える
+  /// </summary>
+  /// <param name="animationName">アニメーション名</param>
+  /// <param name="transitionDuration">遷移時間（秒）</param>
+  void SetAnimation(const std::string& animationName, float transitionDuration);
+
+  /// <summary>
   /// 登録されているアニメーション名のリストを取得
   /// </summary>
   /// <returns>アニメーション名のリスト</returns>
@@ -176,7 +183,23 @@ private: // プライベートメンバー関数
   /// </summary>
   void DrawJointHierarchy(int32_t jointIndex, int depth = 0);
 
+  /// <summary>
+  /// 現在のポーズを保存
+  /// </summary>
+  void SaveCurrentPose();
+
+  /// <summary>
+  /// ノードのポーズを再帰的に保存
+  /// </summary>
+  void SaveNodePose(const Node& node);
+
 private: // メンバ変数
+
+  // アニメーション遷移関連構造体
+  struct AnimationTransitionState {
+    std::map<std::string, QuatTransform> nodeTransforms;  // ノード用
+    std::map<std::string, QuatTransform> jointTransforms; // ジョイント用
+  };
 
   ModelBasic* m_modelBasic_;
   DX12Basic* m_dx12_;
@@ -215,4 +238,10 @@ private: // メンバ変数
   static bool s_showSkeletonDebug;  // 全体的なスケルトン表示ON/OFF
   int expandState_ = 0;  // 0: normal, 1: expand all, 2: collapse all
   int32_t hoveredJointIndex_ = -1;  // ホバー中のジョイントインデックス（-1: なし）
+
+  // アニメーション遷移関連
+  AnimationTransitionState previousPose_;     // 遷移前のポーズ
+  float transitionDuration_ = 0.0f;          // 遷移時間（秒）
+  float transitionTime_ = 0.0f;              // 現在の遷移経過時間
+  bool isTransitioning_ = false;             // 遷移中フラグ
 };

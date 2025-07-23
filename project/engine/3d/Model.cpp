@@ -913,6 +913,20 @@ void Model::UpdateAnimation(float deltaTime)
     return;
   }
 
+  // 遷移中の処理
+  if (isTransitioning_)
+  {
+    transitionTime_ += deltaTime;
+
+    // 遷移完了チェック
+    if (transitionTime_ >= transitionDuration_)
+    {
+      isTransitioning_ = false;
+      transitionTime_ = 0.0f;
+      transitionDuration_ = 0.0f;
+    }
+  }
+
   // 現在のアニメーションの時間を更新
   float& animTime = animationTimes_[currentAnimationName_];
   animTime += deltaTime;
@@ -940,6 +954,20 @@ void Model::UpdateNodeHierarchyAnimation(Node& node, float time)
     Quaternion rotate = CalcKeyFrameValue(nodeAnimation.rotate.keyFrames, time);
     // スケールアニメーションの計算
     Vector3 scale = CalcKeyFrameValue(nodeAnimation.scale.keyFrames, time);
+
+    // 遷移中の補間処理
+    if (isTransitioning_ && previousPose_.nodeTransforms.find(node.name) != previousPose_.nodeTransforms.end())
+    {
+      float t = transitionTime_ / transitionDuration_;
+      t = std::min(t, 1.0f);  // 0〜1にクランプ
+
+      const QuatTransform& prevTransform = previousPose_.nodeTransforms[node.name];
+      
+      // 前のポーズから現在のアニメーションへ補間
+      translate = Vec3::Lerp(prevTransform.translate, translate, t);
+      rotate = Quat::Slerp(prevTransform.rotate, rotate, t);
+      scale = Vec3::Lerp(prevTransform.scale, scale, t);
+    }
 
     // ローカル変換行列を更新
     node.transform.translate = translate;
@@ -986,11 +1014,30 @@ void Model::UpdateSkeletonAnimation(float time)
       const NodeAnimetion& rootAnimetion = (*it).second; // ルートノードのアニメーションを取得
 
       // 位置アニメーションの計算
-      joint.transform.translate = CalcKeyFrameValue(rootAnimetion.translate.keyFrames, time);
+      Vector3 translate = CalcKeyFrameValue(rootAnimetion.translate.keyFrames, time);
       // 回転アニメーションの計算
-      joint.transform.rotate = CalcKeyFrameValue(rootAnimetion.rotate.keyFrames, time);
+      Quaternion rotate = CalcKeyFrameValue(rootAnimetion.rotate.keyFrames, time);
       // スケールアニメーションの計算
-      joint.transform.scale = CalcKeyFrameValue(rootAnimetion.scale.keyFrames, time);
+      Vector3 scale = CalcKeyFrameValue(rootAnimetion.scale.keyFrames, time);
+
+      // 遷移中の補間処理
+      if (isTransitioning_ && previousPose_.jointTransforms.find(joint.name) != previousPose_.jointTransforms.end())
+      {
+        float t = transitionTime_ / transitionDuration_;
+        t = std::min(t, 1.0f);  // 0〜1にクランプ
+
+        const QuatTransform& prevTransform = previousPose_.jointTransforms[joint.name];
+        
+        // 前のポーズから現在のアニメーションへ補間
+        translate = Vec3::Lerp(prevTransform.translate, translate, t);
+        rotate = Quat::Slerp(prevTransform.rotate, rotate, t);
+        scale = Vec3::Lerp(prevTransform.scale, scale, t);
+      }
+
+      // ジョイントのトランスフォームを更新
+      joint.transform.translate = translate;
+      joint.transform.rotate = rotate;
+      joint.transform.scale = scale;
     }
   }
 }
@@ -1058,6 +1105,34 @@ void Model::SetAnimation(const std::string& animationName)
   {
     currentAnimationName_ = animationName;
     animationTimes_[animationName] = 0.0f;  // アニメーション時間をリセット
+    isTransitioning_ = false;  // 即座に切り替えるため遷移フラグをオフ
+  }else
+  {
+#ifdef  _DEBUG
+    Logger::Log("Warning: Animation '%s' not found in model '%s'\n", animationName.c_str(), modelFileName_.c_str());
+#endif
+  }
+}
+
+void Model::SetAnimation(const std::string& animationName, float transitionDuration)
+{
+  if (animations_.find(animationName) != animations_.end())
+  {
+    // 同じアニメーションへの遷移は無視
+    if (currentAnimationName_ == animationName)
+    {
+      return;
+    }
+
+    // 現在のポーズを保存
+    SaveCurrentPose();
+
+    // 遷移設定
+    currentAnimationName_ = animationName;
+    animationTimes_[animationName] = 0.0f;  // アニメーション時間をリセット
+    transitionDuration_ = transitionDuration;
+    transitionTime_ = 0.0f;
+    isTransitioning_ = true;
   }else
   {
 #ifdef  _DEBUG
@@ -1077,4 +1152,35 @@ std::vector<std::string> Model::GetAnimationNames() const
   }
   
   return names;
+}
+
+void Model::SaveCurrentPose()
+{
+  // 前回のポーズをクリア
+  previousPose_.nodeTransforms.clear();
+  previousPose_.jointTransforms.clear();
+
+  // ノードベースアニメーションの場合
+  SaveNodePose(rootNode_);
+
+  // スケルトンアニメーションの場合
+  if (hasSkeleton_)
+  {
+    for (const auto& joint : skeleton_.joints)
+    {
+      previousPose_.jointTransforms[joint.name] = joint.transform;
+    }
+  }
+}
+
+void Model::SaveNodePose(const Node& node)
+{
+  // 現在のノードのトランスフォームを保存
+  previousPose_.nodeTransforms[node.name] = node.transform;
+
+  // 子ノードも再帰的に保存
+  for (const auto& child : node.children)
+  {
+    SaveNodePose(child);
+  }
 }

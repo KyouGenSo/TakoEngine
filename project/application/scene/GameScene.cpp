@@ -125,11 +125,22 @@ void GameScene::Update()
   ///              更新処理               ///
   /// ================================== ///
 
+  // アニメーション切り替えテスト（遷移時間付き）
   if (Input::GetInstance()->TriggerKey(DIK_1))
   {
-    characterModel_->GetModel()->SetAnimation("Anim_0");
+    // 0.5秒かけてAnim_0へ遷移
+    characterModel_->GetModel()->SetAnimation("Anim_0", 0.3f);
   } else if (Input::GetInstance()->TriggerKey(DIK_2))
   {
+    // 0.5秒かけてAnim_1へ遷移
+    characterModel_->GetModel()->SetAnimation("Anim_1", 0.3f);
+  } else if (Input::GetInstance()->TriggerKey(DIK_3))
+  {
+    // 即座にAnim_0へ切り替え（遷移なし）
+    characterModel_->GetModel()->SetAnimation("Anim_0");
+  } else if (Input::GetInstance()->TriggerKey(DIK_4))
+  {
+    // 即座にAnim_1へ切り替え（遷移なし）
     characterModel_->GetModel()->SetAnimation("Anim_1");
   }
 
