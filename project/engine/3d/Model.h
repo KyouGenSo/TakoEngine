@@ -111,7 +111,7 @@ private: // プライベートメンバー関数
   /// <summary>
   /// Skeletonのデバグ用描画
   /// </summary>
-  void DrawSkeleton(Matrix4x4 world, Matrix4x4 viewProjection);
+  void DrawSkeleton(Matrix4x4 world);
 
   /// <summary>
   /// アニメーションの読み込み

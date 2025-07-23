@@ -123,7 +123,7 @@ void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
 #ifdef _DEBUG
   if (hasSkeleton_ && s_showSkeletonDebug)
   {
-    DrawSkeleton(world, viewProjection);
+    DrawSkeleton(world);
   }
 #endif
 }
@@ -449,7 +449,7 @@ void Model::ProcessNodeHierarchy(const Node& node, const Matrix4x4& parentGlobal
 ///                PRIVATE METHODS                ///
 ///-----------------------------------------------///
 
-void Model::DrawSkeleton(Matrix4x4 world, Matrix4x4 viewProjection)
+void Model::DrawSkeleton(Matrix4x4 world)
 {
   // Draw each joint as a sphere and draw lines between joints to represent bones
   for (const Joint& joint : skeleton_.joints)
@@ -457,10 +457,6 @@ void Model::DrawSkeleton(Matrix4x4 world, Matrix4x4 viewProjection)
     // Calculate the position of the joint in world space
     Matrix4x4 jointWorldMatrix = joint.skeletonSpaceMatrix * world;
     Vector3 jointPosition = Mat4x4::TransForm(jointWorldMatrix, Vector3(0.0f, 0.0f, 0.0f));
-
-    // Draw the joint as a sphere
-    //float radius = 0.01f; // Sphere radius
-    //Draw2D::GetInstance()->DrawSphere(jointPosition, radius, Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 
     // Draw line to parent joint if it exists
     if (joint.parentIndex)
@@ -470,13 +466,20 @@ void Model::DrawSkeleton(Matrix4x4 world, Matrix4x4 viewProjection)
       // Calculate the position of the parent joint in world space
       Matrix4x4 parentWorldMatrix = parentJoint.skeletonSpaceMatrix * world;
       Vector3 parentPosition = Mat4x4::TransForm(parentWorldMatrix, Vector3(0.0f, 0.0f, 0.0f));
-      viewProjection;
+
       // ホバー中のジョイントに関連する線は赤色で表示
       Vector4 lineColor = Vector4(1.0f, 1.0f, 1.0f, 1.0f);  // デフォルト: 白
       if (hoveredJointIndex_ == joint.index || hoveredJointIndex_ == *joint.parentIndex)
       {
         lineColor = Vector4(1.0f, 0.0f, 0.0f, 1.0f);  // 赤色
       }
+
+      // Draw the joint as a AABB
+      AABB aabb{
+        jointPosition - Vector3(0.01f, 0.01f, 0.01f), // Min corner
+        jointPosition + Vector3(0.01f, 0.01f, 0.01f)  // Max corner
+      };
+      Draw2D::GetInstance()->DrawAABB(aabb, lineColor);
       
       // Draw a line between the current joint and its parent
       Draw2D::GetInstance()->DrawLine(
