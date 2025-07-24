@@ -92,7 +92,9 @@ void GaussianBlur::DrawImgui()
 {
 #ifdef _DEBUG
   ImGui::DragFloat("Blur Sigma", &cBufferData1_->sigma, 0.01f, 0.0f, 50.0f);
+  cBufferData2_->sigma = cBufferData1_->sigma; // Pass2でも同じ値を使用
   ImGui::DragInt("Blur Kernel Size", reinterpret_cast<int*>(&cBufferData1_->kernelSize), 1.0f, 1, 100);
+  cBufferData2_->kernelSize = cBufferData1_->kernelSize; // Pass2でも同じ値を使用
 #endif
 }
 
@@ -244,8 +246,8 @@ void GaussianBlur::CreatePSO()
 void GaussianBlur::CreateCBV()
 {
   // BloomParamのリソース生成
-  cBufferResource1_ = m_dx12_->MakeBufferResource(sizeof(BloomParam));
-  cBufferResource2_ = m_dx12_->MakeBufferResource(sizeof(BloomParam));
+  cBufferResource1_ = m_dx12_->MakeBufferResource(sizeof(GaussianBlurParam));
+  cBufferResource2_ = m_dx12_->MakeBufferResource(sizeof(GaussianBlurParam));
 
   // データの設定
   cBufferResource1_->Map(0, nullptr, reinterpret_cast<void**>(&cBufferData1_));
@@ -253,11 +255,11 @@ void GaussianBlur::CreateCBV()
 
   // データの初期化
   cBufferData1_->sigma = 2.0f;
-  cBufferData1_->direction = { 1.0f, 0.0f };
+  cBufferData1_->direction = { 0.0f, 1.0f };
   cBufferData1_->kernelSize = 9;
 
   cBufferData2_->sigma = 2.0f;
-  cBufferData2_->direction = { 0.0f, 1.0f };
+  cBufferData2_->direction = { 1.0f, 0.0f };
   cBufferData2_->kernelSize = 9;
 }
 

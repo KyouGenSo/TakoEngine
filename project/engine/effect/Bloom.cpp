@@ -39,7 +39,6 @@ void Bloom::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvH
   depthSrvIndex; // 深度バッファはこのエフェクトでは使用しないため、引数として受け取るが無視する
   clearColor;    // ClearColorもこのエフェクトでは使用しないため、引数として受け取るが無視する
 
-
   //---------------------------Pass1---------------------------//
   D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
 
@@ -91,9 +90,13 @@ void Bloom::DrawImgui()
 {
 #ifdef _DEBUG
   ImGui::DragFloat("Bloom Intensity", &cBufferData1_->intensity, 0.01f, 0.0f, 10.0f);
+  cBufferData2_->intensity = cBufferData1_->intensity; // Pass2でも同じ値を使用
   ImGui::DragFloat("Bloom Threshold", &cBufferData1_->threshold, 0.01f, 0.0f, 1.0f);
+  cBufferData2_->threshold = cBufferData1_->threshold; // Pass2でも同じ値を使用
   ImGui::DragFloat("Bloom Sigma", &cBufferData1_->sigma, 0.01f, 0.0f, 50.0f);
+  cBufferData2_->sigma = cBufferData1_->sigma; // Pass2でも同じ値を使用
   ImGui::DragInt("Bloom Kernel Size", reinterpret_cast<int*>(&cBufferData1_->kernelSize), 1.0f, 1, 100);
+  cBufferData2_->kernelSize = cBufferData1_->kernelSize; // Pass2でも同じ値を使用
 #endif
 }
 
@@ -117,6 +120,16 @@ void Bloom::SetParam(const BloomParam& param)
   cBufferData1_->threshold = param.threshold;
   cBufferData1_->sigma = param.sigma;
   cBufferData1_->kernelSize = param.kernelSize;
+
+  if (cBufferData2_ == nullptr)
+  {
+    return; // cBufferData2_が初期化されていない場合は何もしない
+  }
+  // パラメータを設定する
+  cBufferData2_->intensity = param.intensity;
+  cBufferData2_->threshold = param.threshold;
+  cBufferData2_->sigma = param.sigma;
+  cBufferData2_->kernelSize = param.kernelSize;
 }
 
 void Bloom::CreateRootSignature()

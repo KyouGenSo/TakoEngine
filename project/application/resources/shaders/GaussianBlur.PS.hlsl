@@ -34,10 +34,10 @@ float4 GaussianBlur(float2 texcoord, float2 texSize, float2 dir)
     for (int karnelStep = -kernelSize / 2; karnelStep <= kernelSize / 2; ++karnelStep)
     {
         float2 uvOffset = texcoord;
-        uvOffset.x += karnelStep * texOffset.x * dir.x;
-        uvOffset.y += karnelStep * texOffset.y * dir.y;
+        uvOffset.x += ((karnelStep + 0.5f) * texOffset.x) * dir.x;
+        uvOffset.y += ((karnelStep + 0.5f) * texOffset.y) * dir.y;
         
-        float weight = Gaussian(float(karnelStep), gSigma);
+        float weight = Gaussian(float(karnelStep), gSigma) + Gaussian(float(karnelStep + 1), gSigma);
 
         result.xyz += gTexture.Sample(gSampler, uvOffset).xyz * weight;
         
@@ -62,6 +62,5 @@ float4 main(VertexShaderOutput input) : SV_TARGET
 
     //resultColor.rgb += output.color.rgb;
     
-    return resultColor; // return the final color   
-
+    return resultColor; // return the final color
 }
