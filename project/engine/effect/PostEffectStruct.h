@@ -53,11 +53,21 @@ struct NewBloomParam
   int padding4;        // パディング追加
 };
 
+struct HighLumExtrcatParam
+{
+  float threshold;
+};
+
 struct GaussianBlurParam
 {
   float sigma;
   int kernelSize;
   Vector2 direction;
+};
+
+struct BloomCombineParam
+{
+  float intensity;
 };
 
 // Shader用のカメラ
@@ -143,5 +153,7 @@ using EffectParam = std::variant<
   DissolveParam,
   WhiteNoiseParam,
   HalfToneParam,
-  GaussianBlurParam
+  GaussianBlurParam,
+  HighLumExtrcatParam,
+  BloomCombineParam
 >;

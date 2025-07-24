@@ -1,4 +1,6 @@
 #pragma once
+#include <unordered_map>
+
 #include "IPostEffect.h"
 #include "Vector2.h"
 
@@ -26,15 +28,18 @@ public:
 
   // パラメータ設定
   bool SetGenericParam(const EffectParam& param) override;
-  void SetParam(const BloomParam& param);
+  void SetParam(const HighLumExtrcatParam& param);
+  void SetParam(const GaussianBlurParam& param);
+  void SetParam(const BloomCombineParam& param);
 
   // リサイズ処理
   void OnResize(Vector2 newSize);
 
 private:
-
   void CreateRootSignature() override;
+  void CreateRootSignature(std::string shaderNeme);
   void CreatePSO() override;
+  void CreatePSO(std::string shaderNeme);
   void CreateCBV();
   void CreateRenderTexture();
   void RecreateRenderTexture();
@@ -42,13 +47,26 @@ private:
   void SetBarrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
 
 private:
+  // ルートシグネチャ
+  std::unordered_map <std::string, ComPtr<ID3D12RootSignature>> rootSignatures_;
 
-  ComPtr<ID3D12Resource> cBufferResource1_;
-  BloomParam* cBufferData1_ = nullptr;
+  // パイプラインステート
+  std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> pipelineStates_;
 
-  ComPtr<ID3D12Resource> cBufferResource2_;
-  BloomParam* cBufferData2_ = nullptr;
+  ComPtr<ID3D12Resource> extractCBufferRes_;
+  HighLumExtrcatParam* extractData_ = nullptr;
 
+  ComPtr<ID3D12Resource> blurCBufferRes1_;
+  GaussianBlurParam* blurData1_ = nullptr;
+
+  ComPtr<ID3D12Resource> blurCBufferRes2_;
+  GaussianBlurParam* blurData2_ = nullptr;
+
+  ComPtr<ID3D12Resource> combineCBufferRes_;
+  BloomCombineParam* combineData_ = nullptr;
+
+  RenderTexture highLumRT_{};
+  RenderTexture blurRT_{};
   RenderTexture resultRT_{};
 
   // リサイズコールバック管理

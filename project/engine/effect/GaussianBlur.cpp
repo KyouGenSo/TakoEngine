@@ -291,7 +291,7 @@ void GaussianBlur::CreateRenderTexture()
     );
     };
 
-  createRT(resultRT_, 7, Vector4(0.0f, 0.0f, 0.0f, 1.0f));
+  createRT(resultRT_, 9, Vector4(0.0f, 0.0f, 0.0f, 1.0f));
 }
 
 void GaussianBlur::OnResize(Vector2 newSize)
