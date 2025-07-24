@@ -25,7 +25,7 @@ float Gaussian(float x, float sigma)
 float4 GaussianBlur(float2 texcoord, float2 texSize, float2 dir)
 {
     // 1ƒsƒNƒZƒ‹‚Ì’·‚³
-    const float2 texOffset = float2(rcp(texSize.x * 0.5f), rcp(texSize.y * 0.5f));
+    const float2 texOffset = float2(rcp(texSize.x), rcp(texSize.y));
     
     float4 result = 0;
     

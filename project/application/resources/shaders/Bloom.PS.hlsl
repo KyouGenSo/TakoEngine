@@ -49,7 +49,7 @@ float4 GaussianBlur(float2 texcoord, float2 texSize, float2 dir)
     float2 uvOffset;
     
     // 1ƒsƒNƒZƒ‹‚Ì’·‚³
-    const float2 texOffset = float2(rcp(texSize.x * 0.5f), rcp(texSize.y * 0.5f));
+    const float2 texOffset = float2(rcp(texSize.x), rcp(texSize.y));
     
     float4 result = BloomExtract(texcoord);
     
@@ -147,6 +147,5 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     
     bloomColor.rgb += output.color.rgb;
     
-    return bloomColor; // return the final combined color   
-
+    return bloomColor; // return the final combined color
 }
