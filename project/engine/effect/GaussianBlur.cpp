@@ -2,6 +2,7 @@
 #include "Bloom.h"
 
 #include "DX12Basic.h"
+#include "WinApp.h"
 #include "Logger.h"
 #include "SrvManager.h"
 #include "StringUtility.h"
@@ -10,11 +11,28 @@
 #include "imgui.h"
 #endif
 
+GaussianBlur::~GaussianBlur()
+{
+  if (winApp_ && onResizeId_ != 0)
+  {
+    winApp_->UnregisterOnResizeFunc(onResizeId_);
+  }
+}
+
 void GaussianBlur::Initialize(DX12Basic* dx12, std::string shaderName)
 {
   IPostEffect::Initialize(dx12, shaderName);
   CreateCBV();
   CreateRenderTexture();
+
+  // WinAppのインスタンスを取得してリサイズコールバックを登録
+  winApp_ = WinApp::GetInstance();
+  if (winApp_)
+  {
+    onResizeId_ = winApp_->RegisterOnResizeFunc(
+      std::bind(&GaussianBlur::OnResize, this, std::placeholders::_1)
+    );
+  }
 }
 
 void GaussianBlur::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, uint32_t depthSrvIndex, Vector4 clearColor)
@@ -272,6 +290,22 @@ void GaussianBlur::CreateRenderTexture()
     };
 
   createRT(resultRT_, 7, Vector4(0.0f, 0.0f, 0.0f, 1.0f));
+}
+
+void GaussianBlur::OnResize(Vector2 newSize)
+{
+  newSize; // 未使用の警告を抑制
+  
+  // RenderTextureを再作成
+  RecreateRenderTexture();
+}
+
+void GaussianBlur::RecreateRenderTexture()
+{
+  resultRT_.resource.Reset();
+  SrvManager::GetInstance()->Free(resultRT_.srvIndex);
+
+  CreateRenderTexture();
 }
 
 void GaussianBlur::SetBarrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter)
