@@ -1,6 +1,7 @@
 #include "Bloom.h"
 
 #include "DX12Basic.h"
+#include "WinApp.h"
 #include "Logger.h"
 #include "SrvManager.h"
 #include "StringUtility.h"
@@ -9,11 +10,28 @@
 #include "imgui.h"
 #endif
 
+Bloom::~Bloom()
+{
+  if (winApp_ && onResizeId_ != 0)
+  {
+    winApp_->UnregisterOnResizeFunc(onResizeId_);
+  }
+}
+
 void Bloom::Initialize(DX12Basic* dx12, std::string shaderName)
 {
   IPostEffect::Initialize(dx12, shaderName);
   CreateCBV();
   CreateRenderTexture();
+
+  // WinAppのインスタンスを取得してリサイズコールバックを登録
+  winApp_ = WinApp::GetInstance();
+  if (winApp_)
+  {
+    onResizeId_ = winApp_->RegisterOnResizeFunc(
+      std::bind(&Bloom::OnResize, this, std::placeholders::_1)
+    );
+  }
 }
 
 void Bloom::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, uint32_t depthSrvIndex, Vector4 clearColor)
@@ -272,6 +290,22 @@ void Bloom::CreateRenderTexture()
     };
 
   createRT(resultRT_, 6, Vector4(0.0f, 0.0f, 0.0f, 1.0f));
+}
+
+void Bloom::OnResize(Vector2 newSize)
+{
+  newSize; // 未使用の警告を抑制
+  
+  // RenderTextureを再作成
+  RecreateRenderTexture();
+}
+
+void Bloom::RecreateRenderTexture()
+{
+  resultRT_.resource.Reset();
+  SrvManager::GetInstance()->Free(resultRT_.srvIndex);
+
+  CreateRenderTexture();
 }
 
 void Bloom::SetBarrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter)
