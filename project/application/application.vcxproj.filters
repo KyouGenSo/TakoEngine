@@ -133,9 +133,6 @@
     <FxCompile Include="resources\shaders\UpdateParticle.CS.hlsl">
       <Filter>Shader\Particle</Filter>
     </FxCompile>
-    <FxCompile Include="resources\shaders\Composite.PS.hlsl">
-      <Filter>Shader\PostEffect</Filter>
-    </FxCompile>
     <FxCompile Include="resources\shaders\RadialBlur.PS.hlsl">
       <Filter>Shader\PostEffect</Filter>
     </FxCompile>
