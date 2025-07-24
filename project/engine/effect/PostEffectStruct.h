@@ -53,6 +53,13 @@ struct NewBloomParam
   int padding4;        // パディング追加
 };
 
+struct GaussianBlurParam
+{
+  float sigma;
+  int kernelSize;
+  Vector2 direction;
+};
+
 // Shader用のカメラ
 struct CameraForGPU
 {
@@ -135,5 +142,6 @@ using EffectParam = std::variant<
   CameraForGPU,
   DissolveParam,
   WhiteNoiseParam,
-  HalfToneParam
+  HalfToneParam,
+  GaussianBlurParam
 >;

@@ -213,6 +213,9 @@
     <ClCompile Include="engine\effect\HalfTone.cpp">
       <Filter>effect\PostEffect</Filter>
     </ClCompile>
+    <ClCompile Include="engine\effect\GaussianBlur.cpp">
+      <Filter>effect\PostEffect</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\math\Matrix4x4.h">
@@ -423,6 +426,9 @@
       <Filter>effect</Filter>
     </ClInclude>
     <ClInclude Include="engine\effect\HalfTone.h">
+      <Filter>effect\PostEffect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\GaussianBlur.h">
       <Filter>effect\PostEffect</Filter>
     </ClInclude>
   </ItemGroup>

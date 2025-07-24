@@ -19,6 +19,7 @@
 #include "Dissolve.h"
 #include "WhiteNoise.h"
 #include "HalfTone.h"
+#include "GaussianBlur.h"
 
 #include <algorithm>
 
@@ -57,6 +58,7 @@ void PostEffectManager::Initialize(DX12Basic* dx12)
   RegisterEffect("Dissolve", std::make_unique<Dissolve>());
   RegisterEffect("WhiteNoise", std::make_unique<WhiteNoise>());
   RegisterEffect("HalfTone", std::make_unique<HalfTone>());
+  RegisterEffect("GaussianBlur", std::make_unique<GaussianBlur>());
 
   // 深度バッファテクスチャのSRV作成
   depthSrvIndex_ = SrvManager::GetInstance()->Allocate();

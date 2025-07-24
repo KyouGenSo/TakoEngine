@@ -148,7 +148,7 @@
     <FxCompile Include="resources\shaders\ThresholdExtract.PS.hlsl">
       <Filter>Shader\PostEffect</Filter>
     </FxCompile>
-    <FxCompile Include="resources\shaders\GaussianBlur.PS.hlsl">
+    <FxCompile Include="resources\shaders\GaussianBloom.PS.hlsl">
       <Filter>Shader\PostEffect</Filter>
     </FxCompile>
     <FxCompile Include="resources\shaders\BloomCombine.PS.hlsl">
@@ -176,6 +176,9 @@
       <Filter>Shader\PostEffect</Filter>
     </FxCompile>
     <FxCompile Include="resources\shaders\HalfTone.PS.hlsl">
+      <Filter>Shader\PostEffect</Filter>
+    </FxCompile>
+    <FxCompile Include="resources\shaders\GaussianBlur.PS.hlsl">
       <Filter>Shader\PostEffect</Filter>
     </FxCompile>
   </ItemGroup>
