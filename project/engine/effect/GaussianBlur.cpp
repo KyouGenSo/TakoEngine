@@ -271,7 +271,7 @@ void GaussianBlur::CreateRenderTexture()
     );
     };
 
-  createRT(resultRT_, 6, Vector4(0.0f, 0.0f, 0.0f, 1.0f));
+  createRT(resultRT_, 7, Vector4(0.0f, 0.0f, 0.0f, 1.0f));
 }
 
 void GaussianBlur::SetBarrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter)
