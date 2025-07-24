@@ -17,7 +17,7 @@
 #include <imgui.h>
 
 // 静的メンバー変数の定義
-bool Model::s_showSkeletonDebug = false;
+bool Model::s_showSkeletonDebug = true;
 
 ///------------------------------------------------///
 ///                 PUBLIC METHODS                ///

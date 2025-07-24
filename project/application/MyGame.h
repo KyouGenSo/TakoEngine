@@ -28,8 +28,8 @@ public: // メンバ関数
 
 private: // メンバ変数
 
-  bool FPSWindowVisible = true;
-  bool PostEffectWindowVisible = false;
+  bool FPSWindowVisible = false;
+  bool PostEffectWindowVisible = true;
 
   uint32_t spriteBasicOnresizeId = 0;
 };
