@@ -112,13 +112,14 @@ std::unique_ptr<SceneLoader::LoadedScene> SceneLoader::LoadScene(const std::stri
       // Transformデータを格納
       nlohmann::json& transform = object["transform"];
       // 平行移動 "translation"
-      objectData.transform.translate.x = static_cast<float>(transform["translation"][1]);
+      // Blender(Z-up右手系) -> ゲームエンジン(Y-up左手系)への変換
+      objectData.transform.translate.x = static_cast<float>(transform["translation"][0]);
       objectData.transform.translate.y = static_cast<float>(transform["translation"][2]);
-      objectData.transform.translate.z = -static_cast<float>(transform["translation"][0]);
+      objectData.transform.translate.z = static_cast<float>(transform["translation"][1]);
       // 回転 "rotation" (度からラジアンに変換)
-      objectData.transform.rotate.x    = DirectX::XMConvertToRadians(static_cast<float>(transform["rotation"][2]));
-      objectData.transform.rotate.y    = DirectX::XMConvertToRadians(static_cast<float>(transform["rotation"][0]));
-      objectData.transform.rotate.z    = DirectX::XMConvertToRadians(static_cast<float>(transform["rotation"][1]));
+      objectData.transform.rotate.x    = DirectX::XMConvertToRadians(-static_cast<float>(transform["rotation"][0]));
+      objectData.transform.rotate.y    = DirectX::XMConvertToRadians(-static_cast<float>(transform["rotation"][2]));
+      objectData.transform.rotate.z    = DirectX::XMConvertToRadians(-static_cast<float>(transform["rotation"][1]));
       // 拡大縮小 "scale"
       objectData.transform.scale.x     = static_cast<float>(transform["scale"][0]);
       objectData.transform.scale.y     = static_cast<float>(transform["scale"][2]);
