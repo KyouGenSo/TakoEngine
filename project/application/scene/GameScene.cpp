@@ -36,6 +36,13 @@ void GameScene::Initialize()
   skyBox_ = std::make_unique<SkyBox>();
   skyBox_->Initialize("my_skybox.dds");
 
+  // SceneLoaderの初期化とテスト
+  sceneLoader_ = std::make_unique<SceneLoader>();
+  sceneLoader_->Initialize();
+  
+
+loadedScene_ = sceneLoader_->LoadScene("scene");
+
   terrain_ = new Object3d();
   terrain_->Initialize();
   terrain_->SetModel("terrain.obj");
@@ -144,6 +151,12 @@ void GameScene::Update()
     characterModel_->GetModel()->SetAnimation("Anim_1");
   }
 
+  if (Input::GetInstance()->TriggerKey(DIK_F5))
+  {
+    loadedScene_->Clear();
+    loadedScene_ = sceneLoader_->LoadScene("scene");
+  }
+
   skyBox_->Update();
 
   terrain_->SetTransform(terrainTransform_);
@@ -172,6 +185,15 @@ void GameScene::Update()
   characterModel_->Update();
   characterModel2_->Update();
   weaponModel_->Update();
+  
+  // LoadedSceneのObject3dも更新
+  if (loadedScene_)
+  {
+    for (const auto& object : loadedScene_->GetAllObjects())
+    {
+      object->Update();
+    }
+  }
 
   // ボーントラッカーの更新（エミッター位置をボーンに追従）
   boneTracker_->Update(characterTransform_);
@@ -208,11 +230,20 @@ void GameScene::Draw()
   //-------------------Modelの描画-------------------//
   // 3Dモデル共通描画設定
   Object3dBasic::GetInstance()->SetCommonRenderSetting();
-  // モデル描画
+  //// モデル描画
   characterModel_->Draw();
   characterModel2_->Draw();
-  terrain_->Draw();
-  weaponModel_->Draw(); // 武器の描画
+  //terrain_->Draw();
+  //weaponModel_->Draw(); // 武器の描画
+  
+  // LoadedSceneのObject3dも描画
+  if (loadedScene_)
+  {
+    for (const auto& object : loadedScene_->GetAllObjects())
+    {
+      object->Draw();
+    }
+  }
 
 
 

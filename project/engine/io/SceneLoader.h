@@ -3,9 +3,47 @@
 
 #include <string>
 #include <vector>
+#include <memory>
+#include <map>
+
+class Object3d;
 
 class SceneLoader
 {
+public: // LoadedSceneコンテナクラス
+  class LoadedScene
+  {
+  public:
+    /// <summary>
+    /// 名前でObject3dを取得
+    /// </summary>
+    /// <param name="name">オブジェクト名</param>
+    /// <returns>Object3dのポインタ（見つからない場合はnullptr）</returns>
+    Object3d* GetObject3d(const std::string& name);
+
+    /// <summary>
+    /// Object3dを追加
+    /// </summary>
+    /// <param name="name">オブジェクト名</param>
+    /// <param name="object">Object3dのunique_ptr</param>
+    void AddObject(const std::string& name, std::unique_ptr<Object3d> object);
+
+    /// <summary>
+    /// 全てのObject3dを取得
+    /// </summary>
+    /// <returns>Object3dのリスト</returns>
+    const std::vector<std::unique_ptr<Object3d>>& GetAllObjects() const { return objects_; }
+
+    /// <summary>
+    /// クリア
+    /// </summary>
+    void Clear();
+
+  private:
+    std::vector<std::unique_ptr<Object3d>> objects_;
+    std::map<std::string, Object3d*> objectMap_;
+  };
+  
 private: // 構造体定義
   struct ObjectData
   {
@@ -31,7 +69,8 @@ public: //　メンバー関数
   /// シーンをjsonファイルから読み込む
   /// </summary>
   /// <param name="sceneFileName">シーンファイル名</param>
-  bool LoadScene(const std::string& sceneFileName);
+  /// <returns>読み込まれたシーンデータ（失敗時はnullptr）</returns>
+  std::unique_ptr<LoadedScene> LoadScene(const std::string& sceneFileName);
 
   // -----------------------------------Setters-----------------------------------//
   void SetDirectoryFolderName(const std::string& directoryFolderName)
