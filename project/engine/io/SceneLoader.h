@@ -30,8 +30,8 @@ public: //　メンバー関数
   /// <summary>
   /// シーンをjsonファイルから読み込む
   /// </summary>
-  /// <param name="sceneName">シーン名</param>
-  bool LoadScene(const std::string& sceneName);
+  /// <param name="sceneFileName">シーンファイル名</param>
+  bool LoadScene(const std::string& sceneFileName);
 
   // -----------------------------------Setters-----------------------------------//
   void SetDirectoryFolderName(const std::string& directoryFolderName)
