@@ -10,8 +10,9 @@ class Object3d;
 
 class SceneLoader
 {
-public: // LoadedSceneコンテナクラス
-  class LoadedScene
+public: // 構造体定義
+  // LoadedSceneコンテナ構造体
+  struct LoadedScene
   {
   public:
     /// <summary>
@@ -43,8 +44,7 @@ public: // LoadedSceneコンテナクラス
     std::vector<std::unique_ptr<Object3d>> objects_;
     std::map<std::string, Object3d*> objectMap_;
   };
-  
-private: // 構造体定義
+
   struct ObjectData
   {
     std::string type; // e.g., "Mesh", "Light", "Camera"

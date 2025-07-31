@@ -155,8 +155,6 @@ std::unique_ptr<SceneLoader::LoadedScene> SceneLoader::LoadScene(const std::stri
     loadedScene->AddObject(objectData.name, std::move(object3d));
   }
 
-  // levelDataを削除
-  delete levelData;
 
   // 読み込んだシーンを返す
   return loadedScene;

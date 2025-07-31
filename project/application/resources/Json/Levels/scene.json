@@ -2,6 +2,72 @@
     "name": "scene",
     "objects": [
         {
+            "type": "MESH",
+            "name": "Cube_Cube.001",
+            "transform": {
+                "translation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "rotation": [
+                    0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "file_name": "axis.obj"
+        },
+        {
+            "type": "MESH",
+            "name": "teapot",
+            "transform": {
+                "translation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "rotation": [
+                    0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "file_name": "teapot.obj"
+        },
+        {
+            "type": "MESH",
+            "name": "Plane",
+            "transform": {
+                "translation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "rotation": [
+                    0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "file_name": "terrain.obj"
+        },
+        {
             "type": "LIGHT",
             "name": "Light",
             "transform": {
@@ -42,116 +108,6 @@
                     1.0
                 ]
             }
-        },
-        {
-            "type": "MESH",
-            "name": "teapot",
-            "transform": {
-                "translation": [
-                    -5.380218505859375,
-                    5.284969329833984,
-                    1.2345211505889893
-                ],
-                "rotation": [
-                    0.0,
-                    -0.0,
-                    0.0
-                ],
-                "scale": [
-                    1.0,
-                    1.0,
-                    1.0
-                ]
-            },
-            "file_name": "teapot.obj"
-        },
-        {
-            "type": "MESH",
-            "name": "Plane",
-            "transform": {
-                "translation": [
-                    0.05701756477355957,
-                    0.0,
-                    -2.724027633666992
-                ],
-                "rotation": [
-                    0.0,
-                    -0.0,
-                    0.0
-                ],
-                "scale": [
-                    1.0,
-                    1.0,
-                    1.0
-                ]
-            },
-            "file_name": "terrain.obj"
-        },
-        {
-            "type": "MESH",
-            "name": "Cube_Cube.001",
-            "transform": {
-                "translation": [
-                    3.2189395427703857,
-                    -5.8853583335876465,
-                    -0.6442041397094727
-                ],
-                "rotation": [
-                    0.0,
-                    -0.0,
-                    0.0
-                ],
-                "scale": [
-                    1.0,
-                    1.0,
-                    1.0
-                ]
-            },
-            "file_name": "axis.obj"
-        },
-        {
-            "type": "MESH",
-            "name": "teapot.001",
-            "transform": {
-                "translation": [
-                    -6.096498012542725,
-                    5.051879405975342,
-                    0.0
-                ],
-                "rotation": [
-                    0.0,
-                    -0.0,
-                    0.0
-                ],
-                "scale": [
-                    1.0,
-                    1.0,
-                    1.0
-                ]
-            },
-            "file_name": "teapot.obj"
-        },
-        {
-            "type": "MESH",
-            "name": "Figure_2_geometry",
-            "transform": {
-                "translation": [
-                    6.332618236541748,
-                    6.347743034362793,
-                    0.276121586561203
-                ],
-                "rotation": [
-                    0.0,
-                    -0.0,
-                    0.0
-                ],
-                "scale": [
-                    1.0,
-                    1.0,
-                    1.0
-                ]
-            },
-            "file_name": "BrainStem.gltf"
         }
     ]
 }
