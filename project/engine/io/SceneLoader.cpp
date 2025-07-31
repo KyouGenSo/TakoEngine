@@ -166,7 +166,7 @@ std::unique_ptr<SceneLoader::LoadedScene> SceneLoader::LoadScene(const std::stri
       object3dBasic->SetCameraTranslate(objectData.transform.translate);
       object3dBasic->SetCameraRotation(objectData.transform.rotate);
 
-      continue; // カメラはObject3dではないのでスキップ
+      continue;
     }
 
     if (objectData.fileName.empty())
@@ -188,7 +188,7 @@ std::unique_ptr<SceneLoader::LoadedScene> SceneLoader::LoadScene(const std::stri
     object3d->SetTransform(objectData.transform);
 
     // LoadedSceneに追加
-    loadedScene->AddObject(objectData.name, std::move(object3d));
+    loadedScene->AddObject(objectData.fileName, std::move(object3d));
   }
 
 

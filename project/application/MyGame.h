@@ -1,4 +1,6 @@
 #pragma once
+#include <stdbool.h>
+
 #include"TakoFramework.h"
 #include"Vector2.h"
 
@@ -28,7 +30,7 @@ public: // メンバ関数
 
 private: // メンバ変数
 
-  bool FPSWindowVisible = true;
+  bool FPSWindowVisible = false;
   bool PostEffectWindowVisible = false;
 
   uint32_t spriteBasicOnresizeId = 0;
