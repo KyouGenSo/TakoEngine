@@ -1,6 +1,8 @@
 #pragma once
 #include <d3d12.h>
 #include<wrl.h>
+
+#include "Camera.h"
 #include "Matrix4x4.h"
 #include "Light.h"
 #include "SkyBox.h"
@@ -54,6 +56,8 @@ public: // メンバー関数
 
 	// -----------------------------------Setters-----------------------------------//
 	void SetCamera(Camera* camera) { camera_ = camera; }
+  void SetCameraTranslate(Vector3 translate) { camera_->SetTranslate(translate); }
+  void SetCameraRotation(Vector3 rotation) { camera_->SetRotate(rotation); }
 	void SetDebug(bool isDebug) { isDebug_ = isDebug; }
 
 	// DirectionalLight

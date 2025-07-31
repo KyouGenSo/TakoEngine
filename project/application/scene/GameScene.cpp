@@ -39,9 +39,8 @@ void GameScene::Initialize()
   // SceneLoaderの初期化とテスト
   sceneLoader_ = std::make_unique<SceneLoader>();
   sceneLoader_->Initialize();
-  
 
-loadedScene_ = sceneLoader_->LoadScene("scene");
+  loadedScene_ = sceneLoader_->LoadScene("scene");
 
   terrain_ = new Object3d();
   terrain_->Initialize();
@@ -185,7 +184,7 @@ void GameScene::Update()
   characterModel_->Update();
   characterModel2_->Update();
   weaponModel_->Update();
-  
+
   // LoadedSceneのObject3dも更新
   if (loadedScene_)
   {
@@ -235,7 +234,7 @@ void GameScene::Draw()
   characterModel2_->Draw();
   //terrain_->Draw();
   //weaponModel_->Draw(); // 武器の描画
-  
+
   // LoadedSceneのObject3dも描画
   if (loadedScene_)
   {
