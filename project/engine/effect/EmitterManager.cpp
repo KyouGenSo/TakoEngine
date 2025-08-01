@@ -41,6 +41,33 @@ void EmitterManager::CreateSphereEmitter(const std::string& name, const Vector3&
 
 }
 
+void EmitterManager::CreateSphereEmitter(SphereEmitterSettings settings)
+{
+  // 名前の重複チェック
+  if (emitterMap_.contains(settings.name)) {
+    Logger::Log("Warning: Emitter name '%s' already exists. Overwriting.", settings.name.c_str());
+    RemoveEmitter(settings.name);
+  }
+  // エミッター作成
+  std::shared_ptr<SphereEmitter> emitter = std::make_shared<SphereEmitter>(particleSystem_, settings.position, settings.radius, settings.count, settings.frequency);
+
+  // GPUParticleにエミッターを登録
+  particleSystem_->RegisterEmitter(emitter);
+  // マップに追加
+  emitterMap_[settings.name] = emitter;
+
+  auto it = emitterMap_.find(settings.name);
+  if (it != emitterMap_.end()) {
+    it->second->SetScaleRange(settings.scaleRangeX, settings.scaleRangeY);
+    it->second->SetVelRange(settings.velRangeX, settings.velRangeY, settings.velRangeZ);
+    it->second->SetLifeTimeRange(settings.lifeTimeRange);
+    it->second->SetColors(settings.startColor, settings.endColor);
+    it->second->SetActive(settings.isActive);
+    it->second->SetNormalize(settings.isNormalize);
+  }
+
+}
+
 void EmitterManager::CreateBoxEmitter(const std::string& name, const Vector3& position, const Vector3& size, const Vector3& rotation, uint32_t count, float frequency)
 {
   // 名前の重複チェック
@@ -58,6 +85,31 @@ void EmitterManager::CreateBoxEmitter(const std::string& name, const Vector3& po
   // マップに追加
   emitterMap_[name] = emitter;
 
+}
+
+void EmitterManager::CreateBoxEmitter(BoxEmitterSettings settings)
+{
+  // 名前の重複チェック
+  if (emitterMap_.contains(settings.name)) {
+    Logger::Log("Warning: Emitter name '%s' already exists. Overwriting.", settings.name.c_str());
+    RemoveEmitter(settings.name);
+  }
+  // エミッター作成
+  std::shared_ptr<BoxEmitter> emitter = std::make_shared<BoxEmitter>(particleSystem_, settings.position, settings.size, settings.rotation, settings.count, settings.frequency);
+  // GPUParticleにエミッターを登録
+  particleSystem_->RegisterEmitter(emitter);
+  // マップに追加
+  emitterMap_[settings.name] = emitter;
+
+  auto it = emitterMap_.find(settings.name);
+  if (it != emitterMap_.end()) {
+    it->second->SetScaleRange(settings.scaleRangeX, settings.scaleRangeY);
+    it->second->SetVelRange(settings.velRangeX, settings.velRangeY, settings.velRangeZ);
+    it->second->SetLifeTimeRange(settings.lifeTimeRange);
+    it->second->SetColors(settings.startColor, settings.endColor);
+    it->second->SetActive(settings.isActive);
+    it->second->SetNormalize(settings.isNormalize);
+  }
 }
 
 void EmitterManager::CreateTriangleEmitter(const std::string& name, const Vector3& position, const Vector3& v1, const Vector3& v2, const Vector3& v3, uint32_t count, float frequency)
@@ -79,8 +131,32 @@ void EmitterManager::CreateTriangleEmitter(const std::string& name, const Vector
 
 }
 
+void EmitterManager::CreateTriangleEmitter(TriangleEmitterSettings settings)
+{
+  // 名前の重複チェック
+  if (emitterMap_.contains(settings.name)) {
+    Logger::Log("Warning: Emitter name '%s' already exists. Overwriting.", settings.name.c_str());
+    RemoveEmitter(settings.name);
+  }
+  // エミッター作成
+  std::shared_ptr<TriangleEmitter> emitter = std::make_shared<TriangleEmitter>(particleSystem_, settings.position, settings.v1, settings.v2, settings.v3, settings.count, settings.frequency);
+  // GPUParticleにエミッターを登録
+  particleSystem_->RegisterEmitter(emitter);
+  // マップに追加
+  emitterMap_[settings.name] = emitter;
+  auto it = emitterMap_.find(settings.name);
+  if (it != emitterMap_.end()) {
+    it->second->SetScaleRange(settings.scaleRangeX, settings.scaleRangeY);
+    it->second->SetVelRange(settings.velRangeX, settings.velRangeY, settings.velRangeZ);
+    it->second->SetLifeTimeRange(settings.lifeTimeRange);
+    it->second->SetColors(settings.startColor, settings.endColor);
+    it->second->SetActive(settings.isActive);
+    it->second->SetNormalize(settings.isNormalize);
+  }
+}
+
 void EmitterManager::UpdateSphereEmitter(const std::string& name, const Vector3& position, float radius,
-  uint32_t count, float frequency)
+                                         uint32_t count, float frequency)
 {
   auto it = emitterMap_.find(name);
 
@@ -98,6 +174,30 @@ void EmitterManager::UpdateSphereEmitter(const std::string& name, const Vector3&
 
   } else {
     Logger::Log("UpdateSphereEmitter: Emitter '%s' not found", name.c_str());
+  }
+}
+
+void EmitterManager::UpdateSphereEmitter(const SphereEmitterSettings& settings)
+{
+  auto it = emitterMap_.find(settings.name);
+  if (it != emitterMap_.end()) {
+    auto sphereEmitter = std::dynamic_pointer_cast<SphereEmitter>(it->second);
+    if (sphereEmitter) {
+      sphereEmitter->SetPosition(settings.position);
+      sphereEmitter->SetRadius(settings.radius);
+      sphereEmitter->SetParticleCount(settings.count);
+      sphereEmitter->SetFrequency(settings.frequency);
+      sphereEmitter->SetScaleRange(settings.scaleRangeX, settings.scaleRangeY);
+      sphereEmitter->SetVelRange(settings.velRangeX, settings.velRangeY, settings.velRangeZ);
+      sphereEmitter->SetLifeTimeRange(settings.lifeTimeRange);
+      sphereEmitter->SetColors(settings.startColor, settings.endColor);
+      sphereEmitter->SetActive(settings.isActive);
+      sphereEmitter->SetNormalize(settings.isNormalize);
+    } else {
+      Logger::Log("UpdateSphereEmitter: Emitter '%s' is not a SphereEmitter", settings.name.c_str());
+    }
+  } else {
+    Logger::Log("UpdateSphereEmitter: Emitter '%s' not found", settings.name.c_str());
   }
 }
 
@@ -123,6 +223,31 @@ void EmitterManager::UpdateBoxEmitter(const std::string& name, const Vector3& po
   }
 }
 
+void EmitterManager::UpdateBoxEmitter(const BoxEmitterSettings& settings)
+{
+  auto it = emitterMap_.find(settings.name);
+  if (it != emitterMap_.end()) {
+    auto boxEmitter = std::dynamic_pointer_cast<BoxEmitter>(it->second);
+    if (boxEmitter) {
+      boxEmitter->SetPosition(settings.position);
+      boxEmitter->SetSize(settings.size);
+      boxEmitter->SetRotation(settings.rotation);
+      boxEmitter->SetParticleCount(settings.count);
+      boxEmitter->SetFrequency(settings.frequency);
+      boxEmitter->SetScaleRange(settings.scaleRangeX, settings.scaleRangeY);
+      boxEmitter->SetVelRange(settings.velRangeX, settings.velRangeY, settings.velRangeZ);
+      boxEmitter->SetLifeTimeRange(settings.lifeTimeRange);
+      boxEmitter->SetColors(settings.startColor, settings.endColor);
+      boxEmitter->SetActive(settings.isActive);
+      boxEmitter->SetNormalize(settings.isNormalize);
+    } else {
+      Logger::Log("UpdateBoxEmitter: Emitter '%s' is not a BoxEmitter", settings.name.c_str());
+    }
+  } else {
+    Logger::Log("UpdateBoxEmitter: Emitter '%s' not found", settings.name.c_str());
+  }
+}
+
 void EmitterManager::UpdateTriangleEmitter(const std::string& name, const Vector3& position, const Vector3& v1, const Vector3& v2, const Vector3& v3, uint32_t count, float frequency)
 {
   auto it = emitterMap_.find(name);
@@ -141,6 +266,30 @@ void EmitterManager::UpdateTriangleEmitter(const std::string& name, const Vector
 
   } else {
     Logger::Log("UpdateTriangleEmitter: Emitter '%s' not found", name.c_str());
+  }
+}
+
+void EmitterManager::UpdateTriangleEmitter(const TriangleEmitterSettings& settings)
+{
+  auto it = emitterMap_.find(settings.name);
+  if (it != emitterMap_.end()) {
+    auto triangleEmitter = std::dynamic_pointer_cast<TriangleEmitter>(it->second);
+    if (triangleEmitter) {
+      triangleEmitter->SetPosition(settings.position);
+      triangleEmitter->SetVertices(settings.v1, settings.v2, settings.v3);
+      triangleEmitter->SetParticleCount(settings.count);
+      triangleEmitter->SetFrequency(settings.frequency);
+      triangleEmitter->SetScaleRange(settings.scaleRangeX, settings.scaleRangeY);
+      triangleEmitter->SetVelRange(settings.velRangeX, settings.velRangeY, settings.velRangeZ);
+      triangleEmitter->SetLifeTimeRange(settings.lifeTimeRange);
+      triangleEmitter->SetColors(settings.startColor, settings.endColor);
+      triangleEmitter->SetActive(settings.isActive);
+      triangleEmitter->SetNormalize(settings.isNormalize);
+    } else {
+      Logger::Log("UpdateTriangleEmitter: Emitter '%s' is not a TriangleEmitter", settings.name.c_str());
+    }
+  } else {
+    Logger::Log("UpdateTriangleEmitter: Emitter '%s' not found", settings.name.c_str());
   }
 }
 
@@ -201,11 +350,6 @@ void EmitterManager::UpdateTemporaryEmitters()
     Logger::Log("UpdateTemporaryEmitters: Removing expired emitter '%s'", name.c_str());
     RemoveEmitter(name);
   }
-}
-
-void EmitterManager::Update()
-{
-  UpdateTemporaryEmitters();
 }
 
 void EmitterManager::SetEmitterPosition(const std::string& name, const Vector3& position)

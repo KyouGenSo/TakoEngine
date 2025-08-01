@@ -21,38 +21,80 @@ struct EmitterGroup {
 
 class EmitterManager
 {
-public:
+public: // エミッター設定構造体
+  struct EmitterSettings
+  {
+    std::string name;
+    Vector3 position;
+    uint32_t count;
+    float frequency;
+    Vector2 scaleRangeX;
+    Vector2 scaleRangeY;
+    Vector2 velRangeX;
+    Vector2 velRangeY;
+    Vector2 velRangeZ;
+    Vector2 lifeTimeRange;
+    Vector4 startColor;
+    Vector4 endColor;
+    bool isActive;
+    bool isNormalize;
+  };
+
+  struct SphereEmitterSettings : EmitterSettings
+  {
+    float radius;
+  };
+
+  struct BoxEmitterSettings : EmitterSettings
+  {
+    Vector3 size;
+    Vector3 rotation; // 回転を表すベクトル（例: Euler角）
+  };
+
+  struct TriangleEmitterSettings : EmitterSettings
+  {
+    Vector3 v1;
+    Vector3 v2;
+    Vector3 v3;
+  };
+
+public: // メンバー関数
   EmitterManager(GPUParticle* particleSystem);
   ~EmitterManager();
 
   // 基本エミッター作成
   void CreateSphereEmitter(const std::string& name, const Vector3& position, float radius,
     uint32_t count, float frequency);
+  void CreateSphereEmitter(SphereEmitterSettings settings);
 
   void CreateBoxEmitter(const std::string& name, const Vector3& position, const Vector3& size,
     const Vector3& rotation, uint32_t count, float frequency);
+  void CreateBoxEmitter(BoxEmitterSettings settings);
 
   void CreateTriangleEmitter(const std::string& name, const Vector3& position,
     const Vector3& v1, const Vector3& v2, const Vector3& v3,
     uint32_t count, float frequency);
+  void CreateTriangleEmitter(TriangleEmitterSettings settings);
 
   // エミッターの更新
   void UpdateSphereEmitter(const std::string& name, const Vector3& position, float radius,
     uint32_t count = 0, float frequency = 0.0f);
+  void UpdateSphereEmitter(const SphereEmitterSettings& settings);
 
   void UpdateBoxEmitter(const std::string& name, const Vector3& position, const Vector3& size,
     const Vector3& rotation, uint32_t count = 0, float frequency = 0.0f);
+  void UpdateBoxEmitter(const BoxEmitterSettings& settings);
 
   void UpdateTriangleEmitter(const std::string& name, const Vector3& position,
     const Vector3& v1, const Vector3& v2, const Vector3& v3,
     uint32_t count = 0, float frequency = 0.0f);
-
+  void UpdateTriangleEmitter(const TriangleEmitterSettings& settings);
 
   // 一時的なエミッター作成
   void CreateTemporaryEmitterFrom(const std::string& sourceName, const std::string& newName, float lifeTime);
 
-  // 更新
-  void Update();
+  //　一時的なエミッターの更新
+  void UpdateTemporaryEmitters(); // Update関数内で呼び出す
 
   void SetEmitterPosition(const std::string& name, const Vector3& position);
   void SetEmitterScaleRange(const std::string& name, const Vector2& scaleRangeX, const Vector2& scaleRangeY);
@@ -84,8 +126,7 @@ public:
 
 private: // プライベートメンバー関数
 
-  // 一時的なエミッターの更新
-  void UpdateTemporaryEmitters(); // Update関数内で呼び出す
+
 
 private:
   GPUParticle* particleSystem_;
