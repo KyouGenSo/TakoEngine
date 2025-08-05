@@ -6,6 +6,7 @@
 #include "SkyBox.h"
 #include "BoneTracker.h"
 #include "CharacterEffectPresets.h"
+#include "SceneLoader.h"
 
 class GameScene : public BaseScene
 {
@@ -72,4 +73,8 @@ private: // メンバ変数
 
   // ボーントラッカー
   std::unique_ptr<BoneTracker> boneTracker_;
+
+  // SceneLoader関連
+  std::unique_ptr<SceneLoader> sceneLoader_;
+  std::unique_ptr<SceneLoader::LoadedScene> loadedScene_;
 };

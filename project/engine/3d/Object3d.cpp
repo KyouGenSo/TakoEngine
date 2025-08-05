@@ -133,11 +133,21 @@ void Object3d::DrawImGui()
 
 void Object3d::SetModel(const std::string& fileName)
 {
+  if (m_model_)
+  {
+    m_model_ = nullptr;
+  }
+
   m_model_ = ModelManager::GetInstance()->GetModel(fileName);
 }
 
 void Object3d::SetModel(const std::string& fileName, bool hasAnimation, bool hasSkeleton)
 {
+  if (m_model_)
+  {
+    m_model_ = nullptr;
+  }
+
   m_model_ = ModelManager::GetInstance()->GetModel(fileName, hasAnimation, hasSkeleton);
 }
 

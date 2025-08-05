@@ -153,6 +153,7 @@
     <ClCompile Include="engine\io\Input.cpp" />
     <ClCompile Include="engine\func\commonFunc\Logger.cpp" />
     <ClCompile Include="engine\3d\Light.cpp" />
+    <ClCompile Include="engine\io\SceneLoader.cpp" />
     <ClCompile Include="engine\time\FrameTimer.cpp" />
     <ClCompile Include="engine\func\mathFunc\Mat4x4Func.cpp" />
     <ClCompile Include="engine\3d\Model.cpp" />
@@ -202,6 +203,7 @@
     <ClInclude Include="engine\effect\Vignette.h" />
     <ClInclude Include="engine\effect\WhiteNoise.h" />
     <ClInclude Include="engine\io\GlobalVariables.h" />
+    <ClInclude Include="engine\io\SceneLoader.h" />
     <ClInclude Include="engine\math\AABB.h" />
     <ClInclude Include="engine\2d\DebugCamera.h" />
     <ClInclude Include="engine\2d\Draw2D.h" />

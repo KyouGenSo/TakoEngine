@@ -1,0 +1,115 @@
+{
+    "name": "scene",
+    "objects": [
+        {
+            "type": "MESH",
+            "name": "Cube_Cube.001",
+            "transform": {
+                "translation": [
+                    -4.514853477478027,
+                    0.0,
+                    0.9603627324104309
+                ],
+                "rotation": [
+                    0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "file_name": "axis.obj"
+        },
+        {
+            "type": "MESH",
+            "name": "teapot",
+            "transform": {
+                "translation": [
+                    0.0,
+                    0.0,
+                    1.262438416481018
+                ],
+                "rotation": [
+                    0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "file_name": "teapot.obj"
+        },
+        {
+            "type": "MESH",
+            "name": "Plane",
+            "transform": {
+                "translation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "rotation": [
+                    0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "disabled": false,
+            "file_name": "terrain.obj"
+        },
+        {
+            "type": "LIGHT",
+            "name": "Light",
+            "transform": {
+                "translation": [
+                    4.076245307922363,
+                    1.0054539442062378,
+                    5.903861999511719
+                ],
+                "rotation": [
+                    37.26104736328125,
+                    3.1637091636657715,
+                    106.93632507324219
+                ],
+                "scale": [
+                    1.0,
+                    0.9999999403953552,
+                    1.0
+                ]
+            }
+        },
+        {
+            "type": "CAMERA",
+            "name": "カメラ",
+            "transform": {
+                "translation": [
+                    0.0,
+                    -16.079999923706055,
+                    9.0
+                ],
+                "rotation": [
+                    60.54084396362305,
+                    -0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "disabled": false
+        }
+    ]
+}
