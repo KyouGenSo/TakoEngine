@@ -6,7 +6,6 @@
 #include "SkyBox.h"
 #include "BoneTracker.h"
 #include "CharacterEffectPresets.h"
-#include "SceneLoader.h"
 
 class GameScene : public BaseScene
 {
@@ -68,13 +67,9 @@ private: // メンバ変数
   Vector3 lightDirection_ = { .x = 0.0f, .y = -1.0f, .z = 0.0f };
   float lightIntensity_ = 1.0f;
 
-    // エミッター管理
+  // エミッター管理
   std::unique_ptr<EmitterManager> emitterManager_;
 
   // ボーントラッカー
   std::unique_ptr<BoneTracker> boneTracker_;
-
-  // SceneLoader関連
-  std::unique_ptr<SceneLoader> sceneLoader_;
-  std::unique_ptr<SceneLoader::LoadedScene> loadedScene_;
 };

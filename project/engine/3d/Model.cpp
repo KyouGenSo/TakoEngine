@@ -532,7 +532,7 @@ void Model::DrawImGui()
     }
 
     // 再生速度スライダー
-    ImGui::SliderFloat("Speed", &animationSpeed_, -10.0f, 10.0f, "%.2f");
+    ImGui::SliderFloat("Speed", &animationSpeed_, -10.0f, 100.0f, "%.2f");
     ImGui::SameLine();
     if (ImGui::Button("Reset Speed"))
     {
