@@ -109,6 +109,12 @@ struct Animation
     std::map<std::string, NodeAnimetion> nodeAnimations;
 };
 
+// アニメーション遷移関連構造体
+struct AnimationTransitionState {
+  std::map<std::string, QuatTransform> nodeTransforms;  // ノード用
+  std::map<std::string, QuatTransform> jointTransforms; // ジョイント用
+};
+
 // 骨データ
 struct Joint
 {

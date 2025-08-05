@@ -223,12 +223,6 @@ private: // プライベートメンバー関数
 
 private: // メンバ変数
 
-  // アニメーション遷移関連構造体
-  struct AnimationTransitionState {
-    std::map<std::string, QuatTransform> nodeTransforms;  // ノード用
-    std::map<std::string, QuatTransform> jointTransforms; // ジョイント用
-  };
-
   ModelBasic* m_modelBasic_;
   DX12Basic* m_dx12_;
 
