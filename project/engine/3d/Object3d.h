@@ -68,7 +68,6 @@ public: // メンバー関数
 
 	//-----------------------------------------Setter-----------------------------------------//
 	void SetModel(const std::string& fileName);
-  void SetModel(const std::string& fileName, bool hasAnimation, bool hasSkeleton);
 	void SetCamera(Camera** camera) { m_camera_ = camera; }
   void SetTransform(const Transform& transform) { transform_ = transform; }
 	void SetScale(const Vector3& scale) { transform_.scale = scale; }

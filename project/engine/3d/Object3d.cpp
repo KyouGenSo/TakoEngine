@@ -141,16 +141,6 @@ void Object3d::SetModel(const std::string& fileName)
   m_model_ = ModelManager::GetInstance()->GetModel(fileName);
 }
 
-void Object3d::SetModel(const std::string& fileName, bool hasAnimation, bool hasSkeleton)
-{
-  if (m_model_)
-  {
-    m_model_ = nullptr;
-  }
-
-  m_model_ = ModelManager::GetInstance()->GetModel(fileName, hasAnimation, hasSkeleton);
-}
-
 void Object3d::SetMaterialColor(const Vector4& color)
 {
   if (m_model_)

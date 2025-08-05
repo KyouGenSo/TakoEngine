@@ -23,22 +23,22 @@ bool Model::s_showSkeletonDebug = false;
 ///                 PUBLIC METHODS                ///
 ///-----------------------------------------------///
 
-void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName, bool hasAnimation, bool hasSkeleton)
+void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName)
 {
   m_modelBasic_ = modelBasic;
   m_dx12_ = m_modelBasic_->GetDX12Basic();
   directoryFolderName_ = m_modelBasic_->GetDirectoryFolderName();
   ModelFolderName_ = m_modelBasic_->GetModelFolderName();
   modelFileName_ = fileName;  // ファイル名を保存
-  hasAnimation_ = hasAnimation;
-  hasSkeleton_ = hasSkeleton;
+  hasAnimation_ = false;  // LoadModelFileで自動設定される
+  hasSkeleton_ = false;   // LoadModelFileで自動設定される
   paletteSrvIndex_ = 0;
   expandState_ = 0;
   hoveredJointIndex_ = -1;
   animationSpeed_ = 1.0f;
   isPaused_ = false;
 
-  // objファイルの読み込み
+  // objファイルの読み込み（この中でhasAnimation_とhasSkeleton_が自動設定される）
   LoadModelFile(directoryFolderName_ + "/" + ModelFolderName_, fileName);
 
   // アニメーションの読み込み
@@ -120,7 +120,8 @@ void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
     for (auto& mesh : meshes_) {
       mesh->Draw();
     }
-  } else
+  }
+  else
   {
     // マルチメッシュモデル（スキニングなし）の場合はノード階層で描画
     ProcessNodeHierarchy(rootNode_, Mat4x4::MakeIdentity(), world, viewProjection);
@@ -150,6 +151,18 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
     aiProcess_Triangulate
   );
   assert(scene->HasMeshes());
+
+  // アニメーションの有無を自動判定
+  hasAnimation_ = scene->HasAnimations();
+
+  // スケルトン（ボーン）の有無を自動判定
+  hasSkeleton_ = false;
+  for (uint32_t i = 0; i < scene->mNumMeshes; ++i) {
+    if (scene->mMeshes[i]->mNumBones > 0) {
+      hasSkeleton_ = true;
+      break;
+    }
+  }
 
   // ルートノードの読み込み
   rootNode_ = ReadNode(scene->mRootNode);

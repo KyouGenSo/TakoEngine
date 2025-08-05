@@ -46,7 +46,7 @@ void GameScene::Initialize()
 
   characterModel_ = new Object3d();
   characterModel_->Initialize();
-  characterModel_->SetModel("BrainStem2.gltf", true, true);
+  characterModel_->SetModel("BrainStem2.gltf");
   characterTransform_.translate = { .x = -1.0f, .y = 6.7f, .z = -24.0f };
   characterTransform_.scale = { .x = 1.0f, .y = 1.0f, .z = 1.0f };
   characterTransform_.rotate = { .x = 0.0f, .y = DirectX::XMConvertToRadians(180.0f), .z = 0.0f };
@@ -55,7 +55,7 @@ void GameScene::Initialize()
 
   characterModel2_ = new Object3d();
   characterModel2_->Initialize();
-  characterModel2_->SetModel("sneakwalk.gltf", true, true);
+  characterModel2_->SetModel("AnimatedCube.gltf");
   characterTransform2_.translate = { .x = 1.0f, .y = 6.7f, .z = -24.0f };
   characterTransform2_.scale = { .x = 1.0f, .y = 1.0f, .z = 1.0f };
   characterTransform2_.rotate = { .x = 0.0f, .y = DirectX::XMConvertToRadians(180.0f), .z = 0.0f };

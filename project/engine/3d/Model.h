@@ -20,7 +20,7 @@ public: // メンバー関数
   /// <summary>
   /// 初期化
   /// </summary>
-  void Initialize(ModelBasic* modelBasic, const std::string& fileName, bool hasAnimation, bool hasSkeleton);
+  void Initialize(ModelBasic* modelBasic, const std::string& fileName);
 
   /// <summary>
   /// 終了処理

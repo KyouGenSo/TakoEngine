@@ -47,13 +47,11 @@ public: // メンバー関数
 	/// モデルの読み込む
 	///	</summary>
 	void LoadModel(const std::string& fileName);
-	void LoadModel(const std::string& fileName, bool hasAnimation, bool hasSkeleton);
 
   /// <summary>
   /// モデルの検索
   ///	</summary>
   Model* GetModel(const std::string& fileName);
-  Model* GetModel(const std::string& fileName, bool hasAnimation, bool hasSkeleton);
 
 	//-----------------------------------------Getter-----------------------------------------//
 	ModelBasic* GetModelBasic() { return pModelBasic_; }

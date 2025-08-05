@@ -45,11 +45,6 @@ void ModelManager::Finalize()
 
 void ModelManager::LoadModel(const std::string& fileName)
 {
-  LoadModel(fileName, false, false);
-}
-
-void ModelManager::LoadModel(const std::string& fileName, bool hasAnimation, bool hasSkeleton)
-{
   // すでにロード済みのファイル名をチェック
 #ifdef _DEBUG
   if (models_.contains(fileName))
@@ -61,18 +56,13 @@ void ModelManager::LoadModel(const std::string& fileName, bool hasAnimation, boo
 
   // 新しいModelインスタンスを作成
   std::unique_ptr<Model> newModel = std::make_unique<Model>();
-  newModel->Initialize(pModelBasic_, fileName, hasAnimation, hasSkeleton);
+  newModel->Initialize(pModelBasic_, fileName);
 
   models_.insert(std::make_pair(fileName, std::move(newModel)));
 }
 
 
 Model* ModelManager::GetModel(const std::string& fileName)
-{
-  return GetModel(fileName, false, false);
-}
-
-Model* ModelManager::GetModel(const std::string& fileName, bool hasAnimation, bool hasSkeleton)
 {
   if (models_.contains(fileName))
   {
@@ -82,7 +72,7 @@ Model* ModelManager::GetModel(const std::string& fileName, bool hasAnimation, bo
 
   // 新しいModelインスタンスを作成
   std::unique_ptr<Model> newModel = std::make_unique<Model>();
-  newModel->Initialize(pModelBasic_, fileName, hasAnimation, hasSkeleton);
+  newModel->Initialize(pModelBasic_, fileName);
 
   // モデルデータの登録
   Model* modelPtr = newModel.get();
