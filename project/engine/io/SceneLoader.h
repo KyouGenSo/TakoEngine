@@ -82,7 +82,6 @@ public: //　メンバー関数
     secneFolderName_ = scenefolderName;
   }
 
-
 private:
   std::string directoryFolderName_;
 
