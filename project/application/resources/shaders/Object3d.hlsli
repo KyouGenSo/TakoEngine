@@ -8,9 +8,9 @@ struct VertexShaderOutput
 };
 
 // シャドウマップ用定数バッファ
-cbuffer ShadowConstants : register(b4)
+struct ShadowConstants
 {
-    matrix lightViewProj;    // ライトビュープロジェクション行列
+    float4x4 lightViewProj; // ライトビュープロジェクション行列
     float shadowBias;        // シャドウバイアス
     int enableShadow;        // シャドウの有効/無効
     float2 shadowMapSize;    // シャドウマップのサイズ（PCF用）

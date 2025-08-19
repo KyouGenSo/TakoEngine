@@ -884,8 +884,14 @@ void Model::ExecuteSkinning()
     mesh->SkinningCompute();
   }
 
-  // 共通レンダリング設定に戻す
-  Object3dBasic::GetInstance()->SetCommonRenderSetting();
+  // シャドウマップレンダリング中は設定を維持
+  if (!Object3dBasic::GetInstance()->IsRenderingShadowMap()) {
+    // 通常レンダリング時は共通レンダリング設定に戻す
+    Object3dBasic::GetInstance()->SetCommonRenderSetting();
+  } else {
+    // シャドウマップレンダリング中はシャドウ設定を維持
+    Object3dBasic::GetInstance()->SetShadowRenderSetting();
+  }
 }
 
 void Model::InitializeMatrixPalette() {

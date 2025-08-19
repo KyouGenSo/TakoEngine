@@ -2,6 +2,7 @@
 #include "DX12Basic.h"
 #include "Mat4x4Func.h"
 #include "ModelBasic.h"
+#include "Object3dBasic.h"
 #include "SrvManager.h"
 #include "TextureManager.h"
 
@@ -47,18 +48,20 @@ void Mesh::Draw()
   dx12_->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
 
   // マテリアルデータを設定
-  dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource_->GetGPUVirtualAddress());
+  if (!Object3dBasic::GetInstance()->IsRenderingShadowMap()) {
+    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource_->GetGPUVirtualAddress());
 
-  // テクスチャを設定
-  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, textureData_.textureIndex);
+    // テクスチャを設定
+    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, textureData_.textureIndex);
 
-  // 環境マップを使用する場合の設定
-  if (materialData_->enableEnvMap && envTextureIndex_ != 0) {
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(8, envTextureIndex_);
-  } else {
-    // 環境マップが無効またはテクスチャが設定されていない場合は、デフォルトテクスチャを設定
-    uint32_t defaultTextureIndex = TextureManager::GetInstance()->GetSRVIndex("white.png");
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(8, defaultTextureIndex);
+    // 環境マップを使用する場合の設定
+    if (materialData_->enableEnvMap && envTextureIndex_ != 0) {
+      SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(8, envTextureIndex_);
+    } else {
+      // 環境マップが無効またはテクスチャが設定されていない場合は、デフォルトテクスチャを設定
+      uint32_t defaultTextureIndex = TextureManager::GetInstance()->GetSRVIndex("white.png");
+      SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(8, defaultTextureIndex);
+    }
   }
 
   // 描画
@@ -77,23 +80,28 @@ void Mesh::DrawWithCurrentTransform()
   // インデックスバッファビューを設定
   dx12_->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
 
-  // マテリアルデータを設定
-  dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource_->GetGPUVirtualAddress());
-
-  // 座標変換行列データを設定
-  dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationResource_->GetGPUVirtualAddress());
-
-  // テクスチャを設定
-  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, textureData_.textureIndex);
-
-  // 環境マップテクスチャを設定
-  if (materialData_->enableEnvMap && envTextureIndex_ != 0) {
-    // 環境マップが有効で、テクスチャが設定されている場合
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(8, envTextureIndex_);
+  if (Object3dBasic::GetInstance()->IsRenderingShadowMap()) {
+    // シャドウマップレンダリング時は座標変換行列のみ設定（パラメータ0）
+    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, transformationResource_->GetGPUVirtualAddress());
   } else {
-    // 環境マップが無効またはテクスチャが設定されていない場合は、デフォルトテクスチャを設定
-    uint32_t defaultTextureIndex = TextureManager::GetInstance()->GetSRVIndex("white.png");
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(8, defaultTextureIndex);
+    // マテリアルデータを設定
+    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource_->GetGPUVirtualAddress());
+
+    // 座標変換行列データを設定
+    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationResource_->GetGPUVirtualAddress());
+
+    // テクスチャを設定
+    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, textureData_.textureIndex);
+
+    // 環境マップテクスチャを設定
+    if (materialData_->enableEnvMap && envTextureIndex_ != 0) {
+      // 環境マップが有効で、テクスチャが設定されている場合
+      SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(8, envTextureIndex_);
+    } else {
+      // 環境マップが無効またはテクスチャが設定されていない場合は、デフォルトテクスチャを設定
+      uint32_t defaultTextureIndex = TextureManager::GetInstance()->GetSRVIndex("white.png");
+      SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(8, defaultTextureIndex);
+    }
   }
 
   // 描画

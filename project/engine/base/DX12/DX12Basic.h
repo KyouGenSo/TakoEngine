@@ -11,6 +11,7 @@
 #include<dxcapi.h>
 #include "DirectXTex.h"
 #include "DirectXTex.inl"
+#include <unordered_map>
 
 #include"Vector4.h"
 
@@ -106,6 +107,21 @@ public: // メンバー関数
   /// トランジションバリアの設定
   /// </summary>
   void TransitionResourceState(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter, ID3D12Resource* resource);
+  
+  /// <summary>
+  /// リソース状態追跡付きバリア遷移
+  /// </summary>
+  void TransitionResourceWithTracking(ID3D12Resource* resource, D3D12_RESOURCE_STATES newState);
+  
+  /// <summary>
+  /// 現在のリソース状態を取得
+  /// </summary>
+  D3D12_RESOURCE_STATES GetResourceState(ID3D12Resource* resource) const;
+  
+  /// <summary>
+  /// リソースの初期状態を設定（バリア遷移なし）
+  /// </summary>
+  void SetInitialResourceState(ID3D12Resource* resource, D3D12_RESOURCE_STATES initialState);
 
   /// <summary>
   /// UAVリソースバリアの設定
@@ -306,6 +322,9 @@ private: // メンバ変数
 
   // RTVハンドルの要素数
   static const UINT kRtvHandleCount = 2;
+  
+  // リソース状態追跡用マップ
+  mutable std::unordered_map<ID3D12Resource*, D3D12_RESOURCE_STATES> resourceStates_;
 
   // ウィンドウクラスポインター
   WinApp* winApp_ = nullptr;

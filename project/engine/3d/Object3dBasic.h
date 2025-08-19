@@ -108,6 +108,11 @@ public: // メンバー関数
 	void EnableShadow(bool enable) { shadowEnabled_ = enable; }
 	void SetAutoUpdatePosition(bool enable) { light_->SetAutoUpdatePosition(enable); }
 	void SetSceneCenter(const Vector3& center) { light_->SetSceneCenter(center); }
+	
+	/// <summary>
+	/// シャドウマップレンダリング中かどうかを取得
+	/// </summary>
+	bool IsRenderingShadowMap() const { return isRenderingShadowMap_; }
 
 private: // プライベートメンバー関数
 
@@ -115,6 +120,11 @@ private: // プライベートメンバー関数
 	/// ルートシグネチャの作成
 	/// 	/// </summary>
 	void CreateRootSignature();
+	
+	/// <summary>
+	/// シャドウマップ用ルートシグネチャの作成
+	/// </summary>
+	void CreateShadowRootSignature();
 
 	///<summary>
 	/// パイプラインステートの生成
@@ -145,6 +155,7 @@ private: // メンバー変数
 
 	// ルートシグネチャ
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> shadowRootSignature_;  // シャドウマップ用
 
 	// パイプラインステート
   Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;
@@ -169,4 +180,7 @@ private: // メンバー変数
   D3D12_CPU_DESCRIPTOR_HANDLE savedRTVHandle_;
   D3D12_CPU_DESCRIPTOR_HANDLE savedDSVHandle_;
   bool hasSavedRenderTargets_ = false;
+  
+  // シャドウマップレンダリング中フラグ
+  bool isRenderingShadowMap_ = false;
 };

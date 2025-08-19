@@ -47,13 +47,17 @@ void ShadowMap::Finalize()
 
 void ShadowMap::BeginShadowMapRender()
 {
+#ifdef _DEBUG
+  OutputDebugStringA("ShadowMap::BeginShadowMapRender() - Starting shadow map render pass\n");
+#endif
+
   // コマンドリストの取得
   ID3D12GraphicsCommandList* commandList = dx12_->GetCommandList();
 
-  dx12_->TransitionResourceState(
-    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-    D3D12_RESOURCE_STATE_DEPTH_WRITE,
-    shadowMapResource_.Get()
+  // リソースバリアの設定（現在の状態から DEPTH_WRITE へ）
+  dx12_->TransitionResourceWithTracking(
+    shadowMapResource_.Get(),
+    D3D12_RESOURCE_STATE_DEPTH_WRITE
   );
 
   // レンダーターゲットをnullに設定（深度のみ）
@@ -65,16 +69,28 @@ void ShadowMap::BeginShadowMapRender()
   // ビューポートとシザー矩形を設定
   commandList->RSSetViewports(1, &viewport_);
   commandList->RSSetScissorRects(1, &scissorRect_);
+  
+  // 初回フレームフラグをクリア
+  if (isFirstFrame_) {
+    isFirstFrame_ = false;
+  }
 }
 
 void ShadowMap::EndShadowMapRender()
 {
-  // 必ず DEPTH_WRITE -> PIXEL_SHADER_RESOURCE に遷移
-  dx12_->TransitionResourceState(
-    D3D12_RESOURCE_STATE_DEPTH_WRITE,
-    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-    shadowMapResource_.Get()
+#ifdef _DEBUG
+  OutputDebugStringA("ShadowMap::EndShadowMapRender() - Ending shadow map render pass\n");
+#endif
+
+  // DEPTH_WRITE -> PIXEL_SHADER_RESOURCE に遷移
+  dx12_->TransitionResourceWithTracking(
+    shadowMapResource_.Get(),
+    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
   );
+  
+#ifdef _DEBUG
+  OutputDebugStringA("ShadowMap::EndShadowMapRender() - Resource transitioned to PIXEL_SHADER_RESOURCE\n");
+#endif
 }
 
 void ShadowMap::SetLightViewProjectionMatrix(const Matrix4x4& lightViewProj)
@@ -104,7 +120,7 @@ void ShadowMap::CreateShadowMapResource()
   resourceDesc.Width = SHADOW_MAP_SIZE;
   resourceDesc.Height = SHADOW_MAP_SIZE;
   resourceDesc.DepthOrArraySize = 1;
-  resourceDesc.MipLevels = 1;s
+  resourceDesc.MipLevels = 1;
   resourceDesc.Format = DXGI_FORMAT_R32_TYPELESS;
   resourceDesc.SampleDesc.Count = 1;
   resourceDesc.SampleDesc.Quality = 0;
@@ -125,11 +141,18 @@ void ShadowMap::CreateShadowMapResource()
     &heapProps,
     D3D12_HEAP_FLAG_NONE,
     &resourceDesc,
-    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,  // 初期状態をPIXEL_SHADER_RESOURCEに設定
     &clearValue,
     IID_PPV_ARGS(&shadowMapResource_));
 
   assert(SUCCEEDED(hr));
+  
+  // 初期状態をDX12Basicの状態追跡マップに登録
+  // これにより、最初のBeginShadowMapRenderで正しい状態遷移が行われる
+  dx12_->SetInitialResourceState(
+    shadowMapResource_.Get(),
+    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+  );
 }
 
 void ShadowMap::CreateDepthStencilView()

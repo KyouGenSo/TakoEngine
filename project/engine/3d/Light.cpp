@@ -193,7 +193,7 @@ void Light::UpdateDirectionalLightShadowMatrices()
 {
 	// デフォルトの影距離とサイズ設定
 	if (directionalLightData_->shadowDistance <= 0.0f) {
-		directionalLightData_->shadowDistance = 30.0f;  // デフォルト値
+		directionalLightData_->shadowDistance = 35.0f;  // デフォルト値
 	}
 	
 	float shadowSize = directionalLightData_->shadowDistance;

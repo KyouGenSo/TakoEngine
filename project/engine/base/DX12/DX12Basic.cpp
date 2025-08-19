@@ -921,6 +921,62 @@ void DX12Basic::TransitionResourceState(D3D12_RESOURCE_STATES stateBefore, D3D12
 	barrier.Transition.StateBefore = stateBefore;
 	barrier.Transition.StateAfter = stateAfter;
 	commandList_->ResourceBarrier(1, &barrier);
+	
+	// リソース状態を更新
+	resourceStates_[resource] = stateAfter;
+}
+
+void DX12Basic::TransitionResourceWithTracking(ID3D12Resource* resource, D3D12_RESOURCE_STATES newState)
+{
+	// 現在の状態を取得（未追跡の場合はCOMMONと仮定）
+	D3D12_RESOURCE_STATES currentState = D3D12_RESOURCE_STATE_COMMON;
+	auto it = resourceStates_.find(resource);
+	if (it != resourceStates_.end()) {
+		currentState = it->second;
+	}
+	
+	// 状態が同じなら何もしない
+	if (currentState == newState) {
+#ifdef _DEBUG
+		OutputDebugStringA("TransitionResourceWithTracking: State is already correct, skipping transition\n");
+#endif
+		return;
+	}
+	
+#ifdef _DEBUG
+	char debugMsg[256];
+	sprintf_s(debugMsg, "TransitionResourceWithTracking: Resource %p: 0x%X -> 0x%X\n", 
+	          resource, currentState, newState);
+	OutputDebugStringA(debugMsg);
+#endif
+	
+	// バリア遷移を実行
+	D3D12_RESOURCE_BARRIER barrier{};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	barrier.Transition.pResource = resource;
+	barrier.Transition.StateBefore = currentState;
+	barrier.Transition.StateAfter = newState;
+	commandList_->ResourceBarrier(1, &barrier);
+	
+	// 新しい状態を記録
+	resourceStates_[resource] = newState;
+}
+
+D3D12_RESOURCE_STATES DX12Basic::GetResourceState(ID3D12Resource* resource) const
+{
+	auto it = resourceStates_.find(resource);
+	if (it != resourceStates_.end()) {
+		return it->second;
+	}
+	// 未追跡の場合はCOMMONを返す
+	return D3D12_RESOURCE_STATE_COMMON;
+}
+
+void DX12Basic::SetInitialResourceState(ID3D12Resource* resource, D3D12_RESOURCE_STATES initialState)
+{
+	// バリア遷移なしで、状態のみを記録
+	resourceStates_[resource] = initialState;
 }
 
 void DX12Basic::SetUAVBarrier(ID3D12Resource* resource)

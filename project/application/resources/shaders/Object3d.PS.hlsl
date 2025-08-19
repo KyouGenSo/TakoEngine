@@ -60,6 +60,7 @@ struct PixelShaderOutput
 ConstantBuffer<Material> gMaterial : register(b0);
 ConstantBuffer<DirectionalLight> gDirectionalLight : register(b1);
 ConstantBuffer<Camera> gCamera : register(b2);
+ConstantBuffer<ShadowConstants> gShadowConstants : register(b4);
 
 Texture2D<float4> gTexture : register(t0);
 SamplerState gSampler : register(s0);
@@ -90,11 +91,11 @@ float CalculateShadowFactor(float4 lightSpacePos)
     }
     
     // バイアスを適用
-    float currentDepth = projCoords.z - shadowBias;
+    float currentDepth = projCoords.z - gShadowConstants.shadowBias;
     
     // PCF（Percentage Closer Filtering）3x3
     float shadowFactor = 0.0;
-    float2 texelSize = 1.0 / shadowMapSize;
+    float2 texelSize = 1.0 / gShadowConstants.shadowMapSize;
     
     [unroll]
     for (int x = -1; x <= 1; ++x) {
@@ -118,7 +119,7 @@ PixelShaderOutput main(VertexShaderOutput input)
     
     // シャドウファクターを計算
     float shadowFactor = 1.0; // デフォルトでは影なし
-    if (enableShadow != 0) {
+    if (gShadowConstants.enableShadow != 0) {
         shadowFactor = CalculateShadowFactor(input.lightSpacePos);
     }
     

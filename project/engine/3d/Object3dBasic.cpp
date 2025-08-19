@@ -27,6 +27,7 @@ void Object3dBasic::Initialize(DX12Basic* dx12)
 	isDebug_ = false;
 
 	CreatePSO();
+	CreateShadowRootSignature();  // シャドウ用ルートシグネチャの作成
 	CreateShadowPSO();
 
 	// ライトの生成と初期化
@@ -111,9 +112,18 @@ void Object3dBasic::SetCommonRenderSetting()
 	}
 	
 	// シャドウマップの設定（ルートパラメータ10、テクスチャt4）
-	if (shadowMap_) {
+	// シャドウマップレンダリング中はSRV設定をスキップ
+	if (!isRenderingShadowMap_ && shadowMap_) {
+#ifdef _DEBUG
+		OutputDebugStringA("Object3dBasic::SetCommonRenderSetting() - Setting shadow map as shader resource\n");
+#endif
 		SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(10, shadowMap_->GetSrvIndex());
 	}
+#ifdef _DEBUG
+	else if (isRenderingShadowMap_) {
+		OutputDebugStringA("Object3dBasic::SetCommonRenderSetting() - Skipping shadow map SRV (rendering shadow map)\n");
+	}
+#endif
 }
 
 void Object3dBasic::SetDirectionalLight(const Vector3& direction, const Vector4& color, int32_t lightType, float intensity)
@@ -281,6 +291,57 @@ void Object3dBasic::CreateRootSignature()
 
 }
 
+void Object3dBasic::CreateShadowRootSignature()
+{
+	HRESULT hr;
+
+	// shadowRootSignatureの生成
+	D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
+	descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+	// Samplerの設定（シャドウマップ生成時は不要だが、最小限の設定）
+	D3D12_STATIC_SAMPLER_DESC samplerDesc[1]{};
+	samplerDesc[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+	samplerDesc[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	samplerDesc[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	samplerDesc[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	samplerDesc[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+	samplerDesc[0].MaxLOD = D3D12_FLOAT32_MAX;
+	samplerDesc[0].ShaderRegister = 0;
+	samplerDesc[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	descriptionRootSignature.pStaticSamplers = samplerDesc;
+	descriptionRootSignature.NumStaticSamplers = _countof(samplerDesc);
+
+	// RootParameterの設定（シャドウマップ生成に必要な最小限のパラメータ）
+	D3D12_ROOT_PARAMETER rootParameters[2] = {};
+
+	// Parameter 0: TransformationMatrix (b0)
+	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+	rootParameters[0].Descriptor.ShaderRegister = 0;
+
+	// Parameter 1: ShadowConstants (b4)
+	rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+	rootParameters[1].Descriptor.ShaderRegister = 4;
+
+	descriptionRootSignature.pParameters = rootParameters;
+	descriptionRootSignature.NumParameters = _countof(rootParameters);
+
+	Microsoft::WRL::ComPtr<ID3DBlob> signatureBlob = nullptr;
+	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
+
+	hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
+	if (FAILED(hr))
+	{
+		Logger::Log(static_cast<char*>(errorBlob->GetBufferPointer()));
+		assert(false);
+	}
+
+	hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(shadowRootSignature_.GetAddressOf()));
+	assert(SUCCEEDED(hr));
+}
+
 void Object3dBasic::CreatePSO()
 {
 	HRESULT hr;
@@ -373,21 +434,12 @@ void Object3dBasic::CreateShadowPSO()
 	HRESULT hr;
 	
 	// InputLayout（通常のObject3dと同じ）
-	D3D12_INPUT_ELEMENT_DESC inputElementDescs[3] = {};
+	D3D12_INPUT_ELEMENT_DESC inputElementDescs[1] = {};
 	inputElementDescs[0].SemanticName = "POSITION";
 	inputElementDescs[0].SemanticIndex = 0;
 	inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
-	inputElementDescs[1].SemanticName = "TEXCOORD";
-	inputElementDescs[1].SemanticIndex = 0;
-	inputElementDescs[1].Format = DXGI_FORMAT_R32G32_FLOAT;
-	inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-
-	inputElementDescs[2].SemanticName = "NORMAL";
-	inputElementDescs[2].SemanticIndex = 0;
-	inputElementDescs[2].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-	inputElementDescs[2].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
 	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
 	inputLayoutDesc.pInputElementDescs = inputElementDescs;
@@ -418,7 +470,7 @@ void Object3dBasic::CreateShadowPSO()
 
 	// シャドウPSOの生成
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
-	graphicsPipelineStateDesc.pRootSignature = rootSignature_.Get(); // 同じルートシグネチャを使用
+	graphicsPipelineStateDesc.pRootSignature = shadowRootSignature_.Get(); // シャドウ用ルートシグネチャを使用
 	graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
 	graphicsPipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() };
 	graphicsPipelineStateDesc.PS = { nullptr, 0 }; // ピクセルシェーダーなし
@@ -438,8 +490,8 @@ void Object3dBasic::CreateShadowPSO()
 
 void Object3dBasic::SetShadowRenderSetting()
 {
-	// ルートシグネチャの設定
-	m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
+	// シャドウ用ルートシグネチャの設定
+	m_dx12_->GetCommandList()->SetGraphicsRootSignature(shadowRootSignature_.Get());
 	
 	// シャドウ用パイプラインステートの設定
 	m_dx12_->GetCommandList()->SetPipelineState(shadowPipelineState_.Get());
@@ -447,15 +499,16 @@ void Object3dBasic::SetShadowRenderSetting()
 	// トポロジの設定
 	m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	
-	// シャドウ定数バッファの設定（シャドウマップ生成時もb4を使用）
-	if (shadowEnabled_ && shadowConstantBuffer_) {
-		m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(9, shadowConstantBuffer_->GetGPUVirtualAddress());
-	}
+	// シャドウ定数バッファの設定（パラメータ1、レジスタb4）
+	m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, shadowConstantBuffer_->GetGPUVirtualAddress());
 }
 
 void Object3dBasic::BeginShadowMapRender()
 {
 	if (!shadowEnabled_ || !shadowMap_) return;
+	
+	// シャドウマップレンダリング中フラグを設定
+	isRenderingShadowMap_ = true;
 	
 	// 現在のレンダーターゲットとデプスバッファを保存
 	savedRTVHandle_ = PostEffectManager::GetInstance()->GetCurrentRTVHandle();
@@ -472,9 +525,15 @@ void Object3dBasic::EndShadowMapRender()
 	
 	shadowMap_->EndShadowMapRender();
 	
+	// シャドウマップレンダリング中フラグをクリア
+	isRenderingShadowMap_ = false;
+	
 	// 元のレンダーターゲットとデプスバッファを復元
 	if (hasSavedRenderTargets_) {
 		m_dx12_->GetCommandList()->OMSetRenderTargets(1, &savedRTVHandle_, FALSE, &savedDSVHandle_);
 		hasSavedRenderTargets_ = false;
 	}
+	
+	// ビューポートとシザー矩形を元に戻す
+	m_dx12_->SetViewPort();
 }

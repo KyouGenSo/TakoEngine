@@ -110,11 +110,17 @@ void Object3d::Update()
 
 void Object3d::Draw()
 {
-	// 座標変換行列CBufferの場所を設定
-	Object3dBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatResource_->GetGPUVirtualAddress());
-
-	// シェーダー用カメラデータの場所を設定
-	Object3dBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(4, cameraForGPUResource_->GetGPUVirtualAddress());
+	// シャドウマップレンダリング中は異なるルートパラメータインデックスを使用
+	if (Object3dBasic::GetInstance()->IsRenderingShadowMap()) {
+		// シャドウ用ルートシグネチャのインデックス（パラメータ0）
+		Object3dBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(0, transformationMatResource_->GetGPUVirtualAddress());
+		// カメラデータは不要（シャドウマップ生成時は使用しない）
+	} else {
+		// 通常のルートシグネチャのインデックス
+		Object3dBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatResource_->GetGPUVirtualAddress());
+		// シェーダー用カメラデータの場所を設定
+		Object3dBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(4, cameraForGPUResource_->GetGPUVirtualAddress());
+	}
 
 	// モデルの描画
 	if (m_model_)
