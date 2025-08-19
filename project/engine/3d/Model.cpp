@@ -97,6 +97,11 @@ void Model::Update()
 
   // スケルトンアニメーションの場合
   if (hasSkeleton_ && hasAnimation_) {
+    // すべてのメッシュのスキニング状態をリセット
+    for (auto& mesh : meshes_)
+    {
+      mesh->ResetSkinningState();
+    }
     // スキニング処理の準備（ボーン行列の更新など）
     PrepareSkinning();
   }

@@ -219,6 +219,9 @@
     <ClCompile Include="engine\io\SceneLoader.cpp">
       <Filter>io</Filter>
     </ClCompile>
+    <ClCompile Include="engine\3d\ShadowMap.cpp">
+      <Filter>3d</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\math\Matrix4x4.h">
@@ -436,6 +439,9 @@
     </ClInclude>
     <ClInclude Include="engine\io\SceneLoader.h">
       <Filter>io</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\ShadowMap.h">
+      <Filter>3d</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

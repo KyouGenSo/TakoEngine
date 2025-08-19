@@ -23,5 +23,10 @@ VertexShaderOutput main( VertexShaderInput input )
     output.texcoord = input.texcoord;
     output.normal = normalize(mul(input.normal, (float3x3) gTransformationMatrix.WorldIT));
     output.worldPos = mul( input.pos, gTransformationMatrix.World ).xyz;
+    
+    // ライト空間での位置を計算
+    float4 worldPos = mul(input.pos, gTransformationMatrix.World);
+    output.lightSpacePos = mul(worldPos, lightViewProj);
+    
     return output;
 }

@@ -3,6 +3,8 @@
 #include "SrvManager.h"
 #include <numbers>
 
+#include "Mat4x4Func.h"
+
 void Light::Initialize(DX12Basic* dx12)
 {
 	m_dx12_ = dx12;
@@ -40,6 +42,23 @@ void Light::SetDirectionalLight(const Vector3& direction, const Vector4& color, 
 	directionalLightData_->color = color;
 	directionalLightData_->lightType = lightType;
 	directionalLightData_->intensity = intensity;
+	
+	// 自動更新が有効な場合、位置も更新
+	if (autoUpdatePosition_) {
+		// 方向が設定されたので、位置を自動計算するためのトリガーをリセット
+		directionalLightData_->position = sceneCenter_;
+	}
+}
+
+void Light::SetDirectionalLightDirection(const Vector3& direction)
+{
+	directionalLightData_->direction = direction;
+	
+	// 自動更新が有効な場合、位置も更新
+	if (autoUpdatePosition_) {
+		// 位置を自動計算するためのトリガーをリセット
+		directionalLightData_->position = sceneCenter_;
+	}
 }
 
 void Light::SetPointLight(const Vector3& position, const Vector4& color, float intensity, float radius, float decay, bool enable, int index)
@@ -103,6 +122,13 @@ void Light::CreateDirectionalLightData()
 	directionalLightData_->lightType = 1;                          // ライトのタイプ 0:Lambert 1:Half-Lambert
 
 	directionalLightData_->intensity = 1.0f;                       // 輝度
+	
+	// シャドウマップ用の初期値設定
+	directionalLightData_->position = Vector3(0.0f, 0.0f, 0.0f);   // 位置（0,0,0は自動計算のトリガー）
+	directionalLightData_->shadowDistance = 30.0f;                 // デフォルトのシャドウ範囲
+	directionalLightData_->viewMatrix = Mat4x4::MakeIdentity();
+	directionalLightData_->projMatrix = Mat4x4::MakeIdentity();
+	directionalLightData_->viewProjMatrix = Mat4x4::MakeIdentity();
 }
 
 void Light::CreatePointLightData()
@@ -161,4 +187,62 @@ void Light::CreateLightConstants()
 	lightConstantsData_->numPointLights = 0;
 
 	lightConstantsData_->numSpotLights = 0;
+}
+
+void Light::UpdateDirectionalLightShadowMatrices()
+{
+	// デフォルトの影距離とサイズ設定
+	if (directionalLightData_->shadowDistance <= 0.0f) {
+		directionalLightData_->shadowDistance = 30.0f;  // デフォルト値
+	}
+	
+	float shadowSize = directionalLightData_->shadowDistance;
+	Vector3 lightDirection = directionalLightData_->direction;
+	lightDirection = lightDirection.Normalize();
+	
+	// 自動位置計算：位置が(0,0,0)に近い場合は自動計算モード
+	Vector3 lightPosition;
+	if (directionalLightData_->position.Length() < 0.001f || autoUpdatePosition_) {
+		// シーン中心から、ライト方向の逆方向にshadowDistance分離れた位置を設定
+		lightPosition = sceneCenter_ - lightDirection * shadowSize;
+		// 計算した位置を保存（手動設定との整合性のため）
+		if (autoUpdatePosition_) {
+			directionalLightData_->position = sceneCenter_;  // シーン中心を基準として保存
+		}
+	} else {
+		// 手動で設定された位置を使用
+		lightPosition = directionalLightData_->position - lightDirection * shadowSize;
+	}
+	
+	// TakoEngineの方式でビュー行列を生成
+	// ライトの Transform を作成（ライト位置から原点を向く）
+	Vector3 scale = {1.0f, 1.0f, 1.0f};
+	Vector3 rotate = {0.0f, 0.0f, 0.0f};
+	
+	// Y軸まわりの回転角度を計算（XZ平面での方向から）
+	rotate.y = std::atan2f(lightDirection.x, lightDirection.z);
+	
+	// X軸まわりの回転角度を計算（ピッチ角）
+	float horizontalLength = std::sqrtf(lightDirection.x * lightDirection.x + lightDirection.z * lightDirection.z);
+	rotate.x = std::atan2f(-lightDirection.y, horizontalLength);
+	
+	// ライトのワールド行列を作成
+	Matrix4x4 lightWorldMatrix = Mat4x4::MakeAffine(scale, rotate, lightPosition);
+	
+	// ビュー行列はワールド行列の逆行列
+	directionalLightData_->viewMatrix = Mat4x4::Inverse(lightWorldMatrix);
+	
+	// 正射影行列の計算（TakoEngineのMakeOrtho関数を使用）
+	float orthoWidth = shadowSize * 2.0f;
+	float orthoHeight = shadowSize * 2.0f;
+	float nearPlane = 0.1f;
+	float farPlane = shadowSize * 2.0f;
+	
+	directionalLightData_->projMatrix = Mat4x4::MakeOrtho(
+		-orthoWidth / 2.0f, orthoHeight / 2.0f,
+		orthoWidth / 2.0f, -orthoHeight / 2.0f,
+		nearPlane, farPlane);
+	
+	// ビュープロジェクション行列の計算
+	directionalLightData_->viewProjMatrix = Mat4x4::Multiply(directionalLightData_->viewMatrix, directionalLightData_->projMatrix);
 }

@@ -62,6 +62,9 @@ public: // メンバー関数
   uint32_t GetUAVIndex() { return uavIndex_; }
   D3D12_GPU_VIRTUAL_ADDRESS GetSkinningInfoResourceGPUAddress() { return skinningInfoResource_->GetGPUVirtualAddress(); }
   UINT GetVertexCount() { return static_cast<UINT>(vertices_.size()); }
+  
+  // フレーム開始時にリセットするメソッド
+  void ResetSkinningState() { skinningComputedThisFrame_ = false; }
 
 private: // プライベートメンバー関数
 
@@ -119,5 +122,8 @@ private: // プライベートメンバー関数
   uint32_t uavIndex_ = 0;
 
   SkinningInfo* skinningInfoData_ = nullptr;
+  
+  // スキニング済みフラグ（フレーム内で1回だけ実行）
+  bool skinningComputedThisFrame_ = false;
 };
 

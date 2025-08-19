@@ -72,4 +72,12 @@ private: // メンバ変数
 
   // ボーントラッカー
   std::unique_ptr<BoneTracker> boneTracker_;
+  
+  // Shadow Mapping パラメータ
+  bool shadowEnabled_ = true;
+  float shadowBias_ = 0.0001f;
+  float shadowDistance_ = 30.0f;
+  Vector3 lightPosition_ = {0.0f, 10.0f, -5.0f};
+  bool autoUpdateLightPos_ = true;
+  Vector3 sceneCenter_ = {0.0f, 0.0f, 0.0f};
 };

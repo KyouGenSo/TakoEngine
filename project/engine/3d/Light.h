@@ -5,6 +5,7 @@
 #include "vector2.h"
 #include "vector3.h"
 #include "vector4.h"
+#include "Matrix4x4.h"
 
 class DX12Basic;
 
@@ -24,6 +25,11 @@ public: // 構造体
 		Vector3 direction;
 		int32_t lightType;
 		float intensity;
+		Matrix4x4 viewMatrix;
+		Matrix4x4 projMatrix;
+		Matrix4x4 viewProjMatrix;
+		Vector3 position;  // ライトの位置（シャドウマップ用）
+		float shadowDistance;  // シャドウの範囲
 	};
 
 	// 点光源データ
@@ -77,10 +83,23 @@ public: // メンバ関数
 	//-----------------------------------------Setter-----------------------------------------//
 	// DirectionalLight
 	void SetDirectionalLight(const Vector3& direction, const Vector4& color, int32_t lightType, float intensity);
-	void SetDirectionalLightDirection(const Vector3& direction) { directionalLightData_->direction = direction; }
+	void SetDirectionalLightDirection(const Vector3& direction);
 	void SetDirectionalLightColor(const Vector4& color) { directionalLightData_->color = color; }
 	void SetDirectionalLightType(int32_t lightType) { directionalLightData_->lightType = lightType; }
 	void SetDirectionalLightIntensity(float intensity) { directionalLightData_->intensity = intensity; }
+	void SetDirectionalLightPosition(const Vector3& position) { directionalLightData_->position = position; }
+	void SetDirectionalLightShadowDistance(float distance) { directionalLightData_->shadowDistance = distance; }
+	
+	// シャドウマップ用の行列計算
+	void UpdateDirectionalLightShadowMatrices();
+	
+	// ゲッター
+	const DirectionalLight& GetDirectionalLight() const { return *directionalLightData_; }
+	
+	// 自動更新制御
+	void SetAutoUpdatePosition(bool enable) { autoUpdatePosition_ = enable; }
+	void SetSceneCenter(const Vector3& center) { sceneCenter_ = center; }
+	bool GetAutoUpdatePosition() const { return autoUpdatePosition_; }
 
 	// PointLight
 	void SetPointLight(const Vector3& position, const Vector4& color, float intensity, float radius, float decay, bool enable, int index);
@@ -153,14 +172,18 @@ private: // メンバ変数
 	Microsoft::WRL::ComPtr<ID3D12Resource> lightConstantsResource_;
 
 	// 点光源のsrvIndex
-	int pointLightSrvIndex_;
+  uint32_t pointLightSrvIndex_;
 
 	// スポットライトのsrvIndex
-	int spotLightSrvIndex_;
+  uint32_t spotLightSrvIndex_;
 
   // pointLightのindexのリスト
   std::vector<uint32_t> pointLightIndexList_;
 
   // spotLightのindexのリスト
   std::vector<uint32_t> spotLightIndexList_;
+  
+  // シャドウマップ自動更新関連
+  bool autoUpdatePosition_ = true;  // 位置の自動更新フラグ
+  Vector3 sceneCenter_ = {0.0f, 0.0f, 0.0f};  // シーン中心位置
 };

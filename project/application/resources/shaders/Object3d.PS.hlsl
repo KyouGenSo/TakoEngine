@@ -68,6 +68,46 @@ StructuredBuffer<PointLight> gPointLights : register(t1);
 StructuredBuffer<SpotLight> gSpotLight : register(t2);
 
 TextureCube<float4> gEnvironmentMap : register(t3); // Optional, if environment mapping is used
+Texture2D<float> gShadowMap : register(t4); // ã‚·ãƒ£ãƒ‰ã‚¦ãƒãƒƒãƒ—
+SamplerComparisonState gShadowSampler : register(s1); // ã‚·ãƒ£ãƒ‰ã‚¦ãƒãƒƒãƒ—ç”¨æ¯”è¼ƒã‚µãƒ³ãƒ—ãƒ©ãƒ¼
+
+// ã‚·ãƒ£ãƒ‰ã‚¦ãƒ•ã‚¡ã‚¯ã‚¿ãƒ¼ã‚’è¨ˆç®—ï¼ˆPCFä»˜ãï¼‰
+float CalculateShadowFactor(float4 lightSpacePos)
+{
+    // é€è¦–å¤‰æ›ã®å®Ÿè¡Œ
+    float3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
+    
+    // NDCç©ºé–“ã‹ã‚‰ãƒ†ã‚¯ã‚¹ãƒãƒ£åº§æ¨™ã«å¤‰æ›
+    float2 shadowTexCoord;
+    shadowTexCoord.x = projCoords.x * 0.5 + 0.5;
+    shadowTexCoord.y = -projCoords.y * 0.5 + 0.5;
+    
+    // ã‚·ãƒ£ãƒ‰ã‚¦ãƒãƒƒãƒ—ã®ç¯„å›²å¤–ãƒã‚§ãƒƒã‚¯
+    if (shadowTexCoord.x < 0.0 || shadowTexCoord.x > 1.0 ||
+        shadowTexCoord.y < 0.0 || shadowTexCoord.y > 1.0 ||
+        projCoords.z < 0.0 || projCoords.z > 1.0) {
+        return 1.0; // ã‚·ãƒ£ãƒ‰ã‚¦ãƒãƒƒãƒ—ã®ç¯„å›²å¤–ã¯ç…§æ˜
+    }
+    
+    // ãƒã‚¤ã‚¢ã‚¹ã‚’é©ç”¨
+    float currentDepth = projCoords.z - shadowBias;
+    
+    // PCFï¼ˆPercentage Closer Filteringï¼‰3x3
+    float shadowFactor = 0.0;
+    float2 texelSize = 1.0 / shadowMapSize;
+    
+    [unroll]
+    for (int x = -1; x <= 1; ++x) {
+        for (int y = -1; y <= 1; ++y) {
+            float2 offset = float2(x, y) * texelSize;
+            shadowFactor += gShadowMap.SampleCmpLevelZero(gShadowSampler, 
+                           shadowTexCoord + offset, currentDepth);
+        }
+    }
+    shadowFactor /= 9.0; // 9ã‚µãƒ³ãƒ—ãƒ«ã®å¹³å‡
+    
+    return shadowFactor;
+}
 
 PixelShaderOutput main(VertexShaderOutput input)
 {
@@ -75,6 +115,12 @@ PixelShaderOutput main(VertexShaderOutput input)
     
     float4 transformedUV = mul(float4(input.texcoord, 0, 1), gMaterial.uvTransform);
     float4 texColor = gTexture.Sample(gSampler, transformedUV.xy);
+    
+    // ã‚·ãƒ£ãƒ‰ã‚¦ãƒ•ã‚¡ã‚¯ã‚¿ãƒ¼ã‚’è¨ˆç®—
+    float shadowFactor = 1.0; // ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆã§ã¯å½±ãªã—
+    if (enableShadow != 0) {
+        shadowFactor = CalculateShadowFactor(input.lightSpacePos);
+    }
     
     if (gMaterial.enableLighting != 0)
     {
@@ -88,28 +134,28 @@ PixelShaderOutput main(VertexShaderOutput input)
         {
             float3 halfVector = normalize(-gDirectionalLight.direction + toEye);
             float NdotH = dot(normalize(input.normal), halfVector);
-            float specularPow = pow(saturate(NdotH), gMaterial.shininess); // ”½Ë‹­“x
+            float specularPow = pow(saturate(NdotH), gMaterial.shininess); // ï¿½ï¿½ï¿½Ë‹ï¿½ï¿½x
             
-            // ŠgU”½Ë
+            // ï¿½gï¿½Uï¿½ï¿½ï¿½ï¿½
             float NdotL = saturate(dot(normalize(input.normal), -gDirectionalLight.direction));
-            directionalLightDiffuse = texColor.rgb * gMaterial.color.rgb * gDirectionalLight.color.rgb * gDirectionalLight.intensity * NdotL;
+            directionalLightDiffuse = texColor.rgb * gMaterial.color.rgb * gDirectionalLight.color.rgb * gDirectionalLight.intensity * NdotL * shadowFactor;
             
-            // ‹¾–Ê”½Ë
-            directionalLightSpecular = gDirectionalLight.color.rgb * gDirectionalLight.intensity * specularPow * float3(1.0f, 1.0f, 1.0f);
+            // é¡é¢åå°„
+            directionalLightSpecular = gDirectionalLight.color.rgb * gDirectionalLight.intensity * specularPow * float3(1.0f, 1.0f, 1.0f) * shadowFactor;
         }
         else if (gDirectionalLight.lightType == 1) // half-Lambertian reflection
         {
             float3 halfVector = normalize(-gDirectionalLight.direction + toEye);
             float NdotH = dot(normalize(input.normal), halfVector);
-            float specularPow = pow(saturate(NdotH), gMaterial.shininess); // ”½Ë‹­“x
+            float specularPow = pow(saturate(NdotH), gMaterial.shininess); // ï¿½ï¿½ï¿½Ë‹ï¿½ï¿½x
             
-            // ŠgU”½Ë
+            // ï¿½gï¿½Uï¿½ï¿½ï¿½ï¿½
             float NdotL = saturate(dot(normalize(input.normal), -gDirectionalLight.direction));
             float cos = pow(NdotL * 0.5 + 0.5, 2.0f);
-            directionalLightDiffuse = texColor.rgb * gMaterial.color.rgb * gDirectionalLight.color.rgb * gDirectionalLight.intensity * cos;
+            directionalLightDiffuse = texColor.rgb * gMaterial.color.rgb * gDirectionalLight.color.rgb * gDirectionalLight.intensity * cos * shadowFactor;
             
-            // ‹¾–Ê”½Ë
-            directionalLightSpecular = gDirectionalLight.color.rgb * gDirectionalLight.intensity * specularPow * float3(1.0f, 1.0f, 1.0f);
+            // é¡é¢åå°„
+            directionalLightSpecular = gDirectionalLight.color.rgb * gDirectionalLight.intensity * specularPow * float3(1.0f, 1.0f, 1.0f) * shadowFactor;
         }
         
         //---------------------------------- Point Light ----------------------------------
@@ -130,11 +176,11 @@ PixelShaderOutput main(VertexShaderOutput input)
                 float factor = pow(saturate(-distance / gPointLights[i].radius + 1.0f), gPointLights[i].decay);
                 float3 pointLightColor = gPointLights[i].color.rgb * gPointLights[i].intensity * factor;
         
-                // ŠgU”½Ë
+                // ï¿½gï¿½Uï¿½ï¿½ï¿½ï¿½
                 float NdotL = saturate(dot(normalize(input.normal), -pointLightDir));
                 totalPointLightDiffuse += texColor.rgb * gMaterial.color.rgb * pointLightColor * NdotL;
         
-                // ‹¾–Ê”½Ë
+                // ï¿½ï¿½ï¿½Ê”ï¿½ï¿½ï¿½
                 totalPointLightSpecular += gPointLights[i].color.rgb * gPointLights[i].intensity * specularPow * float3(1.0f, 1.0f, 1.0f);
             }
         }
@@ -151,21 +197,21 @@ PixelShaderOutput main(VertexShaderOutput input)
                 
                 float3 halfVector = normalize(-spotLightDirOnSurface + toEye);
                 float NdotH = dot(normalize(input.normal), halfVector);
-                float specularPow = pow(saturate(NdotH), gMaterial.shininess); // ”½Ë‹­“x
+                float specularPow = pow(saturate(NdotH), gMaterial.shininess); // ï¿½ï¿½ï¿½Ë‹ï¿½ï¿½x
                 
                 float distance = length(gSpotLight[j].position - input.worldPos);
-                float factor = pow(saturate(-distance / gSpotLight[j].radius + 1.0f), gSpotLight[j].decay); // ‹——£‚É‚æ‚éŒ¸Š(0.0f ~ 1.0f
+                float factor = pow(saturate(-distance / gSpotLight[j].radius + 1.0f), gSpotLight[j].decay); // ï¿½ï¿½ï¿½ï¿½ï¿½É‚ï¿½éŒ¸ï¿½ï¿½(0.0f ~ 1.0f
                 
                 float cosAngle = dot(spotLightDirOnSurface, gSpotLight[j].direction);
                 float falloffFactor = saturate((cosAngle - gSpotLight[j].cosAngle) / (1.0f - gSpotLight[j].cosAngle));
                 
                 float3 spotLightColor = gSpotLight[j].color.rgb * gSpotLight[j].intensity * factor * falloffFactor;
                 
-                // ŠgU”½Ë
+                // ï¿½gï¿½Uï¿½ï¿½ï¿½ï¿½
                 float NdotL = saturate(dot(normalize(input.normal), -spotLightDirOnSurface));
                 spotLightDiffuse += texColor.rgb * gMaterial.color.rgb * spotLightColor * NdotL;
                 
-                // ‹¾–Ê”½Ë
+                // ï¿½ï¿½ï¿½Ê”ï¿½ï¿½ï¿½
                 spotLightSpecular += gSpotLight[j].color.rgb * gSpotLight[j].intensity * specularPow * float3(1.0f, 1.0f, 1.0f);
             }
         }
@@ -184,7 +230,7 @@ PixelShaderOutput main(VertexShaderOutput input)
 
         if (gMaterial.enableEnvMap != 0)
         {
-        // ŠÂ‹«ƒ}ƒbƒsƒ“ƒO‚ğ“K—p
+        // ï¿½Â‹ï¿½ï¿½}ï¿½bï¿½sï¿½ï¿½ï¿½Oï¿½ï¿½Kï¿½p
             float3 cameraToPos = normalize(input.worldPos - gCamera.worldPos);
             float3 refelectedVector = reflect(cameraToPos, normalize(input.normal));
             float4 environmentColor = gEnvironmentMap.Sample(gSampler, refelectedVector);
@@ -197,7 +243,7 @@ PixelShaderOutput main(VertexShaderOutput input)
         output.color = texColor * gMaterial.color;
         if (gMaterial.enableEnvMap != 0)
         {
-        // ŠÂ‹«ƒ}ƒbƒsƒ“ƒO‚ğ“K—p
+        // ï¿½Â‹ï¿½ï¿½}ï¿½bï¿½sï¿½ï¿½ï¿½Oï¿½ï¿½Kï¿½p
             float3 cameraToPos = normalize(input.worldPos - gCamera.worldPos);
             float3 refelectedVector = reflect(cameraToPos, normalize(input.normal));
             float4 environmentColor = gEnvironmentMap.Sample(gSampler, refelectedVector);

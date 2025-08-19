@@ -6,6 +6,7 @@
 #include "Matrix4x4.h"
 #include "Light.h"
 #include "SkyBox.h"
+#include "ShadowMap.h"
 
 class DX12Basic;
 
@@ -48,6 +49,21 @@ public: // メンバー関数
 	///　共通描画設定
 	/// </summary>
 	void SetCommonRenderSetting();
+	
+	/// <summary>
+	/// シャドウマップ描画設定
+	/// </summary>
+	void SetShadowRenderSetting();
+	
+	/// <summary>
+	/// シャドウマップ生成開始
+	/// </summary>
+	void BeginShadowMapRender();
+	
+	/// <summary>
+	/// シャドウマップ生成終了
+	/// </summary>
+	void EndShadowMapRender();
 
 	// -----------------------------------Getters-----------------------------------//
 	DX12Basic* GetDX12Basic() const { return m_dx12_; }
@@ -85,6 +101,13 @@ public: // メンバー関数
   void SetSpotLightDecay(float decay, int index) { light_->SetSpotLightDecay(decay, index); }
   void SetSpotLightCosAngle(float cosAngle, int index) { light_->SetSpotLightCosAngle(cosAngle, index); }
   void SetSpotLightEnable(bool enable, int index) { light_->SetSpotLightEnable(enable, index); }
+	
+	// Shadow Mapping
+	void SetDirectionalLightPosition(const Vector3& position) { light_->SetDirectionalLightPosition(position); }
+	void SetDirectionalLightShadowDistance(float distance) { light_->SetDirectionalLightShadowDistance(distance); }
+	void EnableShadow(bool enable) { shadowEnabled_ = enable; }
+	void SetAutoUpdatePosition(bool enable) { light_->SetAutoUpdatePosition(enable); }
+	void SetSceneCenter(const Vector3& center) { light_->SetSceneCenter(center); }
 
 private: // プライベートメンバー関数
 
@@ -97,6 +120,11 @@ private: // プライベートメンバー関数
 	/// パイプラインステートの生成
 	/// </summary>
 	void CreatePSO();
+	
+	/// <summary>
+	/// シャドウマップ用PSOの生成
+	/// </summary>
+	void CreateShadowPSO();
 
 private: // メンバー変数
 	// DX12Basicクラスのインスタンス
@@ -120,4 +148,25 @@ private: // メンバー変数
 
 	// パイプラインステート
   Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;
+  
+  // シャドウマップ関連
+  ShadowMap* shadowMap_ = nullptr;
+  Microsoft::WRL::ComPtr<ID3D12PipelineState> shadowPipelineState_;
+  bool shadowEnabled_ = true;
+  
+  // シャドウ用定数バッファ
+  Microsoft::WRL::ComPtr<ID3D12Resource> shadowConstantBuffer_;
+  
+  struct ShadowConstants {
+      Matrix4x4 lightViewProj;
+      float shadowBias;
+      int enableShadow;
+      Vector2 shadowMapSize;
+  };
+  ShadowConstants* shadowConstantData_ = nullptr;
+  
+  // レンダーターゲット復元用
+  D3D12_CPU_DESCRIPTOR_HANDLE savedRTVHandle_;
+  D3D12_CPU_DESCRIPTOR_HANDLE savedDSVHandle_;
+  bool hasSavedRenderTargets_ = false;
 };

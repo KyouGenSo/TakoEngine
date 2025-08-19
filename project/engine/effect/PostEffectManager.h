@@ -100,6 +100,9 @@ public: // メンバ関数
   size_t GetEffectChainSize() const;
   std::string GetEffectAtPosition(int position) const;
   std::vector<std::string> GetEffectChain() const;
+  
+  // 現在のレンダーターゲットハンドル取得
+  D3D12_CPU_DESCRIPTOR_HANDLE GetCurrentRTVHandle() const { return effectTargetRT_.rtvHandle; }
 
 private: // プライベートメンバー関数
   // レンダーターゲットの作成

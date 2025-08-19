@@ -93,6 +93,13 @@ void GameScene::Initialize()
   // キャラクターにアタッチ　mixamorig:LeftHand　nodes[17]
   weaponModel_->AttachToJoint(characterModel_, "Node_16", weaponOffset_.translate); // 仮のJoint名
 
+  // ライトの設定
+  Object3dBasic* obj3d = Object3dBasic::GetInstance();
+  obj3d->SetDirectionalLight(lightDirection_, lightColor_, 0, lightIntensity_);
+  obj3d->EnableShadow(true);
+  obj3d->SetDirectionalLightShadowDistance(shadowDistance_);
+  obj3d->SetSceneCenter(sceneCenter_);
+  obj3d->SetAutoUpdatePosition(autoUpdateLightPos_);
 }
 
 void GameScene::Finalize()
@@ -179,7 +186,15 @@ void GameScene::Update()
   emitterManager_->Update();
 
   // ライトの設定
-  Object3dBasic::GetInstance()->SetDirectionalLight(lightDirection_, lightColor_, 1, lightIntensity_);
+  Object3dBasic* obj3d = Object3dBasic::GetInstance();
+  obj3d->SetDirectionalLight(lightDirection_, lightColor_, 1, lightIntensity_);
+  obj3d->EnableShadow(shadowEnabled_);
+  obj3d->SetDirectionalLightShadowDistance(shadowDistance_);
+  obj3d->SetAutoUpdatePosition(autoUpdateLightPos_);
+  if (!autoUpdateLightPos_) {
+    obj3d->SetDirectionalLightPosition(lightPosition_);
+  }
+  obj3d->SetSceneCenter(sceneCenter_);
 
   // シーン遷移
   if (Input::GetInstance()->TriggerKey(DIK_RETURN))
@@ -195,6 +210,16 @@ void GameScene::Draw()
   /// ================================== ///
 
   skyBox_->Draw();
+
+  // シャドウマップ生成パス
+  if (shadowEnabled_) {
+    Object3dBasic::GetInstance()->BeginShadowMapRender();
+    terrain_->Draw();
+    characterModel_->Draw();
+    characterModel2_->Draw();
+    weaponModel_->Draw();
+    Object3dBasic::GetInstance()->EndShadowMapRender();
+  }
 
   //------------------背景Spriteの描画------------------//
   // スプライト共通描画設定
@@ -355,6 +380,18 @@ void GameScene::DrawImGui()
   {
     ImGui::DragFloat("EnvMap Coefficient", &envMapCoefficient_, 0.01f, 0.0f, 1.0f);
   }
+  ImGui::End();
+
+  // Shadow Mapping の設定
+  ImGui::Begin("Shadow Mapping");
+  ImGui::Checkbox("Enable Shadow", &shadowEnabled_);
+  ImGui::DragFloat("Shadow Bias", &shadowBias_, 0.00001f, 0.0f, 0.01f, "%.6f");
+  ImGui::DragFloat("Shadow Distance", &shadowDistance_, 0.5f, 5.0f, 100.0f);
+  ImGui::Checkbox("Auto Update Light Position", &autoUpdateLightPos_);
+  if (!autoUpdateLightPos_) {
+    ImGui::DragFloat3("Light Position", &lightPosition_.x, 0.1f, -50.0f, 50.0f);
+  }
+  ImGui::DragFloat3("Scene Center", &sceneCenter_.x, 0.1f, -50.0f, 50.0f);
   ImGui::End();
 
   characterModel_->DrawImGui();

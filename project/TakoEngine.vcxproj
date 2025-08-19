@@ -119,6 +119,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="engine\3d\ShadowMap.cpp" />
     <ClCompile Include="engine\3d\SkyBox.cpp" />
     <ClCompile Include="engine\effect\Bloom.cpp" />
     <ClCompile Include="engine\effect\BoneTracker.cpp" />
@@ -176,6 +177,7 @@
     <ClCompile Include="engine\3d\Mesh.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\3d\ShadowMap.h" />
     <ClInclude Include="engine\3d\SkyBox.h" />
     <ClInclude Include="engine\effect\Bloom.h" />
     <ClInclude Include="engine\effect\BoneTracker.h" />

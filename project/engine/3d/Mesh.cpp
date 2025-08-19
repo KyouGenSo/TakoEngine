@@ -224,6 +224,20 @@ void Mesh::InitializeSkinning(const std::map<std::string, JointWeightData>& skin
 void Mesh::SkinningCompute()
 {
   if (!hasSkinning_) return;
+  
+  // 既にこのフレームでスキニングが実行されていたらスキップ
+  if (skinningComputedThisFrame_) return;
+  
+  // 現在のリソース状態を確認して適切に遷移
+  // 初回以外は VERTEX_AND_CONSTANT_BUFFER → UAV への遷移が必要
+  static bool isFirstCompute = true;
+  if (!isFirstCompute) {
+    dx12_->TransitionResourceState(
+      D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,
+      D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+      uavVertexOutputResource_.Get());
+  }
+  isFirstCompute = false;
 
   SrvManager* srvManager = SrvManager::GetInstance();
 
@@ -248,6 +262,9 @@ void Mesh::SkinningCompute()
     D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
     D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,
     uavVertexOutputResource_.Get());
+    
+  // フラグを設定
+  skinningComputedThisFrame_ = true;
 }
 
 ///-----------------------------------------------///
