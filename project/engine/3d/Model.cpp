@@ -7,6 +7,7 @@
 #include "Mat4x4Func.h"
 #include "QuatFunc.h"
 #include "Object3dBasic.h"
+#include "ShadowRenderer.h"
 
 #include <cassert>
 #include <fstream>
@@ -889,8 +890,11 @@ void Model::ExecuteSkinning()
     // 通常レンダリング時は共通レンダリング設定に戻す
     Object3dBasic::GetInstance()->SetCommonRenderSetting();
   } else {
-    // シャドウマップレンダリング中はシャドウ設定を維持
-    Object3dBasic::GetInstance()->SetShadowRenderSetting();
+    // シャドウマップレンダリング中はシャドウレンダラーの設定を使用
+    auto* shadowRenderer = Object3dBasic::GetInstance()->GetShadowRenderer();
+    if (shadowRenderer) {
+      shadowRenderer->SetRenderState();
+    }
   }
 }
 

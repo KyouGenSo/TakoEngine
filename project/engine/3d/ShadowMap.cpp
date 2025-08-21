@@ -45,6 +45,39 @@ void ShadowMap::Finalize()
   }
 }
 
+void ShadowMap::BeginFrame()
+{
+  // 遅延リソース再作成の処理
+  if (pendingRecreation_) {
+    // 前フレームの描画が完了しているので、安全にリソースを再作成できる
+    
+    // 既存のリソースを解放
+    if (srvIndex_ != 0) {
+      srvManager_->Free(srvIndex_);
+      srvIndex_ = 0;
+    }
+    shadowMapResource_.Reset();
+    dsvDescriptorHeap_.Reset();
+    
+    // 新しいサイズを適用
+    shadowMapSize_ = pendingShadowMapSize_;
+    
+    // リソースを再作成
+    CreateShadowMapResource();
+    CreateDepthStencilView();
+    CreateShaderResourceView();
+    
+    // ビューポートとシザー矩形を更新
+    viewport_.Width = static_cast<float>(shadowMapSize_);
+    viewport_.Height = static_cast<float>(shadowMapSize_);
+    scissorRect_.right = shadowMapSize_;
+    scissorRect_.bottom = shadowMapSize_;
+    
+    // フラグをクリア
+    pendingRecreation_ = false;
+  }
+}
+
 void ShadowMap::BeginShadowMapRender()
 {
 #ifdef _DEBUG
@@ -210,50 +243,39 @@ void ShadowMap::SetShadowQuality(ShadowQuality quality)
   currentQuality_ = quality;
   
   // 品質に応じた設定
+  uint32_t newSize = DEFAULT_SHADOW_MAP_SIZE;
   switch (quality) {
     case ShadowQuality::Low:
-      shadowMapSize_ = 512;
-      pcfKernelSize_ = 3;
+      newSize = 512;
+      pcfKernelSize_ = 1;
       break;
     case ShadowQuality::Medium:
-      shadowMapSize_ = 1024;
-      pcfKernelSize_ = 5;
+      newSize = 1024;
+      pcfKernelSize_ = 3;
       break;
     case ShadowQuality::High:
-      shadowMapSize_ = 2048;
-      pcfKernelSize_ = 7;
+      newSize = 2048;
+      pcfKernelSize_ = 5;
       break;
     case ShadowQuality::Ultra:
-      shadowMapSize_ = 4096;
+      newSize = 4096;
+      pcfKernelSize_ = 7;
+      break;
+    case ShadowQuality::Super:
+      newSize = 8192;
       pcfKernelSize_ = 9;
       break;
   }
   
-  needsRecreation_ = true;
-  
-  // リソースの再作成
-  if (shadowMapResource_) {
-    // 既存のリソースを解放
-    if (srvIndex_ != 0) {
-      srvManager_->Free(srvIndex_);
-      srvIndex_ = 0;
-    }
-    shadowMapResource_.Reset();
-    dsvDescriptorHeap_.Reset();
-    
-    // リソースを再作成
-    CreateShadowMapResource();
-    CreateDepthStencilView();
-    CreateShaderResourceView();
-    
-    // ビューポートとシザー矩形を更新
-    viewport_.Width = static_cast<float>(shadowMapSize_);
-    viewport_.Height = static_cast<float>(shadowMapSize_);
-    scissorRect_.right = shadowMapSize_;
-    scissorRect_.bottom = shadowMapSize_;
+  // サイズが変更される場合は次フレームで再作成
+  if (shadowMapSize_ != newSize && shadowMapResource_) {
+    pendingShadowMapSize_ = newSize;
+    pendingRecreation_ = true;
+  } else {
+    shadowMapSize_ = newSize;
   }
   
-  // 定数バッファを更新
+  // 定数バッファを更新（PCFカーネルサイズはすぐに変更可能）
   if (constantBufferData_) {
     constantBufferData_->pcfKernelSize = static_cast<float>(pcfKernelSize_);
   }
@@ -267,31 +289,13 @@ void ShadowMap::SetShadowMapSize(uint32_t size)
     clampedSize *= 2;
   }
   
-  if (shadowMapSize_ != clampedSize) {
+  // サイズが変更される場合は次フレームで再作成
+  if (shadowMapSize_ != clampedSize && shadowMapResource_) {
+    pendingShadowMapSize_ = clampedSize;
+    pendingRecreation_ = true;
+  } else if (!shadowMapResource_) {
+    // 初回の場合はすぐに設定
     shadowMapSize_ = clampedSize;
-    needsRecreation_ = true;
-    
-    // リソースの再作成
-    if (shadowMapResource_) {
-      // 既存のリソースを解放
-      if (srvIndex_ != 0) {
-        srvManager_->Free(srvIndex_);
-        srvIndex_ = 0;
-      }
-      shadowMapResource_.Reset();
-      dsvDescriptorHeap_.Reset();
-      
-      // リソースを再作成
-      CreateShadowMapResource();
-      CreateDepthStencilView();
-      CreateShaderResourceView();
-      
-      // ビューポートとシザー矩形を更新
-      viewport_.Width = static_cast<float>(shadowMapSize_);
-      viewport_.Height = static_cast<float>(shadowMapSize_);
-      scissorRect_.right = shadowMapSize_;
-      scissorRect_.bottom = shadowMapSize_;
-    }
   }
 }
 

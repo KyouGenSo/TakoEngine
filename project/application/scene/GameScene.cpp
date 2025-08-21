@@ -213,12 +213,18 @@ void GameScene::Draw()
 
   // シャドウマップ生成パス
   if (shadowEnabled_) {
-    Object3dBasic::GetInstance()->BeginShadowMapRender();
-    terrain_->Draw();
-    characterModel_->Draw();
-    characterModel2_->Draw();
-    weaponModel_->Draw();
-    Object3dBasic::GetInstance()->EndShadowMapRender();
+    auto* shadowRenderer = Object3dBasic::GetInstance()->GetShadowRenderer();
+    if (shadowRenderer) {
+      shadowRenderer->BeginShadowPass();
+      
+      // シャドウキャスターの描画
+      terrain_->Draw();
+      characterModel_->Draw();
+      characterModel2_->Draw();
+      weaponModel_->Draw();
+      
+      shadowRenderer->EndShadowPass();
+    }
   }
 
   //------------------背景Spriteの描画------------------//
@@ -390,8 +396,9 @@ void GameScene::DrawImGui()
   ImGui::Separator();
   ImGui::Text("Shadow Quality");
   static int shadowQuality = 2; // デフォルトはHigh
-  const char* qualityNames[] = { "Low (512x512, PCF 3x3)", "Medium (1024x1024, PCF 5x5)", 
-                                  "High (2048x2048, PCF 7x7)", "Ultra (4096x4096, PCF 9x9)" };
+  const char* qualityNames[] = { "Low (512x512, NO PCF)", "Medium (1024x1024, PCF 3x3)", 
+                                  "High (2048x2048, PCF 5x5)", "Ultra (4096x4096, PCF 7x7)",
+                                  "Super (8192x8192, PCF 9x9)" };
   if (ImGui::Combo("Quality Preset", &shadowQuality, qualityNames, IM_ARRAYSIZE(qualityNames))) {
     Object3dBasic::GetInstance()->SetShadowQuality(static_cast<ShadowMap::ShadowQuality>(shadowQuality));
   }

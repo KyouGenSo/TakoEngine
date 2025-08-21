@@ -7,6 +7,7 @@
 #include "Light.h"
 #include "SkyBox.h"
 #include "ShadowMap.h"
+#include "ShadowRenderer.h"
 
 class DX12Basic;
 
@@ -51,19 +52,9 @@ public: // メンバー関数
 	void SetCommonRenderSetting();
 	
 	/// <summary>
-	/// シャドウマップ描画設定
+	/// ShadowRendererを取得
 	/// </summary>
-	void SetShadowRenderSetting();
-	
-	/// <summary>
-	/// シャドウマップ生成開始
-	/// </summary>
-	void BeginShadowMapRender();
-	
-	/// <summary>
-	/// シャドウマップ生成終了
-	/// </summary>
-	void EndShadowMapRender();
+	ShadowRenderer* GetShadowRenderer() { return shadowRenderer_; }
 
 	// -----------------------------------Getters-----------------------------------//
 	DX12Basic* GetDX12Basic() const { return m_dx12_; }
@@ -132,7 +123,7 @@ public: // メンバー関数
 	/// <summary>
 	/// シャドウマップレンダリング中かどうかを取得
 	/// </summary>
-	bool IsRenderingShadowMap() const { return isRenderingShadowMap_; }
+	bool IsRenderingShadowMap() const { return shadowRenderer_ ? shadowRenderer_->IsRenderingShadow() : false; }
 	
 	/// <summary>
 	/// 現在のシャドウマップサイズを取得
@@ -151,20 +142,10 @@ private: // プライベートメンバー関数
 	/// 	/// </summary>
 	void CreateRootSignature();
 	
-	/// <summary>
-	/// シャドウマップ用ルートシグネチャの作成
-	/// </summary>
-	void CreateShadowRootSignature();
-
 	///<summary>
 	/// パイプラインステートの生成
 	/// </summary>
 	void CreatePSO();
-	
-	/// <summary>
-	/// シャドウマップ用PSOの生成
-	/// </summary>
-	void CreateShadowPSO();
 
 private: // メンバー変数
 	// DX12Basicクラスのインスタンス
@@ -185,34 +166,12 @@ private: // メンバー変数
 
 	// ルートシグネチャ
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> shadowRootSignature_;  // シャドウマップ用
 
 	// パイプラインステート
   Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;
   
   // シャドウマップ関連
   ShadowMap* shadowMap_ = nullptr;
-  Microsoft::WRL::ComPtr<ID3D12PipelineState> shadowPipelineState_;
+  ShadowRenderer* shadowRenderer_ = nullptr;
   bool shadowEnabled_ = true;
-  
-  // シャドウ用定数バッファ
-  Microsoft::WRL::ComPtr<ID3D12Resource> shadowConstantBuffer_;
-  
-  struct ShadowConstants {
-      Matrix4x4 lightViewProj;
-      float shadowBias;
-      int enableShadow;
-      Vector2 shadowMapSize;
-      float normalOffsetBias;
-      float pcfKernelSize;
-  };
-  ShadowConstants* shadowConstantData_ = nullptr;
-  
-  // レンダーターゲット復元用
-  D3D12_CPU_DESCRIPTOR_HANDLE savedRTVHandle_;
-  D3D12_CPU_DESCRIPTOR_HANDLE savedDSVHandle_;
-  bool hasSavedRenderTargets_ = false;
-  
-  // シャドウマップレンダリング中フラグ
-  bool isRenderingShadowMap_ = false;
 };

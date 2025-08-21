@@ -12,10 +12,11 @@ class ShadowMap
 public:
     // シャドウマップの品質設定
     enum class ShadowQuality {
-        Low = 0,     // 512x512, PCF 3x3
-        Medium = 1,  // 1024x1024, PCF 5x5
-        High = 2,    // 2048x2048, PCF 7x7
-        Ultra = 3    // 4096x4096, PCF 9x9
+        Low = 0,     // 512x512, PCF 1x1
+        Medium = 1,  // 1024x1024, PCF 3x3
+        High = 2,    // 2048x2048, PCF 5x5
+        Ultra = 3,   // 4096x4096, PCF 7x7
+        Super = 4    // 8192x8192, PCF 9x9
     };
     
     // デフォルトのシャドウマップサイズ
@@ -32,6 +33,11 @@ public:
     /// </summary>
     void Finalize();
 
+    /// <summary>
+    /// フレーム開始時の処理（遅延リソース再作成）
+    /// </summary>
+    void BeginFrame();
+    
     /// <summary>
     /// シャドウマップレンダリング開始
     /// </summary>
@@ -165,6 +171,10 @@ private:
     int pcfKernelSize_ = 3;  // デフォルトは3x3
     ShadowQuality currentQuality_ = ShadowQuality::High;
     bool needsRecreation_ = false;  // リソース再作成フラグ
+    
+    // 遅延リソース再作成用
+    bool pendingRecreation_ = false;  // 次フレームで再作成
+    uint32_t pendingShadowMapSize_ = DEFAULT_SHADOW_MAP_SIZE;
     
     // ビューポート
     D3D12_VIEWPORT viewport_;

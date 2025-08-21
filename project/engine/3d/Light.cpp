@@ -191,7 +191,7 @@ void Light::CreateLightConstants()
 
 void Light::UpdateDirectionalLightShadowMatrices()
 {
-	// デフォルトの影距離とサイズ設定
+	// デフォルトの影距離設定
 	if (directionalLightData_->shadowDistance <= 0.0f) {
 		directionalLightData_->shadowDistance = 35.0f;  // デフォルト値
 	}
@@ -214,7 +214,6 @@ void Light::UpdateDirectionalLightShadowMatrices()
 		lightPosition = directionalLightData_->position - lightDirection * shadowSize;
 	}
 	
-	// TakoEngineの方式でビュー行列を生成
 	// ライトの Transform を作成（ライト位置から原点を向く）
 	Vector3 scale = {1.0f, 1.0f, 1.0f};
 	Vector3 rotate = {0.0f, 0.0f, 0.0f};
