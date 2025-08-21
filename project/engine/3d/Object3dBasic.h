@@ -110,9 +110,39 @@ public: // メンバー関数
 	void SetSceneCenter(const Vector3& center) { light_->SetSceneCenter(center); }
 	
 	/// <summary>
+	/// シャドウ品質を設定
+	/// </summary>
+	void SetShadowQuality(ShadowMap::ShadowQuality quality);
+	
+	/// <summary>
+	/// シャドウマップの解像度を設定（カスタム値）
+	/// </summary>
+	void SetShadowMapSize(uint32_t size);
+	
+	/// <summary>
+	/// PCFカーネルサイズを設定
+	/// </summary>
+	void SetPCFKernelSize(int kernelSize);
+	
+	/// <summary>
+	/// 法線オフセットバイアスを設定
+	/// </summary>
+	void SetNormalOffsetBias(float bias);
+	
+	/// <summary>
 	/// シャドウマップレンダリング中かどうかを取得
 	/// </summary>
 	bool IsRenderingShadowMap() const { return isRenderingShadowMap_; }
+	
+	/// <summary>
+	/// 現在のシャドウマップサイズを取得
+	/// </summary>
+	uint32_t GetShadowMapSize() const { return shadowMap_ ? shadowMap_->GetShadowMapSize() : 0; }
+	
+	/// <summary>
+	/// 現在のPCFカーネルサイズを取得
+	/// </summary>
+	int GetPCFKernelSize() const { return shadowMap_ ? shadowMap_->GetPCFKernelSize() : 0; }
 
 private: // プライベートメンバー関数
 
@@ -173,6 +203,8 @@ private: // メンバー変数
       float shadowBias;
       int enableShadow;
       Vector2 shadowMapSize;
+      float normalOffsetBias;
+      float pcfKernelSize;
   };
   ShadowConstants* shadowConstantData_ = nullptr;
   

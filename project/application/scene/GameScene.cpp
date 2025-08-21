@@ -385,13 +385,83 @@ void GameScene::DrawImGui()
   // Shadow Mapping の設定
   ImGui::Begin("Shadow Mapping");
   ImGui::Checkbox("Enable Shadow", &shadowEnabled_);
+  
+  // シャドウ品質プリセット
+  ImGui::Separator();
+  ImGui::Text("Shadow Quality");
+  static int shadowQuality = 2; // デフォルトはHigh
+  const char* qualityNames[] = { "Low (512x512, PCF 3x3)", "Medium (1024x1024, PCF 5x5)", 
+                                  "High (2048x2048, PCF 7x7)", "Ultra (4096x4096, PCF 9x9)" };
+  if (ImGui::Combo("Quality Preset", &shadowQuality, qualityNames, IM_ARRAYSIZE(qualityNames))) {
+    Object3dBasic::GetInstance()->SetShadowQuality(static_cast<ShadowMap::ShadowQuality>(shadowQuality));
+  }
+  
+  // カスタム設定
+  ImGui::Separator();
+  ImGui::Text("Custom Settings");
+  
+  // シャドウマップ解像度
+  static int shadowMapSize = Object3dBasic::GetInstance()->GetShadowMapSize();
+  const char* sizeNames[] = { "256", "512", "1024", "2048", "4096", "8192" };
+  int sizeValues[] = { 256, 512, 1024, 2048, 4096, 8192 };
+  int currentSizeIndex = 3; // デフォルトは2048
+  for (int i = 0; i < IM_ARRAYSIZE(sizeValues); i++) {
+    if (sizeValues[i] == shadowMapSize) {
+      currentSizeIndex = i;
+      break;
+    }
+  }
+  if (ImGui::Combo("Shadow Map Size", &currentSizeIndex, sizeNames, IM_ARRAYSIZE(sizeNames))) {
+    shadowMapSize = sizeValues[currentSizeIndex];
+    Object3dBasic::GetInstance()->SetShadowMapSize(shadowMapSize);
+  }
+  
+  // PCFカーネルサイズ
+  static int pcfKernelSize = Object3dBasic::GetInstance()->GetPCFKernelSize();
+  const char* kernelNames[] = { "1x1 (No PCF)", "3x3", "5x5", "7x7", "9x9" };
+  int kernelValues[] = { 1, 3, 5, 7, 9 };
+  int currentKernelIndex = 1; // デフォルトは3x3
+  for (int i = 0; i < IM_ARRAYSIZE(kernelValues); i++) {
+    if (kernelValues[i] == pcfKernelSize) {
+      currentKernelIndex = i;
+      break;
+    }
+  }
+  if (ImGui::Combo("PCF Kernel Size", &currentKernelIndex, kernelNames, IM_ARRAYSIZE(kernelNames))) {
+    pcfKernelSize = kernelValues[currentKernelIndex];
+    Object3dBasic::GetInstance()->SetPCFKernelSize(pcfKernelSize);
+  }
+  
+  // バイアス設定
+  ImGui::Separator();
+  ImGui::Text("Bias Settings");
   ImGui::DragFloat("Shadow Bias", &shadowBias_, 0.00001f, 0.0f, 0.01f, "%.6f");
+  
+  static float normalOffsetBias = 0.01f;
+  if (ImGui::DragFloat("Normal Offset Bias", &normalOffsetBias, 0.001f, 0.0f, 0.1f, "%.4f")) {
+    Object3dBasic::GetInstance()->SetNormalOffsetBias(normalOffsetBias);
+  }
+  
+  // その他の設定
+  ImGui::Separator();
+  ImGui::Text("Light Settings");
   ImGui::DragFloat("Shadow Distance", &shadowDistance_, 0.5f, 5.0f, 100.0f);
   ImGui::Checkbox("Auto Update Light Position", &autoUpdateLightPos_);
   if (!autoUpdateLightPos_) {
     ImGui::DragFloat3("Light Position", &lightPosition_.x, 0.1f, -50.0f, 50.0f);
   }
   ImGui::DragFloat3("Scene Center", &sceneCenter_.x, 0.1f, -50.0f, 50.0f);
+  
+  // パフォーマンス情報
+  ImGui::Separator();
+  ImGui::Text("Performance Info");
+  ImGui::Text("Current Shadow Map Size: %dx%d", 
+              Object3dBasic::GetInstance()->GetShadowMapSize(),
+              Object3dBasic::GetInstance()->GetShadowMapSize());
+  ImGui::Text("Current PCF Kernel: %dx%d", 
+              Object3dBasic::GetInstance()->GetPCFKernelSize(),
+              Object3dBasic::GetInstance()->GetPCFKernelSize());
+  
   ImGui::End();
 
   characterModel_->DrawImGui();

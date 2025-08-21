@@ -25,8 +25,8 @@ void ShadowMap::Initialize(DX12Basic* dx12)
   CreateConstantBuffer();
 
   // ビューポートとシザー矩形の設定
-  viewport_.Width = static_cast<float>(SHADOW_MAP_SIZE);
-  viewport_.Height = static_cast<float>(SHADOW_MAP_SIZE);
+  viewport_.Width = static_cast<float>(shadowMapSize_);
+  viewport_.Height = static_cast<float>(shadowMapSize_);
   viewport_.TopLeftX = 0.0f;
   viewport_.TopLeftY = 0.0f;
   viewport_.MinDepth = 0.0f;
@@ -34,8 +34,8 @@ void ShadowMap::Initialize(DX12Basic* dx12)
 
   scissorRect_.left = 0;
   scissorRect_.top = 0;
-  scissorRect_.right = SHADOW_MAP_SIZE;
-  scissorRect_.bottom = SHADOW_MAP_SIZE;
+  scissorRect_.right = shadowMapSize_;
+  scissorRect_.bottom = shadowMapSize_;
 }
 
 void ShadowMap::Finalize()
@@ -102,6 +102,8 @@ void ShadowMap::SetLightViewProjectionMatrix(const Matrix4x4& lightViewProj)
     constantBufferData_->lightViewProjectionMatrix = lightViewProjectionMatrix_;
     constantBufferData_->depthBias = static_cast<float>(depthBias_);
     constantBufferData_->slopeScaledDepthBias = slopeScaledDepthBias_;
+    constantBufferData_->normalOffsetBias = normalOffsetBias_;
+    constantBufferData_->pcfKernelSize = static_cast<float>(pcfKernelSize_);
   }
 }
 
@@ -117,8 +119,8 @@ void ShadowMap::CreateShadowMapResource()
   D3D12_RESOURCE_DESC resourceDesc = {};
   resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
   resourceDesc.Alignment = 0;
-  resourceDesc.Width = SHADOW_MAP_SIZE;
-  resourceDesc.Height = SHADOW_MAP_SIZE;
+  resourceDesc.Width = shadowMapSize_;
+  resourceDesc.Height = shadowMapSize_;
   resourceDesc.DepthOrArraySize = 1;
   resourceDesc.MipLevels = 1;
   resourceDesc.Format = DXGI_FORMAT_R32_TYPELESS;
@@ -199,4 +201,109 @@ void ShadowMap::CreateConstantBuffer()
   constantBufferData_->lightViewProjectionMatrix = Mat4x4::MakeIdentity();
   constantBufferData_->depthBias = static_cast<float>(depthBias_);
   constantBufferData_->slopeScaledDepthBias = slopeScaledDepthBias_;
+  constantBufferData_->normalOffsetBias = normalOffsetBias_;
+  constantBufferData_->pcfKernelSize = static_cast<float>(pcfKernelSize_);
+}
+
+void ShadowMap::SetShadowQuality(ShadowQuality quality)
+{
+  currentQuality_ = quality;
+  
+  // 品質に応じた設定
+  switch (quality) {
+    case ShadowQuality::Low:
+      shadowMapSize_ = 512;
+      pcfKernelSize_ = 3;
+      break;
+    case ShadowQuality::Medium:
+      shadowMapSize_ = 1024;
+      pcfKernelSize_ = 5;
+      break;
+    case ShadowQuality::High:
+      shadowMapSize_ = 2048;
+      pcfKernelSize_ = 7;
+      break;
+    case ShadowQuality::Ultra:
+      shadowMapSize_ = 4096;
+      pcfKernelSize_ = 9;
+      break;
+  }
+  
+  needsRecreation_ = true;
+  
+  // リソースの再作成
+  if (shadowMapResource_) {
+    // 既存のリソースを解放
+    if (srvIndex_ != 0) {
+      srvManager_->Free(srvIndex_);
+      srvIndex_ = 0;
+    }
+    shadowMapResource_.Reset();
+    dsvDescriptorHeap_.Reset();
+    
+    // リソースを再作成
+    CreateShadowMapResource();
+    CreateDepthStencilView();
+    CreateShaderResourceView();
+    
+    // ビューポートとシザー矩形を更新
+    viewport_.Width = static_cast<float>(shadowMapSize_);
+    viewport_.Height = static_cast<float>(shadowMapSize_);
+    scissorRect_.right = shadowMapSize_;
+    scissorRect_.bottom = shadowMapSize_;
+  }
+  
+  // 定数バッファを更新
+  if (constantBufferData_) {
+    constantBufferData_->pcfKernelSize = static_cast<float>(pcfKernelSize_);
+  }
+}
+
+void ShadowMap::SetShadowMapSize(uint32_t size)
+{
+  // 2のべき乗にクランプ
+  uint32_t clampedSize = 256;
+  while (clampedSize < size && clampedSize < 8192) {
+    clampedSize *= 2;
+  }
+  
+  if (shadowMapSize_ != clampedSize) {
+    shadowMapSize_ = clampedSize;
+    needsRecreation_ = true;
+    
+    // リソースの再作成
+    if (shadowMapResource_) {
+      // 既存のリソースを解放
+      if (srvIndex_ != 0) {
+        srvManager_->Free(srvIndex_);
+        srvIndex_ = 0;
+      }
+      shadowMapResource_.Reset();
+      dsvDescriptorHeap_.Reset();
+      
+      // リソースを再作成
+      CreateShadowMapResource();
+      CreateDepthStencilView();
+      CreateShaderResourceView();
+      
+      // ビューポートとシザー矩形を更新
+      viewport_.Width = static_cast<float>(shadowMapSize_);
+      viewport_.Height = static_cast<float>(shadowMapSize_);
+      scissorRect_.right = shadowMapSize_;
+      scissorRect_.bottom = shadowMapSize_;
+    }
+  }
+}
+
+void ShadowMap::SetPCFKernelSize(int kernelSize)
+{
+  // 奇数値のみ許可（1, 3, 5, 7, 9）
+  if (kernelSize >= 1 && kernelSize <= 9 && kernelSize % 2 == 1) {
+    pcfKernelSize_ = kernelSize;
+    
+    // 定数バッファを更新
+    if (constantBufferData_) {
+      constantBufferData_->pcfKernelSize = static_cast<float>(pcfKernelSize_);
+    }
+  }
 }

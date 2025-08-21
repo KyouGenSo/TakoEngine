@@ -47,6 +47,8 @@ void Object3dBasic::Initialize(DX12Basic* dx12)
 	shadowConstantData_->shadowBias = 0.0001f;
 	shadowConstantData_->enableShadow = shadowEnabled_ ? 1 : 0;
 	shadowConstantData_->shadowMapSize = {2048.0f, 2048.0f};
+	shadowConstantData_->normalOffsetBias = 0.01f;
+	shadowConstantData_->pcfKernelSize = 3.0f;
 }
 
 void Object3dBasic::Update()
@@ -70,6 +72,9 @@ void Object3dBasic::Update()
       light_->UpdateDirectionalLightShadowMatrices();
       shadowConstantData_->lightViewProj = light_->GetDirectionalLight().viewProjMatrix;
       shadowConstantData_->enableShadow = 1;
+      shadowConstantData_->shadowMapSize = {static_cast<float>(shadowMap_->GetShadowMapSize()), static_cast<float>(shadowMap_->GetShadowMapSize())};
+      shadowConstantData_->normalOffsetBias = 0.01f;  // TODO: 動的に変更可能にする
+      shadowConstantData_->pcfKernelSize = static_cast<float>(shadowMap_->GetPCFKernelSize());
       shadowMap_->SetLightViewProjectionMatrix(light_->GetDirectionalLight().viewProjMatrix);
   } else {
       shadowConstantData_->enableShadow = 0;
@@ -139,6 +144,43 @@ void Object3dBasic::SetPointLight(const Vector3& position, const Vector4& color,
 void Object3dBasic::SetSpotLight(const Vector3& position, const Vector3& direction, const Vector4& color, float intensity, float distance, float decay, float cosAngle, bool enable, int index)
 {
 	light_->SetSpotLight(position, direction, color, intensity, distance, decay, cosAngle, enable, index);
+}
+
+void Object3dBasic::SetShadowQuality(ShadowMap::ShadowQuality quality)
+{
+	if (shadowMap_) {
+		shadowMap_->SetShadowQuality(quality);
+		// 定数バッファを更新
+		shadowConstantData_->shadowMapSize = {static_cast<float>(shadowMap_->GetShadowMapSize()), static_cast<float>(shadowMap_->GetShadowMapSize())};
+		shadowConstantData_->pcfKernelSize = static_cast<float>(shadowMap_->GetPCFKernelSize());
+	}
+}
+
+void Object3dBasic::SetShadowMapSize(uint32_t size)
+{
+	if (shadowMap_) {
+		shadowMap_->SetShadowMapSize(size);
+		// 定数バッファを更新
+		shadowConstantData_->shadowMapSize = {static_cast<float>(shadowMap_->GetShadowMapSize()), static_cast<float>(shadowMap_->GetShadowMapSize())};
+	}
+}
+
+void Object3dBasic::SetPCFKernelSize(int kernelSize)
+{
+	if (shadowMap_) {
+		shadowMap_->SetPCFKernelSize(kernelSize);
+		// 定数バッファを更新
+		shadowConstantData_->pcfKernelSize = static_cast<float>(shadowMap_->GetPCFKernelSize());
+	}
+}
+
+void Object3dBasic::SetNormalOffsetBias(float bias)
+{
+	if (shadowMap_) {
+		shadowMap_->SetNormalOffsetBias(bias);
+		// 定数バッファを更新
+		shadowConstantData_->normalOffsetBias = bias;
+	}
 }
 
 void Object3dBasic::CreateRootSignature()

@@ -10,8 +10,16 @@ class SrvManager;
 class ShadowMap
 {
 public:
-    // シャドウマップのサイズ
-    static const uint32_t SHADOW_MAP_SIZE = 2048;
+    // シャドウマップの品質設定
+    enum class ShadowQuality {
+        Low = 0,     // 512x512, PCF 3x3
+        Medium = 1,  // 1024x1024, PCF 5x5
+        High = 2,    // 2048x2048, PCF 7x7
+        Ultra = 3    // 4096x4096, PCF 9x9
+    };
+    
+    // デフォルトのシャドウマップサイズ
+    static const uint32_t DEFAULT_SHADOW_MAP_SIZE = 2048;
     
 public:
     /// <summary>
@@ -61,6 +69,36 @@ public:
         depthBias_ = bias;
         slopeScaledDepthBias_ = slopeScaledBias;
     }
+    
+    /// <summary>
+    /// シャドウ品質の設定
+    /// </summary>
+    void SetShadowQuality(ShadowQuality quality);
+    
+    /// <summary>
+    /// カスタム解像度の設定
+    /// </summary>
+    void SetShadowMapSize(uint32_t size);
+    
+    /// <summary>
+    /// PCFカーネルサイズの設定（1, 3, 5, 7, 9のいずれか）
+    /// </summary>
+    void SetPCFKernelSize(int kernelSize);
+    
+    /// <summary>
+    /// 法線オフセットバイアスの設定
+    /// </summary>
+    void SetNormalOffsetBias(float normalBias) { normalOffsetBias_ = normalBias; }
+    
+    /// <summary>
+    /// 現在の解像度を取得
+    /// </summary>
+    uint32_t GetShadowMapSize() const { return shadowMapSize_; }
+    
+    /// <summary>
+    /// 現在のPCFカーネルサイズを取得
+    /// </summary>
+    int GetPCFKernelSize() const { return pcfKernelSize_; }
 
 private:
     /// <summary>
@@ -112,13 +150,21 @@ private:
         Matrix4x4 lightViewProjectionMatrix;
         float depthBias;
         float slopeScaledDepthBias;
-        float padding[2];
+        float normalOffsetBias;
+        float pcfKernelSize;  // PCFカーネルサイズ
     };
     ShadowConstantBuffer* constantBufferData_;
     
     // 深度バイアス設定
     int depthBias_ = 100000;
     float slopeScaledDepthBias_ = 1.0f;
+    float normalOffsetBias_ = 0.01f;
+    
+    // シャドウマップサイズとPCF設定
+    uint32_t shadowMapSize_ = DEFAULT_SHADOW_MAP_SIZE;
+    int pcfKernelSize_ = 3;  // デフォルトは3x3
+    ShadowQuality currentQuality_ = ShadowQuality::High;
+    bool needsRecreation_ = false;  // リソース再作成フラグ
     
     // ビューポート
     D3D12_VIEWPORT viewport_;
