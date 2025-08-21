@@ -54,11 +54,6 @@ public:
     void SetLightViewProjectionMatrix(const Matrix4x4& lightViewProj);
 
     /// <summary>
-    /// シャドウマップをシェーダーリソースとして設定
-    /// </summary>
-    void SetShadowMapForShader();
-
-    /// <summary>
     /// ライトビュープロジェクション行列を取得
     /// </summary>
     const Matrix4x4& GetLightViewProjectionMatrix() const { return lightViewProjectionMatrix_; }

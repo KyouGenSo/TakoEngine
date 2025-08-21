@@ -80,10 +80,6 @@ void ShadowMap::BeginFrame()
 
 void ShadowMap::BeginShadowMapRender()
 {
-#ifdef _DEBUG
-  OutputDebugStringA("ShadowMap::BeginShadowMapRender() - Starting shadow map render pass\n");
-#endif
-
   // コマンドリストの取得
   ID3D12GraphicsCommandList* commandList = dx12_->GetCommandList();
 
@@ -111,19 +107,11 @@ void ShadowMap::BeginShadowMapRender()
 
 void ShadowMap::EndShadowMapRender()
 {
-#ifdef _DEBUG
-  OutputDebugStringA("ShadowMap::EndShadowMapRender() - Ending shadow map render pass\n");
-#endif
-
   // DEPTH_WRITE -> PIXEL_SHADER_RESOURCE に遷移
   dx12_->TransitionResourceWithTracking(
     shadowMapResource_.Get(),
     D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
   );
-  
-#ifdef _DEBUG
-  OutputDebugStringA("ShadowMap::EndShadowMapRender() - Resource transitioned to PIXEL_SHADER_RESOURCE\n");
-#endif
 }
 
 void ShadowMap::SetLightViewProjectionMatrix(const Matrix4x4& lightViewProj)
@@ -138,12 +126,6 @@ void ShadowMap::SetLightViewProjectionMatrix(const Matrix4x4& lightViewProj)
     constantBufferData_->normalOffsetBias = normalOffsetBias_;
     constantBufferData_->pcfKernelSize = static_cast<float>(pcfKernelSize_);
   }
-}
-
-void ShadowMap::SetShadowMapForShader()
-{
-  // SRVマネージャーの描画前処理で自動的に設定される
-  // 追加の設定が必要な場合はここに記述
 }
 
 void ShadowMap::CreateShadowMapResource()

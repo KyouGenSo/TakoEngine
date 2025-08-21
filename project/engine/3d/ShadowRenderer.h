@@ -143,8 +143,8 @@ private:
 private:
     // DirectX12関連
     DX12Basic* dx12_ = nullptr;
-    ShadowMap* shadowMap_ = nullptr; // 内部で管理
-    Light* light_ = nullptr; // Light::GetInstance()を使用
+    ShadowMap* shadowMap_ = nullptr;
+    Light* light_ = nullptr;
 
     // シャドウ用ルートシグネチャとPSO
     Microsoft::WRL::ComPtr<ID3D12RootSignature> shadowRootSignature_;

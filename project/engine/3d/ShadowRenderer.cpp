@@ -155,16 +155,8 @@ void ShadowRenderer::SetShadowForMainPass()
     
     // シャドウマップの設定（ルートパラメータ10、テクスチャt4）
     if (!isRenderingShadow_ && shadowMap_) {
-#ifdef _DEBUG
-        OutputDebugStringA("ShadowRenderer::SetShadowForMainPass() - Setting shadow map as shader resource\n");
-#endif
         SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(10, shadowMap_->GetSrvIndex());
     }
-#ifdef _DEBUG
-    else if (isRenderingShadow_) {
-        OutputDebugStringA("ShadowRenderer::SetShadowForMainPass() - Skipping shadow map SRV (rendering shadow map)\n");
-    }
-#endif
 }
 
 void ShadowRenderer::CreateShadowRootSignature()
