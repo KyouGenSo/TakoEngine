@@ -13,6 +13,7 @@
 #include "GPUParticle.h"
 #include "SpriteBasic.h"
 #include "Transition.h"
+#include "ShadowRenderer.h"
 
 void MyGame::Initialize()
 {

@@ -5,6 +5,7 @@
 #include"ModelManager.h"
 #include"Camera.h"
 #include "SrvManager.h"
+#include "ShadowRenderer.h"
 #include "Logger.h"
 
 Object3d::~Object3d()
@@ -111,7 +112,7 @@ void Object3d::Update()
 void Object3d::Draw()
 {
 	// シャドウマップレンダリング中は異なるルートパラメータインデックスを使用
-	if (Object3dBasic::GetInstance()->IsRenderingShadowMap()) {
+	if (ShadowRenderer::GetInstance()->IsRenderingShadow()) {
 		// シャドウ用ルートシグネチャのインデックス（パラメータ0）
 		Object3dBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(0, transformationMatResource_->GetGPUVirtualAddress());
 		// カメラデータは不要（シャドウマップ生成時は使用しない）

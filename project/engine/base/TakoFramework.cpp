@@ -11,6 +11,7 @@
 #include "DebugCamera.h"
 #include "Transition.h"
 #include "FrameTimer.h"
+#include "ShadowRenderer.h"
 
 void TakoFramework::Initialize()
 {
@@ -50,6 +51,10 @@ void TakoFramework::Initialize()
 
 	// デフォルトカメラを設定
 	Object3dBasic::GetInstance()->SetCamera(defaultCamera_);
+
+  // ShadowRendererの初期化
+  ShadowRenderer::GetInstance()->Initialize(dx12_);
+  ShadowRenderer::GetInstance()->SetLight(Object3dBasic::GetInstance()->GetLight());
 
   Draw2D::GetInstance()->SetCamera(defaultCamera_);
   Draw2D::GetInstance()->Initialize(dx12_);
@@ -100,6 +105,9 @@ void TakoFramework::Finalize()
 
 	// トランジションの解放
 	Transition::GetInstance()->Finalize();
+
+  // ShadowRendererの解放
+  ShadowRenderer::GetInstance()->Finalize();
 
 #ifdef _DEBUG
 	// ImGuiManagerの終了処理

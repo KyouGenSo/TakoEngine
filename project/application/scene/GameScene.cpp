@@ -12,6 +12,7 @@
 #include "EmitterManager.h"
 #include "Object3d.h"
 #include "Model.h"
+#include "ShadowRenderer.h"
 
 #include <numbers>
 
@@ -31,6 +32,8 @@ void GameScene::Initialize()
   /// ================================== ///
   ///              初期化処理              ///
   /// ================================== ///
+  
+
 
   // SkyBoxの初期化
   skyBox_ = std::make_unique<SkyBox>();
@@ -96,7 +99,6 @@ void GameScene::Initialize()
   // ライトの設定
   Object3dBasic* obj3d = Object3dBasic::GetInstance();
   obj3d->SetDirectionalLight(lightDirection_, lightColor_, 0, lightIntensity_);
-  obj3d->EnableShadow(true);
   obj3d->SetDirectionalLightShadowDistance(shadowDistance_);
   obj3d->SetSceneCenter(sceneCenter_);
   obj3d->SetAutoUpdatePosition(autoUpdateLightPos_);
@@ -188,13 +190,16 @@ void GameScene::Update()
   // ライトの設定
   Object3dBasic* obj3d = Object3dBasic::GetInstance();
   obj3d->SetDirectionalLight(lightDirection_, lightColor_, 1, lightIntensity_);
-  obj3d->EnableShadow(shadowEnabled_);
   obj3d->SetDirectionalLightShadowDistance(shadowDistance_);
   obj3d->SetAutoUpdatePosition(autoUpdateLightPos_);
   if (!autoUpdateLightPos_) {
     obj3d->SetDirectionalLightPosition(lightPosition_);
   }
   obj3d->SetSceneCenter(sceneCenter_);
+  
+  // ShadowRendererの更新
+  ShadowRenderer::GetInstance()->SetEnabled(shadowEnabled_);
+  ShadowRenderer::GetInstance()->Update();
 
   // シーン遷移
   if (Input::GetInstance()->TriggerKey(DIK_RETURN))
@@ -213,18 +218,15 @@ void GameScene::Draw()
 
   // シャドウマップ生成パス
   if (shadowEnabled_) {
-    auto* shadowRenderer = Object3dBasic::GetInstance()->GetShadowRenderer();
-    if (shadowRenderer) {
-      shadowRenderer->BeginShadowPass();
-      
-      // シャドウキャスターの描画
-      terrain_->Draw();
-      characterModel_->Draw();
-      characterModel2_->Draw();
-      weaponModel_->Draw();
-      
-      shadowRenderer->EndShadowPass();
-    }
+    ShadowRenderer::GetInstance()->BeginShadowPass();
+    
+    // シャドウキャスターの描画
+    terrain_->Draw();
+    characterModel_->Draw();
+    characterModel2_->Draw();
+    weaponModel_->Draw();
+    
+    ShadowRenderer::GetInstance()->EndShadowPass();
   }
 
   //------------------背景Spriteの描画------------------//
@@ -400,7 +402,7 @@ void GameScene::DrawImGui()
                                   "High (2048x2048, PCF 5x5)", "Ultra (4096x4096, PCF 7x7)",
                                   "Super (8192x8192, PCF 9x9)" };
   if (ImGui::Combo("Quality Preset", &shadowQuality, qualityNames, IM_ARRAYSIZE(qualityNames))) {
-    Object3dBasic::GetInstance()->SetShadowQuality(static_cast<ShadowMap::ShadowQuality>(shadowQuality));
+    ShadowRenderer::GetInstance()->SetShadowQuality(shadowQuality);
   }
   
   // カスタム設定
@@ -408,7 +410,7 @@ void GameScene::DrawImGui()
   ImGui::Text("Custom Settings");
   
   // シャドウマップ解像度
-  static int shadowMapSize = Object3dBasic::GetInstance()->GetShadowMapSize();
+  static int shadowMapSize = ShadowRenderer::GetInstance()->GetShadowMap() ? ShadowRenderer::GetInstance()->GetShadowMap()->GetShadowMapSize() : 2048;
   const char* sizeNames[] = { "256", "512", "1024", "2048", "4096", "8192" };
   int sizeValues[] = { 256, 512, 1024, 2048, 4096, 8192 };
   int currentSizeIndex = 3; // デフォルトは2048
@@ -420,11 +422,11 @@ void GameScene::DrawImGui()
   }
   if (ImGui::Combo("Shadow Map Size", &currentSizeIndex, sizeNames, IM_ARRAYSIZE(sizeNames))) {
     shadowMapSize = sizeValues[currentSizeIndex];
-    Object3dBasic::GetInstance()->SetShadowMapSize(shadowMapSize);
+    ShadowRenderer::GetInstance()->SetShadowMapSize(shadowMapSize);
   }
   
   // PCFカーネルサイズ
-  static int pcfKernelSize = Object3dBasic::GetInstance()->GetPCFKernelSize();
+  static int pcfKernelSize = ShadowRenderer::GetInstance()->GetShadowMap() ? ShadowRenderer::GetInstance()->GetShadowMap()->GetPCFKernelSize() : 3;
   const char* kernelNames[] = { "1x1 (No PCF)", "3x3", "5x5", "7x7", "9x9" };
   int kernelValues[] = { 1, 3, 5, 7, 9 };
   int currentKernelIndex = 1; // デフォルトは3x3
@@ -436,7 +438,7 @@ void GameScene::DrawImGui()
   }
   if (ImGui::Combo("PCF Kernel Size", &currentKernelIndex, kernelNames, IM_ARRAYSIZE(kernelNames))) {
     pcfKernelSize = kernelValues[currentKernelIndex];
-    Object3dBasic::GetInstance()->SetPCFKernelSize(pcfKernelSize);
+    ShadowRenderer::GetInstance()->SetPCFKernelSize(pcfKernelSize);
   }
   
   // バイアス設定
@@ -446,7 +448,7 @@ void GameScene::DrawImGui()
   
   static float normalOffsetBias = 0.01f;
   if (ImGui::DragFloat("Normal Offset Bias", &normalOffsetBias, 0.001f, 0.0f, 0.1f, "%.4f")) {
-    Object3dBasic::GetInstance()->SetNormalOffsetBias(normalOffsetBias);
+    ShadowRenderer::GetInstance()->SetNormalOffsetBias(normalOffsetBias);
   }
   
   // その他の設定
@@ -462,12 +464,15 @@ void GameScene::DrawImGui()
   // パフォーマンス情報
   ImGui::Separator();
   ImGui::Text("Performance Info");
-  ImGui::Text("Current Shadow Map Size: %dx%d", 
-              Object3dBasic::GetInstance()->GetShadowMapSize(),
-              Object3dBasic::GetInstance()->GetShadowMapSize());
-  ImGui::Text("Current PCF Kernel: %dx%d", 
-              Object3dBasic::GetInstance()->GetPCFKernelSize(),
-              Object3dBasic::GetInstance()->GetPCFKernelSize());
+  auto* shadowMap = ShadowRenderer::GetInstance()->GetShadowMap();
+  if (shadowMap) {
+    ImGui::Text("Current Shadow Map Size: %dx%d", 
+                shadowMap->GetShadowMapSize(),
+                shadowMap->GetShadowMapSize());
+    ImGui::Text("Current PCF Kernel: %dx%d", 
+                shadowMap->GetPCFKernelSize(),
+                shadowMap->GetPCFKernelSize());
+  }
   
   ImGui::End();
 

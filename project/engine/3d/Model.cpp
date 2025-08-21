@@ -886,15 +886,12 @@ void Model::ExecuteSkinning()
   }
 
   // シャドウマップレンダリング中は設定を維持
-  if (!Object3dBasic::GetInstance()->IsRenderingShadowMap()) {
+  if (!ShadowRenderer::GetInstance()->IsRenderingShadow()) {
     // 通常レンダリング時は共通レンダリング設定に戻す
     Object3dBasic::GetInstance()->SetCommonRenderSetting();
   } else {
     // シャドウマップレンダリング中はシャドウレンダラーの設定を使用
-    auto* shadowRenderer = Object3dBasic::GetInstance()->GetShadowRenderer();
-    if (shadowRenderer) {
-      shadowRenderer->SetRenderState();
-    }
+    ShadowRenderer::GetInstance()->SetRenderState();
   }
 }
 

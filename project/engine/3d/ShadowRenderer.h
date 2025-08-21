@@ -3,6 +3,7 @@
 #include <wrl.h>
 #include "Matrix4x4.h"
 #include "Vector2.h"
+#include "ShadowMap.h"
 
 class DX12Basic;
 class ShadowMap;
@@ -10,14 +11,31 @@ class Light;
 
 class ShadowRenderer
 {
+private: // シングルトン設定
+    // インスタンス
+    static ShadowRenderer* instance_;
+    
+    ShadowRenderer() = default;
+    ~ShadowRenderer() = default;
+    ShadowRenderer(ShadowRenderer&) = delete;
+    ShadowRenderer& operator=(ShadowRenderer&) = delete;
+
 public:
+    /// <summary>
+    /// インスタンスの取得
+    /// </summary>
+    static ShadowRenderer* GetInstance();
+    
     /// <summary>
     /// 初期化
     /// </summary>
     /// <param name="dx12">DirectX12基本オブジェクト</param>
-    /// <param name="shadowMap">シャドウマップ</param>
-    /// <param name="light">ライト</param>
-    void Initialize(DX12Basic* dx12, ShadowMap* shadowMap, Light* light);
+    void Initialize(DX12Basic* dx12);
+    
+    /// <summary>
+    /// Lightの参照を設定
+    /// </summary>
+    void SetLight(Light* light) { light_ = light; }
 
     /// <summary>
     /// 更新処理（定数バッファの更新）
@@ -80,6 +98,26 @@ public:
     /// 法線オフセットバイアスを設定
     /// </summary>
     void SetNormalOffsetBias(float bias) { normalOffsetBias_ = bias; }
+    
+    /// <summary>
+    /// シャドウ品質を設定
+    /// </summary>
+    void SetShadowQuality(int quality);
+    
+    /// <summary>
+    /// シャドウマップサイズを設定
+    /// </summary>
+    void SetShadowMapSize(uint32_t size);
+    
+    /// <summary>
+    /// PCFカーネルサイズを設定
+    /// </summary>
+    void SetPCFKernelSize(int kernelSize);
+    
+    /// <summary>
+    /// ShadowMapを取得
+    /// </summary>
+    ShadowMap* GetShadowMap() { return shadowMap_; }
 
 private:
     /// <summary>
@@ -100,8 +138,8 @@ private:
 private:
     // DirectX12関連
     DX12Basic* dx12_ = nullptr;
-    ShadowMap* shadowMap_ = nullptr;
-    Light* light_ = nullptr;
+    ShadowMap* shadowMap_ = nullptr; // 内部で管理
+    Light* light_ = nullptr; // Light::GetInstance()を使用
 
     // シャドウ用ルートシグネチャとPSO
     Microsoft::WRL::ComPtr<ID3D12RootSignature> shadowRootSignature_;

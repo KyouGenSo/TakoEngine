@@ -4,6 +4,7 @@
 #include "Camera.h"
 #include "SrvManager.h"
 #include "PostEffectManager.h"
+#include "ShadowRenderer.h"
 
 #ifdef _DEBUG
 #include "DebugCamera.h"
@@ -32,13 +33,6 @@ void Object3dBasic::Initialize(DX12Basic* dx12)
 	light_ = new Light();
 	light_->Initialize(m_dx12_);
 	
-	// シャドウマップの生成と初期化
-	shadowMap_ = new ShadowMap();
-	shadowMap_->Initialize(m_dx12_);
-	
-	// ShadowRendererの生成と初期化
-	shadowRenderer_ = new ShadowRenderer();
-	shadowRenderer_->Initialize(m_dx12_, shadowMap_, light_);
 }
 
 void Object3dBasic::Update()
@@ -56,29 +50,12 @@ void Object3dBasic::Update()
 	}
 	
   light_->Update();
-  
-  // ShadowRendererの更新
-  if (shadowRenderer_) {
-      shadowRenderer_->SetEnabled(shadowEnabled_);
-      shadowRenderer_->Update();
-  }
 }
 
 void Object3dBasic::Finalize()
 {
 	delete light_;
 	
-	if (shadowRenderer_) {
-		shadowRenderer_->Finalize();
-		delete shadowRenderer_;
-		shadowRenderer_ = nullptr;
-	}
-	
-	if (shadowMap_) {
-		shadowMap_->Finalize();
-		delete shadowMap_;
-		shadowMap_ = nullptr;
-	}
 
 	if (instance_ != nullptr)
 	{
@@ -101,10 +78,8 @@ void Object3dBasic::SetCommonRenderSetting()
 	// ライトの描画設定
 	light_->PreDraw();
 	
-	// ShadowRendererを使用してシャドウ設定を適用
-	if (shadowRenderer_) {
-		shadowRenderer_->SetShadowForMainPass();
-	}
+	// ShadowRendererのリソース設定（ルートパラメータ9と10）
+	ShadowRenderer::GetInstance()->SetShadowForMainPass();
 }
 
 void Object3dBasic::SetDirectionalLight(const Vector3& direction, const Vector4& color, int32_t lightType, float intensity)
@@ -120,37 +95,6 @@ void Object3dBasic::SetPointLight(const Vector3& position, const Vector4& color,
 void Object3dBasic::SetSpotLight(const Vector3& position, const Vector3& direction, const Vector4& color, float intensity, float distance, float decay, float cosAngle, bool enable, int index)
 {
 	light_->SetSpotLight(position, direction, color, intensity, distance, decay, cosAngle, enable, index);
-}
-
-void Object3dBasic::SetShadowQuality(ShadowMap::ShadowQuality quality)
-{
-	if (shadowMap_) {
-		shadowMap_->SetShadowQuality(quality);
-	}
-}
-
-void Object3dBasic::SetShadowMapSize(uint32_t size)
-{
-	if (shadowMap_) {
-		shadowMap_->SetShadowMapSize(size);
-	}
-}
-
-void Object3dBasic::SetPCFKernelSize(int kernelSize)
-{
-	if (shadowMap_) {
-		shadowMap_->SetPCFKernelSize(kernelSize);
-	}
-}
-
-void Object3dBasic::SetNormalOffsetBias(float bias)
-{
-	if (shadowMap_) {
-		shadowMap_->SetNormalOffsetBias(bias);
-	}
-	if (shadowRenderer_) {
-		shadowRenderer_->SetNormalOffsetBias(bias);
-	}
 }
 
 void Object3dBasic::CreateRootSignature()
@@ -302,7 +246,6 @@ void Object3dBasic::CreateRootSignature()
 	assert(SUCCEEDED(hr));
 
 }
-
 
 void Object3dBasic::CreatePSO()
 {

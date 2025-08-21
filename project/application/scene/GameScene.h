@@ -5,8 +5,6 @@
 #include "Sprite.h"
 #include "SkyBox.h"
 #include "BoneTracker.h"
-#include "CharacterEffectPresets.h"
-#include "ShadowMap.h"
 
 class GameScene : public BaseScene
 {

@@ -1,6 +1,5 @@
 #include "ShadowRenderer.h"
 #include "DX12Basic.h"
-#include "ShadowMap.h"
 #include "Light.h"
 #include "Logger.h"
 #include "PostEffectManager.h"
@@ -9,15 +8,27 @@
 
 #include "Mat4x4Func.h"
 
-void ShadowRenderer::Initialize(DX12Basic* dx12, ShadowMap* shadowMap, Light* light)
+// 静的メンバ変数の定義
+ShadowRenderer* ShadowRenderer::instance_ = nullptr;
+
+ShadowRenderer* ShadowRenderer::GetInstance()
+{
+    if (instance_ == nullptr)
+    {
+        instance_ = new ShadowRenderer();
+    }
+    return instance_;
+}
+
+void ShadowRenderer::Initialize(DX12Basic* dx12)
 {
     assert(dx12);
-    assert(shadowMap);
-    assert(light);
     
     dx12_ = dx12;
-    shadowMap_ = shadowMap;
-    light_ = light;
+    
+    // ShadowMapを内部で生成
+    shadowMap_ = new ShadowMap();
+    shadowMap_->Initialize(dx12_);
     
     // シャドウ用のパイプラインを作成
     CreateShadowRootSignature();
@@ -59,6 +70,20 @@ void ShadowRenderer::Finalize()
     if (shadowConstantBuffer_ && shadowConstantData_) {
         shadowConstantBuffer_->Unmap(0, nullptr);
         shadowConstantData_ = nullptr;
+    }
+    
+    // ShadowMapを削除
+    if (shadowMap_) {
+        shadowMap_->Finalize();
+        delete shadowMap_;
+        shadowMap_ = nullptr;
+    }
+    
+    // インスタンスを削除
+    if (instance_ != nullptr)
+    {
+        delete instance_;
+        instance_ = nullptr;
     }
 }
 
@@ -266,4 +291,25 @@ void ShadowRenderer::CreateConstantBuffer()
     shadowConstantData_->shadowMapSize = {2048.0f, 2048.0f};
     shadowConstantData_->normalOffsetBias = normalOffsetBias_;
     shadowConstantData_->pcfKernelSize = 3.0f;
+}
+
+void ShadowRenderer::SetShadowQuality(int quality)
+{
+    if (shadowMap_) {
+        shadowMap_->SetShadowQuality(static_cast<ShadowMap::ShadowQuality>(quality));
+    }
+}
+
+void ShadowRenderer::SetShadowMapSize(uint32_t size)
+{
+    if (shadowMap_) {
+        shadowMap_->SetShadowMapSize(size);
+    }
+}
+
+void ShadowRenderer::SetPCFKernelSize(int kernelSize)
+{
+    if (shadowMap_) {
+        shadowMap_->SetPCFKernelSize(kernelSize);
+    }
 }

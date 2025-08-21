@@ -3,6 +3,7 @@
 #include "Mat4x4Func.h"
 #include "ModelBasic.h"
 #include "Object3dBasic.h"
+#include "ShadowRenderer.h"
 #include "SrvManager.h"
 #include "TextureManager.h"
 
@@ -48,7 +49,7 @@ void Mesh::Draw()
   dx12_->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
 
   // マテリアルデータを設定
-  if (!Object3dBasic::GetInstance()->IsRenderingShadowMap()) {
+  if (!ShadowRenderer::GetInstance()->IsRenderingShadow()) {
     dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource_->GetGPUVirtualAddress());
 
     // テクスチャを設定
@@ -80,7 +81,7 @@ void Mesh::DrawWithCurrentTransform()
   // インデックスバッファビューを設定
   dx12_->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
 
-  if (Object3dBasic::GetInstance()->IsRenderingShadowMap()) {
+  if (ShadowRenderer::GetInstance()->IsRenderingShadow()) {
     // シャドウマップレンダリング時は座標変換行列のみ設定（パラメータ0）
     dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, transformationResource_->GetGPUVirtualAddress());
   } else {

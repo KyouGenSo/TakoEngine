@@ -6,8 +6,6 @@
 #include "Matrix4x4.h"
 #include "Light.h"
 #include "SkyBox.h"
-#include "ShadowMap.h"
-#include "ShadowRenderer.h"
 
 class DX12Basic;
 
@@ -51,15 +49,12 @@ public: // メンバー関数
 	/// </summary>
 	void SetCommonRenderSetting();
 	
-	/// <summary>
-	/// ShadowRendererを取得
-	/// </summary>
-	ShadowRenderer* GetShadowRenderer() { return shadowRenderer_; }
 
 	// -----------------------------------Getters-----------------------------------//
 	DX12Basic* GetDX12Basic() const { return m_dx12_; }
 	Camera** GetCamera() { return &camera_; }
 	bool GetDebug() const { return isDebug_; }
+	Light* GetLight() const { return light_; }
 
 	// -----------------------------------Setters-----------------------------------//
 	void SetCamera(Camera* camera) { camera_ = camera; }
@@ -96,44 +91,8 @@ public: // メンバー関数
 	// Shadow Mapping
 	void SetDirectionalLightPosition(const Vector3& position) { light_->SetDirectionalLightPosition(position); }
 	void SetDirectionalLightShadowDistance(float distance) { light_->SetDirectionalLightShadowDistance(distance); }
-	void EnableShadow(bool enable) { shadowEnabled_ = enable; }
 	void SetAutoUpdatePosition(bool enable) { light_->SetAutoUpdatePosition(enable); }
 	void SetSceneCenter(const Vector3& center) { light_->SetSceneCenter(center); }
-	
-	/// <summary>
-	/// シャドウ品質を設定
-	/// </summary>
-	void SetShadowQuality(ShadowMap::ShadowQuality quality);
-	
-	/// <summary>
-	/// シャドウマップの解像度を設定（カスタム値）
-	/// </summary>
-	void SetShadowMapSize(uint32_t size);
-	
-	/// <summary>
-	/// PCFカーネルサイズを設定
-	/// </summary>
-	void SetPCFKernelSize(int kernelSize);
-	
-	/// <summary>
-	/// 法線オフセットバイアスを設定
-	/// </summary>
-	void SetNormalOffsetBias(float bias);
-	
-	/// <summary>
-	/// シャドウマップレンダリング中かどうかを取得
-	/// </summary>
-	bool IsRenderingShadowMap() const { return shadowRenderer_ ? shadowRenderer_->IsRenderingShadow() : false; }
-	
-	/// <summary>
-	/// 現在のシャドウマップサイズを取得
-	/// </summary>
-	uint32_t GetShadowMapSize() const { return shadowMap_ ? shadowMap_->GetShadowMapSize() : 0; }
-	
-	/// <summary>
-	/// 現在のPCFカーネルサイズを取得
-	/// </summary>
-	int GetPCFKernelSize() const { return shadowMap_ ? shadowMap_->GetPCFKernelSize() : 0; }
 
 private: // プライベートメンバー関数
 
@@ -169,9 +128,4 @@ private: // メンバー変数
 
 	// パイプラインステート
   Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;
-  
-  // シャドウマップ関連
-  ShadowMap* shadowMap_ = nullptr;
-  ShadowRenderer* shadowRenderer_ = nullptr;
-  bool shadowEnabled_ = true;
 };
