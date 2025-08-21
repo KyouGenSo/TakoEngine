@@ -119,6 +119,11 @@ public:
     /// </summary>
     ShadowMap* GetShadowMap() { return shadowMap_; }
 
+    /// <summary>
+    /// ImGuiでのデバッグ表示
+    /// </summary>
+    void DrawImGui();
+
 private:
     /// <summary>
     /// シャドウ用ルートシグネチャの作成

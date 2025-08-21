@@ -99,9 +99,9 @@ void GameScene::Initialize()
   // ライトの設定
   Object3dBasic* obj3d = Object3dBasic::GetInstance();
   obj3d->SetDirectionalLight(lightDirection_, lightColor_, 0, lightIntensity_);
-  obj3d->SetDirectionalLightShadowDistance(shadowDistance_);
-  obj3d->SetSceneCenter(sceneCenter_);
-  obj3d->SetAutoUpdatePosition(autoUpdateLightPos_);
+  obj3d->SetDirectionalLightShadowDistance(30.0f);  // デフォルト値
+  obj3d->SetSceneCenter(Vector3(0.0f, 0.0f, 0.0f));  // デフォルト値
+  obj3d->SetAutoUpdatePosition(true);  // デフォルト値
 }
 
 void GameScene::Finalize()
@@ -190,15 +190,8 @@ void GameScene::Update()
   // ライトの設定
   Object3dBasic* obj3d = Object3dBasic::GetInstance();
   obj3d->SetDirectionalLight(lightDirection_, lightColor_, 1, lightIntensity_);
-  obj3d->SetDirectionalLightShadowDistance(shadowDistance_);
-  obj3d->SetAutoUpdatePosition(autoUpdateLightPos_);
-  if (!autoUpdateLightPos_) {
-    obj3d->SetDirectionalLightPosition(lightPosition_);
-  }
-  obj3d->SetSceneCenter(sceneCenter_);
   
   // ShadowRendererの更新
-  ShadowRenderer::GetInstance()->SetEnabled(shadowEnabled_);
   ShadowRenderer::GetInstance()->Update();
 
   // シーン遷移
@@ -217,7 +210,7 @@ void GameScene::Draw()
   skyBox_->Draw();
 
   // シャドウマップ生成パス
-  if (shadowEnabled_) {
+  if (ShadowRenderer::GetInstance()->IsEnabled()) {
     ShadowRenderer::GetInstance()->BeginShadowPass();
     
     // シャドウキャスターの描画
@@ -390,91 +383,8 @@ void GameScene::DrawImGui()
   }
   ImGui::End();
 
-  // Shadow Mapping の設定
-  ImGui::Begin("Shadow Mapping");
-  ImGui::Checkbox("Enable Shadow", &shadowEnabled_);
-  
-  // シャドウ品質プリセット
-  ImGui::Separator();
-  ImGui::Text("Shadow Quality");
-  static int shadowQuality = 2; // デフォルトはHigh
-  const char* qualityNames[] = { "Low (512x512, NO PCF)", "Medium (1024x1024, PCF 3x3)", 
-                                  "High (2048x2048, PCF 5x5)", "Ultra (4096x4096, PCF 7x7)",
-                                  "Super (8192x8192, PCF 9x9)" };
-  if (ImGui::Combo("Quality Preset", &shadowQuality, qualityNames, IM_ARRAYSIZE(qualityNames))) {
-    ShadowRenderer::GetInstance()->SetShadowQuality(shadowQuality);
-  }
-  
-  // カスタム設定
-  ImGui::Separator();
-  ImGui::Text("Custom Settings");
-  
-  // シャドウマップ解像度
-  static int shadowMapSize = ShadowRenderer::GetInstance()->GetShadowMap() ? ShadowRenderer::GetInstance()->GetShadowMap()->GetShadowMapSize() : 2048;
-  const char* sizeNames[] = { "256", "512", "1024", "2048", "4096", "8192" };
-  int sizeValues[] = { 256, 512, 1024, 2048, 4096, 8192 };
-  int currentSizeIndex = 3; // デフォルトは2048
-  for (int i = 0; i < IM_ARRAYSIZE(sizeValues); i++) {
-    if (sizeValues[i] == shadowMapSize) {
-      currentSizeIndex = i;
-      break;
-    }
-  }
-  if (ImGui::Combo("Shadow Map Size", &currentSizeIndex, sizeNames, IM_ARRAYSIZE(sizeNames))) {
-    shadowMapSize = sizeValues[currentSizeIndex];
-    ShadowRenderer::GetInstance()->SetShadowMapSize(shadowMapSize);
-  }
-  
-  // PCFカーネルサイズ
-  static int pcfKernelSize = ShadowRenderer::GetInstance()->GetShadowMap() ? ShadowRenderer::GetInstance()->GetShadowMap()->GetPCFKernelSize() : 3;
-  const char* kernelNames[] = { "1x1 (No PCF)", "3x3", "5x5", "7x7", "9x9" };
-  int kernelValues[] = { 1, 3, 5, 7, 9 };
-  int currentKernelIndex = 1; // デフォルトは3x3
-  for (int i = 0; i < IM_ARRAYSIZE(kernelValues); i++) {
-    if (kernelValues[i] == pcfKernelSize) {
-      currentKernelIndex = i;
-      break;
-    }
-  }
-  if (ImGui::Combo("PCF Kernel Size", &currentKernelIndex, kernelNames, IM_ARRAYSIZE(kernelNames))) {
-    pcfKernelSize = kernelValues[currentKernelIndex];
-    ShadowRenderer::GetInstance()->SetPCFKernelSize(pcfKernelSize);
-  }
-  
-  // バイアス設定
-  ImGui::Separator();
-  ImGui::Text("Bias Settings");
-  ImGui::DragFloat("Shadow Bias", &shadowBias_, 0.00001f, 0.0f, 0.01f, "%.6f");
-  
-  static float normalOffsetBias = 0.01f;
-  if (ImGui::DragFloat("Normal Offset Bias", &normalOffsetBias, 0.001f, 0.0f, 0.1f, "%.4f")) {
-    ShadowRenderer::GetInstance()->SetNormalOffsetBias(normalOffsetBias);
-  }
-  
-  // その他の設定
-  ImGui::Separator();
-  ImGui::Text("Light Settings");
-  ImGui::DragFloat("Shadow Distance", &shadowDistance_, 0.5f, 5.0f, 100.0f);
-  ImGui::Checkbox("Auto Update Light Position", &autoUpdateLightPos_);
-  if (!autoUpdateLightPos_) {
-    ImGui::DragFloat3("Light Position", &lightPosition_.x, 0.1f, -50.0f, 50.0f);
-  }
-  ImGui::DragFloat3("Scene Center", &sceneCenter_.x, 0.1f, -50.0f, 50.0f);
-  
-  // パフォーマンス情報
-  ImGui::Separator();
-  ImGui::Text("Performance Info");
-  auto* shadowMap = ShadowRenderer::GetInstance()->GetShadowMap();
-  if (shadowMap) {
-    ImGui::Text("Current Shadow Map Size: %dx%d", 
-                shadowMap->GetShadowMapSize(),
-                shadowMap->GetShadowMapSize());
-    ImGui::Text("Current PCF Kernel: %dx%d", 
-                shadowMap->GetPCFKernelSize(),
-                shadowMap->GetPCFKernelSize());
-  }
-  
-  ImGui::End();
+  // ShadowRendererのImGuiを描画
+  ShadowRenderer::GetInstance()->DrawImGui();
 
   characterModel_->DrawImGui();
   characterModel2_->DrawImGui();

@@ -8,6 +8,10 @@
 
 #include "Mat4x4Func.h"
 
+#ifdef _DEBUG
+#include "ImGui.h"
+#endif
+
 // 静的メンバ変数の定義
 ShadowRenderer* ShadowRenderer::instance_ = nullptr;
 
@@ -312,4 +316,121 @@ void ShadowRenderer::SetPCFKernelSize(int kernelSize)
     if (shadowMap_) {
         shadowMap_->SetPCFKernelSize(kernelSize);
     }
+}
+
+void ShadowRenderer::DrawImGui()
+{
+#ifdef _DEBUG
+    ImGui::Begin("Shadow Mapping");
+    
+    // シャドウの有効/無効
+    ImGui::Checkbox("Enable Shadow", &shadowEnabled_);
+    
+    // シャドウ品質プリセット
+    ImGui::Separator();
+    ImGui::Text("Shadow Quality");
+    static int shadowQuality = 2; // デフォルトはHigh
+    const char* qualityNames[] = { "Low (512x512, NO PCF)", "Medium (1024x1024, PCF 3x3)", 
+                                    "High (2048x2048, PCF 5x5)", "Ultra (4096x4096, PCF 7x7)",
+                                    "Super (8192x8192, PCF 9x9)" };
+    if (ImGui::Combo("Quality Preset", &shadowQuality, qualityNames, IM_ARRAYSIZE(qualityNames))) {
+        SetShadowQuality(shadowQuality);
+    }
+    
+    // カスタム設定
+    ImGui::Separator();
+    ImGui::Text("Custom Settings");
+    
+    // シャドウマップ解像度
+    if (shadowMap_) {
+        static int shadowMapSize = shadowMap_->GetShadowMapSize();
+        const char* sizeNames[] = { "256", "512", "1024", "2048", "4096", "8192" };
+        int sizeValues[] = { 256, 512, 1024, 2048, 4096, 8192 };
+        int currentSizeIndex = 3; // デフォルトは2048
+        for (int i = 0; i < IM_ARRAYSIZE(sizeValues); i++) {
+            if (sizeValues[i] == shadowMapSize) {
+                currentSizeIndex = i;
+                break;
+            }
+        }
+        if (ImGui::Combo("Shadow Map Size", &currentSizeIndex, sizeNames, IM_ARRAYSIZE(sizeNames))) {
+            shadowMapSize = sizeValues[currentSizeIndex];
+            SetShadowMapSize(shadowMapSize);
+        }
+        
+        // PCFカーネルサイズ
+        static int pcfKernelSize = shadowMap_->GetPCFKernelSize();
+        const char* kernelNames[] = { "1x1 (No PCF)", "3x3", "5x5", "7x7", "9x9" };
+        int kernelValues[] = { 1, 3, 5, 7, 9 };
+        int currentKernelIndex = 1; // デフォルトは3x3
+        for (int i = 0; i < IM_ARRAYSIZE(kernelValues); i++) {
+            if (kernelValues[i] == pcfKernelSize) {
+                currentKernelIndex = i;
+                break;
+            }
+        }
+        if (ImGui::Combo("PCF Kernel Size", &currentKernelIndex, kernelNames, IM_ARRAYSIZE(kernelNames))) {
+            pcfKernelSize = kernelValues[currentKernelIndex];
+            SetPCFKernelSize(pcfKernelSize);
+        }
+    }
+    
+    // バイアス設定
+    ImGui::Separator();
+    ImGui::Text("Bias Settings");
+    if (ImGui::DragFloat("Shadow Bias", &shadowBias_, 0.00001f, 0.0f, 0.01f, "%.6f")) {
+        // shadowBias_は既にメンバ変数なので直接変更される
+    }
+    
+    if (ImGui::DragFloat("Normal Offset Bias", &normalOffsetBias_, 0.001f, 0.0f, 0.1f, "%.4f")) {
+        // normalOffsetBias_は既にメンバ変数なので直接変更される
+    }
+    
+    // ライト設定（Lightクラスと連携）
+    if (light_) {
+        ImGui::Separator();
+        ImGui::Text("Light Settings");
+        
+        float shadowDistance = light_->GetDirectionalLight().shadowDistance;
+        if (ImGui::DragFloat("Shadow Distance", &shadowDistance, 0.5f, 5.0f, 100.0f)) {
+            light_->SetDirectionalLightShadowDistance(shadowDistance);
+        }
+        
+        bool autoUpdatePos = light_->GetAutoUpdatePosition();
+        if (ImGui::Checkbox("Auto Update Light Position", &autoUpdatePos)) {
+            light_->SetAutoUpdatePosition(autoUpdatePos);
+        }
+        
+        if (!autoUpdatePos) {
+            Vector3 lightPos = light_->GetDirectionalLight().position;
+            if (ImGui::DragFloat3("Light Position", &lightPos.x, 0.1f, -50.0f, 50.0f)) {
+                light_->SetDirectionalLightPosition(lightPos);
+            }
+        }
+        
+        Vector3 sceneCenter = light_->GetSceneCenter();
+        if (ImGui::DragFloat3("Scene Center", &sceneCenter.x, 0.1f, -50.0f, 50.0f)) {
+            light_->SetSceneCenter(sceneCenter);
+        }
+    }
+    
+    // パフォーマンス情報
+    ImGui::Separator();
+    ImGui::Text("Performance Info");
+    if (shadowMap_) {
+        ImGui::Text("Current Shadow Map Size: %dx%d", 
+                    shadowMap_->GetShadowMapSize(),
+                    shadowMap_->GetShadowMapSize());
+        ImGui::Text("Current PCF Kernel: %dx%d", 
+                    shadowMap_->GetPCFKernelSize(),
+                    shadowMap_->GetPCFKernelSize());
+        
+        // シャドウマップのメモリ使用量を表示
+        uint32_t mapSize = shadowMap_->GetShadowMapSize();
+        float memoryMB = (mapSize * mapSize * 4) / (1024.0f * 1024.0f); // 32bit depth
+        ImGui::Text("Memory Usage: %.2f MB", memoryMB);
+    }
+    
+    ImGui::End();
+#endif // _DEBUG
 }

@@ -100,6 +100,7 @@ public: // メンバ関数
 	void SetAutoUpdatePosition(bool enable) { autoUpdatePosition_ = enable; }
 	void SetSceneCenter(const Vector3& center) { sceneCenter_ = center; }
 	bool GetAutoUpdatePosition() const { return autoUpdatePosition_; }
+	Vector3 GetSceneCenter() const { return sceneCenter_; }
 
 	// PointLight
 	void SetPointLight(const Vector3& position, const Vector4& color, float intensity, float radius, float decay, bool enable, int index);
