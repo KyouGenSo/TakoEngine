@@ -28,6 +28,9 @@ public: // メンバー関数
 	[[nodiscard]] const Matrix4x4& GetProjectionMatrix() const { return projectionMatrix_; }
 	[[nodiscard]] const Matrix4x4& GetViewProjectionMatrix() const { return viewProjectionMatrix_; }
 	[[nodiscard]] const Vector3& GetRotate() const { return transform_.rotate; }
+  [[nodiscard]] float GetRotateX() const { return transform_.rotate.x; }
+  [[nodiscard]] float GetRotateY() const { return transform_.rotate.y; }
+  [[nodiscard]] float GetRotateZ() const { return transform_.rotate.z; }
 	[[nodiscard]] const Vector3& GetTranslate() const { return transform_.translate; }
   [[nodiscard]] const Transform& GetTransform() const { return transform_; }
 	[[nodiscard]] float GetFovY() const { return fovY_; }
