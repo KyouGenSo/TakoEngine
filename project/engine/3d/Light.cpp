@@ -4,6 +4,7 @@
 #include <numbers>
 
 #include "Mat4x4Func.h"
+#include "Camera.h"
 
 void Light::Initialize(DX12Basic* dx12)
 {
@@ -125,7 +126,6 @@ void Light::CreateDirectionalLightData()
 	
 	// シャドウマップ用の初期値設定
 	directionalLightData_->position = Vector3(0.0f, 0.0f, 0.0f);   // 位置（0,0,0は自動計算のトリガー）
-	directionalLightData_->shadowDistance = 30.0f;                 // デフォルトのシャドウ範囲
 	directionalLightData_->viewMatrix = Mat4x4::MakeIdentity();
 	directionalLightData_->projMatrix = Mat4x4::MakeIdentity();
 	directionalLightData_->viewProjMatrix = Mat4x4::MakeIdentity();
@@ -189,32 +189,21 @@ void Light::CreateLightConstants()
 	lightConstantsData_->numSpotLights = 0;
 }
 
-void Light::UpdateDirectionalLightShadowMatrices()
+void Light::UpdateDirectionalLightShadowMatrices(const Camera* camera, float maxShadowDistance)
 {
-	// デフォルトの影距離設定
-	if (directionalLightData_->shadowDistance <= 0.0f) {
-		directionalLightData_->shadowDistance = 35.0f;  // デフォルト値
+	if (!camera) {
+		return; // カメラが指定されていない場合は処理しない
 	}
 	
-	float shadowSize = directionalLightData_->shadowDistance;
 	Vector3 lightDirection = directionalLightData_->direction;
 	lightDirection = lightDirection.Normalize();
 	
-	// 自動位置計算：位置が(0,0,0)に近い場合は自動計算モード
-	Vector3 lightPosition;
-	if (directionalLightData_->position.Length() < 0.001f || autoUpdatePosition_) {
-		// シーン中心から、ライト方向の逆方向にshadowDistance分離れた位置を設定
-		lightPosition = sceneCenter_ - lightDirection * shadowSize;
-		// 計算した位置を保存（手動設定との整合性のため）
-		if (autoUpdatePosition_) {
-			directionalLightData_->position = sceneCenter_;  // シーン中心を基準として保存
-		}
-	} else {
-		// 手動で設定された位置を使用
-		lightPosition = directionalLightData_->position - lightDirection * shadowSize;
-	}
+	// ライトの仮の位置を設定（カメラ位置を基準に）
+	Vector3 cameraPosition = camera->GetTranslate();
+	float tempDistance = 100.0f; // ライトカメラの仮の距離
+	Vector3 lightPosition = cameraPosition - lightDirection * tempDistance;
 	
-	// ライトの Transform を作成（ライト位置から原点を向く）
+	// ライトのビュー行列を作成
 	Vector3 scale = {1.0f, 1.0f, 1.0f};
 	Vector3 rotate = {0.0f, 0.0f, 0.0f};
 	
@@ -231,17 +220,34 @@ void Light::UpdateDirectionalLightShadowMatrices()
 	// ビュー行列はワールド行列の逆行列
 	directionalLightData_->viewMatrix = Mat4x4::Inverse(lightWorldMatrix);
 	
-	// 正射影行列の計算（TakoEngineのMakeOrtho関数を使用）
-	float orthoWidth = shadowSize * 2.0f;
-	float orthoHeight = shadowSize * 2.0f;
-	float nearPlane = 0.1f;
-	float farPlane = shadowSize * 2.0f;
+	// maxShadowDistanceで制限された視錐台の境界ボックスをライト空間で取得
+	auto [minBounds, maxBounds] = camera->GetFrustumBoundingBoxWithCustomFar(maxShadowDistance, &directionalLightData_->viewMatrix);
 	
+	// 視錐台を制限された範囲でカバーする正射影パラメータを計算
+	float orthoLeft = minBounds.x;
+	float orthoRight = maxBounds.x;
+	float orthoBottom = minBounds.y;
+	float orthoTop = maxBounds.y;
+	float orthoNear = minBounds.z - 20.0f; // 余裕を持たせる（最も近い点から少し手前）
+	float orthoFar = maxBounds.z + 20.0f;  // 余裕を持たせる（最も遠い点から少し奥）
+	
+	// 安全性チェック（near/farが逆転しないように）
+	if (orthoNear >= orthoFar) {
+		orthoNear = 0.1f;
+		orthoFar = 1000.0f;
+	}
+	
+	// 正射影行列の作成
 	directionalLightData_->projMatrix = Mat4x4::MakeOrtho(
-		-orthoWidth / 2.0f, orthoHeight / 2.0f,
-		orthoWidth / 2.0f, -orthoHeight / 2.0f,
-		nearPlane, farPlane);
+		orthoLeft, orthoTop,
+		orthoRight, orthoBottom,
+		orthoNear, orthoFar);
 	
 	// ビュープロジェクション行列の計算
 	directionalLightData_->viewProjMatrix = Mat4x4::Multiply(directionalLightData_->viewMatrix, directionalLightData_->projMatrix);
+	
+	// ライト位置を保存（互換性のため）
+	if (autoUpdatePosition_) {
+		directionalLightData_->position = lightPosition;
+	}
 }

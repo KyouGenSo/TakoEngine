@@ -8,6 +8,7 @@
 #include "Matrix4x4.h"
 
 class DX12Basic;
+class Camera;
 
 class Light
 {
@@ -29,7 +30,6 @@ public: // 構造体
 		Matrix4x4 projMatrix;
 		Matrix4x4 viewProjMatrix;
 		Vector3 position;  // ライトの位置（シャドウマップ用）
-		float shadowDistance;  // シャドウの範囲
 	};
 
 	// 点光源データ
@@ -88,10 +88,9 @@ public: // メンバ関数
 	void SetDirectionalLightType(int32_t lightType) { directionalLightData_->lightType = lightType; }
 	void SetDirectionalLightIntensity(float intensity) { directionalLightData_->intensity = intensity; }
 	void SetDirectionalLightPosition(const Vector3& position) { directionalLightData_->position = position; }
-	void SetDirectionalLightShadowDistance(float distance) { directionalLightData_->shadowDistance = distance; }
 	
-	// シャドウマップ用の行列計算
-	void UpdateDirectionalLightShadowMatrices();
+	// シャドウマップ用の行列計算（カメラの視錐台に基づく）
+	void UpdateDirectionalLightShadowMatrices(const Camera* camera, float maxShadowDistance = 1000.0f);
 	
 	// ゲッター
 	const DirectionalLight& GetDirectionalLight() const { return *directionalLightData_; }

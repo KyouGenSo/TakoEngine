@@ -52,8 +52,8 @@ void ShadowRenderer::Update()
     }
     
     // シャドウマップの更新
-    if (shadowEnabled_) {
-        light_->UpdateDirectionalLightShadowMatrices();
+    if (shadowEnabled_ && camera_) {
+        light_->UpdateDirectionalLightShadowMatrices(camera_, maxShadowDistance_);
         shadowConstantData_->lightViewProj = light_->GetDirectionalLight().viewProjMatrix;
         shadowConstantData_->enableShadow = 1;
         shadowConstantData_->shadowMapSize = {
@@ -383,9 +383,9 @@ void ShadowRenderer::DrawImGui()
         ImGui::Separator();
         ImGui::Text("Light Settings");
         
-        float shadowDistance = light_->GetDirectionalLight().shadowDistance;
-        if (ImGui::DragFloat("Shadow Distance", &shadowDistance, 0.5f, 5.0f, 100.0f)) {
-            light_->SetDirectionalLightShadowDistance(shadowDistance);
+        // 最大シャドウ距離の設定
+        if (ImGui::DragFloat("Max Shadow Distance", &maxShadowDistance_, 1.0f, 5.0f, 500.0f, "%.1f")) {
+            // 値は既に更新されている
         }
         
         bool autoUpdatePos = light_->GetAutoUpdatePosition();

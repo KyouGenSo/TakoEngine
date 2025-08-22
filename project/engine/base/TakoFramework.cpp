@@ -55,6 +55,7 @@ void TakoFramework::Initialize()
   // ShadowRendererの初期化
   ShadowRenderer::GetInstance()->Initialize(dx12_);
   ShadowRenderer::GetInstance()->SetLight(Object3dBasic::GetInstance()->GetLight());
+  ShadowRenderer::GetInstance()->SetCamera(defaultCamera_);
 
   Draw2D::GetInstance()->SetCamera(defaultCamera_);
   Draw2D::GetInstance()->Initialize(dx12_);

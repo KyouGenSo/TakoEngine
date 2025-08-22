@@ -8,6 +8,7 @@
 class DX12Basic;
 class ShadowMap;
 class Light;
+class Camera;
 
 class ShadowRenderer
 {
@@ -36,6 +37,11 @@ public:
     /// Lightの参照を設定
     /// </summary>
     void SetLight(Light* light) { light_ = light; }
+    
+    /// <summary>
+    /// Cameraの参照を設定
+    /// </summary>
+    void SetCamera(Camera* camera) { camera_ = camera; }
 
     /// <summary>
     /// 更新処理（定数バッファの更新）
@@ -115,6 +121,16 @@ public:
     void SetPCFKernelSize(int kernelSize);
     
     /// <summary>
+    /// 最大シャドウ距離を設定
+    /// </summary>
+    void SetMaxShadowDistance(float distance) { maxShadowDistance_ = distance; }
+    
+    /// <summary>
+    /// 最大シャドウ距離を取得
+    /// </summary>
+    float GetMaxShadowDistance() const { return maxShadowDistance_; }
+    
+    /// <summary>
     /// ShadowMapを取得
     /// </summary>
     ShadowMap* GetShadowMap() { return shadowMap_; }
@@ -145,6 +161,7 @@ private:
     DX12Basic* dx12_ = nullptr;
     ShadowMap* shadowMap_ = nullptr;
     Light* light_ = nullptr;
+    Camera* camera_ = nullptr;
 
     // シャドウ用ルートシグネチャとPSO
     Microsoft::WRL::ComPtr<ID3D12RootSignature> shadowRootSignature_;
@@ -168,6 +185,7 @@ private:
     bool shadowEnabled_ = true;
     float shadowBias_ = 0.0001f;
     float normalOffsetBias_ = 0.01f;
+    float maxShadowDistance_ = 50.0f;  // 影を表示する最大距離
 
     // レンダリング状態
     bool isRenderingShadow_ = false;

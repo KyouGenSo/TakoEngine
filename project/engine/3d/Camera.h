@@ -1,6 +1,7 @@
 #pragma once
 #include "Mat4x4Func.h"
 #include "Transform.h"
+#include <array>
 
 
 class Camera
@@ -37,6 +38,34 @@ public: // メンバー関数
 	[[nodiscard]] float GetAspect() const { return aspect_; }
 	[[nodiscard]] float GetNearClip() const { return nearZ_; }
 	[[nodiscard]] float GetFarClip() const { return farZ_; }
+	
+	/// <summary>
+	/// 視錐台の8つの頂点を取得（ワールド空間）
+	/// </summary>
+	/// <returns>視錐台の8頂点（0-3:near面、4-7:far面）</returns>
+	[[nodiscard]] std::array<Vector3, 8> GetFrustumCorners() const;
+	
+	/// <summary>
+	/// カスタムfarクリップで視錐台の8つの頂点を取得（ワールド空間）
+	/// </summary>
+	/// <param name="customFar">カスタムのfarクリップ距離</param>
+	/// <returns>視錐台の8頂点（0-3:near面、4-7:far面）</returns>
+	[[nodiscard]] std::array<Vector3, 8> GetFrustumCornersWithCustomFar(float customFar) const;
+	
+	/// <summary>
+	/// 視錐台の境界ボックスを取得（min, max）
+	/// </summary>
+	/// <param name="viewMatrix">変換に使用するビュー行列（省略時はワールド空間）</param>
+	/// <returns>first:最小座標、second:最大座標</returns>
+	[[nodiscard]] std::pair<Vector3, Vector3> GetFrustumBoundingBox(const Matrix4x4* viewMatrix = nullptr) const;
+	
+	/// <summary>
+	/// カスタムfarクリップで視錐台の境界ボックスを取得（min, max）
+	/// </summary>
+	/// <param name="customFar">カスタムのfarクリップ距離</param>
+	/// <param name="viewMatrix">変換に使用するビュー行列（省略時はワールド空間）</param>
+	/// <returns>first:最小座標、second:最大座標</returns>
+	[[nodiscard]] std::pair<Vector3, Vector3> GetFrustumBoundingBoxWithCustomFar(float customFar, const Matrix4x4* viewMatrix = nullptr) const;
 
 
 	//-----------------------------------------Setter-----------------------------------------//
