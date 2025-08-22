@@ -484,7 +484,7 @@ void Model::DrawSkeleton(Matrix4x4 world)
   {
     // Calculate the position of the joint in world space
     Matrix4x4 jointWorldMatrix = joint.skeletonSpaceMatrix * world;
-    Vector3 jointPosition = Mat4x4::TransForm(jointWorldMatrix, Vector3(0.0f, 0.0f, 0.0f));
+    Vector3 jointPosition = Mat4x4::Transform(jointWorldMatrix, Vector3(0.0f, 0.0f, 0.0f));
 
     // Draw line to parent joint if it exists
     if (joint.parentIndex)
@@ -493,7 +493,7 @@ void Model::DrawSkeleton(Matrix4x4 world)
 
       // Calculate the position of the parent joint in world space
       Matrix4x4 parentWorldMatrix = parentJoint.skeletonSpaceMatrix * world;
-      Vector3 parentPosition = Mat4x4::TransForm(parentWorldMatrix, Vector3(0.0f, 0.0f, 0.0f));
+      Vector3 parentPosition = Mat4x4::Transform(parentWorldMatrix, Vector3(0.0f, 0.0f, 0.0f));
 
       // ホバー中のジョイントに関連する線は赤色で表示
       Vector4 lineColor = Vector4(1.0f, 1.0f, 1.0f, 1.0f);  // デフォルト: 白

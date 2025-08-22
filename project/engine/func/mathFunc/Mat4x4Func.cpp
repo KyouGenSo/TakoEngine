@@ -383,7 +383,7 @@ namespace Mat4x4 {
 
 	}
 
-	Vector3 TransForm(const Matrix4x4& m, const Vector3& v) {
+	Vector3 Transform(const Matrix4x4& m, const Vector3& v) {
 		Vector3 result;
 		float w;
 
@@ -401,7 +401,7 @@ namespace Mat4x4 {
 		return result;
 	}
 
-  Vector3 TransFormNormal(const Matrix4x4& m, const Vector3& v)
+  Vector3 TransformNormal(const Matrix4x4& m, const Vector3& v)
   {
     Vector3 result;
     result.x = m.m[0][0] * v.x + m.m[1][0] * v.y + m.m[2][0] * v.z;

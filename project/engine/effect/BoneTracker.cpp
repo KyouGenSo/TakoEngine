@@ -132,12 +132,12 @@ void BoneTracker::Update(const Transform& transform)
       transform.translate
     );
     Matrix4x4 boneWorldMatrix = targetJoint.skeletonSpaceMatrix * worldMatrix;
-    Vector3 bonePosition = Mat4x4::TransForm(boneWorldMatrix, Vector3(0.0f, 0.0f, 0.0f));
+    Vector3 bonePosition = Mat4x4::Transform(boneWorldMatrix, Vector3(0.0f, 0.0f, 0.0f));
 
     // オフセットを適用
     if (link.offset.x != 0.0f || link.offset.y != 0.0f || link.offset.z != 0.0f) {
       // ボーンの回転も考慮してオフセットを適用
-      Vector3 worldOffset = Mat4x4::TransForm(boneWorldMatrix, link.offset) - bonePosition;
+      Vector3 worldOffset = Mat4x4::Transform(boneWorldMatrix, link.offset) - bonePosition;
       bonePosition = bonePosition + worldOffset;
     }
 

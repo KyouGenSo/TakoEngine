@@ -99,7 +99,6 @@ void GameScene::Initialize()
   // ライトの設定
   Object3dBasic* obj3d = Object3dBasic::GetInstance();
   obj3d->SetDirectionalLight(lightDirection_, lightColor_, 0, lightIntensity_);
-  obj3d->SetDirectionalLightShadowDistance(30.0f);  // デフォルト値
   obj3d->SetSceneCenter(Vector3(0.0f, 0.0f, 0.0f));  // デフォルト値
   obj3d->SetAutoUpdatePosition(true);  // デフォルト値
 }

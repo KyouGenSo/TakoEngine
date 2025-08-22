@@ -90,7 +90,6 @@ public: // メンバー関数
 	
 	// Shadow Mapping
 	void SetDirectionalLightPosition(const Vector3& position) { light_->SetDirectionalLightPosition(position); }
-	void SetDirectionalLightShadowDistance(float distance) { light_->SetDirectionalLightShadowDistance(distance); }
 	void SetAutoUpdatePosition(bool enable) { light_->SetAutoUpdatePosition(enable); }
 	void SetSceneCenter(const Vector3& center) { light_->SetSceneCenter(center); }
 

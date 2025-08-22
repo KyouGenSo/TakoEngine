@@ -147,7 +147,7 @@ void Draw2D::DrawBox(const Vector3& pos, const Vector3& size, const float angle,
 	for (auto& vertex : vertexPos)
 	{
 		Vector3 pos2D = { vertex.x, vertex.y, 0.0f };
-		pos2D = Mat4x4::TransForm(rotationMatrix, Vector3(pos2D.x, pos2D.y, 0.0f));
+		pos2D = Mat4x4::Transform(rotationMatrix, Vector3(pos2D.x, pos2D.y, 0.0f));
 		vertex = Vector2(pos2D.x, pos2D.y);
 	}
 
@@ -200,9 +200,9 @@ void Draw2D::DrawSphere(const Vector3& center, const float radius, const Vector4
 		Vector3 b = sphereVerties_[i + 1];
 		Vector3 c = sphereVerties_[i + 2];
 
-		a = Mat4x4::TransForm(worldMatrix, a);
-		b = Mat4x4::TransForm(worldMatrix, b);
-		c = Mat4x4::TransForm(worldMatrix, c);
+		a = Mat4x4::Transform(worldMatrix, a);
+		b = Mat4x4::Transform(worldMatrix, b);
+		c = Mat4x4::Transform(worldMatrix, c);
 
 		// ライン描画
 		DrawLine(a, b, color);

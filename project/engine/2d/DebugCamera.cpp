@@ -68,7 +68,7 @@ void DebugCamera::Move()
 
 		Vector3 move = Vector3(0.0f, 0.0f, moveSpeed3D_);
 		// 移動ベクトルを角度分だけ回転させる
-		move = Mat4x4::TransForm(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
+		move = Mat4x4::Transform(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
 
 		transform_.translate += move;
 
@@ -79,7 +79,7 @@ void DebugCamera::Move()
 
 		Vector3 move = Vector3(0.0f, 0.0f, -moveSpeed3D_);
 		// 移動ベクトルを角度分だけ回転させ
-		move = Mat4x4::TransForm(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
+		move = Mat4x4::Transform(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
 
 		transform_.translate += move;
 	}
@@ -89,7 +89,7 @@ void DebugCamera::Move()
 
 		Vector3 move = Vector3(-moveSpeed3D_, 0.0f, 0.0f);
 		// 移動ベクトルを角度分だけ回転させる
-		move = Mat4x4::TransForm(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
+		move = Mat4x4::Transform(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
 
 		transform_.translate += move;
 	}
@@ -99,7 +99,7 @@ void DebugCamera::Move()
 
 		Vector3 move = Vector3(moveSpeed3D_, 0.0f, 0.0f);
 		// 移動ベクトルを角度分だけ回転させる
-		move = Mat4x4::TransForm(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
+		move = Mat4x4::Transform(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
 
 		transform_.translate += move;
 	}
@@ -109,7 +109,7 @@ void DebugCamera::Move()
 
 		Vector3 move = Vector3(0.0f, -moveSpeed3D_, 0.0f);
 		// 移動ベクトルを角度分だけ回転させる
-		move = Mat4x4::TransForm(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
+		move = Mat4x4::Transform(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
 
 		transform_.translate += move;
 	}
@@ -119,7 +119,7 @@ void DebugCamera::Move()
 
 		Vector3 move = Vector3(0.0f, moveSpeed3D_, 0.0f);
 		// 移動ベクトルを角度分だけ回転させる
-		move = Mat4x4::TransForm(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
+		move = Mat4x4::Transform(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
 
 		transform_.translate += move;
 	}

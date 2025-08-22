@@ -38,9 +38,9 @@ namespace Mat4x4 {
 	Matrix4x4 MakeAffine(const Vector3& scale, const Vector3& rotate, const Vector3& translate);
 	Matrix4x4 MakeAffine(const Vector3& scale, const Quaternion& rotate, const Vector3& translate);
 
-	Vector3 TransForm(const Matrix4x4& m, const Vector3& v);
+	Vector3 Transform(const Matrix4x4& m, const Vector3& v);
 
-  Vector3 TransFormNormal(const Matrix4x4& m, const Vector3& v);
+  Vector3 TransformNormal(const Matrix4x4& m, const Vector3& v);
 
 	Matrix4x4 MakePerspective(float fovY, float aspectRatio, float nearClip, float farClip);
 
