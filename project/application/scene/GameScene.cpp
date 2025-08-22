@@ -189,9 +189,6 @@ void GameScene::Update()
   // ライトの設定
   Object3dBasic* obj3d = Object3dBasic::GetInstance();
   obj3d->SetDirectionalLight(lightDirection_, lightColor_, 1, lightIntensity_);
-  
-  // ShadowRendererの更新
-  ShadowRenderer::GetInstance()->Update();
 
   // シーン遷移
   if (Input::GetInstance()->TriggerKey(DIK_RETURN))

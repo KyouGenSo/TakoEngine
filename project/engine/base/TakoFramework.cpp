@@ -147,6 +147,9 @@ void TakoFramework::Update()
 	// Object3dBasicの更新
 	Object3dBasic::GetInstance()->Update();
 
+  // ShadowRendererの更新
+  ShadowRenderer::GetInstance()->Update();
+
 }
 
 void TakoFramework::Run()
