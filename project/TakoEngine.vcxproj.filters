@@ -52,6 +52,9 @@
     <Filter Include="base\DX12">
       <UniqueIdentifier>{490ed4b9-7dfe-4558-9e4b-941c092d8a86}</UniqueIdentifier>
     </Filter>
+    <Filter Include="collision">
+      <UniqueIdentifier>{dc286759-00b1-48d2-835f-d346b9dddb34}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\func\mathFunc\Mat4x4Func.cpp">
@@ -224,6 +227,21 @@
     </ClCompile>
     <ClCompile Include="engine\3d\ShadowRenderer.cpp">
       <Filter>3d</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\collision\AABBCollider.cpp">
+      <Filter>collision</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\collision\Collider.cpp">
+      <Filter>collision</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\collision\CollisionManager.cpp">
+      <Filter>collision</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\collision\SphereCollider.cpp">
+      <Filter>collision</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\collision\OBBCollider.cpp">
+      <Filter>collision</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -448,6 +466,24 @@
     </ClInclude>
     <ClInclude Include="engine\3d\ShadowRenderer.h">
       <Filter>3d</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\collision\AABBCollider.h">
+      <Filter>collision</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\collision\Collider.h">
+      <Filter>collision</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\collision\CollisionManager.h">
+      <Filter>collision</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\collision\SphereCollider.h">
+      <Filter>collision</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\math\OBB.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\collision\OBBCollider.h">
+      <Filter>collision</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

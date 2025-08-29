@@ -2,6 +2,7 @@
 #include "Logger.h"
 #include "imgui.h"
 #include "DebugCamera.h"
+#include "OBB.h"
 #include <cassert>
 
 Draw2D* Draw2D::instance_ = nullptr;
@@ -241,6 +242,30 @@ void Draw2D::DrawAABB(const AABB& aabb, const Vector4& color)
 	DrawLine(p2, p6, color);
 	DrawLine(p3, p7, color);
 	DrawLine(p4, p8, color);
+}
+
+void Draw2D::DrawOBB(const OBB& obb, const Vector4& color)
+{
+	// OBBの8つの頂点を取得
+	std::array<Vector3, 8> vertices = obb.GetVertices();
+	
+	// 底面（頂点0,1,2,3）
+	DrawLine(vertices[0], vertices[1], color);
+	DrawLine(vertices[1], vertices[2], color);
+	DrawLine(vertices[2], vertices[3], color);
+	DrawLine(vertices[3], vertices[0], color);
+	
+	// 上面（頂点4,5,6,7）
+	DrawLine(vertices[4], vertices[5], color);
+	DrawLine(vertices[5], vertices[6], color);
+	DrawLine(vertices[6], vertices[7], color);
+	DrawLine(vertices[7], vertices[4], color);
+	
+	// 側面（底面と上面をつなぐ）
+	DrawLine(vertices[0], vertices[4], color);
+	DrawLine(vertices[1], vertices[5], color);
+	DrawLine(vertices[2], vertices[6], color);
+	DrawLine(vertices[3], vertices[7], color);
 }
 
 void Draw2D::DrawGrid(const float size, const float subdivision, const Vector4& color)

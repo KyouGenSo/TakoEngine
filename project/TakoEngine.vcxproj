@@ -48,13 +48,13 @@
     <OutDir>$(SolutionDir)..\Generated\outputs\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Generated\obj\$(ProjectName)\$(Configuration)\</IntDir>
     <IncludePath>$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\nlohmann;$(IncludePath)</IncludePath>
-    <PublicIncludeDirectories>$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\assimp\include;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\math;$(ProjectDir)engine\2d;$(ProjectDir)engine\3d;$(ProjectDir)engine\audio;$(ProjectDir)engine\base;$(ProjectDir)engine\effect;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\func;$(ProjectDir)engine\imgui;$(ProjectDir)engine\io;$(ProjectDir)engine\scene;$(ProjectDir)engine\time;$(PublicIncludeDirectories)</PublicIncludeDirectories>
+    <PublicIncludeDirectories>$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\assimp\include;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\math;$(ProjectDir)engine\2d;$(ProjectDir)engine\3d;$(ProjectDir)engine\audio;$(ProjectDir)engine\base;$(ProjectDir)engine\effect;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\func;$(ProjectDir)engine\imgui;$(ProjectDir)engine\io;$(ProjectDir)engine\scene;$(ProjectDir)engine\collision;$(ProjectDir)engine\time;$(PublicIncludeDirectories)</PublicIncludeDirectories>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)..\Generated\outputs\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Generated\obj\$(ProjectName)\$(Configuration)\</IntDir>
     <IncludePath>$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\nlohmann;$(IncludePath)</IncludePath>
-    <PublicIncludeDirectories>$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\assimp\include;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\math;$(ProjectDir)engine\2d;$(ProjectDir)engine\3d;$(ProjectDir)engine\audio;$(ProjectDir)engine\base;$(ProjectDir)engine\effect;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\func;$(ProjectDir)engine\imgui;$(ProjectDir)engine\io;$(ProjectDir)engine\scene;$(ProjectDir)engine\time;$(PublicIncludeDirectories)</PublicIncludeDirectories>
+    <PublicIncludeDirectories>$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\assimp\include;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\math;$(ProjectDir)engine\2d;$(ProjectDir)engine\3d;$(ProjectDir)engine\audio;$(ProjectDir)engine\base;$(ProjectDir)engine\effect;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\func;$(ProjectDir)engine\imgui;$(ProjectDir)engine\io;$(ProjectDir)engine\scene;$(ProjectDir)engine\collision;$(ProjectDir)engine\time;$(PublicIncludeDirectories)</PublicIncludeDirectories>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -67,7 +67,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(ProjectDir)engine\time;$(ProjectDir)engine\effect;$(ProjectDir)engine\scene;$(ProjectDir)engine\audio;$(ProjectDir)engine\imgui;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)engine\time;$(ProjectDir)engine\effect;$(ProjectDir)engine\scene;$(ProjectDir)engine\audio;$(ProjectDir)engine\collision;$(ProjectDir)engine\imgui;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -99,7 +99,7 @@
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)engine\time;$(ProjectDir)engine\effect;$(ProjectDir)engine\scene;$(ProjectDir)engine\audio;$(ProjectDir)engine\debug;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)engine\time;$(ProjectDir)engine\effect;$(ProjectDir)engine\scene;$(ProjectDir)engine\audio;$(ProjectDir)engine\collision;$(ProjectDir)engine\debug;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -122,6 +122,11 @@
     <ClCompile Include="engine\3d\ShadowMap.cpp" />
     <ClCompile Include="engine\3d\ShadowRenderer.cpp" />
     <ClCompile Include="engine\3d\SkyBox.cpp" />
+    <ClCompile Include="engine\collision\AABBCollider.cpp" />
+    <ClCompile Include="engine\collision\Collider.cpp" />
+    <ClCompile Include="engine\collision\CollisionManager.cpp" />
+    <ClCompile Include="engine\collision\OBBCollider.cpp" />
+    <ClCompile Include="engine\collision\SphereCollider.cpp" />
     <ClCompile Include="engine\effect\Bloom.cpp" />
     <ClCompile Include="engine\effect\BoneTracker.cpp" />
     <ClCompile Include="engine\effect\BoxEmitter.cpp" />
@@ -181,6 +186,11 @@
     <ClInclude Include="engine\3d\ShadowMap.h" />
     <ClInclude Include="engine\3d\ShadowRenderer.h" />
     <ClInclude Include="engine\3d\SkyBox.h" />
+    <ClInclude Include="engine\collision\AABBCollider.h" />
+    <ClInclude Include="engine\collision\Collider.h" />
+    <ClInclude Include="engine\collision\CollisionManager.h" />
+    <ClInclude Include="engine\collision\OBBCollider.h" />
+    <ClInclude Include="engine\collision\SphereCollider.h" />
     <ClInclude Include="engine\effect\Bloom.h" />
     <ClInclude Include="engine\effect\BoneTracker.h" />
     <ClInclude Include="engine\effect\BWFilter.h" />
@@ -212,6 +222,7 @@
     <ClInclude Include="engine\2d\DebugCamera.h" />
     <ClInclude Include="engine\2d\Draw2D.h" />
     <ClInclude Include="engine\effect\PostEffectManager.h" />
+    <ClInclude Include="engine\math\OBB.h" />
     <ClInclude Include="engine\math\Quaternion.h" />
     <ClInclude Include="engine\scene\AbstractSceneFactory.h" />
     <ClInclude Include="engine\scene\BaseScene.h" />

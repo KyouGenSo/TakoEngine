@@ -125,6 +125,8 @@ public: // メンバ関数
 
 	void DrawAABB(const AABB& aabb, const Vector4& color);
 
+	void DrawOBB(const struct OBB& obb, const Vector4& color);
+
 	void DrawGrid(const float size, const float subdivision, const Vector4& color);
 
 	/// <summary>

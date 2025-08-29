@@ -937,18 +937,8 @@ void DX12Basic::TransitionResourceWithTracking(ID3D12Resource* resource, D3D12_R
 	
 	// 状態が同じなら何もしない
 	if (currentState == newState) {
-#ifdef _DEBUG
-		OutputDebugStringA("TransitionResourceWithTracking: State is already correct, skipping transition\n");
-#endif
 		return;
 	}
-	
-#ifdef _DEBUG
-	char debugMsg[256];
-	sprintf_s(debugMsg, "TransitionResourceWithTracking: Resource %p: 0x%X -> 0x%X\n", 
-	          resource, currentState, newState);
-	OutputDebugStringA(debugMsg);
-#endif
 	
 	// バリア遷移を実行
 	D3D12_RESOURCE_BARRIER barrier{};
