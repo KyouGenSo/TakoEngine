@@ -40,9 +40,17 @@ void ShadowMap::Initialize(DX12Basic* dx12)
 
 void ShadowMap::Finalize()
 {
-  if (srvIndex_ != 0) {
-    srvManager_->Free(srvIndex_);
+  // nullチェックと有効なインデックスの確認
+  if (srvManager_ && srvIndex_ != 0) {
+    // SrvManagerが有効かつインデックスが割り当てられている場合のみ解放
+    if (srvManager_->IsAllocated(srvIndex_)) {
+      srvManager_->Free(srvIndex_);
+    }
+    srvIndex_ = 0;
   }
+  
+  // ポインタをクリア
+  srvManager_ = nullptr;
 }
 
 void ShadowMap::BeginFrame()

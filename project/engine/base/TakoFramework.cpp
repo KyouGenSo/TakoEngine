@@ -74,57 +74,61 @@ void TakoFramework::Initialize()
 
 void TakoFramework::Finalize()
 {
-  // フレームタイマーの終了処理
-  FrameTimer::GetInstance()->Finalize();
-
-  // シーンマネージャーの終了処理
+  // シーンマネージャーの終了処理（最初に実行）
   SceneManager::GetInstance()->Finalize();
 
-	// SRVマネージャーの終了処理
-	SrvManager::GetInstance()->Finalize();
+  // Initializeの逆順で終了処理を実行
+  // Transition
+  Transition::GetInstance()->Finalize();
 
-	// PostEffectの終了処理
-	PostEffectManager::GetInstance()->Finalize();
+  // PostEffectManager
+  PostEffectManager::GetInstance()->Finalize();
 
-	// ModelManagerの終了処理
-	ModelManager::GetInstance()->Finalize();
+  // Draw2D
+  Draw2D::GetInstance()->Finalize();
 
-	// TextureManagerの終了処理
-	TextureManager::GetInstance()->Finalize();
-
-	// SpriteBasicの終了処理
-	SpriteBasic::GetInstance()->Finalize();
-
-	// Object3dBasicの終了処理
-	Object3dBasic::GetInstance()->Finalize();
-
-	// Draw2Dの終了処理
-	Draw2D::GetInstance()->Finalize();
-
-	// デバッグカメラの解放
-	DebugCamera::GetInstance()->Finalize();
-
-	// トランジションの解放
-	Transition::GetInstance()->Finalize();
-
-  // ShadowRendererの解放
+  // ShadowRenderer
   ShadowRenderer::GetInstance()->Finalize();
 
+  // defaultCameraの削除
+  delete defaultCamera_;
+
+  // FrameTimer
+  FrameTimer::GetInstance()->Finalize();
+
+  // DebugCamera
+  DebugCamera::GetInstance()->Finalize();
+
+  // SpriteBasic
+  SpriteBasic::GetInstance()->Finalize();
+
+  // Object3dBasic
+  Object3dBasic::GetInstance()->Finalize();
+
+  // ModelManager
+  ModelManager::GetInstance()->Finalize();
+
+  // TextureManager
+  TextureManager::GetInstance()->Finalize();
+
+  // SRVマネージャー
+  SrvManager::GetInstance()->Finalize();
+
 #ifdef _DEBUG
-	// ImGuiManagerの終了処理
-	imguiManager_->Shutdown();
-	delete imguiManager_;
+  // ImGuiManagerの終了処理
+  imguiManager_->Shutdown();
+  delete imguiManager_;
 #endif
 
-	// DX12の終了処理
-	dx12_->Finalize();
+  // DX12の終了処理
+  dx12_->Finalize();
+  delete dx12_;
 
-	// pointerの解放
-	delete dx12_;
-	delete defaultCamera_;
-	delete sceneFactory_;
+  // その他のポインタ解放
+  delete sceneFactory_;
 
-	winApp_->Finalize();
+  // WinApp（最初に初期化されたもの）
+  winApp_->Finalize();
 }
 
 void TakoFramework::Update()
