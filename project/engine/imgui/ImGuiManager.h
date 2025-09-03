@@ -1,4 +1,6 @@
 #pragma once
+#include <cstdint>
+
 #include"imgui.h"
 #include <d3d12.h>
 #include<wrl.h>
@@ -46,10 +48,6 @@ public: // メンバ関数
   /// </summary>
   void OnWindowResize();
 
-  /// <summary>
-  /// SRV用のディスクリプタヒープの生成
-  /// </summary>
-  void CreateImGuiSrvHeap();
 
   /// <summary>
   /// ImGuiのスタイルの設定
@@ -75,9 +73,9 @@ private: // メンバ変数
   // DX12Basicクラスのインスタンス
   DX12Basic* m_dx12_ = nullptr;
 
-  // SRV用のディスクリプタヒープ
-  Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvHeap_;
-
   bool isDocking_ = false;
+
+  // フォント用のSRVインデックス（SrvManagerで確保）
+  uint32_t fontSrvIndex_ = 0;
 
 };

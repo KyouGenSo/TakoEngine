@@ -131,7 +131,9 @@ void MyGame::Draw()
   /// ============================================= ///
   /// ---------最終結果をスワップチェーンに描画---------///
   /// ============================================= ///
-  PostEffectManager::GetInstance()->DrawFinalResult();
+  // GameViewportWindowVisibleがfalseの時のみスワップチェーンに描画
+  // trueの時はリソース状態の遷移のみ行う（ImGuiで表示するため）
+  PostEffectManager::GetInstance()->DrawFinalResult(!GameViewportWindowVisible);
 
 
 	/// ========================================= ///
@@ -159,6 +161,11 @@ void MyGame::Draw()
   {
     PostEffectWindowVisible = !PostEffectWindowVisible;
   }
+  ImGui::SameLine();
+  if (ImGui::Button("Game Viewport"))
+  {
+    GameViewportWindowVisible = !GameViewportWindowVisible;
+  }
 
   ImGui::End();
 
@@ -176,6 +183,25 @@ void MyGame::Draw()
 	// PostEffectのパラメータ調整
   if (PostEffectWindowVisible) {
     PostEffectManager::GetInstance()->DrawImgui();
+  }
+
+  // ゲームビューポートウィンドウの表示
+  if (GameViewportWindowVisible) {
+    PostEffectManager::GetInstance()->PrepareForImGuiDisplay();
+    
+    ImGui::Begin("Game Viewport", &GameViewportWindowVisible, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoBringToFrontOnFocus);
+    
+    ImVec2 imageSize = { static_cast<float>(WinApp::clientWidth), static_cast<float>(WinApp::clientHeight) };
+    
+    // PostEffectManagerから直接SRVインデックスを取得してゲーム画面を表示
+    uint32_t srvIndex = PostEffectManager::GetInstance()->GetFinalResultSrvIndex();
+    D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = SrvManager::GetInstance()->GetGPUDescriptorHandle(srvIndex);
+    ImGui::Image((ImTextureID)gpuHandle.ptr, imageSize);
+    
+    ImGui::End();
+    
+    // ImGuiでの読み取り完了後、次フレーム用にnonEffectTargetRTをRENDER_TARGET状態に戻す
+    PostEffectManager::GetInstance()->RestoreNonEffectTargetRT();
   }
 
 	imguiManager_->End();

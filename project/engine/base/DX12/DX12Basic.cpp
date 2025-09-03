@@ -122,9 +122,11 @@ void DX12Basic::SetSwapChain()
 	// バッグバッファのインデックスを取得
 	UINT backBufferIndex = swapChain_->GetCurrentBackBufferIndex();
 
-	TransitionResourceState(D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET, swapChainResources_[backBufferIndex].Get());
+	// スワップチェーンバッファの状態を追跡しながらRENDER_TARGET状態に遷移
+	TransitionResourceWithTracking(swapChainResources_[backBufferIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET);
 
-	TransitionResourceState(D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, depthStencilResource_.Get());
+	// 深度バッファの状態を追跡しながらPIXEL_SHADER_RESOURCE状態に遷移
+	TransitionResourceWithTracking(depthStencilResource_.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
 	// 描画先のRTVを設定
 	commandList_->OMSetRenderTargets(1, &rtvHandle_[backBufferIndex], false, nullptr);
@@ -146,9 +148,11 @@ void DX12Basic::EndDraw()
 	// バッグバッファのインデックスを取得
 	UINT backBufferIndex = swapChain_->GetCurrentBackBufferIndex();
 
-	TransitionResourceState(D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT, swapChainResources_[backBufferIndex].Get());
+	// スワップチェーンバッファの状態を追跡しながらPRESENT状態に遷移
+	TransitionResourceWithTracking(swapChainResources_[backBufferIndex].Get(), D3D12_RESOURCE_STATE_PRESENT);
 
-	TransitionResourceState(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE, depthStencilResource_.Get());
+	// 深度バッファの状態を追跡しながらDEPTH_WRITE状態に遷移
+	TransitionResourceWithTracking(depthStencilResource_.Get(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
 
 	// コマンドリストのクローズ
 	hr = commandList_->Close();
@@ -366,6 +370,9 @@ void DX12Basic::CreateDepthStencilResource()
 		&depthClearValue, // クリア値の設定.
 		IID_PPV_ARGS(&depthStencilResource_)); // 生成したリソースのpointerへのpointerを取得
 	assert(SUCCEEDED(hr));
+	
+	// 深度バッファの初期状態を追跡マップに登録
+	resourceStates_[depthStencilResource_.Get()] = D3D12_RESOURCE_STATE_DEPTH_WRITE;
 
 }
 
@@ -389,6 +396,10 @@ void DX12Basic::InitSwapChainRTV()
 	{
 		HRESULT hr = swapChain_->GetBuffer(i, IID_PPV_ARGS(&swapChainResources_[i]));
 		assert(SUCCEEDED(hr));
+		
+		// スワップチェーンバッファの初期状態を追跡マップに登録
+		// DirectX 12ではスワップチェーンバッファは初期状態がPRESENT
+		resourceStates_[swapChainResources_[i].Get()] = D3D12_RESOURCE_STATE_PRESENT;
 	}
 
 	// RTVの設定
@@ -520,6 +531,9 @@ void DX12Basic::RecreateSwapChainRTV()
   {
     HRESULT hr = swapChain_->GetBuffer(i, IID_PPV_ARGS(&swapChainResources_[i]));
     assert(SUCCEEDED(hr));
+    
+    // スワップチェーンバッファの初期状態を追跡マップに登録
+    resourceStates_[swapChainResources_[i].Get()] = D3D12_RESOURCE_STATE_PRESENT;
   }
 
   // RTVの設定
@@ -575,6 +589,9 @@ void DX12Basic::RecreateDepthBuffer()
     &depthClearValue,
     IID_PPV_ARGS(&depthStencilResource_));
   assert(SUCCEEDED(hr));
+  
+  // 深度バッファの初期状態を追跡マップに登録
+  resourceStates_[depthStencilResource_.Get()] = D3D12_RESOURCE_STATE_DEPTH_WRITE;
 
   // DSVの設定
   D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};

@@ -171,6 +171,8 @@ void ShadowMap::CreateShadowMapResource()
     IID_PPV_ARGS(&shadowMapResource_));
 
   assert(SUCCEEDED(hr));
+
+  shadowMapResource_.Get()->SetName(L"ShadowMapResource");
   
   // 初期状態をDX12Basicの状態追跡マップに登録
   // これにより、最初のBeginShadowMapRenderで正しい状態遷移が行われる

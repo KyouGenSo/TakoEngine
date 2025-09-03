@@ -25,12 +25,14 @@ void TakoFramework::Initialize()
 	dx12_ = new DX12Basic();
 	dx12_->Initialize(winApp_);
 
+	// SrvManagerを先に初期化（ImGuiManagerが使用するため）
+	SrvManager::GetInstance()->Initialize(dx12_);
+
 #ifdef _DEBUG
+	// ImGuiManagerの初期化（SrvManagerのディスクリプタヒープを使用）
 	imguiManager_ = new ImGuiManager();
   imguiManager_->Initialize(winApp_, dx12_, true);
 #endif
-
-	SrvManager::GetInstance()->Initialize(dx12_);
 
 	TextureManager::GetInstance()->Initialize(dx12_, "resources/Texture/");
 

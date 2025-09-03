@@ -108,6 +108,11 @@ public: // メンバー関数
 	/// </summary>
 	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(uint32_t index);
 
+	/// <summary>
+	/// ディスクリプタヒープを取得
+	/// </summary>
+	ID3D12DescriptorHeap* GetDescriptorHeap() const { return descriptorHeap_.Get(); }
+
 private: // メンバー変数
 
 	// DX12Basicクラスのインスタンス

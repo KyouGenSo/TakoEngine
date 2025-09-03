@@ -3,6 +3,7 @@
 #include"imgui_impl_dx12.h"
 #include"WinApp.h"
 #include"DX12Basic.h"
+#include"SrvManager.h"
 #include <cassert>
 
 void ImGuiManager::Initialize(WinApp* winApp, DX12Basic* dx12, bool isDocking)
@@ -26,8 +27,8 @@ void ImGuiManager::Initialize(WinApp* winApp, DX12Basic* dx12, bool isDocking)
 
 	ImGui_ImplWin32_Init(m_winApp_->GetHWnd());
 
-	//srv用のディスクリプタヒープの生成
-	CreateImGuiSrvHeap();
+	// フォント用のSRVインデックスを確保
+	fontSrvIndex_ = SrvManager::GetInstance()->Allocate();
 
 	// DX12用の初期化
 	InitializeForDX12();
@@ -39,13 +40,20 @@ void ImGuiManager::Initialize(WinApp* winApp, DX12Basic* dx12, bool isDocking)
 
 void ImGuiManager::InitializeForDX12()
 {
+	// SrvManagerのディスクリプタヒープを取得
+	ID3D12DescriptorHeap* srvHeap = SrvManager::GetInstance()->GetDescriptorHeap();
+	
+	// フォント用のCPU/GPUハンドルを取得
+	D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = SrvManager::GetInstance()->GetCPUDescriptorHandle(fontSrvIndex_);
+	D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = SrvManager::GetInstance()->GetGPUDescriptorHandle(fontSrvIndex_);
+	
 	ImGui_ImplDX12_Init(
 		m_dx12_->GetDevice(), 
 		static_cast<int>(m_dx12_->GetSwapChainBufferCount()),
 		DXGI_FORMAT_R8G8B8A8_UNORM,
-		srvHeap_.Get(), 
-		srvHeap_->GetCPUDescriptorHandleForHeapStart(), 
-		srvHeap_->GetGPUDescriptorHandleForHeapStart());
+		srvHeap, 
+		cpuHandle, 
+		gpuHandle);
 }
 
 void ImGuiManager::Begin()
@@ -62,10 +70,6 @@ void ImGuiManager::Begin()
 
 void ImGuiManager::Draw()
 {
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>ppHeaps[] = { srvHeap_.Get() };
-	m_dx12_->GetCommandList()->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps->GetAddressOf());
-
-	// 描画コマンドの実行
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_dx12_->GetCommandList());
 }
 
@@ -80,9 +84,10 @@ void ImGuiManager::Shutdown()
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
 
-	if (srvHeap_)
-	{
-		srvHeap_.Reset();
+	// フォント用のSRVインデックスを解放
+	if (fontSrvIndex_ != 0) {
+		SrvManager::GetInstance()->Free(fontSrvIndex_);
+		fontSrvIndex_ = 0;
 	}
 }
 
@@ -105,22 +110,6 @@ void ImGuiManager::OnWindowResize()
   SetDocking(isDocking_);
 }
 
-void ImGuiManager::CreateImGuiSrvHeap()
-{
-	HRESULT hr = S_OK;
-
-	// SRV用のディスクリプタヒープの設定
-	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 1;
-	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-
-	// SRV用のディスクリプタヒープの生成
-	m_dx12_->GetDevice()->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(srvHeap_.GetAddressOf()));
-
-	assert(SUCCEEDED(hr));
-
-}
 
 void ImGuiManager::SetStyleBoorstrapDark()
 {

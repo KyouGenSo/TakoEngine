@@ -57,7 +57,7 @@ public: // メンバ関数
 
   // 描画
   void Draw();
-  void DrawFinalResult();
+  void DrawFinalResult(bool drawToSwapChain = true);
   void DrawImgui();
 
   // レンダーテクスチャの再作成
@@ -103,6 +103,16 @@ public: // メンバ関数
   
   // 現在のレンダーターゲットハンドル取得
   D3D12_CPU_DESCRIPTOR_HANDLE GetCurrentRTVHandle() const { return effectTargetRT_.rtvHandle; }
+  
+  // 最終結果のSRVインデックス取得（ImGuiでの表示用）
+  uint32_t GetFinalResultSrvIndex() const;
+  
+  // 最終結果のリソース取得（ImGuiでの表示用）
+  ID3D12Resource* GetFinalResultResource() const;
+  
+  // ImGui表示用のリソース状態管理
+  void PrepareForImGuiDisplay();  // DrawFinalResult(false)で既にSRV状態になっているため、実際には何もしない
+  void RestoreNonEffectTargetRT(); // nonEffectTargetRTを次フレーム用にRENDER_TARGET状態に戻す
 
 private: // プライベートメンバー関数
   // レンダーターゲットの作成
@@ -120,6 +130,15 @@ private: // プライベートメンバー関数
   // バリアの設定
   void SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
   void SetBarrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
+
+  // 状態追跡付きバリア遷移
+  void TransitionResourceWithTracking(ID3D12Resource* resource, D3D12_RESOURCE_STATES newState);
+  
+  // リソース状態取得
+  D3D12_RESOURCE_STATES GetResourceState(ID3D12Resource* resource) const;
+  
+  // 初期リソース状態設定（バリア遷移なし）
+  void SetInitialResourceState(ID3D12Resource* resource, D3D12_RESOURCE_STATES initialState);
 
 private: // メンバ変数
   // DX12の基本情報
@@ -158,5 +177,8 @@ private: // メンバ変数
   // クリアカラー
   const Vector4 kEffectTargetClearColor_ = { 0.17f, 0.17f, 0.17f, 1.0f };
   Vector4 nonEffectTargetClearColor_ = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+  // リソース状態追跡用マップ
+  mutable std::unordered_map<ID3D12Resource*, D3D12_RESOURCE_STATES> resourceStates_;
 
 };

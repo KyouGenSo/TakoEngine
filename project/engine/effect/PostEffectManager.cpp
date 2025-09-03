@@ -126,6 +126,12 @@ void PostEffectManager::BeginDrawEffectTarget()
 
 void PostEffectManager::BegineDrawNonEffectTarget()
 {
+  // nonEffectTargetRTをRENDER_TARGET状態にして記録
+  TransitionResourceWithTracking(
+    nonEffectTargetRT_.resource.Get(),
+    D3D12_RESOURCE_STATE_RENDER_TARGET
+  );
+  
   D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
 
   // 非適用対象RTに描画
@@ -141,35 +147,42 @@ void PostEffectManager::Draw()
   ApplyEffectChain();
 }
 
-void PostEffectManager::DrawFinalResult()
+void PostEffectManager::DrawFinalResult(bool drawToSwapChain)
 {
-  // 非適用対象RTをシェーダーリソースに遷移
-  SetBarrier(
-    nonEffectTargetRT_.resource.Get(),
-    D3D12_RESOURCE_STATE_RENDER_TARGET,
-    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
-  );
+  // スワップチェインへの描画（パラメータがtrueの時のみ）
+  if (drawToSwapChain) {
 
-  // スワップチェインに描画
-  m_dx12_->SetSwapChain();
+    // 非適用対象RTをシェーダーリソースに遷移
+    TransitionResourceWithTracking(
+      nonEffectTargetRT_.resource.Get(),
+      D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+    );
 
-  // NoEffectを使って単純コピー
-  if (effectRegistry_.find("NoEffect") != effectRegistry_.end()) {
-    auto& baseEffect = effectRegistry_["NoEffect"];
+    // スワップチェインに描画
+    m_dx12_->SetSwapChain();
 
-    // NoEffectにダウンキャスト
-    NoEffect* noEffect = dynamic_cast<NoEffect*>(baseEffect.get());
-    if (noEffect != nullptr) {
-      noEffect->ApplyToBackBuffer(nonEffectTargetRT_.srvIndex);
+    // NoEffectを使って単純コピー
+    if (effectRegistry_.find("NoEffect") != effectRegistry_.end()) {
+      auto& baseEffect = effectRegistry_["NoEffect"];
+
+      // NoEffectにダウンキャスト
+      NoEffect* noEffect = dynamic_cast<NoEffect*>(baseEffect.get());
+      if (noEffect != nullptr) {
+        noEffect->ApplyToBackBuffer(nonEffectTargetRT_.srvIndex);
+      }
     }
-  }
 
-  // リソースを元に戻す
-  SetBarrier(
-    nonEffectTargetRT_.resource.Get(),
-    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-    D3D12_RESOURCE_STATE_RENDER_TARGET
-  );
+    TransitionResourceWithTracking(
+      nonEffectTargetRT_.resource.Get(),
+      D3D12_RESOURCE_STATE_RENDER_TARGET
+    );
+  } else {
+    // 非適用対象RTをシェーダーリソースに遷移
+    TransitionResourceWithTracking(
+      nonEffectTargetRT_.resource.Get(),
+      D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+    );
+  }
 }
 
 void PostEffectManager::DrawImgui()
@@ -401,6 +414,19 @@ void PostEffectManager::DrawImgui()
 
 void PostEffectManager::RecreateRenderTexture()
 {
+  // 古いリソースの状態追跡エントリを削除
+  if (effectTargetRT_.resource) {
+    resourceStates_.erase(effectTargetRT_.resource.Get());
+  }
+  if (nonEffectTargetRT_.resource) {
+    resourceStates_.erase(nonEffectTargetRT_.resource.Get());
+  }
+  for (auto& rt : intermediateRTs_) {
+    if (rt.resource) {
+      resourceStates_.erase(rt.resource.Get());
+    }
+  }
+
   // 既存のリソースを解放
   effectTargetRT_.resource.Reset();
   nonEffectTargetRT_.resource.Reset();
@@ -581,6 +607,35 @@ std::vector<std::string> PostEffectManager::GetEffectChain() const
   return effectChain_; // コピーを返す
 }
 
+uint32_t PostEffectManager::GetFinalResultSrvIndex() const
+{
+  // 常にnonEffectTargetRTのSRVインデックスを返す
+  // DrawFinalResult()でnonEffectTargetRTがスワップチェーンに描画されているため
+  return nonEffectTargetRT_.srvIndex;
+}
+
+ID3D12Resource* PostEffectManager::GetFinalResultResource() const
+{
+  return nonEffectTargetRT_.resource.Get();
+}
+
+void PostEffectManager::PrepareForImGuiDisplay()
+{
+  TransitionResourceWithTracking(
+    nonEffectTargetRT_.resource.Get(),
+    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+  );
+}
+
+void PostEffectManager::RestoreNonEffectTargetRT()
+{
+  // nonEffectTargetRTを次フレーム用にRENDER_TARGET状態に戻す
+  TransitionResourceWithTracking(
+    nonEffectTargetRT_.resource.Get(),
+    D3D12_RESOURCE_STATE_RENDER_TARGET
+  );
+}
+
 //------------------------------- プライベート関数 -------------------------------//
 
 void PostEffectManager::CreateRenderTextures() {
@@ -613,16 +668,22 @@ void PostEffectManager::CreateRenderTextures() {
   // エフェクト適用対象用RT
   createRT(effectTargetRT_, 2, kEffectTargetClearColor_);
   effectTargetRT_.resource->SetName(L"EffectTargetRT");
+  // 初期状態を設定（レンダーテクスチャはRENDER_TARGETとして作成される）
+  SetInitialResourceState(effectTargetRT_.resource.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET);
 
   // 非適用対象用RT
   createRT(nonEffectTargetRT_, 3, nonEffectTargetClearColor_);
   nonEffectTargetRT_.resource->SetName(L"NonEffectTargetRT");
+  // 初期状態を設定
+  SetInitialResourceState(nonEffectTargetRT_.resource.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET);
 
   // 中間バッファ
   intermediateRTs_.resize(2);
   for (size_t i = 0; i < intermediateRTs_.size(); ++i) {
     createRT(intermediateRTs_[i], 4 + static_cast<int>(i), kEffectTargetClearColor_);
     intermediateRTs_[i].resource->SetName(L"IntermediateRT");
+    // 初期状態を設定
+    SetInitialResourceState(intermediateRTs_[i].resource.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET);
   }
 }
 
@@ -655,9 +716,8 @@ void PostEffectManager::ApplyEffectChain()
   }
 
   // 最初の入力はエフェクト適用対象RT
-  SetBarrier(
+  TransitionResourceWithTracking(
     effectTargetRT_.resource.Get(),
-    D3D12_RESOURCE_STATE_RENDER_TARGET,
     D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
   );
 
@@ -694,15 +754,19 @@ void PostEffectManager::ApplyEffectChain()
     bool isLastEffect = (i == actualChain.size() - 1);
 
     if (isLastEffect) {
+      // 最後のエフェクトはnonEffectTargetRTに描画するため、RENDER_TARGET状態に遷移
+      TransitionResourceWithTracking(
+        nonEffectTargetRT_.resource.Get(),
+        D3D12_RESOURCE_STATE_RENDER_TARGET
+      );
       dstRtvHandle = nonEffectTargetRT_.rtvHandle;
     } else {
       int bufferIndex = i % 2;
       auto& intermediateRT = intermediateRTs_[bufferIndex];
 
       if (intermediateRTStates[bufferIndex]) {
-        SetBarrier(
+        TransitionResourceWithTracking(
           intermediateRT.resource.Get(),
-          D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
           D3D12_RESOURCE_STATE_RENDER_TARGET
         );
         intermediateRTStates[bufferIndex] = false;
@@ -735,9 +799,8 @@ void PostEffectManager::ApplyEffectChain()
       int bufferIndex = i % 2;
       auto& usedRT = intermediateRTs_[bufferIndex];
 
-      SetBarrier(
+      TransitionResourceWithTracking(
         usedRT.resource.Get(),
-        D3D12_RESOURCE_STATE_RENDER_TARGET,
         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
       );
       intermediateRTStates[bufferIndex] = true;
@@ -755,18 +818,16 @@ void PostEffectManager::ApplyEffectChain()
     );
   }
 
-  SetBarrier(
+  TransitionResourceWithTracking(
     effectTargetRT_.resource.Get(),
-    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
     D3D12_RESOURCE_STATE_RENDER_TARGET
   );
 
   for (size_t i = 0; i < intermediateRTs_.size(); ++i) {
     if (intermediateRTStates[i]) {
       auto& rt = intermediateRTs_[i];
-      SetBarrier(
+      TransitionResourceWithTracking(
         rt.resource.Get(),
-        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
         D3D12_RESOURCE_STATE_RENDER_TARGET
       );
     }
@@ -804,25 +865,57 @@ void PostEffectManager::DrawEffectParametersTab()
 
 void PostEffectManager::SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter)
 {
-  D3D12_RESOURCE_BARRIER barrier{};
-  barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-  barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-  barrier.Transition.pResource = effectTargetRT_.resource.Get();
-
-  barrier.Transition.StateBefore = stateBefore;
-  barrier.Transition.StateAfter = stateAfter;
-
-  m_dx12_->GetCommandList()->ResourceBarrier(1, &barrier);
+  stateBefore;
+  // この関数は廃止予定。代わりにTransitionResourceWithTrackingを使用
+  TransitionResourceWithTracking(effectTargetRT_.resource.Get(), stateAfter);
 }
 
 void PostEffectManager::SetBarrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter)
 {
+  // stateBeforeは使用せず、TransitionResourceWithTrackingで状態追跡を使用
+  stateBefore; // 未使用パラメータの警告を抑制
+  TransitionResourceWithTracking(resource, stateAfter);
+}
+
+void PostEffectManager::TransitionResourceWithTracking(ID3D12Resource* resource, D3D12_RESOURCE_STATES newState)
+{
+  // 現在の状態を取得（未追跡の場合はCOMMONと仮定）
+  D3D12_RESOURCE_STATES currentState = D3D12_RESOURCE_STATE_COMMON;
+  auto it = resourceStates_.find(resource);
+  if (it != resourceStates_.end()) {
+    currentState = it->second;
+  }
+  
+  // 状態が同じなら何もしない
+  if (currentState == newState) {
+    return;
+  }
+  
+  // バリア遷移
   D3D12_RESOURCE_BARRIER barrier{};
   barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
   barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
   barrier.Transition.pResource = resource;
-  barrier.Transition.StateBefore = stateBefore;
-  barrier.Transition.StateAfter = stateAfter;
-
+  barrier.Transition.StateBefore = currentState;
+  barrier.Transition.StateAfter = newState;
   m_dx12_->GetCommandList()->ResourceBarrier(1, &barrier);
+  
+  // 新しい状態を記録
+  resourceStates_[resource] = newState;
+}
+
+D3D12_RESOURCE_STATES PostEffectManager::GetResourceState(ID3D12Resource* resource) const
+{
+  auto it = resourceStates_.find(resource);
+  if (it != resourceStates_.end()) {
+    return it->second;
+  }
+  // 未追跡の場合はCOMMONを返す
+  return D3D12_RESOURCE_STATE_COMMON;
+}
+
+void PostEffectManager::SetInitialResourceState(ID3D12Resource* resource, D3D12_RESOURCE_STATES initialState)
+{
+  // バリア遷移なしで、状態のみを記録
+  resourceStates_[resource] = initialState;
 }
