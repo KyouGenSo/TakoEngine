@@ -26,7 +26,7 @@ public: // メンバ関数
 	virtual void Update();
 
 	// 描画
-	virtual void Draw() = 0;
+	virtual void Draw();
 
 	// 実行
 	void Run();
@@ -60,4 +60,8 @@ protected: // メンバ変数
 
 	// 終了フラグ
 	bool endFlag_ = false;
+
+  bool FPSWindowVisible = true;
+  bool PostEffectWindowVisible = false;
+  bool GameViewportWindowVisible = false; // ゲームビューポートウィンドウの表示フラグ
 };

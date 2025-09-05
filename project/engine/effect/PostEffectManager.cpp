@@ -177,6 +177,8 @@ void PostEffectManager::DrawFinalResult(bool drawToSwapChain)
       D3D12_RESOURCE_STATE_RENDER_TARGET
     );
   } else {
+    m_dx12_->SetSwapChain();
+
     // 非適用対象RTをシェーダーリソースに遷移
     TransitionResourceWithTracking(
       nonEffectTargetRT_.resource.Get(),
@@ -617,23 +619,6 @@ uint32_t PostEffectManager::GetFinalResultSrvIndex() const
 ID3D12Resource* PostEffectManager::GetFinalResultResource() const
 {
   return nonEffectTargetRT_.resource.Get();
-}
-
-void PostEffectManager::PrepareForImGuiDisplay()
-{
-  TransitionResourceWithTracking(
-    nonEffectTargetRT_.resource.Get(),
-    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
-  );
-}
-
-void PostEffectManager::RestoreNonEffectTargetRT()
-{
-  // nonEffectTargetRTを次フレーム用にRENDER_TARGET状態に戻す
-  TransitionResourceWithTracking(
-    nonEffectTargetRT_.resource.Get(),
-    D3D12_RESOURCE_STATE_RENDER_TARGET
-  );
 }
 
 //------------------------------- プライベート関数 -------------------------------//

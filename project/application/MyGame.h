@@ -28,9 +28,5 @@ public: // メンバ関数
 
 private: // メンバ変数
 
-  bool FPSWindowVisible = true;
-  bool PostEffectWindowVisible = false;
-  bool GameViewportWindowVisible = true; // ゲームビューポートウィンドウの表示フラグ
-
   uint32_t spriteBasicOnresizeId = 0;
 };

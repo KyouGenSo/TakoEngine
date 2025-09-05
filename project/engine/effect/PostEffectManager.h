@@ -109,10 +109,6 @@ public: // メンバ関数
   
   // 最終結果のリソース取得（ImGuiでの表示用）
   ID3D12Resource* GetFinalResultResource() const;
-  
-  // ImGui表示用のリソース状態管理
-  void PrepareForImGuiDisplay();  // DrawFinalResult(false)で既にSRV状態になっているため、実際には何もしない
-  void RestoreNonEffectTargetRT(); // nonEffectTargetRTを次フレーム用にRENDER_TARGET状態に戻す
 
 private: // プライベートメンバー関数
   // レンダーターゲットの作成

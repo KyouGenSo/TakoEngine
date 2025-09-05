@@ -17,11 +17,11 @@
 
 void MyGame::Initialize()
 {
-
+  winApp_->SetWindowSize(1600, 900);
 	TakoFramework::Initialize();
 
-  winApp_->SetWindowSize(1280, 720);
   winApp_->SetWindowTitle(L"TakoEngine Sample Game");
+  
 
 #pragma region 汎用機能初期化-------------------------------------------------------------------------------------------------------------------
 	// 入力クラスの初期化
@@ -132,7 +132,6 @@ void MyGame::Draw()
   /// ---------最終結果をスワップチェーンに描画---------///
   /// ============================================= ///
   // GameViewportWindowVisibleがfalseの時のみスワップチェーンに描画
-  // trueの時はリソース状態の遷移のみ行う（ImGuiで表示するため）
   PostEffectManager::GetInstance()->DrawFinalResult(!GameViewportWindowVisible);
 
 
@@ -143,6 +142,8 @@ void MyGame::Draw()
 
 	imguiManager_->Begin();
 
+  TakoFramework::Draw();
+
 	SceneManager::GetInstance()->DrawImGui();
 
 	Draw2D::GetInstance()->ImGui();
@@ -150,66 +151,11 @@ void MyGame::Draw()
   // GlobalVariablesの更新
   GlobalVariables::GetInstance()->Update();
 
-  ImGui::Begin("Option");
-  // buttonでFPSの表示を切り替え
-  if (ImGui::Button("Display FPS"))
-  {
-    FPSWindowVisible = !FPSWindowVisible;
-  }
-  ImGui::SameLine();
-  if (ImGui::Button("PostEffect Option"))
-  {
-    PostEffectWindowVisible = !PostEffectWindowVisible;
-  }
-  ImGui::SameLine();
-  if (ImGui::Button("Game Viewport"))
-  {
-    GameViewportWindowVisible = !GameViewportWindowVisible;
-  }
-
-  ImGui::End();
-
-  // fpsの表示
-  if (FPSWindowVisible)
-  {
-    ImGui::Begin("FPS", &FPSWindowVisible);
-    ImGui::ProgressBar(FrameTimer::GetInstance()->GetFPS() / 60.0f, ImVec2(0.0f, 0.0f), "");
-    ImGui::SameLine();
-    ImGui::Text("FPS : %.0f", FrameTimer::GetInstance()->GetFPS());
-    ImGui::End();
-  }
-
-
-	// PostEffectのパラメータ調整
-  if (PostEffectWindowVisible) {
-    PostEffectManager::GetInstance()->DrawImgui();
-  }
-
-  // ゲームビューポートウィンドウの表示
-  if (GameViewportWindowVisible) {
-    PostEffectManager::GetInstance()->PrepareForImGuiDisplay();
-    
-    ImGui::Begin("Game Viewport", &GameViewportWindowVisible, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoBringToFrontOnFocus);
-    
-    ImVec2 imageSize = { static_cast<float>(WinApp::clientWidth), static_cast<float>(WinApp::clientHeight) };
-    
-    // PostEffectManagerから直接SRVインデックスを取得してゲーム画面を表示
-    uint32_t srvIndex = PostEffectManager::GetInstance()->GetFinalResultSrvIndex();
-    D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = SrvManager::GetInstance()->GetGPUDescriptorHandle(srvIndex);
-    ImGui::Image((ImTextureID)gpuHandle.ptr, imageSize);
-    
-    ImGui::End();
-    
-    // ImGuiでの読み取り完了後、次フレーム用にnonEffectTargetRTをRENDER_TARGET状態に戻す
-    PostEffectManager::GetInstance()->RestoreNonEffectTargetRT();
-  }
-
 	imguiManager_->End();
 
 	//imguiの描画
 	imguiManager_->Draw();
 #endif
-
 
 	// 描画後の処理
 	dx12_->EndDraw();
