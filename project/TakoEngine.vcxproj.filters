@@ -243,6 +243,9 @@
     <ClCompile Include="engine\collision\OBBCollider.cpp">
       <Filter>collision</Filter>
     </ClCompile>
+    <ClCompile Include="engine\3d\InstancedObject3d.cpp">
+      <Filter>3d</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\math\Matrix4x4.h">
@@ -484,6 +487,9 @@
     </ClInclude>
     <ClInclude Include="engine\collision\OBBCollider.h">
       <Filter>collision</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\InstancedObject3d.h">
+      <Filter>3d</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

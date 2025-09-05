@@ -48,6 +48,11 @@ public: // メンバー関数
 	///　共通描画設定
 	/// </summary>
 	void SetCommonRenderSetting();
+
+	///<summary>
+	///　インスタンシング描画設定
+	/// </summary>
+	void SetInstancedRenderSetting();
 	
 
 	// -----------------------------------Getters-----------------------------------//
@@ -105,6 +110,16 @@ private: // プライベートメンバー関数
 	/// </summary>
 	void CreatePSO();
 
+	///<summary>
+	/// インスタンシング用ルートシグネチャの作成
+	/// </summary>
+	void CreateInstancedRootSignature();
+	
+	///<summary>
+	/// インスタンシング用パイプラインステートの生成
+	/// </summary>
+	void CreateInstancedPSO();
+
 private: // メンバー変数
 	// DX12Basicクラスのインスタンス
 	DX12Basic* m_dx12_ = nullptr;
@@ -127,4 +142,10 @@ private: // メンバー変数
 
 	// パイプラインステート
   Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;
+
+	// インスタンシング用ルートシグネチャ
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> instancedRootSignature_;
+
+	// インスタンシング用パイプラインステート
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> instancedPipelineState_;
 };

@@ -168,3 +168,11 @@ struct SkinCluster
 struct MeshSkinClusterData {
   std::map<std::string, JointWeightData> skinClusterData;
 };
+
+// インスタンシング描画用データ構造
+struct InstanceData {
+    Matrix4x4 world;              // ワールド変換行列
+    Matrix4x4 worldInvTranspose;  // ワールド逆転置行列（法線変換用）
+    Vector4 color;                // インスタンス毎のカラー
+    float padding[12];            // 16バイトアラインメント用（256バイトに調整）
+};

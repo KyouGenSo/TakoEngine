@@ -1,6 +1,7 @@
 #pragma once
 #include "BaseScene.h"
 #include"Object3d.h"
+#include "InstancedObject3d.h"
 #include "EmitterManager.h"
 #include "Sprite.h"
 #include "SkyBox.h"
@@ -71,4 +72,9 @@ private: // メンバ変数
 
   // ボーントラッカー
   std::unique_ptr<BoneTracker> boneTracker_;
+
+  // インスタンシング描画のデモ用
+  std::unique_ptr<InstancedObject3d> instancedCubes_;
+  std::vector<std::unique_ptr<ModelInstance>> cubeInstances_;
+  float instanceAnimTime_ = 0.0f;
 };

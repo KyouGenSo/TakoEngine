@@ -25,6 +25,7 @@ public: // メンバー関数
   // 描画
   void Draw();
   void DrawWithCurrentTransform();
+  void DrawInstanced(uint32_t instanceCount);
 
   // 座標変換行列の更新
   void UpdateTransformation(const Matrix4x4& world, const Matrix4x4& viewProjection);

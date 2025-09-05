@@ -181,6 +181,9 @@
     <FxCompile Include="resources\shaders\ShadowMap.VS.hlsl">
       <Filter>Shader\3d</Filter>
     </FxCompile>
+    <FxCompile Include="resources\shaders\Object3dInstanced.VS.hlsl">
+      <Filter>Shader\3d</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\Object3d.hlsli">

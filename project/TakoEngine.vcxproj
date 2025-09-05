@@ -119,6 +119,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="engine\3d\InstancedObject3d.cpp" />
     <ClCompile Include="engine\3d\ShadowMap.cpp" />
     <ClCompile Include="engine\3d\ShadowRenderer.cpp" />
     <ClCompile Include="engine\3d\SkyBox.cpp" />
@@ -183,6 +184,7 @@
     <ClCompile Include="engine\3d\Mesh.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\3d\InstancedObject3d.h" />
     <ClInclude Include="engine\3d\ShadowMap.h" />
     <ClInclude Include="engine\3d\ShadowRenderer.h" />
     <ClInclude Include="engine\3d\SkyBox.h" />

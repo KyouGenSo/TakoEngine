@@ -6,6 +6,7 @@
 #include "ShadowRenderer.h"
 #include "SrvManager.h"
 #include "TextureManager.h"
+#include "Logger.h"
 
 //　デストラクタ
 Mesh::~Mesh()
@@ -107,6 +108,38 @@ void Mesh::DrawWithCurrentTransform()
 
   // 描画
   dx12_->GetCommandList()->DrawIndexedInstanced(static_cast<UINT>(indices_.size()), 1, 0, 0, 0);
+}
+
+void Mesh::DrawInstanced(uint32_t instanceCount)
+{
+  // インスタンシング描画（スキニングは未対応）
+  if (hasSkinning_) {
+    Logger::Log("Warning: Instanced drawing is not supported for skinned meshes");
+    return;
+  }
+
+  // 頂点バッファビューを設定
+  dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView_);
+
+  // インデックスバッファビューを設定
+  dx12_->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
+
+  // マテリアルデータを設定（ルートパラメータ0）
+  dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource_->GetGPUVirtualAddress());
+
+  // テクスチャを設定（ルートパラメータ2）
+  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, textureData_.textureIndex);
+
+  // 環境マップテクスチャを設定（ルートパラメータ8）
+  if (materialData_->enableEnvMap && envTextureIndex_ != 0) {
+    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(8, envTextureIndex_);
+  } else {
+    uint32_t defaultTextureIndex = TextureManager::GetInstance()->GetSRVIndex("white.png");
+    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(8, defaultTextureIndex);
+  }
+
+  // インスタンシング描画
+  dx12_->GetCommandList()->DrawIndexedInstanced(static_cast<UINT>(indices_.size()), instanceCount, 0, 0, 0);
 }
 
 void Mesh::UpdateTransformation(const Matrix4x4& world, const Matrix4x4& viewProjection)

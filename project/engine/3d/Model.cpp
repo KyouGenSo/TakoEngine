@@ -142,6 +142,21 @@ void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
 #endif
 }
 
+void Model::DrawInstanced(uint32_t instanceCount)
+{
+  // インスタンシング描画ではスキニングは未対応
+  if (hasSkeleton_)
+  {
+    Logger::Log("Warning: Instanced drawing is not supported for skinned models");
+    return;
+  }
+
+  // 各メッシュをインスタンシング描画
+  for (auto& mesh : meshes_) {
+    mesh->DrawInstanced(instanceCount);
+  }
+}
+
 void Model::LoadModelFile(const std::string& directoryPath, const std::string& fileName)
 {
   Assimp::Importer importer;

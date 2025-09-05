@@ -47,6 +47,42 @@ void GameScene::Initialize()
   terrainTransform_.rotate = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
   terrain_->SetTransform(terrainTransform_);
 
+  // インスタンシング描画のデモ初期化
+  instancedCubes_ = std::make_unique<InstancedObject3d>();
+  instancedCubes_->Initialize("axis.obj");
+
+  // グリッド状にキューブを配置（10x10x10 = 1000個）
+  const int gridSize = 10;
+  const float spacing = 3.0f;
+  
+  for (int x = 0; x < gridSize; x++) {
+    for (int y = 0; y < gridSize; y++) {
+      for (int z = 0; z < gridSize; z++) {
+        Transform transform;
+        transform.translate = {
+          (x - gridSize / 2.0f) * spacing,
+          (y - gridSize / 2.0f) * spacing + 10.0f,
+          (z - gridSize / 2.0f) * spacing
+        };
+        transform.scale = { 0.5f, 0.5f, 0.5f };
+        transform.rotate = { 0.0f, 0.0f, 0.0f };
+
+        // 位置に応じた色を設定
+        Vector4 color = {
+          static_cast<float>(x) / gridSize,
+          static_cast<float>(y) / gridSize,
+          static_cast<float>(z) / gridSize,
+          1.0f
+        };
+
+        auto instance = instancedCubes_->CreateInstance(transform, color);
+        if (instance) {
+          cubeInstances_.push_back(std::move(instance));
+        }
+      }
+    }
+  }
+
   characterModel_ = new Object3d();
   characterModel_->Initialize();
   characterModel_->SetModel("BrainStem2.gltf");
@@ -133,6 +169,46 @@ void GameScene::Update()
   ///              更新処理               ///
   /// ================================== ///
 
+  // インスタンシング描画のアニメーション更新
+  instanceAnimTime_ += FrameTimer::GetInstance()->GetDeltaTime();
+  
+  // 波のようなアニメーション
+  const int gridSize = 10;
+  const float spacing = 3.0f;
+  const float waveAmplitude = 2.0f;
+  const float waveFrequency = 2.0f;
+  
+  int index = 0;
+  for (int x = 0; x < gridSize; x++) {
+    for (int y = 0; y < gridSize; y++) {
+      for (int z = 0; z < gridSize; z++) {
+        if (index < cubeInstances_.size()) {
+          Transform transform;
+          float offsetY = std::sin(instanceAnimTime_ * waveFrequency + x * 0.5f + z * 0.5f) * waveAmplitude;
+          
+          transform.translate = {
+            (x - gridSize / 2.0f) * spacing,
+            (y - gridSize / 2.0f) * spacing + 10.0f + offsetY,
+            (z - gridSize / 2.0f) * spacing
+          };
+          
+          transform.scale = { 0.5f, 0.5f, 0.5f };
+          transform.rotate = {
+            instanceAnimTime_ * 0.5f,
+            instanceAnimTime_ * 0.3f,
+            instanceAnimTime_ * 0.2f
+          };
+          
+          cubeInstances_[index]->SetTransform(transform);
+          index++;
+        }
+      }
+    }
+  }
+  
+  // インスタンスデータの更新
+  instancedCubes_->Update();
+
   // アニメーション切り替えテスト（遷移時間付き）
   if (Input::GetInstance()->TriggerKey(DIK_1))
   {
@@ -207,13 +283,14 @@ void GameScene::Draw()
 
   // シャドウマップ生成パス
   if (ShadowRenderer::GetInstance()->IsEnabled()) {
-    ShadowRenderer::GetInstance()->BeginShadowPass();
+  ShadowRenderer::GetInstance()->BeginShadowPass();
     
     // シャドウキャスターの描画
     terrain_->Draw();
     characterModel_->Draw();
     characterModel2_->Draw();
     weaponModel_->Draw();
+    //instancedCubes_->Draw();
     
     ShadowRenderer::GetInstance()->EndShadowPass();
   }
@@ -235,6 +312,9 @@ void GameScene::Draw()
   characterModel2_->Draw();
   terrain_->Draw();
   weaponModel_->Draw(); // 武器の描画
+
+  // インスタンシング描画
+  instancedCubes_->Draw();
 
 
 
@@ -384,6 +464,38 @@ void GameScene::DrawImGui()
 
   characterModel_->DrawImGui();
   characterModel2_->DrawImGui();
+
+  // インスタンシング描画のデバッグUI
+  ImGui::Begin("Instancing Demo");
+  ImGui::Text("Instance Count: %d", instancedCubes_->GetInstanceCount());
+  ImGui::Text("Animation Time: %.2f", instanceAnimTime_);
+  if (ImGui::Button("Clear All Instances")) {
+    instancedCubes_->ClearAllInstances();
+    cubeInstances_.clear();
+  }
+  if (ImGui::Button("Add Random Instance")) {
+    Transform transform;
+    transform.translate = {
+      (static_cast<float>(rand()) / RAND_MAX - 0.5f) * 20.0f,
+      10.0f + (static_cast<float>(rand()) / RAND_MAX) * 10.0f,
+      (static_cast<float>(rand()) / RAND_MAX - 0.5f) * 20.0f
+    };
+    transform.scale = { 0.5f, 0.5f, 0.5f };
+    transform.rotate = { 0.0f, 0.0f, 0.0f };
+    
+    Vector4 color = {
+      static_cast<float>(rand()) / RAND_MAX,
+      static_cast<float>(rand()) / RAND_MAX,
+      static_cast<float>(rand()) / RAND_MAX,
+      1.0f
+    };
+    
+    auto instance = instancedCubes_->CreateInstance(transform, color);
+    if (instance) {
+      cubeInstances_.push_back(std::move(instance));
+    }
+  }
+  ImGui::End();
 
 #endif // DEBUG
 }

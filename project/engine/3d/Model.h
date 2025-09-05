@@ -38,6 +38,11 @@ public: // メンバー関数
   void Draw(Matrix4x4 world, Matrix4x4 viewProjection);
 
   /// <summary>
+  /// インスタンシング描画
+  /// </summary>
+  void DrawInstanced(uint32_t instanceCount);
+
+  /// <summary>
   /// objファイルの読み込む
   ///	</summary>
   void LoadModelFile(const std::string& directoryPath, const std::string& fileName);
