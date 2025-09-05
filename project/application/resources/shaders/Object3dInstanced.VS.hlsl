@@ -1,4 +1,4 @@
-#include "Object3d.hlsli"
+#include "Object3dInstanced.hlsli"
 
 // インスタンスデータ構造
 struct InstanceData
@@ -51,6 +51,9 @@ VertexShaderOutput main(VertexShaderInput input, uint instanceID : SV_InstanceID
     
     // ライト空間での位置を計算（シャドウマップ用）
     output.lightSpacePos = mul(worldPos, gShadowConstants.lightViewProj);
+    
+    // インスタンスカラーを渡す
+    output.instanceColor = instance.Color;
     
     return output;
 }
