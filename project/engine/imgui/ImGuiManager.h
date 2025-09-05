@@ -54,6 +54,7 @@ public: // メンバ関数
   /// </summary>
   void SetStyleBoorstrapDark();
   void SetStyleMoonLight();
+  void SetStyleAdobeinspired();
 
   /// <summary>
   /// docking設定
