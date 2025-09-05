@@ -12,5 +12,6 @@ float4 main(VertexShaderOutput input) : SV_TARGET
 {
     PixelShaderOutput output;
     output.color = gTexture.Sample(gSampler, input.texCoord);
+    output.color.a = 1.0f; // Ensure alpha is 1.0
     return output.color;
 }
