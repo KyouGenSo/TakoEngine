@@ -15,6 +15,10 @@
 
 void TakoFramework::Initialize()
 {
+#ifdef _DEBUG
+  GameViewportWindowVisible = true;
+#endif
+
 #pragma region ウィンドウの初期化-------------------------------------------------------------------------------------------------------------------
   winApp_ = WinApp::GetInstance();
 	winApp_->Initialize();
