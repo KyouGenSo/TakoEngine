@@ -124,18 +124,22 @@ void Mesh::DrawInstanced(uint32_t instanceCount)
   // インデックスバッファビューを設定
   dx12_->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
 
-  // マテリアルデータを設定（ルートパラメータ0）
-  dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource_->GetGPUVirtualAddress());
+  // シャドウパス中はマテリアルとテクスチャの設定をスキップ
+  if (!ShadowRenderer::GetInstance()->IsRenderingShadow()) {
+    // 通常レンダリングパスの場合のみマテリアル・テクスチャを設定
+    // マテリアルデータを設定（ルートパラメータ0）
+    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource_->GetGPUVirtualAddress());
 
-  // テクスチャを設定（ルートパラメータ2）
-  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, textureData_.textureIndex);
+    // テクスチャを設定（ルートパラメータ2）
+    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, textureData_.textureIndex);
 
-  // 環境マップテクスチャを設定（ルートパラメータ8）
-  if (materialData_->enableEnvMap && envTextureIndex_ != 0) {
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(8, envTextureIndex_);
-  } else {
-    uint32_t defaultTextureIndex = TextureManager::GetInstance()->GetSRVIndex("white.png");
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(8, defaultTextureIndex);
+    // 環境マップテクスチャを設定（ルートパラメータ8）
+    if (materialData_->enableEnvMap && envTextureIndex_ != 0) {
+      SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(8, envTextureIndex_);
+    } else {
+      uint32_t defaultTextureIndex = TextureManager::GetInstance()->GetSRVIndex("white.png");
+      SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(8, defaultTextureIndex);
+    }
   }
 
   // インスタンシング描画

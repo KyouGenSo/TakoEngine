@@ -290,7 +290,7 @@ void GameScene::Draw()
     characterModel_->Draw();
     characterModel2_->Draw();
     weaponModel_->Draw();
-    //instancedCubes_->Draw();
+    instancedCubes_->Draw();
     
     ShadowRenderer::GetInstance()->EndShadowPass();
   }

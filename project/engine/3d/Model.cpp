@@ -151,6 +151,14 @@ void Model::DrawInstanced(uint32_t instanceCount)
     return;
   }
 
+#ifdef _DEBUG
+  // シャドウパス中の場合はデバッグログ出力
+  if (ShadowRenderer::GetInstance()->IsRenderingShadow())
+  {
+    Logger::Log("Drawing instanced model in shadow pass: %d instances", instanceCount);
+  }
+#endif
+
   // 各メッシュをインスタンシング描画
   for (auto& mesh : meshes_) {
     mesh->DrawInstanced(instanceCount);

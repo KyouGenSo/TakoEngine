@@ -102,6 +102,11 @@ private:
     void CreateCameraForGPUData();
 
     /// <summary>
+    /// ViewProjection行列バッファの作成
+    /// </summary>
+    void CreateViewProjectionBuffer();
+
+    /// <summary>
     /// インスタンスデータを検証
     /// </summary>
     bool IsValidInstanceId(uint32_t instanceId) const;
@@ -129,10 +134,12 @@ private:
     // GPUリソース
     Microsoft::WRL::ComPtr<ID3D12Resource> instanceBuffer_;
     Microsoft::WRL::ComPtr<ID3D12Resource> cameraForGPUResource_;
+    Microsoft::WRL::ComPtr<ID3D12Resource> viewProjResource_;
     
     // マップされたバッファ
     InstanceData* mappedInstanceData_ = nullptr;
     CameraForGPU* cameraForGPUData_ = nullptr;
+    Matrix4x4* viewProjData_ = nullptr;
 
     // SRVインデックス
     uint32_t instanceSrvIndex_ = 0;

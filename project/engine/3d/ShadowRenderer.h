@@ -140,6 +140,11 @@ public:
     /// </summary>
     void DrawImGui();
 
+    /// <summary>
+    /// インスタンシング用シャドウレンダリング設定を適用
+    /// </summary>
+    void SetInstancedRenderState();
+
 private:
     /// <summary>
     /// シャドウ用ルートシグネチャの作成
@@ -156,6 +161,16 @@ private:
     /// </summary>
     void CreateConstantBuffer();
 
+    /// <summary>
+    /// インスタンシング用シャドウルートシグネチャの作成
+    /// </summary>
+    void CreateShadowInstancedRootSignature();
+
+    /// <summary>
+    /// インスタンシング用シャドウパイプラインステートの作成
+    /// </summary>
+    void CreateShadowInstancedPipelineState();
+
 private:
     // DirectX12関連
     DX12Basic* dx12_ = nullptr;
@@ -166,6 +181,10 @@ private:
     // シャドウ用ルートシグネチャとPSO
     Microsoft::WRL::ComPtr<ID3D12RootSignature> shadowRootSignature_;
     Microsoft::WRL::ComPtr<ID3D12PipelineState> shadowPipelineState_;
+    
+    // インスタンシング用シャドウルートシグネチャとPSO
+    Microsoft::WRL::ComPtr<ID3D12RootSignature> shadowInstancedRootSignature_;
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> shadowInstancedPipelineState_;
 
     // シャドウ定数バッファ
     Microsoft::WRL::ComPtr<ID3D12Resource> shadowConstantBuffer_;
