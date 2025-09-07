@@ -129,4 +129,7 @@ private:
   std::vector<ResizeCallbackEntry> onResizeFuncs_;
   // コールバック関数のID
   uint32_t nextId_ = 1u;
+
+  // タイトルバーの文字列
+  static std::wstring windowTitle_;
 };

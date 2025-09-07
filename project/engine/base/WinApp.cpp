@@ -16,78 +16,80 @@ int32_t WinApp::clientWidth = 1280;
 
 int32_t WinApp::clientHeight = 720;
 
+std::wstring WinApp::windowTitle_ = L"TakoEngine";
+
 void WinApp::Initialize()
 {
-	// システムタイマーの分解能を上げる
-	timeBeginPeriod(1);
+  // システムタイマーの分解能を上げる
+  timeBeginPeriod(1);
 
-	// COMの初期化
-	HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
-	assert(SUCCEEDED(hr));
+  // COMの初期化
+  HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+  assert(SUCCEEDED(hr));
 
-	//ウィンドウプロシージャ
-	wc_.lpfnWndProc = WndProc;
-	//クラス名
-	wc_.lpszClassName = L"TakoEngineWindowClass";
-	//インスタンスハンドル
-	wc_.hInstance = GetModuleHandle(nullptr);
-	//カーソル
-	wc_.hCursor = LoadCursor(nullptr, IDC_ARROW);
+  //ウィンドウプロシージャ
+  wc_.lpfnWndProc = WndProc;
+  //クラス名
+  wc_.lpszClassName = L"TakoEngineWindowClass";
+  //インスタンスハンドル
+  wc_.hInstance = GetModuleHandle(nullptr);
+  //カーソル
+  wc_.hCursor = LoadCursor(nullptr, IDC_ARROW);
 
-	//ウィンドウクラスを登録
-	RegisterClass(&wc_);
+  //ウィンドウクラスを登録
+  RegisterClass(&wc_);
 
-	//ウィンドウサイズを表す構造体にクライアント領域のサイズを入れる
-	RECT wrc = { 0, 0, clientWidth, clientHeight };
+  //ウィンドウサイズを表す構造体にクライアント領域のサイズを入れる
+  RECT wrc = { 0, 0, clientWidth, clientHeight };
 
-	//ウィンドウサイズを補正してウィンドウのサイズを計算
-	AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, FALSE);
+  //ウィンドウサイズを補正してウィンドウのサイズを計算
+  AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, FALSE);
 
-	//ウィンドウの生成
-	hWnd_ = CreateWindow(
-		wc_.lpszClassName,             //クラス名
-		L"TakoEngine",                //タイトルバーの文字列
+  //ウィンドウの生成
+  hWnd_ = CreateWindow(
+    wc_.lpszClassName,             //クラス名
+    windowTitle_.c_str(),                //タイトルバーの文字列
     WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,  // サイズ変更不可のウィンドウスタイル
-		CW_USEDEFAULT,               //表示X座標
-		CW_USEDEFAULT,              //表示Y座標
-		wrc.right - wrc.left,      //ウィンドウ幅
-		wrc.bottom - wrc.top,      //ウィンドウ高さ
-		nullptr,                  //親ウィンドウハンドル
-		nullptr,                  //メニューハンドル
-		wc_.hInstance,            //インスタンスハンドル
-		nullptr);                //追加パラメータ
+    CW_USEDEFAULT,               //表示X座標
+    CW_USEDEFAULT,              //表示Y座標
+    wrc.right - wrc.left,      //ウィンドウ幅
+    wrc.bottom - wrc.top,      //ウィンドウ高さ
+    nullptr,                  //親ウィンドウハンドル
+    nullptr,                  //メニューハンドル
+    wc_.hInstance,            //インスタンスハンドル
+    nullptr);                //追加パラメータ
 
-	//ウィンドウを表示
-	ShowWindow(hWnd_, SW_SHOW);
+  //ウィンドウを表示
+  ShowWindow(hWnd_, SW_SHOW);
 }
 
 bool WinApp::ProcessMessage()
 {
-	MSG msg;
+  MSG msg;
 
-	//メッセージがある限りループ
-	while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
-	{
-		//メッセージを処理
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
-	}
+  //メッセージがある限りループ
+  while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+  {
+    //メッセージを処理
+    TranslateMessage(&msg);
+    DispatchMessage(&msg);
+  }
 
-	//ウィンドウが破棄されたらTrueを返す
-	if (msg.message == WM_QUIT)
-	{
-		return true;
-	}
+  //ウィンドウが破棄されたらTrueを返す
+  if (msg.message == WM_QUIT)
+  {
+    return true;
+  }
 
-	return false;
+  return false;
 }
 
 void WinApp::Finalize()
 {
-	//ウィンドウを破棄
-	CloseWindow(hWnd_);
-	// COMの終了処理
-	CoUninitialize();
+  //ウィンドウを破棄
+  CloseWindow(hWnd_);
+  // COMの終了処理
+  CoUninitialize();
 
   // instance_削除
   if (instance_ != nullptr)
@@ -105,33 +107,29 @@ LRESULT WinApp::WndProc(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam)
     handler->OnWndProc(hWnd, msg, wparam, lparam);
   }
 
-	if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wparam, lparam))
-	{
-		return true;
-	}
-
-	//メッセージによって処理を分岐
-	switch (msg)
-	{
-		//ウィンドウが破棄されたとき
-	case WM_DESTROY:
-		//メッセージループを終了
-		PostQuitMessage(0);
-		break;
-
-  default: ;
+  if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wparam, lparam))
+  {
+    return true;
   }
 
-	return DefWindowProc(hWnd, msg, wparam, lparam);
+  //メッセージによって処理を分岐
+  switch (msg)
+  {
+    //ウィンドウが破棄されたとき
+  case WM_DESTROY:
+    //メッセージループを終了
+    PostQuitMessage(0);
+    break;
+
+  default:;
+  }
+
+  return DefWindowProc(hWnd, msg, wparam, lparam);
 }
 
 void WinApp::SetWindowTitle(const std::wstring& title)
 {
-  // ウィンドウハンドルが有効な場合のみタイトルを変更
-  if (hWnd_ != nullptr)
-  {
-    SetWindowText(hWnd_, title.c_str());
-  }
+  windowTitle_ = title;
 }
 
 void WinApp::ToggleFullScreen()
@@ -167,8 +165,7 @@ void WinApp::ToggleFullScreen()
 
     // 状態を更新
     isFullScreen_ = true;
-  }
-  else
+  } else
   {
     // 元のサイズ変更不可のウィンドウスタイルに戻す
     LONG currentStyle = GetWindowLong(hWnd_, GWL_STYLE);
@@ -203,7 +200,7 @@ void WinApp::ToggleFullScreen()
 uint32_t WinApp::RegisterOnResizeFunc(const std::function<void(Vector2)>& onResizeFunc)
 {
   uint32_t id = nextId_++;
-  onResizeFuncs_.push_back({ .callback= onResizeFunc, .id= id});
+  onResizeFuncs_.push_back({ .callback = onResizeFunc, .id = id });
   return id;
 }
 
@@ -211,6 +208,6 @@ void WinApp::UnregisterOnResizeFunc(uint32_t id)
 {
   onResizeFuncs_.erase(
     std::remove_if(onResizeFuncs_.begin(), onResizeFuncs_.end(),
-                   [id](const ResizeCallbackEntry& entry) { return entry.id == id; }),
+      [id](const ResizeCallbackEntry& entry) { return entry.id == id; }),
     onResizeFuncs_.end());
 }
