@@ -130,7 +130,9 @@ void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
   else
   {
     // マルチメッシュモデル（スキニングなし）の場合はノード階層で描画
-    ProcessNodeHierarchy(rootNode_, Mat4x4::MakeIdentity(), world, viewProjection);
+    // アニメーションがある場合は、更新されたrootNodeのlocalMatrixを使用
+    Matrix4x4 rootTransform = hasAnimation_ ? rootNode_.localMatrix : Mat4x4::MakeIdentity();
+    ProcessNodeHierarchy(rootNode_, rootTransform, world, viewProjection);
   }
 
   // skeletonの描画
@@ -666,6 +668,21 @@ void Model::DrawImGui()
     ImGui::EndChild();
   }
 
+  // ノード階層の表示（スケルトンがない場合やデバッグ用）
+  if (!hasSkeleton_ || ImGui::CollapsingHeader("Node Hierarchy"))
+  {
+    ImGui::Text("Total Meshes: %zu", meshes_.size());
+    ImGui::Separator();
+
+    // スクロール可能な子ウィンドウを作成
+    ImGui::BeginChild("NodeHierarchy", ImVec2(0, 300), true, ImGuiWindowFlags_HorizontalScrollbar);
+
+    // ルートノードから再帰的に表示
+    DrawNodeHierarchyImGui(rootNode_);
+
+    ImGui::EndChild();
+  }
+
   ImGui::End();
 }
 
@@ -764,6 +781,109 @@ void Model::DrawJointHierarchy(int32_t jointIndex, int depth)
     for (int32_t childIndex : joint.childrenIndex)
     {
       DrawJointHierarchy(childIndex, depth + 1);
+    }
+    
+    ImGui::TreePop();
+  }
+  
+  // インデントを元に戻す
+  ImGui::Unindent(indentAmount * depth);
+}
+
+void Model::DrawNodeHierarchyImGui(const Node& node, int depth)
+{
+  // インデント量の設定
+  const float indentAmount = 12.0f;
+  ImGui::Indent(indentAmount * depth);
+
+  // 現在のアニメーション情報を取得
+  bool hasNodeAnimation = false;
+  if (hasAnimation_ && !currentAnimationName_.empty() && animations_.find(currentAnimationName_) != animations_.end())
+  {
+    const Animation& currentAnimation = animations_.at(currentAnimationName_);
+    hasNodeAnimation = currentAnimation.nodeAnimations.find(node.name) != currentAnimation.nodeAnimations.end();
+  }
+
+  // アニメーションがあるノードは緑色、ないノードは白色
+  ImVec4 textColor = hasNodeAnimation ? ImVec4(0.2f, 1.0f, 0.2f, 1.0f) : ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+
+  // メッシュ情報の表示
+  std::string meshInfo = "";
+  if (!node.meshIndices.empty())
+  {
+    meshInfo = " [Meshes:";
+    for (size_t i = 0; i < node.meshIndices.size(); ++i)
+    {
+      if (i > 0) meshInfo += ",";
+      meshInfo += std::to_string(node.meshIndices[i]);
+    }
+    meshInfo += "]";
+  }
+
+  // ツリーノードの表示
+  ImGui::PushStyleColor(ImGuiCol_Text, textColor);
+  bool nodeOpen = ImGui::TreeNode(node.name.c_str(), "%s%s%s", 
+                                   node.name.c_str(), 
+                                   meshInfo.c_str(),
+                                   hasNodeAnimation ? " [ANIM]" : "");
+  ImGui::PopStyleColor();
+
+  // ノードが開いている場合、詳細情報を表示
+  if (nodeOpen)
+  {
+    ImGui::Indent();
+    
+    // Transform情報を表示
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
+    ImGui::Text("Transform:");
+    ImGui::Text("  Translate: (%.3f, %.3f, %.3f)", 
+                node.transform.translate.x, node.transform.translate.y, node.transform.translate.z);
+    ImGui::Text("  Rotate: (%.3f, %.3f, %.3f, %.3f)", 
+                node.transform.rotate.x, node.transform.rotate.y, node.transform.rotate.z, node.transform.rotate.w);
+    ImGui::Text("  Scale: (%.3f, %.3f, %.3f)", 
+                node.transform.scale.x, node.transform.scale.y, node.transform.scale.z);
+
+    // LocalMatrix の位置部分を表示（アニメーション適用後の値）
+    Vector3 matrixPos = {
+      node.localMatrix.m[3][0],
+      node.localMatrix.m[3][1],
+      node.localMatrix.m[3][2]
+    };
+    ImGui::Text("LocalMatrix Position: (%.3f, %.3f, %.3f)", matrixPos.x, matrixPos.y, matrixPos.z);
+
+    // メッシュインデックスの詳細
+    if (!node.meshIndices.empty())
+    {
+      ImGui::Text("Mesh Indices: %zu", node.meshIndices.size());
+      for (int meshIdx : node.meshIndices)
+      {
+        ImGui::Text("  - Mesh[%d]", meshIdx);
+      }
+    }
+
+    // 子ノード数
+    ImGui::Text("Children: %zu", node.children.size());
+    ImGui::PopStyleColor();
+
+    // ホバー時に詳細情報をツールチップで表示
+    if (ImGui::IsItemHovered())
+    {
+      ImGui::BeginTooltip();
+      ImGui::Text("Node Details:");
+      ImGui::Separator();
+      ImGui::Text("Name: %s", node.name.c_str());
+      ImGui::Text("Has Animation: %s", hasNodeAnimation ? "Yes" : "No");
+      ImGui::Text("Mesh Count: %zu", node.meshIndices.size());
+      ImGui::Text("Children Count: %zu", node.children.size());
+      ImGui::EndTooltip();
+    }
+    
+    ImGui::Unindent();
+    
+    // 子ノードを再帰的に表示
+    for (const Node& child : node.children)
+    {
+      DrawNodeHierarchyImGui(child, depth + 1);
     }
     
     ImGui::TreePop();

@@ -217,6 +217,11 @@ private: // プライベートメンバー関数
   void DrawJointHierarchy(int32_t jointIndex, int depth = 0);
 
   /// <summary>
+  /// ノード階層を再帰的に表示（ImGui用）
+  /// </summary>
+  void DrawNodeHierarchyImGui(const Node& node, int depth = 0);
+
+  /// <summary>
   /// 現在のポーズを保存
   /// </summary>
   void SaveCurrentPose();
