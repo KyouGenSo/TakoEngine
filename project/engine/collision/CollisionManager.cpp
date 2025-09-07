@@ -273,9 +273,6 @@ void CollisionManager::CheckCollisionPair(Collider* colliderA, Collider* collide
 	
 	if (isColliding) {
 		currentCollisions_.insert(MakeOrderedPair(colliderA, colliderB));
-		
-		colliderA->OnCollision(colliderB);
-		colliderB->OnCollision(colliderA);
 	}
 }
 
