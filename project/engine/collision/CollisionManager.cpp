@@ -3,7 +3,6 @@
 #include "SphereCollider.h"
 #include "OBBCollider.h"
 #include "Draw2D.h"
-#include "Vec3Func.h"
 #include <algorithm>
 #include <cmath>
 #include <unordered_map>
@@ -354,26 +353,49 @@ bool CollisionManager::CheckOBBvsOBB(OBBCollider* a, OBBCollider* b) {
 	// 各OBBの3軸をチェック
 	for (int i = 0; i < 3; ++i) {
 		// A's axes
-		float rA = obbA.halfExtents.x * std::abs(Vec3::Dot(axesA[0], axesA[i])) +
-		          obbA.halfExtents.y * std::abs(Vec3::Dot(axesA[1], axesA[i])) +
-		          obbA.halfExtents.z * std::abs(Vec3::Dot(axesA[2], axesA[i]));
-		float rB = obbB.halfExtents.x * std::abs(Vec3::Dot(axesB[0], axesA[i])) +
-		          obbB.halfExtents.y * std::abs(Vec3::Dot(axesB[1], axesA[i])) +
-		          obbB.halfExtents.z * std::abs(Vec3::Dot(axesB[2], axesA[i]));
-		if (std::abs(Vec3::Dot(t, axesA[i])) > rA + rB) return false;
+		float rA = obbA.halfExtents.x * std::abs(axesA[0].Dot(axesA[i])) +
+		          obbA.halfExtents.y * std::abs(axesA[1].Dot(axesA[i])) +
+		          obbA.halfExtents.z * std::abs(axesA[2].Dot(axesA[i]));
+		float rB = obbB.halfExtents.x * std::abs(axesB[0].Dot(axesA[i])) +
+		          obbB.halfExtents.y * std::abs(axesB[1].Dot(axesA[i])) +
+		          obbB.halfExtents.z * std::abs(axesB[2].Dot(axesA[i]));
+		if (std::abs(t.Dot(axesA[i])) > rA + rB) return false;
 		
 		// B's axes
-		rA = obbA.halfExtents.x * std::abs(Vec3::Dot(axesA[0], axesB[i])) +
-		     obbA.halfExtents.y * std::abs(Vec3::Dot(axesA[1], axesB[i])) +
-		     obbA.halfExtents.z * std::abs(Vec3::Dot(axesA[2], axesB[i]));
-		rB = obbB.halfExtents.x * std::abs(Vec3::Dot(axesB[0], axesB[i])) +
-		     obbB.halfExtents.y * std::abs(Vec3::Dot(axesB[1], axesB[i])) +
-		     obbB.halfExtents.z * std::abs(Vec3::Dot(axesB[2], axesB[i]));
-		if (std::abs(Vec3::Dot(t, axesB[i])) > rA + rB) return false;
+		rA = obbA.halfExtents.x * std::abs(axesA[0].Dot(axesB[i])) +
+		     obbA.halfExtents.y * std::abs(axesA[1].Dot(axesB[i])) +
+		     obbA.halfExtents.z * std::abs(axesA[2].Dot(axesB[i]));
+		rB = obbB.halfExtents.x * std::abs(axesB[0].Dot(axesB[i])) +
+		     obbB.halfExtents.y * std::abs(axesB[1].Dot(axesB[i])) +
+		     obbB.halfExtents.z * std::abs(axesB[2].Dot(axesB[i]));
+		if (std::abs(t.Dot(axesB[i])) > rA + rB) return false;
 	}
 	
-	// クロス積軸のチェック（簡略化のため省略可能）
-	// 完全な実装では9個のクロス積軸もチェックする必要がある
+	// クロス積軸のチェック（9軸）
+	for (int i = 0; i < 3; ++i) {
+		for (int j = 0; j < 3; ++j) {
+			// 軸のクロス積を計算
+			Vector3 axis = axesA[i].Cross(axesB[j]);
+			float axisLength = axis.Length();
+			
+			// 平行軸の場合（クロス積がゼロベクトル）はスキップ
+			if (axisLength < 0.0001f) continue;
+			
+			// 軸を正規化
+			axis = axis / axisLength;
+			
+			// 各OBBの頂点を軸に投影して半径を計算
+			float rA = obbA.halfExtents.x * std::abs(axesA[0].Dot(axis)) +
+			          obbA.halfExtents.y * std::abs(axesA[1].Dot(axis)) +
+			          obbA.halfExtents.z * std::abs(axesA[2].Dot(axis));
+			float rB = obbB.halfExtents.x * std::abs(axesB[0].Dot(axis)) +
+			          obbB.halfExtents.y * std::abs(axesB[1].Dot(axis)) +
+			          obbB.halfExtents.z * std::abs(axesB[2].Dot(axis));
+			
+			// 分離軸定理の判定
+			if (std::abs(t.Dot(axis)) > rA + rB) return false;
+		}
+	}
 	
 	return true;
 }
@@ -394,13 +416,13 @@ bool CollisionManager::CheckOBBvsAABB(OBBCollider* obb, AABBCollider* aabb) {
 	
 	// OBBの3軸でチェック
 	for (int i = 0; i < 3; ++i) {
-		float rOBB = obbData.halfExtents.x * std::abs(Vec3::Dot(axes[0], axes[i])) +
-		            obbData.halfExtents.y * std::abs(Vec3::Dot(axes[1], axes[i])) +
-		            obbData.halfExtents.z * std::abs(Vec3::Dot(axes[2], axes[i]));
+		float rOBB = obbData.halfExtents.x * std::abs(axes[0].Dot(axes[i])) +
+		            obbData.halfExtents.y * std::abs(axes[1].Dot(axes[i])) +
+		            obbData.halfExtents.z * std::abs(axes[2].Dot(axes[i]));
 		float rAABB = aabbAsOBB.halfExtents.x * std::abs(axes[i].x) +
 		             aabbAsOBB.halfExtents.y * std::abs(axes[i].y) +
 		             aabbAsOBB.halfExtents.z * std::abs(axes[i].z);
-		if (std::abs(Vec3::Dot(t, axes[i])) > rOBB + rAABB) return false;
+		if (std::abs(t.Dot(axes[i])) > rOBB + rAABB) return false;
 	}
 	
 	// AABBの3軸（ワールド軸）でチェック
@@ -411,13 +433,41 @@ bool CollisionManager::CheckOBBvsAABB(OBBCollider* obb, AABBCollider* aabb) {
 	};
 	
 	for (int i = 0; i < 3; ++i) {
-		float rOBB = obbData.halfExtents.x * std::abs(Vec3::Dot(axes[0], worldAxes[i])) +
-		            obbData.halfExtents.y * std::abs(Vec3::Dot(axes[1], worldAxes[i])) +
-		            obbData.halfExtents.z * std::abs(Vec3::Dot(axes[2], worldAxes[i]));
+		float rOBB = obbData.halfExtents.x * std::abs(axes[0].Dot(worldAxes[i])) +
+		            obbData.halfExtents.y * std::abs(axes[1].Dot(worldAxes[i])) +
+		            obbData.halfExtents.z * std::abs(axes[2].Dot(worldAxes[i]));
 		float rAABB = aabbAsOBB.halfExtents.x * std::abs(worldAxes[i].x) +
 		             aabbAsOBB.halfExtents.y * std::abs(worldAxes[i].y) +
 		             aabbAsOBB.halfExtents.z * std::abs(worldAxes[i].z);
-		if (std::abs(Vec3::Dot(t, worldAxes[i])) > rOBB + rAABB) return false;
+		if (std::abs(t.Dot(worldAxes[i])) > rOBB + rAABB) return false;
+	}
+	
+	// クロス積軸のチェック（OBBの軸×ワールド軸の9軸）
+	for (int i = 0; i < 3; ++i) {
+		for (int j = 0; j < 3; ++j) {
+			// OBBの軸とワールド軸のクロス積
+			Vector3 axis = axes[i].Cross(worldAxes[j]);
+			float axisLength = axis.Length();
+			
+			// 平行軸の場合（クロス積がゼロベクトル）はスキップ
+			if (axisLength < 0.0001f) continue;
+			
+			// 軸を正規化
+			axis = axis / axisLength;
+			
+			// OBBの投影半径を計算
+			float rOBB = obbData.halfExtents.x * std::abs(axes[0].Dot(axis)) +
+			            obbData.halfExtents.y * std::abs(axes[1].Dot(axis)) +
+			            obbData.halfExtents.z * std::abs(axes[2].Dot(axis));
+			
+			// AABBの投影半径を計算
+			float rAABB = aabbAsOBB.halfExtents.x * std::abs(axis.x) +
+			             aabbAsOBB.halfExtents.y * std::abs(axis.y) +
+			             aabbAsOBB.halfExtents.z * std::abs(axis.z);
+			
+			// 分離軸定理の判定
+			if (std::abs(t.Dot(axis)) > rOBB + rAABB) return false;
+		}
 	}
 	
 	return true;
@@ -435,24 +485,22 @@ bool CollisionManager::CheckOBBvsSphere(OBBCollider* obb, SphereCollider* sphere
 	Vector3 closestPoint = obbData.center;
 	Vector3 axes[3] = { obbData.GetAxis(0), obbData.GetAxis(1), obbData.GetAxis(2) };
 	
+	// halfExtentsを配列として扱う
+	float halfExtents[3] = { obbData.halfExtents.x, obbData.halfExtents.y, obbData.halfExtents.z };
+	
 	for (int i = 0; i < 3; ++i) {
-		float distance = Vec3::Dot(localSphereCenter, axes[i]);
+		float distance = localSphereCenter.Dot(axes[i]);
 		
 		// 軸に沿った範囲内にクランプ
-		float halfExtent = 0.0f;
-		if (i == 0) halfExtent = obbData.halfExtents.x;
-		else if (i == 1) halfExtent = obbData.halfExtents.y;
-		else if (i == 2) halfExtent = obbData.halfExtents.z;
-
-    distance = min(distance, halfExtent);
-    distance = max(distance, -halfExtent);
-
-    closestPoint += axes[i] * distance;
+		distance = min(distance, halfExtents[i]);
+		distance = max(distance, -halfExtents[i]);
+		
+		closestPoint += axes[i] * distance;
 	}
 	
 	// 最近点と球の中心の距離を計算
 	Vector3 diff = sphereCenter - closestPoint;
-	float distanceSquared = diff.x * diff.x + diff.y * diff.y + diff.z * diff.z;
+	float distanceSquared = diff.LengthSquared();
 	
 	return distanceSquared < (radius * radius);
 }
