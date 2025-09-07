@@ -208,10 +208,9 @@ void CollisionManager::DrawImGui() {
       ImGui::PushID(index++);
       uint32_t typeID = collider->GetTypeID();
 
-      ImGui::Text("Collider %d: TypeID=%u, Active=%s, Trigger=%s",
+      ImGui::Text("Collider %d: TypeID=%u, Active=%s",
         index - 1, typeID,
-        collider->IsActive() ? "Yes" : "No",
-        collider->IsTrigger() ? "Yes" : "No");
+        collider->IsActive() ? "Yes" : "No");
 
       // AABBColliderの場合
       if (AABBCollider* aabb = dynamic_cast<AABBCollider*>(collider)) {

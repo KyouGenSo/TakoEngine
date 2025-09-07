@@ -7,7 +7,6 @@ protected:
 	Transform* transform_ = nullptr;
 	uint32_t typeID_ = 0;
 	bool isActive_ = true;
-	bool isTrigger_ = false;
 	void* owner_ = nullptr;
 
 public:
@@ -26,9 +25,6 @@ public:
 	
 	void SetActive(bool active) { isActive_ = active; }
 	bool IsActive() const { return isActive_; }
-	
-	void SetTrigger(bool trigger) { isTrigger_ = trigger; }
-	bool IsTrigger() const { return isTrigger_; }
 	
 	uint32_t GetTypeID() const { return typeID_; }
 	void SetTypeID(uint32_t id) { typeID_ = id; }
