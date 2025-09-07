@@ -3,7 +3,7 @@
 OBBCollider::OBBCollider()
 	: size_(1.0f, 1.0f, 1.0f)
 	, offset_(0.0f, 0.0f, 0.0f) {
-	orientation_ = Mat4x4::MakeIdentity();
+  orientation_ = Mat4x4::MakeIdentity();
 }
 
 OBB OBBCollider::GetOBB() const {
@@ -14,8 +14,9 @@ OBB OBBCollider::GetOBB() const {
 	
 	// オフセットを回転を考慮して適用
 	if (transform_) {
-		// orientation_が設定されている場合はそれを使用（Player側で設定済み）
+		// orientation_が設定されている場合はそれを使用
 		// オフセットをorientation_で回転
+    orientation_ = Mat4x4::MakeRotateXYZ(transform_->rotate);
 		Vector3 rotatedOffset = Mat4x4::TransformNormal(orientation_, offset_);
 		obb.center = worldPos + rotatedOffset;
 		// orientation_をそのまま使用

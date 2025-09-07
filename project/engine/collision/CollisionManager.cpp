@@ -443,15 +443,11 @@ bool CollisionManager::CheckOBBvsSphere(OBBCollider* obb, SphereCollider* sphere
 		if (i == 0) halfExtent = obbData.halfExtents.x;
 		else if (i == 1) halfExtent = obbData.halfExtents.y;
 		else if (i == 2) halfExtent = obbData.halfExtents.z;
-		
-		if (distance > halfExtent) {
-			distance = halfExtent;
-		}
-		if (distance < -halfExtent) {
-			distance = -halfExtent;
-		}
-		
-		closestPoint += axes[i] * distance;
+
+    distance = min(distance, halfExtent);
+    distance = max(distance, -halfExtent);
+
+    closestPoint += axes[i] * distance;
 	}
 	
 	// 最近点と球の中心の距離を計算
