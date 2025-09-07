@@ -35,6 +35,54 @@ void CollisionManager::Reset() {
 	currentCollisions_.clear();
 }
 
+void CollisionManager::CheckAllCollisions() {
+  previousCollisions_ = currentCollisions_;
+  currentCollisions_.clear();
+
+  auto itA = colliders_.begin();
+  for (; itA != colliders_.end(); ++itA) {
+    Collider* colliderA = *itA;
+
+    if (!colliderA || !colliderA->IsActive()) {
+      continue;
+    }
+
+    auto itB = itA;
+    ++itB;
+
+    for (; itB != colliders_.end(); ++itB) {
+      Collider* colliderB = *itB;
+
+      if (!colliderB || !colliderB->IsActive()) {
+        continue;
+      }
+
+      if (!CanCollide(colliderA->GetTypeID(), colliderB->GetTypeID())) {
+        continue;
+      }
+
+      CheckCollisionPair(colliderA, colliderB);
+    }
+  }
+
+  for (const auto& pair : currentCollisions_) {
+    if (previousCollisions_.find(pair) == previousCollisions_.end()) {
+      pair.first->OnCollisionEnter(pair.second);
+      pair.second->OnCollisionEnter(pair.first);
+    } else {
+      pair.first->OnCollisionStay(pair.second);
+      pair.second->OnCollisionStay(pair.first);
+    }
+  }
+
+  for (const auto& pair : previousCollisions_) {
+    if (currentCollisions_.find(pair) == currentCollisions_.end()) {
+      pair.first->OnCollisionExit(pair.second);
+      pair.second->OnCollisionExit(pair.first);
+    }
+  }
+}
+
 void CollisionManager::AddCollider(Collider* collider) {
 	if (collider) {
 		colliders_.push_back(collider);
@@ -55,67 +103,143 @@ void CollisionManager::SetCollisionMask(uint32_t typeA, uint32_t typeB, bool can
 	}
 }
 
-bool CollisionManager::CanCollide(uint32_t typeA, uint32_t typeB) {
-	auto it = collisionMask_.find(typeA);
-	if (it != collisionMask_.end()) {
-		return it->second.find(typeB) != it->second.end();
-	}
-	return false;
+void CollisionManager::DrawColliders() {
+  if (!debugDrawEnabled_) return;
+
+  Draw2D* draw2D = Draw2D::GetInstance();
+  if (!draw2D) return;
+
+  // 色の定義（TypeIDに基づいたハッシュ色生成）
+  auto GetColorByType = [](uint32_t typeID) -> Vector4 {
+    // TypeIDを元に色相を計算（黄金比を使用して均等に分散）
+    float hue = std::fmod(typeID * 0.618033988749895f, 1.0f) * 360.0f;
+
+    // HSVからRGBへ変換（簡略版）
+    float c = 0.7f;  // 彩度
+    float x = c * (1.0f - std::abs(std::fmod(hue / 60.0f, 2.0f) - 1.0f));
+    float m = 0.3f;  // 明度調整
+
+    float r = 0.0f, g = 0.0f, b = 0.0f;
+    if (hue < 60.0f) { r = c; g = x; b = 0.0f; } else if (hue < 120.0f) { r = x; g = c; b = 0.0f; } else if (hue < 180.0f) { r = 0.0f; g = c; b = x; } else if (hue < 240.0f) { r = 0.0f; g = x; b = c; } else if (hue < 300.0f) { r = x; g = 0.0f; b = c; } else { r = c; g = 0.0f; b = x; }
+
+    return Vector4(r + m, g + m, b + m, 0.5f);
+    };
+
+  // すべてのコライダーを描画
+  int drawCount = 0;
+  for (Collider* collider : colliders_) {
+    if (!collider || !collider->IsActive()) continue;
+
+    Vector4 color = GetColorByType(collider->GetTypeID());
+
+    // AABBColliderの場合
+    if (AABBCollider* aabb = dynamic_cast<AABBCollider*>(collider)) {
+      AABB box = aabb->GetAABB();
+      draw2D->DrawAABB(box, color);
+      drawCount++;
+    }
+    // SphereColliderの場合
+    else if (SphereCollider* sphere = dynamic_cast<SphereCollider*>(collider)) {
+      Vector3 center = sphere->GetCenter();
+      float radius = sphere->GetRadius();
+      draw2D->DrawSphere(center, radius, color);
+      drawCount++;
+    }
+    // OBBColliderの場合
+    else if (OBBCollider* obb = dynamic_cast<OBBCollider*>(collider)) {
+      OBB obbData = obb->GetOBB();
+      draw2D->DrawOBB(obbData, color);
+      drawCount++;
+    }
+  }
 }
 
-CollisionManager::CollisionPair CollisionManager::MakeOrderedPair(Collider* a, Collider* b) {
-	if (a < b) {
-		return std::make_pair(a, b);
-	}
-	return std::make_pair(b, a);
-}
+void CollisionManager::DrawImGui() {
+#ifdef _DEBUG
+  ImGui::Begin("CollisionManager Debug");
 
-void CollisionManager::CheckAllCollisions() {
-	previousCollisions_ = currentCollisions_;
-  currentCollisions_.clear();
-	
-	auto itA = colliders_.begin();
-	for (; itA != colliders_.end(); ++itA) {
-		Collider* colliderA = *itA;
-		
-		if (!colliderA || !colliderA->IsActive()) {
-			continue;
-		}
-		
-		auto itB = itA;
-		++itB;
-		
-		for (; itB != colliders_.end(); ++itB) {
-			Collider* colliderB = *itB;
-			
-			if (!colliderB || !colliderB->IsActive()) {
-				continue;
-			}
-			
-			if (!CanCollide(colliderA->GetTypeID(), colliderB->GetTypeID())) {
-				continue;
-			}
-			
-			CheckCollisionPair(colliderA, colliderB);
-		}
-	}
-	
-	for (const auto& pair : currentCollisions_) {
-		if (previousCollisions_.find(pair) == previousCollisions_.end()) {
-			pair.first->OnCollisionEnter(pair.second);
-			pair.second->OnCollisionEnter(pair.first);
-		} else {
-			pair.first->OnCollisionStay(pair.second);
-			pair.second->OnCollisionStay(pair.first);
-		}
-	}
-	
-	for (const auto& pair : previousCollisions_) {
-		if (currentCollisions_.find(pair) == currentCollisions_.end()) {
-			pair.first->OnCollisionExit(pair.second);
-			pair.second->OnCollisionExit(pair.first);
-		}
-	}
+  // 基本情報
+  ImGui::Text("=== Collision System Status ===");
+  ImGui::Text("Total Colliders: %zu", colliders_.size());
+
+  // アクティブなコライダー数をカウント
+  int activeCount = 0;
+  std::unordered_map<uint32_t, int> typeCountMap;
+
+  for (Collider* collider : colliders_) {
+    if (collider && collider->IsActive()) {
+      activeCount++;
+      uint32_t typeID = collider->GetTypeID();
+      typeCountMap[typeID]++;
+    }
+  }
+
+  ImGui::Text("Active Colliders: %d", activeCount);
+  for (const auto& [typeID, count] : typeCountMap) {
+    ImGui::Text("  - Type %u: %d", typeID, count);
+  }
+
+  // 衝突マスク情報
+  ImGui::Separator();
+  ImGui::Text("=== Collision Masks ===");
+  for (const auto& [typeA, typeBSet] : collisionMask_) {
+    ImGui::Text("Type %u can collide with:", typeA);
+    for (uint32_t typeB : typeBSet) {
+      ImGui::Text("  - Type %u", typeB);
+    }
+  }
+
+  // 現在の衝突情報
+  ImGui::Separator();
+  ImGui::Text("=== Current Collisions ===");
+  ImGui::Text("Active Collision Pairs: %zu", currentCollisions_.size());
+
+  // デバッグ描画設定
+  ImGui::Separator();
+  ImGui::Text("=== Debug Draw Settings ===");
+  ImGui::Checkbox("Enable Debug Draw", &debugDrawEnabled_);
+
+  // 各コライダーの詳細情報
+  if (ImGui::CollapsingHeader("Collider Details")) {
+    int index = 0;
+    for (Collider* collider : colliders_) {
+      if (!collider) continue;
+
+      ImGui::PushID(index++);
+      uint32_t typeID = collider->GetTypeID();
+
+      ImGui::Text("Collider %d: TypeID=%u, Active=%s, Trigger=%s",
+        index - 1, typeID,
+        collider->IsActive() ? "Yes" : "No",
+        collider->IsTrigger() ? "Yes" : "No");
+
+      // AABBColliderの場合
+      if (AABBCollider* aabb = dynamic_cast<AABBCollider*>(collider)) {
+        AABB box = aabb->GetAABB();
+        ImGui::Text("  AABB: min(%.1f,%.1f,%.1f) max(%.1f,%.1f,%.1f)",
+          box.min.x, box.min.y, box.min.z,
+          box.max.x, box.max.y, box.max.z);
+      }
+      // SphereColliderの場合
+      else if (SphereCollider* sphere = dynamic_cast<SphereCollider*>(collider)) {
+        Vector3 center = sphere->GetCenter();
+        ImGui::Text("  Sphere: center(%.1f,%.1f,%.1f) radius=%.1f",
+          center.x, center.y, center.z, sphere->GetRadius());
+      }
+      // OBBColliderの場合
+      else if (OBBCollider* obb = dynamic_cast<OBBCollider*>(collider)) {
+        OBB obbData = obb->GetOBB();
+        ImGui::Text("  OBB: center(%.1f,%.1f,%.1f) halfExtents(%.1f,%.1f,%.1f)",
+          obbData.center.x, obbData.center.y, obbData.center.z,
+          obbData.halfExtents.x, obbData.halfExtents.y, obbData.halfExtents.z);
+      }
+
+      ImGui::PopID();
+    }
+  }
+
+  ImGui::End();
+#endif
 }
 
 void CollisionManager::CheckCollisionPair(Collider* colliderA, Collider* colliderB) {
@@ -190,150 +314,6 @@ bool CollisionManager::CheckAABBvsSphere(AABBCollider* aabb, SphereCollider* sph
 	float distanceSquared = diff.x * diff.x + diff.y * diff.y + diff.z * diff.z;
 	
 	return distanceSquared < (radius * radius);
-}
-
-void CollisionManager::DrawImGui() {
-#ifdef _DEBUG
-	ImGui::Begin("CollisionManager Debug");
-	
-	// 基本情報
-	ImGui::Text("=== Collision System Status ===");
-	ImGui::Text("Total Colliders: %zu", colliders_.size());
-	
-	// アクティブなコライダー数をカウント
-	int activeCount = 0;
-	std::unordered_map<uint32_t, int> typeCountMap;
-	
-	for (Collider* collider : colliders_) {
-		if (collider && collider->IsActive()) {
-			activeCount++;
-			uint32_t typeID = collider->GetTypeID();
-			typeCountMap[typeID]++;
-		}
-	}
-	
-	ImGui::Text("Active Colliders: %d", activeCount);
-	for (const auto& [typeID, count] : typeCountMap) {
-		ImGui::Text("  - Type %u: %d", typeID, count);
-	}
-	
-	// 衝突マスク情報
-	ImGui::Separator();
-	ImGui::Text("=== Collision Masks ===");
-	for (const auto& [typeA, typeBSet] : collisionMask_) {
-		ImGui::Text("Type %u can collide with:", typeA);
-		for (uint32_t typeB : typeBSet) {
-			ImGui::Text("  - Type %u", typeB);
-		}
-	}
-	
-	// 現在の衝突情報
-	ImGui::Separator();
-	ImGui::Text("=== Current Collisions ===");
-	ImGui::Text("Active Collision Pairs: %zu", currentCollisions_.size());
-	
-	// デバッグ描画設定
-	ImGui::Separator();
-	ImGui::Text("=== Debug Draw Settings ===");
-	ImGui::Checkbox("Enable Debug Draw", &debugDrawEnabled_);
-	
-	// 各コライダーの詳細情報
-	if (ImGui::CollapsingHeader("Collider Details")) {
-		int index = 0;
-		for (Collider* collider : colliders_) {
-			if (!collider) continue;
-			
-			ImGui::PushID(index++);
-			uint32_t typeID = collider->GetTypeID();
-			
-			ImGui::Text("Collider %d: TypeID=%u, Active=%s, Trigger=%s", 
-				index-1, typeID, 
-				collider->IsActive() ? "Yes" : "No",
-				collider->IsTrigger() ? "Yes" : "No");
-			
-			// AABBColliderの場合
-			if (AABBCollider* aabb = dynamic_cast<AABBCollider*>(collider)) {
-				AABB box = aabb->GetAABB();
-				ImGui::Text("  AABB: min(%.1f,%.1f,%.1f) max(%.1f,%.1f,%.1f)",
-					box.min.x, box.min.y, box.min.z,
-					box.max.x, box.max.y, box.max.z);
-			}
-			// SphereColliderの場合
-			else if (SphereCollider* sphere = dynamic_cast<SphereCollider*>(collider)) {
-				Vector3 center = sphere->GetCenter();
-				ImGui::Text("  Sphere: center(%.1f,%.1f,%.1f) radius=%.1f",
-					center.x, center.y, center.z, sphere->GetRadius());
-			}
-			// OBBColliderの場合
-			else if (OBBCollider* obb = dynamic_cast<OBBCollider*>(collider)) {
-				OBB obbData = obb->GetOBB();
-				ImGui::Text("  OBB: center(%.1f,%.1f,%.1f) halfExtents(%.1f,%.1f,%.1f)",
-					obbData.center.x, obbData.center.y, obbData.center.z,
-					obbData.halfExtents.x, obbData.halfExtents.y, obbData.halfExtents.z);
-			}
-			
-			ImGui::PopID();
-		}
-	}
-	
-	ImGui::End();
-#endif
-}
-
-void CollisionManager::DrawColliders() {
-	if (!debugDrawEnabled_) return;
-	
-	Draw2D* draw2D = Draw2D::GetInstance();
-	if (!draw2D) return;
-	
-	// 色の定義（TypeIDに基づいたハッシュ色生成）
-	auto GetColorByType = [](uint32_t typeID) -> Vector4 {
-		// TypeIDを元に色相を計算（黄金比を使用して均等に分散）
-		float hue = std::fmod(typeID * 0.618033988749895f, 1.0f) * 360.0f;
-		
-		// HSVからRGBへ変換（簡略版）
-		float c = 0.7f;  // 彩度
-		float x = c * (1.0f - std::abs(std::fmod(hue / 60.0f, 2.0f) - 1.0f));
-		float m = 0.3f;  // 明度調整
-		
-		float r = 0.0f, g = 0.0f, b = 0.0f;
-		if (hue < 60.0f) { r = c; g = x; b = 0.0f; }
-		else if (hue < 120.0f) { r = x; g = c; b = 0.0f; }
-		else if (hue < 180.0f) { r = 0.0f; g = c; b = x; }
-		else if (hue < 240.0f) { r = 0.0f; g = x; b = c; }
-		else if (hue < 300.0f) { r = x; g = 0.0f; b = c; }
-		else { r = c; g = 0.0f; b = x; }
-		
-		return Vector4(r + m, g + m, b + m, 0.5f);
-	};
-	
-	// すべてのコライダーを描画
-	int drawCount = 0;
-	for (Collider* collider : colliders_) {
-		if (!collider || !collider->IsActive()) continue;
-		
-		Vector4 color = GetColorByType(collider->GetTypeID());
-		
-		// AABBColliderの場合
-		if (AABBCollider* aabb = dynamic_cast<AABBCollider*>(collider)) {
-			AABB box = aabb->GetAABB();
-			draw2D->DrawAABB(box, color);
-			drawCount++;
-		}
-		// SphereColliderの場合
-		else if (SphereCollider* sphere = dynamic_cast<SphereCollider*>(collider)) {
-			Vector3 center = sphere->GetCenter();
-			float radius = sphere->GetRadius();
-			draw2D->DrawSphere(center, radius, color);
-			drawCount++;
-		}
-		// OBBColliderの場合
-		else if (OBBCollider* obb = dynamic_cast<OBBCollider*>(collider)) {
-			OBB obbData = obb->GetOBB();
-			draw2D->DrawOBB(obbData, color);
-			drawCount++;
-		}
-	}
 }
 
 bool CollisionManager::CheckOBBvsOBB(OBBCollider* a, OBBCollider* b) {
@@ -503,4 +483,19 @@ bool CollisionManager::CheckOBBvsSphere(OBBCollider* obb, SphereCollider* sphere
 	float distanceSquared = diff.LengthSquared();
 	
 	return distanceSquared < (radius * radius);
+}
+
+bool CollisionManager::CanCollide(uint32_t typeA, uint32_t typeB) {
+  auto it = collisionMask_.find(typeA);
+  if (it != collisionMask_.end()) {
+    return it->second.find(typeB) != it->second.end();
+  }
+  return false;
+}
+
+CollisionManager::CollisionPair CollisionManager::MakeOrderedPair(Collider* a, Collider* b) {
+  if (a < b) {
+    return std::make_pair(a, b);
+  }
+  return std::make_pair(b, a);
 }

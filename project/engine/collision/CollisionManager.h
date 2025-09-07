@@ -51,6 +51,8 @@ public:
 	// デバッグ描画
 	void DrawColliders();
 	void DrawImGui();
+
+  //-----------------------------Getters/Setters------------------------------//
 	void SetDebugDrawEnabled(bool enabled) { debugDrawEnabled_ = enabled; }
 	bool IsDebugDrawEnabled() const { return debugDrawEnabled_; }
 	
