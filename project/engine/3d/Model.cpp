@@ -960,6 +960,10 @@ void Model::LoadAnimationFile(const std::string& directoryPath, const std::strin
     // アニメーションをマップに追加
     animations_[animName] = animation;
     animationTimes_[animName] = 0.0f;
+    
+    // デフォルトでループ設定をtrueにする
+    animationLoopSettings_[animName] = true;
+    animationFinished_[animName] = false;
   }
 
   // 最初のアニメーションをデフォルトに設定
@@ -1185,7 +1189,36 @@ void Model::UpdateAnimation(float deltaTime)
   // 現在のアニメーションの時間を更新
   float& animTime = animationTimes_[currentAnimationName_];
   animTime += deltaTime;
-  animTime = std::fmod(animTime, animations_[currentAnimationName_].duration);
+  
+  // ループ設定を確認
+  bool shouldLoop = true;  // デフォルトはループする
+  auto loopIt = animationLoopSettings_.find(currentAnimationName_);
+  if (loopIt != animationLoopSettings_.end())
+  {
+    shouldLoop = loopIt->second;
+  }
+  
+  // ループ処理または終了処理
+  float duration = animations_[currentAnimationName_].duration;
+  if (shouldLoop)
+  {
+    // ループする場合は時間をリセット
+    animTime = std::fmod(animTime, duration);
+    animationFinished_[currentAnimationName_] = false;
+  }
+  else
+  {
+    // ループしない場合は最大値でクランプ
+    if (animTime >= duration)
+    {
+      animTime = duration;
+      animationFinished_[currentAnimationName_] = true;
+    }
+    else
+    {
+      animationFinished_[currentAnimationName_] = false;
+    }
+  }
 }
 
 void Model::UpdateNodeHierarchyAnimation(Node& node, float time)
@@ -1360,6 +1393,7 @@ void Model::SetAnimation(const std::string& animationName)
   {
     currentAnimationName_ = animationName;
     animationTimes_[animationName] = 0.0f;  // アニメーション時間をリセット
+    animationFinished_[animationName] = false;  // 終了フラグをリセット
     isTransitioning_ = false;  // 即座に切り替えるため遷移フラグをオフ
   }else
   {
@@ -1385,6 +1419,7 @@ void Model::SetAnimation(const std::string& animationName, float transitionDurat
     // 遷移設定
     currentAnimationName_ = animationName;
     animationTimes_[animationName] = 0.0f;  // アニメーション時間をリセット
+    animationFinished_[animationName] = false;  // 終了フラグをリセット
     transitionDuration_ = transitionDuration;
     transitionTime_ = 0.0f;
     isTransitioning_ = true;
@@ -1407,6 +1442,43 @@ std::vector<std::string> Model::GetAnimationNames() const
   }
   
   return names;
+}
+
+void Model::SetAnimationLoop(const std::string& animationName, bool loop)
+{
+  // アニメーションが存在する場合のみ設定
+  if (animations_.find(animationName) != animations_.end())
+  {
+    animationLoopSettings_[animationName] = loop;
+    
+    // ループしない設定の場合、終了フラグを初期化
+    if (!loop)
+    {
+      animationFinished_[animationName] = false;
+    }
+  }
+}
+
+bool Model::IsAnimationLooping(const std::string& animationName) const
+{
+  // 設定がない場合はデフォルトでループする
+  auto it = animationLoopSettings_.find(animationName);
+  if (it != animationLoopSettings_.end())
+  {
+    return it->second;
+  }
+  return true;  // デフォルトはループ
+}
+
+bool Model::IsAnimationFinished(const std::string& animationName) const
+{
+  // 終了フラグを確認
+  auto it = animationFinished_.find(animationName);
+  if (it != animationFinished_.end())
+  {
+    return it->second;
+  }
+  return false;  // デフォルトは未終了
 }
 
 void Model::SaveCurrentPose()

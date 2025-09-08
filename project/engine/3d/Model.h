@@ -142,6 +142,27 @@ public: // メンバー関数
   /// <returns>一時停止中ならtrue</returns>
   bool IsAnimationPaused() const { return isPaused_; }
 
+  /// <summary>
+  /// アニメーションのループ設定を変更
+  /// </summary>
+  /// <param name="animationName">アニメーション名</param>
+  /// <param name="loop">ループするかどうか</param>
+  void SetAnimationLoop(const std::string& animationName, bool loop);
+
+  /// <summary>
+  /// アニメーションがループ設定されているかを取得
+  /// </summary>
+  /// <param name="animationName">アニメーション名</param>
+  /// <returns>ループ設定されていればtrue</returns>
+  bool IsAnimationLooping(const std::string& animationName) const;
+
+  /// <summary>
+  /// アニメーションが終了したかを取得（ループしない場合のみ有効）
+  /// </summary>
+  /// <param name="animationName">アニメーション名</param>
+  /// <returns>アニメーションが終了していればtrue</returns>
+  bool IsAnimationFinished(const std::string& animationName) const;
+
 private: // プライベートメンバー関数
   /// <summary>
   /// ノード階層で座標変換行列を処理して描画
@@ -280,4 +301,8 @@ private: // メンバ変数
   // アニメーション再生制御
   float animationSpeed_ = 1.0f;             // アニメーション再生速度（1.0fが通常速度）
   bool isPaused_ = false;                   // アニメーション一時停止フラグ
+  
+  // アニメーションループ制御
+  std::map<std::string, bool> animationLoopSettings_;  // 各アニメーションのループ設定
+  std::map<std::string, bool> animationFinished_;      // 各アニメーションの終了フラグ
 };
