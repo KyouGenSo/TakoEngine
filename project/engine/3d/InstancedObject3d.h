@@ -14,7 +14,7 @@ class ModelInstance;
 
 class InstancedObject3d {
 public:
-    static constexpr uint32_t MAX_INSTANCES = 1000;  // 最大インスタンス数
+    static constexpr uint32_t MAX_INSTANCES = 5000;  // 最大インスタンス数
 
     InstancedObject3d();
     ~InstancedObject3d();
