@@ -74,6 +74,7 @@ public: // メンバー関数
 	void SetRotate(const Vector3& rotate) { transform_.rotate = rotate; }
 	void SetTranslate(const Vector3& translate) { transform_.translate = translate; }
   void SetMaterialColor(const Vector4& color);
+  Vector4 GetMaterialColor() const;
   void SetUvTransform(const Transform& uvTransform);
   void SetEnvironmentTexture(uint32_t textureIndex);
   void SetEnvMapCoefficient(float coefficient);

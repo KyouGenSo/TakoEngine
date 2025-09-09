@@ -156,6 +156,15 @@ void Object3d::SetMaterialColor(const Vector4& color)
   }
 }
 
+Vector4 Object3d::GetMaterialColor() const
+{
+  if (m_model_)
+  {
+    return m_model_->GetMaterialColor();
+  }
+  return Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+}
+
 void Object3d::SetUvTransform(const Transform& uvTransform)
 {
   if (m_model_)

@@ -48,6 +48,7 @@ public: // メンバー関数
   void SetEnableLighting(bool enableLighting) { materialData_->enableLighting = enableLighting; }
   void SetEnableHighlight(bool enableHighlight) { materialData_->enableHighlight = enableHighlight; }
   void SetMaterialColor(const Vector4& color) { materialData_->color = color; }
+  Vector4 GetMaterialColor() const { return materialData_->color; }
   void SetEnvironmentTexture(uint32_t envTextureIndex) { envTextureIndex_ = envTextureIndex; }
   void SetEnableEnvMap(bool enableEnvMap) { materialData_->enableEnvMap = static_cast<int32_t>(enableEnvMap); }
   void SetEnvMapCoefficient(float coefficient) { materialData_->envMapCoefficient = coefficient; }

@@ -413,6 +413,15 @@ void Model::SetMaterialColor(const Vector4& color)
   }
 }
 
+Vector4 Model::GetMaterialColor() const
+{
+  if (!meshes_.empty())
+  {
+    return meshes_[0]->GetMaterialColor();
+  }
+  return Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+}
+
 void Model::SetUvTransform(const Transform& uvTransform)
 {
   for (auto& mesh : meshes_)
