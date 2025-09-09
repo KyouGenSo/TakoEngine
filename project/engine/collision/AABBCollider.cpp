@@ -19,8 +19,8 @@ AABB AABBCollider::GetAABB() const {
 	Vector3 center = GetCenter();
 	
 	AABB aabb;
-	aabb.min = center - size_;
-	aabb.max = center + size_;
+	aabb.min = center - size_ / 2;
+	aabb.max = center + size_ / 2;
 	
 	return aabb;
 }
