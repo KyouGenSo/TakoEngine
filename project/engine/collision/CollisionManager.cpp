@@ -90,7 +90,28 @@ void CollisionManager::AddCollider(Collider* collider) {
 }
 
 void CollisionManager::RemoveCollider(Collider* collider) {
+	// collidersリストから削除
 	colliders_.remove(collider);
+	
+	// currentCollisions_から該当するペアを削除
+	auto currentIt = currentCollisions_.begin();
+	while (currentIt != currentCollisions_.end()) {
+		if (currentIt->first == collider || currentIt->second == collider) {
+			currentIt = currentCollisions_.erase(currentIt);
+		} else {
+			++currentIt;
+		}
+	}
+	
+	// previousCollisions_から該当するペアを削除
+	auto prevIt = previousCollisions_.begin();
+	while (prevIt != previousCollisions_.end()) {
+		if (prevIt->first == collider || prevIt->second == collider) {
+			prevIt = previousCollisions_.erase(prevIt);
+		} else {
+			++prevIt;
+		}
+	}
 }
 
 void CollisionManager::SetCollisionMask(uint32_t typeA, uint32_t typeB, bool canCollide) {
