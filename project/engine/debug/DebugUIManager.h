@@ -21,6 +21,12 @@ public:
         std::string message;
         std::string timestamp;
     };
+    
+    // ゲームオブジェクトデバッグ情報
+    struct GameObjectDebugInfo {
+        std::string name;                    // オブジェクト名
+        std::function<void()> drawImGuiFunc; // DrawImGui関数
+    };
 
 private:
     // シングルトン
@@ -51,6 +57,11 @@ public:
     void RegisterDebugInfo(const std::string& category, std::function<void()> callback);
     void UnregisterDebugInfo(const std::string& category);
     void ClearDebugInfo();
+    
+    // ゲームオブジェクト登録システム
+    void RegisterGameObject(const std::string& name, std::function<void()> drawImGuiFunc);
+    void UnregisterGameObject(const std::string& name);
+    void ClearGameObjects();
     
     // ウィンドウ表示フラグ
     void SetWindowVisible(const std::string& windowName, bool visible);
@@ -89,6 +100,10 @@ private:
     
     // デバッグ情報コールバック
     std::unordered_map<std::string, std::function<void()>> debugInfoCallbacks_;
+    
+    // ゲームオブジェクト情報
+    std::vector<GameObjectDebugInfo> gameObjects_;
+    int selectedObjectIndex_ = -1;  // 選択されたオブジェクトのインデックス
     
     // パフォーマンス計測
     float fpsHistory_[100] = {0};

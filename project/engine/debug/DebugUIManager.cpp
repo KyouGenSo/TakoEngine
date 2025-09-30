@@ -170,46 +170,59 @@ void DebugUIManager::DrawSceneHierarchy() {
     ImGui::Text("Current Scene: %s", currentSceneName_.c_str());
     ImGui::Separator();
     
+    // ゲームオブジェクト一覧（選択可能）
+    if (!gameObjects_.empty()) {
+        ImGui::Text("Game Objects:");
+        ImGui::Separator();
+        
+        for (int i = 0; i < static_cast<int>(gameObjects_.size()); i++) {
+            ImGuiTreeNodeFlags nodeFlags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+            
+            // 選択されているオブジェクトはハイライト表示
+            if (selectedObjectIndex_ == i) {
+                nodeFlags |= ImGuiTreeNodeFlags_Selected;
+            }
+            
+            // オブジェクト名を表示（クリック可能）
+            ImGui::TreeNodeEx(reinterpret_cast<void*>(static_cast<intptr_t>(i)), 
+                             nodeFlags, "%s", gameObjects_[i].name.c_str());
+            
+            // クリックされたら選択
+            if (ImGui::IsItemClicked()) {
+                selectedObjectIndex_ = i;
+            }
+        }
+        
+        ImGui::Spacing();
+        ImGui::Separator();
+    }
+    
+    // エンジンオブジェクト
+    ImGui::Text("Engine Objects:");
+    ImGui::Separator();
+    
     // カメラ情報
-    if (ImGui::TreeNode("Camera")) {
+    if (ImGui::TreeNode("Main Camera")) {
         Camera** cameraPtr = Object3dBasic::GetInstance()->GetCamera();
         if (cameraPtr && *cameraPtr) {
             Vector3 pos = (*cameraPtr)->GetTranslate();
             ImGui::Text("Position: (%.2f, %.2f, %.2f)", pos.x, pos.y, pos.z);
+            Vector3 rot = (*cameraPtr)->GetRotate();
+            ImGui::Text("Rotation: (%.2f, %.2f, %.2f)", rot.x, rot.y, rot.z);
         }
         ImGui::TreePop();
     }
     
     // ライト情報
-    if (ImGui::TreeNode("Lights")) {
+    if (ImGui::TreeNode("Directional Light")) {
         Light* light = Object3dBasic::GetInstance()->GetLight();
         if (light) {
             const Light::DirectionalLight& dirLight = light->GetDirectionalLight();
-            ImGui::Text("Directional Light");
-            ImGui::Text("  Intensity: %.2f", dirLight.intensity);
+            ImGui::Text("Intensity: %.2f", dirLight.intensity);
+            Vector3 dir = dirLight.direction;
+            ImGui::Text("Direction: (%.2f, %.2f, %.2f)", dir.x, dir.y, dir.z);
         }
         ImGui::TreePop();
-    }
-    
-    // コライダー情報
-    char collidersLabel[64];
-    snprintf(collidersLabel, sizeof(collidersLabel), "Colliders (%zu)", 
-             CollisionManager::GetInstance()->GetColliderCount());
-    if (ImGui::TreeNode(collidersLabel)) {
-        ImGui::Text("Active colliders in scene");
-        ImGui::TreePop();
-    }
-    
-    // シーンから登録された追加情報
-    if (!debugInfoCallbacks_.empty()) {
-        ImGui::Separator();
-        ImGui::Text("Scene Objects:");
-        for (const auto& [category, callback] : debugInfoCallbacks_) {
-            if (ImGui::TreeNode(category.c_str())) {
-                callback();
-                ImGui::TreePop();
-            }
-        }
     }
     
     ImGui::End();
@@ -218,19 +231,25 @@ void DebugUIManager::DrawSceneHierarchy() {
 void DebugUIManager::DrawInspector() {
     ImGui::Begin("Inspector", &windowVisibility_["Inspector"]);
     
-    ImGui::Text("Object Properties");
-    ImGui::Separator();
-    
-    // シーンから登録されたデバッグ情報を表示
-    if (!debugInfoCallbacks_.empty()) {
-        if (ImGui::CollapsingHeader("Scene Debug Info", ImGuiTreeNodeFlags_DefaultOpen)) {
-            for (const auto& [category, callback] : debugInfoCallbacks_) {
-                if (ImGui::TreeNode(category.c_str())) {
-                    callback();
-                    ImGui::TreePop();
-                }
-            }
+    // 選択されたゲームオブジェクトがある場合
+    if (selectedObjectIndex_ >= 0 && selectedObjectIndex_ < static_cast<int>(gameObjects_.size())) {
+        // 選択されたオブジェクトの情報を表示
+        const auto& selectedObject = gameObjects_[selectedObjectIndex_];
+        ImGui::Text("Selected: %s", selectedObject.name.c_str());
+        ImGui::Separator();
+        
+        // オブジェクトのDrawImGui関数を呼び出す
+        if (selectedObject.drawImGuiFunc) {
+            selectedObject.drawImGuiFunc();
         }
+        
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+    } else {
+        // 何も選択されていない場合
+        ImGui::Text("No object selected");
+        ImGui::TextDisabled("Select an object from Scene Hierarchy");
         ImGui::Separator();
     }
     
@@ -538,6 +557,37 @@ void DebugUIManager::UnregisterDebugInfo(const std::string& category) {
 
 void DebugUIManager::ClearDebugInfo() {
     debugInfoCallbacks_.clear();
+}
+
+void DebugUIManager::RegisterGameObject(const std::string& name, std::function<void()> drawImGuiFunc) {
+    // 同じ名前のオブジェクトがあるか確認
+    for (auto& obj : gameObjects_) {
+        if (obj.name == name) {
+            // 既存のオブジェクトを更新
+            obj.drawImGuiFunc = drawImGuiFunc;
+            return;
+        }
+    }
+    // 新規登録
+    gameObjects_.push_back({name, drawImGuiFunc});
+}
+
+void DebugUIManager::UnregisterGameObject(const std::string& name) {
+    gameObjects_.erase(
+        std::remove_if(gameObjects_.begin(), gameObjects_.end(),
+            [&name](const GameObjectDebugInfo& obj) { return obj.name == name; }),
+        gameObjects_.end()
+    );
+    
+    // 選択インデックスの調整
+    if (selectedObjectIndex_ >= static_cast<int>(gameObjects_.size())) {
+        selectedObjectIndex_ = -1;
+    }
+}
+
+void DebugUIManager::ClearGameObjects() {
+    gameObjects_.clear();
+    selectedObjectIndex_ = -1;
 }
 
 void DebugUIManager::SetWindowVisible(const std::string& windowName, bool visible) {
