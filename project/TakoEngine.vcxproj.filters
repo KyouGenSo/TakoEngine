@@ -55,6 +55,9 @@
     <Filter Include="collision">
       <UniqueIdentifier>{dc286759-00b1-48d2-835f-d346b9dddb34}</UniqueIdentifier>
     </Filter>
+    <Filter Include="debug">
+      <UniqueIdentifier>{caa58604-08e6-4299-a628-a5eb7e285681}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\func\mathFunc\Mat4x4Func.cpp">
@@ -245,6 +248,9 @@
     </ClCompile>
     <ClCompile Include="engine\3d\InstancedObject3d.cpp">
       <Filter>3d</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\debug\DebugUIManager.cpp">
+      <Filter>debug</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -490,6 +496,9 @@
     </ClInclude>
     <ClInclude Include="engine\3d\InstancedObject3d.h">
       <Filter>3d</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\debug\DebugUIManager.h">
+      <Filter>debug</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -12,12 +12,17 @@
 #include "Transition.h"
 #include "FrameTimer.h"
 #include "ShadowRenderer.h"
+#include "Input.h"
+#include "CollisionManager.h"
+#include "Light.h"
+#include <algorithm>
+#include <vector>
+#include <chrono>
+#include <iomanip>
+#include <sstream>
 
 void TakoFramework::Initialize()
 {
-#ifdef _DEBUG
-  GameViewportWindowVisible = true;
-#endif
 
 #pragma region ウィンドウの初期化-------------------------------------------------------------------------------------------------------------------
   winApp_ = WinApp::GetInstance();
@@ -36,6 +41,12 @@ void TakoFramework::Initialize()
 	// ImGuiManagerの初期化（SrvManagerのディスクリプタヒープを使用）
 	imguiManager_ = new ImGuiManager();
   imguiManager_->Initialize(winApp_, dx12_, true);
+  
+  // DebugUIManagerの初期化
+  DebugUIManager::GetInstance()->Initialize();
+  DebugUIManager::GetInstance()->SetEndFlagPtr(&endFlag_);
+
+  DebugCamera::GetInstance()->Initialize();
 #endif
 
 	TextureManager::GetInstance()->Initialize(dx12_, "resources/Texture/");
@@ -45,8 +56,6 @@ void TakoFramework::Initialize()
 	Object3dBasic::GetInstance()->Initialize(dx12_);
 
 	SpriteBasic::GetInstance()->Initialize(dx12_);
-
-  DebugCamera::GetInstance()->Initialize();
 
   FrameTimer::GetInstance()->Initialize();
 
@@ -76,6 +85,13 @@ void TakoFramework::Initialize()
   Transition::GetInstance()->Initialize();
 
 #pragma endregion
+
+#ifdef _DEBUG
+  // 初期コンソールログ
+  DebugUIManager::GetInstance()->AddLog("TakoEngine Initialized", DebugUIManager::LogType::Info);
+  DebugUIManager::GetInstance()->AddLog("DirectX 12 Ready", DebugUIManager::LogType::Info);
+  DebugUIManager::GetInstance()->AddLog("ImGui Docking Mode Enabled", DebugUIManager::LogType::Info);
+#endif
 }
 
 void TakoFramework::Finalize()
@@ -121,6 +137,9 @@ void TakoFramework::Finalize()
   SrvManager::GetInstance()->Finalize();
 
 #ifdef _DEBUG
+  // DebugUIManagerの終了処理
+  DebugUIManager::GetInstance()->Finalize();
+  
   // ImGuiManagerの終了処理
   imguiManager_->Shutdown();
   delete imguiManager_;
@@ -165,78 +184,8 @@ void TakoFramework::Update()
 void TakoFramework::Draw()
 {
 #ifdef _DEBUG
-  ImGui::Begin("Option");
-  // buttonでFPSの表示を切り替え
-  if (ImGui::Button("Display FPS"))
-  {
-    FPSWindowVisible = !FPSWindowVisible;
-  }
-  ImGui::SameLine();
-  if (ImGui::Button("PostEffect Option"))
-  {
-    PostEffectWindowVisible = !PostEffectWindowVisible;
-  }
-  ImGui::SameLine();
-  if (ImGui::Button("Game Viewport"))
-  {
-    GameViewportWindowVisible = !GameViewportWindowVisible;
-  }
-
-  ImGui::End();
-
-  // fpsの表示
-  if (FPSWindowVisible)
-  {
-    ImGui::Begin("FPS", &FPSWindowVisible);
-    ImGui::ProgressBar(FrameTimer::GetInstance()->GetFPS() / 60.0f, ImVec2(0.0f, 0.0f), "");
-    ImGui::SameLine();
-    ImGui::Text("FPS : %.0f", FrameTimer::GetInstance()->GetFPS());
-    ImGui::End();
-  }
-
-
-  // PostEffectのパラメータ調整
-  if (PostEffectWindowVisible) {
-    PostEffectManager::GetInstance()->DrawImgui();
-  }
-
-  // ゲームビューポートウィンドウの表示
-  if (GameViewportWindowVisible) {
-    ImGui::Begin("Game Viewport", &GameViewportWindowVisible);
-
-    // ウィンドウの利用可能サイズを取得
-    ImVec2 availableSize = ImGui::GetContentRegionAvail();
-
-    // クライアント領域のアスペクト比を計算
-    float aspectRatio = static_cast<float>(WinApp::clientWidth) / static_cast<float>(WinApp::clientHeight);
-
-    // アスペクト比を維持したサイズを計算
-    ImVec2 imageSize;
-    float availableAspect = availableSize.x / availableSize.y;
-
-    if (availableAspect > aspectRatio) {
-      // ウィンドウが横長の場合、高さに合わせる
-      imageSize.y = availableSize.y;
-      imageSize.x = imageSize.y * aspectRatio;
-    } else {
-      // ウィンドウが縦長の場合、幅に合わせる
-      imageSize.x = availableSize.x;
-      imageSize.y = imageSize.x / aspectRatio;
-    }
-
-    // 画像を中央に配置するためのカーソル位置を計算
-    ImVec2 cursorPos = ImGui::GetCursorPos();
-    cursorPos.x += (availableSize.x - imageSize.x) * 0.5f;
-    cursorPos.y += (availableSize.y - imageSize.y) * 0.5f;
-    ImGui::SetCursorPos(cursorPos);
-
-    // PostEffectManagerから直接SRVインデックスを取得してゲーム画面を表示
-    uint32_t srvIndex = PostEffectManager::GetInstance()->GetFinalResultSrvIndex();
-    D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = SrvManager::GetInstance()->GetGPUDescriptorHandle(srvIndex);
-    ImGui::Image((ImTextureID)gpuHandle.ptr, imageSize);
-
-    ImGui::End();
-  }
+  // デバッグUIの描画
+  DebugUIManager::GetInstance()->Draw();
 #endif
 }
 
@@ -283,3 +232,4 @@ void TakoFramework::ToggleFullScreen()
   imguiManager_->OnWindowResize();
 #endif
 }
+
