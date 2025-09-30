@@ -12,10 +12,13 @@
 #include "DX12Basic.h"
 #include "TextureManager.h"
 #include "ModelManager.h"
+#include "ShadowRenderer.h"
 #include "imgui_internal.h"
 #include <algorithm>
 #include <iomanip>
 #include <sstream>
+#include <set>
+#include <map>
 
 // シングルトンインスタンス
 DebugUIManager* DebugUIManager::instance_ = nullptr;
@@ -36,6 +39,8 @@ void DebugUIManager::Initialize() {
     windowVisibility_["Performance"] = true;
     windowVisibility_["EngineStatus"] = false;
     windowVisibility_["InputDebug"] = false;
+    windowVisibility_["ShadowSettings"] = false;
+    windowVisibility_["CollisionDebug"] = false;
     windowVisibility_["PostEffect"] = false;
     
     // 初期ログ
@@ -69,6 +74,8 @@ void DebugUIManager::Draw() {
     if (windowVisibility_["GameViewport"]) DrawGameViewport();
     if (windowVisibility_["EngineStatus"]) DrawEngineStatus();
     if (windowVisibility_["InputDebug"]) DrawInputDebug();
+    if (windowVisibility_["ShadowSettings"]) DrawShadowSettings();
+    if (windowVisibility_["CollisionDebug"]) DrawCollisionDebug();
     
     // PostEffectは独自の描画を持つ
     if (windowVisibility_["PostEffect"]) {
@@ -107,6 +114,8 @@ void DebugUIManager::DrawMainMenuBar() {
             ImGui::Separator();
             ImGui::MenuItem("Engine Status", nullptr, &windowVisibility_["EngineStatus"]);
             ImGui::MenuItem("Input Debug", nullptr, &windowVisibility_["InputDebug"]);
+            ImGui::MenuItem("Shadow Settings", nullptr, &windowVisibility_["ShadowSettings"]);
+            ImGui::MenuItem("Collision Debug", nullptr, &windowVisibility_["CollisionDebug"]);
             ImGui::MenuItem("PostEffect Settings", nullptr, &windowVisibility_["PostEffect"]);
             ImGui::EndMenu();
         }
@@ -554,4 +563,286 @@ std::string DebugUIManager::GetCurrentTimestamp() {
 #endif
     
     return ss.str();
+}
+
+void DebugUIManager::DrawShadowSettings() {
+    ImGui::Begin("Shadow Settings", &windowVisibility_["ShadowSettings"]);
+    
+    ShadowRenderer* shadowRenderer = ShadowRenderer::GetInstance();
+    ShadowMap* shadowMap = shadowRenderer->GetShadowMap();
+    
+    // ヘッダー
+    ImGui::Text("Shadow Mapping Configuration");
+    ImGui::Separator();
+    
+    // シャドウのON/OFF（大きなトグルボタン）
+    bool shadowEnabled = shadowRenderer->IsEnabled();
+    if (ImGui::Checkbox("##EnableShadow", &shadowEnabled)) {
+        shadowRenderer->SetEnabled(shadowEnabled);
+    }
+    ImGui::SameLine();
+    ImGui::Text(shadowEnabled ? "Shadow: ON" : "Shadow: OFF");
+    
+    if (!shadowEnabled) {
+        ImGui::TextDisabled("Enable shadows to configure settings");
+        ImGui::End();
+        return;
+    }
+    
+    ImGui::Separator();
+    
+    // クイックプリセットボタン
+    ImGui::Text("Quick Presets:");
+    ImGui::SameLine();
+    
+    if (ImGui::Button("Low")) {
+        shadowRenderer->SetShadowQuality(0);
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Medium")) {
+        shadowRenderer->SetShadowQuality(1);
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("High")) {
+        shadowRenderer->SetShadowQuality(2);
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Ultra")) {
+        shadowRenderer->SetShadowQuality(3);
+    }
+    
+    ImGui::Separator();
+    
+    // 詳細設定
+    if (ImGui::CollapsingHeader("Quality Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+        if (shadowMap) {
+            // シャドウマップ解像度（static変数で状態を保持）
+            static int shadowMapSize = shadowMap->GetShadowMapSize();
+            ImGui::Text("Shadow Map Resolution:");
+            ImGui::RadioButton("512x512", &shadowMapSize, 512);
+            ImGui::SameLine();
+            ImGui::RadioButton("1024x1024", &shadowMapSize, 1024);
+            ImGui::RadioButton("2048x2048", &shadowMapSize, 2048);
+            ImGui::SameLine();
+            ImGui::RadioButton("4096x4096", &shadowMapSize, 4096);
+            
+            if (shadowMapSize != static_cast<int>(shadowMap->GetShadowMapSize())) {
+                shadowRenderer->SetShadowMapSize(shadowMapSize);
+            }
+            
+            // PCFカーネルサイズ
+            static int kernelSize = shadowMap->GetPCFKernelSize();
+            if (ImGui::SliderInt("PCF Kernel Size", &kernelSize, 0, 9, 
+                kernelSize == 0 ? "No PCF" : "%dx%d")) {
+                shadowRenderer->SetPCFKernelSize(kernelSize);
+            }
+            ImGui::TextDisabled("Higher values = softer shadows, lower performance");
+        }
+    }
+    
+    if (ImGui::CollapsingHeader("Shadow Parameters")) {
+        // バイアス設定（static変数で状態を保持）
+        static float bias = 0.0001f;
+        if (ImGui::SliderFloat("Shadow Bias", &bias, 0.0001f, 0.01f, "%.5f")) {
+            shadowRenderer->SetShadowBias(bias);
+        }
+        ImGui::TextDisabled("Reduces shadow acne");
+        
+        // 法線オフセットバイアス
+        static float normalBias = 0.01f;
+        if (ImGui::SliderFloat("Normal Offset Bias", &normalBias, 0.001f, 0.1f, "%.4f")) {
+            shadowRenderer->SetNormalOffsetBias(normalBias);
+        }
+        ImGui::TextDisabled("Reduces shadow peter-panning");
+        
+        // 最大シャドウ距離
+        float maxDistance = shadowRenderer->GetMaxShadowDistance();
+        if (ImGui::SliderFloat("Max Shadow Distance", &maxDistance, 10.0f, 500.0f, "%.1f")) {
+            shadowRenderer->SetMaxShadowDistance(maxDistance);
+        }
+        ImGui::TextDisabled("Objects beyond this distance won't cast shadows");
+    }
+    
+    // パフォーマンス情報
+    if (shadowMap) {
+        ImGui::Separator();
+        ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Performance Info:");
+        
+        uint32_t mapSize = shadowMap->GetShadowMapSize();
+        int kernelSize = shadowMap->GetPCFKernelSize();
+        
+        ImGui::Text("Shadow Map: %dx%d", mapSize, mapSize);
+        ImGui::Text("PCF Kernel: %dx%d", kernelSize, kernelSize);
+        
+        // メモリ使用量
+        float memoryMB = (mapSize * mapSize * 4) / (1024.0f * 1024.0f);
+        ImGui::Text("Memory Usage: %.2f MB", memoryMB);
+        
+        // パフォーマンス影響の色表示
+        int quality = -1;
+        if (mapSize <= 512 && kernelSize <= 1) quality = 0;
+        else if (mapSize <= 1024 && kernelSize <= 3) quality = 1;
+        else if (mapSize <= 2048 && kernelSize <= 5) quality = 2;
+        else quality = 3;
+        
+        const char* impactText[] = {"Minimal Impact", "Low Impact", "Medium Impact", "High Impact"};
+        ImVec4 impactColor[] = {
+            ImVec4(0.2f, 1.0f, 0.2f, 1.0f),
+            ImVec4(0.7f, 1.0f, 0.2f, 1.0f),
+            ImVec4(1.0f, 0.8f, 0.2f, 1.0f),
+            ImVec4(1.0f, 0.3f, 0.3f, 1.0f)
+        };
+        ImGui::TextColored(impactColor[quality], "%s", impactText[quality]);
+    }
+    
+    ImGui::End();
+}
+
+void DebugUIManager::DrawCollisionDebug() {
+    ImGui::Begin("Collision Debug", &windowVisibility_["CollisionDebug"]);
+    
+    CollisionManager* collisionManager = CollisionManager::GetInstance();
+    
+    // ヘッダー
+    ImGui::Text("Collision System");
+    ImGui::Separator();
+    
+    // デバッグワイヤーフレーム表示のON/OFF
+    bool debugDraw = collisionManager->IsDebugDrawEnabled();
+    if (ImGui::Checkbox("##ShowWireframes", &debugDraw)) {
+        collisionManager->SetDebugDrawEnabled(debugDraw);
+    }
+    ImGui::SameLine();
+    ImGui::Text(debugDraw ? "Debug Draw: ON" : "Debug Draw: OFF");
+    
+    ImGui::Separator();
+    
+    // 統計情報
+    if (ImGui::CollapsingHeader("Statistics", ImGuiTreeNodeFlags_DefaultOpen)) {
+        size_t totalColliders = collisionManager->GetColliderCount();
+        
+        // アクティブなコライダー数をカウント
+        size_t activeCount = 0;
+        size_t inactiveCount = 0;
+        std::unordered_map<uint32_t, int> typeCountMap;
+        const auto& colliders = collisionManager->GetColliders();
+        
+        for (const auto* collider : colliders) {
+            if (collider) {
+                if (collider->IsActive()) {
+                    activeCount++;
+                    uint32_t typeID = collider->GetTypeID();
+                    typeCountMap[typeID]++;
+                } else {
+                    inactiveCount++;
+                }
+            }
+        }
+        
+        // 総数と内訳
+        ImGui::Text("Total Colliders: %zu", totalColliders);
+        
+        // アクティブ/非アクティブの比率表示
+        if (totalColliders > 0) {
+            float activeRatio = (float)activeCount / (float)totalColliders;
+            ImGui::ProgressBar(activeRatio, ImVec2(-1, 0), 
+                ("Active: " + std::to_string(activeCount) + " / Inactive: " + std::to_string(inactiveCount)).c_str());
+        }
+        
+        // Type ID別の分布（汎用的な表示）
+        if (!typeCountMap.empty()) {
+            ImGui::Spacing();
+            ImGui::Text("Type ID Distribution:");
+            
+            // Type IDでソートして表示
+            std::map<uint32_t, int> sortedTypeMap(typeCountMap.begin(), typeCountMap.end());
+            
+            for (const auto& [typeID, count] : sortedTypeMap) {
+                ImGui::Text("  Type %02u: %d collider%s", 
+                    typeID, count, count > 1 ? "s" : "");
+            }
+        }
+    }
+    
+    // コリジョンマスク情報
+    if (ImGui::CollapsingHeader("Collision Masks")) {
+        const auto& masks = collisionManager->GetCollisionMasks();
+        
+        if (masks.empty()) {
+            ImGui::TextDisabled("No collision masks configured");
+        } else {
+            ImGui::Text("Active collision pairs:");
+            ImGui::Spacing();
+            
+            // すべてのマスク情報を収集して整理
+            std::set<std::pair<uint32_t, uint32_t>> collisionPairs;
+            for (const auto& [typeA, typeBSet] : masks) {
+                for (uint32_t typeB : typeBSet) {
+                    // 小さい番号を先にして重複を避ける
+                    if (typeA <= typeB) {
+                        collisionPairs.insert({typeA, typeB});
+                    } else {
+                        collisionPairs.insert({typeB, typeA});
+                    }
+                }
+            }
+            
+            // コリジョンペアを表示
+            for (const auto& [typeA, typeB] : collisionPairs) {
+                if (typeA == typeB) {
+                    ImGui::BulletText("Type %02u <-> Type %02u (self-collision)", typeA, typeB);
+                } else {
+                    ImGui::BulletText("Type %02u <-> Type %02u", typeA, typeB);
+                }
+            }
+            
+            ImGui::Spacing();
+            ImGui::Text("Total mask pairs: %zu", collisionPairs.size());
+        }
+    }
+    
+    // パフォーマンス情報
+    if (ImGui::CollapsingHeader("Performance")) {
+        size_t colliderCount = collisionManager->GetColliderCount();
+        const auto& masks = collisionManager->GetCollisionMasks();
+        
+        // ブロードフェーズの計算量（最悪ケース）
+        size_t maxPairs = colliderCount * (colliderCount - 1) / 2;
+        ImGui::Text("Max possible pairs: %zu", maxPairs);
+        
+        // マスクによる最適化の効果を表示
+        if (!masks.empty()) {
+            ImGui::Text("Collision masks: Active");
+            ImGui::TextDisabled("Reducing unnecessary checks");
+        } else {
+            ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "No masks configured");
+            ImGui::TextDisabled("All types check against all types");
+        }
+        
+        ImGui::Spacing();
+        
+        // パフォーマンスレベルのインジケーター
+        ImVec4 performanceColor;
+        const char* performanceText;
+        
+        if (maxPairs < 100) {
+            performanceColor = ImVec4(0.2f, 1.0f, 0.2f, 1.0f);
+            performanceText = "Excellent";
+        } else if (maxPairs < 500) {
+            performanceColor = ImVec4(0.7f, 1.0f, 0.2f, 1.0f);
+            performanceText = "Good";
+        } else if (maxPairs < 2000) {
+            performanceColor = ImVec4(1.0f, 0.8f, 0.2f, 1.0f);
+            performanceText = "Moderate";
+        } else {
+            performanceColor = ImVec4(1.0f, 0.3f, 0.3f, 1.0f);
+            performanceText = "Heavy";
+        }
+        
+        ImGui::Text("Performance Load: ");
+        ImGui::SameLine();
+        ImGui::TextColored(performanceColor, "%s", performanceText);
+    }
+    
+    ImGui::End();
 }

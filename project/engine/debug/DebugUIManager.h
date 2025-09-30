@@ -70,6 +70,8 @@ private:
     void DrawGameViewport();
     void DrawEngineStatus();
     void DrawInputDebug();
+    void DrawShadowSettings();
+    void DrawCollisionDebug();
     
     // タイムスタンプ生成
     std::string GetCurrentTimestamp();
