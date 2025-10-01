@@ -1,5 +1,5 @@
 #include "Draw2D.h"
-#include "Logger.h"
+#include "DebugUIManager.h"
 #include "imgui.h"
 #include "DebugCamera.h"
 #include "OBB.h"
@@ -391,7 +391,7 @@ void Draw2D::CreateRootSignature(ComPtr<ID3D12RootSignature>& rootSignature)
 	hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
 	if (FAILED(hr))
 	{
-		Logger::Log(reinterpret_cast<char*>(errorBlob->GetBufferPointer()));
+		DebugUIManager::GetInstance()->AddLog(reinterpret_cast<char*>(errorBlob->GetBufferPointer()), DebugUIManager::LogType::Error);
 		assert(false);
 	}
 

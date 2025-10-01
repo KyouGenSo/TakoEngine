@@ -1,6 +1,6 @@
 #include "Object3dBasic.h"
 #include "DX12Basic.h"
-#include "Logger.h"
+#include "DebugUIManager.h"
 #include "Camera.h"
 #include "SrvManager.h"
 #include "PostEffectManager.h"
@@ -238,7 +238,7 @@ void Object3dBasic::CreateRootSignature()
 	hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
 	if (FAILED(hr))
 	{
-		Logger::Log(static_cast<char*>(errorBlob->GetBufferPointer()));
+		DebugUIManager::GetInstance()->AddLog(static_cast<char*>(errorBlob->GetBufferPointer()), DebugUIManager::LogType::Error);
 		assert(false);
 	}
 
@@ -506,7 +506,7 @@ void Object3dBasic::CreateInstancedRootSignature()
 	hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
 	if (FAILED(hr))
 	{
-		Logger::Log(static_cast<char*>(errorBlob->GetBufferPointer()));
+		DebugUIManager::GetInstance()->AddLog(static_cast<char*>(errorBlob->GetBufferPointer()), DebugUIManager::LogType::Error);
 		assert(false);
 	}
 

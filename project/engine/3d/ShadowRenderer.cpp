@@ -1,7 +1,7 @@
 #include "ShadowRenderer.h"
 #include "DX12Basic.h"
 #include "Light.h"
-#include "Logger.h"
+#include "DebugUIManager.h"
 #include "PostEffectManager.h"
 #include "SrvManager.h"
 #include <cassert>
@@ -206,11 +206,11 @@ void ShadowRenderer::CreateShadowRootSignature()
     hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
     if (FAILED(hr))
     {
-        Logger::Log(static_cast<char*>(errorBlob->GetBufferPointer()));
+        DebugUIManager::GetInstance()->AddLog(static_cast<char*>(errorBlob->GetBufferPointer()), DebugUIManager::LogType::Error);
         assert(false);
     }
-    
-    hr = dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), 
+
+    hr = dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(),
         signatureBlob->GetBufferSize(), IID_PPV_ARGS(shadowRootSignature_.GetAddressOf()));
     assert(SUCCEEDED(hr));
 }
@@ -387,11 +387,11 @@ void ShadowRenderer::CreateShadowInstancedRootSignature()
     hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
     if (FAILED(hr))
     {
-        Logger::Log(static_cast<char*>(errorBlob->GetBufferPointer()));
+        DebugUIManager::GetInstance()->AddLog(static_cast<char*>(errorBlob->GetBufferPointer()), DebugUIManager::LogType::Error);
         assert(false);
     }
-    
-    hr = dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), 
+
+    hr = dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(),
         signatureBlob->GetBufferSize(), IID_PPV_ARGS(shadowInstancedRootSignature_.GetAddressOf()));
     assert(SUCCEEDED(hr));
 }

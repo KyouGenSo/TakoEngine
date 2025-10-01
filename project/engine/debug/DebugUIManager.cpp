@@ -20,6 +20,8 @@
 #include <set>
 #include <map>
 
+#include "Logger.h"
+
 // シングルトンインスタンス
 DebugUIManager* DebugUIManager::instance_ = nullptr;
 
@@ -534,7 +536,9 @@ void DebugUIManager::AddLog(const std::string& message, LogType type) {
     entry.type = type;
     entry.message = message;
     entry.timestamp = GetCurrentTimestamp();
-    
+
+    Logger::Log(message + "\n"); // 外部ロガーにも出力
+
     consoleLogs_.push_back(entry);
     
     // 最大数を超えたら古いログを削除

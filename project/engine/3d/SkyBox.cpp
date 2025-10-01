@@ -5,7 +5,7 @@
 #include "DX12Basic.h"
 #include "Mat4x4Func.h"
 #include "Camera.h"
-#include "Logger.h"
+#include "DebugUIManager.h"
 
 void SkyBox::Initialize(const std::string& texturePath)
 {
@@ -133,7 +133,7 @@ void SkyBox::CreateRootSignature()
   hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
   if (FAILED(hr))
   {
-    Logger::Log(static_cast<char*>(errorBlob->GetBufferPointer()));
+    DebugUIManager::GetInstance()->AddLog(static_cast<char*>(errorBlob->GetBufferPointer()), DebugUIManager::LogType::Error);
     assert(false);
   }
   // ルートシグネチャを生成

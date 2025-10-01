@@ -1,5 +1,5 @@
 #include "BoneTracker.h"
-#include "Logger.h"
+#include "DebugUIManager.h"
 
 BoneTracker::BoneTracker()
   : model_(nullptr)
@@ -18,7 +18,7 @@ void BoneTracker::Initialize(Model* model, EmitterManager* emitterManager)
   emitterManager_ = emitterManager;
 
   if (!model_->HasSkeleton()) {
-    Logger::Log("Warning: BoneTracker - Model does not have skeleton\n");
+    DebugUIManager::GetInstance()->AddLog("BoneTracker - Model does not have skeleton", DebugUIManager::LogType::Warning);
   }
 }
 
@@ -28,20 +28,20 @@ void BoneTracker::LinkBoneToEmitter(const std::string& linkName,
   const Vector3& offset)
 {
   if (!model_ || !emitterManager_) {
-    Logger::Log("Error: BoneTracker not initialized\n");
+    DebugUIManager::GetInstance()->AddLog("BoneTracker not initialized", DebugUIManager::LogType::Error);
     return;
   }
 
   // エミッターが存在するか確認
   if (!emitterManager_->GetEmitterByName(emitterName)) {
-    Logger::Log("Error: Emitter '%s' not found in EmitterManager\n", emitterName.c_str());
+    DebugUIManager::GetInstance()->AddLog("Emitter '" + emitterName + "' not found in EmitterManager", DebugUIManager::LogType::Error);
     return;
   }
 
   // ボーンインデックスを検索
   int32_t boneIndex = FindBoneIndex(boneName);
   if (boneIndex < 0) {
-    Logger::Log("Error: Bone '%s' not found in model\n", boneName.c_str());
+    DebugUIManager::GetInstance()->AddLog("Bone '" + boneName + "' not found in model", DebugUIManager::LogType::Error);
     return;
   }
 
@@ -56,8 +56,7 @@ void BoneTracker::LinkBoneToEmitter(const std::string& linkName,
   // リンクを登録
   links_[linkName] = link;
 
-  Logger::Log("BoneTracker: Linked bone '%s' to emitter '%s' (link: '%s')\n",
-    boneName.c_str(), emitterName.c_str(), linkName.c_str());
+  DebugUIManager::GetInstance()->AddLog("BoneTracker: Linked bone '" + boneName + "' to emitter '" + emitterName + "' (link: '" + linkName + "')", DebugUIManager::LogType::Info);
 }
 
 void BoneTracker::CreateAndLinkSphereEmitter(const std::string& linkName,
@@ -66,7 +65,7 @@ void BoneTracker::CreateAndLinkSphereEmitter(const std::string& linkName,
   const Vector3& offset)
 {
   if (!emitterManager_) {
-    Logger::Log("Error: EmitterManager not set\n");
+    DebugUIManager::GetInstance()->AddLog("EmitterManager not set", DebugUIManager::LogType::Error);
     return;
   }
 
@@ -88,7 +87,7 @@ void BoneTracker::CreateAndLinkBoxEmitter(const std::string& linkName,
   const Vector3& offset)
 {
   if (!emitterManager_) {
-    Logger::Log("Error: EmitterManager not set\n");
+    DebugUIManager::GetInstance()->AddLog("EmitterManager not set", DebugUIManager::LogType::Error);
     return;
   }
 
@@ -157,7 +156,7 @@ void BoneTracker::SetLinkActive(const std::string& linkName, bool active)
       emitterManager_->SetEmitterActive(it->second.emitterName, active);
     }
   } else {
-    Logger::Log("Warning: Link '%s' not found\n", linkName.c_str());
+    DebugUIManager::GetInstance()->AddLog("Link '" + linkName + "' not found", DebugUIManager::LogType::Warning);
   }
 }
 
@@ -167,7 +166,7 @@ void BoneTracker::SetLinkOffset(const std::string& linkName, const Vector3& offs
   if (it != links_.end()) {
     it->second.offset = offset;
   } else {
-    Logger::Log("Warning: Link '%s' not found\n", linkName.c_str());
+    DebugUIManager::GetInstance()->AddLog("Link '" + linkName + "' not found", DebugUIManager::LogType::Warning);
   }
 }
 
@@ -181,7 +180,7 @@ void BoneTracker::RemoveLink(const std::string& linkName)
     }
 
     links_.erase(it);
-    Logger::Log("BoneTracker: Removed link '%s'\n", linkName.c_str());
+    DebugUIManager::GetInstance()->AddLog("BoneTracker: Removed link '" + linkName + "'", DebugUIManager::LogType::Info);
   }
 }
 
@@ -195,7 +194,7 @@ void BoneTracker::ClearLinks()
   }
 
   links_.clear();
-  Logger::Log("BoneTracker: Cleared all links\n");
+  DebugUIManager::GetInstance()->AddLog("BoneTracker: Cleared all links", DebugUIManager::LogType::Info);
 }
 
 bool BoneTracker::HasLink(const std::string& linkName) const

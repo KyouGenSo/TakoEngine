@@ -1,6 +1,6 @@
 #include "SceneLoader.h"
 #include "json.hpp"
-#include "Logger.h"
+#include "DebugUIManager.h"
 #include "Object3d.h"
 #include "Object3dBasic.h"
 
@@ -57,7 +57,7 @@ std::unique_ptr<SceneLoader::LoadedScene> SceneLoader::LoadScene(const std::stri
   // ファイルが開けなかったらnullptrを返す
   if (file.fail())
   {
-    Logger::Log("Failed to open scene file");
+    DebugUIManager::GetInstance()->AddLog("Failed to open scene file", DebugUIManager::LogType::Error);
     return nullptr;
   }
 
@@ -69,17 +69,17 @@ std::unique_ptr<SceneLoader::LoadedScene> SceneLoader::LoadScene(const std::stri
 
   if (!deserializedJson.is_object())
   {
-    Logger::Log("Deserialized JSON is not an object");
+    DebugUIManager::GetInstance()->AddLog("Deserialized JSON is not an object", DebugUIManager::LogType::Error);
     return nullptr;
   }
   if (!deserializedJson.contains("name"))
   {
-    Logger::Log("Deserialized JSON does not contain 'name' key");
+    DebugUIManager::GetInstance()->AddLog("Deserialized JSON does not contain 'name' key", DebugUIManager::LogType::Error);
     return nullptr;
   }
   if (!deserializedJson["name"].is_string())
   {
-    Logger::Log("Deserialized JSON 'name' is not a string");
+    DebugUIManager::GetInstance()->AddLog("Deserialized JSON 'name' is not a string", DebugUIManager::LogType::Error);
     return nullptr;
   }
 
@@ -171,7 +171,7 @@ std::unique_ptr<SceneLoader::LoadedScene> SceneLoader::LoadScene(const std::stri
 
     if (objectData.fileName.empty())
     {
-      Logger::Log("Object file name is empty");
+      DebugUIManager::GetInstance()->AddLog("Object file name is empty", DebugUIManager::LogType::Error);
       continue; // エラー時はスキップ
     }
 

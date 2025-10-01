@@ -2,7 +2,7 @@
 #include <cassert>
 #include <format>
 #include <thread>
-#include "Logger.h"
+#include "DebugUIManager.h"
 #include "StringUtility.h"
 #include "PostEffectManager.h"
 
@@ -224,7 +224,7 @@ void DX12Basic::InitDevice()
 
 		if (!(desc.Flags & DXGI_ADAPTER_FLAG3_SOFTWARE))
 		{
-			Logger::Log(std::format("Use Adapter:{}\n", StringUtility::ConvertString(desc.Description)));
+			DebugUIManager::GetInstance()->AddLog("Use Adapter:" + StringUtility::ConvertString(desc.Description), DebugUIManager::LogType::Info);
 			break;
 		}
 		useAdapter = nullptr;
@@ -248,12 +248,12 @@ void DX12Basic::InitDevice()
 	for (size_t i = 0; i < _countof(featureLevels); ++i) {
 		hr = D3D12CreateDevice(useAdapter.Get(), featureLevels[i], IID_PPV_ARGS(&device_));
 		if (SUCCEEDED(hr)) {
-			Logger::Log(std::format("Feature Level: {}\n", featureLevelNames[i]));
+			DebugUIManager::GetInstance()->AddLog("Feature Level: " + std::string(featureLevelNames[i]), DebugUIManager::LogType::Info);
 			break;
 		}
 	}
 	assert(device_ != nullptr);
-	Logger::Log("D3D12Device Created\n");
+	DebugUIManager::GetInstance()->AddLog("D3D12Device Created", DebugUIManager::LogType::Info);
 
 
 	//-----------------------------------------------------エラーチェック-----------------------------------------------------
@@ -627,7 +627,7 @@ Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> DX12Basic::CreateDescriptorHeap(D3D
 Microsoft::WRL::ComPtr<IDxcBlob> DX12Basic::CompileShader(const std::wstring& filePath, const wchar_t* profile)
 {
 	//hlslファイルを読み込む
-	Logger::Log(StringUtility::ConvertString(std::format(L"Begin CompileShader, path:{}, profile:{}\n", filePath, profile)));
+	DebugUIManager::GetInstance()->AddLog(StringUtility::ConvertString(std::format(L"Begin CompileShader, path:{}, profile:{}", filePath, profile)), DebugUIManager::LogType::Info);
 	Microsoft::WRL::ComPtr<IDxcBlobEncoding> shaderSource = nullptr;
 	HRESULT hr = dxcUtils_->LoadFile(filePath.c_str(), nullptr, &shaderSource);
 	assert(SUCCEEDED(hr));
@@ -662,7 +662,7 @@ Microsoft::WRL::ComPtr<IDxcBlob> DX12Basic::CompileShader(const std::wstring& fi
 	shaderResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&shaderError), nullptr);
 	if (shaderError != nullptr && shaderError->GetStringLength() != 0)
 	{
-		Logger::Log(shaderError->GetStringPointer());
+		DebugUIManager::GetInstance()->AddLog(shaderError->GetStringPointer(), DebugUIManager::LogType::Error);
 		assert(false);
 	}
 
@@ -670,7 +670,7 @@ Microsoft::WRL::ComPtr<IDxcBlob> DX12Basic::CompileShader(const std::wstring& fi
 	Microsoft::WRL::ComPtr<IDxcBlob> shaderBlob = nullptr;
 	hr = shaderResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&shaderBlob), nullptr);
 	assert(SUCCEEDED(hr));
-	Logger::Log(StringUtility::ConvertString(std::format(L"Compile Succeeded, path:{}, prefile:{}\n", filePath, profile)));
+	DebugUIManager::GetInstance()->AddLog(StringUtility::ConvertString(std::format(L"Compile Succeeded, path:{}, prefile:{}", filePath, profile)), DebugUIManager::LogType::Info);
 	shaderSource->Release();
 	shaderResult->Release();
 	return shaderBlob;

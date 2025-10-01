@@ -3,7 +3,7 @@
 #include "SphereEmitter.h"
 #include "BoxEmitter.h"
 #include "TriangleEmitter.h"
-#include "Logger.h"
+#include "DebugUIManager.h"
 #include "FrameTimer.h"
 
 #include <algorithm>
@@ -26,7 +26,7 @@ void EmitterManager::CreateSphereEmitter(const std::string& name, const Vector3&
 {
   // 名前の重複チェック
   if (emitterMap_.contains(name)) {
-    Logger::Log("Warning: Emitter name '%s' already exists. Overwriting.", name.c_str());
+    DebugUIManager::GetInstance()->AddLog("Emitter name '" + name + "' already exists. Overwriting.", DebugUIManager::LogType::Warning);
     RemoveEmitter(name);
   }
 
@@ -45,7 +45,7 @@ void EmitterManager::CreateBoxEmitter(const std::string& name, const Vector3& po
 {
   // 名前の重複チェック
   if (emitterMap_.contains(name)) {
-    Logger::Log("Warning: Emitter name '%s' already exists. Overwriting.", name.c_str());
+    DebugUIManager::GetInstance()->AddLog("Emitter name '" + name + "' already exists. Overwriting.", DebugUIManager::LogType::Warning);
     RemoveEmitter(name);
   }
 
@@ -64,7 +64,7 @@ void EmitterManager::CreateTriangleEmitter(const std::string& name, const Vector
 {
   // 名前の重複チェック
   if (emitterMap_.contains(name)) {
-    Logger::Log("Warning: Emitter name '%s' already exists. Overwriting.", name.c_str());
+    DebugUIManager::GetInstance()->AddLog("Emitter name '" + name + "' already exists. Overwriting.", DebugUIManager::LogType::Warning);
     RemoveEmitter(name);
   }
 
@@ -93,11 +93,11 @@ void EmitterManager::UpdateSphereEmitter(const std::string& name, const Vector3&
       if (count > 0) sphereEmitter->SetParticleCount(count);
       if (frequency > 0.0f) sphereEmitter->SetFrequency(frequency);
     } else {
-      Logger::Log("UpdateSphereEmitter: Emitter '%s' is not a SphereEmitter", name.c_str());
+      DebugUIManager::GetInstance()->AddLog("UpdateSphereEmitter: Emitter '" + name + "' is not a SphereEmitter", DebugUIManager::LogType::Warning);
     }
 
   } else {
-    Logger::Log("UpdateSphereEmitter: Emitter '%s' not found", name.c_str());
+    DebugUIManager::GetInstance()->AddLog("UpdateSphereEmitter: Emitter '" + name + "' not found", DebugUIManager::LogType::Warning);
   }
 }
 
@@ -115,11 +115,11 @@ void EmitterManager::UpdateBoxEmitter(const std::string& name, const Vector3& po
       if (count > 0) boxEmitter->SetParticleCount(count);
       if (frequency > 0.0f) boxEmitter->SetFrequency(frequency);
     } else {
-      Logger::Log("UpdateBoxEmitter: Emitter '%s' is not a BoxEmitter", name.c_str());
+      DebugUIManager::GetInstance()->AddLog("UpdateBoxEmitter: Emitter '" + name + "' is not a BoxEmitter", DebugUIManager::LogType::Warning);
     }
 
   } else {
-    Logger::Log("UpdateBoxEmitter: Emitter '%s' not found", name.c_str());
+    DebugUIManager::GetInstance()->AddLog("UpdateBoxEmitter: Emitter '" + name + "' not found", DebugUIManager::LogType::Warning);
   }
 }
 
@@ -136,11 +136,11 @@ void EmitterManager::UpdateTriangleEmitter(const std::string& name, const Vector
       if (count > 0) triangleEmitter->SetParticleCount(count);
       if (frequency > 0.0f) triangleEmitter->SetFrequency(frequency);
     } else {
-      Logger::Log("UpdateTriangleEmitter: Emitter '%s' is not a TriangleEmitter", name.c_str());
+      DebugUIManager::GetInstance()->AddLog("UpdateTriangleEmitter: Emitter '" + name + "' is not a TriangleEmitter", DebugUIManager::LogType::Warning);
     }
 
   } else {
-    Logger::Log("UpdateTriangleEmitter: Emitter '%s' not found", name.c_str());
+    DebugUIManager::GetInstance()->AddLog("UpdateTriangleEmitter: Emitter '" + name + "' not found", DebugUIManager::LogType::Warning);
   }
 }
 
@@ -151,13 +151,13 @@ void EmitterManager::CreateTemporaryEmitterFrom(const std::string& sourceName, c
 
   // ソースエミッターの存在チェック
   if (sourceIt == emitterMap_.end()) {
-    Logger::Log("CreateTemporaryEmitterFrom: Source emitter '%s' not found", sourceName.c_str());
+    DebugUIManager::GetInstance()->AddLog("CreateTemporaryEmitterFrom: Source emitter '" + sourceName + "' not found", DebugUIManager::LogType::Error);
     return;
   }
 
   // 名前の重複チェック
   if (emitterMap_.contains(newName)) {
-    Logger::Log("Warning: Emitter name '%s' already exists. Overwriting.", newName.c_str());
+    DebugUIManager::GetInstance()->AddLog("Emitter name '" + newName + "' already exists. Overwriting.", DebugUIManager::LogType::Warning);
     RemoveEmitter(newName);
   }
 
@@ -172,10 +172,9 @@ void EmitterManager::CreateTemporaryEmitterFrom(const std::string& sourceName, c
     // 即座にパーティクルを発生させるように設定
     newEmitter->SetFrequencyTime(newEmitter->GetFrequency());
 
-    Logger::Log("CreateTemporaryEmitterFrom: Created temporary emitter '%s' from '%s' with lifetime %.2f seconds",
-      newName.c_str(), sourceName.c_str(), lifeTime);
+    DebugUIManager::GetInstance()->AddLog("CreateTemporaryEmitterFrom: Created temporary emitter '" + newName + "' from '" + sourceName + "' with lifetime " + std::to_string(lifeTime) + " seconds", DebugUIManager::LogType::Info);
   } else {
-    Logger::Log("CreateTemporaryEmitterFrom: Failed to create emitter from '%s'", sourceName.c_str());
+    DebugUIManager::GetInstance()->AddLog("CreateTemporaryEmitterFrom: Failed to create emitter from '" + sourceName + "'", DebugUIManager::LogType::Error);
   }
 }
 
@@ -198,7 +197,7 @@ void EmitterManager::UpdateTemporaryEmitters()
 
   // 寿命が尽きたエミッターを削除
   for (const auto& name : emittersToRemove) {
-    Logger::Log("UpdateTemporaryEmitters: Removing expired emitter '%s'", name.c_str());
+    DebugUIManager::GetInstance()->AddLog("UpdateTemporaryEmitters: Removing expired emitter '" + name + "'", DebugUIManager::LogType::Info);
     RemoveEmitter(name);
   }
 }
@@ -303,7 +302,7 @@ void EmitterManager::RemoveEmitter(const std::string& name)
 {
   auto it = emitterMap_.find(name);
   if (it != emitterMap_.end()) {
-    Logger::Log("RemoveEmitter: Removing emitter '%s'", name.c_str());
+    DebugUIManager::GetInstance()->AddLog("RemoveEmitter: Removing emitter '" + name + "'", DebugUIManager::LogType::Info);
 
     // エミッターを非アクティブにして即時効果を得る
     it->second->SetActive(false);
@@ -325,18 +324,17 @@ void EmitterManager::RemoveEmitter(const std::string& name)
       auto removeIt = std::find(names.begin(), names.end(), name);
       if (removeIt != names.end()) {
         names.erase(removeIt);
-        Logger::Log("Removed emitter '%s' from group '%s'", name.c_str(), groupName.c_str());
+        DebugUIManager::GetInstance()->AddLog("Removed emitter '" + name + "' from group '" + groupName + "'", DebugUIManager::LogType::Info);
       }
     }
   } else {
-    Logger::Log("RemoveEmitter: Emitter '%s' not found", name.c_str());
+    DebugUIManager::GetInstance()->AddLog("RemoveEmitter: Emitter '" + name + "' not found", DebugUIManager::LogType::Warning);
   }
 }
 
 void EmitterManager::RemoveAllEmitters()
 {
-  Logger::Log("RemoveAllEmitters: Removing all emitters (%zu emitters)",
-    emitterMap_.size());
+  DebugUIManager::GetInstance()->AddLog("RemoveAllEmitters: Removing all emitters (" + std::to_string(emitterMap_.size()) + " emitters)", DebugUIManager::LogType::Info);
 
   // エミッターを1つずつ明示的に削除（GPUParticleシステムに通知するため）
   for (auto& val : emitterMap_ | std::views::values) {
@@ -359,7 +357,7 @@ void EmitterManager::CreateGroup(const std::string& groupName)
 {
   // グループの重複チェック
   if (groupMap_.contains(groupName)) {
-    Logger::Log("Warning: Group name '%s' already exists.", groupName.c_str());
+    DebugUIManager::GetInstance()->AddLog("Group name '" + groupName + "' already exists.", DebugUIManager::LogType::Warning);
     return;
   }
 
@@ -377,14 +375,14 @@ void EmitterManager::AddToGroup(const std::string& groupName, const std::string&
   // グループの存在チェック
   auto groupIt = groupMap_.find(groupName);
   if (groupIt == groupMap_.end()) {
-    Logger::Log("Warning: Group '%s' not found. Creating new group.", groupName.c_str());
+    DebugUIManager::GetInstance()->AddLog("Group '" + groupName + "' not found. Creating new group.", DebugUIManager::LogType::Warning);
     CreateGroup(groupName);
     groupIt = groupMap_.find(groupName);
   }
 
   // エミッターの存在チェック
   if (!emitterMap_.contains(emitterName)) {
-    Logger::Log("Warning: Emitter '%s' not found. Cannot add to group.", emitterName.c_str());
+    DebugUIManager::GetInstance()->AddLog("Emitter '" + emitterName + "' not found. Cannot add to group.", DebugUIManager::LogType::Warning);
     return;
   }
 
@@ -474,15 +472,14 @@ void EmitterManager::RemoveGroup(const std::string& groupName)
 {
   auto it = groupMap_.find(groupName);
   if (it != groupMap_.end()) {
-    Logger::Log("RemoveGroup: Removing group '%s'", groupName.c_str());
+    DebugUIManager::GetInstance()->AddLog("RemoveGroup: Removing group '" + groupName + "'", DebugUIManager::LogType::Info);
 
     // グループ内のすべてのエミッターの名前をコピー（ループ中に変更されるため）
     std::vector<std::string> emitterNames = it->second.emitterNames;
 
     // グループに属するすべてのエミッターを削除（オプション、コメントアウト可能）
     if (!emitterNames.empty()) {
-      Logger::Log("RemoveGroup: Removing %zu emitters in group '%s'",
-        emitterNames.size(), groupName.c_str());
+      DebugUIManager::GetInstance()->AddLog("RemoveGroup: Removing " + std::to_string(emitterNames.size()) + " emitters in group '" + groupName + "'", DebugUIManager::LogType::Info);
 
       // エミッターを一つずつ削除
       for (const auto& name : emitterNames) {
@@ -494,6 +491,6 @@ void EmitterManager::RemoveGroup(const std::string& groupName)
     groupMap_.erase(it);
 
   } else {
-    Logger::Log("RemoveGroup: Group '%s' not found", groupName.c_str());
+    DebugUIManager::GetInstance()->AddLog("RemoveGroup: Group '" + groupName + "' not found", DebugUIManager::LogType::Warning);
   }
 }
