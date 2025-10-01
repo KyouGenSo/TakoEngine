@@ -125,4 +125,7 @@ public:
 private:
     // デバッグカメラ有効フラグへのポインタ
     bool* pIsDebug_ = nullptr;
+
+    // シーン遷移UI用
+    char sceneNameBuffer_[128] = "";  // シーン名入力バッファ
 };
