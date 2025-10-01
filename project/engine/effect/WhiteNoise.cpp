@@ -1,7 +1,7 @@
 #include "WhiteNoise.h"
 
 #include "DX12Basic.h"
-#include "Logger.h"
+#include "DebugUIManager.h"
 #include "SrvManager.h"
 #include "StringUtility.h"
 #include "FrameTimer.h"
@@ -116,7 +116,7 @@ void WhiteNoise::CreateRootSignature()
   hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
   if (FAILED(hr))
   {
-    Logger::Log(reinterpret_cast<char*>(errorBlob->GetBufferPointer()));
+    DebugUIManager::GetInstance()->AddLog(reinterpret_cast<char*>(errorBlob->GetBufferPointer()), DebugUIManager::LogType::Error);
     assert(false);
   }
 

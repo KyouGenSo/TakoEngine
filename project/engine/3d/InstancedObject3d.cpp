@@ -6,7 +6,7 @@
 #include "Camera.h"
 #include "SrvManager.h"
 #include "ShadowRenderer.h"
-#include "Logger.h"
+#include "DebugUIManager.h"
 #include <algorithm>
 #include <cassert>
 
@@ -173,7 +173,7 @@ void InstancedObject3d::CreateViewProjectionBuffer() {
 
 uint32_t InstancedObject3d::AddInstance(const Transform& transform, const Vector4& color) {
   if (instances_.size() >= MAX_INSTANCES) {
-    Logger::Log("Maximum instance count reached");
+    DebugUIManager::GetInstance()->AddLog("Maximum instance count reached", DebugUIManager::LogType::Warning);
     return UINT32_MAX;
   }
 

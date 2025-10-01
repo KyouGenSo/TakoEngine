@@ -4,7 +4,7 @@
 
 #include"Model.h"
 #include"DX12Basic.h"
-#include "Logger.h"
+#include "DebugUIManager.h"
 
 ModelManager* ModelManager::instance_ = nullptr;
 
@@ -49,7 +49,7 @@ void ModelManager::LoadModel(const std::string& fileName)
 #ifdef _DEBUG
   if (models_.contains(fileName))
   {
-    Logger::Log("ModelManager: Model already loaded: " + fileName);
+    DebugUIManager::GetInstance()->AddLog("ModelManager: Model already loaded: " + fileName, DebugUIManager::LogType::Info);
     return;
   }
 #endif

@@ -1,7 +1,7 @@
 #include "PostEffectManager.h"
 #include "DX12Basic.h"
 #include "SrvManager.h"
-#include "Logger.h"
+#include "DebugUIManager.h"
 #include "StringUtility.h"
 #include "Object3dbasic.h"
 #include "Camera.h"
@@ -460,7 +460,7 @@ bool PostEffectManager::SetEffectParam(const std::string& effectName, const Effe
   if (it == effectRegistry_.end()) {
     // ログ出力（デバッグ用）
 #ifdef _DEBUG
-    Logger::Log("Effect not found: " + effectName);
+    DebugUIManager::GetInstance()->AddLog("Effect not found: " + effectName, DebugUIManager::LogType::Error);
 #endif
     return false;
   }
@@ -470,7 +470,7 @@ bool PostEffectManager::SetEffectParam(const std::string& effectName, const Effe
 
 #ifdef _DEBUG
   if (!success) {
-    Logger::Log("Parameter type mismatch for effect: " + effectName);
+    DebugUIManager::GetInstance()->AddLog("Parameter type mismatch for effect: " + effectName, DebugUIManager::LogType::Error);
   }
 #endif
 

@@ -14,7 +14,7 @@
 #include <set>
 #include <sstream>
 
-#include "Logger.h"
+#include "DebugUIManager.h"
 #include <imgui.h>
 
 // 静的メンバー変数の定義
@@ -149,7 +149,7 @@ void Model::DrawInstanced(uint32_t instanceCount)
   // インスタンシング描画ではスキニングは未対応
   if (hasSkeleton_)
   {
-    Logger::Log("Warning: Instanced drawing is not supported for skinned models");
+    DebugUIManager::GetInstance()->AddLog("Warning: Instanced drawing is not supported for skinned models", DebugUIManager::LogType::Warning);
     return;
   }
 
@@ -157,7 +157,7 @@ void Model::DrawInstanced(uint32_t instanceCount)
   // シャドウパス中の場合はデバッグログ出力
   if (ShadowRenderer::GetInstance()->IsRenderingShadow())
   {
-    Logger::Log("Drawing instanced model in shadow pass: %d instances", instanceCount);
+    DebugUIManager::GetInstance()->AddLog("Drawing instanced model in shadow pass: " + std::to_string(instanceCount) + " instances", DebugUIManager::LogType::Info);
   }
 #endif
 
@@ -467,7 +467,7 @@ Matrix4x4 Model::GetJointWorldMatrix(const std::string& jointName, const Matrix4
   if (it == skeleton_.jointMap.end())
   {
     // Jointが見つからない場合は単位行列を返す
-    Logger::Log("Warning: Joint '%s' not found in skeleton\n", jointName.c_str());
+    DebugUIManager::GetInstance()->AddLog("Warning: Joint '" + jointName + "' not found in skeleton", DebugUIManager::LogType::Warning);
     return Mat4x4::MakeIdentity();
   }
 
@@ -1407,7 +1407,7 @@ void Model::SetAnimation(const std::string& animationName)
   }else
   {
 #ifdef  _DEBUG
-    Logger::Log("Warning: Animation '%s' not found in model '%s'\n", animationName.c_str(), modelFileName_.c_str());
+    DebugUIManager::GetInstance()->AddLog("Warning: Animation '" + animationName + "' not found in model '" + modelFileName_ + "'", DebugUIManager::LogType::Warning);
 #endif
   }
 }
@@ -1435,7 +1435,7 @@ void Model::SetAnimation(const std::string& animationName, float transitionDurat
   }else
   {
 #ifdef  _DEBUG
-    Logger::Log("Warning: Animation '%s' not found in model '%s'\n", animationName.c_str(), modelFileName_.c_str());
+    DebugUIManager::GetInstance()->AddLog("Warning: Animation '" + animationName + "' not found in model '" + modelFileName_ + "'", DebugUIManager::LogType::Warning);
 #endif
   }
 }

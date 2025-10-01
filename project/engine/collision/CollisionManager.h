@@ -59,6 +59,7 @@ public:
 	// デバッグ用ゲッター
 	size_t GetColliderCount() const { return colliders_.size(); }
 	const std::list<Collider*>& GetColliders() const { return colliders_; }
+	const std::unordered_map<uint32_t, std::unordered_set<uint32_t>>& GetCollisionMasks() const { return collisionMask_; }
 	
 private:
 	void CheckCollisionPair(Collider* colliderA, Collider* colliderB);

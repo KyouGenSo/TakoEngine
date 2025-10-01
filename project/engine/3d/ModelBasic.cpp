@@ -1,7 +1,7 @@
 #include "ModelBasic.h"
 #include "DX12Basic.h"
 #include "SrvManager.h"
-#include "Logger.h"
+#include "DebugUIManager.h"
 
 void ModelBasic::Initialize(DX12Basic* dx12)
 {
@@ -92,7 +92,7 @@ void ModelBasic::CreateCSRootSignature()
   HRESULT hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
   if (FAILED(hr))
   {
-    Logger::Log(reinterpret_cast<char*>(errorBlob->GetBufferPointer()));
+    DebugUIManager::GetInstance()->AddLog(reinterpret_cast<char*>(errorBlob->GetBufferPointer()), DebugUIManager::LogType::Error);
     assert(false);
   }
 
@@ -100,7 +100,7 @@ void ModelBasic::CreateCSRootSignature()
   signatureBlob->GetBufferSize(), IID_PPV_ARGS(csRootSignature_.GetAddressOf());
   assert(SUCCEEDED(hr));
 
-  Logger::Log("CSRootSignature Created\n");
+  DebugUIManager::GetInstance()->AddLog("CSRootSignature Created", DebugUIManager::LogType::Info);
 
 }
 

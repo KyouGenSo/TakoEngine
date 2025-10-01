@@ -6,7 +6,7 @@
 #include "ShadowRenderer.h"
 #include "SrvManager.h"
 #include "TextureManager.h"
-#include "Logger.h"
+#include "DebugUIManager.h"
 
 //　デストラクタ
 Mesh::~Mesh()
@@ -114,7 +114,7 @@ void Mesh::DrawInstanced(uint32_t instanceCount)
 {
   // インスタンシング描画（スキニングは未対応）
   if (hasSkinning_) {
-    Logger::Log("Warning: Instanced drawing is not supported for skinned meshes");
+    DebugUIManager::GetInstance()->AddLog("Instanced drawing is not supported for skinned meshes", DebugUIManager::LogType::Warning);
     return;
   }
 
