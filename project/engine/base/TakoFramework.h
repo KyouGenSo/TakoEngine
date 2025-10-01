@@ -35,6 +35,13 @@ public: // メンバ関数
 	// 終了フラグを取得
 	bool GetEndFlag() const { return endFlag_; }
 
+#ifdef _DEBUG
+	// デバッグモード制御
+	bool GetIsDebug() const { return isDebug_; }
+	void SetIsDebug(bool value);
+	bool* GetIsDebugPtr() { return &isDebug_; }
+#endif
+
   // フルスクリーンモードの切り替え
   void ToggleFullScreen();
 
@@ -64,4 +71,6 @@ protected: // メンバ変数
 
 	// 終了フラグ
 	bool endFlag_ = false;
+
+  bool isDebug_ = false;
 };

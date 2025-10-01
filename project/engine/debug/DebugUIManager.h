@@ -118,4 +118,11 @@ private:
 public:
     // 終了フラグ設定
     void SetEndFlagPtr(bool* pEndFlag) { pEndFlag_ = pEndFlag; }
+
+    // デバッグフラグ設定
+    void SetDebugFlagPtr(bool* pIsDebug) { pIsDebug_ = pIsDebug; }
+
+private:
+    // デバッグカメラ有効フラグへのポインタ
+    bool* pIsDebug_ = nullptr;
 };

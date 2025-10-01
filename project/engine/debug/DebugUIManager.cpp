@@ -20,6 +20,8 @@
 #include <set>
 #include <map>
 
+#include "Draw2D.h"
+#include "GPUParticle.h"
 #include "Logger.h"
 
 // シングルトンインスタンス
@@ -60,7 +62,21 @@ void DebugUIManager::Finalize() {
 }
 
 void DebugUIManager::Update() {
-    // 必要に応じて更新処理
+  if (Input::GetInstance()->TriggerKey(DIK_F2)) {
+      windowVisibility_["SceneHierarchy"] = !windowVisibility_["SceneHierarchy"];
+  }
+  if (Input::GetInstance()->TriggerKey(DIK_F3)) {
+      windowVisibility_["Inspector"] = !windowVisibility_["Inspector"];
+  }
+  if (Input::GetInstance()->TriggerKey(DIK_F4)) {
+      windowVisibility_["GameViewport"] = !windowVisibility_["GameViewport"];
+  }
+  if (Input::GetInstance()->TriggerKey(DIK_F5)) {
+      windowVisibility_["Console"] = !windowVisibility_["Console"];
+  }
+  if (Input::GetInstance()->TriggerKey(DIK_F6)) {
+      windowVisibility_["Performance"] = !windowVisibility_["Performance"];
+  }
 }
 
 void DebugUIManager::Draw() {
@@ -106,11 +122,11 @@ void DebugUIManager::DrawMainMenuBar() {
         if (ImGui::BeginMenu("View")) {
             ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Main Windows");
             ImGui::Separator();
-            ImGui::MenuItem("Scene Hierarchy", "F1", &windowVisibility_["SceneHierarchy"]);
-            ImGui::MenuItem("Inspector", "F2", &windowVisibility_["Inspector"]);
-            ImGui::MenuItem("Game Viewport", "F3", &windowVisibility_["GameViewport"]);
-            ImGui::MenuItem("Console", "F4", &windowVisibility_["Console"]);
-            ImGui::MenuItem("Performance", "F5", &windowVisibility_["Performance"]);
+            ImGui::MenuItem("Scene Hierarchy", "F2", &windowVisibility_["SceneHierarchy"]);
+            ImGui::MenuItem("Inspector", "F3", &windowVisibility_["Inspector"]);
+            ImGui::MenuItem("Game Viewport", "F4", &windowVisibility_["GameViewport"]);
+            ImGui::MenuItem("Console", "F5", &windowVisibility_["Console"]);
+            ImGui::MenuItem("Performance", "F6", &windowVisibility_["Performance"]);
             ImGui::Separator();
             ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Debug Windows");
             ImGui::Separator();
@@ -128,9 +144,22 @@ void DebugUIManager::DrawMainMenuBar() {
         if (ImGui::BeginMenu("Tools")) {
             if (ImGui::MenuItem("Global Variables")) {}
             bool collisionDebug = CollisionManager::GetInstance()->IsDebugDrawEnabled();
-            if (ImGui::MenuItem("Collision Debug", nullptr, collisionDebug)) {
+            if (ImGui::MenuItem("Collider Visibility", nullptr, collisionDebug)) {
                 CollisionManager::GetInstance()->SetDebugDrawEnabled(!collisionDebug);
             }
+
+            // Debug Cameraの切り替え
+            if (pIsDebug_) {
+                bool debugCamera = *pIsDebug_;
+                if (ImGui::MenuItem("Debug Camera", "F1", debugCamera)) {
+                    *pIsDebug_ = !debugCamera;
+                    // 各コンポーネントのデバッグモードも同時に設定
+                    Object3dBasic::GetInstance()->SetDebug(*pIsDebug_);
+                    Draw2D::GetInstance()->SetDebug(*pIsDebug_);
+                    GPUParticle::GetInstance()->SetIsDebug(*pIsDebug_);
+                }
+            }
+
             ImGui::EndMenu();
         }
         

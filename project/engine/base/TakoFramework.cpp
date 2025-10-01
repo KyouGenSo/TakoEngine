@@ -21,6 +21,8 @@
 #include <iomanip>
 #include <sstream>
 
+#include "GPUParticle.h"
+
 void TakoFramework::Initialize()
 {
 
@@ -50,6 +52,7 @@ void TakoFramework::Initialize()
   // DebugUIManagerの初期化
   DebugUIManager::GetInstance()->Initialize();
   DebugUIManager::GetInstance()->SetEndFlagPtr(&endFlag_);
+  DebugUIManager::GetInstance()->SetDebugFlagPtr(&isDebug_);
 
   DebugCamera::GetInstance()->Initialize();
 #endif
@@ -123,8 +126,10 @@ void TakoFramework::Finalize()
   // FrameTimer
   FrameTimer::GetInstance()->Finalize();
 
+#ifdef _DEBUG
   // DebugCamera
   DebugCamera::GetInstance()->Finalize();
+#endif
 
   // SpriteBasic
   SpriteBasic::GetInstance()->Finalize();
@@ -169,14 +174,31 @@ void TakoFramework::Update()
 		return;
 	}
 
-	// フレームタイマーの更新
-	FrameTimer::GetInstance()->Update();
+  // フレームタイマーの更新
+  FrameTimer::GetInstance()->Update();
+
+  // シーンマネージャーの更新
+  SceneManager::GetInstance()->Update();
+
+#ifdef _DEBUG
+  if (Input::GetInstance()->TriggerKey(DIK_F1))
+  {
+    isDebug_ = !isDebug_;
+    Object3dBasic::GetInstance()->SetDebug(isDebug_);
+    Draw2D::GetInstance()->SetDebug(isDebug_);
+    GPUParticle::GetInstance()->SetIsDebug(isDebug_);
+  }
+
+  if (isDebug_)
+  {
+    DebugCamera::GetInstance()->Update();
+  }
+
+  DebugUIManager::GetInstance()->Update();
+#endif
 
 	//	Draw2Dの更新
 	Draw2D::GetInstance()->Update();
-
-	// シーンマネージャーの更新
-	SceneManager::GetInstance()->Update();
 
 	// Object3dBasicの更新
 	Object3dBasic::GetInstance()->Update();
@@ -239,4 +261,15 @@ void TakoFramework::OnWindowResize(uint32_t width, uint32_t height)
   imguiManager_->OnWindowResize();
 #endif
 }
+
+#ifdef _DEBUG
+void TakoFramework::SetIsDebug(bool value)
+{
+  isDebug_ = value;
+  // 各コンポーネントのデバッグモードも同時に設定
+  Object3dBasic::GetInstance()->SetDebug(isDebug_);
+  Draw2D::GetInstance()->SetDebug(isDebug_);
+  GPUParticle::GetInstance()->SetIsDebug(isDebug_);
+}
+#endif
 
