@@ -8,6 +8,7 @@
 
 #ifdef _DEBUG
 #include "ImGuiManager.h"
+#include "DebugUIManager.h"
 #endif
 
 class TakoFramework {
@@ -60,8 +61,4 @@ protected: // メンバ変数
 
 	// 終了フラグ
 	bool endFlag_ = false;
-
-  bool FPSWindowVisible = true;
-  bool PostEffectWindowVisible = false;
-  bool GameViewportWindowVisible = false; // ゲームビューポートウィンドウの表示フラグ
 };
