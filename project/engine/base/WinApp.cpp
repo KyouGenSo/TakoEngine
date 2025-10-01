@@ -219,7 +219,6 @@ void WinApp::ToggleFullScreen()
   {
     // 元のウィンドウスタイルに戻す（最大化ボタンあり）
     LONG currentStyle = GetWindowLong(hWnd_, GWL_STYLE);
-    //SetWindowLong(hWnd_, GWL_STYLE, WS_OVERLAPPEDWINDOW);
     SetWindowLong(hWnd_, GWL_STYLE, currentStyle | WS_OVERLAPPEDWINDOW);
 
     // 保存していた位置とサイズに戻す
