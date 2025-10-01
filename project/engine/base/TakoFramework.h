@@ -38,6 +38,9 @@ public: // メンバ関数
   // フルスクリーンモードの切り替え
   void ToggleFullScreen();
 
+  // ウィンドウリサイズ時の処理
+  void OnWindowResize(uint32_t width, uint32_t height);
+
 protected: // メンバ変数
 	// リソースリークチェッカー
 	D3DResourceLeakChecker d3dResourceLeakCheker;

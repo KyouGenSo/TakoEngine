@@ -49,7 +49,7 @@ void WinApp::Initialize()
   hWnd_ = CreateWindow(
     wc_.lpszClassName,             //クラス名
     windowTitle_.c_str(),                //タイトルバーの文字列
-    WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,  // サイズ変更不可のウィンドウスタイル
+    WS_OVERLAPPEDWINDOW,  // サイズ変更可能で最大化ボタンも有効なウィンドウスタイル
     CW_USEDEFAULT,               //表示X座標
     CW_USEDEFAULT,              //表示Y座標
     wrc.right - wrc.left,      //ウィンドウ幅
@@ -121,6 +121,56 @@ LRESULT WinApp::WndProc(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam)
     PostQuitMessage(0);
     break;
 
+  // ウィンドウサイズが変更されたとき
+  case WM_SIZE:
+    {
+      // インスタンスを取得
+      WinApp* instance = GetInstance();
+
+      // クライアント領域の新しいサイズを取得
+      int width = LOWORD(lparam);
+      int height = HIWORD(lparam);
+
+      // wparamに基づいて最大化状態を更新
+      switch (wparam)
+      {
+      case SIZE_MAXIMIZED:
+        // 最大化された
+        instance->isMaximized_ = true;
+        instance->SetWindowSize(width, height);
+
+        // OnResize関数があれば呼び出す
+        if (!instance->onResizeFuncs_.empty()) {
+          Vector2 newSize = { .x = static_cast<float>(width), .y = static_cast<float>(height) };
+          for (const auto& entry : instance->onResizeFuncs_) {
+            entry.callback(newSize);
+          }
+        }
+        break;
+
+      case SIZE_RESTORED:
+        // 通常状態に戻った
+        if (instance->isMaximized_) {
+          instance->isMaximized_ = false;
+        }
+        instance->SetWindowSize(width, height);
+
+        // OnResize関数があれば呼び出す
+        if (!instance->onResizeFuncs_.empty()) {
+          Vector2 newSize = { .x = static_cast<float>(width), .y = static_cast<float>(height) };
+          for (const auto& entry : instance->onResizeFuncs_) {
+            entry.callback(newSize);
+          }
+        }
+        break;
+
+      case SIZE_MINIMIZED:
+        // 最小化された（特に処理なし）
+        break;
+      }
+    }
+    break;
+
   default:;
   }
 
@@ -167,9 +217,10 @@ void WinApp::ToggleFullScreen()
     isFullScreen_ = true;
   } else
   {
-    // 元のサイズ変更不可のウィンドウスタイルに戻す
+    // 元のウィンドウスタイルに戻す（最大化ボタンあり）
     LONG currentStyle = GetWindowLong(hWnd_, GWL_STYLE);
-    SetWindowLong(hWnd_, GWL_STYLE, currentStyle | (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX));
+    //SetWindowLong(hWnd_, GWL_STYLE, WS_OVERLAPPEDWINDOW);
+    SetWindowLong(hWnd_, GWL_STYLE, currentStyle | WS_OVERLAPPEDWINDOW);
 
     // 保存していた位置とサイズに戻す
     SetWindowPos(hWnd_, HWND_TOP,
@@ -210,4 +261,10 @@ void WinApp::UnregisterOnResizeFunc(uint32_t id)
     std::remove_if(onResizeFuncs_.begin(), onResizeFuncs_.end(),
       [id](const ResizeCallbackEntry& entry) { return entry.id == id; }),
     onResizeFuncs_.end());
+}
+
+void WinApp::MaximizeWindow()
+{
+  // ウィンドウを最大化
+  ShowWindow(hWnd_, SW_MAXIMIZE);
 }

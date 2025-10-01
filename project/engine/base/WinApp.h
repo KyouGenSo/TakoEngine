@@ -87,6 +87,16 @@ public: // メンバ関数
   bool IsFullScreen() const { return isFullScreen_; }
 
   /// <summary>
+  /// 最大化状態の取得
+  /// </summary>
+  bool IsMaximized() const { return isMaximized_; }
+
+  /// <summary>
+  /// ウィンドウの最大化
+  /// </summary>
+  void MaximizeWindow();
+
+  /// <summary>
   /// OnResize関数の登録
   /// <summary>
   /// <param name="onResizeFunc"></param>
@@ -121,6 +131,9 @@ private:
 
   // フルスクリーン状態を保持
   bool isFullScreen_ = false;
+
+  // 最大化状態を保持
+  bool isMaximized_ = false;
 
   // ウィンドウモード時の位置とサイズを保存
   RECT windowedRect_ = {};

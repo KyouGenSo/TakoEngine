@@ -27,6 +27,11 @@ void TakoFramework::Initialize()
 #pragma region ウィンドウの初期化-------------------------------------------------------------------------------------------------------------------
   winApp_ = WinApp::GetInstance();
 	winApp_->Initialize();
+
+	// ウィンドウリサイズ時のコールバックを登録
+	winApp_->RegisterOnResizeFunc([this](Vector2 size) {
+		OnWindowResize(static_cast<uint32_t>(size.x), static_cast<uint32_t>(size.y));
+	});
 #pragma endregion
 
 
@@ -212,10 +217,12 @@ void TakoFramework::ToggleFullScreen()
   // ウィンドウの状態を切り替え
   winApp_->ToggleFullScreen();
 
-  // 画面サイズを取得
-  uint32_t width = WinApp::clientWidth;
-  uint32_t height = WinApp::clientHeight;
+  // リサイズ処理を実行
+  OnWindowResize(WinApp::clientWidth, WinApp::clientHeight);
+}
 
+void TakoFramework::OnWindowResize(uint32_t width, uint32_t height)
+{
   // GPUの処理を待機
   dx12_->WaitForGPU();
 

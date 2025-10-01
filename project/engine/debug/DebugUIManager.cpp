@@ -400,7 +400,7 @@ void DebugUIManager::DrawGameViewport() {
     ImVec2 availableSize = ImGui::GetContentRegionAvail();
     
     // クライアント領域のアスペクト比を計算
-    float aspectRatio = static_cast<float>(WinApp::clientWidth) / static_cast<float>(WinApp::clientHeight);
+    float aspectRatio = 16.0f / 9.0f;
     
     // アスペクト比を維持したサイズを計算
     ImVec2 imageSize;
