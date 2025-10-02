@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <array>
 #include "GPUParticleEmitter.h"
 #include "EmitterStruct.h"
 #include <json.hpp>
@@ -89,13 +90,21 @@ public:
   void SavePreset(const std::string& presetName, const std::string& emitterName);
   void LoadPreset(const std::string& presetName, const std::string& newEmitterName);
 
-  // GlobalVariables連携
-  void ApplyGlobalVariables(const std::string& groupName);
-  void RegisterToGlobalVariables(const std::string& emitterName, const std::string& groupName);
-
   // エミッター情報取得（エディター用）
   std::vector<std::string> GetEmitterNames() const;
   bool HasEmitter(const std::string& name) const;
+
+  // コピー＆ペースト機能
+  bool CopyEmitterSettings(const std::string& emitterName, int slotIndex = 0);
+  bool PasteEmitterSettings(const std::string& targetEmitterName, int slotIndex = 0, bool colorOnly = false, bool velocityOnly = false, bool scaleOnly = false);
+  bool HasCopiedSettings(int slotIndex = 0) const;
+  void ClearCopiedSettings(int slotIndex = 0);
+
+  // グループ情報取得
+  std::vector<std::string> GetGroupNames() const;
+  std::vector<std::string> GetEmittersInGroup(const std::string& groupName) const;
+  bool IsGroupActive(const std::string& groupName) const;
+  size_t GetGroupCount() const { return groupMap_.size(); }
 
 private: // プライベートメンバー関数
 
@@ -114,5 +123,13 @@ private:
 
   // グループマップ（グループ名→グループ情報）
   std::unordered_map<std::string, EmitterGroup> groupMap_;
+
+  // コピーバッファ（5スロット）
+  struct CopiedSettings {
+    bool valid = false;
+    EmitterData data;
+    EmitterType type;
+  };
+  std::array<CopiedSettings, 5> copiedSettingsSlots_;
 
 };

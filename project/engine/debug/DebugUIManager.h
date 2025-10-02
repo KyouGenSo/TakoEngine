@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <chrono>
 #include "imgui.h"
+#include <json.hpp>
 
 class DebugUIManager {
 public:
@@ -87,7 +88,8 @@ private:
     void DrawShadowSettings();
     void DrawCollisionDebug();
     void DrawParticleEditor();  // パーティクルエディター
-    
+    void DrawGroupsTab();       // グループ管理タブ
+
     // タイムスタンプ生成
     std::string GetCurrentTimestamp();
 
@@ -140,4 +142,8 @@ private:
     char presetNameBuffer_[128] = "";
     char loadPresetBuffer_[128] = "";
     bool showPresetManager_ = false;
+
+    // グループ管理用
+    int selectedGroupIndex_ = -1;
+    char newGroupNameBuffer_[128] = "";
 };

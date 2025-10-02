@@ -3,7 +3,6 @@
 #include "SphereEmitter.h"
 #include "BoxEmitter.h"
 #include "TriangleEmitter.h"
-#include "GlobalVariables.h"
 #include <cstring>
 
 void DebugUIManager::DrawParticleEditor() {
@@ -289,8 +288,94 @@ void DebugUIManager::DrawParticleEditor() {
       ImGui::EndTabItem();
     }
 
+    // グループ管理タブ
+    if (ImGui::BeginTabItem("Groups")) {
+      DrawGroupsTab();
+      ImGui::EndTabItem();
+    }
+
     ImGui::EndTabBar();
   }
 
   ImGui::End();
+}
+
+// グループ管理タブの実装
+void DebugUIManager::DrawGroupsTab() {
+  ImGui::Text("Group Management");
+  ImGui::Separator();
+
+  // 新規グループ作成
+  if (ImGui::CollapsingHeader("Create Group")) {
+    ImGui::InputText("Group Name##NewGroup", newGroupNameBuffer_, sizeof(newGroupNameBuffer_));
+    if (ImGui::Button("Create##NewGroup") && strlen(newGroupNameBuffer_) > 0) {
+      emitterManager_->CreateGroup(newGroupNameBuffer_);
+      AddLog("Created group: " + std::string(newGroupNameBuffer_), LogType::Info);
+    }
+  }
+
+  // グループリスト
+  auto groupNames = emitterManager_->GetGroupNames();
+  ImGui::Text("Groups: %zu", groupNames.size());
+
+  if (ImGui::BeginListBox("##GroupList", ImVec2(-1, 150))) {
+    for (int i = 0; i < groupNames.size(); i++) {
+      bool isSelected = (selectedGroupIndex_ == i);
+      if (ImGui::Selectable(groupNames[i].c_str(), isSelected)) {
+        selectedGroupIndex_ = i;
+      }
+    }
+    ImGui::EndListBox();
+  }
+
+  // 選択したグループの操作
+  if (selectedGroupIndex_ >= 0 && selectedGroupIndex_ < groupNames.size()) {
+    std::string groupName = groupNames[selectedGroupIndex_];
+    ImGui::Separator();
+    ImGui::Text("Selected Group: %s", groupName.c_str());
+
+    // グループアクティブ切り替え
+    bool isActive = emitterManager_->IsGroupActive(groupName);
+    if (ImGui::Checkbox("Group Active##Group", &isActive)) {
+      emitterManager_->SetGroupActive(groupName, isActive);
+    }
+
+    // グループ位置調整
+    static Vector3 groupOffset = {0, 0, 0};
+    if (ImGui::DragFloat3("Group Position##Group", &groupOffset.x, 0.1f)) {
+      emitterManager_->SetGroupPosition(groupName, groupOffset);
+    }
+
+    // グループ内のエミッター表示
+    auto emittersInGroup = emitterManager_->GetEmittersInGroup(groupName);
+    ImGui::Text("Emitters in group: %zu", emittersInGroup.size());
+    if (ImGui::BeginListBox("##GroupEmitters", ImVec2(-1, 100))) {
+      for (const auto& name : emittersInGroup) {
+        ImGui::Text("%s", name.c_str());
+      }
+      ImGui::EndListBox();
+    }
+
+    // エミッターをグループに追加
+    auto allEmitters = emitterManager_->GetEmitterNames();
+    static int addEmitterIndex = 0;
+    if (allEmitters.size() > 0) {
+      std::vector<const char*> items;
+      for (const auto& name : allEmitters) {
+        items.push_back(name.c_str());
+      }
+      ImGui::Combo("Add Emitter##Group", &addEmitterIndex, items.data(), static_cast<int>(items.size()));
+      if (ImGui::Button("Add to Group##Group")) {
+        emitterManager_->AddToGroup(groupName, allEmitters[addEmitterIndex]);
+        AddLog("Added " + allEmitters[addEmitterIndex] + " to group " + groupName, LogType::Info);
+      }
+    }
+
+    // グループ削除
+    if (ImGui::Button("Delete Group##Group")) {
+      emitterManager_->RemoveGroup(groupName);
+      selectedGroupIndex_ = -1;
+      AddLog("Deleted group: " + groupName, LogType::Info);
+    }
+  }
 }

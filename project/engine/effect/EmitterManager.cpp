@@ -5,7 +5,6 @@
 #include "TriangleEmitter.h"
 #include "DebugUIManager.h"
 #include "FrameTimer.h"
-#include "GlobalVariables.h"
 
 #include <algorithm>
 #include <ranges>
@@ -657,6 +656,132 @@ std::vector<std::string> EmitterManager::GetEmitterNames() const
 bool EmitterManager::HasEmitter(const std::string& name) const
 {
   return emitterMap_.contains(name);
+}
+
+//========================================
+// コピー＆ペースト機能
+//========================================
+
+bool EmitterManager::CopyEmitterSettings(const std::string& emitterName, int slotIndex)
+{
+  if (slotIndex < 0 || slotIndex >= 5) return false;
+
+  auto it = emitterMap_.find(emitterName);
+  if (it == emitterMap_.end()) return false;
+
+  auto emitter = it->second;
+  CopiedSettings& slot = copiedSettingsSlots_[slotIndex];
+
+  // エミッターの設定をコピー
+  slot.type = emitter->GetType();
+  slot.data.type = emitter->GetType();
+  slot.data.position = emitter->GetPosition();
+  slot.data.isActive = emitter->IsActive();
+  slot.data.isEmitting = emitter->IsEmitting();
+  slot.data.isNormalize = emitter->IsNormalize();
+  slot.data.count = emitter->GetParticleCount();
+  slot.data.frequency = emitter->GetFrequency();
+  slot.data.frequencyTime = emitter->GetFrequencyTime();
+  slot.data.scaleRangeX = emitter->GetScaleRangeX();
+  slot.data.scaleRangeY = emitter->GetScaleRangeY();
+  slot.data.velRangeX = emitter->GetVelRangeX();
+  slot.data.velRangeY = emitter->GetVelRangeY();
+  slot.data.velRangeZ = emitter->GetVelRangeZ();
+  slot.data.lifeTimeRange = emitter->GetLifeTimeRange();
+  slot.data.startColorTint = emitter->GetStartColor();
+  slot.data.endColorTint = emitter->GetEndColor();
+
+  // 型固有のパラメータ
+  if (auto sphereEmitter = std::dynamic_pointer_cast<SphereEmitter>(emitter)) {
+    slot.data.sphere.radius = sphereEmitter->GetRadius();
+  } else if (auto boxEmitter = std::dynamic_pointer_cast<BoxEmitter>(emitter)) {
+    slot.data.box.size = boxEmitter->GetSize();
+    slot.data.box.rotation = boxEmitter->GetRotation();
+  } else if (auto triangleEmitter = std::dynamic_pointer_cast<TriangleEmitter>(emitter)) {
+    slot.data.triangle.v1 = triangleEmitter->GetVertex1();
+    slot.data.triangle.v2 = triangleEmitter->GetVertex2();
+    slot.data.triangle.v3 = triangleEmitter->GetVertex3();
+  }
+
+  slot.valid = true;
+  return true;
+}
+
+bool EmitterManager::PasteEmitterSettings(const std::string& targetEmitterName, int slotIndex, bool colorOnly, bool velocityOnly, bool scaleOnly)
+{
+  if (slotIndex < 0 || slotIndex >= 5) return false;
+  if (!copiedSettingsSlots_[slotIndex].valid) return false;
+
+  auto it = emitterMap_.find(targetEmitterName);
+  if (it == emitterMap_.end()) return false;
+
+  auto targetEmitter = it->second;
+  const CopiedSettings& slot = copiedSettingsSlots_[slotIndex];
+
+  // 部分ペースト
+  if (colorOnly) {
+    targetEmitter->SetColors(slot.data.startColorTint, slot.data.endColorTint);
+  } else if (velocityOnly) {
+    targetEmitter->SetVelRange(slot.data.velRangeX, slot.data.velRangeY, slot.data.velRangeZ);
+  } else if (scaleOnly) {
+    targetEmitter->SetScaleRange(slot.data.scaleRangeX, slot.data.scaleRangeY);
+  } else {
+    // 全体ペースト（位置と型固有パラメータ以外）
+    targetEmitter->SetActive(slot.data.isActive);
+    targetEmitter->SetEmitting(slot.data.isEmitting);
+    targetEmitter->SetNormalize(slot.data.isNormalize);
+    targetEmitter->SetParticleCount(slot.data.count);
+    targetEmitter->SetFrequency(slot.data.frequency);
+    targetEmitter->SetScaleRange(slot.data.scaleRangeX, slot.data.scaleRangeY);
+    targetEmitter->SetVelRange(slot.data.velRangeX, slot.data.velRangeY, slot.data.velRangeZ);
+    targetEmitter->SetLifeTimeRange(slot.data.lifeTimeRange);
+    targetEmitter->SetColors(slot.data.startColorTint, slot.data.endColorTint);
+  }
+
+  return true;
+}
+
+bool EmitterManager::HasCopiedSettings(int slotIndex) const
+{
+  if (slotIndex < 0 || slotIndex >= 5) return false;
+  return copiedSettingsSlots_[slotIndex].valid;
+}
+
+void EmitterManager::ClearCopiedSettings(int slotIndex)
+{
+  if (slotIndex < 0 || slotIndex >= 5) return;
+  copiedSettingsSlots_[slotIndex].valid = false;
+}
+
+//========================================
+// グループ情報取得
+//========================================
+
+std::vector<std::string> EmitterManager::GetGroupNames() const
+{
+  std::vector<std::string> names;
+  for (const auto& [name, _] : groupMap_) {
+    names.push_back(name);
+  }
+  return names;
+}
+
+std::vector<std::string> EmitterManager::GetEmittersInGroup(const std::string& groupName) const
+{
+  auto it = groupMap_.find(groupName);
+  if (it == groupMap_.end()) {
+    return {};
+  }
+  return it->second.emitterNames;
+}
+
+bool EmitterManager::IsGroupActive(const std::string& groupName) const
+{
+  auto it = groupMap_.find(groupName);
+  if (it == groupMap_.end()) {
+    return false;
+  }
+  return it->second.isActive;
 }
 
 //========================================
