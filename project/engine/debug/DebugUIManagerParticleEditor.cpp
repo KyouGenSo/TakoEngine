@@ -283,13 +283,11 @@ void DebugUIManager::DrawParticleEditor() {
         if (ImGui::Button("Save All Emitters##ScenePreset")) {
           emitterManager_->SaveEmittersToJSON(scenePresetName);
           AddLog("Saved all emitters to: " + std::string(scenePresetName), LogType::Info);
-          scenePresetName[0] = '\0';  // 入力ボックスをクリア
         }
         ImGui::SameLine();
         if (ImGui::Button("Load All Emitters##ScenePreset")) {
           emitterManager_->LoadEmittersFromJSON(scenePresetName);
           AddLog("Loaded all emitters from: " + std::string(scenePresetName), LogType::Info);
-          scenePresetName[0] = '\0';  // 入力ボックスをクリア
         }
       }
 
