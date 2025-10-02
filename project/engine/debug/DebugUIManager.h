@@ -71,6 +71,9 @@ public:
     void SetSceneName(const std::string& sceneName) { currentSceneName_ = sceneName; }
     const std::string& GetSceneName() const { return currentSceneName_; }
 
+    // EmitterManager設定
+    void SetEmitterManager(class EmitterManager* emitterManager) { emitterManager_ = emitterManager; }
+
 private:
     // 各ウィンドウの描画
     void DrawMainMenuBar();
@@ -83,6 +86,7 @@ private:
     void DrawInputDebug();
     void DrawShadowSettings();
     void DrawCollisionDebug();
+    void DrawParticleEditor();  // パーティクルエディター
     
     // タイムスタンプ生成
     std::string GetCurrentTimestamp();
@@ -128,4 +132,12 @@ private:
 
     // シーン遷移UI用
     char sceneNameBuffer_[128] = "";  // シーン名入力バッファ
+
+    // パーティクルエディター用
+    class EmitterManager* emitterManager_ = nullptr;
+    int selectedEmitterIndex_ = -1;
+    char newEmitterNameBuffer_[128] = "";
+    char presetNameBuffer_[128] = "";
+    char loadPresetBuffer_[128] = "";
+    bool showPresetManager_ = false;
 };

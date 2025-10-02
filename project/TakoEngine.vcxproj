@@ -129,6 +129,7 @@
     <ClCompile Include="engine\collision\OBBCollider.cpp" />
     <ClCompile Include="engine\collision\SphereCollider.cpp" />
     <ClCompile Include="engine\debug\DebugUIManager.cpp" />
+    <ClCompile Include="engine\debug\DebugUIManagerParticleEditor.cpp" />
     <ClCompile Include="engine\effect\Bloom.cpp" />
     <ClCompile Include="engine\effect\BoneTracker.cpp" />
     <ClCompile Include="engine\effect\BoxEmitter.cpp" />

@@ -9,8 +9,6 @@
 
 class GlobalVariables
 {
-
-
 private: // シングルトン設定
   static GlobalVariables* instance_;
   GlobalVariables() = default;

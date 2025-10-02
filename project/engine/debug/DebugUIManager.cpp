@@ -25,6 +25,11 @@
 #include "Draw2D.h"
 #include "GPUParticle.h"
 #include "Logger.h"
+#include "EmitterManager.h"
+#include "SphereEmitter.h"
+#include "BoxEmitter.h"
+#include "TriangleEmitter.h"
+#include "GlobalVariables.h"
 
 // シングルトンインスタンス
 DebugUIManager* DebugUIManager::instance_ = nullptr;
@@ -48,6 +53,7 @@ void DebugUIManager::Initialize() {
   windowVisibility_["ShadowSettings"] = false;
   windowVisibility_["CollisionDebug"] = false;
   windowVisibility_["PostEffect"] = false;
+  windowVisibility_["ParticleEditor"] = false;
 
   // 初期ログ
   AddLog("DebugUIManager Initialized", LogType::Info);
@@ -96,6 +102,7 @@ void DebugUIManager::Draw() {
   if (windowVisibility_["InputDebug"]) DrawInputDebug();
   if (windowVisibility_["ShadowSettings"]) DrawShadowSettings();
   if (windowVisibility_["CollisionDebug"]) DrawCollisionDebug();
+  if (windowVisibility_["ParticleEditor"]) DrawParticleEditor();
 
   // PostEffectは独自の描画を持つ
   if (windowVisibility_["PostEffect"]) {
@@ -136,6 +143,7 @@ void DebugUIManager::DrawMainMenuBar() {
       ImGui::MenuItem("Input Debug", nullptr, &windowVisibility_["InputDebug"]);
       ImGui::MenuItem("Shadow Settings", nullptr, &windowVisibility_["ShadowSettings"]);
       ImGui::MenuItem("Collision Debug", nullptr, &windowVisibility_["CollisionDebug"]);
+      ImGui::MenuItem("Particle Editor", nullptr, &windowVisibility_["ParticleEditor"]);
       ImGui::MenuItem("PostEffect Settings", nullptr, &windowVisibility_["PostEffect"]);
       ImGui::EndMenu();
     }

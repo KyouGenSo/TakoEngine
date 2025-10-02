@@ -252,6 +252,9 @@
     <ClCompile Include="engine\debug\DebugUIManager.cpp">
       <Filter>debug</Filter>
     </ClCompile>
+    <ClCompile Include="engine\debug\DebugUIManagerParticleEditor.cpp">
+      <Filter>debug</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\math\Matrix4x4.h">

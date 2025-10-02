@@ -5,10 +5,14 @@
 #include "TriangleEmitter.h"
 #include "DebugUIManager.h"
 #include "FrameTimer.h"
+#include "GlobalVariables.h"
 
 #include <algorithm>
 #include <ranges>
 #include <memory>
+#include <filesystem>
+#include <fstream>
+#include <iomanip>
 
 EmitterManager::EmitterManager(GPUParticle* particleSystem)
   : particleSystem_(particleSystem)
@@ -493,4 +497,261 @@ void EmitterManager::RemoveGroup(const std::string& groupName)
   } else {
     DebugUIManager::GetInstance()->AddLog("RemoveGroup: Group '" + groupName + "' not found", DebugUIManager::LogType::Warning);
   }
+}
+
+//========================================
+// JSON保存・読み込み機能
+//========================================
+
+void EmitterManager::SaveEmittersToJSON(const std::string& filename)
+{
+  using json = nlohmann::json;
+  json root;
+
+  // ディレクトリが存在しない場合は作成
+  const std::string directory = "resources/Json/ParticlePresets/";
+  if (!std::filesystem::exists(directory)) {
+    std::filesystem::create_directories(directory);
+  }
+
+  // すべてのエミッターをJSONに変換
+  root["emitters"] = json::object();
+  for (const auto& [name, emitter] : emitterMap_) {
+    json emitterJson;
+    SerializeEmitterToJSON(emitter, emitterJson);
+    root["emitters"][name] = emitterJson;
+  }
+
+  // グループ情報も保存
+  root["groups"] = json::object();
+  for (const auto& [groupName, group] : groupMap_) {
+    json groupJson;
+    groupJson["name"] = group.name;
+    groupJson["emitters"] = group.emitterNames;
+    groupJson["isActive"] = group.isActive;
+    root["groups"][groupName] = groupJson;
+  }
+
+  // ファイルに書き込み
+  std::string filepath = directory + filename + ".json";
+  std::ofstream ofs(filepath);
+  if (ofs.is_open()) {
+    ofs << std::setw(2) << root << std::endl;
+    ofs.close();
+    DebugUIManager::GetInstance()->AddLog("Saved emitters to: " + filepath, DebugUIManager::LogType::Info);
+  } else {
+    DebugUIManager::GetInstance()->AddLog("Failed to save emitters to: " + filepath, DebugUIManager::LogType::Error);
+  }
+}
+
+void EmitterManager::LoadEmittersFromJSON(const std::string& filename)
+{
+  using json = nlohmann::json;
+
+  const std::string directory = "resources/Json/ParticlePresets/";
+  std::string filepath = directory + filename + ".json";
+
+  std::ifstream ifs(filepath);
+  if (!ifs.is_open()) {
+    DebugUIManager::GetInstance()->AddLog("Failed to load emitters from: " + filepath, DebugUIManager::LogType::Error);
+    return;
+  }
+
+  json root;
+  ifs >> root;
+  ifs.close();
+
+  // 既存のエミッターをクリア（オプション）
+  // RemoveAllEmitters();
+
+  // エミッターを読み込み
+  if (root.contains("emitters")) {
+    for (auto& [name, emitterJson] : root["emitters"].items()) {
+      auto emitter = DeserializeEmitterFromJSON(emitterJson);
+      if (emitter) {
+        particleSystem_->RegisterEmitter(emitter);
+        emitterMap_[name] = emitter;
+      }
+    }
+  }
+
+  // グループを読み込み
+  if (root.contains("groups")) {
+    for (auto& [groupName, groupJson] : root["groups"].items()) {
+      EmitterGroup group;
+      group.name = groupJson["name"];
+      group.emitterNames = groupJson["emitters"].get<std::vector<std::string>>();
+      group.isActive = groupJson["isActive"];
+      groupMap_[groupName] = group;
+    }
+  }
+
+  DebugUIManager::GetInstance()->AddLog("Loaded emitters from: " + filepath, DebugUIManager::LogType::Info);
+}
+
+void EmitterManager::SavePreset(const std::string& presetName, const std::string& emitterName)
+{
+  auto it = emitterMap_.find(emitterName);
+  if (it == emitterMap_.end()) {
+    DebugUIManager::GetInstance()->AddLog("SavePreset: Emitter '" + emitterName + "' not found", DebugUIManager::LogType::Warning);
+    return;
+  }
+
+  using json = nlohmann::json;
+  json preset;
+  SerializeEmitterToJSON(it->second, preset);
+
+  // プリセットディレクトリ
+  const std::string directory = "resources/Json/ParticlePresets/Presets/";
+  if (!std::filesystem::exists(directory)) {
+    std::filesystem::create_directories(directory);
+  }
+
+  std::string filepath = directory + presetName + ".json";
+  std::ofstream ofs(filepath);
+  if (ofs.is_open()) {
+    ofs << std::setw(2) << preset << std::endl;
+    ofs.close();
+    DebugUIManager::GetInstance()->AddLog("Saved preset: " + presetName, DebugUIManager::LogType::Info);
+  }
+}
+
+void EmitterManager::LoadPreset(const std::string& presetName, const std::string& newEmitterName)
+{
+  using json = nlohmann::json;
+
+  const std::string directory = "resources/Json/ParticlePresets/Presets/";
+  std::string filepath = directory + presetName + ".json";
+
+  std::ifstream ifs(filepath);
+  if (!ifs.is_open()) {
+    DebugUIManager::GetInstance()->AddLog("Failed to load preset: " + presetName, DebugUIManager::LogType::Error);
+    return;
+  }
+
+  json preset;
+  ifs >> preset;
+  ifs.close();
+
+  auto emitter = DeserializeEmitterFromJSON(preset);
+  if (emitter) {
+    particleSystem_->RegisterEmitter(emitter);
+    emitterMap_[newEmitterName] = emitter;
+    DebugUIManager::GetInstance()->AddLog("Loaded preset '" + presetName + "' as '" + newEmitterName + "'", DebugUIManager::LogType::Info);
+  }
+}
+
+//========================================
+// エミッター情報取得
+//========================================
+
+std::vector<std::string> EmitterManager::GetEmitterNames() const
+{
+  std::vector<std::string> names;
+  for (const auto& [name, _] : emitterMap_) {
+    names.push_back(name);
+  }
+  return names;
+}
+
+bool EmitterManager::HasEmitter(const std::string& name) const
+{
+  return emitterMap_.contains(name);
+}
+
+//========================================
+// JSON変換ヘルパー
+//========================================
+
+void EmitterManager::SerializeEmitterToJSON(const std::shared_ptr<GPUParticleEmitter>& emitter, nlohmann::json& json) const
+{
+  // 基本パラメータ
+  json["type"] = static_cast<uint32_t>(emitter->GetType());
+  json["position"] = { emitter->GetPosition().x, emitter->GetPosition().y, emitter->GetPosition().z };
+  json["particleCount"] = emitter->GetParticleCount();
+  json["frequency"] = emitter->GetFrequency();
+  json["frequencyTime"] = emitter->GetFrequencyTime();
+
+  // 範囲パラメータ
+  json["scaleRangeX"] = { emitter->GetScaleRangeX().x, emitter->GetScaleRangeX().y };
+  json["scaleRangeY"] = { emitter->GetScaleRangeY().x, emitter->GetScaleRangeY().y };
+  json["velRangeX"] = { emitter->GetVelRangeX().x, emitter->GetVelRangeX().y };
+  json["velRangeY"] = { emitter->GetVelRangeY().x, emitter->GetVelRangeY().y };
+  json["velRangeZ"] = { emitter->GetVelRangeZ().x, emitter->GetVelRangeZ().y };
+  json["lifeTimeRange"] = { emitter->GetLifeTimeRange().x, emitter->GetLifeTimeRange().y };
+
+  // 色パラメータ
+  json["startColor"] = { emitter->GetStartColor().x, emitter->GetStartColor().y, emitter->GetStartColor().z, emitter->GetStartColor().w };
+  json["endColor"] = { emitter->GetEndColor().x, emitter->GetEndColor().y, emitter->GetEndColor().z, emitter->GetEndColor().w };
+
+  // フラグ
+  json["isActive"] = emitter->IsActive();
+  json["isEmitting"] = emitter->IsEmitting();
+  json["isNormalize"] = emitter->IsNormalize();
+  json["isTemporary"] = emitter->IsTemporary();
+
+  // 型固有のパラメータ
+  if (auto sphereEmitter = std::dynamic_pointer_cast<SphereEmitter>(emitter)) {
+    json["radius"] = sphereEmitter->GetRadius();
+  } else if (auto boxEmitter = std::dynamic_pointer_cast<BoxEmitter>(emitter)) {
+    json["boxSize"] = { boxEmitter->GetSize().x, boxEmitter->GetSize().y, boxEmitter->GetSize().z };
+    json["boxRotation"] = { boxEmitter->GetRotation().x, boxEmitter->GetRotation().y, boxEmitter->GetRotation().z };
+  } else if (auto triangleEmitter = std::dynamic_pointer_cast<TriangleEmitter>(emitter)) {
+    json["triangleV1"] = { triangleEmitter->GetVertex1().x, triangleEmitter->GetVertex1().y, triangleEmitter->GetVertex1().z };
+    json["triangleV2"] = { triangleEmitter->GetVertex2().x, triangleEmitter->GetVertex2().y, triangleEmitter->GetVertex2().z };
+    json["triangleV3"] = { triangleEmitter->GetVertex3().x, triangleEmitter->GetVertex3().y, triangleEmitter->GetVertex3().z };
+  }
+}
+
+std::shared_ptr<GPUParticleEmitter> EmitterManager::DeserializeEmitterFromJSON(const nlohmann::json& json)
+{
+  EmitterType type = static_cast<EmitterType>(json["type"].get<uint32_t>());
+  Vector3 position = { json["position"][0], json["position"][1], json["position"][2] };
+  uint32_t count = json["particleCount"];
+  float frequency = json["frequency"];
+
+  std::shared_ptr<GPUParticleEmitter> emitter;
+
+  // タイプに応じてエミッターを作成
+  if (type == EmitterType::Sphere) {
+    float radius = json["radius"];
+    emitter = std::make_shared<SphereEmitter>(particleSystem_, position, radius, count, frequency);
+  } else if (type == EmitterType::Box) {
+    Vector3 size = { json["boxSize"][0], json["boxSize"][1], json["boxSize"][2] };
+    Vector3 rotation = { json["boxRotation"][0], json["boxRotation"][1], json["boxRotation"][2] };
+    emitter = std::make_shared<BoxEmitter>(particleSystem_, position, size, rotation, count, frequency);
+  } else if (type == EmitterType::Triangle) {
+    Vector3 v1 = { json["triangleV1"][0], json["triangleV1"][1], json["triangleV1"][2] };
+    Vector3 v2 = { json["triangleV2"][0], json["triangleV2"][1], json["triangleV2"][2] };
+    Vector3 v3 = { json["triangleV3"][0], json["triangleV3"][1], json["triangleV3"][2] };
+    emitter = std::make_shared<TriangleEmitter>(particleSystem_, position, v1, v2, v3, count, frequency);
+  } else {
+    return nullptr;
+  }
+
+  // 共通パラメータを設定
+  emitter->SetScaleRange(
+    Vector2{ json["scaleRangeX"][0], json["scaleRangeX"][1] },
+    Vector2{ json["scaleRangeY"][0], json["scaleRangeY"][1] }
+  );
+  emitter->SetVelRange(
+    Vector2{ json["velRangeX"][0], json["velRangeX"][1] },
+    Vector2{ json["velRangeY"][0], json["velRangeY"][1] },
+    Vector2{ json["velRangeZ"][0], json["velRangeZ"][1] }
+  );
+  emitter->SetLifeTimeRange(Vector2{ json["lifeTimeRange"][0], json["lifeTimeRange"][1] });
+
+  Vector4 startColor = { json["startColor"][0], json["startColor"][1], json["startColor"][2], json["startColor"][3] };
+  Vector4 endColor = { json["endColor"][0], json["endColor"][1], json["endColor"][2], json["endColor"][3] };
+  emitter->SetColors(startColor, endColor);
+
+  emitter->SetActive(json["isActive"]);
+  emitter->SetEmitting(json["isEmitting"]);
+  emitter->SetNormalize(json["isNormalize"]);
+
+  if (json.contains("frequencyTime")) {
+    emitter->SetFrequencyTime(json["frequencyTime"]);
+  }
+
+  return emitter;
 }

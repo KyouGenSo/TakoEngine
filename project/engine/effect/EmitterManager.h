@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include "GPUParticleEmitter.h"
 #include "EmitterStruct.h"
+#include <json.hpp>
 
 // 前方宣言
 class GPUParticle;
@@ -82,10 +83,28 @@ public:
   void DebugInfo();
   size_t GetActiveEmitterCount() const { return emitterMap_.size(); }
 
+  // JSON保存・読み込み機能
+  void SaveEmittersToJSON(const std::string& filename);
+  void LoadEmittersFromJSON(const std::string& filename);
+  void SavePreset(const std::string& presetName, const std::string& emitterName);
+  void LoadPreset(const std::string& presetName, const std::string& newEmitterName);
+
+  // GlobalVariables連携
+  void ApplyGlobalVariables(const std::string& groupName);
+  void RegisterToGlobalVariables(const std::string& emitterName, const std::string& groupName);
+
+  // エミッター情報取得（エディター用）
+  std::vector<std::string> GetEmitterNames() const;
+  bool HasEmitter(const std::string& name) const;
+
 private: // プライベートメンバー関数
 
   // 一時的なエミッターの更新
   void UpdateTemporaryEmitters(); // Update関数内で呼び出す
+
+  // JSON変換ヘルパー
+  void SerializeEmitterToJSON(const std::shared_ptr<GPUParticleEmitter>& emitter, nlohmann::json& json) const;
+  std::shared_ptr<GPUParticleEmitter> DeserializeEmitterFromJSON(const nlohmann::json& json);
 
 private:
   GPUParticle* particleSystem_;
