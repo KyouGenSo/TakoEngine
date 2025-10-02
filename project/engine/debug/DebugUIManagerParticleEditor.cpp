@@ -41,6 +41,7 @@ void DebugUIManager::DrawParticleEditor() {
             if (strlen(newEmitterNameBuffer_) > 0) {
               emitterManager_->CreateSphereEmitter(newEmitterNameBuffer_, position, radius, 50, 0.016f);
               AddLog("Created sphere emitter: " + std::string(newEmitterNameBuffer_), LogType::Info);
+              newEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
             }
           }
         } else if (emitterType == 1) {  // Box
@@ -53,6 +54,7 @@ void DebugUIManager::DrawParticleEditor() {
             if (strlen(newEmitterNameBuffer_) > 0) {
               emitterManager_->CreateBoxEmitter(newEmitterNameBuffer_, position, size, rotation, 50, 0.016f);
               AddLog("Created box emitter: " + std::string(newEmitterNameBuffer_), LogType::Info);
+              newEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
             }
           }
         } else {  // Triangle
@@ -67,6 +69,7 @@ void DebugUIManager::DrawParticleEditor() {
             if (strlen(newEmitterNameBuffer_) > 0) {
               emitterManager_->CreateTriangleEmitter(newEmitterNameBuffer_, position, v1, v2, v3, 50, 0.016f);
               AddLog("Created triangle emitter: " + std::string(newEmitterNameBuffer_), LogType::Info);
+              newEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
             }
           }
         }
@@ -252,6 +255,7 @@ void DebugUIManager::DrawParticleEditor() {
           if (ImGui::Button("Save as Preset##SavePreset") && strlen(presetNameBuffer_) > 0) {
             emitterManager_->SavePreset(presetNameBuffer_, emitterNames[selectedEmitterIndex_]);
             AddLog("Saved preset: " + std::string(presetNameBuffer_), LogType::Info);
+            presetNameBuffer_[0] = '\0';  // 入力ボックスをクリア
           }
         } else {
           ImGui::TextDisabled("Select an emitter first");
@@ -266,6 +270,8 @@ void DebugUIManager::DrawParticleEditor() {
         if (ImGui::Button("Load Preset##LoadPreset") && strlen(loadPresetBuffer_) > 0 && strlen(newEmitterNameBuffer_) > 0) {
           emitterManager_->LoadPreset(loadPresetBuffer_, newEmitterNameBuffer_);
           AddLog("Loaded preset: " + std::string(loadPresetBuffer_), LogType::Info);
+          loadPresetBuffer_[0] = '\0';  // 入力ボックスをクリア
+          newEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
         }
       }
 
@@ -277,11 +283,13 @@ void DebugUIManager::DrawParticleEditor() {
         if (ImGui::Button("Save All Emitters##ScenePreset")) {
           emitterManager_->SaveEmittersToJSON(scenePresetName);
           AddLog("Saved all emitters to: " + std::string(scenePresetName), LogType::Info);
+          scenePresetName[0] = '\0';  // 入力ボックスをクリア
         }
         ImGui::SameLine();
         if (ImGui::Button("Load All Emitters##ScenePreset")) {
           emitterManager_->LoadEmittersFromJSON(scenePresetName);
           AddLog("Loaded all emitters from: " + std::string(scenePresetName), LogType::Info);
+          scenePresetName[0] = '\0';  // 入力ボックスをクリア
         }
       }
 
@@ -311,6 +319,7 @@ void DebugUIManager::DrawGroupsTab() {
     if (ImGui::Button("Create##NewGroup") && strlen(newGroupNameBuffer_) > 0) {
       emitterManager_->CreateGroup(newGroupNameBuffer_);
       AddLog("Created group: " + std::string(newGroupNameBuffer_), LogType::Info);
+      newGroupNameBuffer_[0] = '\0';  // 入力ボックスをクリア
     }
   }
 
