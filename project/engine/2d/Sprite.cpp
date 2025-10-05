@@ -4,6 +4,10 @@
 #include"SpriteBasic.h"
 #include "TextureManager.h"
 #include "SrvManager.h"
+#include "imgui.h"
+#ifdef _DEBUG
+#include "ImGuiManager.h"
+#endif
 
 void Sprite::Initialize(const std::string& texturePath)
 {
@@ -173,4 +177,56 @@ void Sprite::FitTexCutSize()
 
 	// 画像サイズをテクスチャサイズに合わせる
 	size_ = texCutSize_;
+}
+
+void Sprite::DrawImGui()
+{
+#ifdef _DEBUG
+	// Transform設定
+	ImGui::Text("Transform Settings");
+	ImGui::DragFloat2("Position", &pos_.x, 1.0f);
+
+	// 回転角度（度数表示）
+	float rotationDegrees = rotation_ * 57.2958f; // ラジアンから度に変換
+	if (ImGui::DragFloat("Rotation (degrees)", &rotationDegrees, 1.0f, -360.0f, 360.0f)) {
+		rotation_ = rotationDegrees * 0.0174533f; // 度からラジアンに変換
+	}
+
+	ImGui::DragFloat2("Size", &size_.x, 1.0f, 0.0f, 2000.0f);
+
+	ImGui::Separator();
+
+	// 描画設定
+	ImGui::Text("Rendering Settings");
+	ImGui::DragFloat2("Anchor Point", &anchorPoint_.x, 0.01f, 0.0f, 1.0f);
+
+	// 色設定
+	if (materialData_) {
+		ImGui::ColorEdit4("Color", &materialData_->color.x);
+	}
+
+	// フリップ設定
+	ImGui::Checkbox("Flip X", &isFlipX_);
+	ImGui::SameLine();
+	ImGui::Checkbox("Flip Y", &isFlipY_);
+
+	ImGui::Separator();
+
+	// テクスチャ設定
+	ImGui::Text("Texture Settings");
+	ImGui::DragFloat2("Texture Top-Left", &texTopLeft_.x, 1.0f, 0.0f, 4096.0f);
+	ImGui::DragFloat2("Texture Cut Size", &texCutSize_.x, 1.0f, 0.0f, 4096.0f);
+
+	// テクスチャ情報の表示
+	ImGui::Separator();
+	ImGui::Text("Texture Info");
+	ImGui::Text("Path: %s", texturePath_.c_str());
+	ImGui::Text("Index: %u", textureIndex_);
+
+	// 現在のTransform情報の表示
+	ImGui::Separator();
+	ImGui::Text("Current Transform");
+	ImGui::Text("Translate: (%.2f, %.2f, %.2f)", transform_.translate.x, transform_.translate.y, transform_.translate.z);
+	ImGui::Text("Scale: (%.2f, %.2f, %.2f)", transform_.scale.x, transform_.scale.y, transform_.scale.z);
+#endif // _DEBUG
 }

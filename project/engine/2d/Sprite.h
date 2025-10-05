@@ -52,6 +52,11 @@ public: // メンバー関数
   /// </summary>
   void Draw();
 
+  ///<summary>
+  ///ImGuiでパラメータ調整
+  /// </summary>
+  void DrawImGui();
+
   //-----------------------------------Getters-----------------------------------//
   // Get Transform
   [[nodiscard]] Transform GetTransform() const { return transform_; }
