@@ -145,6 +145,11 @@ void DebugUIManager::DrawParticleEditor() {
               emitter->SetNormalize(isNormalize);
             }
 
+            bool isRandomRotateZ = emitter->IsRandomRotateZ();
+            if (ImGui::Checkbox("RandomRotateZ", &isRandomRotateZ)) {
+              emitter->SetRandomRotateZ(isRandomRotateZ);
+            }
+
             int count = emitter->GetParticleCount();
             if (ImGui::DragInt("Particle Count", &count, 1, 1, 1000)) {
               emitter->SetParticleCount(count);

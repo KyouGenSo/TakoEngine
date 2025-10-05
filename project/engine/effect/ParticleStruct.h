@@ -37,6 +37,7 @@ struct Particle
   Vector3 translate;    // 位置
   Vector3 scale;        // スケール
   Vector3 velocity;     // 速度
+  Vector3 rotate;       // 回転（オイラー角）
   Vector4 startColor;   // 開始色（アルファ値含む）
   Vector4 endColor;     // 終了色（アルファ値含む）
   float lifeTime;       // 寿命（秒）
@@ -49,6 +50,7 @@ struct ParticleCS
   Vector3 translate;    // 位置
   Vector3 scale;        // スケール
   Vector3 velocity;     // 速度
+  Vector3 rotate;       // 回転（オイラー角）
   Vector4 startColor;   // 開始色（アルファ値含む）
   Vector4 endColor;     // 終了色（アルファ値含む）
   float lifeTime;       // 寿命（秒）
@@ -95,6 +97,7 @@ struct EmitterData {
   bool isActive;            // アクティブ状態
   bool isEmitting;          // 現在射出中かどうか
   bool isNormalize;         // 正規化フラグ
+  bool isRandomRotateZ;     // Z軸のランダム回転フラグ
   uint32_t emitterID;       // エミッターID
 
   Vector3 position;         // 中心/基準位置
@@ -142,7 +145,8 @@ struct EmitterGPUData
   uint32_t type;           // エミッタータイプ
   uint32_t isActive;       // アクティブ状態
   uint32_t isEmit;         // 射出フラグ
-  bool isNormalize;         // 正規化フラグ
+  uint32_t isNormalize;         // 正規化フラグ
+  uint32_t isRandomRotateZ;     // Z軸のランダム回転フラグ
   uint32_t emitterID;      // エミッターID
 
   Vector3 position;        // 中心/基準位置

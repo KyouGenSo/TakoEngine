@@ -21,6 +21,19 @@ VertexShaderOutput main(VertexShaderInput input, uint instanceID : SV_InstanceID
     
     // ビルボード行列を取得
     float4x4 worldMat = gPerView.billboardMat;
+
+	// Z軸回転を適用----------------------------------------
+    if (particle.rotate.z != 0.0f)
+    {
+        float s, c;
+        sincos(particle.rotate.z, s, c);
+
+        float3 right = worldMat[0].xyz;
+        float3 up = worldMat[1].xyz;
+
+        worldMat[0].xyz = right * c - up * s;
+        worldMat[1].xyz = right * s + up * c;
+    }
     
     // パーティクルのスケールを適用
     worldMat[0] *= particle.scale.x;

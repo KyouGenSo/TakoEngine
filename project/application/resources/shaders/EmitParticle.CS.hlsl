@@ -213,6 +213,17 @@ void main(uint3 DTid : SV_DispatchThreadID)
             
             // 位置設定---------------------------------------------------------------------------------
             gParticles[particleID].translate = particlePosition;
+
+        	// 回転設定---------------------------------------------------------------------------------
+            if (gEmitters[emitterIndex].isRandomRotateZ > 0)
+            {
+                // ランダム回転フラグが立っている場合、ランダムな回転を設定
+                gParticles[particleID].rotate.z = generator.Generate1d() * 360.0f; // Z軸回転
+            }
+            else
+            {
+                gParticles[particleID].rotate.z = 0.0f; // Z軸回転なし
+            }
             
             
             // 速度設定---------------------------------------------------------------------------------

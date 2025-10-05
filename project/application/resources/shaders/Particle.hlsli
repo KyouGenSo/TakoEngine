@@ -16,6 +16,7 @@ struct Particle
 {
     float3 translate;
     float3 scale;
+    float3 rotate;
     float3 velocity;
     float4 startColor;
     float4 endColor;
@@ -31,6 +32,7 @@ struct Emitter
     uint isActive;            // アクティブ状態（1=有効、0=無効）
     uint isEmit;              // 射出フラグ（1=射出する、0=射出しない）
     uint isNormalize;         // 正規化フラグ
+    uint isRandomRotateZ; // Z軸ランダム回転フラグ（1=ランダム、0=固定回転）
     uint emitterID;           // エミッターID
     
     float3 position;          // 中心/基準位置

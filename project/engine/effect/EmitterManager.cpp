@@ -258,6 +258,14 @@ void EmitterManager::SetEmitterNormalize(const std::string& name, bool isNormali
   }
 }
 
+void EmitterManager::SetEmitterRandomRotateZ(const std::string& name, bool isRandomRotateZ)
+{
+  auto it = emitterMap_.find(name);
+  if (it != emitterMap_.end()) {
+    it->second->SetRandomRotateZ(isRandomRotateZ);
+  }
+}
+
 void EmitterManager::SetEmitterColor(const std::string& name, const Vector4& color)
 {
   auto it = emitterMap_.find(name);
@@ -813,6 +821,7 @@ void EmitterManager::SerializeEmitterToJSON(const std::shared_ptr<GPUParticleEmi
   json["isActive"] = emitter->IsActive();
   json["isEmitting"] = emitter->IsEmitting();
   json["isNormalize"] = emitter->IsNormalize();
+  json["isRandomRotateZ"] = emitter->IsRandomRotateZ();
   json["isTemporary"] = emitter->IsTemporary();
 
   // 型固有のパラメータ
@@ -873,6 +882,7 @@ std::shared_ptr<GPUParticleEmitter> EmitterManager::DeserializeEmitterFromJSON(c
   emitter->SetActive(json["isActive"]);
   emitter->SetEmitting(json["isEmitting"]);
   emitter->SetNormalize(json["isNormalize"]);
+  emitter->SetRandomRotateZ(json["isRandomRotateZ"]);
 
   if (json.contains("frequencyTime")) {
     emitter->SetFrequencyTime(json["frequencyTime"]);

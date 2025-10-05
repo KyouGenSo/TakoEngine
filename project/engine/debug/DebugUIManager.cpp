@@ -223,6 +223,8 @@ void DebugUIManager::DrawSceneHierarchy() {
       logMsg += sceneNameBuffer_;
       AddLog(logMsg, LogType::Info);
 
+      emitterManager_->RemoveAllEmitters();
+
       // シーン遷移を実行
       SceneManager::GetInstance()->ChangeScene(sceneNameBuffer_);
 
