@@ -85,6 +85,20 @@ void DebugUIManager::Update() {
   if (Input::GetInstance()->TriggerKey(DIK_F6)) {
     windowVisibility_["Performance"] = !windowVisibility_["Performance"];
   }
+  if (Input::GetInstance()->TriggerKey(DIK_F12)) {
+    windowVisibility_["SceneHierarchy"] = !windowVisibility_["SceneHierarchy"];
+    windowVisibility_["Inspector"] = !windowVisibility_["Inspector"];
+    windowVisibility_["GameViewport"] = !windowVisibility_["GameViewport"];
+    windowVisibility_["Console"] = !windowVisibility_["Console"];
+    windowVisibility_["Performance"] = !windowVisibility_["Performance"];
+  }
+  if (Input::GetInstance()->TriggerKey(DIK_F10)) {
+    windowVisibility_["SceneHierarchy"] = true;
+    windowVisibility_["Inspector"] = true;
+    windowVisibility_["GameViewport"] = true;
+    windowVisibility_["Console"] = true;
+    windowVisibility_["Performance"] = true;
+  }
 }
 
 void DebugUIManager::Draw() {
