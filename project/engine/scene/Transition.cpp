@@ -4,6 +4,7 @@
 #include <algorithm>
 #include "Sprite.h"
 #include "SpriteBasic.h"
+#include "TextureManager.h"
 
 Transition* Transition::instance_ = nullptr;
 
@@ -30,9 +31,10 @@ void Transition::Initialize()
 
 	alpha_ = 0.0f;
 
+  TextureManager::GetInstance()->LoadTexture("white.png");
   // spriteの初期化
   blackBoxsp_ = std::make_unique<Sprite>();
-  blackBoxsp_->Initialize("black.png");
+  blackBoxsp_->Initialize("white.png");
   blackBoxsp_->SetSize(Vector2(static_cast<float>(WinApp::clientWidth), static_cast<float>(WinApp::clientHeight)));
   blackBoxsp_->SetPos(Vector2(0.0f, 0.0f));
 }
@@ -57,12 +59,9 @@ void Transition::Update()
 		case FADE_OUT:
 			transitionTime_ += transitionSpeed_;
 
-			if (transitionTime_ >= duration_)
-			{
-				transitionTime_ = duration_;
-			}
+      transitionTime_ = std::min<float>(transitionTime_, duration_);
 
-			alpha_ = std::clamp(transitionTime_ / duration_, 0.0f, 1.0f);
+      alpha_ = std::clamp(transitionTime_ / duration_, 0.0f, 1.0f);
 			break;
 
 		case FADE_IN:
@@ -79,9 +78,9 @@ void Transition::Update()
 		}
 	}
 
-  blackBoxsp_->Update();
   blackBoxsp_->SetAlpha(alpha_);
   blackBoxsp_->SetSize(Vector2(static_cast<float>(WinApp::clientWidth), static_cast<float>(WinApp::clientHeight)));
+  blackBoxsp_->Update();
 }
 
 void Transition::Start(TransitionState state, TransitionType type, float duration)

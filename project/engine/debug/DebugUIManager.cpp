@@ -349,8 +349,8 @@ void DebugUIManager::DrawInspector() {
     ImGui::Text("Textures: ~%u", srvAllocated);
   }
 
-  // Rendering Settings
-  if (ImGui::CollapsingHeader("Rendering Settings")) {
+  // Default Camera Settings
+  if (ImGui::CollapsingHeader("Default Camera Settings")) {
     Camera** cameraPtr = Object3dBasic::GetInstance()->GetCamera();
     if (cameraPtr && *cameraPtr) {
       Camera* camera = *cameraPtr;

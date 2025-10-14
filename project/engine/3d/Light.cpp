@@ -168,7 +168,7 @@ void Light::CreateSpotLightData()
 	spotLightData_[0].distance = 10.0f;                        // 距離
 	spotLightData_[0].decay = 1.0f;                           // 減衰
 	spotLightData_[0].cosAngle = std::cos(std::numbers::pi_v<float> / 3.0f); // 角度
-	spotLightData_[0].enable = true;                         // スポットライトの有効無効
+	spotLightData_[0].enable = false;                         // スポットライトの有効無効
 
 	// SRVの生成
 	spotLightSrvIndex_ = SrvManager::GetInstance()->Allocate();
