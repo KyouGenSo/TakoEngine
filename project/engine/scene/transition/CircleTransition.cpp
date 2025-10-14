@@ -138,7 +138,7 @@ void CircleTransition::Update()
 	}
 
 	// スプライトの更新
-	circleSprite_->SetScale(Vector2(currentRadius_, currentRadius_));
+	circleSprite_->SetSize(Vector2(currentRadius_, currentRadius_));
 	circleSprite_->SetPos(center_);
 
 	// expandOutの場合、円が小さいときは背景を表示、大きいときは円を不透明に

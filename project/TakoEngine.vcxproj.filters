@@ -258,10 +258,10 @@
     <ClCompile Include="engine\scene\TransitionManager.cpp">
       <Filter>scene</Filter>
     </ClCompile>
-    <ClCompile Include="engine\scene\CircleTransition.cpp">
+    <ClCompile Include="engine\scene\transition\CircleTransition.cpp">
       <Filter>scene</Filter>
     </ClCompile>
-    <ClCompile Include="engine\scene\FadeTransition.cpp">
+    <ClCompile Include="engine\scene\transition\FadeTransition.cpp">
       <Filter>scene</Filter>
     </ClCompile>
   </ItemGroup>
@@ -512,16 +512,16 @@
     <ClInclude Include="engine\debug\DebugUIManager.h">
       <Filter>debug</Filter>
     </ClInclude>
-    <ClInclude Include="engine\scene\transition\ITransitionEffect.h">
-      <Filter>scene</Filter>
-    </ClInclude>
     <ClInclude Include="engine\scene\TransitionManager.h">
       <Filter>scene</Filter>
     </ClInclude>
-    <ClInclude Include="engine\scene\CircleTransition.h">
+    <ClInclude Include="engine\scene\transition\CircleTransition.h">
       <Filter>scene</Filter>
     </ClInclude>
-    <ClInclude Include="engine\scene\FadeTransition.h">
+    <ClInclude Include="engine\scene\transition\FadeTransition.h">
+      <Filter>scene</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\scene\transition\ITransitionEffect.h">
       <Filter>scene</Filter>
     </ClInclude>
   </ItemGroup>
