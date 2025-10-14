@@ -3,6 +3,8 @@
 
 class Sprite;
 
+// 後方互換性のためのラッパークラス
+// 新しいコードではTransitionManagerを直接使用することを推奨
 class Transition
 {
 private: // シングルトン設定

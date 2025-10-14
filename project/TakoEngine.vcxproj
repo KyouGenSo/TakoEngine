@@ -164,6 +164,9 @@
     <ClCompile Include="engine\func\commonFunc\Logger.cpp" />
     <ClCompile Include="engine\3d\Light.cpp" />
     <ClCompile Include="engine\io\SceneLoader.cpp" />
+    <ClCompile Include="engine\scene\CircleTransition.cpp" />
+    <ClCompile Include="engine\scene\FadeTransition.cpp" />
+    <ClCompile Include="engine\scene\TransitionManager.cpp" />
     <ClCompile Include="engine\time\FrameTimer.cpp" />
     <ClCompile Include="engine\func\mathFunc\Mat4x4Func.cpp" />
     <ClCompile Include="engine\3d\Model.cpp" />
@@ -256,6 +259,8 @@
     <ClInclude Include="engine\base\WinApp.h" />
     <ClInclude Include="engine\base\DX12\SrvManager.h" />
     <ClInclude Include="engine\base\TakoFramework.h" />
+    <ClInclude Include="engine\scene\CircleTransition.h" />
+    <ClInclude Include="engine\scene\FadeTransition.h" />
     <ClInclude Include="engine\scene\SceneManager.h" />
     <ClInclude Include="engine\math\Matrix3x3.h" />
     <ClInclude Include="engine\scene\Transition.h" />
@@ -263,6 +268,8 @@
     <ClInclude Include="engine\3d\ModelStruct.h" />
     <ClInclude Include="engine\func\mathFunc\QuatFunc.h" />
     <ClInclude Include="engine\3d\Transform.h" />
+    <ClInclude Include="engine\scene\TransitionManager.h" />
+    <ClInclude Include="engine\scene\transition\ITransitionEffect.h" />
     <ClInclude Include="engine\time\FrameTimer.h" />
     <ClInclude Include="engine\base\IWndProcHandler.h" />
     <ClInclude Include="engine\effect\ParticleStruct.h" />

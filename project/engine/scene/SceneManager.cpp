@@ -1,5 +1,9 @@
 #include "SceneManager.h"
 #include "Transition.h"
+#include "TransitionManager.h"
+#include "transition/ITransitionEffect.h"
+#include "transition/FadeTransition.h"
+#include "transition/CircleTransition.h"
 #include <cassert>
 
 SceneManager* SceneManager::instance_ = nullptr;
@@ -19,7 +23,8 @@ void SceneManager::Update()
 	if (nextScene_)
 	{
 		// シーン遷移アニメーションが終了している場合
-		if (Transition::GetInstance()->IsFinished())
+		// TransitionManagerを使用（Transitionは内部でTransitionManagerを使用）
+		if (TransitionManager::GetInstance()->IsFinished())
 		{
 			// 現在のシーンがある場合
 			if (scene_)
@@ -35,8 +40,9 @@ void SceneManager::Update()
 			// シーンの初期化
 			scene_->Initialize();
 
-			// シーン遷移アニメーションの開始
-			Transition::GetInstance()->Start(Transition::FADE_IN, Transition::FADE, transitionTime_);
+			// シーン遷移アニメーションの開始（フェードイン）
+			TransitionManager::GetInstance()->Start(
+				ITransitionEffect::FADE_IN, transitionTime_);
 
 			// 次のシーンの予約を解除
 			nextScene_ = nullptr;
@@ -49,7 +55,8 @@ void SceneManager::Update()
 		scene_->Update();
 	}
 
-	Transition::GetInstance()->Update();
+	// TransitionManagerの更新
+	TransitionManager::GetInstance()->Update();
 }
 
 void SceneManager::Draw()
@@ -101,10 +108,11 @@ void SceneManager::ChangeScene(const std::string& sceneName)
 
 	// 次のシーンを生成
 	if (nextScene_ == nullptr) {
-		Transition::GetInstance()->Start(Transition::FADE_OUT, Transition::FADE, transitionTime_);
+		// TransitionManagerを使用（デフォルトはFade）
+		TransitionManager::GetInstance()->Start(
+			ITransitionEffect::FADE_OUT, transitionTime_);
 		nextScene_ = m_sceneFactory_->CreateScene(sceneName);
 	}
-
 }
 
 void SceneManager::ChangeScene(const std::string& sceneName, float transitionTime)
@@ -114,7 +122,62 @@ void SceneManager::ChangeScene(const std::string& sceneName, float transitionTim
 	// 次のシーンを生成
 	if (nextScene_ == nullptr)
 	{
-		Transition::GetInstance()->Start(Transition::FADE_OUT, Transition::FADE, transitionTime);
+		// TransitionManagerを使用（デフォルトはFade）
+		TransitionManager::GetInstance()->Start(
+			ITransitionEffect::FADE_OUT, transitionTime);
 		nextScene_ = m_sceneFactory_->CreateScene(sceneName);
+		transitionTime_ = transitionTime;
+	}
+}
+
+void SceneManager::ChangeScene(const std::string& sceneName,
+                              TransitionManager::EffectType effectType,
+                              float transitionTime)
+{
+	assert(m_sceneFactory_);
+
+	// 次のシーンを生成
+	if (nextScene_ == nullptr)
+	{
+		// TransitionManagerを使用して指定されたエフェクトで開始
+		TransitionManager::GetInstance()->Start(
+			ITransitionEffect::FADE_OUT, effectType, transitionTime);
+		nextScene_ = m_sceneFactory_->CreateScene(sceneName);
+		transitionTime_ = transitionTime;
+	}
+}
+
+void SceneManager::ChangeScene(const std::string& sceneName,
+                              const std::string& effectName,
+                              float transitionTime)
+{
+	assert(m_sceneFactory_);
+
+	// 次のシーンを生成
+	if (nextScene_ == nullptr)
+	{
+		// TransitionManagerを使用して名前指定されたエフェクトで開始
+		TransitionManager::GetInstance()->Start(
+			ITransitionEffect::FADE_OUT, effectName, transitionTime);
+		nextScene_ = m_sceneFactory_->CreateScene(sceneName);
+		transitionTime_ = transitionTime;
+	}
+}
+
+void SceneManager::ChangeScene(const std::string& sceneName,
+                              std::unique_ptr<ITransitionEffect> effect,
+                              float transitionTime)
+{
+	assert(m_sceneFactory_);
+
+	// 次のシーンを生成
+	if (nextScene_ == nullptr)
+	{
+		// TransitionManagerに新しいエフェクトを設定してから開始
+		TransitionManager::GetInstance()->SetCurrentEffect(std::move(effect));
+		TransitionManager::GetInstance()->Start(
+			ITransitionEffect::FADE_OUT, transitionTime);
+		nextScene_ = m_sceneFactory_->CreateScene(sceneName);
+		transitionTime_ = transitionTime;
 	}
 }

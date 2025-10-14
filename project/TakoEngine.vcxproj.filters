@@ -255,6 +255,15 @@
     <ClCompile Include="engine\debug\DebugUIManagerParticleEditor.cpp">
       <Filter>debug</Filter>
     </ClCompile>
+    <ClCompile Include="engine\scene\TransitionManager.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\scene\CircleTransition.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\scene\FadeTransition.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\math\Matrix4x4.h">
@@ -502,6 +511,18 @@
     </ClInclude>
     <ClInclude Include="engine\debug\DebugUIManager.h">
       <Filter>debug</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\scene\transition\ITransitionEffect.h">
+      <Filter>scene</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\scene\TransitionManager.h">
+      <Filter>scene</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\scene\CircleTransition.h">
+      <Filter>scene</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\scene\FadeTransition.h">
+      <Filter>scene</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
