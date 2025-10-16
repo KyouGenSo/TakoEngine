@@ -31,6 +31,9 @@ void NoEffect::Apply(uint32_t inputSrvIndex,
   m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
   m_dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
 
+  // プリミティブトポロジーの設定（フルスクリーン三角形用）
+  m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+
   // レンダーテクスチャAをシェーダーリソースとして設定
   SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, inputSrvIndex);
 
@@ -43,6 +46,9 @@ void NoEffect::ApplyToBackBuffer(uint32_t inputSrvIndex)
   // エフェクト適用シェーダーの設定
   m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
   m_dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
+
+  // プリミティブトポロジーの設定（フルスクリーン三角形用）
+  m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
   // レンダーテクスチャAをシェーダーリソースとして設定
   SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, inputSrvIndex);

@@ -54,6 +54,9 @@ void Bloom::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvH
   m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_["ThresholdExtract"].Get());
   m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_["ThresholdExtract"].Get());
 
+  // プリミティブトポロジーの設定（フルスクリーン三角形用）
+  m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+
   // パラメータリソースの設定
   m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, extractCBufferRes_->GetGPUVirtualAddress());
 
@@ -79,6 +82,9 @@ void Bloom::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvH
   m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_["GaussianBlur"].Get());
   m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_["GaussianBlur"].Get());
 
+  // プリミティブトポロジーの設定（フルスクリーン三角形用）
+  m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+
   // BloomParamをセット
   m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, blurCBufferRes1_->GetGPUVirtualAddress());
 
@@ -98,6 +104,9 @@ void Bloom::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvH
     &resultRT_.rtvHandle,
     false,
     &dsvHandle);
+
+  // プリミティブトポロジーの設定（フルスクリーン三角形用）
+  m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
   // BloomParamをセット
   m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, blurCBufferRes2_->GetGPUVirtualAddress());
@@ -122,6 +131,9 @@ void Bloom::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvH
   // エフェクト適用シェーダーの設定
   m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_["BloomCombine"].Get());
   m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_["BloomCombine"].Get());
+
+  // プリミティブトポロジーの設定（フルスクリーン三角形用）
+  m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
   // BloomParamをセット
   m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, combineCBufferRes_->GetGPUVirtualAddress());

@@ -30,6 +30,9 @@ void RGBSplit::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputR
   m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
   m_dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
 
+  // プリミティブトポロジーの設定（フルスクリーン三角形用）
+  m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+
   // パラメータリソースの設定
   m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, cBufferResource_->GetGPUVirtualAddress());
 
