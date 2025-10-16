@@ -183,7 +183,6 @@
     <ClCompile Include="engine\base\DX12\SrvManager.cpp" />
     <ClCompile Include="engine\base\TakoFramework.cpp" />
     <ClCompile Include="engine\scene\SceneManager.cpp" />
-    <ClCompile Include="engine\scene\Transition.cpp" />
     <ClCompile Include="engine\func\mathFunc\QuatFunc.cpp" />
     <ClCompile Include="engine\effect\TriangleEmitter.cpp" />
     <ClCompile Include="engine\3d\Mesh.cpp" />
@@ -261,7 +260,6 @@
     <ClInclude Include="engine\base\TakoFramework.h" />
     <ClInclude Include="engine\scene\SceneManager.h" />
     <ClInclude Include="engine\math\Matrix3x3.h" />
-    <ClInclude Include="engine\scene\Transition.h" />
     <ClInclude Include="engine\3d\Light.h" />
     <ClInclude Include="engine\3d\ModelStruct.h" />
     <ClInclude Include="engine\func\mathFunc\QuatFunc.h" />

@@ -9,7 +9,7 @@
 #include "Draw2D.h"
 #include "PostEffectManager.h"
 #include "DebugCamera.h"
-#include "Transition.h"
+#include "TransitionManager.h"
 #include "FrameTimer.h"
 #include "ShadowRenderer.h"
 #include "Input.h"
@@ -90,7 +90,7 @@ void TakoFramework::Initialize()
 
   PostEffectManager::GetInstance()->SetCamera(defaultCamera_);
 
-  Transition::GetInstance()->Initialize();
+  TransitionManager::GetInstance()->Initialize();
 
 #pragma endregion
 
@@ -108,8 +108,8 @@ void TakoFramework::Finalize()
   SceneManager::GetInstance()->Finalize();
 
   // Initializeの逆順で終了処理を実行
-  // Transition
-  Transition::GetInstance()->Finalize();
+  // TransitionManager
+  TransitionManager::GetInstance()->Finalize();
 
   // PostEffectManager
   PostEffectManager::GetInstance()->Finalize();

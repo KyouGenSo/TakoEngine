@@ -58,6 +58,9 @@
     <Filter Include="debug">
       <UniqueIdentifier>{caa58604-08e6-4299-a628-a5eb7e285681}</UniqueIdentifier>
     </Filter>
+    <Filter Include="scene\transition">
+      <UniqueIdentifier>{3af8577c-5872-4f00-8eb0-c08d47e87d92}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\func\mathFunc\Mat4x4Func.cpp">
@@ -131,9 +134,6 @@
     </ClCompile>
     <ClCompile Include="engine\2d\DebugCamera.cpp">
       <Filter>3d</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\scene\Transition.cpp">
-      <Filter>scene</Filter>
     </ClCompile>
     <ClCompile Include="engine\3d\Light.cpp">
       <Filter>3d</Filter>
@@ -255,14 +255,14 @@
     <ClCompile Include="engine\debug\DebugUIManagerParticleEditor.cpp">
       <Filter>debug</Filter>
     </ClCompile>
-    <ClCompile Include="engine\scene\TransitionManager.cpp">
-      <Filter>scene</Filter>
-    </ClCompile>
     <ClCompile Include="engine\scene\transition\CircleTransition.cpp">
-      <Filter>scene</Filter>
+      <Filter>scene\transition</Filter>
     </ClCompile>
     <ClCompile Include="engine\scene\transition\FadeTransition.cpp">
-      <Filter>scene</Filter>
+      <Filter>scene\transition</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\scene\TransitionManager.cpp">
+      <Filter>scene\transition</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -384,9 +384,6 @@
       <Filter>scene</Filter>
     </ClInclude>
     <ClInclude Include="engine\scene\SceneManager.h">
-      <Filter>scene</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\scene\Transition.h">
       <Filter>scene</Filter>
     </ClInclude>
     <ClInclude Include="engine\time\FrameTimer.h">
@@ -512,17 +509,17 @@
     <ClInclude Include="engine\debug\DebugUIManager.h">
       <Filter>debug</Filter>
     </ClInclude>
-    <ClInclude Include="engine\scene\TransitionManager.h">
-      <Filter>scene</Filter>
-    </ClInclude>
     <ClInclude Include="engine\scene\transition\CircleTransition.h">
-      <Filter>scene</Filter>
+      <Filter>scene\transition</Filter>
     </ClInclude>
     <ClInclude Include="engine\scene\transition\FadeTransition.h">
-      <Filter>scene</Filter>
+      <Filter>scene\transition</Filter>
     </ClInclude>
     <ClInclude Include="engine\scene\transition\ITransitionEffect.h">
-      <Filter>scene</Filter>
+      <Filter>scene\transition</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\scene\TransitionManager.h">
+      <Filter>scene\transition</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

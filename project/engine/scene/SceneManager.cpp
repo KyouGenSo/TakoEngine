@@ -1,5 +1,4 @@
 #include "SceneManager.h"
-#include "Transition.h"
 #include "TransitionManager.h"
 #include "transition/ITransitionEffect.h"
 #include "transition/FadeTransition.h"
