@@ -9,13 +9,13 @@
 CircleTransition::CircleTransition()
 	: center_(static_cast<float>(WinApp::clientWidth) * 0.5f, static_cast<float>(WinApp::clientHeight) * 0.5f)
 	, expandOut_(true)
-	//, backgroundColor_(0.0f, 0.0f, 0.0f, 1.0f)  // デフォルトは黒背景
+  , color_(1.0f, 1.0f, 1.0f, 1.0f)
 	, state_(NONE)
 	, duration_(0.0f)
 	, transitionTime_(0.0f)
 	, transitionSpeed_(1.0f / 60.0f)
 	, currentRadius_(1.0f)
-	, alpha_(0.0f)
+	, alpha_(1.0f)
 	, isInitialized_(false)
 {
 }
@@ -23,13 +23,13 @@ CircleTransition::CircleTransition()
 CircleTransition::CircleTransition(const Vector2& center, bool expandOut)
 	: center_(center)
 	, expandOut_(expandOut)
-	//, backgroundColor_(0.0f, 0.0f, 0.0f, 1.0f)
+	, color_(1.0f, 1.0f, 1.0f, 1.0f)
 	, state_(NONE)
 	, duration_(0.0f)
 	, transitionTime_(0.0f)
 	, transitionSpeed_(1.0f / 60.0f)
 	, currentRadius_(1.0f)
-	, alpha_(0.0f)
+	, alpha_(1.0f)
 	, isInitialized_(false)
 {
 }
@@ -37,45 +37,34 @@ CircleTransition::CircleTransition(const Vector2& center, bool expandOut)
 CircleTransition::CircleTransition(const Vector2& center, const Vector4& color, bool expandOut)
 	: center_(center)
 	, expandOut_(expandOut)
-	, backgroundColor_(color)
+	, color_(color)
 	, state_(NONE)
 	, duration_(0.0f)
 	, transitionTime_(0.0f)
 	, transitionSpeed_(1.0f / 60.0f)
 	, currentRadius_(1.0f)
-	, alpha_(0.0f)
+	, alpha_(1.0f)
 	, isInitialized_(false)
 {
 }
 
 void CircleTransition::Initialize()
 {
-	// 円形マスク用のテクスチャを読み込み（circle.pngが必要）
-	TextureManager::GetInstance()->LoadTexture("ground.png");
-
-	// 背景用のテクスチャ
+	// テクスチャ読み込み
 	TextureManager::GetInstance()->LoadTexture("white.png");
 
-	// 円形スプライトの初期化
+	// スプライトの初期化
 	circleSprite_ = std::make_unique<Sprite>();
 	circleSprite_->Initialize("white.png");
 
-	// 円のサイズを画面サイズに基づいて設定（最大時に画面全体を覆うサイズ）
+	// サイズを画面サイズに基づいて設定（最大時に画面全体を覆うサイズ）
 	float maxDimension = std::max<float>(static_cast<float>(WinApp::clientWidth),
 	                              static_cast<float>(WinApp::clientHeight));
 	circleSprite_->SetSize(Vector2(maxDimension, maxDimension));
 	circleSprite_->SetAnchorPoint(Vector2(0.5f, 0.5f));  // 中心を基準点に
 	circleSprite_->SetPos(center_);
-  circleSprite_->SetColor(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
-  circleSprite_->SetAlpha(1.0f);
-
-	// 背景スプライトの初期化
-	//backgroundSprite_ = std::make_unique<Sprite>();
-	//backgroundSprite_->Initialize("white.png");
-	//backgroundSprite_->SetSize(Vector2(static_cast<float>(WinApp::clientWidth),
-	//                                   static_cast<float>(WinApp::clientHeight)));
-	//backgroundSprite_->SetPos(Vector2(0.0f, 0.0f));
-	//backgroundSprite_->SetColor(backgroundColor_);
+  circleSprite_->SetColor(color_);
+  circleSprite_->SetAlpha(alpha_);
 
 	isInitialized_ = true;
 }
@@ -148,23 +137,7 @@ void CircleTransition::Update()
 	circleSprite_->SetSize(Vector2(actualSize, actualSize));
 	circleSprite_->SetPos(center_);
 
-	// expandOutの場合、円が小さいときは背景を表示、大きいときは円を不透明に
-	// !expandOutの場合、円が大きいときは背景を隠し、小さいときは背景を表示
-	if (expandOut_)
-	{
-		//backgroundSprite_->SetAlpha(0.0f);  // expandOutでは背景は使わない
-	}
-	else
-	{
-		//backgroundSprite_->SetAlpha(alpha_);
-	}
-
-	// 背景スプライトのサイズをウィンドウサイズに追従
-	//backgroundSprite_->SetSize(Vector2(static_cast<float>(WinApp::clientWidth),
-	                                   //static_cast<float>(WinApp::clientHeight)));
-
 	circleSprite_->Update();
-	//backgroundSprite_->Update();
 }
 
 void CircleTransition::Draw()
@@ -175,13 +148,6 @@ void CircleTransition::Draw()
 	}
 
 	SpriteBasic::GetInstance()->SetCommonRenderSetting();
-
-	// 演出タイプによって描画順を変える
-	if (!expandOut_)
-	{
-		// 縮小タイプの場合、先に背景を描画
-		//backgroundSprite_->Draw();
-	}
 
 	// 円を描画
 	circleSprite_->Draw();
@@ -261,16 +227,7 @@ void CircleTransition::SetCenter(const Vector2& center)
 	}
 }
 
-void CircleTransition::SetBackgroundColor(const Vector4& color)
+void CircleTransition::SetColor(const Vector4& color)
 {
-  color;
-	//backgroundColor_ = color;
-	//if (backgroundSprite_)
-	//{
-	//	backgroundSprite_->SetColor(backgroundColor_);
-	//}
-	//if (circleSprite_ && expandOut_)
-	//{
-	//	circleSprite_->SetColor(backgroundColor_);
-	//}
+	color_ = color;
 }

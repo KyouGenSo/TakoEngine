@@ -84,7 +84,7 @@ public:
 	/// 背景色の設定
 	/// </summary>
 	/// <param name="color">新しい背景色</param>
-	void SetBackgroundColor(const Vector4& color);
+	void SetColor(const Vector4& color);
 
 private:
 	// 状態
@@ -98,7 +98,7 @@ private:
 	// パラメータ
 	Vector2 center_;      // 円の中心位置
 	bool expandOut_;      // 拡大方向（true: 内→外, false: 外→内）
-	Vector4 backgroundColor_; // 背景色
+	Vector4 color_; // 背景色
 
 	// 現在の値
 	float currentRadius_;  // 現在の半径（スケール値として使用）
@@ -106,7 +106,6 @@ private:
 
 	// スプライト
 	std::unique_ptr<Sprite> circleSprite_;    // 円形マスク用スプライト
-	//std::unique_ptr<Sprite> backgroundSprite_; // 背景用スプライト
 
 	// 初期化フラグ
 	bool isInitialized_;
