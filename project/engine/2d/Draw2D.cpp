@@ -303,60 +303,72 @@ void Draw2D::Draw()
 	/// ================================== ///
 	///              線の描画               ///
 	/// ================================== ///
-	// ルートシグネチャの設定
-	m_dx12_->GetCommandList()->SetGraphicsRootSignature(lineRootSignature_.Get());
+	// 描画する線がある場合のみ処理
+	if (lineIndex_ > 0)
+	{
+		// ルートシグネチャの設定
+		m_dx12_->GetCommandList()->SetGraphicsRootSignature(lineRootSignature_.Get());
 
-	// パイプラインステートの設定
-	m_dx12_->GetCommandList()->SetPipelineState(linePipelineState_.Get());
+		// パイプラインステートの設定
+		m_dx12_->GetCommandList()->SetPipelineState(linePipelineState_.Get());
 
-	// トポロジの設定
-	m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
+		// トポロジの設定
+		m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
 
-	// 頂点バッファビューの設定
-	m_dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &lineData_->vertexBufferView);
+		// 頂点バッファビューの設定
+		m_dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &lineData_->vertexBufferView);
 
-	// 座標変換行列の設定
-	m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, transformationMatrixBuffer_->GetGPUVirtualAddress());
+		// 座標変換行列の設定
+		m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, transformationMatrixBuffer_->GetGPUVirtualAddress());
 
-	// 描画
-	m_dx12_->GetCommandList()->DrawInstanced(lineIndex_, lineIndex_ / kVertexCountLine, 0, 0);
+		// 描画
+		m_dx12_->GetCommandList()->DrawInstanced(lineIndex_, lineIndex_ / kVertexCountLine, 0, 0);
+	}
 
 
 	/// ================================== ///
 	///              三角形の描画            ///
 	/// ================================== ///
-	// ルートシグネチャの設定
-	m_dx12_->GetCommandList()->SetGraphicsRootSignature(triangleRootSignature_.Get());
+	// 描画する三角形がある場合のみ処理
+	if (triangleIndex_ > 0)
+	{
+		// ルートシグネチャの設定
+		m_dx12_->GetCommandList()->SetGraphicsRootSignature(triangleRootSignature_.Get());
 
-	// パイプラインステートの設定
-	m_dx12_->GetCommandList()->SetPipelineState(trianglePipelineState_.Get());
+		// パイプラインステートの設定
+		m_dx12_->GetCommandList()->SetPipelineState(trianglePipelineState_.Get());
 
-	// トポロジの設定
-	m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		// トポロジの設定
+		m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	// 頂点バッファビューの設定
-	m_dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &triangleData_->vertexBufferView);
+		// 頂点バッファビューの設定
+		m_dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &triangleData_->vertexBufferView);
 
-	// 座標変換行列の設定
-	m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, transformationMatrixBuffer_->GetGPUVirtualAddress());
+		// 座標変換行列の設定
+		m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, transformationMatrixBuffer_->GetGPUVirtualAddress());
 
-	// 描画
-	m_dx12_->GetCommandList()->DrawInstanced(triangleIndex_, triangleIndex_ / kVertexCountTrriangle, 0, 0);
+		// 描画
+		m_dx12_->GetCommandList()->DrawInstanced(triangleIndex_, triangleIndex_ / kVertexCountTrriangle, 0, 0);
+	}
 
 	/// ================================== ///
 	///              BOXの描画              ///
 	/// ================================== ///
-	// 頂点バッファビューの設定
-	m_dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &boxData_->vertexBufferView);
+	// 描画するBOXがある場合のみ処理
+	if (boxVertexIndex_ > 0)
+	{
+		// 頂点バッファビューの設定
+		m_dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &boxData_->vertexBufferView);
 
-	// インデックスバッファビューの設定
-	m_dx12_->GetCommandList()->IASetIndexBuffer(&boxData_->indexBufferView);
+		// インデックスバッファビューの設定
+		m_dx12_->GetCommandList()->IASetIndexBuffer(&boxData_->indexBufferView);
 
-	// 座標変換行列の設定
-	m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, transformationMatrixBuffer_->GetGPUVirtualAddress());
+		// 座標変換行列の設定
+		m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, transformationMatrixBuffer_->GetGPUVirtualAddress());
 
-	// 描画
-	m_dx12_->GetCommandList()->DrawIndexedInstanced(kIndexCountBox, boxVertexIndex_ / kVertexCountBox, 0, 0, 0);
+		// 描画
+		m_dx12_->GetCommandList()->DrawIndexedInstanced(kIndexCountBox, boxVertexIndex_ / kVertexCountBox, 0, 0, 0);
+	}
 }
 
 void Draw2D::Reset()
