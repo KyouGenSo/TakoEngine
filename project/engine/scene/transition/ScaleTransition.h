@@ -11,20 +11,20 @@ class Sprite;
 /// 円形トランジション
 /// 円形のマスクが拡大/縮小しながら画面を覆う演出
 /// </summary>
-class CircleTransition : public ITransitionEffect
+class ScaleTransition : public ITransitionEffect
 {
 public:
 	/// <summary>
 	/// デフォルトコンストラクタ
 	/// </summary>
-	CircleTransition();
+	ScaleTransition();
 
 	/// <summary>
 	/// パラメータ指定コンストラクタ
 	/// </summary>
 	/// <param name="center">円の中心位置（スクリーン座標）</param>
 	/// <param name="expandOut">true: 内から外へ拡大, false: 外から内へ縮小</param>
-	CircleTransition(const Vector2& center, bool expandOut = true);
+	ScaleTransition(const Vector2& center, bool expandOut = true);
 
 	/// <summary>
 	/// 色指定付きコンストラクタ
@@ -32,12 +32,12 @@ public:
 	/// <param name="center">円の中心位置</param>
 	/// <param name="color">背景色</param>
 	/// <param name="expandOut">拡大方向</param>
-	CircleTransition(const Vector2& center, const Vector4& color, bool expandOut = true);
+	ScaleTransition(const Vector2& center, const Vector4& color, bool expandOut = true);
 
 	/// <summary>
 	/// デストラクタ
 	/// </summary>
-	~CircleTransition() override = default;
+	~ScaleTransition() override = default;
 
 	/// <summary>
 	/// 初期化

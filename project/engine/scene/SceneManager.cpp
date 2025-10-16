@@ -2,7 +2,7 @@
 #include "TransitionManager.h"
 #include "transition/ITransitionEffect.h"
 #include "transition/FadeTransition.h"
-#include "transition/CircleTransition.h"
+#include "transition/ScaleTransition.h"
 #include <cassert>
 
 SceneManager* SceneManager::instance_ = nullptr;

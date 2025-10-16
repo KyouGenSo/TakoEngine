@@ -165,7 +165,7 @@
     <ClCompile Include="engine\3d\Light.cpp" />
     <ClCompile Include="engine\io\SceneLoader.cpp" />
     <ClCompile Include="engine\scene\TransitionManager.cpp" />
-    <ClCompile Include="engine\scene\transition\CircleTransition.cpp" />
+    <ClCompile Include="engine\scene\transition\ScaleTransition.cpp" />
     <ClCompile Include="engine\scene\transition\FadeTransition.cpp" />
     <ClCompile Include="engine\time\FrameTimer.cpp" />
     <ClCompile Include="engine\func\mathFunc\Mat4x4Func.cpp" />
@@ -265,7 +265,7 @@
     <ClInclude Include="engine\func\mathFunc\QuatFunc.h" />
     <ClInclude Include="engine\3d\Transform.h" />
     <ClInclude Include="engine\scene\TransitionManager.h" />
-    <ClInclude Include="engine\scene\transition\CircleTransition.h" />
+    <ClInclude Include="engine\scene\transition\ScaleTransition.h" />
     <ClInclude Include="engine\scene\transition\FadeTransition.h" />
     <ClInclude Include="engine\scene\transition\ITransitionEffect.h" />
     <ClInclude Include="engine\time\FrameTimer.h" />

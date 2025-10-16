@@ -1,6 +1,6 @@
 #include "TransitionManager.h"
 #include "transition/FadeTransition.h"
-#include "transition/CircleTransition.h"
+#include "transition/ScaleTransition.h"
 #include <cassert>
 
 TransitionManager* TransitionManager::instance_ = nullptr;
@@ -28,8 +28,8 @@ void TransitionManager::Initialize()
 		return std::make_unique<FadeTransition>();
 	});
 
-	RegisterCustomEffect("Circle", []() {
-		return std::make_unique<CircleTransition>();
+	RegisterCustomEffect("Scale", []() {
+		return std::make_unique<ScaleTransition>();
 	});
 
 	// よく使うバリエーションも登録しておく
@@ -41,16 +41,16 @@ void TransitionManager::Initialize()
 		return std::make_unique<FadeTransition>(Vector4(1, 1, 1, 1));
 	});
 
-	RegisterCustomEffect("CircleCenter", []() {
-		return std::make_unique<CircleTransition>();
+	RegisterCustomEffect("ScaleCenter", []() {
+		return std::make_unique<ScaleTransition>();
 	});
 
-	RegisterCustomEffect("CircleExpand", []() {
-		return std::make_unique<CircleTransition>(Vector2(960, 540), true);
+	RegisterCustomEffect("ScaleExpand", []() {
+		return std::make_unique<ScaleTransition>(Vector2(960, 540), true);
 	});
 
-	RegisterCustomEffect("CircleShrink", []() {
-		return std::make_unique<CircleTransition>(Vector2(960, 540), false);
+	RegisterCustomEffect("ScaleShrink", []() {
+		return std::make_unique<ScaleTransition>(Vector2(960, 540), false);
 	});
 }
 
@@ -89,7 +89,7 @@ std::unique_ptr<ITransitionEffect> TransitionManager::CreateEffect(EffectType ty
 		return std::make_unique<FadeTransition>();
 
 	case EffectType::Circle:
-		return std::make_unique<CircleTransition>();
+		return std::make_unique<ScaleTransition>();
 
 	case EffectType::Custom:
 	default:

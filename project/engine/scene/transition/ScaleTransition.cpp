@@ -1,4 +1,4 @@
-#include "CircleTransition.h"
+#include "ScaleTransition.h"
 #include "Sprite.h"
 #include "SpriteBasic.h"
 #include "TextureManager.h"
@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <cmath>
 
-CircleTransition::CircleTransition()
+ScaleTransition::ScaleTransition()
 	: center_(static_cast<float>(WinApp::clientWidth) * 0.5f, static_cast<float>(WinApp::clientHeight) * 0.5f)
 	, expandOut_(true)
   , color_(1.0f, 1.0f, 1.0f, 1.0f)
@@ -20,7 +20,7 @@ CircleTransition::CircleTransition()
 {
 }
 
-CircleTransition::CircleTransition(const Vector2& center, bool expandOut)
+ScaleTransition::ScaleTransition(const Vector2& center, bool expandOut)
 	: center_(center)
 	, expandOut_(expandOut)
 	, color_(1.0f, 1.0f, 1.0f, 1.0f)
@@ -34,7 +34,7 @@ CircleTransition::CircleTransition(const Vector2& center, bool expandOut)
 {
 }
 
-CircleTransition::CircleTransition(const Vector2& center, const Vector4& color, bool expandOut)
+ScaleTransition::ScaleTransition(const Vector2& center, const Vector4& color, bool expandOut)
 	: center_(center)
 	, expandOut_(expandOut)
 	, color_(color)
@@ -48,7 +48,7 @@ CircleTransition::CircleTransition(const Vector2& center, const Vector4& color, 
 {
 }
 
-void CircleTransition::Initialize()
+void ScaleTransition::Initialize()
 {
 	// テクスチャ読み込み
 	TextureManager::GetInstance()->LoadTexture("white.png");
@@ -69,7 +69,7 @@ void CircleTransition::Initialize()
 	isInitialized_ = true;
 }
 
-void CircleTransition::Update()
+void ScaleTransition::Update()
 {
 	if (!isInitialized_)
 	{
@@ -140,7 +140,7 @@ void CircleTransition::Update()
 	circleSprite_->Update();
 }
 
-void CircleTransition::Draw()
+void ScaleTransition::Draw()
 {
 	if (!isInitialized_ || state_ == NONE)
 	{
@@ -153,7 +153,7 @@ void CircleTransition::Draw()
 	circleSprite_->Draw();
 }
 
-void CircleTransition::Start(TransitionState state, float duration)
+void ScaleTransition::Start(TransitionState state, float duration)
 {
 	if (!isInitialized_)
 	{
@@ -197,12 +197,12 @@ void CircleTransition::Start(TransitionState state, float duration)
 	}
 }
 
-void CircleTransition::Stop()
+void ScaleTransition::Stop()
 {
 	state_ = NONE;
 }
 
-bool CircleTransition::IsFinished() const
+bool ScaleTransition::IsFinished() const
 {
 	switch (state_)
 	{
@@ -218,7 +218,7 @@ bool CircleTransition::IsFinished() const
 	}
 }
 
-void CircleTransition::SetCenter(const Vector2& center)
+void ScaleTransition::SetCenter(const Vector2& center)
 {
 	center_ = center;
 	if (circleSprite_)
@@ -227,7 +227,7 @@ void CircleTransition::SetCenter(const Vector2& center)
 	}
 }
 
-void CircleTransition::SetColor(const Vector4& color)
+void ScaleTransition::SetColor(const Vector4& color)
 {
 	color_ = color;
 }
