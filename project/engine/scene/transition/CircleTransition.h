@@ -106,7 +106,7 @@ private:
 
 	// スプライト
 	std::unique_ptr<Sprite> circleSprite_;    // 円形マスク用スプライト
-	std::unique_ptr<Sprite> backgroundSprite_; // 背景用スプライト
+	//std::unique_ptr<Sprite> backgroundSprite_; // 背景用スプライト
 
 	// 初期化フラグ
 	bool isInitialized_;

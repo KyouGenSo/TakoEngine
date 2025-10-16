@@ -9,7 +9,7 @@
 CircleTransition::CircleTransition()
 	: center_(static_cast<float>(WinApp::clientWidth) * 0.5f, static_cast<float>(WinApp::clientHeight) * 0.5f)
 	, expandOut_(true)
-	, backgroundColor_(0.0f, 0.0f, 0.0f, 1.0f)  // デフォルトは黒背景
+	//, backgroundColor_(0.0f, 0.0f, 0.0f, 1.0f)  // デフォルトは黒背景
 	, state_(NONE)
 	, duration_(0.0f)
 	, transitionTime_(0.0f)
@@ -23,7 +23,7 @@ CircleTransition::CircleTransition()
 CircleTransition::CircleTransition(const Vector2& center, bool expandOut)
 	: center_(center)
 	, expandOut_(expandOut)
-	, backgroundColor_(0.0f, 0.0f, 0.0f, 1.0f)
+	//, backgroundColor_(0.0f, 0.0f, 0.0f, 1.0f)
 	, state_(NONE)
 	, duration_(0.0f)
 	, transitionTime_(0.0f)
@@ -51,14 +51,14 @@ CircleTransition::CircleTransition(const Vector2& center, const Vector4& color, 
 void CircleTransition::Initialize()
 {
 	// 円形マスク用のテクスチャを読み込み（circle.pngが必要）
-	TextureManager::GetInstance()->LoadTexture("circle.png");
+	TextureManager::GetInstance()->LoadTexture("ground.png");
 
 	// 背景用のテクスチャ
 	TextureManager::GetInstance()->LoadTexture("white.png");
 
 	// 円形スプライトの初期化
 	circleSprite_ = std::make_unique<Sprite>();
-	circleSprite_->Initialize("circle.png");
+	circleSprite_->Initialize("white.png");
 
 	// 円のサイズを画面サイズに基づいて設定（最大時に画面全体を覆うサイズ）
 	float maxDimension = std::max<float>(static_cast<float>(WinApp::clientWidth),
@@ -66,14 +66,16 @@ void CircleTransition::Initialize()
 	circleSprite_->SetSize(Vector2(maxDimension, maxDimension));
 	circleSprite_->SetAnchorPoint(Vector2(0.5f, 0.5f));  // 中心を基準点に
 	circleSprite_->SetPos(center_);
+  circleSprite_->SetColor(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+  circleSprite_->SetAlpha(1.0f);
 
 	// 背景スプライトの初期化
-	backgroundSprite_ = std::make_unique<Sprite>();
-	backgroundSprite_->Initialize("white.png");
-	backgroundSprite_->SetSize(Vector2(static_cast<float>(WinApp::clientWidth),
-	                                   static_cast<float>(WinApp::clientHeight)));
-	backgroundSprite_->SetPos(Vector2(0.0f, 0.0f));
-	backgroundSprite_->SetColor(backgroundColor_);
+	//backgroundSprite_ = std::make_unique<Sprite>();
+	//backgroundSprite_->Initialize("white.png");
+	//backgroundSprite_->SetSize(Vector2(static_cast<float>(WinApp::clientWidth),
+	//                                   static_cast<float>(WinApp::clientHeight)));
+	//backgroundSprite_->SetPos(Vector2(0.0f, 0.0f));
+	//backgroundSprite_->SetColor(backgroundColor_);
 
 	isInitialized_ = true;
 }
@@ -137,34 +139,32 @@ void CircleTransition::Update()
 		break;
 	}
 
-	// スプライトの更新
-	circleSprite_->SetSize(Vector2(currentRadius_, currentRadius_));
+	// ウィンドウサイズに基づいて実際のサイズを計算
+	float maxDimension = std::max<float>(static_cast<float>(WinApp::clientWidth),
+	                              static_cast<float>(WinApp::clientHeight));
+
+	// スケール値をピクセル値に変換して円のサイズを更新
+	float actualSize = maxDimension * currentRadius_;
+	circleSprite_->SetSize(Vector2(actualSize, actualSize));
 	circleSprite_->SetPos(center_);
 
 	// expandOutの場合、円が小さいときは背景を表示、大きいときは円を不透明に
 	// !expandOutの場合、円が大きいときは背景を隠し、小さいときは背景を表示
 	if (expandOut_)
 	{
-		circleSprite_->SetColor(backgroundColor_);
-		circleSprite_->SetAlpha(1.0f);
-		backgroundSprite_->SetAlpha(0.0f);  // expandOutでは背景は使わない
+		//backgroundSprite_->SetAlpha(0.0f);  // expandOutでは背景は使わない
 	}
 	else
 	{
-		circleSprite_->SetColor(Vector4(0, 0, 0, 1));  // 縮小時は黒い円でマスク
-		circleSprite_->SetAlpha(1.0f);
-		backgroundSprite_->SetAlpha(alpha_);
+		//backgroundSprite_->SetAlpha(alpha_);
 	}
 
-	// ウィンドウサイズに追従
-	float maxDimension = std::max<float>(static_cast<float>(WinApp::clientWidth),
-	                              static_cast<float>(WinApp::clientHeight));
-	circleSprite_->SetSize(Vector2(maxDimension, maxDimension));
-	backgroundSprite_->SetSize(Vector2(static_cast<float>(WinApp::clientWidth),
-	                                   static_cast<float>(WinApp::clientHeight)));
+	// 背景スプライトのサイズをウィンドウサイズに追従
+	//backgroundSprite_->SetSize(Vector2(static_cast<float>(WinApp::clientWidth),
+	                                   //static_cast<float>(WinApp::clientHeight)));
 
 	circleSprite_->Update();
-	backgroundSprite_->Update();
+	//backgroundSprite_->Update();
 }
 
 void CircleTransition::Draw()
@@ -180,7 +180,7 @@ void CircleTransition::Draw()
 	if (!expandOut_)
 	{
 		// 縮小タイプの場合、先に背景を描画
-		backgroundSprite_->Draw();
+		//backgroundSprite_->Draw();
 	}
 
 	// 円を描画
@@ -263,13 +263,14 @@ void CircleTransition::SetCenter(const Vector2& center)
 
 void CircleTransition::SetBackgroundColor(const Vector4& color)
 {
-	backgroundColor_ = color;
-	if (backgroundSprite_)
-	{
-		backgroundSprite_->SetColor(backgroundColor_);
-	}
-	if (circleSprite_ && expandOut_)
-	{
-		circleSprite_->SetColor(backgroundColor_);
-	}
+  color;
+	//backgroundColor_ = color;
+	//if (backgroundSprite_)
+	//{
+	//	backgroundSprite_->SetColor(backgroundColor_);
+	//}
+	//if (circleSprite_ && expandOut_)
+	//{
+	//	circleSprite_->SetColor(backgroundColor_);
+	//}
 }
