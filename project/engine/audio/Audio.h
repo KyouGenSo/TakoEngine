@@ -7,6 +7,9 @@
 #include "xaudio2.h"
 #pragma comment(lib, "xaudio2.lib")
 
+/// <summary>
+/// オーディオ管理クラス。XAudio2を使用してWAVE/MP3ファイルの読み込み、再生、音量/ピッチ制御を行う
+/// </summary>
 class Audio
 {
 
@@ -47,7 +50,10 @@ public: // 構造体
 
 public:
 
-	// インスタンスの取得
+	/// <summary>
+	/// シングルトンインスタンスを取得
+	/// </summary>
+	/// <returns>Audioのインスタンス</returns>
 	static Audio* GetInstance();
 
 	// サウンドの最大数
@@ -56,6 +62,7 @@ public:
 	/// <summary>
 	/// 初期化
 	/// </summary>
+	/// <param name="directoryPath">サウンドファイルの格納ディレクトリパス</param>
 	void Initialize(const std::string& directoryPath);
 
 	/// <summary>
@@ -69,46 +76,82 @@ public:
 	void Update();
 
 	/// <summary>
-	/// サウンドの読み込み
+	/// WAVEファイルの読み込み
 	/// </summary>
+	/// <param name="filename">ファイル名（directoryPath基準の相対パス）</param>
+	/// <returns>サウンドデータハンドル</returns>
 	uint32_t LoadWaveFile(const std::string& filename);
 
   /// <summary>
   /// MP3ファイルの読み込み（miniaudio使用）
   /// </summary>
+  /// <param name="filename">ファイル名（directoryPath基準の相対パス）</param>
+  /// <returns>サウンドデータハンドル</returns>
   uint32_t LoadMP3File(const std::string& filename);
 
 	/// <summary>
-	/// サウンドの解放
+	/// サウンドデータの解放
 	/// </summary>
+	/// <param name="soundData">解放するサウンドデータ</param>
 	void SoundUnload(SoundData* soundData);
 
 	/// <summary>
-	/// サウンドの再生
+	/// サウンドの再生（全パラメータ指定）
 	/// </summary>
+	/// <param name="soundDataHandle">サウンドデータハンドル</param>
+	/// <param name="loopFlag">ループ再生する場合true</param>
+	/// <param name="volume">音量（0.0 ~ 1.0）</param>
+	/// <returns>ボイスハンドル</returns>
 	uint32_t Play(uint32_t soundDataHandle, bool loopFlag, float volume);
+
+	/// <summary>
+	/// サウンドの再生（デフォルト設定）
+	/// </summary>
+	/// <param name="soundDataHandle">サウンドデータハンドル</param>
+	/// <returns>ボイスハンドル</returns>
 	uint32_t Play(uint32_t soundDataHandle);
+
+	/// <summary>
+	/// サウンドの再生（ループ指定）
+	/// </summary>
+	/// <param name="soundDataHandle">サウンドデータハンドル</param>
+	/// <param name="loopFlag">ループ再生する場合true</param>
+	/// <returns>ボイスハンドル</returns>
 	uint32_t Play(uint32_t soundDataHandle, bool loopFlag);
+
+	/// <summary>
+	/// サウンドの再生（音量指定）
+	/// </summary>
+	/// <param name="soundDataHandle">サウンドデータハンドル</param>
+	/// <param name="volume">音量（0.0 ~ 1.0）</param>
+	/// <returns>ボイスハンドル</returns>
 	uint32_t Play(uint32_t soundDataHandle, float volume);
 
 	/// <summary>
-	/// サウンド停止
+	/// サウンドの再生を停止
 	/// </summary>
+	/// <param name="voiceHandle">停止するボイスハンドル</param>
 	void StopWave(uint32_t voiceHandle);
 
 	/// <summary>
-	/// サウンド再生中かどうか
+	/// サウンドが再生中かどうかを判定
 	/// </summary>
+	/// <param name="voiceHandle">判定するボイスハンドル</param>
+	/// <returns>再生中の場合true</returns>
 	bool IsPlaying(uint32_t voiceHandle);
 
 	/// <summary>
-	/// 音量の設定
+	/// 音量を設定
 	/// </summary>
+	/// <param name="voiceHandle">対象ボイスハンドル</param>
+	/// <param name="volume">音量（0.0 ~ 1.0）</param>
 	void SetVolume(uint32_t voiceHandle, float volume);
 
 	/// <summary>
-	/// ピッチの設定
+	/// ピッチ（再生速度）を設定
 	/// </summary>
+	/// <param name="voiceHandle">対象ボイスハンドル</param>
+	/// <param name="pitch">ピッチ倍率（1.0が標準、範囲: 0.5 ~ 2.0）</param>
 	void SetPitch(uint32_t voiceHandle, float pitch);
 
 private: // メンバー変数

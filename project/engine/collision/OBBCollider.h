@@ -4,6 +4,9 @@
 #include "Vector3.h"
 #include "Matrix4x4.h"
 
+/// <summary>
+/// 有向境界ボックス(Oriented Bounding Box)の衝突判定を行うコライダー
+/// </summary>
 class OBBCollider : public Collider {
 protected:
   Vector3 size_;           // ボックスのサイズ（幅、高さ、奥行き）
@@ -14,21 +17,51 @@ public:
   OBBCollider();
   virtual ~OBBCollider() = default;
 
-  // OBBを取得（ワールド座標系）
+  /// <summary>
+  /// OBB構造体を取得（ワールド座標系）
+  /// </summary>
+  /// <returns>OBB構造体</returns>
   OBB GetOBB() const;
 
-  // Colliderの仮想関数実装
+  /// <summary>
+  /// OBBの中心座標を取得（ワールド座標系）
+  /// </summary>
+  /// <returns>中心座標</returns>
   Vector3 GetCenter() const override;
 
-  // サイズ設定
+  /// <summary>
+  /// OBBのサイズを設定
+  /// </summary>
+  /// <param name="size">サイズ（幅、高さ、奥行き）</param>
   void SetSize(const Vector3& size) { size_ = size; }
+
+  /// <summary>
+  /// OBBのサイズを取得
+  /// </summary>
+  /// <returns>サイズ（幅、高さ、奥行き）</returns>
   Vector3 GetSize() const { return size_; }
 
-  // オフセット設定
+  /// <summary>
+  /// ローカルオフセットを設定
+  /// </summary>
+  /// <param name="offset">オフセット値</param>
   void SetOffset(const Vector3& offset) { offset_ = offset; }
+
+  /// <summary>
+  /// ローカルオフセットを取得
+  /// </summary>
+  /// <returns>オフセット値</returns>
   Vector3 GetOffset() const { return offset_; }
 
-  // 回転設定
+  /// <summary>
+  /// ローカル回転行列を設定
+  /// </summary>
+  /// <param name="orientation">回転行列</param>
   void SetOrientation(const Matrix4x4& orientation) { orientation_ = orientation; }
+
+  /// <summary>
+  /// ローカル回転行列を取得
+  /// </summary>
+  /// <returns>回転行列</returns>
   Matrix4x4 GetOrientation() const { return orientation_; }
 };

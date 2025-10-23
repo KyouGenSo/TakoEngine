@@ -2,6 +2,9 @@
 #include "BaseScene.h"
 #include <string>
 
+/// <summary>
+/// シーン生成のための抽象ファクトリークラス
+/// </summary>
 class AbstractSceneFactory
 {
 public: // メンバ関数
@@ -11,8 +14,8 @@ public: // メンバ関数
 	/// </summary>
 	virtual ~AbstractSceneFactory() = default;
 
-	///<summary>
+	/// <summary>
 	/// シーンの生成
-	///	</summary>
+	/// </summary>
 	virtual BaseScene* CreateScene(const std::string& sceneName) = 0;
 };

@@ -4,6 +4,9 @@
 #include "Mat4x4Func.h"
 #include <array>
 
+/// <summary>
+/// 有向境界ボックス(Oriented Bounding Box)。回転を含む境界ボックス。AABBより精密な衝突判定が可能
+/// </summary>
 struct OBB {
 	Vector3 center;         // OBBの中心位置
 	Vector3 halfExtents;    // 各軸の半サイズ（幅/2、高さ/2、奥行き/2）

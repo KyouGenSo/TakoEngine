@@ -1,6 +1,9 @@
 #pragma once
 #include <chrono>
 
+/// <summary>
+/// フレーム時間管理クラス。デルタタイム、FPS計測、ゲーム経過時間の管理を行う
+/// </summary>
 class FrameTimer
 {
 private: // シングルトン設定

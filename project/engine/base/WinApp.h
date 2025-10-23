@@ -8,19 +8,24 @@
 #include "IWndProcHandler.h"
 #include "Vector2.h"
 
+/// <summary>
+/// Windowsアプリケーション管理クラス
+/// ウィンドウ生成とメッセージ処理を担当
+/// </summary>
 class WinApp {
 private: // シングルトン設定
-  // シングルトンインスタンス
-  static WinApp* instance_;
+  static WinApp* instance_;  ///< シングルトンインスタンス
   WinApp() = default;
   ~WinApp() = default;
 
 public:
-  // コピーコンストラクタと代入演算子を削除
-  WinApp(const WinApp&) = delete;
-  WinApp& operator=(const WinApp&) = delete;
+  WinApp(const WinApp&) = delete;  ///< コピーコンストラクタを削除
+  WinApp& operator=(const WinApp&) = delete;  ///< 代入演算子を削除
 
-  // シングルトンインスタンスの取得
+  /// <summary>
+  /// シングルトンインスタンスの取得
+  /// </summary>
+  /// <returns>WinAppのシングルトンインスタンス</returns>
   static WinApp* GetInstance() {
     if (instance_ == nullptr) {
       instance_ = new WinApp();
@@ -37,6 +42,7 @@ public: // メンバ関数
   /// <summary>
   /// メッセージの処理
   /// </summary>
+  /// <returns>アプリケーション続行フラグ（false: 終了、true: 継続）</returns>
   bool ProcessMessage();
 
   /// <summary>
@@ -47,27 +53,36 @@ public: // メンバ関数
   /// <summary>
   /// ウィンドウプロシージャ
   /// </summary>
+  /// <param name="hWnd">ウィンドウハンドル</param>
+  /// <param name="msg">メッセージID</param>
+  /// <param name="wparam">メッセージパラメータ1</param>
+  /// <param name="lparam">メッセージパラメータ2</param>
+  /// <returns>メッセージ処理結果</returns>
   static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam);
 
   /// <summary>
   /// ウィンドウハンドルの取得
   /// </summary>
+  /// <returns>ウィンドウハンドル</returns>
   HWND GetHWnd() const { return hWnd_; }
 
   /// <summary>
   /// hInstanceの取得
   /// </summary>
+  /// <returns>アプリケーションインスタンスハンドル</returns>
   HINSTANCE GetHInstance() const { return wc_.hInstance; }
 
   /// <summary>
   /// ハンドラの設定
   /// </summary>
-  /// <param name="handler"></param>
+  /// <param name="handler">登録するウィンドウプロシージャハンドラ</param>
   void SetWndProcHandler(IWndProcHandler* handler) { m_handlers_.push_back(handler); }
 
   /// <summary>
   /// ウィンドウのサイズを設定
   /// </summary>
+  /// <param name="width">ウィンドウの幅（ピクセル）</param>
+  /// <param name="height">ウィンドウの高さ（ピクセル）</param>
   void SetWindowSize(int32_t width, int32_t height) { clientWidth = width; clientHeight = height; }
 
   /// <summary>
@@ -84,11 +99,13 @@ public: // メンバ関数
   /// <summary>
   /// フルスクリーン状態の取得
   /// </summary>
+  /// <returns>フルスクリーン状態フラグ（true: フルスクリーン、false: ウィンドウモード）</returns>
   bool IsFullScreen() const { return isFullScreen_; }
 
   /// <summary>
   /// 最大化状態の取得
   /// </summary>
+  /// <returns>最大化状態フラグ（true: 最大化、false: 通常サイズ）</returns>
   bool IsMaximized() const { return isMaximized_; }
 
   /// <summary>
@@ -98,51 +115,45 @@ public: // メンバ関数
 
   /// <summary>
   /// OnResize関数の登録
-  /// <summary>
-  /// <param name="onResizeFunc"></param>
+  /// </summary>
+  /// <param name="onResizeFunc">リサイズ時に呼び出されるコールバック関数</param>
+  /// <returns>登録されたコールバックの一意識別ID</returns>
   uint32_t RegisterOnResizeFunc(const std::function<void(Vector2)>& onResizeFunc);
 
   /// <summary>
   /// OnResize関数の削除
-  /// <summary>
-  /// <param name="id"></param>
+  /// </summary>
+  /// <param name="id">削除するコールバックの識別ID</param>
   void UnregisterOnResizeFunc(uint32_t id);
 
 public:
-  //クライアント領域のサイズ
-  static int32_t clientWidth;
-  static int32_t clientHeight;
+  static int32_t clientWidth;  ///< クライアント領域の幅（ピクセル）
+  static int32_t clientHeight;  ///< クライアント領域の高さ（ピクセル）
 
 private:
-  struct ResizeCallbackEntry {
-    std::function<void(Vector2)> callback;
-    uint32_t id;
-  };
+	/// <summary>
+	/// リサイズコールバック登録エントリー
+	/// </summary>
+	struct ResizeCallbackEntry {
+		std::function<void(Vector2)> callback;  ///< ウィンドウリサイズ時に呼び出されるコールバック関数
+		uint32_t id;  ///< このコールバックの一意識別子（登録解除時に使用）
+	};
 
 private:
-  //ウィンドウハンドル
-  HWND hWnd_ = nullptr;
+	HWND hWnd_ = nullptr;  ///< ウィンドウハンドル
 
-  //ウィンドウクラス
-  WNDCLASS wc_{};
+	WNDCLASS wc_{};  ///< ウィンドウクラス情報
 
-  // handlers
-  static std::vector<IWndProcHandler*> m_handlers_;
+	static std::vector<IWndProcHandler*> m_handlers_;  ///< ウィンドウメッセージ処理ハンドラのリスト
 
-  // フルスクリーン状態を保持
-  bool isFullScreen_ = false;
+	bool isFullScreen_ = false;  ///< フルスクリーン状態フラグ
 
-  // 最大化状態を保持
-  bool isMaximized_ = false;
+	bool isMaximized_ = false;  ///< 最大化状態フラグ
 
-  // ウィンドウモード時の位置とサイズを保存
-  RECT windowedRect_ = {};
+	RECT windowedRect_ = {};  ///< ウィンドウモード時の位置とサイズ（フルスクリーンから戻る時に使用）
 
-  // コールバック関数のリスト
-  std::vector<ResizeCallbackEntry> onResizeFuncs_;
-  // コールバック関数のID
-  uint32_t nextId_ = 1u;
+	std::vector<ResizeCallbackEntry> onResizeFuncs_;  ///< リサイズイベント時に呼び出されるコールバック関数のリスト
+	uint32_t nextId_ = 1u;  ///< 次に割り当てるコールバックID（ユニーク保証用）
 
-  // タイトルバーの文字列
-  static std::wstring windowTitle_;
+	static std::wstring windowTitle_;  ///< ウィンドウタイトルバーに表示される文字列
 };

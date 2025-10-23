@@ -5,7 +5,7 @@
 /// 3x3行列
 /// </summary>
 struct Matrix3x3 final {
-	float m[3][3];
+	float m[3][3];  ///< 行列要素 [行][列]で格納（行優先）
 
 	// 演算子のオーバーロード
 

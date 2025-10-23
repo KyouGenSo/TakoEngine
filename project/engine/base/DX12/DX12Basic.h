@@ -15,14 +15,19 @@
 
 #include"Vector4.h"
 
+/// <summary>
+/// DirectX 12基盤システムクラス
+/// デバイス、コマンドキュー、スワップチェーン管理
+/// </summary>
 class DX12Basic {
 public: // メンバー関数
 
-  // ComPtrのエイリアス
+  /// <summary>
+  /// ComPtrのエイリアス
+  /// </summary>
   template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
 
-  // 最大SRV数(テクスチャ数)
-  static const uint32_t kMaxSRVCount;
+  static const uint32_t kMaxSRVCount;  ///< 最大SRV数（テクスチャ数）
 
   /// <summary>
   /// デストラクタ
@@ -32,6 +37,7 @@ public: // メンバー関数
   /// <summary>
   /// 初期化
   /// </summary>
+  /// <param name="winApp">ウィンドウ管理クラスのポインタ</param>
   void Initialize(WinApp* winApp);
 
   /// <summary>
@@ -41,8 +47,12 @@ public: // メンバー関数
 
   /// <summary>
   /// renderTextureを設定
-  /// </summary> 
+  /// </summary>
   void SetEffectRenderTexture();
+
+  /// <summary>
+  /// エフェクトなしレンダーテクスチャを設定
+  /// </summary>
   void SetNonEffectRenderTexture();
 
   /// <summary>
@@ -61,81 +71,128 @@ public: // メンバー関数
   void WaitForGPU();
 
   /// <summary>
-  /// コンパイルシェーダー
+  /// シェーダーをコンパイル
   /// </summary>
+  /// <param name="filePath">シェーダーファイルのパス</param>
+  /// <param name="profile">シェーダープロファイル（例: vs_6_0, ps_6_0）</param>
+  /// <returns>コンパイル済みシェーダーのバイナリ</returns>
   ComPtr<IDxcBlob> CompileShader(const std::wstring& filePath, const wchar_t* profile);
 
   /// <summary>
   /// バッファリソースの生成
   /// </summary>
+  /// <param name="sizeInBytes">バッファサイズ（バイト）</param>
+  /// <returns>生成されたバッファリソース</returns>
   ComPtr<ID3D12Resource> MakeBufferResource(size_t sizeInBytes);
+
+  /// <summary>
+  /// バッファリソースの生成（参照版）
+  /// </summary>
+  /// <param name="bufferResource">出力先のバッファリソース</param>
+  /// <param name="sizeInBytes">バッファサイズ（バイト）</param>
   void CreateBufferResource(ComPtr<ID3D12Resource>& bufferResource, size_t sizeInBytes);
 
   /// <summary>
   /// UAVリソースの生成
   /// </summary>
+  /// <param name="uavResource">出力先のUAVリソース</param>
+  /// <param name="sizeInBytes">リソースサイズ（バイト）</param>
   void CreateResourceForUAV(ComPtr<ID3D12Resource>& uavResource, UINT sizeInBytes);
 
   /// <summary>
   /// テクスチャリソースの生成
   /// </summary>
+  /// <param name="metaData">テクスチャのメタデータ（サイズ、フォーマット等）</param>
+  /// <returns>生成されたテクスチャリソース</returns>
   ComPtr<ID3D12Resource> MakeTextureResource(const DirectX::TexMetadata& metaData);
+
+  /// <summary>
+  /// テクスチャリソースの生成（参照版）
+  /// </summary>
+  /// <param name="textureResource">出力先のテクスチャリソース</param>
+  /// <param name="metaData">テクスチャのメタデータ（サイズ、フォーマット等）</param>
   void CreateTextureResource(ComPtr<ID3D12Resource>& textureResource, const DirectX::TexMetadata& metaData);
 
   /// <summary>
   /// レンダーテクスチャリソースの生成
   /// </summary>
+  /// <param name="rendertextureResource">出力先のレンダーテクスチャリソース</param>
+  /// <param name="width">テクスチャの幅（ピクセル）</param>
+  /// <param name="height">テクスチャの高さ（ピクセル）</param>
+  /// <param name="format">ピクセルフォーマット（例: DXGI_FORMAT_R8G8B8A8_UNORM）</param>
+  /// <param name="clearColor">クリアカラー（RGBA、各要素0.0-1.0）</param>
   void CreateRenderTextureResource(ComPtr<ID3D12Resource>& rendertextureResource, uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4& clearColor);
 
   /// <summary>
   /// デスクリプタヒープの生成
-  /// <summary>+
+  /// </summary>
+  /// <param name="heapType">ヒープのタイプ（RTV、DSV、CBV_SRV_UAV等）</param>
+  /// <param name="numDescriptors">デスクリプタ数</param>
+  /// <param name="shaderVisible">シェーダーから可視かどうか</param>
+  /// <returns>生成されたデスクリプタヒープ</returns>
   ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisible);
 
   /// <summary>
   /// テクスチャリソースの転送
   /// </summary>
+  /// <param name="texture">転送先のテクスチャリソース</param>
+  /// <param name="mipImages">転送するミップマップ画像データ</param>
+  /// <returns>アップロード用の中間バッファリソース（転送完了まで保持必要）</returns>
   [[nodiscard]]
   ComPtr<ID3D12Resource> UploadTextureData(const ComPtr<ID3D12Resource>& texture, const DirectX::ScratchImage& mipImages);
 
   /// <summary>
   /// テクスチャファイルの読み込み
   /// </summary>
+  /// <param name="filePath">テクスチャファイルのパス（.png, .jpg等）</param>
+  /// <returns>読み込まれた画像データ</returns>
   static DirectX::ScratchImage LoadTexture(const std::string& filePath);
 
   /// <summary>
   /// トランジションバリアの設定
   /// </summary>
+  /// <param name="stateBefore">遷移前のリソース状態</param>
+  /// <param name="stateAfter">遷移後のリソース状態</param>
+  /// <param name="resource">対象リソース</param>
   void TransitionResourceState(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter, ID3D12Resource* resource);
   
   /// <summary>
   /// リソース状態追跡付きバリア遷移
   /// </summary>
+  /// <param name="resource">対象リソース</param>
+  /// <param name="newState">新しいリソース状態</param>
   void TransitionResourceWithTracking(ID3D12Resource* resource, D3D12_RESOURCE_STATES newState);
   
   /// <summary>
   /// 現在のリソース状態を取得
   /// </summary>
+  /// <param name="resource">対象リソース</param>
+  /// <returns>現在のリソース状態</returns>
   D3D12_RESOURCE_STATES GetResourceState(ID3D12Resource* resource) const;
   
   /// <summary>
   /// リソースの初期状態を設定（バリア遷移なし）
   /// </summary>
+  /// <param name="resource">対象リソース</param>
+  /// <param name="initialState">初期状態</param>
   void SetInitialResourceState(ID3D12Resource* resource, D3D12_RESOURCE_STATES initialState);
 
   /// <summary>
   /// UAVリソースバリアの設定
   /// </summary>
+  /// <param name="resource">対象UAVリソース</param>
   void SetUAVBarrier(ID3D12Resource* resource);
 
   /// <summary>
-  /// // ビューポートとシザリング矩形をセット
+  /// ビューポートとシザリング矩形をセット
   /// </summary>
   void SetViewPort();
 
   /// <summary>
   /// RTV,DepthBufferのリサイズ
   /// </summary>
+  /// <param name="width">新しい幅（ピクセル）</param>
+  /// <param name="height">新しい高さ（ピクセル）</param>
   void ResizeBuffers(uint32_t width, uint32_t height);
 
   /// <summary>
@@ -146,10 +203,10 @@ public: // メンバー関数
     InitScissorRect();
   }
 
-  //-----------------------------------------Getter-----------------------------------------//
   /// <summary>
   /// デバイスの取得
   /// </summary>
+  /// <returns>DirectX 12デバイス</returns>
   ID3D12Device* GetDevice() {
     return device_.Get();
   }
@@ -157,6 +214,7 @@ public: // メンバー関数
   /// <summary>
   /// コマンドリストの取得
   /// </summary>
+  /// <returns>グラフィックスコマンドリスト</returns>
   ID3D12GraphicsCommandList* GetCommandList() {
     return commandList_.Get();
   }
@@ -164,6 +222,7 @@ public: // メンバー関数
   /// <summary>
   /// コマンドキューの取得
   /// </summary>
+  /// <returns>コマンドキュー</returns>
   ID3D12CommandQueue* GetCommandQueue() {
     return commandQueue_.Get();
   }
@@ -171,6 +230,7 @@ public: // メンバー関数
   /// <summary>
   /// backBufferの数の取得
   /// </summary>
+  /// <returns>スワップチェインのバッファ数</returns>
   size_t GetSwapChainBufferCount() {
     return swapChainResources_.size();
   }
@@ -178,6 +238,8 @@ public: // メンバー関数
   /// <summary>
   /// レンダーテクスチャのcpuハンドルの取得
   /// </summary>
+  /// <param name="index">レンダーテクスチャのインデックス</param>
+  /// <returns>CPUディスクリプタハンドル</returns>
   D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTextureRTVHandle(uint32_t index) {
     return GetCPUDescriptorHandle(rtvHeap_.Get(), descriptorSizeRTV_, index);
   }
@@ -185,6 +247,7 @@ public: // メンバー関数
   /// <summary>
   /// DSVHeapの先頭のハンドルの取得
   ///	</summary>
+  /// <returns>DSVヒープの先頭CPUディスクリプタハンドル</returns>
   D3D12_CPU_DESCRIPTOR_HANDLE GetDSVHeapHandleStart() {
     return dsvHeap_->GetCPUDescriptorHandleForHeapStart();
   }
@@ -192,6 +255,7 @@ public: // メンバー関数
   /// <summary>
   /// 深度バッファのリソースの取得
   ///	</summary>
+  /// <returns>深度ステンシルリソース</returns>
   ID3D12Resource* GetDepthStencilResource() {
     return depthStencilResource_.Get();
   }
@@ -199,6 +263,7 @@ public: // メンバー関数
   /// <summary>
   /// スワップチェインの取得
   ///	</summary>
+  /// <returns>スワップチェイン</returns>
   IDXGISwapChain4* GetSwapChain() {
     return swapChain_.Get();
   }
@@ -206,6 +271,7 @@ public: // メンバー関数
   /// <summary>
   /// スワップチェインのRTVHandleを取得
   ///	</summary>
+  /// <returns>現在のバックバッファのRTVハンドル</returns>
   D3D12_CPU_DESCRIPTOR_HANDLE GetSwapChainRTVHandle() {
     UINT backBufferIndex = swapChain_->GetCurrentBackBufferIndex();
     return rtvHandle_[backBufferIndex];
@@ -214,6 +280,7 @@ public: // メンバー関数
   /// <summary>
   /// Viewportの取得
   ///	</summary>
+  /// <returns>ビューポート</returns>
   D3D12_VIEWPORT GetViewport() {
     return viewport_;
   }
@@ -221,6 +288,7 @@ public: // メンバー関数
   /// <summary>
   /// ScissorRectの取得
   ///	</summary>
+  /// <returns>シザリング矩形</returns>
   D3D12_RECT GetScissorRect() {
     return scissorRect_;
   }
@@ -247,150 +315,135 @@ private: // プライベートメンバー関数
 
   /// <summary>
   /// デスクリプタヒープの初期化
-  /// <summary>
+  /// </summary>
   void InitDescriptorHeap();
 
   /// <summary>
   /// レンダーターゲットビューの初期化
-  /// <summary> 
+  /// </summary>
   void InitSwapChainRTV();
 
   /// <summary>
   /// 深度ステンシルビューの初期化
-  /// <summary> 
+  /// </summary>
   void InitDSV();
 
   /// <summary>
   /// フェンスの初期化
-  /// <summary> 
+  /// </summary>
   void InitFence();
 
   /// <summary>
   ///　ビューポート矩形の初期化
-  /// <summary> 
+  /// </summary>
   void InitViewport();
 
   /// <summary>
   /// シザリング矩形の初期化
-  /// <summary> 
+  /// </summary>
   void InitScissorRect();
 
   /// <summary>
   /// DXCコンパイラの生成
-  /// <summary> 
+  /// </summary>
   void CreateDXCCompiler();
 
   /// <summary>
   /// FPS制御初期化
-  /// <summary> 
+  /// </summary>
   void InitFPSLimiter();
 
   /// <summary>
   /// FPS制御更新
-  /// <summary> 
+  /// </summary>
   void UpdateFPSLimiter();
 
   /// <summary>
   /// RTVの再作成
-  /// <summary> 
+  /// </summary>
   void RecreateSwapChainRTV();
 
   /// <summary>
   /// 深度バッファの再作成
-  /// <summary> 
+  /// </summary>
   void RecreateDepthBuffer();
 
   /// <summary>
   /// 指定番号のCPUディスクリプタハンドルを取得
   /// </summary>
+  /// <param name="descriptorHeap">デスクリプタヒープ</param>
+  /// <param name="descriptorSize">デスクリプタのサイズ（バイト）</param>
+  /// <param name="index">インデックス番号</param>
+  /// <returns>CPUディスクリプタハンドル</returns>
   static D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle(ID3D12DescriptorHeap* descriptorHeap, uint32_t descriptorSize, uint32_t index);
 
   /// <summary>
   /// 指定番号のGPUディスクリプタハンドルを取得
   /// </summary>
+  /// <param name="descriptorHeap">デスクリプタヒープ</param>
+  /// <param name="descriptorSize">デスクリプタのサイズ（バイト）</param>
+  /// <param name="index">インデックス番号</param>
+  /// <returns>GPUディスクリプタハンドル</returns>
   static D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(ID3D12DescriptorHeap* descriptorHeap, uint32_t descriptorSize, uint32_t index);
 
   /// <summary>
   /// バックバッファのバリアを設定
   /// </summary>
+  /// <param name="stateBefore">遷移前のリソース状態</param>
+  /// <param name="stateAfter">遷移後のリソース状態</param>
   void SetBackBufferBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
 
 private: // メンバ変数
 
-  // 記録時間(FPS制御用)
-  std::chrono::steady_clock::time_point referenceTime_;
+  std::chrono::steady_clock::time_point referenceTime_;  ///< 記録時間（FPS制御用の基準時刻）
 
-  // RTVハンドルの要素数
-  static const UINT kRtvHandleCount = 2;
-  
-  // リソース状態追跡用マップ
-  mutable std::unordered_map<ID3D12Resource*, D3D12_RESOURCE_STATES> resourceStates_;
+  static const UINT kRtvHandleCount = 2;  ///< RTVハンドルの要素数（スワップチェイン用バックバッファ数）
 
-  // ウィンドウクラスポインター
-  WinApp* winApp_ = nullptr;
+  mutable std::unordered_map<ID3D12Resource*, D3D12_RESOURCE_STATES> resourceStates_;  ///< リソース状態追跡用マップ（バリア遷移の最適化に使用）
 
-  // デバイス
-  ComPtr<ID3D12Device> device_;
+  WinApp* winApp_ = nullptr;  ///< ウィンドウクラスポインター（ウィンドウサイズ等の取得に使用）
 
-  // DXGIファクトリ
-  ComPtr<IDXGIFactory7> dxgiFactory_;
+  ComPtr<ID3D12Device> device_;  ///< DirectX 12デバイス（リソース生成の中心オブジェクト）
 
-  // コマンドキュー
-  ComPtr<ID3D12CommandQueue> commandQueue_;
+  ComPtr<IDXGIFactory7> dxgiFactory_;  ///< DXGIファクトリ（スワップチェイン生成に使用）
 
-  // コマンドアロケータ
-  ComPtr<ID3D12CommandAllocator> commandAllocator_;
+  ComPtr<ID3D12CommandQueue> commandQueue_;  ///< コマンドキュー（GPU実行キュー）
 
-  // コマンドリスト
-  ComPtr<ID3D12GraphicsCommandList> commandList_;
+  ComPtr<ID3D12CommandAllocator> commandAllocator_;  ///< コマンドアロケータ（コマンドリストのメモリ管理）
 
-  // スワップチェイン
-  ComPtr<IDXGISwapChain4> swapChain_;
+  ComPtr<ID3D12GraphicsCommandList> commandList_;  ///< コマンドリスト（描画コマンドの記録）
 
-  // 深度バッファ
-  ComPtr<ID3D12Resource> depthStencilResource_;
+  ComPtr<IDXGISwapChain4> swapChain_;  ///< スワップチェイン（ダブルバッファリング管理）
 
-  // デスクリプタヒープのサイズ
-  uint32_t descriptorSizeRTV_;
-  uint32_t descriptorSizeDSV_;
+  ComPtr<ID3D12Resource> depthStencilResource_;  ///< 深度バッファリソース（深度テスト用）
 
-  // レンダーターゲットビューのデスクリプタヒープ
-  ComPtr<ID3D12DescriptorHeap> rtvHeap_;
+  uint32_t descriptorSizeRTV_;  ///< RTVデスクリプタのサイズ（バイト）
+  uint32_t descriptorSizeDSV_;  ///< DSVデスクリプタのサイズ（バイト）
 
-  // 深度ステンシルビューのデスクリプタヒープ
-  ComPtr<ID3D12DescriptorHeap> dsvHeap_;
+  ComPtr<ID3D12DescriptorHeap> rtvHeap_;  ///< レンダーターゲットビューのデスクリプタヒープ
 
-  // スワップチェインのバッファ
-  std::array<ComPtr<ID3D12Resource>, 2> swapChainResources_;
+  ComPtr<ID3D12DescriptorHeap> dsvHeap_;  ///< 深度ステンシルビューのデスクリプタヒープ
 
-  // スワップチェインのバッファのカウント
-  UINT swapChainBufferCount_;
+  std::array<ComPtr<ID3D12Resource>, 2> swapChainResources_;  ///< スワップチェインのバッファ（ダブルバッファリング用2枚）
 
-  // RTVハンドル
-  D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle_[kRtvHandleCount];
+  UINT swapChainBufferCount_;  ///< スワップチェインのバッファのカウント（通常2）
 
-  // フェンス
-  ComPtr<ID3D12Fence> fence_;
+  D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle_[kRtvHandleCount];  ///< RTVハンドル配列（各バックバッファ用）
 
-  // フェンスイベント
-  HANDLE fenceEvent_;
+  ComPtr<ID3D12Fence> fence_;  ///< フェンスオブジェクト（GPU同期用）
 
-  // フェンスの値
-  UINT64 fenceValue_;
+  HANDLE fenceEvent_;  ///< フェンスイベントハンドル（CPU待機用）
 
-  // ビューポート
-  D3D12_VIEWPORT viewport_;
+  UINT64 fenceValue_;  ///< フェンスの値（同期カウンター）
 
-  // シザリング矩形
-  D3D12_RECT scissorRect_;
+  D3D12_VIEWPORT viewport_;  ///< ビューポート（描画領域の定義）
 
-  // DXCUtility
-  ComPtr<IDxcUtils> dxcUtils_ = nullptr;
+  D3D12_RECT scissorRect_;  ///< シザリング矩形（描画範囲の制限）
 
-  // DXCコンパイラ
-  ComPtr<IDxcCompiler3> dxcCompiler_ = nullptr;
+  ComPtr<IDxcUtils> dxcUtils_ = nullptr;  ///< DXC ユーティリティ（シェーダーコンパイル補助）
 
-  // デフォルトインクルードハンドラー
-  ComPtr<IDxcIncludeHandler> includeHandler_ = nullptr;
+  ComPtr<IDxcCompiler3> dxcCompiler_ = nullptr;  ///< DXC コンパイラ（HLSL → DXIL変換）
+
+  ComPtr<IDxcIncludeHandler> includeHandler_ = nullptr;  ///< デフォルトインクルードハンドラー（シェーダーファイルのインクルード処理）
 
 };

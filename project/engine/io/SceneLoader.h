@@ -11,7 +11,9 @@ class Object3d;
 class SceneLoader
 {
 public: // 構造体定義
-  // LoadedSceneコンテナ構造体
+  /// <summary>
+  /// 読み込まれたシーンを保持するコンテナ構造体
+  /// </summary>
   struct LoadedScene
   {
   public:
@@ -41,22 +43,28 @@ public: // 構造体定義
     void Clear();
 
   private:
-    std::vector<std::unique_ptr<Object3d>> objects_;
-    std::map<std::string, Object3d*> objectMap_;
+    std::vector<std::unique_ptr<Object3d>> objects_; ///< オブジェクトのリスト
+    std::map<std::string, Object3d*> objectMap_; ///< 名前からオブジェクトへのマップ
   };
 
+  /// <summary>
+  /// オブジェクトデータ構造体
+  /// </summary>
   struct ObjectData
   {
-    std::string type; // e.g., "Mesh", "Light", "Camera"
-    std::string name;
-    Transform transform; // Position, rotation, scale
-    std::string fileName;
+    std::string type; ///< オブジェクトタイプ（例: "Mesh", "Light", "Camera"）
+    std::string name; ///< オブジェクト名
+    Transform transform; ///< トランスフォーム（位置、回転、スケール）
+    std::string fileName; ///< ファイル名
   };
 
+  /// <summary>
+  /// レベルデータ構造体
+  /// </summary>
   struct LevelData
   {
-    std::string name;
-    std::vector<ObjectData> objects; // List of objects in the level
+    std::string name; ///< レベル名
+    std::vector<ObjectData> objects; ///< レベル内のオブジェクトリスト
   };
 
 public: //　メンバー関数
@@ -73,17 +81,26 @@ public: //　メンバー関数
   std::unique_ptr<LoadedScene> LoadScene(const std::string& sceneFileName);
 
   // -----------------------------------Setters-----------------------------------//
+  /// <summary>
+  /// ディレクトリフォルダ名を設定
+  /// </summary>
+  /// <param name="directoryFolderName">ディレクトリフォルダ名</param>
   void SetDirectoryFolderName(const std::string& directoryFolderName)
   {
     directoryFolderName_ = directoryFolderName;
   }
+
+  /// <summary>
+  /// シーンフォルダ名を設定
+  /// </summary>
+  /// <param name="scenefolderName">シーンフォルダ名</param>
   void SetSecneFolderName(const std::string& scenefolderName)
   {
     secneFolderName_ = scenefolderName;
   }
 
 private:
-  std::string directoryFolderName_;
+  std::string directoryFolderName_; ///< ディレクトリフォルダ名
 
-  std::string secneFolderName_;
+  std::string secneFolderName_; ///< シーンフォルダ名
 };

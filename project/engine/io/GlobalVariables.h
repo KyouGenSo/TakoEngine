@@ -7,6 +7,10 @@
 #include "Vector4.h"
 #include "Vector2.h"
 
+/// <summary>
+/// グローバル変数管理クラス
+/// JSON形式での設定値保存・読み込みとImGuiでの実行時編集
+/// </summary>
 class GlobalVariables
 {
 private: // シングルトン設定
@@ -25,11 +29,13 @@ public: // メンバ関数
   /// <summary>
   /// グループの作成
   /// </summary>
+  /// <param name="groupName">グループ名</param>
   void CreateGroup(const std::string& groupName);
 
   /// <summary>
   /// グループの削除
   /// </summary>
+  /// <param name="groupName">グループ名</param>
   void DeleteGroup(const std::string& groupName);
 
   /// <summary>
@@ -40,6 +46,7 @@ public: // メンバ関数
   /// <summary>
   /// ファイルに書き出す
   /// </summary>
+  /// <param name="groupName">グループ名</param>
   void SaveFile(const std::string& groupName);
 
   /// <summary>
@@ -50,64 +57,175 @@ public: // メンバ関数
   /// <summary>
   /// ファイルから読み込む
   /// </summary>
+  /// <param name="groupName">グループ名</param>
   void LoadFile(const std::string& groupName);
 
   //-----------------------------------------Setter-----------------------------------------//
-  // 値の設定(int)
+  /// <summary>
+  /// 値の設定(int)
+  /// </summary>
+  /// <param name="groupName">グループ名</param>
+  /// <param name="key">キー名</param>
+  /// <param name="value">設定する値</param>
   void SetValue(const std::string& groupName, const std::string& key, int32_t value);
-  // 値の設定(float)
+
+  /// <summary>
+  /// 値の設定(float)
+  /// </summary>
+  /// <param name="groupName">グループ名</param>
+  /// <param name="key">キー名</param>
+  /// <param name="value">設定する値</param>
   void SetValue(const std::string& groupName, const std::string& key, float value);
-  // 値の設定(Vector2)
+
+  /// <summary>
+  /// 値の設定(Vector2)
+  /// </summary>
+  /// <param name="groupName">グループ名</param>
+  /// <param name="key">キー名</param>
+  /// <param name="value">設定する値</param>
   void SetValue(const std::string& groupName, const std::string& key, const Vector2& value);
-  // 値の設定(Vector3)
+
+  /// <summary>
+  /// 値の設定(Vector3)
+  /// </summary>
+  /// <param name="groupName">グループ名</param>
+  /// <param name="key">キー名</param>
+  /// <param name="value">設定する値</param>
   void SetValue(const std::string& groupName, const std::string& key, const Vector3& value);
-  // 値の設定(Vector4)
+
+  /// <summary>
+  /// 値の設定(Vector4)
+  /// </summary>
+  /// <param name="groupName">グループ名</param>
+  /// <param name="key">キー名</param>
+  /// <param name="value">設定する値</param>
   void SetValue(const std::string& groupName, const std::string& key, const Vector4& value);
-  // 値の設定(bool)
+
+  /// <summary>
+  /// 値の設定(bool)
+  /// </summary>
+  /// <param name="groupName">グループ名</param>
+  /// <param name="key">キー名</param>
+  /// <param name="value">設定する値</param>
   void SetValue(const std::string& groupName, const std::string& key, bool value);
 
-  // 項目の追加(int)
+  /// <summary>
+  /// 項目の追加(int)
+  /// </summary>
+  /// <param name="groupName">グループ名</param>
+  /// <param name="key">キー名</param>
+  /// <param name="value">設定する値</param>
   void AddItem(const std::string& groupName, const std::string& key, int32_t value);
-  // 項目の追加(float)
+
+  /// <summary>
+  /// 項目の追加(float)
+  /// </summary>
+  /// <param name="groupName">グループ名</param>
+  /// <param name="key">キー名</param>
+  /// <param name="value">設定する値</param>
   void AddItem(const std::string& groupName, const std::string& key, float value);
-  // 項目の追加(Vector2)
+
+  /// <summary>
+  /// 項目の追加(Vector2)
+  /// </summary>
+  /// <param name="groupName">グループ名</param>
+  /// <param name="key">キー名</param>
+  /// <param name="value">設定する値</param>
   void AddItem(const std::string& groupName, const std::string& key, const Vector2& value);
-  // 項目の追加(Vector3)
+
+  /// <summary>
+  /// 項目の追加(Vector3)
+  /// </summary>
+  /// <param name="groupName">グループ名</param>
+  /// <param name="key">キー名</param>
+  /// <param name="value">設定する値</param>
   void AddItem(const std::string& groupName, const std::string& key, const Vector3& value);
-  // 項目の追加(Vector4)
+
+  /// <summary>
+  /// 項目の追加(Vector4)
+  /// </summary>
+  /// <param name="groupName">グループ名</param>
+  /// <param name="key">キー名</param>
+  /// <param name="value">設定する値</param>
   void AddItem(const std::string& groupName, const std::string& key, const Vector4& value);
-  // 項目の追加(bool)
+
+  /// <summary>
+  /// 項目の追加(bool)
+  /// </summary>
+  /// <param name="groupName">グループ名</param>
+  /// <param name="key">キー名</param>
+  /// <param name="value">設定する値</param>
   void AddItem(const std::string& groupName, const std::string& key, bool value);
 
   //-----------------------------------------Getter-----------------------------------------//
-  // 値の取得(int)
+  /// <summary>
+  /// 値の取得(int)
+  /// </summary>
+  /// <param name="groupName">グループ名</param>
+  /// <param name="key">キー名</param>
+  /// <returns>取得したint値</returns>
   int32_t GetValueInt(const std::string& groupName, const std::string& key);
-  // 値の取得(float)
+
+  /// <summary>
+  /// 値の取得(float)
+  /// </summary>
+  /// <param name="groupName">グループ名</param>
+  /// <param name="key">キー名</param>
+  /// <returns>取得したfloat値</returns>
   float GetValueFloat(const std::string& groupName, const std::string& key);
-  // 値の取得(Vector2)
+
+  /// <summary>
+  /// 値の取得(Vector2)
+  /// </summary>
+  /// <param name="groupName">グループ名</param>
+  /// <param name="key">キー名</param>
+  /// <returns>取得したVector2値</returns>
   Vector2 GetValueVec2(const std::string& groupName, const std::string& key);
-  // 値の取得(Vector3)
+
+  /// <summary>
+  /// 値の取得(Vector3)
+  /// </summary>
+  /// <param name="groupName">グループ名</param>
+  /// <param name="key">キー名</param>
+  /// <returns>取得したVector3値</returns>
   Vector3 GetValueVec3(const std::string& groupName, const std::string& key);
-  // 値の取得(Vector4)
+
+  /// <summary>
+  /// 値の取得(Vector4)
+  /// </summary>
+  /// <param name="groupName">グループ名</param>
+  /// <param name="key">キー名</param>
+  /// <returns>取得したVector4値</returns>
   Vector4 GetValueVec4(const std::string& groupName, const std::string& key);
-  // 値の取得(bool)
+
+  /// <summary>
+  /// 値の取得(bool)
+  /// </summary>
+  /// <param name="groupName">グループ名</param>
+  /// <param name="key">キー名</param>
+  /// <returns>取得したbool値</returns>
   bool GetValueBool(const std::string& groupName, const std::string& key);
 
 public: // 構造体
+  /// <summary>
+  /// グローバル変数の単一アイテム
+  /// </summary>
   struct Item {
-    std::variant<bool, int32_t, float, Vector2, Vector3, Vector4> value;
+    std::variant<bool, int32_t, float, Vector2, Vector3, Vector4> value; ///< 値（複数の型に対応）
   };
 
+  /// <summary>
+  /// グローバル変数のグループ
+  /// </summary>
   struct Group {
-    std::map<std::string, Item> items;
+    std::map<std::string, Item> items; ///< アイテムのマップ
   };
 
 private: // メンバ変数
 
-  // 保存先のファイルパス
-  const std::string kDirectoryPath = "resources/Json/GlobalVariables/";
+  const std::string kDirectoryPath = "resources/Json/GlobalVariables/"; ///< 保存先のファイルパス
 
-  std::map<std::string, Group> datas_;
+  std::map<std::string, Group> datas_; ///< グループのマップ
 };
 
 

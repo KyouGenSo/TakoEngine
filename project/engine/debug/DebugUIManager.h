@@ -7,6 +7,9 @@
 #include "imgui.h"
 #include <json.hpp>
 
+/// <summary>
+/// デバッグUIの統合管理クラス。シーンヒエラルキー、インスペクター、コンソール、パフォーマンスモニターなどを提供
+/// </summary>
 class DebugUIManager {
 public:
     // ログタイプ
@@ -38,59 +41,183 @@ private:
     DebugUIManager& operator=(const DebugUIManager&) = delete;
 
 public:
-    // インスタンス取得
+    /// <summary>
+    /// インスタンス取得
+    /// </summary>
+    /// <returns>DebugUIManagerのインスタンス</returns>
     static DebugUIManager* GetInstance();
-    
-    // 初期化・終了処理
+
+    /// <summary>
+    /// 初期化
+    /// </summary>
     void Initialize();
+
+    /// <summary>
+    /// 終了処理
+    /// </summary>
     void Finalize();
-    
-    // 更新・描画
+
+    /// <summary>
+    /// 更新
+    /// </summary>
     void Update();
+
+    /// <summary>
+    /// 描画
+    /// </summary>
     void Draw();
-    
-    // コンソールログ機能
+
+    /// <summary>
+    /// コンソールにログを追加
+    /// </summary>
+    /// <param name="message">ログメッセージ</param>
+    /// <param name="type">ログの種類</param>
     void AddLog(const std::string& message, LogType type = LogType::Info);
+
+    /// <summary>
+    /// ログをクリア
+    /// </summary>
     void ClearLogs();
+
+    /// <summary>
+    /// ログリストを取得
+    /// </summary>
+    /// <returns>ログエントリーのリスト</returns>
     const std::vector<LogEntry>& GetLogs() const { return consoleLogs_; }
-    
-    // デバッグ情報登録システム
+
+    /// <summary>
+    /// デバッグ情報を登録
+    /// </summary>
+    /// <param name="category">カテゴリ名</param>
+    /// <param name="callback">デバッグ表示用コールバック</param>
     void RegisterDebugInfo(const std::string& category, std::function<void()> callback);
+
+    /// <summary>
+    /// デバッグ情報の登録を解除
+    /// </summary>
+    /// <param name="category">カテゴリ名</param>
     void UnregisterDebugInfo(const std::string& category);
+
+    /// <summary>
+    /// デバッグ情報をクリア
+    /// </summary>
     void ClearDebugInfo();
-    
-    // ゲームオブジェクト登録システム
+
+    /// <summary>
+    /// ゲームオブジェクトを登録
+    /// </summary>
+    /// <param name="name">オブジェクト名</param>
+    /// <param name="drawImGuiFunc">ImGui描画関数</param>
     void RegisterGameObject(const std::string& name, std::function<void()> drawImGuiFunc);
+
+    /// <summary>
+    /// ゲームオブジェクトの登録を解除
+    /// </summary>
+    /// <param name="name">オブジェクト名</param>
     void UnregisterGameObject(const std::string& name);
+
+    /// <summary>
+    /// ゲームオブジェクトをクリア
+    /// </summary>
     void ClearGameObjects();
-    
-    // ウィンドウ表示フラグ
+
+    /// <summary>
+    /// ウィンドウの表示状態を設定
+    /// </summary>
+    /// <param name="windowName">ウィンドウ名</param>
+    /// <param name="visible">表示フラグ</param>
     void SetWindowVisible(const std::string& windowName, bool visible);
+
+    /// <summary>
+    /// ウィンドウの表示状態を取得
+    /// </summary>
+    /// <param name="windowName">ウィンドウ名</param>
+    /// <returns>表示状態</returns>
     bool IsWindowVisible(const std::string& windowName) const;
-    
-    // Scene情報登録用の特別なインターフェース
+
+    /// <summary>
+    /// シーン名を設定
+    /// </summary>
+    /// <param name="sceneName">シーン名</param>
     void SetSceneName(const std::string& sceneName) { currentSceneName_ = sceneName; }
+
+    /// <summary>
+    /// シーン名を取得
+    /// </summary>
+    /// <returns>現在のシーン名</returns>
     const std::string& GetSceneName() const { return currentSceneName_; }
 
-    // EmitterManager設定
+    /// <summary>
+    /// EmitterManagerを設定
+    /// </summary>
+    /// <param name="emitterManager">EmitterManagerポインタ</param>
     void SetEmitterManager(class EmitterManager* emitterManager) { emitterManager_ = emitterManager; }
 
 private:
-    // 各ウィンドウの描画
+    /// <summary>
+    /// メインメニューバーを描画
+    /// </summary>
     void DrawMainMenuBar();
-    void DrawSceneHierarchy();
-    void DrawInspector();
-    void DrawConsole();
-    void DrawPerformance();
-    void DrawGameViewport();
-    void DrawEngineStatus();
-    void DrawInputDebug();
-    void DrawShadowSettings();
-    void DrawCollisionDebug();
-    void DrawParticleEditor();  // パーティクルエディター
-    void DrawGroupsTab();       // グループ管理タブ
 
-    // タイムスタンプ生成
+    /// <summary>
+    /// シーンヒエラルキーウィンドウを描画
+    /// </summary>
+    void DrawSceneHierarchy();
+
+    /// <summary>
+    /// インスペクターウィンドウを描画
+    /// </summary>
+    void DrawInspector();
+
+    /// <summary>
+    /// コンソールウィンドウを描画
+    /// </summary>
+    void DrawConsole();
+
+    /// <summary>
+    /// パフォーマンスウィンドウを描画
+    /// </summary>
+    void DrawPerformance();
+
+    /// <summary>
+    /// ゲームビューポートを描画
+    /// </summary>
+    void DrawGameViewport();
+
+    /// <summary>
+    /// エンジンステータスウィンドウを描画
+    /// </summary>
+    void DrawEngineStatus();
+
+    /// <summary>
+    /// 入力デバッグウィンドウを描画
+    /// </summary>
+    void DrawInputDebug();
+
+    /// <summary>
+    /// シャドウ設定ウィンドウを描画
+    /// </summary>
+    void DrawShadowSettings();
+
+    /// <summary>
+    /// コリジョンデバッグウィンドウを描画
+    /// </summary>
+    void DrawCollisionDebug();
+
+    /// <summary>
+    /// パーティクルエディターを描画
+    /// </summary>
+    void DrawParticleEditor();
+
+    /// <summary>
+    /// グループ管理タブを描画
+    /// </summary>
+    void DrawGroupsTab();
+
+    /// <summary>
+    /// 現在のタイムスタンプを生成
+    /// </summary>
+    /// <returns>タイムスタンプ文字列</returns>
     std::string GetCurrentTimestamp();
 
 private:
@@ -122,10 +249,16 @@ private:
     bool* pEndFlag_ = nullptr;
     
 public:
-    // 終了フラグ設定
+    /// <summary>
+    /// 終了フラグポインタを設定
+    /// </summary>
+    /// <param name="pEndFlag">終了フラグへのポインタ</param>
     void SetEndFlagPtr(bool* pEndFlag) { pEndFlag_ = pEndFlag; }
 
-    // デバッグフラグ設定
+    /// <summary>
+    /// デバッグフラグポインタを設定
+    /// </summary>
+    /// <param name="pIsDebug">デバッグフラグへのポインタ</param>
     void SetDebugFlagPtr(bool* pIsDebug) { pIsDebug_ = pIsDebug; }
 
 private:

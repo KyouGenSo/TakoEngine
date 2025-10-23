@@ -9,6 +9,9 @@ class WinApp;
 
 class DX12Basic;
 
+/// <summary>
+/// ImGuiのDirectX 12統合管理クラス。初期化、描画、スタイル設定を担当
+/// </summary>
 class ImGuiManager
 {
 public: // メンバ関数

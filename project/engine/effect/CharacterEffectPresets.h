@@ -3,19 +3,47 @@
 #include "EmitterManager.h"
 #include "Model.h"
 
-// キャラクターエフェクトのプリセット集
-// 既存のEmitterManagerとBoneTrackerを使用してエフェクトを作成
+/// <summary>
+/// キャラクターエフェクトのプリセット集
+/// 既存のEmitterManagerとBoneTrackerを使用してエフェクトを作成
+/// </summary>
 namespace CharacterEffectPresets
 {
-  // エフェクトグループ名
+  /// <summary>
+  /// 炎の拳エフェクトグループ名
+  /// </summary>
   constexpr const char* GROUP_FIRE_FIST = "fire_fist_effect";
+
+  /// <summary>
+  /// 氷のオーラエフェクトグループ名
+  /// </summary>
   constexpr const char* GROUP_ICE_AURA = "ice_aura_effect";
+
+  /// <summary>
+  /// 電撃エフェクトグループ名
+  /// </summary>
   constexpr const char* GROUP_LIGHTNING = "lightning_effect";
+
+  /// <summary>
+  /// 回復エフェクトグループ名
+  /// </summary>
   constexpr const char* GROUP_HEALING = "healing_effect";
+
+  /// <summary>
+  /// 毒エフェクトグループ名
+  /// </summary>
   constexpr const char* GROUP_POISON = "poison_effect";
+
+  /// <summary>
+  /// 武器の軌跡エフェクトグループ名
+  /// </summary>
   constexpr const char* GROUP_WEAPON_TRAIL = "weapon_trail_effect";
 
-  // 炎の拳エフェクト（両手から炎パーティクル）
+  /// <summary>
+  /// 炎の拳エフェクトを作成（両手から炎パーティクルを放出）
+  /// </summary>
+  /// <param name="emitterManager">エミッターマネージャーへのポインタ</param>
+  /// <param name="boneTracker">ボーントラッカーへのポインタ</param>
   inline void CreateFireFistEffect(EmitterManager* emitterManager, BoneTracker* boneTracker)
   {
     // グループを作成
@@ -48,7 +76,11 @@ namespace CharacterEffectPresets
     boneTracker->LinkBoneToEmitter("fire_right_link", "Hand_R", "fire_right");
   }
 
-  // 氷のオーラエフェクト（全身の主要部位から氷パーティクル）
+  /// <summary>
+  /// 氷のオーラエフェクトを作成（全身の主要部位から氷パーティクルを放出）
+  /// </summary>
+  /// <param name="emitterManager">エミッターマネージャーへのポインタ</param>
+  /// <param name="boneTracker">ボーントラッカーへのポインタ</param>
   inline void CreateIceAuraEffect(EmitterManager* emitterManager, BoneTracker* boneTracker)
   {
     // グループを作成
@@ -98,7 +130,11 @@ namespace CharacterEffectPresets
     }
   }
 
-  // 電撃エフェクト（頭部と両手から電撃パーティクル）
+  /// <summary>
+  /// 電撃エフェクトを作成（頭部と両手から電撃パーティクルを放出）
+  /// </summary>
+  /// <param name="emitterManager">エミッターマネージャーへのポインタ</param>
+  /// <param name="boneTracker">ボーントラッカーへのポインタ</param>
   inline void CreateLightningEffect(EmitterManager* emitterManager, BoneTracker* boneTracker)
   {
     // グループを作成
@@ -136,7 +172,11 @@ namespace CharacterEffectPresets
     }
   }
 
-  // 武器の軌跡エフェクト
+  /// <summary>
+  /// 武器の軌跡エフェクトを作成
+  /// </summary>
+  /// <param name="emitterManager">エミッターマネージャーへのポインタ</param>
+  /// <param name="boneTracker">ボーントラッカーへのポインタ</param>
   inline void CreateWeaponTrailEffect(EmitterManager* emitterManager, BoneTracker* boneTracker)
   {
     // グループを作成
@@ -160,7 +200,12 @@ namespace CharacterEffectPresets
     emitterManager->SetEmitterActive("weapon_trail", false);
   }
 
-  // エフェクトの削除
+  /// <summary>
+  /// エフェクトを削除（グループと関連するボーンリンクを削除）
+  /// </summary>
+  /// <param name="emitterManager">エミッターマネージャーへのポインタ</param>
+  /// <param name="boneTracker">ボーントラッカーへのポインタ</param>
+  /// <param name="groupName">削除するエフェクトグループ名</param>
   inline void RemoveEffect(EmitterManager* emitterManager, BoneTracker* boneTracker, const std::string& groupName)
   {
     // グループを削除（関連するエミッターも削除される）

@@ -6,38 +6,52 @@
 #include "vector3.h"
 #include "Vector4.h"
 
-// レンダーターゲット構造体
+/// <summary>
+/// レンダーターゲット構造体
+/// ポストエフェクトの中間バッファとして使用
+/// </summary>
 struct RenderTexture {
-  Microsoft::WRL::ComPtr<ID3D12Resource> resource;
-  D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;
-  uint32_t srvIndex;
+  Microsoft::WRL::ComPtr<ID3D12Resource> resource;  ///< テクスチャリソース
+  D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;            ///< レンダーターゲットビューハンドル
+  uint32_t srvIndex;                                ///< シェーダーリソースビューインデックス
 };
 
+/// <summary>
+/// ビネット効果パラメータ
+/// 画面周辺を暗くする効果
+/// </summary>
 struct VignetteParam
 {
-  float power;
-  float range;
-  float padding[2];
-  Vector3 color;
-  float padding2;
+  float power;       ///< ビネット強度
+  float range;       ///< ビネット範囲（0.0〜1.0）
+  float padding[2];  ///< 16バイトアライメント用
+  Vector3 color;     ///< ビネット色（RGB）
+  float padding2;    ///< パディング
 };
 
+/// <summary>
+/// ビネット＋赤色Bloom効果パラメータ
+/// </summary>
 struct VignetteRedBloomParam
 {
-  float power;
-  float range;
-  float threshold;
+  float power;      ///< ビネット強度
+  float range;      ///< ビネット範囲
+  float threshold;  ///< Bloomしきい値
 };
 
+/// <summary>
+/// Bloom効果パラメータ
+/// 明るい部分を光らせる効果
+/// </summary>
 struct BloomParam
 {
-  float intensity;
-  float threshold;
-  float sigma;
-  int kernelSize;
-  Vector2 direction;
-  int padding1;        // パディング追加
-  int padding2;        // パディング追加
+  float intensity;   ///< Bloom強度
+  float threshold;   ///< 高輝度抽出のしきい値
+  float sigma;       ///< ガウシアンブラーのシグマ値（ぼかし強度）
+  int kernelSize;    ///< ブラーカーネルサイズ
+  Vector2 direction; ///< ブラー方向ベクトル
+  int padding1;      ///< パディング
+  int padding2;      ///< パディング
 };
 
 struct NewBloomParam
@@ -83,24 +97,36 @@ struct FogParam
   float density;
 };
 
+/// <summary>
+/// ラジアルブラーパラメータ
+/// 画面中心から放射状にブラーをかける効果
+/// </summary>
 struct RadialBlurParam
 {
-  Vector2 center;
-  float blurWidth;
-  int32_t sampleCount;
+  Vector2 center;       ///< ブラー中心座標（スクリーン空間0.0〜1.0）
+  float blurWidth;      ///< ブラーの幅
+  int32_t sampleCount;  ///< サンプリング数（品質）
 };
 
+/// <summary>
+/// 白黒フィルターパラメータ
+/// しきい値による2値化処理
+/// </summary>
 struct BWFilterParam
 {
-  float threshold;
+  float threshold;  ///< 白黒の境界しきい値（0.0〜1.0）
 };
 
+/// <summary>
+/// RGBカラー分離効果パラメータ
+/// 色収差のような効果を生成
+/// </summary>
 struct RGBSplitParam
 {
-  Vector2 redOffset;   // Rチャンネルのオフセット
-  Vector2 greenOffset; // Gチャンネルのオフセット
-  Vector2 blueOffset;  // Bチャンネルのオフセット
-  float intensity;     // エフェクトの強度
+  Vector2 redOffset;   ///< Rチャンネルのオフセット（ピクセル単位）
+  Vector2 greenOffset; ///< Gチャンネルのオフセット（ピクセル単位）
+  Vector2 blueOffset;  ///< Bチャンネルのオフセット（ピクセル単位）
+  float intensity;     ///< エフェクトの全体強度（0.0〜1.0）
 };
 
 struct LuminanceOutlineParam
@@ -114,29 +140,41 @@ struct DepthOutlineParam
   float outlineThickness;
 };
 
+/// <summary>
+/// ディゾルブ効果パラメータ
+/// 画像を徐々に溶かす/消失させる効果
+/// </summary>
 struct DissolveParam
 {
-  float threshold; // 溶解のしきい値
-  float edgeThickness;
-  float padding[2]; // パディング追加
-  Vector4 edgeColor;
+  float threshold;      ///< 溶解のしきい値（0.0〜1.0）
+  float edgeThickness;  ///< エッジ（縁取り）の太さ
+  float padding[2];     ///< パディング
+  Vector4 edgeColor;    ///< エッジの色（RGBA）
 };
 
+/// <summary>
+/// ホワイトノイズパラメータ
+/// ランダムノイズを生成
+/// </summary>
 struct WhiteNoiseParam
 {
-  float time;
+  float time;  ///< 時間（ノイズの変化に使用）
 };
 
+/// <summary>
+/// ハーフトーン効果パラメータ
+/// 印刷物のようなドットパターン効果
+/// </summary>
 struct HalfToneParam
 {
-  float dotSize;          // ドットのサイズ
-  float contrast;         // コントラスト
-  float angle;            // ドットグリッドの回転角度（ラジアン）
-  int32_t dotPattern;     // ドットパターン (0=円, 1=四角, 2=ダイヤモンド)
-  Vector2 screenSize;     // スクリーンサイズ
-  int32_t colorMode;      // カラーモード (0=モノクロ, 1=CMYK風)
-  float threshold;        // 閾値調整
-  float padding;          // パディング
+  float dotSize;          ///< ドットのサイズ（大きいほど粗い）
+  float contrast;         ///< コントラスト調整
+  float angle;            ///< ドットグリッドの回転角度（ラジアン）
+  int32_t dotPattern;     ///< ドットパターン (0=円, 1=四角, 2=ダイヤモンド)
+  Vector2 screenSize;     ///< スクリーン解像度（ピクセル）
+  int32_t colorMode;      ///< カラーモード (0=モノクロ, 1=CMYK風)
+  float threshold;        ///< 明暗の閾値調整
+  float padding;          ///< パディング
 };
 
 using EffectParam = std::variant<

@@ -5,10 +5,13 @@
 #include "DX12Basic.h"
 #include "Matrix4x4.h"
 
+/// <summary>
+/// スプライト描画の基盤クラス。パイプライン、ルートシグネチャ、ビュープロジェクション行列を管理
+/// </summary>
 class SpriteBasic {
 private: // シングルトン設定
 
-	// インスタンス
+	///< インスタンス
 	static SpriteBasic* instance_;
 
 	SpriteBasic() = default;
@@ -29,6 +32,7 @@ public: // メンバー関数
 	/// <summary>
 	/// 初期化
 	/// </summary>
+	/// <param name="dx12">DX12Basicのインスタンス</param>
 	void Initialize(DX12Basic* dx12);
 
 	/// <summary>
@@ -43,13 +47,28 @@ public: // メンバー関数
 
   /// <summary>
   /// 画面サイズが変わったときに呼び出すコールバック関数
-  /// <summary>
+  /// </summary>
+  /// <param name="size">新しい画面サイズ</param>
   void OnResize(Vector2 size);
 
 	//-----------------------------------Getters-----------------------------------//
+	/// <summary>
+	/// DX12Basicインスタンスの取得
+	/// </summary>
+	/// <returns>DX12Basicのポインタ</returns>
 	DX12Basic* GetDX12Basic() { return m_dx12_; }
-  Matrix4x4 GetViewMatrix() { return viewMatrixSprite_; }
-  Matrix4x4 GetProjectionMatrix() { return projectionMatrixSprite_; }
+
+	/// <summary>
+	/// ビュー行列の取得
+	/// </summary>
+	/// <returns>スプライト用ビュー行列</returns>
+	Matrix4x4 GetViewMatrix() { return viewMatrixSprite_; }
+
+	/// <summary>
+	/// プロジェクション行列の取得
+	/// </summary>
+	/// <returns>スプライト用プロジェクション行列</returns>
+	Matrix4x4 GetProjectionMatrix() { return projectionMatrixSprite_; }
 
 private: // プライベートメンバー関数
 	/// <summary>
@@ -64,18 +83,18 @@ private: // プライベートメンバー関数
 
 private: // メンバー変数
 
-	// DX12Basicクラスのインスタンス
+	///< DX12Basicクラスのインスタンス
 	DX12Basic* m_dx12_;
 
-	// ルートシグネチャ
+	///< ルートシグネチャ
 	ComPtr<ID3D12RootSignature> rootSignature_;
 
-	// パイプラインステート
+	///< パイプラインステート
 	ComPtr<ID3D12PipelineState> pipelineState_;
 
-  // ビュー行列
-  Matrix4x4 viewMatrixSprite_ = {};
+	///< ビュー行列
+	Matrix4x4 viewMatrixSprite_ = {};
 
-  // プロジェクション行列
-  Matrix4x4 projectionMatrixSprite_ = {};
+	///< プロジェクション行列
+	Matrix4x4 projectionMatrixSprite_ = {};
 };

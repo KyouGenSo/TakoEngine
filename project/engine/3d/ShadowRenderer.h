@@ -10,6 +10,12 @@ class ShadowMap;
 class Light;
 class Camera;
 
+/// <summary>
+/// シャドウレンダリング統合管理クラス
+/// シングルトンパターンで実装され、シャドウマップの生成と適用を制御
+/// 通常描画とインスタンシング描画の両方でシャドウをサポート
+/// PCFフィルタリング、動的品質調整、ImGuiデバッグUI統合機能を提供
+/// </summary>
 class ShadowRenderer
 {
 private: // シングルトン設定
@@ -25,22 +31,25 @@ public:
     /// <summary>
     /// インスタンスの取得
     /// </summary>
+    /// <returns>ShadowRendererのシングルトンインスタンス</returns>
     static ShadowRenderer* GetInstance();
-    
+
     /// <summary>
     /// 初期化
     /// </summary>
-    /// <param name="dx12">DirectX12基本オブジェクト</param>
+    /// <param name="dx12">DirectX12基盤システムへのポインタ</param>
     void Initialize(DX12Basic* dx12);
-    
+
     /// <summary>
     /// Lightの参照を設定
     /// </summary>
+    /// <param name="light">ライトシステムへのポインタ</param>
     void SetLight(Light* light) { light_ = light; }
-    
+
     /// <summary>
     /// Cameraの参照を設定
     /// </summary>
+    /// <param name="camera">カメラへのポインタ</param>
     void SetCamera(Camera* camera) { camera_ = camera; }
 
     /// <summary>
@@ -76,21 +85,25 @@ public:
     /// <summary>
     /// シャドウレンダリング中かどうか
     /// </summary>
+    /// <returns>シャドウレンダリング中の場合true</returns>
     bool IsRenderingShadow() const { return isRenderingShadow_; }
 
     /// <summary>
     /// シャドウの有効/無効を設定
     /// </summary>
+    /// <param name="enabled">シャドウを有効にするか</param>
     void SetEnabled(bool enabled) { shadowEnabled_ = enabled; }
 
     /// <summary>
     /// シャドウが有効かどうか
     /// </summary>
+    /// <returns>シャドウが有効な場合true</returns>
     bool IsEnabled() const { return shadowEnabled_; }
 
     /// <summary>
     /// 定数バッファのGPUアドレスを取得
     /// </summary>
+    /// <returns>定数バッファのGPUアドレス</returns>
     D3D12_GPU_VIRTUAL_ADDRESS GetConstantBufferGPUAddress() const {
         return shadowConstantBuffer_ ? shadowConstantBuffer_->GetGPUVirtualAddress() : 0;
     }
@@ -98,41 +111,49 @@ public:
     /// <summary>
     /// シャドウバイアスを設定
     /// </summary>
+    /// <param name="bias">シャドウバイアス値</param>
     void SetShadowBias(float bias) { shadowBias_ = bias; }
 
     /// <summary>
     /// 法線オフセットバイアスを設定
     /// </summary>
+    /// <param name="bias">法線オフセットバイアス値</param>
     void SetNormalOffsetBias(float bias) { normalOffsetBias_ = bias; }
-    
+
     /// <summary>
     /// シャドウ品質を設定
     /// </summary>
+    /// <param name="quality">品質レベル（0-4）</param>
     void SetShadowQuality(int quality);
-    
+
     /// <summary>
     /// シャドウマップサイズを設定
     /// </summary>
+    /// <param name="size">シャドウマップの解像度</param>
     void SetShadowMapSize(uint32_t size);
-    
+
     /// <summary>
     /// PCFカーネルサイズを設定
     /// </summary>
+    /// <param name="kernelSize">PCFカーネルサイズ</param>
     void SetPCFKernelSize(int kernelSize);
-    
+
     /// <summary>
     /// 最大シャドウ距離を設定
     /// </summary>
+    /// <param name="distance">最大シャドウ距離</param>
     void SetMaxShadowDistance(float distance) { maxShadowDistance_ = distance; }
-    
+
     /// <summary>
     /// 最大シャドウ距離を取得
     /// </summary>
+    /// <returns>最大シャドウ距離</returns>
     float GetMaxShadowDistance() const { return maxShadowDistance_; }
-    
+
     /// <summary>
     /// ShadowMapを取得
     /// </summary>
+    /// <returns>ShadowMapポインタ</returns>
     ShadowMap* GetShadowMap() { return shadowMap_; }
 
     /// <summary>
@@ -172,45 +193,42 @@ private:
     void CreateShadowInstancedPipelineState();
 
 private:
-    // DirectX12関連
-    DX12Basic* dx12_ = nullptr;
-    ShadowMap* shadowMap_ = nullptr;
-    Light* light_ = nullptr;
-    Camera* camera_ = nullptr;
+    DX12Basic* dx12_ = nullptr;          ///< DirectX12基盤システムへの参照
+    ShadowMap* shadowMap_ = nullptr;     ///< シャドウマップ管理クラスへのポインタ
+    Light* light_ = nullptr;             ///< ライトシステムへの参照（ライト位置・方向取得用）
+    Camera* camera_ = nullptr;           ///< カメラへの参照（視錐台カリング用）
 
-    // シャドウ用ルートシグネチャとPSO
-    Microsoft::WRL::ComPtr<ID3D12RootSignature> shadowRootSignature_;
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> shadowPipelineState_;
-    
-    // インスタンシング用シャドウルートシグネチャとPSO
-    Microsoft::WRL::ComPtr<ID3D12RootSignature> shadowInstancedRootSignature_;
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> shadowInstancedPipelineState_;
+    Microsoft::WRL::ComPtr<ID3D12RootSignature> shadowRootSignature_;  ///< 通常シャドウ描画用ルートシグネチャ
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> shadowPipelineState_;   ///< 通常シャドウ描画用パイプラインステート
 
-    // シャドウ定数バッファ
-    Microsoft::WRL::ComPtr<ID3D12Resource> shadowConstantBuffer_;
-    
+    Microsoft::WRL::ComPtr<ID3D12RootSignature> shadowInstancedRootSignature_; ///< インスタンシングシャドウ描画用ルートシグネチャ
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> shadowInstancedPipelineState_;  ///< インスタンシングシャドウ描画用パイプラインステート
+
+    Microsoft::WRL::ComPtr<ID3D12Resource> shadowConstantBuffer_; ///< シャドウパラメータ用定数バッファ
+
+    /// <summary>
+    /// シャドウレンダリング用定数バッファ構造体
+    /// GPU側に送信されるシャドウ設定パラメータ
+    /// </summary>
     struct ShadowConstants {
-        Matrix4x4 lightViewProj;
-        float shadowBias;
-        int enableShadow;
-        Vector2 shadowMapSize;
-        float normalOffsetBias;
-        float pcfKernelSize;
-        float padding[2];  // 16バイトアライメント
+        Matrix4x4 lightViewProj; ///< ライト空間のビュープロジェクション行列
+        float shadowBias;        ///< シャドウバイアス（シャドウアクネ防止）
+        int enableShadow;        ///< シャドウ有効フラグ（0=無効, 1=有効）
+        Vector2 shadowMapSize;   ///< シャドウマップ解像度（テクセルサイズ計算用）
+        float normalOffsetBias;  ///< 法線オフセットバイアス（ピーターパニング防止）
+        float pcfKernelSize;     ///< PCFカーネルサイズ（フィルタリング品質）
+        float padding[2];        ///< 16バイトアライメント用パディング
     };
-    ShadowConstants* shadowConstantData_ = nullptr;
+    ShadowConstants* shadowConstantData_ = nullptr; ///< 定数バッファのマップ済みポインタ
 
-    // シャドウ設定
-    bool shadowEnabled_ = true;
-    float shadowBias_ = 0.0001f;
-    float normalOffsetBias_ = 0.01f;
-    float maxShadowDistance_ = 50.0f;  // 影を表示する最大距離
+    bool shadowEnabled_ = true;              ///< シャドウ有効/無効フラグ
+    float shadowBias_ = 0.0001f;             ///< シャドウバイアス値
+    float normalOffsetBias_ = 0.01f;         ///< 法線オフセットバイアス値
+    float maxShadowDistance_ = 50.0f;        ///< 影を表示する最大距離（カメラからの距離）
 
-    // レンダリング状態
-    bool isRenderingShadow_ = false;
-    
-    // レンダーターゲット復元用
-    D3D12_CPU_DESCRIPTOR_HANDLE savedRTVHandle_;
-    D3D12_CPU_DESCRIPTOR_HANDLE savedDSVHandle_;
-    bool hasSavedRenderTargets_ = false;
+    bool isRenderingShadow_ = false;         ///< 現在シャドウパス中かどうかのフラグ
+
+    D3D12_CPU_DESCRIPTOR_HANDLE savedRTVHandle_; ///< 保存された元のレンダーターゲットビューハンドル
+    D3D12_CPU_DESCRIPTOR_HANDLE savedDSVHandle_; ///< 保存された元の深度ステンシルビューハンドル
+    bool hasSavedRenderTargets_ = false;     ///< レンダーターゲットが保存されているかのフラグ
 };

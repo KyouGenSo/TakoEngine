@@ -1,5 +1,8 @@
 #pragma once
 
+/// <summary>
+/// 全てのシーンの基底クラス。初期化、更新、描画のインターフェースを定義
+/// </summary>
 class BaseScene
 {
 public: // メンバ関数
@@ -25,7 +28,11 @@ public: // メンバ関数
 	/// 描画
 	/// </summary>
 	virtual void Draw() = 0;
-  virtual void DrawWithoutEffect() = 0;
+
+	/// <summary>
+	/// エフェクトなしで描画
+	/// </summary>
+	virtual void DrawWithoutEffect() = 0;
 
 	/// <summary>
 	/// ImGuiの描画

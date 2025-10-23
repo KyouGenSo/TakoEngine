@@ -28,50 +28,55 @@ static const WORD XINPUT_Buttons[] = {
 	  XINPUT_GAMEPAD_BACK
 };
 
-// XButtonIDs構造体
+/// <summary>
+/// XInputボタンID管理構造体
+/// ゲームパッドのボタン番号を格納
+/// </summary>
 struct XButtonIDs
 {
-	XButtonIDs(); // コンストラクタ
+	/// <summary>
+	/// コンストラクタ
+	/// </summary>
+	XButtonIDs();
 
-	// メンバー変数
-	//---------------------//
-	int A, B, X, Y; // 'Action'ボタン
+	//---------------------メンバー変数---------------------//
+	int A, B, X, Y; ///< 'Action'ボタン
 
-	// Directional Pad(DPad) ボタン
-	int DPad_Up, DPad_Down, DPad_Left, DPad_Right;
+	int DPad_Up, DPad_Down, DPad_Left, DPad_Right; ///< Directional Pad(DPad) ボタン
 
-	// Shoulder ボタン
-	int L_Shoulder, R_Shoulder;
+	int L_Shoulder, R_Shoulder; ///< Shoulder ボタン
 
-	// Thumbstick ボタン
-	int L_Thumbstick, R_Thumbstick;
+	int L_Thumbstick, R_Thumbstick; ///< Thumbstick ボタン
 
-	int Start; // 'START' ボタン
-	int Back;  // 'BACK' ボタン
+	int Start; ///< 'START' ボタン
+	int Back;  ///< 'BACK' ボタン
 };
 
+/// <summary>
+/// 統合入力管理クラス
+/// DirectInputとXInputでキーボード、マウス、ゲームパッド入力を処理
+/// </summary>
 class Input {
 private: 	// シングルトン
-	// インスタンス
-	static Input* instance_;
+	static Input* instance_; ///< インスタンス
 
 	Input() = default;
 	Input(const Input&) = delete;
 	Input& operator=(const Input&) = delete;
 	~Input() = default;
 public:
-	// ComPtrのエイリアス
-	template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
+	template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>; ///< ComPtrのエイリアス
 
 public:
-	///<summary>
-	///インスタンスの取得
-	///	</summary>
+	/// <summary>
+	/// インスタンスの取得
+	/// </summary>
 	static Input* GetInstance();
 
 	/// <summary>
 	/// 初期化
 	/// </summary>
+	/// <param name="winApp">ウィンドウアプリケーション</param>
 	void Initialize(WinApp* winApp);
 
 	/// <summary>
@@ -92,64 +97,68 @@ public:
 	/// <summary>
 	/// キーの押下状態を取得
 	/// </summary>
-	/// <param name="key">取得したいキー</param>
+	/// <param name="keyNum">取得したいキーコード</param>
+	/// <returns>押下されている場合true</returns>
 	bool PushKey(BYTE keyNum) const;
 
 	/// <summary>
 	/// キーのトリガー状態を取得
 	/// </summary>
-	/// <param name="key">取得したいキー</param>
+	/// <param name="keyNum">取得したいキーコード</param>
+	/// <returns>押した瞬間のみtrue</returns>
 	bool TriggerKey(BYTE keyNum) const;
 
 	/// <summary>
 	/// キーのリリース状態を取得
 	/// </summary>
-	/// <param name="key">取得したいキー</param>
+	/// <param name="keyNum">取得したいキーコード</param>
+	/// <returns>離した瞬間のみtrue</returns>
 	bool ReleaseKey(BYTE keyNum) const;
 
 	/// <summary>
 	/// マウスの押下状態を取得
 	/// </summary>
-	/// <param name="button"></param>
-	/// <returns></returns>
+	/// <param name="button">マウスボタン番号（0:左, 1:右, 2:中央）</param>
+	/// <returns>押下されている場合true</returns>
 	bool PushMouse(int button) const;
 
 	/// <summary>
-	/// マウスのトリガー状態を取得
+	/// マウスのトリガー状態を取得（押した瞬間のみtrue）
 	/// </summary>
-	/// <param name="button"></param>
-	/// <returns></returns>
+	/// <param name="button">マウスボタン番号（0:左, 1:右, 2:中央）</param>
+	/// <returns>押した瞬間のみtrue</returns>
 	bool TriggerMouse(int button) const;
 
 	/// <summary>
-	/// マウスのリリース状態を取得
+	/// マウスのリリース状態を取得（離した瞬間のみtrue）
 	/// </summary>
-	/// <param name="button"></param>
-	/// <returns></returns>
+	/// <param name="button">マウスボタン番号（0:左, 1:右, 2:中央）</param>
+	/// <returns>離した瞬間のみtrue</returns>
 	bool ReleaseMouse(int button) const;
 
 	/// <summary>
 	/// マウスの座標を取得
 	/// </summary>
-	/// <returns></returns>
+	/// <returns>スクリーン座標系でのマウス位置</returns>
 	Vector2 GetMousePos();
 
 	/// <summary>
 	/// マウスの座標を設定
 	/// </summary>
-	/// <param name="x"></param>
-	/// <param name="y"></param>
+	/// <param name="x">X座標（スクリーン座標）</param>
+	/// <param name="y">Y座標（スクリーン座標）</param>
 	void SetMousePos(int x, int y);
 
 	/// <summary>
 	/// ゲームパッドの状態を取得
 	/// </summary>
+	/// <returns>XInput状態構造体</returns>
 	XINPUT_STATE GetGamePadState();
 
 	/// <summary>
 	/// ゲームパッドの接続状態を取得
 	/// </summary>
-	/// <returns></returns>
+	/// <returns>接続されている場合true</returns>
 	bool IsConnect();
 
 	/// <summary>
@@ -160,64 +169,65 @@ public:
 	/// <summary>
 	/// ゲームパッドの押下状態を取得
 	/// </summary>
-	/// <param name="button"></param>
-	/// <returns></returns>
+	/// <param name="button">ボタン番号（XButtons構造体のメンバーを使用）</param>
+	/// <returns>押下されている場合true</returns>
 	bool PushButton(int button) const;
 
 	/// <summary>
-	/// ゲームパッドのトリガー状態を取得
+	/// ゲームパッドのトリガー状態を取得（押した瞬間のみtrue）
 	/// </summary>
-	/// <param name="button"></param>
-	/// <returns></returns>
+	/// <param name="button">ボタン番号（XButtons構造体のメンバーを使用）</param>
+	/// <returns>押した瞬間のみtrue</returns>
 	bool TriggerButton(int button) const;
 
 	/// <summary>
-	/// ゲームパッドのリリース状態を取得
+	/// ゲームパッドのリリース状態を取得（離した瞬間のみtrue）
 	/// </summary>
-	/// <param name="button"></param>
-	/// <returns></returns>
+	/// <param name="button">ボタン番号（XButtons構造体のメンバーを使用）</param>
+	/// <returns>離した瞬間のみtrue</returns>
 	bool ReleaseButton(int button) const;
 
 	/// <summary>
 	/// ゲームパッドの左スティックがデッドゾーン内かどうか
 	/// </summary>
-	/// <returns></returns>
+	/// <returns>デッドゾーン内の場合true</returns>
 	bool LStickInDeadZone() const;
 
 	/// <summary>
 	/// ゲームパッドの右スティックがデッドゾーン内かどうか
 	/// </summary>
-	/// <returns></returns>
+	/// <returns>デッドゾーン内の場合true</returns>
 	bool RStickInDeadZone() const;
 
 	/// <summary>
 	/// ゲームパッドの左スティックの値を取得
 	/// </summary>
-	/// <returns></returns>
+	/// <returns>正規化された左スティックの値（-1.0 ~ 1.0）</returns>
 	Vector2 GetLeftStick();
 
 	/// <summary>
 	/// ゲームパッドの右スティックの値を取得
 	/// </summary>
-	/// <returns></returns>
+	/// <returns>正規化された右スティックの値（-1.0 ~ 1.0）</returns>
 	Vector2 GetRightStick();
 
 	/// <summary>
 	/// ゲームパッドの左トリガーの値を取得
 	/// </summary>
-	/// <returns></returns>
+	/// <returns>正規化されたトリガー値（0.0 ~ 1.0）</returns>
 	float GetLeftTrigger();
 
 	/// <summary>
 	/// ゲームパッドの右トリガーの値を取得
 	/// </summary>
+	/// <returns>正規化されたトリガー値（0.0 ~ 1.0）</returns>
 	float GetRightTrigger();
 
 	/// <summary>
-	/// ゲームパッドの振動
+	/// ゲームパッドの振動を設定
 	/// </summary>
-	/// <param name="leftMotor"></param>
-	/// <param name="rightMotor"></param>
+	/// <param name="leftMotor">左モーターの強度（0.0 ~ 1.0）</param>
+	/// <param name="rightMotor">右モーターの強度（0.0 ~ 1.0）</param>
 	void SetVibration(float leftMotor, float rightMotor);
 
 	/// <summary>
@@ -226,48 +236,34 @@ public:
 	void StopVibration();
 
 private:
-	// WinAppクラスのインスタンス
-	WinApp* winApp_ = nullptr;
+	WinApp* winApp_ = nullptr; ///< WinAppクラスのインスタンス
 
-	// DirectInputオブジェクト
-	ComPtr<IDirectInput8> directInput_;
+	ComPtr<IDirectInput8> directInput_; ///< DirectInputオブジェクト
 
-	// キーボードデバイス
-	ComPtr<IDirectInputDevice8> keyboardDevice_;
+	ComPtr<IDirectInputDevice8> keyboardDevice_; ///< キーボードデバイス
 
-	// マウスデバイス
-	ComPtr<IDirectInputDevice8> mouseDevice_;
+	ComPtr<IDirectInputDevice8> mouseDevice_; ///< マウスデバイス
 
-	// マウスの状態
-	DIMOUSESTATE mouseState_;
+	DIMOUSESTATE mouseState_; ///< マウスの状態
 
-	// 前フレームのマウスの状態
-	DIMOUSESTATE prevMouseState_;
+	DIMOUSESTATE prevMouseState_; ///< 前フレームのマウスの状態
 
-	// マウスの座標
-	POINT mousePos_ = {};
+	POINT mousePos_ = {}; ///< マウスの座標
 
-	// キーボードの入力状態
-	BYTE keys_[256] = {};
+	BYTE keys_[256] = {}; ///< キーボードの入力状態
 
-	// 前フレームのキーボード入力状態
-	BYTE prevKeys_[256] = {};
+	BYTE prevKeys_[256] = {}; ///< 前フレームのキーボード入力状態
 
-	// -----------------------------------------------ゲームパット-----------------------------------------------//
-	// ゲームパッドの状態
-	XINPUT_STATE state_;
+	//---------------------ゲームパット---------------------//
+	XINPUT_STATE state_; ///< ゲームパッドの状態
 
-	// ゲームパッドボタンの数
-	static const int GAMEPAD_BUTTON_NUM = 14;
+	static const int GAMEPAD_BUTTON_NUM = 14; ///< ゲームパッドボタンの数
 
-	// ゲームパッドのボタンの状態
-	bool buttonStates_[GAMEPAD_BUTTON_NUM];
+	bool buttonStates_[GAMEPAD_BUTTON_NUM]; ///< ゲームパッドのボタンの状態
 
-	// 前フレームのゲームパッドのボタンの状態
-	bool prevButtonStates_[GAMEPAD_BUTTON_NUM];
+	bool prevButtonStates_[GAMEPAD_BUTTON_NUM]; ///< 前フレームのゲームパッドのボタンの状態
 
-	// ゲームパッドのトリガーの状態
-	bool buttonsTriger_[GAMEPAD_BUTTON_NUM];
+	bool buttonsTriger_[GAMEPAD_BUTTON_NUM]; ///< ゲームパッドのトリガーの状態
 
 };
 

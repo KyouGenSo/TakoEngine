@@ -20,6 +20,10 @@ class Camera;
 class IPostEffect;
 class DX12Basic;
 
+/// <summary>
+/// ポストエフェクト管理クラス
+/// エフェクトチェーンシステムで複数エフェクトの連続適用を制御
+/// </summary>
 class PostEffectManager {
 private:
   // シングルトン設定
@@ -37,77 +41,216 @@ public: // メンバ関数
   // ComPtrのエイリアス
   template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
 
-  // インスタンスの取得
+  /// <summary>
+  /// シングルトンインスタンスを取得
+  /// </summary>
+  /// <returns>PostEffectManagerのインスタンスポインタ</returns>
   static PostEffectManager* GetInstance();
 
-  // 初期化
+  /// <summary>
+  /// ポストエフェクトマネージャーを初期化
+  /// レンダーテクスチャの作成と全エフェクトの登録を行う
+  /// </summary>
+  /// <param name="dx12">DirectX 12基盤クラスのポインタ</param>
   void Initialize(DX12Basic* dx12);
 
-  // 終了処理
+  /// <summary>
+  /// ポストエフェクトマネージャーを終了
+  /// シングルトンインスタンスを解放する
+  /// </summary>
   static void Finalize();
 
-  // エフェクトチェーンの管理
+  /// <summary>
+  /// エフェクトチェーンに指定されたエフェクトを追加
+  /// 追加されたエフェクトは描画時に適用順序に従って実行される
+  /// </summary>
+  /// <param name="name">追加するエフェクトの名前</param>
   void AddEffectToChain(const std::string& name);
+
+  /// <summary>
+  /// エフェクトチェーンから指定されたエフェクトを削除
+  /// </summary>
+  /// <param name="name">削除するエフェクトの名前</param>
   void RemoveEffectFromChain(const std::string& name);
+
+  /// <summary>
+  /// エフェクトチェーンをクリアして全エフェクトを削除
+  /// </summary>
   void ClearEffectChain();
 
-  // 描画前の処理
+  /// <summary>
+  /// エフェクト適用対象のレンダーターゲットへの描画を開始
+  /// この関数の後に描画されたオブジェクトにはポストエフェクトが適用される
+  /// </summary>
   void BeginDrawEffectTarget();
+
+  /// <summary>
+  /// エフェクト非適用対象のレンダーターゲットへの描画を開始
+  /// この関数の後に描画されたオブジェクトにはポストエフェクトが適用されない
+  /// </summary>
   void BegineDrawNonEffectTarget();
 
-  // 描画
+  /// <summary>
+  /// エフェクトチェーンを適用して描画処理を実行
+  /// 内部でApplyEffectChainを呼び出す
+  /// </summary>
   void Draw();
+
+  /// <summary>
+  /// 最終的なエフェクト適用結果を描画
+  /// </summary>
+  /// <param name="drawToSwapChain">スワップチェーンに描画するかどうか（デフォルト: true）</param>
   void DrawFinalResult(bool drawToSwapChain = true);
+
+  /// <summary>
+  /// ImGuiデバッグUIを描画
+  /// エフェクトチェーン管理とパラメータ調整用のUIを表示する
+  /// </summary>
   void DrawImgui();
 
-  // レンダーテクスチャの再作成
+  /// <summary>
+  /// レンダーテクスチャを現在のウィンドウサイズで再生成
+  /// ウィンドウリサイズ時などに呼び出される
+  /// </summary>
   void RecreateRenderTexture();
 
-  // 汎用パラメーター設定関数
+  /// <summary>
+  /// 指定されたエフェクトのパラメータを設定
+  /// </summary>
+  /// <param name="effectName">エフェクト名</param>
+  /// <param name="param">設定するパラメータ（EffectParam型）</param>
+  /// <returns>設定が成功した場合true、エフェクトが見つからない場合false</returns>
   bool SetEffectParam(const std::string& effectName, const EffectParam& param);
 
+  /// <summary>
+  /// 指定されたエフェクトのパラメータを設定（テンプレート版）
+  /// 任意の型のパラメータを受け取り、内部でEffectParamに変換する
+  /// </summary>
+  /// <typeparam name="ParamType">パラメータの型</typeparam>
+  /// <param name="effectName">エフェクト名</param>
+  /// <param name="param">設定するパラメータ</param>
+  /// <returns>設定が成功した場合true、エフェクトが見つからない場合false</returns>
   template<typename ParamType>
   bool SetEffectParam(const std::string& effectName, const ParamType& param) {
     return SetEffectParam(effectName, EffectParam(param));
   }
 
+  /// <summary>
+  /// ポストエフェクトで使用するカメラを設定
+  /// 深度ベースエフェクト等でカメラ情報が必要な場合に使用
+  /// </summary>
+  /// <param name="camera">設定するカメラのポインタ</param>
   void SetCamera(Camera* camera) {
     if (camera) {
       camera_ = camera;
     }
   }
 
+  /// <summary>
+  /// ディゾルブエフェクト用のマスクテクスチャを設定
+  /// </summary>
+  /// <param name="textureName">マスクテクスチャの名前</param>
   void SetDissolveMaskTex(const std::string& textureName) {
     if (!textureName.empty()) {
       dissolveMaskSrvIndex_ = TextureManager::GetInstance()->GetSRVIndex(textureName);
     }
   }
 
+  /// <summary>
+  /// ディゾルブエフェクト用のベーステクスチャを設定
+  /// </summary>
+  /// <param name="textureName">ベーステクスチャの名前</param>
   void SetDissolveBaseTex(const std::string& textureName);
 
-  // エフェクト順序変更関数
+  /// <summary>
+  /// 指定されたエフェクトをチェーン内で1つ上に移動
+  /// </summary>
+  /// <param name="effectName">移動するエフェクトの名前</param>
+  /// <returns>移動が成功した場合true、失敗した場合false</returns>
   bool MoveEffectUp(const std::string& effectName);
+
+  /// <summary>
+  /// 指定されたエフェクトをチェーン内で1つ下に移動
+  /// </summary>
+  /// <param name="effectName">移動するエフェクトの名前</param>
+  /// <returns>移動が成功した場合true、失敗した場合false</returns>
   bool MoveEffectDown(const std::string& effectName);
+
+  /// <summary>
+  /// 指定されたエフェクトをチェーン内の特定位置に移動
+  /// </summary>
+  /// <param name="effectName">移動するエフェクトの名前</param>
+  /// <param name="newPosition">移動先の位置（0から始まるインデックス）</param>
+  /// <returns>移動が成功した場合true、失敗した場合false</returns>
   bool MoveEffectToPosition(const std::string& effectName, int newPosition);
+
+  /// <summary>
+  /// チェーン内の2つのエフェクトの位置を交換
+  /// </summary>
+  /// <param name="effectName1">1つ目のエフェクトの名前</param>
+  /// <param name="effectName2">2つ目のエフェクトの名前</param>
+  /// <returns>交換が成功した場合true、失敗した場合false</returns>
   bool SwapEffects(const std::string& effectName1, const std::string& effectName2);
+
+  /// <summary>
+  /// チェーン内の2つのエフェクトをインデックスで指定して位置を交換
+  /// </summary>
+  /// <param name="index1">1つ目のエフェクトのインデックス</param>
+  /// <param name="index2">2つ目のエフェクトのインデックス</param>
+  /// <returns>交換が成功した場合true、失敗した場合false</returns>
   bool SwapEffectsByIndex(int index1, int index2);
 
-  // エフェクト位置取得
+  /// <summary>
+  /// 指定されたエフェクトのチェーン内での位置を取得
+  /// </summary>
+  /// <param name="effectName">エフェクトの名前</param>
+  /// <returns>エフェクトの位置（0から始まるインデックス）、見つからない場合は-1</returns>
   int GetEffectPosition(const std::string& effectName) const;
+
+  /// <summary>
+  /// 指定されたエフェクトがチェーン内に存在するか判定
+  /// </summary>
+  /// <param name="effectName">エフェクトの名前</param>
+  /// <returns>チェーン内に存在する場合true、存在しない場合false</returns>
   bool IsEffectInChain(const std::string& effectName) const;
 
-  // エフェクトチェーン情報取得
+  /// <summary>
+  /// エフェクトチェーンのサイズ（登録されているエフェクト数）を取得
+  /// </summary>
+  /// <returns>エフェクトチェーンのサイズ</returns>
   size_t GetEffectChainSize() const;
+
+  /// <summary>
+  /// 指定位置にあるエフェクトの名前を取得
+  /// </summary>
+  /// <param name="position">取得する位置（0から始まるインデックス）</param>
+  /// <returns>指定位置のエフェクト名、範囲外の場合は空文字列</returns>
   std::string GetEffectAtPosition(int position) const;
+
+  /// <summary>
+  /// エフェクトチェーン全体を取得
+  /// </summary>
+  /// <returns>エフェクト名のリスト</returns>
   std::vector<std::string> GetEffectChain() const;
-  
-  // 現在のレンダーターゲットハンドル取得
+
+  /// <summary>
+  /// 現在のレンダーターゲットのCPUディスクリプタハンドルを取得
+  /// </summary>
+  /// <returns>エフェクト対象レンダーターゲットのRTVハンドル</returns>
   D3D12_CPU_DESCRIPTOR_HANDLE GetCurrentRTVHandle() const { return effectTargetRT_.rtvHandle; }
-  
-  // 最終結果のSRVインデックス取得（ImGuiでの表示用）
+
+  /// <summary>
+  /// 最終的なエフェクト適用結果のSRVインデックスを取得
+  /// ImGuiでのテクスチャ表示などに使用
+  /// </summary>
+  /// <returns>最終結果テクスチャのSRVインデックス</returns>
   uint32_t GetFinalResultSrvIndex() const;
-  
-  // 最終結果のリソース取得（ImGuiでの表示用）
+
+  /// <summary>
+  /// 最終的なエフェクト適用結果のリソースを取得
+  /// ImGuiでのテクスチャ表示などに使用
+  /// </summary>
+  /// <returns>最終結果テクスチャのリソースポインタ</returns>
   ID3D12Resource* GetFinalResultResource() const;
 
 private: // プライベートメンバー関数
@@ -120,14 +263,29 @@ private: // プライベートメンバー関数
   // エフェクトを適用
   void ApplyEffectChain();
 
-  // ImGuiヘルパー関数
+  /// <summary>
+  /// ImGuiエフェクトパラメータタブを描画
+  /// </summary>
   void DrawEffectParametersTab();
 
-  // バリアの設定
+  /// <summary>
+  /// リソースバリアを設定
+  /// </summary>
+  /// <param name="stateBefore">遷移前の状態</param>
+  /// <param name="stateAfter">遷移後の状態</param>
   void SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
+
+  /// <summary>
+  /// 指定リソースのバリアを設定
+  /// </summary>
+  /// <param name="resource">対象リソース</param>
+  /// <param name="stateBefore">遷移前の状態</param>
+  /// <param name="stateAfter">遷移後の状態</param>
   void SetBarrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
 
-  // 状態追跡付きバリア遷移
+  /// <summary>
+  /// 状態追跡付きバリア遷移
+  /// </summary>
   void TransitionResourceWithTracking(ID3D12Resource* resource, D3D12_RESOURCE_STATES newState);
   
   // リソース状態取得

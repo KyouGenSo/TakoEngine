@@ -3,7 +3,10 @@
 #include "Transform.h"
 #include <array>
 
-
+/// <summary>
+/// カメラシステムクラス
+/// ビュー・プロジェクション行列管理
+/// </summary>
 class Camera
 {
 public: // メンバー関数
@@ -24,19 +27,88 @@ public: // メンバー関数
   void UpdateProjectionMatrix();
 
 	//-----------------------------------------Getter-----------------------------------------//
+	/// <summary>
+	/// ワールド行列を取得
+	/// </summary>
+	/// <returns>ワールド行列</returns>
 	[[nodiscard]] const Matrix4x4& GetWorldMatrix() const { return worldMatrix_; }
+
+	/// <summary>
+	/// ビュー行列を取得
+	/// </summary>
+	/// <returns>ビュー行列</returns>
 	[[nodiscard]] const Matrix4x4& GetViewMatrix() const { return viewMatrix_; }
+
+	/// <summary>
+	/// プロジェクション行列を取得
+	/// </summary>
+	/// <returns>プロジェクション行列</returns>
 	[[nodiscard]] const Matrix4x4& GetProjectionMatrix() const { return projectionMatrix_; }
+
+	/// <summary>
+	/// ビュープロジェクション行列を取得
+	/// </summary>
+	/// <returns>ビュープロジェクション行列</returns>
 	[[nodiscard]] const Matrix4x4& GetViewProjectionMatrix() const { return viewProjectionMatrix_; }
+
+	/// <summary>
+	/// 回転を取得
+	/// </summary>
+	/// <returns>回転値（ラジアン）</returns>
 	[[nodiscard]] const Vector3& GetRotate() const { return transform_.rotate; }
+
+	/// <summary>
+	/// X軸回転を取得
+	/// </summary>
+	/// <returns>X軸回転値（ラジアン）</returns>
   [[nodiscard]] float GetRotateX() const { return transform_.rotate.x; }
+
+	/// <summary>
+	/// Y軸回転を取得
+	/// </summary>
+	/// <returns>Y軸回転値（ラジアン）</returns>
   [[nodiscard]] float GetRotateY() const { return transform_.rotate.y; }
+
+	/// <summary>
+	/// Z軸回転を取得
+	/// </summary>
+	/// <returns>Z軸回転値（ラジアン）</returns>
   [[nodiscard]] float GetRotateZ() const { return transform_.rotate.z; }
+
+	/// <summary>
+	/// 座標を取得
+	/// </summary>
+	/// <returns>座標値</returns>
 	[[nodiscard]] const Vector3& GetTranslate() const { return transform_.translate; }
+
+	/// <summary>
+	/// トランスフォームを取得
+	/// </summary>
+	/// <returns>トランスフォーム情報</returns>
   [[nodiscard]] const Transform& GetTransform() const { return transform_; }
+
+	/// <summary>
+	/// 垂直視野角を取得
+	/// </summary>
+	/// <returns>垂直視野角（ラジアン）</returns>
 	[[nodiscard]] float GetFovY() const { return fovY_; }
+
+	/// <summary>
+	/// アスペクト比を取得
+	/// </summary>
+	/// <returns>アスペクト比</returns>
 	[[nodiscard]] float GetAspect() const { return aspect_; }
+
+	/// <summary>
+	/// ニアクリップ距離を取得
+	/// </summary>
+	/// <returns>ニアクリップ距離</returns>
 	[[nodiscard]] float GetNearClip() const { return nearZ_; }
+
+	/// <summary>
+	/// ファークリップ距離を取得
+	/// </summary>
+	/// <returns>ファークリップ距離</returns>
 	[[nodiscard]] float GetFarClip() const { return farZ_; }
 	
 	/// <summary>
@@ -69,12 +141,46 @@ public: // メンバー関数
 
 
 	//-----------------------------------------Setter-----------------------------------------//
+	/// <summary>
+	/// 回転を設定
+	/// </summary>
+	/// <param name="rotate">回転値（ラジアン）</param>
 	void SetRotate(const Vector3& rotate) { transform_.rotate = rotate; }
+
+	/// <summary>
+	/// 座標を設定
+	/// </summary>
+	/// <param name="translate">座標値</param>
 	void SetTranslate(const Vector3& translate) { transform_.translate = translate; }
+
+	/// <summary>
+	/// 垂直視野角を設定
+	/// </summary>
+	/// <param name="fovY">垂直視野角（ラジアン）</param>
 	void SetFovY(float fovY) { fovY_ = fovY; }
+
+	/// <summary>
+	/// アスペクト比を設定
+	/// </summary>
+	/// <param name="aspect">アスペクト比</param>
 	void SetAspect(float aspect) { aspect_ = aspect; }
+
+	/// <summary>
+	/// ニアクリップ距離を設定
+	/// </summary>
+	/// <param name="nearZ">ニアクリップ距離</param>
 	void SetNearClip(float nearZ) { nearZ_ = nearZ; }
+
+	/// <summary>
+	/// ファークリップ距離を設定
+	/// </summary>
+	/// <param name="farZ">ファークリップ距離</param>
 	void SetFarClip(float farZ) { farZ_ = farZ; }
+
+	/// <summary>
+	/// ビュープロジェクション行列を設定
+	/// </summary>
+	/// <param name="viewProjectionMatrix">ビュープロジェクション行列</param>
 	void SetViewProjectionMatrix(const Matrix4x4& viewProjectionMatrix) { viewProjectionMatrix_ = viewProjectionMatrix; }
 
 private: // メンバー変数

@@ -5,12 +5,14 @@
 
 class ITransitionEffect;
 
+/// <summary>
+/// シーン管理を行うシングルトンクラス。シーンの切り替え、更新、描画を統括
+/// </summary>
 class SceneManager
 {
 private: // シングルトン設定
 
-	// インスタンス
-	static SceneManager* instance_;
+	static SceneManager* instance_; ///< インスタンス
 
 	SceneManager() = default;
 	~SceneManager() = default;
@@ -19,9 +21,9 @@ private: // シングルトン設定
 
 public: // メンバ関数
 
-	///<summary>
-	///インスタンスの取得
-	///	</summary>
+	/// <summary>
+	/// インスタンスの取得
+	/// </summary>
 	static SceneManager* GetInstance();
 
 	/// <summary>
@@ -33,7 +35,11 @@ public: // メンバ関数
 	/// 描画
 	/// </summary>
 	void Draw();
-  void DrawWithoutEffect();
+
+	/// <summary>
+	/// エフェクトなしで描画
+	/// </summary>
+	void DrawWithoutEffect();
 
 	/// <summary>
 	/// imguiの描画
@@ -91,19 +97,16 @@ public: // メンバ関数
 	/// <summary>
 	/// シーンファクトリーの設定
 	/// </summary>
+	/// <param name="sceneFactory">シーンファクトリーのポインタ</param>
 	void SetSceneFactory(AbstractSceneFactory* sceneFactory) { m_sceneFactory_ = sceneFactory; }
 
 private: // メンバ変数
 
-	// シーン
-	BaseScene* scene_ = nullptr;
+	BaseScene* scene_ = nullptr; ///< 現在のシーン
 
-	// 次のシーン
-	BaseScene* nextScene_ = nullptr;
+	BaseScene* nextScene_ = nullptr; ///< 次のシーン
 
-	// シーンファクトリー
-	AbstractSceneFactory* m_sceneFactory_ = nullptr;
+	AbstractSceneFactory* m_sceneFactory_ = nullptr; ///< シーンファクトリー
 
-	// シーン遷移アニメーション時間
-	float transitionTime_ = 0.5f;
+	float transitionTime_ = 0.5f; ///< シーン遷移アニメーション時間
 };

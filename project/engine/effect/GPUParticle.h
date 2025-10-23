@@ -16,10 +16,16 @@ class EmitterManager;
 class DX12Basic;
 class Camera;
 
+/// <summary>
+/// GPUパーティクルシステムクラス
+/// Compute Shaderで最大10万パーティクルの高速処理を実現
+/// </summary>
 class GPUParticle
 {
 private: // シングルトン設定
-  // インスタンス
+  /// <summary>
+  /// シングルトンインスタンス
+  /// </summary>
   static GPUParticle* instance_;
   GPUParticle() = default;
   ~GPUParticle() = default;
@@ -29,22 +35,25 @@ private: // シングルトン設定
 public: // メンバー関数
 
   /// <summary>
-  ///　インスタンスの取得
-  ///	</summary>
+  /// インスタンスの取得
+  /// </summary>
+  /// <returns>GPUParticleシステムのシングルトンインスタンス</returns>
   static GPUParticle* GetInstance();
 
   /// <summary>
-  ///　初期化
-  /// <summary>
+  /// 初期化
+  /// </summary>
+  /// <param name="dx12">DirectX 12基盤クラスへのポインタ</param>
+  /// <param name="camera">カメラへのポインタ</param>
   void Initialize(DX12Basic* dx12, Camera* camera);
 
   /// <summary>
-  ///　更新
+  /// 更新
   /// </summary>
   void Update();
 
   /// <summary>
-  ///　描画
+  /// 描画
   /// </summary>
   void Draw();
 
@@ -58,29 +67,53 @@ public: // メンバー関数
   /// <summary>
   /// 既存のエミッターからコピーして一時的なエミッターを作成
   /// </summary>
+  /// <param name="sourceEmitter">コピー元のエミッター</param>
+  /// <param name="lifeTime">一時エミッターの寿命（秒）</param>
+  /// <returns>作成された一時エミッター</returns>
   std::shared_ptr<GPUParticleEmitter> CreateTemporaryEmitterFrom(GPUParticleEmitter* sourceEmitter, float lifeTime);
 
   /// <summary>
   /// エミッターの登録
   /// </summary>
+  /// <param name="emitter">登録するエミッター</param>
   void RegisterEmitter(std::shared_ptr<GPUParticleEmitter> emitter);
 
   /// <summary>
   /// エミッターの登録解除
   /// </summary>
+  /// <param name="emitter">登録解除するエミッター</param>
   void UnregisterEmitter(std::shared_ptr<GPUParticleEmitter> emitter);
 
   /// <summary>
-  /// エミッターのID取得
+  /// エミッターの数を取得
   /// </summary>
+  /// <returns>アクティブなエミッターの数</returns>
   [[nodiscard]] uint32_t GetEmitterCount() const { return static_cast<uint32_t>(activeEmitters_.size()); }
 
   //-------------------------Getter/Setter-------------------------//
+  /// <summary>
+  /// インデックスによってエミッターを検索
+  /// </summary>
+  /// <param name="index">検索するインデックス</param>
+  /// <returns>見つかったエミッター、見つからない場合はnullptr</returns>
   std::shared_ptr<GPUParticleEmitter> FindEmitterByIndex(size_t index);
 
+  /// <summary>
+  /// デバッグモードが有効か取得
+  /// </summary>
+  /// <returns>デバッグモードが有効な場合true</returns>
   [[nodiscard]] bool GetIsDebug() const { return isDebug_; }
 
+  /// <summary>
+  /// カメラを設定
+  /// </summary>
+  /// <param name="camera">設定するカメラ</param>
   void SetCamera(Camera* camera) { m_camera_ = camera; }
+
+  /// <summary>
+  /// デバッグモードを設定
+  /// </summary>
+  /// <param name="isDebug">デバッグモードを有効にする場合true</param>
   void SetIsDebug(bool isDebug) { isDebug_ = isDebug; }
   //-------------------------Getter/Setter-------------------------//
 
@@ -93,7 +126,7 @@ public: // メンバー関数
 
 private: // プライベートメンバー関数
   /// <summary>
-  ///　emitterの更新
+  /// emitterの更新
   /// </summary>
   void UpdateEmitter();
 
@@ -113,34 +146,37 @@ private: // プライベートメンバー関数
   void SyncEmitterData();
 
   //-----------リソース作成関連------------//
-  ///<summary>
+  /// <summary>
   /// ルートシグネチャの作成
   /// </summary>
   void CreateRS();
 
-  ///<summary>
+  /// <summary>
   /// パイプラインステートの生成
   /// </summary>
   void CreatePSO();
 
-  ///<summary>
+  /// <summary>
   /// InitCSルートシグネチャの作成
-  ///</summary>
+  /// </summary>
   void CreateInitComputeRS();
 
-  ///<summary>
+  /// <summary>
   /// EmitParticleCSルートシグネチャの作成
-  ///</summary>
+  /// </summary>
   void CreateEmitParticleComputeRS();
 
-  ///<summary>
+  /// <summary>
   /// UpdateParticleCSルートシグネチャの作成
-  ///</summary>
+  /// </summary>
   void CreateUpdateParticleComputeRS();
 
-  ///<summary>
-  /// パイプラインステートの生成
+  /// <summary>
+  /// コンピュートシェーダーのパイプラインステートを生成
   /// </summary>
+  /// <param name="RS">ルートシグネチャ</param>
+  /// <param name="PSO">パイプラインステート</param>
+  /// <param name="shaderName">シェーダーファイル名</param>
   void CreateComputeShaderPSO(Microsoft::WRL::ComPtr<ID3D12RootSignature>& RS, Microsoft::WRL::ComPtr<ID3D12PipelineState>& PSO, const std::wstring& shaderName);
 
   /// <summary>
@@ -175,72 +211,170 @@ private: // プライベートメンバー関数
 
 private: //メンバー変数
 
-  // パーティクルの最大出力数
+  /// <summary>
+  /// パーティクルの最大出力数
+  /// </summary>
   static const uint32_t kNumMaxParticle;
 
-  // emitterの最大数
+  /// <summary>
+  /// エミッターの最大数
+  /// </summary>
   static const uint32_t kNumMaxEmitter;
 
 
-  // 初期化フラグ
+  /// <summary>
+  /// 初期化フラグ
+  /// </summary>
   bool isInited_ = false;
+
+  /// <summary>
+  /// デバッグモードフラグ
+  /// </summary>
   bool isDebug_ = false;
 
-  // DX12Basic
+  /// <summary>
+  /// DirectX 12基盤クラスへのポインタ
+  /// </summary>
   DX12Basic* m_dx12_ = nullptr;
 
-  // SRVマネージャ
+  /// <summary>
+  /// SRVマネージャへのポインタ
+  /// </summary>
   SrvManager* m_srvManager_ = nullptr;
 
-  // カメラ
+  /// <summary>
+  /// カメラへのポインタ
+  /// </summary>
   Camera* m_camera_;
 
-  // モデル
+  /// <summary>
+  /// モデルデータ
+  /// </summary>
   ModelData modelData_;
 
-  // ルートシグネチャ
+  /// <summary>
+  /// 描画用ルートシグネチャ
+  /// </summary>
   Microsoft::WRL::ComPtr<ID3D12RootSignature> RS_;
+
+  /// <summary>
+  /// 初期化コンピュートシェーダー用ルートシグネチャ
+  /// </summary>
   Microsoft::WRL::ComPtr<ID3D12RootSignature> initComputeRS_;
+
+  /// <summary>
+  /// パーティクル射出コンピュートシェーダー用ルートシグネチャ
+  /// </summary>
   Microsoft::WRL::ComPtr<ID3D12RootSignature> emitParticleRS_;
+
+  /// <summary>
+  /// パーティクル更新コンピュートシェーダー用ルートシグネチャ
+  /// </summary>
   Microsoft::WRL::ComPtr<ID3D12RootSignature> updateParticleRS_;
 
-  // パイプラインステート
+  /// <summary>
+  /// 描画用パイプラインステート
+  /// </summary>
   Microsoft::WRL::ComPtr<ID3D12PipelineState> PSO_;
+
+  /// <summary>
+  /// 初期化コンピュートシェーダー用パイプラインステート
+  /// </summary>
   Microsoft::WRL::ComPtr<ID3D12PipelineState> initComputePSO_;
+
+  /// <summary>
+  /// パーティクル射出コンピュートシェーダー用パイプラインステート
+  /// </summary>
   Microsoft::WRL::ComPtr<ID3D12PipelineState> emitParticlePSO_;
+
+  /// <summary>
+  /// パーティクル更新コンピュートシェーダー用パイプラインステート
+  /// </summary>
   Microsoft::WRL::ComPtr<ID3D12PipelineState> updateParticlePSO_;
 
-  // パーティクルリソース
+  /// <summary>
+  /// パーティクルデータ用GPU リソース
+  /// </summary>
   Microsoft::WRL::ComPtr<ID3D12Resource> particleResource_;
+
+  /// <summary>
+  /// パーティクルリソースのUAVインデックス
+  /// </summary>
   uint32_t particleUavIndex_;
+
+  /// <summary>
+  /// パーティクルリソースのSRVインデックス
+  /// </summary>
   uint32_t particleSrvIndex_;
 
-  // PerViewの定数バッファ
+  /// <summary>
+  /// PerView定数バッファリソース
+  /// </summary>
   Microsoft::WRL::ComPtr<ID3D12Resource> perViewResource_;
+
+  /// <summary>
+  /// PerViewデータへのポインタ
+  /// </summary>
   PerView* perViewData_;
 
-  // PerFrameの定数バッファ
+  /// <summary>
+  /// PerFrame定数バッファリソース
+  /// </summary>
   Microsoft::WRL::ComPtr<ID3D12Resource> perFrameResource_;
+
+  /// <summary>
+  /// PerFrameデータへのポインタ
+  /// </summary>
   PerFrame* perFrameData_;
 
-  // エミッターリソース
+  /// <summary>
+  /// エミッターデータ用GPUリソース
+  /// </summary>
   Microsoft::WRL::ComPtr<ID3D12Resource> emitterResource_;
+
+  /// <summary>
+  /// エミッターリソースのSRVインデックス
+  /// </summary>
   uint32_t emitterSrvIndex_;
-  //std::vector<EmitterData> emitters_;
-  //uint32_t activeEmitterCount_ = 0;
+
+  /// <summary>
+  /// アクティブなエミッターのリスト
+  /// </summary>
   std::vector<std::shared_ptr<GPUParticleEmitter>> activeEmitters_;
 
-  // FreeListリソース
+  /// <summary>
+  /// FreeListインデックス用GPUリソース
+  /// </summary>
   Microsoft::WRL::ComPtr<ID3D12Resource> freeListIndexResource_;
+
+  /// <summary>
+  /// FreeListインデックスのUAVインデックス
+  /// </summary>
   uint32_t freeListIndexUavIndex_;
+
+  /// <summary>
+  /// FreeList用GPUリソース
+  /// </summary>
   Microsoft::WRL::ComPtr<ID3D12Resource> freeListResource_;
+
+  /// <summary>
+  /// FreeListのUAVインデックス
+  /// </summary>
   uint32_t freeListUavIndex_;
 
-  // 頂点バッファ
+  /// <summary>
+  /// 頂点データ用GPUリソース
+  /// </summary>
   Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource_;
+
+  /// <summary>
+  /// 頂点データへのポインタ
+  /// </summary>
   VertexData* vertexData_;
 
-  // 頂点バッファビュー
+  /// <summary>
+  /// 頂点バッファビュー
+  /// </summary>
   D3D12_VERTEX_BUFFER_VIEW vertexBufferView_;
 };
 

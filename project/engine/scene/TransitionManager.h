@@ -12,8 +12,7 @@
 class TransitionManager
 {
 private: // シングルトン設定
-	// インスタンス
-	static TransitionManager* instance_;
+	static TransitionManager* instance_; ///< インスタンス
 
 	TransitionManager() = default;
 	~TransitionManager() = default;
@@ -104,21 +103,31 @@ public: // メンバ関数
 	/// <returns>現在のエフェクト</returns>
 	ITransitionEffect* GetCurrentEffect() const;
 
-	// 後方互換性のためのメソッド（既存のTransitionクラスと同じインターフェース）
+	/// <summary>
+	/// 後方互換性のためのメソッド
+	/// </summary>
 
 	/// <summary>
 	/// シーン遷移アニメーション開始
 	/// </summary>
+	/// <param name="state">遷移状態</param>
+	/// <param name="duration">遷移時間</param>
 	void Start(ITransitionEffect::TransitionState state, float duration);
 
 	/// <summary>
 	/// シーン遷移アニメーション開始（エフェクト指定）
 	/// </summary>
+	/// <param name="state">遷移状態</param>
+	/// <param name="type">エフェクトタイプ</param>
+	/// <param name="duration">遷移時間</param>
 	void Start(ITransitionEffect::TransitionState state, EffectType type, float duration);
 
 	/// <summary>
 	/// シーン遷移アニメーション開始（エフェクト名指定）
 	/// </summary>
+	/// <param name="state">遷移状態</param>
+	/// <param name="effectName">エフェクト名</param>
+	/// <param name="duration">遷移時間</param>
 	void Start(ITransitionEffect::TransitionState state, const std::string& effectName, float duration);
 
 	/// <summary>
@@ -129,16 +138,14 @@ public: // メンバ関数
 	/// <summary>
 	/// シーン遷移アニメーションが終了しているか
 	/// </summary>
+	/// <returns>終了している場合true</returns>
 	bool IsFinished() const;
 
 private: // メンバ変数
 
-	// 現在使用中のエフェクト
-	std::unique_ptr<ITransitionEffect> currentEffect_;
+	std::unique_ptr<ITransitionEffect> currentEffect_; ///< 現在使用中のエフェクト
 
-	// カスタムエフェクトのファクトリ登録用
-	std::unordered_map<std::string, std::function<std::unique_ptr<ITransitionEffect>()>> effectFactories_;
+	std::unordered_map<std::string, std::function<std::unique_ptr<ITransitionEffect>()>> effectFactories_; ///< カスタムエフェクトのファクトリ登録用
 
-	// デフォルトエフェクトタイプ
-	EffectType defaultEffectType_ = EffectType::Fade;
+	EffectType defaultEffectType_ = EffectType::Fade; ///< デフォルトエフェクトタイプ
 };

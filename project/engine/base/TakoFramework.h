@@ -11,66 +11,97 @@
 #include "DebugUIManager.h"
 #endif
 
+/// <summary>
+/// ゲームエンジンのメインフレームワーク
+/// アプリケーションの基底クラス
+/// </summary>
 class TakoFramework {
 public: // メンバ関数
 
-	// デストラクタ
+	/// <summary>
+	/// デストラクタ
+	/// </summary>
 	virtual ~TakoFramework() = default;
 
-	// 初期化
+	/// <summary>
+	/// アプリケーションの初期化
+	/// </summary>
 	virtual void Initialize();
 
-	// 終了処理
+	/// <summary>
+	/// 終了処理
+	/// </summary>
 	virtual void Finalize();
 
-	// 更新
+	/// <summary>
+	/// フレーム更新処理
+	/// </summary>
 	virtual void Update();
 
-	// 描画
+	/// <summary>
+	/// 描画処理
+	/// </summary>
 	virtual void Draw();
 
-	// 実行
+	/// <summary>
+	/// アプリケーションのメインループ実行
+	/// </summary>
 	void Run();
 
-	// 終了フラグを取得
+	/// <summary>
+	/// 終了フラグを取得
+	/// </summary>
+	/// <returns>終了フラグ</returns>
 	bool GetEndFlag() const { return endFlag_; }
 
 #ifdef _DEBUG
-	// デバッグモード制御
+	/// <summary>
+	/// デバッグモードの取得
+	/// </summary>
+	/// <returns>デバッグモードフラグ</returns>
 	bool GetIsDebug() const { return isDebug_; }
+
+	/// <summary>
+	/// デバッグモードの設定
+	/// </summary>
+	/// <param name="value">デバッグモードフラグ</param>
 	void SetIsDebug(bool value);
+
+	/// <summary>
+	/// デバッグフラグのポインタ取得（ImGui用）
+	/// </summary>
+	/// <returns>デバッグフラグへのポインタ</returns>
 	bool* GetIsDebugPtr() { return &isDebug_; }
 #endif
 
-  // フルスクリーンモードの切り替え
-  void ToggleFullScreen();
+	/// <summary>
+	/// フルスクリーンモードの切り替え
+	/// </summary>
+	void ToggleFullScreen();
 
-  // ウィンドウリサイズ時の処理
-  void OnWindowResize(uint32_t width, uint32_t height);
+	/// <summary>
+	/// ウィンドウリサイズ時の処理
+	/// </summary>
+	/// <param name="width">新しいウィンドウ幅</param>
+	/// <param name="height">新しいウィンドウ高さ</param>
+	void OnWindowResize(uint32_t width, uint32_t height);
 
 protected: // メンバ変数
-	// リソースリークチェッカー
-	D3DResourceLeakChecker d3dResourceLeakCheker;
+	D3DResourceLeakChecker d3dResourceLeakCheker;  ///< リソースリークチェッカー（デバッグビルドでメモリリーク検出）
 
-	// ウィンドウクラス
-	WinApp* winApp_ = nullptr;
+	WinApp* winApp_ = nullptr;  ///< ウィンドウ管理クラスへのポインタ
 
-	// DX12
-	DX12Basic* dx12_ = nullptr;
+	DX12Basic* dx12_ = nullptr;  ///< DirectX 12基盤システムへのポインタ
 
-	// ImGuiManager
 #ifdef _DEBUG
-	ImGuiManager* imguiManager_ = nullptr;
+	ImGuiManager* imguiManager_ = nullptr;  ///< ImGuiマネージャー（デバッグUI用）
 #endif
 
-	// カメラ
-	Camera* defaultCamera_ = nullptr;
+	Camera* defaultCamera_ = nullptr;  ///< デフォルトカメラ
 
-	// シーンファクトリー
-	AbstractSceneFactory* sceneFactory_ = nullptr;
+	AbstractSceneFactory* sceneFactory_ = nullptr;  ///< シーンファクトリー（シーン生成用）
 
-	// 終了フラグ
-	bool endFlag_ = false;
+	bool endFlag_ = false;  ///< アプリケーション終了フラグ
 
-  bool isDebug_ = false;
+	bool isDebug_ = false;  ///< デバッグモードフラグ
 };
