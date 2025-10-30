@@ -114,7 +114,12 @@ void Mesh::DrawInstanced(uint32_t instanceCount)
 {
   // インスタンシング描画（スキニングは未対応）
   if (hasSkinning_) {
-    DebugUIManager::GetInstance()->AddLog("Instanced drawing is not supported for skinned meshes", DebugUIManager::LogType::Warning);
+#ifdef _DEBUG
+    DebugUIManager::GetInstance()->AddLog(
+      "Instanced drawing is not supported for skinned meshes",
+      DebugUIManager::LogType::Warning);
+#endif
+
     return;
   }
 

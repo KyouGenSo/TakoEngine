@@ -149,7 +149,12 @@ void Model::DrawInstanced(uint32_t instanceCount)
   // インスタンシング描画ではスキニングは未対応
   if (hasSkeleton_)
   {
-    DebugUIManager::GetInstance()->AddLog("Warning: Instanced drawing is not supported for skinned models", DebugUIManager::LogType::Warning);
+#ifdef _DEBUG
+    DebugUIManager::GetInstance()->AddLog(
+      "Warning: Instanced drawing is not supported for skinned models",
+      DebugUIManager::LogType::Warning);
+#endif
+
     return;
   }
 
@@ -467,7 +472,12 @@ Matrix4x4 Model::GetJointWorldMatrix(const std::string& jointName, const Matrix4
   if (it == skeleton_.jointMap.end())
   {
     // Jointが見つからない場合は単位行列を返す
-    DebugUIManager::GetInstance()->AddLog("Warning: Joint '" + jointName + "' not found in skeleton", DebugUIManager::LogType::Warning);
+#ifdef _DEBUG
+    DebugUIManager::GetInstance()->AddLog(
+      "Warning: Joint '" + jointName + "' not found in skeleton",
+      DebugUIManager::LogType::Warning);
+#endif
+
     return Mat4x4::MakeIdentity();
   }
 
@@ -1407,7 +1417,9 @@ void Model::SetAnimation(const std::string& animationName)
   }else
   {
 #ifdef  _DEBUG
-    DebugUIManager::GetInstance()->AddLog("Warning: Animation '" + animationName + "' not found in model '" + modelFileName_ + "'", DebugUIManager::LogType::Warning);
+    DebugUIManager::GetInstance()->AddLog(
+      "Warning: Animation '" + animationName + "' not found in model '" + modelFileName_ + "'",
+      DebugUIManager::LogType::Warning);
 #endif
   }
 }
@@ -1435,7 +1447,9 @@ void Model::SetAnimation(const std::string& animationName, float transitionDurat
   }else
   {
 #ifdef  _DEBUG
-    DebugUIManager::GetInstance()->AddLog("Warning: Animation '" + animationName + "' not found in model '" + modelFileName_ + "'", DebugUIManager::LogType::Warning);
+    DebugUIManager::GetInstance()->AddLog(
+      "Warning: Animation '" + animationName + "' not found in model '" + modelFileName_ + "'",
+      DebugUIManager::LogType::Warning);
 #endif
   }
 }

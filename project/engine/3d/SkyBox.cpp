@@ -133,7 +133,12 @@ void SkyBox::CreateRootSignature()
   hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
   if (FAILED(hr))
   {
-    DebugUIManager::GetInstance()->AddLog(static_cast<char*>(errorBlob->GetBufferPointer()), DebugUIManager::LogType::Error);
+#ifdef _DEBUG
+    DebugUIManager::GetInstance()->AddLog(
+      static_cast<char*>(errorBlob->GetBufferPointer()),
+      DebugUIManager::LogType::Error);
+#endif
+
     assert(false);
   }
   // ルートシグネチャを生成

@@ -46,13 +46,18 @@ void ModelManager::Finalize()
 void ModelManager::LoadModel(const std::string& fileName)
 {
   // すでにロード済みのファイル名をチェック
-#ifdef _DEBUG
+
   if (models_.contains(fileName))
   {
-    DebugUIManager::GetInstance()->AddLog("ModelManager: Model already loaded: " + fileName, DebugUIManager::LogType::Info);
+#ifdef _DEBUG
+    DebugUIManager::GetInstance()->AddLog(
+      "ModelManager: Model already loaded: " + fileName,
+      DebugUIManager::LogType::Info);
+#endif
+
     return;
   }
-#endif
+
 
   // 新しいModelインスタンスを作成
   std::unique_ptr<Model> newModel = std::make_unique<Model>();

@@ -92,7 +92,12 @@ void ModelBasic::CreateCSRootSignature()
   HRESULT hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
   if (FAILED(hr))
   {
-    DebugUIManager::GetInstance()->AddLog(reinterpret_cast<char*>(errorBlob->GetBufferPointer()), DebugUIManager::LogType::Error);
+#ifdef _DEBUG
+    DebugUIManager::GetInstance()->AddLog(
+      reinterpret_cast<char*>(errorBlob->GetBufferPointer()),
+      DebugUIManager::LogType::Error);
+#endif
+
     assert(false);
   }
 
@@ -100,7 +105,9 @@ void ModelBasic::CreateCSRootSignature()
   signatureBlob->GetBufferSize(), IID_PPV_ARGS(csRootSignature_.GetAddressOf());
   assert(SUCCEEDED(hr));
 
+#ifdef _DEBUG
   DebugUIManager::GetInstance()->AddLog("CSRootSignature Created", DebugUIManager::LogType::Info);
+#endif
 
 }
 

@@ -173,7 +173,12 @@ void InstancedObject3d::CreateViewProjectionBuffer() {
 
 uint32_t InstancedObject3d::AddInstance(const Transform& transform, const Vector4& color) {
   if (instances_.size() >= MAX_INSTANCES) {
-    DebugUIManager::GetInstance()->AddLog("Maximum instance count reached", DebugUIManager::LogType::Warning);
+#ifdef _DEBUG
+    DebugUIManager::GetInstance()->AddLog(
+      "Maximum instance count reached",
+      DebugUIManager::LogType::Warning);
+#endif
+
     return UINT32_MAX;
   }
 

@@ -631,8 +631,12 @@ void EmitterManager::LoadPreset(const std::string& presetName, const std::string
   std::string filepath = directory + presetName + ".json";
 
   std::ifstream ifs(filepath);
+
   if (!ifs.is_open()) {
+#ifdef _DEBUG
     DebugUIManager::GetInstance()->AddLog("Failed to load preset: " + presetName, DebugUIManager::LogType::Error);
+#endif
+
     return;
   }
 
@@ -644,7 +648,10 @@ void EmitterManager::LoadPreset(const std::string& presetName, const std::string
   if (emitter) {
     particleSystem_->RegisterEmitter(emitter);
     emitterMap_[newEmitterName] = emitter;
+#ifdef _DEBUG
     DebugUIManager::GetInstance()->AddLog("Loaded preset '" + presetName + "' as '" + newEmitterName + "'", DebugUIManager::LogType::Info);
+#endif
+
   }
 }
 
