@@ -593,7 +593,7 @@ void EmitterManager::RemoveGroup(const std::string& groupName)
 // JSON保存・読み込み機能
 //========================================
 
-void EmitterManager::SaveEmittersToJSON(const std::string& filename)
+void EmitterManager::SaveScenePreset(const std::string& filename)
 {
   using json = nlohmann::json;
   json root;
@@ -641,7 +641,7 @@ void EmitterManager::SaveEmittersToJSON(const std::string& filename)
   }
 }
 
-void EmitterManager::LoadEmittersFromJSON(const std::string& filename)
+void EmitterManager::LoadScenePreset(const std::string& filename)
 {
   using json = nlohmann::json;
 

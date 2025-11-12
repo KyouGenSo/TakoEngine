@@ -286,13 +286,13 @@ public:
   /// エミッター設定をJSONファイルに保存
   /// </summary>
   /// <param name="filename">ファイル名</param>
-  void SaveEmittersToJSON(const std::string& filename);
+  void SaveScenePreset(const std::string& filename);
 
   /// <summary>
   /// JSONファイルからエミッター設定を読み込み
   /// </summary>
   /// <param name="filename">ファイル名</param>
-  void LoadEmittersFromJSON(const std::string& filename);
+  void LoadScenePreset(const std::string& filename);
 
   /// <summary>
   /// エミッター設定をプリセットとして保存
