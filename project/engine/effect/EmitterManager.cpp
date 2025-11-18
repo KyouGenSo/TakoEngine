@@ -295,6 +295,14 @@ void EmitterManager::SetEmitterActive(const std::string& name, bool isActive)
   }
 }
 
+void EmitterManager::SetEmitterCount(const std::string& name, const uint32_t count)
+{
+  auto it = emitterMap_.find(name);
+  if (it != emitterMap_.end()) {
+    it->second->SetParticleCount(count);
+  }
+}
+
 void EmitterManager::SetEmitterNormalize(const std::string& name, bool isNormalize)
 {
   auto it = emitterMap_.find(name);
@@ -340,6 +348,32 @@ void EmitterManager::SetEmitterColors(const std::string& name, const Vector4& st
   auto it = emitterMap_.find(name);
   if (it != emitterMap_.end()) {
     it->second->SetColors(startColor, endColor);
+  }
+}
+
+void EmitterManager::SetEmitterRadius(const std::string& name, float radius)
+{
+  auto it = emitterMap_.find(name);
+
+  if (it != emitterMap_.end()) {
+    auto sphereEmitter = std::dynamic_pointer_cast<SphereEmitter>(it->second);
+
+    if (sphereEmitter) {
+      sphereEmitter->SetRadius(radius);
+    }
+    else {
+#ifdef _DEBUG
+      DebugUIManager::GetInstance()->AddLog(
+        "UpdateSphereEmitter: Emitter '" + name + "' is not a SphereEmitter", DebugUIManager::LogType::Warning);
+#endif
+    }
+
+  }
+  else {
+#ifdef _DEBUG
+    DebugUIManager::GetInstance()->AddLog(
+      "UpdateSphereEmitter: Emitter '" + name + "' not found", DebugUIManager::LogType::Warning);
+#endif
   }
 }
 

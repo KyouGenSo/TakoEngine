@@ -171,6 +171,13 @@ public:
   void SetEmitterActive(const std::string& name, bool isActive);
 
   /// <summary>
+  /// エミッターの発生数を設定
+  /// </summary>
+  /// <param name="name">エミッター名</param>
+  /// <param name="count">パーティクル数</param>
+  void SetEmitterCount(const std::string& name, const uint32_t count);
+
+  /// <summary>
   /// エミッターの速度正規化を設定
   /// </summary>
   /// <param name="name">エミッター名</param>
@@ -212,6 +219,13 @@ public:
   /// <param name="startColor">開始色</param>
   /// <param name="endColor">終了色</param>
   void SetEmitterColors(const std::string& name, const Vector4& startColor, const Vector4& endColor);
+
+  /// <summary>
+  /// エミッターの半径を設定（球形エミッター専用）
+  /// </summary>
+  /// <param name="name">エミッター名</param>
+  /// <param name="radius">半径</param>
+  void SetEmitterRadius(const std::string& name, float radius);
 
   /// <summary>
   /// 名前でエミッターを取得
