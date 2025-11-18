@@ -264,6 +264,9 @@
     <ClCompile Include="engine\scene\TransitionManager.cpp">
       <Filter>scene\transition</Filter>
     </ClCompile>
+    <ClCompile Include="engine\math\RandomEngine.cpp">
+      <Filter>math</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\math\Matrix4x4.h">
@@ -520,6 +523,9 @@
     </ClInclude>
     <ClInclude Include="engine\scene\TransitionManager.h">
       <Filter>scene\transition</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\math\RandomEngine.h">
+      <Filter>math</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

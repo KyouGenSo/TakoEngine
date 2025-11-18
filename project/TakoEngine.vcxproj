@@ -164,6 +164,7 @@
     <ClCompile Include="engine\func\commonFunc\Logger.cpp" />
     <ClCompile Include="engine\3d\Light.cpp" />
     <ClCompile Include="engine\io\SceneLoader.cpp" />
+    <ClCompile Include="engine\math\RandomEngine.cpp" />
     <ClCompile Include="engine\scene\TransitionManager.cpp" />
     <ClCompile Include="engine\scene\transition\ScaleTransition.cpp" />
     <ClCompile Include="engine\scene\transition\FadeTransition.cpp" />
@@ -231,6 +232,7 @@
     <ClInclude Include="engine\effect\PostEffectManager.h" />
     <ClInclude Include="engine\math\OBB.h" />
     <ClInclude Include="engine\math\Quaternion.h" />
+    <ClInclude Include="engine\math\RandomEngine.h" />
     <ClInclude Include="engine\scene\AbstractSceneFactory.h" />
     <ClInclude Include="engine\scene\BaseScene.h" />
     <ClInclude Include="engine\audio\Audio.h" />
