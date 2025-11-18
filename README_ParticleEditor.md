@@ -18,8 +18,7 @@ void GameScene::Initialize() {
 ```
 
 ### 2. エディターの表示
-- デバッグビルドでF1キーを押してImGuiを表示
-- メニューバーから「Windows」→「Particle Editor」を選択
+- デバッグビルドでImGuiのメニューバーから「Tools」→「Particle Editor」を選択
 
 ## 主な機能
 
@@ -47,7 +46,6 @@ void GameScene::Initialize() {
 2. Emittersタブで新しいエミッターを作成
 3. Propertiesタブで詳細を調整
 4. Presetsタブでプリセットとして保存
-5. GlobalVariablesタブで実行時調整用に登録
 
 ### コードからの使用
 ```cpp
