@@ -758,6 +758,39 @@ void EmitterManager::LoadPreset(const std::string& presetName, const std::string
   }
 }
 
+void EmitterManager::LoadPreset(const std::string& presetName)
+{
+  using json = nlohmann::json;
+
+  const std::string directory = "resources/Json/ParticlePresets/Presets/";
+  std::string filepath = directory + presetName + ".json";
+
+  std::ifstream ifs(filepath);
+
+  if (!ifs.is_open()) {
+#ifdef _DEBUG
+    DebugUIManager::GetInstance()->AddLog("Failed to load preset: " + presetName, DebugUIManager::LogType::Error);
+#endif
+
+    return;
+  }
+
+  json preset;
+  ifs >> preset;
+  ifs.close();
+
+  auto emitter = DeserializeEmitterFromJSON(preset);
+  if (emitter) {
+    particleSystem_->RegisterEmitter(emitter);
+    emitterMap_[presetName] = emitter;
+#ifdef _DEBUG
+    DebugUIManager::GetInstance()->AddLog(
+      "Loaded preset '" + presetName + "' as '" + presetName + "'", DebugUIManager::LogType::Info);
+#endif
+
+  }
+}
+
 //========================================
 // エミッター情報取得
 //========================================

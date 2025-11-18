@@ -309,6 +309,12 @@ public:
   void LoadPreset(const std::string& presetName, const std::string& newEmitterName);
 
   /// <summary>
+  /// プリセットからエミッターを作成,既存のエミッター名を使用
+  /// </summary>
+  /// <param name="presetName">プリセット名</param>
+  void LoadPreset(const std::string& presetName);
+
+  /// <summary>
   /// 全てのエミッター名を取得
   /// </summary>
   /// <returns>エミッター名のリスト</returns>

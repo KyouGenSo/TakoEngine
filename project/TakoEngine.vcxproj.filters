@@ -61,6 +61,24 @@
     <Filter Include="scene\transition">
       <UniqueIdentifier>{3af8577c-5872-4f00-8eb0-c08d47e87d92}</UniqueIdentifier>
     </Filter>
+    <Filter Include="3d\Camera">
+      <UniqueIdentifier>{6ac3b598-b434-4796-84ea-36a09dcc0221}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="3d\Object">
+      <UniqueIdentifier>{1ae13524-d406-4dc8-930c-f0a4fddae8d2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="3d\Model">
+      <UniqueIdentifier>{ebdaaf93-3b20-4480-ac57-572dcabcc34f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="3d\Shadow">
+      <UniqueIdentifier>{ffda1915-99cf-42d4-90ba-4dbc59b3e8a5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="3d\Light">
+      <UniqueIdentifier>{56c2569e-9a6e-41da-8cb0-b28137fbdd12}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="3d\SkyBox">
+      <UniqueIdentifier>{7c6d8bc5-1c55-4022-97c9-a2419ba7e962}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\func\mathFunc\Mat4x4Func.cpp">
@@ -68,21 +86,6 @@
     </ClCompile>
     <ClCompile Include="engine\func\mathFunc\Vec3Func.cpp">
       <Filter>func\MathFunc</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\3d\Model.cpp">
-      <Filter>3d</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\3d\ModelBasic.cpp">
-      <Filter>3d</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\3d\ModelManager.cpp">
-      <Filter>3d</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\3d\Object3d.cpp">
-      <Filter>3d</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\3d\Object3dBasic.cpp">
-      <Filter>3d</Filter>
     </ClCompile>
     <ClCompile Include="engine\2d\Sprite.cpp">
       <Filter>2d</Filter>
@@ -111,9 +114,6 @@
     <ClCompile Include="engine\func\commonFunc\StringUtility.cpp">
       <Filter>func\commonFunc</Filter>
     </ClCompile>
-    <ClCompile Include="engine\3d\Camera.cpp">
-      <Filter>3d</Filter>
-    </ClCompile>
     <ClCompile Include="engine\base\DX12\SrvManager.cpp">
       <Filter>base\DX12</Filter>
     </ClCompile>
@@ -131,12 +131,6 @@
     </ClCompile>
     <ClCompile Include="engine\2d\Draw2D.cpp">
       <Filter>2d</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\2d\DebugCamera.cpp">
-      <Filter>3d</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\3d\Light.cpp">
-      <Filter>3d</Filter>
     </ClCompile>
     <ClCompile Include="engine\func\mathFunc\QuatFunc.cpp">
       <Filter>func\MathFunc</Filter>
@@ -164,12 +158,6 @@
     </ClCompile>
     <ClCompile Include="engine\effect\EmitterManager.cpp">
       <Filter>effect\Particle\Emitter</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\3d\Mesh.cpp">
-      <Filter>3d</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\3d\SkyBox.cpp">
-      <Filter>3d</Filter>
     </ClCompile>
     <ClCompile Include="engine\effect\PostEffectManager.cpp">
       <Filter>effect\PostEffect</Filter>
@@ -225,12 +213,6 @@
     <ClCompile Include="engine\io\SceneLoader.cpp">
       <Filter>io</Filter>
     </ClCompile>
-    <ClCompile Include="engine\3d\ShadowMap.cpp">
-      <Filter>3d</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\3d\ShadowRenderer.cpp">
-      <Filter>3d</Filter>
-    </ClCompile>
     <ClCompile Include="engine\collision\AABBCollider.cpp">
       <Filter>collision</Filter>
     </ClCompile>
@@ -245,9 +227,6 @@
     </ClCompile>
     <ClCompile Include="engine\collision\OBBCollider.cpp">
       <Filter>collision</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\3d\InstancedObject3d.cpp">
-      <Filter>3d</Filter>
     </ClCompile>
     <ClCompile Include="engine\debug\DebugUIManager.cpp">
       <Filter>debug</Filter>
@@ -266,6 +245,45 @@
     </ClCompile>
     <ClCompile Include="engine\math\RandomEngine.cpp">
       <Filter>math</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3d\Camera.cpp">
+      <Filter>3d\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\2d\DebugCamera.cpp">
+      <Filter>3d\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3d\InstancedObject3d.cpp">
+      <Filter>3d\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3d\Object3d.cpp">
+      <Filter>3d\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3d\Object3dBasic.cpp">
+      <Filter>3d\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3d\Mesh.cpp">
+      <Filter>3d\Model</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3d\Model.cpp">
+      <Filter>3d\Model</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3d\ModelBasic.cpp">
+      <Filter>3d\Model</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3d\ModelManager.cpp">
+      <Filter>3d\Model</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3d\ShadowRenderer.cpp">
+      <Filter>3d\Shadow</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3d\ShadowMap.cpp">
+      <Filter>3d\Shadow</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3d\Light.cpp">
+      <Filter>3d\Light</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3d\SkyBox.cpp">
+      <Filter>3d\SkyBox</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -304,33 +322,6 @@
     </ClInclude>
     <ClInclude Include="engine\2d\SpriteBasic.h">
       <Filter>2d</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\3d\Camera.h">
-      <Filter>3d</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\2d\DebugCamera.h">
-      <Filter>3d</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\3d\Light.h">
-      <Filter>3d</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\3d\Model.h">
-      <Filter>3d</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\3d\ModelBasic.h">
-      <Filter>3d</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\3d\ModelManager.h">
-      <Filter>3d</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\3d\ModelStruct.h">
-      <Filter>3d</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\3d\Object3d.h">
-      <Filter>3d</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\3d\Object3dBasic.h">
-      <Filter>3d</Filter>
     </ClInclude>
     <ClInclude Include="engine\audio\Audio.h">
       <Filter>audio</Filter>
@@ -416,12 +407,6 @@
     <ClInclude Include="engine\effect\EmitterStruct.h">
       <Filter>effect\Particle\Emitter</Filter>
     </ClInclude>
-    <ClInclude Include="engine\3d\Mesh.h">
-      <Filter>3d</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\3d\SkyBox.h">
-      <Filter>3d</Filter>
-    </ClInclude>
     <ClInclude Include="engine\effect\PostEffectManager.h">
       <Filter>effect\PostEffect</Filter>
     </ClInclude>
@@ -482,12 +467,6 @@
     <ClInclude Include="engine\io\SceneLoader.h">
       <Filter>io</Filter>
     </ClInclude>
-    <ClInclude Include="engine\3d\ShadowMap.h">
-      <Filter>3d</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\3d\ShadowRenderer.h">
-      <Filter>3d</Filter>
-    </ClInclude>
     <ClInclude Include="engine\collision\AABBCollider.h">
       <Filter>collision</Filter>
     </ClInclude>
@@ -506,9 +485,6 @@
     <ClInclude Include="engine\collision\OBBCollider.h">
       <Filter>collision</Filter>
     </ClInclude>
-    <ClInclude Include="engine\3d\InstancedObject3d.h">
-      <Filter>3d</Filter>
-    </ClInclude>
     <ClInclude Include="engine\debug\DebugUIManager.h">
       <Filter>debug</Filter>
     </ClInclude>
@@ -526,6 +502,48 @@
     </ClInclude>
     <ClInclude Include="engine\math\RandomEngine.h">
       <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\Camera.h">
+      <Filter>3d\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\2d\DebugCamera.h">
+      <Filter>3d\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\InstancedObject3d.h">
+      <Filter>3d\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\Object3d.h">
+      <Filter>3d\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\Object3dBasic.h">
+      <Filter>3d\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\Mesh.h">
+      <Filter>3d\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\Model.h">
+      <Filter>3d\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\ModelBasic.h">
+      <Filter>3d\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\ModelManager.h">
+      <Filter>3d\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\ModelStruct.h">
+      <Filter>3d\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\ShadowRenderer.h">
+      <Filter>3d\Shadow</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\ShadowMap.h">
+      <Filter>3d\Shadow</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\Light.h">
+      <Filter>3d\Light</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\SkyBox.h">
+      <Filter>3d\SkyBox</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
