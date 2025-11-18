@@ -127,12 +127,8 @@ void DebugUIManager::Draw() {
 
 void DebugUIManager::DrawMainMenuBar() {
   if (ImGui::BeginMainMenuBar()) {
-    // Fileメニュー
-    if (ImGui::BeginMenu("File")) {
-      if (ImGui::MenuItem("New Scene", "Ctrl+N")) {}
-      if (ImGui::MenuItem("Open Scene", "Ctrl+O")) {}
-      if (ImGui::MenuItem("Save Scene", "Ctrl+S")) {}
-      ImGui::Separator();
+    // Generalメニュー
+    if (ImGui::BeginMenu("General")) {
       if (ImGui::MenuItem("Exit", "Alt+F4")) {
         if (pEndFlag_) *pEndFlag_ = true;
       }
@@ -157,7 +153,6 @@ void DebugUIManager::DrawMainMenuBar() {
       ImGui::MenuItem("Input Debug", nullptr, &windowVisibility_["InputDebug"]);
       ImGui::MenuItem("Shadow Settings", nullptr, &windowVisibility_["ShadowSettings"]);
       ImGui::MenuItem("Collision Debug", nullptr, &windowVisibility_["CollisionDebug"]);
-      ImGui::MenuItem("Particle Editor", nullptr, &windowVisibility_["ParticleEditor"]);
       ImGui::MenuItem("PostEffect Settings", nullptr, &windowVisibility_["PostEffect"]);
       ImGui::EndMenu();
     }
@@ -166,7 +161,6 @@ void DebugUIManager::DrawMainMenuBar() {
 
     // Toolsメニュー
     if (ImGui::BeginMenu("Tools")) {
-      if (ImGui::MenuItem("Global Variables")) {}
       bool collisionDebug = CollisionManager::GetInstance()->IsDebugDrawEnabled();
       if (ImGui::MenuItem("Collider Visibility", nullptr, collisionDebug)) {
         CollisionManager::GetInstance()->SetDebugDrawEnabled(!collisionDebug);
@@ -183,6 +177,8 @@ void DebugUIManager::DrawMainMenuBar() {
           GPUParticle::GetInstance()->SetIsDebug(*pIsDebug_);
         }
       }
+
+      ImGui::MenuItem("Particle Editor", nullptr, &windowVisibility_["ParticleEditor"]);
 
       ImGui::EndMenu();
     }
