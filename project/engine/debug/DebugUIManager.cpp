@@ -404,6 +404,8 @@ void DebugUIManager::DrawConsole() {
   ImGui::Checkbox("Warning", &showWarning_);
   ImGui::SameLine();
   ImGui::Checkbox("Error", &showError_);
+  ImGui::SameLine();
+  ImGui::Checkbox("Auto Scroll", &autoScroll_);
 
   ImGui::Separator();
 
@@ -438,7 +440,7 @@ void DebugUIManager::DrawConsole() {
   }
 
   // 自動スクロール
-  if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY()) {
+  if (autoScroll_) {
     ImGui::SetScrollHereY(1.0f);
   }
 

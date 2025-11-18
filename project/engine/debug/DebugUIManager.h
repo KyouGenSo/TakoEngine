@@ -227,6 +227,7 @@ private:
     bool showInfo_ = true;
     bool showWarning_ = true;
     bool showError_ = true;
+    bool autoScroll_ = true;
     
     // ウィンドウ表示フラグ
     std::unordered_map<std::string, bool> windowVisibility_;
