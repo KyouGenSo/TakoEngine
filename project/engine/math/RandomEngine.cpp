@@ -75,7 +75,6 @@ Vector3 RandomEngine::GetRandomDirectionXZ() {
 
 Vector3 RandomEngine::GetRandomPointInSphere(float radius) {
 	// 拒絶サンプリング法を使用
-	// より効率的な方法もあるが、実装がシンプルで理解しやすい
 	float x, y, z;
 	float lengthSq;
 
