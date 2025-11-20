@@ -1,4 +1,7 @@
 #pragma once
+
+#ifdef _DEBUG
+
 #include <cstdint>
 
 #include"imgui.h"
@@ -83,3 +86,5 @@ private: // メンバ変数
   uint32_t fontSrvIndex_ = 0;
 
 };
+
+#endif // _DEBUG

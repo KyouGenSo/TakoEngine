@@ -1,4 +1,7 @@
 #pragma once
+
+#ifdef _DEBUG
+
 #include <vector>
 #include <string>
 #include <functional>
@@ -281,3 +284,5 @@ private:
     int selectedGroupIndex_ = -1;
     char newGroupNameBuffer_[128] = "";
 };
+
+#endif // _DEBUG

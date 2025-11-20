@@ -1,9 +1,12 @@
 #include "Draw2D.h"
+#include "OBB.h"
+#include <cassert>
+
+#ifdef _DEBUG
 #include "DebugUIManager.h"
 #include "imgui.h"
 #include "DebugCamera.h"
-#include "OBB.h"
-#include <cassert>
+#endif // DEBUG
 
 Draw2D* Draw2D::instance_ = nullptr;
 
@@ -71,7 +74,9 @@ void Draw2D::Update()
 	if (!isDebug_) {
 		transformationMatrixData_->WVP = m_camera_->GetViewMatrix() * m_camera_->GetProjectionMatrix();
 	} else {
+#ifdef _DEBUG
 		transformationMatrixData_->WVP = DebugCamera::GetInstance()->GetViewProjectionMat();
+#endif
 	}
 }
 

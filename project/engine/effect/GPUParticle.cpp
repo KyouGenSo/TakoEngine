@@ -6,13 +6,13 @@
 #include "DX12Basic.h"
 #include "Camera.h"
 #include "TextureManager.h"
-#include "DebugUIManager.h"
 #include "FrameTimer.h"
 #include "DebugCamera.h"
 
 #ifdef _DEBUG
+#include "DebugUIManager.h"
 #include "ImGuiManager.h"
-#endif // DEBUG
+#endif // _DEBUG
 
 #include <numbers>
 
@@ -258,11 +258,13 @@ std::shared_ptr<GPUParticleEmitter> GPUParticle::CreateTemporaryEmitterFrom(GPUP
   RegisterEmitter(newEmitter);
 
   // デバッグ情報
+#ifdef _DEBUG
   DebugUIManager::GetInstance()->AddLog("CreateTempEmitter: ID=" + std::to_string(newEmitter->GetEmitterId()) +
     ", Active=" + std::to_string(newEmitter->IsActive() ? 1 : 0) +
     ", Emit=" + std::to_string(newEmitter->IsEmitting() ? 1 : 0) +
     ", FreqTime=" + std::to_string(newEmitter->GetFrequencyTime()) +
     "/" + std::to_string(newEmitter->GetFrequency()), DebugUIManager::LogType::Info);
+#endif
 
   return newEmitter;
 }
@@ -375,8 +377,10 @@ void GPUParticle::SyncEmitterData()
 
   // バッファサイズが足りるか確認
   if (activeEmitters_.size() > kNumMaxEmitter) {
+#ifdef _DEBUG
     DebugUIManager::GetInstance()->AddLog("Warning: Too many active emitters! Max: " + std::to_string(kNumMaxEmitter) +
       ", Current: " + std::to_string(activeEmitters_.size()), DebugUIManager::LogType::Warning);
+#endif
   }
 
   // 各エミッターのGPUデータを更新
@@ -460,7 +464,9 @@ void GPUParticle::CreateRS()
   hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
   if (FAILED(hr))
   {
+#ifdef _DEBUG
     DebugUIManager::GetInstance()->AddLog(static_cast<char*>(errorBlob->GetBufferPointer()), DebugUIManager::LogType::Error);
+#endif
     assert(false);
   }
 
@@ -607,7 +613,9 @@ void GPUParticle::CreateInitComputeRS()
   hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
   if (FAILED(hr))
   {
+#ifdef _DEBUG
     DebugUIManager::GetInstance()->AddLog(reinterpret_cast<char*>(errorBlob->GetBufferPointer()), DebugUIManager::LogType::Error);
+#endif
     assert(false);
   }
   hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(initComputeRS_.GetAddressOf()));
@@ -684,7 +692,9 @@ void GPUParticle::CreateEmitParticleComputeRS()
   hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
   if (FAILED(hr))
   {
+#ifdef _DEBUG
     DebugUIManager::GetInstance()->AddLog(static_cast<char*>(errorBlob->GetBufferPointer()), DebugUIManager::LogType::Error);
+#endif
     assert(false);
   }
   hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(emitParticleRS_.GetAddressOf()));
@@ -749,7 +759,9 @@ void GPUParticle::CreateUpdateParticleComputeRS()
   hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
   if (FAILED(hr))
   {
+#ifdef _DEBUG
     DebugUIManager::GetInstance()->AddLog(reinterpret_cast<char*>(errorBlob->GetBufferPointer()), DebugUIManager::LogType::Error);
+#endif
     assert(false);
   }
   hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(updateParticleRS_.GetAddressOf()));

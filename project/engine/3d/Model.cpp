@@ -14,8 +14,10 @@
 #include <set>
 #include <sstream>
 
+#ifdef _DEBUG
 #include "DebugUIManager.h"
 #include <imgui.h>
+#endif
 
 // 静的メンバー変数の定義
 bool Model::s_showSkeletonDebug = false;
@@ -565,6 +567,7 @@ void Model::DrawSkeleton(Matrix4x4 world)
 
 void Model::DrawImGui()
 {
+#ifdef _DEBUG
   // ホバー中のジョイントインデックスをリセット
   hoveredJointIndex_ = -1;
 
@@ -703,10 +706,12 @@ void Model::DrawImGui()
   }
 
   ImGui::End();
+#endif
 }
 
 void Model::DrawJointHierarchy(int32_t jointIndex, int depth)
 {
+#ifdef _DEBUG
   if (jointIndex < 0 || jointIndex >= skeleton_.joints.size()) return;
 
   const Joint& joint = skeleton_.joints[jointIndex];
@@ -807,10 +812,12 @@ void Model::DrawJointHierarchy(int32_t jointIndex, int depth)
   
   // インデントを元に戻す
   ImGui::Unindent(indentAmount * depth);
+#endif
 }
 
 void Model::DrawNodeHierarchyImGui(const Node& node, int depth)
 {
+#ifdef _DEBUG
   // インデント量の設定
   const float indentAmount = 12.0f;
   ImGui::Indent(indentAmount * depth);
@@ -910,6 +917,7 @@ void Model::DrawNodeHierarchyImGui(const Node& node, int depth)
   
   // インデントを元に戻す
   ImGui::Unindent(indentAmount * depth);
+#endif
 }
 
 void Model::LoadAnimationFile(const std::string& directoryPath, const std::string& fileName)

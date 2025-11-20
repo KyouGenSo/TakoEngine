@@ -1,7 +1,9 @@
 #include "PostEffectManager.h"
 #include "DX12Basic.h"
 #include "SrvManager.h"
+#ifdef _DEBUG
 #include "DebugUIManager.h"
+#endif
 #include "StringUtility.h"
 #include "Object3dbasic.h"
 #include "Camera.h"

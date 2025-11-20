@@ -4,8 +4,10 @@
 
 #include <algorithm>
 #include <cassert>
+#ifdef _DEBUG
 #include"imgui_impl_win32.h"
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+#endif
 
 // instanceの初期化
 WinApp* WinApp::instance_ = nullptr;
@@ -107,10 +109,12 @@ LRESULT WinApp::WndProc(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam)
     handler->OnWndProc(hWnd, msg, wparam, lparam);
   }
 
+#ifdef _DEBUG
   if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wparam, lparam))
   {
     return true;
   }
+#endif
 
   //メッセージによって処理を分岐
   switch (msg)

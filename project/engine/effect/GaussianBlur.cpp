@@ -3,7 +3,9 @@
 
 #include "DX12Basic.h"
 #include "WinApp.h"
+#ifdef _DEBUG
 #include "DebugUIManager.h"
+#endif
 #include "SrvManager.h"
 #include "StringUtility.h"
 
@@ -179,7 +181,9 @@ void GaussianBlur::CreateRootSignature()
   hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
   if (FAILED(hr))
   {
+#ifdef _DEBUG
     DebugUIManager::GetInstance()->AddLog(reinterpret_cast<char*>(errorBlob->GetBufferPointer()), DebugUIManager::LogType::Error);
+#endif
     assert(false);
   }
 
