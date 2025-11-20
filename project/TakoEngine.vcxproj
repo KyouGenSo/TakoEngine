@@ -128,8 +128,12 @@
     <ClCompile Include="engine\collision\CollisionManager.cpp" />
     <ClCompile Include="engine\collision\OBBCollider.cpp" />
     <ClCompile Include="engine\collision\SphereCollider.cpp" />
-    <ClCompile Include="engine\debug\DebugUIManager.cpp" />
-    <ClCompile Include="engine\debug\DebugUIManagerParticleEditor.cpp" />
+    <ClCompile Include="engine\debug\DebugUIManager.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="engine\debug\DebugUIManagerParticleEditor.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="engine\effect\Bloom.cpp" />
     <ClCompile Include="engine\effect\BoneTracker.cpp" />
     <ClCompile Include="engine\effect\BoxEmitter.cpp" />
@@ -155,7 +159,9 @@
     <ClCompile Include="engine\effect\SphereEmitter.cpp" />
     <ClCompile Include="engine\effect\Vignette.cpp" />
     <ClCompile Include="engine\effect\WhiteNoise.cpp" />
-    <ClCompile Include="engine\imgui\ImGuiManager.cpp" />
+    <ClCompile Include="engine\imgui\ImGuiManager.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="engine\base\DX12\D3DResourceLeakChecker.cpp" />
     <ClCompile Include="engine\base\DX12\DX12Basic.cpp" />
     <ClCompile Include="engine\effect\PostEffectManager.cpp" />
@@ -280,7 +286,7 @@
     <ProjectReference Include="externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">
       <Project>{371b9fa9-4c90-4ac6-a123-aced756d6c77}</Project>
     </ProjectReference>
-    <ProjectReference Include="externals\imgui\imgui.vcxproj">
+    <ProjectReference Include="externals\imgui\imgui.vcxproj" Condition="'$(Configuration)'=='Debug'">
       <Project>{ffa51982-471d-4530-909e-c8fb8fe4f342}</Project>
     </ProjectReference>
   </ItemGroup>
