@@ -8,7 +8,7 @@
 #include <unordered_map>
 
 #ifdef _DEBUG
-#include "ImGui.h"
+#include "ImGuiManager.h"
 #endif
 
 CollisionManager* CollisionManager::instance_ = nullptr;

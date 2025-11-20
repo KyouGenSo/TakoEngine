@@ -7,7 +7,7 @@
 #include <functional>
 #include <unordered_map>
 #include <chrono>
-#include "imgui.h"
+#include "ImGuiManager.h"
 #include <json.hpp>
 
 /// <summary>

@@ -4,7 +4,7 @@
 
 #ifdef _DEBUG
 #include "DebugUIManager.h"
-#include "imgui.h"
+#include "ImGuiManager.h"
 #include "DebugCamera.h"
 #endif // DEBUG
 

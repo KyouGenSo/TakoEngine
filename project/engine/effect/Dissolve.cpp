@@ -9,7 +9,7 @@
 #include "TextureManager.h"
 
 #ifdef _DEBUG
-#include "imgui.h"
+#include "ImGuiManager.h"
 #endif
 
 void Dissolve::Initialize(DX12Basic* dx12, std::string shaderName)

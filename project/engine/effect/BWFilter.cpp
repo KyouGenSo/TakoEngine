@@ -8,8 +8,9 @@
 #include "StringUtility.h"
 
 #ifdef _DEBUG
-#include "imgui.h"
+#include "ImGuiManager.h"
 #endif
+
 void BWFilter::Initialize(DX12Basic* dx12, std::string shaderName)
 {
   IPostEffect::Initialize(dx12, shaderName);

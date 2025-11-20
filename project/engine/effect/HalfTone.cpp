@@ -11,7 +11,7 @@
 #include <cassert>
 
 #ifdef _DEBUG
-#include "imgui.h"
+#include "ImGuiManager.h"
 #endif
 
 void HalfTone::Initialize(DX12Basic* dx12, const std::string shaderName)

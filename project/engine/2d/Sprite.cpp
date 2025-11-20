@@ -4,7 +4,6 @@
 #include"SpriteBasic.h"
 #include "TextureManager.h"
 #include "SrvManager.h"
-#include "imgui.h"
 #ifdef _DEBUG
 #include "ImGuiManager.h"
 #endif

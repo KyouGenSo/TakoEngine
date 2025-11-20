@@ -6,7 +6,7 @@
 #include "StringUtility.h"
 
 #ifdef _DEBUG
-#include "imgui.h"
+#include "ImGuiManager.h"
 #endif
 
 void RGBSplit::Initialize(DX12Basic* dx12, std::string shaderName)

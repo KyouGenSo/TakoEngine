@@ -9,7 +9,7 @@
 #include "Mat4x4Func.h"
 
 #ifdef _DEBUG
-#include "imgui.h"
+#include "ImGuiManager.h"
 #endif
 
 void DepthBasedOutline::Initialize(DX12Basic* dx12, std::string shaderName)

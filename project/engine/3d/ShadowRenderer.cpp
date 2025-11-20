@@ -9,7 +9,7 @@
 #include "Mat4x4Func.h"
 
 #ifdef _DEBUG
-#include "ImGui.h"
+#include "ImGuiManager.h"
 #endif
 
 // 静的メンバ変数の定義

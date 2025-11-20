@@ -10,7 +10,7 @@
 #include "StringUtility.h"
 
 #ifdef _DEBUG
-#include "imgui.h"
+#include "ImGuiManager.h"
 #endif
 
 GaussianBlur::~GaussianBlur()
