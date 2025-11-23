@@ -3,6 +3,8 @@
 #include "SphereEmitter.h"
 #include "BoxEmitter.h"
 #include "TriangleEmitter.h"
+#include "ImGuiManager.h"
+
 #include <cstring>
 
 void DebugUIManager::DrawParticleEditor() {

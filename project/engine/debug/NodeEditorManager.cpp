@@ -24,7 +24,7 @@ void NodeEditorManager::Initialize() {
   context_ = ed::CreateEditor(config_);
 
   // サンプルグラフの作成（デバッグ用）
-  CreateSampleGraph();
+  //CreateSampleGraph();
 }
 
 void NodeEditorManager::Finalize() {
@@ -111,8 +111,6 @@ void NodeEditorManager::DrawNode(const Node& node) {
 
   // シンプルなテキスト表示
   ImGui::Text("%s", node.name.c_str());
-  ImGui::SameLine();
-  ImGui::Text("[ID:%d]", node.id - 1000);
 
   // 入力ピン
   for (int pinId : node.inputPins) {

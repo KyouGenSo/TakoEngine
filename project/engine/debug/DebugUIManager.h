@@ -7,9 +7,6 @@
 #include <functional>
 #include <unordered_map>
 #include <chrono>
-#include "ImGuiManager.h"
-#include "NodeEditorManager.h"
-#include <json.hpp>
 
 /// <summary>
 /// デバッグUIの統合管理クラス。シーンヒエラルキー、インスペクター、コンソール、パフォーマンスモニターなどを提供

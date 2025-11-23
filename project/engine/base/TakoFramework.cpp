@@ -14,6 +14,8 @@
 #include "ShadowRenderer.h"
 #include "Input.h"
 #include "CollisionManager.h"
+#include "NodeEditorManager.h"
+
 #include "Light.h"
 #include <algorithm>
 #include <vector>
@@ -53,6 +55,8 @@ void TakoFramework::Initialize()
   DebugUIManager::GetInstance()->Initialize();
   DebugUIManager::GetInstance()->SetEndFlagPtr(&endFlag_);
   DebugUIManager::GetInstance()->SetDebugFlagPtr(&isDebug_);
+
+  NodeEditorManager::GetInstance()->Initialize();
 
   DebugCamera::GetInstance()->Initialize();
 #endif

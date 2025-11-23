@@ -6,30 +6,26 @@
 #include "Camera.h"
 #include "Input.h"
 #include "CollisionManager.h"
-#include "DebugCamera.h"
 #include "PostEffectManager.h"
 #include "WinApp.h"
 #include "DX12Basic.h"
-#include "TextureManager.h"
 #include "ModelManager.h"
 #include "ShadowRenderer.h"
 #include "SceneManager.h"
 #include "imgui_internal.h"
+#include "Draw2D.h"
+#include "GPUParticle.h"
+#include "Logger.h"
+#include "EmitterManager.h"
+#include "GlobalVariables.h"
+#include "NodeEditorManager.h"
+
 #include <algorithm>
 #include <iomanip>
 #include <sstream>
 #include <set>
 #include <map>
 #include <cstring>
-
-#include "Draw2D.h"
-#include "GPUParticle.h"
-#include "Logger.h"
-#include "EmitterManager.h"
-#include "SphereEmitter.h"
-#include "BoxEmitter.h"
-#include "TriangleEmitter.h"
-#include "GlobalVariables.h"
 
 // シングルトンインスタンス
 DebugUIManager* DebugUIManager::instance_ = nullptr;
@@ -55,9 +51,6 @@ void DebugUIManager::Initialize() {
   windowVisibility_["PostEffect"] = false;
   windowVisibility_["ParticleEditor"] = false;
   windowVisibility_["NodeEditor"] = false;
-
-  // NodeEditorManagerの初期化
-  NodeEditorManager::GetInstance()->Initialize();
 
   // 初期ログ
   AddLog("DebugUIManager Initialized", LogType::Info);
