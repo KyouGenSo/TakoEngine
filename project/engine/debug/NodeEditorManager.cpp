@@ -16,7 +16,7 @@ NodeEditorManager::~NodeEditorManager() {
 void NodeEditorManager::Initialize() {
   // エディタコンフィグの作成
   config_ = new ed::Config();
-  config_->SettingsFile = "NodeEditor.json";
+  config_->SettingsFile = "resources/Json/NodeEditor.json";
   config_->NavigateButtonIndex = 1; // マウス中ボタンでナビゲート
   config_->ContextMenuButtonIndex = 2; // マウス右ボタンでコンテキストメニュー
 
