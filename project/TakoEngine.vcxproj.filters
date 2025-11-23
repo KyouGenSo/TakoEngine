@@ -285,6 +285,7 @@
     <ClCompile Include="engine\3d\SkyBox.cpp">
       <Filter>3d\SkyBox</Filter>
     </ClCompile>
+    <ClCompile Include="engine\debug\NodeEditorManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\math\Matrix4x4.h">
@@ -545,5 +546,6 @@
     <ClInclude Include="engine\3d\SkyBox.h">
       <Filter>3d\SkyBox</Filter>
     </ClInclude>
+    <ClInclude Include="engine\debug\NodeEditorManager.h" />
   </ItemGroup>
 </Project>

@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <chrono>
 #include "ImGuiManager.h"
+#include "NodeEditorManager.h"
 #include <json.hpp>
 
 /// <summary>
@@ -211,6 +212,11 @@ private:
     /// パーティクルエディターを描画
     /// </summary>
     void DrawParticleEditor();
+
+    /// <summary>
+    /// ノードエディターを描画
+    /// </summary>
+    void DrawNodeEditor();
 
     /// <summary>
     /// グループ管理タブを描画

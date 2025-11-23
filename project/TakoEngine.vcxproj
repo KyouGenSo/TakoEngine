@@ -67,7 +67,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(ProjectDir)engine\debug;$(ProjectDir)engine\time;$(ProjectDir)engine\effect;$(ProjectDir)engine\scene;$(ProjectDir)engine\audio;$(ProjectDir)engine\collision;$(ProjectDir)engine\imgui;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)engine\debug;$(ProjectDir)engine\time;$(ProjectDir)engine\effect;$(ProjectDir)engine\scene;$(ProjectDir)engine\audio;$(ProjectDir)engine\collision;$(ProjectDir)engine\imgui;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)externals\imgui-node-editor;$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -81,7 +81,7 @@
       </Command>
     </PostBuildEvent>
     <Lib>
-      <AdditionalDependencies>assimp-vc143-mtd.lib;imgui.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>assimp-vc143-mtd.lib;imgui.lib;imgui-node-editor.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
     <Lib>
       <AdditionalLibraryDirectories>$(SolutionDir)\Generated\outputs\$(Configuration)\;$(ProjectDir)externals\assimp\lib\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -99,7 +99,7 @@
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)engine\debug;$(ProjectDir)engine\time;$(ProjectDir)engine\effect;$(ProjectDir)engine\scene;$(ProjectDir)engine\audio;$(ProjectDir)engine\collision;$(ProjectDir)engine\debug;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)engine\debug;$(ProjectDir)engine\time;$(ProjectDir)engine\effect;$(ProjectDir)engine\scene;$(ProjectDir)engine\audio;$(ProjectDir)engine\collision;$(ProjectDir)engine\debug;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)externals\imgui-node-editor;$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -129,6 +129,9 @@
     <ClCompile Include="engine\collision\OBBCollider.cpp" />
     <ClCompile Include="engine\collision\SphereCollider.cpp" />
     <ClCompile Include="engine\debug\DebugUIManager.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="engine\debug\NodeEditorManager.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="engine\debug\DebugUIManagerParticleEditor.cpp">
@@ -205,6 +208,7 @@
     <ClInclude Include="engine\collision\OBBCollider.h" />
     <ClInclude Include="engine\collision\SphereCollider.h" />
     <ClInclude Include="engine\debug\DebugUIManager.h" />
+    <ClInclude Include="engine\debug\NodeEditorManager.h" />
     <ClInclude Include="engine\effect\Bloom.h" />
     <ClInclude Include="engine\effect\BoneTracker.h" />
     <ClInclude Include="engine\effect\BWFilter.h" />
@@ -288,6 +292,9 @@
     </ProjectReference>
     <ProjectReference Include="externals\imgui\imgui.vcxproj" Condition="'$(Configuration)'=='Debug'">
       <Project>{ffa51982-471d-4530-909e-c8fb8fe4f342}</Project>
+    </ProjectReference>
+    <ProjectReference Include="externals\imgui-node-editor\imgui-node-editor.vcxproj" Condition="'$(Configuration)'=='Debug'">
+      <Project>{0517d071-8cdd-4f0b-bdc1-05fcf6331bcc}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

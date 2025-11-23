@@ -334,3 +334,7 @@ settings.local.json
 
 # Temporary null files
 nul
+
+# imgui-node-editor files
+project/externals/imgui-node-editor/docs Files/
+project/externals/imgui-node-editor/examples Files/
