@@ -141,75 +141,6 @@
     <ClCompile Include="engine\io\GlobalVariables.cpp">
       <Filter>io</Filter>
     </ClCompile>
-    <ClCompile Include="engine\effect\GPUParticle.cpp">
-      <Filter>effect\Particle</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\GPUParticleEmitter.cpp">
-      <Filter>effect\Particle\Emitter</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\BoxEmitter.cpp">
-      <Filter>effect\Particle\Emitter</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\SphereEmitter.cpp">
-      <Filter>effect\Particle\Emitter</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\TriangleEmitter.cpp">
-      <Filter>effect\Particle\Emitter</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\EmitterManager.cpp">
-      <Filter>effect\Particle\Emitter</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\PostEffectManager.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\IPostEffect.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\GrayScale.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\Vignette.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\NoEffect.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\RadialBlur.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\RGBSplit.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\BWFilter.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\LuminanceBasedOutline.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\DepthBasedOutline.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\Bloom.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\Fog.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\Dissolve.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\WhiteNoise.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\BoneTracker.cpp">
-      <Filter>effect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\HalfTone.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\GaussianBlur.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
     <ClCompile Include="engine\io\SceneLoader.cpp">
       <Filter>io</Filter>
     </ClCompile>
@@ -287,6 +218,72 @@
     </ClCompile>
     <ClCompile Include="engine\debug\NodeEditorManager.cpp">
       <Filter>debug</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\effect\Particle\BoxEmitter.cpp">
+      <Filter>effect\Particle\Emitter</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\effect\Particle\EmitterManager.cpp">
+      <Filter>effect\Particle\Emitter</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\effect\Particle\GPUParticleEmitter.cpp">
+      <Filter>effect\Particle\Emitter</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\effect\Particle\SphereEmitter.cpp">
+      <Filter>effect\Particle\Emitter</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\effect\Particle\TriangleEmitter.cpp">
+      <Filter>effect\Particle\Emitter</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\effect\Particle\GPUParticle.cpp">
+      <Filter>effect\Particle</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\effect\PostEffect\Bloom.cpp">
+      <Filter>effect\PostEffect</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\effect\PostEffect\BWFilter.cpp">
+      <Filter>effect\PostEffect</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\effect\PostEffect\DepthBasedOutline.cpp">
+      <Filter>effect\PostEffect</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\effect\PostEffect\Dissolve.cpp">
+      <Filter>effect\PostEffect</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\effect\PostEffect\Fog.cpp">
+      <Filter>effect\PostEffect</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\effect\PostEffect\GaussianBlur.cpp">
+      <Filter>effect\PostEffect</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\effect\PostEffect\GrayScale.cpp">
+      <Filter>effect\PostEffect</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\effect\PostEffect\HalfTone.cpp">
+      <Filter>effect\PostEffect</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\effect\PostEffect\IPostEffect.cpp">
+      <Filter>effect\PostEffect</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\effect\PostEffect\LuminanceBasedOutline.cpp">
+      <Filter>effect\PostEffect</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\effect\PostEffect\NoEffect.cpp">
+      <Filter>effect\PostEffect</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\effect\PostEffect\PostEffectManager.cpp">
+      <Filter>effect\PostEffect</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\effect\PostEffect\RadialBlur.cpp">
+      <Filter>effect\PostEffect</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\effect\PostEffect\RGBSplit.cpp">
+      <Filter>effect\PostEffect</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\effect\PostEffect\Vignette.cpp">
+      <Filter>effect\PostEffect</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\effect\PostEffect\WhiteNoise.cpp">
+      <Filter>effect\PostEffect</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -386,87 +383,6 @@
     <ClInclude Include="engine\time\FrameTimer.h">
       <Filter>time</Filter>
     </ClInclude>
-    <ClInclude Include="engine\effect\GPUParticle.h">
-      <Filter>effect\Particle</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\ParticleStruct.h">
-      <Filter>effect\Particle</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\BoxEmitter.h">
-      <Filter>effect\Particle\Emitter</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\GPUParticleEmitter.h">
-      <Filter>effect\Particle\Emitter</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\SphereEmitter.h">
-      <Filter>effect\Particle\Emitter</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\TriangleEmitter.h">
-      <Filter>effect\Particle\Emitter</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\EmitterManager.h">
-      <Filter>effect\Particle\Emitter</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\EmitterStruct.h">
-      <Filter>effect\Particle\Emitter</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\PostEffectManager.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\PostEffectStruct.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\IPostEffect.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\GrayScale.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\Vignette.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\NoEffect.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\RadialBlur.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\RGBSplit.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\BWFilter.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\LuminanceBasedOutline.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\DepthBasedOutline.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\Fog.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\Bloom.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\Dissolve.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\WhiteNoise.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\BoneTracker.h">
-      <Filter>effect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\CharacterEffectPresets.h">
-      <Filter>effect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\HalfTone.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\GaussianBlur.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
     <ClInclude Include="engine\io\SceneLoader.h">
       <Filter>io</Filter>
     </ClInclude>
@@ -550,6 +466,81 @@
     </ClInclude>
     <ClInclude Include="engine\debug\NodeEditorManager.h">
       <Filter>debug</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\Particle\BoxEmitter.h">
+      <Filter>effect\Particle\Emitter</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\Particle\EmitterManager.h">
+      <Filter>effect\Particle\Emitter</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\Particle\EmitterStruct.h">
+      <Filter>effect\Particle\Emitter</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\Particle\GPUParticleEmitter.h">
+      <Filter>effect\Particle\Emitter</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\Particle\SphereEmitter.h">
+      <Filter>effect\Particle\Emitter</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\Particle\TriangleEmitter.h">
+      <Filter>effect\Particle\Emitter</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\Particle\GPUParticle.h">
+      <Filter>effect\Particle</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\Particle\ParticleStruct.h">
+      <Filter>effect\Particle</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\PostEffect\Bloom.h">
+      <Filter>effect\PostEffect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\PostEffect\BWFilter.h">
+      <Filter>effect\PostEffect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\PostEffect\DepthBasedOutline.h">
+      <Filter>effect\PostEffect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\PostEffect\Dissolve.h">
+      <Filter>effect\PostEffect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\PostEffect\Fog.h">
+      <Filter>effect\PostEffect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\PostEffect\GaussianBlur.h">
+      <Filter>effect\PostEffect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\PostEffect\GrayScale.h">
+      <Filter>effect\PostEffect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\PostEffect\HalfTone.h">
+      <Filter>effect\PostEffect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\PostEffect\IPostEffect.h">
+      <Filter>effect\PostEffect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\PostEffect\LuminanceBasedOutline.h">
+      <Filter>effect\PostEffect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\PostEffect\NoEffect.h">
+      <Filter>effect\PostEffect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\PostEffect\PostEffectManager.h">
+      <Filter>effect\PostEffect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\PostEffect\PostEffectStruct.h">
+      <Filter>effect\PostEffect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\PostEffect\RadialBlur.h">
+      <Filter>effect\PostEffect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\PostEffect\RGBSplit.h">
+      <Filter>effect\PostEffect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\PostEffect\Vignette.h">
+      <Filter>effect\PostEffect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\PostEffect\WhiteNoise.h">
+      <Filter>effect\PostEffect</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

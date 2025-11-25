@@ -48,13 +48,13 @@
     <OutDir>$(SolutionDir)\Generated\outputs\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\Generated\obj\$(ProjectName)\$(Configuration)\</IntDir>
     <IncludePath>$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\nlohmann;$(IncludePath)</IncludePath>
-    <PublicIncludeDirectories>$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\assimp\include;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\math;$(ProjectDir)engine\2d;$(ProjectDir)engine\3d;$(ProjectDir)engine\audio;$(ProjectDir)engine\base;$(ProjectDir)engine\effect;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\func;$(ProjectDir)engine\imgui;$(ProjectDir)engine\io;$(ProjectDir)engine\scene;$(ProjectDir)engine\collision;$(ProjectDir)engine\debug;$(ProjectDir)engine\time;$(PublicIncludeDirectories)</PublicIncludeDirectories>
+    <PublicIncludeDirectories>$(ProjectDir)engine\effect\PostEffect;$(ProjectDir)engine\effect\Particle;$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\assimp\include;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\math;$(ProjectDir)engine\2d;$(ProjectDir)engine\3d;$(ProjectDir)engine\audio;$(ProjectDir)engine\base;$(ProjectDir)engine\effect;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\func;$(ProjectDir)engine\imgui;$(ProjectDir)engine\io;$(ProjectDir)engine\scene;$(ProjectDir)engine\collision;$(ProjectDir)engine\debug;$(ProjectDir)engine\time;$(PublicIncludeDirectories)</PublicIncludeDirectories>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)\Generated\outputs\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\Generated\obj\$(ProjectName)\$(Configuration)\</IntDir>
     <IncludePath>$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\nlohmann;$(IncludePath)</IncludePath>
-    <PublicIncludeDirectories>$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\assimp\include;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\math;$(ProjectDir)engine\2d;$(ProjectDir)engine\3d;$(ProjectDir)engine\audio;$(ProjectDir)engine\base;$(ProjectDir)engine\effect;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\func;$(ProjectDir)engine\imgui;$(ProjectDir)engine\io;$(ProjectDir)engine\scene;$(ProjectDir)engine\collision;$(ProjectDir)engine\time;$(PublicIncludeDirectories)</PublicIncludeDirectories>
+    <PublicIncludeDirectories>$(ProjectDir)engine\effect\PostEffect;$(ProjectDir)engine\effect\Particle;$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\assimp\include;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\math;$(ProjectDir)engine\2d;$(ProjectDir)engine\3d;$(ProjectDir)engine\audio;$(ProjectDir)engine\base;$(ProjectDir)engine\effect;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\func;$(ProjectDir)engine\imgui;$(ProjectDir)engine\io;$(ProjectDir)engine\scene;$(ProjectDir)engine\collision;$(ProjectDir)engine\time;$(PublicIncludeDirectories)</PublicIncludeDirectories>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -67,7 +67,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(ProjectDir)engine\debug;$(ProjectDir)engine\time;$(ProjectDir)engine\effect;$(ProjectDir)engine\scene;$(ProjectDir)engine\audio;$(ProjectDir)engine\collision;$(ProjectDir)engine\imgui;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)externals\imgui-node-editor;$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)engine\debug;$(ProjectDir)engine\time;$(ProjectDir)engine\effect;$(ProjectDir)engine\effect\Particle;$(ProjectDir)engine\effect\PostEffect;$(ProjectDir)engine\scene;$(ProjectDir)engine\audio;$(ProjectDir)engine\collision;$(ProjectDir)engine\imgui;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)externals\imgui-node-editor;$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -99,7 +99,7 @@
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)engine\debug;$(ProjectDir)engine\time;$(ProjectDir)engine\effect;$(ProjectDir)engine\scene;$(ProjectDir)engine\audio;$(ProjectDir)engine\collision;$(ProjectDir)engine\debug;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)externals\imgui-node-editor;$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)engine\debug;$(ProjectDir)engine\time;$(ProjectDir)engine\effect;$(ProjectDir)engine\effect\Particle;$(ProjectDir)engine\effect\PostEffect;$(ProjectDir)engine\scene;$(ProjectDir)engine\audio;$(ProjectDir)engine\collision;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)externals\imgui-node-editor;$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -137,37 +137,37 @@
     <ClCompile Include="engine\debug\DebugUIManagerParticleEditor.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="engine\effect\Bloom.cpp" />
-    <ClCompile Include="engine\effect\BoneTracker.cpp" />
-    <ClCompile Include="engine\effect\BoxEmitter.cpp" />
-    <ClCompile Include="engine\effect\BWFilter.cpp" />
-    <ClCompile Include="engine\effect\DepthBasedOutline.cpp" />
-    <ClCompile Include="engine\effect\Dissolve.cpp" />
-    <ClCompile Include="engine\effect\EmitterManager.cpp" />
-    <ClCompile Include="engine\effect\Fog.cpp" />
-    <ClCompile Include="engine\effect\GaussianBlur.cpp" />
-    <ClCompile Include="engine\effect\GPUParticle.cpp" />
     <ClCompile Include="engine\2d\DebugCamera.cpp" />
     <ClCompile Include="engine\2d\Draw2D.cpp" />
     <ClCompile Include="engine\audio\Audio.cpp" />
     <ClCompile Include="engine\3d\Camera.cpp" />
-    <ClCompile Include="engine\effect\GPUParticleEmitter.cpp" />
-    <ClCompile Include="engine\effect\GrayScale.cpp" />
-    <ClCompile Include="engine\effect\HalfTone.cpp" />
-    <ClCompile Include="engine\effect\IPostEffect.cpp" />
-    <ClCompile Include="engine\effect\LuminanceBasedOutline.cpp" />
-    <ClCompile Include="engine\effect\NoEffect.cpp" />
-    <ClCompile Include="engine\effect\RadialBlur.cpp" />
-    <ClCompile Include="engine\effect\RGBSplit.cpp" />
-    <ClCompile Include="engine\effect\SphereEmitter.cpp" />
-    <ClCompile Include="engine\effect\Vignette.cpp" />
-    <ClCompile Include="engine\effect\WhiteNoise.cpp" />
+    <ClCompile Include="engine\effect\Particle\BoxEmitter.cpp" />
+    <ClCompile Include="engine\effect\Particle\EmitterManager.cpp" />
+    <ClCompile Include="engine\effect\Particle\GPUParticle.cpp" />
+    <ClCompile Include="engine\effect\Particle\GPUParticleEmitter.cpp" />
+    <ClCompile Include="engine\effect\Particle\SphereEmitter.cpp" />
+    <ClCompile Include="engine\effect\Particle\TriangleEmitter.cpp" />
+    <ClCompile Include="engine\effect\PostEffect\Bloom.cpp" />
+    <ClCompile Include="engine\effect\PostEffect\BWFilter.cpp" />
+    <ClCompile Include="engine\effect\PostEffect\DepthBasedOutline.cpp" />
+    <ClCompile Include="engine\effect\PostEffect\Dissolve.cpp" />
+    <ClCompile Include="engine\effect\PostEffect\Fog.cpp" />
+    <ClCompile Include="engine\effect\PostEffect\GaussianBlur.cpp" />
+    <ClCompile Include="engine\effect\PostEffect\GrayScale.cpp" />
+    <ClCompile Include="engine\effect\PostEffect\HalfTone.cpp" />
+    <ClCompile Include="engine\effect\PostEffect\IPostEffect.cpp" />
+    <ClCompile Include="engine\effect\PostEffect\LuminanceBasedOutline.cpp" />
+    <ClCompile Include="engine\effect\PostEffect\NoEffect.cpp" />
+    <ClCompile Include="engine\effect\PostEffect\PostEffectManager.cpp" />
+    <ClCompile Include="engine\effect\PostEffect\RadialBlur.cpp" />
+    <ClCompile Include="engine\effect\PostEffect\RGBSplit.cpp" />
+    <ClCompile Include="engine\effect\PostEffect\Vignette.cpp" />
+    <ClCompile Include="engine\effect\PostEffect\WhiteNoise.cpp" />
     <ClCompile Include="engine\imgui\ImGuiManager.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="engine\base\DX12\D3DResourceLeakChecker.cpp" />
     <ClCompile Include="engine\base\DX12\DX12Basic.cpp" />
-    <ClCompile Include="engine\effect\PostEffectManager.cpp" />
     <ClCompile Include="engine\io\GlobalVariables.cpp" />
     <ClCompile Include="engine\io\Input.cpp" />
     <ClCompile Include="engine\func\commonFunc\Logger.cpp" />
@@ -194,7 +194,6 @@
     <ClCompile Include="engine\base\TakoFramework.cpp" />
     <ClCompile Include="engine\scene\SceneManager.cpp" />
     <ClCompile Include="engine\func\mathFunc\QuatFunc.cpp" />
-    <ClCompile Include="engine\effect\TriangleEmitter.cpp" />
     <ClCompile Include="engine\3d\Mesh.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -209,37 +208,37 @@
     <ClInclude Include="engine\collision\SphereCollider.h" />
     <ClInclude Include="engine\debug\DebugUIManager.h" />
     <ClInclude Include="engine\debug\NodeEditorManager.h" />
-    <ClInclude Include="engine\effect\Bloom.h" />
-    <ClInclude Include="engine\effect\BoneTracker.h" />
-    <ClInclude Include="engine\effect\BWFilter.h" />
-    <ClInclude Include="engine\effect\CharacterEffectPresets.h" />
-    <ClInclude Include="engine\effect\DepthBasedOutline.h" />
-    <ClInclude Include="engine\effect\Dissolve.h" />
-    <ClInclude Include="engine\effect\EmitterStruct.h" />
-    <ClInclude Include="engine\effect\BoxEmitter.h" />
-    <ClInclude Include="engine\effect\EmitterManager.h" />
-    <ClInclude Include="engine\effect\Fog.h" />
-    <ClInclude Include="engine\effect\GaussianBlur.h" />
-    <ClInclude Include="engine\effect\GPUParticle.h" />
     <ClInclude Include="engine\audio\miniaudio.h" />
-    <ClInclude Include="engine\effect\GPUParticleEmitter.h" />
-    <ClInclude Include="engine\effect\GrayScale.h" />
-    <ClInclude Include="engine\effect\HalfTone.h" />
-    <ClInclude Include="engine\effect\IPostEffect.h" />
-    <ClInclude Include="engine\effect\LuminanceBasedOutline.h" />
-    <ClInclude Include="engine\effect\NoEffect.h" />
-    <ClInclude Include="engine\effect\PostEffectStruct.h" />
-    <ClInclude Include="engine\effect\RadialBlur.h" />
-    <ClInclude Include="engine\effect\RGBSplit.h" />
-    <ClInclude Include="engine\effect\SphereEmitter.h" />
-    <ClInclude Include="engine\effect\Vignette.h" />
-    <ClInclude Include="engine\effect\WhiteNoise.h" />
+    <ClInclude Include="engine\effect\Particle\BoxEmitter.h" />
+    <ClInclude Include="engine\effect\Particle\EmitterManager.h" />
+    <ClInclude Include="engine\effect\Particle\EmitterStruct.h" />
+    <ClInclude Include="engine\effect\Particle\GPUParticle.h" />
+    <ClInclude Include="engine\effect\Particle\GPUParticleEmitter.h" />
+    <ClInclude Include="engine\effect\Particle\ParticleStruct.h" />
+    <ClInclude Include="engine\effect\Particle\SphereEmitter.h" />
+    <ClInclude Include="engine\effect\Particle\TriangleEmitter.h" />
+    <ClInclude Include="engine\effect\PostEffect\Bloom.h" />
+    <ClInclude Include="engine\effect\PostEffect\BWFilter.h" />
+    <ClInclude Include="engine\effect\PostEffect\DepthBasedOutline.h" />
+    <ClInclude Include="engine\effect\PostEffect\Dissolve.h" />
+    <ClInclude Include="engine\effect\PostEffect\Fog.h" />
+    <ClInclude Include="engine\effect\PostEffect\GaussianBlur.h" />
+    <ClInclude Include="engine\effect\PostEffect\GrayScale.h" />
+    <ClInclude Include="engine\effect\PostEffect\HalfTone.h" />
+    <ClInclude Include="engine\effect\PostEffect\IPostEffect.h" />
+    <ClInclude Include="engine\effect\PostEffect\LuminanceBasedOutline.h" />
+    <ClInclude Include="engine\effect\PostEffect\NoEffect.h" />
+    <ClInclude Include="engine\effect\PostEffect\PostEffectManager.h" />
+    <ClInclude Include="engine\effect\PostEffect\PostEffectStruct.h" />
+    <ClInclude Include="engine\effect\PostEffect\RadialBlur.h" />
+    <ClInclude Include="engine\effect\PostEffect\RGBSplit.h" />
+    <ClInclude Include="engine\effect\PostEffect\Vignette.h" />
+    <ClInclude Include="engine\effect\PostEffect\WhiteNoise.h" />
     <ClInclude Include="engine\io\GlobalVariables.h" />
     <ClInclude Include="engine\io\SceneLoader.h" />
     <ClInclude Include="engine\math\AABB.h" />
     <ClInclude Include="engine\2d\DebugCamera.h" />
     <ClInclude Include="engine\2d\Draw2D.h" />
-    <ClInclude Include="engine\effect\PostEffectManager.h" />
     <ClInclude Include="engine\math\OBB.h" />
     <ClInclude Include="engine\math\Quaternion.h" />
     <ClInclude Include="engine\math\RandomEngine.h" />
@@ -282,8 +281,6 @@
     <ClInclude Include="engine\scene\transition\ITransitionEffect.h" />
     <ClInclude Include="engine\time\FrameTimer.h" />
     <ClInclude Include="engine\base\IWndProcHandler.h" />
-    <ClInclude Include="engine\effect\ParticleStruct.h" />
-    <ClInclude Include="engine\effect\TriangleEmitter.h" />
     <ClInclude Include="engine\3d\Mesh.h" />
   </ItemGroup>
   <ItemGroup>
