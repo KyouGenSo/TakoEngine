@@ -448,6 +448,7 @@ void EmitterManager::RemoveAllEmitters()
     auto& emitter = val;
     // エミッターを非アクティブ化して即時効果を得る
     emitter->SetActive(false);
+    particleSystem_->UnregisterEmitter(emitter);
   }
 
   // エミッターマップをクリア
