@@ -284,7 +284,11 @@ void GPUParticle::RegisterEmitter(std::shared_ptr<GPUParticleEmitter> emitter)
 
 void GPUParticle::UnregisterEmitter(std::shared_ptr<GPUParticleEmitter> emitter)
 {
-  auto it = std::find(activeEmitters_.begin(), activeEmitters_.end(), emitter);
+  if (activeEmitters_.empty()) {
+    return;
+  }
+
+  auto it = std::ranges::find(activeEmitters_, emitter);
   if (it != activeEmitters_.end()) {
     activeEmitters_.erase(it);
   }
