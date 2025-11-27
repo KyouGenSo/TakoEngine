@@ -1,7 +1,7 @@
 #ifdef _DEBUG
 
 #include "NodeEditorManager.h"
-#include "ImGuiManager.h"
+#include <imgui.h>
 #include <imgui_node_editor.h>
 #include <algorithm>
 #include <cmath>
