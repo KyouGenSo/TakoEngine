@@ -286,6 +286,7 @@ void DX12Basic::InitDevice()
 
 		D3D12_MESSAGE_ID denyIds[] = {
 			D3D12_MESSAGE_ID_RESOURCE_BARRIER_MISMATCHING_COMMAND_LIST_TYPE,
+			(D3D12_MESSAGE_ID)1424, // FENCE_ZERO_WAIT - ImGuiの内部Fence処理で発生する警告を除外
 		};
 
 		D3D12_MESSAGE_SEVERITY severities[] = {

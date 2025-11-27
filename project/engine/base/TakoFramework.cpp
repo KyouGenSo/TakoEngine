@@ -250,7 +250,7 @@ void TakoFramework::ToggleFullScreen()
 void TakoFramework::OnWindowResize(uint32_t width, uint32_t height)
 {
   // GPUの処理を待機
-  dx12_->WaitForGPU();
+  //dx12_->WaitForGPU();
 
   // バッファのリサイズ
   dx12_->ResizeBuffers(width, height);

@@ -94,12 +94,6 @@ void ImGuiManager::Shutdown()
 
 void ImGuiManager::OnWindowResize()
 {
-  // ImGuiの終了処理と再初期化
-  ImGui_ImplDX12_Shutdown();
-  ImGui_ImplWin32_Shutdown();
-  ImGui_ImplWin32_Init(m_winApp_->GetHWnd());
-  InitializeForDX12();
-
   // イベント処理を強制的に更新
   ImGuiIO& io = ImGui::GetIO();
   io.DisplaySize = ImVec2(
