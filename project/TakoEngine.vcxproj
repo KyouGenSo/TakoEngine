@@ -47,7 +47,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)\Generated\outputs\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\Generated\obj\$(ProjectName)\$(Configuration)\</IntDir>
-    <IncludePath>$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\nlohmann;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\imgui;$(ProjectDir)externals\nlohmann;$(IncludePath)</IncludePath>
     <PublicIncludeDirectories>$(ProjectDir)engine\effect\PostEffect;$(ProjectDir)engine\effect\Particle;$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\assimp\include;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\math;$(ProjectDir)engine\2d;$(ProjectDir)engine\3d;$(ProjectDir)engine\audio;$(ProjectDir)engine\base;$(ProjectDir)engine\effect;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\func;$(ProjectDir)engine\imgui;$(ProjectDir)engine\io;$(ProjectDir)engine\scene;$(ProjectDir)engine\collision;$(ProjectDir)engine\debug;$(ProjectDir)engine\time;$(PublicIncludeDirectories)</PublicIncludeDirectories>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -286,9 +286,6 @@
   <ItemGroup>
     <ProjectReference Include="externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">
       <Project>{371b9fa9-4c90-4ac6-a123-aced756d6c77}</Project>
-    </ProjectReference>
-    <ProjectReference Include="externals\imgui\imgui.vcxproj" Condition="'$(Configuration)'=='Debug'">
-      <Project>{ffa51982-471d-4530-909e-c8fb8fe4f342}</Project>
     </ProjectReference>
     <ProjectReference Include="externals\imgui-node-editor\imgui-node-editor.vcxproj" Condition="'$(Configuration)'=='Debug'">
       <Project>{0517d071-8cdd-4f0b-bdc1-05fcf6331bcc}</Project>

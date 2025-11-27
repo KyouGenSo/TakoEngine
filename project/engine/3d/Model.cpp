@@ -16,7 +16,7 @@
 
 #ifdef _DEBUG
 #include "DebugUIManager.h"
-#include <imgui.h>
+#include "ImGuiManager.h"
 #endif
 
 // 静的メンバー変数の定義
