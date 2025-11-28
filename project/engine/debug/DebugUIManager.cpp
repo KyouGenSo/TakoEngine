@@ -51,6 +51,7 @@ void DebugUIManager::Initialize() {
   windowVisibility_["PostEffect"] = false;
   windowVisibility_["ParticleEditor"] = false;
   windowVisibility_["NodeEditor"] = false;
+  windowVisibility_["GlobalVariables"] = false;
 
   // 初期ログ
   AddLog("DebugUIManager Initialized", LogType::Info);
@@ -119,6 +120,16 @@ void DebugUIManager::Draw() {
   if (windowVisibility_["ParticleEditor"]) DrawParticleEditor();
   if (windowVisibility_["NodeEditor"]) DrawNodeEditor();
 
+  // GlobalVariables（グループがない場合は警告を出して閉じる）
+  if (windowVisibility_["GlobalVariables"]) {
+    if (GlobalVariables::GetInstance()->HasGroups()) {
+      GlobalVariables::GetInstance()->Update();
+    } else {
+      AddLog("GlobalVariables: No groups registered. Window will not open.", LogType::Warning);
+      windowVisibility_["GlobalVariables"] = false;
+    }
+  }
+
   // PostEffectは独自の描画を持つ
   if (windowVisibility_["PostEffect"]) {
     PostEffectManager::GetInstance()->DrawImgui();
@@ -181,6 +192,7 @@ void DebugUIManager::DrawMainMenuBar() {
       }
 
       ImGui::MenuItem("Particle Editor", nullptr, &windowVisibility_["ParticleEditor"]);
+      ImGui::MenuItem("Global Variables", nullptr, &windowVisibility_["GlobalVariables"]);
 
       ImGui::EndMenu();
     }

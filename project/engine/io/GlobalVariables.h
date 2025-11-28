@@ -206,6 +206,12 @@ public: // メンバ関数
   /// <returns>取得したbool値</returns>
   bool GetValueBool(const std::string& groupName, const std::string& key);
 
+  /// <summary>
+  /// グループが登録されているか確認
+  /// </summary>
+  /// <returns>グループが1つ以上あればtrue</returns>
+  bool HasGroups() const { return !datas_.empty(); }
+
 public: // 構造体
   /// <summary>
   /// グローバル変数の単一アイテム
