@@ -42,8 +42,8 @@ void DebugUIManager::Initialize() {
   windowVisibility_["GameViewport"] = true;
   windowVisibility_["SceneHierarchy"] = true;
   windowVisibility_["Inspector"] = true;
-  windowVisibility_["Console"] = true;
-  windowVisibility_["Performance"] = true;
+  windowVisibility_["Console"] = false;
+  windowVisibility_["Performance"] = false;
   windowVisibility_["EngineStatus"] = false;
   windowVisibility_["InputDebug"] = false;
   windowVisibility_["ShadowSettings"] = false;
