@@ -6,14 +6,7 @@
 #include <string>
 #include <memory>
 #include <unordered_map>
-
-// Forward declarations to avoid including imgui-node-editor in header
-namespace ax {
-namespace NodeEditor {
-    struct Config;
-    struct EditorContext;
-}
-}
+#include <imgui_node_editor.h>
 
 namespace ed = ax::NodeEditor;
 
@@ -51,7 +44,7 @@ public:
 private:
     static NodeEditorManager* instance_;
     ed::EditorContext* context_ = nullptr;
-    ed::Config* config_ = nullptr;
+    std::unique_ptr<ed::Config> config_;
 
     // ノードエディタのデータ
     std::vector<Node> nodes_;

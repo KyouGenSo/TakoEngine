@@ -95,7 +95,7 @@ public:
     /// モデルを取得
     /// </summary>
     /// <returns>モデルポインタ</returns>
-    Model* GetModel() const { return model_; }
+    Model* GetModel() const { return model_.get(); }
 
     /// <summary>
     /// インスタンスのトランスフォームを取得
@@ -175,7 +175,7 @@ private:
         uint32_t id;  ///< 一意のID
     };
 
-    Model* model_ = nullptr;  ///< モデルポインタ
+    std::unique_ptr<Model> model_;  ///< モデルポインタ
 
     Camera** camera_ = nullptr;  ///< カメラポインタのポインタ
 

@@ -67,11 +67,11 @@ public: // メンバー関数
 	/// モデル基本システムを取得
 	/// </summary>
 	/// <returns>ModelBasicポインタ</returns>
-	ModelBasic* GetModelBasic() { return pModelBasic_; }
+	ModelBasic* GetModelBasic() { return pModelBasic_.get(); }
 
 private: // メンバー変数
 
-	ModelBasic* pModelBasic_; ///< モデル基本システムへのポインタ
+	std::unique_ptr<ModelBasic> pModelBasic_; ///< モデル基本システムへのポインタ
 
 	///< モデルのマップ（キー:ファイル名、値:モデルインスタンス）
 	std::unordered_map<std::string, std::unique_ptr<Model>> models_;

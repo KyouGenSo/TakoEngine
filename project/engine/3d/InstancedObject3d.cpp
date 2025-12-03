@@ -27,8 +27,10 @@ InstancedObject3d::~InstancedObject3d() {
     SrvManager::GetInstance()->Free(instanceSrvIndex_);
   }
 
-  model_->Finalize();
-  delete model_;
+  if (model_) {
+    model_->Finalize();
+  }
+  // unique_ptrが自動でdeleteする
 }
 
 void InstancedObject3d::Initialize(const std::string& modelFileName) {
@@ -36,7 +38,7 @@ void InstancedObject3d::Initialize(const std::string& modelFileName) {
   camera_ = Object3dBasic::GetInstance()->GetCamera();
 
   // モデルを取得
-  model_ = ModelManager::GetInstance()->GetModel(modelFileName);
+  model_.reset(ModelManager::GetInstance()->GetModel(modelFileName));
 
   // インスタンスバッファの作成
   CreateInstanceBuffer();

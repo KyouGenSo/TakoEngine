@@ -4,8 +4,9 @@
 #include"Vector2.h"
 #include"Vector3.h"
 #include"Mat4x4Func.h"
-#include<vector>
+#include <vector>
 #include <list>
+#include <memory>
 #include "Camera.h"
 #include "AABB.h"
 
@@ -313,11 +314,11 @@ private: // メンバ変数
 
 	TransformationMatrix* transformationMatrixData_; ///< 座標変換行列データ
 
-	TriangleData* triangleData_; ///< 三角形データ
+	std::unique_ptr<TriangleData> triangleData_; ///< 三角形データ
 
-	BoxData* boxData_; ///< 矩形データ
+	std::unique_ptr<BoxData> boxData_; ///< 矩形データ
 
-	LineData* lineData_; ///< 線データ
+	std::unique_ptr<LineData> lineData_; ///< 線データ
 
 	std::vector<Vector3> sphereVerties_; ///< 球の頂点データ
 

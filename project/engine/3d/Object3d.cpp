@@ -8,10 +8,14 @@
 #include "ShadowRenderer.h"
 #include "Logger.h"
 
+Object3d::Object3d() = default;
+
 Object3d::~Object3d()
 {
-  m_model_->Finalize();
-  delete m_model_;
+  if (m_model_) {
+    m_model_->Finalize();
+  }
+  // unique_ptrが自動でdeleteする
 }
 
 void Object3d::Initialize()
@@ -140,12 +144,15 @@ void Object3d::DrawImGui()
 
 void Object3d::SetModel(const std::string& fileName)
 {
+  // 既存モデルがあれば解放
   if (m_model_)
   {
-    m_model_ = nullptr;
+    m_model_->Finalize();
+    m_model_.reset();
   }
 
-  m_model_ = ModelManager::GetInstance()->GetModel(fileName);
+  // 新しいモデルをセット（ModelManagerからCloneを取得）
+  m_model_.reset(ModelManager::GetInstance()->GetModel(fileName));
 }
 
 void Object3d::SetMaterialColor(const Vector4& color)

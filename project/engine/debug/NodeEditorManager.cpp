@@ -2,7 +2,6 @@
 
 #include "NodeEditorManager.h"
 #include <imgui.h>
-#include <imgui_node_editor.h>
 #include <algorithm>
 #include <cmath>
 
@@ -15,13 +14,13 @@ NodeEditorManager::~NodeEditorManager() {
 
 void NodeEditorManager::Initialize() {
   // エディタコンフィグの作成
-  config_ = new ed::Config();
+  config_ = std::make_unique<ed::Config>();
   config_->SettingsFile = "resources/Json/NodeEditor.json";
   config_->NavigateButtonIndex = 1; // マウス中ボタンでナビゲート
   config_->ContextMenuButtonIndex = 2; // マウス右ボタンでコンテキストメニュー
 
   // エディタコンテキストの作成
-  context_ = ed::CreateEditor(config_);
+  context_ = ed::CreateEditor(config_.get());
 
   // サンプルグラフの作成（デバッグ用）
   //CreateSampleGraph();
@@ -32,10 +31,7 @@ void NodeEditorManager::Finalize() {
     ed::DestroyEditor(context_);
     context_ = nullptr;
   }
-  if (config_) {
-    delete config_;
-    config_ = nullptr;
-  }
+  config_.reset();
   Clear();
 }
 

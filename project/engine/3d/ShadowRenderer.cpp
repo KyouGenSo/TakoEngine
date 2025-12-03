@@ -31,7 +31,7 @@ void ShadowRenderer::Initialize(DX12Basic* dx12)
     dx12_ = dx12;
     
     // ShadowMapを内部で生成
-    shadowMap_ = new ShadowMap();
+    shadowMap_ = std::make_unique<ShadowMap>();
     shadowMap_->Initialize(dx12_);
     
     // シャドウ用のパイプラインを作成
@@ -83,8 +83,7 @@ void ShadowRenderer::Finalize()
     // ShadowMapを削除
     if (shadowMap_) {
         shadowMap_->Finalize();
-        delete shadowMap_;
-        shadowMap_ = nullptr;
+        shadowMap_.reset();
     }
     
     // インスタンスを削除

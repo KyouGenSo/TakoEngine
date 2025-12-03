@@ -36,16 +36,16 @@ void Draw2D::Initialize(DX12Basic* dx12)
 	CreateTransformMatData();
 
 	// 三角形の頂点データを生成
-	triangleData_ = new TriangleData();
-	CreateTriangleVertexData(triangleData_);
+	triangleData_ = std::make_unique<TriangleData>();
+	CreateTriangleVertexData(triangleData_.get());
 
 	// 矩形の頂点データを生成
-	boxData_ = new BoxData();
-	CreateBoxVertexData(boxData_);
+	boxData_ = std::make_unique<BoxData>();
+	CreateBoxVertexData(boxData_.get());
 
 	// 線の頂点データを生成
-	lineData_ = new LineData();
-	CreateLineVertexData(lineData_);
+	lineData_ = std::make_unique<LineData>();
+	CreateLineVertexData(lineData_.get());
 
 	// 球の頂点位置を計算
 	CalcSphereVertexData();
@@ -53,14 +53,11 @@ void Draw2D::Initialize(DX12Basic* dx12)
 
 void Draw2D::Finalize()
 {
-	triangleData_->vertexBuffer->Release();
-
-	boxData_->vertexBuffer->Release();
-
-	boxData_->indexBuffer->Release();
-
-	lineData_->vertexBuffer->Release();
-
+	// unique_ptrがデストラクト時にComPtrも自動解放するので
+	// reset()だけで完全にクリーンアップされる
+	triangleData_.reset();
+	boxData_.reset();
+	lineData_.reset();
 
 	if (instance_ != nullptr)
 	{

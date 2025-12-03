@@ -31,7 +31,7 @@ void Object3dBasic::Initialize(DX12Basic* dx12)
 	CreateInstancedPSO();
 
 	// ライトの生成と初期化
-	light_ = new Light();
+	light_ = std::make_unique<Light>();
 	light_->Initialize(m_dx12_);
 	
 }
@@ -55,8 +55,7 @@ void Object3dBasic::Update()
 
 void Object3dBasic::Finalize()
 {
-	delete light_;
-	
+	light_.reset();
 
 	if (instance_ != nullptr)
 	{

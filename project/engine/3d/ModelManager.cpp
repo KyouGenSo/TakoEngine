@@ -19,13 +19,13 @@ ModelManager* ModelManager::GetInstance()
 
 void ModelManager::Initialize(DX12Basic* dx12)
 {
-	pModelBasic_ = new ModelBasic();
+	pModelBasic_ = std::make_unique<ModelBasic>();
 	pModelBasic_->Initialize(dx12);
 }
 
 void ModelManager::Finalize()
 {
-  delete pModelBasic_;
+  pModelBasic_.reset();
 
   // 各モデルインスタンスに対してFinalize呼び出し
   for (auto& model : models_) {
@@ -61,7 +61,7 @@ void ModelManager::LoadModel(const std::string& fileName)
 
   // 新しいModelインスタンスを作成
   std::unique_ptr<Model> newModel = std::make_unique<Model>();
-  newModel->Initialize(pModelBasic_, fileName);
+  newModel->Initialize(pModelBasic_.get(), fileName);
 
   models_.insert(std::make_pair(fileName, std::move(newModel)));
 }
@@ -77,7 +77,7 @@ Model* ModelManager::GetModel(const std::string& fileName)
 
   // 新しいModelインスタンスを作成
   std::unique_ptr<Model> newModel = std::make_unique<Model>();
-  newModel->Initialize(pModelBasic_, fileName);
+  newModel->Initialize(pModelBasic_.get(), fileName);
 
   // モデルデータの登録
   Model* modelPtr = newModel.get();

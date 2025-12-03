@@ -1,6 +1,7 @@
 #pragma once
 #include <d3d12.h>
-#include<wrl.h>
+#include <wrl.h>
+#include <memory>
 
 #include "Camera.h"
 #include "Matrix4x4.h"
@@ -83,7 +84,7 @@ public: // メンバー関数
 	/// ライトシステムを取得
 	/// </summary>
 	/// <returns>Lightポインタ</returns>
-	Light* GetLight() const { return light_; }
+	Light* GetLight() const { return light_.get(); }
 
 	// ===== Setters =====
 	/// <summary>
@@ -309,7 +310,7 @@ private: // メンバー変数
 
 	Camera* camera_ = nullptr; ///< デフォルトカメラへのポインタ
 
-	Light* light_ = nullptr; ///< ライティングシステムへのポインタ
+	std::unique_ptr<Light> light_; ///< ライティングシステムへのポインタ
 
 	Matrix4x4 viewProjectionMatrix_; ///< ビュープロジェクション行列
 	Matrix4x4 debugViewProjectionMatrix_; ///< デバッグ表示用ビュープロジェクション行列

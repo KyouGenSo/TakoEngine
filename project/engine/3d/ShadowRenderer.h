@@ -1,6 +1,7 @@
 #pragma once
 #include <d3d12.h>
 #include <wrl.h>
+#include <memory>
 #include "Matrix4x4.h"
 #include "Vector2.h"
 #include "ShadowMap.h"
@@ -154,7 +155,7 @@ public:
     /// ShadowMapを取得
     /// </summary>
     /// <returns>ShadowMapポインタ</returns>
-    ShadowMap* GetShadowMap() { return shadowMap_; }
+    ShadowMap* GetShadowMap() { return shadowMap_.get(); }
 
     /// <summary>
     /// ImGuiでのデバッグ表示
@@ -194,7 +195,7 @@ private:
 
 private:
     DX12Basic* dx12_ = nullptr;          ///< DirectX12基盤システムへの参照
-    ShadowMap* shadowMap_ = nullptr;     ///< シャドウマップ管理クラスへのポインタ
+    std::unique_ptr<ShadowMap> shadowMap_;     ///< シャドウマップ管理クラスへのポインタ
     Light* light_ = nullptr;             ///< ライトシステムへの参照（ライト位置・方向取得用）
     Camera* camera_ = nullptr;           ///< カメラへの参照（視錐台カリング用）
 
