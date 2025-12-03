@@ -30,11 +30,11 @@ void SceneManager::Update()
 			{
 				// 現在のシーンの終了処理
 				scene_->Finalize();
-				delete scene_;
+				scene_.reset();
 			}
 
 			// シーンの切り替え
-			scene_ = nextScene_;
+			scene_ = std::move(nextScene_);
 
 			// シーンの初期化
 			scene_->Initialize();
@@ -87,13 +87,14 @@ void SceneManager::Finalize()
 	if (scene_)
 	{
 		scene_->Finalize();
-		delete scene_;
+		scene_.reset();
 	}
 	if (nextScene_)
 	{
-		delete nextScene_;
+		nextScene_.reset();
 	}
 
+	// シングルトンインスタンスを削除
 	if (instance_)
 	{
 		delete instance_;

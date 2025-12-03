@@ -1,6 +1,7 @@
 #pragma once
 #include "BaseScene.h"
 #include <string>
+#include <memory>
 
 /// <summary>
 /// シーン生成のための抽象ファクトリークラス
@@ -17,5 +18,5 @@ public: // メンバ関数
 	/// <summary>
 	/// シーンの生成
 	/// </summary>
-	virtual BaseScene* CreateScene(const std::string& sceneName) = 0;
+	virtual std::unique_ptr<BaseScene> CreateScene(const std::string& sceneName) = 0;
 };

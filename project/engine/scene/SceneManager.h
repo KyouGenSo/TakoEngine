@@ -102,9 +102,9 @@ public: // メンバ関数
 
 private: // メンバ変数
 
-	BaseScene* scene_ = nullptr; ///< 現在のシーン
+	std::unique_ptr<BaseScene> scene_; ///< 現在のシーン
 
-	BaseScene* nextScene_ = nullptr; ///< 次のシーン
+	std::unique_ptr<BaseScene> nextScene_; ///< 次のシーン
 
 	AbstractSceneFactory* m_sceneFactory_ = nullptr; ///< シーンファクトリー
 

@@ -40,16 +40,16 @@ void TakoFramework::Initialize()
 
 
 #pragma region 基盤システムの初期化-------------------------------------------------------------------------------------------------------------------
-	dx12_ = new DX12Basic();
+	dx12_ = std::make_unique<DX12Basic>();
 	dx12_->Initialize(winApp_);
 
 	// SrvManagerを先に初期化（ImGuiManagerが使用するため）
-	SrvManager::GetInstance()->Initialize(dx12_);
+	SrvManager::GetInstance()->Initialize(dx12_.get());
 
 #ifdef _DEBUG
 	// ImGuiManagerの初期化（SrvManagerのディスクリプタヒープを使用）
-	imguiManager_ = new ImGuiManager();
-  imguiManager_->Initialize(winApp_, dx12_, true);
+	imguiManager_ = std::make_unique<ImGuiManager>();
+  imguiManager_->Initialize(winApp_, dx12_.get(), true);
   
   // DebugUIManagerの初期化
   DebugUIManager::GetInstance()->Initialize();
@@ -61,38 +61,38 @@ void TakoFramework::Initialize()
   DebugCamera::GetInstance()->Initialize();
 #endif
 
-	TextureManager::GetInstance()->Initialize(dx12_, "resources/Texture/");
+	TextureManager::GetInstance()->Initialize(dx12_.get(), "resources/Texture/");
 
-	ModelManager::GetInstance()->Initialize(dx12_);
+	ModelManager::GetInstance()->Initialize(dx12_.get());
 
-	Object3dBasic::GetInstance()->Initialize(dx12_);
+	Object3dBasic::GetInstance()->Initialize(dx12_.get());
 
-	SpriteBasic::GetInstance()->Initialize(dx12_);
+	SpriteBasic::GetInstance()->Initialize(dx12_.get());
 
   FrameTimer::GetInstance()->Initialize();
 
   // デフォルトカメラを生成
-	defaultCamera_ = new Camera();
+	defaultCamera_ = std::make_unique<Camera>();
 	defaultCamera_->SetRotate(Vector3(0.2f, 0.0f, 0.0f));
 	defaultCamera_->SetTranslate(Vector3(0.0f, 9.0f, -34.0f));
 
 	// デフォルトカメラを設定
-	Object3dBasic::GetInstance()->SetCamera(defaultCamera_);
+	Object3dBasic::GetInstance()->SetCamera(defaultCamera_.get());
 
   // ShadowRendererの初期化
-  ShadowRenderer::GetInstance()->Initialize(dx12_);
+  ShadowRenderer::GetInstance()->Initialize(dx12_.get());
   ShadowRenderer::GetInstance()->SetLight(Object3dBasic::GetInstance()->GetLight());
-  ShadowRenderer::GetInstance()->SetCamera(defaultCamera_);
+  ShadowRenderer::GetInstance()->SetCamera(defaultCamera_.get());
 
-  Draw2D::GetInstance()->SetCamera(defaultCamera_);
-  Draw2D::GetInstance()->Initialize(dx12_);
+  Draw2D::GetInstance()->SetCamera(defaultCamera_.get());
+  Draw2D::GetInstance()->Initialize(dx12_.get());
 
   TextureManager::GetInstance()->LoadTexture("black.png");
   TextureManager::GetInstance()->LoadTexture("noise0.png");
 
-  PostEffectManager::GetInstance()->Initialize(dx12_);
+  PostEffectManager::GetInstance()->Initialize(dx12_.get());
 
-  PostEffectManager::GetInstance()->SetCamera(defaultCamera_);
+  PostEffectManager::GetInstance()->SetCamera(defaultCamera_.get());
 
   TransitionManager::GetInstance()->Initialize();
 
@@ -124,8 +124,8 @@ void TakoFramework::Finalize()
   // ShadowRenderer
   ShadowRenderer::GetInstance()->Finalize();
 
-  // defaultCameraの削除
-  delete defaultCamera_;
+  // defaultCameraはunique_ptrで自動解放
+  defaultCamera_.reset();
 
   // FrameTimer
   FrameTimer::GetInstance()->Finalize();
@@ -153,18 +153,18 @@ void TakoFramework::Finalize()
 #ifdef _DEBUG
   // DebugUIManagerの終了処理
   DebugUIManager::GetInstance()->Finalize();
-  
+
   // ImGuiManagerの終了処理
   imguiManager_->Shutdown();
-  delete imguiManager_;
+  imguiManager_.reset();
 #endif
 
   // DX12の終了処理
   dx12_->Finalize();
-  delete dx12_;
+  dx12_.reset();
 
-  // その他のポインタ解放
-  delete sceneFactory_;
+  // sceneFactoryはunique_ptrで自動解放
+  sceneFactory_.reset();
 
   // WinApp（最初に初期化されたもの）
   winApp_->Finalize();

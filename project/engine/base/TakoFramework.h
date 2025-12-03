@@ -5,6 +5,7 @@
 #include "Camera.h"
 #include "SrvManager.h"
 #include "AbstractSceneFactory.h"
+#include <memory>
 
 #ifdef _DEBUG
 #include "ImGuiManager.h"
@@ -91,15 +92,15 @@ protected: // メンバ変数
 
 	WinApp* winApp_ = nullptr;  ///< ウィンドウ管理クラスへのポインタ
 
-	DX12Basic* dx12_ = nullptr;  ///< DirectX 12基盤システムへのポインタ
+	std::unique_ptr<DX12Basic> dx12_;  ///< DirectX 12基盤システムへのポインタ
 
 #ifdef _DEBUG
-	ImGuiManager* imguiManager_ = nullptr;  ///< ImGuiマネージャー（デバッグUI用）
+	std::unique_ptr<ImGuiManager> imguiManager_;  ///< ImGuiマネージャー（デバッグUI用）
 #endif
 
-	Camera* defaultCamera_ = nullptr;  ///< デフォルトカメラ
+	std::unique_ptr<Camera> defaultCamera_;  ///< デフォルトカメラ
 
-	AbstractSceneFactory* sceneFactory_ = nullptr;  ///< シーンファクトリー（シーン生成用）
+	std::unique_ptr<AbstractSceneFactory> sceneFactory_;  ///< シーンファクトリー（シーン生成用）
 
 	bool endFlag_ = false;  ///< アプリケーション終了フラグ
 
