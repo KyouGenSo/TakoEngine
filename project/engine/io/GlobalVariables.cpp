@@ -188,7 +188,7 @@ void GlobalVariables::LoadFiles()
     std::string extension = filePath.extension().string();
 
     // 拡張子が.jsonでない場合はスキップ
-    if (extension.compare(".json") != 0) {
+    if (extension != ".json") {
       continue;
     }
 
@@ -229,6 +229,9 @@ void GlobalVariables::LoadFile(const std::string& groupName)
   // グループが存在しない場合はエラー
   json::iterator itGroup = root.find(groupName);
   assert(itGroup != root.end());
+
+  // グループを作成
+  CreateGroup(groupName);
 
   // 各アイテムの処理
   for (json::iterator itItem = itGroup->begin(); itItem != itGroup->end(); ++itItem) {
@@ -340,42 +343,42 @@ void GlobalVariables::SetValue(const std::string& groupName, const std::string& 
 void GlobalVariables::AddItem(const std::string& groupName, const std::string& key, int32_t value)
 {
   // 項目が存在しない場合は追加、存在する場合は何もしない
-  if (datas_[groupName].items.find(key) == datas_[groupName].items.end()) {
+  if (!datas_[groupName].items.contains(key)) {
     SetValue(groupName, key, value);
   }
 }
 
 void GlobalVariables::AddItem(const std::string& groupName, const std::string& key, float value)
 {
-  if (datas_[groupName].items.find(key) == datas_[groupName].items.end()) {
+  if (!datas_[groupName].items.contains(key)) {
     SetValue(groupName, key, value);
   }
 }
 
 void GlobalVariables::AddItem(const std::string& groupName, const std::string& key, const Vector2& value)
 {
-  if (datas_[groupName].items.find(key) == datas_[groupName].items.end()) {
+  if (!datas_[groupName].items.contains(key)) {
     SetValue(groupName, key, value);
   }
 }
 
 void GlobalVariables::AddItem(const std::string& groupName, const std::string& key, const Vector3& value)
 {
-  if (datas_[groupName].items.find(key) == datas_[groupName].items.end()) {
+  if (!datas_[groupName].items.contains(key)) {
     SetValue(groupName, key, value);
   }
 }
 
 void GlobalVariables::AddItem(const std::string& groupName, const std::string& key, const Vector4& value)
 {
-  if (datas_[groupName].items.find(key) == datas_[groupName].items.end()) {
+  if (!datas_[groupName].items.contains(key)) {
     SetValue(groupName, key, value);
   }
 }
 
 void GlobalVariables::AddItem(const std::string& groupName, const std::string& key, bool value)
 {
-  if (datas_[groupName].items.find(key) == datas_[groupName].items.end()) {
+  if (!datas_[groupName].items.contains(key)) {
     SetValue(groupName, key, value);
   }
 }
