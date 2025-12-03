@@ -37,12 +37,8 @@ void GaussianBlur::Initialize(DX12Basic* dx12, const std::string& shaderName)
   }
 }
 
-void GaussianBlur::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, uint32_t depthSrvIndex, const Vector4& clearColor)
+void GaussianBlur::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, [[maybe_unused]] uint32_t depthSrvIndex, [[maybe_unused]] const Vector4& clearColor)
 {
-  depthSrvIndex; // 深度バッファはこのエフェクトでは使用しないため、引数として受け取るが無視する
-  clearColor;    // ClearColorもこのエフェクトでは使用しないため、引数として受け取るが無視する
-
-
   //---------------------------Pass1---------------------------//
   D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
 

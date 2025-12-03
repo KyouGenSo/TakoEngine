@@ -40,8 +40,8 @@ public: // メンバー関数
   virtual void Apply(
     uint32_t                    inputSrvIndex,
     D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle,
-    uint32_t                    depthSrvIndex,
-    const Vector4&              clearColor
+    [[maybe_unused]] uint32_t   depthSrvIndex,
+    [[maybe_unused]] const Vector4& clearColor
   ) = 0;
 
   /// <summary>

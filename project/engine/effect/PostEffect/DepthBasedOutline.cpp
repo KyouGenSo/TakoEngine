@@ -18,10 +18,8 @@ void DepthBasedOutline::Initialize(DX12Basic* dx12, const std::string& shaderNam
   CreateCBV();
 }
 
-void DepthBasedOutline::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, uint32_t depthSrvIndex, const Vector4& clearColor)
+void DepthBasedOutline::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, uint32_t depthSrvIndex, [[maybe_unused]] const Vector4& clearColor)
 {
-  clearColor;    // ClearColorもこのエフェクトでは使用しないため、引数として受け取るが無視する
-
   m_dx12_->TransitionResourceState(D3D12_RESOURCE_STATE_DEPTH_WRITE,
     D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
     m_dx12_->GetDepthStencilResource());

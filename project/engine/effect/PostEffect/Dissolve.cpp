@@ -20,10 +20,8 @@ void Dissolve::Initialize(DX12Basic* dx12, const std::string& shaderName)
   baseTexSrvIndex_ = TextureManager::GetInstance()->GetSRVIndex("black.png");
 }
 
-void Dissolve::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, uint32_t maskSrvIndex, const Vector4& clearColor)
+void Dissolve::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, uint32_t maskSrvIndex, [[maybe_unused]] const Vector4& clearColor)
 {
-  clearColor;    // ClearColorもこのエフェクトでは使用しないため、引数として受け取るが無視する
-
   D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
   m_dx12_->GetCommandList()->OMSetRenderTargets(1,
     &outputRtvHandle,

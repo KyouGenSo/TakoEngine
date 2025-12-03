@@ -14,12 +14,9 @@ void NoEffect::Initialize(DX12Basic* dx12, const std::string& shaderName)
 
 void NoEffect::Apply(uint32_t inputSrvIndex,
   D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle,
-  uint32_t depthSrvIndex, // 深度バッファが必要なエフェクト用
-  const Vector4& clearColor)
+  [[maybe_unused]] uint32_t depthSrvIndex,
+  [[maybe_unused]] const Vector4& clearColor)
 {
-  depthSrvIndex; // 深度バッファはNoEffectエフェクトでは使用しないため、引数として受け取るが無視する
-  clearColor;    // ClearColorもNoEffectエフェクトでは使用しないため、引数として受け取るが無視する
-
   D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
   m_dx12_->GetCommandList()->OMSetRenderTargets(1,
     &outputRtvHandle,

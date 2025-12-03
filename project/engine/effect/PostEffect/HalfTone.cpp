@@ -20,11 +20,8 @@ void HalfTone::Initialize(DX12Basic* dx12, const std::string& shaderName)
   CreateCBV();
 }
 
-void HalfTone::Apply(const uint32_t inputSrvIndex, const D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, const uint32_t depthSrvIndex, const Vector4& clearColor)
+void HalfTone::Apply(const uint32_t inputSrvIndex, const D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, [[maybe_unused]] const uint32_t depthSrvIndex, [[maybe_unused]] const Vector4& clearColor)
 {
-  depthSrvIndex; // 深度バッファはこのエフェクトでは使用しないため、引数として受け取るが無視する
-  clearColor;    // ClearColorもこのエフェクトでは使用しないため、引数として受け取るが無視する
-
   // スクリーンサイズを更新
   UpdateScreenSize();
 
