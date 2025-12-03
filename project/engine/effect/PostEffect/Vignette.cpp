@@ -13,13 +13,13 @@
 #include "ImGuiManager.h"
 #endif
 
-void Vignette::Initialize(DX12Basic* dx12, const std::string shaderName)
+void Vignette::Initialize(DX12Basic* dx12, const std::string& shaderName)
 {
   IPostEffect::Initialize(dx12, shaderName);
   CreateCBV();
 }
 
-void Vignette::Apply(const uint32_t inputSrvIndex, const D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, const uint32_t depthSrvIndex, const Vector4 clearColor)
+void Vignette::Apply(const uint32_t inputSrvIndex, const D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, const uint32_t depthSrvIndex, const Vector4& clearColor)
 {
   depthSrvIndex; // 深度バッファはこのエフェクトでは使用しないため、引数として受け取るが無視する
   clearColor;    // ClearColorもこのエフェクトでは使用しないため、引数として受け取るが無視する

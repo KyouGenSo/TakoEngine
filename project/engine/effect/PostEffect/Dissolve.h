@@ -12,7 +12,7 @@ public:
   /// </summary>
   /// <param name="dx12">DirectX12基盤</param>
   /// <param name="shaderName">シェーダー名</param>
-  void Initialize(DX12Basic* dx12, std::string shaderName) override;
+  void Initialize(DX12Basic* dx12, const std::string& shaderName) override;
 
   /// <summary>
   /// エフェクトを適用
@@ -25,7 +25,7 @@ public:
     uint32_t                    inputSrvIndex,
     D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle,
     uint32_t                    maskSrvIndex,
-    Vector4                     clearColor
+    const Vector4&              clearColor
   ) override;
 
   /// <summary>

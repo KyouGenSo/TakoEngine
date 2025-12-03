@@ -28,7 +28,7 @@ public: // メンバー関数
   /// </summary>
   /// <param name="dx12">DirectX12基盤</param>
   /// <param name="shaderName">シェーダー名</param>
-  virtual void Initialize(DX12Basic* dx12, std::string shaderName);
+  virtual void Initialize(DX12Basic* dx12, const std::string& shaderName);
 
   /// <summary>
   /// エフェクトを適用
@@ -41,7 +41,7 @@ public: // メンバー関数
     uint32_t                    inputSrvIndex,
     D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle,
     uint32_t                    depthSrvIndex,
-    Vector4                     clearColor
+    const Vector4&              clearColor
   ) = 0;
 
   /// <summary>

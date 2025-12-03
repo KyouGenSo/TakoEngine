@@ -10,13 +10,13 @@
 #include "ImGuiManager.h"
 #endif
 
-void WhiteNoise::Initialize(DX12Basic* dx12, std::string shaderName)
+void WhiteNoise::Initialize(DX12Basic* dx12, const std::string& shaderName)
 {
   IPostEffect::Initialize(dx12, shaderName);
   CreateCBV();
 }
 
-void WhiteNoise::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, uint32_t depthSrvIndex, Vector4 clearColor)
+void WhiteNoise::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, uint32_t depthSrvIndex, const Vector4& clearColor)
 {
   depthSrvIndex; // 深度バッファはこのエフェクトでは使用しないため、引数として受け取るが無視する
   clearColor;    // ClearColorもこのエフェクトでは使用しないため、引数として受け取るが無視する

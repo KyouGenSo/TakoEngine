@@ -57,7 +57,7 @@ public: // メンバー関数
 	/// </summary>
 	/// <param name="dx12">DX12Basicのインスタンス</param>
 	/// <param name="directoryPath">テクスチャ格納ディレクトリのパス</param>
-	void Initialize(DX12Basic* dx12, std::string directoryPath);
+	void Initialize(DX12Basic* dx12, const std::string& directoryPath);
 
 	/// <summary>
 	/// 終了処理

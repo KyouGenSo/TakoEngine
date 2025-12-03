@@ -49,7 +49,7 @@ public: // メンバー関数
   /// 画面サイズが変わったときに呼び出すコールバック関数
   /// </summary>
   /// <param name="size">新しい画面サイズ</param>
-  void OnResize(Vector2 size);
+  void OnResize(const Vector2& size);
 
 	//-----------------------------------Getters-----------------------------------//
 	/// <summary>

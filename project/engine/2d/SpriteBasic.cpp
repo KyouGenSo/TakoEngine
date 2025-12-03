@@ -49,7 +49,7 @@ void SpriteBasic::SetCommonRenderSetting()
 	m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
 
-void SpriteBasic::OnResize(Vector2 size)
+void SpriteBasic::OnResize(const Vector2& size)
 {
   projectionMatrixSprite_ = Mat4x4::MakeOrtho(
     0.0f, 0.0f,

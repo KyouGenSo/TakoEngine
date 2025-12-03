@@ -18,7 +18,7 @@ TextureManager* TextureManager::GetInstance()
 	return instance_;
 }
 
-void TextureManager::Initialize(DX12Basic* dx12, std::string directoryPath)
+void TextureManager::Initialize(DX12Basic* dx12, const std::string& directoryPath)
 {
 	m_dx12_ = dx12;
 

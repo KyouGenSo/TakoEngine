@@ -21,7 +21,7 @@ GaussianBlur::~GaussianBlur()
   }
 }
 
-void GaussianBlur::Initialize(DX12Basic* dx12, std::string shaderName)
+void GaussianBlur::Initialize(DX12Basic* dx12, const std::string& shaderName)
 {
   IPostEffect::Initialize(dx12, shaderName);
   CreateCBV();
@@ -37,7 +37,7 @@ void GaussianBlur::Initialize(DX12Basic* dx12, std::string shaderName)
   }
 }
 
-void GaussianBlur::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, uint32_t depthSrvIndex, Vector4 clearColor)
+void GaussianBlur::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, uint32_t depthSrvIndex, const Vector4& clearColor)
 {
   depthSrvIndex; // 深度バッファはこのエフェクトでは使用しないため、引数として受け取るが無視する
   clearColor;    // ClearColorもこのエフェクトでは使用しないため、引数として受け取るが無視する
@@ -301,7 +301,7 @@ void GaussianBlur::CreateRenderTexture()
   createRT(resultRT_, 9, Vector4(0.0f, 0.0f, 0.0f, 1.0f));
 }
 
-void GaussianBlur::OnResize(Vector2 newSize)
+void GaussianBlur::OnResize(const Vector2& newSize)
 {
   newSize; // 未使用の警告を抑制
   

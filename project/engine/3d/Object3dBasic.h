@@ -97,13 +97,13 @@ public: // メンバー関数
 	/// カメラの座標を設定
 	/// </summary>
 	/// <param name="translate">座標値</param>
-	void SetCameraTranslate(Vector3 translate) { camera_->SetTranslate(translate); }
+	void SetCameraTranslate(const Vector3& translate) { camera_->SetTranslate(translate); }
 
 	/// <summary>
 	/// カメラの回転を設定
 	/// </summary>
 	/// <param name="rotation">回転値（ラジアン）</param>
-	void SetCameraRotation(Vector3 rotation) { camera_->SetRotate(rotation); }
+	void SetCameraRotation(const Vector3& rotation) { camera_->SetRotate(rotation); }
 
 	/// <summary>
 	/// デバッグモードを設定

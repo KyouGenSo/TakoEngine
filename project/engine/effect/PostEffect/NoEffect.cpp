@@ -7,7 +7,7 @@
 #include "SrvManager.h"
 #include "StringUtility.h"
 
-void NoEffect::Initialize(DX12Basic* dx12, std::string shaderName)
+void NoEffect::Initialize(DX12Basic* dx12, const std::string& shaderName)
 {
   IPostEffect::Initialize(dx12, shaderName);
 }
@@ -15,7 +15,7 @@ void NoEffect::Initialize(DX12Basic* dx12, std::string shaderName)
 void NoEffect::Apply(uint32_t inputSrvIndex,
   D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle,
   uint32_t depthSrvIndex, // 深度バッファが必要なエフェクト用
-  Vector4 clearColor)
+  const Vector4& clearColor)
 {
   depthSrvIndex; // 深度バッファはNoEffectエフェクトでは使用しないため、引数として受け取るが無視する
   clearColor;    // ClearColorもNoEffectエフェクトでは使用しないため、引数として受け取るが無視する

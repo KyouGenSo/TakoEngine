@@ -12,7 +12,7 @@
 #include "ImGuiManager.h"
 #endif
 
-void Dissolve::Initialize(DX12Basic* dx12, std::string shaderName)
+void Dissolve::Initialize(DX12Basic* dx12, const std::string& shaderName)
 {
   IPostEffect::Initialize(dx12, shaderName);
   CreateCBV();
@@ -20,7 +20,7 @@ void Dissolve::Initialize(DX12Basic* dx12, std::string shaderName)
   baseTexSrvIndex_ = TextureManager::GetInstance()->GetSRVIndex("black.png");
 }
 
-void Dissolve::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, uint32_t maskSrvIndex, Vector4 clearColor)
+void Dissolve::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, uint32_t maskSrvIndex, const Vector4& clearColor)
 {
   clearColor;    // ClearColorもこのエフェクトでは使用しないため、引数として受け取るが無視する
 

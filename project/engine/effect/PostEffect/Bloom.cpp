@@ -18,7 +18,7 @@ Bloom::~Bloom()
   }
 }
 
-void Bloom::Initialize(DX12Basic* dx12, std::string shaderName)
+void Bloom::Initialize(DX12Basic* dx12, const std::string& shaderName)
 {
   IPostEffect::Initialize(dx12, shaderName);
   CreatePSO("ThresholdExtract");
@@ -37,7 +37,7 @@ void Bloom::Initialize(DX12Basic* dx12, std::string shaderName)
   }
 }
 
-void Bloom::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, uint32_t depthSrvIndex, Vector4 clearColor)
+void Bloom::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, uint32_t depthSrvIndex, const Vector4& clearColor)
 {
   depthSrvIndex; // 深度バッファはこのエフェクトでは使用しないため、引数として受け取るが無視する
   clearColor;    // ClearColorもこのエフェクトでは使用しないため、引数として受け取るが無視する
@@ -292,7 +292,7 @@ void Bloom::CreateRootSignature()
   assert(SUCCEEDED(hr));
 }
 
-void Bloom::CreateRootSignature(std::string shaderNeme)
+void Bloom::CreateRootSignature(const std::string& shaderNeme)
 {
   shaderNeme;
   HRESULT hr;
@@ -426,7 +426,7 @@ void Bloom::CreatePSO()
   assert(SUCCEEDED(hr));
 }
 
-void Bloom::CreatePSO(std::string shaderNeme)
+void Bloom::CreatePSO(const std::string& shaderNeme)
 {
   CreateRootSignature(shaderNeme);
 
@@ -547,7 +547,7 @@ void Bloom::CreateRenderTexture()
   createRT(resultRT_, 8, Vector4(0.0f, 0.0f, 0.0f, 1.0f));
 }
 
-void Bloom::OnResize(Vector2 newSize)
+void Bloom::OnResize(const Vector2& newSize)
 {
   newSize; // 未使用の警告を抑制
 
