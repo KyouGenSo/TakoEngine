@@ -87,7 +87,7 @@ void GlobalVariables::Update()
 
       ImGui::Text("\n");
 
-      if (ImGui::Button("Save")) {
+      if (ImGui::Button(("Save##" + groupName).c_str())) {
         SaveFile(groupName);
         std::string message = std::format("{}.json saved", groupName);
         MessageBoxA(nullptr, message.c_str(), "GlobalVariables", 0);
