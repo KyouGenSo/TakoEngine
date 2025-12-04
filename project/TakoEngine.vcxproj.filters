@@ -177,43 +177,40 @@
     <ClCompile Include="engine\math\RandomEngine.cpp">
       <Filter>math</Filter>
     </ClCompile>
-    <ClCompile Include="engine\3d\Camera.cpp">
+    <ClCompile Include="engine\3d\Camera\Camera.cpp">
       <Filter>3d\Camera</Filter>
     </ClCompile>
-    <ClCompile Include="engine\2d\DebugCamera.cpp">
-      <Filter>3d\Camera</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\3d\InstancedObject3d.cpp">
+    <ClCompile Include="engine\3d\Object\InstancedObject3d.cpp">
       <Filter>3d\Object</Filter>
     </ClCompile>
-    <ClCompile Include="engine\3d\Object3d.cpp">
+    <ClCompile Include="engine\3d\Object\Object3d.cpp">
       <Filter>3d\Object</Filter>
     </ClCompile>
-    <ClCompile Include="engine\3d\Object3dBasic.cpp">
+    <ClCompile Include="engine\3d\Object\Object3dBasic.cpp">
       <Filter>3d\Object</Filter>
     </ClCompile>
-    <ClCompile Include="engine\3d\Mesh.cpp">
+    <ClCompile Include="engine\3d\Model\Mesh.cpp">
       <Filter>3d\Model</Filter>
     </ClCompile>
-    <ClCompile Include="engine\3d\Model.cpp">
+    <ClCompile Include="engine\3d\Model\Model.cpp">
       <Filter>3d\Model</Filter>
     </ClCompile>
-    <ClCompile Include="engine\3d\ModelBasic.cpp">
+    <ClCompile Include="engine\3d\Model\ModelBasic.cpp">
       <Filter>3d\Model</Filter>
     </ClCompile>
-    <ClCompile Include="engine\3d\ModelManager.cpp">
+    <ClCompile Include="engine\3d\Model\ModelManager.cpp">
       <Filter>3d\Model</Filter>
     </ClCompile>
-    <ClCompile Include="engine\3d\ShadowRenderer.cpp">
+    <ClCompile Include="engine\3d\Shadow\ShadowRenderer.cpp">
       <Filter>3d\Shadow</Filter>
     </ClCompile>
-    <ClCompile Include="engine\3d\ShadowMap.cpp">
+    <ClCompile Include="engine\3d\Shadow\ShadowMap.cpp">
       <Filter>3d\Shadow</Filter>
     </ClCompile>
-    <ClCompile Include="engine\3d\Light.cpp">
+    <ClCompile Include="engine\3d\Light\Light.cpp">
       <Filter>3d\Light</Filter>
     </ClCompile>
-    <ClCompile Include="engine\3d\SkyBox.cpp">
+    <ClCompile Include="engine\3d\SkyBox\SkyBox.cpp">
       <Filter>3d\SkyBox</Filter>
     </ClCompile>
     <ClCompile Include="engine\debug\NodeEditorManager.cpp">
@@ -285,6 +282,12 @@
     <ClCompile Include="engine\effect\PostEffect\WhiteNoise.cpp">
       <Filter>effect\PostEffect</Filter>
     </ClCompile>
+    <ClCompile Include="engine\debug\DebugCamera.cpp">
+      <Filter>debug</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3d\Model\BoneTracker.cpp">
+      <Filter>3d\Model</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\math\Matrix4x4.h">
@@ -305,7 +308,7 @@
     <ClInclude Include="engine\math\Quaternion.h">
       <Filter>math</Filter>
     </ClInclude>
-    <ClInclude Include="engine\3d\Transform.h">
+    <ClInclude Include="engine\math\Transform.h">
       <Filter>math</Filter>
     </ClInclude>
     <ClInclude Include="engine\math\AABB.h">
@@ -422,46 +425,43 @@
     <ClInclude Include="engine\math\RandomEngine.h">
       <Filter>math</Filter>
     </ClInclude>
-    <ClInclude Include="engine\3d\Camera.h">
+    <ClInclude Include="engine\3d\Camera\Camera.h">
       <Filter>3d\Camera</Filter>
     </ClInclude>
-    <ClInclude Include="engine\2d\DebugCamera.h">
-      <Filter>3d\Camera</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\3d\InstancedObject3d.h">
+    <ClInclude Include="engine\3d\Object\InstancedObject3d.h">
       <Filter>3d\Object</Filter>
     </ClInclude>
-    <ClInclude Include="engine\3d\Object3d.h">
+    <ClInclude Include="engine\3d\Object\Object3d.h">
       <Filter>3d\Object</Filter>
     </ClInclude>
-    <ClInclude Include="engine\3d\Object3dBasic.h">
+    <ClInclude Include="engine\3d\Object\Object3dBasic.h">
       <Filter>3d\Object</Filter>
     </ClInclude>
-    <ClInclude Include="engine\3d\Mesh.h">
+    <ClInclude Include="engine\3d\Model\Mesh.h">
       <Filter>3d\Model</Filter>
     </ClInclude>
-    <ClInclude Include="engine\3d\Model.h">
+    <ClInclude Include="engine\3d\Model\Model.h">
       <Filter>3d\Model</Filter>
     </ClInclude>
-    <ClInclude Include="engine\3d\ModelBasic.h">
+    <ClInclude Include="engine\3d\Model\ModelBasic.h">
       <Filter>3d\Model</Filter>
     </ClInclude>
-    <ClInclude Include="engine\3d\ModelManager.h">
+    <ClInclude Include="engine\3d\Model\ModelManager.h">
       <Filter>3d\Model</Filter>
     </ClInclude>
-    <ClInclude Include="engine\3d\ModelStruct.h">
+    <ClInclude Include="engine\3d\Model\ModelStruct.h">
       <Filter>3d\Model</Filter>
     </ClInclude>
-    <ClInclude Include="engine\3d\ShadowRenderer.h">
+    <ClInclude Include="engine\3d\Shadow\ShadowRenderer.h">
       <Filter>3d\Shadow</Filter>
     </ClInclude>
-    <ClInclude Include="engine\3d\ShadowMap.h">
+    <ClInclude Include="engine\3d\Shadow\ShadowMap.h">
       <Filter>3d\Shadow</Filter>
     </ClInclude>
-    <ClInclude Include="engine\3d\Light.h">
+    <ClInclude Include="engine\3d\Light\Light.h">
       <Filter>3d\Light</Filter>
     </ClInclude>
-    <ClInclude Include="engine\3d\SkyBox.h">
+    <ClInclude Include="engine\3d\SkyBox\SkyBox.h">
       <Filter>3d\SkyBox</Filter>
     </ClInclude>
     <ClInclude Include="engine\debug\NodeEditorManager.h">
@@ -541,6 +541,12 @@
     </ClInclude>
     <ClInclude Include="engine\effect\PostEffect\WhiteNoise.h">
       <Filter>effect\PostEffect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\debug\DebugCamera.h">
+      <Filter>debug</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\Model\BoneTracker.h">
+      <Filter>3d\Model</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
