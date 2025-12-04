@@ -2,11 +2,11 @@
 
 #include "DX12Basic.h"
 #include "WinApp.h"
-#include "DebugUIManager.h"
 #include "SrvManager.h"
 #include "StringUtility.h"
 
 #ifdef _DEBUG
+#include "DebugUIManager.h"
 #include "ImGuiManager.h"
 #endif
 

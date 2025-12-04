@@ -1,12 +1,12 @@
 #include "Object3dBasic.h"
 #include "DX12Basic.h"
-#include "DebugUIManager.h"
 #include "Camera.h"
 #include "SrvManager.h"
 #include "PostEffectManager.h"
 #include "ShadowRenderer.h"
 
 #ifdef _DEBUG
+#include "DebugUIManager.h"
 #include "DebugCamera.h"
 #endif
 

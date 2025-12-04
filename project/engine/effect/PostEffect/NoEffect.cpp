@@ -1,11 +1,13 @@
 #include "NoEffect.h"
-
-#include <cassert>
-
 #include "DX12Basic.h"
-#include "DebugUIManager.h"
 #include "SrvManager.h"
 #include "StringUtility.h"
+#include <cassert>
+
+#ifdef _DEBUG
+#include "DebugUIManager.h"
+#endif
+
 
 void NoEffect::Initialize(DX12Basic* dx12, const std::string& shaderName)
 {

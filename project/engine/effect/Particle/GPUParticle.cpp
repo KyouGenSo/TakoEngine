@@ -7,11 +7,11 @@
 #include "Camera.h"
 #include "TextureManager.h"
 #include "FrameTimer.h"
-#include "DebugCamera.h"
 
 #ifdef _DEBUG
 #include "DebugUIManager.h"
 #include "ImGuiManager.h"
+#include "DebugCamera.h"
 #endif // _DEBUG
 
 #include <numbers>
@@ -346,10 +346,12 @@ void GPUParticle::UpdatePerView()
 
   Matrix4x4 cameraMatrix = Mat4x4::MakeAffine({ .x = 1.0f,.y = 1.0f,.z = 1.0f }, m_camera_->GetRotate(), m_camera_->GetTranslate());
 
+#ifdef _DEBUG
   if (isDebug_)
   {
     cameraMatrix = Mat4x4::MakeAffine({ .x = 1.0f,.y = 1.0f,.z = 1.0f }, DebugCamera::GetInstance()->GetRotate(), DebugCamera::GetInstance()->GetTranslate());
   }
+#endif
 
   const Matrix4x4 viewProjectionMatrix = Mat4x4::Multiply(Mat4x4::Inverse(cameraMatrix), m_camera_->GetProjectionMatrix());
 

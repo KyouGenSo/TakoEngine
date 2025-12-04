@@ -1,7 +1,10 @@
 #include "ModelBasic.h"
 #include "DX12Basic.h"
 #include "SrvManager.h"
+
+#ifdef _DEBUG
 #include "DebugUIManager.h"
+#endif
 
 void ModelBasic::Initialize(DX12Basic* dx12)
 {

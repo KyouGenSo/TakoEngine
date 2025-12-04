@@ -6,9 +6,13 @@
 #include "Camera.h"
 #include "SrvManager.h"
 #include "ShadowRenderer.h"
-#include "DebugUIManager.h"
+
 #include <algorithm>
 #include <cassert>
+
+#ifdef _DEBUG
+#include "DebugUIManager.h"
+#endif
 
 InstancedObject3d::InstancedObject3d() {
 }

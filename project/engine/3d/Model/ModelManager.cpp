@@ -1,10 +1,11 @@
 #include"ModelManager.h"
-
-#include <ranges>
-
 #include"Model.h"
 #include"DX12Basic.h"
+#include <ranges>
+
+#ifdef _DEBUG
 #include "DebugUIManager.h"
+#endif
 
 ModelManager* ModelManager::instance_ = nullptr;
 

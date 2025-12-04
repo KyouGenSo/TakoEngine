@@ -5,7 +5,10 @@
 #include "DX12Basic.h"
 #include "Mat4x4Func.h"
 #include "Camera.h"
+
+#ifdef _DEBUG
 #include "DebugUIManager.h"
+#endif
 
 void SkyBox::Initialize(const std::string& texturePath)
 {

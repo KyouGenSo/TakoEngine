@@ -8,14 +8,12 @@
 #include "Model.h"
 #include "Draw2D.h"
 #include "PostEffectManager.h"
-#include "DebugCamera.h"
+#include "GPUParticle.h"
 #include "TransitionManager.h"
 #include "FrameTimer.h"
 #include "ShadowRenderer.h"
 #include "Input.h"
 #include "CollisionManager.h"
-#include "NodeEditorManager.h"
-
 #include "Light.h"
 #include <algorithm>
 #include <vector>
@@ -23,7 +21,12 @@
 #include <iomanip>
 #include <sstream>
 
-#include "GPUParticle.h"
+#ifdef _DEBUG
+#include "DebugCamera.h"
+#include "NodeEditorManager.h"
+#endif
+
+
 
 void TakoFramework::Initialize()
 {

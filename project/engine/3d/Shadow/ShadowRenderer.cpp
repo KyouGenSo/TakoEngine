@@ -1,14 +1,13 @@
 #include "ShadowRenderer.h"
 #include "DX12Basic.h"
 #include "Light.h"
-#include "DebugUIManager.h"
 #include "PostEffectManager.h"
 #include "SrvManager.h"
 #include <cassert>
-
 #include "Mat4x4Func.h"
 
 #ifdef _DEBUG
+#include "DebugUIManager.h"
 #include "ImGuiManager.h"
 #endif
 

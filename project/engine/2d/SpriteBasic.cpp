@@ -1,7 +1,11 @@
 #include "SpriteBasic.h"
 #include <cassert>
-#include "DebugUIManager.h"
+
 #include "Mat4x4Func.h"
+
+#ifdef _DEBUG
+#include "DebugUIManager.h"
+#endif
 
 SpriteBasic* SpriteBasic::instance_ = nullptr;
 

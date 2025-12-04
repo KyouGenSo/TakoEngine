@@ -6,7 +6,10 @@
 #include "ShadowRenderer.h"
 #include "SrvManager.h"
 #include "TextureManager.h"
+
+#ifdef _DEBUG
 #include "DebugUIManager.h"
+#endif
 
 //　デストラクタ
 Mesh::~Mesh()

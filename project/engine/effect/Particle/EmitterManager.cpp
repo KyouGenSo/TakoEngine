@@ -3,15 +3,17 @@
 #include "SphereEmitter.h"
 #include "BoxEmitter.h"
 #include "TriangleEmitter.h"
-#include "DebugUIManager.h"
 #include "FrameTimer.h"
-
 #include <algorithm>
 #include <ranges>
 #include <memory>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
+
+#ifdef _DEBUG
+#include "DebugUIManager.h"
+#endif
 
 EmitterManager::EmitterManager(GPUParticle* particleSystem)
   : particleSystem_(particleSystem)
