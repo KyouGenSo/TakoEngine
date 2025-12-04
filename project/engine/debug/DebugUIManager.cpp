@@ -404,6 +404,8 @@ void DebugUIManager::DrawInspector() {
 void DebugUIManager::DrawConsole() {
   ImGui::Begin("Console", &windowVisibility_["Console"]);
 
+  // 自動スクロールチェックボックス
+  ImGui::Checkbox("Auto Scroll", &autoScroll_);
   // フィルタボタン
   if (ImGui::Button("Clear")) {
     ClearLogs();
@@ -414,8 +416,6 @@ void DebugUIManager::DrawConsole() {
   ImGui::Checkbox("Warning", &showWarning_);
   ImGui::SameLine();
   ImGui::Checkbox("Error", &showError_);
-  ImGui::SameLine();
-  ImGui::Checkbox("Auto Scroll", &autoScroll_);
 
   ImGui::Separator();
 
