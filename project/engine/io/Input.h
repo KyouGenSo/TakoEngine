@@ -228,7 +228,8 @@ public:
 	/// </summary>
 	/// <param name="leftMotor">左モーターの強度（0.0 ~ 1.0）</param>
 	/// <param name="rightMotor">右モーターの強度（0.0 ~ 1.0）</param>
-	void SetVibration(float leftMotor, float rightMotor);
+	/// <param name="duration">振動継続時間（秒）。0以下で無限に振動</param>
+	void SetVibration(float leftMotor, float rightMotor, float duration = 0.0f);
 
 	/// <summary>
 	/// ゲームパッドの振動を停止
@@ -264,6 +265,11 @@ private:
 	bool prevButtonStates_[GAMEPAD_BUTTON_NUM]; ///< 前フレームのゲームパッドのボタンの状態
 
 	bool buttonsTriger_[GAMEPAD_BUTTON_NUM]; ///< ゲームパッドのトリガーの状態
+
+	//---------------------振動制御---------------------//
+	float vibrationDuration_ = 0.0f; ///< 振動継続時間（秒）。0以下で無限
+	float vibrationTimer_ = 0.0f;    ///< 振動経過時間
+	bool isVibrating_ = false;       ///< 振動中フラグ
 
 };
 

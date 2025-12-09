@@ -1,6 +1,7 @@
 #include "Input.h"
 #include <cassert>
 #include "Vector2.h"
+#include "FrameTimer.h"
 
 
 Input* Input::instance_ = nullptr;
@@ -92,6 +93,7 @@ void Input::Initialize(WinApp* winApp) {
 
 void Input::Finalize()
 {
+  StopVibration();
 	if (instance_ != nullptr)
 	{
 		delete instance_;
@@ -125,6 +127,16 @@ void Input::Update() {
 	{
 		buttonStates_[i] = (state_.Gamepad.wButtons & XINPUT_Buttons[i]) == XINPUT_Buttons[i];
 		buttonsTriger_[i] = !prevButtonStates_[i] && buttonStates_[i];
+	}
+
+	// 振動タイマーの更新
+	if (isVibrating_ && vibrationDuration_ > 0.0f)
+	{
+		vibrationTimer_ += FrameTimer::GetInstance()->GetDeltaTime();
+		if (vibrationTimer_ >= vibrationDuration_)
+		{
+			StopVibration();
+		}
 	}
 }
 
@@ -336,7 +348,7 @@ float Input::GetRightTrigger()
 	return 0.0f;
 }
 
-void Input::SetVibration(float leftMotor, float rightMotor)
+void Input::SetVibration(float leftMotor, float rightMotor, float duration)
 {
 	// モーターの振動設定
 	XINPUT_VIBRATION vibration;
@@ -346,6 +358,11 @@ void Input::SetVibration(float leftMotor, float rightMotor)
 	vibration.wRightMotorSpeed = static_cast<WORD>(rightMotor * 65535.0f);
 
 	XInputSetState(0, &vibration);
+
+	// 振動タイマーの設定
+	vibrationDuration_ = duration;
+	vibrationTimer_ = 0.0f;
+	isVibrating_ = (leftMotor > 0.0f || rightMotor > 0.0f);
 }
 
 void Input::StopVibration()
@@ -358,4 +375,9 @@ void Input::StopVibration()
 	vibration.wRightMotorSpeed = 0;
 
 	XInputSetState(0, &vibration);
+
+	// 振動タイマーのリセット
+	isVibrating_ = false;
+	vibrationTimer_ = 0.0f;
+	vibrationDuration_ = 0.0f;
 }
