@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <cassert>
 
+namespace Tako {
+
 TextureManager* TextureManager::instance_ = nullptr;
 
 uint32_t TextureManager::kSRVIndexStart = 1;
@@ -129,3 +131,5 @@ uint32_t TextureManager::GetSRVIndex(const std::string& fileName)
 
 	return textureData.srvIndex;
 }
+
+} // namespace Tako

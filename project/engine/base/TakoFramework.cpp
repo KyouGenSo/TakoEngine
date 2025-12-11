@@ -26,7 +26,7 @@
 #include "NodeEditorManager.h"
 #endif
 
-
+namespace Tako {
 
 void TakoFramework::Initialize()
 {
@@ -279,4 +279,6 @@ void TakoFramework::SetIsDebug(bool value)
   GPUParticle::GetInstance()->SetIsDebug(isDebug_);
 }
 #endif
+
+} // namespace Tako
 

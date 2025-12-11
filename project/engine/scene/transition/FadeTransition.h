@@ -5,6 +5,8 @@
 #include "Vector2.h"
 #include "Vector4.h"
 
+namespace Tako {
+
 class Sprite;
 
 /// <summary>
@@ -102,3 +104,5 @@ private:
 	// 初期化フラグ
 	bool isInitialized_;
 };
+
+} // namespace Tako

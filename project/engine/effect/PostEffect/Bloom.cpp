@@ -10,6 +10,8 @@
 #include "ImGuiManager.h"
 #endif
 
+namespace Tako {
+
 Bloom::~Bloom()
 {
   if (winApp_ && onResizeId_ != 0)
@@ -575,3 +577,5 @@ void Bloom::SetBarrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefo
 
   m_dx12_->GetCommandList()->ResourceBarrier(1, &barrier);
 }
+
+} // namespace Tako

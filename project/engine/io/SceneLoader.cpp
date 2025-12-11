@@ -10,6 +10,8 @@
 #include <cassert>
 #include <DirectXMath.h>
 
+namespace Tako {
+
 Object3d* SceneLoader::LoadedScene::GetObject3d(const std::string& name)
 {
   auto it = objectMap_.find(name);
@@ -207,3 +209,5 @@ std::unique_ptr<SceneLoader::LoadedScene> SceneLoader::LoadScene(const std::stri
   // 読み込んだシーンを返す
   return loadedScene;
 }
+
+} // namespace Tako

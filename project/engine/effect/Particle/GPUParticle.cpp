@@ -16,6 +16,8 @@
 
 #include <numbers>
 
+namespace Tako {
+
 GPUParticle* GPUParticle::instance_ = nullptr;
 
 const uint32_t GPUParticle::kNumMaxParticle = 1000000;
@@ -883,3 +885,5 @@ void GPUParticle::CreateFreeListResource()
   freeListUavIndex_ = m_srvManager_->Allocate();
   m_srvManager_->CreateUAV(freeListUavIndex_, freeListResource_.Get(), kNumMaxParticle, sizeof(uint32_t));
 }
+
+} // namespace Tako

@@ -8,6 +8,8 @@
 #include "IWndProcHandler.h"
 #include "Vector2.h"
 
+namespace Tako {
+
 /// <summary>
 /// Windowsアプリケーション管理クラス
 /// ウィンドウ生成とメッセージ処理を担当
@@ -157,3 +159,5 @@ private:
 
 	static std::wstring windowTitle_;  ///< ウィンドウタイトルバーに表示される文字列
 };
+
+} // namespace Tako

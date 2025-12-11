@@ -1,6 +1,8 @@
 #pragma once
 #include <string>
 
+namespace Tako {
+
 /// <summary>
 /// ログ出力ユーティリティ名前空間
 /// デバッグコンソールへのメッセージ出力機能を提供
@@ -22,3 +24,5 @@ namespace Logger
 	/// <param name="...">可変長引数</param>
 	void Log(const char* format, ...);
 }
+
+} // namespace Tako

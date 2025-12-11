@@ -7,6 +7,8 @@
 #include "DebugUIManager.h"
 #endif
 
+namespace Tako {
+
 SpriteBasic* SpriteBasic::instance_ = nullptr;
 
 SpriteBasic* SpriteBasic::GetInstance()
@@ -219,3 +221,5 @@ void SpriteBasic::CreatePSO()
 	hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
 	assert(SUCCEEDED(hr));
 }
+
+} // namespace Tako

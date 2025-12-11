@@ -3,6 +3,8 @@
 #include "TransitionManager.h"
 #include <memory>
 
+namespace Tako {
+
 class ITransitionEffect;
 
 /// <summary>
@@ -110,3 +112,5 @@ private: // メンバ変数
 
 	float transitionTime_ = 0.5f; ///< シーン遷移アニメーション時間
 };
+
+} // namespace Tako

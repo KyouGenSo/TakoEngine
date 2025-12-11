@@ -2,6 +2,8 @@
 #include <limits>
 #include <cmath>
 
+namespace Tako {
+
 /// <summary>
 /// 4次元ベクトル
 /// </summary>
@@ -251,3 +253,5 @@ struct Vector4 final {
 		};
 	}
 };
+
+} // namespace Tako

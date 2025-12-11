@@ -1,6 +1,8 @@
 #pragma once
 #include "IPostEffect.h"
 
+namespace Tako {
+
 /// <summary>
 /// 輝度ベースアウトラインエフェクト - 輝度の変化を検出してエッジを強調表示
 /// </summary>
@@ -68,4 +70,6 @@ private:
   LuminanceOutlineParam* cBufferData_ = nullptr;
 
 };
+
+} // namespace Tako
 

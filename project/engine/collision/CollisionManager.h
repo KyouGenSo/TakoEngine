@@ -6,6 +6,8 @@
 #include <utility>
 #include "Collider.h"
 
+namespace Tako {
+
 class AABBCollider;
 class SphereCollider;
 class OBBCollider;
@@ -138,3 +140,5 @@ private:
 	bool CanCollide(uint32_t typeA, uint32_t typeB);
 	CollisionPair MakeOrderedPair(Collider* a, Collider* b);
 };
+
+} // namespace Tako

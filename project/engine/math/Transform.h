@@ -2,6 +2,8 @@
 #include "Vector3.h"
 #include "Quaternion.h"
 
+namespace Tako {
+
 /// <summary>
 /// 3D変換情報構造体
 /// オイラー角による回転表現
@@ -21,3 +23,5 @@ struct QuatTransform {
 	Quaternion rotate;
 	Vector3 translate;
 };
+
+} // namespace Tako

@@ -5,6 +5,8 @@
 #include "Vector3.h"
 #include "Quaternion.h"
 
+namespace Tako {
+
 const int kRowHeight = 20;   ///< ImGuiデバッグ表示用の行の高さ
 const int kColumnWidth = 60;  ///< ImGuiデバッグ表示用の列の幅
 
@@ -100,6 +102,8 @@ namespace Mat4x4 {
 	/// <returns>回転（オイラー角）</returns>
 	Vector3 ExtractEulerAngles(const Matrix4x4& matrix);
 }
+
+} // namespace Tako
 
 
 

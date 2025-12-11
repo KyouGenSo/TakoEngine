@@ -5,6 +5,8 @@
 
 #include "Vector4.h"
 
+namespace Tako {
+
 Camera::Camera() : 
 	transform_({ Vector3(1.0f, 1.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 0.0f) }),
 	fovY_(0.45f), 
@@ -148,7 +150,7 @@ std::pair<Vector3, Vector3> Camera::GetFrustumBoundingBoxWithCustomFar(float cus
 {
 	// カスタムfarクリップで視錐台の8つの頂点を取得
 	std::array<Vector3, 8> corners = GetFrustumCornersWithCustomFar(customFar);
-	
+
 	// 指定されたビュー行列で変換（指定がある場合）
 	if (viewMatrix) {
 		for (int i = 0; i < 8; ++i) {
@@ -157,20 +159,22 @@ std::pair<Vector3, Vector3> Camera::GetFrustumBoundingBoxWithCustomFar(float cus
 			corners[i] = Vector3(corner4.x, corner4.y, corner4.z);
 		}
 	}
-	
+
 	// 境界ボックスの最小・最大値を計算
 	Vector3 minBounds = corners[0];
 	Vector3 maxBounds = corners[0];
-	
+
 	for (int i = 1; i < 8; ++i) {
 		minBounds.x = min(minBounds.x, corners[i].x);
 		minBounds.y = min(minBounds.y, corners[i].y);
 		minBounds.z = min(minBounds.z, corners[i].z);
-		
+
 		maxBounds.x = max(maxBounds.x, corners[i].x);
 		maxBounds.y = max(maxBounds.y, corners[i].y);
 		maxBounds.z = max(maxBounds.z, corners[i].z);
 	}
-	
+
 	return std::make_pair(minBounds, maxBounds);
 }
+
+} // namespace Tako

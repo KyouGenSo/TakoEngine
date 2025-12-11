@@ -4,6 +4,8 @@
 #include "Vector3.h"
 #include "Matrix4x4.h"
 
+namespace Tako {
+
 class DX12Basic;
 class SrvManager;
 
@@ -188,3 +190,5 @@ private:
 
     bool isFirstFrame_ = true;                 ///< 初回フレーム判定フラグ
 };
+
+} // namespace Tako

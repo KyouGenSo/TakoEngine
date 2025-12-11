@@ -1,6 +1,8 @@
 #pragma once
 #include "IPostEffect.h"
 
+namespace Tako {
+
 /// <summary>
 /// ホワイトノイズエフェクト - ランダムノイズを画面に追加してグリッチ表現などに使用
 /// </summary>
@@ -67,4 +69,6 @@ private:
   ComPtr<ID3D12Resource> cBufferResource_;
   WhiteNoiseParam* cBufferData_ = nullptr;
 };
+
+} // namespace Tako
 

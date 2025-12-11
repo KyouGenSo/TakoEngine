@@ -5,6 +5,8 @@
 #include <functional>
 #include "transition/ITransitionEffect.h"
 
+namespace Tako {
+
 /// <summary>
 /// トランジション効果の管理クラス
 /// 各種トランジション効果の生成・管理を行う
@@ -149,3 +151,5 @@ private: // メンバ変数
 
 	EffectType defaultEffectType_ = EffectType::Fade; ///< デフォルトエフェクトタイプ
 };
+
+} // namespace Tako

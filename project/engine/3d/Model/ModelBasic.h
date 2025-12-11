@@ -3,6 +3,8 @@
 #include <d3d12.h>
 #include<wrl.h>
 
+namespace Tako {
+
 class DX12Basic;
 
 /// <summary>
@@ -76,3 +78,5 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> csPipelineState_;  ///< コンピュートシェーダー用パイプラインステート
 
 };
+
+} // namespace Tako

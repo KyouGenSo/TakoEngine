@@ -1,6 +1,8 @@
 #include "SphereEmitter.h"
 #include "GPUParticle.h"
 
+namespace Tako {
+
 SphereEmitter::SphereEmitter(GPUParticle* particleSystem, const Vector3& position,
   float radius, uint32_t count, float frequency)
   : GPUParticleEmitter(particleSystem, 0) // 一時的なIDを設定
@@ -47,3 +49,5 @@ void SphereEmitter::SetRadius(float radius)
 {
   data_.sphere.radius = radius;
 }
+
+} // namespace Tako

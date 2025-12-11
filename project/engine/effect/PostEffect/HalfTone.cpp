@@ -14,6 +14,8 @@
 #include "ImGuiManager.h"
 #endif
 
+namespace Tako {
+
 void HalfTone::Initialize(DX12Basic* dx12, const std::string& shaderName)
 {
   IPostEffect::Initialize(dx12, shaderName);
@@ -235,7 +237,9 @@ void HalfTone::CreateCBV()
   cBufferData_->colorMode = 0;        // デフォルトはモノクロ
   cBufferData_->threshold = 0.0f;     // デフォルトの閾値
   cBufferData_->padding = 0.0f;       // パディング
-  
+
   // スクリーンサイズをWinAppから取得
   UpdateScreenSize();
 }
+
+} // namespace Tako

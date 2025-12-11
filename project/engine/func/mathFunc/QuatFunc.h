@@ -3,6 +3,8 @@
 #include "Vector3.h"
 #include "Matrix4x4.h"
 
+namespace Tako {
+
 /// <summary>
 /// クォータニオン演算ユーティリティ名前空間
 /// 3D回転をジンバルロックなしで表現するクォータニオンの全操作を提供
@@ -51,3 +53,5 @@ namespace Quat {
 	/// <summary>ベクトルをクォータニオンで回転</summary>
 	Vector3 RotateVec3(const Vector3& v, const Quaternion& q);
 }
+
+} // namespace Tako

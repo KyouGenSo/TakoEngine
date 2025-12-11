@@ -1,6 +1,8 @@
 #pragma once
 #include "IPostEffect.h"
 
+namespace Tako {
+
 /// <summary>
 /// ディゾルブエフェクト - マスクテクスチャを使用して徐々に消える/現れる遷移を表現
 /// </summary>
@@ -77,4 +79,6 @@ private:
   uint32_t baseTexSrvIndex_ = 0; // 背景テクスチャのSRVインデックス
 
 };
+
+} // namespace Tako
 

@@ -5,6 +5,8 @@
 #include "WinApp.h"
 #include <algorithm>
 
+namespace Tako {
+
 FadeTransition::FadeTransition()
 	: fadeColor_(1.0f, 1.0f, 1.0f, 1.0f)
 	, textureName_("white.png")
@@ -161,3 +163,5 @@ void FadeTransition::SetColor(const Vector4& color)
 		fadeSprite_->SetColor(fadeColor_);
 	}
 }
+
+} // namespace Tako

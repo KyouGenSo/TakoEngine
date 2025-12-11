@@ -6,6 +6,8 @@
 #include "DebugUIManager.h"
 #endif
 
+namespace Tako {
+
 void ModelBasic::Initialize(DX12Basic* dx12)
 {
 	m_dx12_ = dx12;
@@ -127,3 +129,5 @@ void ModelBasic::CreateCSPSO()
   HRESULT hr = m_dx12_->GetDevice()->CreateComputePipelineState(&computePipelineStateDesc, IID_PPV_ARGS(&csPipelineState_));
   assert(SUCCEEDED(hr));
 }
+
+} // namespace Tako

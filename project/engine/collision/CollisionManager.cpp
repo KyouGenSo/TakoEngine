@@ -11,6 +11,8 @@
 #include "ImGuiManager.h"
 #endif
 
+namespace Tako {
+
 CollisionManager* CollisionManager::instance_ = nullptr;
 
 CollisionManager* CollisionManager::GetInstance() {
@@ -516,3 +518,5 @@ CollisionManager::CollisionPair CollisionManager::MakeOrderedPair(Collider* a, C
   }
   return std::make_pair(b, a);
 }
+
+} // namespace Tako

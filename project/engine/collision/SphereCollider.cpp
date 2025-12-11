@@ -1,5 +1,7 @@
 #include "SphereCollider.h"
 
+namespace Tako {
+
 Vector3 SphereCollider::GetCenter() const {
 	if (!transform_) {
 		return offset_;
@@ -14,3 +16,5 @@ Vector3 SphereCollider::GetCenter() const {
 	Vector3 worldPos = Mat4x4::Transform(worldMatrix, offset_);
 	return worldPos;
 }
+
+} // namespace Tako

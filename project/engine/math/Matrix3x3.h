@@ -1,6 +1,8 @@
 #pragma once
 #include "Vector3.h"
 
+namespace Tako {
+
 /// <summary>
 /// 3x3行列
 /// </summary>
@@ -33,3 +35,5 @@ struct Matrix3x3 final {
 		return result;
 	}
 };
+
+} // namespace Tako

@@ -1,6 +1,8 @@
 #pragma once
 #include "IPostEffect.h"
 
+namespace Tako {
+
 /// <summary>
 /// RGB分離エフェクト - RGBチャンネルを微妙にずらして色収差を表現
 /// </summary>
@@ -67,4 +69,6 @@ private:
   ComPtr<ID3D12Resource> cBufferResource_;
   RGBSplitParam* cBufferData_ = nullptr;
 };
+
+} // namespace Tako
 

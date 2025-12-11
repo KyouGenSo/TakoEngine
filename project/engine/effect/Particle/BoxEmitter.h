@@ -1,6 +1,8 @@
 #pragma once
 #include "GPUParticleEmitter.h"
 
+namespace Tako {
+
 /// <summary>
 /// ボックス型パーティクルエミッター - 直方体領域からパーティクルを放出
 /// </summary>
@@ -70,3 +72,5 @@ public:
   /// <returns>エミッタータイプ</returns>
   EmitterType GetType() const override { return EmitterType::Box; }
 };
+
+} // namespace Tako

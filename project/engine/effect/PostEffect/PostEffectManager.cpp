@@ -29,6 +29,8 @@
 #include "ImGuiManager.h"
 #endif
 
+namespace Tako {
+
 PostEffectManager* PostEffectManager::instance_ = nullptr;
 
 PostEffectManager* PostEffectManager::GetInstance()
@@ -906,3 +908,5 @@ void PostEffectManager::SetInitialResourceState(ID3D12Resource* resource, D3D12_
   // バリア遷移なしで、状態のみを記録
   resourceStates_[resource] = initialState;
 }
+
+} // namespace Tako

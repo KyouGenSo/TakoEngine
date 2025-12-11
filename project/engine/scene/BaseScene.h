@@ -1,5 +1,7 @@
 #pragma once
 
+namespace Tako {
+
 /// <summary>
 /// 全てのシーンの基底クラス。初期化、更新、描画のインターフェースを定義
 /// </summary>
@@ -40,3 +42,5 @@ public: // メンバ関数
 	virtual void DrawImGui() = 0;
 
 };
+
+} // namespace Tako

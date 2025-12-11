@@ -15,6 +15,8 @@
 
 #include"Vector4.h"
 
+namespace Tako {
+
 /// <summary>
 /// DirectX 12基盤システムクラス
 /// デバイス、コマンドキュー、スワップチェーン管理
@@ -447,3 +449,5 @@ private: // メンバ変数
   ComPtr<IDxcIncludeHandler> includeHandler_ = nullptr;  ///< デフォルトインクルードハンドラー（シェーダーファイルのインクルード処理）
 
 };
+
+} // namespace Tako

@@ -8,6 +8,8 @@
 #include <unordered_map>
 #include <chrono>
 
+namespace Tako {
+
 /// <summary>
 /// デバッグUIの統合管理クラス。シーンヒエラルキー、インスペクター、コンソール、パフォーマンスモニターなどを提供
 /// </summary>
@@ -287,5 +289,7 @@ private:
     int selectedGroupIndex_ = -1;
     char newGroupNameBuffer_[128] = "";
 };
+
+} // namespace Tako
 
 #endif // _DEBUG

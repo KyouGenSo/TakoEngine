@@ -1,6 +1,8 @@
 #include"SrvManager.h"
 #include"DX12Basic.h"
 
+namespace Tako {
+
 SrvManager* SrvManager::instance_ = nullptr;
 
 const uint32_t SrvManager::kMaxSRVCount = 2048;
@@ -184,3 +186,5 @@ D3D12_GPU_DESCRIPTOR_HANDLE SrvManager::GetGPUDescriptorHandle(uint32_t index)
 
 	return handleGPU;
 }
+
+} // namespace Tako

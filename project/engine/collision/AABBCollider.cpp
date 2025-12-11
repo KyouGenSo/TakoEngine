@@ -1,5 +1,7 @@
 #include "AABBCollider.h"
 
+namespace Tako {
+
 Vector3 AABBCollider::GetCenter() const {
 	if (!transform_) {
 		return offset_;
@@ -24,3 +26,5 @@ AABB AABBCollider::GetAABB() const {
 	
 	return aabb;
 }
+
+} // namespace Tako

@@ -16,9 +16,12 @@
 #include "TextureManager.h"
 
 
-class Camera;
 class IPostEffect;
 class DX12Basic;
+
+namespace Tako {
+
+class Camera;
 
 /// <summary>
 /// ポストエフェクト管理クラス
@@ -336,3 +339,5 @@ private: // メンバ変数
   mutable std::unordered_map<ID3D12Resource*, D3D12_RESOURCE_STATES> resourceStates_;
 
 };
+
+} // namespace Tako

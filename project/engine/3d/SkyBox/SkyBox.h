@@ -9,6 +9,8 @@
 #include "Vector2.h"
 #include "Vector4.h"
 
+namespace Tako {
+
 // 前方宣言
 class DX12Basic;
 
@@ -111,4 +113,6 @@ private: // メンバ変数
   // テクスチャ番号
   uint32_t textureIndex_ = 0;
 };
+
+} // namespace Tako
 

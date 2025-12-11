@@ -13,6 +13,8 @@
 #include "ImGuiManager.h"
 #endif
 
+namespace Tako {
+
 void Fog::Initialize(DX12Basic* dx12, const std::string& shaderName)
 {
   IPostEffect::Initialize(dx12, shaderName);
@@ -245,3 +247,5 @@ void Fog::CreateCBV()
   // unmap
   cameraResource_->Unmap(0, nullptr);
 }
+
+} // namespace Tako

@@ -8,6 +8,8 @@
 #include "DebugCamera.h"
 #endif // DEBUG
 
+namespace Tako {
+
 Draw2D* Draw2D::instance_ = nullptr;
 
 Draw2D* Draw2D::GetInstance()
@@ -624,6 +626,8 @@ void Draw2D::CalcGridVertexData()
 		gridVerties_.push_back(worldEnd);
 	}
 }
+
+} // namespace Tako
 
 
 

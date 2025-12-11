@@ -7,6 +7,8 @@
 
 #include <cstring>
 
+namespace Tako {
+
 void DebugUIManager::DrawParticleEditor() {
   ImGui::Begin("Particle Editor", &windowVisibility_["ParticleEditor"]);
 
@@ -393,3 +395,5 @@ void DebugUIManager::DrawGroupsTab() {
     }
   }
 }
+
+} // namespace Tako

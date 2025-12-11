@@ -9,6 +9,8 @@
 #include "ImGuiManager.h"
 #endif
 
+namespace Tako {
+
 void WhiteNoise::Initialize(DX12Basic* dx12, const std::string& shaderName)
 {
   IPostEffect::Initialize(dx12, shaderName);
@@ -195,3 +197,5 @@ void WhiteNoise::CreateCBV()
   // データの初期化
   cBufferData_->time = 0.0f;
 }
+
+} // namespace Tako

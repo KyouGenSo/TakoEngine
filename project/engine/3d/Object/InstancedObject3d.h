@@ -8,6 +8,8 @@
 #include "Vector4.h"
 #include "Mat4x4Func.h"
 
+namespace Tako {
+
 class Model;
 class Camera;
 class ModelInstance;
@@ -289,3 +291,5 @@ private:
     InstancedObject3d* parent_ = nullptr;  ///< 親のInstancedObject3dポインタ
     uint32_t instanceId_ = UINT32_MAX;  ///< インスタンスID
 };
+
+} // namespace Tako

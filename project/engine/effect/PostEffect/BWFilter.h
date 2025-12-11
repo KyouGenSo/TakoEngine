@@ -1,6 +1,8 @@
 #pragma once
 #include "IPostEffect.h"
 
+namespace Tako {
+
 /// <summary>
 /// 白黒フィルターエフェクト - 閾値を使用してカラー画像を白黒の2値に変換
 /// </summary>
@@ -67,4 +69,6 @@ private:
   ComPtr<ID3D12Resource> cBufferResource_;
   BWFilterParam* cBufferData_ = nullptr;
 };
+
+} // namespace Tako
 

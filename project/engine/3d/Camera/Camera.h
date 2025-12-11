@@ -3,6 +3,8 @@
 #include "Transform.h"
 #include <array>
 
+namespace Tako {
+
 /// <summary>
 /// カメラシステムクラス
 /// ビュー・プロジェクション行列管理
@@ -204,3 +206,5 @@ private: // メンバー変数
 	// ビュープロジェクション行列
 	Matrix4x4 viewProjectionMatrix_;
 };
+
+} // namespace Tako

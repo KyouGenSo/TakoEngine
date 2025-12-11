@@ -8,6 +8,8 @@
 #include "ShadowRenderer.h"
 #include "Logger.h"
 
+namespace Tako {
+
 Object3d::Object3d() = default;
 
 Object3d::~Object3d()
@@ -283,3 +285,5 @@ void Object3d::CreateCameraForGPUData()
 	// カメラデータの初期値を書き込む
 	cameraForGPUData_->worldPos = (*m_camera_)->GetTranslate();
 }
+
+} // namespace Tako

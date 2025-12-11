@@ -7,6 +7,8 @@
 #include <fstream>
 #include <cstring>
 
+namespace Tako {
+
 Audio* Audio::instance_ = nullptr;
 
 Audio* Audio::GetInstance()
@@ -343,3 +345,5 @@ void Audio::SetPitch(uint32_t voiceHandle, float pitch)
 {
   voiceDatas_.at(voiceHandle)->SetFrequencyRatio(pitch);
 }
+
+} // namespace Tako

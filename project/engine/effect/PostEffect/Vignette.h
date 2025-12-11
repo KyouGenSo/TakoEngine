@@ -2,6 +2,8 @@
 #include "IPostEffect.h"
 #include "PostEffectStruct.h"
 
+namespace Tako {
+
 /// <summary>
 /// ビネットエフェクト - 画面の周辺部を暗くして中心に視線を誘導
 /// </summary>
@@ -69,3 +71,5 @@ private:
   VignetteParam* cBufferData_ = nullptr;
 
 };
+
+} // namespace Tako

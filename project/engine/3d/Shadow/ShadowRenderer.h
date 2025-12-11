@@ -8,6 +8,9 @@
 
 class DX12Basic;
 class ShadowMap;
+
+namespace Tako {
+
 class Light;
 class Camera;
 
@@ -233,3 +236,5 @@ private:
     D3D12_CPU_DESCRIPTOR_HANDLE savedDSVHandle_; ///< 保存された元の深度ステンシルビューハンドル
     bool hasSavedRenderTargets_ = false;     ///< レンダーターゲットが保存されているかのフラグ
 };
+
+} // namespace Tako

@@ -4,6 +4,8 @@
 #include <dxgidebug.h>
 #include <wrl.h>
 
+namespace Tako {
+
 D3DResourceLeakChecker::~D3DResourceLeakChecker()
 {
 	// リソースリークのチェック
@@ -15,3 +17,5 @@ D3DResourceLeakChecker::~D3DResourceLeakChecker()
 		dxgiDebug->ReportLiveObjects(DXGI_DEBUG_D3D12, DXGI_DEBUG_RLO_ALL);
 	}
 }
+
+} // namespace Tako

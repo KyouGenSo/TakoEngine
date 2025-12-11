@@ -5,6 +5,8 @@
 #include "Mat4x4Func.h"
 #include <cassert>
 
+namespace Tako {
+
 void ShadowMap::Initialize(DX12Basic* dx12)
 {
   assert(dx12);
@@ -303,3 +305,5 @@ void ShadowMap::SetPCFKernelSize(int kernelSize)
     }
   }
 }
+
+} // namespace Tako

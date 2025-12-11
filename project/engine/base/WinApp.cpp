@@ -9,6 +9,8 @@
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 #endif
 
+namespace Tako {
+
 // instanceの初期化
 WinApp* WinApp::instance_ = nullptr;
 
@@ -271,3 +273,5 @@ void WinApp::MaximizeWindow()
   // ウィンドウを最大化
   ShowWindow(hWnd_, SW_MAXIMIZE);
 }
+
+} // namespace Tako

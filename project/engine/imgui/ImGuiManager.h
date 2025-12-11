@@ -8,8 +8,9 @@
 #include <d3d12.h>
 #include<wrl.h>
 
-class WinApp;
+namespace Tako {
 
+class WinApp;
 class DX12Basic;
 
 /// <summary>
@@ -86,5 +87,7 @@ private: // メンバ変数
   uint32_t fontSrvIndex_ = 0;
 
 };
+
+} // namespace Tako
 
 #endif // _DEBUG

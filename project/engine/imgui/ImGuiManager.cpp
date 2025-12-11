@@ -6,6 +6,8 @@
 #include"SrvManager.h"
 #include <cassert>
 
+namespace Tako {
+
 void ImGuiManager::Initialize(WinApp* winApp, DX12Basic* dx12, bool isDocking)
 {
 
@@ -398,4 +400,4 @@ void ImGuiManager::SetDockSpaceViewPort()
   ImGui::DockSpaceOverViewport(dockspace_id, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 }
 
-
+} // namespace Tako

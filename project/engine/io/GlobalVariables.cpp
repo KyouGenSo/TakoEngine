@@ -8,9 +8,11 @@
 #include "ImGuiManager.h"
 #endif
 
-GlobalVariables* GlobalVariables::instance_ = nullptr;
-
 using json = nlohmann::json;
+
+namespace Tako {
+
+GlobalVariables* GlobalVariables::instance_ = nullptr;
 
 GlobalVariables* GlobalVariables::GetInstance()
 {
@@ -459,3 +461,5 @@ bool GlobalVariables::GetValueBool(const std::string& groupName, const std::stri
   // 他の型の場合は例外をスロー（もしくはエラーハンドリングを行う）
   throw std::runtime_error("Variant does not contain a bool or convertible int32_t value.");
 }
+
+} // namespace Tako

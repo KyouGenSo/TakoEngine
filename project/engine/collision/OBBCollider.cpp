@@ -1,5 +1,7 @@
 #include "OBBCollider.h"
 
+namespace Tako {
+
 OBBCollider::OBBCollider()
 	: size_(1.0f, 1.0f, 1.0f)
 	, offset_(0.0f, 0.0f, 0.0f) {
@@ -40,3 +42,5 @@ Vector3 OBBCollider::GetCenter() const {
 	}
 	return offset_;
 }
+
+} // namespace Tako

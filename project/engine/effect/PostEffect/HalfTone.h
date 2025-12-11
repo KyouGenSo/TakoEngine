@@ -2,6 +2,8 @@
 #include "IPostEffect.h"
 #include "PostEffectStruct.h"
 
+namespace Tako {
+
 /// <summary>
 /// ハーフトーンエフェクト - 網点パターンを使用して印刷物のような表現を実現
 /// </summary>
@@ -74,3 +76,5 @@ private:
   HalfToneParam* cBufferData_ = nullptr;
 
 };
+
+} // namespace Tako

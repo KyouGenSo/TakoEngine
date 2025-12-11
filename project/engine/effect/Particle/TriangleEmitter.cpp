@@ -1,6 +1,8 @@
 #include "TriangleEmitter.h"
 #include "GPUParticle.h"
 
+namespace Tako {
+
 TriangleEmitter::TriangleEmitter(GPUParticle* particleSystem, const Vector3& position,
   const Vector3& v1, const Vector3& v2, const Vector3& v3,
   uint32_t count, float frequency)
@@ -53,3 +55,5 @@ void TriangleEmitter::SetVertices(const Vector3& v1, const Vector3& v2, const Ve
   data_.triangle.v2 = v2;
   data_.triangle.v3 = v3;
 }
+
+} // namespace Tako

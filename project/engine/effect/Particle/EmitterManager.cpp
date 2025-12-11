@@ -15,6 +15,8 @@
 #include "DebugUIManager.h"
 #endif
 
+namespace Tako {
+
 EmitterManager::EmitterManager(GPUParticle* particleSystem)
   : particleSystem_(particleSystem)
 {
@@ -1070,3 +1072,5 @@ std::shared_ptr<GPUParticleEmitter> EmitterManager::DeserializeEmitterFromJSON(c
 
   return emitter;
 }
+
+} // namespace Tako

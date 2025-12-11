@@ -3,6 +3,8 @@
 #include"Input.h"
 #include "Vector3.h"
 
+namespace Tako {
+
 DebugCamera* DebugCamera::instance_ = nullptr;
 
 DebugCamera* DebugCamera::GetInstance()
@@ -144,5 +146,7 @@ void DebugCamera::Move()
 	{
 		transform_.rotate.y += rotateSpeed_;
 	}
-	
+
 }
+
+} // namespace Tako

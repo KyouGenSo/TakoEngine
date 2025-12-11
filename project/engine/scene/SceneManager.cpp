@@ -5,6 +5,8 @@
 #include "transition/ScaleTransition.h"
 #include <cassert>
 
+namespace Tako {
+
 SceneManager* SceneManager::instance_ = nullptr;
 
 SceneManager* SceneManager::GetInstance()
@@ -181,3 +183,5 @@ void SceneManager::ChangeScene(const std::string& sceneName,
 		transitionTime_ = transitionTime;
 	}
 }
+
+} // namespace Tako

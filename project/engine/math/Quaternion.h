@@ -1,6 +1,8 @@
 #pragma once
 #include "Vec3Func.h"
 
+namespace Tako {
+
 /// <summary>
 /// クォータニオン。3D回転を表現する数学的構造体
 /// </summary>
@@ -40,3 +42,5 @@ struct Quaternion {
 		return result;
 	}
 };
+
+} // namespace Tako

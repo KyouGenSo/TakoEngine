@@ -4,6 +4,8 @@
 #include "Mat4x4Func.h"
 #include <array>
 
+namespace Tako {
+
 /// <summary>
 /// 有向境界ボックス(Oriented Bounding Box)。回転を含む境界ボックス。AABBより精密な衝突判定が可能
 /// </summary>
@@ -34,7 +36,7 @@ struct OBB {
 	// OBBの8つの頂点を取得
 	std::array<Vector3, 8> GetVertices() const {
 		std::array<Vector3, 8> vertices;
-		
+
 		// ローカル空間での8つの頂点
 		Vector3 localVertices[8] = {
 			Vector3(-halfExtents.x, -halfExtents.y, -halfExtents.z),
@@ -46,12 +48,14 @@ struct OBB {
 			Vector3( halfExtents.x,  halfExtents.y,  halfExtents.z),
 			Vector3(-halfExtents.x,  halfExtents.y,  halfExtents.z)
 		};
-		
+
 		// ワールド空間に変換
 		for (int i = 0; i < 8; ++i) {
 			vertices[i] = Mat4x4::TransformNormal(orientation, localVertices[i]) + center;
 		}
-		
+
 		return vertices;
 	}
 };
+
+} // namespace Tako

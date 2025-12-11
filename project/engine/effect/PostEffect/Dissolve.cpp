@@ -12,6 +12,8 @@
 #include "ImGuiManager.h"
 #endif
 
+namespace Tako {
+
 void Dissolve::Initialize(DX12Basic* dx12, const std::string& shaderName)
 {
   IPostEffect::Initialize(dx12, shaderName);
@@ -240,3 +242,5 @@ void Dissolve::CreateCBV()
   cBufferData_->edgeThickness = 0.0f;
   cBufferData_->edgeColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f); // デフォルト値を設定
 }
+
+} // namespace Tako

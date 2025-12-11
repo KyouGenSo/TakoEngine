@@ -27,6 +27,8 @@
 #include <map>
 #include <cstring>
 
+namespace Tako {
+
 // シングルトンインスタンス
 DebugUIManager* DebugUIManager::instance_ = nullptr;
 
@@ -1003,3 +1005,5 @@ void DebugUIManager::DrawNodeEditor() {
   NodeEditorManager::GetInstance()->SetVisible(windowVisibility_["NodeEditor"]);
   NodeEditorManager::GetInstance()->Draw();
 }
+
+} // namespace Tako

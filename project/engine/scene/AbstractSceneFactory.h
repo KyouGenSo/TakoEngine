@@ -3,6 +3,8 @@
 #include <string>
 #include <memory>
 
+namespace Tako {
+
 /// <summary>
 /// シーン生成のための抽象ファクトリークラス
 /// </summary>
@@ -20,3 +22,5 @@ public: // メンバ関数
 	/// </summary>
 	virtual std::unique_ptr<BaseScene> CreateScene(const std::string& sceneName) = 0;
 };
+
+} // namespace Tako

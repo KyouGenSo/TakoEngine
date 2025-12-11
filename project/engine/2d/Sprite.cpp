@@ -8,6 +8,8 @@
 #include "ImGuiManager.h"
 #endif
 
+namespace Tako {
+
 void Sprite::Initialize(const std::string& texturePath)
 {
 	// Transformの初期化
@@ -229,3 +231,5 @@ void Sprite::DrawImGui()
 	ImGui::Text("Scale: (%.2f, %.2f, %.2f)", transform_.scale.x, transform_.scale.y, transform_.scale.z);
 #endif // _DEBUG
 }
+
+} // namespace Tako

@@ -8,6 +8,8 @@
 #include "ImGuiManager.h"
 #endif
 
+namespace Tako {
+
 void RadialBlur::Initialize(DX12Basic* dx12, const std::string& shaderName)
 {
   IPostEffect::Initialize(dx12, shaderName);
@@ -201,3 +203,5 @@ void RadialBlur::CreateCBV()
   cBufferData_->blurWidth = 0.0f;
   cBufferData_->sampleCount = 8;
 }
+
+} // namespace Tako

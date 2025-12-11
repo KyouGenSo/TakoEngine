@@ -13,6 +13,8 @@
 #include "ImGuiManager.h"
 #endif
 
+namespace Tako {
+
 GaussianBlur::~GaussianBlur()
 {
   if (winApp_ && onResizeId_ != 0)
@@ -324,3 +326,5 @@ void GaussianBlur::SetBarrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES st
 
   m_dx12_->GetCommandList()->ResourceBarrier(1, &barrier);
 }
+
+} // namespace Tako

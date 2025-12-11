@@ -7,6 +7,8 @@
 #include "SrvManager.h"
 #include "ParticleStruct.h"
 
+namespace Tako {
+
 // 前方宣言
 class GPUParticleEmitter;
 class SphereEmitter;
@@ -377,4 +379,6 @@ private: //メンバー変数
   /// </summary>
   D3D12_VERTEX_BUFFER_VIEW vertexBufferView_;
 };
+
+} // namespace Tako
 

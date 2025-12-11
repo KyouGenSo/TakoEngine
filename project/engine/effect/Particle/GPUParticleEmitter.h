@@ -4,6 +4,8 @@
 #include "ParticleStruct.h"
 #include <memory>
 
+namespace Tako {
+
 // 前方宣言
 class GPUParticle;
 
@@ -321,3 +323,5 @@ protected:
 
   EmitterData data_;               ///< エミッターの全設定データ（位置、色、速度範囲、寿命など）
 };
+
+} // namespace Tako

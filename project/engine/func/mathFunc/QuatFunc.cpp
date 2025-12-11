@@ -1,6 +1,8 @@
 #include "QuatFunc.h"
 #include <cmath>
 
+namespace Tako {
+
 Quaternion Quat::Identity()
 {
 	return Quaternion{ 0, 0, 0, 1 };
@@ -181,3 +183,5 @@ Vector3 Quat::RotateVec3(const Vector3& v, const Quaternion& q)
 
     return Vector3{ result.x, result.y, result.z };
 }
+
+} // namespace Tako

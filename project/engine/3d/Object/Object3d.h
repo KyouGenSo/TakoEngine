@@ -10,6 +10,8 @@
 #include "Mat4x4Func.h"
 #include "Transform.h"
 
+namespace Tako {
+
 class Model;
 class Camera;
 
@@ -262,3 +264,5 @@ private: // メンバー変数
   std::string parentJointName_;      // アタッチするJoint名
   Transform attachmentOffset_{};     // Jointからのオフセット
 };
+
+} // namespace Tako

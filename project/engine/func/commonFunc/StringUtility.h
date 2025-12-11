@@ -1,6 +1,8 @@
 #pragma once
 #include<string>
 
+namespace Tako {
+
 /// <summary>
 /// 文字列変換ユーティリティ名前空間
 /// マルチバイト文字列(std::string)とワイド文字列(std::wstring)の相互変換機能を提供
@@ -21,3 +23,5 @@ namespace StringUtility {
 	/// <returns>変換されたマルチバイト文字列</returns>
 	std::string ConvertString(const std::wstring& str);
 }
+
+} // namespace Tako

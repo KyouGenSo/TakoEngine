@@ -1,6 +1,8 @@
 #pragma once
 #include "Vector3.h"
 
+namespace Tako {
+
 /// <summary>
 /// 3次元ベクトル演算ユーティリティ名前空間
 /// 加算・減算・内積・外積など基本的なベクトル演算から
@@ -40,4 +42,6 @@ namespace Vec3 {
 	/// <summary>角度の最短経路補間（±180度を考慮）</summary>
 	float LerpShortAngle(float thetaA, float thetaB, float t);
 }
+
+} // namespace Tako
 

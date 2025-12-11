@@ -2,6 +2,8 @@
 #include "IPostEffect.h"
 #include "Matrix4x4.h"
 
+namespace Tako {
+
 /// <summary>
 /// 深度ベースアウトラインエフェクト - 深度バッファを使用してオブジェクトの輪郭を検出・描画
 /// </summary>
@@ -75,4 +77,6 @@ private:
   DepthOutlineParam* cBufferData_ = nullptr;
 
 };
+
+} // namespace Tako
 

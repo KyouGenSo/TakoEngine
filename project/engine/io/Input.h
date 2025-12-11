@@ -28,6 +28,8 @@ static const WORD XINPUT_Buttons[] = {
 	  XINPUT_GAMEPAD_BACK
 };
 
+namespace Tako {
+
 /// <summary>
 /// XInputボタンID管理構造体
 /// ゲームパッドのボタン番号を格納
@@ -274,3 +276,5 @@ private:
 };
 
 extern XButtonIDs XButtons;
+
+} // namespace Tako

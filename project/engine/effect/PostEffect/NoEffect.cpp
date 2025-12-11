@@ -8,6 +8,7 @@
 #include "DebugUIManager.h"
 #endif
 
+namespace Tako {
 
 void NoEffect::Initialize(DX12Basic* dx12, const std::string& shaderName)
 {
@@ -174,3 +175,5 @@ void NoEffect::CreatePSO()
   hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
   assert(SUCCEEDED(hr));
 }
+
+} // namespace Tako

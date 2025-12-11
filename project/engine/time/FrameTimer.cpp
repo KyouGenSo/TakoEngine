@@ -1,5 +1,7 @@
 #include "FrameTimer.h"
 
+namespace Tako {
+
 FrameTimer* FrameTimer::instance_ = nullptr;
 
 FrameTimer* FrameTimer::GetInstance()
@@ -84,3 +86,5 @@ void FrameTimer::UpdateGameTime()
   std::chrono::duration<float> elapsedTime = nowTime - startTime_;
   gameTime_ = elapsedTime.count();
 }
+
+} // namespace Tako

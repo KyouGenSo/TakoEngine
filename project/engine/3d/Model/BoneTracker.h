@@ -5,6 +5,8 @@
 #include <unordered_map>
 #include <memory>
 
+namespace Tako {
+
 /// <summary>
 /// ボーンとエミッターのリンク情報構造体
 /// モデルの特定ボーンにエミッターを追従させるための関連付けデータ
@@ -145,3 +147,5 @@ private:
 
   std::unordered_map<std::string, BoneEmitterLink> links_; ///< リンク名からリンク情報へのマップ
 };
+
+} // namespace Tako

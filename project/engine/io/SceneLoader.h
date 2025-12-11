@@ -6,6 +6,8 @@
 #include <memory>
 #include <map>
 
+namespace Tako {
+
 class Object3d;
 
 class SceneLoader
@@ -104,3 +106,5 @@ private:
 
   std::string secneFolderName_; ///< シーンフォルダ名
 };
+
+} // namespace Tako

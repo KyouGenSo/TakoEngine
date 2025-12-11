@@ -2,6 +2,8 @@
 #include "Collider.h"
 #include "Mat4x4Func.h"
 
+namespace Tako {
+
 /// <summary>
 /// 球体の衝突判定を行うコライダー
 /// </summary>
@@ -44,3 +46,5 @@ public:
 	/// <returns>オフセット値</returns>
 	const Vector3& GetOffset() const { return offset_; }
 };
+
+} // namespace Tako

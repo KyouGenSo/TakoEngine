@@ -3,6 +3,8 @@
 #include "transition/ScaleTransition.h"
 #include <cassert>
 
+namespace Tako {
+
 TransitionManager* TransitionManager::instance_ = nullptr;
 
 TransitionManager* TransitionManager::GetInstance()
@@ -192,3 +194,5 @@ bool TransitionManager::IsFinished() const
 	}
 	return true;
 }
+
+} // namespace Tako

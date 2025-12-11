@@ -19,6 +19,8 @@
 #include <imgui.h>
 #endif
 
+namespace Tako {
+
 // 静的メンバー変数の定義
 bool Model::s_showSkeletonDebug = false;
 
@@ -1542,3 +1544,5 @@ void Model::SaveNodePose(const Node& node)
     SaveNodePose(child);
   }
 }
+
+} // namespace Tako

@@ -1,6 +1,8 @@
 #pragma once
 #include <chrono>
 
+namespace Tako {
+
 /// <summary>
 /// フレーム時間管理クラス。デルタタイム、FPS計測、ゲーム経過時間の管理を行う
 /// </summary>
@@ -61,3 +63,5 @@ private:
   float timeAccumulator_;
   int frameCount_;
 };
+
+} // namespace Tako

@@ -20,6 +20,8 @@
 #pragma comment(lib, "dxcompiler.lib")
 #pragma comment(lib, "dxguid.lib")
 
+namespace Tako {
+
 // 最大のSRV数
 const uint32_t DX12Basic::kMaxSRVCount = 2048;
 
@@ -1062,4 +1064,6 @@ void DX12Basic::ResizeBuffers(uint32_t width, uint32_t height)
   // ビューポートとシザー矩形を更新
   UpdateViewportAndScissorRect();
 }
+
+} // namespace Tako
 

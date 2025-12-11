@@ -1,5 +1,7 @@
 #pragma once
 
+namespace Tako {
+
 class D3DResourceLeakChecker {
 public:
 	/// <summary>
@@ -7,3 +9,5 @@ public:
 	/// </summary>
 	~D3DResourceLeakChecker();
 };
+
+} // namespace Tako

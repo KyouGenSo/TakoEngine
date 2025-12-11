@@ -1,6 +1,8 @@
 #pragma once
 #include "IPostEffect.h"
 
+namespace Tako {
+
 /// <summary>
 /// エフェクトなし - 入力をそのまま出力に渡すパススルーエフェクト
 /// </summary>
@@ -51,4 +53,6 @@ private:
   void CreatePSO() override;
 
 };
+
+} // namespace Tako
 

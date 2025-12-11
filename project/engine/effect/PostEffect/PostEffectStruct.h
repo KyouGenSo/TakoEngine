@@ -6,6 +6,8 @@
 #include "vector3.h"
 #include "Vector4.h"
 
+namespace Tako {
+
 /// <summary>
 /// レンダーターゲット構造体
 /// ポストエフェクトの中間バッファとして使用
@@ -195,3 +197,5 @@ using EffectParam = std::variant<
   HighLumExtrcatParam,
   BloomCombineParam
 >;
+
+} // namespace Tako

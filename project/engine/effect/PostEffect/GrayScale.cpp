@@ -9,6 +9,8 @@
 #include "SrvManager.h"
 #include "StringUtility.h"
 
+namespace Tako {
+
 void GrayScale::Initialize(DX12Basic* dx12, const std::string& shaderName)
 {
   IPostEffect::Initialize(dx12, shaderName);
@@ -160,3 +162,5 @@ void GrayScale::CreatePSO()
   hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
   assert(SUCCEEDED(hr));
 }
+
+} // namespace Tako

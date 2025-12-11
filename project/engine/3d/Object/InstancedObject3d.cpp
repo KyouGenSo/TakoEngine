@@ -14,6 +14,8 @@
 #include "DebugUIManager.h"
 #endif
 
+namespace Tako {
+
 InstancedObject3d::InstancedObject3d() {
 }
 
@@ -477,3 +479,5 @@ Vector4 ModelInstance::GetColor() const {
   }
   return Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 }
+
+} // namespace Tako

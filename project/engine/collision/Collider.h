@@ -2,6 +2,8 @@
 #include "Vector3.h"
 #include "Transform.h"
 
+namespace Tako {
+
 /// <summary>
 /// 衝突判定用の基底クラス。全てのコライダーはこのクラスを継承する
 /// </summary>
@@ -90,3 +92,5 @@ public:
 	/// <returns>所有者オブジェクトへのポインタ</returns>
 	void* GetOwner() const { return owner_; }
 };
+
+} // namespace Tako

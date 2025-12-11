@@ -6,9 +6,9 @@
 #include <d3d12.h>
 #include"DirectXTex.h"
 
-class DX12Basic;
+namespace Tako {
 
-class SrvManager;
+  class DX12Basic;
 
 /// <summary>
 /// テクスチャの読み込みと管理を行うシングルトンクラス。テクスチャのキャッシュとSRV管理を担当
@@ -103,3 +103,5 @@ private: // メンバー変数
 	std::unordered_map<std::string, TextureData> textureDatas_;
 
 };
+
+} // namespace Tako

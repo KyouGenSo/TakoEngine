@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <cmath>
 
+namespace Tako {
+
 ScaleTransition::ScaleTransition()
 	: center_(static_cast<float>(WinApp::clientWidth) * 0.5f, static_cast<float>(WinApp::clientHeight) * 0.5f)
 	, expandOut_(true)
@@ -231,3 +233,5 @@ void ScaleTransition::SetColor(const Vector4& color)
 {
 	color_ = color;
 }
+
+} // namespace Tako

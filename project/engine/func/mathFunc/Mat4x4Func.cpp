@@ -6,7 +6,7 @@
 
 #define _USE_MATH_DEFINES
 
-
+namespace Tako {
 namespace Mat4x4 {
 	Matrix4x4 Add(const Matrix4x4& m1, const Matrix4x4& m2) {
 		Matrix4x4 result;
@@ -637,3 +637,4 @@ namespace Mat4x4 {
 	}
 
 }
+} // namespace Tako

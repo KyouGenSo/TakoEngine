@@ -1,6 +1,8 @@
 #pragma once
 #include "IPostEffect.h"
 
+namespace Tako {
+
 /// <summary>
 /// グレースケールエフェクト - カラー画像をモノクロ(グレースケール)に変換
 /// </summary>
@@ -45,3 +47,4 @@ private:
   void CreatePSO() override;
 };
 
+} // namespace Tako

@@ -1,6 +1,8 @@
 #pragma once
 #include "GPUParticleEmitter.h"
 
+namespace Tako {
+
 /// <summary>
 /// 三角形パーティクルエミッター - 三角形領域からパーティクルを放出
 /// </summary>
@@ -73,3 +75,5 @@ public:
   /// <returns>エミッタータイプ</returns>
   EmitterType GetType() const override { return EmitterType::Triangle; }
 };
+
+} // namespace Tako

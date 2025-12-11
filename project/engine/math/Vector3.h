@@ -2,6 +2,8 @@
 #include <limits>
 #include <cmath>
 
+namespace Tako {
+
 /// <summary>
 /// 3次元ベクトル
 /// </summary>
@@ -274,3 +276,5 @@ struct Vector3 final {
 		return onto * scalar;
 	}
 };
+
+} // namespace Tako

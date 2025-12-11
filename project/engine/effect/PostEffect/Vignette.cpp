@@ -13,6 +13,8 @@
 #include "ImGuiManager.h"
 #endif
 
+namespace Tako {
+
 void Vignette::Initialize(DX12Basic* dx12, const std::string& shaderName)
 {
   IPostEffect::Initialize(dx12, shaderName);
@@ -208,3 +210,5 @@ void Vignette::CreateCBV()
   cBufferData_->range = 20.0f;
   cBufferData_->color = Vector3(0.0f, 0.0f, 0.0f);
 }
+
+} // namespace Tako

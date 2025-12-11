@@ -1,6 +1,7 @@
 #include "GPUParticleEmitter.h"
 #include "GPUParticle.h"
 
+namespace Tako {
 
 GPUParticleEmitter::GPUParticleEmitter(GPUParticle* particleSystem, uint32_t emitterId)
   : particleSystem_(particleSystem)
@@ -225,3 +226,5 @@ bool GPUParticleEmitter::IsLifeTimeExpired() const
   if (!data_.isTemp || data_.emitterLifeTime <= 0.0f) return false;
   return data_.emitterCurrentTime >= data_.emitterLifeTime;
 }
+
+} // namespace Tako

@@ -2,6 +2,8 @@
 #include <chrono>
 #include <cmath>
 
+namespace Tako {
+
 // スレッドローカル変数の定義
 thread_local std::mt19937 RandomEngine::generator_;
 thread_local bool RandomEngine::initialized_ = false;
@@ -116,3 +118,5 @@ void RandomEngine::SetRandomSeed() {
 	auto seed = static_cast<unsigned int>(now.time_since_epoch().count());
 	SetSeed(seed);
 }
+
+} // namespace Tako

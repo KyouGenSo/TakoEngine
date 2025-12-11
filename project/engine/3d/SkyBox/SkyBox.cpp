@@ -10,6 +10,8 @@
 #include "DebugUIManager.h"
 #endif
 
+namespace Tako {
+
 void SkyBox::Initialize(const std::string& texturePath)
 {
   // Transformの初期化
@@ -306,3 +308,5 @@ void SkyBox::CreateTransformationMatrixData()
   // 座標変換行列データの初期値を書き込む
   transformationMatrixData_->WVP = Mat4x4::MakeIdentity();
 }
+
+} // namespace Tako

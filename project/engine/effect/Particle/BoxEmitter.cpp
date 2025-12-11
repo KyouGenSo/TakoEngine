@@ -1,6 +1,8 @@
 #include "BoxEmitter.h"
 #include "GPUParticle.h"
 
+namespace Tako {
+
 BoxEmitter::BoxEmitter(GPUParticle* particleSystem, const Vector3& position,
                        const Vector3& size, const Vector3& rotation,
                        uint32_t count, float frequency)
@@ -55,3 +57,5 @@ void BoxEmitter::SetRotation(const Vector3& rotation)
 {
   data_.box.rotation = rotation;
 }
+
+} // namespace Tako

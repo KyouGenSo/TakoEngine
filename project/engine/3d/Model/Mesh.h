@@ -5,6 +5,8 @@
 #include "ModelStruct.h"
 #include "Object3d.h"
 
+namespace Tako {
+
 class DX12Basic;
 class ModelBasic;
 
@@ -266,4 +268,6 @@ private: // プライベートメンバー関数
 
   bool skinningComputedThisFrame_ = false; ///< スキニング済みフラグ（フレーム内で1回だけ実行）
 };
+
+} // namespace Tako
 

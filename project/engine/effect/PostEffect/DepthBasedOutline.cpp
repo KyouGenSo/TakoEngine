@@ -12,6 +12,8 @@
 #include "ImGuiManager.h"
 #endif
 
+namespace Tako {
+
 void DepthBasedOutline::Initialize(DX12Basic* dx12, const std::string& shaderName)
 {
   IPostEffect::Initialize(dx12, shaderName);
@@ -227,3 +229,5 @@ void DepthBasedOutline::CreateCBV()
   cBufferData_->outlineThickness = 1.0f; // 初期値は1.0f
   cBufferData_->projectionInverse = Mat4x4::MakeIdentity();
 }
+
+} // namespace Tako

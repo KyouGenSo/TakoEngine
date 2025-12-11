@@ -2,6 +2,8 @@
 #include <limits>
 #include <cmath>
 
+namespace Tako {
+
 /// <summary>
 /// 2次元ベクトル
 /// </summary>
@@ -223,3 +225,5 @@ struct Vector2 final {
 		};
 	}
 };
+
+} // namespace Tako

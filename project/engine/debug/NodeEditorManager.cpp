@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <cmath>
 
+namespace Tako {
+
 // 静的メンバーの定義
 NodeEditorManager* NodeEditorManager::instance_ = nullptr;
 
@@ -456,5 +458,7 @@ void NodeEditorManager::AutoArrangeNodes() {
     }
   }
 }
+
+} // namespace Tako
 
 #endif // _DEBUG

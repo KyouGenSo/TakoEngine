@@ -1,6 +1,8 @@
 #pragma once
 #include "IPostEffect.h"
 
+namespace Tako {
+
 /// <summary>
 /// フォグエフェクト - 距離に基づいて霧を表現し、遠景をぼかす
 /// </summary>
@@ -70,4 +72,6 @@ private:
   CameraForGPU* cameraData_ = nullptr;
 
 };
+
+} // namespace Tako
 

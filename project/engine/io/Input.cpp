@@ -3,6 +3,7 @@
 #include "Vector2.h"
 #include "FrameTimer.h"
 
+namespace Tako {
 
 Input* Input::instance_ = nullptr;
 
@@ -381,3 +382,5 @@ void Input::StopVibration()
 	vibrationTimer_ = 0.0f;
 	vibrationDuration_ = 0.0f;
 }
+
+} // namespace Tako

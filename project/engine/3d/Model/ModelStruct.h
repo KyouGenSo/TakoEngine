@@ -13,6 +13,8 @@
 #include "Quaternion.h"
 #include "Transform.h"
 
+namespace Tako {
+
 /// <summary>
 /// シーングラフノード構造体
 /// 3Dモデルの階層構造を表現（親子関係によるトランスフォームの継承）
@@ -250,3 +252,5 @@ struct InstanceData {
     Vector4 color;                ///< インスタンス固有のカラー
     float padding[12];            ///< 16バイトアラインメント用パディング（定数バッファは256バイト境界）
 };
+
+} // namespace Tako

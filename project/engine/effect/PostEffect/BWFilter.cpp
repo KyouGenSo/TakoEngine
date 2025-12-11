@@ -11,6 +11,8 @@
 #include "ImGuiManager.h"
 #endif
 
+namespace Tako {
+
 void BWFilter::Initialize(DX12Basic* dx12, const std::string& shaderName)
 {
   IPostEffect::Initialize(dx12, shaderName);
@@ -198,3 +200,5 @@ void BWFilter::CreateCBV()
   // 初期値の設定
   cBufferData_->threshold = 0.5f;
 }
+
+} // namespace Tako

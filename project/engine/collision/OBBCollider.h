@@ -4,6 +4,8 @@
 #include "Vector3.h"
 #include "Matrix4x4.h"
 
+namespace Tako {
+
 /// <summary>
 /// 有向境界ボックス(Oriented Bounding Box)の衝突判定を行うコライダー
 /// </summary>
@@ -65,3 +67,5 @@ public:
   /// <returns>回転行列</returns>
   Matrix4x4 GetOrientation() const { return orientation_; }
 };
+
+} // namespace Tako

@@ -10,6 +10,8 @@
 
 namespace ed = ax::NodeEditor;
 
+namespace Tako {
+
 /**
  * @brief ノードエディタ管理クラス
  * imgui-node-editorを使用したビジュアルノードエディタシステムを管理
@@ -188,5 +190,7 @@ public:
     void SetAutoArrange(bool enable) { autoArrange_ = enable; }
     bool GetAutoArrange() const { return autoArrange_; }
 };
+
+} // namespace Tako
 
 #endif // _DEBUG

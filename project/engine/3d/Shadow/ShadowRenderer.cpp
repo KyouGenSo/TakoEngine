@@ -11,6 +11,8 @@
 #include "ImGuiManager.h"
 #endif
 
+namespace Tako {
+
 // 静的メンバ変数の定義
 ShadowRenderer* ShadowRenderer::instance_ = nullptr;
 
@@ -583,3 +585,5 @@ void ShadowRenderer::DrawImGui()
     ImGui::End();
 #endif // _DEBUG
 }
+
+} // namespace Tako

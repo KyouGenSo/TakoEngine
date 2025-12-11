@@ -7,6 +7,8 @@
 #include "Vector4.h"
 #include "Vector2.h"
 
+namespace Tako {
+
 /// <summary>
 /// グローバル変数管理クラス
 /// JSON形式での設定値保存・読み込みとImGuiでの実行時編集
@@ -234,4 +236,4 @@ private: // メンバ変数
   std::map<std::string, Group> datas_; ///< グループのマップ
 };
 
-
+} // namespace Tako

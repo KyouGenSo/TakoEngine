@@ -11,6 +11,8 @@
 #include "DebugUIManager.h"
 #endif
 
+namespace Tako {
+
 //　デストラクタ
 Mesh::~Mesh()
 {
@@ -459,3 +461,5 @@ void Mesh::SetupSkinningUAV()
   skinnedVertexBufferView_.SizeInBytes = static_cast<UINT>(sizeof(VertexData) * vertices_.size());
   skinnedVertexBufferView_.StrideInBytes = sizeof(VertexData);
 }
+
+} // namespace Tako

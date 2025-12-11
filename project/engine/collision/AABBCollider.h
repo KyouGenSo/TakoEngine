@@ -3,6 +3,8 @@
 #include "AABB.h"
 #include "Mat4x4Func.h"
 
+namespace Tako {
+
 /// <summary>
 /// 軸平行境界ボックス(Axis-Aligned Bounding Box)の衝突判定を行うコライダー
 /// </summary>
@@ -51,3 +53,5 @@ public:
 	/// <returns>サイズ（幅、高さ、奥行き）</returns>
 	const Vector3& GetSize() const { return size_; }
 };
+
+} // namespace Tako

@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <vector>
 
+namespace Tako {
 namespace Logger
 {
   // 内部ヘルパー関数（名前空間によって隠蔽）
@@ -39,3 +40,4 @@ namespace Logger
     Log(formattedMessage + "\n");
   }
 }
+} // namespace Tako

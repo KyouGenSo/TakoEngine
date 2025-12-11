@@ -5,6 +5,8 @@
 #include "DX12Basic.h"
 #include "Matrix4x4.h"
 
+namespace Tako {
+
 /// <summary>
 /// スプライト描画の基盤クラス。パイプライン、ルートシグネチャ、ビュープロジェクション行列を管理
 /// </summary>
@@ -98,3 +100,5 @@ private: // メンバー変数
 	///< プロジェクション行列
 	Matrix4x4 projectionMatrixSprite_ = {};
 };
+
+} // namespace Tako

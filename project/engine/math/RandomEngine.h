@@ -4,6 +4,8 @@
 #include "Vector2.h"
 #include "Vector3.h"
 
+namespace Tako {
+
 /// <summary>
 /// 乱数生成エンジン
 /// シングルトンパターンで実装され、アプリケーション全体で統一された乱数生成を提供
@@ -130,3 +132,5 @@ private:
 	static constexpr float kPi = 3.14159265358979323846f;
 	static constexpr float k2Pi = kPi * 2.0f;
 };
+
+} // namespace Tako

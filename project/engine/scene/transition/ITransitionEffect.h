@@ -1,5 +1,7 @@
 #pragma once
 
+namespace Tako {
+
 /// <summary>
 /// トランジション効果のインターフェース
 /// 全てのトランジション演出はこのインターフェースを実装する
@@ -62,3 +64,5 @@ public:
 	/// <returns>現在のトランジション状態</returns>
 	virtual TransitionState GetState() const = 0;
 };
+
+} // namespace Tako

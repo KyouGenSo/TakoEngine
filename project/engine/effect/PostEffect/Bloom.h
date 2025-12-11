@@ -4,6 +4,8 @@
 #include "IPostEffect.h"
 #include "Vector2.h"
 
+namespace Tako {
+
 class WinApp;
 
 /// <summary>
@@ -148,3 +150,4 @@ private:
   uint32_t onResizeId_ = 0;
 };
 
+} // namespace Tako

@@ -10,6 +10,8 @@
 #include "DebugCamera.h"
 #endif
 
+namespace Tako {
+
 Object3dBasic* Object3dBasic::instance_ = nullptr;
 
 Object3dBasic* Object3dBasic::GetInstance()
@@ -600,4 +602,6 @@ void Object3dBasic::CreateInstancedPSO()
 	hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&instancedPipelineState_));
 	assert(SUCCEEDED(hr));
 }
+
+} // namespace Tako
 

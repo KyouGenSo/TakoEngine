@@ -7,6 +7,8 @@
 #include "xaudio2.h"
 #pragma comment(lib, "xaudio2.lib")
 
+namespace Tako {
+
 /// <summary>
 /// オーディオ管理クラス。XAudio2を使用してWAVE/MP3ファイルの読み込み、再生、音量/ピッチ制御を行う
 /// </summary>
@@ -182,3 +184,5 @@ private: // メンバー変数
 	uint32_t nextVoiceHandle_ = 0u;
 
 };
+
+} // namespace Tako

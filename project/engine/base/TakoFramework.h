@@ -12,6 +12,8 @@
 #include "DebugUIManager.h"
 #endif
 
+namespace Tako {
+
 /// <summary>
 /// ゲームエンジンのメインフレームワーク
 /// アプリケーションの基底クラス
@@ -106,3 +108,5 @@ protected: // メンバ変数
 
 	bool isDebug_ = false;  ///< デバッグモードフラグ
 };
+
+} // namespace Tako

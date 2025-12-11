@@ -1,10 +1,12 @@
-#pragma once  
-#include <d3d12.h>  
-#include <string>  
+#pragma once
+#include <d3d12.h>
+#include <string>
 #include <variant>
-#include <wrl.h>  
+#include <wrl.h>
 
 #include "PostEffectStruct.h"
+
+namespace Tako {
 
 struct Vector4;
 class DX12Basic;
@@ -87,3 +89,5 @@ protected: // メンバー変数
 
   ComPtr<ID3D12PipelineState> pipelineState_;  ///< このエフェクト用のパイプラインステート
 };
+
+} // namespace Tako

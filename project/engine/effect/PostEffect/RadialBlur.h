@@ -1,6 +1,8 @@
 #pragma once
 #include "IPostEffect.h"
 
+namespace Tako {
+
 /// <summary>
 /// ラジアルブラーエフェクト - 指定した中心点から放射状にブラーをかけて速度感を表現
 /// </summary>
@@ -68,3 +70,4 @@ private:
   RadialBlurParam* cBufferData_ = nullptr;
 };
 
+} // namespace Tako

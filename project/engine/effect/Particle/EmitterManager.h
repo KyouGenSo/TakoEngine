@@ -8,6 +8,8 @@
 #include "EmitterStruct.h"
 #include <json.hpp>
 
+namespace Tako {
+
 // 前方宣言
 class GPUParticle;
 class SphereEmitter;
@@ -448,3 +450,5 @@ private:
   std::array<CopiedSettings, 5> copiedSettingsSlots_; ///< コピーバッファ（5スロット分）
 
 };
+
+} // namespace Tako

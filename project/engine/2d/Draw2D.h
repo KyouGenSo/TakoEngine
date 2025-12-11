@@ -15,6 +15,8 @@ using namespace std;
 // ComPtrのエイリアス
 template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
 
+namespace Tako {
+
 /// <summary>
 /// 2Dプリミティブ描画クラス。三角形、矩形、線、球、AABB、OBB、グリッドなどのデバッグ描画を提供
 /// </summary>
@@ -324,3 +326,5 @@ private: // メンバ変数
 
 	std::vector<Vector3> gridVerties_; ///< グリッドの頂点データ
 };
+
+} // namespace Tako

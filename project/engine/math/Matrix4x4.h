@@ -1,4 +1,7 @@
 #pragma once
+
+namespace Tako {
+
 /// <summary>
 /// 4x4行列
 /// </summary>
@@ -35,3 +38,5 @@ struct Matrix4x4 final {
 		return result;
 	}
 };
+
+} // namespace Tako

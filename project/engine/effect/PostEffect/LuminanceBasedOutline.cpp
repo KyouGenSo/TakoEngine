@@ -8,6 +8,8 @@
 #include "ImGuiManager.h"
 #endif
 
+namespace Tako {
+
 void LuminanceBasedOutline::Initialize(DX12Basic* dx12, const std::string& shaderName)
 {
   IPostEffect::Initialize(dx12, shaderName);
@@ -194,3 +196,5 @@ void LuminanceBasedOutline::CreateCBV()
   // 初期値を設定
   cBufferData_->outlineThickness = 1.0f; // 初期値は1.0f
 }
+
+} // namespace Tako

@@ -2,6 +2,8 @@
 #include "Mat4x4Func.h"
 #include "Transform.h"
 
+namespace Tako {
+
 /// <summary>
 /// デバッグ用の自由カメラクラス。キーボード・マウス操作による3D空間の自由移動が可能
 /// </summary>
@@ -163,3 +165,5 @@ private: // メンバー変数
 	///< カメラの回転速度
 	float rotateSpeed_ = 0.02f;
 };
+
+} // namespace Tako

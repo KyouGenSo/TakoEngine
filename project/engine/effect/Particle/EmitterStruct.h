@@ -1,6 +1,8 @@
 #pragma once
 #include "Vector3.h"
 
+namespace Tako {
+
 /// <summary>
 /// 球体エミッターパラメータ構造体
 /// 球面上にランダムにパーティクルを射出するエミッターの設定
@@ -78,3 +80,5 @@ struct TriangleEmitterParams
   bool isActive = true;  ///< エミッターがアクティブかどうか
   bool isNormalize;      ///< 速度ベクトルを正規化するか
 };
+
+} // namespace Tako

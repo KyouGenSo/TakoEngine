@@ -1,6 +1,7 @@
 #include "Vec3Func.h"
 #include<math.h>
 
+namespace Tako {
 namespace Vec3 {
 	Vector3 Add(const Vector3& v1, const Vector3& v2) {
 		return Vector3(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z);
@@ -92,4 +93,5 @@ namespace Vec3 {
     return thetaA + diff * t;
   }
 }
+} // namespace Tako
 

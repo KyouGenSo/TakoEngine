@@ -3,6 +3,8 @@
 #include "DebugUIManager.h"
 #endif
 
+namespace Tako {
+
 BoneTracker::BoneTracker()
   : model_(nullptr)
   , emitterManager_(nullptr)
@@ -240,3 +242,5 @@ int32_t BoneTracker::FindBoneIndex(const std::string& boneName)
 
   return -1;
 }
+
+} // namespace Tako

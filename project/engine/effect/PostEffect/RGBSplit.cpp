@@ -8,6 +8,8 @@
 #include "ImGuiManager.h"
 #endif
 
+namespace Tako {
+
 void RGBSplit::Initialize(DX12Basic* dx12, const std::string& shaderName)
 {
   IPostEffect::Initialize(dx12, shaderName);
@@ -204,3 +206,5 @@ void RGBSplit::CreateCBV()
   cBufferData_->blueOffset = Vector2(0.0f, 0.0f);
   cBufferData_->intensity = 0.0f;
 }
+
+} // namespace Tako

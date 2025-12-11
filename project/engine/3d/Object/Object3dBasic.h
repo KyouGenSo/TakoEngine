@@ -10,6 +10,8 @@
 
 class DX12Basic;
 
+namespace Tako {
+
 class Camera;
 
 /// <summary>
@@ -325,3 +327,5 @@ private: // メンバー変数
 
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> instancedPipelineState_; ///< インスタンシング描画用パイプラインステート
 };
+
+} // namespace Tako

@@ -9,6 +9,8 @@
 #include <d3d12.h>
 #include<wrl.h>
 
+namespace Tako {
+
 /// <summary>
 /// 2Dスプライト描画クラス。テクスチャの表示、切り抜き、反転などの機能を提供
 /// </summary>
@@ -276,3 +278,5 @@ private:// メンバー変数
   ///< 上下反転
   bool isFlipY_ = false;
 };
+
+} // namespace Tako

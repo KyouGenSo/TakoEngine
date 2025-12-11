@@ -9,6 +9,8 @@
 #include "Matrix4x4.h"
 #include "ModelStruct.h"
 
+namespace Tako {
+
 /// <summary>
 /// エミッタータイプ列挙型
 /// </summary>
@@ -199,3 +201,5 @@ struct EmitterGPUData
   Vector3 triangleV2;      ///< 三角形エミッター用：頂点2
   Vector3 triangleV3;      ///< 三角形エミッター用：頂点3
 };
+
+} // namespace Tako

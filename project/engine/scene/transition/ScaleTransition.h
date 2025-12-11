@@ -5,6 +5,8 @@
 #include "Vector2.h"
 #include "Vector4.h"
 
+namespace Tako {
+
 class Sprite;
 
 /// <summary>
@@ -114,3 +116,5 @@ private:
 	static constexpr float MIN_SCALE = 0.01f;  // 最小スケール
 	static constexpr float MAX_SCALE = 3.0f;   // 最大スケール（画面全体を覆うため大きめに）
 };
+
+} // namespace Tako
