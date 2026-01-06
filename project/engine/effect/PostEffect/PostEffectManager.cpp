@@ -24,6 +24,7 @@
 #include "GaussianBlur.h"
 
 #include <algorithm>
+#include <cmath>
 
 #ifdef _DEBUG
 #include "ImGuiManager.h"
@@ -907,6 +908,100 @@ void PostEffectManager::SetInitialResourceState(ID3D12Resource* resource, D3D12_
 {
   // バリア遷移なしで、状態のみを記録
   resourceStates_[resource] = initialState;
+}
+
+void PostEffectManager::Update(float deltaTime)
+{
+    std::vector<std::string> toRemove;
+
+    for (auto& [effectName, info] : temporaryEffects_) {
+        info.elapsedTime += deltaTime;
+
+        if (info.elapsedTime >= info.duration) {
+            toRemove.push_back(effectName);
+        } else {
+            float progress = info.elapsedTime / info.duration;
+            float easedProgress = ApplyEasing(progress, info.easing);
+            float fadeFactor = 1.0f - easedProgress;
+
+            EffectParam fadedParam = ApplyFadeToParam(info.baseParam, fadeFactor);
+            SetEffectParam(effectName, fadedParam);
+        }
+    }
+
+    for (const auto& name : toRemove) {
+        temporaryEffects_.erase(name);
+        RemoveEffectFromChain(name);
+    }
+}
+
+void PostEffectManager::CancelTemporaryEffect(const std::string& effectName)
+{
+    auto it = temporaryEffects_.find(effectName);
+    if (it != temporaryEffects_.end()) {
+        temporaryEffects_.erase(it);
+        RemoveEffectFromChain(effectName);
+    }
+}
+
+bool PostEffectManager::IsTemporaryEffectActive(const std::string& effectName) const
+{
+    return temporaryEffects_.find(effectName) != temporaryEffects_.end();
+}
+
+float PostEffectManager::ApplyEasing(float t, EasingType type) const
+{
+    t = std::clamp(t, 0.0f, 1.0f);
+    switch (type) {
+        case EasingType::Linear:
+            return t;
+        case EasingType::EaseOut:
+            return 1.0f - (1.0f - t) * (1.0f - t);
+        case EasingType::EaseIn:
+            return t * t;
+        case EasingType::EaseInOut:
+            return t < 0.5f
+                ? 2.0f * t * t
+                : 1.0f - std::pow(-2.0f * t + 2.0f, 2.0f) / 2.0f;
+        default:
+            return t;
+    }
+}
+
+EffectParam PostEffectManager::ApplyFadeToParam(const EffectParam& param, float fadeFactor) const
+{
+    return std::visit([fadeFactor](auto&& arg) -> EffectParam {
+        using T = std::decay_t<decltype(arg)>;
+
+        if constexpr (std::is_same_v<T, VignetteParam>) {
+            VignetteParam result = arg;
+            result.power *= fadeFactor;
+            return result;
+        }
+        else if constexpr (std::is_same_v<T, BloomParam>) {
+            BloomParam result = arg;
+            result.intensity *= fadeFactor;
+            return result;
+        }
+        else if constexpr (std::is_same_v<T, RadialBlurParam>) {
+            RadialBlurParam result = arg;
+            result.blurWidth *= fadeFactor;
+            return result;
+        }
+        else if constexpr (std::is_same_v<T, RGBSplitParam>) {
+            RGBSplitParam result = arg;
+            result.intensity *= fadeFactor;
+            return result;
+        }
+        else if constexpr (std::is_same_v<T, GaussianBlurParam>) {
+            GaussianBlurParam result = arg;
+            result.sigma *= fadeFactor;
+            return result;
+        }
+        else {
+            return arg;
+        }
+    }, param);
 }
 
 } // namespace Tako

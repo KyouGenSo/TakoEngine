@@ -198,4 +198,15 @@ using EffectParam = std::variant<
   BloomCombineParam
 >;
 
+/// <summary>
+/// イージング種別
+/// 一時エフェクトのフェードアウト曲線を指定
+/// </summary>
+enum class EasingType {
+    Linear,     ///< 線形補間
+    EaseOut,    ///< イーズアウト（減速）
+    EaseIn,     ///< イーズイン（加速）
+    EaseInOut   ///< イーズインアウト
+};
+
 } // namespace Tako

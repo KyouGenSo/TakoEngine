@@ -187,6 +187,9 @@ void TakoFramework::Update()
   // シーンマネージャーの更新
   SceneManager::GetInstance()->Update();
 
+  // 一時エフェクトの更新
+  PostEffectManager::GetInstance()->Update(FrameTimer::GetInstance()->GetDeltaTime());
+
 #ifdef _DEBUG
   if (Input::GetInstance()->TriggerKey(DIK_F1))
   {

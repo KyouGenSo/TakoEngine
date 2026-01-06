@@ -139,6 +139,54 @@ public: // メンバ関数
   }
 
   /// <summary>
+  /// 一時的なポストエフェクトを適用
+  /// 指定した持続時間でフェードアウトし、終了後に自動削除される
+  /// </summary>
+  /// <typeparam name="ParamType">エフェクトパラメータの型</typeparam>
+  /// <param name="effectName">エフェクト名</param>
+  /// <param name="duration">持続時間（秒）</param>
+  /// <param name="param">開始時のパラメータ</param>
+  /// <param name="easing">イージング種別（デフォルト: EaseOut）</param>
+  template<typename ParamType>
+  void ApplyTemporaryEffect(
+      const std::string& effectName,
+      float duration,
+      const ParamType& param,
+      EasingType easing = EasingType::EaseOut)
+  {
+      if (!IsEffectInChain(effectName)) {
+          AddEffectToChain(effectName);
+      }
+      SetEffectParam(effectName, param);
+
+      TemporaryEffectInfo info;
+      info.duration = duration;
+      info.elapsedTime = 0.0f;
+      info.easing = easing;
+      info.baseParam = EffectParam(param);
+      temporaryEffects_[effectName] = info;
+  }
+
+  /// <summary>
+  /// 一時エフェクトの更新処理（毎フレーム呼び出し）
+  /// </summary>
+  /// <param name="deltaTime">前フレームからの経過時間（秒）</param>
+  void Update(float deltaTime);
+
+  /// <summary>
+  /// 一時エフェクトをキャンセル
+  /// </summary>
+  /// <param name="effectName">キャンセルするエフェクト名</param>
+  void CancelTemporaryEffect(const std::string& effectName);
+
+  /// <summary>
+  /// 指定エフェクトが一時エフェクトとして動作中か判定
+  /// </summary>
+  /// <param name="effectName">エフェクト名</param>
+  /// <returns>一時エフェクトとして動作中ならtrue</returns>
+  bool IsTemporaryEffectActive(const std::string& effectName) const;
+
+  /// <summary>
   /// ポストエフェクトで使用するカメラを設定
   /// 深度ベースエフェクト等でカメラ情報が必要な場合に使用
   /// </summary>
@@ -297,6 +345,33 @@ private: // プライベートメンバー関数
   // 初期リソース状態設定（バリア遷移なし）
   void SetInitialResourceState(ID3D12Resource* resource, D3D12_RESOURCE_STATES initialState);
 
+  /// <summary>
+  /// イージング関数を適用
+  /// </summary>
+  /// <param name="t">進行度（0.0〜1.0）</param>
+  /// <param name="type">イージング種別</param>
+  /// <returns>イージング適用後の値</returns>
+  float ApplyEasing(float t, EasingType type) const;
+
+  /// <summary>
+  /// フェード係数をパラメータに適用
+  /// </summary>
+  /// <param name="param">基本パラメータ</param>
+  /// <param name="fadeFactor">フェード係数（0.0〜1.0）</param>
+  /// <returns>フェード適用後のパラメータ</returns>
+  EffectParam ApplyFadeToParam(const EffectParam& param, float fadeFactor) const;
+
+private: // 内部構造体
+  /// <summary>
+  /// 一時エフェクト情報
+  /// </summary>
+  struct TemporaryEffectInfo {
+      float duration;           ///< 持続時間（秒）
+      float elapsedTime;        ///< 経過時間（秒）
+      EasingType easing;        ///< イージング種別
+      EffectParam baseParam;    ///< 基本パラメータ（開始時の値）
+  };
+
 private: // メンバ変数
   // DX12の基本情報
   DX12Basic* m_dx12_ = nullptr;
@@ -321,6 +396,11 @@ private: // メンバ変数
 
   // エフェクトチェーン
   std::vector<std::string> effectChain_;
+
+  /// <summary>
+  /// 一時エフェクトの管理マップ
+  /// </summary>
+  std::unordered_map<std::string, TemporaryEffectInfo> temporaryEffects_;
 
   // 利用可能なエフェクトのリスト（ImGui用）
   std::vector<std::string> availableEffects_;
