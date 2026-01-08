@@ -12,7 +12,7 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 namespace Tako {
 
 // instanceの初期化
-WinApp* WinApp::instance_ = nullptr;
+std::unique_ptr<WinApp> WinApp::instance_ = nullptr;
 
 std::vector<IWndProcHandler*> WinApp::m_handlers_;
 
@@ -96,11 +96,7 @@ void WinApp::Finalize()
   CoUninitialize();
 
   // instance_削除
-  if (instance_ != nullptr)
-  {
-    delete instance_;
-    instance_ = nullptr;
-  }
+  instance_.reset();
 }
 
 LRESULT WinApp::WndProc(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam)

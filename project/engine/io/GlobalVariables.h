@@ -2,6 +2,7 @@
 #include <variant>
 #include <map>
 #include <cassert>
+#include <memory>
 #include <string>
 #include "Vec3Func.h"
 #include "Vector4.h"
@@ -16,11 +17,16 @@ namespace Tako {
 class GlobalVariables
 {
 private: // シングルトン設定
-  static GlobalVariables* instance_;
+  static std::unique_ptr<GlobalVariables> instance_;
+
   GlobalVariables() = default;
+  ~GlobalVariables() = default;
+
+  friend struct std::default_delete<GlobalVariables>;
+
+public:
   GlobalVariables(const GlobalVariables&) = delete;
   GlobalVariables& operator=(const GlobalVariables&) = delete;
-  ~GlobalVariables() = default;
 
 public: // メンバ関数
   /// <summary>

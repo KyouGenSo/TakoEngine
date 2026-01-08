@@ -14,12 +14,18 @@ namespace Tako {
 class TransitionManager
 {
 private: // シングルトン設定
-	static TransitionManager* instance_; ///< インスタンス
+	static std::unique_ptr<TransitionManager> instance_; ///< インスタンス
 
 	TransitionManager() = default;
 	~TransitionManager() = default;
-	TransitionManager(TransitionManager&) = delete;
-	TransitionManager& operator=(TransitionManager&) = delete;
+
+	friend struct std::default_delete<TransitionManager>;
+
+public:
+	TransitionManager(const TransitionManager&) = delete;
+	TransitionManager& operator=(const TransitionManager&) = delete;
+
+private:
 
 public: // 列挙型
 	/// <summary>

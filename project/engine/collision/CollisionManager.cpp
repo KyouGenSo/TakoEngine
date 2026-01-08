@@ -13,18 +13,17 @@
 
 namespace Tako {
 
-CollisionManager* CollisionManager::instance_ = nullptr;
+std::unique_ptr<CollisionManager> CollisionManager::instance_ = nullptr;
 
 CollisionManager* CollisionManager::GetInstance() {
 	if (!instance_) {
-		instance_ = new CollisionManager();
+		instance_ = std::unique_ptr<CollisionManager>(new CollisionManager());
 	}
-	return instance_;
+	return instance_.get();
 }
 
 void CollisionManager::Destroy() {
-	delete instance_;
-	instance_ = nullptr;
+	instance_.reset();
 }
 
 void CollisionManager::Initialize() {

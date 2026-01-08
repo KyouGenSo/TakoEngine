@@ -30,13 +30,13 @@
 namespace Tako {
 
 // シングルトンインスタンス
-DebugUIManager* DebugUIManager::instance_ = nullptr;
+std::unique_ptr<DebugUIManager> DebugUIManager::instance_ = nullptr;
 
 DebugUIManager* DebugUIManager::GetInstance() {
   if (!instance_) {
-    instance_ = new DebugUIManager();
+    instance_ = std::unique_ptr<DebugUIManager>(new DebugUIManager());
   }
-  return instance_;
+  return instance_.get();
 }
 
 void DebugUIManager::Initialize() {
@@ -63,10 +63,7 @@ void DebugUIManager::Initialize() {
 void DebugUIManager::Finalize() {
   ClearDebugInfo();
   ClearLogs();
-  if (instance_) {
-    delete instance_;
-    instance_ = nullptr;
-  }
+  instance_.reset();
 }
 
 void DebugUIManager::Update() {

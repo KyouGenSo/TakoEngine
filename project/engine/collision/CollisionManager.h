@@ -18,9 +18,9 @@ class OBBCollider;
 class CollisionManager {
 private:
 	std::list<Collider*> colliders_;
-	
+
 	std::unordered_map<uint32_t, std::unordered_set<uint32_t>> collisionMask_;
-	
+
 	using CollisionPair = std::pair<Collider*, Collider*>;
 	struct PairHash {
 		size_t operator()(const CollisionPair& p) const {
@@ -31,16 +31,20 @@ private:
 	};
 	std::unordered_set<CollisionPair, PairHash> previousCollisions_;
 	std::unordered_set<CollisionPair, PairHash> currentCollisions_;
-	
-	static CollisionManager* instance_;
-	
+
+	static std::unique_ptr<CollisionManager> instance_;
+
 	bool debugDrawEnabled_ = false;
 
 	CollisionManager() = default;
+	~CollisionManager() = default;
+
+	friend struct std::default_delete<CollisionManager>;
 
 public:
-	~CollisionManager() = default;
-	
+	CollisionManager(const CollisionManager&) = delete;
+	CollisionManager& operator=(const CollisionManager&) = delete;
+
 	/// <summary>
 	/// シングルトンインスタンスを取得
 	/// </summary>

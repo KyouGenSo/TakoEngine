@@ -4,6 +4,7 @@
 #include<unordered_map>
 #include<wrl.h>
 #include <d3d12.h>
+#include <memory>
 #include"DirectXTex.h"
 
 namespace Tako {
@@ -15,14 +16,16 @@ namespace Tako {
 /// </summary>
 class TextureManager{
 private: // シングルトン設定
-
-	///< インスタンス
-	static TextureManager* instance_;
+	static std::unique_ptr<TextureManager> instance_;
 
 	TextureManager() = default;
 	~TextureManager() = default;
-	TextureManager(TextureManager&) = delete;
-	TextureManager& operator=(TextureManager&) = delete;
+
+	friend struct std::default_delete<TextureManager>;
+
+public:
+	TextureManager(const TextureManager&) = delete;
+	TextureManager& operator=(const TextureManager&) = delete;
 
 private: // 構造体
 

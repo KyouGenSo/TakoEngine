@@ -1,5 +1,6 @@
 #pragma once
 #include <chrono>
+#include <memory>
 
 namespace Tako {
 
@@ -9,14 +10,17 @@ namespace Tako {
 class FrameTimer
 {
 private: // シングルトン設定
-  // インスタンス
-  static FrameTimer* instance_;
+  static std::unique_ptr<FrameTimer> instance_;
+
   FrameTimer() = default;
-  FrameTimer(const FrameTimer&) = delete;
-  FrameTimer& operator=(const FrameTimer&) = delete;
   ~FrameTimer() = default;
 
+  friend struct std::default_delete<FrameTimer>;
+
 public:
+  FrameTimer(const FrameTimer&) = delete;
+  FrameTimer& operator=(const FrameTimer&) = delete;
+
   // インスタンスの取得
   static FrameTimer* GetInstance();
   // 初期化

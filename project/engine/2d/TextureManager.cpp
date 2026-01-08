@@ -7,17 +7,17 @@
 
 namespace Tako {
 
-TextureManager* TextureManager::instance_ = nullptr;
+std::unique_ptr<TextureManager> TextureManager::instance_ = nullptr;
 
 uint32_t TextureManager::kSRVIndexStart = 1;
 
 TextureManager* TextureManager::GetInstance()
 {
-	if (instance_ == nullptr)
+	if (!instance_)
 	{
-		instance_ = new TextureManager();
+		instance_ = std::unique_ptr<TextureManager>(new TextureManager());
 	}
-	return instance_;
+	return instance_.get();
 }
 
 void TextureManager::Initialize(DX12Basic* dx12, const std::string& directoryPath)
@@ -31,11 +31,7 @@ void TextureManager::Initialize(DX12Basic* dx12, const std::string& directoryPat
 
 void TextureManager::Finalize()
 {
-	if (instance_ != nullptr)
-	{
-		delete instance_;
-		instance_ = nullptr;
-	}
+	instance_.reset();
 }
 
 void TextureManager::LoadTexture(const std::string& fileName)

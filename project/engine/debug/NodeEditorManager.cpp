@@ -8,7 +8,7 @@
 namespace Tako {
 
 // 静的メンバーの定義
-NodeEditorManager* NodeEditorManager::instance_ = nullptr;
+std::unique_ptr<NodeEditorManager> NodeEditorManager::instance_ = nullptr;
 
 NodeEditorManager::~NodeEditorManager() {
   Finalize();

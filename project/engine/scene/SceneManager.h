@@ -14,12 +14,18 @@ class SceneManager
 {
 private: // シングルトン設定
 
-	static SceneManager* instance_; ///< インスタンス
+	static std::unique_ptr<SceneManager> instance_; ///< インスタンス
 
 	SceneManager() = default;
 	~SceneManager() = default;
-	SceneManager(SceneManager&) = delete;
-	SceneManager& operator=(SceneManager&) = delete;
+
+	friend struct std::default_delete<SceneManager>;
+
+public:
+	SceneManager(const SceneManager&) = delete;
+	SceneManager& operator=(const SceneManager&) = delete;
+
+private:
 
 public: // メンバ関数
 

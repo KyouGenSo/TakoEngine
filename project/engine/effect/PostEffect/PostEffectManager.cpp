@@ -32,15 +32,15 @@
 
 namespace Tako {
 
-PostEffectManager* PostEffectManager::instance_ = nullptr;
+std::unique_ptr<PostEffectManager> PostEffectManager::instance_ = nullptr;
 
 PostEffectManager* PostEffectManager::GetInstance()
 {
-  if (instance_ == nullptr)
+  if (!instance_)
   {
-    instance_ = new PostEffectManager();
+    instance_ = std::unique_ptr<PostEffectManager>(new PostEffectManager());
   }
-  return instance_;
+  return instance_.get();
 }
 
 void PostEffectManager::Initialize(DX12Basic* dx12)
@@ -80,11 +80,7 @@ void PostEffectManager::Initialize(DX12Basic* dx12)
 
 void PostEffectManager::Finalize()
 {
-  if (instance_ != nullptr)
-  {
-    delete instance_;
-    instance_ = nullptr;
-  }
+  instance_.reset();
 }
 
 void PostEffectManager::AddEffectToChain(const std::string& name)

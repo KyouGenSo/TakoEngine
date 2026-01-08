@@ -2,15 +2,15 @@
 
 namespace Tako {
 
-FrameTimer* FrameTimer::instance_ = nullptr;
+std::unique_ptr<FrameTimer> FrameTimer::instance_ = nullptr;
 
 FrameTimer* FrameTimer::GetInstance()
 {
-  if (instance_ == nullptr)
+  if (!instance_)
   {
-    instance_ = new FrameTimer();
+    instance_ = std::unique_ptr<FrameTimer>(new FrameTimer());
   }
-  return instance_;
+  return instance_.get();
 }
 
 void FrameTimer::Initialize()
@@ -28,11 +28,7 @@ void FrameTimer::Initialize()
 
 void FrameTimer::Finalize()
 {
-  if (instance_ != nullptr)
-  {
-    delete instance_;
-    instance_ = nullptr;
-  }
+  instance_.reset();
 }
 
 void FrameTimer::Update()

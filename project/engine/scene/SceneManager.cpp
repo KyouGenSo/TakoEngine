@@ -7,15 +7,15 @@
 
 namespace Tako {
 
-SceneManager* SceneManager::instance_ = nullptr;
+std::unique_ptr<SceneManager> SceneManager::instance_ = nullptr;
 
 SceneManager* SceneManager::GetInstance()
 {
-	if (instance_ == nullptr)
+	if (!instance_)
 	{
-		instance_ = new SceneManager();
+		instance_ = std::unique_ptr<SceneManager>(new SceneManager());
 	}
-	return instance_;
+	return instance_.get();
 }
 
 void SceneManager::Update()
@@ -97,11 +97,7 @@ void SceneManager::Finalize()
 	}
 
 	// シングルトンインスタンスを削除
-	if (instance_)
-	{
-		delete instance_;
-		instance_ = nullptr;
-	}
+	instance_.reset();
 }
 
 void SceneManager::ChangeScene(const std::string& sceneName)

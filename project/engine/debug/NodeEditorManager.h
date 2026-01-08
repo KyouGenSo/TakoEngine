@@ -44,7 +44,7 @@ public:
     };
 
 private:
-    static NodeEditorManager* instance_;
+    static std::unique_ptr<NodeEditorManager> instance_;
     ed::EditorContext* context_ = nullptr;
     std::unique_ptr<ed::Config> config_;
 
@@ -63,8 +63,11 @@ private:
     bool autoArrange_ = false;
     bool firstFrame_ = true;  // 初回フレームフラグ（ノード位置設定用）
 
-    // プライベートコンストラクタ（シングルトン）
+    // プライベートコンストラクタ/デストラクタ（シングルトン）
     NodeEditorManager() = default;
+    ~NodeEditorManager();
+
+    friend struct std::default_delete<NodeEditorManager>;
 
     // ノード描画関数
     void DrawNodes();
@@ -83,14 +86,8 @@ private:
     Link* FindLink(int linkId);
 
 public:
-    // デストラクタ
-    ~NodeEditorManager();
-
-    // コピー/ムーブ禁止
     NodeEditorManager(const NodeEditorManager&) = delete;
     NodeEditorManager& operator=(const NodeEditorManager&) = delete;
-    NodeEditorManager(NodeEditorManager&&) = delete;
-    NodeEditorManager& operator=(NodeEditorManager&&) = delete;
 
     /**
      * @brief シングルトンインスタンスの取得
@@ -98,9 +95,9 @@ public:
      */
     static NodeEditorManager* GetInstance() {
         if (!instance_) {
-            instance_ = new NodeEditorManager();
+            instance_ = std::unique_ptr<NodeEditorManager>(new NodeEditorManager());
         }
-        return instance_;
+        return instance_.get();
     }
 
     /**

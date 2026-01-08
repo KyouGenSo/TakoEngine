@@ -30,14 +30,16 @@ namespace Tako {
   class PostEffectManager {
   private:
     // シングルトン設定
-    static PostEffectManager* instance_;
+    static std::unique_ptr<PostEffectManager> instance_;
 
     PostEffectManager() = default;
     ~PostEffectManager() = default;
 
+    friend struct std::default_delete<PostEffectManager>;
+
   public:
-    PostEffectManager(PostEffectManager&) = delete;
-    PostEffectManager& operator=(PostEffectManager&) = delete;
+    PostEffectManager(const PostEffectManager&) = delete;
+    PostEffectManager& operator=(const PostEffectManager&) = delete;
 
   public: // メンバ関数
 

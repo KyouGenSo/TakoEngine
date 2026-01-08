@@ -18,7 +18,6 @@ public:
 	/// <returns>RandomEngineのシングルトンインスタンス</returns>
 	static RandomEngine* GetInstance();
 
-	// 削除されたコンストラクタと代入演算子
 	RandomEngine(const RandomEngine&) = delete;
 	RandomEngine& operator=(const RandomEngine&) = delete;
 

@@ -2,6 +2,7 @@
 #include<Windows.h>
 #include<cstdint>
 #include <functional>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -16,23 +17,26 @@ namespace Tako {
 /// </summary>
 class WinApp {
 private: // シングルトン設定
-  static WinApp* instance_;  ///< シングルトンインスタンス
+  static std::unique_ptr<WinApp> instance_;
+
   WinApp() = default;
   ~WinApp() = default;
 
+  friend struct std::default_delete<WinApp>;
+
 public:
-  WinApp(const WinApp&) = delete;  ///< コピーコンストラクタを削除
-  WinApp& operator=(const WinApp&) = delete;  ///< 代入演算子を削除
+  WinApp(const WinApp&) = delete;
+  WinApp& operator=(const WinApp&) = delete;
 
   /// <summary>
   /// シングルトンインスタンスの取得
   /// </summary>
   /// <returns>WinAppのシングルトンインスタンス</returns>
   static WinApp* GetInstance() {
-    if (instance_ == nullptr) {
-      instance_ = new WinApp();
+    if (!instance_) {
+      instance_ = std::unique_ptr<WinApp>(new WinApp());
     }
-    return instance_;
+    return instance_.get();
   }
 
 public: // メンバ関数

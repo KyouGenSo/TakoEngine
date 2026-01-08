@@ -5,7 +5,7 @@
 
 namespace Tako {
 
-Input* Input::instance_ = nullptr;
+std::unique_ptr<Input> Input::instance_ = nullptr;
 
 XButtonIDs XButtons;
 
@@ -33,11 +33,11 @@ XButtonIDs::XButtonIDs()
 
 Input* Input::GetInstance()
 {
-	if (instance_ == nullptr)
+	if (!instance_)
 	{
-		instance_ = new Input();
+		instance_ = std::unique_ptr<Input>(new Input());
 	}
-	return instance_;
+	return instance_.get();
 }
 
 void Input::Initialize(WinApp* winApp) {
@@ -95,11 +95,7 @@ void Input::Initialize(WinApp* winApp) {
 void Input::Finalize()
 {
   StopVibration();
-	if (instance_ != nullptr)
-	{
-		delete instance_;
-		instance_ = nullptr;
-	}
+  instance_.reset();
 }
 
 void Input::Update() {

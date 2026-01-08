@@ -3,6 +3,7 @@
 #include <string>
 #include <unordered_map>
 #include <array>
+#include <memory>
 #include <wrl.h>
 #include "xaudio2.h"
 #pragma comment(lib, "xaudio2.lib")
@@ -16,14 +17,16 @@ class Audio
 {
 
 private: // シングルトン設定
-
-	// インスタンス
-	static Audio* instance_;
+	static std::unique_ptr<Audio> instance_;
 
 	Audio() = default;
 	~Audio() = default;
-	Audio(Audio&) = delete;
-	Audio& operator=(Audio&) = delete;
+
+	friend struct std::default_delete<Audio>;
+
+public:
+	Audio(const Audio&) = delete;
+	Audio& operator=(const Audio&) = delete;
 
 public: // 構造体
 	struct ChunkHeader {

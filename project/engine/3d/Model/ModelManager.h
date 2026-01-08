@@ -20,14 +20,16 @@ namespace Tako {
   class ModelManager
   {
   private: // シングルトン設定
-
-    // インスタンス
-    static ModelManager* instance_;
+    static std::unique_ptr<ModelManager> instance_;
 
     ModelManager() = default;
     ~ModelManager() = default;
-    ModelManager(ModelManager&) = delete;
-    ModelManager& operator=(ModelManager&) = delete;
+
+    friend struct std::default_delete<ModelManager>;
+
+  public:
+    ModelManager(const ModelManager&) = delete;
+    ModelManager& operator=(const ModelManager&) = delete;
 
   public: // メンバー関数
 

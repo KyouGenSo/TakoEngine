@@ -28,11 +28,17 @@ private: // シングルトン設定
   /// <summary>
   /// シングルトンインスタンス
   /// </summary>
-  static GPUParticle* instance_;
+  static std::unique_ptr<GPUParticle> instance_;
   GPUParticle() = default;
   ~GPUParticle() = default;
-  GPUParticle(GPUParticle&) = delete;
-  GPUParticle& operator=(GPUParticle&) = delete;
+
+  friend struct std::default_delete<GPUParticle>;
+
+public:
+  GPUParticle(const GPUParticle&) = delete;
+  GPUParticle& operator=(const GPUParticle&) = delete;
+
+private:
 
 public: // メンバー関数
 

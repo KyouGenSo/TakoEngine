@@ -7,6 +7,7 @@
 #include <functional>
 #include <unordered_map>
 #include <chrono>
+#include <memory>
 
 namespace Tako {
 
@@ -37,11 +38,17 @@ public:
 
 private:
     // シングルトン
-    static DebugUIManager* instance_;
+    static std::unique_ptr<DebugUIManager> instance_;
     DebugUIManager() = default;
     ~DebugUIManager() = default;
+
+    friend struct std::default_delete<DebugUIManager>;
+
+public:
     DebugUIManager(const DebugUIManager&) = delete;
     DebugUIManager& operator=(const DebugUIManager&) = delete;
+
+private:
 
 public:
     /// <summary>

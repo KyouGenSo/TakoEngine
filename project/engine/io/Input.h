@@ -1,6 +1,7 @@
 #pragma once
 #include "WinApp.h"
 #include<wrl.h>
+#include <memory>
 #include "Vector2.h"
 #include "Xinput.h"
 #pragma comment(lib, "XInput.lib")
@@ -60,13 +61,17 @@ struct XButtonIDs
 /// </summary>
 class Input {
 private: 	// シングルトン
-	static Input* instance_; ///< インスタンス
+	static std::unique_ptr<Input> instance_;
 
 	Input() = default;
+	~Input() = default;
+
+	friend struct std::default_delete<Input>;
+
+public:
 	Input(const Input&) = delete;
 	Input& operator=(const Input&) = delete;
-	~Input() = default;
-public:
+
 	template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>; ///< ComPtrのエイリアス
 
 public:

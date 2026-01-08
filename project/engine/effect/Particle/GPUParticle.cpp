@@ -18,7 +18,7 @@
 
 namespace Tako {
 
-GPUParticle* GPUParticle::instance_ = nullptr;
+std::unique_ptr<GPUParticle> GPUParticle::instance_ = nullptr;
 
 const uint32_t GPUParticle::kNumMaxParticle = 1000000;
 
@@ -26,11 +26,11 @@ const uint32_t GPUParticle::kNumMaxEmitter = 80;
 
 GPUParticle* GPUParticle::GetInstance()
 {
-  if (instance_ == nullptr)
+  if (!instance_)
   {
-    instance_ = new GPUParticle();
+    instance_ = std::unique_ptr<GPUParticle>(new GPUParticle());
   }
-  return instance_;
+  return instance_.get();
 }
 
 void GPUParticle::Initialize(DX12Basic* dx12, Camera* camera)
@@ -228,11 +228,7 @@ void GPUParticle::Draw()
 
 void GPUParticle::Finalize()
 {
-  if (instance_ != nullptr)
-  {
-    delete instance_;
-    instance_ = nullptr;
-  }
+  instance_.reset();
 }
 
 std::shared_ptr<GPUParticleEmitter> GPUParticle::CreateTemporaryEmitterFrom(GPUParticleEmitter* sourceEmitter, float lifeTime)

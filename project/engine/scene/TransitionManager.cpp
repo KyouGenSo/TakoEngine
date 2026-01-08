@@ -5,15 +5,15 @@
 
 namespace Tako {
 
-TransitionManager* TransitionManager::instance_ = nullptr;
+std::unique_ptr<TransitionManager> TransitionManager::instance_ = nullptr;
 
 TransitionManager* TransitionManager::GetInstance()
 {
-	if (instance_ == nullptr)
+	if (!instance_)
 	{
-		instance_ = new TransitionManager();
+		instance_ = std::unique_ptr<TransitionManager>(new TransitionManager());
 	}
-	return instance_;
+	return instance_.get();
 }
 
 void TransitionManager::Initialize()
@@ -59,12 +59,7 @@ void TransitionManager::Initialize()
 void TransitionManager::Finalize()
 {
 	currentEffect_.reset();
-
-	if (instance_ != nullptr)
-	{
-		delete instance_;
-		instance_ = nullptr;
-	}
+	instance_.reset();
 }
 
 void TransitionManager::Update()

@@ -3,17 +3,17 @@
 
 namespace Tako {
 
-SrvManager* SrvManager::instance_ = nullptr;
+std::unique_ptr<SrvManager> SrvManager::instance_ = nullptr;
 
 const uint32_t SrvManager::kMaxSRVCount = 2048;
 
 SrvManager* SrvManager::GetInstance()
 {
-	if (instance_ == nullptr)
+	if (!instance_)
 	{
-		instance_ = new SrvManager();
+		instance_ = std::unique_ptr<SrvManager>(new SrvManager());
 	}
-	return instance_;
+	return instance_.get();
 }
 
 void SrvManager::Initialize(DX12Basic* dx12)
@@ -34,11 +34,7 @@ void SrvManager::Initialize(DX12Basic* dx12)
 
 void SrvManager::Finalize()
 {
-	if (instance_ != nullptr)
-	{
-		delete instance_;
-		instance_ = nullptr;
-	}
+	instance_.reset();
 }
 
 void SrvManager::BeginDraw()

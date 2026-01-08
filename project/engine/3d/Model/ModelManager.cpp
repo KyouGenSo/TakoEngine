@@ -9,14 +9,14 @@
 
 namespace Tako {
 
-  ModelManager* ModelManager::instance_ = nullptr;
+  std::unique_ptr<ModelManager> ModelManager::instance_ = nullptr;
 
   ModelManager* ModelManager::GetInstance()
   {
-    if (instance_ == nullptr) {
-      instance_ = new ModelManager();
+    if (!instance_) {
+      instance_ = std::unique_ptr<ModelManager>(new ModelManager());
     }
-    return instance_;
+    return instance_.get();
   }
 
   void ModelManager::Initialize(DX12Basic* dx12)
@@ -38,10 +38,7 @@ namespace Tako {
     // モデルインスタンスの解放
     models_.clear();
 
-    if (instance_ != nullptr) {
-      delete instance_;
-      instance_ = nullptr;
-    }
+    instance_.reset();
   }
 
   void ModelManager::LoadModel(const std::string& fileName)

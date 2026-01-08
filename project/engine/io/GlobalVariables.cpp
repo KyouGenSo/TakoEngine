@@ -12,14 +12,14 @@ using json = nlohmann::json;
 
 namespace Tako {
 
-GlobalVariables* GlobalVariables::instance_ = nullptr;
+std::unique_ptr<GlobalVariables> GlobalVariables::instance_ = nullptr;
 
 GlobalVariables* GlobalVariables::GetInstance()
 {
-  if (instance_ == nullptr) {
-    instance_ = new GlobalVariables();
+  if (!instance_) {
+    instance_ = std::unique_ptr<GlobalVariables>(new GlobalVariables());
   }
-  return instance_;
+  return instance_.get();
 }
 
 void GlobalVariables::CreateGroup(const std::string& groupName)

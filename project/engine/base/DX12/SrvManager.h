@@ -2,6 +2,7 @@
 #include <d3d12.h>
 #include<wrl.h>
 #include <iostream>
+#include <memory>
 #include <queue>
 #include <unordered_set>
 
@@ -15,13 +16,16 @@ namespace Tako {
   /// </summary>
   class SrvManager {
   private: // シングルトン設定
-
-    static SrvManager* instance_;  ///< シングルトンインスタンス
+    static std::unique_ptr<SrvManager> instance_;
 
     SrvManager() = default;
     ~SrvManager() = default;
-    SrvManager(SrvManager&) = delete;  ///< コピーコンストラクタを削除
-    SrvManager& operator=(SrvManager&) = delete;  ///< 代入演算子を削除
+
+    friend struct std::default_delete<SrvManager>;
+
+  public:
+    SrvManager(const SrvManager&) = delete;
+    SrvManager& operator=(const SrvManager&) = delete;
 
   public: // メンバー関数
 
