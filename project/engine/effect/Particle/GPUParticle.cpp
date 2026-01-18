@@ -22,7 +22,7 @@ std::unique_ptr<GPUParticle> GPUParticle::instance_ = nullptr;
 
 const uint32_t GPUParticle::kNumMaxParticle = 1000000;
 
-const uint32_t GPUParticle::kNumMaxEmitter = 80;
+const uint32_t GPUParticle::kNumMaxEmitter = 500;
 
 GPUParticle* GPUParticle::GetInstance()
 {
