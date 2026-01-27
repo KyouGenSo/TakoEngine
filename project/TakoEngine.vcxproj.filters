@@ -213,9 +213,6 @@
     <ClCompile Include="engine\3d\SkyBox\SkyBox.cpp">
       <Filter>3d\SkyBox</Filter>
     </ClCompile>
-    <ClCompile Include="engine\debug\NodeEditorManager.cpp">
-      <Filter>debug</Filter>
-    </ClCompile>
     <ClCompile Include="engine\effect\Particle\BoxEmitter.cpp">
       <Filter>effect\Particle\Emitter</Filter>
     </ClCompile>
@@ -463,9 +460,6 @@
     </ClInclude>
     <ClInclude Include="engine\3d\SkyBox\SkyBox.h">
       <Filter>3d\SkyBox</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\debug\NodeEditorManager.h">
-      <Filter>debug</Filter>
     </ClInclude>
     <ClInclude Include="engine\effect\Particle\BoxEmitter.h">
       <Filter>effect\Particle\Emitter</Filter>

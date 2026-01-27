@@ -23,7 +23,6 @@
 
 #ifdef _DEBUG
 #include "DebugCamera.h"
-#include "NodeEditorManager.h"
 #endif
 
 namespace Tako {
@@ -58,8 +57,6 @@ void TakoFramework::Initialize()
   DebugUIManager::GetInstance()->Initialize();
   DebugUIManager::GetInstance()->SetEndFlagPtr(&endFlag_);
   DebugUIManager::GetInstance()->SetDebugFlagPtr(&isDebug_);
-
-  NodeEditorManager::GetInstance()->Initialize();
 
   DebugCamera::GetInstance()->Initialize();
 #endif

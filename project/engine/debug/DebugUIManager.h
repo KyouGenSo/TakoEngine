@@ -220,11 +220,6 @@ private:
     void DrawParticleEditor();
 
     /// <summary>
-    /// ノードエディターを描画
-    /// </summary>
-    void DrawNodeEditor();
-
-    /// <summary>
     /// グループ管理タブを描画
     /// </summary>
     void DrawGroupsTab();
