@@ -115,13 +115,13 @@ public: // メンバー関数
   /// <summary>
   /// 左右反転フラグの取得
   /// </summary>
-  /// <returns>左右反転されている場合true</returns>
+  /// <returns>左右反転されている場合 true</returns>
   [[nodiscard]] bool GetIsFlipX() const { return isFlipX_; }
 
   /// <summary>
   /// 上下反転フラグの取得
   /// </summary>
-  /// <returns>上下反転されている場合true</returns>
+  /// <returns>上下反転されている場合 true</returns>
   [[nodiscard]] bool GetIsFlipY() const { return isFlipY_; }
 
   /// <summary>
@@ -182,13 +182,13 @@ public: // メンバー関数
   /// <summary>
   /// 左右反転フラグの設定
   /// </summary>
-  /// <param name="isFlipX">左右反転する場合true</param>
+  /// <param name="isFlipX">左右反転する場合 true</param>
   void SetIsFlipX(const bool isFlipX) { isFlipX_ = isFlipX; }
 
   /// <summary>
   /// 上下反転フラグの設定
   /// </summary>
-  /// <param name="isFlipY">上下反転する場合true</param>
+  /// <param name="isFlipY">上下反転する場合 true</param>
   void SetIsFlipY(const bool isFlipY) { isFlipY_ = isFlipY; }
 
   /// <summary>

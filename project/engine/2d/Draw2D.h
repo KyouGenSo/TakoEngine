@@ -203,7 +203,7 @@ public: // メンバ関数
 	/// <summary>
 	/// デバッグ状態を取得
 	/// </summary>
-	/// <returns>デバッグが有効な場合true</returns>
+	/// <returns>デバッグが有効な場合 true</returns>
 	const bool GetDebug() const { return isDebug_; }
 
 
@@ -283,8 +283,8 @@ private: // メンバ変数
 
 	bool isDebug_; ///< デバッグフラグ
 
-	const uint32_t kTrriangleMaxCount = 30096; ///< 三角形の最大数
-	const uint32_t kVertexCountTrriangle = 3; ///< 三角形の頂点数
+	const uint32_t kTriangleMaxCount = 30096; ///< 三角形の最大数
+	const uint32_t kVertexCountTriangle = 3; ///< 三角形の頂点数
 
 	const uint32_t kBoxMaxCount = 30096; ///< 矩形の最大数
 	const uint32_t kVertexCountBox = 4; ///< 矩形の頂点数
@@ -322,9 +322,9 @@ private: // メンバ変数
 
 	std::unique_ptr<LineData> lineData_; ///< 線データ
 
-	std::vector<Vector3> sphereVerties_; ///< 球の頂点データ
+	std::vector<Vector3> sphereVertices_; ///< 球の頂点データ
 
-	std::vector<Vector3> gridVerties_; ///< グリッドの頂点データ
+	std::vector<Vector3> gridVertices_; ///< グリッドの頂点データ
 };
 
 } // namespace Tako

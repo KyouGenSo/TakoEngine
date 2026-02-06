@@ -100,7 +100,7 @@ void Draw2D::DrawTriangle(const Vector3& pos1, const Vector3& pos2, const Vector
 	triangleData_->vertexData[triangleIndex_ + 2].color = color;
 
 
-	triangleIndex_ += kVertexCountTrriangle;
+	triangleIndex_ += kVertexCountTriangle;
 
 }
 
@@ -199,11 +199,11 @@ void Draw2D::DrawSphere(const Vector3& center, const float radius, const Vector4
 {
 	Matrix4x4 worldMatrix = Mat4x4::MakeAffine(Vector3(radius, radius, radius), Vector3(0.0f, 0.0f, 0.0f), center);
 
-	for (uint32_t i = 0; i < sphereVerties_.size(); i += 3)
+	for (uint32_t i = 0; i < sphereVertices_.size(); i += 3)
 	{
-		Vector3 a = sphereVerties_[i];
-		Vector3 b = sphereVerties_[i + 1];
-		Vector3 c = sphereVerties_[i + 2];
+		Vector3 a = sphereVertices_[i];
+		Vector3 b = sphereVertices_[i + 1];
+		Vector3 c = sphereVertices_[i + 2];
 
 		a = Mat4x4::Transform(worldMatrix, a);
 		b = Mat4x4::Transform(worldMatrix, b);
@@ -352,7 +352,7 @@ void Draw2D::Draw()
 		m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, transformationMatrixBuffer_->GetGPUVirtualAddress());
 
 		// 描画
-		m_dx12_->GetCommandList()->DrawInstanced(triangleIndex_, triangleIndex_ / kVertexCountTrriangle, 0, 0);
+		m_dx12_->GetCommandList()->DrawInstanced(triangleIndex_, triangleIndex_ / kVertexCountTriangle, 0, 0);
 	}
 
 	/// ================================== ///
@@ -494,7 +494,7 @@ void Draw2D::CreatePSO(D3D12_PRIMITIVE_TOPOLOGY_TYPE primitiveTopologyType, ComP
 
 void Draw2D::CreateTriangleVertexData(TriangleData* triangleData)
 {
-	UINT vertexBufferSize = sizeof(VertexData) * kVertexCountTrriangle * kTrriangleMaxCount;
+	UINT vertexBufferSize = sizeof(VertexData) * kVertexCountTriangle * kTriangleMaxCount;
 
 	// 頂点リソースを生成
 	triangleData->vertexBuffer = m_dx12_->MakeBufferResource(vertexBufferSize);
@@ -591,9 +591,9 @@ void Draw2D::CalcSphereVertexData()
 			c.z = 0.0f + 1.0f * cosf(lat) * sinf(lon + kLonEvery);
 
 			// 座標を保存
-			sphereVerties_.push_back(a);
-			sphereVerties_.push_back(b);
-			sphereVerties_.push_back(c);
+			sphereVertices_.push_back(a);
+			sphereVertices_.push_back(b);
+			sphereVertices_.push_back(c);
 		}
 	}
 }
@@ -611,8 +611,8 @@ void Draw2D::CalcGridVertexData()
 		Vector3 worldEnd(-kGridHalfWidth + kGridEvery * static_cast<float>(xIndex), 0.0f, -kGridHalfWidth);
 
 		// 座標を保存
-		gridVerties_.push_back(worldStart);
-		gridVerties_.push_back(worldEnd);
+		gridVertices_.push_back(worldStart);
+		gridVertices_.push_back(worldEnd);
 	}
 
 	// 左から右への線を順々に引いていく
@@ -622,8 +622,8 @@ void Draw2D::CalcGridVertexData()
 		Vector3 worldEnd(kGridHalfWidth, 0.0f, kGridHalfWidth - kGridEvery * static_cast<float>(zIndex));
 
 		// 座標を保存
-		gridVerties_.push_back(worldStart);
-		gridVerties_.push_back(worldEnd);
+		gridVertices_.push_back(worldStart);
+		gridVertices_.push_back(worldEnd);
 	}
 }
 

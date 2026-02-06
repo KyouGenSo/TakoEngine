@@ -103,7 +103,7 @@ private: // メンバー変数
 	std::string directoryPath_;
 
 	///< テクスチャデータ配列
-	std::unordered_map<std::string, TextureData> textureDatas_;
+	std::unordered_map<std::string, TextureData> textureData_;
 
 };
 

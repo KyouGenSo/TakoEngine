@@ -26,7 +26,7 @@ void TextureManager::Initialize(DX12Basic* dx12, const std::string& directoryPat
 
 	directoryPath_ = directoryPath;
 
-	textureDatas_.reserve(DX12Basic::kMaxSRVCount);
+	textureData_.reserve(DX12Basic::kMaxSRVCount);
 }
 
 void TextureManager::Finalize()
@@ -37,7 +37,7 @@ void TextureManager::Finalize()
 void TextureManager::LoadTexture(const std::string& fileName)
 {
 	// 重複チェック
-	if (textureDatas_.contains(fileName))
+	if (textureData_.contains(fileName))
 	{
 		return;
 	}
@@ -78,7 +78,7 @@ void TextureManager::LoadTexture(const std::string& fileName)
 	assert(SUCCEEDED(hr));
 
 	// 追加したテクスチャデータを取得
-	TextureData& textureData = textureDatas_[fileName];
+	TextureData& textureData = textureData_[fileName];
 
 	textureData.fileName = fileName;
 	textureData.metadata = mipImages.GetMetadata();
@@ -107,7 +107,7 @@ void TextureManager::LoadTexture(const std::string& fileName)
 D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetSRVGPUHandle(const std::string& fileName)
 {
 	// クスチャデータを取得
-	TextureData& textureData = textureDatas_[fileName];
+	TextureData& textureData = textureData_[fileName];
 
 	return textureData.srvGpuHandle;
 }
@@ -115,7 +115,7 @@ D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetSRVGPUHandle(const std::string& f
 const DirectX::TexMetadata& TextureManager::GetMetaData(const std::string& fileName)
 {
 	// クスチャデータを取得
-	TextureData& textureData = textureDatas_[fileName];
+	TextureData& textureData = textureData_[fileName];
 
 	return textureData.metadata;
 }
@@ -123,7 +123,7 @@ const DirectX::TexMetadata& TextureManager::GetMetaData(const std::string& fileN
 uint32_t TextureManager::GetSRVIndex(const std::string& fileName)
 {
 	// クスチャデータを取得
-	TextureData& textureData = textureDatas_[fileName];
+	TextureData& textureData = textureData_[fileName];
 
 	return textureData.srvIndex;
 }

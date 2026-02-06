@@ -64,13 +64,13 @@ public: // メンバー関数
 	/// ビュー行列の取得
 	/// </summary>
 	/// <returns>スプライト用ビュー行列</returns>
-	Matrix4x4 GetViewMatrix() { return viewMatrixSprite_; }
+	const Matrix4x4& GetViewMatrix() { return viewMatrixSprite_; }
 
 	/// <summary>
 	/// プロジェクション行列の取得
 	/// </summary>
 	/// <returns>スプライト用プロジェクション行列</returns>
-	Matrix4x4 GetProjectionMatrix() { return projectionMatrixSprite_; }
+	const Matrix4x4& GetProjectionMatrix() { return projectionMatrixSprite_; }
 
 private: // プライベートメンバー関数
 	/// <summary>
