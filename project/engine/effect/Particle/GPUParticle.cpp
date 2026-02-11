@@ -42,7 +42,7 @@ void GPUParticle::Initialize(DX12Basic* dx12, Camera* camera)
 
   m_srvManager_ = SrvManager::GetInstance();
 
-  modelData_.textureData.texturePath = "circle.png";
+  modelData_.textureData.texturePath = "circle.dds";
   modelData_.textureData.textureIndex = TextureManager::GetInstance()->GetSRVIndex(modelData_.textureData.texturePath);
 
   isInited_ = false;

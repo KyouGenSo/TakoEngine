@@ -326,7 +326,7 @@ void Model::LoadModelFile(const std::string& directoryPath, const std::string& f
         }
       } else {
         textureData.texturePath = "";
-        textureData.textureIndex = TextureManager::GetInstance()->GetSRVIndex("white.png");
+        textureData.textureIndex = TextureManager::GetInstance()->GetSRVIndex("white.dds");
       }
     }
 
