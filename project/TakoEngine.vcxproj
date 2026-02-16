@@ -166,7 +166,7 @@
     </ClCompile>
     <ClCompile Include="engine\base\DX12\D3DResourceLeakChecker.cpp" />
     <ClCompile Include="engine\base\DX12\DX12Basic.cpp" />
-    <ClCompile Include="engine\io\GlobalVariables.cpp" />
+    <ClCompile Include="engine\debug\GlobalVariables.cpp" />
     <ClCompile Include="engine\io\Input.cpp" />
     <ClCompile Include="engine\func\commonFunc\Logger.cpp" />
     <ClCompile Include="engine\3d\Light\Light.cpp" />
@@ -233,7 +233,7 @@
     <ClInclude Include="engine\effect\PostEffect\RGBSplit.h" />
     <ClInclude Include="engine\effect\PostEffect\Vignette.h" />
     <ClInclude Include="engine\effect\PostEffect\WhiteNoise.h" />
-    <ClInclude Include="engine\io\GlobalVariables.h" />
+    <ClInclude Include="engine\debug\GlobalVariables.h" />
     <ClInclude Include="engine\io\SceneLoader.h" />
     <ClInclude Include="engine\math\AABB.h" />
     <ClInclude Include="engine\2d\Draw2D.h" />
