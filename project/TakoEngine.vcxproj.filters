@@ -282,8 +282,8 @@
     <ClCompile Include="engine\3d\Model\BoneTracker.cpp">
       <Filter>3d\Model</Filter>
     </ClCompile>
-    <ClCompile Include="engine\debug\GlobalVariables.cpp">
-      <Filter>debug</Filter>
+    <ClCompile Include="engine\io\GlobalVariables.cpp">
+      <Filter>io</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -539,8 +539,8 @@
     <ClInclude Include="engine\3d\Model\BoneTracker.h">
       <Filter>3d\Model</Filter>
     </ClInclude>
-    <ClInclude Include="engine\debug\GlobalVariables.h">
-      <Filter>debug</Filter>
+    <ClInclude Include="engine\io\GlobalVariables.h">
+      <Filter>io</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
