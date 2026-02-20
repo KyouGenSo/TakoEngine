@@ -12,15 +12,15 @@
 
 namespace Tako {
 
-Object3dBasic* Object3dBasic::instance_ = nullptr;
+std::unique_ptr<Object3dBasic> Object3dBasic::instance_ = nullptr;
 
 Object3dBasic* Object3dBasic::GetInstance()
 {
-	if (instance_ == nullptr)
+	if (!instance_)
 	{
-		instance_ = new Object3dBasic();
+		instance_ = std::unique_ptr<Object3dBasic>(new Object3dBasic());
 	}
-	return instance_;
+	return instance_.get();
 }
 
 void Object3dBasic::Initialize(DX12Basic* dx12)
@@ -59,11 +59,7 @@ void Object3dBasic::Finalize()
 {
 	light_.reset();
 
-	if (instance_ != nullptr)
-	{
-		delete instance_;
-		instance_ = nullptr;
-	}
+	instance_.reset();
 }
 
 void Object3dBasic::SetCommonRenderSetting()

@@ -171,10 +171,10 @@ namespace Tako {
     transformationData_->worldInvTranspose = Mat4x4::InverseTranspose(world);
   }
 
-  Mesh* Mesh::Clone() const
+  std::unique_ptr<Mesh> Mesh::Clone() const
   {
     // メッシュのクローンを作成
-    Mesh* newMesh = new Mesh();
+    auto newMesh = std::make_unique<Mesh>();
     newMesh->Initialize(modelBasic_, vertices_, indices_, textureData_);
     return newMesh;
   }

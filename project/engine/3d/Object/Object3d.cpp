@@ -154,7 +154,7 @@ void Object3d::SetModel(const std::string& fileName)
   }
 
   // 新しいモデルをセット（ModelManager から Clone を取得）
-  m_model_.reset(ModelManager::GetInstance()->GetModel(fileName));
+  m_model_ = ModelManager::GetInstance()->GetModel(fileName);
 }
 
 void Object3d::SetMaterialColor(const Vector4& color)

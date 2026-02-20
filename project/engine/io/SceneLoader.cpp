@@ -94,10 +94,10 @@ namespace Tako {
     /// レベルデータを構造体に格納していく ///
     /// ----------------------------- ///
 
-    LevelData* levelData = new LevelData;
+    LevelData levelData;
 
     // name 文字列を取得
-    levelData->name = deserializedJson["name"].get<std::string>();
+    levelData.name = deserializedJson["name"].get<std::string>();
 
     for (nlohmann::json& object : deserializedJson["objects"]) {
       assert(object.contains("type"));
@@ -109,8 +109,8 @@ namespace Tako {
 
       if (object["type"].get<std::string>() == "MESH" && object.contains("file_name")) {
         // 1個分の要素の準備
-        levelData->objects.emplace_back(ObjectData{});
-        ObjectData& objectData = levelData->objects.back();
+        levelData.objects.emplace_back(ObjectData{});
+        ObjectData& objectData = levelData.objects.back();
 
         // データを格納
         objectData.type = object["type"].get<std::string>();           // "type"
@@ -135,8 +135,8 @@ namespace Tako {
       }
       else if (object["type"].get<std::string>() == "CAMERA") {
         // 1個分の要素の準備
-        levelData->objects.emplace_back(ObjectData{});
-        ObjectData& objectData = levelData->objects.back();
+        levelData.objects.emplace_back(ObjectData{});
+        ObjectData& objectData = levelData.objects.back();
 
         // データを格納
         objectData.type = object["type"].get<std::string>();           // "type"
@@ -160,7 +160,7 @@ namespace Tako {
     /// レベルデータからオブジェクトを生成、配置 ///
     /// ---------------------------------- ///
 
-    for (auto& objectData : levelData->objects) {
+    for (auto& objectData : levelData.objects) {
       if (objectData.type == "CAMERA") {
         Object3dBasic* object3dBasic = Object3dBasic::GetInstance();
 

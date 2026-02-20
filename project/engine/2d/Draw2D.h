@@ -24,12 +24,14 @@ namespace Tako {
   {
   private: // シングルトン設定
     // インスタンス
-    static Draw2D* instance_;
+    static std::unique_ptr<Draw2D> instance_;
 
     Draw2D() = default;
     ~Draw2D() = default;
     Draw2D(const Draw2D&) = delete;
     Draw2D& operator=(const Draw2D&) = delete;
+
+    friend struct std::default_delete<Draw2D>;
 
   public: // 構造体
     /// <summary>

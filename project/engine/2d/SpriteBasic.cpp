@@ -9,14 +9,14 @@
 
 namespace Tako {
 
-  SpriteBasic* SpriteBasic::instance_ = nullptr;
+  std::unique_ptr<SpriteBasic> SpriteBasic::instance_ = nullptr;
 
   SpriteBasic* SpriteBasic::GetInstance()
   {
-    if (instance_ == nullptr) {
-      instance_ = new SpriteBasic();
+    if (!instance_) {
+      instance_ = std::unique_ptr<SpriteBasic>(new SpriteBasic());
     }
-    return instance_;
+    return instance_.get();
   }
 
   void SpriteBasic::Initialize(DX12Basic* dx12)
@@ -35,10 +35,7 @@ namespace Tako {
 
   void SpriteBasic::Finalize()
   {
-    if (instance_ != nullptr) {
-      delete instance_;
-      instance_ = nullptr;
-    }
+    instance_.reset();
   }
 
   void SpriteBasic::SetCommonRenderSetting()

@@ -73,10 +73,7 @@ namespace Tako {
     // スキニング関連リソースの解放
     ReleaseSkinningSRVIndex();
 
-    // メッシュの解放
-    for (auto& mesh : meshes_) {
-      delete mesh;
-    }
+    // メッシュの解放（unique_ptr が自動で delete する）
     meshes_.clear();
   }
 
@@ -323,15 +320,15 @@ namespace Tako {
       }
 
       // メッシュデータの保存
-      Mesh* newMesh = new Mesh();
+      auto newMesh = std::make_unique<Mesh>();
       newMesh->Initialize(m_modelBasic_, vertices, indices, textureData);
-      meshes_.push_back(newMesh);
+      meshes_.push_back(std::move(newMesh));
     }
   }
 
-  Model* Model::Clone() const
+  std::unique_ptr<Model> Model::Clone() const
   {
-    Model* newModel = new Model();
+    auto newModel = std::make_unique<Model>();
     newModel->m_modelBasic_ = this->m_modelBasic_;
     newModel->m_dx12_ = this->m_dx12_;
     newModel->directoryFolderName_ = this->directoryFolderName_;
@@ -366,12 +363,12 @@ namespace Tako {
 
     // Mesh のクローンを作成
     for (size_t i = 0; i < meshes_.size(); ++i) {
-      Mesh* newMesh = meshes_[i]->Clone();
+      auto newMesh = meshes_[i]->Clone();
       if (this->hasSkeleton_ && i < this->meshSkinClusterData_.size() && !this->meshSkinClusterData_[i].skinClusterData.empty()) {
         // 各メッシュに専用のスキンクラスターデータを設定
         newMesh->InitializeSkinning(this->meshSkinClusterData_[i].skinClusterData, this->skeleton_.jointMap);
       }
-      newModel->meshes_.push_back(newMesh);
+      newModel->meshes_.push_back(std::move(newMesh));
     }
 
     return newModel;

@@ -66,7 +66,7 @@ namespace Tako {
     /// <summary>
     /// クローン
     ///	</summary>
-    Model* Clone() const;
+    std::unique_ptr<Model> Clone() const;
 
     // -----------------------------------Getters-----------------------------------//
     /// <summary>
@@ -376,7 +376,7 @@ namespace Tako {
     std::string modelFileName_;  ///< モデルファイル名
 
     // モデルデータ
-    std::vector<Mesh*> meshes_;  ///< メッシュデータ配列
+    std::vector<std::unique_ptr<Mesh>> meshes_;  ///< メッシュデータ配列
 
     // ノードデータ
     Node rootNode_;  ///< ルートノード（階層構造の起点）

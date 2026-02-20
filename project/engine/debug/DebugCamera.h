@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include "Mat4x4Func.h"
 #include "Transform.h"
 
@@ -12,12 +13,14 @@ namespace Tako {
   private: // シングルトン設定
 
     ///< インスタンス
-    static DebugCamera* instance_;
+    static std::unique_ptr<DebugCamera> instance_;
 
     DebugCamera() = default;
     ~DebugCamera() = default;
     DebugCamera(DebugCamera&) = delete;
     DebugCamera& operator=(DebugCamera&) = delete;
+
+    friend struct std::default_delete<DebugCamera>;
 
   public: // メンバー関数
 

@@ -1,6 +1,7 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include<wrl.h>
+#include <memory>
 #include "DX12Basic.h"
 #include "Matrix4x4.h"
 
@@ -13,12 +14,14 @@ namespace Tako {
   private: // シングルトン設定
 
     ///< インスタンス
-    static SpriteBasic* instance_;
+    static std::unique_ptr<SpriteBasic> instance_;
 
     SpriteBasic() = default;
     ~SpriteBasic() = default;
     SpriteBasic(SpriteBasic&) = delete;
     SpriteBasic& operator=(SpriteBasic&) = delete;
+
+    friend struct std::default_delete<SpriteBasic>;
 
   public: // メンバー関数
 

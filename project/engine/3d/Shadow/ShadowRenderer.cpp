@@ -14,15 +14,15 @@
 namespace Tako {
 
 // 静的メンバ変数の定義
-ShadowRenderer* ShadowRenderer::instance_ = nullptr;
+std::unique_ptr<ShadowRenderer> ShadowRenderer::instance_ = nullptr;
 
 ShadowRenderer* ShadowRenderer::GetInstance()
 {
-    if (instance_ == nullptr)
+    if (!instance_)
     {
-        instance_ = new ShadowRenderer();
+        instance_ = std::unique_ptr<ShadowRenderer>(new ShadowRenderer());
     }
-    return instance_;
+    return instance_.get();
 }
 
 void ShadowRenderer::Initialize(DX12Basic* dx12)
@@ -88,11 +88,7 @@ void ShadowRenderer::Finalize()
     }
     
     // インスタンスを削除
-    if (instance_ != nullptr)
-    {
-        delete instance_;
-        instance_ = nullptr;
-    }
+    instance_.reset();
 }
 
 void ShadowRenderer::BeginShadowPass()

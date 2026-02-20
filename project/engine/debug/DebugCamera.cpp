@@ -5,14 +5,14 @@
 
 namespace Tako {
 
-  DebugCamera* DebugCamera::instance_ = nullptr;
+  std::unique_ptr<DebugCamera> DebugCamera::instance_ = nullptr;
 
   DebugCamera* DebugCamera::GetInstance()
   {
-    if (instance_ == nullptr) {
-      instance_ = new DebugCamera();
+    if (!instance_) {
+      instance_ = std::unique_ptr<DebugCamera>(new DebugCamera());
     }
-    return instance_;
+    return instance_.get();
   }
 
   void DebugCamera::Initialize()
@@ -32,10 +32,7 @@ namespace Tako {
 
   void DebugCamera::Finalize()
   {
-    if (instance_ != nullptr) {
-      delete instance_;
-      instance_ = nullptr;
-    }
+    instance_.reset();
   }
 
   void DebugCamera::Update()

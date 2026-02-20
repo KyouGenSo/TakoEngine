@@ -24,12 +24,14 @@ class ShadowRenderer
 {
 private: // シングルトン設定
     // インスタンス
-    static ShadowRenderer* instance_;
-    
+    static std::unique_ptr<ShadowRenderer> instance_;
+
     ShadowRenderer() = default;
     ~ShadowRenderer() = default;
     ShadowRenderer(ShadowRenderer&) = delete;
     ShadowRenderer& operator=(ShadowRenderer&) = delete;
+
+    friend struct std::default_delete<ShadowRenderer>;
 
 public:
     /// <summary>

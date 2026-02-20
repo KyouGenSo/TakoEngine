@@ -10,14 +10,14 @@
 
 namespace Tako {
 
-  Draw2D* Draw2D::instance_ = nullptr;
+  std::unique_ptr<Draw2D> Draw2D::instance_ = nullptr;
 
   Draw2D* Draw2D::GetInstance()
   {
-    if (instance_ == nullptr) {
-      instance_ = new Draw2D();
+    if (!instance_) {
+      instance_ = std::unique_ptr<Draw2D>(new Draw2D());
     }
-    return instance_;
+    return instance_.get();
   }
 
   void Draw2D::Initialize(DX12Basic* dx12)
@@ -60,10 +60,7 @@ namespace Tako {
     boxData_.reset();
     lineData_.reset();
 
-    if (instance_ != nullptr) {
-      delete instance_;
-      instance_ = nullptr;
-    }
+    instance_.reset();
   }
 
   void Draw2D::Update()

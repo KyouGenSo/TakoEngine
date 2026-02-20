@@ -48,7 +48,7 @@ public: // 構造体
 		// 波形フォーマット
 		WAVEFORMATEX wfex;
 		// バッファの先頭アドレス
-		BYTE* pBuffer;
+		std::unique_ptr<BYTE[]> pBuffer;
 		// バッファのサイズ
 		unsigned int bufferSize;
 	};

@@ -64,15 +64,15 @@ namespace Tako {
   }
 
 
-  Model* ModelManager::GetModel(const std::string& fileName)
+  std::unique_ptr<Model> ModelManager::GetModel(const std::string& fileName)
   {
     if (models_.contains(fileName)) {
-      // モデルがすでに存在する場合はそのポインタを返す
-      return models_.at(fileName).get()->Clone();
+      // モデルがすでに存在する場合はクローンを返す
+      return models_.at(fileName)->Clone();
     }
 
     // 新しい Model インスタンスを作成
-    std::unique_ptr<Model> newModel = std::make_unique<Model>();
+    auto newModel = std::make_unique<Model>();
     newModel->Initialize(pModelBasic_.get(), fileName);
 
     // モデルデータの登録

@@ -23,12 +23,14 @@ class Object3dBasic {
 private: // シングルトン設定
 
 	// インスタンス
-	static Object3dBasic* instance_;
+	static std::unique_ptr<Object3dBasic> instance_;
 
 	Object3dBasic() = default;
 	~Object3dBasic() = default;
 	Object3dBasic(Object3dBasic&) = delete;
 	Object3dBasic& operator=(Object3dBasic&) = delete;
+
+	friend struct std::default_delete<Object3dBasic>;
 
 public: // メンバー関数
 

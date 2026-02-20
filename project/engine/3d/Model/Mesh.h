@@ -62,8 +62,8 @@ namespace Tako {
     /// <summary>
     /// メッシュのクローンを作成
     /// </summary>
-    /// <returns>クローンされたメッシュのポインタ</returns>
-    Mesh* Clone() const;
+    /// <returns>クローンされたメッシュの unique_ptr</returns>
+    std::unique_ptr<Mesh> Clone() const;
 
     // ===== スキニング関連 =====
     /// <summary>

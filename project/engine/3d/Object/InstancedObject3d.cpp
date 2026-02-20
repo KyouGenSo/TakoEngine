@@ -44,7 +44,7 @@ void InstancedObject3d::Initialize(const std::string& modelFileName) {
   camera_ = Object3dBasic::GetInstance()->GetCamera();
 
   // モデルを取得
-  model_.reset(ModelManager::GetInstance()->GetModel(modelFileName));
+  model_ = ModelManager::GetInstance()->GetModel(modelFileName);
 
   // インスタンスバッファの作成
   CreateInstanceBuffer();

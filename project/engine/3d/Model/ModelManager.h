@@ -61,7 +61,7 @@ namespace Tako {
     /// </summary>
     /// <param name="fileName">モデルファイル名</param>
     /// <returns>モデルポインタ（見つからない場合 nullptr）</returns>
-    Model* GetModel(const std::string& fileName);
+    std::unique_ptr<Model> GetModel(const std::string& fileName);
 
     // ===== Getter =====
     /// <summary>

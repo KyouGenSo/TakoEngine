@@ -162,13 +162,13 @@ namespace Tako {
       assert(false);
     }
 
-    char* pBuffer = new char[data.size];
-    file.read(pBuffer, data.size);
+    auto pBuffer = std::make_unique<char[]>(data.size);
+    file.read(pBuffer.get(), data.size);
 
     file.close();
 
     soundData.wfex = format.fmt;
-    soundData.pBuffer = reinterpret_cast<BYTE*>(pBuffer);
+    soundData.pBuffer = std::unique_ptr<BYTE[]>(reinterpret_cast<BYTE*>(pBuffer.release()));
     soundData.bufferSize = data.size;
 
     // 名前の登録
@@ -210,9 +210,9 @@ namespace Tako {
     ma_uint32 sampleRate = decoder.outputSampleRate;
     if (sampleRate == 0) sampleRate = config.sampleRate;
     size_t bufferSize = static_cast<size_t>(totalFrames * channels * sizeof(float));
-    float* pBuffer = new float[totalFrames * channels];
+    auto pBuffer = std::make_unique<float[]>(totalFrames * channels);
     ma_uint64 framesRead = 0;
-    ma_result result = ma_decoder_read_pcm_frames(&decoder, pBuffer, totalFrames, &framesRead);
+    ma_result result = ma_decoder_read_pcm_frames(&decoder, pBuffer.get(), totalFrames, &framesRead);
     (void)result; // 未使用の変数であることを明示
 
     // デコード完了後、decoder を解放
@@ -226,7 +226,7 @@ namespace Tako {
     soundData.wfex.nBlockAlign = static_cast<WORD>(channels * 4);
     soundData.wfex.nAvgBytesPerSec = sampleRate * soundData.wfex.nBlockAlign;
     soundData.wfex.cbSize = 0;
-    soundData.pBuffer = reinterpret_cast<BYTE*>(pBuffer);
+    soundData.pBuffer = std::unique_ptr<BYTE[]>(reinterpret_cast<BYTE*>(pBuffer.release()));
     soundData.bufferSize = static_cast<unsigned int>(bufferSize);
     soundNames_[nextSoundIndex_] = filename;
     uint32_t handle = nextSoundIndex_;
@@ -236,14 +236,11 @@ namespace Tako {
 
   void Audio::SoundUnload(SoundData* soundData)
   {
-    if (soundData->pBuffer != nullptr) {
-      delete[] soundData->pBuffer;
-      soundData->pBuffer = 0;
+    if (soundData->pBuffer) {
+      soundData->pBuffer.reset();
       soundData->bufferSize = 0;
       soundData->wfex = {};
     }
-
-    soundData = nullptr;
   }
 
   uint32_t Audio::Play(uint32_t soundDataHandle, bool loopFlag, float volume)
@@ -263,7 +260,7 @@ namespace Tako {
 
     // バッファの設定
     XAUDIO2_BUFFER buffer = {};
-    buffer.pAudioData = soundData.pBuffer;
+    buffer.pAudioData = soundData.pBuffer.get();
     buffer.AudioBytes = soundData.bufferSize;
     buffer.Flags = XAUDIO2_END_OF_STREAM;
     buffer.LoopCount = loopFlag ? XAUDIO2_LOOP_INFINITE : 0;
