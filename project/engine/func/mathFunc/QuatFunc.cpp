@@ -3,60 +3,60 @@
 
 namespace Tako {
 
-Quaternion Quat::Identity()
-{
-	return Quaternion{ 0, 0, 0, 1 };
-}
+  Quaternion Quat::Identity()
+  {
+    return Quaternion{ 0, 0, 0, 1 };
+  }
 
-Quaternion Quat::Add(const Quaternion& q1, const Quaternion& q2)
-{
-	return Quaternion{ q1.x + q2.x, q1.y + q2.y, q1.z + q2.z, q1.w + q2.w };
-}
+  Quaternion Quat::Add(const Quaternion& q1, const Quaternion& q2)
+  {
+    return Quaternion{ q1.x + q2.x, q1.y + q2.y, q1.z + q2.z, q1.w + q2.w };
+  }
 
-Quaternion Quat::Subtract(const Quaternion& q1, const Quaternion& q2)
-{
-	return Quaternion{ q1.x - q2.x, q1.y - q2.y, q1.z - q2.z, q1.w - q2.w };
-}
+  Quaternion Quat::Subtract(const Quaternion& q1, const Quaternion& q2)
+  {
+    return Quaternion{ q1.x - q2.x, q1.y - q2.y, q1.z - q2.z, q1.w - q2.w };
+  }
 
-Quaternion Quat::Multiply(const Quaternion& q, float scaler)
-{
-	return Quaternion{ q.x * scaler, q.y * scaler, q.z * scaler, q.w * scaler };
-}
+  Quaternion Quat::Multiply(const Quaternion& q, float scaler)
+  {
+    return Quaternion{ q.x * scaler, q.y * scaler, q.z * scaler, q.w * scaler };
+  }
 
-Quaternion Quat::Multiply(const Quaternion& q1, const Quaternion& q2)
-{
-	Quaternion result;
-	result.x = q1.w * q2.x + q1.x * q2.w + q1.y * q2.z - q1.z * q2.y;
-	result.y = q1.w * q2.y + q1.y * q2.w + q1.z * q2.x - q1.x * q2.z;
-	result.z = q1.w * q2.z + q1.z * q2.w + q1.x * q2.y - q1.y * q2.x;
-	result.w = q1.w * q2.w - q1.x * q2.x - q1.y * q2.y - q1.z * q2.z;
+  Quaternion Quat::Multiply(const Quaternion& q1, const Quaternion& q2)
+  {
+    Quaternion result;
+    result.x = q1.w * q2.x + q1.x * q2.w + q1.y * q2.z - q1.z * q2.y;
+    result.y = q1.w * q2.y + q1.y * q2.w + q1.z * q2.x - q1.x * q2.z;
+    result.z = q1.w * q2.z + q1.z * q2.w + q1.x * q2.y - q1.y * q2.x;
+    result.w = q1.w * q2.w - q1.x * q2.x - q1.y * q2.y - q1.z * q2.z;
 
-	return result;
-}
+    return result;
+  }
 
-float Quat::Norm(const Quaternion& q)
-{
-	return sqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
-}
+  float Quat::Norm(const Quaternion& q)
+  {
+    return sqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
+  }
 
-Quaternion Quat::Normalize(const Quaternion& q)
-{
-	float norm = Norm(q);
-	return Quaternion{ q.x / norm, q.y / norm, q.z / norm, q.w / norm };
-}
+  Quaternion Quat::Normalize(const Quaternion& q)
+  {
+    float norm = Norm(q);
+    return Quaternion{ q.x / norm, q.y / norm, q.z / norm, q.w / norm };
+  }
 
-Quaternion Quat::Conjugate(const Quaternion& q)
-{
-	return Quaternion{ -q.x, -q.y, -q.z, q.w };
-}
+  Quaternion Quat::Conjugate(const Quaternion& q)
+  {
+    return Quaternion{ -q.x, -q.y, -q.z, q.w };
+  }
 
-Quaternion Quat::Inverse(const Quaternion& q)
-{
+  Quaternion Quat::Inverse(const Quaternion& q)
+  {
     float normSquared = q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w;
 
     // ゼロ除算を防ぐ
     if (normSquared < 1e-6f) {
-        return Quaternion{ 0, 0, 0, 1 };  // またはエラー処理
+      return Quaternion{ 0, 0, 0, 1 };  // またはエラー処理
     }
 
     Quaternion conjugate = Conjugate(q);
@@ -68,29 +68,27 @@ Quaternion Quat::Inverse(const Quaternion& q)
         conjugate.z * invNorm,
         conjugate.w * invNorm
     };
-}
+  }
 
-Quaternion Quat::Slerp(const Quaternion& q1, const Quaternion& q2, float t)
-{
+  Quaternion Quat::Slerp(const Quaternion& q1, const Quaternion& q2, float t)
+  {
     float dot = q1.x * q2.x + q1.y * q2.y + q1.z * q2.z + q1.w * q2.w;
 
     // ドット積が負の場合、片方のクォータニオンを反転
     Quaternion q2Modified = q2;
-    if (dot < 0.0f)
-    {
-        dot = -dot;
-        q2Modified = Quaternion{ -q2.x, -q2.y, -q2.z, -q2.w };
+    if (dot < 0.0f) {
+      dot = -dot;
+      q2Modified = Quaternion{ -q2.x, -q2.y, -q2.z, -q2.w };
     }
 
     // 小さい角度の場合は線形補間を使用
-    if (dot > 0.9995f)
-    {
-        Quaternion result;
-        result.x = q1.x + t * (q2Modified.x - q1.x);
-        result.y = q1.y + t * (q2Modified.y - q1.y);
-        result.z = q1.z + t * (q2Modified.z - q1.z);
-        result.w = q1.w + t * (q2Modified.w - q1.w);
-        return Normalize(result);
+    if (dot > 0.9995f) {
+      Quaternion result;
+      result.x = q1.x + t * (q2Modified.x - q1.x);
+      result.y = q1.y + t * (q2Modified.y - q1.y);
+      result.z = q1.z + t * (q2Modified.z - q1.z);
+      result.w = q1.w + t * (q2Modified.w - q1.w);
+      return Normalize(result);
     }
 
     float theta = acos(dot);
@@ -106,10 +104,10 @@ Quaternion Quat::Slerp(const Quaternion& q1, const Quaternion& q2, float t)
     result.w = (q1.w * sinThetaFrom + q2Modified.w * sinThetaTo) / sinTheta;
 
     return result;
-}
+  }
 
-Quaternion Quat::MakeRotateAxisAngle(const Vector3& axis, float angle)
-{
+  Quaternion Quat::MakeRotateAxisAngle(const Vector3& axis, float angle)
+  {
     // 軸を正規化
     Vector3 normAxis = axis.Normalize();
 
@@ -123,10 +121,10 @@ Quaternion Quat::MakeRotateAxisAngle(const Vector3& axis, float angle)
         normAxis.z * sinHalfAngle,
         cosHalfAngle
     };
-}
+  }
 
-Vector3 Quat::ToVec3(const Quaternion& q)
-{
+  Vector3 Quat::ToVec3(const Quaternion& q)
+  {
     float sinY = 2 * (q.w * q.y - q.z * q.x);
     sinY = sinY > 1.0f ? 1.0f : (sinY < -1.0f ? -1.0f : sinY); // クランプ
 
@@ -135,53 +133,53 @@ Vector3 Quat::ToVec3(const Quaternion& q)
     float z = atan2(2 * (q.w * q.z + q.x * q.y), 1 - 2 * (q.y * q.y + q.z * q.z));
 
     return Vector3{ x, y, z };
-}
+  }
 
-Matrix4x4 Quat::ToMatrix(const Quaternion& q)
-{
-	Matrix4x4 mat;
-	float xx = q.x * q.x;
-	float yy = q.y * q.y;
-	float zz = q.z * q.z;
-	float xy = q.x * q.y;
-	float xz = q.x * q.z;
-	float yz = q.y * q.z;
-	float wx = q.w * q.x;
-	float wy = q.w * q.y;
-	float wz = q.w * q.z;
+  Matrix4x4 Quat::ToMatrix(const Quaternion& q)
+  {
+    Matrix4x4 mat;
+    float xx = q.x * q.x;
+    float yy = q.y * q.y;
+    float zz = q.z * q.z;
+    float xy = q.x * q.y;
+    float xz = q.x * q.z;
+    float yz = q.y * q.z;
+    float wx = q.w * q.x;
+    float wy = q.w * q.y;
+    float wz = q.w * q.z;
 
-	mat.m[0][0] = 1.0f - 2.0f * (yy + zz);
-	mat.m[0][1] = 2.0f * (xy + wz);
-	mat.m[0][2] = 2.0f * (xz - wy);
-	mat.m[0][3] = 0.0f;
+    mat.m[0][0] = 1.0f - 2.0f * (yy + zz);
+    mat.m[0][1] = 2.0f * (xy + wz);
+    mat.m[0][2] = 2.0f * (xz - wy);
+    mat.m[0][3] = 0.0f;
 
-	mat.m[1][0] = 2.0f * (xy - wz);
-	mat.m[1][1] = 1.0f - 2.0f * (xx + zz);
-	mat.m[1][2] = 2.0f * (yz + wx);
-	mat.m[1][3] = 0.0f;
+    mat.m[1][0] = 2.0f * (xy - wz);
+    mat.m[1][1] = 1.0f - 2.0f * (xx + zz);
+    mat.m[1][2] = 2.0f * (yz + wx);
+    mat.m[1][3] = 0.0f;
 
-	mat.m[2][0] = 2.0f * (xz + wy);
-	mat.m[2][1] = 2.0f * (yz - wx);
-	mat.m[2][2] = 1.0f - 2.0f * (xx + yy);
-	mat.m[2][3] = 0.0f;
+    mat.m[2][0] = 2.0f * (xz + wy);
+    mat.m[2][1] = 2.0f * (yz - wx);
+    mat.m[2][2] = 1.0f - 2.0f * (xx + yy);
+    mat.m[2][3] = 0.0f;
 
-	mat.m[3][0] = 0.0f;
-	mat.m[3][1] = 0.0f;
-	mat.m[3][2] = 0.0f;
-	mat.m[3][3] = 1.0f;
+    mat.m[3][0] = 0.0f;
+    mat.m[3][1] = 0.0f;
+    mat.m[3][2] = 0.0f;
+    mat.m[3][3] = 1.0f;
 
-	return mat;
-}
+    return mat;
+  }
 
-Vector3 Quat::RotateVec3(const Vector3& v, const Quaternion& q)
-{
+  Vector3 Quat::RotateVec3(const Vector3& v, const Quaternion& q)
+  {
     // クォータニオンを正規化
-	Quaternion normQ = Normalize(q);
+    Quaternion normQ = Normalize(q);
 
     Quaternion vQuat{ v.x, v.y, v.z, 0 };
     Quaternion result = Multiply(Multiply(normQ, vQuat), Conjugate(normQ));
 
     return Vector3{ result.x, result.y, result.z };
-}
+  }
 
 } // namespace Tako
