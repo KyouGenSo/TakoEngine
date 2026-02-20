@@ -11,32 +11,32 @@
 
 namespace Tako {
 
-/// <summary>
-/// デバッグ UI の統合管理クラス。シーンヒエラルキー、インスペクター、コンソール、パフォーマンスモニターなどを提供
-/// </summary>
-class DebugUIManager {
-public:
+  /// <summary>
+  /// デバッグ UI の統合管理クラス。シーンヒエラルキー、インスペクター、コンソール、パフォーマンスモニターなどを提供
+  /// </summary>
+  class DebugUIManager {
+  public:
     // ログタイプ
     enum class LogType {
-        Info,
-        Warning,
-        Error
+      Info,
+      Warning,
+      Error
     };
 
     // ログ構造体
     struct LogEntry {
-        LogType type;
-        std::string message;
-        std::string timestamp;
-    };
-    
-    // ゲームオブジェクトデバッグ情報
-    struct GameObjectDebugInfo {
-        std::string name;                    // オブジェクト名
-        std::function<void()> drawImGuiFunc; // DrawImGui 関数
+      LogType type;
+      std::string message;
+      std::string timestamp;
     };
 
-private:
+    // ゲームオブジェクトデバッグ情報
+    struct GameObjectDebugInfo {
+      std::string name;                    // オブジェクト名
+      std::function<void()> drawImGuiFunc; // DrawImGui 関数
+    };
+
+  private:
     // シングルトン
     static std::unique_ptr<DebugUIManager> instance_;
     DebugUIManager() = default;
@@ -44,13 +44,13 @@ private:
 
     friend struct std::default_delete<DebugUIManager>;
 
-public:
+  public:
     DebugUIManager(const DebugUIManager&) = delete;
     DebugUIManager& operator=(const DebugUIManager&) = delete;
 
-private:
+  private:
 
-public:
+  public:
     /// <summary>
     /// インスタンス取得
     /// </summary>
@@ -163,7 +163,7 @@ public:
     /// <param name="emitterManager">EmitterManager ポインタ</param>
     void SetEmitterManager(class EmitterManager* emitterManager) { emitterManager_ = emitterManager; }
 
-private:
+  private:
     /// <summary>
     /// メインメニューバーを描画
     /// </summary>
@@ -230,7 +230,7 @@ private:
     /// <returns>タイムスタンプ文字列</returns>
     std::string GetCurrentTimestamp();
 
-private:
+  private:
     // コンソールログ
     std::vector<LogEntry> consoleLogs_;
     int maxConsoleLogs_ = 1000;
@@ -238,28 +238,28 @@ private:
     bool showWarning_ = true;
     bool showError_ = true;
     bool autoScroll_ = true;
-    
+
     // ウィンドウ表示フラグ
     std::unordered_map<std::string, bool> windowVisibility_;
-    
+
     // デバッグ情報コールバック
     std::unordered_map<std::string, std::function<void()>> debugInfoCallbacks_;
-    
+
     // ゲームオブジェクト情報
     std::vector<GameObjectDebugInfo> gameObjects_;
     int selectedObjectIndex_ = -1;  // 選択されたオブジェクトのインデックス
-    
+
     // パフォーマンス計測
-    float fpsHistory_[100] = {0};
+    float fpsHistory_[100] = { 0 };
     int fpsHistoryIndex_ = 0;
-    
+
     // 現在のシーン名
     std::string currentSceneName_ = "Unknown";
-    
+
     // アプリケーション終了フラグへのポインタ
     bool* pEndFlag_ = nullptr;
-    
-public:
+
+  public:
     /// <summary>
     /// 終了フラグポインタを設定
     /// </summary>
@@ -272,7 +272,7 @@ public:
     /// <param name="pIsDebug">デバッグフラグへのポインタ</param>
     void SetDebugFlagPtr(bool* pIsDebug) { pIsDebug_ = pIsDebug; }
 
-private:
+  private:
     // デバッグカメラ有効フラグへのポインタ
     bool* pIsDebug_ = nullptr;
 
@@ -290,7 +290,7 @@ private:
     // グループ管理用
     int selectedGroupIndex_ = -1;
     char newGroupNameBuffer_[128] = "";
-};
+  };
 
 } // namespace Tako
 
