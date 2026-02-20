@@ -20,257 +20,254 @@
 
 namespace Tako {
 
-void TakoFramework::Initialize()
-{
+  void TakoFramework::Initialize()
+  {
 
 #pragma region ウィンドウの初期化-------------------------------------------------------------------------------------------------------------------
-  winApp_ = WinApp::GetInstance();
-	winApp_->Initialize();
+    winApp_ = WinApp::GetInstance();
+    winApp_->Initialize();
 
-	// ウィンドウリサイズ時のコールバックを登録
-	winApp_->RegisterOnResizeFunc([this](Vector2 size) {
-		OnWindowResize(static_cast<uint32_t>(size.x), static_cast<uint32_t>(size.y));
-	});
+    // ウィンドウリサイズ時のコールバックを登録
+    winApp_->RegisterOnResizeFunc([this](Vector2 size) {
+      OnWindowResize(static_cast<uint32_t>(size.x), static_cast<uint32_t>(size.y));
+      });
 #pragma endregion
 
 
 #pragma region 基盤システムの初期化-------------------------------------------------------------------------------------------------------------------
-	dx12_ = std::make_unique<DX12Basic>();
-	dx12_->Initialize(winApp_);
+    dx12_ = std::make_unique<DX12Basic>();
+    dx12_->Initialize(winApp_);
 
-	// SrvManager を先に初期化（ImGuiManager が使用するため）
-	SrvManager::GetInstance()->Initialize(dx12_.get());
+    // SrvManager を先に初期化（ImGuiManager が使用するため）
+    SrvManager::GetInstance()->Initialize(dx12_.get());
 
 #ifdef _DEBUG
-	// ImGuiManager の初期化（SrvManager のディスクリプタヒープを使用）
-	imguiManager_ = std::make_unique<ImGuiManager>();
-  imguiManager_->Initialize(winApp_, dx12_.get(), true);
-  
-  // DebugUIManager の初期化
-  DebugUIManager::GetInstance()->Initialize();
-  DebugUIManager::GetInstance()->SetEndFlagPtr(&endFlag_);
-  DebugUIManager::GetInstance()->SetDebugFlagPtr(&isDebug_);
+    // ImGuiManager の初期化（SrvManager のディスクリプタヒープを使用）
+    imguiManager_ = std::make_unique<ImGuiManager>();
+    imguiManager_->Initialize(winApp_, dx12_.get(), true);
 
-  DebugCamera::GetInstance()->Initialize();
+    // DebugUIManager の初期化
+    DebugUIManager::GetInstance()->Initialize();
+    DebugUIManager::GetInstance()->SetEndFlagPtr(&endFlag_);
+    DebugUIManager::GetInstance()->SetDebugFlagPtr(&isDebug_);
+
+    DebugCamera::GetInstance()->Initialize();
 #endif
 
-	TextureManager::GetInstance()->Initialize(dx12_.get(), "resources/Texture/");
+    TextureManager::GetInstance()->Initialize(dx12_.get(), "resources/Texture/");
 
-	ModelManager::GetInstance()->Initialize(dx12_.get());
+    ModelManager::GetInstance()->Initialize(dx12_.get());
 
-	Object3dBasic::GetInstance()->Initialize(dx12_.get());
+    Object3dBasic::GetInstance()->Initialize(dx12_.get());
 
-	SpriteBasic::GetInstance()->Initialize(dx12_.get());
+    SpriteBasic::GetInstance()->Initialize(dx12_.get());
 
-  FrameTimer::GetInstance()->Initialize();
+    FrameTimer::GetInstance()->Initialize();
 
-  // デフォルトカメラを生成
-	defaultCamera_ = std::make_unique<Camera>();
-	defaultCamera_->SetRotate(Vector3(0.2f, 0.0f, 0.0f));
-	defaultCamera_->SetTranslate(Vector3(0.0f, 9.0f, -34.0f));
+    // デフォルトカメラを生成
+    defaultCamera_ = std::make_unique<Camera>();
+    defaultCamera_->SetRotate(Vector3(0.2f, 0.0f, 0.0f));
+    defaultCamera_->SetTranslate(Vector3(0.0f, 9.0f, -34.0f));
 
-	// デフォルトカメラを設定
-	Object3dBasic::GetInstance()->SetCamera(defaultCamera_.get());
+    // デフォルトカメラを設定
+    Object3dBasic::GetInstance()->SetCamera(defaultCamera_.get());
 
-  // ShadowRenderer の初期化
-  ShadowRenderer::GetInstance()->Initialize(dx12_.get());
-  ShadowRenderer::GetInstance()->SetLight(Object3dBasic::GetInstance()->GetLight());
-  ShadowRenderer::GetInstance()->SetCamera(defaultCamera_.get());
+    // ShadowRenderer の初期化
+    ShadowRenderer::GetInstance()->Initialize(dx12_.get());
+    ShadowRenderer::GetInstance()->SetLight(Object3dBasic::GetInstance()->GetLight());
+    ShadowRenderer::GetInstance()->SetCamera(defaultCamera_.get());
 
-  Draw2D::GetInstance()->SetCamera(defaultCamera_.get());
-  Draw2D::GetInstance()->Initialize(dx12_.get());
+    Draw2D::GetInstance()->SetCamera(defaultCamera_.get());
+    Draw2D::GetInstance()->Initialize(dx12_.get());
 
-  TextureManager::GetInstance()->LoadTexture("black.dds");
-  TextureManager::GetInstance()->LoadTexture("noise0.png");
+    TextureManager::GetInstance()->LoadTexture("black.dds");
+    TextureManager::GetInstance()->LoadTexture("noise0.png");
 
-  PostEffectManager::GetInstance()->Initialize(dx12_.get());
+    PostEffectManager::GetInstance()->Initialize(dx12_.get());
 
-  PostEffectManager::GetInstance()->SetCamera(defaultCamera_.get());
+    PostEffectManager::GetInstance()->SetCamera(defaultCamera_.get());
 
-  TransitionManager::GetInstance()->Initialize();
+    TransitionManager::GetInstance()->Initialize();
 
 #pragma endregion
 
 #ifdef _DEBUG
-  // 初期コンソールログ
-  DebugUIManager::GetInstance()->AddLog("TakoEngine Initialized", DebugUIManager::LogType::Info);
-  DebugUIManager::GetInstance()->AddLog("DirectX 12 Ready", DebugUIManager::LogType::Info);
-  DebugUIManager::GetInstance()->AddLog("ImGui Docking Mode Enabled", DebugUIManager::LogType::Info);
+    // 初期コンソールログ
+    DebugUIManager::GetInstance()->AddLog("TakoEngine Initialized", DebugUIManager::LogType::Info);
+    DebugUIManager::GetInstance()->AddLog("DirectX 12 Ready", DebugUIManager::LogType::Info);
+    DebugUIManager::GetInstance()->AddLog("ImGui Docking Mode Enabled", DebugUIManager::LogType::Info);
 #endif
-}
+  }
 
-void TakoFramework::Finalize()
-{
-  // シーンマネージャーの終了処理（最初に実行）
-  SceneManager::GetInstance()->Finalize();
-
-  // Initialize の逆順で終了処理を実行
-  // TransitionManager
-  TransitionManager::GetInstance()->Finalize();
-
-  // PostEffectManager
-  PostEffectManager::GetInstance()->Finalize();
-
-  // Draw2D
-  Draw2D::GetInstance()->Finalize();
-
-  // ShadowRenderer
-  ShadowRenderer::GetInstance()->Finalize();
-
-  // defaultCamera は unique_ptr で自動解放
-  defaultCamera_.reset();
-
-  // FrameTimer
-  FrameTimer::GetInstance()->Finalize();
-
-#ifdef _DEBUG
-  // DebugCamera
-  DebugCamera::GetInstance()->Finalize();
-#endif
-
-  // SpriteBasic
-  SpriteBasic::GetInstance()->Finalize();
-
-  // Object3dBasic
-  Object3dBasic::GetInstance()->Finalize();
-
-  // ModelManager
-  ModelManager::GetInstance()->Finalize();
-
-  // TextureManager
-  TextureManager::GetInstance()->Finalize();
-
-  // SRV マネージャー
-  SrvManager::GetInstance()->Finalize();
-
-#ifdef _DEBUG
-  // DebugUIManager の終了処理
-  DebugUIManager::GetInstance()->Finalize();
-
-  // ImGuiManager の終了処理
-  imguiManager_->Shutdown();
-  imguiManager_.reset();
-#endif
-
-  // DX12の終了処理
-  dx12_->Finalize();
-  dx12_.reset();
-
-  // sceneFactory は unique_ptr で自動解放
-  sceneFactory_.reset();
-
-  // WinApp（最初に初期化されたもの）
-  winApp_->Finalize();
-}
-
-void TakoFramework::Update()
-{
-	// ウィンドウメッセージの取得
-	if (winApp_->ProcessMessage()) {
-		endFlag_ = true;
-		return;
-	}
-
-  // フレームタイマーの更新
-  FrameTimer::GetInstance()->Update();
-
-  // シーンマネージャーの更新
-  SceneManager::GetInstance()->Update();
-
-  // 一時エフェクトの更新
-  PostEffectManager::GetInstance()->Update(FrameTimer::GetInstance()->GetDeltaTime());
-
-#ifdef _DEBUG
-  if (Input::GetInstance()->TriggerKey(DIK_F1))
+  void TakoFramework::Finalize()
   {
-    isDebug_ = !isDebug_;
+    // シーンマネージャーの終了処理（最初に実行）
+    SceneManager::GetInstance()->Finalize();
+
+    // Initialize の逆順で終了処理を実行
+    // TransitionManager
+    TransitionManager::GetInstance()->Finalize();
+
+    // PostEffectManager
+    PostEffectManager::GetInstance()->Finalize();
+
+    // Draw2D
+    Draw2D::GetInstance()->Finalize();
+
+    // ShadowRenderer
+    ShadowRenderer::GetInstance()->Finalize();
+
+    // defaultCamera は unique_ptr で自動解放
+    defaultCamera_.reset();
+
+    // FrameTimer
+    FrameTimer::GetInstance()->Finalize();
+
+#ifdef _DEBUG
+    // DebugCamera
+    DebugCamera::GetInstance()->Finalize();
+#endif
+
+    // SpriteBasic
+    SpriteBasic::GetInstance()->Finalize();
+
+    // Object3dBasic
+    Object3dBasic::GetInstance()->Finalize();
+
+    // ModelManager
+    ModelManager::GetInstance()->Finalize();
+
+    // TextureManager
+    TextureManager::GetInstance()->Finalize();
+
+    // SRV マネージャー
+    SrvManager::GetInstance()->Finalize();
+
+#ifdef _DEBUG
+    // DebugUIManager の終了処理
+    DebugUIManager::GetInstance()->Finalize();
+
+    // ImGuiManager の終了処理
+    imguiManager_->Shutdown();
+    imguiManager_.reset();
+#endif
+
+    // DX12の終了処理
+    dx12_->Finalize();
+    dx12_.reset();
+
+    // sceneFactory は unique_ptr で自動解放
+    sceneFactory_.reset();
+
+    // WinApp（最初に初期化されたもの）
+    winApp_->Finalize();
+  }
+
+  void TakoFramework::Update()
+  {
+    // ウィンドウメッセージの取得
+    if (winApp_->ProcessMessage()) {
+      endFlag_ = true;
+      return;
+    }
+
+    // フレームタイマーの更新
+    FrameTimer::GetInstance()->Update();
+
+    // シーンマネージャーの更新
+    SceneManager::GetInstance()->Update();
+
+    // 一時エフェクトの更新
+    PostEffectManager::GetInstance()->Update(FrameTimer::GetInstance()->GetDeltaTime());
+
+#ifdef _DEBUG
+    if (Input::GetInstance()->TriggerKey(DIK_F1)) {
+      isDebug_ = !isDebug_;
+      Object3dBasic::GetInstance()->SetDebug(isDebug_);
+      Draw2D::GetInstance()->SetDebug(isDebug_);
+      GPUParticle::GetInstance()->SetIsDebug(isDebug_);
+    }
+
+    if (isDebug_) {
+      DebugCamera::GetInstance()->Update();
+    }
+
+    DebugUIManager::GetInstance()->Update();
+#endif
+
+    //	Draw2D の更新
+    Draw2D::GetInstance()->Update();
+
+    // Object3dBasic の更新
+    Object3dBasic::GetInstance()->Update();
+
+    // ShadowRenderer の更新
+    ShadowRenderer::GetInstance()->Update();
+
+  }
+
+  void TakoFramework::Draw()
+  {
+#ifdef _DEBUG
+    // デバッグ UI の描画
+    DebugUIManager::GetInstance()->Draw();
+#endif
+  }
+
+  void TakoFramework::Run()
+  {
+    Initialize();
+
+    while (true) {
+      Update();
+
+      if (GetEndFlag()) {
+        break;
+      }
+
+      Draw();
+    }
+
+    Finalize();
+  }
+
+  void TakoFramework::ToggleFullScreen()
+  {
+    // ウィンドウの状態を切り替え
+    winApp_->ToggleFullScreen();
+
+    // リサイズ処理を実行
+    OnWindowResize(WinApp::clientWidth, WinApp::clientHeight);
+  }
+
+  void TakoFramework::OnWindowResize(uint32_t width, uint32_t height)
+  {
+    // GPU の処理を待機
+    //dx12_->WaitForGPU();
+
+    // バッファのリサイズ
+    dx12_->ResizeBuffers(width, height);
+
+    // レンダーテクスチャの再作成（PostEffect 用）
+    PostEffectManager::GetInstance()->RecreateRenderTexture();
+
+    // カメラのアスペクト比を更新
+    defaultCamera_->UpdateProjectionMatrix();
+
+#ifdef _DEBUG
+    imguiManager_->OnWindowResize();
+#endif
+  }
+
+#ifdef _DEBUG
+  void TakoFramework::SetIsDebug(bool value)
+  {
+    isDebug_ = value;
+    // 各コンポーネントのデバッグモードも同時に設定
     Object3dBasic::GetInstance()->SetDebug(isDebug_);
     Draw2D::GetInstance()->SetDebug(isDebug_);
     GPUParticle::GetInstance()->SetIsDebug(isDebug_);
   }
-
-  if (isDebug_)
-  {
-    DebugCamera::GetInstance()->Update();
-  }
-
-  DebugUIManager::GetInstance()->Update();
-#endif
-
-	//	Draw2D の更新
-	Draw2D::GetInstance()->Update();
-
-	// Object3dBasic の更新
-	Object3dBasic::GetInstance()->Update();
-
-  // ShadowRenderer の更新
-  ShadowRenderer::GetInstance()->Update();
-
-}
-
-void TakoFramework::Draw()
-{
-#ifdef _DEBUG
-  // デバッグ UI の描画
-  DebugUIManager::GetInstance()->Draw();
-#endif
-}
-
-void TakoFramework::Run()
-{
-	Initialize();
-
-	while (true)
-	{
-		Update();
-
-		if (GetEndFlag()) {
-			break;
-		}
-
-		Draw();
-	}
-
-	Finalize();
-}
-
-void TakoFramework::ToggleFullScreen()
-{
-  // ウィンドウの状態を切り替え
-  winApp_->ToggleFullScreen();
-
-  // リサイズ処理を実行
-  OnWindowResize(WinApp::clientWidth, WinApp::clientHeight);
-}
-
-void TakoFramework::OnWindowResize(uint32_t width, uint32_t height)
-{
-  // GPU の処理を待機
-  //dx12_->WaitForGPU();
-
-  // バッファのリサイズ
-  dx12_->ResizeBuffers(width, height);
-
-  // レンダーテクスチャの再作成（PostEffect 用）
-  PostEffectManager::GetInstance()->RecreateRenderTexture();
-
-  // カメラのアスペクト比を更新
-  defaultCamera_->UpdateProjectionMatrix();
-
-#ifdef _DEBUG
-  imguiManager_->OnWindowResize();
-#endif
-}
-
-#ifdef _DEBUG
-void TakoFramework::SetIsDebug(bool value)
-{
-  isDebug_ = value;
-  // 各コンポーネントのデバッグモードも同時に設定
-  Object3dBasic::GetInstance()->SetDebug(isDebug_);
-  Draw2D::GetInstance()->SetDebug(isDebug_);
-  GPUParticle::GetInstance()->SetIsDebug(isDebug_);
-}
 #endif
 
 } // namespace Tako

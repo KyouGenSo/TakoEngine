@@ -13,99 +13,100 @@
 
 namespace Tako {
 
-/// <summary>
-/// ゲームエンジンのメインフレームワーク
-/// アプリケーションの基底クラス
-/// </summary>
-class TakoFramework {
-public: // メンバ関数
 
-	/// <summary>
-	/// デストラクタ
-	/// </summary>
-	virtual ~TakoFramework() = default;
+  /// <summary>
+  /// ゲームエンジンのメインフレームワーク
+  /// アプリケーションの基底クラス
+  /// </summary>
+  class TakoFramework {
+  public: // メンバ関数
 
-	/// <summary>
-	/// アプリケーションの初期化
-	/// </summary>
-	virtual void Initialize();
+    /// <summary>
+    /// デストラクタ
+    /// </summary>
+    virtual ~TakoFramework() = default;
 
-	/// <summary>
-	/// 終了処理
-	/// </summary>
-	virtual void Finalize();
+    /// <summary>
+    /// アプリケーションの初期化
+    /// </summary>
+    virtual void Initialize();
 
-	/// <summary>
-	/// フレーム更新処理
-	/// </summary>
-	virtual void Update();
+    /// <summary>
+    /// 終了処理
+    /// </summary>
+    virtual void Finalize();
 
-	/// <summary>
-	/// 描画処理
-	/// </summary>
-	virtual void Draw();
+    /// <summary>
+    /// フレーム更新処理
+    /// </summary>
+    virtual void Update();
 
-	/// <summary>
-	/// アプリケーションのメインループ実行
-	/// </summary>
-	void Run();
+    /// <summary>
+    /// 描画処理
+    /// </summary>
+    virtual void Draw();
 
-	/// <summary>
-	/// 終了フラグを取得
-	/// </summary>
-	/// <returns>終了フラグ</returns>
-	bool GetEndFlag() const { return endFlag_; }
+    /// <summary>
+    /// アプリケーションのメインループ実行
+    /// </summary>
+    void Run();
 
-#ifdef _DEBUG
-	/// <summary>
-	/// デバッグモードの取得
-	/// </summary>
-	/// <returns>デバッグモードフラグ</returns>
-	bool GetIsDebug() const { return isDebug_; }
-
-	/// <summary>
-	/// デバッグモードの設定
-	/// </summary>
-	/// <param name="value">デバッグモードフラグ</param>
-	void SetIsDebug(bool value);
-
-	/// <summary>
-	/// デバッグフラグのポインタ取得（ImGui 用）
-	/// </summary>
-	/// <returns>デバッグフラグへのポインタ</returns>
-	bool* GetIsDebugPtr() { return &isDebug_; }
-#endif
-
-	/// <summary>
-	/// フルスクリーンモードの切り替え
-	/// </summary>
-	void ToggleFullScreen();
-
-	/// <summary>
-	/// ウィンドウリサイズ時の処理
-	/// </summary>
-	/// <param name="width">新しいウィンドウ幅</param>
-	/// <param name="height">新しいウィンドウ高さ</param>
-	void OnWindowResize(uint32_t width, uint32_t height);
-
-protected: // メンバ変数
-	D3DResourceLeakChecker d3dResourceLeakChecker;  ///< リソースリークチェッカー（デバッグビルドでメモリリーク検出）
-
-	WinApp* winApp_ = nullptr;  ///< ウィンドウ管理クラスへのポインタ
-
-	std::unique_ptr<DX12Basic> dx12_;  ///< DirectX 12基盤システムへのポインタ
+    /// <summary>
+    /// 終了フラグを取得
+    /// </summary>
+    /// <returns>終了フラグ</returns>
+    bool GetEndFlag() const { return endFlag_; }
 
 #ifdef _DEBUG
-	std::unique_ptr<ImGuiManager> imguiManager_;  ///< ImGui マネージャー（デバッグ UI 用）
+    /// <summary>
+    /// デバッグモードの取得
+    /// </summary>
+    /// <returns>デバッグモードフラグ</returns>
+    bool GetIsDebug() const { return isDebug_; }
+
+    /// <summary>
+    /// デバッグモードの設定
+    /// </summary>
+    /// <param name="value">デバッグモードフラグ</param>
+    void SetIsDebug(bool value);
+
+    /// <summary>
+    /// デバッグフラグのポインタ取得（ImGui 用）
+    /// </summary>
+    /// <returns>デバッグフラグへのポインタ</returns>
+    bool* GetIsDebugPtr() { return &isDebug_; }
 #endif
 
-	std::unique_ptr<Camera> defaultCamera_;  ///< デフォルトカメラ
+    /// <summary>
+    /// フルスクリーンモードの切り替え
+    /// </summary>
+    void ToggleFullScreen();
 
-	std::unique_ptr<AbstractSceneFactory> sceneFactory_;  ///< シーンファクトリー（シーン生成用）
+    /// <summary>
+    /// ウィンドウリサイズ時の処理
+    /// </summary>
+    /// <param name="width">新しいウィンドウ幅</param>
+    /// <param name="height">新しいウィンドウ高さ</param>
+    void OnWindowResize(uint32_t width, uint32_t height);
 
-	bool endFlag_ = false;  ///< アプリケーション終了フラグ
+  protected: // メンバ変数
+    D3DResourceLeakChecker d3dResourceLeakChecker;  ///< リソースリークチェッカー（デバッグビルドでメモリリーク検出）
 
-	bool isDebug_ = false;  ///< デバッグモードフラグ
-};
+    WinApp* winApp_ = nullptr;  ///< ウィンドウ管理クラスへのポインタ
+
+    std::unique_ptr<DX12Basic> dx12_;  ///< DirectX 12基盤システムへのポインタ
+
+#ifdef _DEBUG
+    std::unique_ptr<ImGuiManager> imguiManager_;  ///< ImGui マネージャー（デバッグ UI 用）
+#endif
+
+    std::unique_ptr<Camera> defaultCamera_;  ///< デフォルトカメラ
+
+    std::unique_ptr<AbstractSceneFactory> sceneFactory_;  ///< シーンファクトリー（シーン生成用）
+
+    bool endFlag_ = false;  ///< アプリケーション終了フラグ
+
+    bool isDebug_ = false;  ///< デバッグモードフラグ
+  };
 
 } // namespace Tako
