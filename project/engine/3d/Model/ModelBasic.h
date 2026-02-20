@@ -41,7 +41,7 @@ public:
 	/// モデルフォルダ名を取得
 	/// </summary>
 	/// <returns>モデルフォルダ名</returns>
-	const std::string& GetModelFolderName() const { return ModelFolderName_; }
+	const std::string& GetModelFolderName() const { return modelFolderName_; }
 
 	//-----------------------------------------Setter-----------------------------------------//
 	/// <summary>
@@ -53,8 +53,8 @@ public:
 	/// <summary>
 	/// モデルフォルダ名を設定
 	/// </summary>
-	/// <param name="ModelFolderName">モデルフォルダ名</param>
-	void SetModelFolderName(const std::string& ModelFolderName) { ModelFolderName_ = ModelFolderName; }
+	/// <param name="modelFolderName">モデルフォルダ名</param>
+	void SetModelFolderName(const std::string& modelFolderName) { modelFolderName_ = modelFolderName; }
 
 private: // プライベートメンバー関数
   /// <summary>
@@ -72,7 +72,7 @@ private:
 
 	std::string directoryFolderName_;  ///< ディレクトリフォルダパス
 
-	std::string ModelFolderName_;  ///< モデルフォルダ名
+	std::string modelFolderName_;  ///< モデルフォルダ名
 
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> csRootSignature_;  ///< コンピュートシェーダー用ルートシグネチャ
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> csPipelineState_;  ///< コンピュートシェーダー用パイプラインステート

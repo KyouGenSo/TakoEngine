@@ -14,7 +14,7 @@ void ModelBasic::Initialize(DX12Basic* dx12)
 
 	directoryFolderName_ = "resources";
 
-	ModelFolderName_ = "Model";
+	modelFolderName_ = "Model";
 
   CreateCSPSO();
 }
