@@ -7,125 +7,118 @@
 
 namespace Tako {
 
-std::unique_ptr<TextureManager> TextureManager::instance_ = nullptr;
+  std::unique_ptr<TextureManager> TextureManager::instance_ = nullptr;
 
-uint32_t TextureManager::kSRVIndexStart = 1;
+  uint32_t TextureManager::kSRVIndexStart = 1;
 
-TextureManager* TextureManager::GetInstance()
-{
-	if (!instance_)
-	{
-		instance_ = std::unique_ptr<TextureManager>(new TextureManager());
-	}
-	return instance_.get();
-}
-
-void TextureManager::Initialize(DX12Basic* dx12, const std::string& directoryPath)
-{
-	m_dx12_ = dx12;
-
-	directoryPath_ = directoryPath;
-
-	textureData_.reserve(DX12Basic::kMaxSRVCount);
-}
-
-void TextureManager::Finalize()
-{
-	instance_.reset();
-}
-
-void TextureManager::LoadTexture(const std::string& fileName)
-{
-	// 重複チェック
-	if (textureData_.contains(fileName))
-	{
-		return;
-	}
-
-	// テクスチャ枚数上限チェック
-	assert(SrvManager::GetInstance()->CanAllocate());
-
-  HRESULT hr;
-
-	// テクスチャの読み込み
-	DirectX::ScratchImage image;
-	std::wstring filePathW = StringUtility::ConvertString(directoryPath_ + fileName);
-
-  if (filePathW.ends_with(L".dds"))
+  TextureManager* TextureManager::GetInstance()
   {
-    // DDSファイルの読み込み
-    hr = DirectX::LoadFromDDSFile(filePathW.c_str(), DirectX::DDS_FLAGS_NONE, nullptr, image);
+    if (!instance_) {
+      instance_ = std::unique_ptr<TextureManager>(new TextureManager());
+    }
+    return instance_.get();
+  }
+
+  void TextureManager::Initialize(DX12Basic* dx12, const std::string& directoryPath)
+  {
+    m_dx12_ = dx12;
+
+    directoryPath_ = directoryPath;
+
+    textureData_.reserve(DX12Basic::kMaxSRVCount);
+  }
+
+  void TextureManager::Finalize()
+  {
+    instance_.reset();
+  }
+
+  void TextureManager::LoadTexture(const std::string& fileName)
+  {
+    // 重複チェック
+    if (textureData_.contains(fileName)) {
+      return;
+    }
+
+    // テクスチャ枚数上限チェック
+    assert(SrvManager::GetInstance()->CanAllocate());
+
+    HRESULT hr;
+
+    // テクスチャの読み込み
+    DirectX::ScratchImage image;
+    std::wstring filePathW = StringUtility::ConvertString(directoryPath_ + fileName);
+
+    if (filePathW.ends_with(L".dds")) {
+      // DDS ファイルの読み込み
+      hr = DirectX::LoadFromDDSFile(filePathW.c_str(), DirectX::DDS_FLAGS_NONE, nullptr, image);
+      assert(SUCCEEDED(hr));
+    }
+    else {
+      // WIC ファイルの読み込み
+      hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
+      assert(SUCCEEDED(hr));
+    }
+
+    // mipmap を生成
+    DirectX::ScratchImage mipImages{};
+    if (DirectX::IsCompressed(image.GetMetadata().format)) {
+      mipImages = std::move(image);
+    }
+    else {
+      // 非圧縮テクスチャの場合
+      hr = DirectX::GenerateMipMaps(image.GetImages(), image.GetImageCount(), image.GetMetadata(), DirectX::TEX_FILTER_SRGB, 4, mipImages);
+    }
     assert(SUCCEEDED(hr));
+
+    // 追加したテクスチャデータを取得
+    TextureData& textureData = textureData_[fileName];
+
+    textureData.fileName = fileName;
+    textureData.metadata = mipImages.GetMetadata();
+    textureData.resource = m_dx12_->MakeTextureResource(textureData.metadata);
+    textureData.intermediateResource = m_dx12_->UploadTextureData(textureData.resource, mipImages);
+
+    // テクスチャデータの SRV インデックスを設定
+    textureData.srvIndex = SrvManager::GetInstance()->Allocate();
+
+    // テクスチャデータの SRV ハンドルを取得
+    textureData.srvCpuHandle = SrvManager::GetInstance()->GetCPUDescriptorHandle(textureData.srvIndex);
+    textureData.srvGpuHandle = SrvManager::GetInstance()->GetGPUDescriptorHandle(textureData.srvIndex);
+
+    // SRV の作成
+    if (textureData.metadata.IsCubemap()) {
+      // キューブマップの場合
+      SrvManager::GetInstance()->CreateSRVForCubeMap(textureData.srvIndex, textureData.resource.Get(), textureData.metadata.format, UINT_MAX);
+    }
+    else {
+      // 通常の2D テクスチャの場合
+      SrvManager::GetInstance()->CreateSRVForTexture2D(textureData.srvIndex, textureData.resource.Get(), textureData.metadata.format, static_cast<UINT>(textureData.metadata.mipLevels));
+    }
   }
-  else
+
+  D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetSRVGPUHandle(const std::string& fileName)
   {
-    // WICファイルの読み込み
-    hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
-    assert(SUCCEEDED(hr));
+    // クスチャデータを取得
+    TextureData& textureData = textureData_[fileName];
+
+    return textureData.srvGpuHandle;
   }
 
-	// mipmapを生成
-	DirectX::ScratchImage mipImages{};
-  if (DirectX::IsCompressed(image.GetMetadata().format))
+  const DirectX::TexMetadata& TextureManager::GetMetaData(const std::string& fileName)
   {
-    mipImages = std::move(image);
+    // クスチャデータを取得
+    TextureData& textureData = textureData_[fileName];
+
+    return textureData.metadata;
   }
-  else
+
+  uint32_t TextureManager::GetSRVIndex(const std::string& fileName)
   {
-    // 非圧縮テクスチャの場合
-    hr = DirectX::GenerateMipMaps(image.GetImages(), image.GetImageCount(), image.GetMetadata(), DirectX::TEX_FILTER_SRGB, 4, mipImages);
+    // クスチャデータを取得
+    TextureData& textureData = textureData_[fileName];
+
+    return textureData.srvIndex;
   }
-	assert(SUCCEEDED(hr));
-
-	// 追加したテクスチャデータを取得
-	TextureData& textureData = textureData_[fileName];
-
-	textureData.fileName = fileName;
-	textureData.metadata = mipImages.GetMetadata();
-	textureData.resource = m_dx12_->MakeTextureResource(textureData.metadata);
-	textureData.intermediateResource = m_dx12_->UploadTextureData(textureData.resource, mipImages);
-
-	// テクスチャデータのSRVインデックスを設定
-	textureData.srvIndex = SrvManager::GetInstance()->Allocate();
-
-	// テクスチャデータのSRVハンドルを取得
-	textureData.srvCpuHandle = SrvManager::GetInstance()->GetCPUDescriptorHandle(textureData.srvIndex);
-	textureData.srvGpuHandle = SrvManager::GetInstance()->GetGPUDescriptorHandle(textureData.srvIndex);
-
-	// SRVの作成
-  if (textureData.metadata.IsCubemap())
-  {
-    // キューブマップの場合
-    SrvManager::GetInstance()->CreateSRVForCubeMap(textureData.srvIndex, textureData.resource.Get(), textureData.metadata.format, UINT_MAX);
-  } else
-  {
-    // 通常の2Dテクスチャの場合
-    SrvManager::GetInstance()->CreateSRVForTexture2D(textureData.srvIndex, textureData.resource.Get(), textureData.metadata.format, static_cast<UINT>(textureData.metadata.mipLevels));
-  }
-}
-
-D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetSRVGPUHandle(const std::string& fileName)
-{
-	// クスチャデータを取得
-	TextureData& textureData = textureData_[fileName];
-
-	return textureData.srvGpuHandle;
-}
-
-const DirectX::TexMetadata& TextureManager::GetMetaData(const std::string& fileName)
-{
-	// クスチャデータを取得
-	TextureData& textureData = textureData_[fileName];
-
-	return textureData.metadata;
-}
-
-uint32_t TextureManager::GetSRVIndex(const std::string& fileName)
-{
-	// クスチャデータを取得
-	TextureData& textureData = textureData_[fileName];
-
-	return textureData.srvIndex;
-}
 
 } // namespace Tako

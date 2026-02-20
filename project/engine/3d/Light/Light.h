@@ -320,7 +320,7 @@ namespace Tako {
     void CreateSpotLightData();
 
     /// <summary>
-    /// LightConstantsの生成
+    /// LightConstants の生成
     /// </summary>
     void CreateLightConstants();
 
@@ -343,9 +343,9 @@ namespace Tako {
 
     Microsoft::WRL::ComPtr<ID3D12Resource> lightConstantsResource_;  ///< ライト定数リソース
 
-    uint32_t pointLightSrvIndex_;  ///< 点光源のSRVインデックス
+    uint32_t pointLightSrvIndex_;  ///< 点光源の SRV インデックス
 
-    uint32_t spotLightSrvIndex_;  ///< スポットライトのSRVインデックス
+    uint32_t spotLightSrvIndex_;  ///< スポットライトの SRV インデックス
 
     std::vector<uint32_t> pointLightIndexList_;  ///< 点光源インデックスリスト
 

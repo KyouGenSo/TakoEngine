@@ -146,7 +146,7 @@ public: // メンバ関数
 	/// <summary>
 	/// シーン遷移アニメーションが終了しているか
 	/// </summary>
-	/// <returns>終了している場合true</returns>
+	/// <returns>終了している場合 true</returns>
 	bool IsFinished() const;
 
 private: // メンバ変数

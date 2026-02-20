@@ -17,10 +17,10 @@ void ShadowMap::Initialize(DX12Basic* dx12)
   // シャドウマップリソースの作成
   CreateShadowMapResource();
 
-  // DSVの作成
+  // DSV の作成
   CreateDepthStencilView();
 
-  // SRVの作成
+  // SRV の作成
   CreateShaderResourceView();
 
   // 定数バッファの作成
@@ -42,9 +42,9 @@ void ShadowMap::Initialize(DX12Basic* dx12)
 
 void ShadowMap::Finalize()
 {
-  // nullチェックと有効なインデックスの確認
+  // null チェックと有効なインデックスの確認
   if (srvManager_ && srvIndex_ != 0) {
-    // SrvManagerが有効かつインデックスが割り当てられている場合のみ解放
+    // SrvManager が有効かつインデックスが割り当てられている場合のみ解放
     if (srvManager_->IsAllocated(srvIndex_)) {
       srvManager_->Free(srvIndex_);
     }
@@ -99,7 +99,7 @@ void ShadowMap::BeginShadowMapRender()
     D3D12_RESOURCE_STATE_DEPTH_WRITE
   );
 
-  // レンダーターゲットをnullに設定（深度のみ）
+  // レンダーターゲットを null に設定（深度のみ）
   commandList->OMSetRenderTargets(0, nullptr, FALSE, &dsvHandle_);
 
   // 深度バッファをクリア
@@ -168,7 +168,7 @@ void ShadowMap::CreateShadowMapResource()
     &heapProps,
     D3D12_HEAP_FLAG_NONE,
     &resourceDesc,
-    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,  // 初期状態をPIXEL_SHADER_RESOURCEに設定
+    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,  // 初期状態を PIXEL_SHADER_RESOURCE に設定
     &clearValue,
     IID_PPV_ARGS(&shadowMapResource_));
 
@@ -176,8 +176,8 @@ void ShadowMap::CreateShadowMapResource()
 
   shadowMapResource_.Get()->SetName(L"ShadowMapResource");
   
-  // 初期状態をDX12Basicの状態追跡マップに登録
-  // これにより、最初のBeginShadowMapRenderで正しい状態遷移が行われる
+  // 初期状態を DX12Basic の状態追跡マップに登録
+  // これにより、最初の BeginShadowMapRender で正しい状態遷移が行われる
   dx12_->SetInitialResourceState(
     shadowMapResource_.Get(),
     D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
@@ -186,12 +186,12 @@ void ShadowMap::CreateShadowMapResource()
 
 void ShadowMap::CreateDepthStencilView()
 {
-  // DSV用のディスクリプタヒープを作成
+  // DSV 用のディスクリプタヒープを作成
   dsvDescriptorHeap_ = dx12_->CreateDescriptorHeap(
     D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
   assert(dsvDescriptorHeap_);
 
-  // DSVの作成
+  // DSV の作成
   D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
   dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
   dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
@@ -205,11 +205,11 @@ void ShadowMap::CreateDepthStencilView()
 
 void ShadowMap::CreateShaderResourceView()
 {
-  // SRVインデックスを確保
+  // SRV インデックスを確保
   srvIndex_ = srvManager_->Allocate();
   assert(srvManager_->CanAllocate());
 
-  // SRVの作成
+  // SRV の作成
   srvManager_->CreateSRVForTexture2D(
     srvIndex_, shadowMapResource_.Get(), DXGI_FORMAT_R32_FLOAT, 1);
 }
@@ -269,7 +269,7 @@ void ShadowMap::SetShadowQuality(ShadowQuality quality)
     shadowMapSize_ = newSize;
   }
   
-  // 定数バッファを更新（PCFカーネルサイズはすぐに変更可能）
+  // 定数バッファを更新（PCF カーネルサイズはすぐに変更可能）
   if (constantBufferData_) {
     constantBufferData_->pcfKernelSize = static_cast<float>(pcfKernelSize_);
   }

@@ -158,7 +158,7 @@ namespace Tako {
         bonePosition = bonePosition + worldOffset;
       }
 
-      // EmitterManagerを使ってエミッター位置を更新
+      // EmitterManager を使ってエミッター位置を更新
       emitterManager_->SetEmitterPosition(link.emitterName, bonePosition);
     }
   }

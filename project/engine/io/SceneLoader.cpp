@@ -43,22 +43,22 @@ void SceneLoader::Initialize()
 
 std::unique_ptr<SceneLoader::LoadedScene> SceneLoader::LoadScene(const std::string& sceneFileName)
 {
-  // LoadedSceneを作成
+  // LoadedScene を作成
   auto loadedScene = std::make_unique<LoadedScene>();
 
   /// ------------------------- ///
-  /// jsonファイルをデシリアライズ ///
+  /// json ファイルをデシリアライズ ///
   /// ------------------------- ///
 
-  // jsonファイルのパス
+  // json ファイルのパス
   std::string filePath = directoryFolderName_ + "/" + secneFolderName_ + "/" + sceneFileName + ".json";
 
   // ファイルストリーム
   std::ifstream file;
 
-  // jsonファイルを開く
+  // json ファイルを開く
   file.open(filePath);
-  // ファイルが開けなかったらnullptrを返す
+  // ファイルが開けなかったら nullptr を返す
   if (file.fail())
   {
 #ifdef _DEBUG
@@ -69,7 +69,7 @@ std::unique_ptr<SceneLoader::LoadedScene> SceneLoader::LoadScene(const std::stri
 
   nlohmann::json deserializedJson;
 
-  // jsonファイルを読み込む
+  // json ファイルを読み込む
   file >> deserializedJson;
 
 
@@ -101,7 +101,7 @@ std::unique_ptr<SceneLoader::LoadedScene> SceneLoader::LoadScene(const std::stri
 
   LevelData* levelData = new LevelData;
 
-  // name文字列を取得
+  // name 文字列を取得
   levelData->name = deserializedJson["name"].get<std::string>();
 
   for (nlohmann::json& object : deserializedJson["objects"])
@@ -125,10 +125,10 @@ std::unique_ptr<SceneLoader::LoadedScene> SceneLoader::LoadScene(const std::stri
       objectData.name = object["name"].get<std::string>();           // "name"
       objectData.fileName = object["file_name"].get<std::string>();  // "fileName"
 
-      // Transformデータを格納
+      // Transform データを格納
       nlohmann::json& transform = object["transform"];
       // 平行移動 "translation"
-      // Blender(Z-up右手系) -> ゲームエンジン(Y-up左手系)への変換
+      // Blender(Z-up 右手系) -> ゲームエンジン(Y-up 左手系)への変換
       objectData.transform.translate.x = static_cast<float>(transform["translation"][0]);
       objectData.transform.translate.y = static_cast<float>(transform["translation"][2]);
       objectData.transform.translate.z = static_cast<float>(transform["translation"][1]);
@@ -151,15 +151,15 @@ std::unique_ptr<SceneLoader::LoadedScene> SceneLoader::LoadScene(const std::stri
       objectData.type = object["type"].get<std::string>();           // "type"
       objectData.name = object["name"].get<std::string>();           // "name"
 
-      // Transformデータを格納
+      // Transform データを格納
       nlohmann::json& transform = object["transform"];
       // 平行移動 "translation"
-      // Blender(Z-up右手系) -> ゲームエンジン(Y-up左手系)への変換
+      // Blender(Z-up 右手系) -> ゲームエンジン(Y-up 左手系)への変換
       objectData.transform.translate.x = static_cast<float>(transform["translation"][0]);
       objectData.transform.translate.y = static_cast<float>(transform["translation"][2]);
       objectData.transform.translate.z = static_cast<float>(transform["translation"][1]);
       // 回転 "rotation" (度からラジアンに変換)
-      objectData.transform.rotate.x = DirectX::XMConvertToRadians(-static_cast<float>(transform["rotation"][0])) + DirectX::XM_PIDIV2; // カメラはX軸を-90度回転させる
+      objectData.transform.rotate.x = DirectX::XMConvertToRadians(-static_cast<float>(transform["rotation"][0])) + DirectX::XM_PIDIV2; // カメラは X 軸を-90度回転させる
       objectData.transform.rotate.y = DirectX::XMConvertToRadians(-static_cast<float>(transform["rotation"][2]));
       objectData.transform.rotate.z = DirectX::XMConvertToRadians(-static_cast<float>(transform["rotation"][1]));
     }
@@ -178,7 +178,7 @@ std::unique_ptr<SceneLoader::LoadedScene> SceneLoader::LoadScene(const std::stri
       object3dBasic->SetCameraTranslate(objectData.transform.translate);
       object3dBasic->SetCameraRotation(objectData.transform.rotate);
 
-      continue; // カメラはObject3dではないのでスキップ
+      continue; // カメラは Object3d ではないのでスキップ
     }
 
     if (objectData.fileName.empty())
@@ -189,7 +189,7 @@ std::unique_ptr<SceneLoader::LoadedScene> SceneLoader::LoadScene(const std::stri
       continue; // エラー時はスキップ
     }
 
-    // Object3dのインスタンスを生成
+    // Object3d のインスタンスを生成
     auto object3d = std::make_unique<Object3d>();
 
     // 初期化
@@ -198,10 +198,10 @@ std::unique_ptr<SceneLoader::LoadedScene> SceneLoader::LoadScene(const std::stri
     // モデルを設定
     object3d->SetModel(objectData.fileName);
 
-    // Transformを設定
+    // Transform を設定
     object3d->SetTransform(objectData.transform);
 
-    // LoadedSceneに追加
+    // LoadedScene に追加
     loadedScene->AddObject(objectData.name, std::move(object3d));
   }
 

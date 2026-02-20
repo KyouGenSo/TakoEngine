@@ -33,10 +33,10 @@ void FrameTimer::Finalize()
 
 void FrameTimer::Update()
 {
-  // deltaTimeとFPSの更新
+  // deltaTime と FPS の更新
   UpdateDeltaTimeAndFPS();
 
-  // gameTimeの更新
+  // gameTime の更新
   UpdateGameTime();
 }
 
@@ -58,9 +58,9 @@ void FrameTimer::UpdateDeltaTimeAndFPS()
   timeAccumulator_ += frameDelta;
   frameCount_++;
 
-  // 平均deltaTimeは累積時間をフレーム数で割った値
+  // 平均 deltaTime は累積時間をフレーム数で割った値
   deltaTime_ = timeAccumulator_ / frameCount_;
-  // FPSはフレーム数を累積時間で割った値
+  // FPS はフレーム数を累積時間で割った値
   fps_ = static_cast<float>(frameCount_) / timeAccumulator_;
 
   // 蓄積時間が1秒以上になったら更新

@@ -108,7 +108,7 @@ namespace Tako {
     RiffHeader riff;
 
     do {
-      // wavファイルのヘッダーを読み込む
+      // wav ファイルのヘッダーを読み込む
       file.read(reinterpret_cast<char*>(&riff), sizeof(riff));
 
       if (strncmp(riff.chunk.id, "RIFF", 4) == 0 && strncmp(riff.type, "WAVE", 4) == 0) {
@@ -195,7 +195,7 @@ namespace Tako {
     // フルパス（ディレクトリパスと連結）
     std::string fullPath = directoryPath_ + filename;
     ma_decoder decoder;
-    ma_decoder_config config = ma_decoder_config_init(ma_format_f32, 0, 0); // nativeチャンネル、サンプルレートでfloat出力
+    ma_decoder_config config = ma_decoder_config_init(ma_format_f32, 0, 0); // native チャンネル、サンプルレートで float 出力
     if (ma_decoder_init_file(fullPath.c_str(), &config, &decoder) != MA_SUCCESS) {
       return 0;
     }
@@ -204,7 +204,7 @@ namespace Tako {
       ma_decoder_uninit(&decoder);
       return 0;
     }
-    // チャンネル数、サンプルレートはdecoderから取得（ゼロの場合はconfigの値を使用）
+    // チャンネル数、サンプルレートは decoder から取得（ゼロの場合は config の値を使用）
     ma_uint32 channels = decoder.outputChannels;
     if (channels == 0) channels = config.channels;
     ma_uint32 sampleRate = decoder.outputSampleRate;
@@ -215,10 +215,10 @@ namespace Tako {
     ma_result result = ma_decoder_read_pcm_frames(&decoder, pBuffer, totalFrames, &framesRead);
     (void)result; // 未使用の変数であることを明示
 
-    // デコード完了後、decoderを解放
+    // デコード完了後、decoder を解放
     ma_decoder_uninit(&decoder);
 
-    // WAVEFORMATEXをfloatフォーマットに合わせて設定
+    // WAVEFORMATEX を float フォーマットに合わせて設定
     soundData.wfex.wFormatTag = WAVE_FORMAT_IEEE_FLOAT;
     soundData.wfex.nChannels = static_cast<WORD>(channels);
     soundData.wfex.nSamplesPerSec = sampleRate;

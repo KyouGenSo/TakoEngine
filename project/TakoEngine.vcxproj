@@ -47,13 +47,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)\Generated\outputs\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\Generated\obj\$(ProjectName)\$(Configuration)\</IntDir>
-    <IncludePath>$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\nlohmann;$(IncludePath)</IncludePath>
-    <PublicIncludeDirectories>$(ProjectDir)engine\3d\Camera;$(ProjectDir)engine\3d\Light;$(ProjectDir)engine\3d\Model;$(ProjectDir)engine\3d\Object;$(ProjectDir)engine\3d\Shadow;$(ProjectDir)engine\3d\Skybox;$(ProjectDir)engine\effect\PostEffect;$(ProjectDir)engine\effect\Particle;$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\assimp\include;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\math;$(ProjectDir)engine\2d;$(ProjectDir)engine\3d;$(ProjectDir)engine\audio;$(ProjectDir)engine\base;$(ProjectDir)engine\effect;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\func;$(ProjectDir)engine\imgui;$(ProjectDir)engine\io;$(ProjectDir)engine\scene;$(ProjectDir)engine\collision;$(ProjectDir)engine\debug;$(ProjectDir)engine\time;$(PublicIncludeDirectories)</PublicIncludeDirectories>
+    <IncludePath>$(IncludePath)</IncludePath>
+    <PublicIncludeDirectories>$(ProjectDir)engine\3d\Camera;$(ProjectDir)engine\3d\Light;$(ProjectDir)engine\3d\Model;$(ProjectDir)engine\3d\Object;$(ProjectDir)engine\3d\Shadow;$(ProjectDir)engine\3d\Skybox;$(ProjectDir)engine\effect\PostEffect;$(ProjectDir)engine\effect\Particle;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\math;$(ProjectDir)engine\2d;$(ProjectDir)engine\3d;$(ProjectDir)engine\audio;$(ProjectDir)engine\base;$(ProjectDir)engine\effect;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\func;$(ProjectDir)engine\imgui;$(ProjectDir)engine\io;$(ProjectDir)engine\scene;$(ProjectDir)engine\collision;$(ProjectDir)engine\debug;$(ProjectDir)engine\time;$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\assimp\include;$(PublicIncludeDirectories)</PublicIncludeDirectories>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)\Generated\outputs\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\Generated\obj\$(ProjectName)\$(Configuration)\</IntDir>
-    <IncludePath>$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\nlohmann;$(IncludePath)</IncludePath>
+    <IncludePath>$(IncludePath)</IncludePath>
     <PublicIncludeDirectories>$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\assimp\include;$(ProjectDir)engine\math;$(ProjectDir)engine\2d;$(ProjectDir)engine\3d;$(ProjectDir)engine\3d\Camera;$(ProjectDir)engine\3d\Light;$(ProjectDir)engine\3d\Model;$(ProjectDir)engine\3d\Object;$(ProjectDir)engine\3d\Shadow;$(ProjectDir)engine\3d\Skybox;$(ProjectDir)engine\audio;$(ProjectDir)engine\base;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\collision;$(ProjectDir)engine\effect;$(ProjectDir)engine\effect\PostEffect;$(ProjectDir)engine\effect\Particle;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\func;$(ProjectDir)engine\io;$(ProjectDir)engine\scene;$(ProjectDir)engine\time;$(PublicIncludeDirectories)</PublicIncludeDirectories>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -67,7 +67,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(ProjectDir)engine\debug;$(ProjectDir)engine\3d\Camera;$(ProjectDir)engine\3d\Light;$(ProjectDir)engine\3d\Model;$(ProjectDir)engine\3d\Object;$(ProjectDir)engine\3d\Shadow;$(ProjectDir)engine\3d\Skybox;$(ProjectDir)engine\time;$(ProjectDir)engine\effect;$(ProjectDir)engine\effect\Particle;$(ProjectDir)engine\effect\PostEffect;$(ProjectDir)engine\scene;$(ProjectDir)engine\audio;$(ProjectDir)engine\collision;$(ProjectDir)engine\imgui;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)externals\imgui-node-editor;$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)engine\debug;$(ProjectDir)engine\3d\Camera;$(ProjectDir)engine\3d\Light;$(ProjectDir)engine\3d\Model;$(ProjectDir)engine\3d\Object;$(ProjectDir)engine\3d\Shadow;$(ProjectDir)engine\3d\Skybox;$(ProjectDir)engine\time;$(ProjectDir)engine\effect;$(ProjectDir)engine\effect\Particle;$(ProjectDir)engine\effect\PostEffect;$(ProjectDir)engine\scene;$(ProjectDir)engine\audio;$(ProjectDir)engine\collision;$(ProjectDir)engine\imgui;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\miniaudio;$(ProjectDir)externals\imgui-node-editor;$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -99,7 +99,7 @@
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)engine\3d\Camera;$(ProjectDir)engine\3d\Light;$(ProjectDir)engine\3d\Model;$(ProjectDir)engine\3d\Object;$(ProjectDir)engine\3d\Shadow;$(ProjectDir)engine\3d\Skybox;$(ProjectDir)engine\time;$(ProjectDir)engine\effect;$(ProjectDir)engine\effect\Particle;$(ProjectDir)engine\effect\PostEffect;$(ProjectDir)engine\scene;$(ProjectDir)engine\audio;$(ProjectDir)engine\collision;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)externals\imgui-node-editor;$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)engine\3d\Camera;$(ProjectDir)engine\3d\Light;$(ProjectDir)engine\3d\Model;$(ProjectDir)engine\3d\Object;$(ProjectDir)engine\3d\Shadow;$(ProjectDir)engine\3d\Skybox;$(ProjectDir)engine\time;$(ProjectDir)engine\effect;$(ProjectDir)engine\effect\Particle;$(ProjectDir)engine\effect\PostEffect;$(ProjectDir)engine\scene;$(ProjectDir)engine\audio;$(ProjectDir)engine\collision;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)externals\miniaudio;$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\imgui-node-editor;$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -207,7 +207,6 @@
     <ClInclude Include="engine\collision\SphereCollider.h" />
     <ClInclude Include="engine\debug\DebugCamera.h" />
     <ClInclude Include="engine\debug\DebugUIManager.h" />
-    <ClInclude Include="engine\audio\miniaudio.h" />
     <ClInclude Include="engine\effect\Particle\BoxEmitter.h" />
     <ClInclude Include="engine\effect\Particle\EmitterManager.h" />
     <ClInclude Include="engine\effect\Particle\EmitterStruct.h" />

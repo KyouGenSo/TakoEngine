@@ -19,14 +19,14 @@ class ShadowMap
 public:
     /// <summary>
     /// シャドウマップの品質プリセット
-    /// 解像度とPCFカーネルサイズを組み合わせた設定
+    /// 解像度と PCF カーネルサイズを組み合わせた設定
     /// </summary>
     enum class ShadowQuality {
         Low = 0,     ///< 512x512, PCF 1x1 - モバイル向け最低品質
         Medium = 1,  ///< 1024x1024, PCF 3x3 - 標準品質
         High = 2,    ///< 2048x2048, PCF 5x5 - 高品質（デフォルト）
         Ultra = 3,   ///< 4096x4096, PCF 7x7 - 超高品質
-        Super = 4    ///< 8192x8192, PCF 9x9 - 最高品質（ハイエンドGPU向け）
+        Super = 4    ///< 8192x8192, PCF 9x9 - 最高品質（ハイエンド GPU 向け）
     };
 
     static const uint32_t DEFAULT_SHADOW_MAP_SIZE = 2048; ///< デフォルトのシャドウマップ解像度（2048x2048）
@@ -71,7 +71,7 @@ public:
     const Matrix4x4& GetLightViewProjectionMatrix() const { return lightViewProjectionMatrix_; }
 
     /// <summary>
-    /// SRVインデックスを取得
+    /// SRV インデックスを取得
     /// </summary>
     /// <returns>シェーダーリソースビューのインデックス</returns>
     uint32_t GetSrvIndex() const { return srvIndex_; }
@@ -99,9 +99,9 @@ public:
     void SetShadowMapSize(uint32_t size);
 
     /// <summary>
-    /// PCFカーネルサイズの設定（1, 3, 5, 7, 9のいずれか）
+    /// PCF カーネルサイズの設定（1, 3, 5, 7, 9のいずれか）
     /// </summary>
-    /// <param name="kernelSize">PCFカーネルサイズ</param>
+    /// <param name="kernelSize">PCF カーネルサイズ</param>
     void SetPCFKernelSize(int kernelSize);
 
     /// <summary>
@@ -117,9 +117,9 @@ public:
     uint32_t GetShadowMapSize() const { return shadowMapSize_; }
 
     /// <summary>
-    /// 現在のPCFカーネルサイズを取得
+    /// 現在の PCF カーネルサイズを取得
     /// </summary>
-    /// <returns>現在のPCFカーネルサイズ</returns>
+    /// <returns>現在の PCF カーネルサイズ</returns>
     int GetPCFKernelSize() const { return pcfKernelSize_; }
 
 private:
@@ -145,13 +145,13 @@ private:
 
 private:
     DX12Basic* dx12_; ///< DirectX12基盤システムへの参照
-    SrvManager* srvManager_; ///< SRV管理システムへの参照
+    SrvManager* srvManager_; ///< SRV 管理システムへの参照
 
     Microsoft::WRL::ComPtr<ID3D12Resource> shadowMapResource_; ///< シャドウマップ用深度テクスチャリソース
 
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap_; ///< 深度ステンシルビュー用ディスクリプタヒープ
 
-    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle_; ///< 深度ステンシルビューのCPUハンドル
+    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle_; ///< 深度ステンシルビューの CPU ハンドル
 
     uint32_t srvIndex_; ///< シェーダーリソースビューのインデックス（テクスチャとして読み取り用）
 
@@ -161,7 +161,7 @@ private:
 
     /// <summary>
     /// シャドウマップ用定数バッファ構造体
-    /// GPU側に送信されるシャドウパラメータ
+    /// GPU 側に送信されるシャドウパラメータ
     /// </summary>
     struct ShadowConstantBuffer
     {
@@ -169,7 +169,7 @@ private:
         float depthBias;                     ///< 深度バイアス（シャドウアクネ防止）
         float slopeScaledDepthBias;          ///< スロープスケール深度バイアス
         float normalOffsetBias;              ///< 法線オフセットバイアス（ピーターパニング防止）
-        float pcfKernelSize;                 ///< PCFカーネルサイズ（フィルタリング品質）
+        float pcfKernelSize;                 ///< PCF カーネルサイズ（フィルタリング品質）
     };
     ShadowConstantBuffer* constantBufferData_; ///< 定数バッファのマップ済みポインタ
 
@@ -178,7 +178,7 @@ private:
     float normalOffsetBias_ = 0.01f;           ///< 法線オフセットバイアス値
 
     uint32_t shadowMapSize_ = DEFAULT_SHADOW_MAP_SIZE; ///< 現在のシャドウマップ解像度
-    int pcfKernelSize_ = 3;                    ///< PCFカーネルサイズ（デフォルト3x3）
+    int pcfKernelSize_ = 3;                    ///< PCF カーネルサイズ（デフォルト3x3）
     ShadowQuality currentQuality_ = ShadowQuality::High; ///< 現在の品質設定
     bool needsRecreation_ = false;             ///< リソース再作成が必要かどうかのフラグ
 

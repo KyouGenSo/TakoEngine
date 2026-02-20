@@ -27,35 +27,35 @@ namespace Tako {
 
   void ModelBasic::CreateCSRootSignature()
   {
-    // rootSignatureの生成
+    // rootSignature の生成
     D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
 
     descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
-    // DescriptorRangeの設定。
+    // DescriptorRange の設定。
     D3D12_DESCRIPTOR_RANGE descriptorRangeForPalette[1] = {};
     descriptorRangeForPalette[0].BaseShaderRegister = 0; // レジスタ番号
     descriptorRangeForPalette[0].NumDescriptors = 1; // ディスクリプタ数
-    descriptorRangeForPalette[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
-    descriptorRangeForPalette[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+    descriptorRangeForPalette[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRV を使う
+    descriptorRangeForPalette[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
 
     D3D12_DESCRIPTOR_RANGE descriptorRangeForVertexInput[1] = {};
     descriptorRangeForVertexInput[0].BaseShaderRegister = 1; // レジスタ番号
     descriptorRangeForVertexInput[0].NumDescriptors = 1; // ディスクリプタ数
-    descriptorRangeForVertexInput[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
-    descriptorRangeForVertexInput[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+    descriptorRangeForVertexInput[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRV を使う
+    descriptorRangeForVertexInput[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
 
     D3D12_DESCRIPTOR_RANGE descriptorRangeForInfluence[1] = {};
     descriptorRangeForInfluence[0].BaseShaderRegister = 2; // レジスタ番号
     descriptorRangeForInfluence[0].NumDescriptors = 1; // ディスクリプタ数
-    descriptorRangeForInfluence[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
-    descriptorRangeForInfluence[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+    descriptorRangeForInfluence[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRV を使う
+    descriptorRangeForInfluence[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
 
     D3D12_DESCRIPTOR_RANGE descriptorRangeForVertexOutput[1] = {};
     descriptorRangeForVertexOutput[0].BaseShaderRegister = 0; // レジスタ番号
     descriptorRangeForVertexOutput[0].NumDescriptors = 1; // ディスクリプタ数
-    descriptorRangeForVertexOutput[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // UAVを使う
-    descriptorRangeForVertexOutput[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+    descriptorRangeForVertexOutput[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // UAV を使う
+    descriptorRangeForVertexOutput[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
 
     D3D12_ROOT_PARAMETER rootParameters[5] = {};
 

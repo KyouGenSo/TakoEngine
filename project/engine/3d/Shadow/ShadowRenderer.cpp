@@ -31,7 +31,7 @@ void ShadowRenderer::Initialize(DX12Basic* dx12)
     
     dx12_ = dx12;
     
-    // ShadowMapを内部で生成
+    // ShadowMap を内部で生成
     shadowMap_ = std::make_unique<ShadowMap>();
     shadowMap_->Initialize(dx12_);
     
@@ -81,7 +81,7 @@ void ShadowRenderer::Finalize()
         shadowConstantData_ = nullptr;
     }
     
-    // ShadowMapを削除
+    // ShadowMap を削除
     if (shadowMap_) {
         shadowMap_->Finalize();
         shadowMap_.reset();
@@ -145,7 +145,7 @@ void ShadowRenderer::SetRenderState()
     // トポロジの設定
     dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     
-    // シャドウ定数バッファの設定（パラメータ1、レジスタb4）
+    // シャドウ定数バッファの設定（パラメータ1、レジスタ b4）
     dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, shadowConstantBuffer_->GetGPUVirtualAddress());
 }
 
@@ -153,11 +153,11 @@ void ShadowRenderer::SetShadowForMainPass()
 {
     // 通常レンダリング時のシャドウ設定
     if (!isRenderingShadow_ && shadowConstantBuffer_) {
-        // シャドウ定数バッファの設定（ルートパラメータ9、レジスタb4）
+        // シャドウ定数バッファの設定（ルートパラメータ9、レジスタ b4）
         dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(9, shadowConstantBuffer_->GetGPUVirtualAddress());
     }
     
-    // シャドウマップの設定（ルートパラメータ10、テクスチャt4）
+    // シャドウマップの設定（ルートパラメータ10、テクスチャ t4）
     if (!isRenderingShadow_ && shadowMap_) {
         SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(10, shadowMap_->GetSrvIndex());
     }
@@ -167,11 +167,11 @@ void ShadowRenderer::CreateShadowRootSignature()
 {
     HRESULT hr;
     
-    // shadowRootSignatureの生成
+    // shadowRootSignature の生成
     D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
     descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
     
-    // Samplerの設定（シャドウマップ生成時は不要だが、最小限の設定）
+    // Sampler の設定（シャドウマップ生成時は不要だが、最小限の設定）
     D3D12_STATIC_SAMPLER_DESC samplerDesc[1]{};
     samplerDesc[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
     samplerDesc[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
@@ -184,7 +184,7 @@ void ShadowRenderer::CreateShadowRootSignature()
     descriptionRootSignature.pStaticSamplers = samplerDesc;
     descriptionRootSignature.NumStaticSamplers = _countof(samplerDesc);
     
-    // RootParameterの設定（シャドウマップ生成に必要な最小限のパラメータ）
+    // RootParameter の設定（シャドウマップ生成に必要な最小限のパラメータ）
     D3D12_ROOT_PARAMETER rootParameters[2] = {};
     
     // Parameter 0: TransformationMatrix (b0)
@@ -259,7 +259,7 @@ void ShadowRenderer::CreateShadowPipelineState()
     depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
     depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
     
-    // シャドウPSOの生成
+    // シャドウ PSO の生成
     D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
     graphicsPipelineStateDesc.pRootSignature = shadowRootSignature_.Get();
     graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
@@ -277,7 +277,7 @@ void ShadowRenderer::CreateShadowPipelineState()
     graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
     graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
     
-    // PSOを生成
+    // PSO を生成
     hr = dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, 
         IID_PPV_ARGS(&shadowPipelineState_));
     assert(SUCCEEDED(hr));
@@ -332,7 +332,7 @@ void ShadowRenderer::SetInstancedRenderState()
     // トポロジの設定
     dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     
-    // シャドウ定数バッファの設定（パラメータ1、レジスタb4）
+    // シャドウ定数バッファの設定（パラメータ1、レジスタ b4）
     dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, shadowConstantBuffer_->GetGPUVirtualAddress());
 }
 
@@ -340,11 +340,11 @@ void ShadowRenderer::CreateShadowInstancedRootSignature()
 {
     HRESULT hr;
     
-    // shadowInstancedRootSignatureの生成
+    // shadowInstancedRootSignature の生成
     D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
     descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
     
-    // Samplerの設定（シャドウマップ生成時は不要だが、最小限の設定）
+    // Sampler の設定（シャドウマップ生成時は不要だが、最小限の設定）
     D3D12_STATIC_SAMPLER_DESC samplerDesc[1]{};
     samplerDesc[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
     samplerDesc[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
@@ -357,14 +357,14 @@ void ShadowRenderer::CreateShadowInstancedRootSignature()
     descriptionRootSignature.pStaticSamplers = samplerDesc;
     descriptionRootSignature.NumStaticSamplers = _countof(samplerDesc);
     
-    // DescriptorRangeの設定（インスタンスデータ用）
+    // DescriptorRange の設定（インスタンスデータ用）
     D3D12_DESCRIPTOR_RANGE descriptorRangeInstance[1] = {};
     descriptorRangeInstance[0].BaseShaderRegister = 5;  // t5レジスタ
     descriptorRangeInstance[0].NumDescriptors = 1;
     descriptorRangeInstance[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
     descriptorRangeInstance[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
     
-    // RootParameterの設定（インスタンシング対応）
+    // RootParameter の設定（インスタンシング対応）
     D3D12_ROOT_PARAMETER rootParameters[3] = {};
     
     // Parameter 0: TransformationMatrix (b0) - 通常のシャドウパスとの互換性のため残す
@@ -445,7 +445,7 @@ void ShadowRenderer::CreateShadowInstancedPipelineState()
     depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
     depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
     
-    // インスタンシング用シャドウPSOの生成
+    // インスタンシング用シャドウ PSO の生成
     D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
     graphicsPipelineStateDesc.pRootSignature = shadowInstancedRootSignature_.Get();
     graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
@@ -463,7 +463,7 @@ void ShadowRenderer::CreateShadowInstancedPipelineState()
     graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
     graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
     
-    // PSOを生成
+    // PSO を生成
     hr = dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, 
         IID_PPV_ARGS(&shadowInstancedPipelineState_));
     assert(SUCCEEDED(hr));
@@ -480,7 +480,7 @@ void ShadowRenderer::DrawImGui()
     // シャドウ品質プリセット
     ImGui::Separator();
     ImGui::Text("Shadow Quality");
-    static int shadowQuality = 2; // デフォルトはHigh
+    static int shadowQuality = 2; // デフォルトは High
     const char* qualityNames[] = { "Low (512x512, NO PCF)", "Medium (1024x1024, PCF 3x3)", 
                                     "High (2048x2048, PCF 5x5)", "Ultra (4096x4096, PCF 7x7)",
                                     "Super (8192x8192, PCF 9x9)" };
@@ -509,7 +509,7 @@ void ShadowRenderer::DrawImGui()
             SetShadowMapSize(shadowMapSize);
         }
         
-        // PCFカーネルサイズ
+        // PCF カーネルサイズ
         static int pcfKernelSize = shadowMap_->GetPCFKernelSize();
         const char* kernelNames[] = { "1x1 (No PCF)", "3x3", "5x5", "7x7", "9x9" };
         int kernelValues[] = { 1, 3, 5, 7, 9 };
@@ -537,7 +537,7 @@ void ShadowRenderer::DrawImGui()
         // normalOffsetBias_は既にメンバ変数なので直接変更される
     }
     
-    // ライト設定（Lightクラスと連携）
+    // ライト設定（Light クラスと連携）
     if (light_) {
         ImGui::Separator();
         ImGui::Text("Light Settings");

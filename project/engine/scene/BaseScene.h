@@ -37,7 +37,7 @@ public: // メンバ関数
 	virtual void DrawWithoutEffect() = 0;
 
 	/// <summary>
-	/// ImGuiの描画
+	/// ImGui の描画
 	/// </summary>
 	virtual void DrawImGui() = 0;
 

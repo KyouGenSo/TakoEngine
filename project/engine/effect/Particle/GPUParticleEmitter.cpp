@@ -31,7 +31,7 @@ GPUParticleEmitter::GPUParticleEmitter(GPUParticle* particleSystem, uint32_t emi
 GPUParticleEmitter::~GPUParticleEmitter()
 {
   // デストラクタで特に何もしない
-  // 必要なリソースはGPUParticleクラスが管理しているため
+  // 必要なリソースは GPUParticle クラスが管理しているため
   // ここで解放する必要はない
 }
 

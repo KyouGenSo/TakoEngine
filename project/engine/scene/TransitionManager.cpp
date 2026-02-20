@@ -90,7 +90,7 @@ std::unique_ptr<ITransitionEffect> TransitionManager::CreateEffect(EffectType ty
 
 	case EffectType::Custom:
 	default:
-		// カスタムの場合はnullptrを返す（名前指定で取得してもらう）
+		// カスタムの場合は nullptr を返す（名前指定で取得してもらう）
 		return nullptr;
 	}
 }
@@ -103,7 +103,7 @@ std::unique_ptr<ITransitionEffect> TransitionManager::CreateEffect(const std::st
 		return it->second();
 	}
 
-	// 見つからない場合はデフォルトのFadeを返す
+	// 見つからない場合はデフォルトの Fade を返す
 	return std::make_unique<FadeTransition>();
 }
 

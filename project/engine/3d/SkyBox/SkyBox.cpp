@@ -14,7 +14,7 @@ namespace Tako {
 
 void SkyBox::Initialize(const std::string& texturePath)
 {
-  // Transformの初期化
+  // Transform の初期化
   transform_.scale = { 500.0f, 500.0f, 500.0f };
   transform_.rotate = { 0.0f, 0.0f, 0.0f };
   transform_.translate = { 0.0f, 0.0f, 0.0f };
@@ -54,7 +54,7 @@ void SkyBox::Update()
 
 void SkyBox::Draw()
 {
-  // rootSignatureを設定
+  // rootSignature を設定
   m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
 
   // パイプラインステートを設定
@@ -69,13 +69,13 @@ void SkyBox::Draw()
   // インデックスバッファビューの設定
   m_dx12_->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
 
-  // 座標変換行列CBufferの場所を設定
+  // 座標変換行列 CBuffer の場所を設定
   m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, transformationMatrixResource_->GetGPUVirtualAddress());
 
-  // SRVのDescriptorTableを設定,テクスチャを指定
+  // SRV の DescriptorTable を設定,テクスチャを指定
   SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(1, textureIndex_);
 
-  // マテリアルCBufferの場所を設定
+  // マテリアル CBuffer の場所を設定
   m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(2, materialResource_->GetGPUVirtualAddress());
 
   // 描画
@@ -86,31 +86,31 @@ void SkyBox::CreateRootSignature()
 {
   HRESULT hr;
 
-  // rootSignatureの生成
+  // rootSignature の生成
   D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
   descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
-  // Samplerの設定
+  // Sampler の設定
   D3D12_STATIC_SAMPLER_DESC samplerDesc[1]{};
   samplerDesc[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR; // テクスチャの補間方法
   samplerDesc[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
   samplerDesc[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
   samplerDesc[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
   samplerDesc[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER; // 比較しない
-  samplerDesc[0].MaxLOD = D3D12_FLOAT32_MAX; // ミップマップの最大LOD
+  samplerDesc[0].MaxLOD = D3D12_FLOAT32_MAX; // ミップマップの最大 LOD
   samplerDesc[0].ShaderRegister = 0; // レジスタ番号
   samplerDesc[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
   descriptionRootSignature.pStaticSamplers = samplerDesc;
   descriptionRootSignature.NumStaticSamplers = _countof(samplerDesc);
 
-  // DescriptorRangeの設定。
+  // DescriptorRange の設定。
   D3D12_DESCRIPTOR_RANGE textureDescriptorRange[1] = {};
   textureDescriptorRange[0].BaseShaderRegister = 0; // レジスタ番号
   textureDescriptorRange[0].NumDescriptors = 1; // ディスクリプタ数
-  textureDescriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
-  textureDescriptorRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+  textureDescriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRV を使う
+  textureDescriptorRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
 
-  // RootParameterの設定。
+  // RootParameter の設定。
   D3D12_ROOT_PARAMETER rootParameters[3] = {};
   // TransformationMatrix
   rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
@@ -155,7 +155,7 @@ void SkyBox::CreatePSO()
 {
   HRESULT hr;
 
-  // RootSignatureの生成
+  // RootSignature の生成
   CreateRootSignature();
 
   // InputLayout
@@ -178,20 +178,20 @@ void SkyBox::CreatePSO()
   rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID; // 塗りつぶしモード
   rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK; // 裏面を描画しない
 
-  // shaderのコンパイル
+  // shader のコンパイル
   Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(L"resources/shaders/SkyBox.VS.hlsl", L"vs_6_0");
   assert(vertexShaderBlob != nullptr);
 
   Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(L"resources/shaders/SkyBox.PS.hlsl", L"ps_6_0");
   assert(pixelShaderBlob != nullptr);
 
-  // DepthStencilStateの設定
+  // DepthStencilState の設定
   D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
   depthStencilDesc.DepthEnable = true;                           // 深度バッファを有効にする
   depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO; // 深度値を書き込まない
   depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL; // 深度比較関数
 
-  // PSOの設定
+  // PSO の設定
   D3D12_GRAPHICS_PIPELINE_STATE_DESC pipelineStateDesc{};
   pipelineStateDesc.pRootSignature = rootSignature_.Get(); // ルートシグネチャ
   pipelineStateDesc.InputLayout = inputLayoutDesc;         // 入力レイアウト
@@ -208,7 +208,7 @@ void SkyBox::CreatePSO()
   pipelineStateDesc.DepthStencilState = depthStencilDesc; // 深度ステンシルステート
   pipelineStateDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT; // 深度ステンシルフォーマット
 
-  // PSOの生成
+  // PSO の生成
   hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&pipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
   assert(SUCCEEDED(hr));
 
@@ -283,7 +283,7 @@ void SkyBox::CreateIndexData()
   indexData_[30] = 20; indexData_[31] = 21; indexData_[32] = 22;
   indexData_[33] = 22; indexData_[34] = 21; indexData_[35] = 23;
 
-  // indexBufferViewを作成
+  // indexBufferView を作成
   indexBufferView_.BufferLocation = indexResource_->GetGPUVirtualAddress();
   indexBufferView_.SizeInBytes = sizeof(uint32_t) * 36;
   indexBufferView_.Format = DXGI_FORMAT_R32_UINT;

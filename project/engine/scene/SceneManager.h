@@ -50,7 +50,7 @@ public: // メンバ関数
 	void DrawWithoutEffect();
 
 	/// <summary>
-	/// imguiの描画
+	/// imgui の描画
 	/// </summary>
 	void DrawImGui();
 

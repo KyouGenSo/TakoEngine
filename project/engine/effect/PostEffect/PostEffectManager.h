@@ -43,13 +43,13 @@ namespace Tako {
 
   public: // メンバ関数
 
-    // ComPtrのエイリアス
+    // ComPtr のエイリアス
     template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
 
     /// <summary>
     /// シングルトンインスタンスを取得
     /// </summary>
-    /// <returns>PostEffectManagerのインスタンスポインタ</returns>
+    /// <returns>PostEffectManager のインスタンスポインタ</returns>
     static PostEffectManager* GetInstance();
 
     /// <summary>
@@ -97,7 +97,7 @@ namespace Tako {
 
     /// <summary>
     /// エフェクトチェーンを適用して描画処理を実行
-    /// 内部でApplyEffectChainを呼び出す
+    /// 内部で ApplyEffectChain を呼び出す
     /// </summary>
     void Draw();
 
@@ -108,8 +108,8 @@ namespace Tako {
     void DrawFinalResult(bool drawToSwapChain = true);
 
     /// <summary>
-    /// ImGuiデバッグUIを描画
-    /// エフェクトチェーン管理とパラメータ調整用のUIを表示する
+    /// ImGui デバッグ UI を描画
+    /// エフェクトチェーン管理とパラメータ調整用の UI を表示する
     /// </summary>
     void DrawImgui();
 
@@ -123,18 +123,18 @@ namespace Tako {
     /// 指定されたエフェクトのパラメータを設定
     /// </summary>
     /// <param name="effectName">エフェクト名</param>
-    /// <param name="param">設定するパラメータ（EffectParam型）</param>
-    /// <returns>設定が成功した場合true、エフェクトが見つからない場合false</returns>
+    /// <param name="param">設定するパラメータ（EffectParam 型）</param>
+    /// <returns>設定が成功した場合 true、エフェクトが見つからない場合 false</returns>
     bool SetEffectParam(const std::string& effectName, const EffectParam& param);
 
     /// <summary>
     /// 指定されたエフェクトのパラメータを設定（テンプレート版）
-    /// 任意の型のパラメータを受け取り、内部でEffectParamに変換する
+    /// 任意の型のパラメータを受け取り、内部で EffectParam に変換する
     /// </summary>
     /// <typeparam name="ParamType">パラメータの型</typeparam>
     /// <param name="effectName">エフェクト名</param>
     /// <param name="param">設定するパラメータ</param>
-    /// <returns>設定が成功した場合true、エフェクトが見つからない場合false</returns>
+    /// <returns>設定が成功した場合 true、エフェクトが見つからない場合 false</returns>
     template<typename ParamType>
     bool SetEffectParam(const std::string& effectName, const ParamType& param) {
       return SetEffectParam(effectName, EffectParam(param));
@@ -185,7 +185,7 @@ namespace Tako {
     /// 指定エフェクトが一時エフェクトとして動作中か判定
     /// </summary>
     /// <param name="effectName">エフェクト名</param>
-    /// <returns>一時エフェクトとして動作中ならtrue</returns>
+    /// <returns>一時エフェクトとして動作中なら true</returns>
     bool IsTemporaryEffectActive(const std::string& effectName) const;
 
     /// <summary>
@@ -219,14 +219,14 @@ namespace Tako {
     /// 指定されたエフェクトをチェーン内で1つ上に移動
     /// </summary>
     /// <param name="effectName">移動するエフェクトの名前</param>
-    /// <returns>移動が成功した場合true、失敗した場合false</returns>
+    /// <returns>移動が成功した場合 true、失敗した場合 false</returns>
     bool MoveEffectUp(const std::string& effectName);
 
     /// <summary>
     /// 指定されたエフェクトをチェーン内で1つ下に移動
     /// </summary>
     /// <param name="effectName">移動するエフェクトの名前</param>
-    /// <returns>移動が成功した場合true、失敗した場合false</returns>
+    /// <returns>移動が成功した場合 true、失敗した場合 false</returns>
     bool MoveEffectDown(const std::string& effectName);
 
     /// <summary>
@@ -234,7 +234,7 @@ namespace Tako {
     /// </summary>
     /// <param name="effectName">移動するエフェクトの名前</param>
     /// <param name="newPosition">移動先の位置（0から始まるインデックス）</param>
-    /// <returns>移動が成功した場合true、失敗した場合false</returns>
+    /// <returns>移動が成功した場合 true、失敗した場合 false</returns>
     bool MoveEffectToPosition(const std::string& effectName, int newPosition);
 
     /// <summary>
@@ -242,7 +242,7 @@ namespace Tako {
     /// </summary>
     /// <param name="effectName1">1つ目のエフェクトの名前</param>
     /// <param name="effectName2">2つ目のエフェクトの名前</param>
-    /// <returns>交換が成功した場合true、失敗した場合false</returns>
+    /// <returns>交換が成功した場合 true、失敗した場合 false</returns>
     bool SwapEffects(const std::string& effectName1, const std::string& effectName2);
 
     /// <summary>
@@ -250,7 +250,7 @@ namespace Tako {
     /// </summary>
     /// <param name="index1">1つ目のエフェクトのインデックス</param>
     /// <param name="index2">2つ目のエフェクトのインデックス</param>
-    /// <returns>交換が成功した場合true、失敗した場合false</returns>
+    /// <returns>交換が成功した場合 true、失敗した場合 false</returns>
     bool SwapEffectsByIndex(int index1, int index2);
 
     /// <summary>
@@ -264,7 +264,7 @@ namespace Tako {
     /// 指定されたエフェクトがチェーン内に存在するか判定
     /// </summary>
     /// <param name="effectName">エフェクトの名前</param>
-    /// <returns>チェーン内に存在する場合true、存在しない場合false</returns>
+    /// <returns>チェーン内に存在する場合 true、存在しない場合 false</returns>
     bool IsEffectInChain(const std::string& effectName) const;
 
     /// <summary>
@@ -287,21 +287,21 @@ namespace Tako {
     std::vector<std::string> GetEffectChain() const;
 
     /// <summary>
-    /// 現在のレンダーターゲットのCPUディスクリプタハンドルを取得
+    /// 現在のレンダーターゲットの CPU ディスクリプタハンドルを取得
     /// </summary>
-    /// <returns>エフェクト対象レンダーターゲットのRTVハンドル</returns>
+    /// <returns>エフェクト対象レンダーターゲットの RTV ハンドル</returns>
     D3D12_CPU_DESCRIPTOR_HANDLE GetCurrentRTVHandle() const { return effectTargetRT_.rtvHandle; }
 
     /// <summary>
-    /// 最終的なエフェクト適用結果のSRVインデックスを取得
-    /// ImGuiでのテクスチャ表示などに使用
+    /// 最終的なエフェクト適用結果の SRV インデックスを取得
+    /// ImGui でのテクスチャ表示などに使用
     /// </summary>
-    /// <returns>最終結果テクスチャのSRVインデックス</returns>
+    /// <returns>最終結果テクスチャの SRV インデックス</returns>
     uint32_t GetFinalResultSrvIndex() const;
 
     /// <summary>
     /// 最終的なエフェクト適用結果のリソースを取得
-    /// ImGuiでのテクスチャ表示などに使用
+    /// ImGui でのテクスチャ表示などに使用
     /// </summary>
     /// <returns>最終結果テクスチャのリソースポインタ</returns>
     ID3D12Resource* GetFinalResultResource() const;
@@ -317,7 +317,7 @@ namespace Tako {
     void ApplyEffectChain();
 
     /// <summary>
-    /// ImGuiエフェクトパラメータタブを描画
+    /// ImGui エフェクトパラメータタブを描画
     /// </summary>
     void DrawEffectParametersTab();
 
@@ -380,14 +380,14 @@ namespace Tako {
 
     Camera* camera_ = nullptr; // カメラ情報
 
-    // UI用の選択状態
+    // UI 用の選択状態
     std::string selectedAvailableEffect_ = "";    // 利用可能エフェクトの選択
     std::string selectedActiveEffect_ = "";       // アクティブエフェクトの選択
 
-    // エフェクト適用対象用RT
+    // エフェクト適用対象用 RT
     RenderTexture effectTargetRT_;
 
-    // 非適用対象用RT
+    // 非適用対象用 RT
     RenderTexture nonEffectTargetRT_;
 
     // 中間バッファ（複数エフェクト用）
@@ -404,13 +404,13 @@ namespace Tako {
     /// </summary>
     std::unordered_map<std::string, TemporaryEffectInfo> temporaryEffects_;
 
-    // 利用可能なエフェクトのリスト（ImGui用）
+    // 利用可能なエフェクトのリスト（ImGui 用）
     std::vector<std::string> availableEffects_;
 
-    // 深度バッファのSRV
+    // 深度バッファの SRV
     uint32_t depthSrvIndex_ = 0;
 
-    // DissolveマスクテクスチャのSRV
+    // Dissolve マスクテクスチャの SRV
     uint32_t dissolveMaskSrvIndex_ = 0;
 
     // クリアカラー

@@ -9,6 +9,9 @@
 #include "Object3dBasic.h"
 #include "ShadowRenderer.h"
 
+#include <assimp/Importer.hpp>
+#include <assimp/postprocess.h>
+
 #include <cassert>
 #include <fstream>
 #include <set>
@@ -35,15 +38,15 @@ namespace Tako {
     directoryFolderName_ = m_modelBasic_->GetDirectoryFolderName();
     ModelFolderName_ = m_modelBasic_->GetModelFolderName();
     modelFileName_ = fileName;  // ファイル名を保存
-    hasAnimation_ = false;  // LoadModelFileで自動設定される
-    hasSkeleton_ = false;   // LoadModelFileで自動設定される
+    hasAnimation_ = false;  // LoadModelFile で自動設定される
+    hasSkeleton_ = false;   // LoadModelFile で自動設定される
     paletteSrvIndex_ = 0;
     expandState_ = 0;
     hoveredJointIndex_ = -1;
     animationSpeed_ = 1.0f;
     isPaused_ = false;
 
-    // objファイルの読み込み（この中でhasAnimation_とhasSkeleton_が自動設定される）
+    // obj ファイルの読み込み（この中で hasAnimation_と hasSkeleton_が自動設定される）
     LoadModelFile(directoryFolderName_ + "/" + ModelFolderName_, fileName);
 
     // アニメーションの読み込み
@@ -51,7 +54,7 @@ namespace Tako {
       LoadAnimationFile(directoryFolderName_ + "/" + ModelFolderName_, fileName);
     }
 
-    // skeletonの生成とメッシュのスキンニングデータの初期化
+    // skeleton の生成とメッシュのスキンニングデータの初期化
     if (hasSkeleton_) {
       skeleton_ = CreateSkeleton(rootNode_);
       InitializeMatrixPalette();
@@ -107,7 +110,7 @@ namespace Tako {
 
   void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
   {
-    // スキニング処理の実行（ComputeShaderによる頂点変形）
+    // スキニング処理の実行（ComputeShader による頂点変形）
     ExecuteSkinning();
 
     // スキニングモデルの場合
@@ -125,12 +128,12 @@ namespace Tako {
     }
     else {
       // マルチメッシュモデル（スキニングなし）の場合はノード階層で描画
-      // アニメーションがある場合は、更新されたrootNodeのlocalMatrixを使用
+      // アニメーションがある場合は、更新された rootNode の localMatrix を使用
       Matrix4x4 rootTransform = hasAnimation_ ? rootNode_.localMatrix : Mat4x4::MakeIdentity();
       ProcessNodeHierarchy(rootNode_, rootTransform, world, viewProjection);
     }
 
-    // skeletonの描画
+    // skeleton の描画
 #ifdef _DEBUG
     if (hasSkeleton_ && s_showSkeletonDebug) {
       DrawSkeleton(world);
@@ -203,7 +206,7 @@ namespace Tako {
       aiMesh* mesh = scene->mMeshes[meshIndex];
 
       bool hasTexCoords = mesh->HasTextureCoords(0);
-      bool hasNormals = mesh->HasNormals();
+      bool hasNormal = mesh->HasNormals();
 
       // 頂点の解析
       std::vector<VertexData> vertices(mesh->mNumVertices);
@@ -219,7 +222,7 @@ namespace Tako {
           vertices[vertexIndex].texcoord = { 0.0f, 0.0f };
         }
 
-        if (hasNormals) {
+        if (hasNormal) {
           aiVector3D& normal = mesh->mNormals[vertexIndex];
           vertices[vertexIndex].normal = { -normal.x, normal.y, normal.z };
         }
@@ -293,7 +296,7 @@ namespace Tako {
         if (material->Get(AI_MATKEY_COLOR_DIFFUSE, baseColor) == AI_SUCCESS) {
           textureData.baseColor = Vector4(baseColor.r, baseColor.g, baseColor.b, baseColor.a);
         }
-        // PBRマテリアルの場合はBASE_COLORも試す
+        // PBR マテリアルの場合は BASE_COLOR も試す
         else if (material->Get(AI_MATKEY_BASE_COLOR, baseColor) == AI_SUCCESS) {
           textureData.baseColor = Vector4(baseColor.r, baseColor.g, baseColor.b, baseColor.a);
         }
@@ -361,7 +364,7 @@ namespace Tako {
       }
     }
 
-    // Meshのクローンを作成
+    // Mesh のクローンを作成
     for (size_t i = 0; i < meshes_.size(); ++i) {
       Mesh* newMesh = meshes_[i]->Clone();
       if (this->hasSkeleton_ && i < this->meshSkinClusterData_.size() && !this->meshSkinClusterData_[i].skinClusterData.empty()) {
@@ -445,10 +448,10 @@ namespace Tako {
       return Mat4x4::MakeIdentity();
     }
 
-    // Joint名からインデックスを検索
+    // Joint 名からインデックスを検索
     auto it = skeleton_.jointMap.find(jointName);
     if (it == skeleton_.jointMap.end()) {
-      // Jointが見つからない場合は単位行列を返す
+      // Joint が見つからない場合は単位行列を返す
 #ifdef _DEBUG
       DebugUIManager::GetInstance()->AddLog(
         "Warning: Joint '" + jointName + "' not found in skeleton",
@@ -463,7 +466,7 @@ namespace Tako {
       return Mat4x4::MakeIdentity();
     }
 
-    // JointのskeletonSpaceMatrixとワールド行列を掛け合わせて返す
+    // Joint の skeletonSpaceMatrix とワールド行列を掛け合わせて返す
     const Joint& joint = skeleton_.joints[jointIndex];
     return joint.skeletonSpaceMatrix * worldMatrix;
   }
@@ -612,7 +615,7 @@ namespace Tako {
     }
 
     if (hasSkeleton_) {
-      // 3Dビジュアライゼーションのトグル
+      // 3D ビジュアライゼーションのトグル
       ImGui::Checkbox("Show 3D Skeleton", &s_showSkeletonDebug);
       ImGui::Separator();
 
@@ -801,7 +804,7 @@ namespace Tako {
     if (nodeOpen) {
       ImGui::Indent();
 
-      // Transform情報を表示
+      // Transform 情報を表示
       ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
       ImGui::Text("Transform:");
       ImGui::Text("  Translate: (%.3f, %.3f, %.3f)",
@@ -885,7 +888,7 @@ namespace Tako {
       // ノードアニメーションの解析
       for (uint32_t channelIndex = 0; channelIndex < aiAnimation->mNumChannels; ++channelIndex) {
         aiNodeAnim* aiNodeAnim = aiAnimation->mChannels[channelIndex];
-        NodeAnimetion& nodeAnimetion = animation.nodeAnimations[aiNodeAnim->mNodeName.C_Str()]; // ノード名をキーにしてノードアニメーションを取得
+        NodeAnimation& nodeAnimetion = animation.nodeAnimations[aiNodeAnim->mNodeName.C_Str()]; // ノード名をキーにしてノードアニメーションを取得
 
         // 位置アニメーションの解析
         for (uint32_t keyIndex = 0; keyIndex < aiNodeAnim->mNumPositionKeys; ++keyIndex) {
@@ -901,7 +904,7 @@ namespace Tako {
           aiQuatKey& aiKey = aiNodeAnim->mRotationKeys[keyIndex];
           KeyFrameQuaternion keyFrame;
           keyFrame.time = static_cast<float>(aiKey.mTime / aiAnimation->mTicksPerSecond); // 時間を秒に変換
-          keyFrame.value = Quaternion(aiKey.mValue.x, -aiKey.mValue.y, -aiKey.mValue.z, aiKey.mValue.w); // クォータニオンのy,z成分を反転,右手系から左手系に変換
+          keyFrame.value = Quaternion(aiKey.mValue.x, -aiKey.mValue.y, -aiKey.mValue.z, aiKey.mValue.w); // クォータニオンの y,z 成分を反転,右手系から左手系に変換
           nodeAnimetion.rotate.keyFrames.push_back(keyFrame);
         }
 
@@ -919,7 +922,7 @@ namespace Tako {
       animations_[animName] = animation;
       animationTimes_[animName] = 0.0f;
 
-      // デフォルトでループ設定をtrueにする
+      // デフォルトでループ設定を true にする
       animationLoopSettings_[animName] = true;
       animationFinished_[animName] = false;
     }
@@ -957,7 +960,7 @@ namespace Tako {
       mappedPalette_[jointIndex].skeletonSpaceMatrixInvTransposeMat = normalMatrix;
     }
 
-    // UAVバリアを設定
+    // UAV バリアを設定
     for (auto& mesh : meshes_) {
       if (mesh->HasSkinning()) {
         m_dx12_->SetUAVBarrier(mesh->GetUAVVertexResource());
@@ -972,10 +975,10 @@ namespace Tako {
       return;
     }
 
-    // ComputeShaderの設定
+    // ComputeShader の設定
     m_modelBasic_->SetSkinningCSSetting();
 
-    // 共有パレット（ボーン行列）のSRVを設定
+    // 共有パレット（ボーン行列）の SRV を設定
     SrvManager::GetInstance()->SetComputeRootDescriptorTable(0, paletteSrvIndex_);
 
     // 各メッシュごとにスキニング計算を実行
@@ -1043,7 +1046,7 @@ namespace Tako {
       mappedPalette_[i].skeletonSpaceMatrixInvTransposeMat = Mat4x4::MakeIdentity();
     }
 
-    // 3. パレットのSRVを作成
+    // 3. パレットの SRV を作成
     SrvManager* srvManager = SrvManager::GetInstance();
     paletteSrvIndex_ = srvManager->Allocate();
     srvManager->CreateSRVForStructuredBuffer(
@@ -1061,13 +1064,13 @@ namespace Tako {
     joint.localMatrix = node.localMatrix;
     joint.skeletonSpaceMatrix = Mat4x4::MakeIdentity();
     joint.transform = node.transform;
-    joint.index = static_cast<int32_t>(joints.size());              // 現在登録されている数をindexとして設定
+    joint.index = static_cast<int32_t>(joints.size());              // 現在登録されている数を index として設定
     joint.parentIndex = parentIndex;
-    joints.push_back(joint);                           // skeletonのjoint列に追加
+    joints.push_back(joint);                           // skeleton の joint 列に追加
 
     for (const Node& child : node.children) {
-      int32_t childIndex = CreateJoint(child, joint.index, joints); // 再帰的に子Jointを生成
-      joints[joint.index].childrenIndex.push_back(childIndex);      // 子Jointのindexを追加
+      int32_t childIndex = CreateJoint(child, joint.index, joints); // 再帰的に子 Joint を生成
+      joints[joint.index].childrenIndex.push_back(childIndex);      // 子 Joint の index を追加
     }
 
     return joint.index;
@@ -1078,7 +1081,7 @@ namespace Tako {
     Skeleton skeleton;
     skeleton.root = CreateJoint(rootNode, {}, skeleton.joints); // ルートノードからジョイントを生成
 
-    // 名前とindexのマップを作る
+    // 名前と index のマップを作る
     for (const Joint& joint : skeleton.joints) {
       skeleton.jointMap.emplace(joint.name, joint.index);
     }
@@ -1098,7 +1101,7 @@ namespace Tako {
 
     result.transform.scale = { scale.x, scale.y, scale.z };                         // スケールを取得
     result.transform.rotate = { rotate.x, -rotate.y, -rotate.z, rotate.w };         // 回転を取得,右手系から左手系に変換
-    result.transform.translate = { -position.x, position.y, position.z };           // 平行移動を取得,x軸を反転
+    result.transform.translate = { -position.x, position.y, position.z };           // 平行移動を取得,x 軸を反転
 
     result.localMatrix = Mat4x4::MakeAffine(
       result.transform.scale, result.transform.rotate, result.transform.translate);   // ローカル変換行列を生成
@@ -1179,7 +1182,7 @@ namespace Tako {
 
     // このノードのアニメーションを検索
     if (auto it = currentAnimation.nodeAnimations.find(node.name); it != currentAnimation.nodeAnimations.end()) {
-      const NodeAnimetion& nodeAnimation = it->second;
+      const NodeAnimation& nodeAnimation = it->second;
 
       // 位置アニメーションの計算
       Vector3 translate = CalcKeyFrameValue(nodeAnimation.translate.keyFrames, time);
@@ -1239,7 +1242,7 @@ namespace Tako {
 
     for (Joint& joint : skeleton_.joints) {
       if (auto it = currentAnimation.nodeAnimations.find(joint.name); it != currentAnimation.nodeAnimations.end()) {
-        const NodeAnimetion& rootAnimetion = (*it).second; // ルートノードのアニメーションを取得
+        const NodeAnimation& rootAnimetion = (*it).second; // ルートノードのアニメーションを取得
 
         // 位置アニメーションの計算
         Vector3 translate = CalcKeyFrameValue(rootAnimetion.translate.keyFrames, time);
@@ -1271,7 +1274,7 @@ namespace Tako {
 
   void Model::ReleaseSkinningSRVIndex()
   {
-    // パレットSRVの解放
+    // パレット SRV の解放
     if (paletteSrvIndex_ != 0) {
       // アロケートされているか確認してから解放
       if (SrvManager::GetInstance()->IsAllocated(paletteSrvIndex_)) {

@@ -20,25 +20,25 @@ public:
   virtual ~OBBCollider() = default;
 
   /// <summary>
-  /// OBB構造体を取得（ワールド座標系）
+  /// OBB 構造体を取得（ワールド座標系）
   /// </summary>
-  /// <returns>OBB構造体</returns>
+  /// <returns>OBB 構造体</returns>
   OBB GetOBB() const;
 
   /// <summary>
-  /// OBBの中心座標を取得（ワールド座標系）
+  /// OBB の中心座標を取得（ワールド座標系）
   /// </summary>
   /// <returns>中心座標</returns>
   Vector3 GetCenter() const override;
 
   /// <summary>
-  /// OBBのサイズを設定
+  /// OBB のサイズを設定
   /// </summary>
   /// <param name="size">サイズ（幅、高さ、奥行き）</param>
   void SetSize(const Vector3& size) { size_ = size; }
 
   /// <summary>
-  /// OBBのサイズを取得
+  /// OBB のサイズを取得
   /// </summary>
   /// <returns>サイズ（幅、高さ、奥行き）</returns>
   Vector3 GetSize() const { return size_; }

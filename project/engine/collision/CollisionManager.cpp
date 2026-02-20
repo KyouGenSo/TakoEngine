@@ -91,7 +91,7 @@ void CollisionManager::AddCollider(Collider* collider) {
 }
 
 void CollisionManager::RemoveCollider(Collider* collider) {
-	// collidersリストから削除
+	// colliders リストから削除
 	colliders_.remove(collider);
 	
 	// currentCollisions_から該当するペアを削除
@@ -131,12 +131,12 @@ void CollisionManager::DrawColliders() {
   Draw2D* draw2D = Draw2D::GetInstance();
   if (!draw2D) return;
 
-  // 色の定義（TypeIDに基づいたハッシュ色生成）
+  // 色の定義（TypeID に基づいたハッシュ色生成）
   auto GetColorByType = [](uint32_t typeID) -> Vector4 {
-    // TypeIDを元に色相を計算（黄金比を使用して均等に分散）
+    // TypeID を元に色相を計算（黄金比を使用して均等に分散）
     float hue = std::fmod(typeID * 0.618033988749895f, 1.0f) * 360.0f;
 
-    // HSVからRGBへ変換（簡略版）
+    // HSV から RGB へ変換（簡略版）
     float c = 0.7f;  // 彩度
     float x = c * (1.0f - std::abs(std::fmod(hue / 60.0f, 2.0f) - 1.0f));
     float m = 0.3f;  // 明度調整
@@ -154,20 +154,20 @@ void CollisionManager::DrawColliders() {
 
     Vector4 color = GetColorByType(collider->GetTypeID());
 
-    // AABBColliderの場合
+    // AABBCollider の場合
     if (AABBCollider* aabb = dynamic_cast<AABBCollider*>(collider)) {
       AABB box = aabb->GetAABB();
       draw2D->DrawAABB(box, color);
       drawCount++;
     }
-    // SphereColliderの場合
+    // SphereCollider の場合
     else if (SphereCollider* sphere = dynamic_cast<SphereCollider*>(collider)) {
       Vector3 center = sphere->GetCenter();
       float radius = sphere->GetRadius();
       draw2D->DrawSphere(center, radius, color);
       drawCount++;
     }
-    // OBBColliderの場合
+    // OBBCollider の場合
     else if (OBBCollider* obb = dynamic_cast<OBBCollider*>(collider)) {
       OBB obbData = obb->GetOBB();
       draw2D->DrawOBB(obbData, color);
@@ -234,20 +234,20 @@ void CollisionManager::DrawImGui() {
         index - 1, typeID,
         collider->IsActive() ? "Yes" : "No");
 
-      // AABBColliderの場合
+      // AABBCollider の場合
       if (AABBCollider* aabb = dynamic_cast<AABBCollider*>(collider)) {
         AABB box = aabb->GetAABB();
         ImGui::Text("  AABB: min(%.1f,%.1f,%.1f) max(%.1f,%.1f,%.1f)",
           box.min.x, box.min.y, box.min.z,
           box.max.x, box.max.y, box.max.z);
       }
-      // SphereColliderの場合
+      // SphereCollider の場合
       else if (SphereCollider* sphere = dynamic_cast<SphereCollider*>(collider)) {
         Vector3 center = sphere->GetCenter();
         ImGui::Text("  Sphere: center(%.1f,%.1f,%.1f) radius=%.1f",
           center.x, center.y, center.z, sphere->GetRadius());
       }
-      // OBBColliderの場合
+      // OBBCollider の場合
       else if (OBBCollider* obb = dynamic_cast<OBBCollider*>(collider)) {
         OBB obbData = obb->GetOBB();
         ImGui::Text("  OBB: center(%.1f,%.1f,%.1f) halfExtents(%.1f,%.1f,%.1f)",
@@ -339,16 +339,16 @@ bool CollisionManager::CheckOBBvsOBB(OBBCollider* a, OBBCollider* b) {
 	OBB obbB = b->GetOBB();
 	
 	// 分離軸定理（SAT）を使用
-	// 15個の軸をチェック（各OBBの3軸 + 9個のクロス積軸）
+	// 15個の軸をチェック（各 OBB の3軸 + 9個のクロス積軸）
 	
-	// OBBの軸を取得
+	// OBB の軸を取得
 	Vector3 axesA[3] = { obbA.GetAxis(0), obbA.GetAxis(1), obbA.GetAxis(2) };
 	Vector3 axesB[3] = { obbB.GetAxis(0), obbB.GetAxis(1), obbB.GetAxis(2) };
 	
 	// 中心間のベクトル
 	Vector3 t = obbB.center - obbA.center;
 	
-	// 各OBBの3軸をチェック
+	// 各 OBB の3軸をチェック
 	for (int i = 0; i < 3; ++i) {
 		// A's axes
 		float rA = obbA.halfExtents.x * std::abs(axesA[0].Dot(axesA[i])) +
@@ -382,7 +382,7 @@ bool CollisionManager::CheckOBBvsOBB(OBBCollider* a, OBBCollider* b) {
 			// 軸を正規化
 			axis = axis / axisLength;
 			
-			// 各OBBの頂点を軸に投影して半径を計算
+			// 各 OBB の頂点を軸に投影して半径を計算
 			float rA = obbA.halfExtents.x * std::abs(axesA[0].Dot(axis)) +
 			          obbA.halfExtents.y * std::abs(axesA[1].Dot(axis)) +
 			          obbA.halfExtents.z * std::abs(axesA[2].Dot(axis));
@@ -402,17 +402,17 @@ bool CollisionManager::CheckOBBvsAABB(OBBCollider* obb, AABBCollider* aabb) {
 	OBB obbData = obb->GetOBB();
 	AABB aabbData = aabb->GetAABB();
 	
-	// AABBをOBBとして扱う（回転なし）
+	// AABB を OBB として扱う（回転なし）
 	OBB aabbAsOBB;
 	aabbAsOBB.center = (aabbData.min + aabbData.max) * 0.5f;
 	aabbAsOBB.halfExtents = (aabbData.max - aabbData.min) * 0.5f;
 	aabbAsOBB.orientation = Mat4x4::MakeIdentity();
 	
-	// OBB同士の判定として処理（簡略版）
+	// OBB 同士の判定として処理（簡略版）
 	Vector3 axes[3] = { obbData.GetAxis(0), obbData.GetAxis(1), obbData.GetAxis(2) };
 	Vector3 t = aabbAsOBB.center - obbData.center;
 	
-	// OBBの3軸でチェック
+	// OBB の3軸でチェック
 	for (int i = 0; i < 3; ++i) {
 		float rOBB = obbData.halfExtents.x * std::abs(axes[0].Dot(axes[i])) +
 		            obbData.halfExtents.y * std::abs(axes[1].Dot(axes[i])) +
@@ -423,7 +423,7 @@ bool CollisionManager::CheckOBBvsAABB(OBBCollider* obb, AABBCollider* aabb) {
 		if (std::abs(t.Dot(axes[i])) > rOBB + rAABB) return false;
 	}
 	
-	// AABBの3軸（ワールド軸）でチェック
+	// AABB の3軸（ワールド軸）でチェック
 	Vector3 worldAxes[3] = {
 		Vector3(1.0f, 0.0f, 0.0f),
 		Vector3(0.0f, 1.0f, 0.0f),
@@ -440,10 +440,10 @@ bool CollisionManager::CheckOBBvsAABB(OBBCollider* obb, AABBCollider* aabb) {
 		if (std::abs(t.Dot(worldAxes[i])) > rOBB + rAABB) return false;
 	}
 	
-	// クロス積軸のチェック（OBBの軸×ワールド軸の9軸）
+	// クロス積軸のチェック（OBB の軸×ワールド軸の9軸）
 	for (int i = 0; i < 3; ++i) {
 		for (int j = 0; j < 3; ++j) {
-			// OBBの軸とワールド軸のクロス積
+			// OBB の軸とワールド軸のクロス積
 			Vector3 axis = axes[i].Cross(worldAxes[j]);
 			float axisLength = axis.Length();
 			
@@ -453,12 +453,12 @@ bool CollisionManager::CheckOBBvsAABB(OBBCollider* obb, AABBCollider* aabb) {
 			// 軸を正規化
 			axis = axis / axisLength;
 			
-			// OBBの投影半径を計算
+			// OBB の投影半径を計算
 			float rOBB = obbData.halfExtents.x * std::abs(axes[0].Dot(axis)) +
 			            obbData.halfExtents.y * std::abs(axes[1].Dot(axis)) +
 			            obbData.halfExtents.z * std::abs(axes[2].Dot(axis));
 			
-			// AABBの投影半径を計算
+			// AABB の投影半径を計算
 			float rAABB = aabbAsOBB.halfExtents.x * std::abs(axis.x) +
 			             aabbAsOBB.halfExtents.y * std::abs(axis.y) +
 			             aabbAsOBB.halfExtents.z * std::abs(axis.z);
@@ -476,14 +476,14 @@ bool CollisionManager::CheckOBBvsSphere(OBBCollider* obb, SphereCollider* sphere
 	Vector3 sphereCenter = sphere->GetCenter();
 	float radius = sphere->GetRadius();
 	
-	// OBBのローカル座標系での球の中心を計算
+	// OBB のローカル座標系での球の中心を計算
 	Vector3 localSphereCenter = sphereCenter - obbData.center;
 	
 	// 最近点を計算
 	Vector3 closestPoint = obbData.center;
 	Vector3 axes[3] = { obbData.GetAxis(0), obbData.GetAxis(1), obbData.GetAxis(2) };
 	
-	// halfExtentsを配列として扱う
+	// halfExtents を配列として扱う
 	float halfExtents[3] = { obbData.halfExtents.x, obbData.halfExtents.y, obbData.halfExtents.z };
 	
 	for (int i = 0; i < 3; ++i) {

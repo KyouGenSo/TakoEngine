@@ -14,7 +14,7 @@ class WinApp;
 class DX12Basic;
 
 /// <summary>
-/// ImGuiのDirectX 12統合管理クラス。初期化、描画、スタイル設定を担当
+/// ImGui の DirectX 12統合管理クラス。初期化、描画、スタイル設定を担当
 /// </summary>
 class ImGuiManager
 {
@@ -57,33 +57,33 @@ public: // メンバ関数
 
 
   /// <summary>
-  /// ImGuiのスタイルの設定
+  /// ImGui のスタイルの設定
   /// </summary>
   void SetStyleBoorstrapDark();
   void SetStyleMoonLight();
   void SetStyleAdobeinspired();
 
   /// <summary>
-  /// docking設定
+  /// docking 設定
   /// </summary>
   void SetDocking(bool isDocking);
 
   /// <summary>
-  /// DockSpaceViewPortの設定
+  /// DockSpaceViewPort の設定
   /// </summary>
   void SetDockSpaceViewPort();
 
 private: // メンバ変数
 
-  // WinAppクラスのインスタンス
+  // WinApp クラスのインスタンス
   WinApp* m_winApp_ = nullptr;
 
-  // DX12Basicクラスのインスタンス
+  // DX12Basic クラスのインスタンス
   DX12Basic* m_dx12_ = nullptr;
 
   bool isDocking_ = false;
 
-  // フォント用のSRVインデックス（SrvManagerで確保）
+  // フォント用の SRV インデックス（SrvManager で確保）
   uint32_t fontSrvIndex_ = 0;
 
 };

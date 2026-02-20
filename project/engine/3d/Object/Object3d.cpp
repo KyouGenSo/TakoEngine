@@ -17,7 +17,7 @@ Object3d::~Object3d()
   if (m_model_) {
     m_model_->Finalize();
   }
-  // unique_ptrが自動でdeleteする
+  // unique_ptr が自動で delete する
 }
 
 void Object3d::Initialize()
@@ -51,7 +51,7 @@ void Object3d::Update()
 		m_model_->Update();
 	}
 
-	// 親Jointへのアタッチメント処理
+	// 親 Joint へのアタッチメント処理
 	if (IsAttached() && parentObject_ && parentObject_->GetModel())
 	{
 		Model* parentModel = parentObject_->GetModel();
@@ -60,7 +60,7 @@ void Object3d::Update()
 			// 親のワールド行列を取得
 			Matrix4x4 parentWorldMatrix = parentObject_->GetWorldMatrix();
 			
-			// 親のJointのワールド行列を取得
+			// 親の Joint のワールド行列を取得
 			Matrix4x4 jointWorldMatrix = parentModel->GetJointWorldMatrix(parentJointName_, parentWorldMatrix);
 			
 			// オフセットのアフィン変換行列を作成
@@ -70,7 +70,7 @@ void Object3d::Update()
 				attachmentOffset_.translate
 			);
 			
-			// 最終的なワールド行列を計算（オフセット行列 × Joint行列）
+			// 最終的なワールド行列を計算（オフセット行列 × Joint 行列）
 			finalWorldMatrix_ = Mat4x4::Multiply(offsetMatrix, jointWorldMatrix);
 
       worldMatrix_ = finalWorldMatrix_;
@@ -153,7 +153,7 @@ void Object3d::SetModel(const std::string& fileName)
     m_model_.reset();
   }
 
-  // 新しいモデルをセット（ModelManagerからCloneを取得）
+  // 新しいモデルをセット（ModelManager から Clone を取得）
   m_model_.reset(ModelManager::GetInstance()->GetModel(fileName));
 }
 
@@ -232,7 +232,7 @@ void Object3d::SetEnvMapCoefficient(float coefficient)
 
 void Object3d::AttachToJoint(Object3d* parent, const std::string& jointName, const Vector3& offset)
 {
-	// 親オブジェクトとJoint名を設定
+	// 親オブジェクトと Joint 名を設定
 	parentObject_ = parent;
 	parentJointName_ = jointName;
   attachmentOffset_.translate = offset;
@@ -240,7 +240,7 @@ void Object3d::AttachToJoint(Object3d* parent, const std::string& jointName, con
 
 void Object3d::DetachFromJoint()
 {
-	// 親オブジェクトとJoint名をクリア
+	// 親オブジェクトと Joint 名をクリア
 	parentObject_ = nullptr;
 	parentJointName_.clear();
   attachmentOffset_.translate = Vector3(0.0f, 0.0f, 0.0f);

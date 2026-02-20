@@ -52,13 +52,13 @@ public:
     /// </summary>
     /// <param name="transform">初期トランスフォーム</param>
     /// <param name="color">インスタンスのカラー</param>
-    /// <returns>インスタンスID（削除時に使用）</returns>
+    /// <returns>インスタンス ID（削除時に使用）</returns>
     uint32_t AddInstance(const Transform& transform, const Vector4& color = Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 
     /// <summary>
     /// インスタンスを削除
     /// </summary>
-    /// <param name="instanceId">削除するインスタンスのID</param>
+    /// <param name="instanceId">削除するインスタンスの ID</param>
     void RemoveInstance(uint32_t instanceId);
 
     /// <summary>
@@ -72,7 +72,7 @@ public:
     void UpdateInstanceColor(uint32_t instanceId, const Vector4& color);
 
     /// <summary>
-    /// 全インスタンスをGPUバッファに反映
+    /// 全インスタンスを GPU バッファに反映
     /// </summary>
     void UpdateAllInstances();
 
@@ -82,7 +82,7 @@ public:
     void ClearAllInstances();
 
     /// <summary>
-    /// ModelInstanceハンドルを作成
+    /// ModelInstance ハンドルを作成
     /// </summary>
     std::unique_ptr<ModelInstance> CreateInstance(const Transform& transform, const Vector4& color = Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 
@@ -102,14 +102,14 @@ public:
     /// <summary>
     /// インスタンスのトランスフォームを取得
     /// </summary>
-    /// <param name="instanceId">インスタンスID</param>
+    /// <param name="instanceId">インスタンス ID</param>
     /// <returns>トランスフォーム参照</returns>
     const Transform& GetInstanceTransform(uint32_t instanceId) const;
 
     /// <summary>
     /// インスタンスのカラーを取得
     /// </summary>
-    /// <param name="instanceId">インスタンスID</param>
+    /// <param name="instanceId">インスタンス ID</param>
     /// <returns>カラー参照</returns>
     const Vector4& GetInstanceColor(uint32_t instanceId) const;
 
@@ -157,7 +157,7 @@ private:
     void CreateCameraForGPUData();
 
     /// <summary>
-    /// ViewProjection行列バッファの作成
+    /// ViewProjection 行列バッファの作成
     /// </summary>
     void CreateViewProjectionBuffer();
 
@@ -174,7 +174,7 @@ private:
         Transform transform;  ///< トランスフォーム情報
         Vector4 color;  ///< カラー情報
         bool active;  ///< アクティブフラグ
-        uint32_t id;  ///< 一意のID
+        uint32_t id;  ///< 一意の ID
     };
 
     std::unique_ptr<Model> model_;  ///< モデルポインタ
@@ -183,20 +183,20 @@ private:
 
     // インスタンスデータ
     std::vector<InternalInstanceData> instances_;  ///< インスタンスデータ配列
-    std::vector<uint32_t> freeIds_;  ///< 再利用可能なIDリスト
-    uint32_t nextId_ = 0;  ///< 次に割り当てるID
+    std::vector<uint32_t> freeIds_;  ///< 再利用可能な ID リスト
+    uint32_t nextId_ = 0;  ///< 次に割り当てる ID
 
-    // GPUリソース
+    // GPU リソース
     Microsoft::WRL::ComPtr<ID3D12Resource> instanceBuffer_;  ///< インスタンスバッファ
     Microsoft::WRL::ComPtr<ID3D12Resource> cameraForGPUResource_;  ///< カメラデータ用リソース
-    Microsoft::WRL::ComPtr<ID3D12Resource> viewProjResource_;  ///< ViewProjection行列リソース
+    Microsoft::WRL::ComPtr<ID3D12Resource> viewProjResource_;  ///< ViewProjection 行列リソース
 
     // マップされたバッファ
     InstanceData* mappedInstanceData_ = nullptr;  ///< マップされたインスタンスデータ
     CameraForGPU* cameraForGPUData_ = nullptr;  ///< マップされたカメラデータ
-    Matrix4x4* viewProjData_ = nullptr;  ///< マップされたViewProjection行列
+    Matrix4x4* viewProjData_ = nullptr;  ///< マップされた ViewProjection 行列
 
-    uint32_t instanceSrvIndex_ = 0;  ///< インスタンスバッファのSRVインデックス
+    uint32_t instanceSrvIndex_ = 0;  ///< インスタンスバッファの SRV インデックス
 
     bool needsUpdate_ = false;  ///< 更新必要フラグ
 };
@@ -210,8 +210,8 @@ public:
     /// <summary>
     /// コンストラクタ
     /// </summary>
-    /// <param name="parent">親のInstancedObject3d</param>
-    /// <param name="instanceId">インスタンスID</param>
+    /// <param name="parent">親の InstancedObject3d</param>
+    /// <param name="instanceId">インスタンス ID</param>
     ModelInstance(InstancedObject3d* parent, uint32_t instanceId);
 
     /// <summary>
@@ -284,12 +284,12 @@ public:
     /// <summary>
     /// 有効性を確認
     /// </summary>
-    /// <returns>有効な場合true</returns>
+    /// <returns>有効な場合 true</returns>
     bool IsValid() const { return parent_ != nullptr && instanceId_ != UINT32_MAX; }
 
 private:
-    InstancedObject3d* parent_ = nullptr;  ///< 親のInstancedObject3dポインタ
-    uint32_t instanceId_ = UINT32_MAX;  ///< インスタンスID
+    InstancedObject3d* parent_ = nullptr;  ///< 親の InstancedObject3d ポインタ
+    uint32_t instanceId_ = UINT32_MAX;  ///< インスタンス ID
 };
 
 } // namespace Tako

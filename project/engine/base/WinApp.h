@@ -12,7 +12,7 @@
 namespace Tako {
 
 /// <summary>
-/// Windowsアプリケーション管理クラス
+/// Windows アプリケーション管理クラス
 /// ウィンドウ生成とメッセージ処理を担当
 /// </summary>
 class WinApp {
@@ -31,7 +31,7 @@ public:
   /// <summary>
   /// シングルトンインスタンスの取得
   /// </summary>
-  /// <returns>WinAppのシングルトンインスタンス</returns>
+  /// <returns>WinApp のシングルトンインスタンス</returns>
   static WinApp* GetInstance() {
     if (!instance_) {
       instance_ = std::unique_ptr<WinApp>(new WinApp());
@@ -60,7 +60,7 @@ public: // メンバ関数
   /// ウィンドウプロシージャ
   /// </summary>
   /// <param name="hWnd">ウィンドウハンドル</param>
-  /// <param name="msg">メッセージID</param>
+  /// <param name="msg">メッセージ ID</param>
   /// <param name="wparam">メッセージパラメータ1</param>
   /// <param name="lparam">メッセージパラメータ2</param>
   /// <returns>メッセージ処理結果</returns>
@@ -73,7 +73,7 @@ public: // メンバ関数
   HWND GetHWnd() const { return hWnd_; }
 
   /// <summary>
-  /// hInstanceの取得
+  /// hInstance の取得
   /// </summary>
   /// <returns>アプリケーションインスタンスハンドル</returns>
   HINSTANCE GetHInstance() const { return wc_.hInstance; }
@@ -120,16 +120,16 @@ public: // メンバ関数
   void MaximizeWindow();
 
   /// <summary>
-  /// OnResize関数の登録
+  /// OnResize 関数の登録
   /// </summary>
   /// <param name="onResizeFunc">リサイズ時に呼び出されるコールバック関数</param>
-  /// <returns>登録されたコールバックの一意識別ID</returns>
+  /// <returns>登録されたコールバックの一意識別 ID</returns>
   uint32_t RegisterOnResizeFunc(const std::function<void(Vector2)>& onResizeFunc);
 
   /// <summary>
-  /// OnResize関数の削除
+  /// OnResize 関数の削除
   /// </summary>
-  /// <param name="id">削除するコールバックの識別ID</param>
+  /// <param name="id">削除するコールバックの識別 ID</param>
   void UnregisterOnResizeFunc(uint32_t id);
 
 public:
@@ -159,7 +159,7 @@ private:
 	RECT windowedRect_ = {};  ///< ウィンドウモード時の位置とサイズ（フルスクリーンから戻る時に使用）
 
 	std::vector<ResizeCallbackEntry> onResizeFuncs_;  ///< リサイズイベント時に呼び出されるコールバック関数のリスト
-	uint32_t nextId_ = 1u;  ///< 次に割り当てるコールバックID（ユニーク保証用）
+	uint32_t nextId_ = 1u;  ///< 次に割り当てるコールバック ID（ユニーク保証用）
 
 	static std::wstring windowTitle_;  ///< ウィンドウタイトルバーに表示される文字列
 };

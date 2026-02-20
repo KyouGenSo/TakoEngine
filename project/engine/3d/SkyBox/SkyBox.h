@@ -40,7 +40,7 @@ public: // 構造体
   };
 
 public: // メンバ変数
-  // ComPtrのエイリアス
+  // ComPtr のエイリアス
   template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
 
   // 初期化
@@ -62,7 +62,7 @@ public: // メンバ変数
   uint32_t GetTextureIndex() const { return textureIndex_; }
 
 private: // プライベートメンバー関数
-  // RootSignatureを生成
+  // RootSignature を生成
   void CreateRootSignature();
   // パイプラインステートを生成
   void CreatePSO();

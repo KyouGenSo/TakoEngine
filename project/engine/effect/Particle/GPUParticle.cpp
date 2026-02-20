@@ -55,40 +55,40 @@ void GPUParticle::Initialize(DX12Basic* dx12, Camera* camera)
   CreateEmitParticleComputeRS();
   CreateUpdateParticleComputeRS();
 
-  // PSOの生成
+  // PSO の生成
   CreatePSO();
   CreateComputeShaderPSO(initComputeRS_, initComputePSO_, L"InitParticle.CS.hlsl");
   CreateComputeShaderPSO(emitParticleRS_, emitParticlePSO_, L"EmitParticle.CS.hlsl");
   CreateComputeShaderPSO(updateParticleRS_, updateParticlePSO_, L"UpdateParticle.CS.hlsl");
 
-  // PerViewデータの生成
+  // PerView データの生成
   CreatePerViewData();
 
-  // PerFrameデータの生成
+  // PerFrame データの生成
   CreatePerFrameData();
 
   // パーティクルリソースの生成
   CreateParticleResource();
 
-  // EmitterSphereデータの生成
+  // EmitterSphere データの生成
   CreateEmitterData();
 
   // 頂点データの生成
   CreateVertexData();
 
-  // FreeCounterリソースの生成
+  // FreeCounter リソースの生成
   CreateFreeListResource();
 }
 
 void GPUParticle::Update()
 {
-  // PerFrameの更新
+  // PerFrame の更新
   UpdatePerFrame();
 
   // エミッターの更新
   UpdateEmitter();
 
-  // PerViewの更新
+  // PerView の更新
   UpdatePerView();
 
   SyncEmitterData();
@@ -111,13 +111,13 @@ void GPUParticle::Draw()
     // パイプラインステートの設定
     commandList->SetPipelineState(initComputePSO_.Get());
 
-    // ParticleDataのUAVの設定
+    // ParticleData の UAV の設定
     m_srvManager_->SetComputeRootDescriptorTable(0, particleUavIndex_);
 
-    // FreeListIndexのUAVの設定
+    // FreeListIndex の UAV の設定
     m_srvManager_->SetComputeRootDescriptorTable(1, freeListIndexUavIndex_);
 
-    // FreeListのUAVの設定
+    // FreeList の UAV の設定
     m_srvManager_->SetComputeRootDescriptorTable(2, freeListUavIndex_);
 
     // ディスパッチ
@@ -126,7 +126,7 @@ void GPUParticle::Draw()
     isInited_ = true;
   }
 
-  // リソースバリアの設定（UAV同期）
+  // リソースバリアの設定（UAV 同期）
   m_dx12_->SetUAVBarrier(particleResource_.Get());
   m_dx12_->SetUAVBarrier(freeListIndexResource_.Get());
   m_dx12_->SetUAVBarrier(freeListResource_.Get());
@@ -141,19 +141,19 @@ void GPUParticle::Draw()
     // パイプラインステートの設定
     commandList->SetPipelineState(emitParticlePSO_.Get());
 
-    // ParticleDataのUAVの設定
+    // ParticleData の UAV の設定
     m_srvManager_->SetComputeRootDescriptorTable(0, particleUavIndex_);
 
-    // FreeListIndexのUAVの設定
+    // FreeListIndex の UAV の設定
     m_srvManager_->SetComputeRootDescriptorTable(3, freeListIndexUavIndex_);
 
-    // FreeListのUAVの設定
+    // FreeList の UAV の設定
     m_srvManager_->SetComputeRootDescriptorTable(4, freeListUavIndex_);
 
-    // エミッターリストのSRVの設定
+    // エミッターリストの SRV の設定
     m_srvManager_->SetComputeRootDescriptorTable(1, emitterSrvIndex_);
 
-    // PerFrameの設定
+    // PerFrame の設定
     commandList->SetComputeRootConstantBufferView(2, perFrameResource_->GetGPUVirtualAddress());
 
     // ディスパッチ（16スレッドごとにグループ化）
@@ -161,7 +161,7 @@ void GPUParticle::Draw()
     commandList->Dispatch(threadGroupsX, 1, 1);
   }
 
-  // リソースバリアの設定（UAV同期）
+  // リソースバリアの設定（UAV 同期）
   m_dx12_->SetUAVBarrier(particleResource_.Get());
   m_dx12_->SetUAVBarrier(freeListIndexResource_.Get());
   m_dx12_->SetUAVBarrier(freeListResource_.Get());
@@ -174,16 +174,16 @@ void GPUParticle::Draw()
   // パイプラインステートの設定
   commandList->SetPipelineState(updateParticlePSO_.Get());
 
-  // ParticleDataのUAVの設定
+  // ParticleData の UAV の設定
   m_srvManager_->SetComputeRootDescriptorTable(0, particleUavIndex_);
 
-  //PerFrameのCBVの設定
+  //PerFrame の CBV の設定
   commandList->SetComputeRootConstantBufferView(1, perFrameResource_->GetGPUVirtualAddress());
 
-  // FreeListIndexのUAVの設定
+  // FreeListIndex の UAV の設定
   m_srvManager_->SetComputeRootDescriptorTable(2, freeListIndexUavIndex_);
 
-  // FreeListのUAVの設定
+  // FreeList の UAV の設定
   m_srvManager_->SetComputeRootDescriptorTable(3, freeListUavIndex_);
 
   // ディスパッチ
@@ -204,16 +204,16 @@ void GPUParticle::Draw()
   // プリミティブトポロジを設定
   commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-  // VBVを設定
+  // VBV を設定
   commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
 
-  // ParticleDataをSRVに変更
+  // ParticleData を SRV に変更
   m_dx12_->TransitionResourceState(D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, particleResource_.Get());
 
-  // ParticleDataのSRVを設定
+  // ParticleData の SRV を設定
   m_srvManager_->SetGraphicsRootDescriptorTable(0, particleSrvIndex_);
 
-  // PerViewの設定
+  // PerView の設定
   commandList->SetGraphicsRootConstantBufferView(1, perViewResource_->GetGPUVirtualAddress());
 
   // テクスチャの設定
@@ -222,7 +222,7 @@ void GPUParticle::Draw()
   // 描画（インスタンス描画）
   commandList->DrawInstanced(static_cast<UINT>(modelData_.vertices.size()), kNumMaxParticle, 0, 0);
 
-  // ParticleDataをUAVに戻す
+  // ParticleData を UAV に戻す
   m_dx12_->TransitionResourceState(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, particleResource_.Get());
 }
 
@@ -335,7 +335,7 @@ void GPUParticle::UpdateEmitter()
     UnregisterEmitter(emitter);
   }
 
-  // GPU側のデータを同期
+  // GPU 側のデータを同期
   SyncEmitterData();
 }
 
@@ -361,7 +361,7 @@ void GPUParticle::UpdatePerView()
   billboardMatrix.m[3][1] = 0.0f;
   billboardMatrix.m[3][2] = 0.0f;
 
-  // PerViewの更新
+  // PerView の更新
   perViewData_->billboardMatrix = billboardMatrix;
   perViewData_->viewProjection = viewProjectionMatrix;
 }
@@ -372,10 +372,10 @@ void GPUParticle::UpdatePerFrame()
   perFrameData_->deltaTime = FrameTimer::GetInstance()->GetDeltaTime();
 }
 
-// CPU→GPU同期
+// CPU→GPU 同期
 void GPUParticle::SyncEmitterData()
 {
-  // GPU側のエミッターバッファにマップ
+  // GPU 側のエミッターバッファにマップ
   EmitterGPUData* gpuEmitters = nullptr;
   emitterResource_->Map(0, nullptr, reinterpret_cast<void**>(&gpuEmitters));
 
@@ -387,11 +387,11 @@ void GPUParticle::SyncEmitterData()
 #endif
   }
 
-  // 各エミッターのGPUデータを更新
+  // 各エミッターの GPU データを更新
   size_t emitterCount = min(activeEmitters_.size(), static_cast<size_t>(kNumMaxEmitter));
   for (size_t i = 0; i < emitterCount; i++) {
     if (activeEmitters_[i]) {
-      // エミッターにGPUデータのセットアップを依頼
+      // エミッターに GPU データのセットアップを依頼
       activeEmitters_[i]->SetupGPUData(gpuEmitters[i]);
     }
   }
@@ -399,7 +399,7 @@ void GPUParticle::SyncEmitterData()
   // アンマップ
   emitterResource_->Unmap(0, nullptr);
 
-  // PerFrameデータにアクティブエミッター数を格納
+  // PerFrame データにアクティブエミッター数を格納
   perFrameData_->activeEmitterCount = static_cast<uint32_t>(emitterCount);
 }
 
@@ -407,39 +407,39 @@ void GPUParticle::CreateRS()
 {
   HRESULT hr;
 
-  // rootSignatureの生成
+  // rootSignature の生成
   D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature;
   descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
-  // Samplerの設定
+  // Sampler の設定
   D3D12_STATIC_SAMPLER_DESC samplerDesc[1]{};
   samplerDesc[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR; // テクスチャの補間方法
   samplerDesc[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
   samplerDesc[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
   samplerDesc[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
   samplerDesc[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER; // 比較しない
-  samplerDesc[0].MaxLOD = D3D12_FLOAT32_MAX; // ミップマップの最大LOD
+  samplerDesc[0].MaxLOD = D3D12_FLOAT32_MAX; // ミップマップの最大 LOD
   samplerDesc[0].ShaderRegister = 0; // レジスタ番号
   samplerDesc[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
   descriptionRootSignature.pStaticSamplers = samplerDesc;
   descriptionRootSignature.NumStaticSamplers = _countof(samplerDesc);
 
-  // DescriptorRangeの設定。
+  // DescriptorRange の設定。
   // Texture
   D3D12_DESCRIPTOR_RANGE descriptorRange_tex[1] = {};
   descriptorRange_tex[0].BaseShaderRegister = 0; // レジスタ番号
   descriptorRange_tex[0].NumDescriptors = 1; // ディスクリプタ数
-  descriptorRange_tex[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
-  descriptorRange_tex[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+  descriptorRange_tex[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRV を使う
+  descriptorRange_tex[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
 
   // Particle
   D3D12_DESCRIPTOR_RANGE descriptorRangeForParticle[1] = {};
   descriptorRangeForParticle[0].BaseShaderRegister = 0; // レジスタ番号
   descriptorRangeForParticle[0].NumDescriptors = 1; // ディスクリプタ数
-  descriptorRangeForParticle[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
-  descriptorRangeForParticle[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+  descriptorRangeForParticle[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRV を使う
+  descriptorRangeForParticle[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
 
-  // RootParameterの設定。複数設定できるので配列
+  // RootParameter の設定。複数設定できるので配列
   D3D12_ROOT_PARAMETER rootParameters[3] = {};
 
   // Particle
@@ -522,7 +522,7 @@ void GPUParticle::CreatePSO()
   // 裏面を表示しない
   rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
 
-  // shaderのコンパイル
+  // shader のコンパイル
   Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(L"resources/shaders/GPUParticle.VS.hlsl", L"vs_6_0");
   assert(vertexShaderBlob != nullptr);
 
@@ -531,14 +531,14 @@ void GPUParticle::CreatePSO()
 
   // DepthStencilState
   D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
-  // depthの機能を有効化にする
+  // depth の機能を有効化にする
   depthStencilDesc.DepthEnable = true;
   // 書き込みします
   depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
   // 深度の比較方法
   depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 
-  // PSOの生成
+  // PSO の生成
   D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
   graphicsPipelineStateDesc.pRootSignature = RS_.Get();
   graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
@@ -546,7 +546,7 @@ void GPUParticle::CreatePSO()
   graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
   graphicsPipelineStateDesc.BlendState = blendDesc;
   graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
-  // 書き込むRTVの情報
+  // 書き込む RTV の情報
   graphicsPipelineStateDesc.NumRenderTargets = 1;
   graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
   // 利用するトポロジ（形状）のタイプ。三角形
@@ -554,7 +554,7 @@ void GPUParticle::CreatePSO()
   // どのように画面に色を打ち込むかの設定
   graphicsPipelineStateDesc.SampleDesc.Count = 1;
   graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-  // DepthStencilの設定
+  // DepthStencil の設定
   graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
   graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 
@@ -566,30 +566,30 @@ void GPUParticle::CreatePSO()
 void GPUParticle::CreateInitComputeRS()
 {
   HRESULT hr;
-  // rootSignatureの生成
+  // rootSignature の生成
   D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
   descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
-  // DescriptorRangeの設定。
+  // DescriptorRange の設定。
   D3D12_DESCRIPTOR_RANGE descriptorRangeForParticle[1] = {}; // Particle
   descriptorRangeForParticle[0].BaseShaderRegister = 0; // レジスタ番号
   descriptorRangeForParticle[0].NumDescriptors = 1; // ディスクリプタ数
-  descriptorRangeForParticle[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // UAVを使う
-  descriptorRangeForParticle[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+  descriptorRangeForParticle[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // UAV を使う
+  descriptorRangeForParticle[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
 
   D3D12_DESCRIPTOR_RANGE descriptorRangeForFreeListIndex[1] = {}; // FreeListIndex
   descriptorRangeForFreeListIndex[0].BaseShaderRegister = 1; // レジスタ番号
   descriptorRangeForFreeListIndex[0].NumDescriptors = 1; // ディスクリプタ数
-  descriptorRangeForFreeListIndex[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // UAVを使う
-  descriptorRangeForFreeListIndex[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+  descriptorRangeForFreeListIndex[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // UAV を使う
+  descriptorRangeForFreeListIndex[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
 
   D3D12_DESCRIPTOR_RANGE descriptorRangeForFreeList[1] = {}; // FreeList
   descriptorRangeForFreeList[0].BaseShaderRegister = 2; // レジスタ番号
   descriptorRangeForFreeList[0].NumDescriptors = 1; // ディスクリプタ数
-  descriptorRangeForFreeList[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // UAVを使う
-  descriptorRangeForFreeList[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+  descriptorRangeForFreeList[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // UAV を使う
+  descriptorRangeForFreeList[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
 
-  // RootParameterの設定。複数設定できるので配列
+  // RootParameter の設定。複数設定できるので配列
   D3D12_ROOT_PARAMETER rootParameters[3] = {};
   // Particle
   rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
@@ -628,36 +628,36 @@ void GPUParticle::CreateInitComputeRS()
 void GPUParticle::CreateEmitParticleComputeRS()
 {
   HRESULT hr;
-  // rootSignatureの生成
+  // rootSignature の生成
   D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
   descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
-  // DescriptorRangeの設定。
+  // DescriptorRange の設定。
   D3D12_DESCRIPTOR_RANGE descriptorRange_Particle[1] = {}; // Particle
   descriptorRange_Particle[0].BaseShaderRegister = 0; // レジスタ番号
   descriptorRange_Particle[0].NumDescriptors = 1; // ディスクリプタ数
-  descriptorRange_Particle[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // UAVを使う
-  descriptorRange_Particle[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+  descriptorRange_Particle[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // UAV を使う
+  descriptorRange_Particle[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
 
   D3D12_DESCRIPTOR_RANGE descriptorRange_FreeListIndex[1] = {}; // FreeListIndex
   descriptorRange_FreeListIndex[0].BaseShaderRegister = 1; // レジスタ番号
   descriptorRange_FreeListIndex[0].NumDescriptors = 1; // ディスクリプタ数
-  descriptorRange_FreeListIndex[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // UAVを使う
-  descriptorRange_FreeListIndex[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+  descriptorRange_FreeListIndex[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // UAV を使う
+  descriptorRange_FreeListIndex[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
 
   D3D12_DESCRIPTOR_RANGE descriptorRange_FreeList[1] = {}; // FreeList
   descriptorRange_FreeList[0].BaseShaderRegister = 2; // レジスタ番号
   descriptorRange_FreeList[0].NumDescriptors = 1; // ディスクリプタ数
-  descriptorRange_FreeList[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // UAVを使う
-  descriptorRange_FreeList[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+  descriptorRange_FreeList[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // UAV を使う
+  descriptorRange_FreeList[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
 
   D3D12_DESCRIPTOR_RANGE descriptorRange_Emitter[1] = {}; // Emitter
   descriptorRange_Emitter[0].BaseShaderRegister = 0; // レジスタ番号
   descriptorRange_Emitter[0].NumDescriptors = 1; // ディスクリプタ数
-  descriptorRange_Emitter[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
-  descriptorRange_Emitter[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+  descriptorRange_Emitter[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRV を使う
+  descriptorRange_Emitter[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
 
-  // RootParameterの設定。複数設定できるので配列
+  // RootParameter の設定。複数設定できるので配列
   D3D12_ROOT_PARAMETER rootParameters[5] = {};
   // Particle
   rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
@@ -707,30 +707,30 @@ void GPUParticle::CreateEmitParticleComputeRS()
 void GPUParticle::CreateUpdateParticleComputeRS()
 {
   HRESULT hr;
-  // rootSignatureの生成
+  // rootSignature の生成
   D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
   descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
-  // DescriptorRangeの設定。
+  // DescriptorRange の設定。
   D3D12_DESCRIPTOR_RANGE descriptorRangeForParticle[1] = {}; // Particle
   descriptorRangeForParticle[0].BaseShaderRegister = 0; // レジスタ番号
   descriptorRangeForParticle[0].NumDescriptors = 1; // ディスクリプタ数
-  descriptorRangeForParticle[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // UAVを使う
-  descriptorRangeForParticle[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+  descriptorRangeForParticle[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // UAV を使う
+  descriptorRangeForParticle[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
 
   D3D12_DESCRIPTOR_RANGE descriptorRangeForFreeListIndex[1] = {}; // FreeListIndex
   descriptorRangeForFreeListIndex[0].BaseShaderRegister = 1; // レジスタ番号
   descriptorRangeForFreeListIndex[0].NumDescriptors = 1; // ディスクリプタ数
-  descriptorRangeForFreeListIndex[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // UAVを使う
-  descriptorRangeForFreeListIndex[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+  descriptorRangeForFreeListIndex[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // UAV を使う
+  descriptorRangeForFreeListIndex[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
 
   D3D12_DESCRIPTOR_RANGE descriptorRangeForFreeList[1] = {}; // FreeList
   descriptorRangeForFreeList[0].BaseShaderRegister = 2; // レジスタ番号
   descriptorRangeForFreeList[0].NumDescriptors = 1; // ディスクリプタ数
-  descriptorRangeForFreeList[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // UAVを使う
-  descriptorRangeForFreeList[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+  descriptorRangeForFreeList[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // UAV を使う
+  descriptorRangeForFreeList[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
 
-  // RootParameterの設定。複数設定できるので配列
+  // RootParameter の設定。複数設定できるので配列
   D3D12_ROOT_PARAMETER rootParameters[4] = {};
   // Particle
   rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
@@ -796,7 +796,7 @@ void GPUParticle::CreateVertexData()
   // 頂点リソース生成
   vertexResource_ = m_dx12_->MakeBufferResource(sizeof(VertexData) * modelData_.vertices.size());
 
-  // VertexBufferViewの作成
+  // VertexBufferView の作成
   vertexBufferView_.BufferLocation = vertexResource_->GetGPUVirtualAddress(); // リソースの先頭のアドレスから使う
   vertexBufferView_.SizeInBytes = static_cast<UINT>(sizeof(VertexData) * modelData_.vertices.size());	// 使用するリソースのサイズは頂点のサイズ
   vertexBufferView_.StrideInBytes = sizeof(VertexData); // 1頂点あたりのサイズ
@@ -821,11 +821,11 @@ void GPUParticle::CreatePerViewData()
 
 void GPUParticle::CreatePerFrameData()
 {
-  // PerFrameのリソースを生成
+  // PerFrame のリソースを生成
   m_dx12_->CreateBufferResource(perFrameResource_, sizeof(PerFrame));
-  // PerFrameのデータをマップ
+  // PerFrame のデータをマップ
   perFrameResource_->Map(0, nullptr, reinterpret_cast<void**>(&perFrameData_));
-  // PerFrameのデータを初期化
+  // PerFrame のデータを初期化
   perFrameData_->time = 0.0f;
   perFrameData_->deltaTime = 0.0f;
 }
@@ -836,14 +836,14 @@ void GPUParticle::CreateEmitterData()
   // エミッターリソースの生成
   m_dx12_->CreateBufferResource(emitterResource_, sizeof(EmitterGPUData) * kNumMaxEmitter);
 
-  // エミッターリソースのSRVを作成
+  // エミッターリソースの SRV を作成
   emitterSrvIndex_ = m_srvManager_->Allocate();
   m_srvManager_->CreateSRVForStructuredBuffer(emitterSrvIndex_, emitterResource_.Get(), kNumMaxEmitter, sizeof(EmitterGPUData));
 
   // エミッター配列の初期化
   activeEmitters_.clear();
 
-  // GPU側の初期化
+  // GPU 側の初期化
   EmitterGPUData* gpuEmitters = nullptr;
   emitterResource_->Map(0, nullptr, reinterpret_cast<void**>(&gpuEmitters));
   ZeroMemory(gpuEmitters, sizeof(EmitterGPUData) * kNumMaxEmitter);
@@ -852,32 +852,32 @@ void GPUParticle::CreateEmitterData()
 
 void GPUParticle::CreateParticleResource()
 {
-  // ParticleCSのリソースを生成
+  // ParticleCS のリソースを生成
   m_dx12_->CreateResourceForUAV(particleResource_, sizeof(ParticleCS) * kNumMaxParticle);
 
-  // ParticleCSのUAVを生成
+  // ParticleCS の UAV を生成
   particleUavIndex_ = m_srvManager_->Allocate();
   m_srvManager_->CreateUAV(particleUavIndex_, particleResource_.Get(), kNumMaxParticle, sizeof(ParticleCS));
 
-  // ParticleCSのSRVを生成
+  // ParticleCS の SRV を生成
   particleSrvIndex_ = m_srvManager_->Allocate();
   m_srvManager_->CreateSRVForStructuredBuffer(particleSrvIndex_, particleResource_.Get(), kNumMaxParticle, sizeof(ParticleCS));
 }
 
 void GPUParticle::CreateFreeListResource()
 {
-  // FreeListIndexのリソースを生成
+  // FreeListIndex のリソースを生成
   m_dx12_->CreateResourceForUAV(freeListIndexResource_, sizeof(int32_t));
 
-  // FreeListIndexのUAVを生成
+  // FreeListIndex の UAV を生成
   freeListIndexUavIndex_ = m_srvManager_->Allocate();
   m_srvManager_->CreateUAV(freeListIndexUavIndex_, freeListIndexResource_.Get(), 1, sizeof(int32_t));
 
 
-  // FreeListのリソースを生成
+  // FreeList のリソースを生成
   m_dx12_->CreateResourceForUAV(freeListResource_, sizeof(uint32_t) * kNumMaxParticle);
 
-  // FreeListのUAVを生成
+  // FreeList の UAV を生成
   freeListUavIndex_ = m_srvManager_->Allocate();
   m_srvManager_->CreateUAV(freeListUavIndex_, freeListResource_.Get(), kNumMaxParticle, sizeof(uint32_t));
 }

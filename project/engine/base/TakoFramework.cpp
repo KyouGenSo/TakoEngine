@@ -45,15 +45,15 @@ void TakoFramework::Initialize()
 	dx12_ = std::make_unique<DX12Basic>();
 	dx12_->Initialize(winApp_);
 
-	// SrvManagerを先に初期化（ImGuiManagerが使用するため）
+	// SrvManager を先に初期化（ImGuiManager が使用するため）
 	SrvManager::GetInstance()->Initialize(dx12_.get());
 
 #ifdef _DEBUG
-	// ImGuiManagerの初期化（SrvManagerのディスクリプタヒープを使用）
+	// ImGuiManager の初期化（SrvManager のディスクリプタヒープを使用）
 	imguiManager_ = std::make_unique<ImGuiManager>();
   imguiManager_->Initialize(winApp_, dx12_.get(), true);
   
-  // DebugUIManagerの初期化
+  // DebugUIManager の初期化
   DebugUIManager::GetInstance()->Initialize();
   DebugUIManager::GetInstance()->SetEndFlagPtr(&endFlag_);
   DebugUIManager::GetInstance()->SetDebugFlagPtr(&isDebug_);
@@ -79,7 +79,7 @@ void TakoFramework::Initialize()
 	// デフォルトカメラを設定
 	Object3dBasic::GetInstance()->SetCamera(defaultCamera_.get());
 
-  // ShadowRendererの初期化
+  // ShadowRenderer の初期化
   ShadowRenderer::GetInstance()->Initialize(dx12_.get());
   ShadowRenderer::GetInstance()->SetLight(Object3dBasic::GetInstance()->GetLight());
   ShadowRenderer::GetInstance()->SetCamera(defaultCamera_.get());
@@ -111,7 +111,7 @@ void TakoFramework::Finalize()
   // シーンマネージャーの終了処理（最初に実行）
   SceneManager::GetInstance()->Finalize();
 
-  // Initializeの逆順で終了処理を実行
+  // Initialize の逆順で終了処理を実行
   // TransitionManager
   TransitionManager::GetInstance()->Finalize();
 
@@ -124,7 +124,7 @@ void TakoFramework::Finalize()
   // ShadowRenderer
   ShadowRenderer::GetInstance()->Finalize();
 
-  // defaultCameraはunique_ptrで自動解放
+  // defaultCamera は unique_ptr で自動解放
   defaultCamera_.reset();
 
   // FrameTimer
@@ -147,14 +147,14 @@ void TakoFramework::Finalize()
   // TextureManager
   TextureManager::GetInstance()->Finalize();
 
-  // SRVマネージャー
+  // SRV マネージャー
   SrvManager::GetInstance()->Finalize();
 
 #ifdef _DEBUG
-  // DebugUIManagerの終了処理
+  // DebugUIManager の終了処理
   DebugUIManager::GetInstance()->Finalize();
 
-  // ImGuiManagerの終了処理
+  // ImGuiManager の終了処理
   imguiManager_->Shutdown();
   imguiManager_.reset();
 #endif
@@ -163,7 +163,7 @@ void TakoFramework::Finalize()
   dx12_->Finalize();
   dx12_.reset();
 
-  // sceneFactoryはunique_ptrで自動解放
+  // sceneFactory は unique_ptr で自動解放
   sceneFactory_.reset();
 
   // WinApp（最初に初期化されたもの）
@@ -204,13 +204,13 @@ void TakoFramework::Update()
   DebugUIManager::GetInstance()->Update();
 #endif
 
-	//	Draw2Dの更新
+	//	Draw2D の更新
 	Draw2D::GetInstance()->Update();
 
-	// Object3dBasicの更新
+	// Object3dBasic の更新
 	Object3dBasic::GetInstance()->Update();
 
-  // ShadowRendererの更新
+  // ShadowRenderer の更新
   ShadowRenderer::GetInstance()->Update();
 
 }
@@ -218,7 +218,7 @@ void TakoFramework::Update()
 void TakoFramework::Draw()
 {
 #ifdef _DEBUG
-  // デバッグUIの描画
+  // デバッグ UI の描画
   DebugUIManager::GetInstance()->Draw();
 #endif
 }
@@ -252,13 +252,13 @@ void TakoFramework::ToggleFullScreen()
 
 void TakoFramework::OnWindowResize(uint32_t width, uint32_t height)
 {
-  // GPUの処理を待機
+  // GPU の処理を待機
   //dx12_->WaitForGPU();
 
   // バッファのリサイズ
   dx12_->ResizeBuffers(width, height);
 
-  // レンダーテクスチャの再作成（PostEffect用）
+  // レンダーテクスチャの再作成（PostEffect 用）
   PostEffectManager::GetInstance()->RecreateRenderTexture();
 
   // カメラのアスペクト比を更新

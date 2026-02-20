@@ -123,7 +123,7 @@ void DebugUIManager::Draw() {
     }
   }
 
-  // PostEffectは独自の描画を持つ
+  // PostEffect は独自の描画を持つ
   if (windowVisibility_["PostEffect"]) {
     PostEffectManager::GetInstance()->DrawImgui();
   }
@@ -132,7 +132,7 @@ void DebugUIManager::Draw() {
 
 void DebugUIManager::DrawMainMenuBar() {
   if (ImGui::BeginMainMenuBar()) {
-    // Generalメニュー
+    // General メニュー
     if (ImGui::BeginMenu("General")) {
       if (ImGui::MenuItem("Exit", "Alt+F4")) {
         if (pEndFlag_) *pEndFlag_ = true;
@@ -142,7 +142,7 @@ void DebugUIManager::DrawMainMenuBar() {
 
     ImGui::Text(" | ");
 
-    // Viewメニュー
+    // View メニュー
     if (ImGui::BeginMenu("View")) {
       ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Main Windows");
       ImGui::Separator();
@@ -164,14 +164,14 @@ void DebugUIManager::DrawMainMenuBar() {
 
     ImGui::Text(" | ");
 
-    // Toolsメニュー
+    // Tools メニュー
     if (ImGui::BeginMenu("Tools")) {
       bool collisionDebug = CollisionManager::GetInstance()->IsDebugDrawEnabled();
       if (ImGui::MenuItem("Collider Visibility", nullptr, collisionDebug)) {
         CollisionManager::GetInstance()->SetDebugDrawEnabled(!collisionDebug);
       }
 
-      // Debug Cameraの切り替え
+      // Debug Camera の切り替え
       if (pIsDebug_) {
         bool debugCamera = *pIsDebug_;
         if (ImGui::MenuItem("Debug Camera", "F1", debugCamera)) {
@@ -191,7 +191,7 @@ void DebugUIManager::DrawMainMenuBar() {
 
     ImGui::Text(" | ");
 
-    // Helpメニュー
+    // Help メニュー
     if (ImGui::BeginMenu("Help")) {
       if (ImGui::MenuItem("About TakoEngine")) {}
       if (ImGui::MenuItem("Documentation")) {}
@@ -206,7 +206,7 @@ void DebugUIManager::DrawMainMenuBar() {
     ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 140);
     ImGui::Text("|");
 
-    // FPS表示（右端）
+    // FPS 表示（右端）
     ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 120);
     float fps = FrameTimer::GetInstance()->GetFPS();
     if (fps >= 55.0f) {
@@ -226,7 +226,7 @@ void DebugUIManager::DrawSceneHierarchy() {
 
   ImGui::Text("Current Scene: %s", currentSceneName_.c_str());
 
-  // シーン遷移UI
+  // シーン遷移 UI
   ImGui::PushItemWidth(120.0f);  // 入力ボックスの幅を設定
   ImGui::InputText("##SceneName", sceneNameBuffer_, sizeof(sceneNameBuffer_));
   ImGui::PopItemWidth();
@@ -327,7 +327,7 @@ void DebugUIManager::DrawInspector() {
     ImGui::Text("Selected: %s", selectedObject.name.c_str());
     ImGui::Separator();
 
-    // オブジェクトのDrawImGui関数を呼び出す
+    // オブジェクトの DrawImGui 関数を呼び出す
     if (selectedObject.drawImGuiFunc) {
       selectedObject.drawImGuiFunc();
     }
@@ -459,7 +459,7 @@ void DebugUIManager::DrawPerformance() {
   ImGui::Text("Current FPS: %.1f", fps);
   ImGui::Text("Frame Time: %.2f ms", frameTime);
 
-  // FPSグラフ
+  // FPS グラフ
   fpsHistory_[fpsHistoryIndex_] = fps;
   fpsHistoryIndex_ = (fpsHistoryIndex_ + 1) % 100;
 
@@ -718,7 +718,7 @@ void DebugUIManager::DrawShadowSettings() {
   ImGui::Text("Shadow Mapping Configuration");
   ImGui::Separator();
 
-  // シャドウのON/OFF（大きなトグルボタン）
+  // シャドウの ON/OFF（大きなトグルボタン）
   bool shadowEnabled = shadowRenderer->IsEnabled();
   if (ImGui::Checkbox("##EnableShadow", &shadowEnabled)) {
     shadowRenderer->SetEnabled(shadowEnabled);
@@ -759,7 +759,7 @@ void DebugUIManager::DrawShadowSettings() {
   // 詳細設定
   if (ImGui::CollapsingHeader("Quality Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
     if (shadowMap) {
-      // シャドウマップ解像度（static変数で状態を保持）
+      // シャドウマップ解像度（static 変数で状態を保持）
       static int shadowMapSize = shadowMap->GetShadowMapSize();
       ImGui::Text("Shadow Map Resolution:");
       ImGui::RadioButton("512x512", &shadowMapSize, 512);
@@ -773,7 +773,7 @@ void DebugUIManager::DrawShadowSettings() {
         shadowRenderer->SetShadowMapSize(shadowMapSize);
       }
 
-      // PCFカーネルサイズ
+      // PCF カーネルサイズ
       static int kernelSize = shadowMap->GetPCFKernelSize();
       if (ImGui::SliderInt("PCF Kernel Size", &kernelSize, 0, 9,
         kernelSize == 0 ? "No PCF" : "%dx%d")) {
@@ -784,7 +784,7 @@ void DebugUIManager::DrawShadowSettings() {
   }
 
   if (ImGui::CollapsingHeader("Shadow Parameters")) {
-    // バイアス設定（static変数で状態を保持）
+    // バイアス設定（static 変数で状態を保持）
     static float bias = 0.0001f;
     if (ImGui::SliderFloat("Shadow Bias", &bias, 0.0001f, 0.01f, "%.5f")) {
       shadowRenderer->SetShadowBias(bias);
@@ -850,7 +850,7 @@ void DebugUIManager::DrawCollisionDebug() {
   ImGui::Text("Collision System");
   ImGui::Separator();
 
-  // デバッグワイヤーフレーム表示のON/OFF
+  // デバッグワイヤーフレーム表示の ON/OFF
   bool debugDraw = collisionManager->IsDebugDrawEnabled();
   if (ImGui::Checkbox("##ShowWireframes", &debugDraw)) {
     collisionManager->SetDebugDrawEnabled(debugDraw);
@@ -892,12 +892,12 @@ void DebugUIManager::DrawCollisionDebug() {
         ("Active: " + std::to_string(activeCount) + " / Inactive: " + std::to_string(inactiveCount)).c_str());
     }
 
-    // Type ID別の分布（汎用的な表示）
+    // Type ID 別の分布（汎用的な表示）
     if (!typeCountMap.empty()) {
       ImGui::Spacing();
       ImGui::Text("Type ID Distribution:");
 
-      // Type IDでソートして表示
+      // Type ID でソートして表示
       std::map<uint32_t, int> sortedTypeMap(typeCountMap.begin(), typeCountMap.end());
 
       for (const auto& [typeID, count] : sortedTypeMap) {

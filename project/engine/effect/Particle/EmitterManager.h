@@ -27,10 +27,10 @@ struct EmitterGroup {
 };
 
 /// <summary>
-/// GPUパーティクルエミッター管理クラス
+/// GPU パーティクルエミッター管理クラス
 /// 球体、箱型、三角形の各種エミッターを名前で管理し、動的な生成・更新・削除をサポート
 /// グループ機能、プリセット保存/読み込み、コピー&ペースト機能を提供
-/// JSON形式でのエミッター設定の永続化に対応
+/// JSON 形式でのエミッター設定の永続化に対応
 /// </summary>
 class EmitterManager
 {
@@ -38,7 +38,7 @@ public:
   /// <summary>
   /// コンストラクタ
   /// </summary>
-  /// <param name="particleSystem">GPUパーティクルシステムへのポインタ</param>
+  /// <param name="particleSystem">GPU パーティクルシステムへのポインタ</param>
   EmitterManager(GPUParticle* particleSystem);
 
   /// <summary>
@@ -145,17 +145,17 @@ public:
   /// エミッターのスケール範囲を設定
   /// </summary>
   /// <param name="name">エミッター名</param>
-  /// <param name="scaleRangeX">X方向のスケール範囲</param>
-  /// <param name="scaleRangeY">Y方向のスケール範囲</param>
+  /// <param name="scaleRangeX">X 方向のスケール範囲</param>
+  /// <param name="scaleRangeY">Y 方向のスケール範囲</param>
   void SetEmitterScaleRange(const std::string& name, const Vector2& scaleRangeX, const Vector2& scaleRangeY);
 
   /// <summary>
   /// エミッターの速度範囲を設定
   /// </summary>
   /// <param name="name">エミッター名</param>
-  /// <param name="velRangeX">X方向の速度範囲</param>
-  /// <param name="velRangeY">Y方向の速度範囲</param>
-  /// <param name="velRangeZ">Z方向の速度範囲</param>
+  /// <param name="velRangeX">X 方向の速度範囲</param>
+  /// <param name="velRangeY">Y 方向の速度範囲</param>
+  /// <param name="velRangeZ">Z 方向の速度範囲</param>
   void SetEmitterVelocityRange(const std::string& name, const Vector2& velRangeX, const Vector2& velRangeY, const Vector2& velRangeZ);
 
   /// <summary>
@@ -169,7 +169,7 @@ public:
   /// エミッターのアクティブ状態を設定
   /// </summary>
   /// <param name="name">エミッター名</param>
-  /// <param name="isActive">アクティブにする場合true</param>
+  /// <param name="isActive">アクティブにする場合 true</param>
   void SetEmitterActive(const std::string& name, bool isActive);
 
   /// <summary>
@@ -183,14 +183,14 @@ public:
   /// エミッターの速度正規化を設定
   /// </summary>
   /// <param name="name">エミッター名</param>
-  /// <param name="isNormalize">正規化する場合true</param>
+  /// <param name="isNormalize">正規化する場合 true</param>
   void SetEmitterNormalize(const std::string& name, bool isNormalize);
 
   /// <summary>
-  /// エミッターのランダムZ軸回転を設定
+  /// エミッターのランダム Z 軸回転を設定
   /// </summary>
   /// <param name="name">エミッター名</param>
-  /// <param name="isRandomRotateZ">ランダム回転を有効にする場合true</param>
+  /// <param name="isRandomRotateZ">ランダム回転を有効にする場合 true</param>
   void SetEmitterRandomRotateZ(const std::string& name, bool isRandomRotateZ);
 
   /// <summary>
@@ -233,7 +233,7 @@ public:
   /// 名前でエミッターを取得
   /// </summary>
   /// <param name="name">エミッター名</param>
-  /// <returns>見つかったエミッター、見つからない場合はnullptr</returns>
+  /// <returns>見つかったエミッター、見つからない場合は nullptr</returns>
   std::shared_ptr<GPUParticleEmitter> GetEmitterByName(const std::string& name);
 
   /// <summary>
@@ -271,7 +271,7 @@ public:
   /// グループのアクティブ状態を設定
   /// </summary>
   /// <param name="groupName">グループ名</param>
-  /// <param name="isActive">アクティブにする場合true</param>
+  /// <param name="isActive">アクティブにする場合 true</param>
   void SetGroupActive(const std::string& groupName, bool isActive);
 
   /// <summary>
@@ -299,13 +299,13 @@ public:
   size_t GetActiveEmitterCount() const { return emitterMap_.size(); }
 
   /// <summary>
-  /// エミッター設定をJSONファイルに保存
+  /// エミッター設定を JSON ファイルに保存
   /// </summary>
   /// <param name="filename">ファイル名</param>
   void SaveScenePreset(const std::string& filename);
 
   /// <summary>
-  /// JSONファイルからエミッター設定を読み込み
+  /// JSON ファイルからエミッター設定を読み込み
   /// </summary>
   /// <param name="filename">ファイル名</param>
   void LoadScenePreset(const std::string& filename);
@@ -340,7 +340,7 @@ public:
   /// 指定した名前のエミッターが存在するか確認
   /// </summary>
   /// <param name="name">エミッター名</param>
-  /// <returns>存在する場合true</returns>
+  /// <returns>存在する場合 true</returns>
   bool HasEmitter(const std::string& name) const;
 
   /// <summary>
@@ -348,7 +348,7 @@ public:
   /// </summary>
   /// <param name="emitterName">コピー元のエミッター名</param>
   /// <param name="slotIndex">コピー先スロット番号（0-4）</param>
-  /// <returns>成功した場合true</returns>
+  /// <returns>成功した場合 true</returns>
   bool CopyEmitterSettings(const std::string& emitterName, int slotIndex = 0);
 
   /// <summary>
@@ -356,17 +356,17 @@ public:
   /// </summary>
   /// <param name="targetEmitterName">ペースト先のエミッター名</param>
   /// <param name="slotIndex">コピー元スロット番号（0-4）</param>
-  /// <param name="colorOnly">色のみペーストする場合true</param>
-  /// <param name="velocityOnly">速度のみペーストする場合true</param>
-  /// <param name="scaleOnly">スケールのみペーストする場合true</param>
-  /// <returns>成功した場合true</returns>
+  /// <param name="colorOnly">色のみペーストする場合 true</param>
+  /// <param name="velocityOnly">速度のみペーストする場合 true</param>
+  /// <param name="scaleOnly">スケールのみペーストする場合 true</param>
+  /// <returns>成功した場合 true</returns>
   bool PasteEmitterSettings(const std::string& targetEmitterName, int slotIndex = 0, bool colorOnly = false, bool velocityOnly = false, bool scaleOnly = false);
 
   /// <summary>
   /// 指定したスロットにコピー済みの設定があるか確認
   /// </summary>
   /// <param name="slotIndex">スロット番号（0-4）</param>
-  /// <returns>設定がある場合true</returns>
+  /// <returns>設定がある場合 true</returns>
   bool HasCopiedSettings(int slotIndex = 0) const;
 
   /// <summary>
@@ -392,7 +392,7 @@ public:
   /// グループがアクティブかどうかを取得
   /// </summary>
   /// <param name="groupName">グループ名</param>
-  /// <returns>アクティブな場合true</returns>
+  /// <returns>アクティブな場合 true</returns>
   bool IsGroupActive(const std::string& groupName) const;
 
   /// <summary>
@@ -404,27 +404,27 @@ public:
 private: // プライベートメンバー関数
 
   /// <summary>
-  /// 一時的なエミッターの更新（Update関数内で呼び出される）
+  /// 一時的なエミッターの更新（Update 関数内で呼び出される）
   /// </summary>
   void UpdateTemporaryEmitters();
 
   /// <summary>
-  /// エミッターをJSONにシリアライズ
+  /// エミッターを JSON にシリアライズ
   /// </summary>
   /// <param name="emitter">シリアライズするエミッター</param>
-  /// <param name="json">出力先のJSONオブジェクト</param>
+  /// <param name="json">出力先の JSON オブジェクト</param>
   void SerializeEmitterToJSON(const std::shared_ptr<GPUParticleEmitter>& emitter, nlohmann::json& json) const;
 
   /// <summary>
-  /// JSONからエミッターをデシリアライズ
+  /// JSON からエミッターをデシリアライズ
   /// </summary>
-  /// <param name="json">読み込むJSONオブジェクト</param>
+  /// <param name="json">読み込む JSON オブジェクト</param>
   /// <returns>デシリアライズされたエミッター</returns>
   std::shared_ptr<GPUParticleEmitter> DeserializeEmitterFromJSON(const nlohmann::json& json);
 
 private:
   /// <summary>
-  /// GPUパーティクルシステムへのポインタ
+  /// GPU パーティクルシステムへのポインタ
   /// </summary>
   GPUParticle* particleSystem_;
 

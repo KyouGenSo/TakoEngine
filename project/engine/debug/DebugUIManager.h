@@ -12,7 +12,7 @@
 namespace Tako {
 
 /// <summary>
-/// デバッグUIの統合管理クラス。シーンヒエラルキー、インスペクター、コンソール、パフォーマンスモニターなどを提供
+/// デバッグ UI の統合管理クラス。シーンヒエラルキー、インスペクター、コンソール、パフォーマンスモニターなどを提供
 /// </summary>
 class DebugUIManager {
 public:
@@ -33,7 +33,7 @@ public:
     // ゲームオブジェクトデバッグ情報
     struct GameObjectDebugInfo {
         std::string name;                    // オブジェクト名
-        std::function<void()> drawImGuiFunc; // DrawImGui関数
+        std::function<void()> drawImGuiFunc; // DrawImGui 関数
     };
 
 private:
@@ -54,7 +54,7 @@ public:
     /// <summary>
     /// インスタンス取得
     /// </summary>
-    /// <returns>DebugUIManagerのインスタンス</returns>
+    /// <returns>DebugUIManager のインスタンス</returns>
     static DebugUIManager* GetInstance();
 
     /// <summary>
@@ -117,7 +117,7 @@ public:
     /// ゲームオブジェクトを登録
     /// </summary>
     /// <param name="name">オブジェクト名</param>
-    /// <param name="drawImGuiFunc">ImGui描画関数</param>
+    /// <param name="drawImGuiFunc">ImGui 描画関数</param>
     void RegisterGameObject(const std::string& name, std::function<void()> drawImGuiFunc);
 
     /// <summary>
@@ -158,9 +158,9 @@ public:
     const std::string& GetSceneName() const { return currentSceneName_; }
 
     /// <summary>
-    /// EmitterManagerを設定
+    /// EmitterManager を設定
     /// </summary>
-    /// <param name="emitterManager">EmitterManagerポインタ</param>
+    /// <param name="emitterManager">EmitterManager ポインタ</param>
     void SetEmitterManager(class EmitterManager* emitterManager) { emitterManager_ = emitterManager; }
 
 private:
@@ -276,7 +276,7 @@ private:
     // デバッグカメラ有効フラグへのポインタ
     bool* pIsDebug_ = nullptr;
 
-    // シーン遷移UI用
+    // シーン遷移 UI 用
     char sceneNameBuffer_[128] = "";  // シーン名入力バッファ
 
     // パーティクルエディター用

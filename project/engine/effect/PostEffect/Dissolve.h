@@ -19,10 +19,10 @@ public:
   /// <summary>
   /// エフェクトを適用
   /// </summary>
-  /// <param name="inputSrvIndex">入力テクスチャのSRVインデックス</param>
-  /// <param name="outputRtvHandle">出力先のRTVハンドル</param>
-  /// <param name="maskSrvIndex">マスクテクスチャのSRVインデックス</param>
-  /// <param name="clearColor">出力先のRTVのクリアカラー</param>
+  /// <param name="inputSrvIndex">入力テクスチャの SRV インデックス</param>
+  /// <param name="outputRtvHandle">出力先の RTV ハンドル</param>
+  /// <param name="maskSrvIndex">マスクテクスチャの SRV インデックス</param>
+  /// <param name="clearColor">出力先の RTV のクリアカラー</param>
   void Apply(
     uint32_t                    inputSrvIndex,
     D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle,
@@ -31,7 +31,7 @@ public:
   ) override;
 
   /// <summary>
-  /// ImGuiでデバッグUIを描画
+  /// ImGui でデバッグ UI を描画
   /// </summary>
   void DrawImgui() override;
 
@@ -39,7 +39,7 @@ public:
   /// 汎用パラメータを設定
   /// </summary>
   /// <param name="param">エフェクトパラメータ</param>
-  /// <returns>設定成功の場合true</returns>
+  /// <returns>設定成功の場合 true</returns>
   bool SetGenericParam(const EffectParam& param) override;
 
   /// <summary>
@@ -49,9 +49,9 @@ public:
   void SetParam(const DissolveParam& param);
 
   /// <summary>
-  /// 背景テクスチャのSRVインデックスを設定
+  /// 背景テクスチャの SRV インデックスを設定
   /// </summary>
-  /// <param name="srvIndex">SRVインデックス</param>
+  /// <param name="srvIndex">SRV インデックス</param>
   void SetBaseTextureSrvIndex(uint32_t srvIndex){
     baseTexSrvIndex_ = srvIndex;
   }
@@ -76,7 +76,7 @@ private:
   ComPtr<ID3D12Resource> cBufferResource_;
   DissolveParam* cBufferData_ = nullptr;
 
-  uint32_t baseTexSrvIndex_ = 0; // 背景テクスチャのSRVインデックス
+  uint32_t baseTexSrvIndex_ = 0; // 背景テクスチャの SRV インデックス
 
 };
 

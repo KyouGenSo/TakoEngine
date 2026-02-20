@@ -8,9 +8,9 @@ namespace Tako {
 /// 3次元ベクトル
 /// </summary>
 struct Vector3 final {
-	float x;  ///< X座標
-	float y;  ///< Y座標
-	float z;  ///< Z座標
+	float x;  ///< X 座標
+	float y;  ///< Y 座標
+	float z;  ///< Z 座標
 
 	/// <summary>
 	/// ベクトルの加算代入演算子
@@ -138,7 +138,7 @@ struct Vector3 final {
 	/// ベクトルの等価比較演算子（誤差を考慮）
 	/// </summary>
 	/// <param name="v">比較するベクトル</param>
-	/// <returns>等しい場合true、異なる場合false</returns>
+	/// <returns>等しい場合 true、異なる場合 false</returns>
 	bool operator==(const Vector3& v) const {
 		return (std::abs(x - v.x) <= std::numeric_limits<float>::epsilon() &&
 		        std::abs(y - v.y) <= std::numeric_limits<float>::epsilon() &&
@@ -149,7 +149,7 @@ struct Vector3 final {
 	/// ベクトルの非等価比較演算子
 	/// </summary>
 	/// <param name="v">比較するベクトル</param>
-	/// <returns>異なる場合true、等しい場合false</returns>
+	/// <returns>異なる場合 true、等しい場合 false</returns>
 	bool operator!=(const Vector3& v) const {
 		return !(*this == v);
 	}
@@ -266,7 +266,7 @@ struct Vector3 final {
 	/// ベクトルを別のベクトルに射影（投影）
 	/// </summary>
 	/// <param name="onto">射影先のベクトル</param>
-	/// <returns>射影されたベクトル（ontoと平行なベクトル）</returns>
+	/// <returns>射影されたベクトル（onto と平行なベクトル）</returns>
 	Vector3 Project(const Vector3& onto) const {
 		float lengthSquared = onto.LengthSquared();
 		if (lengthSquared <= std::numeric_limits<float>::epsilon()) {

@@ -11,7 +11,7 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 
 namespace Tako {
 
-// instanceの初期化
+// instance の初期化
 std::unique_ptr<WinApp> WinApp::instance_ = nullptr;
 
 std::vector<IWndProcHandler*> WinApp::m_handlers_;
@@ -27,7 +27,7 @@ void WinApp::Initialize()
   // システムタイマーの分解能を上げる
   timeBeginPeriod(1);
 
-  // COMの初期化
+  // COM の初期化
   HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
   assert(SUCCEEDED(hr));
 
@@ -54,8 +54,8 @@ void WinApp::Initialize()
     wc_.lpszClassName,             //クラス名
     windowTitle_.c_str(),                //タイトルバーの文字列
     WS_OVERLAPPEDWINDOW,  // サイズ変更可能で最大化ボタンも有効なウィンドウスタイル
-    CW_USEDEFAULT,               //表示X座標
-    CW_USEDEFAULT,              //表示Y座標
+    CW_USEDEFAULT,               //表示 X 座標
+    CW_USEDEFAULT,              //表示 Y 座標
     wrc.right - wrc.left,      //ウィンドウ幅
     wrc.bottom - wrc.top,      //ウィンドウ高さ
     nullptr,                  //親ウィンドウハンドル
@@ -79,7 +79,7 @@ bool WinApp::ProcessMessage()
     DispatchMessage(&msg);
   }
 
-  //ウィンドウが破棄されたらTrueを返す
+  //ウィンドウが破棄されたら True を返す
   if (msg.message == WM_QUIT)
   {
     return true;
@@ -92,7 +92,7 @@ void WinApp::Finalize()
 {
   //ウィンドウを破棄
   CloseWindow(hWnd_);
-  // COMの終了処理
+  // COM の終了処理
   CoUninitialize();
 
   // instance_削除
@@ -101,7 +101,7 @@ void WinApp::Finalize()
 
 LRESULT WinApp::WndProc(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
-  // handlerがあれば関数を呼び出す
+  // handler があれば関数を呼び出す
   for (auto handler : m_handlers_)
   {
     handler->OnWndProc(hWnd, msg, wparam, lparam);
@@ -133,7 +133,7 @@ LRESULT WinApp::WndProc(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam)
       int width = LOWORD(lparam);
       int height = HIWORD(lparam);
 
-      // wparamに基づいて最大化状態を更新
+      // wparam に基づいて最大化状態を更新
       switch (wparam)
       {
       case SIZE_MAXIMIZED:
@@ -141,7 +141,7 @@ LRESULT WinApp::WndProc(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam)
         instance->isMaximized_ = true;
         instance->SetWindowSize(width, height);
 
-        // OnResize関数があれば呼び出す
+        // OnResize 関数があれば呼び出す
         if (!instance->onResizeFuncs_.empty()) {
           Vector2 newSize = { .x = static_cast<float>(width), .y = static_cast<float>(height) };
           for (const auto& entry : instance->onResizeFuncs_) {
@@ -157,7 +157,7 @@ LRESULT WinApp::WndProc(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam)
         }
         instance->SetWindowSize(width, height);
 
-        // OnResize関数があれば呼び出す
+        // OnResize 関数があれば呼び出す
         if (!instance->onResizeFuncs_.empty()) {
           Vector2 newSize = { .x = static_cast<float>(width), .y = static_cast<float>(height) };
           for (const auto& entry : instance->onResizeFuncs_) {
@@ -240,7 +240,7 @@ void WinApp::ToggleFullScreen()
     isFullScreen_ = false;
   }
 
-  // OnResize関数があれば呼び出す
+  // OnResize 関数があれば呼び出す
   if (!onResizeFuncs_.empty()) {
     Vector2 newSize = { .x = static_cast<float>(clientWidth), .y = static_cast<float>(clientHeight) };
     for (const auto& entry : onResizeFuncs_) {

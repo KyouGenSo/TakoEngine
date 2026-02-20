@@ -17,7 +17,7 @@ OBB OBBCollider::GetOBB() const {
 	// オフセットを回転を考慮して適用
 	if (transform_) {
 		// orientation_が設定されている場合はそれを使用
-		// オフセットをorientation_で回転
+		// オフセットを orientation_で回転
     orientation_ = Mat4x4::MakeRotateXYZ(transform_->rotate);
 		Vector3 rotatedOffset = Mat4x4::TransformNormal(orientation_, offset_);
 		obb.center = worldPos + rotatedOffset;

@@ -26,16 +26,16 @@ namespace Tako {
 
   void Light::PreDraw()
   {
-    // 平行光源CBufferの場所を設定
+    // 平行光源 CBuffer の場所を設定
     m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource_->GetGPUVirtualAddress());
 
-    // ポイントライトsrvの場所を設定
+    // ポイントライト srv の場所を設定
     SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(5, pointLightSrvIndex_);
 
-    // スポットライトCBufferの場所を設定
+    // スポットライト CBuffer の場所を設定
     SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(6, spotLightSrvIndex_);
 
-    // ライト定数CBufferの場所を設定
+    // ライト定数 CBuffer の場所を設定
     m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(7, lightConstantsResource_->GetGPUVirtualAddress());
   }
 
@@ -66,12 +66,12 @@ namespace Tako {
 
   void Light::SetPointLight(const Vector3& position, const Vector4& color, float intensity, float radius, float decay, bool enable, int index)
   {
-    // indexをチェック
+    // index をチェック
     if (index >= Light::MAX_POINT_LIGHT) {
       return;
     }
 
-    // indexの配列にこの値がないなら、新しい値を追加
+    // index の配列にこの値がないなら、新しい値を追加
     if (pointLightIndexList_.size() <= index && index <= Light::MAX_POINT_LIGHT) {
       pointLightIndexList_.resize(index + 1);
     }
@@ -86,11 +86,11 @@ namespace Tako {
 
   void Light::SetSpotLight(const Vector3& position, const Vector3& direction, const Vector4& color, float intensity, float distance, float decay, float cosAngle, bool enable, int index)
   {
-    // indexをチェック
+    // index をチェック
     if (index >= Light::MAX_SPOT_LIGHT) {
       return;
     }
-    // indexの配列にこの値がないなら、新しい値を追加
+    // index の配列にこの値がないなら、新しい値を追加
     if (spotLightIndexList_.size() <= index && index <= Light::MAX_SPOT_LIGHT) {
       spotLightIndexList_.resize(index + 1);
     }
@@ -145,7 +145,7 @@ namespace Tako {
     pointLightData_[0].decay = 1.0f;                           // 減衰
     pointLightData_[0].enable = false;                         // 点光源の有効無効
 
-    // SRVの生成
+    // SRV の生成
     pointLightSrvIndex_ = SrvManager::GetInstance()->Allocate();
     SrvManager::GetInstance()->CreateSRVForStructuredBuffer(pointLightSrvIndex_, pointLightResource_.Get(), Light::MAX_POINT_LIGHT, sizeof(PointLight));
   }
@@ -168,7 +168,7 @@ namespace Tako {
     spotLightData_[0].cosAngle = std::cos(std::numbers::pi_v<float> / 3.0f); // 角度
     spotLightData_[0].enable = false;                         // スポットライトの有効無効
 
-    // SRVの生成
+    // SRV の生成
     spotLightSrvIndex_ = SrvManager::GetInstance()->Allocate();
     SrvManager::GetInstance()->CreateSRVForStructuredBuffer(spotLightSrvIndex_, spotLightResource_.Get(), Light::MAX_SPOT_LIGHT, sizeof(SpotLight));
   }
@@ -205,10 +205,10 @@ namespace Tako {
     Vector3 scale = { 1.0f, 1.0f, 1.0f };
     Vector3 rotate = { 0.0f, 0.0f, 0.0f };
 
-    // Y軸まわりの回転角度を計算（XZ平面での方向から）
+    // Y 軸まわりの回転角度を計算（XZ 平面での方向から）
     rotate.y = std::atan2f(lightDirection.x, lightDirection.z);
 
-    // X軸まわりの回転角度を計算（ピッチ角）
+    // X 軸まわりの回転角度を計算（ピッチ角）
     float horizontalLength = std::sqrtf(lightDirection.x * lightDirection.x + lightDirection.z * lightDirection.z);
     rotate.x = std::atan2f(-lightDirection.y, horizontalLength);
 
@@ -218,7 +218,7 @@ namespace Tako {
     // ビュー行列はワールド行列の逆行列
     directionalLightData_->viewMatrix = Mat4x4::Inverse(lightWorldMatrix);
 
-    // maxShadowDistanceで制限された視錐台の境界ボックスをライト空間で取得
+    // maxShadowDistance で制限された視錐台の境界ボックスをライト空間で取得
     auto [minBounds, maxBounds] = camera->GetFrustumBoundingBoxWithCustomFar(maxShadowDistance, &directionalLightData_->viewMatrix);
 
     // 視錐台を制限された範囲でカバーする正射影パラメータを計算
@@ -229,7 +229,7 @@ namespace Tako {
     float orthoNear = minBounds.z - 20.0f; // 余裕を持たせる（最も近い点から少し手前）
     float orthoFar = maxBounds.z + 20.0f;  // 余裕を持たせる（最も遠い点から少し奥）
 
-    // 安全性チェック（near/farが逆転しないように）
+    // 安全性チェック（near/far が逆転しないように）
     if (orthoNear >= orthoFar) {
       orthoNear = 0.1f;
       orthoFar = 1000.0f;

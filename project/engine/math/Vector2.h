@@ -8,8 +8,8 @@ namespace Tako {
 /// 2次元ベクトル
 /// </summary>
 struct Vector2 final {
-	float x;  ///< X成分
-	float y;  ///< Y成分
+	float x;  ///< X 成分
+	float y;  ///< Y 成分
 
 	/// <summary>
 	/// 加算代入演算子
@@ -129,7 +129,7 @@ struct Vector2 final {
 	/// 等価演算子(イプシロン比較)
 	/// </summary>
 	/// <param name="v">比較するベクトル</param>
-	/// <returns>ほぼ等しい場合true</returns>
+	/// <returns>ほぼ等しい場合 true</returns>
 	bool operator==(const Vector2& v) const {
 		return (std::abs(x - v.x) <= std::numeric_limits<float>::epsilon() &&
 		        std::abs(y - v.y) <= std::numeric_limits<float>::epsilon());
@@ -139,7 +139,7 @@ struct Vector2 final {
 	/// 非等価演算子
 	/// </summary>
 	/// <param name="v">比較するベクトル</param>
-	/// <returns>等しくない場合true</returns>
+	/// <returns>等しくない場合 true</returns>
 	bool operator!=(const Vector2& v) const {
 		return !(*this == v);
 	}

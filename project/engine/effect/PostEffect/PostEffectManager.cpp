@@ -65,7 +65,7 @@ void PostEffectManager::Initialize(DX12Basic* dx12)
   RegisterEffect("HalfTone", std::make_unique<HalfTone>());
   RegisterEffect("GaussianBlur", std::make_unique<GaussianBlur>());
 
-  // 深度バッファテクスチャのSRV作成
+  // 深度バッファテクスチャの SRV 作成
   depthSrvIndex_ = SrvManager::GetInstance()->Allocate();
   SrvManager::GetInstance()->CreateSRVForTexture2D(
     depthSrvIndex_,
@@ -74,7 +74,7 @@ void PostEffectManager::Initialize(DX12Basic* dx12)
     1
   );
 
-  // DissolveマスクテクスチャのデフォルトSRV作成
+  // Dissolve マスクテクスチャのデフォルト SRV 作成
   dissolveMaskSrvIndex_ = TextureManager::GetInstance()->GetSRVIndex("noise0.png");
 }
 
@@ -107,7 +107,7 @@ void PostEffectManager::BeginDrawEffectTarget()
 {
   D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
 
-  // エフェクト適用対象RTに描画
+  // エフェクト適用対象 RT に描画
   m_dx12_->GetCommandList()->OMSetRenderTargets(
     1,
     &effectTargetRT_.rtvHandle,
@@ -121,13 +121,13 @@ void PostEffectManager::BeginDrawEffectTarget()
       kEffectTargetClearColor_.w
   };
 
-  // エフェクト適用対象RTをクリア
+  // エフェクト適用対象 RT をクリア
   m_dx12_->GetCommandList()->ClearRenderTargetView(effectTargetRT_.rtvHandle, clearColor, 0, nullptr);
 }
 
 void PostEffectManager::BegineDrawNonEffectTarget()
 {
-  // nonEffectTargetRTをRENDER_TARGET状態にして記録
+  // nonEffectTargetRT を RENDER_TARGET 状態にして記録
   TransitionResourceWithTracking(
     nonEffectTargetRT_.resource.Get(),
     D3D12_RESOURCE_STATE_RENDER_TARGET
@@ -135,7 +135,7 @@ void PostEffectManager::BegineDrawNonEffectTarget()
   
   D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
 
-  // 非適用対象RTに描画
+  // 非適用対象 RT に描画
   m_dx12_->GetCommandList()->OMSetRenderTargets(
     1,
     &nonEffectTargetRT_.rtvHandle,
@@ -150,10 +150,10 @@ void PostEffectManager::Draw()
 
 void PostEffectManager::DrawFinalResult(bool drawToSwapChain)
 {
-  // スワップチェインへの描画（パラメータがtrueの時のみ）
+  // スワップチェインへの描画（パラメータが true の時のみ）
   if (drawToSwapChain) {
 
-    // 非適用対象RTをシェーダーリソースに遷移
+    // 非適用対象 RT をシェーダーリソースに遷移
     TransitionResourceWithTracking(
       nonEffectTargetRT_.resource.Get(),
       D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
@@ -162,11 +162,11 @@ void PostEffectManager::DrawFinalResult(bool drawToSwapChain)
     // スワップチェインに描画
     m_dx12_->SetSwapChain();
 
-    // NoEffectを使って単純コピー
+    // NoEffect を使って単純コピー
     if (effectRegistry_.find("NoEffect") != effectRegistry_.end()) {
       auto& baseEffect = effectRegistry_["NoEffect"];
 
-      // NoEffectにダウンキャスト
+      // NoEffect にダウンキャスト
       NoEffect* noEffect = dynamic_cast<NoEffect*>(baseEffect.get());
       if (noEffect != nullptr) {
         noEffect->ApplyToBackBuffer(nonEffectTargetRT_.srvIndex);
@@ -180,7 +180,7 @@ void PostEffectManager::DrawFinalResult(bool drawToSwapChain)
   } else {
     m_dx12_->SetSwapChain();
 
-    // 非適用対象RTをシェーダーリソースに遷移
+    // 非適用対象 RT をシェーダーリソースに遷移
     TransitionResourceWithTracking(
       nonEffectTargetRT_.resource.Get(),
       D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
@@ -445,7 +445,7 @@ void PostEffectManager::RecreateRenderTexture()
   // 新しいサイズで再作成
   CreateRenderTextures();
 
-  // 深度バッファのSRVも更新
+  // 深度バッファの SRV も更新
   SrvManager::GetInstance()->CreateSRVForTexture2D(
     depthSrvIndex_,
     m_dx12_->GetDepthStencilResource(),
@@ -612,8 +612,8 @@ std::vector<std::string> PostEffectManager::GetEffectChain() const
 
 uint32_t PostEffectManager::GetFinalResultSrvIndex() const
 {
-  // 常にnonEffectTargetRTのSRVインデックスを返す
-  // DrawFinalResult()でnonEffectTargetRTがスワップチェーンに描画されているため
+  // 常に nonEffectTargetRT の SRV インデックスを返す
+  // DrawFinalResult()で nonEffectTargetRT がスワップチェーンに描画されているため
   return nonEffectTargetRT_.srvIndex;
 }
 
@@ -635,7 +635,7 @@ void PostEffectManager::CreateRenderTextures() {
       clearColor
     );
 
-    // RTV作成
+    // RTV 作成
     rt.rtvHandle = m_dx12_->GetRenderTextureRTVHandle(rtvIndex);
     D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
     rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -644,20 +644,20 @@ void PostEffectManager::CreateRenderTextures() {
       rt.resource.Get(), &rtvDesc, rt.rtvHandle
     );
 
-    // SRV作成
+    // SRV 作成
     rt.srvIndex = SrvManager::GetInstance()->Allocate();
     SrvManager::GetInstance()->CreateSRVForTexture2D(
       rt.srvIndex, rt.resource.Get(), DXGI_FORMAT_R8G8B8A8_UNORM, 1
     );
     };
 
-  // エフェクト適用対象用RT
+  // エフェクト適用対象用 RT
   createRT(effectTargetRT_, 2, kEffectTargetClearColor_);
   effectTargetRT_.resource->SetName(L"EffectTargetRT");
-  // 初期状態を設定（レンダーテクスチャはRENDER_TARGETとして作成される）
+  // 初期状態を設定（レンダーテクスチャは RENDER_TARGET として作成される）
   SetInitialResourceState(effectTargetRT_.resource.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET);
 
-  // 非適用対象用RT
+  // 非適用対象用 RT
   createRT(nonEffectTargetRT_, 3, nonEffectTargetClearColor_);
   nonEffectTargetRT_.resource->SetName(L"NonEffectTargetRT");
   // 初期状態を設定
@@ -681,7 +681,7 @@ void PostEffectManager::RegisterEffect(const std::string& name, std::unique_ptr<
   effectRegistry_[name] = std::move(effect);
   effectRegistry_[name]->Initialize(m_dx12_, name);
 
-  // 利用可能なエフェクトリストに追加（NoEffect以外）
+  // 利用可能なエフェクトリストに追加（NoEffect 以外）
   if (name != "NoEffect") {
     availableEffects_.push_back(name);
   }
@@ -690,18 +690,18 @@ void PostEffectManager::RegisterEffect(const std::string& name, std::unique_ptr<
 
 void PostEffectManager::ApplyEffectChain()
 {
-  // エフェクトチェーンにNoEffectを自動追加せず、空の場合のみNoEffectを使用
+  // エフェクトチェーンに NoEffect を自動追加せず、空の場合のみ NoEffect を使用
   std::vector<std::string> actualChain;
 
   if (effectChain_.empty()) {
-    // エフェクトチェーンが空の場合はNoEffectのみ
+    // エフェクトチェーンが空の場合は NoEffect のみ
     actualChain.push_back("NoEffect");
   } else {
-    // エフェクトチェーンがある場合は、そのまま使用（NoEffectは追加しない）
+    // エフェクトチェーンがある場合は、そのまま使用（NoEffect は追加しない）
     actualChain = effectChain_;
   }
 
-  // 最初の入力はエフェクト適用対象RT
+  // 最初の入力はエフェクト適用対象 RT
   TransitionResourceWithTracking(
     effectTargetRT_.resource.Get(),
     D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
@@ -740,7 +740,7 @@ void PostEffectManager::ApplyEffectChain()
     bool isLastEffect = (i == actualChain.size() - 1);
 
     if (isLastEffect) {
-      // 最後のエフェクトはnonEffectTargetRTに描画するため、RENDER_TARGET状態に遷移
+      // 最後のエフェクトは nonEffectTargetRT に描画するため、RENDER_TARGET 状態に遷移
       TransitionResourceWithTracking(
         nonEffectTargetRT_.resource.Get(),
         D3D12_RESOURCE_STATE_RENDER_TARGET
@@ -764,7 +764,7 @@ void PostEffectManager::ApplyEffectChain()
     if (effectName == "DepthBasedOutline") {
       auto it = effectRegistry_.find(effectName);
       if (it != effectRegistry_.end()) {
-        // DepthBasedOutlineの初期化
+        // DepthBasedOutline の初期化
         auto depthEffect = dynamic_cast<DepthBasedOutline*>(it->second.get());
         if (depthEffect) {
           depthEffect->SetInvProjectionMatrix(Mat4x4::Inverse(camera_->GetProjectionMatrix()));
@@ -852,20 +852,20 @@ void PostEffectManager::DrawEffectParametersTab()
 void PostEffectManager::SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter)
 {
   stateBefore;
-  // この関数は廃止予定。代わりにTransitionResourceWithTrackingを使用
+  // この関数は廃止予定。代わりに TransitionResourceWithTracking を使用
   TransitionResourceWithTracking(effectTargetRT_.resource.Get(), stateAfter);
 }
 
 void PostEffectManager::SetBarrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter)
 {
-  // stateBeforeは使用せず、TransitionResourceWithTrackingで状態追跡を使用
+  // stateBefore は使用せず、TransitionResourceWithTracking で状態追跡を使用
   stateBefore; // 未使用パラメータの警告を抑制
   TransitionResourceWithTracking(resource, stateAfter);
 }
 
 void PostEffectManager::TransitionResourceWithTracking(ID3D12Resource* resource, D3D12_RESOURCE_STATES newState)
 {
-  // 現在の状態を取得（未追跡の場合はCOMMONと仮定）
+  // 現在の状態を取得（未追跡の場合は COMMON と仮定）
   D3D12_RESOURCE_STATES currentState = D3D12_RESOURCE_STATE_COMMON;
   auto it = resourceStates_.find(resource);
   if (it != resourceStates_.end()) {
@@ -896,7 +896,7 @@ D3D12_RESOURCE_STATES PostEffectManager::GetResourceState(ID3D12Resource* resour
   if (it != resourceStates_.end()) {
     return it->second;
   }
-  // 未追跡の場合はCOMMONを返す
+  // 未追跡の場合は COMMON を返す
   return D3D12_RESOURCE_STATE_COMMON;
 }
 

@@ -7,14 +7,14 @@
 
 namespace Tako {
 
-const int kRowHeight = 20;   ///< ImGuiデバッグ表示用の行の高さ
-const int kColumnWidth = 60;  ///< ImGuiデバッグ表示用の列の幅
+const int kRowHeight = 20;   ///< ImGui デバッグ表示用の行の高さ
+const int kColumnWidth = 60;  ///< ImGui デバッグ表示用の列の幅
 
 /// <summary>
 /// 4x4行列演算ユーティリティ名前空間
 /// アフィン変換（移動・回転・拡大縮小）、ビュー行列、プロジェクション行列など
-/// 3Dグラフィックスに必要な全ての行列操作を提供
-/// OpenGLスタイル（列優先）ではなくDirectXスタイル（行優先）で実装
+/// 3D グラフィックスに必要な全ての行列操作を提供
+/// OpenGL スタイル（列優先）ではなく DirectX スタイル（行優先）で実装
 /// </summary>
 namespace Mat4x4 {
 	/// <summary>行列の加算</summary>
@@ -41,16 +41,16 @@ namespace Mat4x4 {
 	/// <summary>拡大縮小行列を生成</summary>
 	Matrix4x4 MakeScale(const Vector3& scale);
 
-	/// <summary>X軸周りの回転行列を生成</summary>
+	/// <summary>X 軸周りの回転行列を生成</summary>
 	Matrix4x4 MakeRotateX(float angle);
 
-	/// <summary>Y軸周りの回転行列を生成</summary>
+	/// <summary>Y 軸周りの回転行列を生成</summary>
 	Matrix4x4 MakeRotateY(float angle);
 
-	/// <summary>Z軸周りの回転行列を生成</summary>
+	/// <summary>Z 軸周りの回転行列を生成</summary>
 	Matrix4x4 MakeRotateZ(float angle);
 
-	/// <summary>X-Y-Z順のオイラー角回転行列を生成</summary>
+	/// <summary>X-Y-Z 順のオイラー角回転行列を生成</summary>
 	Matrix4x4 MakeRotateXYZ(Matrix4x4 mX, Matrix4x4 mY, Matrix4x4 mZ);
 	/// <summary>オイラー角から回転行列を生成</summary>
 	Matrix4x4 MakeRotateXYZ(const Vector3& rotate);

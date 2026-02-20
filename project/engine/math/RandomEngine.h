@@ -15,7 +15,7 @@ public:
 	/// <summary>
 	/// インスタンスの取得
 	/// </summary>
-	/// <returns>RandomEngineのシングルトンインスタンス</returns>
+	/// <returns>RandomEngine のシングルトンインスタンス</returns>
 	static RandomEngine* GetInstance();
 
 	RandomEngine(const RandomEngine&) = delete;
@@ -40,7 +40,7 @@ public:
 	/// <summary>
 	/// 0から1の範囲の浮動小数点数を生成
 	/// </summary>
-	/// <returns>0.0f～1.0fの乱数</returns>
+	/// <returns>0.0f～1.0f の乱数</returns>
 	float GetNormalized();
 
 	/// <summary>
@@ -60,37 +60,37 @@ public:
 	/// <summary>
 	/// 正規化された3次元ランダム方向ベクトルを生成
 	/// </summary>
-	/// <returns>長さ1の3Dベクトル</returns>
+	/// <returns>長さ1の3D ベクトル</returns>
 	Vector3 GetRandomDirection3D();
 
 	/// <summary>
 	/// 正規化された2次元ランダム方向ベクトルを生成
 	/// </summary>
-	/// <returns>長さ1の2Dベクトル</returns>
+	/// <returns>長さ1の2D ベクトル</returns>
 	Vector2 GetRandomDirection2D();
 
 	/// <summary>
-	/// XZ平面上の正規化されたランダム方向ベクトルを生成（Y=0）
+	/// XZ 平面上の正規化されたランダム方向ベクトルを生成（Y=0）
 	/// </summary>
-	/// <returns>Y=0の長さ1の3Dベクトル</returns>
+	/// <returns>Y=0の長さ1の3D ベクトル</returns>
 	Vector3 GetRandomDirectionXZ();
 
 	/// <summary>
 	/// 球内のランダムな点を生成
 	/// </summary>
 	/// <param name="radius">球の半径</param>
-	/// <returns>球内のランダムな3D座標</returns>
+	/// <returns>球内のランダムな3D 座標</returns>
 	Vector3 GetRandomPointInSphere(float radius);
 
 	/// <summary>
 	/// 円内のランダムな点を生成
 	/// </summary>
 	/// <param name="radius">円の半径</param>
-	/// <returns>円内のランダムな2D座標</returns>
+	/// <returns>円内のランダムな2D 座標</returns>
 	Vector2 GetRandomPointInCircle(float radius);
 
 	/// <summary>
-	/// 確率判定（指定した確率でtrueを返す）
+	/// 確率判定（指定した確率で true を返す）
 	/// </summary>
 	/// <param name="probability">確率（0.0～1.0）</param>
 	/// <returns>判定結果</returns>

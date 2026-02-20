@@ -46,7 +46,7 @@ namespace Tako {
   {
     std::array<Vector3, 8> corners;
 
-    // 視錐台のnear面とfar面のサイズを計算
+    // 視錐台の near 面と far 面のサイズを計算
     float tanHalfFovY = std::tanf(fovY_ * 0.5f);
     float nearHeight = tanHalfFovY * nearZ_ * 2.0f;
     float nearWidth = nearHeight * aspect_;
@@ -54,14 +54,14 @@ namespace Tako {
     float farWidth = farHeight * aspect_;
 
     // カメラのローカル座標系でのコーナー位置を計算
-    // Near面の4つの頂点（カメラ空間）
+    // Near 面の4つの頂点（カメラ空間）
     Vector3 nearCenter = Vector3(0, 0, nearZ_);
     corners[0] = Vector3(-nearWidth * 0.5f, -nearHeight * 0.5f, nearZ_); // 左下
     corners[1] = Vector3(nearWidth * 0.5f, -nearHeight * 0.5f, nearZ_); // 右下
     corners[2] = Vector3(nearWidth * 0.5f, nearHeight * 0.5f, nearZ_); // 右上
     corners[3] = Vector3(-nearWidth * 0.5f, nearHeight * 0.5f, nearZ_); // 左上
 
-    // Far面の4つの頂点（カメラ空間）
+    // Far 面の4つの頂点（カメラ空間）
     Vector3 farCenter = Vector3(0, 0, farZ_);
     corners[4] = Vector3(-farWidth * 0.5f, -farHeight * 0.5f, farZ_); // 左下
     corners[5] = Vector3(farWidth * 0.5f, -farHeight * 0.5f, farZ_); // 右下
@@ -82,25 +82,25 @@ namespace Tako {
   {
     std::array<Vector3, 8> corners;
 
-    // カスタムfarクリップを使用（元のfarZ_を超えないように制限）
+    // カスタム far クリップを使用（元の farZ_を超えないように制限）
     float limitedFar = min(customFar, farZ_);
-    limitedFar = max(limitedFar, nearZ_);  // nearより大きいことを保証
+    limitedFar = max(limitedFar, nearZ_);  // near より大きいことを保証
 
-    // 視錐台のnear面とfar面のサイズを計算
+    // 視錐台の near 面と far 面のサイズを計算
     float tanHalfFovY = std::tanf(fovY_ * 0.5f);
     float nearHeight = tanHalfFovY * nearZ_ * 2.0f;
     float nearWidth = nearHeight * aspect_;
-    float farHeight = tanHalfFovY * limitedFar * 2.0f;  // カスタムfarを使用
+    float farHeight = tanHalfFovY * limitedFar * 2.0f;  // カスタム far を使用
     float farWidth = farHeight * aspect_;
 
     // カメラのローカル座標系でのコーナー位置を計算
-    // Near面の4つの頂点（カメラ空間）
+    // Near 面の4つの頂点（カメラ空間）
     corners[0] = Vector3(-nearWidth * 0.5f, -nearHeight * 0.5f, nearZ_); // 左下
     corners[1] = Vector3(nearWidth * 0.5f, -nearHeight * 0.5f, nearZ_); // 右下
     corners[2] = Vector3(nearWidth * 0.5f, nearHeight * 0.5f, nearZ_); // 右上
     corners[3] = Vector3(-nearWidth * 0.5f, nearHeight * 0.5f, nearZ_); // 左上
 
-    // Far面の4つの頂点（カメラ空間）- カスタムfarを使用
+    // Far 面の4つの頂点（カメラ空間）- カスタム far を使用
     corners[4] = Vector3(-farWidth * 0.5f, -farHeight * 0.5f, limitedFar); // 左下
     corners[5] = Vector3(farWidth * 0.5f, -farHeight * 0.5f, limitedFar); // 右下
     corners[6] = Vector3(farWidth * 0.5f, farHeight * 0.5f, limitedFar); // 右上
@@ -149,7 +149,7 @@ namespace Tako {
 
   std::pair<Vector3, Vector3> Camera::GetFrustumBoundingBoxWithCustomFar(float customFar, const Matrix4x4* viewMatrix) const
   {
-    // カスタムfarクリップで視錐台の8つの頂点を取得
+    // カスタム far クリップで視錐台の8つの頂点を取得
     std::array<Vector3, 8> corners = GetFrustumCornersWithCustomFar(customFar);
 
     // 指定されたビュー行列で変換（指定がある場合）

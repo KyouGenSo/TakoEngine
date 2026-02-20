@@ -19,8 +19,8 @@ class DX12Basic;
 class Camera;
 
 /// <summary>
-/// GPUパーティクルシステムクラス
-/// Compute Shaderで最大10万パーティクルの高速処理を実現
+/// GPU パーティクルシステムクラス
+/// Compute Shader で最大10万パーティクルの高速処理を実現
 /// </summary>
 class GPUParticle
 {
@@ -45,7 +45,7 @@ public: // メンバー関数
   /// <summary>
   /// インスタンスの取得
   /// </summary>
-  /// <returns>GPUParticleシステムのシングルトンインスタンス</returns>
+  /// <returns>GPUParticle システムのシングルトンインスタンス</returns>
   static GPUParticle* GetInstance();
 
   /// <summary>
@@ -103,13 +103,13 @@ public: // メンバー関数
   /// インデックスによってエミッターを検索
   /// </summary>
   /// <param name="index">検索するインデックス</param>
-  /// <returns>見つかったエミッター、見つからない場合はnullptr</returns>
+  /// <returns>見つかったエミッター、見つからない場合は nullptr</returns>
   std::shared_ptr<GPUParticleEmitter> FindEmitterByIndex(size_t index);
 
   /// <summary>
   /// デバッグモードが有効か取得
   /// </summary>
-  /// <returns>デバッグモードが有効な場合true</returns>
+  /// <returns>デバッグモードが有効な場合 true</returns>
   [[nodiscard]] bool GetIsDebug() const { return isDebug_; }
 
   /// <summary>
@@ -121,7 +121,7 @@ public: // メンバー関数
   /// <summary>
   /// デバッグモードを設定
   /// </summary>
-  /// <param name="isDebug">デバッグモードを有効にする場合true</param>
+  /// <param name="isDebug">デバッグモードを有効にする場合 true</param>
   void SetIsDebug(bool isDebug) { isDebug_ = isDebug; }
   //-------------------------Getter/Setter-------------------------//
 
@@ -134,22 +134,22 @@ public: // メンバー関数
 
 private: // プライベートメンバー関数
   /// <summary>
-  /// emitterの更新
+  /// emitter の更新
   /// </summary>
   void UpdateEmitter();
 
   /// <summary>
-  /// PerViewの更新
+  /// PerView の更新
   /// </summary>
   void UpdatePerView();
 
   /// <summary>
-  /// PerFrameの更新
+  /// PerFrame の更新
   /// </summary>
   void UpdatePerFrame();
 
   /// <summary>
-  /// CPU側からGPU側へのエミッターデータ同期
+  /// CPU 側から GPU 側へのエミッターデータ同期
   /// </summary>
   void SyncEmitterData();
 
@@ -165,17 +165,17 @@ private: // プライベートメンバー関数
   void CreatePSO();
 
   /// <summary>
-  /// InitCSルートシグネチャの作成
+  /// InitCS ルートシグネチャの作成
   /// </summary>
   void CreateInitComputeRS();
 
   /// <summary>
-  /// EmitParticleCSルートシグネチャの作成
+  /// EmitParticleCS ルートシグネチャの作成
   /// </summary>
   void CreateEmitParticleComputeRS();
 
   /// <summary>
-  /// UpdateParticleCSルートシグネチャの作成
+  /// UpdateParticleCS ルートシグネチャの作成
   /// </summary>
   void CreateUpdateParticleComputeRS();
 
@@ -193,27 +193,27 @@ private: // プライベートメンバー関数
   void CreateVertexData();
 
   /// <summary>
-  /// PerViewデータの生成
+  /// PerView データの生成
   /// </summary>
   void CreatePerViewData();
 
   /// <summary>
-  /// PerFrameデータの生成
+  /// PerFrame データの生成
   /// </summary>
   void CreatePerFrameData();
 
   /// <summary>
-  /// EmitterSphereデータの生成
+  /// EmitterSphere データの生成
   /// </summary>
   void CreateEmitterData();
 
   /// <summary>
-  /// CSパーティクルリソースの生成
+  /// CS パーティクルリソースの生成
   /// </summary>
   void CreateParticleResource();
 
   /// <summary>
-  /// FreeListリソースの生成
+  /// FreeList リソースの生成
   /// </summary>
   void CreateFreeListResource();
 
@@ -246,7 +246,7 @@ private: //メンバー変数
   DX12Basic* m_dx12_ = nullptr;
 
   /// <summary>
-  /// SRVマネージャへのポインタ
+  /// SRV マネージャへのポインタ
   /// </summary>
   SrvManager* m_srvManager_ = nullptr;
 
@@ -301,47 +301,47 @@ private: //メンバー変数
   Microsoft::WRL::ComPtr<ID3D12PipelineState> updateParticlePSO_;
 
   /// <summary>
-  /// パーティクルデータ用GPU リソース
+  /// パーティクルデータ用 GPU リソース
   /// </summary>
   Microsoft::WRL::ComPtr<ID3D12Resource> particleResource_;
 
   /// <summary>
-  /// パーティクルリソースのUAVインデックス
+  /// パーティクルリソースの UAV インデックス
   /// </summary>
   uint32_t particleUavIndex_;
 
   /// <summary>
-  /// パーティクルリソースのSRVインデックス
+  /// パーティクルリソースの SRV インデックス
   /// </summary>
   uint32_t particleSrvIndex_;
 
   /// <summary>
-  /// PerView定数バッファリソース
+  /// PerView 定数バッファリソース
   /// </summary>
   Microsoft::WRL::ComPtr<ID3D12Resource> perViewResource_;
 
   /// <summary>
-  /// PerViewデータへのポインタ
+  /// PerView データへのポインタ
   /// </summary>
   PerView* perViewData_;
 
   /// <summary>
-  /// PerFrame定数バッファリソース
+  /// PerFrame 定数バッファリソース
   /// </summary>
   Microsoft::WRL::ComPtr<ID3D12Resource> perFrameResource_;
 
   /// <summary>
-  /// PerFrameデータへのポインタ
+  /// PerFrame データへのポインタ
   /// </summary>
   PerFrame* perFrameData_;
 
   /// <summary>
-  /// エミッターデータ用GPUリソース
+  /// エミッターデータ用 GPU リソース
   /// </summary>
   Microsoft::WRL::ComPtr<ID3D12Resource> emitterResource_;
 
   /// <summary>
-  /// エミッターリソースのSRVインデックス
+  /// エミッターリソースの SRV インデックス
   /// </summary>
   uint32_t emitterSrvIndex_;
 
@@ -351,27 +351,27 @@ private: //メンバー変数
   std::vector<std::shared_ptr<GPUParticleEmitter>> activeEmitters_;
 
   /// <summary>
-  /// FreeListインデックス用GPUリソース
+  /// FreeList インデックス用 GPU リソース
   /// </summary>
   Microsoft::WRL::ComPtr<ID3D12Resource> freeListIndexResource_;
 
   /// <summary>
-  /// FreeListインデックスのUAVインデックス
+  /// FreeList インデックスの UAV インデックス
   /// </summary>
   uint32_t freeListIndexUavIndex_;
 
   /// <summary>
-  /// FreeList用GPUリソース
+  /// FreeList 用 GPU リソース
   /// </summary>
   Microsoft::WRL::ComPtr<ID3D12Resource> freeListResource_;
 
   /// <summary>
-  /// FreeListのUAVインデックス
+  /// FreeList の UAV インデックス
   /// </summary>
   uint32_t freeListUavIndex_;
 
   /// <summary>
-  /// 頂点データ用GPUリソース
+  /// 頂点データ用 GPU リソース
   /// </summary>
   Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource_;
 

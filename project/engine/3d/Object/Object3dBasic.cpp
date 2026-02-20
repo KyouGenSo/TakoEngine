@@ -80,7 +80,7 @@ void Object3dBasic::SetCommonRenderSetting()
 	// ライトの描画設定
 	light_->PreDraw();
 	
-	// ShadowRendererのリソース設定（ルートパラメータ9と10）
+	// ShadowRenderer のリソース設定（ルートパラメータ9と10）
 	ShadowRenderer::GetInstance()->SetShadowForMainPass();
 }
 
@@ -103,18 +103,18 @@ void Object3dBasic::CreateRootSignature()
 {
 	HRESULT hr;
 
-	// rootSignatureの生成
+	// rootSignature の生成
 	D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
 	descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
-	// Samplerの設定
+	// Sampler の設定
 	D3D12_STATIC_SAMPLER_DESC samplerDesc[2]{};
 	samplerDesc[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR; // テクスチャの補間方法
 	samplerDesc[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
 	samplerDesc[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
 	samplerDesc[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
 	samplerDesc[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER; // 比較しない
-	samplerDesc[0].MaxLOD = D3D12_FLOAT32_MAX; // ミップマップの最大LOD
+	samplerDesc[0].MaxLOD = D3D12_FLOAT32_MAX; // ミップマップの最大 LOD
 	samplerDesc[0].ShaderRegister = 0; // レジスタ番号
 	samplerDesc[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
 	
@@ -131,43 +131,43 @@ void Object3dBasic::CreateRootSignature()
 	descriptionRootSignature.pStaticSamplers = samplerDesc;
 	descriptionRootSignature.NumStaticSamplers = _countof(samplerDesc);
 
-	// DescriptorRangeの設定。
+	// DescriptorRange の設定。
   // Texture
 	D3D12_DESCRIPTOR_RANGE descriptorRange[1] = {};
 	descriptorRange[0].BaseShaderRegister = 0; // レジスタ番号
 	descriptorRange[0].NumDescriptors = 1; // ディスクリプタ数
-	descriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
-	descriptorRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+	descriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRV を使う
+	descriptorRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
 
   // PointLight
 	D3D12_DESCRIPTOR_RANGE descriptorRangeForPointLight[1] = {};
 	descriptorRangeForPointLight[0].BaseShaderRegister = 1; // レジスタ番号
 	descriptorRangeForPointLight[0].NumDescriptors = 1; // ディスクリプタ数
-	descriptorRangeForPointLight[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
-	descriptorRangeForPointLight[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+	descriptorRangeForPointLight[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRV を使う
+	descriptorRangeForPointLight[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
 
   // SpotLight
 	D3D12_DESCRIPTOR_RANGE descriptorRangeForSpotLight[1] = {};
 	descriptorRangeForSpotLight[0].BaseShaderRegister = 2; // レジスタ番号
 	descriptorRangeForSpotLight[0].NumDescriptors = 1; // ディスクリプタ数
-	descriptorRangeForSpotLight[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
-	descriptorRangeForSpotLight[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+	descriptorRangeForSpotLight[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRV を使う
+	descriptorRangeForSpotLight[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
 
   // EnvironmentMap
   D3D12_DESCRIPTOR_RANGE descriptorRangeForEnvironmentMap[1] = {};
   descriptorRangeForEnvironmentMap[0].BaseShaderRegister = 3; // レジスタ番号
   descriptorRangeForEnvironmentMap[0].NumDescriptors = 1; // ディスクリプタ数
-  descriptorRangeForEnvironmentMap[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
-  descriptorRangeForEnvironmentMap[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+  descriptorRangeForEnvironmentMap[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRV を使う
+  descriptorRangeForEnvironmentMap[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
 
   // ShadowMap
   D3D12_DESCRIPTOR_RANGE descriptorRangeForShadowMap[1] = {};
   descriptorRangeForShadowMap[0].BaseShaderRegister = 4; // レジスタ番号（t4）
   descriptorRangeForShadowMap[0].NumDescriptors = 1; // ディスクリプタ数
-  descriptorRangeForShadowMap[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
-  descriptorRangeForShadowMap[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+  descriptorRangeForShadowMap[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRV を使う
+  descriptorRangeForShadowMap[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
 
-	// RootParameterの設定。複数設定できるので配列
+	// RootParameter の設定。複数設定できるので配列
 	D3D12_ROOT_PARAMETER rootParameters[11] = {};
 
 	// Material
@@ -258,7 +258,7 @@ void Object3dBasic::CreatePSO()
 {
 	HRESULT hr;
 
-	// RootSignatureの生成
+	// RootSignature の生成
 	CreateRootSignature();
 
 	// InputLayout
@@ -300,7 +300,7 @@ void Object3dBasic::CreatePSO()
 	// 裏面を表示しない
 	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
 
-	// shaderのコンパイル
+	// shader のコンパイル
 	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(L"resources/shaders/Object3d.VS.hlsl", L"vs_6_0");
 	assert(vertexShaderBlob != nullptr);
 
@@ -309,14 +309,14 @@ void Object3dBasic::CreatePSO()
 
 	// DepthStencilState
 	D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
-	// depthの機能を有効化にする
+	// depth の機能を有効化にする
 	depthStencilDesc.DepthEnable = true;
 	// 書き込みします
 	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
 	// 深度の比較方法
 	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 
-	// PSOの生成
+	// PSO の生成
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
 	graphicsPipelineStateDesc.pRootSignature = rootSignature_.Get();
 	graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
@@ -324,7 +324,7 @@ void Object3dBasic::CreatePSO()
 	graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
 	graphicsPipelineStateDesc.BlendState = blendDesc;
 	graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
-	// 書き込むRTVの情報
+	// 書き込む RTV の情報
 	graphicsPipelineStateDesc.NumRenderTargets = 1;
 	graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	// 利用するトポロジ（形状）のタイプ。三角形
@@ -332,7 +332,7 @@ void Object3dBasic::CreatePSO()
 	// どのように画面に色を打ち込むかの設定
 	graphicsPipelineStateDesc.SampleDesc.Count = 1;
 	graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-	// DepthStencilの設定
+	// DepthStencil の設定
 	graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
 	graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 
@@ -355,7 +355,7 @@ void Object3dBasic::SetInstancedRenderSetting()
 	// ライトの描画設定
 	light_->PreDraw();
 	
-	// ShadowRendererのリソース設定
+	// ShadowRenderer のリソース設定
 	ShadowRenderer::GetInstance()->SetShadowForMainPass();
 }
 
@@ -363,11 +363,11 @@ void Object3dBasic::CreateInstancedRootSignature()
 {
 	HRESULT hr;
 
-	// rootSignatureの生成
+	// rootSignature の生成
 	D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
 	descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
-	// Samplerの設定
+	// Sampler の設定
 	D3D12_STATIC_SAMPLER_DESC samplerDesc[2]{};
 	samplerDesc[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
 	samplerDesc[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
@@ -391,7 +391,7 @@ void Object3dBasic::CreateInstancedRootSignature()
 	descriptionRootSignature.pStaticSamplers = samplerDesc;
 	descriptionRootSignature.NumStaticSamplers = _countof(samplerDesc);
 
-	// DescriptorRangeの設定
+	// DescriptorRange の設定
 	// テクスチャ（t0）
 	D3D12_DESCRIPTOR_RANGE descriptorRange[1] = {};
 	descriptorRange[0].BaseShaderRegister = 0;
@@ -434,7 +434,7 @@ void Object3dBasic::CreateInstancedRootSignature()
 	descriptorRangeInstance[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 	descriptorRangeInstance[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-	// RootParameterの設定
+	// RootParameter の設定
 	D3D12_ROOT_PARAMETER rootParameters[12] = {};
 
 	// Material（b0 - pixel）
@@ -529,7 +529,7 @@ void Object3dBasic::CreateInstancedPSO()
 {
 	HRESULT hr;
 
-	// RootSignatureの生成
+	// RootSignature の生成
 	CreateInstancedRootSignature();
 
 	// InputLayout（頂点レイアウト）
@@ -582,7 +582,7 @@ void Object3dBasic::CreateInstancedPSO()
 	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
 	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 
-	// PSOの生成
+	// PSO の生成
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
 	graphicsPipelineStateDesc.pRootSignature = instancedRootSignature_.Get();
 	graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;

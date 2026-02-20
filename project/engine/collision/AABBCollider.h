@@ -18,15 +18,15 @@ public:
 	virtual ~AABBCollider() = default;
 
 	/// <summary>
-	/// AABBの中心座標を取得（ワールド座標系）
+	/// AABB の中心座標を取得（ワールド座標系）
 	/// </summary>
 	/// <returns>中心座標</returns>
 	Vector3 GetCenter() const override;
 
 	/// <summary>
-	/// AABB構造体を取得（ワールド座標系）
+	/// AABB 構造体を取得（ワールド座標系）
 	/// </summary>
-	/// <returns>AABB構造体</returns>
+	/// <returns>AABB 構造体</returns>
 	AABB GetAABB() const;
 
 	/// <summary>
@@ -42,13 +42,13 @@ public:
 	const Vector3& GetOffset() const { return offset_; }
 
 	/// <summary>
-	/// AABBのサイズを設定
+	/// AABB のサイズを設定
 	/// </summary>
 	/// <param name="size">サイズ（幅、高さ、奥行き）</param>
 	void SetSize(const Vector3& size) { size_ = size; }
 
 	/// <summary>
-	/// AABBのサイズを取得
+	/// AABB のサイズを取得
 	/// </summary>
 	/// <returns>サイズ（幅、高さ、奥行き）</returns>
 	const Vector3& GetSize() const { return size_; }

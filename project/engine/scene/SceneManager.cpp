@@ -24,7 +24,7 @@ void SceneManager::Update()
 	if (nextScene_)
 	{
 		// シーン遷移アニメーションが終了している場合
-		// TransitionManagerを使用（Transitionは内部でTransitionManagerを使用）
+		// TransitionManager を使用（Transition は内部で TransitionManager を使用）
 		if (TransitionManager::GetInstance()->IsFinished())
 		{
 			// 現在のシーンがある場合
@@ -56,7 +56,7 @@ void SceneManager::Update()
 		scene_->Update();
 	}
 
-	// TransitionManagerの更新
+	// TransitionManager の更新
 	TransitionManager::GetInstance()->Update();
 }
 
@@ -106,7 +106,7 @@ void SceneManager::ChangeScene(const std::string& sceneName)
 
 	// 次のシーンを生成
 	if (nextScene_ == nullptr) {
-		// TransitionManagerを使用（デフォルトはFade）
+		// TransitionManager を使用（デフォルトは Fade）
 		TransitionManager::GetInstance()->Start(
 			ITransitionEffect::FADE_OUT, transitionTime_);
 		nextScene_ = m_sceneFactory_->CreateScene(sceneName);
@@ -120,7 +120,7 @@ void SceneManager::ChangeScene(const std::string& sceneName, float transitionTim
 	// 次のシーンを生成
 	if (nextScene_ == nullptr)
 	{
-		// TransitionManagerを使用（デフォルトはFade）
+		// TransitionManager を使用（デフォルトは Fade）
 		TransitionManager::GetInstance()->Start(
 			ITransitionEffect::FADE_OUT, transitionTime);
 		nextScene_ = m_sceneFactory_->CreateScene(sceneName);
@@ -137,7 +137,7 @@ void SceneManager::ChangeScene(const std::string& sceneName,
 	// 次のシーンを生成
 	if (nextScene_ == nullptr)
 	{
-		// TransitionManagerを使用して指定されたエフェクトで開始
+		// TransitionManager を使用して指定されたエフェクトで開始
 		TransitionManager::GetInstance()->Start(
 			ITransitionEffect::FADE_OUT, effectType, transitionTime);
 		nextScene_ = m_sceneFactory_->CreateScene(sceneName);
@@ -154,7 +154,7 @@ void SceneManager::ChangeScene(const std::string& sceneName,
 	// 次のシーンを生成
 	if (nextScene_ == nullptr)
 	{
-		// TransitionManagerを使用して名前指定されたエフェクトで開始
+		// TransitionManager を使用して名前指定されたエフェクトで開始
 		TransitionManager::GetInstance()->Start(
 			ITransitionEffect::FADE_OUT, effectName, transitionTime);
 		nextScene_ = m_sceneFactory_->CreateScene(sceneName);
@@ -171,7 +171,7 @@ void SceneManager::ChangeScene(const std::string& sceneName,
 	// 次のシーンを生成
 	if (nextScene_ == nullptr)
 	{
-		// TransitionManagerに新しいエフェクトを設定してから開始
+		// TransitionManager に新しいエフェクトを設定してから開始
 		TransitionManager::GetInstance()->SetCurrentEffect(std::move(effect));
 		TransitionManager::GetInstance()->Start(
 			ITransitionEffect::FADE_OUT, transitionTime);

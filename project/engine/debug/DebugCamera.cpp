@@ -49,7 +49,7 @@ void DebugCamera::Update()
 
 	Matrix4x4 transMat = Mat4x4::MakeTranslate(transform_.translate);
 
-	//  rotMatとtransMatでワールド行列を作る
+	//  rotMat と transMat でワールド行列を作る
 	worldMat_ = Mat4x4::Multiply(rotMat_, transMat);
 
 	// ビュー行列を作る

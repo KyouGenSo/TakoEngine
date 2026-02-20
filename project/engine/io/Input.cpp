@@ -41,25 +41,25 @@ Input* Input::GetInstance()
 }
 
 void Input::Initialize(WinApp* winApp) {
-	// WinAppクラスのインスタンスを取得
+	// WinApp クラスのインスタンスを取得
 	this->winApp_ = winApp;
 
 	HRESULT hr;
 
-// DirectInputの初期化
-	// DirectInputオブジェクトの生成
+// DirectInput の初期化
+	// DirectInput オブジェクトの生成
 	hr = DirectInput8Create(winApp->GetHInstance(), DIRECTINPUT_VERSION, IID_IDirectInput8, reinterpret_cast<void**>(directInput_.GetAddressOf()), nullptr);
 	assert(SUCCEEDED(hr));
 
-	// KeyboardDeviceの生成
+	// KeyboardDevice の生成
 	hr = directInput_->CreateDevice(GUID_SysKeyboard, keyboardDevice_.GetAddressOf(), NULL);
 	assert(SUCCEEDED(hr));
 
-	// KeyboardDeviceのフォーマット設定
+	// KeyboardDevice のフォーマット設定
 	hr = keyboardDevice_->SetDataFormat(&c_dfDIKeyboard);
 	assert(SUCCEEDED(hr));
 
-	// KeyboardDeviceの協調レベル設定
+	// KeyboardDevice の協調レベル設定
 	hr = keyboardDevice_->SetCooperativeLevel(winApp->GetHWnd(), DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
 	assert(SUCCEEDED(hr));
 

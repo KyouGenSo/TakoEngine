@@ -326,9 +326,6 @@
     <ClInclude Include="engine\audio\Audio.h">
       <Filter>audio</Filter>
     </ClInclude>
-    <ClInclude Include="engine\audio\miniaudio.h">
-      <Filter>audio</Filter>
-    </ClInclude>
     <ClInclude Include="engine\base\IWndProcHandler.h">
       <Filter>base</Filter>
     </ClInclude>

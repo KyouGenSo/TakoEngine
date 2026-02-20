@@ -55,7 +55,7 @@ public:
 	/// <summary>
 	/// トランジションが終了したか
 	/// </summary>
-	/// <returns>終了していればtrue</returns>
+	/// <returns>終了していれば true</returns>
 	virtual bool IsFinished() const = 0;
 
 	/// <summary>

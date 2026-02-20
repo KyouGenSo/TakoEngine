@@ -18,7 +18,7 @@ class Camera;
 /// シャドウレンダリング統合管理クラス
 /// シングルトンパターンで実装され、シャドウマップの生成と適用を制御
 /// 通常描画とインスタンシング描画の両方でシャドウをサポート
-/// PCFフィルタリング、動的品質調整、ImGuiデバッグUI統合機能を提供
+/// PCF フィルタリング、動的品質調整、ImGui デバッグ UI 統合機能を提供
 /// </summary>
 class ShadowRenderer
 {
@@ -35,7 +35,7 @@ public:
     /// <summary>
     /// インスタンスの取得
     /// </summary>
-    /// <returns>ShadowRendererのシングルトンインスタンス</returns>
+    /// <returns>ShadowRenderer のシングルトンインスタンス</returns>
     static ShadowRenderer* GetInstance();
 
     /// <summary>
@@ -45,13 +45,13 @@ public:
     void Initialize(DX12Basic* dx12);
 
     /// <summary>
-    /// Lightの参照を設定
+    /// Light の参照を設定
     /// </summary>
     /// <param name="light">ライトシステムへのポインタ</param>
     void SetLight(Light* light) { light_ = light; }
 
     /// <summary>
-    /// Cameraの参照を設定
+    /// Camera の参照を設定
     /// </summary>
     /// <param name="camera">カメラへのポインタ</param>
     void SetCamera(Camera* camera) { camera_ = camera; }
@@ -89,7 +89,7 @@ public:
     /// <summary>
     /// シャドウレンダリング中かどうか
     /// </summary>
-    /// <returns>シャドウレンダリング中の場合true</returns>
+    /// <returns>シャドウレンダリング中の場合 true</returns>
     bool IsRenderingShadow() const { return isRenderingShadow_; }
 
     /// <summary>
@@ -101,13 +101,13 @@ public:
     /// <summary>
     /// シャドウが有効かどうか
     /// </summary>
-    /// <returns>シャドウが有効な場合true</returns>
+    /// <returns>シャドウが有効な場合 true</returns>
     bool IsEnabled() const { return shadowEnabled_; }
 
     /// <summary>
-    /// 定数バッファのGPUアドレスを取得
+    /// 定数バッファの GPU アドレスを取得
     /// </summary>
-    /// <returns>定数バッファのGPUアドレス</returns>
+    /// <returns>定数バッファの GPU アドレス</returns>
     D3D12_GPU_VIRTUAL_ADDRESS GetConstantBufferGPUAddress() const {
         return shadowConstantBuffer_ ? shadowConstantBuffer_->GetGPUVirtualAddress() : 0;
     }
@@ -137,9 +137,9 @@ public:
     void SetShadowMapSize(uint32_t size);
 
     /// <summary>
-    /// PCFカーネルサイズを設定
+    /// PCF カーネルサイズを設定
     /// </summary>
-    /// <param name="kernelSize">PCFカーネルサイズ</param>
+    /// <param name="kernelSize">PCF カーネルサイズ</param>
     void SetPCFKernelSize(int kernelSize);
 
     /// <summary>
@@ -155,13 +155,13 @@ public:
     float GetMaxShadowDistance() const { return maxShadowDistance_; }
 
     /// <summary>
-    /// ShadowMapを取得
+    /// ShadowMap を取得
     /// </summary>
-    /// <returns>ShadowMapポインタ</returns>
+    /// <returns>ShadowMap ポインタ</returns>
     ShadowMap* GetShadowMap() { return shadowMap_.get(); }
 
     /// <summary>
-    /// ImGuiでのデバッグ表示
+    /// ImGui でのデバッグ表示
     /// </summary>
     void DrawImGui();
 
@@ -212,7 +212,7 @@ private:
 
     /// <summary>
     /// シャドウレンダリング用定数バッファ構造体
-    /// GPU側に送信されるシャドウ設定パラメータ
+    /// GPU 側に送信されるシャドウ設定パラメータ
     /// </summary>
     struct ShadowConstants {
         Matrix4x4 lightViewProj; ///< ライト空間のビュープロジェクション行列
@@ -220,7 +220,7 @@ private:
         int enableShadow;        ///< シャドウ有効フラグ（0=無効, 1=有効）
         Vector2 shadowMapSize;   ///< シャドウマップ解像度（テクセルサイズ計算用）
         float normalOffsetBias;  ///< 法線オフセットバイアス（ピーターパニング防止）
-        float pcfKernelSize;     ///< PCFカーネルサイズ（フィルタリング品質）
+        float pcfKernelSize;     ///< PCF カーネルサイズ（フィルタリング品質）
         float padding[2];        ///< 16バイトアライメント用パディング
     };
     ShadowConstants* shadowConstantData_ = nullptr; ///< 定数バッファのマップ済みポインタ

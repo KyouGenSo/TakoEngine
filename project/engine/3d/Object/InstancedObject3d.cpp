@@ -36,7 +36,7 @@ InstancedObject3d::~InstancedObject3d() {
   if (model_) {
     model_->Finalize();
   }
-  // unique_ptrが自動でdeleteする
+  // unique_ptr が自動で delete する
 }
 
 void InstancedObject3d::Initialize(const std::string& modelFileName) {
@@ -52,7 +52,7 @@ void InstancedObject3d::Initialize(const std::string& modelFileName) {
   // カメラデータの作成
   CreateCameraForGPUData();
 
-  // ViewProjection行列バッファの作成
+  // ViewProjection 行列バッファの作成
   CreateViewProjectionBuffer();
 }
 
@@ -96,7 +96,7 @@ void InstancedObject3d::CreateInstanceBuffer() {
     mappedInstanceData_[i].color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
   }
 
-  // SRVの作成
+  // SRV の作成
   instanceSrvIndex_ = SrvManager::GetInstance()->Allocate();
 
   D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
@@ -147,7 +147,7 @@ void InstancedObject3d::CreateCameraForGPUData() {
 void InstancedObject3d::CreateViewProjectionBuffer() {
   DX12Basic* dx12 = Object3dBasic::GetInstance()->GetDX12Basic();
 
-  // ViewProjection用バッファの作成
+  // ViewProjection 用バッファの作成
   D3D12_HEAP_PROPERTIES heapProperties{};
   heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
 
@@ -253,7 +253,7 @@ void InstancedObject3d::UpdateAllInstances() {
     return;
   }
 
-  // アクティブなインスタンスデータをGPUバッファに書き込む
+  // アクティブなインスタンスデータを GPU バッファに書き込む
   size_t activeCount = 0;
   for (const auto& instance : instances_) {
     if (instance.active && activeCount < MAX_INSTANCES) {
@@ -285,7 +285,7 @@ void InstancedObject3d::Update() {
   // カメラデータの更新
   if (camera_ && *camera_) {
     cameraForGPUData_->worldPos = (*camera_)->GetTransform().translate;
-    // ViewProjection行列を更新
+    // ViewProjection 行列を更新
     *viewProjData_ = (*camera_)->GetViewProjectionMatrix();
   }
 }
@@ -303,7 +303,7 @@ void InstancedObject3d::Draw() {
     // インスタンシング用シャドウレンダリング設定
     ShadowRenderer::GetInstance()->SetInstancedRenderState();
 
-    // インスタンスバッファのSRVをセット（ルートパラメータ2: t5レジスタ）
+    // インスタンスバッファの SRV をセット（ルートパラメータ2: t5レジスタ）
     D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = SrvManager::GetInstance()->GetGPUDescriptorHandle(instanceSrvIndex_);
     dx12->GetCommandList()->SetGraphicsRootDescriptorTable(2, gpuHandle);
 
@@ -317,7 +317,7 @@ void InstancedObject3d::Draw() {
   // インスタンシング用のレンダリング設定
   Object3dBasic::GetInstance()->SetInstancedRenderSetting();
 
-  // ViewProjection行列をセット（ルートパラメータ1: b0）
+  // ViewProjection 行列をセット（ルートパラメータ1: b0）
   if (camera_ && *camera_) {
     commandList->SetGraphicsRootConstantBufferView(1, viewProjResource_->GetGPUVirtualAddress());
   }
@@ -325,7 +325,7 @@ void InstancedObject3d::Draw() {
   // カメラデータをセット（ルートパラメータ4: b2）
   commandList->SetGraphicsRootConstantBufferView(4, cameraForGPUResource_->GetGPUVirtualAddress());
 
-  // インスタンスバッファのSRVをセット（ルートパラメータ11: t5レジスタ）
+  // インスタンスバッファの SRV をセット（ルートパラメータ11: t5レジスタ）
   D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = SrvManager::GetInstance()->GetGPUDescriptorHandle(instanceSrvIndex_);
   commandList->SetGraphicsRootDescriptorTable(11, gpuHandle);
 
@@ -400,7 +400,7 @@ bool InstancedObject3d::IsValidInstanceId(uint32_t instanceId) const {
     });
 }
 
-// ModelInstance実装
+// ModelInstance 実装
 ModelInstance::ModelInstance(InstancedObject3d* parent, uint32_t instanceId)
   : parent_(parent), instanceId_(instanceId) {
 }

@@ -29,7 +29,7 @@ namespace Tako {
   {
     pModelBasic_.reset();
 
-    // 各モデルインスタンスに対してFinalize呼び出し
+    // 各モデルインスタンスに対して Finalize 呼び出し
     for (auto& model : models_) {
       if (model.second) {
         model.second->Finalize();
@@ -56,7 +56,7 @@ namespace Tako {
     }
 
 
-    // 新しいModelインスタンスを作成
+    // 新しい Model インスタンスを作成
     std::unique_ptr<Model> newModel = std::make_unique<Model>();
     newModel->Initialize(pModelBasic_.get(), fileName);
 
@@ -71,7 +71,7 @@ namespace Tako {
       return models_.at(fileName).get()->Clone();
     }
 
-    // 新しいModelインスタンスを作成
+    // 新しい Model インスタンスを作成
     std::unique_ptr<Model> newModel = std::make_unique<Model>();
     newModel->Initialize(pModelBasic_.get(), fileName);
 

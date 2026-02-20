@@ -6,7 +6,7 @@ namespace Tako {
 /// <summary>
 /// 文字列変換ユーティリティ名前空間
 /// マルチバイト文字列(std::string)とワイド文字列(std::wstring)の相互変換機能を提供
-/// Windows APIとの連携やDirectX APIで必要なワイド文字列への変換に使用
+/// Windows API との連携や DirectX API で必要なワイド文字列への変換に使用
 /// </summary>
 namespace StringUtility {
 	/// <summary>

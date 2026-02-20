@@ -16,8 +16,8 @@ class Model;
 class Camera;
 
 /// <summary>
-/// 3Dオブジェクト基底クラス
-/// Transform管理とモデル描画機能
+/// 3D オブジェクト基底クラス
+/// Transform 管理とモデル描画機能
 /// </summary>
 class Object3d {
 
@@ -30,7 +30,7 @@ public: // 構造体
     Matrix4x4 worldInvTranspose;
   };
 
-  // Shader用のカメラ
+  // Shader 用のカメラ
   struct CameraForGPU
   {
     Vector3 worldPos;
@@ -65,7 +65,7 @@ public: // メンバー関数
   void Draw();
 
   /// <summary>
-  /// デバッグUIを表示
+  /// デバッグ UI を表示
   /// </summary>
   void DrawImGui();
 
@@ -153,9 +153,9 @@ public: // メンバー関数
   void SetMaterialColor(const Vector4& color);
 
   /// <summary>
-  /// UVトランスフォームを設定
+  /// UV トランスフォームを設定
   /// </summary>
-  /// <param name="uvTransform">UVトランスフォーム情報</param>
+  /// <param name="uvTransform">UV トランスフォーム情報</param>
   void SetUvTransform(const Transform& uvTransform);
 
   /// <summary>
@@ -195,22 +195,22 @@ public: // メンバー関数
   /// <param name="enableEnvMap">環境マップを有効にするか</param>
   void SetEnableEnvMap(bool enableEnvMap);
 
-  // Jointアタッチメント機能
+  // Joint アタッチメント機能
   /// <summary>
-  /// 親Object3dの特定のJointにアタッチ
+  /// 親 Object3d の特定の Joint にアタッチ
   /// </summary>
-  /// <param name="parent">親となるObject3d</param>
-  /// <param name="jointName">アタッチするJoint名</param>
-  /// <param name="offset">Jointからのオフセット</param>
+  /// <param name="parent">親となる Object3d</param>
+  /// <param name="jointName">アタッチする Joint 名</param>
+  /// <param name="offset">Joint からのオフセット</param>
   void AttachToJoint(Object3d* parent, const std::string& jointName, const Vector3& offset = Vector3(0.0f, 0.0f, 0.0f));
 
   /// <summary>
-  /// 親Jointからデタッチ
+  /// 親 Joint からデタッチ
   /// </summary>
   void DetachFromJoint();
 
   /// <summary>
-  /// 親Jointのアタッチメント状態を取得
+  /// 親 Joint のアタッチメント状態を取得
   /// </summary>
   bool IsAttached() const { return parentObject_ != nullptr && !parentJointName_.empty(); }
 
@@ -259,10 +259,10 @@ private: // メンバー変数
   TransformationMatrix* transformationMatData_ = nullptr;
   CameraForGPU* cameraForGPUData_ = nullptr;
 
-  // Jointアタッチメント用変数
-  Object3d* parentObject_ = nullptr; // 親となるObject3d
-  std::string parentJointName_;      // アタッチするJoint名
-  Transform attachmentOffset_{};     // Jointからのオフセット
+  // Joint アタッチメント用変数
+  Object3d* parentObject_ = nullptr; // 親となる Object3d
+  std::string parentJointName_;      // アタッチする Joint 名
+  Transform attachmentOffset_{};     // Joint からのオフセット
 };
 
 } // namespace Tako

@@ -71,7 +71,7 @@ public: // メンバ関数
 	void SetIsDebug(bool value);
 
 	/// <summary>
-	/// デバッグフラグのポインタ取得（ImGui用）
+	/// デバッグフラグのポインタ取得（ImGui 用）
 	/// </summary>
 	/// <returns>デバッグフラグへのポインタ</returns>
 	bool* GetIsDebugPtr() { return &isDebug_; }
@@ -97,7 +97,7 @@ protected: // メンバ変数
 	std::unique_ptr<DX12Basic> dx12_;  ///< DirectX 12基盤システムへのポインタ
 
 #ifdef _DEBUG
-	std::unique_ptr<ImGuiManager> imguiManager_;  ///< ImGuiマネージャー（デバッグUI用）
+	std::unique_ptr<ImGuiManager> imguiManager_;  ///< ImGui マネージャー（デバッグ UI 用）
 #endif
 
 	std::unique_ptr<Camera> defaultCamera_;  ///< デフォルトカメラ

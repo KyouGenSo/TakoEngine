@@ -9,9 +9,9 @@ namespace Tako {
 /// </summary>
 class Collider {
 protected:
-	Transform* transform_ = nullptr;  ///< 対象オブジェクトのTransform（位置・回転・スケール情報）
-	uint32_t typeID_ = 0;             ///< コライダーの型ID（CollisionTypeIdDef参照）
-	bool isActive_ = true;            ///< コライダーの有効/無効状態（falseの場合は衝突判定を行わない）
+	Transform* transform_ = nullptr;  ///< 対象オブジェクトの Transform（位置・回転・スケール情報）
+	uint32_t typeID_ = 0;             ///< コライダーの型 ID（CollisionTypeIdDef 参照）
+	bool isActive_ = true;            ///< コライダーの有効/無効状態（false の場合は衝突判定を行わない）
 	void* owner_ = nullptr;           ///< このコライダーを所有するオブジェクトへのポインタ
 
 public:
@@ -45,39 +45,39 @@ public:
 	virtual void OnCollisionExit([[maybe_unused]] Collider* other) {}
 
 	/// <summary>
-	/// Transformを設定する
+	/// Transform を設定する
 	/// </summary>
-	/// <param name="transform">設定するTransformオブジェクトへのポインタ</param>
+	/// <param name="transform">設定する Transform オブジェクトへのポインタ</param>
 	void SetTransform(Transform* transform) { transform_ = transform; }
 
 	/// <summary>
-	/// Transformを取得する
+	/// Transform を取得する
 	/// </summary>
-	/// <returns>現在設定されているTransformへのポインタ</returns>
+	/// <returns>現在設定されている Transform へのポインタ</returns>
 	Transform* GetTransform() const { return transform_; }
 
 	/// <summary>
 	/// コライダーの有効/無効を設定する
 	/// </summary>
-	/// <param name="active">有効にする場合はtrue、無効にする場合はfalse</param>
+	/// <param name="active">有効にする場合は true、無効にする場合は false</param>
 	void SetActive(bool active) { isActive_ = active; }
 
 	/// <summary>
 	/// コライダーが有効かどうかを取得する
 	/// </summary>
-	/// <returns>有効な場合はtrue、無効な場合はfalse</returns>
+	/// <returns>有効な場合は true、無効な場合は false</returns>
 	bool IsActive() const { return isActive_; }
 
 	/// <summary>
-	/// コライダーの型IDを取得する
+	/// コライダーの型 ID を取得する
 	/// </summary>
-	/// <returns>型ID（CollisionTypeIdDefで定義された値）</returns>
+	/// <returns>型 ID（CollisionTypeIdDef で定義された値）</returns>
 	uint32_t GetTypeID() const { return typeID_; }
 
 	/// <summary>
-	/// コライダーの型IDを設定する
+	/// コライダーの型 ID を設定する
 	/// </summary>
-	/// <param name="id">設定する型ID（CollisionTypeIdDefで定義された値）</param>
+	/// <param name="id">設定する型 ID（CollisionTypeIdDef で定義された値）</param>
 	void SetTypeID(uint32_t id) { typeID_ = id; }
 
 	/// <summary>

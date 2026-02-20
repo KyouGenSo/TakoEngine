@@ -5,7 +5,7 @@
 namespace Tako {
 
 /// <summary>
-/// フレーム時間管理クラス。デルタタイム、FPS計測、ゲーム経過時間の管理を行う
+/// フレーム時間管理クラス。デルタタイム、FPS 計測、ゲーム経過時間の管理を行う
 /// </summary>
 class FrameTimer
 {
@@ -31,20 +31,20 @@ public:
   void Update();
 
   //----------------------------Getter----------------------------//
-  // deltaTimeの取得
+  // deltaTime の取得
   float GetDeltaTime() const { return deltaTime_; }
-  // 実際のFPSの取得
+  // 実際の FPS の取得
   float GetFPS() const { return fps_; }
-  // 表示用FPSの取得
+  // 表示用 FPS の取得
   float GetDisplayFPS() const { return displayFPS_; }
   // ゲーム起動からの経過時間の取得
   float GetGameTime() const { return gameTime_; }
 
 private:
-  // deltaTimeとFPSの更新
+  // deltaTime と FPS の更新
   void UpdateDeltaTimeAndFPS();
 
-  // gameTimeの更新
+  // gameTime の更新
   void UpdateGameTime();
 
 private:
@@ -57,7 +57,7 @@ private:
   // FPS
   float fps_;
 
-  // 表示用FPS
+  // 表示用 FPS
   float displayFPS_;
 
   // ゲーム起動からの経過時間

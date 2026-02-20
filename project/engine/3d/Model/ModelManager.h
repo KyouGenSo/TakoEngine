@@ -15,7 +15,7 @@ namespace Tako {
 
   /// <summary>
   /// モデルリソースの一元管理を行うシングルトンクラス
-  /// モデルのキャッシュ管理とAssimpベースのモデル読み込みを提供
+  /// モデルのキャッシュ管理と Assimp ベースのモデル読み込みを提供
   /// </summary>
   class ModelManager
   {
@@ -36,7 +36,7 @@ namespace Tako {
     /// <summary>
     /// インスタンスの取得
     /// </summary>
-    /// <returns>ModelManagerのシングルトンインスタンス</returns>
+    /// <returns>ModelManager のシングルトンインスタンス</returns>
     static ModelManager* GetInstance();
 
     /// <summary>
@@ -60,14 +60,14 @@ namespace Tako {
     /// モデルの検索
     /// </summary>
     /// <param name="fileName">モデルファイル名</param>
-    /// <returns>モデルポインタ（見つからない場合nullptr）</returns>
+    /// <returns>モデルポインタ（見つからない場合 nullptr）</returns>
     Model* GetModel(const std::string& fileName);
 
     // ===== Getter =====
     /// <summary>
     /// モデル基本システムを取得
     /// </summary>
-    /// <returns>ModelBasicポインタ</returns>
+    /// <returns>ModelBasic ポインタ</returns>
     ModelBasic* GetModelBasic() { return pModelBasic_.get(); }
 
   private: // メンバー変数

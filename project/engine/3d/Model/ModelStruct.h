@@ -17,12 +17,12 @@ namespace Tako {
 
   /// <summary>
   /// シーングラフノード構造体
-  /// 3Dモデルの階層構造を表現（親子関係によるトランスフォームの継承）
+  /// 3D モデルの階層構造を表現（親子関係によるトランスフォームの継承）
   /// </summary>
   struct Node
   {
     QuatTransform transform;            ///< このノードのローカル座標変換（位置・回転・スケール）
-    Matrix4x4 localMatrix;              ///< ローカル変換行列（transformから計算）
+    Matrix4x4 localMatrix;              ///< ローカル変換行列（transform から計算）
     std::string name;                   ///< ノード名（ボーン検索などに使用）
     std::vector<Node> children;         ///< 子ノードのリスト
     std::vector<int> meshIndices;       ///< このノードに関連付けられたメッシュインデックス
@@ -30,12 +30,12 @@ namespace Tako {
 
   /// <summary>
   /// 頂点データ構造体
-  /// 3Dモデルの各頂点が持つ属性情報
+  /// 3D モデルの各頂点が持つ属性情報
   /// </summary>
   struct VertexData
   {
     Vector4 position;  ///< 頂点位置（w=1.0で同次座標）
-    Vector2 texcoord;  ///< テクスチャ座標（UV座標）
+    Vector2 texcoord;  ///< テクスチャ座標（UV 座標）
     Vector3 normal;    ///< 法線ベクトル（ライティング計算用）
   };
 
@@ -45,7 +45,7 @@ namespace Tako {
   /// </summary>
   struct TextureData {
     std::string texturePath;  ///< テクスチャファイルのパス
-    uint32_t textureIndex;    ///< TextureManagerでのインデックス
+    uint32_t textureIndex;    ///< TextureManager でのインデックス
     Vector4 baseColor;        ///< 基本色（テクスチャと乗算される）
   };
 
@@ -71,7 +71,7 @@ namespace Tako {
 
   /// <summary>
   /// モデルデータ構造体（スキニングなし）
-  /// 静的な3Dモデルのメッシュデータ
+  /// 静的な3D モデルのメッシュデータ
   /// </summary>
   struct ModelData
   {
@@ -92,7 +92,7 @@ namespace Tako {
   };
 
   /// <summary>
-  /// マテリアル構造体（GPU用）
+  /// マテリアル構造体（GPU 用）
   /// シェーダーに送信される材質パラメータ
   /// </summary>
   struct Material
@@ -100,7 +100,7 @@ namespace Tako {
     Vector4 color;              ///< マテリアルカラー（RGBA）
     int32_t enableLighting;     ///< ライティング有効フラグ（0=無効, 1=有効）
     float padding1[3];          ///< 16バイトアライメント用パディング
-    Matrix4x4 uvTransform;      ///< UV座標変換行列（テクスチャアニメーション用）
+    Matrix4x4 uvTransform;      ///< UV 座標変換行列（テクスチャアニメーション用）
     float shininess;            ///< 光沢度（スペキュラ反射の鋭さ）
     float envMapCoefficient;    ///< 環境マップの影響度（0.0〜1.0）
     int32_t enableHighlight;    ///< ハイライト有効フラグ
@@ -115,7 +115,7 @@ namespace Tako {
   struct KeyFrame
   {
     float time;    ///< キーフレームの時刻（秒）
-    tValue value;  ///< その時刻での値（Vector3, Quaternionなど）
+    tValue value;  ///< その時刻での値（Vector3, Quaternion など）
   };
 
   using KeyFrameVector3 = KeyFrame<Vector3>;       ///< 位置・スケール用キーフレーム
@@ -135,7 +135,7 @@ namespace Tako {
   /// ノードアニメーション構造体
   /// 1つのノード/ボーンの移動・回転・拡大縮小アニメーション
   /// </summary>
-  struct NodeAnimetion
+  struct NodeAnimation
   {
     AnimationCurve<Vector3> translate;    ///< 位置アニメーションカーブ
     AnimationCurve<Quaternion> rotate;    ///< 回転アニメーションカーブ
@@ -149,7 +149,7 @@ namespace Tako {
   struct Animation
   {
     float duration;                                      ///< アニメーションの総再生時間（秒）
-    std::map<std::string, NodeAnimetion> nodeAnimations; ///< ノード名から各ノードのアニメーションへのマップ
+    std::map<std::string, NodeAnimation> nodeAnimations; ///< ノード名から各ノードのアニメーションへのマップ
   };
 
   /// <summary>
@@ -190,7 +190,7 @@ namespace Tako {
   const uint32_t MAX_INFLUENCE = 4;  ///< 1頂点に影響できる最大ジョイント数
 
   /// <summary>
-  /// 頂点影響情報構造体（GPU用）
+  /// 頂点影響情報構造体（GPU 用）
   /// 各頂点がどのジョイントからどれだけ影響を受けるか
   /// </summary>
   struct VertexInfluence
@@ -200,8 +200,8 @@ namespace Tako {
   };
 
   /// <summary>
-  /// GPU用スキニング行列構造体
-  /// Compute Shaderでのスキニング計算に使用
+  /// GPU 用スキニング行列構造体
+  /// Compute Shader でのスキニング計算に使用
   /// </summary>
   struct WellForGPU
   {
@@ -211,7 +211,7 @@ namespace Tako {
 
   /// <summary>
   /// スキニング情報構造体
-  /// Compute Shader用のメタデータ
+  /// Compute Shader 用のメタデータ
   /// </summary>
   struct SkinningInfo
   {
@@ -220,17 +220,17 @@ namespace Tako {
 
   /// <summary>
   /// スキンクラスター構造体
-  /// GPUスキニングに必要な全リソースを管理
+  /// GPU スキニングに必要な全リソースを管理
   /// </summary>
   struct SkinCluster
   {
     std::vector<Matrix4x4> inverseBindMatrices;                        ///< 各ジョイントの逆バインドポーズ行列
-    Microsoft::WRL::ComPtr<ID3D12Resource> influenceResource;          ///< 頂点影響情報リソース（GPU側）
+    Microsoft::WRL::ComPtr<ID3D12Resource> influenceResource;          ///< 頂点影響情報リソース（GPU 側）
     std::span<VertexInfluence> mappedInfluences;                       ///< 頂点影響情報の書き込み先ポインタ
-    uint32_t influenceSrvIndex;                                        ///< 頂点影響情報のSRVインデックス
+    uint32_t influenceSrvIndex;                                        ///< 頂点影響情報の SRV インデックス
     Microsoft::WRL::ComPtr<ID3D12Resource> paletteResource;            ///< スキニング行列パレットリソース
     std::span<WellForGPU> mappedPalette;                               ///< パレットの書き込み先ポインタ
-    uint32_t paletteSrvIndex;                                          ///< パレットのSRVインデックス
+    uint32_t paletteSrvIndex;                                          ///< パレットの SRV インデックス
     std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> paletteSrvHandle; ///< パレットのディスクリプタハンドル
   };
 

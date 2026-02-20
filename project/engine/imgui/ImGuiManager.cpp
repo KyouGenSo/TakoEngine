@@ -19,7 +19,7 @@ void ImGuiManager::Initialize(WinApp* winApp, DX12Basic* dx12, bool isDocking)
 
   ImGui::CreateContext();
 
-  // スケールの調整（DPIスケーリングに対応）
+  // スケールの調整（DPI スケーリングに対応）
   ImGuiIO& io = ImGui::GetIO();
   io.FontGlobalScale = 1.0f;
 
@@ -30,23 +30,23 @@ void ImGuiManager::Initialize(WinApp* winApp, DX12Basic* dx12, bool isDocking)
 
   ImGui_ImplWin32_Init(m_winApp_->GetHWnd());
 
-  // フォント用のSRVインデックスを確保
+  // フォント用の SRV インデックスを確保
   fontSrvIndex_ = SrvManager::GetInstance()->Allocate();
 
   // DX12用の初期化
   InitializeForDX12();
 
-  // Dockingの設定
+  // Docking の設定
   SetDocking(isDocking_);
 
 }
 
 void ImGuiManager::InitializeForDX12()
 {
-  // SrvManagerのディスクリプタヒープを取得
+  // SrvManager のディスクリプタヒープを取得
   ID3D12DescriptorHeap* srvHeap = SrvManager::GetInstance()->GetDescriptorHeap();
 
-  // フォント用のCPU/GPUハンドルを取得
+  // フォント用の CPU/GPU ハンドルを取得
   D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = SrvManager::GetInstance()->GetCPUDescriptorHandle(fontSrvIndex_);
   D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = SrvManager::GetInstance()->GetGPUDescriptorHandle(fontSrvIndex_);
 
@@ -87,7 +87,7 @@ void ImGuiManager::Shutdown()
   ImGui_ImplWin32_Shutdown();
   ImGui::DestroyContext();
 
-  // フォント用のSRVインデックスを解放
+  // フォント用の SRV インデックスを解放
   if (fontSrvIndex_ != 0) {
     SrvManager::GetInstance()->Free(fontSrvIndex_);
     fontSrvIndex_ = 0;
@@ -103,7 +103,7 @@ void ImGuiManager::OnWindowResize()
     static_cast<float>(WinApp::clientHeight)
   );
 
-  // Dockingの再設定
+  // Docking の再設定
   SetDocking(isDocking_);
 }
 

@@ -43,7 +43,7 @@ void EmitterManager::CreateSphereEmitter(const std::string& name, const Vector3&
   // エミッター作成
   std::shared_ptr<SphereEmitter> emitter = std::make_shared<SphereEmitter>(particleSystem_, position, radius, count, frequency);
 
-  // GPUParticleにエミッターを登録
+  // GPUParticle にエミッターを登録
   particleSystem_->RegisterEmitter(emitter);
 
   // マップに追加
@@ -66,7 +66,7 @@ void EmitterManager::CreateBoxEmitter(const std::string& name, const Vector3& po
   // エミッター作成
   std::shared_ptr<BoxEmitter> emitter = std::make_shared<BoxEmitter>(particleSystem_, position, size, rotation, count, frequency);
 
-  // GPUParticleにエミッターを登録
+  // GPUParticle にエミッターを登録
   particleSystem_->RegisterEmitter(emitter);
 
   // マップに追加
@@ -89,7 +89,7 @@ void EmitterManager::CreateTriangleEmitter(const std::string& name, const Vector
   // エミッター作成
   std::shared_ptr<TriangleEmitter> emitter = std::make_shared<TriangleEmitter>(particleSystem_, position, v1, v2, v3, count, frequency);
 
-  // GPUParticleにエミッターを登録
+  // GPUParticle にエミッターを登録
   particleSystem_->RegisterEmitter(emitter);
 
   // マップに追加
@@ -409,7 +409,7 @@ void EmitterManager::RemoveEmitter(const std::string& name)
     std::shared_ptr<GPUParticleEmitter> emitter = it->second;
     emitterMap_.erase(it);
 
-    // GPUParticleシステムから登録解除
+    // GPUParticle システムから登録解除
     if (particleSystem_) {
       particleSystem_->UnregisterEmitter(emitter);
     }
@@ -418,7 +418,7 @@ void EmitterManager::RemoveEmitter(const std::string& name)
     for (auto& [groupName, group] : groupMap_) {
       auto& names = group.emitterNames;
 
-      // erase-removeイディオムの安全な実装
+      // erase-remove イディオムの安全な実装
       auto removeIt = std::find(names.begin(), names.end(), name);
       if (removeIt != names.end()) {
         names.erase(removeIt);
@@ -447,7 +447,7 @@ void EmitterManager::RemoveAllEmitters()
     DebugUIManager::LogType::Info);
 #endif
 
-  // エミッターを1つずつ明示的に削除（GPUParticleシステムに通知するため）
+  // エミッターを1つずつ明示的に削除（GPUParticle システムに通知するため）
   for (auto& val : emitterMap_ | std::views::values) {
     auto& emitter = val;
     // エミッターを非アクティブ化して即時効果を得る
@@ -629,7 +629,7 @@ void EmitterManager::RemoveGroup(const std::string& groupName)
 }
 
 //========================================
-// JSON保存・読み込み機能
+// JSON 保存・読み込み機能
 //========================================
 
 void EmitterManager::SaveScenePreset(const std::string& filename)
@@ -643,7 +643,7 @@ void EmitterManager::SaveScenePreset(const std::string& filename)
     std::filesystem::create_directories(directory);
   }
 
-  // すべてのエミッターをJSONに変換
+  // すべてのエミッターを JSON に変換
   root["emitters"] = json::object();
   for (const auto& [name, emitter] : emitterMap_) {
     json emitterJson;
@@ -975,7 +975,7 @@ bool EmitterManager::IsGroupActive(const std::string& groupName) const
 }
 
 //========================================
-// JSON変換ヘルパー
+// JSON 変換ヘルパー
 //========================================
 
 void EmitterManager::SerializeEmitterToJSON(const std::shared_ptr<GPUParticleEmitter>& emitter, nlohmann::json& json) const

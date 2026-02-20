@@ -28,7 +28,7 @@ namespace Tako {
     /// <summary>
     /// DirectX12基盤を取得
     /// </summary>
-    /// <returns>DX12Basicポインタ</returns>
+    /// <returns>DX12Basic ポインタ</returns>
     DX12Basic* GetDX12Basic() { return m_dx12_; }
 
     /// <summary>

@@ -20,23 +20,23 @@ public: // 構造体定義
   {
   public:
     /// <summary>
-    /// 名前でObject3dを取得
+    /// 名前で Object3d を取得
     /// </summary>
     /// <param name="name">オブジェクト名</param>
-    /// <returns>Object3dのポインタ（見つからない場合はnullptr）</returns>
+    /// <returns>Object3d のポインタ（見つからない場合は nullptr）</returns>
     Object3d* GetObject3d(const std::string& name);
 
     /// <summary>
-    /// Object3dを追加
+    /// Object3d を追加
     /// </summary>
     /// <param name="name">オブジェクト名</param>
-    /// <param name="object">Object3dのunique_ptr</param>
+    /// <param name="object">Object3d の unique_ptr</param>
     void AddObject(const std::string& name, std::unique_ptr<Object3d> object);
 
     /// <summary>
-    /// 全てのObject3dを取得
+    /// 全ての Object3d を取得
     /// </summary>
-    /// <returns>Object3dのリスト</returns>
+    /// <returns>Object3d のリスト</returns>
     const std::vector<std::unique_ptr<Object3d>>& GetAllObjects() const { return objects_; }
 
     /// <summary>
@@ -76,10 +76,10 @@ public: //　メンバー関数
   void Initialize();
 
   /// <summary>
-  /// シーンをjsonファイルから読み込む
+  /// シーンを json ファイルから読み込む
   /// </summary>
   /// <param name="sceneFileName">シーンファイル名</param>
-  /// <returns>読み込まれたシーンデータ（失敗時はnullptr）</returns>
+  /// <returns>読み込まれたシーンデータ（失敗時は nullptr）</returns>
   std::unique_ptr<LoadedScene> LoadScene(const std::string& sceneFileName);
 
   // -----------------------------------Setters-----------------------------------//

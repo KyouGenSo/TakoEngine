@@ -12,7 +12,7 @@ public:
   /// <summary>
   /// コンストラクタ
   /// </summary>
-  /// <param name="particleSystem">GPUパーティクルシステムへのポインタ</param>
+  /// <param name="particleSystem">GPU パーティクルシステムへのポインタ</param>
   /// <param name="position">位置</param>
   /// <param name="size">ボックスのサイズ</param>
   /// <param name="rotation">回転角度</param>
@@ -37,9 +37,9 @@ public:
   std::shared_ptr<GPUParticleEmitter> Clone() const override;
 
   /// <summary>
-  /// GPUデータの設定
+  /// GPU データの設定
   /// </summary>
-  /// <param name="gpuData">設定するGPUデータ</param>
+  /// <param name="gpuData">設定する GPU データ</param>
   void SetupGPUData(EmitterGPUData& gpuData) const override;
 
   /// <summary>

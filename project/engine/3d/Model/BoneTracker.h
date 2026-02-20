@@ -14,7 +14,7 @@ namespace Tako {
   struct BoneEmitterLink
   {
     std::string boneName;       ///< 追跡対象のボーン名
-    std::string emitterName;    ///< EmitterManager内で管理されているエミッター名
+    std::string emitterName;    ///< EmitterManager 内で管理されているエミッター名
     int32_t boneIndex;          ///< ボーンインデックス（検索キャッシュ用、-1=未解決）
     Vector3 offset;             ///< ボーン位置からの相対オフセット
     bool isActive;              ///< このリンクがアクティブかどうか
@@ -23,7 +23,7 @@ namespace Tako {
   /// <summary>
   /// ボーントラッキングシステムクラス
   /// スケルタルアニメーション対応モデルのボーンにエミッターを追従させる機能を提供
-  /// 既存のEmitterManagerを活用し、ボーン位置の自動更新を実現
+  /// 既存の EmitterManager を活用し、ボーン位置の自動更新を実現
   /// キャラクターの手足や武器装着位置などへのエフェクト配置に有用
   /// </summary>
   class BoneTracker
@@ -40,7 +40,7 @@ namespace Tako {
     ~BoneTracker();
 
     /// <summary>
-    /// 初期化（対象モデルとEmitterManagerを設定）
+    /// 初期化（対象モデルと EmitterManager を設定）
     /// </summary>
     /// <param name="model">対象モデル</param>
     /// <param name="emitterManager">エミッター管理システム</param>
@@ -51,7 +51,7 @@ namespace Tako {
     /// </summary>
     /// <param name="linkName">リンクの識別名</param>
     /// <param name="boneName">追跡するボーン名</param>
-    /// <param name="emitterName">EmitterManager内のエミッター名</param>
+    /// <param name="emitterName">EmitterManager 内のエミッター名</param>
     /// <param name="offset">ボーンからのオフセット位置</param>
     void LinkBoneToEmitter(const std::string& linkName,
       const std::string& boneName,
@@ -123,7 +123,7 @@ namespace Tako {
     /// リンクが存在するか確認
     /// </summary>
     /// <param name="linkName">リンク名</param>
-    /// <returns>存在する場合true</returns>
+    /// <returns>存在する場合 true</returns>
     bool HasLink(const std::string& linkName) const;
 
     /// <summary>

@@ -162,7 +162,7 @@ namespace Tako {
 
   void Mesh::UpdateTransformation(const Matrix4x4& world, const Matrix4x4& viewProjection)
   {
-    // ワールド変換行列とビュープロジェクション行列からWVP行列を計算
+    // ワールド変換行列とビュープロジェクション行列から WVP 行列を計算
     Matrix4x4 wvpMatrix = Mat4x4::Multiply(world, viewProjection);
 
     // 変換行列データを更新
@@ -181,7 +181,7 @@ namespace Tako {
 
   void Mesh::ReleaseSRVIndex()
   {
-    // SRVインデックスの解放
+    // SRV インデックスの解放
     if (vertexSrvIndex_ != 0) {
       // 解放前にアロケートされているか確認
       if (SrvManager::GetInstance()->IsAllocated(vertexSrvIndex_)) {
@@ -210,7 +210,7 @@ namespace Tako {
     // スキニングフラグを設定
     hasSkinning_ = true;
 
-    // 全頂点の影響度配列を初期化（MAX_INFLUENCE個の要素を持つ配列）
+    // 全頂点の影響度配列を初期化（MAX_INFLUENCE 個の要素を持つ配列）
     vertexInfluences_.resize(vertices_.size());
 
     // すべての頂点影響度を0で初期化
@@ -271,7 +271,7 @@ namespace Tako {
       }
     }
 
-    // UAVリソースを生成
+    // UAV リソースを生成
     SetupSkinningUAV();
   }
 
@@ -295,19 +295,19 @@ namespace Tako {
 
     SrvManager* srvManager = SrvManager::GetInstance();
 
-    // 入力頂点バッファのSRV設定
+    // 入力頂点バッファの SRV 設定
     srvManager->SetComputeRootDescriptorTable(1, vertexSrvIndex_);
 
-    // 頂点影響度データのSRV設定
+    // 頂点影響度データの SRV 設定
     srvManager->SetComputeRootDescriptorTable(2, influenceSrvIndex_);
 
-    // 出力頂点バッファのUAV設定
+    // 出力頂点バッファの UAV 設定
     srvManager->SetComputeRootDescriptorTable(3, uavIndex_);
 
     // スキニング情報の設定
     dx12_->GetCommandList()->SetComputeRootConstantBufferView(4, skinningInfoResource_->GetGPUVirtualAddress());
 
-    // ComputeShaderの実行
+    // ComputeShader の実行
     dx12_->GetCommandList()->Dispatch(
       static_cast<UINT>(vertices_.size() + 1023) / 1024, 1, 1);
 
@@ -338,7 +338,7 @@ namespace Tako {
 
   void Mesh::CreateVertexBufferView()
   {
-    // VertexBufferViewを作成
+    // VertexBufferView を作成
     vertexBufferView_.BufferLocation = vertexResource_->GetGPUVirtualAddress();
     vertexBufferView_.SizeInBytes = static_cast<UINT>(sizeof(VertexData) * vertices_.size());
     vertexBufferView_.StrideInBytes = sizeof(VertexData);
@@ -403,7 +403,7 @@ namespace Tako {
     DX12Basic* dx12 = modelBasic_->GetDX12Basic();
     SrvManager* srvManager = SrvManager::GetInstance();
 
-    // 1. 頂点バッファのSRVを作成
+    // 1. 頂点バッファの SRV を作成
     if (vertexSrvIndex_ == 0) {
       vertexSrvIndex_ = srvManager->Allocate();
       srvManager->CreateSRVForStructuredBuffer(
@@ -423,7 +423,7 @@ namespace Tako {
     std::memcpy(mappedInfluences, vertexInfluences_.data(), sizeof(VertexInfluence) * vertexInfluences_.size());
     influenceResource_->Unmap(0, nullptr);
 
-    // 4. 影響度バッファのSRVを作成
+    // 4. 影響度バッファの SRV を作成
     influenceSrvIndex_ = srvManager->Allocate();
     srvManager->CreateSRVForStructuredBuffer(
       influenceSrvIndex_,
@@ -438,7 +438,7 @@ namespace Tako {
       static_cast<UINT>(vertices_.size() * sizeof(VertexData))
     );
 
-    // 6. UAVの作成
+    // 6. UAV の作成
     uavIndex_ = srvManager->Allocate();
     srvManager->CreateUAV(
       uavIndex_,

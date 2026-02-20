@@ -166,7 +166,7 @@ void GlobalVariables::SaveFile(const std::string& groupName)
     return;
   }
 
-  // ファイルにjson文字列を書き込み(インデント4)
+  // ファイルに json 文字列を書き込み(インデント4)
   ofs << std::setw(4) << root << std::endl;
 
   // ファイルを閉じる
@@ -183,13 +183,13 @@ void GlobalVariables::LoadFiles()
 
   std::filesystem::directory_iterator dir_it(kDirectoryPath);
   for (const std::filesystem::directory_entry& entry : dir_it) {
-    // ファイルパスをs取得
+    // ファイルパスを s 取得
     const std::filesystem::path& filePath = entry.path();
 
     // ファイル拡張子を取得
     std::string extension = filePath.extension().string();
 
-    // 拡張子が.jsonでない場合はスキップ
+    // 拡張子が.json でない場合はスキップ
     if (extension != ".json") {
       continue;
     }
@@ -393,7 +393,7 @@ int32_t GlobalVariables::GetValueInt(const std::string& groupName, const std::st
   // 項目が存在しない場合はエラー
   assert(group.items.find(key) != group.items.end());
   const Item& item = group.items.at(key);
-  // 型がintでない場合はエラー
+  // 型が int でない場合はエラー
   assert(std::holds_alternative<int32_t>(item.value));
   return std::get<int32_t>(item.value);
 }
@@ -450,11 +450,11 @@ bool GlobalVariables::GetValueBool(const std::string& groupName, const std::stri
   assert(itemIt != group.items.end());
   const Item& item = itemIt->second;
 
-  // bool型が格納されているか確認
+  // bool 型が格納されているか確認
   if (auto boolPtr = std::get_if<bool>(&item.value)) {
     return *boolPtr;
   }
-  // もしint32_t型が格納されている場合は、0以外ならtrueとみなす
+  // もし int32_t 型が格納されている場合は、0以外なら true とみなす
   else if (auto intPtr = std::get_if<int32_t>(&item.value)) {
     return (*intPtr != 0);
   }

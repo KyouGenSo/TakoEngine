@@ -26,11 +26,11 @@ enum class EmitterType : uint32_t {
 struct ParticleMaterial
 {
   Vector4 color;         ///< マテリアルカラー（RGBA）
-  Matrix4x4 uvTransform; ///< UV座標変換行列
+  Matrix4x4 uvTransform; ///< UV 座標変換行列
 };
 
 /// <summary>
-/// GPU用パーティクルデータ構造体
+/// GPU 用パーティクルデータ構造体
 /// インスタンシング描画用の各パーティクルのトランスフォームデータ
 /// </summary>
 struct ParticleDataForGPU
@@ -41,7 +41,7 @@ struct ParticleDataForGPU
 };
 
 /// <summary>
-/// パーティクル構造体（CPU側）
+/// パーティクル構造体（CPU 側）
 /// 個々のパーティクルの状態を保持
 /// </summary>
 struct Particle
@@ -57,8 +57,8 @@ struct Particle
 };
 
 /// <summary>
-/// Compute Shader用パーティクルデータ構造体
-/// GPU側でのパーティクル更新計算に使用
+/// Compute Shader 用パーティクルデータ構造体
+/// GPU 側でのパーティクル更新計算に使用
 /// </summary>
 struct ParticleCS
 {
@@ -73,7 +73,7 @@ struct ParticleCS
 };
 
 /// <summary>
-/// ビュー共通データ構造体（GPU用）
+/// ビュー共通データ構造体（GPU 用）
 /// フレーム内で共通のビュー関連データ
 /// </summary>
 struct PerView
@@ -83,7 +83,7 @@ struct PerView
 };
 
 /// <summary>
-/// フレーム共通データ構造体（GPU用）
+/// フレーム共通データ構造体（GPU 用）
 /// フレーム内で共通の時間・エミッター情報
 /// </summary>
 struct PerFrame
@@ -102,30 +102,30 @@ struct ParticleGroup
 {
   TextureData texture;                       ///< 使用するテクスチャ情報
   std::list<Particle> particleList;          ///< このグループに属するパーティクルのリスト
-  int instancingSrvIndex;                    ///< インスタンシングデータのSRVインデックス
-  Microsoft::WRL::ComPtr<ID3D12Resource> particleDataForGPUResource_; ///< GPU用インスタンシングデータリソース
+  int instancingSrvIndex;                    ///< インスタンシングデータの SRV インデックス
+  Microsoft::WRL::ComPtr<ID3D12Resource> particleDataForGPUResource_; ///< GPU 用インスタンシングデータリソース
   ParticleDataForGPU* pParticleDataForGPU = nullptr; ///< インスタンシングデータ書き込み先ポインタ
   UINT instanceCount = 0;                    ///< このフレームで描画するインスタンス数
 };
 
 /// <summary>
 /// C++側エミッターデータ構造体
-/// エミッターの全設定パラメータを保持（CPU側）
+/// エミッターの全設定パラメータを保持（CPU 側）
 /// </summary>
 struct EmitterData {
   EmitterType type;         ///< エミッタータイプ（球体/箱型/三角形）
   bool isActive;            ///< エミッターがアクティブかどうか
   bool isEmitting;          ///< 現在射出中かどうか
   bool isNormalize;         ///< 速度ベクトルを正規化するか
-  bool isRandomRotateZ;     ///< Z軸ランダム回転を有効にするか
-  uint32_t emitterID;       ///< エミッター固有のID
+  bool isRandomRotateZ;     ///< Z 軸ランダム回転を有効にするか
+  uint32_t emitterID;       ///< エミッター固有の ID
 
   Vector3 position;         ///< エミッターの中心/基準位置
-  Vector2 scaleRangeX;      ///< Xスケールの範囲[min, max]
-  Vector2 scaleRangeY;      ///< Yスケールの範囲[min, max]
-  Vector2 velRangeX;        ///< X方向速度の範囲[min, max]
-  Vector2 velRangeY;        ///< Y方向速度の範囲[min, max]
-  Vector2 velRangeZ;        ///< Z方向速度の範囲[min, max]
+  Vector2 scaleRangeX;      ///< X スケールの範囲[min, max]
+  Vector2 scaleRangeY;      ///< Y スケールの範囲[min, max]
+  Vector2 velRangeX;        ///< X 方向速度の範囲[min, max]
+  Vector2 velRangeY;        ///< Y 方向速度の範囲[min, max]
+  Vector2 velRangeZ;        ///< Z 方向速度の範囲[min, max]
   Vector2 lifeTimeRange;    ///< パーティクル寿命の範囲[min, max]（秒）
   Vector4 startColorTint;   ///< 開始色の色調補正（RGBA）
   Vector4 endColorTint;     ///< 終了色の色調補正（RGBA）
@@ -161,8 +161,8 @@ struct EmitterData {
 };
 
 /// <summary>
-/// GPU側エミッター構造体
-/// Compute ShaderでのパーティクルComputeに使用
+/// GPU 側エミッター構造体
+/// Compute Shader でのパーティクル Compute に使用
 /// 全エミッタータイプのパラメータを平坦化して保持
 /// </summary>
 struct EmitterGPUData
@@ -171,15 +171,15 @@ struct EmitterGPUData
   uint32_t isActive;       ///< アクティブ状態（0=無効, 1=有効）
   uint32_t isEmit;         ///< 射出フラグ（このフレームで射出するか）
   uint32_t isNormalize;    ///< 速度正規化フラグ
-  uint32_t isRandomRotateZ; ///< Z軸ランダム回転フラグ
-  uint32_t emitterID;      ///< エミッターID
+  uint32_t isRandomRotateZ; ///< Z 軸ランダム回転フラグ
+  uint32_t emitterID;      ///< エミッター ID
 
   Vector3 position;        ///< エミッター中心/基準位置
-  Vector2 scaleRangeX;     ///< Xスケールの範囲[min, max]
-  Vector2 scaleRangeY;     ///< Yスケールの範囲[min, max]
-  Vector2 velRangeX;       ///< X方向速度の範囲[min, max]
-  Vector2 velRangeY;       ///< Y方向速度の範囲[min, max]
-  Vector2 velRangeZ;       ///< Z方向速度の範囲[min, max]
+  Vector2 scaleRangeX;     ///< X スケールの範囲[min, max]
+  Vector2 scaleRangeY;     ///< Y スケールの範囲[min, max]
+  Vector2 velRangeX;       ///< X 方向速度の範囲[min, max]
+  Vector2 velRangeY;       ///< Y 方向速度の範囲[min, max]
+  Vector2 velRangeZ;       ///< Z 方向速度の範囲[min, max]
   Vector2 lifeTimeRange;   ///< パーティクル寿命の範囲[min, max]（秒）
   Vector4 startColorTint;  ///< 開始色の色調補正（RGBA）
   Vector4 endColorTint;    ///< 終了色の色調補正（RGBA）

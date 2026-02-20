@@ -15,7 +15,7 @@ namespace Tako {
 class Camera;
 
 /// <summary>
-/// 3Dオブジェクト描画の基盤システムクラス
+/// 3D オブジェクト描画の基盤システムクラス
 /// シングルトンパターンで実装され、通常描画とインスタンシング描画の両方をサポート
 /// カメラ、ライティング、デバッグ機能を統合管理
 /// </summary>
@@ -67,7 +67,7 @@ public: // メンバー関数
 	/// <summary>
 	/// DirectX12基盤システムを取得
 	/// </summary>
-	/// <returns>DX12Basicポインタ</returns>
+	/// <returns>DX12Basic ポインタ</returns>
 	DX12Basic* GetDX12Basic() const { return m_dx12_; }
 
 	/// <summary>
@@ -79,13 +79,13 @@ public: // メンバー関数
 	/// <summary>
 	/// デバッグモードの状態を取得
 	/// </summary>
-	/// <returns>デバッグモードが有効な場合true</returns>
+	/// <returns>デバッグモードが有効な場合 true</returns>
 	bool GetDebug() const { return isDebug_; }
 
 	/// <summary>
 	/// ライトシステムを取得
 	/// </summary>
-	/// <returns>Lightポインタ</returns>
+	/// <returns>Light ポインタ</returns>
 	Light* GetLight() const { return light_.get(); }
 
 	// ===== Setters =====

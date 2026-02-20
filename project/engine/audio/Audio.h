@@ -11,7 +11,7 @@
 namespace Tako {
 
 /// <summary>
-/// オーディオ管理クラス。XAudio2を使用してWAVE/MP3ファイルの読み込み、再生、音量/ピッチ制御を行う
+/// オーディオ管理クラス。XAudio2を使用して WAVE/MP3ファイルの読み込み、再生、音量/ピッチ制御を行う
 /// </summary>
 class Audio
 {
@@ -30,7 +30,7 @@ public:
 
 public: // 構造体
 	struct ChunkHeader {
-		char id[4]; // チャンクのID
+		char id[4]; // チャンクの ID
 		uint32_t size; // チャンクのサイズ
 	};
 
@@ -58,7 +58,7 @@ public:
 	/// <summary>
 	/// シングルトンインスタンスを取得
 	/// </summary>
-	/// <returns>Audioのインスタンス</returns>
+	/// <returns>Audio のインスタンス</returns>
 	static Audio* GetInstance();
 
 	// サウンドの最大数
@@ -81,16 +81,16 @@ public:
 	void Update();
 
 	/// <summary>
-	/// WAVEファイルの読み込み
+	/// WAVE ファイルの読み込み
 	/// </summary>
-	/// <param name="filename">ファイル名（directoryPath基準の相対パス）</param>
+	/// <param name="filename">ファイル名（directoryPath 基準の相対パス）</param>
 	/// <returns>サウンドデータハンドル</returns>
 	uint32_t LoadWaveFile(const std::string& filename);
 
   /// <summary>
-  /// MP3ファイルの読み込み（miniaudio使用）
+  /// MP3ファイルの読み込み（miniaudio 使用）
   /// </summary>
-  /// <param name="filename">ファイル名（directoryPath基準の相対パス）</param>
+  /// <param name="filename">ファイル名（directoryPath 基準の相対パス）</param>
   /// <returns>サウンドデータハンドル</returns>
   uint32_t LoadMP3File(const std::string& filename);
 
@@ -104,7 +104,7 @@ public:
 	/// サウンドの再生（全パラメータ指定）
 	/// </summary>
 	/// <param name="soundDataHandle">サウンドデータハンドル</param>
-	/// <param name="loopFlag">ループ再生する場合true</param>
+	/// <param name="loopFlag">ループ再生する場合 true</param>
 	/// <param name="volume">音量（0.0 ~ 1.0）</param>
 	/// <returns>ボイスハンドル</returns>
 	uint32_t Play(uint32_t soundDataHandle, bool loopFlag, float volume);
@@ -120,7 +120,7 @@ public:
 	/// サウンドの再生（ループ指定）
 	/// </summary>
 	/// <param name="soundDataHandle">サウンドデータハンドル</param>
-	/// <param name="loopFlag">ループ再生する場合true</param>
+	/// <param name="loopFlag">ループ再生する場合 true</param>
 	/// <returns>ボイスハンドル</returns>
 	uint32_t Play(uint32_t soundDataHandle, bool loopFlag);
 
@@ -142,7 +142,7 @@ public:
 	/// サウンドが再生中かどうかを判定
 	/// </summary>
 	/// <param name="voiceHandle">判定するボイスハンドル</param>
-	/// <returns>再生中の場合true</returns>
+	/// <returns>再生中の場合 true</returns>
 	bool IsPlaying(uint32_t voiceHandle);
 
 	/// <summary>

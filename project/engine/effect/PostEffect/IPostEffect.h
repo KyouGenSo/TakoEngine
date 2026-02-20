@@ -13,9 +13,9 @@ class DX12Basic;
 
 /// <summary>
 /// ポストエフェクト基底インターフェースクラス
-/// Bloom、Vignette、RadialBlurなど各種ポストエフェクトの共通インターフェースを定義
+/// Bloom、Vignette、RadialBlur など各種ポストエフェクトの共通インターフェースを定義
 /// 各エフェクトはこのクラスを継承し、Apply()メソッドで独自の画像処理を実装
-/// ルートシグネチャとPSOの管理、ImGuiデバッグUI統合をサポート
+/// ルートシグネチャと PSO の管理、ImGui デバッグ UI 統合をサポート
 /// </summary>
 class IPostEffect
 {
@@ -35,10 +35,10 @@ public: // メンバー関数
   /// <summary>
   /// エフェクトを適用
   /// </summary>
-  /// <param name="inputSrvIndex">入力テクスチャのSRVインデックス</param>
-  /// <param name="outputRtvHandle">出力先のRTVハンドル</param>
-  /// <param name="depthSrvIndex">深度バッファのSRVインデックス</param>
-  /// <param name="clearColor">出力先のRTVのクリアカラー</param>
+  /// <param name="inputSrvIndex">入力テクスチャの SRV インデックス</param>
+  /// <param name="outputRtvHandle">出力先の RTV ハンドル</param>
+  /// <param name="depthSrvIndex">深度バッファの SRV インデックス</param>
+  /// <param name="clearColor">出力先の RTV のクリアカラー</param>
   virtual void Apply(
     uint32_t                    inputSrvIndex,
     D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle,
@@ -47,7 +47,7 @@ public: // メンバー関数
   ) = 0;
 
   /// <summary>
-  /// ImGuiでデバッグUIを描画
+  /// ImGui でデバッグ UI を描画
   /// </summary>
   virtual void DrawImgui() = 0;
 
@@ -55,18 +55,18 @@ public: // メンバー関数
   /// 汎用パラメータを設定
   /// </summary>
   /// <param name="param">エフェクトパラメータ</param>
-  /// <returns>設定成功の場合true</returns>
+  /// <returns>設定成功の場合 true</returns>
   virtual bool SetGenericParam(const EffectParam& param) { param; return false; }
 
   /// <summary>
   /// 深度バッファが必要か判定
   /// </summary>
-  /// <returns>必要な場合true</returns>
+  /// <returns>必要な場合 true</returns>
   virtual bool RequiresDepthBuffer() const { return false; }
 
 protected: // プライベートメンバー関数
 
-  // ComPtrのエイリアス
+  // ComPtr のエイリアス
   template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
 
   /// <summary>

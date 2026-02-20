@@ -11,8 +11,8 @@ namespace Tako {
   class ModelBasic;
 
   /// <summary>
-  /// 3Dモデルのメッシュデータとスキニングアニメーション処理を管理するクラス
-  /// 頂点データ、インデックス、マテリアル、GPUスキニングを統合管理
+  /// 3D モデルのメッシュデータとスキニングアニメーション処理を管理するクラス
+  /// 頂点データ、インデックス、マテリアル、GPU スキニングを統合管理
   /// </summary>
   class Mesh {
 
@@ -132,9 +132,9 @@ namespace Tako {
     void SetEnvMapCoefficient(float coefficient) { materialData_->envMapCoefficient = coefficient; }
 
     /// <summary>
-    /// UVトランスフォームを設定
+    /// UV トランスフォームを設定
     /// </summary>
-    /// <param name="transform">UVトランスフォーム情報</param>
+    /// <param name="transform">UV トランスフォーム情報</param>
     void SetUvTransform(const Transform& transform)
     {
       materialData_->uvTransform = Mat4x4::MakeAffine(transform.scale, transform.rotate, transform.translate);
@@ -143,37 +143,37 @@ namespace Tako {
     /// <summary>
     /// スキニングの有無を取得
     /// </summary>
-    /// <returns>スキニングを持つ場合true</returns>
+    /// <returns>スキニングを持つ場合 true</returns>
     bool HasSkinning() const { return hasSkinning_; }
 
     /// <summary>
-    /// UAV頂点リソースを取得
+    /// UAV 頂点リソースを取得
     /// </summary>
-    /// <returns>UAV頂点出力リソースポインタ</returns>
+    /// <returns>UAV 頂点出力リソースポインタ</returns>
     ID3D12Resource* GetUAVVertexResource() { return uavVertexOutputResource_.Get(); }
 
     /// <summary>
-    /// 頂点SRVインデックスを取得
+    /// 頂点 SRV インデックスを取得
     /// </summary>
-    /// <returns>頂点SRVインデックス</returns>
+    /// <returns>頂点 SRV インデックス</returns>
     uint32_t GetVertexSrvIndex() { return vertexSrvIndex_; }
 
     /// <summary>
-    /// インフルエンスSRVインデックスを取得
+    /// インフルエンス SRV インデックスを取得
     /// </summary>
-    /// <returns>インフルエンスSRVインデックス</returns>
+    /// <returns>インフルエンス SRV インデックス</returns>
     uint32_t GetInfluenceSrvIndex() { return influenceSrvIndex_; }
 
     /// <summary>
-    /// UAVインデックスを取得
+    /// UAV インデックスを取得
     /// </summary>
-    /// <returns>UAVインデックス</returns>
+    /// <returns>UAV インデックス</returns>
     uint32_t GetUAVIndex() { return uavIndex_; }
 
     /// <summary>
-    /// スキニング情報リソースのGPUアドレスを取得
+    /// スキニング情報リソースの GPU アドレスを取得
     /// </summary>
-    /// <returns>スキニング情報リソースのGPUアドレス</returns>
+    /// <returns>スキニング情報リソースの GPU アドレス</returns>
     D3D12_GPU_VIRTUAL_ADDRESS GetSkinningInfoResourceGPUAddress() { return skinningInfoResource_->GetGPUVirtualAddress(); }
 
     /// <summary>
@@ -215,12 +215,12 @@ namespace Tako {
     void CreateTransformation();
 
     /// <summary>
-    /// スキニング用UAVリソースをセットアップ
+    /// スキニング用 UAV リソースをセットアップ
     /// </summary>
     void SetupSkinningUAV();
 
     /// <summary>
-    /// リソースの解放（SRVインデックスの解放）
+    /// リソースの解放（SRV インデックスの解放）
     /// </summary>
     void ReleaseSRVIndex();
 
@@ -248,8 +248,8 @@ namespace Tako {
     Material* materialData_ = nullptr; ///< マテリアルデータへのポインタ
     Object3d::TransformationMatrix* transformationData_ = nullptr; ///< 変換行列データへのポインタ
 
-    // SRVインデックス
-    uint32_t vertexSrvIndex_ = 0; ///< 頂点SRVインデックス
+    // SRV インデックス
+    uint32_t vertexSrvIndex_ = 0; ///< 頂点 SRV インデックス
     uint32_t envTextureIndex_ = 0; ///< 環境マップテクスチャインデックス
 
     // ===== スキニング関連 =====
@@ -258,11 +258,11 @@ namespace Tako {
 
     // スキニングリソース
     Microsoft::WRL::ComPtr<ID3D12Resource> influenceResource_; ///< インフルエンスバッファリソース
-    Microsoft::WRL::ComPtr<ID3D12Resource> uavVertexOutputResource_; ///< UAV頂点出力リソース
+    Microsoft::WRL::ComPtr<ID3D12Resource> uavVertexOutputResource_; ///< UAV 頂点出力リソース
     Microsoft::WRL::ComPtr<ID3D12Resource> skinningInfoResource_; ///< スキニング情報バッファリソース
 
-    uint32_t influenceSrvIndex_ = 0; ///< インフルエンスSRVインデックス
-    uint32_t uavIndex_ = 0; ///< UAVインデックス
+    uint32_t influenceSrvIndex_ = 0; ///< インフルエンス SRV インデックス
+    uint32_t uavIndex_ = 0; ///< UAV インデックス
 
     SkinningInfo* skinningInfoData_ = nullptr; ///< スキニング情報データへのポインタ
 

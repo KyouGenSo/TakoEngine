@@ -20,10 +20,10 @@ void SrvManager::Initialize(DX12Basic* dx12)
 {
 	m_dx12_ = dx12;
 
-	// SRVのディスクリプタのサイズを取得
+	// SRV のディスクリプタのサイズを取得
 	descriptorSize_ = m_dx12_->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-	// SRVのディスクリプタヒープの生成
+	// SRV のディスクリプタヒープの生成
 	descriptorHeap_ = m_dx12_->CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, kMaxSRVCount, true);
 
 
@@ -39,7 +39,7 @@ void SrvManager::Finalize()
 
 void SrvManager::BeginDraw()
 {
-	// SRVのディスクリプタヒープをセット
+	// SRV のディスクリプタヒープをセット
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeaps[] = { descriptorHeap_.Get() };
 	m_dx12_->GetCommandList()->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps->GetAddressOf());
 }

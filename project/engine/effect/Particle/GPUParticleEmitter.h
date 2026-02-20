@@ -10,7 +10,7 @@ namespace Tako {
 class GPUParticle;
 
 /// <summary>
-/// GPUパーティクルエミッター基底クラス
+/// GPU パーティクルエミッター基底クラス
 /// 球体、箱型、三角形など各種エミッターの共通機能を提供
 /// パーティクル射出タイミング制御、色・速度・スケールの範囲指定、一時エミッター機能をサポート
 /// std::enable_shared_from_this により安全な shared_ptr の生成を実現
@@ -21,8 +21,8 @@ public:
   /// <summary>
   /// コンストラクタ
   /// </summary>
-  /// <param name="particleSystem">GPUパーティクルシステムへのポインタ</param>
-  /// <param name="emitterId">エミッターID</param>
+  /// <param name="particleSystem">GPU パーティクルシステムへのポインタ</param>
+  /// <param name="emitterId">エミッター ID</param>
   GPUParticleEmitter(GPUParticle* particleSystem, uint32_t emitterId);
 
   /// <summary>
@@ -37,9 +37,9 @@ public:
   virtual std::shared_ptr<GPUParticleEmitter> Clone() const = 0;
 
   /// <summary>
-  /// GPUデータの設定
+  /// GPU データの設定
   /// </summary>
-  /// <param name="gpuData">設定するGPUデータ</param>
+  /// <param name="gpuData">設定する GPU データ</param>
   virtual void SetupGPUData(EmitterGPUData& gpuData) const;
 
   /// <summary>
@@ -57,25 +57,25 @@ public:
   /// <summary>
   /// エミッターのアクティブ状態を設定
   /// </summary>
-  /// <param name="isActive">アクティブにする場合true</param>
+  /// <param name="isActive">アクティブにする場合 true</param>
   void SetActive(bool isActive);
 
   /// <summary>
   /// エミッターの射出状態を設定
   /// </summary>
-  /// <param name="cond">射出を有効にする場合true</param>
+  /// <param name="cond">射出を有効にする場合 true</param>
   void SetEmitting(bool cond);
 
   /// <summary>
   /// 速度の正規化を設定
   /// </summary>
-  /// <param name="isNormalize">正規化する場合true</param>
+  /// <param name="isNormalize">正規化する場合 true</param>
   void SetNormalize(bool isNormalize);
 
   /// <summary>
-  /// ランダムZ軸回転を設定
+  /// ランダム Z 軸回転を設定
   /// </summary>
-  /// <param name="isRandomRotateZ">ランダム回転を有効にする場合true</param>
+  /// <param name="isRandomRotateZ">ランダム回転を有効にする場合 true</param>
   void SetRandomRotateZ(bool isRandomRotateZ);
 
   /// <summary>
@@ -124,18 +124,18 @@ public:
   /// <summary>
   /// スケールの乱数範囲を設定（X・Y）
   /// </summary>
-  /// <param name="rangeX">X方向の範囲（最小値、最大値）</param>
-  /// <param name="rangeY">Y方向の範囲（最小値、最大値）</param>
+  /// <param name="rangeX">X 方向の範囲（最小値、最大値）</param>
+  /// <param name="rangeY">Y 方向の範囲（最小値、最大値）</param>
   void SetScaleRange(const Vector2& rangeX, const Vector2& rangeY);
 
   /// <summary>
-  /// スケールの乱数範囲を設定（X方向のみ）
+  /// スケールの乱数範囲を設定（X 方向のみ）
   /// </summary>
   /// <param name="range">範囲（最小値、最大値）</param>
   void SetScaleRangeX(const Vector2& range);
 
   /// <summary>
-  /// スケールの乱数範囲を設定（Y方向のみ）
+  /// スケールの乱数範囲を設定（Y 方向のみ）
   /// </summary>
   /// <param name="range">範囲（最小値、最大値）</param>
   void SetScaleRangeY(const Vector2& range);
@@ -143,25 +143,25 @@ public:
   /// <summary>
   /// 速度の乱数範囲を設定（X・Y・Z）
   /// </summary>
-  /// <param name="rangeX">X方向の範囲（最小値、最大値）</param>
-  /// <param name="rangeY">Y方向の範囲（最小値、最大値）</param>
-  /// <param name="rangeZ">Z方向の範囲（最小値、最大値）</param>
+  /// <param name="rangeX">X 方向の範囲（最小値、最大値）</param>
+  /// <param name="rangeY">Y 方向の範囲（最小値、最大値）</param>
+  /// <param name="rangeZ">Z 方向の範囲（最小値、最大値）</param>
   void SetVelRange(const Vector2& rangeX, const Vector2& rangeY, const Vector2& rangeZ);
 
   /// <summary>
-  /// 速度の乱数範囲を設定（X方向のみ）
+  /// 速度の乱数範囲を設定（X 方向のみ）
   /// </summary>
   /// <param name="range">範囲（最小値、最大値）</param>
   void SetVelRangeX(const Vector2& range);
 
   /// <summary>
-  /// 速度の乱数範囲を設定（Y方向のみ）
+  /// 速度の乱数範囲を設定（Y 方向のみ）
   /// </summary>
   /// <param name="range">範囲（最小値、最大値）</param>
   void SetVelRangeY(const Vector2& range);
 
   /// <summary>
-  /// 速度の乱数範囲を設定（Z方向のみ）
+  /// 速度の乱数範囲を設定（Z 方向のみ）
   /// </summary>
   /// <param name="range">範囲（最小値、最大値）</param>
   void SetVelRangeZ(const Vector2& range);
@@ -175,7 +175,7 @@ public:
   /// <summary>
   /// 一時的なエミッターとして設定
   /// </summary>
-  /// <param name="isTemporary">一時的にする場合true</param>
+  /// <param name="isTemporary">一時的にする場合 true</param>
   /// <param name="lifeTime">エミッターの寿命（秒）</param>
   void SetTemporary(bool isTemporary, float lifeTime = 0.0f);
 
@@ -194,47 +194,47 @@ public:
   /// <summary>
   /// エミッターがアクティブかどうかを取得
   /// </summary>
-  /// <returns>アクティブな場合true</returns>
+  /// <returns>アクティブな場合 true</returns>
   [[nodiscard]] bool IsActive() const { return data_.isActive; }
 
   /// <summary>
   /// エミッターが射出中かどうかを取得
   /// </summary>
-  /// <returns>射出中の場合true</returns>
+  /// <returns>射出中の場合 true</returns>
   [[nodiscard]] bool IsEmitting() const { return data_.isEmitting; }
 
   /// <summary>
-  /// ランダムZ軸回転が有効かどうかを取得
+  /// ランダム Z 軸回転が有効かどうかを取得
   /// </summary>
-  /// <returns>有効な場合true</returns>
+  /// <returns>有効な場合 true</returns>
   [[nodiscard]] bool IsRandomRotateZ() const { return data_.isRandomRotateZ; }
 
   /// <summary>
-  /// X方向のスケール範囲を取得
+  /// X 方向のスケール範囲を取得
   /// </summary>
   /// <returns>スケール範囲</returns>
   [[nodiscard]] const Vector2& GetScaleRangeX() const { return data_.scaleRangeX; }
 
   /// <summary>
-  /// Y方向のスケール範囲を取得
+  /// Y 方向のスケール範囲を取得
   /// </summary>
   /// <returns>スケール範囲</returns>
   [[nodiscard]] const Vector2& GetScaleRangeY() const { return data_.scaleRangeY; }
 
   /// <summary>
-  /// X方向の速度範囲を取得
+  /// X 方向の速度範囲を取得
   /// </summary>
   /// <returns>速度範囲</returns>
   [[nodiscard]] const Vector2& GetVelRangeX() const { return data_.velRangeX; }
 
   /// <summary>
-  /// Y方向の速度範囲を取得
+  /// Y 方向の速度範囲を取得
   /// </summary>
   /// <returns>速度範囲</returns>
   [[nodiscard]] const Vector2& GetVelRangeY() const { return data_.velRangeY; }
 
   /// <summary>
-  /// Z方向の速度範囲を取得
+  /// Z 方向の速度範囲を取得
   /// </summary>
   /// <returns>速度範囲</returns>
   [[nodiscard]] const Vector2& GetVelRangeZ() const { return data_.velRangeZ; }
@@ -276,15 +276,15 @@ public:
   [[nodiscard]] float GetFrequency() const { return data_.frequency; }
 
   /// <summary>
-  /// エミッターIDを取得
+  /// エミッター ID を取得
   /// </summary>
-  /// <returns>エミッターID</returns>
+  /// <returns>エミッター ID</returns>
   [[nodiscard]] uint32_t GetEmitterId() const { return data_.emitterID; }
 
   /// <summary>
   /// 一時的なエミッターかどうかを取得
   /// </summary>
-  /// <returns>一時的な場合true</returns>
+  /// <returns>一時的な場合 true</returns>
   [[nodiscard]] bool IsTemporary() const { return data_.isTemp; }
 
   /// <summary>
@@ -302,13 +302,13 @@ public:
   /// <summary>
   /// エミッターの寿命が切れたかどうかを取得
   /// </summary>
-  /// <returns>寿命が切れた場合true</returns>
+  /// <returns>寿命が切れた場合 true</returns>
   [[nodiscard]] bool IsLifeTimeExpired() const;
 
   /// <summary>
   /// 速度の正規化が有効かどうかを取得
   /// </summary>
-  /// <returns>有効な場合true</returns>
+  /// <returns>有効な場合 true</returns>
   [[nodiscard]] bool IsNormalize() const { return data_.isNormalize; }
 
 
@@ -319,7 +319,7 @@ public:
   [[nodiscard]] virtual EmitterType GetType() const = 0;
 
 protected:
-  GPUParticle* particleSystem_;    ///< GPUパーティクルシステムへの参照（パーティクル生成要求の送信先）
+  GPUParticle* particleSystem_;    ///< GPU パーティクルシステムへの参照（パーティクル生成要求の送信先）
 
   EmitterData data_;               ///< エミッターの全設定データ（位置、色、速度範囲、寿命など）
 };

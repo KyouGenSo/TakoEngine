@@ -5,7 +5,7 @@
 namespace Tako {
 
 /// <summary>
-/// 3D変換情報構造体
+/// 3D 変換情報構造体
 /// オイラー角による回転表現
 /// </summary>
 struct Transform {
@@ -15,7 +15,7 @@ struct Transform {
 };
 
 /// <summary>
-/// 3D変換情報構造体
+/// 3D 変換情報構造体
 /// クォータニオンによる回転表現
 /// </summary>
 struct QuatTransform {

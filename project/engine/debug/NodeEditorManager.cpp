@@ -47,9 +47,9 @@ void NodeEditorManager::Update() {
 void NodeEditorManager::Draw() {
   if (!isVisible_) return;
 
-  // ImGuiウィンドウの開始
+  // ImGui ウィンドウの開始
   if (ImGui::Begin("Node Editor", &isVisible_)) {
-    // ツールバーの描画（各ボタンにユニークIDを付与）
+    // ツールバーの描画（各ボタンにユニーク ID を付与）
     if (ImGui::Button("Add Node##toolbar_add")) {
       CreateNode("New Node", 100.0f, 100.0f);
     }
@@ -104,7 +104,7 @@ void NodeEditorManager::DrawNode(const Node& node) {
   // ノードの開始
   ed::BeginNode(node.id);
 
-  // ImGuiのIDスコープを追加（エディターのIDスコープとは別に必要）
+  // ImGui の ID スコープを追加（エディターの ID スコープとは別に必要）
   ImGui::PushID(node.id);
 
   // シンプルなテキスト表示
@@ -130,7 +130,7 @@ void NodeEditorManager::DrawNode(const Node& node) {
     }
   }
 
-  // ImGuiのIDスコープを終了
+  // ImGui の ID スコープを終了
   ImGui::PopID();
 
   ed::EndNode();
@@ -147,7 +147,7 @@ void NodeEditorManager::DrawPin(const Pin& pin) {
 
   ed::BeginPin(pin.id, pin.isInput ? ed::PinKind::Input : ed::PinKind::Output);
 
-  // ImGuiのIDスコープを追加（複数のピンが同じ名前を持つ場合の衝突を防ぐ）
+  // ImGui の ID スコープを追加（複数のピンが同じ名前を持つ場合の衝突を防ぐ）
   ImGui::PushID(&pin);
 
   // ピンアイコンの描画
@@ -165,7 +165,7 @@ void NodeEditorManager::DrawPin(const Pin& pin) {
     drawList->AddCircleFilled(ImVec2(pos.x + ImGui::CalcTextSize(pin.name.c_str()).x + 8, pos.y + 8), radius, pinColor);
   }
 
-  // ImGuiのIDスコープを終了
+  // ImGui の ID スコープを終了
   ImGui::PopID();
 
   ed::EndPin();
@@ -362,11 +362,11 @@ void NodeEditorManager::Clear() {
   pins_.clear();
   links_.clear();
 
-  // ID範囲を分離して競合を防ぐ
+  // ID 範囲を分離して競合を防ぐ
   nextNodeId_ = 1000;  // ノード: 1000番台
   nextPinId_ = 2000;   // ピン: 2000番台
   nextLinkId_ = 3000;  // リンク: 3000番台
-  firstFrame_ = true;  // リセット時にfirstFrameフラグも初期化
+  firstFrame_ = true;  // リセット時に firstFrame フラグも初期化
 }
 
 // ヘルパー関数の実装

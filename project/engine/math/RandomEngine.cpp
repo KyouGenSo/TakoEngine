@@ -53,7 +53,7 @@ float RandomEngine::GetAngleRadians(float min, float max) {
 
 Vector3 RandomEngine::GetRandomDirection3D() {
 	// 球面上の一様分布を生成
-	// アルゴリズム: Marsaglia法を使用
+	// アルゴリズム: Marsaglia 法を使用
 	float theta = GetAngle();  // 方位角
 	float phi = std::acos(1.0f - 2.0f * GetNormalized());  // 仰角
 
@@ -100,7 +100,7 @@ Vector2 RandomEngine::GetRandomPointInCircle(float radius) {
 }
 
 bool RandomEngine::GetBool(float probability) {
-	// probabilityをクランプ
+	// probability をクランプ
 	if (probability <= 0.0f) return false;
 	if (probability >= 1.0f) return true;
 

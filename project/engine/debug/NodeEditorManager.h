@@ -14,7 +14,7 @@ namespace Tako {
 
 /**
  * @brief ノードエディタ管理クラス
- * imgui-node-editorを使用したビジュアルノードエディタシステムを管理
+ * imgui-node-editor を使用したビジュアルノードエディタシステムを管理
  */
 class NodeEditorManager {
 public:
@@ -52,7 +52,7 @@ private:
     std::vector<Node> nodes_;
     std::vector<Pin> pins_;
     std::vector<Link> links_;
-    // IDカウンター（範囲を分離して競合を防ぐ）
+    // ID カウンター（範囲を分離して競合を防ぐ）
     int nextNodeId_ = 1000;  // ノード: 1000番台
     int nextPinId_ = 2000;   // ピン: 2000番台
     int nextLinkId_ = 3000;  // リンク: 3000番台
@@ -91,7 +91,7 @@ public:
 
     /**
      * @brief シングルトンインスタンスの取得
-     * @return NodeEditorManagerのインスタンス
+     * @return NodeEditorManager のインスタンス
      */
     static NodeEditorManager* GetInstance() {
         if (!instance_) {
@@ -129,39 +129,39 @@ public:
     /**
      * @brief 新しいノードの作成
      * @param name ノード名
-     * @param x X座標
-     * @param y Y座標
-     * @return 作成されたノードのID
+     * @param x X 座標
+     * @param y Y 座標
+     * @return 作成されたノードの ID
      */
     int CreateNode(const std::string& name, float x = 0.0f, float y = 0.0f);
 
     /**
      * @brief ピンの追加
-     * @param nodeId ノードID
+     * @param nodeId ノード ID
      * @param name ピン名
      * @param isInput 入力ピンかどうか
      * @param type ピンのタイプ
-     * @return 作成されたピンのID
+     * @return 作成されたピンの ID
      */
     int AddPin(int nodeId, const std::string& name, bool isInput, const std::string& type = "default");
 
     /**
      * @brief リンクの作成
-     * @param startPinId 開始ピンID
-     * @param endPinId 終了ピンID
-     * @return 作成されたリンクのID（失敗時は-1）
+     * @param startPinId 開始ピン ID
+     * @param endPinId 終了ピン ID
+     * @return 作成されたリンクの ID（失敗時は-1）
      */
     int CreateLink(int startPinId, int endPinId);
 
     /**
      * @brief ノードの削除
-     * @param nodeId ノードID
+     * @param nodeId ノード ID
      */
     void DeleteNode(int nodeId);
 
     /**
      * @brief リンクの削除
-     * @param linkId リンクID
+     * @param linkId リンク ID
      */
     void DeleteLink(int linkId);
 

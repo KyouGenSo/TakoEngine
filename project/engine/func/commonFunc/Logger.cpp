@@ -36,7 +36,7 @@ namespace Logger
     std::string formattedMessage = detail::FormatString(format, args);
     va_end(args);
 
-    // std::string版のLogを呼び出す
+    // std::string 版の Log を呼び出す
     Log(formattedMessage + "\n");
   }
 }

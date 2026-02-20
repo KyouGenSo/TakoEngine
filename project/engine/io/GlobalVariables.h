@@ -12,7 +12,7 @@ namespace Tako {
 
 /// <summary>
 /// グローバル変数管理クラス
-/// JSON形式での設定値保存・読み込みとImGuiでの実行時編集
+/// JSON 形式での設定値保存・読み込みと ImGui での実行時編集
 /// </summary>
 class GlobalVariables
 {
@@ -171,7 +171,7 @@ public: // メンバ関数
   /// </summary>
   /// <param name="groupName">グループ名</param>
   /// <param name="key">キー名</param>
-  /// <returns>取得したint値</returns>
+  /// <returns>取得した int 値</returns>
   int32_t GetValueInt(const std::string& groupName, const std::string& key);
 
   /// <summary>
@@ -179,7 +179,7 @@ public: // メンバ関数
   /// </summary>
   /// <param name="groupName">グループ名</param>
   /// <param name="key">キー名</param>
-  /// <returns>取得したfloat値</returns>
+  /// <returns>取得した float 値</returns>
   float GetValueFloat(const std::string& groupName, const std::string& key);
 
   /// <summary>
@@ -187,7 +187,7 @@ public: // メンバ関数
   /// </summary>
   /// <param name="groupName">グループ名</param>
   /// <param name="key">キー名</param>
-  /// <returns>取得したVector2値</returns>
+  /// <returns>取得した Vector2値</returns>
   Vector2 GetValueVec2(const std::string& groupName, const std::string& key);
 
   /// <summary>
@@ -195,7 +195,7 @@ public: // メンバ関数
   /// </summary>
   /// <param name="groupName">グループ名</param>
   /// <param name="key">キー名</param>
-  /// <returns>取得したVector3値</returns>
+  /// <returns>取得した Vector3値</returns>
   Vector3 GetValueVec3(const std::string& groupName, const std::string& key);
 
   /// <summary>
@@ -203,7 +203,7 @@ public: // メンバ関数
   /// </summary>
   /// <param name="groupName">グループ名</param>
   /// <param name="key">キー名</param>
-  /// <returns>取得したVector4値</returns>
+  /// <returns>取得した Vector4値</returns>
   Vector4 GetValueVec4(const std::string& groupName, const std::string& key);
 
   /// <summary>
@@ -211,13 +211,13 @@ public: // メンバ関数
   /// </summary>
   /// <param name="groupName">グループ名</param>
   /// <param name="key">キー名</param>
-  /// <returns>取得したbool値</returns>
+  /// <returns>取得した bool 値</returns>
   bool GetValueBool(const std::string& groupName, const std::string& key);
 
   /// <summary>
   /// グループが登録されているか確認
   /// </summary>
-  /// <returns>グループが1つ以上あればtrue</returns>
+  /// <returns>グループが1つ以上あれば true</returns>
   bool HasGroups() const { return !datas_.empty(); }
 
 public: // 構造体

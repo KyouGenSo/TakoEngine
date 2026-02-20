@@ -614,7 +614,7 @@ namespace Mat4x4 {
 	{
 		Vector3 rotation;
 
-		// XYZ順序での抽出
+		// XYZ 順序での抽出
 		float sy = std::sqrt(matrix.m[0][0] * matrix.m[0][0] + matrix.m[1][0] * matrix.m[1][0]);
 		
 		bool singular = sy < 1e-6; // ジンバルロック判定

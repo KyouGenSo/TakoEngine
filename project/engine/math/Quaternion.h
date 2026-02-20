@@ -4,12 +4,12 @@
 namespace Tako {
 
 /// <summary>
-/// クォータニオン。3D回転を表現する数学的構造体
+/// クォータニオン。3D 回転を表現する数学的構造体
 /// </summary>
 struct Quaternion {
-	float x;  ///< 虚部のX成分
-	float y;  ///< 虚部のY成分
-	float z;  ///< 虚部のZ成分
+	float x;  ///< 虚部の X 成分
+	float y;  ///< 虚部の Y 成分
+	float z;  ///< 虚部の Z 成分
 	float w;  ///< 実部
 
 	/// <summary>

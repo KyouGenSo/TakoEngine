@@ -7,10 +7,10 @@
 namespace Tako {
 
 /// <summary>
-/// 有向境界ボックス(Oriented Bounding Box)。回転を含む境界ボックス。AABBより精密な衝突判定が可能
+/// 有向境界ボックス(Oriented Bounding Box)。回転を含む境界ボックス。AABB より精密な衝突判定が可能
 /// </summary>
 struct OBB {
-	Vector3 center;         // OBBの中心位置
+	Vector3 center;         // OBB の中心位置
 	Vector3 halfExtents;    // 各軸の半サイズ（幅/2、高さ/2、奥行き/2）
 	Matrix4x4 orientation;  // 回転行列（ローカル座標系の向き）
 	
@@ -23,7 +23,7 @@ struct OBB {
 	OBB(const Vector3& c, const Vector3& he, const Matrix4x4& orient)
 		: center(c), halfExtents(he), orientation(orient) {}
 	
-	// OBBの軸ベクトルを取得（X軸、Y軸、Z軸）
+	// OBB の軸ベクトルを取得（X 軸、Y 軸、Z 軸）
 	Vector3 GetAxis(int index) const {
 		switch (index) {
 			case 0: return Vector3(orientation.m[0][0], orientation.m[0][1], orientation.m[0][2]).Normalize();
@@ -33,7 +33,7 @@ struct OBB {
 		}
 	}
 	
-	// OBBの8つの頂点を取得
+	// OBB の8つの頂点を取得
 	std::array<Vector3, 8> GetVertices() const {
 		std::array<Vector3, 8> vertices;
 

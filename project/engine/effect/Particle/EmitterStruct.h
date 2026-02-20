@@ -14,11 +14,11 @@ struct SphereEmitterParams
   uint32_t count;     ///< 1回の射出で生成するパーティクル数
   float frequency;    ///< 射出頻度（秒）
 
-  Vector2 scaleRangeX = { .x = 0.0f, .y = 0.0f };  ///< Xスケールの範囲[min, max]
-  Vector2 scaleRangeY = { .x = 0.0f, .y = 0.0f };  ///< Yスケールの範囲[min, max]
-  Vector2 velRangeX = { .x = 0.0f, .y = 0.0f };    ///< X方向速度の範囲[min, max]
-  Vector2 velRangeY = { .x = 0.0f, .y = 0.0f };    ///< Y方向速度の範囲[min, max]
-  Vector2 velRangeZ = { .x = 0.0f, .y = 0.0f };    ///< Z方向速度の範囲[min, max]
+  Vector2 scaleRangeX = { .x = 0.0f, .y = 0.0f };  ///< X スケールの範囲[min, max]
+  Vector2 scaleRangeY = { .x = 0.0f, .y = 0.0f };  ///< Y スケールの範囲[min, max]
+  Vector2 velRangeX = { .x = 0.0f, .y = 0.0f };    ///< X 方向速度の範囲[min, max]
+  Vector2 velRangeY = { .x = 0.0f, .y = 0.0f };    ///< Y 方向速度の範囲[min, max]
+  Vector2 velRangeZ = { .x = 0.0f, .y = 0.0f };    ///< Z 方向速度の範囲[min, max]
   Vector2 lifeTimeRange = { .x = 0.0f, .y = 0.0f }; ///< パーティクル寿命の範囲[min, max]（秒）
 
   Vector4 startColor = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };  ///< 開始時の色（RGBA）
@@ -40,11 +40,11 @@ struct BoxEmitterParams
   uint32_t count;     ///< 1回の射出で生成するパーティクル数
   float frequency;    ///< 射出頻度（秒）
 
-  Vector2 scaleRangeX = { .x = 0.0f, .y = 0.0f };  ///< Xスケールの範囲[min, max]
-  Vector2 scaleRangeY = { .x = 0.0f, .y = 0.0f };  ///< Yスケールの範囲[min, max]
-  Vector2 velRangeX = { .x = 0.0f, .y = 0.0f };    ///< X方向速度の範囲[min, max]
-  Vector2 velRangeY = { .x = 0.0f, .y = 0.0f };    ///< Y方向速度の範囲[min, max]
-  Vector2 velRangeZ = { .x = 0.0f, .y = 0.0f };    ///< Z方向速度の範囲[min, max]
+  Vector2 scaleRangeX = { .x = 0.0f, .y = 0.0f };  ///< X スケールの範囲[min, max]
+  Vector2 scaleRangeY = { .x = 0.0f, .y = 0.0f };  ///< Y スケールの範囲[min, max]
+  Vector2 velRangeX = { .x = 0.0f, .y = 0.0f };    ///< X 方向速度の範囲[min, max]
+  Vector2 velRangeY = { .x = 0.0f, .y = 0.0f };    ///< Y 方向速度の範囲[min, max]
+  Vector2 velRangeZ = { .x = 0.0f, .y = 0.0f };    ///< Z 方向速度の範囲[min, max]
   Vector2 lifeTimeRange = { .x = 0.0f, .y = 0.0f }; ///< パーティクル寿命の範囲[min, max]（秒）
 
   Vector4 startColor = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };  ///< 開始時の色（RGBA）
@@ -67,11 +67,11 @@ struct TriangleEmitterParams
   uint32_t count;     ///< 1回の射出で生成するパーティクル数
   float frequency;    ///< 射出頻度（秒）
 
-  Vector2 scaleRangeX = { .x = 0.0f, .y = 0.0f };  ///< Xスケールの範囲[min, max]
-  Vector2 scaleRangeY = { .x = 0.0f, .y = 0.0f };  ///< Yスケールの範囲[min, max]
-  Vector2 velRangeX = { .x = 0.0f, .y = 0.0f };    ///< X方向速度の範囲[min, max]
-  Vector2 velRangeY = { .x = 0.0f, .y = 0.0f };    ///< Y方向速度の範囲[min, max]
-  Vector2 velRangeZ = { .x = 0.0f, .y = 0.0f };    ///< Z方向速度の範囲[min, max]
+  Vector2 scaleRangeX = { .x = 0.0f, .y = 0.0f };  ///< X スケールの範囲[min, max]
+  Vector2 scaleRangeY = { .x = 0.0f, .y = 0.0f };  ///< Y スケールの範囲[min, max]
+  Vector2 velRangeX = { .x = 0.0f, .y = 0.0f };    ///< X 方向速度の範囲[min, max]
+  Vector2 velRangeY = { .x = 0.0f, .y = 0.0f };    ///< Y 方向速度の範囲[min, max]
+  Vector2 velRangeZ = { .x = 0.0f, .y = 0.0f };    ///< Z 方向速度の範囲[min, max]
   Vector2 lifeTimeRange = { .x = 0.0f, .y = 0.0f }; ///< パーティクル寿命の範囲[min, max]（秒）
 
   Vector4 startColor = { .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f };  ///< 開始時の色（RGBA）

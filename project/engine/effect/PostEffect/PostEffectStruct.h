@@ -32,22 +32,22 @@ struct VignetteParam
 };
 
 /// <summary>
-/// ビネット＋赤色Bloom効果パラメータ
+/// ビネット＋赤色 Bloom 効果パラメータ
 /// </summary>
 struct VignetteRedBloomParam
 {
   float power;      ///< ビネット強度
   float range;      ///< ビネット範囲
-  float threshold;  ///< Bloomしきい値
+  float threshold;  ///< Bloom しきい値
 };
 
 /// <summary>
-/// Bloom効果パラメータ
+/// Bloom 効果パラメータ
 /// 明るい部分を光らせる効果
 /// </summary>
 struct BloomParam
 {
-  float intensity;   ///< Bloom強度
+  float intensity;   ///< Bloom 強度
   float threshold;   ///< 高輝度抽出のしきい値
   float sigma;       ///< ガウシアンブラーのシグマ値（ぼかし強度）
   int kernelSize;    ///< ブラーカーネルサイズ
@@ -86,7 +86,7 @@ struct BloomCombineParam
   float intensity;
 };
 
-// Shader用のカメラ
+// Shader 用のカメラ
 struct CameraForGPU
 {
   float nearPlane;
@@ -120,14 +120,14 @@ struct BWFilterParam
 };
 
 /// <summary>
-/// RGBカラー分離効果パラメータ
+/// RGB カラー分離効果パラメータ
 /// 色収差のような効果を生成
 /// </summary>
 struct RGBSplitParam
 {
-  Vector2 redOffset;   ///< Rチャンネルのオフセット（ピクセル単位）
-  Vector2 greenOffset; ///< Gチャンネルのオフセット（ピクセル単位）
-  Vector2 blueOffset;  ///< Bチャンネルのオフセット（ピクセル単位）
+  Vector2 redOffset;   ///< R チャンネルのオフセット（ピクセル単位）
+  Vector2 greenOffset; ///< G チャンネルのオフセット（ピクセル単位）
+  Vector2 blueOffset;  ///< B チャンネルのオフセット（ピクセル単位）
   float intensity;     ///< エフェクトの全体強度（0.0〜1.0）
 };
 
@@ -174,7 +174,7 @@ struct HalfToneParam
   float angle;            ///< ドットグリッドの回転角度（ラジアン）
   int32_t dotPattern;     ///< ドットパターン (0=円, 1=四角, 2=ダイヤモンド)
   Vector2 screenSize;     ///< スクリーン解像度（ピクセル）
-  int32_t colorMode;      ///< カラーモード (0=モノクロ, 1=CMYK風)
+  int32_t colorMode;      ///< カラーモード (0=モノクロ, 1=CMYK 風)
   float threshold;        ///< 明暗の閾値調整
   float padding;          ///< パディング
 };

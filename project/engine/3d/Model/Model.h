@@ -5,9 +5,7 @@
 #include<wrl.h>
 #include "ModelStruct.h"
 
-#include <assimp/Importer.hpp>
 #include <assimp/scene.h>
-#include <assimp/postprocess.h>
 
 #include "Mesh.h"
 
@@ -17,7 +15,7 @@ namespace Tako {
   class DX12Basic;
 
   /// <summary>
-  /// 3Dモデル管理クラス
+  /// 3D モデル管理クラス
   /// アニメーション、スキニング、マテリアル対応
   /// </summary>
   class Model
@@ -54,14 +52,14 @@ namespace Tako {
     void DrawInstanced(uint32_t instanceCount);
 
     /// <summary>
-    /// objファイルの読み込む
+    /// obj ファイルの読み込む
     ///	</summary>
     /// <param name="directoryPath">モデルファイルのディレクトリパス</param>
     /// <param name="fileName">モデルファイル名</param>
     void LoadModelFile(const std::string& directoryPath, const std::string& fileName);
 
     /// <summary>
-    /// デバッグUIを表示
+    /// デバッグ UI を表示
     /// </summary>
     void DrawImGui();
 
@@ -86,21 +84,21 @@ namespace Tako {
     /// <summary>
     /// アニメーションの有無を取得
     /// </summary>
-    /// <returns>アニメーションが存在する場合true</returns>
+    /// <returns>アニメーションが存在する場合 true</returns>
     bool HasAnimation() const { return hasAnimation_; }
 
     /// <summary>
     /// スケルトンの有無を取得
     /// </summary>
-    /// <returns>スケルトンが存在する場合true</returns>
+    /// <returns>スケルトンが存在する場合 true</returns>
     bool HasSkeleton() const { return hasSkeleton_; }
 
     /// <summary>
-    /// 指定したJointのワールド座標変換行列を取得
+    /// 指定した Joint のワールド座標変換行列を取得
     /// </summary>
-    /// <param name="jointName">Joint名</param>
+    /// <param name="jointName">Joint 名</param>
     /// <param name="worldMatrix">モデルのワールド行列</param>
-    /// <returns>Jointのワールド座標変換行列</returns>
+    /// <returns>Joint のワールド座標変換行列</returns>
     Matrix4x4 GetJointWorldMatrix(const std::string& jointName, const Matrix4x4& worldMatrix) const;
 
     // -----------------------------------Setters-----------------------------------//
@@ -135,9 +133,9 @@ namespace Tako {
     Vector4 GetMaterialColor() const;
 
     /// <summary>
-    /// UVトランスフォームを設定
+    /// UV トランスフォームを設定
     /// </summary>
-    /// <param name="uvTransform">UVトランスフォーム情報</param>
+    /// <param name="uvTransform">UV トランスフォーム情報</param>
     void SetUvTransform(const Transform& uvTransform);
 
     /// <summary>
@@ -167,7 +165,7 @@ namespace Tako {
     /// <summary>
     /// スケルトンデバッグ表示の状態を取得（静的関数）
     /// </summary>
-    /// <returns>デバッグ表示が有効な場合true</returns>
+    /// <returns>デバッグ表示が有効な場合 true</returns>
     static bool GetShowSkeletonDebug() { return s_showSkeletonDebug; }
 
     // -----------------------------------Animation Control-----------------------------------//
@@ -199,7 +197,7 @@ namespace Tako {
     /// <summary>
     /// アニメーション再生速度を設定
     /// </summary>
-    /// <param name="speed">再生速度（1.0fが通常速度、負の値で逆再生）</param>
+    /// <param name="speed">再生速度（1.0f が通常速度、負の値で逆再生）</param>
     void SetAnimationSpeed(float speed) { animationSpeed_ = speed; }
 
     /// <summary>
@@ -221,7 +219,7 @@ namespace Tako {
     /// <summary>
     /// アニメーションが一時停止中かを取得
     /// </summary>
-    /// <returns>一時停止中ならtrue</returns>
+    /// <returns>一時停止中なら true</returns>
     bool IsAnimationPaused() const { return isPaused_; }
 
     /// <summary>
@@ -235,14 +233,14 @@ namespace Tako {
     /// アニメーションがループ設定されているかを取得
     /// </summary>
     /// <param name="animationName">アニメーション名</param>
-    /// <returns>ループ設定されていればtrue</returns>
+    /// <returns>ループ設定されていれば true</returns>
     bool IsAnimationLooping(const std::string& animationName) const;
 
     /// <summary>
     /// アニメーションが終了したかを取得（ループしない場合のみ有効）
     /// </summary>
     /// <param name="animationName">アニメーション名</param>
-    /// <returns>アニメーションが終了していればtrue</returns>
+    /// <returns>アニメーションが終了していれば true</returns>
     bool IsAnimationFinished(const std::string& animationName) const;
 
   private: // プライベートメンバー関数
@@ -256,7 +254,7 @@ namespace Tako {
     void ProcessNodeHierarchy(const Node& node, const Matrix4x4& parentGlobalMatrix, Matrix4x4 world, Matrix4x4 viewProjection);
 
     /// <summary>
-    /// Skeletonのデバグ用描画
+    /// Skeleton のデバグ用描画
     /// </summary>
     /// <param name="world">ワールド変換行列</param>
     void DrawSkeleton(Matrix4x4 world);
@@ -278,21 +276,21 @@ namespace Tako {
     /// <summary>
     /// ノード読み込み
     /// </summary>
-    /// <param name="node">Assimpノードポインタ</param>
+    /// <param name="node">Assimp ノードポインタ</param>
     /// <returns>読み込まれたノード</returns>
     Node ReadNode(aiNode* node);
 
     /// <summary>
-    /// Jointの生成
+    /// Joint の生成
     /// </summary>
     /// <param name="node">ノード情報</param>
-    /// <param name="parentIndex">親ジョイントのインデックス（ルートの場合はnullopt）</param>
+    /// <param name="parentIndex">親ジョイントのインデックス（ルートの場合は nullopt）</param>
     /// <param name="joints">ジョイント配列（出力先）</param>
     /// <returns>生成されたジョイントのインデックス</returns>
     int32_t CreateJoint(const Node& node, const std::optional<int32_t>& parentIndex, std::vector<Joint>& joints);
 
     /// <summary>
-    /// Skeletonの生成
+    /// Skeleton の生成
     /// </summary>
     /// <param name="rootNode">ルートノード</param>
     /// <returns>生成されたスケルトン</returns>
@@ -303,15 +301,15 @@ namespace Tako {
     /// </summary>
     /// <param name="keyFrames">キーフレーム配列</param>
     /// <param name="time">現在の時間</param>
-    /// <returns>補間されたVector3値</returns>
+    /// <returns>補間された Vector3値</returns>
     Vector3 CalcKeyFrameValue(const std::vector<KeyFrameVector3>& keyFrames, float time);
 
     /// <summary>
-    /// キーフレームの値を計算（Quaternion版）
+    /// キーフレームの値を計算（Quaternion 版）
     /// </summary>
     /// <param name="keyFrames">キーフレーム配列</param>
     /// <param name="time">現在の時間</param>
-    /// <returns>補間されたQuaternion値</returns>
+    /// <returns>補間された Quaternion 値</returns>
     Quaternion CalcKeyFrameValue(const std::vector<KeyFrameQuaternion>& keyFrames, float time);
 
     /// <summary>
@@ -328,7 +326,7 @@ namespace Tako {
     void UpdateNodeHierarchyAnimation(Node& node, float time);
 
     /// <summary>
-    /// skeletonの更新
+    /// skeleton の更新
     /// </summary>
     void UpdateSkeleton();
 
@@ -344,14 +342,14 @@ namespace Tako {
     void ReleaseSkinningSRVIndex();
 
     /// <summary>
-    /// ジョイント階層を再帰的に表示（ImGui用）
+    /// ジョイント階層を再帰的に表示（ImGui 用）
     /// </summary>
     /// <param name="jointIndex">表示するジョイントのインデックス</param>
     /// <param name="depth">階層の深さ（インデント用）</param>
     void DrawJointHierarchy(int32_t jointIndex, int depth = 0);
 
     /// <summary>
-    /// ノード階層を再帰的に表示（ImGui用）
+    /// ノード階層を再帰的に表示（ImGui 用）
     /// </summary>
     /// <param name="node">表示するノード</param>
     /// <param name="depth">階層の深さ（インデント用）</param>
@@ -398,14 +396,14 @@ namespace Tako {
     std::vector<Matrix4x4> inverseBindMatrices_;  ///< 逆バインド行列配列
     Microsoft::WRL::ComPtr<ID3D12Resource> paletteResource_;  ///< スキニング用パレットリソース
     std::span<WellForGPU> mappedPalette_;  ///< マップされたパレットメモリ
-    uint32_t paletteSrvIndex_ = 0;  ///< パレットSRVインデックス
-    std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> paletteSrvHandle_;  ///< パレットSRVハンドルペア
+    uint32_t paletteSrvIndex_ = 0;  ///< パレット SRV インデックス
+    std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> paletteSrvHandle_;  ///< パレット SRV ハンドルペア
     std::map<std::string, JointWeightData> skinClusterData_;  ///< スキンクラスターデータマップ
     std::vector<MeshSkinClusterData> meshSkinClusterData_;  ///< メッシュごとのスキンクラスターデータ
 
     // デバッグ表示用
-    static bool s_showSkeletonDebug;  ///< 全体的なスケルトン表示ON/OFF
-    int expandState_ = 0;  ///< ImGUI展開状態（0:通常, 1:全展開, 2:全折畳）
+    static bool s_showSkeletonDebug;  ///< 全体的なスケルトン表示 ON/OFF
+    int expandState_ = 0;  ///< ImGUI 展開状態（0:通常, 1:全展開, 2:全折畳）
     int32_t hoveredJointIndex_ = -1;  ///< ホバー中のジョイントインデックス（-1:なし）
 
     // アニメーション遷移関連
@@ -415,7 +413,7 @@ namespace Tako {
     bool isTransitioning_ = false;  ///< 遷移中フラグ
 
     // アニメーション再生制御
-    float animationSpeed_ = 1.0f;  ///< アニメーション再生速度（1.0fが通常速度）
+    float animationSpeed_ = 1.0f;  ///< アニメーション再生速度（1.0f が通常速度）
     bool isPaused_ = false;  ///< アニメーション一時停止フラグ
 
     // アニメーションループ制御

@@ -60,21 +60,21 @@ namespace Tako {
     [[nodiscard]] const Vector3& GetRotate() const { return transform_.rotate; }
 
     /// <summary>
-    /// X軸回転を取得
+    /// X 軸回転を取得
     /// </summary>
-    /// <returns>X軸回転値（ラジアン）</returns>
+    /// <returns>X 軸回転値（ラジアン）</returns>
     [[nodiscard]] float GetRotateX() const { return transform_.rotate.x; }
 
     /// <summary>
-    /// Y軸回転を取得
+    /// Y 軸回転を取得
     /// </summary>
-    /// <returns>Y軸回転値（ラジアン）</returns>
+    /// <returns>Y 軸回転値（ラジアン）</returns>
     [[nodiscard]] float GetRotateY() const { return transform_.rotate.y; }
 
     /// <summary>
-    /// Z軸回転を取得
+    /// Z 軸回転を取得
     /// </summary>
-    /// <returns>Z軸回転値（ラジアン）</returns>
+    /// <returns>Z 軸回転値（ラジアン）</returns>
     [[nodiscard]] float GetRotateZ() const { return transform_.rotate.z; }
 
     /// <summary>
@@ -116,14 +116,14 @@ namespace Tako {
     /// <summary>
     /// 視錐台の8つの頂点を取得（ワールド空間）
     /// </summary>
-    /// <returns>視錐台の8頂点（0-3:near面、4-7:far面）</returns>
+    /// <returns>視錐台の8頂点（0-3:near 面、4-7:far 面）</returns>
     [[nodiscard]] std::array<Vector3, 8> GetFrustumCorners() const;
 
     /// <summary>
-    /// カスタムfarクリップで視錐台の8つの頂点を取得（ワールド空間）
+    /// カスタム far クリップで視錐台の8つの頂点を取得（ワールド空間）
     /// </summary>
-    /// <param name="customFar">カスタムのfarクリップ距離</param>
-    /// <returns>視錐台の8頂点（0-3:near面、4-7:far面）</returns>
+    /// <param name="customFar">カスタムの far クリップ距離</param>
+    /// <returns>視錐台の8頂点（0-3:near 面、4-7:far 面）</returns>
     [[nodiscard]] std::array<Vector3, 8> GetFrustumCornersWithCustomFar(float customFar) const;
 
     /// <summary>
@@ -134,9 +134,9 @@ namespace Tako {
     [[nodiscard]] std::pair<Vector3, Vector3> GetFrustumBoundingBox(const Matrix4x4* viewMatrix = nullptr) const;
 
     /// <summary>
-    /// カスタムfarクリップで視錐台の境界ボックスを取得（min, max）
+    /// カスタム far クリップで視錐台の境界ボックスを取得（min, max）
     /// </summary>
-    /// <param name="customFar">カスタムのfarクリップ距離</param>
+    /// <param name="customFar">カスタムの far クリップ距離</param>
     /// <param name="viewMatrix">変換に使用するビュー行列（省略時はワールド空間）</param>
     /// <returns>first:最小座標、second:最大座標</returns>
     [[nodiscard]] std::pair<Vector3, Vector3> GetFrustumBoundingBoxWithCustomFar(float customFar, const Matrix4x4* viewMatrix = nullptr) const;

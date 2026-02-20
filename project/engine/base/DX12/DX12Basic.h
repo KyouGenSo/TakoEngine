@@ -25,11 +25,11 @@ class DX12Basic {
 public: // メンバー関数
 
   /// <summary>
-  /// ComPtrのエイリアス
+  /// ComPtr のエイリアス
   /// </summary>
   template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
 
-  static const uint32_t kMaxSRVCount;  ///< 最大SRV数（テクスチャ数）
+  static const uint32_t kMaxSRVCount;  ///< 最大 SRV 数（テクスチャ数）
 
   /// <summary>
   /// デストラクタ
@@ -48,7 +48,7 @@ public: // メンバー関数
   void Finalize();
 
   /// <summary>
-  /// renderTextureを設定
+  /// renderTexture を設定
   /// </summary>
   void SetEffectRenderTexture();
 
@@ -58,7 +58,7 @@ public: // メンバー関数
   void SetNonEffectRenderTexture();
 
   /// <summary>
-  /// swapChainを設定
+  /// swapChain を設定
   /// </summary> 
   void SetSwapChain();
 
@@ -95,9 +95,9 @@ public: // メンバー関数
   void CreateBufferResource(ComPtr<ID3D12Resource>& bufferResource, size_t sizeInBytes);
 
   /// <summary>
-  /// UAVリソースの生成
+  /// UAV リソースの生成
   /// </summary>
-  /// <param name="uavResource">出力先のUAVリソース</param>
+  /// <param name="uavResource">出力先の UAV リソース</param>
   /// <param name="sizeInBytes">リソースサイズ（バイト）</param>
   void CreateResourceForUAV(ComPtr<ID3D12Resource>& uavResource, UINT sizeInBytes);
 
@@ -128,7 +128,7 @@ public: // メンバー関数
   /// <summary>
   /// デスクリプタヒープの生成
   /// </summary>
-  /// <param name="heapType">ヒープのタイプ（RTV、DSV、CBV_SRV_UAV等）</param>
+  /// <param name="heapType">ヒープのタイプ（RTV、DSV、CBV_SRV_UAV 等）</param>
   /// <param name="numDescriptors">デスクリプタ数</param>
   /// <param name="shaderVisible">シェーダーから可視かどうか</param>
   /// <returns>生成されたデスクリプタヒープ</returns>
@@ -146,7 +146,7 @@ public: // メンバー関数
   /// <summary>
   /// テクスチャファイルの読み込み
   /// </summary>
-  /// <param name="filePath">テクスチャファイルのパス（.png, .jpg等）</param>
+  /// <param name="filePath">テクスチャファイルのパス（.png, .jpg 等）</param>
   /// <returns>読み込まれた画像データ</returns>
   static DirectX::ScratchImage LoadTexture(const std::string& filePath);
 
@@ -180,9 +180,9 @@ public: // メンバー関数
   void SetInitialResourceState(ID3D12Resource* resource, D3D12_RESOURCE_STATES initialState);
 
   /// <summary>
-  /// UAVリソースバリアの設定
+  /// UAV リソースバリアの設定
   /// </summary>
-  /// <param name="resource">対象UAVリソース</param>
+  /// <param name="resource">対象 UAV リソース</param>
   void SetUAVBarrier(ID3D12Resource* resource);
 
   /// <summary>
@@ -191,7 +191,7 @@ public: // メンバー関数
   void SetViewPort();
 
   /// <summary>
-  /// RTV,DepthBufferのリサイズ
+  /// RTV,DepthBuffer のリサイズ
   /// </summary>
   /// <param name="width">新しい幅（ピクセル）</param>
   /// <param name="height">新しい高さ（ピクセル）</param>
@@ -230,7 +230,7 @@ public: // メンバー関数
   }
 
   /// <summary>
-  /// backBufferの数の取得
+  /// backBuffer の数の取得
   /// </summary>
   /// <returns>スワップチェインのバッファ数</returns>
   size_t GetSwapChainBufferCount() {
@@ -238,18 +238,18 @@ public: // メンバー関数
   }
 
   /// <summary>
-  /// レンダーテクスチャのcpuハンドルの取得
+  /// レンダーテクスチャの cpu ハンドルの取得
   /// </summary>
   /// <param name="index">レンダーテクスチャのインデックス</param>
-  /// <returns>CPUディスクリプタハンドル</returns>
+  /// <returns>CPU ディスクリプタハンドル</returns>
   D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTextureRTVHandle(uint32_t index) {
     return GetCPUDescriptorHandle(rtvHeap_.Get(), descriptorSizeRTV_, index);
   }
 
   /// <summary>
-  /// DSVHeapの先頭のハンドルの取得
+  /// DSVHeap の先頭のハンドルの取得
   ///	</summary>
-  /// <returns>DSVヒープの先頭CPUディスクリプタハンドル</returns>
+  /// <returns>DSV ヒープの先頭 CPU ディスクリプタハンドル</returns>
   D3D12_CPU_DESCRIPTOR_HANDLE GetDSVHeapHandleStart() {
     return dsvHeap_->GetCPUDescriptorHandleForHeapStart();
   }
@@ -271,16 +271,16 @@ public: // メンバー関数
   }
 
   /// <summary>
-  /// スワップチェインのRTVHandleを取得
+  /// スワップチェインの RTVHandle を取得
   ///	</summary>
-  /// <returns>現在のバックバッファのRTVハンドル</returns>
+  /// <returns>現在のバックバッファの RTV ハンドル</returns>
   D3D12_CPU_DESCRIPTOR_HANDLE GetSwapChainRTVHandle() {
     UINT backBufferIndex = swapChain_->GetCurrentBackBufferIndex();
     return rtvHandle_[backBufferIndex];
   }
 
   /// <summary>
-  /// Viewportの取得
+  /// Viewport の取得
   ///	</summary>
   /// <returns>ビューポート</returns>
   D3D12_VIEWPORT GetViewport() {
@@ -288,7 +288,7 @@ public: // メンバー関数
   }
 
   /// <summary>
-  /// ScissorRectの取得
+  /// ScissorRect の取得
   ///	</summary>
   /// <returns>シザリング矩形</returns>
   D3D12_RECT GetScissorRect() {
@@ -296,7 +296,7 @@ public: // メンバー関数
   }
 private: // プライベートメンバー関数
   /// <summary>
-  /// deviceの初期化
+  /// device の初期化
   /// </summary>
   void InitDevice();
 
@@ -346,22 +346,22 @@ private: // プライベートメンバー関数
   void InitScissorRect();
 
   /// <summary>
-  /// DXCコンパイラの生成
+  /// DXC コンパイラの生成
   /// </summary>
   void CreateDXCCompiler();
 
   /// <summary>
-  /// FPS制御初期化
+  /// FPS 制御初期化
   /// </summary>
   void InitFPSLimiter();
 
   /// <summary>
-  /// FPS制御更新
+  /// FPS 制御更新
   /// </summary>
   void UpdateFPSLimiter();
 
   /// <summary>
-  /// RTVの再作成
+  /// RTV の再作成
   /// </summary>
   void RecreateSwapChainRTV();
 
@@ -371,21 +371,21 @@ private: // プライベートメンバー関数
   void RecreateDepthBuffer();
 
   /// <summary>
-  /// 指定番号のCPUディスクリプタハンドルを取得
+  /// 指定番号の CPU ディスクリプタハンドルを取得
   /// </summary>
   /// <param name="descriptorHeap">デスクリプタヒープ</param>
   /// <param name="descriptorSize">デスクリプタのサイズ（バイト）</param>
   /// <param name="index">インデックス番号</param>
-  /// <returns>CPUディスクリプタハンドル</returns>
+  /// <returns>CPU ディスクリプタハンドル</returns>
   static D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle(ID3D12DescriptorHeap* descriptorHeap, uint32_t descriptorSize, uint32_t index);
 
   /// <summary>
-  /// 指定番号のGPUディスクリプタハンドルを取得
+  /// 指定番号の GPU ディスクリプタハンドルを取得
   /// </summary>
   /// <param name="descriptorHeap">デスクリプタヒープ</param>
   /// <param name="descriptorSize">デスクリプタのサイズ（バイト）</param>
   /// <param name="index">インデックス番号</param>
-  /// <returns>GPUディスクリプタハンドル</returns>
+  /// <returns>GPU ディスクリプタハンドル</returns>
   static D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(ID3D12DescriptorHeap* descriptorHeap, uint32_t descriptorSize, uint32_t index);
 
   /// <summary>
@@ -397,9 +397,9 @@ private: // プライベートメンバー関数
 
 private: // メンバ変数
 
-  std::chrono::steady_clock::time_point referenceTime_;  ///< 記録時間（FPS制御用の基準時刻）
+  std::chrono::steady_clock::time_point referenceTime_;  ///< 記録時間（FPS 制御用の基準時刻）
 
-  static const UINT kRtvHandleCount = 2;  ///< RTVハンドルの要素数（スワップチェイン用バックバッファ数）
+  static const UINT kRtvHandleCount = 2;  ///< RTV ハンドルの要素数（スワップチェイン用バックバッファ数）
 
   mutable std::unordered_map<ID3D12Resource*, D3D12_RESOURCE_STATES> resourceStates_;  ///< リソース状態追跡用マップ（バリア遷移の最適化に使用）
 
@@ -407,9 +407,9 @@ private: // メンバ変数
 
   ComPtr<ID3D12Device> device_;  ///< DirectX 12デバイス（リソース生成の中心オブジェクト）
 
-  ComPtr<IDXGIFactory7> dxgiFactory_;  ///< DXGIファクトリ（スワップチェイン生成に使用）
+  ComPtr<IDXGIFactory7> dxgiFactory_;  ///< DXGI ファクトリ（スワップチェイン生成に使用）
 
-  ComPtr<ID3D12CommandQueue> commandQueue_;  ///< コマンドキュー（GPU実行キュー）
+  ComPtr<ID3D12CommandQueue> commandQueue_;  ///< コマンドキュー（GPU 実行キュー）
 
   ComPtr<ID3D12CommandAllocator> commandAllocator_;  ///< コマンドアロケータ（コマンドリストのメモリ管理）
 
@@ -419,8 +419,8 @@ private: // メンバ変数
 
   ComPtr<ID3D12Resource> depthStencilResource_;  ///< 深度バッファリソース（深度テスト用）
 
-  uint32_t descriptorSizeRTV_;  ///< RTVデスクリプタのサイズ（バイト）
-  uint32_t descriptorSizeDSV_;  ///< DSVデスクリプタのサイズ（バイト）
+  uint32_t descriptorSizeRTV_;  ///< RTV デスクリプタのサイズ（バイト）
+  uint32_t descriptorSizeDSV_;  ///< DSV デスクリプタのサイズ（バイト）
 
   ComPtr<ID3D12DescriptorHeap> rtvHeap_;  ///< レンダーターゲットビューのデスクリプタヒープ
 
@@ -430,11 +430,11 @@ private: // メンバ変数
 
   UINT swapChainBufferCount_;  ///< スワップチェインのバッファのカウント（通常2）
 
-  D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle_[kRtvHandleCount];  ///< RTVハンドル配列（各バックバッファ用）
+  D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle_[kRtvHandleCount];  ///< RTV ハンドル配列（各バックバッファ用）
 
-  ComPtr<ID3D12Fence> fence_;  ///< フェンスオブジェクト（GPU同期用）
+  ComPtr<ID3D12Fence> fence_;  ///< フェンスオブジェクト（GPU 同期用）
 
-  HANDLE fenceEvent_;  ///< フェンスイベントハンドル（CPU待機用）
+  HANDLE fenceEvent_;  ///< フェンスイベントハンドル（CPU 待機用）
 
   UINT64 fenceValue_;  ///< フェンスの値（同期カウンター）
 
@@ -444,7 +444,7 @@ private: // メンバ変数
 
   ComPtr<IDxcUtils> dxcUtils_ = nullptr;  ///< DXC ユーティリティ（シェーダーコンパイル補助）
 
-  ComPtr<IDxcCompiler3> dxcCompiler_ = nullptr;  ///< DXC コンパイラ（HLSL → DXIL変換）
+  ComPtr<IDxcCompiler3> dxcCompiler_ = nullptr;  ///< DXC コンパイラ（HLSL → DXIL 変換）
 
   ComPtr<IDxcIncludeHandler> includeHandler_ = nullptr;  ///< デフォルトインクルードハンドラー（シェーダーファイルのインクルード処理）
 

@@ -5,7 +5,7 @@
 namespace Tako {
 
 /// <summary>
-/// デバッグ用の自由カメラクラス。キーボード・マウス操作による3D空間の自由移動が可能
+/// デバッグ用の自由カメラクラス。キーボード・マウス操作による3D 空間の自由移動が可能
 /// </summary>
 class DebugCamera
 {
@@ -42,7 +42,7 @@ public: // メンバー関数
 	void Update();
 
 	/// <summary>
-	/// 3Dカメラの移動操作
+	/// 3D カメラの移動操作
 	/// </summary>
 	void Move();
 

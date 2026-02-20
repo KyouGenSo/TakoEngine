@@ -34,7 +34,7 @@ void RGBSplit::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputR
   // パラメータリソースの設定
   m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, cBufferResource_->GetGPUVirtualAddress());
 
-  // レンダーテクスチャAをシェーダーリソースとして設定
+  // レンダーテクスチャ A をシェーダーリソースとして設定
   SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, inputSrvIndex);
 
   // フルスクリーン三角形描画
@@ -77,31 +77,31 @@ void RGBSplit::CreateRootSignature()
 {
   HRESULT hr;
 
-  // rootSignatureの生成
+  // rootSignature の生成
   D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature;
   descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
-  // Samplerの設定
+  // Sampler の設定
   D3D12_STATIC_SAMPLER_DESC samplerDesc[1]{};
   samplerDesc[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR; // テクスチャの補間方法
   samplerDesc[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP; // 画面端でクランプ（ラップアラウンド防止）
   samplerDesc[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP; // 画面端でクランプ（ラップアラウンド防止）
   samplerDesc[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
   samplerDesc[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER; // 比較しない
-  samplerDesc[0].MaxLOD = D3D12_FLOAT32_MAX; // ミップマップの最大LOD
+  samplerDesc[0].MaxLOD = D3D12_FLOAT32_MAX; // ミップマップの最大 LOD
   samplerDesc[0].ShaderRegister = 0; // レジスタ番号
   samplerDesc[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
   descriptionRootSignature.pStaticSamplers = samplerDesc;
   descriptionRootSignature.NumStaticSamplers = _countof(samplerDesc);
 
-  // DescriptorRangeの設定。
+  // DescriptorRange の設定。
   D3D12_DESCRIPTOR_RANGE descriptorRangesForTex[1] = {};
   descriptorRangesForTex[0].BaseShaderRegister = 0; // レジスタ番号
   descriptorRangesForTex[0].NumDescriptors = 1; // ディスクリプタ数
-  descriptorRangesForTex[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
-  descriptorRangesForTex[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
+  descriptorRangesForTex[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRV を使う
+  descriptorRangesForTex[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
 
-  // RootParameterの設定。複数設定できるので配列
+  // RootParameter の設定。複数設定できるので配列
   D3D12_ROOT_PARAMETER rootParameters[2] = {};
   // Texture
   rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
@@ -154,7 +154,7 @@ void RGBSplit::CreatePSO()
   // 裏面を表示しない
   rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
 
-  // shaderのコンパイル
+  // shader のコンパイル
   Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(L"resources/shaders/FullScreen.VS.hlsl", L"vs_6_0");
   assert(vertexShaderBlob != nullptr);
 
@@ -164,10 +164,10 @@ void RGBSplit::CreatePSO()
 
   // DepthStencilState
   D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
-  // depthの機能を無効にする
+  // depth の機能を無効にする
   depthStencilDesc.DepthEnable = false;
 
-  // PSOの生成
+  // PSO の生成
   D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
   graphicsPipelineStateDesc.pRootSignature = rootSignature_.Get();
   graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
@@ -175,7 +175,7 @@ void RGBSplit::CreatePSO()
   graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
   graphicsPipelineStateDesc.BlendState = blendDesc;
   graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
-  // 書き込むRTVの情報
+  // 書き込む RTV の情報
   graphicsPipelineStateDesc.NumRenderTargets = 1;
   graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
   // 利用するトポロジ（形状）のタイプ。三角形
@@ -183,7 +183,7 @@ void RGBSplit::CreatePSO()
   // どのように画面に色を打ち込むかの設定
   graphicsPipelineStateDesc.SampleDesc.Count = 1;
   graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-  // DepthStencilの設定
+  // DepthStencil の設定
   graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
   graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
@@ -194,7 +194,7 @@ void RGBSplit::CreatePSO()
 
 void RGBSplit::CreateCBV()
 {
-  // RadialBlurの定数バッファの生成
+  // RadialBlur の定数バッファの生成
   cBufferResource_ = m_dx12_->MakeBufferResource(sizeof(RGBSplitParam));
 
   //　map
