@@ -70,16 +70,16 @@ namespace Tako {
 
     // 頂点リソースにデータを書き込む
     vertexData_[0].position = { left, bottom, 0.0f, 1.0f }; // 左下
-    vertexData_[0].texcoord = { texLeft, texBottom };
+    vertexData_[0].texCoord = { texLeft, texBottom };
 
     vertexData_[1].position = { left, top, 0.0f, 1.0f }; // 左上
-    vertexData_[1].texcoord = { texLeft, texTop };
+    vertexData_[1].texCoord = { texLeft, texTop };
 
     vertexData_[2].position = { right, bottom, 0.0f, 1.0f }; // 右下
-    vertexData_[2].texcoord = { texRight, texBottom };
+    vertexData_[2].texCoord = { texRight, texBottom };
 
     vertexData_[3].position = { right, top, 0.0f, 1.0f }; // 右上
-    vertexData_[3].texcoord = { texRight, texTop };
+    vertexData_[3].texCoord = { texRight, texTop };
 
     // Sprite の座標変換
     Matrix4x4 worldMatrixSprite = Mat4x4::MakeAffine(transform_.scale, transform_.rotate, transform_.translate);
