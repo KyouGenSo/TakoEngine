@@ -12,570 +12,562 @@
 
 namespace Tako {
 
-Bloom::~Bloom()
-{
-  if (winApp_ && onResizeId_ != 0)
+  Bloom::~Bloom()
   {
-    winApp_->UnregisterOnResizeFunc(onResizeId_);
+    if (winApp_ && onResizeId_ != 0) {
+      winApp_->UnregisterOnResizeFunc(onResizeId_);
+    }
   }
-}
 
-void Bloom::Initialize(DX12Basic* dx12, const std::string& shaderName)
-{
-  IPostEffect::Initialize(dx12, shaderName);
-  CreatePSO("ThresholdExtract");
-  CreatePSO("GaussianBlur");
-  CreatePSO("BloomCombine");
-  CreateCBV();
-  CreateRenderTexture();
-
-  // WinApp のインスタンスを取得してリサイズコールバックを登録
-  winApp_ = WinApp::GetInstance();
-  if (winApp_)
+  void Bloom::Initialize(DX12Basic* dx12, const std::string& shaderName)
   {
-    onResizeId_ = winApp_->RegisterOnResizeFunc(
-      std::bind(&Bloom::OnResize, this, std::placeholders::_1)
-    );
-  }
-}
+    IPostEffect::Initialize(dx12, shaderName);
+    CreatePSO("ThresholdExtract");
+    CreatePSO("GaussianBlur");
+    CreatePSO("BloomCombine");
+    CreateCBV();
+    CreateRenderTexture();
 
-void Bloom::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, [[maybe_unused]] uint32_t depthSrvIndex, [[maybe_unused]] const Vector4& clearColor)
-{
-  //---------------------------Pass1 HighLunExtract---------------------------//
-  D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
-
-  m_dx12_->GetCommandList()->OMSetRenderTargets(1,
-    &highLumRT_.rtvHandle,
-    false,
-    &dsvHandle);
-
-  // エフェクト適用シェーダーの設定
-  m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_["ThresholdExtract"].Get());
-  m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_["ThresholdExtract"].Get());
-
-  // プリミティブトポロジーの設定（フルスクリーン三角形用）
-  m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-
-  // パラメータリソースの設定
-  m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, extractCBufferRes_->GetGPUVirtualAddress());
-
-  // レンダーテクスチャ A をシェーダーリソースとして設定
-  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, inputSrvIndex);
-
-  // 描画
-  m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
-
-
-  //---------------------------Pass2 HorizontalBlur---------------------------//
-  SetBarrier(highLumRT_.resource.Get(),
-    D3D12_RESOURCE_STATE_RENDER_TARGET,
-    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-
-  // 最終結果レンダーテクスチャを描画先に設定
-  m_dx12_->GetCommandList()->OMSetRenderTargets(1,
-    &blurRT_.rtvHandle,
-    false,
-    &dsvHandle);
-
-  // エフェクト適用シェーダーの設定
-  m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_["GaussianBlur"].Get());
-  m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_["GaussianBlur"].Get());
-
-  // プリミティブトポロジーの設定（フルスクリーン三角形用）
-  m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-
-  // BloomParam をセット
-  m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, blurCBufferRes1_->GetGPUVirtualAddress());
-
-  // ブラー画像をシェーダーリソースとして設定（スロット0）
-  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, highLumRT_.srvIndex);
-
-  // 描画
-  m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
-
-  //---------------------------Pass3 VerticalBlur---------------------------//
-  SetBarrier(blurRT_.resource.Get(),
-    D3D12_RESOURCE_STATE_RENDER_TARGET,
-    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-
-  // 最終結果レンダーテクスチャを描画先に設定
-  m_dx12_->GetCommandList()->OMSetRenderTargets(1,
-    &resultRT_.rtvHandle,
-    false,
-    &dsvHandle);
-
-  // プリミティブトポロジーの設定（フルスクリーン三角形用）
-  m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-
-  // BloomParam をセット
-  m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, blurCBufferRes2_->GetGPUVirtualAddress());
-
-  // ブラー画像をシェーダーリソースとして設定（スロット0）
-  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, blurRT_.srvIndex);
-
-  // 描画
-  m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
-
-  //---------------------------Pass4 Combine---------------------------//
-  SetBarrier(resultRT_.resource.Get(),
-    D3D12_RESOURCE_STATE_RENDER_TARGET,
-    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-
-  // 最終結果レンダーテクスチャを描画先に設定
-  m_dx12_->GetCommandList()->OMSetRenderTargets(1,
-    &outputRtvHandle,
-    false,
-    &dsvHandle);
-
-  // エフェクト適用シェーダーの設定
-  m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_["BloomCombine"].Get());
-  m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_["BloomCombine"].Get());
-
-  // プリミティブトポロジーの設定（フルスクリーン三角形用）
-  m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-
-  // BloomParam をセット
-  m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, combineCBufferRes_->GetGPUVirtualAddress());
-
-  // ブラー画像をシェーダーリソースとして設定（スロット0）
-  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, inputSrvIndex);
-  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, resultRT_.srvIndex);
-
-  // 描画
-  m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
-
-
-  //---------------------------リソースステートを戻す---------------------------//
-  SetBarrier(highLumRT_.resource.Get(),
-    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-    D3D12_RESOURCE_STATE_RENDER_TARGET);
-
-  SetBarrier(blurRT_.resource.Get(),
-    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-    D3D12_RESOURCE_STATE_RENDER_TARGET);
-
-  SetBarrier(resultRT_.resource.Get(),
-    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-    D3D12_RESOURCE_STATE_RENDER_TARGET);
-}
-
-void Bloom::DrawImgui()
-{
-#ifdef _DEBUG
-  ImGui::DragFloat("Bloom Intensity", &combineData_->intensity, 0.01f, 0.0f, 10.0f);
-  ImGui::DragFloat("Bloom Threshold", &extractData_->threshold, 0.01f, 0.0f, 1.0f);
-  ImGui::DragFloat("Bloom Sigma", &blurData1_->sigma, 0.01f, 0.0f, 50.0f);
-  blurData2_->sigma = blurData1_->sigma; // Pass2でも同じ値を使用
-  ImGui::DragInt("Bloom Kernel Size", reinterpret_cast<int*>(&blurData1_->kernelSize), 1.0f, 1, 100);
-  blurData2_->kernelSize = blurData1_->kernelSize; // Pass2でも同じ値を使用
-#endif
-}
-
-bool Bloom::SetGenericParam(const EffectParam& param)
-{
-  if (auto* bloomParam = std::get_if<HighLumExtrcatParam>(&param)) {
-    SetParam(*bloomParam);
-    return true;
+    // WinApp のインスタンスを取得してリサイズコールバックを登録
+    winApp_ = WinApp::GetInstance();
+    if (winApp_) {
+      onResizeId_ = winApp_->RegisterOnResizeFunc(
+        std::bind(&Bloom::OnResize, this, std::placeholders::_1)
+      );
+    }
   }
 
-  if (auto* bloomParam = std::get_if<GaussianBlurParam>(&param)) {
-    SetParam(*bloomParam);
-    return true;
-  }
-
-  if (auto* bloomParam = std::get_if<BloomCombineParam>(&param)) {
-    SetParam(*bloomParam);
-    return true;
-  }
-  return false;
-}
-
-void Bloom::SetParam(const HighLumExtrcatParam& param)
-{
-  if (extractData_ == nullptr)
+  void Bloom::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, [[maybe_unused]] uint32_t depthSrvIndex, [[maybe_unused]] const Vector4& clearColor)
   {
-    return; // cBufferData_が初期化されていない場合は何もしない
+    //---------------------------Pass1 HighLunExtract---------------------------//
+    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
+
+    m_dx12_->GetCommandList()->OMSetRenderTargets(1,
+      &highLumRT_.rtvHandle,
+      false,
+      &dsvHandle);
+
+    // エフェクト適用シェーダーの設定
+    m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_["ThresholdExtract"].Get());
+    m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_["ThresholdExtract"].Get());
+
+    // プリミティブトポロジーの設定（フルスクリーン三角形用）
+    m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+
+    // パラメータリソースの設定
+    m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, extractCBufferRes_->GetGPUVirtualAddress());
+
+    // レンダーテクスチャ A をシェーダーリソースとして設定
+    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, inputSrvIndex);
+
+    // 描画
+    m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+
+
+    //---------------------------Pass2 HorizontalBlur---------------------------//
+    SetBarrier(highLumRT_.resource.Get(),
+      D3D12_RESOURCE_STATE_RENDER_TARGET,
+      D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+    // 最終結果レンダーテクスチャを描画先に設定
+    m_dx12_->GetCommandList()->OMSetRenderTargets(1,
+      &blurRT_.rtvHandle,
+      false,
+      &dsvHandle);
+
+    // エフェクト適用シェーダーの設定
+    m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_["GaussianBlur"].Get());
+    m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_["GaussianBlur"].Get());
+
+    // プリミティブトポロジーの設定（フルスクリーン三角形用）
+    m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+
+    // BloomParam をセット
+    m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, blurCBufferRes1_->GetGPUVirtualAddress());
+
+    // ブラー画像をシェーダーリソースとして設定（スロット0）
+    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, highLumRT_.srvIndex);
+
+    // 描画
+    m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+
+    //---------------------------Pass3 VerticalBlur---------------------------//
+    SetBarrier(blurRT_.resource.Get(),
+      D3D12_RESOURCE_STATE_RENDER_TARGET,
+      D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+    // 最終結果レンダーテクスチャを描画先に設定
+    m_dx12_->GetCommandList()->OMSetRenderTargets(1,
+      &resultRT_.rtvHandle,
+      false,
+      &dsvHandle);
+
+    // プリミティブトポロジーの設定（フルスクリーン三角形用）
+    m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+
+    // BloomParam をセット
+    m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, blurCBufferRes2_->GetGPUVirtualAddress());
+
+    // ブラー画像をシェーダーリソースとして設定（スロット0）
+    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, blurRT_.srvIndex);
+
+    // 描画
+    m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+
+    //---------------------------Pass4 Combine---------------------------//
+    SetBarrier(resultRT_.resource.Get(),
+      D3D12_RESOURCE_STATE_RENDER_TARGET,
+      D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+    // 最終結果レンダーテクスチャを描画先に設定
+    m_dx12_->GetCommandList()->OMSetRenderTargets(1,
+      &outputRtvHandle,
+      false,
+      &dsvHandle);
+
+    // エフェクト適用シェーダーの設定
+    m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_["BloomCombine"].Get());
+    m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_["BloomCombine"].Get());
+
+    // プリミティブトポロジーの設定（フルスクリーン三角形用）
+    m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+
+    // BloomParam をセット
+    m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, combineCBufferRes_->GetGPUVirtualAddress());
+
+    // ブラー画像をシェーダーリソースとして設定（スロット0）
+    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, inputSrvIndex);
+    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, resultRT_.srvIndex);
+
+    // 描画
+    m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+
+
+    //---------------------------リソースステートを戻す---------------------------//
+    SetBarrier(highLumRT_.resource.Get(),
+      D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+      D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+    SetBarrier(blurRT_.resource.Get(),
+      D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+      D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+    SetBarrier(resultRT_.resource.Get(),
+      D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+      D3D12_RESOURCE_STATE_RENDER_TARGET);
   }
-  // パラメータを設定する
-  extractData_->threshold = param.threshold;
-}
 
-void Bloom::SetParam(const GaussianBlurParam& param)
-{
-  if (blurData1_ == nullptr)
-  {
-    return; // cBufferData_が初期化されていない場合は何もしない
-  }
-  // パラメータを設定する
-  blurData1_->sigma = param.sigma;
-  blurData1_->kernelSize = param.kernelSize;
-
-  if (blurData2_ == nullptr)
-  {
-    return; // cBufferData2_が初期化されていない場合は何もしない
-  }
-  // パラメータを設定する
-  blurData2_->sigma = param.sigma;
-  blurData2_->kernelSize = param.kernelSize;
-}
-
-void Bloom::SetParam(const BloomCombineParam& param)
-{
-  if (combineData_ == nullptr)
-  {
-    return; // cBufferData_が初期化されていない場合は何もしない
-  }
-  // パラメータを設定する
-  combineData_->intensity = param.intensity;
-}
-
-void Bloom::CreateRootSignature()
-{
-  HRESULT hr;
-
-  // rootSignature の生成
-  D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature;
-  descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-
-  // Sampler の設定
-  D3D12_STATIC_SAMPLER_DESC samplerDesc[1]{};
-  samplerDesc[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR; // テクスチャの補間方法
-  samplerDesc[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP; // テクスチャの繰り返し方法
-  samplerDesc[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP; // テクスチャの繰り返し方法
-  samplerDesc[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
-  samplerDesc[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER; // 比較しない
-  samplerDesc[0].MaxLOD = D3D12_FLOAT32_MAX; // ミップマップの最大 LOD
-  samplerDesc[0].ShaderRegister = 0; // レジスタ番号
-  samplerDesc[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-  descriptionRootSignature.pStaticSamplers = samplerDesc;
-  descriptionRootSignature.NumStaticSamplers = _countof(samplerDesc);
-
-  // DescriptorRange の設定。
-  D3D12_DESCRIPTOR_RANGE descriptorRangesForTex[1] = {};
-  descriptorRangesForTex[0].BaseShaderRegister = 0; // レジスタ番号
-  descriptorRangesForTex[0].NumDescriptors = 1; // ディスクリプタ数
-  descriptorRangesForTex[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRV を使う
-  descriptorRangesForTex[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
-
-  // RootParameter の設定。複数設定できるので配列
-  D3D12_ROOT_PARAMETER rootParameters[2] = {};
-
-  // Texture
-  rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-  rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-  rootParameters[0].DescriptorTable.pDescriptorRanges = descriptorRangesForTex; // ディスクリプタレンジを設定
-  rootParameters[0].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangesForTex); // レンジの数
-
-  // Param
-  rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-  rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-  rootParameters[1].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
-
-  descriptionRootSignature.pParameters = rootParameters;
-  descriptionRootSignature.NumParameters = _countof(rootParameters);
-
-  Microsoft::WRL::ComPtr<ID3DBlob> signatureBlob = nullptr;
-  Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
-
-  hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
-  if (FAILED(hr))
+  void Bloom::DrawImgui()
   {
 #ifdef _DEBUG
-    DebugUIManager::GetInstance()->AddLog(reinterpret_cast<char*>(errorBlob->GetBufferPointer()), DebugUIManager::LogType::Error);
+    ImGui::DragFloat("Bloom Intensity", &combineData_->intensity, 0.01f, 0.0f, 10.0f);
+    ImGui::DragFloat("Bloom Threshold", &extractData_->threshold, 0.01f, 0.0f, 1.0f);
+    ImGui::DragFloat("Bloom Sigma", &blurData1_->sigma, 0.01f, 0.0f, 50.0f);
+    blurData2_->sigma = blurData1_->sigma; // Pass2でも同じ値を使用
+    ImGui::DragInt("Bloom Kernel Size", reinterpret_cast<int*>(&blurData1_->kernelSize), 1.0f, 1, 100);
+    blurData2_->kernelSize = blurData1_->kernelSize; // Pass2でも同じ値を使用
 #endif
-    assert(false);
   }
 
-  hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature_.GetAddressOf()));
-  signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature_.GetAddressOf());
-  assert(SUCCEEDED(hr));
-}
-
-void Bloom::CreateRootSignature(const std::string& shaderNeme)
-{
-  shaderNeme;
-  HRESULT hr;
-
-  // rootSignature の生成
-  D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature;
-  descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-
-  // Sampler の設定
-  D3D12_STATIC_SAMPLER_DESC samplerDesc[1]{};
-  samplerDesc[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR; // テクスチャの補間方法
-  samplerDesc[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
-  samplerDesc[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
-  samplerDesc[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
-  samplerDesc[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER; // 比較しない
-  samplerDesc[0].MaxLOD = D3D12_FLOAT32_MAX; // ミップマップの最大 LOD
-  samplerDesc[0].ShaderRegister = 0; // レジスタ番号
-  samplerDesc[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-  descriptionRootSignature.pStaticSamplers = samplerDesc;
-  descriptionRootSignature.NumStaticSamplers = _countof(samplerDesc);
-
-  // DescriptorRange の設定。
-  D3D12_DESCRIPTOR_RANGE descriptorRangesForTex1[1] = {};
-  descriptorRangesForTex1[0].BaseShaderRegister = 0; // レジスタ番号
-  descriptorRangesForTex1[0].NumDescriptors = 1; // ディスクリプタ数
-  descriptorRangesForTex1[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRV を使う
-  descriptorRangesForTex1[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
-
-  // DescriptorRange の設定。
-  D3D12_DESCRIPTOR_RANGE descriptorRangesForTex2[1] = {};
-  descriptorRangesForTex2[0].BaseShaderRegister = 1; // レジスタ番号
-  descriptorRangesForTex2[0].NumDescriptors = 1; // ディスクリプタ数
-  descriptorRangesForTex2[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRV を使う
-  descriptorRangesForTex2[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
-
-  // RootParameter の設定。複数設定できるので配列
-  D3D12_ROOT_PARAMETER rootParameters[3] = {};
-
-  // Texture1
-  rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-  rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-  rootParameters[0].DescriptorTable.pDescriptorRanges = descriptorRangesForTex1; // ディスクリプタレンジを設定
-  rootParameters[0].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangesForTex1); // レンジの数
-
-  // Param
-  rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-  rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-  rootParameters[1].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
-
-  // Texture2
-  rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-  rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-  rootParameters[2].DescriptorTable.pDescriptorRanges = descriptorRangesForTex2; // ディスクリプタレンジを設定
-  rootParameters[2].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangesForTex2); // レンジの数
-
-  descriptionRootSignature.pParameters = rootParameters;
-  descriptionRootSignature.NumParameters = _countof(rootParameters);
-
-  Microsoft::WRL::ComPtr<ID3DBlob> signatureBlob = nullptr;
-  Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
-
-  hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
-  if (FAILED(hr))
+  bool Bloom::SetGenericParam(const EffectParam& param)
   {
-#ifdef _DEBUG
-    DebugUIManager::GetInstance()->AddLog(reinterpret_cast<char*>(errorBlob->GetBufferPointer()), DebugUIManager::LogType::Error);
-#endif
-    assert(false);
+    if (auto* bloomParam = std::get_if<HighLumExtrcatParam>(&param)) {
+      SetParam(*bloomParam);
+      return true;
+    }
+
+    if (auto* bloomParam = std::get_if<GaussianBlurParam>(&param)) {
+      SetParam(*bloomParam);
+      return true;
+    }
+
+    if (auto* bloomParam = std::get_if<BloomCombineParam>(&param)) {
+      SetParam(*bloomParam);
+      return true;
+    }
+    return false;
   }
 
-  hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignatures_[shaderNeme].GetAddressOf()));
-  signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignatures_[shaderNeme].GetAddressOf());
-  assert(SUCCEEDED(hr));
-}
+  void Bloom::SetParam(const HighLumExtrcatParam& param)
+  {
+    if (extractData_ == nullptr) {
+      return; // cBufferData_が初期化されていない場合は何もしない
+    }
+    // パラメータを設定する
+    extractData_->threshold = param.threshold;
+  }
 
-void Bloom::CreatePSO()
-{
-  HRESULT hr;
+  void Bloom::SetParam(const GaussianBlurParam& param)
+  {
+    if (blurData1_ == nullptr) {
+      return; // cBufferData_が初期化されていない場合は何もしない
+    }
+    // パラメータを設定する
+    blurData1_->sigma = param.sigma;
+    blurData1_->kernelSize = param.kernelSize;
 
-  // InputLayout
-  D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
-  inputLayoutDesc.pInputElementDescs = nullptr;
-  inputLayoutDesc.NumElements = 0;
+    if (blurData2_ == nullptr) {
+      return; // cBufferData2_が初期化されていない場合は何もしない
+    }
+    // パラメータを設定する
+    blurData2_->sigma = param.sigma;
+    blurData2_->kernelSize = param.kernelSize;
+  }
 
-  // BlendState
-  D3D12_BLEND_DESC blendDesc{};
-  blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+  void Bloom::SetParam(const BloomCombineParam& param)
+  {
+    if (combineData_ == nullptr) {
+      return; // cBufferData_が初期化されていない場合は何もしない
+    }
+    // パラメータを設定する
+    combineData_->intensity = param.intensity;
+  }
 
-  // RasterizerState
-  D3D12_RASTERIZER_DESC rasterizerDesc{};
-  // 三角形の中を塗りつぶす
-  rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
-  // 裏面を表示しない
-  rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
+  void Bloom::CreateRootSignature()
+  {
+    HRESULT hr;
 
-  // shader のコンパイル
-  Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(L"resources/shaders/FullScreen.VS.hlsl", L"vs_6_0");
-  assert(vertexShaderBlob != nullptr);
+    // rootSignature の生成
+    D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature;
+    descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
-  std::wstring psPath = L"resources/shaders/" + StringUtility::ConvertString(shaderName_) + L".PS.hlsl";
-  Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(psPath, L"ps_6_0");
-  assert(pixelShaderBlob != nullptr);
+    // Sampler の設定
+    D3D12_STATIC_SAMPLER_DESC samplerDesc[1]{};
+    samplerDesc[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR; // テクスチャの補間方法
+    samplerDesc[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP; // テクスチャの繰り返し方法
+    samplerDesc[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP; // テクスチャの繰り返し方法
+    samplerDesc[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
+    samplerDesc[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER; // 比較しない
+    samplerDesc[0].MaxLOD = D3D12_FLOAT32_MAX; // ミップマップの最大 LOD
+    samplerDesc[0].ShaderRegister = 0; // レジスタ番号
+    samplerDesc[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+    descriptionRootSignature.pStaticSamplers = samplerDesc;
+    descriptionRootSignature.NumStaticSamplers = _countof(samplerDesc);
 
-  // DepthStencilState
-  D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
-  // depth の機能を無効にする
-  depthStencilDesc.DepthEnable = false;
+    // DescriptorRange の設定。
+    D3D12_DESCRIPTOR_RANGE descriptorRangesForTex[1] = {};
+    descriptorRangesForTex[0].BaseShaderRegister = 0; // レジスタ番号
+    descriptorRangesForTex[0].NumDescriptors = 1; // ディスクリプタ数
+    descriptorRangesForTex[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRV を使う
+    descriptorRangesForTex[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
 
-  // PSO の生成
-  D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
-  graphicsPipelineStateDesc.pRootSignature = rootSignature_.Get();
-  graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
-  graphicsPipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() };
-  graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
-  graphicsPipelineStateDesc.BlendState = blendDesc;
-  graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
-  // 書き込む RTV の情報
-  graphicsPipelineStateDesc.NumRenderTargets = 1;
-  graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-  // 利用するトポロジ（形状）のタイプ。三角形
-  graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-  // どのように画面に色を打ち込むかの設定
-  graphicsPipelineStateDesc.SampleDesc.Count = 1;
-  graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-  // DepthStencil の設定
-  graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
-  graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    // RootParameter の設定。複数設定できるので配列
+    D3D12_ROOT_PARAMETER rootParameters[2] = {};
 
-  // 実際に生成
-  hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
-  assert(SUCCEEDED(hr));
-}
+    // Texture
+    rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
+    rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+    rootParameters[0].DescriptorTable.pDescriptorRanges = descriptorRangesForTex; // ディスクリプタレンジを設定
+    rootParameters[0].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangesForTex); // レンジの数
 
-void Bloom::CreatePSO(const std::string& shaderNeme)
-{
-  CreateRootSignature(shaderNeme);
+    // Param
+    rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
+    rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+    rootParameters[1].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
 
-  HRESULT hr;
+    descriptionRootSignature.pParameters = rootParameters;
+    descriptionRootSignature.NumParameters = _countof(rootParameters);
 
-  // InputLayout
-  D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
-  inputLayoutDesc.pInputElementDescs = nullptr;
-  inputLayoutDesc.NumElements = 0;
+    Microsoft::WRL::ComPtr<ID3DBlob> signatureBlob = nullptr;
+    Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
 
-  // BlendState
-  D3D12_BLEND_DESC blendDesc{};
-  blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+    hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
+    if (FAILED(hr)) {
+#ifdef _DEBUG
+      DebugUIManager::GetInstance()->AddLog(reinterpret_cast<char*>(errorBlob->GetBufferPointer()), DebugUIManager::LogType::Error);
+#endif
+      assert(false);
+    }
 
-  // RasterizerState
-  D3D12_RASTERIZER_DESC rasterizerDesc{};
-  // 三角形の中を塗りつぶす
-  rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
-  // 裏面を表示しない
-  rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
+    hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature_.GetAddressOf()));
+    signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature_.GetAddressOf());
+    assert(SUCCEEDED(hr));
+  }
 
-  // shader のコンパイル
-  Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(L"resources/shaders/FullScreen.VS.hlsl", L"vs_6_0");
-  assert(vertexShaderBlob != nullptr);
+  void Bloom::CreateRootSignature(const std::string& shaderName)
+  {
+    shaderName;
+    HRESULT hr;
 
-  std::wstring psPath = L"resources/shaders/" + StringUtility::ConvertString(shaderNeme) + L".PS.hlsl";
-  Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(psPath, L"ps_6_0");
-  assert(pixelShaderBlob != nullptr);
+    // rootSignature の生成
+    D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature;
+    descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
-  // DepthStencilState
-  D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
-  // depth の機能を無効にする
-  depthStencilDesc.DepthEnable = false;
+    // Sampler の設定
+    D3D12_STATIC_SAMPLER_DESC samplerDesc[1]{};
+    samplerDesc[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR; // テクスチャの補間方法
+    samplerDesc[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
+    samplerDesc[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
+    samplerDesc[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
+    samplerDesc[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER; // 比較しない
+    samplerDesc[0].MaxLOD = D3D12_FLOAT32_MAX; // ミップマップの最大 LOD
+    samplerDesc[0].ShaderRegister = 0; // レジスタ番号
+    samplerDesc[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+    descriptionRootSignature.pStaticSamplers = samplerDesc;
+    descriptionRootSignature.NumStaticSamplers = _countof(samplerDesc);
 
-  // PSO の生成
-  D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
-  graphicsPipelineStateDesc.pRootSignature = rootSignatures_[shaderNeme].Get();
-  graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
-  graphicsPipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() };
-  graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
-  graphicsPipelineStateDesc.BlendState = blendDesc;
-  graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
-  // 書き込む RTV の情報
-  graphicsPipelineStateDesc.NumRenderTargets = 1;
-  graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-  // 利用するトポロジ（形状）のタイプ。三角形
-  graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-  // どのように画面に色を打ち込むかの設定
-  graphicsPipelineStateDesc.SampleDesc.Count = 1;
-  graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-  // DepthStencil の設定
-  graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
-  graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    // DescriptorRange の設定。
+    D3D12_DESCRIPTOR_RANGE descriptorRangesForTex1[1] = {};
+    descriptorRangesForTex1[0].BaseShaderRegister = 0; // レジスタ番号
+    descriptorRangesForTex1[0].NumDescriptors = 1; // ディスクリプタ数
+    descriptorRangesForTex1[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRV を使う
+    descriptorRangesForTex1[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
 
-  // 実際に生成
-  hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineStates_[shaderNeme]));
-  assert(SUCCEEDED(hr));
-}
+    // DescriptorRange の設定。
+    D3D12_DESCRIPTOR_RANGE descriptorRangesForTex2[1] = {};
+    descriptorRangesForTex2[0].BaseShaderRegister = 1; // レジスタ番号
+    descriptorRangesForTex2[0].NumDescriptors = 1; // ディスクリプタ数
+    descriptorRangesForTex2[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRV を使う
+    descriptorRangesForTex2[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
 
-void Bloom::CreateCBV()
-{
-  // BloomParam のリソース生成
-  extractCBufferRes_ = m_dx12_->MakeBufferResource(sizeof(HighLumExtrcatParam));
-  blurCBufferRes1_ = m_dx12_->MakeBufferResource(sizeof(GaussianBlurParam));
-  blurCBufferRes2_ = m_dx12_->MakeBufferResource(sizeof(GaussianBlurParam));
-  combineCBufferRes_ = m_dx12_->MakeBufferResource(sizeof(BloomCombineParam));
+    // RootParameter の設定。複数設定できるので配列
+    D3D12_ROOT_PARAMETER rootParameters[3] = {};
 
-  // データの設定
-  extractCBufferRes_->Map(0, nullptr, reinterpret_cast<void**>(&extractData_));
-  blurCBufferRes1_->Map(0, nullptr, reinterpret_cast<void**>(&blurData1_));
-  blurCBufferRes2_->Map(0, nullptr, reinterpret_cast<void**>(&blurData2_));
-  combineCBufferRes_->Map(0, nullptr, reinterpret_cast<void**>(&combineData_));
+    // Texture1
+    rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
+    rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+    rootParameters[0].DescriptorTable.pDescriptorRanges = descriptorRangesForTex1; // ディスクリプタレンジを設定
+    rootParameters[0].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangesForTex1); // レンジの数
 
-  // データの初期化
-  extractData_->threshold = 1.0f;
+    // Param
+    rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
+    rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+    rootParameters[1].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
 
-  blurData1_->sigma = 2.0f;
-  blurData1_->kernelSize = 10;
-  blurData1_->direction = Vector2(1.0f, 0.0f); // 水平方向
+    // Texture2
+    rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
+    rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+    rootParameters[2].DescriptorTable.pDescriptorRanges = descriptorRangesForTex2; // ディスクリプタレンジを設定
+    rootParameters[2].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangesForTex2); // レンジの数
 
-  blurData2_->sigma = 2.0f;
-  blurData2_->kernelSize = 10;
-  blurData2_->direction = Vector2(0.0f, 1.0f); // 垂直方向
+    descriptionRootSignature.pParameters = rootParameters;
+    descriptionRootSignature.NumParameters = _countof(rootParameters);
 
-  combineData_->intensity = 1.0f;
-}
+    Microsoft::WRL::ComPtr<ID3DBlob> signatureBlob = nullptr;
+    Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
 
-void Bloom::CreateRenderTexture()
-{
-  auto createRT = [this](RenderTexture& rt, int rtvIndex, const Vector4& clearColor) {
-    // リソース作成
-    m_dx12_->CreateRenderTextureResource(
-      rt.resource,
-      WinApp::clientWidth,
-      WinApp::clientHeight,
-      DXGI_FORMAT_R8G8B8A8_UNORM,
-      clearColor
-    );
+    hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
+    if (FAILED(hr)) {
+#ifdef _DEBUG
+      DebugUIManager::GetInstance()->AddLog(reinterpret_cast<char*>(errorBlob->GetBufferPointer()), DebugUIManager::LogType::Error);
+#endif
+      assert(false);
+    }
 
-    // RTV 作成
-    rt.rtvHandle = m_dx12_->GetRenderTextureRTVHandle(rtvIndex);
-    D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
-    rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-    m_dx12_->GetDevice()->CreateRenderTargetView(
-      rt.resource.Get(), &rtvDesc, rt.rtvHandle
-    );
+    hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignatures_[shaderName].GetAddressOf()));
+    signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignatures_[shaderName].GetAddressOf());
+    assert(SUCCEEDED(hr));
+  }
 
-    // SRV 作成
-    rt.srvIndex = SrvManager::GetInstance()->Allocate();
-    SrvManager::GetInstance()->CreateSRVForTexture2D(
-      rt.srvIndex, rt.resource.Get(), DXGI_FORMAT_R8G8B8A8_UNORM, 1
-    );
-    };
+  void Bloom::CreatePSO()
+  {
+    HRESULT hr;
 
-  createRT(highLumRT_, 6, Vector4(0.0f, 0.0f, 0.0f, 1.0f));
-  createRT(blurRT_, 7, Vector4(0.0f, 0.0f, 0.0f, 1.0f));
-  createRT(resultRT_, 8, Vector4(0.0f, 0.0f, 0.0f, 1.0f));
-}
+    // InputLayout
+    D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
+    inputLayoutDesc.pInputElementDescs = nullptr;
+    inputLayoutDesc.NumElements = 0;
 
-void Bloom::OnResize(const Vector2& newSize)
-{
-  newSize; // 未使用の警告を抑制
+    // BlendState
+    D3D12_BLEND_DESC blendDesc{};
+    blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
-  // RenderTexture を再作成
-  RecreateRenderTexture();
-}
+    // RasterizerState
+    D3D12_RASTERIZER_DESC rasterizerDesc{};
+    // 三角形の中を塗りつぶす
+    rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
+    // 裏面を表示しない
+    rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
 
-void Bloom::RecreateRenderTexture()
-{
-  resultRT_.resource.Reset();
-  highLumRT_.resource.Reset();
-  blurRT_.resource.Reset();
-  SrvManager::GetInstance()->Free(resultRT_.srvIndex);
-  SrvManager::GetInstance()->Free(highLumRT_.srvIndex);
-  SrvManager::GetInstance()->Free(blurRT_.srvIndex);
+    // shader のコンパイル
+    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(L"resources/shaders/FullScreen.VS.hlsl", L"vs_6_0");
+    assert(vertexShaderBlob != nullptr);
 
-  CreateRenderTexture();
-}
+    std::wstring psPath = L"resources/shaders/" + StringUtility::ConvertString(shaderName_) + L".PS.hlsl";
+    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(psPath, L"ps_6_0");
+    assert(pixelShaderBlob != nullptr);
 
-void Bloom::SetBarrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter)
-{
-  D3D12_RESOURCE_BARRIER barrier{};
-  barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-  barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-  barrier.Transition.pResource = resource;
-  barrier.Transition.StateBefore = stateBefore;
-  barrier.Transition.StateAfter = stateAfter;
+    // DepthStencilState
+    D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
+    // depth の機能を無効にする
+    depthStencilDesc.DepthEnable = false;
 
-  m_dx12_->GetCommandList()->ResourceBarrier(1, &barrier);
-}
+    // PSO の生成
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
+    graphicsPipelineStateDesc.pRootSignature = rootSignature_.Get();
+    graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
+    graphicsPipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() };
+    graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
+    graphicsPipelineStateDesc.BlendState = blendDesc;
+    graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
+    // 書き込む RTV の情報
+    graphicsPipelineStateDesc.NumRenderTargets = 1;
+    graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+    // 利用するトポロジ（形状）のタイプ。三角形
+    graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+    // どのように画面に色を打ち込むかの設定
+    graphicsPipelineStateDesc.SampleDesc.Count = 1;
+    graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+    // DepthStencil の設定
+    graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
+    graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+
+    // 実際に生成
+    hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
+    assert(SUCCEEDED(hr));
+  }
+
+  void Bloom::CreatePSO(const std::string& shaderName)
+  {
+    CreateRootSignature(shaderName);
+
+    HRESULT hr;
+
+    // InputLayout
+    D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
+    inputLayoutDesc.pInputElementDescs = nullptr;
+    inputLayoutDesc.NumElements = 0;
+
+    // BlendState
+    D3D12_BLEND_DESC blendDesc{};
+    blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+
+    // RasterizerState
+    D3D12_RASTERIZER_DESC rasterizerDesc{};
+    // 三角形の中を塗りつぶす
+    rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
+    // 裏面を表示しない
+    rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
+
+    // shader のコンパイル
+    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(L"resources/shaders/FullScreen.VS.hlsl", L"vs_6_0");
+    assert(vertexShaderBlob != nullptr);
+
+    std::wstring psPath = L"resources/shaders/" + StringUtility::ConvertString(shaderName) + L".PS.hlsl";
+    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(psPath, L"ps_6_0");
+    assert(pixelShaderBlob != nullptr);
+
+    // DepthStencilState
+    D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
+    // depth の機能を無効にする
+    depthStencilDesc.DepthEnable = false;
+
+    // PSO の生成
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
+    graphicsPipelineStateDesc.pRootSignature = rootSignatures_[shaderName].Get();
+    graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
+    graphicsPipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() };
+    graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
+    graphicsPipelineStateDesc.BlendState = blendDesc;
+    graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
+    // 書き込む RTV の情報
+    graphicsPipelineStateDesc.NumRenderTargets = 1;
+    graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+    // 利用するトポロジ（形状）のタイプ。三角形
+    graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+    // どのように画面に色を打ち込むかの設定
+    graphicsPipelineStateDesc.SampleDesc.Count = 1;
+    graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+    // DepthStencil の設定
+    graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
+    graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+
+    // 実際に生成
+    hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineStates_[shaderName]));
+    assert(SUCCEEDED(hr));
+  }
+
+  void Bloom::CreateCBV()
+  {
+    // BloomParam のリソース生成
+    extractCBufferRes_ = m_dx12_->MakeBufferResource(sizeof(HighLumExtrcatParam));
+    blurCBufferRes1_ = m_dx12_->MakeBufferResource(sizeof(GaussianBlurParam));
+    blurCBufferRes2_ = m_dx12_->MakeBufferResource(sizeof(GaussianBlurParam));
+    combineCBufferRes_ = m_dx12_->MakeBufferResource(sizeof(BloomCombineParam));
+
+    // データの設定
+    extractCBufferRes_->Map(0, nullptr, reinterpret_cast<void**>(&extractData_));
+    blurCBufferRes1_->Map(0, nullptr, reinterpret_cast<void**>(&blurData1_));
+    blurCBufferRes2_->Map(0, nullptr, reinterpret_cast<void**>(&blurData2_));
+    combineCBufferRes_->Map(0, nullptr, reinterpret_cast<void**>(&combineData_));
+
+    // データの初期化
+    extractData_->threshold = 1.0f;
+
+    blurData1_->sigma = 2.0f;
+    blurData1_->kernelSize = 10;
+    blurData1_->direction = Vector2(1.0f, 0.0f); // 水平方向
+
+    blurData2_->sigma = 2.0f;
+    blurData2_->kernelSize = 10;
+    blurData2_->direction = Vector2(0.0f, 1.0f); // 垂直方向
+
+    combineData_->intensity = 1.0f;
+  }
+
+  void Bloom::CreateRenderTexture()
+  {
+    auto createRT = [this](RenderTexture& rt, int rtvIndex, const Vector4& clearColor) {
+      // リソース作成
+      m_dx12_->CreateRenderTextureResource(
+        rt.resource,
+        WinApp::clientWidth,
+        WinApp::clientHeight,
+        DXGI_FORMAT_R8G8B8A8_UNORM,
+        clearColor
+      );
+
+      // RTV 作成
+      rt.rtvHandle = m_dx12_->GetRenderTextureRTVHandle(rtvIndex);
+      D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
+      rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+      rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+      m_dx12_->GetDevice()->CreateRenderTargetView(
+        rt.resource.Get(), &rtvDesc, rt.rtvHandle
+      );
+
+      // SRV 作成
+      rt.srvIndex = SrvManager::GetInstance()->Allocate();
+      SrvManager::GetInstance()->CreateSRVForTexture2D(
+        rt.srvIndex, rt.resource.Get(), DXGI_FORMAT_R8G8B8A8_UNORM, 1
+      );
+      };
+
+    createRT(highLumRT_, 6, Vector4(0.0f, 0.0f, 0.0f, 1.0f));
+    createRT(blurRT_, 7, Vector4(0.0f, 0.0f, 0.0f, 1.0f));
+    createRT(resultRT_, 8, Vector4(0.0f, 0.0f, 0.0f, 1.0f));
+  }
+
+  void Bloom::OnResize(const Vector2& newSize)
+  {
+    newSize; // 未使用の警告を抑制
+
+    // RenderTexture を再作成
+    RecreateRenderTexture();
+  }
+
+  void Bloom::RecreateRenderTexture()
+  {
+    resultRT_.resource.Reset();
+    highLumRT_.resource.Reset();
+    blurRT_.resource.Reset();
+    SrvManager::GetInstance()->Free(resultRT_.srvIndex);
+    SrvManager::GetInstance()->Free(highLumRT_.srvIndex);
+    SrvManager::GetInstance()->Free(blurRT_.srvIndex);
+
+    CreateRenderTexture();
+  }
+
+  void Bloom::SetBarrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter)
+  {
+    D3D12_RESOURCE_BARRIER barrier{};
+    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+    barrier.Transition.pResource = resource;
+    barrier.Transition.StateBefore = stateBefore;
+    barrier.Transition.StateAfter = stateAfter;
+
+    m_dx12_->GetCommandList()->ResourceBarrier(1, &barrier);
+  }
 
 } // namespace Tako

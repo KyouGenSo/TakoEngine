@@ -10,191 +10,189 @@
 
 namespace Tako {
 
-void LuminanceBasedOutline::Initialize(DX12Basic* dx12, const std::string& shaderName)
-{
-  IPostEffect::Initialize(dx12, shaderName);
-  CreateCBV();
-}
-
-void LuminanceBasedOutline::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, [[maybe_unused]] uint32_t depthSrvIndex, [[maybe_unused]] const Vector4& clearColor)
-{
-  D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
-  m_dx12_->GetCommandList()->OMSetRenderTargets(1,
-    &outputRtvHandle,
-    false,
-    &dsvHandle);
-
-  // エフェクト適用シェーダーの設定
-  m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
-  m_dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
-
-  // プリミティブトポロジーの設定（フルスクリーン三角形用）
-  m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-
-  // パラメータリソースの設定
-  m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, cBufferResource_->GetGPUVirtualAddress());
-
-  // レンダーテクスチャ A をシェーダーリソースとして設定
-  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, inputSrvIndex);
-
-  // フルスクリーン三角形描画
-  m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
-}
-
-void LuminanceBasedOutline::DrawImgui()
-{
-#ifdef _DEBUG
-  ImGui::DragFloat("LuminanceBasedOutline Thickness", &cBufferData_->outlineThickness, 0.01f, 0.0f, 100.0f, "%.2f");
-#endif
-}
-
-bool LuminanceBasedOutline::SetGenericParam(const EffectParam& param)
-{
-  if (auto* luminanceBasedOutlineParam = std::get_if<LuminanceOutlineParam>(&param)) {
-    SetParam(*luminanceBasedOutlineParam);
-    return true;
-  }
-  return false;
-}
-
-void LuminanceBasedOutline::SetParam(const LuminanceOutlineParam& param)
-{
-  if (cBufferData_ == nullptr)
+  void LuminanceBasedOutline::Initialize(DX12Basic* dx12, const std::string& shaderName)
   {
-    return; // cBufferData_が初期化されていない場合は何もしない
+    IPostEffect::Initialize(dx12, shaderName);
+    CreateCBV();
   }
-  // パラメータを更新
-  cBufferData_->outlineThickness = param.outlineThickness;
-}
 
-void LuminanceBasedOutline::CreateRootSignature()
-{
-  HRESULT hr;
+  void LuminanceBasedOutline::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, [[maybe_unused]] uint32_t depthSrvIndex, [[maybe_unused]] const Vector4& clearColor)
+  {
+    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
+    m_dx12_->GetCommandList()->OMSetRenderTargets(1,
+      &outputRtvHandle,
+      false,
+      &dsvHandle);
 
-  // rootSignature の生成
-  D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature;
-  descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+    // エフェクト適用シェーダーの設定
+    m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
+    m_dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
 
-  // Sampler の設定
-  D3D12_STATIC_SAMPLER_DESC samplerDesc[1]{};
-  samplerDesc[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR; // テクスチャの補間方法
-  samplerDesc[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
-  samplerDesc[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
-  samplerDesc[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
-  samplerDesc[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER; // 比較しない
-  samplerDesc[0].MaxLOD = D3D12_FLOAT32_MAX; // ミップマップの最大 LOD
-  samplerDesc[0].ShaderRegister = 0; // レジスタ番号
-  samplerDesc[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-  descriptionRootSignature.pStaticSamplers = samplerDesc;
-  descriptionRootSignature.NumStaticSamplers = _countof(samplerDesc);
+    // プリミティブトポロジーの設定（フルスクリーン三角形用）
+    m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-  // DescriptorRange の設定。
-  D3D12_DESCRIPTOR_RANGE descriptorRangesForTex[1] = {};
-  descriptorRangesForTex[0].BaseShaderRegister = 0; // レジスタ番号
-  descriptorRangesForTex[0].NumDescriptors = 1; // ディスクリプタ数
-  descriptorRangesForTex[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRV を使う
-  descriptorRangesForTex[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
+    // パラメータリソースの設定
+    m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, cBufferResource_->GetGPUVirtualAddress());
 
-  // RootParameter の設定。複数設定できるので配列
-  D3D12_ROOT_PARAMETER rootParameters[2] = {};
-  // Texture
-  rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-  rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-  rootParameters[0].DescriptorTable.pDescriptorRanges = descriptorRangesForTex; // ディスクリプタレンジを設定
-  rootParameters[0].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangesForTex); // レンジの数
+    // レンダーテクスチャ A をシェーダーリソースとして設定
+    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, inputSrvIndex);
 
-  // Param
-  rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-  rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-  rootParameters[1].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
+    // フルスクリーン三角形描画
+    m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+  }
 
-  descriptionRootSignature.pParameters = rootParameters;
-  descriptionRootSignature.NumParameters = _countof(rootParameters);
-
-  Microsoft::WRL::ComPtr<ID3DBlob> signatureBlob = nullptr;
-  Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
-
-  hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
-  if (FAILED(hr))
+  void LuminanceBasedOutline::DrawImgui()
   {
 #ifdef _DEBUG
-    DebugUIManager::GetInstance()->AddLog(reinterpret_cast<char*>(errorBlob->GetBufferPointer()), DebugUIManager::LogType::Error);
+    ImGui::DragFloat("LuminanceBasedOutline Thickness", &cBufferData_->outlineThickness, 0.01f, 0.0f, 100.0f, "%.2f");
 #endif
-    assert(false);
   }
 
-  hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature_.GetAddressOf()));
-  signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature_.GetAddressOf());
-  assert(SUCCEEDED(hr));
-}
+  bool LuminanceBasedOutline::SetGenericParam(const EffectParam& param)
+  {
+    if (auto* luminanceBasedOutlineParam = std::get_if<LuminanceOutlineParam>(&param)) {
+      SetParam(*luminanceBasedOutlineParam);
+      return true;
+    }
+    return false;
+  }
 
-void LuminanceBasedOutline::CreatePSO()
-{
-  HRESULT hr;
+  void LuminanceBasedOutline::SetParam(const LuminanceOutlineParam& param)
+  {
+    if (cBufferData_ == nullptr) {
+      return; // cBufferData_が初期化されていない場合は何もしない
+    }
+    // パラメータを更新
+    cBufferData_->outlineThickness = param.outlineThickness;
+  }
 
-  // InputLayout
-  D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
-  inputLayoutDesc.pInputElementDescs = nullptr;
-  inputLayoutDesc.NumElements = 0;
+  void LuminanceBasedOutline::CreateRootSignature()
+  {
+    HRESULT hr;
 
-  // BlendState
-  D3D12_BLEND_DESC blendDesc{};
-  blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+    // rootSignature の生成
+    D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature;
+    descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
-  // RasterizerState
-  D3D12_RASTERIZER_DESC rasterizerDesc{};
-  // 三角形の中を塗りつぶす
-  rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
-  // 裏面を表示しない
-  rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
+    // Sampler の設定
+    D3D12_STATIC_SAMPLER_DESC samplerDesc[1]{};
+    samplerDesc[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR; // テクスチャの補間方法
+    samplerDesc[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
+    samplerDesc[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
+    samplerDesc[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
+    samplerDesc[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER; // 比較しない
+    samplerDesc[0].MaxLOD = D3D12_FLOAT32_MAX; // ミップマップの最大 LOD
+    samplerDesc[0].ShaderRegister = 0; // レジスタ番号
+    samplerDesc[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+    descriptionRootSignature.pStaticSamplers = samplerDesc;
+    descriptionRootSignature.NumStaticSamplers = _countof(samplerDesc);
 
-  // shader のコンパイル
-  Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(L"resources/shaders/FullScreen.VS.hlsl", L"vs_6_0");
-  assert(vertexShaderBlob != nullptr);
+    // DescriptorRange の設定。
+    D3D12_DESCRIPTOR_RANGE descriptorRangesForTex[1] = {};
+    descriptorRangesForTex[0].BaseShaderRegister = 0; // レジスタ番号
+    descriptorRangesForTex[0].NumDescriptors = 1; // ディスクリプタ数
+    descriptorRangesForTex[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRV を使う
+    descriptorRangesForTex[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
 
-  std::wstring psPath = L"resources/shaders/" + StringUtility::ConvertString(shaderName_) + L".PS.hlsl";
-  Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(psPath, L"ps_6_0");
-  assert(pixelShaderBlob != nullptr);
+    // RootParameter の設定。複数設定できるので配列
+    D3D12_ROOT_PARAMETER rootParameters[2] = {};
+    // Texture
+    rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
+    rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+    rootParameters[0].DescriptorTable.pDescriptorRanges = descriptorRangesForTex; // ディスクリプタレンジを設定
+    rootParameters[0].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangesForTex); // レンジの数
 
-  // DepthStencilState
-  D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
-  // depth の機能を無効にする
-  depthStencilDesc.DepthEnable = false;
+    // Param
+    rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
+    rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+    rootParameters[1].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
 
-  // PSO の生成
-  D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
-  graphicsPipelineStateDesc.pRootSignature = rootSignature_.Get();
-  graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
-  graphicsPipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() };
-  graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
-  graphicsPipelineStateDesc.BlendState = blendDesc;
-  graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
-  // 書き込む RTV の情報
-  graphicsPipelineStateDesc.NumRenderTargets = 1;
-  graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-  // 利用するトポロジ（形状）のタイプ。三角形
-  graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-  // どのように画面に色を打ち込むかの設定
-  graphicsPipelineStateDesc.SampleDesc.Count = 1;
-  graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-  // DepthStencil の設定
-  graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
-  graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    descriptionRootSignature.pParameters = rootParameters;
+    descriptionRootSignature.NumParameters = _countof(rootParameters);
 
-  // 実際に生成
-  hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
-  assert(SUCCEEDED(hr));
-}
+    Microsoft::WRL::ComPtr<ID3DBlob> signatureBlob = nullptr;
+    Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
 
-void LuminanceBasedOutline::CreateCBV()
-{
-  cBufferResource_ = m_dx12_->MakeBufferResource(sizeof(LuminanceOutlineParam));
+    hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
+    if (FAILED(hr)) {
+#ifdef _DEBUG
+      DebugUIManager::GetInstance()->AddLog(reinterpret_cast<char*>(errorBlob->GetBufferPointer()), DebugUIManager::LogType::Error);
+#endif
+      assert(false);
+    }
 
-  // map
-  cBufferResource_->Map(0, nullptr, reinterpret_cast<void**>(&cBufferData_));
+    hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature_.GetAddressOf()));
+    signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature_.GetAddressOf());
+    assert(SUCCEEDED(hr));
+  }
 
-  // 初期値を設定
-  cBufferData_->outlineThickness = 1.0f; // 初期値は1.0f
-}
+  void LuminanceBasedOutline::CreatePSO()
+  {
+    HRESULT hr;
+
+    // InputLayout
+    D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
+    inputLayoutDesc.pInputElementDescs = nullptr;
+    inputLayoutDesc.NumElements = 0;
+
+    // BlendState
+    D3D12_BLEND_DESC blendDesc{};
+    blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+
+    // RasterizerState
+    D3D12_RASTERIZER_DESC rasterizerDesc{};
+    // 三角形の中を塗りつぶす
+    rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
+    // 裏面を表示しない
+    rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
+
+    // shader のコンパイル
+    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(L"resources/shaders/FullScreen.VS.hlsl", L"vs_6_0");
+    assert(vertexShaderBlob != nullptr);
+
+    std::wstring psPath = L"resources/shaders/" + StringUtility::ConvertString(shaderName_) + L".PS.hlsl";
+    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(psPath, L"ps_6_0");
+    assert(pixelShaderBlob != nullptr);
+
+    // DepthStencilState
+    D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
+    // depth の機能を無効にする
+    depthStencilDesc.DepthEnable = false;
+
+    // PSO の生成
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
+    graphicsPipelineStateDesc.pRootSignature = rootSignature_.Get();
+    graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
+    graphicsPipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() };
+    graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
+    graphicsPipelineStateDesc.BlendState = blendDesc;
+    graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
+    // 書き込む RTV の情報
+    graphicsPipelineStateDesc.NumRenderTargets = 1;
+    graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+    // 利用するトポロジ（形状）のタイプ。三角形
+    graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+    // どのように画面に色を打ち込むかの設定
+    graphicsPipelineStateDesc.SampleDesc.Count = 1;
+    graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+    // DepthStencil の設定
+    graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
+    graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+
+    // 実際に生成
+    hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
+    assert(SUCCEEDED(hr));
+  }
+
+  void LuminanceBasedOutline::CreateCBV()
+  {
+    cBufferResource_ = m_dx12_->MakeBufferResource(sizeof(LuminanceOutlineParam));
+
+    // map
+    cBufferResource_->Map(0, nullptr, reinterpret_cast<void**>(&cBufferData_));
+
+    // 初期値を設定
+    cBufferData_->outlineThickness = 1.0f; // 初期値は1.0f
+  }
 
 } // namespace Tako

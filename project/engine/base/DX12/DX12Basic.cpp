@@ -116,7 +116,7 @@ namespace Tako {
     D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvHeap_->GetCPUDescriptorHandleForHeapStart();
 
     // レンダーテクスチャを描画先に設定
-    PostEffectManager::GetInstance()->BegineDrawNonEffectTarget();
+    PostEffectManager::GetInstance()->BeginDrawNonEffectTarget();
 
     SetViewPort();
   }

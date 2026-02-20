@@ -93,7 +93,7 @@ namespace Tako {
     /// エフェクト非適用対象のレンダーターゲットへの描画を開始
     /// この関数の後に描画されたオブジェクトにはポストエフェクトが適用されない
     /// </summary>
-    void BegineDrawNonEffectTarget();
+    void BeginDrawNonEffectTarget();
 
     /// <summary>
     /// エフェクトチェーンを適用して描画処理を実行
