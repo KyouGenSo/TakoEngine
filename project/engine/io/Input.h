@@ -11,48 +11,35 @@
 #pragma comment(lib, "dinput8.lib")
 #pragma comment(lib, "dxguid.lib")
 
-// XINPUT_Button の GUID
-static const WORD XINPUT_Buttons[] = {
-    XINPUT_GAMEPAD_A,
-    XINPUT_GAMEPAD_B,
-    XINPUT_GAMEPAD_X,
-    XINPUT_GAMEPAD_Y,
-    XINPUT_GAMEPAD_DPAD_UP,
-    XINPUT_GAMEPAD_DPAD_DOWN,
-    XINPUT_GAMEPAD_DPAD_LEFT,
-    XINPUT_GAMEPAD_DPAD_RIGHT,
-    XINPUT_GAMEPAD_LEFT_SHOULDER,
-    XINPUT_GAMEPAD_RIGHT_SHOULDER,
-    XINPUT_GAMEPAD_LEFT_THUMB,
-    XINPUT_GAMEPAD_RIGHT_THUMB,
-    XINPUT_GAMEPAD_START,
-    XINPUT_GAMEPAD_BACK
-};
-
 namespace Tako {
 
   /// <summary>
-  /// XInput ボタン ID 管理構造体
-  /// ゲームパッドのボタン番号を格納
+  /// ゲームパッドボタン定数（XInput ビットフラグ値）
+  /// wButtons のビットマスクとして直接使用
   /// </summary>
-  struct XButtonIDs
+  struct GamepadButton
   {
-    /// <summary>
-    /// コンストラクタ
-    /// </summary>
-    XButtonIDs();
+    static constexpr WORD A = XINPUT_GAMEPAD_A;                      ///< A ボタン
+    static constexpr WORD B = XINPUT_GAMEPAD_B;                      ///< B ボタン
+    static constexpr WORD X = XINPUT_GAMEPAD_X;                      ///< X ボタン
+    static constexpr WORD Y = XINPUT_GAMEPAD_Y;                      ///< Y ボタン
+    static constexpr WORD DPad_Up = XINPUT_GAMEPAD_DPAD_UP;          ///< DPad 上
+    static constexpr WORD DPad_Down = XINPUT_GAMEPAD_DPAD_DOWN;      ///< DPad 下
+    static constexpr WORD DPad_Left = XINPUT_GAMEPAD_DPAD_LEFT;      ///< DPad 左
+    static constexpr WORD DPad_Right = XINPUT_GAMEPAD_DPAD_RIGHT;    ///< DPad 右
+    static constexpr WORD L_Shoulder = XINPUT_GAMEPAD_LEFT_SHOULDER;  ///< 左ショルダー
+    static constexpr WORD R_Shoulder = XINPUT_GAMEPAD_RIGHT_SHOULDER; ///< 右ショルダー
+    static constexpr WORD L_Thumbstick = XINPUT_GAMEPAD_LEFT_THUMB;  ///< 左スティック押込
+    static constexpr WORD R_Thumbstick = XINPUT_GAMEPAD_RIGHT_THUMB; ///< 右スティック押込
+    static constexpr WORD Start = XINPUT_GAMEPAD_START;              ///< Start ボタン
+    static constexpr WORD Back = XINPUT_GAMEPAD_BACK;                ///< Back ボタン
 
-    //---------------------メンバー変数---------------------//
-    int A, B, X, Y; ///< 'Action'ボタン
-
-    int DPad_Up, DPad_Down, DPad_Left, DPad_Right; ///< Directional Pad(DPad) ボタン
-
-    int L_Shoulder, R_Shoulder; ///< Shoulder ボタン
-
-    int L_Thumbstick, R_Thumbstick; ///< Thumbstick ボタン
-
-    int Start; ///< 'START' ボタン
-    int Back;  ///< 'BACK' ボタン
+    /// デバッグ列挙用の全ボタン配列
+    static constexpr int COUNT = 14;
+    static constexpr WORD ALL[COUNT] = {
+        A, B, X, Y, DPad_Up, DPad_Down, DPad_Left, DPad_Right,
+        L_Shoulder, R_Shoulder, L_Thumbstick, R_Thumbstick, Start, Back
+    };
   };
 
   /// <summary>
@@ -147,7 +134,7 @@ namespace Tako {
     /// マウスの座標を取得
     /// </summary>
     /// <returns>スクリーン座標系でのマウス位置</returns>
-    Vector2 GetMousePos();
+    Vector2 GetMousePos() const;
 
     /// <summary>
     /// マウスの座標を設定
@@ -157,42 +144,36 @@ namespace Tako {
     void SetMousePos(int x, int y);
 
     /// <summary>
-    /// ゲームパッドの状態を取得
-    /// </summary>
-    /// <returns>XInput 状態構造体</returns>
-    XINPUT_STATE GetGamePadState();
-
-    /// <summary>
     /// ゲームパッドの接続状態を取得
     /// </summary>
     /// <returns>接続されている場合 true</returns>
-    bool IsConnect();
+    bool IsConnect() const;
 
     /// <summary>
-    /// ゲームパッドの状態を更新
+    /// 互換維持用（no-op）。prevButtons_ は Update() 内部で保存される
     /// </summary>
     void RefreshGamePadState();
 
     /// <summary>
     /// ゲームパッドの押下状態を取得
     /// </summary>
-    /// <param name="button">ボタン番号（XButtons 構造体のメンバーを使用）</param>
+    /// <param name="button">ボタンビットフラグ（GamepadButton 定数を使用）</param>
     /// <returns>押下されている場合 true</returns>
-    bool PushButton(int button) const;
+    bool PushButton(WORD button) const;
 
     /// <summary>
     /// ゲームパッドのトリガー状態を取得（押した瞬間のみ true）
     /// </summary>
-    /// <param name="button">ボタン番号（XButtons 構造体のメンバーを使用）</param>
+    /// <param name="button">ボタンビットフラグ（GamepadButton 定数を使用）</param>
     /// <returns>押した瞬間のみ true</returns>
-    bool TriggerButton(int button) const;
+    bool TriggerButton(WORD button) const;
 
     /// <summary>
     /// ゲームパッドのリリース状態を取得（離した瞬間のみ true）
     /// </summary>
-    /// <param name="button">ボタン番号（XButtons 構造体のメンバーを使用）</param>
+    /// <param name="button">ボタンビットフラグ（GamepadButton 定数を使用）</param>
     /// <returns>離した瞬間のみ true</returns>
-    bool ReleaseButton(int button) const;
+    bool ReleaseButton(WORD button) const;
 
     /// <summary>
     /// ゲームパッドの左スティックがデッドゾーン内かどうか
@@ -210,25 +191,25 @@ namespace Tako {
     /// ゲームパッドの左スティックの値を取得
     /// </summary>
     /// <returns>正規化された左スティックの値（-1.0 ~ 1.0）</returns>
-    Vector2 GetLeftStick();
+    Vector2 GetLeftStick() const;
 
     /// <summary>
     /// ゲームパッドの右スティックの値を取得
     /// </summary>
     /// <returns>正規化された右スティックの値（-1.0 ~ 1.0）</returns>
-    Vector2 GetRightStick();
+    Vector2 GetRightStick() const;
 
     /// <summary>
     /// ゲームパッドの左トリガーの値を取得
     /// </summary>
     /// <returns>正規化されたトリガー値（0.0 ~ 1.0）</returns>
-    float GetLeftTrigger();
+    float GetLeftTrigger() const;
 
     /// <summary>
     /// ゲームパッドの右トリガーの値を取得
     /// </summary>
     /// <returns>正規化されたトリガー値（0.0 ~ 1.0）</returns>
-    float GetRightTrigger();
+    float GetRightTrigger() const;
 
     /// <summary>
     /// ゲームパッドの振動を設定
@@ -262,16 +243,12 @@ namespace Tako {
 
     BYTE prevKeys_[256] = {}; ///< 前フレームのキーボード入力状態
 
-    //---------------------ゲームパット---------------------//
-    XINPUT_STATE state_; ///< ゲームパッドの状態
+    //---------------------ゲームパッド---------------------//
+    XINPUT_STATE state_{}; ///< ゲームパッドの状態
 
-    static const int GAMEPAD_BUTTON_NUM = 14; ///< ゲームパッドボタンの数
+    WORD prevButtons_ = 0; ///< 前フレームのボタンビットマスク
 
-    bool buttonStates_[GAMEPAD_BUTTON_NUM]; ///< ゲームパッドのボタンの状態
-
-    bool prevButtonStates_[GAMEPAD_BUTTON_NUM]; ///< 前フレームのゲームパッドのボタンの状態
-
-    bool buttonsTriger_[GAMEPAD_BUTTON_NUM]; ///< ゲームパッドのトリガーの状態
+    bool isConnected_ = false; ///< ゲームパッドの接続状態
 
     //---------------------振動制御---------------------//
     float vibrationDuration_ = 0.0f; ///< 振動継続時間（秒）。0以下で無限
@@ -279,7 +256,5 @@ namespace Tako {
     bool isVibrating_ = false;       ///< 振動中フラグ
 
   };
-
-  extern XButtonIDs XButtons;
 
 } // namespace Tako

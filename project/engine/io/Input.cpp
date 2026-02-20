@@ -7,30 +7,6 @@ namespace Tako {
 
   std::unique_ptr<Input> Input::instance_ = nullptr;
 
-  XButtonIDs XButtons;
-
-  XButtonIDs::XButtonIDs()
-  {
-    A = 0;
-    B = 1;
-    X = 2;
-    Y = 3;
-
-    DPad_Up = 4;
-    DPad_Down = 5;
-    DPad_Left = 6;
-    DPad_Right = 7;
-
-    L_Shoulder = 8;
-    R_Shoulder = 9;
-
-    L_Thumbstick = 10;
-    R_Thumbstick = 11;
-
-    Start = 12;
-    Back = 13;
-  }
-
   Input* Input::GetInstance()
   {
     if (!instance_) {
@@ -82,11 +58,9 @@ namespace Tako {
     mousePos_.y = point.y;
 
     // ゲームパッドの初期化
-    for (int i = 0; i < GAMEPAD_BUTTON_NUM; i++) {
-      prevButtonStates_[i] = false;
-      buttonStates_[i] = false;
-      buttonsTriger_[i] = false;
-    }
+    ZeroMemory(&state_, sizeof(XINPUT_STATE));
+    prevButtons_ = 0;
+    isConnected_ = false;
 
   }
 
@@ -97,11 +71,10 @@ namespace Tako {
   }
 
   void Input::Update() {
-    // 前フレームのキーボード入力状態を保存
+    // 前フレーム状態を保存（キーボード・マウス・ゲームパッド統一）
     memcpy(prevKeys_, keys_, sizeof(keys_));
-
-    // 前フレームのマウス入力状態を保存
     prevMouseState_ = mouseState_;
+    prevButtons_ = state_.Gamepad.wButtons;
 
     // キーボード情報の取得
     keyboardDevice_->Acquire();
@@ -115,12 +88,11 @@ namespace Tako {
     UpdateMousePos();
 
     // ゲームパッドの状態を取得
-    state_ = GetGamePadState();
-
-    // ゲームパッドのボタンの状態を更新
-    for (int i = 0; i < GAMEPAD_BUTTON_NUM; i++) {
-      buttonStates_[i] = (state_.Gamepad.wButtons & XINPUT_Buttons[i]) == XINPUT_Buttons[i];
-      buttonsTriger_[i] = !prevButtonStates_[i] && buttonStates_[i];
+    DWORD result = XInputGetState(0, &state_);
+    isConnected_ = (result == ERROR_SUCCESS);
+    if (!isConnected_)
+    {
+      ZeroMemory(&state_.Gamepad, sizeof(XINPUT_GAMEPAD));
     }
 
     // 振動タイマーの更新
@@ -190,7 +162,7 @@ namespace Tako {
     return false;
   }
 
-  Vector2 Input::GetMousePos()
+  Vector2 Input::GetMousePos() const
   {
     return Vector2(static_cast<float>(mousePos_.x), static_cast<float>(mousePos_.y));
   }
@@ -204,54 +176,29 @@ namespace Tako {
     SetCursorPos(point.x, point.y);
   }
 
-  XINPUT_STATE Input::GetGamePadState()
+  bool Input::IsConnect() const
   {
-    XINPUT_STATE state;
-
-    ZeroMemory(&state, sizeof(XINPUT_STATE));
-
-    // ゲームパッドの状態を取得
-    XInputGetState(0, &state);
-
-    return state;
-  }
-
-  bool Input::IsConnect()
-  {
-    ZeroMemory(&state_, sizeof(XINPUT_STATE));
-
-    // ゲームパッドの状態を取得
-    DWORD result = XInputGetState(0, &state_);
-
-    return result == ERROR_SUCCESS;
+    return isConnected_;
   }
 
   void Input::RefreshGamePadState()
   {
-    memcpy(prevButtonStates_, buttonStates_, sizeof(prevButtonStates_));
+    // prevButtons_ は Update() 内部で保存されるため no-op
   }
 
-  bool Input::PushButton(int button) const
+  bool Input::PushButton(WORD button) const
   {
-    if (state_.Gamepad.wButtons & XINPUT_Buttons[button]) {
-      return true;
-    }
-
-    return false;
+    return (state_.Gamepad.wButtons & button) != 0;
   }
 
-  bool Input::TriggerButton(int button) const
+  bool Input::TriggerButton(WORD button) const
   {
-    return buttonsTriger_[button];
+    return (state_.Gamepad.wButtons & button) && !(prevButtons_ & button);
   }
 
-  bool Input::ReleaseButton(int button) const
+  bool Input::ReleaseButton(WORD button) const
   {
-    if (!buttonStates_[button] && prevButtonStates_[button]) {
-      return true;
-    }
-
-    return false;
+    return !(state_.Gamepad.wButtons & button) && (prevButtons_ & button);
   }
 
   bool Input::LStickInDeadZone() const
@@ -290,7 +237,7 @@ namespace Tako {
     return true;
   }
 
-  Vector2 Input::GetLeftStick()
+  Vector2 Input::GetLeftStick() const
   {
     // 左スティックの値を取得
     short x = state_.Gamepad.sThumbLX;
@@ -299,7 +246,7 @@ namespace Tako {
     return Vector2(static_cast<float>(x) / 32768.0f, static_cast<float>(y) / 32768.0f);
   }
 
-  Vector2 Input::GetRightStick()
+  Vector2 Input::GetRightStick() const
   {
     // 右スティックの値を取得
     short x = state_.Gamepad.sThumbRX;
@@ -308,7 +255,7 @@ namespace Tako {
     return Vector2(static_cast<float>(x) / 32768.0f, static_cast<float>(y) / 32768.0f);
   }
 
-  float Input::GetLeftTrigger()
+  float Input::GetLeftTrigger() const
   {
     // 左トリガーの値を取得
     BYTE trigger = state_.Gamepad.bLeftTrigger;
@@ -320,7 +267,7 @@ namespace Tako {
     return 0.0f;
   }
 
-  float Input::GetRightTrigger()
+  float Input::GetRightTrigger() const
   {
     // 右トリガーの値を取得
     BYTE trigger = state_.Gamepad.bRightTrigger;

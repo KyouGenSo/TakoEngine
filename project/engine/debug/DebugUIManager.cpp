@@ -580,7 +580,6 @@ namespace Tako {
 
         // ボタン状態
         ImGui::Text("Buttons:");
-        XButtonIDs btns;
         const char* buttonNames[] = {
             "A", "B", "X", "Y",
             "Up", "Down", "Left", "Right",
@@ -588,9 +587,9 @@ namespace Tako {
             "Start", "Back"
         };
 
-        for (int i = 0; i < 14; i++) {
+        for (int i = 0; i < GamepadButton::COUNT; i++) {
           if (i > 0 && i % 4 != 0) ImGui::SameLine();
-          bool pressed = input->PushButton(i);
+          bool pressed = input->PushButton(GamepadButton::ALL[i]);
           if (pressed) {
             ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "[%s]", buttonNames[i]);
           }
