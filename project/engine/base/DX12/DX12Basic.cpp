@@ -497,7 +497,7 @@ void DX12Basic::InitScissorRect()
 void DX12Basic::CreateDXCCompiler()
 {
 	HRESULT hr;
-	// DXCUtillities の生成
+	// DXCUtilities の生成
 	hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils_));
 	assert(SUCCEEDED(hr));
 

@@ -3,13 +3,12 @@
 #include "DX12Basic.h"
 #include "D3DResourceLeakChecker.h"
 #include "Camera.h"
-#include "SrvManager.h"
 #include "AbstractSceneFactory.h"
+
 #include <memory>
 
 #ifdef _DEBUG
 #include "ImGuiManager.h"
-#include "DebugUIManager.h"
 #endif
 
 namespace Tako {
@@ -90,7 +89,7 @@ public: // メンバ関数
 	void OnWindowResize(uint32_t width, uint32_t height);
 
 protected: // メンバ変数
-	D3DResourceLeakChecker d3dResourceLeakCheker;  ///< リソースリークチェッカー（デバッグビルドでメモリリーク検出）
+	D3DResourceLeakChecker d3dResourceLeakChecker;  ///< リソースリークチェッカー（デバッグビルドでメモリリーク検出）
 
 	WinApp* winApp_ = nullptr;  ///< ウィンドウ管理クラスへのポインタ
 

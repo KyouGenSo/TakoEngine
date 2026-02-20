@@ -5,7 +5,6 @@
 #include "ModelManager.h"
 #include "Object3dBasic.h"
 #include "SpriteBasic.h"
-#include "Model.h"
 #include "Draw2D.h"
 #include "PostEffectManager.h"
 #include "GPUParticle.h"
@@ -13,16 +12,10 @@
 #include "FrameTimer.h"
 #include "ShadowRenderer.h"
 #include "Input.h"
-#include "CollisionManager.h"
-#include "Light.h"
-#include <algorithm>
-#include <vector>
-#include <chrono>
-#include <iomanip>
-#include <sstream>
 
 #ifdef _DEBUG
 #include "DebugCamera.h"
+#include "DebugUIManager.h"
 #endif
 
 namespace Tako {
