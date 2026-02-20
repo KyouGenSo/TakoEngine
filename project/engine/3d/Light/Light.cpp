@@ -76,12 +76,12 @@ namespace Tako {
       pointLightIndexList_.resize(index + 1);
     }
 
-    pointLightDatas_[index].position = position;
-    pointLightDatas_[index].color = color;
-    pointLightDatas_[index].intensity = intensity;
-    pointLightDatas_[index].radius = radius;
-    pointLightDatas_[index].decay = decay;
-    pointLightDatas_[index].enable = enable;
+    pointLightData_[index].position = position;
+    pointLightData_[index].color = color;
+    pointLightData_[index].intensity = intensity;
+    pointLightData_[index].radius = radius;
+    pointLightData_[index].decay = decay;
+    pointLightData_[index].enable = enable;
   }
 
   void Light::SetSpotLight(const Vector3& position, const Vector3& direction, const Vector4& color, float intensity, float distance, float decay, float cosAngle, bool enable, int index)
@@ -135,15 +135,15 @@ namespace Tako {
     pointLightResource_ = m_dx12_->MakeBufferResource(sizeof(PointLight) * Light::MAX_POINT_LIGHT);
 
     // 点光源リソースをマップ
-    pointLightResource_->Map(0, nullptr, reinterpret_cast<void**>(&pointLightDatas_));
+    pointLightResource_->Map(0, nullptr, reinterpret_cast<void**>(&pointLightData_));
 
     // 点光源データの初期値を書き込む
-    pointLightDatas_[0].position = Vector3(0.0f, 2.0f, 0.0f); // ライトの位置
-    pointLightDatas_[0].color = { 1.0f, 1.0f, 1.0f, 1.0f };     // ライトの色
-    pointLightDatas_[0].intensity = 1.0f;                       // 輝度
-    pointLightDatas_[0].radius = 10.0f;                         // 半径
-    pointLightDatas_[0].decay = 1.0f;                           // 減衰
-    pointLightDatas_[0].enable = false;                         // 点光源の有効無効
+    pointLightData_[0].position = Vector3(0.0f, 2.0f, 0.0f); // ライトの位置
+    pointLightData_[0].color = { 1.0f, 1.0f, 1.0f, 1.0f };     // ライトの色
+    pointLightData_[0].intensity = 1.0f;                       // 輝度
+    pointLightData_[0].radius = 10.0f;                         // 半径
+    pointLightData_[0].decay = 1.0f;                           // 減衰
+    pointLightData_[0].enable = false;                         // 点光源の有効無効
 
     // SRVの生成
     pointLightSrvIndex_ = SrvManager::GetInstance()->Allocate();
@@ -176,7 +176,7 @@ namespace Tako {
   void Light::CreateLightConstants()
   {
     // ライト定数リソースを生成
-    lightConstantsResource_ = m_dx12_->MakeBufferResource(sizeof(LightConsteants));
+    lightConstantsResource_ = m_dx12_->MakeBufferResource(sizeof(LightConstants));
 
     // ライト定数リソースをマップ
     lightConstantsResource_->Map(0, nullptr, reinterpret_cast<void**>(&lightConstantsData_));

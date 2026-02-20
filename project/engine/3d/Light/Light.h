@@ -71,7 +71,7 @@ namespace Tako {
     /// <summary>
     /// ライト数定数
     /// </summary>
-    struct LightConsteants
+    struct LightConstants
     {
       int numPointLights;  ///< 点光源の数
       int numSpotLights;  ///< スポットライトの数
@@ -194,42 +194,42 @@ namespace Tako {
     /// </summary>
     /// <param name="color">カラー</param>
     /// <param name="index">インデックス</param>
-    void SetPointLightColor(const Vector4& color, int index) { pointLightDatas_[index].color = color; }
+    void SetPointLightColor(const Vector4& color, int index) { pointLightData_[index].color = color; }
 
     /// <summary>
     /// 点光源の位置を設定
     /// </summary>
     /// <param name="position">位置</param>
     /// <param name="index">インデックス</param>
-    void SetPointLightPos(const Vector3& position, int index) { pointLightDatas_[index].position = position; }
+    void SetPointLightPos(const Vector3& position, int index) { pointLightData_[index].position = position; }
 
     /// <summary>
     /// 点光源の強度を設定
     /// </summary>
     /// <param name="intensity">強度</param>
     /// <param name="index">インデックス</param>
-    void SetPointLightIntensity(float intensity, int index) { pointLightDatas_[index].intensity = intensity; }
+    void SetPointLightIntensity(float intensity, int index) { pointLightData_[index].intensity = intensity; }
 
     /// <summary>
     /// 点光源の半径を設定
     /// </summary>
     /// <param name="radius">半径</param>
     /// <param name="index">インデックス</param>
-    void SetPointLightRadius(float radius, int index) { pointLightDatas_[index].radius = radius; }
+    void SetPointLightRadius(float radius, int index) { pointLightData_[index].radius = radius; }
 
     /// <summary>
     /// 点光源の減衰率を設定
     /// </summary>
     /// <param name="decay">減衰率</param>
     /// <param name="index">インデックス</param>
-    void SetPointLightDecay(float decay, int index) { pointLightDatas_[index].decay = decay; }
+    void SetPointLightDecay(float decay, int index) { pointLightData_[index].decay = decay; }
 
     /// <summary>
     /// 点光源の有効化を設定
     /// </summary>
     /// <param name="enable">有効フラグ</param>
     /// <param name="index">インデックス</param>
-    void SetPointLightEnable(bool enable, int index) { pointLightDatas_[index].enable = enable; }
+    void SetPointLightEnable(bool enable, int index) { pointLightData_[index].enable = enable; }
 
     // SpotLight
     /// <summary>
@@ -329,11 +329,11 @@ namespace Tako {
 
     DirectionalLight* directionalLightData_;  ///< 平行光源データポインタ
 
-    PointLight* pointLightDatas_;  ///< 点光源データ配列ポインタ
+    PointLight* pointLightData_;  ///< 点光源データ配列ポインタ
 
     SpotLight* spotLightData_;  ///< スポットライトデータ配列ポインタ
 
-    LightConsteants* lightConstantsData_;  ///< ライト定数データポインタ
+    LightConstants* lightConstantsData_;  ///< ライト定数データポインタ
 
     Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightResource_;  ///< 平行光源リソース
 
