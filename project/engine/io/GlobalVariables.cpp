@@ -158,9 +158,9 @@ namespace Tako {
 
     // エラーハンドル
     if (ofs.fail()) {
-      std::string erroeMessage = "file to opne json file";
+      std::string errorMessage = "file to opne json file";
 #ifdef _DEBUG
-      MessageBoxA(nullptr, erroeMessage.c_str(), "GlobalVariables", 0);
+      MessageBoxA(nullptr, errorMessage.c_str(), "GlobalVariables", 0);
 #endif
       assert(false);
       return;

@@ -27,8 +27,8 @@ namespace Tako {
     static constexpr WORD DPad_Down = XINPUT_GAMEPAD_DPAD_DOWN;      ///< DPad 下
     static constexpr WORD DPad_Left = XINPUT_GAMEPAD_DPAD_LEFT;      ///< DPad 左
     static constexpr WORD DPad_Right = XINPUT_GAMEPAD_DPAD_RIGHT;    ///< DPad 右
-    static constexpr WORD L_Shoulder = XINPUT_GAMEPAD_LEFT_SHOULDER;  ///< 左ショルダー
-    static constexpr WORD R_Shoulder = XINPUT_GAMEPAD_RIGHT_SHOULDER; ///< 右ショルダー
+    static constexpr WORD L_Shoulder = XINPUT_GAMEPAD_LEFT_SHOULDER; ///< 左ショルダー
+    static constexpr WORD R_Shoulder = XINPUT_GAMEPAD_RIGHT_SHOULDER;///< 右ショルダー
     static constexpr WORD L_Thumbstick = XINPUT_GAMEPAD_LEFT_THUMB;  ///< 左スティック押込
     static constexpr WORD R_Thumbstick = XINPUT_GAMEPAD_RIGHT_THUMB; ///< 右スティック押込
     static constexpr WORD Start = XINPUT_GAMEPAD_START;              ///< Start ボタン
