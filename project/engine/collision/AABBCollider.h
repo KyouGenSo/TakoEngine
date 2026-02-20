@@ -5,53 +5,53 @@
 
 namespace Tako {
 
-/// <summary>
-/// 軸平行境界ボックス(Axis-Aligned Bounding Box)の衝突判定を行うコライダー
-/// </summary>
-class AABBCollider : public Collider {
-private:
-	Vector3 offset_ = { 0.0f, 0.0f, 0.0f };  ///< ローカル座標系でのオフセット
-	Vector3 size_ = { 1.0f, 1.0f, 1.0f };  ///< ボックスのサイズ（幅、高さ、奥行き）
+  /// <summary>
+  /// 軸平行境界ボックス(Axis-Aligned Bounding Box)の衝突判定を行うコライダー
+  /// </summary>
+  class AABBCollider : public Collider {
+  private:
+    Vector3 offset_ = { 0.0f, 0.0f, 0.0f };  ///< ローカル座標系でのオフセット
+    Vector3 size_ = { 1.0f, 1.0f, 1.0f };  ///< ボックスのサイズ（幅、高さ、奥行き）
 
-public:
-	AABBCollider() = default;
-	virtual ~AABBCollider() = default;
+  public:
+    AABBCollider() = default;
+    virtual ~AABBCollider() = default;
 
-	/// <summary>
-	/// AABB の中心座標を取得（ワールド座標系）
-	/// </summary>
-	/// <returns>中心座標</returns>
-	Vector3 GetCenter() const override;
+    /// <summary>
+    /// AABB の中心座標を取得（ワールド座標系）
+    /// </summary>
+    /// <returns>中心座標</returns>
+    Vector3 GetCenter() const override;
 
-	/// <summary>
-	/// AABB 構造体を取得（ワールド座標系）
-	/// </summary>
-	/// <returns>AABB 構造体</returns>
-	AABB GetAABB() const;
+    /// <summary>
+    /// AABB 構造体を取得（ワールド座標系）
+    /// </summary>
+    /// <returns>AABB 構造体</returns>
+    AABB GetAABB() const;
 
-	/// <summary>
-	/// ローカルオフセットを設定
-	/// </summary>
-	/// <param name="offset">オフセット値</param>
-	void SetOffset(const Vector3& offset) { offset_ = offset; }
+    /// <summary>
+    /// ローカルオフセットを設定
+    /// </summary>
+    /// <param name="offset">オフセット値</param>
+    void SetOffset(const Vector3& offset) { offset_ = offset; }
 
-	/// <summary>
-	/// ローカルオフセットを取得
-	/// </summary>
-	/// <returns>オフセット値</returns>
-	const Vector3& GetOffset() const { return offset_; }
+    /// <summary>
+    /// ローカルオフセットを取得
+    /// </summary>
+    /// <returns>オフセット値</returns>
+    const Vector3& GetOffset() const { return offset_; }
 
-	/// <summary>
-	/// AABB のサイズを設定
-	/// </summary>
-	/// <param name="size">サイズ（幅、高さ、奥行き）</param>
-	void SetSize(const Vector3& size) { size_ = size; }
+    /// <summary>
+    /// AABB のサイズを設定
+    /// </summary>
+    /// <param name="size">サイズ（幅、高さ、奥行き）</param>
+    void SetSize(const Vector3& size) { size_ = size; }
 
-	/// <summary>
-	/// AABB のサイズを取得
-	/// </summary>
-	/// <returns>サイズ（幅、高さ、奥行き）</returns>
-	const Vector3& GetSize() const { return size_; }
-};
+    /// <summary>
+    /// AABB のサイズを取得
+    /// </summary>
+    /// <returns>サイズ（幅、高さ、奥行き）</returns>
+    const Vector3& GetSize() const { return size_; }
+  };
 
 } // namespace Tako
