@@ -10,83 +10,83 @@
 
 namespace Tako {
 
-class WinApp;
-class DX12Basic;
-
-/// <summary>
-/// ImGui の DirectX 12統合管理クラス。初期化、描画、スタイル設定を担当
-/// </summary>
-class ImGuiManager
-{
-public: // メンバ関数
+  class WinApp;
+  class DX12Basic;
 
   /// <summary>
-  /// 初期化
+  /// ImGui の DirectX 12統合管理クラス。初期化、描画、スタイル設定を担当
   /// </summary>
-  void Initialize(WinApp* winApp, DX12Basic* dx12, bool isDocking);
+  class ImGuiManager
+  {
+  public: // メンバ関数
 
-  /// <summary>
-  /// dx12用初期化
-  /// </summary>
-  void InitializeForDX12();
+    /// <summary>
+    /// 初期化
+    /// </summary>
+    void Initialize(WinApp* winApp, DX12Basic* dx12, bool isDocking);
 
-  /// <summary>
-  /// 描画開始
-  /// </summary>
-  void Begin();
+    /// <summary>
+    /// dx12用初期化
+    /// </summary>
+    void InitializeForDX12();
 
-  /// <summary>
-  /// 描画
-  /// </summary>
-  void Draw();
+    /// <summary>
+    /// 描画開始
+    /// </summary>
+    void Begin();
 
-  /// <summary>
-  /// 描画終了
-  /// </summary>
-  void End();
+    /// <summary>
+    /// 描画
+    /// </summary>
+    void Draw();
 
-  /// <summary>
-  /// 終了処理
-  /// </summary>
-  void Shutdown();
+    /// <summary>
+    /// 描画終了
+    /// </summary>
+    void End();
 
-  /// <summary>
-  /// ウィンドウサイズ変更時の更新処理
-  /// </summary>
-  void OnWindowResize();
+    /// <summary>
+    /// 終了処理
+    /// </summary>
+    void Shutdown();
+
+    /// <summary>
+    /// ウィンドウサイズ変更時の更新処理
+    /// </summary>
+    void OnWindowResize();
 
 
-  /// <summary>
-  /// ImGui のスタイルの設定
-  /// </summary>
-  void SetStyleBoorstrapDark();
-  void SetStyleMoonLight();
-  void SetStyleAdobeinspired();
+    /// <summary>
+    /// ImGui のスタイルの設定
+    /// </summary>
+    void SetStyleBoostRapDark();
+    void SetStyleMoonLight();
+    void SetStyleAdobeInspired();
 
-  /// <summary>
-  /// docking 設定
-  /// </summary>
-  void SetDocking(bool isDocking);
+    /// <summary>
+    /// docking 設定
+    /// </summary>
+    void SetDocking(bool isDocking);
 
-  /// <summary>
-  /// DockSpaceViewPort の設定
-  /// </summary>
-  void SetDockSpaceViewPort();
+    /// <summary>
+    /// DockSpaceViewPort の設定
+    /// </summary>
+    void SetDockSpaceViewPort();
 
-private: // メンバ変数
+  private: // メンバ変数
 
-  // WinApp クラスのインスタンス
-  WinApp* m_winApp_ = nullptr;
+    // WinApp クラスのインスタンス
+    WinApp* m_winApp_ = nullptr;
 
-  // DX12Basic クラスのインスタンス
-  DX12Basic* m_dx12_ = nullptr;
+    // DX12Basic クラスのインスタンス
+    DX12Basic* m_dx12_ = nullptr;
 
-  bool isDocking_ = false;
+    bool isDocking_ = false;
 
-  // フォント用の SRV インデックス（SrvManager で確保）
-  uint32_t fontSrvIndex_ = 0;
+    // フォント用の SRV インデックス（SrvManager で確保）
+    uint32_t fontSrvIndex_ = 0;
 
-};
+  };
 
 } // namespace Tako
 
