@@ -5,12 +5,17 @@
 #include "SrvManager.h"
 #include "TextureManager.h"
 #include "Mat4x4Func.h"
+#ifdef _DEBUG
+#include "ImGuiManager.h"
+#endif
 
 namespace Tako {
 
   void Decal::Initialize()
   {
     DX12Basic* dx12 = DecalBasic::GetInstance()->GetDX12Basic();
+
+    textureSrvIndex_ = TextureManager::GetInstance()->GetSRVIndex("white.dds");
 
     // DecalData 定数バッファの作成
     decalDataBuffer_ = dx12->MakeBufferResource(sizeof(DecalDataGPU));
@@ -72,6 +77,67 @@ namespace Tako {
   {
     useTexture_ = false;
     textureSrvIndex_ = 0;
+  }
+
+  void Decal::DrawImGui()
+  {
+#ifdef _DEBUG
+    // === Transform ===
+    ImGui::Text("Transform");
+    ImGui::DragFloat3("Translate", &transform_.translate.x, 0.1f);
+
+    // 回転角度（度数表示）
+    Vector3 rotateDeg = {
+      transform_.rotate.x * 57.2958f,
+      transform_.rotate.y * 57.2958f,
+      transform_.rotate.z * 57.2958f
+    };
+    if (ImGui::DragFloat3("Rotate (deg)", &rotateDeg.x, 1.0f, -360.0f, 360.0f)) {
+      transform_.rotate = {
+        rotateDeg.x * 0.0174533f,
+        rotateDeg.y * 0.0174533f,
+        rotateDeg.z * 0.0174533f
+      };
+    }
+
+    ImGui::DragFloat3("Scale", &transform_.scale.x, 0.1f, 0.01f, 100.0f);
+
+    ImGui::Separator();
+
+    // === Rendering ===
+    ImGui::Text("Rendering");
+    ImGui::ColorEdit4("Color", &color_.x);
+    ImGui::Checkbox("Visible", &isVisible_);
+
+    ImGui::Separator();
+
+    // === Shape ===
+    ImGui::Text("Shape");
+    const char* shapeNames[] = { "Circle", "Fan", "Rectangle" };
+    int currentShape = static_cast<int>(shape_);
+    if (ImGui::Combo("Shape", &currentShape, shapeNames, IM_ARRAYSIZE(shapeNames))) {
+      shape_ = static_cast<DecalShape>(currentShape);
+    }
+
+    // 扇形パラメータ（Fan 選択時のみ表示）
+    if (shape_ == DecalShape::Fan) {
+      float halfAngleDeg = fanHalfAngle_ * 57.2958f;
+      if (ImGui::DragFloat("Fan Half Angle (deg)", &halfAngleDeg, 1.0f, 0.0f, 180.0f)) {
+        fanHalfAngle_ = halfAngleDeg * 0.0174533f;
+      }
+    }
+
+    ImGui::DragFloat("Edge Softness", &edgeSoftness_, 0.01f, 0.0f, 1.0f);
+
+    ImGui::Separator();
+
+    // === Texture ===
+    ImGui::Text("Texture");
+    ImGui::Checkbox("Use Texture", &useTexture_);
+    if (useTexture_) {
+      ImGui::Text("SRV Index: %u", textureSrvIndex_);
+    }
+#endif // _DEBUG
   }
 
 } // namespace Tako
