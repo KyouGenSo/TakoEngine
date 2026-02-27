@@ -79,6 +79,9 @@
     <Filter Include="3d\SkyBox">
       <UniqueIdentifier>{7c6d8bc5-1c55-4022-97c9-a2419ba7e962}</UniqueIdentifier>
     </Filter>
+    <Filter Include="3d\Decal">
+      <UniqueIdentifier>{58048fd3-d745-46e3-ae80-74d9ec044fb2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\func\mathFunc\Mat4x4Func.cpp">
@@ -284,6 +287,12 @@
     </ClCompile>
     <ClCompile Include="engine\io\GlobalVariables.cpp">
       <Filter>io</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3d\Decal\Decal.cpp">
+      <Filter>3d\Decal</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3d\Decal\DecalBasic.cpp">
+      <Filter>3d\Decal</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -538,6 +547,12 @@
     </ClInclude>
     <ClInclude Include="engine\io\GlobalVariables.h">
       <Filter>io</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\Decal\Decal.h">
+      <Filter>3d\Decal</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\Decal\DecalBasic.h">
+      <Filter>3d\Decal</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

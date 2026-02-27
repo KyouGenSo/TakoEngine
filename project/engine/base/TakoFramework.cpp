@@ -11,6 +11,7 @@
 #include "TransitionManager.h"
 #include "FrameTimer.h"
 #include "ShadowRenderer.h"
+#include "DecalBasic.h"
 #include "Input.h"
 
 #ifdef _DEBUG
@@ -87,6 +88,10 @@ namespace Tako {
 
     PostEffectManager::GetInstance()->SetCamera(defaultCamera_.get());
 
+    // DecalBasic の初期化（PostEffectManager の後、深度SRVを作成するため）
+    DecalBasic::GetInstance()->Initialize(dx12_.get());
+    DecalBasic::GetInstance()->SetCamera(defaultCamera_.get());
+
     TransitionManager::GetInstance()->Initialize();
 
 #pragma endregion
@@ -110,6 +115,9 @@ namespace Tako {
 
     // PostEffectManager
     PostEffectManager::GetInstance()->Finalize();
+
+    // DecalBasic
+    DecalBasic::GetInstance()->Finalize();
 
     // Draw2D
     Draw2D::GetInstance()->Finalize();
@@ -250,6 +258,9 @@ namespace Tako {
 
     // レンダーテクスチャの再作成（PostEffect 用）
     PostEffectManager::GetInstance()->RecreateRenderTexture();
+
+    // デカール深度 SRV の再作成
+    DecalBasic::GetInstance()->OnResize();
 
     // カメラのアスペクト比を更新
     defaultCamera_->UpdateProjectionMatrix();

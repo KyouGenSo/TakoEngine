@@ -1,0 +1,77 @@
+#include "Decal.h"
+#include "DecalBasic.h"
+#include "DX12Basic.h"
+#include "Camera.h"
+#include "SrvManager.h"
+#include "TextureManager.h"
+#include "Mat4x4Func.h"
+
+namespace Tako {
+
+  void Decal::Initialize()
+  {
+    DX12Basic* dx12 = DecalBasic::GetInstance()->GetDX12Basic();
+
+    // DecalData 定数バッファの作成
+    decalDataBuffer_ = dx12->MakeBufferResource(sizeof(DecalDataGPU));
+    decalDataBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&decalDataMapped_));
+  }
+
+  void Decal::Update()
+  {
+    if (!isVisible_) return;
+
+    // ワールド行列を構築
+    Matrix4x4 worldMatrix = Mat4x4::MakeAffine(transform_.scale, transform_.rotate, transform_.translate);
+
+    // 逆ワールド行列を計算
+    Matrix4x4 worldInverse = Mat4x4::Inverse(worldMatrix);
+
+    // WVP 行列を計算
+    Matrix4x4 viewProjMatrix = DecalBasic::GetInstance()->GetViewProjectionMatrix();
+    Matrix4x4 wvpMatrix = worldMatrix * viewProjMatrix;
+
+    // 定数バッファに書き込み
+    decalDataMapped_->decalWorldInverse = worldInverse;
+    decalDataMapped_->decalWVP = wvpMatrix;
+    decalDataMapped_->color = color_;
+    decalDataMapped_->shapeType = static_cast<int32_t>(shape_);
+    decalDataMapped_->fanHalfAngle = fanHalfAngle_;
+    decalDataMapped_->edgeSoftness = edgeSoftness_;
+    decalDataMapped_->useTexture = useTexture_ ? 1 : 0;
+  }
+
+  void Decal::Draw()
+  {
+    if (!isVisible_) return;
+
+    DX12Basic* dx12 = DecalBasic::GetInstance()->GetDX12Basic();
+
+    // DecalData CBV をバインド（RP#1）
+    dx12->GetCommandList()->SetGraphicsRootConstantBufferView(
+      1,
+      decalDataBuffer_->GetGPUVirtualAddress()
+    );
+
+    // テクスチャモード時: デカールテクスチャ SRV をバインド（RP#3）
+    if (useTexture_ && textureSrvIndex_ != 0) {
+      SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(3, textureSrvIndex_);
+    }
+
+    // インデックス付きドローコール（36 インデックス = 12 三角形のキューブ）
+    dx12->GetCommandList()->DrawIndexedInstanced(36, 1, 0, 0, 0);
+  }
+
+  void Decal::SetTexture(const std::string& textureName)
+  {
+    useTexture_ = true;
+    textureSrvIndex_ = TextureManager::GetInstance()->GetSRVIndex(textureName);
+  }
+
+  void Decal::ClearTexture()
+  {
+    useTexture_ = false;
+    textureSrvIndex_ = 0;
+  }
+
+} // namespace Tako
