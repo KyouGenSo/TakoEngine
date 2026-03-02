@@ -1,4 +1,5 @@
-#include "DecalBasic.h"
+#include "DecalManager.h"
+#include "Decal.h"
 #include "DX12Basic.h"
 #include "Camera.h"
 #include "SrvManager.h"
@@ -12,17 +13,17 @@
 
 namespace Tako {
 
-  std::unique_ptr<DecalBasic> DecalBasic::instance_ = nullptr;
+  std::unique_ptr<DecalManager> DecalManager::instance_ = nullptr;
 
-  DecalBasic* DecalBasic::GetInstance()
+  DecalManager* DecalManager::GetInstance()
   {
     if (!instance_) {
-      instance_ = std::unique_ptr<DecalBasic>(new DecalBasic());
+      instance_ = std::unique_ptr<DecalManager>(new DecalManager());
     }
     return instance_.get();
   }
 
-  void DecalBasic::Initialize(DX12Basic* dx12)
+  void DecalManager::Initialize(DX12Basic* dx12)
   {
     m_dx12_ = dx12;
 
@@ -32,7 +33,7 @@ namespace Tako {
     CreatePSO();
   }
 
-  void DecalBasic::Finalize()
+  void DecalManager::Finalize()
   {
     // 深度 SRV を解放
     if (depthSrvIndex_ != 0) {
@@ -43,13 +44,13 @@ namespace Tako {
     instance_.reset();
   }
 
-  void DecalBasic::OnResize()
+  void DecalManager::OnResize()
   {
     // ウィンドウサイズが変更されたら深度 SRV を再作成
     CreateDepthSRV();
   }
 
-  void DecalBasic::BeginDraw()
+  void DecalManager::BeginDraw()
   {
     // ビュープロジェクション行列を更新
     viewProjectionMatrix_ = camera_->GetViewProjectionMatrix();
@@ -88,7 +89,7 @@ namespace Tako {
     SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, depthSrvIndex_);
   }
 
-  void DecalBasic::EndDraw()
+  void DecalManager::EndDraw()
   {
     // 深度バッファを DEPTH_WRITE に復帰
     m_dx12_->TransitionResourceWithTracking(
@@ -102,8 +103,58 @@ namespace Tako {
     m_dx12_->GetCommandList()->OMSetRenderTargets(1, &rtvHandle, false, &dsvHandle);
   }
 
+  void DecalManager::AddDecal(Decal* decal)
+  {
+    if (decal) {
+      decals_.push_back(decal);
+    }
+  }
+
+  void DecalManager::RemoveDecal(Decal* decal)
+  {
+    decals_.remove(decal);
+  }
+
+  void DecalManager::UpdateAll()
+  {
+    for (Decal* decal : decals_) {
+      if (decal) {
+        decal->Update();
+      }
+    }
+  }
+
+  void DecalManager::DrawAll()
+  {
+    if (decals_.empty()) return;
+
+    BeginDraw();
+    for (Decal* decal : decals_) {
+      if (decal) {
+        decal->Draw();
+      }
+    }
+    EndDraw();
+  }
+
+  void DecalManager::DrawAllDebug()
+  {
+    if (decals_.empty()) return;
+
+    for (Decal* decal : decals_) {
+      if (decal) {
+        decal->DrawDebug();
+      }
+    }
+  }
+
+  void DecalManager::ClearDecals()
+  {
+    decals_.clear();
+  }
+
   // ルートシグネチャの作成
-  void DecalBasic::CreateRootSignature()
+  void DecalManager::CreateRootSignature()
   {
     HRESULT hr;
 
@@ -200,7 +251,7 @@ namespace Tako {
   }
 
   // パイプラインステートの生成
-  void DecalBasic::CreatePSO()
+  void DecalManager::CreatePSO()
   {
     HRESULT hr;
 
@@ -267,7 +318,7 @@ namespace Tako {
   }
 
   // 単位キューブメッシュの作成（[-0.5, 0.5] 範囲の 8 頂点 / 36 インデックス）
-  void DecalBasic::CreateCubeMesh()
+  void DecalManager::CreateCubeMesh()
   {
     // 8 頂点（float4: x, y, z, w）
     struct CubeVertex {
@@ -325,14 +376,14 @@ namespace Tako {
   }
 
   // ViewData 定数バッファの作成
-  void DecalBasic::CreateViewDataBuffer()
+  void DecalManager::CreateViewDataBuffer()
   {
     viewDataBuffer_ = m_dx12_->MakeBufferResource(sizeof(ViewDataGPU));
     viewDataBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&viewDataMapped_));
   }
 
   // 深度 SRV の作成
-  void DecalBasic::CreateDepthSRV()
+  void DecalManager::CreateDepthSRV()
   {
     // 前回の SRV があれば解放
     if (depthSrvIndex_ != 0) {

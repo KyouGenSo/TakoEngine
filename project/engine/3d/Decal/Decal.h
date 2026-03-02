@@ -25,6 +25,8 @@ namespace Tako {
   /// </summary>
   class Decal {
   public:
+    ~Decal();
+
     /// <summary>
     /// 初期化
     /// </summary>

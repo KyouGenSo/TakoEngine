@@ -1,10 +1,11 @@
 #include "Decal.h"
-#include "DecalBasic.h"
+#include "DecalManager.h"
 #include "DX12Basic.h"
 #include "Camera.h"
 #include "SrvManager.h"
 #include "TextureManager.h"
 #include "Mat4x4Func.h"
+
 #ifdef _DEBUG
 #include "ImGuiManager.h"
 #include "Draw2D.h"
@@ -13,15 +14,26 @@
 
 namespace Tako {
 
+  Decal::~Decal()
+  {
+    // アプリ終了時の静的破棄順序でDecalManagerが先に消えている可能性に備える
+    if (DecalManager::GetInstance()) {
+      DecalManager::GetInstance()->RemoveDecal(this);
+    }
+  }
+
   void Decal::Initialize()
   {
-    DX12Basic* dx12 = DecalBasic::GetInstance()->GetDX12Basic();
+    DX12Basic* dx12 = DecalManager::GetInstance()->GetDX12Basic();
 
     textureSrvIndex_ = TextureManager::GetInstance()->GetSRVIndex("white.dds");
 
     // DecalData 定数バッファの作成
     decalDataBuffer_ = dx12->MakeBufferResource(sizeof(DecalDataGPU));
     decalDataBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&decalDataMapped_));
+
+    // DecalManager に自動登録
+    DecalManager::GetInstance()->AddDecal(this);
   }
 
   void Decal::Update()
@@ -35,7 +47,7 @@ namespace Tako {
     Matrix4x4 worldInverse = Mat4x4::Inverse(worldMatrix);
 
     // WVP 行列を計算
-    Matrix4x4 viewProjMatrix = DecalBasic::GetInstance()->GetViewProjectionMatrix();
+    Matrix4x4 viewProjMatrix = DecalManager::GetInstance()->GetViewProjectionMatrix();
     Matrix4x4 wvpMatrix = worldMatrix * viewProjMatrix;
 
     // 定数バッファに書き込み
@@ -52,7 +64,7 @@ namespace Tako {
   {
     if (!isVisible_) return;
 
-    DX12Basic* dx12 = DecalBasic::GetInstance()->GetDX12Basic();
+    DX12Basic* dx12 = DecalManager::GetInstance()->GetDX12Basic();
 
     // DecalData CBV をバインド（RP#1）
     dx12->GetCommandList()->SetGraphicsRootConstantBufferView(

@@ -2,6 +2,7 @@
 #include <d3d12.h>
 #include <wrl.h>
 #include <memory>
+#include <list>
 
 #include "Camera.h"
 #include "Matrix4x4.h"
@@ -10,30 +11,31 @@ namespace Tako {
 
   class DX12Basic;
   class Camera;
+  class Decal;
 
   /// <summary>
   /// Projective Decal 描画の基盤システムクラス
   /// シングルトンパターンで実装
   /// PSO / RootSignature / 単位キューブメッシュ / 深度SRV を管理
   /// </summary>
-  class DecalBasic {
+  class DecalManager {
   private: // シングルトン設定
 
-    static std::unique_ptr<DecalBasic> instance_;
+    static std::unique_ptr<DecalManager> instance_;
 
-    DecalBasic() = default;
-    ~DecalBasic() = default;
-    DecalBasic(DecalBasic&) = delete;
-    DecalBasic& operator=(DecalBasic&) = delete;
+    DecalManager() = default;
+    ~DecalManager() = default;
+    DecalManager(DecalManager&) = delete;
+    DecalManager& operator=(DecalManager&) = delete;
 
-    friend struct std::default_delete<DecalBasic>;
+    friend struct std::default_delete<DecalManager>;
 
   public: // メンバー関数
 
     /// <summary>
     /// インスタンスの取得
     /// </summary>
-    static DecalBasic* GetInstance();
+    static DecalManager* GetInstance();
 
     /// <summary>
     /// 初期化
@@ -62,6 +64,36 @@ namespace Tako {
     /// 深度バッファを DEPTH_WRITE に復帰、RTV + DSV を再バインド
     /// </summary>
     void EndDraw();
+
+    /// <summary>
+    /// デカールを登録
+    /// </summary>
+    void AddDecal(Decal* decal);
+
+    /// <summary>
+    /// デカールの登録を解除
+    /// </summary>
+    void RemoveDecal(Decal* decal);
+
+    /// <summary>
+    /// 登録済み全デカールの更新
+    /// </summary>
+    void UpdateAll();
+
+    /// <summary>
+    /// 登録済み全デカールの描画（BeginDraw/EndDraw を内部で呼び出す）
+    /// </summary>
+    void DrawAll();
+
+    /// <summary>
+    /// 登録済み全デカールのデバッグ描画
+    /// </summary>
+    void DrawAllDebug();
+
+    /// <summary>
+    /// 全デカールの登録を解除（シーン切替時）
+    /// </summary>
+    void ClearDecals();
 
     // ===== Getters =====
     /// <summary>
@@ -156,6 +188,8 @@ namespace Tako {
 
     // 深度 SRV
     uint32_t depthSrvIndex_ = 0; ///< 深度テクスチャの SRV インデックス
+
+    std::list<Decal*> decals_; ///< 登録済みデカールリスト
   };
 
 } // namespace Tako
