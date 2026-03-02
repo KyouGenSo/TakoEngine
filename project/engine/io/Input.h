@@ -150,11 +150,6 @@ namespace Tako {
     bool IsConnect() const;
 
     /// <summary>
-    /// 互換維持用（no-op）。prevButtons_ は Update() 内部で保存される
-    /// </summary>
-    void RefreshGamePadState();
-
-    /// <summary>
     /// ゲームパッドの押下状態を取得
     /// </summary>
     /// <param name="button">ボタンビットフラグ（GamepadButton 定数を使用）</param>

@@ -21,6 +21,7 @@
 
 #include <algorithm>
 #include <iomanip>
+#include <numbers>
 #include <sstream>
 #include <set>
 #include <map>
@@ -367,9 +368,9 @@ namespace Tako {
         ImGui::DragFloat3("Camera Position", &camPos.x, 0.1f);
         ImGui::DragFloat3("Camera Rotation", &camRot.x, 0.01f);
 
-        float fov = camera->GetFovY() * 180.0f / 3.14159265f;
+        float fov = camera->GetFovY() * 180.0f / std::numbers::pi_v<float>;
         if (ImGui::DragFloat("Field of View", &fov, 0.1f, 10.0f, 120.0f)) {
-          camera->SetFovY(fov * 3.14159265f / 180.0f);
+          camera->SetFovY(fov * std::numbers::pi_v<float> / 180.0f);
         }
       }
     }

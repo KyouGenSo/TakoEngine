@@ -1,4 +1,5 @@
 #pragma once
+#include <numbers>
 #include <random>
 #include <thread>
 #include "Vector2.h"
@@ -128,7 +129,7 @@ namespace Tako {
     static thread_local bool initialized_;
 
     // π定数
-    static constexpr float kPi = 3.14159265358979323846f;
+    static constexpr float kPi = std::numbers::pi_v<float>;
     static constexpr float k2Pi = kPi * 2.0f;
   };
 

@@ -89,6 +89,12 @@ namespace Tako {
     /// <param name="height">新しいウィンドウ高さ</param>
     void OnWindowResize(uint32_t width, uint32_t height);
 
+  private:
+    /// <summary>
+    /// エンジンリソースの読み込み
+    /// </summary>
+    void LoadResources();
+
   protected: // メンバ変数
     D3DResourceLeakChecker d3dResourceLeakChecker;  ///< リソースリークチェッカー（デバッグビルドでメモリリーク検出）
 
@@ -103,6 +109,8 @@ namespace Tako {
     std::unique_ptr<Camera> defaultCamera_;  ///< デフォルトカメラ
 
     std::unique_ptr<AbstractSceneFactory> sceneFactory_;  ///< シーンファクトリー（シーン生成用）
+
+    uint32_t spriteBasicOnresizeId_ = 0;
 
     bool endFlag_ = false;  ///< アプリケーション終了フラグ
 

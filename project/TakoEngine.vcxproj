@@ -120,7 +120,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="engine\3d\Decal\Decal.cpp" />
-    <ClCompile Include="engine\3d\Decal\DecalBasic.cpp" />
+    <ClCompile Include="engine\3d\Decal\DecalManager.cpp" />
     <ClCompile Include="engine\3d\Model\BoneTracker.cpp" />
     <ClCompile Include="engine\3d\Object\InstancedObject3d.cpp" />
     <ClCompile Include="engine\3d\Shadow\ShadowMap.cpp" />
@@ -198,7 +198,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\3d\Decal\Decal.h" />
-    <ClInclude Include="engine\3d\Decal\DecalBasic.h" />
+    <ClInclude Include="engine\3d\Decal\DecalManager.h" />
     <ClInclude Include="engine\3d\Model\BoneTracker.h" />
     <ClInclude Include="engine\3d\Object\InstancedObject3d.h" />
     <ClInclude Include="engine\3d\Shadow\ShadowMap.h" />

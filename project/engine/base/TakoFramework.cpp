@@ -1,4 +1,6 @@
 #include "TakoFramework.h"
+
+#include "Audio.h"
 #include "SrvManager.h"
 #include "TextureManager.h"
 #include "SceneManager.h"
@@ -11,7 +13,7 @@
 #include "TransitionManager.h"
 #include "FrameTimer.h"
 #include "ShadowRenderer.h"
-#include "DecalBasic.h"
+#include "DecalManager.h"
 #include "Input.h"
 
 #ifdef _DEBUG
@@ -55,7 +57,12 @@ namespace Tako {
     DebugCamera::GetInstance()->Initialize();
 #endif
 
+    Input::GetInstance()->Initialize(winApp_);
+
+    Audio::GetInstance()->Initialize("resources/Sound/");
+
     TextureManager::GetInstance()->Initialize(dx12_.get(), "resources/Texture/");
+    LoadResources();
 
     ModelManager::GetInstance()->Initialize(dx12_.get());
 
@@ -88,11 +95,17 @@ namespace Tako {
 
     PostEffectManager::GetInstance()->SetCamera(defaultCamera_.get());
 
-    // DecalBasic の初期化（PostEffectManager の後、深度SRVを作成するため）
-    DecalBasic::GetInstance()->Initialize(dx12_.get());
-    DecalBasic::GetInstance()->SetCamera(defaultCamera_.get());
+    // DecalManager の初期化（PostEffectManager の後、深度SRVを作成するため）
+    DecalManager::GetInstance()->Initialize(dx12_.get());
+    DecalManager::GetInstance()->SetCamera(defaultCamera_.get());
 
     TransitionManager::GetInstance()->Initialize();
+
+    // SpriteBasic のリサイズコールバック関数登録
+    spriteBasicOnresizeId_ = winApp_->RegisterOnResizeFunc(std::bind(&SpriteBasic::OnResize, SpriteBasic::GetInstance(), std::placeholders::_1));
+
+    // GPU パーティクルの初期化
+    GPUParticle::GetInstance()->Initialize(dx12_.get(), defaultCamera_.get());
 
 #pragma endregion
 
@@ -109,6 +122,11 @@ namespace Tako {
     // シーンマネージャーの終了処理（最初に実行）
     SceneManager::GetInstance()->Finalize();
 
+    winApp_->UnregisterOnResizeFunc(spriteBasicOnresizeId_);
+
+    // GPU パーティクルの解放
+    GPUParticle::GetInstance()->Finalize();
+
     // Initialize の逆順で終了処理を実行
     // TransitionManager
     TransitionManager::GetInstance()->Finalize();
@@ -116,8 +134,8 @@ namespace Tako {
     // PostEffectManager
     PostEffectManager::GetInstance()->Finalize();
 
-    // DecalBasic
-    DecalBasic::GetInstance()->Finalize();
+    // DecalManager
+    DecalManager::GetInstance()->Finalize();
 
     // Draw2D
     Draw2D::GetInstance()->Finalize();
@@ -151,6 +169,13 @@ namespace Tako {
     // SRV マネージャー
     SrvManager::GetInstance()->Finalize();
 
+    // Audio の解放
+    Audio::GetInstance()->Finalize();
+
+    // 入力クラスの解放
+    Input::GetInstance()->SetVibration(0.0f, 0.0f, 0.0f);
+    Input::GetInstance()->Finalize();
+
 #ifdef _DEBUG
     // DebugUIManager の終了処理
     DebugUIManager::GetInstance()->Finalize();
@@ -179,11 +204,26 @@ namespace Tako {
       return;
     }
 
+    // カメラの更新
+    defaultCamera_->Update();
+
+    // GPU パーティクルの更新
+    GPUParticle::GetInstance()->Update();
+
     // フレームタイマーの更新
     FrameTimer::GetInstance()->Update();
 
+    // 入力情報の更新
+    Input::GetInstance()->Update();
+
+    //　サウンドの更新
+    Audio::GetInstance()->Update();
+
     // シーンマネージャーの更新
     SceneManager::GetInstance()->Update();
+
+    // デコールの更新
+    DecalManager::GetInstance()->UpdateAll();
 
     // 一時エフェクトの更新
     PostEffectManager::GetInstance()->Update(FrameTimer::GetInstance()->GetDeltaTime());
@@ -216,10 +256,81 @@ namespace Tako {
 
   void TakoFramework::Draw()
   {
+    /// ============================================= ///
+    /// ------------------シーン描画-------------------///
+    /// ============================================= ///
+
+    //ポストエフェクト適用対象のレンダーテクスチャを描画先に設定
+    dx12_->SetEffectRenderTexture();
+
+    // テクスチャ用の srv ヒープの設定
+    SrvManager::GetInstance()->BeginDraw();
+
+    SceneManager::GetInstance()->Draw();
+
+    DecalManager::GetInstance()->DrawAll();
+
 #ifdef _DEBUG
+    DecalManager::GetInstance()->DrawAllDebug();
+#endif
+
+    GPUParticle::GetInstance()->Draw();
+
+    Draw2D::GetInstance()->Draw();
+
+    /// ===================================================== ///
+    /// ------------------ポストエフェクト描画-------------------///
+    /// ===================================================== ///
+
+    // ポストエフェクトの描画
+    PostEffectManager::GetInstance()->Draw();
+
+    /// ===================================================== ///
+    /// ------------ポストエフェクト非適用対象の描画---------------///
+    /// ===================================================== ///
+    // ポストエフェクト非適用対象のレンダーテクスチャを描画先に設定
+    dx12_->SetNonEffectRenderTexture();
+
+    // シーンの描画
+    SceneManager::GetInstance()->DrawWithoutEffect();
+
+    TransitionManager::GetInstance()->Draw();
+
+    Draw2D::GetInstance()->Reset();
+
+    /// ============================================= ///
+    /// ---------最終結果をスワップチェーンに描画---------///
+    /// ============================================= ///
+    bool isDrawToSwapChain = true;
+
+#ifdef _DEBUG
+    isDrawToSwapChain = !DebugUIManager::GetInstance()->IsWindowVisible("GameViewport");
+#endif
+
+    PostEffectManager::GetInstance()->DrawFinalResult(isDrawToSwapChain);
+
+
+    /// ========================================= ///
+    ///-------------------ImGui-------------------///
+    /// ========================================= ///
+#ifdef _DEBUG
+
+    imguiManager_->Begin();
+
     // デバッグ UI の描画
     DebugUIManager::GetInstance()->Draw();
+
+    Draw2D::GetInstance()->ImGui();
+
+    imguiManager_->End();
+
+    //imgui の描画
+    imguiManager_->Draw();
 #endif
+
+
+    // 描画後の処理
+    dx12_->EndDraw();
   }
 
   void TakoFramework::Run()
@@ -260,7 +371,7 @@ namespace Tako {
     PostEffectManager::GetInstance()->RecreateRenderTexture();
 
     // デカール深度 SRV の再作成
-    DecalBasic::GetInstance()->OnResize();
+    DecalManager::GetInstance()->OnResize();
 
     // カメラのアスペクト比を更新
     defaultCamera_->UpdateProjectionMatrix();
@@ -268,6 +379,15 @@ namespace Tako {
 #ifdef _DEBUG
     imguiManager_->OnWindowResize();
 #endif
+  }
+
+  void TakoFramework::LoadResources()
+  {
+    TextureManager* tm = TextureManager::GetInstance();
+    tm->LoadTexture("white.dds");
+    tm->LoadTexture("black.dds");
+    tm->LoadTexture("circle.dds");
+    tm->LoadTexture("my_skybox.dds");
   }
 
 #ifdef _DEBUG

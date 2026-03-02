@@ -1,6 +1,7 @@
 #include "Draw2D.h"
 #include "OBB.h"
 #include <cassert>
+#include <numbers>
 
 #ifdef _DEBUG
 #include "DebugUIManager.h"
@@ -557,12 +558,12 @@ namespace Tako {
   void Draw2D::CalcSphereVertexData()
   {
     const uint32_t kSubdivision = 4; // 1分割数
-    const float kLonEvery = 2.0f * 3.14159265359f / static_cast<float>(kSubdivision); // 経度の1分割の角度 phi
-    const float kLatEvery = 3.14159265359f / static_cast<float>(kSubdivision); // 緯度の1分割の角度 theta
+    const float kLonEvery = 2.0f * std::numbers::pi_v<float> / static_cast<float>(kSubdivision); // 経度の1分割の角度 phi
+    const float kLatEvery = std::numbers::pi_v<float> / static_cast<float>(kSubdivision); // 緯度の1分割の角度 theta
 
     // 緯度方向のループ
     for (uint32_t latIndex = 0; latIndex < kSubdivision; latIndex++) {
-      float lat = -3.14159265359f / 2.0f + kLatEvery * static_cast<float>(latIndex);
+      float lat = -std::numbers::pi_v<float> / 2.0f + kLatEvery * static_cast<float>(latIndex);
       // 経度方向のループ
       for (uint32_t lonIndex = 0; lonIndex < kSubdivision; lonIndex++) {
         float lon = kLonEvery * static_cast<float>(lonIndex);

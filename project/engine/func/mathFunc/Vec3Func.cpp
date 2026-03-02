@@ -1,7 +1,10 @@
 #include "Vec3Func.h"
 #include<math.h>
 
-namespace Tako {
+#include <numbers>
+
+namespace Tako
+{
   namespace Vec3 {
     Vector3 Add(const Vector3& v1, const Vector3& v2) {
       return Vector3(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z);
@@ -75,7 +78,7 @@ namespace Tako {
     float LerpShortAngle(float thetaA, float thetaB, float t)
     {
       float diff = thetaB - thetaA;
-      float pi = 3.14159265358979323846f;
+      float pi = std::numbers::pi_v<float>;
 
       // 2πから-2πに補正
       if (diff > pi * 2) {

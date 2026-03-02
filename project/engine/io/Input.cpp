@@ -181,11 +181,6 @@ namespace Tako {
     return isConnected_;
   }
 
-  void Input::RefreshGamePadState()
-  {
-    // prevButtons_ は Update() 内部で保存されるため no-op
-  }
-
   bool Input::PushButton(WORD button) const
   {
     return (state_.Gamepad.wButtons & button) != 0;

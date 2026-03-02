@@ -291,7 +291,7 @@
     <ClCompile Include="engine\3d\Decal\Decal.cpp">
       <Filter>3d\Decal</Filter>
     </ClCompile>
-    <ClCompile Include="engine\3d\Decal\DecalBasic.cpp">
+    <ClCompile Include="engine\3d\Decal\DecalManager.cpp">
       <Filter>3d\Decal</Filter>
     </ClCompile>
   </ItemGroup>
@@ -551,7 +551,7 @@
     <ClInclude Include="engine\3d\Decal\Decal.h">
       <Filter>3d\Decal</Filter>
     </ClInclude>
-    <ClInclude Include="engine\3d\Decal\DecalBasic.h">
+    <ClInclude Include="engine\3d\Decal\DecalManager.h">
       <Filter>3d\Decal</Filter>
     </ClInclude>
   </ItemGroup>
