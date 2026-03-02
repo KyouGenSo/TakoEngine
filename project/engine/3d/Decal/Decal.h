@@ -24,6 +24,8 @@ namespace Tako {
   /// Projective Decal の位置、形状、カラーなどを管理
   /// </summary>
   class Decal {
+    friend class DecalManager;
+
   public:
     ~Decal();
 
@@ -31,26 +33,6 @@ namespace Tako {
     /// 初期化
     /// </summary>
     void Initialize();
-
-    /// <summary>
-    /// 更新（定数バッファの再計算）
-    /// </summary>
-    void Update();
-
-    /// <summary>
-    /// 描画
-    /// </summary>
-    void Draw();
-
-    /// <summary>
-    /// ImGui でパラメータをデバッグ表示・編集
-    /// </summary>
-    void DrawImGui();
-
-    /// <summary>
-    /// デバッグ描画（Draw2D による投影ボリュームのワイヤーフレーム表示）
-    /// </summary>
-    void DrawDebug();
 
     /// <summary>
     /// プロシージャルモードに戻す
@@ -119,6 +101,27 @@ namespace Tako {
     void SetTexture(const std::string& textureName);
 
   private:
+    // --- DecalManager からのみ呼び出されるメソッド ---
+
+    /// <summary>
+    /// 更新（定数バッファの再計算）
+    /// </summary>
+    void Update();
+
+    /// <summary>
+    /// 描画
+    /// </summary>
+    void Draw();
+
+    /// <summary>
+    /// ImGui でパラメータをデバッグ表示・編集
+    /// </summary>
+    void DrawImGui();
+
+    /// <summary>
+    /// デバッグ描画（Draw2D による投影ボリュームのワイヤーフレーム表示）
+    /// </summary>
+    void DrawDebug();
 
     /// <summary>
     /// GPU に送る DecalData 構造体
