@@ -7,6 +7,8 @@
 #include "Mat4x4Func.h"
 #ifdef _DEBUG
 #include "ImGuiManager.h"
+#include "Draw2D.h"
+#include "OBB.h"
 #endif
 
 namespace Tako {
@@ -108,6 +110,7 @@ namespace Tako {
     ImGui::Text("Rendering");
     ImGui::ColorEdit4("Color", &color_.x);
     ImGui::Checkbox("Visible", &isVisible_);
+    ImGui::Checkbox("DebugViewVisible", &isDebugViewVisible_);
 
     ImGui::Separator();
 
@@ -138,6 +141,24 @@ namespace Tako {
       ImGui::Text("SRV Index: %u", textureSrvIndex_);
     }
 #endif // _DEBUG
+  }
+
+  void Decal::DrawDebug()
+  {
+#ifdef _DEBUG
+    if (!isDebugViewVisible_) return;
+
+    // OBB を構築
+    OBB obb;
+    obb.center = transform_.translate;
+    obb.halfExtents = { transform_.scale.x * 0.5f, transform_.scale.y * 0.5f, transform_.scale.z * 0.5f };
+    obb.orientation = Mat4x4::MakeRotateXYZ(transform_.rotate);
+
+    // アルファ 1.0 で視認性確保
+    Vector4 debugColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+
+    Draw2D::GetInstance()->DrawOBB(obb, debugColor);
+#endif
   }
 
 } // namespace Tako

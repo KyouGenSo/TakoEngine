@@ -40,6 +40,21 @@ namespace Tako {
     /// </summary>
     void Draw();
 
+    /// <summary>
+    /// ImGui でパラメータをデバッグ表示・編集
+    /// </summary>
+    void DrawImGui();
+
+    /// <summary>
+    /// デバッグ描画（Draw2D による投影ボリュームのワイヤーフレーム表示）
+    /// </summary>
+    void DrawDebug();
+
+    /// <summary>
+    /// プロシージャルモードに戻す
+    /// </summary>
+    void ClearTexture();
+
     // ===== Getters =====
     const Transform& GetTransform() const { return transform_; }
     const Vector4& GetColor() const { return color_; }
@@ -91,20 +106,15 @@ namespace Tako {
     void SetVisible(bool visible) { isVisible_ = visible; }
 
     /// <summary>
+    /// デバッグ描画の表示/非表示を設定
+    /// </summary>
+    void SetDebugViewVisible(bool visible) { isDebugViewVisible_ = visible; }
+
+    /// <summary>
     /// テクスチャモードに切り替え（TextureManager で事前ロード済みのテクスチャを使用）
     /// </summary>
     /// <param name="textureName">テクスチャ名</param>
     void SetTexture(const std::string& textureName);
-
-    /// <summary>
-    /// プロシージャルモードに戻す
-    /// </summary>
-    void ClearTexture();
-
-    /// <summary>
-    /// ImGui でパラメータをデバッグ表示・編集
-    /// </summary>
-    void DrawImGui();
 
   private:
 
@@ -136,6 +146,8 @@ namespace Tako {
     uint32_t textureSrvIndex_ = 0; ///< テクスチャの SRV インデックス
 
     bool isVisible_ = true; ///< 表示フラグ
+
+    bool isDebugViewVisible_ = false;
 
     // 定数バッファ
     Microsoft::WRL::ComPtr<ID3D12Resource> decalDataBuffer_; ///< DecalData 定数バッファリソース
