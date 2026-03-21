@@ -53,12 +53,14 @@ namespace Tako {
     CreateInitComputeRS();
     CreateEmitParticleComputeRS();
     CreateUpdateParticleComputeRS();
+    CreateIntegrateAllComputeRS();
 
     // PSO の生成
     CreatePSO();
     CreateComputeShaderPSO(initComputeRS_, initComputePSO_, L"InitParticle.CS.hlsl");
     CreateComputeShaderPSO(emitParticleRS_, emitParticlePSO_, L"EmitParticle.CS.hlsl");
     CreateComputeShaderPSO(updateParticleRS_, updateParticlePSO_, L"UpdateParticle.CS.hlsl");
+    CreateComputeShaderPSO(integrateAllRS_, integrateAllPSO_, L"IntegrateAll.CS.hlsl");
 
     // PerView データの生成
     CreatePerViewData();
@@ -77,6 +79,12 @@ namespace Tako {
 
     // FreeCounter リソースの生成
     CreateFreeListResource();
+
+    // フォースフィールドリソースの生成
+    CreateForceFieldResource();
+
+    // 物理パラメータリソースの生成
+    CreatePhysicsParamsResource();
   }
 
   void GPUParticle::Update()
@@ -91,6 +99,12 @@ namespace Tako {
     UpdatePerView();
 
     SyncEmitterData();
+
+    // 物理パラメータの更新
+    UpdatePhysicsParams();
+
+    // フォースフィールドデータの同期
+    SyncForceFieldData();
   }
 
   void GPUParticle::Draw()
@@ -163,28 +177,35 @@ namespace Tako {
     m_dx12_->SetUAVBarrier(freeListIndexResource_.Get());
     m_dx12_->SetUAVBarrier(freeListResource_.Get());
 
-    //--------------------------------------更新--------------------------------------//
+    //--------------------------------------IntegrateAll--------------------------------------//
 
     // ルートシグネチャの設定
-    commandList->SetComputeRootSignature(updateParticleRS_.Get());
+    commandList->SetComputeRootSignature(integrateAllRS_.Get());
 
     // パイプラインステートの設定
-    commandList->SetPipelineState(updateParticlePSO_.Get());
+    commandList->SetPipelineState(integrateAllPSO_.Get());
 
-    // ParticleData の UAV の設定
+    // ParticleData の UAV の設定 (u0)
     m_srvManager_->SetComputeRootDescriptorTable(0, particleUavIndex_);
 
-    //PerFrame の CBV の設定
-    commandList->SetComputeRootConstantBufferView(1, perFrameResource_->GetGPUVirtualAddress());
+    // FreeListIndex の UAV の設定 (u1)
+    m_srvManager_->SetComputeRootDescriptorTable(1, freeListIndexUavIndex_);
 
-    // FreeListIndex の UAV の設定
-    m_srvManager_->SetComputeRootDescriptorTable(2, freeListIndexUavIndex_);
+    // FreeList の UAV の設定 (u2)
+    m_srvManager_->SetComputeRootDescriptorTable(2, freeListUavIndex_);
 
-    // FreeList の UAV の設定
-    m_srvManager_->SetComputeRootDescriptorTable(3, freeListUavIndex_);
+    // ForceFields の SRV の設定 (t0)
+    m_srvManager_->SetComputeRootDescriptorTable(3, forceFieldSrvIndex_);
 
-    // ディスパッチ
-    commandList->Dispatch(1024, 1, 1);
+    // PerFrame の CBV の設定 (b0)
+    commandList->SetComputeRootConstantBufferView(4, perFrameResource_->GetGPUVirtualAddress());
+
+    // PhysicsParams の CBV の設定 (b1)
+    commandList->SetComputeRootConstantBufferView(5, physicsParamsResource_->GetGPUVirtualAddress());
+
+    // ディスパッチ（256スレッド/グループ × ceil(1M/256) = 3907グループ）
+    uint32_t integrateGroups = (kNumMaxParticle + 255) / 256;
+    commandList->Dispatch(integrateGroups, 1, 1);
 
     m_dx12_->SetUAVBarrier(particleResource_.Get());
 
@@ -872,6 +893,189 @@ namespace Tako {
     // FreeList の UAV を生成
     freeListUavIndex_ = m_srvManager_->Allocate();
     m_srvManager_->CreateUAV(freeListUavIndex_, freeListResource_.Get(), kNumMaxParticle, sizeof(uint32_t));
+  }
+
+  void GPUParticle::CreateIntegrateAllComputeRS()
+  {
+    HRESULT hr;
+    D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
+    descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+    // DescriptorRange: UAV
+    D3D12_DESCRIPTOR_RANGE rangeParticle[1] = {};
+    rangeParticle[0].BaseShaderRegister = 0; // u0
+    rangeParticle[0].NumDescriptors = 1;
+    rangeParticle[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+    rangeParticle[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+    D3D12_DESCRIPTOR_RANGE rangeFreeListIndex[1] = {};
+    rangeFreeListIndex[0].BaseShaderRegister = 1; // u1
+    rangeFreeListIndex[0].NumDescriptors = 1;
+    rangeFreeListIndex[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+    rangeFreeListIndex[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+    D3D12_DESCRIPTOR_RANGE rangeFreeList[1] = {};
+    rangeFreeList[0].BaseShaderRegister = 2; // u2
+    rangeFreeList[0].NumDescriptors = 1;
+    rangeFreeList[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+    rangeFreeList[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+    // DescriptorRange: SRV
+    D3D12_DESCRIPTOR_RANGE rangeForceFields[1] = {};
+    rangeForceFields[0].BaseShaderRegister = 0; // t0
+    rangeForceFields[0].NumDescriptors = 1;
+    rangeForceFields[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+    rangeForceFields[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+    // RootParameter: 3 UAV + 1 SRV + 2 CBV = 6
+    D3D12_ROOT_PARAMETER rootParameters[6] = {};
+
+    // [0] Particles UAV (u0)
+    rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    rootParameters[0].DescriptorTable.pDescriptorRanges = rangeParticle;
+    rootParameters[0].DescriptorTable.NumDescriptorRanges = 1;
+
+    // [1] FreeListIndex UAV (u1)
+    rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    rootParameters[1].DescriptorTable.pDescriptorRanges = rangeFreeListIndex;
+    rootParameters[1].DescriptorTable.NumDescriptorRanges = 1;
+
+    // [2] FreeList UAV (u2)
+    rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    rootParameters[2].DescriptorTable.pDescriptorRanges = rangeFreeList;
+    rootParameters[2].DescriptorTable.NumDescriptorRanges = 1;
+
+    // [3] ForceFields SRV (t0)
+    rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    rootParameters[3].DescriptorTable.pDescriptorRanges = rangeForceFields;
+    rootParameters[3].DescriptorTable.NumDescriptorRanges = 1;
+
+    // [4] PerFrame CBV (b0)
+    rootParameters[4].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+    rootParameters[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    rootParameters[4].Descriptor.ShaderRegister = 0;
+
+    // [5] PhysicsParams CBV (b1)
+    rootParameters[5].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+    rootParameters[5].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    rootParameters[5].Descriptor.ShaderRegister = 1;
+
+    descriptionRootSignature.pParameters = rootParameters;
+    descriptionRootSignature.NumParameters = _countof(rootParameters);
+
+    Microsoft::WRL::ComPtr<ID3DBlob> signatureBlob = nullptr;
+    Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
+    hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
+    if (FAILED(hr)) {
+#ifdef _DEBUG
+      DebugUIManager::GetInstance()->AddLog(reinterpret_cast<char*>(errorBlob->GetBufferPointer()), DebugUIManager::LogType::Error);
+#endif
+      assert(false);
+    }
+    hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(integrateAllRS_.GetAddressOf()));
+    assert(SUCCEEDED(hr));
+  }
+
+  void GPUParticle::CreateForceFieldResource()
+  {
+    // フォースフィールドリソースの生成（UPLOAD ヒープ — CPU から毎フレーム書き換え可能）
+    m_dx12_->CreateBufferResource(forceFieldResource_, sizeof(ForceFieldData) * kMaxForceFields);
+
+    // SRV を作成
+    forceFieldSrvIndex_ = m_srvManager_->Allocate();
+    m_srvManager_->CreateSRVForStructuredBuffer(forceFieldSrvIndex_, forceFieldResource_.Get(), kMaxForceFields, sizeof(ForceFieldData));
+
+    // フォースフィールドリストの初期化
+    forceFields_.clear();
+
+    // GPU 側のゼロ初期化
+    ForceFieldData* gpuForceFields = nullptr;
+    forceFieldResource_->Map(0, nullptr, reinterpret_cast<void**>(&gpuForceFields));
+    ZeroMemory(gpuForceFields, sizeof(ForceFieldData) * kMaxForceFields);
+    forceFieldResource_->Unmap(0, nullptr);
+  }
+
+  void GPUParticle::CreatePhysicsParamsResource()
+  {
+    // 物理パラメータの定数バッファを生成
+    m_dx12_->CreateBufferResource(physicsParamsResource_, sizeof(PhysicsParamsData));
+
+    // データをマップ
+    physicsParamsResource_->Map(0, nullptr, reinterpret_cast<void**>(&physicsParamsData_));
+
+    // デフォルト値の設定
+    physicsParamsData_->damping = 0.99f;
+    physicsParamsData_->collisionRestitution = 0.5f;
+    physicsParamsData_->particleRadius = 0.05f;
+    physicsParamsData_->depthBias = 0.01f;
+
+    physicsParamsData_->gridOrigin = { .x = -50.0f, .y = -50.0f, .z = -50.0f };
+    physicsParamsData_->gridCellSize = 1.5625f; // 100.0 / 64.0
+    physicsParamsData_->gridDimX = 64;
+    physicsParamsData_->gridDimY = 64;
+    physicsParamsData_->gridDimZ = 64;
+    physicsParamsData_->activeForceFieldCount = 0;
+
+    physicsParamsData_->invViewProj = Mat4x4::MakeIdentity();
+    physicsParamsData_->screenWidth = 1280.0f;
+    physicsParamsData_->screenHeight = 720.0f;
+    physicsParamsData_->noiseTime = 0.0f;
+    physicsParamsData_->pad = 0.0f;
+  }
+
+  void GPUParticle::SyncForceFieldData()
+  {
+    // GPU 側のフォースフィールドバッファにマップ
+    ForceFieldData* gpuForceFields = nullptr;
+    forceFieldResource_->Map(0, nullptr, reinterpret_cast<void**>(&gpuForceFields));
+
+    // フォースフィールドデータをコピー
+    size_t count = min(forceFields_.size(), static_cast<size_t>(kMaxForceFields));
+    if (count > 0) {
+      std::memcpy(gpuForceFields, forceFields_.data(), sizeof(ForceFieldData) * count);
+    }
+
+    // 残りをゼロクリア
+    if (count < kMaxForceFields) {
+      ZeroMemory(&gpuForceFields[count], sizeof(ForceFieldData) * (kMaxForceFields - count));
+    }
+
+    forceFieldResource_->Unmap(0, nullptr);
+  }
+
+  void GPUParticle::UpdatePhysicsParams()
+  {
+    // アクティブなフォースフィールド数を更新
+    physicsParamsData_->activeForceFieldCount = static_cast<uint32_t>(
+      min(forceFields_.size(), static_cast<size_t>(kMaxForceFields)));
+
+    // 時間を更新（Curl Noise 用）
+    physicsParamsData_->noiseTime = FrameTimer::GetInstance()->GetGameTime();
+  }
+
+  int32_t GPUParticle::AddForceField(const ForceFieldData& field)
+  {
+    if (forceFields_.size() >= kMaxForceFields) {
+      return -1;
+    }
+    forceFields_.push_back(field);
+    return static_cast<int32_t>(forceFields_.size() - 1);
+  }
+
+  void GPUParticle::RemoveForceField(uint32_t index)
+  {
+    if (index < forceFields_.size()) {
+      forceFields_.erase(forceFields_.begin() + index);
+    }
+  }
+
+  void GPUParticle::ClearForceFields()
+  {
+    forceFields_.clear();
   }
 
 } // namespace Tako

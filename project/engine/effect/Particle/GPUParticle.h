@@ -98,6 +98,44 @@ namespace Tako {
     /// <returns>アクティブなエミッターの数</returns>
     [[nodiscard]] uint32_t GetEmitterCount() const { return static_cast<uint32_t>(activeEmitters_.size()); }
 
+    //-------------------------フォースフィールド管理-------------------------//
+
+    /// <summary>
+    /// フォースフィールドを追加
+    /// </summary>
+    /// <param name="field">追加するフォースフィールド</param>
+    /// <returns>追加されたフォースフィールドのインデックス（失敗時は -1）</returns>
+    int32_t AddForceField(const ForceFieldData& field);
+
+    /// <summary>
+    /// フォースフィールドを削除
+    /// </summary>
+    /// <param name="index">削除するインデックス</param>
+    void RemoveForceField(uint32_t index);
+
+    /// <summary>
+    /// フォースフィールドをすべて削除
+    /// </summary>
+    void ClearForceFields();
+
+    /// <summary>
+    /// 物理パラメータの速度減衰を設定
+    /// </summary>
+    /// <param name="damping">減衰係数（0.98-0.99 推奨）</param>
+    void SetDamping(float damping) { physicsParamsData_->damping = damping; }
+
+    /// <summary>
+    /// 物理パラメータの反発係数を設定
+    /// </summary>
+    /// <param name="restitution">反発係数（0-1）</param>
+    void SetCollisionRestitution(float restitution) { physicsParamsData_->collisionRestitution = restitution; }
+
+    /// <summary>
+    /// パーティクルの衝突半径を設定
+    /// </summary>
+    /// <param name="radius">衝突半径</param>
+    void SetParticleRadius(float radius) { physicsParamsData_->particleRadius = radius; }
+
     //-------------------------Getter/Setter-------------------------//
     /// <summary>
     /// インデックスによってエミッターを検索
@@ -217,6 +255,31 @@ namespace Tako {
     /// </summary>
     void CreateFreeListResource();
 
+    /// <summary>
+    /// IntegrateAll CS ルートシグネチャの作成
+    /// </summary>
+    void CreateIntegrateAllComputeRS();
+
+    /// <summary>
+    /// フォースフィールドリソースの生成
+    /// </summary>
+    void CreateForceFieldResource();
+
+    /// <summary>
+    /// 物理パラメータリソースの生成
+    /// </summary>
+    void CreatePhysicsParamsResource();
+
+    /// <summary>
+    /// CPU 側から GPU 側へのフォースフィールドデータ同期
+    /// </summary>
+    void SyncForceFieldData();
+
+    /// <summary>
+    /// 物理パラメータの更新
+    /// </summary>
+    void UpdatePhysicsParams();
+
   private: //メンバー変数
 
     /// <summary>
@@ -276,9 +339,14 @@ namespace Tako {
     Microsoft::WRL::ComPtr<ID3D12RootSignature> emitParticleRS_;
 
     /// <summary>
-    /// パーティクル更新コンピュートシェーダー用ルートシグネチャ
+    /// パーティクル更新コンピュートシェーダー用ルートシグネチャ（旧式、段階的に廃止）
     /// </summary>
     Microsoft::WRL::ComPtr<ID3D12RootSignature> updateParticleRS_;
+
+    /// <summary>
+    /// IntegrateAll コンピュートシェーダー用ルートシグネチャ
+    /// </summary>
+    Microsoft::WRL::ComPtr<ID3D12RootSignature> integrateAllRS_;
 
     /// <summary>
     /// 描画用パイプラインステート
@@ -296,9 +364,14 @@ namespace Tako {
     Microsoft::WRL::ComPtr<ID3D12PipelineState> emitParticlePSO_;
 
     /// <summary>
-    /// パーティクル更新コンピュートシェーダー用パイプラインステート
+    /// パーティクル更新コンピュートシェーダー用パイプラインステート（旧式、段階的に廃止）
     /// </summary>
     Microsoft::WRL::ComPtr<ID3D12PipelineState> updateParticlePSO_;
+
+    /// <summary>
+    /// IntegrateAll コンピュートシェーダー用パイプラインステート
+    /// </summary>
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> integrateAllPSO_;
 
     /// <summary>
     /// パーティクルデータ用 GPU リソース
@@ -369,6 +442,38 @@ namespace Tako {
     /// FreeList の UAV インデックス
     /// </summary>
     uint32_t freeListUavIndex_;
+
+    //-------------------------物理シミュレーション関連-------------------------//
+
+    /// <summary>
+    /// フォースフィールドデータ用 GPU リソース
+    /// </summary>
+    Microsoft::WRL::ComPtr<ID3D12Resource> forceFieldResource_;
+
+    /// <summary>
+    /// フォースフィールドリソースの SRV インデックス
+    /// </summary>
+    uint32_t forceFieldSrvIndex_ = 0;
+
+    /// <summary>
+    /// 物理パラメータ定数バッファリソース
+    /// </summary>
+    Microsoft::WRL::ComPtr<ID3D12Resource> physicsParamsResource_;
+
+    /// <summary>
+    /// 物理パラメータデータへのポインタ
+    /// </summary>
+    PhysicsParamsData* physicsParamsData_ = nullptr;
+
+    /// <summary>
+    /// CPU 側のフォースフィールドリスト
+    /// </summary>
+    std::vector<ForceFieldData> forceFields_;
+
+    /// <summary>
+    /// フォースフィールドの最大数
+    /// </summary>
+    static const uint32_t kMaxForceFields = 64;
 
     /// <summary>
     /// 頂点データ用 GPU リソース
