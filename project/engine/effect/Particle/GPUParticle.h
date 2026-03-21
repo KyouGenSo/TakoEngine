@@ -101,6 +101,11 @@ namespace Tako {
     //-------------------------フォースフィールド管理-------------------------//
 
     /// <summary>
+    /// フォースフィールドの最大数
+    /// </summary>
+    static const uint32_t kMaxForceFields = 64;
+
+    /// <summary>
     /// フォースフィールドを追加
     /// </summary>
     /// <param name="field">追加するフォースフィールド</param>
@@ -135,6 +140,34 @@ namespace Tako {
     /// </summary>
     /// <param name="radius">衝突半径</param>
     void SetParticleRadius(float radius) { physicsParamsData_->particleRadius = radius; }
+
+    /// <summary>
+    /// フォースフィールドを更新
+    /// </summary>
+    /// <param name="index">更新するインデックス</param>
+    /// <param name="field">新しいフォースフィールドデータ</param>
+    void UpdateForceField(uint32_t index, const ForceFieldData& field);
+
+    /// <summary>
+    /// フォースフィールドリストを取得
+    /// </summary>
+    /// <returns>フォースフィールドリストの const 参照</returns>
+    [[nodiscard]] const std::vector<ForceFieldData>& GetForceFields() const { return forceFields_; }
+
+    /// <summary>
+    /// 速度減衰を取得
+    /// </summary>
+    [[nodiscard]] float GetDamping() const { return physicsParamsData_ ? physicsParamsData_->damping : 0.99f; }
+
+    /// <summary>
+    /// 反発係数を取得
+    /// </summary>
+    [[nodiscard]] float GetCollisionRestitution() const { return physicsParamsData_ ? physicsParamsData_->collisionRestitution : 0.5f; }
+
+    /// <summary>
+    /// パーティクル衝突半径を取得
+    /// </summary>
+    [[nodiscard]] float GetParticleRadius() const { return physicsParamsData_ ? physicsParamsData_->particleRadius : 0.05f; }
 
     //-------------------------Getter/Setter-------------------------//
     /// <summary>
@@ -469,11 +502,6 @@ namespace Tako {
     /// CPU 側のフォースフィールドリスト
     /// </summary>
     std::vector<ForceFieldData> forceFields_;
-
-    /// <summary>
-    /// フォースフィールドの最大数
-    /// </summary>
-    static const uint32_t kMaxForceFields = 64;
 
     /// <summary>
     /// 頂点データ用 GPU リソース

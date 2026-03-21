@@ -3,6 +3,7 @@
 #include "SphereEmitter.h"
 #include "BoxEmitter.h"
 #include "TriangleEmitter.h"
+#include "GPUParticle.h"
 #include "ImGuiManager.h"
 
 #include <cstring>
@@ -310,6 +311,12 @@ namespace Tako {
         ImGui::EndTabItem();
       }
 
+      // フォースフィールド管理タブ
+      if (ImGui::BeginTabItem("ForceFields")) {
+        DrawForceFieldsTab();
+        ImGui::EndTabItem();
+      }
+
       // グループ管理タブ
       if (ImGui::BeginTabItem("Groups")) {
         DrawGroupsTab();
@@ -399,6 +406,182 @@ namespace Tako {
         emitterManager_->RemoveGroup(groupName);
         selectedGroupIndex_ = -1;
         AddLog("Deleted group: " + groupName, LogType::Info);
+      }
+    }
+  }
+
+  void DebugUIManager::DrawForceFieldsTab() {
+    auto* gpuParticle = GPUParticle::GetInstance();
+
+    // --- 物理パラメータセクション ---
+    if (ImGui::CollapsingHeader("Physics Parameters", ImGuiTreeNodeFlags_DefaultOpen)) {
+      float damping = gpuParticle->GetDamping();
+      if (ImGui::SliderFloat("Damping", &damping, 0.9f, 1.0f, "%.4f")) {
+        gpuParticle->SetDamping(damping);
+      }
+      if (ImGui::IsItemHovered()) ImGui::SetTooltip("Speed attenuation per frame (0.99 recommended)");
+
+      float restitution = gpuParticle->GetCollisionRestitution();
+      if (ImGui::SliderFloat("Restitution", &restitution, 0.0f, 1.0f, "%.2f")) {
+        gpuParticle->SetCollisionRestitution(restitution);
+      }
+
+      float particleRadius = gpuParticle->GetParticleRadius();
+      if (ImGui::DragFloat("Particle Radius", &particleRadius, 0.001f, 0.001f, 1.0f, "%.3f")) {
+        gpuParticle->SetParticleRadius(particleRadius);
+      }
+    }
+
+    ImGui::Separator();
+
+    // --- フォースフィールド一覧 ---
+    const auto& forceFields = gpuParticle->GetForceFields();
+    ImGui::Text("Force Fields: %zu / %u", forceFields.size(), GPUParticle::kMaxForceFields);
+
+    // フォースフィールドタイプ名の定義
+    static const char* forceTypeNames[] = {
+      "Gravity", "Directional", "Vortex", "Attract", "Repel"
+    };
+
+    // リスト表示
+    if (ImGui::BeginListBox("##ForceFieldList", ImVec2(-1, 120))) {
+      for (int i = 0; i < static_cast<int>(forceFields.size()); i++) {
+        uint32_t typeIdx = forceFields[i].type;
+        const char* typeName = (typeIdx < 5) ? forceTypeNames[typeIdx] : "Unknown";
+
+        char label[64];
+        snprintf(label, sizeof(label), "[%d] %s (str: %.2f)", i, typeName, forceFields[i].strength);
+
+        bool isSelected = (selectedForceFieldIndex_ == i);
+        if (ImGui::Selectable(label, isSelected)) {
+          selectedForceFieldIndex_ = i;
+        }
+      }
+      ImGui::EndListBox();
+    }
+
+    // --- 新規フォースフィールド追加 ---
+    if (ImGui::CollapsingHeader("Add Force Field")) {
+      static int newForceType = 0;
+      ImGui::Combo("Type##NewFF", &newForceType, "Gravity\0Directional\0Vortex\0Attract\0Repel\0");
+
+      static Vector3 newPosition = { 0.0f, 0.0f, 0.0f };
+      static Vector3 newDirection = { 0.0f, -1.0f, 0.0f };
+      static float newStrength = 1.0f;
+      static float newRadius = 0.0f;
+      static float newFalloff = 1.0f;
+
+      ImGui::DragFloat3("Position##NewFF", &newPosition.x, 0.1f);
+
+      // タイプに応じた方向ガイド
+      if (newForceType == 0 || newForceType == 1) {
+        ImGui::DragFloat3("Direction##NewFF", &newDirection.x, 0.1f);
+      }
+      else if (newForceType == 2) {
+        ImGui::DragFloat3("Rotation Axis##NewFF", &newDirection.x, 0.1f);
+      }
+
+      ImGui::DragFloat("Strength##NewFF", &newStrength, 0.1f, 0.0f, 100.0f);
+      ImGui::DragFloat("Radius##NewFF", &newRadius, 0.1f, 0.0f, 100.0f);
+      if (ImGui::IsItemHovered()) ImGui::SetTooltip("0 = infinite range");
+      ImGui::DragFloat("Falloff##NewFF", &newFalloff, 0.1f, 0.0f, 10.0f);
+
+      if (ImGui::Button("Add##NewFF")) {
+        ForceFieldData field{};
+        field.type = static_cast<uint32_t>(newForceType);
+        field.position = newPosition;
+        field.direction = newDirection;
+        field.strength = newStrength;
+        field.radius = newRadius;
+        field.falloff = newFalloff;
+        field.pad[0] = 0.0f;
+        field.pad[1] = 0.0f;
+
+        int32_t idx = gpuParticle->AddForceField(field);
+        if (idx >= 0) {
+          selectedForceFieldIndex_ = idx;
+          AddLog("Added force field: " + std::string(forceTypeNames[newForceType]), LogType::Info);
+        }
+        else {
+          AddLog("Failed to add force field: max reached", LogType::Warning);
+        }
+      }
+
+      // クイック追加ボタン
+      ImGui::Separator();
+      ImGui::Text("Quick Add:");
+      if (ImGui::Button("Gravity (Y-9.8)##Quick")) {
+        ForceFieldData field{};
+        field.type = static_cast<uint32_t>(ForceFieldType::Gravity);
+        field.direction = { .x = 0.0f, .y = -9.8f, .z = 0.0f };
+        field.strength = 1.0f;
+        gpuParticle->AddForceField(field);
+        AddLog("Added gravity force field", LogType::Info);
+      }
+      ImGui::SameLine();
+      if (ImGui::Button("Vortex (Y-axis)##Quick")) {
+        ForceFieldData field{};
+        field.type = static_cast<uint32_t>(ForceFieldType::Vortex);
+        field.direction = { .x = 0.0f, .y = 1.0f, .z = 0.0f };
+        field.strength = 5.0f;
+        field.radius = 10.0f;
+        field.falloff = 1.0f;
+        gpuParticle->AddForceField(field);
+        AddLog("Added vortex force field", LogType::Info);
+      }
+    }
+
+    // --- 選択中のフォースフィールド編集 ---
+    if (selectedForceFieldIndex_ >= 0 && selectedForceFieldIndex_ < static_cast<int>(forceFields.size())) {
+      ImGui::Separator();
+
+      uint32_t typeIdx = forceFields[selectedForceFieldIndex_].type;
+      const char* typeName = (typeIdx < 5) ? forceTypeNames[typeIdx] : "Unknown";
+      ImGui::Text("Editing: [%d] %s", selectedForceFieldIndex_, typeName);
+
+      // 編集可能なコピーを作成
+      ForceFieldData editField = forceFields[selectedForceFieldIndex_];
+      bool changed = false;
+
+      // タイプ変更
+      int editType = static_cast<int>(editField.type);
+      if (ImGui::Combo("Type##EditFF", &editType, "Gravity\0Directional\0Vortex\0Attract\0Repel\0")) {
+        editField.type = static_cast<uint32_t>(editType);
+        changed = true;
+      }
+
+      changed |= ImGui::DragFloat3("Position##EditFF", &editField.position.x, 0.1f);
+
+      // タイプに応じたラベル
+      if (editField.type == static_cast<uint32_t>(ForceFieldType::Vortex)) {
+        changed |= ImGui::DragFloat3("Rotation Axis##EditFF", &editField.direction.x, 0.1f);
+      }
+      else if (editField.type == static_cast<uint32_t>(ForceFieldType::Gravity) ||
+               editField.type == static_cast<uint32_t>(ForceFieldType::Directional)) {
+        changed |= ImGui::DragFloat3("Direction##EditFF", &editField.direction.x, 0.1f);
+      }
+
+      changed |= ImGui::DragFloat("Strength##EditFF", &editField.strength, 0.1f, 0.0f, 100.0f);
+      changed |= ImGui::DragFloat("Radius##EditFF", &editField.radius, 0.1f, 0.0f, 100.0f);
+      if (ImGui::IsItemHovered()) ImGui::SetTooltip("0 = infinite range");
+      changed |= ImGui::DragFloat("Falloff##EditFF", &editField.falloff, 0.1f, 0.0f, 10.0f);
+
+      if (changed) {
+        gpuParticle->UpdateForceField(static_cast<uint32_t>(selectedForceFieldIndex_), editField);
+      }
+
+      // 削除ボタン
+      ImGui::Separator();
+      if (ImGui::Button("Delete##EditFF")) {
+        gpuParticle->RemoveForceField(static_cast<uint32_t>(selectedForceFieldIndex_));
+        AddLog("Deleted force field [" + std::to_string(selectedForceFieldIndex_) + "]", LogType::Info);
+        selectedForceFieldIndex_ = -1;
+      }
+      ImGui::SameLine();
+      if (ImGui::Button("Clear All##EditFF")) {
+        gpuParticle->ClearForceFields();
+        selectedForceFieldIndex_ = -1;
+        AddLog("Cleared all force fields", LogType::Info);
       }
     }
   }

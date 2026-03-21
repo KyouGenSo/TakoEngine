@@ -1066,6 +1066,13 @@ namespace Tako {
     return static_cast<int32_t>(forceFields_.size() - 1);
   }
 
+  void GPUParticle::UpdateForceField(uint32_t index, const ForceFieldData& field)
+  {
+    if (index < forceFields_.size()) {
+      forceFields_[index] = field;
+    }
+  }
+
   void GPUParticle::RemoveForceField(uint32_t index)
   {
     if (index < forceFields_.size()) {

@@ -225,6 +225,11 @@ namespace Tako {
     void DrawGroupsTab();
 
     /// <summary>
+    /// フォースフィールド管理タブを描画
+    /// </summary>
+    void DrawForceFieldsTab();
+
+    /// <summary>
     /// 現在のタイムスタンプを生成
     /// </summary>
     /// <returns>タイムスタンプ文字列</returns>
@@ -290,6 +295,9 @@ namespace Tako {
     // グループ管理用
     int selectedGroupIndex_ = -1;
     char newGroupNameBuffer_[128] = "";
+
+    // フォースフィールド管理用
+    int selectedForceFieldIndex_ = -1;
   };
 
 } // namespace Tako
