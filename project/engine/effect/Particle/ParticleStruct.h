@@ -89,7 +89,6 @@ namespace Tako {
 
   /// <summary>
   /// フォースフィールドデータ構造体（GPU 用）
-  /// HLSL 側の ForceField 構造体と完全一致
   /// </summary>
   struct ForceFieldData
   {
@@ -104,7 +103,6 @@ namespace Tako {
 
   /// <summary>
   /// 物理パラメータ定数バッファ構造体（GPU 用）
-  /// HLSL 側の PhysicsParams 構造体と完全一致
   /// </summary>
   struct PhysicsParamsData
   {
