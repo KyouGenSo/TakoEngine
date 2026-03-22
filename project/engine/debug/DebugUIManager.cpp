@@ -113,6 +113,7 @@ namespace Tako {
     if (windowVisibility_["ShadowSettings"]) DrawShadowSettings();
     if (windowVisibility_["CollisionDebug"]) DrawCollisionDebug();
     if (windowVisibility_["ParticleEditor"]) DrawParticleEditor();
+    if (windowVisibility_["ParticleEditor"]) DrawParticleVisualization();
 
     // GlobalVariables（グループがない場合は警告を出して閉じる）
     if (windowVisibility_["GlobalVariables"]) {

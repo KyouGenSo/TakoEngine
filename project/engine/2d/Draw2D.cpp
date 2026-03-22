@@ -1,6 +1,7 @@
 #include "Draw2D.h"
 #include "OBB.h"
 #include <cassert>
+#include <cmath>
 #include <numbers>
 
 #ifdef _DEBUG
@@ -189,6 +190,57 @@ namespace Tako {
 
     lineIndex_ += kVertexCountLine;
 
+  }
+
+  void Draw2D::DrawArrow(const Vector3& start, const Vector3& end, const Vector4& color, float headSize)
+  {
+    // 本体の線を描画
+    DrawLine(start, end, color);
+
+    // 矢印の方向と長さ
+    Vector3 diff = { end.x - start.x, end.y - start.y, end.z - start.z };
+    float length = std::sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
+    if (length < 0.001f) return;
+
+    Vector3 dir = { diff.x / length, diff.y / length, diff.z / length };
+
+    // dir に垂直な2つの軸を算出
+    Vector3 up = { 0.0f, 1.0f, 0.0f };
+    float dot = dir.x * up.x + dir.y * up.y + dir.z * up.z;
+    if (std::abs(dot) > 0.99f) {
+      up = { 1.0f, 0.0f, 0.0f };
+    }
+
+    // right = dir x up
+    Vector3 right = {
+      dir.y * up.z - dir.z * up.y,
+      dir.z * up.x - dir.x * up.z,
+      dir.x * up.y - dir.y * up.x
+    };
+    float rightLen = std::sqrt(right.x * right.x + right.y * right.y + right.z * right.z);
+    if (rightLen > 0.001f) {
+      right = { right.x / rightLen, right.y / rightLen, right.z / rightLen };
+    }
+
+    // upPerp = right x dir
+    Vector3 upPerp = {
+      right.y * dir.z - right.z * dir.y,
+      right.z * dir.x - right.x * dir.z,
+      right.x * dir.y - right.y * dir.x
+    };
+
+    // 矢印の先端4本の線（十字形状、3Dでどの角度からも矢印に見える）
+    Vector3 headBase = {
+      end.x - dir.x * headSize,
+      end.y - dir.y * headSize,
+      end.z - dir.z * headSize
+    };
+    float halfHead = headSize * 0.5f;
+
+    DrawLine(end, { headBase.x + right.x * halfHead, headBase.y + right.y * halfHead, headBase.z + right.z * halfHead }, color);
+    DrawLine(end, { headBase.x - right.x * halfHead, headBase.y - right.y * halfHead, headBase.z - right.z * halfHead }, color);
+    DrawLine(end, { headBase.x + upPerp.x * halfHead, headBase.y + upPerp.y * halfHead, headBase.z + upPerp.z * halfHead }, color);
+    DrawLine(end, { headBase.x - upPerp.x * halfHead, headBase.y - upPerp.y * halfHead, headBase.z - upPerp.z * halfHead }, color);
   }
 
   void Draw2D::DrawSphere(const Vector3& center, const float radius, const Vector4& color)

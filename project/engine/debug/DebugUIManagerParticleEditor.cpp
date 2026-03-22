@@ -5,8 +5,12 @@
 #include "TriangleEmitter.h"
 #include "GPUParticle.h"
 #include "ImGuiManager.h"
+#include "Draw2D.h"
+#include "OBB.h"
 
 #include <cstring>
+#include <numbers>
+#include <cmath>
 
 namespace Tako {
 
@@ -322,6 +326,12 @@ namespace Tako {
         ImGui::EndTabItem();
       }
 
+      // 可視化設定タブ
+      if (ImGui::BeginTabItem("Visualization")) {
+        DrawVisualizationTab();
+        ImGui::EndTabItem();
+      }
+
       // グループ管理タブ
       if (ImGui::BeginTabItem("Groups")) {
         DrawGroupsTab();
@@ -587,6 +597,268 @@ namespace Tako {
         gpuParticle->ClearForceFields();
         selectedForceFieldIndex_ = -1;
         AddLog("Cleared all force fields", LogType::Info);
+      }
+    }
+  }
+
+  // =====================================================
+  // パーティクル可視化設定タブ
+  // =====================================================
+  void DebugUIManager::DrawVisualizationTab() {
+    ImGui::Text("Debug Visualization Settings");
+    ImGui::Separator();
+
+    // === エミッター形状の可視化設定 ===
+    if (ImGui::CollapsingHeader("Emitter Shapes", ImGuiTreeNodeFlags_DefaultOpen)) {
+      ImGui::Checkbox("Show Emitter Shapes", &showEmitterShapes_);
+
+      if (showEmitterShapes_) {
+        ImGui::ColorEdit4("Sphere Color##EmVis", &emitterColorSphere_.x);
+        ImGui::ColorEdit4("Box Color##EmVis", &emitterColorBox_.x);
+        ImGui::ColorEdit4("Triangle Color##EmVis", &emitterColorTriangle_.x);
+      }
+    }
+
+    // === フォースフィールドの可視化設定 ===
+    if (ImGui::CollapsingHeader("Force Field Visualization", ImGuiTreeNodeFlags_DefaultOpen)) {
+      ImGui::Checkbox("Show Radius##FFVis", &showForceFieldRadius_);
+      ImGui::Checkbox("Show Direction##FFVis", &showForceFieldDirection_);
+
+      if (showForceFieldRadius_ || showForceFieldDirection_) {
+        ImGui::ColorEdit4("Radius Color##FFVis", &forceFieldRadiusColor_.x);
+        ImGui::ColorEdit4("Direction Color##FFVis", &forceFieldDirectionColor_.x);
+      }
+    }
+  }
+
+  // =====================================================
+  // エミッター形状の描画
+  // =====================================================
+  void DebugUIManager::DrawEmitterShape(const std::shared_ptr<GPUParticleEmitter>& emitter) {
+    auto* draw2D = Draw2D::GetInstance();
+    Vector3 pos = emitter->GetPosition();
+
+    if (auto sphereEmitter = std::dynamic_pointer_cast<SphereEmitter>(emitter)) {
+      // 球エミッター: DrawSphere でワイヤーフレーム球を描画
+      draw2D->DrawSphere(pos, sphereEmitter->GetRadius(), emitterColorSphere_);
+    }
+    else if (auto boxEmitter = std::dynamic_pointer_cast<BoxEmitter>(emitter)) {
+      // 箱エミッター: OBBを構築してDrawOBBで描画
+      Vector3 size = boxEmitter->GetSize();
+      Vector3 rotDeg = boxEmitter->GetRotation();
+
+      // 度数法 → ラジアン変換
+      constexpr float kDeg2Rad = static_cast<float>(std::numbers::pi) / 180.0f;
+      Vector3 rotRad = { rotDeg.x * kDeg2Rad, rotDeg.y * kDeg2Rad, rotDeg.z * kDeg2Rad };
+
+      // OBB: center, halfExtents(sizeの半分), orientation(回転行列)
+      Matrix4x4 orientation = Mat4x4::MakeRotateXYZ(rotRad);
+      OBB obb(pos, { size.x * 0.5f, size.y * 0.5f, size.z * 0.5f }, orientation);
+      draw2D->DrawOBB(obb, emitterColorBox_);
+    }
+    else if (auto triEmitter = std::dynamic_pointer_cast<TriangleEmitter>(emitter)) {
+      // 三角形エミッター: 3辺を線で描画（頂点は相対座標なのでpositionを加算）
+      Vector3 v1 = { pos.x + triEmitter->GetVertex1().x, pos.y + triEmitter->GetVertex1().y, pos.z + triEmitter->GetVertex1().z };
+      Vector3 v2 = { pos.x + triEmitter->GetVertex2().x, pos.y + triEmitter->GetVertex2().y, pos.z + triEmitter->GetVertex2().z };
+      Vector3 v3 = { pos.x + triEmitter->GetVertex3().x, pos.y + triEmitter->GetVertex3().y, pos.z + triEmitter->GetVertex3().z };
+
+      draw2D->DrawLine(v1, v2, emitterColorTriangle_);
+      draw2D->DrawLine(v2, v3, emitterColorTriangle_);
+      draw2D->DrawLine(v3, v1, emitterColorTriangle_);
+    }
+  }
+
+  // =====================================================
+  // フォースフィールドの可視化
+  // =====================================================
+  void DebugUIManager::DrawForceFieldVisualization(const ForceFieldData& field, int index) {
+    auto* draw2D = Draw2D::GetInstance();
+
+    // 選択中のフォースフィールドは黄色でハイライト
+    Vector4 radiusColor = forceFieldRadiusColor_;
+    Vector4 dirColor = forceFieldDirectionColor_;
+    if (index == selectedForceFieldIndex_) {
+      radiusColor = { 1.0f, 1.0f, 0.0f, 0.8f };
+      dirColor = { 1.0f, 1.0f, 0.0f, 1.0f };
+    }
+
+    // === 影響半径の描画 ===
+    if (showForceFieldRadius_ && field.radius > 0.0f) {
+      draw2D->DrawSphere(field.position, field.radius, radiusColor);
+    }
+
+    // === 方向表示 ===
+    if (!showForceFieldDirection_) return;
+
+    constexpr float kArrowLength = 2.0f;
+    constexpr float kHeadSize = 0.3f;
+
+    switch (static_cast<ForceFieldType>(field.type)) {
+    case ForceFieldType::Gravity:
+    case ForceFieldType::Directional: {
+      // direction方向にstrength比例の矢印を描画
+      float dirLen = std::sqrt(field.direction.x * field.direction.x + field.direction.y * field.direction.y + field.direction.z * field.direction.z);
+      if (dirLen < 0.001f) break;
+
+      Vector3 dir = { field.direction.x / dirLen, field.direction.y / dirLen, field.direction.z / dirLen };
+      float len = (std::min)((std::max)(kArrowLength * field.strength, 0.5f), 10.0f);
+      Vector3 end = { field.position.x + dir.x * len, field.position.y + dir.y * len, field.position.z + dir.z * len };
+      draw2D->DrawArrow(field.position, end, dirColor, kHeadSize);
+      break;
+    }
+    case ForceFieldType::Vortex: {
+      // 中心に十字を描画
+      constexpr float kCrossSize = 0.5f;
+      draw2D->DrawLine(
+        { field.position.x - kCrossSize, field.position.y, field.position.z },
+        { field.position.x + kCrossSize, field.position.y, field.position.z }, dirColor);
+      draw2D->DrawLine(
+        { field.position.x, field.position.y - kCrossSize, field.position.z },
+        { field.position.x, field.position.y + kCrossSize, field.position.z }, dirColor);
+      draw2D->DrawLine(
+        { field.position.x, field.position.y, field.position.z - kCrossSize },
+        { field.position.x, field.position.y, field.position.z + kCrossSize }, dirColor);
+
+      // 回転軸に垂直な平面上に3/4周の円弧を描画
+      float axisLen = std::sqrt(field.direction.x * field.direction.x + field.direction.y * field.direction.y + field.direction.z * field.direction.z);
+      if (axisLen < 0.001f) break;
+
+      Vector3 axis = { field.direction.x / axisLen, field.direction.y / axisLen, field.direction.z / axisLen };
+      float circleRadius = (field.radius > 0.0f) ? field.radius * 0.5f : 2.0f;
+      constexpr int kSegments = 16;
+
+      // 回転軸に垂直な2軸を算出
+      Vector3 up = { 0.0f, 1.0f, 0.0f };
+      float axisDotUp = axis.x * up.x + axis.y * up.y + axis.z * up.z;
+      if (std::abs(axisDotUp) > 0.99f) {
+        up = { 1.0f, 0.0f, 0.0f };
+      }
+
+      // right = axis x up
+      Vector3 right = {
+        axis.y * up.z - axis.z * up.y,
+        axis.z * up.x - axis.x * up.z,
+        axis.x * up.y - axis.y * up.x
+      };
+      float rightLen = std::sqrt(right.x * right.x + right.y * right.y + right.z * right.z);
+      if (rightLen > 0.001f) {
+        right = { right.x / rightLen, right.y / rightLen, right.z / rightLen };
+      }
+
+      // forward = axis x right (HLSL Vortex: cross(axis, radialDir) と回転方向を一致させる)
+      Vector3 forward = {
+        axis.y * right.z - axis.z * right.y,
+        axis.z * right.x - axis.x * right.z,
+        axis.x * right.y - axis.y * right.x
+      };
+
+      // 3/4周の円弧（回転方向が分かるように途切れさせる）
+      int arcSegments = kSegments * 3 / 4;
+      constexpr float kTwoPi = 2.0f * static_cast<float>(std::numbers::pi);
+
+      for (int i = 0; i < arcSegments; i++) {
+        float angle1 = (kTwoPi * i) / kSegments;
+        float angle2 = (kTwoPi * (i + 1)) / kSegments;
+
+        Vector3 p1 = {
+          field.position.x + (right.x * std::cos(angle1) + forward.x * std::sin(angle1)) * circleRadius,
+          field.position.y + (right.y * std::cos(angle1) + forward.y * std::sin(angle1)) * circleRadius,
+          field.position.z + (right.z * std::cos(angle1) + forward.z * std::sin(angle1)) * circleRadius
+        };
+        Vector3 p2 = {
+          field.position.x + (right.x * std::cos(angle2) + forward.x * std::sin(angle2)) * circleRadius,
+          field.position.y + (right.y * std::cos(angle2) + forward.y * std::sin(angle2)) * circleRadius,
+          field.position.z + (right.z * std::cos(angle2) + forward.z * std::sin(angle2)) * circleRadius
+        };
+
+        draw2D->DrawLine(p1, p2, dirColor);
+      }
+
+      // 円弧の終端に接線方向の矢印を追加（回転方向を示す）
+      float endAngle = (kTwoPi * arcSegments) / kSegments;
+      Vector3 arcEnd = {
+        field.position.x + (right.x * std::cos(endAngle) + forward.x * std::sin(endAngle)) * circleRadius,
+        field.position.y + (right.y * std::cos(endAngle) + forward.y * std::sin(endAngle)) * circleRadius,
+        field.position.z + (right.z * std::cos(endAngle) + forward.z * std::sin(endAngle)) * circleRadius
+      };
+      // 接線方向 = 円弧の進行方向
+      float tangentAngle = endAngle + static_cast<float>(std::numbers::pi) * 0.5f;
+      Vector3 tangent = {
+        right.x * std::cos(tangentAngle) + forward.x * std::sin(tangentAngle),
+        right.y * std::cos(tangentAngle) + forward.y * std::sin(tangentAngle),
+        right.z * std::cos(tangentAngle) + forward.z * std::sin(tangentAngle)
+      };
+      Vector3 arrowStart = {
+        arcEnd.x - tangent.x * 0.3f,
+        arcEnd.y - tangent.y * 0.3f,
+        arcEnd.z - tangent.z * 0.3f
+      };
+      draw2D->DrawArrow(arrowStart, arcEnd, dirColor, kHeadSize * 0.5f);
+      break;
+    }
+    case ForceFieldType::Attract: {
+      // 4方向（±X, ±Z）から中心へ向かう矢印
+      float dist = (field.radius > 0.0f) ? field.radius : kArrowLength * 2.0f;
+      Vector3 offsets[4] = {
+        { dist, 0.0f,  0.0f },
+        {-dist, 0.0f,  0.0f },
+        { 0.0f, 0.0f,  dist },
+        { 0.0f, 0.0f, -dist }
+      };
+      for (const auto& offset : offsets) {
+        Vector3 start = { field.position.x + offset.x, field.position.y + offset.y, field.position.z + offset.z };
+        // 中心の少し手前で止める
+        Vector3 toCenter = { field.position.x - start.x, field.position.y - start.y, field.position.z - start.z };
+        float tcLen = std::sqrt(toCenter.x * toCenter.x + toCenter.y * toCenter.y + toCenter.z * toCenter.z);
+        if (tcLen < 0.001f) continue;
+        Vector3 dir = { toCenter.x / tcLen, toCenter.y / tcLen, toCenter.z / tcLen };
+        Vector3 end = { field.position.x - dir.x * 0.5f, field.position.y - dir.y * 0.5f, field.position.z - dir.z * 0.5f };
+        draw2D->DrawArrow(start, end, dirColor, kHeadSize);
+      }
+      break;
+    }
+    case ForceFieldType::Repel: {
+      // 中心から4方向へ向かう矢印
+      float dist = (field.radius > 0.0f) ? field.radius * 0.8f : kArrowLength * 2.0f;
+      Vector3 directions[4] = {
+        { 1.0f, 0.0f,  0.0f },
+        {-1.0f, 0.0f,  0.0f },
+        { 0.0f, 0.0f,  1.0f },
+        { 0.0f, 0.0f, -1.0f }
+      };
+      for (const auto& dir : directions) {
+        Vector3 start = { field.position.x + dir.x * 0.5f, field.position.y + dir.y * 0.5f, field.position.z + dir.z * 0.5f };
+        Vector3 end = { field.position.x + dir.x * dist, field.position.y + dir.y * dist, field.position.z + dir.z * dist };
+        draw2D->DrawArrow(start, end, dirColor, kHeadSize);
+      }
+      break;
+    }
+    } // switch
+  }
+
+  // =====================================================
+  // パーティクル可視化の統合描画
+  // =====================================================
+  void DebugUIManager::DrawParticleVisualization() {
+    if (!emitterManager_) return;
+
+    // === エミッター形状の描画 ===
+    if (showEmitterShapes_) {
+      auto emitterNames = emitterManager_->GetEmitterNames();
+      for (const auto& name : emitterNames) {
+        auto emitter = emitterManager_->GetEmitterByName(name);
+        if (emitter && emitter->IsActive()) {
+          DrawEmitterShape(emitter);
+        }
+      }
+    }
+
+    // === フォースフィールドの描画 ===
+    if (showForceFieldRadius_ || showForceFieldDirection_) {
+      auto* gpuParticle = GPUParticle::GetInstance();
+      const auto& forceFields = gpuParticle->GetForceFields();
+      for (int i = 0; i < static_cast<int>(forceFields.size()); i++) {
+        DrawForceFieldVisualization(forceFields[i], i);
       }
     }
   }

@@ -8,6 +8,8 @@
 #include <unordered_map>
 #include <chrono>
 #include <memory>
+#include "Vector3.h"
+#include "Vector4.h"
 
 namespace Tako {
 
@@ -230,6 +232,29 @@ namespace Tako {
     void DrawForceFieldsTab();
 
     /// <summary>
+    /// パーティクル可視化の描画（エミッター形状 + フォースフィールド）
+    /// </summary>
+    void DrawParticleVisualization();
+
+    /// <summary>
+    /// パーティクル可視化設定UIの描画（Visualizationタブ内）
+    /// </summary>
+    void DrawVisualizationTab();
+
+    /// <summary>
+    /// 個別エミッターの形状を描画
+    /// </summary>
+    /// <param name="emitter">描画対象のエミッター</param>
+    void DrawEmitterShape(const std::shared_ptr<class GPUParticleEmitter>& emitter);
+
+    /// <summary>
+    /// 個別フォースフィールドの可視化を描画
+    /// </summary>
+    /// <param name="field">描画対象のフォースフィールド</param>
+    /// <param name="index">フィールドのインデックス（ハイライト判定用）</param>
+    void DrawForceFieldVisualization(const struct ForceFieldData& field, int index);
+
+    /// <summary>
     /// 現在のタイムスタンプを生成
     /// </summary>
     /// <returns>タイムスタンプ文字列</returns>
@@ -298,6 +323,16 @@ namespace Tako {
 
     // フォースフィールド管理用
     int selectedForceFieldIndex_ = -1;
+
+    // パーティクル可視化設定
+    bool showEmitterShapes_ = true;        ///< エミッター形状の表示ON/OFF
+    bool showForceFieldRadius_ = true;     ///< フォースフィールド影響半径の表示ON/OFF
+    bool showForceFieldDirection_ = true;  ///< フォースフィールド方向表示ON/OFF
+    Vector4 emitterColorSphere_   = { 0.0f, 1.0f, 0.0f, 1.0f }; ///< 球エミッター色（緑）
+    Vector4 emitterColorBox_      = { 0.0f, 0.5f, 1.0f, 1.0f }; ///< 箱エミッター色（青）
+    Vector4 emitterColorTriangle_ = { 1.0f, 1.0f, 0.0f, 1.0f }; ///< 三角形エミッター色（黄）
+    Vector4 forceFieldRadiusColor_    = { 1.0f, 0.5f, 0.0f, 0.5f }; ///< フォースフィールド半径色（オレンジ）
+    Vector4 forceFieldDirectionColor_ = { 1.0f, 0.0f, 0.0f, 1.0f }; ///< フォースフィールド方向色（赤）
   };
 
 } // namespace Tako

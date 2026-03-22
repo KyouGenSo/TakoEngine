@@ -156,6 +156,15 @@ namespace Tako {
     void DrawLine(const Vector3& start, const Vector3& end, const Vector4& color);
 
     /// <summary>
+    /// 矢印の描画（線 + 十字型の先端）
+    /// </summary>
+    /// <param name="start">矢印の根元</param>
+    /// <param name="end">矢印の先端</param>
+    /// <param name="color">描画色</param>
+    /// <param name="headSize">矢印の先端サイズ</param>
+    void DrawArrow(const Vector3& start, const Vector3& end, const Vector4& color, float headSize = 0.2f);
+
+    /// <summary>
     /// 球体の描画
     /// </summary>
     /// <param name="center">中心座標</param>
