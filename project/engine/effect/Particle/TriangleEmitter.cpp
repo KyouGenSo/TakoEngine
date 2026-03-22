@@ -15,7 +15,7 @@ namespace Tako {
     SetFrequency(frequency);
 
     // エミッターのタイプを設定
-    data_.type = EmitterType::Triangle;
+    data_.type = static_cast<uint32_t>(EmitterType::Triangle);
 
   }
 
@@ -38,22 +38,11 @@ namespace Tako {
     return clone;
   }
 
-  void TriangleEmitter::SetupGPUData(EmitterGPUData& gpuData) const
-  {
-    GPUParticleEmitter::SetupGPUData(gpuData);
-
-    // 三角形固有のデータを設定
-    gpuData.triangleV1 = data_.triangle.v1;
-    gpuData.triangleV2 = data_.triangle.v2;
-    gpuData.triangleV3 = data_.triangle.v3;
-    gpuData.type = static_cast<uint32_t>(data_.type);
-  }
-
   void TriangleEmitter::SetVertices(const Vector3& v1, const Vector3& v2, const Vector3& v3)
   {
-    data_.triangle.v1 = v1;
-    data_.triangle.v2 = v2;
-    data_.triangle.v3 = v3;
+    data_.triangleV1 = v1;
+    data_.triangleV2 = v2;
+    data_.triangleV3 = v3;
   }
 
 } // namespace Tako

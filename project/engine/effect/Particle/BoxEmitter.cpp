@@ -16,7 +16,7 @@ namespace Tako {
     SetFrequency(frequency);
 
     // エミッターのタイプを設定
-    data_.type = EmitterType::Box;
+    data_.type = static_cast<uint32_t>(EmitterType::Box);
   }
 
   std::shared_ptr<GPUParticleEmitter> BoxEmitter::Clone() const
@@ -38,24 +38,14 @@ namespace Tako {
     return clone;
   }
 
-  void BoxEmitter::SetupGPUData(EmitterGPUData& gpuData) const
-  {
-    GPUParticleEmitter::SetupGPUData(gpuData);
-
-    // 箱型固有のデータを設定
-    gpuData.boxSize = data_.box.size;
-    gpuData.boxRotation = data_.box.rotation;
-    gpuData.type = static_cast<uint32_t>(data_.type);
-  }
-
   void BoxEmitter::SetSize(const Vector3& size)
   {
-    data_.box.size = size;
+    data_.boxSize = size;
   }
 
   void BoxEmitter::SetRotation(const Vector3& rotation)
   {
-    data_.box.rotation = rotation;
+    data_.boxRotation = rotation;
   }
 
 } // namespace Tako

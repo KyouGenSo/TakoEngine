@@ -37,12 +37,6 @@ namespace Tako {
     std::shared_ptr<GPUParticleEmitter> Clone() const override;
 
     /// <summary>
-    /// GPU データの設定
-    /// </summary>
-    /// <param name="gpuData">設定する GPU データ</param>
-    void SetupGPUData(EmitterGPUData& gpuData) const override;
-
-    /// <summary>
     /// 箱のサイズを設定
     /// </summary>
     /// <param name="size">サイズ</param>
@@ -58,13 +52,13 @@ namespace Tako {
     /// 箱のサイズを取得
     /// </summary>
     /// <returns>サイズ</returns>
-    const Vector3& GetSize() const { return data_.box.size; }
+    const Vector3& GetSize() const { return data_.boxSize; }
 
     /// <summary>
     /// 箱の回転を取得
     /// </summary>
     /// <returns>回転角度</returns>
-    const Vector3& GetRotation() const { return data_.box.rotation; }
+    const Vector3& GetRotation() const { return data_.boxRotation; }
 
     /// <summary>
     /// エミッタータイプを取得

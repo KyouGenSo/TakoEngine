@@ -7,12 +7,8 @@ namespace Tako {
     : particleSystem_(particleSystem)
   {
     data_.emitterID = emitterId;
-    data_.isActive = true;
-    data_.isEmitting = false;
-    data_.isNormalize = false;
-    data_.isRandomRotateZ = false;
-    data_.useForceField = true;
-    data_.isTemp = false;
+    data_.type = static_cast<uint32_t>(EmitterType::Sphere);
+    data_.flags = EFLAG_ACTIVE | EFLAG_USE_FORCE_FIELD;
     data_.emitterLifeTime = 0.0f;
     data_.emitterCurrentTime = 0.0f;
     data_.frequencyTime = 0.0f;
@@ -27,6 +23,7 @@ namespace Tako {
     data_.endColorTint = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
     data_.count = 0;
     data_.frequency = 0.0f;
+    data_.radius = 1.0f;
   }
 
   GPUParticleEmitter::~GPUParticleEmitter()
@@ -36,58 +33,11 @@ namespace Tako {
     // ここで解放する必要はない
   }
 
-  void GPUParticleEmitter::SetupGPUData(EmitterGPUData& gpuData) const
-  {
-    gpuData.type = static_cast<uint32_t>(data_.type);
-    gpuData.isActive = data_.isActive ? 1u : 0u;
-    gpuData.isEmit = data_.isEmitting ? 1u : 0u;
-    gpuData.isNormalize = data_.isNormalize ? 1u : 0u;
-    gpuData.isRandomRotateZ = data_.isRandomRotateZ ? 1u : 0u;
-    gpuData.useForceField = data_.useForceField ? 1u : 0u;
-    gpuData.emitterID = data_.emitterID;
-
-    gpuData.position = data_.position;
-    gpuData.scaleRangeX = data_.scaleRangeX;
-    gpuData.scaleRangeY = data_.scaleRangeY;
-    gpuData.velRangeX = data_.velRangeX;
-    gpuData.velRangeY = data_.velRangeY;
-    gpuData.velRangeZ = data_.velRangeZ;
-    gpuData.lifeTimeRange = data_.lifeTimeRange;
-
-    gpuData.startColorTint = data_.startColorTint;
-    gpuData.endColorTint = data_.endColorTint;
-
-    gpuData.count = data_.count;
-    gpuData.frequency = data_.frequency;
-    gpuData.frequencyTime = data_.frequencyTime;
-
-    // 一時的なエミッター用のデータをコピー
-    gpuData.isTemp = data_.isTemp ? 1u : 0u;
-    gpuData.emitterLifeTime = data_.emitterLifeTime;
-    gpuData.emitterCurrentTime = data_.emitterCurrentTime;
-
-    // 型固有のデータをコピー
-    switch (data_.type) {
-    case EmitterType::Sphere:
-      gpuData.radius = data_.sphere.radius;
-      break;
-    case EmitterType::Box:
-      gpuData.boxSize = data_.box.size;
-      gpuData.boxRotation = data_.box.rotation;
-      break;
-    case EmitterType::Triangle:
-      gpuData.triangleV1 = data_.triangle.v1;
-      gpuData.triangleV2 = data_.triangle.v2;
-      gpuData.triangleV3 = data_.triangle.v3;
-      break;
-    }
-  }
-
   void GPUParticleEmitter::UpdateEmission(float deltaTime)
   {
     // 非アクティブならスキップ
-    if (!data_.isActive) {
-      data_.isEmitting = false;
+    if (!(data_.flags & EFLAG_ACTIVE)) {
+      data_.flags &= ~EFLAG_EMITTING;
       return;
     }
 
@@ -96,13 +46,13 @@ namespace Tako {
 
     // 射出間隔を超えたら射出許可を出して時間を調整
     if (data_.frequency <= data_.frequencyTime) {
-      data_.isEmitting = true;
+      data_.flags |= EFLAG_EMITTING;
 
       // 余剰時間を調整（蓄積誤差を防ぐ）
       data_.frequencyTime = fmodf(data_.frequencyTime, data_.frequency);
     }
     else {
-      data_.isEmitting = false;
+      data_.flags &= ~EFLAG_EMITTING;
     }
   }
 
@@ -113,27 +63,27 @@ namespace Tako {
 
   void GPUParticleEmitter::SetActive(bool isActive)
   {
-    data_.isActive = isActive;
+    if (isActive) data_.flags |= EFLAG_ACTIVE; else data_.flags &= ~EFLAG_ACTIVE;
   }
 
   void GPUParticleEmitter::SetEmitting(bool cond)
   {
-    data_.isEmitting = cond;
+    if (cond) data_.flags |= EFLAG_EMITTING; else data_.flags &= ~EFLAG_EMITTING;
   }
 
   void GPUParticleEmitter::SetNormalize(bool isNormalize)
   {
-    data_.isNormalize = isNormalize;
+    if (isNormalize) data_.flags |= EFLAG_NORMALIZE; else data_.flags &= ~EFLAG_NORMALIZE;
   }
 
   void GPUParticleEmitter::SetRandomRotateZ(bool isRandomRotateZ)
   {
-    data_.isRandomRotateZ = isRandomRotateZ;
+    if (isRandomRotateZ) data_.flags |= EFLAG_RANDOM_ROTATE_Z; else data_.flags &= ~EFLAG_RANDOM_ROTATE_Z;
   }
 
   void GPUParticleEmitter::SetUseForceField(bool useForceField)
   {
-    data_.useForceField = useForceField;
+    if (useForceField) data_.flags |= EFLAG_USE_FORCE_FIELD; else data_.flags &= ~EFLAG_USE_FORCE_FIELD;
   }
 
   void GPUParticleEmitter::SetColor(const Vector4& color)
@@ -217,21 +167,21 @@ namespace Tako {
 
   void GPUParticleEmitter::SetTemporary(bool isTemporary, float lifeTime)
   {
-    data_.isTemp = isTemporary;
+    if (isTemporary) data_.flags |= EFLAG_TEMPORARY; else data_.flags &= ~EFLAG_TEMPORARY;
     data_.emitterLifeTime = lifeTime;
     data_.emitterCurrentTime = 0.0f;
   }
 
   void GPUParticleEmitter::UpdateTemporaryLifeTime(const float deltaTime)
   {
-    if (!data_.isTemp || data_.emitterLifeTime <= 0.0f) return;
+    if (!(data_.flags & EFLAG_TEMPORARY) || data_.emitterLifeTime <= 0.0f) return;
 
     data_.emitterCurrentTime += deltaTime;
   }
 
   bool GPUParticleEmitter::IsLifeTimeExpired() const
   {
-    if (!data_.isTemp || data_.emitterLifeTime <= 0.0f) return false;
+    if (!(data_.flags & EFLAG_TEMPORARY) || data_.emitterLifeTime <= 0.0f) return false;
     return data_.emitterCurrentTime >= data_.emitterLifeTime;
   }
 

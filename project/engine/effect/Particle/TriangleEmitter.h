@@ -38,12 +38,6 @@ namespace Tako {
     std::shared_ptr<GPUParticleEmitter> Clone() const override;
 
     /// <summary>
-    /// GPU データの設定
-    /// </summary>
-    /// <param name="gpuData">設定する GPU データ</param>
-    void SetupGPUData(EmitterGPUData& gpuData) const override;
-
-    /// <summary>
     /// 三角形の頂点を設定
     /// </summary>
     /// <param name="v1">頂点1</param>
@@ -55,19 +49,19 @@ namespace Tako {
     /// 頂点1を取得
     /// </summary>
     /// <returns>頂点1の座標</returns>
-    const Vector3& GetVertex1() const { return data_.triangle.v1; }
+    const Vector3& GetVertex1() const { return data_.triangleV1; }
 
     /// <summary>
     /// 頂点2を取得
     /// </summary>
     /// <returns>頂点2の座標</returns>
-    const Vector3& GetVertex2() const { return data_.triangle.v2; }
+    const Vector3& GetVertex2() const { return data_.triangleV2; }
 
     /// <summary>
     /// 頂点3を取得
     /// </summary>
     /// <returns>頂点3の座標</returns>
-    const Vector3& GetVertex3() const { return data_.triangle.v3; }
+    const Vector3& GetVertex3() const { return data_.triangleV3; }
 
     /// <summary>
     /// エミッタータイプを取得

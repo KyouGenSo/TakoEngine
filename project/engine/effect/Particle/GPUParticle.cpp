@@ -393,7 +393,7 @@ namespace Tako {
   void GPUParticle::SyncEmitterData()
   {
     // GPU 側のエミッターバッファにマップ
-    EmitterGPUData* gpuEmitters = nullptr;
+    EmitterData* gpuEmitters = nullptr;
     emitterResource_->Map(0, nullptr, reinterpret_cast<void**>(&gpuEmitters));
 
     // バッファサイズが足りるか確認
@@ -404,12 +404,11 @@ namespace Tako {
 #endif
     }
 
-    // 各エミッターの GPU データを更新
+    // 各エミッターの GPU データを更新（統合構造体をそのままコピー）
     size_t emitterCount = min(activeEmitters_.size(), static_cast<size_t>(kNumMaxEmitter));
     for (size_t i = 0; i < emitterCount; i++) {
       if (activeEmitters_[i]) {
-        // エミッターに GPU データのセットアップを依頼
-        activeEmitters_[i]->SetupGPUData(gpuEmitters[i]);
+        gpuEmitters[i] = activeEmitters_[i]->GetData();
       }
     }
 
@@ -847,19 +846,19 @@ namespace Tako {
   {
 
     // エミッターリソースの生成
-    m_dx12_->CreateBufferResource(emitterResource_, sizeof(EmitterGPUData) * kNumMaxEmitter);
+    m_dx12_->CreateBufferResource(emitterResource_, sizeof(EmitterData) * kNumMaxEmitter);
 
     // エミッターリソースの SRV を作成
     emitterSrvIndex_ = m_srvManager_->Allocate();
-    m_srvManager_->CreateSRVForStructuredBuffer(emitterSrvIndex_, emitterResource_.Get(), kNumMaxEmitter, sizeof(EmitterGPUData));
+    m_srvManager_->CreateSRVForStructuredBuffer(emitterSrvIndex_, emitterResource_.Get(), kNumMaxEmitter, sizeof(EmitterData));
 
     // エミッター配列の初期化
     activeEmitters_.clear();
 
     // GPU 側の初期化
-    EmitterGPUData* gpuEmitters = nullptr;
+    EmitterData* gpuEmitters = nullptr;
     emitterResource_->Map(0, nullptr, reinterpret_cast<void**>(&gpuEmitters));
-    ZeroMemory(gpuEmitters, sizeof(EmitterGPUData) * kNumMaxEmitter);
+    ZeroMemory(gpuEmitters, sizeof(EmitterData) * kNumMaxEmitter);
     emitterResource_->Unmap(0, nullptr);
   }
 

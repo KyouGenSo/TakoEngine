@@ -11,6 +11,18 @@
 
 namespace Tako {
 
+  // ===== パーティクル用ビットフラグ定数 =====
+  /// パーティクルがフォースフィールドの影響を受けるか
+  constexpr uint32_t PFLAG_USE_FORCE_FIELD = (1u << 0);
+
+  // ===== エミッター用ビットフラグ定数 =====
+  constexpr uint32_t EFLAG_ACTIVE          = (1u << 0); ///< エミッターがアクティブ
+  constexpr uint32_t EFLAG_EMITTING        = (1u << 1); ///< 現在射出中
+  constexpr uint32_t EFLAG_NORMALIZE       = (1u << 2); ///< 速度ベクトルを正規化
+  constexpr uint32_t EFLAG_RANDOM_ROTATE_Z = (1u << 3); ///< Z軸ランダム回転
+  constexpr uint32_t EFLAG_USE_FORCE_FIELD = (1u << 4); ///< フォースフィールド有効
+  constexpr uint32_t EFLAG_TEMPORARY       = (1u << 5); ///< 一時的なエミッター
+
   /// <summary>
   /// エミッタータイプ列挙型
   /// </summary>
@@ -74,7 +86,7 @@ namespace Tako {
     float currentTime;      ///< 生成からの経過時間（秒）
     float mass;             ///< 質量（衝突応答用）
     uint32_t cellIndex;     ///< 空間ハッシュ用セルインデックス
-    uint32_t useForceField; ///< フォースフィールドの影響を受けるか（1=有効, 0=無効）
+    uint32_t flags;         ///< パーティクルフラグ（PFLAG_* ビットフラグ）
   };
 
   /// <summary>
@@ -165,16 +177,13 @@ namespace Tako {
   };
 
   /// <summary>
-  /// C++側エミッターデータ構造体
-  /// エミッターの全設定パラメータを保持（CPU 側）
+  /// 統合エミッターデータ構造体
+  /// CPU側とGPU側で共通のデータ構造。HLSL側のEmitter構造体と同一のフィールド順序・サイズ
+  /// StructuredBuffer経由でGPUに直接転送される
   /// </summary>
   struct EmitterData {
-    EmitterType type;         ///< エミッタータイプ（球体/箱型/三角形）
-    bool isActive;            ///< エミッターがアクティブかどうか
-    bool isEmitting;          ///< 現在射出中かどうか
-    bool isNormalize;         ///< 速度ベクトルを正規化するか
-    bool isRandomRotateZ;     ///< Z 軸ランダム回転を有効にするか
-    bool useForceField;       ///< フォースフィールドの影響を受けるか
+    uint32_t type;            ///< エミッタータイプ（EmitterType: 0=球体, 1=箱型, 2=三角形）
+    uint32_t flags;           ///< エミッターフラグ（EFLAG_* ビットフラグ）
     uint32_t emitterID;       ///< エミッター固有の ID
 
     Vector3 position;         ///< エミッターの中心/基準位置
@@ -191,74 +200,30 @@ namespace Tako {
     float frequency;          ///< 射出頻度（秒）
     float frequencyTime;      ///< 射出タイマーの経過時間
 
-    bool isTemp;              ///< 一時的なエミッターかどうか
     float emitterLifeTime;    ///< エミッターの寿命（一時エミッター用）
     float emitterCurrentTime; ///< エミッターの経過時間
 
-    /// <summary>
-    /// 型固有のパラメータ（共用体）
-    /// </summary>
-    union {
-      struct { float radius; } sphere;                      ///< 球体用：半径
-      struct { Vector3 size; Vector3 rotation; } box;       ///< 箱型用：サイズと回転
-      struct { Vector3 v1; Vector3 v2; Vector3 v3; } triangle; ///< 三角形用：3頂点
-    };
+    float radius;             ///< 球体エミッター用：半径
+    Vector3 boxSize;          ///< 箱型エミッター用：サイズ
+    Vector3 boxRotation;      ///< 箱型エミッター用：回転（オイラー角）
+    Vector3 triangleV1;       ///< 三角形エミッター用：頂点1
+    Vector3 triangleV2;       ///< 三角形エミッター用：頂点2
+    Vector3 triangleV3;       ///< 三角形エミッター用：頂点3
 
-    // デフォルトコンストラクタ
-    EmitterData() : type(EmitterType::Sphere), isActive(true), isEmitting(false),
-      isNormalize(false), isRandomRotateZ(false), useForceField(true),
+    /// <summary>
+    /// デフォルトコンストラクタ
+    /// </summary>
+    EmitterData() : type(static_cast<uint32_t>(EmitterType::Sphere)),
+      flags(EFLAG_ACTIVE | EFLAG_USE_FORCE_FIELD),
       emitterID(0), position({ .x = 0.0f, .y = 0.0f, .z = 0.0f }),
       scaleRangeX(), scaleRangeY(), velRangeX(), velRangeY(), velRangeZ(), lifeTimeRange(),
       startColorTint({ .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f }),
       endColorTint({ .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f }),
-      count(20), frequency(0.5f), frequencyTime(0.0f)
-    {
-      // 球体パラメータの初期化
-      sphere.radius = 1.0f;
-    }
-  };
-
-  /// <summary>
-  /// GPU 側エミッター構造体
-  /// Compute Shader でのパーティクル Compute に使用
-  /// 全エミッタータイプのパラメータを平坦化して保持
-  /// </summary>
-  struct EmitterGPUData
-  {
-    uint32_t type;           ///< エミッタータイプ（0=球体, 1=箱型, 2=三角形）
-    uint32_t isActive;       ///< アクティブ状態（0=無効, 1=有効）
-    uint32_t isEmit;         ///< 射出フラグ（このフレームで射出するか）
-    uint32_t isNormalize;    ///< 速度正規化フラグ
-    uint32_t isRandomRotateZ; ///< Z 軸ランダム回転フラグ
-    uint32_t useForceField;  ///< フォースフィールド有効フラグ（0=無効, 1=有効）
-    uint32_t emitterID;      ///< エミッター ID
-
-    Vector3 position;        ///< エミッター中心/基準位置
-    Vector2 scaleRangeX;     ///< X スケールの範囲[min, max]
-    Vector2 scaleRangeY;     ///< Y スケールの範囲[min, max]
-    Vector2 velRangeX;       ///< X 方向速度の範囲[min, max]
-    Vector2 velRangeY;       ///< Y 方向速度の範囲[min, max]
-    Vector2 velRangeZ;       ///< Z 方向速度の範囲[min, max]
-    Vector2 lifeTimeRange;   ///< パーティクル寿命の範囲[min, max]（秒）
-    Vector4 startColorTint;  ///< 開始色の色調補正（RGBA）
-    Vector4 endColorTint;    ///< 終了色の色調補正（RGBA）
-
-    uint32_t count;          ///< 1回の射出で生成するパーティクル数
-    float frequency;         ///< 射出頻度（秒）
-    float frequencyTime;     ///< 射出タイマーの経過時間
-
-    uint32_t isTemp;          ///< 一時的なエミッターフラグ
-    float emitterLifeTime;    ///< エミッターの寿命
-    float emitterCurrentTime; ///< エミッターの経過時間
-
-    float radius;            ///< 球体エミッター用：半径
-
-    Vector3 boxSize;         ///< 箱型エミッター用：サイズ
-    Vector3 boxRotation;     ///< 箱型エミッター用：回転（オイラー角）
-
-    Vector3 triangleV1;      ///< 三角形エミッター用：頂点1
-    Vector3 triangleV2;      ///< 三角形エミッター用：頂点2
-    Vector3 triangleV3;      ///< 三角形エミッター用：頂点3
+      count(20), frequency(0.5f), frequencyTime(0.0f),
+      emitterLifeTime(0.0f), emitterCurrentTime(0.0f),
+      radius(1.0f), boxSize(), boxRotation(),
+      triangleV1(), triangleV2(), triangleV3()
+    {}
   };
 
 } // namespace Tako

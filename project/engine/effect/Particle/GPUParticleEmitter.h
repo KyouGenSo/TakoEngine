@@ -37,10 +37,10 @@ namespace Tako {
     virtual std::shared_ptr<GPUParticleEmitter> Clone() const = 0;
 
     /// <summary>
-    /// GPU データの設定
+    /// エミッターデータの参照を取得（GPU転送用）
     /// </summary>
-    /// <param name="gpuData">設定する GPU データ</param>
-    virtual void SetupGPUData(EmitterGPUData& gpuData) const;
+    /// <returns>エミッターデータの const 参照</returns>
+    const EmitterData& GetData() const { return data_; }
 
     /// <summary>
     /// エミッターの射出更新
@@ -201,25 +201,25 @@ namespace Tako {
     /// エミッターがアクティブかどうかを取得
     /// </summary>
     /// <returns>アクティブな場合 true</returns>
-    [[nodiscard]] bool IsActive() const { return data_.isActive; }
+    [[nodiscard]] bool IsActive() const { return (data_.flags & EFLAG_ACTIVE) != 0; }
 
     /// <summary>
     /// エミッターが射出中かどうかを取得
     /// </summary>
     /// <returns>射出中の場合 true</returns>
-    [[nodiscard]] bool IsEmitting() const { return data_.isEmitting; }
+    [[nodiscard]] bool IsEmitting() const { return (data_.flags & EFLAG_EMITTING) != 0; }
 
     /// <summary>
     /// ランダム Z 軸回転が有効かどうかを取得
     /// </summary>
     /// <returns>有効な場合 true</returns>
-    [[nodiscard]] bool IsRandomRotateZ() const { return data_.isRandomRotateZ; }
+    [[nodiscard]] bool IsRandomRotateZ() const { return (data_.flags & EFLAG_RANDOM_ROTATE_Z) != 0; }
 
     /// <summary>
     /// フォースフィールドの影響を受けるかを取得
     /// </summary>
     /// <returns>有効な場合 true</returns>
-    [[nodiscard]] bool IsUseForceField() const { return data_.useForceField; }
+    [[nodiscard]] bool IsUseForceField() const { return (data_.flags & EFLAG_USE_FORCE_FIELD) != 0; }
 
     /// <summary>
     /// X 方向のスケール範囲を取得
@@ -297,7 +297,7 @@ namespace Tako {
     /// 一時的なエミッターかどうかを取得
     /// </summary>
     /// <returns>一時的な場合 true</returns>
-    [[nodiscard]] bool IsTemporary() const { return data_.isTemp; }
+    [[nodiscard]] bool IsTemporary() const { return (data_.flags & EFLAG_TEMPORARY) != 0; }
 
     /// <summary>
     /// エミッターの寿命を取得
@@ -321,7 +321,7 @@ namespace Tako {
     /// 速度の正規化が有効かどうかを取得
     /// </summary>
     /// <returns>有効な場合 true</returns>
-    [[nodiscard]] bool IsNormalize() const { return data_.isNormalize; }
+    [[nodiscard]] bool IsNormalize() const { return (data_.flags & EFLAG_NORMALIZE) != 0; }
 
 
     /// <summary>

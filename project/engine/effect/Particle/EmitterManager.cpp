@@ -873,37 +873,22 @@ namespace Tako {
     auto emitter = it->second;
     CopiedSettings& slot = copiedSettingsSlots_[slotIndex];
 
-    // エミッターの設定をコピー
+    // エミッターの設定をコピー（統合構造体をそのままコピー）
     slot.type = emitter->GetType();
-    slot.data.type = emitter->GetType();
-    slot.data.position = emitter->GetPosition();
-    slot.data.isActive = emitter->IsActive();
-    slot.data.isEmitting = emitter->IsEmitting();
-    slot.data.isNormalize = emitter->IsNormalize();
-    slot.data.count = emitter->GetParticleCount();
-    slot.data.frequency = emitter->GetFrequency();
-    slot.data.frequencyTime = emitter->GetFrequencyTime();
-    slot.data.scaleRangeX = emitter->GetScaleRangeX();
-    slot.data.scaleRangeY = emitter->GetScaleRangeY();
-    slot.data.velRangeX = emitter->GetVelRangeX();
-    slot.data.velRangeY = emitter->GetVelRangeY();
-    slot.data.velRangeZ = emitter->GetVelRangeZ();
-    slot.data.lifeTimeRange = emitter->GetLifeTimeRange();
-    slot.data.startColorTint = emitter->GetStartColor();
-    slot.data.endColorTint = emitter->GetEndColor();
+    slot.data = emitter->GetData();
 
-    // 型固有のパラメータ
+    // 型固有のパラメータ（GetData()で全てコピー済みだが、Getter経由で明示的に設定）
     if (auto sphereEmitter = std::dynamic_pointer_cast<SphereEmitter>(emitter)) {
-      slot.data.sphere.radius = sphereEmitter->GetRadius();
+      slot.data.radius = sphereEmitter->GetRadius();
     }
     else if (auto boxEmitter = std::dynamic_pointer_cast<BoxEmitter>(emitter)) {
-      slot.data.box.size = boxEmitter->GetSize();
-      slot.data.box.rotation = boxEmitter->GetRotation();
+      slot.data.boxSize = boxEmitter->GetSize();
+      slot.data.boxRotation = boxEmitter->GetRotation();
     }
     else if (auto triangleEmitter = std::dynamic_pointer_cast<TriangleEmitter>(emitter)) {
-      slot.data.triangle.v1 = triangleEmitter->GetVertex1();
-      slot.data.triangle.v2 = triangleEmitter->GetVertex2();
-      slot.data.triangle.v3 = triangleEmitter->GetVertex3();
+      slot.data.triangleV1 = triangleEmitter->GetVertex1();
+      slot.data.triangleV2 = triangleEmitter->GetVertex2();
+      slot.data.triangleV3 = triangleEmitter->GetVertex3();
     }
 
     slot.valid = true;
@@ -933,9 +918,9 @@ namespace Tako {
     }
     else {
       // 全体ペースト（位置と型固有パラメータ以外）
-      targetEmitter->SetActive(slot.data.isActive);
-      targetEmitter->SetEmitting(slot.data.isEmitting);
-      targetEmitter->SetNormalize(slot.data.isNormalize);
+      targetEmitter->SetActive((slot.data.flags & EFLAG_ACTIVE) != 0);
+      targetEmitter->SetEmitting((slot.data.flags & EFLAG_EMITTING) != 0);
+      targetEmitter->SetNormalize((slot.data.flags & EFLAG_NORMALIZE) != 0);
       targetEmitter->SetParticleCount(slot.data.count);
       targetEmitter->SetFrequency(slot.data.frequency);
       targetEmitter->SetScaleRange(slot.data.scaleRangeX, slot.data.scaleRangeY);

@@ -36,12 +36,6 @@ namespace Tako {
     std::shared_ptr<GPUParticleEmitter> Clone() const override;
 
     /// <summary>
-    /// GPU データの設定
-    /// </summary>
-    /// <param name="gpuData">設定する GPU データ</param>
-    void SetupGPUData(EmitterGPUData& gpuData) const override;
-
-    /// <summary>
     /// 球体の半径を設定
     /// </summary>
     /// <param name="radius">半径</param>
@@ -51,7 +45,7 @@ namespace Tako {
     /// 球体の半径を取得
     /// </summary>
     /// <returns>半径</returns>
-    float GetRadius() const { return data_.sphere.radius; }
+    float GetRadius() const { return data_.radius; }
 
     /// <summary>
     /// エミッタータイプを取得

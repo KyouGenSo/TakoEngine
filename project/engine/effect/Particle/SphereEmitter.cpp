@@ -14,7 +14,7 @@ namespace Tako {
     SetFrequency(frequency);
 
     // エミッターのタイプを設定
-    data_.type = EmitterType::Sphere;
+    data_.type = static_cast<uint32_t>(EmitterType::Sphere);
   }
 
   std::shared_ptr<GPUParticleEmitter> SphereEmitter::Clone() const
@@ -36,18 +36,9 @@ namespace Tako {
     return clone;
   }
 
-  void SphereEmitter::SetupGPUData(EmitterGPUData& gpuData) const
-  {
-    // 基底クラスのデータを設定
-    GPUParticleEmitter::SetupGPUData(gpuData);
-    // 球体固有のデータを設定
-    gpuData.radius = data_.sphere.radius;
-    gpuData.type = static_cast<uint32_t>(data_.type);
-  }
-
   void SphereEmitter::SetRadius(float radius)
   {
-    data_.sphere.radius = radius;
+    data_.radius = radius;
   }
 
 } // namespace Tako
