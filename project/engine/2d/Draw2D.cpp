@@ -50,8 +50,6 @@ namespace Tako {
     lineData_ = std::make_unique<LineData>();
     CreateLineVertexData(lineData_.get());
 
-    // 球の頂点位置を計算
-    CalcSphereVertexData();
   }
 
   void Draw2D::Finalize()
@@ -243,22 +241,36 @@ namespace Tako {
     DrawLine(end, { headBase.x - upPerp.x * halfHead, headBase.y - upPerp.y * halfHead, headBase.z - upPerp.z * halfHead }, color);
   }
 
-  void Draw2D::DrawSphere(const Vector3& center, const float radius, const Vector4& color)
+  void Draw2D::DrawSphere(const Vector3& center, const float radius, const Vector4& color, uint32_t subdivision)
   {
-    Matrix4x4 worldMatrix = Mat4x4::MakeAffine(Vector3(radius, radius, radius), Vector3(0.0f, 0.0f, 0.0f), center);
+    const float kLonEvery = 2.0f * std::numbers::pi_v<float> / static_cast<float>(subdivision);
+    const float kLatEvery = std::numbers::pi_v<float> / static_cast<float>(subdivision);
 
-    for (uint32_t i = 0; i < sphereVertices_.size(); i += 3) {
-      Vector3 a = sphereVertices_[i];
-      Vector3 b = sphereVertices_[i + 1];
-      Vector3 c = sphereVertices_[i + 2];
+    for (uint32_t latIndex = 0; latIndex < subdivision; latIndex++) {
+      float lat = -std::numbers::pi_v<float> / 2.0f + kLatEvery * static_cast<float>(latIndex);
+      for (uint32_t lonIndex = 0; lonIndex < subdivision; lonIndex++) {
+        float lon = kLonEvery * static_cast<float>(lonIndex);
 
-      a = Mat4x4::Transform(worldMatrix, a);
-      b = Mat4x4::Transform(worldMatrix, b);
-      c = Mat4x4::Transform(worldMatrix, c);
+        // 単位球上の3点を計算し、radius + center でワールド座標に変換
+        Vector3 a = {
+          cosf(lat) * cosf(lon) * radius + center.x,
+          sinf(lat) * radius + center.y,
+          cosf(lat) * sinf(lon) * radius + center.z
+        };
+        Vector3 b = {
+          cosf(lat + kLatEvery) * cosf(lon) * radius + center.x,
+          sinf(lat + kLatEvery) * radius + center.y,
+          cosf(lat + kLatEvery) * sinf(lon) * radius + center.z
+        };
+        Vector3 c = {
+          cosf(lat) * cosf(lon + kLonEvery) * radius + center.x,
+          sinf(lat) * radius + center.y,
+          cosf(lat) * sinf(lon + kLonEvery) * radius + center.z
+        };
 
-      // ライン描画
-      DrawLine(a, b, color);
-      DrawLine(b, c, color);
+        DrawLine(a, b, color);
+        DrawLine(b, c, color);
+      }
     }
   }
 
@@ -605,38 +617,6 @@ namespace Tako {
     transformationMatrixBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixData_));
 
     transformationMatrixData_->WVP = m_camera_->GetViewMatrix() * m_camera_->GetProjectionMatrix();
-  }
-
-  void Draw2D::CalcSphereVertexData()
-  {
-    const uint32_t kSubdivision = 4; // 1分割数
-    const float kLonEvery = 2.0f * std::numbers::pi_v<float> / static_cast<float>(kSubdivision); // 経度の1分割の角度 phi
-    const float kLatEvery = std::numbers::pi_v<float> / static_cast<float>(kSubdivision); // 緯度の1分割の角度 theta
-
-    // 緯度方向のループ
-    for (uint32_t latIndex = 0; latIndex < kSubdivision; latIndex++) {
-      float lat = -std::numbers::pi_v<float> / 2.0f + kLatEvery * static_cast<float>(latIndex);
-      // 経度方向のループ
-      for (uint32_t lonIndex = 0; lonIndex < kSubdivision; lonIndex++) {
-        float lon = kLonEvery * static_cast<float>(lonIndex);
-        // 球の表面上の点を求める
-        Vector3 a, b, c;
-        a.x = 0.0f + 1.0f * cosf(lat) * cosf(lon);
-        a.y = 0.0f + 1.0f * sinf(lat);
-        a.z = 0.0f + 1.0f * cosf(lat) * sinf(lon);
-        b.x = 0.0f + 1.0f * cosf(lat + kLatEvery) * cosf(lon);
-        b.y = 0.0f + 1.0f * sinf(lat + kLatEvery);
-        b.z = 0.0f + 1.0f * cosf(lat + kLatEvery) * sinf(lon);
-        c.x = 0.0f + 1.0f * cosf(lat) * cosf(lon + kLonEvery);
-        c.y = 0.0f + 1.0f * sinf(lat);
-        c.z = 0.0f + 1.0f * cosf(lat) * sinf(lon + kLonEvery);
-
-        // 座標を保存
-        sphereVertices_.push_back(a);
-        sphereVertices_.push_back(b);
-        sphereVertices_.push_back(c);
-      }
-    }
   }
 
   void Draw2D::CalcGridVertexData()

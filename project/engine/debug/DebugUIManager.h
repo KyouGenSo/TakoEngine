@@ -333,6 +333,8 @@ namespace Tako {
     Vector4 emitterColorTriangle_ = { 1.0f, 1.0f, 0.0f, 1.0f }; ///< 三角形エミッター色（黄）
     Vector4 forceFieldRadiusColor_    = { 1.0f, 0.5f, 0.0f, 0.5f }; ///< フォースフィールド半径色（オレンジ）
     Vector4 forceFieldDirectionColor_ = { 1.0f, 0.0f, 0.0f, 1.0f }; ///< フォースフィールド方向色（赤）
+    float forceFieldArrowLength_ = 2.0f;   ///< フォースフィールド矢印の長さ
+    float forceFieldArrowHeadSize_ = 0.3f;  ///< フォースフィールド矢印の先端サイズ
   };
 
 } // namespace Tako

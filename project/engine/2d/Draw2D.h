@@ -170,7 +170,7 @@ namespace Tako {
     /// <param name="center">中心座標</param>
     /// <param name="radius">半径</param>
     /// <param name="color">描画色</param>
-    void DrawSphere(const Vector3& center, const float radius, const Vector4& color);
+    void DrawSphere(const Vector3& center, const float radius, const Vector4& color, uint32_t subdivision = 10);
 
     /// <summary>
     /// AABB の描画
@@ -277,11 +277,6 @@ namespace Tako {
     void CreateTransformMatData();
 
     /// <summary>
-    /// 球の頂点位置を計算
-    /// </summary>
-    void CalcSphereVertexData();
-
-    /// <summary>
     /// グリッドの頂点位置を計算
     /// </summary>
     void CalcGridVertexData();
@@ -332,8 +327,6 @@ namespace Tako {
     std::unique_ptr<BoxData> boxData_; ///< 矩形データ
 
     std::unique_ptr<LineData> lineData_; ///< 線データ
-
-    std::vector<Vector3> sphereVertices_; ///< 球の頂点データ
 
     std::vector<Vector3> gridVertices_; ///< グリッドの頂点データ
   };

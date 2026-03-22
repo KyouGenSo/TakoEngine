@@ -627,6 +627,8 @@ namespace Tako {
       if (showForceFieldRadius_ || showForceFieldDirection_) {
         ImGui::ColorEdit4("Radius Color##FFVis", &forceFieldRadiusColor_.x);
         ImGui::ColorEdit4("Direction Color##FFVis", &forceFieldDirectionColor_.x);
+        ImGui::DragFloat("Arrow Length##FFVis", &forceFieldArrowLength_, 0.1f, 0.1f, 20.0f);
+        ImGui::DragFloat("Arrow Head Size##FFVis", &forceFieldArrowHeadSize_, 0.01f, 0.05f, 1.0f);
       }
     }
   }
@@ -690,9 +692,6 @@ namespace Tako {
     // === 方向表示 ===
     if (!showForceFieldDirection_) return;
 
-    constexpr float kArrowLength = 2.0f;
-    constexpr float kHeadSize = 0.3f;
-
     switch (static_cast<ForceFieldType>(field.type)) {
     case ForceFieldType::Gravity:
     case ForceFieldType::Directional: {
@@ -701,9 +700,9 @@ namespace Tako {
       if (dirLen < 0.001f) break;
 
       Vector3 dir = { field.direction.x / dirLen, field.direction.y / dirLen, field.direction.z / dirLen };
-      float len = (std::min)((std::max)(kArrowLength * field.strength, 0.5f), 10.0f);
+      float len = (std::min)((std::max)(forceFieldArrowLength_ * field.strength, 0.5f), 10.0f);
       Vector3 end = { field.position.x + dir.x * len, field.position.y + dir.y * len, field.position.z + dir.z * len };
-      draw2D->DrawArrow(field.position, end, dirColor, kHeadSize);
+      draw2D->DrawArrow(field.position, end, dirColor, forceFieldArrowHeadSize_);
       break;
     }
     case ForceFieldType::Vortex: {
@@ -793,12 +792,12 @@ namespace Tako {
         arcEnd.y - tangent.y * 0.3f,
         arcEnd.z - tangent.z * 0.3f
       };
-      draw2D->DrawArrow(arrowStart, arcEnd, dirColor, kHeadSize * 0.5f);
+      draw2D->DrawArrow(arrowStart, arcEnd, dirColor, forceFieldArrowHeadSize_ * 0.5f);
       break;
     }
     case ForceFieldType::Attract: {
       // 4方向（±X, ±Z）から中心へ向かう矢印
-      float dist = (field.radius > 0.0f) ? field.radius : kArrowLength * 2.0f;
+      float dist = (field.radius > 0.0f) ? field.radius : forceFieldArrowLength_ * 2.0f;
       Vector3 offsets[4] = {
         { dist, 0.0f,  0.0f },
         {-dist, 0.0f,  0.0f },
@@ -813,13 +812,13 @@ namespace Tako {
         if (tcLen < 0.001f) continue;
         Vector3 dir = { toCenter.x / tcLen, toCenter.y / tcLen, toCenter.z / tcLen };
         Vector3 end = { field.position.x - dir.x * 0.5f, field.position.y - dir.y * 0.5f, field.position.z - dir.z * 0.5f };
-        draw2D->DrawArrow(start, end, dirColor, kHeadSize);
+        draw2D->DrawArrow(start, end, dirColor, forceFieldArrowHeadSize_);
       }
       break;
     }
     case ForceFieldType::Repel: {
       // 中心から4方向へ向かう矢印
-      float dist = (field.radius > 0.0f) ? field.radius * 0.8f : kArrowLength * 2.0f;
+      float dist = (field.radius > 0.0f) ? field.radius * 0.8f : forceFieldArrowLength_ * 2.0f;
       Vector3 directions[4] = {
         { 1.0f, 0.0f,  0.0f },
         {-1.0f, 0.0f,  0.0f },
@@ -829,7 +828,7 @@ namespace Tako {
       for (const auto& dir : directions) {
         Vector3 start = { field.position.x + dir.x * 0.5f, field.position.y + dir.y * 0.5f, field.position.z + dir.z * 0.5f };
         Vector3 end = { field.position.x + dir.x * dist, field.position.y + dir.y * dist, field.position.z + dir.z * dist };
-        draw2D->DrawArrow(start, end, dirColor, kHeadSize);
+        draw2D->DrawArrow(start, end, dirColor, forceFieldArrowHeadSize_);
       }
       break;
     }
