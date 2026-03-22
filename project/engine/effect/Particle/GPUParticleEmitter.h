@@ -79,6 +79,12 @@ namespace Tako {
     void SetRandomRotateZ(bool isRandomRotateZ);
 
     /// <summary>
+    /// フォースフィールドの影響を受けるかを設定
+    /// </summary>
+    /// <param name="useForceField">フォースフィールドを有効にする場合 true</param>
+    void SetUseForceField(bool useForceField);
+
+    /// <summary>
     /// 1回の射出で生成するパーティクル数を設定
     /// </summary>
     /// <param name="count">パーティクル数</param>
@@ -208,6 +214,12 @@ namespace Tako {
     /// </summary>
     /// <returns>有効な場合 true</returns>
     [[nodiscard]] bool IsRandomRotateZ() const { return data_.isRandomRotateZ; }
+
+    /// <summary>
+    /// フォースフィールドの影響を受けるかを取得
+    /// </summary>
+    /// <returns>有効な場合 true</returns>
+    [[nodiscard]] bool IsUseForceField() const { return data_.useForceField; }
 
     /// <summary>
     /// X 方向のスケール範囲を取得

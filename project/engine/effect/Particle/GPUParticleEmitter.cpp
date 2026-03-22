@@ -11,6 +11,7 @@ namespace Tako {
     data_.isEmitting = false;
     data_.isNormalize = false;
     data_.isRandomRotateZ = false;
+    data_.useForceField = true;
     data_.isTemp = false;
     data_.emitterLifeTime = 0.0f;
     data_.emitterCurrentTime = 0.0f;
@@ -42,6 +43,7 @@ namespace Tako {
     gpuData.isEmit = data_.isEmitting ? 1u : 0u;
     gpuData.isNormalize = data_.isNormalize ? 1u : 0u;
     gpuData.isRandomRotateZ = data_.isRandomRotateZ ? 1u : 0u;
+    gpuData.useForceField = data_.useForceField ? 1u : 0u;
     gpuData.emitterID = data_.emitterID;
 
     gpuData.position = data_.position;
@@ -127,6 +129,11 @@ namespace Tako {
   void GPUParticleEmitter::SetRandomRotateZ(bool isRandomRotateZ)
   {
     data_.isRandomRotateZ = isRandomRotateZ;
+  }
+
+  void GPUParticleEmitter::SetUseForceField(bool useForceField)
+  {
+    data_.useForceField = useForceField;
   }
 
   void GPUParticleEmitter::SetColor(const Vector4& color)

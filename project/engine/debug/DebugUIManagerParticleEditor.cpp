@@ -434,31 +434,10 @@ namespace Tako {
 
     ImGui::Separator();
 
-    // --- フォースフィールド一覧 ---
-    const auto& forceFields = gpuParticle->GetForceFields();
-    ImGui::Text("Force Fields: %zu / %u", forceFields.size(), GPUParticle::kMaxForceFields);
-
     // フォースフィールドタイプ名の定義
     static const char* forceTypeNames[] = {
       "Gravity", "Directional", "Vortex", "Attract", "Repel"
     };
-
-    // リスト表示
-    if (ImGui::BeginListBox("##ForceFieldList", ImVec2(-1, 120))) {
-      for (int i = 0; i < static_cast<int>(forceFields.size()); i++) {
-        uint32_t typeIdx = forceFields[i].type;
-        const char* typeName = (typeIdx < 5) ? forceTypeNames[typeIdx] : "Unknown";
-
-        char label[64];
-        snprintf(label, sizeof(label), "[%d] %s (str: %.2f)", i, typeName, forceFields[i].strength);
-
-        bool isSelected = (selectedForceFieldIndex_ == i);
-        if (ImGui::Selectable(label, isSelected)) {
-          selectedForceFieldIndex_ = i;
-        }
-      }
-      ImGui::EndListBox();
-    }
 
     // --- 新規フォースフィールド追加 ---
     if (ImGui::CollapsingHeader("Add Force Field")) {
@@ -529,6 +508,27 @@ namespace Tako {
         gpuParticle->AddForceField(field);
         AddLog("Added vortex force field", LogType::Info);
       }
+    }
+
+    // --- フォースフィールド一覧 ---
+    const auto& forceFields = gpuParticle->GetForceFields();
+    ImGui::Text("Force Fields: %zu / %u", forceFields.size(), GPUParticle::kMaxForceFields);
+
+    // リスト表示
+    if (ImGui::BeginListBox("##ForceFieldList", ImVec2(-1, 120))) {
+      for (int i = 0; i < static_cast<int>(forceFields.size()); i++) {
+        uint32_t typeIdx = forceFields[i].type;
+        const char* typeName = (typeIdx < 5) ? forceTypeNames[typeIdx] : "Unknown";
+
+        char label[64];
+        snprintf(label, sizeof(label), "[%d] %s (str: %.2f)", i, typeName, forceFields[i].strength);
+
+        bool isSelected = (selectedForceFieldIndex_ == i);
+        if (ImGui::Selectable(label, isSelected)) {
+          selectedForceFieldIndex_ = i;
+        }
+      }
+      ImGui::EndListBox();
     }
 
     // --- 選択中のフォースフィールド編集 ---

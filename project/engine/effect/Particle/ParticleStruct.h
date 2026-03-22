@@ -74,6 +74,7 @@ namespace Tako {
     float currentTime;      ///< 生成からの経過時間（秒）
     float mass;             ///< 質量（衝突応答用）
     uint32_t cellIndex;     ///< 空間ハッシュ用セルインデックス
+    uint32_t useForceField; ///< フォースフィールドの影響を受けるか（1=有効, 0=無効）
   };
 
   /// <summary>
@@ -173,6 +174,7 @@ namespace Tako {
     bool isEmitting;          ///< 現在射出中かどうか
     bool isNormalize;         ///< 速度ベクトルを正規化するか
     bool isRandomRotateZ;     ///< Z 軸ランダム回転を有効にするか
+    bool useForceField;       ///< フォースフィールドの影響を受けるか
     uint32_t emitterID;       ///< エミッター固有の ID
 
     Vector3 position;         ///< エミッターの中心/基準位置
@@ -204,6 +206,7 @@ namespace Tako {
 
     // デフォルトコンストラクタ
     EmitterData() : type(EmitterType::Sphere), isActive(true), isEmitting(false),
+      isNormalize(false), isRandomRotateZ(false), useForceField(true),
       emitterID(0), position({ .x = 0.0f, .y = 0.0f, .z = 0.0f }),
       scaleRangeX(), scaleRangeY(), velRangeX(), velRangeY(), velRangeZ(), lifeTimeRange(),
       startColorTint({ .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f }),
@@ -227,6 +230,7 @@ namespace Tako {
     uint32_t isEmit;         ///< 射出フラグ（このフレームで射出するか）
     uint32_t isNormalize;    ///< 速度正規化フラグ
     uint32_t isRandomRotateZ; ///< Z 軸ランダム回転フラグ
+    uint32_t useForceField;  ///< フォースフィールド有効フラグ（0=無効, 1=有効）
     uint32_t emitterID;      ///< エミッター ID
 
     Vector3 position;        ///< エミッター中心/基準位置
