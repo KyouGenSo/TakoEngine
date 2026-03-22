@@ -158,6 +158,11 @@ namespace Tako {
                 emitter->SetRandomRotateZ(isRandomRotateZ);
               }
 
+              bool useForceField = emitter->IsUseForceField();
+              if (ImGui::Checkbox("Use ForceField", &useForceField)) {
+                emitter->SetUseForceField(useForceField);
+              }
+
               int count = emitter->GetParticleCount();
               if (ImGui::DragInt("Particle Count", &count, 1, 1, 1000)) {
                 emitter->SetParticleCount(count);
