@@ -85,6 +85,12 @@ namespace Tako {
     void SetUseForceField(bool useForceField);
 
     /// <summary>
+    /// Curl Noise 乱流の影響を受けるかを設定
+    /// </summary>
+    /// <param name="useCurlNoise">Curl Noise を有効にする場合 true</param>
+    void SetUseCurlNoise(bool useCurlNoise);
+
+    /// <summary>
     /// 1回の射出で生成するパーティクル数を設定
     /// </summary>
     /// <param name="count">パーティクル数</param>
@@ -220,6 +226,12 @@ namespace Tako {
     /// </summary>
     /// <returns>有効な場合 true</returns>
     [[nodiscard]] bool IsUseForceField() const { return (data_.flags & EFLAG_USE_FORCE_FIELD) != 0; }
+
+    /// <summary>
+    /// Curl Noise 乱流の影響を受けるかを取得
+    /// </summary>
+    /// <returns>有効な場合 true</returns>
+    [[nodiscard]] bool IsUseCurlNoise() const { return (data_.flags & EFLAG_USE_CURL_NOISE) != 0; }
 
     /// <summary>
     /// X 方向のスケール範囲を取得

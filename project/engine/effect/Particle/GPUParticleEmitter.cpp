@@ -86,6 +86,11 @@ namespace Tako {
     if (useForceField) data_.flags |= EFLAG_USE_FORCE_FIELD; else data_.flags &= ~EFLAG_USE_FORCE_FIELD;
   }
 
+  void GPUParticleEmitter::SetUseCurlNoise(bool useCurlNoise)
+  {
+    if (useCurlNoise) data_.flags |= EFLAG_USE_CURL_NOISE; else data_.flags &= ~EFLAG_USE_CURL_NOISE;
+  }
+
   void GPUParticleEmitter::SetColor(const Vector4& color)
   {
     SetColors(color, color);

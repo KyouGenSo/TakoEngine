@@ -169,6 +169,18 @@ namespace Tako {
     /// </summary>
     [[nodiscard]] float GetParticleRadius() const { return physicsParamsData_ ? physicsParamsData_->particleRadius : 0.05f; }
 
+    /// <summary>
+    /// Curl Noise の空間スケールを設定
+    /// </summary>
+    /// <param name="scale">空間スケール（小さい値=大きな渦、大きい値=細かいディテール）</param>
+    void SetNoiseScale(float scale) { physicsParamsData_->noiseScale = scale; }
+
+    /// <summary>
+    /// Curl Noise の空間スケールを取得
+    /// </summary>
+    /// <returns>空間スケール</returns>
+    [[nodiscard]] float GetNoiseScale() const { return physicsParamsData_ ? physicsParamsData_->noiseScale : 1.0f; }
+
     //-------------------------Getter/Setter-------------------------//
     /// <summary>
     /// インデックスによってエミッターを検索

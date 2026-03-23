@@ -167,6 +167,11 @@ namespace Tako {
                 emitter->SetUseForceField(useForceField);
               }
 
+              bool useCurlNoise = emitter->IsUseCurlNoise();
+              if (ImGui::Checkbox("Use Curl Noise", &useCurlNoise)) {
+                emitter->SetUseCurlNoise(useCurlNoise);
+              }
+
               int count = emitter->GetParticleCount();
               if (ImGui::DragInt("Particle Count", &count, 1, 1, 1000)) {
                 emitter->SetParticleCount(count);
@@ -445,6 +450,12 @@ namespace Tako {
       if (ImGui::DragFloat("Particle Radius", &particleRadius, 0.001f, 0.001f, 1.0f, "%.3f")) {
         gpuParticle->SetParticleRadius(particleRadius);
       }
+
+      float noiseScale = gpuParticle->GetNoiseScale();
+      if (ImGui::SliderFloat("Noise Scale", &noiseScale, 0.01f, 10.0f, "%.2f")) {
+        gpuParticle->SetNoiseScale(noiseScale);
+      }
+      if (ImGui::IsItemHovered()) ImGui::SetTooltip("Curl Noise spatial scale (small=large swirls, large=fine detail)");
     }
 
     ImGui::Separator();
