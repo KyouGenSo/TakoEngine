@@ -456,6 +456,12 @@ namespace Tako {
         gpuParticle->SetNoiseScale(noiseScale);
       }
       if (ImGui::IsItemHovered()) ImGui::SetTooltip("Curl Noise spatial scale (small=large swirls, large=fine detail)");
+
+      float noiseStrength = gpuParticle->GetNoiseStrength();
+      if (ImGui::SliderFloat("Noise Strength", &noiseStrength, 0.001f, 1.0f, "%.3f")) {
+        gpuParticle->SetNoiseStrength(noiseStrength);
+      }
+      if (ImGui::IsItemHovered()) ImGui::SetTooltip("Curl Noise intensity (0.01-0.1 for subtle, 0.5+ for strong turbulence)");
     }
 
     ImGui::Separator();

@@ -179,7 +179,10 @@ namespace Tako {
     /// Curl Noise の空間スケールを取得
     /// </summary>
     /// <returns>空間スケール</returns>
-    [[nodiscard]] float GetNoiseScale() const { return physicsParamsData_ ? physicsParamsData_->noiseScale : 1.0f; }
+    [[nodiscard]] float GetNoiseScale() const { return physicsParamsData_ ? physicsParamsData_->noiseScale : 3.0f; }
+
+    void SetNoiseStrength(float strength) { physicsParamsData_->noiseStrength = strength; }
+    [[nodiscard]] float GetNoiseStrength() const { return physicsParamsData_ ? physicsParamsData_->noiseStrength : 0.05f; }
 
     //-------------------------Getter/Setter-------------------------//
     /// <summary>

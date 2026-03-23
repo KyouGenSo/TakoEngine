@@ -1023,7 +1023,11 @@ namespace Tako {
     physicsParamsData_->screenWidth = 1280.0f;
     physicsParamsData_->screenHeight = 720.0f;
     physicsParamsData_->noiseTime = 0.0f;
-    physicsParamsData_->noiseScale = 1.0f;
+    physicsParamsData_->noiseScale = 3.0f;
+    physicsParamsData_->noiseStrength = 0.05f;
+    physicsParamsData_->pad[0] = 0.0f;
+    physicsParamsData_->pad[1] = 0.0f;
+    physicsParamsData_->pad[2] = 0.0f;
   }
 
   void GPUParticle::SyncForceFieldData()

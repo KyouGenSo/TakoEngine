@@ -141,6 +141,9 @@ namespace Tako {
     float screenHeight;         ///< スクリーン高さ
     float noiseTime;            ///< Curl Noise 用の時間オフセット
     float noiseScale;           ///< Curl Noise の空間スケール
+
+    float noiseStrength;        ///< Curl Noise の強度
+    float pad[3];               ///< パディング（16Bアライメント）
   };
 
   /// <summary>
