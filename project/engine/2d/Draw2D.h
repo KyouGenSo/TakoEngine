@@ -215,7 +215,7 @@ namespace Tako {
     /// デバッグ状態を取得
     /// </summary>
     /// <returns>デバッグが有効な場合 true</returns>
-    const bool GetDebug() const { return isDebug_; }
+    bool GetDebug() const { return isDebug_; }
 
 
     // -----------------------------------Setters-----------------------------------//
