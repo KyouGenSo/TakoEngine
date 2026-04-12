@@ -91,6 +91,11 @@ namespace Tako {
     if (useCurlNoise) data_.flags |= EFLAG_USE_CURL_NOISE; else data_.flags &= ~EFLAG_USE_CURL_NOISE;
   }
 
+  void GPUParticleEmitter::SetUseDepthCollision(bool useDepthCollision)
+  {
+    if (useDepthCollision) data_.flags |= EFLAG_USE_DEPTH_COLLISION; else data_.flags &= ~EFLAG_USE_DEPTH_COLLISION;
+  }
+
   void GPUParticleEmitter::SetColor(const Vector4& color)
   {
     SetColors(color, color);

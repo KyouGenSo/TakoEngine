@@ -172,6 +172,11 @@ namespace Tako {
                 emitter->SetUseCurlNoise(useCurlNoise);
               }
 
+              bool useDepthCollision = emitter->IsUseDepthCollision();
+              if (ImGui::Checkbox("Use Depth Collision", &useDepthCollision)) {
+                emitter->SetUseDepthCollision(useDepthCollision);
+              }
+
               int count = emitter->GetParticleCount();
               if (ImGui::DragInt("Particle Count", &count, 1, 1, 1000)) {
                 emitter->SetParticleCount(count);

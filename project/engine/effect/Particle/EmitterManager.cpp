@@ -1007,6 +1007,7 @@ namespace Tako {
     json["isRandomRotateZ"] = emitter->IsRandomRotateZ();
     json["useForceField"] = emitter->IsUseForceField();
     json["useCurlNoise"] = emitter->IsUseCurlNoise();
+    json["useDepthCollision"] = emitter->IsUseDepthCollision();
     json["isTemporary"] = emitter->IsTemporary();
 
     // 型固有のパラメータ
@@ -1080,6 +1081,10 @@ namespace Tako {
 
     if (json.contains("useCurlNoise")) {
       emitter->SetUseCurlNoise(json["useCurlNoise"]);
+    }
+
+    if (json.contains("useDepthCollision")) {
+      emitter->SetUseDepthCollision(json["useDepthCollision"]);
     }
 
     if (json.contains("frequencyTime")) {

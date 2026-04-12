@@ -319,6 +319,19 @@ namespace Tako {
     void CreatePhysicsParamsResource();
 
     /// <summary>
+    /// 深度バッファ用 SRV の作成（深度衝突用）
+    /// </summary>
+    void CreateDepthSRV();
+
+  public:
+    /// <summary>
+    /// ウィンドウリサイズ時の処理（深度 SRV の再作成）
+    /// </summary>
+    void OnResize();
+
+  private:
+
+    /// <summary>
     /// CPU 側から GPU 側へのフォースフィールドデータ同期
     /// </summary>
     void SyncForceFieldData();
@@ -502,6 +515,11 @@ namespace Tako {
     /// フォースフィールドリソースの SRV インデックス
     /// </summary>
     uint32_t forceFieldSrvIndex_ = 0;
+
+    /// <summary>
+    /// 深度バッファの SRV インデックス（深度衝突用）
+    /// </summary>
+    uint32_t depthSrvIndex_ = UINT32_MAX;
 
     /// <summary>
     /// 物理パラメータ定数バッファリソース

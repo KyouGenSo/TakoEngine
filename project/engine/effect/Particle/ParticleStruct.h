@@ -15,7 +15,8 @@ namespace Tako {
   /// パーティクルがフォースフィールドの影響を受けるか
   constexpr uint32_t PFLAG_USE_FORCE_FIELD = (1u << 0);
   /// パーティクルがCurl Noiseの影響を受けるか
-  constexpr uint32_t PFLAG_USE_CURL_NOISE  = (1u << 1);
+  constexpr uint32_t PFLAG_USE_CURL_NOISE      = (1u << 1);
+  constexpr uint32_t PFLAG_USE_DEPTH_COLLISION = (1u << 2); ///< 深度バッファ衝突有効
 
   // ===== エミッター用ビットフラグ定数 =====
   constexpr uint32_t EFLAG_ACTIVE          = (1u << 0); ///< エミッターがアクティブ
@@ -24,7 +25,8 @@ namespace Tako {
   constexpr uint32_t EFLAG_RANDOM_ROTATE_Z = (1u << 3); ///< Z軸ランダム回転
   constexpr uint32_t EFLAG_USE_FORCE_FIELD = (1u << 4); ///< フォースフィールド有効
   constexpr uint32_t EFLAG_TEMPORARY       = (1u << 5); ///< 一時的なエミッター
-  constexpr uint32_t EFLAG_USE_CURL_NOISE  = (1u << 6); ///< Curl Noise乱流有効
+  constexpr uint32_t EFLAG_USE_CURL_NOISE      = (1u << 6); ///< Curl Noise乱流有効
+  constexpr uint32_t EFLAG_USE_DEPTH_COLLISION = (1u << 7); ///< 深度バッファ衝突有効
 
   /// <summary>
   /// エミッタータイプ列挙型
@@ -144,6 +146,11 @@ namespace Tako {
 
     float noiseStrength;        ///< Curl Noise の強度
     float pad[3];               ///< パディング（16Bアライメント）
+
+    // --- 深度バッファ衝突用（段階3で追加） ---
+    Matrix4x4 viewProj;         ///< ビュープロジェクション行列（パーティクル→スクリーン投影用）
+    Vector3 cameraPos;          ///< カメラ位置（法線方向決定用）
+    float pad2;                 ///< 16Bアライメント
   };
 
   /// <summary>

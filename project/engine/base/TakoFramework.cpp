@@ -373,6 +373,9 @@ namespace Tako {
     // デカール深度 SRV の再作成
     DecalManager::GetInstance()->OnResize();
 
+    // パーティクル深度 SRV の再作成
+    GPUParticle::GetInstance()->OnResize();
+
     // カメラのアスペクト比を更新
     defaultCamera_->UpdateProjectionMatrix();
 

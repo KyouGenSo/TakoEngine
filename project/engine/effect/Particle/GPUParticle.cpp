@@ -7,6 +7,7 @@
 #include "Camera.h"
 #include "TextureManager.h"
 #include "FrameTimer.h"
+#include "WinApp.h"
 
 #ifdef _DEBUG
 #include "DebugUIManager.h"
@@ -85,6 +86,9 @@ namespace Tako {
 
     // 物理パラメータリソースの生成
     CreatePhysicsParamsResource();
+
+    // 深度バッファ用 SRV の作成
+    CreateDepthSRV();
   }
 
   void GPUParticle::Update()
@@ -179,6 +183,11 @@ namespace Tako {
 
     //--------------------------------------IntegrateAll--------------------------------------//
 
+    // 深度バッファを NON_PIXEL_SHADER_RESOURCE に遷移（深度衝突用）
+    m_dx12_->TransitionResourceWithTracking(
+      m_dx12_->GetDepthStencilResource(),
+      D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
     // ルートシグネチャの設定
     commandList->SetComputeRootSignature(integrateAllRS_.Get());
 
@@ -197,17 +206,25 @@ namespace Tako {
     // ForceFields の SRV の設定 (t0)
     m_srvManager_->SetComputeRootDescriptorTable(3, forceFieldSrvIndex_);
 
+    // DepthBuffer の SRV の設定 (t1) — 深度バッファ衝突用
+    m_srvManager_->SetComputeRootDescriptorTable(4, depthSrvIndex_);
+
     // PerFrame の CBV の設定 (b0)
-    commandList->SetComputeRootConstantBufferView(4, perFrameResource_->GetGPUVirtualAddress());
+    commandList->SetComputeRootConstantBufferView(5, perFrameResource_->GetGPUVirtualAddress());
 
     // PhysicsParams の CBV の設定 (b1)
-    commandList->SetComputeRootConstantBufferView(5, physicsParamsResource_->GetGPUVirtualAddress());
+    commandList->SetComputeRootConstantBufferView(6, physicsParamsResource_->GetGPUVirtualAddress());
 
     // ディスパッチ（256スレッド/グループ × ceil(1M/256) = 3907グループ）
     uint32_t integrateGroups = (kNumMaxParticle + 255) / 256;
     commandList->Dispatch(integrateGroups, 1, 1);
 
     m_dx12_->SetUAVBarrier(particleResource_.Get());
+
+    // 深度バッファを DEPTH_WRITE に復帰
+    m_dx12_->TransitionResourceWithTracking(
+      m_dx12_->GetDepthStencilResource(),
+      D3D12_RESOURCE_STATE_DEPTH_WRITE);
 
     /// ======================== ///
     ///           描画    　     ///
@@ -926,8 +943,14 @@ namespace Tako {
     rangeForceFields[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
     rangeForceFields[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-    // RootParameter: 3 UAV + 1 SRV + 2 CBV = 6
-    D3D12_ROOT_PARAMETER rootParameters[6] = {};
+    D3D12_DESCRIPTOR_RANGE rangeDepthBuffer[1] = {};
+    rangeDepthBuffer[0].BaseShaderRegister = 1; // t1
+    rangeDepthBuffer[0].NumDescriptors = 1;
+    rangeDepthBuffer[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+    rangeDepthBuffer[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+    // RootParameter: 3 UAV + 2 SRV + 2 CBV = 7
+    D3D12_ROOT_PARAMETER rootParameters[7] = {};
 
     // [0] Particles UAV (u0)
     rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
@@ -953,18 +976,37 @@ namespace Tako {
     rootParameters[3].DescriptorTable.pDescriptorRanges = rangeForceFields;
     rootParameters[3].DescriptorTable.NumDescriptorRanges = 1;
 
-    // [4] PerFrame CBV (b0)
-    rootParameters[4].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+    // [4] DepthBuffer SRV (t1) — 深度バッファ衝突用
+    rootParameters[4].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
     rootParameters[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-    rootParameters[4].Descriptor.ShaderRegister = 0;
+    rootParameters[4].DescriptorTable.pDescriptorRanges = rangeDepthBuffer;
+    rootParameters[4].DescriptorTable.NumDescriptorRanges = 1;
 
-    // [5] PhysicsParams CBV (b1)
+    // [5] PerFrame CBV (b0)
     rootParameters[5].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
     rootParameters[5].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-    rootParameters[5].Descriptor.ShaderRegister = 1;
+    rootParameters[5].Descriptor.ShaderRegister = 0;
+
+    // [6] PhysicsParams CBV (b1)
+    rootParameters[6].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+    rootParameters[6].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    rootParameters[6].Descriptor.ShaderRegister = 1;
+
+    // Static Sampler: Point/Clamp（深度テクスチャサンプリング用）
+    D3D12_STATIC_SAMPLER_DESC staticSampler{};
+    staticSampler.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
+    staticSampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    staticSampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    staticSampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    staticSampler.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+    staticSampler.MaxLOD = D3D12_FLOAT32_MAX;
+    staticSampler.ShaderRegister = 0; // s0
+    staticSampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
     descriptionRootSignature.pParameters = rootParameters;
     descriptionRootSignature.NumParameters = _countof(rootParameters);
+    descriptionRootSignature.pStaticSamplers = &staticSampler;
+    descriptionRootSignature.NumStaticSamplers = 1;
 
     Microsoft::WRL::ComPtr<ID3DBlob> signatureBlob = nullptr;
     Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
@@ -1010,7 +1052,7 @@ namespace Tako {
     physicsParamsData_->damping = 0.99f;
     physicsParamsData_->collisionRestitution = 0.5f;
     physicsParamsData_->particleRadius = 0.05f;
-    physicsParamsData_->depthBias = 0.01f;
+    physicsParamsData_->depthBias = 5.0f;  ///< ワールド空間の最大衝突距離（メートル単位）
 
     physicsParamsData_->gridOrigin = { .x = -50.0f, .y = -50.0f, .z = -50.0f };
     physicsParamsData_->gridCellSize = 1.5625f; // 100.0 / 64.0
@@ -1028,6 +1070,32 @@ namespace Tako {
     physicsParamsData_->pad[0] = 0.0f;
     physicsParamsData_->pad[1] = 0.0f;
     physicsParamsData_->pad[2] = 0.0f;
+
+    // 深度バッファ衝突用
+    physicsParamsData_->viewProj = Mat4x4::MakeIdentity();
+    physicsParamsData_->cameraPos = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
+    physicsParamsData_->pad2 = 0.0f;
+  }
+
+  void GPUParticle::CreateDepthSRV()
+  {
+    // 既存の SRV を解放（リサイズ時の再作成対応）
+    if (depthSrvIndex_ != UINT32_MAX) {
+      m_srvManager_->Free(depthSrvIndex_);
+      depthSrvIndex_ = UINT32_MAX;
+    }
+    depthSrvIndex_ = m_srvManager_->Allocate();
+    m_srvManager_->CreateSRVForTexture2D(
+      depthSrvIndex_,
+      m_dx12_->GetDepthStencilResource(),
+      DXGI_FORMAT_R32_FLOAT,
+      1);
+  }
+
+  void GPUParticle::OnResize()
+  {
+    // 深度バッファが再作成されるため SRV を再構築
+    CreateDepthSRV();
   }
 
   void GPUParticle::SyncForceFieldData()
@@ -1058,6 +1126,33 @@ namespace Tako {
 
     // 時間を更新（Curl Noise 用）
     physicsParamsData_->noiseTime = FrameTimer::GetInstance()->GetGameTime();
+
+    // --- カメラ行列の計算（深度衝突用） ---
+    Matrix4x4 cameraMatrix = Mat4x4::MakeAffine(
+      { .x = 1.0f, .y = 1.0f, .z = 1.0f },
+      m_camera_->GetRotate(), m_camera_->GetTranslate());
+    Vector3 camPos = m_camera_->GetTranslate();
+
+#ifdef _DEBUG
+    if (isDebug_) {
+      cameraMatrix = Mat4x4::MakeAffine(
+        { .x = 1.0f, .y = 1.0f, .z = 1.0f },
+        DebugCamera::GetInstance()->GetRotate(),
+        DebugCamera::GetInstance()->GetTranslate());
+      camPos = DebugCamera::GetInstance()->GetTranslate();
+    }
+#endif
+
+    Matrix4x4 vp = Mat4x4::Multiply(
+      Mat4x4::Inverse(cameraMatrix), m_camera_->GetProjectionMatrix());
+
+    physicsParamsData_->viewProj = vp;
+    physicsParamsData_->invViewProj = Mat4x4::Inverse(vp);
+    physicsParamsData_->cameraPos = camPos;
+
+    // スクリーンサイズ（リサイズ対応）
+    physicsParamsData_->screenWidth = static_cast<float>(WinApp::clientWidth);
+    physicsParamsData_->screenHeight = static_cast<float>(WinApp::clientHeight);
   }
 
   int32_t GPUParticle::AddForceField(const ForceFieldData& field)

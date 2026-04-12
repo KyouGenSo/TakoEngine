@@ -91,6 +91,12 @@ namespace Tako {
     void SetUseCurlNoise(bool useCurlNoise);
 
     /// <summary>
+    /// 深度バッファ衝突の有効/無効を設定
+    /// </summary>
+    /// <param name="useDepthCollision">深度衝突を有効にする場合 true</param>
+    void SetUseDepthCollision(bool useDepthCollision);
+
+    /// <summary>
     /// 1回の射出で生成するパーティクル数を設定
     /// </summary>
     /// <param name="count">パーティクル数</param>
@@ -232,6 +238,12 @@ namespace Tako {
     /// </summary>
     /// <returns>有効な場合 true</returns>
     [[nodiscard]] bool IsUseCurlNoise() const { return (data_.flags & EFLAG_USE_CURL_NOISE) != 0; }
+
+    /// <summary>
+    /// 深度バッファ衝突が有効かどうかを取得
+    /// </summary>
+    /// <returns>有効な場合 true</returns>
+    [[nodiscard]] bool IsUseDepthCollision() const { return (data_.flags & EFLAG_USE_DEPTH_COLLISION) != 0; }
 
     /// <summary>
     /// X 方向のスケール範囲を取得
