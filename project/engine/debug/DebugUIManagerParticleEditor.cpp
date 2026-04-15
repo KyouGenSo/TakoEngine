@@ -24,6 +24,27 @@ namespace Tako {
       return;
     }
 
+    // アクティブパーティクル数の表示
+    {
+      uint32_t activeCount = GPUParticle::GetInstance()->GetActiveParticleCount();
+      uint32_t maxCount = GPUParticle::GetMaxParticleCount();
+      float usage = static_cast<float>(activeCount) / static_cast<float>(maxCount);
+
+      ImVec4 color;
+      if (usage < 0.5f) {
+        color = ImVec4(0.2f, 1.0f, 0.2f, 1.0f);
+      } else if (usage < 0.8f) {
+        color = ImVec4(1.0f, 1.0f, 0.2f, 1.0f);
+      } else {
+        color = ImVec4(1.0f, 0.2f, 0.2f, 1.0f);
+      }
+
+      ImGui::TextColored(color, "Active Particles: %u / %u (%.1f%%)",
+        activeCount, maxCount, usage * 100.0f);
+      ImGui::ProgressBar(usage, ImVec2(-1, 0), "");
+    }
+    ImGui::Separator();
+
     // タブバー
     if (ImGui::BeginTabBar("ParticleEditorTabs")) {
       // エミッターリストタブ

@@ -98,6 +98,20 @@ namespace Tako {
     /// <returns>アクティブなエミッターの数</returns>
     [[nodiscard]] uint32_t GetEmitterCount() const { return static_cast<uint32_t>(activeEmitters_.size()); }
 
+#ifdef _DEBUG
+    /// <summary>
+    /// GPU上で生存中のパーティクル数を取得
+    /// </summary>
+    /// <returns>アクティブなパーティクル数</returns>
+    [[nodiscard]] uint32_t GetActiveParticleCount() const { return activeParticleCount_; }
+
+    /// <summary>
+    /// パーティクルの最大数を取得
+    /// </summary>
+    /// <returns>最大パーティクル数</returns>
+    [[nodiscard]] static uint32_t GetMaxParticleCount() { return kNumMaxParticle; }
+#endif
+
     //-------------------------フォースフィールド管理-------------------------//
 
     /// <summary>
@@ -323,6 +337,18 @@ namespace Tako {
     /// </summary>
     void CreateDepthSRV();
 
+#ifdef _DEBUG
+    /// <summary>
+    /// FreeListIndex の Readback バッファを作成
+    /// </summary>
+    void CreateFreeListReadbackResource();
+
+    /// <summary>
+    /// FreeListIndex を Readback バッファにコピーし、アクティブパーティクル数を算出
+    /// </summary>
+    void ReadbackActiveParticleCount();
+#endif
+
   public:
     /// <summary>
     /// ウィンドウリサイズ時の処理（深度 SRV の再作成）
@@ -503,6 +529,30 @@ namespace Tako {
     /// FreeList の UAV インデックス
     /// </summary>
     uint32_t freeListUavIndex_;
+
+#ifdef _DEBUG
+    //-------------------------Readback: アクティブパーティクル数取得-------------------------//
+
+    /// <summary>
+    /// FreeListIndex の Readback バッファ（D3D12_HEAP_TYPE_READBACK）
+    /// </summary>
+    Microsoft::WRL::ComPtr<ID3D12Resource> freeListIndexReadbackResource_;
+
+    /// <summary>
+    /// CPU 側で読み取ったアクティブパーティクル数（表示用キャッシュ）
+    /// </summary>
+    uint32_t activeParticleCount_ = 0;
+
+    /// <summary>
+    /// Readback 間引きカウンタ（フレーム数）
+    /// </summary>
+    uint32_t readbackFrameCounter_ = 0;
+
+    /// <summary>
+    /// Readback 実行間隔（フレーム数）
+    /// </summary>
+    static const uint32_t kReadbackInterval = 10;
+#endif
 
     //-------------------------物理シミュレーション関連-------------------------//
 

@@ -81,6 +81,11 @@ namespace Tako {
     // FreeCounter リソースの生成
     CreateFreeListResource();
 
+#ifdef _DEBUG
+    // Readback バッファの生成（アクティブパーティクル数取得用）
+    CreateFreeListReadbackResource();
+#endif
+
     // フォースフィールドリソースの生成
     CreateForceFieldResource();
 
@@ -220,6 +225,11 @@ namespace Tako {
     commandList->Dispatch(integrateGroups, 1, 1);
 
     m_dx12_->SetUAVBarrier(particleResource_.Get());
+
+#ifdef _DEBUG
+    // アクティブパーティクル数の Readback（IntegrateAll 完了直後が最適）
+    ReadbackActiveParticleCount();
+#endif
 
     // 深度バッファを DEPTH_WRITE に復帰
     m_dx12_->TransitionResourceWithTracking(
@@ -910,6 +920,75 @@ namespace Tako {
     freeListUavIndex_ = m_srvManager_->Allocate();
     m_srvManager_->CreateUAV(freeListUavIndex_, freeListResource_.Get(), kNumMaxParticle, sizeof(uint32_t));
   }
+
+#ifdef _DEBUG
+  void GPUParticle::CreateFreeListReadbackResource()
+  {
+    D3D12_RESOURCE_DESC bufferDesc = {};
+    bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+    bufferDesc.Width = sizeof(int32_t);
+    bufferDesc.Height = 1;
+    bufferDesc.DepthOrArraySize = 1;
+    bufferDesc.MipLevels = 1;
+    bufferDesc.SampleDesc.Count = 1;
+    bufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+    bufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+    D3D12_HEAP_PROPERTIES heapProps = {};
+    heapProps.Type = D3D12_HEAP_TYPE_READBACK;
+
+    HRESULT hr = m_dx12_->GetDevice()->CreateCommittedResource(
+      &heapProps,
+      D3D12_HEAP_FLAG_NONE,
+      &bufferDesc,
+      D3D12_RESOURCE_STATE_COPY_DEST,
+      nullptr,
+      IID_PPV_ARGS(&freeListIndexReadbackResource_));
+    assert(SUCCEEDED(hr));
+  }
+
+  void GPUParticle::ReadbackActiveParticleCount()
+  {
+    // 間引き制御: kReadbackInterval フレームに1回だけ実行
+    readbackFrameCounter_++;
+    if (readbackFrameCounter_ < kReadbackInterval) {
+      return;
+    }
+    readbackFrameCounter_ = 0;
+
+    ID3D12GraphicsCommandList* commandList = m_dx12_->GetCommandList();
+
+    // freeListIndexResource_: UAV → COPY_SOURCE
+    m_dx12_->TransitionResourceState(
+      D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+      D3D12_RESOURCE_STATE_COPY_SOURCE,
+      freeListIndexResource_.Get());
+
+    // UAV バッファ → Readback バッファにコピー（4バイトのみ）
+    commandList->CopyBufferRegion(
+      freeListIndexReadbackResource_.Get(), 0,
+      freeListIndexResource_.Get(), 0,
+      sizeof(int32_t));
+
+    // freeListIndexResource_: COPY_SOURCE → UAV
+    m_dx12_->TransitionResourceState(
+      D3D12_RESOURCE_STATE_COPY_SOURCE,
+      D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+      freeListIndexResource_.Get());
+
+    // Readback バッファから CPU 読み取り（前回コピー分の結果、表示用途では問題なし）
+    int32_t* mappedData = nullptr;
+    D3D12_RANGE readRange = { 0, sizeof(int32_t) };
+    D3D12_RANGE writeRange = { 0, 0 };
+    HRESULT hr = freeListIndexReadbackResource_->Map(0, &readRange, reinterpret_cast<void**>(&mappedData));
+    if (SUCCEEDED(hr) && mappedData) {
+      int32_t freeListIndex = *mappedData;
+      int32_t active = static_cast<int32_t>(kNumMaxParticle) - 1 - freeListIndex;
+      activeParticleCount_ = static_cast<uint32_t>((std::max)(0, active));
+      freeListIndexReadbackResource_->Unmap(0, &writeRange);
+    }
+  }
+#endif
 
   void GPUParticle::CreateIntegrateAllComputeRS()
   {
