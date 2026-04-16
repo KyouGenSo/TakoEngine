@@ -53,14 +53,12 @@ namespace Tako {
     CreateRS();
     CreateInitComputeRS();
     CreateEmitParticleComputeRS();
-    CreateUpdateParticleComputeRS();
     CreateIntegrateAllComputeRS();
 
     // PSO の生成
     CreatePSO();
     CreateComputeShaderPSO(initComputeRS_, initComputePSO_, L"InitParticle.CS.hlsl");
     CreateComputeShaderPSO(emitParticleRS_, emitParticlePSO_, L"EmitParticle.CS.hlsl");
-    CreateComputeShaderPSO(updateParticleRS_, updateParticlePSO_, L"UpdateParticle.CS.hlsl");
     CreateComputeShaderPSO(integrateAllRS_, integrateAllPSO_, L"IntegrateAll.CS.hlsl");
 
     // PerView データの生成
@@ -742,73 +740,6 @@ namespace Tako {
       assert(false);
     }
     hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(emitParticleRS_.GetAddressOf()));
-  }
-
-  void GPUParticle::CreateUpdateParticleComputeRS()
-  {
-    HRESULT hr;
-    // rootSignature の生成
-    D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
-    descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-
-    // DescriptorRange の設定。
-    D3D12_DESCRIPTOR_RANGE descriptorRangeForParticle[1] = {}; // Particle
-    descriptorRangeForParticle[0].BaseShaderRegister = 0; // レジスタ番号
-    descriptorRangeForParticle[0].NumDescriptors = 1; // ディスクリプタ数
-    descriptorRangeForParticle[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // UAV を使う
-    descriptorRangeForParticle[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
-
-    D3D12_DESCRIPTOR_RANGE descriptorRangeForFreeListIndex[1] = {}; // FreeListIndex
-    descriptorRangeForFreeListIndex[0].BaseShaderRegister = 1; // レジスタ番号
-    descriptorRangeForFreeListIndex[0].NumDescriptors = 1; // ディスクリプタ数
-    descriptorRangeForFreeListIndex[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // UAV を使う
-    descriptorRangeForFreeListIndex[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
-
-    D3D12_DESCRIPTOR_RANGE descriptorRangeForFreeList[1] = {}; // FreeList
-    descriptorRangeForFreeList[0].BaseShaderRegister = 2; // レジスタ番号
-    descriptorRangeForFreeList[0].NumDescriptors = 1; // ディスクリプタ数
-    descriptorRangeForFreeList[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; // UAV を使う
-    descriptorRangeForFreeList[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
-
-    // RootParameter の設定。複数設定できるので配列
-    D3D12_ROOT_PARAMETER rootParameters[4] = {};
-    // Particle
-    rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-    rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
-    rootParameters[0].DescriptorTable.pDescriptorRanges = descriptorRangeForParticle; // ディスクリプタレンジを設定
-    rootParameters[0].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForParticle); // レンジの数
-
-    // PerFrame
-    rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-    rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
-    rootParameters[1].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
-
-    // FreeListIndex
-    rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-    rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
-    rootParameters[2].DescriptorTable.pDescriptorRanges = descriptorRangeForFreeListIndex; // ディスクリプタレンジを設定
-    rootParameters[2].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForFreeListIndex); // レンジの数
-
-    // FreeList
-    rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-    rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
-    rootParameters[3].DescriptorTable.pDescriptorRanges = descriptorRangeForFreeList; // ディスクリプタレンジを設定
-    rootParameters[3].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForFreeList); // レンジの数
-
-    descriptionRootSignature.pParameters = rootParameters;
-    descriptionRootSignature.NumParameters = _countof(rootParameters);
-
-    Microsoft::WRL::ComPtr<ID3DBlob> signatureBlob = nullptr;
-    Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
-    hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
-    if (FAILED(hr)) {
-#ifdef _DEBUG
-      DebugUIManager::GetInstance()->AddLog(reinterpret_cast<char*>(errorBlob->GetBufferPointer()), DebugUIManager::LogType::Error);
-#endif
-      assert(false);
-    }
-    hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(updateParticleRS_.GetAddressOf()));
-
   }
 
   void GPUParticle::CreateComputeShaderPSO(Microsoft::WRL::ComPtr<ID3D12RootSignature>& RS, Microsoft::WRL::ComPtr<ID3D12PipelineState>& PSO, const std::wstring& shaderName)

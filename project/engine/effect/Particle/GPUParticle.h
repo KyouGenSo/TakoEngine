@@ -275,11 +275,6 @@ namespace Tako {
     void CreateEmitParticleComputeRS();
 
     /// <summary>
-    /// UpdateParticleCS ルートシグネチャの作成
-    /// </summary>
-    void CreateUpdateParticleComputeRS();
-
-    /// <summary>
     /// コンピュートシェーダーのパイプラインステートを生成
     /// </summary>
     /// <param name="RS">ルートシグネチャ</param>
@@ -426,11 +421,6 @@ namespace Tako {
     Microsoft::WRL::ComPtr<ID3D12RootSignature> emitParticleRS_;
 
     /// <summary>
-    /// パーティクル更新コンピュートシェーダー用ルートシグネチャ（旧式、段階的に廃止）
-    /// </summary>
-    Microsoft::WRL::ComPtr<ID3D12RootSignature> updateParticleRS_;
-
-    /// <summary>
     /// IntegrateAll コンピュートシェーダー用ルートシグネチャ
     /// </summary>
     Microsoft::WRL::ComPtr<ID3D12RootSignature> integrateAllRS_;
@@ -449,11 +439,6 @@ namespace Tako {
     /// パーティクル射出コンピュートシェーダー用パイプラインステート
     /// </summary>
     Microsoft::WRL::ComPtr<ID3D12PipelineState> emitParticlePSO_;
-
-    /// <summary>
-    /// パーティクル更新コンピュートシェーダー用パイプラインステート（旧式、段階的に廃止）
-    /// </summary>
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> updateParticlePSO_;
 
     /// <summary>
     /// IntegrateAll コンピュートシェーダー用パイプラインステート

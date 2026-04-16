@@ -213,7 +213,11 @@ namespace Tako {
 #endif
 
     //------------------------------------------------------DXGI ファクトリの生成------------------------------------------------------
-    hr = CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, IID_PPV_ARGS(&dxgiFactory_));
+    UINT dxgiFactoryFlags = 0;
+#ifdef _DEBUG
+    dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
+#endif
+    hr = CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&dxgiFactory_));
     assert(SUCCEEDED(hr));
 
     //-----------------------------------------------------------アダプターの列挙-----------------------------------------------------------
