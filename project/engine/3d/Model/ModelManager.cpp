@@ -1,6 +1,7 @@
 #include"ModelManager.h"
 
 #include"DX12Basic.h"
+#include "EnginePaths.h"
 #include <ranges>
 
 #ifdef _DEBUG
@@ -43,8 +44,13 @@ namespace Tako {
 
   void ModelManager::LoadModel(const std::string& fileName)
   {
-    // すでにロード済みのファイル名をチェック
+    // fileName が "EngineResources/Model/" で始まる場合はエンジン用ロードに委譲
+    if (fileName.starts_with(EnginePaths::kEngineModels)) {
+      LoadEngineModel(fileName.substr(EnginePaths::kEngineModels.size()));
+      return;
+    }
 
+    // すでにロード済みのファイル名をチェック
     if (models_.contains(fileName)) {
 #ifdef _DEBUG
       DebugUIManager::GetInstance()->AddLog(
@@ -66,6 +72,11 @@ namespace Tako {
 
   std::unique_ptr<Model> ModelManager::GetModel(const std::string& fileName)
   {
+    // fileName が "EngineResources/Model/" で始まる場合はエンジン用取得に委譲
+    if (fileName.starts_with(EnginePaths::kEngineModels)) {
+      return GetEngineModel(fileName.substr(EnginePaths::kEngineModels.size()));
+    }
+
     if (models_.contains(fileName)) {
       // モデルがすでに存在する場合はクローンを返す
       return models_.at(fileName)->Clone();
@@ -80,6 +91,48 @@ namespace Tako {
     models_.insert(std::make_pair(fileName, std::move(newModel)));
 
     return modelPtr->Clone();
+  }
+
+  void ModelManager::LoadEngineModel(const std::string& fileName)
+  {
+    // エンジン用キーはプレフィックス付きでゲーム用と分離
+    const std::string key = std::string(EnginePaths::kEngineModels) + fileName;
+
+    if (models_.contains(key)) {
+#ifdef _DEBUG
+      DebugUIManager::GetInstance()->AddLog(
+        "ModelManager: Engine model already loaded: " + fileName,
+        DebugUIManager::LogType::Info);
+#endif
+      return;
+    }
+
+    // ModelBasic のディレクトリを一時的にエンジン用に切り替え
+    const std::string savedDir = pModelBasic_->GetDirectoryFolderName();
+    const std::string savedModelDir = pModelBasic_->GetModelFolderName();
+    // "EngineResources/Model" に分割
+    pModelBasic_->SetDirectoryFolderName("EngineResources");
+    pModelBasic_->SetModelFolderName("Model");
+
+    auto newModel = std::make_unique<Model>();
+    newModel->Initialize(pModelBasic_.get(), fileName);
+
+    // 元のディレクトリ設定に戻す
+    pModelBasic_->SetDirectoryFolderName(savedDir);
+    pModelBasic_->SetModelFolderName(savedModelDir);
+
+    models_.insert(std::make_pair(key, std::move(newModel)));
+  }
+
+  std::unique_ptr<Model> ModelManager::GetEngineModel(const std::string& fileName)
+  {
+    const std::string key = std::string(EnginePaths::kEngineModels) + fileName;
+
+    if (!models_.contains(key)) {
+      LoadEngineModel(fileName);
+    }
+
+    return models_.at(key)->Clone();
   }
 
 } // namespace Tako

@@ -63,6 +63,19 @@ namespace Tako {
     /// <returns>モデルポインタ（見つからない場合 nullptr）</returns>
     std::unique_ptr<Model> GetModel(const std::string& fileName);
 
+    /// <summary>
+    /// エンジン用モデルの読み込み（EngineResources/Model/ 配下から）
+    /// </summary>
+    /// <param name="fileName">エンジン用モデルファイル名</param>
+    void LoadEngineModel(const std::string& fileName);
+
+    /// <summary>
+    /// エンジン用モデルの取得
+    /// </summary>
+    /// <param name="fileName">エンジン用モデルファイル名</param>
+    /// <returns>モデルポインタ（クローン）</returns>
+    std::unique_ptr<Model> GetEngineModel(const std::string& fileName);
+
     // ===== Getter =====
     /// <summary>
     /// モデル基本システムを取得

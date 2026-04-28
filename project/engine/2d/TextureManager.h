@@ -94,6 +94,33 @@ namespace Tako {
     /// <returns>SRV インデックス</returns>
     uint32_t GetSRVIndex(const std::string& fileName);
 
+    /// <summary>
+    /// エンジン用デフォルトテクスチャの読み込み（EngineResources/Texture/ 配下から）
+    /// </summary>
+    /// <param name="fileName">エンジン用テクスチャファイルの名前</param>
+    void LoadEngineDefault(const std::string& fileName);
+
+    /// <summary>
+    /// エンジン用デフォルトテクスチャの GPU ハンドル取得
+    /// </summary>
+    /// <param name="fileName">エンジン用テクスチャファイルの名前</param>
+    /// <returns>SRV の GPU ディスクリプタハンドル</returns>
+    D3D12_GPU_DESCRIPTOR_HANDLE GetEngineDefaultSRVGPUHandle(const std::string& fileName);
+
+    /// <summary>
+    /// エンジン用デフォルトテクスチャのメタデータ取得
+    /// </summary>
+    /// <param name="fileName">エンジン用テクスチャファイルの名前</param>
+    /// <returns>テクスチャのメタデータ</returns>
+    const DirectX::TexMetadata& GetEngineDefaultMetaData(const std::string& fileName);
+
+    /// <summary>
+    /// エンジン用デフォルトテクスチャの SRV インデックス取得
+    /// </summary>
+    /// <param name="fileName">エンジン用テクスチャファイルの名前</param>
+    /// <returns>SRV インデックス</returns>
+    uint32_t GetEngineDefaultSRVIndex(const std::string& fileName);
+
   private: // メンバー変数
 
     ///< DX12Basic クラスのインスタンス

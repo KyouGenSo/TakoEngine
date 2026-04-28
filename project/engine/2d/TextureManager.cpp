@@ -2,6 +2,7 @@
 #include "SrvManager.h"
 #include "DX12Basic.h"
 #include "StringUtility.h"
+#include "EnginePaths.h"
 #include <algorithm>
 #include <cassert>
 
@@ -46,8 +47,10 @@ namespace Tako {
     HRESULT hr;
 
     // テクスチャの読み込み
+    // fileName が "EngineResources/" で始まる場合は directoryPath_ を経由せず、エンジン用パスとして直接読む
     DirectX::ScratchImage image;
-    std::wstring filePathW = StringUtility::ConvertString(directoryPath_ + fileName);
+    const std::string filePath = fileName.starts_with("EngineResources/") ? fileName : (directoryPath_ + fileName);
+    std::wstring filePathW = StringUtility::ConvertString(filePath);
 
     if (filePathW.ends_with(L".dds")) {
       // DDS ファイルの読み込み
@@ -119,6 +122,27 @@ namespace Tako {
     TextureData& textureData = textureData_[fileName];
 
     return textureData.srvIndex;
+  }
+
+  void TextureManager::LoadEngineDefault(const std::string& fileName)
+  {
+    // エンジン用フルパスをキー兼ファイルパスに使う（LoadTexture 内のプレフィックス判定で directoryPath_ を経由しない）
+    LoadTexture(EnginePaths::TexturePath(fileName));
+  }
+
+  D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetEngineDefaultSRVGPUHandle(const std::string& fileName)
+  {
+    return GetSRVGPUHandle(EnginePaths::TexturePath(fileName));
+  }
+
+  const DirectX::TexMetadata& TextureManager::GetEngineDefaultMetaData(const std::string& fileName)
+  {
+    return GetMetaData(EnginePaths::TexturePath(fileName));
+  }
+
+  uint32_t TextureManager::GetEngineDefaultSRVIndex(const std::string& fileName)
+  {
+    return GetSRVIndex(EnginePaths::TexturePath(fileName));
   }
 
 } // namespace Tako
