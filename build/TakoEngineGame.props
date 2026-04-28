@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!-- ===================================================
+       共有プロパティ
+       MSBuildThisFileDirectory はこの .props 自身の場所を指すので、
+       import 元の物理パスに依存しない。
+       =================================================== -->
+  <PropertyGroup>
+    <TakoEngineRoot>$(MSBuildThisFileDirectory)..</TakoEngineRoot>
+    <EngineResourcesSrc>$(TakoEngineRoot)\project\engine\resources</EngineResourcesSrc>
+    <EngineResourcesDirName>EngineResources</EngineResourcesDirName>
+    <GameResourcesSrc>$(ProjectDir)resources</GameResourcesSrc>
+    <GameResourcesDirName>resources</GameResourcesDirName>
+  </PropertyGroup>
+
+  <!-- ===================================================
+       Visual Studio から F5 起動した時の作業ディレクトリ
+       （exe の隣 = OutDir）に統一。
+       これで「VS から実行」も「exe ダブルクリック」も
+       同じ相対パス解決になる。
+
+       注意: $(OutDir) は .props 評価時点ではまだ未定義のため
+       eager 評価で空になる。$(SolutionDir) と $(Configuration) は
+       MSBuild の予約プロパティで先に確定するため、これらを使って
+       OutDir 規約を直接記述する。
+       =================================================== -->
+  <PropertyGroup>
+    <LocalDebuggerWorkingDirectory>$(SolutionDir)Generated\outputs\$(Configuration)\</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
+
+  <!-- ===================================================
+       PreBuildEvent: リソースを OutDir 直下にミラー
+       /XO により更新分だけコピーするので増分ビルドに優しい。
+       robocopy の終了コード 0..7 は成功扱い、8 以上だけ真のエラー。
+       =================================================== -->
+  <ItemDefinitionGroup>
+    <PreBuildEvent>
+      <Command>robocopy "$(EngineResourcesSrc)" "$(OutDir)$(EngineResourcesDirName)" /E /XO /NFL /NDL /NJH /NJS /NP /NS /NC
+IF %ERRORLEVEL% GEQ 8 EXIT /B %ERRORLEVEL%
+robocopy "$(GameResourcesSrc)" "$(OutDir)$(GameResourcesDirName)" /E /XO /NFL /NDL /NJH /NJS /NP /NS /NC
+IF %ERRORLEVEL% GEQ 8 EXIT /B %ERRORLEVEL%
+EXIT /B 0</Command>
+      <Message>Copying engine and game resources to $(OutDir)</Message>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+
+  <!-- ===================================================
+       PostBuildEvent: DXC ランタイム DLL を exe の隣に配置
+       全 DX12 ゲームに必須なので .props で集約。
+       =================================================== -->
+  <ItemDefinitionGroup>
+    <PostBuildEvent>
+      <Command>copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxcompiler.dll" "$(TargetDir)dxcompiler.dll"
+copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dxil.dll"</Command>
+      <Message>Copying DXC runtime DLLs</Message>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+
+</Project>
