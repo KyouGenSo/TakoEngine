@@ -554,5 +554,8 @@
     <ClInclude Include="engine\3d\Decal\DecalManager.h">
       <Filter>3d\Decal</Filter>
     </ClInclude>
+    <ClInclude Include="engine\base\EnginePaths.h">
+      <Filter>base</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

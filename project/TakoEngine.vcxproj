@@ -204,6 +204,7 @@
     <ClInclude Include="engine\3d\Shadow\ShadowMap.h" />
     <ClInclude Include="engine\3d\Shadow\ShadowRenderer.h" />
     <ClInclude Include="engine\3d\SkyBox\SkyBox.h" />
+    <ClInclude Include="engine\base\EnginePaths.h" />
     <ClInclude Include="engine\collision\AABBCollider.h" />
     <ClInclude Include="engine\collision\Collider.h" />
     <ClInclude Include="engine\collision\CollisionManager.h" />
