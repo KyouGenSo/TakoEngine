@@ -315,7 +315,7 @@ namespace Tako {
         }
         else {
           textureData.texturePath = "";
-          textureData.textureIndex = TextureManager::GetInstance()->GetSRVIndex("white.dds");
+          textureData.textureIndex = TextureManager::GetInstance()->GetEngineDefaultSRVIndex("white.dds");
         }
       }
 

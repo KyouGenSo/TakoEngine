@@ -455,6 +455,8 @@ namespace Tako {
       DebugUIManager::LogType::Info);
 #endif
 
+    if (emitterMap_.empty()) return; // すでに空の場合は何もしない
+
     // エミッターを1つずつ明示的に削除（GPUParticle システムに通知するため）
     for (auto& val : emitterMap_ | std::views::values) {
       auto& emitter = val;

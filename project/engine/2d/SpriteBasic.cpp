@@ -2,6 +2,7 @@
 #include <cassert>
 
 #include "Mat4x4Func.h"
+#include "EnginePaths.h"
 
 #ifdef _DEBUG
 #include "DebugUIManager.h"
@@ -176,10 +177,10 @@ namespace Tako {
     rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
 
     // shader のコンパイル
-    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(L"resources/shaders/Sprite.VS.hlsl", L"vs_6_0");
+    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"Sprite.VS.hlsl"), L"vs_6_0");
     assert(vertexShaderBlob != nullptr);
 
-    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(L"resources/shaders/Sprite.PS.hlsl", L"ps_6_0");
+    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"Sprite.PS.hlsl"), L"ps_6_0");
     assert(pixelShaderBlob != nullptr);
 
     // DepthStencilState

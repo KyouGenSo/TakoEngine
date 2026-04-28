@@ -67,7 +67,7 @@ namespace Tako {
       }
       else {
         // 環境マップが無効またはテクスチャが設定されていない場合は、デフォルトテクスチャを設定
-        uint32_t defaultTextureIndex = TextureManager::GetInstance()->GetSRVIndex("white.png");
+        uint32_t defaultTextureIndex = TextureManager::GetInstance()->GetEngineDefaultSRVIndex("white.png");
         SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(8, defaultTextureIndex);
       }
     }
@@ -109,7 +109,7 @@ namespace Tako {
       }
       else {
         // 環境マップが無効またはテクスチャが設定されていない場合は、デフォルトテクスチャを設定
-        uint32_t defaultTextureIndex = TextureManager::GetInstance()->GetSRVIndex("white.png");
+        uint32_t defaultTextureIndex = TextureManager::GetInstance()->GetEngineDefaultSRVIndex("white.png");
         SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(8, defaultTextureIndex);
       }
     }
@@ -151,7 +151,7 @@ namespace Tako {
         SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(8, envTextureIndex_);
       }
       else {
-        uint32_t defaultTextureIndex = TextureManager::GetInstance()->GetSRVIndex("white.png");
+        uint32_t defaultTextureIndex = TextureManager::GetInstance()->GetEngineDefaultSRVIndex("white.png");
         SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(8, defaultTextureIndex);
       }
     }

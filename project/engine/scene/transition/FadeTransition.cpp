@@ -9,7 +9,7 @@ namespace Tako {
 
   FadeTransition::FadeTransition()
     : fadeColor_(1.0f, 1.0f, 1.0f, 1.0f)
-    , textureName_("white.dds")
+    , textureName_("EngineResources/Texture/white.dds")
     , state_(NONE)
     , duration_(0.0f)
     , transitionTime_(0.0f)
@@ -21,7 +21,7 @@ namespace Tako {
 
   FadeTransition::FadeTransition(const Vector4& color)
     : fadeColor_(color)
-    , textureName_("white.dds")
+    , textureName_("EngineResources/Texture/white.dds")
     , state_(NONE)
     , duration_(0.0f)
     , transitionTime_(0.0f)

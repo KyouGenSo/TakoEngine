@@ -26,7 +26,7 @@ namespace Tako {
   {
     DX12Basic* dx12 = DecalManager::GetInstance()->GetDX12Basic();
 
-    textureSrvIndex_ = TextureManager::GetInstance()->GetSRVIndex("white.dds");
+    textureSrvIndex_ = TextureManager::GetInstance()->GetEngineDefaultSRVIndex("white.dds");
 
     // DecalData 定数バッファの作成
     decalDataBuffer_ = dx12->MakeBufferResource(sizeof(DecalDataGPU));

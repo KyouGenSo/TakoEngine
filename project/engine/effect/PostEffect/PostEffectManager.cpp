@@ -74,7 +74,7 @@ namespace Tako {
     );
 
     // Dissolve マスクテクスチャのデフォルト SRV 作成
-    dissolveMaskSrvIndex_ = TextureManager::GetInstance()->GetSRVIndex("noise0.png");
+    dissolveMaskSrvIndex_ = TextureManager::GetInstance()->GetEngineDefaultSRVIndex("noise0.png");
   }
 
   void PostEffectManager::Finalize()

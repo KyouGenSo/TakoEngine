@@ -8,6 +8,7 @@
 #include "TextureManager.h"
 #include "FrameTimer.h"
 #include "WinApp.h"
+#include "EnginePaths.h"
 
 #ifdef _DEBUG
 #include "DebugUIManager.h"
@@ -43,7 +44,7 @@ namespace Tako {
     m_srvManager_ = SrvManager::GetInstance();
 
     modelData_.textureData.texturePath = "circle.dds";
-    modelData_.textureData.textureIndex = TextureManager::GetInstance()->GetSRVIndex(modelData_.textureData.texturePath);
+    modelData_.textureData.textureIndex = TextureManager::GetInstance()->GetEngineDefaultSRVIndex(modelData_.textureData.texturePath);
 
     isInited_ = false;
 
@@ -563,10 +564,10 @@ namespace Tako {
     rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
 
     // shader のコンパイル
-    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(L"resources/shaders/GPUParticle.VS.hlsl", L"vs_6_0");
+    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"GPUParticle.VS.hlsl"), L"vs_6_0");
     assert(vertexShaderBlob != nullptr);
 
-    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(L"resources/shaders/GPUParticle.PS.hlsl", L"ps_6_0");
+    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"GPUParticle.PS.hlsl"), L"ps_6_0");
     assert(pixelShaderBlob != nullptr);
 
     // DepthStencilState
@@ -744,7 +745,7 @@ namespace Tako {
 
   void GPUParticle::CreateComputeShaderPSO(Microsoft::WRL::ComPtr<ID3D12RootSignature>& RS, Microsoft::WRL::ComPtr<ID3D12PipelineState>& PSO, const std::wstring& shaderName)
   {
-    Microsoft::WRL::ComPtr<IDxcBlob> csBlob = m_dx12_->CompileShader(L"resources/shaders/" + shaderName, L"cs_6_0");
+    Microsoft::WRL::ComPtr<IDxcBlob> csBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(shaderName), L"cs_6_0");
 
     D3D12_COMPUTE_PIPELINE_STATE_DESC computePipelineStateDesc{};
     computePipelineStateDesc.pRootSignature = RS.Get();

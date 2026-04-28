@@ -1,150 +1,150 @@
 #include "Particle.hlsli"
 #include "Random.hlsli"
 
-// ‰ñ“]s—ñ‚ÌŒvZ
+// å›è»¢è¡Œåˆ—ã®è¨ˆç®—
 float3x3 CalculateRotationMatrix(float3 eulerAngles)
 {
-    // “x”‚©‚çƒ‰ƒWƒAƒ“‚É•ÏŠ·
+    // åº¦æ•°ã‹ã‚‰ãƒ©ã‚¸ã‚¢ãƒ³ã«å¤‰æ›
     float3 rad = eulerAngles * (3.14159265f / 180.0f);
-    
-    // X²‰ñ“]s—ñ
+
+    // Xè»¸å›è»¢è¡Œåˆ—
     float3x3 rotX = float3x3(
         1.0f, 0.0f, 0.0f,
         0.0f, cos(rad.x), -sin(rad.x),
         0.0f, sin(rad.x), cos(rad.x)
     );
-    
-    // Y²‰ñ“]s—ñ
+
+    // Yè»¸å›è»¢è¡Œåˆ—
     float3x3 rotY = float3x3(
         cos(rad.y), 0.0f, sin(rad.y),
         0.0f, 1.0f, 0.0f,
         -sin(rad.y), 0.0f, cos(rad.y)
     );
-    
-    // Z²‰ñ“]s—ñ
+
+    // Zè»¸å›è»¢è¡Œåˆ—
     float3x3 rotZ = float3x3(
         cos(rad.z), -sin(rad.z), 0.0f,
         sin(rad.z), cos(rad.z), 0.0f,
         0.0f, 0.0f, 1.0f
     );
-    
-    // s—ñ‚Ì‡¬iZ¨Y¨X‡j
+
+    // è¡Œåˆ—ã®åˆæˆï¼ˆZ*Y*Xé †ï¼‰
     return mul(mul(rotZ, rotY), rotX);
 }
 
-// ‹…‘Ì“à‚Ìƒ‰ƒ“ƒ_ƒ€‚È“_‚ğ¶¬
+// çƒä½“å†…ã®ãƒ©ãƒ³ãƒ€ãƒ ãªç‚¹ã‚’ç”Ÿæˆ
 float3 GetRandomPointInSphere(RandomGenerator generator, float3 center, float radius)
 {
-    // •ûŒüƒxƒNƒgƒ‹‚Ì¶¬
+    // æ–¹å‘ãƒ™ã‚¯ãƒˆãƒ«ã®ç”Ÿæˆ
     float3 dir = generator.Generate3d() * 2.0f - 1.0f;
     float len = length(dir);
-    
-    // ƒ[ƒœZ–h~
+
+    // ã‚¼ãƒ­é™¤ç®—é˜²æ­¢
     if (len < 0.0001f)
     {
         dir = float3(0.0f, 1.0f, 0.0f);
         len = 1.0f;
     }
-    
-    // ³‹K‰»
+
+    // æ­£è¦åŒ–
     dir /= len;
-    
-    // ‹…‘Ì“à‚Ì‹Ïˆê•ª•z‚Ì‚½‚ß‚ÌƒXƒP[ƒŠƒ“ƒOi‘ÌÏ‚É”ä—áj
+
+    // çƒä½“å†…ã®å‡ä¸€åˆ†å¸ƒã®ãŸã‚ã®ã‚¹ã‚±ãƒ¼ãƒªãƒ³ã‚°ï¼ˆä½“ç©ã«æ¯”ä¾‹ï¼‰
     float r = radius * pow(generator.Generate1d(), 1.0f / 3.0f);
-    
+
     return center + dir * r;
 }
 
-// ” “à‚Ìƒ‰ƒ“ƒ_ƒ€‚È“_‚ğ¶¬
+// ç®±å†…ã®ãƒ©ãƒ³ãƒ€ãƒ ãªç‚¹ã‚’ç”Ÿæˆ
 float3 GetRandomPointInBox(RandomGenerator generator, float3 center, float3 size, float3 rotation)
 {
-    // ƒ[ƒJƒ‹À•W“à‚Ìƒ‰ƒ“ƒ_ƒ€‚È“_
+    // ãƒ­ãƒ¼ã‚«ãƒ«åº§æ¨™ç³»ã®ãƒ©ãƒ³ãƒ€ãƒ ãªç‚¹
     float3 localPoint = (generator.Generate3d() - 0.5f) * size;
-    
-    // ‰ñ“]s—ñ‚Ì“K—p
+
+    // å›è»¢è¡Œåˆ—ã®é©ç”¨
     float3x3 rotMatrix = CalculateRotationMatrix(rotation);
     float3 rotatedPoint = mul(rotMatrix, localPoint);
-    
+
     return center + rotatedPoint;
 }
 
-// OŠpŒ`ã‚Ìƒ‰ƒ“ƒ_ƒ€‚È“_‚ğ¶¬
+// ä¸‰è§’å½¢ä¸Šã®ãƒ©ãƒ³ãƒ€ãƒ ãªç‚¹ã‚’ç”Ÿæˆ
 float3 GetRandomPointOnTriangle(RandomGenerator generator, float3 p0, float3 p1, float3 p2)
 {
-    // ƒoƒŠƒZƒ“ƒgƒŠƒbƒNÀ•W‚ğ—p‚¢‚½OŠpŒ`ã‚Ìƒ‰ƒ“ƒ_ƒ€‚È“_
+    // ãƒãƒªã‚»ãƒ³ãƒˆãƒªãƒƒã‚¯åº§æ¨™ã‚’ç”¨ã„ãŸä¸‰è§’å½¢ä¸Šã®ãƒ©ãƒ³ãƒ€ãƒ ãªç‚¹
     float r1 = generator.Generate1d();
     float r2 = generator.Generate1d();
-    
-    // OŠpŒ`ã‚Ì‹Ïˆê•ª•z‚ğŠm•Û
+
+    // ä¸‰è§’å½¢ä¸Šã®å‡ä¸€åˆ†å¸ƒã‚’ç¢ºä¿
     if (r1 + r2 > 1.0f)
     {
         r1 = 1.0f - r1;
         r2 = 1.0f - r2;
     }
-    
+
     float a = 1.0f - r1 - r2;
     float b = r1;
     float c = r2;
-    
+
     return a * p0 + b * p1 + c * p2;
 }
 
-RWStructuredBuffer<Particle> gParticles : register(u0); // ƒp[ƒeƒBƒNƒ‹ƒoƒbƒtƒ@
-RWStructuredBuffer<int> gFreeListIndex : register(u1);  // ƒtƒŠ[ƒŠƒXƒgƒCƒ“ƒfƒbƒNƒX
-RWStructuredBuffer<uint> gFreeList : register(u2);      // ƒtƒŠ[ƒŠƒXƒg
-StructuredBuffer<Emitter> gEmitters : register(t0);     // ƒGƒ~ƒbƒ^[ƒŠƒXƒg
+RWStructuredBuffer<Particle> gParticles : register(u0); // ãƒ‘ãƒ¼ãƒ†ã‚£ã‚¯ãƒ«ãƒãƒƒãƒ•ã‚¡
+RWStructuredBuffer<int> gFreeListIndex : register(u1);  // ãƒ•ãƒªãƒ¼ãƒªã‚¹ãƒˆã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹
+RWStructuredBuffer<uint> gFreeList : register(u2);      // ãƒ•ãƒªãƒ¼ãƒªã‚¹ãƒˆ
+StructuredBuffer<Emitter> gEmitters : register(t0);     // ã‚¨ãƒŸãƒƒã‚¿ãƒ¼ãƒªã‚¹ãƒˆ
 
-ConstantBuffer<PerFrame> gPerFrame : register(b0);      // ƒtƒŒ[ƒ€î•ñ
+ConstantBuffer<PerFrame> gPerFrame : register(b0);      // ãƒ•ãƒ¬ãƒ¼ãƒ æƒ…å ±
 
 [numthreads(16, 1, 1)]
 void main(uint3 DTid : SV_DispatchThreadID)
 {
-    // ƒGƒ~ƒbƒ^[‚ÌƒCƒ“ƒfƒbƒNƒXŒvZ
+    // ã‚¨ãƒŸãƒƒã‚¿ãƒ¼ã®ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹è¨ˆç®—
     uint emitterIndex = DTid.x;
-    
-    // ”ÍˆÍƒ`ƒFƒbƒN
+
+    // ç¯„å›²ãƒã‚§ãƒƒã‚¯
     if (emitterIndex >= gPerFrame.activeEmitterCount)
     {
         return;
     }
-    
-    // ‚±‚ÌƒGƒ~ƒbƒ^[‚ªƒAƒNƒeƒBƒu‚©ƒ`ƒFƒbƒN
-    if (gEmitters[emitterIndex].isActive == 0)
+
+    // ã“ã®ã‚¨ãƒŸãƒƒã‚¿ãƒ¼ãŒã‚¢ã‚¯ãƒ†ã‚£ãƒ–ã‹ãƒã‚§ãƒƒã‚¯
+    if (!(gEmitters[emitterIndex].flags & EFLAG_ACTIVE))
     {
         return;
     }
-    
-    // Ëoƒtƒ‰ƒO‚ª—§‚Á‚Ä‚¢‚é‚©ƒ`ƒFƒbƒN
-    if (gEmitters[emitterIndex].isEmit == 0)
+
+    // å°„å‡ºãƒ•ãƒ©ã‚°ãŒç«‹ã£ã¦ã„ã‚‹ã‹ãƒã‚§ãƒƒã‚¯
+    if (!(gEmitters[emitterIndex].flags & EFLAG_EMITTING))
     {
         return;
     }
-    
-    // —”¶¬Ší‚Ì‰Šú‰»
+
+    // ä¹±æ•°ç”Ÿæˆå™¨ã®åˆæœŸåŒ–
     RandomGenerator generator;
-    // ƒV[ƒh’l¶¬ (ŠÔ{ƒGƒ~ƒbƒ^[ID{ƒXƒŒƒbƒhIDj
+    // ã‚·ãƒ¼ãƒ‰å€¤è¨­å®š (æ™‚é–“+ã‚¨ãƒŸãƒƒã‚¿ãƒ¼ID+ã‚¹ãƒ¬ãƒƒãƒ‰ID)
     generator.seed = float3(
         DTid.x + gPerFrame.time * 0.1f,
         DTid.y + gPerFrame.time * 0.2f,
         gEmitters[emitterIndex].emitterID + gPerFrame.time * 0.3f
     );
-    
-    // ‚±‚ÌƒGƒ~ƒbƒ^[‚©‚çw’è”‚Ìƒp[ƒeƒBƒNƒ‹‚ğËo
+
+    // ã“ã®ã‚¨ãƒŸãƒƒã‚¿ãƒ¼ã‹ã‚‰æŒ‡å®šæ•°ã®ãƒ‘ãƒ¼ãƒ†ã‚£ã‚¯ãƒ«ã‚’å°„å‡º
     for (uint particleIndex = 0; particleIndex < gEmitters[emitterIndex].count; ++particleIndex)
     {
-        // FreeList‚©‚ç‹ó‚«ƒp[ƒeƒBƒNƒ‹ƒXƒƒbƒg‚ğæ“¾
+        // FreeListã‹ã‚‰ç©ºããƒ‘ãƒ¼ãƒ†ã‚£ã‚¯ãƒ«ã‚¹ãƒ­ãƒƒãƒˆã‚’å–å¾—
         int freeListIndex;
         InterlockedAdd(gFreeListIndex[0], -1, freeListIndex);
-        
-        // —LŒø‚ÈƒCƒ“ƒfƒbƒNƒX‚©‚Â\•ª‚È‹ó‚«‚ª‚ ‚é‚©‚ğŠm”F
+
+        // æœ‰åŠ¹ãªã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã‹ååˆ†ãªç©ºããŒã‚ã‚‹ã‹ã‚’ç¢ºèª
         if (freeListIndex >= 0 && freeListIndex < kMaxParticles && gFreeList[freeListIndex] < kMaxParticles)
         {
-            // FreeList‚©‚çÀÛ‚Ìƒp[ƒeƒBƒNƒ‹ID‚ğæ“¾
+            // FreeListã‹ã‚‰å®Ÿéš›ã®ãƒ‘ãƒ¼ãƒ†ã‚£ã‚¯ãƒ«IDã‚’å–å¾—
             uint particleID = gFreeList[freeListIndex];
-            
-            // ƒp[ƒeƒBƒNƒ‹‚ÌˆÊ’u‚ğŒˆ’èiƒGƒ~ƒbƒ^[Œ`ó‚É‰‚¶‚Äj
+
+            // ãƒ‘ãƒ¼ãƒ†ã‚£ã‚¯ãƒ«ã®ä½ç½®ã‚’æ±ºå®šï¼ˆã‚¨ãƒŸãƒƒã‚¿ãƒ¼å½¢çŠ¶ã«å¿œã˜ã¦ï¼‰
             float3 particlePosition;
-            
+
             switch (gEmitters[emitterIndex].type)
             {
                 case EMITTER_TYPE_SPHERE:
@@ -154,7 +154,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
                         gEmitters[emitterIndex].radius
                     );
                     break;
-                    
+
                 case EMITTER_TYPE_BOX:
                     particlePosition = GetRandomPointInBox(
                         generator,
@@ -163,7 +163,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
                         gEmitters[emitterIndex].boxRotation
                     );
                     break;
-                    
+
                 case EMITTER_TYPE_TRIANGLE:
                     particlePosition = GetRandomPointOnTriangle(
                         generator,
@@ -172,19 +172,19 @@ void main(uint3 DTid : SV_DispatchThreadID)
                         gEmitters[emitterIndex].position + gEmitters[emitterIndex].triangleV3
                     );
                     break;
-                    
+
                 default:
-                    // ƒfƒtƒHƒ‹ƒg‚ÍƒGƒ~ƒbƒ^[‚Ì’†S
+                    // ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆã¯ã‚¨ãƒŸãƒƒã‚¿ãƒ¼ã®ä¸­å¿ƒ
                     particlePosition = gEmitters[emitterIndex].position;
                     break;
             }
-            
-            // -----------------------------ƒp[ƒeƒBƒNƒ‹‚Ì‰Šú‰»----------------------------- //
-            
-            // ƒTƒCƒYİ’è---------------------------------------------------------------------------------
+
+            // -----------------------------ãƒ‘ãƒ¼ãƒ†ã‚£ã‚¯ãƒ«ã®åˆæœŸåŒ–----------------------------- //
+
+            // ã‚µã‚¤ã‚ºè¨­å®š---------------------------------------------------------------------------------
             float3 particleScale;
-            
-            // X²•ûŒü‚ÌƒXƒP[ƒ‹
+
+            // Xæ–¹å‘ã®ã‚¹ã‚±ãƒ¼ãƒ«
             if (any(gEmitters[emitterIndex].scaleRangeX != float2(0.0f, 0.0f)))
             {
                 particleScale.x = generator.Generate1d() * (gEmitters[emitterIndex].scaleRangeX.y - gEmitters[emitterIndex].scaleRangeX.x) + gEmitters[emitterIndex].scaleRangeX.x;
@@ -193,8 +193,8 @@ void main(uint3 DTid : SV_DispatchThreadID)
             {
                 particleScale.x = 1.0f;
             }
-            
-            // Y²•ûŒü‚ÌƒXƒP[ƒ‹
+
+            // Yæ–¹å‘ã®ã‚¹ã‚±ãƒ¼ãƒ«
             if (any(gEmitters[emitterIndex].scaleRangeY != float2(0.0f, 0.0f)))
             {
                 particleScale.y = generator.Generate1d() * (gEmitters[emitterIndex].scaleRangeY.y - gEmitters[emitterIndex].scaleRangeY.x) + gEmitters[emitterIndex].scaleRangeY.x;
@@ -203,35 +203,46 @@ void main(uint3 DTid : SV_DispatchThreadID)
             {
                 particleScale.y = 1.0f;
             }
-            
-            // Z²•ûŒü‚ÌƒXƒP[ƒ‹
+
+            // Zæ–¹å‘ã®ã‚¹ã‚±ãƒ¼ãƒ«
             particleScale.z = 1.0f;
-            
-            // ƒp[ƒeƒBƒNƒ‹‚ÌƒXƒP[ƒ‹‚ğİ’è
+
+            // ãƒ‘ãƒ¼ãƒ†ã‚£ã‚¯ãƒ«ã®ã‚¹ã‚±ãƒ¼ãƒ«ã‚’è¨­å®š
             gParticles[particleID].scale.x = particleScale.x;
             gParticles[particleID].scale.y = particleScale.y;
-            
-            // ˆÊ’uİ’è---------------------------------------------------------------------------------
+
+            // ä½ç½®è¨­å®š---------------------------------------------------------------------------------
             gParticles[particleID].translate = particlePosition;
 
-        	// ‰ñ“]İ’è---------------------------------------------------------------------------------
-            if (gEmitters[emitterIndex].isRandomRotateZ > 0)
+            // è³ªé‡ãƒ»ã‚»ãƒ«ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ãƒ»ãƒ•ã‚©ãƒ¼ã‚¹ãƒ•ã‚£ãƒ¼ãƒ«ãƒ‰ãƒ•ãƒ©ã‚°è¨­å®š----------------------------------
+            gParticles[particleID].mass = 1.0f;
+            gParticles[particleID].cellIndex = 0xFFFFFFFF; // æœªå‰²ã‚Šå½“ã¦
+            gParticles[particleID].flags = 0;
+            if (gEmitters[emitterIndex].flags & EFLAG_USE_FORCE_FIELD)
+                gParticles[particleID].flags |= PFLAG_USE_FORCE_FIELD;
+            if (gEmitters[emitterIndex].flags & EFLAG_USE_CURL_NOISE)
+                gParticles[particleID].flags |= PFLAG_USE_CURL_NOISE;
+            if (gEmitters[emitterIndex].flags & EFLAG_USE_DEPTH_COLLISION)
+                gParticles[particleID].flags |= PFLAG_USE_DEPTH_COLLISION;
+
+            // å›è»¢è¨­å®š---------------------------------------------------------------------------------
+            if (gEmitters[emitterIndex].flags & EFLAG_RANDOM_ROTATE_Z)
             {
-                // ƒ‰ƒ“ƒ_ƒ€‰ñ“]ƒtƒ‰ƒO‚ª—§‚Á‚Ä‚¢‚éê‡Aƒ‰ƒ“ƒ_ƒ€‚È‰ñ“]‚ğİ’è
-                gParticles[particleID].rotate.z = generator.Generate1d() * 360.0f; // Z²‰ñ“]
+                // ãƒ©ãƒ³ãƒ€ãƒ å›è»¢ãƒ•ãƒ©ã‚°ãŒç«‹ã£ã¦ã„ã‚‹å ´åˆã€ãƒ©ãƒ³ãƒ€ãƒ ãªå›è»¢ã‚’è¨­å®š
+                gParticles[particleID].rotate.z = generator.Generate1d() * 360.0f; // Zè»¸å›è»¢
             }
             else
             {
-                gParticles[particleID].rotate.z = 0.0f; // Z²‰ñ“]‚È‚µ
+                gParticles[particleID].rotate.z = 0.0f; // Zè»¸å›è»¢ãªã—
             }
-            
-            
-            // ‘¬“xİ’è---------------------------------------------------------------------------------
+
+
+            // é€Ÿåº¦è¨­å®š---------------------------------------------------------------------------------
             float3 particleVelocity;
 
             float3 randomVel = (generator.Generate3d() * 2.0f - 1.0f) * 0.1f;
 
-            // X²•ûŒü‚Ì‘¬“x
+            // Xæ–¹å‘ã®é€Ÿåº¦
             if (any(gEmitters[emitterIndex].velRangeX != float2(0.0f, 0.0f)))
             {
                 particleVelocity.x = generator.Generate1d() * (gEmitters[emitterIndex].velRangeX.y - gEmitters[emitterIndex].velRangeX.x) + gEmitters[emitterIndex].velRangeX.x;
@@ -241,7 +252,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
                 particleVelocity.x = randomVel.x;
             }
 
-            // Y²•ûŒü‚Ì‘¬“x
+            // Yæ–¹å‘ã®é€Ÿåº¦
             if (any(gEmitters[emitterIndex].velRangeY != float2(0.0f, 0.0f)))
             {
                 particleVelocity.y = generator.Generate1d() * (gEmitters[emitterIndex].velRangeY.y - gEmitters[emitterIndex].velRangeY.x) + gEmitters[emitterIndex].velRangeY.x;
@@ -251,7 +262,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
                 particleVelocity.y = randomVel.y;
             }
 
-            // Z²•ûŒü‚Ì‘¬“x
+            // Zæ–¹å‘ã®é€Ÿåº¦
             if (any(gEmitters[emitterIndex].velRangeZ != float2(0.0f, 0.0f)))
             {
                 particleVelocity.z = generator.Generate1d() * (gEmitters[emitterIndex].velRangeZ.y - gEmitters[emitterIndex].velRangeZ.x) + gEmitters[emitterIndex].velRangeZ.x;
@@ -262,32 +273,36 @@ void main(uint3 DTid : SV_DispatchThreadID)
 
             }
 
-            // ³‹K‰»
-            if (gEmitters[emitterIndex].isNormalize == 1)
+            // æ­£è¦åŒ–
+            if (gEmitters[emitterIndex].flags & EFLAG_NORMALIZE)
             {
-                // ³‹K‰»ƒtƒ‰ƒO‚ª—§‚Á‚Ä‚¢‚éê‡A‘¬“x‚ğ³‹K‰»
+                // æ­£è¦åŒ–ãƒ•ãƒ©ã‚°ãŒç«‹ã£ã¦ã„ã‚‹å ´åˆã€é€Ÿåº¦ã‚’æ­£è¦åŒ–
                 particleVelocity = normalize(particleVelocity);
             }
 
-            // ƒp[ƒeƒBƒNƒ‹‚Ì‘¬“x‚ğİ’è
+            // ãƒ‘ãƒ¼ãƒ†ã‚£ã‚¯ãƒ«ã®é€Ÿåº¦ã‚’è¨­å®š
             gParticles[particleID].velocity.x = particleVelocity.x;
             gParticles[particleID].velocity.y = particleVelocity.y;
             gParticles[particleID].velocity.z = particleVelocity.z;
-            
-            
-            // õ–½İ’è---------------------------------------------------------------------------------
+
+            // å‰ãƒ•ãƒ¬ãƒ¼ãƒ ä½ç½®ã®åˆæœŸåŒ–ï¼ˆVerletç©åˆ†ç”¨ï¼‰
+            // prevPosition = translate - velocity ã§åˆé€Ÿã‚’ã‚¨ãƒ³ã‚³ãƒ¼ãƒ‰
+            gParticles[particleID].prevPosition = particlePosition - particleVelocity;
+
+
+            // å¯¿å‘½è¨­å®š---------------------------------------------------------------------------------
             if (any(gEmitters[emitterIndex].lifeTimeRange != float2(0.0f, 0.0f)))
             {
                 gParticles[particleID].lifeTime = generator.Generate1d() * (gEmitters[emitterIndex].lifeTimeRange.y - gEmitters[emitterIndex].lifeTimeRange.x) + gEmitters[emitterIndex].lifeTimeRange.x;
             }
             else
             {
-                gParticles[particleID].lifeTime = 1.0f + generator.Generate1d() * 0.5f; // 1.0`1.5•b
+                gParticles[particleID].lifeTime = 1.0f + generator.Generate1d() * 0.5f; // 1.0ã€œ1.5ç§’
             }
-            
+
             gParticles[particleID].currentTime = 0.0f;
-            
-            // Fİ’è---------------------------------------------------------------------------------
+
+            // è‰²è¨­å®š---------------------------------------------------------------------------------
             gParticles[particleID].startColor.rgb = gEmitters[emitterIndex].startColorTint.rgb;
             gParticles[particleID].startColor.a = 1.0f;
 
@@ -297,7 +312,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
         }
         else
         {
-            // ‹ó‚«ƒp[ƒeƒBƒNƒ‹‚ª‘«‚è‚È‚¢ê‡‚Í–ß‚µ‚ÄI—¹
+            // ç©ºããƒ‘ãƒ¼ãƒ†ã‚£ã‚¯ãƒ«ãŒãªã„å ´åˆã¯æˆ»ã—ã¦çµ‚äº†
             InterlockedAdd(gFreeListIndex[0], 1);
             break;
         }

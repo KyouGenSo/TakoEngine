@@ -88,8 +88,8 @@ namespace Tako {
     Draw2D::GetInstance()->SetCamera(defaultCamera_.get());
     Draw2D::GetInstance()->Initialize(dx12_.get());
 
-    TextureManager::GetInstance()->LoadTexture("black.dds");
-    TextureManager::GetInstance()->LoadTexture("noise0.png");
+    TextureManager::GetInstance()->LoadEngineDefault("black.dds");
+    TextureManager::GetInstance()->LoadEngineDefault("noise0.png");
 
     PostEffectManager::GetInstance()->Initialize(dx12_.get());
 
@@ -387,10 +387,10 @@ namespace Tako {
   void TakoFramework::LoadResources()
   {
     TextureManager* tm = TextureManager::GetInstance();
-    tm->LoadTexture("white.dds");
-    tm->LoadTexture("black.dds");
-    tm->LoadTexture("circle.dds");
-    tm->LoadTexture("my_skybox.dds");
+    tm->LoadEngineDefault("white.dds");
+    tm->LoadEngineDefault("black.dds");
+    tm->LoadEngineDefault("circle.dds");
+    tm->LoadEngineDefault("my_skybox.dds");
   }
 
 #ifdef _DEBUG

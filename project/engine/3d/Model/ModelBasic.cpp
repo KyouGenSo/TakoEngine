@@ -1,6 +1,7 @@
 #include "ModelBasic.h"
 #include "DX12Basic.h"
 #include "SrvManager.h"
+#include "EnginePaths.h"
 
 #ifdef _DEBUG
 #include "DebugUIManager.h"
@@ -119,7 +120,7 @@ namespace Tako {
   {
     CreateCSRootSignature();
 
-    Microsoft::WRL::ComPtr<IDxcBlob> csBlob = m_dx12_->CompileShader(L"resources/shaders/Skinning.CS.hlsl", L"cs_6_0");
+    Microsoft::WRL::ComPtr<IDxcBlob> csBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"Skinning.CS.hlsl"), L"cs_6_0");
 
     D3D12_COMPUTE_PIPELINE_STATE_DESC computePipelineStateDesc{};
     computePipelineStateDesc.pRootSignature = csRootSignature_.Get();

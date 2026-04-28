@@ -59,6 +59,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     gTexture.GetDimensions(texSize.x, texSize.y);
     
     float4 resultColor = GaussianBlur(input.texCoord, texSize, direction);
+    resultColor.a = 1.0f;
 
     //resultColor.rgb += output.color.rgb;
     

@@ -5,6 +5,7 @@
 #include "SrvManager.h"
 #include <cassert>
 #include "Mat4x4Func.h"
+#include "EnginePaths.h"
 
 #ifdef _DEBUG
 #include "DebugUIManager.h"
@@ -244,7 +245,7 @@ void ShadowRenderer::CreateShadowPipelineState()
     
     // シェーダーのコンパイル
     Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = dx12_->CompileShader(
-        L"resources/shaders/ShadowMap.VS.hlsl", L"vs_6_0");
+        EnginePaths::ShaderPath(L"ShadowMap.VS.hlsl"), L"vs_6_0");
     assert(vertexShaderBlob != nullptr);
     
     // ピクセルシェーダーは不要（深度のみ）
@@ -430,7 +431,7 @@ void ShadowRenderer::CreateShadowInstancedPipelineState()
     
     // インスタンシング用頂点シェーダーのコンパイル
     Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = dx12_->CompileShader(
-        L"resources/shaders/ShadowMapInstanced.VS.hlsl", L"vs_6_0");
+        EnginePaths::ShaderPath(L"ShadowMapInstanced.VS.hlsl"), L"vs_6_0");
     assert(vertexShaderBlob != nullptr);
     
     // ピクセルシェーダーは不要（深度のみ）

@@ -52,12 +52,12 @@ namespace Tako {
 
   void ScaleTransition::Initialize()
   {
-    // テクスチャ読み込み
-    TextureManager::GetInstance()->LoadTexture("white.png");
+    // テクスチャ読み込み（エンジン提供のデフォルトテクスチャ）
+    TextureManager::GetInstance()->LoadEngineDefault("white.png");
 
     // スプライトの初期化
     circleSprite_ = std::make_unique<Sprite>();
-    circleSprite_->Initialize("white.png");
+    circleSprite_->Initialize("EngineResources/Texture/white.png");
 
     // サイズを画面サイズに基づいて設定（最大時に画面全体を覆うサイズ）
     float maxDimension = std::max<float>(static_cast<float>(WinApp::clientWidth),

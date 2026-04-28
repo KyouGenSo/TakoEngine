@@ -8,6 +8,7 @@
 #endif
 #include "SrvManager.h"
 #include "StringUtility.h"
+#include "EnginePaths.h"
 
 #ifdef _DEBUG
 #include "ImGuiManager.h"
@@ -206,10 +207,10 @@ namespace Tako {
     rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
 
     // shader のコンパイル
-    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(L"resources/shaders/FullScreen.VS.hlsl", L"vs_6_0");
+    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"FullScreen.VS.hlsl"), L"vs_6_0");
     assert(vertexShaderBlob != nullptr);
 
-    std::wstring psPath = L"resources/shaders/" + StringUtility::ConvertString(shaderName_) + L".PS.hlsl";
+    std::wstring psPath = EnginePaths::ShaderPath(StringUtility::ConvertString(shaderName_) + L".PS.hlsl");
     Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(psPath, L"ps_6_0");
     assert(pixelShaderBlob != nullptr);
 

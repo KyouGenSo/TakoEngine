@@ -5,6 +5,7 @@
 #include "DX12Basic.h"
 #include "Mat4x4Func.h"
 #include "Camera.h"
+#include "EnginePaths.h"
 
 #ifdef _DEBUG
 #include "DebugUIManager.h"
@@ -179,10 +180,10 @@ void SkyBox::CreatePSO()
   rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK; // 裏面を描画しない
 
   // shader のコンパイル
-  Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(L"resources/shaders/SkyBox.VS.hlsl", L"vs_6_0");
+  Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"SkyBox.VS.hlsl"), L"vs_6_0");
   assert(vertexShaderBlob != nullptr);
 
-  Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(L"resources/shaders/SkyBox.PS.hlsl", L"ps_6_0");
+  Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"SkyBox.PS.hlsl"), L"ps_6_0");
   assert(pixelShaderBlob != nullptr);
 
   // DepthStencilState の設定
