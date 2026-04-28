@@ -15,6 +15,19 @@
   </PropertyGroup>
 
   <!-- ===================================================
+       出力 / 中間ディレクトリ規約
+       全ゲームプロジェクトで $(SolutionDir)\Generated\... 配下に統一。
+       OutDir は Configuration 単位でフラット（DLL/exe/リソース同居）、
+       IntDir は ProjectName で分離して複数ゲーム同時ビルドにも対応。
+       Debug/Release で同じ式なので Condition 不要。
+       =================================================== -->
+  <PropertyGroup>
+    <OutDir>$(SolutionDir)\Generated\outputs\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)\Generated\obj\$(ProjectName)\$(Configuration)\</IntDir>
+    <IncludePath>$(WindowsSDK_IncludePath);$(ProjectDir);$(VC_IncludePath);$(IncludePath)</IncludePath>
+  </PropertyGroup>
+
+  <!-- ===================================================
        Visual Studio から F5 起動した時の作業ディレクトリ
        （exe の隣 = OutDir）に統一。
        これで「VS から実行」も「exe ダブルクリック」も
@@ -29,6 +42,52 @@
     <LocalDebuggerWorkingDirectory>$(SolutionDir)Generated\outputs\$(Configuration)\</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
+
+  <!-- ===================================================
+       共通 C++ コンパイラ / リンカ設定
+       Debug/Release 両方に適用される最大公約数。
+       Configuration 固有の差分（最適化や RuntimeLibrary）は
+       下の ItemDefinitionGroup（Debug|Release）で個別指定する。
+       =================================================== -->
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <TreatWarningAsError>true</TreatWarningAsError>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+
+  <!-- ===================================================
+       Debug 固有: RuntimeLibrary（MTd）+ プリプロセッサ
+       =================================================== -->
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+
+  <!-- ===================================================
+       Release 固有: RuntimeLibrary（MT）+ 最適化 + プリプロセッサ
+       /O1 系（MinSpace）はサイズ優先。速度優先なら MaxSpeed に切替。
+       =================================================== -->
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <Optimization>MinSpace</Optimization>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
 
   <!-- ===================================================
        PreBuildEvent: リソースを OutDir 直下にミラー
