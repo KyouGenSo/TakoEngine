@@ -38,8 +38,6 @@ namespace Tako {
     GPUParticle(const GPUParticle&) = delete;
     GPUParticle& operator=(const GPUParticle&) = delete;
 
-  private:
-
   public: // メンバー関数
 
     /// <summary>
@@ -69,6 +67,11 @@ namespace Tako {
     /// 終了処理
     /// </summary>
     void Finalize();
+
+    /// <summary>
+    /// ウィンドウリサイズ時の処理（深度 SRV の再作成）
+    /// </summary>
+    void OnResize();
 
     //-------------------------エミッター管理-------------------------//
 
@@ -115,11 +118,6 @@ namespace Tako {
     //-------------------------フォースフィールド管理-------------------------//
 
     /// <summary>
-    /// フォースフィールドの最大数
-    /// </summary>
-    static const uint32_t kMaxForceFields = 64;
-
-    /// <summary>
     /// フォースフィールドを追加
     /// </summary>
     /// <param name="field">追加するフォースフィールド</param>
@@ -138,24 +136,6 @@ namespace Tako {
     void ClearForceFields();
 
     /// <summary>
-    /// 物理パラメータの速度減衰を設定
-    /// </summary>
-    /// <param name="damping">減衰係数（0.98-0.99 推奨）</param>
-    void SetDamping(float damping) { physicsParamsData_->damping = damping; }
-
-    /// <summary>
-    /// 物理パラメータの反発係数を設定
-    /// </summary>
-    /// <param name="restitution">反発係数（0-1）</param>
-    void SetCollisionRestitution(float restitution) { physicsParamsData_->collisionRestitution = restitution; }
-
-    /// <summary>
-    /// パーティクルの衝突半径を設定
-    /// </summary>
-    /// <param name="radius">衝突半径</param>
-    void SetParticleRadius(float radius) { physicsParamsData_->particleRadius = radius; }
-
-    /// <summary>
     /// フォースフィールドを更新
     /// </summary>
     /// <param name="index">更新するインデックス</param>
@@ -167,36 +147,6 @@ namespace Tako {
     /// </summary>
     /// <returns>フォースフィールドリストの const 参照</returns>
     [[nodiscard]] const std::vector<ForceFieldData>& GetForceFields() const { return forceFields_; }
-
-    /// <summary>
-    /// 速度減衰を取得
-    /// </summary>
-    [[nodiscard]] float GetDamping() const { return physicsParamsData_ ? physicsParamsData_->damping : 0.99f; }
-
-    /// <summary>
-    /// 反発係数を取得
-    /// </summary>
-    [[nodiscard]] float GetCollisionRestitution() const { return physicsParamsData_ ? physicsParamsData_->collisionRestitution : 0.5f; }
-
-    /// <summary>
-    /// パーティクル衝突半径を取得
-    /// </summary>
-    [[nodiscard]] float GetParticleRadius() const { return physicsParamsData_ ? physicsParamsData_->particleRadius : 0.05f; }
-
-    /// <summary>
-    /// Curl Noise の空間スケールを設定
-    /// </summary>
-    /// <param name="scale">空間スケール（小さい値=大きな渦、大きい値=細かいディテール）</param>
-    void SetNoiseScale(float scale) { physicsParamsData_->noiseScale = scale; }
-
-    /// <summary>
-    /// Curl Noise の空間スケールを取得
-    /// </summary>
-    /// <returns>空間スケール</returns>
-    [[nodiscard]] float GetNoiseScale() const { return physicsParamsData_ ? physicsParamsData_->noiseScale : 3.0f; }
-
-    void SetNoiseStrength(float strength) { physicsParamsData_->noiseStrength = strength; }
-    [[nodiscard]] float GetNoiseStrength() const { return physicsParamsData_ ? physicsParamsData_->noiseStrength : 0.05f; }
 
     //-------------------------Getter/Setter-------------------------//
     /// <summary>
@@ -344,12 +294,6 @@ namespace Tako {
     void ReadbackActiveParticleCount();
 #endif
 
-  public:
-    /// <summary>
-    /// ウィンドウリサイズ時の処理（深度 SRV の再作成）
-    /// </summary>
-    void OnResize();
-
   private:
 
     /// <summary>
@@ -361,6 +305,12 @@ namespace Tako {
     /// 物理パラメータの更新
     /// </summary>
     void UpdatePhysicsParams();
+
+  public: // 公開定数
+    /// <summary>
+    /// フォースフィールドの最大数
+    /// </summary>
+    static constexpr uint32_t kMaxForceFields = 64;
 
   private: //メンバー変数
 

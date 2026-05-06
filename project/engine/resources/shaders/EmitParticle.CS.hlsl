@@ -225,6 +225,13 @@ void main(uint3 DTid : SV_DispatchThreadID)
             if (gEmitters[emitterIndex].flags & EFLAG_USE_DEPTH_COLLISION)
                 gParticles[particleID].flags |= PFLAG_USE_DEPTH_COLLISION;
 
+            // per-emitter 物理 / Curl Noise パラメーターをパーティクルへキャッシュ
+            gParticles[particleID].damping              = gEmitters[emitterIndex].damping;
+            gParticles[particleID].collisionRestitution = gEmitters[emitterIndex].collisionRestitution;
+            gParticles[particleID].particleRadius       = gEmitters[emitterIndex].particleRadius;
+            gParticles[particleID].noiseScale           = gEmitters[emitterIndex].noiseScale;
+            gParticles[particleID].noiseStrength        = gEmitters[emitterIndex].noiseStrength;
+
             // 回転設定---------------------------------------------------------------------------------
             if (gEmitters[emitterIndex].flags & EFLAG_RANDOM_ROTATE_Z)
             {

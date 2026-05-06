@@ -175,6 +175,31 @@ namespace Tako {
     data_.lifeTimeRange = range;
   }
 
+  void GPUParticleEmitter::SetDamping(float damping)
+  {
+    data_.damping = damping;
+  }
+
+  void GPUParticleEmitter::SetCollisionRestitution(float restitution)
+  {
+    data_.collisionRestitution = restitution;
+  }
+
+  void GPUParticleEmitter::SetParticleRadius(float radius)
+  {
+    data_.particleRadius = radius;
+  }
+
+  void GPUParticleEmitter::SetNoiseScale(float scale)
+  {
+    data_.noiseScale = scale;
+  }
+
+  void GPUParticleEmitter::SetNoiseStrength(float strength)
+  {
+    data_.noiseStrength = strength;
+  }
+
   void GPUParticleEmitter::SetTemporary(bool isTemporary, float lifeTime)
   {
     if (isTemporary) data_.flags |= EFLAG_TEMPORARY; else data_.flags &= ~EFLAG_TEMPORARY;

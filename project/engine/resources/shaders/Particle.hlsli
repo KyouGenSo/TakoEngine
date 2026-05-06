@@ -41,6 +41,12 @@ struct Particle
     float mass;            // 質量（衝突応答用）
     uint  cellIndex;       // 空間ハッシュ用セルインデックス
     uint  flags;           // パーティクルフラグ（PFLAG_* ビットフラグ）
+    // --- per-emitter からキャッシュされた物理 / Curl Noise パラメーター ---
+    float damping;              // 速度減衰係数
+    float collisionRestitution; // 反発係数
+    float particleRadius;       // 衝突判定半径
+    float noiseScale;           // Curl Noise 空間スケール
+    float noiseStrength;        // Curl Noise 強度
 };
 
 // エミッター共通構造体
@@ -78,6 +84,13 @@ struct Emitter
     float3 triangleV1;        // 三角形の頂点1（相対座標）
     float3 triangleV2;        // 三角形の頂点2（相対座標）
     float3 triangleV3;        // 三角形の頂点3（相対座標）
+
+    // --- per-emitter 物理 / Curl Noise パラメーター ---
+    float damping;              // 速度減衰係数
+    float collisionRestitution; // 反発係数
+    float particleRadius;       // 衝突判定半径
+    float noiseScale;           // Curl Noise 空間スケール
+    float noiseStrength;        // Curl Noise 強度
 };
 
 // パーフレーム情報構造体

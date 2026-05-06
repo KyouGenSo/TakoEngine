@@ -56,15 +56,16 @@ void main(uint3 DTid : SV_DispatchThreadID)
     // フレーム間変位から暗黙速度を導出
     float3 displacement = currentPos - prevPos;
 
-    // 減衰の適用（エネルギー散逸）
-    displacement *= gPhysicsParams.damping;
+    // 減衰の適用（エネルギー散逸） — per-emitter 値をパーティクルから読む
+    displacement *= gParticles[particleIndex].damping;
 
     // Curl Noise乱流（速度の擾乱として displacement に加算。accelerationではなくdisplacementに適用することで十分な強度を得る）
     if (gParticles[particleIndex].flags & PFLAG_USE_CURL_NOISE)
     {
-        float scale = gPhysicsParams.noiseScale;
+        // per-emitter 値をパーティクルから読む。noiseTime は全体の時間進行なのでグローバル維持
+        float scale = gParticles[particleIndex].noiseScale;
         float3 noisePos = currentPos * scale + float3(0.0f, 0.0f, gPhysicsParams.noiseTime);
-        displacement += curlNoise3D(noisePos) * gPhysicsParams.noiseStrength;
+        displacement += curlNoise3D(noisePos) * gParticles[particleIndex].noiseStrength;
     }
 
     // 新しい位置を計算: newPos = pos + displacement + accel * dt²
@@ -78,7 +79,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
             newPos, collisionPrev,
             gPhysicsParams.viewProj, gPhysicsParams.invViewProj,
             gPhysicsParams.screenSize, gPhysicsParams.cameraPos,
-            gPhysicsParams.collisionRestitution, gPhysicsParams.particleRadius,
+            gParticles[particleIndex].collisionRestitution, gParticles[particleIndex].particleRadius,
             gPhysicsParams.depthBias, gDepthBuffer, gDepthSampler);
 
         if (collided)

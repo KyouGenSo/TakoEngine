@@ -275,6 +275,12 @@ namespace Tako {
     instance_.reset();
   }
 
+  void GPUParticle::OnResize()
+  {
+    // 深度バッファが再作成されるため SRV を再構築
+    CreateDepthSRV();
+  }
+
   std::shared_ptr<GPUParticleEmitter> GPUParticle::CreateTemporaryEmitterFrom(GPUParticleEmitter* sourceEmitter, float lifeTime)
   {
     if (!sourceEmitter) return nullptr;
@@ -1060,10 +1066,10 @@ namespace Tako {
     physicsParamsResource_->Map(0, nullptr, reinterpret_cast<void**>(&physicsParamsData_));
 
     // デフォルト値の設定
-    physicsParamsData_->damping = 0.99f;
-    physicsParamsData_->collisionRestitution = 0.5f;
-    physicsParamsData_->particleRadius = 0.05f;
     physicsParamsData_->depthBias = 5.0f;  ///< ワールド空間の最大衝突距離（メートル単位）
+    physicsParamsData_->pad0[0] = 0.0f;
+    physicsParamsData_->pad0[1] = 0.0f;
+    physicsParamsData_->pad0[2] = 0.0f;
 
     physicsParamsData_->gridOrigin = { .x = -50.0f, .y = -50.0f, .z = -50.0f };
     physicsParamsData_->gridCellSize = 1.5625f; // 100.0 / 64.0
@@ -1076,11 +1082,7 @@ namespace Tako {
     physicsParamsData_->screenWidth = 1280.0f;
     physicsParamsData_->screenHeight = 720.0f;
     physicsParamsData_->noiseTime = 0.0f;
-    physicsParamsData_->noiseScale = 3.0f;
-    physicsParamsData_->noiseStrength = 0.05f;
-    physicsParamsData_->pad[0] = 0.0f;
-    physicsParamsData_->pad[1] = 0.0f;
-    physicsParamsData_->pad[2] = 0.0f;
+    physicsParamsData_->pad1 = 0.0f;
 
     // 深度バッファ衝突用
     physicsParamsData_->viewProj = Mat4x4::MakeIdentity();
@@ -1101,12 +1103,6 @@ namespace Tako {
       m_dx12_->GetDepthStencilResource(),
       DXGI_FORMAT_R32_FLOAT,
       1);
-  }
-
-  void GPUParticle::OnResize()
-  {
-    // 深度バッファが再作成されるため SRV を再構築
-    CreateDepthSRV();
   }
 
   void GPUParticle::SyncForceFieldData()

@@ -92,6 +92,12 @@ namespace Tako {
     float mass;             ///< 質量（衝突応答用）
     uint32_t cellIndex;     ///< 空間ハッシュ用セルインデックス
     uint32_t flags;         ///< パーティクルフラグ（PFLAG_* ビットフラグ）
+    // --- per-emitter 物理 / Curl Noise パラメーター（spawn 時にエミッターからキャッシュ） ---
+    float damping;              ///< 速度減衰係数
+    float collisionRestitution; ///< 反発係数
+    float particleRadius;       ///< 衝突判定半径
+    float noiseScale;           ///< Curl Noise 空間スケール
+    float noiseStrength;        ///< Curl Noise 強度
   };
 
   /// <summary>
@@ -124,10 +130,8 @@ namespace Tako {
   /// </summary>
   struct PhysicsParamsData
   {
-    float damping;              ///< 速度減衰係数（0.98-0.99 推奨）
-    float collisionRestitution; ///< 反発係数（0-1）
-    float particleRadius;       ///< パーティクルの衝突判定半径
     float depthBias;            ///< 深度衝突のバイアス
+    float pad0[3];              ///< 16Bアライメント
 
     Vector3 gridOrigin;         ///< ハッシュグリッドの原点
     float gridCellSize;         ///< セルサイズ
@@ -141,13 +145,10 @@ namespace Tako {
 
     float screenWidth;          ///< スクリーン幅
     float screenHeight;         ///< スクリーン高さ
-    float noiseTime;            ///< Curl Noise 用の時間オフセット
-    float noiseScale;           ///< Curl Noise の空間スケール
+    float noiseTime;            ///< Curl Noise 用の時間オフセット（フレーム進行）
+    float pad1;                 ///< 16Bアライメント
 
-    float noiseStrength;        ///< Curl Noise の強度
-    float pad[3];               ///< パディング（16Bアライメント）
-
-    // --- 深度バッファ衝突用（段階3で追加） ---
+    // --- 深度バッファ衝突用 ---
     Matrix4x4 viewProj;         ///< ビュープロジェクション行列（パーティクル→スクリーン投影用）
     Vector3 cameraPos;          ///< カメラ位置（法線方向決定用）
     float pad2;                 ///< 16Bアライメント
@@ -223,6 +224,13 @@ namespace Tako {
     Vector3 triangleV2;       ///< 三角形エミッター用：頂点2
     Vector3 triangleV3;       ///< 三角形エミッター用：頂点3
 
+    // --- per-emitter 物理 / Curl Noise パラメーター ---
+    float damping;              ///< 速度減衰係数（0.98-0.99 推奨）
+    float collisionRestitution; ///< 反発係数（0-1）
+    float particleRadius;       ///< パーティクルの衝突判定半径
+    float noiseScale;           ///< Curl Noise の空間スケール
+    float noiseStrength;        ///< Curl Noise の強度
+
     /// <summary>
     /// デフォルトコンストラクタ
     /// </summary>
@@ -235,7 +243,9 @@ namespace Tako {
       count(20), frequency(0.5f), frequencyTime(0.0f),
       emitterLifeTime(0.0f), emitterCurrentTime(0.0f),
       radius(1.0f), boxSize(), boxRotation(),
-      triangleV1(), triangleV2(), triangleV3()
+      triangleV1(), triangleV2(), triangleV3(),
+      damping(0.99f), collisionRestitution(0.5f), particleRadius(0.5f),
+      noiseScale(0.05f), noiseStrength(0.001f)
     {}
   };
 

@@ -191,6 +191,36 @@ namespace Tako {
     void SetLifeTimeRange(const Vector2& range);
 
     /// <summary>
+    /// 速度減衰係数を設定（per-emitter）
+    /// </summary>
+    /// <param name="damping">減衰係数（0.9-1.0、0.99推奨）</param>
+    void SetDamping(float damping);
+
+    /// <summary>
+    /// 反発係数を設定（per-emitter）
+    /// </summary>
+    /// <param name="restitution">反発係数（0.0-1.0）</param>
+    void SetCollisionRestitution(float restitution);
+
+    /// <summary>
+    /// 衝突判定半径を設定（per-emitter）
+    /// </summary>
+    /// <param name="radius">パーティクルの衝突判定半径</param>
+    void SetParticleRadius(float radius);
+
+    /// <summary>
+    /// Curl Noise の空間スケールを設定（per-emitter）
+    /// </summary>
+    /// <param name="scale">空間スケール（小=大渦、大=細密）</param>
+    void SetNoiseScale(float scale);
+
+    /// <summary>
+    /// Curl Noise の強度を設定（per-emitter）
+    /// </summary>
+    /// <param name="strength">強度（0.01-0.1=控えめ、0.5+=強い乱流）</param>
+    void SetNoiseStrength(float strength);
+
+    /// <summary>
     /// 一時的なエミッターとして設定
     /// </summary>
     /// <param name="isTemporary">一時的にする場合 true</param>
@@ -346,6 +376,31 @@ namespace Tako {
     /// </summary>
     /// <returns>有効な場合 true</returns>
     [[nodiscard]] bool IsNormalize() const { return (data_.flags & EFLAG_NORMALIZE) != 0; }
+
+    /// <summary>
+    /// 速度減衰係数を取得（per-emitter）
+    /// </summary>
+    [[nodiscard]] float GetDamping() const { return data_.damping; }
+
+    /// <summary>
+    /// 反発係数を取得（per-emitter）
+    /// </summary>
+    [[nodiscard]] float GetCollisionRestitution() const { return data_.collisionRestitution; }
+
+    /// <summary>
+    /// 衝突判定半径を取得（per-emitter）
+    /// </summary>
+    [[nodiscard]] float GetParticleRadius() const { return data_.particleRadius; }
+
+    /// <summary>
+    /// Curl Noise の空間スケールを取得（per-emitter）
+    /// </summary>
+    [[nodiscard]] float GetNoiseScale() const { return data_.noiseScale; }
+
+    /// <summary>
+    /// Curl Noise の強度を取得（per-emitter）
+    /// </summary>
+    [[nodiscard]] float GetNoiseStrength() const { return data_.noiseStrength; }
 
 
     /// <summary>

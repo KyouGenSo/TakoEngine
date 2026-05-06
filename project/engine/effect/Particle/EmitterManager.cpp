@@ -1023,6 +1023,13 @@ namespace Tako {
     json["useDepthCollision"] = emitter->IsUseDepthCollision();
     json["isTemporary"] = emitter->IsTemporary();
 
+    // per-emitter 物理 / Curl Noise パラメーター
+    json["damping"] = emitter->GetDamping();
+    json["collisionRestitution"] = emitter->GetCollisionRestitution();
+    json["particleRadius"] = emitter->GetParticleRadius();
+    json["noiseScale"] = emitter->GetNoiseScale();
+    json["noiseStrength"] = emitter->GetNoiseStrength();
+
     // 型固有のパラメータ
     if (auto sphereEmitter = std::dynamic_pointer_cast<SphereEmitter>(emitter)) {
       json["radius"] = sphereEmitter->GetRadius();
@@ -1102,6 +1109,23 @@ namespace Tako {
 
     if (json.contains("frequencyTime")) {
       emitter->SetFrequencyTime(json["frequencyTime"]);
+    }
+
+    // per-emitter 物理 / Curl Noise パラメーター（後方互換: 古いプリセットには含まれない）
+    if (json.contains("damping")) {
+      emitter->SetDamping(json["damping"]);
+    }
+    if (json.contains("collisionRestitution")) {
+      emitter->SetCollisionRestitution(json["collisionRestitution"]);
+    }
+    if (json.contains("particleRadius")) {
+      emitter->SetParticleRadius(json["particleRadius"]);
+    }
+    if (json.contains("noiseScale")) {
+      emitter->SetNoiseScale(json["noiseScale"]);
+    }
+    if (json.contains("noiseStrength")) {
+      emitter->SetNoiseStrength(json["noiseStrength"]);
     }
 
     return emitter;

@@ -287,6 +287,41 @@ namespace Tako {
                 }
               }
             }
+
+            // 物理 / Curl Noise（per-emitter）— 旧 ForceFields タブから移植
+            if (ImGui::CollapsingHeader("Physics & Noise##Properties")) {
+              float damping = emitter->GetDamping();
+              if (ImGui::SliderFloat("Damping##P", &damping, 0.9f, 1.0f, "%.4f")) {
+                emitter->SetDamping(damping);
+              }
+              if (ImGui::IsItemHovered()) ImGui::SetTooltip("フレーム毎の速度減衰（0.99 推奨）");
+
+              float restitution = emitter->GetCollisionRestitution();
+              if (ImGui::SliderFloat("Restitution##P", &restitution, 0.0f, 1.0f, "%.3f")) {
+                emitter->SetCollisionRestitution(restitution);
+              }
+              if (ImGui::IsItemHovered()) ImGui::SetTooltip("衝突反発係数（0.0=吸収、1.0=完全弾性）");
+
+              float pRadius = emitter->GetParticleRadius();
+              if (ImGui::DragFloat("Particle Radius##P", &pRadius, 0.001f, 0.001f, 1.0f, "%.4f")) {
+                emitter->SetParticleRadius(pRadius);
+              }
+              if (ImGui::IsItemHovered()) ImGui::SetTooltip("深度衝突に使うパーティクル半径");
+
+              float noiseScale = emitter->GetNoiseScale();
+              if (ImGui::SliderFloat("Noise Scale##P", &noiseScale, 0.01f, 10.0f, "%.3f")) {
+                emitter->SetNoiseScale(noiseScale);
+              }
+              if (ImGui::IsItemHovered()) ImGui::SetTooltip("Curl Noise 空間スケール（小=大渦、大=細密）");
+
+              float noiseStrength = emitter->GetNoiseStrength();
+              if (ImGui::SliderFloat("Noise Strength##P", &noiseStrength, 0.001f, 1.0f, "%.4f")) {
+                emitter->SetNoiseStrength(noiseStrength);
+              }
+              if (ImGui::IsItemHovered()) ImGui::SetTooltip("Curl Noise 強度（0.01-0.1=控えめ、0.5+=強い乱流）");
+
+              ImGui::TextDisabled("※ 値の変更は新しく射出されるパーティクルに反映されます");
+            }
           }
           else {
             ImGui::TextDisabled("Emitter not found");
@@ -460,38 +495,6 @@ namespace Tako {
   void DebugUIManager::DrawForceFieldsTab() {
     auto* gpuParticle = GPUParticle::GetInstance();
 
-    // --- 物理パラメータセクション ---
-    if (ImGui::CollapsingHeader("Physics Parameters", ImGuiTreeNodeFlags_DefaultOpen)) {
-      float damping = gpuParticle->GetDamping();
-      if (ImGui::SliderFloat("Damping", &damping, 0.9f, 1.0f, "%.4f")) {
-        gpuParticle->SetDamping(damping);
-      }
-      if (ImGui::IsItemHovered()) ImGui::SetTooltip("Speed attenuation per frame (0.99 recommended)");
-
-      float restitution = gpuParticle->GetCollisionRestitution();
-      if (ImGui::SliderFloat("Restitution", &restitution, 0.0f, 1.0f, "%.2f")) {
-        gpuParticle->SetCollisionRestitution(restitution);
-      }
-
-      float particleRadius = gpuParticle->GetParticleRadius();
-      if (ImGui::DragFloat("Particle Radius", &particleRadius, 0.001f, 0.001f, 1.0f, "%.3f")) {
-        gpuParticle->SetParticleRadius(particleRadius);
-      }
-
-      float noiseScale = gpuParticle->GetNoiseScale();
-      if (ImGui::SliderFloat("Noise Scale", &noiseScale, 0.01f, 10.0f, "%.2f")) {
-        gpuParticle->SetNoiseScale(noiseScale);
-      }
-      if (ImGui::IsItemHovered()) ImGui::SetTooltip("Curl Noise spatial scale (small=large swirls, large=fine detail)");
-
-      float noiseStrength = gpuParticle->GetNoiseStrength();
-      if (ImGui::SliderFloat("Noise Strength", &noiseStrength, 0.001f, 1.0f, "%.3f")) {
-        gpuParticle->SetNoiseStrength(noiseStrength);
-      }
-      if (ImGui::IsItemHovered()) ImGui::SetTooltip("Curl Noise intensity (0.01-0.1 for subtle, 0.5+ for strong turbulence)");
-    }
-
-    ImGui::Separator();
 
     // フォースフィールドタイプ名の定義
     static const char* forceTypeNames[] = {
