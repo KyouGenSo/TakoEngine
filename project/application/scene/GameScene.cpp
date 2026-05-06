@@ -105,6 +105,10 @@ void GameScene::Initialize()
 
   emitterManager_ = std::make_unique<EmitterManager>(particleSystem);
 
+  // ForceFieldManager（シーンプリセット統合保存のため EmitterManager に連携）
+  forceFieldManager_ = std::make_unique<ForceFieldManager>(particleSystem);
+  emitterManager_->SetForceFieldManager(forceFieldManager_.get());
+
   // ボーントラッカーを初期化
   boneTracker_ = std::make_unique<BoneTracker>();
   boneTracker_->Initialize(characterModel_->GetModel(), emitterManager_.get());

@@ -143,6 +143,7 @@
     <ClCompile Include="engine\3d\Camera\Camera.cpp" />
     <ClCompile Include="engine\effect\Particle\BoxEmitter.cpp" />
     <ClCompile Include="engine\effect\Particle\EmitterManager.cpp" />
+    <ClCompile Include="engine\effect\Particle\ForceFieldManager.cpp" />
     <ClCompile Include="engine\effect\Particle\GPUParticle.cpp" />
     <ClCompile Include="engine\effect\Particle\GPUParticleEmitter.cpp" />
     <ClCompile Include="engine\effect\Particle\SphereEmitter.cpp" />
@@ -215,6 +216,7 @@
     <ClInclude Include="engine\effect\Particle\BoxEmitter.h" />
     <ClInclude Include="engine\effect\Particle\EmitterManager.h" />
     <ClInclude Include="engine\effect\Particle\EmitterStruct.h" />
+    <ClInclude Include="engine\effect\Particle\ForceFieldManager.h" />
     <ClInclude Include="engine\effect\Particle\GPUParticle.h" />
     <ClInclude Include="engine\effect\Particle\GPUParticleEmitter.h" />
     <ClInclude Include="engine\effect\Particle\ParticleStruct.h" />

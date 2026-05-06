@@ -1,5 +1,6 @@
 #include "DebugUIManager.h"
 #include "EmitterManager.h"
+#include "ForceFieldManager.h"
 #include "SphereEmitter.h"
 #include "BoxEmitter.h"
 #include "TriangleEmitter.h"
@@ -641,6 +642,53 @@ namespace Tako {
         selectedForceFieldIndex_ = -1;
         AddLog("Cleared all force fields", LogType::Info);
       }
+    }
+
+    // --- プリセット保存/読込セクション ---
+    ImGui::Separator();
+    ImGui::Text("Force Field Presets");
+
+    if (!forceFieldManager_) {
+      ImGui::TextDisabled("Call SetForceFieldManager() first");
+      return;
+    }
+
+    if (ImGui::CollapsingHeader("Save Force Field Preset")) {
+      ImGui::InputText("Preset Name##SaveFFPreset", ffPresetSaveBuffer_, sizeof(ffPresetSaveBuffer_));
+
+      const bool hasSelection = (selectedForceFieldIndex_ >= 0
+        && selectedForceFieldIndex_ < static_cast<int>(forceFields.size()));
+
+      if (hasSelection) {
+        ImGui::Text("From: [Index %d]", selectedForceFieldIndex_);
+      }
+      else {
+        ImGui::TextDisabled("Select a force field first");
+      }
+
+      if (ImGui::Button("Save##SaveFFPreset")
+          && hasSelection
+          && strlen(ffPresetSaveBuffer_) > 0) {
+        forceFieldManager_->SavePreset(
+          ffPresetSaveBuffer_, static_cast<uint32_t>(selectedForceFieldIndex_));
+        AddLog("Saved force field preset: " + std::string(ffPresetSaveBuffer_), LogType::Info);
+        ffPresetSaveBuffer_[0] = '\0';
+      }
+    }
+
+    if (ImGui::CollapsingHeader("Load Force Field Preset")) {
+      ImGui::InputText("Preset Name##LoadFFPreset", ffPresetLoadBuffer_, sizeof(ffPresetLoadBuffer_));
+      if (ImGui::Button("Load##LoadFFPreset") && strlen(ffPresetLoadBuffer_) > 0) {
+        forceFieldManager_->LoadPreset(ffPresetLoadBuffer_);
+        AddLog("Loaded force field preset: " + std::string(ffPresetLoadBuffer_), LogType::Info);
+        ffPresetLoadBuffer_[0] = '\0';
+      }
+    }
+
+    if (ImGui::CollapsingHeader("Scene Presets (Force Fields included)")) {
+      ImGui::TextWrapped(
+        "Scene presets save/load Emitters + Groups + Force Fields together. "
+        "Use the 'Presets' tab > 'Scene Presets' to save/load all.");
     }
   }
 

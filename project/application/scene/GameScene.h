@@ -3,6 +3,7 @@
 #include"Object3d.h"
 #include "InstancedObject3d.h"
 #include "EmitterManager.h"
+#include "ForceFieldManager.h"
 #include "Sprite.h"
 #include "SkyBox.h"
 #include "BoneTracker.h"
@@ -69,6 +70,9 @@ private: // メンバ変数
 
   // エミッター管理
   std::unique_ptr<EmitterManager> emitterManager_;
+
+  // フォースフィールド管理
+  std::unique_ptr<ForceFieldManager> forceFieldManager_;
 
   // ボーントラッカー
   std::unique_ptr<BoneTracker> boneTracker_;

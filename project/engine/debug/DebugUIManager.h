@@ -165,6 +165,12 @@ namespace Tako {
     /// <param name="emitterManager">EmitterManager ポインタ</param>
     void SetEmitterManager(class EmitterManager* emitterManager) { emitterManager_ = emitterManager; }
 
+    /// <summary>
+    /// ForceFieldManager を設定（パーティクルエディタの ForceField タブ Save/Load UI で利用）
+    /// </summary>
+    /// <param name="forceFieldManager">ForceFieldManager ポインタ</param>
+    void SetForceFieldManager(class ForceFieldManager* forceFieldManager) { forceFieldManager_ = forceFieldManager; }
+
   private:
     /// <summary>
     /// メインメニューバーを描画
@@ -322,7 +328,10 @@ namespace Tako {
     char newGroupNameBuffer_[128] = "";
 
     // フォースフィールド管理用
+    class ForceFieldManager* forceFieldManager_ = nullptr;
     int selectedForceFieldIndex_ = -1;
+    char ffPresetSaveBuffer_[128] = "";
+    char ffPresetLoadBuffer_[128] = "";
 
     // パーティクル可視化設定
     bool showEmitterShapes_ = true;        ///< エミッター形状の表示ON/OFF

@@ -15,6 +15,7 @@ namespace Tako {
   class SphereEmitter;
   class BoxEmitter;
   class TriangleEmitter;
+  class ForceFieldManager;
 
   /// <summary>
   /// エミッターグループ情報構造体
@@ -401,6 +402,14 @@ namespace Tako {
     /// <returns>グループ数</returns>
     size_t GetGroupCount() const { return groupMap_.size(); }
 
+    /// <summary>
+    /// フォースフィールドマネージャを設定（弱参照、所有しない）
+    /// 設定済みの場合、SaveScenePreset/LoadScenePreset でフォースフィールドも統合保存/読込される
+    /// 未設定の場合はエミッタ・グループのみが対象（後方互換動作）
+    /// </summary>
+    /// <param name="manager">ForceFieldManager へのポインタ（nullptr で連携無効）</param>
+    void SetForceFieldManager(ForceFieldManager* manager) { forceFieldManager_ = manager; }
+
   private: // プライベートメンバー関数
 
     /// <summary>
@@ -448,6 +457,11 @@ namespace Tako {
       EmitterType type;     ///< コピーされたエミッタータイプ
     };
     std::array<CopiedSettings, 5> copiedSettingsSlots_; ///< コピーバッファ（5スロット分）
+
+    /// <summary>
+    /// フォースフィールドマネージャへの弱参照（シーン統合保存連携用、nullable）
+    /// </summary>
+    ForceFieldManager* forceFieldManager_ = nullptr;
 
   };
 

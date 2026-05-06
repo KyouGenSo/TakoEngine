@@ -3,6 +3,7 @@
 #include "SphereEmitter.h"
 #include "BoxEmitter.h"
 #include "TriangleEmitter.h"
+#include "ForceFieldManager.h"
 #include "FrameTimer.h"
 #include <algorithm>
 #include <ranges>
@@ -673,6 +674,11 @@ namespace Tako {
       root["groups"][groupName] = groupJson;
     }
 
+    // フォースフィールドも統合保存（連携設定済みの場合のみ）
+    if (forceFieldManager_) {
+      forceFieldManager_->SerializeAllToJSON(root);
+    }
+
     // ファイルに書き込み
     std::string filepath = directory + filename + ".json";
     std::ofstream ofs(filepath);
@@ -737,6 +743,11 @@ namespace Tako {
         group.isActive = groupJson["isActive"];
         groupMap_[groupName] = group;
       }
+    }
+
+    // フォースフィールドも統合読込（連携設定済み + JSON にキー存在の場合のみ）
+    if (forceFieldManager_) {
+      forceFieldManager_->DeserializeAllFromJSON(root);
     }
 #ifdef _DEBUG
     DebugUIManager::GetInstance()->AddLog("Loaded emitters from: " + filepath, DebugUIManager::LogType::Info);
