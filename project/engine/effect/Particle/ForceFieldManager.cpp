@@ -1,5 +1,7 @@
 #include "ForceFieldManager.h"
 #include "GPUParticle.h"
+#include <algorithm>
+#include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -234,6 +236,154 @@ namespace Tako {
   }
 
   //========================================
+  // プリセット → ForceFieldData 変換（AddForceField を呼ばない読み込み）
+  //========================================
+
+  bool ForceFieldManager::LoadPresetToData(const std::string& presetName, ForceFieldData& outField) const
+  {
+    using json = nlohmann::json;
+
+    const std::string filepath = std::string(kPresetDirectory) + presetName + ".json";
+    std::ifstream ifs(filepath);
+    if (!ifs.is_open()) {
+#ifdef _DEBUG
+      DebugUIManager::GetInstance()->AddLog(
+        "LoadPresetToData: Failed to open: " + filepath, DebugUIManager::LogType::Error);
+#endif
+      return false;
+    }
+
+    json preset;
+    try {
+      ifs >> preset;
+    }
+    catch (const json::exception& e) {
+#ifdef _DEBUG
+      DebugUIManager::GetInstance()->AddLog(
+        std::string("LoadPresetToData JSON parse error: ") + e.what(),
+        DebugUIManager::LogType::Error);
+#endif
+      return false;
+    }
+    ifs.close();
+
+    return DeserializeForceFieldFromJSON(preset, outField);
+  }
+
+  //========================================
+  // GPUParticle への薄いラッパー
+  //========================================
+
+  int32_t ForceFieldManager::AddForceField(const ForceFieldData& field)
+  {
+    return particleSystem_ ? particleSystem_->AddForceField(field) : -1;
+  }
+
+  void ForceFieldManager::UpdateForceField(uint32_t index, const ForceFieldData& field)
+  {
+    if (particleSystem_) {
+      particleSystem_->UpdateForceField(index, field);
+    }
+  }
+
+  void ForceFieldManager::RemoveForceField(uint32_t index)
+  {
+    if (particleSystem_) {
+      particleSystem_->RemoveForceField(index);
+    }
+  }
+
+  size_t ForceFieldManager::GetForceFieldCount() const
+  {
+    return particleSystem_ ? particleSystem_->GetForceFields().size() : 0;
+  }
+
+  //========================================
+  // CPU 側力場評価（GPU compute shader と同等のロジック）
+  //========================================
+
+  Vector3 ForceFieldManager::EvaluateForceAt(const Vector3& pos, uint32_t mask) const
+  {
+    Vector3 totalForce = { 0.0f, 0.0f, 0.0f };
+    if (!particleSystem_) {
+      return totalForce;
+    }
+
+    const auto& fields = particleSystem_->GetForceFields();
+    for (const auto& field : fields) {
+      // affectMask フィルタ：呼び出し側 mask とビット AND が 0 なら対象外
+      if ((field.affectMask & mask) == 0u) {
+        continue;
+      }
+
+      const Vector3 toParticle = pos - field.position;
+      const float dist = toParticle.Length();
+
+      // 影響半径外なら力を適用しない（radius == 0 は無限範囲）
+      if (field.radius > 0.0f && dist > field.radius) {
+        continue;
+      }
+
+      // 距離減衰の計算（GPU 側と同一式 / 0除算回避）
+      float attenuation = 1.0f;
+      if (field.falloff > 0.0f && dist > 0.001f) {
+        if (field.radius > 0.0f) {
+          const float normalizedDist = dist / field.radius;
+          const float clamped = std::clamp(normalizedDist, 0.0f, 1.0f);
+          attenuation = std::pow(1.0f - clamped, field.falloff);
+        }
+        else {
+          attenuation = 1.0f / std::pow(std::max<float>(dist, 0.001f), field.falloff);
+        }
+      }
+
+      Vector3 force = { 0.0f, 0.0f, 0.0f };
+
+      switch (static_cast<ForceFieldType>(field.type)) {
+      case ForceFieldType::Gravity:
+        // 方向重力: direction方向に一定の力（減衰なし）
+        force = field.direction * field.strength;
+        break;
+
+      case ForceFieldType::Directional:
+        // 方向風: direction方向に減衰付きの力
+        force = field.direction * field.strength * attenuation;
+        break;
+
+      case ForceFieldType::Vortex: {
+        // 渦: direction を回転軸として回転力を生成
+        const Vector3 axis = field.direction.Normalize();
+        const Vector3 projected = toParticle - axis * toParticle.Dot(axis);
+        const float projLen = projected.Length();
+        if (projLen > 0.001f) {
+          const Vector3 tangent = axis.Cross(projected / projLen);
+          force = tangent * field.strength * attenuation;
+        }
+        break;
+      }
+
+      case ForceFieldType::Attract:
+        // 吸引: フォース中心に向かう力
+        if (dist > 0.001f) {
+          force = -toParticle.Normalize() * field.strength * attenuation;
+        }
+        break;
+
+      case ForceFieldType::Repel:
+        // 反発: フォース中心から離れる力
+        if (dist > 0.001f) {
+          force = toParticle.Normalize() * field.strength * attenuation;
+        }
+        break;
+      }
+
+      totalForce += force;
+    }
+
+    return totalForce;
+  }
+
+  //========================================
   // JSON 変換ヘルパー
   //========================================
 
@@ -245,16 +395,17 @@ namespace Tako {
     json["strength"] = field.strength;
     json["radius"] = field.radius;
     json["falloff"] = field.falloff;
-    // pad[2] は GPU アライメント専用なので JSON 対象外
+    json["affectMask"] = field.affectMask;
+    // pad は GPU アライメント専用なので JSON 対象外
   }
 
   bool ForceFieldManager::DeserializeForceFieldFromJSON(const nlohmann::json& json, ForceFieldData& outField) const
   {
     using nlohJson = nlohmann::json;
 
-    // pad はあらかじめゼロ初期化しておく（途中で false return しても未初期化が残らないように）
-    outField.pad[0] = 0.0f;
-    outField.pad[1] = 0.0f;
+    // affectMask / pad はあらかじめ初期化（途中で false return しても未初期化が残らないように）
+    outField.affectMask = 0xFFFFFFFFu;  // 後続の JSON 読み込みで上書きされる場合あり / 既定は全マスク有効
+    outField.pad = 0.0f;
 
     try {
       // 構造の最低限チェック
@@ -299,6 +450,11 @@ namespace Tako {
         ? json["radius"].get<float>() : 0.0f;
       outField.falloff = (json.contains("falloff") && json["falloff"].is_number())
         ? json["falloff"].get<float>() : 1.0f;
+
+      // affectMask はオプショナル。旧プリセット（キー未存在）は既定値 0xFFFFFFFF（全マスク有効）
+      if (json.contains("affectMask") && json["affectMask"].is_number_unsigned()) {
+        outField.affectMask = json["affectMask"].get<uint32_t>();
+      }
 
       return true;
     }

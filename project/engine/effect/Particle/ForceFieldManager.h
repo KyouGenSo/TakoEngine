@@ -54,6 +54,15 @@ namespace Tako {
     void LoadPreset(const std::string& presetName);
 
     /// <summary>
+    /// 個別プリセットを読み込んで ForceFieldData に展開する（AddForceField はしない）。
+    /// 呼び出し側で position 等を上書きしてから AddForceField したいケース用。
+    /// </summary>
+    /// <param name="presetName">プリセット名（拡張子なし）</param>
+    /// <param name="outField">[out] 読み込み結果</param>
+    /// <returns>読み込み成功で true / ファイル不在・JSON 不正で false</returns>
+    bool LoadPresetToData(const std::string& presetName, ForceFieldData& outField) const;
+
+    /// <summary>
     /// 全フォースフィールドを root JSON の "forceFields" 配列に書き込む
     /// EmitterManager::SaveScenePreset から呼ばれる
     /// </summary>
@@ -65,6 +74,53 @@ namespace Tako {
     /// </summary>
     /// <param name="root">読み込み元 JSON</param>
     void DeserializeAllFromJSON(const nlohmann::json& root);
+
+    /// <summary>
+    /// 指定位置に作用する力ベクトルの合計を CPU 側で評価する。
+    /// GPU 側 compute shader と同等のロジックを CPU で再実装し、
+    /// 弾やキャラクターなど CPU 駆動オブジェクトに同じ力場を作用させるためのクエリ API。
+    /// </summary>
+    /// <param name="pos">評価する世界座標</param>
+    /// <param name="mask">評価対象とするビットフラグ。 (field.affectMask &amp; mask) != 0 の力場のみを合計</param>
+    /// <returns>合計力ベクトル（加速度として velocity に加算する想定）</returns>
+    /// <remarks>
+    /// mask の意味解釈は呼び出し側の責任。エンジンはビット意味を一切定義しない。
+    /// 既定値 0xFFFFFFFF を渡すと全力場が対象になる。
+    /// </remarks>
+    Vector3 EvaluateForceAt(const Vector3& pos, uint32_t mask = 0xFFFFFFFF) const;
+
+    //=============================================================
+    // GPUParticle への薄いラッパー（呼び出し側が GPUParticle を直接扱わなくて済むよう統一窓口を提供）
+    //=============================================================
+
+    /// <summary>
+    /// フォースフィールドを追加（GPUParticle への薄いラッパー）
+    /// </summary>
+    /// <returns>登録インデックス（-1 = 失敗・上限到達）</returns>
+    /// <remarks>
+    /// RemoveForceField は erase ベースで以降のインデックスがシフトするため、
+    /// 複数フィールドを削除する場合は **逆順インデックス** で RemoveForceField を呼ぶこと。
+    /// </remarks>
+    int32_t AddForceField(const ForceFieldData& field);
+
+    /// <summary>
+    /// 指定インデックスのフォースフィールドを更新（GPUParticle への薄いラッパー）
+    /// </summary>
+    void UpdateForceField(uint32_t index, const ForceFieldData& field);
+
+    /// <summary>
+    /// 指定インデックスのフォースフィールドを削除（GPUParticle への薄いラッパー）
+    /// </summary>
+    /// <remarks>
+    /// 削除すると以降のインデックスは 1 ずつ前にシフトする。
+    /// 連続削除する場合は必ず逆順（大きいインデックスから）で呼び出すこと。
+    /// </remarks>
+    void RemoveForceField(uint32_t index);
+
+    /// <summary>
+    /// 現在登録されているフォースフィールド数
+    /// </summary>
+    size_t GetForceFieldCount() const;
 
   private:
     /// <summary>

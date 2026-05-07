@@ -114,15 +114,21 @@ namespace Tako {
   /// <summary>
   /// フォースフィールドデータ構造体（GPU 用）
   /// </summary>
+  /// <remarks>
+  /// affectMask は呼び出し側（ゲーム側）が独自に意味付けする汎用ビットフラグ。
+  /// エンジン側は意味を解釈せず、CPU クエリ API のフィルタリングにのみ使用。
+  /// GPU シェーダ側はこのフィールドを無視する（パーティクルは従来通り全力場の影響を受ける）。
+  /// </remarks>
   struct ForceFieldData
   {
-    uint32_t type;    ///< フォースタイプ（ForceFieldType）
-    Vector3 position; ///< フォースの中心位置
-    Vector3 direction;///< 方向（Gravity, Directional で使用）
-    float strength;   ///< 強度
-    float radius;     ///< 影響半径（0 = 無限）
-    float falloff;    ///< 減衰指数（distance^falloff）
-    float pad[2];     ///< 16バイトアライメント用パディング
+    uint32_t type;       ///< フォースタイプ（ForceFieldType）
+    Vector3 position;    ///< フォースの中心位置
+    Vector3 direction;   ///< 方向（Gravity, Directional で使用）
+    float strength;      ///< 強度
+    float radius;        ///< 影響半径（0 = 無限）
+    float falloff;       ///< 減衰指数（distance^falloff）
+    uint32_t affectMask; ///< 影響対象を識別する汎用ビットフラグ（既定 0xFFFFFFFF = 全部に作用）
+    float pad;           ///< 16バイトアライメント用パディング
   };
 
   /// <summary>

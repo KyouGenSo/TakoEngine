@@ -535,8 +535,7 @@ namespace Tako {
         field.strength = newStrength;
         field.radius = newRadius;
         field.falloff = newFalloff;
-        field.pad[0] = 0.0f;
-        field.pad[1] = 0.0f;
+        field.pad = 0.0f;
 
         int32_t idx = gpuParticle->AddForceField(field);
         if (idx >= 0) {
