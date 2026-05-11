@@ -74,7 +74,7 @@ namespace Tako {
     try {
       ifs >> root;
     }
-    catch (const json::exception& e) {
+    catch ([[maybe_unused]] const json::exception& e) {
 #ifdef _DEBUG
       DebugUIManager::GetInstance()->AddLog(
         std::string("ForceField scene JSON parse error: ") + e.what(), DebugUIManager::LogType::Error);
@@ -148,7 +148,7 @@ namespace Tako {
     try {
       ifs >> preset;
     }
-    catch (const json::exception& e) {
+    catch ([[maybe_unused]] const json::exception& e) {
 #ifdef _DEBUG
       DebugUIManager::GetInstance()->AddLog(
         std::string("Force field preset JSON parse error: ") + e.what(), DebugUIManager::LogType::Error);
@@ -227,7 +227,7 @@ namespace Tako {
         }
       }
     }
-    catch (const json::exception& e) {
+    catch ([[maybe_unused]] const json::exception& e) {
 #ifdef _DEBUG
       DebugUIManager::GetInstance()->AddLog(
         std::string("ForceField scene deserialization error: ") + e.what(), DebugUIManager::LogType::Error);
@@ -257,7 +257,7 @@ namespace Tako {
     try {
       ifs >> preset;
     }
-    catch (const json::exception& e) {
+    catch ([[maybe_unused]] const json::exception& e) {
 #ifdef _DEBUG
       DebugUIManager::GetInstance()->AddLog(
         std::string("LoadPresetToData JSON parse error: ") + e.what(),
