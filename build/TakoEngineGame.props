@@ -98,10 +98,12 @@
     <PreBuildEvent>
       <Command>robocopy "$(EngineResourcesSrc)" "$(OutDir)$(EngineResourcesDirName)" /E /XO /NFL /NDL /NJH /NJS /NP /NS /NC
 IF %ERRORLEVEL% GEQ 8 EXIT /B %ERRORLEVEL%
+robocopy "$(EngineResourcesSrc)" "$(ProjectDir)$(EngineResourcesDirName)" /E /XO /NFL /NDL /NJH /NJS /NP /NS /NC
+IF %ERRORLEVEL% GEQ 8 EXIT /B %ERRORLEVEL%
 robocopy "$(GameResourcesSrc)" "$(OutDir)$(GameResourcesDirName)" /E /XO /NFL /NDL /NJH /NJS /NP /NS /NC
 IF %ERRORLEVEL% GEQ 8 EXIT /B %ERRORLEVEL%
 EXIT /B 0</Command>
-      <Message>Copying engine and game resources to $(OutDir)</Message>
+      <Message>Copying engine resources to $(OutDir) and $(ProjectDir), and game resources to $(OutDir)</Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>
 
