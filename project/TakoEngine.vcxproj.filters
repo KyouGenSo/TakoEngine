@@ -82,6 +82,21 @@
     <Filter Include="3d\Decal">
       <UniqueIdentifier>{58048fd3-d745-46e3-ae80-74d9ec044fb2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="shader">
+      <UniqueIdentifier>{331ef712-4f12-4e5c-852b-e2b7f88d0312}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shader\PostEffect">
+      <UniqueIdentifier>{0a1ac29d-506d-4f35-8f58-1eb98ce42705}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shader\Particle">
+      <UniqueIdentifier>{fc7b9fc7-a57b-454a-9933-b575589e27e4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shader\3D">
+      <UniqueIdentifier>{1e853396-6853-44c3-a195-ed6e96cb960f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shader\2D">
+      <UniqueIdentifier>{bfa6d60d-78b0-47ea-9903-131cb125bad8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\func\mathFunc\Mat4x4Func.cpp">
@@ -563,5 +578,171 @@
     <ClInclude Include="engine\base\EnginePaths.h">
       <Filter>base</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="engine\resources\shaders\Bloom.PS.hlsl">
+      <Filter>shader\PostEffect</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\BloomCombine.PS.hlsl">
+      <Filter>shader\PostEffect</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\BloomFog.PS.hlsl">
+      <Filter>shader\PostEffect</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\BWFilter.PS.hlsl">
+      <Filter>shader\PostEffect</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\DepthBasedOutline.PS.hlsl">
+      <Filter>shader\PostEffect</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\Dissolve.PS.hlsl">
+      <Filter>shader\PostEffect</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\Fog.PS.hlsl">
+      <Filter>shader\PostEffect</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\FullScreen.VS.hlsl">
+      <Filter>shader\PostEffect</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\GaussianBloom.PS.hlsl">
+      <Filter>shader\PostEffect</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\GaussianBlur.PS.hlsl">
+      <Filter>shader\PostEffect</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\GrayScale.PS.hlsl">
+      <Filter>shader\PostEffect</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\HalfTone.PS.hlsl">
+      <Filter>shader\PostEffect</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\LuminanceBasedOutline.PS.hlsl">
+      <Filter>shader\PostEffect</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\NoEffect.PS.hlsl">
+      <Filter>shader\PostEffect</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\RadialBlur.PS.hlsl">
+      <Filter>shader\PostEffect</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\ThresholdExtract.PS.hlsl">
+      <Filter>shader\PostEffect</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\Vignette.PS.hlsl">
+      <Filter>shader\PostEffect</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\VignetteRedBloom.PS.hlsl">
+      <Filter>shader\PostEffect</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\WhiteNoise.PS.hlsl">
+      <Filter>shader\PostEffect</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\Decal.PS.hlsl">
+      <Filter>shader\3D</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\Decal.VS.hlsl">
+      <Filter>shader\3D</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\NoTex.PS.hlsl">
+      <Filter>shader\3D</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\NoTex.VS.hlsl">
+      <Filter>shader\3D</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\Object3d.PS.hlsl">
+      <Filter>shader\3D</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\Object3D.VS.hlsl">
+      <Filter>shader\3D</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\Object3dInstanced.PS.hlsl">
+      <Filter>shader\3D</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\Object3dInstanced.VS.hlsl">
+      <Filter>shader\3D</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\ShadowMap.VS.hlsl">
+      <Filter>shader\3D</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\ShadowMapInstanced.VS.hlsl">
+      <Filter>shader\3D</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\Skinning.CS.hlsl">
+      <Filter>shader\3D</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\SkinningObject3d.VS.hlsl">
+      <Filter>shader\3D</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\SkyBox.PS.hlsl">
+      <Filter>shader\3D</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\SkyBox.VS.hlsl">
+      <Filter>shader\3D</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\EmitParticle.CS.hlsl">
+      <Filter>shader\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\GPUParticle.PS.hlsl">
+      <Filter>shader\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\GPUParticle.VS.hlsl">
+      <Filter>shader\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\InitParticle.CS.hlsl">
+      <Filter>shader\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\IntegrateAll.CS.hlsl">
+      <Filter>shader\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\2D.PS.hlsl">
+      <Filter>shader\2D</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\2D.VS.hlsl">
+      <Filter>shader\2D</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\Sprite.PS.hlsl">
+      <Filter>shader\2D</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\Sprite.VS.hlsl">
+      <Filter>shader\2D</Filter>
+    </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="engine\resources\shaders\FullScreen.hlsli">
+      <Filter>shader\PostEffect</Filter>
+    </None>
+    <None Include="engine\resources\shaders\Decal.hlsli">
+      <Filter>shader\3D</Filter>
+    </None>
+    <None Include="engine\resources\shaders\Object3d.hlsli">
+      <Filter>shader\3D</Filter>
+    </None>
+    <None Include="engine\resources\shaders\Object3dInstanced.hlsli">
+      <Filter>shader\3D</Filter>
+    </None>
+    <None Include="engine\resources\shaders\SkyBox.hlsli">
+      <Filter>shader\3D</Filter>
+    </None>
+    <None Include="engine\resources\shaders\DepthCollision.hlsli">
+      <Filter>shader\Particle</Filter>
+    </None>
+    <None Include="engine\resources\shaders\ForceField.hlsli">
+      <Filter>shader\Particle</Filter>
+    </None>
+    <None Include="engine\resources\shaders\Particle.hlsli">
+      <Filter>shader\Particle</Filter>
+    </None>
+    <None Include="engine\resources\shaders\PerlinNoise3D.hlsli">
+      <Filter>shader\Particle</Filter>
+    </None>
+    <None Include="engine\resources\shaders\PhysicsParams.hlsli">
+      <Filter>shader\Particle</Filter>
+    </None>
+    <None Include="engine\resources\shaders\Sprite.hlsli">
+      <Filter>shader\2D</Filter>
+    </None>
+    <None Include="engine\resources\shaders\Random.hlsli">
+      <Filter>shader</Filter>
+    </None>
   </ItemGroup>
 </Project>
