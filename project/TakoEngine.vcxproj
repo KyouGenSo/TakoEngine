@@ -48,13 +48,13 @@
     <OutDir>$(SolutionDir)\Generated\outputs\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\Generated\obj\$(ProjectName)\$(Configuration)\</IntDir>
     <IncludePath>$(IncludePath)</IncludePath>
-    <PublicIncludeDirectories>$(ProjectDir)engine\3d\Camera;$(ProjectDir)engine\3d\Decal;$(ProjectDir)engine\3d\Light;$(ProjectDir)engine\3d\Model;$(ProjectDir)engine\3d\Object;$(ProjectDir)engine\3d\Shadow;$(ProjectDir)engine\3d\Skybox;$(ProjectDir)engine\effect\PostEffect;$(ProjectDir)engine\effect\Particle;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\math;$(ProjectDir)engine\2d;$(ProjectDir)engine\3d;$(ProjectDir)engine\audio;$(ProjectDir)engine\base;$(ProjectDir)engine\effect;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\func;$(ProjectDir)engine\imgui;$(ProjectDir)engine\io;$(ProjectDir)engine\scene;$(ProjectDir)engine\collision;$(ProjectDir)engine\debug;$(ProjectDir)engine\time;$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\assimp\include;$(PublicIncludeDirectories)</PublicIncludeDirectories>
+    <PublicIncludeDirectories>$(ProjectDir)engine\3d\Camera;$(ProjectDir)engine\3d\Decal;$(ProjectDir)engine\3d\Light;$(ProjectDir)engine\3d\Model;$(ProjectDir)engine\3d\Object;$(ProjectDir)engine\3d\Shadow;$(ProjectDir)engine\3d\Skybox;$(ProjectDir)engine\effect\PostEffect;$(ProjectDir)engine\effect\Particle;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\math;$(ProjectDir)engine\2d;$(ProjectDir)engine\3d;$(ProjectDir)engine\audio;$(ProjectDir)engine\base;$(ProjectDir)engine\effect;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\func;$(ProjectDir)engine\imgui;$(ProjectDir)engine\io;$(ProjectDir)engine\scene;$(ProjectDir)engine\collision;$(ProjectDir)engine\debug;$(ProjectDir)engine\time;$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\assimp\include;$(ProjectDir)engine\ai;$(ProjectDir)engine\ai\BehaviorTree\Core;$(ProjectDir)engine\ai\BehaviorTree\Composites;$(ProjectDir)engine\ai\BehaviorTree\Runtime;$(ProjectDir)engine\ai\BehaviorTree\Editor;$(ProjectDir)externals\imgui-node-editor;$(PublicIncludeDirectories)</PublicIncludeDirectories>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)\Generated\outputs\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\Generated\obj\$(ProjectName)\$(Configuration)\</IntDir>
     <IncludePath>$(IncludePath)</IncludePath>
-    <PublicIncludeDirectories>$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\assimp\include;$(ProjectDir)engine\math;$(ProjectDir)engine\2d;$(ProjectDir)engine\3d;$(ProjectDir)engine\3d\Decal;$(ProjectDir)engine\3d\Camera;$(ProjectDir)engine\3d\Light;$(ProjectDir)engine\3d\Model;$(ProjectDir)engine\3d\Object;$(ProjectDir)engine\3d\Shadow;$(ProjectDir)engine\3d\Skybox;$(ProjectDir)engine\audio;$(ProjectDir)engine\base;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\collision;$(ProjectDir)engine\effect;$(ProjectDir)engine\effect\PostEffect;$(ProjectDir)engine\effect\Particle;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\func;$(ProjectDir)engine\io;$(ProjectDir)engine\scene;$(ProjectDir)engine\time;$(PublicIncludeDirectories)</PublicIncludeDirectories>
+    <PublicIncludeDirectories>$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\assimp\include;$(ProjectDir)engine\math;$(ProjectDir)engine\2d;$(ProjectDir)engine\3d;$(ProjectDir)engine\3d\Decal;$(ProjectDir)engine\3d\Camera;$(ProjectDir)engine\3d\Light;$(ProjectDir)engine\3d\Model;$(ProjectDir)engine\3d\Object;$(ProjectDir)engine\3d\Shadow;$(ProjectDir)engine\3d\Skybox;$(ProjectDir)engine\audio;$(ProjectDir)engine\base;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\collision;$(ProjectDir)engine\effect;$(ProjectDir)engine\effect\PostEffect;$(ProjectDir)engine\effect\Particle;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\func;$(ProjectDir)engine\io;$(ProjectDir)engine\scene;$(ProjectDir)engine\time;$(ProjectDir)engine\ai;$(ProjectDir)engine\ai\BehaviorTree\Core;$(ProjectDir)engine\ai\BehaviorTree\Composites;$(ProjectDir)engine\ai\BehaviorTree\Runtime;$(PublicIncludeDirectories)</PublicIncludeDirectories>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -67,7 +67,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(ProjectDir)engine\debug;$(ProjectDir)engine\3d\Decal;$(ProjectDir)engine\3d\Camera;$(ProjectDir)engine\3d\Light;$(ProjectDir)engine\3d\Model;$(ProjectDir)engine\3d\Object;$(ProjectDir)engine\3d\Shadow;$(ProjectDir)engine\3d\Skybox;$(ProjectDir)engine\time;$(ProjectDir)engine\effect;$(ProjectDir)engine\effect\Particle;$(ProjectDir)engine\effect\PostEffect;$(ProjectDir)engine\scene;$(ProjectDir)engine\audio;$(ProjectDir)engine\collision;$(ProjectDir)engine\imgui;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\miniaudio;$(ProjectDir)externals\imgui-node-editor;$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)engine\debug;$(ProjectDir)engine\3d\Decal;$(ProjectDir)engine\3d\Camera;$(ProjectDir)engine\3d\Light;$(ProjectDir)engine\3d\Model;$(ProjectDir)engine\3d\Object;$(ProjectDir)engine\3d\Shadow;$(ProjectDir)engine\3d\Skybox;$(ProjectDir)engine\time;$(ProjectDir)engine\effect;$(ProjectDir)engine\effect\Particle;$(ProjectDir)engine\effect\PostEffect;$(ProjectDir)engine\scene;$(ProjectDir)engine\audio;$(ProjectDir)engine\collision;$(ProjectDir)engine\imgui;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\miniaudio;$(ProjectDir)externals\imgui-node-editor;$(ProjectDir)engine\ai;$(ProjectDir)engine\ai\BehaviorTree\Core;$(ProjectDir)engine\ai\BehaviorTree\Composites;$(ProjectDir)engine\ai\BehaviorTree\Runtime;$(ProjectDir)engine\ai\BehaviorTree\Editor;$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -99,7 +99,7 @@
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)engine\3d\Camera;$(ProjectDir)engine\3d\Decal;$(ProjectDir)engine\3d\Light;$(ProjectDir)engine\3d\Model;$(ProjectDir)engine\3d\Object;$(ProjectDir)engine\3d\Shadow;$(ProjectDir)engine\3d\Skybox;$(ProjectDir)engine\time;$(ProjectDir)engine\effect;$(ProjectDir)engine\effect\Particle;$(ProjectDir)engine\effect\PostEffect;$(ProjectDir)engine\scene;$(ProjectDir)engine\audio;$(ProjectDir)engine\collision;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)externals\miniaudio;$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\imgui-node-editor;$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)engine\3d\Camera;$(ProjectDir)engine\3d\Decal;$(ProjectDir)engine\3d\Light;$(ProjectDir)engine\3d\Model;$(ProjectDir)engine\3d\Object;$(ProjectDir)engine\3d\Shadow;$(ProjectDir)engine\3d\Skybox;$(ProjectDir)engine\time;$(ProjectDir)engine\effect;$(ProjectDir)engine\effect\Particle;$(ProjectDir)engine\effect\PostEffect;$(ProjectDir)engine\scene;$(ProjectDir)engine\audio;$(ProjectDir)engine\collision;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)externals\miniaudio;$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\imgui-node-editor;$(ProjectDir)engine\ai;$(ProjectDir)engine\ai\BehaviorTree\Core;$(ProjectDir)engine\ai\BehaviorTree\Composites;$(ProjectDir)engine\ai\BehaviorTree\Runtime;$(ProjectDir)engine\ai\BehaviorTree\Editor;$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -196,6 +196,16 @@
     <ClCompile Include="engine\scene\SceneManager.cpp" />
     <ClCompile Include="engine\func\mathFunc\QuatFunc.cpp" />
     <ClCompile Include="engine\3d\Model\Mesh.cpp" />
+    <ClCompile Include="engine\ai\BehaviorTree\Core\BTComposite.cpp" />
+    <ClCompile Include="engine\ai\BehaviorTree\Composites\BTSequence.cpp" />
+    <ClCompile Include="engine\ai\BehaviorTree\Composites\BTSelector.cpp" />
+    <ClCompile Include="engine\ai\BehaviorTree\Composites\BTRandomSelector.cpp" />
+    <ClCompile Include="engine\ai\BehaviorTree\Composites\BTParallel.cpp" />
+    <ClCompile Include="engine\ai\BehaviorTree\Runtime\BTNodeRegistry.cpp" />
+    <ClCompile Include="engine\ai\BehaviorTree\Runtime\BehaviorTree.cpp" />
+    <ClCompile Include="engine\ai\BehaviorTree\Editor\BehaviorTreeEditor.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\3d\Decal\Decal.h" />
@@ -286,6 +296,18 @@
     <ClInclude Include="engine\time\FrameTimer.h" />
     <ClInclude Include="engine\base\IWndProcHandler.h" />
     <ClInclude Include="engine\3d\Model\Mesh.h" />
+    <ClInclude Include="engine\ai\BehaviorTree\Core\BTNode.h" />
+    <ClInclude Include="engine\ai\BehaviorTree\Core\BTBlackboard.h" />
+    <ClInclude Include="engine\ai\BehaviorTree\Core\BTComposite.h" />
+    <ClInclude Include="engine\ai\BehaviorTree\Composites\BTSequence.h" />
+    <ClInclude Include="engine\ai\BehaviorTree\Composites\BTSelector.h" />
+    <ClInclude Include="engine\ai\BehaviorTree\Composites\BTRandomSelector.h" />
+    <ClInclude Include="engine\ai\BehaviorTree\Composites\BTParallel.h" />
+    <ClInclude Include="engine\ai\BehaviorTree\Runtime\BTNodeMeta.h" />
+    <ClInclude Include="engine\ai\BehaviorTree\Runtime\BTNodeRegistry.h" />
+    <ClInclude Include="engine\ai\BehaviorTree\Runtime\BehaviorTree.h" />
+    <ClInclude Include="engine\ai\BehaviorTree\Editor\EditorTypes.h" />
+    <ClInclude Include="engine\ai\BehaviorTree\Editor\BehaviorTreeEditor.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">

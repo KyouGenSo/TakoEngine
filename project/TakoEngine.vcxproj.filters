@@ -97,6 +97,24 @@
     <Filter Include="shader\2D">
       <UniqueIdentifier>{bfa6d60d-78b0-47ea-9903-131cb125bad8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ai">
+      <UniqueIdentifier>{9988c6d1-96dd-4ae5-84b1-ccf7b6250bcd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ai\BehaviorTree">
+      <UniqueIdentifier>{cbd70fa9-182b-4676-8e3c-88d0da4911de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ai\BehaviorTree\Core">
+      <UniqueIdentifier>{fc11af98-4812-48b7-ba2a-f8ddfba9b7ce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ai\BehaviorTree\Composites">
+      <UniqueIdentifier>{b73fe5f4-7aa3-4542-a7f1-9ad20f77992d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ai\BehaviorTree\Runtime">
+      <UniqueIdentifier>{f94d4de9-2ab7-45a8-86f2-a7be9515558a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ai\BehaviorTree\Editor">
+      <UniqueIdentifier>{fadb2f6d-f4fa-43de-b6e1-2db0ed66eb5d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\func\mathFunc\Mat4x4Func.cpp">
@@ -311,6 +329,30 @@
     </ClCompile>
     <ClCompile Include="engine\3d\Decal\DecalManager.cpp">
       <Filter>3d\Decal</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\ai\BehaviorTree\Core\BTComposite.cpp">
+      <Filter>ai\BehaviorTree\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\ai\BehaviorTree\Composites\BTSequence.cpp">
+      <Filter>ai\BehaviorTree\Composites</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\ai\BehaviorTree\Composites\BTSelector.cpp">
+      <Filter>ai\BehaviorTree\Composites</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\ai\BehaviorTree\Composites\BTRandomSelector.cpp">
+      <Filter>ai\BehaviorTree\Composites</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\ai\BehaviorTree\Composites\BTParallel.cpp">
+      <Filter>ai\BehaviorTree\Composites</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\ai\BehaviorTree\Runtime\BTNodeRegistry.cpp">
+      <Filter>ai\BehaviorTree\Runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\ai\BehaviorTree\Runtime\BehaviorTree.cpp">
+      <Filter>ai\BehaviorTree\Runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\ai\BehaviorTree\Editor\BehaviorTreeEditor.cpp">
+      <Filter>ai\BehaviorTree\Editor</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -577,6 +619,42 @@
     </ClInclude>
     <ClInclude Include="engine\base\EnginePaths.h">
       <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\ai\BehaviorTree\Core\BTNode.h">
+      <Filter>ai\BehaviorTree\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\ai\BehaviorTree\Core\BTBlackboard.h">
+      <Filter>ai\BehaviorTree\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\ai\BehaviorTree\Core\BTComposite.h">
+      <Filter>ai\BehaviorTree\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\ai\BehaviorTree\Composites\BTSequence.h">
+      <Filter>ai\BehaviorTree\Composites</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\ai\BehaviorTree\Composites\BTSelector.h">
+      <Filter>ai\BehaviorTree\Composites</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\ai\BehaviorTree\Composites\BTRandomSelector.h">
+      <Filter>ai\BehaviorTree\Composites</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\ai\BehaviorTree\Composites\BTParallel.h">
+      <Filter>ai\BehaviorTree\Composites</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\ai\BehaviorTree\Runtime\BTNodeMeta.h">
+      <Filter>ai\BehaviorTree\Runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\ai\BehaviorTree\Runtime\BTNodeRegistry.h">
+      <Filter>ai\BehaviorTree\Runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\ai\BehaviorTree\Runtime\BehaviorTree.h">
+      <Filter>ai\BehaviorTree\Runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\ai\BehaviorTree\Editor\EditorTypes.h">
+      <Filter>ai\BehaviorTree\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\ai\BehaviorTree\Editor\BehaviorTreeEditor.h">
+      <Filter>ai\BehaviorTree\Editor</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
