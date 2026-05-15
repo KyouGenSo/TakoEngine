@@ -22,8 +22,6 @@ namespace Tako {
 
   /// <summary>
   /// ビヘイビアツリーノードの基底クラス。
-  /// 派生ノードは Execute() を必ず実装し、必要に応じて
-  /// ApplyParameters / ExtractParameters / DrawImGui を override する。
   /// </summary>
   class BTNode {
   public:
@@ -33,7 +31,7 @@ namespace Tako {
     virtual ~BTNode() = default;
 
     /// <summary>
-    /// ノードの実行 (純粋仮想)。
+    /// ノードの実行
     /// </summary>
     /// <param name="blackboard">ブラックボード (共有データ)</param>
     /// <returns>実行結果 (Success / Failure / Running)</returns>
