@@ -110,8 +110,18 @@ namespace Tako {
 
   const DirectX::TexMetadata& TextureManager::GetMetaData(const std::string& fileName)
   {
-    // クスチャデータを取得
+    // テクスチャデータを取得
     TextureData& textureData = textureData_[fileName];
+
+    return textureData.metadata;
+  }
+
+  const DirectX::TexMetadata& TextureManager::GetMetaData(uint32_t srvIndex)
+  {
+    // SRV インデックスからテクスチャデータを検索
+    TextureData& textureData = std::find_if(
+      textureData_.begin(), textureData_.end(),
+      [srvIndex](const auto& pair) { return pair.second.srvIndex == srvIndex; })->second;
 
     return textureData.metadata;
   }

@@ -88,6 +88,13 @@ namespace Tako {
     const DirectX::TexMetadata& GetMetaData(const std::string& fileName);
 
     /// <summary>
+    /// メタデータを取得
+    /// </summary>
+    /// <param name="srvIndex">テクスチャファイルのSRVIndex</param>
+    /// <returns>テクスチャのメタデータ</returns>
+    const DirectX::TexMetadata& GetMetaData(uint32_t srvIndex);
+
+    /// <summary>
     /// srvIndex を取得
     /// </summary>
     /// <param name="fileName">テクスチャファイルの名前</param>
