@@ -119,11 +119,13 @@ namespace Tako {
   const DirectX::TexMetadata& TextureManager::GetMetaData(uint32_t srvIndex)
   {
     // SRV インデックスからテクスチャデータを検索
-    TextureData& textureData = std::find_if(
+    auto it = std::find_if(
       textureData_.begin(), textureData_.end(),
-      [srvIndex](const auto& pair) { return pair.second.srvIndex == srvIndex; })->second;
+      [srvIndex](const auto& pair) { return pair.second.srvIndex == srvIndex; });
 
-    return textureData.metadata;
+    assert(it != textureData_.end() && "TextureManager::GetMetaData: srvIndex not found");
+
+    return it->second.metadata;
   }
 
   uint32_t TextureManager::GetSRVIndex(const std::string& fileName)
@@ -132,6 +134,21 @@ namespace Tako {
     TextureData& textureData = textureData_[fileName];
 
     return textureData.srvIndex;
+  }
+
+  const std::string& TextureManager::GetFileName(uint32_t srvIndex)
+  {
+    // SRV インデックスからテクスチャデータを検索
+    auto it = std::find_if(
+      textureData_.begin(), textureData_.end(),
+      [srvIndex](const auto& pair) { return pair.second.srvIndex == srvIndex; });
+
+    if (it == textureData_.end()) {
+      static const std::string empty;
+      return empty;
+    }
+
+    return it->second.fileName;
   }
 
   void TextureManager::LoadEngineDefault(const std::string& fileName)

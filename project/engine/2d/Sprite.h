@@ -203,6 +203,18 @@ namespace Tako {
     /// <param name="texCutSize">テクスチャ切り取りサイズ</param>
     void SetTexCutSize(const Vector2& texCutSize) { texCutSize_ = texCutSize; }
 
+    /// <summary>
+    /// テクスチャをファイルパスから変更する。切り取り範囲は新しいテクスチャ全体に自動フィット
+    /// </summary>
+    /// <param name="texturePath">変更先テクスチャのファイルパス</param>
+    void SetTexture(const std::string& texturePath);
+
+    /// <summary>
+    /// テクスチャを SRVIndex から変更する。切り取り範囲は新しいテクスチャ全体に自動フィット
+    /// </summary>
+    /// <param name="textureIndex">変更先テクスチャの SRV インデックス</param>
+    void SetTextureIndex(uint32_t textureIndex);
+
   private: // プライベートメンバー関数
 
     /// <summary>

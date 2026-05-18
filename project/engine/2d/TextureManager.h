@@ -102,6 +102,13 @@ namespace Tako {
     uint32_t GetSRVIndex(const std::string& fileName);
 
     /// <summary>
+    /// SRVIndex からテクスチャのファイル名を取得
+    /// </summary>
+    /// <param name="srvIndex">テクスチャの SRV インデックス</param>
+    /// <returns>テクスチャファイル名（未登録の場合は空文字）</returns>
+    const std::string& GetFileName(uint32_t srvIndex);
+
+    /// <summary>
     /// エンジン用デフォルトテクスチャの読み込み（EngineResources/Texture/ 配下から）
     /// </summary>
     /// <param name="fileName">エンジン用テクスチャファイルの名前</param>

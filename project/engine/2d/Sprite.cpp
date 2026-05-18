@@ -62,7 +62,7 @@ namespace Tako {
     }
 
     // テクスチャ範囲指定
-    const DirectX::TexMetadata& metadata = TextureManager::GetInstance()->GetMetaData(texturePath_);
+    const DirectX::TexMetadata& metadata = TextureManager::GetInstance()->GetMetaData(textureIndex_);
     float texLeft = texTopLeft_.x / metadata.width;
     float texRight = (texTopLeft_.x + texCutSize_.x) / metadata.width;
     float texTop = texTopLeft_.y / metadata.height;
@@ -169,13 +169,27 @@ namespace Tako {
 
   void Sprite::FitTexCutSize()
   {
-    const DirectX::TexMetadata& metadata = TextureManager::GetInstance()->GetMetaData(texturePath_);
+    const DirectX::TexMetadata& metadata = TextureManager::GetInstance()->GetMetaData(textureIndex_);
 
     texCutSize_.x = static_cast<float>(metadata.width);
     texCutSize_.y = static_cast<float>(metadata.height);
 
     // 画像サイズをテクスチャサイズに合わせる
     size_ = texCutSize_;
+  }
+
+  void Sprite::SetTexture(const std::string& texturePath)
+  {
+    texturePath_ = texturePath;
+    textureIndex_ = TextureManager::GetInstance()->GetSRVIndex(texturePath_);
+    FitTexCutSize();
+  }
+
+  void Sprite::SetTextureIndex(uint32_t textureIndex)
+  {
+    textureIndex_ = textureIndex;
+    texturePath_ = TextureManager::GetInstance()->GetFileName(textureIndex_);
+    FitTexCutSize();
   }
 
   void Sprite::DrawImGui()
