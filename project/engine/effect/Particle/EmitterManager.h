@@ -18,6 +18,7 @@ namespace Tako {
   class MeshEmitter;
   class Mesh; // CreateMeshEmitter のパラメータで使用
   class Model; // CreateMeshEmitter(Model*) オーバーロードで使用 (マルチプリミティブ対応)
+  class Object3d; // CreateMeshEmitter(Object3d*) / LoadPreset(Object3d*) オーバーロードで使用
   class ForceFieldManager;
 
   /// <summary>
@@ -108,6 +109,21 @@ namespace Tako {
     /// 集約モード (Mesh 数 > 1) ではスキニング動的同期は未対応 (バインドポーズで固定)。
     /// </remarks>
     void CreateMeshEmitter(const std::string& name, Model* model, uint32_t count, float frequency);
+
+    /// <summary>
+    /// Object3d を渡してメッシュエミッターを作成 (JSON 永続化対応経路)
+    /// </summary>
+    /// <param name="name">エミッター名</param>
+    /// <param name="obj3d">スポーン形状ソース (非所有、ライフタイム責務は呼び出し側)</param>
+    /// <param name="object3dKey">JSON シリアライズ時に保存する識別キー</param>
+    /// <param name="count">パーティクル数</param>
+    /// <param name="frequency">射出頻度 (秒)</param>
+    /// <remarks>
+    /// 内部で <c>obj3d-&gt;GetModel()</c> を取り出して既存 Model* オーバーロードと同等の SRV 構築を行う。
+    /// 動的世界行列は MeshEmitter 内部で <c>obj3d-&gt;GetWorldMatrix()</c> を毎射出時に自動同期。
+    /// </remarks>
+    void CreateMeshEmitter(const std::string& name, Object3d* obj3d, const std::string& object3dKey,
+                           uint32_t count, float frequency);
 
     /// <summary>
     /// 球形エミッターのパラメータを更新
@@ -337,6 +353,17 @@ namespace Tako {
     void LoadScenePreset(const std::string& filename);
 
     /// <summary>
+    /// JSON ファイルからエミッター設定を読み込み (Mesh エミッタ復元用 Object3d 解決マップ付き)
+    /// </summary>
+    /// <param name="filename">ファイル名</param>
+    /// <param name="object3dMap">JSON 内の <c>object3dKey</c> から Object3d* を解決するマップ (非所有)</param>
+    /// <remarks>
+    /// マップに無いキーを参照する MeshEmitter は警告ログを出してスキップ。他エミッタは正常ロード継続。
+    /// </remarks>
+    void LoadScenePreset(const std::string& filename,
+                         const std::unordered_map<std::string, Object3d*>& object3dMap);
+
+    /// <summary>
     /// エミッター設定をプリセットとして保存
     /// </summary>
     /// <param name="presetName">プリセット名</param>
@@ -355,6 +382,24 @@ namespace Tako {
     /// </summary>
     /// <param name="presetName">プリセット名</param>
     void LoadPreset(const std::string& presetName);
+
+    /// <summary>
+    /// プリセットから Mesh エミッターを作成 (新しいエミッター名指定 + Object3d バインド版)
+    /// </summary>
+    /// <param name="presetName">プリセット名</param>
+    /// <param name="newEmitterName">新しいエミッター名</param>
+    /// <param name="obj3d">バインドする Object3d (JSON 内の object3dKey を上書き)</param>
+    /// <remarks>
+    /// 単一プリセット復元のため、JSON 内の <c>object3dKey</c> 値は無視し、引数の <c>obj3d</c> を採用する。
+    /// </remarks>
+    void LoadPreset(const std::string& presetName, const std::string& newEmitterName, Object3d* obj3d);
+
+    /// <summary>
+    /// プリセットから Mesh エミッターを作成 (既存名使用 + Object3d バインド版)
+    /// </summary>
+    /// <param name="presetName">プリセット名</param>
+    /// <param name="obj3d">バインドする Object3d (JSON 内の object3dKey を上書き)</param>
+    void LoadPreset(const std::string& presetName, Object3d* obj3d);
 
     /// <summary>
     /// 全てのエミッター名を取得
@@ -455,6 +500,16 @@ namespace Tako {
     /// <param name="json">読み込む JSON オブジェクト</param>
     /// <returns>デシリアライズされたエミッター</returns>
     std::shared_ptr<GPUParticleEmitter> DeserializeEmitterFromJSON(const nlohmann::json& json);
+
+    /// <summary>
+    /// JSON からエミッターをデシリアライズ (Mesh エミッタ用 Object3d 解決マップ付き)
+    /// </summary>
+    /// <param name="json">読み込む JSON オブジェクト</param>
+    /// <param name="object3dMap">Object3d 解決マップ (nullptr 可、その場合 Mesh エミッタはスキップ)</param>
+    /// <returns>デシリアライズされたエミッター</returns>
+    std::shared_ptr<GPUParticleEmitter> DeserializeEmitterFromJSON(
+      const nlohmann::json& json,
+      const std::unordered_map<std::string, Object3d*>* object3dMap);
 
   private:
     /// <summary>

@@ -1,11 +1,13 @@
 #pragma once
 #include "GPUParticleEmitter.h"
 #include "Matrix4x4.h"
+#include <string>
 
 namespace Tako {
 
   class Mesh;
   class Model;
+  class Object3d;
 
   /// <summary>
   /// メッシュをスポーン形状として使うエミッター
@@ -40,6 +42,20 @@ namespace Tako {
     /// Mesh 数 > 1 のとき集約バッファに統合する。集約モードではスキニング動的同期は未対応。
     /// </remarks>
     MeshEmitter(GPUParticle* particleSystem, Model* model, uint32_t count, float frequency);
+
+    /// <summary>
+    /// Object3d を渡して MeshEmitter を生成 (JSON 永続化対応)
+    /// </summary>
+    /// <param name="particleSystem">GPU パーティクルシステムへのポインタ</param>
+    /// <param name="obj3d">スポーン形状ソース (非所有、ライフタイム責務は呼び出し側)</param>
+    /// <param name="count">1 回の射出で生成するパーティクル数</param>
+    /// <param name="frequency">射出間隔 (秒)</param>
+    /// <param name="object3dKey">JSON シリアライズ時に保存される識別キー (空文字で round-trip 不可)</param>
+    /// <remarks>
+    /// 内部で <c>obj3d-&gt;GetModel()</c> を取り出して Model* ctor に委譲する。
+    /// 動的世界行列は <c>UpdateEmission()</c> 内で <c>obj3d-&gt;GetWorldMatrix()</c> から自動同期。
+    /// </remarks>
+    MeshEmitter(GPUParticle* particleSystem, Object3d* obj3d, uint32_t count, float frequency, std::string object3dKey);
 
     ~MeshEmitter() override = default;
 
@@ -85,13 +101,34 @@ namespace Tako {
     [[nodiscard]] Mesh* GetMesh() const { return mesh_; }
 
     /// <summary>
+    /// バインドされている Object3d ポインタを取得
+    /// </summary>
+    [[nodiscard]] Object3d* GetBoundObject3d() const { return boundObject3d_; }
+
+    /// <summary>
+    /// JSON シリアライズ用の Object3d 識別キーを取得
+    /// </summary>
+    [[nodiscard]] const std::string& GetObject3dKey() const { return object3dKey_; }
+
+    /// <summary>
+    /// JSON シリアライズ用の Object3d 識別キーを設定
+    /// </summary>
+    void SetObject3dKey(const std::string& key) { object3dKey_ = key; }
+
+    /// <summary>
     /// 動的バインドされた meshWorld を同期 (UpdateEmission から呼ばれる)
     /// </summary>
+    /// <remarks>
+    /// 優先順位: <c>boundObject3d_</c> &gt; <c>boundMeshWorld_</c>。
+    /// Object3d がバインドされていれば <c>GetWorldMatrix()</c> で動的に世界行列を取得する。
+    /// </remarks>
     void SyncMeshWorld();
 
   private:
     Mesh* mesh_ = nullptr;                            ///< 非所有参照
     const Matrix4x4* boundMeshWorld_ = nullptr;       ///< 動的バインド用 (非所有)
+    Object3d* boundObject3d_ = nullptr;               ///< 動的バインド用 Object3d (非所有、Matrix4x4* より優先)
+    std::string object3dKey_;                         ///< JSON シリアライズ用 Object3d 識別キー (空文字で round-trip 不可)
     uint32_t meshIndexSrvIndex_ = 0;                  ///< このエミッタ用に確保した index SRV インデックス
 
     // 三角形面積 Prefix Sum (Inversion Sampling)

@@ -117,6 +117,27 @@ namespace Tako {
     emitterMap_[name] = emitter;
   }
 
+  void EmitterManager::CreateMeshEmitter(const std::string& name, Object3d* obj3d, const std::string& object3dKey,
+                                         uint32_t count, float frequency)
+  {
+    // 名前の重複チェック
+    if (emitterMap_.contains(name)) {
+#ifdef _DEBUG
+      DebugUIManager::GetInstance()->AddLog(
+        "Emitter name '" + name + "' already exists. Overwriting.", DebugUIManager::LogType::Warning);
+#endif
+      RemoveEmitter(name);
+    }
+
+    auto emitter = std::make_shared<MeshEmitter>(particleSystem_, obj3d, count, frequency, object3dKey);
+
+    // GPUParticle にエミッターを登録
+    particleSystem_->RegisterEmitter(emitter);
+
+    // マップに追加
+    emitterMap_[name] = emitter;
+  }
+
   void EmitterManager::CreateTriangleEmitter(const std::string& name, const Vector3& position, const Vector3& v1, const Vector3& v2, const Vector3& v3, uint32_t count, float frequency)
   {
     // 名前の重複チェック
@@ -743,6 +764,13 @@ namespace Tako {
 
   void EmitterManager::LoadScenePreset(const std::string& filename)
   {
+    // Object3d 解決マップなし版 → Mesh エミッタが含まれていても警告 + スキップで他は正常ロード
+    LoadScenePreset(filename, {});
+  }
+
+  void EmitterManager::LoadScenePreset(const std::string& filename,
+                                       const std::unordered_map<std::string, Object3d*>& object3dMap)
+  {
     using json = nlohmann::json;
 
     const std::string directory = "resources/Json/ParticlePresets/";
@@ -762,13 +790,13 @@ namespace Tako {
     ifs >> root;
     ifs.close();
 
-    // 既存のエミッターをクリア（オプション）
-    // RemoveAllEmitters();
+    const std::unordered_map<std::string, Object3d*>* mapPtr =
+      object3dMap.empty() ? nullptr : &object3dMap;
 
     // エミッターを読み込み
     if (root.contains("emitters")) {
       for (auto& [name, emitterJson] : root["emitters"].items()) {
-        auto emitter = DeserializeEmitterFromJSON(emitterJson);
+        auto emitter = DeserializeEmitterFromJSON(emitterJson, mapPtr);
         if (emitter) {
           particleSystem_->RegisterEmitter(emitter);
           emitterMap_[name] = emitter;
@@ -894,6 +922,47 @@ namespace Tako {
 #endif
 
     }
+  }
+
+  void EmitterManager::LoadPreset(const std::string& presetName, const std::string& newEmitterName, Object3d* obj3d)
+  {
+    using json = nlohmann::json;
+
+    const std::string directory = "resources/Json/ParticlePresets/Presets/";
+    std::string filepath = directory + presetName + ".json";
+
+    std::ifstream ifs(filepath);
+    if (!ifs.is_open()) {
+#ifdef _DEBUG
+      DebugUIManager::GetInstance()->AddLog("Failed to load preset: " + presetName, DebugUIManager::LogType::Error);
+#endif
+      return;
+    }
+
+    json preset;
+    ifs >> preset;
+    ifs.close();
+
+    // 引数の obj3d で JSON 内の object3dKey を強制上書きする (LoadPreset 系の仕様)
+    const std::string overrideKey = "___LoadPresetOverride___";
+    preset["object3dKey"] = overrideKey;
+    std::unordered_map<std::string, Object3d*> objMap = { { overrideKey, obj3d } };
+
+    auto emitter = DeserializeEmitterFromJSON(preset, &objMap);
+    if (emitter) {
+      particleSystem_->RegisterEmitter(emitter);
+      emitterMap_[newEmitterName] = emitter;
+#ifdef _DEBUG
+      DebugUIManager::GetInstance()->AddLog(
+        "Loaded preset '" + presetName + "' as '" + newEmitterName + "' with Object3d override",
+        DebugUIManager::LogType::Info);
+#endif
+    }
+  }
+
+  void EmitterManager::LoadPreset(const std::string& presetName, Object3d* obj3d)
+  {
+    LoadPreset(presetName, presetName, obj3d);
   }
 
   //========================================
@@ -1109,9 +1178,30 @@ namespace Tako {
       json["triangleV2"] = { triangleEmitter->GetVertex2().x, triangleEmitter->GetVertex2().y, triangleEmitter->GetVertex2().z };
       json["triangleV3"] = { triangleEmitter->GetVertex3().x, triangleEmitter->GetVertex3().y, triangleEmitter->GetVertex3().z };
     }
+    else if (auto meshEmitter = std::dynamic_pointer_cast<MeshEmitter>(emitter)) {
+      // MeshEmitter は Object3d 識別キーを保存する。Object3d 本体は永続化せず、
+      // ロード時に呼び出し側が同じキーで Object3d* を解決する責務を負う。
+      const std::string& key = meshEmitter->GetObject3dKey();
+#ifdef _DEBUG
+      if (key.empty()) {
+        DebugUIManager::GetInstance()->AddLog(
+          "Serialize: MeshEmitter has no object3dKey; not round-trippable.",
+          DebugUIManager::LogType::Warning);
+      }
+#endif
+      json["object3dKey"] = key;
+    }
   }
 
   std::shared_ptr<GPUParticleEmitter> EmitterManager::DeserializeEmitterFromJSON(const nlohmann::json& json)
+  {
+    // 旧シグネチャは objMap=nullptr 経由で helper に委譲する薄いラッパ
+    return DeserializeEmitterFromJSON(json, nullptr);
+  }
+
+  std::shared_ptr<GPUParticleEmitter> EmitterManager::DeserializeEmitterFromJSON(
+    const nlohmann::json& json,
+    const std::unordered_map<std::string, Object3d*>* object3dMap)
   {
     EmitterType type = static_cast<EmitterType>(json["type"].get<uint32_t>());
     Vector3 position = { json["position"][0], json["position"][1], json["position"][2] };
@@ -1135,6 +1225,35 @@ namespace Tako {
       Vector3 v2 = { json["triangleV2"][0], json["triangleV2"][1], json["triangleV2"][2] };
       Vector3 v3 = { json["triangleV3"][0], json["triangleV3"][1], json["triangleV3"][2] };
       emitter = std::make_shared<TriangleEmitter>(particleSystem_, position, v1, v2, v3, count, frequency);
+    }
+    else if (type == EmitterType::Mesh) {
+      if (!json.contains("object3dKey")) {
+#ifdef _DEBUG
+        DebugUIManager::GetInstance()->AddLog(
+          "Deserialize: Mesh emitter missing 'object3dKey'.",
+          DebugUIManager::LogType::Error);
+#endif
+        return nullptr;
+      }
+      const std::string key = json["object3dKey"].get<std::string>();
+      if (object3dMap == nullptr) {
+#ifdef _DEBUG
+        DebugUIManager::GetInstance()->AddLog(
+          "Deserialize: Mesh emitter found but no Object3d map provided. Skipping '" + key + "'.",
+          DebugUIManager::LogType::Warning);
+#endif
+        return nullptr;
+      }
+      auto it = object3dMap->find(key);
+      if (it == object3dMap->end() || it->second == nullptr) {
+#ifdef _DEBUG
+        DebugUIManager::GetInstance()->AddLog(
+          "Deserialize: object3dKey '" + key + "' not resolved. Skipping.",
+          DebugUIManager::LogType::Warning);
+#endif
+        return nullptr;
+      }
+      emitter = std::make_shared<MeshEmitter>(particleSystem_, it->second, count, frequency, key);
     }
     else {
       return nullptr;

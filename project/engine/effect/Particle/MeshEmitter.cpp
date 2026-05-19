@@ -2,12 +2,14 @@
 #include "GPUParticle.h"
 #include "Mesh.h"
 #include "Model.h"
+#include "Object3d.h"
 #include "SrvManager.h"
 #include "Matrix4x4.h"
 #include "Mat4x4Func.h"
 #include "DX12Basic.h"
 #include "ModelStruct.h"
 #include <cstring>
+#include <utility>
 #include <vector>
 #include <cmath>
 #include <algorithm>
@@ -282,6 +284,14 @@ namespace Tako {
     data_.meshSkinnedVertexSrvIndex = 0;
   }
 
+  MeshEmitter::MeshEmitter(GPUParticle* particleSystem, Object3d* obj3d,
+                           uint32_t count, float frequency, std::string object3dKey)
+    : MeshEmitter(particleSystem, obj3d ? obj3d->GetModel() : nullptr, count, frequency)
+  {
+    boundObject3d_ = obj3d;
+    object3dKey_ = std::move(object3dKey);
+  }
+
   std::shared_ptr<GPUParticleEmitter> MeshEmitter::Clone() const
   {
     auto clone = std::make_shared<MeshEmitter>(particleSystem_, mesh_, data_.count, data_.frequency);
@@ -301,6 +311,11 @@ namespace Tako {
 
   void MeshEmitter::SyncMeshWorld()
   {
+    // Object3d バインドが優先 (動的世界行列を毎回再計算で取得)
+    if (boundObject3d_ != nullptr) {
+      data_.meshWorld = boundObject3d_->GetWorldMatrix();
+      return;
+    }
     if (boundMeshWorld_ != nullptr) {
       data_.meshWorld = *boundMeshWorld_;
     }
