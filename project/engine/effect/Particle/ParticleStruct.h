@@ -17,6 +17,8 @@ namespace Tako {
   /// パーティクルがCurl Noiseの影響を受けるか
   constexpr uint32_t PFLAG_USE_CURL_NOISE      = (1u << 1);
   constexpr uint32_t PFLAG_USE_DEPTH_COLLISION = (1u << 2); ///< 深度バッファ衝突有効
+  constexpr uint32_t PFLAG_SCALE_FADE          = (1u << 3); ///< 寿命進行に応じてスケールを endScale へ補間
+  constexpr uint32_t PFLAG_ALPHA_FADE          = (1u << 4); ///< 寿命進行に応じて alpha を 1.0 → 0.0 へ線形補間
 
   // ===== エミッター用ビットフラグ定数 =====
   constexpr uint32_t EFLAG_ACTIVE          = (1u << 0); ///< エミッターがアクティブ
@@ -27,6 +29,20 @@ namespace Tako {
   constexpr uint32_t EFLAG_TEMPORARY       = (1u << 5); ///< 一時的なエミッター
   constexpr uint32_t EFLAG_USE_CURL_NOISE      = (1u << 6); ///< Curl Noise乱流有効
   constexpr uint32_t EFLAG_USE_DEPTH_COLLISION = (1u << 7); ///< 深度バッファ衝突有効
+  constexpr uint32_t EFLAG_USE_SCALE_FADE      = (1u << 8); ///< スケール縮小消滅を有効化 (endScaleDefault に補間)
+  constexpr uint32_t EFLAG_USE_ALPHA_FADE      = (1u << 9); ///< 寿命進行で alpha フェード (既定 ON、OFF で寿命中は不透明)
+
+  // ===== パラメータごとのランダム化フラグ (randomFlags 用) =====
+  /// <remarks>
+  /// randomFlags が 0 のときは旧来の「range != float2(0,0) ならランダム」自動判定が
+  /// 後方互換として動作する。明示制御したい場合はビットを立てて使う。
+  /// </remarks>
+  constexpr uint32_t ERAND_SCALE_X  = (1u << 0); ///< X 方向スケールをランダム化
+  constexpr uint32_t ERAND_SCALE_Y  = (1u << 1); ///< Y 方向スケールをランダム化
+  constexpr uint32_t ERAND_VEL_X    = (1u << 2); ///< X 方向速度をランダム化
+  constexpr uint32_t ERAND_VEL_Y    = (1u << 3); ///< Y 方向速度をランダム化
+  constexpr uint32_t ERAND_VEL_Z    = (1u << 4); ///< Z 方向速度をランダム化
+  constexpr uint32_t ERAND_LIFETIME = (1u << 5); ///< 寿命をランダム化
 
   /// <summary>
   /// エミッタータイプ列挙型
@@ -35,6 +51,22 @@ namespace Tako {
     Sphere = 0,    ///< 球体エミッター
     Box = 1,       ///< 箱型エミッター
     Triangle = 2   ///< 三角形エミッター
+  };
+
+  /// <summary>
+  /// スポーン位置種別 (要望4: 中/外/線)
+  /// </summary>
+  /// <remarks>
+  /// 形状ごとに対応の有無が異なる:
+  ///  - Sphere: Inside / Surface のみ (Edge は頂点未定義のため Surface へフォールバック)
+  ///  - Box: 3 種すべて対応 (Inside=範囲内、Surface=6面、Edge=12辺)
+  ///  - Triangle: Surface / Edge のみ (Inside は 2D 形状で意味なし → Surface へフォールバック)
+  ///  - Mesh: Stage D で対応 (Surface=面、Edge=辺、Inside=SDF Rejection)
+  /// </remarks>
+  enum class SpawnLocation : uint32_t {
+    Inside  = 0,  ///< 中 (範囲内ランダム): 現状の挙動
+    Surface = 1,  ///< 外 (境界面上)
+    Edge    = 2   ///< 線 (頂点を繋ぐエッジ上)
   };
 
   /// <summary>
@@ -82,7 +114,8 @@ namespace Tako {
   {
     Vector3 translate;      ///< 現在位置
     Vector3 prevPosition;   ///< 前フレーム位置（Verlet積分用）
-    Vector3 scale;          ///< スケール
+    Vector3 scale;          ///< 開始時スケール（Emit 時に決定）
+    Vector3 endScale;       ///< 終了時スケール（PFLAG_SCALE_FADE が立っているときのみ補間先として使用）
     Vector3 rotate;         ///< 回転（オイラー角）
     Vector3 velocity;       ///< 速度ベクトル
     Vector4 startColor;     ///< 開始時の色（アルファ値含む）
@@ -205,6 +238,8 @@ namespace Tako {
     uint32_t type;            ///< エミッタータイプ（EmitterType: 0=球体, 1=箱型, 2=三角形）
     uint32_t flags;           ///< エミッターフラグ（EFLAG_* ビットフラグ）
     uint32_t emitterID;       ///< エミッター固有の ID
+    uint32_t randomFlags;     ///< パラメータごとのランダム化フラグ（ERAND_* ビットフラグ、0 で旧来の自動判定）
+    uint32_t spawnLocation;   ///< スポーン位置種別（SpawnLocation: 0=Inside, 1=Surface, 2=Edge）
 
     Vector3 position;         ///< エミッターの中心/基準位置
     Vector2 scaleRangeX;      ///< X スケールの範囲[min, max]
@@ -230,6 +265,9 @@ namespace Tako {
     Vector3 triangleV2;       ///< 三角形エミッター用：頂点2
     Vector3 triangleV3;       ///< 三角形エミッター用：頂点3
 
+    // --- スケール縮小消滅 (Stage B-1) ---
+    Vector3 endScaleDefault;  ///< EFLAG_USE_SCALE_FADE 有効時の終端スケール（既定 (0,0,0) で完全消失）
+
     // --- per-emitter 物理 / Curl Noise パラメーター ---
     float damping;              ///< 速度減衰係数（0.98-0.99 推奨）
     float collisionRestitution; ///< 反発係数（0-1）
@@ -241,8 +279,10 @@ namespace Tako {
     /// デフォルトコンストラクタ
     /// </summary>
     EmitterData() : type(static_cast<uint32_t>(EmitterType::Sphere)),
-      flags(EFLAG_ACTIVE | EFLAG_USE_FORCE_FIELD),
-      emitterID(0), position({ .x = 0.0f, .y = 0.0f, .z = 0.0f }),
+      flags(EFLAG_ACTIVE | EFLAG_USE_FORCE_FIELD | EFLAG_USE_ALPHA_FADE), // alpha フェードは既定 ON (旧挙動互換)
+      emitterID(0), randomFlags(0),
+      spawnLocation(static_cast<uint32_t>(SpawnLocation::Inside)),
+      position({ .x = 0.0f, .y = 0.0f, .z = 0.0f }),
       scaleRangeX(), scaleRangeY(), velRangeX(), velRangeY(), velRangeZ(), lifeTimeRange(),
       startColorTint({ .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f }),
       endColorTint({ .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f }),
@@ -250,6 +290,7 @@ namespace Tako {
       emitterLifeTime(0.0f), emitterCurrentTime(0.0f),
       radius(1.0f), boxSize(), boxRotation(),
       triangleV1(), triangleV2(), triangleV3(),
+      endScaleDefault({ .x = 0.0f, .y = 0.0f, .z = 0.0f }),
       damping(0.99f), collisionRestitution(0.5f), particleRadius(0.5f),
       noiseScale(0.05f), noiseStrength(0.001f)
     {}

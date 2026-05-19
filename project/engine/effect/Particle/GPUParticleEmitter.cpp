@@ -8,7 +8,7 @@ namespace Tako {
   {
     data_.emitterID = emitterId;
     data_.type = static_cast<uint32_t>(EmitterType::Sphere);
-    data_.flags = EFLAG_ACTIVE | EFLAG_USE_FORCE_FIELD;
+    data_.flags = EFLAG_ACTIVE | EFLAG_USE_FORCE_FIELD | EFLAG_USE_ALPHA_FADE;
     data_.emitterLifeTime = 0.0f;
     data_.emitterCurrentTime = 0.0f;
     data_.frequencyTime = 0.0f;
@@ -24,6 +24,7 @@ namespace Tako {
     data_.count = 0;
     data_.frequency = 0.0f;
     data_.radius = 1.0f;
+    data_.randomFlags = 0; // 0 = 旧来の自動判定にフォールバック（既存 JSON プリセットの後方互換）
   }
 
   GPUParticleEmitter::~GPUParticleEmitter()
@@ -198,6 +199,42 @@ namespace Tako {
   void GPUParticleEmitter::SetNoiseStrength(float strength)
   {
     data_.noiseStrength = strength;
+  }
+
+  void GPUParticleEmitter::SetSpawnLocation(SpawnLocation location)
+  {
+    data_.spawnLocation = static_cast<uint32_t>(location);
+  }
+
+  void GPUParticleEmitter::SetAlphaFade(bool enable)
+  {
+    if (enable) data_.flags |= EFLAG_USE_ALPHA_FADE; else data_.flags &= ~EFLAG_USE_ALPHA_FADE;
+  }
+
+  void GPUParticleEmitter::SetScaleFade(bool enable, const Vector3& endScale)
+  {
+    if (enable) data_.flags |= EFLAG_USE_SCALE_FADE; else data_.flags &= ~EFLAG_USE_SCALE_FADE;
+    data_.endScaleDefault = endScale;
+  }
+
+  void GPUParticleEmitter::SetEndScaleDefault(const Vector3& endScale)
+  {
+    data_.endScaleDefault = endScale;
+  }
+
+  void GPUParticleEmitter::SetRandomFlags(uint32_t flags)
+  {
+    data_.randomFlags = flags;
+  }
+
+  void GPUParticleEmitter::EnableRandom(uint32_t mask)
+  {
+    data_.randomFlags |= mask;
+  }
+
+  void GPUParticleEmitter::DisableRandom(uint32_t mask)
+  {
+    data_.randomFlags &= ~mask;
   }
 
   void GPUParticleEmitter::SetTemporary(bool isTemporary, float lifeTime)

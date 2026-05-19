@@ -1009,6 +1009,19 @@ namespace Tako {
     json["velRangeZ"] = { emitter->GetVelRangeZ().x, emitter->GetVelRangeZ().y };
     json["lifeTimeRange"] = { emitter->GetLifeTimeRange().x, emitter->GetLifeTimeRange().y };
 
+    // パラメータごとのランダム化フラグ (Stage A)
+    json["randomFlags"] = emitter->GetRandomFlags();
+
+    // アルファフェード (Stage B-1 補完): 独立フラグ
+    json["useAlphaFade"] = emitter->IsUseAlphaFade();
+
+    // スケール縮小消滅 (Stage B-1)
+    json["useScaleFade"] = emitter->IsUseScaleFade();
+    json["endScaleDefault"] = { emitter->GetEndScaleDefault().x, emitter->GetEndScaleDefault().y, emitter->GetEndScaleDefault().z };
+
+    // スポーン位置種別 (Stage B-2)
+    json["spawnLocation"] = static_cast<uint32_t>(emitter->GetSpawnLocation());
+
     // 色パラメータ
     json["startColor"] = { emitter->GetStartColor().x, emitter->GetStartColor().y, emitter->GetStartColor().z, emitter->GetStartColor().w };
     json["endColor"] = { emitter->GetEndColor().x, emitter->GetEndColor().y, emitter->GetEndColor().z, emitter->GetEndColor().w };
@@ -1101,6 +1114,27 @@ namespace Tako {
 
     if (json.contains("useCurlNoise")) {
       emitter->SetUseCurlNoise(json["useCurlNoise"]);
+    }
+
+    if (json.contains("randomFlags")) {
+      emitter->SetRandomFlags(json["randomFlags"]);
+    }
+    // randomFlags キーが無い旧 JSON は 0 のまま → EmitParticle.CS の自動判定にフォールバック
+
+    // アルファフェード (Stage B-1 補完)。旧 JSON は欠落 → コンストラクタで ON されたままなので旧挙動互換
+    if (json.contains("useAlphaFade")) {
+      emitter->SetAlphaFade(json["useAlphaFade"]);
+    }
+
+    // スケール縮小消滅 (Stage B-1)。旧 JSON は両キーとも欠落 → SetScaleFade(false) 相当の既定維持
+    if (json.contains("useScaleFade") && json.contains("endScaleDefault")) {
+      Vector3 endScale = { json["endScaleDefault"][0], json["endScaleDefault"][1], json["endScaleDefault"][2] };
+      emitter->SetScaleFade(json["useScaleFade"], endScale);
+    }
+
+    // スポーン位置種別 (Stage B-2)。旧 JSON は欠落 → Inside (現状挙動) のまま
+    if (json.contains("spawnLocation")) {
+      emitter->SetSpawnLocation(static_cast<SpawnLocation>(json["spawnLocation"].get<uint32_t>()));
     }
 
     if (json.contains("useDepthCollision")) {

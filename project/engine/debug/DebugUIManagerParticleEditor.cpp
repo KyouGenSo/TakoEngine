@@ -212,11 +212,53 @@ namespace Tako {
 
             // 範囲設定
             if (ImGui::CollapsingHeader("Range Settings")) {
+              // Stage A: パラメータごとのランダム化フラグ
+              // randomFlags == 0 のときは旧来の「range != (0,0) で自動判定」が効くので、
+              // チェックボックスはあくまで「明示的に Override したい」場合のための UI。
+              uint32_t randomFlags = emitter->GetRandomFlags();
+              const bool legacyAuto = (randomFlags == 0u);
+              ImGui::TextDisabled(legacyAuto
+                ? "Randomize: [Auto] (range != 0 enables randomization)"
+                : "Randomize: [Manual] (per-parameter checkboxes)");
+              if (legacyAuto) {
+                if (ImGui::SmallButton("Switch to Manual")) {
+                  // 現状の値を元に Auto 判定を Manual ビットに固定化
+                  uint32_t newFlags = 0u;
+                  if (emitter->GetScaleRangeX().x != 0.0f || emitter->GetScaleRangeX().y != 0.0f) newFlags |= ERAND_SCALE_X;
+                  if (emitter->GetScaleRangeY().x != 0.0f || emitter->GetScaleRangeY().y != 0.0f) newFlags |= ERAND_SCALE_Y;
+                  if (emitter->GetVelRangeX().x != 0.0f || emitter->GetVelRangeX().y != 0.0f) newFlags |= ERAND_VEL_X;
+                  if (emitter->GetVelRangeY().x != 0.0f || emitter->GetVelRangeY().y != 0.0f) newFlags |= ERAND_VEL_Y;
+                  if (emitter->GetVelRangeZ().x != 0.0f || emitter->GetVelRangeZ().y != 0.0f) newFlags |= ERAND_VEL_Z;
+                  if (emitter->GetLifeTimeRange().x != 0.0f || emitter->GetLifeTimeRange().y != 0.0f) newFlags |= ERAND_LIFETIME;
+                  // 全 0 だと Auto に戻ってしまうため、最低 1 ビットだけ立てて Manual 確定
+                  if (newFlags == 0u) newFlags = ERAND_SCALE_X;
+                  emitter->SetRandomFlags(newFlags);
+                }
+              }
+              else {
+                if (ImGui::SmallButton("Reset to Auto")) {
+                  emitter->SetRandomFlags(0u);
+                }
+              }
+              ImGui::Separator();
+
+              auto drawRandomCheckbox = [&](const char* label, uint32_t flag) {
+                bool enabled = (randomFlags & flag) != 0u;
+                if (ImGui::Checkbox(label, &enabled)) {
+                  if (enabled) emitter->EnableRandom(flag);
+                  else        emitter->DisableRandom(flag);
+                }
+              };
+
               Vector2 scaleX = emitter->GetScaleRangeX();
               Vector2 scaleY = emitter->GetScaleRangeY();
+              drawRandomCheckbox("##RandScaleX", ERAND_SCALE_X);
+              ImGui::SameLine();
               if (ImGui::DragFloat2("Scale Range X", &scaleX.x, 0.01f)) {
                 emitter->SetScaleRangeX(scaleX);
               }
+              drawRandomCheckbox("##RandScaleY", ERAND_SCALE_Y);
+              ImGui::SameLine();
               if (ImGui::DragFloat2("Scale Range Y", &scaleY.x, 0.01f)) {
                 emitter->SetScaleRangeY(scaleY);
               }
@@ -224,17 +266,25 @@ namespace Tako {
               Vector2 velX = emitter->GetVelRangeX();
               Vector2 velY = emitter->GetVelRangeY();
               Vector2 velZ = emitter->GetVelRangeZ();
+              drawRandomCheckbox("##RandVelX", ERAND_VEL_X);
+              ImGui::SameLine();
               if (ImGui::DragFloat2("Velocity Range X", &velX.x, 0.1f)) {
                 emitter->SetVelRangeX(velX);
               }
+              drawRandomCheckbox("##RandVelY", ERAND_VEL_Y);
+              ImGui::SameLine();
               if (ImGui::DragFloat2("Velocity Range Y", &velY.x, 0.1f)) {
                 emitter->SetVelRangeY(velY);
               }
+              drawRandomCheckbox("##RandVelZ", ERAND_VEL_Z);
+              ImGui::SameLine();
               if (ImGui::DragFloat2("Velocity Range Z", &velZ.x, 0.1f)) {
                 emitter->SetVelRangeZ(velZ);
               }
 
               Vector2 lifeTime = emitter->GetLifeTimeRange();
+              drawRandomCheckbox("##RandLifeTime", ERAND_LIFETIME);
+              ImGui::SameLine();
               if (ImGui::DragFloat2("LifeTime Range", &lifeTime.x, 0.01f, 0.01f, 10.0f)) {
                 emitter->SetLifeTimeRange(lifeTime);
               }
@@ -251,6 +301,47 @@ namespace Tako {
               if (ImGui::ColorEdit4("End Color", &endColor.x)) {
                 emitter->SetEndColor(endColor);
               }
+            }
+
+            // スポーン位置種別 (Stage B-2: 中/外/線)
+            if (ImGui::CollapsingHeader("Spawn Location")) {
+              static const char* kSpawnLocationLabels[] = { "Inside", "Surface", "Edge" };
+              int currentLoc = static_cast<int>(emitter->GetSpawnLocation());
+              if (ImGui::Combo("Location##SpawnLocation", &currentLoc, kSpawnLocationLabels, IM_ARRAYSIZE(kSpawnLocationLabels))) {
+                emitter->SetSpawnLocation(static_cast<SpawnLocation>(currentLoc));
+              }
+              // 形状ごとの対応状況を警告表示
+              EmitterType etype = emitter->GetType();
+              if (etype == EmitterType::Sphere && currentLoc == static_cast<int>(SpawnLocation::Edge)) {
+                ImGui::TextColored(ImVec4(1, 0.7f, 0, 1), "Sphere has no vertices: Edge falls back to Surface");
+              }
+              if (etype == EmitterType::Triangle && currentLoc == static_cast<int>(SpawnLocation::Inside)) {
+                ImGui::TextColored(ImVec4(1, 0.7f, 0, 1), "Triangle is 2D: Inside falls back to Surface");
+              }
+            }
+
+            // 消滅設定 (Stage B-1 / B-1 補完): alpha フェードとスケール縮小は独立フラグ
+            if (ImGui::CollapsingHeader("Death Style")) {
+              // アルファフェード
+              bool useAlphaFade = emitter->IsUseAlphaFade();
+              if (ImGui::Checkbox("Enable Alpha Fade", &useAlphaFade)) {
+                emitter->SetAlphaFade(useAlphaFade);
+              }
+              ImGui::SameLine();
+              ImGui::TextDisabled("(alpha 1.0 -> 0.0 over lifetime)");
+
+              // スケール縮小
+              bool useScaleFade = emitter->IsUseScaleFade();
+              if (ImGui::Checkbox("Enable Scale Fade", &useScaleFade)) {
+                emitter->SetScaleFade(useScaleFade, emitter->GetEndScaleDefault());
+              }
+              ImGui::SameLine();
+              ImGui::TextDisabled("(scale -> endScale over lifetime)");
+              Vector3 endScale = emitter->GetEndScaleDefault();
+              if (ImGui::DragFloat3("End Scale", &endScale.x, 0.01f, 0.0f, 10.0f)) {
+                emitter->SetEndScaleDefault(endScale);
+              }
+              ImGui::TextDisabled("Independent flags. Both ON = shrink with fade. Both OFF = stays visible until death.");
             }
 
             // 型固有のパラメータ
@@ -294,33 +385,33 @@ namespace Tako {
               if (ImGui::SliderFloat("Damping##P", &damping, 0.9f, 1.0f, "%.4f")) {
                 emitter->SetDamping(damping);
               }
-              if (ImGui::IsItemHovered()) ImGui::SetTooltip("フレーム毎の速度減衰（0.99 推奨）");
+              if (ImGui::IsItemHovered()) ImGui::SetTooltip("Per-frame velocity damping (0.99 recommended)");
 
               float restitution = emitter->GetCollisionRestitution();
               if (ImGui::SliderFloat("Restitution##P", &restitution, 0.0f, 1.0f, "%.3f")) {
                 emitter->SetCollisionRestitution(restitution);
               }
-              if (ImGui::IsItemHovered()) ImGui::SetTooltip("衝突反発係数（0.0=吸収、1.0=完全弾性）");
+              if (ImGui::IsItemHovered()) ImGui::SetTooltip("Collision restitution (0.0=absorb, 1.0=fully elastic)");
 
               float pRadius = emitter->GetParticleRadius();
               if (ImGui::DragFloat("Particle Radius##P", &pRadius, 0.001f, 0.001f, 1.0f, "%.4f")) {
                 emitter->SetParticleRadius(pRadius);
               }
-              if (ImGui::IsItemHovered()) ImGui::SetTooltip("深度衝突に使うパーティクル半径");
+              if (ImGui::IsItemHovered()) ImGui::SetTooltip("Particle radius used in depth collision");
 
               float noiseScale = emitter->GetNoiseScale();
               if (ImGui::SliderFloat("Noise Scale##P", &noiseScale, 0.01f, 10.0f, "%.3f")) {
                 emitter->SetNoiseScale(noiseScale);
               }
-              if (ImGui::IsItemHovered()) ImGui::SetTooltip("Curl Noise 空間スケール（小=大渦、大=細密）");
+              if (ImGui::IsItemHovered()) ImGui::SetTooltip("Curl Noise spatial scale (small=large eddies, large=fine detail)");
 
               float noiseStrength = emitter->GetNoiseStrength();
               if (ImGui::SliderFloat("Noise Strength##P", &noiseStrength, 0.001f, 1.0f, "%.4f")) {
                 emitter->SetNoiseStrength(noiseStrength);
               }
-              if (ImGui::IsItemHovered()) ImGui::SetTooltip("Curl Noise 強度（0.01-0.1=控えめ、0.5+=強い乱流）");
+              if (ImGui::IsItemHovered()) ImGui::SetTooltip("Curl Noise strength (0.01-0.1=subtle, 0.5+=strong turbulence)");
 
-              ImGui::TextDisabled("※ 値の変更は新しく射出されるパーティクルに反映されます");
+              ImGui::TextDisabled("Note: Changes apply to newly spawned particles only.");
             }
           }
           else {

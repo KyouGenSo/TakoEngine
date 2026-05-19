@@ -221,6 +221,100 @@ namespace Tako {
     void SetNoiseStrength(float strength);
 
     /// <summary>
+    /// スポーン位置種別を設定 (Stage B-2: 中/外/線)
+    /// </summary>
+    /// <param name="location">SpawnLocation::Inside / Surface / Edge</param>
+    /// <remarks>
+    /// 形状ごとの対応:
+    ///  - Sphere: Inside / Surface (Edge は Surface へフォールバック)
+    ///  - Box: 全 3 種
+    ///  - Triangle: Surface / Edge (Inside は Surface へフォールバック)
+    ///  - Mesh: 全 3 種 (Inside は SDF を要求)
+    /// </remarks>
+    void SetSpawnLocation(SpawnLocation location);
+
+    /// <summary>
+    /// スポーン位置種別を取得 (Stage B-2)
+    /// </summary>
+    [[nodiscard]] SpawnLocation GetSpawnLocation() const { return static_cast<SpawnLocation>(data_.spawnLocation); }
+
+    /// <summary>
+    /// アルファフェードを有効化／無効化 (Stage B-1 補完)
+    /// </summary>
+    /// <param name="enable">有効化する場合 true (既定 ON)</param>
+    /// <remarks>
+    /// ON: 寿命進行で alpha が 1.0 → 0.0 に線形補間 (旧挙動)。
+    /// OFF: 寿命中は alpha = 1.0 を維持し、寿命終端で即非表示。スケール縮小と組み合わせると
+    /// 「縮みながら最後まで不透明」の表現が可能。
+    /// </remarks>
+    void SetAlphaFade(bool enable);
+
+    /// <summary>
+    /// アルファフェードが有効かを取得
+    /// </summary>
+    [[nodiscard]] bool IsUseAlphaFade() const { return (data_.flags & EFLAG_USE_ALPHA_FADE) != 0; }
+
+    /// <summary>
+    /// スケール縮小消滅を有効化／無効化 (Stage B-1)
+    /// </summary>
+    /// <param name="enable">有効化する場合 true</param>
+    /// <param name="endScale">寿命終端で到達するスケール。既定 (0,0,0) で完全消失</param>
+    /// <remarks>
+    /// alpha フェードとは独立フラグなので、片方だけ・両方併用のいずれも可。
+    /// </remarks>
+    void SetScaleFade(bool enable, const Vector3& endScale = { .x = 0.0f, .y = 0.0f, .z = 0.0f });
+
+    /// <summary>
+    /// スケール縮小消滅の終端スケールのみを更新（フラグは触らない）
+    /// </summary>
+    /// <param name="endScale">終端スケール</param>
+    void SetEndScaleDefault(const Vector3& endScale);
+
+    /// <summary>
+    /// スケール縮小消滅が有効かを取得
+    /// </summary>
+    [[nodiscard]] bool IsUseScaleFade() const { return (data_.flags & EFLAG_USE_SCALE_FADE) != 0; }
+
+    /// <summary>
+    /// スケール縮小消滅の終端スケールを取得
+    /// </summary>
+    [[nodiscard]] const Vector3& GetEndScaleDefault() const { return data_.endScaleDefault; }
+
+    /// <summary>
+    /// パラメータごとのランダム化フラグをまとめて設定
+    /// </summary>
+    /// <param name="flags">ERAND_* のビット OR。0 にすると旧来の自動判定にフォールバック</param>
+    /// <remarks>
+    /// 例: <c>SetRandomFlags(ERAND_SCALE_X | ERAND_VEL_X | ERAND_VEL_Y);</c>
+    /// </remarks>
+    void SetRandomFlags(uint32_t flags);
+
+    /// <summary>
+    /// 指定したパラメータのランダム化を有効化（既存ビットは保持）
+    /// </summary>
+    /// <param name="mask">有効化したい ERAND_* のビット OR</param>
+    void EnableRandom(uint32_t mask);
+
+    /// <summary>
+    /// 指定したパラメータのランダム化を無効化（既存ビットは保持）
+    /// </summary>
+    /// <param name="mask">無効化したい ERAND_* のビット OR</param>
+    void DisableRandom(uint32_t mask);
+
+    /// <summary>
+    /// パラメータごとのランダム化フラグを取得
+    /// </summary>
+    /// <returns>現在の ERAND_* ビット集合</returns>
+    [[nodiscard]] uint32_t GetRandomFlags() const { return data_.randomFlags; }
+
+    /// <summary>
+    /// 指定 ERAND_* フラグが立っているかを判定
+    /// </summary>
+    /// <param name="flag">問い合わせたい単一フラグ</param>
+    /// <returns>立っていれば true</returns>
+    [[nodiscard]] bool IsRandomEnabled(uint32_t flag) const { return (data_.randomFlags & flag) != 0u; }
+
+    /// <summary>
     /// 一時的なエミッターとして設定
     /// </summary>
     /// <param name="isTemporary">一時的にする場合 true</param>

@@ -1,28 +1,28 @@
 #include "Particle.hlsli"
 
-// ƒŠƒ\[ƒXƒoƒCƒ“ƒfƒBƒ“ƒO
+// ï¿½ï¿½ï¿½\ï¿½[ï¿½Xï¿½oï¿½Cï¿½ï¿½ï¿½fï¿½Bï¿½ï¿½ï¿½O
 StructuredBuffer<Particle> gParticles : register(t0);
 ConstantBuffer<PerView> gPerView : register(b0);
 
-// ’¸“_ƒVƒF[ƒ_[“ü—Í
+// ï¿½ï¿½ï¿½_ï¿½Vï¿½Fï¿½[ï¿½_ï¿½[ï¿½ï¿½ï¿½ï¿½
 struct VertexShaderInput
 {
     float4 pos : POSITION;
     float2 texcoord : TEXCOORD0;
 };
 
-// ’¸“_ƒVƒF[ƒ_[ƒƒCƒ“ŠÖ”
+// ï¿½ï¿½ï¿½_ï¿½Vï¿½Fï¿½[ï¿½_ï¿½[ï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½Öï¿½
 VertexShaderOutput main(VertexShaderInput input, uint instanceID : SV_InstanceID)
 {
     VertexShaderOutput output;
     
-    // ƒCƒ“ƒXƒ^ƒ“ƒXID‚É‘Î‰‚·‚éƒp[ƒeƒBƒNƒ‹ƒf[ƒ^‚ğæ“¾
+    // ï¿½Cï¿½ï¿½ï¿½Xï¿½^ï¿½ï¿½ï¿½XIDï¿½É‘Î‰ï¿½ï¿½ï¿½ï¿½ï¿½pï¿½[ï¿½eï¿½Bï¿½Nï¿½ï¿½ï¿½fï¿½[ï¿½^ï¿½ï¿½ï¿½æ“¾
     Particle particle = gParticles[instanceID];
     
-    // ƒrƒ‹ƒ{[ƒhs—ñ‚ğæ“¾
+    // ï¿½rï¿½ï¿½ï¿½{ï¿½[ï¿½hï¿½sï¿½ï¿½ï¿½ï¿½æ“¾
     float4x4 worldMat = gPerView.billboardMat;
 
-	// Z²‰ñ“]‚ğ“K—p----------------------------------------
+	// Zï¿½ï¿½ï¿½ï¿½]ï¿½ï¿½Kï¿½p----------------------------------------
     if (particle.rotate.z != 0.0f)
     {
         float s, c;
@@ -35,22 +35,26 @@ VertexShaderOutput main(VertexShaderInput input, uint instanceID : SV_InstanceID
         worldMat[1].xyz = right * s + up * c;
     }
     
-    // ƒp[ƒeƒBƒNƒ‹‚ÌƒXƒP[ƒ‹‚ğ“K—p
-    worldMat[0] *= particle.scale.x;
-    worldMat[1] *= particle.scale.y;
-    worldMat[2] *= particle.scale.z;
+    // ãƒ‘ãƒ¼ãƒ†ã‚£ã‚¯ãƒ«ã®ã‚¹ã‚±ãƒ¼ãƒ«ã‚’é©ç”¨ (Stage B-1: SCALE_FADE ãƒ•ãƒ©ã‚°ãŒã‚ã‚Œã° endScale ã¸è£œé–“)
+    float lifeRatioForScale = saturate(particle.currentTime / max(particle.lifeTime, 0.0001f));
+    float3 currentScale = (particle.flags & PFLAG_SCALE_FADE)
+        ? lerp(particle.scale, particle.endScale, lifeRatioForScale)
+        : particle.scale;
+    worldMat[0] *= currentScale.x;
+    worldMat[1] *= currentScale.y;
+    worldMat[2] *= currentScale.z;
     
-    // ƒp[ƒeƒBƒNƒ‹‚ÌˆÊ’u‚ğ“K—p
+    // ï¿½pï¿½[ï¿½eï¿½Bï¿½Nï¿½ï¿½ï¿½ÌˆÊ’uï¿½ï¿½Kï¿½p
     worldMat[3].xyz = particle.translate;
     
-    // ’¸“_ˆÊ’u‚ÌŒvZ
+    // ï¿½ï¿½ï¿½_ï¿½Ê’uï¿½ÌŒvï¿½Z
     output.pos = mul(input.pos, mul(worldMat, gPerView.viewProj));
     
-    // ƒeƒNƒXƒ`ƒƒÀ•W‚ğ‚»‚Ì‚Ü‚Üo—Í
+    // ï¿½eï¿½Nï¿½Xï¿½`ï¿½ï¿½ï¿½ï¿½ï¿½Wï¿½ï¿½ï¿½ï¿½ï¿½Ì‚Ü‚Üoï¿½ï¿½
     output.texcoord = input.texcoord;
     
-    // Fî•ñ‚ğo—Í
-    // õ–½‚ÉŠî‚Ã‚¢‚ÄF‚ğüŒ`•âŠÔ
+    // ï¿½Fï¿½ï¿½ï¿½ï¿½ï¿½oï¿½ï¿½
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ÉŠï¿½Ã‚ï¿½ï¿½ÄFï¿½ï¿½ï¿½ï¿½`ï¿½ï¿½ï¿½
     float lifeRatio = particle.currentTime / particle.lifeTime;
     output.color = lerp(particle.startColor, particle.endColor, lifeRatio);
     

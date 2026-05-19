@@ -1,6 +1,18 @@
 #include "Particle.hlsli"
 #include "Random.hlsli"
 
+// パラメータごとのランダム化判定
+// randomFlags が 0 の場合は旧来の「range != (0,0) ならランダム」自動判定にフォールバック
+// 既存 JSON プリセットの後方互換を保つための分岐
+bool ShouldRandomize(uint randomFlags, uint flagBit, float2 range)
+{
+    if (randomFlags != 0u)
+    {
+        return (randomFlags & flagBit) != 0u;
+    }
+    return any(range != float2(0.0f, 0.0f));
+}
+
 // 回転行列の計算
 float3x3 CalculateRotationMatrix(float3 eulerAngles)
 {
@@ -32,8 +44,11 @@ float3x3 CalculateRotationMatrix(float3 eulerAngles)
     return mul(mul(rotZ, rotY), rotX);
 }
 
-// 球体内のランダムな点を生成
-float3 GetRandomPointInSphere(RandomGenerator generator, float3 center, float radius)
+// 球体エミッタからのランダム点生成（SpawnLocation 対応）
+// - SPAWN_INSIDE  : 体積に比例した均一分布 (r = radius * rand^(1/3))
+// - SPAWN_SURFACE : 球面上 (r = radius 固定)
+// - SPAWN_EDGE    : 球には頂点が無いため Surface へフォールバック (UI で警告表示済み)
+float3 GetRandomPointInSphere(RandomGenerator generator, float3 center, float radius, uint spawnLocation)
 {
     // 方向ベクトルの生成
     float3 dir = generator.Generate3d() * 2.0f - 1.0f;
@@ -49,17 +64,56 @@ float3 GetRandomPointInSphere(RandomGenerator generator, float3 center, float ra
     // 正規化
     dir /= len;
 
-    // 球体内の均一分布のためのスケーリング（体積に比例）
-    float r = radius * pow(generator.Generate1d(), 1.0f / 3.0f);
+    // SpawnLocation に応じた半径
+    float r;
+    if (spawnLocation == SPAWN_SURFACE || spawnLocation == SPAWN_EDGE)
+    {
+        r = radius;
+    }
+    else
+    {
+        // SPAWN_INSIDE: 球体内の均一分布のためのスケーリング（体積に比例）
+        r = radius * pow(generator.Generate1d(), 1.0f / 3.0f);
+    }
 
     return center + dir * r;
 }
 
-// 箱内のランダムな点を生成
-float3 GetRandomPointInBox(RandomGenerator generator, float3 center, float3 size, float3 rotation)
+// 箱型エミッタからのランダム点生成（SpawnLocation 対応）
+// - SPAWN_INSIDE  : 範囲内ランダム
+// - SPAWN_SURFACE : 6 面のいずれかをランダム選択し、1 軸を ±size/2 に固定
+// - SPAWN_EDGE    : 12 辺のいずれかをランダム選択 (1 軸が辺方向、残り 2 軸の符号で 4 通り × 3 軸 = 12 辺)
+float3 GetRandomPointInBox(RandomGenerator generator, float3 center, float3 size, float3 rotation, uint spawnLocation)
 {
-    // ローカル座標系のランダムな点
-    float3 localPoint = (generator.Generate3d() - 0.5f) * size;
+    float3 localPoint;
+
+    if (spawnLocation == SPAWN_SURFACE)
+    {
+        // 6 面: 軸 3 種 × 表裏 2 = 6
+        localPoint = (generator.Generate3d() - 0.5f) * size;
+        uint axis = (uint)(generator.Generate1d() * 3.0f);
+        float sign = (generator.Generate1d() < 0.5f) ? -0.5f : 0.5f;
+        if (axis == 0)      localPoint.x = sign * size.x;
+        else if (axis == 1) localPoint.y = sign * size.y;
+        else                localPoint.z = sign * size.z;
+    }
+    else if (spawnLocation == SPAWN_EDGE)
+    {
+        // 12 辺: 辺方向の軸 3 種 × 残り 2 軸の符号 2x2 = 12
+        uint edgeAxis = (uint)(generator.Generate1d() * 3.0f);
+        float r  = generator.Generate1d() - 0.5f; // 辺方向のパラメータ
+        float s1 = (generator.Generate1d() < 0.5f) ? -0.5f : 0.5f;
+        float s2 = (generator.Generate1d() < 0.5f) ? -0.5f : 0.5f;
+        if (edgeAxis == 0)      localPoint = float3(r, s1, s2);
+        else if (edgeAxis == 1) localPoint = float3(s1, r, s2);
+        else                    localPoint = float3(s1, s2, r);
+        localPoint *= size;
+    }
+    else
+    {
+        // SPAWN_INSIDE: ローカル座標系のランダムな点
+        localPoint = (generator.Generate3d() - 0.5f) * size;
+    }
 
     // 回転行列の適用
     float3x3 rotMatrix = CalculateRotationMatrix(rotation);
@@ -68,9 +122,20 @@ float3 GetRandomPointInBox(RandomGenerator generator, float3 center, float3 size
     return center + rotatedPoint;
 }
 
-// 三角形上のランダムな点を生成
-float3 GetRandomPointOnTriangle(RandomGenerator generator, float3 p0, float3 p1, float3 p2)
+// 三角形エミッタからのランダム点生成（SpawnLocation 対応）
+// - SPAWN_SURFACE / SPAWN_INSIDE : バリ重心 (Inside は 2D 形状で意味なし → Surface にフォールバック)
+// - SPAWN_EDGE                   : 3 辺いずれかランダム選択 + 辺上線形補間
+float3 GetRandomPointOnTriangle(RandomGenerator generator, float3 p0, float3 p1, float3 p2, uint spawnLocation)
 {
+    if (spawnLocation == SPAWN_EDGE)
+    {
+        uint edgeIdx = (uint)(generator.Generate1d() * 3.0f);
+        float t = generator.Generate1d();
+        if (edgeIdx == 0) return lerp(p0, p1, t);
+        if (edgeIdx == 1) return lerp(p1, p2, t);
+        return lerp(p2, p0, t);
+    }
+
     // バリセントリック座標を用いた三角形上のランダムな点
     float r1 = generator.Generate1d();
     float r2 = generator.Generate1d();
@@ -151,7 +216,8 @@ void main(uint3 DTid : SV_DispatchThreadID)
                     particlePosition = GetRandomPointInSphere(
                         generator,
                         gEmitters[emitterIndex].position,
-                        gEmitters[emitterIndex].radius
+                        gEmitters[emitterIndex].radius,
+                        gEmitters[emitterIndex].spawnLocation
                     );
                     break;
 
@@ -160,7 +226,8 @@ void main(uint3 DTid : SV_DispatchThreadID)
                         generator,
                         gEmitters[emitterIndex].position,
                         gEmitters[emitterIndex].boxSize,
-                        gEmitters[emitterIndex].boxRotation
+                        gEmitters[emitterIndex].boxRotation,
+                        gEmitters[emitterIndex].spawnLocation
                     );
                     break;
 
@@ -169,7 +236,8 @@ void main(uint3 DTid : SV_DispatchThreadID)
                         generator,
                         gEmitters[emitterIndex].position + gEmitters[emitterIndex].triangleV1,
                         gEmitters[emitterIndex].position + gEmitters[emitterIndex].triangleV2,
-                        gEmitters[emitterIndex].position + gEmitters[emitterIndex].triangleV3
+                        gEmitters[emitterIndex].position + gEmitters[emitterIndex].triangleV3,
+                        gEmitters[emitterIndex].spawnLocation
                     );
                     break;
 
@@ -185,7 +253,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
             float3 particleScale;
 
             // X方向のスケール
-            if (any(gEmitters[emitterIndex].scaleRangeX != float2(0.0f, 0.0f)))
+            if (ShouldRandomize(gEmitters[emitterIndex].randomFlags, ERAND_SCALE_X, gEmitters[emitterIndex].scaleRangeX))
             {
                 particleScale.x = generator.Generate1d() * (gEmitters[emitterIndex].scaleRangeX.y - gEmitters[emitterIndex].scaleRangeX.x) + gEmitters[emitterIndex].scaleRangeX.x;
             }
@@ -195,7 +263,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
             }
 
             // Y方向のスケール
-            if (any(gEmitters[emitterIndex].scaleRangeY != float2(0.0f, 0.0f)))
+            if (ShouldRandomize(gEmitters[emitterIndex].randomFlags, ERAND_SCALE_Y, gEmitters[emitterIndex].scaleRangeY))
             {
                 particleScale.y = generator.Generate1d() * (gEmitters[emitterIndex].scaleRangeY.y - gEmitters[emitterIndex].scaleRangeY.x) + gEmitters[emitterIndex].scaleRangeY.x;
             }
@@ -210,6 +278,19 @@ void main(uint3 DTid : SV_DispatchThreadID)
             // パーティクルのスケールを設定
             gParticles[particleID].scale.x = particleScale.x;
             gParticles[particleID].scale.y = particleScale.y;
+            gParticles[particleID].scale.z = particleScale.z;
+
+            // 終了時スケール (Stage B-1: スケール縮小消滅)
+            // EFLAG_USE_SCALE_FADE が立っていれば endScaleDefault に向けて補間、
+            // 立っていなければ scale 自身を入れて補間しても変化なし
+            if (gEmitters[emitterIndex].flags & EFLAG_USE_SCALE_FADE)
+            {
+                gParticles[particleID].endScale = gEmitters[emitterIndex].endScaleDefault;
+            }
+            else
+            {
+                gParticles[particleID].endScale = particleScale;
+            }
 
             // 位置設定---------------------------------------------------------------------------------
             gParticles[particleID].translate = particlePosition;
@@ -224,6 +305,10 @@ void main(uint3 DTid : SV_DispatchThreadID)
                 gParticles[particleID].flags |= PFLAG_USE_CURL_NOISE;
             if (gEmitters[emitterIndex].flags & EFLAG_USE_DEPTH_COLLISION)
                 gParticles[particleID].flags |= PFLAG_USE_DEPTH_COLLISION;
+            if (gEmitters[emitterIndex].flags & EFLAG_USE_SCALE_FADE)
+                gParticles[particleID].flags |= PFLAG_SCALE_FADE;
+            if (gEmitters[emitterIndex].flags & EFLAG_USE_ALPHA_FADE)
+                gParticles[particleID].flags |= PFLAG_ALPHA_FADE;
 
             // per-emitter 物理 / Curl Noise パラメーターをパーティクルへキャッシュ
             gParticles[particleID].damping              = gEmitters[emitterIndex].damping;
@@ -250,7 +335,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
             float3 randomVel = (generator.Generate3d() * 2.0f - 1.0f) * 0.1f;
 
             // X方向の速度
-            if (any(gEmitters[emitterIndex].velRangeX != float2(0.0f, 0.0f)))
+            if (ShouldRandomize(gEmitters[emitterIndex].randomFlags, ERAND_VEL_X, gEmitters[emitterIndex].velRangeX))
             {
                 particleVelocity.x = generator.Generate1d() * (gEmitters[emitterIndex].velRangeX.y - gEmitters[emitterIndex].velRangeX.x) + gEmitters[emitterIndex].velRangeX.x;
             }
@@ -260,24 +345,23 @@ void main(uint3 DTid : SV_DispatchThreadID)
             }
 
             // Y方向の速度
-            if (any(gEmitters[emitterIndex].velRangeY != float2(0.0f, 0.0f)))
+            if (ShouldRandomize(gEmitters[emitterIndex].randomFlags, ERAND_VEL_Y, gEmitters[emitterIndex].velRangeY))
             {
                 particleVelocity.y = generator.Generate1d() * (gEmitters[emitterIndex].velRangeY.y - gEmitters[emitterIndex].velRangeY.x) + gEmitters[emitterIndex].velRangeY.x;
             }
-			else
-			{
+            else
+            {
                 particleVelocity.y = randomVel.y;
             }
 
             // Z方向の速度
-            if (any(gEmitters[emitterIndex].velRangeZ != float2(0.0f, 0.0f)))
+            if (ShouldRandomize(gEmitters[emitterIndex].randomFlags, ERAND_VEL_Z, gEmitters[emitterIndex].velRangeZ))
             {
                 particleVelocity.z = generator.Generate1d() * (gEmitters[emitterIndex].velRangeZ.y - gEmitters[emitterIndex].velRangeZ.x) + gEmitters[emitterIndex].velRangeZ.x;
             }
             else
             {
                 particleVelocity.z = randomVel.z;
-
             }
 
             // 正規化
@@ -298,7 +382,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
 
 
             // 寿命設定---------------------------------------------------------------------------------
-            if (any(gEmitters[emitterIndex].lifeTimeRange != float2(0.0f, 0.0f)))
+            if (ShouldRandomize(gEmitters[emitterIndex].randomFlags, ERAND_LIFETIME, gEmitters[emitterIndex].lifeTimeRange))
             {
                 gParticles[particleID].lifeTime = generator.Generate1d() * (gEmitters[emitterIndex].lifeTimeRange.y - gEmitters[emitterIndex].lifeTimeRange.x) + gEmitters[emitterIndex].lifeTimeRange.x;
             }

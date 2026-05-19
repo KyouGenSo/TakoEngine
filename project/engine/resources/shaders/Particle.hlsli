@@ -5,10 +5,17 @@ static const int kMaxParticles = 1000000;
 #define EMITTER_TYPE_BOX 1
 #define EMITTER_TYPE_TRIANGLE 2
 
+// スポーン位置種別 (要望4: 中/外/線)
+#define SPAWN_INSIDE  0  // 中: 範囲内ランダム
+#define SPAWN_SURFACE 1  // 外: 境界面上
+#define SPAWN_EDGE    2  // 線: 頂点を繋ぐエッジ上
+
 // パーティクル用ビットフラグ定数
 #define PFLAG_USE_FORCE_FIELD  (1u << 0)
 #define PFLAG_USE_CURL_NOISE       (1u << 1)
 #define PFLAG_USE_DEPTH_COLLISION  (1u << 2)
+#define PFLAG_SCALE_FADE           (1u << 3) // 寿命進行で scale を endScale に補間
+#define PFLAG_ALPHA_FADE           (1u << 4) // 寿命進行で alpha を 1.0 → 0.0 に補間
 
 // エミッター用ビットフラグ定数
 #define EFLAG_ACTIVE           (1u << 0)
@@ -19,6 +26,17 @@ static const int kMaxParticles = 1000000;
 #define EFLAG_TEMPORARY        (1u << 5)
 #define EFLAG_USE_CURL_NOISE       (1u << 6)
 #define EFLAG_USE_DEPTH_COLLISION  (1u << 7)
+#define EFLAG_USE_SCALE_FADE       (1u << 8) // スケール縮小消滅 (Stage B-1)
+#define EFLAG_USE_ALPHA_FADE       (1u << 9) // alpha フェード (既定 ON、OFF で寿命中は不透明)
+
+// パラメータごとのランダム化フラグ（randomFlags 用）
+// randomFlags == 0 のときは旧来の「range != float2(0,0) ならランダム」自動判定にフォールバック
+#define ERAND_SCALE_X   (1u << 0)
+#define ERAND_SCALE_Y   (1u << 1)
+#define ERAND_VEL_X     (1u << 2)
+#define ERAND_VEL_Y     (1u << 3)
+#define ERAND_VEL_Z     (1u << 4)
+#define ERAND_LIFETIME  (1u << 5)
 
 struct VertexShaderOutput
 {
@@ -31,7 +49,8 @@ struct Particle
 {
     float3 translate;      // 現在位置
     float3 prevPosition;   // 前フレーム位置（Verlet積分用）
-    float3 scale;          // スケール
+    float3 scale;          // 開始時スケール
+    float3 endScale;       // 終了時スケール（PFLAG_SCALE_FADE のときのみ補間先として使用）
     float3 rotate;         // 回転（オイラー角）
     float3 velocity;       // 速度ベクトル
     float4 startColor;     // 開始色（RGBA）
@@ -55,6 +74,8 @@ struct Emitter
     uint   type;              // エミッタータイプ
     uint   flags;             // エミッターフラグ（EFLAG_* ビットフラグ）
     uint   emitterID;         // エミッターID
+    uint   randomFlags;       // パラメータごとのランダム化フラグ（ERAND_*、0 で旧来自動判定）
+    uint   spawnLocation;     // スポーン位置種別（SPAWN_INSIDE / SPAWN_SURFACE / SPAWN_EDGE）
 
     float3 position;          // 中心/基準位置
     float2 scaleRangeX;       // パーティクルXサイズ範囲（最小、最大）
@@ -84,6 +105,9 @@ struct Emitter
     float3 triangleV1;        // 三角形の頂点1（相対座標）
     float3 triangleV2;        // 三角形の頂点2（相対座標）
     float3 triangleV3;        // 三角形の頂点3（相対座標）
+
+    // --- スケール縮小消滅 (Stage B-1) ---
+    float3 endScaleDefault;   // EFLAG_USE_SCALE_FADE 有効時の終端スケール
 
     // --- per-emitter 物理 / Curl Noise パラメーター ---
     float damping;              // 速度減衰係数
