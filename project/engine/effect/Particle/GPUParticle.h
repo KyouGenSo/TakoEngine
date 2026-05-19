@@ -345,6 +345,14 @@ namespace Tako {
     /// </summary>
     SrvManager* m_srvManager_ = nullptr;
 
+  public:
+    /// <summary>
+    /// SrvManager 参照を取得 (Stage D-1: MeshEmitter が Mesh の index SRV を作成するために使用)
+    /// </summary>
+    SrvManager* GetSrvManager() const { return m_srvManager_; }
+
+  private:
+
     /// <summary>
     /// カメラへのポインタ
     /// </summary>

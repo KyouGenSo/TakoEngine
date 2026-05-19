@@ -31,6 +31,7 @@ namespace Tako {
   constexpr uint32_t EFLAG_USE_DEPTH_COLLISION = (1u << 7); ///< 深度バッファ衝突有効
   constexpr uint32_t EFLAG_USE_SCALE_FADE      = (1u << 8); ///< スケール縮小消滅を有効化 (endScaleDefault に補間)
   constexpr uint32_t EFLAG_USE_ALPHA_FADE      = (1u << 9); ///< 寿命進行で alpha フェード (既定 ON、OFF で寿命中は不透明)
+  constexpr uint32_t EFLAG_CONVERGE_TO_TARGET  = (1u << 10); ///< Per-Emitter Target 収束 (Stage C: 全粒子が targetPosition へバネ-ダンパ)
 
   // ===== パラメータごとのランダム化フラグ (randomFlags 用) =====
   /// <remarks>
@@ -50,7 +51,8 @@ namespace Tako {
   enum class EmitterType : uint32_t {
     Sphere = 0,    ///< 球体エミッター
     Box = 1,       ///< 箱型エミッター
-    Triangle = 2   ///< 三角形エミッター
+    Triangle = 2,  ///< 三角形エミッター
+    Mesh = 3       ///< メッシュエミッター (Stage D)
   };
 
   /// <summary>
@@ -131,6 +133,8 @@ namespace Tako {
     float particleRadius;       ///< 衝突判定半径
     float noiseScale;           ///< Curl Noise 空間スケール
     float noiseStrength;        ///< Curl Noise 強度
+    uint32_t emitterId;         ///< 所属エミッター ID (Update.CS で EmitterData を逆引きするため Emit 時に書き込む)
+    Vector3 targetLocal;        ///< Stage D/E: スポーン時のローカル座標 (Mesh エミッタの場合はメッシュローカル、その他は world)
   };
 
   /// <summary>
@@ -268,6 +272,19 @@ namespace Tako {
     // --- スケール縮小消滅 (Stage B-1) ---
     Vector3 endScaleDefault;  ///< EFLAG_USE_SCALE_FADE 有効時の終端スケール（既定 (0,0,0) で完全消失）
 
+    // --- Per-Emitter Target 収束 (Stage C) ---
+    Vector3 targetPosition;     ///< 収束目標座標 (動的バインド時は毎フレーム CPU 側で同期)
+    float convergeStiffness;    ///< バネ係数 k (大きいほど強く target へ引き寄せられる)
+    float convergeDamping;      ///< ダンパ係数 d (大きいほど振動が抑えられる)
+
+    // --- Mesh エミッタ (Stage D) ---
+    uint32_t meshVertexSrvIndex; ///< Mesh 頂点 StructuredBuffer SRV インデックス (未使用なら 0)
+    uint32_t meshIndexSrvIndex;  ///< Mesh インデックス StructuredBuffer SRV インデックス
+    uint32_t meshTriangleCount;  ///< Mesh の三角形数 (indices.size() / 3)
+    Matrix4x4 meshWorld;         ///< Mesh 自体の world 行列 (動的追従用、毎フレーム CPU 側で同期)
+    Vector3 meshAabbMin;         ///< Mesh ローカル AABB 最小 (Stage D-2 SDF UV 変換用)
+    Vector3 meshAabbMax;         ///< Mesh ローカル AABB 最大
+
     // --- per-emitter 物理 / Curl Noise パラメーター ---
     float damping;              ///< 速度減衰係数（0.98-0.99 推奨）
     float collisionRestitution; ///< 反発係数（0-1）
@@ -291,6 +308,12 @@ namespace Tako {
       radius(1.0f), boxSize(), boxRotation(),
       triangleV1(), triangleV2(), triangleV3(),
       endScaleDefault({ .x = 0.0f, .y = 0.0f, .z = 0.0f }),
+      targetPosition({ .x = 0.0f, .y = 0.0f, .z = 0.0f }),
+      convergeStiffness(8.0f), convergeDamping(2.0f),
+      meshVertexSrvIndex(0), meshIndexSrvIndex(0), meshTriangleCount(0),
+      meshWorld(), // 全 0 で初期化 → Mesh エミッタ生成時に identity で上書き
+      meshAabbMin({ .x = 0.0f, .y = 0.0f, .z = 0.0f }),
+      meshAabbMax({ .x = 0.0f, .y = 0.0f, .z = 0.0f }),
       damping(0.99f), collisionRestitution(0.5f), particleRadius(0.5f),
       noiseScale(0.05f), noiseStrength(0.001f)
     {}

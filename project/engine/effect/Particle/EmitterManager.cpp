@@ -1022,6 +1022,12 @@ namespace Tako {
     // スポーン位置種別 (Stage B-2)
     json["spawnLocation"] = static_cast<uint32_t>(emitter->GetSpawnLocation());
 
+    // Per-Emitter Target 収束 (Stage C)
+    json["convergeToTarget"] = emitter->IsConvergeToTarget();
+    json["targetPosition"] = { emitter->GetTargetPosition().x, emitter->GetTargetPosition().y, emitter->GetTargetPosition().z };
+    json["convergeStiffness"] = emitter->GetConvergeStiffness();
+    json["convergeDamping"] = emitter->GetConvergeDamping();
+
     // 色パラメータ
     json["startColor"] = { emitter->GetStartColor().x, emitter->GetStartColor().y, emitter->GetStartColor().z, emitter->GetStartColor().w };
     json["endColor"] = { emitter->GetEndColor().x, emitter->GetEndColor().y, emitter->GetEndColor().z, emitter->GetEndColor().w };
@@ -1135,6 +1141,18 @@ namespace Tako {
     // スポーン位置種別 (Stage B-2)。旧 JSON は欠落 → Inside (現状挙動) のまま
     if (json.contains("spawnLocation")) {
       emitter->SetSpawnLocation(static_cast<SpawnLocation>(json["spawnLocation"].get<uint32_t>()));
+    }
+
+    // Per-Emitter Target 収束 (Stage C)。旧 JSON は欠落 → フラグ OFF (旧挙動互換)
+    if (json.contains("targetPosition")) {
+      Vector3 tp = { json["targetPosition"][0], json["targetPosition"][1], json["targetPosition"][2] };
+      emitter->SetTargetPosition(tp);
+    }
+    if (json.contains("convergeStiffness") && json.contains("convergeDamping")) {
+      emitter->SetConvergeParameters(json["convergeStiffness"], json["convergeDamping"]);
+    }
+    if (json.contains("convergeToTarget")) {
+      emitter->SetConvergeToTarget(json["convergeToTarget"]);
     }
 
     if (json.contains("useDepthCollision")) {

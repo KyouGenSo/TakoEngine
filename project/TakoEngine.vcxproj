@@ -147,6 +147,7 @@
     <ClCompile Include="engine\effect\Particle\ForceFieldManager.cpp" />
     <ClCompile Include="engine\effect\Particle\GPUParticle.cpp" />
     <ClCompile Include="engine\effect\Particle\GPUParticleEmitter.cpp" />
+    <ClCompile Include="engine\effect\Particle\MeshEmitter.cpp" />
     <ClCompile Include="engine\effect\Particle\SphereEmitter.cpp" />
     <ClCompile Include="engine\effect\Particle\TriangleEmitter.cpp" />
     <ClCompile Include="engine\effect\PostEffect\Bloom.cpp" />
@@ -231,6 +232,7 @@
     <ClInclude Include="engine\effect\Particle\ForceFieldManager.h" />
     <ClInclude Include="engine\effect\Particle\GPUParticle.h" />
     <ClInclude Include="engine\effect\Particle\GPUParticleEmitter.h" />
+    <ClInclude Include="engine\effect\Particle\MeshEmitter.h" />
     <ClInclude Include="engine\effect\Particle\ParticleStruct.h" />
     <ClInclude Include="engine\effect\Particle\SphereEmitter.h" />
     <ClInclude Include="engine\effect\Particle\TriangleEmitter.h" />

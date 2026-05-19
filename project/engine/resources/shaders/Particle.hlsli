@@ -4,6 +4,7 @@ static const int kMaxParticles = 1000000;
 #define EMITTER_TYPE_SPHERE 0
 #define EMITTER_TYPE_BOX 1
 #define EMITTER_TYPE_TRIANGLE 2
+#define EMITTER_TYPE_MESH 3
 
 // スポーン位置種別 (要望4: 中/外/線)
 #define SPAWN_INSIDE  0  // 中: 範囲内ランダム
@@ -28,6 +29,7 @@ static const int kMaxParticles = 1000000;
 #define EFLAG_USE_DEPTH_COLLISION  (1u << 7)
 #define EFLAG_USE_SCALE_FADE       (1u << 8) // スケール縮小消滅 (Stage B-1)
 #define EFLAG_USE_ALPHA_FADE       (1u << 9) // alpha フェード (既定 ON、OFF で寿命中は不透明)
+#define EFLAG_CONVERGE_TO_TARGET   (1u << 10) // Per-Emitter Target 収束 (Stage C)
 
 // パラメータごとのランダム化フラグ（randomFlags 用）
 // randomFlags == 0 のときは旧来の「range != float2(0,0) ならランダム」自動判定にフォールバック
@@ -66,6 +68,8 @@ struct Particle
     float particleRadius;       // 衝突判定半径
     float noiseScale;           // Curl Noise 空間スケール
     float noiseStrength;        // Curl Noise 強度
+    uint  emitterId;            // 所属エミッター ID (Update.CS で逆引き、Stage C/E)
+    float3 targetLocal;         // Stage D/E: スポーン時のローカル座標 (Mesh エミッタの場合はメッシュローカル)
 };
 
 // エミッター共通構造体
@@ -108,6 +112,19 @@ struct Emitter
 
     // --- スケール縮小消滅 (Stage B-1) ---
     float3 endScaleDefault;   // EFLAG_USE_SCALE_FADE 有効時の終端スケール
+
+    // --- Per-Emitter Target 収束 (Stage C) ---
+    float3 targetPosition;    // 収束目標座標 (CPU 側で毎フレーム同期)
+    float  convergeStiffness; // バネ係数 k
+    float  convergeDamping;   // ダンパ係数 d
+
+    // --- Mesh エミッタ (Stage D) ---
+    uint     meshVertexSrvIndex; // Mesh 頂点 SRV (シェーダ内 register bind は固定スロット使用)
+    uint     meshIndexSrvIndex;
+    uint     meshTriangleCount;
+    float4x4 meshWorld;
+    float3   meshAabbMin;
+    float3   meshAabbMax;
 
     // --- per-emitter 物理 / Curl Noise パラメーター ---
     float damping;              // 速度減衰係数

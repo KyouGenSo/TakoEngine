@@ -46,7 +46,8 @@ namespace Tako {
     /// エミッターの射出更新
     /// </summary>
     /// <param name="deltaTime">経過時間（秒）</param>
-    void UpdateEmission(float deltaTime);
+    /// <remarks>派生クラスが追加の同期処理を行えるよう virtual。基底実装で active/emit タイマーと Stage C 動的同期を実行する</remarks>
+    virtual void UpdateEmission(float deltaTime);
 
     /// <summary>
     /// エミッターの位置を設定
@@ -237,6 +238,68 @@ namespace Tako {
     /// スポーン位置種別を取得 (Stage B-2)
     /// </summary>
     [[nodiscard]] SpawnLocation GetSpawnLocation() const { return static_cast<SpawnLocation>(data_.spawnLocation); }
+
+    /// <summary>
+    /// Per-Emitter Target 収束を有効化／無効化 (Stage C)
+    /// </summary>
+    /// <param name="enable">有効化する場合 true</param>
+    /// <remarks>
+    /// 有効時は所属パーティクル全員が targetPosition へバネ-ダンパで引き寄せられる。
+    /// 動く目標を追従させたい場合は <c>BindTargetPosition()</c> でポインタを渡すか、
+    /// 静的目標なら <c>SetTargetPosition()</c> を使う。
+    /// </remarks>
+    void SetConvergeToTarget(bool enable);
+
+    /// <summary>
+    /// 収束目標座標を静的に設定 (Stage C)
+    /// </summary>
+    /// <param name="position">目標ワールド座標</param>
+    /// <remarks>
+    /// <c>BindTargetPosition()</c> で動的バインドされている場合は次の UpdateEmission で上書きされる。
+    /// </remarks>
+    void SetTargetPosition(const Vector3& position);
+
+    /// <summary>
+    /// 収束目標座標を動的にバインド (Stage C)
+    /// </summary>
+    /// <param name="pPosition">毎フレーム読み取られる Vector3 へのポインタ。ライフタイム管理は呼び出し側責務</param>
+    /// <remarks>
+    /// 非 nullptr のとき、<c>UpdateEmission()</c> 内で毎フレーム <c>*pPosition</c> を <c>data_.targetPosition</c> に同期する。
+    /// 解除するには <c>UnbindTargetPosition()</c> または <c>BindTargetPosition(nullptr)</c>。
+    /// </remarks>
+    void BindTargetPosition(const Vector3* pPosition);
+
+    /// <summary>
+    /// 動的バインドを解除 (Stage C)
+    /// </summary>
+    void UnbindTargetPosition() { boundTargetPosition_ = nullptr; }
+
+    /// <summary>
+    /// 収束のバネ係数とダンパ係数を設定 (Stage C)
+    /// </summary>
+    /// <param name="stiffness">バネ係数 k (大きいほど強く引き寄せる)</param>
+    /// <param name="damping">ダンパ係数 d (大きいほど振動を抑える)</param>
+    void SetConvergeParameters(float stiffness, float damping);
+
+    /// <summary>
+    /// Per-Emitter Target 収束が有効かを取得 (Stage C)
+    /// </summary>
+    [[nodiscard]] bool IsConvergeToTarget() const { return (data_.flags & EFLAG_CONVERGE_TO_TARGET) != 0; }
+
+    /// <summary>
+    /// 現在の収束目標座標を取得 (Stage C)
+    /// </summary>
+    [[nodiscard]] const Vector3& GetTargetPosition() const { return data_.targetPosition; }
+
+    /// <summary>
+    /// 収束のバネ係数を取得 (Stage C)
+    /// </summary>
+    [[nodiscard]] float GetConvergeStiffness() const { return data_.convergeStiffness; }
+
+    /// <summary>
+    /// 収束のダンパ係数を取得 (Stage C)
+    /// </summary>
+    [[nodiscard]] float GetConvergeDamping() const { return data_.convergeDamping; }
 
     /// <summary>
     /// アルファフェードを有効化／無効化 (Stage B-1 補完)
@@ -507,6 +570,8 @@ namespace Tako {
     GPUParticle* particleSystem_;    ///< GPU パーティクルシステムへの参照（パーティクル生成要求の送信先）
 
     EmitterData data_;               ///< エミッターの全設定データ（位置、色、速度範囲、寿命など）
+
+    const Vector3* boundTargetPosition_ = nullptr; ///< Stage C: 動的バインド用 Vector3 ポインタ (非所有、毎フレーム UpdateEmission で同期)
   };
 
 } // namespace Tako

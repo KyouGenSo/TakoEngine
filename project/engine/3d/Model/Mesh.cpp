@@ -41,6 +41,21 @@ namespace Tako {
     CreateIndexData();
     CreateMaterialData();
     CreateTransformation();
+
+    // Stage D-1: ローカル AABB を計算 (Mesh エミッタの Inside/Surface/Edge スポーンで参照)
+    if (!vertices_.empty()) {
+      aabbLocalMin_.x = aabbLocalMax_.x = vertices_[0].position.x;
+      aabbLocalMin_.y = aabbLocalMax_.y = vertices_[0].position.y;
+      aabbLocalMin_.z = aabbLocalMax_.z = vertices_[0].position.z;
+      for (const auto& v : vertices_) {
+        if (v.position.x < aabbLocalMin_.x) aabbLocalMin_.x = v.position.x;
+        if (v.position.y < aabbLocalMin_.y) aabbLocalMin_.y = v.position.y;
+        if (v.position.z < aabbLocalMin_.z) aabbLocalMin_.z = v.position.z;
+        if (v.position.x > aabbLocalMax_.x) aabbLocalMax_.x = v.position.x;
+        if (v.position.y > aabbLocalMax_.y) aabbLocalMax_.y = v.position.y;
+        if (v.position.z > aabbLocalMax_.z) aabbLocalMax_.z = v.position.z;
+      }
+    }
   }
 
   void Mesh::Draw()

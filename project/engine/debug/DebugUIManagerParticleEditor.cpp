@@ -320,6 +320,28 @@ namespace Tako {
               }
             }
 
+            // Per-Emitter Target 収束 (Stage C)
+            if (ImGui::CollapsingHeader("Target Convergence")) {
+              bool convergeOn = emitter->IsConvergeToTarget();
+              if (ImGui::Checkbox("Converge To Target", &convergeOn)) {
+                emitter->SetConvergeToTarget(convergeOn);
+              }
+              ImGui::TextDisabled("Spring-damper force pulls all particles to targetPosition");
+              Vector3 targetPos = emitter->GetTargetPosition();
+              if (ImGui::DragFloat3("Target Position", &targetPos.x, 0.1f)) {
+                emitter->SetTargetPosition(targetPos);
+              }
+              float stiffness = emitter->GetConvergeStiffness();
+              if (ImGui::DragFloat("Stiffness (k)", &stiffness, 0.1f, 0.0f, 100.0f)) {
+                emitter->SetConvergeParameters(stiffness, emitter->GetConvergeDamping());
+              }
+              float damping = emitter->GetConvergeDamping();
+              if (ImGui::DragFloat("Damping (d)", &damping, 0.05f, 0.0f, 20.0f)) {
+                emitter->SetConvergeParameters(emitter->GetConvergeStiffness(), damping);
+              }
+              ImGui::TextDisabled("Use BindTargetPosition(const Vector3*) in code for dynamic tracking.");
+            }
+
             // 消滅設定 (Stage B-1 / B-1 補完): alpha フェードとスケール縮小は独立フラグ
             if (ImGui::CollapsingHeader("Death Style")) {
               // アルファフェード

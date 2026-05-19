@@ -183,6 +183,26 @@ namespace Tako {
     UINT GetVertexCount() { return static_cast<UINT>(vertices_.size()); }
 
     /// <summary>
+    /// インデックスバッファのリソースを取得 (Stage D-1: GPU パーティクルの Mesh エミッタで SRV 化するために使用)
+    /// </summary>
+    ID3D12Resource* GetIndexResource() { return indexResource_.Get(); }
+
+    /// <summary>
+    /// インデックス数を取得 (三角形数 = GetIndexCount() / 3)
+    /// </summary>
+    UINT GetIndexCount() const { return static_cast<UINT>(indices_.size()); }
+
+    /// <summary>
+    /// ローカル座標系での AABB 最小値を取得 (Stage D-1/D-2)
+    /// </summary>
+    const Vector3& GetAABBLocalMin() const { return aabbLocalMin_; }
+
+    /// <summary>
+    /// ローカル座標系での AABB 最大値を取得 (Stage D-1/D-2)
+    /// </summary>
+    const Vector3& GetAABBLocalMax() const { return aabbLocalMax_; }
+
+    /// <summary>
     /// フレーム開始時にスキニング状態をリセット
     /// </summary>
     void ResetSkinningState() { skinningComputedThisFrame_ = false; }
@@ -267,6 +287,10 @@ namespace Tako {
     SkinningInfo* skinningInfoData_ = nullptr; ///< スキニング情報データへのポインタ
 
     bool skinningComputedThisFrame_ = false; ///< スキニング済みフラグ（フレーム内で1回だけ実行）
+
+    // Stage D-1: GPU パーティクルの Mesh エミッタ用 AABB (頂点ローカル座標系)
+    Vector3 aabbLocalMin_{ .x = 0.0f, .y = 0.0f, .z = 0.0f };
+    Vector3 aabbLocalMax_{ .x = 0.0f, .y = 0.0f, .z = 0.0f };
   };
 
 } // namespace Tako

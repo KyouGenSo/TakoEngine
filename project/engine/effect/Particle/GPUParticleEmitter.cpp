@@ -36,6 +36,11 @@ namespace Tako {
 
   void GPUParticleEmitter::UpdateEmission(float deltaTime)
   {
+    // Stage C: 動的バインドされた目標座標を毎フレーム同期 (active/inactive に関わらず実行)
+    if (boundTargetPosition_) {
+      data_.targetPosition = *boundTargetPosition_;
+    }
+
     // 非アクティブならスキップ
     if (!(data_.flags & EFLAG_ACTIVE)) {
       data_.flags &= ~EFLAG_EMITTING;
@@ -209,6 +214,33 @@ namespace Tako {
   void GPUParticleEmitter::SetAlphaFade(bool enable)
   {
     if (enable) data_.flags |= EFLAG_USE_ALPHA_FADE; else data_.flags &= ~EFLAG_USE_ALPHA_FADE;
+  }
+
+  void GPUParticleEmitter::SetConvergeToTarget(bool enable)
+  {
+    if (enable) data_.flags |= EFLAG_CONVERGE_TO_TARGET; else data_.flags &= ~EFLAG_CONVERGE_TO_TARGET;
+  }
+
+  void GPUParticleEmitter::SetTargetPosition(const Vector3& position)
+  {
+    data_.targetPosition = position;
+    // 静的指定なのでバインドは解除する
+    boundTargetPosition_ = nullptr;
+  }
+
+  void GPUParticleEmitter::BindTargetPosition(const Vector3* pPosition)
+  {
+    boundTargetPosition_ = pPosition;
+    // バインド時点で即座に一度同期 (UpdateEmission を待たずに最新値を反映)
+    if (pPosition) {
+      data_.targetPosition = *pPosition;
+    }
+  }
+
+  void GPUParticleEmitter::SetConvergeParameters(float stiffness, float damping)
+  {
+    data_.convergeStiffness = stiffness;
+    data_.convergeDamping = damping;
   }
 
   void GPUParticleEmitter::SetScaleFade(bool enable, const Vector3& endScale)

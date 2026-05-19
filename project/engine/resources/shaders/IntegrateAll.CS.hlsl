@@ -11,6 +11,7 @@ RWStructuredBuffer<uint> gFreeList : register(u2);
 
 StructuredBuffer<ForceField> gForceFields : register(t0);
 Texture2D<float> gDepthBuffer : register(t1);
+StructuredBuffer<Emitter> gEmitters : register(t2); // Stage C/E: emitter 逆引き
 
 SamplerState gDepthSampler : register(s0);
 
@@ -49,6 +50,20 @@ void main(uint3 DTid : SV_DispatchThreadID)
         for (uint i = 0; i < forceFieldCount; i++)
         {
             acceleration += EvaluateForceField(gForceFields[i], currentPos);
+        }
+    }
+
+    // Stage C: Per-Emitter Target 収束 (バネ-ダンパ)
+    // 所属エミッターのフラグを引き、EFLAG_CONVERGE_TO_TARGET が立っていれば targetPosition へ向かう力を加算
+    {
+        uint eid = gParticles[particleIndex].emitterId;
+        if (eid < gPerFrame.activeEmitterCount &&
+            (gEmitters[eid].flags & EFLAG_CONVERGE_TO_TARGET))
+        {
+            float3 toTarget = gEmitters[eid].targetPosition - currentPos;
+            float3 vel = (currentPos - prevPos) / max(dt, 0.0001f);
+            acceleration += gEmitters[eid].convergeStiffness * toTarget
+                          - gEmitters[eid].convergeDamping * vel;
         }
     }
 
