@@ -7,7 +7,7 @@ namespace Tako {
   class Mesh;
 
   /// <summary>
-  /// メッシュをスポーン形状として使うエミッター (Stage D-1)
+  /// メッシュをスポーン形状として使うエミッター
   /// </summary>
   /// <remarks>
   /// Mesh の頂点バッファとインデックスバッファを SRV 経由でシェーダに渡し、
@@ -57,7 +57,7 @@ namespace Tako {
     void SetMeshWorld(const Matrix4x4& world);
 
     /// <summary>
-    /// メッシュの世界行列を動的にバインド (Stage D-1)
+    /// メッシュの世界行列を動的にバインド
     /// </summary>
     /// <param name="worldPtr">毎フレーム読み取られる Matrix4x4 へのポインタ。ライフタイム管理は呼び出し側責務</param>
     /// <remarks>

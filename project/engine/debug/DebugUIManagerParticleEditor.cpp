@@ -214,7 +214,7 @@ namespace Tako {
 
             // 範囲設定
             if (ImGui::CollapsingHeader("Range Settings")) {
-              // Stage A: パラメータごとのランダム化フラグ
+              // パラメータごとのランダム化フラグ
               // randomFlags == 0 のときは旧来の「range != (0,0) で自動判定」が効くので、
               // チェックボックスはあくまで「明示的に Override したい」場合のための UI。
               uint32_t randomFlags = emitter->GetRandomFlags();
@@ -305,7 +305,7 @@ namespace Tako {
               }
             }
 
-            // スポーン位置種別 (Stage B-2: 中/外/線)
+            // スポーン位置種別 (中/外/線)
             if (ImGui::CollapsingHeader("Spawn Location")) {
               static const char* kSpawnLocationLabels[] = { "Inside", "Surface", "Edge" };
               int currentLoc = static_cast<int>(emitter->GetSpawnLocation());
@@ -322,7 +322,7 @@ namespace Tako {
               }
             }
 
-            // Per-Particle Spawn 拘束 (Stage E)
+            // Per-Particle Spawn 拘束
             if (ImGui::CollapsingHeader("Spawn Lock (per-particle)")) {
               bool spawnLockOn = emitter->IsSpawnLock();
               float lockK = emitter->GetLockStiffness();
@@ -340,7 +340,7 @@ namespace Tako {
               }
             }
 
-            // Per-Emitter Target 収束 (Stage C)
+            // Per-Emitter Target 収束
             if (ImGui::CollapsingHeader("Target Convergence")) {
               bool convergeOn = emitter->IsConvergeToTarget();
               if (ImGui::Checkbox("Converge To Target", &convergeOn)) {
@@ -362,7 +362,7 @@ namespace Tako {
               ImGui::TextDisabled("Use BindTargetPosition(const Vector3*) in code for dynamic tracking.");
             }
 
-            // 消滅設定 (Stage B-1 / B-1 補完): alpha フェードとスケール縮小は独立フラグ
+            // 消滅設定: alpha フェードとスケール縮小は独立フラグ
             if (ImGui::CollapsingHeader("Death Style")) {
               // アルファフェード
               bool useAlphaFade = emitter->IsUseAlphaFade();
@@ -420,7 +420,7 @@ namespace Tako {
                 }
               }
               else if (auto meshEmitter = std::dynamic_pointer_cast<MeshEmitter>(emitter)) {
-                // Stage D-1: Mesh エミッタの情報表示 (Mesh ポインタは実行時参照なので read-only)
+                // Mesh エミッタの情報表示 (Mesh ポインタは実行時参照なので read-only)
                 const auto& edata = meshEmitter->GetData();
                 ImGui::Text("Triangle Count: %u", edata.meshTriangleCount);
                 ImGui::Text("AABB Min: (%.2f, %.2f, %.2f)", edata.meshAabbMin.x, edata.meshAabbMin.y, edata.meshAabbMin.z);

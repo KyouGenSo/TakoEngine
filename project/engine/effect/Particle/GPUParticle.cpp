@@ -172,7 +172,7 @@ namespace Tako {
       // エミッターリストの SRV の設定
       m_srvManager_->SetComputeRootDescriptorTable(1, emitterSrvIndex_);
 
-      // Stage D-1: Mesh エミッタが activeEmitters_ に存在する場合、その vertex/index SRV をバインド
+      // Mesh エミッタが activeEmitters_ に存在する場合、その vertex/index SRV をバインド
       // 初期実装は同時 1 個のみ対応 (最初に見つかった Mesh エミッタを採用)
       uint32_t meshVtxSrvIndex = 0;
       uint32_t meshIdxSrvIndex = 0;
@@ -237,7 +237,7 @@ namespace Tako {
     // PhysicsParams の CBV の設定 (b1)
     commandList->SetComputeRootConstantBufferView(6, physicsParamsResource_->GetGPUVirtualAddress());
 
-    // Emitter SRV の設定 (t2) — Stage C: IntegrateAll が targetPosition 等を参照
+    // Emitter SRV の設定 (t2) — IntegrateAll が targetPosition 等を参照
     m_srvManager_->SetComputeRootDescriptorTable(7, emitterSrvIndex_);
 
     // ディスパッチ（256スレッド/グループ × ceil(1M/256) = 3907グループ）
@@ -724,7 +724,7 @@ namespace Tako {
     descriptorRange_Emitter[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRV を使う
     descriptorRange_Emitter[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
 
-    // Stage D-1: Mesh エミッタ用の頂点/インデックス SRV (t10, t11 の固定スロット)
+    // Mesh エミッタ用の頂点/インデックス SRV (t10, t11 の固定スロット)
     D3D12_DESCRIPTOR_RANGE descriptorRange_MeshVertices[1] = {};
     descriptorRange_MeshVertices[0].BaseShaderRegister = 10; // t10
     descriptorRange_MeshVertices[0].NumDescriptors = 1;
@@ -737,7 +737,7 @@ namespace Tako {
     descriptorRange_MeshIndices[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
     descriptorRange_MeshIndices[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-    // RootParameter の設定。Stage D-1 で Mesh SRV 2 つを追加し 5 → 7 に拡張
+    // RootParameter: Particle/FreeListIndex/FreeList UAV + Emitter/MeshVtx/MeshIdx SRV + PerFrame CBV = 7
     D3D12_ROOT_PARAMETER rootParameters[7] = {};
     // Particle
     rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
@@ -768,13 +768,13 @@ namespace Tako {
     rootParameters[4].DescriptorTable.pDescriptorRanges = descriptorRange_FreeList; // ディスクリプタレンジを設定
     rootParameters[4].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange_FreeList); // レンジの数
 
-    // Stage D-1: Mesh Vertex SRV (t10) - Mesh エミッタの頂点バッファ
+    // Mesh Vertex SRV (t10) - Mesh エミッタの頂点バッファ
     rootParameters[5].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
     rootParameters[5].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
     rootParameters[5].DescriptorTable.pDescriptorRanges = descriptorRange_MeshVertices;
     rootParameters[5].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange_MeshVertices);
 
-    // Stage D-1: Mesh Index SRV (t11) - Mesh エミッタのインデックスバッファ
+    // Mesh Index SRV (t11) - Mesh エミッタのインデックスバッファ
     rootParameters[6].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
     rootParameters[6].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
     rootParameters[6].DescriptorTable.pDescriptorRanges = descriptorRange_MeshIndices;
@@ -1012,14 +1012,14 @@ namespace Tako {
     rangeDepthBuffer[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
     rangeDepthBuffer[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-    // Stage C: Emitter SRV (t2) — IntegrateAll で targetPosition/convergeStiffness 等を逆引きするため
+    // Emitter SRV (t2) — IntegrateAll で targetPosition/convergeStiffness 等を逆引き
     D3D12_DESCRIPTOR_RANGE rangeEmitters[1] = {};
     rangeEmitters[0].BaseShaderRegister = 2; // t2
     rangeEmitters[0].NumDescriptors = 1;
     rangeEmitters[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
     rangeEmitters[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-    // RootParameter: 3 UAV + 3 SRV + 2 CBV = 8 (Stage C で Emitter SRV を追加)
+    // RootParameter: 3 UAV + 3 SRV + 2 CBV = 8
     D3D12_ROOT_PARAMETER rootParameters[8] = {};
 
     // [0] Particles UAV (u0)
@@ -1062,7 +1062,7 @@ namespace Tako {
     rootParameters[6].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
     rootParameters[6].Descriptor.ShaderRegister = 1;
 
-    // [7] Emitter SRV (t2) — Stage C: Target 収束など emitter 設定の逆引き用
+    // [7] Emitter SRV (t2) — emitter 設定の逆引き用
     rootParameters[7].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
     rootParameters[7].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
     rootParameters[7].DescriptorTable.pDescriptorRanges = rangeEmitters;

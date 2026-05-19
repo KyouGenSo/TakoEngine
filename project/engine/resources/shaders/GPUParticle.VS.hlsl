@@ -35,7 +35,7 @@ VertexShaderOutput main(VertexShaderInput input, uint instanceID : SV_InstanceID
         worldMat[1].xyz = right * s + up * c;
     }
     
-    // パーティクルのスケールを適用 (Stage B-1: SCALE_FADE フラグがあれば endScale へ補間)
+    // パーティクルのスケールを適用 (SCALE_FADE フラグがあれば endScale へ補間)
     float lifeRatioForScale = saturate(particle.currentTime / max(particle.lifeTime, 0.0001f));
     float3 currentScale = (particle.flags & PFLAG_SCALE_FADE)
         ? lerp(particle.scale, particle.endScale, lifeRatioForScale)

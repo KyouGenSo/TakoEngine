@@ -360,6 +360,9 @@
     <ClCompile Include="engine\ai\BehaviorTree\Editor\BehaviorTreeEditor.cpp">
       <Filter>ai\BehaviorTree\Editor</Filter>
     </ClCompile>
+    <ClCompile Include="engine\effect\Particle\MeshEmitter.cpp">
+      <Filter>effect\Particle\Emitter</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\math\Matrix4x4.h">
@@ -664,6 +667,9 @@
     </ClInclude>
     <ClInclude Include="engine\ai\BehaviorTree\Editor\BehaviorTreeEditor.h">
       <Filter>ai\BehaviorTree\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\effect\Particle\MeshEmitter.h">
+      <Filter>effect\Particle\Emitter</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

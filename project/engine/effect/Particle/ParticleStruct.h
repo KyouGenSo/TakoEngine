@@ -31,8 +31,8 @@ namespace Tako {
   constexpr uint32_t EFLAG_USE_DEPTH_COLLISION = (1u << 7); ///< 深度バッファ衝突有効
   constexpr uint32_t EFLAG_USE_SCALE_FADE      = (1u << 8); ///< スケール縮小消滅を有効化 (endScaleDefault に補間)
   constexpr uint32_t EFLAG_USE_ALPHA_FADE      = (1u << 9); ///< 寿命進行で alpha フェード (既定 ON、OFF で寿命中は不透明)
-  constexpr uint32_t EFLAG_CONVERGE_TO_TARGET  = (1u << 10); ///< Per-Emitter Target 収束 (Stage C: 全粒子が targetPosition へバネ-ダンパ)
-  constexpr uint32_t EFLAG_LOCK_TO_SPAWN       = (1u << 11); ///< Per-Particle Spawn 拘束 (Stage E: 粒子ごとに targetLocal へバネ-ダンパ)
+  constexpr uint32_t EFLAG_CONVERGE_TO_TARGET  = (1u << 10); ///< Per-Emitter Target 収束 (全粒子が targetPosition へバネ-ダンパ)
+  constexpr uint32_t EFLAG_LOCK_TO_SPAWN       = (1u << 11); ///< Per-Particle Spawn 拘束 (粒子ごとに targetLocal へバネ-ダンパ)
 
   // ===== パラメータごとのランダム化フラグ (randomFlags 用) =====
   /// <remarks>
@@ -53,7 +53,7 @@ namespace Tako {
     Sphere = 0,    ///< 球体エミッター
     Box = 1,       ///< 箱型エミッター
     Triangle = 2,  ///< 三角形エミッター
-    Mesh = 3       ///< メッシュエミッター (Stage D)
+    Mesh = 3       ///< メッシュエミッター
   };
 
   /// <summary>
@@ -64,7 +64,7 @@ namespace Tako {
   ///  - Sphere: Inside / Surface のみ (Edge は頂点未定義のため Surface へフォールバック)
   ///  - Box: 3 種すべて対応 (Inside=範囲内、Surface=6面、Edge=12辺)
   ///  - Triangle: Surface / Edge のみ (Inside は 2D 形状で意味なし → Surface へフォールバック)
-  ///  - Mesh: Stage D で対応 (Surface=面、Edge=辺、Inside=SDF Rejection)
+  ///  - Mesh: Surface=面、Edge=辺、Inside=SDF Rejection
   /// </remarks>
   enum class SpawnLocation : uint32_t {
     Inside  = 0,  ///< 中 (範囲内ランダム): 現状の挙動
@@ -135,7 +135,7 @@ namespace Tako {
     float noiseScale;           ///< Curl Noise 空間スケール
     float noiseStrength;        ///< Curl Noise 強度
     uint32_t emitterId;         ///< 所属エミッター ID (Update.CS で EmitterData を逆引きするため Emit 時に書き込む)
-    Vector3 targetLocal;        ///< Stage D/E: スポーン時のローカル座標 (Mesh エミッタの場合はメッシュローカル、その他は world)
+    Vector3 targetLocal;        ///< スポーン時の座標 (Mesh ならメッシュローカル、それ以外は world)
   };
 
   /// <summary>
@@ -270,23 +270,23 @@ namespace Tako {
     Vector3 triangleV2;       ///< 三角形エミッター用：頂点2
     Vector3 triangleV3;       ///< 三角形エミッター用：頂点3
 
-    // --- スケール縮小消滅 (Stage B-1) ---
+    // --- スケール縮小消滅 ---
     Vector3 endScaleDefault;  ///< EFLAG_USE_SCALE_FADE 有効時の終端スケール（既定 (0,0,0) で完全消失）
 
-    // --- Per-Emitter Target 収束 (Stage C) ---
+    // --- Per-Emitter Target 収束 ---
     Vector3 targetPosition;     ///< 収束目標座標 (動的バインド時は毎フレーム CPU 側で同期)
     float convergeStiffness;    ///< バネ係数 k (大きいほど強く target へ引き寄せられる)
     float convergeDamping;      ///< ダンパ係数 d (大きいほど振動が抑えられる)
 
-    // --- Mesh エミッタ (Stage D) ---
+    // --- Mesh エミッタ ---
     uint32_t meshVertexSrvIndex; ///< Mesh 頂点 StructuredBuffer SRV インデックス (未使用なら 0)
     uint32_t meshIndexSrvIndex;  ///< Mesh インデックス StructuredBuffer SRV インデックス
     uint32_t meshTriangleCount;  ///< Mesh の三角形数 (indices.size() / 3)
     Matrix4x4 meshWorld;         ///< Mesh 自体の world 行列 (動的追従用、毎フレーム CPU 側で同期)
-    Vector3 meshAabbMin;         ///< Mesh ローカル AABB 最小 (Stage D-2 SDF UV 変換用)
+    Vector3 meshAabbMin;         ///< Mesh ローカル AABB 最小 (SDF UV 変換にも使用)
     Vector3 meshAabbMax;         ///< Mesh ローカル AABB 最大
 
-    // --- Per-Particle Spawn 拘束 (Stage E) ---
+    // --- Per-Particle Spawn 拘束 ---
     float lockStiffness;         ///< 拘束バネ係数 k (粒子ごと targetLocal への引き寄せ力)
     float lockDamping;           ///< 拘束ダンパ係数 d
 

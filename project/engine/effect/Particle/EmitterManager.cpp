@@ -87,7 +87,7 @@ namespace Tako {
       RemoveEmitter(name);
     }
 
-    // Mesh エミッター作成 (Stage D-1)
+    // Mesh エミッター作成
     auto emitter = std::make_shared<MeshEmitter>(particleSystem_, mesh, count, frequency);
 
     // GPUParticle にエミッターを登録
@@ -1031,26 +1031,26 @@ namespace Tako {
     json["velRangeZ"] = { emitter->GetVelRangeZ().x, emitter->GetVelRangeZ().y };
     json["lifeTimeRange"] = { emitter->GetLifeTimeRange().x, emitter->GetLifeTimeRange().y };
 
-    // パラメータごとのランダム化フラグ (Stage A)
+    // パラメータごとのランダム化フラグ
     json["randomFlags"] = emitter->GetRandomFlags();
 
-    // アルファフェード (Stage B-1 補完): 独立フラグ
+    // アルファフェード (独立フラグ)
     json["useAlphaFade"] = emitter->IsUseAlphaFade();
 
-    // スケール縮小消滅 (Stage B-1)
+    // スケール縮小消滅
     json["useScaleFade"] = emitter->IsUseScaleFade();
     json["endScaleDefault"] = { emitter->GetEndScaleDefault().x, emitter->GetEndScaleDefault().y, emitter->GetEndScaleDefault().z };
 
-    // スポーン位置種別 (Stage B-2)
+    // スポーン位置種別
     json["spawnLocation"] = static_cast<uint32_t>(emitter->GetSpawnLocation());
 
-    // Per-Emitter Target 収束 (Stage C)
+    // Per-Emitter Target 収束
     json["convergeToTarget"] = emitter->IsConvergeToTarget();
     json["targetPosition"] = { emitter->GetTargetPosition().x, emitter->GetTargetPosition().y, emitter->GetTargetPosition().z };
     json["convergeStiffness"] = emitter->GetConvergeStiffness();
     json["convergeDamping"] = emitter->GetConvergeDamping();
 
-    // Per-Particle Spawn 拘束 (Stage E)
+    // Per-Particle Spawn 拘束
     json["spawnLock"] = emitter->IsSpawnLock();
     json["lockStiffness"] = emitter->GetLockStiffness();
     json["lockDamping"] = emitter->GetLockDamping();
@@ -1154,23 +1154,23 @@ namespace Tako {
     }
     // randomFlags キーが無い旧 JSON は 0 のまま → EmitParticle.CS の自動判定にフォールバック
 
-    // アルファフェード (Stage B-1 補完)。旧 JSON は欠落 → コンストラクタで ON されたままなので旧挙動互換
+    // アルファフェード。旧 JSON は欠落 → コンストラクタで ON されたままなので旧挙動互換
     if (json.contains("useAlphaFade")) {
       emitter->SetAlphaFade(json["useAlphaFade"]);
     }
 
-    // スケール縮小消滅 (Stage B-1)。旧 JSON は両キーとも欠落 → SetScaleFade(false) 相当の既定維持
+    // スケール縮小消滅。旧 JSON は両キーとも欠落 → SetScaleFade(false) 相当の既定維持
     if (json.contains("useScaleFade") && json.contains("endScaleDefault")) {
       Vector3 endScale = { json["endScaleDefault"][0], json["endScaleDefault"][1], json["endScaleDefault"][2] };
       emitter->SetScaleFade(json["useScaleFade"], endScale);
     }
 
-    // スポーン位置種別 (Stage B-2)。旧 JSON は欠落 → Inside (現状挙動) のまま
+    // スポーン位置種別。旧 JSON は欠落 → Inside (現状挙動) のまま
     if (json.contains("spawnLocation")) {
       emitter->SetSpawnLocation(static_cast<SpawnLocation>(json["spawnLocation"].get<uint32_t>()));
     }
 
-    // Per-Emitter Target 収束 (Stage C)。旧 JSON は欠落 → フラグ OFF (旧挙動互換)
+    // Per-Emitter Target 収束。旧 JSON は欠落 → フラグ OFF (旧挙動互換)
     if (json.contains("targetPosition")) {
       Vector3 tp = { json["targetPosition"][0], json["targetPosition"][1], json["targetPosition"][2] };
       emitter->SetTargetPosition(tp);
@@ -1182,7 +1182,7 @@ namespace Tako {
       emitter->SetConvergeToTarget(json["convergeToTarget"]);
     }
 
-    // Per-Particle Spawn 拘束 (Stage E)。旧 JSON は欠落 → フラグ OFF (旧挙動互換)
+    // Per-Particle Spawn 拘束。旧 JSON は欠落 → フラグ OFF (旧挙動互換)
     if (json.contains("spawnLock") && json.contains("lockStiffness") && json.contains("lockDamping")) {
       emitter->SetSpawnLock(json["spawnLock"], json["lockStiffness"], json["lockDamping"]);
     }

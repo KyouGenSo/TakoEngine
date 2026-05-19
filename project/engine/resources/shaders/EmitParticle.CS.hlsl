@@ -159,7 +159,7 @@ RWStructuredBuffer<int> gFreeListIndex : register(u1);  // フリーリストイ
 RWStructuredBuffer<uint> gFreeList : register(u2);      // フリーリスト
 StructuredBuffer<Emitter> gEmitters : register(t0);     // エミッターリスト
 
-// Stage D-1: Mesh エミッタ用 (固定スロット、Mesh エミッタが無い場合は dummy リソースで bind)
+// Mesh エミッタ用 (固定スロット、Mesh エミッタが無い場合は dummy リソースで bind)
 struct MeshVertex
 {
     float4 position;
@@ -253,8 +253,8 @@ void main(uint3 DTid : SV_DispatchThreadID)
 
                 case EMITTER_TYPE_MESH:
                 {
-                    // Stage D-1: メッシュからのスポーン (Surface / Edge / Inside)
-                    // Inside は本フェーズでは AABB 中心フォールバック (Stage D-2 で SDF Rejection に置換)
+                    // メッシュからのスポーン (Surface / Edge / Inside)
+                    // Inside は SDF 未実装、AABB 内ランダムでフォールバック
                     float3 localSpawn = float3(0.0f, 0.0f, 0.0f);
                     uint triCount = gEmitters[emitterIndex].meshTriangleCount;
                     if (triCount > 0)
@@ -277,7 +277,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
                         }
                         else if (gEmitters[emitterIndex].spawnLocation == SPAWN_INSIDE)
                         {
-                            // Stage D-2 で SDF Rejection Sampling 実装予定。現状は AABB 内ランダムでフォールバック
+                            // SDF 未実装、AABB 内ランダムでフォールバック
                             float3 t3 = float3(generator.Generate1d(), generator.Generate1d(), generator.Generate1d());
                             localSpawn = lerp(gEmitters[emitterIndex].meshAabbMin, gEmitters[emitterIndex].meshAabbMax, t3);
                         }
@@ -300,7 +300,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
                     }
                     // mesh local → world 変換 (engine 規約は mul(vec, matrix))
                     particlePosition = mul(float4(localSpawn, 1.0f), gEmitters[emitterIndex].meshWorld).xyz;
-                    // Stage E 用に local 座標を保存 (per-particle 表面拘束で参照)
+                    // local 座標を保存 (per-particle 拘束で参照)
                     gParticles[particleID].targetLocal = localSpawn;
                     break;
                 }
@@ -344,7 +344,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
             gParticles[particleID].scale.y = particleScale.y;
             gParticles[particleID].scale.z = particleScale.z;
 
-            // 終了時スケール (Stage B-1: スケール縮小消滅)
+            // 終了時スケール (スケール縮小消滅)
             // EFLAG_USE_SCALE_FADE が立っていれば endScaleDefault に向けて補間、
             // 立っていなければ scale 自身を入れて補間しても変化なし
             if (gEmitters[emitterIndex].flags & EFLAG_USE_SCALE_FADE)
@@ -359,7 +359,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
             // 位置設定---------------------------------------------------------------------------------
             gParticles[particleID].translate = particlePosition;
 
-            // Stage E: Per-Particle Spawn 拘束用に targetLocal を保存
+            // Per-Particle Spawn 拘束用に targetLocal を保存
             // Mesh の場合は Mesh case 内で mesh local 座標が既に書き込まれているので上書きしない
             if (gEmitters[emitterIndex].type != EMITTER_TYPE_MESH)
             {
@@ -387,7 +387,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
             gParticles[particleID].particleRadius       = gEmitters[emitterIndex].particleRadius;
             gParticles[particleID].noiseScale           = gEmitters[emitterIndex].noiseScale;
             gParticles[particleID].noiseStrength        = gEmitters[emitterIndex].noiseStrength;
-            // Stage C/E: エミッター配列インデックスを保持し、IntegrateAll.CS で逆引き可能に
+            // エミッター配列インデックスを保持し、IntegrateAll.CS で逆引き可能に
             gParticles[particleID].emitterId            = emitterIndex;
 
             // 回転設定---------------------------------------------------------------------------------

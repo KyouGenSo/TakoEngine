@@ -347,7 +347,7 @@ namespace Tako {
 
   public:
     /// <summary>
-    /// SrvManager 参照を取得 (Stage D-1: MeshEmitter が Mesh の index SRV を作成するために使用)
+    /// SrvManager 参照を取得 (MeshEmitter が Mesh の index SRV を作成するために使用)
     /// </summary>
     SrvManager* GetSrvManager() const { return m_srvManager_; }
 

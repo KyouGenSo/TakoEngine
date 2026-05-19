@@ -27,10 +27,10 @@ static const int kMaxParticles = 1000000;
 #define EFLAG_TEMPORARY        (1u << 5)
 #define EFLAG_USE_CURL_NOISE       (1u << 6)
 #define EFLAG_USE_DEPTH_COLLISION  (1u << 7)
-#define EFLAG_USE_SCALE_FADE       (1u << 8) // スケール縮小消滅 (Stage B-1)
+#define EFLAG_USE_SCALE_FADE       (1u << 8) // スケール縮小消滅
 #define EFLAG_USE_ALPHA_FADE       (1u << 9) // alpha フェード (既定 ON、OFF で寿命中は不透明)
-#define EFLAG_CONVERGE_TO_TARGET   (1u << 10) // Per-Emitter Target 収束 (Stage C)
-#define EFLAG_LOCK_TO_SPAWN        (1u << 11) // Per-Particle Spawn 拘束 (Stage E)
+#define EFLAG_CONVERGE_TO_TARGET   (1u << 10) // Per-Emitter Target 収束
+#define EFLAG_LOCK_TO_SPAWN        (1u << 11) // Per-Particle Spawn 拘束
 
 // パラメータごとのランダム化フラグ（randomFlags 用）
 // randomFlags == 0 のときは旧来の「range != float2(0,0) ならランダム」自動判定にフォールバック
@@ -69,8 +69,8 @@ struct Particle
     float particleRadius;       // 衝突判定半径
     float noiseScale;           // Curl Noise 空間スケール
     float noiseStrength;        // Curl Noise 強度
-    uint  emitterId;            // 所属エミッター ID (Update.CS で逆引き、Stage C/E)
-    float3 targetLocal;         // Stage D/E: スポーン時のローカル座標 (Mesh エミッタの場合はメッシュローカル)
+    uint  emitterId;            // 所属エミッター ID (Update.CS で逆引き)
+    float3 targetLocal;         // スポーン時の座標 (Mesh ならメッシュローカル、それ以外は world)
 };
 
 // エミッター共通構造体
@@ -111,15 +111,15 @@ struct Emitter
     float3 triangleV2;        // 三角形の頂点2（相対座標）
     float3 triangleV3;        // 三角形の頂点3（相対座標）
 
-    // --- スケール縮小消滅 (Stage B-1) ---
+    // --- スケール縮小消滅 ---
     float3 endScaleDefault;   // EFLAG_USE_SCALE_FADE 有効時の終端スケール
 
-    // --- Per-Emitter Target 収束 (Stage C) ---
+    // --- Per-Emitter Target 収束 ---
     float3 targetPosition;    // 収束目標座標 (CPU 側で毎フレーム同期)
     float  convergeStiffness; // バネ係数 k
     float  convergeDamping;   // ダンパ係数 d
 
-    // --- Mesh エミッタ (Stage D) ---
+    // --- Mesh エミッタ ---
     uint     meshVertexSrvIndex; // Mesh 頂点 SRV (シェーダ内 register bind は固定スロット使用)
     uint     meshIndexSrvIndex;
     uint     meshTriangleCount;
@@ -127,7 +127,7 @@ struct Emitter
     float3   meshAabbMin;
     float3   meshAabbMax;
 
-    // --- Per-Particle Spawn 拘束 (Stage E) ---
+    // --- Per-Particle Spawn 拘束 ---
     float    lockStiffness;
     float    lockDamping;
 

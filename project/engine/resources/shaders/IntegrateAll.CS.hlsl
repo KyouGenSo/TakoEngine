@@ -11,7 +11,7 @@ RWStructuredBuffer<uint> gFreeList : register(u2);
 
 StructuredBuffer<ForceField> gForceFields : register(t0);
 Texture2D<float> gDepthBuffer : register(t1);
-StructuredBuffer<Emitter> gEmitters : register(t2); // Stage C/E: emitter 逆引き
+StructuredBuffer<Emitter> gEmitters : register(t2); // emitter 逆引き
 
 SamplerState gDepthSampler : register(s0);
 
@@ -53,7 +53,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
         }
     }
 
-    // Stage C: Per-Emitter Target 収束 (バネ-ダンパ)
+    // Per-Emitter Target 収束 (バネ-ダンパ)
     // 所属エミッターのフラグを引き、EFLAG_CONVERGE_TO_TARGET が立っていれば targetPosition へ向かう力を加算
     {
         uint eid = gParticles[particleIndex].emitterId;
@@ -67,7 +67,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
         }
     }
 
-    // Stage E: Per-Particle Spawn 拘束 (各粒子が自分の targetLocal へバネ-ダンパで引き寄せられる)
+    // Per-Particle Spawn 拘束 (各粒子が自分の targetLocal へバネ-ダンパで引き寄せられる)
     // Mesh エミッタの場合は targetLocal をメッシュ world で変換、それ以外は world 座標として直接使用
     {
         uint eid = gParticles[particleIndex].emitterId;

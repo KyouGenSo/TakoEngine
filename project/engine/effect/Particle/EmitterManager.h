@@ -16,7 +16,7 @@ namespace Tako {
   class BoxEmitter;
   class TriangleEmitter;
   class MeshEmitter;
-  class Mesh; // Stage D-1: CreateMeshEmitter のパラメータで使用
+  class Mesh; // CreateMeshEmitter のパラメータで使用
   class ForceFieldManager;
 
   /// <summary>
@@ -87,7 +87,7 @@ namespace Tako {
       uint32_t count, float frequency);
 
     /// <summary>
-    /// メッシュエミッター (Stage D-1) を作成
+    /// メッシュエミッターを作成
     /// </summary>
     /// <param name="name">エミッター名</param>
     /// <param name="mesh">スポーン形状として使う Mesh (非所有、ライフタイム責務は呼び出し側)</param>

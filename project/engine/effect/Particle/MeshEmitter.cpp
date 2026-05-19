@@ -16,7 +16,7 @@ namespace Tako {
     data_.type = static_cast<uint32_t>(EmitterType::Mesh);
 
     if (mesh_ != nullptr) {
-      // Stage D-1: メッシュのインデックスバッファを StructuredBuffer<uint> として SRV 化
+      // メッシュのインデックスバッファを StructuredBuffer<uint> として SRV 化
       // 頂点バッファはすでに Mesh 内部で SRV 化されている (vertexSrvIndex_)
       SrvManager* srvManager = particleSystem_->GetSrvManager();
       if (srvManager != nullptr) {
@@ -66,9 +66,9 @@ namespace Tako {
 
   void MeshEmitter::UpdateEmission(float deltaTime)
   {
-    // 基底クラスで active/emitting タイマー + Stage C の targetPosition 動的同期を処理
+    // 基底クラスで active/emitting タイマー + targetPosition 動的同期を処理
     GPUParticleEmitter::UpdateEmission(deltaTime);
-    // Stage D-1: メッシュの world 行列を動的同期 (BindMeshWorld されている場合のみ)
+    // メッシュの world 行列を動的同期 (BindMeshWorld されている場合のみ)
     SyncMeshWorld();
   }
 

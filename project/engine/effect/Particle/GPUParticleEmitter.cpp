@@ -36,7 +36,7 @@ namespace Tako {
 
   void GPUParticleEmitter::UpdateEmission(float deltaTime)
   {
-    // Stage C: 動的バインドされた目標座標を毎フレーム同期 (active/inactive に関わらず実行)
+    // 動的バインドされた目標座標を毎フレーム同期 (active/inactive に関わらず実行)
     if (boundTargetPosition_) {
       data_.targetPosition = *boundTargetPosition_;
     }

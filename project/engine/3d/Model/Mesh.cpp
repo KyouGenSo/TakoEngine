@@ -42,7 +42,7 @@ namespace Tako {
     CreateMaterialData();
     CreateTransformation();
 
-    // Stage D-1: ローカル AABB を計算 (Mesh エミッタの Inside/Surface/Edge スポーンで参照)
+    // ローカル AABB を計算 (Mesh エミッタの Inside/Surface/Edge スポーンで参照)
     if (!vertices_.empty()) {
       aabbLocalMin_.x = aabbLocalMax_.x = vertices_[0].position.x;
       aabbLocalMin_.y = aabbLocalMax_.y = vertices_[0].position.y;
