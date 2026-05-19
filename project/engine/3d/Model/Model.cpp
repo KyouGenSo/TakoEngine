@@ -68,6 +68,22 @@ namespace Tako {
     }
   }
 
+  void Model::InitializeFromPrimitive(ModelBasic* modelBasic, std::unique_ptr<Mesh> mesh, const std::string& debugName)
+  {
+    m_modelBasic_ = modelBasic;
+    m_dx12_ = m_modelBasic_->GetDX12Basic();
+    modelFileName_ = debugName;
+    rootNode_.localMatrix = Mat4x4::MakeIdentity();
+    hasAnimation_ = false;
+    hasSkeleton_ = false;
+    paletteSrvIndex_ = 0;
+    expandState_ = 0;
+    hoveredJointIndex_ = -1;
+    animationSpeed_ = 1.0f;
+    isPaused_ = false;
+    meshes_.push_back(std::move(mesh));
+  }
+
   void Model::Finalize()
   {
     // スキニング関連リソースの解放

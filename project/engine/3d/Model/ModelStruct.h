@@ -6,6 +6,9 @@
 #include <span>
 #include <array>
 
+#include <d3d12.h>
+#include <wrl.h>
+
 #include "vector2.h"
 #include "vector3.h"
 #include "vector4.h"

@@ -157,6 +157,18 @@ void Object3d::SetModel(const std::string& fileName)
   m_model_ = ModelManager::GetInstance()->GetModel(fileName);
 }
 
+void Object3d::SetModel(std::unique_ptr<Model> model)
+{
+  // 既存モデルがあれば解放
+  if (m_model_)
+  {
+    m_model_->Finalize();
+    m_model_.reset();
+  }
+
+  m_model_ = std::move(model);
+}
+
 void Object3d::SetMaterialColor(const Vector4& color)
 {
   if (m_model_)

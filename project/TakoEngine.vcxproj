@@ -126,6 +126,7 @@
     <ClCompile Include="engine\3d\Shadow\ShadowMap.cpp" />
     <ClCompile Include="engine\3d\Shadow\ShadowRenderer.cpp" />
     <ClCompile Include="engine\3d\SkyBox\SkyBox.cpp" />
+    <ClCompile Include="engine\3d\Primitive\PrimitiveBuilder.cpp" />
     <ClCompile Include="engine\collision\AABBCollider.cpp" />
     <ClCompile Include="engine\collision\Collider.cpp" />
     <ClCompile Include="engine\collision\CollisionManager.cpp" />
@@ -215,6 +216,7 @@
     <ClInclude Include="engine\3d\Shadow\ShadowMap.h" />
     <ClInclude Include="engine\3d\Shadow\ShadowRenderer.h" />
     <ClInclude Include="engine\3d\SkyBox\SkyBox.h" />
+    <ClInclude Include="engine\3d\Primitive\PrimitiveBuilder.h" />
     <ClInclude Include="engine\base\EnginePaths.h" />
     <ClInclude Include="engine\collision\AABBCollider.h" />
     <ClInclude Include="engine\collision\Collider.h" />

@@ -82,6 +82,9 @@
     <Filter Include="3d\Decal">
       <UniqueIdentifier>{58048fd3-d745-46e3-ae80-74d9ec044fb2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="3d\Primitive">
+      <UniqueIdentifier>{c5e8a2b1-9d4f-4732-bc1e-87f6d3a5e890}</UniqueIdentifier>
+    </Filter>
     <Filter Include="shader">
       <UniqueIdentifier>{331ef712-4f12-4e5c-852b-e2b7f88d0312}</UniqueIdentifier>
     </Filter>
@@ -245,6 +248,9 @@
     </ClCompile>
     <ClCompile Include="engine\3d\SkyBox\SkyBox.cpp">
       <Filter>3d\SkyBox</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3d\Primitive\PrimitiveBuilder.cpp">
+      <Filter>3d\Primitive</Filter>
     </ClCompile>
     <ClCompile Include="engine\effect\Particle\BoxEmitter.cpp">
       <Filter>effect\Particle\Emitter</Filter>
@@ -523,6 +529,9 @@
     </ClInclude>
     <ClInclude Include="engine\3d\SkyBox\SkyBox.h">
       <Filter>3d\SkyBox</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\Primitive\PrimitiveBuilder.h">
+      <Filter>3d\Primitive</Filter>
     </ClInclude>
     <ClInclude Include="engine\effect\Particle\BoxEmitter.h">
       <Filter>effect\Particle\Emitter</Filter>

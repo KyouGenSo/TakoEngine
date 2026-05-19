@@ -29,6 +29,14 @@ namespace Tako {
     void Initialize(ModelBasic* modelBasic, const std::string& fileName);
 
     /// <summary>
+    /// コード生成 Mesh から Primitive Model を初期化（ファイル読み込みをスキップ）
+    /// </summary>
+    /// <param name="modelBasic">モデル基本システムへのポインタ</param>
+    /// <param name="mesh">事前に生成済みの Mesh</param>
+    /// <param name="debugName">ImGui 識別用の仮想名（例: "&lt;Primitive_Cube&gt;"）</param>
+    void InitializeFromPrimitive(ModelBasic* modelBasic, std::unique_ptr<Mesh> mesh, const std::string& debugName);
+
+    /// <summary>
     /// 終了処理
     /// </summary>
     void Finalize();

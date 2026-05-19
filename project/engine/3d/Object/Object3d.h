@@ -117,6 +117,12 @@ public: // メンバー関数
   void SetModel(const std::string& fileName);
 
   /// <summary>
+  /// コード生成 Model を直接セット（PrimitiveBuilder 等）
+  /// </summary>
+  /// <param name="model">所有権を渡す Model（unique_ptr）</param>
+  void SetModel(std::unique_ptr<Model> model);
+
+  /// <summary>
   /// カメラを設定
   /// </summary>
   /// <param name="camera">カメラポインタのポインタ</param>
