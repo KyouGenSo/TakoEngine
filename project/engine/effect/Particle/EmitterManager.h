@@ -17,6 +17,7 @@ namespace Tako {
   class TriangleEmitter;
   class MeshEmitter;
   class Mesh; // CreateMeshEmitter のパラメータで使用
+  class Model; // CreateMeshEmitter(Model*) オーバーロードで使用 (マルチプリミティブ対応)
   class ForceFieldManager;
 
   /// <summary>
@@ -99,6 +100,14 @@ namespace Tako {
     /// 多重対応は次フェーズで indexable SRV 配列化により実装予定。
     /// </remarks>
     void CreateMeshEmitter(const std::string& name, Mesh* mesh, uint32_t count, float frequency);
+
+    /// <summary>
+    /// Model を渡してマルチプリミティブ対応のメッシュエミッターを作成
+    /// </summary>
+    /// <remarks>
+    /// 集約モード (Mesh 数 > 1) ではスキニング動的同期は未対応 (バインドポーズで固定)。
+    /// </remarks>
+    void CreateMeshEmitter(const std::string& name, Model* model, uint32_t count, float frequency);
 
     /// <summary>
     /// 球形エミッターのパラメータを更新

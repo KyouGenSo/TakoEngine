@@ -126,6 +126,9 @@ struct Emitter
     float4x4 meshWorld;
     float3   meshAabbMin;
     float3   meshAabbMax;
+    uint     meshAreaPrefixSumSrvIndex; // 0 で等確率フォールバック
+    float    meshTotalArea;
+    uint     meshSkinnedVertexSrvIndex; // 0 で原頂点 SRV を使用
 
     // --- Per-Particle Spawn 拘束 ---
     float    lockStiffness;

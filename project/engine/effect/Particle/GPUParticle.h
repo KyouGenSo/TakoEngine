@@ -351,6 +351,11 @@ namespace Tako {
     /// </summary>
     SrvManager* GetSrvManager() const { return m_srvManager_; }
 
+    /// <summary>
+    /// DX12Basic を取得
+    /// </summary>
+    DX12Basic* GetDx12() const { return m_dx12_; }
+
   private:
 
     /// <summary>

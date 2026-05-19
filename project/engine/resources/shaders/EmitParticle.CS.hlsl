@@ -166,10 +166,42 @@ struct MeshVertex
     float2 texcoord;
     float3 normal;
 };
-StructuredBuffer<MeshVertex> gMeshVertices : register(t10);
-StructuredBuffer<uint>       gMeshIndices  : register(t11);
+StructuredBuffer<MeshVertex> gMeshVertices    : register(t10);
+StructuredBuffer<uint>       gMeshIndices     : register(t11);
+// 要素数 = triCount + 1, prefixSum[0]=0, prefixSum[triCount]=totalArea
+StructuredBuffer<float>      gMeshAreaPrefixSum : register(t12);
 
-ConstantBuffer<PerFrame> gPerFrame : register(b0);      // フレーム情報
+ConstantBuffer<PerFrame> gPerFrame : register(b0);
+
+// 0xFFFFFFFF = 非 Mesh エミッタ向け Dispatch、それ以外 = 指定 index の Mesh エミッタのみ処理
+cbuffer RootConstants : register(b1)
+{
+    uint gTargetMeshEmitterId;
+};
+
+// areaPrefixSumSrvIndex == 0 / totalArea == 0 のとき等確率分配にフォールバック (後方互換維持)
+uint SelectTriangleByArea(uint triCount, float totalArea, uint areaPrefixSumSrvIndex, float rand01)
+{
+    if (areaPrefixSumSrvIndex != 0u && totalArea > 0.0f)
+    {
+        float target = rand01 * totalArea;
+        uint lo = 0u;
+        uint hi = triCount;
+        [loop]
+        for (uint iter = 0u; iter < 32u; ++iter)
+        {
+            if (lo >= hi) break;
+            uint mid = (lo + hi) / 2u;
+            if (gMeshAreaPrefixSum[mid + 1u] < target) lo = mid + 1u;
+            else hi = mid;
+        }
+        return min(lo, triCount - 1u);
+    }
+    else
+    {
+        return min((uint)(rand01 * (float)triCount), triCount - 1u);
+    }
+}
 
 [numthreads(16, 1, 1)]
 void main(uint3 DTid : SV_DispatchThreadID)
@@ -195,13 +227,21 @@ void main(uint3 DTid : SV_DispatchThreadID)
         return;
     }
 
-    // 乱数生成器の初期化
+    {
+        const uint kInvalidMeshTarget = 0xFFFFFFFFu;
+        uint emitterType = gEmitters[emitterIndex].type;
+        if (gTargetMeshEmitterId == kInvalidMeshTarget) {
+            if (emitterType == EMITTER_TYPE_MESH) return;
+        } else {
+            if (emitterIndex != gTargetMeshEmitterId) return;
+        }
+    }
+
     RandomGenerator generator;
-    // シード値設定 (時間+エミッターID+スレッドID)
     generator.seed = float3(
-        DTid.x + gPerFrame.time * 0.1f,
-        DTid.y + gPerFrame.time * 0.2f,
-        gEmitters[emitterIndex].emitterID + gPerFrame.time * 0.3f
+        DTid.x * 73.0f + gPerFrame.time * 173.5f,
+        DTid.y * 191.0f + gPerFrame.time * 71.3f + gEmitters[emitterIndex].emitterID * 53.0f,
+        gEmitters[emitterIndex].emitterID * 127.0f + gPerFrame.time * 257.1f
     );
 
     // このエミッターから指定数のパーティクルを射出
@@ -261,8 +301,11 @@ void main(uint3 DTid : SV_DispatchThreadID)
                     {
                         if (gEmitters[emitterIndex].spawnLocation == SPAWN_EDGE)
                         {
-                            uint triIdx = (uint)(generator.Generate1d() * (float)triCount);
-                            triIdx = min(triIdx, triCount - 1);
+                            uint triIdx = SelectTriangleByArea(
+                                triCount,
+                                gEmitters[emitterIndex].meshTotalArea,
+                                gEmitters[emitterIndex].meshAreaPrefixSumSrvIndex,
+                                generator.Generate1d());
                             uint i0 = gMeshIndices[triIdx * 3 + 0];
                             uint i1 = gMeshIndices[triIdx * 3 + 1];
                             uint i2 = gMeshIndices[triIdx * 3 + 2];
@@ -283,9 +326,12 @@ void main(uint3 DTid : SV_DispatchThreadID)
                         }
                         else
                         {
-                            // SPAWN_SURFACE: 三角形 + バリ重心
-                            uint triIdx = (uint)(generator.Generate1d() * (float)triCount);
-                            triIdx = min(triIdx, triCount - 1);
+                            // SPAWN_SURFACE
+                            uint triIdx = SelectTriangleByArea(
+                                triCount,
+                                gEmitters[emitterIndex].meshTotalArea,
+                                gEmitters[emitterIndex].meshAreaPrefixSumSrvIndex,
+                                generator.Generate1d());
                             uint i0 = gMeshIndices[triIdx * 3 + 0];
                             uint i1 = gMeshIndices[triIdx * 3 + 1];
                             uint i2 = gMeshIndices[triIdx * 3 + 2];

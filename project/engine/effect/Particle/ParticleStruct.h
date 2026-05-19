@@ -285,6 +285,9 @@ namespace Tako {
     Matrix4x4 meshWorld;         ///< Mesh 自体の world 行列 (動的追従用、毎フレーム CPU 側で同期)
     Vector3 meshAabbMin;         ///< Mesh ローカル AABB 最小 (SDF UV 変換にも使用)
     Vector3 meshAabbMax;         ///< Mesh ローカル AABB 最大
+    uint32_t meshAreaPrefixSumSrvIndex; ///< 0 で等確率フォールバック
+    float meshTotalArea;
+    uint32_t meshSkinnedVertexSrvIndex; ///< 0 で原頂点 SRV を使用
 
     // --- Per-Particle Spawn 拘束 ---
     float lockStiffness;         ///< 拘束バネ係数 k (粒子ごと targetLocal への引き寄せ力)
@@ -319,6 +322,8 @@ namespace Tako {
       meshWorld(), // 全 0 で初期化 → Mesh エミッタ生成時に identity で上書き
       meshAabbMin({ .x = 0.0f, .y = 0.0f, .z = 0.0f }),
       meshAabbMax({ .x = 0.0f, .y = 0.0f, .z = 0.0f }),
+      meshAreaPrefixSumSrvIndex(0), meshTotalArea(0.0f),
+      meshSkinnedVertexSrvIndex(0),
       lockStiffness(20.0f), lockDamping(3.0f),
       damping(0.99f), collisionRestitution(0.5f), particleRadius(0.5f),
       noiseScale(0.05f), noiseStrength(0.001f)

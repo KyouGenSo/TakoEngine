@@ -297,12 +297,11 @@ namespace Tako {
     // 既にこのフレームでスキニングが実行されていたらスキップ
     if (skinningComputedThisFrame_) return;
 
-    // 現在のリソース状態を確認して適切に遷移
-    // 初回以外は VERTEX_AND_CONSTANT_BUFFER → UAV への遷移が必要
+    // 初回以外は (VBV | SRV) → UAV への遷移が必要
     static bool isFirstCompute = true;
     if (!isFirstCompute) {
       dx12_->TransitionResourceState(
-        D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,
+        D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
         D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
         uavVertexOutputResource_.Get());
     }
@@ -326,13 +325,12 @@ namespace Tako {
     dx12_->GetCommandList()->Dispatch(
       static_cast<UINT>(vertices_.size() + 1023) / 1024, 1, 1);
 
-    // バリア設定
+    // 描画 (VBV) とパーティクル emit (SRV) の両方で読めるよう OR 状態に遷移
     dx12_->TransitionResourceState(
       D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-      D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,
+      D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
       uavVertexOutputResource_.Get());
 
-    // フラグを設定
     skinningComputedThisFrame_ = true;
   }
 
@@ -457,6 +455,15 @@ namespace Tako {
     uavIndex_ = srvManager->Allocate();
     srvManager->CreateUAV(
       uavIndex_,
+      uavVertexOutputResource_.Get(),
+      static_cast<UINT>(vertices_.size()),
+      sizeof(VertexData)
+    );
+
+    // 6b. 同一リソースに対する SRV (UAV と同時 bind せず、バリアで遷移して使う)
+    skinnedVertexSrvIndex_ = srvManager->Allocate();
+    srvManager->CreateSRVForStructuredBuffer(
+      skinnedVertexSrvIndex_,
       uavVertexOutputResource_.Get(),
       static_cast<UINT>(vertices_.size()),
       sizeof(VertexData)

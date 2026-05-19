@@ -172,30 +172,37 @@ namespace Tako {
       // エミッターリストの SRV の設定
       m_srvManager_->SetComputeRootDescriptorTable(1, emitterSrvIndex_);
 
-      // Mesh エミッタが activeEmitters_ に存在する場合、その vertex/index SRV をバインド
-      // 初期実装は同時 1 個のみ対応 (最初に見つかった Mesh エミッタを採用)
-      uint32_t meshVtxSrvIndex = 0;
-      uint32_t meshIdxSrvIndex = 0;
-      for (const auto& emitter : activeEmitters_) {
-        if (emitter && emitter->GetType() == EmitterType::Mesh) {
-          const auto& edata = emitter->GetData();
-          meshVtxSrvIndex = edata.meshVertexSrvIndex;
-          meshIdxSrvIndex = edata.meshIndexSrvIndex;
-          break;
-        }
-      }
-      // Mesh エミッタが無い場合は emitter SRV を流用 (実際の case 内で参照されないので安全)
-      m_srvManager_->SetComputeRootDescriptorTable(5,
-        meshVtxSrvIndex != 0 ? meshVtxSrvIndex : emitterSrvIndex_);
-      m_srvManager_->SetComputeRootDescriptorTable(6,
-        meshIdxSrvIndex != 0 ? meshIdxSrvIndex : emitterSrvIndex_);
-
-      // PerFrame の設定
       commandList->SetComputeRootConstantBufferView(2, perFrameResource_->GetGPUVirtualAddress());
 
-      // ディスパッチ（16スレッドごとにグループ化）
-      uint32_t threadGroupsX = (static_cast<uint32_t>(activeEmitters_.size()) + 15) / 16;
+      const uint32_t kInvalidMeshTarget = 0xFFFFFFFFu;
+      const uint32_t threadGroupsX = (static_cast<uint32_t>(activeEmitters_.size()) + 15) / 16;
+
+      // 非 Mesh エミッタを一括処理 (Mesh SRV はダミー bind、HLSL 側で Mesh タイプは早期 return)
+      commandList->SetComputeRoot32BitConstant(8, kInvalidMeshTarget, 0);
+      m_srvManager_->SetComputeRootDescriptorTable(5, emitterSrvIndex_);
+      m_srvManager_->SetComputeRootDescriptorTable(6, emitterSrvIndex_);
+      m_srvManager_->SetComputeRootDescriptorTable(7, emitterSrvIndex_);
       commandList->Dispatch(threadGroupsX, 1, 1);
+
+      // Mesh エミッタを 1 つずつ別 Dispatch (スキニング有効なら skinned SRV を優先)
+      for (uint32_t i = 0; i < activeEmitters_.size(); ++i) {
+        const auto& emitter = activeEmitters_[i];
+        if (!emitter || emitter->GetType() != EmitterType::Mesh) continue;
+
+        const auto& edata = emitter->GetData();
+        const uint32_t vtxSrv = (edata.meshSkinnedVertexSrvIndex != 0)
+                                  ? edata.meshSkinnedVertexSrvIndex
+                                  : edata.meshVertexSrvIndex;
+
+        m_srvManager_->SetComputeRootDescriptorTable(5,
+          vtxSrv != 0 ? vtxSrv : emitterSrvIndex_);
+        m_srvManager_->SetComputeRootDescriptorTable(6,
+          edata.meshIndexSrvIndex != 0 ? edata.meshIndexSrvIndex : emitterSrvIndex_);
+        m_srvManager_->SetComputeRootDescriptorTable(7,
+          edata.meshAreaPrefixSumSrvIndex != 0 ? edata.meshAreaPrefixSumSrvIndex : emitterSrvIndex_);
+        commandList->SetComputeRoot32BitConstant(8, i, 0);
+        commandList->Dispatch(threadGroupsX, 1, 1);
+      }
     }
 
     // リソースバリアの設定（UAV 同期）
@@ -737,8 +744,15 @@ namespace Tako {
     descriptorRange_MeshIndices[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
     descriptorRange_MeshIndices[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-    // RootParameter: Particle/FreeListIndex/FreeList UAV + Emitter/MeshVtx/MeshIdx SRV + PerFrame CBV = 7
-    D3D12_ROOT_PARAMETER rootParameters[7] = {};
+    // Mesh Area Prefix Sum SRV (t12)
+    D3D12_DESCRIPTOR_RANGE descriptorRange_MeshAreaPrefixSum[1] = {};
+    descriptorRange_MeshAreaPrefixSum[0].BaseShaderRegister = 12; // t12
+    descriptorRange_MeshAreaPrefixSum[0].NumDescriptors = 1;
+    descriptorRange_MeshAreaPrefixSum[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+    descriptorRange_MeshAreaPrefixSum[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+    // RootParameter: Particle/FreeListIndex/FreeList UAV + Emitter/MeshVtx/MeshIdx/MeshAreaPrefixSum SRV + PerFrame CBV + RootConstants = 9
+    D3D12_ROOT_PARAMETER rootParameters[9] = {};
     // Particle
     rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
     rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
@@ -779,6 +793,19 @@ namespace Tako {
     rootParameters[6].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
     rootParameters[6].DescriptorTable.pDescriptorRanges = descriptorRange_MeshIndices;
     rootParameters[6].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange_MeshIndices);
+
+    // Mesh Area Prefix Sum SRV (t12)
+    rootParameters[7].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    rootParameters[7].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    rootParameters[7].DescriptorTable.pDescriptorRanges = descriptorRange_MeshAreaPrefixSum;
+    rootParameters[7].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange_MeshAreaPrefixSum);
+
+    // RootConstants (b1) - gTargetMeshEmitterId
+    rootParameters[8].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+    rootParameters[8].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    rootParameters[8].Constants.ShaderRegister = 1; // b1
+    rootParameters[8].Constants.RegisterSpace = 0;
+    rootParameters[8].Constants.Num32BitValues = 1; // uint gTargetMeshEmitterId
 
     descriptionRootSignature.pParameters = rootParameters;
     descriptionRootSignature.NumParameters = _countof(rootParameters);

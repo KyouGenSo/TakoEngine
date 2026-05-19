@@ -5,6 +5,7 @@
 namespace Tako {
 
   class Mesh;
+  class Model;
 
   /// <summary>
   /// メッシュをスポーン形状として使うエミッター
@@ -31,6 +32,14 @@ namespace Tako {
     /// emitterId は基底クラスで 0 として初期化される。実際の ID は <c>RegisterEmitter()</c> 時に割り当てられる。
     /// </remarks>
     MeshEmitter(GPUParticle* particleSystem, Mesh* mesh, uint32_t count, float frequency);
+
+    /// <summary>
+    /// Model を渡してマルチプリミティブ対応の MeshEmitter を生成
+    /// </summary>
+    /// <remarks>
+    /// Mesh 数 > 1 のとき集約バッファに統合する。集約モードではスキニング動的同期は未対応。
+    /// </remarks>
+    MeshEmitter(GPUParticle* particleSystem, Model* model, uint32_t count, float frequency);
 
     ~MeshEmitter() override = default;
 
@@ -84,6 +93,16 @@ namespace Tako {
     Mesh* mesh_ = nullptr;                            ///< 非所有参照
     const Matrix4x4* boundMeshWorld_ = nullptr;       ///< 動的バインド用 (非所有)
     uint32_t meshIndexSrvIndex_ = 0;                  ///< このエミッタ用に確保した index SRV インデックス
+
+    // 三角形面積 Prefix Sum (Inversion Sampling)
+    Microsoft::WRL::ComPtr<ID3D12Resource> areaPrefixSumResource_; ///< size = triCount + 1
+    uint32_t meshAreaPrefixSumSrvIndex_ = 0;
+
+    // マルチプリミティブ集約バッファ。index は mesh ごとの vertex base offset を加算済み。
+    Microsoft::WRL::ComPtr<ID3D12Resource> aggregatedVertexResource_;
+    Microsoft::WRL::ComPtr<ID3D12Resource> aggregatedIndexResource_;
+    uint32_t aggregatedVertexSrvIndex_ = 0;
+    uint32_t aggregatedIndexSrvIndex_ = 0;
   };
 
 } // namespace Tako

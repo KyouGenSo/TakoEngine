@@ -171,6 +171,11 @@ namespace Tako {
     uint32_t GetUAVIndex() { return uavIndex_; }
 
     /// <summary>
+    /// スキニング後頂点 SRV のインデックス (0 でスキニング無効)
+    /// </summary>
+    uint32_t GetSkinnedVertexSrvIndex() const { return skinnedVertexSrvIndex_; }
+
+    /// <summary>
     /// スキニング情報リソースの GPU アドレスを取得
     /// </summary>
     /// <returns>スキニング情報リソースの GPU アドレス</returns>
@@ -191,6 +196,9 @@ namespace Tako {
     /// インデックス数を取得 (三角形数 = GetIndexCount() / 3)
     /// </summary>
     UINT GetIndexCount() const { return static_cast<UINT>(indices_.size()); }
+
+    const std::vector<VertexData>& GetVertices() const { return vertices_; }
+    const std::vector<uint32_t>& GetIndices() const { return indices_; }
 
     /// <summary>
     /// ローカル座標系での AABB 最小値を取得
@@ -283,6 +291,7 @@ namespace Tako {
 
     uint32_t influenceSrvIndex_ = 0; ///< インフルエンス SRV インデックス
     uint32_t uavIndex_ = 0; ///< UAV インデックス
+    uint32_t skinnedVertexSrvIndex_ = 0; ///< UAV と同一リソースに対する SRV ビュー
 
     SkinningInfo* skinningInfoData_ = nullptr; ///< スキニング情報データへのポインタ
 

@@ -97,6 +97,26 @@ namespace Tako {
     emitterMap_[name] = emitter;
   }
 
+  void EmitterManager::CreateMeshEmitter(const std::string& name, Model* model, uint32_t count, float frequency)
+  {
+    // 名前の重複チェック
+    if (emitterMap_.contains(name)) {
+#ifdef _DEBUG
+      DebugUIManager::GetInstance()->AddLog(
+        "Emitter name '" + name + "' already exists. Overwriting.", DebugUIManager::LogType::Warning);
+#endif
+      RemoveEmitter(name);
+    }
+
+    auto emitter = std::make_shared<MeshEmitter>(particleSystem_, model, count, frequency);
+
+    // GPUParticle にエミッターを登録
+    particleSystem_->RegisterEmitter(emitter);
+
+    // マップに追加
+    emitterMap_[name] = emitter;
+  }
+
   void EmitterManager::CreateTriangleEmitter(const std::string& name, const Vector3& position, const Vector3& v1, const Vector3& v2, const Vector3& v3, uint32_t count, float frequency)
   {
     // 名前の重複チェック

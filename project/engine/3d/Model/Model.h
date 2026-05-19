@@ -78,6 +78,19 @@ namespace Tako {
 
     // -----------------------------------Getters-----------------------------------//
     /// <summary>
+    /// 指定インデックスの Mesh を取得 (非所有)。範囲外なら nullptr。
+    /// MeshEmitter 等で頂点・インデックス情報を参照したい用途向け。
+    /// </summary>
+    Mesh* GetMesh(size_t index = 0) const {
+      return index < meshes_.size() ? meshes_[index].get() : nullptr;
+    }
+
+    /// <summary>
+    /// 保持メッシュ数。複数メッシュの gltf を扱う場合に使う。
+    /// </summary>
+    size_t GetMeshCount() const { return meshes_.size(); }
+
+    /// <summary>
     /// ルートノードのローカル行列を取得
     /// </summary>
     /// <returns>ローカル行列</returns>
