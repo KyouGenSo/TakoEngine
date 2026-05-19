@@ -67,6 +67,30 @@ void main(uint3 DTid : SV_DispatchThreadID)
         }
     }
 
+    // Stage E: Per-Particle Spawn 拘束 (各粒子が自分の targetLocal へバネ-ダンパで引き寄せられる)
+    // Mesh エミッタの場合は targetLocal をメッシュ world で変換、それ以外は world 座標として直接使用
+    {
+        uint eid = gParticles[particleIndex].emitterId;
+        if (eid < gPerFrame.activeEmitterCount &&
+            (gEmitters[eid].flags & EFLAG_LOCK_TO_SPAWN))
+        {
+            float3 currentTarget;
+            if (gEmitters[eid].type == EMITTER_TYPE_MESH)
+            {
+                // mesh local → world (engine 規約 mul(vec, matrix))
+                currentTarget = mul(float4(gParticles[particleIndex].targetLocal, 1.0f), gEmitters[eid].meshWorld).xyz;
+            }
+            else
+            {
+                currentTarget = gParticles[particleIndex].targetLocal;
+            }
+            float3 toTarget = currentTarget - currentPos;
+            float3 vel = (currentPos - prevPos) / max(dt, 0.0001f);
+            acceleration += gEmitters[eid].lockStiffness * toTarget
+                          - gEmitters[eid].lockDamping * vel;
+        }
+    }
+
     // --- Verlet 積分 ---
     // フレーム間変位から暗黙速度を導出
     float3 displacement = currentPos - prevPos;

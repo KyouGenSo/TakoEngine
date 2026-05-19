@@ -15,6 +15,8 @@ namespace Tako {
   class SphereEmitter;
   class BoxEmitter;
   class TriangleEmitter;
+  class MeshEmitter;
+  class Mesh; // Stage D-1: CreateMeshEmitter のパラメータで使用
   class ForceFieldManager;
 
   /// <summary>
@@ -83,6 +85,20 @@ namespace Tako {
     void CreateTriangleEmitter(const std::string& name, const Vector3& position,
       const Vector3& v1, const Vector3& v2, const Vector3& v3,
       uint32_t count, float frequency);
+
+    /// <summary>
+    /// メッシュエミッター (Stage D-1) を作成
+    /// </summary>
+    /// <param name="name">エミッター名</param>
+    /// <param name="mesh">スポーン形状として使う Mesh (非所有、ライフタイム責務は呼び出し側)</param>
+    /// <param name="count">パーティクル数</param>
+    /// <param name="frequency">射出頻度 (秒)</param>
+    /// <remarks>
+    /// 初期実装は同時メッシュエミッタ 1 個まで対応。複数の Mesh エミッタを同時に
+    /// 動作させると、最初に登録された一つの vertex/index SRV のみが GPU 側で参照される。
+    /// 多重対応は次フェーズで indexable SRV 配列化により実装予定。
+    /// </remarks>
+    void CreateMeshEmitter(const std::string& name, Mesh* mesh, uint32_t count, float frequency);
 
     /// <summary>
     /// 球形エミッターのパラメータを更新

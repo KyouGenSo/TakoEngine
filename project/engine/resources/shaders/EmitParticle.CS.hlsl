@@ -359,6 +359,13 @@ void main(uint3 DTid : SV_DispatchThreadID)
             // 位置設定---------------------------------------------------------------------------------
             gParticles[particleID].translate = particlePosition;
 
+            // Stage E: Per-Particle Spawn 拘束用に targetLocal を保存
+            // Mesh の場合は Mesh case 内で mesh local 座標が既に書き込まれているので上書きしない
+            if (gEmitters[emitterIndex].type != EMITTER_TYPE_MESH)
+            {
+                gParticles[particleID].targetLocal = particlePosition;
+            }
+
             // 質量・セルインデックス・フォースフィールドフラグ設定----------------------------------
             gParticles[particleID].mass = 1.0f;
             gParticles[particleID].cellIndex = 0xFFFFFFFF; // 未割り当て

@@ -240,6 +240,33 @@ namespace Tako {
     [[nodiscard]] SpawnLocation GetSpawnLocation() const { return static_cast<SpawnLocation>(data_.spawnLocation); }
 
     /// <summary>
+    /// Per-Particle Spawn 拘束を有効化／無効化 (Stage E)
+    /// </summary>
+    /// <param name="enable">有効化する場合 true</param>
+    /// <param name="stiffness">バネ係数 k (粒子ごとに targetLocal へ引き寄せる力)</param>
+    /// <param name="damping">ダンパ係数 d</param>
+    /// <remarks>
+    /// Mesh エミッタと組み合わせると「粒子群がメッシュ表面に拘束されて形状を成す」演出になる。
+    /// Mesh の動的回転・移動にも追従する (meshWorld 経由)。
+    /// </remarks>
+    void SetSpawnLock(bool enable, float stiffness, float damping);
+
+    /// <summary>
+    /// Spawn 拘束が有効かを取得 (Stage E)
+    /// </summary>
+    [[nodiscard]] bool IsSpawnLock() const { return (data_.flags & EFLAG_LOCK_TO_SPAWN) != 0; }
+
+    /// <summary>
+    /// 拘束バネ係数を取得 (Stage E)
+    /// </summary>
+    [[nodiscard]] float GetLockStiffness() const { return data_.lockStiffness; }
+
+    /// <summary>
+    /// 拘束ダンパ係数を取得 (Stage E)
+    /// </summary>
+    [[nodiscard]] float GetLockDamping() const { return data_.lockDamping; }
+
+    /// <summary>
     /// Per-Emitter Target 収束を有効化／無効化 (Stage C)
     /// </summary>
     /// <param name="enable">有効化する場合 true</param>

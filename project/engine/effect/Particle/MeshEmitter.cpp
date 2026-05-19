@@ -7,12 +7,13 @@
 
 namespace Tako {
 
-  MeshEmitter::MeshEmitter(GPUParticle* particleSystem, uint32_t emitterId, Mesh* mesh, uint32_t count, float frequency)
-    : GPUParticleEmitter(particleSystem, emitterId), mesh_(mesh)
+  MeshEmitter::MeshEmitter(GPUParticle* particleSystem, Mesh* mesh, uint32_t count, float frequency)
+    : GPUParticleEmitter(particleSystem, 0) // 一時的な ID (RegisterEmitter で正式割り当て)
+    , mesh_(mesh)
   {
+    SetParticleCount(count);
+    SetFrequency(frequency);
     data_.type = static_cast<uint32_t>(EmitterType::Mesh);
-    data_.count = count;
-    data_.frequency = frequency;
 
     if (mesh_ != nullptr) {
       // Stage D-1: メッシュのインデックスバッファを StructuredBuffer<uint> として SRV 化
@@ -41,7 +42,7 @@ namespace Tako {
 
   std::shared_ptr<GPUParticleEmitter> MeshEmitter::Clone() const
   {
-    auto clone = std::make_shared<MeshEmitter>(particleSystem_, data_.emitterID, mesh_, data_.count, data_.frequency);
+    auto clone = std::make_shared<MeshEmitter>(particleSystem_, mesh_, data_.count, data_.frequency);
     // 全パラメータをコピー (ただし SRV インデックスはクローン側の新規 SRV を保持)
     uint32_t cloneSrvIndex = clone->data_.meshIndexSrvIndex;
     clone->data_ = data_;

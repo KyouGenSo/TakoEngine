@@ -4,6 +4,8 @@
 #include "SphereEmitter.h"
 #include "BoxEmitter.h"
 #include "TriangleEmitter.h"
+#include "MeshEmitter.h"
+#include "Mesh.h"
 #include "GPUParticle.h"
 #include "ImGuiManager.h"
 #include "Draw2D.h"
@@ -320,6 +322,24 @@ namespace Tako {
               }
             }
 
+            // Per-Particle Spawn 拘束 (Stage E)
+            if (ImGui::CollapsingHeader("Spawn Lock (per-particle)")) {
+              bool spawnLockOn = emitter->IsSpawnLock();
+              float lockK = emitter->GetLockStiffness();
+              float lockD = emitter->GetLockDamping();
+              if (ImGui::Checkbox("Lock To Spawn", &spawnLockOn)) {
+                emitter->SetSpawnLock(spawnLockOn, lockK, lockD);
+              }
+              ImGui::TextDisabled("Each particle is pulled back to its spawn position (per-particle spring).");
+              ImGui::TextDisabled("Combined with Mesh emitter: particles stick to mesh surface and follow rotation/movement.");
+              if (ImGui::DragFloat("Lock Stiffness (k)", &lockK, 0.1f, 0.0f, 200.0f)) {
+                emitter->SetSpawnLock(spawnLockOn, lockK, lockD);
+              }
+              if (ImGui::DragFloat("Lock Damping (d)", &lockD, 0.05f, 0.0f, 50.0f)) {
+                emitter->SetSpawnLock(spawnLockOn, lockK, lockD);
+              }
+            }
+
             // Per-Emitter Target 収束 (Stage C)
             if (ImGui::CollapsingHeader("Target Convergence")) {
               bool convergeOn = emitter->IsConvergeToTarget();
@@ -398,6 +418,24 @@ namespace Tako {
                 if (changed) {
                   triangleEmitter->SetVertices(v1, v2, v3);
                 }
+              }
+              else if (auto meshEmitter = std::dynamic_pointer_cast<MeshEmitter>(emitter)) {
+                // Stage D-1: Mesh エミッタの情報表示 (Mesh ポインタは実行時参照なので read-only)
+                const auto& edata = meshEmitter->GetData();
+                ImGui::Text("Triangle Count: %u", edata.meshTriangleCount);
+                ImGui::Text("AABB Min: (%.2f, %.2f, %.2f)", edata.meshAabbMin.x, edata.meshAabbMin.y, edata.meshAabbMin.z);
+                ImGui::Text("AABB Max: (%.2f, %.2f, %.2f)", edata.meshAabbMax.x, edata.meshAabbMax.y, edata.meshAabbMax.z);
+                ImGui::Text("Vertex SRV: %u, Index SRV: %u", edata.meshVertexSrvIndex, edata.meshIndexSrvIndex);
+                Mesh* meshPtr = meshEmitter->GetMesh();
+                if (meshPtr) {
+                  ImGui::Text("Mesh Vertices: %u", meshPtr->GetVertexCount());
+                  ImGui::Text("Mesh Indices: %u", meshPtr->GetIndexCount());
+                }
+                else {
+                  ImGui::TextColored(ImVec4(1, 0.5f, 0.5f, 1), "Mesh pointer is null!");
+                }
+                ImGui::TextDisabled("Use CreateMeshEmitter() in code to assign mesh.");
+                ImGui::TextDisabled("BindMeshWorld(const Matrix4x4*) for dynamic tracking.");
               }
             }
 

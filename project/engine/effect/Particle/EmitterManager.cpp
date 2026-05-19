@@ -3,6 +3,7 @@
 #include "SphereEmitter.h"
 #include "BoxEmitter.h"
 #include "TriangleEmitter.h"
+#include "MeshEmitter.h"
 #include "ForceFieldManager.h"
 #include "FrameTimer.h"
 #include <algorithm>
@@ -73,6 +74,27 @@ namespace Tako {
     // マップに追加
     emitterMap_[name] = emitter;
 
+  }
+
+  void EmitterManager::CreateMeshEmitter(const std::string& name, Mesh* mesh, uint32_t count, float frequency)
+  {
+    // 名前の重複チェック
+    if (emitterMap_.contains(name)) {
+#ifdef _DEBUG
+      DebugUIManager::GetInstance()->AddLog(
+        "Emitter name '" + name + "' already exists. Overwriting.", DebugUIManager::LogType::Warning);
+#endif
+      RemoveEmitter(name);
+    }
+
+    // Mesh エミッター作成 (Stage D-1)
+    auto emitter = std::make_shared<MeshEmitter>(particleSystem_, mesh, count, frequency);
+
+    // GPUParticle にエミッターを登録
+    particleSystem_->RegisterEmitter(emitter);
+
+    // マップに追加
+    emitterMap_[name] = emitter;
   }
 
   void EmitterManager::CreateTriangleEmitter(const std::string& name, const Vector3& position, const Vector3& v1, const Vector3& v2, const Vector3& v3, uint32_t count, float frequency)
@@ -1028,6 +1050,11 @@ namespace Tako {
     json["convergeStiffness"] = emitter->GetConvergeStiffness();
     json["convergeDamping"] = emitter->GetConvergeDamping();
 
+    // Per-Particle Spawn 拘束 (Stage E)
+    json["spawnLock"] = emitter->IsSpawnLock();
+    json["lockStiffness"] = emitter->GetLockStiffness();
+    json["lockDamping"] = emitter->GetLockDamping();
+
     // 色パラメータ
     json["startColor"] = { emitter->GetStartColor().x, emitter->GetStartColor().y, emitter->GetStartColor().z, emitter->GetStartColor().w };
     json["endColor"] = { emitter->GetEndColor().x, emitter->GetEndColor().y, emitter->GetEndColor().z, emitter->GetEndColor().w };
@@ -1153,6 +1180,11 @@ namespace Tako {
     }
     if (json.contains("convergeToTarget")) {
       emitter->SetConvergeToTarget(json["convergeToTarget"]);
+    }
+
+    // Per-Particle Spawn 拘束 (Stage E)。旧 JSON は欠落 → フラグ OFF (旧挙動互換)
+    if (json.contains("spawnLock") && json.contains("lockStiffness") && json.contains("lockDamping")) {
+      emitter->SetSpawnLock(json["spawnLock"], json["lockStiffness"], json["lockDamping"]);
     }
 
     if (json.contains("useDepthCollision")) {

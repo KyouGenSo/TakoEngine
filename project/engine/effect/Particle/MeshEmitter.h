@@ -24,11 +24,13 @@ namespace Tako {
     /// コンストラクタ
     /// </summary>
     /// <param name="particleSystem">GPU パーティクルシステムへのポインタ</param>
-    /// <param name="emitterId">エミッター ID</param>
     /// <param name="mesh">スポーン形状として使う Mesh (非所有、ライフタイム責務は呼び出し側)</param>
     /// <param name="count">1 回の射出で生成するパーティクル数</param>
     /// <param name="frequency">射出間隔 (秒)</param>
-    MeshEmitter(GPUParticle* particleSystem, uint32_t emitterId, Mesh* mesh, uint32_t count, float frequency);
+    /// <remarks>
+    /// emitterId は基底クラスで 0 として初期化される。実際の ID は <c>RegisterEmitter()</c> 時に割り当てられる。
+    /// </remarks>
+    MeshEmitter(GPUParticle* particleSystem, Mesh* mesh, uint32_t count, float frequency);
 
     ~MeshEmitter() override = default;
 

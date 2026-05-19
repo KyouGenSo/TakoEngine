@@ -221,6 +221,13 @@ namespace Tako {
     if (enable) data_.flags |= EFLAG_CONVERGE_TO_TARGET; else data_.flags &= ~EFLAG_CONVERGE_TO_TARGET;
   }
 
+  void GPUParticleEmitter::SetSpawnLock(bool enable, float stiffness, float damping)
+  {
+    if (enable) data_.flags |= EFLAG_LOCK_TO_SPAWN; else data_.flags &= ~EFLAG_LOCK_TO_SPAWN;
+    data_.lockStiffness = stiffness;
+    data_.lockDamping = damping;
+  }
+
   void GPUParticleEmitter::SetTargetPosition(const Vector3& position)
   {
     data_.targetPosition = position;

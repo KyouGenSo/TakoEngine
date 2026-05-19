@@ -30,6 +30,7 @@ static const int kMaxParticles = 1000000;
 #define EFLAG_USE_SCALE_FADE       (1u << 8) // スケール縮小消滅 (Stage B-1)
 #define EFLAG_USE_ALPHA_FADE       (1u << 9) // alpha フェード (既定 ON、OFF で寿命中は不透明)
 #define EFLAG_CONVERGE_TO_TARGET   (1u << 10) // Per-Emitter Target 収束 (Stage C)
+#define EFLAG_LOCK_TO_SPAWN        (1u << 11) // Per-Particle Spawn 拘束 (Stage E)
 
 // パラメータごとのランダム化フラグ（randomFlags 用）
 // randomFlags == 0 のときは旧来の「range != float2(0,0) ならランダム」自動判定にフォールバック
@@ -125,6 +126,10 @@ struct Emitter
     float4x4 meshWorld;
     float3   meshAabbMin;
     float3   meshAabbMax;
+
+    // --- Per-Particle Spawn 拘束 (Stage E) ---
+    float    lockStiffness;
+    float    lockDamping;
 
     // --- per-emitter 物理 / Curl Noise パラメーター ---
     float damping;              // 速度減衰係数
