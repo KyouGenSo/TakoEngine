@@ -63,7 +63,12 @@ public: // メンバー関数
 	/// インスタンシング描画設定
 	/// </summary>
 	void SetInstancedRenderSetting();
-	
+
+	/// <summary>
+	/// 半透明描画設定 (CullMode=NONE, DepthWriteMask=ZERO で両面描画 + 深度書き込み無効)
+	/// </summary>
+	void SetTransparentRenderSetting();
+
 
 	// ===== Getters =====
 	/// <summary>
@@ -309,6 +314,12 @@ private: // プライベートメンバー関数
 	/// </summary>
 	void CreateInstancedPSO();
 
+	/// <summary>
+	/// 半透明描画用パイプラインステートの生成 (CullMode=NONE, DepthWriteMask=ZERO)
+	/// RootSignature は通常描画用と共有
+	/// </summary>
+	void CreateTransparentPSO();
+
 private: // メンバー変数
 	DX12Basic* m_dx12_ = nullptr; ///< DirectX12基盤システムへの参照
 
@@ -328,6 +339,8 @@ private: // メンバー変数
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> instancedRootSignature_; ///< インスタンシング描画用ルートシグネチャ
 
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> instancedPipelineState_; ///< インスタンシング描画用パイプラインステート
+
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> transparentPipelineState_; ///< 半透明描画用パイプラインステート (両面描画 + 深度書き込み無効)
 };
 
 } // namespace Tako

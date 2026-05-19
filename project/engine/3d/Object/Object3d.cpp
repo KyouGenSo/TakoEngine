@@ -117,6 +117,13 @@ void Object3d::Update()
 
 void Object3d::Draw()
 {
+	// 半透明モードなら PSO を一時的に切り替え (CullMode=NONE で両面描画 + 深度書き込み無効)
+	// シャドウマップレンダリング中はシャドウ用 PSO が既にセットされているのでスキップ
+	const bool useTransparentPso = isTransparent_ && !ShadowRenderer::GetInstance()->IsRenderingShadow();
+	if (useTransparentPso) {
+		Object3dBasic::GetInstance()->SetTransparentRenderSetting();
+	}
+
 	// シャドウマップレンダリング中は異なるルートパラメータインデックスを使用
 	if (ShadowRenderer::GetInstance()->IsRenderingShadow()) {
 		// シャドウ用ルートシグネチャのインデックス（パラメータ0）
@@ -133,6 +140,11 @@ void Object3d::Draw()
 	if (m_model_)
 	{
 		m_model_->Draw(transformationMatData_->world, (*Object3dBasic::GetInstance()->GetCamera())->GetViewProjectionMatrix());
+	}
+
+	// 半透明モードで PSO を切り替えていた場合、後続の不透明 Object3d への影響を防ぐため通常 PSO に戻す
+	if (useTransparentPso) {
+		Object3dBasic::GetInstance()->SetCommonRenderSetting();
 	}
 }
 

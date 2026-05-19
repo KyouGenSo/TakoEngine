@@ -159,6 +159,18 @@ public: // メンバー関数
   void SetMaterialColor(const Vector4& color);
 
   /// <summary>
+  /// 半透明描画モードを設定 (両面描画 + 深度書き込み無効 PSO を使用)
+  /// </summary>
+  /// <param name="isTransparent">半透明描画モードにする場合 true</param>
+  void SetTransparent(bool isTransparent) { isTransparent_ = isTransparent; }
+
+  /// <summary>
+  /// 半透明描画モードか取得
+  /// </summary>
+  /// <returns>半透明描画モードなら true</returns>
+  bool IsTransparent() const { return isTransparent_; }
+
+  /// <summary>
   /// UV トランスフォームを設定
   /// </summary>
   /// <param name="uvTransform">UV トランスフォーム情報</param>
@@ -269,6 +281,9 @@ private: // メンバー変数
   Object3d* parentObject_ = nullptr; // 親となる Object3d
   std::string parentJointName_;      // アタッチする Joint 名
   Transform attachmentOffset_{};     // Joint からのオフセット
+
+  // 半透明描画モードフラグ (true なら Draw 内で TransparentRenderSetting に一時切り替え)
+  bool isTransparent_ = false;
 };
 
 } // namespace Tako

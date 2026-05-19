@@ -32,6 +32,7 @@ void Object3dBasic::Initialize(DX12Basic* dx12)
 
 	CreatePSO();
 	CreateInstancedPSO();
+	CreateTransparentPSO();
 
 	// ライトの生成と初期化
 	light_ = std::make_unique<Light>();
@@ -76,7 +77,25 @@ void Object3dBasic::SetCommonRenderSetting()
 
 	// ライトの描画設定
 	light_->PreDraw();
-	
+
+	// ShadowRenderer のリソース設定（ルートパラメータ9と10）
+	ShadowRenderer::GetInstance()->SetShadowForMainPass();
+}
+
+void Object3dBasic::SetTransparentRenderSetting()
+{
+	// ルートシグネチャは通常描画用と共有
+	m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
+
+	// 半透明描画用パイプラインステートの設定 (CullMode=NONE, DepthWriteMask=ZERO)
+	m_dx12_->GetCommandList()->SetPipelineState(transparentPipelineState_.Get());
+
+	// トポロジの設定
+	m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	// ライトの描画設定
+	light_->PreDraw();
+
 	// ShadowRenderer のリソース設定（ルートパラメータ9と10）
 	ShadowRenderer::GetInstance()->SetShadowForMainPass();
 }
@@ -335,6 +354,85 @@ void Object3dBasic::CreatePSO()
 
 	// 実際に生成
 	hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
+	assert(SUCCEEDED(hr));
+}
+
+void Object3dBasic::CreateTransparentPSO()
+{
+	HRESULT hr;
+
+	// RootSignature は通常描画用 (rootSignature_) を共有する — CreatePSO で生成済み
+
+	// InputLayout (通常描画と同じ: POSITION, TEXCOORD, NORMAL)
+	D3D12_INPUT_ELEMENT_DESC inputElementDescs[3] = {};
+	inputElementDescs[0].SemanticName = "POSITION";
+	inputElementDescs[0].SemanticIndex = 0;
+	inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+
+	inputElementDescs[1].SemanticName = "TEXCOORD";
+	inputElementDescs[1].SemanticIndex = 0;
+	inputElementDescs[1].Format = DXGI_FORMAT_R32G32_FLOAT;
+	inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+
+	inputElementDescs[2].SemanticName = "NORMAL";
+	inputElementDescs[2].SemanticIndex = 0;
+	inputElementDescs[2].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	inputElementDescs[2].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+
+	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
+	inputLayoutDesc.pInputElementDescs = inputElementDescs;
+	inputLayoutDesc.NumElements = _countof(inputElementDescs);
+
+	// BlendState (通常描画と同じアルファブレンド)
+	D3D12_BLEND_DESC blendDesc{};
+	blendDesc.RenderTarget[0].BlendEnable = true;
+	blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+	blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+	blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
+	blendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
+	blendDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+
+	// RasterizerState (差分: 両面描画)
+	D3D12_RASTERIZER_DESC rasterizerDesc{};
+	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
+	// 半透明描画では裏面も表示する (CullMode=NONE)
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
+
+	// shader (通常描画と同じものを使用)
+	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"Object3d.VS.hlsl"), L"vs_6_0");
+	assert(vertexShaderBlob != nullptr);
+
+	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"Object3d.PS.hlsl"), L"ps_6_0");
+	assert(pixelShaderBlob != nullptr);
+
+	// DepthStencilState (差分: 深度書き込み無効)
+	D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
+	depthStencilDesc.DepthEnable = true;
+	// 半透明描画では深度書き込みを無効化 (Z-fighting 防止 + 後続の半透明オブジェクトと正しく合成)
+	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+
+	// PSO の生成
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
+	graphicsPipelineStateDesc.pRootSignature = rootSignature_.Get();
+	graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
+	graphicsPipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() };
+	graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
+	graphicsPipelineStateDesc.BlendState = blendDesc;
+	graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
+	graphicsPipelineStateDesc.NumRenderTargets = 1;
+	graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	graphicsPipelineStateDesc.SampleDesc.Count = 1;
+	graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+	graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
+	graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+
+	// 実際に生成
+	hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&transparentPipelineState_));
 	assert(SUCCEEDED(hr));
 }
 
