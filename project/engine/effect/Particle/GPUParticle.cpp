@@ -447,6 +447,7 @@ namespace Tako {
   {
     perFrameData_->time = FrameTimer::GetInstance()->GetGameTime();
     perFrameData_->deltaTime = FrameTimer::GetInstance()->GetDeltaTime();
+    perFrameData_->frameCount++;
   }
 
   // CPU→GPU 同期
@@ -878,6 +879,8 @@ namespace Tako {
     // PerFrame のデータを初期化
     perFrameData_->time = 0.0f;
     perFrameData_->deltaTime = 0.0f;
+    // 毎起動異なる乱数ストリームを保証するため random_device で抽選
+    perFrameData_->frameCount = std::random_device{}();
   }
 
   void GPUParticle::CreateEmitterData()

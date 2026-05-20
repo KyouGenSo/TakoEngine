@@ -237,16 +237,33 @@ void main(uint3 DTid : SV_DispatchThreadID)
         }
     }
 
+    // PCG3D seed: 整数エントロピー源 (frameCount, emitterID, DTid) で初期化。
+    // time(float) は使わない - float 累積で sin() 入力の仮数部精度が劣化し
+    // 出力分布が少数 bucket に collapse する問題を避けるため、単調増加 uint で
+    // ある frameCount を seed 軸に採用 (CPU 側 PerFrame.frameCount を毎フレーム ++)。
+    // 各軸に異なる素数 (golden ratio / MurmurHash3 finalizer 由来) を掛けて
+    // XOR 混合することで DTid.x が emitterIndex 単独に collapse しても
+    // 全 96bit にビット拡散させる。
     RandomGenerator generator;
-    generator.seed = float3(
-        DTid.x * 73.0f + gPerFrame.time * 173.5f,
-        DTid.y * 191.0f + gPerFrame.time * 71.3f + gEmitters[emitterIndex].emitterID * 53.0f,
-        gEmitters[emitterIndex].emitterID * 127.0f + gPerFrame.time * 257.1f
+    generator.state = uint3(
+        gPerFrame.frameCount ^ (DTid.x * 0x9E3779B9u),
+        gEmitters[emitterIndex].emitterID ^ (gPerFrame.frameCount * 0x85EBCA6Bu),
+        (gPerFrame.frameCount + gEmitters[emitterIndex].emitterID) * 0xC2B2AE35u
     );
+    generator.state = pcg3d(generator.state); // warm-up 1 タップ
 
     // このエミッターから指定数のパーティクルを射出
     for (uint particleIndex = 0; particleIndex < gEmitters[emitterIndex].count; ++particleIndex)
     {
+        // particleIndex を明示的に state へ混入し Per-Particle 独立性を保証。
+        // PCG3D の state chaining だけでも各粒子に独立な値は出るが、将来 1 thread =
+        // 1 particle のディスパッチに切り替えた場合の前方互換性のため、ここで軸を
+        // 分離しておく。各軸の定数は CityHash / xxHash 系の素数。
+        generator.state ^= uint3(particleIndex * 0x27D4EB2Du,
+                                 particleIndex * 0x165667B1u,
+                                 particleIndex * 0xD3A2646Cu);
+        generator.state = pcg3d(generator.state);
+
         // FreeListから空きパーティクルスロットを取得
         int freeListIndex;
         InterlockedAdd(gFreeListIndex[0], -1, freeListIndex);

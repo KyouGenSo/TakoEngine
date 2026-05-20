@@ -17,19 +17,44 @@ float rand2dTo1d(float2 value)
     return frac(sin(dot(value, float2(127.1f, 311.7f))) * 43758.5453f);
 }
 
+// =============================================================================
+// PCG3D 整数ハッシュ
+// Mark Jarzynski, Marc Olano, "Hash Functions for GPU Rendering",
+// JCGT Vol.9 No.3, 2020.
+// frac(sin()) 系は time 等の大きな単調入力で float 仮数部の精度が劣化し、
+// 出力分布が少数の bucket に collapse する。PCG3D は整数演算のみで構成され
+// この問題を起こさないため、EmitParticle.CS の RandomGenerator はこちらを使用。
+// =============================================================================
+uint3 pcg3d(uint3 v)
+{
+    v = v * 1664525u + 1013904223u;
+    v.x += v.y * v.z; v.y += v.z * v.x; v.z += v.x * v.y;
+    v ^= v >> 16u;
+    v.x += v.y * v.z; v.y += v.z * v.x; v.z += v.x * v.y;
+    return v;
+}
+
+// uint → [0, 1) float。上位 23bit を mantissa に詰めて [1,2) を作り 1 を引く
+float uintToFloat01(uint u)
+{
+    return asfloat(0x3F800000u | (u >> 9u)) - 1.0f;
+}
+
 class RandomGenerator
 {
-    float3 seed;
-    
+    uint3 state;
+
     float3 Generate3d()
     {
-        seed = rand3dTo3d(seed);
-        return seed;
+        state = pcg3d(state);
+        return float3(uintToFloat01(state.x),
+                      uintToFloat01(state.y),
+                      uintToFloat01(state.z));
     }
-    
+
     float Generate1d()
     {
-        seed = rand3dTo3d(seed);
-        return seed.x;
+        state = pcg3d(state);
+        return uintToFloat01(state.x);
     }
 };

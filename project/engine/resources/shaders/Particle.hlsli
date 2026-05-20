@@ -148,7 +148,7 @@ struct PerFrame
     float time;                 // 時間
     float deltaTime;            // デルタタイム
     uint activeEmitterCount;    // アクティブなエミッター数
-    uint pad;                   // パディング
+    uint frameCount;            // GPU 乱数 seed 用フレームカウンタ (旧 pad)
 };
 
 // PerView情報構造体

@@ -217,7 +217,7 @@ namespace Tako {
     float time;                  ///< ゲーム開始からの総時間（秒）
     float deltaTime;             ///< 前フレームからの経過時間（秒）
     uint32_t activeEmitterCount; ///< アクティブなエミッター数
-    uint32_t pad;                ///< パディング（16バイトアライメント）
+    uint32_t frameCount;         ///< GPU 乱数 seed 用フレームカウンタ (HLSL PerFrame.frameCount と一致)
   };
 
   /// <summary>
