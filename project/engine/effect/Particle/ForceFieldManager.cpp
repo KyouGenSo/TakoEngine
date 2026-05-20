@@ -23,6 +23,13 @@ namespace Tako {
   {
   }
 
+  ForceFieldManager::~ForceFieldManager()
+  {
+    if (particleSystem_) {
+      particleSystem_->ClearForceFields();
+    }
+  }
+
   //========================================
   // ファイル単位 API
   //========================================

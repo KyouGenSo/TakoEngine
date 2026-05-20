@@ -26,7 +26,7 @@ namespace Tako {
     /// <summary>
     /// デストラクタ
     /// </summary>
-    ~ForceFieldManager() = default;
+    ~ForceFieldManager();
 
     /// <summary>
     /// 全フォースフィールドを ScenePreset JSON ファイルに保存
