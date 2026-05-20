@@ -237,13 +237,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
         }
     }
 
-    // PCG3D seed: 整数エントロピー源 (frameCount, emitterID, DTid) で初期化。
-    // time(float) は使わない - float 累積で sin() 入力の仮数部精度が劣化し
-    // 出力分布が少数 bucket に collapse する問題を避けるため、単調増加 uint で
-    // ある frameCount を seed 軸に採用 (CPU 側 PerFrame.frameCount を毎フレーム ++)。
-    // 各軸に異なる素数 (golden ratio / MurmurHash3 finalizer 由来) を掛けて
-    // XOR 混合することで DTid.x が emitterIndex 単独に collapse しても
-    // 全 96bit にビット拡散させる。
+    // ランダムジェネレーターの初期化
     RandomGenerator generator;
     generator.state = uint3(
         gPerFrame.frameCount ^ (DTid.x * 0x9E3779B9u),
@@ -255,10 +249,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
     // このエミッターから指定数のパーティクルを射出
     for (uint particleIndex = 0; particleIndex < gEmitters[emitterIndex].count; ++particleIndex)
     {
-        // particleIndex を明示的に state へ混入し Per-Particle 独立性を保証。
-        // PCG3D の state chaining だけでも各粒子に独立な値は出るが、将来 1 thread =
-        // 1 particle のディスパッチに切り替えた場合の前方互換性のため、ここで軸を
-        // 分離しておく。各軸の定数は CityHash / xxHash 系の素数。
+        // パーティクルごとにジェネレーターを進める（同一エミッター内で異なる乱数列になるように）
         generator.state ^= uint3(particleIndex * 0x27D4EB2Du,
                                  particleIndex * 0x165667B1u,
                                  particleIndex * 0xD3A2646Cu);
@@ -312,6 +303,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
                 {
                     // メッシュからのスポーン (Surface / Edge / Inside)
                     // Inside は SDF 未実装、AABB 内ランダムでフォールバック
+                    // TODO: Inside SDF 対応、SpawnLocation ごとの分布の実装（現状は全て Surface と同じ分布）
                     float3 localSpawn = float3(0.0f, 0.0f, 0.0f);
                     uint triCount = gEmitters[emitterIndex].meshTriangleCount;
                     if (triCount > 0)

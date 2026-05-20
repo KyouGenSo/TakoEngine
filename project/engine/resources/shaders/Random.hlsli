@@ -19,11 +19,6 @@ float rand2dTo1d(float2 value)
 
 // =============================================================================
 // PCG3D 整数ハッシュ
-// Mark Jarzynski, Marc Olano, "Hash Functions for GPU Rendering",
-// JCGT Vol.9 No.3, 2020.
-// frac(sin()) 系は time 等の大きな単調入力で float 仮数部の精度が劣化し、
-// 出力分布が少数の bucket に collapse する。PCG3D は整数演算のみで構成され
-// この問題を起こさないため、EmitParticle.CS の RandomGenerator はこちらを使用。
 // =============================================================================
 uint3 pcg3d(uint3 v)
 {
