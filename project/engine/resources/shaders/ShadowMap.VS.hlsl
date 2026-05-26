@@ -41,7 +41,7 @@ VertexOutput main(VertexInput input)
     // 深度値をテクスチャ座標として出力（デバッグ用）
     output.depth = output.position.z / output.position.w;
     
-    // 深度バイアスを適用（頂点シェーダーでの実装）
+    // 深度バイアスを適用
     // 通常はラスタライザーステートで設定するが、手動でも調整可能
     output.position.z += shadowBias * output.position.w;
     

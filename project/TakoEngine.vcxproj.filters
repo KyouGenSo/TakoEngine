@@ -679,9 +679,6 @@
     <FxCompile Include="engine\resources\shaders\BloomCombine.PS.hlsl">
       <Filter>shader\PostEffect</Filter>
     </FxCompile>
-    <FxCompile Include="engine\resources\shaders\BloomFog.PS.hlsl">
-      <Filter>shader\PostEffect</Filter>
-    </FxCompile>
     <FxCompile Include="engine\resources\shaders\BWFilter.PS.hlsl">
       <Filter>shader\PostEffect</Filter>
     </FxCompile>
@@ -722,9 +719,6 @@
       <Filter>shader\PostEffect</Filter>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\Vignette.PS.hlsl">
-      <Filter>shader\PostEffect</Filter>
-    </FxCompile>
-    <FxCompile Include="engine\resources\shaders\VignetteRedBloom.PS.hlsl">
       <Filter>shader\PostEffect</Filter>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\WhiteNoise.PS.hlsl">

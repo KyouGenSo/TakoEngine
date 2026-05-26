@@ -72,7 +72,7 @@ TextureCube<float4> gEnvironmentMap : register(t3); // Optional, if environment 
 Texture2D<float> gShadowMap : register(t4); // シャドウマップ
 SamplerComparisonState gShadowSampler : register(s1); // シャドウマップ用比較サンプラー
 
-// シャドウファクターを計算（動的PCF付き）
+// シャドウファクターを計算（動的PCF）
 float CalculateShadowFactor(float4 lightSpacePos, float3 normal)
 {
     // 透視変換の実行
@@ -86,7 +86,8 @@ float CalculateShadowFactor(float4 lightSpacePos, float3 normal)
     // シャドウマップの範囲外チェック
     if (shadowTexCoord.x < 0.0 || shadowTexCoord.x > 1.0 ||
         shadowTexCoord.y < 0.0 || shadowTexCoord.y > 1.0 ||
-        projCoords.z < 0.0 || projCoords.z > 1.0) {
+        projCoords.z < 0.0 || projCoords.z > 1.0)
+    {
         return 1.0; // シャドウマップの範囲外は照明
     }
     
@@ -106,10 +107,12 @@ float CalculateShadowFactor(float4 lightSpacePos, float3 normal)
     int kernelRadius = int(gShadowConstants.pcfKernelSize) / 2;
     float sampleCount = 0.0;
     
-    for (int x = -kernelRadius; x <= kernelRadius; ++x) {
-        for (int y = -kernelRadius; y <= kernelRadius; ++y) {
+    for (int x = -kernelRadius; x <= kernelRadius; ++x)
+    {
+        for (int y = -kernelRadius; y <= kernelRadius; ++y)
+        {
             float2 offset = float2(x, y) * texelSize;
-            shadowFactor += gShadowMap.SampleCmpLevelZero(gShadowSampler, 
+            shadowFactor += gShadowMap.SampleCmpLevelZero(gShadowSampler,
                            shadowTexCoord + offset, currentDepth);
             sampleCount += 1.0;
         }
@@ -128,7 +131,8 @@ PixelShaderOutput main(VertexShaderOutput input)
     
     // シャドウファクターを計算
     float shadowFactor = 1.0; // デフォルトでは影なし
-    if (gShadowConstants.enableShadow != 0) {
+    if (gShadowConstants.enableShadow != 0)
+    {
         shadowFactor = CalculateShadowFactor(input.lightSpacePos, normalize(input.normal));
     }
     
@@ -146,7 +150,7 @@ PixelShaderOutput main(VertexShaderOutput input)
             float NdotH = dot(normalize(input.normal), halfVector);
             float specularPow = pow(saturate(NdotH), gMaterial.shininess); // ���ˋ��x
             
-            // �g�U����
+            // 拡散反射
             float NdotL = saturate(dot(normalize(input.normal), -gDirectionalLight.direction));
             directionalLightDiffuse = texColor.rgb * gMaterial.color.rgb * gDirectionalLight.color.rgb * gDirectionalLight.intensity * NdotL * shadowFactor;
             
@@ -159,7 +163,7 @@ PixelShaderOutput main(VertexShaderOutput input)
             float NdotH = dot(normalize(input.normal), halfVector);
             float specularPow = pow(saturate(NdotH), gMaterial.shininess); // ���ˋ��x
             
-            // �g�U����
+            // 拡散反射
             float NdotL = saturate(dot(normalize(input.normal), -gDirectionalLight.direction));
             float cos = pow(NdotL * 0.5 + 0.5, 2.0f);
             directionalLightDiffuse = texColor.rgb * gMaterial.color.rgb * gDirectionalLight.color.rgb * gDirectionalLight.intensity * cos * shadowFactor;
@@ -186,11 +190,12 @@ PixelShaderOutput main(VertexShaderOutput input)
                 float factor = pow(saturate(-distance / gPointLights[i].radius + 1.0f), gPointLights[i].decay);
                 float3 pointLightColor = gPointLights[i].color.rgb * gPointLights[i].intensity * factor;
         
-                // �g�U����
+                // 拡散反射
+                // SHADOWマップの点光源は通常、影を考慮しないため、shadowFactorは適用しない
                 float NdotL = saturate(dot(normalize(input.normal), -pointLightDir));
                 totalPointLightDiffuse += texColor.rgb * gMaterial.color.rgb * pointLightColor * NdotL;
         
-                // ���ʔ���
+                // 鏡面反射
                 totalPointLightSpecular += gPointLights[i].color.rgb * gPointLights[i].intensity * specularPow * float3(1.0f, 1.0f, 1.0f);
             }
         }
@@ -217,11 +222,12 @@ PixelShaderOutput main(VertexShaderOutput input)
                 
                 float3 spotLightColor = gSpotLight[j].color.rgb * gSpotLight[j].intensity * factor * falloffFactor;
                 
-                // �g�U����
+                // 拡散反射
+                // SHADOWマップのスポットライトは通常、影を考慮しないため、shadowFactorは適用しない
                 float NdotL = saturate(dot(normalize(input.normal), -spotLightDirOnSurface));
                 spotLightDiffuse += texColor.rgb * gMaterial.color.rgb * spotLightColor * NdotL;
                 
-                // ���ʔ���
+                // 鏡面反射
                 spotLightSpecular += gSpotLight[j].color.rgb * gSpotLight[j].intensity * specularPow * float3(1.0f, 1.0f, 1.0f);
             }
         }
@@ -240,7 +246,7 @@ PixelShaderOutput main(VertexShaderOutput input)
 
         if (gMaterial.enableEnvMap != 0)
         {
-        // ���}�b�s���O��K�p
+        // 環境マップをサンプリングして反射色を取得
             float3 cameraToPos = normalize(input.worldPos - gCamera.worldPos);
             float3 refelectedVector = reflect(cameraToPos, normalize(input.normal));
             float4 environmentColor = gEnvironmentMap.Sample(gSampler, refelectedVector);
@@ -248,12 +254,12 @@ PixelShaderOutput main(VertexShaderOutput input)
             output.color.rgb += environmentColor.rgb * gMaterial.envMapCoefficient;
         }
     }
-    else
+    else // ライティング無効の場合はテクスチャカラーにマテリアルカラーを乗算
     {
         output.color = texColor * gMaterial.color;
         if (gMaterial.enableEnvMap != 0)
         {
-        // ���}�b�s���O��K�p
+        //　環境マップを単純に加算（ライティング無効なので反射ベクトルはカメラ方向の逆を使用）
             float3 cameraToPos = normalize(input.worldPos - gCamera.worldPos);
             float3 refelectedVector = reflect(cameraToPos, normalize(input.normal));
             float4 environmentColor = gEnvironmentMap.Sample(gSampler, refelectedVector);

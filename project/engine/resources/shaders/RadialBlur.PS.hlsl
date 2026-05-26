@@ -31,7 +31,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
 
     PixelShaderOutput output;
     output.color.rgb = outputColor;
-    output.color.a = 1.0f; // Alpha channel is set to 1.0 (opaque)
+    output.color.a = 1.0f;
 
     return output.color;
 }

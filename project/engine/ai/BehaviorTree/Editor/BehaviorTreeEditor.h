@@ -18,7 +18,6 @@ namespace Tako {
 
 /// <summary>
 /// BehaviorTreeEditor の初期化設定。
-/// ゲーム側から注入することで、エンジン側に固定パスを残さない。
 /// </summary>
 struct EditorConfig {
   /// BT 関連 JSON の配置ディレクトリ。存在しない場合は Initialize で自動生成。
@@ -39,7 +38,7 @@ struct EditorConfig {
 };
 
 /// <summary>
-/// ビヘイビアツリー用の汎用ノードエディタ (シングルトン、Debug ビルド限定)。
+/// ビヘイビアツリー用の汎用ノードエディタ。
 /// imgui-node-editor を直接使用してビヘイビアツリーを視覚的に編集する。
 /// ノード型は BTNodeRegistry に事前登録する必要がある。
 /// </summary>
@@ -59,7 +58,7 @@ public:
   BehaviorTreeEditor& operator=(const BehaviorTreeEditor&) = delete;
 
   /// <summary>
-  /// エディタの初期化 (設定注入)。
+  /// エディタの初期化。
   /// btJsonDir のディレクトリを自動生成し、imgui-node-editor のコンテキストを作る。
   /// initialTreeFile が指定されていれば LoadFromJSON で読み込む。
   /// </summary>
@@ -67,8 +66,7 @@ public:
   void Initialize(const EditorConfig& config);
 
   /// <summary>
-  /// 1 フレーム分の更新・描画 (ImGui ウィンドウ内で呼ぶ)。
-  /// 非表示状態 (isVisible_ == false) の場合は何も行わない。
+  /// 1 フレーム分の更新・描画 。
   /// </summary>
   void Update();
 
@@ -166,7 +164,7 @@ public:
   BTNodePtr BuildRuntimeTree();
 
   /// <summary>
-  /// 現在実行中のノードをエディタ上でハイライト表示 (パルスエフェクト)。
+  /// 現在実行中のノードをエディタ上でハイライト表示。
   /// </summary>
   /// <param name="nodePtr">実行中のランタイムノード (nullptr ならクリア)</param>
   void HighlightRunningNode(const BTNodePtr& nodePtr);
@@ -252,69 +250,69 @@ private:
   void RebuildEditorContext();
 
 private:
-  /// 注入された初期化設定
+  // 注入された初期化設定
   EditorConfig config_;
 
-  /// imgui-node-editor のエディタコンテキスト
+  // imgui-node-editor のエディタコンテキスト
   ed::EditorContext* editorContext_ = nullptr;
-  /// imgui-node-editor の設定 (SettingsFile 等)
+  // imgui-node-editor の設定 (SettingsFile 等)
   std::unique_ptr<ed::Config> editorConfig_;
 
-  /// エディタ上のノード一覧
+  // エディタ上のノード一覧
   std::vector<EditorNode> nodes_;
-  /// エディタ上のリンク一覧
+  // エディタ上のリンク一覧
   std::vector<EditorLink> links_;
-  /// エディタ上のピン一覧
+  // エディタ上のピン一覧
   std::vector<EditorPin> pins_;
 
-  /// ID カウンタ (ノード: 10000 番台で他エディタと分離)
+  // ID カウンタ (ノード: 10000 番台で他エディタと分離)
   int nextNodeId_ = 10000;
-  /// ID カウンタ (リンク: 30000 番台)
+  // ID カウンタ (リンク: 30000 番台)
   int nextLinkId_ = 30000;
-  /// ID カウンタ (ピン: 20000 番台)
+  // ID カウンタ (ピン: 20000 番台)
   int nextPinId_ = 20000;
 
-  /// 表示状態
+  // 表示状態
   bool isVisible_ = false;
-  /// 初回フレームフラグ (ed::SetNodePosition でノード位置を反映する 1 フレーム限定スイッチ)。
-  /// LoadFromJSON や CreateNode 後にも true に戻す。
+  // 初回フレームフラグ (ed::SetNodePosition でノード位置を反映する 1 フレーム限定スイッチ)。
+  // LoadFromJSON や CreateNode 後にも true に戻す。
   bool firstFrame_ = true;
 
-  /// 次の ed::End 前に ed::NavigateToContent() を呼んでビューを全ノードに合わせるフラグ。
-  /// 初回起動・LoadFromJSON 後に true。ナビゲート完了後 false に戻す。
+  // 次の ed::End 前に ed::NavigateToContent() を呼んでビューを全ノードに合わせるフラグ。
+  // 初回起動・LoadFromJSON 後に true。ナビゲート完了後 false に戻す。
   bool pendingNavigateToContent_ = true;
-  /// ハイライト中のノード ID (-1 ならハイライトなし)
+  // ハイライト中のノード ID (-1 ならハイライトなし)
   int highlightedNodeId_ = -1;
-  /// ハイライト開始時刻 (パルスエフェクト計算用)
+  // ハイライト開始時刻
   float highlightStartTime_ = 0.0f;
-  /// 現在選択中のノード ID (インスペクター連動)
+  // 現在選択中のノード ID (インスペクター連動)
   int selectedNodeId_ = -1;
 
-  /// ランタイムノードからエディタ ID への逆引きマップ
+  // ランタイムノードからエディタ ID への逆引きマップ
   std::unordered_map<BTNode*, int> runtimeNodeToEditorId_;
 
-  /// 次フレームで ed::SetNodePosition を呼びたいノード位置の予約リスト。
-  /// Add Node 直後の新規ノードのみ追加し、適用後クリアする。
-  /// LoadFromJSON では使わない (SettingsFile からの復元を優先する)。
+  // 次フレームで ed::SetNodePosition を呼びたいノード位置の予約リスト。
+  // Add Node 直後の新規ノードのみ追加し、適用後クリアする。
+  // LoadFromJSON では使わない (SettingsFile からの復元を優先する)。
   std::vector<std::pair<int, ImVec2>> pendingNodePositions_;
 
   //--- マルチツリー管理状態 ---
 
-  /// 現在編集中のツリー名 (拡張子なし、例: "MainTree")
+  // 現在編集中のツリー名 (拡張子なし、例: "MainTree")
   std::string currentTreeName_;
 
-  /// 未保存変更フラグ (CreateNode/DeleteNode/CreateLink 等で true、Save/Load で false)
+  // 未保存変更フラグ (CreateNode/DeleteNode/CreateLink 等で true、Save/Load で false)
   bool hasUnsavedChanges_ = false;
 
-  /// SwitchTree で未保存変更検出時に表示する確認モーダルのトリガー
+  // SwitchTree で未保存変更検出時に表示する確認モーダルのトリガー
   bool showUnsavedChangesModal_ = false;
 
-  /// SwitchTree 未保存確認モーダル経由で切替予定のツリー名
+  // SwitchTree 未保存確認モーダル経由で切替予定のツリー名
   std::string pendingSwitchTarget_;
 
-  /// 次回 Update 冒頭で ed::EditorContext を再作成するフラグ。
-  /// SettingsFile (= _{treeName}_layout.json) をツリーに合わせて切り替えるため、
-  /// LoadTree/SwitchTree 直後に立てる。
+  // 次回 Update 冒頭で ed::EditorContext を再作成するフラグ。
+  // SettingsFile (= _{treeName}_layout.json) をツリーに合わせて切り替えるため、
+  // LoadTree/SwitchTree 直後に立てる。
   bool pendingRebuildEditorContext_ = false;
 };
 

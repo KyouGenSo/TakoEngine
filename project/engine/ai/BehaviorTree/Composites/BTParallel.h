@@ -9,11 +9,6 @@ namespace Tako {
   /// 全ての子ノードを 1 フレームで並列に Execute し、
   /// 終了判定は Policy に応じて切り替える。
   /// </summary>
-  /// <remarks>
-  /// BTSequence / BTSelector は子を直列実行するため、
-  /// 「メイン攻撃が走っている間に別の攻撃を同時に行う」といった
-  /// 並列構成が表現できなかった。BTParallel はそのギャップを埋める。
-  /// </remarks>
   class BTParallel : public BTComposite {
   public:
     /// <summary>
@@ -42,7 +37,7 @@ namespace Tako {
     /// <summary>
     /// コンストラクタ。
     /// </summary>
-    /// <param name="policy">終了判定ポリシー (既定: MainChild)</param>
+    /// <param name="policy">終了判定ポリシー (デフォルト: MainChild)</param>
     explicit BTParallel(Policy policy = Policy::MainChild);
 
     /// <summary>
@@ -95,11 +90,11 @@ namespace Tako {
 #endif
 
   private:
-    /// 終了判定ポリシー
+    // 終了判定ポリシー
     Policy policy_;
 
-    /// 各子ノードの最新ステータス (初回 Execute 時に children_.size() に合わせて初期化)。
-    /// 一度 Success/Failure になった子は、再 Execute されずに状態を保持する (ポリシー判定用)。
+    // 各子ノードの最新ステータス (初回 Execute 時に children_.size() に合わせて初期化)。
+    // 一度 Success/Failure になった子は、再 Execute されずに状態を保持する (ポリシー判定用)。
     std::vector<BTNodeStatus> childStatuses_;
   };
 

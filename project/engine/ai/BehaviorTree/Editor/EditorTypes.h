@@ -18,7 +18,7 @@ struct EditorNode {
   int id;
   /// エディタキャンバス上の位置
   ImVec2 position;
-  /// ノードタイプ名 ("BTSelector" 等、BTNodeRegistry に登録済みの typeName)
+  /// ノードタイプ名
   std::string nodeType;
   /// 表示名 (パレット名、ユーザーが変更可能)
   std::string displayName;

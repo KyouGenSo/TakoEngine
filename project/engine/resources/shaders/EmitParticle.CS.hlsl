@@ -3,7 +3,6 @@
 
 // パラメータごとのランダム化判定
 // randomFlags が 0 の場合は旧来の「range != (0,0) ならランダム」自動判定にフォールバック
-// 既存 JSON プリセットの後方互換を保つための分岐
 bool ShouldRandomize(uint randomFlags, uint flagBit, float2 range)
 {
     if (randomFlags != 0u)
@@ -353,7 +352,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
                             localSpawn = v0 + u * (v1 - v0) + v * (v2 - v0);
                         }
                     }
-                    // mesh local → world 変換 (engine 規約は mul(vec, matrix))
+                    // mesh local → world 変換
                     particlePosition = mul(float4(localSpawn, 1.0f), gEmitters[emitterIndex].meshWorld).xyz;
                     // local 座標を保存 (per-particle 拘束で参照)
                     gParticles[particleID].targetLocal = localSpawn;

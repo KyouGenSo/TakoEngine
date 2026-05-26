@@ -6,7 +6,7 @@ static const int kMaxParticles = 1000000;
 #define EMITTER_TYPE_TRIANGLE 2
 #define EMITTER_TYPE_MESH 3
 
-// スポーン位置種別 (要望4: 中/外/線)
+// スポーン位置種別 
 #define SPAWN_INSIDE  0  // 中: 範囲内ランダム
 #define SPAWN_SURFACE 1  // 外: 境界面上
 #define SPAWN_EDGE    2  // 線: 頂点を繋ぐエッジ上
@@ -32,7 +32,7 @@ static const int kMaxParticles = 1000000;
 #define EFLAG_CONVERGE_TO_TARGET   (1u << 10) // Per-Emitter Target 収束
 #define EFLAG_LOCK_TO_SPAWN        (1u << 11) // Per-Particle Spawn 拘束
 
-// パラメータごとのランダム化フラグ（randomFlags 用）
+// パラメータごとのランダム化フラグ
 // randomFlags == 0 のときは旧来の「range != float2(0,0) ならランダム」自動判定にフォールバック
 #define ERAND_SCALE_X   (1u << 0)
 #define ERAND_SCALE_Y   (1u << 1)
@@ -79,7 +79,7 @@ struct Emitter
     uint   type;              // エミッタータイプ
     uint   flags;             // エミッターフラグ（EFLAG_* ビットフラグ）
     uint   emitterID;         // エミッターID
-    uint   randomFlags;       // パラメータごとのランダム化フラグ（ERAND_*、0 で旧来自動判定）
+    uint   randomFlags;       // パラメータごとのランダム化フラグ
     uint   spawnLocation;     // スポーン位置種別（SPAWN_INSIDE / SPAWN_SURFACE / SPAWN_EDGE）
 
     float3 position;          // 中心/基準位置
@@ -148,7 +148,7 @@ struct PerFrame
     float time;                 // 時間
     float deltaTime;            // デルタタイム
     uint activeEmitterCount;    // アクティブなエミッター数
-    uint frameCount;            // GPU 乱数 seed 用フレームカウンタ (旧 pad)
+    uint frameCount;            // GPU 乱数 seed 用フレームカウンタ
 };
 
 // PerView情報構造体

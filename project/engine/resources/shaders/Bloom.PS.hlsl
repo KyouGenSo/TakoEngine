@@ -147,5 +147,5 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     
     bloomColor.rgb += output.color.rgb;
     
-    return bloomColor; // return the final combined color
+    return bloomColor;
 }

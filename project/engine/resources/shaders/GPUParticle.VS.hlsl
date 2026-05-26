@@ -1,28 +1,23 @@
 #include "Particle.hlsli"
 
-// ���\�[�X�o�C���f�B���O
 StructuredBuffer<Particle> gParticles : register(t0);
 ConstantBuffer<PerView> gPerView : register(b0);
 
-// ���_�V�F�[�_�[����
 struct VertexShaderInput
 {
     float4 pos : POSITION;
     float2 texcoord : TEXCOORD0;
 };
 
-// ���_�V�F�[�_�[���C���֐�
 VertexShaderOutput main(VertexShaderInput input, uint instanceID : SV_InstanceID)
 {
     VertexShaderOutput output;
     
-    // �C���X�^���XID�ɑΉ�����p�[�e�B�N���f�[�^���擾
     Particle particle = gParticles[instanceID];
     
-    // �r���{�[�h�s����擾
     float4x4 worldMat = gPerView.billboardMat;
 
-	// Z����]��K�p----------------------------------------
+	// パーティクルの回転を適用 (Z軸回転のみ)
     if (particle.rotate.z != 0.0f)
     {
         float s, c;
@@ -44,17 +39,16 @@ VertexShaderOutput main(VertexShaderInput input, uint instanceID : SV_InstanceID
     worldMat[1] *= currentScale.y;
     worldMat[2] *= currentScale.z;
     
-    // �p�[�e�B�N���̈ʒu��K�p
+    // パーティクルの位置を適用
     worldMat[3].xyz = particle.translate;
     
-    // ���_�ʒu�̌v�Z
+    // ワールドビュー射影行列を乗算して最終的な頂点位置を計算
     output.pos = mul(input.pos, mul(worldMat, gPerView.viewProj));
     
-    // �e�N�X�`�����W�����̂܂܏o��
+    // テクスチャ座標はそのまま渡す
     output.texcoord = input.texcoord;
     
-    // �F�����o��
-    // �����Ɋ�Â��ĐF����`���
+    // パーティクルの色を計算
     float lifeRatio = particle.currentTime / particle.lifeTime;
     output.color = lerp(particle.startColor, particle.endColor, lifeRatio);
     

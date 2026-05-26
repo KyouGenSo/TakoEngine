@@ -42,16 +42,16 @@ namespace Tako {
     void ShuffleIndices();
 
   private:
-    /// シャッフルされたインデックス列
+    // シャッフルされたインデックス列
     std::vector<size_t> shuffledIndices_;
 
-    /// 現在のシャッフル済みインデックス位置 (Running 状態の継続用)
+    // 現在のシャッフル済みインデックス位置 (Running 状態の継続用)
     size_t currentShuffledIdx_ = 0;
 
-    /// シャッフルが必要かどうか (新しい選択サイクル開始時に true)
+    // シャッフルが必要かどうか (新しい選択サイクル開始時に true)
     bool needsShuffle_ = true;
 
-    /// 前回成功した子ノードのインデックス (連続選択防止用)
+    // 前回成功した子ノードのインデックス (連続選択防止用)
     std::optional<size_t> lastSuccessIdx_;
   };
 

@@ -53,7 +53,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
         }
     }
 
-    // Per-Emitter Target 収束 (バネ-ダンパ)
+    // Per-Emitter Target 収束 
     // 所属エミッターのフラグを引き、EFLAG_CONVERGE_TO_TARGET が立っていれば targetPosition へ向かう力を加算
     {
         uint eid = gParticles[particleIndex].emitterId;
@@ -95,10 +95,10 @@ void main(uint3 DTid : SV_DispatchThreadID)
     // フレーム間変位から暗黙速度を導出
     float3 displacement = currentPos - prevPos;
 
-    // 減衰の適用（エネルギー散逸） — per-emitter 値をパーティクルから読む
+    // 減衰の適用 — per-emitter 値をパーティクルから読む
     displacement *= gParticles[particleIndex].damping;
 
-    // Curl Noise乱流（速度の擾乱として displacement に加算。accelerationではなくdisplacementに適用することで十分な強度を得る）
+    // Curl Noise乱流（速度の擾乱として displacement に加算）
     if (gParticles[particleIndex].flags & PFLAG_USE_CURL_NOISE)
     {
         // per-emitter 値をパーティクルから読む。noiseTime は全体の時間進行なのでグローバル維持
@@ -107,7 +107,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
         displacement += curlNoise3D(noisePos) * gParticles[particleIndex].noiseStrength;
     }
 
-    // 新しい位置を計算: newPos = pos + displacement + accel * dt²
+    // 新しい位置を計算
     float3 newPos = currentPos + displacement + acceleration * dt * dt;
 
     // --- 深度バッファ衝突 ---
@@ -136,7 +136,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
     // 経過時間の更新
     gParticles[particleIndex].currentTime += dt;
 
-    // 寿命進行率 (0.0 → 1.0)。寿命終了判定はこの値で行うため、alpha フェード ON/OFF と独立
+    // 寿命進行率 (0.0 → 1.0)。
     float lifeRatio = gParticles[particleIndex].currentTime / max(gParticles[particleIndex].lifeTime, 0.0001f);
 
     // alpha フェード (PFLAG_ALPHA_FADE が立っているときのみ)
@@ -147,7 +147,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
     gParticles[particleIndex].startColor.a = alpha;
     gParticles[particleIndex].endColor.a = alpha;
 
-    // 寿命終了判定は lifeRatio ベース (alpha フェード OFF でも正しく動く)
+    // 寿命終了判定は lifeRatio ベース
     if (lifeRatio >= 1.0f)
     {
         gParticles[particleIndex].startColor.a = 0.0f;

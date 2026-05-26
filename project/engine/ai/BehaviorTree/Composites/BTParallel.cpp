@@ -7,7 +7,7 @@
 namespace Tako {
 
   namespace {
-    /// policy 文字列 → Policy 列挙値
+    // policy 文字列 → Policy 列挙値
     BTParallel::Policy PolicyFromString(const std::string& s) {
       if (s == "AllSuccess") return BTParallel::Policy::AllSuccess;
       if (s == "AnySuccess") return BTParallel::Policy::AnySuccess;
@@ -16,7 +16,7 @@ namespace Tako {
       return BTParallel::Policy::MainChild;
     }
 
-    /// Policy 列挙値 → 文字列
+    // Policy 列挙値 → 文字列
     const char* PolicyToString(BTParallel::Policy p) {
       switch (p) {
       case BTParallel::Policy::AllSuccess: return "AllSuccess";
@@ -35,7 +35,7 @@ namespace Tako {
 
   BTNodeStatus BTParallel::Execute(BTBlackboard* blackboard) {
     if (children_.empty()) {
-      // 子なしは Success (BTSequence と同じ慣習)
+      // 子なしは Success
       status_ = BTNodeStatus::Success;
       return status_;
     }
@@ -46,15 +46,14 @@ namespace Tako {
       childStatuses_.assign(children_.size(), BTNodeStatus::Running);
     }
 
-    // 1. 全 Running 子を 1 フレームで並列 tick
-    //    (Sequence/Selector のように index で順次ではなく、毎フレーム全子を呼ぶのが Parallel の本質)
+    // 全 Running 子を 1 フレームで並列 tick
     for (size_t i = 0; i < children_.size(); ++i) {
       if (childStatuses_[i] == BTNodeStatus::Running) {
         childStatuses_[i] = children_[i]->Execute(blackboard);
       }
     }
 
-    // 2. ポリシーに応じた終了判定
+    // ポリシーに応じた終了判定
     auto resetRunningChildren = [this](size_t skipIndex) {
       for (size_t i = 0; i < children_.size(); ++i) {
         if (i == skipIndex) continue;

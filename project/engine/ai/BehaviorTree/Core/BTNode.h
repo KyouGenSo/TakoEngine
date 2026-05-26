@@ -104,10 +104,10 @@ namespace Tako {
 #endif
 
   protected:
-    /// 現在の状態 (初期値 Failure)
+    // 現在の状態 (初期値 Failure)
     BTNodeStatus status_ = BTNodeStatus::Failure;
 
-    /// ノード名 (エディタ表示・デバッグログ用)
+    // ノード名 (エディタ表示・デバッグログ用)
     std::string name_ = "BTNode";
   };
 
