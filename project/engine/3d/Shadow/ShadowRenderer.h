@@ -6,11 +6,9 @@
 #include "Vector2.h"
 #include "ShadowMap.h"
 
-class DX12Basic;
-class ShadowMap;
-
 namespace Tako {
 
+  class DX12Basic;
   class Light;
   class Camera;
 
@@ -107,21 +105,6 @@ namespace Tako {
     bool IsEnabled() const { return shadowEnabled_; }
 
     /// <summary>
-    /// 定数バッファの GPU アドレスを取得
-    /// </summary>
-    /// <returns>定数バッファの GPU アドレス</returns>
-    D3D12_GPU_VIRTUAL_ADDRESS GetConstantBufferGPUAddress() const {
-      return shadowConstantBuffer_ ? shadowConstantBuffer_->GetGPUVirtualAddress() : 0;
-    }
-
-    /// <summary>
-    /// シャドウバイアスを設定
-    /// </summary>
-    /// <param name="bias">シャドウバイアス値</param>
-    void SetShadowBias(float bias) { shadowBias_ = bias; }
-
-
-    /// <summary>
     /// シャドウ品質を設定
     /// </summary>
     /// <param name="quality">品質レベル（0-4）</param>
@@ -152,12 +135,6 @@ namespace Tako {
     float GetMaxShadowDistance() const { return maxShadowDistance_; }
 
     /// <summary>
-    /// ShadowMap を取得
-    /// </summary>
-    /// <returns>ShadowMap ポインタ</returns>
-    ShadowMap* GetShadowMap() { return shadowMap_.get(); }
-
-    /// <summary>
     /// ImGui でのデバッグ表示
     /// </summary>
     void DrawImGui();
@@ -169,34 +146,32 @@ namespace Tako {
 
   private:
     /// <summary>
-    /// シャドウ用ルートシグネチャの作成
+    /// シャドウ用ルートシグネチャの作成（通常 / インスタンシング共通）
     /// </summary>
-    void CreateShadowRootSignature();
+    /// <param name="instanced">true の場合、末尾にインスタンスデータ用 SRV テーブル（t5）を追加</param>
+    /// <returns>生成したルートシグネチャ</returns>
+    Microsoft::WRL::ComPtr<ID3D12RootSignature> CreateShadowRootSignature(bool instanced);
 
     /// <summary>
-    /// シャドウ用パイプラインステートの作成
+    /// シャドウ用パイプラインステート（深度のみ）の作成（通常 / インスタンシング共通）
     /// </summary>
-    void CreateShadowPipelineState();
+    /// <param name="rootSignature">バインドするルートシグネチャ</param>
+    /// <param name="vsFileName">使用する頂点シェーダーのファイル名</param>
+    /// <returns>生成したパイプラインステート</returns>
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> CreateShadowPipelineState(
+        ID3D12RootSignature* rootSignature, const wchar_t* vsFileName);
 
     /// <summary>
     /// 定数バッファの作成
     /// </summary>
     void CreateConstantBuffer();
 
-    /// <summary>
-    /// インスタンシング用シャドウルートシグネチャの作成
-    /// </summary>
-    void CreateShadowInstancedRootSignature();
-
-    /// <summary>
-    /// インスタンシング用シャドウパイプラインステートの作成
-    /// </summary>
-    void CreateShadowInstancedPipelineState();
-
   private: // 定数構造
     /// <summary>
-    /// シャドウレンダリング用定数バッファ構造体
-    /// GPU 側に送信されるシャドウ設定パラメータ
+    /// シャドウレンダリング用定数バッファ構造体（HLSL register b4 の唯一の対応構造体）
+    /// GPU 側に送信されるシャドウ設定パラメータ。
+    /// 注意: このレイアウトは ShadowMap.VS.hlsl / ShadowMapInstanced.VS.hlsl /
+    /// Object3d.hlsli の cbuffer と一致させること（現状は lightViewProj のみが VS で参照される）。
     /// </summary>
     struct ShadowConstants {
       Matrix4x4 lightViewProj; ///< ライト空間のビュープロジェクション行列
@@ -225,7 +200,6 @@ namespace Tako {
     bool shadowEnabled_ = true;              ///< シャドウ有効/無効フラグ
     float shadowBias_ = 0.0001f;             ///< 深度比較の最小マージン（数値誤差吸収用のごく小さい固定値）
 
-    float slopeScaledDepthBias_ = 0.f;      ///< シャドウ生成時の勾配比例バイアス（アクネ対策、ImGui で調整）
     float maxShadowDistance_ = 50.0f;        ///< 影を表示する最大距離（カメラからの距離）
 
     bool isRenderingShadow_ = false;         ///< 現在シャドウパス中かどうかのフラグ

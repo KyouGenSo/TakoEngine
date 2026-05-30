@@ -1016,6 +1016,12 @@ namespace Tako {
     resourceStates_[resource] = initialState;
   }
 
+  void DX12Basic::RemoveResourceState(ID3D12Resource* resource)
+  {
+    // 状態追跡マップから該当エントリを削除（無ければ何もしない）
+    resourceStates_.erase(resource);
+  }
+
   void DX12Basic::SetUAVBarrier(ID3D12Resource* resource)
   {
     D3D12_RESOURCE_BARRIER barrier{};

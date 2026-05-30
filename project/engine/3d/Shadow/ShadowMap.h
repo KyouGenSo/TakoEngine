@@ -1,8 +1,7 @@
 #pragma once
+#include <cstdint>
 #include <d3d12.h>
 #include <wrl.h>
-#include "Vector3.h"
-#include "Matrix4x4.h"
 
 namespace Tako {
 
@@ -11,15 +10,14 @@ class SrvManager;
 
 /// <summary>
 /// シャドウマッピング用の深度バッファ管理クラス
-/// PCF（Percentage Closer Filtering）対応の高品質なシャドウ生成をサポート
-/// 動的な解像度変更、品質プリセット、深度バイアス調整機能を提供
+/// 深度テクスチャ（DSV/SRV）・ビューポート・解像度ポリシー・リソース状態遷移を管理する。
+/// 品質プリセットと PCF カーネルサイズによる動的な解像度変更（遅延再作成）に対応。
 /// </summary>
 class ShadowMap
 {
 public:
     /// <summary>
-    /// シャドウマップの品質プリセット
-    /// 解像度と PCF カーネルサイズを組み合わせた設定
+    /// シャドウマップの品質プリセット（解像度 + PCF カーネルサイズの組み合わせ）
     /// </summary>
     enum class ShadowQuality {
         Low = 0,     ///< 512x512, PCF 1x1 - モバイル向け最低品質
@@ -30,8 +28,7 @@ public:
     };
 
     static const uint32_t DEFAULT_SHADOW_MAP_SIZE = 2048; ///< デフォルトのシャドウマップ解像度（2048x2048）
-    
-public:
+
     /// <summary>
     /// 初期化
     /// </summary>
@@ -49,66 +46,38 @@ public:
     void BeginFrame();
 
     /// <summary>
-    /// シャドウマップレンダリング開始
+    /// シャドウマップレンダリング開始（DEPTH_WRITE へ遷移し深度をクリア）
     /// </summary>
     void BeginShadowMapRender();
 
     /// <summary>
-    /// シャドウマップレンダリング終了
+    /// シャドウマップレンダリング終了（PIXEL_SHADER_RESOURCE へ遷移）
     /// </summary>
     void EndShadowMapRender();
 
     /// <summary>
-    /// ライトビュープロジェクション行列を設定
-    /// </summary>
-    /// <param name="lightViewProj">ライトビュープロジェクション行列</param>
-    void SetLightViewProjectionMatrix(const Matrix4x4& lightViewProj);
-
-    /// <summary>
-    /// ライトビュープロジェクション行列を取得
-    /// </summary>
-    /// <returns>ライトビュープロジェクション行列の参照</returns>
-    const Matrix4x4& GetLightViewProjectionMatrix() const { return lightViewProjectionMatrix_; }
-
-    /// <summary>
-    /// SRV インデックスを取得
+    /// SRV インデックスを取得（深度テクスチャ読み取り用、register t4）
     /// </summary>
     /// <returns>シェーダーリソースビューのインデックス</returns>
     uint32_t GetSrvIndex() const { return srvIndex_; }
 
     /// <summary>
-    /// 深度バイアス設定
-    /// </summary>
-    /// <param name="bias">深度バイアス値</param>
-    /// <param name="slopeScaledBias">スロープスケール深度バイアス値</param>
-    void SetDepthBias(int bias, float slopeScaledBias) {
-        depthBias_ = bias;
-        slopeScaledDepthBias_ = slopeScaledBias;
-    }
-
-    /// <summary>
-    /// シャドウ品質の設定
+    /// シャドウ品質の設定（解像度と PCF カーネルサイズをまとめて変更）
     /// </summary>
     /// <param name="quality">品質プリセット</param>
     void SetShadowQuality(ShadowQuality quality);
 
     /// <summary>
-    /// カスタム解像度の設定
+    /// カスタム解像度の設定（256-8192、2のべき乗にクランプ）
     /// </summary>
-    /// <param name="size">シャドウマップの解像度（512-8192推奨）</param>
+    /// <param name="size">シャドウマップの解像度</param>
     void SetShadowMapSize(uint32_t size);
 
     /// <summary>
-    /// PCF カーネルサイズの設定（1, 3, 5, 7, 9のいずれか）
+    /// PCF カーネルサイズの設定（1, 3, 5, 7, 9 のいずれか）
     /// </summary>
     /// <param name="kernelSize">PCF カーネルサイズ</param>
     void SetPCFKernelSize(int kernelSize);
-
-    /// <summary>
-    /// 法線オフセットバイアスの設定
-    /// </summary>
-    /// <param name="normalBias">法線オフセットバイアス値</param>
-    void SetNormalOffsetBias(float normalBias) { normalOffsetBias_ = normalBias; }
 
     /// <summary>
     /// 現在の解像度を取得
@@ -124,7 +93,7 @@ public:
 
 private:
     /// <summary>
-    /// シャドウマップリソースの作成
+    /// シャドウマップリソース（深度テクスチャ）の作成
     /// </summary>
     void CreateShadowMapResource();
 
@@ -138,57 +107,23 @@ private:
     /// </summary>
     void CreateShaderResourceView();
 
-    /// <summary>
-    /// 定数バッファの作成
-    /// </summary>
-    void CreateConstantBuffer();
-
 private:
-    DX12Basic* dx12_; ///< DirectX12基盤システムへの参照
-    SrvManager* srvManager_; ///< SRV 管理システムへの参照
+    DX12Basic* dx12_ = nullptr;        ///< DirectX12基盤システムへの参照
+    SrvManager* srvManager_ = nullptr; ///< SRV 管理システムへの参照
 
-    Microsoft::WRL::ComPtr<ID3D12Resource> shadowMapResource_; ///< シャドウマップ用深度テクスチャリソース
-
+    Microsoft::WRL::ComPtr<ID3D12Resource> shadowMapResource_;       ///< シャドウマップ用深度テクスチャリソース
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap_; ///< 深度ステンシルビュー用ディスクリプタヒープ
-
-    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle_; ///< 深度ステンシルビューの CPU ハンドル
-
-    uint32_t srvIndex_; ///< シェーダーリソースビューのインデックス（テクスチャとして読み取り用）
-
-    Matrix4x4 lightViewProjectionMatrix_; ///< ライト空間のビュープロジェクション行列
-
-    Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_; ///< シャドウパラメータ用定数バッファ
-
-    /// <summary>
-    /// シャドウマップ用定数バッファ構造体
-    /// GPU 側に送信されるシャドウパラメータ
-    /// </summary>
-    struct ShadowConstantBuffer
-    {
-        Matrix4x4 lightViewProjectionMatrix; ///< ライトビュープロジェクション行列
-        float depthBias;                     ///< 深度バイアス（シャドウアクネ防止）
-        float slopeScaledDepthBias;          ///< スロープスケール深度バイアス
-        float normalOffsetBias;              ///< 法線オフセットバイアス（ピーターパニング防止）
-        float pcfKernelSize;                 ///< PCF カーネルサイズ（フィルタリング品質）
-    };
-    ShadowConstantBuffer* constantBufferData_; ///< 定数バッファのマップ済みポインタ
-
-    int depthBias_ = 100000;                   ///< 深度バイアス値（デフォルト値）
-    float slopeScaledDepthBias_ = 1.0f;        ///< スロープスケール深度バイアス値
-    float normalOffsetBias_ = 0.01f;           ///< 法線オフセットバイアス値
+    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle_{};                        ///< 深度ステンシルビューの CPU ハンドル
+    uint32_t srvIndex_ = UINT32_MAX;                                 ///< SRV インデックス（深度テクスチャ読み取り用、未確保時は UINT32_MAX。0 は有効なインデックスのため使えない）
 
     uint32_t shadowMapSize_ = DEFAULT_SHADOW_MAP_SIZE; ///< 現在のシャドウマップ解像度
-    int pcfKernelSize_ = 3;                    ///< PCF カーネルサイズ（デフォルト3x3）
-    ShadowQuality currentQuality_ = ShadowQuality::High; ///< 現在の品質設定
-    bool needsRecreation_ = false;             ///< リソース再作成が必要かどうかのフラグ
+    int pcfKernelSize_ = 3;                            ///< PCF カーネルサイズ（デフォルト3x3）
 
-    bool pendingRecreation_ = false;           ///< 次フレームで再作成を行うフラグ（遅延実行用）
+    bool pendingRecreation_ = false;                         ///< 次フレームで再作成を行うフラグ（遅延実行用）
     uint32_t pendingShadowMapSize_ = DEFAULT_SHADOW_MAP_SIZE; ///< 次フレームで適用する解像度
 
-    D3D12_VIEWPORT viewport_;                  ///< シャドウマップレンダリング用ビューポート
-    D3D12_RECT scissorRect_;                   ///< シャドウマップレンダリング用シザー矩形
-
-    bool isFirstFrame_ = true;                 ///< 初回フレーム判定フラグ
+    D3D12_VIEWPORT viewport_{};  ///< シャドウマップレンダリング用ビューポート
+    D3D12_RECT scissorRect_{};   ///< シャドウマップレンダリング用シザー矩形
 };
 
 } // namespace Tako

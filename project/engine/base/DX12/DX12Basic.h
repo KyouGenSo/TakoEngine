@@ -180,6 +180,13 @@ namespace Tako {
     void SetInitialResourceState(ID3D12Resource* resource, D3D12_RESOURCE_STATES initialState);
 
     /// <summary>
+    /// リソースの状態追跡エントリを削除（リソースを破棄/再作成する前に呼ぶ）
+    /// 解放済みポインタのエントリが残り、アドレス再利用時に誤った状態遷移を起こすのを防ぐ。
+    /// </summary>
+    /// <param name="resource">対象リソース</param>
+    void RemoveResourceState(ID3D12Resource* resource);
+
+    /// <summary>
     /// UAV リソースバリアの設定
     /// </summary>
     /// <param name="resource">対象 UAV リソース</param>

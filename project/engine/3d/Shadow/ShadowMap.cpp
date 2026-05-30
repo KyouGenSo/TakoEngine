@@ -1,11 +1,17 @@
 #include "ShadowMap.h"
 #include "DX12Basic.h"
 #include "SrvManager.h"
-#include "Matrix4x4.h"
-#include "Mat4x4Func.h"
 #include <cassert>
 
 namespace Tako {
+
+namespace {
+    // シャドウ深度テクスチャのフォーマット。
+    // TYPELESS リソースを DSV（深度書き込み）と SRV（深度読み取り）で別ビューとして扱う。
+    constexpr DXGI_FORMAT kShadowTypelessFormat = DXGI_FORMAT_R32_TYPELESS; ///< リソース本体
+    constexpr DXGI_FORMAT kShadowDepthFormat    = DXGI_FORMAT_D32_FLOAT;    ///< DSV / クリア値
+    constexpr DXGI_FORMAT kShadowSrvFormat      = DXGI_FORMAT_R32_FLOAT;    ///< SRV（読み取り）
+}
 
 void ShadowMap::Initialize(DX12Basic* dx12)
 {
@@ -14,7 +20,7 @@ void ShadowMap::Initialize(DX12Basic* dx12)
   srvManager_ = SrvManager::GetInstance();
   assert(srvManager_);
 
-  // シャドウマップリソースの作成
+  // シャドウマップリソース（深度テクスチャ）の作成
   CreateShadowMapResource();
 
   // DSV の作成
@@ -22,9 +28,6 @@ void ShadowMap::Initialize(DX12Basic* dx12)
 
   // SRV の作成
   CreateShaderResourceView();
-
-  // 定数バッファの作成
-  CreateConstantBuffer();
 
   // ビューポートとシザー矩形の設定
   viewport_.Width = static_cast<float>(shadowMapSize_);
@@ -42,15 +45,19 @@ void ShadowMap::Initialize(DX12Basic* dx12)
 
 void ShadowMap::Finalize()
 {
-  // null チェックと有効なインデックスの確認
-  if (srvManager_ && srvIndex_ != 0) {
-    // SrvManager が有効かつインデックスが割り当てられている場合のみ解放
+  // SRV インデックスを解放（有効に確保されている場合のみ）
+  if (srvManager_ && srvIndex_ != UINT32_MAX) {
     if (srvManager_->IsAllocated(srvIndex_)) {
       srvManager_->Free(srvIndex_);
     }
-    srvIndex_ = 0;
+    srvIndex_ = UINT32_MAX;
   }
-  
+
+  // 状態追跡エントリを削除（リソース破棄前にマップから除去）
+  if (dx12_ && shadowMapResource_) {
+    dx12_->RemoveResourceState(shadowMapResource_.Get());
+  }
+
   // ポインタをクリア
   srvManager_ = nullptr;
 }
@@ -60,29 +67,34 @@ void ShadowMap::BeginFrame()
   // 遅延リソース再作成の処理
   if (pendingRecreation_) {
     // 前フレームの描画が完了しているので、安全にリソースを再作成できる
-    
+
     // 既存のリソースを解放
-    if (srvIndex_ != 0) {
+    if (srvIndex_ != UINT32_MAX) {
       srvManager_->Free(srvIndex_);
-      srvIndex_ = 0;
+      srvIndex_ = UINT32_MAX;
+    }
+    // 状態追跡エントリを削除してからリソースを破棄する
+    // （解放済みアドレスが別リソースに再利用された際の誤った状態遷移を防ぐ）
+    if (shadowMapResource_) {
+      dx12_->RemoveResourceState(shadowMapResource_.Get());
     }
     shadowMapResource_.Reset();
     dsvDescriptorHeap_.Reset();
-    
+
     // 新しいサイズを適用
     shadowMapSize_ = pendingShadowMapSize_;
-    
+
     // リソースを再作成
     CreateShadowMapResource();
     CreateDepthStencilView();
     CreateShaderResourceView();
-    
+
     // ビューポートとシザー矩形を更新
     viewport_.Width = static_cast<float>(shadowMapSize_);
     viewport_.Height = static_cast<float>(shadowMapSize_);
     scissorRect_.right = shadowMapSize_;
     scissorRect_.bottom = shadowMapSize_;
-    
+
     // フラグをクリア
     pendingRecreation_ = false;
   }
@@ -108,11 +120,6 @@ void ShadowMap::BeginShadowMapRender()
   // ビューポートとシザー矩形を設定
   commandList->RSSetViewports(1, &viewport_);
   commandList->RSSetScissorRects(1, &scissorRect_);
-  
-  // 初回フレームフラグをクリア
-  if (isFirstFrame_) {
-    isFirstFrame_ = false;
-  }
 }
 
 void ShadowMap::EndShadowMapRender()
@@ -122,20 +129,6 @@ void ShadowMap::EndShadowMapRender()
     shadowMapResource_.Get(),
     D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
   );
-}
-
-void ShadowMap::SetLightViewProjectionMatrix(const Matrix4x4& lightViewProj)
-{
-  lightViewProjectionMatrix_ = lightViewProj;
-
-  // 定数バッファを更新
-  if (constantBufferData_) {
-    constantBufferData_->lightViewProjectionMatrix = lightViewProjectionMatrix_;
-    constantBufferData_->depthBias = static_cast<float>(depthBias_);
-    constantBufferData_->slopeScaledDepthBias = slopeScaledDepthBias_;
-    constantBufferData_->normalOffsetBias = normalOffsetBias_;
-    constantBufferData_->pcfKernelSize = static_cast<float>(pcfKernelSize_);
-  }
 }
 
 void ShadowMap::CreateShadowMapResource()
@@ -148,7 +141,7 @@ void ShadowMap::CreateShadowMapResource()
   resourceDesc.Height = shadowMapSize_;
   resourceDesc.DepthOrArraySize = 1;
   resourceDesc.MipLevels = 1;
-  resourceDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+  resourceDesc.Format = kShadowTypelessFormat;
   resourceDesc.SampleDesc.Count = 1;
   resourceDesc.SampleDesc.Quality = 0;
   resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
@@ -160,7 +153,7 @@ void ShadowMap::CreateShadowMapResource()
   heapProps.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
 
   D3D12_CLEAR_VALUE clearValue = {};
-  clearValue.Format = DXGI_FORMAT_D32_FLOAT;
+  clearValue.Format = kShadowDepthFormat;
   clearValue.DepthStencil.Depth = 1.0f;
   clearValue.DepthStencil.Stencil = 0;
 
@@ -175,7 +168,7 @@ void ShadowMap::CreateShadowMapResource()
   assert(SUCCEEDED(hr));
 
   shadowMapResource_.Get()->SetName(L"ShadowMapResource");
-  
+
   // 初期状態を DX12Basic の状態追跡マップに登録
   // これにより、最初の BeginShadowMapRender で正しい状態遷移が行われる
   dx12_->SetInitialResourceState(
@@ -193,7 +186,7 @@ void ShadowMap::CreateDepthStencilView()
 
   // DSV の作成
   D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
-  dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
+  dsvDesc.Format = kShadowDepthFormat;
   dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
   dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
   dsvDesc.Texture2D.MipSlice = 0;
@@ -209,86 +202,46 @@ void ShadowMap::CreateShaderResourceView()
   srvIndex_ = srvManager_->Allocate();
   assert(srvManager_->CanAllocate());
 
-  // SRV の作成
+  // SRV の作成（深度を float として読み取る）
   srvManager_->CreateSRVForTexture2D(
-    srvIndex_, shadowMapResource_.Get(), DXGI_FORMAT_R32_FLOAT, 1);
-}
-
-void ShadowMap::CreateConstantBuffer()
-{
-  // 定数バッファの作成
-  constantBuffer_ = dx12_->MakeBufferResource(sizeof(ShadowConstantBuffer));
-  assert(constantBuffer_);
-
-  // 定数バッファをマップ
-  HRESULT hr = constantBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&constantBufferData_));
-  assert(SUCCEEDED(hr));
-
-  // 初期値を設定
-  constantBufferData_->lightViewProjectionMatrix = Mat4x4::MakeIdentity();
-  constantBufferData_->depthBias = static_cast<float>(depthBias_);
-  constantBufferData_->slopeScaledDepthBias = slopeScaledDepthBias_;
-  constantBufferData_->normalOffsetBias = normalOffsetBias_;
-  constantBufferData_->pcfKernelSize = static_cast<float>(pcfKernelSize_);
+    srvIndex_, shadowMapResource_.Get(), kShadowSrvFormat, 1);
 }
 
 void ShadowMap::SetShadowQuality(ShadowQuality quality)
 {
-  currentQuality_ = quality;
-  
-  // 品質に応じた設定
+  // 品質に応じた解像度と PCF カーネルサイズの設定
   uint32_t newSize = DEFAULT_SHADOW_MAP_SIZE;
   switch (quality) {
-    case ShadowQuality::Low:
-      newSize = 512;
-      pcfKernelSize_ = 1;
-      break;
-    case ShadowQuality::Medium:
-      newSize = 1024;
-      pcfKernelSize_ = 3;
-      break;
-    case ShadowQuality::High:
-      newSize = 2048;
-      pcfKernelSize_ = 5;
-      break;
-    case ShadowQuality::Ultra:
-      newSize = 4096;
-      pcfKernelSize_ = 7;
-      break;
-    case ShadowQuality::Super:
-      newSize = 8192;
-      pcfKernelSize_ = 9;
-      break;
+    case ShadowQuality::Low:    newSize = 512;  pcfKernelSize_ = 1; break;
+    case ShadowQuality::Medium: newSize = 1024; pcfKernelSize_ = 3; break;
+    case ShadowQuality::High:   newSize = 2048; pcfKernelSize_ = 5; break;
+    case ShadowQuality::Ultra:  newSize = 4096; pcfKernelSize_ = 7; break;
+    case ShadowQuality::Super:  newSize = 8192; pcfKernelSize_ = 9; break;
   }
-  
-  // サイズが変更される場合は次フレームで再作成
+
+  // サイズが変更される場合は次フレームで再作成（PCF カーネルサイズは即時反映）
   if (shadowMapSize_ != newSize && shadowMapResource_) {
     pendingShadowMapSize_ = newSize;
     pendingRecreation_ = true;
   } else {
     shadowMapSize_ = newSize;
   }
-  
-  // 定数バッファを更新（PCF カーネルサイズはすぐに変更可能）
-  if (constantBufferData_) {
-    constantBufferData_->pcfKernelSize = static_cast<float>(pcfKernelSize_);
-  }
 }
 
 void ShadowMap::SetShadowMapSize(uint32_t size)
 {
-  // 2のべき乗にクランプ
+  // 2のべき乗にクランプ（256-8192）
   uint32_t clampedSize = 256;
   while (clampedSize < size && clampedSize < 8192) {
     clampedSize *= 2;
   }
-  
+
   // サイズが変更される場合は次フレームで再作成
   if (shadowMapSize_ != clampedSize && shadowMapResource_) {
     pendingShadowMapSize_ = clampedSize;
     pendingRecreation_ = true;
   } else if (!shadowMapResource_) {
-    // 初回の場合はすぐに設定
+    // 初回（リソース未作成）の場合はすぐに設定
     shadowMapSize_ = clampedSize;
   }
 }
@@ -298,11 +251,6 @@ void ShadowMap::SetPCFKernelSize(int kernelSize)
   // 奇数値のみ許可（1, 3, 5, 7, 9）
   if (kernelSize >= 1 && kernelSize <= 9 && kernelSize % 2 == 1) {
     pcfKernelSize_ = kernelSize;
-    
-    // 定数バッファを更新
-    if (constantBufferData_) {
-      constantBufferData_->pcfKernelSize = static_cast<float>(pcfKernelSize_);
-    }
   }
 }
 
