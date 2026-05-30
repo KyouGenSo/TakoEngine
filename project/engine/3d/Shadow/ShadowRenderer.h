@@ -168,10 +168,8 @@ namespace Tako {
 
   private: // 定数構造
     /// <summary>
-    /// シャドウレンダリング用定数バッファ構造体（HLSL register b4 の唯一の対応構造体）
+    /// シャドウレンダリング用定数バッファ構造体
     /// GPU 側に送信されるシャドウ設定パラメータ。
-    /// 注意: このレイアウトは ShadowMap.VS.hlsl / ShadowMapInstanced.VS.hlsl /
-    /// Object3d.hlsli の cbuffer と一致させること（現状は lightViewProj のみが VS で参照される）。
     /// </summary>
     struct ShadowConstants {
       Matrix4x4 lightViewProj; ///< ライト空間のビュープロジェクション行列

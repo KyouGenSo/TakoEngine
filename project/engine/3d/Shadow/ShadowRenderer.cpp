@@ -76,7 +76,7 @@ void ShadowRenderer::Update()
         shadowMap_->BeginFrame();
     }
 
-    // シャドウマップの更新（light_ / camera_ が揃っている場合のみ）
+    // シャドウマップの更新
     if (shadowEnabled_ && camera_ && light_) {
         light_->UpdateDirectionalLightShadowMatrices(camera_, maxShadowDistance_);
         shadowConstantData_->lightViewProj = light_->GetDirectionalLight().viewProjMatrix;
@@ -197,7 +197,7 @@ Microsoft::WRL::ComPtr<ID3D12RootSignature> ShadowRenderer::CreateShadowRootSign
     instanceRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
     instanceRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-    // RootParameter（通常: 2個、インスタンシング: + t5 テーブルで 3個）
+    // RootParameter
     D3D12_ROOT_PARAMETER rootParameters[3] = {};
 
     // Parameter 0: TransformationMatrix (b0)

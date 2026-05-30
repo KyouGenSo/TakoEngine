@@ -30,9 +30,6 @@ cbuffer ShadowTransform : register(b4)
     float shadowBias;
     int enableShadow;
     float2 shadowMapSize;
-    float normalOffsetBias;
-    float pcfKernelSize;
-    float padding[2];
 };
 
 VertexOutput main(VertexInput input, uint instanceID : SV_InstanceID)

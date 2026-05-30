@@ -114,7 +114,7 @@ private:
     Microsoft::WRL::ComPtr<ID3D12Resource> shadowMapResource_;       ///< シャドウマップ用深度テクスチャリソース
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap_; ///< 深度ステンシルビュー用ディスクリプタヒープ
     D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle_{};                        ///< 深度ステンシルビューの CPU ハンドル
-    uint32_t srvIndex_ = UINT32_MAX;                                 ///< SRV インデックス（深度テクスチャ読み取り用、未確保時は UINT32_MAX。0 は有効なインデックスのため使えない）
+    uint32_t srvIndex_ = UINT32_MAX;                                 ///< SRV インデックス（深度テクスチャ読み取り用）
 
     uint32_t shadowMapSize_ = DEFAULT_SHADOW_MAP_SIZE; ///< 現在のシャドウマップ解像度
     int pcfKernelSize_ = 3;                            ///< PCF カーネルサイズ（デフォルト3x3）
