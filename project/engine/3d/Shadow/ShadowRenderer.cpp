@@ -67,7 +67,6 @@ void ShadowRenderer::Update()
             static_cast<float>(shadowMap_->GetShadowMapSize())
         };
         shadowConstantData_->shadowBias = shadowBias_;
-        shadowConstantData_->normalOffsetBias = normalOffsetBias_;
         shadowConstantData_->pcfKernelSize = static_cast<float>(shadowMap_->GetPCFKernelSize());
         shadowMap_->SetLightViewProjectionMatrix(light_->GetDirectionalLight().viewProjMatrix);
     } else {
@@ -236,12 +235,12 @@ void ShadowRenderer::CreateShadowPipelineState()
     D3D12_BLEND_DESC blendDesc{};
     blendDesc.RenderTarget[0].RenderTargetWriteMask = 0; // カラー出力しない
     
-    // RasterizerState（フロントフェースカリング）
+    // RasterizerState
     D3D12_RASTERIZER_DESC rasterizerDesc{};
     rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
-    rasterizerDesc.CullMode = D3D12_CULL_MODE_FRONT; // シャドウアクネ対策
-    rasterizerDesc.DepthBias = 100000; // 深度バイアス
-    rasterizerDesc.SlopeScaledDepthBias = 1.0f; // スロープスケール深度バイアス
+    rasterizerDesc.CullMode = D3D12_CULL_MODE_FRONT;
+    rasterizerDesc.SlopeScaledDepthBias = slopeScaledDepthBias_; // 勾配比例バイアス（ImGui で調整、PSO 再生成）
+    rasterizerDesc.DepthBiasClamp = 0.01f;                       // バイアスの上限（暴走防止）
     
     // シェーダーのコンパイル
     Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = dx12_->CompileShader(
@@ -291,7 +290,6 @@ void ShadowRenderer::CreateConstantBuffer()
     shadowConstantData_->shadowBias = shadowBias_;
     shadowConstantData_->enableShadow = shadowEnabled_ ? 1 : 0;
     shadowConstantData_->shadowMapSize = {2048.0f, 2048.0f};
-    shadowConstantData_->normalOffsetBias = normalOffsetBias_;
     shadowConstantData_->pcfKernelSize = 3.0f;
 }
 
@@ -422,12 +420,12 @@ void ShadowRenderer::CreateShadowInstancedPipelineState()
     D3D12_BLEND_DESC blendDesc{};
     blendDesc.RenderTarget[0].RenderTargetWriteMask = 0; // カラー出力しない
     
-    // RasterizerState（フロントフェースカリング）
+    // RasterizerState
     D3D12_RASTERIZER_DESC rasterizerDesc{};
     rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
-    rasterizerDesc.CullMode = D3D12_CULL_MODE_FRONT; // シャドウアクネ対策
-    rasterizerDesc.DepthBias = 100000; // 深度バイアス
-    rasterizerDesc.SlopeScaledDepthBias = 1.0f; // スロープスケール深度バイアス
+    rasterizerDesc.CullMode = D3D12_CULL_MODE_FRONT;
+    rasterizerDesc.SlopeScaledDepthBias = slopeScaledDepthBias_; // 勾配比例バイアス（ImGui で調整、PSO 再生成）
+    rasterizerDesc.DepthBiasClamp = 0.01f;                       // バイアスの上限（暴走防止）
     
     // インスタンシング用頂点シェーダーのコンパイル
     Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = dx12_->CompileShader(
@@ -469,8 +467,6 @@ void ShadowRenderer::CreateShadowInstancedPipelineState()
 void ShadowRenderer::DrawImGui()
 {
 #ifdef _DEBUG
-    ImGui::Begin("Shadow Mapping");
-    
     // シャドウの有効/無効
     ImGui::Checkbox("Enable Shadow", &shadowEnabled_);
     
@@ -530,9 +526,6 @@ void ShadowRenderer::DrawImGui()
         // shadowBias_は既にメンバ変数なので直接変更される
     }
     
-    if (ImGui::DragFloat("Normal Offset Bias", &normalOffsetBias_, 0.001f, 0.0f, 0.1f, "%.4f")) {
-        // normalOffsetBias_は既にメンバ変数なので直接変更される
-    }
     
     // ライト設定（Light クラスと連携）
     if (light_) {
@@ -579,7 +572,6 @@ void ShadowRenderer::DrawImGui()
         ImGui::Text("Memory Usage: %.2f MB", memoryMB);
     }
     
-    ImGui::End();
 #endif // _DEBUG
 }
 

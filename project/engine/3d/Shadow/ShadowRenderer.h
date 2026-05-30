@@ -11,18 +11,18 @@ class ShadowMap;
 
 namespace Tako {
 
-class Light;
-class Camera;
+  class Light;
+  class Camera;
 
-/// <summary>
-/// シャドウレンダリング統合管理クラス
-/// シングルトンパターンで実装され、シャドウマップの生成と適用を制御
-/// 通常描画とインスタンシング描画の両方でシャドウをサポート
-/// PCF フィルタリング、動的品質調整、ImGui デバッグ UI 統合機能を提供
-/// </summary>
-class ShadowRenderer
-{
-private: // シングルトン設定
+  /// <summary>
+  /// シャドウレンダリング統合管理クラス
+  /// シングルトンパターンで実装され、シャドウマップの生成と適用を制御
+  /// 通常描画とインスタンシング描画の両方でシャドウをサポート
+  /// PCF フィルタリング、動的品質調整、ImGui デバッグ UI 統合機能を提供
+  /// </summary>
+  class ShadowRenderer
+  {
+  private: // シングルトン設定
     // インスタンス
     static std::unique_ptr<ShadowRenderer> instance_;
 
@@ -33,7 +33,7 @@ private: // シングルトン設定
 
     friend struct std::default_delete<ShadowRenderer>;
 
-public:
+  public:
     /// <summary>
     /// インスタンスの取得
     /// </summary>
@@ -111,7 +111,7 @@ public:
     /// </summary>
     /// <returns>定数バッファの GPU アドレス</returns>
     D3D12_GPU_VIRTUAL_ADDRESS GetConstantBufferGPUAddress() const {
-        return shadowConstantBuffer_ ? shadowConstantBuffer_->GetGPUVirtualAddress() : 0;
+      return shadowConstantBuffer_ ? shadowConstantBuffer_->GetGPUVirtualAddress() : 0;
     }
 
     /// <summary>
@@ -120,11 +120,6 @@ public:
     /// <param name="bias">シャドウバイアス値</param>
     void SetShadowBias(float bias) { shadowBias_ = bias; }
 
-    /// <summary>
-    /// 法線オフセットバイアスを設定
-    /// </summary>
-    /// <param name="bias">法線オフセットバイアス値</param>
-    void SetNormalOffsetBias(float bias) { normalOffsetBias_ = bias; }
 
     /// <summary>
     /// シャドウ品質を設定
@@ -172,7 +167,7 @@ public:
     /// </summary>
     void SetInstancedRenderState();
 
-private:
+  private:
     /// <summary>
     /// シャドウ用ルートシグネチャの作成
     /// </summary>
@@ -198,7 +193,22 @@ private:
     /// </summary>
     void CreateShadowInstancedPipelineState();
 
-private:
+  private: // 定数構造
+    /// <summary>
+    /// シャドウレンダリング用定数バッファ構造体
+    /// GPU 側に送信されるシャドウ設定パラメータ
+    /// </summary>
+    struct ShadowConstants {
+      Matrix4x4 lightViewProj; ///< ライト空間のビュープロジェクション行列
+      float shadowBias;        ///< シャドウバイアス（深度比較の最小マージン）
+      int enableShadow;        ///< シャドウ有効フラグ（0=無効, 1=有効）
+      Vector2 shadowMapSize;   ///< シャドウマップ解像度（テクセルサイズ計算用）
+      float pcfKernelSize;     ///< PCF カーネルサイズ（フィルタリング品質）
+      float padding[1];        ///< 16バイトアライメント用パディング
+    };
+    ShadowConstants* shadowConstantData_ = nullptr; ///< 定数バッファのマップ済みポインタ
+
+  private:
     DX12Basic* dx12_ = nullptr;          ///< DirectX12基盤システムへの参照
     std::unique_ptr<ShadowMap> shadowMap_;     ///< シャドウマップ管理クラスへのポインタ
     Light* light_ = nullptr;             ///< ライトシステムへの参照（ライト位置・方向取得用）
@@ -212,24 +222,10 @@ private:
 
     Microsoft::WRL::ComPtr<ID3D12Resource> shadowConstantBuffer_; ///< シャドウパラメータ用定数バッファ
 
-    /// <summary>
-    /// シャドウレンダリング用定数バッファ構造体
-    /// GPU 側に送信されるシャドウ設定パラメータ
-    /// </summary>
-    struct ShadowConstants {
-        Matrix4x4 lightViewProj; ///< ライト空間のビュープロジェクション行列
-        float shadowBias;        ///< シャドウバイアス（シャドウアクネ防止）
-        int enableShadow;        ///< シャドウ有効フラグ（0=無効, 1=有効）
-        Vector2 shadowMapSize;   ///< シャドウマップ解像度（テクセルサイズ計算用）
-        float normalOffsetBias;  ///< 法線オフセットバイアス（ピーターパニング防止）
-        float pcfKernelSize;     ///< PCF カーネルサイズ（フィルタリング品質）
-        float padding[2];        ///< 16バイトアライメント用パディング
-    };
-    ShadowConstants* shadowConstantData_ = nullptr; ///< 定数バッファのマップ済みポインタ
-
     bool shadowEnabled_ = true;              ///< シャドウ有効/無効フラグ
-    float shadowBias_ = 0.0001f;             ///< シャドウバイアス値
-    float normalOffsetBias_ = 0.01f;         ///< 法線オフセットバイアス値
+    float shadowBias_ = 0.0001f;             ///< 深度比較の最小マージン（数値誤差吸収用のごく小さい固定値）
+
+    float slopeScaledDepthBias_ = 0.f;      ///< シャドウ生成時の勾配比例バイアス（アクネ対策、ImGui で調整）
     float maxShadowDistance_ = 50.0f;        ///< 影を表示する最大距離（カメラからの距離）
 
     bool isRenderingShadow_ = false;         ///< 現在シャドウパス中かどうかのフラグ
@@ -237,6 +233,6 @@ private:
     D3D12_CPU_DESCRIPTOR_HANDLE savedRTVHandle_; ///< 保存された元のレンダーターゲットビューハンドル
     D3D12_CPU_DESCRIPTOR_HANDLE savedDSVHandle_; ///< 保存された元の深度ステンシルビューハンドル
     bool hasSavedRenderTargets_ = false;     ///< レンダーターゲットが保存されているかのフラグ
-};
+  };
 
 } // namespace Tako

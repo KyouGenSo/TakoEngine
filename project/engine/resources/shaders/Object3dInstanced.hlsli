@@ -15,6 +15,5 @@ struct ShadowConstants
     float shadowBias;        // シャドウバイアス
     int enableShadow;        // シャドウの有効/無効
     float2 shadowMapSize;    // シャドウマップのサイズ（PCF用）
-    float normalOffsetBias;  // 法線オフセットバイアス
     float pcfKernelSize;     // PCFカーネルサイズ（3, 5, 7, 9）
 };

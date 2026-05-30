@@ -68,14 +68,25 @@ SamplerState gSampler : register(s0);
 StructuredBuffer<PointLight> gPointLights : register(t1);
 StructuredBuffer<SpotLight> gSpotLight : register(t2);
 
-TextureCube<float4> gEnvironmentMap : register(t3); // Optional, if environment mapping is used
+TextureCube<float4> gEnvironmentMap : register(t3);
 Texture2D<float> gShadowMap : register(t4); // シャドウマップ
 SamplerComparisonState gShadowSampler : register(s1); // シャドウマップ用比較サンプラー
 
 // シャドウファクターを計算（動的PCF）
-float CalculateShadowFactor(float4 lightSpacePos, float3 normal)
+float CalculateShadowFactor(float3 worldPos, float3 normal)
 {
-    // 透視変換の実行
+    float3 N = normalize(normal);
+    float3 L = normalize(-gDirectionalLight.direction); // 面から光源へ向かうベクトル
+    float NdotL = dot(N, L);
+
+    // 光に背を向けた面はライトから直接見えない＝自己影なので影なしとする（シャドウマップのサンプリングも不要）
+    if (NdotL <= 0.0)
+    {
+        return 1.0;
+    }
+
+    // 受光点をそのままライト空間へ変換する
+    float4 lightSpacePos = mul(float4(worldPos, 1.0), gShadowConstants.lightViewProj);
     float3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
     
     // NDC空間からテクスチャ座標に変換
@@ -91,15 +102,9 @@ float CalculateShadowFactor(float4 lightSpacePos, float3 normal)
         return 1.0; // シャドウマップの範囲外は照明
     }
     
-    // 法線オフセットバイアスを適用
-    float3 lightDir = normalize(gDirectionalLight.direction);
-    float NdotL = max(0.0, dot(normal, -lightDir));
-    float bias = gShadowConstants.shadowBias + (1.0 - NdotL) * gShadowConstants.normalOffsetBias;
+    float currentDepth = projCoords.z - gShadowConstants.shadowBias;
     
-    // バイアスを適用
-    float currentDepth = projCoords.z - bias;
-    
-    // 動的PCF（Percentage Closer Filtering）
+    // 動的PCF
     float shadowFactor = 0.0;
     float2 texelSize = 1.0 / gShadowConstants.shadowMapSize;
     
@@ -133,7 +138,7 @@ PixelShaderOutput main(VertexShaderOutput input)
     float shadowFactor = 1.0; // デフォルトでは影なし
     if (gShadowConstants.enableShadow != 0)
     {
-        shadowFactor = CalculateShadowFactor(input.lightSpacePos, normalize(input.normal));
+        shadowFactor = CalculateShadowFactor(input.worldPos, input.normal);
     }
     
     if (gMaterial.enableLighting != 0)

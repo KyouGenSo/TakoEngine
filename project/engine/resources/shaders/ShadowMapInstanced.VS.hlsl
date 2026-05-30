@@ -50,9 +50,6 @@ VertexOutput main(VertexInput input, uint instanceID : SV_InstanceID)
     
     // 深度値をテクスチャ座標として出力（デバッグ用）
     output.depth = output.position.z / output.position.w;
-    
-    // 深度バイアスを適用
-    output.position.z += shadowBias * output.position.w;
-    
+
     return output;
 }
