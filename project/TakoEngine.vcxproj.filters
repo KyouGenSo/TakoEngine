@@ -123,6 +123,9 @@
     <ClCompile Include="engine\func\mathFunc\Mat4x4Func.cpp">
       <Filter>func\MathFunc</Filter>
     </ClCompile>
+    <ClCompile Include="engine\func\mathFunc\EaseFunc.cpp">
+      <Filter>func\MathFunc</Filter>
+    </ClCompile>
     <ClCompile Include="engine\func\mathFunc\Vec3Func.cpp">
       <Filter>func\MathFunc</Filter>
     </ClCompile>
@@ -427,6 +430,9 @@
     </ClInclude>
     <ClInclude Include="engine\func\commonFunc\StringUtility.h">
       <Filter>func\commonFunc</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\func\mathFunc\EaseFunc.h">
+      <Filter>func\MathFunc</Filter>
     </ClInclude>
     <ClInclude Include="engine\func\mathFunc\Vec3Func.h">
       <Filter>func\MathFunc</Filter>

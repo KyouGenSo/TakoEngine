@@ -22,6 +22,7 @@
 #include "WhiteNoise.h"
 #include "HalfTone.h"
 #include "GaussianBlur.h"
+#include "EaseFunc.h"
 
 #include <algorithm>
 #include <cmath>
@@ -958,15 +959,13 @@ namespace Tako {
     t = std::clamp(t, 0.0f, 1.0f);
     switch (type) {
     case EasingType::Linear:
-      return t;
+      return Ease::Linear(t);
     case EasingType::EaseOut:
-      return 1.0f - (1.0f - t) * (1.0f - t);
+      return Ease::OutQuad(t);
     case EasingType::EaseIn:
-      return t * t;
+      return Ease::InQuad(t);
     case EasingType::EaseInOut:
-      return t < 0.5f
-        ? 2.0f * t * t
-        : 1.0f - std::pow(-2.0f * t + 2.0f, 2.0f) / 2.0f;
+      return Ease::InOutQuad(t);
     default:
       return t;
     }
