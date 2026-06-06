@@ -114,7 +114,12 @@ EXIT /B 0</Command>
   <ItemDefinitionGroup>
     <PostBuildEvent>
       <Command>copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxcompiler.dll" "$(TargetDir)dxcompiler.dll"
-copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dxil.dll"</Command>
+rem dxil.dll は SDK 26100 世代で bin\(SDKバージョン)\x64 から Redist\D3D\x64 へ移動したため両レイアウトを探索する
+if exist "$(WindowsSdkDir)Redist\D3D\x64\dxil.dll" (
+copy /Y "$(WindowsSdkDir)Redist\D3D\x64\dxil.dll" "$(TargetDir)dxil.dll"
+) else (
+copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dxil.dll"
+)</Command>
       <Message>Copying DXC runtime DLLs</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
