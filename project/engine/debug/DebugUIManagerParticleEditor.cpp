@@ -7,6 +7,7 @@
 #include "MeshEmitter.h"
 #include "Mesh.h"
 #include "GPUParticle.h"
+#include "TextureManager.h"
 #include "ImGuiManager.h"
 #include "Draw2D.h"
 #include "OBB.h"
@@ -302,6 +303,66 @@ namespace Tako {
               }
               if (ImGui::ColorEdit4("End Color", &endColor.x)) {
                 emitter->SetEndColor(endColor);
+              }
+            }
+
+            // 描画設定 (per-emitter): ブレンドモード / ビルボード / テクスチャ / メッシュ形状描画
+            if (ImGui::CollapsingHeader("Render Settings")) {
+              // ブレンドモード
+              static const char* kBlendLabels[] = { "Add", "Screen", "Alpha" };
+              int blend = static_cast<int>(emitter->GetBlendMode());
+              if (ImGui::Combo("Blend Mode##Render", &blend, kBlendLabels, IM_ARRAYSIZE(kBlendLabels))) {
+                emitter->SetBlendMode(static_cast<ParticleBlendMode>(blend));
+              }
+
+              // ビルボード ON/OFF
+              bool billboard = emitter->IsBillboard();
+              if (ImGui::Checkbox("Billboard (camera-facing)", &billboard)) {
+                emitter->SetBillboard(billboard);
+              }
+              ImGui::SameLine();
+              ImGui::TextDisabled("(OFF: world-fixed, rotate.z applied)");
+
+              // テクスチャ選択
+              uint32_t curTex = emitter->GetTextureSrvIndex();
+              std::string curName = (curTex != 0)
+                ? TextureManager::GetInstance()->GetFileName(curTex)
+                : std::string("(default: circle.dds)");
+              ImGui::Text("Texture: %s", curName.c_str());
+
+              // ロード済みテクスチャからの選択
+              std::vector<std::string> texNames = TextureManager::GetInstance()->GetLoadedTextureFileNames();
+              if (!texNames.empty()) {
+                int curIdx = -1;
+                for (int n = 0; n < static_cast<int>(texNames.size()); ++n) {
+                  if (texNames[n] == curName) { curIdx = n; break; }
+                }
+                std::vector<const char*> items;
+                items.reserve(texNames.size());
+                for (const auto& s : texNames) items.push_back(s.c_str());
+                if (ImGui::Combo("Texture##Render", &curIdx, items.data(), static_cast<int>(items.size()))) {
+                  if (curIdx >= 0 && curIdx < static_cast<int>(texNames.size())) {
+                    emitter->SetTexture(texNames[curIdx]);
+                  }
+                }
+              }
+
+              // 新規テクスチャの読込 (パス指定)
+              static char texPath[256] = "";
+              ImGui::InputText("Texture Path##Render", texPath, sizeof(texPath));
+              ImGui::SameLine();
+              if (ImGui::Button("Load & Set##Render") && texPath[0] != '\0') {
+                emitter->SetTexture(texPath);
+              }
+
+              // メッシュ形状描画 (Mesh エミッターのみ)
+              if (emitter->GetType() == EmitterType::Mesh) {
+                bool renderAsMesh = emitter->IsRenderAsMesh();
+                if (ImGui::Checkbox("Render As Mesh", &renderAsMesh)) {
+                  emitter->SetRenderAsMesh(renderAsMesh);
+                }
+                ImGui::SameLine();
+                ImGui::TextDisabled("(ON: draw each particle as this mesh)");
               }
             }
 

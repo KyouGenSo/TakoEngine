@@ -109,6 +109,13 @@ namespace Tako {
     const std::string& GetFileName(uint32_t srvIndex);
 
     /// <summary>
+    /// ロード済みテクスチャのファイル名一覧を取得（ソート済み）。
+    /// エディタのテクスチャ選択 UI などで使用する。
+    /// </summary>
+    /// <returns>ロード済みテクスチャファイル名のソート済みリスト</returns>
+    std::vector<std::string> GetLoadedTextureFileNames() const;
+
+    /// <summary>
     /// エンジン用デフォルトテクスチャの読み込み（EngineResources/Texture/ 配下から）
     /// </summary>
     /// <param name="fileName">エンジン用テクスチャファイルの名前</param>
