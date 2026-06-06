@@ -8,6 +8,7 @@
 RWStructuredBuffer<Particle> gParticles : register(u0);
 RWStructuredBuffer<int> gFreeListIndex : register(u1);
 RWStructuredBuffer<uint> gFreeList : register(u2);
+RWStructuredBuffer<uint> gPerEmitterCount : register(u3); // 描画コンパクション用: per-emitter の今フレーム生存数を加算
 
 StructuredBuffer<ForceField> gForceFields : register(t0);
 Texture2D<float> gDepthBuffer : register(t1);
@@ -167,6 +168,17 @@ void main(uint3 DTid : SV_DispatchThreadID)
         {
             // エラーケースの処理
             InterlockedAdd(gFreeListIndex[0], -1);
+        }
+    }
+    else
+    {
+        // この粒子は今フレーム生存 → 所属エミッターの描画カウントを加算する。
+        // ScatterCompact が詰め直す生存条件 (alpha > 0) と完全に一致するため、
+        // 各エミッターの instanceCount と drawIndexList の要素数は常に一致する。
+        uint eid = gParticles[particleIndex].emitterId;
+        if (eid < kMaxEmitters)
+        {
+            InterlockedAdd(gPerEmitterCount[eid], 1);
         }
     }
 }

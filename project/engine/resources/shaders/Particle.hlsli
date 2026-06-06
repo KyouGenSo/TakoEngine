@@ -1,4 +1,5 @@
 static const int kMaxParticles = 1000000;
+static const uint kMaxEmitters = 500; // GPUParticle::kNumMaxEmitter と必ず一致させること
 
 // エミッタータイプの定義
 #define EMITTER_TYPE_SPHERE 0
@@ -31,6 +32,8 @@ static const int kMaxParticles = 1000000;
 #define EFLAG_USE_ALPHA_FADE       (1u << 9) // alpha フェード (既定 ON、OFF で寿命中は不透明)
 #define EFLAG_CONVERGE_TO_TARGET   (1u << 10) // Per-Emitter Target 収束
 #define EFLAG_LOCK_TO_SPAWN        (1u << 11) // Per-Particle Spawn 拘束
+#define EFLAG_BILLBOARD            (1u << 12) // ビルボード(カメラ追従)。OFF で particle.rotate に従う固定向き
+#define EFLAG_RENDER_AS_MESH      (1u << 13) // パーティクルを選択メッシュ形状で描画 (CPU 側の描画分岐で使用)
 
 // パラメータごとのランダム化フラグ
 // randomFlags == 0 のときは旧来の「range != float2(0,0) ならランダム」自動判定にフォールバック
@@ -140,6 +143,10 @@ struct Emitter
     float particleRadius;       // 衝突判定半径
     float noiseScale;           // Curl Noise 空間スケール
     float noiseStrength;        // Curl Noise 強度
+
+    // --- 描画設定 (per-emitter) ---
+    uint  blendMode;            // 描画ブレンドモード (0=Add, 1=Screen, 2=Alpha)
+    uint  textureSrvIndex;      // 使用テクスチャ SRV index (0 で既定テクスチャ)
 };
 
 // パーフレーム情報構造体

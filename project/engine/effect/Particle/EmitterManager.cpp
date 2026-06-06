@@ -6,6 +6,7 @@
 #include "MeshEmitter.h"
 #include "ForceFieldManager.h"
 #include "FrameTimer.h"
+#include "TextureManager.h"
 #include <algorithm>
 #include <ranges>
 #include <memory>
@@ -1051,6 +1052,17 @@ namespace Tako {
       targetEmitter->SetVelRange(slot.data.velRangeX, slot.data.velRangeY, slot.data.velRangeZ);
       targetEmitter->SetLifeTimeRange(slot.data.lifeTimeRange);
       targetEmitter->SetColors(slot.data.startColorTint, slot.data.endColorTint);
+      // 描画設定 (per-emitter)
+      targetEmitter->SetBlendMode(static_cast<ParticleBlendMode>(slot.data.blendMode));
+      targetEmitter->SetBillboard((slot.data.flags & EFLAG_BILLBOARD) != 0);
+      targetEmitter->SetRenderAsMesh((slot.data.flags & EFLAG_RENDER_AS_MESH) != 0);
+      // テクスチャは srvIndex からファイル名を解決して再設定 (0 は既定テクスチャなので何もしない)
+      if (slot.data.textureSrvIndex != 0) {
+        const std::string& texName = TextureManager::GetInstance()->GetFileName(slot.data.textureSrvIndex);
+        if (!texName.empty()) {
+          targetEmitter->SetTexture(texName);
+        }
+      }
     }
 
     return true;
@@ -1164,6 +1176,15 @@ namespace Tako {
     json["particleRadius"] = emitter->GetParticleRadius();
     json["noiseScale"] = emitter->GetNoiseScale();
     json["noiseStrength"] = emitter->GetNoiseStrength();
+
+    // 描画設定 (per-emitter)
+    json["blendMode"] = static_cast<uint32_t>(emitter->GetBlendMode());
+    json["billboard"] = emitter->IsBillboard();
+    json["renderAsMesh"] = emitter->IsRenderAsMesh();
+    // テクスチャは SRV index でなくファイルパスで保存 (index は実行時依存のため)。0 は既定テクスチャ。
+    if (emitter->GetTextureSrvIndex() != 0) {
+      json["texturePath"] = TextureManager::GetInstance()->GetFileName(emitter->GetTextureSrvIndex());
+    }
 
     // 型固有のパラメータ
     if (auto sphereEmitter = std::dynamic_pointer_cast<SphereEmitter>(emitter)) {
@@ -1349,6 +1370,23 @@ namespace Tako {
     }
     if (json.contains("noiseStrength")) {
       emitter->SetNoiseStrength(json["noiseStrength"]);
+    }
+
+    // 描画設定 (per-emitter)。旧 JSON にキーが無ければコンストラクタ既定 (Screen / billboard ON / quad / 既定テクスチャ) を維持
+    if (json.contains("blendMode")) {
+      emitter->SetBlendMode(static_cast<ParticleBlendMode>(json["blendMode"].get<uint32_t>()));
+    }
+    if (json.contains("billboard")) {
+      emitter->SetBillboard(json["billboard"].get<bool>());
+    }
+    if (json.contains("renderAsMesh")) {
+      emitter->SetRenderAsMesh(json["renderAsMesh"].get<bool>());
+    }
+    if (json.contains("texturePath")) {
+      std::string texPath = json["texturePath"].get<std::string>();
+      if (!texPath.empty()) {
+        emitter->SetTexture(texPath);
+      }
     }
 
     return emitter;

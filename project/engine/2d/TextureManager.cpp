@@ -151,6 +151,18 @@ namespace Tako {
     return it->second.fileName;
   }
 
+  std::vector<std::string> TextureManager::GetLoadedTextureFileNames() const
+  {
+    std::vector<std::string> names;
+    names.reserve(textureData_.size());
+    for (const auto& [name, data] : textureData_) {
+      (void)data;
+      names.push_back(name);
+    }
+    std::sort(names.begin(), names.end());
+    return names;
+  }
+
   void TextureManager::LoadEngineDefault(const std::string& fileName)
   {
     // エンジン用フルパスをキー兼ファイルパスに使う（LoadTexture 内のプレフィックス判定で directoryPath_ を経由しない）

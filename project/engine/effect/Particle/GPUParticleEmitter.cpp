@@ -1,5 +1,6 @@
 #include "GPUParticleEmitter.h"
 #include "GPUParticle.h"
+#include "TextureManager.h"
 
 namespace Tako {
 
@@ -8,7 +9,7 @@ namespace Tako {
   {
     data_.emitterID = emitterId;
     data_.type = static_cast<uint32_t>(EmitterType::Sphere);
-    data_.flags = EFLAG_ACTIVE | EFLAG_USE_FORCE_FIELD | EFLAG_USE_ALPHA_FADE;
+    data_.flags = EFLAG_ACTIVE | EFLAG_USE_FORCE_FIELD | EFLAG_USE_ALPHA_FADE | EFLAG_BILLBOARD;
     data_.emitterLifeTime = 0.0f;
     data_.emitterCurrentTime = 0.0f;
     data_.frequencyTime = 0.0f;
@@ -204,6 +205,14 @@ namespace Tako {
   void GPUParticleEmitter::SetNoiseStrength(float strength)
   {
     data_.noiseStrength = strength;
+  }
+
+  void GPUParticleEmitter::SetTexture(const std::string& filePath)
+  {
+    // テクスチャを読み込み、その SRV インデックスを保存する。
+    // 描画ループ側で textureSrvIndex != 0 のとき per-emitter テクスチャとして使用する。
+    TextureManager::GetInstance()->LoadTexture(filePath);
+    data_.textureSrvIndex = TextureManager::GetInstance()->GetSRVIndex(filePath);
   }
 
   void GPUParticleEmitter::SetSpawnLocation(SpawnLocation location)
