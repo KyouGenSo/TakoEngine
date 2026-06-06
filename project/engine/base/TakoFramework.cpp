@@ -207,9 +207,6 @@ namespace Tako {
     // カメラの更新
     defaultCamera_->Update();
 
-    // GPU パーティクルの更新
-    GPUParticle::GetInstance()->Update();
-
     // フレームタイマーの更新
     FrameTimer::GetInstance()->Update();
 
@@ -221,6 +218,9 @@ namespace Tako {
 
     // シーンマネージャーの更新
     SceneManager::GetInstance()->Update();
+
+    // GPU パーティクルの更新
+    GPUParticle::GetInstance()->Update();
 
     // デコールの更新
     DecalManager::GetInstance()->UpdateAll();

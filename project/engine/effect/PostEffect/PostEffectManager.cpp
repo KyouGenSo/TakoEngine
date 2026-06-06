@@ -84,6 +84,11 @@ namespace Tako {
 
   void PostEffectManager::AddEffectToChain(const std::string& name)
   {
+    // 既に同名エフェクトがチェーンに存在する場合は多重追加しない。
+    if (std::find(effectChain_.begin(), effectChain_.end(), name) != effectChain_.end()) {
+      return;
+    }
+
     if (effectRegistry_.find(name) != effectRegistry_.end()) {
       effectChain_.push_back(name);
     }

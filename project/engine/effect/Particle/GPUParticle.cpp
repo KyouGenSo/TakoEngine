@@ -383,34 +383,15 @@ namespace Tako {
   {
     float deltaTime = FrameTimer::GetInstance()->GetDeltaTime();
 
-    // 削除予定のエミッターを格納するリスト
-    std::vector<std::shared_ptr<GPUParticleEmitter>> emittersToRemove;
-
-    // すべてのエミッターを更新
+    // すべてのアクティブなエミッターの射出タイマーを更新する。
     for (auto& emitter : activeEmitters_) {
-      // 非アクティブならスキップ
+      // 非アクティブなら射出しない
       if (!emitter->IsActive()) {
         continue;
       }
 
-      // 一時的なエミッターの場合、寿命を更新
-      if (emitter->IsTemporary()) {
-        emitter->UpdateTemporaryLifeTime(deltaTime);
-
-        // 寿命が尽きたら削除予定リストに追加
-        if (emitter->IsLifeTimeExpired()) {
-          emittersToRemove.push_back(emitter);
-          continue;
-        }
-      }
-
       // 射出タイマーを更新
       emitter->UpdateEmission(deltaTime);
-    }
-
-    // 寿命が尽きたエミッターを削除
-    for (auto& emitter : emittersToRemove) {
-      UnregisterEmitter(emitter);
     }
 
     // GPU 側のデータを同期
