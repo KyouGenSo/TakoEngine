@@ -33,6 +33,8 @@ namespace Tako {
   constexpr uint32_t EFLAG_USE_ALPHA_FADE      = (1u << 9); ///< 寿命進行で alpha フェード (既定 ON、OFF で寿命中は不透明)
   constexpr uint32_t EFLAG_CONVERGE_TO_TARGET  = (1u << 10); ///< Per-Emitter Target 収束 (全粒子が targetPosition へバネ-ダンパ)
   constexpr uint32_t EFLAG_LOCK_TO_SPAWN       = (1u << 11); ///< Per-Particle Spawn 拘束 (粒子ごとに targetLocal へバネ-ダンパ)
+  constexpr uint32_t EFLAG_BILLBOARD           = (1u << 12); ///< ビルボード(カメラ追従)。OFF で particle.rotate に従うワールド固定向き
+  constexpr uint32_t EFLAG_RENDER_AS_MESH      = (1u << 13); ///< パーティクルを(quad でなく)選択メッシュ形状で描画。Mesh エミッターで明示 ON にして使う
 
   // ===== パラメータごとのランダム化フラグ (randomFlags 用) =====
   /// <remarks>
@@ -54,6 +56,15 @@ namespace Tako {
     Box = 1,       ///< 箱型エミッター
     Triangle = 2,  ///< 三角形エミッター
     Mesh = 3       ///< メッシュエミッター
+  };
+
+  /// <summary>
+  /// パーティクル描画ブレンドモード (per-emitter)
+  /// </summary>
+  enum class ParticleBlendMode : uint32_t {
+    Add    = 0,  ///< 加算         (SrcBlend=SRC_ALPHA, DestBlend=ONE)
+    Screen = 1,  ///< スクリーン   (SrcBlend=INV_DEST_COLOR, DestBlend=ONE) — 既定 (旧挙動互換)
+    Alpha  = 2   ///< アルファ合成 (SrcBlend=SRC_ALPHA, DestBlend=INV_SRC_ALPHA)
   };
 
   /// <summary>
@@ -300,11 +311,15 @@ namespace Tako {
     float noiseScale;           ///< Curl Noise の空間スケール
     float noiseStrength;        ///< Curl Noise の強度
 
+    // --- 描画設定 (per-emitter) ---
+    uint32_t blendMode;         ///< 描画ブレンドモード (ParticleBlendMode: 0=Add, 1=Screen, 2=Alpha)
+    uint32_t textureSrvIndex;   ///< 使用テクスチャの SRV インデックス (0 で既定テクスチャ circle.dds にフォールバック)
+
     /// <summary>
     /// デフォルトコンストラクタ
     /// </summary>
     EmitterData() : type(static_cast<uint32_t>(EmitterType::Sphere)),
-      flags(EFLAG_ACTIVE | EFLAG_USE_FORCE_FIELD | EFLAG_USE_ALPHA_FADE), // alpha フェードは既定 ON (旧挙動互換)
+      flags(EFLAG_ACTIVE | EFLAG_USE_FORCE_FIELD | EFLAG_USE_ALPHA_FADE | EFLAG_BILLBOARD), // alpha フェード・ビルボードは既定 ON (旧挙動互換)
       emitterID(0), randomFlags(0),
       spawnLocation(static_cast<uint32_t>(SpawnLocation::Inside)),
       position({ .x = 0.0f, .y = 0.0f, .z = 0.0f }),
@@ -326,7 +341,8 @@ namespace Tako {
       meshSkinnedVertexSrvIndex(0),
       lockStiffness(20.0f), lockDamping(3.0f),
       damping(0.99f), collisionRestitution(0.5f), particleRadius(0.5f),
-      noiseScale(0.05f), noiseStrength(0.001f)
+      noiseScale(0.05f), noiseStrength(0.001f),
+      blendMode(static_cast<uint32_t>(ParticleBlendMode::Screen)), textureSrvIndex(0)
     {}
   };
 

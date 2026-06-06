@@ -3,6 +3,7 @@
 #include "Vector4.h"
 #include "ParticleStruct.h"
 #include <memory>
+#include <string>
 
 namespace Tako {
 
@@ -569,6 +570,51 @@ namespace Tako {
     /// Curl Noise の強度を取得（per-emitter）
     /// </summary>
     [[nodiscard]] float GetNoiseStrength() const { return data_.noiseStrength; }
+
+    /// <summary>
+    /// 描画ブレンドモードを設定（加算 / スクリーン / アルファ）
+    /// </summary>
+    /// <param name="mode">ParticleBlendMode</param>
+    void SetBlendMode(ParticleBlendMode mode) { data_.blendMode = static_cast<uint32_t>(mode); }
+
+    /// <summary>
+    /// 描画ブレンドモードを取得
+    /// </summary>
+    [[nodiscard]] ParticleBlendMode GetBlendMode() const { return static_cast<ParticleBlendMode>(data_.blendMode); }
+
+    /// <summary>
+    /// ビルボード(カメラ追従)の ON/OFF を設定。既定 ON。
+    /// OFF にするとパーティクルはワールド固定向き(particle.rotate.z でXY平面回転)で描画される。
+    /// </summary>
+    void SetBillboard(bool enable) { if (enable) data_.flags |= EFLAG_BILLBOARD; else data_.flags &= ~EFLAG_BILLBOARD; }
+
+    /// <summary>
+    /// ビルボードが有効かを取得
+    /// </summary>
+    [[nodiscard]] bool IsBillboard() const { return (data_.flags & EFLAG_BILLBOARD) != 0; }
+
+    /// <summary>
+    /// このエミッターのパーティクルが使用するテクスチャを設定する。
+    /// </summary>
+    /// <param name="filePath">テクスチャファイルパス (TextureManager の通常ディレクトリ基準)</param>
+    void SetTexture(const std::string& filePath);
+
+    /// <summary>
+    /// 使用テクスチャの SRV インデックスを取得 (0 で既定テクスチャ circle.dds)
+    /// </summary>
+    [[nodiscard]] uint32_t GetTextureSrvIndex() const { return data_.textureSrvIndex; }
+
+    /// <summary>
+    /// パーティクルを quad でなく選択メッシュ形状で描画するかを設定。
+    /// Mesh エミッター(MeshEmitter)で ON にすると、各パーティクルがそのメッシュとして描画される。
+    /// 既定 OFF (= 従来どおり quad 描画。Mesh エミッターは「スポーン形状」としてのみ機能)。
+    /// </summary>
+    void SetRenderAsMesh(bool enable) { if (enable) data_.flags |= EFLAG_RENDER_AS_MESH; else data_.flags &= ~EFLAG_RENDER_AS_MESH; }
+
+    /// <summary>
+    /// メッシュ形状描画が有効かを取得
+    /// </summary>
+    [[nodiscard]] bool IsRenderAsMesh() const { return (data_.flags & EFLAG_RENDER_AS_MESH) != 0; }
 
 
     /// <summary>
