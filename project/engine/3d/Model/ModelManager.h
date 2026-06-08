@@ -83,6 +83,13 @@ namespace Tako {
     /// <returns>ModelBasic ポインタ</returns>
     ModelBasic* GetModelBasic() { return pModelBasic_.get(); }
 
+    /// <summary>
+    /// 読み込み済みモデルのファイル名(キー)一覧を取得する。
+    /// エンジンモデルは "EngineResources/Model/" プレフィックス付きキーで含まれる。
+    /// </summary>
+    /// <returns>ソート済みのモデル名リスト</returns>
+    std::vector<std::string> GetLoadedModelNames() const;
+
   private: // メンバー変数
 
     std::unique_ptr<ModelBasic> pModelBasic_; ///< モデル基本システムへのポインタ

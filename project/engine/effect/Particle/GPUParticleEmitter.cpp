@@ -1,6 +1,7 @@
 #include "GPUParticleEmitter.h"
 #include "GPUParticle.h"
 #include "TextureManager.h"
+#include "Mesh.h"
 
 namespace Tako {
 
@@ -213,6 +214,50 @@ namespace Tako {
     // 描画ループ側で textureSrvIndex != 0 のとき per-emitter テクスチャとして使用する。
     TextureManager::GetInstance()->LoadTexture(filePath);
     data_.textureSrvIndex = TextureManager::GetInstance()->GetSRVIndex(filePath);
+  }
+
+  void GPUParticleEmitter::SetParticleModel(const std::string& modelPath)
+  {
+    // 描画モデルをシステムにロード・保持させ、その先頭メッシュを描画モデルに設定する。
+    Mesh* mesh = particleSystem_ ? particleSystem_->AcquireModelMesh(modelPath) : nullptr;
+    SetParticleModel(mesh);
+    // 成功時のみパスを記録 (JSON 永続化・エディタ表示用)。SetParticleModel(Mesh*) がクリアした後に上書きする。
+    if (mesh) renderModelPath_ = modelPath;
+  }
+
+  void GPUParticleEmitter::SetParticleModel(Mesh* mesh)
+  {
+    if (!mesh) {
+      ResetParticleModel();
+      return;
+    }
+    // 描画モデルの SRV 群を記録する 
+    data_.renderVertexSrvIndex = mesh->GetVertexSrvIndex();
+    data_.renderIndexSrvIndex = mesh->GetIndexSrvIndex();
+    data_.renderIndexCount = mesh->GetIndexCount();
+    // Mesh* 直接指定はパス不明なのでパス記録をクリア (非永続)。
+    renderModelPath_.clear();
+  }
+
+  void GPUParticleEmitter::ResetParticleModel()
+  {
+    // 既定の板ポリ描画に戻す。
+    data_.renderVertexSrvIndex = 0;
+    data_.renderIndexSrvIndex = 0;
+    data_.renderIndexCount = 0;
+    renderModelPath_.clear();
+  }
+
+  void GPUParticleEmitter::CopyDrawStateTo(GPUParticleEmitter& dst) const
+  {
+    // 描画系(ブレンド/ビルボード/テクスチャ/描画モデル)をクローン先へ転送する。
+    dst.data_.blendMode = data_.blendMode;
+    dst.SetBillboard(IsBillboard());
+    dst.data_.textureSrvIndex = data_.textureSrvIndex;
+    dst.data_.renderVertexSrvIndex = data_.renderVertexSrvIndex;
+    dst.data_.renderIndexSrvIndex = data_.renderIndexSrvIndex;
+    dst.data_.renderIndexCount = data_.renderIndexCount;
+    dst.renderModelPath_ = renderModelPath_;
   }
 
   void GPUParticleEmitter::SetSpawnLocation(SpawnLocation location)

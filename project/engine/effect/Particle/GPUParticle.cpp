@@ -9,6 +9,9 @@
 #include "FrameTimer.h"
 #include "WinApp.h"
 #include "EnginePaths.h"
+#include "Model.h"
+#include "Mesh.h"
+#include "ModelManager.h"
 
 #ifdef _DEBUG
 #include "DebugUIManager.h"
@@ -58,7 +61,6 @@ namespace Tako {
     CreateResetCountersRS();
     CreateBuildDrawArgsRS();
     CreateScatterCompactRS();
-    CreateMeshRS();
 
     // PSO の生成 (ブレンドモード別に 3 つ生成)
     {
@@ -83,14 +85,10 @@ namespace Tako {
       blendAlpha.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
       blendAlpha.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
 
+      // 全パーティクル共通の描画 PSO
       CreateDrawPSO(blendAdd, psoAdd_);
       CreateDrawPSO(blendScreen, psoScreen_);
       CreateDrawPSO(blendAlpha, psoAlpha_);
-
-      // メッシュ描画用 PSO (同じブレンド設定、入力レイアウト/シェーダのみ異なる)
-      CreateMeshDrawPSO(blendAdd, meshPsoAdd_);
-      CreateMeshDrawPSO(blendScreen, meshPsoScreen_);
-      CreateMeshDrawPSO(blendAlpha, meshPsoAlpha_);
     }
     CreateComputeShaderPSO(initComputeRS_, initComputePSO_, L"InitParticle.CS.hlsl");
     CreateComputeShaderPSO(emitParticleRS_, emitParticlePSO_, L"EmitParticle.CS.hlsl");
@@ -111,17 +109,15 @@ namespace Tako {
     // EmitterSphere データの生成
     CreateEmitterData();
 
-    // 頂点データの生成
-    CreateVertexData();
+    // デフォルトの描画モデル (板ポリ) の生成
+    CreateDefaultQuadMesh();
 
     // FreeCounter リソースの生成
     CreateFreeListResource();
 
     // Indirect 描画・コンパクション用リソースの生成
-    CreateQuadIndexBuffer();
     CreateIndirectResources();
     CreateCommandSignature();
-    CreateMeshCommandSignature();
 
 #ifdef _DEBUG
     // Readback バッファの生成（アクティブパーティクル数取得用）
@@ -326,11 +322,9 @@ namespace Tako {
     m_srvManager_->SetComputeRootDescriptorTable(0, perEmitterCountUavIndex_);
     m_srvManager_->SetComputeRootDescriptorTable(1, drawArgsUavIndex_);
     m_srvManager_->SetComputeRootDescriptorTable(2, scatterCursorUavIndex_);
-    m_srvManager_->SetComputeRootDescriptorTable(3, meshDrawArgsUavIndex_);
-    m_srvManager_->SetComputeRootDescriptorTable(4, emitterDrawTemplateSrvIndex_);
+    m_srvManager_->SetComputeRootDescriptorTable(3, emitterDrawTemplateSrvIndex_);
     commandList->Dispatch(1, 1, 1);
     m_dx12_->SetUAVBarrier(drawArgsResource_.Get());
-    m_dx12_->SetUAVBarrier(meshDrawArgsResource_.Get());
     m_dx12_->SetUAVBarrier(scatterCursorResource_.Get());
 
     //--------------------------------------ScatterCompact--------------------------------------//
@@ -357,96 +351,60 @@ namespace Tako {
     // プリミティブトポロジを設定
     commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    // VBV(slot0=クアッド頂点, slot1=per-instance パーティクル index) / IBV を設定
-    commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
+    // per-instance パーティクル index ストリーム (slot1) のみバインド。
+    // 頂点/インデックスは VS が SRV(t3/t4) からプルするため slot0 頂点バッファ・IBV は不要。
     commandList->IASetVertexBuffers(1, 1, &drawIndexVBV_);
-    commandList->IASetIndexBuffer(&indexBufferView_);
 
     // ParticleData は VS で SRV(t0) として読むため NON_PIXEL へ遷移
     m_dx12_->TransitionResourceState(D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, particleResource_.Get());
     // drawIndexList は per-instance VBV として使うため VERTEX_AND_CONSTANT_BUFFER へ遷移
     m_dx12_->TransitionResourceWithTracking(drawIndexResource_.Get(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-    // DrawArgs (quad/mesh 両方) を ExecuteIndirect の引数 state へ遷移
+    // DrawArgs を ExecuteIndirect の引数 state へ遷移
     m_dx12_->TransitionResourceWithTracking(drawArgsResource_.Get(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
-    m_dx12_->TransitionResourceWithTracking(meshDrawArgsResource_.Get(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
 
     // 全エミッター共通のルート: ParticleData SRV(t0), PerView CBV(b0), Emitter SRV(t2: ビルボード判定用)
     m_srvManager_->SetGraphicsRootDescriptorTable(0, particleSrvIndex_);
     commandList->SetGraphicsRootConstantBufferView(1, perViewResource_->GetGPUVirtualAddress());
     m_srvManager_->SetGraphicsRootDescriptorTable(3, emitterSrvIndex_);
 
-    // per-emitter ループ: エミッターごとに PSO(ブレンドモード)/テクスチャ/(メッシュSRV) を切り替えて
-    // 1 つずつ ExecuteIndirect。instanceCount / StartInstanceLocation(=base_e) は GPU 側 (BuildDrawArgs) 計算済み。
-    // quad は DrawIndexed(drawCommandSignature_), mesh は DrawInstanced(meshDrawCommandSignature_) を使う。
-    const size_t emitterCount = min(activeEmitters_.size(), static_cast<size_t>(kNumMaxEmitter));
-    const UINT quadStride = static_cast<UINT>(sizeof(D3D12_DRAW_INDEXED_ARGUMENTS));
-    const UINT meshStride = static_cast<UINT>(sizeof(D3D12_DRAW_ARGUMENTS));
-    const D3D12_GPU_VIRTUAL_ADDRESS perViewAddr = perViewResource_->GetGPUVirtualAddress();
-
-    bool meshMode = false; // 現在 meshRS_ をバインド中か (RS 切替を最小化するため追跡)
+    // per-emitter ループ: エミッターごとに PSO(ブレンドモード)/テクスチャ/
+    // 描画モデル(頂点 SRV t3・index SRV t4) を切り替えて 1 つずつ ExecuteIndirect。
+    // instanceCount / StartInstanceLocation(=base_e) / VertexCountPerInstance(=描画モデル index 数) は
+    // GPU 側 (BuildDrawArgs) 計算済み。描画モデル未指定のエミッターはデフォルト板ポリ SRV にフォールバックする。
+    const size_t emitterCount = std::min(activeEmitters_.size(), static_cast<size_t>(kNumMaxEmitter));
+    const UINT drawStride = static_cast<UINT>(sizeof(D3D12_DRAW_ARGUMENTS));
     for (size_t i = 0; i < emitterCount; ++i) {
       const auto& emitter = activeEmitters_[i];
       if (!emitter) continue;
       const EmitterData& ed = emitter->GetData();
       const uint32_t texIndex = (ed.textureSrvIndex != 0) ? ed.textureSrvIndex : modelData_.textureData.textureIndex;
-      const bool isMesh = ((ed.flags & EFLAG_RENDER_AS_MESH) != 0)
-                          && (ed.type == static_cast<uint32_t>(EmitterType::Mesh))
-                          && ed.meshTriangleCount > 0 && ed.meshVertexSrvIndex != 0;
+      const uint32_t vtxSrv = (ed.renderVertexSrvIndex != 0) ? ed.renderVertexSrvIndex : defaultQuadVertexSrvIndex_;
+      const uint32_t idxSrv = (ed.renderIndexSrvIndex != 0) ? ed.renderIndexSrvIndex : defaultQuadIndexSrvIndex_;
 
-      if (isMesh) {
-        // メッシュ描画: meshRS_ に切替え、共通ルートを張り直してから per-emitter のメッシュ SRV を設定
-        commandList->SetGraphicsRootSignature(meshRS_.Get());
-        commandList->SetPipelineState(GetMeshBlendPSO(ed.blendMode));
-        m_srvManager_->SetGraphicsRootDescriptorTable(0, particleSrvIndex_);
-        commandList->SetGraphicsRootConstantBufferView(1, perViewAddr);
-        m_srvManager_->SetGraphicsRootDescriptorTable(2, texIndex);
-        m_srvManager_->SetGraphicsRootDescriptorTable(3, emitterSrvIndex_);
-        const uint32_t meshVtxSrv = (ed.meshSkinnedVertexSrvIndex != 0) ? ed.meshSkinnedVertexSrvIndex : ed.meshVertexSrvIndex;
-        m_srvManager_->SetGraphicsRootDescriptorTable(4, meshVtxSrv);
-        m_srvManager_->SetGraphicsRootDescriptorTable(5, ed.meshIndexSrvIndex);
-        commandList->ExecuteIndirect(meshDrawCommandSignature_.Get(), 1, meshDrawArgsResource_.Get(),
-                                     static_cast<UINT64>(i) * meshStride, nullptr, 0);
-        meshMode = true;
-      }
-      else {
-        if (meshMode) {
-          // quad RS_ に戻して共通ルートを張り直す
-          commandList->SetGraphicsRootSignature(RS_.Get());
-          m_srvManager_->SetGraphicsRootDescriptorTable(0, particleSrvIndex_);
-          commandList->SetGraphicsRootConstantBufferView(1, perViewAddr);
-          m_srvManager_->SetGraphicsRootDescriptorTable(3, emitterSrvIndex_);
-          meshMode = false;
-        }
-        commandList->SetPipelineState(GetBlendPSO(ed.blendMode));
-        m_srvManager_->SetGraphicsRootDescriptorTable(2, texIndex);
-        commandList->ExecuteIndirect(drawCommandSignature_.Get(), 1, drawArgsResource_.Get(),
-                                     static_cast<UINT64>(i) * quadStride, nullptr, 0);
-      }
+      commandList->SetPipelineState(GetBlendPSO(ed.blendMode));      // ブレンドモード
+      m_srvManager_->SetGraphicsRootDescriptorTable(2, texIndex);    // テクスチャ (t0, PS)
+      m_srvManager_->SetGraphicsRootDescriptorTable(4, vtxSrv);      // 描画モデル頂点 (t3)
+      m_srvManager_->SetGraphicsRootDescriptorTable(5, idxSrv);      // 描画モデルインデックス (t4)
+      commandList->ExecuteIndirect(drawCommandSignature_.Get(), 1, drawArgsResource_.Get(),
+                                   static_cast<UINT64>(i) * drawStride, nullptr, 0);
     }
 
-    // オーファン描画は quad パスで行うため、meshRS_ のままなら RS_ に戻す
-    if (meshMode) {
-      commandList->SetGraphicsRootSignature(RS_.Get());
-      m_srvManager_->SetGraphicsRootDescriptorTable(0, particleSrvIndex_);
-      commandList->SetGraphicsRootConstantBufferView(1, perViewAddr);
-      m_srvManager_->SetGraphicsRootDescriptorTable(3, emitterSrvIndex_);
-    }
 
-    // オーファン (登録解除されたエミッターの残存パーティクル) を既定 PSO/テクスチャでまとめて描画する。
-    // バケット [emitterCount, kNumMaxEmitter) を 1 回の ExecuteIndirect で処理 (空バケットは instanceCount=0 の no-op)。
-    // これにより、一時エミッター削除後も残存パーティクルが消えない (元の「常に全描画」に近い挙動を維持)。
+    // バケット [emitterCount, kNumMaxEmitter) を 1 回の ExecuteIndirect で処理。
+    // これにより、一時エミッター削除後も残存パーティクルが消えない 。
     if (emitterCount < static_cast<size_t>(kNumMaxEmitter)) {
-      commandList->SetPipelineState(psoScreen_.Get());
+      commandList->SetPipelineState(psoAdd_.Get());
       m_srvManager_->SetGraphicsRootDescriptorTable(2, modelData_.textureData.textureIndex);
+      m_srvManager_->SetGraphicsRootDescriptorTable(4, defaultQuadVertexSrvIndex_);
+      m_srvManager_->SetGraphicsRootDescriptorTable(5, defaultQuadIndexSrvIndex_);
       commandList->ExecuteIndirect(drawCommandSignature_.Get(),
                                    kNumMaxEmitter - static_cast<UINT>(emitterCount),
                                    drawArgsResource_.Get(),
-                                   static_cast<UINT64>(emitterCount) * quadStride, nullptr, 0);
+                                   static_cast<UINT64>(emitterCount) * drawStride, nullptr, 0);
     }
 
     // 各リソースの state を UAV に戻す
     m_dx12_->TransitionResourceWithTracking(drawArgsResource_.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-    m_dx12_->TransitionResourceWithTracking(meshDrawArgsResource_.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
     m_dx12_->TransitionResourceWithTracking(drawIndexResource_.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
     m_dx12_->TransitionResourceState(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, particleResource_.Get());
   }
@@ -460,6 +418,19 @@ namespace Tako {
   {
     // 深度バッファが再作成されるため SRV を再構築
     CreateDepthSRV();
+  }
+
+  Mesh* GPUParticle::AcquireModelMesh(const std::string& modelPath)
+  {
+    // 同一 path はキャッシュを返す。未ロードならロードし、Model クローンをシステムが保持する。
+    auto it = renderModels_.find(modelPath);
+    if (it == renderModels_.end()) {
+      ModelManager::GetInstance()->LoadModel(modelPath);
+      std::shared_ptr<Model> model = ModelManager::GetInstance()->GetModel(modelPath); // unique_ptr → shared_ptr へ移譲
+      if (!model || model->GetMeshCount() == 0) return nullptr;
+      it = renderModels_.emplace(modelPath, std::move(model)).first;
+    }
+    return it->second ? it->second->GetMesh(0) : nullptr;
   }
 
   std::shared_ptr<GPUParticleEmitter> GPUParticle::CreateTemporaryEmitterFrom(GPUParticleEmitter* sourceEmitter, float lifeTime)
@@ -600,22 +571,22 @@ namespace Tako {
     }
 
     // 各エミッターの GPU データを更新（統合構造体をそのままコピー）
-    size_t emitterCount = min(activeEmitters_.size(), static_cast<size_t>(kNumMaxEmitter));
+    size_t emitterCount = std::min(activeEmitters_.size(), static_cast<size_t>(kNumMaxEmitter));
     for (size_t i = 0; i < emitterCount; i++) {
       if (activeEmitters_[i]) {
         const EmitterData& ed = activeEmitters_[i]->GetData();
         gpuEmitters[i] = ed;
-        // 描画テンプレート: メッシュ形状描画 ON の Mesh エミッターのみ index 数 (= triangleCount*3)、それ以外は 0 (quad)
+        // 描画テンプレート: 描画モデルの index 数 (= 1パーティクルあたりの描画頂点数)。
+        // 描画モデル未指定 (renderIndexCount==0) のエミッターはデフォルト板ポリ (6)。
         if (emitterDrawTemplateData_) {
-          const bool renderAsMesh = ((ed.flags & EFLAG_RENDER_AS_MESH) != 0) && (ed.type == static_cast<uint32_t>(EmitterType::Mesh));
-          emitterDrawTemplateData_[i] = renderAsMesh ? (ed.meshTriangleCount * 3u) : 0u;
+          emitterDrawTemplateData_[i] = (ed.renderIndexCount != 0u) ? ed.renderIndexCount : defaultQuadIndexCount_;
         }
       }
     }
 
-    // テンプレートの残り (orphan バケット) を 0 クリア (quad パスで描くため)
+    // テンプレートの残り (orphan バケット) は既定板ポリ (6) で描く
     if (emitterDrawTemplateData_) {
-      for (size_t i = emitterCount; i < static_cast<size_t>(kNumMaxEmitter); ++i) emitterDrawTemplateData_[i] = 0u;
+      for (size_t i = emitterCount; i < static_cast<size_t>(kNumMaxEmitter); ++i) emitterDrawTemplateData_[i] = defaultQuadIndexCount_;
     }
 
     // アンマップ
@@ -629,201 +600,11 @@ namespace Tako {
   {
     HRESULT hr;
 
-    // rootSignature の生成
-    D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature;
-    descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-
-    // Sampler の設定
-    D3D12_STATIC_SAMPLER_DESC samplerDesc[1]{};
-    samplerDesc[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR; // テクスチャの補間方法
-    samplerDesc[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
-    samplerDesc[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
-    samplerDesc[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
-    samplerDesc[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER; // 比較しない
-    samplerDesc[0].MaxLOD = D3D12_FLOAT32_MAX; // ミップマップの最大 LOD
-    samplerDesc[0].ShaderRegister = 0; // レジスタ番号
-    samplerDesc[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-    descriptionRootSignature.pStaticSamplers = samplerDesc;
-    descriptionRootSignature.NumStaticSamplers = _countof(samplerDesc);
-
-    // DescriptorRange の設定。
-    // Texture
-    D3D12_DESCRIPTOR_RANGE descriptorRange_tex[1] = {};
-    descriptorRange_tex[0].BaseShaderRegister = 0; // レジスタ番号
-    descriptorRange_tex[0].NumDescriptors = 1; // ディスクリプタ数
-    descriptorRange_tex[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRV を使う
-    descriptorRange_tex[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
-
-    // Particle
-    D3D12_DESCRIPTOR_RANGE descriptorRangeForParticle[1] = {};
-    descriptorRangeForParticle[0].BaseShaderRegister = 0; // レジスタ番号
-    descriptorRangeForParticle[0].NumDescriptors = 1; // ディスクリプタ数
-    descriptorRangeForParticle[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRV を使う
-    descriptorRangeForParticle[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
-
-    // Emitter (VS でビルボードフラグを参照, t2)
-    D3D12_DESCRIPTOR_RANGE descriptorRangeForEmitter[1] = {};
-    descriptorRangeForEmitter[0].BaseShaderRegister = 2; // t2
-    descriptorRangeForEmitter[0].NumDescriptors = 1;
-    descriptorRangeForEmitter[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-    descriptorRangeForEmitter[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-
-    // RootParameter の設定。複数設定できるので配列
-    // ([0]=Particle SRV(VS) / [1]=PerView CBV(VS) / [2]=Texture SRV(PS) / [3]=Emitter SRV(VS))
-    // drawIndexList は per-instance VBV で渡すため SRV ルートパラメータは不要。
-    D3D12_ROOT_PARAMETER rootParameters[4] = {};
-
-    // Particle
-    rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-    rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // 頂点シェーダーで使う
-    rootParameters[0].DescriptorTable.pDescriptorRanges = descriptorRangeForParticle; // ディスクリプタレンジを設定
-    rootParameters[0].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForParticle); // レンジの数
-
-    // PerView
-    rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-    rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // 頂点シェーダーで使う
-    rootParameters[1].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
-
-    // Texture
-    rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-    rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-    rootParameters[2].DescriptorTable.pDescriptorRanges = descriptorRange_tex; // ディスクリプタレンジを設定
-    rootParameters[2].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange_tex); // レンジの数
-
-    // Emitter (VS でビルボードフラグを読む, t2)
-    rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-    rootParameters[3].DescriptorTable.pDescriptorRanges = descriptorRangeForEmitter;
-    rootParameters[3].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForEmitter);
-
-    descriptionRootSignature.pParameters = rootParameters;
-    descriptionRootSignature.NumParameters = _countof(rootParameters);
-
-    Microsoft::WRL::ComPtr<ID3DBlob> signatureBlob = nullptr;
-    Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
-
-    hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
-    if (FAILED(hr)) {
-#ifdef _DEBUG
-      DebugUIManager::GetInstance()->AddLog(static_cast<char*>(errorBlob->GetBufferPointer()), DebugUIManager::LogType::Error);
-#endif
-      assert(false);
-    }
-
-    hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(RS_.GetAddressOf()));
-    signatureBlob->GetBufferSize(), IID_PPV_ARGS(RS_.GetAddressOf());
-    assert(SUCCEEDED(hr));
-  }
-
-  void GPUParticle::CreateDrawPSO(const D3D12_BLEND_DESC& blendDesc, Microsoft::WRL::ComPtr<ID3D12PipelineState>& outPSO)
-  {
-    HRESULT hr;
-
-    // InputLayout (slot0=per-vertex クアッド頂点, slot1=per-instance パーティクル index)
-    D3D12_INPUT_ELEMENT_DESC inputElementDescs[4] = {};
-    inputElementDescs[0].SemanticName = "POSITION";
-    inputElementDescs[0].SemanticIndex = 0;
-    inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-    inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-
-    inputElementDescs[1].SemanticName = "TEXCOORD";
-    inputElementDescs[1].SemanticIndex = 0;
-    inputElementDescs[1].Format = DXGI_FORMAT_R32G32_FLOAT;
-    inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-
-    inputElementDescs[2].SemanticName = "COLOR";
-    inputElementDescs[2].SemanticIndex = 0;
-    inputElementDescs[2].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-    inputElementDescs[2].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-
-    // per-instance 頂点ストリーム (slot1): コンパクション済みパーティクル index (R32_UINT)
-    inputElementDescs[3].SemanticName = "TEXCOORD";
-    inputElementDescs[3].SemanticIndex = 1;
-    inputElementDescs[3].Format = DXGI_FORMAT_R32_UINT;
-    inputElementDescs[3].InputSlot = 1;
-    inputElementDescs[3].AlignedByteOffset = 0;
-    inputElementDescs[3].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA;
-    inputElementDescs[3].InstanceDataStepRate = 1;
-
-    D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
-    inputLayoutDesc.pInputElementDescs = inputElementDescs;
-    inputLayoutDesc.NumElements = _countof(inputElementDescs);
-
-    // BlendState は引数 blendDesc で受け取る (ブレンドモード別)
-
-    // RasterizerState
-    D3D12_RASTERIZER_DESC rasterizerDesc{};
-    // 三角形の中を塗りつぶす
-    rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
-    // 裏面を表示しない
-    rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
-
-    // shader のコンパイル
-    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"GPUParticle.VS.hlsl"), L"vs_6_0");
-    assert(vertexShaderBlob != nullptr);
-
-    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"GPUParticle.PS.hlsl"), L"ps_6_0");
-    assert(pixelShaderBlob != nullptr);
-
-    // DepthStencilState
-    D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
-    // depth の機能を有効化にする
-    depthStencilDesc.DepthEnable = true;
-    // 書き込みします
-    depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
-    // 深度の比較方法
-    depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-
-    // PSO の生成
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
-    graphicsPipelineStateDesc.pRootSignature = RS_.Get();
-    graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
-    graphicsPipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() };
-    graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
-    graphicsPipelineStateDesc.BlendState = blendDesc;
-    graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
-    // 書き込む RTV の情報
-    graphicsPipelineStateDesc.NumRenderTargets = 1;
-    graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-    // 利用するトポロジ（形状）のタイプ。三角形
-    graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-    // どのように画面に色を打ち込むかの設定
-    graphicsPipelineStateDesc.SampleDesc.Count = 1;
-    graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-    // DepthStencil の設定
-    graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
-    graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
-
-    // 実際に生成
-    hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&outPSO));
-    assert(SUCCEEDED(hr));
-  }
-
-  ID3D12PipelineState* GPUParticle::GetBlendPSO(uint32_t blendMode) const
-  {
-    switch (static_cast<ParticleBlendMode>(blendMode))
-    {
-    case ParticleBlendMode::Add:   return psoAdd_.Get();
-    case ParticleBlendMode::Alpha: return psoAlpha_.Get();
-    case ParticleBlendMode::Screen:
-    default:                       return psoScreen_.Get();
-    }
-  }
-
-  ID3D12PipelineState* GPUParticle::GetMeshBlendPSO(uint32_t blendMode) const
-  {
-    switch (static_cast<ParticleBlendMode>(blendMode))
-    {
-    case ParticleBlendMode::Add:   return meshPsoAdd_.Get();
-    case ParticleBlendMode::Alpha: return meshPsoAlpha_.Get();
-    case ParticleBlendMode::Screen:
-    default:                       return meshPsoScreen_.Get();
-    }
-  }
-
-  void GPUParticle::CreateMeshRS()
-  {
-    HRESULT hr;
+    // 全パーティクル共通の描画ルートシグネチャ。
+    // VS(GPUParticle.VS) が頂点/インデックスを SRV プルするため、描画モデル(既定板ポリ含む)の
+    // 頂点 SRV(t3)・インデックス SRV(t4) をルートに持つ。
+    // ([0]=Particle SRV t0(VS) / [1]=PerView CBV b0(VS) / [2]=Texture SRV t0(PS) /
+    //  [3]=Emitter SRV t2(VS) / [4]=描画モデル頂点 SRV t3(VS) / [5]=描画モデルインデックス SRV t4(VS))
     D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
     descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
@@ -840,7 +621,7 @@ namespace Tako {
     descriptionRootSignature.pStaticSamplers = samplerDesc;
     descriptionRootSignature.NumStaticSamplers = _countof(samplerDesc);
 
-    // SRV レンジ (Particle=t0, Texture=t0(PS), Emitter=t2, MeshVtx=t3, MeshIdx=t4)
+    // SRV レンジ生成ヘルパ (1 ディスクリプタ, append offset)
     auto makeSrvRange = [](UINT reg) {
       D3D12_DESCRIPTOR_RANGE r{};
       r.BaseShaderRegister = reg;
@@ -849,11 +630,11 @@ namespace Tako {
       r.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
       return r;
       };
-    D3D12_DESCRIPTOR_RANGE rangeParticle[1] = { makeSrvRange(0) };
-    D3D12_DESCRIPTOR_RANGE rangeTex[1]      = { makeSrvRange(0) };
-    D3D12_DESCRIPTOR_RANGE rangeEmitter[1]  = { makeSrvRange(2) };
-    D3D12_DESCRIPTOR_RANGE rangeMeshVtx[1]  = { makeSrvRange(3) };
-    D3D12_DESCRIPTOR_RANGE rangeMeshIdx[1]  = { makeSrvRange(4) };
+    D3D12_DESCRIPTOR_RANGE rangeParticle[1]  = { makeSrvRange(0) }; // t0
+    D3D12_DESCRIPTOR_RANGE rangeTex[1]       = { makeSrvRange(0) }; // t0 (PS)
+    D3D12_DESCRIPTOR_RANGE rangeEmitter[1]   = { makeSrvRange(2) }; // t2
+    D3D12_DESCRIPTOR_RANGE rangeRenderVtx[1] = { makeSrvRange(3) }; // t3
+    D3D12_DESCRIPTOR_RANGE rangeRenderIdx[1] = { makeSrvRange(4) }; // t4
 
     D3D12_ROOT_PARAMETER rootParameters[6] = {};
     // [0] Particle SRV (t0, VS)
@@ -870,20 +651,20 @@ namespace Tako {
     rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
     rootParameters[2].DescriptorTable.pDescriptorRanges = rangeTex;
     rootParameters[2].DescriptorTable.NumDescriptorRanges = 1;
-    // [3] Emitter SRV (t2, VS)
+    // [3] Emitter SRV (t2, VS) — ビルボードフラグ参照
     rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
     rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
     rootParameters[3].DescriptorTable.pDescriptorRanges = rangeEmitter;
     rootParameters[3].DescriptorTable.NumDescriptorRanges = 1;
-    // [4] MeshVertices SRV (t3, VS)
+    // [4] 描画モデル頂点 SRV (t3, VS)
     rootParameters[4].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
     rootParameters[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-    rootParameters[4].DescriptorTable.pDescriptorRanges = rangeMeshVtx;
+    rootParameters[4].DescriptorTable.pDescriptorRanges = rangeRenderVtx;
     rootParameters[4].DescriptorTable.NumDescriptorRanges = 1;
-    // [5] MeshIndices SRV (t4, VS)
+    // [5] 描画モデルインデックス SRV (t4, VS)
     rootParameters[5].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
     rootParameters[5].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-    rootParameters[5].DescriptorTable.pDescriptorRanges = rangeMeshIdx;
+    rootParameters[5].DescriptorTable.pDescriptorRanges = rangeRenderIdx;
     rootParameters[5].DescriptorTable.NumDescriptorRanges = 1;
 
     descriptionRootSignature.pParameters = rootParameters;
@@ -898,15 +679,16 @@ namespace Tako {
 #endif
       assert(false);
     }
-    hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(meshRS_.GetAddressOf()));
+    hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(RS_.GetAddressOf()));
     assert(SUCCEEDED(hr));
   }
 
-  void GPUParticle::CreateMeshDrawPSO(const D3D12_BLEND_DESC& blendDesc, Microsoft::WRL::ComPtr<ID3D12PipelineState>& outPSO)
+  void GPUParticle::CreateDrawPSO(const D3D12_BLEND_DESC& blendDesc, Microsoft::WRL::ComPtr<ID3D12PipelineState>& outPSO)
   {
     HRESULT hr;
 
-    // InputLayout: per-instance パーティクル index のみ (頂点はシェーダで SRV プル)
+    // InputLayout: per-instance パーティクル index のみ (slot1, R32_UINT)。
+    // 頂点/インデックスは VS(GPUParticle.VS) が SRV(t3/t4) からプルするため slot0 頂点バッファは無し。
     D3D12_INPUT_ELEMENT_DESC inputElementDescs[1] = {};
     inputElementDescs[0].SemanticName = "TEXCOORD";
     inputElementDescs[0].SemanticIndex = 1;
@@ -920,13 +702,15 @@ namespace Tako {
     inputLayoutDesc.pInputElementDescs = inputElementDescs;
     inputLayoutDesc.NumElements = _countof(inputElementDescs);
 
-    // RasterizerState (メッシュは裏面カリング)
+    // RasterizerState
     D3D12_RASTERIZER_DESC rasterizerDesc{};
     rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
     rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
 
-    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"GPUParticleMesh.VS.hlsl"), L"vs_6_0");
+    // shader のコンパイル 
+    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"GPUParticle.VS.hlsl"), L"vs_6_0");
     assert(vertexShaderBlob != nullptr);
+
     Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"GPUParticle.PS.hlsl"), L"ps_6_0");
     assert(pixelShaderBlob != nullptr);
 
@@ -936,8 +720,9 @@ namespace Tako {
     depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
     depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 
+    // PSO の生成
     D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
-    graphicsPipelineStateDesc.pRootSignature = meshRS_.Get();
+    graphicsPipelineStateDesc.pRootSignature = RS_.Get();
     graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
     graphicsPipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() };
     graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
@@ -955,21 +740,15 @@ namespace Tako {
     assert(SUCCEEDED(hr));
   }
 
-  void GPUParticle::CreateMeshCommandSignature()
+  ID3D12PipelineState* GPUParticle::GetBlendPSO(uint32_t blendMode) const
   {
-    // DRAW (非indexed) のコマンドシグネチャ。頂点/インデックスはシェーダで SRV プルするため。
-    D3D12_INDIRECT_ARGUMENT_DESC argDesc{};
-    argDesc.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW;
-
-    D3D12_COMMAND_SIGNATURE_DESC sigDesc{};
-    sigDesc.ByteStride = sizeof(D3D12_DRAW_ARGUMENTS); // 16
-    sigDesc.NumArgumentDescs = 1;
-    sigDesc.pArgumentDescs = &argDesc;
-    sigDesc.NodeMask = 0;
-
-    HRESULT hr = m_dx12_->GetDevice()->CreateCommandSignature(
-      &sigDesc, nullptr, IID_PPV_ARGS(&meshDrawCommandSignature_));
-    assert(SUCCEEDED(hr));
+    switch (static_cast<ParticleBlendMode>(blendMode))
+    {
+    case ParticleBlendMode::Add:   return psoAdd_.Get();
+    case ParticleBlendMode::Alpha: return psoAlpha_.Get();
+    case ParticleBlendMode::Screen:
+    default:                       return psoScreen_.Get();
+    }
   }
 
   void GPUParticle::CreateInitComputeRS()
@@ -1168,7 +947,7 @@ namespace Tako {
     assert(SUCCEEDED(hr));
   }
 
-  void GPUParticle::CreateVertexData()
+  void GPUParticle::CreateDefaultQuadMesh()
   {
     modelData_.vertices.push_back({ .position = {.x = 1.0f, .y = 1.0f, .z = 0.0f, .w = 1.0f}, .texcoord = {.x = 0.0f, .y = 0.0f}, .normal = {.x = 0.0f, .y = 0.0f, .z = 1.0f} });
     modelData_.vertices.push_back({ .position = {.x = -1.0f, .y = 1.0f, .z = 0.0f, .w = 1.0f}, .texcoord = {.x = 1.0f, .y = 0.0f}, .normal = {.x = 0.0f, .y = 0.0f, .z = 1.0f} });
@@ -1177,18 +956,26 @@ namespace Tako {
     modelData_.vertices.push_back({ .position = {.x = -1.0f, .y = 1.0f, .z = 0.0f, .w = 1.0f}, .texcoord = {.x = 1.0f, .y = 0.0f}, .normal = {.x = 0.0f, .y = 0.0f, .z = 1.0f} });
     modelData_.vertices.push_back({ .position = {.x = -1.0f, .y = -1.0f, .z = 0.0f, .w = 1.0f}, .texcoord = {.x = 1.0f, .y = 1.0f}, .normal = {.x = 0.0f, .y = 0.0f, .z = 1.0f} });
 
-    // 頂点リソース生成
-    vertexResource_ = m_dx12_->MakeBufferResource(sizeof(VertexData) * modelData_.vertices.size());
+    // 頂点 StructuredBuffer + SRV (VS が SV_VertexID でプルする)
+    const UINT vertexCount = static_cast<UINT>(modelData_.vertices.size());
+    defaultQuadVertexResource_ = m_dx12_->MakeBufferResource(sizeof(VertexData) * vertexCount);
+    VertexData* mappedVtx = nullptr;
+    defaultQuadVertexResource_->Map(0, nullptr, reinterpret_cast<void**>(&mappedVtx));
+    std::memcpy(mappedVtx, modelData_.vertices.data(), sizeof(VertexData) * vertexCount);
+    defaultQuadVertexResource_->Unmap(0, nullptr);
+    defaultQuadVertexSrvIndex_ = m_srvManager_->Allocate();
+    m_srvManager_->CreateSRVForStructuredBuffer(defaultQuadVertexSrvIndex_, defaultQuadVertexResource_.Get(), vertexCount, sizeof(VertexData));
 
-    // VertexBufferView の作成
-    vertexBufferView_.BufferLocation = vertexResource_->GetGPUVirtualAddress(); // リソースの先頭のアドレスから使う
-    vertexBufferView_.SizeInBytes = static_cast<UINT>(sizeof(VertexData) * modelData_.vertices.size());	// 使用するリソースのサイズは頂点のサイズ
-    vertexBufferView_.StrideInBytes = sizeof(VertexData); // 1頂点あたりのサイズ
-
-    // 頂点リソースをマップ
-    [[maybe_unused]] HRESULT hr = vertexResource_->Map(0, nullptr, reinterpret_cast<void**>(&vertexData_));
-    // 頂点データをリソースにコピー
-    std::memcpy(vertexData_, modelData_.vertices.data(), sizeof(VertexData) * modelData_.vertices.size());
+    // インデックス StructuredBuffer + SRV ({0,1,2,3,4,5} 素通し。2 三角形)
+    const uint32_t indices[6] = { 0, 1, 2, 3, 4, 5 };
+    defaultQuadIndexCount_ = _countof(indices);
+    defaultQuadIndexResource_ = m_dx12_->MakeBufferResource(sizeof(indices));
+    uint32_t* mappedIdx = nullptr;
+    defaultQuadIndexResource_->Map(0, nullptr, reinterpret_cast<void**>(&mappedIdx));
+    std::memcpy(mappedIdx, indices, sizeof(indices));
+    defaultQuadIndexResource_->Unmap(0, nullptr);
+    defaultQuadIndexSrvIndex_ = m_srvManager_->Allocate();
+    m_srvManager_->CreateSRVForStructuredBuffer(defaultQuadIndexSrvIndex_, defaultQuadIndexResource_.Get(), defaultQuadIndexCount_, sizeof(uint32_t));
   }
 
   void GPUParticle::CreatePerViewData()
@@ -1295,55 +1082,30 @@ namespace Tako {
     scatterCursorUavIndex_ = m_srvManager_->Allocate();
     m_srvManager_->CreateUAV(scatterCursorUavIndex_, scatterCursorResource_.Get(), kNumMaxEmitter, sizeof(uint32_t));
 
-    // --- per-emitter Indirect 描画引数 (D3D12_DRAW_INDEXED_ARGUMENTS kNumMaxEmitter 要素) ---
-    m_dx12_->CreateResourceForUAV(drawArgsResource_, sizeof(D3D12_DRAW_INDEXED_ARGUMENTS) * kNumMaxEmitter);
+    // --- per-emitter Indirect 描画引数 (D3D12_DRAW_ARGUMENTS kNumMaxEmitter 要素) ---
+    m_dx12_->CreateResourceForUAV(drawArgsResource_, sizeof(D3D12_DRAW_ARGUMENTS) * kNumMaxEmitter);
     m_dx12_->SetInitialResourceState(drawArgsResource_.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
     drawArgsUavIndex_ = m_srvManager_->Allocate();
-    m_srvManager_->CreateUAV(drawArgsUavIndex_, drawArgsResource_.Get(), kNumMaxEmitter, sizeof(D3D12_DRAW_INDEXED_ARGUMENTS));
+    m_srvManager_->CreateUAV(drawArgsUavIndex_, drawArgsResource_.Get(), kNumMaxEmitter, sizeof(D3D12_DRAW_ARGUMENTS));
 
-    // --- per-emitter メッシュ描画引数 (D3D12_DRAW_ARGUMENTS kNumMaxEmitter 要素) ---
-    m_dx12_->CreateResourceForUAV(meshDrawArgsResource_, sizeof(D3D12_DRAW_ARGUMENTS) * kNumMaxEmitter);
-    m_dx12_->SetInitialResourceState(meshDrawArgsResource_.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-    meshDrawArgsUavIndex_ = m_srvManager_->Allocate();
-    m_srvManager_->CreateUAV(meshDrawArgsUavIndex_, meshDrawArgsResource_.Get(), kNumMaxEmitter, sizeof(D3D12_DRAW_ARGUMENTS));
-
-    // --- per-emitter 描画テンプレート (UPLOAD: メッシュ頂点数 = index 数。quad は 0) ---
+    // --- per-emitter 描画テンプレート (UPLOAD: 描画モデルの index 数。既定板ポリは 6) ---
     m_dx12_->CreateBufferResource(emitterDrawTemplateResource_, sizeof(uint32_t) * kNumMaxEmitter);
     emitterDrawTemplateSrvIndex_ = m_srvManager_->Allocate();
     m_srvManager_->CreateSRVForStructuredBuffer(emitterDrawTemplateSrvIndex_, emitterDrawTemplateResource_.Get(), kNumMaxEmitter, sizeof(uint32_t));
     emitterDrawTemplateResource_->Map(0, nullptr, reinterpret_cast<void**>(&emitterDrawTemplateData_));
-    for (uint32_t i = 0; i < kNumMaxEmitter; ++i) emitterDrawTemplateData_[i] = 0; // 既定: 全 quad
-  }
-
-  void GPUParticle::CreateQuadIndexBuffer()
-  {
-    // CreateVertexData の 6 頂点 (2 三角形) をそのまま indexed 描画するためのインデックス。
-    // DrawIndexedInstanced + コマンドシグネチャ (DRAW_INDEXED) に統一し、
-    // 以降のメッシュ対応でコマンドシグネチャを作り直さずに済むようにする。
-    const uint32_t indices[6] = { 0, 1, 2, 3, 4, 5 };
-
-    m_dx12_->CreateBufferResource(indexResource_, sizeof(indices));
-
-    uint32_t* mapped = nullptr;
-    indexResource_->Map(0, nullptr, reinterpret_cast<void**>(&mapped));
-    std::memcpy(mapped, indices, sizeof(indices));
-    indexResource_->Unmap(0, nullptr);
-
-    indexBufferView_.BufferLocation = indexResource_->GetGPUVirtualAddress();
-    indexBufferView_.SizeInBytes = sizeof(indices);
-    indexBufferView_.Format = DXGI_FORMAT_R32_UINT;
+    for (uint32_t i = 0; i < kNumMaxEmitter; ++i) emitterDrawTemplateData_[i] = defaultQuadIndexCount_; // 既定: 全 quad (6)
   }
 
   void GPUParticle::CreateCommandSignature()
   {
-    // DRAW_INDEXED 単体のコマンドシグネチャ。
-    // ルート引数を含まない (per-instance VBV の StartInstanceLocation でオフセットするため)
-    // ので pRootSignature は nullptr で良い。
+    // DRAW (非indexed) 単体のコマンドシグネチャ。全パーティクル描画 (既定板ポリ / カスタムモデル) で共用。
+    // 頂点/インデックスは VS が SRV プルし、オフセットは per-instance VBV の StartInstanceLocation で
+    // 与えるため、ルート引数を含まない。
     D3D12_INDIRECT_ARGUMENT_DESC argDesc{};
-    argDesc.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED;
+    argDesc.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW;
 
     D3D12_COMMAND_SIGNATURE_DESC sigDesc{};
-    sigDesc.ByteStride = sizeof(D3D12_DRAW_INDEXED_ARGUMENTS); // 20
+    sigDesc.ByteStride = sizeof(D3D12_DRAW_ARGUMENTS); // 16
     sigDesc.NumArgumentDescs = 1;
     sigDesc.pArgumentDescs = &argDesc;
     sigDesc.NodeMask = 0;
@@ -1386,10 +1148,10 @@ namespace Tako {
 
   void GPUParticle::CreateBuildDrawArgsRS()
   {
-    // u0: perEmitterCount, u1: quad DrawArgs, u2: ScatterCursor, u3: mesh DrawArgs (UAV)
+    // u0: perEmitterCount, u1: DrawArgs(DRAW), u2: ScatterCursor (UAV)
     // t0: emitterTemplate (SRV)
-    D3D12_DESCRIPTOR_RANGE uavRanges[4] = {};
-    for (uint32_t i = 0; i < 4; ++i) {
+    D3D12_DESCRIPTOR_RANGE uavRanges[3] = {};
+    for (uint32_t i = 0; i < 3; ++i) {
       uavRanges[i].BaseShaderRegister = i;
       uavRanges[i].NumDescriptors = 1;
       uavRanges[i].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
@@ -1401,17 +1163,17 @@ namespace Tako {
     srvRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
     srvRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-    D3D12_ROOT_PARAMETER rootParameters[5] = {};
-    for (uint32_t i = 0; i < 4; ++i) {
+    D3D12_ROOT_PARAMETER rootParameters[4] = {};
+    for (uint32_t i = 0; i < 3; ++i) {
       rootParameters[i].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
       rootParameters[i].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
       rootParameters[i].DescriptorTable.pDescriptorRanges = &uavRanges[i];
       rootParameters[i].DescriptorTable.NumDescriptorRanges = 1;
     }
-    rootParameters[4].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-    rootParameters[4].DescriptorTable.pDescriptorRanges = srvRange;
-    rootParameters[4].DescriptorTable.NumDescriptorRanges = 1;
+    rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    rootParameters[3].DescriptorTable.pDescriptorRanges = srvRange;
+    rootParameters[3].DescriptorTable.NumDescriptorRanges = 1;
 
     D3D12_ROOT_SIGNATURE_DESC desc{};
     desc.pParameters = rootParameters;
@@ -1743,7 +1505,7 @@ namespace Tako {
     forceFieldResource_->Map(0, nullptr, reinterpret_cast<void**>(&gpuForceFields));
 
     // フォースフィールドデータをコピー
-    size_t count = min(forceFields_.size(), static_cast<size_t>(kMaxForceFields));
+    size_t count = std::min(forceFields_.size(), static_cast<size_t>(kMaxForceFields));
     if (count > 0) {
       std::memcpy(gpuForceFields, forceFields_.data(), sizeof(ForceFieldData) * count);
     }
@@ -1760,7 +1522,7 @@ namespace Tako {
   {
     // アクティブなフォースフィールド数を更新
     physicsParamsData_->activeForceFieldCount = static_cast<uint32_t>(
-      min(forceFields_.size(), static_cast<size_t>(kMaxForceFields)));
+      std::min(forceFields_.size(), static_cast<size_t>(kMaxForceFields)));
 
     // 時間を更新（Curl Noise 用）
     physicsParamsData_->noiseTime = FrameTimer::GetInstance()->GetGameTime();

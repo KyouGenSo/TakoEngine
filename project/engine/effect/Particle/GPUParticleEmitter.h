@@ -9,6 +9,7 @@ namespace Tako {
 
   // 前方宣言
   class GPUParticle;
+  class Mesh;
 
   /// <summary>
   /// GPU パーティクルエミッター基底クラス
@@ -605,16 +606,33 @@ namespace Tako {
     [[nodiscard]] uint32_t GetTextureSrvIndex() const { return data_.textureSrvIndex; }
 
     /// <summary>
-    /// パーティクルを quad でなく選択メッシュ形状で描画するかを設定。
-    /// Mesh エミッター(MeshEmitter)で ON にすると、各パーティクルがそのメッシュとして描画される。
-    /// 既定 OFF (= 従来どおり quad 描画。Mesh エミッターは「スポーン形状」としてのみ機能)。
+    /// パーティクルの描画モデルをファイルから設定する (デフォルトは板ポリ)。
+    /// 各パーティクルがそのモデル(先頭メッシュだけ)形状で描画される。
     /// </summary>
-    void SetRenderAsMesh(bool enable) { if (enable) data_.flags |= EFLAG_RENDER_AS_MESH; else data_.flags &= ~EFLAG_RENDER_AS_MESH; }
+    /// <param name="modelPath">モデルファイル名</param>
+    void SetParticleModel(const std::string& modelPath);
 
     /// <summary>
-    /// メッシュ形状描画が有効かを取得
+    /// パーティクルの描画モデルを既存メッシュから設定する。
+    /// mesh の寿命は呼び出し側が保証すること (例: Mesh エミッターが自身のスポーンメッシュを渡す)。
     /// </summary>
-    [[nodiscard]] bool IsRenderAsMesh() const { return (data_.flags & EFLAG_RENDER_AS_MESH) != 0; }
+    /// <param name="mesh">描画に使うメッシュ</param>
+    void SetParticleModel(Mesh* mesh);
+
+    /// <summary>
+    /// 描画モデルをデフォルトの板ポリに戻す。
+    /// </summary>
+    void ResetParticleModel();
+
+    /// <summary>
+    /// 描画モデルが設定されているかを取得 (false でデフォルト板ポリ)
+    /// </summary>
+    [[nodiscard]] bool HasParticleModel() const { return data_.renderIndexCount != 0; }
+
+    /// <summary>
+    /// 描画モデルのファイルパスを取得
+    /// </summary>
+    [[nodiscard]] const std::string& GetRenderModelPath() const { return renderModelPath_; }
 
 
     /// <summary>
@@ -624,9 +642,17 @@ namespace Tako {
     [[nodiscard]] virtual EmitterType GetType() const = 0;
 
   protected:
+    /// <summary>
+    /// 描画系の共通状態(ブレンドモード/ビルボード/テクスチャ/描画モデル)をクローン先へコピーする。
+    /// </summary>
+    /// <param name="dst">コピー先エミッター</param>
+    void CopyDrawStateTo(GPUParticleEmitter& dst) const;
+
     GPUParticle* particleSystem_;    ///< GPU パーティクルシステムへの参照（パーティクル生成要求の送信先）
 
     EmitterData data_;               ///< エミッターの全設定データ（位置、色、速度範囲、寿命など）
+
+    std::string renderModelPath_;    ///< 描画モデルのファイルパス (空=既定板ポリ)。JSON 永続化用。
 
     const Vector3* boundTargetPosition_ = nullptr; ///< 動的バインド用 Vector3 ポインタ (非所有、毎フレーム UpdateEmission で同期)
   };

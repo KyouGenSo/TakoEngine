@@ -3,6 +3,7 @@
 #include"DX12Basic.h"
 #include "EnginePaths.h"
 #include <ranges>
+#include <algorithm>
 
 #ifdef _DEBUG
 #include "DebugUIManager.h"
@@ -91,6 +92,18 @@ namespace Tako {
     models_.insert(std::make_pair(fileName, std::move(newModel)));
 
     return modelPtr->Clone();
+  }
+
+  std::vector<std::string> ModelManager::GetLoadedModelNames() const
+  {
+    // 読み込み済みモデルのキー(ファイル名)を列挙してソートして返す。
+    std::vector<std::string> names;
+    names.reserve(models_.size());
+    for (const auto& [name, _] : models_) {
+      names.push_back(name);
+    }
+    std::sort(names.begin(), names.end());
+    return names;
   }
 
   void ModelManager::LoadEngineModel(const std::string& fileName)

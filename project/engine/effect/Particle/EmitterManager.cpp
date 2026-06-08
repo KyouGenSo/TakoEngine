@@ -98,6 +98,34 @@ namespace Tako {
     emitterMap_[name] = emitter;
   }
 
+  void EmitterManager::CreateMeshEmitterFromModel(const std::string& name, const std::string& modelPath, uint32_t count, float frequency)
+  {
+    // 先にモデルをロードし、成功を確認してから既存 emitter を置き換える。
+    Mesh* mesh = particleSystem_->AcquireModelMesh(modelPath);
+    if (mesh == nullptr) {
+#ifdef _DEBUG
+      DebugUIManager::GetInstance()->AddLog(
+        "CreateMeshEmitterFromModel: failed to load model '" + modelPath + "'", DebugUIManager::LogType::Error);
+#endif
+      return;
+    }
+
+    // ロード成功後に既存の同名 emitter があれば置き換える
+    if (emitterMap_.contains(name)) {
+#ifdef _DEBUG
+      DebugUIManager::GetInstance()->AddLog(
+        "Emitter name '" + name + "' already exists. Overwriting.", DebugUIManager::LogType::Warning);
+#endif
+      RemoveEmitter(name);
+    }
+
+    auto emitter = std::make_shared<MeshEmitter>(particleSystem_, mesh, count, frequency);
+    emitter->SetSpawnModelPath(modelPath); // JSON 永続化用 (パスからスポーン形状を復元可能に)
+
+    particleSystem_->RegisterEmitter(emitter);
+    emitterMap_[name] = emitter;
+  }
+
   void EmitterManager::CreateMeshEmitter(const std::string& name, Model* model, uint32_t count, float frequency)
   {
     // 名前の重複チェック
@@ -1001,6 +1029,7 @@ namespace Tako {
     // エミッターの設定をコピー（統合構造体をそのままコピー）
     slot.type = emitter->GetType();
     slot.data = emitter->GetData();
+    slot.renderModelPath = emitter->GetRenderModelPath();
 
     // 型固有のパラメータ（GetData()で全てコピー済みだが、Getter経由で明示的に設定）
     if (auto sphereEmitter = std::dynamic_pointer_cast<SphereEmitter>(emitter)) {
@@ -1055,7 +1084,14 @@ namespace Tako {
       // 描画設定 (per-emitter)
       targetEmitter->SetBlendMode(static_cast<ParticleBlendMode>(slot.data.blendMode));
       targetEmitter->SetBillboard((slot.data.flags & EFLAG_BILLBOARD) != 0);
-      targetEmitter->SetRenderAsMesh((slot.data.flags & EFLAG_RENDER_AS_MESH) != 0);
+      // 描画モデルを復元する 。
+      // 空ならデフォルト板ポリにリセットする。
+      if (!slot.renderModelPath.empty()) {
+        targetEmitter->SetParticleModel(slot.renderModelPath);
+      }
+      else {
+        targetEmitter->ResetParticleModel();
+      }
       // テクスチャは srvIndex からファイル名を解決して再設定 (0 は既定テクスチャなので何もしない)
       if (slot.data.textureSrvIndex != 0) {
         const std::string& texName = TextureManager::GetInstance()->GetFileName(slot.data.textureSrvIndex);
@@ -1180,8 +1216,11 @@ namespace Tako {
     // 描画設定 (per-emitter)
     json["blendMode"] = static_cast<uint32_t>(emitter->GetBlendMode());
     json["billboard"] = emitter->IsBillboard();
-    json["renderAsMesh"] = emitter->IsRenderAsMesh();
-    // テクスチャは SRV index でなくファイルパスで保存 (index は実行時依存のため)。0 は既定テクスチャ。
+    // パーティクル描画モデルはファイルパスで保存。空=既定板ポリ。
+    if (!emitter->GetRenderModelPath().empty()) {
+      json["renderModelPath"] = emitter->GetRenderModelPath();
+    }
+    // テクスチャは SRV index でなくファイルパスで保存。
     if (emitter->GetTextureSrvIndex() != 0) {
       json["texturePath"] = TextureManager::GetInstance()->GetFileName(emitter->GetTextureSrvIndex());
     }
@@ -1203,13 +1242,17 @@ namespace Tako {
       // MeshEmitter は Object3d 識別キーを保存する。Object3d 本体は永続化せず、
       // ロード時に呼び出し側が同じキーで Object3d* を解決する責務を負う。
       const std::string& key = meshEmitter->GetObject3dKey();
+      const std::string& meshModelPath = meshEmitter->GetSpawnModelPath();
 #ifdef _DEBUG
-      if (key.empty()) {
+      if (key.empty() && meshModelPath.empty()) {
         DebugUIManager::GetInstance()->AddLog(
-          "Serialize: MeshEmitter has no object3dKey; not round-trippable.",
+          "Serialize: MeshEmitter has neither object3dKey nor meshModelPath; not round-trippable.",
           DebugUIManager::LogType::Warning);
       }
 #endif
+      // モデルパスと Object3d キーを両方保存する。
+      // 復元時は meshModelPath を優先し、無ければ object3dKey + object3dMap で解決する。
+      if (!meshModelPath.empty()) json["meshModelPath"] = meshModelPath;
       json["object3dKey"] = key;
     }
   }
@@ -1248,33 +1291,53 @@ namespace Tako {
       emitter = std::make_shared<TriangleEmitter>(particleSystem_, position, v1, v2, v3, count, frequency);
     }
     else if (type == EmitterType::Mesh) {
-      if (!json.contains("object3dKey")) {
+      // 優先: モデルパスから自己完結で復元 (object3dMap 不要)。エディタ作成の Mesh エミッター用。
+      std::string meshModelPath;
+      if (json.contains("meshModelPath")) meshModelPath = json["meshModelPath"].get<std::string>();
+      if (!meshModelPath.empty()) {
+        Mesh* mesh = particleSystem_->AcquireModelMesh(meshModelPath);
+        if (mesh == nullptr) {
 #ifdef _DEBUG
-        DebugUIManager::GetInstance()->AddLog(
-          "Deserialize: Mesh emitter missing 'object3dKey'.",
-          DebugUIManager::LogType::Error);
+          DebugUIManager::GetInstance()->AddLog(
+            "Deserialize: failed to load meshModelPath '" + meshModelPath + "'.",
+            DebugUIManager::LogType::Error);
 #endif
-        return nullptr;
+          return nullptr;
+        }
+        auto meshEmitter = std::make_shared<MeshEmitter>(particleSystem_, mesh, count, frequency);
+        meshEmitter->SetSpawnModelPath(meshModelPath);
+        emitter = meshEmitter;
       }
-      const std::string key = json["object3dKey"].get<std::string>();
-      if (object3dMap == nullptr) {
+      else {
+        // フォールバック: 既存の Object3d キー経路 (Object3d バインド。object3dMap 必須)。
+        if (!json.contains("object3dKey")) {
 #ifdef _DEBUG
-        DebugUIManager::GetInstance()->AddLog(
-          "Deserialize: Mesh emitter found but no Object3d map provided. Skipping '" + key + "'.",
-          DebugUIManager::LogType::Warning);
+          DebugUIManager::GetInstance()->AddLog(
+            "Deserialize: Mesh emitter missing both 'meshModelPath' and 'object3dKey'.",
+            DebugUIManager::LogType::Error);
 #endif
-        return nullptr;
-      }
-      auto it = object3dMap->find(key);
-      if (it == object3dMap->end() || it->second == nullptr) {
+          return nullptr;
+        }
+        const std::string key = json["object3dKey"].get<std::string>();
+        if (object3dMap == nullptr) {
 #ifdef _DEBUG
-        DebugUIManager::GetInstance()->AddLog(
-          "Deserialize: object3dKey '" + key + "' not resolved. Skipping.",
-          DebugUIManager::LogType::Warning);
+          DebugUIManager::GetInstance()->AddLog(
+            "Deserialize: Mesh emitter found but no Object3d map provided. Skipping '" + key + "'.",
+            DebugUIManager::LogType::Warning);
 #endif
-        return nullptr;
+          return nullptr;
+        }
+        auto it = object3dMap->find(key);
+        if (it == object3dMap->end() || it->second == nullptr) {
+#ifdef _DEBUG
+          DebugUIManager::GetInstance()->AddLog(
+            "Deserialize: object3dKey '" + key + "' not resolved. Skipping.",
+            DebugUIManager::LogType::Warning);
+#endif
+          return nullptr;
+        }
+        emitter = std::make_shared<MeshEmitter>(particleSystem_, it->second, count, frequency, key);
       }
-      emitter = std::make_shared<MeshEmitter>(particleSystem_, it->second, count, frequency, key);
     }
     else {
       return nullptr;
@@ -1312,25 +1375,24 @@ namespace Tako {
     if (json.contains("randomFlags")) {
       emitter->SetRandomFlags(json["randomFlags"]);
     }
-    // randomFlags キーが無い旧 JSON は 0 のまま → EmitParticle.CS の自動判定にフォールバック
 
-    // アルファフェード。旧 JSON は欠落 → コンストラクタで ON されたままなので旧挙動互換
+    // アルファフェード。
     if (json.contains("useAlphaFade")) {
       emitter->SetAlphaFade(json["useAlphaFade"]);
     }
 
-    // スケール縮小消滅。旧 JSON は両キーとも欠落 → SetScaleFade(false) 相当の既定維持
+    // スケール縮小消滅。
     if (json.contains("useScaleFade") && json.contains("endScaleDefault")) {
       Vector3 endScale = { json["endScaleDefault"][0], json["endScaleDefault"][1], json["endScaleDefault"][2] };
       emitter->SetScaleFade(json["useScaleFade"], endScale);
     }
 
-    // スポーン位置種別。旧 JSON は欠落 → Inside (現状挙動) のまま
+    // スポーン位置種別。
     if (json.contains("spawnLocation")) {
       emitter->SetSpawnLocation(static_cast<SpawnLocation>(json["spawnLocation"].get<uint32_t>()));
     }
 
-    // Per-Emitter Target 収束。旧 JSON は欠落 → フラグ OFF (旧挙動互換)
+    // Per-Emitter Target 収束。
     if (json.contains("targetPosition")) {
       Vector3 tp = { json["targetPosition"][0], json["targetPosition"][1], json["targetPosition"][2] };
       emitter->SetTargetPosition(tp);
@@ -1342,7 +1404,7 @@ namespace Tako {
       emitter->SetConvergeToTarget(json["convergeToTarget"]);
     }
 
-    // Per-Particle Spawn 拘束。旧 JSON は欠落 → フラグ OFF (旧挙動互換)
+    // Per-Particle Spawn 拘束。
     if (json.contains("spawnLock") && json.contains("lockStiffness") && json.contains("lockDamping")) {
       emitter->SetSpawnLock(json["spawnLock"], json["lockStiffness"], json["lockDamping"]);
     }
@@ -1355,7 +1417,7 @@ namespace Tako {
       emitter->SetFrequencyTime(json["frequencyTime"]);
     }
 
-    // per-emitter 物理 / Curl Noise パラメーター（後方互換: 古いプリセットには含まれない）
+    // per-emitter 物理 / Curl Noise パラメーター
     if (json.contains("damping")) {
       emitter->SetDamping(json["damping"]);
     }
@@ -1372,15 +1434,17 @@ namespace Tako {
       emitter->SetNoiseStrength(json["noiseStrength"]);
     }
 
-    // 描画設定 (per-emitter)。旧 JSON にキーが無ければコンストラクタ既定 (Screen / billboard ON / quad / 既定テクスチャ) を維持
+    // 描画設定 (per-emitter)。
     if (json.contains("blendMode")) {
       emitter->SetBlendMode(static_cast<ParticleBlendMode>(json["blendMode"].get<uint32_t>()));
     }
     if (json.contains("billboard")) {
       emitter->SetBillboard(json["billboard"].get<bool>());
     }
-    if (json.contains("renderAsMesh")) {
-      emitter->SetRenderAsMesh(json["renderAsMesh"].get<bool>());
+    // 描画モデル: パス指定で復元 (全タイプ)。空=デフォルト板ポリ。
+    if (json.contains("renderModelPath")) {
+      std::string mp = json["renderModelPath"].get<std::string>();
+      if (!mp.empty()) emitter->SetParticleModel(mp);
     }
     if (json.contains("texturePath")) {
       std::string texPath = json["texturePath"].get<std::string>();

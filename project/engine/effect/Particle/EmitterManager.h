@@ -126,6 +126,16 @@ namespace Tako {
                            uint32_t count, float frequency);
 
     /// <summary>
+    /// モデルファイルパスからメッシュエミッターを作成 (パーティクルエディタ用・JSON 永続化対応)。
+    /// モデルは GPUParticle がロード・保持し、その先頭メッシュをスポーン形状に使う。
+    /// </summary>
+    /// <param name="name">エミッター名</param>
+    /// <param name="modelPath">モデルファイル名 (ModelManager 経由でロード)</param>
+    /// <param name="count">パーティクル数</param>
+    /// <param name="frequency">射出頻度 (秒)</param>
+    void CreateMeshEmitterFromModel(const std::string& name, const std::string& modelPath, uint32_t count, float frequency);
+
+    /// <summary>
     /// 球形エミッターのパラメータを更新
     /// </summary>
     /// <param name="name">エミッター名</param>
@@ -532,9 +542,10 @@ namespace Tako {
     /// エミッター設定のコピー&ペースト用の一時保存領域
     /// </summary>
     struct CopiedSettings {
-      bool valid = false;   ///< このスロットが有効なデータを持っているか
-      EmitterData data;     ///< コピーされたエミッターデータ
-      EmitterType type;     ///< コピーされたエミッタータイプ
+      bool valid = false;          ///< このスロットが有効なデータを持っているか
+      EmitterData data;            ///< コピーされたエミッターデータ
+      EmitterType type;            ///< コピーされたエミッタータイプ
+      std::string renderModelPath; ///< 描画モデルのファイルパス (data_ 外メンバのため別途保持。空=描画モデル無し)
     };
     std::array<CopiedSettings, 5> copiedSettingsSlots_; ///< コピーバッファ（5スロット分）
 

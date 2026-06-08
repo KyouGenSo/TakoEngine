@@ -116,6 +116,16 @@ namespace Tako {
     void SetObject3dKey(const std::string& key) { object3dKey_ = key; }
 
     /// <summary>
+    /// スポーン形状モデルのファイルパスを取得 (空=パスからの復元不可)。JSON 永続化用。
+    /// </summary>
+    [[nodiscard]] const std::string& GetSpawnModelPath() const { return spawnModelPath_; }
+
+    /// <summary>
+    /// スポーン形状モデルのファイルパスを設定 (CreateMeshEmitterFromModel で記録)。
+    /// </summary>
+    void SetSpawnModelPath(const std::string& path) { spawnModelPath_ = path; }
+
+    /// <summary>
     /// 動的バインドされた meshWorld を同期 (UpdateEmission から呼ばれる)
     /// </summary>
     /// <remarks>
@@ -129,6 +139,7 @@ namespace Tako {
     const Matrix4x4* boundMeshWorld_ = nullptr;       ///< 動的バインド用 (非所有)
     Object3d* boundObject3d_ = nullptr;               ///< 動的バインド用 Object3d (非所有、Matrix4x4* より優先)
     std::string object3dKey_;                         ///< JSON シリアライズ用 Object3d 識別キー (空文字で round-trip 不可)
+    std::string spawnModelPath_;                      ///< JSON シリアライズ用 スポーン形状モデルのパス (空=パス復元不可)
     uint32_t meshIndexSrvIndex_ = 0;                  ///< このエミッタ用に確保した index SRV インデックス
 
     // 三角形面積 Prefix Sum (Inversion Sampling)

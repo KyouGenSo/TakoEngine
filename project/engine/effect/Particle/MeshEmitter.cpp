@@ -25,17 +25,8 @@ namespace Tako {
     data_.type = static_cast<uint32_t>(EmitterType::Mesh);
 
     if (mesh_ != nullptr) {
-      // メッシュのインデックスバッファを StructuredBuffer<uint> として SRV 化
-      // 頂点バッファはすでに Mesh 内部で SRV 化されている (vertexSrvIndex_)
       SrvManager* srvManager = particleSystem_->GetSrvManager();
-      if (srvManager != nullptr) {
-        meshIndexSrvIndex_ = srvManager->Allocate();
-        srvManager->CreateSRVForStructuredBuffer(
-          meshIndexSrvIndex_,
-          mesh_->GetIndexResource(),
-          mesh_->GetIndexCount(),
-          sizeof(uint32_t));
-      }
+      meshIndexSrvIndex_ = mesh_->GetIndexSrvIndex();
 
       // EmitterData にメッシュ情報を反映
       data_.meshVertexSrvIndex = mesh_->GetVertexSrvIndex();
@@ -120,12 +111,8 @@ namespace Tako {
       if (singleMesh == nullptr) return;
       mesh_ = singleMesh;
 
-      meshIndexSrvIndex_ = srvManager->Allocate();
-      srvManager->CreateSRVForStructuredBuffer(
-        meshIndexSrvIndex_,
-        singleMesh->GetIndexResource(),
-        singleMesh->GetIndexCount(),
-        sizeof(uint32_t));
+      // index SRV は Mesh の遅延生成 getter から共有取得
+      meshIndexSrvIndex_ = singleMesh->GetIndexSrvIndex();
 
       data_.meshVertexSrvIndex = singleMesh->GetVertexSrvIndex();
       data_.meshIndexSrvIndex = meshIndexSrvIndex_;
@@ -299,6 +286,8 @@ namespace Tako {
     uint32_t cloneSrvIndex = clone->data_.meshIndexSrvIndex;
     clone->data_ = data_;
     clone->data_.meshIndexSrvIndex = cloneSrvIndex;
+    CopyDrawStateTo(*clone);                    // renderModelPath_ 等(data_ コピーで漏れる文字列メンバ)を転送
+    clone->SetSpawnModelPath(spawnModelPath_);  // スポーン形状モデルパスを転送
     return clone;
   }
 

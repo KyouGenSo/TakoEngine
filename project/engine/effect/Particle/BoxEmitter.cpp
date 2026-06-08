@@ -34,6 +34,7 @@ namespace Tako {
     clone->SetNormalize(IsNormalize());
     clone->SetRandomRotateZ(IsRandomRotateZ());
     clone->SetFrequencyTime(GetFrequency());
+    CopyDrawStateTo(*clone); // ブレンド/ビルボード/テクスチャ/描画モデルを転送
 
     return clone;
   }

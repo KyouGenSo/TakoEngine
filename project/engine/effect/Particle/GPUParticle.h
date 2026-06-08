@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <unordered_map>
 
 #include "SrvManager.h"
 #include "ParticleStruct.h"
@@ -17,6 +18,8 @@ namespace Tako {
   class EmitterManager;
   class DX12Basic;
   class Camera;
+  class Model;
+  class Mesh;
 
   /// <summary>
   /// GPU パーティクルシステムクラス
@@ -72,6 +75,15 @@ namespace Tako {
     /// ウィンドウリサイズ時の処理（深度 SRV の再作成）
     /// </summary>
     void OnResize();
+
+    /// <summary>
+    /// モデルを path からロードしてシステムが保持し、その先頭メッシュを返す。
+    /// スポーン形状・描画モデルの両方で使う。GPU リソース寿命をシステム側で保証する
+    /// (エミッターのクローン後も SRV が有効)。同一 path は一度だけロードしてキャッシュ。失敗時は nullptr。
+    /// </summary>
+    /// <param name="modelPath">モデルファイル名</param>
+    /// <returns>モデルの先頭メッシュ (失敗時 nullptr)</returns>
+    Mesh* AcquireModelMesh(const std::string& modelPath);
 
     //-------------------------エミッター管理-------------------------//
 
@@ -242,9 +254,11 @@ namespace Tako {
     void CreateComputeShaderPSO(Microsoft::WRL::ComPtr<ID3D12RootSignature>& RS, Microsoft::WRL::ComPtr<ID3D12PipelineState>& PSO, const std::wstring& shaderName);
 
     /// <summary>
-    /// 頂点データの生成
+    /// 既定の描画モデル(板ポリ)を生成する。
+    /// 頂点・インデックスを StructuredBuffer + SRV として作り、
+    /// 描画モデル未指定エミッターの既定モデルとして全パーティクル共通で使う。
     /// </summary>
-    void CreateVertexData();
+    void CreateDefaultQuadMesh();
 
     /// <summary>
     /// PerView データの生成
@@ -279,12 +293,7 @@ namespace Tako {
     void CreateIndirectResources();
 
     /// <summary>
-    /// クアッド用インデックスバッファの生成 (DrawIndexed 統一用、6 index)
-    /// </summary>
-    void CreateQuadIndexBuffer();
-
-    /// <summary>
-    /// ExecuteIndirect 用コマンドシグネチャの生成 (DRAW_INDEXED)
+    /// ExecuteIndirect 用コマンドシグネチャの生成 。
     /// </summary>
     void CreateCommandSignature();
 
@@ -302,26 +311,6 @@ namespace Tako {
     /// ScatterCompact CS のルートシグネチャ作成
     /// </summary>
     void CreateScatterCompactRS();
-
-    /// <summary>
-    /// メッシュ描画用ルートシグネチャの作成
-    /// </summary>
-    void CreateMeshRS();
-
-    /// <summary>
-    /// メッシュ描画用 PSO の作成 (ブレンドモード別)
-    /// </summary>
-    void CreateMeshDrawPSO(const D3D12_BLEND_DESC& blendDesc, Microsoft::WRL::ComPtr<ID3D12PipelineState>& outPSO);
-
-    /// <summary>
-    /// メッシュ描画用 ExecuteIndirect コマンドシグネチャ (DRAW) の作成
-    /// </summary>
-    void CreateMeshCommandSignature();
-
-    /// <summary>
-    /// ブレンドモード値に対応するメッシュ描画 PSO を取得
-    /// </summary>
-    ID3D12PipelineState* GetMeshBlendPSO(uint32_t blendMode) const;
 
     /// <summary>
     /// IntegrateAll CS ルートシグネチャの作成
@@ -597,36 +586,36 @@ namespace Tako {
     /// </summary>
     std::vector<ForceFieldData> forceFields_;
 
-    /// <summary>
-    /// 頂点データ用 GPU リソース
-    /// </summary>
-    Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource_;
+    //-------------------------デフォルトの描画モデル (板ポリ)-------------------------//
 
     /// <summary>
-    /// 頂点データへのポインタ
+    /// 既定板ポリの頂点 StructuredBuffer
     /// </summary>
-    VertexData* vertexData_;
+    Microsoft::WRL::ComPtr<ID3D12Resource> defaultQuadVertexResource_;
+    uint32_t defaultQuadVertexSrvIndex_ = 0;
 
     /// <summary>
-    /// 頂点バッファビュー
+    /// 既定板ポリのインデックス StructuredBuffer
     /// </summary>
-    D3D12_VERTEX_BUFFER_VIEW vertexBufferView_;
+    Microsoft::WRL::ComPtr<ID3D12Resource> defaultQuadIndexResource_;
+    uint32_t defaultQuadIndexSrvIndex_ = 0;
+    uint32_t defaultQuadIndexCount_ = 0;
 
     //-------------------------Indirect 描画 / コンパクション関連-------------------------//
 
     /// <summary>
-    /// ExecuteIndirect 用コマンドシグネチャ (DRAW_INDEXED)
+    /// ExecuteIndirect 用コマンドシグネチャ
     /// </summary>
     Microsoft::WRL::ComPtr<ID3D12CommandSignature> drawCommandSignature_;
 
     /// <summary>
-    /// per-emitter の今フレーム生存パーティクル数 (RWStructuredBuffer&lt;uint&gt; kNumMaxEmitter 要素)
+    /// per-emitter の今フレーム生存パーティクル数バッファ
     /// </summary>
     Microsoft::WRL::ComPtr<ID3D12Resource> perEmitterCountResource_;
     uint32_t perEmitterCountUavIndex_ = 0;
 
     /// <summary>
-    /// コンパクション済み生存パーティクル index リスト (RWStructuredBuffer&lt;uint&gt; kNumMaxParticle 要素)
+    /// コンパクション済み生存パーティクル index リスト
     /// per-instance 頂点ストリーム (drawIndexVBV_) としてもバインドする
     /// </summary>
     Microsoft::WRL::ComPtr<ID3D12Resource> drawIndexResource_;
@@ -635,22 +624,16 @@ namespace Tako {
     D3D12_VERTEX_BUFFER_VIEW drawIndexVBV_{};
 
     /// <summary>
-    /// スキャッタ書き込みカーソル (RWStructuredBuffer&lt;uint&gt;)
+    /// スキャッタ書き込みカーソル
     /// </summary>
     Microsoft::WRL::ComPtr<ID3D12Resource> scatterCursorResource_;
     uint32_t scatterCursorUavIndex_ = 0;
 
     /// <summary>
-    /// Indirect 描画引数バッファ (D3D12_DRAW_INDEXED_ARGUMENTS 配列)
+    /// Indirect 描画引数バッファ (D3D12_DRAW_ARGUMENTS 配列 × kNumMaxEmitter)
     /// </summary>
     Microsoft::WRL::ComPtr<ID3D12Resource> drawArgsResource_;
     uint32_t drawArgsUavIndex_ = 0;
-
-    /// <summary>
-    /// クアッド用インデックスバッファ (6 index)
-    /// </summary>
-    Microsoft::WRL::ComPtr<ID3D12Resource> indexResource_;
-    D3D12_INDEX_BUFFER_VIEW indexBufferView_{};
 
     //-------------------------コンパクション用 CS の RS/PSO-------------------------//
 
@@ -661,34 +644,22 @@ namespace Tako {
     Microsoft::WRL::ComPtr<ID3D12RootSignature> scatterCompactRS_;
     Microsoft::WRL::ComPtr<ID3D12PipelineState> scatterCompactPSO_;
 
-    //-------------------------メッシュパーティクル描画関連-------------------------//
+    //-------------------------描画テンプレート-------------------------//
 
     /// <summary>
-    /// メッシュ描画用 ExecuteIndirect コマンドシグネチャ (DRAW: 非indexed)
-    /// </summary>
-    Microsoft::WRL::ComPtr<ID3D12CommandSignature> meshDrawCommandSignature_;
-
-    /// <summary>
-    /// per-emitter メッシュ描画引数 (D3D12_DRAW_ARGUMENTS × kNumMaxEmitter)
-    /// </summary>
-    Microsoft::WRL::ComPtr<ID3D12Resource> meshDrawArgsResource_;
-    uint32_t meshDrawArgsUavIndex_ = 0;
-
-    /// <summary>
-    /// per-emitter 描画テンプレート (CPU 書き込み: メッシュ頂点数 = index 数。quad は 0)
-    /// BuildDrawArgs がメッシュ引数の VertexCountPerInstance に使う。
+    /// per-emitter 描画テンプレート (CPU 書き込み: 描画モデルの index 数。既定板ポリは 6)
+    /// BuildDrawArgs が DRAW 引数の VertexCountPerInstance に使う。
     /// </summary>
     Microsoft::WRL::ComPtr<ID3D12Resource> emitterDrawTemplateResource_;
     uint32_t emitterDrawTemplateSrvIndex_ = 0;
     uint32_t* emitterDrawTemplateData_ = nullptr;
 
     /// <summary>
-    /// メッシュ描画用ルートシグネチャ / PSO (ブレンドモード別)
+    /// per-emitter 描画モデルのキャッシュ (path → Model)。
+    /// 描画モデルの GPU リソース寿命をシステムが保持し、エミッターのクローン後も SRV を有効に保つ。
+    /// shared_ptr のためデストラクタが型消去され、前方宣言 (不完全型) のままメンバにできる。
     /// </summary>
-    Microsoft::WRL::ComPtr<ID3D12RootSignature> meshRS_;
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> meshPsoAdd_;
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> meshPsoScreen_;
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> meshPsoAlpha_;
+    std::unordered_map<std::string, std::shared_ptr<Model>> renderModels_;
   };
 
 } // namespace Tako
