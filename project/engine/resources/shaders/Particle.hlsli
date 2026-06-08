@@ -33,7 +33,6 @@ static const uint kMaxEmitters = 500; // GPUParticle::kNumMaxEmitter と必ず�
 #define EFLAG_CONVERGE_TO_TARGET   (1u << 10) // Per-Emitter Target 収束
 #define EFLAG_LOCK_TO_SPAWN        (1u << 11) // Per-Particle Spawn 拘束
 #define EFLAG_BILLBOARD            (1u << 12) // ビルボード(カメラ追従)。OFF で particle.rotate に従う固定向き
-// (1u << 13) は旧 EFLAG_RENDER_AS_MESH。描画モデルは per-emitter の renderVertexSrvIndex 等に一本化したため廃止 (空き)
 
 // パラメータごとのランダム化フラグ
 // randomFlags == 0 のときは旧来の「range != float2(0,0) ならランダム」自動判定にフォールバック

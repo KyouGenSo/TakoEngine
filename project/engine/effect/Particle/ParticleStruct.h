@@ -34,7 +34,6 @@ namespace Tako {
   constexpr uint32_t EFLAG_CONVERGE_TO_TARGET  = (1u << 10); ///< Per-Emitter Target 収束 (全粒子が targetPosition へバネ-ダンパ)
   constexpr uint32_t EFLAG_LOCK_TO_SPAWN       = (1u << 11); ///< Per-Particle Spawn 拘束 (粒子ごとに targetLocal へバネ-ダンパ)
   constexpr uint32_t EFLAG_BILLBOARD           = (1u << 12); ///< ビルボード(カメラ追従)。OFF で particle.rotate に従うワールド固定向き
-  // (1u << 13) は旧 EFLAG_RENDER_AS_MESH。描画モデルは per-emitter の renderVertexSrvIndex 等に一本化したため廃止 (空き)
 
   // ===== パラメータごとのランダム化フラグ (randomFlags 用) =====
   /// <remarks>
@@ -315,7 +314,7 @@ namespace Tako {
     uint32_t blendMode;         ///< 描画ブレンドモード (ParticleBlendMode: 0=Add, 1=Screen, 2=Alpha)
     uint32_t textureSrvIndex;   ///< 使用テクスチャの SRV インデックス (0 で既定テクスチャ circle.dds にフォールバック)
 
-    // --- 描画モデル (per-emitter)。スポーン形状(mesh* 群)とは独立。0 で既定の板ポリ(quad)にフォールバック ---
+    // --- 描画モデル (per-emitter)。スポーン形状(mesh* 群)とは独立。0 で既定の板ポリにフォールバック ---
     uint32_t renderVertexSrvIndex; ///< 描画モデル頂点 StructuredBuffer の SRV インデックス (0=既定板ポリ)
     uint32_t renderIndexSrvIndex;  ///< 描画モデルインデックス StructuredBuffer の SRV インデックス (0=既定板ポリ)
     uint32_t renderIndexCount;     ///< 描画モデルのインデックス数 (= 1パーティクルあたりの描画頂点数。0=既定板ポリの6)

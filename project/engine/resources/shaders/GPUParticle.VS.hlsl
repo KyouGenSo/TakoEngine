@@ -1,10 +1,9 @@
 // ============================================================================
 // GPUParticle.VS.hlsl
-//   全パーティクル共通の頂点シェーダ。各パーティクルを「描画モデル」(既定=板ポリ quad、
+//   全パーティクル共通の頂点シェーダ。各パーティクルを「描画モデル」(既定=板ポリ、
 //   または per-emitter 指定モデル)として描画する。頂点/インデックスは描画モデルの SRV から
 //   SV_VertexID でプルする (programmable vertex pulling)。per-instance 頂点ストリーム(slot1)
 //   からコンパクション済みパーティクル index を受け取り、その transform で描画する。
-//   transform 規約: ビルボード/Z回転/スケール/平行移動。
 // ============================================================================
 #include "Particle.hlsli"
 
@@ -35,11 +34,11 @@ VertexShaderOutput main(VertexShaderInput input, uint vertexId : SV_VertexID)
 
     Particle particle = gParticles[input.particleIndex];
 
-    // インデックス SRV → 頂点 SRV の順にプル (DrawInstanced 非indexed のため自前で index 解決)
+    // インデックス SRV → 頂点 SRV の順にプル
     uint vIdx = gMeshIndices[vertexId];
     MeshVertex mv = gMeshVertices[vIdx];
 
-    // ビルボード判定 (メッシュは通常 OFF にして使うが、共通処理として扱う)
+    // ビルボード判定
     bool useBillboard = true;
     uint eid = particle.emitterId;
     if (eid < kMaxEmitters)
@@ -49,7 +48,7 @@ VertexShaderOutput main(VertexShaderInput input, uint vertexId : SV_VertexID)
     float4x4 identityMat = float4x4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
     float4x4 worldMat = useBillboard ? gPerView.billboardMat : identityMat;
 
-    // Z 回転 (quad VS と共通規約)
+    // Z 回転 
     if (particle.rotate.z != 0.0f)
     {
         float s, c;
