@@ -230,8 +230,8 @@ namespace Tako {
 
         const auto& edata = emitter->GetData();
         const uint32_t vtxSrv = (edata.meshSkinnedVertexSrvIndex != 0)
-                                  ? edata.meshSkinnedVertexSrvIndex
-                                  : edata.meshVertexSrvIndex;
+          ? edata.meshSkinnedVertexSrvIndex
+          : edata.meshVertexSrvIndex;
 
         m_srvManager_->SetComputeRootDescriptorTable(5,
           vtxSrv != 0 ? vtxSrv : emitterSrvIndex_);
@@ -386,13 +386,10 @@ namespace Tako {
       m_srvManager_->SetGraphicsRootDescriptorTable(4, vtxSrv);      // 描画モデル頂点 (t3)
       m_srvManager_->SetGraphicsRootDescriptorTable(5, idxSrv);      // 描画モデルインデックス (t4)
       commandList->ExecuteIndirect(drawCommandSignature_.Get(), 1, drawArgsResource_.Get(),
-                                   static_cast<UINT64>(i) * drawStride, nullptr, 0);
+        static_cast<UINT64>(i) * drawStride, nullptr, 0);
     }
 
 
-    // 旧 orphan バケット描画は廃止。スロット安定化(退役方式)により、削除されたエミッターの
-    // パーティクルもスロットを保持したまま正しいエミッターで描き切り、全滅後にスロットを解放するため、
-    // 「スロットを失った生存パーティクル」が原理的に存在しない (板ポリ降格も発生しない)。
 
     // 各リソースの state を UAV に戻す
     m_dx12_->TransitionResourceWithTracking(drawArgsResource_.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -466,9 +463,7 @@ namespace Tako {
       return;
     }
 
-    // スロット安定化: 空きスロットがあれば再利用し、無ければ末尾に新規確保する。
-    // 配列インデックス(=スロット番号)はパーティクルの emitterId として焼き込まれるため、
-    // 一度割り当てたスロットは当該エミッターのパーティクルが全滅するまで固定する (compaction しない)。
+    //  空きスロットがあれば再利用し、無ければ末尾に新規確保する。
     if (!freeEmitterSlots_.empty()) {
       const uint32_t slot = freeEmitterSlots_.back();
       freeEmitterSlots_.pop_back();
@@ -493,10 +488,8 @@ namespace Tako {
       return;
     }
 
-    // compaction せず「退役」させる: スロットは保持したまま射出だけ停止し、既存パーティクルは
-    // 寿命まで正しいエミッター(描画モデル/ブレンド/テクスチャ)で描き切る。パーティクルが全滅する頃
-    // (= 最大寿命経過後) に RetireExpiredSlots がスロットを解放し、freeEmitterSlots_ へ返す。
-    // erase で詰めると後続スロットがずれ、パーティクルの emitterId が別エミッターを指して取り違える。
+    //スロットは保持したまま射出だけ停止し、既存パーティクルは寿命まで正しいエミッター(描画モデル/ブレンド/テクスチャ)で描き切る。パーティクルが全滅する頃
+    // に RetireExpiredSlots がスロットを解放し、freeEmitterSlots_ へ返す。
     const uint32_t slot = static_cast<uint32_t>(it - activeEmitters_.begin());
 
     // 既に退役登録済みのスロットは二重登録しない (二重解放→スロット重複割り当てを防ぐ)。
@@ -509,17 +502,13 @@ namespace Tako {
     emitter->SetActive(false);
     emitter->SetEmitting(false);
 
-    // 解放時刻 = 現在時刻 + 粒子寿命の真の上界 + マージン。
-    // 粒子寿命はランダム化ON時 lifeTimeRange.y、OFF時 固定 1.0〜1.5秒 (EmitParticle.CS.hlsl:518) になるため、
-    // 両分岐を必ずカバーする max(lifeTimeRange.y, kDefaultParticleMaxLife) を上界に使う。
-    // これより早く解放すると、生存中の粒子が(orphan バケット廃止済みのため)描画経路を失い消滅する。
-    constexpr float kEmitterRetireMargin = 0.25f;   // フレーム境界の取りこぼし防止マージン(秒)
+    // 解放時刻 = 現在時刻 + 粒子寿命の上限 + マージン。。
+    constexpr float kEmitterRetireMargin = 0.25f;   // フレーム境界の取りこぼし防止マージン
     constexpr float kDefaultParticleMaxLife = 1.5f; // EmitParticle.CS.hlsl:518 の非ランダム化時デフォルト寿命上限と一致させること
     const float now = FrameTimer::GetInstance()->GetGameTime();
     const float maxLifeTime = (std::max)(emitter->GetLifeTimeRange().y, kDefaultParticleMaxLife);
     const float freeAt = now + maxLifeTime + kEmitterRetireMargin;
     retiringSlots_.emplace_back(slot, freeAt);
-    // activeEmitters_[slot] は emitter を保持したまま (描画継続のため erase しない)
   }
 
   std::shared_ptr<GPUParticleEmitter> GPUParticle::FindEmitterByIndex(size_t index) {
@@ -536,29 +525,28 @@ namespace Tako {
     if (retiringSlots_.empty()) {
       return;
     }
-    // 退役後、最大寿命が経過したスロットを解放する。当該エミッターのパーティクルは既に全滅している
-    // ため、スロットを別エミッターへ再利用しても emitterId の取り違えは起きない。
+    // 退役後、最大寿命が経過したスロットを解放する。
     const float now = FrameTimer::GetInstance()->GetGameTime();
     std::erase_if(retiringSlots_, [&](const std::pair<uint32_t, float>& r) {
       if (now < r.second) {
         return false;
       }
-      activeEmitters_[r.first] = nullptr;    // スロットを空に (穴)
+      activeEmitters_[r.first] = nullptr;    // スロットを空に
       freeEmitterSlots_.push_back(r.first);  // 再利用可能リストへ返却
       return true;
-    });
+      });
   }
 
   void GPUParticle::UpdateEmitter()
   {
     float deltaTime = FrameTimer::GetInstance()->GetDeltaTime();
 
-    // 退役済みスロットのうち寿命切れのものを解放 (穴あけ) する。
+    // 退役済みスロットのうち寿命切れのものを解放する。
     RetireExpiredSlots();
 
     // すべてのアクティブなエミッターの射出タイマーを更新する。
     for (auto& emitter : activeEmitters_) {
-      // 空きスロット(退役後に解放された穴)または非アクティブなら射出しない
+      // 空きスロットまたは非アクティブなら射出しない
       if (!emitter || !emitter->IsActive()) {
         continue;
       }
@@ -626,16 +614,16 @@ namespace Tako {
         const EmitterData& ed = activeEmitters_[i]->GetData();
         gpuEmitters[i] = ed;
         // 描画テンプレート: 描画モデルの index 数 (= 1パーティクルあたりの描画頂点数)。
-        // 描画モデル未指定 (renderIndexCount==0) のエミッターはデフォルト板ポリ (6)。
+        // 描画モデル未指定 (renderIndexCount==0) のエミッターはデフォルト板ポリ。
         if (emitterDrawTemplateData_) {
           emitterDrawTemplateData_[i] = (ed.renderIndexCount != 0u) ? ed.renderIndexCount : defaultQuadIndexCount_;
         }
       }
       else {
-        // 退役後に解放された空きスロット(穴): EmitParticle/描画でスキップさせるため無効化する。
-        // 前占有エミッターの古い flags が残ると誤射出するので明示的にゼロ化する。
-        gpuEmitters[i].flags = 0u;            // EFLAG_ACTIVE なし → 射出・描画グルーピング対象外
-        gpuEmitters[i].renderIndexCount = 0u; // 既定板ポリ扱い
+        // 退役後に解放された空きスロット: EmitParticle/描画でスキップさせるため無効化する。
+        // 前占有エミッターの古い flags が残ると誤射出するので明示的にゼロにする。
+        gpuEmitters[i].flags = 0u;
+        gpuEmitters[i].renderIndexCount = 0u;
         if (emitterDrawTemplateData_) {
           emitterDrawTemplateData_[i] = defaultQuadIndexCount_;
         }
@@ -795,8 +783,7 @@ namespace Tako {
 
   ID3D12PipelineState* GPUParticle::GetBlendPSO(uint32_t blendMode) const
   {
-    switch (static_cast<ParticleBlendMode>(blendMode))
-    {
+    switch (static_cast<ParticleBlendMode>(blendMode)) {
     case ParticleBlendMode::Add:   return psoAdd_.Get();
     case ParticleBlendMode::Alpha: return psoAlpha_.Get();
     case ParticleBlendMode::Screen:
