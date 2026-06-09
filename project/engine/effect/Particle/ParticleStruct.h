@@ -34,7 +34,6 @@ namespace Tako {
   constexpr uint32_t EFLAG_CONVERGE_TO_TARGET  = (1u << 10); ///< Per-Emitter Target 収束 (全粒子が targetPosition へバネ-ダンパ)
   constexpr uint32_t EFLAG_LOCK_TO_SPAWN       = (1u << 11); ///< Per-Particle Spawn 拘束 (粒子ごとに targetLocal へバネ-ダンパ)
   constexpr uint32_t EFLAG_BILLBOARD           = (1u << 12); ///< ビルボード(カメラ追従)。OFF で particle.rotate に従うワールド固定向き
-  constexpr uint32_t EFLAG_RENDER_AS_MESH      = (1u << 13); ///< パーティクルを(quad でなく)選択メッシュ形状で描画。Mesh エミッターで明示 ON にして使う
 
   // ===== パラメータごとのランダム化フラグ (randomFlags 用) =====
   /// <remarks>
@@ -315,6 +314,11 @@ namespace Tako {
     uint32_t blendMode;         ///< 描画ブレンドモード (ParticleBlendMode: 0=Add, 1=Screen, 2=Alpha)
     uint32_t textureSrvIndex;   ///< 使用テクスチャの SRV インデックス (0 で既定テクスチャ circle.dds にフォールバック)
 
+    // --- 描画モデル (per-emitter)。スポーン形状(mesh* 群)とは独立。0 で既定の板ポリにフォールバック ---
+    uint32_t renderVertexSrvIndex; ///< 描画モデル頂点 StructuredBuffer の SRV インデックス (0=既定板ポリ)
+    uint32_t renderIndexSrvIndex;  ///< 描画モデルインデックス StructuredBuffer の SRV インデックス (0=既定板ポリ)
+    uint32_t renderIndexCount;     ///< 描画モデルのインデックス数 (= 1パーティクルあたりの描画頂点数。0=既定板ポリの6)
+
     /// <summary>
     /// デフォルトコンストラクタ
     /// </summary>
@@ -342,7 +346,8 @@ namespace Tako {
       lockStiffness(20.0f), lockDamping(3.0f),
       damping(0.99f), collisionRestitution(0.5f), particleRadius(0.5f),
       noiseScale(0.05f), noiseStrength(0.001f),
-      blendMode(static_cast<uint32_t>(ParticleBlendMode::Screen)), textureSrvIndex(0)
+      blendMode(static_cast<uint32_t>(ParticleBlendMode::Add)), textureSrvIndex(0),
+      renderVertexSrvIndex(0), renderIndexSrvIndex(0), renderIndexCount(0)
     {}
   };
 

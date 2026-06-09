@@ -8,6 +8,7 @@
 #include "Mesh.h"
 #include "GPUParticle.h"
 #include "TextureManager.h"
+#include "ModelManager.h"
 #include "ImGuiManager.h"
 #include "Draw2D.h"
 #include "OBB.h"
@@ -62,7 +63,7 @@ namespace Tako {
           ImGui::InputText("Name##CreateEmitter", newEmitterNameBuffer_, sizeof(newEmitterNameBuffer_));
 
           static int emitterType = 0;
-          ImGui::Combo("Type##CreateEmitter", &emitterType, "Sphere\0Box\0Triangle\0");
+          ImGui::Combo("Type##CreateEmitter", &emitterType, "Sphere\0Box\0Triangle\0Mesh\0");
 
           static Vector3 position = { 0, 0, 0 };
           ImGui::DragFloat3("Position##CreateEmitter", &position.x, 0.1f);
@@ -93,7 +94,7 @@ namespace Tako {
               }
             }
           }
-          else {  // Triangle
+          else if (emitterType == 2) {  // Triangle
             static Vector3 v1 = { -1, 0, 0 };
             static Vector3 v2 = { 1, 0, 0 };
             static Vector3 v3 = { 0, 1, 0 };
@@ -105,6 +106,38 @@ namespace Tako {
               if (strlen(newEmitterNameBuffer_) > 0) {
                 emitterManager_->CreateTriangleEmitter(newEmitterNameBuffer_, position, v1, v2, v3, 50, 0.016f);
                 AddLog("Created triangle emitter: " + std::string(newEmitterNameBuffer_), LogType::Info);
+                newEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
+              }
+            }
+          }
+          else {  // Mesh
+            // 読み込み済みモデル一覧から選んで生成 (テクスチャ切替UIと同型)。スポーン形状にそのモデルを使う。
+            static int selectedModelIdx = 0;
+            std::vector<std::string> modelNames = ModelManager::GetInstance()->GetLoadedModelNames();
+            if (!modelNames.empty()) {
+              if (selectedModelIdx >= static_cast<int>(modelNames.size())) selectedModelIdx = 0;
+              std::vector<const char*> items;
+              items.reserve(modelNames.size());
+              for (const auto& s : modelNames) items.push_back(s.c_str());
+              ImGui::Combo("Model##CreateMesh", &selectedModelIdx, items.data(), static_cast<int>(items.size()));
+            }
+            else {
+              ImGui::TextDisabled("(no loaded models - load one below)");
+            }
+
+            // 未ロードのモデルをパス指定でロード
+            static char loadModelPath[256] = "";
+            ImGui::InputText("Model Path##CreateMesh", loadModelPath, sizeof(loadModelPath));
+            ImGui::SameLine();
+            if (ImGui::Button("Load##CreateMesh") && loadModelPath[0] != '\0') {
+              ModelManager::GetInstance()->LoadModel(loadModelPath);
+              AddLog("Loaded model: " + std::string(loadModelPath), LogType::Info);
+            }
+
+            if (ImGui::Button("Create Mesh Emitter##Create")) {
+              if (strlen(newEmitterNameBuffer_) > 0 && !modelNames.empty()) {
+                emitterManager_->CreateMeshEmitterFromModel(newEmitterNameBuffer_, modelNames[selectedModelIdx], 50, 0.016f);
+                AddLog("Created mesh emitter: " + std::string(newEmitterNameBuffer_) + " (" + modelNames[selectedModelIdx] + ")", LogType::Info);
                 newEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
               }
             }
@@ -355,14 +388,38 @@ namespace Tako {
                 emitter->SetTexture(texPath);
               }
 
-              // メッシュ形状描画 (Mesh エミッターのみ)
-              if (emitter->GetType() == EmitterType::Mesh) {
-                bool renderAsMesh = emitter->IsRenderAsMesh();
-                if (ImGui::Checkbox("Render As Mesh", &renderAsMesh)) {
-                  emitter->SetRenderAsMesh(renderAsMesh);
+              // 描画モデル選択: 読み込み済みモデルから選んで
+              // 各パーティクルの描画形状を切り替える。空=デフォルトの板ポリ。
+              const std::string& curModel = emitter->GetRenderModelPath();
+              ImGui::Text("Render Model: %s", curModel.empty() ? "(default: quad)" : curModel.c_str());
+
+              std::vector<std::string> modelNames = ModelManager::GetInstance()->GetLoadedModelNames();
+              if (!modelNames.empty()) {
+                int curModelIdx = -1;
+                for (int n = 0; n < static_cast<int>(modelNames.size()); ++n) {
+                  if (modelNames[n] == curModel) { curModelIdx = n; break; }
                 }
-                ImGui::SameLine();
-                ImGui::TextDisabled("(ON: draw each particle as this mesh)");
+                std::vector<const char*> modelItems;
+                modelItems.reserve(modelNames.size());
+                for (const auto& s : modelNames) modelItems.push_back(s.c_str());
+                if (ImGui::Combo("Model##Render", &curModelIdx, modelItems.data(), static_cast<int>(modelItems.size()))) {
+                  if (curModelIdx >= 0 && curModelIdx < static_cast<int>(modelNames.size())) {
+                    emitter->SetParticleModel(modelNames[curModelIdx]);
+                  }
+                }
+              }
+
+              // 新規モデルをパス指定でロードして描画モデルに設定
+              static char renderModelPathBuf[256] = "";
+              ImGui::InputText("Model Path##Render", renderModelPathBuf, sizeof(renderModelPathBuf));
+              ImGui::SameLine();
+              if (ImGui::Button("Load & Set##RenderModel") && renderModelPathBuf[0] != '\0') {
+                emitter->SetParticleModel(renderModelPathBuf);
+              }
+
+              // 既定の板ポリに戻す
+              if (ImGui::Button("Reset to Quad##Render")) {
+                emitter->ResetParticleModel();
               }
             }
 

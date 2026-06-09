@@ -218,6 +218,13 @@ namespace Tako {
       }
       uavIndex_ = 0;
     }
+
+    if (indexSrvIndex_ != 0) {
+      if (SrvManager::GetInstance()->IsAllocated(indexSrvIndex_)) {
+        SrvManager::GetInstance()->Free(indexSrvIndex_);
+      }
+      indexSrvIndex_ = 0;
+    }
   }
 
   void Mesh::InitializeSkinning(const std::map<std::string, JointWeightData>& skinClusterData, const std::map<std::string, int32_t>& jointMap)
@@ -373,6 +380,17 @@ namespace Tako {
     memcpy(indexData, indices_.data(), sizeof(uint32_t) * indices_.size());
 
     indexResource_->Unmap(0, nullptr);
+  }
+
+  uint32_t Mesh::GetIndexSrvIndex()
+  {
+    // 初回のみ index バッファに対する StructuredBuffer SRV を遅延生成してキャッシュする。
+    if (indexSrvIndex_ == 0) {
+      indexSrvIndex_ = SrvManager::GetInstance()->Allocate();
+      SrvManager::GetInstance()->CreateSRVForStructuredBuffer(
+        indexSrvIndex_, indexResource_.Get(), static_cast<UINT>(indices_.size()), sizeof(uint32_t));
+    }
+    return indexSrvIndex_;
   }
 
   void Mesh::CreateMaterialData()

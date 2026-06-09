@@ -778,9 +778,6 @@
     <FxCompile Include="engine\resources\shaders\GPUParticle.PS.hlsl">
       <Filter>shader\Particle</Filter>
     </FxCompile>
-    <FxCompile Include="engine\resources\shaders\GPUParticle.VS.hlsl">
-      <Filter>shader\Particle</Filter>
-    </FxCompile>
     <FxCompile Include="engine\resources\shaders\InitParticle.CS.hlsl">
       <Filter>shader\Particle</Filter>
     </FxCompile>
@@ -798,6 +795,18 @@
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\Sprite.VS.hlsl">
       <Filter>shader\2D</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\BuildDrawArgs.CS.hlsl">
+      <Filter>shader\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\GPUParticle.VS.hlsl">
+      <Filter>shader\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\ResetCounters.CS.hlsl">
+      <Filter>shader\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\ScatterCompact.CS.hlsl">
+      <Filter>shader\Particle</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

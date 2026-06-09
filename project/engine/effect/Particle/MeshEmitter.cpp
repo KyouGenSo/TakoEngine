@@ -25,17 +25,8 @@ namespace Tako {
     data_.type = static_cast<uint32_t>(EmitterType::Mesh);
 
     if (mesh_ != nullptr) {
-      // メッシュのインデックスバッファを StructuredBuffer<uint> として SRV 化
-      // 頂点バッファはすでに Mesh 内部で SRV 化されている (vertexSrvIndex_)
       SrvManager* srvManager = particleSystem_->GetSrvManager();
-      if (srvManager != nullptr) {
-        meshIndexSrvIndex_ = srvManager->Allocate();
-        srvManager->CreateSRVForStructuredBuffer(
-          meshIndexSrvIndex_,
-          mesh_->GetIndexResource(),
-          mesh_->GetIndexCount(),
-          sizeof(uint32_t));
-      }
+      meshIndexSrvIndex_ = mesh_->GetIndexSrvIndex();
 
       // EmitterData にメッシュ情報を反映
       data_.meshVertexSrvIndex = mesh_->GetVertexSrvIndex();
@@ -120,12 +111,8 @@ namespace Tako {
       if (singleMesh == nullptr) return;
       mesh_ = singleMesh;
 
-      meshIndexSrvIndex_ = srvManager->Allocate();
-      srvManager->CreateSRVForStructuredBuffer(
-        meshIndexSrvIndex_,
-        singleMesh->GetIndexResource(),
-        singleMesh->GetIndexCount(),
-        sizeof(uint32_t));
+      // index SRV は Mesh の遅延生成 getter から共有取得
+      meshIndexSrvIndex_ = singleMesh->GetIndexSrvIndex();
 
       data_.meshVertexSrvIndex = singleMesh->GetVertexSrvIndex();
       data_.meshIndexSrvIndex = meshIndexSrvIndex_;
@@ -295,10 +282,10 @@ namespace Tako {
   std::shared_ptr<GPUParticleEmitter> MeshEmitter::Clone() const
   {
     auto clone = std::make_shared<MeshEmitter>(particleSystem_, mesh_, data_.count, data_.frequency);
-    // 全パラメータをコピー (ただし SRV インデックスはクローン側の新規 SRV を保持)
-    uint32_t cloneSrvIndex = clone->data_.meshIndexSrvIndex;
-    clone->data_ = data_;
-    clone->data_.meshIndexSrvIndex = cloneSrvIndex;
+    const uint32_t cloneSrvIndex = clone->data_.meshIndexSrvIndex; // clone 固有 index SRV を保持
+    CopyCommonStateTo(*clone);                                     // data_ 全体 + renderModelPath_ を転送
+    clone->data_.meshIndexSrvIndex = cloneSrvIndex;                // → clone 自身の SRV を復元
+    clone->SetSpawnModelPath(spawnModelPath_);                     // MeshEmitter 固有の data_ 外メンバ
     return clone;
   }
 

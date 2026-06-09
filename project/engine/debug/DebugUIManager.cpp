@@ -488,39 +488,56 @@ namespace Tako {
   }
 
   void DebugUIManager::DrawGameViewport() {
-    ImGui::Begin("Game Viewport", &windowVisibility_["GameViewport"]);
+    // 毎フレームリセット（折りたたみ/非表示タブ時は hover 無しのまま）
+    isGameViewportHovered_ = false;
 
-    // ウィンドウの利用可能サイズを取得
-    ImVec2 availableSize = ImGui::GetContentRegionAvail();
+    // Begin が false（折りたたみ等）の場合は中身を描かない。Begin/End は対で必ず呼ぶ
+    if (ImGui::Begin("Game Viewport", &windowVisibility_["GameViewport"])) {
 
-    // クライアント領域のアスペクト比を計算
-    float aspectRatio = 16.0f / 9.0f;
+      // ウィンドウの利用可能サイズを取得
+      ImVec2 availableSize = ImGui::GetContentRegionAvail();
 
-    // アスペクト比を維持したサイズを計算
-    ImVec2 imageSize;
-    float availableAspect = availableSize.x / availableSize.y;
+      // クライアント領域のアスペクト比を計算
+      float aspectRatio = 16.0f / 9.0f;
 
-    if (availableAspect > aspectRatio) {
-      imageSize.y = availableSize.y;
-      imageSize.x = imageSize.y * aspectRatio;
+      // アスペクト比を維持したサイズを計算
+      ImVec2 imageSize;
+      float availableAspect = availableSize.x / availableSize.y;
+
+      if (availableAspect > aspectRatio) {
+        imageSize.y = availableSize.y;
+        imageSize.x = imageSize.y * aspectRatio;
+      }
+      else {
+        imageSize.x = availableSize.x;
+        imageSize.y = imageSize.x / aspectRatio;
+      }
+
+      // 画像を中央に配置
+      ImVec2 cursorPos = ImGui::GetCursorPos();
+      cursorPos.x += (availableSize.x - imageSize.x) * 0.5f;
+      cursorPos.y += (availableSize.y - imageSize.y) * 0.5f;
+      ImGui::SetCursorPos(cursorPos);
+
+      // ゲーム画面を表示
+      uint32_t srvIndex = PostEffectManager::GetInstance()->GetFinalResultSrvIndex();
+      D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = SrvManager::GetInstance()->GetGPUDescriptorHandle(srvIndex);
+      ImGui::Image((ImTextureID)gpuHandle.ptr, imageSize);
+
+      // ゲーム画像の上にカーソルがあるか（レターボックス余白・タイトルバーは除外）
+      isGameViewportHovered_ = ImGui::IsItemHovered();
     }
-    else {
-      imageSize.x = availableSize.x;
-      imageSize.y = imageSize.x / aspectRatio;
-    }
-
-    // 画像を中央に配置
-    ImVec2 cursorPos = ImGui::GetCursorPos();
-    cursorPos.x += (availableSize.x - imageSize.x) * 0.5f;
-    cursorPos.y += (availableSize.y - imageSize.y) * 0.5f;
-    ImGui::SetCursorPos(cursorPos);
-
-    // ゲーム画面を表示
-    uint32_t srvIndex = PostEffectManager::GetInstance()->GetFinalResultSrvIndex();
-    D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = SrvManager::GetInstance()->GetGPUDescriptorHandle(srvIndex);
-    ImGui::Image((ImTextureID)gpuHandle.ptr, imageSize);
 
     ImGui::End();
+  }
+
+  bool DebugUIManager::IsCursorOverGameView() const {
+    // GameViewport 表示中: ゲーム画像上にカーソルがあるか
+    if (IsWindowVisible("GameViewport")) {
+      return isGameViewportHovered_;
+    }
+    // 非表示(フルスクリーン直描画)中: いずれの ImGui ウィンドウにもカーソルが無いか
+    return !ImGui::GetIO().WantCaptureMouse;
   }
 
   void DebugUIManager::DrawEngineStatus() {

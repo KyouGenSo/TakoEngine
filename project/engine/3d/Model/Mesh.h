@@ -197,6 +197,13 @@ namespace Tako {
     /// </summary>
     UINT GetIndexCount() const { return static_cast<UINT>(indices_.size()); }
 
+    /// <summary>
+    /// インデックスバッファのSRVインデックスを取得する。
+    /// 初回呼び出し時に遅延生成してキャッシュする。
+    /// </summary>
+    /// <returns>インデックス SRV インデックス</returns>
+    uint32_t GetIndexSrvIndex();
+
     const std::vector<VertexData>& GetVertices() const { return vertices_; }
     const std::vector<uint32_t>& GetIndices() const { return indices_; }
 
@@ -278,6 +285,7 @@ namespace Tako {
 
     // SRV インデックス
     uint32_t vertexSrvIndex_ = 0; ///< 頂点 SRV インデックス
+    uint32_t indexSrvIndex_ = 0; ///< インデックス SRV インデックス (GetIndexSrvIndex で遅延生成)
     uint32_t envTextureIndex_ = 0; ///< 環境マップテクスチャインデックス
 
     // ===== スキニング関連 =====

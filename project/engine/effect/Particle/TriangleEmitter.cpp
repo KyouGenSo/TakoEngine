@@ -21,20 +21,9 @@ namespace Tako {
 
   std::shared_ptr<GPUParticleEmitter> TriangleEmitter::Clone() const
   {
-    // 新しいインスタンスを作成し、現在のデータをコピー
     auto clone = std::make_shared<TriangleEmitter>(
       particleSystem_, GetPosition(), GetVertex1(), GetVertex2(), GetVertex3(), GetParticleCount(), GetFrequency());
-
-    // 他のプロパティも転送
-    clone->SetColors(GetStartColor(), GetEndColor());
-    clone->SetVelRange(GetVelRangeX(), GetVelRangeY(), GetVelRangeZ());
-    clone->SetLifeTimeRange(GetLifeTimeRange());
-    clone->SetScaleRange(GetScaleRangeX(), GetScaleRangeY());
-    clone->SetActive(IsActive());
-    clone->SetNormalize(IsNormalize());
-    clone->SetRandomRotateZ(IsRandomRotateZ());
-    clone->SetFrequencyTime(GetFrequency());
-
+    CopyCommonStateTo(*clone);
     return clone;
   }
 
