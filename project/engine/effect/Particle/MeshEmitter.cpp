@@ -282,12 +282,10 @@ namespace Tako {
   std::shared_ptr<GPUParticleEmitter> MeshEmitter::Clone() const
   {
     auto clone = std::make_shared<MeshEmitter>(particleSystem_, mesh_, data_.count, data_.frequency);
-    // 全パラメータをコピー (ただし SRV インデックスはクローン側の新規 SRV を保持)
-    uint32_t cloneSrvIndex = clone->data_.meshIndexSrvIndex;
-    clone->data_ = data_;
-    clone->data_.meshIndexSrvIndex = cloneSrvIndex;
-    CopyDrawStateTo(*clone);                    // renderModelPath_ 等(data_ コピーで漏れる文字列メンバ)を転送
-    clone->SetSpawnModelPath(spawnModelPath_);  // スポーン形状モデルパスを転送
+    const uint32_t cloneSrvIndex = clone->data_.meshIndexSrvIndex; // clone 固有 index SRV を保持
+    CopyCommonStateTo(*clone);                                     // data_ 全体 + renderModelPath_ を転送
+    clone->data_.meshIndexSrvIndex = cloneSrvIndex;                // → clone 自身の SRV を復元
+    clone->SetSpawnModelPath(spawnModelPath_);                     // MeshEmitter 固有の data_ 外メンバ
     return clone;
   }
 

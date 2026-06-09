@@ -643,10 +643,10 @@ namespace Tako {
 
   protected:
     /// <summary>
-    /// 描画系の共通状態(ブレンドモード/ビルボード/テクスチャ/描画モデル)をクローン先へコピーする。
+    /// クローン共通処理: EmitterData 全体と data_ 外メンバ(renderModelPath_)を dst へ転送する。
     /// </summary>
     /// <param name="dst">コピー先エミッター</param>
-    void CopyDrawStateTo(GPUParticleEmitter& dst) const;
+    void CopyCommonStateTo(GPUParticleEmitter& dst) const;
 
     GPUParticle* particleSystem_;    ///< GPU パーティクルシステムへの参照（パーティクル生成要求の送信先）
 

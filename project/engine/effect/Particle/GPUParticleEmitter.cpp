@@ -248,15 +248,11 @@ namespace Tako {
     renderModelPath_.clear();
   }
 
-  void GPUParticleEmitter::CopyDrawStateTo(GPUParticleEmitter& dst) const
+  void GPUParticleEmitter::CopyCommonStateTo(GPUParticleEmitter& dst) const
   {
-    // 描画系(ブレンド/ビルボード/テクスチャ/描画モデル)をクローン先へ転送する。
-    dst.data_.blendMode = data_.blendMode;
-    dst.SetBillboard(IsBillboard());
-    dst.data_.textureSrvIndex = data_.textureSrvIndex;
-    dst.data_.renderVertexSrvIndex = data_.renderVertexSrvIndex;
-    dst.data_.renderIndexSrvIndex = data_.renderIndexSrvIndex;
-    dst.data_.renderIndexCount = data_.renderIndexCount;
+    // クローン共通処理: EmitterData 全体をコピーし、
+    // data_ に含まれないrenderModelPath_を明示的に転送する。
+    dst.data_ = data_;
     dst.renderModelPath_ = renderModelPath_;
   }
 
