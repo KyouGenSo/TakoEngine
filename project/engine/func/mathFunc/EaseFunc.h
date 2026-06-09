@@ -4,6 +4,13 @@ namespace Tako {
 
   /// <summary>
   /// イージング関数ユーティリティ名前空間
+<<<<<<< HEAD
+=======
+  /// 正規化された進度 t∈[0,1] を受け取り、イージング後の進度を返す純スカラー関数群。
+  /// Quad/Cubic/Quart/Quint/Sine/Expo/Circ/Back/Elastic/Bounce）と SmoothStep / SmootherStep を提供する。
+  /// 戻り値も基本的に [0,1]（Back/Elastic はオーバーシュートで範囲外になる場合がある）。
+  /// t のクランプは行わない。
+>>>>>>> refact/easing-func-replace
   /// 使用例: Vec3::Lerp(start, end, Ease::OutQuad(t));
   /// </summary>
   namespace Ease {
