@@ -148,6 +148,15 @@ namespace Tako {
     bool IsWindowVisible(const std::string& windowName) const;
 
     /// <summary>
+    /// カーソルがゲーム描画領域上にあるか。
+    /// GameViewport 表示中はゲーム画像上、非表示(フルスクリーン)中は
+    /// いずれの ImGui ウィンドウにもカーソルが無い状態を指す。
+    /// ゲーム入力を ImGui 操作と排他にするゲートとして使う。
+    /// </summary>
+    /// <returns>カーソルがゲーム描画領域上にある場合 true</returns>
+    bool IsCursorOverGameView() const;
+
+    /// <summary>
     /// シーン名を設定
     /// </summary>
     /// <param name="sceneName">シーン名</param>
@@ -277,6 +286,9 @@ namespace Tako {
 
     // ウィンドウ表示フラグ
     std::unordered_map<std::string, bool> windowVisibility_;
+
+    // 直近フレームでゲーム画像上にカーソルがあったか（DrawGameViewport で更新）
+    bool isGameViewportHovered_ = false;
 
     // デバッグ情報コールバック
     std::unordered_map<std::string, std::function<void()>> debugInfoCallbacks_;
