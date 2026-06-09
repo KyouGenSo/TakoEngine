@@ -222,6 +222,30 @@ namespace Tako {
     /// </summary>
     void ResetSkinningState() { skinningComputedThisFrame_ = false; }
 
+    /// <summary>
+    /// メッシュ名を設定（モデルロード時に Assimp のメッシュ名を格納）
+    /// </summary>
+    /// <param name="name">メッシュ名</param>
+    void SetName(const std::string& name) { name_ = name; }
+
+    /// <summary>
+    /// メッシュ名を取得
+    /// </summary>
+    /// <returns>メッシュ名</returns>
+    const std::string& GetName() const { return name_; }
+
+    /// <summary>
+    /// 表示状態を設定（false で Model の描画ループからスキップされる）
+    /// </summary>
+    /// <param name="isVisible">表示する場合 true</param>
+    void SetVisible(bool isVisible) { isVisible_ = isVisible; }
+
+    /// <summary>
+    /// 表示状態を取得
+    /// </summary>
+    /// <returns>表示中なら true</returns>
+    bool IsVisible() const { return isVisible_; }
+
   private: // プライベートメンバー関数
 
     /// <summary>
@@ -308,6 +332,10 @@ namespace Tako {
     // GPU パーティクルの Mesh エミッタ用 AABB (頂点ローカル座標系)
     Vector3 aabbLocalMin_{ .x = 0.0f, .y = 0.0f, .z = 0.0f };
     Vector3 aabbLocalMax_{ .x = 0.0f, .y = 0.0f, .z = 0.0f };
+
+    // 表示制御・識別
+    std::string name_;       ///< メッシュ名（Assimp aiMesh->mName 由来。表示制御の識別子）
+    bool isVisible_ = true;  ///< 表示フラグ（false で Model の描画ループからスキップ）
   };
 
 } // namespace Tako

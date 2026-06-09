@@ -90,6 +90,34 @@ namespace Tako {
     /// </summary>
     size_t GetMeshCount() const { return meshes_.size(); }
 
+    // -----------------------------------Mesh Visibility-----------------------------------//
+    /// <summary>
+    /// メッシュ名から Mesh を取得。見つからなければ nullptr。
+    /// </summary>
+    /// <param name="name">メッシュ名</param>
+    /// <returns>該当する Mesh（無ければ nullptr）</returns>
+    Mesh* GetMeshByName(const std::string& name) const;
+
+    /// <summary>
+    /// 全メッシュ名のリストを取得
+    /// </summary>
+    /// <returns>メッシュ名のリスト</returns>
+    std::vector<std::string> GetMeshNames() const;
+
+    /// <summary>
+    /// メッシュ名を指定して表示・非表示を設定
+    /// </summary>
+    /// <param name="name">メッシュ名</param>
+    /// <param name="visible">表示する場合 true</param>
+    void SetMeshVisible(const std::string& name, bool visible);
+
+    /// <summary>
+    /// メッシュ名を指定して表示状態を取得
+    /// </summary>
+    /// <param name="name">メッシュ名</param>
+    /// <returns>表示中なら true</returns>
+    bool IsMeshVisible(const std::string& name) const;
+
     /// <summary>
     /// ルートノードのローカル行列を取得
     /// </summary>

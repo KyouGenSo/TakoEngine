@@ -130,12 +130,14 @@ namespace Tako {
     if (hasSkeleton_) {
       // スキニングモデルは各メッシュを直接描画（スキニング済みの頂点を使用）
       for (auto& mesh : meshes_) {
+        if (!mesh->IsVisible()) continue;
         mesh->Draw();
       }
     }
     else if (meshes_.size() <= 1) {
       // 単一メッシュモデルの場合
       for (auto& mesh : meshes_) {
+        if (!mesh->IsVisible()) continue;
         mesh->Draw();
       }
     }
@@ -176,6 +178,7 @@ namespace Tako {
 
     // 各メッシュをインスタンシング描画
     for (auto& mesh : meshes_) {
+      if (!mesh->IsVisible()) continue;
       mesh->DrawInstanced(instanceCount);
     }
   }
@@ -213,6 +216,9 @@ namespace Tako {
 
     // メッシュごとのスキンクラスターデータを準備
     meshSkinClusterData_.resize(scene->mNumMeshes);
+
+    // メッシュ名の重複を一意化するためのカウンタ（同名メッシュを "_2","_3" で区別）
+    std::unordered_map<std::string, int> meshNameCountMap;
 
     // メッシュの解析
     for (uint32_t meshIndex = 0; meshIndex < scene->mNumMeshes; meshIndex++) {
@@ -338,6 +344,18 @@ namespace Tako {
       // メッシュデータの保存
       auto newMesh = std::make_unique<Mesh>();
       newMesh->Initialize(m_modelBasic_, vertices, indices, textureData);
+
+      // メッシュ名を設定（空名はインデックスで補完、同名は "_2","_3" で一意化）
+      std::string meshName = mesh->mName.C_Str();
+      if (meshName.empty()) {
+        meshName = "mesh_" + std::to_string(meshIndex);
+      }
+      const int duplicateCount = ++meshNameCountMap[meshName];
+      if (duplicateCount > 1) {
+        meshName += "_" + std::to_string(duplicateCount);
+      }
+      newMesh->SetName(meshName);
+
       meshes_.push_back(std::move(newMesh));
     }
   }
@@ -454,6 +472,46 @@ namespace Tako {
     }
   }
 
+  Mesh* Model::GetMeshByName(const std::string& name) const
+  {
+    for (const auto& mesh : meshes_) {
+      if (mesh->GetName() == name) {
+        return mesh.get();
+      }
+    }
+    return nullptr;
+  }
+
+  std::vector<std::string> Model::GetMeshNames() const
+  {
+    std::vector<std::string> names;
+    names.reserve(meshes_.size());
+    for (const auto& mesh : meshes_) {
+      names.push_back(mesh->GetName());
+    }
+    return names;
+  }
+
+  void Model::SetMeshVisible(const std::string& name, bool visible)
+  {
+    if (Mesh* mesh = GetMeshByName(name)) {
+      mesh->SetVisible(visible);
+    }
+#ifdef _DEBUG
+    else {
+      DebugUIManager::GetInstance()->AddLog(
+        "Warning: Mesh '" + name + "' not found in model '" + modelFileName_ + "'",
+        DebugUIManager::LogType::Warning);
+    }
+#endif
+  }
+
+  bool Model::IsMeshVisible(const std::string& name) const
+  {
+    const Mesh* mesh = GetMeshByName(name);
+    return mesh != nullptr && mesh->IsVisible();
+  }
+
   Matrix4x4 Model::GetJointWorldMatrix(const std::string& jointName, const Matrix4x4& worldMatrix) const
   {
     // スケルトンがない場合は単位行列を返す
@@ -492,6 +550,9 @@ namespace Tako {
     // このノードに関連付けられたメッシュを処理
     for (int meshIndex : node.meshIndices) {
       if (meshIndex < static_cast<int>(meshes_.size())) {
+        // 非表示メッシュはスキップ
+        if (!meshes_[meshIndex]->IsVisible()) continue;
+
         // メッシュのワールド変換行列を計算
         Matrix4x4 meshWorldMatrix = Mat4x4::Multiply(globalMatrix, world);
 
@@ -625,6 +686,35 @@ namespace Tako {
       ImGui::EndChild();
 
       ImGui::Separator();
+    }
+
+    // メッシュ表示制御（メッシュ単位で描画 ON/OFF を切り替え）
+    if (ImGui::CollapsingHeader("Mesh Visibility")) {
+      ImGui::Text("Total Meshes: %zu", meshes_.size());
+      if (ImGui::Button("Show All")) {
+        for (auto& mesh : meshes_) mesh->SetVisible(true);
+      }
+      ImGui::SameLine();
+      if (ImGui::Button("Hide All")) {
+        for (auto& mesh : meshes_) mesh->SetVisible(false);
+      }
+      ImGui::Separator();
+
+      // スクロール可能な子ウィンドウにメッシュ一覧を表示
+      ImGui::BeginChild("MeshVisibilityList", ImVec2(0, 150), true);
+      for (size_t i = 0; i < meshes_.size(); ++i) {
+        ImGui::PushID(static_cast<int>(i));  // 同名メッシュでも ImGui の ID が衝突しないように
+        bool visible = meshes_[i]->IsVisible();
+        std::string label = meshes_[i]->GetName();
+        if (label.empty()) {
+          label = "mesh_" + std::to_string(i);
+        }
+        if (ImGui::Checkbox(label.c_str(), &visible)) {
+          meshes_[i]->SetVisible(visible);
+        }
+        ImGui::PopID();
+      }
+      ImGui::EndChild();
     }
 
     if (hasSkeleton_) {

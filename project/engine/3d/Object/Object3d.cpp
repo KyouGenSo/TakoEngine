@@ -254,6 +254,24 @@ void Object3d::SetEnvMapCoefficient(float coefficient)
   }
 }
 
+void Object3d::SetMeshVisible(const std::string& name, bool visible)
+{
+  if (m_model_)
+  {
+    m_model_->SetMeshVisible(name, visible);
+  }
+}
+
+bool Object3d::IsMeshVisible(const std::string& name) const
+{
+  return m_model_ ? m_model_->IsMeshVisible(name) : false;
+}
+
+std::vector<std::string> Object3d::GetMeshNames() const
+{
+  return m_model_ ? m_model_->GetMeshNames() : std::vector<std::string>{};
+}
+
 void Object3d::AttachToJoint(Object3d* parent, const std::string& jointName, const Vector3& offset)
 {
 	// 親オブジェクトと Joint 名を設定

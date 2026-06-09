@@ -191,6 +191,8 @@ namespace Tako {
     // メッシュのクローンを作成
     auto newMesh = std::make_unique<Mesh>();
     newMesh->Initialize(modelBasic_, vertices_, indices_, textureData_);
+    newMesh->name_ = name_;
+    newMesh->isVisible_ = isVisible_;
     return newMesh;
   }
 

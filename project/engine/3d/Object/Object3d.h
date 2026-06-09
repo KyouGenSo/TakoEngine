@@ -213,6 +213,26 @@ public: // メンバー関数
   /// <param name="enableEnvMap">環境マップを有効にするか</param>
   void SetEnableEnvMap(bool enableEnvMap);
 
+  /// <summary>
+  /// メッシュ名を指定して表示・非表示を設定
+  /// </summary>
+  /// <param name="name">メッシュ名</param>
+  /// <param name="visible">表示する場合 true</param>
+  void SetMeshVisible(const std::string& name, bool visible);
+
+  /// <summary>
+  /// メッシュ名を指定して表示状態を取得
+  /// </summary>
+  /// <param name="name">メッシュ名</param>
+  /// <returns>表示中なら true</returns>
+  bool IsMeshVisible(const std::string& name) const;
+
+  /// <summary>
+  /// モデルが持つ全メッシュ名のリストを取得
+  /// </summary>
+  /// <returns>メッシュ名のリスト（モデル未設定なら空）</returns>
+  std::vector<std::string> GetMeshNames() const;
+
   // Joint アタッチメント機能
   /// <summary>
   /// 親 Object3d の特定の Joint にアタッチ
