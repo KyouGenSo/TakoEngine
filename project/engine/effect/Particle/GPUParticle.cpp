@@ -305,7 +305,7 @@ namespace Tako {
     m_dx12_->SetUAVBarrier(perEmitterCountResource_.Get()); // BuildDrawArgs が読む前に per-emitter 生存数の書き込みを同期
 
 #ifdef _DEBUG
-    // アクティブパーティクル数の Readback（IntegrateAll 完了直後が最適）
+    // アクティブパーティクル数の Readback
     ReadbackActiveParticleCount();
 #endif
 
@@ -390,18 +390,9 @@ namespace Tako {
     }
 
 
-    // バケット [emitterCount, kNumMaxEmitter) を 1 回の ExecuteIndirect で処理。
-    // これにより、一時エミッター削除後も残存パーティクルが消えない 。
-    if (emitterCount < static_cast<size_t>(kNumMaxEmitter)) {
-      commandList->SetPipelineState(psoAdd_.Get());
-      m_srvManager_->SetGraphicsRootDescriptorTable(2, modelData_.textureData.textureIndex);
-      m_srvManager_->SetGraphicsRootDescriptorTable(4, defaultQuadVertexSrvIndex_);
-      m_srvManager_->SetGraphicsRootDescriptorTable(5, defaultQuadIndexSrvIndex_);
-      commandList->ExecuteIndirect(drawCommandSignature_.Get(),
-                                   kNumMaxEmitter - static_cast<UINT>(emitterCount),
-                                   drawArgsResource_.Get(),
-                                   static_cast<UINT64>(emitterCount) * drawStride, nullptr, 0);
-    }
+    // 旧 orphan バケット描画は廃止。スロット安定化(退役方式)により、削除されたエミッターの
+    // パーティクルもスロットを保持したまま正しいエミッターで描き切り、全滅後にスロットを解放するため、
+    // 「スロットを失った生存パーティクル」が原理的に存在しない (板ポリ降格も発生しない)。
 
     // 各リソースの state を UAV に戻す
     m_dx12_->TransitionResourceWithTracking(drawArgsResource_.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -471,27 +462,64 @@ namespace Tako {
 
   void GPUParticle::RegisterEmitter(std::shared_ptr<GPUParticleEmitter> emitter)
   {
-    if (activeEmitters_.size() >= kNumMaxEmitter) {
-      return;
-    }
-
     if (!emitter) {
       return;
     }
 
-    activeEmitters_.push_back(emitter);
+    // スロット安定化: 空きスロットがあれば再利用し、無ければ末尾に新規確保する。
+    // 配列インデックス(=スロット番号)はパーティクルの emitterId として焼き込まれるため、
+    // 一度割り当てたスロットは当該エミッターのパーティクルが全滅するまで固定する (compaction しない)。
+    if (!freeEmitterSlots_.empty()) {
+      const uint32_t slot = freeEmitterSlots_.back();
+      freeEmitterSlots_.pop_back();
+      activeEmitters_[slot] = emitter;
+    }
+    else {
+      if (activeEmitters_.size() >= kNumMaxEmitter) {
+        return;
+      }
+      activeEmitters_.push_back(emitter);
+    }
   }
 
   void GPUParticle::UnregisterEmitter(std::shared_ptr<GPUParticleEmitter> emitter)
   {
-    if (activeEmitters_.empty()) {
+    if (!emitter || activeEmitters_.empty()) {
       return;
     }
 
     auto it = std::ranges::find(activeEmitters_, emitter);
-    if (it != activeEmitters_.end()) {
-      activeEmitters_.erase(it);
+    if (it == activeEmitters_.end()) {
+      return;
     }
+
+    // compaction せず「退役」させる: スロットは保持したまま射出だけ停止し、既存パーティクルは
+    // 寿命まで正しいエミッター(描画モデル/ブレンド/テクスチャ)で描き切る。パーティクルが全滅する頃
+    // (= 最大寿命経過後) に RetireExpiredSlots がスロットを解放し、freeEmitterSlots_ へ返す。
+    // erase で詰めると後続スロットがずれ、パーティクルの emitterId が別エミッターを指して取り違える。
+    const uint32_t slot = static_cast<uint32_t>(it - activeEmitters_.begin());
+
+    // 既に退役登録済みのスロットは二重登録しない (二重解放→スロット重複割り当てを防ぐ)。
+    for (const auto& r : retiringSlots_) {
+      if (r.first == slot) {
+        return;
+      }
+    }
+
+    emitter->SetActive(false);
+    emitter->SetEmitting(false);
+
+    // 解放時刻 = 現在時刻 + 粒子寿命の真の上界 + マージン。
+    // 粒子寿命はランダム化ON時 lifeTimeRange.y、OFF時 固定 1.0〜1.5秒 (EmitParticle.CS.hlsl:518) になるため、
+    // 両分岐を必ずカバーする max(lifeTimeRange.y, kDefaultParticleMaxLife) を上界に使う。
+    // これより早く解放すると、生存中の粒子が(orphan バケット廃止済みのため)描画経路を失い消滅する。
+    constexpr float kEmitterRetireMargin = 0.25f;   // フレーム境界の取りこぼし防止マージン(秒)
+    constexpr float kDefaultParticleMaxLife = 1.5f; // EmitParticle.CS.hlsl:518 の非ランダム化時デフォルト寿命上限と一致させること
+    const float now = FrameTimer::GetInstance()->GetGameTime();
+    const float maxLifeTime = (std::max)(emitter->GetLifeTimeRange().y, kDefaultParticleMaxLife);
+    const float freeAt = now + maxLifeTime + kEmitterRetireMargin;
+    retiringSlots_.emplace_back(slot, freeAt);
+    // activeEmitters_[slot] は emitter を保持したまま (描画継続のため erase しない)
   }
 
   std::shared_ptr<GPUParticleEmitter> GPUParticle::FindEmitterByIndex(size_t index) {
@@ -503,14 +531,35 @@ namespace Tako {
 
   //--------------------------------------Private--------------------------------------//
 
+  void GPUParticle::RetireExpiredSlots()
+  {
+    if (retiringSlots_.empty()) {
+      return;
+    }
+    // 退役後、最大寿命が経過したスロットを解放する。当該エミッターのパーティクルは既に全滅している
+    // ため、スロットを別エミッターへ再利用しても emitterId の取り違えは起きない。
+    const float now = FrameTimer::GetInstance()->GetGameTime();
+    std::erase_if(retiringSlots_, [&](const std::pair<uint32_t, float>& r) {
+      if (now < r.second) {
+        return false;
+      }
+      activeEmitters_[r.first] = nullptr;    // スロットを空に (穴)
+      freeEmitterSlots_.push_back(r.first);  // 再利用可能リストへ返却
+      return true;
+    });
+  }
+
   void GPUParticle::UpdateEmitter()
   {
     float deltaTime = FrameTimer::GetInstance()->GetDeltaTime();
 
+    // 退役済みスロットのうち寿命切れのものを解放 (穴あけ) する。
+    RetireExpiredSlots();
+
     // すべてのアクティブなエミッターの射出タイマーを更新する。
     for (auto& emitter : activeEmitters_) {
-      // 非アクティブなら射出しない
-      if (!emitter->IsActive()) {
+      // 空きスロット(退役後に解放された穴)または非アクティブなら射出しない
+      if (!emitter || !emitter->IsActive()) {
         continue;
       }
 
@@ -570,7 +619,7 @@ namespace Tako {
 #endif
     }
 
-    // 各エミッターの GPU データを更新（統合構造体をそのままコピー）
+    // 各エミッターの GPU データを更新
     size_t emitterCount = std::min(activeEmitters_.size(), static_cast<size_t>(kNumMaxEmitter));
     for (size_t i = 0; i < emitterCount; i++) {
       if (activeEmitters_[i]) {
@@ -582,11 +631,15 @@ namespace Tako {
           emitterDrawTemplateData_[i] = (ed.renderIndexCount != 0u) ? ed.renderIndexCount : defaultQuadIndexCount_;
         }
       }
-    }
-
-    // テンプレートの残り (orphan バケット) は既定板ポリ (6) で描く
-    if (emitterDrawTemplateData_) {
-      for (size_t i = emitterCount; i < static_cast<size_t>(kNumMaxEmitter); ++i) emitterDrawTemplateData_[i] = defaultQuadIndexCount_;
+      else {
+        // 退役後に解放された空きスロット(穴): EmitParticle/描画でスキップさせるため無効化する。
+        // 前占有エミッターの古い flags が残ると誤射出するので明示的にゼロ化する。
+        gpuEmitters[i].flags = 0u;            // EFLAG_ACTIVE なし → 射出・描画グルーピング対象外
+        gpuEmitters[i].renderIndexCount = 0u; // 既定板ポリ扱い
+        if (emitterDrawTemplateData_) {
+          emitterDrawTemplateData_[i] = defaultQuadIndexCount_;
+        }
+      }
     }
 
     // アンマップ
@@ -1013,8 +1066,10 @@ namespace Tako {
     emitterSrvIndex_ = m_srvManager_->Allocate();
     m_srvManager_->CreateSRVForStructuredBuffer(emitterSrvIndex_, emitterResource_.Get(), kNumMaxEmitter, sizeof(EmitterData));
 
-    // エミッター配列の初期化
+    // エミッター配列とスロット管理状態の初期化
     activeEmitters_.clear();
+    freeEmitterSlots_.clear();
+    retiringSlots_.clear();
 
     // GPU 側の初期化
     EmitterData* gpuEmitters = nullptr;

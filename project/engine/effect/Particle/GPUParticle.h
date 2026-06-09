@@ -215,6 +215,12 @@ namespace Tako {
     /// </summary>
     void SyncEmitterData();
 
+    /// <summary>
+    /// 退役済みエミッタースロットのうち、寿命が尽きてパーティクルが全滅したものを解放する。
+    /// (毎フレーム UpdateEmitter の先頭で呼ぶ)
+    /// </summary>
+    void RetireExpiredSlots();
+
     //-----------リソース作成関連------------//
     /// <summary>
     /// ルートシグネチャの作成
@@ -232,7 +238,7 @@ namespace Tako {
     /// ブレンドモード値 (ParticleBlendMode) に対応する描画 PSO を取得
     /// </summary>
     /// <param name="blendMode">0=Add, 1=Screen, 2=Alpha</param>
-    /// <returns>対応する PSO (不正値は Screen にフォールバック)</returns>
+    /// <returns>対応する PSO (不正値は Add にフォールバック)</returns>
     ID3D12PipelineState* GetBlendPSO(uint32_t blendMode) const;
 
     /// <summary>
@@ -506,9 +512,20 @@ namespace Tako {
     uint32_t emitterSrvIndex_;
 
     /// <summary>
-    /// アクティブなエミッターのリスト
+    /// アクティブなエミッターのリスト。index = 安定スロット番号 (パーティクルの emitterId として焼き込まれる)。
+    /// 削除時に compaction せず、退役→寿命経過後に nullptr 穴にして freeEmitterSlots_ で再利用する。
     /// </summary>
     std::vector<std::shared_ptr<GPUParticleEmitter>> activeEmitters_;
+
+    /// <summary>
+    /// 再利用可能なスロット番号スタック (LIFO)。退役スロット解放時に返却し、RegisterEmitter で再利用する。
+    /// </summary>
+    std::vector<uint32_t> freeEmitterSlots_;
+
+    /// <summary>
+    /// 退役中スロット {slot, 解放予定時刻(gameTime 秒)}。射出停止後もパーティクル全滅まで描画継続するため保持する。
+    /// </summary>
+    std::vector<std::pair<uint32_t, float>> retiringSlots_;
 
     /// <summary>
     /// FreeList インデックス用 GPU リソース
