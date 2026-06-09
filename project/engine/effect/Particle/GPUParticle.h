@@ -663,15 +663,15 @@ namespace Tako {
     //-------------------------描画テンプレート-------------------------//
 
     /// <summary>
-    /// per-emitter 描画テンプレート (CPU 書き込み: 描画モデルの index 数。既定板ポリは 6)
+    /// per-emitter 描画モデルのインデクスカウンタバッファ。
     /// BuildDrawArgs が DRAW 引数の VertexCountPerInstance に使う。
     /// </summary>
-    Microsoft::WRL::ComPtr<ID3D12Resource> emitterDrawTemplateResource_;
-    uint32_t emitterDrawTemplateSrvIndex_ = 0;
-    uint32_t* emitterDrawTemplateData_ = nullptr;
+    Microsoft::WRL::ComPtr<ID3D12Resource> emitterIndexCountResource_;
+    uint32_t emitterIndexCountSrvIndex_ = 0;
+    uint32_t* emitterIndexCountData_ = nullptr;
 
     /// <summary>
-    /// per-emitter 描画モデルのキャッシュ (path → Model)。
+    /// per-emitter 描画モデルのキャッシュ。
     /// 描画モデルの GPU リソース寿命をシステムが保持し、エミッターのクローン後も SRV を有効に保つ。
     /// shared_ptr のためデストラクタが型消去され、前方宣言 (不完全型) のままメンバにできる。
     /// </summary>

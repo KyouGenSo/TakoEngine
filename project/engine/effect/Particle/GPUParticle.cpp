@@ -322,7 +322,7 @@ namespace Tako {
     m_srvManager_->SetComputeRootDescriptorTable(0, perEmitterCountUavIndex_);
     m_srvManager_->SetComputeRootDescriptorTable(1, drawArgsUavIndex_);
     m_srvManager_->SetComputeRootDescriptorTable(2, scatterCursorUavIndex_);
-    m_srvManager_->SetComputeRootDescriptorTable(3, emitterDrawTemplateSrvIndex_);
+    m_srvManager_->SetComputeRootDescriptorTable(3, emitterIndexCountSrvIndex_);
     commandList->Dispatch(1, 1, 1);
     m_dx12_->SetUAVBarrier(drawArgsResource_.Get());
     m_dx12_->SetUAVBarrier(scatterCursorResource_.Get());
@@ -615,8 +615,8 @@ namespace Tako {
         gpuEmitters[i] = ed;
         // 描画テンプレート: 描画モデルの index 数 (= 1パーティクルあたりの描画頂点数)。
         // 描画モデル未指定 (renderIndexCount==0) のエミッターはデフォルト板ポリ。
-        if (emitterDrawTemplateData_) {
-          emitterDrawTemplateData_[i] = (ed.renderIndexCount != 0u) ? ed.renderIndexCount : defaultQuadIndexCount_;
+        if (emitterIndexCountData_) {
+          emitterIndexCountData_[i] = (ed.renderIndexCount != 0u) ? ed.renderIndexCount : defaultQuadIndexCount_;
         }
       }
       else {
@@ -624,8 +624,8 @@ namespace Tako {
         // 前占有エミッターの古い flags が残ると誤射出するので明示的にゼロにする。
         gpuEmitters[i].flags = 0u;
         gpuEmitters[i].renderIndexCount = 0u;
-        if (emitterDrawTemplateData_) {
-          emitterDrawTemplateData_[i] = defaultQuadIndexCount_;
+        if (emitterIndexCountData_) {
+          emitterIndexCountData_[i] = defaultQuadIndexCount_;
         }
       }
     }
@@ -1131,11 +1131,11 @@ namespace Tako {
     m_srvManager_->CreateUAV(drawArgsUavIndex_, drawArgsResource_.Get(), kNumMaxEmitter, sizeof(D3D12_DRAW_ARGUMENTS));
 
     // --- per-emitter 描画テンプレート (UPLOAD: 描画モデルの index 数。既定板ポリは 6) ---
-    m_dx12_->CreateBufferResource(emitterDrawTemplateResource_, sizeof(uint32_t) * kNumMaxEmitter);
-    emitterDrawTemplateSrvIndex_ = m_srvManager_->Allocate();
-    m_srvManager_->CreateSRVForStructuredBuffer(emitterDrawTemplateSrvIndex_, emitterDrawTemplateResource_.Get(), kNumMaxEmitter, sizeof(uint32_t));
-    emitterDrawTemplateResource_->Map(0, nullptr, reinterpret_cast<void**>(&emitterDrawTemplateData_));
-    for (uint32_t i = 0; i < kNumMaxEmitter; ++i) emitterDrawTemplateData_[i] = defaultQuadIndexCount_; // 既定: 全 quad (6)
+    m_dx12_->CreateBufferResource(emitterIndexCountResource_, sizeof(uint32_t) * kNumMaxEmitter);
+    emitterIndexCountSrvIndex_ = m_srvManager_->Allocate();
+    m_srvManager_->CreateSRVForStructuredBuffer(emitterIndexCountSrvIndex_, emitterIndexCountResource_.Get(), kNumMaxEmitter, sizeof(uint32_t));
+    emitterIndexCountResource_->Map(0, nullptr, reinterpret_cast<void**>(&emitterIndexCountData_));
+    for (uint32_t i = 0; i < kNumMaxEmitter; ++i) emitterIndexCountData_[i] = defaultQuadIndexCount_; // 既定: 全 quad (6)
   }
 
   void GPUParticle::CreateCommandSignature()
