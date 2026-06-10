@@ -42,6 +42,25 @@ namespace Tako {
     std::shared_ptr<GPUParticleEmitter> Clone() const override;
 
     /// <summary>
+    /// 型固有パラメータを json に書き出す
+    /// </summary>
+    /// <remarks>
+    /// Object3d バインドは実行時情報のため永続化しない。復元時は
+    /// <c>LoadPreset(presetName, newEmitterName, obj3d)</c> で呼び出し側が再バインドする。
+    /// </remarks>
+    void SerializeTypeSpecific(nlohmann::json& json) const override;
+
+    /// <summary>
+    /// JSON から MeshEmitter を構築
+    /// </summary>
+    /// <param name="particleSystem">GPU パーティクルシステムへのポインタ</param>
+    /// <param name="json">読み込む JSON オブジェクト</param>
+    /// <param name="bindTarget">バインド先 Object3d (nullptr で meshModelPath から自己完結復元)</param>
+    /// <returns>構築されたエミッター (復元手段が無い場合 nullptr)</returns>
+    static std::shared_ptr<GPUParticleEmitter> CreateFromJSON(
+      GPUParticle* particleSystem, const nlohmann::json& json, Object3d* bindTarget);
+
+    /// <summary>
     /// 射出更新 (基底実装 + meshWorld のオフセット合成)
     /// </summary>
     void UpdateEmission(float deltaTime) override;

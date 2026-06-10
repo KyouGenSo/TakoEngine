@@ -205,8 +205,16 @@ uint SelectTriangleByArea(uint triCount, float totalArea, uint areaPrefixSumSrvI
 [numthreads(16, 1, 1)]
 void main(uint3 DTid : SV_DispatchThreadID)
 {
+    const uint kInvalidMeshTarget = 0xFFFFFFFFu;
+
     // エミッターのインデックス計算
+    // Mesh per-emitter Dispatch は CPU 側が 1 グループのみ起動し、スレッド 0 が対象エミッタを担当する。
     uint emitterIndex = DTid.x;
+    if (gTargetMeshEmitterId != kInvalidMeshTarget)
+    {
+        if (DTid.x != 0) return;
+        emitterIndex = gTargetMeshEmitterId;
+    }
 
     // 範囲チェック
     if (emitterIndex >= gPerFrame.activeEmitterCount)
@@ -226,20 +234,17 @@ void main(uint3 DTid : SV_DispatchThreadID)
         return;
     }
 
+    // 非 Mesh 一括 Dispatch では Mesh タイプをスキップ
+    if (gTargetMeshEmitterId == kInvalidMeshTarget &&
+        gEmitters[emitterIndex].type == EMITTER_TYPE_MESH)
     {
-        const uint kInvalidMeshTarget = 0xFFFFFFFFu;
-        uint emitterType = gEmitters[emitterIndex].type;
-        if (gTargetMeshEmitterId == kInvalidMeshTarget) {
-            if (emitterType == EMITTER_TYPE_MESH) return;
-        } else {
-            if (emitterIndex != gTargetMeshEmitterId) return;
-        }
+        return;
     }
 
     // ランダムジェネレーターの初期化
     RandomGenerator generator;
     generator.state = uint3(
-        gPerFrame.frameCount ^ (DTid.x * 0x9E3779B9u),
+        gPerFrame.frameCount ^ (emitterIndex * 0x9E3779B9u),
         gEmitters[emitterIndex].emitterID ^ (gPerFrame.frameCount * 0x85EBCA6Bu),
         (gPerFrame.frameCount + gEmitters[emitterIndex].emitterID) * 0xC2B2AE35u
     );

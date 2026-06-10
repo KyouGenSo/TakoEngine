@@ -918,24 +918,10 @@ namespace Tako {
     auto emitter = it->second;
     CopiedSettings& slot = copiedSettingsSlots_[slotIndex];
 
-    // エミッターの設定をコピー（統合構造体をそのままコピー）
+    // エミッターの設定をコピー
     slot.type = emitter->GetType();
     slot.data = emitter->GetData();
     slot.renderModelPath = emitter->GetRenderModelPath();
-
-    // 型固有のパラメータ（GetData()で全てコピー済みだが、Getter経由で明示的に設定）
-    if (auto sphereEmitter = std::dynamic_pointer_cast<SphereEmitter>(emitter)) {
-      slot.data.radius = sphereEmitter->GetRadius();
-    }
-    else if (auto boxEmitter = std::dynamic_pointer_cast<BoxEmitter>(emitter)) {
-      slot.data.boxSize = boxEmitter->GetSize();
-      slot.data.boxRotation = boxEmitter->GetRotation();
-    }
-    else if (auto triangleEmitter = std::dynamic_pointer_cast<TriangleEmitter>(emitter)) {
-      slot.data.triangleV1 = triangleEmitter->GetVertex1();
-      slot.data.triangleV2 = triangleEmitter->GetVertex2();
-      slot.data.triangleV3 = triangleEmitter->GetVertex3();
-    }
 
     slot.valid = true;
     return true;
@@ -1117,112 +1103,25 @@ namespace Tako {
       json["texturePath"] = TextureManager::GetInstance()->GetFileName(emitter->GetTextureSrvIndex());
     }
 
-    // 型固有のパラメータ
-    if (auto sphereEmitter = std::dynamic_pointer_cast<SphereEmitter>(emitter)) {
-      json["radius"] = sphereEmitter->GetRadius();
-    }
-    else if (auto boxEmitter = std::dynamic_pointer_cast<BoxEmitter>(emitter)) {
-      json["boxSize"] = { boxEmitter->GetSize().x, boxEmitter->GetSize().y, boxEmitter->GetSize().z };
-      json["boxRotation"] = { boxEmitter->GetRotation().x, boxEmitter->GetRotation().y, boxEmitter->GetRotation().z };
-    }
-    else if (auto triangleEmitter = std::dynamic_pointer_cast<TriangleEmitter>(emitter)) {
-      json["triangleV1"] = { triangleEmitter->GetVertex1().x, triangleEmitter->GetVertex1().y, triangleEmitter->GetVertex1().z };
-      json["triangleV2"] = { triangleEmitter->GetVertex2().x, triangleEmitter->GetVertex2().y, triangleEmitter->GetVertex2().z };
-      json["triangleV3"] = { triangleEmitter->GetVertex3().x, triangleEmitter->GetVertex3().y, triangleEmitter->GetVertex3().z };
-    }
-    else if (auto meshEmitter = std::dynamic_pointer_cast<MeshEmitter>(emitter)) {
-      // スポーン形状はモデルパスで自己完結保存する。Object3d バインドは実行時情報のため
-      // 永続化せず、復元時に呼び出し側が LoadPreset(presetName, newName, obj3d) で再バインドする。
-      const std::string& meshModelPath = meshEmitter->GetSpawnModelPath();
-      if (!meshModelPath.empty()) {
-        json["meshModelPath"] = meshModelPath;
-      }
-#ifdef _DEBUG
-      else {
-        DebugUIManager::GetInstance()->AddLog(
-          "Serialize: MeshEmitter has no meshModelPath; restorable only via LoadPreset(Object3d*).",
-          DebugUIManager::LogType::Warning);
-      }
-#endif
-      const Vector3& offsetRotation = meshEmitter->GetOffsetRotation();
-      const Vector3& offsetScale = meshEmitter->GetOffsetScale();
-      json["meshOffsetRotation"] = { offsetRotation.x, offsetRotation.y, offsetRotation.z };
-      json["meshOffsetScale"] = { offsetScale.x, offsetScale.y, offsetScale.z };
-    }
+    // 型固有のパラメータは各エミッタクラスが書き出す
+    emitter->SerializeTypeSpecific(json);
   }
 
   std::shared_ptr<GPUParticleEmitter> EmitterManager::DeserializeEmitterFromJSON(
     const nlohmann::json& json, Object3d* bindTarget)
   {
     EmitterType type = static_cast<EmitterType>(json["type"].get<uint32_t>());
-    Vector3 position = { json["position"][0], json["position"][1], json["position"][2] };
-    uint32_t count = json["particleCount"];
-    float frequency = json["frequency"];
+
 
     std::shared_ptr<GPUParticleEmitter> emitter;
-
-    // タイプに応じてエミッターを作成
-    if (type == EmitterType::Sphere) {
-      float radius = json["radius"];
-      emitter = std::make_shared<SphereEmitter>(particleSystem_, position, radius, count, frequency);
+    switch (type) {
+    case EmitterType::Sphere:   emitter = SphereEmitter::CreateFromJSON(particleSystem_, json); break;
+    case EmitterType::Box:      emitter = BoxEmitter::CreateFromJSON(particleSystem_, json); break;
+    case EmitterType::Triangle: emitter = TriangleEmitter::CreateFromJSON(particleSystem_, json); break;
+    case EmitterType::Mesh:     emitter = MeshEmitter::CreateFromJSON(particleSystem_, json, bindTarget); break;
+    default: return nullptr;
     }
-    else if (type == EmitterType::Box) {
-      Vector3 size = { json["boxSize"][0], json["boxSize"][1], json["boxSize"][2] };
-      Vector3 rotation = { json["boxRotation"][0], json["boxRotation"][1], json["boxRotation"][2] };
-      emitter = std::make_shared<BoxEmitter>(particleSystem_, position, size, rotation, count, frequency);
-    }
-    else if (type == EmitterType::Triangle) {
-      Vector3 v1 = { json["triangleV1"][0], json["triangleV1"][1], json["triangleV1"][2] };
-      Vector3 v2 = { json["triangleV2"][0], json["triangleV2"][1], json["triangleV2"][2] };
-      Vector3 v3 = { json["triangleV3"][0], json["triangleV3"][1], json["triangleV3"][2] };
-      emitter = std::make_shared<TriangleEmitter>(particleSystem_, position, v1, v2, v3, count, frequency);
-    }
-    else if (type == EmitterType::Mesh) {
-      std::shared_ptr<MeshEmitter> meshEmitter;
-      if (bindTarget != nullptr) {
-        // バインド先のモデルをスポーン形状に使い、毎フレーム world 行列に追従させる
-        meshEmitter = std::make_shared<MeshEmitter>(particleSystem_, bindTarget->GetModel(), count, frequency);
-        meshEmitter->BindObject3d(bindTarget);
-      }
-      else if (json.contains("meshModelPath") && !json["meshModelPath"].get<std::string>().empty()) {
-        // モデルパスから自己完結で復元 (エディタ作成の Mesh エミッター用)
-        const std::string meshModelPath = json["meshModelPath"].get<std::string>();
-        Model* model = particleSystem_->AcquireModel(meshModelPath);
-        if (model == nullptr) {
-#ifdef _DEBUG
-          DebugUIManager::GetInstance()->AddLog(
-            "Deserialize: failed to load meshModelPath '" + meshModelPath + "'.",
-            DebugUIManager::LogType::Error);
-#endif
-          return nullptr;
-        }
-        meshEmitter = std::make_shared<MeshEmitter>(particleSystem_, model, count, frequency);
-        meshEmitter->SetSpawnModelPath(meshModelPath);
-      }
-      else {
-#ifdef _DEBUG
-        DebugUIManager::GetInstance()->AddLog(
-          "Deserialize: Mesh emitter has no 'meshModelPath' and no bind target. Skipping.",
-          DebugUIManager::LogType::Warning);
-#endif
-        return nullptr;
-      }
-
-      // Mesh の position はローカルオフセット平行移動
-      meshEmitter->SetPosition(position);
-      if (json.contains("meshOffsetRotation")) {
-        meshEmitter->SetOffsetRotation(
-          { json["meshOffsetRotation"][0], json["meshOffsetRotation"][1], json["meshOffsetRotation"][2] });
-      }
-      if (json.contains("meshOffsetScale")) {
-        meshEmitter->SetOffsetScale(
-          { json["meshOffsetScale"][0], json["meshOffsetScale"][1], json["meshOffsetScale"][2] });
-      }
-      emitter = meshEmitter;
-    }
-    else {
-      return nullptr;
-    }
+    if (!emitter) return nullptr;
 
     // 共通パラメータを設定
     emitter->SetScaleRange(

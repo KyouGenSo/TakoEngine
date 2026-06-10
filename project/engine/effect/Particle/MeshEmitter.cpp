@@ -11,6 +11,7 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
+#include <json.hpp>
 
 #ifdef _DEBUG
 #include "DebugUIManager.h"
@@ -202,6 +203,76 @@ namespace Tako {
     clone->aggregatedVertexResource_ = aggregatedVertexResource_;
     clone->aggregatedIndexResource_ = aggregatedIndexResource_;
     return clone;
+  }
+
+  void MeshEmitter::SerializeTypeSpecific(nlohmann::json& json) const
+  {
+    // スポーン形状はモデルパスで自己完結保存する。Object3d バインドは実行時情報のため
+    // 永続化せず、復元時に呼び出し側が LoadPreset(presetName, newName, obj3d) で再バインドする。
+    if (!spawnModelPath_.empty()) {
+      json["meshModelPath"] = spawnModelPath_;
+    }
+#ifdef _DEBUG
+    else {
+      DebugUIManager::GetInstance()->AddLog(
+        "Serialize: MeshEmitter has no meshModelPath; restorable only via LoadPreset(Object3d*).",
+        DebugUIManager::LogType::Warning);
+    }
+#endif
+    json["meshOffsetRotation"] = { offsetRotation_.x, offsetRotation_.y, offsetRotation_.z };
+    json["meshOffsetScale"] = { offsetScale_.x, offsetScale_.y, offsetScale_.z };
+  }
+
+  std::shared_ptr<GPUParticleEmitter> MeshEmitter::CreateFromJSON(
+    GPUParticle* particleSystem, const nlohmann::json& json, Object3d* bindTarget)
+  {
+    const uint32_t count = json["particleCount"];
+    const float frequency = json["frequency"];
+
+    std::shared_ptr<MeshEmitter> emitter;
+    if (bindTarget != nullptr) {
+      // バインド先のモデルをスポーン形状に使い、毎フレーム world 行列に追従させる
+      emitter = std::make_shared<MeshEmitter>(particleSystem, bindTarget->GetModel(), count, frequency);
+      emitter->BindObject3d(bindTarget);
+    }
+    else if (json.contains("meshModelPath") && !json["meshModelPath"].get<std::string>().empty()) {
+      // モデルパスから自己完結で復元 (エディタ作成の Mesh エミッター用)
+      const std::string meshModelPath = json["meshModelPath"].get<std::string>();
+      Model* model = particleSystem->AcquireModel(meshModelPath);
+      if (model == nullptr) {
+#ifdef _DEBUG
+        DebugUIManager::GetInstance()->AddLog(
+          "Deserialize: failed to load meshModelPath '" + meshModelPath + "'.",
+          DebugUIManager::LogType::Error);
+#endif
+        return nullptr;
+      }
+      emitter = std::make_shared<MeshEmitter>(particleSystem, model, count, frequency);
+      emitter->SetSpawnModelPath(meshModelPath);
+    }
+    else {
+#ifdef _DEBUG
+      DebugUIManager::GetInstance()->AddLog(
+        "Deserialize: Mesh emitter has no 'meshModelPath' and no bind target. Skipping.",
+        DebugUIManager::LogType::Warning);
+#endif
+      return nullptr;
+    }
+
+    // position はローカルオフセット平行移動
+    const Vector3 position = { json["position"][0], json["position"][1], json["position"][2] };
+    emitter->SetPosition(position);
+    if (json.contains("meshOffsetRotation")) {
+      const Vector3 offsetRotation = {
+        json["meshOffsetRotation"][0], json["meshOffsetRotation"][1], json["meshOffsetRotation"][2] };
+      emitter->SetOffsetRotation(offsetRotation);
+    }
+    if (json.contains("meshOffsetScale")) {
+      const Vector3 offsetScale = {
+        json["meshOffsetScale"][0], json["meshOffsetScale"][1], json["meshOffsetScale"][2] };
+      emitter->SetOffsetScale(offsetScale);
+    }
+    return emitter;
   }
 
   void MeshEmitter::SyncMeshWorld()

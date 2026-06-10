@@ -4,6 +4,7 @@
 #include "ParticleStruct.h"
 #include <memory>
 #include <string>
+#include <json_fwd.hpp>
 
 namespace Tako {
 
@@ -37,6 +38,16 @@ namespace Tako {
     /// </summary>
     /// <returns>複製されたエミッター</returns>
     virtual std::shared_ptr<GPUParticleEmitter> Clone() const = 0;
+
+    /// <summary>
+    /// 型固有パラメータを json に書き出す
+    /// </summary>
+    /// <param name="json">出力先の JSON オブジェクト</param>
+    /// <remarks>
+    /// 共通パラメータの保存は <c>EmitterManager::SerializeEmitterToJSON</c> が担当。
+    /// 復元側の対は各派生クラスの static <c>CreateFromJSON</c>。
+    /// </remarks>
+    virtual void SerializeTypeSpecific(nlohmann::json& json) const = 0;
 
     /// <summary>
     /// エミッターデータの参照を取得（GPU転送用）

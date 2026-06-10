@@ -213,16 +213,26 @@ namespace Tako {
 
       commandList->SetComputeRootConstantBufferView(2, perFrameResource_->GetGPUVirtualAddress());
 
-      const uint32_t threadGroupsX = (static_cast<uint32_t>(activeEmitters_.size()) + 15) / 16;
+      bool hasNonMeshEmitter = false;
+      for (const auto& emitter : activeEmitters_) {
+        if (emitter && emitter->GetType() != EmitterType::Mesh) {
+          hasNonMeshEmitter = true;
+          break;
+        }
+      }
 
       // 非 Mesh エミッタを一括処理 (Mesh SRV はダミー bind、HLSL 側で Mesh タイプは早期 return)
-      commandList->SetComputeRoot32BitConstant(8, kInvalidMeshTarget, 0);
-      m_srvManager_->SetComputeRootDescriptorTable(5, emitterSrvIndex_);
-      m_srvManager_->SetComputeRootDescriptorTable(6, emitterSrvIndex_);
-      m_srvManager_->SetComputeRootDescriptorTable(7, emitterSrvIndex_);
-      commandList->Dispatch(threadGroupsX, 1, 1);
+      if (hasNonMeshEmitter) {
+        const uint32_t threadGroupsX = (static_cast<uint32_t>(activeEmitters_.size()) + 15) / 16;
+        commandList->SetComputeRoot32BitConstant(8, kInvalidMeshTarget, 0);
+        m_srvManager_->SetComputeRootDescriptorTable(5, emitterSrvIndex_);
+        m_srvManager_->SetComputeRootDescriptorTable(6, emitterSrvIndex_);
+        m_srvManager_->SetComputeRootDescriptorTable(7, emitterSrvIndex_);
+        commandList->Dispatch(threadGroupsX, 1, 1);
+      }
 
-      // Mesh エミッタを 1 つずつ別 Dispatch (スキニング有効なら skinned SRV を優先)
+      // Mesh エミッタを 1 つずつ別 Dispatch (スキニング有効なら skinned SRV を優先)。
+      // HLSL 側はスレッド 0 が gTargetMeshEmitterId のエミッタを担当するため 1 グループで足りる
       for (uint32_t i = 0; i < activeEmitters_.size(); ++i) {
         const auto& emitter = activeEmitters_[i];
         if (!emitter || emitter->GetType() != EmitterType::Mesh) continue;
@@ -239,7 +249,7 @@ namespace Tako {
         m_srvManager_->SetComputeRootDescriptorTable(7,
           edata.meshAreaPrefixSumSrvIndex != 0 ? edata.meshAreaPrefixSumSrvIndex : emitterSrvIndex_);
         commandList->SetComputeRoot32BitConstant(8, i, 0);
-        commandList->Dispatch(threadGroupsX, 1, 1);
+        commandList->Dispatch(1, 1, 1);
       }
     }
 

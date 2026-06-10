@@ -1,5 +1,6 @@
 #include "SphereEmitter.h"
 #include "GPUParticle.h"
+#include <json.hpp>
 
 namespace Tako {
 
@@ -28,6 +29,20 @@ namespace Tako {
   void SphereEmitter::SetRadius(float radius)
   {
     data_.radius = radius;
+  }
+
+  void SphereEmitter::SerializeTypeSpecific(nlohmann::json& json) const
+  {
+    json["radius"] = GetRadius();
+  }
+
+  std::shared_ptr<GPUParticleEmitter> SphereEmitter::CreateFromJSON(GPUParticle* particleSystem, const nlohmann::json& json)
+  {
+    const Vector3 position = { json["position"][0], json["position"][1], json["position"][2] };
+    const float radius = json["radius"];
+    const uint32_t count = json["particleCount"];
+    const float frequency = json["frequency"];
+    return std::make_shared<SphereEmitter>(particleSystem, position, radius, count, frequency);
   }
 
 } // namespace Tako

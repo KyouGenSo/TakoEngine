@@ -36,6 +36,19 @@ namespace Tako {
     std::shared_ptr<GPUParticleEmitter> Clone() const override;
 
     /// <summary>
+    /// 型固有パラメータを json に書き出す
+    /// </summary>
+    void SerializeTypeSpecific(nlohmann::json& json) const override;
+
+    /// <summary>
+    /// JSON から SphereEmitter を構築
+    /// </summary>
+    /// <param name="particleSystem">GPU パーティクルシステムへのポインタ</param>
+    /// <param name="json">読み込む JSON オブジェクト</param>
+    /// <returns>構築されたエミッター</returns>
+    static std::shared_ptr<GPUParticleEmitter> CreateFromJSON(GPUParticle* particleSystem, const nlohmann::json& json);
+
+    /// <summary>
     /// 球体の半径を設定
     /// </summary>
     /// <param name="radius">半径</param>
