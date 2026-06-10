@@ -52,6 +52,13 @@ namespace Tako {
     // 射出タイマーを更新
     data_.frequencyTime += deltaTime;
 
+    // frequency <= 0 は毎フレーム射出 (fmodf の第2引数 0 による NaN を回避)
+    if (data_.frequency <= 0.0f) {
+      data_.flags |= EFLAG_EMITTING;
+      data_.frequencyTime = 0.0f;
+      return;
+    }
+
     // 射出間隔を超えたら射出許可を出して時間を調整
     if (data_.frequency <= data_.frequencyTime) {
       data_.flags |= EFLAG_EMITTING;

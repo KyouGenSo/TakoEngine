@@ -77,9 +77,16 @@ namespace Tako {
     void OnResize();
 
     /// <summary>
-    /// モデルを path からロードしてシステムが保持し、その先頭メッシュを返す。
+    /// モデルを path からロードしてシステムが保持し、その Model を返す。
     /// スポーン形状・描画モデルの両方で使う。GPU リソース寿命をシステム側で保証する
     /// (エミッターのクローン後も SRV が有効)。同一 path は一度だけロードしてキャッシュ。失敗時は nullptr。
+    /// </summary>
+    /// <param name="modelPath">モデルファイル名</param>
+    /// <returns>キャッシュされた Model (失敗時 nullptr)</returns>
+    Model* AcquireModel(const std::string& modelPath);
+
+    /// <summary>
+    /// AcquireModel の先頭メッシュ版。描画モデル (板ポリ代替) 用途で使う。失敗時は nullptr。
     /// </summary>
     /// <param name="modelPath">モデルファイル名</param>
     /// <returns>モデルの先頭メッシュ (失敗時 nullptr)</returns>
@@ -378,6 +385,11 @@ namespace Tako {
     /// エミッターの最大数
     /// </summary>
     static const uint32_t kNumMaxEmitter;
+
+    /// <summary>
+    /// HLSL 側 gTargetMeshEmitterId の無効値 (非 Mesh 一括 Dispatch を示す)
+    /// </summary>
+    static constexpr uint32_t kInvalidMeshTarget = 0xFFFFFFFFu;
 
 
     /// <summary>

@@ -4,156 +4,68 @@
 #include "Model.h"
 #include "Object3d.h"
 #include "SrvManager.h"
-#include "Matrix4x4.h"
 #include "Mat4x4Func.h"
 #include "DX12Basic.h"
 #include "ModelStruct.h"
 #include <cstring>
-#include <utility>
 #include <vector>
 #include <cmath>
 #include <algorithm>
 
+#ifdef _DEBUG
+#include "DebugUIManager.h"
+#endif
+
 namespace Tako {
 
-  MeshEmitter::MeshEmitter(GPUParticle* particleSystem, Mesh* mesh, uint32_t count, float frequency)
+  MeshEmitter::MeshEmitter(GPUParticle* particleSystem, Model* model, uint32_t count, float frequency)
     : GPUParticleEmitter(particleSystem, 0) // 一時的な ID (RegisterEmitter で正式割り当て)
-    , mesh_(mesh)
   {
     SetParticleCount(count);
     SetFrequency(frequency);
     data_.type = static_cast<uint32_t>(EmitterType::Mesh);
-
-    if (mesh_ != nullptr) {
-      SrvManager* srvManager = particleSystem_->GetSrvManager();
-      meshIndexSrvIndex_ = mesh_->GetIndexSrvIndex();
-
-      // EmitterData にメッシュ情報を反映
-      data_.meshVertexSrvIndex = mesh_->GetVertexSrvIndex();
-      data_.meshIndexSrvIndex = meshIndexSrvIndex_;
-      data_.meshTriangleCount = mesh_->GetIndexCount() / 3u;
-      data_.meshAabbMin = mesh_->GetAABBLocalMin();
-      data_.meshAabbMax = mesh_->GetAABBLocalMax();
-
-      if (mesh_->HasSkinning()) {
-        data_.meshSkinnedVertexSrvIndex = mesh_->GetSkinnedVertexSrvIndex();
-      }
-
-      // 三角形面積 Prefix Sum (Inversion Sampling)
-      const auto& vertices = mesh_->GetVertices();
-      const auto& indices = mesh_->GetIndices();
-      const uint32_t triCount = static_cast<uint32_t>(indices.size() / 3u);
-      DX12Basic* dx12 = particleSystem_->GetDx12();
-      if (triCount > 0 && dx12 != nullptr && srvManager != nullptr) {
-        std::vector<float> prefixSum(triCount + 1u);
-        prefixSum[0] = 0.0f;
-        for (uint32_t t = 0; t < triCount; ++t) {
-          const uint32_t i0 = indices[t * 3u + 0u];
-          const uint32_t i1 = indices[t * 3u + 1u];
-          const uint32_t i2 = indices[t * 3u + 2u];
-          const auto& p0 = vertices[i0].position;
-          const auto& p1 = vertices[i1].position;
-          const auto& p2 = vertices[i2].position;
-          // 三角形面積 = 0.5 * |cross(p1-p0, p2-p0)|
-          const float e1x = p1.x - p0.x, e1y = p1.y - p0.y, e1z = p1.z - p0.z;
-          const float e2x = p2.x - p0.x, e2y = p2.y - p0.y, e2z = p2.z - p0.z;
-          const float cx = e1y * e2z - e1z * e2y;
-          const float cy = e1z * e2x - e1x * e2z;
-          const float cz = e1x * e2y - e1y * e2x;
-          const float area = 0.5f * std::sqrt(cx * cx + cy * cy + cz * cz);
-          prefixSum[t + 1u] = prefixSum[t] + area;
-        }
-        data_.meshTotalArea = prefixSum[triCount];
-
-        // UPLOAD バッファに prefix sum を書き込み
-        const size_t bufferSize = sizeof(float) * (triCount + 1u);
-        dx12->CreateBufferResource(areaPrefixSumResource_, bufferSize);
-        void* mapped = nullptr;
-        areaPrefixSumResource_->Map(0, nullptr, &mapped);
-        std::memcpy(mapped, prefixSum.data(), bufferSize);
-        areaPrefixSumResource_->Unmap(0, nullptr);
-
-        // SRV 登録
-        meshAreaPrefixSumSrvIndex_ = srvManager->Allocate();
-        srvManager->CreateSRVForStructuredBuffer(
-          meshAreaPrefixSumSrvIndex_,
-          areaPrefixSumResource_.Get(),
-          triCount + 1u,
-          static_cast<UINT>(sizeof(float)));
-        data_.meshAreaPrefixSumSrvIndex = meshAreaPrefixSumSrvIndex_;
-      }
-    }
-
-    // 初期 world は単位行列 (BindMeshWorld / SetMeshWorld で更新)
     data_.meshWorld = Mat4x4::MakeIdentity();
+    BuildFromModel(model);
   }
 
-  MeshEmitter::MeshEmitter(GPUParticle* particleSystem, Model* model, uint32_t count, float frequency)
-    : GPUParticleEmitter(particleSystem, 0)
-    , mesh_(nullptr)
+  void MeshEmitter::BuildFromModel(Model* model)
   {
-    SetParticleCount(count);
-    SetFrequency(frequency);
-    data_.type = static_cast<uint32_t>(EmitterType::Mesh);
-    data_.meshWorld = Mat4x4::MakeIdentity();
-
+    // model = nullptr は Clone 用の空殻生成 (状態は呼び出し側がコピーする)
     if (model == nullptr || model->GetMeshCount() == 0) return;
 
     SrvManager* srvManager = particleSystem_->GetSrvManager();
     DX12Basic* dx12 = particleSystem_->GetDx12();
-    if (srvManager == nullptr || dx12 == nullptr) return;
+    if (srvManager == nullptr || dx12 == nullptr) {
+#ifdef _DEBUG
+      DebugUIManager::GetInstance()->AddLog(
+        "MeshEmitter: SrvManager/DX12Basic unavailable. Spawn shape not built.",
+        DebugUIManager::LogType::Error);
+#endif
+      return;
+    }
 
     const size_t meshCount = model->GetMeshCount();
 
-    // Mesh 1 個ならスキニング対応のため集約せず単一 SRV を流用
+    // Mesh 1 個ならスキニング対応のため集約せず Mesh の SRV を共有
     if (meshCount == 1) {
-      Mesh* singleMesh = model->GetMesh(0);
-      if (singleMesh == nullptr) return;
-      mesh_ = singleMesh;
+      Mesh* mesh = model->GetMesh(0);
+      if (mesh == nullptr) return;
+      mesh_ = mesh;
 
-      // index SRV は Mesh の遅延生成 getter から共有取得
-      meshIndexSrvIndex_ = singleMesh->GetIndexSrvIndex();
-
-      data_.meshVertexSrvIndex = singleMesh->GetVertexSrvIndex();
-      data_.meshIndexSrvIndex = meshIndexSrvIndex_;
-      data_.meshTriangleCount = singleMesh->GetIndexCount() / 3u;
-      data_.meshAabbMin = singleMesh->GetAABBLocalMin();
-      data_.meshAabbMax = singleMesh->GetAABBLocalMax();
-      if (singleMesh->HasSkinning()) {
-        data_.meshSkinnedVertexSrvIndex = singleMesh->GetSkinnedVertexSrvIndex();
+      data_.meshVertexSrvIndex = mesh->GetVertexSrvIndex();
+      data_.meshIndexSrvIndex = mesh->GetIndexSrvIndex(); // Mesh の遅延生成 getter から共有取得
+      data_.meshTriangleCount = mesh->GetIndexCount() / 3u;
+      data_.meshAabbMin = mesh->GetAABBLocalMin();
+      data_.meshAabbMax = mesh->GetAABBLocalMax();
+      if (mesh->HasSkinning()) {
+        data_.meshSkinnedVertexSrvIndex = mesh->GetSkinnedVertexSrvIndex();
       }
 
-      // Prefix Sum
-      const auto& vertices = singleMesh->GetVertices();
-      const auto& indices = singleMesh->GetIndices();
-      const uint32_t triCount = static_cast<uint32_t>(indices.size() / 3u);
-      if (triCount > 0) {
-        std::vector<float> prefixSum(triCount + 1u, 0.0f);
-        for (uint32_t t = 0; t < triCount; ++t) {
-          const auto& p0 = vertices[indices[t * 3u + 0u]].position;
-          const auto& p1 = vertices[indices[t * 3u + 1u]].position;
-          const auto& p2 = vertices[indices[t * 3u + 2u]].position;
-          const float e1x = p1.x - p0.x, e1y = p1.y - p0.y, e1z = p1.z - p0.z;
-          const float e2x = p2.x - p0.x, e2y = p2.y - p0.y, e2z = p2.z - p0.z;
-          const float cx = e1y * e2z - e1z * e2y;
-          const float cy = e1z * e2x - e1x * e2z;
-          const float cz = e1x * e2y - e1y * e2x;
-          prefixSum[t + 1u] = prefixSum[t] + 0.5f * std::sqrt(cx * cx + cy * cy + cz * cz);
-        }
-        data_.meshTotalArea = prefixSum[triCount];
-        const size_t bufferSize = sizeof(float) * (triCount + 1u);
-        dx12->CreateBufferResource(areaPrefixSumResource_, bufferSize);
-        void* mapped = nullptr;
-        areaPrefixSumResource_->Map(0, nullptr, &mapped);
-        std::memcpy(mapped, prefixSum.data(), bufferSize);
-        areaPrefixSumResource_->Unmap(0, nullptr);
-        meshAreaPrefixSumSrvIndex_ = srvManager->Allocate();
-        srvManager->CreateSRVForStructuredBuffer(
-          meshAreaPrefixSumSrvIndex_,
-          areaPrefixSumResource_.Get(),
-          triCount + 1u,
-          static_cast<UINT>(sizeof(float)));
-        data_.meshAreaPrefixSumSrvIndex = meshAreaPrefixSumSrvIndex_;
+      const std::vector<float> prefixSum = ComputeTriangleAreaPrefixSum(mesh->GetVertices(), mesh->GetIndices());
+      if (prefixSum.size() > 1u) {
+        data_.meshTotalArea = prefixSum.back();
+        data_.meshAreaPrefixSumSrvIndex = CreateStructuredBufferSrv(
+          areaPrefixSumResource_, prefixSum.data(), sizeof(float), static_cast<uint32_t>(prefixSum.size()));
       }
       return;
     }
@@ -161,11 +73,10 @@ namespace Tako {
     // 複数 Mesh: indices に vertex base offset を加算しながら 1 本に連結
     std::vector<VertexData> aggregatedVertices;
     std::vector<uint32_t> aggregatedIndices;
-    std::vector<float> prefixSum;
-    prefixSum.push_back(0.0f);
 
     Vector3 aggAabbMin = { FLT_MAX,  FLT_MAX,  FLT_MAX };
     Vector3 aggAabbMax = { -FLT_MAX, -FLT_MAX, -FLT_MAX };
+    bool hasSkinnedMesh = false;
 
     for (size_t m = 0; m < meshCount; ++m) {
       Mesh* mesh = model->GetMesh(m);
@@ -173,6 +84,8 @@ namespace Tako {
       const auto& vertices = mesh->GetVertices();
       const auto& indices = mesh->GetIndices();
       if (vertices.empty() || indices.empty()) continue;
+
+      hasSkinnedMesh |= mesh->HasSkinning();
 
       const uint32_t vertexBaseOffset = static_cast<uint32_t>(aggregatedVertices.size());
 
@@ -182,20 +95,6 @@ namespace Tako {
       aggregatedIndices.resize(prevIndexSize + indices.size());
       for (size_t k = 0; k < indices.size(); ++k) {
         aggregatedIndices[prevIndexSize + k] = indices[k] + vertexBaseOffset;
-      }
-
-      const uint32_t triCount = static_cast<uint32_t>(indices.size() / 3u);
-      for (uint32_t t = 0; t < triCount; ++t) {
-        const auto& p0 = vertices[indices[t * 3u + 0u]].position;
-        const auto& p1 = vertices[indices[t * 3u + 1u]].position;
-        const auto& p2 = vertices[indices[t * 3u + 2u]].position;
-        const float e1x = p1.x - p0.x, e1y = p1.y - p0.y, e1z = p1.z - p0.z;
-        const float e2x = p2.x - p0.x, e2y = p2.y - p0.y, e2z = p2.z - p0.z;
-        const float cx = e1y * e2z - e1z * e2y;
-        const float cy = e1z * e2x - e1x * e2z;
-        const float cz = e1x * e2y - e1y * e2x;
-        const float area = 0.5f * std::sqrt(cx * cx + cy * cy + cz * cz);
-        prefixSum.push_back(prefixSum.back() + area);
       }
 
       // Windows.h の min/max マクロが std::min/std::max と衝突するため括弧で展開抑止
@@ -209,110 +108,117 @@ namespace Tako {
       aggAabbMax.z = (std::max)(aggAabbMax.z, meshMax.z);
     }
 
-    if (aggregatedVertices.empty() || aggregatedIndices.empty()) return;
-
-    {
-      const size_t bufferSize = sizeof(VertexData) * aggregatedVertices.size();
-      dx12->CreateBufferResource(aggregatedVertexResource_, bufferSize);
-      void* mapped = nullptr;
-      aggregatedVertexResource_->Map(0, nullptr, &mapped);
-      std::memcpy(mapped, aggregatedVertices.data(), bufferSize);
-      aggregatedVertexResource_->Unmap(0, nullptr);
-
-      aggregatedVertexSrvIndex_ = srvManager->Allocate();
-      srvManager->CreateSRVForStructuredBuffer(
-        aggregatedVertexSrvIndex_,
-        aggregatedVertexResource_.Get(),
-        static_cast<UINT>(aggregatedVertices.size()),
-        static_cast<UINT>(sizeof(VertexData)));
+    if (aggregatedVertices.empty() || aggregatedIndices.empty()) {
+#ifdef _DEBUG
+      DebugUIManager::GetInstance()->AddLog(
+        "MeshEmitter: model has no valid mesh data. Spawn shape not built.",
+        DebugUIManager::LogType::Warning);
+#endif
+      return;
     }
 
-    {
-      const size_t bufferSize = sizeof(uint32_t) * aggregatedIndices.size();
-      dx12->CreateBufferResource(aggregatedIndexResource_, bufferSize);
-      void* mapped = nullptr;
-      aggregatedIndexResource_->Map(0, nullptr, &mapped);
-      std::memcpy(mapped, aggregatedIndices.data(), bufferSize);
-      aggregatedIndexResource_->Unmap(0, nullptr);
+#ifdef _DEBUG
+    if (hasSkinnedMesh) {
+      DebugUIManager::GetInstance()->AddLog(
+        "MeshEmitter: aggregated mode does not support skinning. Spawning from bind pose.",
+        DebugUIManager::LogType::Warning);
+    }
+#endif
 
-      aggregatedIndexSrvIndex_ = srvManager->Allocate();
-      srvManager->CreateSRVForStructuredBuffer(
-        aggregatedIndexSrvIndex_,
-        aggregatedIndexResource_.Get(),
-        static_cast<UINT>(aggregatedIndices.size()),
-        static_cast<UINT>(sizeof(uint32_t)));
+    data_.meshVertexSrvIndex = CreateStructuredBufferSrv(
+      aggregatedVertexResource_, aggregatedVertices.data(),
+      sizeof(VertexData), static_cast<uint32_t>(aggregatedVertices.size()));
+    data_.meshIndexSrvIndex = CreateStructuredBufferSrv(
+      aggregatedIndexResource_, aggregatedIndices.data(),
+      sizeof(uint32_t), static_cast<uint32_t>(aggregatedIndices.size()));
+
+    const std::vector<float> prefixSum = ComputeTriangleAreaPrefixSum(aggregatedVertices, aggregatedIndices);
+    if (prefixSum.size() > 1u) {
+      data_.meshTotalArea = prefixSum.back();
+      data_.meshAreaPrefixSumSrvIndex = CreateStructuredBufferSrv(
+        areaPrefixSumResource_, prefixSum.data(), sizeof(float), static_cast<uint32_t>(prefixSum.size()));
     }
 
-    const uint32_t aggTriCount = static_cast<uint32_t>(aggregatedIndices.size() / 3u);
-    if (aggTriCount > 0) {
-      const size_t bufferSize = sizeof(float) * (aggTriCount + 1u);
-      dx12->CreateBufferResource(areaPrefixSumResource_, bufferSize);
-      void* mapped = nullptr;
-      areaPrefixSumResource_->Map(0, nullptr, &mapped);
-      std::memcpy(mapped, prefixSum.data(), bufferSize);
-      areaPrefixSumResource_->Unmap(0, nullptr);
-
-      meshAreaPrefixSumSrvIndex_ = srvManager->Allocate();
-      srvManager->CreateSRVForStructuredBuffer(
-        meshAreaPrefixSumSrvIndex_,
-        areaPrefixSumResource_.Get(),
-        aggTriCount + 1u,
-        static_cast<UINT>(sizeof(float)));
-    }
-
-    data_.meshVertexSrvIndex = aggregatedVertexSrvIndex_;
-    data_.meshIndexSrvIndex = aggregatedIndexSrvIndex_;
-    data_.meshTriangleCount = aggTriCount;
+    data_.meshTriangleCount = static_cast<uint32_t>(aggregatedIndices.size() / 3u);
     data_.meshAabbMin = aggAabbMin;
     data_.meshAabbMax = aggAabbMax;
-    data_.meshAreaPrefixSumSrvIndex = meshAreaPrefixSumSrvIndex_;
-    data_.meshTotalArea = prefixSum.back();
     // 集約モードではスキニング動的同期は未対応 (バインドポーズで固定)
     data_.meshSkinnedVertexSrvIndex = 0;
   }
 
-  MeshEmitter::MeshEmitter(GPUParticle* particleSystem, Object3d* obj3d,
-                           uint32_t count, float frequency, std::string object3dKey)
-    : MeshEmitter(particleSystem, obj3d ? obj3d->GetModel() : nullptr, count, frequency)
+  std::vector<float> MeshEmitter::ComputeTriangleAreaPrefixSum(
+    const std::vector<VertexData>& vertices, const std::vector<uint32_t>& indices)
   {
-    boundObject3d_ = obj3d;
-    object3dKey_ = std::move(object3dKey);
+    const uint32_t triCount = static_cast<uint32_t>(indices.size() / 3u);
+    std::vector<float> prefixSum(triCount + 1u, 0.0f);
+    for (uint32_t t = 0; t < triCount; ++t) {
+      const auto& p0 = vertices[indices[t * 3u + 0u]].position;
+      const auto& p1 = vertices[indices[t * 3u + 1u]].position;
+      const auto& p2 = vertices[indices[t * 3u + 2u]].position;
+      // 三角形面積 = 0.5 * |cross(p1-p0, p2-p0)|
+      const float e1x = p1.x - p0.x, e1y = p1.y - p0.y, e1z = p1.z - p0.z;
+      const float e2x = p2.x - p0.x, e2y = p2.y - p0.y, e2z = p2.z - p0.z;
+      const float cx = e1y * e2z - e1z * e2y;
+      const float cy = e1z * e2x - e1x * e2z;
+      const float cz = e1x * e2y - e1y * e2x;
+      const float area = 0.5f * std::sqrt(cx * cx + cy * cy + cz * cz);
+      prefixSum[t + 1u] = prefixSum[t] + area;
+    }
+    return prefixSum;
+  }
+
+  uint32_t MeshEmitter::CreateStructuredBufferSrv(
+    Microsoft::WRL::ComPtr<ID3D12Resource>& outResource,
+    const void* srcData, size_t elementSize, uint32_t elementCount)
+  {
+    DX12Basic* dx12 = particleSystem_->GetDx12();
+    SrvManager* srvManager = particleSystem_->GetSrvManager();
+
+    const size_t bufferSize = elementSize * elementCount;
+    dx12->CreateBufferResource(outResource, bufferSize);
+    void* mapped = nullptr;
+    outResource->Map(0, nullptr, &mapped);
+    std::memcpy(mapped, srcData, bufferSize);
+    outResource->Unmap(0, nullptr);
+
+    const uint32_t srvIndex = srvManager->Allocate();
+    srvManager->CreateSRVForStructuredBuffer(
+      srvIndex, outResource.Get(), elementCount, static_cast<UINT>(elementSize));
+    return srvIndex;
   }
 
   std::shared_ptr<GPUParticleEmitter> MeshEmitter::Clone() const
   {
-    auto clone = std::make_shared<MeshEmitter>(particleSystem_, mesh_, data_.count, data_.frequency);
-    const uint32_t cloneSrvIndex = clone->data_.meshIndexSrvIndex; // clone 固有 index SRV を保持
-    CopyCommonStateTo(*clone);                                     // data_ 全体 + renderModelPath_ を転送
-    clone->data_.meshIndexSrvIndex = cloneSrvIndex;                // → clone 自身の SRV を復元
-    clone->SetSpawnModelPath(spawnModelPath_);                     // MeshEmitter 固有の data_ 外メンバ
+    // 空殻 (model = nullptr) を生成して全状態をコピーする。スポーン形状は再構築しない。
+    auto clone = std::make_shared<MeshEmitter>(particleSystem_, nullptr, data_.count, data_.frequency);
+    CopyCommonStateTo(*clone); // data_ 全体 (mesh SRV index 含む) + renderModelPath_ を転送
+    clone->mesh_ = mesh_;
+    clone->boundObject3d_ = boundObject3d_;
+    clone->spawnModelPath_ = spawnModelPath_;
+    clone->offsetRotation_ = offsetRotation_;
+    clone->offsetScale_ = offsetScale_;
+    // GPU リソースは構築後 immutable なので ComPtr 共有。オリジナル破棄後もクローンの SRV 実体が生存する
+    clone->areaPrefixSumResource_ = areaPrefixSumResource_;
+    clone->aggregatedVertexResource_ = aggregatedVertexResource_;
+    clone->aggregatedIndexResource_ = aggregatedIndexResource_;
     return clone;
-  }
-
-  void MeshEmitter::SetMeshWorld(const Matrix4x4& world)
-  {
-    data_.meshWorld = world;
-    // 静的指定なので動的バインドは解除
-    boundMeshWorld_ = nullptr;
   }
 
   void MeshEmitter::SyncMeshWorld()
   {
-    // Object3d バインドが優先 (動的世界行列を毎回再計算で取得)
-    if (boundObject3d_ != nullptr) {
-      data_.meshWorld = boundObject3d_->GetWorldMatrix();
-      return;
-    }
-    if (boundMeshWorld_ != nullptr) {
-      data_.meshWorld = *boundMeshWorld_;
-    }
+    // ローカルオフセット (position / offsetRotation / offsetScale) をバインド先のローカル空間で適用。
+    // row-vector 規約 (HLSL: mul(v, M)) のため先に掛かるオフセットを左に置く。
+    const Matrix4x4 offset = Mat4x4::MakeAffine(offsetScale_, offsetRotation_, data_.position);
+    data_.meshWorld = (boundObject3d_ != nullptr)
+      ? Mat4x4::Multiply(offset, boundObject3d_->GetWorldMatrix())
+      : offset;
   }
 
   void MeshEmitter::UpdateEmission(float deltaTime)
   {
     // 基底クラスで active/emitting タイマー + targetPosition 動的同期を処理
     GPUParticleEmitter::UpdateEmission(deltaTime);
-    // メッシュの world 行列を動的同期 (BindMeshWorld されている場合のみ)
+    // meshWorld をオフセット + バインド先 world から再合成
     SyncMeshWorld();
   }
 

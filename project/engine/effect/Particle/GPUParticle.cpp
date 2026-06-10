@@ -213,7 +213,6 @@ namespace Tako {
 
       commandList->SetComputeRootConstantBufferView(2, perFrameResource_->GetGPUVirtualAddress());
 
-      const uint32_t kInvalidMeshTarget = 0xFFFFFFFFu;
       const uint32_t threadGroupsX = (static_cast<uint32_t>(activeEmitters_.size()) + 15) / 16;
 
       // 非 Mesh エミッタを一括処理 (Mesh SRV はダミー bind、HLSL 側で Mesh タイプは早期 return)
@@ -408,7 +407,7 @@ namespace Tako {
     CreateDepthSRV();
   }
 
-  Mesh* GPUParticle::AcquireModelMesh(const std::string& modelPath)
+  Model* GPUParticle::AcquireModel(const std::string& modelPath)
   {
     // 同一 path はキャッシュを返す。未ロードならロードし、Model クローンをシステムが保持する。
     auto it = renderModels_.find(modelPath);
@@ -418,7 +417,13 @@ namespace Tako {
       if (!model || model->GetMeshCount() == 0) return nullptr;
       it = renderModels_.emplace(modelPath, std::move(model)).first;
     }
-    return it->second ? it->second->GetMesh(0) : nullptr;
+    return it->second.get();
+  }
+
+  Mesh* GPUParticle::AcquireModelMesh(const std::string& modelPath)
+  {
+    Model* model = AcquireModel(modelPath);
+    return model ? model->GetMesh(0) : nullptr;
   }
 
   std::shared_ptr<GPUParticleEmitter> GPUParticle::CreateTemporaryEmitterFrom(GPUParticleEmitter* sourceEmitter, float lifeTime)

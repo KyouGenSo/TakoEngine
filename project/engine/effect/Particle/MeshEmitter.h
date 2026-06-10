@@ -1,25 +1,22 @@
 #pragma once
 #include "GPUParticleEmitter.h"
-#include "Matrix4x4.h"
 #include <string>
+#include <vector>
 
 namespace Tako {
 
   class Mesh;
   class Model;
   class Object3d;
+  struct VertexData;
 
   /// <summary>
   /// メッシュをスポーン形状として使うエミッター
   /// </summary>
   /// <remarks>
-  /// Mesh の頂点バッファとインデックスバッファを SRV 経由でシェーダに渡し、
-  /// SpawnLocation = Surface/Edge/Inside に応じてメッシュ表面・エッジ・内部から
-  /// パーティクルをスポーンする。Mesh の動的追従は <c>BindMeshWorld()</c> または
-  /// <c>SetMeshWorld()</c> で世界行列を更新する。
-  ///
-  /// 制約: 初期実装では同時メッシュエミッタ 1 個まで対応 (固定 SRV スロット)。
-  /// 多重対応は indexable SRV 配列で将来フェーズに拡張予定。
+  /// スポーン位置は「メッシュローカル座標 × meshWorld」で決まる。
+  /// meshWorld は毎フレーム「ローカルオフセット (position / offsetRotation / offsetScale) ×
+  /// バインド先 Object3d の world 行列」を合成して更新される (非バインド時はオフセットのみ)。
   /// </remarks>
   class MeshEmitter : public GPUParticleEmitter {
   public:
@@ -27,45 +24,25 @@ namespace Tako {
     /// コンストラクタ
     /// </summary>
     /// <param name="particleSystem">GPU パーティクルシステムへのポインタ</param>
-    /// <param name="mesh">スポーン形状として使う Mesh (非所有、ライフタイム責務は呼び出し側)</param>
+    /// <param name="model">スポーン形状ソース (非所有、ライフタイム責務は呼び出し側)</param>
     /// <param name="count">1 回の射出で生成するパーティクル数</param>
     /// <param name="frequency">射出間隔 (秒)</param>
     /// <remarks>
+    /// Mesh 数 1 ならスキニング対応のため Mesh の SRV を共有、複数なら集約バッファに統合する
+    /// (集約モードではスキニング動的同期は未対応)。
     /// emitterId は基底クラスで 0 として初期化される。実際の ID は <c>RegisterEmitter()</c> 時に割り当てられる。
     /// </remarks>
-    MeshEmitter(GPUParticle* particleSystem, Mesh* mesh, uint32_t count, float frequency);
-
-    /// <summary>
-    /// Model を渡してマルチプリミティブ対応の MeshEmitter を生成
-    /// </summary>
-    /// <remarks>
-    /// Mesh 数 > 1 のとき集約バッファに統合する。集約モードではスキニング動的同期は未対応。
-    /// </remarks>
     MeshEmitter(GPUParticle* particleSystem, Model* model, uint32_t count, float frequency);
-
-    /// <summary>
-    /// Object3d を渡して MeshEmitter を生成 (JSON 永続化対応)
-    /// </summary>
-    /// <param name="particleSystem">GPU パーティクルシステムへのポインタ</param>
-    /// <param name="obj3d">スポーン形状ソース (非所有、ライフタイム責務は呼び出し側)</param>
-    /// <param name="count">1 回の射出で生成するパーティクル数</param>
-    /// <param name="frequency">射出間隔 (秒)</param>
-    /// <param name="object3dKey">JSON シリアライズ時に保存される識別キー (空文字で round-trip 不可)</param>
-    /// <remarks>
-    /// 内部で <c>obj3d-&gt;GetModel()</c> を取り出して Model* ctor に委譲する。
-    /// 動的世界行列は <c>UpdateEmission()</c> 内で <c>obj3d-&gt;GetWorldMatrix()</c> から自動同期。
-    /// </remarks>
-    MeshEmitter(GPUParticle* particleSystem, Object3d* obj3d, uint32_t count, float frequency, std::string object3dKey);
 
     ~MeshEmitter() override = default;
 
     /// <summary>
-    /// クローン作成
+    /// クローン作成 (スポーン形状の GPU リソースは immutable なので ComPtr 共有)
     /// </summary>
     std::shared_ptr<GPUParticleEmitter> Clone() const override;
 
     /// <summary>
-    /// 射出更新 (基底実装 + Mesh world の動的同期)
+    /// 射出更新 (基底実装 + meshWorld のオフセット合成)
     /// </summary>
     void UpdateEmission(float deltaTime) override;
 
@@ -75,30 +52,15 @@ namespace Tako {
     [[nodiscard]] EmitterType GetType() const override { return EmitterType::Mesh; }
 
     /// <summary>
-    /// メッシュの世界行列を直接設定 (静的)
+    /// Object3d をバインドし、毎フレーム world 行列に追従させる
     /// </summary>
-    /// <param name="world">世界行列</param>
-    /// <remarks>動的バインドは <c>BindMeshWorld()</c> で行う</remarks>
-    void SetMeshWorld(const Matrix4x4& world);
+    /// <param name="obj3d">追従先 (非所有、ライフタイム責務は呼び出し側)</param>
+    void BindObject3d(Object3d* obj3d) { boundObject3d_ = obj3d; }
 
     /// <summary>
-    /// メッシュの世界行列を動的にバインド
+    /// Object3d バインドを解除 (以後はローカルオフセットのみでワールド配置)
     /// </summary>
-    /// <param name="worldPtr">毎フレーム読み取られる Matrix4x4 へのポインタ。ライフタイム管理は呼び出し側責務</param>
-    /// <remarks>
-    /// 非 nullptr のとき、<c>UpdateEmission()</c> 内で毎フレーム <c>*worldPtr</c> を <c>data_.meshWorld</c> に同期する。
-    /// </remarks>
-    void BindMeshWorld(const Matrix4x4* worldPtr) { boundMeshWorld_ = worldPtr; }
-
-    /// <summary>
-    /// 動的バインドを解除
-    /// </summary>
-    void UnbindMeshWorld() { boundMeshWorld_ = nullptr; }
-
-    /// <summary>
-    /// 参照中の Mesh ポインタを取得
-    /// </summary>
-    [[nodiscard]] Mesh* GetMesh() const { return mesh_; }
+    void UnbindObject3d() { boundObject3d_ = nullptr; }
 
     /// <summary>
     /// バインドされている Object3d ポインタを取得
@@ -106,14 +68,9 @@ namespace Tako {
     [[nodiscard]] Object3d* GetBoundObject3d() const { return boundObject3d_; }
 
     /// <summary>
-    /// JSON シリアライズ用の Object3d 識別キーを取得
+    /// 参照中の Mesh ポインタを取得 (単一メッシュ時のみ非 null。集約モードでは null)
     /// </summary>
-    [[nodiscard]] const std::string& GetObject3dKey() const { return object3dKey_; }
-
-    /// <summary>
-    /// JSON シリアライズ用の Object3d 識別キーを設定
-    /// </summary>
-    void SetObject3dKey(const std::string& key) { object3dKey_ = key; }
+    [[nodiscard]] Mesh* GetMesh() const { return mesh_; }
 
     /// <summary>
     /// スポーン形状モデルのファイルパスを取得 (空=パスからの復元不可)。JSON 永続化用。
@@ -126,31 +83,60 @@ namespace Tako {
     void SetSpawnModelPath(const std::string& path) { spawnModelPath_ = path; }
 
     /// <summary>
-    /// 動的バインドされた meshWorld を同期 (UpdateEmission から呼ばれる)
+    /// ローカルオフセット回転を設定 (ラジアン Euler)
     /// </summary>
-    /// <remarks>
-    /// 優先順位: <c>boundObject3d_</c> &gt; <c>boundMeshWorld_</c>。
-    /// Object3d がバインドされていれば <c>GetWorldMatrix()</c> で動的に世界行列を取得する。
-    /// </remarks>
-    void SyncMeshWorld();
+    void SetOffsetRotation(const Vector3& rotation) { offsetRotation_ = rotation; }
+
+    /// <summary>
+    /// ローカルオフセット回転を取得 (ラジアン Euler)
+    /// </summary>
+    [[nodiscard]] const Vector3& GetOffsetRotation() const { return offsetRotation_; }
+
+    /// <summary>
+    /// ローカルオフセットスケールを設定
+    /// </summary>
+    void SetOffsetScale(const Vector3& scale) { offsetScale_ = scale; }
+
+    /// <summary>
+    /// ローカルオフセットスケールを取得
+    /// </summary>
+    [[nodiscard]] const Vector3& GetOffsetScale() const { return offsetScale_; }
 
   private:
-    Mesh* mesh_ = nullptr;                            ///< 非所有参照
-    const Matrix4x4* boundMeshWorld_ = nullptr;       ///< 動的バインド用 (非所有)
-    Object3d* boundObject3d_ = nullptr;               ///< 動的バインド用 Object3d (非所有、Matrix4x4* より優先)
-    std::string object3dKey_;                         ///< JSON シリアライズ用 Object3d 識別キー (空文字で round-trip 不可)
-    std::string spawnModelPath_;                      ///< JSON シリアライズ用 スポーン形状モデルのパス (空=パス復元不可)
-    uint32_t meshIndexSrvIndex_ = 0;                  ///< このエミッタ用に確保した index SRV インデックス
+    /// <summary>
+    /// スポーン形状の GPU リソースを構築 (ctor 本体)。model が null または mesh 0 個なら何もしない。
+    /// </summary>
+    void BuildFromModel(Model* model);
 
-    // 三角形面積 Prefix Sum (Inversion Sampling)
-    Microsoft::WRL::ComPtr<ID3D12Resource> areaPrefixSumResource_; ///< size = triCount + 1
-    uint32_t meshAreaPrefixSumSrvIndex_ = 0;
+    /// <summary>
+    /// 三角形面積の Prefix Sum を計算 (Inversion Sampling 用、size = triCount + 1)
+    /// </summary>
+    static std::vector<float> ComputeTriangleAreaPrefixSum(
+      const std::vector<VertexData>& vertices, const std::vector<uint32_t>& indices);
 
-    // マルチプリミティブ集約バッファ。index は mesh ごとの vertex base offset を加算済み。
-    Microsoft::WRL::ComPtr<ID3D12Resource> aggregatedVertexResource_;
-    Microsoft::WRL::ComPtr<ID3D12Resource> aggregatedIndexResource_;
-    uint32_t aggregatedVertexSrvIndex_ = 0;
-    uint32_t aggregatedIndexSrvIndex_ = 0;
+    /// <summary>
+    /// UPLOAD バッファを生成して srcData を書き込み、StructuredBuffer SRV を確保して index を返す
+    /// </summary>
+    uint32_t CreateStructuredBufferSrv(
+      Microsoft::WRL::ComPtr<ID3D12Resource>& outResource,
+      const void* srcData, size_t elementSize, uint32_t elementCount);
+
+    /// <summary>
+    /// ローカルオフセットとバインド先 world を合成して data_.meshWorld を更新 (毎フレーム)
+    /// </summary>
+    void SyncMeshWorld();
+
+    Mesh* mesh_ = nullptr;               ///< 単一メッシュ時のみ非 null (スキニング/エディタ表示用、非所有)
+    Object3d* boundObject3d_ = nullptr;  ///< 追従先 Object3d (非所有)
+    std::string spawnModelPath_;         ///< JSON 永続化用 スポーン形状モデルのパス (空=パス復元不可)
+
+    Vector3 offsetRotation_ = { 0.0f, 0.0f, 0.0f }; ///< ローカルオフセット回転 (ラジアン Euler)
+    Vector3 offsetScale_ = { 1.0f, 1.0f, 1.0f };    ///< ローカルオフセットスケール
+
+    // スポーン形状の GPU リソース (構築後 immutable、Clone 間で ComPtr 共有)
+    Microsoft::WRL::ComPtr<ID3D12Resource> areaPrefixSumResource_;    ///< 三角形面積 Prefix Sum (size = triCount + 1)
+    Microsoft::WRL::ComPtr<ID3D12Resource> aggregatedVertexResource_; ///< マルチプリミティブ集約頂点
+    Microsoft::WRL::ComPtr<ID3D12Resource> aggregatedIndexResource_;  ///< 集約インデックス (vertex base offset 加算済み)
   };
 
 } // namespace Tako

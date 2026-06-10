@@ -195,9 +195,13 @@ namespace Tako {
 
             // 基本プロパティ
             if (ImGui::CollapsingHeader("Basic Properties", ImGuiTreeNodeFlags_DefaultOpen)) {
+              const bool isMeshEmitter = (emitter->GetType() == EmitterType::Mesh);
               Vector3 pos = emitter->GetPosition();
-              if (ImGui::DragFloat3("Position##Properties", &pos.x, 0.1f)) {
+              if (ImGui::DragFloat3(isMeshEmitter ? "Position (Local Offset)##Properties" : "Position##Properties", &pos.x, 0.1f)) {
                 emitter->SetPosition(pos);
+              }
+              if (isMeshEmitter && ImGui::IsItemHovered()) {
+                ImGui::SetTooltip("Mesh emitter: offset in the bound Object3d's local space.\nNo binding: world-space placement.");
               }
 
               bool isActive = emitter->IsActive();
@@ -538,22 +542,42 @@ namespace Tako {
                 }
               }
               else if (auto meshEmitter = std::dynamic_pointer_cast<MeshEmitter>(emitter)) {
-                // Mesh エミッタの情報表示 (Mesh ポインタは実行時参照なので read-only)
+                // ローカルオフセット (平行移動は Basic Properties の Position)
+                Vector3 offsetRotation = meshEmitter->GetOffsetRotation();
+                if (ImGui::DragFloat3("Offset Rotation##TypeSpecific", &offsetRotation.x, 0.01f)) {
+                  meshEmitter->SetOffsetRotation(offsetRotation);
+                }
+                Vector3 offsetScale = meshEmitter->GetOffsetScale();
+                if (ImGui::DragFloat3("Offset Scale##TypeSpecific", &offsetScale.x, 0.01f)) {
+                  meshEmitter->SetOffsetScale(offsetScale);
+                }
+                ImGui::TextDisabled("Position (Basic Properties) acts as local offset translation.");
+                ImGui::Separator();
+
+                // バインド状態とスポーン形状の情報表示 (read-only)
+                if (meshEmitter->GetBoundObject3d() != nullptr) {
+                  ImGui::Text("Bound to Object3d (follows its world matrix)");
+                }
+                else if (!meshEmitter->GetSpawnModelPath().empty()) {
+                  ImGui::Text("Spawn Model: %s", meshEmitter->GetSpawnModelPath().c_str());
+                }
                 const auto& edata = meshEmitter->GetData();
                 ImGui::Text("Triangle Count: %u", edata.meshTriangleCount);
                 ImGui::Text("AABB Min: (%.2f, %.2f, %.2f)", edata.meshAabbMin.x, edata.meshAabbMin.y, edata.meshAabbMin.z);
                 ImGui::Text("AABB Max: (%.2f, %.2f, %.2f)", edata.meshAabbMax.x, edata.meshAabbMax.y, edata.meshAabbMax.z);
                 ImGui::Text("Vertex SRV: %u, Index SRV: %u", edata.meshVertexSrvIndex, edata.meshIndexSrvIndex);
                 Mesh* meshPtr = meshEmitter->GetMesh();
-                if (meshPtr) {
+                if (meshPtr != nullptr) {
                   ImGui::Text("Mesh Vertices: %u", meshPtr->GetVertexCount());
                   ImGui::Text("Mesh Indices: %u", meshPtr->GetIndexCount());
                 }
-                else {
-                  ImGui::TextColored(ImVec4(1, 0.5f, 0.5f, 1), "Mesh pointer is null!");
+                else if (edata.meshTriangleCount > 0) {
+                  // 複数メッシュモデルは集約バッファ経由
+                  ImGui::Text("Aggregated model (%u tris)", edata.meshTriangleCount);
                 }
-                ImGui::TextDisabled("Use CreateMeshEmitter() in code to assign mesh.");
-                ImGui::TextDisabled("BindMeshWorld(const Matrix4x4*) for dynamic tracking.");
+                else {
+                  ImGui::TextColored(ImVec4(1, 0.5f, 0.5f, 1), "No spawn shape (0 triangles)!");
+                }
               }
             }
 
