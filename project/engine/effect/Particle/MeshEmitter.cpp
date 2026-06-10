@@ -277,8 +277,7 @@ namespace Tako {
 
   void MeshEmitter::SyncMeshWorld()
   {
-    // ローカルオフセット (position / offsetRotation / offsetScale) をバインド先のローカル空間で適用。
-    // row-vector 規約 (HLSL: mul(v, M)) のため先に掛かるオフセットを左に置く。
+    // ローカルオフセットをバインド先のローカル空間で適用。
     const Matrix4x4 offset = Mat4x4::MakeAffine(offsetScale_, offsetRotation_, data_.position);
     data_.meshWorld = (boundObject3d_ != nullptr)
       ? Mat4x4::Multiply(offset, boundObject3d_->GetWorldMatrix())
