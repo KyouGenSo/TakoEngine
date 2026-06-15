@@ -346,9 +346,9 @@ namespace Tako {
     char ffPresetLoadBuffer_[128] = "";
 
     // パーティクル可視化設定
-    bool showEmitterShapes_ = true;        ///< エミッター形状の表示ON/OFF
-    bool showForceFieldRadius_ = true;     ///< フォースフィールド影響半径の表示ON/OFF
-    bool showForceFieldDirection_ = true;  ///< フォースフィールド方向表示ON/OFF
+    bool showEmitterShapes_ = false;        ///< エミッター形状の表示ON/OFF
+    bool showForceFieldRadius_ = false;     ///< フォースフィールド影響半径の表示ON/OFF
+    bool showForceFieldDirection_ = false;  ///< フォースフィールド方向表示ON/OFF
     Vector4 emitterColorSphere_   = { 0.0f, 1.0f, 0.0f, 1.0f }; ///< 球エミッター色（緑）
     Vector4 emitterColorBox_      = { 0.0f, 0.5f, 1.0f, 1.0f }; ///< 箱エミッター色（青）
     Vector4 emitterColorTriangle_ = { 1.0f, 1.0f, 0.0f, 1.0f }; ///< 三角形エミッター色（黄）
