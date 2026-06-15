@@ -62,9 +62,10 @@ namespace Tako {
     Audio::GetInstance()->Initialize("resources/Sound/");
 
     TextureManager::GetInstance()->Initialize(dx12_.get(), "resources/Texture/");
-    LoadResources();
 
     ModelManager::GetInstance()->Initialize(dx12_.get());
+
+    LoadResources();
 
     Object3dBasic::GetInstance()->Initialize(dx12_.get());
 
@@ -87,9 +88,6 @@ namespace Tako {
 
     Draw2D::GetInstance()->SetCamera(defaultCamera_.get());
     Draw2D::GetInstance()->Initialize(dx12_.get());
-
-    TextureManager::GetInstance()->LoadEngineDefault("black.dds");
-    TextureManager::GetInstance()->LoadEngineDefault("noise0.png");
 
     PostEffectManager::GetInstance()->Initialize(dx12_.get());
 
@@ -390,7 +388,16 @@ namespace Tako {
     tm->LoadEngineDefault("white.dds");
     tm->LoadEngineDefault("black.dds");
     tm->LoadEngineDefault("circle.dds");
+    tm->LoadEngineDefault("circle2.dds");
+    tm->LoadEngineDefault("spark.dds");
+    tm->LoadEngineDefault("ring.png");
     tm->LoadEngineDefault("my_skybox.dds");
+    tm->LoadEngineDefault("black.dds");
+    tm->LoadEngineDefault("noise0.png");
+
+    ModelManager* mm = ModelManager::GetInstance();
+    mm->LoadEngineModel("sphere.gltf");
+    mm->LoadEngineModel("white_cube.gltf");
   }
 
 #ifdef _DEBUG
