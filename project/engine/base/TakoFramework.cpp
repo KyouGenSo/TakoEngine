@@ -392,7 +392,6 @@ namespace Tako {
     tm->LoadEngineDefault("spark.dds");
     tm->LoadEngineDefault("ring.png");
     tm->LoadEngineDefault("my_skybox.dds");
-    tm->LoadEngineDefault("black.dds");
     tm->LoadEngineDefault("noise0.png");
 
     ModelManager* mm = ModelManager::GetInstance();
