@@ -192,15 +192,6 @@ namespace Tako {
         ImGui::EndMenu();
       }
 
-      ImGui::Text(" | ");
-
-      // Help メニュー
-      if (ImGui::BeginMenu("Help")) {
-        if (ImGui::MenuItem("About TakoEngine")) {}
-        if (ImGui::MenuItem("Documentation")) {}
-        ImGui::EndMenu();
-      }
-
       // 中央にエンジン名を表示
       ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.0f - 40.0f);
       ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "TakoEngine");
