@@ -452,6 +452,9 @@ namespace Tako {
     /// </summary>
     void UpdateTemporaryEmitters();
 
+    /// 名前でエミッターを検索 (見つからなければ nullptr)
+    GPUParticleEmitter* FindEmitter(const std::string& name);
+
     /// <summary>
     /// 生成済みエミッターを名前付きで登録する (同名は警告ログを出して置き換え)
     /// </summary>

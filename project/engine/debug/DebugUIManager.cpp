@@ -26,6 +26,8 @@
 #include <set>
 #include <map>
 #include <cstring>
+#include <chrono>
+#include <format>
 
 namespace Tako {
 
@@ -695,19 +697,8 @@ namespace Tako {
   }
 
   std::string DebugUIManager::GetCurrentTimestamp() {
-    auto now = std::chrono::system_clock::now();
-    auto time_t = std::chrono::system_clock::to_time_t(now);
-    std::stringstream ss;
-
-#ifdef _WIN32
-    struct tm timeinfo;
-    localtime_s(&timeinfo, &time_t);
-    ss << std::put_time(&timeinfo, "%H:%M:%S");
-#else
-    ss << std::put_time(std::localtime(&time_t), "%H:%M:%S");
-#endif
-
-    return ss.str();
+    auto localNow = std::chrono::current_zone()->to_local(std::chrono::system_clock::now());
+    return std::format("{:%H:%M:%S}", std::chrono::floor<std::chrono::seconds>(localNow));
   }
 
   void DebugUIManager::DrawShadowSettings() {

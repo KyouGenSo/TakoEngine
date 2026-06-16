@@ -598,7 +598,7 @@ namespace Tako {
     /// ビルボード(カメラ追従)の ON/OFF を設定。既定 ON。
     /// OFF にするとパーティクルはワールド固定向き(particle.rotate.z でXY平面回転)で描画される。
     /// </summary>
-    void SetBillboard(bool enable) { if (enable) data_.flags |= EFLAG_BILLBOARD; else data_.flags &= ~EFLAG_BILLBOARD; }
+    void SetBillboard(bool enable) { SetFlag(EFLAG_BILLBOARD, enable); }
 
     /// <summary>
     /// ビルボードが有効かを取得
@@ -658,6 +658,9 @@ namespace Tako {
     /// </summary>
     /// <param name="dst">コピー先エミッター</param>
     void CopyCommonStateTo(GPUParticleEmitter& dst) const;
+
+    /// data_.flags の指定ビットを enable に応じて設定/クリアする
+    void SetFlag(uint32_t flag, bool enable) { enable ? (data_.flags |= flag) : (data_.flags &= ~flag); }
 
     GPUParticle* particleSystem_;    ///< GPU パーティクルシステムへの参照（パーティクル生成要求の送信先）
 

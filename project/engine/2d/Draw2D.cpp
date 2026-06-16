@@ -196,49 +196,28 @@ namespace Tako {
     DrawLine(start, end, color);
 
     // 矢印の方向と長さ
-    Vector3 diff = { end.x - start.x, end.y - start.y, end.z - start.z };
-    float length = std::sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
+    Vector3 diff = end - start;
+    float length = diff.Length();
     if (length < 0.001f) return;
 
-    Vector3 dir = { diff.x / length, diff.y / length, diff.z / length };
+    Vector3 dir = diff.Normalize();
 
     // dir に垂直な2つの軸を算出
     Vector3 up = { 0.0f, 1.0f, 0.0f };
-    float dot = dir.x * up.x + dir.y * up.y + dir.z * up.z;
-    if (std::abs(dot) > 0.99f) {
+    if (std::abs(dir.Dot(up)) > 0.99f) {
       up = { 1.0f, 0.0f, 0.0f };
     }
-
-    // right = dir x up
-    Vector3 right = {
-      dir.y * up.z - dir.z * up.y,
-      dir.z * up.x - dir.x * up.z,
-      dir.x * up.y - dir.y * up.x
-    };
-    float rightLen = std::sqrt(right.x * right.x + right.y * right.y + right.z * right.z);
-    if (rightLen > 0.001f) {
-      right = { right.x / rightLen, right.y / rightLen, right.z / rightLen };
-    }
-
-    // upPerp = right x dir
-    Vector3 upPerp = {
-      right.y * dir.z - right.z * dir.y,
-      right.z * dir.x - right.x * dir.z,
-      right.x * dir.y - right.y * dir.x
-    };
+    Vector3 right = dir.Cross(up).Normalize();
+    Vector3 upPerp = right.Cross(dir);
 
     // 矢印の先端4本の線（十字形状、3Dでどの角度からも矢印に見える）
-    Vector3 headBase = {
-      end.x - dir.x * headSize,
-      end.y - dir.y * headSize,
-      end.z - dir.z * headSize
-    };
+    Vector3 headBase = end - dir * headSize;
     float halfHead = headSize * 0.5f;
 
-    DrawLine(end, { headBase.x + right.x * halfHead, headBase.y + right.y * halfHead, headBase.z + right.z * halfHead }, color);
-    DrawLine(end, { headBase.x - right.x * halfHead, headBase.y - right.y * halfHead, headBase.z - right.z * halfHead }, color);
-    DrawLine(end, { headBase.x + upPerp.x * halfHead, headBase.y + upPerp.y * halfHead, headBase.z + upPerp.z * halfHead }, color);
-    DrawLine(end, { headBase.x - upPerp.x * halfHead, headBase.y - upPerp.y * halfHead, headBase.z - upPerp.z * halfHead }, color);
+    DrawLine(end, headBase + right * halfHead, color);
+    DrawLine(end, headBase - right * halfHead, color);
+    DrawLine(end, headBase + upPerp * halfHead, color);
+    DrawLine(end, headBase - upPerp * halfHead, color);
   }
 
   void Draw2D::DrawSphere(const Vector3& center, const float radius, const Vector4& color, uint32_t subdivision)

@@ -265,100 +265,70 @@ namespace Tako {
     UpdateTemporaryEmitters();
   }
 
-  void EmitterManager::SetEmitterPosition(const std::string& name, const Vector3& position)
+  GPUParticleEmitter* EmitterManager::FindEmitter(const std::string& name)
   {
     auto it = emitterMap_.find(name);
-    if (it != emitterMap_.end()) {
-      it->second->SetPosition(position);
-    }
+    return it != emitterMap_.end() ? it->second.get() : nullptr;
+  }
+
+  void EmitterManager::SetEmitterPosition(const std::string& name, const Vector3& position)
+  {
+    if (auto* e = FindEmitter(name)) e->SetPosition(position);
   }
 
   void EmitterManager::SetEmitterScaleRange(const std::string& name, const Vector2& scaleRangeX, const Vector2& scaleRangeY)
   {
-    auto it = emitterMap_.find(name);
-    if (it != emitterMap_.end()) {
-      it->second->SetScaleRange(scaleRangeX, scaleRangeY);
-    }
+    if (auto* e = FindEmitter(name)) e->SetScaleRange(scaleRangeX, scaleRangeY);
   }
 
   void EmitterManager::SetEmitterVelocityRange(const std::string& name, const Vector2& velRangeX, const Vector2& velRangeY, const Vector2& velRangeZ)
   {
-    auto it = emitterMap_.find(name);
-    if (it != emitterMap_.end()) {
-      it->second->SetVelRange(velRangeX, velRangeY, velRangeZ);
-    }
+    if (auto* e = FindEmitter(name)) e->SetVelRange(velRangeX, velRangeY, velRangeZ);
   }
 
   void EmitterManager::SetEmitterLifeTimeRange(const std::string& name, const Vector2& lifeTimeRange)
   {
-    auto it = emitterMap_.find(name);
-    if (it != emitterMap_.end()) {
-      it->second->SetLifeTimeRange(lifeTimeRange);
-    }
+    if (auto* e = FindEmitter(name)) e->SetLifeTimeRange(lifeTimeRange);
   }
 
   void EmitterManager::SetEmitterActive(const std::string& name, bool isActive)
   {
-    auto it = emitterMap_.find(name);
-    if (it != emitterMap_.end()) {
-      it->second->SetActive(isActive);
-    }
+    if (auto* e = FindEmitter(name)) e->SetActive(isActive);
   }
 
   void EmitterManager::SetEmitterCount(const std::string& name, const uint32_t count)
   {
-    auto it = emitterMap_.find(name);
-    if (it != emitterMap_.end()) {
-      it->second->SetParticleCount(count);
-    }
+    if (auto* e = FindEmitter(name)) e->SetParticleCount(count);
   }
 
   void EmitterManager::SetEmitterNormalize(const std::string& name, bool isNormalize)
   {
-    auto it = emitterMap_.find(name);
-    if (it != emitterMap_.end()) {
-      it->second->SetNormalize(isNormalize);
-    }
+    if (auto* e = FindEmitter(name)) e->SetNormalize(isNormalize);
   }
 
   void EmitterManager::SetEmitterRandomRotateZ(const std::string& name, bool isRandomRotateZ)
   {
-    auto it = emitterMap_.find(name);
-    if (it != emitterMap_.end()) {
-      it->second->SetRandomRotateZ(isRandomRotateZ);
-    }
+    if (auto* e = FindEmitter(name)) e->SetRandomRotateZ(isRandomRotateZ);
   }
 
   void EmitterManager::SetEmitterColor(const std::string& name, const Vector4& color)
   {
-    auto it = emitterMap_.find(name);
-    if (it != emitterMap_.end()) {
-      it->second->SetColor(color);
-    }
+    if (auto* e = FindEmitter(name)) e->SetColor(color);
   }
 
   void EmitterManager::SetEmitterStartColor(const std::string& name, const Vector4& color)
   {
-    auto it = emitterMap_.find(name);
-    if (it != emitterMap_.end()) {
-      it->second->SetStartColor(color);
-    }
+    if (auto* e = FindEmitter(name)) e->SetStartColor(color);
   }
 
   void EmitterManager::SetEmitterEndColor(const std::string& name, const Vector4& color)
   {
-    auto it = emitterMap_.find(name);
-    if (it != emitterMap_.end()) {
-      it->second->SetEndColor(color);
-    }
+    if (auto* e = FindEmitter(name)) e->SetEndColor(color);
   }
 
   void EmitterManager::SetEmitterColors(const std::string& name, const Vector4& startColor, const Vector4& endColor)
   {
-    auto it = emitterMap_.find(name);
-    if (it != emitterMap_.end()) {
-      it->second->SetColors(startColor, endColor);
-    }
+    if (auto* e = FindEmitter(name)) e->SetColors(startColor, endColor);
   }
 
   void EmitterManager::SetEmitterRadius(const std::string& name, float radius)

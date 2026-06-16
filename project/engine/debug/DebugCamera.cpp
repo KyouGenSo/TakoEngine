@@ -59,61 +59,16 @@ namespace Tako {
 
   void DebugCamera::Move()
   {
-    // カメラの移動
-    if (Input::GetInstance()->PushKey(DIK_W)) {
-
-      Vector3 move = Vector3(0.0f, 0.0f, moveSpeed3D_);
-      // 移動ベクトルを角度分だけ回転させる
-      move = Mat4x4::Transform(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
-
-      transform_.translate += move;
-
-    }
-
-    if (Input::GetInstance()->PushKey(DIK_S)) {
-
-      Vector3 move = Vector3(0.0f, 0.0f, -moveSpeed3D_);
-      // 移動ベクトルを角度分だけ回転させ
-      move = Mat4x4::Transform(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
-
-      transform_.translate += move;
-    }
-
-    if (Input::GetInstance()->PushKey(DIK_A)) {
-
-      Vector3 move = Vector3(-moveSpeed3D_, 0.0f, 0.0f);
-      // 移動ベクトルを角度分だけ回転させる
-      move = Mat4x4::Transform(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
-
-      transform_.translate += move;
-    }
-
-    if (Input::GetInstance()->PushKey(DIK_D)) {
-
-      Vector3 move = Vector3(moveSpeed3D_, 0.0f, 0.0f);
-      // 移動ベクトルを角度分だけ回転させる
-      move = Mat4x4::Transform(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
-
-      transform_.translate += move;
-    }
-
-    if (Input::GetInstance()->PushKey(DIK_LSHIFT)) {
-
-      Vector3 move = Vector3(0.0f, -moveSpeed3D_, 0.0f);
-      // 移動ベクトルを角度分だけ回転させる
-      move = Mat4x4::Transform(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
-
-      transform_.translate += move;
-    }
-
-    if (Input::GetInstance()->PushKey(DIK_SPACE)) {
-
-      Vector3 move = Vector3(0.0f, moveSpeed3D_, 0.0f);
-      // 移動ベクトルを角度分だけ回転させる
-      move = Mat4x4::Transform(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
-
-      transform_.translate += move;
-    }
+    // カメラの移動 (ローカル移動量を集計し、回転を一度だけ適用)
+    Input* input = Input::GetInstance();
+    Vector3 move = { 0.0f, 0.0f, 0.0f };
+    if (input->PushKey(DIK_W))      move.z += moveSpeed3D_;
+    if (input->PushKey(DIK_S))      move.z -= moveSpeed3D_;
+    if (input->PushKey(DIK_A))      move.x -= moveSpeed3D_;
+    if (input->PushKey(DIK_D))      move.x += moveSpeed3D_;
+    if (input->PushKey(DIK_LSHIFT)) move.y -= moveSpeed3D_;
+    if (input->PushKey(DIK_SPACE))  move.y += moveSpeed3D_;
+    transform_.translate += Mat4x4::Transform(Mat4x4::MakeRotateXYZ(transform_.rotate), move);
 
     // カメラの回転
     if (Input::GetInstance()->PushKey(DIK_UP)) {

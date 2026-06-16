@@ -135,13 +135,7 @@ namespace Tako {
         instance->isMaximized_ = true;
         instance->SetWindowSize(width, height);
 
-        // OnResize 関数があれば呼び出す
-        if (!instance->onResizeFuncs_.empty()) {
-          Vector2 newSize = { .x = static_cast<float>(width), .y = static_cast<float>(height) };
-          for (const auto& entry : instance->onResizeFuncs_) {
-            entry.callback(newSize);
-          }
-        }
+        instance->NotifyResize(width, height);
         break;
 
       case SIZE_RESTORED:
@@ -151,13 +145,7 @@ namespace Tako {
         }
         instance->SetWindowSize(width, height);
 
-        // OnResize 関数があれば呼び出す
-        if (!instance->onResizeFuncs_.empty()) {
-          Vector2 newSize = { .x = static_cast<float>(width), .y = static_cast<float>(height) };
-          for (const auto& entry : instance->onResizeFuncs_) {
-            entry.callback(newSize);
-          }
-        }
+        instance->NotifyResize(width, height);
         break;
 
       case SIZE_MINIMIZED:
@@ -233,12 +221,15 @@ namespace Tako {
       isFullScreen_ = false;
     }
 
-    // OnResize 関数があれば呼び出す
-    if (!onResizeFuncs_.empty()) {
-      Vector2 newSize = { .x = static_cast<float>(clientWidth), .y = static_cast<float>(clientHeight) };
-      for (const auto& entry : onResizeFuncs_) {
-        entry.callback(newSize);
-      }
+    NotifyResize(clientWidth, clientHeight);
+  }
+
+  void WinApp::NotifyResize(int width, int height)
+  {
+    if (onResizeFuncs_.empty()) return;
+    Vector2 newSize = { .x = static_cast<float>(width), .y = static_cast<float>(height) };
+    for (const auto& entry : onResizeFuncs_) {
+      entry.callback(newSize);
     }
   }
 

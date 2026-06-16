@@ -145,6 +145,9 @@ namespace Tako {
       uint32_t id;  ///< このコールバックの一意識別子（登録解除時に使用）
     };
 
+    /// 登録済み OnResize コールバックを width/height で一括呼び出し
+    void NotifyResize(int width, int height);
+
   private:
     HWND hWnd_ = nullptr;  ///< ウィンドウハンドル
 

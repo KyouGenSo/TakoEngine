@@ -116,50 +116,32 @@ namespace Tako {
 
   bool Input::PushKey(BYTE keyNum) const
   {
-    if (keys_[keyNum])
-      return true;
-
-    return false;
+    return keys_[keyNum] != 0;
   }
 
   bool Input::TriggerKey(BYTE keyNum) const
   {
-    if (keys_[keyNum] && !prevKeys_[keyNum])
-      return true;
-
-    return false;
+    return keys_[keyNum] && !prevKeys_[keyNum];
   }
 
   bool Input::ReleaseKey(BYTE keyNum) const
   {
-    if (!keys_[keyNum] && prevKeys_[keyNum])
-      return true;
-
-    return false;
+    return !keys_[keyNum] && prevKeys_[keyNum];
   }
 
   bool Input::PushMouse(int button) const
   {
-    if (mouseState_.rgbButtons[button])
-      return true;
-
-    return false;
+    return mouseState_.rgbButtons[button] != 0;
   }
 
   bool Input::TriggerMouse(int button) const
   {
-    if (mouseState_.rgbButtons[button] && !prevMouseState_.rgbButtons[button])
-      return true;
-
-    return false;
+    return mouseState_.rgbButtons[button] && !prevMouseState_.rgbButtons[button];
   }
 
   bool Input::ReleaseMouse(int button) const
   {
-    if (!mouseState_.rgbButtons[button] && prevMouseState_.rgbButtons[button])
-      return true;
-
-    return false;
+    return !mouseState_.rgbButtons[button] && prevMouseState_.rgbButtons[button];
   }
 
   Vector2 Input::GetMousePos() const

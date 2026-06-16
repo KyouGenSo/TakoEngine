@@ -76,14 +76,7 @@ namespace Tako {
     }
 
     // 再生終了したボイスの削除
-    for (auto it = voiceDatas_.begin(); it != voiceDatas_.end(); ) {
-      if (it->second == nullptr) {
-        it = voiceDatas_.erase(it);
-      }
-      else {
-        ++it;
-      }
-    }
+    std::erase_if(voiceDatas_, [](const auto& voiceData) { return voiceData.second == nullptr; });
   }
 
   uint32_t Audio::LoadWaveFile(const std::string& filename)

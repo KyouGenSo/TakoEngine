@@ -340,9 +340,9 @@ namespace Tako {
     Vector3 sphereCenter = sphere->GetCenter();
     float radius = sphere->GetRadius();
 
-    float closestX = max(box.min.x, min(sphereCenter.x, box.max.x));
-    float closestY = max(box.min.y, min(sphereCenter.y, box.max.y));
-    float closestZ = max(box.min.z, min(sphereCenter.z, box.max.z));
+    float closestX = std::clamp(sphereCenter.x, box.min.x, box.max.x);
+    float closestY = std::clamp(sphereCenter.y, box.min.y, box.max.y);
+    float closestZ = std::clamp(sphereCenter.z, box.min.z, box.max.z);
 
     Vector3 closestPoint = { closestX, closestY, closestZ };
     Vector3 diff = sphereCenter - closestPoint;
@@ -507,8 +507,7 @@ namespace Tako {
       float distance = localSphereCenter.Dot(axes[i]);
 
       // 軸に沿った範囲内にクランプ
-      distance = min(distance, halfExtents[i]);
-      distance = max(distance, -halfExtents[i]);
+      distance = std::clamp(distance, -halfExtents[i], halfExtents[i]);
 
       closestPoint += axes[i] * distance;
     }

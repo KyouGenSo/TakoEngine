@@ -78,37 +78,37 @@ namespace Tako {
 
   void GPUParticleEmitter::SetActive(bool isActive)
   {
-    if (isActive) data_.flags |= EFLAG_ACTIVE; else data_.flags &= ~EFLAG_ACTIVE;
+    SetFlag(EFLAG_ACTIVE, isActive);
   }
 
   void GPUParticleEmitter::SetEmitting(bool cond)
   {
-    if (cond) data_.flags |= EFLAG_EMITTING; else data_.flags &= ~EFLAG_EMITTING;
+    SetFlag(EFLAG_EMITTING, cond);
   }
 
   void GPUParticleEmitter::SetNormalize(bool isNormalize)
   {
-    if (isNormalize) data_.flags |= EFLAG_NORMALIZE; else data_.flags &= ~EFLAG_NORMALIZE;
+    SetFlag(EFLAG_NORMALIZE, isNormalize);
   }
 
   void GPUParticleEmitter::SetRandomRotateZ(bool isRandomRotateZ)
   {
-    if (isRandomRotateZ) data_.flags |= EFLAG_RANDOM_ROTATE_Z; else data_.flags &= ~EFLAG_RANDOM_ROTATE_Z;
+    SetFlag(EFLAG_RANDOM_ROTATE_Z, isRandomRotateZ);
   }
 
   void GPUParticleEmitter::SetUseForceField(bool useForceField)
   {
-    if (useForceField) data_.flags |= EFLAG_USE_FORCE_FIELD; else data_.flags &= ~EFLAG_USE_FORCE_FIELD;
+    SetFlag(EFLAG_USE_FORCE_FIELD, useForceField);
   }
 
   void GPUParticleEmitter::SetUseCurlNoise(bool useCurlNoise)
   {
-    if (useCurlNoise) data_.flags |= EFLAG_USE_CURL_NOISE; else data_.flags &= ~EFLAG_USE_CURL_NOISE;
+    SetFlag(EFLAG_USE_CURL_NOISE, useCurlNoise);
   }
 
   void GPUParticleEmitter::SetUseDepthCollision(bool useDepthCollision)
   {
-    if (useDepthCollision) data_.flags |= EFLAG_USE_DEPTH_COLLISION; else data_.flags &= ~EFLAG_USE_DEPTH_COLLISION;
+    SetFlag(EFLAG_USE_DEPTH_COLLISION, useDepthCollision);
   }
 
   void GPUParticleEmitter::SetColor(const Vector4& color)
@@ -270,17 +270,17 @@ namespace Tako {
 
   void GPUParticleEmitter::SetAlphaFade(bool enable)
   {
-    if (enable) data_.flags |= EFLAG_USE_ALPHA_FADE; else data_.flags &= ~EFLAG_USE_ALPHA_FADE;
+    SetFlag(EFLAG_USE_ALPHA_FADE, enable);
   }
 
   void GPUParticleEmitter::SetConvergeToTarget(bool enable)
   {
-    if (enable) data_.flags |= EFLAG_CONVERGE_TO_TARGET; else data_.flags &= ~EFLAG_CONVERGE_TO_TARGET;
+    SetFlag(EFLAG_CONVERGE_TO_TARGET, enable);
   }
 
   void GPUParticleEmitter::SetSpawnLock(bool enable, float stiffness, float damping)
   {
-    if (enable) data_.flags |= EFLAG_LOCK_TO_SPAWN; else data_.flags &= ~EFLAG_LOCK_TO_SPAWN;
+    SetFlag(EFLAG_LOCK_TO_SPAWN, enable);
     data_.lockStiffness = stiffness;
     data_.lockDamping = damping;
   }
@@ -309,7 +309,7 @@ namespace Tako {
 
   void GPUParticleEmitter::SetScaleFade(bool enable, const Vector3& endScale)
   {
-    if (enable) data_.flags |= EFLAG_USE_SCALE_FADE; else data_.flags &= ~EFLAG_USE_SCALE_FADE;
+    SetFlag(EFLAG_USE_SCALE_FADE, enable);
     data_.endScaleDefault = endScale;
   }
 
@@ -335,7 +335,7 @@ namespace Tako {
 
   void GPUParticleEmitter::SetTemporary(bool isTemporary, float lifeTime)
   {
-    if (isTemporary) data_.flags |= EFLAG_TEMPORARY; else data_.flags &= ~EFLAG_TEMPORARY;
+    SetFlag(EFLAG_TEMPORARY, isTemporary);
     data_.emitterLifeTime = lifeTime;
     data_.emitterCurrentTime = 0.0f;
   }
