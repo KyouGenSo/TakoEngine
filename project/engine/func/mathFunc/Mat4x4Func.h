@@ -7,9 +7,6 @@
 
 namespace Tako {
 
-  const int kRowHeight = 20;   ///< ImGui デバッグ表示用の行の高さ
-  const int kColumnWidth = 60;  ///< ImGui デバッグ表示用の列の幅
-
   /// <summary>
   /// 4x4行列演算ユーティリティ名前空間
   /// アフィン変換（移動・回転・拡大縮小）、ビュー行列、プロジェクション行列など

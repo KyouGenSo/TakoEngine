@@ -526,13 +526,6 @@ namespace Tako {
     retiringSlots_.emplace_back(slot, freeAt);
   }
 
-  std::shared_ptr<GPUParticleEmitter> GPUParticle::FindEmitterByIndex(size_t index) {
-    if (index < activeEmitters_.size()) {
-      return activeEmitters_[index];
-    }
-    return nullptr;
-  }
-
   //--------------------------------------Private--------------------------------------//
 
   void GPUParticle::RetireExpiredSlots()

@@ -55,14 +55,12 @@ namespace Tako {
 
     // カメラのローカル座標系でのコーナー位置を計算
     // Near 面の4つの頂点（カメラ空間）
-    Vector3 nearCenter = Vector3(0, 0, nearZ_);
     corners[0] = Vector3(-nearWidth * 0.5f, -nearHeight * 0.5f, nearZ_); // 左下
     corners[1] = Vector3(nearWidth * 0.5f, -nearHeight * 0.5f, nearZ_); // 右下
     corners[2] = Vector3(nearWidth * 0.5f, nearHeight * 0.5f, nearZ_); // 右上
     corners[3] = Vector3(-nearWidth * 0.5f, nearHeight * 0.5f, nearZ_); // 左上
 
     // Far 面の4つの頂点（カメラ空間）
-    Vector3 farCenter = Vector3(0, 0, farZ_);
     corners[4] = Vector3(-farWidth * 0.5f, -farHeight * 0.5f, farZ_); // 左下
     corners[5] = Vector3(farWidth * 0.5f, -farHeight * 0.5f, farZ_); // 右下
     corners[6] = Vector3(farWidth * 0.5f, farHeight * 0.5f, farZ_); // 右上
@@ -70,9 +68,7 @@ namespace Tako {
 
     // カメラ空間からワールド空間に変換
     for (int i = 0; i < 8; ++i) {
-      Vector3 corner4 = Vector3(corners[i].x, corners[i].y, corners[i].z);
-      corner4 = Mat4x4::Transform(worldMatrix_, corner4);
-      corners[i] = Vector3(corner4.x, corner4.y, corner4.z);
+      corners[i] = Mat4x4::Transform(worldMatrix_, corners[i]);
     }
 
     return corners;
@@ -108,9 +104,7 @@ namespace Tako {
 
     // カメラ空間からワールド空間に変換
     for (int i = 0; i < 8; ++i) {
-      Vector3 corner4 = Vector3(corners[i].x, corners[i].y, corners[i].z);
-      corner4 = Mat4x4::Transform(worldMatrix_, corner4);
-      corners[i] = Vector3(corner4.x, corner4.y, corner4.z);
+      corners[i] = Mat4x4::Transform(worldMatrix_, corners[i]);
     }
 
     return corners;
@@ -124,9 +118,7 @@ namespace Tako {
     // 指定されたビュー行列で変換（指定がある場合）
     if (viewMatrix) {
       for (int i = 0; i < 8; ++i) {
-        Vector3 corner4 = Vector3(corners[i].x, corners[i].y, corners[i].z);
-        corner4 = Mat4x4::Transform(*viewMatrix, corner4);
-        corners[i] = Vector3(corner4.x, corner4.y, corner4.z);
+        corners[i] = Mat4x4::Transform(*viewMatrix, corners[i]);
       }
     }
 
@@ -155,9 +147,7 @@ namespace Tako {
     // 指定されたビュー行列で変換（指定がある場合）
     if (viewMatrix) {
       for (int i = 0; i < 8; ++i) {
-        Vector3 corner4 = Vector3(corners[i].x, corners[i].y, corners[i].z);
-        corner4 = Mat4x4::Transform(*viewMatrix, corner4);
-        corners[i] = Vector3(corner4.x, corner4.y, corner4.z);
+        corners[i] = Mat4x4::Transform(*viewMatrix, corners[i]);
       }
     }
 

@@ -32,16 +32,6 @@ namespace Tako {
   };
 
   /// <summary>
-  /// ビネット＋赤色 Bloom 効果パラメータ
-  /// </summary>
-  struct VignetteRedBloomParam
-  {
-    float power;      ///< ビネット強度
-    float range;      ///< ビネット範囲
-    float threshold;  ///< Bloom しきい値
-  };
-
-  /// <summary>
   /// Bloom 効果パラメータ
   /// 明るい部分を光らせる効果
   /// </summary>

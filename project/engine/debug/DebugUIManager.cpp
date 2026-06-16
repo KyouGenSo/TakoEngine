@@ -60,7 +60,6 @@ namespace Tako {
   }
 
   void DebugUIManager::Finalize() {
-    ClearDebugInfo();
     ClearLogs();
     instance_.reset();
   }
@@ -653,18 +652,6 @@ namespace Tako {
 
   void DebugUIManager::ClearLogs() {
     consoleLogs_.clear();
-  }
-
-  void DebugUIManager::RegisterDebugInfo(const std::string& category, std::function<void()> callback) {
-    debugInfoCallbacks_[category] = callback;
-  }
-
-  void DebugUIManager::UnregisterDebugInfo(const std::string& category) {
-    debugInfoCallbacks_.erase(category);
-  }
-
-  void DebugUIManager::ClearDebugInfo() {
-    debugInfoCallbacks_.clear();
   }
 
   void DebugUIManager::RegisterGameObject(const std::string& name, std::function<void()> drawImGuiFunc) {

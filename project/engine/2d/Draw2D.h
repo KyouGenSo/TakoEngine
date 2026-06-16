@@ -84,14 +84,6 @@ namespace Tako {
       D3D12_VERTEX_BUFFER_VIEW vertexBufferView;   ///< 頂点バッファビュー
     };
 
-    /// <summary>
-    /// 球体データ構造体
-    /// </summary>
-    struct Sphere {
-      Vector3 center; ///< 中心座標
-      float radius;   ///< 半径
-    };
-
   public: // メンバ関数
 
     /// <summary>
@@ -276,11 +268,6 @@ namespace Tako {
     /// </summary>
     void CreateTransformMatData();
 
-    /// <summary>
-    /// グリッドの頂点位置を計算
-    /// </summary>
-    void CalcGridVertexData();
-
   private: // メンバ変数
 
     DX12Basic* m_dx12_; ///< DX12Basic クラスのインスタンス
@@ -307,10 +294,6 @@ namespace Tako {
     uint32_t lineIndex_ = 0; ///< 線のインデクス
 
     Matrix4x4 projectionMatrix_; ///< プロジェクション行列
-    Matrix4x4 viewPortMatrix_; ///< ビューポート行列
-
-    Matrix4x4 debugViewMatrix_; ///< デバッグビュー行列
-    Matrix4x4 debugProjectionMatrix_; ///< デバッグプロジェクション行列
 
     Microsoft::WRL::ComPtr<ID3D12RootSignature> triangleRootSignature_; ///< 三角形用ルートシグネチャ
     Microsoft::WRL::ComPtr<ID3D12RootSignature> lineRootSignature_; ///< 線用ルートシグネチャ
@@ -327,8 +310,6 @@ namespace Tako {
     std::unique_ptr<BoxData> boxData_; ///< 矩形データ
 
     std::unique_ptr<LineData> lineData_; ///< 線データ
-
-    std::vector<Vector3> gridVertices_; ///< グリッドの頂点データ
   };
 
 } // namespace Tako

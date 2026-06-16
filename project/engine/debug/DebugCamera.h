@@ -159,9 +159,6 @@ namespace Tako {
     ///< ビュープロジェクション行列
     Matrix4x4 viewProjectionMat_;
 
-    ///< カメラの移動速度（2D）
-    float moveSpeed2D_ = 1.0f;
-
     ///< カメラの移動速度（3D）
     float moveSpeed3D_ = 0.35f;
 

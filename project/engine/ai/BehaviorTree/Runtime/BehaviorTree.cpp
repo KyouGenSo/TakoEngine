@@ -123,12 +123,6 @@ namespace Tako {
     }
   }
 
-  bool BehaviorTree::SaveToJSON(const std::string& filepath) const {
-    (void)filepath;
-    // SaveToJSON は BehaviorTreeEditor 側 (エディタ状態を含むため) に実装
-    return false;
-  }
-
   BTNodePtr BehaviorTree::BuildNodeFromJSON(
     const nlohmann::json& nodeJson,
     const std::unordered_map<int, nlohmann::json>& nodeMap,

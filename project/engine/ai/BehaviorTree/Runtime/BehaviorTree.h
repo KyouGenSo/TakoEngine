@@ -82,14 +82,6 @@ namespace Tako {
     /// <returns>成功すれば true</returns>
     bool LoadFromJSON(const std::string& filepath);
 
-    /// <summary>
-    /// JSON ファイルへツリーを保存する。
-    /// (現状はプレースホルダ。BehaviorTreeEditor 側で JSON IO を実装している)
-    /// </summary>
-    /// <param name="filepath">保存先 JSON ファイルパス</param>
-    /// <returns>成功すれば true</returns>
-    bool SaveToJSON(const std::string& filepath) const;
-
   private:
     /// <summary>
     /// ノードを再帰的に探索し、Running 状態の最深ノードを返す。

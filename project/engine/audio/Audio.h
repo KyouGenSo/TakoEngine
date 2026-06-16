@@ -170,7 +170,6 @@ private: // メンバー変数
 
 	// サウンドデータ
 	std::array<SoundData, kMaxSoundNum> soundDatas_;
-	//std::unordered_map<std::string, SoundData> soundDatas_;
 
 	// ボイスデータ
 	std::unordered_map<uint32_t, IXAudio2SourceVoice*> voiceDatas_;

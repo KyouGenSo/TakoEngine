@@ -59,9 +59,7 @@ namespace Tako {
     /// <summary>
     /// ImGui のスタイルの設定
     /// </summary>
-    void SetStyleBoostRapDark();
     void SetStyleMoonLight();
-    void SetStyleAdobeInspired();
 
     /// <summary>
     /// docking 設定

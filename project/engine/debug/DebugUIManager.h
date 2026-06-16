@@ -98,24 +98,6 @@ namespace Tako {
     const std::vector<LogEntry>& GetLogs() const { return consoleLogs_; }
 
     /// <summary>
-    /// デバッグ情報を登録
-    /// </summary>
-    /// <param name="category">カテゴリ名</param>
-    /// <param name="callback">デバッグ表示用コールバック</param>
-    void RegisterDebugInfo(const std::string& category, std::function<void()> callback);
-
-    /// <summary>
-    /// デバッグ情報の登録を解除
-    /// </summary>
-    /// <param name="category">カテゴリ名</param>
-    void UnregisterDebugInfo(const std::string& category);
-
-    /// <summary>
-    /// デバッグ情報をクリア
-    /// </summary>
-    void ClearDebugInfo();
-
-    /// <summary>
     /// ゲームオブジェクトを登録
     /// </summary>
     /// <param name="name">オブジェクト名</param>
@@ -289,9 +271,6 @@ namespace Tako {
 
     // 直近フレームでゲーム画像上にカーソルがあったか（DrawGameViewport で更新）
     bool isGameViewportHovered_ = false;
-
-    // デバッグ情報コールバック
-    std::unordered_map<std::string, std::function<void()>> debugInfoCallbacks_;
 
     // ゲームオブジェクト情報
     std::vector<GameObjectDebugInfo> gameObjects_;

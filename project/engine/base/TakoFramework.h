@@ -69,12 +69,6 @@ namespace Tako {
     /// </summary>
     /// <param name="value">デバッグモードフラグ</param>
     void SetIsDebug(bool value);
-
-    /// <summary>
-    /// デバッグフラグのポインタ取得（ImGui 用）
-    /// </summary>
-    /// <returns>デバッグフラグへのポインタ</returns>
-    bool* GetIsDebugPtr() { return &isDebug_; }
 #endif
 
     /// <summary>

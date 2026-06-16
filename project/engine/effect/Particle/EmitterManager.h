@@ -310,11 +310,6 @@ namespace Tako {
     void RemoveGroup(const std::string& groupName);
 
     /// <summary>
-    /// デバッグ情報を表示
-    /// </summary>
-    void DebugInfo();
-
-    /// <summary>
     /// アクティブなエミッターの数を取得
     /// </summary>
     /// <returns>エミッター数</returns>

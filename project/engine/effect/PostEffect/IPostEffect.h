@@ -1,5 +1,7 @@
 #pragma once
+#include <cstdint>
 #include <d3d12.h>
+#include <initializer_list>
 #include <string>
 #include <variant>
 #include <wrl.h>
@@ -78,6 +80,25 @@ namespace Tako {
     /// パイプラインステートオブジェクトを作成
     /// </summary>
     virtual void CreatePSO() = 0;
+
+    /// サンプラー補間モード
+    enum class SamplerFilterMode { Linear, Point };
+    /// サンプラーアドレスモード (U/V に適用。W は常に WRAP)
+    enum class SamplerAddressMode { Wrap, Clamp };
+
+    /// ルートパラメータ指定。宣言順がそのままルートパラメータのスロット順になる
+    struct RootParam {
+      enum Kind { SrvTable, Cbv } kind;  ///< SRV ディスクリプタテーブル or CBV
+      uint32_t shaderRegister;           ///< t#/b# のレジスタ番号
+    };
+
+    /// 指定したルートパラメータ列と静的サンプラー1個で rootSignature_ を構築
+    void BuildRootSignature(std::initializer_list<RootParam> params,
+                            SamplerFilterMode filter = SamplerFilterMode::Linear,
+                            SamplerAddressMode addrUV = SamplerAddressMode::Wrap);
+
+    /// FullScreen.VS + shaderName_.PS の全画面描画 PSO を pipelineState_ に構築
+    void BuildFullScreenPSO();
 
   protected: // メンバー変数
 

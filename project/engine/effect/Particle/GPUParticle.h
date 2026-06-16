@@ -170,13 +170,6 @@ namespace Tako {
 
     //-------------------------Getter/Setter-------------------------//
     /// <summary>
-    /// インデックスによってエミッターを検索
-    /// </summary>
-    /// <param name="index">検索するインデックス</param>
-    /// <returns>見つかったエミッター、見つからない場合は nullptr</returns>
-    std::shared_ptr<GPUParticleEmitter> FindEmitterByIndex(size_t index);
-
-    /// <summary>
     /// デバッグモードが有効か取得
     /// </summary>
     /// <returns>デバッグモードが有効な場合 true</returns>
