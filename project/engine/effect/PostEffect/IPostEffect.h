@@ -100,6 +100,12 @@ namespace Tako {
     /// FullScreen.VS + shaderName_.PS の全画面描画 PSO を pipelineState_ に構築
     void BuildFullScreenPSO();
 
+    /// 全画面1パスを描画する (RTV設定→RS/PSO→トポロジ→CBV(b0)→SRVテーブル(t0)→Draw)。
+    /// 単一入力テクスチャのポストエフェクトパス共通処理
+    void DrawFullScreenPass(ID3D12RootSignature* rootSig, ID3D12PipelineState* pso,
+                            D3D12_CPU_DESCRIPTOR_HANDLE outputRtv,
+                            D3D12_GPU_VIRTUAL_ADDRESS cbvAddress, uint32_t inputSrvIndex);
+
   protected: // メンバー変数
 
     DX12Basic* m_dx12_ = nullptr;  ///< DirectX12基盤システムへの参照

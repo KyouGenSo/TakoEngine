@@ -40,50 +40,17 @@ namespace Tako {
 
   void GaussianBlur::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, [[maybe_unused]] uint32_t depthSrvIndex, [[maybe_unused]] const Vector4& clearColor)
   {
-    //---------------------------Pass1---------------------------//
-    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
+    // Pass1: 入力テクスチャを1方向にブラーして resultRT_ へ
+    DrawFullScreenPass(rootSignature_.Get(), pipelineState_.Get(), resultRT_.rtvHandle,
+      cBufferResource1_->GetGPUVirtualAddress(), inputSrvIndex);
 
-    m_dx12_->GetCommandList()->OMSetRenderTargets(1,
-      &resultRT_.rtvHandle,
-      false,
-      &dsvHandle);
-
-    // エフェクト適用シェーダーの設定
-    m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
-    m_dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
-
-    // プリミティブトポロジーの設定（フルスクリーン三角形用）
-    m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-
-    // パラメータリソースの設定
-    m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, cBufferResource1_->GetGPUVirtualAddress());
-
-    // レンダーテクスチャ A をシェーダーリソースとして設定
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, inputSrvIndex);
-
-    // 描画
-    m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
-
-
-    //---------------------------Pass2---------------------------//
+    // Pass2: resultRT_ を直交方向にブラーして出力先へ
     SetBarrier(resultRT_.resource.Get(),
       D3D12_RESOURCE_STATE_RENDER_TARGET,
       D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
-    // 最終結果レンダーテクスチャを描画先に設定
-    m_dx12_->GetCommandList()->OMSetRenderTargets(1,
-      &outputRtvHandle,
-      false,
-      &dsvHandle);
-
-    // BloomParam をセット
-    m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, cBufferResource2_->GetGPUVirtualAddress());
-
-    // ブラー画像をシェーダーリソースとして設定（スロット0）
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, resultRT_.srvIndex);
-
-    // 描画
-    m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+    DrawFullScreenPass(rootSignature_.Get(), pipelineState_.Get(), outputRtvHandle,
+      cBufferResource2_->GetGPUVirtualAddress(), resultRT_.srvIndex);
 
     SetBarrier(resultRT_.resource.Get(),
       D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,

@@ -40,80 +40,27 @@ namespace Tako {
 
   void Bloom::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, [[maybe_unused]] uint32_t depthSrvIndex, [[maybe_unused]] const Vector4& clearColor)
   {
-    //---------------------------Pass1 HighLunExtract---------------------------//
     D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
 
-    m_dx12_->GetCommandList()->OMSetRenderTargets(1,
-      &highLumRT_.rtvHandle,
-      false,
-      &dsvHandle);
-
-    // エフェクト適用シェーダーの設定
-    m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_["ThresholdExtract"].Get());
-    m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_["ThresholdExtract"].Get());
-
-    // プリミティブトポロジーの設定（フルスクリーン三角形用）
-    m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-
-    // パラメータリソースの設定
-    m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, extractCBufferRes_->GetGPUVirtualAddress());
-
-    // レンダーテクスチャ A をシェーダーリソースとして設定
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, inputSrvIndex);
-
-    // 描画
-    m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
-
+    //---------------------------Pass1 HighLunExtract---------------------------//
+    DrawFullScreenPass(rootSignatures_["ThresholdExtract"].Get(), pipelineStates_["ThresholdExtract"].Get(),
+      highLumRT_.rtvHandle, extractCBufferRes_->GetGPUVirtualAddress(), inputSrvIndex);
 
     //---------------------------Pass2 HorizontalBlur---------------------------//
     SetBarrier(highLumRT_.resource.Get(),
       D3D12_RESOURCE_STATE_RENDER_TARGET,
       D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
-    // 最終結果レンダーテクスチャを描画先に設定
-    m_dx12_->GetCommandList()->OMSetRenderTargets(1,
-      &blurRT_.rtvHandle,
-      false,
-      &dsvHandle);
-
-    // エフェクト適用シェーダーの設定
-    m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_["GaussianBlur"].Get());
-    m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_["GaussianBlur"].Get());
-
-    // プリミティブトポロジーの設定（フルスクリーン三角形用）
-    m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-
-    // BloomParam をセット
-    m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, blurCBufferRes1_->GetGPUVirtualAddress());
-
-    // ブラー画像をシェーダーリソースとして設定（スロット0）
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, highLumRT_.srvIndex);
-
-    // 描画
-    m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+    DrawFullScreenPass(rootSignatures_["GaussianBlur"].Get(), pipelineStates_["GaussianBlur"].Get(),
+      blurRT_.rtvHandle, blurCBufferRes1_->GetGPUVirtualAddress(), highLumRT_.srvIndex);
 
     //---------------------------Pass3 VerticalBlur---------------------------//
     SetBarrier(blurRT_.resource.Get(),
       D3D12_RESOURCE_STATE_RENDER_TARGET,
       D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
-    // 最終結果レンダーテクスチャを描画先に設定
-    m_dx12_->GetCommandList()->OMSetRenderTargets(1,
-      &resultRT_.rtvHandle,
-      false,
-      &dsvHandle);
-
-    // プリミティブトポロジーの設定（フルスクリーン三角形用）
-    m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-
-    // BloomParam をセット
-    m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, blurCBufferRes2_->GetGPUVirtualAddress());
-
-    // ブラー画像をシェーダーリソースとして設定（スロット0）
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, blurRT_.srvIndex);
-
-    // 描画
-    m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+    DrawFullScreenPass(rootSignatures_["GaussianBlur"].Get(), pipelineStates_["GaussianBlur"].Get(),
+      resultRT_.rtvHandle, blurCBufferRes2_->GetGPUVirtualAddress(), blurRT_.srvIndex);
 
     //---------------------------Pass4 Combine---------------------------//
     SetBarrier(resultRT_.resource.Get(),

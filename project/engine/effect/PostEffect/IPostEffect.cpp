@@ -1,6 +1,7 @@
 #include "IPostEffect.h"
 
 #include "DX12Basic.h"
+#include "SrvManager.h"
 #include "StringUtility.h"
 #include "EnginePaths.h"
 #ifdef _DEBUG
@@ -133,6 +134,22 @@ namespace Tako {
 
     HRESULT hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
     assert(SUCCEEDED(hr));
+  }
+
+  void IPostEffect::DrawFullScreenPass(ID3D12RootSignature* rootSig, ID3D12PipelineState* pso,
+                                       D3D12_CPU_DESCRIPTOR_HANDLE outputRtv,
+                                       D3D12_GPU_VIRTUAL_ADDRESS cbvAddress, uint32_t inputSrvIndex)
+  {
+    auto* commandList = m_dx12_->GetCommandList();
+    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
+
+    commandList->OMSetRenderTargets(1, &outputRtv, false, &dsvHandle);
+    commandList->SetGraphicsRootSignature(rootSig);
+    commandList->SetPipelineState(pso);
+    commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+    commandList->SetGraphicsRootConstantBufferView(1, cbvAddress);
+    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, inputSrvIndex);
+    commandList->DrawInstanced(3, 1, 0, 0);
   }
 
 } // namespace Tako
