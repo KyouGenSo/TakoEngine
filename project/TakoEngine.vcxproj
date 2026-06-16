@@ -229,7 +229,6 @@
     <ClInclude Include="engine\debug\DebugUIManager.h" />
     <ClInclude Include="engine\effect\Particle\BoxEmitter.h" />
     <ClInclude Include="engine\effect\Particle\EmitterManager.h" />
-    <ClInclude Include="engine\effect\Particle\EmitterStruct.h" />
     <ClInclude Include="engine\effect\Particle\ForceFieldManager.h" />
     <ClInclude Include="engine\effect\Particle\GPUParticle.h" />
     <ClInclude Include="engine\effect\Particle\GPUParticleEmitter.h" />

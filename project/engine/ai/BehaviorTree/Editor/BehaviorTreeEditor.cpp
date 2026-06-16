@@ -851,20 +851,7 @@ bool BehaviorTreeEditor::LoadFromJSON(const std::string& filepath) {
           int newSourceNodeId = sourceIt->second;
           int newTargetNodeId = targetIt->second;
 
-          auto* sourceNode = FindNodeById(newSourceNodeId);
-          auto* targetNode = FindNodeById(newTargetNodeId);
-
-          if (sourceNode && targetNode &&
-            !sourceNode->outputPinIds.empty() &&
-            !targetNode->inputPinIds.empty()) {
-            EditorLink link;
-            link.id = nextLinkId_++;
-            link.startPinId = sourceNode->outputPinIds[0];
-            link.endPinId = targetNode->inputPinIds[0];
-            link.startNodeId = newSourceNodeId;
-            link.endNodeId = newTargetNodeId;
-            links_.push_back(link);
-          }
+          CreateLink(newSourceNodeId, newTargetNodeId);
         }
       }
     }
@@ -1041,15 +1028,6 @@ const EditorPin* BehaviorTreeEditor::FindPinById(int pinId) const {
   for (const auto& pin : pins_) {
     if (pin.id == pinId) {
       return &pin;
-    }
-  }
-  return nullptr;
-}
-
-EditorLink* BehaviorTreeEditor::FindLinkById(int linkId) {
-  for (auto& link : links_) {
-    if (link.id == linkId) {
-      return &link;
     }
   }
   return nullptr;

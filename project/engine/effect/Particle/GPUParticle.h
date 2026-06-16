@@ -7,6 +7,7 @@
 
 #include "SrvManager.h"
 #include "ParticleStruct.h"
+#include "ModelStruct.h"
 
 namespace Tako {
 

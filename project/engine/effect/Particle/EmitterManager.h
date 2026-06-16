@@ -5,7 +5,6 @@
 #include <unordered_map>
 #include <array>
 #include "GPUParticleEmitter.h"
-#include "EmitterStruct.h"
 #include <json.hpp>
 
 namespace Tako {

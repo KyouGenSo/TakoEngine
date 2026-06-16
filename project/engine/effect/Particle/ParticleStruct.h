@@ -1,13 +1,9 @@
 #pragma once
-#include <list>
-#include <d3d12.h>
-#include <wrl.h>
-
+#include <cstdint>
 #include "vector2.h"
 #include "vector3.h"
 #include "vector4.h"
 #include "Matrix4x4.h"
-#include "ModelStruct.h"
 
 namespace Tako {
 
@@ -80,42 +76,6 @@ namespace Tako {
     Inside  = 0,  ///< 中 (範囲内ランダム): 現状の挙動
     Surface = 1,  ///< 外 (境界面上)
     Edge    = 2   ///< 線 (頂点を繋ぐエッジ上)
-  };
-
-  /// <summary>
-  /// パーティクルマテリアル構造体
-  /// </summary>
-  struct ParticleMaterial
-  {
-    Vector4 color;         ///< マテリアルカラー（RGBA）
-    Matrix4x4 uvTransform; ///< UV 座標変換行列
-  };
-
-  /// <summary>
-  /// GPU 用パーティクルデータ構造体
-  /// インスタンシング描画用の各パーティクルのトランスフォームデータ
-  /// </summary>
-  struct ParticleDataForGPU
-  {
-    Matrix4x4 WVP;    ///< ワールドビュープロジェクション行列
-    Matrix4x4 world;  ///< ワールド行列
-    Vector4 color;    ///< パーティクルカラー（RGBA）
-  };
-
-  /// <summary>
-  /// パーティクル構造体（CPU 側）
-  /// 個々のパーティクルの状態を保持
-  /// </summary>
-  struct Particle
-  {
-    Vector3 translate;    ///< 位置
-    Vector3 scale;        ///< スケール
-    Vector3 velocity;     ///< 速度ベクトル
-    Vector3 rotate;       ///< 回転（オイラー角）
-    Vector4 startColor;   ///< 開始時の色（アルファ値含む）
-    Vector4 endColor;     ///< 終了時の色（アルファ値含む）
-    float lifeTime;       ///< 寿命（秒）
-    float currentTime;    ///< 生成からの経過時間（秒）
   };
 
   /// <summary>
@@ -228,20 +188,6 @@ namespace Tako {
     float deltaTime;             ///< 前フレームからの経過時間（秒）
     uint32_t activeEmitterCount; ///< アクティブなエミッター数
     uint32_t frameCount;         ///< GPU 乱数 seed 用フレームカウンタ (HLSL PerFrame.frameCount と一致)
-  };
-
-  /// <summary>
-  /// パーティクルグループ構造体
-  /// 同じテクスチャを使用するパーティクルをグループ化して一括描画
-  /// </summary>
-  struct ParticleGroup
-  {
-    TextureData texture;                       ///< 使用するテクスチャ情報
-    std::list<Particle> particleList;          ///< このグループに属するパーティクルのリスト
-    int instancingSrvIndex;                    ///< インスタンシングデータの SRV インデックス
-    Microsoft::WRL::ComPtr<ID3D12Resource> particleDataForGPUResource_; ///< GPU 用インスタンシングデータリソース
-    ParticleDataForGPU* pParticleDataForGPU = nullptr; ///< インスタンシングデータ書き込み先ポインタ
-    UINT instanceCount = 0;                    ///< このフレームで描画するインスタンス数
   };
 
   /// <summary>

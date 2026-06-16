@@ -471,7 +471,6 @@ namespace Tako {
     }
 
     hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature.GetAddressOf()));
-    signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature.GetAddressOf());
     assert(SUCCEEDED(hr));
   }
 

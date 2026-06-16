@@ -211,7 +211,6 @@ private:
   EditorNode* FindNodeByRuntimeNode(const BTNodePtr& node);
   EditorPin* FindPinById(int pinId);
   const EditorPin* FindPinById(int pinId) const;
-  EditorLink* FindLinkById(int linkId);
 
   //--- ツリー構築・解析 ---
   /// 入力リンクを持たないノード (ルート) を探す

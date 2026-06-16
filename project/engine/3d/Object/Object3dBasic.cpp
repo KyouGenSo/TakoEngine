@@ -265,7 +265,6 @@ void Object3dBasic::CreateRootSignature()
 	}
 
 	hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature_.GetAddressOf()));
-	signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature_.GetAddressOf());
 	assert(SUCCEEDED(hr));
 
 }
