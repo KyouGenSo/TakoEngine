@@ -55,7 +55,6 @@ namespace Tako {
     // テクスチャ読み込み（エンジン提供のデフォルトテクスチャ）
     TextureManager::GetInstance()->LoadEngineDefault("white.png");
 
-    // スプライトの初期化
     circleSprite_ = std::make_unique<Sprite>();
     circleSprite_->Initialize("EngineResources/Texture/white.png");
 
@@ -143,7 +142,6 @@ namespace Tako {
 
     SpriteBasic::GetInstance()->SetCommonRenderSetting();
 
-    // 円を描画
     circleSprite_->Draw();
   }
 

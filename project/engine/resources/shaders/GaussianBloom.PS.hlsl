@@ -5,20 +5,15 @@ cbuffer BloomParam : register(b0)
     float intensity;
     float threshold;
     float sigma;
-    float2 direction; // x•ûŒü: float2(1,0), y•ûŒü: float2(0,1)
+    float2 direction; // xæ–¹å‘: float2(1,0), yæ–¹å‘: float2(0,1)
     float2 texelSize; // 1/width, 1/height
-    int sampleCount;  // ƒTƒ“ƒvƒ‹”
+    int sampleCount;  // ã‚µãƒ³ãƒ—ãƒ«æ•°
     int iteration;
 };
 
 Texture2D<float4> gHighLumTex : register(t0);
 Texture2D<float4> gShrinkTex : register(t1);
 SamplerState gSampler : register(s0);
-
-//float CalcGaussianWeight(float x, float sigma)
-//{
-//    return exp(-(x * x) / (2.0 * sigma * sigma));
-//}
 
 float4 Get5x5GaussianBlur(Texture2D<float4> tex, SamplerState smp, float2 uv, float dx, float dy, float4 rect)
 {
@@ -55,19 +50,6 @@ float4 Get5x5GaussianBlur(Texture2D<float4> tex, SamplerState smp, float2 uv, fl
 
 float4 main(VertexShaderOutput input) : SV_TARGET
 {
-    //float4 color = float4(0, 0, 0, 0);
-    //float totalWeight = 0.0;
-    
-    //// w’è•ûŒü‚Ìƒuƒ‰[
-    //for (int i = -sampleCount; i <= sampleCount; i++)
-    //{
-    //    float weight = CalcGaussianWeight(float(i), sigma);
-    //    color += gTexture.Sample(gSampler, input.texCoord + direction * texelSize * i) * weight;
-    //    totalWeight += weight;
-    //}
-    
-    //return color / totalWeight;
-
     float w, h, levels;
     gHighLumTex.GetDimensions(0, w, h, levels);
 

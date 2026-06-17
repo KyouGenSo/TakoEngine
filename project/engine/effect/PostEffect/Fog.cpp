@@ -79,9 +79,8 @@ namespace Tako {
   void Fog::SetParam(const FogParam& param)
   {
     if (fogData_ == nullptr) {
-      return; // cBufferData_が初期化されていない場合は何もしない
+      return;
     }
-    // パラメータを更新
     fogData_->color = param.color;
     fogData_->density = param.density;
   }

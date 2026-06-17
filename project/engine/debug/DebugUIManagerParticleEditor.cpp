@@ -581,7 +581,7 @@ namespace Tako {
               }
             }
 
-            // 物理 / Curl Noise（per-emitter）— 旧 ForceFields タブから移植
+            // 物理 / Curl Noise（per-emitter）
             if (ImGui::CollapsingHeader("Physics & Noise##Properties")) {
               float damping = emitter->GetDamping();
               if (ImGui::SliderFloat("Damping##P", &damping, 0.9f, 1.0f, "%.4f")) {

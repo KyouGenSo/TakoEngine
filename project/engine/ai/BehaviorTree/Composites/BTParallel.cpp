@@ -7,16 +7,14 @@
 namespace Tako {
 
   namespace {
-    // policy 文字列 → Policy 列挙値
     BTParallel::Policy PolicyFromString(const std::string& s) {
       if (s == "AllSuccess") return BTParallel::Policy::AllSuccess;
       if (s == "AnySuccess") return BTParallel::Policy::AnySuccess;
       if (s == "MainChild")  return BTParallel::Policy::MainChild;
-      // 未知文字列は MainChild にフォールバック (最も安全)
+      // 未知文字列は MainChild にフォールバック
       return BTParallel::Policy::MainChild;
     }
 
-    // Policy 列挙値 → 文字列
     const char* PolicyToString(BTParallel::Policy p) {
       switch (p) {
       case BTParallel::Policy::AllSuccess: return "AllSuccess";
@@ -134,7 +132,7 @@ namespace Tako {
 
   void BTParallel::Reset() {
     BTComposite::Reset();    // 全子 Reset + currentChildIndex_ = 0
-    childStatuses_.clear();  // 並列状態キャッシュもクリア
+    childStatuses_.clear();
   }
 
   void BTParallel::ApplyParameters(const nlohmann::json& params) {

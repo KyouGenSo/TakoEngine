@@ -5,8 +5,8 @@ cbuffer Param : register(b0)
     float intensity;
 };
 
-Texture2D<float4> baseTex : register(t0); // Œ³‰æ‘œ
-Texture2D<float4> bloomTex : register(t1); // ƒuƒ‹[ƒ€‰æ‘œ
+Texture2D<float4> baseTex : register(t0); // å…ƒç”»åƒ
+Texture2D<float4> bloomTex : register(t1); // ãƒ–ãƒ«ãƒ¼ãƒ ç”»åƒ
 SamplerState smp : register(s0);
 
 float4 main(VertexShaderOutput input) : SV_TARGET
@@ -14,16 +14,13 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     float4 baseColor = baseTex.Sample(smp, input.texCoord);
     float4 bloomColor = bloomTex.Sample(smp, input.texCoord);
 
-	//// ƒuƒ‹[ƒ€Œø‰Ê‚Ì‹­“x’²®
-    //bloomColor *= intensity;
-
-    // ƒuƒ‹[ƒ€F‚Ì‹­’²i”ñüŒ`‹­’²j
+    // éç·šå½¢å¼·èª¿
     bloomColor.rgb = pow(bloomColor.rgb, 0.8) * intensity * 1.5;
-    
-    // Œ³‰æ‘œ‚Æƒuƒ‹[ƒ€Œø‰Ê‚ğ‰ÁZ‡¬
+
+    // å…ƒç”»åƒã¨ãƒ–ãƒ«ãƒ¼ãƒ åŠ¹æœã‚’åŠ ç®—åˆæˆ
     float3 result = baseColor.rgb + bloomColor.rgb;
     
-    // ƒg[ƒ“ƒ}ƒbƒsƒ“ƒO“I‚Èˆ—‚Å©‘R‚È–¾‚é‚³‚É–ß‚·
+    // ãƒˆãƒ¼ãƒ³ãƒãƒƒãƒ”ãƒ³ã‚°çš„ãªå‡¦ç†ã§è‡ªç„¶ãªæ˜ã‚‹ã•ã«æˆ»ã™
     //result = result / (1.0 + result);
     
     return float4(result, 1.0f);

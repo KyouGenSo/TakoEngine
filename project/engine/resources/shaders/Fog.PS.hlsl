@@ -14,8 +14,8 @@ struct FogParam
 
 ConstantBuffer<FogParam> gFogParam : register(b0);
 ConstantBuffer<Camera> gCamera : register(b1);
-Texture2D<float4> gTexture : register(t0); // ƒV[ƒ“‚ÌƒJƒ‰[ƒeƒNƒXƒ`ƒƒ
-Texture2D gDepthTexture : register(t1); // ƒV[ƒ“‚Ì[“xƒeƒNƒXƒ`ƒƒ
+Texture2D<float4> gTexture : register(t0); // ã‚·ãƒ¼ãƒ³ã®ã‚«ãƒ©ãƒ¼ãƒ†ã‚¯ã‚¹ãƒãƒ£
+Texture2D gDepthTexture : register(t1); // ã‚·ãƒ¼ãƒ³ã®æ·±åº¦ãƒ†ã‚¯ã‚¹ãƒãƒ£
 SamplerState gSampler : register(s0);
 
 struct PixelShaderOutput
@@ -25,20 +25,17 @@ struct PixelShaderOutput
 
 float4 FogColor(float2 texcoord)
 {
-    // ƒV[ƒ“ƒJƒ‰[‚ğæ“¾
     float4 sceneColor = gTexture.Sample(gSampler, texcoord);
 
-    // [“xƒoƒbƒtƒ@‚©‚ç‚Ì[“x’l‚ğæ“¾
     float depth = gDepthTexture.Sample(gSampler, texcoord).r;
 
-    // [“x’l‚ğƒŠƒjƒA‰»
+    // æ·±åº¦å€¤ã‚’ãƒªãƒ‹ã‚¢åŒ–
     float linearDepth = gCamera.nearPlane * gCamera.farPlane / (gCamera.farPlane - depth * (gCamera.farPlane - gCamera.nearPlane));
 
-    // ‘ÌÏƒtƒHƒO‚Ìƒtƒ@ƒNƒ^[‚ğŒvZ
+    // è·é›¢ã«å¯¾ã™ã‚‹æŒ‡æ•°æ¸›è¡°ã§ãƒ•ã‚©ã‚°ã®æ¿ƒã•ã‚’è¨ˆç®—
     float fogFactor = exp(-linearDepth * gFogParam.density);
-    fogFactor = saturate(fogFactor); // [0, 1]‚Ì”ÍˆÍ‚ÉƒNƒ‰ƒ“ƒv
+    fogFactor = saturate(fogFactor);
 
-    // ƒV[ƒ“‚ÌƒJƒ‰[‚ÆƒtƒHƒO‚ÌF‚ğ•âŠÔ
     float4 finalColor = lerp(gFogParam.color, sceneColor, fogFactor);
 
     return finalColor;

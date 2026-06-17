@@ -2,7 +2,6 @@
 /// Decal.hlsli - Projective Decal 共通構造体
 /// ============================================ ///
 
-/// 頂点シェーダー出力
 struct VertexShaderInput {
     float4 pos : POSITION;
 };

@@ -32,11 +32,9 @@ namespace Tako {
       va_list args;
       va_start(args, format);
 
-      // フォーマット処理を別関数に分離
       std::string formattedMessage = detail::FormatString(format, args);
       va_end(args);
 
-      // std::string 版の Log を呼び出す
       Log(formattedMessage + "\n");
     }
   }

@@ -19,10 +19,8 @@ namespace Tako {
   {
     m_dx12_ = dx12;
 
-    // SRV のディスクリプタのサイズを取得
     descriptorSize_ = m_dx12_->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-    // SRV のディスクリプタヒープの生成
     descriptorHeap_ = m_dx12_->CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, kMaxSRVCount, true);
 
 
@@ -38,7 +36,6 @@ namespace Tako {
 
   void SrvManager::BeginDraw()
   {
-    // SRV のディスクリプタヒープをセット
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeaps[] = { descriptorHeap_.Get() };
     m_dx12_->GetCommandList()->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps->GetAddressOf());
   }

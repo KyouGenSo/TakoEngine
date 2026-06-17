@@ -112,10 +112,6 @@ namespace Tako {
     ITransitionEffect* GetCurrentEffect() const;
 
     /// <summary>
-    /// 後方互換性のためのメソッド
-    /// </summary>
-
-    /// <summary>
     /// シーン遷移アニメーション開始
     /// </summary>
     /// <param name="state">遷移状態</param>

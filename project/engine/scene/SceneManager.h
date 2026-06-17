@@ -60,7 +60,7 @@ namespace Tako {
     void Finalize();
 
     /// <summary>
-    /// 次のシーン予約（既存のメソッド）
+    /// 次のシーン予約（デフォルトのフェード演出）
     /// </summary>
     /// <param name="sceneName">次のシーン名</param>
     void ChangeScene(const std::string& sceneName);

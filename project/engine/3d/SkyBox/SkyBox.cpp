@@ -15,31 +15,22 @@ namespace Tako {
 
 void SkyBox::Initialize(const std::string& texturePath)
 {
-  // Transform の初期化
   transform_.scale = { 500.0f, 500.0f, 500.0f };
   transform_.rotate = { 0.0f, 0.0f, 0.0f };
   transform_.translate = { 0.0f, 0.0f, 0.0f };
 
-  // 行列の初期化
   viewProjectionMatrix_ = Mat4x4::MakeIdentity();
   worldMatrix_ = Mat4x4::MakeIdentity();
   wvpMatrix_ = Mat4x4::MakeIdentity();
 
-  // DX12の基本情報を保存
   m_dx12_ = Object3dBasic::GetInstance()->GetDX12Basic();
 
-  // パイプラインステートを生成
   CreatePSO();
-  // 頂点データを生成
   CreateVertexData();
-  // インデックスデータを生成
   CreateIndexData();
-  // マテリアルデータを生成
   CreateMaterialData();
-  // 座標変換行列データを生成
   CreateTransformationMatrixData();
 
-  // テクスチャインデックスを保存
   textureIndex_ = TextureManager::GetInstance()->GetSRVIndex(texturePath);
 }
 
@@ -49,37 +40,30 @@ void SkyBox::Update()
   worldMatrix_ = Mat4x4::MakeAffine(transform_.scale, transform_.rotate, transform_.translate);
   wvpMatrix_ = Mat4x4::Multiply(worldMatrix_, viewProjectionMatrix_);
 
-  // リソースにデータを書き込む
   transformationMatrixData_->WVP = wvpMatrix_;
 }
 
 void SkyBox::Draw()
 {
-  // rootSignature を設定
   m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
 
-  // パイプラインステートを設定
   m_dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
 
-  // プリミティブトポロジの設定
   m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-  // 頂点バッファビューの設定
   m_dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView_);
 
-  // インデックスバッファビューの設定
   m_dx12_->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
 
-  // 座標変換行列 CBuffer の場所を設定
+  // 座標変換行列 CBV (b0)
   m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, transformationMatrixResource_->GetGPUVirtualAddress());
 
-  // SRV の DescriptorTable を設定,テクスチャを指定
+  // テクスチャ SRV (t0)
   SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(1, textureIndex_);
 
-  // マテリアル CBuffer の場所を設定
+  // マテリアル CBV (b0, PS)
   m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(2, materialResource_->GetGPUVirtualAddress());
 
-  // 描画
   m_dx12_->GetCommandList()->DrawIndexedInstanced(36, 1, 0, 0, 0);
 }
 
@@ -93,41 +77,41 @@ void SkyBox::CreateRootSignature()
 
   // Sampler の設定
   D3D12_STATIC_SAMPLER_DESC samplerDesc[1]{};
-  samplerDesc[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR; // テクスチャの補間方法
-  samplerDesc[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
-  samplerDesc[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
-  samplerDesc[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
-  samplerDesc[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER; // 比較しない
-  samplerDesc[0].MaxLOD = D3D12_FLOAT32_MAX; // ミップマップの最大 LOD
-  samplerDesc[0].ShaderRegister = 0; // レジスタ番号
-  samplerDesc[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+  samplerDesc[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+  samplerDesc[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+  samplerDesc[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+  samplerDesc[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+  samplerDesc[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+  samplerDesc[0].MaxLOD = D3D12_FLOAT32_MAX;
+  samplerDesc[0].ShaderRegister = 0;
+  samplerDesc[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
   descriptionRootSignature.pStaticSamplers = samplerDesc;
   descriptionRootSignature.NumStaticSamplers = _countof(samplerDesc);
 
   // DescriptorRange の設定。
   D3D12_DESCRIPTOR_RANGE textureDescriptorRange[1] = {};
-  textureDescriptorRange[0].BaseShaderRegister = 0; // レジスタ番号
-  textureDescriptorRange[0].NumDescriptors = 1; // ディスクリプタ数
-  textureDescriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRV を使う
-  textureDescriptorRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
+  textureDescriptorRange[0].BaseShaderRegister = 0;
+  textureDescriptorRange[0].NumDescriptors = 1;
+  textureDescriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+  textureDescriptorRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
   // RootParameter の設定。
   D3D12_ROOT_PARAMETER rootParameters[3] = {};
   // TransformationMatrix
-  rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-  rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // 頂点シェーダーで使う
-  rootParameters[0].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
+  rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+  rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+  rootParameters[0].Descriptor.ShaderRegister = 0;
 
   // Texture
-  rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-  rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-  rootParameters[1].DescriptorTable.pDescriptorRanges = textureDescriptorRange; // ディスクリプタレンジを設定
-  rootParameters[1].DescriptorTable.NumDescriptorRanges = _countof(textureDescriptorRange); // レンジの数
+  rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+  rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+  rootParameters[1].DescriptorTable.pDescriptorRanges = textureDescriptorRange;
+  rootParameters[1].DescriptorTable.NumDescriptorRanges = _countof(textureDescriptorRange);
 
   // Material
-  rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-  rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-  rootParameters[2].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
+  rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+  rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+  rootParameters[2].Descriptor.ShaderRegister = 0;
 
   descriptionRootSignature.pParameters = rootParameters;
   descriptionRootSignature.NumParameters = _countof(rootParameters);
@@ -176,8 +160,8 @@ void SkyBox::CreatePSO()
 
   // RasterizerState
   D3D12_RASTERIZER_DESC rasterizerDesc{};
-  rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID; // 塗りつぶしモード
-  rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK; // 裏面を描画しない
+  rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
+  rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
 
   // shader のコンパイル
   Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"SkyBox.VS.hlsl"), L"vs_6_0");
@@ -188,26 +172,26 @@ void SkyBox::CreatePSO()
 
   // DepthStencilState の設定
   D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
-  depthStencilDesc.DepthEnable = true;                           // 深度バッファを有効にする
-  depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO; // 深度値を書き込まない
-  depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL; // 深度比較関数
+  depthStencilDesc.DepthEnable = true;
+  depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO; // 深度は書き込まない（最遠面として描く）
+  depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 
   // PSO の設定
   D3D12_GRAPHICS_PIPELINE_STATE_DESC pipelineStateDesc{};
-  pipelineStateDesc.pRootSignature = rootSignature_.Get(); // ルートシグネチャ
-  pipelineStateDesc.InputLayout = inputLayoutDesc;         // 入力レイアウト
-  pipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE; // プリミティブトポロジ
-  pipelineStateDesc.RasterizerState = rasterizerDesc;     // ラスタライザーステート
-  pipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() }; // 頂点シェーダー
-  pipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() }; // ピクセルシェーダー
-  pipelineStateDesc.BlendState = blendDesc;               // ブレンドステート
-  pipelineStateDesc.DepthStencilState = depthStencilDesc; // 深度ステンシルステート
-  pipelineStateDesc.NumRenderTargets = 1;                 // レンダーターゲット数
-  pipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM; // レンダーターゲットフォーマット
-  pipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK; // サンプルマスク
-  pipelineStateDesc.SampleDesc.Count = 1;                // サンプル数
-  pipelineStateDesc.DepthStencilState = depthStencilDesc; // 深度ステンシルステート
-  pipelineStateDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT; // 深度ステンシルフォーマット
+  pipelineStateDesc.pRootSignature = rootSignature_.Get();
+  pipelineStateDesc.InputLayout = inputLayoutDesc;
+  pipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+  pipelineStateDesc.RasterizerState = rasterizerDesc;
+  pipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() };
+  pipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
+  pipelineStateDesc.BlendState = blendDesc;
+  pipelineStateDesc.DepthStencilState = depthStencilDesc;
+  pipelineStateDesc.NumRenderTargets = 1;
+  pipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+  pipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+  pipelineStateDesc.SampleDesc.Count = 1;
+  pipelineStateDesc.DepthStencilState = depthStencilDesc;
+  pipelineStateDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 
   // PSO の生成
   hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&pipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
@@ -217,13 +201,10 @@ void SkyBox::CreatePSO()
 
 void SkyBox::CreateVertexData()
 {
-  // 頂点リソースを生成
   vertexResource_ = m_dx12_->MakeBufferResource(sizeof(VertexData) * 24);
 
-  // 頂点リソースをマップ
   vertexResource_->Map(0, nullptr, reinterpret_cast<void**>(&vertexData_));
 
-  // 頂点データを設定
   // 右面。インデックス[0, 1, 2][2, 1, 3]
   vertexData_[0] = { Vector4(1.0f, 1.0f, 1.0f, 1.0f) };
   vertexData_[1] = { Vector4(1.0f, 1.0f, -1.0f, 1.0f) };
@@ -255,7 +236,6 @@ void SkyBox::CreateVertexData()
   vertexData_[22] = { Vector4(1.0f, -1.0f, 1.0f, 1.0f) };
   vertexData_[23] = { Vector4(-1.0f, -1.0f, 1.0f, 1.0f) };
 
-  // 頂点バッファビューを作成する
   vertexBufferView_.BufferLocation = vertexResource_->GetGPUVirtualAddress();
   vertexBufferView_.SizeInBytes = sizeof(VertexData) * 24;
   vertexBufferView_.StrideInBytes = sizeof(VertexData);
@@ -263,14 +243,11 @@ void SkyBox::CreateVertexData()
 
 void SkyBox::CreateIndexData()
 {
-  // インデックスリソースを生成
   indexResource_ = m_dx12_->MakeBufferResource(sizeof(uint32_t) * 36);
 
-  // インデックスリソースをマップ
   indexResource_->Map(0, nullptr, reinterpret_cast<void**>(&indexData_));
 
-  // インデックスデータを設定
-  // 各面のインデックスデータを設定
+  // 各面2三角形分のインデックス
   indexData_[0] = 0; indexData_[1] = 1; indexData_[2] = 2;
   indexData_[3] = 2; indexData_[4] = 1; indexData_[5] = 3;
   indexData_[6] = 4; indexData_[7] = 5; indexData_[8] = 6;
@@ -284,7 +261,6 @@ void SkyBox::CreateIndexData()
   indexData_[30] = 20; indexData_[31] = 21; indexData_[32] = 22;
   indexData_[33] = 22; indexData_[34] = 21; indexData_[35] = 23;
 
-  // indexBufferView を作成
   indexBufferView_.BufferLocation = indexResource_->GetGPUVirtualAddress();
   indexBufferView_.SizeInBytes = sizeof(uint32_t) * 36;
   indexBufferView_.Format = DXGI_FORMAT_R32_UINT;
@@ -292,21 +268,15 @@ void SkyBox::CreateIndexData()
 
 void SkyBox::CreateMaterialData()
 {
-  // マテリアルリソースを生成
   materialResource_ = m_dx12_->MakeBufferResource(sizeof(Material));
-  // マテリアルリソースをマップ
   materialResource_->Map(0, nullptr, reinterpret_cast<void**>(&materialData_));
-  // マテリアルデータの初期値を書き込む
   materialData_->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 }
 
 void SkyBox::CreateTransformationMatrixData()
 {
-  // 座標変換行列リソースを生成
   transformationMatrixResource_ = m_dx12_->MakeBufferResource(sizeof(TransformationMatrix));
-  // 座標変換行列リソースをマップ
   transformationMatrixResource_->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixData_));
-  // 座標変換行列データの初期値を書き込む
   transformationMatrixData_->WVP = Mat4x4::MakeIdentity();
 }
 

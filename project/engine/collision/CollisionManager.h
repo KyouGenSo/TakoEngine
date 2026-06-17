@@ -133,7 +133,10 @@ namespace Tako {
     const std::unordered_map<uint32_t, std::unordered_set<uint32_t>>& GetCollisionMasks() const { return collisionMask_; }
 
   private:
+    // 形状を判別して対応する判定関数へ振り分け、衝突時のみ currentCollisions_ にペアを登録する
     void CheckCollisionPair(Collider* colliderA, Collider* colliderB);
+
+    // 以下は交差有無のみを返す（接触点・貫通深度は算出しない）。true=交差
     bool CheckAABBvsAABB(AABBCollider* a, AABBCollider* b);
     bool CheckSphereVsSphere(SphereCollider* a, SphereCollider* b);
     bool CheckAABBvsSphere(AABBCollider* aabb, SphereCollider* sphere);

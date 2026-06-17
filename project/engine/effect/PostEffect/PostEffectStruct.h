@@ -13,9 +13,9 @@ namespace Tako {
   /// ポストエフェクトの中間バッファとして使用
   /// </summary>
   struct RenderTexture {
-    Microsoft::WRL::ComPtr<ID3D12Resource> resource;  ///< テクスチャリソース
-    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;            ///< レンダーターゲットビューハンドル
-    uint32_t srvIndex;                                ///< シェーダーリソースビューインデックス
+    Microsoft::WRL::ComPtr<ID3D12Resource> resource;
+    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;
+    uint32_t srvIndex;
   };
 
   /// <summary>
@@ -24,11 +24,11 @@ namespace Tako {
   /// </summary>
   struct VignetteParam
   {
-    float power;       ///< ビネット強度
-    float range;       ///< ビネット範囲（0.0〜1.0）
+    float power;
+    float range;       ///< 0.0〜1.0
     float padding[2];  ///< 16バイトアライメント用
-    Vector3 color;     ///< ビネット色（RGB）
-    float padding2;    ///< パディング
+    Vector3 color;     ///< RGB
+    float padding2;
   };
 
   /// <summary>
@@ -37,13 +37,13 @@ namespace Tako {
   /// </summary>
   struct BloomParam
   {
-    float intensity;   ///< Bloom 強度
+    float intensity;
     float threshold;   ///< 高輝度抽出のしきい値
-    float sigma;       ///< ガウシアンブラーのシグマ値（ぼかし強度）
-    int kernelSize;    ///< ブラーカーネルサイズ
-    Vector2 direction; ///< ブラー方向ベクトル
-    int padding1;      ///< パディング
-    int padding2;      ///< パディング
+    float sigma;       ///< ガウシアンブラーのシグマ
+    int kernelSize;
+    Vector2 direction; ///< ブラー方向
+    int padding1;
+    int padding2;
   };
 
   struct NewBloomParam
@@ -55,8 +55,8 @@ namespace Tako {
     Vector2 texelSize;
     int sampleCount;
     int iteration;
-    int padding3;        // パディング追加
-    int padding4;        // パディング追加
+    int padding3;
+    int padding4;
   };
 
   struct HighLumExtrcatParam
@@ -95,9 +95,9 @@ namespace Tako {
   /// </summary>
   struct RadialBlurParam
   {
-    Vector2 center;       ///< ブラー中心座標（スクリーン空間0.0〜1.0）
-    float blurWidth;      ///< ブラーの幅
-    int32_t sampleCount;  ///< サンプリング数（品質）
+    Vector2 center;       ///< ブラー中心（スクリーン空間0.0〜1.0）
+    float blurWidth;
+    int32_t sampleCount;  ///< サンプリング数（多いほど高品質）
   };
 
   /// <summary>
@@ -139,9 +139,9 @@ namespace Tako {
   struct DissolveParam
   {
     float threshold;      ///< 溶解のしきい値（0.0〜1.0）
-    float edgeThickness;  ///< エッジ（縁取り）の太さ
-    float padding[2];     ///< パディング
-    Vector4 edgeColor;    ///< エッジの色（RGBA）
+    float edgeThickness;  ///< 縁取りの太さ
+    float padding[2];
+    Vector4 edgeColor;    ///< RGBA
   };
 
   /// <summary>
@@ -160,13 +160,13 @@ namespace Tako {
   struct HalfToneParam
   {
     float dotSize;          ///< ドットのサイズ（大きいほど粗い）
-    float contrast;         ///< コントラスト調整
+    float contrast;
     float angle;            ///< ドットグリッドの回転角度（ラジアン）
-    int32_t dotPattern;     ///< ドットパターン (0=円, 1=四角, 2=ダイヤモンド)
+    int32_t dotPattern;     ///< 0=円, 1=四角, 2=ダイヤモンド
     Vector2 screenSize;     ///< スクリーン解像度（ピクセル）
-    int32_t colorMode;      ///< カラーモード (0=モノクロ, 1=CMYK 風)
-    float threshold;        ///< 明暗の閾値調整
-    float padding;          ///< パディング
+    int32_t colorMode;      ///< 0=モノクロ, 1=CMYK 風
+    float threshold;        ///< 明暗の閾値
+    float padding;
   };
 
   using EffectParam = std::variant<

@@ -68,7 +68,7 @@ namespace Tako {
     void EndDraw();
 
     /// <summary>
-    /// // コマンド完了まで待機
+    /// コマンド完了まで待機
     /// </summary>
     void WaitForGPU();
 

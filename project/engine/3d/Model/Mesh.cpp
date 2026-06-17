@@ -13,10 +13,8 @@
 
 namespace Tako {
 
-  //　デストラクタ
   Mesh::~Mesh()
   {
-    // リソースの解放
     ReleaseSRVIndex();
   }
 

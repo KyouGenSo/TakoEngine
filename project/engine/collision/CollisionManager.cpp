@@ -92,10 +92,9 @@ namespace Tako {
   }
 
   void CollisionManager::RemoveCollider(Collider* collider) {
-    // colliders リストから削除
     colliders_.remove(collider);
 
-    // currentCollisions_から該当するペアを削除
+    // Enter/Exit 判定の整合性のため、衝突履歴からも該当ペアを除去
     auto currentIt = currentCollisions_.begin();
     while (currentIt != currentCollisions_.end()) {
       if (currentIt->first == collider || currentIt->second == collider) {
@@ -106,7 +105,6 @@ namespace Tako {
       }
     }
 
-    // previousCollisions_から該当するペアを削除
     auto prevIt = previousCollisions_.begin();
     while (prevIt != previousCollisions_.end()) {
       if (prevIt->first == collider || prevIt->second == collider) {
@@ -135,12 +133,11 @@ namespace Tako {
     Draw2D* draw2D = Draw2D::GetInstance();
     if (!draw2D) return;
 
-    // 色の定義（TypeID に基づいたハッシュ色生成）
     auto GetColorByType = [](uint32_t typeID) -> Vector4 {
-      // TypeID を元に色相を計算（黄金比を使用して均等に分散）
+      // 黄金比でTypeIDを色相に分散させ、型ごとに色を散らす
       float hue = std::fmod(typeID * 0.618033988749895f, 1.0f) * 360.0f;
 
-      // HSV から RGB へ変換（簡略版）
+      // HSV から RGB へ変換
       float c = 0.7f;  // 彩度
       float x = c * (1.0f - std::abs(std::fmod(hue / 60.0f, 2.0f) - 1.0f));
       float m = 0.3f;  // 明度調整
@@ -156,27 +153,23 @@ namespace Tako {
       return Vector4(r + m, g + m, b + m, 0.5f);
       };
 
-    // すべてのコライダーを描画
     int drawCount = 0;
     for (Collider* collider : colliders_) {
       if (!collider || !collider->IsActive()) continue;
 
       Vector4 color = GetColorByType(collider->GetTypeID());
 
-      // AABBCollider の場合
       if (AABBCollider* aabb = dynamic_cast<AABBCollider*>(collider)) {
         AABB box = aabb->GetAABB();
         draw2D->DrawAABB(box, color);
         drawCount++;
       }
-      // SphereCollider の場合
       else if (SphereCollider* sphere = dynamic_cast<SphereCollider*>(collider)) {
         Vector3 center = sphere->GetCenter();
         float radius = sphere->GetRadius();
         draw2D->DrawSphere(center, radius, color);
         drawCount++;
       }
-      // OBBCollider の場合
       else if (OBBCollider* obb = dynamic_cast<OBBCollider*>(collider)) {
         OBB obbData = obb->GetOBB();
         draw2D->DrawOBB(obbData, color);
@@ -243,20 +236,17 @@ namespace Tako {
           index - 1, typeID,
           collider->IsActive() ? "Yes" : "No");
 
-        // AABBCollider の場合
         if (AABBCollider* aabb = dynamic_cast<AABBCollider*>(collider)) {
           AABB box = aabb->GetAABB();
           ImGui::Text("  AABB: min(%.1f,%.1f,%.1f) max(%.1f,%.1f,%.1f)",
             box.min.x, box.min.y, box.min.z,
             box.max.x, box.max.y, box.max.z);
         }
-        // SphereCollider の場合
         else if (SphereCollider* sphere = dynamic_cast<SphereCollider*>(collider)) {
           Vector3 center = sphere->GetCenter();
           ImGui::Text("  Sphere: center(%.1f,%.1f,%.1f) radius=%.1f",
             center.x, center.y, center.z, sphere->GetRadius());
         }
-        // OBBCollider の場合
         else if (OBBCollider* obb = dynamic_cast<OBBCollider*>(collider)) {
           OBB obbData = obb->GetOBB();
           ImGui::Text("  OBB: center(%.1f,%.1f,%.1f) halfExtents(%.1f,%.1f,%.1f)",

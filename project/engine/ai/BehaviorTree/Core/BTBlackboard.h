@@ -14,14 +14,8 @@ namespace Tako {
   /// </summary>
   class BTBlackboard {
   public:
-    /// <summary>
-    /// コンストラクタ。
-    /// </summary>
     BTBlackboard() = default;
 
-    /// <summary>
-    /// デストラクタ。
-    /// </summary>
     ~BTBlackboard() = default;
 
     //==========================================================================
@@ -122,59 +116,26 @@ namespace Tako {
     // プリミティブ型ヘルパー
     //==========================================================================
 
-    /// <summary>
-    /// 整数値の設定。
-    /// </summary>
-    /// <param name="key">キー</param>
-    /// <param name="value">値</param>
     void SetInt(const std::string& key, int value) {
       data_[key] = value;
     }
 
-    /// <summary>
-    /// 整数値の取得。
-    /// </summary>
-    /// <param name="key">キー</param>
-    /// <param name="defaultValue">デフォルト値</param>
-    /// <returns>値</returns>
     int GetInt(const std::string& key, int defaultValue = 0) const {
       return GetAs<int>(key, defaultValue);
     }
 
-    /// <summary>
-    /// 浮動小数点値の設定。
-    /// </summary>
-    /// <param name="key">キー</param>
-    /// <param name="value">値</param>
     void SetFloat(const std::string& key, float value) {
       data_[key] = value;
     }
 
-    /// <summary>
-    /// 浮動小数点値の取得。
-    /// </summary>
-    /// <param name="key">キー</param>
-    /// <param name="defaultValue">デフォルト値</param>
-    /// <returns>値</returns>
     float GetFloat(const std::string& key, float defaultValue = 0.0f) const {
       return GetAs<float>(key, defaultValue);
     }
 
-    /// <summary>
-    /// ベクトル値の設定。
-    /// </summary>
-    /// <param name="key">キー</param>
-    /// <param name="value">値</param>
     void SetVector3(const std::string& key, const Vector3& value) {
       data_[key] = value;
     }
 
-    /// <summary>
-    /// ベクトル値の取得。
-    /// </summary>
-    /// <param name="key">キー</param>
-    /// <param name="defaultValue">デフォルト値</param>
-    /// <returns>値</returns>
     Vector3 GetVector3(const std::string& key, const Vector3& defaultValue = Vector3()) const {
       return GetAs<Vector3>(key, defaultValue);
     }
@@ -183,19 +144,10 @@ namespace Tako {
     // キー操作
     //==========================================================================
 
-    /// <summary>
-    /// キーが存在するかチェック。
-    /// </summary>
-    /// <param name="key">キー</param>
-    /// <returns>存在する場合 true</returns>
     bool HasKey(const std::string& key) const {
       return data_.find(key) != data_.end();
     }
 
-    /// <summary>
-    /// 特定キーの削除。
-    /// </summary>
-    /// <param name="key">キー</param>
     void RemoveKey(const std::string& key) {
       data_.erase(key);
     }

@@ -7,16 +7,14 @@ namespace Tako {
   BoxEmitter::BoxEmitter(GPUParticle* particleSystem, const Vector3& position,
     const Vector3& size, const Vector3& rotation,
     uint32_t count, float frequency)
-    : GPUParticleEmitter(particleSystem, 0) // 一時的な ID を設定
+    : GPUParticleEmitter(particleSystem, 0) // 一時的な ID。RegisterEmitter で正式割り当て
   {
-    // パラメータの初期化
     SetPosition(position);
     SetSize(size);
     SetRotation(rotation);
     SetParticleCount(count);
     SetFrequency(frequency);
 
-    // エミッターのタイプを設定
     data_.type = static_cast<uint32_t>(EmitterType::Box);
   }
 

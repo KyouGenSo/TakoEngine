@@ -36,14 +36,14 @@ Skinned Skinning(VertexShaderInput input)
 {
     Skinned skinned;
 
-    // ˆÊ’u‚Ì•ÏŠ·
+    // ä½ç½®ã®å¤‰æ›
     skinned.pos = mul(input.pos, gMatrixPalette[input.index.x].skeletonSpaceMatrix) * input.weight.x;
     skinned.pos += mul(input.pos, gMatrixPalette[input.index.y].skeletonSpaceMatrix) * input.weight.y;
     skinned.pos += mul(input.pos, gMatrixPalette[input.index.z].skeletonSpaceMatrix) * input.weight.z;
     skinned.pos += mul(input.pos, gMatrixPalette[input.index.w].skeletonSpaceMatrix) * input.weight.w;
     skinned.pos.w = 1.0f;
     
-    // –@ü‚Ì•ÏŠ·
+    // æ³•ç·šã®å¤‰æ›
     skinned.normal = mul(input.normal, (float3x3) gMatrixPalette[input.index.x].skeletonSpaceMatrixIT) * input.weight.x;
     skinned.normal += mul(input.normal, (float3x3) gMatrixPalette[input.index.y].skeletonSpaceMatrixIT) * input.weight.y;
     skinned.normal += mul(input.normal, (float3x3) gMatrixPalette[input.index.z].skeletonSpaceMatrixIT) * input.weight.z;

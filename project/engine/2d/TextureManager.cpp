@@ -102,7 +102,6 @@ namespace Tako {
 
   D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetSRVGPUHandle(const std::string& fileName)
   {
-    // クスチャデータを取得
     TextureData& textureData = textureData_[fileName];
 
     return textureData.srvGpuHandle;
@@ -110,7 +109,6 @@ namespace Tako {
 
   const DirectX::TexMetadata& TextureManager::GetMetaData(const std::string& fileName)
   {
-    // テクスチャデータを取得
     TextureData& textureData = textureData_[fileName];
 
     return textureData.metadata;
@@ -130,7 +128,6 @@ namespace Tako {
 
   uint32_t TextureManager::GetSRVIndex(const std::string& fileName)
   {
-    // クスチャデータを取得
     TextureData& textureData = textureData_[fileName];
 
     return textureData.srvIndex;

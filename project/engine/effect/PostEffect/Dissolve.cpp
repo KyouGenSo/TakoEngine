@@ -75,9 +75,8 @@ namespace Tako {
   void Dissolve::SetParam(const DissolveParam& param)
   {
     if (cBufferData_ == nullptr) {
-      return; // cBufferData_が初期化されていない場合は何もしない
+      return;
     }
-    // パラメータの設定
     cBufferData_->threshold = param.threshold;
     cBufferData_->edgeThickness = param.edgeThickness;
     cBufferData_->edgeColor = param.edgeColor;
@@ -95,7 +94,6 @@ namespace Tako {
 
   void Dissolve::CreateCBV()
   {
-    // VignetteParam のリソース生成
     cBufferResource_ = m_dx12_->MakeBufferResource(sizeof(DissolveParam));
 
     // データの設定

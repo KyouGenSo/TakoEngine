@@ -21,49 +21,35 @@ namespace Tako {
     FrameTimer(const FrameTimer&) = delete;
     FrameTimer& operator=(const FrameTimer&) = delete;
 
-    // インスタンスの取得
     static FrameTimer* GetInstance();
-    // 初期化
     void Initialize();
-    // 終了処理
     void Finalize();
-    // 更新
     void Update();
 
     //----------------------------Getter----------------------------//
-    // deltaTime の取得
     float GetDeltaTime() const { return deltaTime_; }
-    // 実際の FPS の取得
     float GetFPS() const { return fps_; }
-    // 表示用 FPS の取得
+    // 1秒ごとに更新される表示用 FPS
     float GetDisplayFPS() const { return displayFPS_; }
-    // ゲーム起動からの経過時間の取得
+    // ゲーム起動からの経過時間（秒）
     float GetGameTime() const { return gameTime_; }
 
   private:
-    // deltaTime と FPS の更新
     void UpdateDeltaTimeAndFPS();
 
-    // gameTime の更新
     void UpdateGameTime();
 
   private:
-    // システム時間
     std::chrono::system_clock::time_point startTime_;
-    // 前フレームの時間
     std::chrono::system_clock::time_point prevTime_;
-    // deltaTime
     float deltaTime_;
-    // FPS
     float fps_;
 
-    // 表示用 FPS
     float displayFPS_;
 
-    // ゲーム起動からの経過時間
     float gameTime_;
 
-    // 1秒間の計測用
+    // 1秒ごとにリセットする計測用の累積値
     float timeAccumulator_;
     int frameCount_;
   };

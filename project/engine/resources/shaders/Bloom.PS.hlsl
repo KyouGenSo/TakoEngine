@@ -8,7 +8,7 @@ struct BloomParam
     float threshold;
     float sigma;
     int kernelSize;
-    float2 direction; // x•ûŒü: float2(1,0), y•ûŒü: float2(0,1)
+    float2 direction; // xæ–¹å‘: float2(1,0), yæ–¹å‘: float2(0,1)
 };
 
 ConstantBuffer<BloomParam> gBloomParam : register(b0);
@@ -28,13 +28,6 @@ float Gaussian(float x, float sigma)
 float4 BloomExtract(float2 texcoord)
 {
     float4 color = gTexture.Sample(gSampler, texcoord);
-    //// è‡’l‚Ì”ÍˆÍ‚ğ’è‹`
-    //float minThreshold = gBloomParam.threshold;
-    //float maxThreshold = gBloomParam.threshold + 0.1f;
-    //// smoothstep‚ÅŠŠ‚ç‚©‚Èè‡’l“K—p
-    //float brightness = max(color.r, max(color.g, color.b));
-    //float factor = smoothstep(minThreshold, maxThreshold, brightness);
-    //return color * factor;
 
     float brightness = dot(color.rgb, float3(0.299, 0.587, 0.114));
 
@@ -45,23 +38,22 @@ float4 BloomExtract(float2 texcoord)
 
 float4 GaussianBlur(float2 texcoord, float2 texSize, float2 dir)
 {
-    // 1ƒsƒNƒZƒ‹‚Ì’·‚³
     float2 uvOffset;
-    
-    // 1ƒsƒNƒZƒ‹‚Ì’·‚³
+
+    // 1ãƒ”ã‚¯ã‚»ãƒ«ã®UVé•·
     const float2 texOffset = float2(rcp(texSize.x), rcp(texSize.y));
     
     float4 result = BloomExtract(texcoord);
-    
-    float sum = 0.0f; // d‚İ‚Ì‡Œv
-    
-    float weight; // d‚İ
-    
+
+    float sum = 0.0f;
+
+    float weight;
+
     for (int karnelStep = -gBloomParam.kernelSize / 2; karnelStep <= gBloomParam.kernelSize / 2; ++karnelStep)
     {
         if (karnelStep == 0)
         {
-            continue; // ’†S‚ÌƒTƒ“ƒvƒ‹‚ÍŠù‚Éresult‚ÉŠÜ‚Ü‚ê‚Ä‚¢‚é‚Ì‚ÅƒXƒLƒbƒv
+            continue; // ä¸­å¿ƒã®ã‚µãƒ³ãƒ—ãƒ«ã¯æ—¢ã«resultã«å«ã¾ã‚Œã¦ã„ã‚‹ã®ã§ã‚¹ã‚­ãƒƒãƒ—
         }
 
         uvOffset = texcoord;
@@ -76,14 +68,14 @@ float4 GaussianBlur(float2 texcoord, float2 texSize, float2 dir)
         
     }
     
-    result *= (1.0f / sum); // normalizing the result
-    
-    return result; // return the blurred result
+    result *= (1.0f / sum);
+
+    return result;
 }
 
 float4 SquareGaussianBlur(float2 texcoord, float2 texSize)
 {
-    // 9x9‚ÌlŠpŒ`ƒJ[ƒlƒ‹‚ÌƒIƒtƒZƒbƒg
+    // 9x9ã®å››è§’å½¢ã‚«ãƒ¼ãƒãƒ«ã®ã‚ªãƒ•ã‚»ãƒƒãƒˆ
     const float2 offsets9x9[81] =
     {
         float2(-4.0, -4.0), float2(-3.0, -4.0), float2(-2.0, -4.0), float2(-1.0, -4.0), float2(0.0, -4.0), float2(1.0, -4.0), float2(2.0, -4.0), float2(3.0, -4.0), float2(4.0, -4.0),
@@ -97,7 +89,7 @@ float4 SquareGaussianBlur(float2 texcoord, float2 texSize)
         float2(-4.0, 4.0), float2(-3.0, 4.0), float2(-2.0, 4.0), float2(-1.0, 4.0), float2(0.0, 4.0), float2(1.0, 4.0), float2(2.0, 4.0), float2(3.0, 4.0), float2(4.0, 4.0)
     };
 
-    // 5x5‚ÌlŠpŒ`ƒJ[ƒlƒ‹‚ÌƒIƒtƒZƒbƒg
+    // 5x5ã®å››è§’å½¢ã‚«ãƒ¼ãƒãƒ«ã®ã‚ªãƒ•ã‚»ãƒƒãƒˆ
     const float2 offsets5x5[25] =
     {
         float2(-2.0, -2.0), float2(-1.0, -2.0), float2(0.0, -2.0), float2(1.0, -2.0), float2(2.0, -2.0),
@@ -107,24 +99,21 @@ float4 SquareGaussianBlur(float2 texcoord, float2 texSize)
         float2(-2.0, 2.0), float2(-1.0, 2.0), float2(0.0, 2.0), float2(1.0, 2.0), float2(2.0, 2.0)
     };
 
-    float2 texOffset = float2(rcp(texSize.x), rcp(texSize.y)); // 1ƒsƒNƒZƒ‹‚Ì’·‚³
-    float4 result = float4(0.0, 0.0, 0.0, 0.0); // Œ‹‰Ê‚Ì‰Šú‰»
-    float sum = 0.0f; // d‚İ‚Ì‡Œv
+    float2 texOffset = float2(rcp(texSize.x), rcp(texSize.y)); // 1ãƒ”ã‚¯ã‚»ãƒ«ã®UVé•·
+    float4 result = float4(0.0, 0.0, 0.0, 0.0);
+    float sum = 0.0f;
 
     for (int i = 0; i < 25; i++)
     {
-        // ƒTƒ“ƒvƒ‹ˆÊ’u‚ÌÀ•W
         float2 sampleCoord = texcoord + offsets5x5[i] * texOffset * 1;
 
-        // ƒKƒEƒVƒAƒ“d‚İi’†S‚©‚ç‚Ì‹——£‚ÉŠî‚Ã‚­j
+        // ä¸­å¿ƒã‹ã‚‰ã®è·é›¢ã«åŸºã¥ãã‚¬ã‚¦ã‚·ã‚¢ãƒ³é‡ã¿
         float weight = Gaussian(length(offsets5x5[i]), gBloomParam.sigma);
 
-        // ƒTƒ“ƒvƒ‹‚Æd‚İ‚ğ‰ÁZ
         result.xyz += BloomExtract(sampleCoord).xyz * weight;
         sum += weight;
     }
 
-    // ³‹K‰»
     result *= (1.0f / sum);
     
     return result;

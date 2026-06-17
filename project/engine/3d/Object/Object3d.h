@@ -277,13 +277,10 @@ private: // プライベートメンバー関数
   void CreateCameraForGPUData();
 
 private: // メンバー変数
-  // カメラのクラスポインター
   Camera** m_camera_ = nullptr;
 
-  // モデルクラス
   std::unique_ptr<Model> m_model_;
 
-  // トランスフォーム
   Transform transform_;
 
   // バッファリソース
@@ -298,9 +295,9 @@ private: // メンバー変数
   CameraForGPU* cameraForGPUData_ = nullptr;
 
   // Joint アタッチメント用変数
-  Object3d* parentObject_ = nullptr; // 親となる Object3d
-  std::string parentJointName_;      // アタッチする Joint 名
-  Transform attachmentOffset_{};     // Joint からのオフセット
+  Object3d* parentObject_ = nullptr;
+  std::string parentJointName_;
+  Transform attachmentOffset_{};
 
   // 半透明描画モードフラグ (true なら Draw 内で TransparentRenderSetting に一時切り替え)
   bool isTransparent_ = false;

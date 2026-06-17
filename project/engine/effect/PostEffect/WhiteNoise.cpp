@@ -61,9 +61,8 @@ namespace Tako {
   void WhiteNoise::SetParam(const WhiteNoiseParam& param)
   {
     if (cBufferData_ == nullptr) {
-      return; // cBufferData_が初期化されていない場合は何もしない
+      return;
     }
-    // パラメータの設定
     cBufferData_->time = param.time;
   }
 
@@ -79,7 +78,6 @@ namespace Tako {
 
   void WhiteNoise::CreateCBV()
   {
-    // VignetteParam のリソース生成
     cBufferResource_ = m_dx12_->MakeBufferResource(sizeof(WhiteNoiseParam));
 
     // データの設定

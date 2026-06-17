@@ -16,7 +16,6 @@ namespace Tako {
   }
 
   void Input::Initialize(WinApp* winApp) {
-    // WinApp クラスのインスタンスを取得
     this->winApp_ = winApp;
 
     HRESULT hr;

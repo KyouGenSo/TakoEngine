@@ -177,19 +177,14 @@ namespace Tako {
         continue; // エラー時はスキップ
       }
 
-      // Object3d のインスタンスを生成
       auto object3d = std::make_unique<Object3d>();
 
-      // 初期化
       object3d->Initialize();
 
-      // モデルを設定
       object3d->SetModel(objectData.fileName);
 
-      // Transform を設定
       object3d->SetTransform(objectData.transform);
 
-      // LoadedScene に追加
       loadedScene->AddObject(objectData.name, std::move(object3d));
     }
 

@@ -499,7 +499,6 @@ void main(uint3 DTid : SV_DispatchThreadID)
             // 正規化
             if (gEmitters[emitterIndex].flags & EFLAG_NORMALIZE)
             {
-                // 正規化フラグが立っている場合、速度を正規化
                 particleVelocity = normalize(particleVelocity);
             }
 

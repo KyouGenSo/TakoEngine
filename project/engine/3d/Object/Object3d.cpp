@@ -45,7 +45,6 @@ void Object3d::Initialize()
 
 void Object3d::Update()
 {
-	// モデルの更新
 	if (m_model_)
 	{
 		m_model_->Update();

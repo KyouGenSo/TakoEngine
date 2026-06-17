@@ -295,7 +295,7 @@ namespace Tako {
         if (ImGui::Button("Remove Effect", ImVec2(-1, 0))) {
           if (!selectedActiveEffect_.empty()) {
             RemoveEffectFromChain(selectedActiveEffect_);
-            selectedActiveEffect_ = ""; // 選択解除
+            selectedActiveEffect_ = "";
           }
         }
 
@@ -347,7 +347,7 @@ namespace Tako {
 
         if (ImGui::Button("Clear All", ImVec2(80, 0))) {
           ClearEffectChain();
-          selectedActiveEffect_ = ""; // 選択解除
+          selectedActiveEffect_ = "";
         }
 
         ImGui::SameLine();
@@ -465,7 +465,6 @@ namespace Tako {
     // エフェクトが存在するかチェック
     auto it = effectRegistry_.find(effectName);
     if (it == effectRegistry_.end()) {
-      // ログ出力（デバッグ用）
 #ifdef _DEBUG
       DebugUIManager::GetInstance()->AddLog("Effect not found: " + effectName, DebugUIManager::LogType::Error);
 #endif
@@ -700,11 +699,9 @@ namespace Tako {
     std::vector<std::string> actualChain;
 
     if (effectChain_.empty()) {
-      // エフェクトチェーンが空の場合は NoEffect のみ
       actualChain.push_back("NoEffect");
     }
     else {
-      // エフェクトチェーンがある場合は、そのまま使用（NoEffect は追加しない）
       actualChain = effectChain_;
     }
 
@@ -772,7 +769,6 @@ namespace Tako {
       if (effectName == "DepthBasedOutline") {
         auto it = effectRegistry_.find(effectName);
         if (it != effectRegistry_.end()) {
-          // DepthBasedOutline の初期化
           auto depthEffect = dynamic_cast<DepthBasedOutline*>(it->second.get());
           if (depthEffect) {
             depthEffect->SetInvProjectionMatrix(Mat4x4::Inverse(camera_->GetProjectionMatrix()));

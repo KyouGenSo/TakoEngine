@@ -2,6 +2,6 @@
 
 namespace Tako {
 
-  // Collider base class implementation (currently empty - pure virtual interface)
+  // 実装は全てヘッダのインライン定義。翻訳単位確保のためのファイル
 
 } // namespace Tako

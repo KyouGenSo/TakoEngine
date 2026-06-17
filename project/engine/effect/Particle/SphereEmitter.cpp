@@ -6,15 +6,13 @@ namespace Tako {
 
   SphereEmitter::SphereEmitter(GPUParticle* particleSystem, const Vector3& position,
     float radius, uint32_t count, float frequency)
-    : GPUParticleEmitter(particleSystem, 0) // 一時的な ID を設定
+    : GPUParticleEmitter(particleSystem, 0) // 一時的な ID。RegisterEmitter で正式割り当て
   {
-    // パラメータの初期化
     SetPosition(position);
     SetRadius(radius);
     SetParticleCount(count);
     SetFrequency(frequency);
 
-    // エミッターのタイプを設定
     data_.type = static_cast<uint32_t>(EmitterType::Sphere);
   }
 

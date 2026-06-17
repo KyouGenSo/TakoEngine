@@ -166,23 +166,19 @@ private: // メンバー変数
 	// マスターボイス
 	IXAudio2MasteringVoice* masterVoice_ = nullptr;
 
-	std::array<std::string, kMaxSoundNum> soundNames_;
+	std::array<std::string, kMaxSoundNum> soundNames_; ///< 読み込み済みファイル名。重複読み込みの判定に使用（添字 = サウンドハンドル）
 
-	// サウンドデータ
-	std::array<SoundData, kMaxSoundNum> soundDatas_;
+	std::array<SoundData, kMaxSoundNum> soundDatas_; ///< 添字 = サウンドハンドル
 
-	// ボイスデータ
-	std::unordered_map<uint32_t, IXAudio2SourceVoice*> voiceDatas_;
+	std::unordered_map<uint32_t, IXAudio2SourceVoice*> voiceDatas_; ///< ボイスハンドル -> 再生中ソースボイス
 
-	// ボイスの状態
-	std::unordered_map<uint32_t, XAUDIO2_VOICE_STATE> voiceStates_;
+	std::unordered_map<uint32_t, XAUDIO2_VOICE_STATE> voiceStates_; ///< 未使用
 
-	// サウンド格納ディレクトリ
 	std::string directoryPath_;
 
-	// 次に使うサウンドデータ番号
+	// 次に割り当てるサウンドデータ番号（= 返すサウンドハンドル）
 	uint32_t nextSoundIndex_ = 0u;
-	// 次に使う再生中データ番号
+	// 次に割り当てるボイスハンドル。Play ごとに加算し再利用しない
 	uint32_t nextVoiceHandle_ = 0u;
 
 };

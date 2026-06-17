@@ -26,16 +26,16 @@ namespace Tako {
 
   void Light::PreDraw()
   {
-    // 平行光源 CBuffer の場所を設定
+    // 平行光源 CBV (b3)
     m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource_->GetGPUVirtualAddress());
 
-    // ポイントライト srv の場所を設定
+    // 点光源 SRV (t5)
     SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(5, pointLightSrvIndex_);
 
-    // スポットライト CBuffer の場所を設定
+    // スポットライト SRV (t6)
     SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(6, spotLightSrvIndex_);
 
-    // ライト定数 CBuffer の場所を設定
+    // ライト定数 CBV (b7)
     m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(7, lightConstantsResource_->GetGPUVirtualAddress());
   }
 
@@ -46,9 +46,7 @@ namespace Tako {
     directionalLightData_->lightType = lightType;
     directionalLightData_->intensity = intensity;
 
-    // 自動更新が有効な場合、位置も更新
     if (autoUpdatePosition_) {
-      // 方向が設定されたので、位置を自動計算するためのトリガーをリセット
       directionalLightData_->position = sceneCenter_;
     }
   }
@@ -57,21 +55,18 @@ namespace Tako {
   {
     directionalLightData_->direction = direction;
 
-    // 自動更新が有効な場合、位置も更新
     if (autoUpdatePosition_) {
-      // 位置を自動計算するためのトリガーをリセット
       directionalLightData_->position = sceneCenter_;
     }
   }
 
   void Light::SetPointLight(const Vector3& position, const Vector4& color, float intensity, float radius, float decay, bool enable, int index)
   {
-    // index をチェック
     if (index >= Light::MAX_POINT_LIGHT) {
       return;
     }
 
-    // index の配列にこの値がないなら、新しい値を追加
+    // index が未使用ならリストを伸ばして点灯数に反映
     if (pointLightIndexList_.size() <= index && index <= Light::MAX_POINT_LIGHT) {
       pointLightIndexList_.resize(index + 1);
     }
@@ -86,11 +81,10 @@ namespace Tako {
 
   void Light::SetSpotLight(const Vector3& position, const Vector3& direction, const Vector4& color, float intensity, float distance, float decay, float cosAngle, bool enable, int index)
   {
-    // index をチェック
     if (index >= Light::MAX_SPOT_LIGHT) {
       return;
     }
-    // index の配列にこの値がないなら、新しい値を追加
+    // index が未使用ならリストを伸ばして点灯数に反映
     if (spotLightIndexList_.size() <= index && index <= Light::MAX_SPOT_LIGHT) {
       spotLightIndexList_.resize(index + 1);
     }
@@ -107,23 +101,19 @@ namespace Tako {
 
   void Light::CreateDirectionalLightData()
   {
-    // 平行光源リソースを生成
     directionalLightResource_ = m_dx12_->MakeBufferResource(sizeof(DirectionalLight) * Light::MAX_DIRECTIONAL_LIGHT);
 
-    // 平行光源リソースをマップ
     directionalLightResource_->Map(0, nullptr, reinterpret_cast<void**>(&directionalLightData_));
 
-    // 平行光源データの初期値を書き込む
-    directionalLightData_->direction = Vector3(0.0f, -1.0f, 0.0f); // ライトの方向
+    directionalLightData_->direction = Vector3(0.0f, -1.0f, 0.0f);
 
-    directionalLightData_->color = { 1.0f, 1.0f, 1.0f, 1.0f };     // ライトの色
+    directionalLightData_->color = { 1.0f, 1.0f, 1.0f, 1.0f };
 
-    directionalLightData_->lightType = 1;                          // ライトのタイプ 0:Lambert 1:Half-Lambert
+    directionalLightData_->lightType = 1;                          // 0:Lambert 1:Half-Lambert
 
-    directionalLightData_->intensity = 1.0f;                       // 輝度
+    directionalLightData_->intensity = 1.0f;
 
-    // シャドウマップ用の初期値設定
-    directionalLightData_->position = Vector3(0.0f, 0.0f, 0.0f);   // 位置（0,0,0は自動計算のトリガー）
+    directionalLightData_->position = Vector3(0.0f, 0.0f, 0.0f);
     directionalLightData_->viewMatrix = Mat4x4::MakeIdentity();
     directionalLightData_->projMatrix = Mat4x4::MakeIdentity();
     directionalLightData_->viewProjMatrix = Mat4x4::MakeIdentity();
@@ -131,57 +121,46 @@ namespace Tako {
 
   void Light::CreatePointLightData()
   {
-    // 点光源リソースを生成
     pointLightResource_ = m_dx12_->MakeBufferResource(sizeof(PointLight) * Light::MAX_POINT_LIGHT);
 
-    // 点光源リソースをマップ
     pointLightResource_->Map(0, nullptr, reinterpret_cast<void**>(&pointLightData_));
 
-    // 点光源データの初期値を書き込む
-    pointLightData_[0].position = Vector3(0.0f, 2.0f, 0.0f); // ライトの位置
-    pointLightData_[0].color = { 1.0f, 1.0f, 1.0f, 1.0f };     // ライトの色
-    pointLightData_[0].intensity = 1.0f;                       // 輝度
-    pointLightData_[0].radius = 10.0f;                         // 半径
-    pointLightData_[0].decay = 1.0f;                           // 減衰
-    pointLightData_[0].enable = false;                         // 点光源の有効無効
+    pointLightData_[0].position = Vector3(0.0f, 2.0f, 0.0f);
+    pointLightData_[0].color = { 1.0f, 1.0f, 1.0f, 1.0f };
+    pointLightData_[0].intensity = 1.0f;
+    pointLightData_[0].radius = 10.0f;
+    pointLightData_[0].decay = 1.0f;
+    pointLightData_[0].enable = false;
 
-    // SRV の生成
     pointLightSrvIndex_ = SrvManager::GetInstance()->Allocate();
     SrvManager::GetInstance()->CreateSRVForStructuredBuffer(pointLightSrvIndex_, pointLightResource_.Get(), Light::MAX_POINT_LIGHT, sizeof(PointLight));
   }
 
   void Light::CreateSpotLightData()
   {
-    // スポットライトリソースを生成
     spotLightResource_ = m_dx12_->MakeBufferResource(sizeof(SpotLight) * Light::MAX_SPOT_LIGHT);
 
-    // スポットライトリソースをマップ
     spotLightResource_->Map(0, nullptr, reinterpret_cast<void**>(&spotLightData_));
 
-    // スポットライトデータの初期値を書き込む
-    spotLightData_[0].position = Vector3(0.0f, 0.0f, 0.0f); // ライトの位置
-    spotLightData_[0].direction = Vector3(-1.0f, -1.0f, 0.0f); // ライトの方向
-    spotLightData_[0].color = { 1.0f, 1.0f, 1.0f, 1.0f };     // ライトの色
-    spotLightData_[0].intensity = 1.0f;                       // 輝度
-    spotLightData_[0].distance = 10.0f;                        // 距離
-    spotLightData_[0].decay = 1.0f;                           // 減衰
-    spotLightData_[0].cosAngle = std::cos(std::numbers::pi_v<float> / 3.0f); // 角度
-    spotLightData_[0].enable = false;                         // スポットライトの有効無効
+    spotLightData_[0].position = Vector3(0.0f, 0.0f, 0.0f);
+    spotLightData_[0].direction = Vector3(-1.0f, -1.0f, 0.0f);
+    spotLightData_[0].color = { 1.0f, 1.0f, 1.0f, 1.0f };
+    spotLightData_[0].intensity = 1.0f;
+    spotLightData_[0].distance = 10.0f;
+    spotLightData_[0].decay = 1.0f;
+    spotLightData_[0].cosAngle = std::cos(std::numbers::pi_v<float> / 3.0f); // コーン半角60度
+    spotLightData_[0].enable = false;
 
-    // SRV の生成
     spotLightSrvIndex_ = SrvManager::GetInstance()->Allocate();
     SrvManager::GetInstance()->CreateSRVForStructuredBuffer(spotLightSrvIndex_, spotLightResource_.Get(), Light::MAX_SPOT_LIGHT, sizeof(SpotLight));
   }
 
   void Light::CreateLightConstants()
   {
-    // ライト定数リソースを生成
     lightConstantsResource_ = m_dx12_->MakeBufferResource(sizeof(LightConstants));
 
-    // ライト定数リソースをマップ
     lightConstantsResource_->Map(0, nullptr, reinterpret_cast<void**>(&lightConstantsData_));
 
-    // ライト定数データの初期値を書き込む
     lightConstantsData_->numPointLights = 0;
 
     lightConstantsData_->numSpotLights = 0;
@@ -190,15 +169,15 @@ namespace Tako {
   void Light::UpdateDirectionalLightShadowMatrices(const Camera* camera, float maxShadowDistance)
   {
     if (!camera) {
-      return; // カメラが指定されていない場合は処理しない
+      return;
     }
 
     Vector3 lightDirection = directionalLightData_->direction;
     lightDirection = lightDirection.Normalize();
 
-    // ライトの仮の位置を設定（カメラ位置を基準に）
+    // カメラから光方向の逆へ離した位置にライトカメラを置く
     Vector3 cameraPosition = camera->GetTranslate();
-    float tempDistance = 100.0f; // ライトカメラの仮の距離
+    float tempDistance = 100.0f;
     Vector3 lightPosition = cameraPosition - lightDirection * tempDistance;
 
     // ライトのビュー行列を作成
@@ -241,10 +220,8 @@ namespace Tako {
       orthoRight, orthoBottom,
       orthoNear, orthoFar);
 
-    // ビュープロジェクション行列の計算
     directionalLightData_->viewProjMatrix = Mat4x4::Multiply(directionalLightData_->viewMatrix, directionalLightData_->projMatrix);
 
-    // ライト位置を保存（互換性のため）
     if (autoUpdatePosition_) {
       directionalLightData_->position = lightPosition;
     }

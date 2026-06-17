@@ -37,7 +37,7 @@ namespace Tako {
     m_dx12_ = m_modelBasic_->GetDX12Basic();
     directoryFolderName_ = m_modelBasic_->GetDirectoryFolderName();
     ModelFolderName_ = m_modelBasic_->GetModelFolderName();
-    modelFileName_ = fileName;  // ファイル名を保存
+    modelFileName_ = fileName;
     hasAnimation_ = false;  // LoadModelFile で自動設定される
     hasSkeleton_ = false;   // LoadModelFile で自動設定される
     paletteSrvIndex_ = 0;
@@ -596,10 +596,9 @@ namespace Tako {
           lineColor = Vector4(1.0f, 0.0f, 0.0f, 1.0f);  // 赤色
         }
 
-        // Draw the joint as a AABB
         AABB aabb{
-          jointPosition - Vector3(0.01f, 0.01f, 0.01f), // Min corner
-          jointPosition + Vector3(0.01f, 0.01f, 0.01f)  // Max corner
+          jointPosition - Vector3(0.01f, 0.01f, 0.01f),
+          jointPosition + Vector3(0.01f, 0.01f, 0.01f)
         };
         Draw2D::GetInstance()->DrawAABB(aabb, lineColor);
 
@@ -1167,13 +1166,13 @@ namespace Tako {
     joint.localMatrix = node.localMatrix;
     joint.skeletonSpaceMatrix = Mat4x4::MakeIdentity();
     joint.transform = node.transform;
-    joint.index = static_cast<int32_t>(joints.size());              // 現在登録されている数を index として設定
+    joint.index = static_cast<int32_t>(joints.size());
     joint.parentIndex = parentIndex;
-    joints.push_back(joint);                           // skeleton の joint 列に追加
+    joints.push_back(joint);
 
     for (const Node& child : node.children) {
-      int32_t childIndex = CreateJoint(child, joint.index, joints); // 再帰的に子 Joint を生成
-      joints[joint.index].childrenIndex.push_back(childIndex);      // 子 Joint の index を追加
+      int32_t childIndex = CreateJoint(child, joint.index, joints);
+      joints[joint.index].childrenIndex.push_back(childIndex);
     }
 
     return joint.index;
@@ -1182,14 +1181,14 @@ namespace Tako {
   Skeleton Model::CreateSkeleton(const Node& rootNode)
   {
     Skeleton skeleton;
-    skeleton.root = CreateJoint(rootNode, {}, skeleton.joints); // ルートノードからジョイントを生成
+    skeleton.root = CreateJoint(rootNode, {}, skeleton.joints);
 
     // 名前と index のマップを作る
     for (const Joint& joint : skeleton.joints) {
       skeleton.jointMap.emplace(joint.name, joint.index);
     }
 
-    UpdateSkeleton(); // スケルトンの更新
+    UpdateSkeleton();
 
     return skeleton;
   }
@@ -1200,16 +1199,16 @@ namespace Tako {
 
     aiVector3D scale, position;
     aiQuaternion rotate;
-    node->mTransformation.Decompose(scale, rotate, position);         // スケール,回転,平行移動を取得
+    node->mTransformation.Decompose(scale, rotate, position);
 
-    result.transform.scale = { scale.x, scale.y, scale.z };                         // スケールを取得
-    result.transform.rotate = { rotate.x, -rotate.y, -rotate.z, rotate.w };         // 回転を取得,右手系から左手系に変換
-    result.transform.translate = { -position.x, position.y, position.z };           // 平行移動を取得,x 軸を反転
+    result.transform.scale = { scale.x, scale.y, scale.z };
+    result.transform.rotate = { rotate.x, -rotate.y, -rotate.z, rotate.w };         // 右手系から左手系に変換
+    result.transform.translate = { -position.x, position.y, position.z };           // x 軸を反転
 
     result.localMatrix = Mat4x4::MakeAffine(
-      result.transform.scale, result.transform.rotate, result.transform.translate);   // ローカル変換行列を生成
+      result.transform.scale, result.transform.rotate, result.transform.translate);
 
-    result.name = node->mName.C_Str();                                                // ノードの名前を取得
+    result.name = node->mName.C_Str();
 
     // メッシュインデックスの読み込み
     result.meshIndices.resize(node->mNumMeshes);
@@ -1217,10 +1216,10 @@ namespace Tako {
       result.meshIndices[i] = node->mMeshes[i];
     }
 
-    result.children.resize(node->mNumChildren); // 子ノードの数だけリサイズ
+    result.children.resize(node->mNumChildren);
 
     for (uint32_t childIndex = 0; childIndex < node->mNumChildren; ++childIndex) {
-      result.children[childIndex] = ReadNode(node->mChildren[childIndex]); // 再帰的に子ノードを読み込む
+      result.children[childIndex] = ReadNode(node->mChildren[childIndex]);
     }
 
     return result;
@@ -1287,11 +1286,8 @@ namespace Tako {
     if (auto it = currentAnimation.nodeAnimations.find(node.name); it != currentAnimation.nodeAnimations.end()) {
       const NodeAnimation& nodeAnimation = it->second;
 
-      // 位置アニメーションの計算
       Vector3 translate = CalcKeyFrameValue(nodeAnimation.translate.keyFrames, time);
-      // 回転アニメーションの計算
       Quaternion rotate = CalcKeyFrameValue(nodeAnimation.rotate.keyFrames, time);
-      // スケールアニメーションの計算
       Vector3 scale = CalcKeyFrameValue(nodeAnimation.scale.keyFrames, time);
 
       // 遷移中の補間処理
@@ -1323,13 +1319,13 @@ namespace Tako {
   void Model::UpdateSkeleton()
   {
     for (Joint& joint : skeleton_.joints) {
-      joint.localMatrix = Mat4x4::MakeAffine(joint.transform.scale, joint.transform.rotate, joint.transform.translate); // ローカル変換行列を生成
+      joint.localMatrix = Mat4x4::MakeAffine(joint.transform.scale, joint.transform.rotate, joint.transform.translate);
 
       if (joint.parentIndex) {
-        joint.skeletonSpaceMatrix = joint.localMatrix * skeleton_.joints[*joint.parentIndex].skeletonSpaceMatrix; // 親がいる場合は親のスケルトン空間行列を掛ける
+        joint.skeletonSpaceMatrix = joint.localMatrix * skeleton_.joints[*joint.parentIndex].skeletonSpaceMatrix; // 親のスケルトン空間行列を累積
       }
       else {
-        joint.skeletonSpaceMatrix = joint.localMatrix; // 親がいない場合はローカル変換行列がスケルトン空間行列
+        joint.skeletonSpaceMatrix = joint.localMatrix;
       }
     }
   }
@@ -1345,13 +1341,10 @@ namespace Tako {
 
     for (Joint& joint : skeleton_.joints) {
       if (auto it = currentAnimation.nodeAnimations.find(joint.name); it != currentAnimation.nodeAnimations.end()) {
-        const NodeAnimation& rootAnimetion = (*it).second; // ルートノードのアニメーションを取得
+        const NodeAnimation& rootAnimetion = (*it).second;
 
-        // 位置アニメーションの計算
         Vector3 translate = CalcKeyFrameValue(rootAnimetion.translate.keyFrames, time);
-        // 回転アニメーションの計算
         Quaternion rotate = CalcKeyFrameValue(rootAnimetion.rotate.keyFrames, time);
-        // スケールアニメーションの計算
         Vector3 scale = CalcKeyFrameValue(rootAnimetion.scale.keyFrames, time);
 
         // 遷移中の補間処理
@@ -1389,38 +1382,38 @@ namespace Tako {
 
   Vector3 Model::CalcKeyFrameValue(const std::vector<KeyFrameVector3>& keyFrames, float time)
   {
-    assert(!keyFrames.empty()); // キーフレームがない場合はエラー
+    assert(!keyFrames.empty());
     if (keyFrames.size() == 1 || time <= keyFrames[0].time) {
-      return keyFrames[0].value; // 最初のキーフレームの値を返す
+      return keyFrames[0].value;
     }
 
     for (uint32_t keyIndex = 0; keyIndex < keyFrames.size() - 1; ++keyIndex) {
       uint32_t nextKeyIndex = keyIndex + 1;
       if (keyFrames[keyIndex].time <= time && time <= keyFrames[nextKeyIndex].time) {
-        float t = (time - keyFrames[keyIndex].time) / (keyFrames[nextKeyIndex].time - keyFrames[keyIndex].time); // 補間係数を計算
-        return Vec3::Lerp(keyFrames[keyIndex].value, keyFrames[nextKeyIndex].value, t); // 線形補間
+        float t = (time - keyFrames[keyIndex].time) / (keyFrames[nextKeyIndex].time - keyFrames[keyIndex].time);
+        return Vec3::Lerp(keyFrames[keyIndex].value, keyFrames[nextKeyIndex].value, t);
       }
     }
 
-    return (*keyFrames.rbegin()).value; // 最後のキーフレームの値を返す
+    return (*keyFrames.rbegin()).value;
   }
 
   Quaternion Model::CalcKeyFrameValue(const std::vector<KeyFrameQuaternion>& keyFrames, float time)
   {
-    assert(!keyFrames.empty()); // キーフレームがない場合はエラー
+    assert(!keyFrames.empty());
     if (keyFrames.size() == 1 || time <= keyFrames[0].time) {
-      return keyFrames[0].value; // 最初のキーフレームの値を返す
+      return keyFrames[0].value;
     }
 
     for (uint32_t keyIndex = 0; keyIndex < keyFrames.size() - 1; ++keyIndex) {
       uint32_t nextKeyIndex = keyIndex + 1;
       if (keyFrames[keyIndex].time <= time && time <= keyFrames[nextKeyIndex].time) {
-        float t = (time - keyFrames[keyIndex].time) / (keyFrames[nextKeyIndex].time - keyFrames[keyIndex].time); // 補間係数を計算
-        return Quat::Slerp(keyFrames[keyIndex].value, keyFrames[nextKeyIndex].value, t); // 球面線形補間
+        float t = (time - keyFrames[keyIndex].time) / (keyFrames[nextKeyIndex].time - keyFrames[keyIndex].time);
+        return Quat::Slerp(keyFrames[keyIndex].value, keyFrames[nextKeyIndex].value, t);
       }
     }
 
-    return (*keyFrames.rbegin()).value; // 最後のキーフレームの値を返す
+    return (*keyFrames.rbegin()).value;
   }
 
   // アニメーション制御メソッドの実装

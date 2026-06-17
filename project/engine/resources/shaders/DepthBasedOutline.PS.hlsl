@@ -9,7 +9,7 @@ struct DepthBasedOutlineParams
 ConstantBuffer<DepthBasedOutlineParams> gParams : register(b0);
 
 Texture2D<float4> gTexture : register(t0);
-Texture2D<float> gDepthTexture : register(t1); // ƒV[ƒ“‚Ì[“xƒeƒNƒXƒ`ƒƒ
+Texture2D<float> gDepthTexture : register(t1); // ã‚·ãƒ¼ãƒ³ã®æ·±åº¦ãƒ†ã‚¯ã‚¹ãƒãƒ£
 SamplerState gSampler : register(s0);
 
 static const float kPrewittHorizontalKernel[3][3] =
@@ -50,16 +50,16 @@ float4 main(VertexShaderOutput input) : SV_TARGET
         for (int y = 0; y < 3; ++y)
         {
             float2 texcoord = input.texCoord + kIndex3x3[x][y] * uvStepSize;
-            float ndcDepth = gDepthTexture.Sample(gSampler, texcoord); // NDCÀ•WŒn‚Ì[“x’l‚ğæ“¾
+            float ndcDepth = gDepthTexture.Sample(gSampler, texcoord); // NDCåº§æ¨™ç³»ã®æ·±åº¦å€¤ã‚’å–å¾—
             float4 viewSpace = mul(float4(0.0f, 0.0f, ndcDepth, 1.0f), gParams.projectionInverse);
-            float viewZ = viewSpace.z * rcp(viewSpace.w); // “¯ŸÀ•WŒn‚©‚çƒfƒJƒ‹ƒgÀ•WŒn‚É•ÏŠ·
+            float viewZ = viewSpace.z * rcp(viewSpace.w); // åŒæ¬¡åº§æ¨™ç³»ã‹ã‚‰ãƒ‡ã‚«ãƒ«ãƒˆåº§æ¨™ç³»ã«å¤‰æ›
             difference.x += viewZ * kPrewittHorizontalKernel[x][y];
             difference.y += viewZ * kPreWittVerticalKernel[x][y];
         }
     }
 
     float weight = length(difference);
-    weight = saturate(weight * gParams.outlineThickness); // ƒAƒEƒgƒ‰ƒCƒ“‚Ì‘¾‚³‚ğ’²®
+    weight = saturate(weight * gParams.outlineThickness); // ã‚¢ã‚¦ãƒˆãƒ©ã‚¤ãƒ³ã®å¤ªã•ã‚’èª¿æ•´
 
     PixelShaderOutput output;
     output.color.rgb = (1.0f - weight) * gTexture.Sample(gSampler, input.texCoord).rgb;

@@ -10,14 +10,8 @@ namespace Tako {
   /// </summary>
   class BTSequence : public BTComposite {
   public:
-    /// <summary>
-    /// コンストラクタ。ノード名を "Sequence" に設定する。
-    /// </summary>
     BTSequence();
 
-    /// <summary>
-    /// 仮想デストラクタ。
-    /// </summary>
     virtual ~BTSequence() = default;
 
     /// <summary>

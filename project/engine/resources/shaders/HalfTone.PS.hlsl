@@ -2,14 +2,14 @@
 
 cbuffer HalfToneParam : register(b0)
 {
-    float dotSize;          // ドットのサイズ
-    float contrast;         // コントラスト
+    float dotSize;
+    float contrast;
     float angle;            // ドットグリッドの回転角度（ラジアン）
-    int dotPattern;         // ドットパターン (0=円, 1=四角, 2=ダイヤモンド)
-    float2 screenSize;      // スクリーンサイズ
-    int colorMode;          // カラーモード (0=モノクロ, 1=CMYK風)
-    float threshold;        // 閾値調整
-    float padding;          // パディング
+    int dotPattern;         // 0=円, 1=四角, 2=ダイヤモンド
+    float2 screenSize;
+    int colorMode;          // 0=モノクロ, 1=CMYK風
+    float threshold;
+    float padding;
 }
 
 Texture2D<float4> gTexture : register(t0);
@@ -85,10 +85,8 @@ float3 CMYKHalftone(float4 originalColor, float2 texCoord, float2 screenSize, fl
 
 float4 main(VertexShaderOutput input) : SV_TARGET
 {
-    // 元の色をサンプリング
     float4 originalColor = gTexture.Sample(gSampler, input.texCoord);
-    
-    // カラーモードに応じて処理を分岐
+
     if (colorMode == 1) // CMYK風カラーハーフトーン
     {
         float3 cmykResult = CMYKHalftone(originalColor, input.texCoord, screenSize, dotSize, contrast);

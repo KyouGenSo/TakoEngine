@@ -2,7 +2,7 @@
 
 struct DepthBasedOutlineParams
 {
-    float outlineThickness; // Thickness of the outline
+    float outlineThickness;
 };
 
 ConstantBuffer<DepthBasedOutlineParams> gParams : register(b0);
@@ -61,7 +61,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     }
 
     float weight = length(difference);
-    weight = saturate(weight * gParams.outlineThickness); // Adjust the weight to control the outline thickness
+    weight = saturate(weight * gParams.outlineThickness);
 
     PixelShaderOutput output;
     output.color.rgb = (1.0f - weight) * gTexture.Sample(gSampler, input.texCoord).rgb;

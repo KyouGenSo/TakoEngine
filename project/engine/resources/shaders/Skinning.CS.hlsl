@@ -42,6 +42,7 @@ void main( uint3 DTid : SV_DispatchThreadID )
         Vertex skinned;
         skinned.texcoord = inputVertex.texcoord;
         
+        // 4ボーンの行列変換をウェイトで線形ブレンド（リニアブレンドスキニング）
         skinned.pos = mul(inputVertex.pos, gMatrixPalette[influence.index.x].skeletonSpaceMatrix) * influence.weight.x;
         skinned.pos += mul(inputVertex.pos, gMatrixPalette[influence.index.y].skeletonSpaceMatrix) * influence.weight.y;
         skinned.pos += mul(inputVertex.pos, gMatrixPalette[influence.index.z].skeletonSpaceMatrix) * influence.weight.z;

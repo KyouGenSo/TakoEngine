@@ -64,9 +64,8 @@ namespace Tako {
   void BWFilter::SetParam(const BWFilterParam& param)
   {
     if (cBufferData_ == nullptr) {
-      return; // cBufferData_が初期化されていない場合は何もしない
+      return;
     }
-    // パラメータの設定
     cBufferData_->threshold = param.threshold;
   }
 

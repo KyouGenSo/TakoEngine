@@ -18,7 +18,6 @@ struct EditorNode {
   int id;
   /// エディタキャンバス上の位置
   ImVec2 position;
-  /// ノードタイプ名
   std::string nodeType;
   /// 表示名 (パレット名、ユーザーが変更可能)
   std::string displayName;

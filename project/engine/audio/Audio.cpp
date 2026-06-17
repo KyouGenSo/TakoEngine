@@ -24,13 +24,10 @@ namespace Tako {
   {
     HRESULT hr;
 
-    // ディレクトリパスの設定
     directoryPath_ = directoryPath;
 
-    // XAudio2の初期化
     hr = XAudio2Create(&xAudio2_, 0, XAUDIO2_DEFAULT_PROCESSOR);
 
-    // マスターボイスの作成
     hr = xAudio2_->CreateMasteringVoice(&masterVoice_);
   }
 

@@ -82,7 +82,6 @@ namespace Tako {
         }
       }
 
-      // リンク情報を取得
       std::vector<nlohmann::json> links;
       if (json.contains("links")) {
         links = json["links"].get<std::vector<nlohmann::json>>();
@@ -108,7 +107,6 @@ namespace Tako {
         return false;
       }
 
-      // 再帰的にツリー構築
       std::unordered_set<int> visitedNodes;
       root_ = BuildNodeFromJSON(nodeMap[rootNodeId], nodeMap, links, visitedNodes);
       if (!root_) {

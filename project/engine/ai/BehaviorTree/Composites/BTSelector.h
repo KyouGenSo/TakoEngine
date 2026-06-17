@@ -10,14 +10,8 @@ namespace Tako {
   /// </summary>
   class BTSelector : public BTComposite {
   public:
-    /// <summary>
-    /// コンストラクタ。ノード名を "Selector" に設定する。
-    /// </summary>
     BTSelector();
 
-    /// <summary>
-    /// 仮想デストラクタ。
-    /// </summary>
     virtual ~BTSelector() = default;
 
     /// <summary>

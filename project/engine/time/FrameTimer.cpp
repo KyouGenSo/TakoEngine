@@ -14,7 +14,6 @@ namespace Tako {
 
   void FrameTimer::Initialize()
   {
-    // システム時間の取得
     startTime_ = std::chrono::system_clock::now();
     prevTime_ = startTime_;
 
@@ -32,10 +31,8 @@ namespace Tako {
 
   void FrameTimer::Update()
   {
-    // deltaTime と FPS の更新
     UpdateDeltaTimeAndFPS();
 
-    // gameTime の更新
     UpdateGameTime();
   }
 
@@ -43,30 +40,24 @@ namespace Tako {
 
   void FrameTimer::UpdateDeltaTimeAndFPS()
   {
-    // 現在の時間を取得
     auto nowTime = std::chrono::system_clock::now();
 
-    // 前フレームからの経過時間を取得
     std::chrono::duration<float> elapsedTime = nowTime - prevTime_;
     float frameDelta = elapsedTime.count();
 
-    // 前フレームの時間を更新
     prevTime_ = nowTime;
 
-    // フレームごとの経過時間とカウントを蓄積
     timeAccumulator_ += frameDelta;
     frameCount_++;
 
-    // 平均 deltaTime は累積時間をフレーム数で割った値
+    // 直近1秒間の平均で deltaTime / FPS を算出
     deltaTime_ = timeAccumulator_ / frameCount_;
-    // FPS はフレーム数を累積時間で割った値
     fps_ = static_cast<float>(frameCount_) / timeAccumulator_;
 
-    // 蓄積時間が1秒以上になったら更新
+    // 蓄積時間が1秒以上になったら表示用 FPS を更新し計測をリセット
     if (timeAccumulator_ >= 1.0f) {
       displayFPS_ = fps_;
 
-      // 蓄積変数をリセット
       timeAccumulator_ = 0.0f;
       frameCount_ = 0;
     }
@@ -74,9 +65,7 @@ namespace Tako {
 
   void FrameTimer::UpdateGameTime()
   {
-    // システム時間の取得
     auto nowTime = std::chrono::system_clock::now();
-    // ゲーム起動からの経過時間を取得
     std::chrono::duration<float> elapsedTime = nowTime - startTime_;
     gameTime_ = elapsedTime.count();
   }

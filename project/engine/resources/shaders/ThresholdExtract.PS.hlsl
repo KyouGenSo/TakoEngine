@@ -8,29 +8,16 @@ cbuffer Param : register(b0)
 Texture2D<float4> gTexture : register(t0);
 SamplerState gSampler : register(s0);
 
-//float4 BloomExtract(float2 texcoord)
-//{
-//    float4 color = gTexture.Sample(gSampler, texcoord);
-//    // è‡’l‚Ì”ÍˆÍ‚ğ’è‹`
-//    float minThreshold = threshold - 0.1f;
-//    float maxThreshold = threshold;
-//    // smoothstep‚ÅŠŠ‚ç‚©‚Èè‡’l“K—p
-//    float brightness = max(color.r, max(color.g, color.b));
-//    float factor = smoothstep(minThreshold, maxThreshold, brightness);
-//    return color * factor;
-//}
-
 float4 main(VertexShaderOutput input) : SV_TARGET
 {
     float4 color = gTexture.Sample(gSampler, input.texCoord);
     
-    // ‹P“xŒvZiRGB¨‹P“x‚Ö‚Ì•ÏŠ·j
+    // è¼åº¦è¨ˆç®—ï¼ˆRGBâ†’è¼åº¦ã¸ã®å¤‰æ›ï¼‰
     float brightness = dot(color.rgb, float3(0.299, 0.587, 0.114));
     
-    // è‡’lˆÈã‚Ì–¾‚é‚³‚Ì‚İ’Šo
+    // é–¾å€¤ä»¥ä¸Šã®æ˜ã‚‹ã•ã®ã¿æŠ½å‡º
     float4 output = brightness > threshold ? color : float4(0.0f, 0.0f, 0.0f, 0.0f);
-    
-    // Œ‹‰Ê‚ğo—Í
+
     return output;
 
 }

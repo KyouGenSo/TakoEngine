@@ -400,7 +400,6 @@ void BehaviorTreeEditor::DrawNode(const EditorNode& node) {
     );
   }
 
-  // スタイルを適用
   ed::PushStyleColor(ed::StyleColor_NodeBg, ImColor(nodeColor));
   ed::PushStyleColor(ed::StyleColor_NodeBorder, ImColor(borderColor));
   ed::PushStyleVar(ed::StyleVar_NodeRounding, 5.0f);
@@ -828,7 +827,6 @@ bool BehaviorTreeEditor::LoadFromJSON(const std::string& filepath) {
           if (node) {
             node->displayName = displayName;
 
-            // パラメータを適用
             if (nodeJson.contains("parameters")) {
               ApplyNodeParameters(*node, nodeJson["parameters"]);
             }

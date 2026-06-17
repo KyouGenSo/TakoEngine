@@ -11,17 +11,13 @@ namespace Tako {
   OBB OBBCollider::GetOBB() const {
     OBB obb;
 
-    // ワールド座標での中心位置を計算
     Vector3 worldPos = transform_ ? transform_->translate : Vector3(0.0f, 0.0f, 0.0f);
 
-    // オフセットを回転を考慮して適用
     if (transform_) {
-      // orientation_が設定されている場合はそれを使用
-      // オフセットを orientation_で回転
+      // transform の回転で orientation_ を更新し、その回転でオフセットを移動
       orientation_ = Mat4x4::MakeRotateXYZ(transform_->rotate);
       Vector3 rotatedOffset = Mat4x4::TransformNormal(orientation_, offset_);
       obb.center = worldPos + rotatedOffset;
-      // orientation_をそのまま使用
       obb.orientation = orientation_;
     }
     else {
@@ -29,7 +25,6 @@ namespace Tako {
       obb.orientation = orientation_;
     }
 
-    // 半サイズを設定
     obb.halfExtents = size_ * 0.5f;
 
     return obb;
@@ -37,7 +32,6 @@ namespace Tako {
 
   Vector3 OBBCollider::GetCenter() const {
     if (transform_) {
-      // orientation_を使用してオフセットを回転
       Vector3 rotatedOffset = Mat4x4::TransformNormal(orientation_, offset_);
       return transform_->translate + rotatedOffset;
     }

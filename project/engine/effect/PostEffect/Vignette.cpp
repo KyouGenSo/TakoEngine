@@ -68,9 +68,8 @@ namespace Tako {
   void Vignette::SetParam(const VignetteParam& param)
   {
     if (cBufferData_ == nullptr) {
-      return; // cBufferData_が初期化されていない場合は何もしない
+      return;
     }
-    // パラメータの設定
     cBufferData_->power = param.power;
     cBufferData_->range = param.range;
     cBufferData_->color.x = param.color.x;

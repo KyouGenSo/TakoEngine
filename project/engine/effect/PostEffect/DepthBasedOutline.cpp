@@ -76,9 +76,8 @@ namespace Tako {
   void DepthBasedOutline::SetParam(const DepthOutlineParam& param)
   {
     if (cBufferData_ == nullptr) {
-      return; // cBufferData_が初期化されていない場合は何もしない
+      return;
     }
-    // パラメータを更新
     cBufferData_->outlineThickness = param.outlineThickness;
   }
 
@@ -105,7 +104,7 @@ namespace Tako {
     cBufferResource_->Map(0, nullptr, reinterpret_cast<void**>(&cBufferData_));
 
     // 初期値を設定
-    cBufferData_->outlineThickness = 1.0f; // 初期値は1.0f
+    cBufferData_->outlineThickness = 1.0f;
     cBufferData_->projectionInverse = Mat4x4::MakeIdentity();
   }
 

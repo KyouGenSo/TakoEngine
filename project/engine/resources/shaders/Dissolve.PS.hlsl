@@ -8,9 +8,9 @@ struct DissolvePram
 };
 
 ConstantBuffer<DissolvePram> gParam : register(b0);
-Texture2D<float4> gTexture : register(t0);     // ƒV[ƒ“‚ÌƒJƒ‰[ƒeƒNƒXƒ`ƒƒ
-Texture2D<float> gMaskTexture : register(t1);  // ƒ}ƒXƒNƒeƒNƒXƒ`ƒƒ
-Texture2D<float4> gBaseTexture : register(t2); // ‰º’n‚ÌƒJƒ‰[ƒeƒNƒXƒ`ƒƒ
+Texture2D<float4> gTexture : register(t0);     // ã‚·ãƒ¼ãƒ³ã®ã‚«ãƒ©ãƒ¼ãƒ†ã‚¯ã‚¹ãƒãƒ£
+Texture2D<float> gMaskTexture : register(t1);  // ãƒžã‚¹ã‚¯ãƒ†ã‚¯ã‚¹ãƒãƒ£
+Texture2D<float4> gBaseTexture : register(t2); // ä¸‹åœ°ã®ã‚«ãƒ©ãƒ¼ãƒ†ã‚¯ã‚¹ãƒãƒ£
 SamplerState gSampler : register(s0);
 
 struct PixelShaderOutput
@@ -22,13 +22,11 @@ float4 main(VertexShaderOutput input) : SV_TARGET
 {
     PixelShaderOutput output;
 
-	// ‰º’n‚ÌF‚ðŽæ“¾
     float4 baseColor = gBaseTexture.Sample(gSampler, input.texCoord);
 
-	// ƒ}ƒXƒN‚Ì’l‚ðŽæ“¾
     float mask = gMaskTexture.Sample(gSampler, input.texCoord);
 
-    // ƒ}ƒXƒN‚Ì’l‚ªè‡’l‚ð’´‚¦‚Ä‚¢‚éê‡A‰º’n‚ÌF‚ðŽg—p
+    // ãƒžã‚¹ã‚¯ãŒé–¾å€¤ä»¥ä¸‹ãªã‚‰ä¸‹åœ°ã®è‰²ã‚’ä½¿ã†
     if (mask <= gParam.threshold)
     {
         return baseColor;
@@ -41,10 +39,9 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     }
     float edge = 1.0f - smoothstep(gParam.threshold, edgeJudge, mask);
 
-	// ƒV[ƒ“‚ÌF‚ðŽæ“¾
     output.color = gTexture.Sample(gSampler, input.texCoord);
 
-    output.color.rgb += edge * gParam.edgeColor.rgb; // ƒGƒbƒW‚ÌF‚ð‰ÁŽZ
+    output.color.rgb += edge * gParam.edgeColor.rgb;
 
     return output.color;
 

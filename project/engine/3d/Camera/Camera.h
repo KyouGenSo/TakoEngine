@@ -187,23 +187,18 @@ namespace Tako {
 
   private: // メンバー変数
 
-    // トランスフォーム
     Transform transform_;
 
-    // ワールド行列
     Matrix4x4 worldMatrix_;
 
-    // ビュー行列
     Matrix4x4 viewMatrix_;
 
-    // プロジェクション行列
     Matrix4x4 projectionMatrix_;
     float fovY_;
     float aspect_;
     float nearZ_;
     float farZ_;
 
-    // ビュープロジェクション行列
     Matrix4x4 viewProjectionMatrix_;
   };
 

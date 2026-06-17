@@ -31,9 +31,7 @@ namespace Tako {
 
   GPUParticleEmitter::~GPUParticleEmitter()
   {
-    // デストラクタで特に何もしない
-    // 必要なリソースは GPUParticle クラスが管理しているため
-    // ここで解放する必要はない
+    // リソースは GPUParticle が管理するため解放不要
   }
 
   void GPUParticleEmitter::UpdateEmission(float deltaTime)
@@ -238,7 +236,6 @@ namespace Tako {
       ResetParticleModel();
       return;
     }
-    // 描画モデルの SRV 群を記録する 
     data_.renderVertexSrvIndex = mesh->GetVertexSrvIndex();
     data_.renderIndexSrvIndex = mesh->GetIndexSrvIndex();
     data_.renderIndexCount = mesh->GetIndexCount();
@@ -248,7 +245,6 @@ namespace Tako {
 
   void GPUParticleEmitter::ResetParticleModel()
   {
-    // 既定の板ポリ描画に戻す。
     data_.renderVertexSrvIndex = 0;
     data_.renderIndexSrvIndex = 0;
     data_.renderIndexCount = 0;
@@ -257,10 +253,8 @@ namespace Tako {
 
   void GPUParticleEmitter::CopyCommonStateTo(GPUParticleEmitter& dst) const
   {
-    // クローン共通処理: EmitterData 全体をコピーし、
-    // data_ に含まれないrenderModelPath_を明示的に転送する。
     dst.data_ = data_;
-    dst.renderModelPath_ = renderModelPath_;
+    dst.renderModelPath_ = renderModelPath_; // data_ 外メンバなので個別転送
   }
 
   void GPUParticleEmitter::SetSpawnLocation(SpawnLocation location)

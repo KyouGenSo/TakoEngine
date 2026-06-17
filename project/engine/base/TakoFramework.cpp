@@ -49,7 +49,6 @@ namespace Tako {
     imguiManager_ = std::make_unique<ImGuiManager>();
     imguiManager_->Initialize(winApp_, dx12_.get(), true);
 
-    // DebugUIManager の初期化
     DebugUIManager::GetInstance()->Initialize();
     DebugUIManager::GetInstance()->SetEndFlagPtr(&endFlag_);
     DebugUIManager::GetInstance()->SetDebugFlagPtr(&isDebug_);
@@ -73,15 +72,12 @@ namespace Tako {
 
     FrameTimer::GetInstance()->Initialize();
 
-    // デフォルトカメラを生成
     defaultCamera_ = std::make_unique<Camera>();
     defaultCamera_->SetRotate(Vector3(0.2f, 0.0f, 0.0f));
     defaultCamera_->SetTranslate(Vector3(0.0f, 9.0f, -34.0f));
 
-    // デフォルトカメラを設定
     Object3dBasic::GetInstance()->SetCamera(defaultCamera_.get());
 
-    // ShadowRenderer の初期化
     ShadowRenderer::GetInstance()->Initialize(dx12_.get());
     ShadowRenderer::GetInstance()->SetLight(Object3dBasic::GetInstance()->GetLight());
     ShadowRenderer::GetInstance()->SetCamera(defaultCamera_.get());
@@ -99,10 +95,8 @@ namespace Tako {
 
     TransitionManager::GetInstance()->Initialize();
 
-    // SpriteBasic のリサイズコールバック関数登録
     spriteBasicOnresizeId_ = winApp_->RegisterOnResizeFunc(std::bind(&SpriteBasic::OnResize, SpriteBasic::GetInstance(), std::placeholders::_1));
 
-    // GPU パーティクルの初期化
     GPUParticle::GetInstance()->Initialize(dx12_.get(), defaultCamera_.get());
 
 #pragma endregion
@@ -122,72 +116,52 @@ namespace Tako {
 
     winApp_->UnregisterOnResizeFunc(spriteBasicOnresizeId_);
 
-    // GPU パーティクルの解放
     GPUParticle::GetInstance()->Finalize();
 
     // Initialize の逆順で終了処理を実行
-    // TransitionManager
     TransitionManager::GetInstance()->Finalize();
 
-    // PostEffectManager
     PostEffectManager::GetInstance()->Finalize();
 
-    // DecalManager
     DecalManager::GetInstance()->Finalize();
 
-    // Draw2D
     Draw2D::GetInstance()->Finalize();
 
-    // ShadowRenderer
     ShadowRenderer::GetInstance()->Finalize();
 
-    // defaultCamera は unique_ptr で自動解放
     defaultCamera_.reset();
 
-    // FrameTimer
     FrameTimer::GetInstance()->Finalize();
 
 #ifdef _DEBUG
-    // DebugCamera
     DebugCamera::GetInstance()->Finalize();
 #endif
 
-    // SpriteBasic
     SpriteBasic::GetInstance()->Finalize();
 
-    // Object3dBasic
     Object3dBasic::GetInstance()->Finalize();
 
-    // ModelManager
     ModelManager::GetInstance()->Finalize();
 
-    // TextureManager
     TextureManager::GetInstance()->Finalize();
 
-    // SRV マネージャー
     SrvManager::GetInstance()->Finalize();
 
-    // Audio の解放
     Audio::GetInstance()->Finalize();
 
-    // 入力クラスの解放
     Input::GetInstance()->SetVibration(0.0f, 0.0f, 0.0f);
     Input::GetInstance()->Finalize();
 
 #ifdef _DEBUG
-    // DebugUIManager の終了処理
     DebugUIManager::GetInstance()->Finalize();
 
-    // ImGuiManager の終了処理
     imguiManager_->Shutdown();
     imguiManager_.reset();
 #endif
 
-    // DX12の終了処理
     dx12_->Finalize();
     dx12_.reset();
 
-    // sceneFactory は unique_ptr で自動解放
     sceneFactory_.reset();
 
     // WinApp（最初に初期化されたもの）
@@ -202,28 +176,20 @@ namespace Tako {
       return;
     }
 
-    // カメラの更新
     defaultCamera_->Update();
 
-    // フレームタイマーの更新
     FrameTimer::GetInstance()->Update();
 
-    // 入力情報の更新
     Input::GetInstance()->Update();
 
-    //　サウンドの更新
     Audio::GetInstance()->Update();
 
-    // シーンマネージャーの更新
     SceneManager::GetInstance()->Update();
 
-    // GPU パーティクルの更新
     GPUParticle::GetInstance()->Update();
 
-    // デコールの更新
     DecalManager::GetInstance()->UpdateAll();
 
-    // 一時エフェクトの更新
     PostEffectManager::GetInstance()->Update(FrameTimer::GetInstance()->GetDeltaTime());
 
 #ifdef _DEBUG
@@ -241,13 +207,10 @@ namespace Tako {
     DebugUIManager::GetInstance()->Update();
 #endif
 
-    //	Draw2D の更新
     Draw2D::GetInstance()->Update();
 
-    // Object3dBasic の更新
     Object3dBasic::GetInstance()->Update();
 
-    // ShadowRenderer の更新
     ShadowRenderer::GetInstance()->Update();
 
   }
@@ -261,7 +224,6 @@ namespace Tako {
     //ポストエフェクト適用対象のレンダーテクスチャを描画先に設定
     dx12_->SetEffectRenderTexture();
 
-    // テクスチャ用の srv ヒープの設定
     SrvManager::GetInstance()->BeginDraw();
 
     SceneManager::GetInstance()->Draw();
@@ -280,7 +242,6 @@ namespace Tako {
     /// ------------------ポストエフェクト描画-------------------///
     /// ===================================================== ///
 
-    // ポストエフェクトの描画
     PostEffectManager::GetInstance()->Draw();
 
     /// ===================================================== ///
@@ -289,7 +250,6 @@ namespace Tako {
     // ポストエフェクト非適用対象のレンダーテクスチャを描画先に設定
     dx12_->SetNonEffectRenderTexture();
 
-    // シーンの描画
     SceneManager::GetInstance()->DrawWithoutEffect();
 
     TransitionManager::GetInstance()->Draw();
@@ -315,19 +275,16 @@ namespace Tako {
 
     imguiManager_->Begin();
 
-    // デバッグ UI の描画
     DebugUIManager::GetInstance()->Draw();
 
     Draw2D::GetInstance()->ImGui();
 
     imguiManager_->End();
 
-    //imgui の描画
     imguiManager_->Draw();
 #endif
 
 
-    // 描画後の処理
     dx12_->EndDraw();
   }
 
@@ -350,10 +307,8 @@ namespace Tako {
 
   void TakoFramework::ToggleFullScreen()
   {
-    // ウィンドウの状態を切り替え
     winApp_->ToggleFullScreen();
 
-    // リサイズ処理を実行
     OnWindowResize(WinApp::clientWidth, WinApp::clientHeight);
   }
 

@@ -40,9 +40,6 @@ namespace Tako {
     /// <param name="policy">終了判定ポリシー (デフォルト: MainChild)</param>
     explicit BTParallel(Policy policy = Policy::MainChild);
 
-    /// <summary>
-    /// 仮想デストラクタ。
-    /// </summary>
     virtual ~BTParallel() = default;
 
     /// <summary>
@@ -57,16 +54,8 @@ namespace Tako {
     /// </summary>
     void Reset() override;
 
-    /// <summary>
-    /// ポリシー変更。
-    /// </summary>
-    /// <param name="policy">新しいポリシー</param>
     void SetPolicy(Policy policy) { policy_ = policy; }
 
-    /// <summary>
-    /// ポリシー取得。
-    /// </summary>
-    /// <returns>現在のポリシー</returns>
     Policy GetPolicy() const { return policy_; }
 
     /// <summary>
@@ -90,7 +79,6 @@ namespace Tako {
 #endif
 
   private:
-    // 終了判定ポリシー
     Policy policy_;
 
     // 各子ノードの最新ステータス (初回 Execute 時に children_.size() に合わせて初期化)。

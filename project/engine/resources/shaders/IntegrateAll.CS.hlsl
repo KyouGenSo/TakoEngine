@@ -134,7 +134,6 @@ void main(uint3 DTid : SV_DispatchThreadID)
     gParticles[particleIndex].translate = newPos;
 
     // --- 寿命管理 ---
-    // 経過時間の更新
     gParticles[particleIndex].currentTime += dt;
 
     // 寿命進行率 (0.0 → 1.0)。

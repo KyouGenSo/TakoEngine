@@ -28,7 +28,6 @@ namespace Tako {
 
   EmitterManager::~EmitterManager()
   {
-    // すべてのエミッターを削除
     RemoveAllEmitters();
   }
 
@@ -187,10 +186,7 @@ namespace Tako {
 
   void EmitterManager::CreateTemporaryEmitterFrom(const std::string& sourceName, const std::string& newName, float lifeTime)
   {
-    // ソースエミッターを取得
     auto sourceIt = emitterMap_.find(sourceName);
-
-    // ソースエミッターの存在チェック
     if (sourceIt == emitterMap_.end()) {
 #ifdef _DEBUG
       DebugUIManager::GetInstance()->AddLog(
@@ -199,7 +195,6 @@ namespace Tako {
       return;
     }
 
-    // 名前の重複チェック
     if (emitterMap_.contains(newName)) {
 #ifdef _DEBUG
       DebugUIManager::GetInstance()->AddLog(
@@ -209,15 +204,14 @@ namespace Tako {
       RemoveEmitter(newName);
     }
 
-    // 一時的なエミッターを作成
     std::shared_ptr<GPUParticleEmitter> sourceEmitter = sourceIt->second;
     std::shared_ptr<GPUParticleEmitter> newEmitter = particleSystem_->CreateTemporaryEmitterFrom(sourceEmitter.get(), lifeTime);
 
     if (newEmitter) {
-      // マップに追加（グループには追加しない）
+      // グループには追加しない
       emitterMap_[newName] = newEmitter;
 
-      // 即座にパーティクルを発生させるように設定
+      // frequencyTime を frequency に合わせ次フレームで即射出
       newEmitter->SetFrequencyTime(newEmitter->GetFrequency());
 #ifdef _DEBUG
       DebugUIManager::GetInstance()->AddLog(
@@ -378,23 +372,20 @@ namespace Tako {
         DebugUIManager::LogType::Info);
 #endif
 
-      // エミッターを非アクティブにして即時効果を得る
+      // 非アクティブ化して描画へ即反映
       it->second->SetActive(false);
 
-      // エミッターをマップから削除
       std::shared_ptr<GPUParticleEmitter> emitter = it->second;
       emitterMap_.erase(it);
 
-      // GPUParticle システムから登録解除
       if (particleSystem_) {
         particleSystem_->UnregisterEmitter(emitter);
       }
 
-      // グループからの削除処理を別の方法で実装
+      // 所属する全グループからも名前を除去
       for (auto& [groupName, group] : groupMap_) {
         auto& names = group.emitterNames;
 
-        // erase-remove イディオムの安全な実装
         auto removeIt = std::find(names.begin(), names.end(), name);
         if (removeIt != names.end()) {
           names.erase(removeIt);
@@ -426,18 +417,15 @@ namespace Tako {
 
     if (emitterMap_.empty()) return; // すでに空の場合は何もしない
 
-    // エミッターを1つずつ明示的に削除（GPUParticle システムに通知するため）
+    // GPUParticle へ登録解除を通知するため 1 つずつ処理する
     for (auto& val : emitterMap_ | std::views::values) {
       auto& emitter = val;
-      // エミッターを非アクティブ化して即時効果を得る
       emitter->SetActive(false);
       particleSystem_->UnregisterEmitter(emitter);
     }
 
-    // エミッターマップをクリア
     emitterMap_.clear();
 
-    // グループを空にする
     for (auto& val : groupMap_ | std::views::values) {
       val.emitterNames.clear();
     }
@@ -446,7 +434,6 @@ namespace Tako {
   // グループ機能
   void EmitterManager::CreateGroup(const std::string& groupName)
   {
-    // グループの重複チェック
     if (groupMap_.contains(groupName)) {
 #ifdef _DEBUG
       DebugUIManager::GetInstance()->AddLog(
@@ -455,18 +442,14 @@ namespace Tako {
       return;
     }
 
-    // グループを作成
     EmitterGroup group;
     group.name = groupName;
     group.isActive = true;
-
-    // グループをマップに追加
     groupMap_[groupName] = group;
   }
 
   void EmitterManager::AddToGroup(const std::string& groupName, const std::string& emitterName)
   {
-    // グループの存在チェック
     auto groupIt = groupMap_.find(groupName);
     if (groupIt == groupMap_.end()) {
 #ifdef _DEBUG
@@ -478,7 +461,6 @@ namespace Tako {
       groupIt = groupMap_.find(groupName);
     }
 
-    // エミッターの存在チェック
     if (!emitterMap_.contains(emitterName)) {
 #ifdef _DEBUG
       DebugUIManager::GetInstance()->AddLog(
@@ -488,25 +470,21 @@ namespace Tako {
       return;
     }
 
-    // 既に追加済みかチェック
     auto& emitterNames = groupIt->second.emitterNames;
     if (std::ranges::find(emitterNames, emitterName) != emitterNames.end()) {
       return; // 既に追加済み
     }
 
-    // グループにエミッターを追加
     emitterNames.push_back(emitterName);
   }
 
   void EmitterManager::RemoveFromGroup(const std::string& groupName, const std::string& emitterName)
   {
-    // グループの存在チェック
     auto groupIt = groupMap_.find(groupName);
     if (groupIt == groupMap_.end()) {
-      return; // グループが存在しない
+      return;
     }
 
-    // グループからエミッターを削除
     auto& emitterNames = groupIt->second.emitterNames;
     emitterNames.erase(
       std::ranges::remove(emitterNames, emitterName).begin(),
@@ -516,16 +494,14 @@ namespace Tako {
 
   void EmitterManager::SetGroupActive(const std::string& groupName, bool isActive)
   {
-    // グループの存在チェック
     auto groupIt = groupMap_.find(groupName);
     if (groupIt == groupMap_.end()) {
-      return; // グループが存在しない
+      return;
     }
 
-    // グループのアクティブ状態を設定
     groupIt->second.isActive = isActive;
 
-    // グループ内のすべてのエミッターのアクティブ状態を設定
+    // 所属エミッターにもアクティブ状態を伝播
     for (const auto& emitterName : groupIt->second.emitterNames) {
       auto emitterIt = emitterMap_.find(emitterName);
       if (emitterIt != emitterMap_.end()) {
@@ -536,10 +512,9 @@ namespace Tako {
 
   void EmitterManager::SetGroupPosition(const std::string& groupName, const Vector3& position)
   {
-    // グループの存在チェック
     auto groupIt = groupMap_.find(groupName);
     if (groupIt == groupMap_.end()) {
-      return; // グループが存在しない
+      return;
     }
 
     // グループ内の最初のエミッターの位置を取得（相対位置計算用）
@@ -618,13 +593,11 @@ namespace Tako {
     using json = nlohmann::json;
     json root;
 
-    // ディレクトリが存在しない場合は作成
     const std::string directory = "resources/Json/ParticlePresets/";
     if (!std::filesystem::exists(directory)) {
       std::filesystem::create_directories(directory);
     }
 
-    // すべてのエミッターを JSON に変換
     root["emitters"] = json::object();
     for (const auto& [name, emitter] : emitterMap_) {
       json emitterJson;

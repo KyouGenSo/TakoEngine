@@ -45,22 +45,17 @@ namespace Tako {
 
     // 各グループの処理
     for (std::map<std::string, Group>::iterator itGroup = datas_.begin(); itGroup != datas_.end(); ++itGroup) {
-      // グループ名を取得
       const std::string& groupName = itGroup->first;
-      // グループの参照を取得
       Group& group = itGroup->second;
 
       if (ImGui::CollapsingHeader(groupName.c_str())) {
         ImGui::Indent();
 
-        // 各アイテムの処理
         for (std::map<std::string, Item>::iterator itItem = group.items.begin(); itItem != group.items.end(); ++itItem) {
-          // アイテム名を取得
           const std::string& itemName = itItem->first;
-          // アイテムの参照を取得
           Item& item = itItem->second;
 
-          // 型によって処理を分岐
+          // 型によって ImGui ウィジェットを切り替え
           if (std::holds_alternative<bool>(item.value)) {
             bool* value = std::get_if<bool>(&item.value);
             ImGui::Checkbox(itemName.c_str(), value);
@@ -114,14 +109,11 @@ namespace Tako {
     root = json::object();
     root[groupName] = json::object();
 
-    // 各項目について
     for (std::map<std::string, Item>::iterator itItem = itGroup->second.items.begin(); itItem != itGroup->second.items.end(); ++itItem) {
-      // アイテム名を取得
       const std::string& itemName = itItem->first;
-      // アイテムの参照を取得
       Item& item = itItem->second;
 
-      // 型によって処理を分岐
+      // 型に応じて json へ書き出し
       if (std::holds_alternative<bool>(item.value)) {
         root[groupName][itemName] = std::get<bool>(item.value);
       }
@@ -183,18 +175,15 @@ namespace Tako {
 
     std::filesystem::directory_iterator dir_it(kDirectoryPath);
     for (const std::filesystem::directory_entry& entry : dir_it) {
-      // ファイルパスを s 取得
       const std::filesystem::path& filePath = entry.path();
 
-      // ファイル拡張子を取得
       std::string extension = filePath.extension().string();
 
-      // 拡張子が.json でない場合はスキップ
+      // .json 以外はスキップ
       if (extension != ".json") {
         continue;
       }
 
-      // ファイル読み込み
       LoadFile(filePath.stem().string());
 
     }
@@ -235,12 +224,10 @@ namespace Tako {
     // グループを作成
     CreateGroup(groupName);
 
-    // 各アイテムの処理
     for (json::iterator itItem = itGroup->begin(); itItem != itGroup->end(); ++itItem) {
-      // アイテム名を取得
       const std::string& itemName = itItem.key();
 
-      // 型によって処理を分岐
+      // json の型から値の型を判別（配列要素数で Vector2/3/4 を区別）
       if (itItem->is_number_integer()) {
         int32_t value = itItem->get<int32_t>();
         SetValue(groupName, itemName, value);

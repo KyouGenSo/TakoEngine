@@ -83,9 +83,8 @@ namespace Tako {
   void HalfTone::SetParam(const HalfToneParam& param)
   {
     if (cBufferData_ == nullptr) {
-      return; // cBufferData_が初期化されていない場合は何もしない
+      return;
     }
-    // パラメータの設定
     cBufferData_->dotSize = param.dotSize;
     cBufferData_->contrast = param.contrast;
     cBufferData_->angle = param.angle;
@@ -122,13 +121,13 @@ namespace Tako {
     cBufferResource_->Map(0, nullptr, reinterpret_cast<void**>(&cBufferData_));
 
     // データの初期化
-    cBufferData_->dotSize = 8.0f;       // デフォルトのドットサイズ
-    cBufferData_->contrast = 1.0f;      // デフォルトのコントラスト
-    cBufferData_->angle = 0.0f;         // デフォルトの角度
-    cBufferData_->dotPattern = 0;       // デフォルトは円形
-    cBufferData_->colorMode = 0;        // デフォルトはモノクロ
-    cBufferData_->threshold = 0.0f;     // デフォルトの閾値
-    cBufferData_->padding = 0.0f;       // パディング
+    cBufferData_->dotSize = 8.0f;
+    cBufferData_->contrast = 1.0f;
+    cBufferData_->angle = 0.0f;
+    cBufferData_->dotPattern = 0;       // 円
+    cBufferData_->colorMode = 0;        // モノクロ
+    cBufferData_->threshold = 0.0f;
+    cBufferData_->padding = 0.0f;
 
     // スクリーンサイズを WinApp から取得
     UpdateScreenSize();

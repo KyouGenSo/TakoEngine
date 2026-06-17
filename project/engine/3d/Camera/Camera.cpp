@@ -23,16 +23,13 @@ namespace Tako {
 
   void Camera::Update()
   {
-    // トランスフォームでワールド行列を作る
     worldMatrix_ = Mat4x4::MakeAffine(transform_.scale, transform_.rotate, transform_.translate);
 
-    // ビュー行列を作る
     viewMatrix_ = Mat4x4::Inverse(worldMatrix_);
 
-    // プロジェクション行列を作る
     projectionMatrix_ = Mat4x4::MakePerspective(fovY_, aspect_, nearZ_, farZ_);
 
-    // ビュープロジェクション行列を作る
+    // viewProjectionMatrix_ は Object3dBasic::Update で合成するためここでは更新しない
     //viewProjectionMatrix_ = Mat4x4::Multiply(viewMatrix_, projectionMatrix_);
   }
 

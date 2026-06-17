@@ -63,9 +63,8 @@ namespace Tako {
   void RadialBlur::SetParam(const RadialBlurParam& param)
   {
     if (cBufferData_ == nullptr) {
-      return; // cBufferData_が初期化されていない場合は何もしない
+      return;
     }
-    // パラメータの設定
     cBufferData_->center = param.center;
     cBufferData_->blurWidth = param.blurWidth;
     cBufferData_->sampleCount = param.sampleCount;

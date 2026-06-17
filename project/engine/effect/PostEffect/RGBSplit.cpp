@@ -64,9 +64,8 @@ namespace Tako {
   void RGBSplit::SetParam(const RGBSplitParam& param)
   {
     if (cBufferData_ == nullptr) {
-      return; // cBufferData_が初期化されていない場合は何もしない
+      return;
     }
-    // パラメータを設定
     cBufferData_->redOffset = param.redOffset;
     cBufferData_->greenOffset = param.greenOffset;
     cBufferData_->blueOffset = param.blueOffset;
@@ -85,10 +84,8 @@ namespace Tako {
 
   void RGBSplit::CreateCBV()
   {
-    // RadialBlur の定数バッファの生成
     cBufferResource_ = m_dx12_->MakeBufferResource(sizeof(RGBSplitParam));
 
-    //　map
     cBufferResource_->Map(0, nullptr, reinterpret_cast<void**>(&cBufferData_));
 
     // 初期化

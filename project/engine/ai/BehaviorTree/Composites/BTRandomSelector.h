@@ -13,14 +13,8 @@ namespace Tako {
   /// </summary>
   class BTRandomSelector : public BTComposite {
   public:
-    /// <summary>
-    /// コンストラクタ。ノード名を "RandomSelector" に設定する。
-    /// </summary>
     BTRandomSelector();
 
-    /// <summary>
-    /// 仮想デストラクタ。
-    /// </summary>
     virtual ~BTRandomSelector() = default;
 
     /// <summary>
@@ -42,7 +36,6 @@ namespace Tako {
     void ShuffleIndices();
 
   private:
-    // シャッフルされたインデックス列
     std::vector<size_t> shuffledIndices_;
 
     // 現在のシャッフル済みインデックス位置 (Running 状態の継続用)

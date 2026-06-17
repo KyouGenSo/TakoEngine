@@ -79,9 +79,8 @@ namespace Tako {
   void GaussianBlur::SetParam(const GaussianBlurParam& param)
   {
     if (cBufferData1_ == nullptr) {
-      return; // cBufferData_が初期化されていない場合は何もしない
+      return;
     }
-    // パラメータを設定する
     cBufferData1_->sigma = param.sigma;
     cBufferData1_->kernelSize = param.kernelSize;
 
@@ -104,7 +103,6 @@ namespace Tako {
 
   void GaussianBlur::CreateCBV()
   {
-    // BloomParam のリソース生成
     cBufferResource1_ = m_dx12_->MakeBufferResource(sizeof(GaussianBlurParam));
     cBufferResource2_ = m_dx12_->MakeBufferResource(sizeof(GaussianBlurParam));
 

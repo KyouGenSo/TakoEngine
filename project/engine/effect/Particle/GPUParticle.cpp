@@ -40,10 +40,7 @@ namespace Tako {
   void GPUParticle::Initialize(DX12Basic* dx12, Camera* camera)
   {
     m_dx12_ = dx12;
-
-    // カメラの設定
     m_camera_ = camera;
-
     m_srvManager_ = SrvManager::GetInstance();
 
     modelData_.textureData.texturePath = "circle.dds";
@@ -440,27 +437,20 @@ namespace Tako {
   {
     if (!sourceEmitter) return nullptr;
 
-    // ソースエミッターのクローンを作成
     auto newEmitter = sourceEmitter->Clone();
     if (!newEmitter) return nullptr;
 
-    // 重要なパラメータを強制的に設定
-    // アクティブ化
     newEmitter->SetActive(true);
 
-    // 射出をすぐに行うための設定
+    // frequencyTime を frequency に合わせ次フレームで即射出
     newEmitter->SetFrequencyTime(newEmitter->GetFrequency());
 
-    // 強制的に射出フラグを設定する
     newEmitter->SetEmitting(true);
 
-    // 一時エミッター設定
     newEmitter->SetTemporary(true, lifeTime);
 
-    // アクティブリストに追加
     RegisterEmitter(newEmitter);
 
-    // デバッグ情報
 #ifdef _DEBUG
     DebugUIManager::GetInstance()->AddLog("CreateTempEmitter: ID=" + std::to_string(newEmitter->GetEmitterId()) +
       ", Active=" + std::to_string(newEmitter->IsActive() ? 1 : 0) +

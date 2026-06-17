@@ -141,30 +141,30 @@ namespace Tako {
     /// リサイズコールバック登録エントリー
     /// </summary>
     struct ResizeCallbackEntry {
-      std::function<void(Vector2)> callback;  ///< ウィンドウリサイズ時に呼び出されるコールバック関数
-      uint32_t id;  ///< このコールバックの一意識別子（登録解除時に使用）
+      std::function<void(Vector2)> callback;
+      uint32_t id;  ///< 登録解除時に使用する識別子
     };
 
     /// 登録済み OnResize コールバックを width/height で一括呼び出し
     void NotifyResize(int width, int height);
 
   private:
-    HWND hWnd_ = nullptr;  ///< ウィンドウハンドル
+    HWND hWnd_ = nullptr;
 
-    WNDCLASS wc_{};  ///< ウィンドウクラス情報
+    WNDCLASS wc_{};
 
-    static std::vector<IWndProcHandler*> m_handlers_;  ///< ウィンドウメッセージ処理ハンドラのリスト
+    static std::vector<IWndProcHandler*> m_handlers_;
 
-    bool isFullScreen_ = false;  ///< フルスクリーン状態フラグ
+    bool isFullScreen_ = false;
 
-    bool isMaximized_ = false;  ///< 最大化状態フラグ
+    bool isMaximized_ = false;
 
-    RECT windowedRect_ = {};  ///< ウィンドウモード時の位置とサイズ（フルスクリーンから戻る時に使用）
+    RECT windowedRect_ = {};  ///< フルスクリーンから戻る時に使うウィンドウモード時の位置とサイズ
 
-    std::vector<ResizeCallbackEntry> onResizeFuncs_;  ///< リサイズイベント時に呼び出されるコールバック関数のリスト
-    uint32_t nextId_ = 1u;  ///< 次に割り当てるコールバック ID（ユニーク保証用）
+    std::vector<ResizeCallbackEntry> onResizeFuncs_;
+    uint32_t nextId_ = 1u;  ///< 次に割り当てるコールバック ID
 
-    static std::wstring windowTitle_;  ///< ウィンドウタイトルバーに表示される文字列
+    static std::wstring windowTitle_;
   };
 
 } // namespace Tako

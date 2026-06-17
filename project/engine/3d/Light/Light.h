@@ -13,8 +13,7 @@ namespace Tako {
   class Camera;
 
   /// <summary>
-  /// ライト管理クラス
-  /// 平行光源、点光源、スポットライトを統合管理
+  /// 平行光源・点光源・スポットライトを管理するクラス
   /// </summary>
   class Light
   {
@@ -30,14 +29,14 @@ namespace Tako {
     /// </summary>
     struct DirectionalLight
     {
-      Vector4 color;  ///< ライトカラー
-      Vector3 direction;  ///< ライト方向ベクトル
-      int32_t lightType;  ///< ライトタイプ
-      float intensity;  ///< ライト強度
-      Matrix4x4 viewMatrix;  ///< ビュー行列（シャドウマップ用）
-      Matrix4x4 projMatrix;  ///< プロジェクション行列（シャドウマップ用）
-      Matrix4x4 viewProjMatrix;  ///< ビュープロジェクション行列
-      Vector3 position;  ///< ライトの位置（シャドウマップ用）
+      Vector4 color;
+      Vector3 direction;
+      int32_t lightType;  ///< 0:Lambert 1:Half-Lambert
+      float intensity;
+      Matrix4x4 viewMatrix;  ///< シャドウマップ用
+      Matrix4x4 projMatrix;  ///< シャドウマップ用
+      Matrix4x4 viewProjMatrix;  ///< シャドウマップ用
+      Vector3 position;  ///< シャドウマップ用
     };
 
     /// <summary>
@@ -45,12 +44,12 @@ namespace Tako {
     /// </summary>
     struct PointLight
     {
-      Vector4 color;  ///< ライトカラー
-      Vector3 position;  ///< ライト位置
-      float intensity;  ///< ライト強度
-      float radius;  ///< 影響半径
-      float decay;  ///< 減衰率
-      bool enable;  ///< 有効フラグ
+      Vector4 color;
+      Vector3 position;
+      float intensity;
+      float radius;
+      float decay;
+      bool enable;
     };
 
     /// <summary>
@@ -58,14 +57,14 @@ namespace Tako {
     /// </summary>
     struct SpotLight
     {
-      Vector4 color;  ///< ライトカラー
-      Vector3 position;  ///< ライト位置
-      float intensity;  ///< ライト強度
-      Vector3 direction;  ///< 照射方向
-      float distance;  ///< 有効距離
-      float decay;  ///< 減衰率
-      float cosAngle;  ///< コーン角のコサイン値
-      bool enable;  ///< 有効フラグ
+      Vector4 color;
+      Vector3 position;
+      float intensity;
+      Vector3 direction;
+      float distance;
+      float decay;
+      float cosAngle;  ///< コーン半角のコサイン
+      bool enable;
     };
 
     /// <summary>
@@ -73,287 +72,145 @@ namespace Tako {
     /// </summary>
     struct LightConstants
     {
-      int numPointLights;  ///< 点光源の数
-      int numSpotLights;  ///< スポットライトの数
-      int pad1;  ///< パディング1
-      int pad2;  ///< パディング2
+      int numPointLights;
+      int numSpotLights;
+      int pad1;
+      int pad2;
     };
 
   public: // メンバ関数
-    /// <summary>
-    /// 初期化
-    /// </summary>
-    /// <param name="dx12">DirectX12基盤システムへのポインタ</param>
     void Initialize(DX12Basic* dx12);
 
-    /// <summary>
-    /// 更新処理
-    /// </summary>
     void Update();
 
     /// <summary>
-    /// 描画設定
+    /// ライト用の各リソースをルートシグネチャにバインドする
     /// </summary>
     void PreDraw();
 
     //-----------------------------------------Setter-----------------------------------------//
     // DirectionalLight
     /// <summary>
-    /// 平行光源を設定
+    /// 平行光源をまとめて設定（自動更新時は位置をシーン中心へリセット）
     /// </summary>
-    /// <param name="direction">ライト方向</param>
-    /// <param name="color">ライトカラー</param>
-    /// <param name="lightType">ライトタイプ</param>
-    /// <param name="intensity">ライト強度</param>
     void SetDirectionalLight(const Vector3& direction, const Vector4& color, int32_t lightType, float intensity);
 
     /// <summary>
-    /// 平行光源の方向を設定
+    /// 平行光源の方向を設定（自動更新時は位置をシーン中心へリセット）
     /// </summary>
-    /// <param name="direction">ライト方向ベクトル</param>
     void SetDirectionalLightDirection(const Vector3& direction);
 
-    /// <summary>
-    /// 平行光源のカラーを設定
-    /// </summary>
-    /// <param name="color">ライトカラー</param>
     void SetDirectionalLightColor(const Vector4& color) { directionalLightData_->color = color; }
 
-    /// <summary>
-    /// 平行光源のタイプを設定
-    /// </summary>
-    /// <param name="lightType">ライトタイプ</param>
     void SetDirectionalLightType(int32_t lightType) { directionalLightData_->lightType = lightType; }
 
-    /// <summary>
-    /// 平行光源の強度を設定
-    /// </summary>
-    /// <param name="intensity">ライト強度</param>
     void SetDirectionalLightIntensity(float intensity) { directionalLightData_->intensity = intensity; }
 
-    /// <summary>
-    /// 平行光源の位置を設定
-    /// </summary>
-    /// <param name="position">ライト位置</param>
     void SetDirectionalLightPosition(const Vector3& position) { directionalLightData_->position = position; }
 
     /// <summary>
-    /// シャドウマップ用の行列計算（カメラの視錐台に基づく）
+    /// カメラ視錐台を覆う平行光源のシャドウ行列（view/proj/viewProj）を計算する
     /// </summary>
-    /// <param name="camera">カメラ</param>
-    /// <param name="maxShadowDistance">最大シャドウ距離</param>
+    /// <param name="camera">基準カメラ。nullptr なら何もしない</param>
+    /// <param name="maxShadowDistance">影を収める視錐台の最大奥行き</param>
     void UpdateDirectionalLightShadowMatrices(const Camera* camera, float maxShadowDistance = 1000.0f);
 
     // ゲッター
-    /// <summary>
-    /// 平行光源データを取得
-    /// </summary>
-    /// <returns>平行光源データの参照</returns>
     const DirectionalLight& GetDirectionalLight() const { return *directionalLightData_; }
 
     // 自動更新制御
-    /// <summary>
-    /// 自動更新位置を設定
-    /// </summary>
-    /// <param name="enable">有効フラグ</param>
     void SetAutoUpdatePosition(bool enable) { autoUpdatePosition_ = enable; }
 
-    /// <summary>
-    /// シーン中心を設定
-    /// </summary>
-    /// <param name="center">中心座標</param>
     void SetSceneCenter(const Vector3& center) { sceneCenter_ = center; }
 
-    /// <summary>
-    /// 自動更新位置を取得
-    /// </summary>
-    /// <returns>自動更新フラグ</returns>
     bool GetAutoUpdatePosition() const { return autoUpdatePosition_; }
 
-    /// <summary>
-    /// シーン中心を取得
-    /// </summary>
-    /// <returns>中心座標</returns>
     Vector3 GetSceneCenter() const { return sceneCenter_; }
 
     // PointLight
     /// <summary>
-    /// 点光源を設定
+    /// index 番の点光源をまとめて設定
     /// </summary>
-    /// <param name="position">位置</param>
-    /// <param name="color">カラー</param>
-    /// <param name="intensity">強度</param>
-    /// <param name="radius">半径</param>
-    /// <param name="decay">減衰率</param>
-    /// <param name="enable">有効フラグ</param>
-    /// <param name="index">インデックス</param>
     void SetPointLight(const Vector3& position, const Vector4& color, float intensity, float radius, float decay, bool enable, int index);
 
-    /// <summary>
-    /// 点光源のカラーを設定
-    /// </summary>
-    /// <param name="color">カラー</param>
-    /// <param name="index">インデックス</param>
     void SetPointLightColor(const Vector4& color, int index) { pointLightData_[index].color = color; }
 
-    /// <summary>
-    /// 点光源の位置を設定
-    /// </summary>
-    /// <param name="position">位置</param>
-    /// <param name="index">インデックス</param>
     void SetPointLightPos(const Vector3& position, int index) { pointLightData_[index].position = position; }
 
-    /// <summary>
-    /// 点光源の強度を設定
-    /// </summary>
-    /// <param name="intensity">強度</param>
-    /// <param name="index">インデックス</param>
     void SetPointLightIntensity(float intensity, int index) { pointLightData_[index].intensity = intensity; }
 
-    /// <summary>
-    /// 点光源の半径を設定
-    /// </summary>
-    /// <param name="radius">半径</param>
-    /// <param name="index">インデックス</param>
     void SetPointLightRadius(float radius, int index) { pointLightData_[index].radius = radius; }
 
-    /// <summary>
-    /// 点光源の減衰率を設定
-    /// </summary>
-    /// <param name="decay">減衰率</param>
-    /// <param name="index">インデックス</param>
     void SetPointLightDecay(float decay, int index) { pointLightData_[index].decay = decay; }
 
-    /// <summary>
-    /// 点光源の有効化を設定
-    /// </summary>
-    /// <param name="enable">有効フラグ</param>
-    /// <param name="index">インデックス</param>
     void SetPointLightEnable(bool enable, int index) { pointLightData_[index].enable = enable; }
 
     // SpotLight
     /// <summary>
-    /// スポットライトを設定
+    /// index 番のスポットライトをまとめて設定
     /// </summary>
-    /// <param name="position">位置</param>
-    /// <param name="direction">方向</param>
-    /// <param name="color">カラー</param>
-    /// <param name="intensity">強度</param>
-    /// <param name="distance">距離</param>
-    /// <param name="decay">減衰率</param>
-    /// <param name="cosAngle">コーン角のコサイン値</param>
-    /// <param name="enable">有効フラグ</param>
-    /// <param name="index">インデックス</param>
+    /// <param name="cosAngle">コーン半角のコサイン</param>
     void SetSpotLight(const Vector3& position, const Vector3& direction, const Vector4& color, float intensity, float distance, float decay, float cosAngle, bool enable, int index);
 
-    /// <summary>
-    /// スポットライトのカラーを設定
-    /// </summary>
-    /// <param name="color">カラー</param>
-    /// <param name="index">インデックス</param>
     void SetSpotLightColor(const Vector4& color, int index) { spotLightData_[index].color = color; }
 
-    /// <summary>
-    /// スポットライトの位置を設定
-    /// </summary>
-    /// <param name="position">位置</param>
-    /// <param name="index">インデックス</param>
     void SetSpotLightPos(const Vector3& position, int index) { spotLightData_[index].position = position; }
 
-    /// <summary>
-    /// スポットライトの強度を設定
-    /// </summary>
-    /// <param name="intensity">強度</param>
-    /// <param name="index">インデックス</param>
     void SetSpotLightIntensity(float intensity, int index) { spotLightData_[index].intensity = intensity; }
 
-    /// <summary>
-    /// スポットライトの方向を設定
-    /// </summary>
-    /// <param name="direction">方向</param>
-    /// <param name="index">インデックス</param>
     void SetSpotLightDirection(const Vector3& direction, int index) { spotLightData_[index].direction = direction; }
 
-    /// <summary>
-    /// スポットライトの距離を設定
-    /// </summary>
-    /// <param name="distance">距離</param>
-    /// <param name="index">インデックス</param>
     void SetSpotLightDistance(float distance, int index) { spotLightData_[index].distance = distance; }
 
-    /// <summary>
-    /// スポットライトの減衰率を設定
-    /// </summary>
-    /// <param name="decay">減衰率</param>
-    /// <param name="index">インデックス</param>
     void SetSpotLightDecay(float decay, int index) { spotLightData_[index].decay = decay; }
 
     /// <summary>
-    /// スポットライトのコーン角を設定
+    /// スポットライトのコーン半角のコサインを設定
     /// </summary>
-    /// <param name="cosAngle">コサイン値</param>
-    /// <param name="index">インデックス</param>
     void SetSpotLightCosAngle(float cosAngle, int index) { spotLightData_[index].cosAngle = cosAngle; }
 
-    /// <summary>
-    /// スポットライトの有効化を設定
-    /// </summary>
-    /// <param name="enable">有効フラグ</param>
-    /// <param name="index">インデックス</param>
     void SetSpotLightEnable(bool enable, int index) { spotLightData_[index].enable = enable; }
 
 
   private: // プライベートメンバ関数
-    /// <summary>
-    /// 平行光源データの生成
-    /// </summary>
     void CreateDirectionalLightData();
 
-    /// <summary>
-    /// 点光源データの生成
-    /// </summary>
     void CreatePointLightData();
 
-    /// <summary>
-    /// スポットライトデータの生成
-    /// </summary>
     void CreateSpotLightData();
 
-    /// <summary>
-    /// LightConstants の生成
-    /// </summary>
     void CreateLightConstants();
 
   private: // メンバ変数
-    DX12Basic* m_dx12_;  ///< DirectX12基盤システムへのポインタ
+    DX12Basic* m_dx12_;
 
-    DirectionalLight* directionalLightData_;  ///< 平行光源データポインタ
+    DirectionalLight* directionalLightData_;
 
-    PointLight* pointLightData_;  ///< 点光源データ配列ポインタ
+    PointLight* pointLightData_;
 
-    SpotLight* spotLightData_;  ///< スポットライトデータ配列ポインタ
+    SpotLight* spotLightData_;
 
-    LightConstants* lightConstantsData_;  ///< ライト定数データポインタ
+    LightConstants* lightConstantsData_;
 
-    Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightResource_;  ///< 平行光源リソース
+    Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightResource_;
 
-    Microsoft::WRL::ComPtr<ID3D12Resource> pointLightResource_;  ///< 点光源リソース
+    Microsoft::WRL::ComPtr<ID3D12Resource> pointLightResource_;
 
-    Microsoft::WRL::ComPtr<ID3D12Resource> spotLightResource_;  ///< スポットライトリソース
+    Microsoft::WRL::ComPtr<ID3D12Resource> spotLightResource_;
 
-    Microsoft::WRL::ComPtr<ID3D12Resource> lightConstantsResource_;  ///< ライト定数リソース
+    Microsoft::WRL::ComPtr<ID3D12Resource> lightConstantsResource_;
 
-    uint32_t pointLightSrvIndex_;  ///< 点光源の SRV インデックス
+    uint32_t pointLightSrvIndex_;
 
-    uint32_t spotLightSrvIndex_;  ///< スポットライトの SRV インデックス
+    uint32_t spotLightSrvIndex_;
 
-    std::vector<uint32_t> pointLightIndexList_;  ///< 点光源インデックスリスト
+    std::vector<uint32_t> pointLightIndexList_;  ///< サイズ = 有効な点光源数
 
-    std::vector<uint32_t> spotLightIndexList_;  ///< スポットライトインデックスリスト
+    std::vector<uint32_t> spotLightIndexList_;  ///< サイズ = 有効なスポットライト数
 
     // シャドウマップ自動更新関連
-    bool autoUpdatePosition_ = true;  ///< 位置の自動更新フラグ
-    Vector3 sceneCenter_ = { 0.0f, 0.0f, 0.0f };  ///< シーン中心位置
+    bool autoUpdatePosition_ = true;
+    Vector3 sceneCenter_ = { 0.0f, 0.0f, 0.0f };
   };
 
 } // namespace Tako

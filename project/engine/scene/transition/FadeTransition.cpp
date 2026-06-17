@@ -48,7 +48,6 @@ namespace Tako {
     // テクスチャの読み込み（既に読み込まれていれば何もしない）
     TextureManager::GetInstance()->LoadTexture(textureName_);
 
-    // スプライトの初期化
     fadeSprite_ = std::make_unique<Sprite>();
     fadeSprite_->Initialize(textureName_);
     fadeSprite_->SetSize(Vector2(static_cast<float>(WinApp::clientWidth),
@@ -87,7 +86,6 @@ namespace Tako {
       break;
     }
 
-    // スプライトの更新
     fadeSprite_->SetAlpha(alpha_);
     fadeSprite_->SetSize(Vector2(static_cast<float>(WinApp::clientWidth),
       static_cast<float>(WinApp::clientHeight)));

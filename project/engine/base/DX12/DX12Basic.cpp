@@ -22,7 +22,6 @@
 
 namespace Tako {
 
-  // 最大の SRV 数
   const uint32_t DX12Basic::kMaxSRVCount = 2048;
 
   DX12Basic::~DX12Basic()
@@ -39,43 +38,31 @@ namespace Tako {
     commandList_ = nullptr;
     commandAllocator_ = nullptr;
 
-    // FPS 制御の初期化
     InitFPSLimiter();
 
-    // Device の初期化
     InitDevice();
 
-    // Command 関連の初期化
     InitCommand();
 
-    // スワップチェインの生成
     CreateSwapChain();
 
-    // 深度バッファの生成
     CreateDepthStencilResource();
 
-    // デスクリプタヒープの初期化
     InitDescriptorHeap();
 
     // レンダーテクスチャの初期化
     //InitRenderTexture();
 
-    // レンダーターゲットビューの初期化
     InitSwapChainRTV();
 
-    // 深度ステンシルビューの初期化
     InitDSV();
 
-    // Fence の初期化
     InitFence();
 
-    // ビューポート矩形の初期化
     InitViewport();
 
-    // シザー矩形の初期化
     InitScissorRect();
 
-    // DXC コンパイラの生成
     CreateDXCCompiler();
 
   }

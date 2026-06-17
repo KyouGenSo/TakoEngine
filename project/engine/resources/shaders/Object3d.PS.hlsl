@@ -153,7 +153,7 @@ PixelShaderOutput main(VertexShaderOutput input)
         {
             float3 halfVector = normalize(-gDirectionalLight.direction + toEye);
             float NdotH = dot(normalize(input.normal), halfVector);
-            float specularPow = pow(saturate(NdotH), gMaterial.shininess); // ���ˋ��x
+            float specularPow = pow(saturate(NdotH), gMaterial.shininess);
             
             // 拡散反射
             float NdotL = saturate(dot(normalize(input.normal), -gDirectionalLight.direction));
@@ -166,7 +166,7 @@ PixelShaderOutput main(VertexShaderOutput input)
         {
             float3 halfVector = normalize(-gDirectionalLight.direction + toEye);
             float NdotH = dot(normalize(input.normal), halfVector);
-            float specularPow = pow(saturate(NdotH), gMaterial.shininess); // ���ˋ��x
+            float specularPow = pow(saturate(NdotH), gMaterial.shininess);
             
             // 拡散反射
             float NdotL = saturate(dot(normalize(input.normal), -gDirectionalLight.direction));
@@ -217,10 +217,10 @@ PixelShaderOutput main(VertexShaderOutput input)
                 
                 float3 halfVector = normalize(-spotLightDirOnSurface + toEye);
                 float NdotH = dot(normalize(input.normal), halfVector);
-                float specularPow = pow(saturate(NdotH), gMaterial.shininess); // ���ˋ��x
+                float specularPow = pow(saturate(NdotH), gMaterial.shininess);
                 
                 float distance = length(gSpotLight[j].position - input.worldPos);
-                float factor = pow(saturate(-distance / gSpotLight[j].radius + 1.0f), gSpotLight[j].decay); // �����ɂ�錸��(0.0f ~ 1.0f
+                float factor = pow(saturate(-distance / gSpotLight[j].radius + 1.0f), gSpotLight[j].decay);
                 
                 float cosAngle = dot(spotLightDirOnSurface, gSpotLight[j].direction);
                 float falloffFactor = saturate((cosAngle - gSpotLight[j].cosAngle) / (1.0f - gSpotLight[j].cosAngle));

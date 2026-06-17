@@ -6,7 +6,7 @@ cbuffer Param : register(b0)
 {
     float gSigma;
     int kernelSize;
-    float2 direction; // x•ûŒü: float2(1,0), y•ûŒü: float2(0,1)
+    float2 direction; // xæ–¹å‘: float2(1,0), yæ–¹å‘: float2(0,1)
 };
 
 Texture2D<float4> gTexture : register(t0);
@@ -24,13 +24,13 @@ float Gaussian(float x, float sigma)
 
 float4 GaussianBlur(float2 texcoord, float2 texSize, float2 dir)
 {
-    // 1ƒsƒNƒZƒ‹‚Ì’·‚³
+    // 1ãƒ”ã‚¯ã‚»ãƒ«ã®é•·ã•
     const float2 texOffset = float2(rcp(texSize.x), rcp(texSize.y));
     
     float4 result = 0;
-    
-    float sum = 0.0f; // d‚İ‚Ì‡Œv
-    
+
+    float sum = 0.0f;
+
     for (int karnelStep = -kernelSize / 2; karnelStep <= kernelSize / 2; ++karnelStep)
     {
         float2 uvOffset = texcoord;
@@ -44,9 +44,9 @@ float4 GaussianBlur(float2 texcoord, float2 texSize, float2 dir)
         sum += weight;
     }
     
-    result *= (1.0f / sum); // normalizing the result
-    
-    return result; // return the blurred result
+    result *= (1.0f / sum);
+
+    return result;
 }
 
 float4 main(VertexShaderOutput input) : SV_TARGET
@@ -63,5 +63,5 @@ float4 main(VertexShaderOutput input) : SV_TARGET
 
     //resultColor.rgb += output.color.rgb;
     
-    return resultColor; // return the final color
+    return resultColor;
 }

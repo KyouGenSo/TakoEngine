@@ -11,7 +11,6 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 
 namespace Tako {
 
-  // instance の初期化
   std::unique_ptr<WinApp> WinApp::instance_ = nullptr;
 
   std::vector<IWndProcHandler*> WinApp::m_handlers_;
@@ -24,23 +23,17 @@ namespace Tako {
 
   void WinApp::Initialize()
   {
-    // システムタイマーの分解能を上げる
     timeBeginPeriod(1);
 
     // COM の初期化
     HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
     assert(SUCCEEDED(hr));
 
-    //ウィンドウプロシージャ
     wc_.lpfnWndProc = WndProc;
-    //クラス名
     wc_.lpszClassName = L"TakoEngineWindowClass";
-    //インスタンスハンドル
     wc_.hInstance = GetModuleHandle(nullptr);
-    //カーソル
     wc_.hCursor = LoadCursor(nullptr, IDC_ARROW);
 
-    //ウィンドウクラスを登録
     RegisterClass(&wc_);
 
     //ウィンドウサイズを表す構造体にクライアント領域のサイズを入れる
@@ -71,14 +64,11 @@ namespace Tako {
   {
     MSG msg;
 
-    //メッセージがある限りループ
     while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
-      //メッセージを処理
       TranslateMessage(&msg);
       DispatchMessage(&msg);
     }
 
-    //ウィンドウが破棄されたら True を返す
     if (msg.message == WM_QUIT) {
       return true;
     }
@@ -88,18 +78,15 @@ namespace Tako {
 
   void WinApp::Finalize()
   {
-    //ウィンドウを破棄
     CloseWindow(hWnd_);
     // COM の終了処理
     CoUninitialize();
 
-    // instance_削除
     instance_.reset();
   }
 
   LRESULT WinApp::WndProc(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam)
   {
-    // handler があれば関数を呼び出す
     for (auto handler : m_handlers_) {
       handler->OnWndProc(hWnd, msg, wparam, lparam);
     }
@@ -110,28 +97,20 @@ namespace Tako {
     }
 #endif
 
-    //メッセージによって処理を分岐
     switch (msg) {
-      //ウィンドウが破棄されたとき
     case WM_DESTROY:
-      //メッセージループを終了
       PostQuitMessage(0);
       break;
 
-      // ウィンドウサイズが変更されたとき
     case WM_SIZE:
     {
-      // インスタンスを取得
       WinApp* instance = GetInstance();
 
-      // クライアント領域の新しいサイズを取得
       int width = LOWORD(lparam);
       int height = HIWORD(lparam);
 
-      // wparam に基づいて最大化状態を更新
       switch (wparam) {
       case SIZE_MAXIMIZED:
-        // 最大化された
         instance->isMaximized_ = true;
         instance->SetWindowSize(width, height);
 
@@ -139,7 +118,6 @@ namespace Tako {
         break;
 
       case SIZE_RESTORED:
-        // 通常状態に戻った
         if (instance->isMaximized_) {
           instance->isMaximized_ = false;
         }
@@ -149,7 +127,7 @@ namespace Tako {
         break;
 
       case SIZE_MINIMIZED:
-        // 最小化された（特に処理なし）
+        // 最小化時はリサイズ通知しない
         break;
       }
     }
@@ -250,7 +228,6 @@ namespace Tako {
 
   void WinApp::MaximizeWindow()
   {
-    // ウィンドウを最大化
     ShowWindow(hWnd_, SW_MAXIMIZE);
   }
 

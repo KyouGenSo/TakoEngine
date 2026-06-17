@@ -10,7 +10,7 @@ struct VertexShaderOutput
     float4 color : COLOR0;
 };
 
-PixelShaderOutput main(VertexShaderOutput input) // VertexShaderOutput is the same as VertexShaderOutput in 2D.VS.hlsl
+PixelShaderOutput main(VertexShaderOutput input)
 {
     PixelShaderOutput output;
     

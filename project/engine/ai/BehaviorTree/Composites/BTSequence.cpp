@@ -16,21 +16,17 @@ namespace Tako {
       BTNodeStatus childStatus = children_[i]->Execute(blackboard);
 
       if (childStatus == BTNodeStatus::Failure) {
-        // 失敗したら即座に失敗を返す
         currentChildIndex_ = 0;
         status_ = BTNodeStatus::Failure;
         return status_;
       }
       else if (childStatus == BTNodeStatus::Running) {
-        // 実行中なら現在のインデックスを記憶
         currentChildIndex_ = i;
         status_ = BTNodeStatus::Running;
         return status_;
       }
-      // Success の場合は次の子ノードへ
     }
 
-    // 全ての子ノードが成功
     currentChildIndex_ = 0;
     status_ = BTNodeStatus::Success;
     return status_;

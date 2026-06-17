@@ -27,7 +27,7 @@ namespace Tako {
 
       if (childStatus == BTNodeStatus::Success) {
         lastSuccessIdx_ = idx;  // 前回成功した子を記録 (連続選択防止用)
-        needsShuffle_ = true;   // 次回はシャッフル
+        needsShuffle_ = true;
         status_ = BTNodeStatus::Success;
         return status_;
       }
@@ -36,11 +36,9 @@ namespace Tako {
         status_ = BTNodeStatus::Running;
         return status_;
       }
-      // Failure の場合は次へ
     }
 
-    // 全て失敗
-    needsShuffle_ = true;  // 次回はシャッフル
+    needsShuffle_ = true;
     status_ = BTNodeStatus::Failure;
     return status_;
   }

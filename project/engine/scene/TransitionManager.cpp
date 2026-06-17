@@ -17,7 +17,6 @@ namespace Tako {
 
   void TransitionManager::Initialize()
   {
-    // デフォルトエフェクトの設定（Fade）
     currentEffect_ = CreateEffect(defaultEffectType_);
     if (currentEffect_) {
       currentEffect_->Initialize();
@@ -145,7 +144,6 @@ namespace Tako {
 
   void TransitionManager::Start(ITransitionEffect::TransitionState state, EffectType type, float duration)
   {
-    // 新しいエフェクトを設定してから開始
     SetCurrentEffect(type);
     if (currentEffect_) {
       currentEffect_->Start(state, duration);
@@ -154,7 +152,6 @@ namespace Tako {
 
   void TransitionManager::Start(ITransitionEffect::TransitionState state, const std::string& effectName, float duration)
   {
-    // 新しいエフェクトを設定してから開始
     SetCurrentEffect(effectName);
     if (currentEffect_) {
       currentEffect_->Start(state, duration);

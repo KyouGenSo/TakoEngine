@@ -427,7 +427,6 @@ void ShadowRenderer::DrawImGui()
     ImGui::Separator();
     ImGui::Text("Bias Settings");
     if (ImGui::DragFloat("Shadow Bias", &shadowBias_, 0.00001f, 0.0f, 0.01f, "%.6f")) {
-        // shadowBias_は既にメンバ変数なので直接変更される
     }
 
 
@@ -438,7 +437,6 @@ void ShadowRenderer::DrawImGui()
 
         // 最大シャドウ距離の設定
         if (ImGui::DragFloat("Max Shadow Distance", &maxShadowDistance_, 1.0f, 5.0f, 500.0f, "%.1f")) {
-            // 値は既に更新されている
         }
 
         bool autoUpdatePos = light_->GetAutoUpdatePosition();

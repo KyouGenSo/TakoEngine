@@ -22,15 +22,8 @@ namespace Tako {
     /// </summary>
     BehaviorTree();
 
-    /// <summary>
-    /// デストラクタ。
-    /// </summary>
     ~BehaviorTree() = default;
 
-    /// <summary>
-    /// ルートノードの設定。
-    /// </summary>
-    /// <param name="root">設定するルートノード</param>
     void SetRootNode(BTNodePtr root) { root_ = root; }
 
     /// <summary>

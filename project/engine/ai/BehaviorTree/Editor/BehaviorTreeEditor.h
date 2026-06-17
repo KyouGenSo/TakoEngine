@@ -75,16 +75,8 @@ public:
   /// </summary>
   void Finalize();
 
-  /// <summary>
-  /// 表示状態の切り替え。
-  /// </summary>
-  /// <param name="visible">表示するなら true</param>
   void SetVisible(bool visible) { isVisible_ = visible; }
 
-  /// <summary>
-  /// 表示状態の取得。
-  /// </summary>
-  /// <returns>表示中なら true</returns>
   bool IsVisible() const { return isVisible_; }
 
   /// <summary>
@@ -150,10 +142,6 @@ public:
   /// <returns>ツリー名 (空ならデフォルト)</returns>
   const std::string& GetCurrentTreeName() const { return currentTreeName_; }
 
-  /// <summary>
-  /// 未保存変更があるかチェック。
-  /// </summary>
-  /// <returns>未保存変更があれば true</returns>
   bool HasUnsavedChanges() const { return hasUnsavedChanges_; }
 
   /// <summary>
@@ -176,13 +164,10 @@ public:
 
 private:
   //--- 描画系 ---
-  /// 全ノードを描画
   void DrawNodes();
   /// 単一ノードの描画 (ピン・タイトル・実行中ハイライト含む)
   void DrawNode(const EditorNode& node);
-  /// 全リンクを描画
   void DrawLinks();
-  /// 単一ピンの描画
   void DrawPin(const EditorPin& pin);
   /// ノード作成 UI を含むツールバー描画
   void DrawToolbar();
@@ -271,7 +256,6 @@ private:
   // ID カウンタ (ピン: 20000 番台)
   int nextPinId_ = 20000;
 
-  // 表示状態
   bool isVisible_ = false;
   // 初回フレームフラグ (ed::SetNodePosition でノード位置を反映する 1 フレーム限定スイッチ)。
   // LoadFromJSON や CreateNode 後にも true に戻す。
@@ -282,7 +266,6 @@ private:
   bool pendingNavigateToContent_ = true;
   // ハイライト中のノード ID (-1 ならハイライトなし)
   int highlightedNodeId_ = -1;
-  // ハイライト開始時刻
   float highlightStartTime_ = 0.0f;
   // 現在選択中のノード ID (インスペクター連動)
   int selectedNodeId_ = -1;
