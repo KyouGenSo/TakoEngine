@@ -1,12 +1,8 @@
+#include "2D.hlsli"
+
 struct VertexShaderInput
 {
     float3 pos : POSITION0;
-    float4 color : COLOR0;
-};
-
-struct VertexShaderOutput
-{
-    float4 pos : SV_POSITION;
     float4 color : COLOR0;
 };
 

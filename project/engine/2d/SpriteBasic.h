@@ -46,7 +46,7 @@ namespace Tako {
 
     /// <summary>
     /// 共通描画設定
-    /// <summary>
+    /// </summary>
     void SetCommonRenderSetting();
 
     /// <summary>
