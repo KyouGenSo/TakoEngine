@@ -43,10 +43,6 @@ namespace Tako {
       D3D12_GPU_DESCRIPTOR_HANDLE srvGpuHandle;
     };
 
-  public: //静的メンバー変数
-
-    static uint32_t kSRVIndexStart;  ///< SRVIndex の開始番号
-
   public: //メンバー関数
 
     /// <summary>

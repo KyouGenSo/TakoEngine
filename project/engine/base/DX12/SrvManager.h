@@ -162,7 +162,7 @@ namespace Tako {
 
     std::unordered_set<uint32_t> usedIndices_;  ///< 現在使用中のインデックスを管理するセット（高速な存在チェック用）
 
-    uint32_t nextNewIndex_ = 0;  ///< 次に使用する新しいインデックス（フリーリストが空の場合に使用）
+    uint32_t nextNewIndex_ = 1;  ///< 次に使用する新しいインデックス（0 は無効番兵として予約。Initialize 参照）
 
     uint32_t allocatedCount_ = 0;  ///< 現在確保されている SRV の総数
 

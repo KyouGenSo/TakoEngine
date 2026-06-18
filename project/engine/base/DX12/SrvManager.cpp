@@ -24,7 +24,8 @@ namespace Tako {
     descriptorHeap_ = m_dx12_->CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, kMaxSRVCount, true);
 
 
-    nextNewIndex_ = 0;
+    // index 0 は「無効/未割り当て」の番兵として予約する。
+    nextNewIndex_ = 1;
     allocatedCount_ = 0;
     usedIndices_.clear();
   }

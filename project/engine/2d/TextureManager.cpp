@@ -10,8 +10,6 @@ namespace Tako {
 
   std::unique_ptr<TextureManager> TextureManager::instance_ = nullptr;
 
-  uint32_t TextureManager::kSRVIndexStart = 1;
-
   TextureManager* TextureManager::GetInstance()
   {
     if (!instance_) {
