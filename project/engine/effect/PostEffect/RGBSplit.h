@@ -8,7 +8,7 @@ namespace Tako {
   /// </summary>
   class RGBSplit : public IPostEffect
   {
-  public:
+  public: //メンバー関数
     /// <summary>
     /// 初期化
     /// </summary>
@@ -42,13 +42,12 @@ namespace Tako {
     /// <returns>設定成功の場合 true</returns>
     bool SetGenericParam(const EffectParam& param) override;
 
-    /// <summary>
-    /// RGB 分離パラメータを設定
-    /// </summary>
-    /// <param name="param">RGB 分離パラメータ</param>
+    //========================================
+    //Setter
+    //========================================
     void SetParam(const RGBSplitParam& param);
 
-  private:
+  private: //非公開関数
     /// <summary>
     /// ルートシグネチャを作成
     /// </summary>
@@ -64,10 +63,10 @@ namespace Tako {
     /// </summary>
     void CreateCBV();
 
-  private:
+  private: //メンバー変数
 
     ComPtr<ID3D12Resource> cBufferResource_;
-    RGBSplitParam* cBufferData_ = nullptr;
+    RGBSplitParam*         cBufferData_     = nullptr;
   };
 
 } // namespace Tako

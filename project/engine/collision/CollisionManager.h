@@ -16,11 +16,7 @@ namespace Tako {
   /// 衝突判定を一元管理するシングルトンマネージャー。コライダーの登録、衝突検出、衝突マスク管理を行う
   /// </summary>
   class CollisionManager {
-  private:
-    std::list<Collider*> colliders_;
-
-    std::unordered_map<uint32_t, std::unordered_set<uint32_t>> collisionMask_;
-
+  private: //構造体
     using CollisionPair = std::pair<Collider*, Collider*>;
     struct PairHash {
       size_t operator()(const CollisionPair& p) const {
@@ -29,19 +25,8 @@ namespace Tako {
         return h1 ^ (h2 << 1);
       }
     };
-    std::unordered_set<CollisionPair, PairHash> previousCollisions_;
-    std::unordered_set<CollisionPair, PairHash> currentCollisions_;
 
-    static std::unique_ptr<CollisionManager> instance_;
-
-    bool debugDrawEnabled_ = false;
-
-    CollisionManager() = default;
-    ~CollisionManager() = default;
-
-    friend struct std::default_delete<CollisionManager>;
-
-  public:
+  public: //メンバー関数
     CollisionManager(const CollisionManager&) = delete;
     CollisionManager& operator=(const CollisionManager&) = delete;
 
@@ -84,14 +69,6 @@ namespace Tako {
     void RemoveCollider(Collider* collider);
 
     /// <summary>
-    /// 指定した型同士の衝突判定を有効/無効化
-    /// </summary>
-    /// <param name="typeA">型 A</param>
-    /// <param name="typeB">型 B</param>
-    /// <param name="canCollide">衝突判定を行う場合 true</param>
-    void SetCollisionMask(uint32_t typeA, uint32_t typeB, bool canCollide);
-
-    /// <summary>
     /// 全コライダーのデバッグ描画
     /// </summary>
     void DrawColliders();
@@ -101,38 +78,33 @@ namespace Tako {
     /// </summary>
     void DrawImGui();
 
-    //-----------------------------Getters/Setters------------------------------//
+    //============================================================
+    //Setter
+    //============================================================
     /// <summary>
-    /// デバッグ描画の有効/無効を設定
+    /// 指定した型同士の衝突判定を有効/無効化
     /// </summary>
-    /// <param name="enabled">有効にする場合 true</param>
+    /// <param name="typeA">型 A</param>
+    /// <param name="typeB">型 B</param>
+    /// <param name="canCollide">衝突判定を行う場合 true</param>
+    void SetCollisionMask(uint32_t typeA, uint32_t typeB, bool canCollide);
+
     void SetDebugDrawEnabled(bool enabled) { debugDrawEnabled_ = enabled; }
 
-    /// <summary>
-    /// デバッグ描画が有効かどうかを取得
-    /// </summary>
-    /// <returns>有効な場合 true</returns>
+    //============================================================
+    //Getter
+    //============================================================
     bool IsDebugDrawEnabled() const { return debugDrawEnabled_; }
-
-    /// <summary>
-    /// 登録されているコライダー数を取得
-    /// </summary>
-    /// <returns>コライダー数</returns>
     size_t GetColliderCount() const { return colliders_.size(); }
-
-    /// <summary>
-    /// 登録されている全コライダーのリストを取得
-    /// </summary>
-    /// <returns>コライダーリストの参照</returns>
     const std::list<Collider*>& GetColliders() const { return colliders_; }
-
-    /// <summary>
-    /// 衝突マスク設定を取得
-    /// </summary>
-    /// <returns>衝突マスクマップの参照</returns>
     const std::unordered_map<uint32_t, std::unordered_set<uint32_t>>& GetCollisionMasks() const { return collisionMask_; }
 
-  private:
+  private: //非公開関数
+    CollisionManager() = default;
+    ~CollisionManager() = default;
+
+    friend struct std::default_delete<CollisionManager>;
+
     // 形状を判別して対応する判定関数へ振り分け、衝突時のみ currentCollisions_ にペアを登録する
     void CheckCollisionPair(Collider* colliderA, Collider* colliderB);
 
@@ -146,6 +118,19 @@ namespace Tako {
 
     bool CanCollide(uint32_t typeA, uint32_t typeB);
     CollisionPair MakeOrderedPair(Collider* a, Collider* b);
+
+  private: //メンバー変数
+    //登録コライダーと衝突マスク
+    std::list<Collider*>                                       colliders_;
+    std::unordered_map<uint32_t, std::unordered_set<uint32_t>> collisionMask_;
+
+    //衝突ペアの前フレーム/現フレーム追跡
+    std::unordered_set<CollisionPair, PairHash> previousCollisions_;
+    std::unordered_set<CollisionPair, PairHash> currentCollisions_;
+
+    static std::unique_ptr<CollisionManager> instance_;  ///< シングルトン
+
+    bool debugDrawEnabled_ = false;  ///< デバッグ
   };
 
 } // namespace Tako

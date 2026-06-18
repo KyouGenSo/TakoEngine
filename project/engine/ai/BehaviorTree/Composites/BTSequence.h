@@ -9,7 +9,7 @@ namespace Tako {
   /// 子ノードを順に実行し、最初の Failure で停止する。全成功なら Success を返す。
   /// </summary>
   class BTSequence : public BTComposite {
-  public:
+  public: //メンバー関数
     BTSequence();
 
     virtual ~BTSequence() = default;

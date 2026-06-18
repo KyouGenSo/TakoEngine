@@ -9,7 +9,7 @@ namespace Tako {
   /// </summary>
   class Vignette : public IPostEffect
   {
-  public:
+  public: //メンバー関数
     /// <summary>
     /// 初期化
     /// </summary>
@@ -43,13 +43,12 @@ namespace Tako {
     /// <returns>設定成功の場合 true</returns>
     bool SetGenericParam(const EffectParam& param) override;
 
-    /// <summary>
-    /// ビネットパラメータを設定
-    /// </summary>
-    /// <param name="param">ビネットパラメータ</param>
+    //========================================
+    //Setter
+    //========================================
     void SetParam(const VignetteParam& param);
 
-  private:
+  private: //非公開関数
     /// <summary>
     /// ルートシグネチャを作成
     /// </summary>
@@ -65,10 +64,10 @@ namespace Tako {
     /// </summary>
     void CreateCBV();
 
-  private:
+  private: //メンバー変数
 
     ComPtr<ID3D12Resource> cBufferResource_;
-    VignetteParam* cBufferData_ = nullptr;
+    VignetteParam*         cBufferData_     = nullptr;
 
   };
 

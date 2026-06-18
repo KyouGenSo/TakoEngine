@@ -9,7 +9,7 @@ namespace Tako {
   /// </summary>
   class HalfTone : public IPostEffect
   {
-  public:
+  public: //メンバー関数
     /// <summary>
     /// 初期化
     /// </summary>
@@ -44,17 +44,16 @@ namespace Tako {
     bool SetGenericParam(const EffectParam& param) override;
 
     /// <summary>
-    /// ハーフトーンパラメータを設定
-    /// </summary>
-    /// <param name="param">ハーフトーンパラメータ</param>
-    void SetParam(const HalfToneParam& param);
-
-    /// <summary>
     /// スクリーンサイズを更新
     /// </summary>
     void UpdateScreenSize();
 
-  private:
+    //========================================
+    //Setter
+    //========================================
+    void SetParam(const HalfToneParam& param);
+
+  private: //非公開関数
     /// <summary>
     /// ルートシグネチャを作成
     /// </summary>
@@ -70,10 +69,10 @@ namespace Tako {
     /// </summary>
     void CreateCBV();
 
-  private:
+  private: //メンバー変数
 
     ComPtr<ID3D12Resource> cBufferResource_;
-    HalfToneParam* cBufferData_ = nullptr;
+    HalfToneParam*         cBufferData_     = nullptr;
 
   };
 

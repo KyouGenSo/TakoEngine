@@ -19,7 +19,7 @@ namespace Tako {
   /// アプリケーションの基底クラス
   /// </summary>
   class TakoFramework {
-  public: // メンバ関数
+  public: //メンバー関数
 
     /// <summary>
     /// デストラクタ
@@ -52,26 +52,6 @@ namespace Tako {
     void Run();
 
     /// <summary>
-    /// 終了フラグを取得
-    /// </summary>
-    /// <returns>終了フラグ</returns>
-    bool GetEndFlag() const { return endFlag_; }
-
-#ifdef _DEBUG
-    /// <summary>
-    /// デバッグモードの取得
-    /// </summary>
-    /// <returns>デバッグモードフラグ</returns>
-    bool GetIsDebug() const { return isDebug_; }
-
-    /// <summary>
-    /// デバッグモードの設定
-    /// </summary>
-    /// <param name="value">デバッグモードフラグ</param>
-    void SetIsDebug(bool value);
-#endif
-
-    /// <summary>
     /// フルスクリーンモードの切り替え
     /// </summary>
     void ToggleFullScreen();
@@ -83,13 +63,28 @@ namespace Tako {
     /// <param name="height">新しいウィンドウ高さ</param>
     void OnWindowResize(uint32_t width, uint32_t height);
 
-  private:
+#ifdef _DEBUG
+    bool GetIsDebug() const { return isDebug_; }
+
+    /// <summary>
+    /// デバッグモードの設定
+    /// </summary>
+    /// <param name="value">デバッグモードフラグ</param>
+    void SetIsDebug(bool value);
+#endif
+
+    //===================================================
+    //Getter
+    //===================================================
+    bool GetEndFlag() const { return endFlag_; }
+
+  private: //非公開関数
     /// <summary>
     /// エンジンリソースの読み込み
     /// </summary>
     void LoadResources();
 
-  protected: // メンバ変数
+  protected: //メンバー変数
     D3DResourceLeakChecker d3dResourceLeakChecker;  ///< リソースリークチェッカー（デバッグビルドでメモリリーク検出）
 
     WinApp* winApp_ = nullptr;  ///< ウィンドウ管理クラスへのポインタ

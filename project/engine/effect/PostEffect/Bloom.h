@@ -13,7 +13,7 @@ namespace Tako {
   /// </summary>
   class Bloom : public IPostEffect
   {
-  public:
+  public: //メンバー関数
     /// <summary>
     /// デストラクタ
     /// </summary>
@@ -53,30 +53,19 @@ namespace Tako {
     bool SetGenericParam(const EffectParam& param) override;
 
     /// <summary>
-    /// 高輝度抽出パラメータを設定
-    /// </summary>
-    /// <param name="param">高輝度抽出パラメータ</param>
-    void SetParam(const HighLumExtrcatParam& param);
-
-    /// <summary>
-    /// ガウシアンブラーパラメータを設定
-    /// </summary>
-    /// <param name="param">ガウシアンブラーパラメータ</param>
-    void SetParam(const GaussianBlurParam& param);
-
-    /// <summary>
-    /// ブルーム合成パラメータを設定
-    /// </summary>
-    /// <param name="param">ブルーム合成パラメータ</param>
-    void SetParam(const BloomCombineParam& param);
-
-    /// <summary>
     /// ウィンドウリサイズ時の処理
     /// </summary>
     /// <param name="newSize">新しいウィンドウサイズ</param>
     void OnResize(const Vector2& newSize);
 
-  private:
+    //==========================================
+    //Setter
+    //==========================================
+    void SetParam(const HighLumExtrcatParam& param);
+    void SetParam(const GaussianBlurParam& param);
+    void SetParam(const BloomCombineParam& param);
+
+  private: //非公開関数
     /// <summary>
     /// ルートシグネチャを作成
     /// </summary>
@@ -122,31 +111,30 @@ namespace Tako {
     /// <param name="stateAfter">遷移後の状態</param>
     void SetBarrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
 
-  private:
-    // ルートシグネチャ
-    std::unordered_map <std::string, ComPtr<ID3D12RootSignature>> rootSignatures_;
+  private: //メンバー変数
 
-    // パイプラインステート
-    std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> pipelineStates_;
+    std::unordered_map <std::string, ComPtr<ID3D12RootSignature>> rootSignatures_;  ///< ルートシグネチャ
+
+    std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> pipelineStates_;  ///< パイプラインステート
 
     ComPtr<ID3D12Resource> extractCBufferRes_;
-    HighLumExtrcatParam* extractData_ = nullptr;
+    HighLumExtrcatParam*   extractData_       = nullptr;
 
     ComPtr<ID3D12Resource> blurCBufferRes1_;
-    GaussianBlurParam* blurData1_ = nullptr;
+    GaussianBlurParam*     blurData1_       = nullptr;
 
     ComPtr<ID3D12Resource> blurCBufferRes2_;
-    GaussianBlurParam* blurData2_ = nullptr;
+    GaussianBlurParam*     blurData2_       = nullptr;
 
     ComPtr<ID3D12Resource> combineCBufferRes_;
-    BloomCombineParam* combineData_ = nullptr;
+    BloomCombineParam*     combineData_       = nullptr;
 
     RenderTexture highLumRT_{};
     RenderTexture blurRT_{};
     RenderTexture resultRT_{};
 
-    // リサイズコールバック管理
-    WinApp* winApp_ = nullptr;
+    //リサイズコールバック管理
+    WinApp*  winApp_     = nullptr;
     uint32_t onResizeId_ = 0;
   };
 

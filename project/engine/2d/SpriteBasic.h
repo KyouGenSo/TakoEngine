@@ -23,7 +23,7 @@ namespace Tako {
 
     friend struct std::default_delete<SpriteBasic>;
 
-  public: // メンバー関数
+  public: //メンバー関数
 
     // ComPtr のエイリアス
     template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
@@ -55,26 +55,14 @@ namespace Tako {
     /// <param name="size">新しい画面サイズ</param>
     void OnResize(const Vector2& size);
 
-    //-----------------------------------Getters-----------------------------------//
-    /// <summary>
-    /// DX12Basic インスタンスの取得
-    /// </summary>
-    /// <returns>DX12Basic のポインタ</returns>
+    //====================================
+    //Getter
+    //====================================
     DX12Basic* GetDX12Basic() { return m_dx12_; }
-
-    /// <summary>
-    /// ビュー行列の取得
-    /// </summary>
-    /// <returns>スプライト用ビュー行列</returns>
     const Matrix4x4& GetViewMatrix() { return viewMatrixSprite_; }
-
-    /// <summary>
-    /// プロジェクション行列の取得
-    /// </summary>
-    /// <returns>スプライト用プロジェクション行列</returns>
     const Matrix4x4& GetProjectionMatrix() { return projectionMatrixSprite_; }
 
-  private: // プライベートメンバー関数
+  private: //非公開関数
     /// <summary>
     /// ルートシグネチャの作成
     /// </summary>
@@ -85,22 +73,12 @@ namespace Tako {
     /// </summary>
     void CreatePSO();
 
-  private: // メンバー変数
-
-    ///< DX12Basic クラスのインスタンス
-    DX12Basic* m_dx12_;
-
-    ///< ルートシグネチャ
-    ComPtr<ID3D12RootSignature> rootSignature_;
-
-    ///< パイプラインステート
-    ComPtr<ID3D12PipelineState> pipelineState_;
-
-    ///< ビュー行列
-    Matrix4x4 viewMatrixSprite_ = {};
-
-    ///< プロジェクション行列
-    Matrix4x4 projectionMatrixSprite_ = {};
+  private: //メンバー変数
+    DX12Basic*                  m_dx12_;                       ///< DX12Basic クラスのインスタンス
+    ComPtr<ID3D12RootSignature> rootSignature_;                ///< ルートシグネチャ
+    ComPtr<ID3D12PipelineState> pipelineState_;                ///< パイプラインステート
+    Matrix4x4                   viewMatrixSprite_       = {};  ///< ビュー行列
+    Matrix4x4                   projectionMatrixSprite_ = {};  ///< プロジェクション行列
   };
 
 } // namespace Tako

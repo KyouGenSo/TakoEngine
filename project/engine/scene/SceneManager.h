@@ -25,14 +25,7 @@ namespace Tako {
     SceneManager(const SceneManager&) = delete;
     SceneManager& operator=(const SceneManager&) = delete;
 
-  private:
-
-  public: // メンバ関数
-
-    /// <summary>
-    /// インスタンスの取得
-    /// </summary>
-    static SceneManager* GetInstance();
+  public: //メンバー関数
 
     /// <summary>
     /// 更新
@@ -102,21 +95,28 @@ namespace Tako {
       std::unique_ptr<ITransitionEffect> effect,
       float transitionTime);
 
-    /// <summary>
-    /// シーンファクトリーの設定
-    /// </summary>
-    /// <param name="sceneFactory">シーンファクトリーのポインタ</param>
+    //======================================================
+    //Setter
+    //======================================================
     void SetSceneFactory(AbstractSceneFactory* sceneFactory) { m_sceneFactory_ = sceneFactory; }
 
-  private: // メンバ変数
+    //======================================================
+    //Getter
+    //======================================================
+    /// <summary>
+    /// インスタンスの取得
+    /// </summary>
+    static SceneManager* GetInstance();
 
-    std::unique_ptr<BaseScene> scene_; ///< 現在のシーン
+  private: //メンバー変数
 
-    std::unique_ptr<BaseScene> nextScene_; ///< 次のシーン
+    //シーン
+    std::unique_ptr<BaseScene> scene_;      ///< 現在のシーン
+    std::unique_ptr<BaseScene> nextScene_;  ///< 次のシーン
 
-    AbstractSceneFactory* m_sceneFactory_ = nullptr; ///< シーンファクトリー
+    AbstractSceneFactory* m_sceneFactory_ = nullptr;  ///< シーンファクトリー
 
-    float transitionTime_ = 0.5f; ///< シーン遷移アニメーション時間
+    float transitionTime_ = 0.5f;  ///< シーン遷移アニメーション時間
   };
 
 } // namespace Tako

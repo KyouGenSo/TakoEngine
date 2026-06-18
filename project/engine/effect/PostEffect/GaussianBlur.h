@@ -11,7 +11,7 @@ namespace Tako {
   /// </summary>
   class GaussianBlur : public IPostEffect
   {
-  public:
+  public: //メンバー関数
     /// <summary>
     /// デストラクタ
     /// </summary>
@@ -51,18 +51,17 @@ namespace Tako {
     bool SetGenericParam(const EffectParam& param) override;
 
     /// <summary>
-    /// ガウシアンブラーパラメータを設定
-    /// </summary>
-    /// <param name="param">ガウシアンブラーパラメータ</param>
-    void SetParam(const GaussianBlurParam& param);
-
-    /// <summary>
     /// ウィンドウリサイズ時の処理
     /// </summary>
     /// <param name="newSize">新しいウィンドウサイズ</param>
     void OnResize(const Vector2& newSize);
 
-  private:
+    //============================================
+    //Setter
+    //============================================
+    void SetParam(const GaussianBlurParam& param);
+
+  private: //非公開関数
     /// <summary>
     /// ルートシグネチャを作成
     /// </summary>
@@ -96,18 +95,18 @@ namespace Tako {
     /// <param name="stateAfter">遷移後の状態</param>
     void SetBarrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
 
-  private:
+  private: //メンバー変数
 
     ComPtr<ID3D12Resource> cBufferResource1_;
-    GaussianBlurParam* cBufferData1_ = nullptr;
+    GaussianBlurParam*     cBufferData1_     = nullptr;
 
     ComPtr<ID3D12Resource> cBufferResource2_;
-    GaussianBlurParam* cBufferData2_ = nullptr;
+    GaussianBlurParam*     cBufferData2_     = nullptr;
 
     RenderTexture resultRT_{};
 
-    // リサイズコールバック管理
-    WinApp* winApp_ = nullptr;
+    //リサイズコールバック管理
+    WinApp*  winApp_     = nullptr;
     uint32_t onResizeId_ = 0;
   };
 

@@ -16,33 +16,13 @@ namespace Tako {
   /// JSON ロード/セーブは現状プレースホルダ。実際の JSON IO は BehaviorTreeEditor が担当する想定。
   /// </summary>
   class BehaviorTree {
-  public:
+  public: //メンバー関数
     /// <summary>
     /// コンストラクタ。内部ブラックボードを生成する。
     /// </summary>
     BehaviorTree();
 
     ~BehaviorTree() = default;
-
-    void SetRootNode(BTNodePtr root) { root_ = root; }
-
-    /// <summary>
-    /// ルートノードの取得。
-    /// </summary>
-    /// <returns>現在のルートノード (未設定なら nullptr)</returns>
-    BTNodePtr GetRootNode() const { return root_; }
-
-    /// <summary>
-    /// ブラックボード取得 (書き込み可)。
-    /// </summary>
-    /// <returns>内部ブラックボードへのポインタ</returns>
-    BTBlackboard* GetBlackboard() { return blackboard_.get(); }
-
-    /// <summary>
-    /// ブラックボード取得 (読み取り専用)。
-    /// </summary>
-    /// <returns>内部ブラックボードへの const ポインタ</returns>
-    const BTBlackboard* GetBlackboard() const { return blackboard_.get(); }
 
     /// <summary>
     /// 1 フレーム実行。deltaTime をブラックボードに伝えてルートノードを Execute する。
@@ -56,9 +36,24 @@ namespace Tako {
     void Reset();
 
     /// <summary>
-    /// 最後の Tick 実行結果を取得。
+    /// JSON ファイルからツリーを読み込む。
+    /// (現状はプレースホルダ。BehaviorTreeEditor 側で JSON IO を実装している)
     /// </summary>
-    /// <returns>最後の実行ステータス</returns>
+    /// <param name="filepath">読み込み元 JSON ファイルパス</param>
+    /// <returns>成功すれば true</returns>
+    bool LoadFromJSON(const std::string& filepath);
+
+    //=======================================
+    //Setter
+    //=======================================
+    void SetRootNode(BTNodePtr root) { root_ = root; }
+
+    //=======================================
+    //Getter
+    //=======================================
+    BTNodePtr GetRootNode() const { return root_; }
+    BTBlackboard* GetBlackboard() { return blackboard_.get(); }
+    const BTBlackboard* GetBlackboard() const { return blackboard_.get(); }
     BTNodeStatus GetLastStatus() const { return lastStatus_; }
 
     /// <summary>
@@ -67,15 +62,7 @@ namespace Tako {
     /// <returns>Running 状態の最深ノード、なければ nullptr</returns>
     BTNodePtr GetCurrentRunningNode() const;
 
-    /// <summary>
-    /// JSON ファイルからツリーを読み込む。
-    /// (現状はプレースホルダ。BehaviorTreeEditor 側で JSON IO を実装している)
-    /// </summary>
-    /// <param name="filepath">読み込み元 JSON ファイルパス</param>
-    /// <returns>成功すれば true</returns>
-    bool LoadFromJSON(const std::string& filepath);
-
-  private:
+  private: //非公開関数
     /// <summary>
     /// ノードを再帰的に探索し、Running 状態の最深ノードを返す。
     /// </summary>
@@ -93,15 +80,10 @@ namespace Tako {
       const std::vector<nlohmann::json>& links,
       std::unordered_set<int>& visitedNodes);
 
-  private:
-    /// ルートノード (ツリーのエントリポイント)
-    BTNodePtr root_;
-
-    /// 内部ブラックボード (所有)
-    std::unique_ptr<BTBlackboard> blackboard_;
-
-    /// 最後の Tick 実行結果
-    BTNodeStatus lastStatus_ = BTNodeStatus::Failure;
+  private: //メンバー変数
+    BTNodePtr                     root_;                                ///< ルートノード (ツリーのエントリポイント)
+    std::unique_ptr<BTBlackboard> blackboard_;                          ///< 内部ブラックボード (所有)
+    BTNodeStatus                  lastStatus_ = BTNodeStatus::Failure;  ///< 最後の Tick 実行結果
   };
 
 } // namespace Tako

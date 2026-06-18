@@ -10,9 +10,12 @@ namespace Tako {
 
   class Object3d;
 
+  /// <summary>
+  /// シーンを json ファイルから読み込み Object3d 群を構築するローダー
+  /// </summary>
   class SceneLoader
   {
-  public: // 構造体定義
+  public: //構造体
     /// <summary>
     /// 読み込まれたシーンを保持するコンテナ構造体
     /// </summary>
@@ -45,8 +48,8 @@ namespace Tako {
       void Clear();
 
     private:
-      std::vector<std::unique_ptr<Object3d>> objects_; ///< オブジェクトのリスト
-      std::map<std::string, Object3d*> objectMap_; ///< 名前からオブジェクトへのマップ
+      std::vector<std::unique_ptr<Object3d>> objects_;    ///< オブジェクトのリスト
+      std::map<std::string, Object3d*>       objectMap_;  ///< 名前からオブジェクトへのマップ
     };
 
     /// <summary>
@@ -54,10 +57,10 @@ namespace Tako {
     /// </summary>
     struct ObjectData
     {
-      std::string type; ///< オブジェクトタイプ（例: "Mesh", "Light", "Camera"）
-      std::string name; ///< オブジェクト名
-      Transform transform; ///< トランスフォーム（位置、回転、スケール）
-      std::string fileName; ///< ファイル名
+      std::string type;       ///< オブジェクトタイプ（例: "Mesh", "Light", "Camera"）
+      std::string name;       ///< オブジェクト名
+      Transform   transform;  ///< トランスフォーム（位置、回転、スケール）
+      std::string fileName;   ///< ファイル名
     };
 
     /// <summary>
@@ -65,11 +68,11 @@ namespace Tako {
     /// </summary>
     struct LevelData
     {
-      std::string name; ///< レベル名
-      std::vector<ObjectData> objects; ///< レベル内のオブジェクトリスト
+      std::string             name;     ///< レベル名
+      std::vector<ObjectData> objects;  ///< レベル内のオブジェクトリスト
     };
 
-  public: //　メンバー関数
+  public: //メンバー関数
     /// <summary>
     /// 初期化
     /// </summary>
@@ -82,29 +85,23 @@ namespace Tako {
     /// <returns>読み込まれたシーンデータ（失敗時は nullptr）</returns>
     std::unique_ptr<LoadedScene> LoadScene(const std::string& sceneFileName);
 
-    // -----------------------------------Setters-----------------------------------//
-    /// <summary>
-    /// ディレクトリフォルダ名を設定
-    /// </summary>
-    /// <param name="directoryFolderName">ディレクトリフォルダ名</param>
+    //============================================================
+    //Setter
+    //============================================================
     void SetDirectoryFolderName(const std::string& directoryFolderName)
     {
       directoryFolderName_ = directoryFolderName;
     }
 
-    /// <summary>
-    /// シーンフォルダ名を設定
-    /// </summary>
-    /// <param name="sceneFolderName">シーンフォルダ名</param>
     void SetSceneFolderName(const std::string& sceneFolderName)
     {
       sceneFolderName_ = sceneFolderName;
     }
 
-  private:
-    std::string directoryFolderName_; ///< ディレクトリフォルダ名
+  private: //メンバー変数
+    std::string directoryFolderName_;  ///< ディレクトリフォルダ名
 
-    std::string sceneFolderName_; ///< シーンフォルダ名
+    std::string sceneFolderName_;  ///< シーンフォルダ名
   };
 
 } // namespace Tako

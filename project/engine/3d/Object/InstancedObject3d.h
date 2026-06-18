@@ -19,9 +19,18 @@ class ModelInstance;
 /// 同一モデルの大量描画を効率的に処理
 /// </summary>
 class InstancedObject3d {
-public:
+public: //定数
     static constexpr uint32_t MAX_INSTANCES = 5000;  ///< 最大インスタンス数
 
+public: //構造体
+    /// <summary>
+    /// シェーダー用カメラデータ構造
+    /// </summary>
+    struct CameraForGPU {
+        Vector3 worldPos;  ///< カメラのワールド座標
+    };
+
+public: //メンバー関数
     /// <summary>
     /// コンストラクタ
     /// </summary>
@@ -86,38 +95,9 @@ public:
     /// </summary>
     std::unique_ptr<ModelInstance> CreateInstance(const Transform& transform, const Vector4& color = Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 
-    // Getters
-    /// <summary>
-    /// インスタンス数を取得
-    /// </summary>
-    /// <returns>現在のインスタンス数</returns>
-    uint32_t GetInstanceCount() const { return static_cast<uint32_t>(instances_.size()); }
-
-    /// <summary>
-    /// モデルを取得
-    /// </summary>
-    /// <returns>モデルポインタ</returns>
-    Model* GetModel() const { return model_.get(); }
-
-    /// <summary>
-    /// インスタンスのトランスフォームを取得
-    /// </summary>
-    /// <param name="instanceId">インスタンス ID</param>
-    /// <returns>トランスフォーム参照</returns>
-    const Transform& GetInstanceTransform(uint32_t instanceId) const;
-
-    /// <summary>
-    /// インスタンスのカラーを取得
-    /// </summary>
-    /// <param name="instanceId">インスタンス ID</param>
-    /// <returns>カラー参照</returns>
-    const Vector4& GetInstanceColor(uint32_t instanceId) const;
-
-    // Setters
-    /// <summary>
-    /// カメラを設定
-    /// </summary>
-    /// <param name="camera">カメラポインタのポインタ</param>
+    //============================================================
+    //Setter
+    //============================================================
     void SetCamera(Camera** camera) { camera_ = camera; }
 
     /// <summary>
@@ -138,14 +118,38 @@ public:
     /// <param name="textureIndex">テクスチャインデックス</param>
     void SetEnvironmentTexture(uint32_t textureIndex);
 
+    //============================================================
+    //Getter
+    //============================================================
+    uint32_t GetInstanceCount() const { return static_cast<uint32_t>(instances_.size()); }
+    Model* GetModel() const { return model_.get(); }
+
     /// <summary>
-    /// シェーダー用カメラデータ構造
+    /// インスタンスのトランスフォームを取得
     /// </summary>
-    struct CameraForGPU {
-        Vector3 worldPos;  ///< カメラのワールド座標
+    /// <param name="instanceId">インスタンス ID</param>
+    /// <returns>トランスフォーム参照</returns>
+    const Transform& GetInstanceTransform(uint32_t instanceId) const;
+
+    /// <summary>
+    /// インスタンスのカラーを取得
+    /// </summary>
+    /// <param name="instanceId">インスタンス ID</param>
+    /// <returns>カラー参照</returns>
+    const Vector4& GetInstanceColor(uint32_t instanceId) const;
+
+private: //構造体
+    /// <summary>
+    /// インスタンスデータの内部構造
+    /// </summary>
+    struct InternalInstanceData {
+        Transform transform;  ///< トランスフォーム情報
+        Vector4 color;  ///< カラー情報
+        bool active;  ///< アクティブフラグ
+        uint32_t id;  ///< 一意の ID
     };
 
-private:
+private: //非公開関数
     /// <summary>
     /// インスタンスバッファの作成
     /// </summary>
@@ -166,35 +170,24 @@ private:
     /// </summary>
     bool IsValidInstanceId(uint32_t instanceId) const;
 
-private:
-    /// <summary>
-    /// インスタンスデータの内部構造
-    /// </summary>
-    struct InternalInstanceData {
-        Transform transform;  ///< トランスフォーム情報
-        Vector4 color;  ///< カラー情報
-        bool active;  ///< アクティブフラグ
-        uint32_t id;  ///< 一意の ID
-    };
+private: //メンバー変数
+    std::unique_ptr<Model> model_;             ///< モデルポインタ
+    Camera**               camera_ = nullptr;  ///< カメラポインタのポインタ
 
-    std::unique_ptr<Model> model_;  ///< モデルポインタ
+    //インスタンスデータ
+    std::vector<InternalInstanceData> instances_;      ///< インスタンスデータ配列
+    std::vector<uint32_t>             freeIds_;        ///< 再利用可能な ID リスト
+    uint32_t                          nextId_    = 0;  ///< 次に割り当てる ID
 
-    Camera** camera_ = nullptr;  ///< カメラポインタのポインタ
-
-    // インスタンスデータ
-    std::vector<InternalInstanceData> instances_;  ///< インスタンスデータ配列
-    std::vector<uint32_t> freeIds_;  ///< 再利用可能な ID リスト
-    uint32_t nextId_ = 0;  ///< 次に割り当てる ID
-
-    // GPU リソース
-    Microsoft::WRL::ComPtr<ID3D12Resource> instanceBuffer_;  ///< インスタンスバッファ
+    //GPU リソース
+    Microsoft::WRL::ComPtr<ID3D12Resource> instanceBuffer_;        ///< インスタンスバッファ
     Microsoft::WRL::ComPtr<ID3D12Resource> cameraForGPUResource_;  ///< カメラデータ用リソース
-    Microsoft::WRL::ComPtr<ID3D12Resource> viewProjResource_;  ///< ViewProjection 行列リソース
+    Microsoft::WRL::ComPtr<ID3D12Resource> viewProjResource_;      ///< ViewProjection 行列リソース
 
-    // マップされたバッファ
+    //マップされたバッファ
     InstanceData* mappedInstanceData_ = nullptr;  ///< マップされたインスタンスデータ
-    CameraForGPU* cameraForGPUData_ = nullptr;  ///< マップされたカメラデータ
-    Matrix4x4* viewProjData_ = nullptr;  ///< マップされた ViewProjection 行列
+    CameraForGPU* cameraForGPUData_   = nullptr;  ///< マップされたカメラデータ
+    Matrix4x4*    viewProjData_       = nullptr;  ///< マップされた ViewProjection 行列
 
     uint32_t instanceSrvIndex_ = 0;  ///< インスタンスバッファの SRV インデックス
 
@@ -206,7 +199,7 @@ private:
 /// 個別のインスタンスを操作するためのクラス
 /// </summary>
 class ModelInstance {
-public:
+public: //メンバー関数
     /// <summary>
     /// コンストラクタ
     /// </summary>
@@ -236,7 +229,9 @@ public:
     /// <returns>自身の参照</returns>
     ModelInstance& operator=(ModelInstance&& other) noexcept;
 
-    // トランスフォーム操作
+    //============================================================
+    //Setter
+    //============================================================
     /// <summary>
     /// トランスフォームを設定
     /// </summary>
@@ -261,14 +256,15 @@ public:
     /// <param name="scale">新しいスケール</param>
     void SetScale(const Vector3& scale);
 
-    // カラー操作
     /// <summary>
     /// カラーを設定
     /// </summary>
     /// <param name="color">新しいカラー</param>
     void SetColor(const Vector4& color);
 
-    // Getters
+    //============================================================
+    //Getter
+    //============================================================
     /// <summary>
     /// トランスフォームを取得
     /// </summary>
@@ -281,15 +277,11 @@ public:
     /// <returns>現在のカラー</returns>
     Vector4 GetColor() const;
 
-    /// <summary>
-    /// 有効性を確認
-    /// </summary>
-    /// <returns>有効な場合 true</returns>
     bool IsValid() const { return parent_ != nullptr && instanceId_ != UINT32_MAX; }
 
-private:
-    InstancedObject3d* parent_ = nullptr;  ///< 親の InstancedObject3d ポインタ
-    uint32_t instanceId_ = UINT32_MAX;  ///< インスタンス ID
+private: //メンバー変数
+    InstancedObject3d* parent_     = nullptr;     ///< 親の InstancedObject3d ポインタ
+    uint32_t           instanceId_ = UINT32_MAX;  ///< インスタンス ID
 };
 
 } // namespace Tako

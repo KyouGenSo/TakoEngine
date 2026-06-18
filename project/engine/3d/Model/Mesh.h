@@ -16,7 +16,7 @@ namespace Tako {
   /// </summary>
   class Mesh {
 
-  public: // メンバー関数
+  public: //メンバー関数
 
     /// <summary>
     /// デストラクタ
@@ -65,7 +65,7 @@ namespace Tako {
     /// <returns>クローンされたメッシュの unique_ptr</returns>
     std::unique_ptr<Mesh> Clone() const;
 
-    // ===== スキニング関連 =====
+    //スキニング関連
     /// <summary>
     /// スキニングの初期化
     /// </summary>
@@ -82,53 +82,20 @@ namespace Tako {
     /// </summary>
     void SkinningCompute();
 
-    // ===== Getters/Setters =====
     /// <summary>
-    /// 光沢度を設定
+    /// フレーム開始時にスキニング状態をリセット
     /// </summary>
-    /// <param name="shininess">光沢度</param>
+    void ResetSkinningState() { skinningComputedThisFrame_ = false; }
+
+    //============================================================
+    //Setter
+    //============================================================
     void SetShininess(float shininess) { materialData_->shininess = shininess; }
-
-    /// <summary>
-    /// ライティングの有効/無効を設定
-    /// </summary>
-    /// <param name="enableLighting">ライティングを有効にするか</param>
     void SetEnableLighting(bool enableLighting) { materialData_->enableLighting = enableLighting; }
-
-    /// <summary>
-    /// ハイライトの有効/無効を設定
-    /// </summary>
-    /// <param name="enableHighlight">ハイライトを有効にするか</param>
     void SetEnableHighlight(bool enableHighlight) { materialData_->enableHighlight = enableHighlight; }
-
-    /// <summary>
-    /// マテリアルカラーを設定
-    /// </summary>
-    /// <param name="color">マテリアルカラー（RGBA）</param>
     void SetMaterialColor(const Vector4& color) { materialData_->color = color; }
-
-    /// <summary>
-    /// マテリアルカラーを取得
-    /// </summary>
-    /// <returns>マテリアルカラー（RGBA）</returns>
-    Vector4 GetMaterialColor() const { return materialData_->color; }
-
-    /// <summary>
-    /// 環境マップテクスチャを設定
-    /// </summary>
-    /// <param name="envTextureIndex">環境マップテクスチャインデックス</param>
     void SetEnvironmentTexture(uint32_t envTextureIndex) { envTextureIndex_ = envTextureIndex; }
-
-    /// <summary>
-    /// 環境マップの有効/無効を設定
-    /// </summary>
-    /// <param name="enableEnvMap">環境マップを有効にするか</param>
     void SetEnableEnvMap(bool enableEnvMap) { materialData_->enableEnvMap = static_cast<int32_t>(enableEnvMap); }
-
-    /// <summary>
-    /// 環境マップの係数を設定
-    /// </summary>
-    /// <param name="coefficient">環境マップ係数</param>
     void SetEnvMapCoefficient(float coefficient) { materialData_->envMapCoefficient = coefficient; }
 
     /// <summary>
@@ -140,39 +107,18 @@ namespace Tako {
       materialData_->uvTransform = Mat4x4::MakeAffine(transform.scale, transform.rotate, transform.translate);
     }
 
-    /// <summary>
-    /// スキニングの有無を取得
-    /// </summary>
-    /// <returns>スキニングを持つ場合 true</returns>
+    void SetName(const std::string& name) { name_ = name; }
+    void SetVisible(bool isVisible) { isVisible_ = isVisible; }
+
+    //============================================================
+    //Getter
+    //============================================================
+    Vector4 GetMaterialColor() const { return materialData_->color; }
     bool HasSkinning() const { return hasSkinning_; }
-
-    /// <summary>
-    /// UAV 頂点リソースを取得
-    /// </summary>
-    /// <returns>UAV 頂点出力リソースポインタ</returns>
     ID3D12Resource* GetUAVVertexResource() { return uavVertexOutputResource_.Get(); }
-
-    /// <summary>
-    /// 頂点 SRV インデックスを取得
-    /// </summary>
-    /// <returns>頂点 SRV インデックス</returns>
     uint32_t GetVertexSrvIndex() { return vertexSrvIndex_; }
-
-    /// <summary>
-    /// インフルエンス SRV インデックスを取得
-    /// </summary>
-    /// <returns>インフルエンス SRV インデックス</returns>
     uint32_t GetInfluenceSrvIndex() { return influenceSrvIndex_; }
-
-    /// <summary>
-    /// UAV インデックスを取得
-    /// </summary>
-    /// <returns>UAV インデックス</returns>
     uint32_t GetUAVIndex() { return uavIndex_; }
-
-    /// <summary>
-    /// スキニング後頂点 SRV のインデックス (0 でスキニング無効)
-    /// </summary>
     uint32_t GetSkinnedVertexSrvIndex() const { return skinnedVertexSrvIndex_; }
 
     /// <summary>
@@ -187,9 +133,6 @@ namespace Tako {
     /// <returns>頂点数</returns>
     UINT GetVertexCount() { return static_cast<UINT>(vertices_.size()); }
 
-    /// <summary>
-    /// インデックスバッファのリソースを取得 (GPU パーティクルの Mesh エミッタで SRV 化するために使用)
-    /// </summary>
     ID3D12Resource* GetIndexResource() { return indexResource_.Get(); }
 
     /// <summary>
@@ -206,47 +149,12 @@ namespace Tako {
 
     const std::vector<VertexData>& GetVertices() const { return vertices_; }
     const std::vector<uint32_t>& GetIndices() const { return indices_; }
-
-    /// <summary>
-    /// ローカル座標系での AABB 最小値を取得
-    /// </summary>
     const Vector3& GetAABBLocalMin() const { return aabbLocalMin_; }
-
-    /// <summary>
-    /// ローカル座標系での AABB 最大値を取得
-    /// </summary>
     const Vector3& GetAABBLocalMax() const { return aabbLocalMax_; }
-
-    /// <summary>
-    /// フレーム開始時にスキニング状態をリセット
-    /// </summary>
-    void ResetSkinningState() { skinningComputedThisFrame_ = false; }
-
-    /// <summary>
-    /// メッシュ名を設定（モデルロード時に Assimp のメッシュ名を格納）
-    /// </summary>
-    /// <param name="name">メッシュ名</param>
-    void SetName(const std::string& name) { name_ = name; }
-
-    /// <summary>
-    /// メッシュ名を取得
-    /// </summary>
-    /// <returns>メッシュ名</returns>
     const std::string& GetName() const { return name_; }
-
-    /// <summary>
-    /// 表示状態を設定（false で Model の描画ループからスキップされる）
-    /// </summary>
-    /// <param name="isVisible">表示する場合 true</param>
-    void SetVisible(bool isVisible) { isVisible_ = isVisible; }
-
-    /// <summary>
-    /// 表示状態を取得
-    /// </summary>
-    /// <returns>表示中なら true</returns>
     bool IsVisible() const { return isVisible_; }
 
-  private: // プライベートメンバー関数
+  private: //非公開関数
 
     /// <summary>
     /// 頂点データを生成
@@ -283,60 +191,59 @@ namespace Tako {
     /// </summary>
     void ReleaseSRVIndex();
 
-    // ===== メンバ変数 =====
-    ModelBasic* modelBasic_ = nullptr; ///< モデル基本システムへのポインタ
-    DX12Basic* dx12_ = nullptr; ///< DirectX12基盤システムへのポインタ
+  private: //メンバー変数
+    ModelBasic* modelBasic_ = nullptr;  ///< モデル基本システムへのポインタ
+    DX12Basic*  dx12_       = nullptr;  ///< DirectX12基盤システムへのポインタ
 
-    std::vector<VertexData> vertices_; ///< 頂点データ配列
-    std::vector<uint32_t> indices_; ///< インデックスデータ配列
-    TextureData textureData_; ///< テクスチャデータ
+    std::vector<VertexData> vertices_;     ///< 頂点データ配列
+    std::vector<uint32_t>   indices_;      ///< インデックスデータ配列
+    TextureData             textureData_;  ///< テクスチャデータ
 
-    // リソース
-    Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource_; ///< 頂点バッファリソース
-    Microsoft::WRL::ComPtr<ID3D12Resource> indexResource_; ///< インデックスバッファリソース
-    Microsoft::WRL::ComPtr<ID3D12Resource> materialResource_; ///< マテリアルバッファリソース
-    Microsoft::WRL::ComPtr<ID3D12Resource> transformationResource_; ///< 変換行列バッファリソース
+    //リソース
+    Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource_;          ///< 頂点バッファリソース
+    Microsoft::WRL::ComPtr<ID3D12Resource> indexResource_;           ///< インデックスバッファリソース
+    Microsoft::WRL::ComPtr<ID3D12Resource> materialResource_;        ///< マテリアルバッファリソース
+    Microsoft::WRL::ComPtr<ID3D12Resource> transformationResource_;  ///< 変換行列バッファリソース
 
-    // バッファビュー
-    D3D12_VERTEX_BUFFER_VIEW vertexBufferView_; ///< 頂点バッファビュー
-    D3D12_VERTEX_BUFFER_VIEW skinnedVertexBufferView_; ///< スキニング済み頂点バッファビュー
-    D3D12_INDEX_BUFFER_VIEW indexBufferView_; ///< インデックスバッファビュー
+    //バッファビュー
+    D3D12_VERTEX_BUFFER_VIEW vertexBufferView_;         ///< 頂点バッファビュー
+    D3D12_VERTEX_BUFFER_VIEW skinnedVertexBufferView_;  ///< スキニング済み頂点バッファビュー
+    D3D12_INDEX_BUFFER_VIEW  indexBufferView_;          ///< インデックスバッファビュー
 
-    // バッファリソース内のデータを指すポインタ
-    VertexData* vertexData_ = nullptr; ///< 頂点データへのポインタ
-    Material* materialData_ = nullptr; ///< マテリアルデータへのポインタ
-    Object3d::TransformationMatrix* transformationData_ = nullptr; ///< 変換行列データへのポインタ
+    //バッファリソース内のデータを指すポインタ
+    VertexData*                     vertexData_         = nullptr;  ///< 頂点データへのポインタ
+    Material*                       materialData_       = nullptr;  ///< マテリアルデータへのポインタ
+    Object3d::TransformationMatrix* transformationData_ = nullptr;  ///< 変換行列データへのポインタ
 
-    // SRV インデックス
-    uint32_t vertexSrvIndex_ = 0; ///< 頂点 SRV インデックス
-    uint32_t indexSrvIndex_ = 0; ///< インデックス SRV インデックス (GetIndexSrvIndex で遅延生成)
-    uint32_t envTextureIndex_ = 0; ///< 環境マップテクスチャインデックス
+    //SRV インデックス
+    uint32_t vertexSrvIndex_  = 0;  ///< 頂点 SRV インデックス
+    uint32_t indexSrvIndex_   = 0;  ///< インデックス SRV インデックス (GetIndexSrvIndex で遅延生成)
+    uint32_t envTextureIndex_ = 0;  ///< 環境マップテクスチャインデックス
 
-    // ===== スキニング関連 =====
-    bool hasSkinning_ = false; ///< スキニングの有無
-    std::vector<VertexInfluence> vertexInfluences_; ///< 頂点インフルエンス配列
+    //スキニング関連
+    bool                         hasSkinning_      = false;  ///< スキニングの有無
+    std::vector<VertexInfluence> vertexInfluences_;          ///< 頂点インフルエンス配列
 
-    // スキニングリソース
-    Microsoft::WRL::ComPtr<ID3D12Resource> influenceResource_; ///< インフルエンスバッファリソース
-    Microsoft::WRL::ComPtr<ID3D12Resource> uavVertexOutputResource_; ///< UAV 頂点出力リソース
-    Microsoft::WRL::ComPtr<ID3D12Resource> skinningInfoResource_; ///< スキニング情報バッファリソース
+    //スキニングリソース
+    Microsoft::WRL::ComPtr<ID3D12Resource> influenceResource_;        ///< インフルエンスバッファリソース
+    Microsoft::WRL::ComPtr<ID3D12Resource> uavVertexOutputResource_;  ///< UAV 頂点出力リソース
+    Microsoft::WRL::ComPtr<ID3D12Resource> skinningInfoResource_;     ///< スキニング情報バッファリソース
 
-    uint32_t influenceSrvIndex_ = 0; ///< インフルエンス SRV インデックス
-    uint32_t uavIndex_ = 0; ///< UAV インデックス
-    uint32_t skinnedVertexSrvIndex_ = 0; ///< UAV と同一リソースに対する SRV ビュー
+    uint32_t influenceSrvIndex_     = 0;  ///< インフルエンス SRV インデックス
+    uint32_t uavIndex_              = 0;  ///< UAV インデックス
+    uint32_t skinnedVertexSrvIndex_ = 0;  ///< UAV と同一リソースに対する SRV ビュー
 
-    SkinningInfo* skinningInfoData_ = nullptr; ///< スキニング情報データへのポインタ
+    SkinningInfo* skinningInfoData_ = nullptr;  ///< スキニング情報データへのポインタ
 
-    bool skinningComputedThisFrame_ = false; ///< スキニング済みフラグ（フレーム内で1回だけ実行）
+    bool skinningComputedThisFrame_ = false;  ///< スキニング済みフラグ（フレーム内で1回だけ実行）
 
-    // GPU パーティクルの Mesh エミッタ用 AABB (頂点ローカル座標系)
+    //GPU パーティクルの Mesh エミッタ用 AABB (頂点ローカル座標系)
     Vector3 aabbLocalMin_{ .x = 0.0f, .y = 0.0f, .z = 0.0f };
     Vector3 aabbLocalMax_{ .x = 0.0f, .y = 0.0f, .z = 0.0f };
 
-    // 表示制御・識別
-    std::string name_;       ///< メッシュ名（Assimp aiMesh->mName 由来。表示制御の識別子）
-    bool isVisible_ = true;  ///< 表示フラグ（false で Model の描画ループからスキップ）
+    //表示制御・識別
+    std::string name_;              ///< メッシュ名（Assimp aiMesh->mName 由来。表示制御の識別子）
+    bool        isVisible_ = true;  ///< 表示フラグ（false で Model の描画ループからスキップ）
   };
 
 } // namespace Tako
-

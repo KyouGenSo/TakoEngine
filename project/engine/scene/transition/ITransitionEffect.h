@@ -8,7 +8,7 @@ namespace Tako {
   /// </summary>
   class ITransitionEffect
   {
-  public:
+  public: //構造体
     /// <summary>
     /// トランジションの状態
     /// </summary>
@@ -19,7 +19,7 @@ namespace Tako {
       FADE_OUT   // フェードアウト中（演出開始方向）
     };
 
-  public:
+  public: //メンバー関数
     /// <summary>
     /// デストラクタ
     /// </summary>

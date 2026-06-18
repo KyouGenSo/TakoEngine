@@ -18,7 +18,7 @@ namespace Tako {
   /// </summary>
   class ImGuiManager
   {
-  public: // メンバ関数
+  public: //メンバー関数
 
     /// <summary>
     /// 初期化
@@ -55,7 +55,6 @@ namespace Tako {
     /// </summary>
     void OnWindowResize();
 
-
     /// <summary>
     /// ImGui のスタイルの設定
     /// </summary>
@@ -71,18 +70,15 @@ namespace Tako {
     /// </summary>
     void SetDockSpaceViewPort();
 
-  private: // メンバ変数
+  private: //メンバー変数
 
-    // WinApp クラスのインスタンス
-    WinApp* m_winApp_ = nullptr;
+    WinApp* m_winApp_ = nullptr;  ///< WinApp クラスのインスタンス
 
-    // DX12Basic クラスのインスタンス
-    DX12Basic* m_dx12_ = nullptr;
+    DX12Basic* m_dx12_ = nullptr;  ///< DX12Basic クラスのインスタンス
 
     bool isDocking_ = false;
 
-    // フォント用の SRV インデックス（SrvManager で確保）
-    uint32_t fontSrvIndex_ = 0;
+    uint32_t fontSrvIndex_ = 0;  ///< フォント用の SRV インデックス（SrvManager で確保）
 
   };
 

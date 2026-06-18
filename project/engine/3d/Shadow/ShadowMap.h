@@ -15,7 +15,10 @@ class SrvManager;
 /// </summary>
 class ShadowMap
 {
-public:
+public: //定数
+    static const uint32_t DEFAULT_SHADOW_MAP_SIZE = 2048; ///< デフォルトのシャドウマップ解像度（2048x2048）
+
+public: //構造体
     /// <summary>
     /// シャドウマップの品質プリセット（解像度 + PCF カーネルサイズの組み合わせ）
     /// </summary>
@@ -27,8 +30,7 @@ public:
         Super = 4    ///< 8192x8192, PCF 9x9 - 最高品質（ハイエンド GPU 向け）
     };
 
-    static const uint32_t DEFAULT_SHADOW_MAP_SIZE = 2048; ///< デフォルトのシャドウマップ解像度（2048x2048）
-
+public: //メンバー関数
     /// <summary>
     /// 初期化
     /// </summary>
@@ -55,12 +57,9 @@ public:
     /// </summary>
     void EndShadowMapRender();
 
-    /// <summary>
-    /// SRV インデックスを取得（深度テクスチャ読み取り用、register t4）
-    /// </summary>
-    /// <returns>シェーダーリソースビューのインデックス</returns>
-    uint32_t GetSrvIndex() const { return srvIndex_; }
-
+    //========================================
+    //Setter
+    //========================================
     /// <summary>
     /// シャドウ品質の設定（解像度と PCF カーネルサイズをまとめて変更）
     /// </summary>
@@ -79,19 +78,20 @@ public:
     /// <param name="kernelSize">PCF カーネルサイズ</param>
     void SetPCFKernelSize(int kernelSize);
 
+    //========================================
+    //Getter
+    //========================================
     /// <summary>
-    /// 現在の解像度を取得
+    /// SRV インデックスを取得（深度テクスチャ読み取り用、register t4）
     /// </summary>
-    /// <returns>現在のシャドウマップ解像度</returns>
+    /// <returns>シェーダーリソースビューのインデックス</returns>
+    uint32_t GetSrvIndex() const { return srvIndex_; }
+
     uint32_t GetShadowMapSize() const { return shadowMapSize_; }
 
-    /// <summary>
-    /// 現在の PCF カーネルサイズを取得
-    /// </summary>
-    /// <returns>現在の PCF カーネルサイズ</returns>
     int GetPCFKernelSize() const { return pcfKernelSize_; }
 
-private:
+private: //非公開関数
     /// <summary>
     /// シャドウマップリソース（深度テクスチャ）の作成
     /// </summary>
@@ -107,23 +107,23 @@ private:
     /// </summary>
     void CreateShaderResourceView();
 
-private:
-    DX12Basic* dx12_ = nullptr;        ///< DirectX12基盤システムへの参照
-    SrvManager* srvManager_ = nullptr; ///< SRV 管理システムへの参照
+private: //メンバー変数
+    DX12Basic*  dx12_       = nullptr;  ///< DirectX12基盤システムへの参照
+    SrvManager* srvManager_ = nullptr;  ///< SRV 管理システムへの参照
 
-    Microsoft::WRL::ComPtr<ID3D12Resource> shadowMapResource_;       ///< シャドウマップ用深度テクスチャリソース
-    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap_; ///< 深度ステンシルビュー用ディスクリプタヒープ
-    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle_{};                        ///< 深度ステンシルビューの CPU ハンドル
-    uint32_t srvIndex_ = UINT32_MAX;                                 ///< SRV インデックス（深度テクスチャ読み取り用）
+    Microsoft::WRL::ComPtr<ID3D12Resource>       shadowMapResource_;               ///< シャドウマップ用深度テクスチャリソース
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap_;               ///< 深度ステンシルビュー用ディスクリプタヒープ
+    D3D12_CPU_DESCRIPTOR_HANDLE                  dsvHandle_{};                     ///< 深度ステンシルビューの CPU ハンドル
+    uint32_t                                     srvIndex_          = UINT32_MAX;  ///< SRV インデックス（深度テクスチャ読み取り用）
 
-    uint32_t shadowMapSize_ = DEFAULT_SHADOW_MAP_SIZE; ///< 現在のシャドウマップ解像度
-    int pcfKernelSize_ = 3;                            ///< PCF カーネルサイズ（デフォルト3x3）
+    uint32_t shadowMapSize_ = DEFAULT_SHADOW_MAP_SIZE;  ///< 現在のシャドウマップ解像度
+    int      pcfKernelSize_ = 3;                        ///< PCF カーネルサイズ（デフォルト3x3）
 
-    bool pendingRecreation_ = false;                         ///< 次フレームで再作成を行うフラグ（遅延実行用）
-    uint32_t pendingShadowMapSize_ = DEFAULT_SHADOW_MAP_SIZE; ///< 次フレームで適用する解像度
+    bool     pendingRecreation_    = false;                    ///< 次フレームで再作成を行うフラグ（遅延実行用）
+    uint32_t pendingShadowMapSize_ = DEFAULT_SHADOW_MAP_SIZE;  ///< 次フレームで適用する解像度
 
-    D3D12_VIEWPORT viewport_{};  ///< シャドウマップレンダリング用ビューポート
-    D3D12_RECT scissorRect_{};   ///< シャドウマップレンダリング用シザー矩形
+    D3D12_VIEWPORT viewport_{};     ///< シャドウマップレンダリング用ビューポート
+    D3D12_RECT     scissorRect_{};  ///< シャドウマップレンダリング用シザー矩形
 };
 
 } // namespace Tako

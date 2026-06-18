@@ -8,7 +8,7 @@ namespace Tako {
   /// </summary>
   class TriangleEmitter : public GPUParticleEmitter
   {
-  public:
+  public: //メンバー関数
     /// <summary>
     /// コンストラクタ
     /// </summary>
@@ -50,6 +50,9 @@ namespace Tako {
     /// <returns>構築されたエミッター</returns>
     static std::shared_ptr<GPUParticleEmitter> CreateFromJSON(GPUParticle* particleSystem, const nlohmann::json& json);
 
+    //============================================================
+    //Setter
+    //============================================================
     /// <summary>
     /// 三角形の頂点を設定
     /// </summary>
@@ -58,28 +61,12 @@ namespace Tako {
     /// <param name="v3">頂点3</param>
     void SetVertices(const Vector3& v1, const Vector3& v2, const Vector3& v3);
 
-    /// <summary>
-    /// 頂点1を取得
-    /// </summary>
-    /// <returns>頂点1の座標</returns>
+    //============================================================
+    //Getter
+    //============================================================
     const Vector3& GetVertex1() const { return data_.triangleV1; }
-
-    /// <summary>
-    /// 頂点2を取得
-    /// </summary>
-    /// <returns>頂点2の座標</returns>
     const Vector3& GetVertex2() const { return data_.triangleV2; }
-
-    /// <summary>
-    /// 頂点3を取得
-    /// </summary>
-    /// <returns>頂点3の座標</returns>
     const Vector3& GetVertex3() const { return data_.triangleV3; }
-
-    /// <summary>
-    /// エミッタータイプを取得
-    /// </summary>
-    /// <returns>エミッタータイプ</returns>
     EmitterType GetType() const override { return EmitterType::Triangle; }
   };
 

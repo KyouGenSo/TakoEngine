@@ -8,7 +8,7 @@ namespace Tako {
   /// </summary>
   class WhiteNoise : public IPostEffect
   {
-  public:
+  public: //メンバー関数
     /// <summary>
     /// 初期化
     /// </summary>
@@ -42,13 +42,12 @@ namespace Tako {
     /// <returns>設定成功の場合 true</returns>
     bool SetGenericParam(const EffectParam& param) override;
 
-    /// <summary>
-    /// ホワイトノイズパラメータを設定
-    /// </summary>
-    /// <param name="param">ホワイトノイズパラメータ</param>
+    //==========================================
+    //Setter
+    //==========================================
     void SetParam(const WhiteNoiseParam& param);
 
-  private:
+  private: //非公開関数
     /// <summary>
     /// ルートシグネチャを作成
     /// </summary>
@@ -64,10 +63,10 @@ namespace Tako {
     /// </summary>
     void CreateCBV();
 
-  private:
+  private: //メンバー変数
 
     ComPtr<ID3D12Resource> cBufferResource_;
-    WhiteNoiseParam* cBufferData_ = nullptr;
+    WhiteNoiseParam*       cBufferData_     = nullptr;
   };
 
 } // namespace Tako

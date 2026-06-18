@@ -2,12 +2,15 @@
 #include <string>
 #include <string_view>
 
+/// <summary>
+/// エンジンリソースの基準パスとパス組み立てヘルパーをまとめた名前空間
+/// </summary>
 namespace Tako::EnginePaths {
 
-  inline constexpr std::string_view kEngineRoot = "EngineResources/";
-  inline constexpr std::string_view kEngineShaders = "EngineResources/shaders/";
+  inline constexpr std::string_view kEngineRoot     = "EngineResources/";
+  inline constexpr std::string_view kEngineShaders  = "EngineResources/shaders/";
   inline constexpr std::string_view kEngineTextures = "EngineResources/Texture/";
-  inline constexpr std::string_view kEngineModels = "EngineResources/Model/";
+  inline constexpr std::string_view kEngineModels   = "EngineResources/Model/";
 
   inline constexpr std::wstring_view kEngineShadersW = L"EngineResources/shaders/";
 

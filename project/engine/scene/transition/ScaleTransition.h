@@ -15,7 +15,11 @@ namespace Tako {
   /// </summary>
   class ScaleTransition : public ITransitionEffect
   {
-  public:
+  private: //定数
+    static constexpr float MIN_SCALE = 0.01f;  ///< 最小スケール
+    static constexpr float MAX_SCALE = 3.0f;   ///< 最大スケール（画面全体を覆うため大きめに）
+
+  public: //メンバー関数
     /// <summary>
     /// デフォルトコンストラクタ
     /// </summary>
@@ -66,55 +70,47 @@ namespace Tako {
     /// </summary>
     void Stop() override;
 
-    /// <summary>
-    /// トランジションが終了したか
-    /// </summary>
-    bool IsFinished() const override;
-
-    /// <summary>
-    /// 現在の状態を取得
-    /// </summary>
-    TransitionState GetState() const override { return state_; }
-
+    //=====================================
+    //Setter
+    //=====================================
     /// <summary>
     /// 円の中心位置を設定
     /// </summary>
     /// <param name="center">新しい中心位置</param>
     void SetCenter(const Vector2& center);
 
-    /// <summary>
-    /// 背景色の設定
-    /// </summary>
-    /// <param name="color">新しい背景色</param>
     void SetColor(const Vector4& color);
 
-  private:
-    // 状態
-    TransitionState state_;
+    //=====================================
+    //Getter
+    //=====================================
+    /// <summary>
+    /// トランジションが終了したか
+    /// </summary>
+    bool IsFinished() const override;
 
-    // タイミング
+    TransitionState GetState() const override { return state_; }
+
+  private: //メンバー変数
+    TransitionState state_;  ///< 状態
+
+    //タイミング
     float duration_;
     float transitionTime_;
     float transitionSpeed_;
 
-    // パラメータ
-    Vector2 center_;      // 円の中心位置
-    bool expandOut_;      // 拡大方向（true: 内→外, false: 外→内）
-    Vector4 color_; // 背景色
+    //パラメータ
+    Vector2 center_;     ///< 円の中心位置
+    bool    expandOut_;  ///< 拡大方向（true: 内→外, false: 外→内）
+    Vector4 color_;      ///< 背景色
 
-    // 現在の値
-    float currentRadius_;  // 現在の半径（スケール値として使用）
-    float alpha_;         // 現在のアルファ値
+    //現在の値
+    float currentRadius_;  ///< 現在の半径（スケール値として使用）
+    float alpha_;          ///< 現在のアルファ値
 
-    // スプライト
-    std::unique_ptr<Sprite> circleSprite_;    // 円形マスク用スプライト
+    std::unique_ptr<Sprite> circleSprite_;  ///< 円形マスク用スプライト
 
-    // 初期化フラグ
-    bool isInitialized_;
-
-    // 定数
-    static constexpr float MIN_SCALE = 0.01f;  // 最小スケール
-    static constexpr float MAX_SCALE = 3.0f;   // 最大スケール（画面全体を覆うため大きめに）
+    bool isInitialized_;  ///< 初期化フラグ
   };
 
 } // namespace Tako

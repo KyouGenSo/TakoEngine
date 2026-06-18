@@ -19,9 +19,9 @@ namespace Tako {
   /// クォータニオンによる回転表現
   /// </summary>
   struct QuatTransform {
-    Vector3 scale;
+    Vector3    scale;
     Quaternion rotate;
-    Vector3 translate;
+    Vector3    translate;
   };
 
 } // namespace Tako

@@ -27,7 +27,7 @@ namespace Tako {
     TextureManager(const TextureManager&) = delete;
     TextureManager& operator=(const TextureManager&) = delete;
 
-  private: // 構造体
+  private: //構造体
 
     /// <summary>
     /// テクスチャデータ構造体
@@ -43,12 +43,11 @@ namespace Tako {
       D3D12_GPU_DESCRIPTOR_HANDLE srvGpuHandle;
     };
 
-  public: // 静的メンバー変数
+  public: //静的メンバー変数
 
-    ///< SRVIndex の開始番号
-    static uint32_t kSRVIndexStart;
+    static uint32_t kSRVIndexStart;  ///< SRVIndex の開始番号
 
-  public: // メンバー関数
+  public: //メンバー関数
 
     /// <summary>
     /// インスタンスの取得
@@ -73,6 +72,15 @@ namespace Tako {
     /// <param name="fileName">読み込むテクスチャファイルの名前</param>
     void LoadTexture(const std::string& fileName);
 
+    /// <summary>
+    /// エンジン用デフォルトテクスチャの読み込み（EngineResources/Texture/ 配下から）
+    /// </summary>
+    /// <param name="fileName">エンジン用テクスチャファイルの名前</param>
+    void LoadEngineDefault(const std::string& fileName);
+
+    //============================================================
+    //Getter
+    //============================================================
     /// <summary>
     /// テクスチャのインデックスから GPU ハンドルを取得
     /// </summary>
@@ -116,12 +124,6 @@ namespace Tako {
     std::vector<std::string> GetLoadedTextureFileNames() const;
 
     /// <summary>
-    /// エンジン用デフォルトテクスチャの読み込み（EngineResources/Texture/ 配下から）
-    /// </summary>
-    /// <param name="fileName">エンジン用テクスチャファイルの名前</param>
-    void LoadEngineDefault(const std::string& fileName);
-
-    /// <summary>
     /// エンジン用デフォルトテクスチャの GPU ハンドル取得
     /// </summary>
     /// <param name="fileName">エンジン用テクスチャファイルの名前</param>
@@ -142,16 +144,13 @@ namespace Tako {
     /// <returns>SRV インデックス</returns>
     uint32_t GetEngineDefaultSRVIndex(const std::string& fileName);
 
-  private: // メンバー変数
+  private: //メンバー変数
 
-    ///< DX12Basic クラスのインスタンス
-    DX12Basic* m_dx12_ = nullptr;
+    DX12Basic* m_dx12_ = nullptr;  ///< DX12Basic クラスのインスタンス
 
-    ///< テクスチャ格納ディレクトリ
-    std::string directoryPath_;
+    std::string directoryPath_;  ///< テクスチャ格納ディレクトリ
 
-    ///< テクスチャデータ配列
-    std::unordered_map<std::string, TextureData> textureData_;
+    std::unordered_map<std::string, TextureData> textureData_;  ///< テクスチャデータ配列
 
   };
 

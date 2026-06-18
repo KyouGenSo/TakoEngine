@@ -39,7 +39,16 @@ namespace Tako {
       return instance_.get();
     }
 
-  public: // メンバ関数
+  private: //構造体
+    /// <summary>
+    /// リサイズコールバック登録エントリー
+    /// </summary>
+    struct ResizeCallbackEntry {
+      std::function<void(Vector2)> callback;
+      uint32_t id;  ///< 登録解除時に使用する識別子
+    };
+
+  public: //メンバー関数
     /// <summary>
     /// 初期化
     /// </summary>
@@ -67,52 +76,9 @@ namespace Tako {
     static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam);
 
     /// <summary>
-    /// ウィンドウハンドルの取得
-    /// </summary>
-    /// <returns>ウィンドウハンドル</returns>
-    HWND GetHWnd() const { return hWnd_; }
-
-    /// <summary>
-    /// hInstance の取得
-    /// </summary>
-    /// <returns>アプリケーションインスタンスハンドル</returns>
-    HINSTANCE GetHInstance() const { return wc_.hInstance; }
-
-    /// <summary>
-    /// ハンドラの設定
-    /// </summary>
-    /// <param name="handler">登録するウィンドウプロシージャハンドラ</param>
-    void SetWndProcHandler(IWndProcHandler* handler) { m_handlers_.push_back(handler); }
-
-    /// <summary>
-    /// ウィンドウのサイズを設定
-    /// </summary>
-    /// <param name="width">ウィンドウの幅（ピクセル）</param>
-    /// <param name="height">ウィンドウの高さ（ピクセル）</param>
-    void SetWindowSize(int32_t width, int32_t height) { clientWidth = width; clientHeight = height; }
-
-    /// <summary>
-    /// ウィンドウのタイトルを設定
-    /// </summary>
-    /// <param name="title">新しいタイトル</param>
-    void SetWindowTitle(const std::wstring& title);
-
-    /// <summary>
     /// フルスクリーン切り替え
     /// </summary>
     void ToggleFullScreen();
-
-    /// <summary>
-    /// フルスクリーン状態の取得
-    /// </summary>
-    /// <returns>フルスクリーン状態フラグ（true: フルスクリーン、false: ウィンドウモード）</returns>
-    bool IsFullScreen() const { return isFullScreen_; }
-
-    /// <summary>
-    /// 最大化状態の取得
-    /// </summary>
-    /// <returns>最大化状態フラグ（true: 最大化、false: 通常サイズ）</returns>
-    bool IsMaximized() const { return isMaximized_; }
 
     /// <summary>
     /// ウィンドウの最大化
@@ -132,37 +98,54 @@ namespace Tako {
     /// <param name="id">削除するコールバックの識別 ID</param>
     void UnregisterOnResizeFunc(uint32_t id);
 
-  public:
-    static int32_t clientWidth;  ///< クライアント領域の幅（ピクセル）
+    //============================================================
+    //Setter
+    //============================================================
+    /// <summary>
+    /// ハンドラの設定
+    /// </summary>
+    /// <param name="handler">登録するウィンドウプロシージャハンドラ</param>
+    void SetWndProcHandler(IWndProcHandler* handler) { m_handlers_.push_back(handler); }
+
+    void SetWindowSize(int32_t width, int32_t height) { clientWidth = width; clientHeight = height; }
+
+    /// <summary>
+    /// ウィンドウのタイトルを設定
+    /// </summary>
+    /// <param name="title">新しいタイトル</param>
+    void SetWindowTitle(const std::wstring& title);
+
+    //============================================================
+    //Getter
+    //============================================================
+    HWND GetHWnd() const { return hWnd_; }
+    HINSTANCE GetHInstance() const { return wc_.hInstance; }
+    bool IsFullScreen() const { return isFullScreen_; }
+    bool IsMaximized() const { return isMaximized_; }
+
+  public: //メンバー変数
+    static int32_t clientWidth;   ///< クライアント領域の幅（ピクセル）
     static int32_t clientHeight;  ///< クライアント領域の高さ（ピクセル）
 
-  private:
+  private: //非公開関数
     /// <summary>
-    /// リサイズコールバック登録エントリー
-    /// </summary>
-    struct ResizeCallbackEntry {
-      std::function<void(Vector2)> callback;
-      uint32_t id;  ///< 登録解除時に使用する識別子
-    };
-
     /// 登録済み OnResize コールバックを width/height で一括呼び出し
+    /// </summary>
     void NotifyResize(int width, int height);
 
-  private:
-    HWND hWnd_ = nullptr;
-
+  private: //メンバー変数
+    HWND     hWnd_ = nullptr;
     WNDCLASS wc_{};
 
     static std::vector<IWndProcHandler*> m_handlers_;
 
     bool isFullScreen_ = false;
-
-    bool isMaximized_ = false;
+    bool isMaximized_  = false;
 
     RECT windowedRect_ = {};  ///< フルスクリーンから戻る時に使うウィンドウモード時の位置とサイズ
 
     std::vector<ResizeCallbackEntry> onResizeFuncs_;
-    uint32_t nextId_ = 1u;  ///< 次に割り当てるコールバック ID
+    uint32_t                         nextId_        = 1u;  ///< 次に割り当てるコールバック ID
 
     static std::wstring windowTitle_;
   };

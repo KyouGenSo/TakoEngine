@@ -124,9 +124,9 @@ namespace Tako {
     /// </summary>
     void InitializeGenerator();
 
-    // スレッドローカルストレージでジェネレータを管理
+    //スレッドローカルストレージでジェネレータを管理
     static thread_local std::mt19937 generator_;
-    static thread_local bool initialized_;
+    static thread_local bool         initialized_;
 
     // π定数
     static constexpr float kPi = std::numbers::pi_v<float>;

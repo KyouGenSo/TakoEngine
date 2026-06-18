@@ -30,7 +30,7 @@ namespace Tako {
 
     friend struct std::default_delete<DecalManager>;
 
-  public: // メンバー関数
+  public: //メンバー関数
 
     /// <summary>
     /// インスタンスの取得
@@ -95,37 +95,31 @@ namespace Tako {
     /// </summary>
     void ClearDecals();
 
-    // ===== Getters =====
-    /// <summary>
-    /// DirectX12基盤システムを取得
-    /// </summary>
+    //================================================
+    //Setter
+    //================================================
+    void SetCamera(Camera* camera) { camera_ = camera; }
+
+    //================================================
+    //Getter
+    //================================================
     DX12Basic* GetDX12Basic() const { return m_dx12_; }
-
-    /// <summary>
-    /// カメラのポインタを取得
-    /// </summary>
     Camera* GetCamera() const { return camera_; }
-
-    /// <summary>
-    /// ビュープロジェクション行列を取得
-    /// </summary>
     const Matrix4x4& GetViewProjectionMatrix() const { return viewProjectionMatrix_; }
-
-    /// <summary>
-    /// キューブメッシュの頂点バッファビューを取得
-    /// </summary>
     const D3D12_VERTEX_BUFFER_VIEW& GetCubeVBV() const { return cubeVBV_; }
-
-    /// <summary>
-    /// キューブメッシュのインデックスバッファビューを取得
-    /// </summary>
     const D3D12_INDEX_BUFFER_VIEW& GetCubeIBV() const { return cubeIBV_; }
 
-    // ===== Setters =====
+  private: // 構造体
+
     /// <summary>
-    /// カメラを設定
+    /// GPU に送る ViewData 構造体
     /// </summary>
-    void SetCamera(Camera* camera) { camera_ = camera; }
+    struct ViewDataGPU {
+      Matrix4x4 invViewProj;
+      float screenWidth;
+      float screenHeight;
+      float padding[2];
+    };
 
   private: // プライベートメンバー関数
 
@@ -155,41 +149,26 @@ namespace Tako {
     void CreateDepthSRV();
 
   private: // メンバー変数
+    DX12Basic*                                  m_dx12_               = nullptr;  ///< DirectX12基盤システムへの参照
+    Camera*                                     camera_               = nullptr;  ///< カメラへのポインタ
+    Matrix4x4                                   viewProjectionMatrix_;            ///< ビュープロジェクション行列
+    Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;                   ///< ルートシグネチャ
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;                   ///< パイプラインステート
 
-    DX12Basic* m_dx12_ = nullptr; ///< DirectX12基盤システムへの参照
+    //単位キューブメッシュ
+    Microsoft::WRL::ComPtr<ID3D12Resource> cubeVertexBuffer_;  ///< キューブ頂点バッファ
+    Microsoft::WRL::ComPtr<ID3D12Resource> cubeIndexBuffer_;   ///< キューブインデックスバッファ
+    D3D12_VERTEX_BUFFER_VIEW               cubeVBV_{};         ///< 頂点バッファビュー
+    D3D12_INDEX_BUFFER_VIEW                cubeIBV_{};         ///< インデックスバッファビュー
 
-    Camera* camera_ = nullptr; ///< カメラへのポインタ
+    //ViewData 定数バッファ
+    Microsoft::WRL::ComPtr<ID3D12Resource> viewDataBuffer_;            ///< ViewData 定数バッファリソース
+    ViewDataGPU*                           viewDataMapped_ = nullptr;  ///< マップ済みポインタ
 
-    Matrix4x4 viewProjectionMatrix_; ///< ビュープロジェクション行列
+    //深度 SRV
+    uint32_t depthSrvIndex_ = 0;  ///< 深度テクスチャの SRV インデックス
 
-    Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_; ///< ルートシグネチャ
-
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_; ///< パイプラインステート
-
-    // 単位キューブメッシュ
-    Microsoft::WRL::ComPtr<ID3D12Resource> cubeVertexBuffer_; ///< キューブ頂点バッファ
-    Microsoft::WRL::ComPtr<ID3D12Resource> cubeIndexBuffer_;  ///< キューブインデックスバッファ
-    D3D12_VERTEX_BUFFER_VIEW cubeVBV_{};  ///< 頂点バッファビュー
-    D3D12_INDEX_BUFFER_VIEW cubeIBV_{};   ///< インデックスバッファビュー
-
-    // ViewData 定数バッファ
-    Microsoft::WRL::ComPtr<ID3D12Resource> viewDataBuffer_; ///< ViewData 定数バッファリソース
-
-    /// <summary>
-    /// GPU に送る ViewData 構造体
-    /// </summary>
-    struct ViewDataGPU {
-      Matrix4x4 invViewProj;
-      float screenWidth;
-      float screenHeight;
-      float padding[2];
-    };
-    ViewDataGPU* viewDataMapped_ = nullptr; ///< マップ済みポインタ
-
-    // 深度 SRV
-    uint32_t depthSrvIndex_ = 0; ///< 深度テクスチャの SRV インデックス
-
-    std::list<Decal*> decals_; ///< 登録済みデカールリスト
+    std::list<Decal*> decals_;  ///< 登録済みデカールリスト
   };
 
 } // namespace Tako

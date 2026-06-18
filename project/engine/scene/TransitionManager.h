@@ -25,9 +25,7 @@ namespace Tako {
     TransitionManager(const TransitionManager&) = delete;
     TransitionManager& operator=(const TransitionManager&) = delete;
 
-  private:
-
-  public: // 列挙型
+  public: //構造体
     /// <summary>
     /// 組み込みエフェクトタイプ
     /// </summary>
@@ -38,12 +36,7 @@ namespace Tako {
       Custom   // カスタム演出（登録された名前で取得）
     };
 
-  public: // メンバ関数
-
-    /// <summary>
-    /// インスタンスの取得
-    /// </summary>
-    static TransitionManager* GetInstance();
+  public: //メンバー関数
 
     /// <summary>
     /// 初期化
@@ -88,30 +81,6 @@ namespace Tako {
       std::function<std::unique_ptr<ITransitionEffect>()> factory);
 
     /// <summary>
-    /// 現在のエフェクトを設定
-    /// </summary>
-    /// <param name="effect">設定するエフェクト</param>
-    void SetCurrentEffect(std::unique_ptr<ITransitionEffect> effect);
-
-    /// <summary>
-    /// 現在のエフェクトを設定（タイプ指定）
-    /// </summary>
-    /// <param name="type">エフェクトタイプ</param>
-    void SetCurrentEffect(EffectType type);
-
-    /// <summary>
-    /// 現在のエフェクトを設定（名前指定）
-    /// </summary>
-    /// <param name="effectName">エフェクト名</param>
-    void SetCurrentEffect(const std::string& effectName);
-
-    /// <summary>
-    /// 現在のエフェクトを取得
-    /// </summary>
-    /// <returns>現在のエフェクト</returns>
-    ITransitionEffect* GetCurrentEffect() const;
-
-    /// <summary>
     /// シーン遷移アニメーション開始
     /// </summary>
     /// <param name="state">遷移状態</param>
@@ -139,13 +108,44 @@ namespace Tako {
     /// </summary>
     void Stop();
 
+    //============================================================
+    //Setter
+    //============================================================
+    /// <summary>
+    /// 現在のエフェクトを設定
+    /// </summary>
+    /// <param name="effect">設定するエフェクト</param>
+    void SetCurrentEffect(std::unique_ptr<ITransitionEffect> effect);
+
+    /// <summary>
+    /// 現在のエフェクトを設定（タイプ指定）
+    /// </summary>
+    /// <param name="type">エフェクトタイプ</param>
+    void SetCurrentEffect(EffectType type);
+
+    /// <summary>
+    /// 現在のエフェクトを設定（名前指定）
+    /// </summary>
+    /// <param name="effectName">エフェクト名</param>
+    void SetCurrentEffect(const std::string& effectName);
+
+    //============================================================
+    //Getter
+    //============================================================
+    /// <summary>
+    /// インスタンスの取得
+    /// </summary>
+    static TransitionManager* GetInstance();
+
+    ITransitionEffect* GetCurrentEffect() const;
+
     /// <summary>
     /// シーン遷移アニメーションが終了しているか
     /// </summary>
     /// <returns>終了している場合 true</returns>
     bool IsFinished() const;
 
-  private: // メンバ変数
+  private: //メンバー変数
 
     std::unique_ptr<ITransitionEffect> currentEffect_; ///< 現在使用中のエフェクト
 

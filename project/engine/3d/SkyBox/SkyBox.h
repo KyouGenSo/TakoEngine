@@ -21,6 +21,8 @@ class DX12Basic;
 class SkyBox
 {
 public: // 構造体
+  template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
+
   struct VertexData
   {
     Vector4 position;
@@ -36,8 +38,7 @@ public: // 構造体
     Matrix4x4 WVP;
   };
 
-public: // メンバ変数
-  template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
+public: // メンバー関数
 
   /// <summary>
   /// 指定キューブマップテクスチャでスカイボックスを初期化
@@ -47,15 +48,23 @@ public: // メンバ変数
   void Update();
   void Draw();
 
-  //---------------------Setter---------------------//
+  //===========================================
+  //Setter
+  //===========================================
   void SetScale(const Vector3& scale) { transform_.scale = scale; }
   void SetRotate(const Vector3& rotate) { transform_.rotate = rotate; }
   void SetTranslate(const Vector3& translate) { transform_.translate = translate; }
+
+  /// <summary>
+  /// テクスチャを差し替え（TextureManager から SRV インデックスを取得して保持）
+  /// </summary>
   void SetTexture(const std::string& texturePath) {
     textureIndex_ = TextureManager::GetInstance()->GetSRVIndex(texturePath);
   }
 
-  //---------------------Getter---------------------//
+  //===========================================
+  //Getter
+  //===========================================
   uint32_t GetTextureIndex() const { return textureIndex_; }
 
 private: // プライベートメンバー関数
@@ -70,8 +79,8 @@ private: // メンバ変数
   Transform transform_ = {};
 
   Matrix4x4 viewProjectionMatrix_ = {};
-  Matrix4x4 worldMatrix_ = {};
-  Matrix4x4 wvpMatrix_ = {};
+  Matrix4x4 worldMatrix_          = {};
+  Matrix4x4 wvpMatrix_            = {};
 
   DX12Basic* m_dx12_ = nullptr;
 
@@ -79,16 +88,16 @@ private: // メンバ変数
 
   Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;
 
-  // バッファリソース
+  //バッファリソース
   ComPtr<ID3D12Resource> vertexResource_;
   ComPtr<ID3D12Resource> indexResource_;
   ComPtr<ID3D12Resource> materialResource_;
   ComPtr<ID3D12Resource> transformationMatrixResource_;
 
-  // 各バッファのマップ済みポインタ
-  VertexData* vertexData_ = nullptr;
-  uint32_t* indexData_ = nullptr;
-  Material* materialData_ = nullptr;
+  //各バッファのマップ済みポインタ
+  VertexData*           vertexData_               = nullptr;
+  uint32_t*             indexData_                = nullptr;
+  Material*             materialData_             = nullptr;
   TransformationMatrix* transformationMatrixData_ = nullptr;
 
   D3D12_VERTEX_BUFFER_VIEW vertexBufferView_ = {};

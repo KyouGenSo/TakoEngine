@@ -12,19 +12,16 @@ namespace Tako {
   /// ビヘイビアツリーのノード状態。
   /// </summary>
   enum class BTNodeStatus {
-    /// 成功
-    Success,
-    /// 失敗
-    Failure,
-    /// 実行中
-    Running
+    Success,  ///< 成功
+    Failure,  ///< 失敗
+    Running   ///< 実行中
   };
 
   /// <summary>
   /// ビヘイビアツリーノードの基底クラス。
   /// </summary>
   class BTNode {
-  public:
+  public: //メンバー関数
     virtual ~BTNode() = default;
 
     /// <summary>
@@ -42,21 +39,6 @@ namespace Tako {
     virtual void Reset() {
       status_ = BTNodeStatus::Failure;
     }
-
-    const std::string& GetName() const { return name_; }
-
-    void SetName(const std::string& name) { name_ = name; }
-
-    BTNodeStatus GetStatus() const { return status_; }
-
-    bool IsRunning() const { return status_ == BTNodeStatus::Running; }
-
-    /// <summary>
-    /// コンポジットノード (子ノードを持てる) かどうか。
-    /// 既定は false。BTComposite で true を返すよう override する。
-    /// </summary>
-    /// <returns>コンポジットなら true</returns>
-    virtual bool IsComposite() const { return false; }
 
     /// <summary>
     /// JSON からパラメータを適用 (ロード時)。
@@ -84,12 +66,31 @@ namespace Tako {
     virtual bool DrawImGui() { return false; }
 #endif
 
-  protected:
-    // 現在の状態 (初期値 Failure)
-    BTNodeStatus status_ = BTNodeStatus::Failure;
+    //===================================
+    //Setter
+    //===================================
+    void SetName(const std::string& name) { name_ = name; }
 
-    // ノード名 (エディタ表示・デバッグログ用)
-    std::string name_ = "BTNode";
+    //===================================
+    //Getter
+    //===================================
+    const std::string& GetName() const { return name_; }
+
+    BTNodeStatus GetStatus() const { return status_; }
+
+    bool IsRunning() const { return status_ == BTNodeStatus::Running; }
+
+    /// <summary>
+    /// コンポジットノード (子ノードを持てる) かどうか。
+    /// 既定は false。BTComposite で true を返すよう override する。
+    /// </summary>
+    /// <returns>コンポジットなら true</returns>
+    virtual bool IsComposite() const { return false; }
+
+  protected: //メンバー変数
+    //状態
+    BTNodeStatus status_ = BTNodeStatus::Failure;  ///< 現在の状態 (初期値 Failure)
+    std::string  name_   = "BTNode";               ///< ノード名 (エディタ表示・デバッグログ用)
   };
 
   using BTNodePtr = std::shared_ptr<BTNode>;

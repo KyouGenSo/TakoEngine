@@ -20,7 +20,7 @@ namespace Tako {
   /// </summary>
   class Model
   {
-  public: // メンバー関数
+  public: //メンバー関数
     /// <summary>
     /// 初期化
     /// </summary>
@@ -76,33 +76,29 @@ namespace Tako {
     ///	</summary>
     std::unique_ptr<Model> Clone() const;
 
-    // -----------------------------------Getters-----------------------------------//
     /// <summary>
-    /// 指定インデックスの Mesh を取得 (非所有)。範囲外なら nullptr。
-    /// MeshEmitter 等で頂点・インデックス情報を参照したい用途向け。
+    /// アニメーションを一時停止
     /// </summary>
-    Mesh* GetMesh(size_t index = 0) const {
-      return index < meshes_.size() ? meshes_[index].get() : nullptr;
-    }
+    void PauseAnimation() { isPaused_ = true; }
 
     /// <summary>
-    /// 保持メッシュ数。複数メッシュの gltf を扱う場合に使う。
+    /// アニメーションを再生再開
     /// </summary>
-    size_t GetMeshCount() const { return meshes_.size(); }
+    void ResumeAnimation() { isPaused_ = false; }
 
-    // -----------------------------------Mesh Visibility-----------------------------------//
-    /// <summary>
-    /// メッシュ名から Mesh を取得。見つからなければ nullptr。
-    /// </summary>
-    /// <param name="name">メッシュ名</param>
-    /// <returns>該当する Mesh（無ければ nullptr）</returns>
-    Mesh* GetMeshByName(const std::string& name) const;
-
-    /// <summary>
-    /// 全メッシュ名のリストを取得
-    /// </summary>
-    /// <returns>メッシュ名のリスト</returns>
-    std::vector<std::string> GetMeshNames() const;
+    //============================================================
+    //Setter
+    //============================================================
+    void SetShininess(float shininess);
+    void SetEnableLighting(bool enableLighting);
+    void SetEnableHighlight(bool enableHighlight);
+    void SetMaterialColor(const Vector4& color);
+    void SetUvTransform(const Transform& uvTransform);
+    void SetEnvironmentTexture(uint32_t textureIndex);
+    void SetEnableEnvMap(bool enableEnvMap);
+    void SetEnvMapCoefficient(float coefficient);
+    static void SetShowSkeletonDebug(bool show) { s_showSkeletonDebug = show; }
+    void SetAnimationSpeed(float speed) { animationSpeed_ = speed; }
 
     /// <summary>
     /// メッシュ名を指定して表示・非表示を設定
@@ -111,113 +107,6 @@ namespace Tako {
     /// <param name="visible">表示する場合 true</param>
     void SetMeshVisible(const std::string& name, bool visible);
 
-    /// <summary>
-    /// メッシュ名を指定して表示状態を取得
-    /// </summary>
-    /// <param name="name">メッシュ名</param>
-    /// <returns>表示中なら true</returns>
-    bool IsMeshVisible(const std::string& name) const;
-
-    /// <summary>
-    /// ルートノードのローカル行列を取得
-    /// </summary>
-    /// <returns>ローカル行列</returns>
-    const Matrix4x4& GetLocalMatrix() const { return rootNode_.localMatrix; }
-
-    /// <summary>
-    /// スケルトンを取得
-    /// </summary>
-    /// <returns>スケルトン情報</returns>
-    const Skeleton& GetSkeleton() const { return skeleton_; }
-
-    /// <summary>
-    /// アニメーションの有無を取得
-    /// </summary>
-    /// <returns>アニメーションが存在する場合 true</returns>
-    bool HasAnimation() const { return hasAnimation_; }
-
-    /// <summary>
-    /// スケルトンの有無を取得
-    /// </summary>
-    /// <returns>スケルトンが存在する場合 true</returns>
-    bool HasSkeleton() const { return hasSkeleton_; }
-
-    /// <summary>
-    /// 指定した Joint のワールド座標変換行列を取得
-    /// </summary>
-    /// <param name="jointName">Joint 名</param>
-    /// <param name="worldMatrix">モデルのワールド行列</param>
-    /// <returns>Joint のワールド座標変換行列</returns>
-    Matrix4x4 GetJointWorldMatrix(const std::string& jointName, const Matrix4x4& worldMatrix) const;
-
-    // -----------------------------------Setters-----------------------------------//
-    /// <summary>
-    /// 光沢度を設定
-    /// </summary>
-    /// <param name="shininess">光沢度</param>
-    void SetShininess(float shininess);
-
-    /// <summary>
-    /// ライティングの有効/無効を設定
-    /// </summary>
-    /// <param name="enableLighting">ライティングを有効にするか</param>
-    void SetEnableLighting(bool enableLighting);
-
-    /// <summary>
-    /// ハイライトの有効/無効を設定
-    /// </summary>
-    /// <param name="enableHighlight">ハイライトを有効にするか</param>
-    void SetEnableHighlight(bool enableHighlight);
-
-    /// <summary>
-    /// マテリアルカラーを設定
-    /// </summary>
-    /// <param name="color">マテリアルカラー（RGBA）</param>
-    void SetMaterialColor(const Vector4& color);
-
-    /// <summary>
-    /// マテリアルカラーを取得
-    /// </summary>
-    /// <returns>マテリアルカラー（RGBA）</returns>
-    Vector4 GetMaterialColor() const;
-
-    /// <summary>
-    /// UV トランスフォームを設定
-    /// </summary>
-    /// <param name="uvTransform">UV トランスフォーム情報</param>
-    void SetUvTransform(const Transform& uvTransform);
-
-    /// <summary>
-    /// 環境マップテクスチャを設定
-    /// </summary>
-    /// <param name="textureIndex">テクスチャインデックス</param>
-    void SetEnvironmentTexture(uint32_t textureIndex);
-
-    /// <summary>
-    /// 環境マップの有効/無効を設定
-    /// </summary>
-    /// <param name="enableEnvMap">環境マップを有効にするか</param>
-    void SetEnableEnvMap(bool enableEnvMap);
-
-    /// <summary>
-    /// 環境マップの係数を設定
-    /// </summary>
-    /// <param name="coefficient">環境マップ係数</param>
-    void SetEnvMapCoefficient(float coefficient);
-
-    /// <summary>
-    /// スケルトンデバッグ表示の有効/無効を設定（静的関数）
-    /// </summary>
-    /// <param name="show">デバッグ表示を有効にするか</param>
-    static void SetShowSkeletonDebug(bool show) { s_showSkeletonDebug = show; }
-
-    /// <summary>
-    /// スケルトンデバッグ表示の状態を取得（静的関数）
-    /// </summary>
-    /// <returns>デバッグ表示が有効な場合 true</returns>
-    static bool GetShowSkeletonDebug() { return s_showSkeletonDebug; }
-
-    // -----------------------------------Animation Control-----------------------------------//
     /// <summary>
     /// アニメーションを切り替える
     /// </summary>
@@ -232,51 +121,76 @@ namespace Tako {
     void SetAnimation(const std::string& animationName, float transitionDuration);
 
     /// <summary>
-    /// 登録されているアニメーション名のリストを取得
-    /// </summary>
-    /// <returns>アニメーション名のリスト</returns>
-    std::vector<std::string> GetAnimationNames() const;
-
-    /// <summary>
-    /// 現在のアニメーション名を取得
-    /// </summary>
-    /// <returns>現在のアニメーション名</returns>
-    const std::string& GetCurrentAnimationName() const { return currentAnimationName_; }
-
-    /// <summary>
-    /// アニメーション再生速度を設定
-    /// </summary>
-    /// <param name="speed">再生速度（1.0f が通常速度、負の値で逆再生）</param>
-    void SetAnimationSpeed(float speed) { animationSpeed_ = speed; }
-
-    /// <summary>
-    /// アニメーション再生速度を取得
-    /// </summary>
-    /// <returns>現在の再生速度</returns>
-    float GetAnimationSpeed() const { return animationSpeed_; }
-
-    /// <summary>
-    /// アニメーションを一時停止
-    /// </summary>
-    void PauseAnimation() { isPaused_ = true; }
-
-    /// <summary>
-    /// アニメーションを再生再開
-    /// </summary>
-    void ResumeAnimation() { isPaused_ = false; }
-
-    /// <summary>
-    /// アニメーションが一時停止中かを取得
-    /// </summary>
-    /// <returns>一時停止中なら true</returns>
-    bool IsAnimationPaused() const { return isPaused_; }
-
-    /// <summary>
     /// アニメーションのループ設定を変更
     /// </summary>
     /// <param name="animationName">アニメーション名</param>
     /// <param name="loop">ループするかどうか</param>
     void SetAnimationLoop(const std::string& animationName, bool loop);
+
+    //============================================================
+    //Getter
+    //============================================================
+    const Matrix4x4& GetLocalMatrix() const { return rootNode_.localMatrix; }
+    const Skeleton& GetSkeleton() const { return skeleton_; }
+    bool HasAnimation() const { return hasAnimation_; }
+    bool HasSkeleton() const { return hasSkeleton_; }
+    static bool GetShowSkeletonDebug() { return s_showSkeletonDebug; }
+    const std::string& GetCurrentAnimationName() const { return currentAnimationName_; }
+    float GetAnimationSpeed() const { return animationSpeed_; }
+    bool IsAnimationPaused() const { return isPaused_; }
+
+    /// <summary>
+    /// 指定インデックスの Mesh を取得 (非所有)。範囲外なら nullptr。
+    /// MeshEmitter 等で頂点・インデックス情報を参照したい用途向け。
+    /// </summary>
+    Mesh* GetMesh(size_t index = 0) const {
+      return index < meshes_.size() ? meshes_[index].get() : nullptr;
+    }
+
+    /// <summary>
+    /// 保持メッシュ数。複数メッシュの gltf を扱う場合に使う。
+    /// </summary>
+    size_t GetMeshCount() const { return meshes_.size(); }
+
+    /// <summary>
+    /// メッシュ名から Mesh を取得。見つからなければ nullptr。
+    /// </summary>
+    /// <param name="name">メッシュ名</param>
+    /// <returns>該当する Mesh（無ければ nullptr）</returns>
+    Mesh* GetMeshByName(const std::string& name) const;
+
+    /// <summary>
+    /// 全メッシュ名のリストを取得
+    /// </summary>
+    /// <returns>メッシュ名のリスト</returns>
+    std::vector<std::string> GetMeshNames() const;
+
+    /// <summary>
+    /// メッシュ名を指定して表示状態を取得
+    /// </summary>
+    /// <param name="name">メッシュ名</param>
+    /// <returns>表示中なら true</returns>
+    bool IsMeshVisible(const std::string& name) const;
+
+    /// <summary>
+    /// 指定した Joint のワールド座標変換行列を取得
+    /// </summary>
+    /// <param name="jointName">Joint 名</param>
+    /// <param name="worldMatrix">モデルのワールド行列</param>
+    /// <returns>Joint のワールド座標変換行列</returns>
+    Matrix4x4 GetJointWorldMatrix(const std::string& jointName, const Matrix4x4& worldMatrix) const;
+
+    /// <summary>
+    /// マテリアルカラーを取得
+    /// </summary>
+    /// <returns>マテリアルカラー（RGBA）</returns>
+    Vector4 GetMaterialColor() const;
+
+    /// <summary>
+    /// 登録されているアニメーション名のリストを取得
+    /// </summary>
+    /// <returns>アニメーション名のリスト</returns>
+    std::vector<std::string> GetAnimationNames() const;
 
     /// <summary>
     /// アニメーションがループ設定されているかを取得
@@ -292,7 +206,7 @@ namespace Tako {
     /// <returns>アニメーションが終了していれば true</returns>
     bool IsAnimationFinished(const std::string& animationName) const;
 
-  private: // プライベートメンバー関数
+  private: //非公開関数
     /// <summary>
     /// ノード階層で座標変換行列を処理して描画
     /// </summary>
@@ -415,59 +329,58 @@ namespace Tako {
     /// <param name="node">保存対象のノード</param>
     void SaveNodePose(const Node& node);
 
-  private: // メンバ変数
-
+  private: //メンバー変数
     ModelBasic* m_modelBasic_;  ///< モデル基本システムへのポインタ
-    DX12Basic* m_dx12_;  ///< DirectX12基盤システムへのポインタ
+    DX12Basic*  m_dx12_;        ///< DirectX12基盤システムへのポインタ
 
     std::string directoryFolderName_;  ///< モデルファイルのディレクトリパス
-    std::string ModelFolderName_;  ///< モデルフォルダ名
-    std::string modelFileName_;  ///< モデルファイル名
+    std::string ModelFolderName_;      ///< モデルフォルダ名
+    std::string modelFileName_;        ///< モデルファイル名
 
-    // モデルデータ
+    //モデルデータ
     std::vector<std::unique_ptr<Mesh>> meshes_;  ///< メッシュデータ配列
 
-    // ノードデータ
+    //ノードデータ
     Node rootNode_;  ///< ルートノード（階層構造の起点）
 
-    // テクスチャキャッシュ
+    //テクスチャキャッシュ
     std::unordered_map<std::string, TextureData> textureCache_;  ///< テクスチャデータのキャッシュ
 
-    // スケルトン・アニメーション関連
-    std::map<std::string, Animation> animations_;  ///< 複数アニメーション対応のアニメーションマップ
-    std::string currentAnimationName_;  ///< 現在再生中のアニメーション名
-    std::map<std::string, float> animationTimes_;  ///< 各アニメーションの再生時間
-    Skeleton skeleton_;  ///< スケルトン情報
-    bool hasAnimation_ = false;  ///< アニメーション有無フラグ
-    bool hasSkeleton_ = false;  ///< スケルトン有無フラグ
+    //スケルトン・アニメーション関連
+    std::map<std::string, Animation> animations_;                    ///< 複数アニメーション対応のアニメーションマップ
+    std::string                      currentAnimationName_;          ///< 現在再生中のアニメーション名
+    std::map<std::string, float>     animationTimes_;                ///< 各アニメーションの再生時間
+    Skeleton                         skeleton_;                      ///< スケルトン情報
+    bool                             hasAnimation_         = false;  ///< アニメーション有無フラグ
+    bool                             hasSkeleton_          = false;  ///< スケルトン有無フラグ
 
-    // スキニング関連
-    std::vector<Matrix4x4> inverseBindMatrices_;  ///< 逆バインド行列配列
-    Microsoft::WRL::ComPtr<ID3D12Resource> paletteResource_;  ///< スキニング用パレットリソース
-    std::span<WellForGPU> mappedPalette_;  ///< マップされたパレットメモリ
-    uint32_t paletteSrvIndex_ = 0;  ///< パレット SRV インデックス
-    std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> paletteSrvHandle_;  ///< パレット SRV ハンドルペア
-    std::map<std::string, JointWeightData> skinClusterData_;  ///< スキンクラスターデータマップ
-    std::vector<MeshSkinClusterData> meshSkinClusterData_;  ///< メッシュごとのスキンクラスターデータ
+    //スキニング関連
+    std::vector<Matrix4x4>                                              inverseBindMatrices_;      ///< 逆バインド行列配列
+    Microsoft::WRL::ComPtr<ID3D12Resource>                              paletteResource_;          ///< スキニング用パレットリソース
+    std::span<WellForGPU>                                               mappedPalette_;            ///< マップされたパレットメモリ
+    uint32_t                                                            paletteSrvIndex_     = 0;  ///< パレット SRV インデックス
+    std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> paletteSrvHandle_;         ///< パレット SRV ハンドルペア
+    std::map<std::string, JointWeightData>                              skinClusterData_;          ///< スキンクラスターデータマップ
+    std::vector<MeshSkinClusterData>                                    meshSkinClusterData_;      ///< メッシュごとのスキンクラスターデータ
 
-    // デバッグ表示用
-    static bool s_showSkeletonDebug;  ///< 全体的なスケルトン表示 ON/OFF
-    int expandState_ = 0;  ///< ImGUI 展開状態（0:通常, 1:全展開, 2:全折畳）
-    int32_t hoveredJointIndex_ = -1;  ///< ホバー中のジョイントインデックス（-1:なし）
+    //デバッグ表示用
+    static bool s_showSkeletonDebug;       ///< 全体的なスケルトン表示 ON/OFF
+    int         expandState_        = 0;   ///< ImGUI 展開状態（0:通常, 1:全展開, 2:全折畳）
+    int32_t     hoveredJointIndex_  = -1;  ///< ホバー中のジョイントインデックス（-1:なし）
 
-    // アニメーション遷移関連
-    AnimationTransitionState previousPose_;  ///< 遷移前のポーズ
-    float transitionDuration_ = 0.0f;  ///< 遷移時間（秒）
-    float transitionTime_ = 0.0f;  ///< 現在の遷移経過時間
-    bool isTransitioning_ = false;  ///< 遷移中フラグ
+    //アニメーション遷移関連
+    AnimationTransitionState previousPose_;                ///< 遷移前のポーズ
+    float                    transitionDuration_ = 0.0f;   ///< 遷移時間（秒）
+    float                    transitionTime_     = 0.0f;   ///< 現在の遷移経過時間
+    bool                     isTransitioning_    = false;  ///< 遷移中フラグ
 
-    // アニメーション再生制御
-    float animationSpeed_ = 1.0f;  ///< アニメーション再生速度（1.0f が通常速度）
-    bool isPaused_ = false;  ///< アニメーション一時停止フラグ
+    //アニメーション再生制御
+    float animationSpeed_ = 1.0f;   ///< アニメーション再生速度（1.0f が通常速度）
+    bool  isPaused_       = false;  ///< アニメーション一時停止フラグ
 
-    // アニメーションループ制御
+    //アニメーションループ制御
     std::map<std::string, bool> animationLoopSettings_;  ///< 各アニメーションのループ設定
-    std::map<std::string, bool> animationFinished_;  ///< 各アニメーションの終了フラグ
+    std::map<std::string, bool> animationFinished_;      ///< 各アニメーションの終了フラグ
   };
 
 } // namespace Tako

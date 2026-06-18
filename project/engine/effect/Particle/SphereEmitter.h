@@ -8,7 +8,7 @@ namespace Tako {
   /// </summary>
   class SphereEmitter : public GPUParticleEmitter
   {
-  public:
+  public: //メンバー関数
     /// <summary>
     /// コンストラクタ
     /// </summary>
@@ -48,22 +48,19 @@ namespace Tako {
     /// <returns>構築されたエミッター</returns>
     static std::shared_ptr<GPUParticleEmitter> CreateFromJSON(GPUParticle* particleSystem, const nlohmann::json& json);
 
+    //==================================
+    //Setter
+    //==================================
     /// <summary>
     /// 球体の半径を設定
     /// </summary>
     /// <param name="radius">半径</param>
     void SetRadius(float radius);
 
-    /// <summary>
-    /// 球体の半径を取得
-    /// </summary>
-    /// <returns>半径</returns>
+    //==================================
+    //Getter
+    //==================================
     float GetRadius() const { return data_.radius; }
-
-    /// <summary>
-    /// エミッタータイプを取得
-    /// </summary>
-    /// <returns>エミッタータイプ</returns>
     EmitterType GetType() const override { return EmitterType::Sphere; }
   };
 

@@ -69,47 +69,22 @@ public: // メンバー関数
   /// </summary>
   void DrawImGui();
 
-  //-----------------------------------------Getter-----------------------------------------//
   /// <summary>
-  /// スケールを取得
+  /// 親 Object3d の特定の Joint にアタッチ
   /// </summary>
-  /// <returns>スケール値</returns>
-  const Vector3& GetScale() const { return transform_.scale; }
+  /// <param name="parent">親となる Object3d</param>
+  /// <param name="jointName">アタッチする Joint 名</param>
+  /// <param name="offset">Joint からのオフセット</param>
+  void AttachToJoint(Object3d* parent, const std::string& jointName, const Vector3& offset = Vector3(0.0f, 0.0f, 0.0f));
 
   /// <summary>
-  /// 回転を取得
+  /// 親 Joint からデタッチ
   /// </summary>
-  /// <returns>回転値（ラジアン）</returns>
-  const Vector3& GetRotate() const { return transform_.rotate; }
+  void DetachFromJoint();
 
-  /// <summary>
-  /// 座標を取得
-  /// </summary>
-  /// <returns>座標値</returns>
-  const Vector3& GetTranslate() const { return transform_.translate; }
-
-  /// <summary>
-  /// トランスフォームを取得
-  /// </summary>
-  /// <returns>トランスフォーム情報</returns>
-  const Transform& GetTransform() const { return transform_; }
-
-  /// <summary>
-  /// モデルのポインタを取得
-  /// </summary>
-  /// <returns>モデルポインタ</returns>
-  Model* GetModel() const
-  {
-    return m_model_.get();
-  }
-
-  /// <summary>
-  /// マテリアルカラーを取得
-  /// </summary>
-  /// <returns>マテリアルカラー（RGBA）</returns>
-  Vector4 GetMaterialColor() const;
-
-  //-----------------------------------------Setter-----------------------------------------//
+  //=======================================================
+  //Setter
+  //=======================================================
   /// <summary>
   /// モデルを設定
   /// </summary>
@@ -122,34 +97,10 @@ public: // メンバー関数
   /// <param name="model">所有権を渡す Model（unique_ptr）</param>
   void SetModel(std::unique_ptr<Model> model);
 
-  /// <summary>
-  /// カメラを設定
-  /// </summary>
-  /// <param name="camera">カメラポインタのポインタ</param>
   void SetCamera(Camera** camera) { m_camera_ = camera; }
-
-  /// <summary>
-  /// トランスフォームを設定
-  /// </summary>
-  /// <param name="transform">トランスフォーム情報</param>
   void SetTransform(const Transform& transform) { transform_ = transform; }
-
-  /// <summary>
-  /// スケールを設定
-  /// </summary>
-  /// <param name="scale">スケール値</param>
   void SetScale(const Vector3& scale) { transform_.scale = scale; }
-
-  /// <summary>
-  /// 回転を設定
-  /// </summary>
-  /// <param name="rotate">回転値（ラジアン）</param>
   void SetRotate(const Vector3& rotate) { transform_.rotate = rotate; }
-
-  /// <summary>
-  /// 座標を設定
-  /// </summary>
-  /// <param name="translate">座標値</param>
   void SetTranslate(const Vector3& translate) { transform_.translate = translate; }
 
   /// <summary>
@@ -163,12 +114,6 @@ public: // メンバー関数
   /// </summary>
   /// <param name="isTransparent">半透明描画モードにする場合 true</param>
   void SetTransparent(bool isTransparent) { isTransparent_ = isTransparent; }
-
-  /// <summary>
-  /// 半透明描画モードか取得
-  /// </summary>
-  /// <returns>半透明描画モードなら true</returns>
-  bool IsTransparent() const { return isTransparent_; }
 
   /// <summary>
   /// UV トランスフォームを設定
@@ -188,7 +133,6 @@ public: // メンバー関数
   /// <param name="coefficient">環境マップ係数</param>
   void SetEnvMapCoefficient(float coefficient);
 
-  // ライトの設定
   /// <summary>
   /// 光沢度を設定
   /// </summary>
@@ -220,6 +164,32 @@ public: // メンバー関数
   /// <param name="visible">表示する場合 true</param>
   void SetMeshVisible(const std::string& name, bool visible);
 
+  void SetAttachmentTranslate(const Vector3& offset) { attachmentOffset_.translate = offset; }
+  void SetAttachmentRotate(const Vector3& offset) { attachmentOffset_.rotate = offset; }
+  void SetAttachmentScale(const Vector3& offset) { attachmentOffset_.scale = offset; }
+  void SetAttachmentTransform(const Transform& transform) { attachmentOffset_ = transform; }
+
+  //=======================================================
+  //Getter
+  //=======================================================
+  const Vector3& GetScale() const { return transform_.scale; }
+  const Vector3& GetRotate() const { return transform_.rotate; }
+  const Vector3& GetTranslate() const { return transform_.translate; }
+  const Transform& GetTransform() const { return transform_; }
+
+  Model* GetModel() const
+  {
+    return m_model_.get();
+  }
+
+  /// <summary>
+  /// マテリアルカラーを取得
+  /// </summary>
+  /// <returns>マテリアルカラー（RGBA）</returns>
+  Vector4 GetMaterialColor() const;
+
+  bool IsTransparent() const { return isTransparent_; }
+
   /// <summary>
   /// メッシュ名を指定して表示状態を取得
   /// </summary>
@@ -233,32 +203,10 @@ public: // メンバー関数
   /// <returns>メッシュ名のリスト（モデル未設定なら空）</returns>
   std::vector<std::string> GetMeshNames() const;
 
-  // Joint アタッチメント機能
   /// <summary>
-  /// 親 Object3d の特定の Joint にアタッチ
-  /// </summary>
-  /// <param name="parent">親となる Object3d</param>
-  /// <param name="jointName">アタッチする Joint 名</param>
-  /// <param name="offset">Joint からのオフセット</param>
-  void AttachToJoint(Object3d* parent, const std::string& jointName, const Vector3& offset = Vector3(0.0f, 0.0f, 0.0f));
-
-  /// <summary>
-  /// 親 Joint からデタッチ
-  /// </summary>
-  void DetachFromJoint();
-
-  /// <summary>
-  /// 親 Joint のアタッチメント状態を取得
+  /// 親 Joint にアタッチ済みか取得（親と Joint 名の両方が有効なら true）
   /// </summary>
   bool IsAttached() const { return parentObject_ != nullptr && !parentJointName_.empty(); }
-
-  /// <summary>
-  /// アタッチメントのオフセットを設定
-  /// </summary>
-  void SetAttachmentTranslate(const Vector3& offset) { attachmentOffset_.translate = offset; }
-  void SetAttachmentRotate(const Vector3& offset) { attachmentOffset_.rotate = offset; }
-  void SetAttachmentScale(const Vector3& offset) { attachmentOffset_.scale = offset; }
-  void SetAttachmentTransform(const Transform& transform) { attachmentOffset_ = transform; }
 
   /// <summary>
   /// ワールド行列を取得
@@ -277,30 +225,27 @@ private: // プライベートメンバー関数
   void CreateCameraForGPUData();
 
 private: // メンバー変数
-  Camera** m_camera_ = nullptr;
-
+  Camera**               m_camera_  = nullptr;
   std::unique_ptr<Model> m_model_;
+  Transform              transform_;
 
-  Transform transform_;
-
-  // バッファリソース
+  //バッファリソース
   Microsoft::WRL::ComPtr<ID3D12Resource> transformationMatResource_;
   Microsoft::WRL::ComPtr<ID3D12Resource> cameraForGPUResource_;
 
   Matrix4x4 finalWorldMatrix_;
   Matrix4x4 worldMatrix_;
 
-  // バッファリソース内のデータを指すポインタ
+  //バッファリソース内のデータを指すポインタ
   TransformationMatrix* transformationMatData_ = nullptr;
-  CameraForGPU* cameraForGPUData_ = nullptr;
+  CameraForGPU*         cameraForGPUData_      = nullptr;
 
-  // Joint アタッチメント用変数
-  Object3d* parentObject_ = nullptr;
+  //Joint アタッチメント用変数
+  Object3d*   parentObject_       = nullptr;
   std::string parentJointName_;
-  Transform attachmentOffset_{};
+  Transform   attachmentOffset_{};
 
-  // 半透明描画モードフラグ (true なら Draw 内で TransparentRenderSetting に一時切り替え)
-  bool isTransparent_ = false;
+  bool isTransparent_ = false;  ///< 半透明描画モードフラグ (true なら Draw 内で TransparentRenderSetting に一時切り替え)
 };
 
 } // namespace Tako

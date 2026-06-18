@@ -20,13 +20,7 @@ namespace Tako {
   /// RegisterNode&lt;T&gt;() で追加登録する想定。
   /// </remarks>
   class BTNodeRegistry {
-  public:
-    /// <summary>
-    /// シングルトンインスタンスの取得 (遅延初期化)。
-    /// </summary>
-    /// <returns>BTNodeRegistry のインスタンス</returns>
-    static BTNodeRegistry* GetInstance();
-
+  public: //メンバー関数
     BTNodeRegistry(const BTNodeRegistry&) = delete;
     BTNodeRegistry& operator=(const BTNodeRegistry&) = delete;
 
@@ -72,6 +66,15 @@ namespace Tako {
     /// <returns>生成されたノード、未登録なら nullptr</returns>
     BTNodePtr Create(const std::string& typeName) const;
 
+    //============================================================
+    //Getter
+    //============================================================
+    /// <summary>
+    /// シングルトンインスタンスの取得 (遅延初期化)。
+    /// </summary>
+    /// <returns>BTNodeRegistry のインスタンス</returns>
+    static BTNodeRegistry* GetInstance();
+
     /// <summary>
     /// 登録済みの全タイプ名取得。
     /// </summary>
@@ -99,19 +102,17 @@ namespace Tako {
     /// <returns>登録済みなら true</returns>
     bool IsRegistered(const std::string& typeName) const;
 
-  private:
+  private: //非公開関数
     BTNodeRegistry() = default;
     ~BTNodeRegistry() = default;
     friend struct std::default_delete<BTNodeRegistry>;
 
-    /// シングルトン実体
-    static std::unique_ptr<BTNodeRegistry> instance_;
+  private: //メンバー変数
+    static std::unique_ptr<BTNodeRegistry> instance_;  ///< シングルトン実体
 
-    /// 各 typeName から生成関数へのマップ
-    std::unordered_map<std::string, std::function<BTNodePtr()>> factories_;
-
-    /// 各 typeName からメタ情報へのマップ
-    std::unordered_map<std::string, NodeMeta> metas_;
+    //登録テーブル
+    std::unordered_map<std::string, std::function<BTNodePtr()>> factories_;  ///< 各 typeName から生成関数へのマップ
+    std::unordered_map<std::string, NodeMeta>                   metas_;      ///< 各 typeName からメタ情報へのマップ
   };
 
 } // namespace Tako

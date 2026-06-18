@@ -28,7 +28,22 @@ namespace Tako {
     GlobalVariables(const GlobalVariables&) = delete;
     GlobalVariables& operator=(const GlobalVariables&) = delete;
 
-  public: // メンバ関数
+  public: //構造体
+    /// <summary>
+    /// グローバル変数の単一アイテム
+    /// </summary>
+    struct Item {
+      std::variant<bool, int32_t, float, Vector2, Vector3, Vector4> value; ///< 値（複数の型に対応）
+    };
+
+    /// <summary>
+    /// グローバル変数のグループ
+    /// </summary>
+    struct Group {
+      std::map<std::string, Item> items; ///< アイテムのマップ
+    };
+
+  public: //メンバー関数
     /// <summary>
     /// インスタンスの取得
     /// </summary>
@@ -67,55 +82,6 @@ namespace Tako {
     /// </summary>
     /// <param name="groupName">グループ名</param>
     void LoadFile(const std::string& groupName);
-
-    //-----------------------------------------Setter-----------------------------------------//
-    /// <summary>
-    /// 値の設定(int)
-    /// </summary>
-    /// <param name="groupName">グループ名</param>
-    /// <param name="key">キー名</param>
-    /// <param name="value">設定する値</param>
-    void SetValue(const std::string& groupName, const std::string& key, int32_t value);
-
-    /// <summary>
-    /// 値の設定(float)
-    /// </summary>
-    /// <param name="groupName">グループ名</param>
-    /// <param name="key">キー名</param>
-    /// <param name="value">設定する値</param>
-    void SetValue(const std::string& groupName, const std::string& key, float value);
-
-    /// <summary>
-    /// 値の設定(Vector2)
-    /// </summary>
-    /// <param name="groupName">グループ名</param>
-    /// <param name="key">キー名</param>
-    /// <param name="value">設定する値</param>
-    void SetValue(const std::string& groupName, const std::string& key, const Vector2& value);
-
-    /// <summary>
-    /// 値の設定(Vector3)
-    /// </summary>
-    /// <param name="groupName">グループ名</param>
-    /// <param name="key">キー名</param>
-    /// <param name="value">設定する値</param>
-    void SetValue(const std::string& groupName, const std::string& key, const Vector3& value);
-
-    /// <summary>
-    /// 値の設定(Vector4)
-    /// </summary>
-    /// <param name="groupName">グループ名</param>
-    /// <param name="key">キー名</param>
-    /// <param name="value">設定する値</param>
-    void SetValue(const std::string& groupName, const std::string& key, const Vector4& value);
-
-    /// <summary>
-    /// 値の設定(bool)
-    /// </summary>
-    /// <param name="groupName">グループ名</param>
-    /// <param name="key">キー名</param>
-    /// <param name="value">設定する値</param>
-    void SetValue(const std::string& groupName, const std::string& key, bool value);
 
     /// <summary>
     /// 項目の追加(int)
@@ -165,7 +131,60 @@ namespace Tako {
     /// <param name="value">設定する値</param>
     void AddItem(const std::string& groupName, const std::string& key, bool value);
 
-    //-----------------------------------------Getter-----------------------------------------//
+    //============================================================
+    //Setter
+    //============================================================
+    /// <summary>
+    /// 値の設定(int)
+    /// </summary>
+    /// <param name="groupName">グループ名</param>
+    /// <param name="key">キー名</param>
+    /// <param name="value">設定する値</param>
+    void SetValue(const std::string& groupName, const std::string& key, int32_t value);
+
+    /// <summary>
+    /// 値の設定(float)
+    /// </summary>
+    /// <param name="groupName">グループ名</param>
+    /// <param name="key">キー名</param>
+    /// <param name="value">設定する値</param>
+    void SetValue(const std::string& groupName, const std::string& key, float value);
+
+    /// <summary>
+    /// 値の設定(Vector2)
+    /// </summary>
+    /// <param name="groupName">グループ名</param>
+    /// <param name="key">キー名</param>
+    /// <param name="value">設定する値</param>
+    void SetValue(const std::string& groupName, const std::string& key, const Vector2& value);
+
+    /// <summary>
+    /// 値の設定(Vector3)
+    /// </summary>
+    /// <param name="groupName">グループ名</param>
+    /// <param name="key">キー名</param>
+    /// <param name="value">設定する値</param>
+    void SetValue(const std::string& groupName, const std::string& key, const Vector3& value);
+
+    /// <summary>
+    /// 値の設定(Vector4)
+    /// </summary>
+    /// <param name="groupName">グループ名</param>
+    /// <param name="key">キー名</param>
+    /// <param name="value">設定する値</param>
+    void SetValue(const std::string& groupName, const std::string& key, const Vector4& value);
+
+    /// <summary>
+    /// 値の設定(bool)
+    /// </summary>
+    /// <param name="groupName">グループ名</param>
+    /// <param name="key">キー名</param>
+    /// <param name="value">設定する値</param>
+    void SetValue(const std::string& groupName, const std::string& key, bool value);
+
+    //============================================================
+    //Getter
+    //============================================================
     /// <summary>
     /// 値の取得(int)
     /// </summary>
@@ -214,32 +233,13 @@ namespace Tako {
     /// <returns>取得した bool 値</returns>
     bool GetValueBool(const std::string& groupName, const std::string& key);
 
-    /// <summary>
-    /// グループが登録されているか確認
-    /// </summary>
-    /// <returns>グループが1つ以上あれば true</returns>
     bool HasGroups() const { return !datas_.empty(); }
 
-  public: // 構造体
-    /// <summary>
-    /// グローバル変数の単一アイテム
-    /// </summary>
-    struct Item {
-      std::variant<bool, int32_t, float, Vector2, Vector3, Vector4> value; ///< 値（複数の型に対応）
-    };
+  private: //メンバー変数
 
-    /// <summary>
-    /// グローバル変数のグループ
-    /// </summary>
-    struct Group {
-      std::map<std::string, Item> items; ///< アイテムのマップ
-    };
+    const std::string kDirectoryPath = "resources/Json/GlobalVariables/";  ///< 保存先のファイルパス
 
-  private: // メンバ変数
-
-    const std::string kDirectoryPath = "resources/Json/GlobalVariables/"; ///< 保存先のファイルパス
-
-    std::map<std::string, Group> datas_; ///< グループのマップ
+    std::map<std::string, Group> datas_;  ///< グループのマップ
   };
 
 } // namespace Tako

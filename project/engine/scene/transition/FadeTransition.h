@@ -15,7 +15,7 @@ namespace Tako {
   /// </summary>
   class FadeTransition : public ITransitionEffect
   {
-  public:
+  public: //メンバー関数
     /// <summary>
     /// デフォルトコンストラクタ（白フェード）
     /// </summary>
@@ -63,46 +63,42 @@ namespace Tako {
     /// </summary>
     void Stop() override;
 
-    /// <summary>
-    /// トランジションが終了したか
-    /// </summary>
-    bool IsFinished() const override;
-
-    /// <summary>
-    /// 現在の状態を取得
-    /// </summary>
-    TransitionState GetState() const override { return state_; }
-
+    //=====================================
+    //Setter
+    //=====================================
     /// <summary>
     /// フェード色の設定
     /// </summary>
     /// <param name="color">新しいフェード色</param>
     void SetColor(const Vector4& color);
 
+    //=====================================
+    //Getter
+    //=====================================
     /// <summary>
-    /// アルファ値の取得（デバッグ用）
+    /// トランジションが終了したか
     /// </summary>
+    bool IsFinished() const override;
+
+    TransitionState GetState() const override { return state_; }
     float GetAlpha() const { return alpha_; }
 
-  private:
-    // 状態
-    TransitionState state_;
+  private: //メンバー変数
+    TransitionState state_;  ///< 状態
 
-    // タイミング
+    //タイミング
     float duration_;
     float transitionTime_;
     float transitionSpeed_;
 
-    // 表示
-    float alpha_;
-    Vector4 fadeColor_;
+    //表示
+    float       alpha_;
+    Vector4     fadeColor_;
     std::string textureName_;
 
-    // スプライト
-    std::unique_ptr<Sprite> fadeSprite_;
+    std::unique_ptr<Sprite> fadeSprite_;  ///< スプライト
 
-    // 初期化フラグ
-    bool isInitialized_;
+    bool isInitialized_;  ///< 初期化フラグ
   };
 
 } // namespace Tako

@@ -9,7 +9,7 @@ namespace Tako {
   /// 子ノードを順に実行し、最初の Success で停止する。全失敗なら Failure を返す。
   /// </summary>
   class BTSelector : public BTComposite {
-  public:
+  public: //メンバー関数
     BTSelector();
 
     virtual ~BTSelector() = default;

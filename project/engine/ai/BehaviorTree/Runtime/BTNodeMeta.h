@@ -7,13 +7,21 @@ namespace Tako {
   /// ノードのカテゴリ。エディタのパレット分類やシリアライズで使用する。
   /// </summary>
   enum class NodeCategory {
+    /// <summary>
     /// コンポジットノード (子を持てる: Selector / Sequence / Parallel など)
+    /// </summary>
     Composite,
+    /// <summary>
     /// アクションノード (実際の処理)
+    /// </summary>
     Action,
+    /// <summary>
     /// 条件ノード (判定)
+    /// </summary>
     Condition,
+    /// <summary>
     /// デコレータノード (将来の拡張用)
+    /// </summary>
     Decorator
   };
 
@@ -36,14 +44,10 @@ namespace Tako {
   /// ノードのメタ情報。エディタ表示・パレット表示で使用する。
   /// </summary>
   struct NodeMeta {
-    /// 表示名 (パレット項目・ノードキャプション)
-    std::string displayName;
-    /// カテゴリ (パレット分類)
-    NodeCategory category = NodeCategory::Action;
-    /// ノードカラー (エディタ表示色、RGBA)
-    NodeColor color;
-    /// コンポジット (子ノードを持てる) かどうか
-    bool isComposite = false;
+    std::string  displayName;                         ///< 表示名 (パレット項目・ノードキャプション)
+    NodeCategory category    = NodeCategory::Action;  ///< カテゴリ (パレット分類)
+    NodeColor    color;                               ///< ノードカラー (エディタ表示色、RGBA)
+    bool         isComposite = false;                 ///< コンポジット (子ノードを持てる) かどうか
   };
 
 } // namespace Tako

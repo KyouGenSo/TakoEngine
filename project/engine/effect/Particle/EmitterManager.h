@@ -36,7 +36,7 @@ namespace Tako {
   /// </summary>
   class EmitterManager
   {
-  public:
+  public: //メンバー関数
     /// <summary>
     /// コンストラクタ
     /// </summary>
@@ -92,7 +92,6 @@ namespace Tako {
     /// <param name="obj3d">スポーン形状ソース兼追従先 (非所有、ライフタイム責務は呼び出し側)</param>
     /// <param name="count">パーティクル数</param>
     /// <param name="frequency">射出頻度 (秒)</param>
-
     void CreateMeshEmitter(const std::string& name, Object3d* obj3d, uint32_t count, float frequency);
 
     /// <summary>
@@ -142,7 +141,6 @@ namespace Tako {
       const Vector3& v1, const Vector3& v2, const Vector3& v3,
       uint32_t count = 0, float frequency = 0.0f);
 
-
     /// <summary>
     /// 既存のエミッターから一時的なエミッターを作成
     /// </summary>
@@ -156,6 +154,122 @@ namespace Tako {
     /// </summary>
     void Update();
 
+    /// <summary>
+    /// エミッターを削除
+    /// </summary>
+    /// <param name="name">エミッター名</param>
+    void RemoveEmitter(const std::string& name);
+
+    /// <summary>
+    /// 全てのエミッターを削除
+    /// </summary>
+    void RemoveAllEmitters();
+
+    /// <summary>
+    /// エミッターグループを作成
+    /// </summary>
+    /// <param name="groupName">グループ名</param>
+    void CreateGroup(const std::string& groupName);
+
+    /// <summary>
+    /// グループにエミッターを追加
+    /// </summary>
+    /// <param name="groupName">グループ名</param>
+    /// <param name="emitterName">エミッター名</param>
+    void AddToGroup(const std::string& groupName, const std::string& emitterName);
+
+    /// <summary>
+    /// グループからエミッターを削除
+    /// </summary>
+    /// <param name="groupName">グループ名</param>
+    /// <param name="emitterName">エミッター名</param>
+    void RemoveFromGroup(const std::string& groupName, const std::string& emitterName);
+
+    /// <summary>
+    /// グループを削除
+    /// </summary>
+    /// <param name="groupName">グループ名</param>
+    void RemoveGroup(const std::string& groupName);
+
+    /// <summary>
+    /// エミッター設定を JSON ファイルに保存
+    /// </summary>
+    /// <param name="filename">ファイル名</param>
+    void SaveScenePreset(const std::string& filename);
+
+    /// <summary>
+    /// JSON ファイルからエミッター設定を読み込み
+    /// </summary>
+    /// <param name="filename">ファイル名</param>
+    /// <remarks>
+    /// Mesh エミッタは <c>meshModelPath</c> から自己完結で復元する。
+    /// パスを持たない (Object3d バインド前提の) Mesh エミッタは警告ログを出してスキップ。
+    /// </remarks>
+    void LoadScenePreset(const std::string& filename);
+
+    /// <summary>
+    /// エミッター設定をプリセットとして保存
+    /// </summary>
+    /// <param name="presetName">プリセット名</param>
+    /// <param name="emitterName">エミッター名</param>
+    void SavePreset(const std::string& presetName, const std::string& emitterName);
+
+    /// <summary>
+    /// プリセットからエミッターを作成
+    /// </summary>
+    /// <param name="presetName">プリセット名</param>
+    /// <param name="newEmitterName">新しいエミッター名</param>
+    void LoadPreset(const std::string& presetName, const std::string& newEmitterName);
+
+    /// <summary>
+    /// プリセットからエミッターを作成,既存のエミッター名を使用
+    /// </summary>
+    /// <param name="presetName">プリセット名</param>
+    void LoadPreset(const std::string& presetName);
+
+    /// <summary>
+    /// プリセットから Mesh エミッターを作成 (新しいエミッター名指定 + Object3d バインド版)
+    /// </summary>
+    /// <param name="presetName">プリセット名</param>
+    /// <param name="newEmitterName">新しいエミッター名</param>
+    /// <param name="obj3d">バインドする Object3d (スポーン形状もこのモデルから取得)</param>
+    void LoadPreset(const std::string& presetName, const std::string& newEmitterName, Object3d* obj3d);
+
+    /// <summary>
+    /// プリセットから Mesh エミッターを作成 (既存名使用 + Object3d バインド版)
+    /// </summary>
+    /// <param name="presetName">プリセット名</param>
+    /// <param name="obj3d">バインドする Object3d (スポーン形状もこのモデルから取得)</param>
+    void LoadPreset(const std::string& presetName, Object3d* obj3d);
+
+    /// <summary>
+    /// エミッター設定をコピー
+    /// </summary>
+    /// <param name="emitterName">コピー元のエミッター名</param>
+    /// <param name="slotIndex">コピー先スロット番号（0-4）</param>
+    /// <returns>成功した場合 true</returns>
+    bool CopyEmitterSettings(const std::string& emitterName, int slotIndex = 0);
+
+    /// <summary>
+    /// エミッター設定をペースト
+    /// </summary>
+    /// <param name="targetEmitterName">ペースト先のエミッター名</param>
+    /// <param name="slotIndex">コピー元スロット番号（0-4）</param>
+    /// <param name="colorOnly">色のみペーストする場合 true</param>
+    /// <param name="velocityOnly">速度のみペーストする場合 true</param>
+    /// <param name="scaleOnly">スケールのみペーストする場合 true</param>
+    /// <returns>成功した場合 true</returns>
+    bool PasteEmitterSettings(const std::string& targetEmitterName, int slotIndex = 0, bool colorOnly = false, bool velocityOnly = false, bool scaleOnly = false);
+
+    /// <summary>
+    /// 指定したスロットのコピー済み設定をクリア
+    /// </summary>
+    /// <param name="slotIndex">スロット番号（0-4）</param>
+    void ClearCopiedSettings(int slotIndex = 0);
+
+    //============================================================
+    //Setter
+    //============================================================
     /// <summary>
     /// エミッターの位置を設定
     /// </summary>
@@ -252,44 +366,6 @@ namespace Tako {
     void SetEmitterRadius(const std::string& name, float radius);
 
     /// <summary>
-    /// 名前でエミッターを取得
-    /// </summary>
-    /// <param name="name">エミッター名</param>
-    /// <returns>見つかったエミッター、見つからない場合は nullptr</returns>
-    std::shared_ptr<GPUParticleEmitter> GetEmitterByName(const std::string& name);
-
-    /// <summary>
-    /// エミッターを削除
-    /// </summary>
-    /// <param name="name">エミッター名</param>
-    void RemoveEmitter(const std::string& name);
-
-    /// <summary>
-    /// 全てのエミッターを削除
-    /// </summary>
-    void RemoveAllEmitters();
-
-    /// <summary>
-    /// エミッターグループを作成
-    /// </summary>
-    /// <param name="groupName">グループ名</param>
-    void CreateGroup(const std::string& groupName);
-
-    /// <summary>
-    /// グループにエミッターを追加
-    /// </summary>
-    /// <param name="groupName">グループ名</param>
-    /// <param name="emitterName">エミッター名</param>
-    void AddToGroup(const std::string& groupName, const std::string& emitterName);
-
-    /// <summary>
-    /// グループからエミッターを削除
-    /// </summary>
-    /// <param name="groupName">グループ名</param>
-    /// <param name="emitterName">エミッター名</param>
-    void RemoveFromGroup(const std::string& groupName, const std::string& emitterName);
-
-    /// <summary>
     /// グループのアクティブ状態を設定
     /// </summary>
     /// <param name="groupName">グループ名</param>
@@ -304,67 +380,28 @@ namespace Tako {
     void SetGroupPosition(const std::string& groupName, const Vector3& position);
 
     /// <summary>
-    /// グループを削除
+    /// フォースフィールドマネージャを設定（弱参照、所有しない）
+    /// 設定済みの場合、SaveScenePreset/LoadScenePreset でフォースフィールドも統合保存/読込される
+    /// 未設定の場合はエミッタ・グループのみが対象（後方互換動作）
     /// </summary>
-    /// <param name="groupName">グループ名</param>
-    void RemoveGroup(const std::string& groupName);
+    /// <param name="manager">ForceFieldManager へのポインタ（nullptr で連携無効）</param>
+    void SetForceFieldManager(ForceFieldManager* manager) { forceFieldManager_ = manager; }
+
+    //============================================================
+    //Getter
+    //============================================================
+    /// <summary>
+    /// 名前でエミッターを取得
+    /// </summary>
+    /// <param name="name">エミッター名</param>
+    /// <returns>見つかったエミッター、見つからない場合は nullptr</returns>
+    std::shared_ptr<GPUParticleEmitter> GetEmitterByName(const std::string& name);
 
     /// <summary>
     /// アクティブなエミッターの数を取得
     /// </summary>
     /// <returns>エミッター数</returns>
     size_t GetActiveEmitterCount() const { return emitterMap_.size(); }
-
-    /// <summary>
-    /// エミッター設定を JSON ファイルに保存
-    /// </summary>
-    /// <param name="filename">ファイル名</param>
-    void SaveScenePreset(const std::string& filename);
-
-    /// <summary>
-    /// JSON ファイルからエミッター設定を読み込み
-    /// </summary>
-    /// <param name="filename">ファイル名</param>
-    /// <remarks>
-    /// Mesh エミッタは <c>meshModelPath</c> から自己完結で復元する。
-    /// パスを持たない (Object3d バインド前提の) Mesh エミッタは警告ログを出してスキップ。
-    /// </remarks>
-    void LoadScenePreset(const std::string& filename);
-
-    /// <summary>
-    /// エミッター設定をプリセットとして保存
-    /// </summary>
-    /// <param name="presetName">プリセット名</param>
-    /// <param name="emitterName">エミッター名</param>
-    void SavePreset(const std::string& presetName, const std::string& emitterName);
-
-    /// <summary>
-    /// プリセットからエミッターを作成
-    /// </summary>
-    /// <param name="presetName">プリセット名</param>
-    /// <param name="newEmitterName">新しいエミッター名</param>
-    void LoadPreset(const std::string& presetName, const std::string& newEmitterName);
-
-    /// <summary>
-    /// プリセットからエミッターを作成,既存のエミッター名を使用
-    /// </summary>
-    /// <param name="presetName">プリセット名</param>
-    void LoadPreset(const std::string& presetName);
-
-    /// <summary>
-    /// プリセットから Mesh エミッターを作成 (新しいエミッター名指定 + Object3d バインド版)
-    /// </summary>
-    /// <param name="presetName">プリセット名</param>
-    /// <param name="newEmitterName">新しいエミッター名</param>
-    /// <param name="obj3d">バインドする Object3d (スポーン形状もこのモデルから取得)</param>
-    void LoadPreset(const std::string& presetName, const std::string& newEmitterName, Object3d* obj3d);
-
-    /// <summary>
-    /// プリセットから Mesh エミッターを作成 (既存名使用 + Object3d バインド版)
-    /// </summary>
-    /// <param name="presetName">プリセット名</param>
-    /// <param name="obj3d">バインドする Object3d (スポーン形状もこのモデルから取得)</param>
-    void LoadPreset(const std::string& presetName, Object3d* obj3d);
 
     /// <summary>
     /// 全てのエミッター名を取得
@@ -380,36 +417,11 @@ namespace Tako {
     bool HasEmitter(const std::string& name) const;
 
     /// <summary>
-    /// エミッター設定をコピー
-    /// </summary>
-    /// <param name="emitterName">コピー元のエミッター名</param>
-    /// <param name="slotIndex">コピー先スロット番号（0-4）</param>
-    /// <returns>成功した場合 true</returns>
-    bool CopyEmitterSettings(const std::string& emitterName, int slotIndex = 0);
-
-    /// <summary>
-    /// エミッター設定をペースト
-    /// </summary>
-    /// <param name="targetEmitterName">ペースト先のエミッター名</param>
-    /// <param name="slotIndex">コピー元スロット番号（0-4）</param>
-    /// <param name="colorOnly">色のみペーストする場合 true</param>
-    /// <param name="velocityOnly">速度のみペーストする場合 true</param>
-    /// <param name="scaleOnly">スケールのみペーストする場合 true</param>
-    /// <returns>成功した場合 true</returns>
-    bool PasteEmitterSettings(const std::string& targetEmitterName, int slotIndex = 0, bool colorOnly = false, bool velocityOnly = false, bool scaleOnly = false);
-
-    /// <summary>
     /// 指定したスロットにコピー済みの設定があるか確認
     /// </summary>
     /// <param name="slotIndex">スロット番号（0-4）</param>
     /// <returns>設定がある場合 true</returns>
     bool HasCopiedSettings(int slotIndex = 0) const;
-
-    /// <summary>
-    /// 指定したスロットのコピー済み設定をクリア
-    /// </summary>
-    /// <param name="slotIndex">スロット番号（0-4）</param>
-    void ClearCopiedSettings(int slotIndex = 0);
 
     /// <summary>
     /// 全てのグループ名を取得
@@ -437,22 +449,27 @@ namespace Tako {
     /// <returns>グループ数</returns>
     size_t GetGroupCount() const { return groupMap_.size(); }
 
+  private: //構造体
     /// <summary>
-    /// フォースフィールドマネージャを設定（弱参照、所有しない）
-    /// 設定済みの場合、SaveScenePreset/LoadScenePreset でフォースフィールドも統合保存/読込される
-    /// 未設定の場合はエミッタ・グループのみが対象（後方互換動作）
+    /// コピーバッファスロット構造体
+    /// エミッター設定のコピー&ペースト用の一時保存領域
     /// </summary>
-    /// <param name="manager">ForceFieldManager へのポインタ（nullptr で連携無効）</param>
-    void SetForceFieldManager(ForceFieldManager* manager) { forceFieldManager_ = manager; }
+    struct CopiedSettings {
+      bool valid = false;          ///< このスロットが有効なデータを持っているか
+      EmitterData data;            ///< コピーされたエミッターデータ
+      EmitterType type;            ///< コピーされたエミッタータイプ
+      std::string renderModelPath; ///< 描画モデルのファイルパス (data_ 外メンバのため別途保持。空=描画モデル無し)
+    };
 
-  private: // プライベートメンバー関数
-
+  private: //非公開関数
     /// <summary>
     /// 一時的なエミッターの更新（Update 関数内で呼び出される）
     /// </summary>
     void UpdateTemporaryEmitters();
 
+    /// <summary>
     /// 名前でエミッターを検索 (見つからなければ nullptr)
+    /// </summary>
     GPUParticleEmitter* FindEmitter(const std::string& name);
 
     /// <summary>
@@ -478,39 +495,15 @@ namespace Tako {
     std::shared_ptr<GPUParticleEmitter> DeserializeEmitterFromJSON(
       const nlohmann::json& json, Object3d* bindTarget = nullptr);
 
-  private:
-    /// <summary>
-    /// GPU パーティクルシステムへのポインタ
-    /// </summary>
-    GPUParticle* particleSystem_;
+  private: //メンバー変数
+    GPUParticle* particleSystem_;  ///< GPU パーティクルシステムへのポインタ
 
-    /// <summary>
-    /// エミッター名からエミッターへのマップ（名前ベース管理）
-    /// </summary>
-    std::unordered_map<std::string, std::shared_ptr<GPUParticleEmitter>> emitterMap_;
+    std::unordered_map<std::string, std::shared_ptr<GPUParticleEmitter>> emitterMap_;  ///< エミッター名からエミッターへのマップ（名前ベース管理）
+    std::unordered_map<std::string, EmitterGroup>                        groupMap_;    ///< グループ名からグループ情報へのマップ
 
-    /// <summary>
-    /// グループ名からグループ情報へのマップ
-    /// </summary>
-    std::unordered_map<std::string, EmitterGroup> groupMap_;
+    std::array<CopiedSettings, 5> copiedSettingsSlots_;  ///< コピーバッファ（5スロット分）
 
-    /// <summary>
-    /// コピーバッファスロット構造体
-    /// エミッター設定のコピー&ペースト用の一時保存領域
-    /// </summary>
-    struct CopiedSettings {
-      bool valid = false;          ///< このスロットが有効なデータを持っているか
-      EmitterData data;            ///< コピーされたエミッターデータ
-      EmitterType type;            ///< コピーされたエミッタータイプ
-      std::string renderModelPath; ///< 描画モデルのファイルパス (data_ 外メンバのため別途保持。空=描画モデル無し)
-    };
-    std::array<CopiedSettings, 5> copiedSettingsSlots_; ///< コピーバッファ（5スロット分）
-
-    /// <summary>
-    /// フォースフィールドマネージャへの弱参照（シーン統合保存連携用、nullable）
-    /// </summary>
-    ForceFieldManager* forceFieldManager_ = nullptr;
-
+    ForceFieldManager* forceFieldManager_ = nullptr;  ///< フォースフィールドマネージャへの弱参照（シーン統合保存連携用、nullable）
   };
 
 } // namespace Tako

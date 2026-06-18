@@ -28,8 +28,7 @@ namespace Tako {
   /// エフェクトチェーンシステムで複数エフェクトの連続適用を制御
   /// </summary>
   class PostEffectManager {
-  private:
-    // シングルトン設定
+  private: // シングルトン設定
     static std::unique_ptr<PostEffectManager> instance_;
 
     PostEffectManager() = default;
@@ -41,10 +40,23 @@ namespace Tako {
     PostEffectManager(const PostEffectManager&) = delete;
     PostEffectManager& operator=(const PostEffectManager&) = delete;
 
-  public: // メンバ関数
+  public: //構造体
 
     // ComPtr のエイリアス
     template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
+
+  private: //構造体
+    /// <summary>
+    /// 一時エフェクト情報
+    /// </summary>
+    struct TemporaryEffectInfo {
+      float duration;           ///< 持続時間（秒）
+      float elapsedTime;        ///< 経過時間（秒）
+      EasingType easing;        ///< イージング種別
+      EffectParam baseParam;    ///< 基本パラメータ（開始時の値）
+    };
+
+  public: //メンバー関数
 
     /// <summary>
     /// シングルトンインスタンスを取得
@@ -120,27 +132,6 @@ namespace Tako {
     void RecreateRenderTexture();
 
     /// <summary>
-    /// 指定されたエフェクトのパラメータを設定
-    /// </summary>
-    /// <param name="effectName">エフェクト名</param>
-    /// <param name="param">設定するパラメータ（EffectParam 型）</param>
-    /// <returns>設定が成功した場合 true、エフェクトが見つからない場合 false</returns>
-    bool SetEffectParam(const std::string& effectName, const EffectParam& param);
-
-    /// <summary>
-    /// 指定されたエフェクトのパラメータを設定（テンプレート版）
-    /// 任意の型のパラメータを受け取り、内部で EffectParam に変換する
-    /// </summary>
-    /// <typeparam name="ParamType">パラメータの型</typeparam>
-    /// <param name="effectName">エフェクト名</param>
-    /// <param name="param">設定するパラメータ</param>
-    /// <returns>設定が成功した場合 true、エフェクトが見つからない場合 false</returns>
-    template<typename ParamType>
-    bool SetEffectParam(const std::string& effectName, const ParamType& param) {
-      return SetEffectParam(effectName, EffectParam(param));
-    }
-
-    /// <summary>
     /// 一時的なポストエフェクトを適用
     /// 指定した持続時間でフェードアウトし、終了後に自動削除される
     /// </summary>
@@ -182,40 +173,6 @@ namespace Tako {
     void CancelTemporaryEffect(const std::string& effectName);
 
     /// <summary>
-    /// 指定エフェクトが一時エフェクトとして動作中か判定
-    /// </summary>
-    /// <param name="effectName">エフェクト名</param>
-    /// <returns>一時エフェクトとして動作中なら true</returns>
-    bool IsTemporaryEffectActive(const std::string& effectName) const;
-
-    /// <summary>
-    /// ポストエフェクトで使用するカメラを設定
-    /// 深度ベースエフェクト等でカメラ情報が必要な場合に使用
-    /// </summary>
-    /// <param name="camera">設定するカメラのポインタ</param>
-    void SetCamera(Camera* camera) {
-      if (camera) {
-        camera_ = camera;
-      }
-    }
-
-    /// <summary>
-    /// ディゾルブエフェクト用のマスクテクスチャを設定
-    /// </summary>
-    /// <param name="textureName">マスクテクスチャの名前</param>
-    void SetDissolveMaskTex(const std::string& textureName) {
-      if (!textureName.empty()) {
-        dissolveMaskSrvIndex_ = TextureManager::GetInstance()->GetSRVIndex(textureName);
-      }
-    }
-
-    /// <summary>
-    /// ディゾルブエフェクト用のベーステクスチャを設定
-    /// </summary>
-    /// <param name="textureName">ベーステクスチャの名前</param>
-    void SetDissolveBaseTex(const std::string& textureName);
-
-    /// <summary>
     /// 指定されたエフェクトをチェーン内で1つ上に移動
     /// </summary>
     /// <param name="effectName">移動するエフェクトの名前</param>
@@ -253,6 +210,67 @@ namespace Tako {
     /// <returns>交換が成功した場合 true、失敗した場合 false</returns>
     bool SwapEffectsByIndex(int index1, int index2);
 
+    //============================================================
+    //Setter
+    //============================================================
+    /// <summary>
+    /// 指定されたエフェクトのパラメータを設定
+    /// </summary>
+    /// <param name="effectName">エフェクト名</param>
+    /// <param name="param">設定するパラメータ（EffectParam 型）</param>
+    /// <returns>設定が成功した場合 true、エフェクトが見つからない場合 false</returns>
+    bool SetEffectParam(const std::string& effectName, const EffectParam& param);
+
+    /// <summary>
+    /// 指定されたエフェクトのパラメータを設定（テンプレート版）
+    /// 任意の型のパラメータを受け取り、内部で EffectParam に変換する
+    /// </summary>
+    /// <typeparam name="ParamType">パラメータの型</typeparam>
+    /// <param name="effectName">エフェクト名</param>
+    /// <param name="param">設定するパラメータ</param>
+    /// <returns>設定が成功した場合 true、エフェクトが見つからない場合 false</returns>
+    template<typename ParamType>
+    bool SetEffectParam(const std::string& effectName, const ParamType& param) {
+      return SetEffectParam(effectName, EffectParam(param));
+    }
+
+    /// <summary>
+    /// ポストエフェクトで使用するカメラを設定
+    /// 深度ベースエフェクト等でカメラ情報が必要な場合に使用
+    /// </summary>
+    /// <param name="camera">設定するカメラのポインタ</param>
+    void SetCamera(Camera* camera) {
+      if (camera) {
+        camera_ = camera;
+      }
+    }
+
+    /// <summary>
+    /// ディゾルブエフェクト用のマスクテクスチャを設定
+    /// </summary>
+    /// <param name="textureName">マスクテクスチャの名前</param>
+    void SetDissolveMaskTex(const std::string& textureName) {
+      if (!textureName.empty()) {
+        dissolveMaskSrvIndex_ = TextureManager::GetInstance()->GetSRVIndex(textureName);
+      }
+    }
+
+    /// <summary>
+    /// ディゾルブエフェクト用のベーステクスチャを設定
+    /// </summary>
+    /// <param name="textureName">ベーステクスチャの名前</param>
+    void SetDissolveBaseTex(const std::string& textureName);
+
+    //============================================================
+    //Getter
+    //============================================================
+    /// <summary>
+    /// 指定エフェクトが一時エフェクトとして動作中か判定
+    /// </summary>
+    /// <param name="effectName">エフェクト名</param>
+    /// <returns>一時エフェクトとして動作中なら true</returns>
+    bool IsTemporaryEffectActive(const std::string& effectName) const;
+
     /// <summary>
     /// 指定されたエフェクトのチェーン内での位置を取得
     /// </summary>
@@ -286,10 +304,6 @@ namespace Tako {
     /// <returns>エフェクト名のリスト</returns>
     std::vector<std::string> GetEffectChain() const;
 
-    /// <summary>
-    /// 現在のレンダーターゲットの CPU ディスクリプタハンドルを取得
-    /// </summary>
-    /// <returns>エフェクト対象レンダーターゲットの RTV ハンドル</returns>
     D3D12_CPU_DESCRIPTOR_HANDLE GetCurrentRTVHandle() const { return effectTargetRT_.rtvHandle; }
 
     /// <summary>
@@ -306,14 +320,20 @@ namespace Tako {
     /// <returns>最終結果テクスチャのリソースポインタ</returns>
     ID3D12Resource* GetFinalResultResource() const;
 
-  private: // プライベートメンバー関数
-    // レンダーターゲットの作成
+  private: //非公開関数
+    /// <summary>
+    /// レンダーターゲットの作成
+    /// </summary>
     void CreateRenderTextures();
 
-    // エフェクトの登録
+    /// <summary>
+    /// エフェクトの登録
+    /// </summary>
     void RegisterEffect(const std::string& name, std::unique_ptr<IPostEffect> effect);
 
-    // エフェクトを適用
+    /// <summary>
+    /// エフェクトを適用
+    /// </summary>
     void ApplyEffectChain();
 
     /// <summary>
@@ -341,10 +361,14 @@ namespace Tako {
     /// </summary>
     void TransitionResourceWithTracking(ID3D12Resource* resource, D3D12_RESOURCE_STATES newState);
 
-    // リソース状態取得
+    /// <summary>
+    /// リソース状態取得
+    /// </summary>
     D3D12_RESOURCE_STATES GetResourceState(ID3D12Resource* resource) const;
 
-    // 初期リソース状態設定（バリア遷移なし）
+    /// <summary>
+    /// 初期リソース状態設定（バリア遷移なし）
+    /// </summary>
     void SetInitialResourceState(ID3D12Resource* resource, D3D12_RESOURCE_STATES initialState);
 
     /// <summary>
@@ -363,62 +387,29 @@ namespace Tako {
     /// <returns>フェード適用後のパラメータ</returns>
     EffectParam ApplyFadeToParam(const EffectParam& param, float fadeFactor) const;
 
-  private: // 内部構造体
-    /// <summary>
-    /// 一時エフェクト情報
-    /// </summary>
-    struct TemporaryEffectInfo {
-      float duration;           ///< 持続時間（秒）
-      float elapsedTime;        ///< 経過時間（秒）
-      EasingType easing;        ///< イージング種別
-      EffectParam baseParam;    ///< 基本パラメータ（開始時の値）
-    };
+  private: //メンバー変数
+    DX12Basic* m_dx12_ = nullptr;  ///< DX12の基本情報
+    Camera*    camera_ = nullptr;  ///< カメラ情報
 
-  private: // メンバ変数
-    // DX12の基本情報
-    DX12Basic* m_dx12_ = nullptr;
+    //UI 用の選択状態
+    std::string selectedAvailableEffect_ = "";  ///< 利用可能エフェクトの選択
+    std::string selectedActiveEffect_    = "";  ///< アクティブエフェクトの選択
 
-    Camera* camera_ = nullptr; // カメラ情報
+    RenderTexture                                                 effectTargetRT_;            ///< エフェクト適用対象用 RT
+    RenderTexture                                                 nonEffectTargetRT_;         ///< 非適用対象用 RT
+    std::vector<RenderTexture>                                    intermediateRTs_;           ///< 中間バッファ（複数エフェクト用）
+    std::unordered_map<std::string, std::unique_ptr<IPostEffect>> effectRegistry_;            ///< エフェクトのレジストリ
+    std::vector<std::string>                                      effectChain_;               ///< エフェクトチェーン
+    std::unordered_map<std::string, TemporaryEffectInfo>          temporaryEffects_;          ///< 一時エフェクトの管理マップ
+    std::vector<std::string>                                      availableEffects_;          ///< 利用可能なエフェクトのリスト（ImGui 用）
+    uint32_t                                                      depthSrvIndex_        = 0;  ///< 深度バッファの SRV
+    uint32_t                                                      dissolveMaskSrvIndex_ = 0;  ///< Dissolve マスクテクスチャの SRV
 
-    // UI 用の選択状態
-    std::string selectedAvailableEffect_ = "";    // 利用可能エフェクトの選択
-    std::string selectedActiveEffect_ = "";       // アクティブエフェクトの選択
+    //クリアカラー
+    const Vector4 kEffectTargetClearColor_   = { 0.17f, 0.17f, 0.17f, 1.0f };
+    Vector4       nonEffectTargetClearColor_ = { 0.0f, 0.0f, 0.0f, 0.0f };
 
-    // エフェクト適用対象用 RT
-    RenderTexture effectTargetRT_;
-
-    // 非適用対象用 RT
-    RenderTexture nonEffectTargetRT_;
-
-    // 中間バッファ（複数エフェクト用）
-    std::vector<RenderTexture> intermediateRTs_;
-
-    // エフェクトのレジストリ
-    std::unordered_map<std::string, std::unique_ptr<IPostEffect>> effectRegistry_;
-
-    // エフェクトチェーン
-    std::vector<std::string> effectChain_;
-
-    /// <summary>
-    /// 一時エフェクトの管理マップ
-    /// </summary>
-    std::unordered_map<std::string, TemporaryEffectInfo> temporaryEffects_;
-
-    // 利用可能なエフェクトのリスト（ImGui 用）
-    std::vector<std::string> availableEffects_;
-
-    // 深度バッファの SRV
-    uint32_t depthSrvIndex_ = 0;
-
-    // Dissolve マスクテクスチャの SRV
-    uint32_t dissolveMaskSrvIndex_ = 0;
-
-    // クリアカラー
-    const Vector4 kEffectTargetClearColor_ = { 0.17f, 0.17f, 0.17f, 1.0f };
-    Vector4 nonEffectTargetClearColor_ = { 0.0f, 0.0f, 0.0f, 0.0f };
-
-    // リソース状態追跡用マップ
-    mutable std::unordered_map<ID3D12Resource*, D3D12_RESOURCE_STATES> resourceStates_;
+    mutable std::unordered_map<ID3D12Resource*, D3D12_RESOURCE_STATES> resourceStates_;  ///< リソース状態追跡用マップ
 
   };
 

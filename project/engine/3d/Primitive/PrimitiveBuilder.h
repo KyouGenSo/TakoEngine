@@ -14,7 +14,7 @@ namespace Tako {
   /// </summary>
   class PrimitiveBuilder
   {
-  public: // 形状パラメータ
+  public: //構造体
 
     /// <summary>
     /// 立方体生成パラメータ
@@ -45,7 +45,7 @@ namespace Tako {
       uint32_t ySeg = 1;         ///< Z方向の分割数（最小 1）
     };
 
-  public: // 静的ファクトリ
+  public: //メンバー関数
 
     /// <summary>
     /// 立方体 Model を生成

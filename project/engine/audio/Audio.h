@@ -28,41 +28,39 @@ public:
 	Audio(const Audio&) = delete;
 	Audio& operator=(const Audio&) = delete;
 
-public: // 構造体
+public: //定数
+	// サウンドの最大数
+	static const int kMaxSoundNum = 3000;
+
+public: //構造体
 	struct ChunkHeader {
-		char id[4]; // チャンクの ID
-		uint32_t size; // チャンクのサイズ
+		char     id[4];  ///< チャンクの ID
+		uint32_t size;   ///< チャンクのサイズ
 	};
 
 	struct RiffHeader {
-		ChunkHeader chunk; // "RIFF"
-		char type[4]; // "WAVE"
+		ChunkHeader chunk;    ///< "RIFF"
+		char        type[4];  ///< "WAVE"
 	};
 
 	struct FormatChunk {
-		ChunkHeader chunk; // "fmt "
-		WAVEFORMATEX fmt; // 波形フォーマット
+		ChunkHeader  chunk;  ///< "fmt "
+		WAVEFORMATEX fmt;    ///< 波形フォーマット
 	};
 
 	struct SoundData {
-		// 波形フォーマット
-		WAVEFORMATEX wfex;
-		// バッファの先頭アドレス
-		std::unique_ptr<BYTE[]> pBuffer;
-		// バッファのサイズ
-		unsigned int bufferSize;
+		WAVEFORMATEX            wfex;        ///< 波形フォーマット
+		std::unique_ptr<BYTE[]> pBuffer;     ///< バッファの先頭アドレス
+		unsigned int            bufferSize;  ///< バッファのサイズ
 	};
 
-public:
+public: //メンバー関数
 
 	/// <summary>
 	/// シングルトンインスタンスを取得
 	/// </summary>
 	/// <returns>Audio のインスタンス</returns>
 	static Audio* GetInstance();
-
-	// サウンドの最大数
-	static const int kMaxSoundNum = 3000;
 
 	/// <summary>
 	/// 初期化
@@ -87,12 +85,12 @@ public:
 	/// <returns>サウンドデータハンドル</returns>
 	uint32_t LoadWaveFile(const std::string& filename);
 
-  /// <summary>
-  /// MP3ファイルの読み込み（miniaudio 使用）
-  /// </summary>
-  /// <param name="filename">ファイル名（directoryPath 基準の相対パス）</param>
-  /// <returns>サウンドデータハンドル</returns>
-  uint32_t LoadMP3File(const std::string& filename);
+	/// <summary>
+	/// MP3ファイルの読み込み（miniaudio 使用）
+	/// </summary>
+	/// <param name="filename">ファイル名（directoryPath 基準の相対パス）</param>
+	/// <returns>サウンドデータハンドル</returns>
+	uint32_t LoadMP3File(const std::string& filename);
 
 	/// <summary>
 	/// サウンドデータの解放
@@ -138,13 +136,9 @@ public:
 	/// <param name="voiceHandle">停止するボイスハンドル</param>
 	void StopWave(uint32_t voiceHandle);
 
-	/// <summary>
-	/// サウンドが再生中かどうかを判定
-	/// </summary>
-	/// <param name="voiceHandle">判定するボイスハンドル</param>
-	/// <returns>再生中の場合 true</returns>
-	bool IsPlaying(uint32_t voiceHandle);
-
+	//==============================================
+	//Setter
+	//==============================================
 	/// <summary>
 	/// 音量を設定
 	/// </summary>
@@ -159,27 +153,33 @@ public:
 	/// <param name="pitch">ピッチ倍率（1.0が標準、範囲: 0.5 ~ 2.0）</param>
 	void SetPitch(uint32_t voiceHandle, float pitch);
 
-private: // メンバー変数
-	// XAudio2
-	Microsoft::WRL::ComPtr<IXAudio2> xAudio2_;
+	//==============================================
+	//Getter
+	//==============================================
+	/// <summary>
+	/// サウンドが再生中かどうかを判定
+	/// </summary>
+	/// <param name="voiceHandle">判定するボイスハンドル</param>
+	/// <returns>再生中の場合 true</returns>
+	bool IsPlaying(uint32_t voiceHandle);
 
-	// マスターボイス
-	IXAudio2MasteringVoice* masterVoice_ = nullptr;
+private: //メンバー変数
+    Microsoft::WRL::ComPtr<IXAudio2> xAudio2_;  ///< XAudio2
 
-	std::array<std::string, kMaxSoundNum> soundNames_; ///< 読み込み済みファイル名。重複読み込みの判定に使用（添字 = サウンドハンドル）
+    IXAudio2MasteringVoice* masterVoice_ = nullptr;  ///< マスターボイス
 
-	std::array<SoundData, kMaxSoundNum> soundDatas_; ///< 添字 = サウンドハンドル
+    std::array<std::string, kMaxSoundNum> soundNames_;  ///< 読み込み済みファイル名。重複読み込みの判定に使用（添字 = サウンドハンドル）
 
-	std::unordered_map<uint32_t, IXAudio2SourceVoice*> voiceDatas_; ///< ボイスハンドル -> 再生中ソースボイス
+    std::array<SoundData, kMaxSoundNum> soundDatas_;  ///< 添字 = サウンドハンドル
 
-	std::unordered_map<uint32_t, XAUDIO2_VOICE_STATE> voiceStates_; ///< 未使用
+    std::unordered_map<uint32_t, IXAudio2SourceVoice*> voiceDatas_;  ///< ボイスハンドル -> 再生中ソースボイス
 
-	std::string directoryPath_;
+    std::unordered_map<uint32_t, XAUDIO2_VOICE_STATE> voiceStates_;  ///< 未使用
 
-	// 次に割り当てるサウンドデータ番号（= 返すサウンドハンドル）
-	uint32_t nextSoundIndex_ = 0u;
-	// 次に割り当てるボイスハンドル。Play ごとに加算し再利用しない
-	uint32_t nextVoiceHandle_ = 0u;
+    std::string directoryPath_;
+
+    uint32_t nextSoundIndex_  = 0u;  ///< 次に割り当てるサウンドデータ番号（= 返すサウンドハンドル）
+    uint32_t nextVoiceHandle_ = 0u;  ///< 次に割り当てるボイスハンドル。Play ごとに加算し再利用しない
 
 };
 

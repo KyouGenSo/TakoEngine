@@ -7,7 +7,7 @@ namespace Tako {
   /// </summary>
   class BaseScene
   {
-  public: // メンバ関数
+  public: //メンバー関数
 
     virtual ~BaseScene() = default;
 

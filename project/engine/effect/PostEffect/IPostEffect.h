@@ -21,7 +21,7 @@ namespace Tako {
   /// </summary>
   class IPostEffect
   {
-  public: // メンバー関数
+  public: //メンバー関数
     /// <summary>
     /// デストラクタ
     /// </summary>
@@ -66,10 +66,30 @@ namespace Tako {
     /// <returns>必要な場合 true</returns>
     virtual bool RequiresDepthBuffer() const { return false; }
 
-  protected: // プライベートメンバー関数
+  protected: //構造体
 
     // ComPtr のエイリアス
     template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
+
+    /// <summary>
+    /// サンプラー補間モード
+    /// </summary>
+    enum class SamplerFilterMode { Linear, Point };
+
+    /// <summary>
+    /// サンプラーアドレスモード (U/V に適用。W は常に WRAP)
+    /// </summary>
+    enum class SamplerAddressMode { Wrap, Clamp };
+
+    /// <summary>
+    /// ルートパラメータ指定。宣言順がそのままルートパラメータのスロット順になる
+    /// </summary>
+    struct RootParam {
+      enum Kind { SrvTable, Cbv } kind;  ///< SRV ディスクリプタテーブル or CBV
+      uint32_t shaderRegister;           ///< t#/b# のレジスタ番号
+    };
+
+  protected: //メンバー関数
 
     /// <summary>
     /// ルートシグネチャを作成
@@ -81,40 +101,32 @@ namespace Tako {
     /// </summary>
     virtual void CreatePSO() = 0;
 
-    /// サンプラー補間モード
-    enum class SamplerFilterMode { Linear, Point };
-    /// サンプラーアドレスモード (U/V に適用。W は常に WRAP)
-    enum class SamplerAddressMode { Wrap, Clamp };
-
-    /// ルートパラメータ指定。宣言順がそのままルートパラメータのスロット順になる
-    struct RootParam {
-      enum Kind { SrvTable, Cbv } kind;  ///< SRV ディスクリプタテーブル or CBV
-      uint32_t shaderRegister;           ///< t#/b# のレジスタ番号
-    };
-
+    /// <summary>
     /// 指定したルートパラメータ列と静的サンプラー1個で rootSignature_ を構築
+    /// </summary>
     void BuildRootSignature(std::initializer_list<RootParam> params,
                             SamplerFilterMode filter = SamplerFilterMode::Linear,
                             SamplerAddressMode addrUV = SamplerAddressMode::Wrap);
 
+    /// <summary>
     /// FullScreen.VS + shaderName_.PS の全画面描画 PSO を pipelineState_ に構築
+    /// </summary>
     void BuildFullScreenPSO();
 
+    /// <summary>
     /// 全画面1パスを描画する (RTV設定→RS/PSO→トポロジ→CBV(b0)→SRVテーブル(t0)→Draw)。
     /// 単一入力テクスチャのポストエフェクトパス共通処理
+    /// </summary>
     void DrawFullScreenPass(ID3D12RootSignature* rootSig, ID3D12PipelineState* pso,
                             D3D12_CPU_DESCRIPTOR_HANDLE outputRtv,
                             D3D12_GPU_VIRTUAL_ADDRESS cbvAddress, uint32_t inputSrvIndex);
 
-  protected: // メンバー変数
+  protected: //メンバー変数
 
-    DX12Basic* m_dx12_ = nullptr;  ///< DirectX12基盤システムへの参照
-
-    std::string shaderName_;  ///< 使用するシェーダーのファイル名（拡張子なし）
-
-    ComPtr<ID3D12RootSignature> rootSignature_;  ///< このエフェクト用のルートシグネチャ
-
-    ComPtr<ID3D12PipelineState> pipelineState_;  ///< このエフェクト用のパイプラインステート
+    DX12Basic*                  m_dx12_        = nullptr;  ///< DirectX12基盤システムへの参照
+    std::string                 shaderName_;               ///< 使用するシェーダーのファイル名（拡張子なし）
+    ComPtr<ID3D12RootSignature> rootSignature_;            ///< このエフェクト用のルートシグネチャ
+    ComPtr<ID3D12PipelineState> pipelineState_;            ///< このエフェクト用のパイプラインステート
   };
 
 } // namespace Tako

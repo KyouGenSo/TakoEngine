@@ -10,7 +10,7 @@ namespace Tako {
   /// </summary>
   class AbstractSceneFactory
   {
-  public: // メンバ関数
+  public: //メンバー関数
 
     /// <summary>
     /// 仮想デストラクタ

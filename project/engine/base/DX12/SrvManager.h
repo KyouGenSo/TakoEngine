@@ -27,9 +27,10 @@ namespace Tako {
     SrvManager(const SrvManager&) = delete;
     SrvManager& operator=(const SrvManager&) = delete;
 
-  public: // メンバー関数
-
+  public: //定数
     static const uint32_t kMaxSRVCount;  ///< 最大 SRV 数（テクスチャ数）
+
+  public: //メンバー関数
 
     /// <summary>
     /// インスタンスの取得
@@ -50,7 +51,7 @@ namespace Tako {
 
     /// <summary>
     /// 描画前の処理
-    /// </summary> 
+    /// </summary>
     void BeginDraw();
 
     /// <summary>
@@ -70,19 +71,6 @@ namespace Tako {
     /// </summary>
     /// <returns>確保可能な場合 true、不可能な場合 false</returns>
     bool CanAllocate();
-
-    /// <summary>
-    /// 使用中かどうかチェック
-    /// </summary>
-    /// <param name="index">チェックする SRV のインデックス</param>
-    /// <returns>使用中の場合 true、未使用の場合 false</returns>
-    bool IsAllocated(uint32_t index) const;
-
-    /// <summary>
-    /// 使用中の SRV 数を取得
-    /// </summary>
-    /// <returns>使用中の SRV 総数</returns>
-    uint32_t GetAllocatedCount() const { return allocatedCount_; }
 
     /// <summary>
     /// SRV 生成(テクスチャ用)
@@ -134,6 +122,18 @@ namespace Tako {
     /// <param name="index">設定する SRV のインデックス</param>
     void SetComputeRootDescriptorTable(UINT rootParameterIndex, uint32_t index);
 
+    //============================================================
+    //Getter
+    //============================================================
+    /// <summary>
+    /// 使用中かどうかチェック
+    /// </summary>
+    /// <param name="index">チェックする SRV のインデックス</param>
+    /// <returns>使用中の場合 true、未使用の場合 false</returns>
+    bool IsAllocated(uint32_t index) const;
+
+    uint32_t GetAllocatedCount() const { return allocatedCount_; }
+
     /// <summary>
     /// 指定番号の CPU ディスクリプタハンドルを取得
     /// </summary>
@@ -148,13 +148,9 @@ namespace Tako {
     /// <returns>GPU ディスクリプタハンドル</returns>
     D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(uint32_t index);
 
-    /// <summary>
-    /// ディスクリプタヒープを取得
-    /// </summary>
-    /// <returns>SRV/UAV 用ディスクリプタヒープ</returns>
     ID3D12DescriptorHeap* GetDescriptorHeap() const { return descriptorHeap_.Get(); }
 
-  private: // メンバー変数
+  private: //メンバー変数
 
     DX12Basic* m_dx12_ = nullptr;  ///< DirectX 12基盤システムへのポインタ
 

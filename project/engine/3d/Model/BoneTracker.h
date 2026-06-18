@@ -13,11 +13,11 @@ namespace Tako {
   /// </summary>
   struct BoneEmitterLink
   {
-    std::string boneName;       ///< 追跡対象のボーン名
-    std::string emitterName;    ///< EmitterManager 内で管理されているエミッター名
-    int32_t boneIndex;          ///< ボーンインデックス（検索キャッシュ用、-1=未解決）
-    Vector3 offset;             ///< ボーン位置からの相対オフセット
-    bool isActive;              ///< このリンクがアクティブかどうか
+    std::string boneName;     ///< 追跡対象のボーン名
+    std::string emitterName;  ///< EmitterManager 内で管理されているエミッター名
+    int32_t     boneIndex;    ///< ボーンインデックス（検索キャッシュ用、-1=未解決）
+    Vector3     offset;       ///< ボーン位置からの相対オフセット
+    bool        isActive;     ///< このリンクがアクティブかどうか
   };
 
   /// <summary>
@@ -28,7 +28,7 @@ namespace Tako {
   /// </summary>
   class BoneTracker
   {
-  public:
+  public: //メンバー関数
     /// <summary>
     /// コンストラクタ
     /// </summary>
@@ -95,6 +95,20 @@ namespace Tako {
     void Update(const Transform& transform);
 
     /// <summary>
+    /// リンクを削除
+    /// </summary>
+    /// <param name="linkName">削除するリンク名</param>
+    void RemoveLink(const std::string& linkName);
+
+    /// <summary>
+    /// 全てのリンクを削除
+    /// </summary>
+    void ClearLinks();
+
+    //============================================================
+    //Setter
+    //============================================================
+    /// <summary>
     /// リンクの有効/無効を切り替え
     /// </summary>
     /// <param name="linkName">リンク名</param>
@@ -108,17 +122,9 @@ namespace Tako {
     /// <param name="offset">新しいオフセット</param>
     void SetLinkOffset(const std::string& linkName, const Vector3& offset);
 
-    /// <summary>
-    /// リンクを削除
-    /// </summary>
-    /// <param name="linkName">削除するリンク名</param>
-    void RemoveLink(const std::string& linkName);
-
-    /// <summary>
-    /// 全てのリンクを削除
-    /// </summary>
-    void ClearLinks();
-
+    //============================================================
+    //Getter
+    //============================================================
     /// <summary>
     /// リンクが存在するか確認
     /// </summary>
@@ -126,13 +132,9 @@ namespace Tako {
     /// <returns>存在する場合 true</returns>
     bool HasLink(const std::string& linkName) const;
 
-    /// <summary>
-    /// リンク数を取得
-    /// </summary>
-    /// <returns>リンクの総数</returns>
     size_t GetLinkCount() const { return links_.size(); }
 
-  private:
+  private: //非公開関数
     /// <summary>
     /// ボーンインデックスを検索してキャッシュ
     /// </summary>
@@ -140,12 +142,10 @@ namespace Tako {
     /// <returns>ボーンインデックス（見つからない場合-1）</returns>
     int32_t FindBoneIndex(const std::string& boneName);
 
-  private:
-    Model* model_; ///< 追跡対象のスケルタルアニメーションモデル
-
-    EmitterManager* emitterManager_; ///< エミッター管理システムへの参照
-
-    std::unordered_map<std::string, BoneEmitterLink> links_; ///< リンク名からリンク情報へのマップ
+  private: //メンバー変数
+    Model*                                           model_;           ///< 追跡対象のスケルタルアニメーションモデル
+    EmitterManager*                                  emitterManager_;  ///< エミッター管理システムへの参照
+    std::unordered_map<std::string, BoneEmitterLink> links_;           ///< リンク名からリンク情報へのマップ
   };
 
 } // namespace Tako

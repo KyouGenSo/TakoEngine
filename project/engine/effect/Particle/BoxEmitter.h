@@ -8,7 +8,7 @@ namespace Tako {
   /// </summary>
   class BoxEmitter : public GPUParticleEmitter
   {
-  public:
+  public: //メンバー関数
     /// <summary>
     /// コンストラクタ
     /// </summary>
@@ -49,6 +49,9 @@ namespace Tako {
     /// <returns>構築されたエミッター</returns>
     static std::shared_ptr<GPUParticleEmitter> CreateFromJSON(GPUParticle* particleSystem, const nlohmann::json& json);
 
+    //========================================
+    //Setter
+    //========================================
     /// <summary>
     /// 箱のサイズを設定
     /// </summary>
@@ -61,22 +64,11 @@ namespace Tako {
     /// <param name="rotation">回転角度</param>
     void SetRotation(const Vector3& rotation);
 
-    /// <summary>
-    /// 箱のサイズを取得
-    /// </summary>
-    /// <returns>サイズ</returns>
+    //========================================
+    //Getter
+    //========================================
     const Vector3& GetSize() const { return data_.boxSize; }
-
-    /// <summary>
-    /// 箱の回転を取得
-    /// </summary>
-    /// <returns>回転角度</returns>
     const Vector3& GetRotation() const { return data_.boxRotation; }
-
-    /// <summary>
-    /// エミッタータイプを取得
-    /// </summary>
-    /// <returns>エミッタータイプ</returns>
     EmitterType GetType() const override { return EmitterType::Box; }
   };
 

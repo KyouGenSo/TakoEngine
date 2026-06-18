@@ -21,7 +21,7 @@ namespace Tako {
   /// バインド先 Object3d の world 行列」を合成して更新される (非バインド時はオフセットのみ)。
   /// </remarks>
   class MeshEmitter : public GPUParticleEmitter {
-  public:
+  public: //メンバー関数
     /// <summary>
     /// コンストラクタ
     /// </summary>
@@ -68,11 +68,6 @@ namespace Tako {
     void UpdateEmission(float deltaTime) override;
 
     /// <summary>
-    /// エミッタータイプを取得
-    /// </summary>
-    [[nodiscard]] EmitterType GetType() const override { return EmitterType::Mesh; }
-
-    /// <summary>
     /// Object3d をバインドし、毎フレーム world 行列に追従させる
     /// </summary>
     /// <param name="obj3d">追従先 (非所有、ライフタイム責務は呼び出し側)</param>
@@ -83,47 +78,24 @@ namespace Tako {
     /// </summary>
     void UnbindObject3d() { boundObject3d_ = nullptr; }
 
-    /// <summary>
-    /// バインドされている Object3d ポインタを取得
-    /// </summary>
-    [[nodiscard]] Object3d* GetBoundObject3d() const { return boundObject3d_; }
-
-    /// <summary>
-    /// 参照中の Mesh ポインタを取得 (単一メッシュ時のみ非 null。集約モードでは null)
-    /// </summary>
-    [[nodiscard]] Mesh* GetMesh() const { return mesh_; }
-
-    /// <summary>
-    /// スポーン形状モデルのファイルパスを取得 (空=パスからの復元不可)。JSON 永続化用。
-    /// </summary>
-    [[nodiscard]] const std::string& GetSpawnModelPath() const { return spawnModelPath_; }
-
-    /// <summary>
-    /// スポーン形状モデルのファイルパスを設定 (CreateMeshEmitterFromModel で記録)。
-    /// </summary>
+    //=============================================
+    //Setter
+    //=============================================
     void SetSpawnModelPath(const std::string& path) { spawnModelPath_ = path; }
-
-    /// <summary>
-    /// ローカルオフセット回転を設定 (ラジアン Euler)
-    /// </summary>
     void SetOffsetRotation(const Vector3& rotation) { offsetRotation_ = rotation; }
-
-    /// <summary>
-    /// ローカルオフセット回転を取得 (ラジアン Euler)
-    /// </summary>
-    [[nodiscard]] const Vector3& GetOffsetRotation() const { return offsetRotation_; }
-
-    /// <summary>
-    /// ローカルオフセットスケールを設定
-    /// </summary>
     void SetOffsetScale(const Vector3& scale) { offsetScale_ = scale; }
 
-    /// <summary>
-    /// ローカルオフセットスケールを取得
-    /// </summary>
+    //=============================================
+    //Getter
+    //=============================================
+    [[nodiscard]] EmitterType GetType() const override { return EmitterType::Mesh; }
+    [[nodiscard]] Object3d* GetBoundObject3d() const { return boundObject3d_; }
+    [[nodiscard]] Mesh* GetMesh() const { return mesh_; }
+    [[nodiscard]] const std::string& GetSpawnModelPath() const { return spawnModelPath_; }
+    [[nodiscard]] const Vector3& GetOffsetRotation() const { return offsetRotation_; }
     [[nodiscard]] const Vector3& GetOffsetScale() const { return offsetScale_; }
 
-  private:
+  private: //非公開関数
     /// <summary>
     /// スポーン形状の GPU リソースを構築 (ctor 本体)。model が null または mesh 0 個なら何もしない。
     /// </summary>
@@ -147,17 +119,18 @@ namespace Tako {
     /// </summary>
     void SyncMeshWorld();
 
-    Mesh* mesh_ = nullptr;               ///< 単一メッシュ時のみ非 null (スキニング/エディタ表示用、非所有)
-    Object3d* boundObject3d_ = nullptr;  ///< 追従先 Object3d (非所有)
-    std::string spawnModelPath_;         ///< JSON 永続化用 スポーン形状モデルのパス (空=パス復元不可)
+  private: //メンバー変数
+    Mesh*       mesh_           = nullptr;  ///< 単一メッシュ時のみ非 null (スキニング/エディタ表示用、非所有)
+    Object3d*   boundObject3d_  = nullptr;  ///< 追従先 Object3d (非所有)
+    std::string spawnModelPath_;            ///< JSON 永続化用 スポーン形状モデルのパス (空=パス復元不可)
 
-    Vector3 offsetRotation_ = { 0.0f, 0.0f, 0.0f }; ///< ローカルオフセット回転 (ラジアン Euler)
-    Vector3 offsetScale_ = { 1.0f, 1.0f, 1.0f };    ///< ローカルオフセットスケール
+    Vector3 offsetRotation_ = { 0.0f, 0.0f, 0.0f };  ///< ローカルオフセット回転 (ラジアン Euler)
+    Vector3 offsetScale_    = { 1.0f, 1.0f, 1.0f };  ///< ローカルオフセットスケール
 
-    // スポーン形状の GPU リソース (構築後 immutable、Clone 間で ComPtr 共有)
-    Microsoft::WRL::ComPtr<ID3D12Resource> areaPrefixSumResource_;    ///< 三角形面積 Prefix Sum (size = triCount + 1)
-    Microsoft::WRL::ComPtr<ID3D12Resource> aggregatedVertexResource_; ///< マルチプリミティブ集約頂点
-    Microsoft::WRL::ComPtr<ID3D12Resource> aggregatedIndexResource_;  ///< 集約インデックス (vertex base offset 加算済み)
+    //スポーン形状の GPU リソース (構築後 immutable、Clone 間で ComPtr 共有)
+    Microsoft::WRL::ComPtr<ID3D12Resource> areaPrefixSumResource_;     ///< 三角形面積 Prefix Sum (size = triCount + 1)
+    Microsoft::WRL::ComPtr<ID3D12Resource> aggregatedVertexResource_;  ///< マルチプリミティブ集約頂点
+    Microsoft::WRL::ComPtr<ID3D12Resource> aggregatedIndexResource_;   ///< 集約インデックス (vertex base offset 加算済み)
   };
 
 } // namespace Tako

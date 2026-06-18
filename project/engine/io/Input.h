@@ -34,7 +34,9 @@ namespace Tako {
     static constexpr WORD Start = XINPUT_GAMEPAD_START;              ///< Start ボタン
     static constexpr WORD Back = XINPUT_GAMEPAD_BACK;                ///< Back ボタン
 
+    /// <summary>
     /// デバッグ列挙用の全ボタン配列
+    /// </summary>
     static constexpr int COUNT = 14;
     static constexpr WORD ALL[COUNT] = {
         A, B, X, Y, DPad_Up, DPad_Down, DPad_Left, DPad_Right,
@@ -59,9 +61,10 @@ namespace Tako {
     Input(const Input&) = delete;
     Input& operator=(const Input&) = delete;
 
+  public: //構造体
     template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>; ///< ComPtr のエイリアス
 
-  public:
+  public: //メンバー関数
     /// <summary>
     /// インスタンスの取得
     /// </summary>
@@ -131,25 +134,6 @@ namespace Tako {
     bool ReleaseMouse(int button) const;
 
     /// <summary>
-    /// マウスの座標を取得
-    /// </summary>
-    /// <returns>スクリーン座標系でのマウス位置</returns>
-    Vector2 GetMousePos() const;
-
-    /// <summary>
-    /// マウスの座標を設定
-    /// </summary>
-    /// <param name="x">X 座標（スクリーン座標）</param>
-    /// <param name="y">Y 座標（スクリーン座標）</param>
-    void SetMousePos(int x, int y);
-
-    /// <summary>
-    /// ゲームパッドの接続状態を取得
-    /// </summary>
-    /// <returns>接続されている場合 true</returns>
-    bool IsConnect() const;
-
-    /// <summary>
     /// ゲームパッドの押下状態を取得
     /// </summary>
     /// <param name="button">ボタンビットフラグ（GamepadButton 定数を使用）</param>
@@ -183,6 +167,44 @@ namespace Tako {
     bool RStickInDeadZone() const;
 
     /// <summary>
+    /// ゲームパッドの振動を停止
+    /// </summary>
+    void StopVibration();
+
+    //============================================================
+    //Setter
+    //============================================================
+    /// <summary>
+    /// マウスの座標を設定
+    /// </summary>
+    /// <param name="x">X 座標（スクリーン座標）</param>
+    /// <param name="y">Y 座標（スクリーン座標）</param>
+    void SetMousePos(int x, int y);
+
+    /// <summary>
+    /// ゲームパッドの振動を設定
+    /// </summary>
+    /// <param name="leftMotor">左モーターの強度（0.0 ~ 1.0）</param>
+    /// <param name="rightMotor">右モーターの強度（0.0 ~ 1.0）</param>
+    /// <param name="duration">振動継続時間（秒）。0以下で無限に振動</param>
+    void SetVibration(float leftMotor, float rightMotor, float duration = 0.0f);
+
+    //============================================================
+    //Getter
+    //============================================================
+    /// <summary>
+    /// マウスの座標を取得
+    /// </summary>
+    /// <returns>スクリーン座標系でのマウス位置</returns>
+    Vector2 GetMousePos() const;
+
+    /// <summary>
+    /// ゲームパッドの接続状態を取得
+    /// </summary>
+    /// <returns>接続されている場合 true</returns>
+    bool IsConnect() const;
+
+    /// <summary>
     /// ゲームパッドの左スティックの値を取得
     /// </summary>
     /// <returns>正規化された左スティックの値（-1.0 ~ 1.0）</returns>
@@ -206,49 +228,31 @@ namespace Tako {
     /// <returns>正規化されたトリガー値（0.0 ~ 1.0）</returns>
     float GetRightTrigger() const;
 
-    /// <summary>
-    /// ゲームパッドの振動を設定
-    /// </summary>
-    /// <param name="leftMotor">左モーターの強度（0.0 ~ 1.0）</param>
-    /// <param name="rightMotor">右モーターの強度（0.0 ~ 1.0）</param>
-    /// <param name="duration">振動継続時間（秒）。0以下で無限に振動</param>
-    void SetVibration(float leftMotor, float rightMotor, float duration = 0.0f);
+  private: //メンバー変数
+    //基盤・入力デバイス
+    WinApp*                     winApp_         = nullptr;  ///< WinApp クラスのインスタンス
+    ComPtr<IDirectInput8>       directInput_;               ///< DirectInput オブジェクト
+    ComPtr<IDirectInputDevice8> keyboardDevice_;            ///< キーボードデバイス
+    ComPtr<IDirectInputDevice8> mouseDevice_;               ///< マウスデバイス
 
-    /// <summary>
-    /// ゲームパッドの振動を停止
-    /// </summary>
-    void StopVibration();
+    //マウス
+    DIMOUSESTATE mouseState_;           ///< マウスの状態
+    DIMOUSESTATE prevMouseState_;       ///< 前フレームのマウスの状態
+    POINT        mousePos_       = {};  ///< マウスの座標
 
-  private:
-    WinApp* winApp_ = nullptr; ///< WinApp クラスのインスタンス
+    //キーボード
+    BYTE keys_[256]     = {};  ///< キーボードの入力状態
+    BYTE prevKeys_[256] = {};  ///< 前フレームのキーボード入力状態
 
-    ComPtr<IDirectInput8> directInput_; ///< DirectInput オブジェクト
+    //ゲームパッド
+    XINPUT_STATE state_{};              ///< ゲームパッドの状態
+    WORD         prevButtons_ = 0;      ///< 前フレームのボタンビットマスク
+    bool         isConnected_ = false;  ///< ゲームパッドの接続状態
 
-    ComPtr<IDirectInputDevice8> keyboardDevice_; ///< キーボードデバイス
-
-    ComPtr<IDirectInputDevice8> mouseDevice_; ///< マウスデバイス
-
-    DIMOUSESTATE mouseState_; ///< マウスの状態
-
-    DIMOUSESTATE prevMouseState_; ///< 前フレームのマウスの状態
-
-    POINT mousePos_ = {}; ///< マウスの座標
-
-    BYTE keys_[256] = {}; ///< キーボードの入力状態
-
-    BYTE prevKeys_[256] = {}; ///< 前フレームのキーボード入力状態
-
-    //---------------------ゲームパッド---------------------//
-    XINPUT_STATE state_{}; ///< ゲームパッドの状態
-
-    WORD prevButtons_ = 0; ///< 前フレームのボタンビットマスク
-
-    bool isConnected_ = false; ///< ゲームパッドの接続状態
-
-    //---------------------振動制御---------------------//
-    float vibrationDuration_ = 0.0f; ///< 振動継続時間（秒）。0以下で無限
-    float vibrationTimer_ = 0.0f;    ///< 振動経過時間
-    bool isVibrating_ = false;       ///< 振動中フラグ
+    //振動制御
+    float vibrationDuration_ = 0.0f;   ///< 振動継続時間（秒）。0以下で無限
+    float vibrationTimer_    = 0.0f;   ///< 振動経過時間
+    bool  isVibrating_       = false;  ///< 振動中フラグ
 
   };
 

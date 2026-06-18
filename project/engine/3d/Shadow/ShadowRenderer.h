@@ -31,7 +31,21 @@ namespace Tako {
 
     friend struct std::default_delete<ShadowRenderer>;
 
-  public:
+  private: //構造体
+    /// <summary>
+    /// シャドウレンダリング用定数バッファ構造体
+    /// GPU 側に送信されるシャドウ設定パラメータ。
+    /// </summary>
+    struct ShadowConstants {
+      Matrix4x4 lightViewProj; ///< ライト空間のビュープロジェクション行列
+      float shadowBias;        ///< シャドウバイアス（深度比較の最小マージン）
+      int enableShadow;        ///< シャドウ有効フラグ（0=無効, 1=有効）
+      Vector2 shadowMapSize;   ///< シャドウマップ解像度（テクセルサイズ計算用）
+      float pcfKernelSize;     ///< PCF カーネルサイズ（フィルタリング品質）
+      float padding[1];        ///< 16バイトアライメント用パディング
+    };
+
+  public: //メンバー関数
     /// <summary>
     /// インスタンスの取得
     /// </summary>
@@ -43,18 +57,6 @@ namespace Tako {
     /// </summary>
     /// <param name="dx12">DirectX12基盤システムへのポインタ</param>
     void Initialize(DX12Basic* dx12);
-
-    /// <summary>
-    /// Light の参照を設定
-    /// </summary>
-    /// <param name="light">ライトシステムへのポインタ</param>
-    void SetLight(Light* light) { light_ = light; }
-
-    /// <summary>
-    /// Camera の参照を設定
-    /// </summary>
-    /// <param name="camera">カメラへのポインタ</param>
-    void SetCamera(Camera* camera) { camera_ = camera; }
 
     /// <summary>
     /// 更新処理（定数バッファの更新）
@@ -77,6 +79,17 @@ namespace Tako {
     void EndShadowPass();
 
     /// <summary>
+    /// ImGui でのデバッグ表示
+    /// </summary>
+    void DrawImGui();
+
+    //=======================================
+    //Setter
+    //=======================================
+    void SetLight(Light* light) { light_ = light; }
+    void SetCamera(Camera* camera) { camera_ = camera; }
+
+    /// <summary>
     /// シャドウレンダリング設定を適用
     /// </summary>
     void SetRenderState();
@@ -86,23 +99,7 @@ namespace Tako {
     /// </summary>
     void SetShadowForMainPass();
 
-    /// <summary>
-    /// シャドウレンダリング中かどうか
-    /// </summary>
-    /// <returns>シャドウレンダリング中の場合 true</returns>
-    bool IsRenderingShadow() const { return isRenderingShadow_; }
-
-    /// <summary>
-    /// シャドウの有効/無効を設定
-    /// </summary>
-    /// <param name="enabled">シャドウを有効にするか</param>
     void SetEnabled(bool enabled) { shadowEnabled_ = enabled; }
-
-    /// <summary>
-    /// シャドウが有効かどうか
-    /// </summary>
-    /// <returns>シャドウが有効な場合 true</returns>
-    bool IsEnabled() const { return shadowEnabled_; }
 
     /// <summary>
     /// シャドウ品質を設定
@@ -122,27 +119,19 @@ namespace Tako {
     /// <param name="kernelSize">PCF カーネルサイズ</param>
     void SetPCFKernelSize(int kernelSize);
 
-    /// <summary>
-    /// 最大シャドウ距離を設定
-    /// </summary>
-    /// <param name="distance">最大シャドウ距離</param>
     void SetMaxShadowDistance(float distance) { maxShadowDistance_ = distance; }
-
-    /// <summary>
-    /// 最大シャドウ距離を取得
-    /// </summary>
-    /// <returns>最大シャドウ距離</returns>
-    float GetMaxShadowDistance() const { return maxShadowDistance_; }
-
-    /// <summary>
-    /// ImGui でのデバッグ表示
-    /// </summary>
-    void DrawImGui();
 
     /// <summary>
     /// インスタンシング用シャドウレンダリング設定を適用
     /// </summary>
     void SetInstancedRenderState();
+
+    //=======================================
+    //Getter
+    //=======================================
+    bool IsRenderingShadow() const { return isRenderingShadow_; }
+    bool IsEnabled() const { return shadowEnabled_; }
+    float GetMaxShadowDistance() const { return maxShadowDistance_; }
 
   private:
     /// <summary>
@@ -166,45 +155,32 @@ namespace Tako {
     /// </summary>
     void CreateConstantBuffer();
 
-  private: // 定数構造
-    /// <summary>
-    /// シャドウレンダリング用定数バッファ構造体
-    /// GPU 側に送信されるシャドウ設定パラメータ。
-    /// </summary>
-    struct ShadowConstants {
-      Matrix4x4 lightViewProj; ///< ライト空間のビュープロジェクション行列
-      float shadowBias;        ///< シャドウバイアス（深度比較の最小マージン）
-      int enableShadow;        ///< シャドウ有効フラグ（0=無効, 1=有効）
-      Vector2 shadowMapSize;   ///< シャドウマップ解像度（テクセルサイズ計算用）
-      float pcfKernelSize;     ///< PCF カーネルサイズ（フィルタリング品質）
-      float padding[1];        ///< 16バイトアライメント用パディング
-    };
-    ShadowConstants* shadowConstantData_ = nullptr; ///< 定数バッファのマップ済みポインタ
-
   private:
-    DX12Basic* dx12_ = nullptr;          ///< DirectX12基盤システムへの参照
-    std::unique_ptr<ShadowMap> shadowMap_;     ///< シャドウマップ管理クラスへのポインタ
-    Light* light_ = nullptr;             ///< ライトシステムへの参照（ライト位置・方向取得用）
-    Camera* camera_ = nullptr;           ///< カメラへの参照（視錐台カリング用）
+    ShadowConstants* shadowConstantData_ = nullptr;  ///< 定数バッファのマップ済みポインタ
+
+    DX12Basic*                 dx12_      = nullptr;  ///< DirectX12基盤システムへの参照
+    std::unique_ptr<ShadowMap> shadowMap_;            ///< シャドウマップ管理クラスへのポインタ
+    Light*                     light_     = nullptr;  ///< ライトシステムへの参照（ライト位置・方向取得用）
+    Camera*                    camera_    = nullptr;  ///< カメラへの参照（視錐台カリング用）
 
     Microsoft::WRL::ComPtr<ID3D12RootSignature> shadowRootSignature_;  ///< 通常シャドウ描画用ルートシグネチャ
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> shadowPipelineState_;   ///< 通常シャドウ描画用パイプラインステート
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> shadowPipelineState_;  ///< 通常シャドウ描画用パイプラインステート
 
-    Microsoft::WRL::ComPtr<ID3D12RootSignature> shadowInstancedRootSignature_; ///< インスタンシングシャドウ描画用ルートシグネチャ
+    Microsoft::WRL::ComPtr<ID3D12RootSignature> shadowInstancedRootSignature_;  ///< インスタンシングシャドウ描画用ルートシグネチャ
     Microsoft::WRL::ComPtr<ID3D12PipelineState> shadowInstancedPipelineState_;  ///< インスタンシングシャドウ描画用パイプラインステート
 
-    Microsoft::WRL::ComPtr<ID3D12Resource> shadowConstantBuffer_; ///< シャドウパラメータ用定数バッファ
+    Microsoft::WRL::ComPtr<ID3D12Resource> shadowConstantBuffer_;  ///< シャドウパラメータ用定数バッファ
 
-    bool shadowEnabled_ = true;              ///< シャドウ有効/無効フラグ
-    float shadowBias_ = 0.0001f;             ///< 深度比較の最小マージン（数値誤差吸収用のごく小さい固定値）
+    bool  shadowEnabled_ = true;     ///< シャドウ有効/無効フラグ
+    float shadowBias_    = 0.0001f;  ///< 深度比較の最小マージン（数値誤差吸収用のごく小さい固定値）
 
-    float maxShadowDistance_ = 50.0f;        ///< 影を表示する最大距離（カメラからの距離）
+    float maxShadowDistance_ = 50.0f;  ///< 影を表示する最大距離（カメラからの距離）
 
-    bool isRenderingShadow_ = false;         ///< 現在シャドウパス中かどうかのフラグ
+    bool isRenderingShadow_ = false;  ///< 現在シャドウパス中かどうかのフラグ
 
-    D3D12_CPU_DESCRIPTOR_HANDLE savedRTVHandle_; ///< 保存された元のレンダーターゲットビューハンドル
-    D3D12_CPU_DESCRIPTOR_HANDLE savedDSVHandle_; ///< 保存された元の深度ステンシルビューハンドル
-    bool hasSavedRenderTargets_ = false;     ///< レンダーターゲットが保存されているかのフラグ
+    D3D12_CPU_DESCRIPTOR_HANDLE savedRTVHandle_;                 ///< 保存された元のレンダーターゲットビューハンドル
+    D3D12_CPU_DESCRIPTOR_HANDLE savedDSVHandle_;                 ///< 保存された元の深度ステンシルビューハンドル
+    bool                        hasSavedRenderTargets_ = false;  ///< レンダーターゲットが保存されているかのフラグ
   };
 
 } // namespace Tako

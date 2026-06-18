@@ -20,21 +20,11 @@ namespace Tako {
 /// BehaviorTreeEditor の初期化設定。
 /// </summary>
 struct EditorConfig {
-  /// BT 関連 JSON の配置ディレクトリ。存在しない場合は Initialize で自動生成。
-  std::string btJsonDir = "resources/Json/BT/";
-
-  /// 初期ロードするツリーのファイル名 (拡張子付き、btJsonDir 配下)。空なら初回ロードしない。
-  /// 各ツリーには "_{treeName}_layout.json" の layout が自動でペアリングされる。
-  std::string initialTreeFile = "";
-
-  /// メインエディタウィンドウの ImGui ウィンドウ名 (imgui.ini 位置/サイズの保存キー)。
-  std::string windowName = "Behavior Tree Editor";
-
-  /// ノードインスペクタウィンドウの ImGui ウィンドウ名。
-  std::string nodeInspectorName = "Node Inspector##BTE";
-
-  /// imgui-node-editor の Canvas 名 (SettingsFile 互換のため変更可)。
-  std::string canvasName = "Behavior Tree Editor Canvas";
+  std::string btJsonDir         = "resources/Json/BT/";           ///< BT 関連 JSON の配置ディレクトリ。存在しない場合は Initialize で自動生成。
+  std::string initialTreeFile   = "";                             ///< 初期ロードするツリーのファイル名 (拡張子付き、btJsonDir 配下)。空なら初回ロードしない。各ツリーには "_{treeName}_layout.json" の layout が自動でペアリングされる。
+  std::string windowName        = "Behavior Tree Editor";         ///< メインエディタウィンドウの ImGui ウィンドウ名 (imgui.ini 位置/サイズの保存キー)。
+  std::string nodeInspectorName = "Node Inspector##BTE";          ///< ノードインスペクタウィンドウの ImGui ウィンドウ名。
+  std::string canvasName        = "Behavior Tree Editor Canvas";  ///< imgui-node-editor の Canvas 名 (SettingsFile 互換のため変更可)。
 };
 
 /// <summary>
@@ -43,7 +33,7 @@ struct EditorConfig {
 /// ノード型は BTNodeRegistry に事前登録する必要がある。
 /// </summary>
 class BehaviorTreeEditor {
-public:
+public: //メンバー関数
   /// <summary>
   /// コンストラクタ。Initialize() を別途呼ぶこと。
   /// </summary>
@@ -74,10 +64,6 @@ public:
   /// エディタの終了処理。imgui-node-editor のコンテキストを破棄する。
   /// </summary>
   void Finalize();
-
-  void SetVisible(bool visible) { isVisible_ = visible; }
-
-  bool IsVisible() const { return isVisible_; }
 
   /// <summary>
   /// JSON ファイルからツリーを読み込み (ノード・リンク復元)。
@@ -137,14 +123,6 @@ public:
   std::vector<std::string> ListAvailableTrees() const;
 
   /// <summary>
-  /// 現在編集中のツリー名を取得。
-  /// </summary>
-  /// <returns>ツリー名 (空ならデフォルト)</returns>
-  const std::string& GetCurrentTreeName() const { return currentTreeName_; }
-
-  bool HasUnsavedChanges() const { return hasUnsavedChanges_; }
-
-  /// <summary>
   /// 実行時ツリーを構築 (BehaviorTree::SetRootNode に渡す用)。
   /// ルートノードから再帰的に runtimeNode を組み立てる。
   /// </summary>
@@ -162,32 +140,62 @@ public:
   /// </summary>
   void Clear();
 
-private:
+  //=========================================
+  //Setter
+  //=========================================
+  void SetVisible(bool visible) { isVisible_ = visible; }
+
+  //=========================================
+  //Getter
+  //=========================================
+  bool IsVisible() const { return isVisible_; }
+  const std::string& GetCurrentTreeName() const { return currentTreeName_; }
+  bool HasUnsavedChanges() const { return hasUnsavedChanges_; }
+
+private: //非公開関数
   //--- 描画系 ---
   void DrawNodes();
+  /// <summary>
   /// 単一ノードの描画 (ピン・タイトル・実行中ハイライト含む)
+  /// </summary>
   void DrawNode(const EditorNode& node);
   void DrawLinks();
   void DrawPin(const EditorPin& pin);
+  /// <summary>
   /// ノード作成 UI を含むツールバー描画
+  /// </summary>
   void DrawToolbar();
+  /// <summary>
   /// 右クリックコンテキストメニュー描画
+  /// </summary>
   void DrawContextMenu();
+  /// <summary>
   /// 選択ノードのインスペクター描画 (パラメータ編集)
+  /// </summary>
   void DrawNodeInspector();
 
   //--- インタラクション処理 ---
+  /// <summary>
   /// リンク作成イベント処理 (循環参照チェック含む)
+  /// </summary>
   void HandleLinkCreation();
+  /// <summary>
   /// ノード/リンク削除イベント処理
+  /// </summary>
   void HandleDeletion();
 
   //--- ノード操作 ---
+  /// <summary>
   /// ノード生成 (自動 ID 割り当て)
+  /// </summary>
   void CreateNode(const std::string& nodeType, const ImVec2& position);
+  /// <summary>
   /// 指定 ID でノード生成 (JSON ロード復元用)
+  /// </summary>
   int CreateNodeWithId(int nodeId, const std::string& nodeType, const ImVec2& position);
+  /// <summary>
   /// リンク作成ヘルパー
+  /// </summary>
   bool CreateLink(int sourceNodeId, int targetNodeId);
 
   //--- 検索ヘルパー ---
@@ -198,19 +206,31 @@ private:
   const EditorPin* FindPinById(int pinId) const;
 
   //--- ツリー構築・解析 ---
+  /// <summary>
   /// 入力リンクを持たないノード (ルート) を探す
+  /// </summary>
   int FindRootNodeId() const;
+  /// <summary>
   /// 再帰的にランタイムツリーを構築
+  /// </summary>
   void BuildRuntimeTreeRecursive(int nodeId, BTNodePtr& outNode);
+  /// <summary>
   /// 循環参照チェック (BFS)
+  /// </summary>
   bool HasCyclicDependency(int startNodeId, int endNodeId) const;
+  /// <summary>
   /// 指定ノードの子ノード ID 一覧取得
+  /// </summary>
   std::vector<int> GetChildNodeIds(int parentNodeId) const;
 
   //--- パラメータ保存/復元 ---
+  /// <summary>
   /// ノードのパラメータを JSON に抽出
+  /// </summary>
   nlohmann::json ExtractNodeParameters(const EditorNode& node);
+  /// <summary>
   /// JSON からノードのパラメータを適用
+  /// </summary>
   void ApplyNodeParameters(EditorNode& node, const nlohmann::json& params);
 
   //--- マルチツリー: ファイルパス組み立てヘルパー ---
@@ -233,69 +253,43 @@ private:
   /// </summary>
   void RebuildEditorContext();
 
-private:
-  // 注入された初期化設定
-  EditorConfig config_;
+private: //メンバー変数
+  EditorConfig config_;  ///< 注入された初期化設定
 
-  // imgui-node-editor のエディタコンテキスト
-  ed::EditorContext* editorContext_ = nullptr;
-  // imgui-node-editor の設定 (SettingsFile 等)
-  std::unique_ptr<ed::Config> editorConfig_;
+  ed::EditorContext*          editorContext_ = nullptr;  ///< imgui-node-editor のエディタコンテキスト
+  std::unique_ptr<ed::Config> editorConfig_;             ///< imgui-node-editor の設定 (SettingsFile 等)
 
-  // エディタ上のノード一覧
-  std::vector<EditorNode> nodes_;
-  // エディタ上のリンク一覧
-  std::vector<EditorLink> links_;
-  // エディタ上のピン一覧
-  std::vector<EditorPin> pins_;
+  std::vector<EditorNode> nodes_;  ///< エディタ上のノード一覧
+  std::vector<EditorLink> links_;  ///< エディタ上のリンク一覧
+  std::vector<EditorPin>  pins_;   ///< エディタ上のピン一覧
 
-  // ID カウンタ (ノード: 10000 番台で他エディタと分離)
-  int nextNodeId_ = 10000;
-  // ID カウンタ (リンク: 30000 番台)
-  int nextLinkId_ = 30000;
-  // ID カウンタ (ピン: 20000 番台)
-  int nextPinId_ = 20000;
+  int nextNodeId_ = 10000;  ///< ID カウンタ (ノード: 10000 番台で他エディタと分離)
+  int nextLinkId_ = 30000;  ///< ID カウンタ (リンク: 30000 番台)
+  int nextPinId_  = 20000;  ///< ID カウンタ (ピン: 20000 番台)
 
-  bool isVisible_ = false;
-  // 初回フレームフラグ (ed::SetNodePosition でノード位置を反映する 1 フレーム限定スイッチ)。
-  // LoadFromJSON や CreateNode 後にも true に戻す。
-  bool firstFrame_ = true;
+  bool isVisible_  = false;
+  bool firstFrame_ = true;   ///< 初回フレームフラグ (ed::SetNodePosition でノード位置を反映する 1 フレーム限定スイッチ)。LoadFromJSON や CreateNode 後にも true に戻す。
 
-  // 次の ed::End 前に ed::NavigateToContent() を呼んでビューを全ノードに合わせるフラグ。
-  // 初回起動・LoadFromJSON 後に true。ナビゲート完了後 false に戻す。
-  bool pendingNavigateToContent_ = true;
-  // ハイライト中のノード ID (-1 ならハイライトなし)
-  int highlightedNodeId_ = -1;
-  float highlightStartTime_ = 0.0f;
-  // 現在選択中のノード ID (インスペクター連動)
-  int selectedNodeId_ = -1;
+  bool  pendingNavigateToContent_ = true;  ///< 次の ed::End 前に ed::NavigateToContent() を呼んでビューを全ノードに合わせるフラグ。初回起動・LoadFromJSON 後に true。ナビゲート完了後 false に戻す。
+  int   highlightedNodeId_        = -1;    ///< ハイライト中のノード ID (-1 ならハイライトなし)
+  float highlightStartTime_       = 0.0f;
+  int   selectedNodeId_           = -1;    ///< 現在選択中のノード ID (インスペクター連動)
 
-  // ランタイムノードからエディタ ID への逆引きマップ
-  std::unordered_map<BTNode*, int> runtimeNodeToEditorId_;
+  std::unordered_map<BTNode*, int> runtimeNodeToEditorId_;  ///< ランタイムノードからエディタ ID への逆引きマップ
 
-  // 次フレームで ed::SetNodePosition を呼びたいノード位置の予約リスト。
-  // Add Node 直後の新規ノードのみ追加し、適用後クリアする。
-  // LoadFromJSON では使わない (SettingsFile からの復元を優先する)。
-  std::vector<std::pair<int, ImVec2>> pendingNodePositions_;
+  std::vector<std::pair<int, ImVec2>> pendingNodePositions_;  ///< 次フレームで ed::SetNodePosition を呼びたいノード位置の予約リスト。Add Node 直後の新規ノードのみ追加し、適用後クリアする。LoadFromJSON では使わない (SettingsFile からの復元を優先する)。
 
   //--- マルチツリー管理状態 ---
 
-  // 現在編集中のツリー名 (拡張子なし、例: "MainTree")
-  std::string currentTreeName_;
+  std::string currentTreeName_;  ///< 現在編集中のツリー名 (拡張子なし、例: "MainTree")
 
-  // 未保存変更フラグ (CreateNode/DeleteNode/CreateLink 等で true、Save/Load で false)
-  bool hasUnsavedChanges_ = false;
+  bool hasUnsavedChanges_ = false;  ///< 未保存変更フラグ (CreateNode/DeleteNode/CreateLink 等で true、Save/Load で false)
 
-  // SwitchTree で未保存変更検出時に表示する確認モーダルのトリガー
-  bool showUnsavedChangesModal_ = false;
+  bool showUnsavedChangesModal_ = false;  ///< SwitchTree で未保存変更検出時に表示する確認モーダルのトリガー
 
-  // SwitchTree 未保存確認モーダル経由で切替予定のツリー名
-  std::string pendingSwitchTarget_;
+  std::string pendingSwitchTarget_;  ///< SwitchTree 未保存確認モーダル経由で切替予定のツリー名
 
-  // 次回 Update 冒頭で ed::EditorContext を再作成するフラグ。
-  // SettingsFile (= _{treeName}_layout.json) をツリーに合わせて切り替えるため、
-  // LoadTree/SwitchTree 直後に立てる。
-  bool pendingRebuildEditorContext_ = false;
+  bool pendingRebuildEditorContext_ = false;  ///< 次回 Update 冒頭で ed::EditorContext を再作成するフラグ。SettingsFile (= _{treeName}_layout.json) をツリーに合わせて切り替えるため、LoadTree/SwitchTree 直後に立てる。
 };
 
 } // namespace Tako

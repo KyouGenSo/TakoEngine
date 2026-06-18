@@ -17,30 +17,35 @@ namespace Tako {
   /// デバッグ UI の統合管理クラス。シーンヒエラルキー、インスペクター、コンソール、パフォーマンスモニターなどを提供
   /// </summary>
   class DebugUIManager {
-  public:
-    // ログタイプ
+  public: //構造体
+    /// <summary>
+    /// ログタイプ
+    /// </summary>
     enum class LogType {
       Info,
       Warning,
       Error
     };
 
-    // ログ構造体
+    /// <summary>
+    /// ログ構造体
+    /// </summary>
     struct LogEntry {
       LogType type;
       std::string message;
       std::string timestamp;
     };
 
-    // ゲームオブジェクトデバッグ情報
+    /// <summary>
+    /// ゲームオブジェクトデバッグ情報
+    /// </summary>
     struct GameObjectDebugInfo {
-      std::string name;                    // オブジェクト名
-      std::function<void()> drawImGuiFunc; // DrawImGui 関数
+      std::string           name;           ///< オブジェクト名
+      std::function<void()> drawImGuiFunc;  ///< DrawImGui 関数
     };
 
   private:
-    // シングルトン
-    static std::unique_ptr<DebugUIManager> instance_;
+    static std::unique_ptr<DebugUIManager> instance_;  ///< シングルトン
     DebugUIManager() = default;
     ~DebugUIManager() = default;
 
@@ -50,9 +55,7 @@ namespace Tako {
     DebugUIManager(const DebugUIManager&) = delete;
     DebugUIManager& operator=(const DebugUIManager&) = delete;
 
-  private:
-
-  public:
+  public: //メンバー関数
     /// <summary>
     /// インスタンス取得
     /// </summary>
@@ -92,12 +95,6 @@ namespace Tako {
     void ClearLogs();
 
     /// <summary>
-    /// ログリストを取得
-    /// </summary>
-    /// <returns>ログエントリーのリスト</returns>
-    const std::vector<LogEntry>& GetLogs() const { return consoleLogs_; }
-
-    /// <summary>
     /// ゲームオブジェクトを登録
     /// </summary>
     /// <param name="name">オブジェクト名</param>
@@ -115,12 +112,20 @@ namespace Tako {
     /// </summary>
     void ClearGameObjects();
 
-    /// <summary>
-    /// ウィンドウの表示状態を設定
-    /// </summary>
-    /// <param name="windowName">ウィンドウ名</param>
-    /// <param name="visible">表示フラグ</param>
+    //============================================================
+    //Setter
+    //============================================================
     void SetWindowVisible(const std::string& windowName, bool visible);
+    void SetSceneName(const std::string& sceneName) { currentSceneName_ = sceneName; }
+    void SetEmitterManager(class EmitterManager* emitterManager) { emitterManager_ = emitterManager; }
+    void SetForceFieldManager(class ForceFieldManager* forceFieldManager) { forceFieldManager_ = forceFieldManager; }
+    void SetEndFlagPtr(bool* pEndFlag) { pEndFlag_ = pEndFlag; }
+    void SetDebugFlagPtr(bool* pIsDebug) { pIsDebug_ = pIsDebug; }
+
+    //============================================================
+    //Getter
+    //============================================================
+    const std::vector<LogEntry>& GetLogs() const { return consoleLogs_; }
 
     /// <summary>
     /// ウィンドウの表示状態を取得
@@ -138,31 +143,9 @@ namespace Tako {
     /// <returns>カーソルがゲーム描画領域上にある場合 true</returns>
     bool IsCursorOverGameView() const;
 
-    /// <summary>
-    /// シーン名を設定
-    /// </summary>
-    /// <param name="sceneName">シーン名</param>
-    void SetSceneName(const std::string& sceneName) { currentSceneName_ = sceneName; }
-
-    /// <summary>
-    /// シーン名を取得
-    /// </summary>
-    /// <returns>現在のシーン名</returns>
     const std::string& GetSceneName() const { return currentSceneName_; }
 
-    /// <summary>
-    /// EmitterManager を設定
-    /// </summary>
-    /// <param name="emitterManager">EmitterManager ポインタ</param>
-    void SetEmitterManager(class EmitterManager* emitterManager) { emitterManager_ = emitterManager; }
-
-    /// <summary>
-    /// ForceFieldManager を設定（パーティクルエディタの ForceField タブ Save/Load UI で利用）
-    /// </summary>
-    /// <param name="forceFieldManager">ForceFieldManager ポインタ</param>
-    void SetForceFieldManager(class ForceFieldManager* forceFieldManager) { forceFieldManager_ = forceFieldManager; }
-
-  private:
+  private: //非公開関数
     /// <summary>
     /// メインメニューバーを描画
     /// </summary>
@@ -257,84 +240,66 @@ namespace Tako {
     /// <returns>タイムスタンプ文字列</returns>
     std::string GetCurrentTimestamp();
 
-  private:
-    // コンソールログ
+  private: //メンバー変数
+
+    //コンソールログ
     std::vector<LogEntry> consoleLogs_;
-    int maxConsoleLogs_ = 1000;
-    bool showInfo_ = true;
-    bool showWarning_ = true;
-    bool showError_ = true;
-    bool autoScroll_ = true;
+    int                   maxConsoleLogs_ = 1000;
+    bool                  showInfo_       = true;
+    bool                  showWarning_    = true;
+    bool                  showError_      = true;
+    bool                  autoScroll_     = true;
 
-    // ウィンドウ表示フラグ
-    std::unordered_map<std::string, bool> windowVisibility_;
+    std::unordered_map<std::string, bool> windowVisibility_;  ///< ウィンドウ表示フラグ
 
-    // 直近フレームでゲーム画像上にカーソルがあったか（DrawGameViewport で更新）
-    bool isGameViewportHovered_ = false;
+    bool isGameViewportHovered_ = false;  ///< 直近フレームでゲーム画像上にカーソルがあったか（DrawGameViewport で更新）
 
-    // ゲームオブジェクト情報
+    //ゲームオブジェクト情報
     std::vector<GameObjectDebugInfo> gameObjects_;
-    int selectedObjectIndex_ = -1;  // 選択されたオブジェクトのインデックス
+    int                              selectedObjectIndex_ = -1;  ///< 選択されたオブジェクトのインデックス
 
-    // パフォーマンス計測
+    //パフォーマンス計測
     float fpsHistory_[100] = { 0 };
-    int fpsHistoryIndex_ = 0;
+    int   fpsHistoryIndex_ = 0;
 
-    // 現在のシーン名
-    std::string currentSceneName_ = "Unknown";
+    std::string currentSceneName_ = "Unknown";  ///< 現在のシーン名
 
-    // アプリケーション終了フラグへのポインタ
-    bool* pEndFlag_ = nullptr;
+    bool* pEndFlag_ = nullptr;  ///< アプリケーション終了フラグへのポインタ
 
-  public:
-    /// <summary>
-    /// 終了フラグポインタを設定
-    /// </summary>
-    /// <param name="pEndFlag">終了フラグへのポインタ</param>
-    void SetEndFlagPtr(bool* pEndFlag) { pEndFlag_ = pEndFlag; }
+    bool* pIsDebug_ = nullptr;  ///< デバッグカメラ有効フラグへのポインタ
 
-    /// <summary>
-    /// デバッグフラグポインタを設定
-    /// </summary>
-    /// <param name="pIsDebug">デバッグフラグへのポインタ</param>
-    void SetDebugFlagPtr(bool* pIsDebug) { pIsDebug_ = pIsDebug; }
+    //シーン遷移 UI 用
+    char sceneNameBuffer_[128] = "";  ///< シーン名入力バッファ
 
-  private:
-    // デバッグカメラ有効フラグへのポインタ
-    bool* pIsDebug_ = nullptr;
+    //パーティクルエディター用
+    class EmitterManager* emitterManager_            = nullptr;
+    int                   selectedEmitterIndex_      = -1;
+    char                  newEmitterNameBuffer_[128] = "";
+    char                  presetNameBuffer_[128]     = "";
+    char                  loadPresetBuffer_[128]     = "";
+    bool                  showPresetManager_         = false;
 
-    // シーン遷移 UI 用
-    char sceneNameBuffer_[128] = "";  // シーン名入力バッファ
-
-    // パーティクルエディター用
-    class EmitterManager* emitterManager_ = nullptr;
-    int selectedEmitterIndex_ = -1;
-    char newEmitterNameBuffer_[128] = "";
-    char presetNameBuffer_[128] = "";
-    char loadPresetBuffer_[128] = "";
-    bool showPresetManager_ = false;
-
-    // グループ管理用
-    int selectedGroupIndex_ = -1;
+    //グループ管理用
+    int  selectedGroupIndex_      = -1;
     char newGroupNameBuffer_[128] = "";
 
-    // フォースフィールド管理用
-    class ForceFieldManager* forceFieldManager_ = nullptr;
-    int selectedForceFieldIndex_ = -1;
-    char ffPresetSaveBuffer_[128] = "";
-    char ffPresetLoadBuffer_[128] = "";
+    //フォースフィールド管理用
+    class ForceFieldManager* forceFieldManager_       = nullptr;
+    int                      selectedForceFieldIndex_ = -1;
+    char                     ffPresetSaveBuffer_[128] = "";
+    char                     ffPresetLoadBuffer_[128] = "";
 
-    // パーティクル可視化設定
-    bool showEmitterShapes_ = false;        ///< エミッター形状の表示ON/OFF
-    bool showForceFieldRadius_ = false;     ///< フォースフィールド影響半径の表示ON/OFF
-    bool showForceFieldDirection_ = false;  ///< フォースフィールド方向表示ON/OFF
-    Vector4 emitterColorSphere_   = { 0.0f, 1.0f, 0.0f, 1.0f }; ///< 球エミッター色（緑）
-    Vector4 emitterColorBox_      = { 0.0f, 0.5f, 1.0f, 1.0f }; ///< 箱エミッター色（青）
-    Vector4 emitterColorTriangle_ = { 1.0f, 1.0f, 0.0f, 1.0f }; ///< 三角形エミッター色（黄）
-    Vector4 forceFieldRadiusColor_    = { 1.0f, 0.5f, 0.0f, 0.5f }; ///< フォースフィールド半径色（オレンジ）
-    Vector4 forceFieldDirectionColor_ = { 1.0f, 0.0f, 0.0f, 1.0f }; ///< フォースフィールド方向色（赤）
-    float forceFieldArrowLength_ = 2.0f;   ///< フォースフィールド矢印の長さ
-    float forceFieldArrowHeadSize_ = 0.3f;  ///< フォースフィールド矢印の先端サイズ
+    //パーティクル可視化設定
+    bool    showEmitterShapes_        = false;                       ///< エミッター形状の表示ON/OFF
+    bool    showForceFieldRadius_     = false;                       ///< フォースフィールド影響半径の表示ON/OFF
+    bool    showForceFieldDirection_  = false;                       ///< フォースフィールド方向表示ON/OFF
+    Vector4 emitterColorSphere_       = { 0.0f, 1.0f, 0.0f, 1.0f };  ///< 球エミッター色（緑）
+    Vector4 emitterColorBox_          = { 0.0f, 0.5f, 1.0f, 1.0f };  ///< 箱エミッター色（青）
+    Vector4 emitterColorTriangle_     = { 1.0f, 1.0f, 0.0f, 1.0f };  ///< 三角形エミッター色（黄）
+    Vector4 forceFieldRadiusColor_    = { 1.0f, 0.5f, 0.0f, 0.5f };  ///< フォースフィールド半径色（オレンジ）
+    Vector4 forceFieldDirectionColor_ = { 1.0f, 0.0f, 0.0f, 1.0f };  ///< フォースフィールド方向色（赤）
+    float   forceFieldArrowLength_    = 2.0f;                        ///< フォースフィールド矢印の長さ
+    float   forceFieldArrowHeadSize_  = 0.3f;                        ///< フォースフィールド矢印の先端サイズ
   };
 
 } // namespace Tako

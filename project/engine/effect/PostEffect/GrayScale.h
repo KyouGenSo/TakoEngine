@@ -8,7 +8,7 @@ namespace Tako {
   /// </summary>
   class GrayScale : public IPostEffect
   {
-  public:
+  public: //メンバー関数
     /// <summary>
     /// 初期化
     /// </summary>
@@ -35,7 +35,7 @@ namespace Tako {
     /// </summary>
     void DrawImgui() override;
 
-  private:
+  private: //非公開関数
     /// <summary>
     /// ルートシグネチャを作成
     /// </summary>

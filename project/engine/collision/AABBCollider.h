@@ -9,14 +9,19 @@ namespace Tako {
   /// 軸平行境界ボックス(Axis-Aligned Bounding Box)の衝突判定を行うコライダー
   /// </summary>
   class AABBCollider : public Collider {
-  private:
-    Vector3 offset_ = { 0.0f, 0.0f, 0.0f };  ///< ローカル座標系でのオフセット
-    Vector3 size_ = { 1.0f, 1.0f, 1.0f };  ///< ボックスのサイズ（幅、高さ、奥行き）
-
-  public:
+  public: //メンバー関数
     AABBCollider() = default;
     virtual ~AABBCollider() = default;
 
+    //===================================
+    //Setter
+    //===================================
+    void SetOffset(const Vector3& offset) { offset_ = offset; }
+    void SetSize(const Vector3& size) { size_ = size; }
+
+    //===================================
+    //Getter
+    //===================================
     /// <summary>
     /// AABB の中心座標を取得（ワールド座標系）
     /// </summary>
@@ -29,29 +34,13 @@ namespace Tako {
     /// <returns>AABB 構造体</returns>
     AABB GetAABB() const;
 
-    /// <summary>
-    /// ローカルオフセットを設定
-    /// </summary>
-    /// <param name="offset">オフセット値</param>
-    void SetOffset(const Vector3& offset) { offset_ = offset; }
-
-    /// <summary>
-    /// ローカルオフセットを取得
-    /// </summary>
-    /// <returns>オフセット値</returns>
     const Vector3& GetOffset() const { return offset_; }
-
-    /// <summary>
-    /// AABB のサイズを設定
-    /// </summary>
-    /// <param name="size">サイズ（幅、高さ、奥行き）</param>
-    void SetSize(const Vector3& size) { size_ = size; }
-
-    /// <summary>
-    /// AABB のサイズを取得
-    /// </summary>
-    /// <returns>サイズ（幅、高さ、奥行き）</returns>
     const Vector3& GetSize() const { return size_; }
+
+  private: //メンバー変数
+    //形状
+    Vector3 offset_ = { 0.0f, 0.0f, 0.0f };  ///< ローカル座標系でのオフセット
+    Vector3 size_   = { 1.0f, 1.0f, 1.0f };  ///< ボックスのサイズ（幅、高さ、奥行き）
   };
 
 } // namespace Tako

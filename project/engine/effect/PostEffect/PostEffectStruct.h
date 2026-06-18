@@ -14,8 +14,8 @@ namespace Tako {
   /// </summary>
   struct RenderTexture {
     Microsoft::WRL::ComPtr<ID3D12Resource> resource;
-    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;
-    uint32_t srvIndex;
+    D3D12_CPU_DESCRIPTOR_HANDLE            rtvHandle;
+    uint32_t                               srvIndex;
   };
 
   /// <summary>
@@ -24,11 +24,11 @@ namespace Tako {
   /// </summary>
   struct VignetteParam
   {
-    float power;
-    float range;       ///< 0.0〜1.0
-    float padding[2];  ///< 16バイトアライメント用
-    Vector3 color;     ///< RGB
-    float padding2;
+    float   power;
+    float   range;       ///< 0.0〜1.0
+    float   padding[2];  ///< 16バイトアライメント用
+    Vector3 color;       ///< RGB
+    float   padding2;
   };
 
   /// <summary>
@@ -37,26 +37,26 @@ namespace Tako {
   /// </summary>
   struct BloomParam
   {
-    float intensity;
-    float threshold;   ///< 高輝度抽出のしきい値
-    float sigma;       ///< ガウシアンブラーのシグマ
-    int kernelSize;
-    Vector2 direction; ///< ブラー方向
-    int padding1;
-    int padding2;
+    float   intensity;
+    float   threshold;   ///< 高輝度抽出のしきい値
+    float   sigma;       ///< ガウシアンブラーのシグマ
+    int     kernelSize;
+    Vector2 direction;   ///< ブラー方向
+    int     padding1;
+    int     padding2;
   };
 
   struct NewBloomParam
   {
-    float intensity;
-    float threshold;
-    float sigma;
+    float   intensity;
+    float   threshold;
+    float   sigma;
     Vector2 direction;
     Vector2 texelSize;
-    int sampleCount;
-    int iteration;
-    int padding3;
-    int padding4;
+    int     sampleCount;
+    int     iteration;
+    int     padding3;
+    int     padding4;
   };
 
   struct HighLumExtrcatParam
@@ -66,8 +66,8 @@ namespace Tako {
 
   struct GaussianBlurParam
   {
-    float sigma;
-    int kernelSize;
+    float   sigma;
+    int     kernelSize;
     Vector2 direction;
   };
 
@@ -86,7 +86,7 @@ namespace Tako {
   struct FogParam
   {
     Vector4 color;
-    float density;
+    float   density;
   };
 
   /// <summary>
@@ -96,7 +96,7 @@ namespace Tako {
   struct RadialBlurParam
   {
     Vector2 center;       ///< ブラー中心（スクリーン空間0.0〜1.0）
-    float blurWidth;
+    float   blurWidth;
     int32_t sampleCount;  ///< サンプリング数（多いほど高品質）
   };
 
@@ -115,10 +115,10 @@ namespace Tako {
   /// </summary>
   struct RGBSplitParam
   {
-    Vector2 redOffset;   ///< R チャンネルのオフセット（ピクセル単位）
-    Vector2 greenOffset; ///< G チャンネルのオフセット（ピクセル単位）
-    Vector2 blueOffset;  ///< B チャンネルのオフセット（ピクセル単位）
-    float intensity;     ///< エフェクトの全体強度（0.0〜1.0）
+    Vector2 redOffset;    ///< R チャンネルのオフセット（ピクセル単位）
+    Vector2 greenOffset;  ///< G チャンネルのオフセット（ピクセル単位）
+    Vector2 blueOffset;   ///< B チャンネルのオフセット（ピクセル単位）
+    float   intensity;    ///< エフェクトの全体強度（0.0〜1.0）
   };
 
   struct LuminanceOutlineParam
@@ -129,7 +129,7 @@ namespace Tako {
   struct DepthOutlineParam
   {
     Matrix4x4 projectionInverse;
-    float outlineThickness;
+    float     outlineThickness;
   };
 
   /// <summary>
@@ -138,10 +138,10 @@ namespace Tako {
   /// </summary>
   struct DissolveParam
   {
-    float threshold;      ///< 溶解のしきい値（0.0〜1.0）
-    float edgeThickness;  ///< 縁取りの太さ
-    float padding[2];
-    Vector4 edgeColor;    ///< RGBA
+    float   threshold;      ///< 溶解のしきい値（0.0〜1.0）
+    float   edgeThickness;  ///< 縁取りの太さ
+    float   padding[2];
+    Vector4 edgeColor;      ///< RGBA
   };
 
   /// <summary>
@@ -159,14 +159,14 @@ namespace Tako {
   /// </summary>
   struct HalfToneParam
   {
-    float dotSize;          ///< ドットのサイズ（大きいほど粗い）
-    float contrast;
-    float angle;            ///< ドットグリッドの回転角度（ラジアン）
-    int32_t dotPattern;     ///< 0=円, 1=四角, 2=ダイヤモンド
-    Vector2 screenSize;     ///< スクリーン解像度（ピクセル）
-    int32_t colorMode;      ///< 0=モノクロ, 1=CMYK 風
-    float threshold;        ///< 明暗の閾値
-    float padding;
+    float   dotSize;     ///< ドットのサイズ（大きいほど粗い）
+    float   contrast;
+    float   angle;       ///< ドットグリッドの回転角度（ラジアン）
+    int32_t dotPattern;  ///< 0=円, 1=四角, 2=ダイヤモンド
+    Vector2 screenSize;  ///< スクリーン解像度（ピクセル）
+    int32_t colorMode;   ///< 0=モノクロ, 1=CMYK 風
+    float   threshold;   ///< 明暗の閾値
+    float   padding;
   };
 
   using EffectParam = std::variant<

@@ -8,7 +8,7 @@ namespace Tako {
   /// </summary>
   class Fog : public IPostEffect
   {
-  public:
+  public: //メンバー関数
     /// <summary>
     /// 初期化
     /// </summary>
@@ -42,13 +42,12 @@ namespace Tako {
     /// <returns>設定成功の場合 true</returns>
     bool SetGenericParam(const EffectParam& param) override;
 
-    /// <summary>
-    /// フォグパラメータを設定
-    /// </summary>
-    /// <param name="param">フォグパラメータ</param>
+    //=================================
+    //Setter
+    //=================================
     void SetParam(const FogParam& param);
 
-  private:
+  private: //非公開関数
     /// <summary>
     /// ルートシグネチャを作成
     /// </summary>
@@ -64,12 +63,12 @@ namespace Tako {
     /// </summary>
     void CreateCBV();
 
-  private:
+  private: //メンバー変数
 
     ComPtr<ID3D12Resource> fogParamResource_;
     ComPtr<ID3D12Resource> cameraResource_;
-    FogParam* fogData_ = nullptr;
-    CameraForGPU* cameraData_ = nullptr;
+    FogParam*              fogData_          = nullptr;
+    CameraForGPU*          cameraData_       = nullptr;
 
   };
 

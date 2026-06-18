@@ -10,7 +10,7 @@ namespace Tako {
   /// 終了判定は Policy に応じて切り替える。
   /// </summary>
   class BTParallel : public BTComposite {
-  public:
+  public: //構造体
     /// <summary>
     /// 終了判定ポリシー。
     /// </summary>
@@ -34,6 +34,7 @@ namespace Tako {
       MainChild = 2
     };
 
+  public: //メンバー関数
     /// <summary>
     /// コンストラクタ。
     /// </summary>
@@ -53,10 +54,6 @@ namespace Tako {
     /// ノードのリセット。並列状態キャッシュもクリアする。
     /// </summary>
     void Reset() override;
-
-    void SetPolicy(Policy policy) { policy_ = policy; }
-
-    Policy GetPolicy() const { return policy_; }
 
     /// <summary>
     /// JSON からパラメータを適用 (policy: "AllSuccess" / "AnySuccess" / "MainChild")。
@@ -78,12 +75,19 @@ namespace Tako {
     bool DrawImGui() override;
 #endif
 
-  private:
-    Policy policy_;
+    //===========================
+    //Setter
+    //===========================
+    void SetPolicy(Policy policy) { policy_ = policy; }
 
-    // 各子ノードの最新ステータス (初回 Execute 時に children_.size() に合わせて初期化)。
-    // 一度 Success/Failure になった子は、再 Execute されずに状態を保持する (ポリシー判定用)。
-    std::vector<BTNodeStatus> childStatuses_;
+    //===========================
+    //Getter
+    //===========================
+    Policy GetPolicy() const { return policy_; }
+
+  private: //メンバー変数
+    Policy                    policy_;         ///< ポリシー
+    std::vector<BTNodeStatus> childStatuses_;  ///< 各子ノードの最新ステータス (初回 Execute 時に children_.size() に合わせて初期化)。一度 Success/Failure になった子は再 Execute されずに状態を保持する (ポリシー判定用)
   };
 
 } // namespace Tako

@@ -12,7 +12,7 @@ namespace Tako {
   /// 連続選択防止のため、前回成功した子が先頭に来た場合は他要素とスワップする。
   /// </summary>
   class BTRandomSelector : public BTComposite {
-  public:
+  public: //メンバー関数
     BTRandomSelector();
 
     virtual ~BTRandomSelector() = default;
@@ -29,23 +29,18 @@ namespace Tako {
     /// </summary>
     void Reset() override;
 
-  private:
+  private: //非公開関数
     /// <summary>
     /// 子ノードのインデックスをシャッフル。Fisher-Yates アルゴリズム使用。
     /// </summary>
     void ShuffleIndices();
 
-  private:
-    std::vector<size_t> shuffledIndices_;
-
-    // 現在のシャッフル済みインデックス位置 (Running 状態の継続用)
-    size_t currentShuffledIdx_ = 0;
-
-    // シャッフルが必要かどうか (新しい選択サイクル開始時に true)
-    bool needsShuffle_ = true;
-
-    // 前回成功した子ノードのインデックス (連続選択防止用)
-    std::optional<size_t> lastSuccessIdx_;
+  private: //メンバー変数
+    //シャッフル状態
+    std::vector<size_t>   shuffledIndices_;
+    size_t                currentShuffledIdx_ = 0;     ///< 現在のシャッフル済みインデックス位置 (Running 状態の継続用)
+    bool                  needsShuffle_       = true;  ///< シャッフルが必要かどうか (新しい選択サイクル開始時に true)
+    std::optional<size_t> lastSuccessIdx_;             ///< 前回成功した子ノードのインデックス (連続選択防止用)
   };
 
 } // namespace Tako

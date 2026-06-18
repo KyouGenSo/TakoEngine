@@ -8,7 +8,7 @@ namespace Tako {
   /// </summary>
   class Dissolve : public IPostEffect
   {
-  public:
+  public: //メンバー関数
     /// <summary>
     /// 初期化
     /// </summary>
@@ -42,21 +42,16 @@ namespace Tako {
     /// <returns>設定成功の場合 true</returns>
     bool SetGenericParam(const EffectParam& param) override;
 
-    /// <summary>
-    /// ディゾルブパラメータを設定
-    /// </summary>
-    /// <param name="param">ディゾルブパラメータ</param>
+    //============================================
+    //Setter
+    //============================================
     void SetParam(const DissolveParam& param);
 
-    /// <summary>
-    /// 背景テクスチャの SRV インデックスを設定
-    /// </summary>
-    /// <param name="srvIndex">SRV インデックス</param>
     void SetBaseTextureSrvIndex(uint32_t srvIndex) {
       baseTexSrvIndex_ = srvIndex;
     }
 
-  private:
+  private: //非公開関数
     /// <summary>
     /// ルートシグネチャを作成
     /// </summary>
@@ -72,11 +67,11 @@ namespace Tako {
     /// </summary>
     void CreateCBV();
 
-  private:
+  private: //メンバー変数
     ComPtr<ID3D12Resource> cBufferResource_;
-    DissolveParam* cBufferData_ = nullptr;
+    DissolveParam*         cBufferData_     = nullptr;
 
-    uint32_t baseTexSrvIndex_ = 0; // 背景テクスチャの SRV インデックス
+    uint32_t baseTexSrvIndex_ = 0;  ///< 背景テクスチャの SRV インデックス
 
   };
 

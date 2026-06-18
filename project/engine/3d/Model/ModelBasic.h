@@ -13,7 +13,7 @@ namespace Tako {
   /// </summary>
   class ModelBasic
   {
-  public:
+  public: //メンバー関数
     /// <summary>
     /// 初期化
     /// </summary>
@@ -24,39 +24,20 @@ namespace Tako {
     /// </summary>
     void SetSkinningCSSetting();
 
-    //-----------------------------------------Getter-----------------------------------------//
-    /// <summary>
-    /// DirectX12基盤を取得
-    /// </summary>
-    /// <returns>DX12Basic ポインタ</returns>
-    DX12Basic* GetDX12Basic() { return m_dx12_; }
-
-    /// <summary>
-    /// ディレクトリフォルダ名を取得
-    /// </summary>
-    /// <returns>ディレクトリフォルダ名</returns>
-    const std::string& GetDirectoryFolderName() const { return directoryFolderName_; }
-
-    /// <summary>
-    /// モデルフォルダ名を取得
-    /// </summary>
-    /// <returns>モデルフォルダ名</returns>
-    const std::string& GetModelFolderName() const { return modelFolderName_; }
-
-    //-----------------------------------------Setter-----------------------------------------//
-    /// <summary>
-    /// ディレクトリフォルダ名を設定
-    /// </summary>
-    /// <param name="directoryFolderName">ディレクトリフォルダ名</param>
+    //============================================================
+    //Setter
+    //============================================================
     void SetDirectoryFolderName(const std::string& directoryFolderName) { directoryFolderName_ = directoryFolderName; }
-
-    /// <summary>
-    /// モデルフォルダ名を設定
-    /// </summary>
-    /// <param name="modelFolderName">モデルフォルダ名</param>
     void SetModelFolderName(const std::string& modelFolderName) { modelFolderName_ = modelFolderName; }
 
-  private: // プライベートメンバー関数
+    //============================================================
+    //Getter
+    //============================================================
+    DX12Basic* GetDX12Basic() { return m_dx12_; }
+    const std::string& GetDirectoryFolderName() const { return directoryFolderName_; }
+    const std::string& GetModelFolderName() const { return modelFolderName_; }
+
+  private: //非公開関数
     /// <summary>
     /// ルートシグネチャの作成
     /// </summary>
@@ -67,16 +48,12 @@ namespace Tako {
     /// </summary>
     void CreateCSPSO();
 
-  private:
-    DX12Basic* m_dx12_;  ///< DirectX12基盤システムへのポインタ
-
-    std::string directoryFolderName_;  ///< ディレクトリフォルダパス
-
-    std::string modelFolderName_;  ///< モデルフォルダ名
-
-    Microsoft::WRL::ComPtr<ID3D12RootSignature> csRootSignature_;  ///< コンピュートシェーダー用ルートシグネチャ
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> csPipelineState_;  ///< コンピュートシェーダー用パイプラインステート
-
+  private: //メンバー変数
+    DX12Basic*                                  m_dx12_;               ///< DirectX12基盤システムへのポインタ
+    std::string                                 directoryFolderName_;  ///< ディレクトリフォルダパス
+    std::string                                 modelFolderName_;      ///< モデルフォルダ名
+    Microsoft::WRL::ComPtr<ID3D12RootSignature> csRootSignature_;      ///< コンピュートシェーダー用ルートシグネチャ
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> csPipelineState_;      ///< コンピュートシェーダー用パイプラインステート
   };
 
 } // namespace Tako

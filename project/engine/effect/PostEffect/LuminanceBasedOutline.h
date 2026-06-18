@@ -8,7 +8,7 @@ namespace Tako {
   /// </summary>
   class LuminanceBasedOutline : public IPostEffect
   {
-  public:
+  public: //メンバー関数
     /// <summary>
     /// 初期化
     /// </summary>
@@ -42,13 +42,12 @@ namespace Tako {
     /// <returns>設定成功の場合 true</returns>
     bool SetGenericParam(const EffectParam& param) override;
 
-    /// <summary>
-    /// 輝度ベースアウトラインパラメータを設定
-    /// </summary>
-    /// <param name="param">輝度アウトラインパラメータ</param>
+    //================================================
+    //Setter
+    //================================================
     void SetParam(const LuminanceOutlineParam& param);
 
-  private:
+  private: //非公開関数
     /// <summary>
     /// ルートシグネチャを作成
     /// </summary>
@@ -64,10 +63,10 @@ namespace Tako {
     /// </summary>
     void CreateCBV();
 
-  private:
+  private: //メンバー変数
 
     ComPtr<ID3D12Resource> cBufferResource_;
-    LuminanceOutlineParam* cBufferData_ = nullptr;
+    LuminanceOutlineParam* cBufferData_     = nullptr;
 
   };
 

@@ -22,14 +22,16 @@ namespace Tako {
   /// デバイス、コマンドキュー、スワップチェーン管理
   /// </summary>
   class DX12Basic {
-  public: // メンバー関数
+  public: //定数
+    static const uint32_t kMaxSRVCount;  ///< 最大 SRV 数（テクスチャ数）
 
+  public: //構造体
     /// <summary>
     /// ComPtr のエイリアス
     /// </summary>
     template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
 
-    static const uint32_t kMaxSRVCount;  ///< 最大 SRV 数（テクスチャ数）
+  public: //メンバー関数
 
     /// <summary>
     /// デストラクタ
@@ -59,7 +61,7 @@ namespace Tako {
 
     /// <summary>
     /// swapChain を設定
-    /// </summary> 
+    /// </summary>
     void SetSwapChain();
 
     /// <summary>
@@ -166,13 +168,6 @@ namespace Tako {
     void TransitionResourceWithTracking(ID3D12Resource* resource, D3D12_RESOURCE_STATES newState);
 
     /// <summary>
-    /// 現在のリソース状態を取得
-    /// </summary>
-    /// <param name="resource">対象リソース</param>
-    /// <returns>現在のリソース状態</returns>
-    D3D12_RESOURCE_STATES GetResourceState(ID3D12Resource* resource) const;
-
-    /// <summary>
     /// リソースの初期状態を設定（バリア遷移なし）
     /// </summary>
     /// <param name="resource">対象リソース</param>
@@ -212,34 +207,28 @@ namespace Tako {
       InitScissorRect();
     }
 
+    //============================================================
+    //Getter
+    //============================================================
     /// <summary>
-    /// デバイスの取得
+    /// 現在のリソース状態を取得
     /// </summary>
-    /// <returns>DirectX 12デバイス</returns>
+    /// <param name="resource">対象リソース</param>
+    /// <returns>現在のリソース状態</returns>
+    D3D12_RESOURCE_STATES GetResourceState(ID3D12Resource* resource) const;
+
     ID3D12Device* GetDevice() {
       return device_.Get();
     }
 
-    /// <summary>
-    /// コマンドリストの取得
-    /// </summary>
-    /// <returns>グラフィックスコマンドリスト</returns>
     ID3D12GraphicsCommandList* GetCommandList() {
       return commandList_.Get();
     }
 
-    /// <summary>
-    /// コマンドキューの取得
-    /// </summary>
-    /// <returns>コマンドキュー</returns>
     ID3D12CommandQueue* GetCommandQueue() {
       return commandQueue_.Get();
     }
 
-    /// <summary>
-    /// backBuffer の数の取得
-    /// </summary>
-    /// <returns>スワップチェインのバッファ数</returns>
     size_t GetSwapChainBufferCount() {
       return swapChainResources_.size();
     }
@@ -261,18 +250,10 @@ namespace Tako {
       return dsvHeap_->GetCPUDescriptorHandleForHeapStart();
     }
 
-    /// <summary>
-    /// 深度バッファのリソースの取得
-    ///	</summary>
-    /// <returns>深度ステンシルリソース</returns>
     ID3D12Resource* GetDepthStencilResource() {
       return depthStencilResource_.Get();
     }
 
-    /// <summary>
-    /// スワップチェインの取得
-    ///	</summary>
-    /// <returns>スワップチェイン</returns>
     IDXGISwapChain4* GetSwapChain() {
       return swapChain_.Get();
     }
@@ -286,22 +267,14 @@ namespace Tako {
       return rtvHandle_[backBufferIndex];
     }
 
-    /// <summary>
-    /// Viewport の取得
-    ///	</summary>
-    /// <returns>ビューポート</returns>
     D3D12_VIEWPORT GetViewport() {
       return viewport_;
     }
 
-    /// <summary>
-    /// ScissorRect の取得
-    ///	</summary>
-    /// <returns>シザリング矩形</returns>
     D3D12_RECT GetScissorRect() {
       return scissorRect_;
     }
-  private: // プライベートメンバー関数
+  private: //非公開関数
     /// <summary>
     /// device の初期化
     /// </summary>
@@ -402,7 +375,7 @@ namespace Tako {
     /// <param name="stateAfter">遷移後のリソース状態</param>
     void SetBackBufferBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
 
-  private: // メンバ変数
+  private: //メンバー変数
 
     std::chrono::steady_clock::time_point referenceTime_;  ///< 記録時間（FPS 制御用の基準時刻）
 

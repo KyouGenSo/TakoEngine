@@ -16,7 +16,7 @@ namespace Tako {
   /// </summary>
   class ForceFieldManager
   {
-  public:
+  public: //メンバー関数
     /// <summary>
     /// コンストラクタ
     /// </summary>
@@ -89,9 +89,9 @@ namespace Tako {
     /// </remarks>
     Vector3 EvaluateForceAt(const Vector3& pos, uint32_t mask = 0xFFFFFFFF) const;
 
-    //=============================================================
-    // GPUParticle への薄いラッパー（呼び出し側が GPUParticle を直接扱わなくて済むよう統一窓口を提供）
-    //=============================================================
+    //============================================================
+    //GPUParticle への薄いラッパー（呼び出し側が GPUParticle を直接扱わなくて済むよう統一窓口を提供）
+    //============================================================
 
     /// <summary>
     /// フォースフィールドを追加（GPUParticle への薄いラッパー）
@@ -117,12 +117,15 @@ namespace Tako {
     /// </remarks>
     void RemoveForceField(uint32_t index);
 
+    //============================================================
+    //Getter
+    //============================================================
     /// <summary>
     /// 現在登録されているフォースフィールド数
     /// </summary>
     size_t GetForceFieldCount() const;
 
-  private:
+  private: //非公開関数
     /// <summary>
     /// 単一フォースフィールドを JSON にシリアライズ
     /// </summary>
@@ -134,8 +137,7 @@ namespace Tako {
     /// <returns>必須キー（type, position）が揃っていれば true</returns>
     bool DeserializeForceFieldFromJSON(const nlohmann::json& json, ForceFieldData& outField) const;
 
-  private:
-
+  private: //メンバー変数
     GPUParticle* particleSystem_ = nullptr;
   };
 

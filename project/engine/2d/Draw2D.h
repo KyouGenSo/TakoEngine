@@ -23,8 +23,7 @@ namespace Tako {
   class Draw2D
   {
   private: // シングルトン設定
-    // インスタンス
-    static std::unique_ptr<Draw2D> instance_;
+    static std::unique_ptr<Draw2D> instance_;  ///< インスタンス
 
     Draw2D() = default;
     ~Draw2D() = default;
@@ -33,7 +32,7 @@ namespace Tako {
 
     friend struct std::default_delete<Draw2D>;
 
-  public: // 構造体
+  public: //構造体
     /// <summary>
     /// 頂点データ構造体
     /// </summary>
@@ -84,7 +83,7 @@ namespace Tako {
       D3D12_VERTEX_BUFFER_VIEW vertexBufferView;   ///< 頂点バッファビュー
     };
 
-  public: // メンバ関数
+  public: //メンバー関数
 
     /// <summary>
     /// インスタンスの取得
@@ -196,41 +195,20 @@ namespace Tako {
     /// </summary>
     void Reset();
 
-    // -----------------------------------Getters-----------------------------------//
-    /// <summary>
-    /// プロジェクションマトリックスを取得
-    /// </summary>
-    /// <returns>プロジェクション行列</returns>
-    const Matrix4x4& GetProjectionMatrix() const { return projectionMatrix_; }
-
-    /// <summary>
-    /// デバッグ状態を取得
-    /// </summary>
-    /// <returns>デバッグが有効な場合 true</returns>
-    bool GetDebug() const { return isDebug_; }
-
-
-    // -----------------------------------Setters-----------------------------------//
-    /// <summary>
-    /// プロジェクションマトリックスを設定
-    /// </summary>
-    /// <param name="projectionMatrix">設定するプロジェクション行列</param>
+    //=========================================================
+    //Setter
+    //=========================================================
     void SetProjectionMatrix(const Matrix4x4& projectionMatrix) { projectionMatrix_ = projectionMatrix; }
-
-    /// <summary>
-    /// カメラを設定
-    /// </summary>
-    /// <param name="camera">設定するカメラ</param>
     void SetCamera(Camera* camera) { m_camera_ = camera; }
-
-    /// <summary>
-    /// デバッグ状態を設定
-    /// </summary>
-    /// <param name="isDebug">デバッグフラグ</param>
     void SetDebug(bool isDebug) { isDebug_ = isDebug; }
 
+    //=========================================================
+    //Getter
+    //=========================================================
+    const Matrix4x4& GetProjectionMatrix() const { return projectionMatrix_; }
+    bool GetDebug() const { return isDebug_; }
 
-  private: // プライベートメンバ関数
+  private: //非公開関数
     /// <summary>
     /// ルートシグネチャの作成
     /// </summary>
@@ -268,48 +246,48 @@ namespace Tako {
     /// </summary>
     void CreateTransformMatData();
 
-  private: // メンバ変数
+  private: //メンバー変数
 
-    DX12Basic* m_dx12_; ///< DX12Basic クラスのインスタンス
+    DX12Basic* m_dx12_;  ///< DX12Basic クラスのインスタンス
 
-    Camera* m_camera_; ///< カメラ
+    Camera* m_camera_;  ///< カメラ
 
-    bool isDebug_; ///< デバッグフラグ
+    bool isDebug_;  ///< デバッグフラグ
 
-    const uint32_t kTriangleMaxCount = 30096; ///< 三角形の最大数
-    const uint32_t kVertexCountTriangle = 3; ///< 三角形の頂点数
+    const uint32_t kTriangleMaxCount    = 30096;  ///< 三角形の最大数
+    const uint32_t kVertexCountTriangle = 3;      ///< 三角形の頂点数
 
-    const uint32_t kBoxMaxCount = 30096; ///< 矩形の最大数
-    const uint32_t kVertexCountBox = 4; ///< 矩形の頂点数
-    const uint32_t kIndexCountBox = 6; ///< 矩形のインデックス数
+    const uint32_t kBoxMaxCount    = 30096;  ///< 矩形の最大数
+    const uint32_t kVertexCountBox = 4;      ///< 矩形の頂点数
+    const uint32_t kIndexCountBox  = 6;      ///< 矩形のインデックス数
 
-    const uint32_t kLineMaxCount = 100000; ///< 線の最大数
-    const uint32_t kVertexCountLine = 2; ///< 線の頂点数
+    const uint32_t kLineMaxCount    = 100000;  ///< 線の最大数
+    const uint32_t kVertexCountLine = 2;       ///< 線の頂点数
 
-    uint32_t triangleIndex_ = 0; ///< 三角形のインデクス
+    uint32_t triangleIndex_ = 0;  ///< 三角形のインデクス
 
-    uint32_t boxIndexIndex_ = 0; ///< 矩形のインデックスインデクス
-    uint32_t boxVertexIndex_ = 0; ///< 矩形の頂点インデクス
+    uint32_t boxIndexIndex_  = 0;  ///< 矩形のインデックスインデクス
+    uint32_t boxVertexIndex_ = 0;  ///< 矩形の頂点インデクス
 
-    uint32_t lineIndex_ = 0; ///< 線のインデクス
+    uint32_t lineIndex_ = 0;  ///< 線のインデクス
 
-    Matrix4x4 projectionMatrix_; ///< プロジェクション行列
+    Matrix4x4 projectionMatrix_;  ///< プロジェクション行列
 
-    Microsoft::WRL::ComPtr<ID3D12RootSignature> triangleRootSignature_; ///< 三角形用ルートシグネチャ
-    Microsoft::WRL::ComPtr<ID3D12RootSignature> lineRootSignature_; ///< 線用ルートシグネチャ
+    Microsoft::WRL::ComPtr<ID3D12RootSignature> triangleRootSignature_;  ///< 三角形用ルートシグネチャ
+    Microsoft::WRL::ComPtr<ID3D12RootSignature> lineRootSignature_;      ///< 線用ルートシグネチャ
 
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> trianglePipelineState_; ///< 三角形用パイプラインステート
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> linePipelineState_; ///< 線用パイプラインステート
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> trianglePipelineState_;  ///< 三角形用パイプラインステート
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> linePipelineState_;      ///< 線用パイプラインステート
 
-    Microsoft::WRL::ComPtr<ID3D12Resource> transformationMatrixBuffer_; ///< 座標変換行列バッファ
+    Microsoft::WRL::ComPtr<ID3D12Resource> transformationMatrixBuffer_;  ///< 座標変換行列バッファ
 
-    TransformationMatrix* transformationMatrixData_; ///< 座標変換行列データ
+    TransformationMatrix* transformationMatrixData_;  ///< 座標変換行列データ
 
-    std::unique_ptr<TriangleData> triangleData_; ///< 三角形データ
+    std::unique_ptr<TriangleData> triangleData_;  ///< 三角形データ
 
-    std::unique_ptr<BoxData> boxData_; ///< 矩形データ
+    std::unique_ptr<BoxData> boxData_;  ///< 矩形データ
 
-    std::unique_ptr<LineData> lineData_; ///< 線データ
+    std::unique_ptr<LineData> lineData_;  ///< 線データ
   };
 
 } // namespace Tako

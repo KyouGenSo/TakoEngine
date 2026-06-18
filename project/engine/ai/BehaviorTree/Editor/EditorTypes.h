@@ -14,51 +14,35 @@ namespace Tako {
 /// imgui-node-editor 上の 1 ノードに紐づく情報を保持する。
 /// </summary>
 struct EditorNode {
-  /// エディタ固有 ID (10000 番台)
-  int id;
-  /// エディタキャンバス上の位置
-  ImVec2 position;
-  std::string nodeType;
-  /// 表示名 (パレット名、ユーザーが変更可能)
-  std::string displayName;
-  /// 実際の実行時ノード (ランタイムインスタンス)
-  BTNodePtr runtimeNode;
-  /// 入力ピン ID 群 (親接続用、通常 1 個)
-  std::vector<int> inputPinIds;
-  /// 出力ピン ID 群 (子接続用、コンポジットなら 1 個以上)
-  std::vector<int> outputPinIds;
-  /// ノード描画色 (BTNodeRegistry の NodeMeta から取得)
-  ImVec4 color;
+  int              id;            ///< エディタ固有 ID (10000 番台)
+  ImVec2           position;      ///< エディタキャンバス上の位置
+  std::string      nodeType;
+  std::string      displayName;   ///< 表示名 (パレット名、ユーザーが変更可能)
+  BTNodePtr        runtimeNode;   ///< 実際の実行時ノード (ランタイムインスタンス)
+  std::vector<int> inputPinIds;   ///< 入力ピン ID 群 (親接続用、通常 1 個)
+  std::vector<int> outputPinIds;  ///< 出力ピン ID 群 (子接続用、コンポジットなら 1 個以上)
+  ImVec4           color;         ///< ノード描画色 (BTNodeRegistry の NodeMeta から取得)
 };
 
 /// <summary>
 /// エディタリンクデータ (ノード間の接続)。
 /// </summary>
 struct EditorLink {
-  /// リンク固有 ID (30000 番台)
-  int id;
-  /// 開始ピン ID (出力ピン側)
-  int startPinId;
-  /// 終了ピン ID (入力ピン側)
-  int endPinId;
-  /// 開始ノード ID
-  int startNodeId;
-  /// 終了ノード ID
-  int endNodeId;
+  int id;           ///< リンク固有 ID (30000 番台)
+  int startPinId;   ///< 開始ピン ID (出力ピン側)
+  int endPinId;     ///< 終了ピン ID (入力ピン側)
+  int startNodeId;  ///< 開始ノード ID
+  int endNodeId;    ///< 終了ノード ID
 };
 
 /// <summary>
 /// エディタピンデータ (ノードへの接続点)。
 /// </summary>
 struct EditorPin {
-  /// ピン固有 ID (20000 番台)
-  int id;
-  /// 所属ノード ID
-  int nodeId;
-  /// 入力ピン (true) か出力ピン (false) か
-  bool isInput;
-  /// ピン名 (表示用)
-  std::string name;
+  int         id;       ///< ピン固有 ID (20000 番台)
+  int         nodeId;   ///< 所属ノード ID
+  bool        isInput;  ///< 入力ピン (true) か出力ピン (false) か
+  std::string name;     ///< ピン名 (表示用)
 };
 
 } // namespace Tako
