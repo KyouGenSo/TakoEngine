@@ -104,6 +104,15 @@ public: //メンバー関数
   bool CreateNewTree(const std::string& treeName);
 
   /// <summary>
+  /// 既存ツリーを複製して新規ツリーを作成する。
+  /// 本体 json と layout json をペアで複製し、複製後そのツリーへ切り替える。
+  /// </summary>
+  /// <param name="sourceTreeName">複製元ツリー名 (拡張子なし)</param>
+  /// <param name="newTreeName">新規ツリー名 (拡張子なし)</param>
+  /// <returns>成功すれば true</returns>
+  bool CreateTreeFromCopy(const std::string& sourceTreeName, const std::string& newTreeName);
+
+  /// <summary>
   /// 指定ツリーのファイルを削除 (現在編集中のツリーは削除不可)。
   /// </summary>
   /// <param name="treeName">削除対象ツリー名</param>

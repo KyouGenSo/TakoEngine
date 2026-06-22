@@ -200,13 +200,42 @@ void BehaviorTreeEditor::DrawToolbar() {
 
   // 新規ツリー作成ポップアップ
   static char newTreeNameBuf[128] = "";
+  static int  newTreeMode = 0;       // 0 = Empty, 1 = Copy from existing
+  static int  copySourceIndex = 0;
   if (ImGui::BeginPopupModal("New Tree##popup", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
     ImGui::Text("Enter new tree name (no extension, no underscore prefix):");
     ImGui::InputText("##NewTreeName", newTreeNameBuf, sizeof(newTreeNameBuf));
+
+    ImGui::RadioButton("Empty##newmode", &newTreeMode, 0);
+    ImGui::SameLine();
+    ImGui::RadioButton("Copy from existing##newmode", &newTreeMode, 1);
+
+    if (newTreeMode == 1) {
+      if (copySourceIndex >= static_cast<int>(availableTrees.size())) copySourceIndex = 0;
+      const char* preview = availableTrees.empty() ? "(no trees)" : availableTrees[copySourceIndex].c_str();
+      ImGui::SetNextItemWidth(160);
+      if (ImGui::BeginCombo("Source##copysrc", preview)) {
+        for (int i = 0; i < static_cast<int>(availableTrees.size()); i++) {
+          bool sel = (copySourceIndex == i);
+          if (ImGui::Selectable(availableTrees[i].c_str(), sel)) copySourceIndex = i;
+          if (sel) ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+      }
+    }
+
     ImGui::Separator();
     if (ImGui::Button("Create##new")) {
       std::string name = newTreeNameBuf;
-      if (!name.empty() && CreateNewTree(name)) {
+      bool ok = false;
+      if (newTreeMode == 0) {
+        ok = !name.empty() && CreateNewTree(name);
+      }
+      else {
+        ok = !name.empty() && !availableTrees.empty()
+          && CreateTreeFromCopy(availableTrees[copySourceIndex], name);
+      }
+      if (ok) {
         newTreeNameBuf[0] = '\0';
         ImGui::CloseCurrentPopup();
       }
@@ -1263,6 +1292,43 @@ bool BehaviorTreeEditor::CreateNewTree(const std::string& treeName) {
   currentTreeName_ = treeName;
   pendingRebuildEditorContext_ = true;  // 新ツリー専用の layout ファイルへ切替
   return SaveToJSON(treePath);
+}
+
+bool BehaviorTreeEditor::CreateTreeFromCopy(const std::string& sourceTreeName, const std::string& newTreeName) {
+  if (newTreeName.empty() || newTreeName[0] == '_') {
+    DebugUIManager::GetInstance()->AddLog(
+      "[BehaviorTreeEditor] CreateTreeFromCopy: invalid name (empty or underscore-prefixed): " + newTreeName,
+      DebugUIManager::LogType::Error);
+    return false;
+  }
+  const std::string newPath = GetTreeFilePath(newTreeName);
+  if (std::filesystem::exists(newPath)) {
+    DebugUIManager::GetInstance()->AddLog(
+      "[BehaviorTreeEditor] CreateTreeFromCopy: file already exists: " + newPath,
+      DebugUIManager::LogType::Warning);
+    return false;
+  }
+  const std::string sourcePath = GetTreeFilePath(sourceTreeName);
+  if (!std::filesystem::exists(sourcePath)) {
+    DebugUIManager::GetInstance()->AddLog(
+      "[BehaviorTreeEditor] CreateTreeFromCopy: source not found: " + sourcePath,
+      DebugUIManager::LogType::Error);
+    return false;
+  }
+  std::error_code ec;
+  if (!std::filesystem::copy_file(sourcePath, newPath, ec)) {
+    DebugUIManager::GetInstance()->AddLog(
+      "[BehaviorTreeEditor] CreateTreeFromCopy: copy failed: " + ec.message(),
+      DebugUIManager::LogType::Error);
+    return false;
+  }
+  // layout ファイルも複製 
+  const std::string sourceLayout = GetLayoutFilePath(sourceTreeName);
+  if (std::filesystem::exists(sourceLayout)) {
+    std::error_code ecLayout;
+    std::filesystem::copy_file(sourceLayout, GetLayoutFilePath(newTreeName), ecLayout);
+  }
+  return LoadTree(newTreeName);  // 複製したツリーへ切替
 }
 
 bool BehaviorTreeEditor::DeleteTree(const std::string& treeName) {
