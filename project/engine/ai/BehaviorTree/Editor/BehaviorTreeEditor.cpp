@@ -373,7 +373,8 @@ void BehaviorTreeEditor::DrawToolbar() {
 }
 
 void BehaviorTreeEditor::DrawNodes() {
-  for (const auto& node : nodes_) {
+  for (auto& node : nodes_) {
+    node.position = ed::GetNodePosition(node.id);  // ドラッグ最新位置を同期
     DrawNode(node);
   }
 }
@@ -431,6 +432,13 @@ void BehaviorTreeEditor::DrawNode(const EditorNode& node) {
     ImVec2 barMin = ImGui::GetCursorScreenPos();
     ImVec2 barMax = ImVec2(barMin.x + nodeWidth, barMin.y + barHeight);
     drawList->AddRectFilled(barMin, barMax, IM_COL32(30, 30, 30, 255), 3.0f);
+  // ノードの順番番号表示
+    int childOrder = GetChildOrder(node.id);
+    if (childOrder > 0) {
+      std::string orderText = std::to_string(childOrder);
+      drawList->AddText(ImVec2(barMin.x + 6.0f, barMin.y + 4.0f),
+        IM_COL32(255, 220, 80, 255), orderText.c_str());
+    }
 
     ImGui::Dummy(ImVec2(nodeWidth, barHeight));
 
@@ -1072,7 +1080,55 @@ std::vector<int> BehaviorTreeEditor::GetChildNodeIds(int parentNodeId) const {
       childIds.push_back(link.endNodeId);
     }
   }
+  if (childIds.size() < 2) {
+    return childIds;
+  }
+
+  // 子の広がりが横長か縦長かを判定し、広い軸で並べる (横並び=左右順 / 縦並び=上下順)
+  bool first = true;
+  float minX = 0.0f, maxX = 0.0f, minY = 0.0f, maxY = 0.0f;
+  for (int id : childIds) {
+    const EditorNode* n = FindNodeById(id);
+    if (!n) continue;
+    if (first) {
+      minX = maxX = n->position.x;
+      minY = maxY = n->position.y;
+      first = false;
+    } else {
+      minX = std::min(minX, n->position.x);
+      maxX = std::max(maxX, n->position.x);
+      minY = std::min(minY, n->position.y);
+      maxY = std::max(maxY, n->position.y);
+    }
+  }
+  const bool horizontal = (maxX - minX) >= (maxY - minY);
+
+  std::stable_sort(childIds.begin(), childIds.end(),
+    [this, horizontal](int a, int b) {
+      const EditorNode* na = FindNodeById(a);
+      const EditorNode* nb = FindNodeById(b);
+      if (!na || !nb) return false;
+      const float pa = horizontal ? na->position.x : na->position.y;
+      const float pb = horizontal ? nb->position.x : nb->position.y;
+      if (pa != pb) return pa < pb;
+      return (horizontal ? na->position.y : na->position.x)
+           < (horizontal ? nb->position.y : nb->position.x);
+    });
   return childIds;
+}
+
+int BehaviorTreeEditor::GetChildOrder(int nodeId) const {
+  for (const auto& link : links_) {
+    if (link.endNodeId == nodeId) {
+      std::vector<int> siblings = GetChildNodeIds(link.startNodeId);
+      for (size_t i = 0; i < siblings.size(); ++i) {
+        if (siblings[i] == nodeId) {
+          return static_cast<int>(i) + 1;
+        }
+      }
+    }
+  }
+  return -1;
 }
 
 bool BehaviorTreeEditor::HasCyclicDependency(int startNodeId, int endNodeId) const {

@@ -231,6 +231,10 @@ private: //非公開関数
   /// 指定ノードの子ノード ID 一覧取得
   /// </summary>
   std::vector<int> GetChildNodeIds(int parentNodeId) const;
+  /// <summary>
+  /// 親内での実行順 (1 始まり)。ルートは -1
+  /// </summary>
+  int GetChildOrder(int nodeId) const;
 
   //--- パラメータ保存/復元 ---
   /// <summary>
