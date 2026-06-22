@@ -21,10 +21,10 @@ namespace Tako {
 /// </summary>
 struct EditorConfig {
   std::string btJsonDir         = "resources/Json/BT/";           ///< BT 関連 JSON の配置ディレクトリ。存在しない場合は Initialize で自動生成。
-  std::string initialTreeFile   = "";                             ///< 初期ロードするツリーのファイル名 (拡張子付き、btJsonDir 配下)。空なら初回ロードしない。各ツリーには "_{treeName}_layout.json" の layout が自動でペアリングされる。
+  std::string initialTreeFile   = "";                             ///< 初期ロードするツリーのファイル名 (拡張子付き、btJsonDir 配下)。空なら初回ロードしない。
   std::string windowName        = "Behavior Tree Editor";         ///< メインエディタウィンドウの ImGui ウィンドウ名 (imgui.ini 位置/サイズの保存キー)。
   std::string nodeInspectorName = "Node Inspector##BTE";          ///< ノードインスペクタウィンドウの ImGui ウィンドウ名。
-  std::string canvasName        = "Behavior Tree Editor Canvas";  ///< imgui-node-editor の Canvas 名 (SettingsFile 互換のため変更可)。
+  std::string canvasName        = "Behavior Tree Editor Canvas";  ///< imgui-node-editor の Canvas 名。
 };
 
 /// <summary>
@@ -105,7 +105,7 @@ public: //メンバー関数
 
   /// <summary>
   /// 既存ツリーを複製して新規ツリーを作成する。
-  /// 本体 json と layout json をペアで複製し、複製後そのツリーへ切り替える。
+  /// 本体 json を複製し、複製後そのツリーへ切り替える。
   /// </summary>
   /// <param name="sourceTreeName">複製元ツリー名 (拡張子なし)</param>
   /// <param name="newTreeName">新規ツリー名 (拡張子なし)</param>
@@ -249,25 +249,11 @@ private: //非公開関数
   /// </summary>
   std::string GetTreeFilePath(const std::string& treeName) const;
 
-  /// <summary>
-  /// ツリー対応 layout ファイル (imgui-node-editor SettingsFile) のフルパス:
-  /// "{btJsonDir}/_{treeName}_layout.json"。アンダースコア prefix により
-  /// ListAvailableTrees からは自動除外される。
-  /// </summary>
-  std::string GetLayoutFilePath(const std::string& treeName) const;
-
-  /// <summary>
-  /// imgui-node-editor の EditorContext を破棄して新しい SettingsFile (currentTreeName_ 連動)
-  /// で再作成。ツリー切替時にレイアウトファイルをペアで切り替えるために呼ぶ。
-  /// </summary>
-  void RebuildEditorContext();
-
 private: //メンバー変数
   EditorConfig config_;  ///< 注入された初期化設定
 
   ed::EditorContext*          editorContext_ = nullptr;  ///< imgui-node-editor のエディタコンテキスト
-  std::unique_ptr<ed::Config> editorConfig_;             ///< imgui-node-editor の設定 (SettingsFile 等)
-
+  std::unique_ptr<ed::Config> editorConfig_;             ///< imgui-node-editor の設定
   std::vector<EditorNode> nodes_;  ///< エディタ上のノード一覧
   std::vector<EditorLink> links_;  ///< エディタ上のリンク一覧
   std::vector<EditorPin>  pins_;   ///< エディタ上のピン一覧
@@ -276,8 +262,7 @@ private: //メンバー変数
   int nextLinkId_ = 30000;  ///< ID カウンタ (リンク: 30000 番台)
   int nextPinId_  = 20000;  ///< ID カウンタ (ピン: 20000 番台)
 
-  bool isVisible_  = false;
-  bool firstFrame_ = true;   ///< 初回フレームフラグ (ed::SetNodePosition でノード位置を反映する 1 フレーム限定スイッチ)。LoadFromJSON や CreateNode 後にも true に戻す。
+  bool isVisible_ = false;
 
   bool  pendingNavigateToContent_ = true;  ///< 次の ed::End 前に ed::NavigateToContent() を呼んでビューを全ノードに合わせるフラグ。初回起動・LoadFromJSON 後に true。ナビゲート完了後 false に戻す。
   int   highlightedNodeId_        = -1;    ///< ハイライト中のノード ID (-1 ならハイライトなし)
@@ -286,7 +271,7 @@ private: //メンバー変数
 
   std::unordered_map<BTNode*, int> runtimeNodeToEditorId_;  ///< ランタイムノードからエディタ ID への逆引きマップ
 
-  std::vector<std::pair<int, ImVec2>> pendingNodePositions_;  ///< 次フレームで ed::SetNodePosition を呼びたいノード位置の予約リスト。Add Node 直後の新規ノードのみ追加し、適用後クリアする。LoadFromJSON では使わない (SettingsFile からの復元を優先する)。
+  std::vector<std::pair<int, ImVec2>> pendingNodePositions_;  ///< 次フレームの ed::Begin 内で ed::SetNodePosition を呼ぶノード位置の予約リスト。
 
   //--- マルチツリー管理状態 ---
 
@@ -297,8 +282,6 @@ private: //メンバー変数
   bool showUnsavedChangesModal_ = false;  ///< SwitchTree で未保存変更検出時に表示する確認モーダルのトリガー
 
   std::string pendingSwitchTarget_;  ///< SwitchTree 未保存確認モーダル経由で切替予定のツリー名
-
-  bool pendingRebuildEditorContext_ = false;  ///< 次回 Update 冒頭で ed::EditorContext を再作成するフラグ。SettingsFile (= _{treeName}_layout.json) をツリーに合わせて切り替えるため、LoadTree/SwitchTree 直後に立てる。
 };
 
 } // namespace Tako

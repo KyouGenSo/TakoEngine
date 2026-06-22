@@ -33,15 +33,11 @@ void BehaviorTreeEditor::Initialize(const EditorConfig& config) {
   editorConfig_ = std::make_unique<ed::Config>();
   editorConfig_->NavigateButtonIndex = 1;        // マウス中ボタンでナビゲート
   editorConfig_->ContextMenuButtonIndex = 2;     // マウス右ボタンでコンテキストメニュー
+  editorConfig_->SettingsFile = nullptr;
 
   currentTreeName_ = config_.initialTreeFile.empty()
     ? "default"
     : std::filesystem::path(config_.initialTreeFile).stem().string();
-
-  // SettingsFile はヒープアロケート回避のため static にキャッシュ (Config が const char* で保持するため)
-  static std::string settingsFilePath;
-  settingsFilePath = GetLayoutFilePath(currentTreeName_);
-  editorConfig_->SettingsFile = settingsFilePath.c_str();
 
   editorContext_ = ed::CreateEditor(editorConfig_.get());
 
@@ -61,12 +57,6 @@ void BehaviorTreeEditor::Finalize() {
 }
 
 void BehaviorTreeEditor::Update() {
-  // ツリー切替時に SettingsFile を変える必要があるため EditorContext を再作成
-  if (pendingRebuildEditorContext_) {
-    RebuildEditorContext();
-    pendingRebuildEditorContext_ = false;
-  }
-
   if (!isVisible_) return;
 
   if (ImGui::Begin(config_.windowName.c_str(), &isVisible_)) {
@@ -112,10 +102,6 @@ void BehaviorTreeEditor::Update() {
     ed::SetCurrentEditor(nullptr);
 
     DrawNodeInspector();
-
-    if (firstFrame_) {
-      firstFrame_ = false;
-    }
   }
   ImGui::End();
 }
@@ -135,7 +121,6 @@ void BehaviorTreeEditor::Clear() {
   highlightedNodeId_ = -1;
   highlightStartTime_ = 0.0f;
   selectedNodeId_ = -1;
-  firstFrame_ = true;
   pendingNavigateToContent_ = true;
 }
 
@@ -851,6 +836,7 @@ bool BehaviorTreeEditor::LoadFromJSON(const std::string& filepath) {
         int newId = CreateNodeWithId(nextNodeId_++, nodeType, position);
         if (newId != -1) {
           oldToNewNodeIdMap[oldId] = newId;
+          pendingNodePositions_.emplace_back(newId, position);  // JSON 位置をロード時に ed:: へ適用 
 
           auto* node = FindNodeById(newId);
           if (node) {
@@ -890,9 +876,7 @@ bool BehaviorTreeEditor::LoadFromJSON(const std::string& filepath) {
       std::format("[BehaviorTreeEditor] Loaded {} nodes and {} links", nodes_.size(), links_.size()),
       DebugUIManager::LogType::Info);
 
-    // ロード直後のフレームで ed::SetNodePosition を確実に走らせるために firstFrame_ を立て直す。
-    // 加えてキャンバスのビューポートを全ノードに自動フォーカスする。
-    firstFrame_ = true;
+    // ロード直後にキャンバスのビューポートを全ノードへ自動フォーカス
     pendingNavigateToContent_ = true;
     hasUnsavedChanges_ = false;  // ロード直後は未保存状態をクリア
 
@@ -1229,36 +1213,8 @@ std::string BehaviorTreeEditor::GetTreeFilePath(const std::string& treeName) con
   return config_.btJsonDir + treeName + ".json";
 }
 
-std::string BehaviorTreeEditor::GetLayoutFilePath(const std::string& treeName) const {
-  // アンダースコア prefix + "_layout" サフィックスで ListAvailableTrees から自動除外される命名規則
-  return config_.btJsonDir + "_" + treeName + "_layout.json";
-}
-
-void BehaviorTreeEditor::RebuildEditorContext() {
-  // 既存 EditorContext を破棄
-  if (editorContext_) {
-    ed::SetCurrentEditor(editorContext_);
-    ed::DestroyEditor(editorContext_);
-    editorContext_ = nullptr;
-  }
-  // SettingsFile を currentTreeName_ 対応の layout ファイルで更新
-  // (毎回ヒープアロケートを避けるため static にキャッシュ。Config が SettingsFile への const char* を保持するため寿命管理が必要)
-  static std::string settingsFilePath;
-  settingsFilePath = GetLayoutFilePath(currentTreeName_);
-  if (!editorConfig_) {
-    editorConfig_ = std::make_unique<ed::Config>();
-    editorConfig_->NavigateButtonIndex = 1;
-    editorConfig_->ContextMenuButtonIndex = 2;
-  }
-  editorConfig_->SettingsFile = settingsFilePath.c_str();
-  // 新しい SettingsFile で EditorContext 再作成
-  editorContext_ = ed::CreateEditor(editorConfig_.get());
-}
-
 bool BehaviorTreeEditor::LoadTree(const std::string& treeName) {
-  // 先に currentTreeName_ を更新し、次フレームで対応する layout に切替
   currentTreeName_ = treeName;
-  pendingRebuildEditorContext_ = true;
   bool ok = LoadFromJSON(GetTreeFilePath(treeName));
   // hasUnsavedChanges_ は LoadFromJSON 内で false にされている
   return ok;
@@ -1290,7 +1246,6 @@ bool BehaviorTreeEditor::CreateNewTree(const std::string& treeName) {
   // 現在の編集状態をクリアし、新規ツリーを保存
   Clear();
   currentTreeName_ = treeName;
-  pendingRebuildEditorContext_ = true;  // 新ツリー専用の layout ファイルへ切替
   return SaveToJSON(treePath);
 }
 
@@ -1322,12 +1277,6 @@ bool BehaviorTreeEditor::CreateTreeFromCopy(const std::string& sourceTreeName, c
       DebugUIManager::LogType::Error);
     return false;
   }
-  // layout ファイルも複製 
-  const std::string sourceLayout = GetLayoutFilePath(sourceTreeName);
-  if (std::filesystem::exists(sourceLayout)) {
-    std::error_code ecLayout;
-    std::filesystem::copy_file(sourceLayout, GetLayoutFilePath(newTreeName), ecLayout);
-  }
   return LoadTree(newTreeName);  // 複製したツリーへ切替
 }
 
@@ -1339,15 +1288,11 @@ bool BehaviorTreeEditor::DeleteTree(const std::string& treeName) {
     return false;
   }
   const std::string treePath = GetTreeFilePath(treeName);
-  const std::string layoutPath = GetLayoutFilePath(treeName);
   std::error_code ec;
   bool ok = std::filesystem::remove(treePath, ec);
-  // layout ペアも削除 (存在しない・失敗しても無視 - ペア層は補助的)
-  std::error_code ecLayout;
-  std::filesystem::remove(layoutPath, ecLayout);
   if (ok) {
     DebugUIManager::GetInstance()->AddLog(
-      "[BehaviorTreeEditor] DeleteTree: removed tree " + treePath + " (+ paired layout if exists)",
+      "[BehaviorTreeEditor] DeleteTree: removed tree " + treePath,
       DebugUIManager::LogType::Info);
   }
   else {
@@ -1381,7 +1326,7 @@ std::vector<std::string> BehaviorTreeEditor::ListAvailableTrees() const {
     if (!entry.is_regular_file()) continue;
     if (entry.path().extension() != ".json") continue;
     std::string stem = entry.path().stem().string();
-    // アンダースコア prefix のファイル (例: _editor_layout.json) は予約名として除外
+    // アンダースコア prefix のファイルは予約名として除外
     if (stem.empty() || stem[0] == '_') continue;
     result.push_back(stem);
   }
