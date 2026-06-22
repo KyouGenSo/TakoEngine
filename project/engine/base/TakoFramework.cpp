@@ -145,19 +145,20 @@ namespace Tako {
 
     TextureManager::GetInstance()->Finalize();
 
+#ifdef _DEBUG
+    // ImGui は SrvManager の SRV index を保持するため SrvManager より先に破棄する
+    DebugUIManager::GetInstance()->Finalize();
+
+    imguiManager_->Shutdown();
+    imguiManager_.reset();
+#endif
+
     SrvManager::GetInstance()->Finalize();
 
     Audio::GetInstance()->Finalize();
 
     Input::GetInstance()->SetVibration(0.0f, 0.0f, 0.0f);
     Input::GetInstance()->Finalize();
-
-#ifdef _DEBUG
-    DebugUIManager::GetInstance()->Finalize();
-
-    imguiManager_->Shutdown();
-    imguiManager_.reset();
-#endif
 
     dx12_->Finalize();
     dx12_.reset();
