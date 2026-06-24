@@ -323,15 +323,15 @@ namespace Tako {
         continue;
       }
 
-      const Vector3 toParticle = pos - field.position;
-      const float dist = toParticle.Length();
+      const Vector3 toTarget = pos - field.position;
+      const float dist = toTarget.Length();
 
       // 影響半径外なら力を適用しない（radius == 0 は無限範囲）
       if (field.radius > 0.0f && dist > field.radius) {
         continue;
       }
 
-      // 距離減衰の計算（GPU 側と同一式 / 0除算回避）
+      // 距離減衰の計算（GPU 側と同じ）
       float attenuation = 1.0f;
       if (field.falloff > 0.0f && dist > 0.001f) {
         if (field.radius > 0.0f) {
@@ -360,7 +360,7 @@ namespace Tako {
       case ForceFieldType::Vortex: {
         // 渦: direction を回転軸として回転力を生成
         const Vector3 axis = field.direction.Normalize();
-        const Vector3 projected = toParticle - axis * toParticle.Dot(axis);
+        const Vector3 projected = toTarget - axis * toTarget.Dot(axis);
         const float projLen = projected.Length();
         if (projLen > 0.001f) {
           const Vector3 tangent = axis.Cross(projected / projLen);
@@ -372,14 +372,14 @@ namespace Tako {
       case ForceFieldType::Attract:
         // 吸引: フォース中心に向かう力
         if (dist > 0.001f) {
-          force = -toParticle.Normalize() * field.strength * attenuation;
+          force = -toTarget.Normalize() * field.strength * attenuation;
         }
         break;
 
       case ForceFieldType::Repel:
         // 反発: フォース中心から離れる力
         if (dist > 0.001f) {
-          force = toParticle.Normalize() * field.strength * attenuation;
+          force = toTarget.Normalize() * field.strength * attenuation;
         }
         break;
       }
@@ -466,7 +466,7 @@ namespace Tako {
       return true;
     }
     catch (const nlohJson::exception&) {
-      // 型不一致・out_of_range 等の予期しない例外を吸収（境界での防御）
+      // 型不一致・out_of_range 等の予期しない例外を吸収
       return false;
     }
   }
