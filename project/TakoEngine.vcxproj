@@ -204,6 +204,7 @@
     <ClCompile Include="engine\ai\BehaviorTree\Composites\BTSelector.cpp" />
     <ClCompile Include="engine\ai\BehaviorTree\Composites\BTRandomSelector.cpp" />
     <ClCompile Include="engine\ai\BehaviorTree\Composites\BTParallel.cpp" />
+    <ClCompile Include="engine\ai\BehaviorTree\Composites\BTOnce.cpp" />
     <ClCompile Include="engine\ai\BehaviorTree\Runtime\BTNodeRegistry.cpp" />
     <ClCompile Include="engine\ai\BehaviorTree\Runtime\BehaviorTree.cpp" />
     <ClCompile Include="engine\ai\BehaviorTree\Editor\BehaviorTreeEditor.cpp">
@@ -308,6 +309,7 @@
     <ClInclude Include="engine\ai\BehaviorTree\Composites\BTSelector.h" />
     <ClInclude Include="engine\ai\BehaviorTree\Composites\BTRandomSelector.h" />
     <ClInclude Include="engine\ai\BehaviorTree\Composites\BTParallel.h" />
+    <ClInclude Include="engine\ai\BehaviorTree\Composites\BTOnce.h" />
     <ClInclude Include="engine\ai\BehaviorTree\Runtime\BTNodeMeta.h" />
     <ClInclude Include="engine\ai\BehaviorTree\Runtime\BTNodeRegistry.h" />
     <ClInclude Include="engine\ai\BehaviorTree\Runtime\BehaviorTree.h" />

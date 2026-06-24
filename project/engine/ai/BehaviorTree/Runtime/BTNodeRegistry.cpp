@@ -3,6 +3,7 @@
 #include "BTSelector.h"
 #include "BTRandomSelector.h"
 #include "BTParallel.h"
+#include "BTOnce.h"
 
 namespace Tako {
 
@@ -39,6 +40,12 @@ namespace Tako {
         "Parallel",
         NodeCategory::Composite,
         NodeColor(0.4f, 0.7f, 0.4f, 1.0f),  // 緑系
+        true
+      });
+    RegisterNode<BTOnce>("BTOnce", NodeMeta{
+        "Once",
+        NodeCategory::Decorator,
+        NodeColor(0.8f, 0.8f, 0.3f, 1.0f),  // 黄系
         true
       });
   }

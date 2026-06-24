@@ -354,6 +354,9 @@
     <ClCompile Include="engine\ai\BehaviorTree\Composites\BTParallel.cpp">
       <Filter>ai\BehaviorTree\Composites</Filter>
     </ClCompile>
+    <ClCompile Include="engine\ai\BehaviorTree\Composites\BTOnce.cpp">
+      <Filter>ai\BehaviorTree\Composites</Filter>
+    </ClCompile>
     <ClCompile Include="engine\ai\BehaviorTree\Runtime\BTNodeRegistry.cpp">
       <Filter>ai\BehaviorTree\Runtime</Filter>
     </ClCompile>
@@ -654,6 +657,9 @@
       <Filter>ai\BehaviorTree\Composites</Filter>
     </ClInclude>
     <ClInclude Include="engine\ai\BehaviorTree\Composites\BTParallel.h">
+      <Filter>ai\BehaviorTree\Composites</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\ai\BehaviorTree\Composites\BTOnce.h">
       <Filter>ai\BehaviorTree\Composites</Filter>
     </ClInclude>
     <ClInclude Include="engine\ai\BehaviorTree\Runtime\BTNodeMeta.h">

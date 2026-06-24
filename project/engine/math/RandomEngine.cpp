@@ -9,7 +9,7 @@ namespace Tako {
   thread_local bool RandomEngine::initialized_ = false;
 
   RandomEngine::RandomEngine() {
-    // コンストラクタでは特に何もしない（初期化は遅延実行）
+
   }
 
   RandomEngine* RandomEngine::GetInstance() {
