@@ -24,7 +24,7 @@ namespace Tako {
     BTNodeStatus Execute(BTBlackboard* blackboard) override;
 
     /// <summary>
-    /// JSON からパラメータを適用 (maxUses: 成功を許可する回数)。
+    /// JSON からパラメータを適用。
     /// </summary>
     /// <param name="params">パラメータ JSON</param>
     void ApplyParameters(const nlohmann::json& params) override;
@@ -37,7 +37,7 @@ namespace Tako {
 
 #ifdef _DEBUG
     /// <summary>
-    /// ImGui でパラメータ編集 UI を描画 (Debug 限定)。
+    /// ImGui でパラメータ編集 UI を描画。
     /// </summary>
     /// <returns>変更があれば true</returns>
     bool DrawImGui() override;
