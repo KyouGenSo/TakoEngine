@@ -1,5 +1,5 @@
 static const int kMaxParticles = 1000000;
-static const uint kMaxEmitters = 500; // GPUParticle::kNumMaxEmitter と必ず一致させること
+static const uint kMaxEmitters = 1000; // GPUParticle::kNumMaxEmitter と必ず一致させること
 
 // エミッタータイプの定義
 #define EMITTER_TYPE_SPHERE 0

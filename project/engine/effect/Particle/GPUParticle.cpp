@@ -27,7 +27,7 @@ namespace Tako {
 
   const uint32_t GPUParticle::kNumMaxParticle = 1000000;
 
-  const uint32_t GPUParticle::kNumMaxEmitter = 500;
+  const uint32_t GPUParticle::kNumMaxEmitter = 1000;
 
   GPUParticle* GPUParticle::GetInstance()
   {
