@@ -26,7 +26,7 @@ namespace Tako {
 
   void DecalManager::Initialize(DX12Basic* dx12)
   {
-    m_dx12_ = dx12;
+    dx12_ = dx12;
 
     CreateCubeMesh();
     CreateViewDataBuffer();
@@ -62,29 +62,29 @@ namespace Tako {
     viewDataMapped_->screenHeight = static_cast<float>(WinApp::clientHeight);
 
     // 深度バッファを PIXEL_SHADER_RESOURCE に遷移
-    m_dx12_->TransitionResourceWithTracking(
-      m_dx12_->GetDepthStencilResource(),
+    dx12_->TransitionResourceWithTracking(
+      dx12_->GetDepthStencilResource(),
       D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
     );
 
     // RTV を DSV なしで再バインド
     D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = PostEffectManager::GetInstance()->GetCurrentRTVHandle();
-    m_dx12_->GetCommandList()->OMSetRenderTargets(1, &rtvHandle, false, nullptr);
+    dx12_->GetCommandList()->OMSetRenderTargets(1, &rtvHandle, false, nullptr);
 
     // ビューポートとシザー矩形を設定
-    m_dx12_->SetViewPort();
+    dx12_->SetViewPort();
 
     // PSO / RootSignature をセット
-    m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
-    m_dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
-    m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
+    dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
+    dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     // キューブメッシュの VBV / IBV をバインド
-    m_dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &cubeVBV_);
-    m_dx12_->GetCommandList()->IASetIndexBuffer(&cubeIBV_);
+    dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &cubeVBV_);
+    dx12_->GetCommandList()->IASetIndexBuffer(&cubeIBV_);
 
     // ViewData CBV をバインド（RP#0）
-    m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, viewDataBuffer_->GetGPUVirtualAddress());
+    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, viewDataBuffer_->GetGPUVirtualAddress());
 
     // 深度 SRV をバインド（RP#2）
     SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, depthSrvIndex_);
@@ -93,15 +93,15 @@ namespace Tako {
   void DecalManager::EndDraw()
   {
     // 深度バッファを DEPTH_WRITE に復帰
-    m_dx12_->TransitionResourceWithTracking(
-      m_dx12_->GetDepthStencilResource(),
+    dx12_->TransitionResourceWithTracking(
+      dx12_->GetDepthStencilResource(),
       D3D12_RESOURCE_STATE_DEPTH_WRITE
     );
 
     // RTV + DSV を再バインド
     D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = PostEffectManager::GetInstance()->GetCurrentRTVHandle();
-    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
-    m_dx12_->GetCommandList()->OMSetRenderTargets(1, &rtvHandle, false, &dsvHandle);
+    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dx12_->GetDSVHeapHandleStart();
+    dx12_->GetCommandList()->OMSetRenderTargets(1, &rtvHandle, false, &dsvHandle);
   }
 
   void DecalManager::AddDecal(Decal* decal)
@@ -242,7 +242,7 @@ namespace Tako {
       assert(false);
     }
 
-    hr = m_dx12_->GetDevice()->CreateRootSignature(
+    hr = dx12_->GetDevice()->CreateRootSignature(
       0,
       signatureBlob->GetBufferPointer(),
       signatureBlob->GetBufferSize(),
@@ -287,10 +287,10 @@ namespace Tako {
     rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
 
     // シェーダーのコンパイル
-    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"Decal.VS.hlsl"), L"vs_6_0");
+    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = dx12_->CompileShader(EnginePaths::ShaderPath(L"Decal.VS.hlsl"), L"vs_6_0");
     assert(vertexShaderBlob != nullptr);
 
-    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"Decal.PS.hlsl"), L"ps_6_0");
+    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = dx12_->CompileShader(EnginePaths::ShaderPath(L"Decal.PS.hlsl"), L"ps_6_0");
     assert(pixelShaderBlob != nullptr);
 
     // DepthStencilState: 深度テスト・書き込み無効
@@ -314,7 +314,7 @@ namespace Tako {
     graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
     graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_UNKNOWN; // DSV バインドなし
 
-    hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
+    hr = dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
     assert(SUCCEEDED(hr));
   }
 
@@ -354,7 +354,7 @@ namespace Tako {
     };
 
     // 頂点バッファの作成
-    cubeVertexBuffer_ = m_dx12_->MakeBufferResource(sizeof(vertices));
+    cubeVertexBuffer_ = dx12_->MakeBufferResource(sizeof(vertices));
     CubeVertex* vertexData = nullptr;
     cubeVertexBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
     memcpy(vertexData, vertices, sizeof(vertices));
@@ -365,7 +365,7 @@ namespace Tako {
     cubeVBV_.StrideInBytes = sizeof(CubeVertex);
 
     // インデックスバッファの作成
-    cubeIndexBuffer_ = m_dx12_->MakeBufferResource(sizeof(indices));
+    cubeIndexBuffer_ = dx12_->MakeBufferResource(sizeof(indices));
     uint16_t* indexData = nullptr;
     cubeIndexBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&indexData));
     memcpy(indexData, indices, sizeof(indices));
@@ -379,7 +379,7 @@ namespace Tako {
   // ViewData 定数バッファの作成
   void DecalManager::CreateViewDataBuffer()
   {
-    viewDataBuffer_ = m_dx12_->MakeBufferResource(sizeof(ViewDataGPU));
+    viewDataBuffer_ = dx12_->MakeBufferResource(sizeof(ViewDataGPU));
     viewDataBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&viewDataMapped_));
   }
 
@@ -394,7 +394,7 @@ namespace Tako {
     depthSrvIndex_ = SrvManager::GetInstance()->Allocate();
     SrvManager::GetInstance()->CreateSRVForTexture2D(
       depthSrvIndex_,
-      m_dx12_->GetDepthStencilResource(),
+      dx12_->GetDepthStencilResource(),
       DXGI_FORMAT_R32_FLOAT,
       1
     );

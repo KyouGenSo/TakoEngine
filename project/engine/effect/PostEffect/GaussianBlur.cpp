@@ -103,8 +103,8 @@ namespace Tako {
 
   void GaussianBlur::CreateCBV()
   {
-    cBufferResource1_ = m_dx12_->MakeBufferResource(sizeof(GaussianBlurParam));
-    cBufferResource2_ = m_dx12_->MakeBufferResource(sizeof(GaussianBlurParam));
+    cBufferResource1_ = dx12_->MakeBufferResource(sizeof(GaussianBlurParam));
+    cBufferResource2_ = dx12_->MakeBufferResource(sizeof(GaussianBlurParam));
 
     // データの設定
     cBufferResource1_->Map(0, nullptr, reinterpret_cast<void**>(&cBufferData1_));
@@ -124,7 +124,7 @@ namespace Tako {
   {
     auto createRT = [this](RenderTexture& rt, int rtvIndex, const Vector4& clearColor) {
       // リソース作成
-      m_dx12_->CreateRenderTextureResource(
+      dx12_->CreateRenderTextureResource(
         rt.resource,
         WinApp::clientWidth,
         WinApp::clientHeight,
@@ -133,11 +133,11 @@ namespace Tako {
       );
 
       // RTV 作成
-      rt.rtvHandle = m_dx12_->GetRenderTextureRTVHandle(rtvIndex);
+      rt.rtvHandle = dx12_->GetRenderTextureRTVHandle(rtvIndex);
       D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
       rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
       rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-      m_dx12_->GetDevice()->CreateRenderTargetView(
+      dx12_->GetDevice()->CreateRenderTargetView(
         rt.resource.Get(), &rtvDesc, rt.rtvHandle
       );
 
@@ -176,7 +176,7 @@ namespace Tako {
     barrier.Transition.StateBefore = stateBefore;
     barrier.Transition.StateAfter = stateAfter;
 
-    m_dx12_->GetCommandList()->ResourceBarrier(1, &barrier);
+    dx12_->GetCommandList()->ResourceBarrier(1, &barrier);
   }
 
 } // namespace Tako

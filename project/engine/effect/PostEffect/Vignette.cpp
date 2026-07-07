@@ -24,27 +24,27 @@ namespace Tako {
 
   void Vignette::Apply(const uint32_t inputSrvIndex, const D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, [[maybe_unused]] const uint32_t depthSrvIndex, [[maybe_unused]] const Vector4& clearColor)
   {
-    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
-    m_dx12_->GetCommandList()->OMSetRenderTargets(1,
+    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dx12_->GetDSVHeapHandleStart();
+    dx12_->GetCommandList()->OMSetRenderTargets(1,
       &outputRtvHandle,
       false,
       &dsvHandle);
 
     // エフェクト適用シェーダーの設定
-    m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
-    m_dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
+    dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
+    dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
 
     // プリミティブトポロジーの設定（フルスクリーン三角形用）
-    m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+    dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
     // パラメータリソースの設定
-    m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, cBufferResource_->GetGPUVirtualAddress());
+    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, cBufferResource_->GetGPUVirtualAddress());
 
     // レンダーテクスチャ A をシェーダーリソースとして設定
     SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, inputSrvIndex);
 
     // フルスクリーン三角形描画
-    m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+    dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
   }
 
   void Vignette::DrawImgui()
@@ -90,7 +90,7 @@ namespace Tako {
   void Vignette::CreateCBV()
   {
     // VignetteParam のリソース生成
-    cBufferResource_ = m_dx12_->MakeBufferResource(sizeof(VignetteParam));
+    cBufferResource_ = dx12_->MakeBufferResource(sizeof(VignetteParam));
 
     // データの設定
     cBufferResource_->Map(0, nullptr, reinterpret_cast<void**>(&cBufferData_));

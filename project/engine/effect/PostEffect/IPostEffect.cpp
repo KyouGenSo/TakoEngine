@@ -15,7 +15,7 @@ namespace Tako {
 
   void IPostEffect::Initialize(DX12Basic* dx12, const std::string& shaderName)
   {
-    m_dx12_ = dx12;
+    dx12_ = dx12;
 
     shaderName_ = shaderName;
 
@@ -84,7 +84,7 @@ namespace Tako {
       assert(false);
     }
 
-    hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature_.GetAddressOf()));
+    hr = dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature_.GetAddressOf()));
     assert(SUCCEEDED(hr));
   }
 
@@ -105,11 +105,11 @@ namespace Tako {
     rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
 
     // shader のコンパイル
-    ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"FullScreen.VS.hlsl"), L"vs_6_0");
+    ComPtr<IDxcBlob> vertexShaderBlob = dx12_->CompileShader(EnginePaths::ShaderPath(L"FullScreen.VS.hlsl"), L"vs_6_0");
     assert(vertexShaderBlob != nullptr);
 
     std::wstring psPath = EnginePaths::ShaderPath(StringUtility::ConvertString(shaderName_) + L".PS.hlsl");
-    ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(psPath, L"ps_6_0");
+    ComPtr<IDxcBlob> pixelShaderBlob = dx12_->CompileShader(psPath, L"ps_6_0");
     assert(pixelShaderBlob != nullptr);
 
     // DepthStencilState (深度無効)
@@ -132,7 +132,7 @@ namespace Tako {
     graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
     graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
-    HRESULT hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
+    HRESULT hr = dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
     assert(SUCCEEDED(hr));
   }
 
@@ -140,8 +140,8 @@ namespace Tako {
                                        D3D12_CPU_DESCRIPTOR_HANDLE outputRtv,
                                        D3D12_GPU_VIRTUAL_ADDRESS cbvAddress, uint32_t inputSrvIndex)
   {
-    auto* commandList = m_dx12_->GetCommandList();
-    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
+    auto* commandList = dx12_->GetCommandList();
+    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dx12_->GetDSVHeapHandleStart();
 
     commandList->OMSetRenderTargets(1, &outputRtv, false, &dsvHandle);
     commandList->SetGraphicsRootSignature(rootSig);

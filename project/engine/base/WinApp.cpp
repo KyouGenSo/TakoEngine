@@ -13,7 +13,7 @@ namespace Tako {
 
   std::unique_ptr<WinApp> WinApp::instance_ = nullptr;
 
-  std::vector<IWndProcHandler*> WinApp::m_handlers_;
+  std::vector<IWndProcHandler*> WinApp::handlers_;
 
   int32_t WinApp::clientWidth = 1280;
 
@@ -87,7 +87,7 @@ namespace Tako {
 
   LRESULT WinApp::WndProc(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam)
   {
-    for (auto handler : m_handlers_) {
+    for (auto handler : handlers_) {
       handler->OnWndProc(hWnd, msg, wparam, lparam);
     }
 

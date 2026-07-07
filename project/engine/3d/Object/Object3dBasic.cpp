@@ -26,7 +26,7 @@ Object3dBasic* Object3dBasic::GetInstance()
 
 void Object3dBasic::Initialize(DX12Basic* dx12)
 {
-	m_dx12_ = dx12;
+	dx12_ = dx12;
 
 	isDebug_ = false;
 
@@ -36,7 +36,7 @@ void Object3dBasic::Initialize(DX12Basic* dx12)
 
 	// ライトの生成と初期化
 	light_ = std::make_unique<Light>();
-	light_->Initialize(m_dx12_);
+	light_->Initialize(dx12_);
 	
 }
 
@@ -67,13 +67,13 @@ void Object3dBasic::Finalize()
 void Object3dBasic::SetCommonRenderSetting()
 {
 	// ルートシグネチャの設定
-	m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
+	dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
 
 	// パイプラインステートの設定
-	m_dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
+	dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
 
 	// トポロジの設定
-	m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// ライトの描画設定
 	light_->PreDraw();
@@ -85,13 +85,13 @@ void Object3dBasic::SetCommonRenderSetting()
 void Object3dBasic::SetTransparentRenderSetting()
 {
 	// ルートシグネチャは通常描画用と共有
-	m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
+	dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
 
 	// 半透明描画用パイプラインステートの設定 (CullMode=NONE, DepthWriteMask=ZERO)
-	m_dx12_->GetCommandList()->SetPipelineState(transparentPipelineState_.Get());
+	dx12_->GetCommandList()->SetPipelineState(transparentPipelineState_.Get());
 
 	// トポロジの設定
-	m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// ライトの描画設定
 	light_->PreDraw();
@@ -264,7 +264,7 @@ void Object3dBasic::CreateRootSignature()
 		assert(false);
 	}
 
-	hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature_.GetAddressOf()));
+	hr = dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature_.GetAddressOf()));
 	assert(SUCCEEDED(hr));
 
 }
@@ -316,10 +316,10 @@ void Object3dBasic::CreatePSO()
 	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
 
 	// shader のコンパイル
-	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"Object3d.VS.hlsl"), L"vs_6_0");
+	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = dx12_->CompileShader(EnginePaths::ShaderPath(L"Object3d.VS.hlsl"), L"vs_6_0");
 	assert(vertexShaderBlob != nullptr);
 
-	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"Object3d.PS.hlsl"), L"ps_6_0");
+	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = dx12_->CompileShader(EnginePaths::ShaderPath(L"Object3d.PS.hlsl"), L"ps_6_0");
 	assert(pixelShaderBlob != nullptr);
 
 	// DepthStencilState
@@ -352,7 +352,7 @@ void Object3dBasic::CreatePSO()
 	graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 
 	// 実際に生成
-	hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
+	hr = dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
 	assert(SUCCEEDED(hr));
 }
 
@@ -401,10 +401,10 @@ void Object3dBasic::CreateTransparentPSO()
 	rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
 
 	// shader (通常描画と同じものを使用)
-	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"Object3d.VS.hlsl"), L"vs_6_0");
+	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = dx12_->CompileShader(EnginePaths::ShaderPath(L"Object3d.VS.hlsl"), L"vs_6_0");
 	assert(vertexShaderBlob != nullptr);
 
-	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"Object3d.PS.hlsl"), L"ps_6_0");
+	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = dx12_->CompileShader(EnginePaths::ShaderPath(L"Object3d.PS.hlsl"), L"ps_6_0");
 	assert(pixelShaderBlob != nullptr);
 
 	// DepthStencilState (差分: 深度書き込み無効)
@@ -431,20 +431,20 @@ void Object3dBasic::CreateTransparentPSO()
 	graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 
 	// 実際に生成
-	hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&transparentPipelineState_));
+	hr = dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&transparentPipelineState_));
 	assert(SUCCEEDED(hr));
 }
 
 void Object3dBasic::SetInstancedRenderSetting()
 {
 	// インスタンシング用ルートシグネチャの設定
-	m_dx12_->GetCommandList()->SetGraphicsRootSignature(instancedRootSignature_.Get());
+	dx12_->GetCommandList()->SetGraphicsRootSignature(instancedRootSignature_.Get());
 
 	// インスタンシング用パイプラインステートの設定
-	m_dx12_->GetCommandList()->SetPipelineState(instancedPipelineState_.Get());
+	dx12_->GetCommandList()->SetPipelineState(instancedPipelineState_.Get());
 
 	// トポロジの設定
-	m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// ライトの描画設定
 	light_->PreDraw();
@@ -615,7 +615,7 @@ void Object3dBasic::CreateInstancedRootSignature()
 		assert(false);
 	}
 
-	hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(instancedRootSignature_.GetAddressOf()));
+	hr = dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(instancedRootSignature_.GetAddressOf()));
 	assert(SUCCEEDED(hr));
 }
 
@@ -664,10 +664,10 @@ void Object3dBasic::CreateInstancedPSO()
 	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
 
 	// シェーダーのコンパイル
-	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"Object3dInstanced.VS.hlsl"), L"vs_6_0");
+	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = dx12_->CompileShader(EnginePaths::ShaderPath(L"Object3dInstanced.VS.hlsl"), L"vs_6_0");
 	assert(vertexShaderBlob != nullptr);
 
-	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"Object3dInstanced.PS.hlsl"), L"ps_6_0");
+	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = dx12_->CompileShader(EnginePaths::ShaderPath(L"Object3dInstanced.PS.hlsl"), L"ps_6_0");
 	assert(pixelShaderBlob != nullptr);
 
 	// DepthStencilState
@@ -693,7 +693,7 @@ void Object3dBasic::CreateInstancedPSO()
 	graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 
 	// 実際に生成
-	hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&instancedPipelineState_));
+	hr = dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&instancedPipelineState_));
 	assert(SUCCEEDED(hr));
 }
 

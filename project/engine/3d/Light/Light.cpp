@@ -10,7 +10,7 @@ namespace Tako {
 
   void Light::Initialize(DX12Basic* dx12)
   {
-    m_dx12_ = dx12;
+    dx12_ = dx12;
 
     CreateDirectionalLightData();
     CreatePointLightData();
@@ -27,7 +27,7 @@ namespace Tako {
   void Light::PreDraw()
   {
     // 平行光源 CBV (b3)
-    m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource_->GetGPUVirtualAddress());
+    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource_->GetGPUVirtualAddress());
 
     // 点光源 SRV (t5)
     SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(5, pointLightSrvIndex_);
@@ -36,7 +36,7 @@ namespace Tako {
     SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(6, spotLightSrvIndex_);
 
     // ライト定数 CBV (b7)
-    m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(7, lightConstantsResource_->GetGPUVirtualAddress());
+    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(7, lightConstantsResource_->GetGPUVirtualAddress());
   }
 
   void Light::SetDirectionalLight(const Vector3& direction, const Vector4& color, int32_t lightType, float intensity)
@@ -101,7 +101,7 @@ namespace Tako {
 
   void Light::CreateDirectionalLightData()
   {
-    directionalLightResource_ = m_dx12_->MakeBufferResource(sizeof(DirectionalLight) * Light::MAX_DIRECTIONAL_LIGHT);
+    directionalLightResource_ = dx12_->MakeBufferResource(sizeof(DirectionalLight) * Light::MAX_DIRECTIONAL_LIGHT);
 
     directionalLightResource_->Map(0, nullptr, reinterpret_cast<void**>(&directionalLightData_));
 
@@ -121,7 +121,7 @@ namespace Tako {
 
   void Light::CreatePointLightData()
   {
-    pointLightResource_ = m_dx12_->MakeBufferResource(sizeof(PointLight) * Light::MAX_POINT_LIGHT);
+    pointLightResource_ = dx12_->MakeBufferResource(sizeof(PointLight) * Light::MAX_POINT_LIGHT);
 
     pointLightResource_->Map(0, nullptr, reinterpret_cast<void**>(&pointLightData_));
 
@@ -138,7 +138,7 @@ namespace Tako {
 
   void Light::CreateSpotLightData()
   {
-    spotLightResource_ = m_dx12_->MakeBufferResource(sizeof(SpotLight) * Light::MAX_SPOT_LIGHT);
+    spotLightResource_ = dx12_->MakeBufferResource(sizeof(SpotLight) * Light::MAX_SPOT_LIGHT);
 
     spotLightResource_->Map(0, nullptr, reinterpret_cast<void**>(&spotLightData_));
 
@@ -157,7 +157,7 @@ namespace Tako {
 
   void Light::CreateLightConstants()
   {
-    lightConstantsResource_ = m_dx12_->MakeBufferResource(sizeof(LightConstants));
+    lightConstantsResource_ = dx12_->MakeBufferResource(sizeof(LightConstants));
 
     lightConstantsResource_->Map(0, nullptr, reinterpret_cast<void**>(&lightConstantsData_));
 

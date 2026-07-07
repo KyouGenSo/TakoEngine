@@ -58,7 +58,7 @@ namespace Tako {
     //====================================
     //Getter
     //====================================
-    DX12Basic* GetDX12Basic() { return m_dx12_; }
+    DX12Basic* GetDX12Basic() { return dx12_; }
     const Matrix4x4& GetViewMatrix() { return viewMatrixSprite_; }
     const Matrix4x4& GetProjectionMatrix() { return projectionMatrixSprite_; }
 
@@ -74,7 +74,7 @@ namespace Tako {
     void CreatePSO();
 
   private: //メンバー変数
-    DX12Basic*                  m_dx12_;                       ///< DX12Basic クラスのインスタンス
+    DX12Basic*                  dx12_;                       ///< DX12Basic クラスのインスタンス
     ComPtr<ID3D12RootSignature> rootSignature_;                ///< ルートシグネチャ
     ComPtr<ID3D12PipelineState> pipelineState_;                ///< パイプラインステート
     Matrix4x4                   viewMatrixSprite_       = {};  ///< ビュー行列

@@ -103,7 +103,7 @@ namespace Tako {
     //================================================
     //Getter
     //================================================
-    DX12Basic* GetDX12Basic() const { return m_dx12_; }
+    DX12Basic* GetDX12Basic() const { return dx12_; }
     Camera* GetCamera() const { return camera_; }
     const Matrix4x4& GetViewProjectionMatrix() const { return viewProjectionMatrix_; }
     const D3D12_VERTEX_BUFFER_VIEW& GetCubeVBV() const { return cubeVBV_; }
@@ -149,7 +149,7 @@ namespace Tako {
     void CreateDepthSRV();
 
   private: // メンバー変数
-    DX12Basic*                                  m_dx12_               = nullptr;  ///< DirectX12基盤システムへの参照
+    DX12Basic*                                  dx12_               = nullptr;  ///< DirectX12基盤システムへの参照
     Camera*                                     camera_               = nullptr;  ///< カメラへのポインタ
     Matrix4x4                                   viewProjectionMatrix_;            ///< ビュープロジェクション行列
     Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;                   ///< ルートシグネチャ

@@ -330,8 +330,8 @@ namespace Tako {
     void SaveNodePose(const Node& node);
 
   private: //メンバー変数
-    ModelBasic* m_modelBasic_;  ///< モデル基本システムへのポインタ
-    DX12Basic*  m_dx12_;        ///< DirectX12基盤システムへのポインタ
+    ModelBasic* modelBasic_;  ///< モデル基本システムへのポインタ
+    DX12Basic*  dx12_;        ///< DirectX12基盤システムへのポインタ
 
     std::string directoryFolderName_;  ///< モデルファイルのディレクトリパス
     std::string ModelFolderName_;      ///< モデルフォルダ名

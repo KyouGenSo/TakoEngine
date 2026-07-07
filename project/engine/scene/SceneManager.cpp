@@ -80,24 +80,24 @@ namespace Tako {
 
   void SceneManager::ChangeScene(const std::string& sceneName)
   {
-    assert(m_sceneFactory_);
+    assert(sceneFactory_);
 
     // 予約済みなら無視。フェードアウトを開始し次シーンを生成
     if (nextScene_ == nullptr) {
       TransitionManager::GetInstance()->Start(
         ITransitionEffect::FADE_OUT, transitionTime_);
-      nextScene_ = m_sceneFactory_->CreateScene(sceneName);
+      nextScene_ = sceneFactory_->CreateScene(sceneName);
     }
   }
 
   void SceneManager::ChangeScene(const std::string& sceneName, float transitionTime)
   {
-    assert(m_sceneFactory_);
+    assert(sceneFactory_);
 
     if (nextScene_ == nullptr) {
       TransitionManager::GetInstance()->Start(
         ITransitionEffect::FADE_OUT, transitionTime);
-      nextScene_ = m_sceneFactory_->CreateScene(sceneName);
+      nextScene_ = sceneFactory_->CreateScene(sceneName);
       transitionTime_ = transitionTime;
     }
   }
@@ -106,12 +106,12 @@ namespace Tako {
     TransitionManager::EffectType effectType,
     float transitionTime)
   {
-    assert(m_sceneFactory_);
+    assert(sceneFactory_);
 
     if (nextScene_ == nullptr) {
       TransitionManager::GetInstance()->Start(
         ITransitionEffect::FADE_OUT, effectType, transitionTime);
-      nextScene_ = m_sceneFactory_->CreateScene(sceneName);
+      nextScene_ = sceneFactory_->CreateScene(sceneName);
       transitionTime_ = transitionTime;
     }
   }
@@ -120,12 +120,12 @@ namespace Tako {
     const std::string& effectName,
     float transitionTime)
   {
-    assert(m_sceneFactory_);
+    assert(sceneFactory_);
 
     if (nextScene_ == nullptr) {
       TransitionManager::GetInstance()->Start(
         ITransitionEffect::FADE_OUT, effectName, transitionTime);
-      nextScene_ = m_sceneFactory_->CreateScene(sceneName);
+      nextScene_ = sceneFactory_->CreateScene(sceneName);
       transitionTime_ = transitionTime;
     }
   }
@@ -134,14 +134,14 @@ namespace Tako {
     std::unique_ptr<ITransitionEffect> effect,
     float transitionTime)
   {
-    assert(m_sceneFactory_);
+    assert(sceneFactory_);
 
     if (nextScene_ == nullptr) {
       // 渡されたエフェクトを設定してからフェードアウト開始
       TransitionManager::GetInstance()->SetCurrentEffect(std::move(effect));
       TransitionManager::GetInstance()->Start(
         ITransitionEffect::FADE_OUT, transitionTime);
-      nextScene_ = m_sceneFactory_->CreateScene(sceneName);
+      nextScene_ = sceneFactory_->CreateScene(sceneName);
       transitionTime_ = transitionTime;
     }
   }

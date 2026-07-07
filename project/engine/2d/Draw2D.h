@@ -199,7 +199,7 @@ namespace Tako {
     //Setter
     //=========================================================
     void SetProjectionMatrix(const Matrix4x4& projectionMatrix) { projectionMatrix_ = projectionMatrix; }
-    void SetCamera(Camera* camera) { m_camera_ = camera; }
+    void SetCamera(Camera* camera) { camera_ = camera; }
     void SetDebug(bool isDebug) { isDebug_ = isDebug; }
 
     //=========================================================
@@ -248,9 +248,9 @@ namespace Tako {
 
   private: //メンバー変数
 
-    DX12Basic* m_dx12_;  ///< DX12Basic クラスのインスタンス
+    DX12Basic* dx12_;  ///< DX12Basic クラスのインスタンス
 
-    Camera* m_camera_;  ///< カメラ
+    Camera* camera_;  ///< カメラ
 
     bool isDebug_;  ///< デバッグフラグ
 

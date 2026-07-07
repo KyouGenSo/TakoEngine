@@ -23,7 +23,7 @@ void SkyBox::Initialize(const std::string& texturePath)
   worldMatrix_ = Mat4x4::MakeIdentity();
   wvpMatrix_ = Mat4x4::MakeIdentity();
 
-  m_dx12_ = Object3dBasic::GetInstance()->GetDX12Basic();
+  dx12_ = Object3dBasic::GetInstance()->GetDX12Basic();
 
   CreatePSO();
   CreateVertexData();
@@ -45,26 +45,26 @@ void SkyBox::Update()
 
 void SkyBox::Draw()
 {
-  m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
+  dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
 
-  m_dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
+  dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
 
-  m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+  dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-  m_dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView_);
+  dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView_);
 
-  m_dx12_->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
+  dx12_->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
 
   // 座標変換行列 CBV (b0)
-  m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, transformationMatrixResource_->GetGPUVirtualAddress());
+  dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, transformationMatrixResource_->GetGPUVirtualAddress());
 
   // テクスチャ SRV (t0)
   SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(1, textureIndex_);
 
   // マテリアル CBV (b0, PS)
-  m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(2, materialResource_->GetGPUVirtualAddress());
+  dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(2, materialResource_->GetGPUVirtualAddress());
 
-  m_dx12_->GetCommandList()->DrawIndexedInstanced(36, 1, 0, 0, 0);
+  dx12_->GetCommandList()->DrawIndexedInstanced(36, 1, 0, 0, 0);
 }
 
 void SkyBox::CreateRootSignature()
@@ -132,7 +132,7 @@ void SkyBox::CreateRootSignature()
     assert(false);
   }
   // ルートシグネチャを生成
-  hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature_.GetAddressOf()));
+  hr = dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature_.GetAddressOf()));
   assert(SUCCEEDED(hr));
 }
 
@@ -164,10 +164,10 @@ void SkyBox::CreatePSO()
   rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
 
   // shader のコンパイル
-  Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"SkyBox.VS.hlsl"), L"vs_6_0");
+  Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = dx12_->CompileShader(EnginePaths::ShaderPath(L"SkyBox.VS.hlsl"), L"vs_6_0");
   assert(vertexShaderBlob != nullptr);
 
-  Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"SkyBox.PS.hlsl"), L"ps_6_0");
+  Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = dx12_->CompileShader(EnginePaths::ShaderPath(L"SkyBox.PS.hlsl"), L"ps_6_0");
   assert(pixelShaderBlob != nullptr);
 
   // DepthStencilState の設定
@@ -194,14 +194,14 @@ void SkyBox::CreatePSO()
   pipelineStateDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 
   // PSO の生成
-  hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&pipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
+  hr = dx12_->GetDevice()->CreateGraphicsPipelineState(&pipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
   assert(SUCCEEDED(hr));
 
 }
 
 void SkyBox::CreateVertexData()
 {
-  vertexResource_ = m_dx12_->MakeBufferResource(sizeof(VertexData) * 24);
+  vertexResource_ = dx12_->MakeBufferResource(sizeof(VertexData) * 24);
 
   vertexResource_->Map(0, nullptr, reinterpret_cast<void**>(&vertexData_));
 
@@ -243,7 +243,7 @@ void SkyBox::CreateVertexData()
 
 void SkyBox::CreateIndexData()
 {
-  indexResource_ = m_dx12_->MakeBufferResource(sizeof(uint32_t) * 36);
+  indexResource_ = dx12_->MakeBufferResource(sizeof(uint32_t) * 36);
 
   indexResource_->Map(0, nullptr, reinterpret_cast<void**>(&indexData_));
 
@@ -268,14 +268,14 @@ void SkyBox::CreateIndexData()
 
 void SkyBox::CreateMaterialData()
 {
-  materialResource_ = m_dx12_->MakeBufferResource(sizeof(Material));
+  materialResource_ = dx12_->MakeBufferResource(sizeof(Material));
   materialResource_->Map(0, nullptr, reinterpret_cast<void**>(&materialData_));
   materialData_->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 }
 
 void SkyBox::CreateTransformationMatrixData()
 {
-  transformationMatrixResource_ = m_dx12_->MakeBufferResource(sizeof(TransformationMatrix));
+  transformationMatrixResource_ = dx12_->MakeBufferResource(sizeof(TransformationMatrix));
   transformationMatrixResource_->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixData_));
   transformationMatrixData_->WVP = Mat4x4::MakeIdentity();
 }

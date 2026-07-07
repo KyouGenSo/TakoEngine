@@ -142,7 +142,7 @@ namespace Tako {
 
   private: //メンバー変数
 
-    DX12Basic* m_dx12_ = nullptr;  ///< DX12Basic クラスのインスタンス
+    DX12Basic* dx12_ = nullptr;  ///< DX12Basic クラスのインスタンス
 
     std::string directoryPath_;  ///< テクスチャ格納ディレクトリ
 

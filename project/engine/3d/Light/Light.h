@@ -162,7 +162,7 @@ namespace Tako {
 
   private: //メンバー変数
     //基盤
-    DX12Basic* m_dx12_;
+    DX12Basic* dx12_;
 
     //マップ済みデータ
     DirectionalLight* directionalLightData_;

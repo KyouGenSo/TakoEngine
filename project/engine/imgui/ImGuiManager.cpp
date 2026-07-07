@@ -11,9 +11,9 @@ namespace Tako {
   void ImGuiManager::Initialize(WinApp* winApp, DX12Basic* dx12, bool isDocking)
   {
 
-    m_winApp_ = winApp;
+    winApp_ = winApp;
 
-    m_dx12_ = dx12;
+    dx12_ = dx12;
 
     isDocking_ = isDocking;
 
@@ -27,7 +27,7 @@ namespace Tako {
     //ImGui::StyleColorsDark();
     SetStyleMoonLight();
 
-    ImGui_ImplWin32_Init(m_winApp_->GetHWnd());
+    ImGui_ImplWin32_Init(winApp_->GetHWnd());
 
     // フォント用の SRV インデックスを確保
     fontSrvIndex_ = SrvManager::GetInstance()->Allocate();
@@ -50,8 +50,8 @@ namespace Tako {
     D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = SrvManager::GetInstance()->GetGPUDescriptorHandle(fontSrvIndex_);
 
     ImGui_ImplDX12_Init(
-      m_dx12_->GetDevice(),
-      static_cast<int>(m_dx12_->GetSwapChainBufferCount()),
+      dx12_->GetDevice(),
+      static_cast<int>(dx12_->GetSwapChainBufferCount()),
       DXGI_FORMAT_R8G8B8A8_UNORM,
       srvHeap,
       cpuHandle,
@@ -71,7 +71,7 @@ namespace Tako {
 
   void ImGuiManager::Draw()
   {
-    ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_dx12_->GetCommandList());
+    ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), dx12_->GetCommandList());
   }
 
   void ImGuiManager::End()

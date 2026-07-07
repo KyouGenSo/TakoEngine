@@ -143,7 +143,7 @@ public: // メンバー関数
 	//============================================================
 	//Getter
 	//============================================================
-	DX12Basic* GetDX12Basic() const { return m_dx12_; }
+	DX12Basic* GetDX12Basic() const { return dx12_; }
 	Camera** GetCamera() { return &camera_; }
 	bool GetDebug() const { return isDebug_; }
 	Light* GetLight() const { return light_.get(); }
@@ -177,7 +177,7 @@ private: // プライベートメンバー関数
 	void CreateTransparentPSO();
 
 private: // メンバー変数
-	DX12Basic*                                  m_dx12_                    = nullptr;  ///< DirectX12基盤システムへの参照
+	DX12Basic*                                  dx12_                    = nullptr;  ///< DirectX12基盤システムへの参照
 	Camera*                                     camera_                    = nullptr;  ///< デフォルトカメラへのポインタ
 	std::unique_ptr<Light>                      light_;                                ///< ライティングシステムへのポインタ
 	Matrix4x4                                   viewProjectionMatrix_;                 ///< ビュープロジェクション行列

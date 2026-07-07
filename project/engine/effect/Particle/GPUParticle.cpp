@@ -39,9 +39,9 @@ namespace Tako {
 
   void GPUParticle::Initialize(DX12Basic* dx12, Camera* camera)
   {
-    m_dx12_ = dx12;
-    m_camera_ = camera;
-    m_srvManager_ = SrvManager::GetInstance();
+    dx12_ = dx12;
+    camera_ = camera;
+    srvManager_ = SrvManager::GetInstance();
 
     modelData_.textureData.texturePath = "circle.dds";
     modelData_.textureData.textureIndex = TextureManager::GetInstance()->GetEngineDefaultSRVIndex(modelData_.textureData.texturePath);
@@ -153,7 +153,7 @@ namespace Tako {
 
   void GPUParticle::Draw()
   {
-    ID3D12GraphicsCommandList* commandList = m_dx12_->GetCommandList();
+    ID3D12GraphicsCommandList* commandList = dx12_->GetCommandList();
 
     /// ================================== ///
     ///            ComputerShader          ///
@@ -168,13 +168,13 @@ namespace Tako {
       commandList->SetPipelineState(initComputePSO_.Get());
 
       // ParticleData の UAV の設定
-      m_srvManager_->SetComputeRootDescriptorTable(0, particleUavIndex_);
+      srvManager_->SetComputeRootDescriptorTable(0, particleUavIndex_);
 
       // FreeListIndex の UAV の設定
-      m_srvManager_->SetComputeRootDescriptorTable(1, freeListIndexUavIndex_);
+      srvManager_->SetComputeRootDescriptorTable(1, freeListIndexUavIndex_);
 
       // FreeList の UAV の設定
-      m_srvManager_->SetComputeRootDescriptorTable(2, freeListUavIndex_);
+      srvManager_->SetComputeRootDescriptorTable(2, freeListUavIndex_);
 
       // ディスパッチ
       commandList->Dispatch(1024, 1, 1);
@@ -183,9 +183,9 @@ namespace Tako {
     }
 
     // リソースバリアの設定（UAV 同期）
-    m_dx12_->SetUAVBarrier(particleResource_.Get());
-    m_dx12_->SetUAVBarrier(freeListIndexResource_.Get());
-    m_dx12_->SetUAVBarrier(freeListResource_.Get());
+    dx12_->SetUAVBarrier(particleResource_.Get());
+    dx12_->SetUAVBarrier(freeListIndexResource_.Get());
+    dx12_->SetUAVBarrier(freeListResource_.Get());
 
     //--------------------------------------射出--------------------------------------//
       // アクティブなエミッターがある場合のみ実行
@@ -197,16 +197,16 @@ namespace Tako {
       commandList->SetPipelineState(emitParticlePSO_.Get());
 
       // ParticleData の UAV の設定
-      m_srvManager_->SetComputeRootDescriptorTable(0, particleUavIndex_);
+      srvManager_->SetComputeRootDescriptorTable(0, particleUavIndex_);
 
       // FreeListIndex の UAV の設定
-      m_srvManager_->SetComputeRootDescriptorTable(3, freeListIndexUavIndex_);
+      srvManager_->SetComputeRootDescriptorTable(3, freeListIndexUavIndex_);
 
       // FreeList の UAV の設定
-      m_srvManager_->SetComputeRootDescriptorTable(4, freeListUavIndex_);
+      srvManager_->SetComputeRootDescriptorTable(4, freeListUavIndex_);
 
       // エミッターリストの SRV の設定
-      m_srvManager_->SetComputeRootDescriptorTable(1, emitterSrvIndex_);
+      srvManager_->SetComputeRootDescriptorTable(1, emitterSrvIndex_);
 
       commandList->SetComputeRootConstantBufferView(2, perFrameResource_->GetGPUVirtualAddress());
 
@@ -222,9 +222,9 @@ namespace Tako {
       if (hasNonMeshEmitter) {
         const uint32_t threadGroupsX = (static_cast<uint32_t>(activeEmitters_.size()) + 15) / 16;
         commandList->SetComputeRoot32BitConstant(8, kInvalidMeshTarget, 0);
-        m_srvManager_->SetComputeRootDescriptorTable(5, emitterSrvIndex_);
-        m_srvManager_->SetComputeRootDescriptorTable(6, emitterSrvIndex_);
-        m_srvManager_->SetComputeRootDescriptorTable(7, emitterSrvIndex_);
+        srvManager_->SetComputeRootDescriptorTable(5, emitterSrvIndex_);
+        srvManager_->SetComputeRootDescriptorTable(6, emitterSrvIndex_);
+        srvManager_->SetComputeRootDescriptorTable(7, emitterSrvIndex_);
         commandList->Dispatch(threadGroupsX, 1, 1);
       }
 
@@ -239,11 +239,11 @@ namespace Tako {
           ? edata.meshSkinnedVertexSrvIndex
           : edata.meshVertexSrvIndex;
 
-        m_srvManager_->SetComputeRootDescriptorTable(5,
+        srvManager_->SetComputeRootDescriptorTable(5,
           vtxSrv != 0 ? vtxSrv : emitterSrvIndex_);
-        m_srvManager_->SetComputeRootDescriptorTable(6,
+        srvManager_->SetComputeRootDescriptorTable(6,
           edata.meshIndexSrvIndex != 0 ? edata.meshIndexSrvIndex : emitterSrvIndex_);
-        m_srvManager_->SetComputeRootDescriptorTable(7,
+        srvManager_->SetComputeRootDescriptorTable(7,
           edata.meshAreaPrefixSumSrvIndex != 0 ? edata.meshAreaPrefixSumSrvIndex : emitterSrvIndex_);
         commandList->SetComputeRoot32BitConstant(8, i, 0);
         commandList->Dispatch(1, 1, 1);
@@ -251,23 +251,23 @@ namespace Tako {
     }
 
     // リソースバリアの設定（UAV 同期）
-    m_dx12_->SetUAVBarrier(particleResource_.Get());
-    m_dx12_->SetUAVBarrier(freeListIndexResource_.Get());
-    m_dx12_->SetUAVBarrier(freeListResource_.Get());
+    dx12_->SetUAVBarrier(particleResource_.Get());
+    dx12_->SetUAVBarrier(freeListIndexResource_.Get());
+    dx12_->SetUAVBarrier(freeListResource_.Get());
 
     //--------------------------------------per-emitter 生存数カウンタのリセット--------------------------------------//
     // IntegrateAll が InterlockedAdd で加算する前に perEmitterCount[0..kNumMaxEmitter) を 0 クリアする
     commandList->SetComputeRootSignature(resetCountersRS_.Get());
     commandList->SetPipelineState(resetCountersPSO_.Get());
-    m_srvManager_->SetComputeRootDescriptorTable(0, perEmitterCountUavIndex_);
+    srvManager_->SetComputeRootDescriptorTable(0, perEmitterCountUavIndex_);
     commandList->Dispatch(1, 1, 1); // numthreads(512) で kNumMaxEmitter(500) をカバー
-    m_dx12_->SetUAVBarrier(perEmitterCountResource_.Get());
+    dx12_->SetUAVBarrier(perEmitterCountResource_.Get());
 
     //--------------------------------------IntegrateAll--------------------------------------//
 
     // 深度バッファを NON_PIXEL_SHADER_RESOURCE に遷移（深度衝突用）
-    m_dx12_->TransitionResourceWithTracking(
-      m_dx12_->GetDepthStencilResource(),
+    dx12_->TransitionResourceWithTracking(
+      dx12_->GetDepthStencilResource(),
       D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
     // ルートシグネチャの設定
@@ -277,19 +277,19 @@ namespace Tako {
     commandList->SetPipelineState(integrateAllPSO_.Get());
 
     // ParticleData の UAV の設定 (u0)
-    m_srvManager_->SetComputeRootDescriptorTable(0, particleUavIndex_);
+    srvManager_->SetComputeRootDescriptorTable(0, particleUavIndex_);
 
     // FreeListIndex の UAV の設定 (u1)
-    m_srvManager_->SetComputeRootDescriptorTable(1, freeListIndexUavIndex_);
+    srvManager_->SetComputeRootDescriptorTable(1, freeListIndexUavIndex_);
 
     // FreeList の UAV の設定 (u2)
-    m_srvManager_->SetComputeRootDescriptorTable(2, freeListUavIndex_);
+    srvManager_->SetComputeRootDescriptorTable(2, freeListUavIndex_);
 
     // ForceFields の SRV の設定 (t0)
-    m_srvManager_->SetComputeRootDescriptorTable(3, forceFieldSrvIndex_);
+    srvManager_->SetComputeRootDescriptorTable(3, forceFieldSrvIndex_);
 
     // DepthBuffer の SRV の設定 (t1) — 深度バッファ衝突用
-    m_srvManager_->SetComputeRootDescriptorTable(4, depthSrvIndex_);
+    srvManager_->SetComputeRootDescriptorTable(4, depthSrvIndex_);
 
     // PerFrame の CBV の設定 (b0)
     commandList->SetComputeRootConstantBufferView(5, perFrameResource_->GetGPUVirtualAddress());
@@ -298,17 +298,17 @@ namespace Tako {
     commandList->SetComputeRootConstantBufferView(6, physicsParamsResource_->GetGPUVirtualAddress());
 
     // Emitter SRV の設定 (t2) — IntegrateAll が targetPosition 等を参照
-    m_srvManager_->SetComputeRootDescriptorTable(7, emitterSrvIndex_);
+    srvManager_->SetComputeRootDescriptorTable(7, emitterSrvIndex_);
 
     // perEmitterCount UAV の設定 (u3) — per-emitter 生存数のカウント先
-    m_srvManager_->SetComputeRootDescriptorTable(8, perEmitterCountUavIndex_);
+    srvManager_->SetComputeRootDescriptorTable(8, perEmitterCountUavIndex_);
 
     // ディスパッチ（256スレッド/グループ × ceil(1M/256) = 3907グループ）
     uint32_t integrateGroups = (kNumMaxParticle + 255) / 256;
     commandList->Dispatch(integrateGroups, 1, 1);
 
-    m_dx12_->SetUAVBarrier(particleResource_.Get());
-    m_dx12_->SetUAVBarrier(perEmitterCountResource_.Get()); // BuildDrawArgs が読む前に per-emitter 生存数の書き込みを同期
+    dx12_->SetUAVBarrier(particleResource_.Get());
+    dx12_->SetUAVBarrier(perEmitterCountResource_.Get()); // BuildDrawArgs が読む前に per-emitter 生存数の書き込みを同期
 
 #ifdef _DEBUG
     // アクティブパーティクル数の Readback
@@ -316,8 +316,8 @@ namespace Tako {
 #endif
 
     // 深度バッファを DEPTH_WRITE に復帰
-    m_dx12_->TransitionResourceWithTracking(
-      m_dx12_->GetDepthStencilResource(),
+    dx12_->TransitionResourceWithTracking(
+      dx12_->GetDepthStencilResource(),
       D3D12_RESOURCE_STATE_DEPTH_WRITE);
 
     //--------------------------------------BuildDrawArgs--------------------------------------//
@@ -325,27 +325,27 @@ namespace Tako {
     // スキャッタ用カーソル(=base_e) を構築する
     commandList->SetComputeRootSignature(buildDrawArgsRS_.Get());
     commandList->SetPipelineState(buildDrawArgsPSO_.Get());
-    m_srvManager_->SetComputeRootDescriptorTable(0, perEmitterCountUavIndex_);
-    m_srvManager_->SetComputeRootDescriptorTable(1, drawArgsUavIndex_);
-    m_srvManager_->SetComputeRootDescriptorTable(2, scatterCursorUavIndex_);
-    m_srvManager_->SetComputeRootDescriptorTable(3, emitterIndexCountSrvIndex_);
+    srvManager_->SetComputeRootDescriptorTable(0, perEmitterCountUavIndex_);
+    srvManager_->SetComputeRootDescriptorTable(1, drawArgsUavIndex_);
+    srvManager_->SetComputeRootDescriptorTable(2, scatterCursorUavIndex_);
+    srvManager_->SetComputeRootDescriptorTable(3, emitterIndexCountSrvIndex_);
     commandList->Dispatch(1, 1, 1);
-    m_dx12_->SetUAVBarrier(drawArgsResource_.Get());
-    m_dx12_->SetUAVBarrier(scatterCursorResource_.Get());
+    dx12_->SetUAVBarrier(drawArgsResource_.Get());
+    dx12_->SetUAVBarrier(scatterCursorResource_.Get());
 
     //--------------------------------------ScatterCompact--------------------------------------//
     // 散在する生存パーティクル index を drawIndexList に先頭から詰め直す
     // (particleResource_ は IntegrateAll 直後の UAV state のまま読む)
     commandList->SetComputeRootSignature(scatterCompactRS_.Get());
     commandList->SetPipelineState(scatterCompactPSO_.Get());
-    m_srvManager_->SetComputeRootDescriptorTable(0, particleUavIndex_);
-    m_srvManager_->SetComputeRootDescriptorTable(1, drawIndexUavIndex_);
-    m_srvManager_->SetComputeRootDescriptorTable(2, scatterCursorUavIndex_);
+    srvManager_->SetComputeRootDescriptorTable(0, particleUavIndex_);
+    srvManager_->SetComputeRootDescriptorTable(1, drawIndexUavIndex_);
+    srvManager_->SetComputeRootDescriptorTable(2, scatterCursorUavIndex_);
     {
       uint32_t scatterGroups = (kNumMaxParticle + 255) / 256;
       commandList->Dispatch(scatterGroups, 1, 1);
     }
-    m_dx12_->SetUAVBarrier(drawIndexResource_.Get());
+    dx12_->SetUAVBarrier(drawIndexResource_.Get());
 
     /// ======================== ///
     ///           描画    　     ///
@@ -362,16 +362,16 @@ namespace Tako {
     commandList->IASetVertexBuffers(1, 1, &drawIndexVBV_);
 
     // ParticleData は VS で SRV(t0) として読むため NON_PIXEL へ遷移
-    m_dx12_->TransitionResourceState(D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, particleResource_.Get());
+    dx12_->TransitionResourceState(D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, particleResource_.Get());
     // drawIndexList は per-instance VBV として使うため VERTEX_AND_CONSTANT_BUFFER へ遷移
-    m_dx12_->TransitionResourceWithTracking(drawIndexResource_.Get(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+    dx12_->TransitionResourceWithTracking(drawIndexResource_.Get(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
     // DrawArgs を ExecuteIndirect の引数 state へ遷移
-    m_dx12_->TransitionResourceWithTracking(drawArgsResource_.Get(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+    dx12_->TransitionResourceWithTracking(drawArgsResource_.Get(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
 
     // 全エミッター共通のルート: ParticleData SRV(t0), PerView CBV(b0), Emitter SRV(t2: ビルボード判定用)
-    m_srvManager_->SetGraphicsRootDescriptorTable(0, particleSrvIndex_);
+    srvManager_->SetGraphicsRootDescriptorTable(0, particleSrvIndex_);
     commandList->SetGraphicsRootConstantBufferView(1, perViewResource_->GetGPUVirtualAddress());
-    m_srvManager_->SetGraphicsRootDescriptorTable(3, emitterSrvIndex_);
+    srvManager_->SetGraphicsRootDescriptorTable(3, emitterSrvIndex_);
 
     // per-emitter ループ: エミッターごとに PSO(ブレンドモード)/テクスチャ/
     // 描画モデル(頂点 SRV t3・index SRV t4) を切り替えて 1 つずつ ExecuteIndirect。
@@ -388,9 +388,9 @@ namespace Tako {
       const uint32_t idxSrv = (ed.renderIndexSrvIndex != 0) ? ed.renderIndexSrvIndex : defaultQuadIndexSrvIndex_;
 
       commandList->SetPipelineState(GetBlendPSO(ed.blendMode));      // ブレンドモード
-      m_srvManager_->SetGraphicsRootDescriptorTable(2, texIndex);    // テクスチャ (t0, PS)
-      m_srvManager_->SetGraphicsRootDescriptorTable(4, vtxSrv);      // 描画モデル頂点 (t3)
-      m_srvManager_->SetGraphicsRootDescriptorTable(5, idxSrv);      // 描画モデルインデックス (t4)
+      srvManager_->SetGraphicsRootDescriptorTable(2, texIndex);    // テクスチャ (t0, PS)
+      srvManager_->SetGraphicsRootDescriptorTable(4, vtxSrv);      // 描画モデル頂点 (t3)
+      srvManager_->SetGraphicsRootDescriptorTable(5, idxSrv);      // 描画モデルインデックス (t4)
       commandList->ExecuteIndirect(drawCommandSignature_.Get(), 1, drawArgsResource_.Get(),
         static_cast<UINT64>(i) * drawStride, nullptr, 0);
     }
@@ -398,9 +398,9 @@ namespace Tako {
 
 
     // 各リソースの state を UAV に戻す
-    m_dx12_->TransitionResourceWithTracking(drawArgsResource_.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-    m_dx12_->TransitionResourceWithTracking(drawIndexResource_.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-    m_dx12_->TransitionResourceState(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, particleResource_.Get());
+    dx12_->TransitionResourceWithTracking(drawArgsResource_.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+    dx12_->TransitionResourceWithTracking(drawIndexResource_.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+    dx12_->TransitionResourceState(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, particleResource_.Get());
   }
 
   void GPUParticle::Finalize()
@@ -560,7 +560,7 @@ namespace Tako {
   void GPUParticle::UpdatePerView()
   {
 
-    Matrix4x4 cameraMatrix = Mat4x4::MakeAffine({ .x = 1.0f,.y = 1.0f,.z = 1.0f }, m_camera_->GetRotate(), m_camera_->GetTranslate());
+    Matrix4x4 cameraMatrix = Mat4x4::MakeAffine({ .x = 1.0f,.y = 1.0f,.z = 1.0f }, camera_->GetRotate(), camera_->GetTranslate());
 
 #ifdef _DEBUG
     if (isDebug_) {
@@ -568,7 +568,7 @@ namespace Tako {
     }
 #endif
 
-    const Matrix4x4 viewProjectionMatrix = Mat4x4::Multiply(Mat4x4::Inverse(cameraMatrix), m_camera_->GetProjectionMatrix());
+    const Matrix4x4 viewProjectionMatrix = Mat4x4::Multiply(Mat4x4::Inverse(cameraMatrix), camera_->GetProjectionMatrix());
 
     // ビルボード行列の生成
     const Matrix4x4 backToFrontMatrix = Mat4x4::MakeRotateY(std::numbers::pi_v<float>);
@@ -718,7 +718,7 @@ namespace Tako {
 #endif
       assert(false);
     }
-    hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(RS_.GetAddressOf()));
+    hr = dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(RS_.GetAddressOf()));
     assert(SUCCEEDED(hr));
   }
 
@@ -747,10 +747,10 @@ namespace Tako {
     rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
 
     // shader のコンパイル 
-    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"GPUParticle.VS.hlsl"), L"vs_6_0");
+    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = dx12_->CompileShader(EnginePaths::ShaderPath(L"GPUParticle.VS.hlsl"), L"vs_6_0");
     assert(vertexShaderBlob != nullptr);
 
-    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"GPUParticle.PS.hlsl"), L"ps_6_0");
+    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = dx12_->CompileShader(EnginePaths::ShaderPath(L"GPUParticle.PS.hlsl"), L"ps_6_0");
     assert(pixelShaderBlob != nullptr);
 
     // DepthStencilState (透明描画なので深度書き込みなし)
@@ -775,7 +775,7 @@ namespace Tako {
     graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
     graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 
-    hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&outPSO));
+    hr = dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&outPSO));
     assert(SUCCEEDED(hr));
   }
 
@@ -847,7 +847,7 @@ namespace Tako {
 #endif
       assert(false);
     }
-    hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(initComputeRS_.GetAddressOf()));
+    hr = dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(initComputeRS_.GetAddressOf()));
   }
 
   void GPUParticle::CreateEmitParticleComputeRS()
@@ -970,18 +970,18 @@ namespace Tako {
 #endif
       assert(false);
     }
-    hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(emitParticleRS_.GetAddressOf()));
+    hr = dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(emitParticleRS_.GetAddressOf()));
   }
 
   void GPUParticle::CreateComputeShaderPSO(Microsoft::WRL::ComPtr<ID3D12RootSignature>& RS, Microsoft::WRL::ComPtr<ID3D12PipelineState>& PSO, const std::wstring& shaderName)
   {
-    Microsoft::WRL::ComPtr<IDxcBlob> csBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(shaderName), L"cs_6_0");
+    Microsoft::WRL::ComPtr<IDxcBlob> csBlob = dx12_->CompileShader(EnginePaths::ShaderPath(shaderName), L"cs_6_0");
 
     D3D12_COMPUTE_PIPELINE_STATE_DESC computePipelineStateDesc{};
     computePipelineStateDesc.pRootSignature = RS.Get();
     computePipelineStateDesc.CS = { .pShaderBytecode = csBlob->GetBufferPointer(), .BytecodeLength = csBlob->GetBufferSize() };
 
-    HRESULT hr = m_dx12_->GetDevice()->CreateComputePipelineState(&computePipelineStateDesc, IID_PPV_ARGS(&PSO));
+    HRESULT hr = dx12_->GetDevice()->CreateComputePipelineState(&computePipelineStateDesc, IID_PPV_ARGS(&PSO));
     assert(SUCCEEDED(hr));
   }
 
@@ -996,29 +996,29 @@ namespace Tako {
 
     // 頂点 StructuredBuffer + SRV (VS が SV_VertexID でプルする)
     const UINT vertexCount = static_cast<UINT>(modelData_.vertices.size());
-    defaultQuadVertexResource_ = m_dx12_->MakeBufferResource(sizeof(VertexData) * vertexCount);
+    defaultQuadVertexResource_ = dx12_->MakeBufferResource(sizeof(VertexData) * vertexCount);
     VertexData* mappedVtx = nullptr;
     defaultQuadVertexResource_->Map(0, nullptr, reinterpret_cast<void**>(&mappedVtx));
     std::memcpy(mappedVtx, modelData_.vertices.data(), sizeof(VertexData) * vertexCount);
     defaultQuadVertexResource_->Unmap(0, nullptr);
-    defaultQuadVertexSrvIndex_ = m_srvManager_->Allocate();
-    m_srvManager_->CreateSRVForStructuredBuffer(defaultQuadVertexSrvIndex_, defaultQuadVertexResource_.Get(), vertexCount, sizeof(VertexData));
+    defaultQuadVertexSrvIndex_ = srvManager_->Allocate();
+    srvManager_->CreateSRVForStructuredBuffer(defaultQuadVertexSrvIndex_, defaultQuadVertexResource_.Get(), vertexCount, sizeof(VertexData));
 
     // インデックス StructuredBuffer + SRV ({0,1,2,3,4,5} 素通し。2 三角形)
     const uint32_t indices[6] = { 0, 1, 2, 3, 4, 5 };
     defaultQuadIndexCount_ = _countof(indices);
-    defaultQuadIndexResource_ = m_dx12_->MakeBufferResource(sizeof(indices));
+    defaultQuadIndexResource_ = dx12_->MakeBufferResource(sizeof(indices));
     uint32_t* mappedIdx = nullptr;
     defaultQuadIndexResource_->Map(0, nullptr, reinterpret_cast<void**>(&mappedIdx));
     std::memcpy(mappedIdx, indices, sizeof(indices));
     defaultQuadIndexResource_->Unmap(0, nullptr);
-    defaultQuadIndexSrvIndex_ = m_srvManager_->Allocate();
-    m_srvManager_->CreateSRVForStructuredBuffer(defaultQuadIndexSrvIndex_, defaultQuadIndexResource_.Get(), defaultQuadIndexCount_, sizeof(uint32_t));
+    defaultQuadIndexSrvIndex_ = srvManager_->Allocate();
+    srvManager_->CreateSRVForStructuredBuffer(defaultQuadIndexSrvIndex_, defaultQuadIndexResource_.Get(), defaultQuadIndexCount_, sizeof(uint32_t));
   }
 
   void GPUParticle::CreatePerViewData()
   {
-    m_dx12_->CreateBufferResource(perViewResource_, sizeof(PerView));
+    dx12_->CreateBufferResource(perViewResource_, sizeof(PerView));
 
     // map
     perViewResource_->Map(0, nullptr, reinterpret_cast<void**>(&perViewData_));
@@ -1031,7 +1031,7 @@ namespace Tako {
   void GPUParticle::CreatePerFrameData()
   {
     // PerFrame のリソースを生成
-    m_dx12_->CreateBufferResource(perFrameResource_, sizeof(PerFrame));
+    dx12_->CreateBufferResource(perFrameResource_, sizeof(PerFrame));
     // PerFrame のデータをマップ
     perFrameResource_->Map(0, nullptr, reinterpret_cast<void**>(&perFrameData_));
     // PerFrame のデータを初期化
@@ -1045,11 +1045,11 @@ namespace Tako {
   {
 
     // エミッターリソースの生成
-    m_dx12_->CreateBufferResource(emitterResource_, sizeof(EmitterData) * kNumMaxEmitter);
+    dx12_->CreateBufferResource(emitterResource_, sizeof(EmitterData) * kNumMaxEmitter);
 
     // エミッターリソースの SRV を作成
-    emitterSrvIndex_ = m_srvManager_->Allocate();
-    m_srvManager_->CreateSRVForStructuredBuffer(emitterSrvIndex_, emitterResource_.Get(), kNumMaxEmitter, sizeof(EmitterData));
+    emitterSrvIndex_ = srvManager_->Allocate();
+    srvManager_->CreateSRVForStructuredBuffer(emitterSrvIndex_, emitterResource_.Get(), kNumMaxEmitter, sizeof(EmitterData));
 
     // エミッター配列とスロット管理状態の初期化
     activeEmitters_.clear();
@@ -1066,50 +1066,50 @@ namespace Tako {
   void GPUParticle::CreateParticleResource()
   {
     // ParticleCS のリソースを生成
-    m_dx12_->CreateResourceForUAV(particleResource_, sizeof(ParticleCS) * kNumMaxParticle);
+    dx12_->CreateResourceForUAV(particleResource_, sizeof(ParticleCS) * kNumMaxParticle);
 
     // ParticleCS の UAV を生成
-    particleUavIndex_ = m_srvManager_->Allocate();
-    m_srvManager_->CreateUAV(particleUavIndex_, particleResource_.Get(), kNumMaxParticle, sizeof(ParticleCS));
+    particleUavIndex_ = srvManager_->Allocate();
+    srvManager_->CreateUAV(particleUavIndex_, particleResource_.Get(), kNumMaxParticle, sizeof(ParticleCS));
 
     // ParticleCS の SRV を生成
-    particleSrvIndex_ = m_srvManager_->Allocate();
-    m_srvManager_->CreateSRVForStructuredBuffer(particleSrvIndex_, particleResource_.Get(), kNumMaxParticle, sizeof(ParticleCS));
+    particleSrvIndex_ = srvManager_->Allocate();
+    srvManager_->CreateSRVForStructuredBuffer(particleSrvIndex_, particleResource_.Get(), kNumMaxParticle, sizeof(ParticleCS));
   }
 
   void GPUParticle::CreateFreeListResource()
   {
     // FreeListIndex のリソースを生成
-    m_dx12_->CreateResourceForUAV(freeListIndexResource_, sizeof(int32_t));
+    dx12_->CreateResourceForUAV(freeListIndexResource_, sizeof(int32_t));
 
     // FreeListIndex の UAV を生成
-    freeListIndexUavIndex_ = m_srvManager_->Allocate();
-    m_srvManager_->CreateUAV(freeListIndexUavIndex_, freeListIndexResource_.Get(), 1, sizeof(int32_t));
+    freeListIndexUavIndex_ = srvManager_->Allocate();
+    srvManager_->CreateUAV(freeListIndexUavIndex_, freeListIndexResource_.Get(), 1, sizeof(int32_t));
 
 
     // FreeList のリソースを生成
-    m_dx12_->CreateResourceForUAV(freeListResource_, sizeof(uint32_t) * kNumMaxParticle);
+    dx12_->CreateResourceForUAV(freeListResource_, sizeof(uint32_t) * kNumMaxParticle);
 
     // FreeList の UAV を生成
-    freeListUavIndex_ = m_srvManager_->Allocate();
-    m_srvManager_->CreateUAV(freeListUavIndex_, freeListResource_.Get(), kNumMaxParticle, sizeof(uint32_t));
+    freeListUavIndex_ = srvManager_->Allocate();
+    srvManager_->CreateUAV(freeListUavIndex_, freeListResource_.Get(), kNumMaxParticle, sizeof(uint32_t));
   }
 
   void GPUParticle::CreateIndirectResources()
   {
     // --- per-emitter 生存数カウンタ (uint kNumMaxEmitter 要素) ---
-    m_dx12_->CreateResourceForUAV(perEmitterCountResource_, sizeof(uint32_t) * kNumMaxEmitter);
-    m_dx12_->SetInitialResourceState(perEmitterCountResource_.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-    perEmitterCountUavIndex_ = m_srvManager_->Allocate();
-    m_srvManager_->CreateUAV(perEmitterCountUavIndex_, perEmitterCountResource_.Get(), kNumMaxEmitter, sizeof(uint32_t));
+    dx12_->CreateResourceForUAV(perEmitterCountResource_, sizeof(uint32_t) * kNumMaxEmitter);
+    dx12_->SetInitialResourceState(perEmitterCountResource_.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+    perEmitterCountUavIndex_ = srvManager_->Allocate();
+    srvManager_->CreateUAV(perEmitterCountUavIndex_, perEmitterCountResource_.Get(), kNumMaxEmitter, sizeof(uint32_t));
 
     // --- コンパクション済み生存 index 配列 (uint kNumMaxParticle 要素) ---
-    m_dx12_->CreateResourceForUAV(drawIndexResource_, sizeof(uint32_t) * kNumMaxParticle);
-    m_dx12_->SetInitialResourceState(drawIndexResource_.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-    drawIndexUavIndex_ = m_srvManager_->Allocate();
-    m_srvManager_->CreateUAV(drawIndexUavIndex_, drawIndexResource_.Get(), kNumMaxParticle, sizeof(uint32_t));
-    drawIndexSrvIndex_ = m_srvManager_->Allocate();
-    m_srvManager_->CreateSRVForStructuredBuffer(drawIndexSrvIndex_, drawIndexResource_.Get(), kNumMaxParticle, sizeof(uint32_t));
+    dx12_->CreateResourceForUAV(drawIndexResource_, sizeof(uint32_t) * kNumMaxParticle);
+    dx12_->SetInitialResourceState(drawIndexResource_.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+    drawIndexUavIndex_ = srvManager_->Allocate();
+    srvManager_->CreateUAV(drawIndexUavIndex_, drawIndexResource_.Get(), kNumMaxParticle, sizeof(uint32_t));
+    drawIndexSrvIndex_ = srvManager_->Allocate();
+    srvManager_->CreateSRVForStructuredBuffer(drawIndexSrvIndex_, drawIndexResource_.Get(), kNumMaxParticle, sizeof(uint32_t));
     // per-instance 頂点ストリームとしてのビュー (R32_UINT, stride 4)。
     // 各エミッターの描画は ExecuteIndirect の StartInstanceLocation=base_e でこのストリームをオフセット参照する。
     drawIndexVBV_.BufferLocation = drawIndexResource_->GetGPUVirtualAddress();
@@ -1117,21 +1117,21 @@ namespace Tako {
     drawIndexVBV_.StrideInBytes = sizeof(uint32_t);
 
     // --- per-emitter スキャッタ用カーソル (uint kNumMaxEmitter 要素、各 base_e で初期化される) ---
-    m_dx12_->CreateResourceForUAV(scatterCursorResource_, sizeof(uint32_t) * kNumMaxEmitter);
-    m_dx12_->SetInitialResourceState(scatterCursorResource_.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-    scatterCursorUavIndex_ = m_srvManager_->Allocate();
-    m_srvManager_->CreateUAV(scatterCursorUavIndex_, scatterCursorResource_.Get(), kNumMaxEmitter, sizeof(uint32_t));
+    dx12_->CreateResourceForUAV(scatterCursorResource_, sizeof(uint32_t) * kNumMaxEmitter);
+    dx12_->SetInitialResourceState(scatterCursorResource_.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+    scatterCursorUavIndex_ = srvManager_->Allocate();
+    srvManager_->CreateUAV(scatterCursorUavIndex_, scatterCursorResource_.Get(), kNumMaxEmitter, sizeof(uint32_t));
 
     // --- per-emitter Indirect 描画引数 (D3D12_DRAW_ARGUMENTS kNumMaxEmitter 要素) ---
-    m_dx12_->CreateResourceForUAV(drawArgsResource_, sizeof(D3D12_DRAW_ARGUMENTS) * kNumMaxEmitter);
-    m_dx12_->SetInitialResourceState(drawArgsResource_.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-    drawArgsUavIndex_ = m_srvManager_->Allocate();
-    m_srvManager_->CreateUAV(drawArgsUavIndex_, drawArgsResource_.Get(), kNumMaxEmitter, sizeof(D3D12_DRAW_ARGUMENTS));
+    dx12_->CreateResourceForUAV(drawArgsResource_, sizeof(D3D12_DRAW_ARGUMENTS) * kNumMaxEmitter);
+    dx12_->SetInitialResourceState(drawArgsResource_.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+    drawArgsUavIndex_ = srvManager_->Allocate();
+    srvManager_->CreateUAV(drawArgsUavIndex_, drawArgsResource_.Get(), kNumMaxEmitter, sizeof(D3D12_DRAW_ARGUMENTS));
 
     // --- per-emitter 描画テンプレート (UPLOAD: 描画モデルの index 数。既定板ポリは 6) ---
-    m_dx12_->CreateBufferResource(emitterIndexCountResource_, sizeof(uint32_t) * kNumMaxEmitter);
-    emitterIndexCountSrvIndex_ = m_srvManager_->Allocate();
-    m_srvManager_->CreateSRVForStructuredBuffer(emitterIndexCountSrvIndex_, emitterIndexCountResource_.Get(), kNumMaxEmitter, sizeof(uint32_t));
+    dx12_->CreateBufferResource(emitterIndexCountResource_, sizeof(uint32_t) * kNumMaxEmitter);
+    emitterIndexCountSrvIndex_ = srvManager_->Allocate();
+    srvManager_->CreateSRVForStructuredBuffer(emitterIndexCountSrvIndex_, emitterIndexCountResource_.Get(), kNumMaxEmitter, sizeof(uint32_t));
     emitterIndexCountResource_->Map(0, nullptr, reinterpret_cast<void**>(&emitterIndexCountData_));
     for (uint32_t i = 0; i < kNumMaxEmitter; ++i) emitterIndexCountData_[i] = defaultQuadIndexCount_; // 既定: 全 quad (6)
   }
@@ -1150,7 +1150,7 @@ namespace Tako {
     sigDesc.pArgumentDescs = &argDesc;
     sigDesc.NodeMask = 0;
 
-    HRESULT hr = m_dx12_->GetDevice()->CreateCommandSignature(
+    HRESULT hr = dx12_->GetDevice()->CreateCommandSignature(
       &sigDesc, nullptr, IID_PPV_ARGS(&drawCommandSignature_));
     assert(SUCCEEDED(hr));
   }
@@ -1182,7 +1182,7 @@ namespace Tako {
 #endif
       assert(false);
     }
-    hr = m_dx12_->GetDevice()->CreateRootSignature(0, sig->GetBufferPointer(), sig->GetBufferSize(), IID_PPV_ARGS(resetCountersRS_.GetAddressOf()));
+    hr = dx12_->GetDevice()->CreateRootSignature(0, sig->GetBufferPointer(), sig->GetBufferSize(), IID_PPV_ARGS(resetCountersRS_.GetAddressOf()));
     assert(SUCCEEDED(hr));
   }
 
@@ -1227,7 +1227,7 @@ namespace Tako {
 #endif
       assert(false);
     }
-    hr = m_dx12_->GetDevice()->CreateRootSignature(0, sig->GetBufferPointer(), sig->GetBufferSize(), IID_PPV_ARGS(buildDrawArgsRS_.GetAddressOf()));
+    hr = dx12_->GetDevice()->CreateRootSignature(0, sig->GetBufferPointer(), sig->GetBufferSize(), IID_PPV_ARGS(buildDrawArgsRS_.GetAddressOf()));
     assert(SUCCEEDED(hr));
   }
 
@@ -1262,7 +1262,7 @@ namespace Tako {
 #endif
       assert(false);
     }
-    hr = m_dx12_->GetDevice()->CreateRootSignature(0, sig->GetBufferPointer(), sig->GetBufferSize(), IID_PPV_ARGS(scatterCompactRS_.GetAddressOf()));
+    hr = dx12_->GetDevice()->CreateRootSignature(0, sig->GetBufferPointer(), sig->GetBufferSize(), IID_PPV_ARGS(scatterCompactRS_.GetAddressOf()));
     assert(SUCCEEDED(hr));
   }
 
@@ -1282,7 +1282,7 @@ namespace Tako {
     D3D12_HEAP_PROPERTIES heapProps = {};
     heapProps.Type = D3D12_HEAP_TYPE_READBACK;
 
-    HRESULT hr = m_dx12_->GetDevice()->CreateCommittedResource(
+    HRESULT hr = dx12_->GetDevice()->CreateCommittedResource(
       &heapProps,
       D3D12_HEAP_FLAG_NONE,
       &bufferDesc,
@@ -1301,10 +1301,10 @@ namespace Tako {
     }
     readbackFrameCounter_ = 0;
 
-    ID3D12GraphicsCommandList* commandList = m_dx12_->GetCommandList();
+    ID3D12GraphicsCommandList* commandList = dx12_->GetCommandList();
 
     // freeListIndexResource_: UAV → COPY_SOURCE
-    m_dx12_->TransitionResourceState(
+    dx12_->TransitionResourceState(
       D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
       D3D12_RESOURCE_STATE_COPY_SOURCE,
       freeListIndexResource_.Get());
@@ -1316,7 +1316,7 @@ namespace Tako {
       sizeof(int32_t));
 
     // freeListIndexResource_: COPY_SOURCE → UAV
-    m_dx12_->TransitionResourceState(
+    dx12_->TransitionResourceState(
       D3D12_RESOURCE_STATE_COPY_SOURCE,
       D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
       freeListIndexResource_.Get());
@@ -1467,18 +1467,18 @@ namespace Tako {
 #endif
       assert(false);
     }
-    hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(integrateAllRS_.GetAddressOf()));
+    hr = dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(integrateAllRS_.GetAddressOf()));
     assert(SUCCEEDED(hr));
   }
 
   void GPUParticle::CreateForceFieldResource()
   {
     // フォースフィールドリソースの生成（UPLOAD ヒープ — CPU から毎フレーム書き換え可能）
-    m_dx12_->CreateBufferResource(forceFieldResource_, sizeof(ForceFieldData) * kMaxForceFields);
+    dx12_->CreateBufferResource(forceFieldResource_, sizeof(ForceFieldData) * kMaxForceFields);
 
     // SRV を作成
-    forceFieldSrvIndex_ = m_srvManager_->Allocate();
-    m_srvManager_->CreateSRVForStructuredBuffer(forceFieldSrvIndex_, forceFieldResource_.Get(), kMaxForceFields, sizeof(ForceFieldData));
+    forceFieldSrvIndex_ = srvManager_->Allocate();
+    srvManager_->CreateSRVForStructuredBuffer(forceFieldSrvIndex_, forceFieldResource_.Get(), kMaxForceFields, sizeof(ForceFieldData));
 
     // フォースフィールドリストの初期化
     forceFields_.clear();
@@ -1493,7 +1493,7 @@ namespace Tako {
   void GPUParticle::CreatePhysicsParamsResource()
   {
     // 物理パラメータの定数バッファを生成
-    m_dx12_->CreateBufferResource(physicsParamsResource_, sizeof(PhysicsParamsData));
+    dx12_->CreateBufferResource(physicsParamsResource_, sizeof(PhysicsParamsData));
 
     // データをマップ
     physicsParamsResource_->Map(0, nullptr, reinterpret_cast<void**>(&physicsParamsData_));
@@ -1527,13 +1527,13 @@ namespace Tako {
   {
     // 既存の SRV を解放（リサイズ時の再作成対応）
     if (depthSrvIndex_ != UINT32_MAX) {
-      m_srvManager_->Free(depthSrvIndex_);
+      srvManager_->Free(depthSrvIndex_);
       depthSrvIndex_ = UINT32_MAX;
     }
-    depthSrvIndex_ = m_srvManager_->Allocate();
-    m_srvManager_->CreateSRVForTexture2D(
+    depthSrvIndex_ = srvManager_->Allocate();
+    srvManager_->CreateSRVForTexture2D(
       depthSrvIndex_,
-      m_dx12_->GetDepthStencilResource(),
+      dx12_->GetDepthStencilResource(),
       DXGI_FORMAT_R32_FLOAT,
       1);
   }
@@ -1570,8 +1570,8 @@ namespace Tako {
     // --- カメラ行列の計算（深度衝突用） ---
     Matrix4x4 cameraMatrix = Mat4x4::MakeAffine(
       { .x = 1.0f, .y = 1.0f, .z = 1.0f },
-      m_camera_->GetRotate(), m_camera_->GetTranslate());
-    Vector3 camPos = m_camera_->GetTranslate();
+      camera_->GetRotate(), camera_->GetTranslate());
+    Vector3 camPos = camera_->GetTranslate();
 
 #ifdef _DEBUG
     if (isDebug_) {
@@ -1584,7 +1584,7 @@ namespace Tako {
 #endif
 
     Matrix4x4 vp = Mat4x4::Multiply(
-      Mat4x4::Inverse(cameraMatrix), m_camera_->GetProjectionMatrix());
+      Mat4x4::Inverse(cameraMatrix), camera_->GetProjectionMatrix());
 
     physicsParamsData_->viewProj = vp;
     physicsParamsData_->invViewProj = Mat4x4::Inverse(vp);

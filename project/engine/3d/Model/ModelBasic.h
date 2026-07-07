@@ -33,7 +33,7 @@ namespace Tako {
     //============================================================
     //Getter
     //============================================================
-    DX12Basic* GetDX12Basic() { return m_dx12_; }
+    DX12Basic* GetDX12Basic() { return dx12_; }
     const std::string& GetDirectoryFolderName() const { return directoryFolderName_; }
     const std::string& GetModelFolderName() const { return modelFolderName_; }
 
@@ -49,7 +49,7 @@ namespace Tako {
     void CreateCSPSO();
 
   private: //メンバー変数
-    DX12Basic*                                  m_dx12_;               ///< DirectX12基盤システムへのポインタ
+    DX12Basic*                                  dx12_;               ///< DirectX12基盤システムへのポインタ
     std::string                                 directoryFolderName_;  ///< ディレクトリフォルダパス
     std::string                                 modelFolderName_;      ///< モデルフォルダ名
     Microsoft::WRL::ComPtr<ID3D12RootSignature> csRootSignature_;      ///< コンピュートシェーダー用ルートシグネチャ

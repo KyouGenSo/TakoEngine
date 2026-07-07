@@ -11,7 +11,7 @@ namespace Tako {
 
   void ModelBasic::Initialize(DX12Basic* dx12)
   {
-    m_dx12_ = dx12;
+    dx12_ = dx12;
 
     directoryFolderName_ = "resources";
 
@@ -22,8 +22,8 @@ namespace Tako {
 
   void ModelBasic::SetSkinningCSSetting()
   {
-    m_dx12_->GetCommandList()->SetComputeRootSignature(csRootSignature_.Get());
-    m_dx12_->GetCommandList()->SetPipelineState(csPipelineState_.Get());
+    dx12_->GetCommandList()->SetComputeRootSignature(csRootSignature_.Get());
+    dx12_->GetCommandList()->SetPipelineState(csPipelineState_.Get());
   }
 
   void ModelBasic::CreateCSRootSignature()
@@ -106,7 +106,7 @@ namespace Tako {
       assert(false);
     }
 
-    hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(csRootSignature_.GetAddressOf()));
+    hr = dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(csRootSignature_.GetAddressOf()));
     assert(SUCCEEDED(hr));
 
 #ifdef _DEBUG
@@ -119,13 +119,13 @@ namespace Tako {
   {
     CreateCSRootSignature();
 
-    Microsoft::WRL::ComPtr<IDxcBlob> csBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"Skinning.CS.hlsl"), L"cs_6_0");
+    Microsoft::WRL::ComPtr<IDxcBlob> csBlob = dx12_->CompileShader(EnginePaths::ShaderPath(L"Skinning.CS.hlsl"), L"cs_6_0");
 
     D3D12_COMPUTE_PIPELINE_STATE_DESC computePipelineStateDesc{};
     computePipelineStateDesc.pRootSignature = csRootSignature_.Get();
     computePipelineStateDesc.CS = { .pShaderBytecode = csBlob->GetBufferPointer(), .BytecodeLength = csBlob->GetBufferSize() };
 
-    HRESULT hr = m_dx12_->GetDevice()->CreateComputePipelineState(&computePipelineStateDesc, IID_PPV_ARGS(&csPipelineState_));
+    HRESULT hr = dx12_->GetDevice()->CreateComputePipelineState(&computePipelineStateDesc, IID_PPV_ARGS(&csPipelineState_));
     assert(SUCCEEDED(hr));
   }
 

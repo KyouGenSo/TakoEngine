@@ -151,7 +151,7 @@ namespace Tako {
     //============================================================
     //Setter
     //============================================================
-    void SetCamera(Camera* camera) { m_camera_ = camera; }
+    void SetCamera(Camera* camera) { camera_ = camera; }
     void SetIsDebug(bool isDebug) { isDebug_ = isDebug; }
 
     //============================================================
@@ -166,8 +166,8 @@ namespace Tako {
 
     [[nodiscard]] const std::vector<ForceFieldData>& GetForceFields() const { return forceFields_; }
     [[nodiscard]] bool GetIsDebug() const { return isDebug_; }
-    SrvManager* GetSrvManager() const { return m_srvManager_; }
-    DX12Basic* GetDx12() const { return m_dx12_; }
+    SrvManager* GetSrvManager() const { return srvManager_; }
+    DX12Basic* GetDx12() const { return dx12_; }
 
     // フレンドクラス宣言
     friend class GPUParticleEmitter;
@@ -355,9 +355,9 @@ namespace Tako {
     bool isDebug_  = false;  ///< デバッグモードフラグ
 
     //基盤
-    DX12Basic*  m_dx12_       = nullptr;  ///< DirectX 12基盤クラスへのポインタ
-    SrvManager* m_srvManager_ = nullptr;  ///< SRV マネージャへのポインタ
-    Camera*     m_camera_;                ///< カメラへのポインタ
+    DX12Basic*  dx12_       = nullptr;  ///< DirectX 12基盤クラスへのポインタ
+    SrvManager* srvManager_ = nullptr;  ///< SRV マネージャへのポインタ
+    Camera*     camera_;                ///< カメラへのポインタ
     ModelData   modelData_;               ///< モデルデータ
 
     //ルートシグネチャ

@@ -97,7 +97,7 @@ public: // メンバー関数
   /// <param name="model">所有権を渡す Model（unique_ptr）</param>
   void SetModel(std::unique_ptr<Model> model);
 
-  void SetCamera(Camera** camera) { m_camera_ = camera; }
+  void SetCamera(Camera** camera) { camera_ = camera; }
   void SetTransform(const Transform& transform) { transform_ = transform; }
   void SetScale(const Vector3& scale) { transform_.scale = scale; }
   void SetRotate(const Vector3& rotate) { transform_.rotate = rotate; }
@@ -179,7 +179,7 @@ public: // メンバー関数
 
   Model* GetModel() const
   {
-    return m_model_.get();
+    return model_.get();
   }
 
   /// <summary>
@@ -225,8 +225,8 @@ private: // プライベートメンバー関数
   void CreateCameraForGPUData();
 
 private: // メンバー変数
-  Camera**               m_camera_  = nullptr;
-  std::unique_ptr<Model> m_model_;
+  Camera**               camera_  = nullptr;
+  std::unique_ptr<Model> model_;
   Transform              transform_;
 
   //バッファリソース

@@ -25,7 +25,7 @@ namespace Tako {
 
   void Draw2D::Initialize(DX12Basic* dx12)
   {
-    m_dx12_ = dx12;
+    dx12_ = dx12;
 
     isDebug_ = false;
 
@@ -66,7 +66,7 @@ namespace Tako {
   void Draw2D::Update()
   {
     if (!isDebug_) {
-      transformationMatrixData_->WVP = m_camera_->GetViewMatrix() * m_camera_->GetProjectionMatrix();
+      transformationMatrixData_->WVP = camera_->GetViewMatrix() * camera_->GetProjectionMatrix();
     }
     else {
 #ifdef _DEBUG
@@ -346,22 +346,22 @@ namespace Tako {
     // 描画する線がある場合のみ処理
     if (lineIndex_ > 0) {
       // ルートシグネチャの設定
-      m_dx12_->GetCommandList()->SetGraphicsRootSignature(lineRootSignature_.Get());
+      dx12_->GetCommandList()->SetGraphicsRootSignature(lineRootSignature_.Get());
 
       // パイプラインステートの設定
-      m_dx12_->GetCommandList()->SetPipelineState(linePipelineState_.Get());
+      dx12_->GetCommandList()->SetPipelineState(linePipelineState_.Get());
 
       // トポロジの設定
-      m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
+      dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
 
       // 頂点バッファビューの設定
-      m_dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &lineData_->vertexBufferView);
+      dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &lineData_->vertexBufferView);
 
       // 座標変換行列の設定
-      m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, transformationMatrixBuffer_->GetGPUVirtualAddress());
+      dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, transformationMatrixBuffer_->GetGPUVirtualAddress());
 
       // 描画
-      m_dx12_->GetCommandList()->DrawInstanced(lineIndex_, lineIndex_ / kVertexCountLine, 0, 0);
+      dx12_->GetCommandList()->DrawInstanced(lineIndex_, lineIndex_ / kVertexCountLine, 0, 0);
     }
 
 
@@ -371,22 +371,22 @@ namespace Tako {
     // 描画する三角形がある場合のみ処理
     if (triangleIndex_ > 0) {
       // ルートシグネチャの設定
-      m_dx12_->GetCommandList()->SetGraphicsRootSignature(triangleRootSignature_.Get());
+      dx12_->GetCommandList()->SetGraphicsRootSignature(triangleRootSignature_.Get());
 
       // パイプラインステートの設定
-      m_dx12_->GetCommandList()->SetPipelineState(trianglePipelineState_.Get());
+      dx12_->GetCommandList()->SetPipelineState(trianglePipelineState_.Get());
 
       // トポロジの設定
-      m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+      dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
       // 頂点バッファビューの設定
-      m_dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &triangleData_->vertexBufferView);
+      dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &triangleData_->vertexBufferView);
 
       // 座標変換行列の設定
-      m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, transformationMatrixBuffer_->GetGPUVirtualAddress());
+      dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, transformationMatrixBuffer_->GetGPUVirtualAddress());
 
       // 描画
-      m_dx12_->GetCommandList()->DrawInstanced(triangleIndex_, triangleIndex_ / kVertexCountTriangle, 0, 0);
+      dx12_->GetCommandList()->DrawInstanced(triangleIndex_, triangleIndex_ / kVertexCountTriangle, 0, 0);
     }
 
     /// ================================== ///
@@ -395,16 +395,16 @@ namespace Tako {
     // 描画する BOX がある場合のみ処理
     if (boxVertexIndex_ > 0) {
       // 頂点バッファビューの設定
-      m_dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &boxData_->vertexBufferView);
+      dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &boxData_->vertexBufferView);
 
       // インデックスバッファビューの設定
-      m_dx12_->GetCommandList()->IASetIndexBuffer(&boxData_->indexBufferView);
+      dx12_->GetCommandList()->IASetIndexBuffer(&boxData_->indexBufferView);
 
       // 座標変換行列の設定
-      m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, transformationMatrixBuffer_->GetGPUVirtualAddress());
+      dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, transformationMatrixBuffer_->GetGPUVirtualAddress());
 
       // 描画
-      m_dx12_->GetCommandList()->DrawIndexedInstanced(kIndexCountBox, boxVertexIndex_ / kVertexCountBox, 0, 0, 0);
+      dx12_->GetCommandList()->DrawIndexedInstanced(kIndexCountBox, boxVertexIndex_ / kVertexCountBox, 0, 0, 0);
     }
   }
 
@@ -448,7 +448,7 @@ namespace Tako {
       assert(false);
     }
 
-    hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature.GetAddressOf()));
+    hr = dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature.GetAddressOf()));
     assert(SUCCEEDED(hr));
   }
 
@@ -495,10 +495,10 @@ namespace Tako {
     rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
 
     // shader のコンパイル
-    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"2D.VS.hlsl"), L"vs_6_0");
+    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = dx12_->CompileShader(EnginePaths::ShaderPath(L"2D.VS.hlsl"), L"vs_6_0");
     assert(vertexShaderBlob != nullptr);
 
-    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"2D.PS.hlsl"), L"ps_6_0");
+    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = dx12_->CompileShader(EnginePaths::ShaderPath(L"2D.PS.hlsl"), L"ps_6_0");
     assert(pixelShaderBlob != nullptr);
 
     // PSO の生成
@@ -519,7 +519,7 @@ namespace Tako {
     graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
 
     // 実際に生成
-    hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState));
+    hr = dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState));
     assert(SUCCEEDED(hr));
   }
 
@@ -528,8 +528,8 @@ namespace Tako {
     UINT vertexBufferSize = sizeof(VertexData) * kVertexCountTriangle * kTriangleMaxCount;
 
     // 頂点リソースを生成
-    triangleData->vertexBuffer = m_dx12_->MakeBufferResource(vertexBufferSize);
-    //m_dx12_->CreateBufferResource(triangleData->vertexBuffer, vertexBufferSize);
+    triangleData->vertexBuffer = dx12_->MakeBufferResource(vertexBufferSize);
+    //dx12_->CreateBufferResource(triangleData->vertexBuffer, vertexBufferSize);
 
     // 頂点バッファビューを作成する
     triangleData->vertexBufferView.BufferLocation = triangleData->vertexBuffer->GetGPUVirtualAddress();
@@ -547,10 +547,10 @@ namespace Tako {
     UINT indexBufferSize = sizeof(uint32_t) * kIndexCountBox * kBoxMaxCount;
 
     // 頂点リソースを生成
-    boxData->vertexBuffer = m_dx12_->MakeBufferResource(vertexBufferSize);
+    boxData->vertexBuffer = dx12_->MakeBufferResource(vertexBufferSize);
 
     // インデックスリソースを生成
-    boxData->indexBuffer = m_dx12_->MakeBufferResource(indexBufferSize);
+    boxData->indexBuffer = dx12_->MakeBufferResource(indexBufferSize);
 
     // 頂点バッファビューを作成する
     boxData->vertexBufferView.BufferLocation = boxData->vertexBuffer->GetGPUVirtualAddress();
@@ -574,8 +574,8 @@ namespace Tako {
     UINT vertexBufferSize = sizeof(VertexData) * kVertexCountLine * kLineMaxCount;
 
     // 頂点リソースを生成
-    lineData->vertexBuffer = m_dx12_->MakeBufferResource(vertexBufferSize);
-    //m_dx12_->CreateBufferResource(lineData->vertexBuffer, vertexBufferSize);
+    lineData->vertexBuffer = dx12_->MakeBufferResource(vertexBufferSize);
+    //dx12_->CreateBufferResource(lineData->vertexBuffer, vertexBufferSize);
 
     // 頂点バッファビューを作成する
     lineData->vertexBufferView.BufferLocation = lineData->vertexBuffer->GetGPUVirtualAddress();
@@ -589,12 +589,12 @@ namespace Tako {
   void Draw2D::CreateTransformMatData()
   {
     // 座標変換行列リソースを生成
-    transformationMatrixBuffer_ = m_dx12_->MakeBufferResource(sizeof(TransformationMatrix));
+    transformationMatrixBuffer_ = dx12_->MakeBufferResource(sizeof(TransformationMatrix));
 
     // 座標変換行列リソースをマップ
     transformationMatrixBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixData_));
 
-    transformationMatrixData_->WVP = m_camera_->GetViewMatrix() * m_camera_->GetProjectionMatrix();
+    transformationMatrixData_->WVP = camera_->GetViewMatrix() * camera_->GetProjectionMatrix();
   }
 
 } // namespace Tako

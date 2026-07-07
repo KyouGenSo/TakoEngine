@@ -45,7 +45,7 @@ namespace Tako {
 
   void PostEffectManager::Initialize(DX12Basic* dx12)
   {
-    m_dx12_ = dx12;
+    dx12_ = dx12;
 
     CreateRenderTextures();
 
@@ -69,7 +69,7 @@ namespace Tako {
     depthSrvIndex_ = SrvManager::GetInstance()->Allocate();
     SrvManager::GetInstance()->CreateSRVForTexture2D(
       depthSrvIndex_,
-      m_dx12_->GetDepthStencilResource(),
+      dx12_->GetDepthStencilResource(),
       DXGI_FORMAT_R32_FLOAT,
       1
     );
@@ -110,10 +110,10 @@ namespace Tako {
 
   void PostEffectManager::BeginDrawEffectTarget()
   {
-    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
+    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dx12_->GetDSVHeapHandleStart();
 
     // エフェクト適用対象 RT に描画
-    m_dx12_->GetCommandList()->OMSetRenderTargets(
+    dx12_->GetCommandList()->OMSetRenderTargets(
       1,
       &effectTargetRT_.rtvHandle,
       false,
@@ -127,7 +127,7 @@ namespace Tako {
     };
 
     // エフェクト適用対象 RT をクリア
-    m_dx12_->GetCommandList()->ClearRenderTargetView(effectTargetRT_.rtvHandle, clearColor, 0, nullptr);
+    dx12_->GetCommandList()->ClearRenderTargetView(effectTargetRT_.rtvHandle, clearColor, 0, nullptr);
   }
 
   void PostEffectManager::BeginDrawNonEffectTarget()
@@ -138,10 +138,10 @@ namespace Tako {
       D3D12_RESOURCE_STATE_RENDER_TARGET
     );
 
-    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
+    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dx12_->GetDSVHeapHandleStart();
 
     // 非適用対象 RT に描画
-    m_dx12_->GetCommandList()->OMSetRenderTargets(
+    dx12_->GetCommandList()->OMSetRenderTargets(
       1,
       &nonEffectTargetRT_.rtvHandle,
       false,
@@ -165,7 +165,7 @@ namespace Tako {
       );
 
       // スワップチェインに描画
-      m_dx12_->SetSwapChain();
+      dx12_->SetSwapChain();
 
       // NoEffect を使って単純コピー
       if (effectRegistry_.find("NoEffect") != effectRegistry_.end()) {
@@ -184,7 +184,7 @@ namespace Tako {
       );
     }
     else {
-      m_dx12_->SetSwapChain();
+      dx12_->SetSwapChain();
 
       // 非適用対象 RT をシェーダーリソースに遷移
       TransitionResourceWithTracking(
@@ -454,7 +454,7 @@ namespace Tako {
     // 深度バッファの SRV も更新
     SrvManager::GetInstance()->CreateSRVForTexture2D(
       depthSrvIndex_,
-      m_dx12_->GetDepthStencilResource(),
+      dx12_->GetDepthStencilResource(),
       DXGI_FORMAT_R32_FLOAT,
       1
     );
@@ -632,7 +632,7 @@ namespace Tako {
   void PostEffectManager::CreateRenderTextures() {
     auto createRT = [this](RenderTexture& rt, int rtvIndex, const Vector4& clearColor) {
       // リソース作成
-      m_dx12_->CreateRenderTextureResource(
+      dx12_->CreateRenderTextureResource(
         rt.resource,
         WinApp::clientWidth,
         WinApp::clientHeight,
@@ -641,11 +641,11 @@ namespace Tako {
       );
 
       // RTV 作成
-      rt.rtvHandle = m_dx12_->GetRenderTextureRTVHandle(rtvIndex);
+      rt.rtvHandle = dx12_->GetRenderTextureRTVHandle(rtvIndex);
       D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
       rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
       rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-      m_dx12_->GetDevice()->CreateRenderTargetView(
+      dx12_->GetDevice()->CreateRenderTargetView(
         rt.resource.Get(), &rtvDesc, rt.rtvHandle
       );
 
@@ -684,7 +684,7 @@ namespace Tako {
       return;
     }
     effectRegistry_[name] = std::move(effect);
-    effectRegistry_[name]->Initialize(m_dx12_, name);
+    effectRegistry_[name]->Initialize(dx12_, name);
 
     // 利用可能なエフェクトリストに追加（NoEffect 以外）
     if (name != "NoEffect") {
@@ -721,10 +721,10 @@ namespace Tako {
     }
 
     if (needsDepthBuffer) {
-      m_dx12_->TransitionResourceState(
+      dx12_->TransitionResourceState(
         D3D12_RESOURCE_STATE_DEPTH_WRITE,
         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-        m_dx12_->GetDepthStencilResource()
+        dx12_->GetDepthStencilResource()
       );
     }
 
@@ -800,10 +800,10 @@ namespace Tako {
 
     // リソース復元
     if (needsDepthBuffer) {
-      m_dx12_->TransitionResourceState(
+      dx12_->TransitionResourceState(
         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
         D3D12_RESOURCE_STATE_DEPTH_WRITE,
-        m_dx12_->GetDepthStencilResource()
+        dx12_->GetDepthStencilResource()
       );
     }
 
@@ -888,7 +888,7 @@ namespace Tako {
     barrier.Transition.pResource = resource;
     barrier.Transition.StateBefore = currentState;
     barrier.Transition.StateAfter = newState;
-    m_dx12_->GetCommandList()->ResourceBarrier(1, &barrier);
+    dx12_->GetCommandList()->ResourceBarrier(1, &barrier);
 
     // 新しい状態を記録
     resourceStates_[resource] = newState;

@@ -33,10 +33,10 @@ namespace Tako {
 
   void Model::Initialize(ModelBasic* modelBasic, const std::string& fileName)
   {
-    m_modelBasic_ = modelBasic;
-    m_dx12_ = m_modelBasic_->GetDX12Basic();
-    directoryFolderName_ = m_modelBasic_->GetDirectoryFolderName();
-    ModelFolderName_ = m_modelBasic_->GetModelFolderName();
+    modelBasic_ = modelBasic;
+    dx12_ = modelBasic_->GetDX12Basic();
+    directoryFolderName_ = modelBasic_->GetDirectoryFolderName();
+    ModelFolderName_ = modelBasic_->GetModelFolderName();
     modelFileName_ = fileName;
     hasAnimation_ = false;  // LoadModelFile で自動設定される
     hasSkeleton_ = false;   // LoadModelFile で自動設定される
@@ -70,8 +70,8 @@ namespace Tako {
 
   void Model::InitializeFromPrimitive(ModelBasic* modelBasic, std::unique_ptr<Mesh> mesh, const std::string& debugName)
   {
-    m_modelBasic_ = modelBasic;
-    m_dx12_ = m_modelBasic_->GetDX12Basic();
+    modelBasic_ = modelBasic;
+    dx12_ = modelBasic_->GetDX12Basic();
     modelFileName_ = debugName;
     rootNode_.localMatrix = Mat4x4::MakeIdentity();
     hasAnimation_ = false;
@@ -343,7 +343,7 @@ namespace Tako {
 
       // メッシュデータの保存
       auto newMesh = std::make_unique<Mesh>();
-      newMesh->Initialize(m_modelBasic_, vertices, indices, textureData);
+      newMesh->Initialize(modelBasic_, vertices, indices, textureData);
 
       // メッシュ名を設定（空名はインデックスで補完、同名は "_2","_3" で一意化）
       std::string meshName = mesh->mName.C_Str();
@@ -363,8 +363,8 @@ namespace Tako {
   std::unique_ptr<Model> Model::Clone() const
   {
     auto newModel = std::make_unique<Model>();
-    newModel->m_modelBasic_ = this->m_modelBasic_;
-    newModel->m_dx12_ = this->m_dx12_;
+    newModel->modelBasic_ = this->modelBasic_;
+    newModel->dx12_ = this->dx12_;
     newModel->directoryFolderName_ = this->directoryFolderName_;
     newModel->ModelFolderName_ = this->ModelFolderName_;
     newModel->modelFileName_ = this->modelFileName_;
@@ -1065,7 +1065,7 @@ namespace Tako {
     // UAV バリアを設定
     for (auto& mesh : meshes_) {
       if (mesh->HasSkinning()) {
-        m_dx12_->SetUAVBarrier(mesh->GetUAVVertexResource());
+        dx12_->SetUAVBarrier(mesh->GetUAVVertexResource());
       }
     }
   }
@@ -1078,7 +1078,7 @@ namespace Tako {
     }
 
     // ComputeShader の設定
-    m_modelBasic_->SetSkinningCSSetting();
+    modelBasic_->SetSkinningCSSetting();
 
     // 共有パレット（ボーン行列）の SRV を設定
     SrvManager::GetInstance()->SetComputeRootDescriptorTable(0, paletteSrvIndex_);
@@ -1131,7 +1131,7 @@ namespace Tako {
     }
 
     // 2. パレットリソースの作成
-    DX12Basic* dx12 = m_dx12_;
+    DX12Basic* dx12 = dx12_;
     UINT paletteSize = static_cast<UINT>(sizeof(WellForGPU) * skeleton_.joints.size());
 
     // パレットバッファの生成

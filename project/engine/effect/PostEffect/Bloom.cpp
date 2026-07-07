@@ -40,7 +40,7 @@ namespace Tako {
 
   void Bloom::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, [[maybe_unused]] uint32_t depthSrvIndex, [[maybe_unused]] const Vector4& clearColor)
   {
-    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_dx12_->GetDSVHeapHandleStart();
+    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dx12_->GetDSVHeapHandleStart();
 
     //---------------------------Pass1 HighLunExtract---------------------------//
     DrawFullScreenPass(rootSignatures_["ThresholdExtract"].Get(), pipelineStates_["ThresholdExtract"].Get(),
@@ -67,23 +67,23 @@ namespace Tako {
       D3D12_RESOURCE_STATE_RENDER_TARGET,
       D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
-    m_dx12_->GetCommandList()->OMSetRenderTargets(1,
+    dx12_->GetCommandList()->OMSetRenderTargets(1,
       &outputRtvHandle,
       false,
       &dsvHandle);
 
-    m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_["BloomCombine"].Get());
-    m_dx12_->GetCommandList()->SetPipelineState(pipelineStates_["BloomCombine"].Get());
+    dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_["BloomCombine"].Get());
+    dx12_->GetCommandList()->SetPipelineState(pipelineStates_["BloomCombine"].Get());
 
-    m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+    dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-    m_dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, combineCBufferRes_->GetGPUVirtualAddress());
+    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, combineCBufferRes_->GetGPUVirtualAddress());
 
     // t0=元画像, t1(スロット2)=ブラー結果
     SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, inputSrvIndex);
     SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, resultRT_.srvIndex);
 
-    m_dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+    dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
 
 
     //---------------------------リソースステートを戻す---------------------------//
@@ -234,7 +234,7 @@ namespace Tako {
       assert(false);
     }
 
-    hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignatures_[shaderName].GetAddressOf()));
+    hr = dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignatures_[shaderName].GetAddressOf()));
     assert(SUCCEEDED(hr));
   }
 
@@ -264,11 +264,11 @@ namespace Tako {
     rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
 
     // shader のコンパイル
-    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"FullScreen.VS.hlsl"), L"vs_6_0");
+    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = dx12_->CompileShader(EnginePaths::ShaderPath(L"FullScreen.VS.hlsl"), L"vs_6_0");
     assert(vertexShaderBlob != nullptr);
 
     std::wstring psPath = EnginePaths::ShaderPath(StringUtility::ConvertString(shaderName) + L".PS.hlsl");
-    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(psPath, L"ps_6_0");
+    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = dx12_->CompileShader(psPath, L"ps_6_0");
     assert(pixelShaderBlob != nullptr);
 
     // DepthStencilState
@@ -291,16 +291,16 @@ namespace Tako {
     graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
     graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
-    hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineStates_[shaderName]));
+    hr = dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineStates_[shaderName]));
     assert(SUCCEEDED(hr));
   }
 
   void Bloom::CreateCBV()
   {
-    extractCBufferRes_ = m_dx12_->MakeBufferResource(sizeof(HighLumExtrcatParam));
-    blurCBufferRes1_ = m_dx12_->MakeBufferResource(sizeof(GaussianBlurParam));
-    blurCBufferRes2_ = m_dx12_->MakeBufferResource(sizeof(GaussianBlurParam));
-    combineCBufferRes_ = m_dx12_->MakeBufferResource(sizeof(BloomCombineParam));
+    extractCBufferRes_ = dx12_->MakeBufferResource(sizeof(HighLumExtrcatParam));
+    blurCBufferRes1_ = dx12_->MakeBufferResource(sizeof(GaussianBlurParam));
+    blurCBufferRes2_ = dx12_->MakeBufferResource(sizeof(GaussianBlurParam));
+    combineCBufferRes_ = dx12_->MakeBufferResource(sizeof(BloomCombineParam));
 
     // データの設定
     extractCBufferRes_->Map(0, nullptr, reinterpret_cast<void**>(&extractData_));
@@ -326,7 +326,7 @@ namespace Tako {
   {
     auto createRT = [this](RenderTexture& rt, int rtvIndex, const Vector4& clearColor) {
       // リソース作成
-      m_dx12_->CreateRenderTextureResource(
+      dx12_->CreateRenderTextureResource(
         rt.resource,
         WinApp::clientWidth,
         WinApp::clientHeight,
@@ -335,11 +335,11 @@ namespace Tako {
       );
 
       // RTV 作成
-      rt.rtvHandle = m_dx12_->GetRenderTextureRTVHandle(rtvIndex);
+      rt.rtvHandle = dx12_->GetRenderTextureRTVHandle(rtvIndex);
       D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
       rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
       rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-      m_dx12_->GetDevice()->CreateRenderTargetView(
+      dx12_->GetDevice()->CreateRenderTargetView(
         rt.resource.Get(), &rtvDesc, rt.rtvHandle
       );
 
@@ -384,7 +384,7 @@ namespace Tako {
     barrier.Transition.StateBefore = stateBefore;
     barrier.Transition.StateAfter = stateAfter;
 
-    m_dx12_->GetCommandList()->ResourceBarrier(1, &barrier);
+    dx12_->GetCommandList()->ResourceBarrier(1, &barrier);
   }
 
 } // namespace Tako

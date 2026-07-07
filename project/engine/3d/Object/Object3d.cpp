@@ -14,15 +14,15 @@ Object3d::Object3d() = default;
 
 Object3d::~Object3d()
 {
-  if (m_model_) {
-    m_model_->Finalize();
+  if (model_) {
+    model_->Finalize();
   }
   // unique_ptr が自動で delete する
 }
 
 void Object3d::Initialize()
 {
-	m_camera_ = Object3dBasic::GetInstance()->GetCamera();
+	camera_ = Object3dBasic::GetInstance()->GetCamera();
 
 	// トランスフォームに初期化値を設定
 	transform_ = {
@@ -45,9 +45,9 @@ void Object3d::Initialize()
 
 void Object3d::Update()
 {
-	if (m_model_)
+	if (model_)
 	{
-		m_model_->Update();
+		model_->Update();
 	}
 
 	// 親 Joint へのアタッチメント処理
@@ -83,24 +83,24 @@ void Object3d::Update()
 
 	// モデルのローカル行列を取得
 	Matrix4x4 modelLocalMatrix = Mat4x4::MakeIdentity();
-	if (m_model_)
+	if (model_)
 	{
-		modelLocalMatrix = m_model_->GetLocalMatrix();
+		modelLocalMatrix = model_->GetLocalMatrix();
 	}
 
 	Matrix4x4 wvpMatrix;
 
-	if ((*m_camera_)) {
-		const Matrix4x4& viewProjectionMatrix = (*m_camera_)->GetViewProjectionMatrix();
+	if ((*camera_)) {
+		const Matrix4x4& viewProjectionMatrix = (*camera_)->GetViewProjectionMatrix();
 		wvpMatrix = Mat4x4::Multiply(worldMatrix_, viewProjectionMatrix);
 	} else {
 		wvpMatrix = worldMatrix_;
 	}
 
 	// 座標変換行列データに書き込む
-	if (m_model_)
+	if (model_)
 	{
-		if (m_model_->HasSkeleton())
+		if (model_->HasSkeleton())
 		{
 			transformationMatData_->WVP = wvpMatrix;
 			transformationMatData_->world = worldMatrix_;
@@ -136,9 +136,9 @@ void Object3d::Draw()
 	}
 
 	// モデルの描画
-	if (m_model_)
+	if (model_)
 	{
-		m_model_->Draw(transformationMatData_->world, (*Object3dBasic::GetInstance()->GetCamera())->GetViewProjectionMatrix());
+		model_->Draw(transformationMatData_->world, (*Object3dBasic::GetInstance()->GetCamera())->GetViewProjectionMatrix());
 	}
 
 	// 半透明モードで PSO を切り替えていた場合、後続の不透明 Object3d への影響を防ぐため通常 PSO に戻す
@@ -149,126 +149,126 @@ void Object3d::Draw()
 
 void Object3d::DrawImGui()
 {
-  if (m_model_)
+  if (model_)
   {
-    m_model_->DrawImGui();
+    model_->DrawImGui();
   }
 }
 
 void Object3d::SetModel(const std::string& fileName)
 {
   // 既存モデルがあれば解放
-  if (m_model_)
+  if (model_)
   {
-    m_model_->Finalize();
-    m_model_.reset();
+    model_->Finalize();
+    model_.reset();
   }
 
   // 新しいモデルをセット（ModelManager から Clone を取得）
-  m_model_ = ModelManager::GetInstance()->GetModel(fileName);
+  model_ = ModelManager::GetInstance()->GetModel(fileName);
 }
 
 void Object3d::SetModel(std::unique_ptr<Model> model)
 {
   // 既存モデルがあれば解放
-  if (m_model_)
+  if (model_)
   {
-    m_model_->Finalize();
-    m_model_.reset();
+    model_->Finalize();
+    model_.reset();
   }
 
-  m_model_ = std::move(model);
+  model_ = std::move(model);
 }
 
 void Object3d::SetMaterialColor(const Vector4& color)
 {
-  if (m_model_)
+  if (model_)
   {
-    m_model_->SetMaterialColor(color);
+    model_->SetMaterialColor(color);
   }
 }
 
 Vector4 Object3d::GetMaterialColor() const
 {
-  if (m_model_)
+  if (model_)
   {
-    return m_model_->GetMaterialColor();
+    return model_->GetMaterialColor();
   }
   return Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 }
 
 void Object3d::SetUvTransform(const Transform& uvTransform)
 {
-  if (m_model_)
+  if (model_)
   {
-    m_model_->SetUvTransform(uvTransform);
+    model_->SetUvTransform(uvTransform);
   }
 }
 
 void Object3d::SetShininess(float shininess)
 {
-	if (m_model_)
+	if (model_)
 	{
-		m_model_->SetShininess(shininess);
+		model_->SetShininess(shininess);
 	}
 }
 
 void Object3d::SetEnableLighting(bool enableLighting)
 {
-	if (m_model_)
+	if (model_)
 	{
-		m_model_->SetEnableLighting(enableLighting);
+		model_->SetEnableLighting(enableLighting);
 	}
 }
 
 void Object3d::SetEnableHighlight(bool enableHighlight)
 {
-	if (m_model_)
+	if (model_)
 	{
-		m_model_->SetEnableHighlight(enableHighlight);
+		model_->SetEnableHighlight(enableHighlight);
 	}
 }
 
 void Object3d::SetEnableEnvMap(bool enableEnvMap)
 {
-  if (m_model_)
+  if (model_)
   {
-    m_model_->SetEnableEnvMap(enableEnvMap);
+    model_->SetEnableEnvMap(enableEnvMap);
   }
 }
 
 void Object3d::SetEnvironmentTexture(uint32_t textureIndex)
 {
-  if (m_model_)
+  if (model_)
   {
-    m_model_->SetEnvironmentTexture(textureIndex);
+    model_->SetEnvironmentTexture(textureIndex);
   }
 }
 
 void Object3d::SetEnvMapCoefficient(float coefficient)
 {
-  if (m_model_)
+  if (model_)
   {
-    m_model_->SetEnvMapCoefficient(coefficient);
+    model_->SetEnvMapCoefficient(coefficient);
   }
 }
 
 void Object3d::SetMeshVisible(const std::string& name, bool visible)
 {
-  if (m_model_)
+  if (model_)
   {
-    m_model_->SetMeshVisible(name, visible);
+    model_->SetMeshVisible(name, visible);
   }
 }
 
 bool Object3d::IsMeshVisible(const std::string& name) const
 {
-  return m_model_ ? m_model_->IsMeshVisible(name) : false;
+  return model_ ? model_->IsMeshVisible(name) : false;
 }
 
 std::vector<std::string> Object3d::GetMeshNames() const
 {
-  return m_model_ ? m_model_->GetMeshNames() : std::vector<std::string>{};
+  return model_ ? model_->GetMeshNames() : std::vector<std::string>{};
 }
 
 void Object3d::AttachToJoint(Object3d* parent, const std::string& jointName, const Vector3& offset)
@@ -293,9 +293,9 @@ Matrix4x4 Object3d::GetWorldMatrix() const
 	Matrix4x4 worldMatrix = Mat4x4::MakeAffine(transform_.scale, transform_.rotate, transform_.translate);
 	
 	// モデルのローカル行列を考慮
-	if (m_model_ && !m_model_->HasSkeleton())
+	if (model_ && !model_->HasSkeleton())
 	{
-		worldMatrix = m_model_->GetLocalMatrix() * worldMatrix;
+		worldMatrix = model_->GetLocalMatrix() * worldMatrix;
 	}
 	
 	return worldMatrix;
@@ -324,7 +324,7 @@ void Object3d::CreateCameraForGPUData()
 	cameraForGPUResource_->Map(0, nullptr, reinterpret_cast<void**>(&cameraForGPUData_));
 
 	// カメラデータの初期値を書き込む
-	cameraForGPUData_->worldPos = (*m_camera_)->GetTranslate();
+	cameraForGPUData_->worldPos = (*camera_)->GetTranslate();
 }
 
 } // namespace Tako

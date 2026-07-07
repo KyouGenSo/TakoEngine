@@ -82,7 +82,7 @@ private: // メンバ変数
   Matrix4x4 worldMatrix_          = {};
   Matrix4x4 wvpMatrix_            = {};
 
-  DX12Basic* m_dx12_ = nullptr;
+  DX12Basic* dx12_ = nullptr;
 
   Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;
 

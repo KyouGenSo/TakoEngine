@@ -98,7 +98,7 @@ namespace Tako {
     //======================================================
     //Setter
     //======================================================
-    void SetSceneFactory(AbstractSceneFactory* sceneFactory) { m_sceneFactory_ = sceneFactory; }
+    void SetSceneFactory(AbstractSceneFactory* sceneFactory) { sceneFactory_ = sceneFactory; }
 
     //======================================================
     //Getter
@@ -114,7 +114,7 @@ namespace Tako {
     std::unique_ptr<BaseScene> scene_;      ///< 現在のシーン
     std::unique_ptr<BaseScene> nextScene_;  ///< 次のシーン
 
-    AbstractSceneFactory* m_sceneFactory_ = nullptr;  ///< シーンファクトリー
+    AbstractSceneFactory* sceneFactory_ = nullptr;  ///< シーンファクトリー
 
     float transitionTime_ = 0.5f;  ///< シーン遷移アニメーション時間
   };

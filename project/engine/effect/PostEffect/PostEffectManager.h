@@ -388,7 +388,7 @@ namespace Tako {
     EffectParam ApplyFadeToParam(const EffectParam& param, float fadeFactor) const;
 
   private: //メンバー変数
-    DX12Basic* m_dx12_ = nullptr;  ///< DX12の基本情報
+    DX12Basic* dx12_ = nullptr;  ///< DX12の基本情報
     Camera*    camera_ = nullptr;  ///< カメラ情報
 
     //UI 用の選択状態

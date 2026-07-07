@@ -152,7 +152,7 @@ namespace Tako {
 
   private: //メンバー変数
 
-    DX12Basic* m_dx12_ = nullptr;  ///< DirectX 12基盤システムへのポインタ
+    DX12Basic* dx12_ = nullptr;  ///< DirectX 12基盤システムへのポインタ
 
     uint32_t descriptorSize_;  ///< ディスクリプタ1個分のサイズ（バイト単位）
 

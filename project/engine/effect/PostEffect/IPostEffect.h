@@ -123,7 +123,7 @@ namespace Tako {
 
   protected: //メンバー変数
 
-    DX12Basic*                  m_dx12_        = nullptr;  ///< DirectX12基盤システムへの参照
+    DX12Basic*                  dx12_        = nullptr;  ///< DirectX12基盤システムへの参照
     std::string                 shaderName_;               ///< 使用するシェーダーのファイル名（拡張子なし）
     ComPtr<ID3D12RootSignature> rootSignature_;            ///< このエフェクト用のルートシグネチャ
     ComPtr<ID3D12PipelineState> pipelineState_;            ///< このエフェクト用のパイプラインステート

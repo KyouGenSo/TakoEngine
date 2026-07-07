@@ -20,7 +20,7 @@ namespace Tako {
 
   void TextureManager::Initialize(DX12Basic* dx12, const std::string& directoryPath)
   {
-    m_dx12_ = dx12;
+    dx12_ = dx12;
 
     directoryPath_ = directoryPath;
 
@@ -77,8 +77,8 @@ namespace Tako {
 
     textureData.fileName = fileName;
     textureData.metadata = mipImages.GetMetadata();
-    textureData.resource = m_dx12_->MakeTextureResource(textureData.metadata);
-    textureData.intermediateResource = m_dx12_->UploadTextureData(textureData.resource, mipImages);
+    textureData.resource = dx12_->MakeTextureResource(textureData.metadata);
+    textureData.intermediateResource = dx12_->UploadTextureData(textureData.resource, mipImages);
 
     // テクスチャデータの SRV インデックスを設定
     textureData.srvIndex = SrvManager::GetInstance()->Allocate();

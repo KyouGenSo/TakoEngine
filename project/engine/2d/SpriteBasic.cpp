@@ -22,7 +22,7 @@ namespace Tako {
 
   void SpriteBasic::Initialize(DX12Basic* dx12)
   {
-    m_dx12_ = dx12;
+    dx12_ = dx12;
 
     viewMatrixSprite_ = Mat4x4::MakeIdentity();
     projectionMatrixSprite_ = Mat4x4::MakeOrtho(
@@ -42,13 +42,13 @@ namespace Tako {
   void SpriteBasic::SetCommonRenderSetting()
   {
     // ルートシグネチャの設定
-    m_dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
+    dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
 
     // パイプラインステートの設定
-    m_dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
+    dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
 
     // トポロジの設定
-    m_dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   }
 
   void SpriteBasic::OnResize(const Vector2& size)
@@ -129,7 +129,7 @@ namespace Tako {
       assert(false);
     }
 
-    hr = m_dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature_.GetAddressOf()));
+    hr = dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature_.GetAddressOf()));
     assert(SUCCEEDED(hr));
   }
 
@@ -176,10 +176,10 @@ namespace Tako {
     rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
 
     // shader のコンパイル
-    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"Sprite.VS.hlsl"), L"vs_6_0");
+    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = dx12_->CompileShader(EnginePaths::ShaderPath(L"Sprite.VS.hlsl"), L"vs_6_0");
     assert(vertexShaderBlob != nullptr);
 
-    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = m_dx12_->CompileShader(EnginePaths::ShaderPath(L"Sprite.PS.hlsl"), L"ps_6_0");
+    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = dx12_->CompileShader(EnginePaths::ShaderPath(L"Sprite.PS.hlsl"), L"ps_6_0");
     assert(pixelShaderBlob != nullptr);
 
     // DepthStencilState
@@ -212,7 +212,7 @@ namespace Tako {
     graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 
     // 実際に生成
-    hr = m_dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
+    hr = dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
     assert(SUCCEEDED(hr));
   }
 

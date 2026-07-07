@@ -72,9 +72,9 @@ namespace Tako {
 
   private: //メンバー変数
 
-    WinApp* m_winApp_ = nullptr;  ///< WinApp クラスのインスタンス
+    WinApp* winApp_ = nullptr;  ///< WinApp クラスのインスタンス
 
-    DX12Basic* m_dx12_ = nullptr;  ///< DX12Basic クラスのインスタンス
+    DX12Basic* dx12_ = nullptr;  ///< DX12Basic クラスのインスタンス
 
     bool isDocking_ = false;
 

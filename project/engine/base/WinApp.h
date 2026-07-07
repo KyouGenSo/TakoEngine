@@ -105,7 +105,7 @@ namespace Tako {
     /// ハンドラの設定
     /// </summary>
     /// <param name="handler">登録するウィンドウプロシージャハンドラ</param>
-    void SetWndProcHandler(IWndProcHandler* handler) { m_handlers_.push_back(handler); }
+    void SetWndProcHandler(IWndProcHandler* handler) { handlers_.push_back(handler); }
 
     void SetWindowSize(int32_t width, int32_t height) { clientWidth = width; clientHeight = height; }
 
@@ -137,7 +137,7 @@ namespace Tako {
     HWND     hWnd_ = nullptr;
     WNDCLASS wc_{};
 
-    static std::vector<IWndProcHandler*> m_handlers_;
+    static std::vector<IWndProcHandler*> handlers_;
 
     bool isFullScreen_ = false;
     bool isMaximized_  = false;
