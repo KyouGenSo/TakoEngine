@@ -36,6 +36,32 @@ namespace Tako {
   /// </summary>
   class EmitterManager
   {
+  public: //定数
+    static constexpr int kCopySlotCount = 5;  ///< コピーバッファのスロット数
+
+  public: //構造体
+    /// <summary>
+    /// ペーストの適用範囲
+    /// </summary>
+    enum class PasteMode {
+      All,           ///< 全パラメータ（位置・実行時状態を除く）
+      ColorOnly,     ///< 開始色 / 終了色のみ
+      VelocityOnly,  ///< 速度範囲のみ
+      ScaleOnly,     ///< スケール範囲のみ
+    };
+
+  private: //構造体
+    /// <summary>
+    /// コピーバッファスロット構造体
+    /// エミッター設定のコピー&ペースト用の一時保存領域
+    /// </summary>
+    struct CopiedSettings {
+      bool           valid = false;                ///< このスロットが有効なデータを持っているか
+      EmitterType    type  = EmitterType::Sphere;  ///< コピー元エミッタータイプ（型固有ペースト判定用）
+      std::string    sourceName;                   ///< コピー元エミッター名（UI 表示用）
+      nlohmann::json data;                         ///< SerializeEmitterToJSON の出力（全パラメータ）
+    };
+
   public: //メンバー関数
     /// <summary>
     /// コンストラクタ
@@ -248,18 +274,25 @@ namespace Tako {
     /// <param name="emitterName">コピー元のエミッター名</param>
     /// <param name="slotIndex">コピー先スロット番号（0-4）</param>
     /// <returns>成功した場合 true</returns>
+    /// <remarks>プリセット保存と同一の JSON 経路で全パラメータを保存する。</remarks>
     bool CopyEmitterSettings(const std::string& emitterName, int slotIndex = 0);
 
     /// <summary>
-    /// エミッター設定をペースト
+    /// コピー済み設定を既存エミッターへペースト
     /// </summary>
     /// <param name="targetEmitterName">ペースト先のエミッター名</param>
     /// <param name="slotIndex">コピー元スロット番号（0-4）</param>
-    /// <param name="colorOnly">色のみペーストする場合 true</param>
-    /// <param name="velocityOnly">速度のみペーストする場合 true</param>
-    /// <param name="scaleOnly">スケールのみペーストする場合 true</param>
+    /// <param name="mode">適用範囲（All は位置・実行時状態を除く全パラメータ。型固有は型一致時のみ）</param>
     /// <returns>成功した場合 true</returns>
-    bool PasteEmitterSettings(const std::string& targetEmitterName, int slotIndex = 0, bool colorOnly = false, bool velocityOnly = false, bool scaleOnly = false);
+    bool PasteEmitterSettings(const std::string& targetEmitterName, int slotIndex = 0, PasteMode mode = PasteMode::All);
+
+    /// <summary>
+    /// コピー済み設定から新規エミッターを作成して登録する
+    /// </summary>
+    /// <param name="slotIndex">コピー元スロット番号（0-4）</param>
+    /// <param name="newEmitterName">新しいエミッター名（空でコピー元名 + "_paste"。衝突時は連番を付与）</param>
+    /// <returns>実際に登録したエミッター名（失敗時は空文字）</returns>
+    std::string PasteEmitterSettingsAsNew(int slotIndex = 0, const std::string& newEmitterName = "");
 
     /// <summary>
     /// 指定したスロットのコピー済み設定をクリア
@@ -424,6 +457,20 @@ namespace Tako {
     bool HasCopiedSettings(int slotIndex = 0) const;
 
     /// <summary>
+    /// 指定したスロットのコピー元エミッター名を取得（UI 表示用）
+    /// </summary>
+    /// <param name="slotIndex">スロット番号（0-4）</param>
+    /// <returns>コピー元エミッター名（無効スロットは空文字）</returns>
+    std::string GetCopiedSettingsSourceName(int slotIndex = 0) const;
+
+    /// <summary>
+    /// 指定したスロットのコピー元エミッタータイプを取得
+    /// </summary>
+    /// <param name="slotIndex">スロット番号（0-4）</param>
+    /// <returns>コピー元エミッタータイプ（有効スロットのみ意味を持つ）</returns>
+    EmitterType GetCopiedSettingsType(int slotIndex = 0) const;
+
+    /// <summary>
     /// 全てのグループ名を取得
     /// </summary>
     /// <returns>グループ名のリスト</returns>
@@ -448,18 +495,6 @@ namespace Tako {
     /// </summary>
     /// <returns>グループ数</returns>
     size_t GetGroupCount() const { return groupMap_.size(); }
-
-  private: //構造体
-    /// <summary>
-    /// コピーバッファスロット構造体
-    /// エミッター設定のコピー&ペースト用の一時保存領域
-    /// </summary>
-    struct CopiedSettings {
-      bool valid = false;          ///< このスロットが有効なデータを持っているか
-      EmitterData data;            ///< コピーされたエミッターデータ
-      EmitterType type;            ///< コピーされたエミッタータイプ
-      std::string renderModelPath; ///< 描画モデルのファイルパス (data_ 外メンバのため別途保持。空=描画モデル無し)
-    };
 
   private: //非公開関数
     /// <summary>
@@ -495,13 +530,24 @@ namespace Tako {
     std::shared_ptr<GPUParticleEmitter> DeserializeEmitterFromJSON(
       const nlohmann::json& json, Object3d* bindTarget = nullptr);
 
+    /// <summary>
+    /// JSON の共通パラメータを既存エミッターへ適用する
+    /// </summary>
+    /// <param name="emitter">適用先エミッター</param>
+    /// <param name="json">読み込む JSON オブジェクト</param>
+    /// <remarks>
+    /// position / particleCount / frequency / 型固有キーは対象外（デシリアライズでは CreateFromJSON 側が担当）。
+    /// DeserializeEmitterFromJSON とペーストの共通経路。
+    /// </remarks>
+    void ApplyCommonSettingsFromJSON(GPUParticleEmitter* emitter, const nlohmann::json& json);
+
   private: //メンバー変数
     GPUParticle* particleSystem_;  ///< GPU パーティクルシステムへのポインタ
 
     std::unordered_map<std::string, std::shared_ptr<GPUParticleEmitter>> emitterMap_;  ///< エミッター名からエミッターへのマップ（名前ベース管理）
     std::unordered_map<std::string, EmitterGroup>                        groupMap_;    ///< グループ名からグループ情報へのマップ
 
-    std::array<CopiedSettings, 5> copiedSettingsSlots_;  ///< コピーバッファ（5スロット分）
+    std::array<CopiedSettings, kCopySlotCount> copiedSettingsSlots_;  ///< コピーバッファ
 
     ForceFieldManager* forceFieldManager_ = nullptr;  ///< フォースフィールドマネージャへの弱参照（シーン統合保存連携用、nullable）
   };

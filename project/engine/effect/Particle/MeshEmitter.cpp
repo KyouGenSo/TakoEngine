@@ -223,6 +223,20 @@ namespace Tako {
     json["meshOffsetScale"] = { offsetScale_.x, offsetScale_.y, offsetScale_.z };
   }
 
+  void MeshEmitter::DeserializeTypeSpecific(const nlohmann::json& json)
+  {
+    if (json.contains("meshOffsetRotation")) {
+      const Vector3 offsetRotation = {
+        json["meshOffsetRotation"][0], json["meshOffsetRotation"][1], json["meshOffsetRotation"][2] };
+      SetOffsetRotation(offsetRotation);
+    }
+    if (json.contains("meshOffsetScale")) {
+      const Vector3 offsetScale = {
+        json["meshOffsetScale"][0], json["meshOffsetScale"][1], json["meshOffsetScale"][2] };
+      SetOffsetScale(offsetScale);
+    }
+  }
+
   std::shared_ptr<GPUParticleEmitter> MeshEmitter::CreateFromJSON(
     GPUParticle* particleSystem, const nlohmann::json& json, Object3d* bindTarget)
   {
@@ -262,16 +276,7 @@ namespace Tako {
     // position はローカルオフセット平行移動
     const Vector3 position = { json["position"][0], json["position"][1], json["position"][2] };
     emitter->SetPosition(position);
-    if (json.contains("meshOffsetRotation")) {
-      const Vector3 offsetRotation = {
-        json["meshOffsetRotation"][0], json["meshOffsetRotation"][1], json["meshOffsetRotation"][2] };
-      emitter->SetOffsetRotation(offsetRotation);
-    }
-    if (json.contains("meshOffsetScale")) {
-      const Vector3 offsetScale = {
-        json["meshOffsetScale"][0], json["meshOffsetScale"][1], json["meshOffsetScale"][2] };
-      emitter->SetOffsetScale(offsetScale);
-    }
+    emitter->DeserializeTypeSpecific(json);
     return emitter;
   }
 

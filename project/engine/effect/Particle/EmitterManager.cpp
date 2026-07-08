@@ -853,88 +853,136 @@ namespace Tako {
 
   bool EmitterManager::CopyEmitterSettings(const std::string& emitterName, int slotIndex)
   {
-    if (slotIndex < 0 || slotIndex >= 5) return false;
+    if (slotIndex < 0 || slotIndex >= kCopySlotCount) return false;
 
     auto it = emitterMap_.find(emitterName);
     if (it == emitterMap_.end()) return false;
 
-    auto emitter = it->second;
     CopiedSettings& slot = copiedSettingsSlots_[slotIndex];
 
-    // エミッターの設定をコピー
-    slot.type = emitter->GetType();
-    slot.data = emitter->GetData();
-    slot.renderModelPath = emitter->GetRenderModelPath();
-
+    // プリセット保存と同一経路で全パラメータを JSON 化する
+    slot.data = nlohmann::json::object();
+    SerializeEmitterToJSON(it->second, slot.data);
+    slot.type = it->second->GetType();
+    slot.sourceName = emitterName;
     slot.valid = true;
     return true;
   }
 
-  bool EmitterManager::PasteEmitterSettings(const std::string& targetEmitterName, int slotIndex, bool colorOnly, bool velocityOnly, bool scaleOnly)
+  bool EmitterManager::PasteEmitterSettings(const std::string& targetEmitterName, int slotIndex, PasteMode mode)
   {
-    if (slotIndex < 0 || slotIndex >= 5) return false;
-    if (!copiedSettingsSlots_[slotIndex].valid) return false;
+    if (slotIndex < 0 || slotIndex >= kCopySlotCount) return false;
+    const CopiedSettings& slot = copiedSettingsSlots_[slotIndex];
+    if (!slot.valid) return false;
 
     auto it = emitterMap_.find(targetEmitterName);
     if (it == emitterMap_.end()) return false;
 
     auto targetEmitter = it->second;
-    const CopiedSettings& slot = copiedSettingsSlots_[slotIndex];
+    const nlohmann::json& json = slot.data;
 
-    // 部分ペースト
-    if (colorOnly) {
-      targetEmitter->SetColors(slot.data.startColorTint, slot.data.endColorTint);
-    }
-    else if (velocityOnly) {
-      targetEmitter->SetVelRange(slot.data.velRangeX, slot.data.velRangeY, slot.data.velRangeZ);
-    }
-    else if (scaleOnly) {
-      targetEmitter->SetScaleRange(slot.data.scaleRangeX, slot.data.scaleRangeY);
-    }
-    else {
-      // 全体ペースト（位置と型固有パラメータ以外）
-      targetEmitter->SetActive((slot.data.flags & EFLAG_ACTIVE) != 0);
-      targetEmitter->SetEmitting((slot.data.flags & EFLAG_EMITTING) != 0);
-      targetEmitter->SetNormalize((slot.data.flags & EFLAG_NORMALIZE) != 0);
-      targetEmitter->SetParticleCount(slot.data.count);
-      targetEmitter->SetFrequency(slot.data.frequency);
-      targetEmitter->SetScaleRange(slot.data.scaleRangeX, slot.data.scaleRangeY);
-      targetEmitter->SetVelRange(slot.data.velRangeX, slot.data.velRangeY, slot.data.velRangeZ);
-      targetEmitter->SetLifeTimeRange(slot.data.lifeTimeRange);
-      targetEmitter->SetColors(slot.data.startColorTint, slot.data.endColorTint);
-      // 描画設定 (per-emitter)
-      targetEmitter->SetBlendMode(static_cast<ParticleBlendMode>(slot.data.blendMode));
-      targetEmitter->SetBillboard((slot.data.flags & EFLAG_BILLBOARD) != 0);
-      // 描画モデルを復元する 。
-      // 空ならデフォルト板ポリにリセットする。
-      if (!slot.renderModelPath.empty()) {
-        targetEmitter->SetParticleModel(slot.renderModelPath);
-      }
-      else {
+    switch (mode) {
+    case PasteMode::ColorOnly:
+      targetEmitter->SetColors(
+        Vector4{ json["startColor"][0], json["startColor"][1], json["startColor"][2], json["startColor"][3] },
+        Vector4{ json["endColor"][0], json["endColor"][1], json["endColor"][2], json["endColor"][3] });
+      break;
+
+    case PasteMode::VelocityOnly:
+      targetEmitter->SetVelRange(
+        Vector2{ json["velRangeX"][0], json["velRangeX"][1] },
+        Vector2{ json["velRangeY"][0], json["velRangeY"][1] },
+        Vector2{ json["velRangeZ"][0], json["velRangeZ"][1] });
+      break;
+
+    case PasteMode::ScaleOnly:
+      targetEmitter->SetScaleRange(
+        Vector2{ json["scaleRangeX"][0], json["scaleRangeX"][1] },
+        Vector2{ json["scaleRangeY"][0], json["scaleRangeY"][1] });
+      break;
+
+    case PasteMode::All: {
+      // 射出タイマーだけは共通ブロックに含まれるので退避して復元する。
+      const float savedFrequencyTime = targetEmitter->GetFrequencyTime();
+      ApplyCommonSettingsFromJSON(targetEmitter.get(), json);
+      targetEmitter->SetFrequencyTime(savedFrequencyTime);
+
+      // position 以外の CreateFromJSON 側担当分を明示適用する
+      targetEmitter->SetParticleCount(json["particleCount"].get<uint32_t>());
+      targetEmitter->SetFrequency(json["frequency"].get<float>());
+
+      // コピー元が既定モデル / 既定テクスチャ (キー無し) なら対象もリセットして完全一致させる
+      if (!json.contains("renderModelPath")) {
         targetEmitter->ResetParticleModel();
       }
-      // テクスチャは srvIndex からファイル名を解決して再設定 (0 は既定テクスチャなので何もしない)
-      if (slot.data.textureSrvIndex != 0) {
-        const std::string& texName = TextureManager::GetInstance()->GetFileName(slot.data.textureSrvIndex);
-        if (!texName.empty()) {
-          targetEmitter->SetTexture(texName);
-        }
+      if (!json.contains("texturePath")) {
+        targetEmitter->ResetTexture();
       }
+
+      // 型固有パラメータは型一致時のみ
+      if (slot.type == targetEmitter->GetType()) {
+        targetEmitter->DeserializeTypeSpecific(json);
+      }
+#ifdef _DEBUG
+      else {
+        DebugUIManager::GetInstance()->AddLog(
+          "Paste: emitter type mismatch. Type-specific params skipped.", DebugUIManager::LogType::Info);
+      }
+#endif
+      break;
+    }
     }
 
     return true;
   }
 
+  std::string EmitterManager::PasteEmitterSettingsAsNew(int slotIndex, const std::string& newEmitterName)
+  {
+    if (slotIndex < 0 || slotIndex >= kCopySlotCount) return "";
+    const CopiedSettings& slot = copiedSettingsSlots_[slotIndex];
+    if (!slot.valid) return "";
+
+    auto emitter = DeserializeEmitterFromJSON(slot.data);
+    if (!emitter) return "";  // 復元手段の無い Mesh など (警告ログは CreateFromJSON 側で出力済み)
+
+    // 名前衝突は連番で回避する
+    const std::string base = newEmitterName.empty() ? slot.sourceName + "_paste" : newEmitterName;
+    std::string name = base;
+    int suffix = 1;
+    while (emitterMap_.contains(name)) {
+      name = base + "_" + std::to_string(suffix++);
+    }
+
+    AddNamedEmitter(name, std::move(emitter));
+    return name;
+  }
+
   bool EmitterManager::HasCopiedSettings(int slotIndex) const
   {
-    if (slotIndex < 0 || slotIndex >= 5) return false;
+    if (slotIndex < 0 || slotIndex >= kCopySlotCount) return false;
     return copiedSettingsSlots_[slotIndex].valid;
+  }
+
+  std::string EmitterManager::GetCopiedSettingsSourceName(int slotIndex) const
+  {
+    if (slotIndex < 0 || slotIndex >= kCopySlotCount) return "";
+    const CopiedSettings& slot = copiedSettingsSlots_[slotIndex];
+    return slot.valid ? slot.sourceName : "";
+  }
+
+  EmitterType EmitterManager::GetCopiedSettingsType(int slotIndex) const
+  {
+    if (slotIndex < 0 || slotIndex >= kCopySlotCount) return EmitterType::Sphere;
+    return copiedSettingsSlots_[slotIndex].type;
   }
 
   void EmitterManager::ClearCopiedSettings(int slotIndex)
   {
-    if (slotIndex < 0 || slotIndex >= 5) return;
-    copiedSettingsSlots_[slotIndex].valid = false;
+    if (slotIndex < 0 || slotIndex >= kCopySlotCount) return;
+    CopiedSettings& slot = copiedSettingsSlots_[slotIndex];
+    slot.valid = false;
+    slot.sourceName.clear();
+    slot.data.clear();
   }
 
   //========================================
@@ -1066,6 +1114,12 @@ namespace Tako {
     }
     if (!emitter) return nullptr;
 
+    ApplyCommonSettingsFromJSON(emitter.get(), json);
+    return emitter;
+  }
+
+  void EmitterManager::ApplyCommonSettingsFromJSON(GPUParticleEmitter* emitter, const nlohmann::json& json)
+  {
     // 共通パラメータを設定
     emitter->SetScaleRange(
       Vector2{ json["scaleRangeX"][0], json["scaleRangeX"][1] },
@@ -1175,8 +1229,6 @@ namespace Tako {
         emitter->SetTexture(texPath);
       }
     }
-
-    return emitter;
   }
 
 } // namespace Tako

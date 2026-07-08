@@ -45,9 +45,19 @@ namespace Tako {
     /// <param name="json">出力先の JSON オブジェクト</param>
     /// <remarks>
     /// 共通パラメータの保存は <c>EmitterManager::SerializeEmitterToJSON</c> が担当。
-    /// 復元側の対は各派生クラスの static <c>CreateFromJSON</c>。
+    /// 復元側の対は各派生クラスの static <c>CreateFromJSON</c> と <c>DeserializeTypeSpecific</c>。
     /// </remarks>
     virtual void SerializeTypeSpecific(nlohmann::json& json) const = 0;
+
+    /// <summary>
+    /// json から型固有パラメータを読み込んで自身へ適用する
+    /// </summary>
+    /// <param name="json">読み込む JSON オブジェクト</param>
+    /// <remarks>
+    /// <c>SerializeTypeSpecific</c> の対。該当キーが無いパラメータは変更しない。
+    /// スポーン形状の GPU リソース (Mesh の SRV 群) や Object3d バインドは再構築・変更しない。
+    /// </remarks>
+    virtual void DeserializeTypeSpecific(const nlohmann::json& json) = 0;
 
     /// <summary>
     /// エミッターの射出更新
@@ -93,6 +103,11 @@ namespace Tako {
     /// 描画モデルをデフォルトの板ポリに戻す。
     /// </summary>
     void ResetParticleModel();
+
+    /// <summary>
+    /// テクスチャを既定 (circle.dds) に戻す。
+    /// </summary>
+    void ResetTexture() { data_.textureSrvIndex = 0; }
 
     //============================================================
     //Setter

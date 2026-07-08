@@ -42,6 +42,11 @@ namespace Tako {
     void SerializeTypeSpecific(nlohmann::json& json) const override;
 
     /// <summary>
+    /// json から型固有パラメータを読み込んで適用する
+    /// </summary>
+    void DeserializeTypeSpecific(const nlohmann::json& json) override;
+
+    /// <summary>
     /// JSON から BoxEmitter を構築
     /// </summary>
     /// <param name="particleSystem">GPU パーティクルシステムへのポインタ</param>

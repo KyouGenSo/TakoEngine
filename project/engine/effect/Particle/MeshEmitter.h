@@ -53,6 +53,12 @@ namespace Tako {
     void SerializeTypeSpecific(nlohmann::json& json) const override;
 
     /// <summary>
+    /// json から型固有パラメータを読み込んで適用する
+    /// </summary>
+    /// <remarks>スポーン形状 (meshModelPath) と Object3d バインドは変更しない。</remarks>
+    void DeserializeTypeSpecific(const nlohmann::json& json) override;
+
+    /// <summary>
     /// JSON から MeshEmitter を構築
     /// </summary>
     /// <param name="particleSystem">GPU パーティクルシステムへのポインタ</param>

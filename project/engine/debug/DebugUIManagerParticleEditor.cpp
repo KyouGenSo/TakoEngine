@@ -176,6 +176,75 @@ namespace Tako {
           }
         }
 
+        // クリップボード (エミッター設定のコピー & ペースト)
+        ImGui::Separator();
+        if (ImGui::CollapsingHeader("Clipboard")) {
+          static int clipboardSlot = 0;
+          static int pasteModeIdx = 0;
+
+          // スロット選択 ("*" = コピー済み。ホバーでコピー元を表示)
+          ImGui::Text("Slot:");
+          for (int i = 0; i < EmitterManager::kCopySlotCount; i++) {
+            ImGui::SameLine();
+            const bool hasData = emitterManager_->HasCopiedSettings(i);
+            std::string slotLabel = std::to_string(i) + (hasData ? "*" : "") + "##ClipSlot" + std::to_string(i);
+            if (ImGui::RadioButton(slotLabel.c_str(), clipboardSlot == i)) {
+              clipboardSlot = i;
+            }
+            if (hasData && ImGui::IsItemHovered()) {
+              static const char* typeNames[] = { "Sphere", "Box", "Triangle", "Mesh" };
+              const uint32_t typeIdx = static_cast<uint32_t>(emitterManager_->GetCopiedSettingsType(i));
+              ImGui::SetTooltip("%s (%s)", emitterManager_->GetCopiedSettingsSourceName(i).c_str(),
+                typeIdx < 4 ? typeNames[typeIdx] : "Unknown");
+            }
+          }
+
+          // 並び順は EmitterManager::PasteMode の enum 値順と一致させる
+          ImGui::Combo("Paste Mode##Clipboard", &pasteModeIdx, "All\0Color Only\0Velocity Only\0Scale Only\0");
+
+          const bool hasSelection = (selectedEmitterIndex_ >= 0 && selectedEmitterIndex_ < emitterNames.size());
+          const bool slotHasData = emitterManager_->HasCopiedSettings(clipboardSlot);
+
+          ImGui::BeginDisabled(!hasSelection);
+          if (ImGui::Button("Copy##Clipboard")) {
+            if (emitterManager_->CopyEmitterSettings(emitterNames[selectedEmitterIndex_], clipboardSlot)) {
+              AddLog("Copied '" + emitterNames[selectedEmitterIndex_] + "' to slot " + std::to_string(clipboardSlot), LogType::Info);
+            }
+          }
+          ImGui::EndDisabled();
+
+          ImGui::SameLine();
+          ImGui::BeginDisabled(!hasSelection || !slotHasData);
+          if (ImGui::Button("Paste##Clipboard")) {
+            if (emitterManager_->PasteEmitterSettings(emitterNames[selectedEmitterIndex_], clipboardSlot,
+              static_cast<EmitterManager::PasteMode>(pasteModeIdx))) {
+              AddLog("Pasted slot " + std::to_string(clipboardSlot) + " to '" + emitterNames[selectedEmitterIndex_] + "'", LogType::Info);
+            }
+            else {
+              AddLog("Paste failed (slot " + std::to_string(clipboardSlot) + ")", LogType::Warning);
+            }
+          }
+          ImGui::EndDisabled();
+
+          ImGui::SameLine();
+          ImGui::BeginDisabled(!slotHasData);
+          if (ImGui::Button("Paste as New##Clipboard")) {
+            const std::string newName = emitterManager_->PasteEmitterSettingsAsNew(clipboardSlot);
+            if (!newName.empty()) {
+              AddLog("Pasted slot " + std::to_string(clipboardSlot) + " as new emitter: " + newName, LogType::Info);
+            }
+            else {
+              AddLog("Paste as New failed (slot " + std::to_string(clipboardSlot) + ")", LogType::Warning);
+            }
+          }
+          ImGui::SameLine();
+          if (ImGui::Button("Clear##Clipboard")) {
+            emitterManager_->ClearCopiedSettings(clipboardSlot);
+            AddLog("Cleared clipboard slot " + std::to_string(clipboardSlot), LogType::Info);
+          }
+          ImGui::EndDisabled();
+        }
+
         ImGui::EndTabItem();
       }
 

@@ -40,15 +40,25 @@ namespace Tako {
     json["triangleV3"] = { GetVertex3().x, GetVertex3().y, GetVertex3().z };
   }
 
+  void TriangleEmitter::DeserializeTypeSpecific(const nlohmann::json& json)
+  {
+    if (json.contains("triangleV1") && json.contains("triangleV2") && json.contains("triangleV3")) {
+      SetVertices(
+        { json["triangleV1"][0], json["triangleV1"][1], json["triangleV1"][2] },
+        { json["triangleV2"][0], json["triangleV2"][1], json["triangleV2"][2] },
+        { json["triangleV3"][0], json["triangleV3"][1], json["triangleV3"][2] });
+    }
+  }
+
   std::shared_ptr<GPUParticleEmitter> TriangleEmitter::CreateFromJSON(GPUParticle* particleSystem, const nlohmann::json& json)
   {
     const Vector3 position = { json["position"][0], json["position"][1], json["position"][2] };
-    const Vector3 v1 = { json["triangleV1"][0], json["triangleV1"][1], json["triangleV1"][2] };
-    const Vector3 v2 = { json["triangleV2"][0], json["triangleV2"][1], json["triangleV2"][2] };
-    const Vector3 v3 = { json["triangleV3"][0], json["triangleV3"][1], json["triangleV3"][2] };
     const uint32_t count = json["particleCount"];
     const float frequency = json["frequency"];
-    return std::make_shared<TriangleEmitter>(particleSystem, position, v1, v2, v3, count, frequency);
+    const Vector3 zero = { 0.0f, 0.0f, 0.0f };
+    auto emitter = std::make_shared<TriangleEmitter>(particleSystem, position, zero, zero, zero, count, frequency);
+    emitter->DeserializeTypeSpecific(json);
+    return emitter;
   }
 
 } // namespace Tako

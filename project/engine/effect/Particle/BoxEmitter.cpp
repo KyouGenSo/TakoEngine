@@ -42,14 +42,25 @@ namespace Tako {
     json["boxRotation"] = { GetRotation().x, GetRotation().y, GetRotation().z };
   }
 
+  void BoxEmitter::DeserializeTypeSpecific(const nlohmann::json& json)
+  {
+    if (json.contains("boxSize")) {
+      SetSize({ json["boxSize"][0], json["boxSize"][1], json["boxSize"][2] });
+    }
+    if (json.contains("boxRotation")) {
+      SetRotation({ json["boxRotation"][0], json["boxRotation"][1], json["boxRotation"][2] });
+    }
+  }
+
   std::shared_ptr<GPUParticleEmitter> BoxEmitter::CreateFromJSON(GPUParticle* particleSystem, const nlohmann::json& json)
   {
     const Vector3 position = { json["position"][0], json["position"][1], json["position"][2] };
-    const Vector3 size = { json["boxSize"][0], json["boxSize"][1], json["boxSize"][2] };
-    const Vector3 rotation = { json["boxRotation"][0], json["boxRotation"][1], json["boxRotation"][2] };
     const uint32_t count = json["particleCount"];
     const float frequency = json["frequency"];
-    return std::make_shared<BoxEmitter>(particleSystem, position, size, rotation, count, frequency);
+    auto emitter = std::make_shared<BoxEmitter>(
+      particleSystem, position, Vector3{ 1.0f, 1.0f, 1.0f }, Vector3{ 0.0f, 0.0f, 0.0f }, count, frequency);
+    emitter->DeserializeTypeSpecific(json);
+    return emitter;
   }
 
 } // namespace Tako
