@@ -288,6 +288,7 @@ namespace Tako {
     int                      selectedForceFieldIndex_ = -1;
     char                     ffPresetSaveBuffer_[128] = "";
     char                     ffPresetLoadBuffer_[128] = "";
+    std::string              currentFFPresetName_;  ///< 最後にロード/保存したFFプリセット名（上書き保存用）
 
     //パーティクル可視化設定
     bool    showEmitterShapes_        = false;                       ///< エミッター形状の表示ON/OFF

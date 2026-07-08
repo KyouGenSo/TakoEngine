@@ -711,6 +711,13 @@ namespace Tako {
               AddLog("Saved preset: " + std::string(presetNameBuffer_), LogType::Info);
               presetNameBuffer_[0] = '\0';  // 入力ボックスをクリア
             }
+
+            // 名前入力なしでエミッター名のまま上書き保存
+            const std::string& currentName = emitterNames[selectedEmitterIndex_];
+            if (ImGui::Button(("Save as \"" + currentName + "\"##SavePresetCurrent").c_str())) {
+              emitterManager_->SavePreset(currentName, currentName);
+              AddLog("Saved preset: " + currentName, LogType::Info);
+            }
           }
           else {
             ImGui::TextDisabled("Select an emitter first");
@@ -1036,7 +1043,17 @@ namespace Tako {
         forceFieldManager_->SavePreset(
           ffPresetSaveBuffer_, static_cast<uint32_t>(selectedForceFieldIndex_));
         AddLog("Saved force field preset: " + std::string(ffPresetSaveBuffer_), LogType::Info);
+        currentFFPresetName_ = ffPresetSaveBuffer_;
         ffPresetSaveBuffer_[0] = '\0';
+      }
+
+      // 名前入力なしで直近のプリセット名のまま上書き保存
+      if (hasSelection && !currentFFPresetName_.empty()) {
+        if (ImGui::Button(("Save as \"" + currentFFPresetName_ + "\"##SaveFFCurrent").c_str())) {
+          forceFieldManager_->SavePreset(
+            currentFFPresetName_, static_cast<uint32_t>(selectedForceFieldIndex_));
+          AddLog("Saved force field preset: " + currentFFPresetName_, LogType::Info);
+        }
       }
     }
 
@@ -1045,6 +1062,7 @@ namespace Tako {
       if (ImGui::Button("Load##LoadFFPreset") && strlen(ffPresetLoadBuffer_) > 0) {
         forceFieldManager_->LoadPreset(ffPresetLoadBuffer_);
         AddLog("Loaded force field preset: " + std::string(ffPresetLoadBuffer_), LogType::Info);
+        currentFFPresetName_ = ffPresetLoadBuffer_;
         ffPresetLoadBuffer_[0] = '\0';
       }
     }
