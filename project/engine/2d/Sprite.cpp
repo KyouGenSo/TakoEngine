@@ -1,6 +1,5 @@
 #include"Sprite.h"
 
-#include <utility>
 #include"SpriteBasic.h"
 #include "TextureManager.h"
 #include "SrvManager.h"
@@ -27,7 +26,7 @@ namespace Tako {
     CreateTransformationMatrixData();
 
     // ファイルパスを保存
-    texturePath_ = std::move(texturePath);
+    texturePath_ = texturePath;
 
     // テクスチャインデックスを保存
     textureIndex_ = TextureManager::GetInstance()->GetSRVIndex(texturePath_);
