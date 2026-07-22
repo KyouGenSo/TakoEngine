@@ -90,6 +90,7 @@ struct Emitter
     float2 velRangeX;         // パーティクルX速度範囲（最小、最大）
     float2 velRangeY;         // パーティクルY速度範囲（最小、最大）
     float2 velRangeZ;         // パーティクルZ速度範囲（最小、最大）
+    float2 speedRange;        // EFLAG_NORMALIZE 時の速さ範囲（最小、最大）
     float2 lifeTimeRange;     // パーティクルの寿命範囲（最小、最大）
     float4 startColorTint;    // パーティクルの開始色（RGBA）
     float4 endColorTint;      // パーティクルの終了色（RGBA）

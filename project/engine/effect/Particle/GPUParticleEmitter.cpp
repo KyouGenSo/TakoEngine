@@ -183,6 +183,11 @@ namespace Tako {
     data_.velRangeZ = range;
   }
 
+  void GPUParticleEmitter::SetSpeedRange(const Vector2& range)
+  {
+    data_.speedRange = range;
+  }
+
   void GPUParticleEmitter::SetLifeTimeRange(const Vector2& range)
   {
     data_.lifeTimeRange = range;

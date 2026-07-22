@@ -218,6 +218,7 @@ namespace Tako {
     Vector2 velRangeX;       ///< X 方向速度の範囲[min, max]
     Vector2 velRangeY;       ///< Y 方向速度の範囲[min, max]
     Vector2 velRangeZ;       ///< Z 方向速度の範囲[min, max]
+    Vector2 speedRange;      ///< EFLAG_NORMALIZE 時の速さ範囲[min, max]
     Vector2 lifeTimeRange;   ///< パーティクル寿命の範囲[min, max]（秒）
     Vector4 startColorTint;  ///< 開始色の色調補正（RGBA）
     Vector4 endColorTint;    ///< 終了色の色調補正（RGBA）
@@ -283,7 +284,8 @@ namespace Tako {
       emitterID(0), randomFlags(0),
       spawnLocation(static_cast<uint32_t>(SpawnLocation::Inside)),
       position({ .x = 0.0f, .y = 0.0f, .z = 0.0f }),
-      scaleRangeX(), scaleRangeY(), velRangeX(), velRangeY(), velRangeZ(), lifeTimeRange(),
+      scaleRangeX(), scaleRangeY(), velRangeX(), velRangeY(), velRangeZ(),
+      speedRange({ .x = 1.0f, .y = 1.0f }), lifeTimeRange(),
       startColorTint({ .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f }),
       endColorTint({ .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f }),
       count(20), frequency(0.5f), frequencyTime(0.0f),

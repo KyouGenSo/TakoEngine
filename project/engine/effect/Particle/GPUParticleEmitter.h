@@ -134,6 +134,7 @@ namespace Tako {
     void SetVelRangeX(const Vector2& range);
     void SetVelRangeY(const Vector2& range);
     void SetVelRangeZ(const Vector2& range);
+    void SetSpeedRange(const Vector2& range);
     void SetLifeTimeRange(const Vector2& range);
 
     /// <summary>
@@ -323,6 +324,7 @@ namespace Tako {
     [[nodiscard]] const Vector2& GetVelRangeX() const { return data_.velRangeX; }
     [[nodiscard]] const Vector2& GetVelRangeY() const { return data_.velRangeY; }
     [[nodiscard]] const Vector2& GetVelRangeZ() const { return data_.velRangeZ; }
+    [[nodiscard]] const Vector2& GetSpeedRange() const { return data_.speedRange; }
     [[nodiscard]] const Vector2& GetLifeTimeRange() const { return data_.lifeTimeRange; }
     [[nodiscard]] const Vector4& GetStartColor() const { return data_.startColorTint; }
     [[nodiscard]] const Vector4& GetEndColor() const { return data_.endColorTint; }

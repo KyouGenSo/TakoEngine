@@ -893,6 +893,9 @@ namespace Tako {
         Vector2{ json["velRangeX"][0], json["velRangeX"][1] },
         Vector2{ json["velRangeY"][0], json["velRangeY"][1] },
         Vector2{ json["velRangeZ"][0], json["velRangeZ"][1] });
+      if (json.contains("speedRange")) {
+        targetEmitter->SetSpeedRange(Vector2{ json["speedRange"][0], json["speedRange"][1] });
+      }
       break;
 
     case PasteMode::ScaleOnly:
@@ -1069,6 +1072,7 @@ namespace Tako {
     json["isActive"] = emitter->IsActive();
     json["isEmitting"] = emitter->IsEmitting();
     json["isNormalize"] = emitter->IsNormalize();
+    json["speedRange"] = { emitter->GetSpeedRange().x, emitter->GetSpeedRange().y };
     json["isRandomRotateZ"] = emitter->IsRandomRotateZ();
     json["useForceField"] = emitter->IsUseForceField();
     json["useCurlNoise"] = emitter->IsUseCurlNoise();
@@ -1139,6 +1143,10 @@ namespace Tako {
     emitter->SetActive(json["isActive"]);
     emitter->SetEmitting(json["isEmitting"]);
     emitter->SetNormalize(json["isNormalize"]);
+
+    if (json.contains("speedRange")) {
+      emitter->SetSpeedRange(Vector2{ json["speedRange"][0], json["speedRange"][1] });
+    }
     emitter->SetRandomRotateZ(json["isRandomRotateZ"]);
 
     if (json.contains("useForceField")) {

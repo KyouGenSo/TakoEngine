@@ -391,6 +391,14 @@ namespace Tako {
                 emitter->SetVelRangeZ(velZ);
               }
 
+              // Normalize ON 時のみ有効な速さ範囲 (方向=velRange、速さ=speedRange)
+              ImGui::BeginDisabled(!emitter->IsNormalize());
+              Vector2 speedRange = emitter->GetSpeedRange();
+              if (ImGui::DragFloat2("Speed Range (Normalize)", &speedRange.x, 0.1f)) {
+                emitter->SetSpeedRange(speedRange);
+              }
+              ImGui::EndDisabled();
+
               Vector2 lifeTime = emitter->GetLifeTimeRange();
               drawRandomCheckbox("##RandLifeTime", ERAND_LIFETIME);
               ImGui::SameLine();

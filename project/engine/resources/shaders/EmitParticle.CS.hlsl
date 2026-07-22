@@ -496,10 +496,15 @@ void main(uint3 DTid : SV_DispatchThreadID)
                 particleVelocity.z = randomVel.z;
             }
 
-            // 正規化
+            // 正規化: 方向 = velRange の正規化、速さ = speedRange のランダム値
             if (gEmitters[emitterIndex].flags & EFLAG_NORMALIZE)
             {
-                particleVelocity = normalize(particleVelocity);
+                float len = length(particleVelocity);
+                if (len > 1e-6f)
+                {
+                    float speed = lerp(gEmitters[emitterIndex].speedRange.x, gEmitters[emitterIndex].speedRange.y, generator.Generate1d());
+                    particleVelocity = particleVelocity / len * speed;
+                }
             }
 
             // パーティクルの速度を設定
