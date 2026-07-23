@@ -103,9 +103,12 @@ namespace Tako {
     bool IsRegistered(const std::string& typeName) const;
 
   private: //非公開関数
-    BTNodeRegistry() = default;
+    struct Token {};  ///< 外部からの直接生成を防ぐ生成キー
     ~BTNodeRegistry() = default;
     friend struct std::default_delete<BTNodeRegistry>;
+
+  public:
+    explicit BTNodeRegistry(Token) {}
 
   private: //メンバー変数
     static std::unique_ptr<BTNodeRegistry> instance_;  ///< シングルトン実体

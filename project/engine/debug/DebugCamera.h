@@ -14,12 +14,15 @@ namespace Tako {
 
     static std::unique_ptr<DebugCamera> instance_;  ///< インスタンス
 
-    DebugCamera() = default;
+    struct Token {};  ///< 外部からの直接生成を防ぐ生成キー
     ~DebugCamera() = default;
     DebugCamera(DebugCamera&) = delete;
     DebugCamera& operator=(DebugCamera&) = delete;
 
     friend struct std::default_delete<DebugCamera>;
+
+  public:
+    explicit DebugCamera(Token) {}
 
   public: //メンバー関数
 

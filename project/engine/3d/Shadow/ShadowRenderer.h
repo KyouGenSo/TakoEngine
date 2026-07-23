@@ -24,12 +24,15 @@ namespace Tako {
     // インスタンス
     static std::unique_ptr<ShadowRenderer> instance_;
 
-    ShadowRenderer() = default;
+    struct Token {};  ///< 外部からの直接生成を防ぐ生成キー
     ~ShadowRenderer() = default;
     ShadowRenderer(ShadowRenderer&) = delete;
     ShadowRenderer& operator=(ShadowRenderer&) = delete;
 
     friend struct std::default_delete<ShadowRenderer>;
+
+  public:
+    explicit ShadowRenderer(Token) {}
 
   private: //構造体
     /// <summary>

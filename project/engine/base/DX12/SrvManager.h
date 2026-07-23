@@ -18,12 +18,13 @@ namespace Tako {
   private: // シングルトン設定
     static std::unique_ptr<SrvManager> instance_;
 
-    SrvManager() = default;
+    struct Token {};  ///< 外部からの直接生成を防ぐ生成キー
     ~SrvManager() = default;
 
     friend struct std::default_delete<SrvManager>;
 
   public:
+    explicit SrvManager(Token) {}
     SrvManager(const SrvManager&) = delete;
     SrvManager& operator=(const SrvManager&) = delete;
 

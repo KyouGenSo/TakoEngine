@@ -22,12 +22,13 @@ namespace Tako {
   private: //シングルトン設定
     static std::unique_ptr<ModelManager> instance_;
 
-    ModelManager() = default;
+    struct Token {};  ///< 外部からの直接生成を防ぐ生成キー
     ~ModelManager() = default;
 
     friend struct std::default_delete<ModelManager>;
 
   public:
+    explicit ModelManager(Token) {}
     ModelManager(const ModelManager&) = delete;
     ModelManager& operator=(const ModelManager&) = delete;
 

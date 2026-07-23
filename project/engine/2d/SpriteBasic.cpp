@@ -15,7 +15,7 @@ namespace Tako {
   SpriteBasic* SpriteBasic::GetInstance()
   {
     if (!instance_) {
-      instance_ = std::unique_ptr<SpriteBasic>(new SpriteBasic());
+      instance_ = std::make_unique<SpriteBasic>(Token{});
     }
     return instance_.get();
   }

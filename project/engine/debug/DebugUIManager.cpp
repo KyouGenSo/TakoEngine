@@ -36,7 +36,7 @@ namespace Tako {
 
   DebugUIManager* DebugUIManager::GetInstance() {
     if (!instance_) {
-      instance_ = std::unique_ptr<DebugUIManager>(new DebugUIManager());
+      instance_ = std::make_unique<DebugUIManager>(Token{});
     }
     return instance_.get();
   }

@@ -12,7 +12,7 @@ namespace Tako {
   SceneManager* SceneManager::GetInstance()
   {
     if (!instance_) {
-      instance_ = std::unique_ptr<SceneManager>(new SceneManager());
+      instance_ = std::make_unique<SceneManager>(Token{});
     }
     return instance_.get();
   }

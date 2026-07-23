@@ -16,7 +16,7 @@ namespace Tako {
   ModelManager* ModelManager::GetInstance()
   {
     if (!instance_) {
-      instance_ = std::unique_ptr<ModelManager>(new ModelManager());
+      instance_ = std::make_unique<ModelManager>(Token{});
     }
     return instance_.get();
   }

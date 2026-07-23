@@ -25,12 +25,15 @@ private: // シングルトン設定
 	// インスタンス
 	static std::unique_ptr<Object3dBasic> instance_;
 
-	Object3dBasic() = default;
+	struct Token {};  ///< 外部からの直接生成を防ぐ生成キー
 	~Object3dBasic() = default;
 	Object3dBasic(Object3dBasic&) = delete;
 	Object3dBasic& operator=(Object3dBasic&) = delete;
 
 	friend struct std::default_delete<Object3dBasic>;
+
+public:
+	explicit Object3dBasic(Token) {}
 
 public: // メンバー関数
 

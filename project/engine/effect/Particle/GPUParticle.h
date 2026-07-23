@@ -33,7 +33,7 @@ namespace Tako {
     /// シングルトンインスタンス
     /// </summary>
     static std::unique_ptr<GPUParticle> instance_;
-    GPUParticle() = default;
+    struct Token {};  ///< 外部からの直接生成を防ぐ生成キー
     ~GPUParticle() = default;
 
     friend struct std::default_delete<GPUParticle>;
@@ -45,6 +45,7 @@ namespace Tako {
     static constexpr uint32_t kMaxForceFields = 64;
 
   public: //メンバー関数
+    explicit GPUParticle(Token) {}
     GPUParticle(const GPUParticle&) = delete;
     GPUParticle& operator=(const GPUParticle&) = delete;
 

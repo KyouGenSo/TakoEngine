@@ -19,12 +19,13 @@ namespace Tako {
   private: // シングルトン設定
     static std::unique_ptr<GlobalVariables> instance_;
 
-    GlobalVariables() = default;
+    struct Token {};  ///< 外部からの直接生成を防ぐ生成キー
     ~GlobalVariables() = default;
 
     friend struct std::default_delete<GlobalVariables>;
 
   public:
+    explicit GlobalVariables(Token) {}
     GlobalVariables(const GlobalVariables&) = delete;
     GlobalVariables& operator=(const GlobalVariables&) = delete;
 

@@ -16,12 +16,13 @@ namespace Tako {
   private: // シングルトン設定
     static std::unique_ptr<TransitionManager> instance_; ///< インスタンス
 
-    TransitionManager() = default;
+    struct Token {};  ///< 外部からの直接生成を防ぐ生成キー
     ~TransitionManager() = default;
 
     friend struct std::default_delete<TransitionManager>;
 
   public:
+    explicit TransitionManager(Token) {}
     TransitionManager(const TransitionManager&) = delete;
     TransitionManager& operator=(const TransitionManager&) = delete;
 

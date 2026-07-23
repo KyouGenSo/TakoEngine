@@ -52,12 +52,13 @@ namespace Tako {
   private: 	// シングルトン
     static std::unique_ptr<Input> instance_;
 
-    Input() = default;
+    struct Token {};  ///< 外部からの直接生成を防ぐ生成キー
     ~Input() = default;
 
     friend struct std::default_delete<Input>;
 
   public:
+    explicit Input(Token) {}
     Input(const Input&) = delete;
     Input& operator=(const Input&) = delete;
 

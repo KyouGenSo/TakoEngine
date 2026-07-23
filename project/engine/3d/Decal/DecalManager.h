@@ -23,12 +23,15 @@ namespace Tako {
 
     static std::unique_ptr<DecalManager> instance_;
 
-    DecalManager() = default;
+    struct Token {};  ///< 外部からの直接生成を防ぐ生成キー
     ~DecalManager() = default;
     DecalManager(DecalManager&) = delete;
     DecalManager& operator=(DecalManager&) = delete;
 
     friend struct std::default_delete<DecalManager>;
+
+  public:
+    explicit DecalManager(Token) {}
 
   public: //メンバー関数
 

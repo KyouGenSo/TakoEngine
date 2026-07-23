@@ -19,12 +19,13 @@ namespace Tako {
   private: // シングルトン設定
     static std::unique_ptr<WinApp> instance_;
 
-    WinApp() = default;
+    struct Token {};  ///< 外部からの直接生成を防ぐ生成キー
     ~WinApp() = default;
 
     friend struct std::default_delete<WinApp>;
 
   public:
+    explicit WinApp(Token) {}
     WinApp(const WinApp&) = delete;
     WinApp& operator=(const WinApp&) = delete;
 
@@ -34,7 +35,7 @@ namespace Tako {
     /// <returns>WinApp のシングルトンインスタンス</returns>
     static WinApp* GetInstance() {
       if (!instance_) {
-        instance_ = std::unique_ptr<WinApp>(new WinApp());
+        instance_ = std::make_unique<WinApp>(Token{});
       }
       return instance_.get();
     }

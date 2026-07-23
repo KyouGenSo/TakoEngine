@@ -18,12 +18,13 @@ namespace Tako {
   private: // シングルトン設定
     static std::unique_ptr<TextureManager> instance_;
 
-    TextureManager() = default;
+    struct Token {};  ///< 外部からの直接生成を防ぐ生成キー
     ~TextureManager() = default;
 
     friend struct std::default_delete<TextureManager>;
 
   public:
+    explicit TextureManager(Token) {}
     TextureManager(const TextureManager&) = delete;
     TextureManager& operator=(const TextureManager&) = delete;
 

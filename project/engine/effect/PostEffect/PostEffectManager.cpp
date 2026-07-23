@@ -38,7 +38,7 @@ namespace Tako {
   PostEffectManager* PostEffectManager::GetInstance()
   {
     if (!instance_) {
-      instance_ = std::unique_ptr<PostEffectManager>(new PostEffectManager());
+      instance_ = std::make_unique<PostEffectManager>(Token{});
     }
     return instance_.get();
   }

@@ -18,7 +18,7 @@ namespace Tako {
   Draw2D* Draw2D::GetInstance()
   {
     if (!instance_) {
-      instance_ = std::unique_ptr<Draw2D>(new Draw2D());
+      instance_ = std::make_unique<Draw2D>(Token{});
     }
     return instance_.get();
   }

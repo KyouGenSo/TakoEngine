@@ -17,7 +17,7 @@ namespace Tako {
   GlobalVariables* GlobalVariables::GetInstance()
   {
     if (!instance_) {
-      instance_ = std::unique_ptr<GlobalVariables>(new GlobalVariables());
+      instance_ = std::make_unique<GlobalVariables>(Token{});
     }
     return instance_.get();
   }

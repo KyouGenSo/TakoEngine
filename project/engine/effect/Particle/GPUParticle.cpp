@@ -32,7 +32,7 @@ namespace Tako {
   GPUParticle* GPUParticle::GetInstance()
   {
     if (!instance_) {
-      instance_ = std::unique_ptr<GPUParticle>(new GPUParticle());
+      instance_ = std::make_unique<GPUParticle>(Token{});
     }
     return instance_.get();
   }

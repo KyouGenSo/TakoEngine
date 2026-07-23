@@ -13,7 +13,7 @@ namespace Tako {
   TextureManager* TextureManager::GetInstance()
   {
     if (!instance_) {
-      instance_ = std::unique_ptr<TextureManager>(new TextureManager());
+      instance_ = std::make_unique<TextureManager>(Token{});
     }
     return instance_.get();
   }

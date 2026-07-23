@@ -14,7 +14,7 @@ namespace Tako {
   Audio* Audio::GetInstance()
   {
     if (!instance_) {
-      instance_ = std::unique_ptr<Audio>(new Audio());
+      instance_ = std::make_unique<Audio>(Token{});
     }
 
     return instance_.get();

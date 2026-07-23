@@ -16,12 +16,13 @@ namespace Tako {
 
     static std::unique_ptr<SceneManager> instance_; ///< インスタンス
 
-    SceneManager() = default;
+    struct Token {};  ///< 外部からの直接生成を防ぐ生成キー
     ~SceneManager() = default;
 
     friend struct std::default_delete<SceneManager>;
 
   public:
+    explicit SceneManager(Token) {}
     SceneManager(const SceneManager&) = delete;
     SceneManager& operator=(const SceneManager&) = delete;
 

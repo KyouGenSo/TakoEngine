@@ -7,7 +7,7 @@ namespace Tako {
   FrameTimer* FrameTimer::GetInstance()
   {
     if (!instance_) {
-      instance_ = std::unique_ptr<FrameTimer>(new FrameTimer());
+      instance_ = std::make_unique<FrameTimer>(Token{});
     }
     return instance_.get();
   }

@@ -11,7 +11,7 @@ namespace Tako {
 
   BTNodeRegistry* BTNodeRegistry::GetInstance() {
     if (!instance_) {
-      instance_ = std::unique_ptr<BTNodeRegistry>(new BTNodeRegistry());
+      instance_ = std::make_unique<BTNodeRegistry>(Token{});
     }
     return instance_.get();
   }

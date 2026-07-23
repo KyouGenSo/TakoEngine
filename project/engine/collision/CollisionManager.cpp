@@ -17,7 +17,7 @@ namespace Tako {
 
   CollisionManager* CollisionManager::GetInstance() {
     if (!instance_) {
-      instance_ = std::unique_ptr<CollisionManager>(new CollisionManager());
+      instance_ = std::make_unique<CollisionManager>(Token{});
     }
     return instance_.get();
   }

@@ -46,12 +46,13 @@ namespace Tako {
 
   private:
     static std::unique_ptr<DebugUIManager> instance_;  ///< シングルトン
-    DebugUIManager() = default;
+    struct Token {};  ///< 外部からの直接生成を防ぐ生成キー
     ~DebugUIManager() = default;
 
     friend struct std::default_delete<DebugUIManager>;
 
   public:
+    explicit DebugUIManager(Token) {}
     DebugUIManager(const DebugUIManager&) = delete;
     DebugUIManager& operator=(const DebugUIManager&) = delete;
 

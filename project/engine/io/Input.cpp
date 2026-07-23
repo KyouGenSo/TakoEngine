@@ -10,7 +10,7 @@ namespace Tako {
   Input* Input::GetInstance()
   {
     if (!instance_) {
-      instance_ = std::unique_ptr<Input>(new Input());
+      instance_ = std::make_unique<Input>(Token{});
     }
     return instance_.get();
   }

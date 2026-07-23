@@ -10,7 +10,7 @@ namespace Tako {
   TransitionManager* TransitionManager::GetInstance()
   {
     if (!instance_) {
-      instance_ = std::unique_ptr<TransitionManager>(new TransitionManager());
+      instance_ = std::make_unique<TransitionManager>(Token{});
     }
     return instance_.get();
   }

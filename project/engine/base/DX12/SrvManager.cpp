@@ -10,7 +10,7 @@ namespace Tako {
   SrvManager* SrvManager::GetInstance()
   {
     if (!instance_) {
-      instance_ = std::unique_ptr<SrvManager>(new SrvManager());
+      instance_ = std::make_unique<SrvManager>(Token{});
     }
     return instance_.get();
   }

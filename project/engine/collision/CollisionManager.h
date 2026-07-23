@@ -100,11 +100,15 @@ namespace Tako {
     const std::unordered_map<uint32_t, std::unordered_set<uint32_t>>& GetCollisionMasks() const { return collisionMask_; }
 
   private: //非公開関数
-    CollisionManager() = default;
+    struct Token {};  ///< 外部からの直接生成を防ぐ生成キー
     ~CollisionManager() = default;
 
     friend struct std::default_delete<CollisionManager>;
 
+  public:
+    explicit CollisionManager(Token) {}
+
+  private:
     // 形状を判別して対応する判定関数へ振り分け、衝突時のみ currentCollisions_ にペアを登録する
     void CheckCollisionPair(Collider* colliderA, Collider* colliderB);
 

@@ -19,7 +19,7 @@ Object3dBasic* Object3dBasic::GetInstance()
 {
 	if (!instance_)
 	{
-		instance_ = std::unique_ptr<Object3dBasic>(new Object3dBasic());
+		instance_ = std::make_unique<Object3dBasic>(Token{});
 	}
 	return instance_.get();
 }

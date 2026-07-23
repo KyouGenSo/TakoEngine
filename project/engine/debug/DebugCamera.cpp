@@ -10,7 +10,7 @@ namespace Tako {
   DebugCamera* DebugCamera::GetInstance()
   {
     if (!instance_) {
-      instance_ = std::unique_ptr<DebugCamera>(new DebugCamera());
+      instance_ = std::make_unique<DebugCamera>(Token{});
     }
     return instance_.get();
   }

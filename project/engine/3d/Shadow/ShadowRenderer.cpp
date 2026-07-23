@@ -42,7 +42,7 @@ ShadowRenderer* ShadowRenderer::GetInstance()
 {
     if (!instance_)
     {
-        instance_ = std::unique_ptr<ShadowRenderer>(new ShadowRenderer());
+        instance_ = std::make_unique<ShadowRenderer>(Token{});
     }
     return instance_.get();
 }

@@ -19,7 +19,7 @@ namespace Tako {
   DecalManager* DecalManager::GetInstance()
   {
     if (!instance_) {
-      instance_ = std::unique_ptr<DecalManager>(new DecalManager());
+      instance_ = std::make_unique<DecalManager>(Token{});
     }
     return instance_.get();
   }

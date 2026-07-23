@@ -16,12 +16,15 @@ namespace Tako {
     ///< インスタンス
     static std::unique_ptr<SpriteBasic> instance_;
 
-    SpriteBasic() = default;
+    struct Token {};  ///< 外部からの直接生成を防ぐ生成キー
     ~SpriteBasic() = default;
     SpriteBasic(SpriteBasic&) = delete;
     SpriteBasic& operator=(SpriteBasic&) = delete;
 
     friend struct std::default_delete<SpriteBasic>;
+
+  public:
+    explicit SpriteBasic(Token) {}
 
   public: //メンバー関数
 

@@ -31,12 +31,13 @@ namespace Tako {
   private: // シングルトン設定
     static std::unique_ptr<PostEffectManager> instance_;
 
-    PostEffectManager() = default;
+    struct Token {};  ///< 外部からの直接生成を防ぐ生成キー
     ~PostEffectManager() = default;
 
     friend struct std::default_delete<PostEffectManager>;
 
   public:
+    explicit PostEffectManager(Token) {}
     PostEffectManager(const PostEffectManager&) = delete;
     PostEffectManager& operator=(const PostEffectManager&) = delete;
 

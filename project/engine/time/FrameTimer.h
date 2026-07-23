@@ -12,12 +12,13 @@ namespace Tako {
   private: // シングルトン設定
     static std::unique_ptr<FrameTimer> instance_;
 
-    FrameTimer() = default;
+    struct Token {};  ///< 外部からの直接生成を防ぐ生成キー
     ~FrameTimer() = default;
 
     friend struct std::default_delete<FrameTimer>;
 
   public:
+    explicit FrameTimer(Token) {}
     FrameTimer(const FrameTimer&) = delete;
     FrameTimer& operator=(const FrameTimer&) = delete;
 

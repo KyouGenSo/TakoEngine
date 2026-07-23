@@ -19,12 +19,13 @@ class Audio
 private: // シングルトン設定
 	static std::unique_ptr<Audio> instance_;
 
-	Audio() = default;
+	struct Token {};  ///< 外部からの直接生成を防ぐ生成キー
 	~Audio() = default;
 
 	friend struct std::default_delete<Audio>;
 
 public:
+	explicit Audio(Token) {}
 	Audio(const Audio&) = delete;
 	Audio& operator=(const Audio&) = delete;
 
