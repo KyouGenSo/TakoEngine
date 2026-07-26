@@ -1092,7 +1092,7 @@ namespace Tako {
     modelBasic_->SetSkinningCSSetting();
 
     // 共有パレット（ボーン行列）の SRV を設定
-    SrvManager::GetInstance()->SetComputeRootDescriptorTable(0, paletteSrvIndex_);
+    SrvManager::GetInstance()->SetComputeRootDescriptorTable(ModelBasic::kPaletteParam, paletteSrvIndex_);
 
     // 各メッシュごとにスキニング計算を実行
     for (auto& mesh : meshes_) {

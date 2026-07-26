@@ -13,6 +13,9 @@ namespace Tako {
   /// </summary>
   class Bloom : public IPostEffect
   {
+  private: //定数
+    static constexpr uint32_t kBlurTextureParam = 2;  ///< t1: ブラー結果テクスチャ（BloomCombine 用）
+
   public: //メンバー関数
     /// <summary>
     /// デストラクタ

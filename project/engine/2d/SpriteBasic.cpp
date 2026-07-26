@@ -97,20 +97,20 @@ namespace Tako {
     D3D12_ROOT_PARAMETER rootParameters[3] = {};
 
     // Material
-    rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-    rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-    rootParameters[0].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
+    rootParameters[kMaterialParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
+    rootParameters[kMaterialParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+    rootParameters[kMaterialParam].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
 
     // TransformationMatrix
-    rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-    rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // 頂点シェーダーで使う
-    rootParameters[1].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド 
+    rootParameters[kTransformParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
+    rootParameters[kTransformParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // 頂点シェーダーで使う
+    rootParameters[kTransformParam].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド 
 
     // Texture
-    rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-    rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-    rootParameters[2].DescriptorTable.pDescriptorRanges = descriptorRange; // ディスクリプタレンジを設定
-    rootParameters[2].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange); // レンジの数
+    rootParameters[kTextureParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
+    rootParameters[kTextureParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+    rootParameters[kTextureParam].DescriptorTable.pDescriptorRanges = descriptorRange; // ディスクリプタレンジを設定
+    rootParameters[kTextureParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange); // レンジの数
 
     descriptionRootSignature.pParameters = rootParameters;
     descriptionRootSignature.NumParameters = _countof(rootParameters);

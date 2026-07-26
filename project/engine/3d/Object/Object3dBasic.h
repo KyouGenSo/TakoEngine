@@ -35,6 +35,25 @@ private: // シングルトン設定
 public:
 	explicit Object3dBasic(Token) {}
 
+public: //定数
+
+	// 通常/インスタンシング共通のルートパラメータ番号
+	static constexpr UINT kMaterialParam         = 0;   ///< b0 (PS): マテリアル
+	static constexpr UINT kTransformParam        = 1;   ///< b0 (VS): 変換行列（通常 RS）
+	static constexpr UINT kTextureParam          = 2;   ///< t0 (PS): テクスチャ
+	static constexpr UINT kDirectionalLightParam = 3;   ///< b1 (PS): 平行光源
+	static constexpr UINT kCameraParam           = 4;   ///< b2 (PS): カメラ
+	static constexpr UINT kPointLightParam       = 5;   ///< t1 (PS): 点光源
+	static constexpr UINT kSpotLightParam        = 6;   ///< t2 (PS): スポットライト
+	static constexpr UINT kLightConstantsParam   = 7;   ///< b3 (PS): ライト数
+	static constexpr UINT kEnvMapParam           = 8;   ///< t3 (PS): 環境マップ
+	static constexpr UINT kShadowConstantsParam  = 9;   ///< b4 (ALL): シャドウ定数
+	static constexpr UINT kShadowMapParam        = 10;  ///< t4 (PS): シャドウマップ
+
+	// インスタンシング RS 専用
+	static constexpr UINT kInstancedViewProjectionParam = 1;   ///< b0 (VS): ビュープロジェクション
+	static constexpr UINT kInstanceDataParam            = 11;  ///< t5 (VS): インスタンスデータ
+
 public: // メンバー関数
 
 	/// <summary>

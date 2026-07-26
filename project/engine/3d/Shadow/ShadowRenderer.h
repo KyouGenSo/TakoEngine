@@ -34,6 +34,12 @@ namespace Tako {
   public:
     explicit ShadowRenderer(Token) {}
 
+  public: //定数
+    // シャドウパス RS のルートパラメータ番号
+    static constexpr UINT kShadowPassTransformParam    = 0;  ///< b0 (VS): 変換行列
+    static constexpr UINT kShadowPassShadowCbvParam    = 1;  ///< b4 (VS): シャドウ定数
+    static constexpr UINT kShadowPassInstanceDataParam = 2;  ///< t5 (VS): インスタンスデータ（インスタンシング RS のみ）
+
   private: //構造体
     /// <summary>
     /// シャドウレンダリング用定数バッファ構造体

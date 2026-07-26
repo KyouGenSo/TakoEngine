@@ -83,11 +83,11 @@ namespace Tako {
     dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &cubeVBV_);
     dx12_->GetCommandList()->IASetIndexBuffer(&cubeIBV_);
 
-    // ViewData CBV をバインド（RP#0）
-    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, viewDataBuffer_->GetGPUVirtualAddress());
+    // ViewData CBV をバインド
+    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(kViewDataParam, viewDataBuffer_->GetGPUVirtualAddress());
 
-    // 深度 SRV をバインド（RP#2）
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, depthSrvIndex_);
+    // 深度 SRV をバインド
+    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(kDepthTextureParam, depthSrvIndex_);
   }
 
   void DecalManager::EndDraw()
@@ -205,26 +205,26 @@ namespace Tako {
     D3D12_ROOT_PARAMETER rootParameters[4] = {};
 
     // RP#0: ViewData CBV（b0, ALL）
-    rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-    rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-    rootParameters[0].Descriptor.ShaderRegister = 0;
+    rootParameters[kViewDataParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+    rootParameters[kViewDataParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    rootParameters[kViewDataParam].Descriptor.ShaderRegister = 0;
 
     // RP#1: DecalData CBV（b1, ALL）
-    rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-    rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-    rootParameters[1].Descriptor.ShaderRegister = 1;
+    rootParameters[kDecalDataParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+    rootParameters[kDecalDataParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    rootParameters[kDecalDataParam].Descriptor.ShaderRegister = 1;
 
     // RP#2: 深度テクスチャ SRV Table（t0, PIXEL）
-    rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-    rootParameters[2].DescriptorTable.pDescriptorRanges = descriptorRangeDepth;
-    rootParameters[2].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeDepth);
+    rootParameters[kDepthTextureParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    rootParameters[kDepthTextureParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+    rootParameters[kDepthTextureParam].DescriptorTable.pDescriptorRanges = descriptorRangeDepth;
+    rootParameters[kDepthTextureParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeDepth);
 
     // RP#3: デカールテクスチャ SRV Table（t1, PIXEL）
-    rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-    rootParameters[3].DescriptorTable.pDescriptorRanges = descriptorRangeDecalTex;
-    rootParameters[3].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeDecalTex);
+    rootParameters[kDecalTextureParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    rootParameters[kDecalTextureParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+    rootParameters[kDecalTextureParam].DescriptorTable.pDescriptorRanges = descriptorRangeDecalTex;
+    rootParameters[kDecalTextureParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeDecalTex);
 
     descriptionRootSignature.pParameters = rootParameters;
     descriptionRootSignature.NumParameters = _countof(rootParameters);

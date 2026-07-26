@@ -13,6 +13,13 @@
 
 namespace Tako {
 
+namespace {
+  // スカイボックス RS のルートパラメータ番号
+  constexpr UINT kTransformParam = 0;  ///< b0 (VS): 座標変換行列
+  constexpr UINT kTextureParam   = 1;  ///< t0 (PS): キューブマップテクスチャ
+  constexpr UINT kMaterialParam  = 2;  ///< b0 (PS): マテリアル
+}
+
 void SkyBox::Initialize(const std::string& texturePath)
 {
   transform_.scale = { 500.0f, 500.0f, 500.0f };
@@ -56,13 +63,13 @@ void SkyBox::Draw()
   dx12_->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
 
   // 座標変換行列 CBV (b0)
-  dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, transformationMatrixResource_->GetGPUVirtualAddress());
+  dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(kTransformParam, transformationMatrixResource_->GetGPUVirtualAddress());
 
   // テクスチャ SRV (t0)
-  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(1, textureIndex_);
+  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(kTextureParam, textureIndex_);
 
   // マテリアル CBV (b0, PS)
-  dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(2, materialResource_->GetGPUVirtualAddress());
+  dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(kMaterialParam, materialResource_->GetGPUVirtualAddress());
 
   dx12_->GetCommandList()->DrawIndexedInstanced(36, 1, 0, 0, 0);
 }
@@ -98,20 +105,20 @@ void SkyBox::CreateRootSignature()
   // RootParameter の設定。
   D3D12_ROOT_PARAMETER rootParameters[3] = {};
   // TransformationMatrix
-  rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-  rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-  rootParameters[0].Descriptor.ShaderRegister = 0;
+  rootParameters[kTransformParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+  rootParameters[kTransformParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+  rootParameters[kTransformParam].Descriptor.ShaderRegister = 0;
 
   // Texture
-  rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-  rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-  rootParameters[1].DescriptorTable.pDescriptorRanges = textureDescriptorRange;
-  rootParameters[1].DescriptorTable.NumDescriptorRanges = _countof(textureDescriptorRange);
+  rootParameters[kTextureParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+  rootParameters[kTextureParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+  rootParameters[kTextureParam].DescriptorTable.pDescriptorRanges = textureDescriptorRange;
+  rootParameters[kTextureParam].DescriptorTable.NumDescriptorRanges = _countof(textureDescriptorRange);
 
   // Material
-  rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-  rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-  rootParameters[2].Descriptor.ShaderRegister = 0;
+  rootParameters[kMaterialParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+  rootParameters[kMaterialParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+  rootParameters[kMaterialParam].Descriptor.ShaderRegister = 0;
 
   descriptionRootSignature.pParameters = rootParameters;
   descriptionRootSignature.NumParameters = _countof(rootParameters);

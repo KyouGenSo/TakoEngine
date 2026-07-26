@@ -99,13 +99,13 @@ namespace Tako {
     SpriteBasic::GetInstance()->GetDX12Basic()->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
 
     // マテリアル CBuffer の場所を設定
-    SpriteBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource_->GetGPUVirtualAddress());
+    SpriteBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(SpriteBasic::kMaterialParam, materialResource_->GetGPUVirtualAddress());
 
     // 座標変換行列 CBuffer の場所を設定
-    SpriteBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResource_->GetGPUVirtualAddress());
+    SpriteBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(SpriteBasic::kTransformParam, transformationMatrixResource_->GetGPUVirtualAddress());
 
     // SRV の DescriptorTable を設定,テクスチャを指定
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, textureIndex_);
+    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(SpriteBasic::kTextureParam, textureIndex_);
 
     // 描画
     SpriteBasic::GetInstance()->GetDX12Basic()->GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0);

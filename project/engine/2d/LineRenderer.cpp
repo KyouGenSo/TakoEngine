@@ -13,6 +13,11 @@
 
 namespace Tako {
 
+  namespace {
+    // ライン描画 RS のルートパラメータ番号
+    constexpr UINT kTransformParam = 0;  ///< b0 (VS): 座標変換行列
+  }
+
   std::unique_ptr<LineRenderer> LineRenderer::instance_ = nullptr;
 
   LineRenderer* LineRenderer::GetInstance()
@@ -259,7 +264,7 @@ namespace Tako {
     dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &lineData_->vertexBufferView);
 
     // 座標変換行列の設定
-    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, transformationMatrixBuffer_->GetGPUVirtualAddress());
+    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(kTransformParam, transformationMatrixBuffer_->GetGPUVirtualAddress());
 
     // 全線分を1インスタンスで一括描画
     dx12_->GetCommandList()->DrawInstanced(lineIndex_, 1, 0, 0);
@@ -281,9 +286,9 @@ namespace Tako {
     // RootParameter の設定。複数設定できるので配列
     D3D12_ROOT_PARAMETER rootParameters[1] = {};
 
-    rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-    rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // 頂点シェーダーで使う
-    rootParameters[0].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
+    rootParameters[kTransformParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
+    rootParameters[kTransformParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // 頂点シェーダーで使う
+    rootParameters[kTransformParam].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
 
     descriptionRootSignature.pParameters = rootParameters;
     descriptionRootSignature.NumParameters = _countof(rootParameters);

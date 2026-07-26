@@ -80,11 +80,11 @@ namespace Tako {
 
     dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, combineCBufferRes_->GetGPUVirtualAddress());
+    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(kParameterCbvParam, combineCBufferRes_->GetGPUVirtualAddress());
 
     // t0=元画像, t1(スロット2)=ブラー結果
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, inputSrvIndex);
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, resultRT_.srvIndex);
+    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(kInputTextureParam, inputSrvIndex);
+    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(kBlurTextureParam, resultRT_.srvIndex);
 
     dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
 
@@ -207,21 +207,21 @@ namespace Tako {
     D3D12_ROOT_PARAMETER rootParameters[3] = {};
 
     // Texture1
-    rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-    rootParameters[0].DescriptorTable.pDescriptorRanges = descriptorRangesForTex1;
-    rootParameters[0].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangesForTex1);
+    rootParameters[kInputTextureParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    rootParameters[kInputTextureParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+    rootParameters[kInputTextureParam].DescriptorTable.pDescriptorRanges = descriptorRangesForTex1;
+    rootParameters[kInputTextureParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangesForTex1);
 
     // Param
-    rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-    rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-    rootParameters[1].Descriptor.ShaderRegister = 0;
+    rootParameters[kParameterCbvParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+    rootParameters[kParameterCbvParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+    rootParameters[kParameterCbvParam].Descriptor.ShaderRegister = 0;
 
     // Texture2
-    rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-    rootParameters[2].DescriptorTable.pDescriptorRanges = descriptorRangesForTex2;
-    rootParameters[2].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangesForTex2);
+    rootParameters[kBlurTextureParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    rootParameters[kBlurTextureParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+    rootParameters[kBlurTextureParam].DescriptorTable.pDescriptorRanges = descriptorRangesForTex2;
+    rootParameters[kBlurTextureParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangesForTex2);
 
     descriptionRootSignature.pParameters = rootParameters;
     descriptionRootSignature.NumParameters = _countof(rootParameters);

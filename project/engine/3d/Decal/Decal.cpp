@@ -66,15 +66,15 @@ namespace Tako {
 
     DX12Basic* dx12 = DecalManager::GetInstance()->GetDX12Basic();
 
-    // DecalData CBV をバインド（RP#1）
+    // DecalData CBV をバインド
     dx12->GetCommandList()->SetGraphicsRootConstantBufferView(
-      1,
+      DecalManager::kDecalDataParam,
       decalDataBuffer_->GetGPUVirtualAddress()
     );
 
-    // テクスチャモード時: デカールテクスチャ SRV をバインド（RP#3）
+    // テクスチャモード時: デカールテクスチャ SRV をバインド
     if (useTexture_ && textureSrvIndex_ != 0) {
-      SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(3, textureSrvIndex_);
+      SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(DecalManager::kDecalTextureParam, textureSrvIndex_);
     }
 
     // インデックス付きドローコール（36 インデックス = 12 三角形のキューブ）

@@ -305,7 +305,7 @@ void InstancedObject3d::Draw() {
 
     // インスタンスバッファの SRV をセット（ルートパラメータ2: t5レジスタ）
     D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = SrvManager::GetInstance()->GetGPUDescriptorHandle(instanceSrvIndex_);
-    dx12->GetCommandList()->SetGraphicsRootDescriptorTable(2, gpuHandle);
+    dx12->GetCommandList()->SetGraphicsRootDescriptorTable(ShadowRenderer::kShadowPassInstanceDataParam, gpuHandle);
 
     // モデルの各メッシュをインスタンシング描画
     model_->DrawInstanced(static_cast<uint32_t>(instances_.size()));
@@ -319,15 +319,15 @@ void InstancedObject3d::Draw() {
 
   // ViewProjection 行列をセット（ルートパラメータ1: b0）
   if (camera_ && *camera_) {
-    commandList->SetGraphicsRootConstantBufferView(1, viewProjResource_->GetGPUVirtualAddress());
+    commandList->SetGraphicsRootConstantBufferView(Object3dBasic::kInstancedViewProjectionParam, viewProjResource_->GetGPUVirtualAddress());
   }
 
-  // カメラデータをセット（ルートパラメータ4: b2）
-  commandList->SetGraphicsRootConstantBufferView(4, cameraForGPUResource_->GetGPUVirtualAddress());
+  // カメラデータをセット (b2)
+  commandList->SetGraphicsRootConstantBufferView(Object3dBasic::kCameraParam, cameraForGPUResource_->GetGPUVirtualAddress());
 
   // インスタンスバッファの SRV をセット（ルートパラメータ11: t5レジスタ）
   D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = SrvManager::GetInstance()->GetGPUDescriptorHandle(instanceSrvIndex_);
-  commandList->SetGraphicsRootDescriptorTable(11, gpuHandle);
+  commandList->SetGraphicsRootDescriptorTable(Object3dBasic::kInstanceDataParam, gpuHandle);
 
   // モデルの各メッシュをインスタンシング描画
   model_->DrawInstanced(static_cast<uint32_t>(instances_.size()));

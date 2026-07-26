@@ -187,64 +187,64 @@ void Object3dBasic::CreateRootSignature()
 	D3D12_ROOT_PARAMETER rootParameters[11] = {};
 
 	// Material
-	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-	rootParameters[0].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
+	rootParameters[kMaterialParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
+	rootParameters[kMaterialParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+	rootParameters[kMaterialParam].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
 
 	// TransformationMatrix
-	rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // 頂点シェーダーで使う
-	rootParameters[1].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド 
+	rootParameters[kTransformParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
+	rootParameters[kTransformParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // 頂点シェーダーで使う
+	rootParameters[kTransformParam].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
 
 	// Texture
-	rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-	rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-	rootParameters[2].DescriptorTable.pDescriptorRanges = descriptorRange; // ディスクリプタレンジを設定
-	rootParameters[2].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange); // レンジの数
+	rootParameters[kTextureParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
+	rootParameters[kTextureParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+	rootParameters[kTextureParam].DescriptorTable.pDescriptorRanges = descriptorRange; // ディスクリプタレンジを設定
+	rootParameters[kTextureParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange); // レンジの数
 
 	// DirectionalLight
-	rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-	rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-	rootParameters[3].Descriptor.ShaderRegister = 1; // レジスタ番号とバインド
+	rootParameters[kDirectionalLightParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
+	rootParameters[kDirectionalLightParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+	rootParameters[kDirectionalLightParam].Descriptor.ShaderRegister = 1; // レジスタ番号とバインド
 
 	// GPU Camera
-	rootParameters[4].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-	rootParameters[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-	rootParameters[4].Descriptor.ShaderRegister = 2; // レジスタ番号とバインド
+	rootParameters[kCameraParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
+	rootParameters[kCameraParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+	rootParameters[kCameraParam].Descriptor.ShaderRegister = 2; // レジスタ番号とバインド
 
 	// PointLight
-	rootParameters[5].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-	rootParameters[5].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-	rootParameters[5].DescriptorTable.pDescriptorRanges = descriptorRangeForPointLight; // ディスクリプタレンジを設定
-	rootParameters[5].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForPointLight); // レンジの数
+	rootParameters[kPointLightParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
+	rootParameters[kPointLightParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+	rootParameters[kPointLightParam].DescriptorTable.pDescriptorRanges = descriptorRangeForPointLight; // ディスクリプタレンジを設定
+	rootParameters[kPointLightParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForPointLight); // レンジの数
 
 	// SpotLight
-	rootParameters[6].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-	rootParameters[6].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-	rootParameters[6].DescriptorTable.pDescriptorRanges = descriptorRangeForSpotLight; // ディスクリプタレンジを設定
-	rootParameters[6].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForSpotLight); // レンジの数
+	rootParameters[kSpotLightParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
+	rootParameters[kSpotLightParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+	rootParameters[kSpotLightParam].DescriptorTable.pDescriptorRanges = descriptorRangeForSpotLight; // ディスクリプタレンジを設定
+	rootParameters[kSpotLightParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForSpotLight); // レンジの数
 
 	// LightNum
-	rootParameters[7].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-	rootParameters[7].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-	rootParameters[7].Descriptor.ShaderRegister = 3; // レジスタ番号とバインド
+	rootParameters[kLightConstantsParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
+	rootParameters[kLightConstantsParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+	rootParameters[kLightConstantsParam].Descriptor.ShaderRegister = 3; // レジスタ番号とバインド
 
   // EnvironmentMap
-  rootParameters[8].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-  rootParameters[8].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-  rootParameters[8].DescriptorTable.pDescriptorRanges = descriptorRangeForEnvironmentMap; // ディスクリプタレンジを設定
-  rootParameters[8].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForEnvironmentMap); // レンジの数
+  rootParameters[kEnvMapParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
+  rootParameters[kEnvMapParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+  rootParameters[kEnvMapParam].DescriptorTable.pDescriptorRanges = descriptorRangeForEnvironmentMap; // ディスクリプタレンジを設定
+  rootParameters[kEnvMapParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForEnvironmentMap); // レンジの数
 
   // ShadowConstants（b4）
-  rootParameters[9].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-  rootParameters[9].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 頂点・ピクセルシェーダーで使う
-  rootParameters[9].Descriptor.ShaderRegister = 4; // レジスタ番号とバインド
+  rootParameters[kShadowConstantsParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
+  rootParameters[kShadowConstantsParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 頂点・ピクセルシェーダーで使う
+  rootParameters[kShadowConstantsParam].Descriptor.ShaderRegister = 4; // レジスタ番号とバインド
 
   // ShadowMap（t4）
-  rootParameters[10].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-  rootParameters[10].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-  rootParameters[10].DescriptorTable.pDescriptorRanges = descriptorRangeForShadowMap; // ディスクリプタレンジを設定
-  rootParameters[10].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForShadowMap); // レンジの数
+  rootParameters[kShadowMapParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
+  rootParameters[kShadowMapParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+  rootParameters[kShadowMapParam].DescriptorTable.pDescriptorRanges = descriptorRangeForShadowMap; // ディスクリプタレンジを設定
+  rootParameters[kShadowMapParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForShadowMap); // レンジの数
 
 	descriptionRootSignature.pParameters = rootParameters;
 	descriptionRootSignature.NumParameters = _countof(rootParameters);
@@ -532,70 +532,70 @@ void Object3dBasic::CreateInstancedRootSignature()
 	D3D12_ROOT_PARAMETER rootParameters[12] = {};
 
 	// Material（b0 - pixel）
-	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-	rootParameters[0].Descriptor.ShaderRegister = 0;
+	rootParameters[kMaterialParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParameters[kMaterialParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameters[kMaterialParam].Descriptor.ShaderRegister = 0;
 
 	// ViewProjection（b0 - vertex）
-	rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-	rootParameters[1].Descriptor.ShaderRegister = 0;
+	rootParameters[kInstancedViewProjectionParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParameters[kInstancedViewProjectionParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+	rootParameters[kInstancedViewProjectionParam].Descriptor.ShaderRegister = 0;
 
 	// Texture（t0）
-	rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-	rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-	rootParameters[2].DescriptorTable.pDescriptorRanges = descriptorRange;
-	rootParameters[2].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange);
+	rootParameters[kTextureParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParameters[kTextureParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameters[kTextureParam].DescriptorTable.pDescriptorRanges = descriptorRange;
+	rootParameters[kTextureParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange);
 
 	// DirectionalLight（b1）
-	rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-	rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-	rootParameters[3].Descriptor.ShaderRegister = 1;
+	rootParameters[kDirectionalLightParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParameters[kDirectionalLightParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameters[kDirectionalLightParam].Descriptor.ShaderRegister = 1;
 
 	// GPU Camera（b2）
-	rootParameters[4].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-	rootParameters[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-	rootParameters[4].Descriptor.ShaderRegister = 2;
+	rootParameters[kCameraParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParameters[kCameraParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameters[kCameraParam].Descriptor.ShaderRegister = 2;
 
 	// PointLight（t1）
-	rootParameters[5].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-	rootParameters[5].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-	rootParameters[5].DescriptorTable.pDescriptorRanges = descriptorRangeForPointLight;
-	rootParameters[5].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForPointLight);
+	rootParameters[kPointLightParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParameters[kPointLightParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameters[kPointLightParam].DescriptorTable.pDescriptorRanges = descriptorRangeForPointLight;
+	rootParameters[kPointLightParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForPointLight);
 
 	// SpotLight（t2）
-	rootParameters[6].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-	rootParameters[6].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-	rootParameters[6].DescriptorTable.pDescriptorRanges = descriptorRangeForSpotLight;
-	rootParameters[6].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForSpotLight);
+	rootParameters[kSpotLightParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParameters[kSpotLightParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameters[kSpotLightParam].DescriptorTable.pDescriptorRanges = descriptorRangeForSpotLight;
+	rootParameters[kSpotLightParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForSpotLight);
 
 	// LightNum（b3）
-	rootParameters[7].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-	rootParameters[7].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-	rootParameters[7].Descriptor.ShaderRegister = 3;
+	rootParameters[kLightConstantsParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParameters[kLightConstantsParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameters[kLightConstantsParam].Descriptor.ShaderRegister = 3;
 
 	// EnvironmentMap（t3）
-	rootParameters[8].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-	rootParameters[8].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-	rootParameters[8].DescriptorTable.pDescriptorRanges = descriptorRangeForEnvironmentMap;
-	rootParameters[8].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForEnvironmentMap);
+	rootParameters[kEnvMapParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParameters[kEnvMapParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameters[kEnvMapParam].DescriptorTable.pDescriptorRanges = descriptorRangeForEnvironmentMap;
+	rootParameters[kEnvMapParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForEnvironmentMap);
 
 	// ShadowConstants（b4）
-	rootParameters[9].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-	rootParameters[9].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-	rootParameters[9].Descriptor.ShaderRegister = 4;
+	rootParameters[kShadowConstantsParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParameters[kShadowConstantsParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+	rootParameters[kShadowConstantsParam].Descriptor.ShaderRegister = 4;
 
 	// ShadowMap（t4）
-	rootParameters[10].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-	rootParameters[10].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-	rootParameters[10].DescriptorTable.pDescriptorRanges = descriptorRangeForShadowMap;
-	rootParameters[10].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForShadowMap);
+	rootParameters[kShadowMapParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParameters[kShadowMapParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameters[kShadowMapParam].DescriptorTable.pDescriptorRanges = descriptorRangeForShadowMap;
+	rootParameters[kShadowMapParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForShadowMap);
 
 	// インスタンスデータ（t5）
-	rootParameters[11].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-	rootParameters[11].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-	rootParameters[11].DescriptorTable.pDescriptorRanges = descriptorRangeInstance;
-	rootParameters[11].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeInstance);
+	rootParameters[kInstanceDataParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParameters[kInstanceDataParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+	rootParameters[kInstanceDataParam].DescriptorTable.pDescriptorRanges = descriptorRangeInstance;
+	rootParameters[kInstanceDataParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeInstance);
 
 	descriptionRootSignature.pParameters = rootParameters;
 	descriptionRootSignature.NumParameters = _countof(rootParameters);

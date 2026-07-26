@@ -1,5 +1,6 @@
 #include "Light.h"
 #include "DX12Basic.h"
+#include "Object3dBasic.h"
 #include "SrvManager.h"
 #include <numbers>
 
@@ -32,17 +33,17 @@ namespace Tako {
 
   void Light::PreDraw()
   {
-    // 平行光源 CBV (b3)
-    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource_->GetGPUVirtualAddress());
+    // 平行光源 CBV (b1)
+    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(Object3dBasic::kDirectionalLightParam, directionalLightResource_->GetGPUVirtualAddress());
 
-    // 点光源 SRV (t5)
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(5, pointLightSrvIndex_);
+    // 点光源 SRV (t1)
+    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(Object3dBasic::kPointLightParam, pointLightSrvIndex_);
 
-    // スポットライト SRV (t6)
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(6, spotLightSrvIndex_);
+    // スポットライト SRV (t2)
+    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(Object3dBasic::kSpotLightParam, spotLightSrvIndex_);
 
-    // ライト定数 CBV (b7)
-    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(7, lightConstantsResource_->GetGPUVirtualAddress());
+    // ライト定数 CBV (b3)
+    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(Object3dBasic::kLightConstantsParam, lightConstantsResource_->GetGPUVirtualAddress());
   }
 
   void Light::SetDirectionalLight(const Vector3& direction, const Vector4& color, int32_t lightType, float intensity)

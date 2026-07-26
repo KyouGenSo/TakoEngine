@@ -38,7 +38,7 @@ namespace Tako {
     // GrayScale エフェクトではパラメータは使用しないため、設定は行わない
 
     // レンダーテクスチャ A をシェーダーリソースとして設定
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, inputSrvIndex);
+    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(kInputTextureParam, inputSrvIndex);
 
     // フルスクリーン三角形描画
     dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);

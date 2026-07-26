@@ -21,6 +21,12 @@ namespace Tako {
   /// </summary>
   class IPostEffect
   {
+  public: //定数
+    // 全派生エフェクト共通のルートパラメータ番号。BuildRootSignature は宣言リスト順がスロット順になるため、
+    // 各派生は先頭を入力テクスチャ SRV、次をパラメータ CBV の順で宣言する（固有パラメータは 2 以降）
+    static constexpr uint32_t kInputTextureParam = 0;  ///< t0: 入力テクスチャ
+    static constexpr uint32_t kParameterCbvParam = 1;  ///< b0: エフェクトパラメータ
+
   public: //メンバー関数
     /// <summary>
     /// デストラクタ

@@ -23,6 +23,59 @@
 
 namespace Tako {
 
+  namespace {
+    // 各ルートシグネチャのルートパラメータ番号
+    namespace InitCsRP {
+      constexpr UINT kParticleUavParam      = 0;  ///< u0: パーティクル
+      constexpr UINT kFreeListIndexUavParam = 1;  ///< u1: フリーリスト先頭 index
+      constexpr UINT kFreeListUavParam      = 2;  ///< u2: フリーリスト
+    }
+    namespace EmitCsRP {
+      constexpr UINT kParticleUavParam         = 0;  ///< u0: パーティクル
+      constexpr UINT kEmitterSrvParam          = 1;  ///< t0: エミッター
+      constexpr UINT kPerFrameCbvParam         = 2;  ///< b0: フレーム情報
+      constexpr UINT kFreeListIndexUavParam    = 3;  ///< u1: フリーリスト先頭 index
+      constexpr UINT kFreeListUavParam         = 4;  ///< u2: フリーリスト
+      constexpr UINT kMeshVertexParam          = 5;  ///< t10: メッシュ頂点
+      constexpr UINT kMeshIndexParam           = 6;  ///< t11: メッシュインデックス
+      constexpr UINT kMeshAreaPrefixSumParam   = 7;  ///< t12: メッシュ面積プレフィックスサム
+      constexpr UINT kTargetMeshEmitterIdParam = 8;  ///< b1: 対象メッシュエミッター ID（32bit 定数）
+    }
+    namespace ResetCountersRP {
+      constexpr UINT kPerEmitterCountUavParam = 0;  ///< u0: per-emitter 生存数
+    }
+    namespace IntegrateRP {
+      constexpr UINT kParticleUavParam        = 0;  ///< u0: パーティクル
+      constexpr UINT kFreeListIndexUavParam   = 1;  ///< u1: フリーリスト先頭 index
+      constexpr UINT kFreeListUavParam        = 2;  ///< u2: フリーリスト
+      constexpr UINT kForceFieldSrvParam      = 3;  ///< t0: フォースフィールド
+      constexpr UINT kDepthSrvParam           = 4;  ///< t1: 深度バッファ
+      constexpr UINT kPerFrameCbvParam        = 5;  ///< b0: フレーム情報
+      constexpr UINT kPhysicsParamsCbvParam   = 6;  ///< b1: 物理パラメータ
+      constexpr UINT kEmitterSrvParam         = 7;  ///< t2: エミッター
+      constexpr UINT kPerEmitterCountUavParam = 8;  ///< u3: per-emitter 生存数
+    }
+    namespace BuildDrawArgsRP {
+      constexpr UINT kPerEmitterCountUavParam   = 0;  ///< u0: per-emitter 生存数
+      constexpr UINT kDrawArgsUavParam          = 1;  ///< u1: Indirect 描画引数
+      constexpr UINT kScatterCursorUavParam     = 2;  ///< u2: スキャッタ用カーソル
+      constexpr UINT kEmitterIndexCountSrvParam = 3;  ///< t0: エミッターごとの index 数
+    }
+    namespace ScatterCompactRP {
+      constexpr UINT kParticleUavParam      = 0;  ///< u0: パーティクル
+      constexpr UINT kDrawIndexUavParam     = 1;  ///< u1: 描画 index リスト
+      constexpr UINT kScatterCursorUavParam = 2;  ///< u2: スキャッタ用カーソル
+    }
+    namespace DrawRP {
+      constexpr UINT kParticleSrvParam    = 0;  ///< t0 (VS): パーティクル
+      constexpr UINT kPerViewCbvParam     = 1;  ///< b0 (VS): ビュー情報
+      constexpr UINT kTextureParam        = 2;  ///< t0 (PS): テクスチャ
+      constexpr UINT kEmitterSrvParam     = 3;  ///< t2 (VS): エミッター（ビルボード判定）
+      constexpr UINT kModelVertexParam    = 4;  ///< t3 (VS): 描画モデル頂点
+      constexpr UINT kModelIndexParam     = 5;  ///< t4 (VS): 描画モデルインデックス
+    }
+  }
+
   std::unique_ptr<GPUParticle> GPUParticle::instance_ = nullptr;
 
   const uint32_t GPUParticle::kNumMaxParticle = 1000000;
@@ -168,13 +221,13 @@ namespace Tako {
       commandList->SetPipelineState(initComputePSO_.Get());
 
       // ParticleData の UAV の設定
-      srvManager_->SetComputeRootDescriptorTable(0, particleUavIndex_);
+      srvManager_->SetComputeRootDescriptorTable(InitCsRP::kParticleUavParam, particleUavIndex_);
 
       // FreeListIndex の UAV の設定
-      srvManager_->SetComputeRootDescriptorTable(1, freeListIndexUavIndex_);
+      srvManager_->SetComputeRootDescriptorTable(InitCsRP::kFreeListIndexUavParam, freeListIndexUavIndex_);
 
       // FreeList の UAV の設定
-      srvManager_->SetComputeRootDescriptorTable(2, freeListUavIndex_);
+      srvManager_->SetComputeRootDescriptorTable(InitCsRP::kFreeListUavParam, freeListUavIndex_);
 
       // ディスパッチ
       commandList->Dispatch(1024, 1, 1);
@@ -197,18 +250,18 @@ namespace Tako {
       commandList->SetPipelineState(emitParticlePSO_.Get());
 
       // ParticleData の UAV の設定
-      srvManager_->SetComputeRootDescriptorTable(0, particleUavIndex_);
+      srvManager_->SetComputeRootDescriptorTable(EmitCsRP::kParticleUavParam, particleUavIndex_);
 
       // FreeListIndex の UAV の設定
-      srvManager_->SetComputeRootDescriptorTable(3, freeListIndexUavIndex_);
+      srvManager_->SetComputeRootDescriptorTable(EmitCsRP::kFreeListIndexUavParam, freeListIndexUavIndex_);
 
       // FreeList の UAV の設定
-      srvManager_->SetComputeRootDescriptorTable(4, freeListUavIndex_);
+      srvManager_->SetComputeRootDescriptorTable(EmitCsRP::kFreeListUavParam, freeListUavIndex_);
 
       // エミッターリストの SRV の設定
-      srvManager_->SetComputeRootDescriptorTable(1, emitterSrvIndex_);
+      srvManager_->SetComputeRootDescriptorTable(EmitCsRP::kEmitterSrvParam, emitterSrvIndex_);
 
-      commandList->SetComputeRootConstantBufferView(2, perFrameResource_->GetGPUVirtualAddress());
+      commandList->SetComputeRootConstantBufferView(EmitCsRP::kPerFrameCbvParam, perFrameResource_->GetGPUVirtualAddress());
 
       bool hasNonMeshEmitter = false;
       for (const auto& emitter : activeEmitters_) {
@@ -221,10 +274,10 @@ namespace Tako {
       // 非 Mesh エミッタを一括処理 (Mesh SRV はダミー bind、HLSL 側で Mesh タイプは早期 return)
       if (hasNonMeshEmitter) {
         const uint32_t threadGroupsX = (static_cast<uint32_t>(activeEmitters_.size()) + 15) / 16;
-        commandList->SetComputeRoot32BitConstant(8, kInvalidMeshTarget, 0);
-        srvManager_->SetComputeRootDescriptorTable(5, emitterSrvIndex_);
-        srvManager_->SetComputeRootDescriptorTable(6, emitterSrvIndex_);
-        srvManager_->SetComputeRootDescriptorTable(7, emitterSrvIndex_);
+        commandList->SetComputeRoot32BitConstant(EmitCsRP::kTargetMeshEmitterIdParam, kInvalidMeshTarget, 0);
+        srvManager_->SetComputeRootDescriptorTable(EmitCsRP::kMeshVertexParam, emitterSrvIndex_);
+        srvManager_->SetComputeRootDescriptorTable(EmitCsRP::kMeshIndexParam, emitterSrvIndex_);
+        srvManager_->SetComputeRootDescriptorTable(EmitCsRP::kMeshAreaPrefixSumParam, emitterSrvIndex_);
         commandList->Dispatch(threadGroupsX, 1, 1);
       }
 
@@ -239,13 +292,13 @@ namespace Tako {
           ? edata.meshSkinnedVertexSrvIndex
           : edata.meshVertexSrvIndex;
 
-        srvManager_->SetComputeRootDescriptorTable(5,
+        srvManager_->SetComputeRootDescriptorTable(EmitCsRP::kMeshVertexParam,
           vtxSrv != 0 ? vtxSrv : emitterSrvIndex_);
-        srvManager_->SetComputeRootDescriptorTable(6,
+        srvManager_->SetComputeRootDescriptorTable(EmitCsRP::kMeshIndexParam,
           edata.meshIndexSrvIndex != 0 ? edata.meshIndexSrvIndex : emitterSrvIndex_);
-        srvManager_->SetComputeRootDescriptorTable(7,
+        srvManager_->SetComputeRootDescriptorTable(EmitCsRP::kMeshAreaPrefixSumParam,
           edata.meshAreaPrefixSumSrvIndex != 0 ? edata.meshAreaPrefixSumSrvIndex : emitterSrvIndex_);
-        commandList->SetComputeRoot32BitConstant(8, i, 0);
+        commandList->SetComputeRoot32BitConstant(EmitCsRP::kTargetMeshEmitterIdParam, i, 0);
         commandList->Dispatch(1, 1, 1);
       }
     }
@@ -259,7 +312,7 @@ namespace Tako {
     // IntegrateAll が InterlockedAdd で加算する前に perEmitterCount[0..kNumMaxEmitter) を 0 クリアする
     commandList->SetComputeRootSignature(resetCountersRS_.Get());
     commandList->SetPipelineState(resetCountersPSO_.Get());
-    srvManager_->SetComputeRootDescriptorTable(0, perEmitterCountUavIndex_);
+    srvManager_->SetComputeRootDescriptorTable(ResetCountersRP::kPerEmitterCountUavParam, perEmitterCountUavIndex_);
     commandList->Dispatch(1, 1, 1); // numthreads(512) で kNumMaxEmitter(500) をカバー
     dx12_->SetUAVBarrier(perEmitterCountResource_.Get());
 
@@ -277,31 +330,31 @@ namespace Tako {
     commandList->SetPipelineState(integrateAllPSO_.Get());
 
     // ParticleData の UAV の設定 (u0)
-    srvManager_->SetComputeRootDescriptorTable(0, particleUavIndex_);
+    srvManager_->SetComputeRootDescriptorTable(IntegrateRP::kParticleUavParam, particleUavIndex_);
 
     // FreeListIndex の UAV の設定 (u1)
-    srvManager_->SetComputeRootDescriptorTable(1, freeListIndexUavIndex_);
+    srvManager_->SetComputeRootDescriptorTable(IntegrateRP::kFreeListIndexUavParam, freeListIndexUavIndex_);
 
     // FreeList の UAV の設定 (u2)
-    srvManager_->SetComputeRootDescriptorTable(2, freeListUavIndex_);
+    srvManager_->SetComputeRootDescriptorTable(IntegrateRP::kFreeListUavParam, freeListUavIndex_);
 
     // ForceFields の SRV の設定 (t0)
-    srvManager_->SetComputeRootDescriptorTable(3, forceFieldSrvIndex_);
+    srvManager_->SetComputeRootDescriptorTable(IntegrateRP::kForceFieldSrvParam, forceFieldSrvIndex_);
 
     // DepthBuffer の SRV の設定 (t1) — 深度バッファ衝突用
-    srvManager_->SetComputeRootDescriptorTable(4, depthSrvIndex_);
+    srvManager_->SetComputeRootDescriptorTable(IntegrateRP::kDepthSrvParam, depthSrvIndex_);
 
     // PerFrame の CBV の設定 (b0)
-    commandList->SetComputeRootConstantBufferView(5, perFrameResource_->GetGPUVirtualAddress());
+    commandList->SetComputeRootConstantBufferView(IntegrateRP::kPerFrameCbvParam, perFrameResource_->GetGPUVirtualAddress());
 
     // PhysicsParams の CBV の設定 (b1)
-    commandList->SetComputeRootConstantBufferView(6, physicsParamsResource_->GetGPUVirtualAddress());
+    commandList->SetComputeRootConstantBufferView(IntegrateRP::kPhysicsParamsCbvParam, physicsParamsResource_->GetGPUVirtualAddress());
 
     // Emitter SRV の設定 (t2) — IntegrateAll が targetPosition 等を参照
-    srvManager_->SetComputeRootDescriptorTable(7, emitterSrvIndex_);
+    srvManager_->SetComputeRootDescriptorTable(IntegrateRP::kEmitterSrvParam, emitterSrvIndex_);
 
     // perEmitterCount UAV の設定 (u3) — per-emitter 生存数のカウント先
-    srvManager_->SetComputeRootDescriptorTable(8, perEmitterCountUavIndex_);
+    srvManager_->SetComputeRootDescriptorTable(IntegrateRP::kPerEmitterCountUavParam, perEmitterCountUavIndex_);
 
     // ディスパッチ（256スレッド/グループ × ceil(1M/256) = 3907グループ）
     uint32_t integrateGroups = (kNumMaxParticle + 255) / 256;
@@ -325,10 +378,10 @@ namespace Tako {
     // スキャッタ用カーソル(=base_e) を構築する
     commandList->SetComputeRootSignature(buildDrawArgsRS_.Get());
     commandList->SetPipelineState(buildDrawArgsPSO_.Get());
-    srvManager_->SetComputeRootDescriptorTable(0, perEmitterCountUavIndex_);
-    srvManager_->SetComputeRootDescriptorTable(1, drawArgsUavIndex_);
-    srvManager_->SetComputeRootDescriptorTable(2, scatterCursorUavIndex_);
-    srvManager_->SetComputeRootDescriptorTable(3, emitterIndexCountSrvIndex_);
+    srvManager_->SetComputeRootDescriptorTable(BuildDrawArgsRP::kPerEmitterCountUavParam, perEmitterCountUavIndex_);
+    srvManager_->SetComputeRootDescriptorTable(BuildDrawArgsRP::kDrawArgsUavParam, drawArgsUavIndex_);
+    srvManager_->SetComputeRootDescriptorTable(BuildDrawArgsRP::kScatterCursorUavParam, scatterCursorUavIndex_);
+    srvManager_->SetComputeRootDescriptorTable(BuildDrawArgsRP::kEmitterIndexCountSrvParam, emitterIndexCountSrvIndex_);
     commandList->Dispatch(1, 1, 1);
     dx12_->SetUAVBarrier(drawArgsResource_.Get());
     dx12_->SetUAVBarrier(scatterCursorResource_.Get());
@@ -338,9 +391,9 @@ namespace Tako {
     // (particleResource_ は IntegrateAll 直後の UAV state のまま読む)
     commandList->SetComputeRootSignature(scatterCompactRS_.Get());
     commandList->SetPipelineState(scatterCompactPSO_.Get());
-    srvManager_->SetComputeRootDescriptorTable(0, particleUavIndex_);
-    srvManager_->SetComputeRootDescriptorTable(1, drawIndexUavIndex_);
-    srvManager_->SetComputeRootDescriptorTable(2, scatterCursorUavIndex_);
+    srvManager_->SetComputeRootDescriptorTable(ScatterCompactRP::kParticleUavParam, particleUavIndex_);
+    srvManager_->SetComputeRootDescriptorTable(ScatterCompactRP::kDrawIndexUavParam, drawIndexUavIndex_);
+    srvManager_->SetComputeRootDescriptorTable(ScatterCompactRP::kScatterCursorUavParam, scatterCursorUavIndex_);
     {
       uint32_t scatterGroups = (kNumMaxParticle + 255) / 256;
       commandList->Dispatch(scatterGroups, 1, 1);
@@ -369,9 +422,9 @@ namespace Tako {
     dx12_->TransitionResourceWithTracking(drawArgsResource_.Get(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
 
     // 全エミッター共通のルート: ParticleData SRV(t0), PerView CBV(b0), Emitter SRV(t2: ビルボード判定用)
-    srvManager_->SetGraphicsRootDescriptorTable(0, particleSrvIndex_);
-    commandList->SetGraphicsRootConstantBufferView(1, perViewResource_->GetGPUVirtualAddress());
-    srvManager_->SetGraphicsRootDescriptorTable(3, emitterSrvIndex_);
+    srvManager_->SetGraphicsRootDescriptorTable(DrawRP::kParticleSrvParam, particleSrvIndex_);
+    commandList->SetGraphicsRootConstantBufferView(DrawRP::kPerViewCbvParam, perViewResource_->GetGPUVirtualAddress());
+    srvManager_->SetGraphicsRootDescriptorTable(DrawRP::kEmitterSrvParam, emitterSrvIndex_);
 
     // per-emitter ループ: エミッターごとに PSO(ブレンドモード)/テクスチャ/
     // 描画モデル(頂点 SRV t3・index SRV t4) を切り替えて 1 つずつ ExecuteIndirect。
@@ -388,9 +441,9 @@ namespace Tako {
       const uint32_t idxSrv = (ed.renderIndexSrvIndex != 0) ? ed.renderIndexSrvIndex : defaultQuadIndexSrvIndex_;
 
       commandList->SetPipelineState(GetBlendPSO(ed.blendMode));      // ブレンドモード
-      srvManager_->SetGraphicsRootDescriptorTable(2, texIndex);    // テクスチャ (t0, PS)
-      srvManager_->SetGraphicsRootDescriptorTable(4, vtxSrv);      // 描画モデル頂点 (t3)
-      srvManager_->SetGraphicsRootDescriptorTable(5, idxSrv);      // 描画モデルインデックス (t4)
+      srvManager_->SetGraphicsRootDescriptorTable(DrawRP::kTextureParam, texIndex);        // テクスチャ (t0, PS)
+      srvManager_->SetGraphicsRootDescriptorTable(DrawRP::kModelVertexParam, vtxSrv);      // 描画モデル頂点 (t3)
+      srvManager_->SetGraphicsRootDescriptorTable(DrawRP::kModelIndexParam, idxSrv);       // 描画モデルインデックス (t4)
       commandList->ExecuteIndirect(drawCommandSignature_.Get(), 1, drawArgsResource_.Get(),
         static_cast<UINT64>(i) * drawStride, nullptr, 0);
     }
@@ -702,34 +755,34 @@ namespace Tako {
 
     D3D12_ROOT_PARAMETER rootParameters[6] = {};
     // [0] Particle SRV (t0, VS)
-    rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-    rootParameters[0].DescriptorTable.pDescriptorRanges = rangeParticle;
-    rootParameters[0].DescriptorTable.NumDescriptorRanges = 1;
+    rootParameters[DrawRP::kParticleSrvParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    rootParameters[DrawRP::kParticleSrvParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+    rootParameters[DrawRP::kParticleSrvParam].DescriptorTable.pDescriptorRanges = rangeParticle;
+    rootParameters[DrawRP::kParticleSrvParam].DescriptorTable.NumDescriptorRanges = 1;
     // [1] PerView CBV (b0, VS)
-    rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-    rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-    rootParameters[1].Descriptor.ShaderRegister = 0;
+    rootParameters[DrawRP::kPerViewCbvParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+    rootParameters[DrawRP::kPerViewCbvParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+    rootParameters[DrawRP::kPerViewCbvParam].Descriptor.ShaderRegister = 0;
     // [2] Texture SRV (t0, PS)
-    rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-    rootParameters[2].DescriptorTable.pDescriptorRanges = rangeTex;
-    rootParameters[2].DescriptorTable.NumDescriptorRanges = 1;
+    rootParameters[DrawRP::kTextureParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    rootParameters[DrawRP::kTextureParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+    rootParameters[DrawRP::kTextureParam].DescriptorTable.pDescriptorRanges = rangeTex;
+    rootParameters[DrawRP::kTextureParam].DescriptorTable.NumDescriptorRanges = 1;
     // [3] Emitter SRV (t2, VS) — ビルボードフラグ参照
-    rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-    rootParameters[3].DescriptorTable.pDescriptorRanges = rangeEmitter;
-    rootParameters[3].DescriptorTable.NumDescriptorRanges = 1;
+    rootParameters[DrawRP::kEmitterSrvParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    rootParameters[DrawRP::kEmitterSrvParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+    rootParameters[DrawRP::kEmitterSrvParam].DescriptorTable.pDescriptorRanges = rangeEmitter;
+    rootParameters[DrawRP::kEmitterSrvParam].DescriptorTable.NumDescriptorRanges = 1;
     // [4] 描画モデル頂点 SRV (t3, VS)
-    rootParameters[4].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-    rootParameters[4].DescriptorTable.pDescriptorRanges = rangeRenderVtx;
-    rootParameters[4].DescriptorTable.NumDescriptorRanges = 1;
+    rootParameters[DrawRP::kModelVertexParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    rootParameters[DrawRP::kModelVertexParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+    rootParameters[DrawRP::kModelVertexParam].DescriptorTable.pDescriptorRanges = rangeRenderVtx;
+    rootParameters[DrawRP::kModelVertexParam].DescriptorTable.NumDescriptorRanges = 1;
     // [5] 描画モデルインデックス SRV (t4, VS)
-    rootParameters[5].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[5].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-    rootParameters[5].DescriptorTable.pDescriptorRanges = rangeRenderIdx;
-    rootParameters[5].DescriptorTable.NumDescriptorRanges = 1;
+    rootParameters[DrawRP::kModelIndexParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    rootParameters[DrawRP::kModelIndexParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+    rootParameters[DrawRP::kModelIndexParam].DescriptorTable.pDescriptorRanges = rangeRenderIdx;
+    rootParameters[DrawRP::kModelIndexParam].DescriptorTable.NumDescriptorRanges = 1;
 
     descriptionRootSignature.pParameters = rootParameters;
     descriptionRootSignature.NumParameters = _countof(rootParameters);
@@ -843,22 +896,22 @@ namespace Tako {
     // RootParameter の設定。複数設定できるので配列
     D3D12_ROOT_PARAMETER rootParameters[3] = {};
     // Particle
-    rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-    rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
-    rootParameters[0].DescriptorTable.pDescriptorRanges = descriptorRangeForParticle; // ディスクリプタレンジを設定
-    rootParameters[0].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForParticle); // レンジの数
+    rootParameters[InitCsRP::kParticleUavParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
+    rootParameters[InitCsRP::kParticleUavParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
+    rootParameters[InitCsRP::kParticleUavParam].DescriptorTable.pDescriptorRanges = descriptorRangeForParticle; // ディスクリプタレンジを設定
+    rootParameters[InitCsRP::kParticleUavParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForParticle); // レンジの数
 
     // FreeListIndex
-    rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-    rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
-    rootParameters[1].DescriptorTable.pDescriptorRanges = descriptorRangeForFreeListIndex; // ディスクリプタレンジを設定
-    rootParameters[1].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForFreeListIndex); // レンジの数
+    rootParameters[InitCsRP::kFreeListIndexUavParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
+    rootParameters[InitCsRP::kFreeListIndexUavParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
+    rootParameters[InitCsRP::kFreeListIndexUavParam].DescriptorTable.pDescriptorRanges = descriptorRangeForFreeListIndex; // ディスクリプタレンジを設定
+    rootParameters[InitCsRP::kFreeListIndexUavParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForFreeListIndex); // レンジの数
 
     // FreeList
-    rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-    rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
-    rootParameters[2].DescriptorTable.pDescriptorRanges = descriptorRangeForFreeList; // ディスクリプタレンジを設定
-    rootParameters[2].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForFreeList); // レンジの数
+    rootParameters[InitCsRP::kFreeListUavParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
+    rootParameters[InitCsRP::kFreeListUavParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
+    rootParameters[InitCsRP::kFreeListUavParam].DescriptorTable.pDescriptorRanges = descriptorRangeForFreeList; // ディスクリプタレンジを設定
+    rootParameters[InitCsRP::kFreeListUavParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForFreeList); // レンジの数
 
     descriptionRootSignature.pParameters = rootParameters;
     descriptionRootSignature.NumParameters = _countof(rootParameters);
@@ -930,58 +983,58 @@ namespace Tako {
     // RootParameter: Particle/FreeListIndex/FreeList UAV + Emitter/MeshVtx/MeshIdx/MeshAreaPrefixSum SRV + PerFrame CBV + RootConstants = 9
     D3D12_ROOT_PARAMETER rootParameters[9] = {};
     // Particle
-    rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-    rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
-    rootParameters[0].DescriptorTable.pDescriptorRanges = descriptorRange_Particle; // ディスクリプタレンジを設定
-    rootParameters[0].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange_Particle); // レンジの数
+    rootParameters[EmitCsRP::kParticleUavParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
+    rootParameters[EmitCsRP::kParticleUavParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
+    rootParameters[EmitCsRP::kParticleUavParam].DescriptorTable.pDescriptorRanges = descriptorRange_Particle; // ディスクリプタレンジを設定
+    rootParameters[EmitCsRP::kParticleUavParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange_Particle); // レンジの数
 
     // EmitterSphere
-    rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-    rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
-    rootParameters[1].DescriptorTable.pDescriptorRanges = descriptorRange_Emitter; // ディスクリプタレンジを設定
-    rootParameters[1].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange_Emitter); // レンジの数
+    rootParameters[EmitCsRP::kEmitterSrvParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
+    rootParameters[EmitCsRP::kEmitterSrvParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
+    rootParameters[EmitCsRP::kEmitterSrvParam].DescriptorTable.pDescriptorRanges = descriptorRange_Emitter; // ディスクリプタレンジを設定
+    rootParameters[EmitCsRP::kEmitterSrvParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange_Emitter); // レンジの数
 
     // PerFrame
-    rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-    rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
-    rootParameters[2].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
+    rootParameters[EmitCsRP::kPerFrameCbvParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
+    rootParameters[EmitCsRP::kPerFrameCbvParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
+    rootParameters[EmitCsRP::kPerFrameCbvParam].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
 
     // FreeListIndex
-    rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-    rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
-    rootParameters[3].DescriptorTable.pDescriptorRanges = descriptorRange_FreeListIndex; // ディスクリプタレンジを設定
-    rootParameters[3].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange_FreeListIndex); // レンジの数
+    rootParameters[EmitCsRP::kFreeListIndexUavParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
+    rootParameters[EmitCsRP::kFreeListIndexUavParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
+    rootParameters[EmitCsRP::kFreeListIndexUavParam].DescriptorTable.pDescriptorRanges = descriptorRange_FreeListIndex; // ディスクリプタレンジを設定
+    rootParameters[EmitCsRP::kFreeListIndexUavParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange_FreeListIndex); // レンジの数
 
     // FreeList
-    rootParameters[4].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-    rootParameters[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
-    rootParameters[4].DescriptorTable.pDescriptorRanges = descriptorRange_FreeList; // ディスクリプタレンジを設定
-    rootParameters[4].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange_FreeList); // レンジの数
+    rootParameters[EmitCsRP::kFreeListUavParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
+    rootParameters[EmitCsRP::kFreeListUavParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
+    rootParameters[EmitCsRP::kFreeListUavParam].DescriptorTable.pDescriptorRanges = descriptorRange_FreeList; // ディスクリプタレンジを設定
+    rootParameters[EmitCsRP::kFreeListUavParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange_FreeList); // レンジの数
 
     // Mesh Vertex SRV (t10) - Mesh エミッタの頂点バッファ
-    rootParameters[5].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[5].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-    rootParameters[5].DescriptorTable.pDescriptorRanges = descriptorRange_MeshVertices;
-    rootParameters[5].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange_MeshVertices);
+    rootParameters[EmitCsRP::kMeshVertexParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    rootParameters[EmitCsRP::kMeshVertexParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    rootParameters[EmitCsRP::kMeshVertexParam].DescriptorTable.pDescriptorRanges = descriptorRange_MeshVertices;
+    rootParameters[EmitCsRP::kMeshVertexParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange_MeshVertices);
 
     // Mesh Index SRV (t11) - Mesh エミッタのインデックスバッファ
-    rootParameters[6].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[6].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-    rootParameters[6].DescriptorTable.pDescriptorRanges = descriptorRange_MeshIndices;
-    rootParameters[6].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange_MeshIndices);
+    rootParameters[EmitCsRP::kMeshIndexParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    rootParameters[EmitCsRP::kMeshIndexParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    rootParameters[EmitCsRP::kMeshIndexParam].DescriptorTable.pDescriptorRanges = descriptorRange_MeshIndices;
+    rootParameters[EmitCsRP::kMeshIndexParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange_MeshIndices);
 
     // Mesh Area Prefix Sum SRV (t12)
-    rootParameters[7].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[7].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-    rootParameters[7].DescriptorTable.pDescriptorRanges = descriptorRange_MeshAreaPrefixSum;
-    rootParameters[7].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange_MeshAreaPrefixSum);
+    rootParameters[EmitCsRP::kMeshAreaPrefixSumParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    rootParameters[EmitCsRP::kMeshAreaPrefixSumParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    rootParameters[EmitCsRP::kMeshAreaPrefixSumParam].DescriptorTable.pDescriptorRanges = descriptorRange_MeshAreaPrefixSum;
+    rootParameters[EmitCsRP::kMeshAreaPrefixSumParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange_MeshAreaPrefixSum);
 
     // RootConstants (b1) - gTargetMeshEmitterId
-    rootParameters[8].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
-    rootParameters[8].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-    rootParameters[8].Constants.ShaderRegister = 1; // b1
-    rootParameters[8].Constants.RegisterSpace = 0;
-    rootParameters[8].Constants.Num32BitValues = 1; // uint gTargetMeshEmitterId
+    rootParameters[EmitCsRP::kTargetMeshEmitterIdParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+    rootParameters[EmitCsRP::kTargetMeshEmitterIdParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    rootParameters[EmitCsRP::kTargetMeshEmitterIdParam].Constants.ShaderRegister = 1; // b1
+    rootParameters[EmitCsRP::kTargetMeshEmitterIdParam].Constants.RegisterSpace = 0;
+    rootParameters[EmitCsRP::kTargetMeshEmitterIdParam].Constants.Num32BitValues = 1; // uint gTargetMeshEmitterId
 
     descriptionRootSignature.pParameters = rootParameters;
     descriptionRootSignature.NumParameters = _countof(rootParameters);
@@ -1190,10 +1243,10 @@ namespace Tako {
     range[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
     D3D12_ROOT_PARAMETER rootParameters[1] = {};
-    rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-    rootParameters[0].DescriptorTable.pDescriptorRanges = range;
-    rootParameters[0].DescriptorTable.NumDescriptorRanges = 1;
+    rootParameters[ResetCountersRP::kPerEmitterCountUavParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    rootParameters[ResetCountersRP::kPerEmitterCountUavParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    rootParameters[ResetCountersRP::kPerEmitterCountUavParam].DescriptorTable.pDescriptorRanges = range;
+    rootParameters[ResetCountersRP::kPerEmitterCountUavParam].DescriptorTable.NumDescriptorRanges = 1;
 
     D3D12_ROOT_SIGNATURE_DESC desc{};
     desc.pParameters = rootParameters;
@@ -1229,16 +1282,17 @@ namespace Tako {
     srvRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
     D3D12_ROOT_PARAMETER rootParameters[4] = {};
+    // スロット 0..2 = BuildDrawArgsRP の kPerEmitterCountUavParam / kDrawArgsUavParam / kScatterCursorUavParam (u0..u2)
     for (uint32_t i = 0; i < 3; ++i) {
       rootParameters[i].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
       rootParameters[i].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
       rootParameters[i].DescriptorTable.pDescriptorRanges = &uavRanges[i];
       rootParameters[i].DescriptorTable.NumDescriptorRanges = 1;
     }
-    rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-    rootParameters[3].DescriptorTable.pDescriptorRanges = srvRange;
-    rootParameters[3].DescriptorTable.NumDescriptorRanges = 1;
+    rootParameters[BuildDrawArgsRP::kEmitterIndexCountSrvParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    rootParameters[BuildDrawArgsRP::kEmitterIndexCountSrvParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    rootParameters[BuildDrawArgsRP::kEmitterIndexCountSrvParam].DescriptorTable.pDescriptorRanges = srvRange;
+    rootParameters[BuildDrawArgsRP::kEmitterIndexCountSrvParam].DescriptorTable.NumDescriptorRanges = 1;
 
     D3D12_ROOT_SIGNATURE_DESC desc{};
     desc.pParameters = rootParameters;
@@ -1268,6 +1322,7 @@ namespace Tako {
     }
 
     D3D12_ROOT_PARAMETER rootParameters[3] = {};
+    // スロット 0..2 = ScatterCompactRP の kParticleUavParam / kDrawIndexUavParam / kScatterCursorUavParam (u0..u2)
     for (uint32_t i = 0; i < 3; ++i) {
       rootParameters[i].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
       rootParameters[i].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
@@ -1416,56 +1471,56 @@ namespace Tako {
     D3D12_ROOT_PARAMETER rootParameters[9] = {};
 
     // [0] Particles UAV (u0)
-    rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-    rootParameters[0].DescriptorTable.pDescriptorRanges = rangeParticle;
-    rootParameters[0].DescriptorTable.NumDescriptorRanges = 1;
+    rootParameters[IntegrateRP::kParticleUavParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    rootParameters[IntegrateRP::kParticleUavParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    rootParameters[IntegrateRP::kParticleUavParam].DescriptorTable.pDescriptorRanges = rangeParticle;
+    rootParameters[IntegrateRP::kParticleUavParam].DescriptorTable.NumDescriptorRanges = 1;
 
     // [1] FreeListIndex UAV (u1)
-    rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-    rootParameters[1].DescriptorTable.pDescriptorRanges = rangeFreeListIndex;
-    rootParameters[1].DescriptorTable.NumDescriptorRanges = 1;
+    rootParameters[IntegrateRP::kFreeListIndexUavParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    rootParameters[IntegrateRP::kFreeListIndexUavParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    rootParameters[IntegrateRP::kFreeListIndexUavParam].DescriptorTable.pDescriptorRanges = rangeFreeListIndex;
+    rootParameters[IntegrateRP::kFreeListIndexUavParam].DescriptorTable.NumDescriptorRanges = 1;
 
     // [2] FreeList UAV (u2)
-    rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-    rootParameters[2].DescriptorTable.pDescriptorRanges = rangeFreeList;
-    rootParameters[2].DescriptorTable.NumDescriptorRanges = 1;
+    rootParameters[IntegrateRP::kFreeListUavParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    rootParameters[IntegrateRP::kFreeListUavParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    rootParameters[IntegrateRP::kFreeListUavParam].DescriptorTable.pDescriptorRanges = rangeFreeList;
+    rootParameters[IntegrateRP::kFreeListUavParam].DescriptorTable.NumDescriptorRanges = 1;
 
     // [3] ForceFields SRV (t0)
-    rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-    rootParameters[3].DescriptorTable.pDescriptorRanges = rangeForceFields;
-    rootParameters[3].DescriptorTable.NumDescriptorRanges = 1;
+    rootParameters[IntegrateRP::kForceFieldSrvParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    rootParameters[IntegrateRP::kForceFieldSrvParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    rootParameters[IntegrateRP::kForceFieldSrvParam].DescriptorTable.pDescriptorRanges = rangeForceFields;
+    rootParameters[IntegrateRP::kForceFieldSrvParam].DescriptorTable.NumDescriptorRanges = 1;
 
     // [4] DepthBuffer SRV (t1) — 深度バッファ衝突用
-    rootParameters[4].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-    rootParameters[4].DescriptorTable.pDescriptorRanges = rangeDepthBuffer;
-    rootParameters[4].DescriptorTable.NumDescriptorRanges = 1;
+    rootParameters[IntegrateRP::kDepthSrvParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    rootParameters[IntegrateRP::kDepthSrvParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    rootParameters[IntegrateRP::kDepthSrvParam].DescriptorTable.pDescriptorRanges = rangeDepthBuffer;
+    rootParameters[IntegrateRP::kDepthSrvParam].DescriptorTable.NumDescriptorRanges = 1;
 
     // [5] PerFrame CBV (b0)
-    rootParameters[5].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-    rootParameters[5].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-    rootParameters[5].Descriptor.ShaderRegister = 0;
+    rootParameters[IntegrateRP::kPerFrameCbvParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+    rootParameters[IntegrateRP::kPerFrameCbvParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    rootParameters[IntegrateRP::kPerFrameCbvParam].Descriptor.ShaderRegister = 0;
 
     // [6] PhysicsParams CBV (b1)
-    rootParameters[6].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-    rootParameters[6].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-    rootParameters[6].Descriptor.ShaderRegister = 1;
+    rootParameters[IntegrateRP::kPhysicsParamsCbvParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+    rootParameters[IntegrateRP::kPhysicsParamsCbvParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    rootParameters[IntegrateRP::kPhysicsParamsCbvParam].Descriptor.ShaderRegister = 1;
 
     // [7] Emitter SRV (t2) — emitter 設定の逆引き用
-    rootParameters[7].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[7].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-    rootParameters[7].DescriptorTable.pDescriptorRanges = rangeEmitters;
-    rootParameters[7].DescriptorTable.NumDescriptorRanges = 1;
+    rootParameters[IntegrateRP::kEmitterSrvParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    rootParameters[IntegrateRP::kEmitterSrvParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    rootParameters[IntegrateRP::kEmitterSrvParam].DescriptorTable.pDescriptorRanges = rangeEmitters;
+    rootParameters[IntegrateRP::kEmitterSrvParam].DescriptorTable.NumDescriptorRanges = 1;
 
     // [8] perEmitterCount UAV (u3) — per-emitter 生存数カウンタ
-    rootParameters[8].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[8].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-    rootParameters[8].DescriptorTable.pDescriptorRanges = rangePerEmitterCount;
-    rootParameters[8].DescriptorTable.NumDescriptorRanges = 1;
+    rootParameters[IntegrateRP::kPerEmitterCountUavParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    rootParameters[IntegrateRP::kPerEmitterCountUavParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    rootParameters[IntegrateRP::kPerEmitterCountUavParam].DescriptorTable.pDescriptorRanges = rangePerEmitterCount;
+    rootParameters[IntegrateRP::kPerEmitterCountUavParam].DescriptorTable.NumDescriptorRanges = 1;
 
     // Static Sampler: Point/Clamp（深度テクスチャサンプリング用）
     D3D12_STATIC_SAMPLER_DESC staticSampler{};

@@ -40,13 +40,13 @@ namespace Tako {
     dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
     // パラメータリソースの設定
-    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, cBufferResource_->GetGPUVirtualAddress());
+    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(kParameterCbvParam, cBufferResource_->GetGPUVirtualAddress());
 
     // 深度テクスチャをシェーダーリソースとして設定
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, depthSrvIndex);
+    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(kDepthTextureParam, depthSrvIndex);
 
     // レンダーテクスチャ A をシェーダーリソースとして設定
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, inputSrvIndex);
+    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(kInputTextureParam, inputSrvIndex);
 
     // フルスクリーン三角形描画
     dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);

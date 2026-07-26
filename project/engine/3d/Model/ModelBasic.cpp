@@ -61,33 +61,33 @@ namespace Tako {
     D3D12_ROOT_PARAMETER rootParameters[5] = {};
 
     // Palette
-    rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-    rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
-    rootParameters[0].DescriptorTable.pDescriptorRanges = descriptorRangeForPalette; // ディスクリプタレンジを設定
-    rootParameters[0].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForPalette); // レンジの数
+    rootParameters[kPaletteParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
+    rootParameters[kPaletteParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
+    rootParameters[kPaletteParam].DescriptorTable.pDescriptorRanges = descriptorRangeForPalette; // ディスクリプタレンジを設定
+    rootParameters[kPaletteParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForPalette); // レンジの数
 
     // VertexInput
-    rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-    rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
-    rootParameters[1].DescriptorTable.pDescriptorRanges = descriptorRangeForVertexInput; // ディスクリプタレンジを設定
-    rootParameters[1].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForVertexInput); // レンジの数
+    rootParameters[kVertexInputParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
+    rootParameters[kVertexInputParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
+    rootParameters[kVertexInputParam].DescriptorTable.pDescriptorRanges = descriptorRangeForVertexInput; // ディスクリプタレンジを設定
+    rootParameters[kVertexInputParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForVertexInput); // レンジの数
 
     // Influence
-    rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-    rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
-    rootParameters[2].DescriptorTable.pDescriptorRanges = descriptorRangeForInfluence; // ディスクリプタレンジを設定
-    rootParameters[2].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForInfluence); // レンジの数
+    rootParameters[kInfluenceParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
+    rootParameters[kInfluenceParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
+    rootParameters[kInfluenceParam].DescriptorTable.pDescriptorRanges = descriptorRangeForInfluence; // ディスクリプタレンジを設定
+    rootParameters[kInfluenceParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForInfluence); // レンジの数
 
     // VertexOutput
-    rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-    rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
-    rootParameters[3].DescriptorTable.pDescriptorRanges = descriptorRangeForVertexOutput; // ディスクリプタレンジを設定
-    rootParameters[3].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForVertexOutput); // レンジの数
+    rootParameters[kVertexOutputParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
+    rootParameters[kVertexOutputParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
+    rootParameters[kVertexOutputParam].DescriptorTable.pDescriptorRanges = descriptorRangeForVertexOutput; // ディスクリプタレンジを設定
+    rootParameters[kVertexOutputParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForVertexOutput); // レンジの数
 
     // SkinningInfo
-    rootParameters[4].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-    rootParameters[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
-    rootParameters[4].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
+    rootParameters[kSkinningInfoParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
+    rootParameters[kSkinningInfoParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // 全てのシェーダーで使う
+    rootParameters[kSkinningInfoParam].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
 
     descriptionRootSignature.pParameters = rootParameters;
     descriptionRootSignature.NumParameters = _countof(rootParameters);

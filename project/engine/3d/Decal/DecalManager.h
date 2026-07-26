@@ -33,6 +33,13 @@ namespace Tako {
   public:
     explicit DecalManager(Token) {}
 
+  public: //定数
+    // デカール RS のルートパラメータ番号
+    static constexpr UINT kViewDataParam     = 0;  ///< b0: ビュー情報
+    static constexpr UINT kDecalDataParam    = 1;  ///< b1: デカール情報
+    static constexpr UINT kDepthTextureParam = 2;  ///< t0: シーン深度
+    static constexpr UINT kDecalTextureParam = 3;  ///< t1: デカールテクスチャ
+
   public: //メンバー関数
 
     /// <summary>

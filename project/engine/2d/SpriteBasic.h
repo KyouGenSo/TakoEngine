@@ -26,6 +26,12 @@ namespace Tako {
   public:
     explicit SpriteBasic(Token) {}
 
+  public: //定数
+    // スプライト RS のルートパラメータ番号
+    static constexpr UINT kMaterialParam  = 0;  ///< b0 (PS): マテリアル
+    static constexpr UINT kTransformParam = 1;  ///< b0 (VS): 変換行列
+    static constexpr UINT kTextureParam   = 2;  ///< t0 (PS): テクスチャ
+
   public: //メンバー関数
 
     // ComPtr のエイリアス

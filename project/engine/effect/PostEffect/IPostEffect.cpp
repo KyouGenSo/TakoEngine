@@ -147,8 +147,8 @@ namespace Tako {
     commandList->SetGraphicsRootSignature(rootSig);
     commandList->SetPipelineState(pso);
     commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-    commandList->SetGraphicsRootConstantBufferView(1, cbvAddress);
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(0, inputSrvIndex);
+    commandList->SetGraphicsRootConstantBufferView(kParameterCbvParam, cbvAddress);
+    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(kInputTextureParam, inputSrvIndex);
     commandList->DrawInstanced(3, 1, 0, 0);
   }
 

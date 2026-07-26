@@ -69,19 +69,19 @@ namespace Tako {
 
     // マテリアルデータを設定
     if (!ShadowRenderer::GetInstance()->IsRenderingShadow()) {
-      dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource_->GetGPUVirtualAddress());
+      dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(Object3dBasic::kMaterialParam, materialResource_->GetGPUVirtualAddress());
 
       // テクスチャを設定
-      SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, textureData_.textureIndex);
+      SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(Object3dBasic::kTextureParam, textureData_.textureIndex);
 
       // 環境マップを使用する場合の設定
       if (materialData_->enableEnvMap && envTextureIndex_ != 0) {
-        SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(8, envTextureIndex_);
+        SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(Object3dBasic::kEnvMapParam, envTextureIndex_);
       }
       else {
         // 環境マップが無効またはテクスチャが設定されていない場合は、デフォルトテクスチャを設定
         uint32_t defaultTextureIndex = TextureManager::GetInstance()->GetEngineDefaultSRVIndex("white.png");
-        SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(8, defaultTextureIndex);
+        SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(Object3dBasic::kEnvMapParam, defaultTextureIndex);
       }
     }
 
@@ -102,28 +102,28 @@ namespace Tako {
     dx12_->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
 
     if (ShadowRenderer::GetInstance()->IsRenderingShadow()) {
-      // シャドウマップレンダリング時は座標変換行列のみ設定（パラメータ0）
-      dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, transformationResource_->GetGPUVirtualAddress());
+      // シャドウマップレンダリング時は座標変換行列のみ設定
+      dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(ShadowRenderer::kShadowPassTransformParam, transformationResource_->GetGPUVirtualAddress());
     }
     else {
       // マテリアルデータを設定
-      dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource_->GetGPUVirtualAddress());
+      dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(Object3dBasic::kMaterialParam, materialResource_->GetGPUVirtualAddress());
 
       // 座標変換行列データを設定
-      dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationResource_->GetGPUVirtualAddress());
+      dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(Object3dBasic::kTransformParam, transformationResource_->GetGPUVirtualAddress());
 
       // テクスチャを設定
-      SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, textureData_.textureIndex);
+      SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(Object3dBasic::kTextureParam, textureData_.textureIndex);
 
       // 環境マップテクスチャを設定
       if (materialData_->enableEnvMap && envTextureIndex_ != 0) {
         // 環境マップが有効で、テクスチャが設定されている場合
-        SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(8, envTextureIndex_);
+        SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(Object3dBasic::kEnvMapParam, envTextureIndex_);
       }
       else {
         // 環境マップが無効またはテクスチャが設定されていない場合は、デフォルトテクスチャを設定
         uint32_t defaultTextureIndex = TextureManager::GetInstance()->GetEngineDefaultSRVIndex("white.png");
-        SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(8, defaultTextureIndex);
+        SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(Object3dBasic::kEnvMapParam, defaultTextureIndex);
       }
     }
 
@@ -153,19 +153,19 @@ namespace Tako {
     // シャドウパス中はマテリアルとテクスチャの設定をスキップ
     if (!ShadowRenderer::GetInstance()->IsRenderingShadow()) {
       // 通常レンダリングパスの場合のみマテリアル・テクスチャを設定
-      // マテリアルデータを設定（ルートパラメータ0）
-      dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource_->GetGPUVirtualAddress());
+      // マテリアルデータを設定
+      dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(Object3dBasic::kMaterialParam, materialResource_->GetGPUVirtualAddress());
 
-      // テクスチャを設定（ルートパラメータ2）
-      SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(2, textureData_.textureIndex);
+      // テクスチャを設定
+      SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(Object3dBasic::kTextureParam, textureData_.textureIndex);
 
-      // 環境マップテクスチャを設定（ルートパラメータ8）
+      // 環境マップテクスチャを設定
       if (materialData_->enableEnvMap && envTextureIndex_ != 0) {
-        SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(8, envTextureIndex_);
+        SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(Object3dBasic::kEnvMapParam, envTextureIndex_);
       }
       else {
         uint32_t defaultTextureIndex = TextureManager::GetInstance()->GetEngineDefaultSRVIndex("white.png");
-        SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(8, defaultTextureIndex);
+        SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(Object3dBasic::kEnvMapParam, defaultTextureIndex);
       }
     }
 
@@ -336,16 +336,16 @@ namespace Tako {
     SrvManager* srvManager = SrvManager::GetInstance();
 
     // 入力頂点バッファの SRV 設定
-    srvManager->SetComputeRootDescriptorTable(1, vertexSrvIndex_);
+    srvManager->SetComputeRootDescriptorTable(ModelBasic::kVertexInputParam, vertexSrvIndex_);
 
     // 頂点影響度データの SRV 設定
-    srvManager->SetComputeRootDescriptorTable(2, influenceSrvIndex_);
+    srvManager->SetComputeRootDescriptorTable(ModelBasic::kInfluenceParam, influenceSrvIndex_);
 
     // 出力頂点バッファの UAV 設定
-    srvManager->SetComputeRootDescriptorTable(3, uavIndex_);
+    srvManager->SetComputeRootDescriptorTable(ModelBasic::kVertexOutputParam, uavIndex_);
 
     // スキニング情報の設定
-    dx12_->GetCommandList()->SetComputeRootConstantBufferView(4, skinningInfoResource_->GetGPUVirtualAddress());
+    dx12_->GetCommandList()->SetComputeRootConstantBufferView(ModelBasic::kSkinningInfoParam, skinningInfoResource_->GetGPUVirtualAddress());
 
     // ComputeShader の実行
     dx12_->GetCommandList()->Dispatch(

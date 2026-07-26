@@ -1,5 +1,6 @@
 #include "ShadowRenderer.h"
 #include "DX12Basic.h"
+#include "Object3dBasic.h"
 #include "Light.h"
 #include "PostEffectManager.h"
 #include "SrvManager.h"
@@ -28,11 +29,6 @@ namespace {
     constexpr UINT kTransformRegister       = 0; ///< b0: TransformationMatrix
     constexpr UINT kShadowConstantsRegister = 4; ///< b4: ShadowConstants
     constexpr UINT kInstanceDataRegister    = 5; ///< t5: インスタンスデータ（StructuredBuffer）
-
-    // --- ルートパラメータのインデックス ---
-    constexpr UINT kShadowPassShadowCbvParam = 1;  ///< シャドウパスの b4 CBV
-    constexpr UINT kMainPassShadowCbvParam   = 9;  ///< 通常パスの b4 CBV（Object3dBasic のルートシグネチャ定義）
-    constexpr UINT kMainPassShadowSrvParam   = 10; ///< 通常パスの t4 SRV テーブル（Object3dBasic のルートシグネチャ定義）
 }
 
 // 静的メンバ変数の定義
@@ -168,12 +164,12 @@ void ShadowRenderer::SetShadowForMainPass()
     // 通常レンダリング時のシャドウ設定
     if (!isRenderingShadow_ && shadowConstantBuffer_) {
         // シャドウ定数バッファの設定（b4）
-        dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(kMainPassShadowCbvParam, shadowConstantBuffer_->GetGPUVirtualAddress());
+        dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(Object3dBasic::kShadowConstantsParam, shadowConstantBuffer_->GetGPUVirtualAddress());
     }
 
     // シャドウマップの設定（t4 SRV テーブル）
     if (!isRenderingShadow_ && shadowMap_) {
-        SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(kMainPassShadowSrvParam, shadowMap_->GetSrvIndex());
+        SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(Object3dBasic::kShadowMapParam, shadowMap_->GetSrvIndex());
     }
 }
 
@@ -190,7 +186,7 @@ Microsoft::WRL::ComPtr<ID3D12RootSignature> ShadowRenderer::CreateShadowRootSign
     samplerDesc[0].ShaderRegister = 0;
     samplerDesc[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
-    // インスタンスデータ用ディスクリプタレンジ（instanced=true のときのみ rootParameters[2] から参照）
+    // インスタンスデータ用ディスクリプタレンジ（instanced=true のときのみ参照）
     D3D12_DESCRIPTOR_RANGE instanceRange[1] = {};
     instanceRange[0].BaseShaderRegister = kInstanceDataRegister; // t5
     instanceRange[0].NumDescriptors = 1;
@@ -201,22 +197,22 @@ Microsoft::WRL::ComPtr<ID3D12RootSignature> ShadowRenderer::CreateShadowRootSign
     D3D12_ROOT_PARAMETER rootParameters[3] = {};
 
     // Parameter 0: TransformationMatrix (b0)
-    rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-    rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-    rootParameters[0].Descriptor.ShaderRegister = kTransformRegister;
+    rootParameters[kShadowPassTransformParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+    rootParameters[kShadowPassTransformParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+    rootParameters[kShadowPassTransformParam].Descriptor.ShaderRegister = kTransformRegister;
 
     // Parameter 1: ShadowConstants (b4)
-    rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-    rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-    rootParameters[1].Descriptor.ShaderRegister = kShadowConstantsRegister;
+    rootParameters[kShadowPassShadowCbvParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+    rootParameters[kShadowPassShadowCbvParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+    rootParameters[kShadowPassShadowCbvParam].Descriptor.ShaderRegister = kShadowConstantsRegister;
 
     UINT numParameters = 2;
     if (instanced) {
         // Parameter 2: Instance Data (t5) - ディスクリプタテーブル
-        rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-        rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-        rootParameters[2].DescriptorTable.pDescriptorRanges = instanceRange;
-        rootParameters[2].DescriptorTable.NumDescriptorRanges = _countof(instanceRange);
+        rootParameters[kShadowPassInstanceDataParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+        rootParameters[kShadowPassInstanceDataParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+        rootParameters[kShadowPassInstanceDataParam].DescriptorTable.pDescriptorRanges = instanceRange;
+        rootParameters[kShadowPassInstanceDataParam].DescriptorTable.NumDescriptorRanges = _countof(instanceRange);
         numParameters = 3;
     }
 

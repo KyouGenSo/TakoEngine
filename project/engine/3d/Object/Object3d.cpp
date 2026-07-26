@@ -125,14 +125,13 @@ void Object3d::Draw()
 
 	// シャドウマップレンダリング中は異なるルートパラメータインデックスを使用
 	if (ShadowRenderer::GetInstance()->IsRenderingShadow()) {
-		// シャドウ用ルートシグネチャのインデックス（パラメータ0）
-		Object3dBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(0, transformationMatResource_->GetGPUVirtualAddress());
-		// カメラデータは不要（シャドウマップ生成時は使用しない）
+		// シャドウパスは座標変換行列のみ設定
+		Object3dBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(ShadowRenderer::kShadowPassTransformParam, transformationMatResource_->GetGPUVirtualAddress());
 	} else {
 		// 通常のルートシグネチャのインデックス
-		Object3dBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatResource_->GetGPUVirtualAddress());
+		Object3dBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(Object3dBasic::kTransformParam, transformationMatResource_->GetGPUVirtualAddress());
 		// シェーダー用カメラデータの場所を設定
-		Object3dBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(4, cameraForGPUResource_->GetGPUVirtualAddress());
+		Object3dBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(Object3dBasic::kCameraParam, cameraForGPUResource_->GetGPUVirtualAddress());
 	}
 
 	// モデルの描画

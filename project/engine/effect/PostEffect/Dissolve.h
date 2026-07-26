@@ -8,6 +8,10 @@ namespace Tako {
   /// </summary>
   class Dissolve : public IPostEffect
   {
+  private: //定数
+    static constexpr uint32_t kMaskTextureParam = 2;  ///< t1: ディゾルブマスク
+    static constexpr uint32_t kBaseTextureParam = 3;  ///< t2: 背景テクスチャ
+
   public: //メンバー関数
     /// <summary>
     /// 初期化

@@ -13,6 +13,14 @@ namespace Tako {
   /// </summary>
   class ModelBasic
   {
+  public: //定数
+    // スキニング CS のルートパラメータ番号
+    static constexpr UINT kPaletteParam      = 0;  ///< t0: パレット（ボーン行列）
+    static constexpr UINT kVertexInputParam  = 1;  ///< t1: 入力頂点
+    static constexpr UINT kInfluenceParam    = 2;  ///< t2: 頂点影響度
+    static constexpr UINT kVertexOutputParam = 3;  ///< u0: 出力頂点
+    static constexpr UINT kSkinningInfoParam = 4;  ///< b0: スキニング情報
+
   public: //メンバー関数
     /// <summary>
     /// 初期化

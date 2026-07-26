@@ -9,6 +9,9 @@ namespace Tako {
   /// </summary>
   class DepthBasedOutline : public IPostEffect
   {
+  private: //定数
+    static constexpr uint32_t kDepthTextureParam = 2;  ///< t1: シーン深度
+
   public: //メンバー関数
     /// <summary>
     /// 初期化
