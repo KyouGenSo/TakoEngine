@@ -43,7 +43,7 @@ namespace Tako {
 
     /// <summary>
     /// Cube の1面分の頂点（4頂点）とインデックス（6個=2三角形）を末尾追加する
-    /// 巻き順は外向き法線に対し右手系 CCW（Plane/Ring と同じ向き。CullMode=BACK でこちらが表面）
+    /// u×v = n となる右手系の軸を渡すこと。三角形は u×v 方向が表（外向き法線に右手系 CCW）
     /// </summary>
     void AppendCubeFace(
       float cx, float cy, float cz,        // 面中心座標
@@ -74,13 +74,13 @@ namespace Tako {
       outVerts.push_back(makeVertex(+1.0f, +1.0f, 1.0f, 0.0f)); // 2: 右上
       outVerts.push_back(makeVertex(-1.0f, +1.0f, 0.0f, 0.0f)); // 3: 左上
 
-      // 三角形 (0,2,1) + (0,3,2) — 外向き法線に対し右手系 CCW
+      // 三角形 (0,1,2) + (0,2,3) — u×v 方向（=外向き法線）に対し右手系 CCW
       outIndices.push_back(base + 0);
-      outIndices.push_back(base + 2);
       outIndices.push_back(base + 1);
-      outIndices.push_back(base + 0);
-      outIndices.push_back(base + 3);
       outIndices.push_back(base + 2);
+      outIndices.push_back(base + 0);
+      outIndices.push_back(base + 2);
+      outIndices.push_back(base + 3);
     }
 
     /// <summary>
@@ -98,11 +98,11 @@ namespace Tako {
 
       const float h = params.size * 0.5f;
 
-      // 6面: 面中心 = normal * h、各面に u/v 軸を割り当てて4頂点+6インデックスを生成
+      // 6面: 面中心 = normal * h、各面に u×v = n となる右手系の u/v 軸を割り当てて4頂点+6インデックスを生成
       AppendCubeFace(+h, 0, 0,   0, 0,-1,   0, 1, 0,   +1, 0, 0,  h, outVertices, outIndices); // +X
       AppendCubeFace(-h, 0, 0,   0, 0,+1,   0, 1, 0,   -1, 0, 0,  h, outVertices, outIndices); // -X
-      AppendCubeFace( 0,+h, 0,  +1, 0, 0,   0, 0,+1,    0,+1, 0,  h, outVertices, outIndices); // +Y
-      AppendCubeFace( 0,-h, 0,  +1, 0, 0,   0, 0,-1,    0,-1, 0,  h, outVertices, outIndices); // -Y
+      AppendCubeFace( 0,+h, 0,  +1, 0, 0,   0, 0,-1,    0,+1, 0,  h, outVertices, outIndices); // +Y
+      AppendCubeFace( 0,-h, 0,  +1, 0, 0,   0, 0,+1,    0,-1, 0,  h, outVertices, outIndices); // -Y
       AppendCubeFace( 0, 0,+h,  +1, 0, 0,   0,+1, 0,    0, 0,+1,  h, outVertices, outIndices); // +Z
       AppendCubeFace( 0, 0,-h,  -1, 0, 0,   0,+1, 0,    0, 0,-1,  h, outVertices, outIndices); // -Z
     }
