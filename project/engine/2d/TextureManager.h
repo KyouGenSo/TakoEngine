@@ -75,6 +75,20 @@ namespace Tako {
     /// <param name="fileName">エンジン用テクスチャファイルの名前</param>
     void LoadEngineDefault(const std::string& fileName);
 
+    /// <summary>
+    /// テクスチャの個別解放。SRV インデックスを返却しエントリを削除する。
+    /// 呼び出し側が全使用者（キャッシュ済み srvIndex 含む）の不使用を保証し、フレーム境界（EndDraw 後）で呼ぶこと。
+    /// 解放された index は次の Allocate で即再利用される
+    /// </summary>
+    /// <param name="fileName">解放するテクスチャファイルの名前（LoadTexture に渡したキー）</param>
+    void Unload(const std::string& fileName);
+
+    /// <summary>
+    /// 全テクスチャのアップロード用中間リソースを解放する。
+    /// ロードを行ったフレームの EndDraw（GPU 待機）より後に呼ぶこと
+    /// </summary>
+    void ReleaseIntermediateResources();
+
     //============================================================
     //Getter
     //============================================================

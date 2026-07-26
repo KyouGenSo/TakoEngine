@@ -103,18 +103,46 @@ namespace Tako {
     }
   }
 
+  void TextureManager::Unload(const std::string& fileName)
+  {
+    auto it = textureData_.find(fileName);
+    assert(it != textureData_.end() && "TextureManager::Unload: texture not loaded");
+    if (it == textureData_.end()) {
+      return;
+    }
+
+    SrvManager::GetInstance()->Free(it->second.srvIndex);
+    textureData_.erase(it);
+  }
+
+  void TextureManager::ReleaseIntermediateResources()
+  {
+    for (auto& [name, data] : textureData_) {
+      data.intermediateResource.Reset();
+    }
+  }
+
   D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetSRVGPUHandle(const std::string& fileName)
   {
-    TextureData& textureData = textureData_[fileName];
+    auto it = textureData_.find(fileName);
+    assert(it != textureData_.end() && "TextureManager::GetSRVGPUHandle: texture not loaded");
+    if (it == textureData_.end()) {
+      return {};
+    }
 
-    return textureData.srvGpuHandle;
+    return it->second.srvGpuHandle;
   }
 
   const DirectX::TexMetadata& TextureManager::GetMetaData(const std::string& fileName)
   {
-    TextureData& textureData = textureData_[fileName];
+    auto it = textureData_.find(fileName);
+    assert(it != textureData_.end() && "TextureManager::GetMetaData: texture not loaded");
+    if (it == textureData_.end()) {
+      static const DirectX::TexMetadata empty{};
+      return empty;
+    }
 
-    return textureData.metadata;
+    return it->second.metadata;
   }
 
   const DirectX::TexMetadata& TextureManager::GetMetaData(uint32_t srvIndex)
@@ -131,9 +159,13 @@ namespace Tako {
 
   uint32_t TextureManager::GetSRVIndex(const std::string& fileName)
   {
-    TextureData& textureData = textureData_[fileName];
+    auto it = textureData_.find(fileName);
+    assert(it != textureData_.end() && "TextureManager::GetSRVIndex: texture not loaded");
+    if (it == textureData_.end()) {
+      return 0;
+    }
 
-    return textureData.srvIndex;
+    return it->second.srvIndex;
   }
 
   const std::string& TextureManager::GetFileName(uint32_t srvIndex)

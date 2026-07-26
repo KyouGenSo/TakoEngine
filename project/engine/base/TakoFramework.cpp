@@ -348,6 +348,8 @@ namespace Tako {
     TextureManager* tm = TextureManager::GetInstance();
     tm->LoadEngineDefault("white.dds");
     tm->LoadEngineDefault("black.dds");
+    tm->LoadEngineDefault("white.png");
+    tm->LoadEngineDefault("black.png");
     tm->LoadEngineDefault("circle.dds");
     tm->LoadEngineDefault("circle2.dds");
     tm->LoadEngineDefault("spark.dds");
