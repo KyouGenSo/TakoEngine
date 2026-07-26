@@ -348,12 +348,13 @@ namespace Tako {
     char sceneNameBuffer_[128] = "";  ///< シーン名入力バッファ
 
     //パーティクルエディター用
-    class EmitterManager* emitterManager_            = nullptr;
+    class EmitterManager* emitterManager_               = nullptr;
     std::string           selectedEmitterName_;  ///< 空 = 未選択
-    char                  newEmitterNameBuffer_[128] = "";
-    char                  presetNameBuffer_[128]     = "";
-    char                  loadPresetBuffer_[128]     = "";
-    bool                  showPresetManager_         = false;
+    char                  newEmitterNameBuffer_[128]    = "";
+    char                  renameEmitterNameBuffer_[128] = "";
+    char                  presetNameBuffer_[128]        = "";
+    char                  loadPresetBuffer_[128]        = "";
+    bool                  showPresetManager_            = false;
 
     //グループ管理用
     int  selectedGroupIndex_      = -1;

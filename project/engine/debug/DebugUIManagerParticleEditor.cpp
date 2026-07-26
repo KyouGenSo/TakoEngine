@@ -259,6 +259,22 @@ namespace Tako {
 
           if (emitter) {
             ImGui::Text("Editing: %s", selectedName.c_str());
+
+            // 名前変更
+            ImGui::SetNextItemWidth(200.0f);
+            ImGui::InputText("##RenameEmitter", renameEmitterNameBuffer_, sizeof(renameEmitterNameBuffer_));
+            ImGui::SameLine();
+            if (ImGui::Button("Rename##RenameEmitter") && strlen(renameEmitterNameBuffer_) > 0) {
+              const std::string newName = renameEmitterNameBuffer_;
+              if (emitterManager_->RenameEmitter(selectedName, newName)) {
+                selectedEmitterName_ = newName;
+                AddLog("Renamed emitter: " + selectedName + " -> " + newName, LogType::Info);
+                renameEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
+              }
+              else {
+                AddLog("Rename failed: '" + newName + "' (already exists or invalid)", LogType::Warning);
+              }
+            }
             ImGui::Separator();
 
             // 基本プロパティ

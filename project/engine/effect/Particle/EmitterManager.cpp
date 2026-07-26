@@ -848,6 +848,38 @@ namespace Tako {
     return emitterMap_.contains(name);
   }
 
+  bool EmitterManager::RenameEmitter(const std::string& oldName, const std::string& newName)
+  {
+    if (newName.empty() || oldName == newName || !emitterMap_.contains(oldName)) {
+      return false;
+    }
+    if (emitterMap_.contains(newName)) {
+#ifdef _DEBUG
+      DebugUIManager::GetInstance()->AddLog(
+        "Emitter name '" + newName + "' already exists. Rename aborted.", DebugUIManager::LogType::Warning);
+#endif
+      return false;
+    }
+
+    // キー付け替えのみ。GPU側スロットはポインタ参照なので再登録不要
+    auto node = emitterMap_.extract(oldName);
+    node.key() = newName;
+    emitterMap_.insert(std::move(node));
+
+    // グループ内のエミッター名を追随
+    for (auto& [groupName, group] : groupMap_) {
+      std::replace(group.emitterNames.begin(), group.emitterNames.end(), oldName, newName);
+    }
+
+    // クリップボードのコピー元名を追随
+    for (auto& slot : copiedSettingsSlots_) {
+      if (slot.valid && slot.sourceName == oldName) {
+        slot.sourceName = newName;
+      }
+    }
+    return true;
+  }
+
   //========================================
   // コピー＆ペースト機能
   //========================================

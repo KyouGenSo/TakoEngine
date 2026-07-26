@@ -187,6 +187,14 @@ namespace Tako {
     void RemoveEmitter(const std::string& name);
 
     /// <summary>
+    /// エミッターの名前を変更（グループ・クリップボードのコピー元名も追随）
+    /// </summary>
+    /// <param name="oldName">現在のエミッター名</param>
+    /// <param name="newName">新しいエミッター名</param>
+    /// <returns>成功した場合 true（oldName 不在・newName 空/重複時は false）</returns>
+    bool RenameEmitter(const std::string& oldName, const std::string& newName);
+
+    /// <summary>
     /// 全てのエミッターを削除
     /// </summary>
     void RemoveAllEmitters();
