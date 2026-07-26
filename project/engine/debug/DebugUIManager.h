@@ -349,7 +349,7 @@ namespace Tako {
 
     //パーティクルエディター用
     class EmitterManager* emitterManager_            = nullptr;
-    int                   selectedEmitterIndex_      = -1;
+    std::string           selectedEmitterName_;  ///< 空 = 未選択
     char                  newEmitterNameBuffer_[128] = "";
     char                  presetNameBuffer_[128]     = "";
     char                  loadPresetBuffer_[128]     = "";

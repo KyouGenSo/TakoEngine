@@ -839,6 +839,7 @@ namespace Tako {
     for (const auto& [name, _] : emitterMap_) {
       names.push_back(name);
     }
+    std::sort(names.begin(), names.end());
     return names;
   }
 

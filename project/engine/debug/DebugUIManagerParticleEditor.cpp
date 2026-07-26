@@ -149,29 +149,29 @@ namespace Tako {
         // エミッターリスト
         auto emitterNames = emitterManager_->GetEmitterNames();
         if (ImGui::BeginListBox("##EmitterList", ImVec2(-1, 200))) {
-          for (int i = 0; i < emitterNames.size(); i++) {
-            bool isSelected = (selectedEmitterIndex_ == i);
-            if (ImGui::Selectable(emitterNames[i].c_str(), isSelected)) {
-              selectedEmitterIndex_ = i;
+          for (const auto& name : emitterNames) {
+            bool isSelected = (selectedEmitterName_ == name);
+            if (ImGui::Selectable(name.c_str(), isSelected)) {
+              selectedEmitterName_ = name;
             }
           }
           ImGui::EndListBox();
         }
 
         // 選択したエミッターの操作
-        if (selectedEmitterIndex_ >= 0 && selectedEmitterIndex_ < emitterNames.size()) {
+        if (emitterManager_->HasEmitter(selectedEmitterName_)) {
           ImGui::Separator();
-          ImGui::Text("Selected: %s", emitterNames[selectedEmitterIndex_].c_str());
+          ImGui::Text("Selected: %s", selectedEmitterName_.c_str());
 
           if (ImGui::Button("Delete##EmitterList")) {
-            emitterManager_->RemoveEmitter(emitterNames[selectedEmitterIndex_]);
-            selectedEmitterIndex_ = -1;
+            emitterManager_->RemoveEmitter(selectedEmitterName_);
+            selectedEmitterName_.clear();
             AddLog("Deleted emitter", LogType::Info);
           }
           ImGui::SameLine();
           if (ImGui::Button("Duplicate##EmitterList")) {
-            std::string newName = emitterNames[selectedEmitterIndex_] + "_copy";
-            emitterManager_->CreateTemporaryEmitterFrom(emitterNames[selectedEmitterIndex_], newName, 0.0f);
+            std::string newName = selectedEmitterName_ + "_copy";
+            emitterManager_->CreateTemporaryEmitterFrom(selectedEmitterName_, newName, 0.0f);
             AddLog("Duplicated emitter as: " + newName, LogType::Info);
           }
         }
@@ -202,13 +202,13 @@ namespace Tako {
           // 並び順は EmitterManager::PasteMode の enum 値順と一致させる
           ImGui::Combo("Paste Mode##Clipboard", &pasteModeIdx, "All\0Color Only\0Velocity Only\0Scale Only\0");
 
-          const bool hasSelection = (selectedEmitterIndex_ >= 0 && selectedEmitterIndex_ < emitterNames.size());
+          const bool hasSelection = emitterManager_->HasEmitter(selectedEmitterName_);
           const bool slotHasData = emitterManager_->HasCopiedSettings(clipboardSlot);
 
           ImGui::BeginDisabled(!hasSelection);
           if (ImGui::Button("Copy##Clipboard")) {
-            if (emitterManager_->CopyEmitterSettings(emitterNames[selectedEmitterIndex_], clipboardSlot)) {
-              AddLog("Copied '" + emitterNames[selectedEmitterIndex_] + "' to slot " + std::to_string(clipboardSlot), LogType::Info);
+            if (emitterManager_->CopyEmitterSettings(selectedEmitterName_, clipboardSlot)) {
+              AddLog("Copied '" + selectedEmitterName_ + "' to slot " + std::to_string(clipboardSlot), LogType::Info);
             }
           }
           ImGui::EndDisabled();
@@ -216,9 +216,9 @@ namespace Tako {
           ImGui::SameLine();
           ImGui::BeginDisabled(!hasSelection || !slotHasData);
           if (ImGui::Button("Paste##Clipboard")) {
-            if (emitterManager_->PasteEmitterSettings(emitterNames[selectedEmitterIndex_], clipboardSlot,
+            if (emitterManager_->PasteEmitterSettings(selectedEmitterName_, clipboardSlot,
               static_cast<EmitterManager::PasteMode>(pasteModeIdx))) {
-              AddLog("Pasted slot " + std::to_string(clipboardSlot) + " to '" + emitterNames[selectedEmitterIndex_] + "'", LogType::Info);
+              AddLog("Pasted slot " + std::to_string(clipboardSlot) + " to '" + selectedEmitterName_ + "'", LogType::Info);
             }
             else {
               AddLog("Paste failed (slot " + std::to_string(clipboardSlot) + ")", LogType::Warning);
@@ -250,12 +250,11 @@ namespace Tako {
 
       // プロパティエディタタブ
       if (ImGui::BeginTabItem("Properties")) {
-        auto emitterNames = emitterManager_->GetEmitterNames();
-        if (selectedEmitterIndex_ < 0 || selectedEmitterIndex_ >= emitterNames.size()) {
+        if (!emitterManager_->HasEmitter(selectedEmitterName_)) {
           ImGui::TextDisabled("No emitter selected");
         }
         else {
-          std::string selectedName = emitterNames[selectedEmitterIndex_];
+          std::string selectedName = selectedEmitterName_;
           auto emitter = emitterManager_->GetEmitterByName(selectedName);
 
           if (emitter) {
@@ -710,18 +709,17 @@ namespace Tako {
         if (ImGui::CollapsingHeader("Save Preset")) {
           ImGui::InputText("Preset Name##SavePreset", presetNameBuffer_, sizeof(presetNameBuffer_));
 
-          auto emitterNames = emitterManager_->GetEmitterNames();
-          if (selectedEmitterIndex_ >= 0 && selectedEmitterIndex_ < emitterNames.size()) {
-            ImGui::Text("From: %s", emitterNames[selectedEmitterIndex_].c_str());
+          if (emitterManager_->HasEmitter(selectedEmitterName_)) {
+            ImGui::Text("From: %s", selectedEmitterName_.c_str());
 
             if (ImGui::Button("Save as Preset##SavePreset") && strlen(presetNameBuffer_) > 0) {
-              emitterManager_->SavePreset(presetNameBuffer_, emitterNames[selectedEmitterIndex_]);
+              emitterManager_->SavePreset(presetNameBuffer_, selectedEmitterName_);
               AddLog("Saved preset: " + std::string(presetNameBuffer_), LogType::Info);
               presetNameBuffer_[0] = '\0';  // 入力ボックスをクリア
             }
 
             // 名前入力なしでエミッター名のまま上書き保存
-            const std::string& currentName = emitterNames[selectedEmitterIndex_];
+            const std::string& currentName = selectedEmitterName_;
             if (ImGui::Button(("Save as \"" + currentName + "\"##SavePresetCurrent").c_str())) {
               emitterManager_->SavePreset(currentName, currentName);
               AddLog("Saved preset: " + currentName, LogType::Info);
