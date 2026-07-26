@@ -253,6 +253,14 @@ void Object3d::SetEnvMapCoefficient(float coefficient)
   }
 }
 
+void Object3d::SetTexture(const std::string& fileName)
+{
+  if (model_)
+  {
+    model_->SetTexture(fileName);
+  }
+}
+
 void Object3d::SetMeshVisible(const std::string& name, bool visible)
 {
   if (model_)

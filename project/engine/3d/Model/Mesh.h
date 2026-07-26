@@ -99,6 +99,12 @@ namespace Tako {
     void SetEnvMapCoefficient(float coefficient) { materialData_->envMapCoefficient = coefficient; }
 
     /// <summary>
+    /// 通常テクスチャを差し替える（未ロードなら TextureManager 経由でロード）
+    /// </summary>
+    /// <param name="fileName">"resources/Texture/" 相対名、または "EngineResources/" プレフィックス付きパス</param>
+    void SetTexture(const std::string& fileName);
+
+    /// <summary>
     /// UV トランスフォームを設定
     /// </summary>
     /// <param name="transform">UV トランスフォーム情報</param>
@@ -114,6 +120,8 @@ namespace Tako {
     //Getter
     //============================================================
     Vector4 GetMaterialColor() const { return materialData_->color; }
+    float GetShininess() const { return materialData_->shininess; }
+    const TextureData& GetTextureData() const { return textureData_; }
     bool HasSkinning() const { return hasSkinning_; }
     ID3D12Resource* GetUAVVertexResource() { return uavVertexOutputResource_.Get(); }
     uint32_t GetVertexSrvIndex() { return vertexSrvIndex_; }

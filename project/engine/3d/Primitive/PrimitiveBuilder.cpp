@@ -2,6 +2,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <filesystem>
+#include <format>
+#include <fstream>
 #include <numbers>
 #include <string>
 #include <vector>
@@ -532,6 +535,67 @@ namespace Tako {
     std::vector<uint32_t> indices;
     GenerateTorus(p, vertices, indices);
     return BuildModel(vertices, indices, "<Primitive_Torus>");
+  }
+
+  bool PrimitiveBuilder::ExportObj(const Model& model, const std::string& fileBaseName, const std::string& directory)
+  {
+    if (model.GetMeshCount() == 0) {
+      return false;
+    }
+
+    std::filesystem::create_directories(directory);
+    std::ofstream obj(directory + fileBaseName + ".obj");
+    std::ofstream mtl(directory + fileBaseName + ".mtl");
+    if (!obj.is_open() || !mtl.is_open()) {
+      return false;
+    }
+
+    obj << "mtllib " << fileBaseName << ".mtl\n";
+
+    // OBJ のインデックスは 1 始まり。複数メッシュは頂点番号を通し番号で連結する
+    uint32_t vertexOffset = 1;
+    for (size_t m = 0; m < model.GetMeshCount(); ++m) {
+      const Mesh* mesh = model.GetMesh(m);
+      const std::vector<VertexData>& verts = mesh->GetVertices();
+      const std::vector<uint32_t>& indices = mesh->GetIndices();
+      const std::string matName = "material_" + std::to_string(m);
+
+      obj << "o " << fileBaseName << "_" << m << "\n";
+
+      // ローダ (Model.cpp) が位置/法線に {-x,y,z}、UV に FlipUVs を適用するため逆変換して書く
+      for (const VertexData& v : verts) {
+        obj << std::format("v {} {} {}\n", -v.position.x, v.position.y, v.position.z);
+      }
+      for (const VertexData& v : verts) {
+        obj << std::format("vt {} {}\n", v.texcoord.x, 1.0f - v.texcoord.y);
+      }
+      for (const VertexData& v : verts) {
+        obj << std::format("vn {} {} {}\n", -v.normal.x, v.normal.y, v.normal.z);
+      }
+
+      obj << "usemtl " << matName << "\n";
+      obj << "s off\n";
+
+      // FlipWindingOrder の逆変換: (i0,i1,i2) を (i0,i2,i1) で書くと読込反転後 (i1,i2,i0) = 元の巡回置換に戻る
+      for (size_t i = 0; i + 2 < indices.size(); i += 3) {
+        const uint32_t a = indices[i] + vertexOffset;
+        const uint32_t b = indices[i + 2] + vertexOffset;
+        const uint32_t c = indices[i + 1] + vertexOffset;
+        obj << std::format("f {0}/{0}/{0} {1}/{1}/{1} {2}/{2}/{2}\n", a, b, c);
+      }
+      vertexOffset += static_cast<uint32_t>(verts.size());
+
+      // エンジンローダが読み戻すのは Kd と map_Kd のみ。Ns/d は外部 DCC (Blender 等) 互換のため出力
+      const Vector4 col = mesh->GetMaterialColor();
+      mtl << "newmtl " << matName << "\n";
+      mtl << std::format("Ns {}\n", mesh->GetShininess());
+      mtl << std::format("Kd {} {} {}\n", col.x, col.y, col.z);
+      mtl << std::format("d {}\n", col.w);
+      if (!mesh->GetTextureData().texturePath.empty()) {
+        mtl << "map_Kd " << mesh->GetTextureData().texturePath << "\n";
+      }
+    }
+    return true;
   }
 
 } // namespace Tako

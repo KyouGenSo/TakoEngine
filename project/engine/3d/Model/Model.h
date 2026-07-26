@@ -97,6 +97,7 @@ namespace Tako {
     void SetEnvironmentTexture(uint32_t textureIndex);
     void SetEnableEnvMap(bool enableEnvMap);
     void SetEnvMapCoefficient(float coefficient);
+    void SetTexture(const std::string& fileName);
     static void SetShowSkeletonDebug(bool show) { s_showSkeletonDebug = show; }
     void SetAnimationSpeed(float speed) { animationSpeed_ = speed; }
 

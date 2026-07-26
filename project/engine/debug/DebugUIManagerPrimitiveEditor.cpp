@@ -6,6 +6,7 @@
 #include "Camera.h"
 #include "Model.h"
 #include "PrimitiveBuilder.h"
+#include "TextureManager.h"
 #include "FrameTimer.h"
 #include "ImGuiManager.h"
 #include "Mat4x4Func.h"
@@ -55,6 +56,15 @@ namespace Tako {
     constexpr Vector3 kDefaultCamTarget   = { 0.0f, 0.0f, 0.0f };
 
     const char* const kPresetDirectory = "resources/Json/PrimitivePresets/";
+
+    /// <summary>
+    /// TextureManager::LoadTexture と同じパス解決規則でファイルの存在を確認する
+    /// </summary>
+    bool TextureFileExists(const std::string& name)
+    {
+      const std::string path = name.starts_with("EngineResources/") ? name : "resources/Texture/" + name;
+      return std::filesystem::exists(path);
+    }
 
     // JSON の type フィールド用。enum PrimitiveType および Type コンボの並びと一致させること
     constexpr const char* kPrimitiveTypeNames[] = { "Cube", "Sphere", "Plane", "Ring", "Cylinder", "Torus" };
@@ -276,6 +286,13 @@ namespace Tako {
     primPreviewObject_->SetMaterialColor(primPreviewColor_);
     primPreviewObject_->SetEnableLighting(primPreviewLighting_);
     primPreviewObject_->SetTransparent(primPreviewTransparent_);
+    primPreviewObject_->SetShininess(primMaterialShininess_);
+    primPreviewObject_->SetEnableHighlight(primMaterialHighlight_);
+    primPreviewObject_->SetUvTransform(Transform{
+      { primMaterialUvScale_.x, primMaterialUvScale_.y, 1.0f },
+      { 0.0f, 0.0f, primMaterialUvRotate_ },
+      { primMaterialUvOffset_.x, primMaterialUvOffset_.y, 0.0f } });
+    primPreviewObject_->SetTexture(primMaterialTexture_);  // 空/同一パスは Mesh 側で早期 return
   }
 
   void DebugUIManager::DrawPrimitivePreviewPass()
@@ -440,10 +457,6 @@ namespace Tako {
         if (ImGui::CollapsingHeader("Display##PrimEditor", ImGuiTreeNodeFlags_DefaultOpen)) {
           ImGui::DragFloat3("Rotation##PrimEditor", &primPreviewRotate_.x, 0.01f);
           ImGui::DragFloat3("Scale##PrimEditor", &primPreviewScale_.x, 0.01f, 0.0f, 100.0f);
-          ImGui::ColorEdit4("Color##PrimEditor", &primPreviewColor_.x);
-          ImGui::Checkbox("Lighting##PrimEditor", &primPreviewLighting_);
-          ImGui::SameLine();
-          ImGui::Checkbox("Transparent##PrimEditor", &primPreviewTransparent_);
           ImGui::Checkbox("Auto Rotate##PrimEditor", &primAutoRotate_);
           if (primAutoRotate_) {
             ImGui::SameLine();
@@ -451,6 +464,55 @@ namespace Tako {
             ImGui::DragFloat("Speed##PrimEditor", &primAutoRotateSpeed_, 0.01f, -10.0f, 10.0f);
           }
           ImGui::Checkbox("Show Floor##PrimEditor", &primShowFloor_);
+        }
+
+        if (ImGui::CollapsingHeader("Material##PrimEditor", ImGuiTreeNodeFlags_DefaultOpen)) {
+          ImGui::ColorEdit4("Color##PrimEditor", &primPreviewColor_.x);
+          ImGui::Checkbox("Lighting##PrimEditor", &primPreviewLighting_);
+          ImGui::SameLine();
+          ImGui::Checkbox("Transparent##PrimEditor", &primPreviewTransparent_);
+          ImGui::Checkbox("Highlight##PrimEditor", &primMaterialHighlight_);
+          ImGui::SameLine();
+          ImGui::SetNextItemWidth(100.0f);
+          ImGui::DragFloat("Shininess##PrimEditor", &primMaterialShininess_, 1.0f, 1.0f, 1000.0f);
+
+          // ロード済みテクスチャから選択。手入力パスも入るためプレビューには現在値を表示
+          if (ImGui::BeginCombo("Texture##PrimEditor", primMaterialTexture_.empty() ? "(default: white.dds)" : primMaterialTexture_.c_str())) {
+            for (const std::string& texName : TextureManager::GetInstance()->GetLoadedTextureFileNames()) {
+              const bool selected = (texName == primMaterialTexture_);
+              if (ImGui::Selectable(texName.c_str(), selected)) {
+                primMaterialTexture_ = texName;
+              }
+              if (selected) {
+                ImGui::SetItemDefaultFocus();
+              }
+            }
+            ImGui::EndCombo();
+          }
+
+          static char texPathBuffer[256] = "";
+          ImGui::SetNextItemWidth(150.0f);
+          ImGui::InputText("##PrimTexPath", texPathBuffer, sizeof(texPathBuffer));
+          ImGui::SameLine();
+          if (ImGui::Button("Load & Set##PrimTex") && texPathBuffer[0] != '\0') {
+            // LoadTexture は失敗時 assert のため事前に存在チェック
+            if (TextureFileExists(texPathBuffer)) {
+              primMaterialTexture_ = texPathBuffer;
+            }
+            else {
+              AddLog(std::string("Primitive Editor: texture not found '") + texPathBuffer + "'", LogType::Error);
+            }
+          }
+          ImGui::SameLine();
+          if (ImGui::Button("Clear##PrimTex")) {
+            // SetTexture は空文字を無視するため、Model 再生成でデフォルト white.dds に戻す
+            primMaterialTexture_.clear();
+            primParamsDirty_ = true;
+          }
+
+          ImGui::DragFloat2("UV Tiling##PrimEditor", &primMaterialUvScale_.x, 0.01f);
+          ImGui::DragFloat2("UV Offset##PrimEditor", &primMaterialUvOffset_.x, 0.01f);
+          ImGui::DragFloat("UV Rotate##PrimEditor", &primMaterialUvRotate_, 0.01f);
         }
 
         if (ImGui::CollapsingHeader("Output##PrimEditor", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -492,6 +554,20 @@ namespace Tako {
           ImGui::SameLine();
           if (ImGui::Button("Load##PrimPreset") && !primSelectedPreset_.empty()) {
             LoadPrimitivePreset(primSelectedPreset_);
+          }
+
+          ImGui::SeparatorText("Export OBJ");
+          ImGui::SetNextItemWidth(150.0f);
+          ImGui::InputText("##PrimExportName", primExportNameBuffer_, IM_ARRAYSIZE(primExportNameBuffer_));
+          ImGui::SameLine();
+          if (ImGui::Button("Export##PrimObj") && primExportNameBuffer_[0] != '\0') {
+            const Model* model = primPreviewObject_ ? primPreviewObject_->GetModel() : nullptr;
+            if (model && PrimitiveBuilder::ExportObj(*model, primExportNameBuffer_)) {
+              AddLog(std::string("Primitive Editor: exported 'resources/Model/") + primExportNameBuffer_ + ".obj'", LogType::Info);
+            }
+            else {
+              AddLog("Primitive Editor: OBJ export failed", LogType::Error);
+            }
           }
         }
       }
@@ -612,6 +688,17 @@ namespace Tako {
       break;
     }
 
+    json& mat = preset["material"];
+    mat["color"] = { primPreviewColor_.x, primPreviewColor_.y, primPreviewColor_.z, primPreviewColor_.w };
+    mat["lighting"] = primPreviewLighting_;
+    mat["transparent"] = primPreviewTransparent_;
+    mat["highlight"] = primMaterialHighlight_;
+    mat["shininess"] = primMaterialShininess_;
+    mat["texture"] = primMaterialTexture_;
+    mat["uvScale"] = { primMaterialUvScale_.x, primMaterialUvScale_.y };
+    mat["uvOffset"] = { primMaterialUvOffset_.x, primMaterialUvOffset_.y };
+    mat["uvRotate"] = primMaterialUvRotate_;
+
     if (!std::filesystem::exists(kPresetDirectory)) {
       std::filesystem::create_directories(kPresetDirectory);
     }
@@ -707,6 +794,33 @@ namespace Tako {
         primTorusParams_.minorDiv = params.value("minorDiv", def.minorDiv);
         break;
       }
+      }
+
+      // material キーの無い旧プリセットは全項目デフォルトに戻す
+      const json mat = preset.value("material", json::object());
+      const json colorArr = mat.value("color", json::array({ 1.0f, 1.0f, 1.0f, 1.0f }));
+      if (colorArr.is_array() && colorArr.size() == 4) {
+        primPreviewColor_ = { colorArr[0].get<float>(), colorArr[1].get<float>(), colorArr[2].get<float>(), colorArr[3].get<float>() };
+      }
+      primPreviewLighting_ = mat.value("lighting", true);
+      primPreviewTransparent_ = mat.value("transparent", false);
+      primMaterialHighlight_ = mat.value("highlight", true);
+      primMaterialShininess_ = mat.value("shininess", 15.0f);
+      primMaterialTexture_ = mat.value("texture", std::string());
+      const json uvScaleArr = mat.value("uvScale", json::array({ 1.0f, 1.0f }));
+      if (uvScaleArr.is_array() && uvScaleArr.size() == 2) {
+        primMaterialUvScale_ = { uvScaleArr[0].get<float>(), uvScaleArr[1].get<float>() };
+      }
+      const json uvOffsetArr = mat.value("uvOffset", json::array({ 0.0f, 0.0f }));
+      if (uvOffsetArr.is_array() && uvOffsetArr.size() == 2) {
+        primMaterialUvOffset_ = { uvOffsetArr[0].get<float>(), uvOffsetArr[1].get<float>() };
+      }
+      primMaterialUvRotate_ = mat.value("uvRotate", 0.0f);
+
+      // 消えたテクスチャは Apply 時の LoadTexture が assert で落ちるため空にフォールバック
+      if (!primMaterialTexture_.empty() && !TextureFileExists(primMaterialTexture_)) {
+        AddLog("Primitive Editor: preset texture not found '" + primMaterialTexture_ + "'", LogType::Warning);
+        primMaterialTexture_.clear();
       }
     }
     catch (const json::exception&) {

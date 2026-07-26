@@ -194,6 +194,18 @@ namespace Tako {
     return newMesh;
   }
 
+  void Mesh::SetTexture(const std::string& fileName)
+  {
+    // 同一パスなら何もしない
+    if (fileName.empty() || fileName == textureData_.texturePath) {
+      return;
+    }
+
+    TextureManager::GetInstance()->LoadTexture(fileName);
+    textureData_.texturePath = fileName;
+    textureData_.textureIndex = TextureManager::GetInstance()->GetSRVIndex(fileName);
+  }
+
   void Mesh::ReleaseSRVIndex()
   {
     // SRV インデックスの解放

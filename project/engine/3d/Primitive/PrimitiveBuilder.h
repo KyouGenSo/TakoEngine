@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <memory>
+#include <string>
 
 namespace Tako {
 
@@ -11,6 +12,7 @@ namespace Tako {
   /// 1メッシュ Model としてラップして返す静的ファクトリ。
   /// 返却された Model は Object3d::SetModel(std::unique_ptr&lt;Model&gt;) に直接渡せる。
   /// デフォルトテクスチャ "white.dds" を自動で割り当てる。
+  /// ExportObj で任意の Model を Wavefront OBJ(+MTL) として書き出せる。
   /// </summary>
   class PrimitiveBuilder
   {
@@ -126,6 +128,16 @@ namespace Tako {
     /// <param name="p">トーラスパラメータ</param>
     /// <returns>1メッシュ Model（所有権付き）</returns>
     static std::unique_ptr<Model> CreateTorus(const TorusParams& p = {});
+
+    /// <summary>
+    /// Model を Wavefront OBJ(+MTL) として書き出す。
+    /// エンジンローダの読込変換（X反転/UV上下反転/巻き順反転）の逆変換を適用して出力するため、書き出したファイルを再読込すると元と同じ見た目になる
+    /// </summary>
+    /// <param name="model">書き出す Model</param>
+    /// <param name="fileBaseName">拡張子なしのファイル名</param>
+    /// <param name="directory">出力先ディレクトリ</param>
+    /// <returns>成功したら true</returns>
+    static bool ExportObj(const Model& model, const std::string& fileBaseName, const std::string& directory = "resources/Model/");
   };
 
 } // namespace Tako

@@ -134,6 +134,12 @@ public: // メンバー関数
   void SetEnvMapCoefficient(float coefficient);
 
   /// <summary>
+  /// 通常テクスチャを差し替える
+  /// </summary>
+  /// <param name="fileName">"resources/Texture/" 相対名、または "EngineResources/" プレフィックス付きパス</param>
+  void SetTexture(const std::string& fileName);
+
+  /// <summary>
   /// 光沢度を設定
   /// </summary>
   /// <param name="shininess">光沢度</param>

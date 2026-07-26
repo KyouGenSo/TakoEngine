@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <chrono>
 #include <memory>
+#include "Vector2.h"
 #include "Vector3.h"
 #include "Vector4.h"
 #include "PrimitiveBuilder.h"
@@ -398,6 +399,13 @@ namespace Tako {
     bool                             primShowFloor_             = true;
     char                             primPresetNameBuffer_[128] = "";
     std::string                      primSelectedPreset_;                ///< Load コンボの選択中プリセット名
+    float                            primMaterialShininess_     = 15.0f; ///< Mesh::CreateMaterialData の初期値と一致
+    bool                             primMaterialHighlight_     = true;  ///< スペキュラ有効（Mesh 初期値と一致）
+    std::string                      primMaterialTexture_;               ///< 空 = white.dds デフォルト
+    Vector2                          primMaterialUvScale_       = { 1.0f, 1.0f };
+    Vector2                          primMaterialUvOffset_      = { 0.0f, 0.0f };
+    float                            primMaterialUvRotate_      = 0.0f;  ///< ラジアン
+    char                             primExportNameBuffer_[128] = "";    ///< OBJ 出力名（拡張子なし）
 
     //プリミティブエディター専用ビューポート/カメラ
     std::unique_ptr<PrimitivePreviewViewport> primPreviewViewport_;  ///< オフスクリーンRT一式（初回オープン時に生成、定義は cpp 側）

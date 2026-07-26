@@ -473,6 +473,13 @@ namespace Tako {
     }
   }
 
+  void Model::SetTexture(const std::string& fileName)
+  {
+    for (auto& mesh : meshes_) {
+      mesh->SetTexture(fileName);
+    }
+  }
+
   Mesh* Model::GetMeshByName(const std::string& name) const
   {
     for (const auto& mesh : meshes_) {
