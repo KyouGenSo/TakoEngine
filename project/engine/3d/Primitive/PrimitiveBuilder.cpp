@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <numbers>
 #include <string>
 #include <vector>
 
@@ -120,19 +121,18 @@ namespace Tako {
       const uint32_t lon = std::max<uint32_t>(params.lonDiv, 3u);
       const uint32_t lat = std::max<uint32_t>(params.latDiv, 2u);
       const float radius = params.radius;
-      constexpr float kPi = 3.14159265358979323846f;
 
       outVertices.reserve((lon + 1) * (lat + 1));
       outIndices.reserve(lon * lat * 6);
 
       // 頂点生成: 北極 (phi=0) から南極 (phi=π) へ、経度方向に lon+1 個（UV境界の継ぎ目用に重複）
       for (uint32_t j = 0; j <= lat; ++j) {
-        const float phi = static_cast<float>(j) / static_cast<float>(lat) * kPi;
+        const float phi = static_cast<float>(j) / static_cast<float>(lat) * std::numbers::pi_v<float>;
         const float sinPhi = std::sin(phi);
         const float cosPhi = std::cos(phi);
 
         for (uint32_t i = 0; i <= lon; ++i) {
-          const float theta = static_cast<float>(i) / static_cast<float>(lon) * (2.0f * kPi);
+          const float theta = static_cast<float>(i) / static_cast<float>(lon) * (2.0f * std::numbers::pi_v<float>);
           const float sinTheta = std::sin(theta);
           const float cosTheta = std::cos(theta);
 
@@ -223,6 +223,73 @@ namespace Tako {
       }
     }
 
+    /// <summary>
+    /// 平面リングの頂点・インデックスを生成（XZ 平面、上向き法線 +Y）
+    /// </summary>
+    void GenerateRing(
+      const PrimitiveBuilder::RingParams& params,
+      std::vector<VertexData>& outVertices,
+      std::vector<uint32_t>& outIndices)
+    {
+      outVertices.clear();
+      outIndices.clear();
+
+      const uint32_t seg = std::max<uint32_t>(params.segments, 3u);
+      const uint32_t rs = std::max<uint32_t>(params.ringSeg, 1u);
+
+      const float rInner = (std::max)(0.0f, (std::min)(params.innerRadius, params.outerRadius));
+      const float rOuter = (std::max)(0.0f, (std::max)(params.innerRadius, params.outerRadius));
+
+      // 負の掃引角は開始角をずらして正方向へ揃える（そのままだと三角形が裏返る）
+      float startDeg = params.startAngleDeg;
+      float sweepDeg = params.sweepAngleDeg;
+      if (sweepDeg < 0.0f) {
+        startDeg += sweepDeg;
+        sweepDeg = -sweepDeg;
+      }
+      constexpr float kDegToRad = std::numbers::pi_v<float> / 180.0f;
+      const float startRad = startDeg * kDegToRad;
+      const float sweepRad = sweepDeg * kDegToRad;
+
+      outVertices.reserve((seg + 1) * (rs + 1));
+      outIndices.reserve(seg * rs * 6);
+
+      // 角度方向は全周でも UV の継ぎ目を割るため seg+1 個
+      for (uint32_t j = 0; j <= rs; ++j) {
+        const float v = static_cast<float>(j) / static_cast<float>(rs);
+        const float radius = rInner + (rOuter - rInner) * v;
+
+        for (uint32_t i = 0; i <= seg; ++i) {
+          const float u = static_cast<float>(i) / static_cast<float>(seg);
+          const float theta = startRad + sweepRad * u;
+
+          VertexData vd{};
+          vd.position = Vector4(std::cos(theta) * radius, 0.0f, std::sin(theta) * radius, 1.0f);
+          vd.normal = Vector3(0.0f, 1.0f, 0.0f);
+          vd.texcoord = Vector2(u, v);
+          outVertices.push_back(vd);
+        }
+      }
+
+      // i=接線方向 / j=径方向なので cross(Δi, Δj) が +Y。GeneratePlane とは逆順になる
+      for (uint32_t j = 0; j < rs; ++j) {
+        for (uint32_t i = 0; i < seg; ++i) {
+          const uint32_t a = j * (seg + 1) + i;
+          const uint32_t b = a + 1;
+          const uint32_t c = a + (seg + 1);
+          const uint32_t d = c + 1;
+
+          outIndices.push_back(a);
+          outIndices.push_back(b);
+          outIndices.push_back(c);
+
+          outIndices.push_back(b);
+          outIndices.push_back(d);
+          outIndices.push_back(c);
+        }
+      }
+    }
+
   } // anonymous namespace
 
   ///------------------------------------------------///
@@ -251,6 +318,14 @@ namespace Tako {
     std::vector<uint32_t> indices;
     GeneratePlane(p, vertices, indices);
     return BuildModel(vertices, indices, "<Primitive_Plane>");
+  }
+
+  std::unique_ptr<Model> PrimitiveBuilder::CreateRing(const RingParams& p)
+  {
+    std::vector<VertexData> vertices;
+    std::vector<uint32_t> indices;
+    GenerateRing(p, vertices, indices);
+    return BuildModel(vertices, indices, "<Primitive_Ring>");
   }
 
 } // namespace Tako
