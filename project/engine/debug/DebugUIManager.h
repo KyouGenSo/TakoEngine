@@ -10,8 +10,13 @@
 #include <memory>
 #include "Vector3.h"
 #include "Vector4.h"
+#include "PrimitiveBuilder.h"
 
 namespace Tako {
+
+  class Object3d;
+  class Camera;
+  struct PrimitivePreviewViewport;
 
   /// <summary>
   /// デバッグ UI の統合管理クラス。シーンヒエラルキー、インスペクター、コンソール、パフォーマンスモニターなどを提供
@@ -44,15 +49,27 @@ namespace Tako {
       std::function<void()> drawImGuiFunc;  ///< DrawImGui 関数
     };
 
+    /// <summary>
+    /// プリミティブエディターの編集対象タイプ
+    /// </summary>
+    enum class PrimitiveType : int {
+      Cube = 0,
+      Sphere,
+      Plane,
+      Ring,
+      Cylinder,
+      Torus
+    };
+
   private:
     static std::unique_ptr<DebugUIManager> instance_;  ///< シングルトン
     struct Token {};  ///< 外部からの直接生成を防ぐ生成キー
-    ~DebugUIManager() = default;
+    ~DebugUIManager();
 
     friend struct std::default_delete<DebugUIManager>;
 
   public:
-    explicit DebugUIManager(Token) {}
+    explicit DebugUIManager(Token);
     DebugUIManager(const DebugUIManager&) = delete;
     DebugUIManager& operator=(const DebugUIManager&) = delete;
 
@@ -82,6 +99,12 @@ namespace Tako {
     /// 描画
     /// </summary>
     void Draw();
+
+    /// <summary>
+    /// プリミティブエディターのプレビューをオフスクリーン RT へ描画
+    /// TakoFramework::Draw() のシーン描画後・ImGui 描画前に呼ぶ
+    /// </summary>
+    void DrawPrimitivePreviewPass();
 
     /// <summary>
     /// コンソールにログを追加
@@ -236,6 +259,57 @@ namespace Tako {
     void DrawForceFieldVisualization(const struct ForceFieldData& field, int index);
 
     /// <summary>
+    /// プリミティブエディターウィンドウを描画（ビューポート + パラメータ）
+    /// </summary>
+    void DrawPrimitiveEditor();
+
+    /// <summary>
+    /// プリミティブエディターの更新（プレビュー生成/破棄、dirty 時のモデル再生成、カメラ更新）
+    /// GPU アイドル区間である Update() から呼ぶこと（描画フェーズでのモデル差し替えは危険）
+    /// </summary>
+    void UpdatePrimitiveEditor();
+
+    /// <summary>
+    /// プレビュー用オフスクリーン RT/深度/DSV/SRV を生成（初回のみ）
+    /// </summary>
+    void InitializePrimitivePreviewViewport();
+
+    /// <summary>
+    /// プリミティブエディターの GPU リソースを解放
+    /// </summary>
+    void FinalizePrimitiveEditor();
+
+    /// <summary>
+    /// 現在のパラメータでプレビューモデルを再生成して差し替える
+    /// </summary>
+    void RebuildPrimitivePreview();
+
+    /// <summary>
+    /// 色/ライティング/半透明をプレビューへ再適用（Model 差し替えで消えるため毎フレーム）
+    /// </summary>
+    void ApplyPrimitivePreviewSettings();
+
+    /// <summary>
+    /// 現在のパラメータを PrimitiveBuilder 呼び出しの C++ コード文字列に変換
+    /// </summary>
+    /// <returns>designated initializer 形式のコード（デフォルト値と同じフィールドは省略）</returns>
+    std::string GeneratePrimitiveCppString() const;
+
+    /// <summary>
+    /// 現在のプリミティブ設定を JSON プリセットとして保存
+    /// </summary>
+    /// <param name="name">プリセット名（拡張子なし）</param>
+    /// <returns>成功したら true</returns>
+    bool SavePrimitivePreset(const std::string& name);
+
+    /// <summary>
+    /// JSON プリセットを読み込んで現在の設定へ反映
+    /// </summary>
+    /// <param name="name">プリセット名（拡張子なし）</param>
+    /// <returns>成功したら true</returns>
+    bool LoadPrimitivePreset(const std::string& name);
+
+    /// <summary>
     /// 現在のタイムスタンプを生成
     /// </summary>
     /// <returns>タイムスタンプ文字列</returns>
@@ -302,6 +376,37 @@ namespace Tako {
     Vector4 forceFieldDirectionColor_ = { 1.0f, 0.0f, 0.0f, 1.0f };  ///< フォースフィールド方向色（赤）
     float   forceFieldArrowLength_    = 2.0f;                        ///< フォースフィールド矢印の長さ
     float   forceFieldArrowHeadSize_  = 0.3f;                        ///< フォースフィールド矢印の先端サイズ
+
+    //プリミティブエディター用
+    PrimitiveType                    selectedPrimitiveType_     = PrimitiveType::Cylinder;
+    PrimitiveBuilder::CubeParams     primCubeParams_{};
+    PrimitiveBuilder::SphereParams   primSphereParams_{};
+    PrimitiveBuilder::PlaneParams    primPlaneParams_{};
+    PrimitiveBuilder::RingParams     primRingParams_{};
+    PrimitiveBuilder::CylinderParams primCylinderParams_{};
+    PrimitiveBuilder::TorusParams    primTorusParams_{};
+    std::unique_ptr<Object3d>        primPreviewObject_;                 ///< プレビュー対象（エディタ表示中のみ生存）
+    std::unique_ptr<Object3d>        primFloorObject_;                   ///< 床参照プレーン
+    bool                             primParamsDirty_           = false; ///< 次の Update でモデル再生成（描画コマンド記録済みフレーム内での差し替えは危険）
+    Vector3                          primPreviewRotate_         = {};
+    Vector3                          primPreviewScale_          = { 1.0f, 1.0f, 1.0f };
+    Vector4                          primPreviewColor_          = { 1.0f, 1.0f, 1.0f, 1.0f };
+    bool                             primPreviewLighting_       = true;
+    bool                             primPreviewTransparent_    = false;
+    bool                             primAutoRotate_            = false;
+    float                            primAutoRotateSpeed_       = 1.0f;  ///< 自動回転速度（rad/s）
+    bool                             primShowFloor_             = true;
+    char                             primPresetNameBuffer_[128] = "";
+    std::string                      primSelectedPreset_;                ///< Load コンボの選択中プリセット名
+
+    //プリミティブエディター専用ビューポート/カメラ
+    std::unique_ptr<PrimitivePreviewViewport> primPreviewViewport_;  ///< オフスクリーンRT一式（初回オープン時に生成、定義は cpp 側）
+    std::unique_ptr<Camera> primPreviewCamera_;
+    Camera*                 primPreviewCameraPtr_ = nullptr;  ///< Object3d::SetCamera(Camera**) に渡す安定アドレス
+    float                   primCamYaw_           = 0.6f;     ///< オービット方位角（rad）
+    float                   primCamPitch_         = 0.35f;    ///< オービット仰角（rad、正で見下ろし）
+    float                   primCamDistance_      = 4.0f;     ///< 注視点からの距離
+    Vector3                 primCamTarget_        = { 0.0f, 0.0f, 0.0f };  ///< オービット注視点
   };
 
 } // namespace Tako

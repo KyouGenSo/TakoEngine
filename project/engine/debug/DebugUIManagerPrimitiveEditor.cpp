@@ -1,0 +1,722 @@
+#include "DebugUIManager.h"
+#include "DX12Basic.h"
+#include "SrvManager.h"
+#include "Object3d.h"
+#include "Object3dBasic.h"
+#include "Camera.h"
+#include "Model.h"
+#include "PrimitiveBuilder.h"
+#include "FrameTimer.h"
+#include "ImGuiManager.h"
+#include "Mat4x4Func.h"
+
+#include <json.hpp>
+
+#include <algorithm>
+#include <cassert>
+#include <filesystem>
+#include <format>
+#include <fstream>
+#include <iomanip>
+#include <string>
+#include <vector>
+
+namespace Tako {
+
+  /// <summary>
+  /// プリミティブエディターのプレビュー描画先一式（カラーRT/深度/DSVヒープ/SRV）
+  /// </summary>
+  struct PrimitivePreviewViewport {
+    DX12Basic*                                   dx12 = nullptr;  ///< Finalize 時に使う（Object3dBasic より DebugUIManager の方が後に破棄されるため生ポインタで保持）
+    Microsoft::WRL::ComPtr<ID3D12Resource>       renderTexture;
+    Microsoft::WRL::ComPtr<ID3D12Resource>       depthBuffer;
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> dsvHeap;
+    D3D12_CPU_DESCRIPTOR_HANDLE                  rtvHandle{};
+    D3D12_CPU_DESCRIPTOR_HANDLE                  dsvHandle{};
+    uint32_t                                     srvIndex = 0;
+  };
+
+  DebugUIManager::DebugUIManager(Token) {}
+  DebugUIManager::~DebugUIManager() = default;
+
+  namespace {
+
+    constexpr uint32_t    kPreviewRTWidth    = 1280;
+    constexpr uint32_t    kPreviewRTHeight   = 720;
+    constexpr uint32_t    kPreviewRtvIndex   = 10;  ///< RTV ヒープ内 index（0-1:スワップチェーン 2-5:PostEffect 6-8:Bloom 9:GaussianBlur）
+    constexpr DXGI_FORMAT kPreviewRTFormat   = DXGI_FORMAT_R8G8B8A8_UNORM;
+    constexpr DXGI_FORMAT kPreviewDepthFormat = DXGI_FORMAT_D32_FLOAT;
+    constexpr Vector4     kPreviewClearColor = { 0.10f, 0.10f, 0.12f, 1.0f };
+
+    // オービットカメラ初期値（DebugUIManager.h のメンバ初期値と揃える）
+    constexpr float   kDefaultCamYaw      = 0.6f;
+    constexpr float   kDefaultCamPitch    = 0.35f;
+    constexpr float   kDefaultCamDistance = 4.0f;
+    constexpr Vector3 kDefaultCamTarget   = { 0.0f, 0.0f, 0.0f };
+
+    const char* const kPresetDirectory = "resources/Json/PrimitivePresets/";
+
+    // JSON の type フィールド用。enum PrimitiveType および Type コンボの並びと一致させること
+    constexpr const char* kPrimitiveTypeNames[] = { "Cube", "Sphere", "Plane", "Ring", "Cylinder", "Torus" };
+
+    /// <summary>
+    /// uint32_t 用 DragInt ラッパ（Ctrl+クリック直接入力は DragInt の min/max を無視するため明示クランプ）
+    /// </summary>
+    bool DragUint(const char* label, uint32_t& value, int minValue, int maxValue)
+    {
+      int v = static_cast<int>(value);
+      if (ImGui::DragInt(label, &v, 1.0f, minValue, maxValue)) {
+        value = static_cast<uint32_t>(std::clamp(v, minValue, maxValue));
+        return true;
+      }
+      return false;
+    }
+
+    /// <summary>
+    /// float を C++ リテラル文字列へ変換（最短往復表現、整数値は .0 を補い末尾 f）
+    /// </summary>
+    std::string FloatLit(float v)
+    {
+      std::string s = std::format("{}", v);
+      if (s.find('.') == std::string::npos && s.find('e') == std::string::npos) {
+        s += ".0";
+      }
+      return s + "f";
+    }
+
+    /// <summary>
+    /// designated initializer 形式の PrimitiveBuilder 呼び出し文字列を組み立てる
+    /// </summary>
+    std::string BuildCreateCall(const char* funcName, const std::vector<std::string>& fields)
+    {
+      std::string result = std::format("PrimitiveBuilder::{}(", funcName);
+      if (!fields.empty()) {
+        result += "{ ";
+        for (size_t i = 0; i < fields.size(); ++i) {
+          if (i > 0) {
+            result += ", ";
+          }
+          result += fields[i];
+        }
+        result += " }";
+      }
+      result += ")";
+      return result;
+    }
+
+  } // anonymous namespace
+
+  void DebugUIManager::UpdatePrimitiveEditor()
+  {
+    if (!windowVisibility_["PrimitiveEditor"]) {
+      // エディタを閉じたらプレビューを破棄
+      primPreviewObject_.reset();
+      primFloorObject_.reset();
+      return;
+    }
+
+    if (!primPreviewViewport_) {
+      InitializePrimitivePreviewViewport();
+    }
+
+    if (!primPreviewCamera_) {
+      primPreviewCamera_ = std::make_unique<Camera>();
+      primPreviewCamera_->SetAspect(static_cast<float>(kPreviewRTWidth) / static_cast<float>(kPreviewRTHeight));
+      primPreviewCameraPtr_ = primPreviewCamera_.get();
+    }
+
+    if (!primFloorObject_) {
+      primFloorObject_ = std::make_unique<Object3d>();
+      primFloorObject_->Initialize();
+      primFloorObject_->SetCamera(&primPreviewCameraPtr_);
+      primFloorObject_->SetModel(PrimitiveBuilder::CreatePlane({ .width = 10.0f, .height = 10.0f }));
+      primFloorObject_->SetMaterialColor(Vector4(0.35f, 0.35f, 0.35f, 1.0f));
+      primFloorObject_->SetTranslate(Vector3(0.0f, -1.0f, 0.0f));
+    }
+
+    if (!primPreviewObject_) {
+      primPreviewObject_ = std::make_unique<Object3d>();
+      primPreviewObject_->Initialize();
+      primPreviewObject_->SetCamera(&primPreviewCameraPtr_);
+      primParamsDirty_ = true;
+    }
+
+    // モデル再生成はコマンド未記録・GPU アイドルのここでのみ行う（ImGui ハンドラ内での差し替えは記録済みコマンドの参照先を壊す）
+    if (primParamsDirty_) {
+      RebuildPrimitivePreview();
+      primParamsDirty_ = false;
+    }
+
+    if (primAutoRotate_) {
+      primPreviewRotate_.y += primAutoRotateSpeed_ * FrameTimer::GetInstance()->GetDeltaTime();
+    }
+    primPreviewObject_->SetRotate(primPreviewRotate_);
+    primPreviewObject_->SetScale(primPreviewScale_);
+    ApplyPrimitivePreviewSettings();
+
+    // オービットカメラ: 回転から前方ベクトルを求め、注視点から distance 分引いた位置に置く
+    const Vector3 camRotate = { primCamPitch_, primCamYaw_, 0.0f };
+    const Vector3 forward = Mat4x4::TransformNormal(Mat4x4::MakeRotateXYZ(camRotate), Vector3(0.0f, 0.0f, 1.0f));
+    primPreviewCamera_->SetRotate(camRotate);
+    primPreviewCamera_->SetTranslate(primCamTarget_ - forward * primCamDistance_);
+    primPreviewCamera_->Update();
+    primPreviewCamera_->SetViewProjectionMatrix(primPreviewCamera_->GetViewMatrix() * primPreviewCamera_->GetProjectionMatrix());
+
+    primFloorObject_->Update();
+    primPreviewObject_->Update();
+  }
+
+  void DebugUIManager::InitializePrimitivePreviewViewport()
+  {
+    DX12Basic* dx12 = Object3dBasic::GetInstance()->GetDX12Basic();
+    auto viewport = std::make_unique<PrimitivePreviewViewport>();
+    viewport->dx12 = dx12;
+
+    // RT
+    dx12->CreateRenderTextureResource(viewport->renderTexture, kPreviewRTWidth, kPreviewRTHeight, kPreviewRTFormat, kPreviewClearColor);
+    viewport->renderTexture->SetName(L"PrimitiveEditorPreviewRT");
+    dx12->SetInitialResourceState(viewport->renderTexture.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+    viewport->rtvHandle = dx12->GetRenderTextureRTVHandle(kPreviewRtvIndex);
+    D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
+    rtvDesc.Format = kPreviewRTFormat;
+    rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+    dx12->GetDevice()->CreateRenderTargetView(viewport->renderTexture.Get(), &rtvDesc, viewport->rtvHandle);
+
+    viewport->srvIndex = SrvManager::GetInstance()->Allocate();
+    SrvManager::GetInstance()->CreateSRVForTexture2D(viewport->srvIndex, viewport->renderTexture.Get(), kPreviewRTFormat, 1);
+
+    // 深度バッファ
+    D3D12_RESOURCE_DESC depthDesc{};
+    depthDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    depthDesc.Width = kPreviewRTWidth;
+    depthDesc.Height = kPreviewRTHeight;
+    depthDesc.DepthOrArraySize = 1;
+    depthDesc.MipLevels = 1;
+    depthDesc.Format = kPreviewDepthFormat;
+    depthDesc.SampleDesc.Count = 1;
+    depthDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+    depthDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+
+    D3D12_HEAP_PROPERTIES heapProps{};
+    heapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
+
+    D3D12_CLEAR_VALUE depthClear{};
+    depthClear.Format = kPreviewDepthFormat;
+    depthClear.DepthStencil.Depth = 1.0f;
+
+    HRESULT hr = dx12->GetDevice()->CreateCommittedResource(
+      &heapProps,
+      D3D12_HEAP_FLAG_NONE,
+      &depthDesc,
+      D3D12_RESOURCE_STATE_DEPTH_WRITE,
+      &depthClear,
+      IID_PPV_ARGS(&viewport->depthBuffer));
+    assert(SUCCEEDED(hr));
+    viewport->depthBuffer->SetName(L"PrimitiveEditorPreviewDepth");
+
+    viewport->dsvHeap = dx12->CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
+    D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
+    dsvDesc.Format = kPreviewDepthFormat;
+    dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+    viewport->dsvHandle = viewport->dsvHeap->GetCPUDescriptorHandleForHeapStart();
+    dx12->GetDevice()->CreateDepthStencilView(viewport->depthBuffer.Get(), &dsvDesc, viewport->dsvHandle);
+
+    primPreviewViewport_ = std::move(viewport);
+  }
+
+  void DebugUIManager::FinalizePrimitiveEditor()
+  {
+    primPreviewObject_.reset();
+    primFloorObject_.reset();
+
+    if (primPreviewViewport_) {
+      SrvManager* srvManager = SrvManager::GetInstance();
+      if (srvManager && srvManager->IsAllocated(primPreviewViewport_->srvIndex)) {
+        srvManager->Free(primPreviewViewport_->srvIndex);
+      }
+      // 解放済みアドレスが別リソースに再利用された際の誤った状態遷移を防ぐ
+      // Object3dBasic は既に Finalize 済みの可能性があるため、生成時に保持した DX12Basic* を使う
+      if (primPreviewViewport_->dx12) {
+        primPreviewViewport_->dx12->RemoveResourceState(primPreviewViewport_->renderTexture.Get());
+      }
+      primPreviewViewport_.reset();
+    }
+
+    primPreviewCamera_.reset();
+    primPreviewCameraPtr_ = nullptr;
+  }
+
+  void DebugUIManager::RebuildPrimitivePreview()
+  {
+    if (!primPreviewObject_) {
+      return;
+    }
+
+    std::unique_ptr<Model> model;
+    switch (selectedPrimitiveType_) {
+    case PrimitiveType::Cube:     model = PrimitiveBuilder::CreateCube(primCubeParams_);         break;
+    case PrimitiveType::Sphere:   model = PrimitiveBuilder::CreateSphere(primSphereParams_);     break;
+    case PrimitiveType::Plane:    model = PrimitiveBuilder::CreatePlane(primPlaneParams_);       break;
+    case PrimitiveType::Ring:     model = PrimitiveBuilder::CreateRing(primRingParams_);         break;
+    case PrimitiveType::Cylinder: model = PrimitiveBuilder::CreateCylinder(primCylinderParams_); break;
+    case PrimitiveType::Torus:    model = PrimitiveBuilder::CreateTorus(primTorusParams_);       break;
+    }
+
+    // 旧 Model は SetModel 内で破棄され、SRV も Mesh のデストラクタで返却される
+    primPreviewObject_->SetModel(std::move(model));
+  }
+
+  void DebugUIManager::ApplyPrimitivePreviewSettings()
+  {
+    if (!primPreviewObject_) {
+      return;
+    }
+    // マテリアル系は Mesh 内データのため Model 差し替えで消える。毎フレーム再適用する
+    primPreviewObject_->SetMaterialColor(primPreviewColor_);
+    primPreviewObject_->SetEnableLighting(primPreviewLighting_);
+    primPreviewObject_->SetTransparent(primPreviewTransparent_);
+  }
+
+  void DebugUIManager::DrawPrimitivePreviewPass()
+  {
+    if (!windowVisibility_["PrimitiveEditor"] || !primPreviewViewport_ || !primPreviewObject_) {
+      return;
+    }
+
+    DX12Basic* dx12 = Object3dBasic::GetInstance()->GetDX12Basic();
+    ID3D12GraphicsCommandList* commandList = dx12->GetCommandList();
+
+    // プレビュー RT を描画先に設定してクリア
+    dx12->TransitionResourceWithTracking(primPreviewViewport_->renderTexture.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET);
+    commandList->OMSetRenderTargets(1, &primPreviewViewport_->rtvHandle, FALSE, &primPreviewViewport_->dsvHandle);
+    const float clearColor[4] = { kPreviewClearColor.x, kPreviewClearColor.y, kPreviewClearColor.z, kPreviewClearColor.w };
+    commandList->ClearRenderTargetView(primPreviewViewport_->rtvHandle, clearColor, 0, nullptr);
+    commandList->ClearDepthStencilView(primPreviewViewport_->dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+
+    // RT サイズに合わせたビューポート/シザー（画面サイズとは独立）
+    D3D12_VIEWPORT viewport{ 0.0f, 0.0f, static_cast<float>(kPreviewRTWidth), static_cast<float>(kPreviewRTHeight), 0.0f, 1.0f };
+    D3D12_RECT scissorRect{ 0, 0, static_cast<LONG>(kPreviewRTWidth), static_cast<LONG>(kPreviewRTHeight) };
+    commandList->RSSetViewports(1, &viewport);
+    commandList->RSSetScissorRects(1, &scissorRect);
+
+    // 直前は別パスの PSO のため共通描画設定を再適用（カメラ非依存なのでそのまま使える）
+    Object3dBasic::GetInstance()->SetCommonRenderSetting();
+
+    if (primShowFloor_ && primFloorObject_) {
+      primFloorObject_->Draw();
+    }
+    primPreviewObject_->Draw();
+
+    // ImGui がサンプルするため SRV 状態へ遷移。RT/ビューポートは直後の DrawFinalResult が再設定する
+    dx12->TransitionResourceWithTracking(primPreviewViewport_->renderTexture.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+  }
+
+  void DebugUIManager::DrawPrimitiveEditor()
+  {
+    ImGui::SetNextWindowSize(ImVec2(1000.0f, 620.0f), ImGuiCond_FirstUseEver);
+    if (ImGui::Begin("Primitive Editor", &windowVisibility_["PrimitiveEditor"])) {
+
+      const float paramsPanelWidth = 360.0f;
+      const ImVec2 avail = ImGui::GetContentRegionAvail();
+      const float viewportWidth = (std::max)(avail.x - paramsPanelWidth - ImGui::GetStyle().ItemSpacing.x, 100.0f);
+
+      //---------------- 左: プレビュービューポート ----------------//
+      if (ImGui::BeginChild("Viewport##PrimEditor", ImVec2(viewportWidth, 0.0f), true)) {
+        if (ImGui::Button("Reset Camera##PrimEditor")) {
+          primCamYaw_ = kDefaultCamYaw;
+          primCamPitch_ = kDefaultCamPitch;
+          primCamDistance_ = kDefaultCamDistance;
+          primCamTarget_ = kDefaultCamTarget;
+        }
+        ImGui::SameLine();
+        ImGui::TextDisabled("RMB: Orbit / MMB: Pan / Wheel: Zoom");
+
+        // 残り領域に 16:9 レターボックスで表示
+        const ImVec2 availableSize = ImGui::GetContentRegionAvail();
+        const float aspectRatio = static_cast<float>(kPreviewRTWidth) / static_cast<float>(kPreviewRTHeight);
+        ImVec2 imageSize;
+        if (availableSize.x / availableSize.y > aspectRatio) {
+          imageSize.y = availableSize.y;
+          imageSize.x = imageSize.y * aspectRatio;
+        }
+        else {
+          imageSize.x = availableSize.x;
+          imageSize.y = imageSize.x / aspectRatio;
+        }
+        ImVec2 cursorPos = ImGui::GetCursorPos();
+        cursorPos.x += (availableSize.x - imageSize.x) * 0.5f;
+        cursorPos.y += (availableSize.y - imageSize.y) * 0.5f;
+        ImGui::SetCursorPos(cursorPos);
+
+        if (primPreviewViewport_) {
+          D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = SrvManager::GetInstance()->GetGPUDescriptorHandle(primPreviewViewport_->srvIndex);
+          ImGui::Image((ImTextureID)gpuHandle.ptr, imageSize);
+
+          // ビューポート上のマウス操作でオービットカメラを制御（ImGui 経由なので Input クラスやテキスト入力と干渉しない）
+          if (ImGui::IsItemHovered()) {
+            const ImGuiIO& io = ImGui::GetIO();
+            if (ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
+              primCamYaw_ += io.MouseDelta.x * 0.01f;
+              primCamPitch_ += io.MouseDelta.y * 0.01f;
+              primCamPitch_ = std::clamp(primCamPitch_, -1.5f, 1.5f);
+            }
+            if (ImGui::IsMouseDown(ImGuiMouseButton_Middle)) {
+              // 世界を掴んで動かす向き: マウス右移動で注視点は左へ
+              const Matrix4x4 rot = Mat4x4::MakeRotateXYZ(Vector3(primCamPitch_, primCamYaw_, 0.0f));
+              const Vector3 right = Mat4x4::TransformNormal(rot, Vector3(1.0f, 0.0f, 0.0f));
+              const Vector3 up = Mat4x4::TransformNormal(rot, Vector3(0.0f, 1.0f, 0.0f));
+              const float panScale = primCamDistance_ * 0.0015f;
+              primCamTarget_ = primCamTarget_ - right * (io.MouseDelta.x * panScale) + up * (io.MouseDelta.y * panScale);
+            }
+            if (io.MouseWheel != 0.0f) {
+              primCamDistance_ = std::clamp(primCamDistance_ * (1.0f - io.MouseWheel * 0.1f), 0.5f, 100.0f);
+            }
+          }
+        }
+        else {
+          ImGui::TextDisabled("Initializing preview...");
+        }
+      }
+      ImGui::EndChild();
+
+      //---------------- 右: パラメータパネル ----------------//
+      ImGui::SameLine();
+      if (ImGui::BeginChild("Params##PrimEditor", ImVec2(0.0f, 0.0f), true)) {
+
+        int typeIndex = static_cast<int>(selectedPrimitiveType_);
+        if (ImGui::Combo("Type##PrimEditor", &typeIndex, "Cube\0Sphere\0Plane\0Ring\0Cylinder\0Torus\0")) {
+          selectedPrimitiveType_ = static_cast<PrimitiveType>(typeIndex);
+          primParamsDirty_ = true;
+        }
+
+        if (ImGui::CollapsingHeader("Shape Parameters##PrimEditor", ImGuiTreeNodeFlags_DefaultOpen)) {
+          bool changed = false;
+          switch (selectedPrimitiveType_) {
+          case PrimitiveType::Cube:
+            changed |= ImGui::DragFloat("Size##PrimCube", &primCubeParams_.size, 0.01f, 0.0f, 1000.0f);
+            break;
+          case PrimitiveType::Sphere:
+            changed |= ImGui::DragFloat("Radius##PrimSphere", &primSphereParams_.radius, 0.01f, 0.0f, 1000.0f);
+            changed |= DragUint("Lon Div##PrimSphere", primSphereParams_.lonDiv, 3, 256);
+            changed |= DragUint("Lat Div##PrimSphere", primSphereParams_.latDiv, 2, 256);
+            break;
+          case PrimitiveType::Plane:
+            changed |= ImGui::DragFloat("Width##PrimPlane", &primPlaneParams_.width, 0.01f, 0.0f, 1000.0f);
+            changed |= ImGui::DragFloat("Height##PrimPlane", &primPlaneParams_.height, 0.01f, 0.0f, 1000.0f);
+            changed |= DragUint("X Seg##PrimPlane", primPlaneParams_.xSeg, 1, 256);
+            changed |= DragUint("Y Seg##PrimPlane", primPlaneParams_.ySeg, 1, 256);
+            break;
+          case PrimitiveType::Ring:
+            changed |= ImGui::DragFloat("Inner Radius##PrimRing", &primRingParams_.innerRadius, 0.01f, 0.0f, 1000.0f);
+            changed |= ImGui::DragFloat("Outer Radius##PrimRing", &primRingParams_.outerRadius, 0.01f, 0.0f, 1000.0f);
+            changed |= DragUint("Segments##PrimRing", primRingParams_.segments, 3, 512);
+            changed |= DragUint("Ring Seg##PrimRing", primRingParams_.ringSeg, 1, 256);
+            changed |= ImGui::DragFloat("Start Angle##PrimRing", &primRingParams_.startAngleDeg, 1.0f, -720.0f, 720.0f);
+            changed |= ImGui::DragFloat("Sweep Angle##PrimRing", &primRingParams_.sweepAngleDeg, 1.0f, -720.0f, 720.0f);
+            break;
+          case PrimitiveType::Cylinder:
+            changed |= ImGui::DragFloat("Top Radius##PrimCylinder", &primCylinderParams_.topRadius, 0.01f, 0.0f, 1000.0f);
+            changed |= ImGui::DragFloat("Bottom Radius##PrimCylinder", &primCylinderParams_.bottomRadius, 0.01f, 0.0f, 1000.0f);
+            changed |= ImGui::DragFloat("Height##PrimCylinder", &primCylinderParams_.height, 0.01f, 0.0f, 1000.0f);
+            changed |= DragUint("Radial Div##PrimCylinder", primCylinderParams_.radialDiv, 3, 256);
+            changed |= DragUint("Height Div##PrimCylinder", primCylinderParams_.heightDiv, 1, 256);
+            changed |= ImGui::Checkbox("Cap Top##PrimCylinder", &primCylinderParams_.capTop);
+            ImGui::SameLine();
+            changed |= ImGui::Checkbox("Cap Bottom##PrimCylinder", &primCylinderParams_.capBottom);
+            break;
+          case PrimitiveType::Torus:
+            changed |= ImGui::DragFloat("Major Radius##PrimTorus", &primTorusParams_.majorRadius, 0.01f, 0.0f, 1000.0f);
+            changed |= ImGui::DragFloat("Minor Radius##PrimTorus", &primTorusParams_.minorRadius, 0.01f, 0.0f, 1000.0f);
+            changed |= DragUint("Major Div##PrimTorus", primTorusParams_.majorDiv, 3, 256);
+            changed |= DragUint("Minor Div##PrimTorus", primTorusParams_.minorDiv, 3, 256);
+            break;
+          }
+          if (changed) {
+            primParamsDirty_ = true;
+          }
+        }
+
+        if (ImGui::CollapsingHeader("Display##PrimEditor", ImGuiTreeNodeFlags_DefaultOpen)) {
+          ImGui::DragFloat3("Rotation##PrimEditor", &primPreviewRotate_.x, 0.01f);
+          ImGui::DragFloat3("Scale##PrimEditor", &primPreviewScale_.x, 0.01f, 0.0f, 100.0f);
+          ImGui::ColorEdit4("Color##PrimEditor", &primPreviewColor_.x);
+          ImGui::Checkbox("Lighting##PrimEditor", &primPreviewLighting_);
+          ImGui::SameLine();
+          ImGui::Checkbox("Transparent##PrimEditor", &primPreviewTransparent_);
+          ImGui::Checkbox("Auto Rotate##PrimEditor", &primAutoRotate_);
+          if (primAutoRotate_) {
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(100.0f);
+            ImGui::DragFloat("Speed##PrimEditor", &primAutoRotateSpeed_, 0.01f, -10.0f, 10.0f);
+          }
+          ImGui::Checkbox("Show Floor##PrimEditor", &primShowFloor_);
+        }
+
+        if (ImGui::CollapsingHeader("Output##PrimEditor", ImGuiTreeNodeFlags_DefaultOpen)) {
+          const std::string cppString = GeneratePrimitiveCppString();
+          ImGui::TextWrapped("%s", cppString.c_str());
+          if (ImGui::Button("Copy as C++##PrimEditor")) {
+            ImGui::SetClipboardText(cppString.c_str());
+            AddLog("Primitive Editor: copied C++ snippet to clipboard", LogType::Info);
+          }
+
+          ImGui::SeparatorText("Preset");
+          ImGui::SetNextItemWidth(150.0f);
+          ImGui::InputText("##PrimPresetName", primPresetNameBuffer_, IM_ARRAYSIZE(primPresetNameBuffer_));
+          ImGui::SameLine();
+          if (ImGui::Button("Save##PrimPreset") && primPresetNameBuffer_[0] != '\0') {
+            if (SavePrimitivePreset(primPresetNameBuffer_)) {
+              primSelectedPreset_ = primPresetNameBuffer_;
+            }
+          }
+
+          ImGui::SetNextItemWidth(150.0f);
+          if (ImGui::BeginCombo("##PrimPresetList", primSelectedPreset_.empty() ? "(select preset)" : primSelectedPreset_.c_str())) {
+            std::error_code ec;
+            for (const auto& entry : std::filesystem::directory_iterator(kPresetDirectory, ec)) {
+              if (!entry.is_regular_file() || entry.path().extension() != ".json") {
+                continue;
+              }
+              const std::string name = entry.path().stem().string();
+              const bool selected = (name == primSelectedPreset_);
+              if (ImGui::Selectable(name.c_str(), selected)) {
+                primSelectedPreset_ = name;
+              }
+              if (selected) {
+                ImGui::SetItemDefaultFocus();
+              }
+            }
+            ImGui::EndCombo();
+          }
+          ImGui::SameLine();
+          if (ImGui::Button("Load##PrimPreset") && !primSelectedPreset_.empty()) {
+            LoadPrimitivePreset(primSelectedPreset_);
+          }
+        }
+      }
+      ImGui::EndChild();
+    }
+    ImGui::End();
+  }
+
+  std::string DebugUIManager::GeneratePrimitiveCppString() const
+  {
+    std::vector<std::string> fields;
+
+    switch (selectedPrimitiveType_) {
+    case PrimitiveType::Cube: {
+      const PrimitiveBuilder::CubeParams def{};
+      const auto& p = primCubeParams_;
+      if (p.size != def.size) fields.push_back(std::format(".size = {}", FloatLit(p.size)));
+      return BuildCreateCall("CreateCube", fields);
+    }
+    case PrimitiveType::Sphere: {
+      const PrimitiveBuilder::SphereParams def{};
+      const auto& p = primSphereParams_;
+      if (p.radius != def.radius) fields.push_back(std::format(".radius = {}", FloatLit(p.radius)));
+      if (p.lonDiv != def.lonDiv) fields.push_back(std::format(".lonDiv = {}", p.lonDiv));
+      if (p.latDiv != def.latDiv) fields.push_back(std::format(".latDiv = {}", p.latDiv));
+      return BuildCreateCall("CreateSphere", fields);
+    }
+    case PrimitiveType::Plane: {
+      const PrimitiveBuilder::PlaneParams def{};
+      const auto& p = primPlaneParams_;
+      if (p.width != def.width) fields.push_back(std::format(".width = {}", FloatLit(p.width)));
+      if (p.height != def.height) fields.push_back(std::format(".height = {}", FloatLit(p.height)));
+      if (p.xSeg != def.xSeg) fields.push_back(std::format(".xSeg = {}", p.xSeg));
+      if (p.ySeg != def.ySeg) fields.push_back(std::format(".ySeg = {}", p.ySeg));
+      return BuildCreateCall("CreatePlane", fields);
+    }
+    case PrimitiveType::Ring: {
+      const PrimitiveBuilder::RingParams def{};
+      const auto& p = primRingParams_;
+      if (p.innerRadius != def.innerRadius) fields.push_back(std::format(".innerRadius = {}", FloatLit(p.innerRadius)));
+      if (p.outerRadius != def.outerRadius) fields.push_back(std::format(".outerRadius = {}", FloatLit(p.outerRadius)));
+      if (p.segments != def.segments) fields.push_back(std::format(".segments = {}", p.segments));
+      if (p.ringSeg != def.ringSeg) fields.push_back(std::format(".ringSeg = {}", p.ringSeg));
+      if (p.startAngleDeg != def.startAngleDeg) fields.push_back(std::format(".startAngleDeg = {}", FloatLit(p.startAngleDeg)));
+      if (p.sweepAngleDeg != def.sweepAngleDeg) fields.push_back(std::format(".sweepAngleDeg = {}", FloatLit(p.sweepAngleDeg)));
+      return BuildCreateCall("CreateRing", fields);
+    }
+    case PrimitiveType::Cylinder: {
+      const PrimitiveBuilder::CylinderParams def{};
+      const auto& p = primCylinderParams_;
+      if (p.topRadius != def.topRadius) fields.push_back(std::format(".topRadius = {}", FloatLit(p.topRadius)));
+      if (p.bottomRadius != def.bottomRadius) fields.push_back(std::format(".bottomRadius = {}", FloatLit(p.bottomRadius)));
+      if (p.height != def.height) fields.push_back(std::format(".height = {}", FloatLit(p.height)));
+      if (p.radialDiv != def.radialDiv) fields.push_back(std::format(".radialDiv = {}", p.radialDiv));
+      if (p.heightDiv != def.heightDiv) fields.push_back(std::format(".heightDiv = {}", p.heightDiv));
+      if (p.capTop != def.capTop) fields.push_back(std::format(".capTop = {}", p.capTop ? "true" : "false"));
+      if (p.capBottom != def.capBottom) fields.push_back(std::format(".capBottom = {}", p.capBottom ? "true" : "false"));
+      return BuildCreateCall("CreateCylinder", fields);
+    }
+    case PrimitiveType::Torus: {
+      const PrimitiveBuilder::TorusParams def{};
+      const auto& p = primTorusParams_;
+      if (p.majorRadius != def.majorRadius) fields.push_back(std::format(".majorRadius = {}", FloatLit(p.majorRadius)));
+      if (p.minorRadius != def.minorRadius) fields.push_back(std::format(".minorRadius = {}", FloatLit(p.minorRadius)));
+      if (p.majorDiv != def.majorDiv) fields.push_back(std::format(".majorDiv = {}", p.majorDiv));
+      if (p.minorDiv != def.minorDiv) fields.push_back(std::format(".minorDiv = {}", p.minorDiv));
+      return BuildCreateCall("CreateTorus", fields);
+    }
+    }
+    return "";
+  }
+
+  bool DebugUIManager::SavePrimitivePreset(const std::string& name)
+  {
+    using json = nlohmann::json;
+
+    json preset;
+    preset["type"] = kPrimitiveTypeNames[static_cast<int>(selectedPrimitiveType_)];
+    json& params = preset["params"];
+
+    switch (selectedPrimitiveType_) {
+    case PrimitiveType::Cube:
+      params["size"] = primCubeParams_.size;
+      break;
+    case PrimitiveType::Sphere:
+      params["radius"] = primSphereParams_.radius;
+      params["lonDiv"] = primSphereParams_.lonDiv;
+      params["latDiv"] = primSphereParams_.latDiv;
+      break;
+    case PrimitiveType::Plane:
+      params["width"] = primPlaneParams_.width;
+      params["height"] = primPlaneParams_.height;
+      params["xSeg"] = primPlaneParams_.xSeg;
+      params["ySeg"] = primPlaneParams_.ySeg;
+      break;
+    case PrimitiveType::Ring:
+      params["innerRadius"] = primRingParams_.innerRadius;
+      params["outerRadius"] = primRingParams_.outerRadius;
+      params["segments"] = primRingParams_.segments;
+      params["ringSeg"] = primRingParams_.ringSeg;
+      params["startAngleDeg"] = primRingParams_.startAngleDeg;
+      params["sweepAngleDeg"] = primRingParams_.sweepAngleDeg;
+      break;
+    case PrimitiveType::Cylinder:
+      params["topRadius"] = primCylinderParams_.topRadius;
+      params["bottomRadius"] = primCylinderParams_.bottomRadius;
+      params["height"] = primCylinderParams_.height;
+      params["radialDiv"] = primCylinderParams_.radialDiv;
+      params["heightDiv"] = primCylinderParams_.heightDiv;
+      params["capTop"] = primCylinderParams_.capTop;
+      params["capBottom"] = primCylinderParams_.capBottom;
+      break;
+    case PrimitiveType::Torus:
+      params["majorRadius"] = primTorusParams_.majorRadius;
+      params["minorRadius"] = primTorusParams_.minorRadius;
+      params["majorDiv"] = primTorusParams_.majorDiv;
+      params["minorDiv"] = primTorusParams_.minorDiv;
+      break;
+    }
+
+    if (!std::filesystem::exists(kPresetDirectory)) {
+      std::filesystem::create_directories(kPresetDirectory);
+    }
+
+    std::ofstream ofs(std::string(kPresetDirectory) + name + ".json");
+    if (!ofs.is_open()) {
+      AddLog("Primitive Editor: failed to save preset '" + name + "'", LogType::Error);
+      return false;
+    }
+    ofs << std::setw(2) << preset << std::endl;
+
+    AddLog("Primitive Editor: saved preset '" + name + "'", LogType::Info);
+    return true;
+  }
+
+  bool DebugUIManager::LoadPrimitivePreset(const std::string& name)
+  {
+    using json = nlohmann::json;
+
+    std::ifstream ifs(std::string(kPresetDirectory) + name + ".json");
+    if (!ifs.is_open()) {
+      AddLog("Primitive Editor: preset '" + name + "' not found", LogType::Error);
+      return false;
+    }
+
+    try {
+      json preset;
+      ifs >> preset;
+
+      const std::string typeName = preset.value("type", "");
+      int typeIndex = -1;
+      for (int i = 0; i < static_cast<int>(std::size(kPrimitiveTypeNames)); ++i) {
+        if (typeName == kPrimitiveTypeNames[i]) {
+          typeIndex = i;
+          break;
+        }
+      }
+      if (typeIndex < 0) {
+        AddLog("Primitive Editor: unknown primitive type '" + typeName + "'", LogType::Error);
+        return false;
+      }
+      selectedPrimitiveType_ = static_cast<PrimitiveType>(typeIndex);
+
+      // 欠損キーはデフォルト値で埋める（古いプリセットとの互換のため）
+      const json params = preset.value("params", json::object());
+      switch (selectedPrimitiveType_) {
+      case PrimitiveType::Cube: {
+        const PrimitiveBuilder::CubeParams def{};
+        primCubeParams_.size = params.value("size", def.size);
+        break;
+      }
+      case PrimitiveType::Sphere: {
+        const PrimitiveBuilder::SphereParams def{};
+        primSphereParams_.radius = params.value("radius", def.radius);
+        primSphereParams_.lonDiv = params.value("lonDiv", def.lonDiv);
+        primSphereParams_.latDiv = params.value("latDiv", def.latDiv);
+        break;
+      }
+      case PrimitiveType::Plane: {
+        const PrimitiveBuilder::PlaneParams def{};
+        primPlaneParams_.width = params.value("width", def.width);
+        primPlaneParams_.height = params.value("height", def.height);
+        primPlaneParams_.xSeg = params.value("xSeg", def.xSeg);
+        primPlaneParams_.ySeg = params.value("ySeg", def.ySeg);
+        break;
+      }
+      case PrimitiveType::Ring: {
+        const PrimitiveBuilder::RingParams def{};
+        primRingParams_.innerRadius = params.value("innerRadius", def.innerRadius);
+        primRingParams_.outerRadius = params.value("outerRadius", def.outerRadius);
+        primRingParams_.segments = params.value("segments", def.segments);
+        primRingParams_.ringSeg = params.value("ringSeg", def.ringSeg);
+        primRingParams_.startAngleDeg = params.value("startAngleDeg", def.startAngleDeg);
+        primRingParams_.sweepAngleDeg = params.value("sweepAngleDeg", def.sweepAngleDeg);
+        break;
+      }
+      case PrimitiveType::Cylinder: {
+        const PrimitiveBuilder::CylinderParams def{};
+        primCylinderParams_.topRadius = params.value("topRadius", def.topRadius);
+        primCylinderParams_.bottomRadius = params.value("bottomRadius", def.bottomRadius);
+        primCylinderParams_.height = params.value("height", def.height);
+        primCylinderParams_.radialDiv = params.value("radialDiv", def.radialDiv);
+        primCylinderParams_.heightDiv = params.value("heightDiv", def.heightDiv);
+        primCylinderParams_.capTop = params.value("capTop", def.capTop);
+        primCylinderParams_.capBottom = params.value("capBottom", def.capBottom);
+        break;
+      }
+      case PrimitiveType::Torus: {
+        const PrimitiveBuilder::TorusParams def{};
+        primTorusParams_.majorRadius = params.value("majorRadius", def.majorRadius);
+        primTorusParams_.minorRadius = params.value("minorRadius", def.minorRadius);
+        primTorusParams_.majorDiv = params.value("majorDiv", def.majorDiv);
+        primTorusParams_.minorDiv = params.value("minorDiv", def.minorDiv);
+        break;
+      }
+      }
+    }
+    catch (const json::exception&) {
+      AddLog("Primitive Editor: failed to parse preset '" + name + "'", LogType::Error);
+      return false;
+    }
+
+    primParamsDirty_ = true;
+    AddLog("Primitive Editor: loaded preset '" + name + "'", LogType::Info);
+    return true;
+  }
+
+} // namespace Tako

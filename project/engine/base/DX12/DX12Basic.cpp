@@ -389,7 +389,8 @@ namespace Tako {
     descriptorSizeDSV_ = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
     // RTV のディスクリプタヒープの生成
-    rtvHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 10, false);
+    // 0-1:スワップチェーン 2-5:PostEffect 6-8:Bloom 9:GaussianBlur 10:PrimitiveEditorプレビュー
+    rtvHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 11, false);
 
     // DSV のディスクリプタヒープの生成
     dsvHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);

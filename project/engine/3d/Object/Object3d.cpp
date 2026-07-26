@@ -138,7 +138,7 @@ void Object3d::Draw()
 	// モデルの描画
 	if (model_)
 	{
-		model_->Draw(transformationMatData_->world, (*Object3dBasic::GetInstance()->GetCamera())->GetViewProjectionMatrix());
+		model_->Draw(transformationMatData_->world, (*camera_)->GetViewProjectionMatrix());
 	}
 
 	// 半透明モードで PSO を切り替えていた場合、後続の不透明 Object3d への影響を防ぐため通常 PSO に戻す

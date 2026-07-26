@@ -55,6 +55,7 @@ namespace Tako {
     windowVisibility_["PostEffect"] = false;
     windowVisibility_["ParticleEditor"] = false;
     windowVisibility_["GlobalVariables"] = false;
+    windowVisibility_["PrimitiveEditor"] = false;
 
     // 初期ログ
     AddLog("DebugUIManager Initialized", LogType::Info);
@@ -63,6 +64,7 @@ namespace Tako {
 
   void DebugUIManager::Finalize() {
     ClearLogs();
+    FinalizePrimitiveEditor();
     instance_.reset();
   }
 
@@ -96,6 +98,9 @@ namespace Tako {
       windowVisibility_["Console"] = true;
       windowVisibility_["Performance"] = true;
     }
+
+    // 表示状態に関わらず毎フレーム呼ぶ（非表示検知でプレビューを解放するため）
+    UpdatePrimitiveEditor();
   }
 
   void DebugUIManager::Draw() {
@@ -115,6 +120,7 @@ namespace Tako {
     if (windowVisibility_["CollisionDebug"]) DrawCollisionDebug();
     if (windowVisibility_["ParticleEditor"]) DrawParticleEditor();
     if (windowVisibility_["ParticleEditor"]) DrawParticleVisualization();
+    if (windowVisibility_["PrimitiveEditor"]) DrawPrimitiveEditor();
 
     // GlobalVariables（グループがない場合は警告を出して閉じる）
     if (windowVisibility_["GlobalVariables"]) {
@@ -188,6 +194,7 @@ namespace Tako {
         }
 
         ImGui::MenuItem("Particle Editor", nullptr, &windowVisibility_["ParticleEditor"]);
+        ImGui::MenuItem("Primitive Editor", nullptr, &windowVisibility_["PrimitiveEditor"]);
         ImGui::MenuItem("Global Variables", nullptr, &windowVisibility_["GlobalVariables"]);
 
         ImGui::EndMenu();

@@ -43,7 +43,7 @@ namespace Tako {
 
     /// <summary>
     /// Cube の1面分の頂点（4頂点）とインデックス（6個=2三角形）を末尾追加する
-    /// 法線方向から見て CCW (外向き) になるよう (-u,-v) → (+u,-v) → (+u,+v) → (-u,+v) の順
+    /// 巻き順は外向き法線に対し右手系 CCW（Plane/Ring と同じ向き。CullMode=BACK でこちらが表面）
     /// </summary>
     void AppendCubeFace(
       float cx, float cy, float cz,        // 面中心座標
@@ -74,13 +74,13 @@ namespace Tako {
       outVerts.push_back(makeVertex(+1.0f, +1.0f, 1.0f, 0.0f)); // 2: 右上
       outVerts.push_back(makeVertex(-1.0f, +1.0f, 0.0f, 0.0f)); // 3: 左上
 
-      // 三角形 (0,1,2) + (0,2,3) — 法線方向から見て CCW
+      // 三角形 (0,2,1) + (0,3,2) — 外向き法線に対し右手系 CCW
       outIndices.push_back(base + 0);
+      outIndices.push_back(base + 2);
       outIndices.push_back(base + 1);
-      outIndices.push_back(base + 2);
       outIndices.push_back(base + 0);
-      outIndices.push_back(base + 2);
       outIndices.push_back(base + 3);
+      outIndices.push_back(base + 2);
     }
 
     /// <summary>
@@ -151,7 +151,7 @@ namespace Tako {
         }
       }
 
-      // インデックス生成: 各クアッドを2三角形に分割。外向き法線方向から見て CCW
+      // インデックス生成: 各クアッドを2三角形に分割。外向き法線に対し右手系 CCW（Plane/Ring と同じ向き）
       for (uint32_t j = 0; j < lat; ++j) {
         for (uint32_t i = 0; i < lon; ++i) {
           const uint32_t a = j * (lon + 1) + i;
@@ -160,12 +160,12 @@ namespace Tako {
           const uint32_t d = c + 1;
 
           outIndices.push_back(a);
-          outIndices.push_back(c);
           outIndices.push_back(b);
+          outIndices.push_back(c);
 
           outIndices.push_back(b);
-          outIndices.push_back(c);
           outIndices.push_back(d);
+          outIndices.push_back(c);
         }
       }
     }
@@ -290,6 +290,196 @@ namespace Tako {
       }
     }
 
+    /// <summary>
+    /// 円柱キャップ（中心+リムの三角形ファン）の頂点とインデックスを末尾追加する
+    /// 半径 0 以下なら何もしない（円錐の頂点側を自動省略）
+    /// </summary>
+    void AppendCapFan(
+      float y, float radius, uint32_t radialDiv, bool facingUp,
+      std::vector<VertexData>& outVerts,
+      std::vector<uint32_t>& outIndices)
+    {
+      if (radius <= 0.0f) {
+        return;
+      }
+
+      const uint32_t base = static_cast<uint32_t>(outVerts.size());
+      const float ny = facingUp ? 1.0f : -1.0f;
+
+      // 中心頂点。側面と法線が不連続なため頂点は共有しない（ハードエッジ）
+      VertexData center{};
+      center.position = Vector4(0.0f, y, 0.0f, 1.0f);
+      center.normal = Vector3(0.0f, ny, 0.0f);
+      center.texcoord = Vector2(0.5f, 0.5f);
+      outVerts.push_back(center);
+
+      // リムは角度ループを閉じるため radialDiv+1 個。UV は平面マッピング
+      for (uint32_t i = 0; i <= radialDiv; ++i) {
+        const float theta = static_cast<float>(i) / static_cast<float>(radialDiv) * (2.0f * std::numbers::pi_v<float>);
+        const float cosTheta = std::cos(theta);
+        const float sinTheta = std::sin(theta);
+
+        VertexData vd{};
+        vd.position = Vector4(cosTheta * radius, y, sinTheta * radius, 1.0f);
+        vd.normal = Vector3(0.0f, ny, 0.0f);
+        vd.texcoord = Vector2(0.5f + 0.5f * cosTheta, 0.5f + 0.5f * sinTheta);
+        outVerts.push_back(vd);
+      }
+
+      // +Y 面は GenerateRing の円盤 (innerRadius=0) と同じ (center, rim_{i+1}, rim_i)、-Y 面は逆順
+      for (uint32_t i = 0; i < radialDiv; ++i) {
+        const uint32_t rim0 = base + 1 + i;
+        const uint32_t rim1 = base + 2 + i;
+
+        outIndices.push_back(base);
+        if (facingUp) {
+          outIndices.push_back(rim1);
+          outIndices.push_back(rim0);
+        }
+        else {
+          outIndices.push_back(rim0);
+          outIndices.push_back(rim1);
+        }
+      }
+    }
+
+    /// <summary>
+    /// 円柱/円錐台の頂点・インデックスを生成（Y軸中心、topRadius=0 で円錐）
+    /// </summary>
+    void GenerateCylinder(
+      const PrimitiveBuilder::CylinderParams& params,
+      std::vector<VertexData>& outVertices,
+      std::vector<uint32_t>& outIndices)
+    {
+      outVertices.clear();
+      outIndices.clear();
+
+      const uint32_t rad = std::max<uint32_t>(params.radialDiv, 3u);
+      const uint32_t hs = std::max<uint32_t>(params.heightDiv, 1u);
+      const float rTop = (std::max)(0.0f, params.topRadius);
+      const float rBottom = (std::max)(0.0f, params.bottomRadius);
+      const float h = (std::max)(0.0f, params.height);
+      const float halfH = h * 0.5f;
+
+      outVertices.reserve((rad + 1) * (hs + 1) + (rad + 2) * 2);
+      outIndices.reserve(rad * hs * 6 + rad * 3 * 2);
+
+      // 側面プロファイル線 (rBottom,-h/2)→(rTop,+h/2) の外向き法線を r-y 平面で求める
+      // 円柱時は水平放射、円錐時は斜めになる。縮退時 (高さ0かつ同半径) は水平にフォールバック
+      const float slopeLen = std::sqrt(h * h + (rBottom - rTop) * (rBottom - rTop));
+      const float nR = (slopeLen > 0.0f) ? h / slopeLen : 1.0f;
+      const float nY = (slopeLen > 0.0f) ? (rBottom - rTop) / slopeLen : 0.0f;
+
+      // 側面: 上端 (j=0) から下端 (j=hs) へ、周方向は UV 継ぎ目用に rad+1 個
+      // topRadius=0 のとき j=0 行は頂点に縮退するが、GenerateSphere の極と同じ扱いで問題ない
+      for (uint32_t j = 0; j <= hs; ++j) {
+        const float v = static_cast<float>(j) / static_cast<float>(hs);
+        const float y = halfH - h * v;
+        const float radius = rTop + (rBottom - rTop) * v;
+
+        for (uint32_t i = 0; i <= rad; ++i) {
+          const float theta = static_cast<float>(i) / static_cast<float>(rad) * (2.0f * std::numbers::pi_v<float>);
+          const float cosTheta = std::cos(theta);
+          const float sinTheta = std::sin(theta);
+
+          VertexData vd{};
+          vd.position = Vector4(cosTheta * radius, y, sinTheta * radius, 1.0f);
+          vd.normal = Vector3(cosTheta * nR, nY, sinTheta * nR);
+          vd.texcoord = Vector2(static_cast<float>(i) / static_cast<float>(rad), v);
+          outVertices.push_back(vd);
+        }
+      }
+
+      // 行=下方向 / 列=θ+ のトポロジが GenerateSphere と一致するため同じ巻き順（外向き法線に対し右手系 CCW）
+      for (uint32_t j = 0; j < hs; ++j) {
+        for (uint32_t i = 0; i < rad; ++i) {
+          const uint32_t a = j * (rad + 1) + i;
+          const uint32_t b = a + 1;
+          const uint32_t c = a + (rad + 1);
+          const uint32_t d = c + 1;
+
+          outIndices.push_back(a);
+          outIndices.push_back(b);
+          outIndices.push_back(c);
+
+          outIndices.push_back(b);
+          outIndices.push_back(d);
+          outIndices.push_back(c);
+        }
+      }
+
+      if (params.capTop) {
+        AppendCapFan(+halfH, rTop, rad, true, outVertices, outIndices);
+      }
+      if (params.capBottom) {
+        AppendCapFan(-halfH, rBottom, rad, false, outVertices, outIndices);
+      }
+    }
+
+    /// <summary>
+    /// トーラスの頂点・インデックスを生成（XZ 平面に主円、Y軸中心）
+    /// </summary>
+    void GenerateTorus(
+      const PrimitiveBuilder::TorusParams& params,
+      std::vector<VertexData>& outVertices,
+      std::vector<uint32_t>& outIndices)
+    {
+      outVertices.clear();
+      outIndices.clear();
+
+      const uint32_t majorDiv = std::max<uint32_t>(params.majorDiv, 3u);
+      const uint32_t minorDiv = std::max<uint32_t>(params.minorDiv, 3u);
+      const float majorR = (std::max)(0.0f, params.majorRadius);
+      const float minorR = (std::max)(0.0f, params.minorRadius);
+
+      outVertices.reserve((majorDiv + 1) * (minorDiv + 1));
+      outIndices.reserve(majorDiv * minorDiv * 6);
+
+      // 行=断面角 ψ / 列=主円周角 φ、両方向とも UV 継ぎ目用に +1 個重複
+      // ψ=0 が外周赤道、法線はチューブ中心円からの放射方向
+      for (uint32_t j = 0; j <= minorDiv; ++j) {
+        const float psi = static_cast<float>(j) / static_cast<float>(minorDiv) * (2.0f * std::numbers::pi_v<float>);
+        const float cosPsi = std::cos(psi);
+        const float sinPsi = std::sin(psi);
+
+        for (uint32_t i = 0; i <= majorDiv; ++i) {
+          const float phi = static_cast<float>(i) / static_cast<float>(majorDiv) * (2.0f * std::numbers::pi_v<float>);
+          const float cosPhi = std::cos(phi);
+          const float sinPhi = std::sin(phi);
+
+          VertexData vd{};
+          vd.position = Vector4(
+            (majorR + minorR * cosPsi) * cosPhi,
+            minorR * sinPsi,
+            (majorR + minorR * cosPsi) * sinPhi,
+            1.0f);
+          vd.normal = Vector3(cosPsi * cosPhi, sinPsi, cosPsi * sinPhi);
+          vd.texcoord = Vector2(
+            static_cast<float>(i) / static_cast<float>(majorDiv),
+            static_cast<float>(j) / static_cast<float>(minorDiv));
+          outVertices.push_back(vd);
+        }
+      }
+
+      // 外周赤道 (ψ=0) で行方向 ψ+ が +Y を向き GenerateSphere (行方向 -Y) と逆のため巻き順も逆（外向き法線に対し右手系 CCW）
+      for (uint32_t j = 0; j < minorDiv; ++j) {
+        for (uint32_t i = 0; i < majorDiv; ++i) {
+          const uint32_t a = j * (majorDiv + 1) + i;
+          const uint32_t b = a + 1;
+          const uint32_t c = a + (majorDiv + 1);
+          const uint32_t d = c + 1;
+
+          outIndices.push_back(a);
+          outIndices.push_back(c);
+          outIndices.push_back(b);
+
+          outIndices.push_back(b);
+          outIndices.push_back(c);
+          outIndices.push_back(d);
+        }
+      }
+    }
+
   } // anonymous namespace
 
   ///------------------------------------------------///
@@ -326,6 +516,22 @@ namespace Tako {
     std::vector<uint32_t> indices;
     GenerateRing(p, vertices, indices);
     return BuildModel(vertices, indices, "<Primitive_Ring>");
+  }
+
+  std::unique_ptr<Model> PrimitiveBuilder::CreateCylinder(const CylinderParams& p)
+  {
+    std::vector<VertexData> vertices;
+    std::vector<uint32_t> indices;
+    GenerateCylinder(p, vertices, indices);
+    return BuildModel(vertices, indices, "<Primitive_Cylinder>");
+  }
+
+  std::unique_ptr<Model> PrimitiveBuilder::CreateTorus(const TorusParams& p)
+  {
+    std::vector<VertexData> vertices;
+    std::vector<uint32_t> indices;
+    GenerateTorus(p, vertices, indices);
+    return BuildModel(vertices, indices, "<Primitive_Torus>");
   }
 
 } // namespace Tako

@@ -204,6 +204,9 @@
     <ClCompile Include="engine\debug\DebugUIManagerParticleEditor.cpp">
       <Filter>debug</Filter>
     </ClCompile>
+    <ClCompile Include="engine\debug\DebugUIManagerPrimitiveEditor.cpp">
+      <Filter>debug</Filter>
+    </ClCompile>
     <ClCompile Include="engine\scene\transition\ScaleTransition.cpp">
       <Filter>scene\transition</Filter>
     </ClCompile>
