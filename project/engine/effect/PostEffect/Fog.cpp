@@ -28,11 +28,10 @@ namespace Tako {
       D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
       dx12_->GetDepthStencilResource());
 
-    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dx12_->GetDSVHeapHandleStart();
     dx12_->GetCommandList()->OMSetRenderTargets(1,
       &outputRtvHandle,
       false,
-      &dsvHandle);
+      nullptr);
 
     // エフェクト適用シェーダーの設定
     dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());

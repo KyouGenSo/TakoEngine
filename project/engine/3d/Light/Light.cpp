@@ -8,6 +8,12 @@
 
 namespace Tako {
 
+  Light::~Light()
+  {
+    SrvManager::GetInstance()->Free(pointLightSrvIndex_);
+    SrvManager::GetInstance()->Free(spotLightSrvIndex_);
+  }
+
   void Light::Initialize(DX12Basic* dx12)
   {
     dx12_ = dx12;

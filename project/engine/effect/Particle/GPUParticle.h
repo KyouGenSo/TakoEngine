@@ -378,9 +378,9 @@ namespace Tako {
     Microsoft::WRL::ComPtr<ID3D12PipelineState> integrateAllPSO_;  ///< IntegrateAll コンピュートシェーダー用パイプラインステート
 
     //パーティクルリソース
-    Microsoft::WRL::ComPtr<ID3D12Resource> particleResource_;  ///< パーティクルデータ用 GPU リソース
-    uint32_t                               particleUavIndex_;  ///< パーティクルリソースの UAV インデックス
-    uint32_t                               particleSrvIndex_;  ///< パーティクルリソースの SRV インデックス
+    Microsoft::WRL::ComPtr<ID3D12Resource> particleResource_;      ///< パーティクルデータ用 GPU リソース
+    uint32_t                               particleUavIndex_ = 0;  ///< パーティクルリソースの UAV インデックス
+    uint32_t                               particleSrvIndex_ = 0;  ///< パーティクルリソースの SRV インデックス
 
     //定数バッファ
     Microsoft::WRL::ComPtr<ID3D12Resource> perViewResource_;   ///< PerView 定数バッファリソース
@@ -389,17 +389,17 @@ namespace Tako {
     PerFrame*                              perFrameData_;      ///< PerFrame データへのポインタ
 
     //エミッターリソース
-    Microsoft::WRL::ComPtr<ID3D12Resource>           emitterResource_;   ///< エミッターデータ用 GPU リソース
-    uint32_t                                         emitterSrvIndex_;   ///< エミッターリソースの SRV インデックス
+    Microsoft::WRL::ComPtr<ID3D12Resource>           emitterResource_;       ///< エミッターデータ用 GPU リソース
+    uint32_t                                         emitterSrvIndex_ = 0;   ///< エミッターリソースの SRV インデックス
     std::vector<std::shared_ptr<GPUParticleEmitter>> activeEmitters_;    ///< アクティブなエミッターのリスト。index = 安定スロット番号 (パーティクルの emitterId として焼き込まれる)。削除時に compaction せず、退役→寿命経過後に nullptr 穴にして freeEmitterSlots_ で再利用する。
     std::vector<uint32_t>                            freeEmitterSlots_;  ///< 再利用可能なスロット番号スタック。退役スロット解放時に返却し、RegisterEmitter で再利用する。
     std::vector<std::pair<uint32_t, float>>          retiringSlots_;     ///< 退役中スロット。射出停止後もパーティクル全滅まで描画継続するため保持する。
 
     //FreeList
-    Microsoft::WRL::ComPtr<ID3D12Resource> freeListIndexResource_;  ///< FreeList インデックス用 GPU リソース
-    uint32_t                               freeListIndexUavIndex_;  ///< FreeList インデックスの UAV インデックス
-    Microsoft::WRL::ComPtr<ID3D12Resource> freeListResource_;       ///< FreeList 用 GPU リソース
-    uint32_t                               freeListUavIndex_;       ///< FreeList の UAV インデックス
+    Microsoft::WRL::ComPtr<ID3D12Resource> freeListIndexResource_;      ///< FreeList インデックス用 GPU リソース
+    uint32_t                               freeListIndexUavIndex_ = 0;  ///< FreeList インデックスの UAV インデックス
+    Microsoft::WRL::ComPtr<ID3D12Resource> freeListResource_;           ///< FreeList 用 GPU リソース
+    uint32_t                               freeListUavIndex_      = 0;  ///< FreeList の UAV インデックス
 
 #ifdef _DEBUG
     //Readback: アクティブパーティクル数取得
@@ -412,7 +412,7 @@ namespace Tako {
     //物理シミュレーション関連
     Microsoft::WRL::ComPtr<ID3D12Resource> forceFieldResource_;                  ///< フォースフィールドデータ用 GPU リソース
     uint32_t                               forceFieldSrvIndex_    = 0;           ///< フォースフィールドリソースの SRV インデックス
-    uint32_t                               depthSrvIndex_         = UINT32_MAX;  ///< 深度バッファの SRV インデックス（深度衝突用）
+    uint32_t                               depthSrvIndex_         = 0;           ///< 深度バッファの SRV インデックス（深度衝突用）
     Microsoft::WRL::ComPtr<ID3D12Resource> physicsParamsResource_;               ///< 物理パラメータ定数バッファリソース
     PhysicsParamsData*                     physicsParamsData_     = nullptr;     ///< 物理パラメータデータへのポインタ
     std::vector<ForceFieldData>            forceFields_;                         ///< CPU 側のフォースフィールドリスト

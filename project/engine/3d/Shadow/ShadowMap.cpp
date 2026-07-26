@@ -1,6 +1,7 @@
 #include "ShadowMap.h"
 #include "DX12Basic.h"
 #include "SrvManager.h"
+#include "DsvManager.h"
 #include <cassert>
 
 namespace Tako {
@@ -45,13 +46,15 @@ void ShadowMap::Initialize(DX12Basic* dx12)
 
 void ShadowMap::Finalize()
 {
-  // SRV インデックスを解放（有効に確保されている場合のみ）
-  if (srvManager_ && srvIndex_ != UINT32_MAX) {
-    if (srvManager_->IsAllocated(srvIndex_)) {
-      srvManager_->Free(srvIndex_);
-    }
-    srvIndex_ = UINT32_MAX;
+  // SRV インデックスを解放
+  if (srvManager_) {
+    srvManager_->Free(srvIndex_);
+    srvIndex_ = SrvManager::kInvalidIndex;
   }
+
+  // DSV インデックスを解放
+  DsvManager::GetInstance()->Free(dsvIndex_);
+  dsvIndex_ = DsvManager::kInvalidIndex;
 
   // 状態追跡エントリを削除（リソース破棄前にマップから除去）
   if (dx12_ && shadowMapResource_) {
@@ -69,17 +72,14 @@ void ShadowMap::BeginFrame()
     // 前フレームの描画が完了しているので、安全にリソースを再作成できる
 
     // 既存のリソースを解放
-    if (srvIndex_ != UINT32_MAX) {
-      srvManager_->Free(srvIndex_);
-      srvIndex_ = UINT32_MAX;
-    }
+    srvManager_->Free(srvIndex_);
+    srvIndex_ = SrvManager::kInvalidIndex;
     // 状態追跡エントリを削除してからリソースを破棄する
     // （解放済みアドレスが別リソースに再利用された際の誤った状態遷移を防ぐ）
     if (shadowMapResource_) {
       dx12_->RemoveResourceState(shadowMapResource_.Get());
     }
     shadowMapResource_.Reset();
-    dsvDescriptorHeap_.Reset();
 
     // 新しいサイズを適用
     shadowMapSize_ = pendingShadowMapSize_;
@@ -179,28 +179,19 @@ void ShadowMap::CreateShadowMapResource()
 
 void ShadowMap::CreateDepthStencilView()
 {
-  // DSV 用のディスクリプタヒープを作成
-  dsvDescriptorHeap_ = dx12_->CreateDescriptorHeap(
-    D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
-  assert(dsvDescriptorHeap_);
-
-  // DSV の作成
-  D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
-  dsvDesc.Format = kShadowDepthFormat;
-  dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-  dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
-  dsvDesc.Texture2D.MipSlice = 0;
-
-  dsvHandle_ = dsvDescriptorHeap_->GetCPUDescriptorHandleForHeapStart();
-  dx12_->GetDevice()->CreateDepthStencilView(
-    shadowMapResource_.Get(), &dsvDesc, dsvHandle_);
+  // 初回のみ DSV 枠を確保し、再作成時は同じ枠へビューを作り直す
+  if (dsvIndex_ == DsvManager::kInvalidIndex) {
+    dsvIndex_ = DsvManager::GetInstance()->Allocate();
+  }
+  DsvManager::GetInstance()->CreateDSV(dsvIndex_, shadowMapResource_.Get(), kShadowDepthFormat);
+  dsvHandle_ = DsvManager::GetInstance()->GetCpuHandle(dsvIndex_);
 }
 
 void ShadowMap::CreateShaderResourceView()
 {
   // SRV インデックスを確保
-  srvIndex_ = srvManager_->Allocate();
   assert(srvManager_->CanAllocate());
+  srvIndex_ = srvManager_->Allocate();
 
   // SRV の作成（深度を float として読み取る）
   srvManager_->CreateSRVForTexture2D(

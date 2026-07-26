@@ -1,10 +1,8 @@
 #pragma once
 #include <d3d12.h>
-#include<wrl.h>
-#include <iostream>
+#include <wrl.h>
 #include <memory>
-#include <queue>
-#include <unordered_set>
+#include "DescriptorHeap.h"
 
 namespace Tako {
 
@@ -29,7 +27,8 @@ namespace Tako {
     SrvManager& operator=(const SrvManager&) = delete;
 
   public: //定数
-    static const uint32_t kMaxSRVCount;  ///< 最大 SRV 数（テクスチャ数）
+    static constexpr uint32_t kMaxSRVCount = 2048;  ///< 最大 SRV 数（テクスチャ数）
+    static constexpr uint32_t kInvalidIndex = DescriptorHeap::kInvalidIndex;  ///< 無効番兵。Allocate 失敗時もこの値を返す
 
   public: //メンバー関数
 
@@ -46,7 +45,8 @@ namespace Tako {
     void Initialize(DX12Basic* dx12);
 
     /// <summary>
-    /// 終了処理
+    /// 終了処理。ヒープのみ解放しインスタンスは温存する
+    /// （以後の GetInstance() は有効なまま、Free() は no-op になる）
     /// </summary>
     void Finalize();
 
@@ -58,20 +58,14 @@ namespace Tako {
     /// <summary>
     /// SRV の確保
     /// </summary>
-    /// <returns>確保された SRV のインデックス</returns>
+    /// <returns>確保された SRV のインデックス。枯渇時は kInvalidIndex</returns>
     uint32_t Allocate();
 
     /// <summary>
     /// SRV の解放
     /// </summary>
-    /// <param name="index">解放する SRV のインデックス</param>
-    void Free(uint32_t index);
-
-    /// <summary>
-    /// 確保可能チェック
-    /// </summary>
-    /// <returns>確保可能な場合 true、不可能な場合 false</returns>
-    bool CanAllocate();
+    /// <param name="srvIndex">解放する SRV のインデックス</param>
+    void Free(uint32_t srvIndex);
 
     /// <summary>
     /// SRV 生成(テクスチャ用)
@@ -94,20 +88,20 @@ namespace Tako {
     /// <summary>
     /// UAV 生成(ComputeShader 用)
     /// </summary>
-    /// <param name="index">UAV を作成するインデックス</param>
+    /// <param name="srvIndex">UAV を作成するインデックス</param>
     /// <param name="pResource">UAV リソース</param>
     /// <param name="numElements">要素数</param>
     /// <param name="structureByteStride">1要素のバイトサイズ</param>
-    void CreateUAV(uint32_t index, ID3D12Resource* pResource, UINT numElements, UINT structureByteStride);
+    void CreateUAV(uint32_t srvIndex, ID3D12Resource* pResource, UINT numElements, UINT structureByteStride);
 
     /// <summary>
     /// SRV 生成(CubeMap 用)
     /// </summary>
-    /// <param name="_srvIndex">SRV を作成するインデックス</param>
+    /// <param name="srvIndex">SRV を作成するインデックス</param>
     /// <param name="pResource">CubeMap テクスチャリソース</param>
     /// <param name="format">テクスチャフォーマット</param>
     /// <param name="mipLevels">ミップマップレベル数</param>
-    void CreateSRVForCubeMap(uint32_t _srvIndex, ID3D12Resource* pResource, DXGI_FORMAT format, UINT mipLevels);
+    void CreateSRVForCubeMap(uint32_t srvIndex, ID3D12Resource* pResource, DXGI_FORMAT format, UINT mipLevels);
 
     /// <summary>
     /// GraphicsRootDescriptorTable に SRV をセット
@@ -120,52 +114,48 @@ namespace Tako {
     /// ComputeRootDescriptorTable に SRV をセット
     /// </summary>
     /// <param name="rootParameterIndex">ルートパラメータのインデックス</param>
-    /// <param name="index">設定する SRV のインデックス</param>
-    void SetComputeRootDescriptorTable(UINT rootParameterIndex, uint32_t index);
+    /// <param name="srvIndex">設定する SRV のインデックス</param>
+    void SetComputeRootDescriptorTable(UINT rootParameterIndex, uint32_t srvIndex);
 
     //============================================================
     //Getter
     //============================================================
     /// <summary>
+    /// 確保可能チェック
+    /// </summary>
+    /// <returns>確保可能な場合 true、不可能な場合 false</returns>
+    bool CanAllocate() const;
+
+    /// <summary>
     /// 使用中かどうかチェック
     /// </summary>
-    /// <param name="index">チェックする SRV のインデックス</param>
+    /// <param name="srvIndex">チェックする SRV のインデックス</param>
     /// <returns>使用中の場合 true、未使用の場合 false</returns>
-    bool IsAllocated(uint32_t index) const;
+    bool IsAllocated(uint32_t srvIndex) const;
 
-    uint32_t GetAllocatedCount() const { return allocatedCount_; }
+    uint32_t GetAllocatedCount() const { return heap_.GetAllocatedCount(); }
 
     /// <summary>
     /// 指定番号の CPU ディスクリプタハンドルを取得
     /// </summary>
-    /// <param name="index">取得するディスクリプタのインデックス</param>
+    /// <param name="srvIndex">取得するディスクリプタのインデックス</param>
     /// <returns>CPU ディスクリプタハンドル</returns>
-    D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle(uint32_t index);
+    D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle(uint32_t srvIndex) const;
 
     /// <summary>
     /// 指定番号の GPU ディスクリプタハンドルを取得
     /// </summary>
-    /// <param name="index">取得するディスクリプタのインデックス</param>
+    /// <param name="srvIndex">取得するディスクリプタのインデックス</param>
     /// <returns>GPU ディスクリプタハンドル</returns>
-    D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(uint32_t index);
+    D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(uint32_t srvIndex) const;
 
-    ID3D12DescriptorHeap* GetDescriptorHeap() const { return descriptorHeap_.Get(); }
+    ID3D12DescriptorHeap* GetDescriptorHeap() const { return heap_.GetHeap(); }
 
   private: //メンバー変数
 
     DX12Basic* dx12_ = nullptr;  ///< DirectX 12基盤システムへのポインタ
 
-    uint32_t descriptorSize_;  ///< ディスクリプタ1個分のサイズ（バイト単位）
-
-    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeap_;  ///< SRV/UAV 用ディスクリプタヒープ
-
-    std::priority_queue<uint32_t, std::vector<uint32_t>, std::greater<uint32_t>> freeIndices_;  ///< 解放されたインデックスを小さい順に管理する優先度付きキュー
-
-    std::unordered_set<uint32_t> usedIndices_;  ///< 現在使用中のインデックスを管理するセット（高速な存在チェック用）
-
-    uint32_t nextNewIndex_ = 1;  ///< 次に使用する新しいインデックス（0 は無効番兵として予約。Initialize 参照）
-
-    uint32_t allocatedCount_ = 0;  ///< 現在確保されている SRV の総数
+    DescriptorHeap heap_;  ///< SRV/UAV 用ディスクリプタヒープ＋インデックスアロケータ
 
   };
 

@@ -19,6 +19,11 @@
 
 namespace Tako {
 
+  MeshEmitter::SharedBufferSrv::~SharedBufferSrv()
+  {
+    SrvManager::GetInstance()->Free(srvIndex);
+  }
+
   MeshEmitter::MeshEmitter(GPUParticle* particleSystem, Model* model, uint32_t count, float frequency)
     : GPUParticleEmitter(particleSystem, 0) // 一時的な ID (RegisterEmitter で正式割り当て)
   {
@@ -65,8 +70,9 @@ namespace Tako {
       const std::vector<float> prefixSum = ComputeTriangleAreaPrefixSum(mesh->GetVertices(), mesh->GetIndices());
       if (prefixSum.size() > 1u) {
         data_.meshTotalArea = prefixSum.back();
-        data_.meshAreaPrefixSumSrvIndex = CreateStructuredBufferSrv(
-          areaPrefixSumResource_, prefixSum.data(), sizeof(float), static_cast<uint32_t>(prefixSum.size()));
+        areaPrefixSum_ = CreateStructuredBufferSrv(
+          prefixSum.data(), sizeof(float), static_cast<uint32_t>(prefixSum.size()));
+        data_.meshAreaPrefixSumSrvIndex = areaPrefixSum_->srvIndex;
       }
       return;
     }
@@ -126,18 +132,19 @@ namespace Tako {
     }
 #endif
 
-    data_.meshVertexSrvIndex = CreateStructuredBufferSrv(
-      aggregatedVertexResource_, aggregatedVertices.data(),
-      sizeof(VertexData), static_cast<uint32_t>(aggregatedVertices.size()));
-    data_.meshIndexSrvIndex = CreateStructuredBufferSrv(
-      aggregatedIndexResource_, aggregatedIndices.data(),
-      sizeof(uint32_t), static_cast<uint32_t>(aggregatedIndices.size()));
+    aggregatedVertex_ = CreateStructuredBufferSrv(
+      aggregatedVertices.data(), sizeof(VertexData), static_cast<uint32_t>(aggregatedVertices.size()));
+    data_.meshVertexSrvIndex = aggregatedVertex_->srvIndex;
+    aggregatedIndex_ = CreateStructuredBufferSrv(
+      aggregatedIndices.data(), sizeof(uint32_t), static_cast<uint32_t>(aggregatedIndices.size()));
+    data_.meshIndexSrvIndex = aggregatedIndex_->srvIndex;
 
     const std::vector<float> prefixSum = ComputeTriangleAreaPrefixSum(aggregatedVertices, aggregatedIndices);
     if (prefixSum.size() > 1u) {
       data_.meshTotalArea = prefixSum.back();
-      data_.meshAreaPrefixSumSrvIndex = CreateStructuredBufferSrv(
-        areaPrefixSumResource_, prefixSum.data(), sizeof(float), static_cast<uint32_t>(prefixSum.size()));
+      areaPrefixSum_ = CreateStructuredBufferSrv(
+        prefixSum.data(), sizeof(float), static_cast<uint32_t>(prefixSum.size()));
+      data_.meshAreaPrefixSumSrvIndex = areaPrefixSum_->srvIndex;
     }
 
     data_.meshTriangleCount = static_cast<uint32_t>(aggregatedIndices.size() / 3u);
@@ -168,24 +175,25 @@ namespace Tako {
     return prefixSum;
   }
 
-  uint32_t MeshEmitter::CreateStructuredBufferSrv(
-    Microsoft::WRL::ComPtr<ID3D12Resource>& outResource,
+  std::shared_ptr<MeshEmitter::SharedBufferSrv> MeshEmitter::CreateStructuredBufferSrv(
     const void* srcData, size_t elementSize, uint32_t elementCount)
   {
     DX12Basic* dx12 = particleSystem_->GetDx12();
     SrvManager* srvManager = particleSystem_->GetSrvManager();
 
-    const size_t bufferSize = elementSize * elementCount;
-    dx12->CreateBufferResource(outResource, bufferSize);
-    void* mapped = nullptr;
-    outResource->Map(0, nullptr, &mapped);
-    std::memcpy(mapped, srcData, bufferSize);
-    outResource->Unmap(0, nullptr);
+    auto buffer = std::make_shared<SharedBufferSrv>();
 
-    const uint32_t srvIndex = srvManager->Allocate();
+    const size_t bufferSize = elementSize * elementCount;
+    dx12->CreateBufferResource(buffer->resource, bufferSize);
+    void* mapped = nullptr;
+    buffer->resource->Map(0, nullptr, &mapped);
+    std::memcpy(mapped, srcData, bufferSize);
+    buffer->resource->Unmap(0, nullptr);
+
+    buffer->srvIndex = srvManager->Allocate();
     srvManager->CreateSRVForStructuredBuffer(
-      srvIndex, outResource.Get(), elementCount, static_cast<UINT>(elementSize));
-    return srvIndex;
+      buffer->srvIndex, buffer->resource.Get(), elementCount, static_cast<UINT>(elementSize));
+    return buffer;
   }
 
   std::shared_ptr<GPUParticleEmitter> MeshEmitter::Clone() const
@@ -198,10 +206,10 @@ namespace Tako {
     clone->spawnModelPath_ = spawnModelPath_;
     clone->offsetRotation_ = offsetRotation_;
     clone->offsetScale_ = offsetScale_;
-    // GPU リソースは構築後 immutable なので ComPtr 共有。オリジナル破棄後もクローンの SRV 実体が生存する
-    clone->areaPrefixSumResource_ = areaPrefixSumResource_;
-    clone->aggregatedVertexResource_ = aggregatedVertexResource_;
-    clone->aggregatedIndexResource_ = aggregatedIndexResource_;
+    // GPU リソースは構築後 immutable なので shared_ptr 共有。最終所有者の破棄時に 1 回だけ SRV が返却される
+    clone->areaPrefixSum_ = areaPrefixSum_;
+    clone->aggregatedVertex_ = aggregatedVertex_;
+    clone->aggregatedIndex_ = aggregatedIndex_;
     return clone;
   }
 

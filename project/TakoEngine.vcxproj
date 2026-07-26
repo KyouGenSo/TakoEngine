@@ -165,6 +165,7 @@
     <ClCompile Include="engine\effect\PostEffect\LuminanceBasedOutline.cpp" />
     <ClCompile Include="engine\effect\PostEffect\NoEffect.cpp" />
     <ClCompile Include="engine\effect\PostEffect\PostEffectManager.cpp" />
+    <ClCompile Include="engine\effect\PostEffect\PostEffectStruct.cpp" />
     <ClCompile Include="engine\effect\PostEffect\RadialBlur.cpp" />
     <ClCompile Include="engine\effect\PostEffect\RGBSplit.cpp" />
     <ClCompile Include="engine\effect\PostEffect\Vignette.cpp" />
@@ -197,6 +198,9 @@
     <ClCompile Include="engine\func\mathFunc\EaseFunc.cpp" />
     <ClCompile Include="engine\func\mathFunc\Vec3Func.cpp" />
     <ClCompile Include="engine\base\WinApp.cpp" />
+    <ClCompile Include="engine\base\DX12\DescriptorHeap.cpp" />
+    <ClCompile Include="engine\base\DX12\RtvManager.cpp" />
+    <ClCompile Include="engine\base\DX12\DsvManager.cpp" />
     <ClCompile Include="engine\base\DX12\SrvManager.cpp" />
     <ClCompile Include="engine\base\TakoFramework.cpp" />
     <ClCompile Include="engine\scene\SceneManager.cpp" />
@@ -290,6 +294,9 @@
     <ClInclude Include="engine\func\mathFunc\Vec3Func.h" />
     <ClInclude Include="engine\math\Vector4.h" />
     <ClInclude Include="engine\base\WinApp.h" />
+    <ClInclude Include="engine\base\DX12\DescriptorHeap.h" />
+    <ClInclude Include="engine\base\DX12\RtvManager.h" />
+    <ClInclude Include="engine\base\DX12\DsvManager.h" />
     <ClInclude Include="engine\base\DX12\SrvManager.h" />
     <ClInclude Include="engine\base\TakoFramework.h" />
     <ClInclude Include="engine\scene\SceneManager.h" />

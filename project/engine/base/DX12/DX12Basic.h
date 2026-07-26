@@ -22,9 +22,6 @@ namespace Tako {
   /// デバイス、コマンドキュー、スワップチェーン管理
   /// </summary>
   class DX12Basic {
-  public: //定数
-    static const uint32_t kMaxSRVCount;  ///< 最大 SRV 数（テクスチャ数）
-
   public: //構造体
     /// <summary>
     /// ComPtr のエイリアス
@@ -128,15 +125,6 @@ namespace Tako {
     void CreateRenderTextureResource(ComPtr<ID3D12Resource>& rendertextureResource, uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4& clearColor);
 
     /// <summary>
-    /// デスクリプタヒープの生成
-    /// </summary>
-    /// <param name="heapType">ヒープのタイプ（RTV、DSV、CBV_SRV_UAV 等）</param>
-    /// <param name="numDescriptors">デスクリプタ数</param>
-    /// <param name="shaderVisible">シェーダーから可視かどうか</param>
-    /// <returns>生成されたデスクリプタヒープ</returns>
-    ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisible);
-
-    /// <summary>
     /// テクスチャリソースの転送
     /// </summary>
     /// <param name="texture">転送先のテクスチャリソース</param>
@@ -234,21 +222,10 @@ namespace Tako {
     }
 
     /// <summary>
-    /// レンダーテクスチャの cpu ハンドルの取得
-    /// </summary>
-    /// <param name="index">レンダーテクスチャのインデックス</param>
-    /// <returns>CPU ディスクリプタハンドル</returns>
-    D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTextureRTVHandle(uint32_t index) {
-      return GetCPUDescriptorHandle(rtvHeap_.Get(), descriptorSizeRTV_, index);
-    }
-
-    /// <summary>
-    /// DSVHeap の先頭のハンドルの取得
+    /// メイン深度バッファの DSV ハンドルの取得
     ///	</summary>
-    /// <returns>DSV ヒープの先頭 CPU ディスクリプタハンドル</returns>
-    D3D12_CPU_DESCRIPTOR_HANDLE GetDSVHeapHandleStart() {
-      return dsvHeap_->GetCPUDescriptorHandleForHeapStart();
-    }
+    /// <returns>メイン DSV の CPU ディスクリプタハンドル</returns>
+    D3D12_CPU_DESCRIPTOR_HANDLE GetMainDSVHandle() const;
 
     ID3D12Resource* GetDepthStencilResource() {
       return depthStencilResource_.Get();
@@ -341,11 +318,6 @@ namespace Tako {
     void UpdateFPSLimiter();
 
     /// <summary>
-    /// RTV の再作成
-    /// </summary>
-    void RecreateSwapChainRTV();
-
-    /// <summary>
     /// 深度バッファの再作成
     /// </summary>
     void RecreateDepthBuffer();
@@ -399,18 +371,15 @@ namespace Tako {
 
     ComPtr<ID3D12Resource> depthStencilResource_;  ///< 深度バッファリソース（深度テスト用）
 
-    uint32_t descriptorSizeRTV_;  ///< RTV デスクリプタのサイズ（バイト）
-    uint32_t descriptorSizeDSV_;  ///< DSV デスクリプタのサイズ（バイト）
-
-    ComPtr<ID3D12DescriptorHeap> rtvHeap_;  ///< レンダーターゲットビューのデスクリプタヒープ
-
-    ComPtr<ID3D12DescriptorHeap> dsvHeap_;  ///< 深度ステンシルビューのデスクリプタヒープ
+    uint32_t mainDsvIndex_ = 0;  ///< メイン深度バッファの DSV インデックス（DsvManager 発行）
 
     std::array<ComPtr<ID3D12Resource>, 2> swapChainResources_;  ///< スワップチェインのバッファ（ダブルバッファリング用2枚）
 
     UINT swapChainBufferCount_;  ///< スワップチェインのバッファのカウント（通常2）
 
     D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle_[kRtvHandleCount];  ///< RTV ハンドル配列（各バックバッファ用）
+
+    uint32_t swapChainRtvIndices_[kRtvHandleCount] = {};  ///< スワップチェーン用 RTV インデックス（RtvManager 発行）
 
     ComPtr<ID3D12Fence> fence_;  ///< フェンスオブジェクト（GPU 同期用）
 

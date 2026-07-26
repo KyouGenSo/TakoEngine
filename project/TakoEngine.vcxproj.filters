@@ -159,6 +159,15 @@
     <ClCompile Include="engine\base\DX12\SrvManager.cpp">
       <Filter>base\DX12</Filter>
     </ClCompile>
+    <ClCompile Include="engine\base\DX12\DescriptorHeap.cpp">
+      <Filter>base\DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\base\DX12\RtvManager.cpp">
+      <Filter>base\DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\base\DX12\DsvManager.cpp">
+      <Filter>base\DX12</Filter>
+    </ClCompile>
     <ClCompile Include="engine\imgui\ImGuiManager.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
@@ -315,6 +324,9 @@
     <ClCompile Include="engine\effect\PostEffect\PostEffectManager.cpp">
       <Filter>effect\PostEffect</Filter>
     </ClCompile>
+    <ClCompile Include="engine\effect\PostEffect\PostEffectStruct.cpp">
+      <Filter>effect\PostEffect</Filter>
+    </ClCompile>
     <ClCompile Include="engine\effect\PostEffect\RadialBlur.cpp">
       <Filter>effect\PostEffect</Filter>
     </ClCompile>
@@ -429,6 +441,15 @@
       <Filter>base\DX12</Filter>
     </ClInclude>
     <ClInclude Include="engine\base\DX12\SrvManager.h">
+      <Filter>base\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\base\DX12\DescriptorHeap.h">
+      <Filter>base\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\base\DX12\RtvManager.h">
+      <Filter>base\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\base\DX12\DsvManager.h">
       <Filter>base\DX12</Filter>
     </ClInclude>
     <ClInclude Include="engine\func\commonFunc\Logger.h">

@@ -80,6 +80,17 @@ namespace Tako {
 
   void PostEffectManager::Finalize()
   {
+    // RT と深度 SRV を返却してからインスタンスを破棄する
+    if (instance_) {
+      instance_->effectTargetRT_.Release();
+      instance_->nonEffectTargetRT_.Release();
+      for (auto& rt : instance_->intermediateRTs_) {
+        rt.Release();
+      }
+      SrvManager::GetInstance()->Free(instance_->depthSrvIndex_);
+      instance_->depthSrvIndex_ = 0;
+    }
+
     instance_.reset();
   }
 
@@ -110,7 +121,7 @@ namespace Tako {
 
   void PostEffectManager::BeginDrawEffectTarget()
   {
-    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dx12_->GetDSVHeapHandleStart();
+    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dx12_->GetMainDSVHandle();
 
     // エフェクト適用対象 RT に描画
     dx12_->GetCommandList()->OMSetRenderTargets(
@@ -138,7 +149,7 @@ namespace Tako {
       D3D12_RESOURCE_STATE_RENDER_TARGET
     );
 
-    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dx12_->GetDSVHeapHandleStart();
+    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dx12_->GetMainDSVHandle();
 
     // 非適用対象 RT に描画
     dx12_->GetCommandList()->OMSetRenderTargets(
@@ -437,15 +448,11 @@ namespace Tako {
     }
 
     // 既存のリソースを解放
-    effectTargetRT_.resource.Reset();
-    nonEffectTargetRT_.resource.Reset();
-
-    SrvManager::GetInstance()->Free(effectTargetRT_.srvIndex);
-    SrvManager::GetInstance()->Free(nonEffectTargetRT_.srvIndex);
+    effectTargetRT_.Release();
+    nonEffectTargetRT_.Release();
 
     for (auto& rt : intermediateRTs_) {
-      rt.resource.Reset();
-      SrvManager::GetInstance()->Free(rt.srvIndex);
+      rt.Release();
     }
 
     // 新しいサイズで再作成
@@ -630,40 +637,14 @@ namespace Tako {
   //------------------------------- プライベート関数 -------------------------------//
 
   void PostEffectManager::CreateRenderTextures() {
-    auto createRT = [this](RenderTexture& rt, int rtvIndex, const Vector4& clearColor) {
-      // リソース作成
-      dx12_->CreateRenderTextureResource(
-        rt.resource,
-        WinApp::clientWidth,
-        WinApp::clientHeight,
-        DXGI_FORMAT_R8G8B8A8_UNORM,
-        clearColor
-      );
-
-      // RTV 作成
-      rt.rtvHandle = dx12_->GetRenderTextureRTVHandle(rtvIndex);
-      D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
-      rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-      rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-      dx12_->GetDevice()->CreateRenderTargetView(
-        rt.resource.Get(), &rtvDesc, rt.rtvHandle
-      );
-
-      // SRV 作成
-      rt.srvIndex = SrvManager::GetInstance()->Allocate();
-      SrvManager::GetInstance()->CreateSRVForTexture2D(
-        rt.srvIndex, rt.resource.Get(), DXGI_FORMAT_R8G8B8A8_UNORM, 1
-      );
-      };
-
     // エフェクト適用対象用 RT
-    createRT(effectTargetRT_, 2, kEffectTargetClearColor_);
+    effectTargetRT_.Create(dx12_, WinApp::clientWidth, WinApp::clientHeight, DXGI_FORMAT_R8G8B8A8_UNORM, kEffectTargetClearColor_);
     effectTargetRT_.resource->SetName(L"EffectTargetRT");
     // 初期状態を設定（レンダーテクスチャは RENDER_TARGET として作成される）
     SetInitialResourceState(effectTargetRT_.resource.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET);
 
     // 非適用対象用 RT
-    createRT(nonEffectTargetRT_, 3, nonEffectTargetClearColor_);
+    nonEffectTargetRT_.Create(dx12_, WinApp::clientWidth, WinApp::clientHeight, DXGI_FORMAT_R8G8B8A8_UNORM, nonEffectTargetClearColor_);
     nonEffectTargetRT_.resource->SetName(L"NonEffectTargetRT");
     // 初期状態を設定
     SetInitialResourceState(nonEffectTargetRT_.resource.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET);
@@ -671,7 +652,7 @@ namespace Tako {
     // 中間バッファ
     intermediateRTs_.resize(2);
     for (size_t i = 0; i < intermediateRTs_.size(); ++i) {
-      createRT(intermediateRTs_[i], 4 + static_cast<int>(i), kEffectTargetClearColor_);
+      intermediateRTs_[i].Create(dx12_, WinApp::clientWidth, WinApp::clientHeight, DXGI_FORMAT_R8G8B8A8_UNORM, kEffectTargetClearColor_);
       intermediateRTs_[i].resource->SetName(L"IntermediateRT");
       // 初期状態を設定
       SetInitialResourceState(intermediateRTs_[i].resource.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET);

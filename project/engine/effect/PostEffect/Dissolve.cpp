@@ -25,11 +25,10 @@ namespace Tako {
 
   void Dissolve::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, uint32_t maskSrvIndex, [[maybe_unused]] const Vector4& clearColor)
   {
-    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dx12_->GetDSVHeapHandleStart();
     dx12_->GetCommandList()->OMSetRenderTargets(1,
       &outputRtvHandle,
       false,
-      &dsvHandle);
+      nullptr);
 
     // エフェクト適用シェーダーの設定
     dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());

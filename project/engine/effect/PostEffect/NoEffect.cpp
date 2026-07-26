@@ -21,11 +21,10 @@ namespace Tako {
     [[maybe_unused]] uint32_t depthSrvIndex,
     [[maybe_unused]] const Vector4& clearColor)
   {
-    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dx12_->GetDSVHeapHandleStart();
     dx12_->GetCommandList()->OMSetRenderTargets(1,
       &outputRtvHandle,
       false,
-      &dsvHandle);
+      nullptr);
 
 
     // エフェクト適用シェーダーの設定

@@ -237,6 +237,13 @@ namespace Tako {
       }
       indexSrvIndex_ = 0;
     }
+
+    if (skinnedVertexSrvIndex_ != 0) {
+      if (SrvManager::GetInstance()->IsAllocated(skinnedVertexSrvIndex_)) {
+        SrvManager::GetInstance()->Free(skinnedVertexSrvIndex_);
+      }
+      skinnedVertexSrvIndex_ = 0;
+    }
   }
 
   void Mesh::InitializeSkinning(const std::map<std::string, JointWeightData>& skinClusterData, const std::map<std::string, int32_t>& jointMap)

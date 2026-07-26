@@ -24,11 +24,16 @@ namespace Tako {
 
     directoryPath_ = directoryPath;
 
-    textureData_.reserve(DX12Basic::kMaxSRVCount);
+    textureData_.reserve(SrvManager::kMaxSRVCount);
   }
 
   void TextureManager::Finalize()
   {
+    // 全テクスチャの SRV を返却
+    for (auto& [name, data] : textureData_) {
+      SrvManager::GetInstance()->Free(data.srvIndex);
+    }
+
     instance_.reset();
   }
 

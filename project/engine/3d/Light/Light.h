@@ -79,6 +79,8 @@ namespace Tako {
     };
 
   public: //メンバー関数
+    ~Light();
+
     void Initialize(DX12Basic* dx12);
     void Update();
 
@@ -177,8 +179,8 @@ namespace Tako {
     Microsoft::WRL::ComPtr<ID3D12Resource> lightConstantsResource_;
 
     //SRVインデックス
-    uint32_t pointLightSrvIndex_;
-    uint32_t spotLightSrvIndex_;
+    uint32_t pointLightSrvIndex_ = 0;
+    uint32_t spotLightSrvIndex_  = 0;
 
     //有効ライトのインデックスリスト
     std::vector<uint32_t> pointLightIndexList_;  ///< サイズ = 有効な点光源数

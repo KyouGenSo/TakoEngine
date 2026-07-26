@@ -24,11 +24,10 @@ namespace Tako {
 
   void Vignette::Apply(const uint32_t inputSrvIndex, const D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, [[maybe_unused]] const uint32_t depthSrvIndex, [[maybe_unused]] const Vector4& clearColor)
   {
-    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dx12_->GetDSVHeapHandleStart();
     dx12_->GetCommandList()->OMSetRenderTargets(1,
       &outputRtvHandle,
       false,
-      &dsvHandle);
+      nullptr);
 
     // エフェクト適用シェーダーの設定
     dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());

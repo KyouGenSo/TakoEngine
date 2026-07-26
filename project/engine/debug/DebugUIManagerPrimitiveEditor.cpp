@@ -1,6 +1,8 @@
 #include "DebugUIManager.h"
 #include "DX12Basic.h"
 #include "SrvManager.h"
+#include "RtvManager.h"
+#include "DsvManager.h"
 #include "Object3d.h"
 #include "Object3dBasic.h"
 #include "Camera.h"
@@ -25,16 +27,17 @@
 namespace Tako {
 
   /// <summary>
-  /// プリミティブエディターのプレビュー描画先一式（カラーRT/深度/DSVヒープ/SRV）
+  /// プリミティブエディターのプレビュー描画先一式（カラーRT/深度/SRV）
   /// </summary>
   struct PrimitivePreviewViewport {
-    DX12Basic*                                   dx12 = nullptr;  ///< Finalize 時に使う（Object3dBasic より DebugUIManager の方が後に破棄されるため生ポインタで保持）
-    Microsoft::WRL::ComPtr<ID3D12Resource>       renderTexture;
-    Microsoft::WRL::ComPtr<ID3D12Resource>       depthBuffer;
-    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> dsvHeap;
-    D3D12_CPU_DESCRIPTOR_HANDLE                  rtvHandle{};
-    D3D12_CPU_DESCRIPTOR_HANDLE                  dsvHandle{};
-    uint32_t                                     srvIndex = 0;
+    DX12Basic*                             dx12 = nullptr;  ///< Finalize 時に使う（Object3dBasic より DebugUIManager の方が後に破棄されるため生ポインタで保持）
+    Microsoft::WRL::ComPtr<ID3D12Resource> renderTexture;
+    Microsoft::WRL::ComPtr<ID3D12Resource> depthBuffer;
+    D3D12_CPU_DESCRIPTOR_HANDLE            rtvHandle{};
+    D3D12_CPU_DESCRIPTOR_HANDLE            dsvHandle{};
+    uint32_t                               rtvIndex = 0;
+    uint32_t                               dsvIndex = 0;
+    uint32_t                               srvIndex = 0;
   };
 
   DebugUIManager::DebugUIManager(Token) {}
@@ -44,7 +47,6 @@ namespace Tako {
 
     constexpr uint32_t    kPreviewRTWidth    = 1280;
     constexpr uint32_t    kPreviewRTHeight   = 720;
-    constexpr uint32_t    kPreviewRtvIndex   = 10;  ///< RTV ヒープ内 index（0-1:スワップチェーン 2-5:PostEffect 6-8:Bloom 9:GaussianBlur）
     constexpr DXGI_FORMAT kPreviewRTFormat   = DXGI_FORMAT_R8G8B8A8_UNORM;
     constexpr DXGI_FORMAT kPreviewDepthFormat = DXGI_FORMAT_D32_FLOAT;
     constexpr Vector4     kPreviewClearColor = { 0.10f, 0.10f, 0.12f, 1.0f };
@@ -187,11 +189,9 @@ namespace Tako {
     viewport->renderTexture->SetName(L"PrimitiveEditorPreviewRT");
     dx12->SetInitialResourceState(viewport->renderTexture.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET);
 
-    viewport->rtvHandle = dx12->GetRenderTextureRTVHandle(kPreviewRtvIndex);
-    D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
-    rtvDesc.Format = kPreviewRTFormat;
-    rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-    dx12->GetDevice()->CreateRenderTargetView(viewport->renderTexture.Get(), &rtvDesc, viewport->rtvHandle);
+    viewport->rtvIndex = RtvManager::GetInstance()->Allocate();
+    RtvManager::GetInstance()->CreateRTV(viewport->rtvIndex, viewport->renderTexture.Get(), kPreviewRTFormat);
+    viewport->rtvHandle = RtvManager::GetInstance()->GetCpuHandle(viewport->rtvIndex);
 
     viewport->srvIndex = SrvManager::GetInstance()->Allocate();
     SrvManager::GetInstance()->CreateSRVForTexture2D(viewport->srvIndex, viewport->renderTexture.Get(), kPreviewRTFormat, 1);
@@ -225,12 +225,9 @@ namespace Tako {
     assert(SUCCEEDED(hr));
     viewport->depthBuffer->SetName(L"PrimitiveEditorPreviewDepth");
 
-    viewport->dsvHeap = dx12->CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
-    D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
-    dsvDesc.Format = kPreviewDepthFormat;
-    dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-    viewport->dsvHandle = viewport->dsvHeap->GetCPUDescriptorHandleForHeapStart();
-    dx12->GetDevice()->CreateDepthStencilView(viewport->depthBuffer.Get(), &dsvDesc, viewport->dsvHandle);
+    viewport->dsvIndex = DsvManager::GetInstance()->Allocate();
+    DsvManager::GetInstance()->CreateDSV(viewport->dsvIndex, viewport->depthBuffer.Get(), kPreviewDepthFormat);
+    viewport->dsvHandle = DsvManager::GetInstance()->GetCpuHandle(viewport->dsvIndex);
 
     primPreviewViewport_ = std::move(viewport);
   }
@@ -245,6 +242,8 @@ namespace Tako {
       if (srvManager && srvManager->IsAllocated(primPreviewViewport_->srvIndex)) {
         srvManager->Free(primPreviewViewport_->srvIndex);
       }
+      RtvManager::GetInstance()->Free(primPreviewViewport_->rtvIndex);
+      DsvManager::GetInstance()->Free(primPreviewViewport_->dsvIndex);
       // 解放済みアドレスが別リソースに再利用された際の誤った状態遷移を防ぐ
       // Object3dBasic は既に Finalize 済みの可能性があるため、生成時に保持した DX12Basic* を使う
       if (primPreviewViewport_->dx12) {

@@ -1,11 +1,14 @@
 #include"SrvManager.h"
 #include"DX12Basic.h"
+#include <cassert>
+#include <cstdio>
+#ifdef _DEBUG
+#include <Windows.h>
+#endif
 
 namespace Tako {
 
   std::unique_ptr<SrvManager> SrvManager::instance_ = nullptr;
-
-  const uint32_t SrvManager::kMaxSRVCount = 2048;
 
   SrvManager* SrvManager::GetInstance()
   {
@@ -19,88 +22,57 @@ namespace Tako {
   {
     dx12_ = dx12;
 
-    descriptorSize_ = dx12_->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-    descriptorHeap_ = dx12_->CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, kMaxSRVCount, true);
-
-
-    // index 0 は「無効/未割り当て」の番兵として予約する。
-    nextNewIndex_ = 1;
-    allocatedCount_ = 0;
-    usedIndices_.clear();
+    heap_.Initialize(dx12_->GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, kMaxSRVCount, true);
   }
 
   void SrvManager::Finalize()
   {
-    instance_.reset();
+#ifdef _DEBUG
+    // 解放漏れの検出。利用側の Free 忘れをここで可視化する
+    if (heap_.GetAllocatedCount() > 0) {
+      char buf[64];
+      snprintf(buf, sizeof(buf), "SrvManager: %u SRV indices leaked:\n", heap_.GetAllocatedCount());
+      OutputDebugStringA(buf);
+      for (uint32_t index : heap_.GetUsedIndices()) {
+        snprintf(buf, sizeof(buf), "  srvIndex %u\n", index);
+        OutputDebugStringA(buf);
+      }
+    }
+#endif
+    assert(heap_.GetAllocatedCount() == 0 && "SRV indices leaked");
+
+    // インスタンスは温存し、以後の GetInstance() を有効なまま Free() を no-op にする
+    heap_.Finalize();
+    dx12_ = nullptr;
   }
 
   void SrvManager::BeginDraw()
   {
-    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeaps[] = { descriptorHeap_.Get() };
-    dx12_->GetCommandList()->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps->GetAddressOf());
+    ID3D12DescriptorHeap* descriptorHeaps[] = { heap_.GetHeap() };
+    dx12_->GetCommandList()->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
   }
 
   uint32_t SrvManager::Allocate()
   {
-    uint32_t index;
-
-    // フリーリストから優先的に取得
-    if (!freeIndices_.empty()) {
-      index = freeIndices_.top();
-      freeIndices_.pop();
-    }
-    else {
-      // フリーリストが空の場合は新しいインデックスを使用
-      if (nextNewIndex_ >= kMaxSRVCount) {
-        assert(false && "SRV index limit reached");
-        return UINT32_MAX; // エラー値
-      }
-      index = nextNewIndex_++;
-    }
-
-    // 使用中として記録
-    usedIndices_.insert(index);
-    allocatedCount_++;
-
-    return index;
+    return heap_.Allocate();
   }
 
-  void SrvManager::Free(uint32_t index)
+  void SrvManager::Free(uint32_t srvIndex)
   {
-    // 無効なインデックスのチェック
-    if (index >= kMaxSRVCount) {
-      assert(false && "Invalid SRV index");
-      return;
-    }
-
-    // 使用中かチェック
-    auto it = usedIndices_.find(index);
-    if (it == usedIndices_.end()) {
-      assert(false && "Trying to free an SRV index that is not allocated");
-      return;
-    }
-
-    // 使用中リストから削除
-    usedIndices_.erase(it);
-    allocatedCount_--;
-
-    // フリーリストに追加
-    freeIndices_.push(index);
+    heap_.Free(srvIndex);
   }
 
-  bool SrvManager::CanAllocate()
+  bool SrvManager::CanAllocate() const
   {
-    // フリーリストに空きがあるか、新しいインデックスが使えるかチェック
-    return !freeIndices_.empty() || nextNewIndex_ < kMaxSRVCount;
+    return heap_.CanAllocate();
   }
 
-  bool SrvManager::IsAllocated(uint32_t index) const
+  bool SrvManager::IsAllocated(uint32_t srvIndex) const
   {
-    return usedIndices_.find(index) != usedIndices_.end();
+    return heap_.IsAllocated(srvIndex);
   }
 
-  void SrvManager::CreateSRVForTexture2D(uint32_t index, ID3D12Resource* pResource, DXGI_FORMAT format, UINT mipLevels)
+  void SrvManager::CreateSRVForTexture2D(uint32_t srvIndex, ID3D12Resource* pResource, DXGI_FORMAT format, UINT mipLevels)
   {
     D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
     srvDesc.Format = format;
@@ -108,10 +80,10 @@ namespace Tako {
     srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
     srvDesc.Texture2D.MipLevels = mipLevels;
 
-    dx12_->GetDevice()->CreateShaderResourceView(pResource, &srvDesc, GetCPUDescriptorHandle(index));
+    dx12_->GetDevice()->CreateShaderResourceView(pResource, &srvDesc, GetCPUDescriptorHandle(srvIndex));
   }
 
-  void SrvManager::CreateSRVForStructuredBuffer(uint32_t index, ID3D12Resource* pResource, UINT numElements, UINT structureByteStride)
+  void SrvManager::CreateSRVForStructuredBuffer(uint32_t srvIndex, ID3D12Resource* pResource, UINT numElements, UINT structureByteStride)
   {
     D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
     srvDesc.Format = DXGI_FORMAT_UNKNOWN;
@@ -122,10 +94,10 @@ namespace Tako {
     srvDesc.Buffer.StructureByteStride = structureByteStride;
     srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
 
-    dx12_->GetDevice()->CreateShaderResourceView(pResource, &srvDesc, GetCPUDescriptorHandle(index));
+    dx12_->GetDevice()->CreateShaderResourceView(pResource, &srvDesc, GetCPUDescriptorHandle(srvIndex));
   }
 
-  void SrvManager::CreateUAV(uint32_t index, ID3D12Resource* pResource, UINT numElements, UINT structureByteStride)
+  void SrvManager::CreateUAV(uint32_t srvIndex, ID3D12Resource* pResource, UINT numElements, UINT structureByteStride)
   {
     D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
     uavDesc.Format = DXGI_FORMAT_UNKNOWN;
@@ -135,10 +107,10 @@ namespace Tako {
     uavDesc.Buffer.StructureByteStride = structureByteStride;
     uavDesc.Buffer.CounterOffsetInBytes = 0;
     uavDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
-    dx12_->GetDevice()->CreateUnorderedAccessView(pResource, nullptr, &uavDesc, GetCPUDescriptorHandle(index));
+    dx12_->GetDevice()->CreateUnorderedAccessView(pResource, nullptr, &uavDesc, GetCPUDescriptorHandle(srvIndex));
   }
 
-  void SrvManager::CreateSRVForCubeMap(uint32_t _srvIndex, ID3D12Resource* pResource, DXGI_FORMAT format, UINT mipLevels)
+  void SrvManager::CreateSRVForCubeMap(uint32_t srvIndex, ID3D12Resource* pResource, DXGI_FORMAT format, UINT mipLevels)
   {
     D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
     srvDesc.Format = format;
@@ -147,33 +119,27 @@ namespace Tako {
     srvDesc.TextureCube.MostDetailedMip = 0;
     srvDesc.TextureCube.MipLevels = mipLevels;
     srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
-    dx12_->GetDevice()->CreateShaderResourceView(pResource, &srvDesc, GetCPUDescriptorHandle(_srvIndex));
+    dx12_->GetDevice()->CreateShaderResourceView(pResource, &srvDesc, GetCPUDescriptorHandle(srvIndex));
   }
 
-  void SrvManager::SetGraphicsRootDescriptorTable(UINT rootParameterIndex, uint32_t index)
+  void SrvManager::SetGraphicsRootDescriptorTable(UINT rootParameterIndex, uint32_t srvIndex)
   {
-    dx12_->GetCommandList()->SetGraphicsRootDescriptorTable(rootParameterIndex, GetGPUDescriptorHandle(index));
+    dx12_->GetCommandList()->SetGraphicsRootDescriptorTable(rootParameterIndex, GetGPUDescriptorHandle(srvIndex));
   }
 
-  void SrvManager::SetComputeRootDescriptorTable(UINT rootParameterIndex, uint32_t index)
+  void SrvManager::SetComputeRootDescriptorTable(UINT rootParameterIndex, uint32_t srvIndex)
   {
-    dx12_->GetCommandList()->SetComputeRootDescriptorTable(rootParameterIndex, GetGPUDescriptorHandle(index));
+    dx12_->GetCommandList()->SetComputeRootDescriptorTable(rootParameterIndex, GetGPUDescriptorHandle(srvIndex));
   }
 
-  D3D12_CPU_DESCRIPTOR_HANDLE SrvManager::GetCPUDescriptorHandle(uint32_t index)
+  D3D12_CPU_DESCRIPTOR_HANDLE SrvManager::GetCPUDescriptorHandle(uint32_t srvIndex) const
   {
-    D3D12_CPU_DESCRIPTOR_HANDLE handleCPU = descriptorHeap_->GetCPUDescriptorHandleForHeapStart();
-    handleCPU.ptr += descriptorSize_ * index;
-
-    return handleCPU;
+    return heap_.GetCpuHandle(srvIndex);
   }
 
-  D3D12_GPU_DESCRIPTOR_HANDLE SrvManager::GetGPUDescriptorHandle(uint32_t index)
+  D3D12_GPU_DESCRIPTOR_HANDLE SrvManager::GetGPUDescriptorHandle(uint32_t srvIndex) const
   {
-    D3D12_GPU_DESCRIPTOR_HANDLE handleGPU = descriptorHeap_->GetGPUDescriptorHandleForHeapStart();
-    handleGPU.ptr += descriptorSize_ * index;
-
-    return handleGPU;
+    return heap_.GetGpuHandle(srvIndex);
   }
 
 } // namespace Tako

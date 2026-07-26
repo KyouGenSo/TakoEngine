@@ -21,6 +21,9 @@ namespace Tako {
     if (winApp_ && onResizeId_ != 0) {
       winApp_->UnregisterOnResizeFunc(onResizeId_);
     }
+
+    // RT の RTV/SRV を返却
+    resultRT_.Release();
   }
 
   void GaussianBlur::Initialize(DX12Basic* dx12, const std::string& shaderName)
@@ -122,33 +125,7 @@ namespace Tako {
 
   void GaussianBlur::CreateRenderTexture()
   {
-    auto createRT = [this](RenderTexture& rt, int rtvIndex, const Vector4& clearColor) {
-      // リソース作成
-      dx12_->CreateRenderTextureResource(
-        rt.resource,
-        WinApp::clientWidth,
-        WinApp::clientHeight,
-        DXGI_FORMAT_R8G8B8A8_UNORM,
-        clearColor
-      );
-
-      // RTV 作成
-      rt.rtvHandle = dx12_->GetRenderTextureRTVHandle(rtvIndex);
-      D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
-      rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-      rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-      dx12_->GetDevice()->CreateRenderTargetView(
-        rt.resource.Get(), &rtvDesc, rt.rtvHandle
-      );
-
-      // SRV 作成
-      rt.srvIndex = SrvManager::GetInstance()->Allocate();
-      SrvManager::GetInstance()->CreateSRVForTexture2D(
-        rt.srvIndex, rt.resource.Get(), DXGI_FORMAT_R8G8B8A8_UNORM, 1
-      );
-      };
-
-    createRT(resultRT_, 9, Vector4(0.0f, 0.0f, 0.0f, 1.0f));
+    resultRT_.Create(dx12_, WinApp::clientWidth, WinApp::clientHeight, DXGI_FORMAT_R8G8B8A8_UNORM, Vector4(0.0f, 0.0f, 0.0f, 1.0f));
   }
 
   void GaussianBlur::OnResize(const Vector2& newSize)
@@ -161,8 +138,7 @@ namespace Tako {
 
   void GaussianBlur::RecreateRenderTexture()
   {
-    resultRT_.resource.Reset();
-    SrvManager::GetInstance()->Free(resultRT_.srvIndex);
+    resultRT_.Release();
 
     CreateRenderTexture();
   }

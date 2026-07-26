@@ -118,7 +118,7 @@ void ShadowRenderer::BeginShadowPass()
 
     // 現在のレンダーターゲットとデプスバッファを保存
     savedRTVHandle_ = PostEffectManager::GetInstance()->GetCurrentRTVHandle();
-    savedDSVHandle_ = dx12_->GetDSVHeapHandleStart();
+    savedDSVHandle_ = dx12_->GetMainDSVHandle();
     hasSavedRenderTargets_ = true;
 
     // シャドウマップレンダリングを開始

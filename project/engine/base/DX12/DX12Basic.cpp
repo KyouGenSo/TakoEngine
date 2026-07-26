@@ -7,6 +7,8 @@
 #endif
 #include "StringUtility.h"
 #include "PostEffectManager.h"
+#include "RtvManager.h"
+#include "DsvManager.h"
 
 #ifdef _DEBUG
 #include"imgui.h"
@@ -21,8 +23,6 @@
 #pragma comment(lib, "dxguid.lib")
 
 namespace Tako {
-
-  const uint32_t DX12Basic::kMaxSRVCount = 2048;
 
   DX12Basic::~DX12Basic()
   {
@@ -78,20 +78,29 @@ namespace Tako {
       WaitForSingleObject(fenceEvent_, INFINITE);
     }
 
+    // スワップチェーン用 RTV とメイン深度の DSV を返却
+    for (UINT i = 0; i < kRtvHandleCount; ++i) {
+      RtvManager::GetInstance()->Free(swapChainRtvIndices_[i]);
+      swapChainRtvIndices_[i] = RtvManager::kInvalidIndex;
+    }
+    DsvManager::GetInstance()->Free(mainDsvIndex_);
+    mainDsvIndex_ = DsvManager::kInvalidIndex;
+
+    // RTV/DSV マネージャーの終了処理（内部でリーク検査）
+    RtvManager::GetInstance()->Finalize();
+    DsvManager::GetInstance()->Finalize();
+
     // イベントの破棄
     CloseHandle(fenceEvent_);
   }
 
   void DX12Basic::SetEffectRenderTexture()
   {
-    // DSV のハンドルを取得
-    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvHeap_->GetCPUDescriptorHandleForHeapStart();
-
     // レンダーテクスチャを描画先に設定
     PostEffectManager::GetInstance()->BeginDrawEffectTarget();
 
     // 深度ステンシルをクリア
-    commandList_->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+    commandList_->ClearDepthStencilView(GetMainDSVHandle(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
     SetViewPort();
 
@@ -99,9 +108,6 @@ namespace Tako {
 
   void DX12Basic::SetNonEffectRenderTexture()
   {
-    // DSV のハンドルを取得
-    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvHeap_->GetCPUDescriptorHandleForHeapStart();
-
     // レンダーテクスチャを描画先に設定
     PostEffectManager::GetInstance()->BeginDrawNonEffectTarget();
 
@@ -384,65 +390,38 @@ namespace Tako {
 
   void DX12Basic::InitDescriptorHeap()
   {
-    // ディスクリプタヒープのサイズを取得
-    descriptorSizeRTV_ = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-    descriptorSizeDSV_ = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
-
-    // RTV のディスクリプタヒープの生成
-    // 0-1:スワップチェーン 2-5:PostEffect 6-8:Bloom 9:GaussianBlur 10:PrimitiveEditorプレビュー
-    rtvHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 11, false);
-
-    // DSV のディスクリプタヒープの生成
-    dsvHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
+    // RTV/DSV マネージャーの初期化（以降の InitSwapChainRTV / InitDSV が使用する）
+    RtvManager::GetInstance()->Initialize(this);
+    DsvManager::GetInstance()->Initialize(this);
   }
 
   void DX12Basic::InitSwapChainRTV()
   {
-    // SwapChain から Resource を取得
-    for (UINT i = 0; i < 2; ++i) {
+    for (UINT i = 0; i < kRtvHandleCount; ++i) {
+      // SwapChain から Resource を取得
       HRESULT hr = swapChain_->GetBuffer(i, IID_PPV_ARGS(&swapChainResources_[i]));
       assert(SUCCEEDED(hr));
 
       // スワップチェーンバッファの初期状態を追跡マップに登録
       // DirectX 12ではスワップチェーンバッファは初期状態が PRESENT
       resourceStates_[swapChainResources_[i].Get()] = D3D12_RESOURCE_STATE_PRESENT;
-    }
 
-    // RTV の設定
-    D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
-    rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // フォーマット
-    rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D; // 2D テクスチャとして書き込む
-
-    // DescriptorHeap の先頭を取得
-    D3D12_CPU_DESCRIPTOR_HANDLE rtvStartHandle = GetCPUDescriptorHandle(rtvHeap_.Get(), descriptorSizeRTV_, 0);
-
-    for (UINT i = 0; i < kRtvHandleCount; ++i) {
-      // RTV のハンドルを取得
-      if (i == 0) {
-        rtvHandle_[i] = rtvStartHandle;
+      // 初回のみ RTV 枠を確保し、リサイズ時は同じ枠へビューを作り直す
+      if (swapChainRtvIndices_[i] == RtvManager::kInvalidIndex) {
+        swapChainRtvIndices_[i] = RtvManager::GetInstance()->Allocate();
       }
-      else {
-        rtvHandle_[i].ptr += rtvHandle_[i - 1].ptr + descriptorSizeRTV_;
-      }
-
-      // RTV の作成
-      device_->CreateRenderTargetView(swapChainResources_[i].Get(), &rtvDesc, rtvHandle_[i]);
+      RtvManager::GetInstance()->CreateRTV(swapChainRtvIndices_[i], swapChainResources_[i].Get(), DXGI_FORMAT_R8G8B8A8_UNORM);
+      rtvHandle_[i] = RtvManager::GetInstance()->GetCpuHandle(swapChainRtvIndices_[i]);
     }
   }
 
   void DX12Basic::InitDSV()
   {
-    // DSV の設定
-    D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
-    //dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT; // フォーマット
-    dsvDesc.Format = DXGI_FORMAT_D32_FLOAT; // フォーマット
-    dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D; // 2D テクスチャとして書き込む
-
-    // DSV のハンドルを取得
-    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvHeap_->GetCPUDescriptorHandleForHeapStart();
-
-    // DSV の作成
-    device_->CreateDepthStencilView(depthStencilResource_.Get(), &dsvDesc, dsvHandle);
+    // 初回のみ DSV 枠を確保し、リサイズ時は同じ枠へビューを作り直す
+    if (mainDsvIndex_ == DsvManager::kInvalidIndex) {
+      mainDsvIndex_ = DsvManager::GetInstance()->Allocate();
+    }
+    DsvManager::GetInstance()->CreateDSV(mainDsvIndex_, depthStencilResource_.Get(), DXGI_FORMAT_D32_FLOAT);
   }
 
   void DX12Basic::InitFence()
@@ -528,39 +507,6 @@ namespace Tako {
     referenceTime_ = std::chrono::steady_clock::now();
   }
 
-  void DX12Basic::RecreateSwapChainRTV()
-  {
-    // SwapChain から Resource を取得
-    for (UINT i = 0; i < swapChainBufferCount_; ++i) {
-      HRESULT hr = swapChain_->GetBuffer(i, IID_PPV_ARGS(&swapChainResources_[i]));
-      assert(SUCCEEDED(hr));
-
-      // スワップチェーンバッファの初期状態を追跡マップに登録
-      resourceStates_[swapChainResources_[i].Get()] = D3D12_RESOURCE_STATE_PRESENT;
-    }
-
-    // RTV の設定
-    D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
-    rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-
-    // DescriptorHeap の先頭を取得
-    D3D12_CPU_DESCRIPTOR_HANDLE rtvStartHandle = GetCPUDescriptorHandle(rtvHeap_.Get(), descriptorSizeRTV_, 0);
-
-    for (UINT i = 0; i < kRtvHandleCount; ++i) {
-      // RTV のハンドルを取得
-      if (i == 0) {
-        rtvHandle_[i] = rtvStartHandle;
-      }
-      else {
-        rtvHandle_[i].ptr = rtvStartHandle.ptr + descriptorSizeRTV_ * i;
-      }
-
-      // RTV の作成
-      device_->CreateRenderTargetView(swapChainResources_[i].Get(), &rtvDesc, rtvHandle_[i]);
-    }
-  }
-
   void DX12Basic::RecreateDepthBuffer()
   {
     // テクスチャの設定
@@ -596,14 +542,8 @@ namespace Tako {
     // 深度バッファの初期状態を追跡マップに登録
     resourceStates_[depthStencilResource_.Get()] = D3D12_RESOURCE_STATE_DEPTH_WRITE;
 
-    // DSV の設定
-    D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
-    dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
-    dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-
-    // DSV を作成
-    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvHeap_->GetCPUDescriptorHandleForHeapStart();
-    device_->CreateDepthStencilView(depthStencilResource_.Get(), &dsvDesc, dsvHandle);
+    // 同じ DSV 枠へビューを作り直す
+    InitDSV();
   }
 
   void DX12Basic::SetViewPort()
@@ -612,19 +552,9 @@ namespace Tako {
     commandList_->RSSetScissorRects(1, &scissorRect_);
   }
 
-  Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> DX12Basic::CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisible)
+  D3D12_CPU_DESCRIPTOR_HANDLE DX12Basic::GetMainDSVHandle() const
   {
-    // ヒープの設定
-    D3D12_DESCRIPTOR_HEAP_DESC heapDesc{};
-    heapDesc.NumDescriptors = numDescriptors;
-    heapDesc.Type = heapType;
-    heapDesc.Flags = shaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-
-    // ヒープの生成
-    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeap = nullptr;
-    HRESULT hr = device_->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&descriptorHeap));
-    assert(SUCCEEDED(hr));
-    return descriptorHeap;
+    return DsvManager::GetInstance()->GetCpuHandle(mainDsvIndex_);
   }
 
   Microsoft::WRL::ComPtr<IDxcBlob> DX12Basic::CompileShader(const std::wstring& filePath, const wchar_t* profile)
@@ -1043,7 +973,7 @@ namespace Tako {
     assert(SUCCEEDED(hr));
 
     // RTV を再作成
-    RecreateSwapChainRTV();
+    InitSwapChainRTV();
 
     // 深度バッファを再作成
     RecreateDepthBuffer();

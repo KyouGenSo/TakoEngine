@@ -18,6 +18,11 @@ namespace Tako {
     if (winApp_ && onResizeId_ != 0) {
       winApp_->UnregisterOnResizeFunc(onResizeId_);
     }
+
+    // RT の RTV/SRV を返却
+    highLumRT_.Release();
+    blurRT_.Release();
+    resultRT_.Release();
   }
 
   void Bloom::Initialize(DX12Basic* dx12, const std::string& shaderName)
@@ -40,8 +45,6 @@ namespace Tako {
 
   void Bloom::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, [[maybe_unused]] uint32_t depthSrvIndex, [[maybe_unused]] const Vector4& clearColor)
   {
-    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dx12_->GetDSVHeapHandleStart();
-
     //---------------------------Pass1 HighLunExtract---------------------------//
     DrawFullScreenPass(rootSignatures_["ThresholdExtract"].Get(), pipelineStates_["ThresholdExtract"].Get(),
       highLumRT_.rtvHandle, extractCBufferRes_->GetGPUVirtualAddress(), inputSrvIndex);
@@ -70,7 +73,7 @@ namespace Tako {
     dx12_->GetCommandList()->OMSetRenderTargets(1,
       &outputRtvHandle,
       false,
-      &dsvHandle);
+      nullptr);
 
     dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_["BloomCombine"].Get());
     dx12_->GetCommandList()->SetPipelineState(pipelineStates_["BloomCombine"].Get());
@@ -289,7 +292,7 @@ namespace Tako {
     graphicsPipelineStateDesc.SampleDesc.Count = 1;
     graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
     graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
-    graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_UNKNOWN;
 
     hr = dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineStates_[shaderName]));
     assert(SUCCEEDED(hr));
@@ -324,35 +327,10 @@ namespace Tako {
 
   void Bloom::CreateRenderTexture()
   {
-    auto createRT = [this](RenderTexture& rt, int rtvIndex, const Vector4& clearColor) {
-      // リソース作成
-      dx12_->CreateRenderTextureResource(
-        rt.resource,
-        WinApp::clientWidth,
-        WinApp::clientHeight,
-        DXGI_FORMAT_R8G8B8A8_UNORM,
-        clearColor
-      );
-
-      // RTV 作成
-      rt.rtvHandle = dx12_->GetRenderTextureRTVHandle(rtvIndex);
-      D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
-      rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-      rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-      dx12_->GetDevice()->CreateRenderTargetView(
-        rt.resource.Get(), &rtvDesc, rt.rtvHandle
-      );
-
-      // SRV 作成
-      rt.srvIndex = SrvManager::GetInstance()->Allocate();
-      SrvManager::GetInstance()->CreateSRVForTexture2D(
-        rt.srvIndex, rt.resource.Get(), DXGI_FORMAT_R8G8B8A8_UNORM, 1
-      );
-      };
-
-    createRT(highLumRT_, 6, Vector4(0.0f, 0.0f, 0.0f, 1.0f));
-    createRT(blurRT_, 7, Vector4(0.0f, 0.0f, 0.0f, 1.0f));
-    createRT(resultRT_, 8, Vector4(0.0f, 0.0f, 0.0f, 1.0f));
+    const Vector4 clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    highLumRT_.Create(dx12_, WinApp::clientWidth, WinApp::clientHeight, DXGI_FORMAT_R8G8B8A8_UNORM, clearColor);
+    blurRT_.Create(dx12_, WinApp::clientWidth, WinApp::clientHeight, DXGI_FORMAT_R8G8B8A8_UNORM, clearColor);
+    resultRT_.Create(dx12_, WinApp::clientWidth, WinApp::clientHeight, DXGI_FORMAT_R8G8B8A8_UNORM, clearColor);
   }
 
   void Bloom::OnResize(const Vector2& newSize)
@@ -365,12 +343,9 @@ namespace Tako {
 
   void Bloom::RecreateRenderTexture()
   {
-    resultRT_.resource.Reset();
-    highLumRT_.resource.Reset();
-    blurRT_.resource.Reset();
-    SrvManager::GetInstance()->Free(resultRT_.srvIndex);
-    SrvManager::GetInstance()->Free(highLumRT_.srvIndex);
-    SrvManager::GetInstance()->Free(blurRT_.srvIndex);
+    resultRT_.Release();
+    highLumRT_.Release();
+    blurRT_.Release();
 
     CreateRenderTexture();
   }

@@ -405,6 +405,31 @@ namespace Tako {
 
   void GPUParticle::Finalize()
   {
+    // 全 SRV/UAV インデックスを返却
+    SrvManager* srvManager = SrvManager::GetInstance();
+    srvManager->Free(particleUavIndex_);
+    srvManager->Free(particleSrvIndex_);
+    srvManager->Free(emitterSrvIndex_);
+    srvManager->Free(freeListIndexUavIndex_);
+    srvManager->Free(freeListUavIndex_);
+    srvManager->Free(forceFieldSrvIndex_);
+    srvManager->Free(depthSrvIndex_);
+    srvManager->Free(defaultQuadVertexSrvIndex_);
+    srvManager->Free(defaultQuadIndexSrvIndex_);
+    srvManager->Free(perEmitterCountUavIndex_);
+    srvManager->Free(drawIndexUavIndex_);
+    srvManager->Free(drawIndexSrvIndex_);
+    srvManager->Free(scatterCursorUavIndex_);
+    srvManager->Free(drawArgsUavIndex_);
+    srvManager->Free(emitterIndexCountSrvIndex_);
+
+    // クローン保持している Model の SRV を返却（shared_ptr 破棄では Finalize が呼ばれないため明示的に呼ぶ）
+    for (auto& [path, model] : renderModels_) {
+      if (model) {
+        model->Finalize();
+      }
+    }
+
     instance_.reset();
   }
 
@@ -1526,10 +1551,7 @@ namespace Tako {
   void GPUParticle::CreateDepthSRV()
   {
     // 既存の SRV を解放（リサイズ時の再作成対応）
-    if (depthSrvIndex_ != UINT32_MAX) {
-      srvManager_->Free(depthSrvIndex_);
-      depthSrvIndex_ = UINT32_MAX;
-    }
+    srvManager_->Free(depthSrvIndex_);
     depthSrvIndex_ = srvManager_->Allocate();
     srvManager_->CreateSRVForTexture2D(
       depthSrvIndex_,

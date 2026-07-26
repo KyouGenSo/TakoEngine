@@ -21,6 +21,21 @@ namespace Tako {
   /// バインド先 Object3d の world 行列」を合成して更新される (非バインド時はオフセットのみ)。
   /// </remarks>
   class MeshEmitter : public GPUParticleEmitter {
+  private: //構造体
+    /// <summary>
+    /// StructuredBuffer リソースと SRV インデックスの共有所有単位。
+    /// Clone 間で shared_ptr 共有し、最終所有者の破棄時に SRV を返却する
+    /// </summary>
+    struct SharedBufferSrv {
+      Microsoft::WRL::ComPtr<ID3D12Resource> resource;
+      uint32_t                               srvIndex = 0;
+
+      SharedBufferSrv() = default;
+      SharedBufferSrv(const SharedBufferSrv&) = delete;
+      SharedBufferSrv& operator=(const SharedBufferSrv&) = delete;
+      ~SharedBufferSrv();
+    };
+
   public: //メンバー関数
     /// <summary>
     /// コンストラクタ
@@ -39,7 +54,7 @@ namespace Tako {
     ~MeshEmitter() override = default;
 
     /// <summary>
-    /// クローン作成 (スポーン形状の GPU リソースは immutable なので ComPtr 共有)
+    /// クローン作成 (スポーン形状の GPU リソースは immutable なので shared_ptr 共有)
     /// </summary>
     std::shared_ptr<GPUParticleEmitter> Clone() const override;
 
@@ -114,10 +129,9 @@ namespace Tako {
       const std::vector<VertexData>& vertices, const std::vector<uint32_t>& indices);
 
     /// <summary>
-    /// UPLOAD バッファを生成して srcData を書き込み、StructuredBuffer SRV を確保して index を返す
+    /// UPLOAD バッファを生成して srcData を書き込み、StructuredBuffer SRV を確保して返す
     /// </summary>
-    uint32_t CreateStructuredBufferSrv(
-      Microsoft::WRL::ComPtr<ID3D12Resource>& outResource,
+    std::shared_ptr<SharedBufferSrv> CreateStructuredBufferSrv(
       const void* srcData, size_t elementSize, uint32_t elementCount);
 
     /// <summary>
@@ -133,10 +147,10 @@ namespace Tako {
     Vector3 offsetRotation_ = { 0.0f, 0.0f, 0.0f };  ///< ローカルオフセット回転 (ラジアン Euler)
     Vector3 offsetScale_    = { 1.0f, 1.0f, 1.0f };  ///< ローカルオフセットスケール
 
-    //スポーン形状の GPU リソース (構築後 immutable、Clone 間で ComPtr 共有)
-    Microsoft::WRL::ComPtr<ID3D12Resource> areaPrefixSumResource_;     ///< 三角形面積 Prefix Sum (size = triCount + 1)
-    Microsoft::WRL::ComPtr<ID3D12Resource> aggregatedVertexResource_;  ///< マルチプリミティブ集約頂点
-    Microsoft::WRL::ComPtr<ID3D12Resource> aggregatedIndexResource_;   ///< 集約インデックス (vertex base offset 加算済み)
+    //スポーン形状の GPU リソース (構築後 immutable、Clone 間で shared_ptr 共有)
+    std::shared_ptr<SharedBufferSrv> areaPrefixSum_;     ///< 三角形面積 Prefix Sum (size = triCount + 1)
+    std::shared_ptr<SharedBufferSrv> aggregatedVertex_;  ///< マルチプリミティブ集約頂点
+    std::shared_ptr<SharedBufferSrv> aggregatedIndex_;   ///< 集約インデックス (vertex base offset 加算済み)
   };
 
 } // namespace Tako

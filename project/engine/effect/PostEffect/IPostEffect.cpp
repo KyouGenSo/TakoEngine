@@ -130,7 +130,7 @@ namespace Tako {
     graphicsPipelineStateDesc.SampleDesc.Count = 1;
     graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
     graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
-    graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_UNKNOWN;
 
     HRESULT hr = dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
     assert(SUCCEEDED(hr));
@@ -141,9 +141,9 @@ namespace Tako {
                                        D3D12_GPU_VIRTUAL_ADDRESS cbvAddress, uint32_t inputSrvIndex)
   {
     auto* commandList = dx12_->GetCommandList();
-    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dx12_->GetDSVHeapHandleStart();
 
-    commandList->OMSetRenderTargets(1, &outputRtv, false, &dsvHandle);
+    // 深度無効の全画面パスなので DSV はバインドしない
+    commandList->OMSetRenderTargets(1, &outputRtv, false, nullptr);
     commandList->SetGraphicsRootSignature(rootSig);
     commandList->SetPipelineState(pso);
     commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);

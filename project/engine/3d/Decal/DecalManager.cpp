@@ -100,7 +100,7 @@ namespace Tako {
 
     // RTV + DSV を再バインド
     D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = PostEffectManager::GetInstance()->GetCurrentRTVHandle();
-    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dx12_->GetDSVHeapHandleStart();
+    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dx12_->GetMainDSVHandle();
     dx12_->GetCommandList()->OMSetRenderTargets(1, &rtvHandle, false, &dsvHandle);
   }
 

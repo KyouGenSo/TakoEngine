@@ -1,5 +1,8 @@
 #pragma once
 #include <cstdint>
+#include <variant>
+#include <d3d12.h>
+#include <wrl.h>
 
 #include "Matrix4x4.h"
 #include "Vector2.h"
@@ -8,14 +11,32 @@
 
 namespace Tako {
 
+  class DX12Basic;
+
   /// <summary>
   /// レンダーターゲット構造体
   /// ポストエフェクトの中間バッファとして使用
   /// </summary>
   struct RenderTexture {
     Microsoft::WRL::ComPtr<ID3D12Resource> resource;
-    D3D12_CPU_DESCRIPTOR_HANDLE            rtvHandle;
-    uint32_t                               srvIndex;
+    D3D12_CPU_DESCRIPTOR_HANDLE            rtvHandle{};
+    uint32_t                               rtvIndex  = 0;
+    uint32_t                               srvIndex  = 0;
+
+    /// <summary>
+    /// リソース生成と RTV/SRV の確保・ビュー生成
+    /// </summary>
+    /// <param name="dx12">DirectX 12基盤システムのポインタ</param>
+    /// <param name="width">テクスチャの幅（ピクセル）</param>
+    /// <param name="height">テクスチャの高さ（ピクセル）</param>
+    /// <param name="format">ピクセルフォーマット</param>
+    /// <param name="clearColor">クリアカラー</param>
+    void Create(DX12Basic* dx12, uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4& clearColor);
+
+    /// <summary>
+    /// リソース解放と RTV/SRV インデックスの返却
+    /// </summary>
+    void Release();
   };
 
   /// <summary>
