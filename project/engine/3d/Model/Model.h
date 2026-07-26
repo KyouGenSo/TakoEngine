@@ -21,6 +21,15 @@ namespace Tako {
   class Model
   {
   public: //メンバー関数
+    Model() = default;
+    Model(const Model&) = delete;
+    Model& operator=(const Model&) = delete;
+
+    /// <summary>
+    /// デストラクタ
+    /// </summary>
+    ~Model();
+
     /// <summary>
     /// 初期化
     /// </summary>
@@ -356,13 +365,12 @@ namespace Tako {
     bool                             hasSkeleton_          = false;  ///< スケルトン有無フラグ
 
     //スキニング関連
-    std::vector<Matrix4x4>                                              inverseBindMatrices_;      ///< 逆バインド行列配列
-    Microsoft::WRL::ComPtr<ID3D12Resource>                              paletteResource_;          ///< スキニング用パレットリソース
-    std::span<WellForGPU>                                               mappedPalette_;            ///< マップされたパレットメモリ
-    uint32_t                                                            paletteSrvIndex_     = 0;  ///< パレット SRV インデックス
-    std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> paletteSrvHandle_;         ///< パレット SRV ハンドルペア
-    std::map<std::string, JointWeightData>                              skinClusterData_;          ///< スキンクラスターデータマップ
-    std::vector<MeshSkinClusterData>                                    meshSkinClusterData_;      ///< メッシュごとのスキンクラスターデータ
+    std::vector<Matrix4x4>                 inverseBindMatrices_;      ///< 逆バインド行列配列
+    Microsoft::WRL::ComPtr<ID3D12Resource> paletteResource_;          ///< スキニング用パレットリソース
+    std::span<WellForGPU>                  mappedPalette_;            ///< マップされたパレットメモリ
+    uint32_t                               paletteSrvIndex_     = 0;  ///< パレット SRV インデックス
+    std::map<std::string, JointWeightData> skinClusterData_;          ///< スキンクラスターデータマップ
+    std::vector<MeshSkinClusterData>       meshSkinClusterData_;      ///< メッシュごとのスキンクラスターデータ
 
     //デバッグ表示用
     static bool s_showSkeletonDebug;       ///< 全体的なスケルトン表示 ON/OFF

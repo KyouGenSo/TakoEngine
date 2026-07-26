@@ -28,6 +28,11 @@ namespace Tako {
   // 静的メンバー変数の定義
   bool Model::s_showSkeletonDebug = false;
 
+  Model::~Model()
+  {
+    ReleaseSkinningSRVIndex();
+  }
+
   ///------------------------------------------------///
   ///                 PUBLIC METHODS                ///
   ///-----------------------------------------------///
@@ -382,8 +387,6 @@ namespace Tako {
     if (this->hasSkeleton_) {
       newModel->skeleton_ = this->skeleton_;
       newModel->skinClusterData_ = this->skinClusterData_;
-      newModel->inverseBindMatrices_ = this->inverseBindMatrices_;
-      newModel->paletteSrvIndex_ = this->paletteSrvIndex_;
       newModel->InitializeMatrixPalette();
     }
 
