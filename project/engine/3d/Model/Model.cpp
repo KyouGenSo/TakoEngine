@@ -8,6 +8,7 @@
 #include "QuatFunc.h"
 #include "Object3dBasic.h"
 #include "ShadowRenderer.h"
+#include "FrameTimer.h"
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -99,8 +100,8 @@ namespace Tako {
     if (hasAnimation_) {
       // 一時停止中でない場合のみアニメーション時間を更新
       if (!isPaused_) {
-        // アニメーション時間の更新（再生速度を適用）
-        UpdateAnimation(animationSpeed_ / 60.0f);
+        // アニメーション時間の更新（再生速度とタイムスケールを適用）
+        UpdateAnimation(animationSpeed_ / 60.0f * FrameTimer::GetInstance()->GetTimeScale());
       }
 
       // ノード階層のアニメーション更新（スキニングの有無に関わらず実行）

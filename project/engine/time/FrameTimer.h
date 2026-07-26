@@ -31,15 +31,26 @@ namespace Tako {
     //=========================
     //Getter
     //=========================
-    float GetDeltaTime() const { return deltaTime_; }
+    float GetDeltaTime() const { return deltaTime_ * timeScale_; }
+    float GetUnscaledDeltaTime() const { return deltaTime_; }
+    float GetTimeScale() const { return timeScale_; }
     float GetFPS() const { return fps_; }
     float GetDisplayFPS() const { return displayFPS_; }
     float GetGameTime() const { return gameTime_; }
+
+    //=========================
+    //Setter
+    //=========================
+    void SetTimeScale(float scale) { timeScale_ = scale; timeScaleDuration_ = 0.0f; }
+    //指定秒数だけスケールを適用し、経過後 1.0 に自動復帰する。duration が 0 以下なら何もしない(永久停止防止)
+    void SetTimeScaleForDuration(float scale, float duration) { if (duration <= 0.0f) return; timeScale_ = scale; timeScaleDuration_ = duration; }
 
   private: //非公開関数
     void UpdateDeltaTimeAndFPS();
 
     void UpdateGameTime();
+
+    void UpdateTimeScaleDuration();
 
   private: //メンバー変数
     std::chrono::system_clock::time_point startTime_;
@@ -50,6 +61,10 @@ namespace Tako {
     float displayFPS_;
 
     float gameTime_;
+
+    //残り秒数が0以下の間はスケールを維持し続ける
+    float timeScale_;
+    float timeScaleDuration_;
 
     //1秒ごとにリセットする計測用の累積値
     float timeAccumulator_;

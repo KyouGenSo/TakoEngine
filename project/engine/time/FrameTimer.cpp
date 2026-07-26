@@ -20,6 +20,9 @@ namespace Tako {
     deltaTime_ = 0.0f;
     fps_ = 0.0f;
 
+    timeScale_ = 1.0f;
+    timeScaleDuration_ = 0.0f;
+
     timeAccumulator_ = 0.0f;
     frameCount_ = 0;
   }
@@ -34,6 +37,8 @@ namespace Tako {
     UpdateDeltaTimeAndFPS();
 
     UpdateGameTime();
+
+    UpdateTimeScaleDuration();
   }
 
   //----------------------------private----------------------------//
@@ -68,6 +73,17 @@ namespace Tako {
     auto nowTime = std::chrono::system_clock::now();
     std::chrono::duration<float> elapsedTime = nowTime - startTime_;
     gameTime_ = elapsedTime.count();
+  }
+
+  void FrameTimer::UpdateTimeScaleDuration()
+  {
+    if (timeScaleDuration_ <= 0.0f) return;
+
+    // スケール後の値で減算すると timeScale 0 のとき永久停止するため、生の deltaTime を使う
+    timeScaleDuration_ -= deltaTime_;
+    if (timeScaleDuration_ <= 0.0f) {
+      timeScale_ = 1.0f;
+    }
   }
 
 } // namespace Tako
