@@ -1,5 +1,6 @@
 #include "EaseFunc.h"
 
+#include <algorithm>
 #include <cmath>
 #include <numbers>
 
@@ -266,6 +267,67 @@ namespace Tako {
 
     float SmootherStep(float t) {
       return t * t * t * (t * (t * 6.0f - 15.0f) + 10.0f);
+    }
+
+    // ============================================================
+    // CubicBezier（カスタム制御点）
+    // ============================================================
+    float CubicBezier(float t, float x1, float y1, float x2, float y2) {
+      constexpr float kEpsilon = 1e-6f;
+
+      if (t <= 0.0f) {
+        return 0.0f;
+      }
+      if (t >= 1.0f) {
+        return 1.0f;
+      }
+
+      // x1/x2 が [0,1] を外れると曲線が横に折り返し、同じ時間 t に対応する点が複数できてしまうため clamp
+      x1 = std::clamp(x1, 0.0f, 1.0f);
+      x2 = std::clamp(x2, 0.0f, 1.0f);
+
+      // ベジェ曲線を計算しやすい多項式の形 ((a*u + b)*u + c)*u に展開した係数
+      float cx = 3.0f * x1;
+      float bx = 3.0f * (x2 - x1) - cx;
+      float ax = 1.0f - cx - bx;
+
+      auto sampleX = [=](float u) { return ((ax * u + bx) * u + cx) * u; };
+
+      // ベジェ曲線は媒介変数 u で進むため、横軸（時間）が t になる u をまず探す。
+      // 高速な Newton 法を試し、収束しなければ確実な二分法に切り替える
+      float u = t;
+      for (int i = 0; i < 8; ++i) {
+        float diff = sampleX(u) - t;
+        if (std::abs(diff) < kEpsilon) {
+          break;
+        }
+        float derivative = (3.0f * ax * u + 2.0f * bx) * u + cx;
+        if (std::abs(derivative) < kEpsilon) {
+          break;
+        }
+        u -= diff / derivative;
+      }
+      u = std::clamp(u, 0.0f, 1.0f);
+
+      if (std::abs(sampleX(u) - t) >= kEpsilon) {
+        float lo = 0.0f;
+        float hi = 1.0f;
+        while (hi - lo > kEpsilon) {
+          u = (lo + hi) * 0.5f;
+          if (sampleX(u) < t) {
+            lo = u;
+          }
+          else {
+            hi = u;
+          }
+        }
+      }
+
+      // 求めた u における縦軸（進行度）を返す
+      float cy = 3.0f * y1;
+      float by = 3.0f * (y2 - y1) - cy;
+      float ay = 1.0f - cy - by;
+      return ((ay * u + by) * u + cy) * u;
     }
 
   } // namespace Ease

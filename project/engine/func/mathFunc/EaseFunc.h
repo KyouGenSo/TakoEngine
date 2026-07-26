@@ -163,6 +163,14 @@ namespace Tako {
     /// </summary>
     float SmootherStep(float t);
 
+    // --- CubicBezier（カスタム制御点） ---
+    /// <summary>
+    /// カスタムイージング。始点(0,0)と終点(1,1)を制御点 (x1,y1),(x2,y2) で結んだ曲線をイージングとして使う
+    /// （CSS の cubic-bezier と同じ。x が時間、y が進行度で、曲線上で x=t となる点の y を返す）。
+    /// x1/x2 は [0,1] に clamp。y1/y2 は自由で、範囲外にすると行き過ぎて戻る動きも作れる
+    /// </summary>
+    float CubicBezier(float t, float x1, float y1, float x2, float y2);
+
   } // namespace Ease
 
 } // namespace Tako

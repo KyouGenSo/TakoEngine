@@ -98,6 +98,23 @@ namespace Tako
 
       return thetaA + diff * t;
     }
+
+    Vector3 CatmullRom(const Vector3& p0, const Vector3& p1, const Vector3& p2, const Vector3& p3, float t)
+    {
+      float t2 = t * t;
+      float t3 = t2 * t;
+
+      // 4点の混合比率。この重みで足し合わせると曲線上の点になる（t=0 で p1 の重みが 1、t=1 で p2 の重みが 1）
+      float w0 = 0.5f * (-t3 + 2.0f * t2 - t);
+      float w1 = 0.5f * (3.0f * t3 - 5.0f * t2 + 2.0f);
+      float w2 = 0.5f * (-3.0f * t3 + 4.0f * t2 + t);
+      float w3 = 0.5f * (t3 - t2);
+
+      return Vector3(
+        w0 * p0.x + w1 * p1.x + w2 * p2.x + w3 * p3.x,
+        w0 * p0.y + w1 * p1.y + w2 * p2.y + w3 * p3.y,
+        w0 * p0.z + w1 * p1.z + w2 * p2.z + w3 * p3.z);
+    }
   }
 } // namespace Tako
 

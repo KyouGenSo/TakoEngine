@@ -63,6 +63,11 @@ namespace Tako {
     /// 角度の最短経路補間（±180度を考慮）
     /// </summary>
     float LerpShortAngle(float thetaA, float thetaB, float t);
+
+    /// <summary>
+    /// Catmull-Rom スプライン補間。p1→p2 の区間を、前後の点 p0/p3 で接線を決めた滑らかな曲線でつなぐ
+    /// </summary>
+    Vector3 CatmullRom(const Vector3& p0, const Vector3& p1, const Vector3& p2, const Vector3& p3, float t);
   }
 
 } // namespace Tako
