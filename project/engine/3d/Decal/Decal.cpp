@@ -8,7 +8,7 @@
 
 #ifdef _DEBUG
 #include "ImGuiManager.h"
-#include "Draw2D.h"
+#include "LineRenderer.h"
 #include "OBB.h"
 #endif
 
@@ -169,7 +169,7 @@ namespace Tako {
     // アルファ 1.0 で視認性確保
     Vector4 debugColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 
-    Draw2D::GetInstance()->DrawOBB(obb, debugColor);
+    LineRenderer::GetInstance()->DrawOBB(obb, debugColor);
 #endif
   }
 

@@ -2,7 +2,7 @@
 #include "AABBCollider.h"
 #include "SphereCollider.h"
 #include "OBBCollider.h"
-#include "Draw2D.h"
+#include "LineRenderer.h"
 #include <algorithm>
 #include <cmath>
 #include <unordered_map>
@@ -130,8 +130,8 @@ namespace Tako {
   void CollisionManager::DrawColliders() {
     if (!debugDrawEnabled_) return;
 
-    Draw2D* draw2D = Draw2D::GetInstance();
-    if (!draw2D) return;
+    LineRenderer* lineRenderer = LineRenderer::GetInstance();
+    if (!lineRenderer) return;
 
     auto GetColorByType = [](uint32_t typeID) -> Vector4 {
       // 黄金比でTypeIDを色相に分散させ、型ごとに色を散らす
@@ -161,18 +161,18 @@ namespace Tako {
 
       if (AABBCollider* aabb = dynamic_cast<AABBCollider*>(collider)) {
         AABB box = aabb->GetAABB();
-        draw2D->DrawAABB(box, color);
+        lineRenderer->DrawAABB(box, color);
         drawCount++;
       }
       else if (SphereCollider* sphere = dynamic_cast<SphereCollider*>(collider)) {
         Vector3 center = sphere->GetCenter();
         float radius = sphere->GetRadius();
-        draw2D->DrawSphere(center, radius, color);
+        lineRenderer->DrawSphere(center, radius, color);
         drawCount++;
       }
       else if (OBBCollider* obb = dynamic_cast<OBBCollider*>(collider)) {
         OBB obbData = obb->GetOBB();
-        draw2D->DrawOBB(obbData, color);
+        lineRenderer->DrawOBB(obbData, color);
         drawCount++;
       }
     }

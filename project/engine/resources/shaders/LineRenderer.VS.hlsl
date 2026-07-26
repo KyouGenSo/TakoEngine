@@ -1,4 +1,4 @@
-#include "2D.hlsli"
+#include "LineRenderer.hlsli"
 
 struct VertexShaderInput
 {

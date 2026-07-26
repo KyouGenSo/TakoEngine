@@ -3,7 +3,7 @@
 #include "DX12Basic.h"
 #include "TextureManager.h"
 #include "SrvManager.h"
-#include "Draw2D.h"
+#include "LineRenderer.h"
 #include "Mat4x4Func.h"
 #include "QuatFunc.h"
 #include "Object3dBasic.h"
@@ -601,10 +601,10 @@ namespace Tako {
           jointPosition - Vector3(0.01f, 0.01f, 0.01f),
           jointPosition + Vector3(0.01f, 0.01f, 0.01f)
         };
-        Draw2D::GetInstance()->DrawAABB(aabb, lineColor);
+        LineRenderer::GetInstance()->DrawAABB(aabb, lineColor);
 
         // Draw a line between the current joint and its parent
-        Draw2D::GetInstance()->DrawLine(
+        LineRenderer::GetInstance()->DrawLine(
           jointPosition,
           parentPosition,
           lineColor

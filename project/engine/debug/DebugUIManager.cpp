@@ -13,7 +13,7 @@
 #include "ShadowRenderer.h"
 #include "SceneManager.h"
 #include "imgui_internal.h"
-#include "Draw2D.h"
+#include "LineRenderer.h"
 #include "GPUParticle.h"
 #include "Logger.h"
 #include "EmitterManager.h"
@@ -182,7 +182,7 @@ namespace Tako {
             *pIsDebug_ = !debugCamera;
             // 各コンポーネントのデバッグモードも同時に設定
             Object3dBasic::GetInstance()->SetDebug(*pIsDebug_);
-            Draw2D::GetInstance()->SetDebug(*pIsDebug_);
+            LineRenderer::GetInstance()->SetDebug(*pIsDebug_);
             GPUParticle::GetInstance()->SetIsDebug(*pIsDebug_);
           }
         }

@@ -106,7 +106,7 @@ namespace Tako {
     void DrawImGui();
 
     /// <summary>
-    /// デバッグ描画（Draw2D による投影ボリュームのワイヤーフレーム表示）
+    /// デバッグ描画（LineRenderer による投影ボリュームのワイヤーフレーム表示）
     /// </summary>
     void DrawDebug();
 

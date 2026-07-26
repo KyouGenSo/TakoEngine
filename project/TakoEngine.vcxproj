@@ -139,7 +139,7 @@
     <ClCompile Include="engine\debug\DebugUIManagerParticleEditor.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="engine\2d\Draw2D.cpp" />
+    <ClCompile Include="engine\2d\LineRenderer.cpp" />
     <ClCompile Include="engine\audio\Audio.cpp" />
     <ClCompile Include="engine\3d\Camera\Camera.cpp" />
     <ClCompile Include="engine\effect\Particle\BoxEmitter.cpp" />
@@ -257,7 +257,7 @@
     <ClInclude Include="engine\io\GlobalVariables.h" />
     <ClInclude Include="engine\io\SceneLoader.h" />
     <ClInclude Include="engine\math\AABB.h" />
-    <ClInclude Include="engine\2d\Draw2D.h" />
+    <ClInclude Include="engine\2d\LineRenderer.h" />
     <ClInclude Include="engine\math\OBB.h" />
     <ClInclude Include="engine\math\Quaternion.h" />
     <ClInclude Include="engine\math\RandomEngine.h" />
@@ -328,11 +328,11 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="engine\resources\shaders\2D.PS.hlsl">
+    <FxCompile Include="engine\resources\shaders\LineRenderer.PS.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="engine\resources\shaders\2D.VS.hlsl">
+    <FxCompile Include="engine\resources\shaders\LineRenderer.VS.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>

@@ -10,7 +10,7 @@
 #include "TextureManager.h"
 #include "ModelManager.h"
 #include "ImGuiManager.h"
-#include "Draw2D.h"
+#include "LineRenderer.h"
 #include "OBB.h"
 
 #include <cstring>
@@ -1118,12 +1118,12 @@ namespace Tako {
   // エミッター形状の描画
   // =====================================================
   void DebugUIManager::DrawEmitterShape(const std::shared_ptr<GPUParticleEmitter>& emitter) {
-    auto* draw2D = Draw2D::GetInstance();
+    auto* lineRenderer = LineRenderer::GetInstance();
     Vector3 pos = emitter->GetPosition();
 
     if (auto sphereEmitter = std::dynamic_pointer_cast<SphereEmitter>(emitter)) {
       // 球エミッター: DrawSphere でワイヤーフレーム球を描画
-      draw2D->DrawSphere(pos, sphereEmitter->GetRadius(), emitterColorSphere_);
+      lineRenderer->DrawSphere(pos, sphereEmitter->GetRadius(), emitterColorSphere_);
     }
     else if (auto boxEmitter = std::dynamic_pointer_cast<BoxEmitter>(emitter)) {
       // 箱エミッター: OBBを構築してDrawOBBで描画
@@ -1137,7 +1137,7 @@ namespace Tako {
       // OBB: center, halfExtents(sizeの半分), orientation(回転行列)
       Matrix4x4 orientation = Mat4x4::MakeRotateXYZ(rotRad);
       OBB obb(pos, { size.x * 0.5f, size.y * 0.5f, size.z * 0.5f }, orientation);
-      draw2D->DrawOBB(obb, emitterColorBox_);
+      lineRenderer->DrawOBB(obb, emitterColorBox_);
     }
     else if (auto triEmitter = std::dynamic_pointer_cast<TriangleEmitter>(emitter)) {
       // 三角形エミッター: 3辺を線で描画（頂点は相対座標なのでpositionを加算）
@@ -1145,9 +1145,9 @@ namespace Tako {
       Vector3 v2 = { pos.x + triEmitter->GetVertex2().x, pos.y + triEmitter->GetVertex2().y, pos.z + triEmitter->GetVertex2().z };
       Vector3 v3 = { pos.x + triEmitter->GetVertex3().x, pos.y + triEmitter->GetVertex3().y, pos.z + triEmitter->GetVertex3().z };
 
-      draw2D->DrawLine(v1, v2, emitterColorTriangle_);
-      draw2D->DrawLine(v2, v3, emitterColorTriangle_);
-      draw2D->DrawLine(v3, v1, emitterColorTriangle_);
+      lineRenderer->DrawLine(v1, v2, emitterColorTriangle_);
+      lineRenderer->DrawLine(v2, v3, emitterColorTriangle_);
+      lineRenderer->DrawLine(v3, v1, emitterColorTriangle_);
     }
   }
 
@@ -1155,7 +1155,7 @@ namespace Tako {
   // フォースフィールドの可視化
   // =====================================================
   void DebugUIManager::DrawForceFieldVisualization(const ForceFieldData& field, int index) {
-    auto* draw2D = Draw2D::GetInstance();
+    auto* lineRenderer = LineRenderer::GetInstance();
 
     // 選択中のフォースフィールドは黄色でハイライト
     Vector4 radiusColor = forceFieldRadiusColor_;
@@ -1167,7 +1167,7 @@ namespace Tako {
 
     // === 影響半径の描画 ===
     if (showForceFieldRadius_ && field.radius > 0.0f) {
-      draw2D->DrawSphere(field.position, field.radius, radiusColor);
+      lineRenderer->DrawSphere(field.position, field.radius, radiusColor);
     }
 
     // === 方向表示 ===
@@ -1183,19 +1183,19 @@ namespace Tako {
       Vector3 dir = { field.direction.x / dirLen, field.direction.y / dirLen, field.direction.z / dirLen };
       float len = (std::min)((std::max)(forceFieldArrowLength_ * field.strength, 0.5f), 10.0f);
       Vector3 end = { field.position.x + dir.x * len, field.position.y + dir.y * len, field.position.z + dir.z * len };
-      draw2D->DrawArrow(field.position, end, dirColor, forceFieldArrowHeadSize_);
+      lineRenderer->DrawArrow(field.position, end, dirColor, forceFieldArrowHeadSize_);
       break;
     }
     case ForceFieldType::Vortex: {
       // 中心に十字を描画
       constexpr float kCrossSize = 0.5f;
-      draw2D->DrawLine(
+      lineRenderer->DrawLine(
         { field.position.x - kCrossSize, field.position.y, field.position.z },
         { field.position.x + kCrossSize, field.position.y, field.position.z }, dirColor);
-      draw2D->DrawLine(
+      lineRenderer->DrawLine(
         { field.position.x, field.position.y - kCrossSize, field.position.z },
         { field.position.x, field.position.y + kCrossSize, field.position.z }, dirColor);
-      draw2D->DrawLine(
+      lineRenderer->DrawLine(
         { field.position.x, field.position.y, field.position.z - kCrossSize },
         { field.position.x, field.position.y, field.position.z + kCrossSize }, dirColor);
 
@@ -1251,7 +1251,7 @@ namespace Tako {
           field.position.z + (right.z * std::cos(angle2) + forward.z * std::sin(angle2)) * circleRadius
         };
 
-        draw2D->DrawLine(p1, p2, dirColor);
+        lineRenderer->DrawLine(p1, p2, dirColor);
       }
 
       // 円弧の終端に接線方向の矢印を追加（回転方向を示す）
@@ -1273,7 +1273,7 @@ namespace Tako {
         arcEnd.y - tangent.y * 0.3f,
         arcEnd.z - tangent.z * 0.3f
       };
-      draw2D->DrawArrow(arrowStart, arcEnd, dirColor, forceFieldArrowHeadSize_ * 0.5f);
+      lineRenderer->DrawArrow(arrowStart, arcEnd, dirColor, forceFieldArrowHeadSize_ * 0.5f);
       break;
     }
     case ForceFieldType::Attract: {
@@ -1293,7 +1293,7 @@ namespace Tako {
         if (tcLen < 0.001f) continue;
         Vector3 dir = { toCenter.x / tcLen, toCenter.y / tcLen, toCenter.z / tcLen };
         Vector3 end = { field.position.x - dir.x * 0.5f, field.position.y - dir.y * 0.5f, field.position.z - dir.z * 0.5f };
-        draw2D->DrawArrow(start, end, dirColor, forceFieldArrowHeadSize_);
+        lineRenderer->DrawArrow(start, end, dirColor, forceFieldArrowHeadSize_);
       }
       break;
     }
@@ -1309,7 +1309,7 @@ namespace Tako {
       for (const auto& dir : directions) {
         Vector3 start = { field.position.x + dir.x * 0.5f, field.position.y + dir.y * 0.5f, field.position.z + dir.z * 0.5f };
         Vector3 end = { field.position.x + dir.x * dist, field.position.y + dir.y * dist, field.position.z + dir.z * dist };
-        draw2D->DrawArrow(start, end, dirColor, forceFieldArrowHeadSize_);
+        lineRenderer->DrawArrow(start, end, dirColor, forceFieldArrowHeadSize_);
       }
       break;
     }

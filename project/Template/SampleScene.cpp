@@ -1,6 +1,6 @@
 #include "SampleScene.h"
 
-#include "Draw2D.h"
+#include "LineRenderer.h"
 #include "GPUParticle.h"
 #include "Input.h"
 #include "Object3dBasic.h"
@@ -19,7 +19,7 @@ void SampleScene::Initialize()
 #ifdef _DEBUG
   DebugCamera::GetInstance()->Initialize();
   Object3dBasic::GetInstance()->SetDebug(false);
-  Draw2D::GetInstance()->SetDebug(false);
+  LineRenderer::GetInstance()->SetDebug(false);
   GPUParticle::GetInstance()->SetIsDebug(false);
 #endif
 

@@ -7,7 +7,7 @@
 #include "ModelManager.h"
 #include "Object3dBasic.h"
 #include "SpriteBasic.h"
-#include "Draw2D.h"
+#include "LineRenderer.h"
 #include "PostEffectManager.h"
 #include "GPUParticle.h"
 #include "TransitionManager.h"
@@ -82,8 +82,8 @@ namespace Tako {
     ShadowRenderer::GetInstance()->SetLight(Object3dBasic::GetInstance()->GetLight());
     ShadowRenderer::GetInstance()->SetCamera(defaultCamera_.get());
 
-    Draw2D::GetInstance()->SetCamera(defaultCamera_.get());
-    Draw2D::GetInstance()->Initialize(dx12_.get());
+    LineRenderer::GetInstance()->SetCamera(defaultCamera_.get());
+    LineRenderer::GetInstance()->Initialize(dx12_.get());
 
     PostEffectManager::GetInstance()->Initialize(dx12_.get());
 
@@ -125,7 +125,7 @@ namespace Tako {
 
     DecalManager::GetInstance()->Finalize();
 
-    Draw2D::GetInstance()->Finalize();
+    LineRenderer::GetInstance()->Finalize();
 
     ShadowRenderer::GetInstance()->Finalize();
 
@@ -197,7 +197,7 @@ namespace Tako {
     if (Input::GetInstance()->TriggerKey(DIK_F1)) {
       isDebug_ = !isDebug_;
       Object3dBasic::GetInstance()->SetDebug(isDebug_);
-      Draw2D::GetInstance()->SetDebug(isDebug_);
+      LineRenderer::GetInstance()->SetDebug(isDebug_);
       GPUParticle::GetInstance()->SetIsDebug(isDebug_);
     }
 
@@ -208,7 +208,7 @@ namespace Tako {
     DebugUIManager::GetInstance()->Update();
 #endif
 
-    Draw2D::GetInstance()->Update();
+    LineRenderer::GetInstance()->Update();
 
     Object3dBasic::GetInstance()->Update();
 
@@ -237,7 +237,7 @@ namespace Tako {
 
     GPUParticle::GetInstance()->Draw();
 
-    Draw2D::GetInstance()->Draw();
+    LineRenderer::GetInstance()->Draw();
 
     /// ===================================================== ///
     /// ------------------ポストエフェクト描画-------------------///
@@ -255,7 +255,7 @@ namespace Tako {
 
     TransitionManager::GetInstance()->Draw();
 
-    Draw2D::GetInstance()->Reset();
+    LineRenderer::GetInstance()->Reset();
 
     /// ============================================= ///
     /// ---------最終結果をスワップチェーンに描画---------///
@@ -278,7 +278,7 @@ namespace Tako {
 
     DebugUIManager::GetInstance()->Draw();
 
-    Draw2D::GetInstance()->ImGui();
+    LineRenderer::GetInstance()->ImGui();
 
     imguiManager_->End();
 
@@ -361,7 +361,7 @@ namespace Tako {
     isDebug_ = value;
     // 各コンポーネントのデバッグモードも同時に設定
     Object3dBasic::GetInstance()->SetDebug(isDebug_);
-    Draw2D::GetInstance()->SetDebug(isDebug_);
+    LineRenderer::GetInstance()->SetDebug(isDebug_);
     GPUParticle::GetInstance()->SetIsDebug(isDebug_);
   }
 #endif

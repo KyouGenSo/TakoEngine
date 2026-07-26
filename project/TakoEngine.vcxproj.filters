@@ -171,7 +171,7 @@
     <ClCompile Include="engine\scene\SceneManager.cpp">
       <Filter>scene</Filter>
     </ClCompile>
-    <ClCompile Include="engine\2d\Draw2D.cpp">
+    <ClCompile Include="engine\2d\LineRenderer.cpp">
       <Filter>2d</Filter>
     </ClCompile>
     <ClCompile Include="engine\func\mathFunc\QuatFunc.cpp">
@@ -398,7 +398,7 @@
     <ClInclude Include="engine\2d\TextureManager.h">
       <Filter>2d</Filter>
     </ClInclude>
-    <ClInclude Include="engine\2d\Draw2D.h">
+    <ClInclude Include="engine\2d\LineRenderer.h">
       <Filter>2d</Filter>
     </ClInclude>
     <ClInclude Include="engine\2d\Sprite.h">
@@ -787,10 +787,10 @@
     <FxCompile Include="engine\resources\shaders\IntegrateAll.CS.hlsl">
       <Filter>shader\Particle</Filter>
     </FxCompile>
-    <FxCompile Include="engine\resources\shaders\2D.PS.hlsl">
+    <FxCompile Include="engine\resources\shaders\LineRenderer.PS.hlsl">
       <Filter>shader\2D</Filter>
     </FxCompile>
-    <FxCompile Include="engine\resources\shaders\2D.VS.hlsl">
+    <FxCompile Include="engine\resources\shaders\LineRenderer.VS.hlsl">
       <Filter>shader\2D</Filter>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\Sprite.PS.hlsl">
