@@ -117,26 +117,44 @@ namespace Tako {
 
     particlePreviewViewport_->BeginPass();
 
-    // 床グリッド (プレビューカメラ視点で専用バッファに描く)
-    if (particlePreviewShowGrid_) {
-      LineRenderer* lineRenderer = LineRenderer::GetInstance();
-      lineRenderer->BeginPreviewLines();
-      lineRenderer->DrawGrid(500.0f, 500.0f, Vector4(0.35f, 0.35f, 0.35f, 1.0f));
-      lineRenderer->EndPreviewLines();
-      lineRenderer->DrawPreviewLines(particlePreviewCamera_->GetViewProjectionMatrix());
-    }
-
-    // Selected Only で未選択のときはグリッドのみ表示
+    // Selected Only の対象解決 (線分描画とパーティクル描画の両方で使う)
     int32_t slot = -1;
     bool drawParticles = true;
+    std::shared_ptr<GPUParticleEmitter> selectedEmitter;
     if (particlePreviewSelectedOnly_) {
       if (emitterManager_ && emitterManager_->HasEmitter(selectedEmitterName_)) {
-        slot = static_cast<int32_t>(emitterManager_->GetEmitterByName(selectedEmitterName_)->GetEmitterId());
+        selectedEmitter = emitterManager_->GetEmitterByName(selectedEmitterName_);
+        slot = static_cast<int32_t>(selectedEmitter->GetEmitterId());
       }
       else {
         drawParticles = false;
       }
     }
+
+    // 床グリッドと Visualizer をプレビューカメラ視点で専用バッファに描く
+    LineRenderer* lineRenderer = LineRenderer::GetInstance();
+    lineRenderer->BeginPreviewLines();
+    if (particlePreviewShowGrid_) {
+      lineRenderer->DrawGrid(500.0f, 500.0f, Vector4(0.35f, 0.35f, 0.35f, 1.0f));
+    }
+    if (particlePreviewSelectedOnly_) {
+      // エミッター形状は選択対象のみに絞る。FF は全パーティクルへ影響するため常に表示
+      if (showEmitterShapes_ && selectedEmitter && selectedEmitter->IsActive()) {
+        DrawEmitterShape(selectedEmitter);
+      }
+      if (showForceFieldRadius_ || showForceFieldDirection_) {
+        const auto& forceFields = GPUParticle::GetInstance()->GetForceFields();
+        for (int i = 0; i < static_cast<int>(forceFields.size()); i++) {
+          DrawForceFieldVisualization(forceFields[i], i);
+        }
+      }
+    }
+    else {
+      DrawParticleVisualization();
+    }
+    lineRenderer->EndPreviewLines();
+    lineRenderer->DrawPreviewLines(particlePreviewCamera_->GetViewProjectionMatrix());
+
     if (drawParticles) {
       GPUParticle::GetInstance()->DrawEmitterForPreview(slot, particlePreviewCamera_.get());
     }

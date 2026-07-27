@@ -35,7 +35,7 @@ namespace Tako {
     static constexpr uint32_t kVertexCountLine = 2;       ///< 線の頂点数
 
 #ifdef _DEBUG
-    static constexpr uint32_t kPreviewLineMaxCount = 4096;  ///< プレビュー用線分の最大数
+    static constexpr uint32_t kPreviewLineMaxCount = 8192;  ///< プレビュー用線分の最大数
 #endif // _DEBUG
 
   public: //構造体
