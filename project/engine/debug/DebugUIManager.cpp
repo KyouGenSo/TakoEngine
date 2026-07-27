@@ -65,6 +65,7 @@ namespace Tako {
   void DebugUIManager::Finalize() {
     ClearLogs();
     FinalizePrimitiveEditor();
+    FinalizeParticleEditor();
     instance_.reset();
   }
 
@@ -101,6 +102,7 @@ namespace Tako {
 
     // 表示状態に関わらず毎フレーム呼ぶ（非表示検知でプレビューを解放するため）
     UpdatePrimitiveEditor();
+    UpdateParticleEditor();
   }
 
   void DebugUIManager::Draw() {

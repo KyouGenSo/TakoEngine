@@ -72,6 +72,16 @@ namespace Tako {
     /// </summary>
     void Draw();
 
+#ifdef _DEBUG
+    /// <summary>
+    /// エディタプレビュー用: 本フレームのコンパクション結果を別カメラ視点で再描画する。
+    /// RT/DSV/ビューポートは呼び出し側で設定済み、Draw() 実行後に呼ぶこと
+    /// </summary>
+    /// <param name="slot">描画対象のエミッタースロット（-1 = 全エミッター）</param>
+    /// <param name="previewCamera">プレビュー視点カメラ（Update 済み）</param>
+    void DrawEmitterForPreview(int32_t slot, Camera* previewCamera);
+#endif
+
     /// <summary>
     /// 終了処理
     /// </summary>
@@ -187,6 +197,13 @@ namespace Tako {
     /// PerView の更新
     /// </summary>
     void UpdatePerView();
+
+    /// <summary>
+    /// グラフィックス描画パス本体。PerView アドレスと描画スロットの差し替えで本編/プレビューを共用
+    /// </summary>
+    /// <param name="perViewAddress">バインドする PerView 定数バッファの GPU アドレス</param>
+    /// <param name="slotFilter">-1 = 全スロット、0 以上 = そのスロットのみ ExecuteIndirect</param>
+    void DrawParticleGraphics(D3D12_GPU_VIRTUAL_ADDRESS perViewAddress, int32_t slotFilter);
 
     /// <summary>
     /// PerFrame の更新
@@ -407,6 +424,10 @@ namespace Tako {
     uint32_t                               activeParticleCount_           = 0;   ///< CPU 側で読み取ったアクティブパーティクル数（表示用キャッシュ）
     uint32_t                               readbackFrameCounter_          = 0;   ///< Readback 間引きカウンタ（フレーム数）
     static const uint32_t                  kReadbackInterval              = 10;  ///< Readback 実行間隔（フレーム数）
+
+    //エディタプレビュー描画
+    Microsoft::WRL::ComPtr<ID3D12Resource> previewPerViewResource_;            ///< プレビューカメラ用第2 PerView CB（本編と同一フレームで別視点を併存させるため分離）
+    PerView*                               previewPerViewData_     = nullptr;  ///< previewPerViewResource_ の常駐マップ先
 #endif
 
     //物理シミュレーション関連

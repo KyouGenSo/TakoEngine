@@ -1,8 +1,5 @@
 #include "DebugUIManager.h"
-#include "DX12Basic.h"
-#include "SrvManager.h"
-#include "RtvManager.h"
-#include "DsvManager.h"
+#include "PreviewViewport.h"
 #include "Object3d.h"
 #include "Object3dBasic.h"
 #include "Camera.h"
@@ -11,12 +8,10 @@
 #include "TextureManager.h"
 #include "FrameTimer.h"
 #include "ImGuiManager.h"
-#include "Mat4x4Func.h"
 
 #include <json.hpp>
 
 #include <algorithm>
-#include <cassert>
 #include <filesystem>
 #include <format>
 #include <fstream>
@@ -26,36 +21,10 @@
 
 namespace Tako {
 
-  /// <summary>
-  /// プリミティブエディターのプレビュー描画先一式（カラーRT/深度/SRV）
-  /// </summary>
-  struct PrimitivePreviewViewport {
-    DX12Basic*                             dx12 = nullptr;  ///< Finalize 時に使う（Object3dBasic より DebugUIManager の方が後に破棄されるため生ポインタで保持）
-    Microsoft::WRL::ComPtr<ID3D12Resource> renderTexture;
-    Microsoft::WRL::ComPtr<ID3D12Resource> depthBuffer;
-    D3D12_CPU_DESCRIPTOR_HANDLE            rtvHandle{};
-    D3D12_CPU_DESCRIPTOR_HANDLE            dsvHandle{};
-    uint32_t                               rtvIndex = 0;
-    uint32_t                               dsvIndex = 0;
-    uint32_t                               srvIndex = 0;
-  };
-
   DebugUIManager::DebugUIManager(Token) {}
   DebugUIManager::~DebugUIManager() = default;
 
   namespace {
-
-    constexpr uint32_t    kPreviewRTWidth    = 1280;
-    constexpr uint32_t    kPreviewRTHeight   = 720;
-    constexpr DXGI_FORMAT kPreviewRTFormat   = DXGI_FORMAT_R8G8B8A8_UNORM;
-    constexpr DXGI_FORMAT kPreviewDepthFormat = DXGI_FORMAT_D32_FLOAT;
-    constexpr Vector4     kPreviewClearColor = { 0.10f, 0.10f, 0.12f, 1.0f };
-
-    // オービットカメラ初期値（DebugUIManager.h のメンバ初期値と揃える）
-    constexpr float   kDefaultCamYaw      = 0.6f;
-    constexpr float   kDefaultCamPitch    = 0.35f;
-    constexpr float   kDefaultCamDistance = 4.0f;
-    constexpr Vector3 kDefaultCamTarget   = { 0.0f, 0.0f, 0.0f };
 
     const char* const kPresetDirectory = "resources/Json/PrimitivePresets/";
 
@@ -128,12 +97,13 @@ namespace Tako {
     }
 
     if (!primPreviewViewport_) {
-      InitializePrimitivePreviewViewport();
+      primPreviewViewport_ = std::make_unique<PreviewViewport>();
+      primPreviewViewport_->Initialize(L"PrimitiveEditorPreview");
     }
 
     if (!primPreviewCamera_) {
       primPreviewCamera_ = std::make_unique<Camera>();
-      primPreviewCamera_->SetAspect(static_cast<float>(kPreviewRTWidth) / static_cast<float>(kPreviewRTHeight));
+      primPreviewCamera_->SetAspect(primPreviewViewport_->GetAspect());
       primPreviewCameraPtr_ = primPreviewCamera_.get();
     }
 
@@ -166,92 +136,17 @@ namespace Tako {
     primPreviewObject_->SetScale(primPreviewScale_);
     ApplyPrimitivePreviewSettings();
 
-    // オービットカメラ: 回転から前方ベクトルを求め、注視点から distance 分引いた位置に置く
-    const Vector3 camRotate = { primCamPitch_, primCamYaw_, 0.0f };
-    const Vector3 forward = Mat4x4::TransformNormal(Mat4x4::MakeRotateXYZ(camRotate), Vector3(0.0f, 0.0f, 1.0f));
-    primPreviewCamera_->SetRotate(camRotate);
-    primPreviewCamera_->SetTranslate(primCamTarget_ - forward * primCamDistance_);
-    primPreviewCamera_->Update();
-    primPreviewCamera_->SetViewProjectionMatrix(primPreviewCamera_->GetViewMatrix() * primPreviewCamera_->GetProjectionMatrix());
+    primOrbitCamera_.ApplyTo(*primPreviewCamera_);
 
     primFloorObject_->Update();
     primPreviewObject_->Update();
-  }
-
-  void DebugUIManager::InitializePrimitivePreviewViewport()
-  {
-    DX12Basic* dx12 = Object3dBasic::GetInstance()->GetDX12Basic();
-    auto viewport = std::make_unique<PrimitivePreviewViewport>();
-    viewport->dx12 = dx12;
-
-    // RT
-    dx12->CreateRenderTextureResource(viewport->renderTexture, kPreviewRTWidth, kPreviewRTHeight, kPreviewRTFormat, kPreviewClearColor);
-    viewport->renderTexture->SetName(L"PrimitiveEditorPreviewRT");
-    dx12->SetInitialResourceState(viewport->renderTexture.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET);
-
-    viewport->rtvIndex = RtvManager::GetInstance()->Allocate();
-    RtvManager::GetInstance()->CreateRTV(viewport->rtvIndex, viewport->renderTexture.Get(), kPreviewRTFormat);
-    viewport->rtvHandle = RtvManager::GetInstance()->GetCpuHandle(viewport->rtvIndex);
-
-    viewport->srvIndex = SrvManager::GetInstance()->Allocate();
-    SrvManager::GetInstance()->CreateSRVForTexture2D(viewport->srvIndex, viewport->renderTexture.Get(), kPreviewRTFormat, 1);
-
-    // 深度バッファ
-    D3D12_RESOURCE_DESC depthDesc{};
-    depthDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-    depthDesc.Width = kPreviewRTWidth;
-    depthDesc.Height = kPreviewRTHeight;
-    depthDesc.DepthOrArraySize = 1;
-    depthDesc.MipLevels = 1;
-    depthDesc.Format = kPreviewDepthFormat;
-    depthDesc.SampleDesc.Count = 1;
-    depthDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-    depthDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-
-    D3D12_HEAP_PROPERTIES heapProps{};
-    heapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
-
-    D3D12_CLEAR_VALUE depthClear{};
-    depthClear.Format = kPreviewDepthFormat;
-    depthClear.DepthStencil.Depth = 1.0f;
-
-    HRESULT hr = dx12->GetDevice()->CreateCommittedResource(
-      &heapProps,
-      D3D12_HEAP_FLAG_NONE,
-      &depthDesc,
-      D3D12_RESOURCE_STATE_DEPTH_WRITE,
-      &depthClear,
-      IID_PPV_ARGS(&viewport->depthBuffer));
-    assert(SUCCEEDED(hr));
-    viewport->depthBuffer->SetName(L"PrimitiveEditorPreviewDepth");
-
-    viewport->dsvIndex = DsvManager::GetInstance()->Allocate();
-    DsvManager::GetInstance()->CreateDSV(viewport->dsvIndex, viewport->depthBuffer.Get(), kPreviewDepthFormat);
-    viewport->dsvHandle = DsvManager::GetInstance()->GetCpuHandle(viewport->dsvIndex);
-
-    primPreviewViewport_ = std::move(viewport);
   }
 
   void DebugUIManager::FinalizePrimitiveEditor()
   {
     primPreviewObject_.reset();
     primFloorObject_.reset();
-
-    if (primPreviewViewport_) {
-      SrvManager* srvManager = SrvManager::GetInstance();
-      if (srvManager && srvManager->IsAllocated(primPreviewViewport_->srvIndex)) {
-        srvManager->Free(primPreviewViewport_->srvIndex);
-      }
-      RtvManager::GetInstance()->Free(primPreviewViewport_->rtvIndex);
-      DsvManager::GetInstance()->Free(primPreviewViewport_->dsvIndex);
-      // 解放済みアドレスが別リソースに再利用された際の誤った状態遷移を防ぐ
-      // Object3dBasic は既に Finalize 済みの可能性があるため、生成時に保持した DX12Basic* を使う
-      if (primPreviewViewport_->dx12) {
-        primPreviewViewport_->dx12->RemoveResourceState(primPreviewViewport_->renderTexture.Get());
-      }
-      primPreviewViewport_.reset();
-    }
-
+    primPreviewViewport_.reset();
     primPreviewCamera_.reset();
     primPreviewCameraPtr_ = nullptr;
   }
@@ -300,21 +195,7 @@ namespace Tako {
       return;
     }
 
-    DX12Basic* dx12 = Object3dBasic::GetInstance()->GetDX12Basic();
-    ID3D12GraphicsCommandList* commandList = dx12->GetCommandList();
-
-    // プレビュー RT を描画先に設定してクリア
-    dx12->TransitionResourceWithTracking(primPreviewViewport_->renderTexture.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET);
-    commandList->OMSetRenderTargets(1, &primPreviewViewport_->rtvHandle, FALSE, &primPreviewViewport_->dsvHandle);
-    const float clearColor[4] = { kPreviewClearColor.x, kPreviewClearColor.y, kPreviewClearColor.z, kPreviewClearColor.w };
-    commandList->ClearRenderTargetView(primPreviewViewport_->rtvHandle, clearColor, 0, nullptr);
-    commandList->ClearDepthStencilView(primPreviewViewport_->dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-
-    // RT サイズに合わせたビューポート/シザー（画面サイズとは独立）
-    D3D12_VIEWPORT viewport{ 0.0f, 0.0f, static_cast<float>(kPreviewRTWidth), static_cast<float>(kPreviewRTHeight), 0.0f, 1.0f };
-    D3D12_RECT scissorRect{ 0, 0, static_cast<LONG>(kPreviewRTWidth), static_cast<LONG>(kPreviewRTHeight) };
-    commandList->RSSetViewports(1, &viewport);
-    commandList->RSSetScissorRects(1, &scissorRect);
+    primPreviewViewport_->BeginPass();
 
     // 直前は別パスの PSO のため共通描画設定を再適用（カメラ非依存なのでそのまま使える）
     Object3dBasic::GetInstance()->SetCommonRenderSetting();
@@ -324,8 +205,7 @@ namespace Tako {
     }
     primPreviewObject_->Draw();
 
-    // ImGui がサンプルするため SRV 状態へ遷移。RT/ビューポートは直後の DrawFinalResult が再設定する
-    dx12->TransitionResourceWithTracking(primPreviewViewport_->renderTexture.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    primPreviewViewport_->EndPass();
   }
 
   void DebugUIManager::DrawPrimitiveEditor()
@@ -340,54 +220,15 @@ namespace Tako {
       //---------------- 左: プレビュービューポート ----------------//
       if (ImGui::BeginChild("Viewport##PrimEditor", ImVec2(viewportWidth, 0.0f), true)) {
         if (ImGui::Button("Reset Camera##PrimEditor")) {
-          primCamYaw_ = kDefaultCamYaw;
-          primCamPitch_ = kDefaultCamPitch;
-          primCamDistance_ = kDefaultCamDistance;
-          primCamTarget_ = kDefaultCamTarget;
+          primOrbitCamera_.Reset();
         }
         ImGui::SameLine();
         ImGui::TextDisabled("RMB: Orbit / MMB: Pan / Wheel: Zoom");
 
-        // 残り領域に 16:9 レターボックスで表示
-        const ImVec2 availableSize = ImGui::GetContentRegionAvail();
-        const float aspectRatio = static_cast<float>(kPreviewRTWidth) / static_cast<float>(kPreviewRTHeight);
-        ImVec2 imageSize;
-        if (availableSize.x / availableSize.y > aspectRatio) {
-          imageSize.y = availableSize.y;
-          imageSize.x = imageSize.y * aspectRatio;
-        }
-        else {
-          imageSize.x = availableSize.x;
-          imageSize.y = imageSize.x / aspectRatio;
-        }
-        ImVec2 cursorPos = ImGui::GetCursorPos();
-        cursorPos.x += (availableSize.x - imageSize.x) * 0.5f;
-        cursorPos.y += (availableSize.y - imageSize.y) * 0.5f;
-        ImGui::SetCursorPos(cursorPos);
-
-        if (primPreviewViewport_) {
-          D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = SrvManager::GetInstance()->GetGPUDescriptorHandle(primPreviewViewport_->srvIndex);
-          ImGui::Image((ImTextureID)gpuHandle.ptr, imageSize);
-
+        if (primPreviewViewport_ && primPreviewViewport_->IsInitialized()) {
           // ビューポート上のマウス操作でオービットカメラを制御（ImGui 経由なので Input クラスやテキスト入力と干渉しない）
-          if (ImGui::IsItemHovered()) {
-            const ImGuiIO& io = ImGui::GetIO();
-            if (ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
-              primCamYaw_ += io.MouseDelta.x * 0.01f;
-              primCamPitch_ += io.MouseDelta.y * 0.01f;
-              primCamPitch_ = std::clamp(primCamPitch_, -1.5f, 1.5f);
-            }
-            if (ImGui::IsMouseDown(ImGuiMouseButton_Middle)) {
-              // 世界を掴んで動かす向き: マウス右移動で注視点は左へ
-              const Matrix4x4 rot = Mat4x4::MakeRotateXYZ(Vector3(primCamPitch_, primCamYaw_, 0.0f));
-              const Vector3 right = Mat4x4::TransformNormal(rot, Vector3(1.0f, 0.0f, 0.0f));
-              const Vector3 up = Mat4x4::TransformNormal(rot, Vector3(0.0f, 1.0f, 0.0f));
-              const float panScale = primCamDistance_ * 0.0015f;
-              primCamTarget_ = primCamTarget_ - right * (io.MouseDelta.x * panScale) + up * (io.MouseDelta.y * panScale);
-            }
-            if (io.MouseWheel != 0.0f) {
-              primCamDistance_ = std::clamp(primCamDistance_ * (1.0f - io.MouseWheel * 0.1f), 0.5f, 100.0f);
-            }
+          if (primPreviewViewport_->DrawImGuiImage()) {
+            primOrbitCamera_.HandleImGuiInput();
           }
         }
         else {

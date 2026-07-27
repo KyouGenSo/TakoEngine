@@ -12,12 +12,13 @@
 #include "Vector3.h"
 #include "Vector4.h"
 #include "PrimitiveBuilder.h"
+#include "OrbitCameraController.h"
 
 namespace Tako {
 
   class Object3d;
   class Camera;
-  struct PrimitivePreviewViewport;
+  class PreviewViewport;
 
   /// <summary>
   /// デバッグ UI の統合管理クラス。シーンヒエラルキー、インスペクター、コンソール、パフォーマンスモニターなどを提供
@@ -60,6 +61,16 @@ namespace Tako {
       Ring,
       Cylinder,
       Torus
+    };
+
+    /// <summary>
+    /// パーティクルエディターのインスペクタ表示対象
+    /// </summary>
+    enum class ParticleInspectTarget : int {
+      None = 0,
+      Emitter,
+      ForceField,
+      Group
     };
 
   private:
@@ -106,6 +117,12 @@ namespace Tako {
     /// TakoFramework::Draw() のシーン描画後・ImGui 描画前に呼ぶ
     /// </summary>
     void DrawPrimitivePreviewPass();
+
+    /// <summary>
+    /// パーティクルエディターのプレビューをオフスクリーン RT へ描画
+    /// TakoFramework::Draw() の GPUParticle::Draw() 後・ImGui 描画前に呼ぶ
+    /// </summary>
+    void DrawParticlePreviewPass();
 
     /// <summary>
     /// コンソールにログを追加
@@ -222,19 +239,65 @@ namespace Tako {
     void DrawCollisionDebug();
 
     /// <summary>
-    /// パーティクルエディターを描画
+    /// パーティクルエディターを描画（3ペイン: リスト / プレビュー / インスペクタ）
     /// </summary>
     void DrawParticleEditor();
 
     /// <summary>
-    /// グループ管理タブを描画
+    /// パーティクルエディターの更新（プレビュー RT/カメラ/床の生成・破棄、オービットカメラ反映）
+    /// GPU アイドル区間である Update() から呼ぶこと
     /// </summary>
-    void DrawGroupsTab();
+    void UpdateParticleEditor();
 
     /// <summary>
-    /// フォースフィールド管理タブを描画
+    /// パーティクルエディターの GPU リソースを解放
     /// </summary>
-    void DrawForceFieldsTab();
+    void FinalizeParticleEditor();
+
+    /// <summary>
+    /// 左ペイン: エミッター / フォースフィールド / グループの各セクションを描画
+    /// </summary>
+    void DrawParticleEditorListPane();
+
+    /// <summary>
+    /// 左ペイン: エミッター作成フォーム / 一覧 / Delete・Duplicate / クリップボード
+    /// </summary>
+    void DrawParticleEditorEmitterSection();
+
+    /// <summary>
+    /// 左ペイン: フォースフィールド追加フォーム / 一覧
+    /// </summary>
+    void DrawParticleEditorForceFieldSection();
+
+    /// <summary>
+    /// 左ペイン: グループ作成 / 一覧
+    /// </summary>
+    void DrawParticleEditorGroupSection();
+
+    /// <summary>
+    /// 中央ペイン: プレビューツールバー + プレビュー画像 + オービットカメラ入力
+    /// </summary>
+    void DrawParticleEditorPreviewPane();
+
+    /// <summary>
+    /// 右ペイン: 選択対象別インスペクタ + 共通セクション（Scene Presets / Visualization）
+    /// </summary>
+    void DrawParticleEditorInspectorPane();
+
+    /// <summary>
+    /// 選択中エミッターの全プロパティ / リネーム / プリセット保存・読込を描画
+    /// </summary>
+    void DrawEmitterInspector();
+
+    /// <summary>
+    /// 選択中フォースフィールドの編集 / 削除 / FF プリセットを描画
+    /// </summary>
+    void DrawForceFieldInspector();
+
+    /// <summary>
+    /// 選択中グループの操作（Active / 位置 / 所属エミッター管理 / 削除）を描画
+    /// </summary>
+    void DrawGroupInspector();
 
     /// <summary>
     /// パーティクル可視化の描画（エミッター形状 + フォースフィールド）
@@ -242,9 +305,9 @@ namespace Tako {
     void DrawParticleVisualization();
 
     /// <summary>
-    /// パーティクル可視化設定UIの描画（Visualizationタブ内）
+    /// パーティクル可視化設定UIの描画（メインシーンへの線描画の ON/OFF と色）
     /// </summary>
-    void DrawVisualizationTab();
+    void DrawVisualizationSettings();
 
     /// <summary>
     /// 個別エミッターの形状を描画
@@ -269,11 +332,6 @@ namespace Tako {
     /// GPU アイドル区間である Update() から呼ぶこと（描画フェーズでのモデル差し替えは危険）
     /// </summary>
     void UpdatePrimitiveEditor();
-
-    /// <summary>
-    /// プレビュー用オフスクリーン RT/深度/DSV/SRV を生成（初回のみ）
-    /// </summary>
-    void InitializePrimitivePreviewViewport();
 
     /// <summary>
     /// プリミティブエディターの GPU リソースを解放
@@ -349,12 +407,10 @@ namespace Tako {
 
     //パーティクルエディター用
     class EmitterManager* emitterManager_               = nullptr;
-    std::string           selectedEmitterName_;  ///< 空 = 未選択
+    std::string           selectedEmitterName_;                     ///< 空 = 未選択
     char                  newEmitterNameBuffer_[128]    = "";
     char                  renameEmitterNameBuffer_[128] = "";
     char                  presetNameBuffer_[128]        = "";
-    char                  loadPresetBuffer_[128]        = "";
-    bool                  showPresetManager_            = false;
 
     //グループ管理用
     int  selectedGroupIndex_      = -1;
@@ -378,6 +434,42 @@ namespace Tako {
     Vector4 forceFieldDirectionColor_ = { 1.0f, 0.0f, 0.0f, 1.0f };  ///< フォースフィールド方向色（赤）
     float   forceFieldArrowLength_    = 2.0f;                        ///< フォースフィールド矢印の長さ
     float   forceFieldArrowHeadSize_  = 0.3f;                        ///< フォースフィールド矢印の先端サイズ
+
+    //パーティクルエディター 3ペイン/プレビュー
+    ParticleInspectTarget            particleInspectTarget_       = ParticleInspectTarget::None;  ///< インスペクタ表示対象（最後にクリックしたリストで決まる）
+    std::unique_ptr<PreviewViewport> particlePreviewViewport_;
+    std::unique_ptr<Camera>          particlePreviewCamera_;
+    Camera*                          particlePreviewCameraPtr_    = nullptr;                      ///< Object3d::SetCamera(Camera**) に渡す安定アドレス
+    OrbitCameraController            particleOrbitCamera_;
+    std::unique_ptr<Object3d>        particleFloorObject_;                                        ///< 床参照プレーン
+    bool                             particlePreviewSelectedOnly_ = false;                        ///< true = 選択エミッターのみ描画
+    bool                             particlePreviewShowFloor_    = true;
+    std::string                      particleSelectedPreset_;                                     ///< Load コンボの選択中プリセット名
+
+    //パーティクルエディター 入力状態
+    int     newEmitterTypeIndex_               = 0;
+    Vector3 newEmitterPosition_                = { 0.0f, 0.0f, 0.0f };
+    float   newEmitterSphereRadius_            = 1.0f;
+    Vector3 newEmitterBoxSize_                 = { 1.0f, 1.0f, 1.0f };
+    Vector3 newEmitterBoxRotation_             = { 0.0f, 0.0f, 0.0f };
+    Vector3 newEmitterTriV1_                   = { -1.0f, 0.0f, 0.0f };
+    Vector3 newEmitterTriV2_                   = { 1.0f, 0.0f, 0.0f };
+    Vector3 newEmitterTriV3_                   = { 0.0f, 1.0f, 0.0f };
+    int     newEmitterModelIndex_              = 0;
+    char    newEmitterModelPathBuffer_[256]    = "";
+    int     clipboardSlotIndex_                = 0;
+    int     clipboardPasteModeIndex_           = 0;
+    char    emitterTexturePathBuffer_[256]     = "";
+    char    emitterRenderModelPathBuffer_[256] = "";
+    char    scenePresetNameBuffer_[128]        = "scene_preset";
+    Vector3 groupPositionEdit_                 = { 0.0f, 0.0f, 0.0f };   ///< 全グループ共有の編集値（実位置とは非同期の既存挙動を踏襲）
+    int     groupAddEmitterIndex_              = 0;
+    int     newForceFieldTypeIndex_            = 0;
+    Vector3 newForceFieldPosition_             = { 0.0f, 0.0f, 0.0f };
+    Vector3 newForceFieldDirection_            = { 0.0f, -1.0f, 0.0f };
+    float   newForceFieldStrength_             = 1.0f;
+    float   newForceFieldRadius_               = 0.0f;
+    float   newForceFieldFalloff_              = 1.0f;
 
     //プリミティブエディター用
     PrimitiveType                    selectedPrimitiveType_     = PrimitiveType::Cylinder;
@@ -409,13 +501,10 @@ namespace Tako {
     char                             primExportNameBuffer_[128] = "";    ///< OBJ 出力名（拡張子なし）
 
     //プリミティブエディター専用ビューポート/カメラ
-    std::unique_ptr<PrimitivePreviewViewport> primPreviewViewport_;  ///< オフスクリーンRT一式（初回オープン時に生成、定義は cpp 側）
-    std::unique_ptr<Camera> primPreviewCamera_;
-    Camera*                 primPreviewCameraPtr_ = nullptr;  ///< Object3d::SetCamera(Camera**) に渡す安定アドレス
-    float                   primCamYaw_           = 0.6f;     ///< オービット方位角（rad）
-    float                   primCamPitch_         = 0.35f;    ///< オービット仰角（rad、正で見下ろし）
-    float                   primCamDistance_      = 4.0f;     ///< 注視点からの距離
-    Vector3                 primCamTarget_        = { 0.0f, 0.0f, 0.0f };  ///< オービット注視点
+    std::unique_ptr<PreviewViewport> primPreviewViewport_;             ///< オフスクリーンRT一式（初回オープン時に生成）
+    std::unique_ptr<Camera>          primPreviewCamera_;
+    Camera*                          primPreviewCameraPtr_ = nullptr;  ///< Object3d::SetCamera(Camera**) に渡す安定アドレス
+    OrbitCameraController            primOrbitCamera_;
   };
 
 } // namespace Tako

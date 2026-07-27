@@ -355,6 +355,9 @@ namespace Tako {
     [[nodiscard]] const std::string& GetRenderModelPath() const { return renderModelPath_; }
     [[nodiscard]] virtual EmitterType GetType() const = 0;
 
+    // RegisterEmitter がスロット確定時に data_.emitterID へ正式 ID を書き込むため
+    friend class GPUParticle;
+
   protected: //メンバー関数
     /// <summary>
     /// クローン共通処理: EmitterData 全体と data_ 外メンバ(renderModelPath_)を dst へ転送する。

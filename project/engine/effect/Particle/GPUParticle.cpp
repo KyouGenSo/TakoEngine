@@ -404,7 +404,14 @@ namespace Tako {
     ///           描画    　     ///
     /// ======================= ///
 
-      // ルートシグネチャの設定
+    DrawParticleGraphics(perViewResource_->GetGPUVirtualAddress(), -1);
+  }
+
+  void GPUParticle::DrawParticleGraphics(D3D12_GPU_VIRTUAL_ADDRESS perViewAddress, int32_t slotFilter)
+  {
+    ID3D12GraphicsCommandList* commandList = dx12_->GetCommandList();
+
+    // ルートシグネチャの設定
     commandList->SetGraphicsRootSignature(RS_.Get());
 
     // プリミティブトポロジを設定
@@ -423,7 +430,7 @@ namespace Tako {
 
     // 全エミッター共通のルート: ParticleData SRV(t0), PerView CBV(b0), Emitter SRV(t2: ビルボード判定用)
     srvManager_->SetGraphicsRootDescriptorTable(DrawRP::kParticleSrvParam, particleSrvIndex_);
-    commandList->SetGraphicsRootConstantBufferView(DrawRP::kPerViewCbvParam, perViewResource_->GetGPUVirtualAddress());
+    commandList->SetGraphicsRootConstantBufferView(DrawRP::kPerViewCbvParam, perViewAddress);
     srvManager_->SetGraphicsRootDescriptorTable(DrawRP::kEmitterSrvParam, emitterSrvIndex_);
 
     // per-emitter ループ: エミッターごとに PSO(ブレンドモード)/テクスチャ/
@@ -433,6 +440,7 @@ namespace Tako {
     const size_t emitterCount = std::min(activeEmitters_.size(), static_cast<size_t>(kNumMaxEmitter));
     const UINT drawStride = static_cast<UINT>(sizeof(D3D12_DRAW_ARGUMENTS));
     for (size_t i = 0; i < emitterCount; ++i) {
+      if (slotFilter >= 0 && static_cast<int32_t>(i) != slotFilter) continue;
       const auto& emitter = activeEmitters_[i];
       if (!emitter) continue;
       const EmitterData& ed = emitter->GetData();
@@ -448,13 +456,32 @@ namespace Tako {
         static_cast<UINT64>(i) * drawStride, nullptr, 0);
     }
 
-
-
     // 各リソースの state を UAV に戻す
     dx12_->TransitionResourceWithTracking(drawArgsResource_.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
     dx12_->TransitionResourceWithTracking(drawIndexResource_.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
     dx12_->TransitionResourceState(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, particleResource_.Get());
   }
+
+#ifdef _DEBUG
+  void GPUParticle::DrawEmitterForPreview(int32_t slot, Camera* previewCamera)
+  {
+    if (!previewCamera || !previewPerViewData_) {
+      return;
+    }
+
+    // UpdatePerView と同式（デバッグカメラ分岐なし）をプレビューカメラで計算
+    const Matrix4x4 cameraMatrix = Mat4x4::MakeAffine({ .x = 1.0f, .y = 1.0f, .z = 1.0f }, previewCamera->GetRotate(), previewCamera->GetTranslate());
+    previewPerViewData_->viewProjection = Mat4x4::Multiply(Mat4x4::Inverse(cameraMatrix), previewCamera->GetProjectionMatrix());
+
+    Matrix4x4 billboardMatrix = Mat4x4::Multiply(Mat4x4::MakeRotateY(std::numbers::pi_v<float>), cameraMatrix);
+    billboardMatrix.m[3][0] = 0.0f;
+    billboardMatrix.m[3][1] = 0.0f;
+    billboardMatrix.m[3][2] = 0.0f;
+    previewPerViewData_->billboardMatrix = billboardMatrix;
+
+    DrawParticleGraphics(previewPerViewResource_->GetGPUVirtualAddress(), slot);
+  }
+#endif
 
   void GPUParticle::Finalize()
   {
@@ -547,15 +574,18 @@ namespace Tako {
     }
 
     //  空きスロットがあれば再利用し、無ければ末尾に新規確保する。
+    //  スロット番号 = 正式な emitterID (ctor の 0 は仮値)。粒子の emitterId・drawArgs のインデックスと一致する。
     if (!freeEmitterSlots_.empty()) {
       const uint32_t slot = freeEmitterSlots_.back();
       freeEmitterSlots_.pop_back();
+      emitter->data_.emitterID = slot;
       activeEmitters_[slot] = emitter;
     }
     else {
       if (activeEmitters_.size() >= kNumMaxEmitter) {
         return;
       }
+      emitter->data_.emitterID = static_cast<uint32_t>(activeEmitters_.size());
       activeEmitters_.push_back(emitter);
     }
   }
@@ -1104,6 +1134,14 @@ namespace Tako {
     // データの設定
     perViewData_->viewProjection = Mat4x4::MakeIdentity();
     perViewData_->billboardMatrix = Mat4x4::MakeIdentity();
+
+#ifdef _DEBUG
+    // エディタプレビュー用の第2 PerView（本編と同一フレームで別視点を併存させるため分離）
+    dx12_->CreateBufferResource(previewPerViewResource_, sizeof(PerView));
+    previewPerViewResource_->Map(0, nullptr, reinterpret_cast<void**>(&previewPerViewData_));
+    previewPerViewData_->viewProjection = Mat4x4::MakeIdentity();
+    previewPerViewData_->billboardMatrix = Mat4x4::MakeIdentity();
+#endif
   }
 
   void GPUParticle::CreatePerFrameData()

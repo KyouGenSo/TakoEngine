@@ -74,7 +74,8 @@ namespace Tako {
     /// <param name="pResource">テクスチャリソース</param>
     /// <param name="format">テクスチャフォーマット</param>
     /// <param name="mipLevels">ミップマップレベル数</param>
-    void CreateSRVForTexture2D(uint32_t srvIndex, ID3D12Resource* pResource, DXGI_FORMAT format, UINT mipLevels);
+    /// <param name="forceOpaqueAlpha">true でアルファを常に 1.0 としてサンプルさせる (RT を ImGui 等で不透明表示する用途)</param>
+    void CreateSRVForTexture2D(uint32_t srvIndex, ID3D12Resource* pResource, DXGI_FORMAT format, UINT mipLevels, bool forceOpaqueAlpha = false);
 
     /// <summary>
     /// SRV 生成(StructuredBuffer 用)

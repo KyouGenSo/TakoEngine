@@ -258,8 +258,9 @@ namespace Tako {
     LineRenderer::GetInstance()->Reset();
 
 #ifdef _DEBUG
-    // プリミティブエディターのプレビューをオフスクリーン RT へ描画
+    // 各エディターのプレビューをオフスクリーン RT へ描画
     DebugUIManager::GetInstance()->DrawPrimitivePreviewPass();
+    DebugUIManager::GetInstance()->DrawParticlePreviewPass();
 #endif
 
     /// ============================================= ///

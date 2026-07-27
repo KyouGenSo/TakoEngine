@@ -1,4 +1,5 @@
 #include "DebugUIManager.h"
+#include "PreviewViewport.h"
 #include "EmitterManager.h"
 #include "ForceFieldManager.h"
 #include "SphereEmitter.h"
@@ -12,880 +13,359 @@
 #include "ImGuiManager.h"
 #include "LineRenderer.h"
 #include "OBB.h"
+#include "Object3d.h"
+#include "Object3dBasic.h"
+#include "Camera.h"
+#include "Model.h"
+#include "PrimitiveBuilder.h"
 
+#include <algorithm>
 #include <cstring>
-#include <numbers>
 #include <cmath>
+#include <filesystem>
+#include <numbers>
 
 namespace Tako {
 
+  namespace {
+
+    constexpr float kListPaneWidth      = 260.0f;
+    constexpr float kInspectorPaneWidth = 380.0f;
+
+    // EmitterManager::SavePreset の保存先と一致させること
+    const char* const kParticlePresetDirectory = "resources/Json/ParticlePresets/Presets/";
+
+  } // anonymous namespace
+
+  // =====================================================
+  // 本体ウィンドウ (3ペイン: リスト / プレビュー / インスペクタ)
+  // =====================================================
   void DebugUIManager::DrawParticleEditor() {
-    ImGui::Begin("Particle Editor", &windowVisibility_["ParticleEditor"]);
+    ImGui::SetNextWindowSize(ImVec2(1400.0f, 760.0f), ImGuiCond_FirstUseEver);
+    if (ImGui::Begin("Particle Editor", &windowVisibility_["ParticleEditor"])) {
+      if (!emitterManager_) {
+        ImGui::TextColored(ImVec4(1, 1, 0, 1), "EmitterManager not set!");
+        ImGui::TextDisabled("Call SetEmitterManager() first");
+      }
+      else {
+        // アクティブパーティクル数の表示
+        {
+          uint32_t activeCount = GPUParticle::GetInstance()->GetActiveParticleCount();
+          uint32_t maxCount = GPUParticle::GetMaxParticleCount();
+          float usage = static_cast<float>(activeCount) / static_cast<float>(maxCount);
 
-    if (!emitterManager_) {
-      ImGui::TextColored(ImVec4(1, 1, 0, 1), "EmitterManager not set!");
-      ImGui::TextDisabled("Call SetEmitterManager() first");
-      ImGui::End();
-      return;
+          ImVec4 color;
+          if (usage < 0.5f) {
+            color = ImVec4(0.2f, 1.0f, 0.2f, 1.0f);
+          } else if (usage < 0.8f) {
+            color = ImVec4(1.0f, 1.0f, 0.2f, 1.0f);
+          } else {
+            color = ImVec4(1.0f, 0.2f, 0.2f, 1.0f);
+          }
+
+          ImGui::TextColored(color, "Active Particles: %u / %u (%.1f%%)",
+            activeCount, maxCount, usage * 100.0f);
+          ImGui::ProgressBar(usage, ImVec2(-1, 0), "");
+        }
+        ImGui::Separator();
+
+        const float spacing = ImGui::GetStyle().ItemSpacing.x;
+        const float centerWidth = (std::max)(
+          ImGui::GetContentRegionAvail().x - kListPaneWidth - kInspectorPaneWidth - spacing * 2.0f, 100.0f);
+
+        if (ImGui::BeginChild("ListPane##PE", ImVec2(kListPaneWidth, 0.0f), true)) {
+          DrawParticleEditorListPane();
+        }
+        ImGui::EndChild();
+        ImGui::SameLine();
+        if (ImGui::BeginChild("PreviewPane##PE", ImVec2(centerWidth, 0.0f), true)) {
+          DrawParticleEditorPreviewPane();
+        }
+        ImGui::EndChild();
+        ImGui::SameLine();
+        if (ImGui::BeginChild("InspectorPane##PE", ImVec2(0.0f, 0.0f), true)) {
+          DrawParticleEditorInspectorPane();
+        }
+        ImGui::EndChild();
+      }
     }
-
-    // アクティブパーティクル数の表示
-    {
-      uint32_t activeCount = GPUParticle::GetInstance()->GetActiveParticleCount();
-      uint32_t maxCount = GPUParticle::GetMaxParticleCount();
-      float usage = static_cast<float>(activeCount) / static_cast<float>(maxCount);
-
-      ImVec4 color;
-      if (usage < 0.5f) {
-        color = ImVec4(0.2f, 1.0f, 0.2f, 1.0f);
-      } else if (usage < 0.8f) {
-        color = ImVec4(1.0f, 1.0f, 0.2f, 1.0f);
-      } else {
-        color = ImVec4(1.0f, 0.2f, 0.2f, 1.0f);
-      }
-
-      ImGui::TextColored(color, "Active Particles: %u / %u (%.1f%%)",
-        activeCount, maxCount, usage * 100.0f);
-      ImGui::ProgressBar(usage, ImVec2(-1, 0), "");
-    }
-    ImGui::Separator();
-
-    // タブバー
-    if (ImGui::BeginTabBar("ParticleEditorTabs")) {
-      // エミッターリストタブ
-      if (ImGui::BeginTabItem("Emitters")) {
-        // エミッターリスト描画
-        ImGui::Text("Active Emitters: %zu", emitterManager_->GetActiveEmitterCount());
-        ImGui::Separator();
-
-        // 新規エミッター作成セクション
-        if (ImGui::CollapsingHeader("Create New Emitter")) {
-          ImGui::InputText("Name##CreateEmitter", newEmitterNameBuffer_, sizeof(newEmitterNameBuffer_));
-
-          static int emitterType = 0;
-          ImGui::Combo("Type##CreateEmitter", &emitterType, "Sphere\0Box\0Triangle\0Mesh\0");
-
-          static Vector3 position = { 0, 0, 0 };
-          ImGui::DragFloat3("Position##CreateEmitter", &position.x, 0.1f);
-
-          if (emitterType == 0) {  // Sphere
-            static float radius = 1.0f;
-            ImGui::DragFloat("Radius##CreateSphere", &radius, 0.1f, 0.1f, 10.0f);
-
-            if (ImGui::Button("Create Sphere Emitter##Create")) {
-              if (strlen(newEmitterNameBuffer_) > 0) {
-                emitterManager_->CreateSphereEmitter(newEmitterNameBuffer_, position, radius, 50, 0.016f);
-                AddLog("Created sphere emitter: " + std::string(newEmitterNameBuffer_), LogType::Info);
-                newEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
-              }
-            }
-          }
-          else if (emitterType == 1) {  // Box
-            static Vector3 size = { 1, 1, 1 };
-            static Vector3 rotation = { 0, 0, 0 };
-            ImGui::DragFloat3("Size##CreateBox", &size.x, 0.1f);
-            ImGui::DragFloat3("Rotation##CreateBox", &rotation.x, 0.1f);
-
-            if (ImGui::Button("Create Box Emitter##Create")) {
-              if (strlen(newEmitterNameBuffer_) > 0) {
-                emitterManager_->CreateBoxEmitter(newEmitterNameBuffer_, position, size, rotation, 50, 0.016f);
-                AddLog("Created box emitter: " + std::string(newEmitterNameBuffer_), LogType::Info);
-                newEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
-              }
-            }
-          }
-          else if (emitterType == 2) {  // Triangle
-            static Vector3 v1 = { -1, 0, 0 };
-            static Vector3 v2 = { 1, 0, 0 };
-            static Vector3 v3 = { 0, 1, 0 };
-            ImGui::DragFloat3("Vertex 1##CreateTriangle", &v1.x, 0.1f);
-            ImGui::DragFloat3("Vertex 2##CreateTriangle", &v2.x, 0.1f);
-            ImGui::DragFloat3("Vertex 3##CreateTriangle", &v3.x, 0.1f);
-
-            if (ImGui::Button("Create Triangle Emitter##Create")) {
-              if (strlen(newEmitterNameBuffer_) > 0) {
-                emitterManager_->CreateTriangleEmitter(newEmitterNameBuffer_, position, v1, v2, v3, 50, 0.016f);
-                AddLog("Created triangle emitter: " + std::string(newEmitterNameBuffer_), LogType::Info);
-                newEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
-              }
-            }
-          }
-          else {  // Mesh
-            // 読み込み済みモデル一覧から選んで生成 (テクスチャ切替UIと同型)。スポーン形状にそのモデルを使う。
-            static int selectedModelIdx = 0;
-            std::vector<std::string> modelNames = ModelManager::GetInstance()->GetLoadedModelNames();
-            if (!modelNames.empty()) {
-              if (selectedModelIdx >= static_cast<int>(modelNames.size())) selectedModelIdx = 0;
-              std::vector<const char*> items;
-              items.reserve(modelNames.size());
-              for (const auto& s : modelNames) items.push_back(s.c_str());
-              ImGui::Combo("Model##CreateMesh", &selectedModelIdx, items.data(), static_cast<int>(items.size()));
-            }
-            else {
-              ImGui::TextDisabled("(no loaded models - load one below)");
-            }
-
-            // 未ロードのモデルをパス指定でロード
-            static char loadModelPath[256] = "";
-            ImGui::InputText("Model Path##CreateMesh", loadModelPath, sizeof(loadModelPath));
-            ImGui::SameLine();
-            if (ImGui::Button("Load##CreateMesh") && loadModelPath[0] != '\0') {
-              ModelManager::GetInstance()->LoadModel(loadModelPath);
-              AddLog("Loaded model: " + std::string(loadModelPath), LogType::Info);
-            }
-
-            if (ImGui::Button("Create Mesh Emitter##Create")) {
-              if (strlen(newEmitterNameBuffer_) > 0 && !modelNames.empty()) {
-                emitterManager_->CreateMeshEmitterFromModel(newEmitterNameBuffer_, modelNames[selectedModelIdx], 50, 0.016f);
-                AddLog("Created mesh emitter: " + std::string(newEmitterNameBuffer_) + " (" + modelNames[selectedModelIdx] + ")", LogType::Info);
-                newEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
-              }
-            }
-          }
-        }
-
-        ImGui::Separator();
-
-        // エミッターリスト
-        auto emitterNames = emitterManager_->GetEmitterNames();
-        if (ImGui::BeginListBox("##EmitterList", ImVec2(-1, 200))) {
-          for (const auto& name : emitterNames) {
-            bool isSelected = (selectedEmitterName_ == name);
-            if (ImGui::Selectable(name.c_str(), isSelected)) {
-              selectedEmitterName_ = name;
-            }
-          }
-          ImGui::EndListBox();
-        }
-
-        // 選択したエミッターの操作
-        if (emitterManager_->HasEmitter(selectedEmitterName_)) {
-          ImGui::Separator();
-          ImGui::Text("Selected: %s", selectedEmitterName_.c_str());
-
-          if (ImGui::Button("Delete##EmitterList")) {
-            emitterManager_->RemoveEmitter(selectedEmitterName_);
-            selectedEmitterName_.clear();
-            AddLog("Deleted emitter", LogType::Info);
-          }
-          ImGui::SameLine();
-          if (ImGui::Button("Duplicate##EmitterList")) {
-            std::string newName = selectedEmitterName_ + "_copy";
-            emitterManager_->CreateTemporaryEmitterFrom(selectedEmitterName_, newName, 0.0f);
-            AddLog("Duplicated emitter as: " + newName, LogType::Info);
-          }
-        }
-
-        // クリップボード (エミッター設定のコピー & ペースト)
-        ImGui::Separator();
-        if (ImGui::CollapsingHeader("Clipboard")) {
-          static int clipboardSlot = 0;
-          static int pasteModeIdx = 0;
-
-          // スロット選択 ("*" = コピー済み。ホバーでコピー元を表示)
-          ImGui::Text("Slot:");
-          for (int i = 0; i < EmitterManager::kCopySlotCount; i++) {
-            ImGui::SameLine();
-            const bool hasData = emitterManager_->HasCopiedSettings(i);
-            std::string slotLabel = std::to_string(i) + (hasData ? "*" : "") + "##ClipSlot" + std::to_string(i);
-            if (ImGui::RadioButton(slotLabel.c_str(), clipboardSlot == i)) {
-              clipboardSlot = i;
-            }
-            if (hasData && ImGui::IsItemHovered()) {
-              static const char* typeNames[] = { "Sphere", "Box", "Triangle", "Mesh" };
-              const uint32_t typeIdx = static_cast<uint32_t>(emitterManager_->GetCopiedSettingsType(i));
-              ImGui::SetTooltip("%s (%s)", emitterManager_->GetCopiedSettingsSourceName(i).c_str(),
-                typeIdx < 4 ? typeNames[typeIdx] : "Unknown");
-            }
-          }
-
-          // 並び順は EmitterManager::PasteMode の enum 値順と一致させる
-          ImGui::Combo("Paste Mode##Clipboard", &pasteModeIdx, "All\0Color Only\0Velocity Only\0Scale Only\0");
-
-          const bool hasSelection = emitterManager_->HasEmitter(selectedEmitterName_);
-          const bool slotHasData = emitterManager_->HasCopiedSettings(clipboardSlot);
-
-          ImGui::BeginDisabled(!hasSelection);
-          if (ImGui::Button("Copy##Clipboard")) {
-            if (emitterManager_->CopyEmitterSettings(selectedEmitterName_, clipboardSlot)) {
-              AddLog("Copied '" + selectedEmitterName_ + "' to slot " + std::to_string(clipboardSlot), LogType::Info);
-            }
-          }
-          ImGui::EndDisabled();
-
-          ImGui::SameLine();
-          ImGui::BeginDisabled(!hasSelection || !slotHasData);
-          if (ImGui::Button("Paste##Clipboard")) {
-            if (emitterManager_->PasteEmitterSettings(selectedEmitterName_, clipboardSlot,
-              static_cast<EmitterManager::PasteMode>(pasteModeIdx))) {
-              AddLog("Pasted slot " + std::to_string(clipboardSlot) + " to '" + selectedEmitterName_ + "'", LogType::Info);
-            }
-            else {
-              AddLog("Paste failed (slot " + std::to_string(clipboardSlot) + ")", LogType::Warning);
-            }
-          }
-          ImGui::EndDisabled();
-
-          ImGui::SameLine();
-          ImGui::BeginDisabled(!slotHasData);
-          if (ImGui::Button("Paste as New##Clipboard")) {
-            const std::string newName = emitterManager_->PasteEmitterSettingsAsNew(clipboardSlot);
-            if (!newName.empty()) {
-              AddLog("Pasted slot " + std::to_string(clipboardSlot) + " as new emitter: " + newName, LogType::Info);
-            }
-            else {
-              AddLog("Paste as New failed (slot " + std::to_string(clipboardSlot) + ")", LogType::Warning);
-            }
-          }
-          ImGui::SameLine();
-          if (ImGui::Button("Clear##Clipboard")) {
-            emitterManager_->ClearCopiedSettings(clipboardSlot);
-            AddLog("Cleared clipboard slot " + std::to_string(clipboardSlot), LogType::Info);
-          }
-          ImGui::EndDisabled();
-        }
-
-        ImGui::EndTabItem();
-      }
-
-      // プロパティエディタタブ
-      if (ImGui::BeginTabItem("Properties")) {
-        if (!emitterManager_->HasEmitter(selectedEmitterName_)) {
-          ImGui::TextDisabled("No emitter selected");
-        }
-        else {
-          std::string selectedName = selectedEmitterName_;
-          auto emitter = emitterManager_->GetEmitterByName(selectedName);
-
-          if (emitter) {
-            ImGui::Text("Editing: %s", selectedName.c_str());
-
-            // 名前変更
-            ImGui::SetNextItemWidth(200.0f);
-            ImGui::InputText("##RenameEmitter", renameEmitterNameBuffer_, sizeof(renameEmitterNameBuffer_));
-            ImGui::SameLine();
-            if (ImGui::Button("Rename##RenameEmitter") && strlen(renameEmitterNameBuffer_) > 0) {
-              const std::string newName = renameEmitterNameBuffer_;
-              if (emitterManager_->RenameEmitter(selectedName, newName)) {
-                selectedEmitterName_ = newName;
-                AddLog("Renamed emitter: " + selectedName + " -> " + newName, LogType::Info);
-                renameEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
-              }
-              else {
-                AddLog("Rename failed: '" + newName + "' (already exists or invalid)", LogType::Warning);
-              }
-            }
-            ImGui::Separator();
-
-            // 基本プロパティ
-            if (ImGui::CollapsingHeader("Basic Properties", ImGuiTreeNodeFlags_DefaultOpen)) {
-              const bool isMeshEmitter = (emitter->GetType() == EmitterType::Mesh);
-              Vector3 pos = emitter->GetPosition();
-              if (ImGui::DragFloat3(isMeshEmitter ? "Position (Local Offset)##Properties" : "Position##Properties", &pos.x, 0.1f)) {
-                emitter->SetPosition(pos);
-              }
-              if (isMeshEmitter && ImGui::IsItemHovered()) {
-                ImGui::SetTooltip("Mesh emitter: offset in the bound Object3d's local space.\nNo binding: world-space placement.");
-              }
-
-              bool isActive = emitter->IsActive();
-              if (ImGui::Checkbox("Active", &isActive)) {
-                emitter->SetActive(isActive);
-              }
-
-              bool isEmitting = emitter->IsEmitting();
-              if (ImGui::Checkbox("Emitting", &isEmitting)) {
-                emitter->SetEmitting(isEmitting);
-              }
-
-              bool isNormalize = emitter->IsNormalize();
-              if (ImGui::Checkbox("Normalize", &isNormalize)) {
-                emitter->SetNormalize(isNormalize);
-              }
-
-              bool isRandomRotateZ = emitter->IsRandomRotateZ();
-              if (ImGui::Checkbox("RandomRotateZ", &isRandomRotateZ)) {
-                emitter->SetRandomRotateZ(isRandomRotateZ);
-              }
-
-              bool useForceField = emitter->IsUseForceField();
-              if (ImGui::Checkbox("Use ForceField", &useForceField)) {
-                emitter->SetUseForceField(useForceField);
-              }
-
-              bool useCurlNoise = emitter->IsUseCurlNoise();
-              if (ImGui::Checkbox("Use Curl Noise", &useCurlNoise)) {
-                emitter->SetUseCurlNoise(useCurlNoise);
-              }
-
-              bool useDepthCollision = emitter->IsUseDepthCollision();
-              if (ImGui::Checkbox("Use Depth Collision", &useDepthCollision)) {
-                emitter->SetUseDepthCollision(useDepthCollision);
-              }
-
-              int count = emitter->GetParticleCount();
-              if (ImGui::DragInt("Particle Count", &count, 1, 1, 1000)) {
-                emitter->SetParticleCount(count);
-              }
-
-              float frequency = emitter->GetFrequency();
-              if (ImGui::DragFloat("Frequency", &frequency, 0.001f, 0.001f, 1.0f)) {
-                emitter->SetFrequency(frequency);
-              }
-            }
-
-            // 範囲設定
-            if (ImGui::CollapsingHeader("Range Settings")) {
-              // パラメータごとのランダム化フラグ
-              // randomFlags == 0 のときは旧来の「range != (0,0) で自動判定」が効くので、
-              // チェックボックスはあくまで「明示的に Override したい」場合のための UI。
-              uint32_t randomFlags = emitter->GetRandomFlags();
-              const bool legacyAuto = (randomFlags == 0u);
-              ImGui::TextDisabled(legacyAuto
-                ? "Randomize: [Auto] (range != 0 enables randomization)"
-                : "Randomize: [Manual] (per-parameter checkboxes)");
-              if (legacyAuto) {
-                if (ImGui::SmallButton("Switch to Manual")) {
-                  // 現状の値を元に Auto 判定を Manual ビットに固定化
-                  uint32_t newFlags = 0u;
-                  if (emitter->GetScaleRangeX().x != 0.0f || emitter->GetScaleRangeX().y != 0.0f) newFlags |= ERAND_SCALE_X;
-                  if (emitter->GetScaleRangeY().x != 0.0f || emitter->GetScaleRangeY().y != 0.0f) newFlags |= ERAND_SCALE_Y;
-                  if (emitter->GetVelRangeX().x != 0.0f || emitter->GetVelRangeX().y != 0.0f) newFlags |= ERAND_VEL_X;
-                  if (emitter->GetVelRangeY().x != 0.0f || emitter->GetVelRangeY().y != 0.0f) newFlags |= ERAND_VEL_Y;
-                  if (emitter->GetVelRangeZ().x != 0.0f || emitter->GetVelRangeZ().y != 0.0f) newFlags |= ERAND_VEL_Z;
-                  if (emitter->GetLifeTimeRange().x != 0.0f || emitter->GetLifeTimeRange().y != 0.0f) newFlags |= ERAND_LIFETIME;
-                  // 全 0 だと Auto に戻ってしまうため、最低 1 ビットだけ立てて Manual 確定
-                  if (newFlags == 0u) newFlags = ERAND_SCALE_X;
-                  emitter->SetRandomFlags(newFlags);
-                }
-              }
-              else {
-                if (ImGui::SmallButton("Reset to Auto")) {
-                  emitter->SetRandomFlags(0u);
-                }
-              }
-              ImGui::Separator();
-
-              auto drawRandomCheckbox = [&](const char* label, uint32_t flag) {
-                bool enabled = (randomFlags & flag) != 0u;
-                if (ImGui::Checkbox(label, &enabled)) {
-                  if (enabled) emitter->EnableRandom(flag);
-                  else        emitter->DisableRandom(flag);
-                }
-              };
-
-              Vector2 scaleX = emitter->GetScaleRangeX();
-              Vector2 scaleY = emitter->GetScaleRangeY();
-              drawRandomCheckbox("##RandScaleX", ERAND_SCALE_X);
-              ImGui::SameLine();
-              if (ImGui::DragFloat2("Scale Range X", &scaleX.x, 0.01f)) {
-                emitter->SetScaleRangeX(scaleX);
-              }
-              drawRandomCheckbox("##RandScaleY", ERAND_SCALE_Y);
-              ImGui::SameLine();
-              if (ImGui::DragFloat2("Scale Range Y", &scaleY.x, 0.01f)) {
-                emitter->SetScaleRangeY(scaleY);
-              }
-
-              Vector2 velX = emitter->GetVelRangeX();
-              Vector2 velY = emitter->GetVelRangeY();
-              Vector2 velZ = emitter->GetVelRangeZ();
-              drawRandomCheckbox("##RandVelX", ERAND_VEL_X);
-              ImGui::SameLine();
-              if (ImGui::DragFloat2("Velocity Range X", &velX.x, 0.1f)) {
-                emitter->SetVelRangeX(velX);
-              }
-              drawRandomCheckbox("##RandVelY", ERAND_VEL_Y);
-              ImGui::SameLine();
-              if (ImGui::DragFloat2("Velocity Range Y", &velY.x, 0.1f)) {
-                emitter->SetVelRangeY(velY);
-              }
-              drawRandomCheckbox("##RandVelZ", ERAND_VEL_Z);
-              ImGui::SameLine();
-              if (ImGui::DragFloat2("Velocity Range Z", &velZ.x, 0.1f)) {
-                emitter->SetVelRangeZ(velZ);
-              }
-
-              // Normalize ON 時のみ有効な速さ範囲 (方向=velRange、速さ=speedRange)
-              ImGui::BeginDisabled(!emitter->IsNormalize());
-              Vector2 speedRange = emitter->GetSpeedRange();
-              if (ImGui::DragFloat2("Speed Range (Normalize)", &speedRange.x, 0.1f)) {
-                emitter->SetSpeedRange(speedRange);
-              }
-              ImGui::EndDisabled();
-
-              Vector2 lifeTime = emitter->GetLifeTimeRange();
-              drawRandomCheckbox("##RandLifeTime", ERAND_LIFETIME);
-              ImGui::SameLine();
-              if (ImGui::DragFloat2("LifeTime Range", &lifeTime.x, 0.01f, 0.01f, 10.0f)) {
-                emitter->SetLifeTimeRange(lifeTime);
-              }
-            }
-
-            // 色設定
-            if (ImGui::CollapsingHeader("Color Settings")) {
-              Vector4 startColor = emitter->GetStartColor();
-              Vector4 endColor = emitter->GetEndColor();
-
-              if (ImGui::ColorEdit4("Start Color", &startColor.x)) {
-                emitter->SetStartColor(startColor);
-              }
-              if (ImGui::ColorEdit4("End Color", &endColor.x)) {
-                emitter->SetEndColor(endColor);
-              }
-            }
-
-            // 描画設定 (per-emitter): ブレンドモード / ビルボード / テクスチャ / メッシュ形状描画
-            if (ImGui::CollapsingHeader("Render Settings")) {
-              // ブレンドモード
-              static const char* kBlendLabels[] = { "Add", "Screen", "Alpha" };
-              int blend = static_cast<int>(emitter->GetBlendMode());
-              if (ImGui::Combo("Blend Mode##Render", &blend, kBlendLabels, IM_ARRAYSIZE(kBlendLabels))) {
-                emitter->SetBlendMode(static_cast<ParticleBlendMode>(blend));
-              }
-
-              // ビルボード ON/OFF
-              bool billboard = emitter->IsBillboard();
-              if (ImGui::Checkbox("Billboard (camera-facing)", &billboard)) {
-                emitter->SetBillboard(billboard);
-              }
-              ImGui::SameLine();
-              ImGui::TextDisabled("(OFF: world-fixed, rotate.z applied)");
-
-              // テクスチャ選択
-              uint32_t curTex = emitter->GetTextureSrvIndex();
-              std::string curName = (curTex != 0)
-                ? TextureManager::GetInstance()->GetFileName(curTex)
-                : std::string("(default: circle.dds)");
-              ImGui::Text("Texture: %s", curName.c_str());
-
-              // ロード済みテクスチャからの選択
-              std::vector<std::string> texNames = TextureManager::GetInstance()->GetLoadedTextureFileNames();
-              if (!texNames.empty()) {
-                int curIdx = -1;
-                for (int n = 0; n < static_cast<int>(texNames.size()); ++n) {
-                  if (texNames[n] == curName) { curIdx = n; break; }
-                }
-                std::vector<const char*> items;
-                items.reserve(texNames.size());
-                for (const auto& s : texNames) items.push_back(s.c_str());
-                if (ImGui::Combo("Texture##Render", &curIdx, items.data(), static_cast<int>(items.size()))) {
-                  if (curIdx >= 0 && curIdx < static_cast<int>(texNames.size())) {
-                    emitter->SetTexture(texNames[curIdx]);
-                  }
-                }
-              }
-
-              // 新規テクスチャの読込 (パス指定)
-              static char texPath[256] = "";
-              ImGui::InputText("Texture Path##Render", texPath, sizeof(texPath));
-              ImGui::SameLine();
-              if (ImGui::Button("Load & Set##Render") && texPath[0] != '\0') {
-                emitter->SetTexture(texPath);
-              }
-
-              // 描画モデル選択: 読み込み済みモデルから選んで
-              // 各パーティクルの描画形状を切り替える。空=デフォルトの板ポリ。
-              const std::string& curModel = emitter->GetRenderModelPath();
-              ImGui::Text("Render Model: %s", curModel.empty() ? "(default: quad)" : curModel.c_str());
-
-              std::vector<std::string> modelNames = ModelManager::GetInstance()->GetLoadedModelNames();
-              if (!modelNames.empty()) {
-                int curModelIdx = -1;
-                for (int n = 0; n < static_cast<int>(modelNames.size()); ++n) {
-                  if (modelNames[n] == curModel) { curModelIdx = n; break; }
-                }
-                std::vector<const char*> modelItems;
-                modelItems.reserve(modelNames.size());
-                for (const auto& s : modelNames) modelItems.push_back(s.c_str());
-                if (ImGui::Combo("Model##Render", &curModelIdx, modelItems.data(), static_cast<int>(modelItems.size()))) {
-                  if (curModelIdx >= 0 && curModelIdx < static_cast<int>(modelNames.size())) {
-                    emitter->SetParticleModel(modelNames[curModelIdx]);
-                  }
-                }
-              }
-
-              // 新規モデルをパス指定でロードして描画モデルに設定
-              static char renderModelPathBuf[256] = "";
-              ImGui::InputText("Model Path##Render", renderModelPathBuf, sizeof(renderModelPathBuf));
-              ImGui::SameLine();
-              if (ImGui::Button("Load & Set##RenderModel") && renderModelPathBuf[0] != '\0') {
-                emitter->SetParticleModel(renderModelPathBuf);
-              }
-
-              // 既定の板ポリに戻す
-              if (ImGui::Button("Reset to Quad##Render")) {
-                emitter->ResetParticleModel();
-              }
-            }
-
-            // スポーン位置種別 (中/外/線)
-            if (ImGui::CollapsingHeader("Spawn Location")) {
-              static const char* kSpawnLocationLabels[] = { "Inside", "Surface", "Edge" };
-              int currentLoc = static_cast<int>(emitter->GetSpawnLocation());
-              if (ImGui::Combo("Location##SpawnLocation", &currentLoc, kSpawnLocationLabels, IM_ARRAYSIZE(kSpawnLocationLabels))) {
-                emitter->SetSpawnLocation(static_cast<SpawnLocation>(currentLoc));
-              }
-              // 形状ごとの対応状況を警告表示
-              EmitterType etype = emitter->GetType();
-              if (etype == EmitterType::Sphere && currentLoc == static_cast<int>(SpawnLocation::Edge)) {
-                ImGui::TextColored(ImVec4(1, 0.7f, 0, 1), "Sphere has no vertices: Edge falls back to Surface");
-              }
-              if (etype == EmitterType::Triangle && currentLoc == static_cast<int>(SpawnLocation::Inside)) {
-                ImGui::TextColored(ImVec4(1, 0.7f, 0, 1), "Triangle is 2D: Inside falls back to Surface");
-              }
-            }
-
-            // Per-Particle Spawn 拘束
-            if (ImGui::CollapsingHeader("Spawn Lock (per-particle)")) {
-              bool spawnLockOn = emitter->IsSpawnLock();
-              float lockK = emitter->GetLockStiffness();
-              float lockD = emitter->GetLockDamping();
-              if (ImGui::Checkbox("Lock To Spawn", &spawnLockOn)) {
-                emitter->SetSpawnLock(spawnLockOn, lockK, lockD);
-              }
-              ImGui::TextDisabled("Each particle is pulled back to its spawn position (per-particle spring).");
-              ImGui::TextDisabled("Combined with Mesh emitter: particles stick to mesh surface and follow rotation/movement.");
-              if (ImGui::DragFloat("Lock Stiffness (k)", &lockK, 0.1f, 0.0f, 200.0f)) {
-                emitter->SetSpawnLock(spawnLockOn, lockK, lockD);
-              }
-              if (ImGui::DragFloat("Lock Damping (d)", &lockD, 0.05f, 0.0f, 50.0f)) {
-                emitter->SetSpawnLock(spawnLockOn, lockK, lockD);
-              }
-            }
-
-            // Per-Emitter Target 収束
-            if (ImGui::CollapsingHeader("Target Convergence")) {
-              bool convergeOn = emitter->IsConvergeToTarget();
-              if (ImGui::Checkbox("Converge To Target", &convergeOn)) {
-                emitter->SetConvergeToTarget(convergeOn);
-              }
-              ImGui::TextDisabled("Spring-damper force pulls all particles to targetPosition");
-              Vector3 targetPos = emitter->GetTargetPosition();
-              if (ImGui::DragFloat3("Target Position", &targetPos.x, 0.1f)) {
-                emitter->SetTargetPosition(targetPos);
-              }
-              float stiffness = emitter->GetConvergeStiffness();
-              if (ImGui::DragFloat("Stiffness (k)", &stiffness, 0.1f, 0.0f, 100.0f)) {
-                emitter->SetConvergeParameters(stiffness, emitter->GetConvergeDamping());
-              }
-              float damping = emitter->GetConvergeDamping();
-              if (ImGui::DragFloat("Damping (d)", &damping, 0.05f, 0.0f, 20.0f)) {
-                emitter->SetConvergeParameters(emitter->GetConvergeStiffness(), damping);
-              }
-              ImGui::TextDisabled("Use BindTargetPosition(const Vector3*) in code for dynamic tracking.");
-            }
-
-            // 消滅設定: alpha フェードとスケール縮小は独立フラグ
-            if (ImGui::CollapsingHeader("Death Style")) {
-              // アルファフェード
-              bool useAlphaFade = emitter->IsUseAlphaFade();
-              if (ImGui::Checkbox("Enable Alpha Fade", &useAlphaFade)) {
-                emitter->SetAlphaFade(useAlphaFade);
-              }
-              ImGui::SameLine();
-              ImGui::TextDisabled("(alpha 1.0 -> 0.0 over lifetime)");
-
-              // スケール縮小
-              bool useScaleFade = emitter->IsUseScaleFade();
-              if (ImGui::Checkbox("Enable Scale Fade", &useScaleFade)) {
-                emitter->SetScaleFade(useScaleFade, emitter->GetEndScaleDefault());
-              }
-              ImGui::SameLine();
-              ImGui::TextDisabled("(scale -> endScale over lifetime)");
-              Vector3 endScale = emitter->GetEndScaleDefault();
-              if (ImGui::DragFloat3("End Scale", &endScale.x, 0.01f, 0.0f, 10.0f)) {
-                emitter->SetEndScaleDefault(endScale);
-              }
-              ImGui::TextDisabled("Independent flags. Both ON = shrink with fade. Both OFF = stays visible until death.");
-            }
-
-            // 型固有のパラメータ
-            if (ImGui::CollapsingHeader("Type-Specific Settings")) {
-              if (auto sphereEmitter = std::dynamic_pointer_cast<SphereEmitter>(emitter)) {
-                float radius = sphereEmitter->GetRadius();
-                if (ImGui::DragFloat("Radius##TypeSpecific", &radius, 0.1f, 0.1f, 100.0f)) {
-                  sphereEmitter->SetRadius(radius);
-                }
-              }
-              else if (auto boxEmitter = std::dynamic_pointer_cast<BoxEmitter>(emitter)) {
-                Vector3 size = boxEmitter->GetSize();
-                Vector3 rotation = boxEmitter->GetRotation();
-
-                if (ImGui::DragFloat3("Size##TypeSpecific", &size.x, 0.1f)) {
-                  boxEmitter->SetSize(size);
-                }
-                if (ImGui::DragFloat3("Rotation##TypeSpecific", &rotation.x, 0.1f)) {
-                  boxEmitter->SetRotation(rotation);
-                }
-              }
-              else if (auto triangleEmitter = std::dynamic_pointer_cast<TriangleEmitter>(emitter)) {
-                Vector3 v1 = triangleEmitter->GetVertex1();
-                Vector3 v2 = triangleEmitter->GetVertex2();
-                Vector3 v3 = triangleEmitter->GetVertex3();
-
-                bool changed = false;
-                changed |= ImGui::DragFloat3("Vertex 1##TypeSpecific", &v1.x, 0.1f);
-                changed |= ImGui::DragFloat3("Vertex 2##TypeSpecific", &v2.x, 0.1f);
-                changed |= ImGui::DragFloat3("Vertex 3##TypeSpecific", &v3.x, 0.1f);
-
-                if (changed) {
-                  triangleEmitter->SetVertices(v1, v2, v3);
-                }
-              }
-              else if (auto meshEmitter = std::dynamic_pointer_cast<MeshEmitter>(emitter)) {
-                // ローカルオフセット (平行移動は Basic Properties の Position)
-                Vector3 offsetRotation = meshEmitter->GetOffsetRotation();
-                if (ImGui::DragFloat3("Offset Rotation##TypeSpecific", &offsetRotation.x, 0.01f)) {
-                  meshEmitter->SetOffsetRotation(offsetRotation);
-                }
-                Vector3 offsetScale = meshEmitter->GetOffsetScale();
-                if (ImGui::DragFloat3("Offset Scale##TypeSpecific", &offsetScale.x, 0.01f)) {
-                  meshEmitter->SetOffsetScale(offsetScale);
-                }
-                ImGui::TextDisabled("Position (Basic Properties) acts as local offset translation.");
-                ImGui::Separator();
-
-                // バインド状態とスポーン形状の情報表示 (read-only)
-                if (meshEmitter->GetBoundObject3d() != nullptr) {
-                  ImGui::Text("Bound to Object3d (follows its world matrix)");
-                }
-                else if (!meshEmitter->GetSpawnModelPath().empty()) {
-                  ImGui::Text("Spawn Model: %s", meshEmitter->GetSpawnModelPath().c_str());
-                }
-                const auto& edata = meshEmitter->GetData();
-                ImGui::Text("Triangle Count: %u", edata.meshTriangleCount);
-                ImGui::Text("AABB Min: (%.2f, %.2f, %.2f)", edata.meshAabbMin.x, edata.meshAabbMin.y, edata.meshAabbMin.z);
-                ImGui::Text("AABB Max: (%.2f, %.2f, %.2f)", edata.meshAabbMax.x, edata.meshAabbMax.y, edata.meshAabbMax.z);
-                ImGui::Text("Vertex SRV: %u, Index SRV: %u", edata.meshVertexSrvIndex, edata.meshIndexSrvIndex);
-                Mesh* meshPtr = meshEmitter->GetMesh();
-                if (meshPtr != nullptr) {
-                  ImGui::Text("Mesh Vertices: %u", meshPtr->GetVertexCount());
-                  ImGui::Text("Mesh Indices: %u", meshPtr->GetIndexCount());
-                }
-                else if (edata.meshTriangleCount > 0) {
-                  // 複数メッシュモデルは集約バッファ経由
-                  ImGui::Text("Aggregated model (%u tris)", edata.meshTriangleCount);
-                }
-                else {
-                  ImGui::TextColored(ImVec4(1, 0.5f, 0.5f, 1), "No spawn shape (0 triangles)!");
-                }
-              }
-            }
-
-            // 物理 / Curl Noise（per-emitter）
-            if (ImGui::CollapsingHeader("Physics & Noise##Properties")) {
-              float damping = emitter->GetDamping();
-              if (ImGui::SliderFloat("Damping##P", &damping, 0.9f, 1.0f, "%.4f")) {
-                emitter->SetDamping(damping);
-              }
-              if (ImGui::IsItemHovered()) ImGui::SetTooltip("Per-frame velocity damping (0.99 recommended)");
-
-              float restitution = emitter->GetCollisionRestitution();
-              if (ImGui::SliderFloat("Restitution##P", &restitution, 0.0f, 1.0f, "%.3f")) {
-                emitter->SetCollisionRestitution(restitution);
-              }
-              if (ImGui::IsItemHovered()) ImGui::SetTooltip("Collision restitution (0.0=absorb, 1.0=fully elastic)");
-
-              float pRadius = emitter->GetParticleRadius();
-              if (ImGui::DragFloat("Particle Radius##P", &pRadius, 0.001f, 0.001f, 1.0f, "%.4f")) {
-                emitter->SetParticleRadius(pRadius);
-              }
-              if (ImGui::IsItemHovered()) ImGui::SetTooltip("Particle radius used in depth collision");
-
-              float noiseScale = emitter->GetNoiseScale();
-              if (ImGui::SliderFloat("Noise Scale##P", &noiseScale, 0.01f, 10.0f, "%.3f")) {
-                emitter->SetNoiseScale(noiseScale);
-              }
-              if (ImGui::IsItemHovered()) ImGui::SetTooltip("Curl Noise spatial scale (small=large eddies, large=fine detail)");
-
-              float noiseStrength = emitter->GetNoiseStrength();
-              if (ImGui::SliderFloat("Noise Strength##P", &noiseStrength, 0.001f, 1.0f, "%.4f")) {
-                emitter->SetNoiseStrength(noiseStrength);
-              }
-              if (ImGui::IsItemHovered()) ImGui::SetTooltip("Curl Noise strength (0.01-0.1=subtle, 0.5+=strong turbulence)");
-
-              ImGui::TextDisabled("Note: Changes apply to newly spawned particles only.");
-            }
-          }
-          else {
-            ImGui::TextDisabled("Emitter not found");
-          }
-        }
-
-        ImGui::EndTabItem();
-      }
-
-      // プリセット管理タブ
-      if (ImGui::BeginTabItem("Presets")) {
-        ImGui::Text("Preset Management");
-        ImGui::Separator();
-
-        // プリセット保存
-        if (ImGui::CollapsingHeader("Save Preset")) {
-          ImGui::InputText("Preset Name##SavePreset", presetNameBuffer_, sizeof(presetNameBuffer_));
-
-          if (emitterManager_->HasEmitter(selectedEmitterName_)) {
-            ImGui::Text("From: %s", selectedEmitterName_.c_str());
-
-            if (ImGui::Button("Save as Preset##SavePreset") && strlen(presetNameBuffer_) > 0) {
-              emitterManager_->SavePreset(presetNameBuffer_, selectedEmitterName_);
-              AddLog("Saved preset: " + std::string(presetNameBuffer_), LogType::Info);
-              presetNameBuffer_[0] = '\0';  // 入力ボックスをクリア
-            }
-
-            // 名前入力なしでエミッター名のまま上書き保存
-            const std::string& currentName = selectedEmitterName_;
-            if (ImGui::Button(("Save as \"" + currentName + "\"##SavePresetCurrent").c_str())) {
-              emitterManager_->SavePreset(currentName, currentName);
-              AddLog("Saved preset: " + currentName, LogType::Info);
-            }
-          }
-          else {
-            ImGui::TextDisabled("Select an emitter first");
-          }
-        }
-
-        // プリセット読み込み
-        if (ImGui::CollapsingHeader("Load Preset")) {
-          ImGui::InputText("Preset Name##LoadPreset", loadPresetBuffer_, sizeof(loadPresetBuffer_));
-          ImGui::InputText("New Name##LoadPreset", newEmitterNameBuffer_, sizeof(newEmitterNameBuffer_));
-
-          if (ImGui::Button("Load Preset##LoadPreset") && strlen(loadPresetBuffer_) > 0 && strlen(newEmitterNameBuffer_) > 0) {
-            emitterManager_->LoadPreset(loadPresetBuffer_, newEmitterNameBuffer_);
-            AddLog("Loaded preset: " + std::string(loadPresetBuffer_), LogType::Info);
-            loadPresetBuffer_[0] = '\0';  // 入力ボックスをクリア
-            newEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
-          }
-        }
-
-        // 全体保存/読み込み
-        if (ImGui::CollapsingHeader("Scene Presets")) {
-          static char scenePresetName[128] = "scene_preset";
-          ImGui::InputText("Scene Name##ScenePreset", scenePresetName, sizeof(scenePresetName));
-
-          if (ImGui::Button("Save All Emitters##ScenePreset")) {
-            emitterManager_->SaveScenePreset(scenePresetName);
-            AddLog("Saved all emitters to: " + std::string(scenePresetName), LogType::Info);
-          }
-          ImGui::SameLine();
-          if (ImGui::Button("Load All Emitters##ScenePreset")) {
-            emitterManager_->LoadScenePreset(scenePresetName);
-            AddLog("Loaded all emitters from: " + std::string(scenePresetName), LogType::Info);
-          }
-        }
-
-        ImGui::EndTabItem();
-      }
-
-      // フォースフィールド管理タブ
-      if (ImGui::BeginTabItem("ForceFields")) {
-        DrawForceFieldsTab();
-        ImGui::EndTabItem();
-      }
-
-      // 可視化設定タブ
-      if (ImGui::BeginTabItem("Visualization")) {
-        DrawVisualizationTab();
-        ImGui::EndTabItem();
-      }
-
-      // グループ管理タブ
-      if (ImGui::BeginTabItem("Groups")) {
-        DrawGroupsTab();
-        ImGui::EndTabItem();
-      }
-
-      ImGui::EndTabBar();
-    }
-
     ImGui::End();
   }
 
-  // グループ管理タブの実装
-  void DebugUIManager::DrawGroupsTab() {
-    ImGui::Text("Group Management");
-    ImGui::Separator();
+  // =====================================================
+  // プレビューの更新 / 描画パス / 解放
+  // =====================================================
+  void DebugUIManager::UpdateParticleEditor() {
+    if (!windowVisibility_["ParticleEditor"]) {
+      // エディタを閉じたら床を破棄（RT/カメラは再オープンに備えて保持）
+      particleFloorObject_.reset();
+      return;
+    }
 
-    // 新規グループ作成
-    if (ImGui::CollapsingHeader("Create Group")) {
-      ImGui::InputText("Group Name##NewGroup", newGroupNameBuffer_, sizeof(newGroupNameBuffer_));
-      if (ImGui::Button("Create##NewGroup") && strlen(newGroupNameBuffer_) > 0) {
-        emitterManager_->CreateGroup(newGroupNameBuffer_);
-        AddLog("Created group: " + std::string(newGroupNameBuffer_), LogType::Info);
-        newGroupNameBuffer_[0] = '\0';  // 入力ボックスをクリア
+    if (!particlePreviewViewport_) {
+      particlePreviewViewport_ = std::make_unique<PreviewViewport>();
+      particlePreviewViewport_->Initialize(L"ParticleEditorPreview");
+    }
+
+    if (!particlePreviewCamera_) {
+      particlePreviewCamera_ = std::make_unique<Camera>();
+      particlePreviewCamera_->SetAspect(particlePreviewViewport_->GetAspect());
+      particlePreviewCameraPtr_ = particlePreviewCamera_.get();
+    }
+
+    if (!particleFloorObject_) {
+      particleFloorObject_ = std::make_unique<Object3d>();
+      particleFloorObject_->Initialize();
+      particleFloorObject_->SetCamera(&particlePreviewCameraPtr_);
+      particleFloorObject_->SetModel(PrimitiveBuilder::CreatePlane({ .width = 10.0f, .height = 10.0f }));
+      particleFloorObject_->SetMaterialColor(Vector4(0.35f, 0.35f, 0.35f, 1.0f));
+    }
+
+    particleOrbitCamera_.ApplyTo(*particlePreviewCamera_);
+    particleFloorObject_->Update();
+  }
+
+  void DebugUIManager::DrawParticlePreviewPass() {
+    if (!windowVisibility_["ParticleEditor"] || !particlePreviewViewport_
+      || !particlePreviewViewport_->IsInitialized() || !particlePreviewCamera_) {
+      return;
+    }
+
+    particlePreviewViewport_->BeginPass();
+
+    // 直前は別パスの PSO のため共通描画設定を再適用
+    Object3dBasic::GetInstance()->SetCommonRenderSetting();
+    if (particlePreviewShowFloor_ && particleFloorObject_) {
+      particleFloorObject_->Draw();
+    }
+
+    // Selected Only で未選択のときは床のみ表示
+    int32_t slot = -1;
+    bool drawParticles = true;
+    if (particlePreviewSelectedOnly_) {
+      if (emitterManager_ && emitterManager_->HasEmitter(selectedEmitterName_)) {
+        slot = static_cast<int32_t>(emitterManager_->GetEmitterByName(selectedEmitterName_)->GetEmitterId());
+      }
+      else {
+        drawParticles = false;
+      }
+    }
+    if (drawParticles) {
+      GPUParticle::GetInstance()->DrawEmitterForPreview(slot, particlePreviewCamera_.get());
+    }
+
+    particlePreviewViewport_->EndPass();
+  }
+
+  void DebugUIManager::FinalizeParticleEditor() {
+    particleFloorObject_.reset();
+    particlePreviewViewport_.reset();
+    particlePreviewCamera_.reset();
+    particlePreviewCameraPtr_ = nullptr;
+  }
+
+  // =====================================================
+  // 左ペイン
+  // =====================================================
+  void DebugUIManager::DrawParticleEditorListPane() {
+    ImGui::SeparatorText("Emitters");
+    DrawParticleEditorEmitterSection();
+    ImGui::SeparatorText("Force Fields");
+    DrawParticleEditorForceFieldSection();
+    ImGui::SeparatorText("Groups");
+    DrawParticleEditorGroupSection();
+  }
+
+  void DebugUIManager::DrawParticleEditorEmitterSection() {
+    ImGui::Text("Active Emitters: %zu", emitterManager_->GetActiveEmitterCount());
+
+    // 新規エミッター作成セクション
+    if (ImGui::CollapsingHeader("Create New Emitter")) {
+      ImGui::InputText("Name##CreateEmitter", newEmitterNameBuffer_, sizeof(newEmitterNameBuffer_));
+
+      ImGui::Combo("Type##CreateEmitter", &newEmitterTypeIndex_, "Sphere\0Box\0Triangle\0Mesh\0");
+
+      ImGui::DragFloat3("Position##CreateEmitter", &newEmitterPosition_.x, 0.1f);
+
+      if (newEmitterTypeIndex_ == 0) {  // Sphere
+        ImGui::DragFloat("Radius##CreateSphere", &newEmitterSphereRadius_, 0.1f, 0.1f, 10.0f);
+
+        if (ImGui::Button("Create Sphere Emitter##Create")) {
+          if (strlen(newEmitterNameBuffer_) > 0) {
+            emitterManager_->CreateSphereEmitter(newEmitterNameBuffer_, newEmitterPosition_, newEmitterSphereRadius_, 50, 0.016f);
+            AddLog("Created sphere emitter: " + std::string(newEmitterNameBuffer_), LogType::Info);
+            selectedEmitterName_ = newEmitterNameBuffer_;
+            particleInspectTarget_ = ParticleInspectTarget::Emitter;
+            newEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
+          }
+        }
+      }
+      else if (newEmitterTypeIndex_ == 1) {  // Box
+        ImGui::DragFloat3("Size##CreateBox", &newEmitterBoxSize_.x, 0.1f);
+        ImGui::DragFloat3("Rotation##CreateBox", &newEmitterBoxRotation_.x, 0.1f);
+
+        if (ImGui::Button("Create Box Emitter##Create")) {
+          if (strlen(newEmitterNameBuffer_) > 0) {
+            emitterManager_->CreateBoxEmitter(newEmitterNameBuffer_, newEmitterPosition_, newEmitterBoxSize_, newEmitterBoxRotation_, 50, 0.016f);
+            AddLog("Created box emitter: " + std::string(newEmitterNameBuffer_), LogType::Info);
+            selectedEmitterName_ = newEmitterNameBuffer_;
+            particleInspectTarget_ = ParticleInspectTarget::Emitter;
+            newEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
+          }
+        }
+      }
+      else if (newEmitterTypeIndex_ == 2) {  // Triangle
+        ImGui::DragFloat3("Vertex 1##CreateTriangle", &newEmitterTriV1_.x, 0.1f);
+        ImGui::DragFloat3("Vertex 2##CreateTriangle", &newEmitterTriV2_.x, 0.1f);
+        ImGui::DragFloat3("Vertex 3##CreateTriangle", &newEmitterTriV3_.x, 0.1f);
+
+        if (ImGui::Button("Create Triangle Emitter##Create")) {
+          if (strlen(newEmitterNameBuffer_) > 0) {
+            emitterManager_->CreateTriangleEmitter(newEmitterNameBuffer_, newEmitterPosition_, newEmitterTriV1_, newEmitterTriV2_, newEmitterTriV3_, 50, 0.016f);
+            AddLog("Created triangle emitter: " + std::string(newEmitterNameBuffer_), LogType::Info);
+            selectedEmitterName_ = newEmitterNameBuffer_;
+            particleInspectTarget_ = ParticleInspectTarget::Emitter;
+            newEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
+          }
+        }
+      }
+      else {  // Mesh
+        // 読み込み済みモデル一覧から選んで生成 (テクスチャ切替UIと同型)。スポーン形状にそのモデルを使う。
+        std::vector<std::string> modelNames = ModelManager::GetInstance()->GetLoadedModelNames();
+        if (!modelNames.empty()) {
+          if (newEmitterModelIndex_ >= static_cast<int>(modelNames.size())) newEmitterModelIndex_ = 0;
+          std::vector<const char*> items;
+          items.reserve(modelNames.size());
+          for (const auto& s : modelNames) items.push_back(s.c_str());
+          ImGui::Combo("Model##CreateMesh", &newEmitterModelIndex_, items.data(), static_cast<int>(items.size()));
+        }
+        else {
+          ImGui::TextDisabled("(no loaded models - load one below)");
+        }
+
+        // 未ロードのモデルをパス指定でロード
+        ImGui::InputText("Model Path##CreateMesh", newEmitterModelPathBuffer_, sizeof(newEmitterModelPathBuffer_));
+        ImGui::SameLine();
+        if (ImGui::Button("Load##CreateMesh") && newEmitterModelPathBuffer_[0] != '\0') {
+          ModelManager::GetInstance()->LoadModel(newEmitterModelPathBuffer_);
+          AddLog("Loaded model: " + std::string(newEmitterModelPathBuffer_), LogType::Info);
+        }
+
+        if (ImGui::Button("Create Mesh Emitter##Create")) {
+          if (strlen(newEmitterNameBuffer_) > 0 && !modelNames.empty()) {
+            emitterManager_->CreateMeshEmitterFromModel(newEmitterNameBuffer_, modelNames[newEmitterModelIndex_], 50, 0.016f);
+            AddLog("Created mesh emitter: " + std::string(newEmitterNameBuffer_) + " (" + modelNames[newEmitterModelIndex_] + ")", LogType::Info);
+            selectedEmitterName_ = newEmitterNameBuffer_;
+            particleInspectTarget_ = ParticleInspectTarget::Emitter;
+            newEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
+          }
+        }
       }
     }
 
-    // グループリスト
-    auto groupNames = emitterManager_->GetGroupNames();
-    ImGui::Text("Groups: %zu", groupNames.size());
-
-    if (ImGui::BeginListBox("##GroupList", ImVec2(-1, 150))) {
-      for (int i = 0; i < groupNames.size(); i++) {
-        bool isSelected = (selectedGroupIndex_ == i);
-        if (ImGui::Selectable(groupNames[i].c_str(), isSelected)) {
-          selectedGroupIndex_ = i;
+    // エミッターリスト
+    auto emitterNames = emitterManager_->GetEmitterNames();
+    if (ImGui::BeginListBox("##EmitterList", ImVec2(-1, 180))) {
+      for (const auto& name : emitterNames) {
+        bool isSelected = (selectedEmitterName_ == name);
+        if (ImGui::Selectable(name.c_str(), isSelected)) {
+          selectedEmitterName_ = name;
+          particleInspectTarget_ = ParticleInspectTarget::Emitter;
         }
       }
       ImGui::EndListBox();
     }
 
-    // 選択したグループの操作
-    if (selectedGroupIndex_ >= 0 && selectedGroupIndex_ < groupNames.size()) {
-      std::string groupName = groupNames[selectedGroupIndex_];
-      ImGui::Separator();
-      ImGui::Text("Selected Group: %s", groupName.c_str());
-
-      // グループアクティブ切り替え
-      bool isActive = emitterManager_->IsGroupActive(groupName);
-      if (ImGui::Checkbox("Group Active##Group", &isActive)) {
-        emitterManager_->SetGroupActive(groupName, isActive);
-      }
-
-      // グループ位置調整
-      static Vector3 groupOffset = { 0, 0, 0 };
-      if (ImGui::DragFloat3("Group Position##Group", &groupOffset.x, 0.1f)) {
-        emitterManager_->SetGroupPosition(groupName, groupOffset);
-      }
-
-      // グループ内のエミッター表示
-      auto emittersInGroup = emitterManager_->GetEmittersInGroup(groupName);
-      ImGui::Text("Emitters in group: %zu", emittersInGroup.size());
-      if (ImGui::BeginListBox("##GroupEmitters", ImVec2(-1, 100))) {
-        for (const auto& name : emittersInGroup) {
-          ImGui::Text("%s", name.c_str());
+    // 選択したエミッターの操作
+    if (emitterManager_->HasEmitter(selectedEmitterName_)) {
+      if (ImGui::Button("Delete##EmitterList")) {
+        emitterManager_->RemoveEmitter(selectedEmitterName_);
+        selectedEmitterName_.clear();
+        if (particleInspectTarget_ == ParticleInspectTarget::Emitter) {
+          particleInspectTarget_ = ParticleInspectTarget::None;
         }
-        ImGui::EndListBox();
+        AddLog("Deleted emitter", LogType::Info);
       }
+      ImGui::SameLine();
+      if (ImGui::Button("Duplicate##EmitterList")) {
+        std::string newName = selectedEmitterName_ + "_copy";
+        emitterManager_->CreateTemporaryEmitterFrom(selectedEmitterName_, newName, 0.0f);
+        selectedEmitterName_ = newName;
+        particleInspectTarget_ = ParticleInspectTarget::Emitter;
+        AddLog("Duplicated emitter as: " + newName, LogType::Info);
+      }
+    }
 
-      // エミッターをグループに追加
-      auto allEmitters = emitterManager_->GetEmitterNames();
-      static int addEmitterIndex = 0;
-      if (allEmitters.size() > 0) {
-        std::vector<const char*> items;
-        for (const auto& name : allEmitters) {
-          items.push_back(name.c_str());
+    // クリップボード (エミッター設定のコピー & ペースト)
+    if (ImGui::CollapsingHeader("Clipboard")) {
+      // スロット選択 ("*" = コピー済み。ホバーでコピー元を表示)
+      ImGui::Text("Slot:");
+      for (int i = 0; i < EmitterManager::kCopySlotCount; i++) {
+        ImGui::SameLine();
+        const bool hasData = emitterManager_->HasCopiedSettings(i);
+        std::string slotLabel = std::to_string(i) + (hasData ? "*" : "") + "##ClipSlot" + std::to_string(i);
+        if (ImGui::RadioButton(slotLabel.c_str(), clipboardSlotIndex_ == i)) {
+          clipboardSlotIndex_ = i;
         }
-        ImGui::Combo("Add Emitter##Group", &addEmitterIndex, items.data(), static_cast<int>(items.size()));
-        if (ImGui::Button("Add to Group##Group")) {
-          emitterManager_->AddToGroup(groupName, allEmitters[addEmitterIndex]);
-          AddLog("Added " + allEmitters[addEmitterIndex] + " to group " + groupName, LogType::Info);
+        if (hasData && ImGui::IsItemHovered()) {
+          static const char* typeNames[] = { "Sphere", "Box", "Triangle", "Mesh" };
+          const uint32_t typeIdx = static_cast<uint32_t>(emitterManager_->GetCopiedSettingsType(i));
+          ImGui::SetTooltip("%s (%s)", emitterManager_->GetCopiedSettingsSourceName(i).c_str(),
+            typeIdx < 4 ? typeNames[typeIdx] : "Unknown");
         }
       }
 
-      // グループ削除
-      if (ImGui::Button("Delete Group##Group")) {
-        emitterManager_->RemoveGroup(groupName);
-        selectedGroupIndex_ = -1;
-        AddLog("Deleted group: " + groupName, LogType::Info);
+      // 並び順は EmitterManager::PasteMode の enum 値順と一致させる
+      ImGui::Combo("Paste Mode##Clipboard", &clipboardPasteModeIndex_, "All\0Color Only\0Velocity Only\0Scale Only\0");
+
+      const bool hasSelection = emitterManager_->HasEmitter(selectedEmitterName_);
+      const bool slotHasData = emitterManager_->HasCopiedSettings(clipboardSlotIndex_);
+
+      ImGui::BeginDisabled(!hasSelection);
+      if (ImGui::Button("Copy##Clipboard")) {
+        if (emitterManager_->CopyEmitterSettings(selectedEmitterName_, clipboardSlotIndex_)) {
+          AddLog("Copied '" + selectedEmitterName_ + "' to slot " + std::to_string(clipboardSlotIndex_), LogType::Info);
+        }
       }
+      ImGui::EndDisabled();
+
+      ImGui::SameLine();
+      ImGui::BeginDisabled(!hasSelection || !slotHasData);
+      if (ImGui::Button("Paste##Clipboard")) {
+        if (emitterManager_->PasteEmitterSettings(selectedEmitterName_, clipboardSlotIndex_,
+          static_cast<EmitterManager::PasteMode>(clipboardPasteModeIndex_))) {
+          AddLog("Pasted slot " + std::to_string(clipboardSlotIndex_) + " to '" + selectedEmitterName_ + "'", LogType::Info);
+        }
+        else {
+          AddLog("Paste failed (slot " + std::to_string(clipboardSlotIndex_) + ")", LogType::Warning);
+        }
+      }
+      ImGui::EndDisabled();
+
+      ImGui::SameLine();
+      ImGui::BeginDisabled(!slotHasData);
+      if (ImGui::Button("Paste as New##Clipboard")) {
+        const std::string newName = emitterManager_->PasteEmitterSettingsAsNew(clipboardSlotIndex_);
+        if (!newName.empty()) {
+          AddLog("Pasted slot " + std::to_string(clipboardSlotIndex_) + " as new emitter: " + newName, LogType::Info);
+          selectedEmitterName_ = newName;
+          particleInspectTarget_ = ParticleInspectTarget::Emitter;
+        }
+        else {
+          AddLog("Paste as New failed (slot " + std::to_string(clipboardSlotIndex_) + ")", LogType::Warning);
+        }
+      }
+      ImGui::SameLine();
+      if (ImGui::Button("Clear##Clipboard")) {
+        emitterManager_->ClearCopiedSettings(clipboardSlotIndex_);
+        AddLog("Cleared clipboard slot " + std::to_string(clipboardSlotIndex_), LogType::Info);
+      }
+      ImGui::EndDisabled();
     }
   }
 
-  void DebugUIManager::DrawForceFieldsTab() {
+  void DebugUIManager::DrawParticleEditorForceFieldSection() {
     auto* gpuParticle = GPUParticle::GetInstance();
-
 
     // フォースフィールドタイプ名の定義
     static const char* forceTypeNames[] = {
@@ -894,44 +374,38 @@ namespace Tako {
 
     // --- 新規フォースフィールド追加 ---
     if (ImGui::CollapsingHeader("Add Force Field")) {
-      static int newForceType = 0;
-      ImGui::Combo("Type##NewFF", &newForceType, "Gravity\0Directional\0Vortex\0Attract\0Repel\0");
+      ImGui::Combo("Type##NewFF", &newForceFieldTypeIndex_, "Gravity\0Directional\0Vortex\0Attract\0Repel\0");
 
-      static Vector3 newPosition = { 0.0f, 0.0f, 0.0f };
-      static Vector3 newDirection = { 0.0f, -1.0f, 0.0f };
-      static float newStrength = 1.0f;
-      static float newRadius = 0.0f;
-      static float newFalloff = 1.0f;
-
-      ImGui::DragFloat3("Position##NewFF", &newPosition.x, 0.1f);
+      ImGui::DragFloat3("Position##NewFF", &newForceFieldPosition_.x, 0.1f);
 
       // タイプに応じた方向ガイド
-      if (newForceType == 0 || newForceType == 1) {
-        ImGui::DragFloat3("Direction##NewFF", &newDirection.x, 0.1f);
+      if (newForceFieldTypeIndex_ == 0 || newForceFieldTypeIndex_ == 1) {
+        ImGui::DragFloat3("Direction##NewFF", &newForceFieldDirection_.x, 0.1f);
       }
-      else if (newForceType == 2) {
-        ImGui::DragFloat3("Rotation Axis##NewFF", &newDirection.x, 0.1f);
+      else if (newForceFieldTypeIndex_ == 2) {
+        ImGui::DragFloat3("Rotation Axis##NewFF", &newForceFieldDirection_.x, 0.1f);
       }
 
-      ImGui::DragFloat("Strength##NewFF", &newStrength, 0.1f, 0.0f, 100.0f);
-      ImGui::DragFloat("Radius##NewFF", &newRadius, 0.1f, 0.0f, 100.0f);
+      ImGui::DragFloat("Strength##NewFF", &newForceFieldStrength_, 0.1f, 0.0f, 100.0f);
+      ImGui::DragFloat("Radius##NewFF", &newForceFieldRadius_, 0.1f, 0.0f, 100.0f);
       if (ImGui::IsItemHovered()) ImGui::SetTooltip("0 = infinite range");
-      ImGui::DragFloat("Falloff##NewFF", &newFalloff, 0.1f, 0.0f, 10.0f);
+      ImGui::DragFloat("Falloff##NewFF", &newForceFieldFalloff_, 0.1f, 0.0f, 10.0f);
 
       if (ImGui::Button("Add##NewFF")) {
         ForceFieldData field{};
-        field.type = static_cast<uint32_t>(newForceType);
-        field.position = newPosition;
-        field.direction = newDirection;
-        field.strength = newStrength;
-        field.radius = newRadius;
-        field.falloff = newFalloff;
+        field.type = static_cast<uint32_t>(newForceFieldTypeIndex_);
+        field.position = newForceFieldPosition_;
+        field.direction = newForceFieldDirection_;
+        field.strength = newForceFieldStrength_;
+        field.radius = newForceFieldRadius_;
+        field.falloff = newForceFieldFalloff_;
         field.pad = 0.0f;
 
         int32_t idx = gpuParticle->AddForceField(field);
         if (idx >= 0) {
           selectedForceFieldIndex_ = idx;
-          AddLog("Added force field: " + std::string(forceTypeNames[newForceType]), LogType::Info);
+          particleInspectTarget_ = ParticleInspectTarget::ForceField;
+          AddLog("Added force field: " + std::string(forceTypeNames[newForceFieldTypeIndex_]), LogType::Info);
         }
         else {
           AddLog("Failed to add force field: max reached", LogType::Warning);
@@ -939,14 +413,17 @@ namespace Tako {
       }
 
       // クイック追加ボタン
-      ImGui::Separator();
       ImGui::Text("Quick Add:");
       if (ImGui::Button("Gravity (Y-9.8)##Quick")) {
         ForceFieldData field{};
         field.type = static_cast<uint32_t>(ForceFieldType::Gravity);
         field.direction = { .x = 0.0f, .y = -9.8f, .z = 0.0f };
         field.strength = 1.0f;
-        gpuParticle->AddForceField(field);
+        int32_t idx = gpuParticle->AddForceField(field);
+        if (idx >= 0) {
+          selectedForceFieldIndex_ = idx;
+          particleInspectTarget_ = ParticleInspectTarget::ForceField;
+        }
         AddLog("Added gravity force field", LogType::Info);
       }
       ImGui::SameLine();
@@ -957,7 +434,11 @@ namespace Tako {
         field.strength = 5.0f;
         field.radius = 10.0f;
         field.falloff = 1.0f;
-        gpuParticle->AddForceField(field);
+        int32_t idx = gpuParticle->AddForceField(field);
+        if (idx >= 0) {
+          selectedForceFieldIndex_ = idx;
+          particleInspectTarget_ = ParticleInspectTarget::ForceField;
+        }
         AddLog("Added vortex force field", LogType::Info);
       }
     }
@@ -966,7 +447,6 @@ namespace Tako {
     const auto& forceFields = gpuParticle->GetForceFields();
     ImGui::Text("Force Fields: %zu / %u", forceFields.size(), GPUParticle::kMaxForceFields);
 
-    // リスト表示
     if (ImGui::BeginListBox("##ForceFieldList", ImVec2(-1, 120))) {
       for (int i = 0; i < static_cast<int>(forceFields.size()); i++) {
         uint32_t typeIdx = forceFields[i].type;
@@ -978,63 +458,695 @@ namespace Tako {
         bool isSelected = (selectedForceFieldIndex_ == i);
         if (ImGui::Selectable(label, isSelected)) {
           selectedForceFieldIndex_ = i;
+          particleInspectTarget_ = ParticleInspectTarget::ForceField;
         }
       }
       ImGui::EndListBox();
     }
+  }
 
-    // --- 選択中のフォースフィールド編集 ---
-    if (selectedForceFieldIndex_ >= 0 && selectedForceFieldIndex_ < static_cast<int>(forceFields.size())) {
-      ImGui::Separator();
-
-      uint32_t typeIdx = forceFields[selectedForceFieldIndex_].type;
-      const char* typeName = (typeIdx < 5) ? forceTypeNames[typeIdx] : "Unknown";
-      ImGui::Text("Editing: [%d] %s", selectedForceFieldIndex_, typeName);
-
-      // 編集可能なコピーを作成
-      ForceFieldData editField = forceFields[selectedForceFieldIndex_];
-      bool changed = false;
-
-      // タイプ変更
-      int editType = static_cast<int>(editField.type);
-      if (ImGui::Combo("Type##EditFF", &editType, "Gravity\0Directional\0Vortex\0Attract\0Repel\0")) {
-        editField.type = static_cast<uint32_t>(editType);
-        changed = true;
+  void DebugUIManager::DrawParticleEditorGroupSection() {
+    // 新規グループ作成
+    if (ImGui::CollapsingHeader("Create Group")) {
+      ImGui::InputText("Group Name##NewGroup", newGroupNameBuffer_, sizeof(newGroupNameBuffer_));
+      if (ImGui::Button("Create##NewGroup") && strlen(newGroupNameBuffer_) > 0) {
+        emitterManager_->CreateGroup(newGroupNameBuffer_);
+        AddLog("Created group: " + std::string(newGroupNameBuffer_), LogType::Info);
+        // 作成したグループを選択状態にする
+        auto names = emitterManager_->GetGroupNames();
+        for (int i = 0; i < static_cast<int>(names.size()); i++) {
+          if (names[i] == newGroupNameBuffer_) {
+            selectedGroupIndex_ = i;
+            particleInspectTarget_ = ParticleInspectTarget::Group;
+            break;
+          }
+        }
+        newGroupNameBuffer_[0] = '\0';  // 入力ボックスをクリア
       }
+    }
 
-      changed |= ImGui::DragFloat3("Position##EditFF", &editField.position.x, 0.1f);
+    // グループリスト
+    auto groupNames = emitterManager_->GetGroupNames();
+    ImGui::Text("Groups: %zu", groupNames.size());
 
-      // タイプに応じたラベル
-      if (editField.type == static_cast<uint32_t>(ForceFieldType::Vortex)) {
-        changed |= ImGui::DragFloat3("Rotation Axis##EditFF", &editField.direction.x, 0.1f);
+    if (ImGui::BeginListBox("##GroupList", ImVec2(-1, 120))) {
+      for (int i = 0; i < static_cast<int>(groupNames.size()); i++) {
+        bool isSelected = (selectedGroupIndex_ == i);
+        if (ImGui::Selectable(groupNames[i].c_str(), isSelected)) {
+          selectedGroupIndex_ = i;
+          particleInspectTarget_ = ParticleInspectTarget::Group;
+        }
       }
-      else if (editField.type == static_cast<uint32_t>(ForceFieldType::Gravity) ||
-               editField.type == static_cast<uint32_t>(ForceFieldType::Directional)) {
-        changed |= ImGui::DragFloat3("Direction##EditFF", &editField.direction.x, 0.1f);
+      ImGui::EndListBox();
+    }
+  }
+
+  // =====================================================
+  // 中央ペイン (プレビュー)
+  // =====================================================
+  void DebugUIManager::DrawParticleEditorPreviewPane() {
+    ImGui::Checkbox("Selected Only##PePrev", &particlePreviewSelectedOnly_);
+    ImGui::SameLine();
+    ImGui::Checkbox("Floor##PePrev", &particlePreviewShowFloor_);
+    ImGui::SameLine();
+    const bool hasSelection = emitterManager_->HasEmitter(selectedEmitterName_);
+    ImGui::BeginDisabled(!hasSelection);
+    if (ImGui::Button("Focus##PePrev")) {
+      // 注視点を選択エミッターの位置へ (Mesh エミッターはローカルオフセットの場合あり)
+      particleOrbitCamera_.target = emitterManager_->GetEmitterByName(selectedEmitterName_)->GetPosition();
+    }
+    ImGui::EndDisabled();
+    ImGui::SameLine();
+    if (ImGui::Button("Reset Camera##PePrev")) {
+      particleOrbitCamera_.Reset();
+    }
+    ImGui::SameLine();
+    ImGui::TextDisabled("RMB: Orbit / MMB: Pan / Wheel: Zoom");
+
+    if (particlePreviewViewport_ && particlePreviewViewport_->IsInitialized()) {
+      // ビューポート上のマウス操作でオービットカメラを制御（ImGui 経由なので Input クラスやテキスト入力と干渉しない）
+      if (particlePreviewViewport_->DrawImGuiImage()) {
+        particleOrbitCamera_.HandleImGuiInput();
       }
+    }
+    else {
+      ImGui::TextDisabled("Initializing preview...");
+    }
+  }
 
-      changed |= ImGui::DragFloat("Strength##EditFF", &editField.strength, 0.1f, 0.0f, 100.0f);
-      changed |= ImGui::DragFloat("Radius##EditFF", &editField.radius, 0.1f, 0.0f, 100.0f);
-      if (ImGui::IsItemHovered()) ImGui::SetTooltip("0 = infinite range");
-      changed |= ImGui::DragFloat("Falloff##EditFF", &editField.falloff, 0.1f, 0.0f, 10.0f);
+  // =====================================================
+  // 右ペイン (インスペクタ)
+  // =====================================================
+  void DebugUIManager::DrawParticleEditorInspectorPane() {
+    switch (particleInspectTarget_) {
+    case ParticleInspectTarget::Emitter:    DrawEmitterInspector();    break;
+    case ParticleInspectTarget::ForceField: DrawForceFieldInspector(); break;
+    case ParticleInspectTarget::Group:      DrawGroupInspector();      break;
+    default:                                ImGui::TextDisabled("Select an emitter / force field / group"); break;
+    }
 
-      if (changed) {
-        gpuParticle->UpdateForceField(static_cast<uint32_t>(selectedForceFieldIndex_), editField);
-      }
+    ImGui::Separator();
 
-      // 削除ボタン
-      ImGui::Separator();
-      if (ImGui::Button("Delete##EditFF")) {
-        gpuParticle->RemoveForceField(static_cast<uint32_t>(selectedForceFieldIndex_));
-        AddLog("Deleted force field [" + std::to_string(selectedForceFieldIndex_) + "]", LogType::Info);
-        selectedForceFieldIndex_ = -1;
+    // 全体保存/読み込み
+    if (ImGui::CollapsingHeader("Scene Presets")) {
+      ImGui::InputText("Scene Name##ScenePreset", scenePresetNameBuffer_, sizeof(scenePresetNameBuffer_));
+
+      if (ImGui::Button("Save All##ScenePreset")) {
+        emitterManager_->SaveScenePreset(scenePresetNameBuffer_);
+        AddLog("Saved all emitters to: " + std::string(scenePresetNameBuffer_), LogType::Info);
       }
       ImGui::SameLine();
-      if (ImGui::Button("Clear All##EditFF")) {
-        gpuParticle->ClearForceFields();
-        selectedForceFieldIndex_ = -1;
-        AddLog("Cleared all force fields", LogType::Info);
+      if (ImGui::Button("Load All##ScenePreset")) {
+        emitterManager_->LoadScenePreset(scenePresetNameBuffer_);
+        AddLog("Loaded all emitters from: " + std::string(scenePresetNameBuffer_), LogType::Info);
       }
+    }
+
+    // メインシーンへの可視化設定
+    if (ImGui::CollapsingHeader("Visualization")) {
+      DrawVisualizationSettings();
+    }
+  }
+
+  void DebugUIManager::DrawEmitterInspector() {
+    if (!emitterManager_->HasEmitter(selectedEmitterName_)) {
+      ImGui::TextDisabled("No emitter selected");
+      return;
+    }
+
+    std::string selectedName = selectedEmitterName_;
+    auto emitter = emitterManager_->GetEmitterByName(selectedName);
+    if (!emitter) {
+      ImGui::TextDisabled("Emitter not found");
+      return;
+    }
+
+    ImGui::Text("Editing: %s", selectedName.c_str());
+
+    // 名前変更
+    ImGui::SetNextItemWidth(200.0f);
+    ImGui::InputText("##RenameEmitter", renameEmitterNameBuffer_, sizeof(renameEmitterNameBuffer_));
+    ImGui::SameLine();
+    if (ImGui::Button("Rename##RenameEmitter") && strlen(renameEmitterNameBuffer_) > 0) {
+      const std::string newName = renameEmitterNameBuffer_;
+      if (emitterManager_->RenameEmitter(selectedName, newName)) {
+        selectedEmitterName_ = newName;
+        AddLog("Renamed emitter: " + selectedName + " -> " + newName, LogType::Info);
+        renameEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
+      }
+      else {
+        AddLog("Rename failed: '" + newName + "' (already exists or invalid)", LogType::Warning);
+      }
+    }
+    ImGui::Separator();
+
+    // 基本プロパティ
+    if (ImGui::CollapsingHeader("Basic Properties", ImGuiTreeNodeFlags_DefaultOpen)) {
+      const bool isMeshEmitter = (emitter->GetType() == EmitterType::Mesh);
+      Vector3 pos = emitter->GetPosition();
+      if (ImGui::DragFloat3(isMeshEmitter ? "Position (Local Offset)##Properties" : "Position##Properties", &pos.x, 0.1f)) {
+        emitter->SetPosition(pos);
+      }
+      if (isMeshEmitter && ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Mesh emitter: offset in the bound Object3d's local space.\nNo binding: world-space placement.");
+      }
+
+      bool isActive = emitter->IsActive();
+      if (ImGui::Checkbox("Active", &isActive)) {
+        emitter->SetActive(isActive);
+      }
+
+      bool isEmitting = emitter->IsEmitting();
+      if (ImGui::Checkbox("Emitting", &isEmitting)) {
+        emitter->SetEmitting(isEmitting);
+      }
+
+      bool isNormalize = emitter->IsNormalize();
+      if (ImGui::Checkbox("Normalize", &isNormalize)) {
+        emitter->SetNormalize(isNormalize);
+      }
+
+      bool isRandomRotateZ = emitter->IsRandomRotateZ();
+      if (ImGui::Checkbox("RandomRotateZ", &isRandomRotateZ)) {
+        emitter->SetRandomRotateZ(isRandomRotateZ);
+      }
+
+      bool useForceField = emitter->IsUseForceField();
+      if (ImGui::Checkbox("Use ForceField", &useForceField)) {
+        emitter->SetUseForceField(useForceField);
+      }
+
+      bool useCurlNoise = emitter->IsUseCurlNoise();
+      if (ImGui::Checkbox("Use Curl Noise", &useCurlNoise)) {
+        emitter->SetUseCurlNoise(useCurlNoise);
+      }
+
+      bool useDepthCollision = emitter->IsUseDepthCollision();
+      if (ImGui::Checkbox("Use Depth Collision", &useDepthCollision)) {
+        emitter->SetUseDepthCollision(useDepthCollision);
+      }
+
+      int count = emitter->GetParticleCount();
+      if (ImGui::DragInt("Particle Count", &count, 1, 1, 1000)) {
+        emitter->SetParticleCount(count);
+      }
+
+      float frequency = emitter->GetFrequency();
+      if (ImGui::DragFloat("Frequency", &frequency, 0.001f, 0.001f, 1.0f)) {
+        emitter->SetFrequency(frequency);
+      }
+    }
+
+    // 範囲設定
+    if (ImGui::CollapsingHeader("Range Settings")) {
+      // パラメータごとのランダム化フラグ
+      // randomFlags == 0 のときは旧来の「range != (0,0) で自動判定」が効くので、
+      // チェックボックスはあくまで「明示的に Override したい」場合のための UI。
+      uint32_t randomFlags = emitter->GetRandomFlags();
+      const bool legacyAuto = (randomFlags == 0u);
+      ImGui::TextDisabled(legacyAuto
+        ? "Randomize: [Auto] (range != 0 enables randomization)"
+        : "Randomize: [Manual] (per-parameter checkboxes)");
+      if (legacyAuto) {
+        if (ImGui::SmallButton("Switch to Manual")) {
+          // 現状の値を元に Auto 判定を Manual ビットに固定化
+          uint32_t newFlags = 0u;
+          if (emitter->GetScaleRangeX().x != 0.0f || emitter->GetScaleRangeX().y != 0.0f) newFlags |= ERAND_SCALE_X;
+          if (emitter->GetScaleRangeY().x != 0.0f || emitter->GetScaleRangeY().y != 0.0f) newFlags |= ERAND_SCALE_Y;
+          if (emitter->GetVelRangeX().x != 0.0f || emitter->GetVelRangeX().y != 0.0f) newFlags |= ERAND_VEL_X;
+          if (emitter->GetVelRangeY().x != 0.0f || emitter->GetVelRangeY().y != 0.0f) newFlags |= ERAND_VEL_Y;
+          if (emitter->GetVelRangeZ().x != 0.0f || emitter->GetVelRangeZ().y != 0.0f) newFlags |= ERAND_VEL_Z;
+          if (emitter->GetLifeTimeRange().x != 0.0f || emitter->GetLifeTimeRange().y != 0.0f) newFlags |= ERAND_LIFETIME;
+          // 全 0 だと Auto に戻ってしまうため、最低 1 ビットだけ立てて Manual 確定
+          if (newFlags == 0u) newFlags = ERAND_SCALE_X;
+          emitter->SetRandomFlags(newFlags);
+        }
+      }
+      else {
+        if (ImGui::SmallButton("Reset to Auto")) {
+          emitter->SetRandomFlags(0u);
+        }
+      }
+      ImGui::Separator();
+
+      auto drawRandomCheckbox = [&](const char* label, uint32_t flag) {
+        bool enabled = (randomFlags & flag) != 0u;
+        if (ImGui::Checkbox(label, &enabled)) {
+          if (enabled) emitter->EnableRandom(flag);
+          else        emitter->DisableRandom(flag);
+        }
+      };
+
+      Vector2 scaleX = emitter->GetScaleRangeX();
+      Vector2 scaleY = emitter->GetScaleRangeY();
+      drawRandomCheckbox("##RandScaleX", ERAND_SCALE_X);
+      ImGui::SameLine();
+      if (ImGui::DragFloat2("Scale Range X", &scaleX.x, 0.01f)) {
+        emitter->SetScaleRangeX(scaleX);
+      }
+      drawRandomCheckbox("##RandScaleY", ERAND_SCALE_Y);
+      ImGui::SameLine();
+      if (ImGui::DragFloat2("Scale Range Y", &scaleY.x, 0.01f)) {
+        emitter->SetScaleRangeY(scaleY);
+      }
+
+      Vector2 velX = emitter->GetVelRangeX();
+      Vector2 velY = emitter->GetVelRangeY();
+      Vector2 velZ = emitter->GetVelRangeZ();
+      drawRandomCheckbox("##RandVelX", ERAND_VEL_X);
+      ImGui::SameLine();
+      if (ImGui::DragFloat2("Velocity Range X", &velX.x, 0.1f)) {
+        emitter->SetVelRangeX(velX);
+      }
+      drawRandomCheckbox("##RandVelY", ERAND_VEL_Y);
+      ImGui::SameLine();
+      if (ImGui::DragFloat2("Velocity Range Y", &velY.x, 0.1f)) {
+        emitter->SetVelRangeY(velY);
+      }
+      drawRandomCheckbox("##RandVelZ", ERAND_VEL_Z);
+      ImGui::SameLine();
+      if (ImGui::DragFloat2("Velocity Range Z", &velZ.x, 0.1f)) {
+        emitter->SetVelRangeZ(velZ);
+      }
+
+      // Normalize ON 時のみ有効な速さ範囲 (方向=velRange、速さ=speedRange)
+      ImGui::BeginDisabled(!emitter->IsNormalize());
+      Vector2 speedRange = emitter->GetSpeedRange();
+      if (ImGui::DragFloat2("Speed Range (Normalize)", &speedRange.x, 0.1f)) {
+        emitter->SetSpeedRange(speedRange);
+      }
+      ImGui::EndDisabled();
+
+      Vector2 lifeTime = emitter->GetLifeTimeRange();
+      drawRandomCheckbox("##RandLifeTime", ERAND_LIFETIME);
+      ImGui::SameLine();
+      if (ImGui::DragFloat2("LifeTime Range", &lifeTime.x, 0.01f, 0.01f, 10.0f)) {
+        emitter->SetLifeTimeRange(lifeTime);
+      }
+    }
+
+    // 色設定
+    if (ImGui::CollapsingHeader("Color Settings")) {
+      Vector4 startColor = emitter->GetStartColor();
+      Vector4 endColor = emitter->GetEndColor();
+
+      if (ImGui::ColorEdit4("Start Color", &startColor.x)) {
+        emitter->SetStartColor(startColor);
+      }
+      if (ImGui::ColorEdit4("End Color", &endColor.x)) {
+        emitter->SetEndColor(endColor);
+      }
+    }
+
+    // 描画設定 (per-emitter): ブレンドモード / ビルボード / テクスチャ / メッシュ形状描画
+    if (ImGui::CollapsingHeader("Render Settings")) {
+      // ブレンドモード
+      static const char* kBlendLabels[] = { "Add", "Screen", "Alpha" };
+      int blend = static_cast<int>(emitter->GetBlendMode());
+      if (ImGui::Combo("Blend Mode##Render", &blend, kBlendLabels, IM_ARRAYSIZE(kBlendLabels))) {
+        emitter->SetBlendMode(static_cast<ParticleBlendMode>(blend));
+      }
+
+      // ビルボード ON/OFF
+      bool billboard = emitter->IsBillboard();
+      if (ImGui::Checkbox("Billboard (camera-facing)", &billboard)) {
+        emitter->SetBillboard(billboard);
+      }
+      ImGui::SameLine();
+      ImGui::TextDisabled("(OFF: world-fixed, rotate.z applied)");
+
+      // テクスチャ選択
+      uint32_t curTex = emitter->GetTextureSrvIndex();
+      std::string curName = (curTex != 0)
+        ? TextureManager::GetInstance()->GetFileName(curTex)
+        : std::string("(default: circle.dds)");
+      ImGui::Text("Texture: %s", curName.c_str());
+
+      // ロード済みテクスチャからの選択
+      std::vector<std::string> texNames = TextureManager::GetInstance()->GetLoadedTextureFileNames();
+      if (!texNames.empty()) {
+        int curIdx = -1;
+        for (int n = 0; n < static_cast<int>(texNames.size()); ++n) {
+          if (texNames[n] == curName) { curIdx = n; break; }
+        }
+        std::vector<const char*> items;
+        items.reserve(texNames.size());
+        for (const auto& s : texNames) items.push_back(s.c_str());
+        if (ImGui::Combo("Texture##Render", &curIdx, items.data(), static_cast<int>(items.size()))) {
+          if (curIdx >= 0 && curIdx < static_cast<int>(texNames.size())) {
+            emitter->SetTexture(texNames[curIdx]);
+          }
+        }
+      }
+
+      // 新規テクスチャの読込 (パス指定)
+      ImGui::InputText("Texture Path##Render", emitterTexturePathBuffer_, sizeof(emitterTexturePathBuffer_));
+      ImGui::SameLine();
+      if (ImGui::Button("Load & Set##Render") && emitterTexturePathBuffer_[0] != '\0') {
+        emitter->SetTexture(emitterTexturePathBuffer_);
+      }
+
+      // 描画モデル選択: 読み込み済みモデルから選んで
+      // 各パーティクルの描画形状を切り替える。空=デフォルトの板ポリ。
+      const std::string& curModel = emitter->GetRenderModelPath();
+      ImGui::Text("Render Model: %s", curModel.empty() ? "(default: quad)" : curModel.c_str());
+
+      std::vector<std::string> modelNames = ModelManager::GetInstance()->GetLoadedModelNames();
+      if (!modelNames.empty()) {
+        int curModelIdx = -1;
+        for (int n = 0; n < static_cast<int>(modelNames.size()); ++n) {
+          if (modelNames[n] == curModel) { curModelIdx = n; break; }
+        }
+        std::vector<const char*> modelItems;
+        modelItems.reserve(modelNames.size());
+        for (const auto& s : modelNames) modelItems.push_back(s.c_str());
+        if (ImGui::Combo("Model##Render", &curModelIdx, modelItems.data(), static_cast<int>(modelItems.size()))) {
+          if (curModelIdx >= 0 && curModelIdx < static_cast<int>(modelNames.size())) {
+            emitter->SetParticleModel(modelNames[curModelIdx]);
+          }
+        }
+      }
+
+      // 新規モデルをパス指定でロードして描画モデルに設定
+      ImGui::InputText("Model Path##Render", emitterRenderModelPathBuffer_, sizeof(emitterRenderModelPathBuffer_));
+      ImGui::SameLine();
+      if (ImGui::Button("Load & Set##RenderModel") && emitterRenderModelPathBuffer_[0] != '\0') {
+        emitter->SetParticleModel(emitterRenderModelPathBuffer_);
+      }
+
+      // 既定の板ポリに戻す
+      if (ImGui::Button("Reset to Quad##Render")) {
+        emitter->ResetParticleModel();
+      }
+    }
+
+    // スポーン位置種別 (中/外/線)
+    if (ImGui::CollapsingHeader("Spawn Location")) {
+      static const char* kSpawnLocationLabels[] = { "Inside", "Surface", "Edge" };
+      int currentLoc = static_cast<int>(emitter->GetSpawnLocation());
+      if (ImGui::Combo("Location##SpawnLocation", &currentLoc, kSpawnLocationLabels, IM_ARRAYSIZE(kSpawnLocationLabels))) {
+        emitter->SetSpawnLocation(static_cast<SpawnLocation>(currentLoc));
+      }
+      // 形状ごとの対応状況を警告表示
+      EmitterType etype = emitter->GetType();
+      if (etype == EmitterType::Sphere && currentLoc == static_cast<int>(SpawnLocation::Edge)) {
+        ImGui::TextColored(ImVec4(1, 0.7f, 0, 1), "Sphere has no vertices: Edge falls back to Surface");
+      }
+      if (etype == EmitterType::Triangle && currentLoc == static_cast<int>(SpawnLocation::Inside)) {
+        ImGui::TextColored(ImVec4(1, 0.7f, 0, 1), "Triangle is 2D: Inside falls back to Surface");
+      }
+    }
+
+    // Per-Particle Spawn 拘束
+    if (ImGui::CollapsingHeader("Spawn Lock (per-particle)")) {
+      bool spawnLockOn = emitter->IsSpawnLock();
+      float lockK = emitter->GetLockStiffness();
+      float lockD = emitter->GetLockDamping();
+      if (ImGui::Checkbox("Lock To Spawn", &spawnLockOn)) {
+        emitter->SetSpawnLock(spawnLockOn, lockK, lockD);
+      }
+      ImGui::TextDisabled("Each particle is pulled back to its spawn position (per-particle spring).");
+      ImGui::TextDisabled("Combined with Mesh emitter: particles stick to mesh surface and follow rotation/movement.");
+      if (ImGui::DragFloat("Lock Stiffness (k)", &lockK, 0.1f, 0.0f, 200.0f)) {
+        emitter->SetSpawnLock(spawnLockOn, lockK, lockD);
+      }
+      if (ImGui::DragFloat("Lock Damping (d)", &lockD, 0.05f, 0.0f, 50.0f)) {
+        emitter->SetSpawnLock(spawnLockOn, lockK, lockD);
+      }
+    }
+
+    // Per-Emitter Target 収束
+    if (ImGui::CollapsingHeader("Target Convergence")) {
+      bool convergeOn = emitter->IsConvergeToTarget();
+      if (ImGui::Checkbox("Converge To Target", &convergeOn)) {
+        emitter->SetConvergeToTarget(convergeOn);
+      }
+      ImGui::TextDisabled("Spring-damper force pulls all particles to targetPosition");
+      Vector3 targetPos = emitter->GetTargetPosition();
+      if (ImGui::DragFloat3("Target Position", &targetPos.x, 0.1f)) {
+        emitter->SetTargetPosition(targetPos);
+      }
+      float stiffness = emitter->GetConvergeStiffness();
+      if (ImGui::DragFloat("Stiffness (k)", &stiffness, 0.1f, 0.0f, 100.0f)) {
+        emitter->SetConvergeParameters(stiffness, emitter->GetConvergeDamping());
+      }
+      float damping = emitter->GetConvergeDamping();
+      if (ImGui::DragFloat("Damping (d)", &damping, 0.05f, 0.0f, 20.0f)) {
+        emitter->SetConvergeParameters(emitter->GetConvergeStiffness(), damping);
+      }
+      ImGui::TextDisabled("Use BindTargetPosition(const Vector3*) in code for dynamic tracking.");
+    }
+
+    // 消滅設定: alpha フェードとスケール縮小は独立フラグ
+    if (ImGui::CollapsingHeader("Death Style")) {
+      // アルファフェード
+      bool useAlphaFade = emitter->IsUseAlphaFade();
+      if (ImGui::Checkbox("Enable Alpha Fade", &useAlphaFade)) {
+        emitter->SetAlphaFade(useAlphaFade);
+      }
+      ImGui::SameLine();
+      ImGui::TextDisabled("(alpha 1.0 -> 0.0 over lifetime)");
+
+      // スケール縮小
+      bool useScaleFade = emitter->IsUseScaleFade();
+      if (ImGui::Checkbox("Enable Scale Fade", &useScaleFade)) {
+        emitter->SetScaleFade(useScaleFade, emitter->GetEndScaleDefault());
+      }
+      ImGui::SameLine();
+      ImGui::TextDisabled("(scale -> endScale over lifetime)");
+      Vector3 endScale = emitter->GetEndScaleDefault();
+      if (ImGui::DragFloat3("End Scale", &endScale.x, 0.01f, 0.0f, 10.0f)) {
+        emitter->SetEndScaleDefault(endScale);
+      }
+      ImGui::TextDisabled("Independent flags. Both ON = shrink with fade. Both OFF = stays visible until death.");
+    }
+
+    // 型固有のパラメータ
+    if (ImGui::CollapsingHeader("Type-Specific Settings")) {
+      if (auto sphereEmitter = std::dynamic_pointer_cast<SphereEmitter>(emitter)) {
+        float radius = sphereEmitter->GetRadius();
+        if (ImGui::DragFloat("Radius##TypeSpecific", &radius, 0.1f, 0.1f, 100.0f)) {
+          sphereEmitter->SetRadius(radius);
+        }
+      }
+      else if (auto boxEmitter = std::dynamic_pointer_cast<BoxEmitter>(emitter)) {
+        Vector3 size = boxEmitter->GetSize();
+        Vector3 rotation = boxEmitter->GetRotation();
+
+        if (ImGui::DragFloat3("Size##TypeSpecific", &size.x, 0.1f)) {
+          boxEmitter->SetSize(size);
+        }
+        if (ImGui::DragFloat3("Rotation##TypeSpecific", &rotation.x, 0.1f)) {
+          boxEmitter->SetRotation(rotation);
+        }
+      }
+      else if (auto triangleEmitter = std::dynamic_pointer_cast<TriangleEmitter>(emitter)) {
+        Vector3 v1 = triangleEmitter->GetVertex1();
+        Vector3 v2 = triangleEmitter->GetVertex2();
+        Vector3 v3 = triangleEmitter->GetVertex3();
+
+        bool changed = false;
+        changed |= ImGui::DragFloat3("Vertex 1##TypeSpecific", &v1.x, 0.1f);
+        changed |= ImGui::DragFloat3("Vertex 2##TypeSpecific", &v2.x, 0.1f);
+        changed |= ImGui::DragFloat3("Vertex 3##TypeSpecific", &v3.x, 0.1f);
+
+        if (changed) {
+          triangleEmitter->SetVertices(v1, v2, v3);
+        }
+      }
+      else if (auto meshEmitter = std::dynamic_pointer_cast<MeshEmitter>(emitter)) {
+        // ローカルオフセット (平行移動は Basic Properties の Position)
+        Vector3 offsetRotation = meshEmitter->GetOffsetRotation();
+        if (ImGui::DragFloat3("Offset Rotation##TypeSpecific", &offsetRotation.x, 0.01f)) {
+          meshEmitter->SetOffsetRotation(offsetRotation);
+        }
+        Vector3 offsetScale = meshEmitter->GetOffsetScale();
+        if (ImGui::DragFloat3("Offset Scale##TypeSpecific", &offsetScale.x, 0.01f)) {
+          meshEmitter->SetOffsetScale(offsetScale);
+        }
+        ImGui::TextDisabled("Position (Basic Properties) acts as local offset translation.");
+        ImGui::Separator();
+
+        // バインド状態とスポーン形状の情報表示 (read-only)
+        if (meshEmitter->GetBoundObject3d() != nullptr) {
+          ImGui::Text("Bound to Object3d (follows its world matrix)");
+        }
+        else if (!meshEmitter->GetSpawnModelPath().empty()) {
+          ImGui::Text("Spawn Model: %s", meshEmitter->GetSpawnModelPath().c_str());
+        }
+        const auto& edata = meshEmitter->GetData();
+        ImGui::Text("Triangle Count: %u", edata.meshTriangleCount);
+        ImGui::Text("AABB Min: (%.2f, %.2f, %.2f)", edata.meshAabbMin.x, edata.meshAabbMin.y, edata.meshAabbMin.z);
+        ImGui::Text("AABB Max: (%.2f, %.2f, %.2f)", edata.meshAabbMax.x, edata.meshAabbMax.y, edata.meshAabbMax.z);
+        ImGui::Text("Vertex SRV: %u, Index SRV: %u", edata.meshVertexSrvIndex, edata.meshIndexSrvIndex);
+        Mesh* meshPtr = meshEmitter->GetMesh();
+        if (meshPtr != nullptr) {
+          ImGui::Text("Mesh Vertices: %u", meshPtr->GetVertexCount());
+          ImGui::Text("Mesh Indices: %u", meshPtr->GetIndexCount());
+        }
+        else if (edata.meshTriangleCount > 0) {
+          // 複数メッシュモデルは集約バッファ経由
+          ImGui::Text("Aggregated model (%u tris)", edata.meshTriangleCount);
+        }
+        else {
+          ImGui::TextColored(ImVec4(1, 0.5f, 0.5f, 1), "No spawn shape (0 triangles)!");
+        }
+      }
+    }
+
+    // 物理 / Curl Noise（per-emitter）
+    if (ImGui::CollapsingHeader("Physics & Noise##Properties")) {
+      float damping = emitter->GetDamping();
+      if (ImGui::SliderFloat("Damping##P", &damping, 0.9f, 1.0f, "%.4f")) {
+        emitter->SetDamping(damping);
+      }
+      if (ImGui::IsItemHovered()) ImGui::SetTooltip("Per-frame velocity damping (0.99 recommended)");
+
+      float restitution = emitter->GetCollisionRestitution();
+      if (ImGui::SliderFloat("Restitution##P", &restitution, 0.0f, 1.0f, "%.3f")) {
+        emitter->SetCollisionRestitution(restitution);
+      }
+      if (ImGui::IsItemHovered()) ImGui::SetTooltip("Collision restitution (0.0=absorb, 1.0=fully elastic)");
+
+      float pRadius = emitter->GetParticleRadius();
+      if (ImGui::DragFloat("Particle Radius##P", &pRadius, 0.001f, 0.001f, 1.0f, "%.4f")) {
+        emitter->SetParticleRadius(pRadius);
+      }
+      if (ImGui::IsItemHovered()) ImGui::SetTooltip("Particle radius used in depth collision");
+
+      float noiseScale = emitter->GetNoiseScale();
+      if (ImGui::SliderFloat("Noise Scale##P", &noiseScale, 0.01f, 10.0f, "%.3f")) {
+        emitter->SetNoiseScale(noiseScale);
+      }
+      if (ImGui::IsItemHovered()) ImGui::SetTooltip("Curl Noise spatial scale (small=large eddies, large=fine detail)");
+
+      float noiseStrength = emitter->GetNoiseStrength();
+      if (ImGui::SliderFloat("Noise Strength##P", &noiseStrength, 0.001f, 1.0f, "%.4f")) {
+        emitter->SetNoiseStrength(noiseStrength);
+      }
+      if (ImGui::IsItemHovered()) ImGui::SetTooltip("Curl Noise strength (0.01-0.1=subtle, 0.5+=strong turbulence)");
+
+      ImGui::TextDisabled("Note: Changes apply to newly spawned particles only.");
+    }
+
+    // プリセット保存/読込
+    if (ImGui::CollapsingHeader("Preset")) {
+      ImGui::InputText("Preset Name##SavePreset", presetNameBuffer_, sizeof(presetNameBuffer_));
+
+      if (ImGui::Button("Save as Preset##SavePreset") && strlen(presetNameBuffer_) > 0) {
+        emitterManager_->SavePreset(presetNameBuffer_, selectedEmitterName_);
+        AddLog("Saved preset: " + std::string(presetNameBuffer_), LogType::Info);
+        presetNameBuffer_[0] = '\0';  // 入力ボックスをクリア
+      }
+
+      // 名前入力なしでエミッター名のまま上書き保存
+      if (ImGui::Button(("Save as \"" + selectedEmitterName_ + "\"##SavePresetCurrent").c_str())) {
+        emitterManager_->SavePreset(selectedEmitterName_, selectedEmitterName_);
+        AddLog("Saved preset: " + selectedEmitterName_, LogType::Info);
+      }
+
+      ImGui::Separator();
+
+      // 保存済みプリセットの列挙 (毎フレームのディレクトリ走査だがデバッグ UI なので許容)
+      std::vector<std::string> presetNames;
+      std::error_code ec;
+      for (const auto& entry : std::filesystem::directory_iterator(kParticlePresetDirectory, ec)) {
+        if (entry.is_regular_file() && entry.path().extension() == ".json") {
+          presetNames.push_back(entry.path().stem().string());
+        }
+      }
+
+      if (presetNames.empty()) {
+        ImGui::TextDisabled("(no presets found)");
+      }
+      else {
+        if (ImGui::BeginCombo("Preset##LoadPreset", particleSelectedPreset_.empty() ? "(select)" : particleSelectedPreset_.c_str())) {
+          for (const auto& name : presetNames) {
+            const bool isSelected = (particleSelectedPreset_ == name);
+            if (ImGui::Selectable(name.c_str(), isSelected)) {
+              particleSelectedPreset_ = name;
+            }
+          }
+          ImGui::EndCombo();
+        }
+        ImGui::InputText("New Name##LoadPreset", newEmitterNameBuffer_, sizeof(newEmitterNameBuffer_));
+
+        ImGui::BeginDisabled(particleSelectedPreset_.empty());
+        if (ImGui::Button("Load##LoadPreset")) {
+          const std::string newName = (strlen(newEmitterNameBuffer_) > 0) ? newEmitterNameBuffer_ : particleSelectedPreset_;
+          emitterManager_->LoadPreset(particleSelectedPreset_, newName);
+          AddLog("Loaded preset: " + particleSelectedPreset_ + " as '" + newName + "'", LogType::Info);
+          selectedEmitterName_ = newName;
+          particleInspectTarget_ = ParticleInspectTarget::Emitter;
+          newEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
+        }
+        ImGui::EndDisabled();
+      }
+    }
+  }
+
+  void DebugUIManager::DrawForceFieldInspector() {
+    auto* gpuParticle = GPUParticle::GetInstance();
+    const auto& forceFields = gpuParticle->GetForceFields();
+
+    if (selectedForceFieldIndex_ < 0 || selectedForceFieldIndex_ >= static_cast<int>(forceFields.size())) {
+      ImGui::TextDisabled("No force field selected");
+      return;
+    }
+
+    static const char* forceTypeNames[] = {
+      "Gravity", "Directional", "Vortex", "Attract", "Repel"
+    };
+
+    uint32_t typeIdx = forceFields[selectedForceFieldIndex_].type;
+    const char* typeName = (typeIdx < 5) ? forceTypeNames[typeIdx] : "Unknown";
+    ImGui::Text("Editing: [%d] %s", selectedForceFieldIndex_, typeName);
+
+    // 編集可能なコピーを作成
+    ForceFieldData editField = forceFields[selectedForceFieldIndex_];
+    bool changed = false;
+
+    // タイプ変更
+    int editType = static_cast<int>(editField.type);
+    if (ImGui::Combo("Type##EditFF", &editType, "Gravity\0Directional\0Vortex\0Attract\0Repel\0")) {
+      editField.type = static_cast<uint32_t>(editType);
+      changed = true;
+    }
+
+    changed |= ImGui::DragFloat3("Position##EditFF", &editField.position.x, 0.1f);
+
+    // タイプに応じたラベル
+    if (editField.type == static_cast<uint32_t>(ForceFieldType::Vortex)) {
+      changed |= ImGui::DragFloat3("Rotation Axis##EditFF", &editField.direction.x, 0.1f);
+    }
+    else if (editField.type == static_cast<uint32_t>(ForceFieldType::Gravity) ||
+             editField.type == static_cast<uint32_t>(ForceFieldType::Directional)) {
+      changed |= ImGui::DragFloat3("Direction##EditFF", &editField.direction.x, 0.1f);
+    }
+
+    changed |= ImGui::DragFloat("Strength##EditFF", &editField.strength, 0.1f, 0.0f, 100.0f);
+    changed |= ImGui::DragFloat("Radius##EditFF", &editField.radius, 0.1f, 0.0f, 100.0f);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("0 = infinite range");
+    changed |= ImGui::DragFloat("Falloff##EditFF", &editField.falloff, 0.1f, 0.0f, 10.0f);
+
+    if (changed) {
+      gpuParticle->UpdateForceField(static_cast<uint32_t>(selectedForceFieldIndex_), editField);
+    }
+
+    // 削除ボタン
+    ImGui::Separator();
+    if (ImGui::Button("Delete##EditFF")) {
+      gpuParticle->RemoveForceField(static_cast<uint32_t>(selectedForceFieldIndex_));
+      AddLog("Deleted force field [" + std::to_string(selectedForceFieldIndex_) + "]", LogType::Info);
+      selectedForceFieldIndex_ = -1;
+      particleInspectTarget_ = ParticleInspectTarget::None;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Clear All##EditFF")) {
+      gpuParticle->ClearForceFields();
+      selectedForceFieldIndex_ = -1;
+      particleInspectTarget_ = ParticleInspectTarget::None;
+      AddLog("Cleared all force fields", LogType::Info);
     }
 
     // --- プリセット保存/読込セクション ---
@@ -1051,13 +1163,6 @@ namespace Tako {
 
       const bool hasSelection = (selectedForceFieldIndex_ >= 0
         && selectedForceFieldIndex_ < static_cast<int>(forceFields.size()));
-
-      if (hasSelection) {
-        ImGui::Text("From: [Index %d]", selectedForceFieldIndex_);
-      }
-      else {
-        ImGui::TextDisabled("Select a force field first");
-      }
 
       if (ImGui::Button("Save##SaveFFPreset")
           && hasSelection
@@ -1088,21 +1193,68 @@ namespace Tako {
         ffPresetLoadBuffer_[0] = '\0';
       }
     }
+  }
 
-    if (ImGui::CollapsingHeader("Scene Presets (Force Fields included)")) {
-      ImGui::TextWrapped(
-        "Scene presets save/load Emitters + Groups + Force Fields together. "
-        "Use the 'Presets' tab > 'Scene Presets' to save/load all.");
+  void DebugUIManager::DrawGroupInspector() {
+    auto groupNames = emitterManager_->GetGroupNames();
+
+    if (selectedGroupIndex_ < 0 || selectedGroupIndex_ >= static_cast<int>(groupNames.size())) {
+      ImGui::TextDisabled("No group selected");
+      return;
+    }
+
+    std::string groupName = groupNames[selectedGroupIndex_];
+    ImGui::Text("Selected Group: %s", groupName.c_str());
+
+    // グループアクティブ切り替え
+    bool isActive = emitterManager_->IsGroupActive(groupName);
+    if (ImGui::Checkbox("Group Active##Group", &isActive)) {
+      emitterManager_->SetGroupActive(groupName, isActive);
+    }
+
+    // グループ位置調整
+    if (ImGui::DragFloat3("Group Position##Group", &groupPositionEdit_.x, 0.1f)) {
+      emitterManager_->SetGroupPosition(groupName, groupPositionEdit_);
+    }
+
+    // グループ内のエミッター表示
+    auto emittersInGroup = emitterManager_->GetEmittersInGroup(groupName);
+    ImGui::Text("Emitters in group: %zu", emittersInGroup.size());
+    if (ImGui::BeginListBox("##GroupEmitters", ImVec2(-1, 100))) {
+      for (const auto& name : emittersInGroup) {
+        ImGui::Text("%s", name.c_str());
+      }
+      ImGui::EndListBox();
+    }
+
+    // エミッターをグループに追加
+    auto allEmitters = emitterManager_->GetEmitterNames();
+    if (allEmitters.size() > 0) {
+      std::vector<const char*> items;
+      for (const auto& name : allEmitters) {
+        items.push_back(name.c_str());
+      }
+      if (groupAddEmitterIndex_ >= static_cast<int>(allEmitters.size())) groupAddEmitterIndex_ = 0;
+      ImGui::Combo("Add Emitter##Group", &groupAddEmitterIndex_, items.data(), static_cast<int>(items.size()));
+      if (ImGui::Button("Add to Group##Group")) {
+        emitterManager_->AddToGroup(groupName, allEmitters[groupAddEmitterIndex_]);
+        AddLog("Added " + allEmitters[groupAddEmitterIndex_] + " to group " + groupName, LogType::Info);
+      }
+    }
+
+    // グループ削除
+    if (ImGui::Button("Delete Group##Group")) {
+      emitterManager_->RemoveGroup(groupName);
+      selectedGroupIndex_ = -1;
+      particleInspectTarget_ = ParticleInspectTarget::None;
+      AddLog("Deleted group: " + groupName, LogType::Info);
     }
   }
 
   // =====================================================
-  // パーティクル可視化設定タブ
+  // パーティクル可視化設定 (メインシーンへの線描画)
   // =====================================================
-  void DebugUIManager::DrawVisualizationTab() {
-    ImGui::Text("Debug Visualization Settings");
-    ImGui::Separator();
-
+  void DebugUIManager::DrawVisualizationSettings() {
     // === エミッター形状の可視化設定 ===
     if (ImGui::CollapsingHeader("Emitter Shapes", ImGuiTreeNodeFlags_DefaultOpen)) {
       ImGui::Checkbox("Show Emitter Shapes", &showEmitterShapes_);

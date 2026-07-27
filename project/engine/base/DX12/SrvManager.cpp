@@ -72,12 +72,19 @@ namespace Tako {
     return heap_.IsAllocated(srvIndex);
   }
 
-  void SrvManager::CreateSRVForTexture2D(uint32_t srvIndex, ID3D12Resource* pResource, DXGI_FORMAT format, UINT mipLevels)
+  void SrvManager::CreateSRVForTexture2D(uint32_t srvIndex, ID3D12Resource* pResource, DXGI_FORMAT format, UINT mipLevels, bool forceOpaqueAlpha)
   {
     D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
     srvDesc.Format = format;
     srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    // RGB はメモリのまま、A のみ定数 1.0 を返す
+    srvDesc.Shader4ComponentMapping = forceOpaqueAlpha
+      ? D3D12_ENCODE_SHADER_4_COMPONENT_MAPPING(
+          D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_0,
+          D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_1,
+          D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_2,
+          D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_1)
+      : D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
     srvDesc.Texture2D.MipLevels = mipLevels;
 
     dx12_->GetDevice()->CreateShaderResourceView(pResource, &srvDesc, GetCPUDescriptorHandle(srvIndex));
