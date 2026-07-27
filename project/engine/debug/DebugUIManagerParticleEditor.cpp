@@ -117,7 +117,7 @@ namespace Tako {
 
     particlePreviewViewport_->BeginPass();
 
-    // Selected Only の対象解決 (線分描画とパーティクル描画の両方で使う)
+
     int32_t slot = -1;
     bool drawParticles = true;
     std::shared_ptr<GPUParticleEmitter> selectedEmitter;
@@ -138,7 +138,6 @@ namespace Tako {
       lineRenderer->DrawGrid(500.0f, 500.0f, Vector4(0.35f, 0.35f, 0.35f, 1.0f));
     }
     if (particlePreviewSelectedOnly_) {
-      // エミッター形状は選択対象のみに絞る。FF は全パーティクルへ影響するため常に表示
       if (showEmitterShapes_ && selectedEmitter && selectedEmitter->IsActive()) {
         DrawEmitterShape(selectedEmitter);
       }

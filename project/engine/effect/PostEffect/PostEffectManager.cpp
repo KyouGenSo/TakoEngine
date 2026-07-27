@@ -643,8 +643,8 @@ namespace Tako {
     // 初期状態を設定（レンダーテクスチャは RENDER_TARGET として作成される）
     SetInitialResourceState(effectTargetRT_.resource.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET);
 
-    // 非適用対象用 RT
-    nonEffectTargetRT_.Create(dx12_, WinApp::clientWidth, WinApp::clientHeight, DXGI_FORMAT_R8G8B8A8_UNORM, nonEffectTargetClearColor_);
+    // 非適用対象用 RT (最終表示用のため SRV は α=1 固定で読ませ、ImGui 表示での背景透けを防ぐ)
+    nonEffectTargetRT_.Create(dx12_, WinApp::clientWidth, WinApp::clientHeight, DXGI_FORMAT_R8G8B8A8_UNORM, nonEffectTargetClearColor_, true);
     nonEffectTargetRT_.resource->SetName(L"NonEffectTargetRT");
     // 初期状態を設定
     SetInitialResourceState(nonEffectTargetRT_.resource.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET);

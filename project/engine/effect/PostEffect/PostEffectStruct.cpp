@@ -5,7 +5,7 @@
 
 namespace Tako {
 
-  void RenderTexture::Create(DX12Basic* dx12, uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4& clearColor)
+  void RenderTexture::Create(DX12Basic* dx12, uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4& clearColor, bool forceOpaqueAlpha)
   {
     dx12->CreateRenderTextureResource(resource, width, height, format, clearColor);
 
@@ -20,7 +20,7 @@ namespace Tako {
     RtvManager::GetInstance()->CreateRTV(rtvIndex, resource.Get(), format);
     rtvHandle = RtvManager::GetInstance()->GetCpuHandle(rtvIndex);
 
-    SrvManager::GetInstance()->CreateSRVForTexture2D(srvIndex, resource.Get(), format, 1);
+    SrvManager::GetInstance()->CreateSRVForTexture2D(srvIndex, resource.Get(), format, 1, forceOpaqueAlpha);
   }
 
   void RenderTexture::Release()

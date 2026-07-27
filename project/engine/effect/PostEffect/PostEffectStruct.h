@@ -31,7 +31,8 @@ namespace Tako {
     /// <param name="height">テクスチャの高さ（ピクセル）</param>
     /// <param name="format">ピクセルフォーマット</param>
     /// <param name="clearColor">クリアカラー</param>
-    void Create(DX12Basic* dx12, uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4& clearColor);
+    /// <param name="forceOpaqueAlpha">SRV の α を常に 1 として読ませる (最終表示用 RT 向け)</param>
+    void Create(DX12Basic* dx12, uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4& clearColor, bool forceOpaqueAlpha = false);
 
     /// <summary>
     /// リソース解放と RTV/SRV インデックスの返却
