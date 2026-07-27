@@ -244,7 +244,7 @@ namespace Tako {
     void DrawParticleEditor();
 
     /// <summary>
-    /// パーティクルエディターの更新（プレビュー RT/カメラ/床の生成・破棄、オービットカメラ反映）
+    /// パーティクルエディターの更新（プレビュー RT/カメラの生成、オービットカメラ反映）
     /// GPU アイドル区間である Update() から呼ぶこと
     /// </summary>
     void UpdateParticleEditor();
@@ -439,11 +439,9 @@ namespace Tako {
     ParticleInspectTarget            particleInspectTarget_       = ParticleInspectTarget::None;  ///< インスペクタ表示対象（最後にクリックしたリストで決まる）
     std::unique_ptr<PreviewViewport> particlePreviewViewport_;
     std::unique_ptr<Camera>          particlePreviewCamera_;
-    Camera*                          particlePreviewCameraPtr_    = nullptr;                      ///< Object3d::SetCamera(Camera**) に渡す安定アドレス
     OrbitCameraController            particleOrbitCamera_;
-    std::unique_ptr<Object3d>        particleFloorObject_;                                        ///< 床参照プレーン
     bool                             particlePreviewSelectedOnly_ = false;                        ///< true = 選択エミッターのみ描画
-    bool                             particlePreviewShowFloor_    = true;
+    bool                             particlePreviewShowGrid_     = true;
     std::string                      particleSelectedPreset_;                                     ///< Load コンボの選択中プリセット名
 
     //パーティクルエディター 入力状態

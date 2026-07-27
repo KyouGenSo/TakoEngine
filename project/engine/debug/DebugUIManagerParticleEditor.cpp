@@ -13,11 +13,7 @@
 #include "ImGuiManager.h"
 #include "LineRenderer.h"
 #include "OBB.h"
-#include "Object3d.h"
-#include "Object3dBasic.h"
 #include "Camera.h"
-#include "Model.h"
-#include "PrimitiveBuilder.h"
 
 #include <algorithm>
 #include <cstring>
@@ -29,8 +25,9 @@ namespace Tako {
 
   namespace {
 
-    constexpr float kListPaneWidth      = 260.0f;
-    constexpr float kInspectorPaneWidth = 380.0f;
+    // ペイン初期幅。ドラッグ調整後は imgui.ini の保存値が優先される
+    constexpr float kListPaneWidth           = 260.0f;
+    constexpr float kPreviewPaneInitialWidth = 720.0f;
 
     // EmitterManager::SavePreset の保存先と一致させること
     const char* const kParticlePresetDirectory = "resources/Json/ParticlePresets/Presets/";
@@ -69,21 +66,20 @@ namespace Tako {
         }
         ImGui::Separator();
 
-        const float spacing = ImGui::GetStyle().ItemSpacing.x;
-        const float centerWidth = (std::max)(
-          ImGui::GetContentRegionAvail().x - kListPaneWidth - kInspectorPaneWidth - spacing * 2.0f, 100.0f);
-
-        if (ImGui::BeginChild("ListPane##PE", ImVec2(kListPaneWidth, 0.0f), true)) {
+        // 左/中央ペインは右端ドラッグで幅調整可。ウィンドウリサイズ分は右ペインが吸収する
+        ImGui::SetNextWindowSizeConstraints(ImVec2(180.0f, 0.0f), ImVec2(FLT_MAX, FLT_MAX));
+        if (ImGui::BeginChild("ListPane##PE", ImVec2(kListPaneWidth, 0.0f), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeX)) {
           DrawParticleEditorListPane();
         }
         ImGui::EndChild();
         ImGui::SameLine();
-        if (ImGui::BeginChild("PreviewPane##PE", ImVec2(centerWidth, 0.0f), true)) {
+        ImGui::SetNextWindowSizeConstraints(ImVec2(240.0f, 0.0f), ImVec2(FLT_MAX, FLT_MAX));
+        if (ImGui::BeginChild("PreviewPane##PE", ImVec2(kPreviewPaneInitialWidth, 0.0f), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeX)) {
           DrawParticleEditorPreviewPane();
         }
         ImGui::EndChild();
         ImGui::SameLine();
-        if (ImGui::BeginChild("InspectorPane##PE", ImVec2(0.0f, 0.0f), true)) {
+        if (ImGui::BeginChild("InspectorPane##PE", ImVec2(0.0f, 0.0f), ImGuiChildFlags_Borders)) {
           DrawParticleEditorInspectorPane();
         }
         ImGui::EndChild();
@@ -97,8 +93,6 @@ namespace Tako {
   // =====================================================
   void DebugUIManager::UpdateParticleEditor() {
     if (!windowVisibility_["ParticleEditor"]) {
-      // エディタを閉じたら床を破棄（RT/カメラは再オープンに備えて保持）
-      particleFloorObject_.reset();
       return;
     }
 
@@ -110,19 +104,9 @@ namespace Tako {
     if (!particlePreviewCamera_) {
       particlePreviewCamera_ = std::make_unique<Camera>();
       particlePreviewCamera_->SetAspect(particlePreviewViewport_->GetAspect());
-      particlePreviewCameraPtr_ = particlePreviewCamera_.get();
-    }
-
-    if (!particleFloorObject_) {
-      particleFloorObject_ = std::make_unique<Object3d>();
-      particleFloorObject_->Initialize();
-      particleFloorObject_->SetCamera(&particlePreviewCameraPtr_);
-      particleFloorObject_->SetModel(PrimitiveBuilder::CreatePlane({ .width = 10.0f, .height = 10.0f }));
-      particleFloorObject_->SetMaterialColor(Vector4(0.35f, 0.35f, 0.35f, 1.0f));
     }
 
     particleOrbitCamera_.ApplyTo(*particlePreviewCamera_);
-    particleFloorObject_->Update();
   }
 
   void DebugUIManager::DrawParticlePreviewPass() {
@@ -133,13 +117,16 @@ namespace Tako {
 
     particlePreviewViewport_->BeginPass();
 
-    // 直前は別パスの PSO のため共通描画設定を再適用
-    Object3dBasic::GetInstance()->SetCommonRenderSetting();
-    if (particlePreviewShowFloor_ && particleFloorObject_) {
-      particleFloorObject_->Draw();
+    // 床グリッド (プレビューカメラ視点で専用バッファに描く)
+    if (particlePreviewShowGrid_) {
+      LineRenderer* lineRenderer = LineRenderer::GetInstance();
+      lineRenderer->BeginPreviewLines();
+      lineRenderer->DrawGrid(500.0f, 500.0f, Vector4(0.35f, 0.35f, 0.35f, 1.0f));
+      lineRenderer->EndPreviewLines();
+      lineRenderer->DrawPreviewLines(particlePreviewCamera_->GetViewProjectionMatrix());
     }
 
-    // Selected Only で未選択のときは床のみ表示
+    // Selected Only で未選択のときはグリッドのみ表示
     int32_t slot = -1;
     bool drawParticles = true;
     if (particlePreviewSelectedOnly_) {
@@ -158,10 +145,8 @@ namespace Tako {
   }
 
   void DebugUIManager::FinalizeParticleEditor() {
-    particleFloorObject_.reset();
     particlePreviewViewport_.reset();
     particlePreviewCamera_.reset();
-    particlePreviewCameraPtr_ = nullptr;
   }
 
   // =====================================================
@@ -263,9 +248,10 @@ namespace Tako {
       }
     }
 
-    // エミッターリスト
+    // エミッターリスト (下端ドラッグで高さ調整可)
     auto emitterNames = emitterManager_->GetEmitterNames();
-    if (ImGui::BeginListBox("##EmitterList", ImVec2(-1, 180))) {
+    ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 60.0f), ImVec2(FLT_MAX, FLT_MAX));
+    if (ImGui::BeginChild("##EmitterList", ImVec2(-FLT_MIN, 180.0f), ImGuiChildFlags_FrameStyle | ImGuiChildFlags_ResizeY)) {
       for (const auto& name : emitterNames) {
         bool isSelected = (selectedEmitterName_ == name);
         if (ImGui::Selectable(name.c_str(), isSelected)) {
@@ -273,8 +259,8 @@ namespace Tako {
           particleInspectTarget_ = ParticleInspectTarget::Emitter;
         }
       }
-      ImGui::EndListBox();
     }
+    ImGui::EndChild();
 
     // 選択したエミッターの操作
     if (emitterManager_->HasEmitter(selectedEmitterName_)) {
@@ -447,7 +433,8 @@ namespace Tako {
     const auto& forceFields = gpuParticle->GetForceFields();
     ImGui::Text("Force Fields: %zu / %u", forceFields.size(), GPUParticle::kMaxForceFields);
 
-    if (ImGui::BeginListBox("##ForceFieldList", ImVec2(-1, 120))) {
+    ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 60.0f), ImVec2(FLT_MAX, FLT_MAX));
+    if (ImGui::BeginChild("##ForceFieldList", ImVec2(-FLT_MIN, 120.0f), ImGuiChildFlags_FrameStyle | ImGuiChildFlags_ResizeY)) {
       for (int i = 0; i < static_cast<int>(forceFields.size()); i++) {
         uint32_t typeIdx = forceFields[i].type;
         const char* typeName = (typeIdx < 5) ? forceTypeNames[typeIdx] : "Unknown";
@@ -461,8 +448,8 @@ namespace Tako {
           particleInspectTarget_ = ParticleInspectTarget::ForceField;
         }
       }
-      ImGui::EndListBox();
     }
+    ImGui::EndChild();
   }
 
   void DebugUIManager::DrawParticleEditorGroupSection() {
@@ -489,7 +476,8 @@ namespace Tako {
     auto groupNames = emitterManager_->GetGroupNames();
     ImGui::Text("Groups: %zu", groupNames.size());
 
-    if (ImGui::BeginListBox("##GroupList", ImVec2(-1, 120))) {
+    ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 60.0f), ImVec2(FLT_MAX, FLT_MAX));
+    if (ImGui::BeginChild("##GroupList", ImVec2(-FLT_MIN, 120.0f), ImGuiChildFlags_FrameStyle | ImGuiChildFlags_ResizeY)) {
       for (int i = 0; i < static_cast<int>(groupNames.size()); i++) {
         bool isSelected = (selectedGroupIndex_ == i);
         if (ImGui::Selectable(groupNames[i].c_str(), isSelected)) {
@@ -497,8 +485,8 @@ namespace Tako {
           particleInspectTarget_ = ParticleInspectTarget::Group;
         }
       }
-      ImGui::EndListBox();
     }
+    ImGui::EndChild();
   }
 
   // =====================================================
@@ -507,7 +495,7 @@ namespace Tako {
   void DebugUIManager::DrawParticleEditorPreviewPane() {
     ImGui::Checkbox("Selected Only##PePrev", &particlePreviewSelectedOnly_);
     ImGui::SameLine();
-    ImGui::Checkbox("Floor##PePrev", &particlePreviewShowFloor_);
+    ImGui::Checkbox("Grid##PePrev", &particlePreviewShowGrid_);
     ImGui::SameLine();
     const bool hasSelection = emitterManager_->HasEmitter(selectedEmitterName_);
     ImGui::BeginDisabled(!hasSelection);
@@ -1220,12 +1208,13 @@ namespace Tako {
     // グループ内のエミッター表示
     auto emittersInGroup = emitterManager_->GetEmittersInGroup(groupName);
     ImGui::Text("Emitters in group: %zu", emittersInGroup.size());
-    if (ImGui::BeginListBox("##GroupEmitters", ImVec2(-1, 100))) {
+    ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 60.0f), ImVec2(FLT_MAX, FLT_MAX));
+    if (ImGui::BeginChild("##GroupEmitters", ImVec2(-FLT_MIN, 100.0f), ImGuiChildFlags_FrameStyle | ImGuiChildFlags_ResizeY)) {
       for (const auto& name : emittersInGroup) {
         ImGui::Text("%s", name.c_str());
       }
-      ImGui::EndListBox();
     }
+    ImGui::EndChild();
 
     // エミッターをグループに追加
     auto allEmitters = emitterManager_->GetEmitterNames();

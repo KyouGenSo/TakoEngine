@@ -34,6 +34,10 @@ namespace Tako {
     static constexpr uint32_t kLineMaxCount    = 100000;  ///< 線の最大数
     static constexpr uint32_t kVertexCountLine = 2;       ///< 線の頂点数
 
+#ifdef _DEBUG
+    static constexpr uint32_t kPreviewLineMaxCount = 4096;  ///< プレビュー用線分の最大数
+#endif // _DEBUG
+
   public: //構造体
     /// <summary>
     /// 頂点データ構造体
@@ -148,6 +152,25 @@ namespace Tako {
     /// </summary>
     void Reset();
 
+#ifdef _DEBUG
+    /// <summary>
+    /// 以降の DrawLine 系呼び出しをプレビュー用バッファへ振り向ける
+    /// </summary>
+    void BeginPreviewLines() { previewBatchMode_ = true; }
+
+    /// <summary>
+    /// プレビュー用バッファへの振り向けを解除する
+    /// </summary>
+    void EndPreviewLines() { previewBatchMode_ = false; }
+
+    /// <summary>
+    /// 溜めたプレビュー線分を指定 VP で描画してバッファをリセットする。
+    /// RT/ビューポートは呼び出し側で設定済みであること。CB 1本を使い回すため 1 フレーム 1 視点まで
+    /// </summary>
+    /// <param name="viewProjection">プレビューカメラのビュープロジェクション行列</param>
+    void DrawPreviewLines(const Matrix4x4& viewProjection);
+#endif // _DEBUG
+
     //============================
     //Setter
     //============================
@@ -174,7 +197,8 @@ namespace Tako {
     /// 線の頂点データを生成
     /// </summary>
     /// <param name="lineData">線データ</param>
-    void CreateLineVertexData(LineData* lineData);
+    /// <param name="lineCount">確保する線分数</param>
+    void CreateLineVertexData(LineData* lineData, uint32_t lineCount = kLineMaxCount);
 
     /// <summary>
     /// 座標変換行列データを生成
@@ -199,6 +223,15 @@ namespace Tako {
     TransformationMatrix* transformationMatrixData_;  ///< 座標変換行列データ
 
     std::unique_ptr<LineData> lineData_;  ///< 線データ
+
+#ifdef _DEBUG
+    //エディタプレビュー用線分描画
+    std::unique_ptr<LineData>              previewLineData_;                              ///< プレビュー専用頂点バッファ（メインバッチと GPU 実行前の上書き競合を避けるため分離）
+    Microsoft::WRL::ComPtr<ID3D12Resource> previewTransformationMatrixBuffer_;
+    TransformationMatrix*                  previewTransformationMatrixData_   = nullptr;
+    uint32_t                               previewLineIndex_                  = 0;
+    bool                                   previewBatchMode_                  = false;    ///< true 中は DrawLine 系がプレビューバッファへ書く
+#endif // _DEBUG
   };
 
 } // namespace Tako

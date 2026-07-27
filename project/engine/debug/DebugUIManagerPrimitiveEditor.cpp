@@ -213,12 +213,10 @@ namespace Tako {
     ImGui::SetNextWindowSize(ImVec2(1000.0f, 620.0f), ImGuiCond_FirstUseEver);
     if (ImGui::Begin("Primitive Editor", &windowVisibility_["PrimitiveEditor"])) {
 
-      const float paramsPanelWidth = 360.0f;
-      const ImVec2 avail = ImGui::GetContentRegionAvail();
-      const float viewportWidth = (std::max)(avail.x - paramsPanelWidth - ImGui::GetStyle().ItemSpacing.x, 100.0f);
-
       //---------------- 左: プレビュービューポート ----------------//
-      if (ImGui::BeginChild("Viewport##PrimEditor", ImVec2(viewportWidth, 0.0f), true)) {
+      // 右端ドラッグで幅調整可。サイズ指定は初期値で、調整結果は imgui.ini に保存される
+      ImGui::SetNextWindowSizeConstraints(ImVec2(200.0f, 0.0f), ImVec2(FLT_MAX, FLT_MAX));
+      if (ImGui::BeginChild("Viewport##PrimEditor", ImVec2(620.0f, 0.0f), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeX)) {
         if (ImGui::Button("Reset Camera##PrimEditor")) {
           primOrbitCamera_.Reset();
         }
@@ -239,7 +237,7 @@ namespace Tako {
 
       //---------------- 右: パラメータパネル ----------------//
       ImGui::SameLine();
-      if (ImGui::BeginChild("Params##PrimEditor", ImVec2(0.0f, 0.0f), true)) {
+      if (ImGui::BeginChild("Params##PrimEditor", ImVec2(0.0f, 0.0f), ImGuiChildFlags_Borders)) {
 
         int typeIndex = static_cast<int>(selectedPrimitiveType_);
         if (ImGui::Combo("Type##PrimEditor", &typeIndex, "Cube\0Sphere\0Plane\0Ring\0Cylinder\0Torus\0")) {

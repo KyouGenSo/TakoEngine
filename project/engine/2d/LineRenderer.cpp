@@ -43,6 +43,15 @@ namespace Tako {
     // 線の頂点データを生成
     lineData_ = std::make_unique<LineData>();
     CreateLineVertexData(lineData_.get());
+
+#ifdef _DEBUG
+    // エディタプレビュー用の第2バッファ（メインバッチと同一フレームで別視点を併存させるため分離）
+    previewLineData_ = std::make_unique<LineData>();
+    CreateLineVertexData(previewLineData_.get(), kPreviewLineMaxCount);
+    previewTransformationMatrixBuffer_ = dx12_->MakeBufferResource(sizeof(TransformationMatrix));
+    previewTransformationMatrixBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&previewTransformationMatrixData_));
+    previewTransformationMatrixData_->WVP = Mat4x4::MakeIdentity();
+#endif // _DEBUG
   }
 
   void LineRenderer::Finalize()
@@ -50,6 +59,9 @@ namespace Tako {
     // unique_ptr がデストラクト時に ComPtr も自動解放するので
     // reset()だけで完全にクリーンアップされる
     lineData_.reset();
+#ifdef _DEBUG
+    previewLineData_.reset();
+#endif // _DEBUG
 
     instance_.reset();
   }
@@ -75,6 +87,21 @@ namespace Tako {
 
   void LineRenderer::DrawLine(const Vector3& start, const Vector3& end, const Vector4& color)
   {
+#ifdef _DEBUG
+    // プレビューバッチ中はプレビュー専用バッファへ振り向ける
+    if (previewBatchMode_) {
+      if (previewLineIndex_ + kVertexCountLine > kPreviewLineMaxCount * kVertexCountLine) {
+        return;
+      }
+      previewLineData_->vertexData[previewLineIndex_].position = start;
+      previewLineData_->vertexData[previewLineIndex_ + 1].position = end;
+      previewLineData_->vertexData[previewLineIndex_].color = color;
+      previewLineData_->vertexData[previewLineIndex_ + 1].color = color;
+      previewLineIndex_ += kVertexCountLine;
+      return;
+    }
+#endif // _DEBUG
+
     // 上限超過分は破棄する（Map 済み領域外への書き込み防止）
     if (lineIndex_ + kVertexCountLine > kLineMaxCount * kVertexCountLine) {
 #ifdef _DEBUG
@@ -275,6 +302,26 @@ namespace Tako {
     lineIndex_ = 0;
   }
 
+#ifdef _DEBUG
+  void LineRenderer::DrawPreviewLines(const Matrix4x4& viewProjection)
+  {
+    if (previewLineIndex_ == 0) {
+      return;
+    }
+
+    previewTransformationMatrixData_->WVP = viewProjection;
+
+    dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
+    dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
+    dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
+    dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &previewLineData_->vertexBufferView);
+    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(kTransformParam, previewTransformationMatrixBuffer_->GetGPUVirtualAddress());
+    dx12_->GetCommandList()->DrawInstanced(previewLineIndex_, 1, 0, 0);
+
+    previewLineIndex_ = 0;
+  }
+#endif // _DEBUG
+
   void LineRenderer::CreateRootSignature()
   {
     HRESULT hr;
@@ -379,9 +426,9 @@ namespace Tako {
     assert(SUCCEEDED(hr));
   }
 
-  void LineRenderer::CreateLineVertexData(LineData* lineData)
+  void LineRenderer::CreateLineVertexData(LineData* lineData, uint32_t lineCount)
   {
-    UINT vertexBufferSize = sizeof(VertexData) * kVertexCountLine * kLineMaxCount;
+    UINT vertexBufferSize = sizeof(VertexData) * kVertexCountLine * lineCount;
 
     // 頂点リソースを生成
     lineData->vertexBuffer = dx12_->MakeBufferResource(vertexBufferSize);
