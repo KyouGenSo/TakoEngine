@@ -313,7 +313,7 @@ namespace Tako {
     commandList->SetComputeRootSignature(resetCountersRS_.Get());
     commandList->SetPipelineState(resetCountersPSO_.Get());
     srvManager_->SetComputeRootDescriptorTable(ResetCountersRP::kPerEmitterCountUavParam, perEmitterCountUavIndex_);
-    commandList->Dispatch(1, 1, 1); // numthreads(512) で kNumMaxEmitter(500) をカバー
+    commandList->Dispatch(1, 1, 1); // numthreads(1024) で kNumMaxEmitter をカバー
     dx12_->SetUAVBarrier(perEmitterCountResource_.Get());
 
     //--------------------------------------IntegrateAll--------------------------------------//
@@ -583,6 +583,11 @@ namespace Tako {
     }
     else {
       if (activeEmitters_.size() >= kNumMaxEmitter) {
+#ifdef _DEBUG
+        DebugUIManager::GetInstance()->AddLog(
+          "RegisterEmitter: emitter slots exhausted (max " + std::to_string(kNumMaxEmitter) + ")",
+          DebugUIManager::LogType::Error);
+#endif
         return;
       }
       emitter->data_.emitterID = static_cast<uint32_t>(activeEmitters_.size());

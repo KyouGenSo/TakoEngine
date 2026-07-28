@@ -1,6 +1,7 @@
 #ifdef _DEBUG
 
 #include "BehaviorTreeEditor.h"
+#include "BTChildSort.h"
 #include "BTComposite.h"
 #include "BTBlackboard.h"
 #include "BTNodeRegistry.h"
@@ -1080,40 +1081,13 @@ std::vector<int> BehaviorTreeEditor::GetChildNodeIds(int parentNodeId) const {
       childIds.push_back(link.endNodeId);
     }
   }
-  if (childIds.size() < 2) {
-    return childIds;
-  }
-
-  // 子の広がりが横長か縦長かを判定し、広い軸で並べる (横並び=左右順 / 縦並び=上下順)
-  bool first = true;
-  float minX = 0.0f, maxX = 0.0f, minY = 0.0f, maxY = 0.0f;
-  for (int id : childIds) {
+  SortChildIdsByPosition(childIds, [this](int id, float& x, float& y) {
     const EditorNode* n = FindNodeById(id);
-    if (!n) continue;
-    if (first) {
-      minX = maxX = n->position.x;
-      minY = maxY = n->position.y;
-      first = false;
-    } else {
-      minX = std::min(minX, n->position.x);
-      maxX = std::max(maxX, n->position.x);
-      minY = std::min(minY, n->position.y);
-      maxY = std::max(maxY, n->position.y);
-    }
-  }
-  const bool horizontal = (maxX - minX) >= (maxY - minY);
-
-  std::stable_sort(childIds.begin(), childIds.end(),
-    [this, horizontal](int a, int b) {
-      const EditorNode* na = FindNodeById(a);
-      const EditorNode* nb = FindNodeById(b);
-      if (!na || !nb) return false;
-      const float pa = horizontal ? na->position.x : na->position.y;
-      const float pb = horizontal ? nb->position.x : nb->position.y;
-      if (pa != pb) return pa < pb;
-      return (horizontal ? na->position.y : na->position.x)
-           < (horizontal ? nb->position.y : nb->position.x);
-    });
+    if (!n) return false;
+    x = n->position.x;
+    y = n->position.y;
+    return true;
+  });
   return childIds;
 }
 

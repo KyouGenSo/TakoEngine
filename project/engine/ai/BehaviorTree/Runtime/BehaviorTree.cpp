@@ -1,4 +1,5 @@
 #include "BehaviorTree.h"
+#include "BTChildSort.h"
 #include "BTComposite.h"
 #include "BTNodeRegistry.h"
 #include <fstream>
@@ -159,6 +160,14 @@ namespace Tako {
             childIds.push_back(link["targetNodeId"]);
           }
         }
+        // links配列の登録順はエディタ上の並びと無関係なので、座標順に揃える
+        SortChildIdsByPosition(childIds, [&nodeMap](int id, float& x, float& y) {
+          auto it = nodeMap.find(id);
+          if (it == nodeMap.end() || !it->second.contains("position")) return false;
+          x = it->second["position"]["x"].get<float>();
+          y = it->second["position"]["y"].get<float>();
+          return true;
+        });
         for (int childId : childIds) {
           auto childIt = nodeMap.find(childId);
           if (childIt != nodeMap.end()) {

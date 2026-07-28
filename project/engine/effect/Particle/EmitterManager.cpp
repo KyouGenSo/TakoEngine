@@ -666,8 +666,7 @@ namespace Tako {
       for (auto& [name, emitterJson] : root["emitters"].items()) {
         auto emitter = DeserializeEmitterFromJSON(emitterJson);
         if (emitter) {
-          particleSystem_->RegisterEmitter(emitter);
-          emitterMap_[name] = emitter;
+          AddNamedEmitter(name, std::move(emitter));
         }
       }
     }
@@ -749,8 +748,7 @@ namespace Tako {
 
     auto emitter = DeserializeEmitterFromJSON(preset);
     if (emitter) {
-      particleSystem_->RegisterEmitter(emitter);
-      emitterMap_[newEmitterName] = emitter;
+      AddNamedEmitter(newEmitterName, std::move(emitter));
 #ifdef _DEBUG
       DebugUIManager::GetInstance()->AddLog(
         "Loaded preset '" + presetName + "' as '" + newEmitterName + "'", DebugUIManager::LogType::Info);
@@ -782,8 +780,7 @@ namespace Tako {
 
     auto emitter = DeserializeEmitterFromJSON(preset);
     if (emitter) {
-      particleSystem_->RegisterEmitter(emitter);
-      emitterMap_[presetName] = emitter;
+      AddNamedEmitter(presetName, std::move(emitter));
 #ifdef _DEBUG
       DebugUIManager::GetInstance()->AddLog(
         "Loaded preset '" + presetName + "' as '" + presetName + "'", DebugUIManager::LogType::Info);
@@ -814,8 +811,7 @@ namespace Tako {
     // 引数の obj3d をスポーン形状ソース兼追従先としてバインドする
     auto emitter = DeserializeEmitterFromJSON(preset, obj3d);
     if (emitter) {
-      particleSystem_->RegisterEmitter(emitter);
-      emitterMap_[newEmitterName] = emitter;
+      AddNamedEmitter(newEmitterName, std::move(emitter));
 #ifdef _DEBUG
       DebugUIManager::GetInstance()->AddLog(
         "Loaded preset '" + presetName + "' as '" + newEmitterName + "' with Object3d binding",

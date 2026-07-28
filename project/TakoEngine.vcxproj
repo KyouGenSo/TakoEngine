@@ -328,6 +328,7 @@
     <ClInclude Include="engine\ai\BehaviorTree\Composites\BTRandomSelector.h" />
     <ClInclude Include="engine\ai\BehaviorTree\Composites\BTParallel.h" />
     <ClInclude Include="engine\ai\BehaviorTree\Composites\BTOnce.h" />
+    <ClInclude Include="engine\ai\BehaviorTree\Runtime\BTChildSort.h" />
     <ClInclude Include="engine\ai\BehaviorTree\Runtime\BTNodeMeta.h" />
     <ClInclude Include="engine\ai\BehaviorTree\Runtime\BTNodeRegistry.h" />
     <ClInclude Include="engine\ai\BehaviorTree\Runtime\BehaviorTree.h" />

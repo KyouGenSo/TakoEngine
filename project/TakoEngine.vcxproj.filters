@@ -698,6 +698,9 @@
     <ClInclude Include="engine\ai\BehaviorTree\Composites\BTOnce.h">
       <Filter>ai\BehaviorTree\Composites</Filter>
     </ClInclude>
+    <ClInclude Include="engine\ai\BehaviorTree\Runtime\BTChildSort.h">
+      <Filter>ai\BehaviorTree\Runtime</Filter>
+    </ClInclude>
     <ClInclude Include="engine\ai\BehaviorTree\Runtime\BTNodeMeta.h">
       <Filter>ai\BehaviorTree\Runtime</Filter>
     </ClInclude>
