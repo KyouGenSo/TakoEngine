@@ -142,7 +142,7 @@
     <ClCompile Include="engine\debug\DebugUIManagerPrimitiveEditor.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="engine\debug\OrbitCameraController.cpp">
+    <ClCompile Include="engine\debug\ViewportCameraController.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="engine\debug\PreviewViewport.cpp">
@@ -241,7 +241,7 @@
     <ClInclude Include="engine\collision\SphereCollider.h" />
     <ClInclude Include="engine\debug\DebugCamera.h" />
     <ClInclude Include="engine\debug\DebugUIManager.h" />
-    <ClInclude Include="engine\debug\OrbitCameraController.h" />
+    <ClInclude Include="engine\debug\ViewportCameraController.h" />
     <ClInclude Include="engine\debug\PreviewViewport.h" />
     <ClInclude Include="engine\effect\Particle\BoxEmitter.h" />
     <ClInclude Include="engine\effect\Particle\EmitterManager.h" />

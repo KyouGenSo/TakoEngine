@@ -66,6 +66,16 @@ VertexShaderOutput main(VertexShaderInput input, uint vertexId : SV_VertexID)
     output.pos = mul(mv.pos, mul(worldMat, gPerView.viewProj));
     output.texcoord = mv.texcoord;
 
+    // カメラ近傍カリング: 中心までの視線深度が全長を下回る粒子は画面を覆い尽くしオーバードローが爆発するため捨てる
+    // (fovY=0.45 で距離 = 全長のとき画面高さの約 2.2 倍を覆う)
+    static const float kNearCullScale = 1.0f;
+    float centerDepth = mul(float4(particle.translate, 1.0f), gPerView.viewProj).w;
+    if (centerDepth < max(currentScale.x, currentScale.y) * kNearCullScale)
+    {
+        // 全頂点を near 面の手前へ置き、ラスタライズ前にクリップさせる
+        output.pos = float4(0.0f, 0.0f, -1.0f, 1.0f);
+    }
+
     float lifeRatio = particle.currentTime / particle.lifeTime;
     output.color = lerp(particle.startColor, particle.endColor, lifeRatio);
 

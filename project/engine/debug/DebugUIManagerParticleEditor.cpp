@@ -106,7 +106,7 @@ namespace Tako {
       particlePreviewCamera_->SetAspect(particlePreviewViewport_->GetAspect());
     }
 
-    particleOrbitCamera_.ApplyTo(*particlePreviewCamera_);
+    particleCameraController_.ApplyTo(*particlePreviewCamera_);
   }
 
   void DebugUIManager::DrawParticlePreviewPass() {
@@ -516,22 +516,23 @@ namespace Tako {
     ImGui::SameLine();
     const bool hasSelection = emitterManager_->HasEmitter(selectedEmitterName_);
     ImGui::BeginDisabled(!hasSelection);
-    if (ImGui::Button("Focus##PePrev")) {
-      // 注視点を選択エミッターの位置へ (Mesh エミッターはローカルオフセットの場合あり)
-      particleOrbitCamera_.target = emitterManager_->GetEmitterByName(selectedEmitterName_)->GetPosition();
-    }
+    // 注視点を選択エミッターの位置へ (Mesh エミッターはローカルオフセットの場合あり)
+    const bool focusRequested = ImGui::Button("Focus (F)##PePrev");
     ImGui::EndDisabled();
     ImGui::SameLine();
     if (ImGui::Button("Reset Camera##PePrev")) {
-      particleOrbitCamera_.Reset();
+      particleCameraController_.Reset();
     }
     ImGui::SameLine();
-    ImGui::TextDisabled("RMB: Orbit / MMB: Pan / Wheel: Zoom");
+    ImGui::TextDisabled("Speed: %.2f", particleCameraController_.moveSpeed);
+    ImGui::TextDisabled("RMB: Look (+WASD/QE Fly, +Wheel Speed) / Alt+LMB: Orbit / MMB: Pan / Wheel: Dolly");
 
     if (particlePreviewViewport_ && particlePreviewViewport_->IsInitialized()) {
-      // ビューポート上のマウス操作でオービットカメラを制御（ImGui 経由なので Input クラスやテキスト入力と干渉しない）
-      if (particlePreviewViewport_->DrawImGuiImage()) {
-        particleOrbitCamera_.HandleImGuiInput();
+      particlePreviewViewport_->DrawImGuiImage();
+      const bool hovered = ImGui::IsItemHovered();
+      isPreviewInputCaptured_ |= particleCameraController_.HandleImGuiInput();
+      if (hasSelection && (focusRequested || (hovered && ImGui::IsKeyPressed(ImGuiKey_F, false)))) {
+        particleCameraController_.Focus(emitterManager_->GetEmitterByName(selectedEmitterName_)->GetPosition());
       }
     }
     else {

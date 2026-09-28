@@ -42,10 +42,10 @@ namespace Tako {
     void EndPass();
 
     /// <summary>
-    /// 現在の ImGui ウィンドウ残り領域へアスペクト維持レターボックスで中央配置描画する
+    /// 現在の ImGui ウィンドウ残り領域へアスペクト維持レターボックスで中央配置描画する。
+    /// 画像は左/右/中ボタンを受けるアイテムとして置くため、直後の IsItemHovered/IsItemActive で操作を判定できる
     /// </summary>
-    /// <returns>画像上にカーソルがある場合 true</returns>
-    bool DrawImGuiImage() const;
+    void DrawImGuiImage() const;
 
     //============================================================
     //Getter

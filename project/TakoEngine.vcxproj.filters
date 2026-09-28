@@ -216,7 +216,7 @@
     <ClCompile Include="engine\debug\DebugUIManagerPrimitiveEditor.cpp">
       <Filter>debug</Filter>
     </ClCompile>
-    <ClCompile Include="engine\debug\OrbitCameraController.cpp">
+    <ClCompile Include="engine\debug\ViewportCameraController.cpp">
       <Filter>debug</Filter>
     </ClCompile>
     <ClCompile Include="engine\debug\PreviewViewport.cpp">
@@ -518,7 +518,7 @@
     <ClInclude Include="engine\debug\DebugUIManager.h">
       <Filter>debug</Filter>
     </ClInclude>
-    <ClInclude Include="engine\debug\OrbitCameraController.h">
+    <ClInclude Include="engine\debug\ViewportCameraController.h">
       <Filter>debug</Filter>
     </ClInclude>
     <ClInclude Include="engine\debug\PreviewViewport.h">

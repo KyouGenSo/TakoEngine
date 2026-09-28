@@ -130,7 +130,7 @@ namespace Tako {
     dx12_->TransitionResourceWithTracking(renderTexture_.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
   }
 
-  bool PreviewViewport::DrawImGuiImage() const
+  void PreviewViewport::DrawImGuiImage() const
   {
     const ImVec2 availableSize = ImGui::GetContentRegionAvail();
     const float aspectRatio = GetAspect();
@@ -149,8 +149,10 @@ namespace Tako {
     ImGui::SetCursorPos(cursorPos);
 
     D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = SrvManager::GetInstance()->GetGPUDescriptorHandle(srvIndex_);
-    ImGui::Image((ImTextureID)gpuHandle.ptr, imageSize);
-    return ImGui::IsItemHovered();
+    // ボタンにしておくとドラッグ中はマウスを掴み続け、ウィンドウ移動にも奪われない
+    ImGui::InvisibleButton("##PreviewImage", imageSize,
+      ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight | ImGuiButtonFlags_MouseButtonMiddle);
+    ImGui::GetWindowDrawList()->AddImage((ImTextureID)gpuHandle.ptr, ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
   }
 
 } // namespace Tako

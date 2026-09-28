@@ -136,7 +136,7 @@ namespace Tako {
     primPreviewObject_->SetScale(primPreviewScale_);
     ApplyPrimitivePreviewSettings();
 
-    primOrbitCamera_.ApplyTo(*primPreviewCamera_);
+    primCameraController_.ApplyTo(*primPreviewCamera_);
 
     primFloorObject_->Update();
     primPreviewObject_->Update();
@@ -218,16 +218,15 @@ namespace Tako {
       ImGui::SetNextWindowSizeConstraints(ImVec2(200.0f, 0.0f), ImVec2(FLT_MAX, FLT_MAX));
       if (ImGui::BeginChild("Viewport##PrimEditor", ImVec2(620.0f, 0.0f), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeX)) {
         if (ImGui::Button("Reset Camera##PrimEditor")) {
-          primOrbitCamera_.Reset();
+          primCameraController_.Reset();
         }
         ImGui::SameLine();
-        ImGui::TextDisabled("RMB: Orbit / MMB: Pan / Wheel: Zoom");
+        ImGui::TextDisabled("Speed: %.2f", primCameraController_.moveSpeed);
+        ImGui::TextDisabled("RMB: Look (+WASD/QE Fly, +Wheel Speed) / Alt+LMB: Orbit / MMB: Pan / Wheel: Dolly");
 
         if (primPreviewViewport_ && primPreviewViewport_->IsInitialized()) {
-          // ビューポート上のマウス操作でオービットカメラを制御（ImGui 経由なので Input クラスやテキスト入力と干渉しない）
-          if (primPreviewViewport_->DrawImGuiImage()) {
-            primOrbitCamera_.HandleImGuiInput();
-          }
+          primPreviewViewport_->DrawImGuiImage();
+          isPreviewInputCaptured_ |= primCameraController_.HandleImGuiInput();
         }
         else {
           ImGui::TextDisabled("Initializing preview...");

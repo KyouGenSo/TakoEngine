@@ -83,6 +83,11 @@ namespace Tako {
     mouseDevice_->Acquire();
     mouseDevice_->GetDeviceState(sizeof(DIMOUSESTATE), &mouseState_);
 
+    if (isBlocked_) {
+      memset(keys_, 0, sizeof(keys_));
+      mouseState_ = {};
+    }
+
     // マウスの座標を取得
     UpdateMousePos();
 

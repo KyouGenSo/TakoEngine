@@ -107,6 +107,8 @@ namespace Tako {
 
   void DebugUIManager::Draw() {
 #ifdef _DEBUG
+    isPreviewInputCaptured_ = false;
+
     // メインメニューバー
     DrawMainMenuBar();
 
@@ -139,6 +141,9 @@ namespace Tako {
     if (windowVisibility_["PostEffect"]) {
       PostEffectManager::GetInstance()->DrawImgui();
     }
+
+    // ImGui 構築はゲーム更新より後なので、判定結果は次フレームの Input::Update で反映される
+    Input::GetInstance()->SetBlocked(isPreviewInputCaptured_);
 #endif
   }
 

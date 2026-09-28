@@ -12,7 +12,7 @@
 #include "Vector3.h"
 #include "Vector4.h"
 #include "PrimitiveBuilder.h"
-#include "OrbitCameraController.h"
+#include "ViewportCameraController.h"
 
 namespace Tako {
 
@@ -386,7 +386,8 @@ namespace Tako {
 
     std::unordered_map<std::string, bool> windowVisibility_;  ///< ウィンドウ表示フラグ
 
-    bool isGameViewportHovered_ = false;  ///< 直近フレームでゲーム画像上にカーソルがあったか（DrawGameViewport で更新）
+    bool isGameViewportHovered_  = false;  ///< 直近フレームでゲーム画像上にカーソルがあったか（DrawGameViewport で更新）
+    bool isPreviewInputCaptured_ = false;  ///< エディタプレビューがホバー中/操作中か。true の間は次フレームのゲーム入力を遮断する
 
     //ゲームオブジェクト情報
     std::vector<GameObjectDebugInfo> gameObjects_;
@@ -439,7 +440,7 @@ namespace Tako {
     ParticleInspectTarget            particleInspectTarget_       = ParticleInspectTarget::None;  ///< インスペクタ表示対象（最後にクリックしたリストで決まる）
     std::unique_ptr<PreviewViewport> particlePreviewViewport_;
     std::unique_ptr<Camera>          particlePreviewCamera_;
-    OrbitCameraController            particleOrbitCamera_;
+    ViewportCameraController         particleCameraController_;
     bool                             particlePreviewSelectedOnly_ = false;                        ///< true = 選択エミッターのみ描画
     bool                             particlePreviewShowGrid_     = true;
     std::string                      particleSelectedPreset_;                                     ///< Load コンボの選択中プリセット名
@@ -502,7 +503,7 @@ namespace Tako {
     std::unique_ptr<PreviewViewport> primPreviewViewport_;             ///< オフスクリーンRT一式（初回オープン時に生成）
     std::unique_ptr<Camera>          primPreviewCamera_;
     Camera*                          primPreviewCameraPtr_ = nullptr;  ///< Object3d::SetCamera(Camera**) に渡す安定アドレス
-    OrbitCameraController            primOrbitCamera_;
+    ViewportCameraController         primCameraController_;
   };
 
 } // namespace Tako

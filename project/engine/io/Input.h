@@ -190,6 +190,12 @@ namespace Tako {
     /// <param name="duration">振動継続時間（秒）。0以下で無限に振動</param>
     void SetVibration(float leftMotor, float rightMotor, float duration = 0.0f);
 
+    /// <summary>
+    /// キーボード/マウス入力の遮断を設定（次の Update から反映。ゲームパッドは対象外）
+    /// </summary>
+    /// <param name="blocked">true の間、キーとマウスボタン/移動量を未入力として扱う</param>
+    void SetBlocked(bool blocked) { isBlocked_ = blocked; }
+
     //============================================================
     //Getter
     //============================================================
@@ -244,6 +250,8 @@ namespace Tako {
     //キーボード
     BYTE keys_[256]     = {};  ///< キーボードの入力状態
     BYTE prevKeys_[256] = {};  ///< 前フレームのキーボード入力状態
+
+    bool isBlocked_ = false;  ///< キーボード/マウス入力の遮断フラグ
 
     //ゲームパッド
     XINPUT_STATE state_{};              ///< ゲームパッドの状態
