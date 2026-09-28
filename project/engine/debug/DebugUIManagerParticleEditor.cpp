@@ -631,11 +631,6 @@ namespace Tako {
         emitter->SetNormalize(isNormalize);
       }
 
-      bool isRandomRotateZ = emitter->IsRandomRotateZ();
-      if (ImGui::Checkbox("RandomRotateZ", &isRandomRotateZ)) {
-        emitter->SetRandomRotateZ(isRandomRotateZ);
-      }
-
       bool useForceField = emitter->IsUseForceField();
       if (ImGui::Checkbox("Use ForceField", &useForceField)) {
         emitter->SetUseForceField(useForceField);
@@ -748,6 +743,24 @@ namespace Tako {
       if (ImGui::DragFloat2("LifeTime Range", &lifeTime.x, 0.01f, 0.01f, 10.0f)) {
         emitter->SetLifeTimeRange(lifeTime);
       }
+
+      // 回転は randomFlags 対象外。min == max で固定値、min != max で範囲ランダム
+      ImGui::Separator();
+      Vector3 rotateMin = emitter->GetRotateMin();
+      Vector3 rotateMax = emitter->GetRotateMax();
+      bool rotateChanged = ImGui::DragFloat3("Rotate Min (deg)", &rotateMin.x, 1.0f);
+      rotateChanged |= ImGui::DragFloat3("Rotate Max (deg)", &rotateMax.x, 1.0f);
+      if (rotateChanged) {
+        emitter->SetRotateRange(rotateMin, rotateMax);
+      }
+
+      Vector3 angularVelMin = emitter->GetAngularVelMin();
+      Vector3 angularVelMax = emitter->GetAngularVelMax();
+      bool angularVelChanged = ImGui::DragFloat3("Angular Vel Min (deg/s)", &angularVelMin.x, 1.0f);
+      angularVelChanged |= ImGui::DragFloat3("Angular Vel Max (deg/s)", &angularVelMax.x, 1.0f);
+      if (angularVelChanged) {
+        emitter->SetAngularVelocityRange(angularVelMin, angularVelMax);
+      }
     }
 
     // 色設定
@@ -778,7 +791,7 @@ namespace Tako {
         emitter->SetBillboard(billboard);
       }
       ImGui::SameLine();
-      ImGui::TextDisabled("(OFF: world-fixed, rotate.z applied)");
+      ImGui::TextDisabled("(OFF: world-fixed, rotate applied)");
 
       // テクスチャ選択
       uint32_t curTex = emitter->GetTextureSrvIndex();

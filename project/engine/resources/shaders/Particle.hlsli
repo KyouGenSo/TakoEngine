@@ -23,7 +23,6 @@ static const uint kMaxEmitters = 1000; // GPUParticle::kNumMaxEmitter と必ず�
 #define EFLAG_ACTIVE           (1u << 0)
 #define EFLAG_EMITTING         (1u << 1)
 #define EFLAG_NORMALIZE        (1u << 2)
-#define EFLAG_RANDOM_ROTATE_Z  (1u << 3)
 #define EFLAG_USE_FORCE_FIELD  (1u << 4)
 #define EFLAG_TEMPORARY        (1u << 5)
 #define EFLAG_USE_CURL_NOISE       (1u << 6)
@@ -56,7 +55,7 @@ struct Particle
     float3 prevPosition;   // 前フレーム位置（Verlet積分用）
     float3 scale;          // 開始時スケール
     float3 endScale;       // 終了時スケール（PFLAG_SCALE_FADE のときのみ補間先として使用）
-    float3 rotate;         // 回転（オイラー角）
+    float3 rotate;         // 回転（オイラー角、ラジアン）
     float3 velocity;       // 速度ベクトル
     float4 startColor;     // 開始色（RGBA）
     float4 endColor;       // 終了色（RGBA）
@@ -73,6 +72,7 @@ struct Particle
     float noiseStrength;        // Curl Noise 強度
     uint  emitterId;            // 所属エミッター ID (Update.CS で逆引き)
     float3 targetLocal;         // スポーン時の座標 (Mesh ならメッシュローカル、それ以外は world)
+    float3 angularVelocity;     // 角速度（オイラー角速度、ラジアン/秒）
 };
 
 // エミッター共通構造体
@@ -92,6 +92,10 @@ struct Emitter
     float2 velRangeZ;         // パーティクルZ速度範囲（最小、最大）
     float2 speedRange;        // EFLAG_NORMALIZE 時の速さ範囲（最小、最大）
     float2 lifeTimeRange;     // パーティクルの寿命範囲（最小、最大）
+    float3 rotateMin;         // 初期回転の最小値（XYZ、度数法）
+    float3 rotateMax;         // 初期回転の最大値（XYZ、度数法）
+    float3 angularVelMin;     // 角速度の最小値（XYZ、度/秒）
+    float3 angularVelMax;     // 角速度の最大値（XYZ、度/秒）
     float4 startColorTint;    // パーティクルの開始色（RGBA）
     float4 endColorTint;      // パーティクルの終了色（RGBA）
 
@@ -153,6 +157,31 @@ struct Emitter
     uint  renderIndexSrvIndex;  // 描画モデルインデックス SRV index (0=既定板ポリ)
     uint  renderIndexCount;     // 描画モデルのインデックス数 (0=既定板ポリの6)
 };
+
+// オイラー角(ラジアン)から回転行列を生成。列ベクトル規約 mul(M, v) で X→Y→Z の順に回す。
+// 転置するとエンジン側 Mat4x4::MakeRotateXYZ (行ベクトル規約) と一致する。
+float3x3 EulerToRotationMatrix(float3 rad)
+{
+    float3 s, c;
+    sincos(rad, s, c);
+
+    float3x3 rotX = float3x3(
+        1.0f, 0.0f, 0.0f,
+        0.0f, c.x, -s.x,
+        0.0f, s.x, c.x
+    );
+    float3x3 rotY = float3x3(
+        c.y, 0.0f, s.y,
+        0.0f, 1.0f, 0.0f,
+        -s.y, 0.0f, c.y
+    );
+    float3x3 rotZ = float3x3(
+        c.z, -s.z, 0.0f,
+        s.z, c.z, 0.0f,
+        0.0f, 0.0f, 1.0f
+    );
+    return mul(mul(rotZ, rotY), rotX);
+}
 
 // パーフレーム情報構造体
 struct PerFrame

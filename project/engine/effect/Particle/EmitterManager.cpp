@@ -300,9 +300,14 @@ namespace Tako {
     if (auto* e = FindEmitter(name)) e->SetNormalize(isNormalize);
   }
 
-  void EmitterManager::SetEmitterRandomRotateZ(const std::string& name, bool isRandomRotateZ)
+  void EmitterManager::SetEmitterRotateRange(const std::string& name, const Vector3& min, const Vector3& max)
   {
-    if (auto* e = FindEmitter(name)) e->SetRandomRotateZ(isRandomRotateZ);
+    if (auto* e = FindEmitter(name)) e->SetRotateRange(min, max);
+  }
+
+  void EmitterManager::SetEmitterAngularVelocityRange(const std::string& name, const Vector3& min, const Vector3& max)
+  {
+    if (auto* e = FindEmitter(name)) e->SetAngularVelocityRange(min, max);
   }
 
   void EmitterManager::SetEmitterColor(const std::string& name, const Vector4& color)
@@ -1068,6 +1073,10 @@ namespace Tako {
     json["velRangeY"] = { emitter->GetVelRangeY().x, emitter->GetVelRangeY().y };
     json["velRangeZ"] = { emitter->GetVelRangeZ().x, emitter->GetVelRangeZ().y };
     json["lifeTimeRange"] = { emitter->GetLifeTimeRange().x, emitter->GetLifeTimeRange().y };
+    json["rotateMin"] = { emitter->GetRotateMin().x, emitter->GetRotateMin().y, emitter->GetRotateMin().z };
+    json["rotateMax"] = { emitter->GetRotateMax().x, emitter->GetRotateMax().y, emitter->GetRotateMax().z };
+    json["angularVelMin"] = { emitter->GetAngularVelMin().x, emitter->GetAngularVelMin().y, emitter->GetAngularVelMin().z };
+    json["angularVelMax"] = { emitter->GetAngularVelMax().x, emitter->GetAngularVelMax().y, emitter->GetAngularVelMax().z };
 
     // パラメータごとのランダム化フラグ
     json["randomFlags"] = emitter->GetRandomFlags();
@@ -1102,7 +1111,6 @@ namespace Tako {
     json["isEmitting"] = emitter->IsEmitting();
     json["isNormalize"] = emitter->IsNormalize();
     json["speedRange"] = { emitter->GetSpeedRange().x, emitter->GetSpeedRange().y };
-    json["isRandomRotateZ"] = emitter->IsRandomRotateZ();
     json["useForceField"] = emitter->IsUseForceField();
     json["useCurlNoise"] = emitter->IsUseCurlNoise();
     json["useDepthCollision"] = emitter->IsUseDepthCollision();
@@ -1176,7 +1184,22 @@ namespace Tako {
     if (json.contains("speedRange")) {
       emitter->SetSpeedRange(Vector2{ json["speedRange"][0], json["speedRange"][1] });
     }
-    emitter->SetRandomRotateZ(json["isRandomRotateZ"]);
+
+    if (json.contains("rotateMin") && json.contains("rotateMax")) {
+      emitter->SetRotateRange(
+        Vector3{ json["rotateMin"][0], json["rotateMin"][1], json["rotateMin"][2] },
+        Vector3{ json["rotateMax"][0], json["rotateMax"][1], json["rotateMax"][2] });
+    }
+    else if (json.value("isRandomRotateZ", false)) {
+      // 旧フォーマット (Z 軸ランダム回転 ON/OFF) の互換読み込み
+      emitter->SetRotateRange({ .x = 0.0f, .y = 0.0f, .z = 0.0f }, { .x = 0.0f, .y = 0.0f, .z = 360.0f });
+    }
+
+    if (json.contains("angularVelMin") && json.contains("angularVelMax")) {
+      emitter->SetAngularVelocityRange(
+        Vector3{ json["angularVelMin"][0], json["angularVelMin"][1], json["angularVelMin"][2] },
+        Vector3{ json["angularVelMax"][0], json["angularVelMax"][1], json["angularVelMax"][2] });
+    }
 
     if (json.contains("useForceField")) {
       emitter->SetUseForceField(json["useForceField"]);

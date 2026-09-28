@@ -48,25 +48,17 @@ VertexShaderOutput main(VertexShaderInput input, uint vertexId : SV_VertexID)
     float4x4 identityMat = float4x4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
     float4x4 worldMat = useBillboard ? gPerView.billboardMat : identityMat;
 
-    // Z 回転 
-    if (particle.rotate.z != 0.0f)
-    {
-        float s, c;
-        sincos(particle.rotate.z, s, c);
-        float3 right = worldMat[0].xyz;
-        float3 up = worldMat[1].xyz;
-        worldMat[0].xyz = right * c - up * s;
-        worldMat[1].xyz = right * s + up * c;
-    }
-
     // スケール (SCALE_FADE 対応)
     float lifeRatioForScale = saturate(particle.currentTime / max(particle.lifeTime, 0.0001f));
     float3 currentScale = (particle.flags & PFLAG_SCALE_FADE)
         ? lerp(particle.scale, particle.endScale, lifeRatioForScale)
         : particle.scale;
-    worldMat[0] *= currentScale.x;
-    worldMat[1] *= currentScale.y;
-    worldMat[2] *= currentScale.z;
+
+    // 行ベクトル規約で S × R × B。ビルボード ON なら板ローカルで回してからカメラへ向ける
+    float3x3 basis = mul(transpose(EulerToRotationMatrix(particle.rotate)), (float3x3)worldMat);
+    worldMat[0].xyz = basis[0] * currentScale.x;
+    worldMat[1].xyz = basis[1] * currentScale.y;
+    worldMat[2].xyz = basis[2] * currentScale.z;
 
     // 位置
     worldMat[3].xyz = particle.translate;

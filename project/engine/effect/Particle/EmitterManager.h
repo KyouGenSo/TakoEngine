@@ -364,11 +364,20 @@ namespace Tako {
     void SetEmitterNormalize(const std::string& name, bool isNormalize);
 
     /// <summary>
-    /// エミッターのランダム Z 軸回転を設定
+    /// エミッターの生成時回転 (XYZ、度数法) のランダム範囲を設定
     /// </summary>
     /// <param name="name">エミッター名</param>
-    /// <param name="isRandomRotateZ">ランダム回転を有効にする場合 true</param>
-    void SetEmitterRandomRotateZ(const std::string& name, bool isRandomRotateZ);
+    /// <param name="min">各軸の最小値</param>
+    /// <param name="max">各軸の最大値</param>
+    void SetEmitterRotateRange(const std::string& name, const Vector3& min, const Vector3& max);
+
+    /// <summary>
+    /// エミッターの角速度 (XYZ、度/秒) のランダム範囲を設定
+    /// </summary>
+    /// <param name="name">エミッター名</param>
+    /// <param name="min">各軸の最小値</param>
+    /// <param name="max">各軸の最大値</param>
+    void SetEmitterAngularVelocityRange(const std::string& name, const Vector3& min, const Vector3& max);
 
     /// <summary>
     /// エミッターの色を設定（開始色と終了色を同じ値に）

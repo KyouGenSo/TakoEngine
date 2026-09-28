@@ -89,11 +89,6 @@ namespace Tako {
     SetFlag(EFLAG_NORMALIZE, isNormalize);
   }
 
-  void GPUParticleEmitter::SetRandomRotateZ(bool isRandomRotateZ)
-  {
-    SetFlag(EFLAG_RANDOM_ROTATE_Z, isRandomRotateZ);
-  }
-
   void GPUParticleEmitter::SetUseForceField(bool useForceField)
   {
     SetFlag(EFLAG_USE_FORCE_FIELD, useForceField);
@@ -191,6 +186,18 @@ namespace Tako {
   void GPUParticleEmitter::SetLifeTimeRange(const Vector2& range)
   {
     data_.lifeTimeRange = range;
+  }
+
+  void GPUParticleEmitter::SetRotateRange(const Vector3& min, const Vector3& max)
+  {
+    data_.rotateMin = min;
+    data_.rotateMax = max;
+  }
+
+  void GPUParticleEmitter::SetAngularVelocityRange(const Vector3& min, const Vector3& max)
+  {
+    data_.angularVelMin = min;
+    data_.angularVelMax = max;
   }
 
   void GPUParticleEmitter::SetDamping(float damping)

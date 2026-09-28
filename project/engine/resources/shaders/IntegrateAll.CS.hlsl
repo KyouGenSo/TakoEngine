@@ -133,6 +133,8 @@ void main(uint3 DTid : SV_DispatchThreadID)
     gParticles[particleIndex].prevPosition = currentPos;
     gParticles[particleIndex].translate = newPos;
 
+    gParticles[particleIndex].rotate += gParticles[particleIndex].angularVelocity * dt;
+
     // --- 寿命管理 ---
     gParticles[particleIndex].currentTime += dt;
 

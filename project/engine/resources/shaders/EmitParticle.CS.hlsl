@@ -12,37 +12,6 @@ bool ShouldRandomize(uint randomFlags, uint flagBit, float2 range)
     return any(range != float2(0.0f, 0.0f));
 }
 
-// 回転行列の計算
-float3x3 CalculateRotationMatrix(float3 eulerAngles)
-{
-    // 度数からラジアンに変換
-    float3 rad = eulerAngles * (3.14159265f / 180.0f);
-
-    // X軸回転行列
-    float3x3 rotX = float3x3(
-        1.0f, 0.0f, 0.0f,
-        0.0f, cos(rad.x), -sin(rad.x),
-        0.0f, sin(rad.x), cos(rad.x)
-    );
-
-    // Y軸回転行列
-    float3x3 rotY = float3x3(
-        cos(rad.y), 0.0f, sin(rad.y),
-        0.0f, 1.0f, 0.0f,
-        -sin(rad.y), 0.0f, cos(rad.y)
-    );
-
-    // Z軸回転行列
-    float3x3 rotZ = float3x3(
-        cos(rad.z), -sin(rad.z), 0.0f,
-        sin(rad.z), cos(rad.z), 0.0f,
-        0.0f, 0.0f, 1.0f
-    );
-
-    // 行列の合成（Z*Y*X順）
-    return mul(mul(rotZ, rotY), rotX);
-}
-
 // 球体エミッタからのランダム点生成（SpawnLocation 対応）
 // - SPAWN_INSIDE  : 体積に比例した均一分布 (r = radius * rand^(1/3))
 // - SPAWN_SURFACE : 球面上 (r = radius 固定)
@@ -115,7 +84,7 @@ float3 GetRandomPointInBox(RandomGenerator generator, float3 center, float3 size
     }
 
     // 回転行列の適用
-    float3x3 rotMatrix = CalculateRotationMatrix(rotation);
+    float3x3 rotMatrix = EulerToRotationMatrix(radians(rotation));
     float3 rotatedPoint = mul(rotMatrix, localPoint);
 
     return center + rotatedPoint;
@@ -450,15 +419,11 @@ void main(uint3 DTid : SV_DispatchThreadID)
             gParticles[particleID].emitterId            = emitterIndex;
 
             // 回転設定---------------------------------------------------------------------------------
-            if (gEmitters[emitterIndex].flags & EFLAG_RANDOM_ROTATE_Z)
-            {
-                // ランダム回転フラグが立っている場合、ランダムな回転を設定
-                gParticles[particleID].rotate.z = generator.Generate1d() * 360.0f; // Z軸回転
-            }
-            else
-            {
-                gParticles[particleID].rotate.z = 0.0f; // Z軸回転なし
-            }
+            // エミッター側は度数法、パーティクル側はラジアンで保持。min == max なら固定値になる
+            gParticles[particleID].rotate = radians(lerp(
+                gEmitters[emitterIndex].rotateMin, gEmitters[emitterIndex].rotateMax, generator.Generate3d()));
+            gParticles[particleID].angularVelocity = radians(lerp(
+                gEmitters[emitterIndex].angularVelMin, gEmitters[emitterIndex].angularVelMax, generator.Generate3d()));
 
 
             // 速度設定---------------------------------------------------------------------------------

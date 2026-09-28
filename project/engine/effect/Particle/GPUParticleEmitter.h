@@ -116,7 +116,6 @@ namespace Tako {
     void SetActive(bool isActive);
     void SetEmitting(bool cond);
     void SetNormalize(bool isNormalize);
-    void SetRandomRotateZ(bool isRandomRotateZ);
     void SetUseForceField(bool useForceField);
     void SetUseCurlNoise(bool useCurlNoise);
     void SetUseDepthCollision(bool useDepthCollision);
@@ -136,6 +135,20 @@ namespace Tako {
     void SetVelRangeZ(const Vector2& range);
     void SetSpeedRange(const Vector2& range);
     void SetLifeTimeRange(const Vector2& range);
+
+    /// <summary>
+    /// 生成時の回転 (XYZ オイラー角、度数法) のランダム範囲を設定
+    /// </summary>
+    /// <param name="min">各軸の最小値</param>
+    /// <param name="max">各軸の最大値 (min と同じなら固定角)</param>
+    void SetRotateRange(const Vector3& min, const Vector3& max);
+
+    /// <summary>
+    /// 角速度 (XYZ オイラー角速度、度/秒) のランダム範囲を設定
+    /// </summary>
+    /// <param name="min">各軸の最小値</param>
+    /// <param name="max">各軸の最大値 (min と同じなら固定値)</param>
+    void SetAngularVelocityRange(const Vector3& min, const Vector3& max);
 
     /// <summary>
     /// 速度減衰係数を設定（per-emitter）
@@ -270,7 +283,7 @@ namespace Tako {
 
     /// <summary>
     /// ビルボード(カメラ追従)の ON/OFF を設定。既定 ON。
-    /// OFF にするとパーティクルはワールド固定向き(particle.rotate.z でXY平面回転)で描画される。
+    /// OFF にするとパーティクルはワールド固定向き(particle.rotate の XYZ 回転)で描画される。
     /// </summary>
     void SetBillboard(bool enable) { SetFlag(EFLAG_BILLBOARD, enable); }
 
@@ -315,7 +328,6 @@ namespace Tako {
     [[nodiscard]] const Vector3& GetPosition() const { return data_.position; }
     [[nodiscard]] bool IsActive() const { return (data_.flags & EFLAG_ACTIVE) != 0; }
     [[nodiscard]] bool IsEmitting() const { return (data_.flags & EFLAG_EMITTING) != 0; }
-    [[nodiscard]] bool IsRandomRotateZ() const { return (data_.flags & EFLAG_RANDOM_ROTATE_Z) != 0; }
     [[nodiscard]] bool IsUseForceField() const { return (data_.flags & EFLAG_USE_FORCE_FIELD) != 0; }
     [[nodiscard]] bool IsUseCurlNoise() const { return (data_.flags & EFLAG_USE_CURL_NOISE) != 0; }
     [[nodiscard]] bool IsUseDepthCollision() const { return (data_.flags & EFLAG_USE_DEPTH_COLLISION) != 0; }
@@ -326,6 +338,10 @@ namespace Tako {
     [[nodiscard]] const Vector2& GetVelRangeZ() const { return data_.velRangeZ; }
     [[nodiscard]] const Vector2& GetSpeedRange() const { return data_.speedRange; }
     [[nodiscard]] const Vector2& GetLifeTimeRange() const { return data_.lifeTimeRange; }
+    [[nodiscard]] const Vector3& GetRotateMin() const { return data_.rotateMin; }
+    [[nodiscard]] const Vector3& GetRotateMax() const { return data_.rotateMax; }
+    [[nodiscard]] const Vector3& GetAngularVelMin() const { return data_.angularVelMin; }
+    [[nodiscard]] const Vector3& GetAngularVelMax() const { return data_.angularVelMax; }
     [[nodiscard]] const Vector4& GetStartColor() const { return data_.startColorTint; }
     [[nodiscard]] const Vector4& GetEndColor() const { return data_.endColorTint; }
     [[nodiscard]] uint32_t GetParticleCount() const { return data_.count; }

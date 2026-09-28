@@ -28,7 +28,6 @@ namespace Tako {
   constexpr uint32_t EFLAG_ACTIVE          = (1u << 0); ///< エミッターがアクティブ
   constexpr uint32_t EFLAG_EMITTING        = (1u << 1); ///< 現在射出中
   constexpr uint32_t EFLAG_NORMALIZE       = (1u << 2); ///< 速度ベクトルを正規化
-  constexpr uint32_t EFLAG_RANDOM_ROTATE_Z = (1u << 3); ///< Z軸ランダム回転
   constexpr uint32_t EFLAG_USE_FORCE_FIELD = (1u << 4); ///< フォースフィールド有効
   constexpr uint32_t EFLAG_TEMPORARY       = (1u << 5); ///< 一時的なエミッター
   constexpr uint32_t EFLAG_USE_CURL_NOISE      = (1u << 6); ///< Curl Noise乱流有効
@@ -99,7 +98,7 @@ namespace Tako {
     Vector3  prevPosition;  ///< 前フレーム位置（Verlet積分用）
     Vector3  scale;         ///< 開始時スケール（Emit 時に決定）
     Vector3  endScale;      ///< 終了時スケール（PFLAG_SCALE_FADE が立っているときのみ補間先として使用）
-    Vector3  rotate;        ///< 回転（オイラー角）
+    Vector3  rotate;        ///< 回転（オイラー角、ラジアン）
     Vector3  velocity;      ///< 速度ベクトル
     Vector4  startColor;    ///< 開始時の色（アルファ値含む）
     Vector4  endColor;      ///< 終了時の色（アルファ値含む）
@@ -116,6 +115,7 @@ namespace Tako {
     float    noiseStrength;         ///< Curl Noise 強度
     uint32_t emitterId;             ///< 所属エミッター ID (Update.CS で EmitterData を逆引きするため Emit 時に書き込む)
     Vector3  targetLocal;           ///< スポーン時の座標 (Mesh ならメッシュローカル、それ以外は world)
+    Vector3  angularVelocity;       ///< 角速度（オイラー角速度、ラジアン/秒）
   };
 
   /// <summary>
@@ -220,6 +220,10 @@ namespace Tako {
     Vector2 velRangeZ;       ///< Z 方向速度の範囲[min, max]
     Vector2 speedRange;      ///< EFLAG_NORMALIZE 時の速さ範囲[min, max]
     Vector2 lifeTimeRange;   ///< パーティクル寿命の範囲[min, max]（秒）
+    Vector3 rotateMin;       ///< 初期回転の最小値（XYZ、度数法）
+    Vector3 rotateMax;       ///< 初期回転の最大値（XYZ、度数法）
+    Vector3 angularVelMin;   ///< 角速度の最小値（XYZ、度/秒）
+    Vector3 angularVelMax;   ///< 角速度の最大値（XYZ、度/秒）
     Vector4 startColorTint;  ///< 開始色の色調補正（RGBA）
     Vector4 endColorTint;    ///< 終了色の色調補正（RGBA）
 
@@ -286,6 +290,7 @@ namespace Tako {
       position({ .x = 0.0f, .y = 0.0f, .z = 0.0f }),
       scaleRangeX(), scaleRangeY(), velRangeX(), velRangeY(), velRangeZ(),
       speedRange({ .x = 1.0f, .y = 1.0f }), lifeTimeRange(),
+      rotateMin(), rotateMax(), angularVelMin(), angularVelMax(),
       startColorTint({ .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f }),
       endColorTint({ .x = 1.0f, .y = 1.0f, .z = 1.0f, .w = 1.0f }),
       count(20), frequency(0.5f), frequencyTime(0.0f),
