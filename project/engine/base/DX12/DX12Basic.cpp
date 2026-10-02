@@ -631,8 +631,6 @@ namespace Tako {
       DebugUIManager::LogType::Info);
 #endif
 
-    shaderSource->Release();
-    shaderResult->Release();
     return shaderBlob;
   }
 
