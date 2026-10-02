@@ -125,6 +125,12 @@ namespace Tako {
     void DrawParticlePreviewPass();
 
     /// <summary>
+    /// デバッグビューポートへシーンをデバッグカメラ視点で描画
+    /// TakoFramework::Draw() の本編描画後・LineRenderer::Reset() 前に呼ぶ（本編の線分を流用するため）
+    /// </summary>
+    void DrawDebugViewportPass();
+
+    /// <summary>
     /// コンソールにログを追加
     /// </summary>
     /// <param name="message">ログメッセージ</param>
@@ -162,7 +168,6 @@ namespace Tako {
     void SetEmitterManager(class EmitterManager* emitterManager) { emitterManager_ = emitterManager; }
     void SetForceFieldManager(class ForceFieldManager* forceFieldManager) { forceFieldManager_ = forceFieldManager; }
     void SetEndFlagPtr(bool* pEndFlag) { pEndFlag_ = pEndFlag; }
-    void SetDebugFlagPtr(bool* pIsDebug) { pIsDebug_ = pIsDebug; }
 
     //============================================================
     //Getter
@@ -237,6 +242,22 @@ namespace Tako {
     /// コリジョンデバッグウィンドウを描画
     /// </summary>
     void DrawCollisionDebug();
+
+    /// <summary>
+    /// デバッグビューポートウィンドウを描画（ツールバー + ビュー画像 + カメラ入力）
+    /// </summary>
+    void DrawDebugViewportWindow();
+
+    /// <summary>
+    /// デバッグビューポートの更新（RT/カメラの生成・非表示時の解放、カメラ操作の反映）
+    /// GPU アイドル区間である Update() から呼ぶこと
+    /// </summary>
+    void UpdateDebugViewport();
+
+    /// <summary>
+    /// デバッグビューポートの GPU リソースとカメラを解放
+    /// </summary>
+    void FinalizeDebugViewport();
 
     /// <summary>
     /// パーティクルエディターを描画（3ペイン: リスト / プレビュー / インスペクタ）
@@ -387,7 +408,7 @@ namespace Tako {
     std::unordered_map<std::string, bool> windowVisibility_;  ///< ウィンドウ表示フラグ
 
     bool isGameViewportHovered_  = false;  ///< 直近フレームでゲーム画像上にカーソルがあったか（DrawGameViewport で更新）
-    bool isPreviewInputCaptured_ = false;  ///< エディタプレビューがホバー中/操作中か。true の間は次フレームのゲーム入力を遮断する
+    bool isPreviewInputCaptured_ = false;  ///< エディタプレビュー/デバッグビューがホバー中/操作中か。true の間は次フレームのゲーム入力を遮断する
 
     //ゲームオブジェクト情報
     std::vector<GameObjectDebugInfo> gameObjects_;
@@ -400,8 +421,6 @@ namespace Tako {
     std::string currentSceneName_ = "Unknown";  ///< 現在のシーン名
 
     bool* pEndFlag_ = nullptr;  ///< アプリケーション終了フラグへのポインタ
-
-    bool* pIsDebug_ = nullptr;  ///< デバッグカメラ有効フラグへのポインタ
 
     //シーン遷移 UI 用
     char sceneNameBuffer_[128] = "";  ///< シーン名入力バッファ
@@ -435,6 +454,13 @@ namespace Tako {
     Vector4 forceFieldDirectionColor_ = { 1.0f, 0.0f, 0.0f, 1.0f };  ///< フォースフィールド方向色（赤）
     float   forceFieldArrowLength_    = 2.0f;                        ///< フォースフィールド矢印の長さ
     float   forceFieldArrowHeadSize_  = 0.3f;                        ///< フォースフィールド矢印の先端サイズ
+
+    //デバッグビューポート
+    std::unique_ptr<PreviewViewport> debugViewport_;                     ///< オフスクリーン RT 一式（ウィンドウ表示中のみ生存）
+    std::unique_ptr<Camera>          debugViewCamera_;
+    ViewportCameraController         debugCameraController_;
+    bool                             debugViewShowGrid_       = true;
+    bool                             debugViewShowGameCamera_ = true;  ///< ゲームカメラの視錐台を表示
 
     //パーティクルエディター 3ペイン/プレビュー
     ParticleInspectTarget            particleInspectTarget_       = ParticleInspectTarget::None;  ///< インスペクタ表示対象（最後にクリックしたリストで決まる）
@@ -500,9 +526,8 @@ namespace Tako {
     char                             primExportNameBuffer_[128] = "";    ///< OBJ 出力名（拡張子なし）
 
     //プリミティブエディター専用ビューポート/カメラ
-    std::unique_ptr<PreviewViewport> primPreviewViewport_;             ///< オフスクリーンRT一式（初回オープン時に生成）
+    std::unique_ptr<PreviewViewport> primPreviewViewport_;  ///< オフスクリーンRT一式（初回オープン時に生成）
     std::unique_ptr<Camera>          primPreviewCamera_;
-    Camera*                          primPreviewCameraPtr_ = nullptr;  ///< Object3d::SetCamera(Camera**) に渡す安定アドレス
     ViewportCameraController         primCameraController_;
   };
 

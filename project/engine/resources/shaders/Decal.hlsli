@@ -12,6 +12,7 @@ struct VertexShaderOutput {
 
 /// ビュー・プロジェクション情報（b0）
 struct ViewData {
+    float4x4 viewProj;     // ビュー・プロジェクション行列
     float4x4 invViewProj;  // ビュー・プロジェクション逆行列
     float screenWidth;      // スクリーン幅
     float screenHeight;     // スクリーン高さ
@@ -21,7 +22,7 @@ struct ViewData {
 /// 個別デカールデータ（b1）
 struct DecalData {
     float4x4 decalWorldInverse; // ワールド→デカールローカル変換
-    float4x4 decalWVP;         // キューブの World * View * Projection
+    float4x4 decalWorld;        // キューブのワールド行列（VP は ViewData 側）
     float4 color;               // デカールカラー（RGBA）
     int shapeType;              // 0:Circle, 1:Fan, 2:Rectangle
     float fanHalfAngle;         // 扇形の半角(rad)

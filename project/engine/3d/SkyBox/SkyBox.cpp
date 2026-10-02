@@ -4,7 +4,6 @@
 #include "SrvManager.h"
 #include "DX12Basic.h"
 #include "Mat4x4Func.h"
-#include "Camera.h"
 #include "EnginePaths.h"
 
 #ifdef _DEBUG
@@ -18,6 +17,7 @@ namespace {
   constexpr UINT kTransformParam = 0;  ///< b0 (VS): 座標変換行列
   constexpr UINT kTextureParam   = 1;  ///< t0 (PS): キューブマップテクスチャ
   constexpr UINT kMaterialParam  = 2;  ///< b0 (PS): マテリアル
+  constexpr UINT kViewParam      = 3;  ///< b1 (VS): 視点
 }
 
 void SkyBox::Initialize(const std::string& texturePath)
@@ -26,9 +26,7 @@ void SkyBox::Initialize(const std::string& texturePath)
   transform_.rotate = { 0.0f, 0.0f, 0.0f };
   transform_.translate = { 0.0f, 0.0f, 0.0f };
 
-  viewProjectionMatrix_ = Mat4x4::MakeIdentity();
   worldMatrix_ = Mat4x4::MakeIdentity();
-  wvpMatrix_ = Mat4x4::MakeIdentity();
 
   dx12_ = Object3dBasic::GetInstance()->GetDX12Basic();
 
@@ -43,11 +41,9 @@ void SkyBox::Initialize(const std::string& texturePath)
 
 void SkyBox::Update()
 {
-  viewProjectionMatrix_ = (*Object3dBasic::GetInstance()->GetCamera())->GetViewProjectionMatrix();
   worldMatrix_ = Mat4x4::MakeAffine(transform_.scale, transform_.rotate, transform_.translate);
-  wvpMatrix_ = Mat4x4::Multiply(worldMatrix_, viewProjectionMatrix_);
 
-  transformationMatrixData_->WVP = wvpMatrix_;
+  transformationMatrixData_->world = worldMatrix_;
 }
 
 void SkyBox::Draw()
@@ -70,6 +66,9 @@ void SkyBox::Draw()
 
   // マテリアル CBV (b0, PS)
   dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(kMaterialParam, materialResource_->GetGPUVirtualAddress());
+
+  // 視点 CBV (b1, VS)。本編/デバッグビューのどちらで呼ばれても現在の視点で描く
+  dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(kViewParam, Object3dBasic::GetInstance()->GetViewAddress());
 
   dx12_->GetCommandList()->DrawIndexedInstanced(36, 1, 0, 0, 0);
 }
@@ -103,7 +102,7 @@ void SkyBox::CreateRootSignature()
   textureDescriptorRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
   // RootParameter の設定。
-  D3D12_ROOT_PARAMETER rootParameters[3] = {};
+  D3D12_ROOT_PARAMETER rootParameters[4] = {};
   // TransformationMatrix
   rootParameters[kTransformParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
   rootParameters[kTransformParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
@@ -119,6 +118,11 @@ void SkyBox::CreateRootSignature()
   rootParameters[kMaterialParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
   rootParameters[kMaterialParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
   rootParameters[kMaterialParam].Descriptor.ShaderRegister = 0;
+
+  // View
+  rootParameters[kViewParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+  rootParameters[kViewParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+  rootParameters[kViewParam].Descriptor.ShaderRegister = 1;
 
   descriptionRootSignature.pParameters = rootParameters;
   descriptionRootSignature.NumParameters = _countof(rootParameters);
@@ -284,7 +288,7 @@ void SkyBox::CreateTransformationMatrixData()
 {
   transformationMatrixResource_ = dx12_->MakeBufferResource(sizeof(TransformationMatrix));
   transformationMatrixResource_->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixData_));
-  transformationMatrixData_->WVP = Mat4x4::MakeIdentity();
+  transformationMatrixData_->world = Mat4x4::MakeIdentity();
 }
 
 } // namespace Tako

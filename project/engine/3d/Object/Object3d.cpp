@@ -3,7 +3,6 @@
 #include "Object3dbasic.h"
 #include "Model.h"
 #include"ModelManager.h"
-#include"Camera.h"
 #include "SrvManager.h"
 #include "ShadowRenderer.h"
 #include "Logger.h"
@@ -22,8 +21,6 @@ Object3d::~Object3d()
 
 void Object3d::Initialize()
 {
-	camera_ = Object3dBasic::GetInstance()->GetCamera();
-
 	// トランスフォームに初期化値を設定
 	transform_ = {
 	  .scale= Vector3(1.0f, 1.0f, 1.0f),
@@ -38,9 +35,6 @@ void Object3d::Initialize()
 
 	// 座標変換行列データの生成
 	CreateTransformationMatrixData();
-
-	// カメラデータの生成
-	CreateCameraForGPUData();
 }
 
 void Object3d::Update()
@@ -88,26 +82,15 @@ void Object3d::Update()
 		modelLocalMatrix = model_->GetLocalMatrix();
 	}
 
-	Matrix4x4 wvpMatrix;
-
-	if ((*camera_)) {
-		const Matrix4x4& viewProjectionMatrix = (*camera_)->GetViewProjectionMatrix();
-		wvpMatrix = Mat4x4::Multiply(worldMatrix_, viewProjectionMatrix);
-	} else {
-		wvpMatrix = worldMatrix_;
-	}
-
 	// 座標変換行列データに書き込む
 	if (model_)
 	{
 		if (model_->HasSkeleton())
 		{
-			transformationMatData_->WVP = wvpMatrix;
 			transformationMatData_->world = worldMatrix_;
 			transformationMatData_->worldInvTranspose = Mat4x4::InverseTranspose(worldMatrix_);
 		} else
 		{
-			transformationMatData_->WVP = modelLocalMatrix * wvpMatrix;
 			transformationMatData_->world = modelLocalMatrix * worldMatrix_;
 			transformationMatData_->worldInvTranspose = Mat4x4::InverseTranspose(modelLocalMatrix * worldMatrix_);
 		}
@@ -130,14 +113,12 @@ void Object3d::Draw()
 	} else {
 		// 通常のルートシグネチャのインデックス
 		Object3dBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(Object3dBasic::kTransformParam, transformationMatResource_->GetGPUVirtualAddress());
-		// シェーダー用カメラデータの場所を設定
-		Object3dBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(Object3dBasic::kCameraParam, cameraForGPUResource_->GetGPUVirtualAddress());
 	}
 
 	// モデルの描画
 	if (model_)
 	{
-		model_->Draw(transformationMatData_->world, (*camera_)->GetViewProjectionMatrix());
+		model_->Draw(transformationMatData_->world);
 	}
 
 	// 半透明モードで PSO を切り替えていた場合、後続の不透明 Object3d への影響を防ぐため通常 PSO に戻す
@@ -317,21 +298,8 @@ void Object3d::CreateTransformationMatrixData()
 	transformationMatResource_->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatData_));
 
 	// 座標変換行列データの初期値を書き込む
-	transformationMatData_->WVP = Mat4x4::MakeIdentity();
 	transformationMatData_->world = Mat4x4::MakeIdentity();
 	transformationMatData_->worldInvTranspose = Mat4x4::MakeIdentity();
-}
-
-void Object3d::CreateCameraForGPUData()
-{
-	// カメラリソースを生成
-	cameraForGPUResource_ = Object3dBasic::GetInstance()->GetDX12Basic()->MakeBufferResource(sizeof(CameraForGPU));
-
-	// カメラリソースをマップ
-	cameraForGPUResource_->Map(0, nullptr, reinterpret_cast<void**>(&cameraForGPUData_));
-
-	// カメラデータの初期値を書き込む
-	cameraForGPUData_->worldPos = (*camera_)->GetTranslate();
 }
 
 } // namespace Tako

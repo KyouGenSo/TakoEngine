@@ -7,6 +7,7 @@
 #include "Matrix4x4.h"
 #include "Light.h"
 #include "SkyBox.h"
+#include "PerFrameConstantRing.h"
 
 class DX12Basic;
 
@@ -42,7 +43,7 @@ public: //定数
 	static constexpr UINT kTransformParam        = 1;   ///< b0 (VS): 変換行列（通常 RS）
 	static constexpr UINT kTextureParam          = 2;   ///< t0 (PS): テクスチャ
 	static constexpr UINT kDirectionalLightParam = 3;   ///< b1 (PS): 平行光源
-	static constexpr UINT kCameraParam           = 4;   ///< b2 (PS): カメラ
+	static constexpr UINT kViewParam             = 4;   ///< b2 (ALL): 視点（VP・カメラ位置）
 	static constexpr UINT kPointLightParam       = 5;   ///< t1 (PS): 点光源
 	static constexpr UINT kSpotLightParam        = 6;   ///< t2 (PS): スポットライト
 	static constexpr UINT kLightConstantsParam   = 7;   ///< b3 (PS): ライト数
@@ -50,9 +51,21 @@ public: //定数
 	static constexpr UINT kShadowConstantsParam  = 9;   ///< b4 (ALL): シャドウ定数
 	static constexpr UINT kShadowMapParam        = 10;  ///< t4 (PS): シャドウマップ
 
-	// インスタンシング RS 専用
-	static constexpr UINT kInstancedViewProjectionParam = 1;   ///< b0 (VS): ビュープロジェクション
-	static constexpr UINT kInstanceDataParam            = 11;  ///< t5 (VS): インスタンスデータ
+	// インスタンシング RS 専用（通常 RS の変換行列の枠を使う）
+	static constexpr UINT kInstanceDataParam = 1;  ///< t5 (VS): インスタンスデータ
+
+private: //定数
+	static constexpr uint32_t kMaxViewsPerFrame = 4;  ///< 1 フレームで SetView できる回数（本編/デバッグビュー/プレビュー）
+
+public: //構造体
+	/// <summary>
+	/// 視点ごとの定数（View.hlsli と一致させること）
+	/// </summary>
+	struct ViewConstants {
+		Matrix4x4 viewProjection;
+		Vector3   worldPosition;
+		float     padding;
+	};
 
 public: // メンバー関数
 
@@ -94,10 +107,15 @@ public: // メンバー関数
 	/// </summary>
 	void SetTransparentRenderSetting();
 
+	/// <summary>
+	/// 以降の描画設定でバインドする視点を切り替える。Update で本編カメラに戻る
+	/// </summary>
+	/// <param name="camera">描画に使うカメラ（view × projection を合成して使う）</param>
+	void SetView(const Camera& camera);
+
 	void SetCamera(Camera* camera) { camera_ = camera; }
 	void SetCameraTranslate(const Vector3& translate) { camera_->SetTranslate(translate); }
 	void SetCameraRotation(const Vector3& rotation) { camera_->SetRotate(rotation); }
-	void SetDebug(bool isDebug) { isDebug_ = isDebug; }
 
 	// DirectionalLight
 	/// <summary>
@@ -167,8 +185,8 @@ public: // メンバー関数
 	//============================================================
 	DX12Basic* GetDX12Basic() const { return dx12_; }
 	Camera** GetCamera() { return &camera_; }
-	bool GetDebug() const { return isDebug_; }
 	Light* GetLight() const { return light_.get(); }
+	D3D12_GPU_VIRTUAL_ADDRESS GetViewAddress() const { return currentViewAddress_; }
 
 private: // プライベートメンバー関数
 
@@ -202,9 +220,8 @@ private: // メンバー変数
 	DX12Basic*                                  dx12_                    = nullptr;  ///< DirectX12基盤システムへの参照
 	Camera*                                     camera_                    = nullptr;  ///< デフォルトカメラへのポインタ
 	std::unique_ptr<Light>                      light_;                                ///< ライティングシステムへのポインタ
-	Matrix4x4                                   viewProjectionMatrix_;                 ///< ビュープロジェクション行列
-	Matrix4x4                                   debugViewProjectionMatrix_;            ///< デバッグ表示用ビュープロジェクション行列
-	bool                                        isDebug_                   = false;    ///< デバッグモード有効フラグ
+	PerFrameConstantRing<ViewConstants>         viewRing_;                             ///< 視点 CB（1 フレームで複数視点を併存させる）
+	D3D12_GPU_VIRTUAL_ADDRESS                   currentViewAddress_        = 0;        ///< 描画設定でバインドする視点 CB
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;                        ///< 通常描画用ルートシグネチャ
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;                        ///< 通常描画用パイプラインステート
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> instancedRootSignature_;               ///< インスタンシング描画用ルートシグネチャ

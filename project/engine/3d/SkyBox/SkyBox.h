@@ -35,7 +35,7 @@ public: // 構造体
 
   struct TransformationMatrix
   {
-    Matrix4x4 WVP;
+    Matrix4x4 world;  ///< VP は描画時にバインドされた視点 CB 側で掛ける
   };
 
 public: // メンバー関数
@@ -78,9 +78,7 @@ private: // プライベートメンバー関数
 private: // メンバ変数
   Transform transform_ = {};
 
-  Matrix4x4 viewProjectionMatrix_ = {};
-  Matrix4x4 worldMatrix_          = {};
-  Matrix4x4 wvpMatrix_            = {};
+  Matrix4x4 worldMatrix_ = {};
 
   DX12Basic* dx12_ = nullptr;
 

@@ -101,17 +101,12 @@ namespace Tako {
 
     // 深度ステンシルをクリア
     commandList_->ClearDepthStencilView(GetMainDSVHandle(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-
-    SetViewPort();
-
   }
 
   void DX12Basic::SetNonEffectRenderTexture()
   {
     // レンダーテクスチャを描画先に設定
     PostEffectManager::GetInstance()->BeginDrawNonEffectTarget();
-
-    SetViewPort();
   }
 
   void DX12Basic::SetSwapChain()
@@ -550,6 +545,23 @@ namespace Tako {
   {
     commandList_->RSSetViewports(1, &viewport_);
     commandList_->RSSetScissorRects(1, &scissorRect_);
+  }
+
+  void DX12Basic::BindSceneRenderTarget(const SceneRenderTarget& target)
+  {
+    sceneRenderTarget_ = target;
+    RestoreSceneRenderTarget();
+  }
+
+  void DX12Basic::RestoreSceneRenderTarget()
+  {
+    const SceneRenderTarget& target = sceneRenderTarget_;
+    commandList_->OMSetRenderTargets(1, &target.rtv, FALSE, target.dsv.ptr != 0 ? &target.dsv : nullptr);
+
+    const D3D12_VIEWPORT viewport{ 0.0f, 0.0f, static_cast<float>(target.width), static_cast<float>(target.height), 0.0f, 1.0f };
+    const D3D12_RECT scissorRect{ 0, 0, static_cast<LONG>(target.width), static_cast<LONG>(target.height) };
+    commandList_->RSSetViewports(1, &viewport);
+    commandList_->RSSetScissorRects(1, &scissorRect);
   }
 
   D3D12_CPU_DESCRIPTOR_HANDLE DX12Basic::GetMainDSVHandle() const

@@ -186,10 +186,6 @@ namespace Tako {
     float maxShadowDistance_ = 50.0f;  ///< 影を表示する最大距離（カメラからの距離）
 
     bool isRenderingShadow_ = false;  ///< 現在シャドウパス中かどうかのフラグ
-
-    D3D12_CPU_DESCRIPTOR_HANDLE savedRTVHandle_;                 ///< 保存された元のレンダーターゲットビューハンドル
-    D3D12_CPU_DESCRIPTOR_HANDLE savedDSVHandle_;                 ///< 保存された元の深度ステンシルビューハンドル
-    bool                        hasSavedRenderTargets_ = false;  ///< レンダーターゲットが保存されているかのフラグ
   };
 
 } // namespace Tako

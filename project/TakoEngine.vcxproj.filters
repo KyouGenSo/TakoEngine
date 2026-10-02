@@ -213,6 +213,9 @@
     <ClCompile Include="engine\debug\DebugUIManagerParticleEditor.cpp">
       <Filter>debug</Filter>
     </ClCompile>
+    <ClCompile Include="engine\debug\DebugUIManagerDebugViewport.cpp">
+      <Filter>debug</Filter>
+    </ClCompile>
     <ClCompile Include="engine\debug\DebugUIManagerPrimitiveEditor.cpp">
       <Filter>debug</Filter>
     </ClCompile>
@@ -345,9 +348,6 @@
     <ClCompile Include="engine\effect\PostEffect\WhiteNoise.cpp">
       <Filter>effect\PostEffect</Filter>
     </ClCompile>
-    <ClCompile Include="engine\debug\DebugCamera.cpp">
-      <Filter>debug</Filter>
-    </ClCompile>
     <ClCompile Include="engine\3d\Model\BoneTracker.cpp">
       <Filter>3d\Model</Filter>
     </ClCompile>
@@ -444,6 +444,9 @@
       <Filter>base\DX12</Filter>
     </ClInclude>
     <ClInclude Include="engine\base\DX12\DX12Basic.h">
+      <Filter>base\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\base\DX12\PerFrameConstantRing.h">
       <Filter>base\DX12</Filter>
     </ClInclude>
     <ClInclude Include="engine\base\DX12\SrvManager.h">
@@ -656,9 +659,6 @@
     <ClInclude Include="engine\effect\PostEffect\WhiteNoise.h">
       <Filter>effect\PostEffect</Filter>
     </ClInclude>
-    <ClInclude Include="engine\debug\DebugCamera.h">
-      <Filter>debug</Filter>
-    </ClInclude>
     <ClInclude Include="engine\3d\Model\BoneTracker.h">
       <Filter>3d\Model</Filter>
     </ClInclude>
@@ -862,6 +862,9 @@
       <Filter>shader\3D</Filter>
     </None>
     <None Include="engine\resources\shaders\Object3dInstanced.hlsli">
+      <Filter>shader\3D</Filter>
+    </None>
+    <None Include="engine\resources\shaders\View.hlsli">
       <Filter>shader\3D</Filter>
     </None>
     <None Include="engine\resources\shaders\SkyBox.hlsli">

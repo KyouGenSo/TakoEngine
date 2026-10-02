@@ -10,6 +10,6 @@ ConstantBuffer<DecalData> gDecalData : register(b1);
 
 VertexShaderOutput main(VertexShaderInput input) {
     VertexShaderOutput output;
-    output.pos = mul(input.pos, gDecalData.decalWVP);
+    output.pos = mul(mul(input.pos, gDecalData.decalWorld), gViewData.viewProj);
     return output;
 }

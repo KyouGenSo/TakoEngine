@@ -46,13 +46,9 @@ namespace Tako {
     // 逆ワールド行列を計算
     Matrix4x4 worldInverse = Mat4x4::Inverse(worldMatrix);
 
-    // WVP 行列を計算
-    Matrix4x4 viewProjMatrix = DecalManager::GetInstance()->GetViewProjectionMatrix();
-    Matrix4x4 wvpMatrix = worldMatrix * viewProjMatrix;
-
-    // 定数バッファに書き込み
+    // 定数バッファに書き込み（視点に依存しないため本編/デバッグビューで共用できる）
     decalDataMapped_->decalWorldInverse = worldInverse;
-    decalDataMapped_->decalWVP = wvpMatrix;
+    decalDataMapped_->decalWorld = worldMatrix;
     decalDataMapped_->color = color_;
     decalDataMapped_->shapeType = static_cast<int32_t>(shape_);
     decalDataMapped_->fanHalfAngle = fanHalfAngle_;

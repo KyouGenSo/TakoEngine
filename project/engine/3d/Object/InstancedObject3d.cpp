@@ -3,7 +3,6 @@
 #include "Object3dBasic.h"
 #include "Model.h"
 #include "ModelManager.h"
-#include "Camera.h"
 #include "SrvManager.h"
 #include "ShadowRenderer.h"
 
@@ -23,12 +22,6 @@ InstancedObject3d::~InstancedObject3d() {
   if (instanceBuffer_) {
     instanceBuffer_->Unmap(0, nullptr);
   }
-  if (cameraForGPUResource_) {
-    cameraForGPUResource_->Unmap(0, nullptr);
-  }
-  if (viewProjResource_) {
-    viewProjResource_->Unmap(0, nullptr);
-  }
   if (instanceSrvIndex_ != 0) {
     SrvManager::GetInstance()->Free(instanceSrvIndex_);
   }
@@ -40,20 +33,11 @@ InstancedObject3d::~InstancedObject3d() {
 }
 
 void InstancedObject3d::Initialize(const std::string& modelFileName) {
-  // カメラを取得
-  camera_ = Object3dBasic::GetInstance()->GetCamera();
-
   // モデルを取得
   model_ = ModelManager::GetInstance()->GetModel(modelFileName);
 
   // インスタンスバッファの作成
   CreateInstanceBuffer();
-
-  // カメラデータの作成
-  CreateCameraForGPUData();
-
-  // ViewProjection 行列バッファの作成
-  CreateViewProjectionBuffer();
 }
 
 void InstancedObject3d::CreateInstanceBuffer() {
@@ -110,73 +94,6 @@ void InstancedObject3d::CreateInstanceBuffer() {
 
   D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = SrvManager::GetInstance()->GetCPUDescriptorHandle(instanceSrvIndex_);
   dx12->GetDevice()->CreateShaderResourceView(instanceBuffer_.Get(), &srvDesc, cpuHandle);
-}
-
-void InstancedObject3d::CreateCameraForGPUData() {
-  DX12Basic* dx12 = Object3dBasic::GetInstance()->GetDX12Basic();
-
-  // カメラ用バッファの作成
-  D3D12_HEAP_PROPERTIES heapProperties{};
-  heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
-
-  D3D12_RESOURCE_DESC resourceDesc{};
-  resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-  resourceDesc.Width = sizeof(CameraForGPU);
-  resourceDesc.Height = 1;
-  resourceDesc.DepthOrArraySize = 1;
-  resourceDesc.MipLevels = 1;
-  resourceDesc.Format = DXGI_FORMAT_UNKNOWN;
-  resourceDesc.SampleDesc.Count = 1;
-  resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-
-  HRESULT hr = dx12->GetDevice()->CreateCommittedResource(
-    &heapProperties,
-    D3D12_HEAP_FLAG_NONE,
-    &resourceDesc,
-    D3D12_RESOURCE_STATE_GENERIC_READ,
-    nullptr,
-    IID_PPV_ARGS(&cameraForGPUResource_)
-  );
-  assert(SUCCEEDED(hr));
-
-  // マップ
-  hr = cameraForGPUResource_->Map(0, nullptr, reinterpret_cast<void**>(&cameraForGPUData_));
-  assert(SUCCEEDED(hr));
-}
-
-void InstancedObject3d::CreateViewProjectionBuffer() {
-  DX12Basic* dx12 = Object3dBasic::GetInstance()->GetDX12Basic();
-
-  // ViewProjection 用バッファの作成
-  D3D12_HEAP_PROPERTIES heapProperties{};
-  heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
-
-  D3D12_RESOURCE_DESC resourceDesc{};
-  resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-  resourceDesc.Width = sizeof(Matrix4x4);
-  resourceDesc.Height = 1;
-  resourceDesc.DepthOrArraySize = 1;
-  resourceDesc.MipLevels = 1;
-  resourceDesc.Format = DXGI_FORMAT_UNKNOWN;
-  resourceDesc.SampleDesc.Count = 1;
-  resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-
-  HRESULT hr = dx12->GetDevice()->CreateCommittedResource(
-    &heapProperties,
-    D3D12_HEAP_FLAG_NONE,
-    &resourceDesc,
-    D3D12_RESOURCE_STATE_GENERIC_READ,
-    nullptr,
-    IID_PPV_ARGS(&viewProjResource_)
-  );
-  assert(SUCCEEDED(hr));
-
-  // マップ
-  hr = viewProjResource_->Map(0, nullptr, reinterpret_cast<void**>(&viewProjData_));
-  assert(SUCCEEDED(hr));
-
-  // 初期値を単位行列に設定
-  *viewProjData_ = Mat4x4::MakeIdentity();
 }
 
 uint32_t InstancedObject3d::AddInstance(const Transform& transform, const Vector4& color) {
@@ -281,13 +198,6 @@ void InstancedObject3d::Update() {
 
   // インスタンスデータの更新
   UpdateAllInstances();
-
-  // カメラデータの更新
-  if (camera_ && *camera_) {
-    cameraForGPUData_->worldPos = (*camera_)->GetTransform().translate;
-    // ViewProjection 行列を更新
-    *viewProjData_ = (*camera_)->GetViewProjectionMatrix();
-  }
 }
 
 void InstancedObject3d::Draw() {
@@ -314,18 +224,10 @@ void InstancedObject3d::Draw() {
   }
 
   // 通常レンダリングの場合：インスタンシング描画
-  // インスタンシング用のレンダリング設定
+  // インスタンシング用のレンダリング設定（視点 CB もここでバインドされる）
   Object3dBasic::GetInstance()->SetInstancedRenderSetting();
 
-  // ViewProjection 行列をセット（ルートパラメータ1: b0）
-  if (camera_ && *camera_) {
-    commandList->SetGraphicsRootConstantBufferView(Object3dBasic::kInstancedViewProjectionParam, viewProjResource_->GetGPUVirtualAddress());
-  }
-
-  // カメラデータをセット (b2)
-  commandList->SetGraphicsRootConstantBufferView(Object3dBasic::kCameraParam, cameraForGPUResource_->GetGPUVirtualAddress());
-
-  // インスタンスバッファの SRV をセット（ルートパラメータ11: t5レジスタ）
+  // インスタンスバッファの SRV をセット（t5 レジスタ）
   D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = SrvManager::GetInstance()->GetGPUDescriptorHandle(instanceSrvIndex_);
   commandList->SetGraphicsRootDescriptorTable(Object3dBasic::kInstanceDataParam, gpuHandle);
 

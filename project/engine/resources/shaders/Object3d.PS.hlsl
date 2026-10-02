@@ -1,4 +1,5 @@
 #include "Object3d.hlsli"
+#include "View.hlsli"
 
 struct Material
 {
@@ -47,11 +48,6 @@ cbuffer LightConstants : register(b3)
     int gNumSpotLights;
 };
 
-struct Camera
-{
-    float3 worldPos;
-};
-
 struct PixelShaderOutput
 {
     float4 color : SV_TARGET0;
@@ -59,7 +55,7 @@ struct PixelShaderOutput
 
 ConstantBuffer<Material> gMaterial : register(b0);
 ConstantBuffer<DirectionalLight> gDirectionalLight : register(b1);
-ConstantBuffer<Camera> gCamera : register(b2);
+ConstantBuffer<View> gView : register(b2);
 ConstantBuffer<ShadowConstants> gShadowConstants : register(b4);
 
 Texture2D<float4> gTexture : register(t0);
@@ -143,7 +139,7 @@ PixelShaderOutput main(VertexShaderOutput input)
     
     if (gMaterial.enableLighting != 0)
     {
-        float3 toEye = normalize(gCamera.worldPos - input.worldPos);
+        float3 toEye = normalize(gView.worldPos - input.worldPos);
         
         //---------------------------------- Directional Light ----------------------------------
         float3 directionalLightDiffuse;
@@ -252,7 +248,7 @@ PixelShaderOutput main(VertexShaderOutput input)
         if (gMaterial.enableEnvMap != 0)
         {
         // 環境マップをサンプリングして反射色を取得
-            float3 cameraToPos = normalize(input.worldPos - gCamera.worldPos);
+            float3 cameraToPos = normalize(input.worldPos - gView.worldPos);
             float3 refelectedVector = reflect(cameraToPos, normalize(input.normal));
             float4 environmentColor = gEnvironmentMap.Sample(gSampler, refelectedVector);
 
@@ -265,7 +261,7 @@ PixelShaderOutput main(VertexShaderOutput input)
         if (gMaterial.enableEnvMap != 0)
         {
         //　環境マップを単純に加算（ライティング無効なので反射ベクトルはカメラ方向の逆を使用）
-            float3 cameraToPos = normalize(input.worldPos - gCamera.worldPos);
+            float3 cameraToPos = normalize(input.worldPos - gView.worldPos);
             float3 refelectedVector = reflect(cameraToPos, normalize(input.normal));
             float4 environmentColor = gEnvironmentMap.Sample(gSampler, refelectedVector);
 

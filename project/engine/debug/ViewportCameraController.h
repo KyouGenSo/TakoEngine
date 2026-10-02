@@ -32,6 +32,12 @@ namespace Tako {
     void Focus(const Vector3& point);
 
     /// <summary>
+    /// カメラの位置と向きに合わせる（注視点は現在の distance だけ前方に置く）
+    /// </summary>
+    /// <param name="camera">合わせる先のカメラ</param>
+    void SetFromCamera(const Camera& camera);
+
+    /// <summary>
     /// 初期視点へ戻す
     /// </summary>
     void Reset() { *this = ViewportCameraController{}; }

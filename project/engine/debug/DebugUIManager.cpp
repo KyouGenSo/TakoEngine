@@ -44,6 +44,7 @@ namespace Tako {
   void DebugUIManager::Initialize() {
     // デフォルトウィンドウの表示設定
     windowVisibility_["GameViewport"] = true;
+    windowVisibility_["DebugViewport"] = false;
     windowVisibility_["SceneHierarchy"] = true;
     windowVisibility_["Inspector"] = true;
     windowVisibility_["Console"] = false;
@@ -66,10 +67,14 @@ namespace Tako {
     ClearLogs();
     FinalizePrimitiveEditor();
     FinalizeParticleEditor();
+    FinalizeDebugViewport();
     instance_.reset();
   }
 
   void DebugUIManager::Update() {
+    if (Input::GetInstance()->TriggerKey(DIK_F1)) {
+      windowVisibility_["DebugViewport"] = !windowVisibility_["DebugViewport"];
+    }
     if (Input::GetInstance()->TriggerKey(DIK_F2)) {
       windowVisibility_["SceneHierarchy"] = !windowVisibility_["SceneHierarchy"];
     }
@@ -103,6 +108,7 @@ namespace Tako {
     // 表示状態に関わらず毎フレーム呼ぶ（非表示検知でプレビューを解放するため）
     UpdatePrimitiveEditor();
     UpdateParticleEditor();
+    UpdateDebugViewport();
   }
 
   void DebugUIManager::Draw() {
@@ -118,6 +124,7 @@ namespace Tako {
     if (windowVisibility_["Console"]) DrawConsole();
     if (windowVisibility_["Performance"]) DrawPerformance();
     if (windowVisibility_["GameViewport"]) DrawGameViewport();
+    if (windowVisibility_["DebugViewport"]) DrawDebugViewportWindow();
     if (windowVisibility_["EngineStatus"]) DrawEngineStatus();
     if (windowVisibility_["InputDebug"]) DrawInputDebug();
     if (windowVisibility_["ShadowSettings"]) DrawShadowSettings();
@@ -166,6 +173,7 @@ namespace Tako {
         ImGui::MenuItem("Scene Hierarchy", "F2", &windowVisibility_["SceneHierarchy"]);
         ImGui::MenuItem("Inspector", "F3", &windowVisibility_["Inspector"]);
         ImGui::MenuItem("Game Viewport", "F4", &windowVisibility_["GameViewport"]);
+        ImGui::MenuItem("Debug Viewport", "F1", &windowVisibility_["DebugViewport"]);
         ImGui::MenuItem("Console", "F5", &windowVisibility_["Console"]);
         ImGui::MenuItem("Performance", "F6", &windowVisibility_["Performance"]);
         ImGui::Separator();
@@ -186,18 +194,6 @@ namespace Tako {
         bool collisionDebug = CollisionManager::GetInstance()->IsDebugDrawEnabled();
         if (ImGui::MenuItem("Collider Visibility", nullptr, collisionDebug)) {
           CollisionManager::GetInstance()->SetDebugDrawEnabled(!collisionDebug);
-        }
-
-        // Debug Camera の切り替え
-        if (pIsDebug_) {
-          bool debugCamera = *pIsDebug_;
-          if (ImGui::MenuItem("Debug Camera", "F1", debugCamera)) {
-            *pIsDebug_ = !debugCamera;
-            // 各コンポーネントのデバッグモードも同時に設定
-            Object3dBasic::GetInstance()->SetDebug(*pIsDebug_);
-            LineRenderer::GetInstance()->SetDebug(*pIsDebug_);
-            GPUParticle::GetInstance()->SetIsDebug(*pIsDebug_);
-          }
         }
 
         ImGui::MenuItem("Particle Editor", nullptr, &windowVisibility_["ParticleEditor"]);

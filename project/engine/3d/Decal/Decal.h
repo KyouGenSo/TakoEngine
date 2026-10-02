@@ -79,7 +79,7 @@ namespace Tako {
     /// </summary>
     struct DecalDataGPU {
       Matrix4x4 decalWorldInverse; ///< ワールド→デカールローカル変換
-      Matrix4x4 decalWVP;          ///< キューブの WVP
+      Matrix4x4 decalWorld;        ///< キューブのワールド行列（VP は描画時の ViewData 側）
       Vector4 color;               ///< デカールカラー
       int32_t shapeType;           ///< 形状タイプ
       float fanHalfAngle;          ///< 扇形の半角

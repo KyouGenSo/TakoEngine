@@ -13,7 +13,6 @@
 namespace Tako {
 
 class Model;
-class Camera;
 
 /// <summary>
 /// 3D オブジェクト基底クラス
@@ -22,20 +21,12 @@ class Camera;
 class Object3d {
 
 public: // 構造体
-  // 座標変換行列データ
+  // 座標変換行列データ（VP は Object3dBasic の視点 CB 側で掛ける）
   struct TransformationMatrix
   {
-    Matrix4x4 WVP;
     Matrix4x4 world;
     Matrix4x4 worldInvTranspose;
   };
-
-  // Shader 用のカメラ
-  struct CameraForGPU
-  {
-    Vector3 worldPos;
-  };
-
 
 public: // メンバー関数
 
@@ -97,7 +88,6 @@ public: // メンバー関数
   /// <param name="model">所有権を渡す Model（unique_ptr）</param>
   void SetModel(std::unique_ptr<Model> model);
 
-  void SetCamera(Camera** camera) { camera_ = camera; }
   void SetTransform(const Transform& transform) { transform_ = transform; }
   void SetScale(const Vector3& scale) { transform_.scale = scale; }
   void SetRotate(const Vector3& rotate) { transform_.rotate = rotate; }
@@ -225,26 +215,18 @@ private: // プライベートメンバー関数
   /// </summary>
   void CreateTransformationMatrixData();
 
-  /// <summary>
-  /// シェーダー用カメラデータの生成
-  /// </summary>
-  void CreateCameraForGPUData();
-
 private: // メンバー変数
-  Camera**               camera_  = nullptr;
   std::unique_ptr<Model> model_;
   Transform              transform_;
 
   //バッファリソース
   Microsoft::WRL::ComPtr<ID3D12Resource> transformationMatResource_;
-  Microsoft::WRL::ComPtr<ID3D12Resource> cameraForGPUResource_;
 
   Matrix4x4 finalWorldMatrix_;
   Matrix4x4 worldMatrix_;
 
   //バッファリソース内のデータを指すポインタ
   TransformationMatrix* transformationMatData_ = nullptr;
-  CameraForGPU*         cameraForGPUData_      = nullptr;
 
   //Joint アタッチメント用変数
   Object3d*   parentObject_       = nullptr;

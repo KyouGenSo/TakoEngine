@@ -59,8 +59,7 @@ namespace Tako {
     /// 描画
     /// </summary>
     /// <param name="world">ワールド変換行列</param>
-    /// <param name="viewProjection">ビュープロジェクション行列</param>
-    void Draw(Matrix4x4 world, Matrix4x4 viewProjection);
+    void Draw(Matrix4x4 world);
 
     /// <summary>
     /// インスタンシング描画
@@ -223,8 +222,7 @@ namespace Tako {
     /// <param name="node">処理対象のノード</param>
     /// <param name="parentGlobalMatrix">親ノードのグローバル変換行列</param>
     /// <param name="world">ワールド変換行列</param>
-    /// <param name="viewProjection">ビュープロジェクション行列</param>
-    void ProcessNodeHierarchy(const Node& node, const Matrix4x4& parentGlobalMatrix, Matrix4x4 world, Matrix4x4 viewProjection);
+    void ProcessNodeHierarchy(const Node& node, const Matrix4x4& parentGlobalMatrix, Matrix4x4 world);
 
     /// <summary>
     /// Skeleton のデバグ用描画

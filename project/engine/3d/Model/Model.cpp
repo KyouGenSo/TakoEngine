@@ -127,7 +127,7 @@ namespace Tako {
     }
   }
 
-  void Model::Draw(Matrix4x4 world, Matrix4x4 viewProjection)
+  void Model::Draw(Matrix4x4 world)
   {
     // スキニング処理の実行（ComputeShader による頂点変形）
     ExecuteSkinning();
@@ -151,7 +151,7 @@ namespace Tako {
       // マルチメッシュモデル（スキニングなし）の場合はノード階層で描画
       // アニメーションがある場合は、更新された rootNode の localMatrix を使用
       Matrix4x4 rootTransform = hasAnimation_ ? rootNode_.localMatrix : Mat4x4::MakeIdentity();
-      ProcessNodeHierarchy(rootNode_, rootTransform, world, viewProjection);
+      ProcessNodeHierarchy(rootNode_, rootTransform, world);
     }
 
     // skeleton の描画
@@ -553,7 +553,7 @@ namespace Tako {
     return joint.skeletonSpaceMatrix * worldMatrix;
   }
 
-  void Model::ProcessNodeHierarchy(const Node& node, const Matrix4x4& parentGlobalMatrix, Matrix4x4 world, Matrix4x4 viewProjection)
+  void Model::ProcessNodeHierarchy(const Node& node, const Matrix4x4& parentGlobalMatrix, Matrix4x4 world)
   {
     // このノードのグローバル行列を計算（親の変換を適用）
     Matrix4x4 globalMatrix = Mat4x4::Multiply(node.localMatrix, parentGlobalMatrix);
@@ -568,7 +568,7 @@ namespace Tako {
         Matrix4x4 meshWorldMatrix = Mat4x4::Multiply(globalMatrix, world);
 
         // メッシュのトランスフォーム情報を更新
-        meshes_[meshIndex]->UpdateTransformation(meshWorldMatrix, viewProjection);
+        meshes_[meshIndex]->UpdateTransformation(meshWorldMatrix);
 
         // 更新されたトランスフォーム情報で描画
         meshes_[meshIndex]->DrawWithCurrentTransform();
@@ -577,7 +577,7 @@ namespace Tako {
 
     // 子ノードを再帰的に処理
     for (const Node& child : node.children) {
-      ProcessNodeHierarchy(child, globalMatrix, world, viewProjection);
+      ProcessNodeHierarchy(child, globalMatrix, world);
     }
   }
 

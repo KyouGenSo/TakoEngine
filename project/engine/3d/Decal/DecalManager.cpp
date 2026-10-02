@@ -3,9 +3,7 @@
 #include "DX12Basic.h"
 #include "Camera.h"
 #include "SrvManager.h"
-#include "PostEffectManager.h"
 #include "Mat4x4Func.h"
-#include "WinApp.h"
 #include "EnginePaths.h"
 
 #ifdef _DEBUG
@@ -29,7 +27,7 @@ namespace Tako {
     dx12_ = dx12;
 
     CreateCubeMesh();
-    CreateViewDataBuffer();
+    viewDataRing_.Initialize(dx12_->GetDevice(), kMaxViewsPerFrame);
     CreateDepthSRV();
     CreatePSO();
   }
@@ -51,28 +49,24 @@ namespace Tako {
     CreateDepthSRV();
   }
 
-  void DecalManager::BeginDraw()
+  void DecalManager::BeginDraw(const Camera& camera, ID3D12Resource* depthResource, uint32_t depthSrvIndex)
   {
-    // ビュープロジェクション行列を更新
-    viewProjectionMatrix_ = camera_->GetViewProjectionMatrix();
+    const DX12Basic::SceneRenderTarget& target = dx12_->GetSceneRenderTarget();
 
-    // ViewData 定数バッファを更新
-    viewDataMapped_->invViewProj = Mat4x4::Inverse(viewProjectionMatrix_);
-    viewDataMapped_->screenWidth = static_cast<float>(WinApp::clientWidth);
-    viewDataMapped_->screenHeight = static_cast<float>(WinApp::clientHeight);
+    // ViewData を視点ごとのスロットへ書き込む（画面サイズは描画先 RT のサイズ）
+    ViewDataGPU viewData{};
+    viewData.viewProj = camera.GetViewMatrix() * camera.GetProjectionMatrix();
+    viewData.invViewProj = Mat4x4::Inverse(viewData.viewProj);
+    viewData.screenWidth = static_cast<float>(target.width);
+    viewData.screenHeight = static_cast<float>(target.height);
+    const D3D12_GPU_VIRTUAL_ADDRESS viewDataAddress = viewDataRing_.Push(viewData);
 
     // 深度バッファを PIXEL_SHADER_RESOURCE に遷移
-    dx12_->TransitionResourceWithTracking(
-      dx12_->GetDepthStencilResource(),
-      D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
-    );
+    dx12_->TransitionResourceWithTracking(depthResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
-    // RTV を DSV なしで再バインド
-    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = PostEffectManager::GetInstance()->GetCurrentRTVHandle();
-    dx12_->GetCommandList()->OMSetRenderTargets(1, &rtvHandle, false, nullptr);
-
-    // ビューポートとシザー矩形を設定
-    dx12_->SetViewPort();
+    // 描画先 RT のビューポートを保ったまま、DSV を外して RTV だけ再バインド
+    dx12_->RestoreSceneRenderTarget();
+    dx12_->GetCommandList()->OMSetRenderTargets(1, &target.rtv, false, nullptr);
 
     // PSO / RootSignature をセット
     dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
@@ -84,24 +78,19 @@ namespace Tako {
     dx12_->GetCommandList()->IASetIndexBuffer(&cubeIBV_);
 
     // ViewData CBV をバインド
-    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(kViewDataParam, viewDataBuffer_->GetGPUVirtualAddress());
+    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(kViewDataParam, viewDataAddress);
 
     // 深度 SRV をバインド
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(kDepthTextureParam, depthSrvIndex_);
+    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(kDepthTextureParam, depthSrvIndex);
   }
 
-  void DecalManager::EndDraw()
+  void DecalManager::EndDraw(ID3D12Resource* depthResource)
   {
     // 深度バッファを DEPTH_WRITE に復帰
-    dx12_->TransitionResourceWithTracking(
-      dx12_->GetDepthStencilResource(),
-      D3D12_RESOURCE_STATE_DEPTH_WRITE
-    );
+    dx12_->TransitionResourceWithTracking(depthResource, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 
-    // RTV + DSV を再バインド
-    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = PostEffectManager::GetInstance()->GetCurrentRTVHandle();
-    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dx12_->GetMainDSVHandle();
-    dx12_->GetCommandList()->OMSetRenderTargets(1, &rtvHandle, false, &dsvHandle);
+    // シーン描画先（RTV + DSV）を再バインド
+    dx12_->RestoreSceneRenderTarget();
   }
 
   void DecalManager::AddDecal(Decal* decal)
@@ -118,6 +107,8 @@ namespace Tako {
 
   void DecalManager::UpdateAll()
   {
+    viewDataRing_.Reset();
+
     for (Decal* decal : decals_) {
       if (decal) {
         decal->Update();
@@ -127,15 +118,20 @@ namespace Tako {
 
   void DecalManager::DrawAll()
   {
+    DrawAllForView(*camera_, dx12_->GetDepthStencilResource(), depthSrvIndex_);
+  }
+
+  void DecalManager::DrawAllForView(const Camera& camera, ID3D12Resource* depthResource, uint32_t depthSrvIndex)
+  {
     if (decals_.empty()) return;
 
-    BeginDraw();
+    BeginDraw(camera, depthResource, depthSrvIndex);
     for (Decal* decal : decals_) {
       if (decal) {
         decal->Draw();
       }
     }
-    EndDraw();
+    EndDraw(depthResource);
   }
 
   void DecalManager::DrawAllDebug()
@@ -374,13 +370,6 @@ namespace Tako {
     cubeIBV_.BufferLocation = cubeIndexBuffer_->GetGPUVirtualAddress();
     cubeIBV_.SizeInBytes = sizeof(indices);
     cubeIBV_.Format = DXGI_FORMAT_R16_UINT;
-  }
-
-  // ViewData 定数バッファの作成
-  void DecalManager::CreateViewDataBuffer()
-  {
-    viewDataBuffer_ = dx12_->MakeBufferResource(sizeof(ViewDataGPU));
-    viewDataBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&viewDataMapped_));
   }
 
   // 深度 SRV の作成

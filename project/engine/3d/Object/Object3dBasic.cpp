@@ -8,7 +8,6 @@
 
 #ifdef _DEBUG
 #include "DebugUIManager.h"
-#include "DebugCamera.h"
 #endif
 
 namespace Tako {
@@ -28,7 +27,7 @@ void Object3dBasic::Initialize(DX12Basic* dx12)
 {
 	dx12_ = dx12;
 
-	isDebug_ = false;
+	viewRing_.Initialize(dx12_->GetDevice(), kMaxViewsPerFrame);
 
 	CreatePSO();
 	CreateInstancedPSO();
@@ -42,19 +41,18 @@ void Object3dBasic::Initialize(DX12Basic* dx12)
 
 void Object3dBasic::Update()
 {
-	if (isDebug_)
-	{
-#ifdef _DEBUG
-		debugViewProjectionMatrix_ = DebugCamera::GetInstance()->GetViewProjectionMat();
-		camera_->SetViewProjectionMatrix(debugViewProjectionMatrix_);
-#endif
-	} else
-	{
-		viewProjectionMatrix_ = camera_->GetViewMatrix() * camera_->GetProjectionMatrix();
-		camera_->SetViewProjectionMatrix(viewProjectionMatrix_);
-	}
-	
+	camera_->SetViewProjectionMatrix(camera_->GetViewMatrix() * camera_->GetProjectionMatrix());
+
+	// 前フレームの視点を破棄し、本編カメラを既定の視点にする
+	viewRing_.Reset();
+	SetView(*camera_);
+
   light_->Update();
+}
+
+void Object3dBasic::SetView(const Camera& camera)
+{
+	currentViewAddress_ = viewRing_.Push({ camera.GetViewMatrix() * camera.GetProjectionMatrix(), camera.GetTranslate(), 0.0f });
 }
 
 void Object3dBasic::Finalize()
@@ -78,6 +76,9 @@ void Object3dBasic::SetCommonRenderSetting()
 	// ライトの描画設定
 	light_->PreDraw();
 
+	// 視点 CB の設定
+	dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(kViewParam, currentViewAddress_);
+
 	// ShadowRenderer のリソース設定（ルートパラメータ9と10）
 	ShadowRenderer::GetInstance()->SetShadowForMainPass();
 }
@@ -95,6 +96,9 @@ void Object3dBasic::SetTransparentRenderSetting()
 
 	// ライトの描画設定
 	light_->PreDraw();
+
+	// 視点 CB の設定
+	dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(kViewParam, currentViewAddress_);
 
 	// ShadowRenderer のリソース設定（ルートパラメータ9と10）
 	ShadowRenderer::GetInstance()->SetShadowForMainPass();
@@ -207,10 +211,10 @@ void Object3dBasic::CreateRootSignature()
 	rootParameters[kDirectionalLightParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
 	rootParameters[kDirectionalLightParam].Descriptor.ShaderRegister = 1; // レジスタ番号とバインド
 
-	// GPU Camera
-	rootParameters[kCameraParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-	rootParameters[kCameraParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-	rootParameters[kCameraParam].Descriptor.ShaderRegister = 2; // レジスタ番号とバインド
+	// View（VS で VP、PS でカメラ位置を使う）
+	rootParameters[kViewParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
+	rootParameters[kViewParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+	rootParameters[kViewParam].Descriptor.ShaderRegister = 2; // レジスタ番号とバインド
 
 	// PointLight
 	rootParameters[kPointLightParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
@@ -448,7 +452,10 @@ void Object3dBasic::SetInstancedRenderSetting()
 
 	// ライトの描画設定
 	light_->PreDraw();
-	
+
+	// 視点 CB の設定
+	dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(kViewParam, currentViewAddress_);
+
 	// ShadowRenderer のリソース設定
 	ShadowRenderer::GetInstance()->SetShadowForMainPass();
 }
@@ -529,17 +536,12 @@ void Object3dBasic::CreateInstancedRootSignature()
 	descriptorRangeInstance[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
 	// RootParameter の設定
-	D3D12_ROOT_PARAMETER rootParameters[12] = {};
+	D3D12_ROOT_PARAMETER rootParameters[11] = {};
 
 	// Material（b0 - pixel）
 	rootParameters[kMaterialParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	rootParameters[kMaterialParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 	rootParameters[kMaterialParam].Descriptor.ShaderRegister = 0;
-
-	// ViewProjection（b0 - vertex）
-	rootParameters[kInstancedViewProjectionParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-	rootParameters[kInstancedViewProjectionParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-	rootParameters[kInstancedViewProjectionParam].Descriptor.ShaderRegister = 0;
 
 	// Texture（t0）
 	rootParameters[kTextureParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
@@ -552,10 +554,10 @@ void Object3dBasic::CreateInstancedRootSignature()
 	rootParameters[kDirectionalLightParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 	rootParameters[kDirectionalLightParam].Descriptor.ShaderRegister = 1;
 
-	// GPU Camera（b2）
-	rootParameters[kCameraParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-	rootParameters[kCameraParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-	rootParameters[kCameraParam].Descriptor.ShaderRegister = 2;
+	// View（b2）
+	rootParameters[kViewParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParameters[kViewParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+	rootParameters[kViewParam].Descriptor.ShaderRegister = 2;
 
 	// PointLight（t1）
 	rootParameters[kPointLightParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;

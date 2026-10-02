@@ -2,7 +2,6 @@
 #include "DX12Basic.h"
 #include "Object3dBasic.h"
 #include "Light.h"
-#include "PostEffectManager.h"
 #include "SrvManager.h"
 #include <cassert>
 #include "Mat4x4Func.h"
@@ -112,11 +111,6 @@ void ShadowRenderer::BeginShadowPass()
     // シャドウマップレンダリング中フラグを設定
     isRenderingShadow_ = true;
 
-    // 現在のレンダーターゲットとデプスバッファを保存
-    savedRTVHandle_ = PostEffectManager::GetInstance()->GetCurrentRTVHandle();
-    savedDSVHandle_ = dx12_->GetMainDSVHandle();
-    hasSavedRenderTargets_ = true;
-
     // シャドウマップレンダリングを開始
     shadowMap_->BeginShadowMapRender();
 
@@ -134,14 +128,8 @@ void ShadowRenderer::EndShadowPass()
     // シャドウマップレンダリング中フラグをクリア
     isRenderingShadow_ = false;
 
-    // 元のレンダーターゲットとデプスバッファを復元
-    if (hasSavedRenderTargets_) {
-        dx12_->GetCommandList()->OMSetRenderTargets(1, &savedRTVHandle_, FALSE, &savedDSVHandle_);
-        hasSavedRenderTargets_ = false;
-    }
-
-    // ビューポートとシザー矩形を元に戻す
-    dx12_->SetViewPort();
+    // 本編/デバッグビュー/プレビューのどれから呼ばれても、パス開始前の描画先へ戻す
+    dx12_->RestoreSceneRenderTarget();
 }
 
 void ShadowRenderer::SetRenderState()

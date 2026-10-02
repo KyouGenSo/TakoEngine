@@ -28,6 +28,16 @@ namespace Tako {
     /// </summary>
     template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
 
+    /// <summary>
+    /// シーン描画先。シャドウ/デカール等の途中パスが抜けるときの復帰先として記録する
+    /// </summary>
+    struct SceneRenderTarget {
+      D3D12_CPU_DESCRIPTOR_HANDLE rtv{};
+      D3D12_CPU_DESCRIPTOR_HANDLE dsv{};       ///< ptr == 0 なら深度なし
+      uint32_t                    width  = 0;
+      uint32_t                    height = 0;
+    };
+
   public: //メンバー関数
 
     /// <summary>
@@ -181,6 +191,17 @@ namespace Tako {
     void SetViewPort();
 
     /// <summary>
+    /// シーン描画先をバインドしてビューポート/シザーを合わせ、途中パスの復帰先として記録する
+    /// </summary>
+    /// <param name="target">バインドする描画先</param>
+    void BindSceneRenderTarget(const SceneRenderTarget& target);
+
+    /// <summary>
+    /// 記録済みのシーン描画先とビューポート/シザーを再バインドする
+    /// </summary>
+    void RestoreSceneRenderTarget();
+
+    /// <summary>
     /// RTV,DepthBuffer のリサイズ
     /// </summary>
     /// <param name="width">新しい幅（ピクセル）</param>
@@ -251,6 +272,8 @@ namespace Tako {
     D3D12_RECT GetScissorRect() {
       return scissorRect_;
     }
+
+    const SceneRenderTarget& GetSceneRenderTarget() const { return sceneRenderTarget_; }
   private: //非公開関数
     /// <summary>
     /// device の初期化
@@ -390,6 +413,8 @@ namespace Tako {
     D3D12_VIEWPORT viewport_;  ///< ビューポート（描画領域の定義）
 
     D3D12_RECT scissorRect_;  ///< シザリング矩形（描画範囲の制限）
+
+    SceneRenderTarget sceneRenderTarget_{};  ///< 現在のシーン描画先（BindSceneRenderTarget で更新）
 
     ComPtr<IDxcUtils> dxcUtils_ = nullptr;  ///< DXC ユーティリティ（シェーダーコンパイル補助）
 

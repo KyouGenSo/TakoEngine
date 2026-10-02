@@ -173,13 +173,9 @@ namespace Tako {
     dx12_->GetCommandList()->DrawIndexedInstanced(static_cast<UINT>(indices_.size()), instanceCount, 0, 0, 0);
   }
 
-  void Mesh::UpdateTransformation(const Matrix4x4& world, const Matrix4x4& viewProjection)
+  void Mesh::UpdateTransformation(const Matrix4x4& world)
   {
-    // ワールド変換行列とビュープロジェクション行列から WVP 行列を計算
-    Matrix4x4 wvpMatrix = Mat4x4::Multiply(world, viewProjection);
-
-    // 変換行列データを更新
-    transformationData_->WVP = wvpMatrix;
+    // 変換行列データを更新（視点に依存しないため複数ビューで描いても同じ値になる）
     transformationData_->world = world;
     transformationData_->worldInvTranspose = Mat4x4::InverseTranspose(world);
   }
@@ -438,7 +434,6 @@ namespace Tako {
     transformationResource_->Map(0, nullptr, reinterpret_cast<void**>(&transformationData_));
 
     // 座標変換行列データの初期値を書き込む
-    transformationData_->WVP = Mat4x4::MakeIdentity();
     transformationData_->world = Mat4x4::MakeIdentity();
     transformationData_->worldInvTranspose = Mat4x4::MakeIdentity();
   }

@@ -1,4 +1,5 @@
 #include "Object3dInstanced.hlsli"
+#include "View.hlsli"
 
 struct InstanceData
 {
@@ -8,13 +9,8 @@ struct InstanceData
     float3 Padding[4]; // 256バイトアラインメント
 };
 
-struct ViewProjection
-{
-    float4x4 viewProj;
-};
-
 StructuredBuffer<InstanceData> gInstanceData : register(t5);
-ConstantBuffer<ViewProjection> gViewProjection : register(b0);
+ConstantBuffer<View> gView : register(b2);
 ConstantBuffer<ShadowConstants> gShadowConstants : register(b4);
 
 struct VertexShaderInput
@@ -33,7 +29,7 @@ VertexShaderOutput main(VertexShaderInput input, uint instanceID : SV_InstanceID
     float4 worldPos = mul(input.pos, instance.World);
     output.worldPos = worldPos.xyz;
     
-    output.pos = mul(worldPos, gViewProjection.viewProj);
+    output.pos = mul(worldPos, gView.viewProj);
     
     // 法線変換（ワールド逆転置行列を使用）
     output.normal = normalize(mul(input.normal, (float3x3)instance.WorldInvTranspose));

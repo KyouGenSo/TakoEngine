@@ -6,6 +6,7 @@
 
 #include "Camera.h"
 #include "Matrix4x4.h"
+#include "PerFrameConstantRing.h"
 
 namespace Tako {
 
@@ -65,15 +66,19 @@ namespace Tako {
 
     /// <summary>
     /// デカール描画パスの開始
-    /// 深度バッファを PIXEL_SHADER_RESOURCE に遷移、RTV を DSV なしで再バインド
+    /// 深度バッファを PIXEL_SHADER_RESOURCE に遷移、現在のシーン描画先の RTV を DSV なしで再バインド
     /// </summary>
-    void BeginDraw();
+    /// <param name="camera">描画視点のカメラ</param>
+    /// <param name="depthResource">描画先の深度バッファ</param>
+    /// <param name="depthSrvIndex">depthResource の SRV インデックス</param>
+    void BeginDraw(const Camera& camera, ID3D12Resource* depthResource, uint32_t depthSrvIndex);
 
     /// <summary>
     /// デカール描画パスの終了
-    /// 深度バッファを DEPTH_WRITE に復帰、RTV + DSV を再バインド
+    /// 深度バッファを DEPTH_WRITE に復帰、シーン描画先（RTV + DSV）を再バインド
     /// </summary>
-    void EndDraw();
+    /// <param name="depthResource">BeginDraw に渡した深度バッファ</param>
+    void EndDraw(ID3D12Resource* depthResource);
 
     /// <summary>
     /// デカールを登録
@@ -91,9 +96,17 @@ namespace Tako {
     void UpdateAll();
 
     /// <summary>
-    /// 登録済み全デカールの描画（BeginDraw/EndDraw を内部で呼び出す）
+    /// 登録済み全デカールを本編カメラ・メイン深度で描画（BeginDraw/EndDraw を内部で呼び出す）
     /// </summary>
     void DrawAll();
+
+    /// <summary>
+    /// 登録済み全デカールを指定視点・指定深度で現在のシーン描画先へ描画する（デバッグビュー等の別視点用）
+    /// </summary>
+    /// <param name="camera">描画視点のカメラ</param>
+    /// <param name="depthResource">描画先の深度バッファ</param>
+    /// <param name="depthSrvIndex">depthResource の SRV インデックス</param>
+    void DrawAllForView(const Camera& camera, ID3D12Resource* depthResource, uint32_t depthSrvIndex);
 
     /// <summary>
     /// 登録済み全デカールのデバッグ描画
@@ -115,7 +128,6 @@ namespace Tako {
     //================================================
     DX12Basic* GetDX12Basic() const { return dx12_; }
     Camera* GetCamera() const { return camera_; }
-    const Matrix4x4& GetViewProjectionMatrix() const { return viewProjectionMatrix_; }
     const D3D12_VERTEX_BUFFER_VIEW& GetCubeVBV() const { return cubeVBV_; }
     const D3D12_INDEX_BUFFER_VIEW& GetCubeIBV() const { return cubeIBV_; }
 
@@ -125,6 +137,7 @@ namespace Tako {
     /// GPU に送る ViewData 構造体
     /// </summary>
     struct ViewDataGPU {
+      Matrix4x4 viewProj;
       Matrix4x4 invViewProj;
       float screenWidth;
       float screenHeight;
@@ -149,11 +162,6 @@ namespace Tako {
     void CreateCubeMesh();
 
     /// <summary>
-    /// ViewData 定数バッファの作成
-    /// </summary>
-    void CreateViewDataBuffer();
-
-    /// <summary>
     /// 深度 SRV の作成
     /// </summary>
     void CreateDepthSRV();
@@ -161,7 +169,6 @@ namespace Tako {
   private: // メンバー変数
     DX12Basic*                                  dx12_               = nullptr;  ///< DirectX12基盤システムへの参照
     Camera*                                     camera_               = nullptr;  ///< カメラへのポインタ
-    Matrix4x4                                   viewProjectionMatrix_;            ///< ビュープロジェクション行列
     Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;                   ///< ルートシグネチャ
     Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;                   ///< パイプラインステート
 
@@ -172,8 +179,8 @@ namespace Tako {
     D3D12_INDEX_BUFFER_VIEW                cubeIBV_{};         ///< インデックスバッファビュー
 
     //ViewData 定数バッファ
-    Microsoft::WRL::ComPtr<ID3D12Resource> viewDataBuffer_;            ///< ViewData 定数バッファリソース
-    ViewDataGPU*                           viewDataMapped_ = nullptr;  ///< マップ済みポインタ
+    static constexpr uint32_t         kMaxViewsPerFrame = 4;  ///< 1 フレームで描画できる視点数（本編/デバッグビュー）
+    PerFrameConstantRing<ViewDataGPU> viewDataRing_;          ///< 視点ごとの ViewData（1 フレームで複数視点を併存させる）
 
     //深度 SRV
     uint32_t depthSrvIndex_ = 0;  ///< 深度テクスチャの SRV インデックス

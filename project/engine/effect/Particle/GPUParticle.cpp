@@ -16,7 +16,6 @@
 #ifdef _DEBUG
 #include "DebugUIManager.h"
 #include "ImGuiManager.h"
-#include "DebugCamera.h"
 #endif // _DEBUG
 
 #include <numbers>
@@ -101,8 +100,6 @@ namespace Tako {
 
     isInited_ = false;
 
-    isDebug_ = false;
-
     // ルートシグネチャの生成
     CreateRS();
     CreateInitComputeRS();
@@ -186,6 +183,10 @@ namespace Tako {
 
   void GPUParticle::Update()
   {
+#ifdef _DEBUG
+    extraViewRing_.Reset();
+#endif
+
     // PerFrame の更新
     UpdatePerFrame();
 
@@ -463,23 +464,21 @@ namespace Tako {
   }
 
 #ifdef _DEBUG
-  void GPUParticle::DrawEmitterForPreview(int32_t slot, Camera* previewCamera)
+  void GPUParticle::DrawForCamera(const Camera& camera, int32_t slotFilter)
   {
-    if (!previewCamera || !previewPerViewData_) {
-      return;
-    }
-
-    // UpdatePerView と同式（デバッグカメラ分岐なし）をプレビューカメラで計算
-    const Matrix4x4 cameraMatrix = Mat4x4::MakeAffine({ .x = 1.0f, .y = 1.0f, .z = 1.0f }, previewCamera->GetRotate(), previewCamera->GetTranslate());
-    previewPerViewData_->viewProjection = Mat4x4::Multiply(Mat4x4::Inverse(cameraMatrix), previewCamera->GetProjectionMatrix());
+    // UpdatePerView と同式を指定カメラで計算
+    const Matrix4x4 cameraMatrix = Mat4x4::MakeAffine({ .x = 1.0f, .y = 1.0f, .z = 1.0f }, camera.GetRotate(), camera.GetTranslate());
 
     Matrix4x4 billboardMatrix = Mat4x4::Multiply(Mat4x4::MakeRotateY(std::numbers::pi_v<float>), cameraMatrix);
     billboardMatrix.m[3][0] = 0.0f;
     billboardMatrix.m[3][1] = 0.0f;
     billboardMatrix.m[3][2] = 0.0f;
-    previewPerViewData_->billboardMatrix = billboardMatrix;
 
-    DrawParticleGraphics(previewPerViewResource_->GetGPUVirtualAddress(), slot);
+    PerView perView{};
+    perView.viewProjection = Mat4x4::Multiply(Mat4x4::Inverse(cameraMatrix), camera.GetProjectionMatrix());
+    perView.billboardMatrix = billboardMatrix;
+
+    DrawParticleGraphics(extraViewRing_.Push(perView), slotFilter);
   }
 #endif
 
@@ -673,13 +672,7 @@ namespace Tako {
   void GPUParticle::UpdatePerView()
   {
 
-    Matrix4x4 cameraMatrix = Mat4x4::MakeAffine({ .x = 1.0f,.y = 1.0f,.z = 1.0f }, camera_->GetRotate(), camera_->GetTranslate());
-
-#ifdef _DEBUG
-    if (isDebug_) {
-      cameraMatrix = Mat4x4::MakeAffine({ .x = 1.0f,.y = 1.0f,.z = 1.0f }, DebugCamera::GetInstance()->GetRotate(), DebugCamera::GetInstance()->GetTranslate());
-    }
-#endif
+    const Matrix4x4 cameraMatrix = Mat4x4::MakeAffine({ .x = 1.0f,.y = 1.0f,.z = 1.0f }, camera_->GetRotate(), camera_->GetTranslate());
 
     const Matrix4x4 viewProjectionMatrix = Mat4x4::Multiply(Mat4x4::Inverse(cameraMatrix), camera_->GetProjectionMatrix());
 
@@ -1141,11 +1134,7 @@ namespace Tako {
     perViewData_->billboardMatrix = Mat4x4::MakeIdentity();
 
 #ifdef _DEBUG
-    // エディタプレビュー用の第2 PerView（本編と同一フレームで別視点を併存させるため分離）
-    dx12_->CreateBufferResource(previewPerViewResource_, sizeof(PerView));
-    previewPerViewResource_->Map(0, nullptr, reinterpret_cast<void**>(&previewPerViewData_));
-    previewPerViewData_->viewProjection = Mat4x4::MakeIdentity();
-    previewPerViewData_->billboardMatrix = Mat4x4::MakeIdentity();
+    extraViewRing_.Initialize(dx12_->GetDevice(), kMaxExtraViewsPerFrame);
 #endif
   }
 
@@ -1688,20 +1677,10 @@ namespace Tako {
     physicsParamsData_->noiseTime = FrameTimer::GetInstance()->GetGameTime();
 
     // --- カメラ行列の計算（深度衝突用） ---
-    Matrix4x4 cameraMatrix = Mat4x4::MakeAffine(
+    const Matrix4x4 cameraMatrix = Mat4x4::MakeAffine(
       { .x = 1.0f, .y = 1.0f, .z = 1.0f },
       camera_->GetRotate(), camera_->GetTranslate());
-    Vector3 camPos = camera_->GetTranslate();
-
-#ifdef _DEBUG
-    if (isDebug_) {
-      cameraMatrix = Mat4x4::MakeAffine(
-        { .x = 1.0f, .y = 1.0f, .z = 1.0f },
-        DebugCamera::GetInstance()->GetRotate(),
-        DebugCamera::GetInstance()->GetTranslate());
-      camPos = DebugCamera::GetInstance()->GetTranslate();
-    }
-#endif
+    const Vector3 camPos = camera_->GetTranslate();
 
     Matrix4x4 vp = Mat4x4::Multiply(
       Mat4x4::Inverse(cameraMatrix), camera_->GetProjectionMatrix());

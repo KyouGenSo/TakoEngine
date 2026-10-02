@@ -11,7 +11,6 @@
 namespace Tako {
 
 class Model;
-class Camera;
 class ModelInstance;
 
 /// <summary>
@@ -21,14 +20,6 @@ class ModelInstance;
 class InstancedObject3d {
 public: //定数
     static constexpr uint32_t MAX_INSTANCES = 5000;  ///< 最大インスタンス数
-
-public: //構造体
-    /// <summary>
-    /// シェーダー用カメラデータ構造
-    /// </summary>
-    struct CameraForGPU {
-        Vector3 worldPos;  ///< カメラのワールド座標
-    };
 
 public: //メンバー関数
     /// <summary>
@@ -98,8 +89,6 @@ public: //メンバー関数
     //============================================================
     //Setter
     //============================================================
-    void SetCamera(Camera** camera) { camera_ = camera; }
-
     /// <summary>
     /// ライティング有効化設定
     /// </summary>
@@ -156,23 +145,12 @@ private: //非公開関数
     void CreateInstanceBuffer();
 
     /// <summary>
-    /// カメラデータリソースの作成
-    /// </summary>
-    void CreateCameraForGPUData();
-
-    /// <summary>
-    /// ViewProjection 行列バッファの作成
-    /// </summary>
-    void CreateViewProjectionBuffer();
-
-    /// <summary>
     /// インスタンスデータを検証
     /// </summary>
     bool IsValidInstanceId(uint32_t instanceId) const;
 
 private: //メンバー変数
-    std::unique_ptr<Model> model_;             ///< モデルポインタ
-    Camera**               camera_ = nullptr;  ///< カメラポインタのポインタ
+    std::unique_ptr<Model> model_;  ///< モデルポインタ
 
     //インスタンスデータ
     std::vector<InternalInstanceData> instances_;      ///< インスタンスデータ配列
@@ -180,14 +158,10 @@ private: //メンバー変数
     uint32_t                          nextId_    = 0;  ///< 次に割り当てる ID
 
     //GPU リソース
-    Microsoft::WRL::ComPtr<ID3D12Resource> instanceBuffer_;        ///< インスタンスバッファ
-    Microsoft::WRL::ComPtr<ID3D12Resource> cameraForGPUResource_;  ///< カメラデータ用リソース
-    Microsoft::WRL::ComPtr<ID3D12Resource> viewProjResource_;      ///< ViewProjection 行列リソース
+    Microsoft::WRL::ComPtr<ID3D12Resource> instanceBuffer_;  ///< インスタンスバッファ
 
     //マップされたバッファ
     InstanceData* mappedInstanceData_ = nullptr;  ///< マップされたインスタンスデータ
-    CameraForGPU* cameraForGPUData_   = nullptr;  ///< マップされたカメラデータ
-    Matrix4x4*    viewProjData_       = nullptr;  ///< マップされた ViewProjection 行列
 
     uint32_t instanceSrvIndex_ = 0;  ///< インスタンスバッファの SRV インデックス
 

@@ -132,7 +132,6 @@
     <ClCompile Include="engine\collision\CollisionManager.cpp" />
     <ClCompile Include="engine\collision\OBBCollider.cpp" />
     <ClCompile Include="engine\collision\SphereCollider.cpp" />
-    <ClCompile Include="engine\debug\DebugCamera.cpp" />
     <ClCompile Include="engine\debug\DebugUIManager.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
@@ -140,6 +139,9 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="engine\debug\DebugUIManagerPrimitiveEditor.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="engine\debug\DebugUIManagerDebugViewport.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="engine\debug\ViewportCameraController.cpp">
@@ -239,7 +241,6 @@
     <ClInclude Include="engine\collision\CollisionManager.h" />
     <ClInclude Include="engine\collision\OBBCollider.h" />
     <ClInclude Include="engine\collision\SphereCollider.h" />
-    <ClInclude Include="engine\debug\DebugCamera.h" />
     <ClInclude Include="engine\debug\DebugUIManager.h" />
     <ClInclude Include="engine\debug\ViewportCameraController.h" />
     <ClInclude Include="engine\debug\PreviewViewport.h" />
@@ -283,6 +284,7 @@
     <ClInclude Include="engine\imgui\ImGuiManager.h" />
     <ClInclude Include="engine\base\DX12\D3DResourceLeakChecker.h" />
     <ClInclude Include="engine\base\DX12\DX12Basic.h" />
+    <ClInclude Include="engine\base\DX12\PerFrameConstantRing.h" />
     <ClInclude Include="engine\io\Input.h" />
     <ClInclude Include="engine\func\commonFunc\Logger.h" />
     <ClInclude Include="engine\math\Matrix4x4.h" />
@@ -542,6 +544,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
     <None Include="engine\resources\shaders\Object3dInstanced.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="engine\resources\shaders\View.hlsli">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>

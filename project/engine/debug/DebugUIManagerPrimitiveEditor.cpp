@@ -104,13 +104,11 @@ namespace Tako {
     if (!primPreviewCamera_) {
       primPreviewCamera_ = std::make_unique<Camera>();
       primPreviewCamera_->SetAspect(primPreviewViewport_->GetAspect());
-      primPreviewCameraPtr_ = primPreviewCamera_.get();
     }
 
     if (!primFloorObject_) {
       primFloorObject_ = std::make_unique<Object3d>();
       primFloorObject_->Initialize();
-      primFloorObject_->SetCamera(&primPreviewCameraPtr_);
       primFloorObject_->SetModel(PrimitiveBuilder::CreatePlane({ .width = 10.0f, .height = 10.0f }));
       primFloorObject_->SetMaterialColor(Vector4(0.35f, 0.35f, 0.35f, 1.0f));
       primFloorObject_->SetTranslate(Vector3(0.0f, -1.0f, 0.0f));
@@ -119,7 +117,6 @@ namespace Tako {
     if (!primPreviewObject_) {
       primPreviewObject_ = std::make_unique<Object3d>();
       primPreviewObject_->Initialize();
-      primPreviewObject_->SetCamera(&primPreviewCameraPtr_);
       primParamsDirty_ = true;
     }
 
@@ -148,7 +145,6 @@ namespace Tako {
     primFloorObject_.reset();
     primPreviewViewport_.reset();
     primPreviewCamera_.reset();
-    primPreviewCameraPtr_ = nullptr;
   }
 
   void DebugUIManager::RebuildPrimitivePreview()
@@ -191,13 +187,14 @@ namespace Tako {
 
   void DebugUIManager::DrawPrimitivePreviewPass()
   {
-    if (!windowVisibility_["PrimitiveEditor"] || !primPreviewViewport_ || !primPreviewObject_) {
+    if (!windowVisibility_["PrimitiveEditor"] || !primPreviewViewport_ || !primPreviewObject_ || !primPreviewCamera_) {
       return;
     }
 
     primPreviewViewport_->BeginPass();
 
-    // 直前は別パスの PSO のため共通描画設定を再適用（カメラ非依存なのでそのまま使える）
+    // プレビューカメラを視点にし、直前は別パスの PSO のため共通描画設定を再適用
+    Object3dBasic::GetInstance()->SetView(*primPreviewCamera_);
     Object3dBasic::GetInstance()->SetCommonRenderSetting();
 
     if (primShowFloor_ && primFloorObject_) {

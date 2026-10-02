@@ -93,6 +93,14 @@ namespace Tako {
     distance = kFocusDistance;
   }
 
+  void ViewportCameraController::SetFromCamera(const Camera& camera)
+  {
+    const Vector3 rotate = camera.GetRotate();
+    yaw = rotate.y;
+    pitch = std::clamp(rotate.x, -kPitchLimit, kPitchLimit);
+    target = camera.GetTranslate() + Forward() * distance;
+  }
+
   Vector3 ViewportCameraController::Forward() const
   {
     return RotateDirection(pitch, yaw, Vector3(0.0f, 0.0f, 1.0f));

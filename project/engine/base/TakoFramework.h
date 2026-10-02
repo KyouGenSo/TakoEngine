@@ -63,16 +63,6 @@ namespace Tako {
     /// <param name="height">新しいウィンドウ高さ</param>
     void OnWindowResize(uint32_t width, uint32_t height);
 
-#ifdef _DEBUG
-    bool GetIsDebug() const { return isDebug_; }
-
-    /// <summary>
-    /// デバッグモードの設定
-    /// </summary>
-    /// <param name="value">デバッグモードフラグ</param>
-    void SetIsDebug(bool value);
-#endif
-
     //===================================================
     //Getter
     //===================================================
@@ -102,8 +92,6 @@ namespace Tako {
     uint32_t spriteBasicOnresizeId_ = 0;
 
     bool endFlag_ = false;  ///< アプリケーション終了フラグ
-
-    bool isDebug_ = false;  ///< デバッグモードフラグ
   };
 
 } // namespace Tako

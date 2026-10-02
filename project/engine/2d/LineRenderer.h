@@ -3,9 +3,11 @@
 #include "Vector4.h"
 #include "Vector3.h"
 #include "Mat4x4Func.h"
+#include <algorithm>
 #include <memory>
 #include "Camera.h"
 #include "AABB.h"
+#include "PerFrameConstantRing.h"
 
 // ComPtr のエイリアス
 template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
@@ -31,8 +33,9 @@ namespace Tako {
     explicit LineRenderer(Token) {}
 
   private: //定数
-    static constexpr uint32_t kLineMaxCount    = 100000;  ///< 線の最大数
-    static constexpr uint32_t kVertexCountLine = 2;       ///< 線の頂点数
+    static constexpr uint32_t kLineMaxCount     = 100000;  ///< 線の最大数
+    static constexpr uint32_t kVertexCountLine  = 2;       ///< 線の頂点数
+    static constexpr uint32_t kMaxDrawsPerFrame = 8;       ///< 1 フレームで描画できる回数（本編/デバッグビュー/プレビューの視点ごと）
 
 #ifdef _DEBUG
     static constexpr uint32_t kPreviewLineMaxCount = 8192;  ///< プレビュー用線分の最大数
@@ -140,7 +143,8 @@ namespace Tako {
     /// <param name="size">グリッドのサイズ</param>
     /// <param name="subdivision">分割数</param>
     /// <param name="color">描画色</param>
-    void DrawGrid(const float size, const float subdivision, const Vector4& color);
+    /// <param name="height">グリッドを置く Y 座標（深度テストありで床と重ねるときのちらつき回避用）</param>
+    void DrawGrid(const float size, const float subdivision, const Vector4& color, float height = 0.0f);
 
     /// <summary>
     /// 描画
@@ -148,9 +152,27 @@ namespace Tako {
     void Draw();
 
     /// <summary>
+    /// 溜めた線分を本編カメラ以外の視点で描画する（Reset 前に呼ぶこと）
+    /// </summary>
+    /// <param name="viewProjection">描画に使うビュープロジェクション行列</param>
+    void DrawForView(const Matrix4x4& viewProjection);
+
+    /// <summary>
     /// リセット
     /// </summary>
     void Reset();
+
+    /// <summary>
+    /// 現在の線分数を記録する。同じ描画処理を別視点で再実行する前に取り、RollbackBatch で重複分を捨てる
+    /// </summary>
+    /// <returns>現在の頂点書き込み位置</returns>
+    uint32_t GetBatchMark() const { return lineIndex_; }
+
+    /// <summary>
+    /// GetBatchMark 以降に追加された線分を捨てる
+    /// </summary>
+    /// <param name="mark">GetBatchMark の戻り値</param>
+    void RollbackBatch(uint32_t mark) { lineIndex_ = (std::min)(lineIndex_, mark); }
 
 #ifdef _DEBUG
     /// <summary>
@@ -164,8 +186,8 @@ namespace Tako {
     void EndPreviewLines() { previewBatchMode_ = false; }
 
     /// <summary>
-    /// 溜めたプレビュー線分を指定 VP で描画してバッファをリセットする。
-    /// RT/ビューポートは呼び出し側で設定済みであること。CB 1本を使い回すため 1 フレーム 1 視点まで
+    /// 前回の DrawPreviewLines 以降に溜めたプレビュー線分を指定 VP・深度テストありで描画する。
+    /// RT/ビューポートは呼び出し側で設定済みであること。1 フレーム内で視点ごとに複数回呼べる
     /// </summary>
     /// <param name="viewProjection">プレビューカメラのビュープロジェクション行列</param>
     void DrawPreviewLines(const Matrix4x4& viewProjection);
@@ -175,12 +197,6 @@ namespace Tako {
     //Setter
     //============================
     void SetCamera(Camera* camera) { camera_ = camera; }
-    void SetDebug(bool isDebug) { isDebug_ = isDebug; }
-
-    //============================
-    //Getter
-    //============================
-    bool GetDebug() const { return isDebug_; }
 
   private: //非公開関数
     /// <summary>
@@ -201,9 +217,14 @@ namespace Tako {
     void CreateLineVertexData(LineData* lineData, uint32_t lineCount = kLineMaxCount);
 
     /// <summary>
-    /// 座標変換行列データを生成
+    /// 頂点バッファの指定範囲を VP と PSO を指定して描画する
     /// </summary>
-    void CreateTransformMatData();
+    /// <param name="lineData">描画する頂点バッファ</param>
+    /// <param name="startVertex">描画開始頂点</param>
+    /// <param name="vertexCount">描画頂点数</param>
+    /// <param name="viewProjection">ビュープロジェクション行列</param>
+    /// <param name="pipelineState">使用する PSO</param>
+    void DrawRange(const LineData& lineData, uint32_t startVertex, uint32_t vertexCount, const Matrix4x4& viewProjection, ID3D12PipelineState* pipelineState);
 
   private: //メンバー変数
 
@@ -211,26 +232,22 @@ namespace Tako {
 
     Camera* camera_;  ///< カメラ
 
-    bool isDebug_;  ///< デバッグフラグ
-
     uint32_t lineIndex_ = 0;  ///< 線の頂点書き込みカーソル
 
     Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;  ///< ルートシグネチャ
     Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;  ///< パイプラインステート
 
-    Microsoft::WRL::ComPtr<ID3D12Resource> transformationMatrixBuffer_;  ///< 座標変換行列バッファ
-
-    TransformationMatrix* transformationMatrixData_;  ///< 座標変換行列データ
+    PerFrameConstantRing<TransformationMatrix> transformRing_;  ///< 描画ごとの VP（1 フレームで複数視点を併存させる）
 
     std::unique_ptr<LineData> lineData_;  ///< 線データ
 
 #ifdef _DEBUG
     //エディタプレビュー用線分描画
-    std::unique_ptr<LineData>              previewLineData_;                              ///< プレビュー専用頂点バッファ（メインバッチと GPU 実行前の上書き競合を避けるため分離）
-    Microsoft::WRL::ComPtr<ID3D12Resource> previewTransformationMatrixBuffer_;
-    TransformationMatrix*                  previewTransformationMatrixData_   = nullptr;
-    uint32_t                               previewLineIndex_                  = 0;
-    bool                                   previewBatchMode_                  = false;    ///< true 中は DrawLine 系がプレビューバッファへ書く
+    std::unique_ptr<LineData>                   previewLineData_;                   ///< プレビュー専用頂点バッファ（メインバッチと GPU 実行前の上書き競合を避けるため分離）
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> previewPipelineState_;              ///< 深度テストあり（書き込みなし）のプレビュー用 PSO
+    uint32_t                                    previewLineIndex_       = 0;
+    uint32_t                                    previewDrawStart_       = 0;        ///< 次の DrawPreviewLines が描き始める頂点（同一フレームの前回描画分を除く）
+    bool                                        previewBatchMode_       = false;    ///< true 中は DrawLine 系がプレビューバッファへ書く
 #endif // _DEBUG
   };
 

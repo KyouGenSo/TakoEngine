@@ -8,6 +8,7 @@
 #include "SrvManager.h"
 #include "ParticleStruct.h"
 #include "ModelStruct.h"
+#include "PerFrameConstantRing.h"
 
 namespace Tako {
 
@@ -74,12 +75,12 @@ namespace Tako {
 
 #ifdef _DEBUG
     /// <summary>
-    /// エディタプレビュー用: 本フレームのコンパクション結果を別カメラ視点で再描画する。
+    /// 本フレームのコンパクション結果を別カメラ視点で再描画する（デバッグビュー/エディタプレビュー用）。
     /// RT/DSV/ビューポートは呼び出し側で設定済み、Draw() 実行後に呼ぶこと
     /// </summary>
-    /// <param name="slot">描画対象のエミッタースロット（-1 = 全エミッター）</param>
-    /// <param name="previewCamera">プレビュー視点カメラ（Update 済み）</param>
-    void DrawEmitterForPreview(int32_t slot, Camera* previewCamera);
+    /// <param name="camera">描画視点のカメラ（Update 済み）</param>
+    /// <param name="slotFilter">描画対象のエミッタースロット（-1 = 全エミッター）</param>
+    void DrawForCamera(const Camera& camera, int32_t slotFilter = -1);
 #endif
 
     /// <summary>
@@ -163,7 +164,6 @@ namespace Tako {
     //Setter
     //============================================================
     void SetCamera(Camera* camera) { camera_ = camera; }
-    void SetIsDebug(bool isDebug) { isDebug_ = isDebug; }
 
     //============================================================
     //Getter
@@ -176,7 +176,6 @@ namespace Tako {
 #endif
 
     [[nodiscard]] const std::vector<ForceFieldData>& GetForceFields() const { return forceFields_; }
-    [[nodiscard]] bool GetIsDebug() const { return isDebug_; }
     SrvManager* GetSrvManager() const { return srvManager_; }
     DX12Basic* GetDx12() const { return dx12_; }
 
@@ -370,7 +369,6 @@ namespace Tako {
 
     //基本状態
     bool isInited_ = false;  ///< 初期化フラグ
-    bool isDebug_  = false;  ///< デバッグモードフラグ
 
     //基盤
     DX12Basic*  dx12_       = nullptr;  ///< DirectX 12基盤クラスへのポインタ
@@ -425,9 +423,9 @@ namespace Tako {
     uint32_t                               readbackFrameCounter_          = 0;   ///< Readback 間引きカウンタ（フレーム数）
     static const uint32_t                  kReadbackInterval              = 10;  ///< Readback 実行間隔（フレーム数）
 
-    //エディタプレビュー描画
-    Microsoft::WRL::ComPtr<ID3D12Resource> previewPerViewResource_;            ///< プレビューカメラ用第2 PerView CB（本編と同一フレームで別視点を併存させるため分離）
-    PerView*                               previewPerViewData_     = nullptr;  ///< previewPerViewResource_ の常駐マップ先
+    //本編以外の視点描画（デバッグビュー/エディタプレビュー）
+    static constexpr uint32_t     kMaxExtraViewsPerFrame = 4;  ///< 1 フレームで DrawForCamera できる回数
+    PerFrameConstantRing<PerView> extraViewRing_;              ///< 視点ごとの PerView CB（本編と同一フレームで別視点を併存させる）
 #endif
 
     //物理シミュレーション関連

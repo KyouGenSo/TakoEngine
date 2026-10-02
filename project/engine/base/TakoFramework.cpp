@@ -17,7 +17,6 @@
 #include "Input.h"
 
 #ifdef _DEBUG
-#include "DebugCamera.h"
 #include "DebugUIManager.h"
 #endif
 
@@ -51,9 +50,6 @@ namespace Tako {
 
     DebugUIManager::GetInstance()->Initialize();
     DebugUIManager::GetInstance()->SetEndFlagPtr(&endFlag_);
-    DebugUIManager::GetInstance()->SetDebugFlagPtr(&isDebug_);
-
-    DebugCamera::GetInstance()->Initialize();
 #endif
 
     Input::GetInstance()->Initialize(winApp_);
@@ -133,10 +129,6 @@ namespace Tako {
 
     FrameTimer::GetInstance()->Finalize();
 
-#ifdef _DEBUG
-    DebugCamera::GetInstance()->Finalize();
-#endif
-
     SpriteBasic::GetInstance()->Finalize();
 
     Object3dBasic::GetInstance()->Finalize();
@@ -194,17 +186,6 @@ namespace Tako {
     PostEffectManager::GetInstance()->Update(FrameTimer::GetInstance()->GetDeltaTime());
 
 #ifdef _DEBUG
-    if (Input::GetInstance()->TriggerKey(DIK_F1)) {
-      isDebug_ = !isDebug_;
-      Object3dBasic::GetInstance()->SetDebug(isDebug_);
-      LineRenderer::GetInstance()->SetDebug(isDebug_);
-      GPUParticle::GetInstance()->SetIsDebug(isDebug_);
-    }
-
-    if (isDebug_) {
-      DebugCamera::GetInstance()->Update();
-    }
-
     DebugUIManager::GetInstance()->Update();
 #endif
 
@@ -254,6 +235,11 @@ namespace Tako {
     SceneManager::GetInstance()->DrawWithoutEffect();
 
     TransitionManager::GetInstance()->Draw();
+
+#ifdef _DEBUG
+    // 本編で積んだ線分を別視点でも描くため Reset より前に行う
+    DebugUIManager::GetInstance()->DrawDebugViewportPass();
+#endif
 
     LineRenderer::GetInstance()->Reset();
 
@@ -362,17 +348,6 @@ namespace Tako {
     mm->LoadEngineModel("sphere.gltf");
     mm->LoadEngineModel("white_cube.gltf");
   }
-
-#ifdef _DEBUG
-  void TakoFramework::SetIsDebug(bool value)
-  {
-    isDebug_ = value;
-    // 各コンポーネントのデバッグモードも同時に設定
-    Object3dBasic::GetInstance()->SetDebug(isDebug_);
-    LineRenderer::GetInstance()->SetDebug(isDebug_);
-    GPUParticle::GetInstance()->SetIsDebug(isDebug_);
-  }
-#endif
 
 } // namespace Tako
 

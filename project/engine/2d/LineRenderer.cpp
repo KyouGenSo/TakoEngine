@@ -8,7 +8,6 @@
 #ifdef _DEBUG
 #include "DebugUIManager.h"
 #include "ImGuiManager.h"
-#include "DebugCamera.h"
 #endif // DEBUG
 
 namespace Tako {
@@ -32,13 +31,11 @@ namespace Tako {
   {
     dx12_ = dx12;
 
-    isDebug_ = false;
-
     // パイプラインステートの生成
     CreatePSO();
 
-    // 座標変換行列データの生成
-    CreateTransformMatData();
+    // 描画ごとの VP を置く CB
+    transformRing_.Initialize(dx12_->GetDevice(), kMaxDrawsPerFrame);
 
     // 線の頂点データを生成
     lineData_ = std::make_unique<LineData>();
@@ -48,9 +45,6 @@ namespace Tako {
     // エディタプレビュー用の第2バッファ（メインバッチと同一フレームで別視点を併存させるため分離）
     previewLineData_ = std::make_unique<LineData>();
     CreateLineVertexData(previewLineData_.get(), kPreviewLineMaxCount);
-    previewTransformationMatrixBuffer_ = dx12_->MakeBufferResource(sizeof(TransformationMatrix));
-    previewTransformationMatrixBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&previewTransformationMatrixData_));
-    previewTransformationMatrixData_->WVP = Mat4x4::MakeIdentity();
 #endif // _DEBUG
   }
 
@@ -68,14 +62,11 @@ namespace Tako {
 
   void LineRenderer::Update()
   {
-    if (!isDebug_) {
-      transformationMatrixData_->WVP = camera_->GetViewMatrix() * camera_->GetProjectionMatrix();
-    }
-    else {
+    transformRing_.Reset();
 #ifdef _DEBUG
-      transformationMatrixData_->WVP = DebugCamera::GetInstance()->GetViewProjectionMat();
-#endif
-    }
+    previewLineIndex_ = 0;
+    previewDrawStart_ = 0;
+#endif // _DEBUG
   }
 
   void LineRenderer::ImGui()
@@ -245,29 +236,29 @@ namespace Tako {
     DrawLine(vertices[3], vertices[7], color);
   }
 
-  void LineRenderer::DrawGrid(const float size, const float subdivision, const Vector4& color)
+  void LineRenderer::DrawGrid(const float size, const float subdivision, const Vector4& color, float height)
   {
     float halfWidth = size * 0.5f;
     float every = size / subdivision;
 
     for (uint32_t xIndex = 0; xIndex <= subdivision; xIndex++) {
-      Vector3 worldStart = Vector3(-halfWidth + every * xIndex, 0.0f, halfWidth);
-      Vector3 worldEnd = Vector3(-halfWidth + every * xIndex, 0.0f, -halfWidth);
+      Vector3 worldStart = Vector3(-halfWidth + every * xIndex, height, halfWidth);
+      Vector3 worldEnd = Vector3(-halfWidth + every * xIndex, height, -halfWidth);
 
       DrawLine(worldStart, worldEnd, color);
     }
 
     for (uint32_t zIndex = 0; zIndex <= subdivision; zIndex++) {
-      Vector3 worldStart = Vector3(halfWidth, 0.0f, -halfWidth + every * zIndex);
-      Vector3 worldEnd = Vector3(-halfWidth, 0.0f, -halfWidth + every * zIndex);
+      Vector3 worldStart = Vector3(halfWidth, height, -halfWidth + every * zIndex);
+      Vector3 worldEnd = Vector3(-halfWidth, height, -halfWidth + every * zIndex);
 
       DrawLine(worldStart, worldEnd, color);
     }
 
     // X 軸
-    DrawLine(Vector3(-halfWidth, 0.0f, 0.0f), Vector3(halfWidth, 0.0f, 0.0f), Vector4(1.0f, 0.0f, 0.0f, 1.0f));
+    DrawLine(Vector3(-halfWidth, height, 0.0f), Vector3(halfWidth, height, 0.0f), Vector4(1.0f, 0.0f, 0.0f, 1.0f));
     // Z 軸
-    DrawLine(Vector3(0.0f, 0.0f, -halfWidth), Vector3(0.0f, 0.0f, halfWidth), Vector4(0.0f, 0.0f, 1.0f, 1.0f));
+    DrawLine(Vector3(0.0f, height, -halfWidth), Vector3(0.0f, height, halfWidth), Vector4(0.0f, 0.0f, 1.0f, 1.0f));
     // Y 軸
     DrawLine(Vector3(0.0f, -halfWidth, 0.0f), Vector3(0.0f, halfWidth, 0.0f), Vector4(0.0f, 1.0f, 0.0f, 1.0f));
 
@@ -275,26 +266,27 @@ namespace Tako {
 
   void LineRenderer::Draw()
   {
-    // 描画する線がない場合は何もしない
-    if (lineIndex_ == 0) return;
+    DrawForView(camera_->GetViewMatrix() * camera_->GetProjectionMatrix());
+  }
 
-    // ルートシグネチャの設定
-    dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
+  void LineRenderer::DrawForView(const Matrix4x4& viewProjection)
+  {
+    DrawRange(*lineData_, 0, lineIndex_, viewProjection, pipelineState_.Get());
+  }
 
-    // パイプラインステートの設定
-    dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
+  void LineRenderer::DrawRange(const LineData& lineData, uint32_t startVertex, uint32_t vertexCount, const Matrix4x4& viewProjection, ID3D12PipelineState* pipelineState)
+  {
+    if (vertexCount == 0) return;
 
-    // トポロジの設定
-    dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
-
-    // 頂点バッファビューの設定
-    dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &lineData_->vertexBufferView);
-
-    // 座標変換行列の設定
-    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(kTransformParam, transformationMatrixBuffer_->GetGPUVirtualAddress());
+    ID3D12GraphicsCommandList* commandList = dx12_->GetCommandList();
+    commandList->SetGraphicsRootSignature(rootSignature_.Get());
+    commandList->SetPipelineState(pipelineState);
+    commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
+    commandList->IASetVertexBuffers(0, 1, &lineData.vertexBufferView);
+    commandList->SetGraphicsRootConstantBufferView(kTransformParam, transformRing_.Push({ viewProjection }));
 
     // 全線分を1インスタンスで一括描画
-    dx12_->GetCommandList()->DrawInstanced(lineIndex_, 1, 0, 0);
+    commandList->DrawInstanced(vertexCount, 1, startVertex, 0);
   }
 
   void LineRenderer::Reset()
@@ -305,20 +297,9 @@ namespace Tako {
 #ifdef _DEBUG
   void LineRenderer::DrawPreviewLines(const Matrix4x4& viewProjection)
   {
-    if (previewLineIndex_ == 0) {
-      return;
-    }
-
-    previewTransformationMatrixData_->WVP = viewProjection;
-
-    dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
-    dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
-    dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
-    dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &previewLineData_->vertexBufferView);
-    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(kTransformParam, previewTransformationMatrixBuffer_->GetGPUVirtualAddress());
-    dx12_->GetCommandList()->DrawInstanced(previewLineIndex_, 1, 0, 0);
-
-    previewLineIndex_ = 0;
+    // 同一フレームの先行描画分はまだ GPU が読むので上書きせず、その後ろだけ描く
+    DrawRange(*previewLineData_, previewDrawStart_, previewLineIndex_ - previewDrawStart_, viewProjection, previewPipelineState_.Get());
+    previewDrawStart_ = previewLineIndex_;
   }
 #endif // _DEBUG
 
@@ -424,6 +405,16 @@ namespace Tako {
     // 実際に生成
     hr = dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
     assert(SUCCEEDED(hr));
+
+#ifdef _DEBUG
+    // プレビュー用: グリッドや視錐台がモデルの手前に透けないよう深度テストだけ行う
+    graphicsPipelineStateDesc.DepthStencilState.DepthEnable = true;
+    graphicsPipelineStateDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+    graphicsPipelineStateDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+    graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+    hr = dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&previewPipelineState_));
+    assert(SUCCEEDED(hr));
+#endif // _DEBUG
   }
 
   void LineRenderer::CreateLineVertexData(LineData* lineData, uint32_t lineCount)
@@ -440,17 +431,6 @@ namespace Tako {
 
     // 頂点リソースをマップ
     lineData->vertexBuffer->Map(0, nullptr, reinterpret_cast<void**>(&lineData->vertexData));
-  }
-
-  void LineRenderer::CreateTransformMatData()
-  {
-    // 座標変換行列リソースを生成
-    transformationMatrixBuffer_ = dx12_->MakeBufferResource(sizeof(TransformationMatrix));
-
-    // 座標変換行列リソースをマップ
-    transformationMatrixBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixData_));
-
-    transformationMatrixData_->WVP = camera_->GetViewMatrix() * camera_->GetProjectionMatrix();
   }
 
 } // namespace Tako

@@ -121,14 +121,8 @@ namespace Tako {
 
   void PostEffectManager::BeginDrawEffectTarget()
   {
-    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dx12_->GetMainDSVHandle();
-
     // エフェクト適用対象 RT に描画
-    dx12_->GetCommandList()->OMSetRenderTargets(
-      1,
-      &effectTargetRT_.rtvHandle,
-      false,
-      &dsvHandle);
+    dx12_->BindSceneRenderTarget({ effectTargetRT_.rtvHandle, dx12_->GetMainDSVHandle(), static_cast<uint32_t>(WinApp::clientWidth), static_cast<uint32_t>(WinApp::clientHeight) });
 
     float clearColor[] = {
         kEffectTargetClearColor_.x,
@@ -149,14 +143,8 @@ namespace Tako {
       D3D12_RESOURCE_STATE_RENDER_TARGET
     );
 
-    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dx12_->GetMainDSVHandle();
-
     // 非適用対象 RT に描画
-    dx12_->GetCommandList()->OMSetRenderTargets(
-      1,
-      &nonEffectTargetRT_.rtvHandle,
-      false,
-      &dsvHandle);
+    dx12_->BindSceneRenderTarget({ nonEffectTargetRT_.rtvHandle, dx12_->GetMainDSVHandle(), static_cast<uint32_t>(WinApp::clientWidth), static_cast<uint32_t>(WinApp::clientHeight) });
   }
 
   void PostEffectManager::Draw()

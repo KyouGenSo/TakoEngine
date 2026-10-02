@@ -155,7 +155,7 @@ namespace Tako {
     lineRenderer->DrawPreviewLines(particlePreviewCamera_->GetViewProjectionMatrix());
 
     if (drawParticles) {
-      GPUParticle::GetInstance()->DrawEmitterForPreview(slot, particlePreviewCamera_.get());
+      GPUParticle::GetInstance()->DrawForCamera(*particlePreviewCamera_, slot);
     }
 
     particlePreviewViewport_->EndPass();

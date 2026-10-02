@@ -56,8 +56,7 @@ namespace Tako {
     /// 座標変換行列の更新
     /// </summary>
     /// <param name="world">ワールド行列</param>
-    /// <param name="viewProjection">ビュープロジェクション行列</param>
-    void UpdateTransformation(const Matrix4x4& world, const Matrix4x4& viewProjection);
+    void UpdateTransformation(const Matrix4x4& world);
 
     /// <summary>
     /// メッシュのクローンを作成

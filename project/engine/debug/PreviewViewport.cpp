@@ -78,10 +78,15 @@ namespace Tako {
       IID_PPV_ARGS(&depthBuffer_));
     assert(SUCCEEDED(hr));
     depthBuffer_->SetName((namePrefix + L"Depth").c_str());
+    // デカールが SRV として読むため状態を追跡する
+    dx12_->SetInitialResourceState(depthBuffer_.Get(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
 
     dsvIndex_ = DsvManager::GetInstance()->Allocate();
     DsvManager::GetInstance()->CreateDSV(dsvIndex_, depthBuffer_.Get(), kDepthFormat);
     dsvHandle_ = DsvManager::GetInstance()->GetCpuHandle(dsvIndex_);
+
+    depthSrvIndex_ = SrvManager::GetInstance()->Allocate();
+    SrvManager::GetInstance()->CreateSRVForTexture2D(depthSrvIndex_, depthBuffer_.Get(), DXGI_FORMAT_R32_FLOAT, 1);
   }
 
   void PreviewViewport::Finalize()
@@ -94,17 +99,22 @@ namespace Tako {
     if (srvManager && srvManager->IsAllocated(srvIndex_)) {
       srvManager->Free(srvIndex_);
     }
+    if (srvManager && srvManager->IsAllocated(depthSrvIndex_)) {
+      srvManager->Free(depthSrvIndex_);
+    }
     RtvManager::GetInstance()->Free(rtvIndex_);
     DsvManager::GetInstance()->Free(dsvIndex_);
     // 解放済みアドレスが別リソースに再利用された際の誤った状態遷移を防ぐ
     if (dx12_) {
       dx12_->RemoveResourceState(renderTexture_.Get());
+      dx12_->RemoveResourceState(depthBuffer_.Get());
     }
     renderTexture_.Reset();
     depthBuffer_.Reset();
     rtvIndex_ = 0;
     dsvIndex_ = 0;
     srvIndex_ = 0;
+    depthSrvIndex_ = 0;
     dx12_ = nullptr;
   }
 
@@ -113,16 +123,12 @@ namespace Tako {
     ID3D12GraphicsCommandList* commandList = dx12_->GetCommandList();
 
     dx12_->TransitionResourceWithTracking(renderTexture_.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET);
-    commandList->OMSetRenderTargets(1, &rtvHandle_, FALSE, &dsvHandle_);
+    dx12_->TransitionResourceWithTracking(depthBuffer_.Get(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
+    // RT サイズのビューポートで記録し、途中のシャドウ/デカールパスがここへ戻れるようにする
+    dx12_->BindSceneRenderTarget({ rtvHandle_, dsvHandle_, width_, height_ });
     const float clearColor[4] = { clearColor_.x, clearColor_.y, clearColor_.z, clearColor_.w };
     commandList->ClearRenderTargetView(rtvHandle_, clearColor, 0, nullptr);
     commandList->ClearDepthStencilView(dsvHandle_, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-
-    // RT サイズに合わせたビューポート/シザー（画面サイズとは独立）
-    D3D12_VIEWPORT viewport{ 0.0f, 0.0f, static_cast<float>(width_), static_cast<float>(height_), 0.0f, 1.0f };
-    D3D12_RECT scissorRect{ 0, 0, static_cast<LONG>(width_), static_cast<LONG>(height_) };
-    commandList->RSSetViewports(1, &viewport);
-    commandList->RSSetScissorRects(1, &scissorRect);
   }
 
   void PreviewViewport::EndPass()
