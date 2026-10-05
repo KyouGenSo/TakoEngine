@@ -6,6 +6,7 @@
 #include "LineRenderer.h"
 #include "Mat4x4Func.h"
 #include "QuatFunc.h"
+#include "ColorFunc.h"
 #include "Object3dBasic.h"
 #include "ShadowRenderer.h"
 #include "FrameTimer.h"
@@ -311,7 +312,7 @@ namespace Tako {
       // マテリアルの読み込み
       TextureData textureData;
       // デフォルトのベースカラーを白に設定
-      textureData.baseColor = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+      textureData.baseColor = Color::kWhite;
 
       if (mesh->mMaterialIndex < scene->mNumMaterials) {
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
@@ -445,7 +446,7 @@ namespace Tako {
     if (!meshes_.empty()) {
       return meshes_[0]->GetMaterialColor();
     }
-    return Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+    return Color::kWhite;
   }
 
   void Model::SetUvTransform(const Transform& uvTransform)
@@ -602,7 +603,7 @@ namespace Tako {
         Vector3 parentPosition = Mat4x4::Transform(parentWorldMatrix, Vector3(0.0f, 0.0f, 0.0f));
 
         // ホバー中のジョイントに関連する線は赤色で表示
-        Vector4 lineColor = Vector4(1.0f, 1.0f, 1.0f, 1.0f);  // デフォルト: 白
+        Vector4 lineColor = Color::kWhite;
         if (hoveredJointIndex_ == joint.index || hoveredJointIndex_ == *joint.parentIndex) {
           lineColor = Vector4(1.0f, 0.0f, 0.0f, 1.0f);  // 赤色
         }

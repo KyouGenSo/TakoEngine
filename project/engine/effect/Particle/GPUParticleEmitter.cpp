@@ -2,6 +2,7 @@
 #include "GPUParticle.h"
 #include "TextureManager.h"
 #include "Mesh.h"
+#include "ColorFunc.h"
 
 namespace Tako {
 
@@ -21,8 +22,8 @@ namespace Tako {
     data_.velRangeY = Vector2(0.0f, 0.0f);
     data_.velRangeZ = Vector2(0.0f, 0.0f);
     data_.lifeTimeRange = Vector2(0.0f, 0.0f);
-    data_.startColorTint = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-    data_.endColorTint = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+    data_.startColorTint = Color::kWhite;
+    data_.endColorTint = Color::kWhite;
     data_.count = 0;
     data_.frequency = 0.0f;
     data_.radius = 1.0f;

@@ -6,6 +6,7 @@
 #include "SrvManager.h"
 #include "ShadowRenderer.h"
 #include "Logger.h"
+#include "ColorFunc.h"
 
 namespace Tako {
 
@@ -174,7 +175,7 @@ Vector4 Object3d::GetMaterialColor() const
   {
     return model_->GetMaterialColor();
   }
-  return Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+  return Color::kWhite;
 }
 
 void Object3d::SetUvTransform(const Transform& uvTransform)

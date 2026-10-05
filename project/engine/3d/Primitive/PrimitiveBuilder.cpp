@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "ColorFunc.h"
 #include "Mesh.h"
 #include "Model.h"
 #include "ModelBasic.h"
@@ -34,7 +35,7 @@ namespace Tako {
       TextureData textureData{};
       textureData.texturePath = "";
       textureData.textureIndex = TextureManager::GetInstance()->GetEngineDefaultSRVIndex("white.dds");
-      textureData.baseColor = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+      textureData.baseColor = Color::kWhite;
 
       auto mesh = std::make_unique<Mesh>();
       mesh->Initialize(basic, vertices, indices, textureData);

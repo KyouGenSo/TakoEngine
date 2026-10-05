@@ -7,6 +7,7 @@
 #include "Transform.h"
 #include "Vector4.h"
 #include "Mat4x4Func.h"
+#include "ColorFunc.h"
 
 namespace Tako {
 
@@ -53,7 +54,7 @@ public: //メンバー関数
     /// <param name="transform">初期トランスフォーム</param>
     /// <param name="color">インスタンスのカラー</param>
     /// <returns>インスタンス ID（削除時に使用）</returns>
-    uint32_t AddInstance(const Transform& transform, const Vector4& color = Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+    uint32_t AddInstance(const Transform& transform, const Vector4& color = Color::kWhite);
 
     /// <summary>
     /// インスタンスを削除
@@ -84,7 +85,7 @@ public: //メンバー関数
     /// <summary>
     /// ModelInstance ハンドルを作成
     /// </summary>
-    std::unique_ptr<ModelInstance> CreateInstance(const Transform& transform, const Vector4& color = Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+    std::unique_ptr<ModelInstance> CreateInstance(const Transform& transform, const Vector4& color = Color::kWhite);
 
     //============================================================
     //Setter

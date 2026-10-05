@@ -211,6 +211,7 @@
     <ClCompile Include="engine\2d\TextureManager.cpp" />
     <ClCompile Include="engine\func\mathFunc\EaseFunc.cpp" />
     <ClCompile Include="engine\func\mathFunc\Vec3Func.cpp" />
+    <ClCompile Include="engine\func\mathFunc\ColorFunc.cpp" />
     <ClCompile Include="engine\base\WinApp.cpp" />
     <ClCompile Include="engine\base\DX12\DescriptorHeap.cpp" />
     <ClCompile Include="engine\base\DX12\RtvManager.cpp" />
@@ -313,6 +314,7 @@
     <ClInclude Include="engine\math\Vector3.h" />
     <ClInclude Include="engine\func\mathFunc\EaseFunc.h" />
     <ClInclude Include="engine\func\mathFunc\Vec3Func.h" />
+    <ClInclude Include="engine\func\mathFunc\ColorFunc.h" />
     <ClInclude Include="engine\math\Vector4.h" />
     <ClInclude Include="engine\base\WinApp.h" />
     <ClInclude Include="engine\base\DX12\DescriptorHeap.h" />

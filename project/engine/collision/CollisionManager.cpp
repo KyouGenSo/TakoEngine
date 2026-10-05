@@ -3,6 +3,7 @@
 #include "SphereCollider.h"
 #include "OBBCollider.h"
 #include "LineRenderer.h"
+#include "ColorFunc.h"
 #include <algorithm>
 #include <cmath>
 #include <unordered_map>
@@ -135,22 +136,7 @@ namespace Tako {
 
     auto GetColorByType = [](uint32_t typeID) -> Vector4 {
       // 黄金比でTypeIDを色相に分散させ、型ごとに色を散らす
-      float hue = std::fmod(typeID * 0.618033988749895f, 1.0f) * 360.0f;
-
-      // HSV から RGB へ変換
-      float c = 0.7f;  // 彩度
-      float x = c * (1.0f - std::abs(std::fmod(hue / 60.0f, 2.0f) - 1.0f));
-      float m = 0.3f;  // 明度調整
-
-      float r = 0.0f, g = 0.0f, b = 0.0f;
-      if (hue < 60.0f) { r = c; g = x; b = 0.0f; }
-      else if (hue < 120.0f) { r = x; g = c; b = 0.0f; }
-      else if (hue < 180.0f) { r = 0.0f; g = c; b = x; }
-      else if (hue < 240.0f) { r = 0.0f; g = x; b = c; }
-      else if (hue < 300.0f) { r = x; g = 0.0f; b = c; }
-      else { r = c; g = 0.0f; b = x; }
-
-      return Vector4(r + m, g + m, b + m, 0.5f);
+      return Color::FromHSV(std::fmod(typeID * 0.618033988749895f, 1.0f), 0.7f, 1.0f, 0.5f);
       };
 
     int drawCount = 0;

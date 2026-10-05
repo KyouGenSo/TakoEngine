@@ -5,6 +5,7 @@
 #include <numbers>
 
 #include "Mat4x4Func.h"
+#include "ColorFunc.h"
 #include "Camera.h"
 
 namespace Tako {
@@ -114,7 +115,7 @@ namespace Tako {
 
     directionalLightData_->direction = Vector3(0.0f, -1.0f, 0.0f);
 
-    directionalLightData_->color = { 1.0f, 1.0f, 1.0f, 1.0f };
+    directionalLightData_->color = Color::kWhite;
 
     directionalLightData_->lightType = 1;                          // 0:Lambert 1:Half-Lambert
 
@@ -133,7 +134,7 @@ namespace Tako {
     pointLightResource_->Map(0, nullptr, reinterpret_cast<void**>(&pointLightData_));
 
     pointLightData_[0].position = Vector3(0.0f, 2.0f, 0.0f);
-    pointLightData_[0].color = { 1.0f, 1.0f, 1.0f, 1.0f };
+    pointLightData_[0].color = Color::kWhite;
     pointLightData_[0].intensity = 1.0f;
     pointLightData_[0].radius = 10.0f;
     pointLightData_[0].decay = 1.0f;
@@ -151,7 +152,7 @@ namespace Tako {
 
     spotLightData_[0].position = Vector3(0.0f, 0.0f, 0.0f);
     spotLightData_[0].direction = Vector3(-1.0f, -1.0f, 0.0f);
-    spotLightData_[0].color = { 1.0f, 1.0f, 1.0f, 1.0f };
+    spotLightData_[0].color = Color::kWhite;
     spotLightData_[0].intensity = 1.0f;
     spotLightData_[0].distance = 10.0f;
     spotLightData_[0].decay = 1.0f;

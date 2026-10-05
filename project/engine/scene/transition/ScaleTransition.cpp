@@ -3,6 +3,7 @@
 #include "SpriteBasic.h"
 #include "TextureManager.h"
 #include "WinApp.h"
+#include "ColorFunc.h"
 #include <algorithm>
 #include <cmath>
 
@@ -11,7 +12,7 @@ namespace Tako {
   ScaleTransition::ScaleTransition()
     : center_(static_cast<float>(WinApp::clientWidth) * 0.5f, static_cast<float>(WinApp::clientHeight) * 0.5f)
     , expandOut_(true)
-    , color_(1.0f, 1.0f, 1.0f, 1.0f)
+    , color_(Color::kWhite)
     , state_(NONE)
     , duration_(0.0f)
     , transitionTime_(0.0f)
@@ -25,7 +26,7 @@ namespace Tako {
   ScaleTransition::ScaleTransition(const Vector2& center, bool expandOut)
     : center_(center)
     , expandOut_(expandOut)
-    , color_(1.0f, 1.0f, 1.0f, 1.0f)
+    , color_(Color::kWhite)
     , state_(NONE)
     , duration_(0.0f)
     , transitionTime_(0.0f)

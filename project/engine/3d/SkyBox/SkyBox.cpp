@@ -4,6 +4,7 @@
 #include "SrvManager.h"
 #include "DX12Basic.h"
 #include "Mat4x4Func.h"
+#include "ColorFunc.h"
 #include "EnginePaths.h"
 
 #ifdef _DEBUG
@@ -281,7 +282,7 @@ void SkyBox::CreateMaterialData()
 {
   materialResource_ = dx12_->MakeBufferResource(sizeof(Material));
   materialResource_->Map(0, nullptr, reinterpret_cast<void**>(&materialData_));
-  materialData_->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+  materialData_->color = Color::kWhite;
 }
 
 void SkyBox::CreateTransformationMatrixData()

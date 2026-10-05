@@ -6,6 +6,7 @@
 #endif
 #include "SrvManager.h"
 #include "StringUtility.h"
+#include "ColorFunc.h"
 #include "Object3dBasic.h"
 #include "Camera.h"
 #include "EnginePaths.h"
@@ -104,7 +105,7 @@ namespace Tako {
     fogParamResource_->Map(0, nullptr, reinterpret_cast<void**>(&fogData_));
 
     // 初期値を設定
-    fogData_->color = Vector4(1.f, 1.f, 1.f, 1.0f);
+    fogData_->color = Color::kWhite;
     fogData_->density = 0.0f;
 
 

@@ -77,7 +77,7 @@ void InstancedObject3d::CreateInstanceBuffer() {
     mappedInstanceData_[i] = {};
     mappedInstanceData_[i].world = Mat4x4::MakeIdentity();
     mappedInstanceData_[i].worldInvTranspose = Mat4x4::MakeIdentity();
-    mappedInstanceData_[i].color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+    mappedInstanceData_[i].color = Color::kWhite;
   }
 
   // SRV の作成
@@ -270,7 +270,7 @@ const Vector4& InstancedObject3d::GetInstanceColor(uint32_t instanceId) const {
       return data.id == instanceId && data.active;
     });
 
-  static Vector4 defaultColor(1.0f, 1.0f, 1.0f, 1.0f);
+  static Vector4 defaultColor = Color::kWhite;
   if (it != instances_.end()) {
     return it->color;
   }
@@ -379,7 +379,7 @@ Vector4 ModelInstance::GetColor() const {
   if (parent_ && instanceId_ != UINT32_MAX) {
     return parent_->GetInstanceColor(instanceId_);
   }
-  return Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+  return Color::kWhite;
 }
 
 } // namespace Tako

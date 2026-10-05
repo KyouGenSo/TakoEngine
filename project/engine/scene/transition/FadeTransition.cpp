@@ -3,12 +3,13 @@
 #include "SpriteBasic.h"
 #include "TextureManager.h"
 #include "WinApp.h"
+#include "ColorFunc.h"
 #include <algorithm>
 
 namespace Tako {
 
   FadeTransition::FadeTransition()
-    : fadeColor_(1.0f, 1.0f, 1.0f, 1.0f)
+    : fadeColor_(Color::kWhite)
     , textureName_("EngineResources/Texture/white.dds")
     , state_(NONE)
     , duration_(0.0f)
@@ -32,7 +33,7 @@ namespace Tako {
   }
 
   FadeTransition::FadeTransition(const std::string& textureName)
-    : fadeColor_(1.0f, 1.0f, 1.0f, 1.0f)
+    : fadeColor_(Color::kWhite)
     , textureName_(textureName)
     , state_(NONE)
     , duration_(0.0f)

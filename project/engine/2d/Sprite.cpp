@@ -3,6 +3,7 @@
 #include"SpriteBasic.h"
 #include "TextureManager.h"
 #include "SrvManager.h"
+#include "ColorFunc.h"
 #ifdef _DEBUG
 #include "ImGuiManager.h"
 #endif
@@ -149,7 +150,7 @@ namespace Tako {
     materialResource_->Map(0, nullptr, reinterpret_cast<void**>(&materialData_));
 
     // マテリアルデータの初期値を書き込む
-    materialData_->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+    materialData_->color = Color::kWhite;
     materialData_->uvTransform = Mat4x4::MakeIdentity();
   }
 

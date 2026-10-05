@@ -7,6 +7,7 @@
 #include "Vector2.h"
 #include "Vector3.h"
 #include "Vector4.h"
+#include "ColorFunc.h"
 #include "PrimitiveBuilder.h"
 #include "ViewportCameraController.h"
 
@@ -113,7 +114,7 @@ namespace Tako {
     bool                             paramsDirty_           = false;  ///< 次の Update でモデル再生成（描画コマンド記録済みフレーム内での差し替えは危険）
     Vector3                          previewRotate_         = {};
     Vector3                          previewScale_          = { 1.0f, 1.0f, 1.0f };
-    Vector4                          previewColor_          = { 1.0f, 1.0f, 1.0f, 1.0f };
+    Vector4                          previewColor_          = Color::kWhite;
     bool                             previewLighting_       = true;
     bool                             previewTransparent_    = false;
     bool                             autoRotate_            = false;

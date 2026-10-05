@@ -5,6 +5,7 @@
 #include "SrvManager.h"
 #include "TextureManager.h"
 #include "Mat4x4Func.h"
+#include "ColorFunc.h"
 
 #ifdef _DEBUG
 #include "ImGuiManager.h"
@@ -163,7 +164,7 @@ namespace Tako {
     obb.orientation = Mat4x4::MakeRotateXYZ(transform_.rotate);
 
     // アルファ 1.0 で視認性確保
-    Vector4 debugColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+    Vector4 debugColor = Color::kWhite;
 
     LineRenderer::GetInstance()->DrawOBB(obb, debugColor);
 #endif

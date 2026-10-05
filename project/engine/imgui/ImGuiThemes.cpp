@@ -1,5 +1,6 @@
 #include "ImGuiThemes.h"
 #include "ImGuiManager.h"
+#include "ColorFunc.h"
 
 #include "imgui.h"
 
@@ -36,23 +37,6 @@ namespace Tako {
       Shape   shape;
     };
 
-    ImVec4 Rgb(uint32_t hex) {
-      return ImVec4(
-        static_cast<float>((hex >> 16) & 0xFF) / 255.0f,
-        static_cast<float>((hex >> 8) & 0xFF) / 255.0f,
-        static_cast<float>(hex & 0xFF) / 255.0f,
-        1.0f);
-    }
-
-    ImVec4 WithAlpha(ImVec4 color, float alpha) {
-      color.w = alpha;
-      return color;
-    }
-
-    ImVec4 Mix(const ImVec4& a, const ImVec4& b, float t) {
-      return ImVec4(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, a.z + (b.z - a.z) * t, a.w + (b.w - a.w) * t);
-    }
-
     void ApplyShape(ImGuiStyle& style, const Shape& shape) {
       style.WindowRounding    = shape.windowRounding;
       style.ChildRounding     = shape.windowRounding;
@@ -71,24 +55,23 @@ namespace Tako {
     void ApplyPalette(ImGuiStyle& style, const Palette& palette) {
       static_assert(ImGuiCol_COUNT == 58, "ImGuiCol が増減したら割り当てを見直す");
 
-      const ImVec4 mantle   = Rgb(palette.mantle);
-      const ImVec4 base     = Rgb(palette.base);
-      const ImVec4 surface0 = Rgb(palette.surface0);
-      const ImVec4 surface1 = Rgb(palette.surface1);
-      const ImVec4 surface2 = Rgb(palette.surface2);
-      const ImVec4 text     = Rgb(palette.text);
-      const ImVec4 accent   = Rgb(palette.accent);
-      const ImVec4 accent2  = Rgb(palette.accent2);
-      const ImVec4 clear    = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+      const Vector4 mantle   = Color::FromHex(palette.mantle);
+      const Vector4 base     = Color::FromHex(palette.base);
+      const Vector4 surface0 = Color::FromHex(palette.surface0);
+      const Vector4 surface1 = Color::FromHex(palette.surface1);
+      const Vector4 surface2 = Color::FromHex(palette.surface2);
+      const Vector4 text     = Color::FromHex(palette.text);
+      const Vector4 accent   = Color::FromHex(palette.accent);
+      const Vector4 accent2  = Color::FromHex(palette.accent2);
 
-      ImVec4* colors = style.Colors;
+      Vector4 colors[ImGuiCol_COUNT] = {};
       colors[ImGuiCol_Text]                      = text;
-      colors[ImGuiCol_TextDisabled]              = Mix(text, base, 0.45f);
+      colors[ImGuiCol_TextDisabled]              = Vector4::Lerp(text, base, 0.45f);
       colors[ImGuiCol_WindowBg]                  = base;
-      colors[ImGuiCol_ChildBg]                   = clear;
+      colors[ImGuiCol_ChildBg]                   = Color::kClear;
       colors[ImGuiCol_PopupBg]                   = mantle;
       colors[ImGuiCol_Border]                    = surface1;
-      colors[ImGuiCol_BorderShadow]              = clear;
+      colors[ImGuiCol_BorderShadow]              = Color::kClear;
       colors[ImGuiCol_FrameBg]                   = surface0;
       colors[ImGuiCol_FrameBgHovered]            = surface1;
       colors[ImGuiCol_FrameBgActive]             = surface2;
@@ -102,7 +85,7 @@ namespace Tako {
       colors[ImGuiCol_ScrollbarGrabActive]       = accent;
       colors[ImGuiCol_CheckMark]                 = accent;
       colors[ImGuiCol_SliderGrab]                = accent;
-      colors[ImGuiCol_SliderGrabActive]          = Mix(accent, text, 0.3f);
+      colors[ImGuiCol_SliderGrabActive]          = Vector4::Lerp(accent, text, 0.3f);
       colors[ImGuiCol_Button]                    = surface0;
       colors[ImGuiCol_ButtonHovered]             = surface1;
       colors[ImGuiCol_ButtonActive]              = surface2;
@@ -110,36 +93,40 @@ namespace Tako {
       colors[ImGuiCol_HeaderHovered]             = surface1;
       colors[ImGuiCol_HeaderActive]              = surface2;
       colors[ImGuiCol_Separator]                 = surface1;
-      colors[ImGuiCol_SeparatorHovered]          = WithAlpha(accent, 0.78f);
+      colors[ImGuiCol_SeparatorHovered]          = Color::WithAlpha(accent, 0.78f);
       colors[ImGuiCol_SeparatorActive]           = accent;
-      colors[ImGuiCol_ResizeGrip]                = WithAlpha(accent, 0.2f);
-      colors[ImGuiCol_ResizeGripHovered]         = WithAlpha(accent, 0.67f);
-      colors[ImGuiCol_ResizeGripActive]          = WithAlpha(accent, 0.95f);
+      colors[ImGuiCol_ResizeGrip]                = Color::WithAlpha(accent, 0.2f);
+      colors[ImGuiCol_ResizeGripHovered]         = Color::WithAlpha(accent, 0.67f);
+      colors[ImGuiCol_ResizeGripActive]          = Color::WithAlpha(accent, 0.95f);
       colors[ImGuiCol_TabHovered]                = surface1;
       colors[ImGuiCol_Tab]                       = surface0;
       colors[ImGuiCol_TabSelected]               = surface1;
       colors[ImGuiCol_TabSelectedOverline]       = accent;
       colors[ImGuiCol_TabDimmed]                 = mantle;
       colors[ImGuiCol_TabDimmedSelected]         = surface0;
-      colors[ImGuiCol_TabDimmedSelectedOverline] = clear;
-      colors[ImGuiCol_DockingPreview]            = WithAlpha(accent, 0.7f);
+      colors[ImGuiCol_TabDimmedSelectedOverline] = Color::kClear;
+      colors[ImGuiCol_DockingPreview]            = Color::WithAlpha(accent, 0.7f);
       colors[ImGuiCol_DockingEmptyBg]            = mantle;
       colors[ImGuiCol_PlotLines]                 = accent;
       colors[ImGuiCol_PlotLinesHovered]          = accent2;
       colors[ImGuiCol_PlotHistogram]             = accent2;
-      colors[ImGuiCol_PlotHistogramHovered]      = Mix(accent2, text, 0.3f);
+      colors[ImGuiCol_PlotHistogramHovered]      = Vector4::Lerp(accent2, text, 0.3f);
       colors[ImGuiCol_TableHeaderBg]             = surface0;
       colors[ImGuiCol_TableBorderStrong]         = surface1;
       colors[ImGuiCol_TableBorderLight]          = surface0;
-      colors[ImGuiCol_TableRowBg]                = clear;
-      colors[ImGuiCol_TableRowBgAlt]             = WithAlpha(text, 0.04f);
+      colors[ImGuiCol_TableRowBg]                = Color::kClear;
+      colors[ImGuiCol_TableRowBgAlt]             = Color::WithAlpha(text, 0.04f);
       colors[ImGuiCol_TextLink]                  = accent;
-      colors[ImGuiCol_TextSelectedBg]            = WithAlpha(accent, 0.35f);
-      colors[ImGuiCol_DragDropTarget]            = WithAlpha(accent2, 0.9f);
+      colors[ImGuiCol_TextSelectedBg]            = Color::WithAlpha(accent, 0.35f);
+      colors[ImGuiCol_DragDropTarget]            = Color::WithAlpha(accent2, 0.9f);
       colors[ImGuiCol_NavCursor]                 = accent;
-      colors[ImGuiCol_NavWindowingHighlight]     = WithAlpha(text, 0.7f);
-      colors[ImGuiCol_NavWindowingDimBg]         = WithAlpha(text, 0.2f);
-      colors[ImGuiCol_ModalWindowDimBg]          = WithAlpha(text, 0.35f);
+      colors[ImGuiCol_NavWindowingHighlight]     = Color::WithAlpha(text, 0.7f);
+      colors[ImGuiCol_NavWindowingDimBg]         = Color::WithAlpha(text, 0.2f);
+      colors[ImGuiCol_ModalWindowDimBg]          = Color::WithAlpha(text, 0.35f);
+
+      for (int i = 0; i < ImGuiCol_COUNT; ++i) {
+        style.Colors[i] = ImVec4(colors[i].x, colors[i].y, colors[i].z, colors[i].w);
+      }
     }
 
     void ApplyPaletteTheme(ImGuiStyle& style, const PaletteTheme& theme) {

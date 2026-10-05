@@ -129,6 +129,9 @@
     <ClCompile Include="engine\func\mathFunc\Vec3Func.cpp">
       <Filter>func\MathFunc</Filter>
     </ClCompile>
+    <ClCompile Include="engine\func\mathFunc\ColorFunc.cpp">
+      <Filter>func\MathFunc</Filter>
+    </ClCompile>
     <ClCompile Include="engine\2d\Sprite.cpp">
       <Filter>2d</Filter>
     </ClCompile>
@@ -477,6 +480,9 @@
       <Filter>func\MathFunc</Filter>
     </ClInclude>
     <ClInclude Include="engine\func\mathFunc\Vec3Func.h">
+      <Filter>func\MathFunc</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\func\mathFunc\ColorFunc.h">
       <Filter>func\MathFunc</Filter>
     </ClInclude>
     <ClInclude Include="engine\func\mathFunc\Mat4x4Func.h">
