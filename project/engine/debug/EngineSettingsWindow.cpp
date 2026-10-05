@@ -8,9 +8,13 @@
 #include "ShadowRenderer.h"
 #include "Audio.h"
 #include "CollisionManager.h"
+#include "ProjectSettings.h"
+#include "StringUtility.h"
 
 #include "imgui.h"
 #include <json.hpp>
+
+#include <ShlObj.h>
 
 #include <algorithm>
 #include <filesystem>
@@ -24,7 +28,24 @@ namespace Tako {
   namespace {
     using json = nlohmann::json;
 
-    const char* const kFilePath = "resources/Json/EngineSettings.json";
+    // %APPDATA%/TakoEngine/EditorSettings.json。ユーザー単位で複数プロジェクトから共有する。取得できなければ空
+    const std::filesystem::path& EditorSettingsPath() {
+      static const std::filesystem::path path = [] {
+        PWSTR appData = nullptr;
+        std::filesystem::path result;
+        if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, nullptr, &appData))) {
+          result = std::filesystem::path(appData) / L"TakoEngine" / L"EditorSettings.json";
+        }
+        // 失敗時も解放が必要
+        CoTaskMemFree(appData);
+        return result;
+      }();
+      return path;
+    }
+
+    std::string EditorSettingsPathText() {
+      return StringUtility::ConvertString(EditorSettingsPath().wstring());
+    }
 
     const char* const kCategoryNames[] = { "Display", "Time", "Rendering", "Audio", "Physics", "Editor" };
 
@@ -75,42 +96,41 @@ namespace Tako {
       ImGui::EndChild();
 
       if (ImGui::Button("Save")) {
-        Save();
+        const bool saved = ProjectSettings::Save(GetDX12());
+        Log(std::format("Project settings {}: {}", saved ? "saved" : "save failed", ProjectSettings::kFilePath),
+            saved ? DebugUIManager::LogType::Info : DebugUIManager::LogType::Error);
+        SaveEditorSettings();
       }
       ImGui::SameLine();
       if (ImGui::Button("Reload")) {
-        Load();
+        const bool loaded = ProjectSettings::Load(GetDX12());
+        Log(std::format("Project settings {}: {}", loaded ? "loaded" : "load failed", ProjectSettings::kFilePath),
+            loaded ? DebugUIManager::LogType::Info : DebugUIManager::LogType::Warning);
+        LoadEditorSettings();
       }
       ImGui::SameLine();
-      ImGui::TextDisabled("%s", kFilePath);
+      ImGui::TextDisabled("%s", ProjectSettings::kFilePath);
+      if (ImGui::BeginItemTooltip()) {
+        ImGui::Text("Editor settings: %s", EditorSettingsPathText().c_str());
+        ImGui::EndTooltip();
+      }
     }
     ImGui::End();
   }
 
-  void EngineSettingsWindow::Load() {
-    std::ifstream ifs(kFilePath);
+  void EngineSettingsWindow::LoadEditorSettings() {
+    std::ifstream ifs(EditorSettingsPath());
     if (!ifs) {
       return;
     }
 
     // 手編集された JSON の型不一致などは例外になるため、そこまでの適用を残して中断する
     try {
-      const json root = json::parse(ifs);
+      const json root  = json::parse(ifs);
       const json empty = json::object();
 
-      DX12Basic* dx12 = GetDX12();
       const json& display = root.contains("Display") ? root["Display"] : empty;
       SetFullScreen(display.value("Fullscreen", WinApp::GetInstance()->IsFullScreen()));
-      dx12->SetVSync(display.value("VSync", dx12->IsVSync()));
-      dx12->SetTargetFPS(display.value("TargetFPS", dx12->GetTargetFPS()));
-
-      ShadowRenderer* shadow = ShadowRenderer::GetInstance();
-      const json& rendering = root.contains("Rendering") ? root["Rendering"] : empty;
-      shadow->SetEnabled(rendering.value("ShadowEnabled", shadow->IsEnabled()));
-      shadow->SetShadowMapSize(rendering.value("ShadowMapSize", shadow->GetShadowMapSize()));
-      shadow->SetPCFKernelSize(rendering.value("PCFKernelSize", shadow->GetPCFKernelSize()));
-      shadow->SetMaxShadowDistance(rendering.value("MaxShadowDistance", shadow->GetMaxShadowDistance()));
-      shadow->SetShadowBias(rendering.value("ShadowBias", shadow->GetShadowBias()));
 
       const json& audio = root.contains("Audio") ? root["Audio"] : empty;
       masterVolume_ = audio.value("MasterVolume", masterVolume_);
@@ -124,33 +144,26 @@ namespace Tako {
       ImGuiIO& io = ImGui::GetIO();
       const json& editor = root.contains("Editor") ? root["Editor"] : empty;
       io.FontGlobalScale = editor.value("UIScale", io.FontGlobalScale);
-      const int themeCount = static_cast<int>(GetImGuiThemes().size());
-      themeIndex_ = std::clamp(editor.value("Theme", themeIndex_), 0, themeCount - 1);
+      // エンジンのバージョンでテーマ一覧が異なりうるため名前で照合し、見つからなければ現在のテーマを保つ
+      const std::string themeName = editor.value("Theme", std::string());
+      const auto        themes    = GetImGuiThemes();
+      const auto        it        = std::ranges::find_if(themes, [&](const ImGuiTheme& theme) { return themeName == theme.name; });
+      if (it != themes.end()) {
+        themeIndex_ = static_cast<int>(it - themes.begin());
+      }
       ApplyImGuiTheme(themeIndex_);
 
-      Log(std::format("Engine settings loaded: {}", kFilePath));
+      Log(std::format("Editor settings loaded: {}", EditorSettingsPathText()));
     }
     catch (const json::exception& e) {
-      Log(std::format("Engine settings load failed: {}", e.what()), DebugUIManager::LogType::Warning);
+      Log(std::format("Editor settings load failed: {}", e.what()), DebugUIManager::LogType::Warning);
     }
   }
 
-  void EngineSettingsWindow::Save() {
-    DX12Basic*      dx12   = GetDX12();
-    ShadowRenderer* shadow = ShadowRenderer::GetInstance();
-
+  void EngineSettingsWindow::SaveEditorSettings() {
     json root;
     root["Display"] = {
       { "Fullscreen", WinApp::GetInstance()->IsFullScreen() },
-      { "VSync",      dx12->IsVSync() },
-      { "TargetFPS",  dx12->GetTargetFPS() },
-    };
-    root["Rendering"] = {
-      { "ShadowEnabled",     shadow->IsEnabled() },
-      { "ShadowMapSize",     shadow->GetShadowMapSize() },
-      { "PCFKernelSize",     shadow->GetPCFKernelSize() },
-      { "MaxShadowDistance", shadow->GetMaxShadowDistance() },
-      { "ShadowBias",        shadow->GetShadowBias() },
     };
     root["Audio"] = {
       { "MasterVolume", masterVolume_ },
@@ -161,18 +174,20 @@ namespace Tako {
     };
     root["Editor"] = {
       { "UIScale", ImGui::GetIO().FontGlobalScale },
-      { "Theme",   themeIndex_ },
+      { "Theme",   GetImGuiThemes()[themeIndex_].name },
     };
 
-    std::filesystem::create_directories(std::filesystem::path(kFilePath).parent_path());
-    std::ofstream ofs(kFilePath);
+    const std::filesystem::path& path = EditorSettingsPath();
+    std::error_code ec;
+    std::filesystem::create_directories(path.parent_path(), ec);
+    std::ofstream ofs(path);
     if (!ofs) {
-      Log(std::format("Engine settings save failed: {}", kFilePath), DebugUIManager::LogType::Error);
+      Log(std::format("Editor settings save failed: {}", EditorSettingsPathText()), DebugUIManager::LogType::Error);
       return;
     }
     ofs << std::setw(4) << root << std::endl;
 
-    Log(std::format("Engine settings saved: {}", kFilePath));
+    Log(std::format("Editor settings saved: {}", EditorSettingsPathText()));
   }
 
   void EngineSettingsWindow::DrawDisplay() {

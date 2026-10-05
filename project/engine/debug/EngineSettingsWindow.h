@@ -7,7 +7,8 @@
 namespace Tako {
 
   /// <summary>
-  /// 表示・時間・描画・音声などエンジン全体の設定を編集し JSON に保存するウィンドウ
+  /// 表示・時間・描画・音声などエンジン全体の設定を編集するウィンドウ
+  /// ゲームに影響する設定は ProjectSettings、個人設定は %APPDATA%/TakoEngine/EditorSettings.json に保存する
   /// </summary>
   class EngineSettingsWindow {
   public: //定数
@@ -26,14 +27,9 @@ namespace Tako {
     void Draw();
 
     /// <summary>
-    /// JSON を読み込み各システムへ適用する（ファイルが無ければ何もしない）
+    /// 個人設定（フルスクリーン・音量・デバッグ描画・UI）を読み込み適用する（ファイルが無ければ何もしない）
     /// </summary>
-    void Load();
-
-    /// <summary>
-    /// 各システムの現在値を JSON に書き出す
-    /// </summary>
-    void Save();
+    void LoadEditorSettings();
 
     //======================================================
     //Setter
@@ -55,6 +51,11 @@ namespace Tako {
     void DrawAudio();
     void DrawPhysics();
     void DrawEditor();
+
+    /// <summary>
+    /// 個人設定の現在値を書き出す
+    /// </summary>
+    void SaveEditorSettings();
 
     void ApplyMasterVolume();
 

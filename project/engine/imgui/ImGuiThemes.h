@@ -19,7 +19,7 @@ namespace Tako {
   };
 
   /// <summary>
-  /// 選択可能なテーマ一覧。index を EngineSettings.json に保存するため末尾にのみ追加する
+  /// 選択可能なテーマ一覧。個人設定には name で保存するため name は一意にする
   /// </summary>
   std::span<const ImGuiTheme> GetImGuiThemes();
 

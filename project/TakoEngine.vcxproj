@@ -191,6 +191,7 @@
     <ClCompile Include="engine\base\DX12\DX12Basic.cpp" />
     <ClCompile Include="engine\io\GlobalVariables.cpp" />
     <ClCompile Include="engine\io\Input.cpp" />
+    <ClCompile Include="engine\io\ProjectSettings.cpp" />
     <ClCompile Include="engine\func\commonFunc\Logger.cpp" />
     <ClCompile Include="engine\3d\Light\Light.cpp" />
     <ClCompile Include="engine\io\SceneLoader.cpp" />
@@ -282,6 +283,7 @@
     <ClInclude Include="engine\effect\PostEffect\Vignette.h" />
     <ClInclude Include="engine\effect\PostEffect\WhiteNoise.h" />
     <ClInclude Include="engine\io\GlobalVariables.h" />
+    <ClInclude Include="engine\io\ProjectSettings.h" />
     <ClInclude Include="engine\io\SceneLoader.h" />
     <ClInclude Include="engine\math\AABB.h" />
     <ClInclude Include="engine\2d\LineRenderer.h" />

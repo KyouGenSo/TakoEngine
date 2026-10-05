@@ -888,7 +888,7 @@ namespace Tako {
 
     // <<< gen_imgui_themes.py の生成範囲ここまで
 
-    // 並び順が EngineSettings.json に保存される index になるため、末尾にのみ追加する
+    // 個人設定には name で保存するため、既存の name を変えると保存済みの選択が外れる
     constexpr ImGuiTheme kThemes[] = {
       { "MoonLight",        [](ImGuiStyle&) { ImGuiManager::SetStyleMoonLight(); } },
       { "Dark",             [](ImGuiStyle& style) { ImGui::StyleColorsDark(&style); } },

@@ -363,6 +363,9 @@
     <ClCompile Include="engine\io\GlobalVariables.cpp">
       <Filter>io</Filter>
     </ClCompile>
+    <ClCompile Include="engine\io\ProjectSettings.cpp">
+      <Filter>io</Filter>
+    </ClCompile>
     <ClCompile Include="engine\3d\Decal\Decal.cpp">
       <Filter>3d\Decal</Filter>
     </ClCompile>
@@ -690,6 +693,9 @@
       <Filter>3d\Model</Filter>
     </ClInclude>
     <ClInclude Include="engine\io\GlobalVariables.h">
+      <Filter>io</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\io\ProjectSettings.h">
       <Filter>io</Filter>
     </ClInclude>
     <ClInclude Include="engine\3d\Decal\Decal.h">

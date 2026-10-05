@@ -138,9 +138,9 @@ namespace Tako {
     void DrawDebugViewportPass() { debugViewport_.DrawPass(); }
 
     /// <summary>
-    /// 保存済みのエンジン設定を読み込み適用する。全システムの初期化後に呼ぶ
+    /// 保存済みの個人設定（テーマ・音量など）を読み込み適用する。全システムの初期化後に呼ぶ
     /// </summary>
-    void LoadEngineSettings() { engineSettings_.Load(); }
+    void LoadEditorSettings() { engineSettings_.LoadEditorSettings(); }
 
     /// <summary>
     /// コンソールにログを追加
