@@ -221,4 +221,25 @@ namespace Tako {
     EaseInOut   ///< イーズインアウト
   };
 
+  /// <summary>
+  /// ポストエフェクト種別
+  /// </summary>
+  enum class PostEffectType : int {
+    NoEffect,  ///< チェーンが空のときの素通しコピー
+    GrayScale,
+    Vignette,
+    RadialBlur,
+    RGBSplit,
+    BWFilter,
+    LuminanceBasedOutline,
+    DepthBasedOutline,
+    Fog,
+    Bloom,
+    Dissolve,
+    WhiteNoise,
+    HalfTone,
+    GaussianBlur,
+    Count
+  };
+
 } // namespace Tako

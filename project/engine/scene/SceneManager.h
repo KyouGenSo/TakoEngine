@@ -77,16 +77,6 @@ namespace Tako {
       float transitionTime);
 
     /// <summary>
-    /// 次のシーン予約（エフェクト名指定）
-    /// </summary>
-    /// <param name="sceneName">次のシーン名</param>
-    /// <param name="effectName">エフェクト名</param>
-    /// <param name="transitionTime">遷移時間</param>
-    void ChangeScene(const std::string& sceneName,
-      const std::string& effectName,
-      float transitionTime);
-
-    /// <summary>
     /// 次のシーン予約（エフェクトインスタンス直接指定）
     /// </summary>
     /// <param name="sceneName">次のシーン名</param>

@@ -1,6 +1,7 @@
 #include "TransitionManager.h"
 #include "transition/FadeTransition.h"
 #include "transition/ScaleTransition.h"
+#include "WinApp.h"
 #include <cassert>
 
 namespace Tako {
@@ -21,36 +22,6 @@ namespace Tako {
     if (currentEffect_) {
       currentEffect_->Initialize();
     }
-
-    // 組み込みエフェクトのファクトリを登録
-    RegisterCustomEffect("Fade", []() {
-      return std::make_unique<FadeTransition>();
-      });
-
-    RegisterCustomEffect("Scale", []() {
-      return std::make_unique<ScaleTransition>();
-      });
-
-    // よく使うバリエーションも登録しておく
-    RegisterCustomEffect("BlackFade", []() {
-      return std::make_unique<FadeTransition>(Vector4(0, 0, 0, 1));
-      });
-
-    RegisterCustomEffect("WhiteFade", []() {
-      return std::make_unique<FadeTransition>(Vector4(1, 1, 1, 1));
-      });
-
-    RegisterCustomEffect("ScaleCenter", []() {
-      return std::make_unique<ScaleTransition>();
-      });
-
-    RegisterCustomEffect("ScaleExpand", []() {
-      return std::make_unique<ScaleTransition>(Vector2(960, 540), true);
-      });
-
-    RegisterCustomEffect("ScaleShrink", []() {
-      return std::make_unique<ScaleTransition>(Vector2(960, 540), false);
-      });
   }
 
   void TransitionManager::Finalize()
@@ -79,31 +50,17 @@ namespace Tako {
     case EffectType::Fade:
       return std::make_unique<FadeTransition>();
 
-    case EffectType::Circle:
+    case EffectType::BlackFade:
+      return std::make_unique<FadeTransition>(Vector4(0.0f, 0.0f, 0.0f, 1.0f));
+
+    case EffectType::ScaleExpand:
       return std::make_unique<ScaleTransition>();
 
-    case EffectType::Custom:
-    default:
-      // カスタムの場合は nullptr を返す（名前指定で取得してもらう）
-      return nullptr;
+    case EffectType::ScaleShrink:
+      return std::make_unique<ScaleTransition>(
+        Vector2(static_cast<float>(WinApp::clientWidth) * 0.5f, static_cast<float>(WinApp::clientHeight) * 0.5f), false);
     }
-  }
-
-  std::unique_ptr<ITransitionEffect> TransitionManager::CreateEffect(const std::string& effectName) const
-  {
-    auto it = effectFactories_.find(effectName);
-    if (it != effectFactories_.end()) {
-      return it->second();
-    }
-
-    // 見つからない場合はデフォルトの Fade を返す
-    return std::make_unique<FadeTransition>();
-  }
-
-  void TransitionManager::RegisterCustomEffect(const std::string& name,
-    std::function<std::unique_ptr<ITransitionEffect>()> factory)
-  {
-    effectFactories_[name] = factory;
+    return nullptr;
   }
 
   void TransitionManager::SetCurrentEffect(std::unique_ptr<ITransitionEffect> effect)
@@ -117,14 +74,6 @@ namespace Tako {
   void TransitionManager::SetCurrentEffect(EffectType type)
   {
     auto effect = CreateEffect(type);
-    if (effect) {
-      SetCurrentEffect(std::move(effect));
-    }
-  }
-
-  void TransitionManager::SetCurrentEffect(const std::string& effectName)
-  {
-    auto effect = CreateEffect(effectName);
     if (effect) {
       SetCurrentEffect(std::move(effect));
     }
@@ -145,14 +94,6 @@ namespace Tako {
   void TransitionManager::Start(ITransitionEffect::TransitionState state, EffectType type, float duration)
   {
     SetCurrentEffect(type);
-    if (currentEffect_) {
-      currentEffect_->Start(state, duration);
-    }
-  }
-
-  void TransitionManager::Start(ITransitionEffect::TransitionState state, const std::string& effectName, float duration)
-  {
-    SetCurrentEffect(effectName);
     if (currentEffect_) {
       currentEffect_->Start(state, duration);
     }

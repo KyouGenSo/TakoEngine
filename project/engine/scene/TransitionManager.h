@@ -28,13 +28,14 @@ namespace Tako {
 
   public: //構造体
     /// <summary>
-    /// 組み込みエフェクトタイプ
+    /// 組み込みエフェクトタイプ（独自演出は SetCurrentEffect / ChangeScene に ITransitionEffect を直接渡す）
     /// </summary>
     enum class EffectType
     {
-      Fade,    // フェード演出
-      Circle,  // 円形演出
-      Custom   // カスタム演出（登録された名前で取得）
+      Fade,         // 白フェード
+      BlackFade,    // 黒フェード
+      ScaleExpand,  // 画面中央から広がる
+      ScaleShrink   // 画面中央へ縮む
     };
 
   public: //メンバー関数
@@ -67,21 +68,6 @@ namespace Tako {
     std::unique_ptr<ITransitionEffect> CreateEffect(EffectType type) const;
 
     /// <summary>
-    /// 名前からエフェクトを生成
-    /// </summary>
-    /// <param name="effectName">エフェクト名</param>
-    /// <returns>生成されたエフェクト</returns>
-    std::unique_ptr<ITransitionEffect> CreateEffect(const std::string& effectName) const;
-
-    /// <summary>
-    /// カスタムエフェクトの登録
-    /// </summary>
-    /// <param name="name">エフェクト名</param>
-    /// <param name="factory">エフェクト生成関数</param>
-    void RegisterCustomEffect(const std::string& name,
-      std::function<std::unique_ptr<ITransitionEffect>()> factory);
-
-    /// <summary>
     /// シーン遷移アニメーション開始
     /// </summary>
     /// <param name="state">遷移状態</param>
@@ -95,14 +81,6 @@ namespace Tako {
     /// <param name="type">エフェクトタイプ</param>
     /// <param name="duration">遷移時間</param>
     void Start(ITransitionEffect::TransitionState state, EffectType type, float duration);
-
-    /// <summary>
-    /// シーン遷移アニメーション開始（エフェクト名指定）
-    /// </summary>
-    /// <param name="state">遷移状態</param>
-    /// <param name="effectName">エフェクト名</param>
-    /// <param name="duration">遷移時間</param>
-    void Start(ITransitionEffect::TransitionState state, const std::string& effectName, float duration);
 
     /// <summary>
     /// シーン遷移アニメーション中止
@@ -124,12 +102,6 @@ namespace Tako {
     /// <param name="type">エフェクトタイプ</param>
     void SetCurrentEffect(EffectType type);
 
-    /// <summary>
-    /// 現在のエフェクトを設定（名前指定）
-    /// </summary>
-    /// <param name="effectName">エフェクト名</param>
-    void SetCurrentEffect(const std::string& effectName);
-
     //============================================================
     //Getter
     //============================================================
@@ -149,8 +121,6 @@ namespace Tako {
   private: //メンバー変数
 
     std::unique_ptr<ITransitionEffect> currentEffect_; ///< 現在使用中のエフェクト
-
-    std::unordered_map<std::string, std::function<std::unique_ptr<ITransitionEffect>()>> effectFactories_; ///< カスタムエフェクトのファクトリ登録用
 
     EffectType defaultEffectType_ = EffectType::Fade; ///< デフォルトエフェクトタイプ
   };

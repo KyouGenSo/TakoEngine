@@ -33,6 +33,21 @@
 
 namespace Tako {
 
+  namespace {
+
+    // PostEffectType の並びと一致させること。シェーダーファイル名と ImGui 表示名を兼ねる
+    constexpr const char* kEffectNames[] = {
+      "NoEffect", "GrayScale", "Vignette", "RadialBlur", "RGBSplit", "BWFilter", "LuminanceBasedOutline",
+      "DepthBasedOutline", "Fog", "Bloom", "Dissolve", "WhiteNoise", "HalfTone", "GaussianBlur",
+    };
+    static_assert(std::size(kEffectNames) == static_cast<size_t>(PostEffectType::Count));
+
+    const char* EffectName(PostEffectType type) {
+      return kEffectNames[static_cast<size_t>(type)];
+    }
+
+  } // anonymous namespace
+
   std::unique_ptr<PostEffectManager> PostEffectManager::instance_ = nullptr;
 
   PostEffectManager* PostEffectManager::GetInstance()
@@ -50,20 +65,20 @@ namespace Tako {
     CreateRenderTextures();
 
     // デフォルトエフェクトの登録
-    RegisterEffect("NoEffect", std::make_unique<NoEffect>());
-    RegisterEffect("GrayScale", std::make_unique<GrayScale>());
-    RegisterEffect("Vignette", std::make_unique<Vignette>());
-    RegisterEffect("RadialBlur", std::make_unique<RadialBlur>());
-    RegisterEffect("RGBSplit", std::make_unique<RGBSplit>());
-    RegisterEffect("BWFilter", std::make_unique<BWFilter>());
-    RegisterEffect("LuminanceBasedOutline", std::make_unique<LuminanceBasedOutline>());
-    RegisterEffect("DepthBasedOutline", std::make_unique<DepthBasedOutline>());
-    RegisterEffect("Fog", std::make_unique<Fog>());
-    RegisterEffect("Bloom", std::make_unique<Bloom>());
-    RegisterEffect("Dissolve", std::make_unique<Dissolve>());
-    RegisterEffect("WhiteNoise", std::make_unique<WhiteNoise>());
-    RegisterEffect("HalfTone", std::make_unique<HalfTone>());
-    RegisterEffect("GaussianBlur", std::make_unique<GaussianBlur>());
+    RegisterEffect(PostEffectType::NoEffect, std::make_unique<NoEffect>());
+    RegisterEffect(PostEffectType::GrayScale, std::make_unique<GrayScale>());
+    RegisterEffect(PostEffectType::Vignette, std::make_unique<Vignette>());
+    RegisterEffect(PostEffectType::RadialBlur, std::make_unique<RadialBlur>());
+    RegisterEffect(PostEffectType::RGBSplit, std::make_unique<RGBSplit>());
+    RegisterEffect(PostEffectType::BWFilter, std::make_unique<BWFilter>());
+    RegisterEffect(PostEffectType::LuminanceBasedOutline, std::make_unique<LuminanceBasedOutline>());
+    RegisterEffect(PostEffectType::DepthBasedOutline, std::make_unique<DepthBasedOutline>());
+    RegisterEffect(PostEffectType::Fog, std::make_unique<Fog>());
+    RegisterEffect(PostEffectType::Bloom, std::make_unique<Bloom>());
+    RegisterEffect(PostEffectType::Dissolve, std::make_unique<Dissolve>());
+    RegisterEffect(PostEffectType::WhiteNoise, std::make_unique<WhiteNoise>());
+    RegisterEffect(PostEffectType::HalfTone, std::make_unique<HalfTone>());
+    RegisterEffect(PostEffectType::GaussianBlur, std::make_unique<GaussianBlur>());
 
     // 深度バッファテクスチャの SRV 作成
     depthSrvIndex_ = SrvManager::GetInstance()->Allocate();
@@ -94,22 +109,22 @@ namespace Tako {
     instance_.reset();
   }
 
-  void PostEffectManager::AddEffectToChain(const std::string& name)
+  void PostEffectManager::AddEffectToChain(PostEffectType type)
   {
-    // 既に同名エフェクトがチェーンに存在する場合は多重追加しない。
-    if (std::find(effectChain_.begin(), effectChain_.end(), name) != effectChain_.end()) {
+    // 既に同じエフェクトがチェーンに存在する場合は多重追加しない。
+    if (IsEffectInChain(type)) {
       return;
     }
 
-    if (effectRegistry_.find(name) != effectRegistry_.end()) {
-      effectChain_.push_back(name);
+    if (effectRegistry_[static_cast<size_t>(type)]) {
+      effectChain_.push_back(type);
     }
   }
 
-  void PostEffectManager::RemoveEffectFromChain(const std::string& name)
+  void PostEffectManager::RemoveEffectFromChain(PostEffectType type)
   {
     effectChain_.erase(
-      std::remove(effectChain_.begin(), effectChain_.end(), name),
+      std::remove(effectChain_.begin(), effectChain_.end(), type),
       effectChain_.end()
     );
   }
@@ -167,14 +182,9 @@ namespace Tako {
       dx12_->SetSwapChain();
 
       // NoEffect を使って単純コピー
-      if (effectRegistry_.find("NoEffect") != effectRegistry_.end()) {
-        auto& baseEffect = effectRegistry_["NoEffect"];
-
-        // NoEffect にダウンキャスト
-        NoEffect* noEffect = dynamic_cast<NoEffect*>(baseEffect.get());
-        if (noEffect != nullptr) {
-          noEffect->ApplyToBackBuffer(nonEffectTargetRT_.srvIndex);
-        }
+      NoEffect* noEffect = dynamic_cast<NoEffect*>(effectRegistry_[static_cast<size_t>(PostEffectType::NoEffect)].get());
+      if (noEffect != nullptr) {
+        noEffect->ApplyToBackBuffer(nonEffectTargetRT_.srvIndex);
       }
 
       TransitionResourceWithTracking(
@@ -212,26 +222,28 @@ namespace Tako {
 
         // 利用可能エフェクトリスト
         ImGui::BeginChild("AvailableList", ImVec2(0, 200), true);
-        for (const auto& effectName : availableEffects_) {
-          bool isSelected = (selectedAvailableEffect_ == effectName);
+        // NoEffect はチェーンが空のときの素通し用なので一覧に出さない
+        for (size_t i = static_cast<size_t>(PostEffectType::NoEffect) + 1; i < static_cast<size_t>(PostEffectType::Count); ++i) {
+          const PostEffectType type = static_cast<PostEffectType>(i);
+          bool isSelected = (selectedAvailableEffect_ == type);
 
-          if (ImGui::Selectable(effectName.c_str(), isSelected)) {
-            selectedAvailableEffect_ = effectName;
+          if (ImGui::Selectable(EffectName(type), isSelected)) {
+            selectedAvailableEffect_ = type;
           }
         }
         ImGui::EndChild();
 
         // 適用ボタン
-        bool canApply = !selectedAvailableEffect_.empty() &&
-          !IsEffectInChain(selectedAvailableEffect_);
+        bool canApply = selectedAvailableEffect_.has_value() &&
+          !IsEffectInChain(*selectedAvailableEffect_);
 
         if (!canApply) {
           ImGui::BeginDisabled();
         }
 
         if (ImGui::Button("Apply Effect", ImVec2(-1, 0))) {
-          if (!selectedAvailableEffect_.empty()) {
-            AddEffectToChain(selectedAvailableEffect_);
+          if (selectedAvailableEffect_) {
+            AddEffectToChain(*selectedAvailableEffect_);
           }
         }
 
@@ -240,8 +252,8 @@ namespace Tako {
         }
 
         // 状態表示
-        if (!selectedAvailableEffect_.empty()) {
-          if (IsEffectInChain(selectedAvailableEffect_)) {
+        if (selectedAvailableEffect_) {
+          if (IsEffectInChain(*selectedAvailableEffect_)) {
             ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f),
               "Already applied");
           }
@@ -266,16 +278,14 @@ namespace Tako {
         }
         else {
           for (size_t i = 0; i < chainSize; ++i) {
-            std::string effectName = GetEffectAtPosition(static_cast<int>(i));
-            if (effectName.empty()) continue;
-
-            bool isSelected = (selectedActiveEffect_ == effectName);
+            const PostEffectType type = effectChain_[i];
+            bool isSelected = (selectedActiveEffect_ == type);
 
             // エフェクト名に順序番号を付けて表示
-            std::string displayName = std::to_string(i + 1) + ". " + effectName;
+            std::string displayName = std::to_string(i + 1) + ". " + EffectName(type);
 
             if (ImGui::Selectable(displayName.c_str(), isSelected)) {
-              selectedActiveEffect_ = effectName;
+              selectedActiveEffect_ = type;
             }
           }
         }
@@ -283,8 +293,8 @@ namespace Tako {
         ImGui::EndChild();
 
         // 操作ボタン
-        bool hasSelection = !selectedActiveEffect_.empty() &&
-          IsEffectInChain(selectedActiveEffect_);
+        bool hasSelection = selectedActiveEffect_.has_value() &&
+          IsEffectInChain(*selectedActiveEffect_);
 
         // Remove ボタン
         if (!hasSelection) {
@@ -292,9 +302,9 @@ namespace Tako {
         }
 
         if (ImGui::Button("Remove Effect", ImVec2(-1, 0))) {
-          if (!selectedActiveEffect_.empty()) {
-            RemoveEffectFromChain(selectedActiveEffect_);
-            selectedActiveEffect_ = "";
+          if (selectedActiveEffect_) {
+            RemoveEffectFromChain(*selectedActiveEffect_);
+            selectedActiveEffect_.reset();
           }
         }
 
@@ -307,16 +317,16 @@ namespace Tako {
         // 順序変更ボタン
         ImGui::BeginGroup();
 
-        bool canMoveUp = hasSelection && GetEffectPosition(selectedActiveEffect_) > 0;
+        bool canMoveUp = hasSelection && GetEffectPosition(*selectedActiveEffect_) > 0;
         bool canMoveDown = hasSelection &&
-          GetEffectPosition(selectedActiveEffect_) < static_cast<int>(GetEffectChainSize()) - 1;
+          GetEffectPosition(*selectedActiveEffect_) < static_cast<int>(GetEffectChainSize()) - 1;
 
         if (!canMoveUp) {
           ImGui::BeginDisabled();
         }
 
         if (ImGui::Button("Move Up", ImVec2(80, 0))) {
-          MoveEffectUp(selectedActiveEffect_);
+          MoveEffectUp(*selectedActiveEffect_);
         }
 
         if (!canMoveUp) {
@@ -330,7 +340,7 @@ namespace Tako {
         }
 
         if (ImGui::Button("Move Down", ImVec2(-1, 0))) {
-          MoveEffectDown(selectedActiveEffect_);
+          MoveEffectDown(*selectedActiveEffect_);
         }
 
         if (!canMoveDown) {
@@ -346,7 +356,7 @@ namespace Tako {
 
         if (ImGui::Button("Clear All", ImVec2(80, 0))) {
           ClearEffectChain();
-          selectedActiveEffect_ = "";
+          selectedActiveEffect_.reset();
         }
 
         ImGui::SameLine();
@@ -367,8 +377,8 @@ namespace Tako {
         ImGui::EndGroup();
 
         // 状態表示
-        if (!selectedActiveEffect_.empty()) {
-          int position = GetEffectPosition(selectedActiveEffect_);
+        if (selectedActiveEffect_) {
+          int position = GetEffectPosition(*selectedActiveEffect_);
           if (position >= 0) {
             ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f),
               "Position: %d", position + 1);
@@ -401,7 +411,7 @@ namespace Tako {
               ImGui::Text("→");
               ImGui::SameLine();
             }
-            ImGui::Text("%s", GetEffectAtPosition(static_cast<int>(i)).c_str());
+            ImGui::Text("%s", EffectName(effectChain_[i]));
           }
         }
 
@@ -455,23 +465,23 @@ namespace Tako {
     );
   }
 
-  bool PostEffectManager::SetEffectParam(const std::string& effectName, const EffectParam& param)
+  bool PostEffectManager::SetEffectParam(PostEffectType type, const EffectParam& param)
   {
     // エフェクトが存在するかチェック
-    auto it = effectRegistry_.find(effectName);
-    if (it == effectRegistry_.end()) {
+    const auto& effect = effectRegistry_[static_cast<size_t>(type)];
+    if (!effect) {
 #ifdef _DEBUG
-      DebugUIManager::GetInstance()->AddLog("Effect not found: " + effectName, DebugUIManager::LogType::Error);
+      DebugUIManager::GetInstance()->AddLog(std::string("Effect not registered: ") + EffectName(type), DebugUIManager::LogType::Error);
 #endif
       return false;
     }
 
     // エフェクトにパラメーターを設定
-    bool success = it->second->SetGenericParam(param);
+    bool success = effect->SetGenericParam(param);
 
 #ifdef _DEBUG
     if (!success) {
-      DebugUIManager::GetInstance()->AddLog("Parameter type mismatch for effect: " + effectName, DebugUIManager::LogType::Error);
+      DebugUIManager::GetInstance()->AddLog(std::string("Parameter type mismatch for effect: ") + EffectName(type), DebugUIManager::LogType::Error);
     }
 #endif
 
@@ -480,18 +490,15 @@ namespace Tako {
 
   void PostEffectManager::SetDissolveBaseTex(const std::string& textureName)
   {
-    auto it = effectRegistry_.find("Dissolve");
-    if (it != effectRegistry_.end()) {
-      auto dissolveEffect = dynamic_cast<Dissolve*>(it->second.get());
-      if (dissolveEffect) {
-        dissolveEffect->SetBaseTextureSrvIndex(TextureManager::GetInstance()->GetSRVIndex(textureName));
-      }
+    auto dissolveEffect = dynamic_cast<Dissolve*>(effectRegistry_[static_cast<size_t>(PostEffectType::Dissolve)].get());
+    if (dissolveEffect) {
+      dissolveEffect->SetBaseTextureSrvIndex(TextureManager::GetInstance()->GetSRVIndex(textureName));
     }
   }
 
-  bool PostEffectManager::MoveEffectUp(const std::string& effectName)
+  bool PostEffectManager::MoveEffectUp(PostEffectType type)
   {
-    auto it = std::find(effectChain_.begin(), effectChain_.end(), effectName);
+    auto it = std::find(effectChain_.begin(), effectChain_.end(), type);
     if (it == effectChain_.end() || it == effectChain_.begin()) {
       return false; // エフェクトが見つからない、または既に最上位
     }
@@ -501,9 +508,9 @@ namespace Tako {
     return true;
   }
 
-  bool PostEffectManager::MoveEffectDown(const std::string& effectName)
+  bool PostEffectManager::MoveEffectDown(PostEffectType type)
   {
-    auto it = std::find(effectChain_.begin(), effectChain_.end(), effectName);
+    auto it = std::find(effectChain_.begin(), effectChain_.end(), type);
     if (it == effectChain_.end() || it == effectChain_.end() - 1) {
       return false; // エフェクトが見つからない、または既に最下位
     }
@@ -513,7 +520,7 @@ namespace Tako {
     return true;
   }
 
-  bool PostEffectManager::MoveEffectToPosition(const std::string& effectName, int newPosition)
+  bool PostEffectManager::MoveEffectToPosition(PostEffectType type, int newPosition)
   {
     // 範囲チェック
     if (newPosition < 0 || newPosition >= static_cast<int>(effectChain_.size())) {
@@ -521,7 +528,7 @@ namespace Tako {
     }
 
     // 現在の位置を取得
-    auto it = std::find(effectChain_.begin(), effectChain_.end(), effectName);
+    auto it = std::find(effectChain_.begin(), effectChain_.end(), type);
     if (it == effectChain_.end()) {
       return false; // エフェクトが見つからない
     }
@@ -532,7 +539,7 @@ namespace Tako {
     }
 
     // エフェクトを一時的に保存して削除
-    std::string tempEffect = *it;
+    const PostEffectType tempEffect = *it;
     effectChain_.erase(it);
 
     // 新しい位置に挿入
@@ -545,10 +552,10 @@ namespace Tako {
     return true;
   }
 
-  bool PostEffectManager::SwapEffects(const std::string& effectName1, const std::string& effectName2)
+  bool PostEffectManager::SwapEffects(PostEffectType type1, PostEffectType type2)
   {
-    auto it1 = std::find(effectChain_.begin(), effectChain_.end(), effectName1);
-    auto it2 = std::find(effectChain_.begin(), effectChain_.end(), effectName2);
+    auto it1 = std::find(effectChain_.begin(), effectChain_.end(), type1);
+    auto it2 = std::find(effectChain_.begin(), effectChain_.end(), type2);
 
     if (it1 == effectChain_.end() || it2 == effectChain_.end()) {
       return false; // どちらかのエフェクトが見つからない
@@ -576,9 +583,9 @@ namespace Tako {
     return true;
   }
 
-  int PostEffectManager::GetEffectPosition(const std::string& effectName) const
+  int PostEffectManager::GetEffectPosition(PostEffectType type) const
   {
-    auto it = std::find(effectChain_.begin(), effectChain_.end(), effectName);
+    auto it = std::find(effectChain_.begin(), effectChain_.end(), type);
     if (it == effectChain_.end()) {
       return -1; // エフェクトが見つからない
     }
@@ -586,9 +593,9 @@ namespace Tako {
     return static_cast<int>(std::distance(effectChain_.begin(), it));
   }
 
-  bool PostEffectManager::IsEffectInChain(const std::string& effectName) const
+  bool PostEffectManager::IsEffectInChain(PostEffectType type) const
   {
-    return std::find(effectChain_.begin(), effectChain_.end(), effectName) != effectChain_.end();
+    return std::find(effectChain_.begin(), effectChain_.end(), type) != effectChain_.end();
   }
 
   size_t PostEffectManager::GetEffectChainSize() const
@@ -596,16 +603,16 @@ namespace Tako {
     return effectChain_.size();
   }
 
-  std::string PostEffectManager::GetEffectAtPosition(int position) const
+  std::optional<PostEffectType> PostEffectManager::GetEffectAtPosition(int position) const
   {
     if (position < 0 || position >= static_cast<int>(effectChain_.size())) {
-      return ""; // 無効な位置
+      return std::nullopt; // 無効な位置
     }
 
     return effectChain_[position];
   }
 
-  std::vector<std::string> PostEffectManager::GetEffectChain() const
+  std::vector<PostEffectType> PostEffectManager::GetEffectChain() const
   {
     return effectChain_; // コピーを返す
   }
@@ -647,28 +654,23 @@ namespace Tako {
     }
   }
 
-  void PostEffectManager::RegisterEffect(const std::string& name, std::unique_ptr<IPostEffect> effect)
+  void PostEffectManager::RegisterEffect(PostEffectType type, std::unique_ptr<IPostEffect> effect)
   {
-    if (effectRegistry_.find(name) != effectRegistry_.end()) {
+    auto& slot = effectRegistry_[static_cast<size_t>(type)];
+    if (slot) {
       return;
     }
-    effectRegistry_[name] = std::move(effect);
-    effectRegistry_[name]->Initialize(dx12_, name);
-
-    // 利用可能なエフェクトリストに追加（NoEffect 以外）
-    if (name != "NoEffect") {
-      availableEffects_.push_back(name);
-    }
-
+    slot = std::move(effect);
+    slot->Initialize(dx12_, EffectName(type));
   }
 
   void PostEffectManager::ApplyEffectChain()
   {
     // エフェクトチェーンに NoEffect を自動追加せず、空の場合のみ NoEffect を使用
-    std::vector<std::string> actualChain;
+    std::vector<PostEffectType> actualChain;
 
     if (effectChain_.empty()) {
-      actualChain.push_back("NoEffect");
+      actualChain.push_back(PostEffectType::NoEffect);
     }
     else {
       actualChain = effectChain_;
@@ -682,8 +684,8 @@ namespace Tako {
 
     // 深度バッファチェック
     bool needsDepthBuffer = false;
-    for (const auto& effectName : actualChain) {
-      if (effectRegistry_[effectName]->RequiresDepthBuffer()) {
+    for (PostEffectType type : actualChain) {
+      if (effectRegistry_[static_cast<size_t>(type)]->RequiresDepthBuffer()) {
         needsDepthBuffer = true;
         break;
       }
@@ -705,8 +707,8 @@ namespace Tako {
     D3D12_CPU_DESCRIPTOR_HANDLE dstRtvHandle;
 
     for (size_t i = 0; i < actualChain.size(); ++i) {
-      const auto& effectName = actualChain[i];
-      auto& effect = effectRegistry_[effectName];
+      const PostEffectType type = actualChain[i];
+      auto& effect = effectRegistry_[static_cast<size_t>(type)];
 
       if (!effect) continue;
 
@@ -735,17 +737,14 @@ namespace Tako {
         dstRtvHandle = intermediateRT.rtvHandle;
       }
 
-      if (effectName == "DepthBasedOutline") {
-        auto it = effectRegistry_.find(effectName);
-        if (it != effectRegistry_.end()) {
-          auto depthEffect = dynamic_cast<DepthBasedOutline*>(it->second.get());
-          if (depthEffect) {
-            depthEffect->SetInvProjectionMatrix(Mat4x4::Inverse(camera_->GetProjectionMatrix()));
-          }
+      if (type == PostEffectType::DepthBasedOutline) {
+        auto depthEffect = dynamic_cast<DepthBasedOutline*>(effect.get());
+        if (depthEffect) {
+          depthEffect->SetInvProjectionMatrix(Mat4x4::Inverse(camera_->GetProjectionMatrix()));
         }
       }
 
-      if (effectName == "Dissolve") {
+      if (type == PostEffectType::Dissolve) {
         effect->Apply(srcSrvIndex, dstRtvHandle, dissolveMaskSrvIndex_, nonEffectTargetClearColor_);
       }
       else {
@@ -807,14 +806,12 @@ namespace Tako {
       ImGui::Separator();
 
       for (size_t i = 0; i < chainSize; ++i) {
-        std::string effectName = GetEffectAtPosition(static_cast<int>(i));
-        if (!effectName.empty()) {
-          std::string headerName = "[" + std::to_string(i + 1) + "] " + effectName;
+        const PostEffectType type = effectChain_[i];
+        std::string headerName = "[" + std::to_string(i + 1) + "] " + EffectName(type);
 
-          if (ImGui::CollapsingHeader(headerName.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
-            if (effectRegistry_.find(effectName) != effectRegistry_.end()) {
-              effectRegistry_[effectName]->DrawImgui();
-            }
+        if (ImGui::CollapsingHeader(headerName.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
+          if (const auto& effect = effectRegistry_[static_cast<size_t>(type)]) {
+            effect->DrawImgui();
           }
         }
       }
@@ -881,13 +878,13 @@ namespace Tako {
 
   void PostEffectManager::Update(float deltaTime)
   {
-    std::vector<std::string> toRemove;
+    std::vector<PostEffectType> toRemove;
 
-    for (auto& [effectName, info] : temporaryEffects_) {
+    for (auto& [type, info] : temporaryEffects_) {
       info.elapsedTime += deltaTime;
 
       if (info.elapsedTime >= info.duration) {
-        toRemove.push_back(effectName);
+        toRemove.push_back(type);
       }
       else {
         float progress = info.elapsedTime / info.duration;
@@ -895,28 +892,28 @@ namespace Tako {
         float fadeFactor = 1.0f - easedProgress;
 
         EffectParam fadedParam = ApplyFadeToParam(info.baseParam, fadeFactor);
-        SetEffectParam(effectName, fadedParam);
+        SetEffectParam(type, fadedParam);
       }
     }
 
-    for (const auto& name : toRemove) {
-      temporaryEffects_.erase(name);
-      RemoveEffectFromChain(name);
+    for (PostEffectType type : toRemove) {
+      temporaryEffects_.erase(type);
+      RemoveEffectFromChain(type);
     }
   }
 
-  void PostEffectManager::CancelTemporaryEffect(const std::string& effectName)
+  void PostEffectManager::CancelTemporaryEffect(PostEffectType type)
   {
-    auto it = temporaryEffects_.find(effectName);
+    auto it = temporaryEffects_.find(type);
     if (it != temporaryEffects_.end()) {
       temporaryEffects_.erase(it);
-      RemoveEffectFromChain(effectName);
+      RemoveEffectFromChain(type);
     }
   }
 
-  bool PostEffectManager::IsTemporaryEffectActive(const std::string& effectName) const
+  bool PostEffectManager::IsTemporaryEffectActive(PostEffectType type) const
   {
-    return temporaryEffects_.find(effectName) != temporaryEffects_.end();
+    return temporaryEffects_.find(type) != temporaryEffects_.end();
   }
 
   float PostEffectManager::ApplyEasing(float t, EasingType type) const

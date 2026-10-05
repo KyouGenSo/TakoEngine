@@ -1,6 +1,8 @@
 #pragma once
 #include <d3d12.h>
+#include <array>
 #include <memory>
+#include <optional>
 #include <unordered_map>
 #include <string>
 #include <wrl.h>
@@ -82,14 +84,14 @@ namespace Tako {
     /// エフェクトチェーンに指定されたエフェクトを追加
     /// 追加されたエフェクトは描画時に適用順序に従って実行される
     /// </summary>
-    /// <param name="name">追加するエフェクトの名前</param>
-    void AddEffectToChain(const std::string& name);
+    /// <param name="type">追加するエフェクト</param>
+    void AddEffectToChain(PostEffectType type);
 
     /// <summary>
     /// エフェクトチェーンから指定されたエフェクトを削除
     /// </summary>
-    /// <param name="name">削除するエフェクトの名前</param>
-    void RemoveEffectFromChain(const std::string& name);
+    /// <param name="type">削除するエフェクト</param>
+    void RemoveEffectFromChain(PostEffectType type);
 
     /// <summary>
     /// エフェクトチェーンをクリアして全エフェクトを削除
@@ -137,28 +139,28 @@ namespace Tako {
     /// 指定した持続時間でフェードアウトし、終了後に自動削除される
     /// </summary>
     /// <typeparam name="ParamType">エフェクトパラメータの型</typeparam>
-    /// <param name="effectName">エフェクト名</param>
+    /// <param name="type">エフェクト</param>
     /// <param name="duration">持続時間（秒）</param>
     /// <param name="param">開始時のパラメータ</param>
     /// <param name="easing">イージング種別（デフォルト: EaseOut）</param>
     template<typename ParamType>
     void ApplyTemporaryEffect(
-      const std::string& effectName,
+      PostEffectType type,
       float duration,
       const ParamType& param,
       EasingType easing = EasingType::EaseOut)
     {
-      if (!IsEffectInChain(effectName)) {
-        AddEffectToChain(effectName);
+      if (!IsEffectInChain(type)) {
+        AddEffectToChain(type);
       }
-      SetEffectParam(effectName, param);
+      SetEffectParam(type, param);
 
       TemporaryEffectInfo info;
       info.duration = duration;
       info.elapsedTime = 0.0f;
       info.easing = easing;
       info.baseParam = EffectParam(param);
-      temporaryEffects_[effectName] = info;
+      temporaryEffects_[type] = info;
     }
 
     /// <summary>
@@ -170,38 +172,38 @@ namespace Tako {
     /// <summary>
     /// 一時エフェクトをキャンセル
     /// </summary>
-    /// <param name="effectName">キャンセルするエフェクト名</param>
-    void CancelTemporaryEffect(const std::string& effectName);
+    /// <param name="type">キャンセルするエフェクト</param>
+    void CancelTemporaryEffect(PostEffectType type);
 
     /// <summary>
     /// 指定されたエフェクトをチェーン内で1つ上に移動
     /// </summary>
-    /// <param name="effectName">移動するエフェクトの名前</param>
+    /// <param name="type">移動するエフェクト</param>
     /// <returns>移動が成功した場合 true、失敗した場合 false</returns>
-    bool MoveEffectUp(const std::string& effectName);
+    bool MoveEffectUp(PostEffectType type);
 
     /// <summary>
     /// 指定されたエフェクトをチェーン内で1つ下に移動
     /// </summary>
-    /// <param name="effectName">移動するエフェクトの名前</param>
+    /// <param name="type">移動するエフェクト</param>
     /// <returns>移動が成功した場合 true、失敗した場合 false</returns>
-    bool MoveEffectDown(const std::string& effectName);
+    bool MoveEffectDown(PostEffectType type);
 
     /// <summary>
     /// 指定されたエフェクトをチェーン内の特定位置に移動
     /// </summary>
-    /// <param name="effectName">移動するエフェクトの名前</param>
+    /// <param name="type">移動するエフェクト</param>
     /// <param name="newPosition">移動先の位置（0から始まるインデックス）</param>
     /// <returns>移動が成功した場合 true、失敗した場合 false</returns>
-    bool MoveEffectToPosition(const std::string& effectName, int newPosition);
+    bool MoveEffectToPosition(PostEffectType type, int newPosition);
 
     /// <summary>
     /// チェーン内の2つのエフェクトの位置を交換
     /// </summary>
-    /// <param name="effectName1">1つ目のエフェクトの名前</param>
-    /// <param name="effectName2">2つ目のエフェクトの名前</param>
+    /// <param name="type1">1つ目のエフェクト</param>
+    /// <param name="type2">2つ目のエフェクト</param>
     /// <returns>交換が成功した場合 true、失敗した場合 false</returns>
-    bool SwapEffects(const std::string& effectName1, const std::string& effectName2);
+    bool SwapEffects(PostEffectType type1, PostEffectType type2);
 
     /// <summary>
     /// チェーン内の2つのエフェクトをインデックスで指定して位置を交換
@@ -217,22 +219,22 @@ namespace Tako {
     /// <summary>
     /// 指定されたエフェクトのパラメータを設定
     /// </summary>
-    /// <param name="effectName">エフェクト名</param>
+    /// <param name="type">エフェクト</param>
     /// <param name="param">設定するパラメータ（EffectParam 型）</param>
-    /// <returns>設定が成功した場合 true、エフェクトが見つからない場合 false</returns>
-    bool SetEffectParam(const std::string& effectName, const EffectParam& param);
+    /// <returns>設定が成功した場合 true、未登録またはパラメータ型が一致しない場合 false</returns>
+    bool SetEffectParam(PostEffectType type, const EffectParam& param);
 
     /// <summary>
     /// 指定されたエフェクトのパラメータを設定（テンプレート版）
     /// 任意の型のパラメータを受け取り、内部で EffectParam に変換する
     /// </summary>
     /// <typeparam name="ParamType">パラメータの型</typeparam>
-    /// <param name="effectName">エフェクト名</param>
+    /// <param name="type">エフェクト</param>
     /// <param name="param">設定するパラメータ</param>
-    /// <returns>設定が成功した場合 true、エフェクトが見つからない場合 false</returns>
+    /// <returns>設定が成功した場合 true、未登録またはパラメータ型が一致しない場合 false</returns>
     template<typename ParamType>
-    bool SetEffectParam(const std::string& effectName, const ParamType& param) {
-      return SetEffectParam(effectName, EffectParam(param));
+    bool SetEffectParam(PostEffectType type, const ParamType& param) {
+      return SetEffectParam(type, EffectParam(param));
     }
 
     /// <summary>
@@ -268,23 +270,23 @@ namespace Tako {
     /// <summary>
     /// 指定エフェクトが一時エフェクトとして動作中か判定
     /// </summary>
-    /// <param name="effectName">エフェクト名</param>
+    /// <param name="type">エフェクト</param>
     /// <returns>一時エフェクトとして動作中なら true</returns>
-    bool IsTemporaryEffectActive(const std::string& effectName) const;
+    bool IsTemporaryEffectActive(PostEffectType type) const;
 
     /// <summary>
     /// 指定されたエフェクトのチェーン内での位置を取得
     /// </summary>
-    /// <param name="effectName">エフェクトの名前</param>
+    /// <param name="type">エフェクト</param>
     /// <returns>エフェクトの位置（0から始まるインデックス）、見つからない場合は-1</returns>
-    int GetEffectPosition(const std::string& effectName) const;
+    int GetEffectPosition(PostEffectType type) const;
 
     /// <summary>
     /// 指定されたエフェクトがチェーン内に存在するか判定
     /// </summary>
-    /// <param name="effectName">エフェクトの名前</param>
+    /// <param name="type">エフェクト</param>
     /// <returns>チェーン内に存在する場合 true、存在しない場合 false</returns>
-    bool IsEffectInChain(const std::string& effectName) const;
+    bool IsEffectInChain(PostEffectType type) const;
 
     /// <summary>
     /// エフェクトチェーンのサイズ（登録されているエフェクト数）を取得
@@ -293,17 +295,17 @@ namespace Tako {
     size_t GetEffectChainSize() const;
 
     /// <summary>
-    /// 指定位置にあるエフェクトの名前を取得
+    /// 指定位置にあるエフェクトを取得
     /// </summary>
     /// <param name="position">取得する位置（0から始まるインデックス）</param>
-    /// <returns>指定位置のエフェクト名、範囲外の場合は空文字列</returns>
-    std::string GetEffectAtPosition(int position) const;
+    /// <returns>指定位置のエフェクト、範囲外の場合は nullopt</returns>
+    std::optional<PostEffectType> GetEffectAtPosition(int position) const;
 
     /// <summary>
     /// エフェクトチェーン全体を取得
     /// </summary>
-    /// <returns>エフェクト名のリスト</returns>
-    std::vector<std::string> GetEffectChain() const;
+    /// <returns>適用順のエフェクトのリスト</returns>
+    std::vector<PostEffectType> GetEffectChain() const;
 
     D3D12_CPU_DESCRIPTOR_HANDLE GetCurrentRTVHandle() const { return effectTargetRT_.rtvHandle; }
 
@@ -330,7 +332,7 @@ namespace Tako {
     /// <summary>
     /// エフェクトの登録
     /// </summary>
-    void RegisterEffect(const std::string& name, std::unique_ptr<IPostEffect> effect);
+    void RegisterEffect(PostEffectType type, std::unique_ptr<IPostEffect> effect);
 
     /// <summary>
     /// エフェクトを適用
@@ -393,18 +395,17 @@ namespace Tako {
     Camera*    camera_ = nullptr;  ///< カメラ情報
 
     //UI 用の選択状態
-    std::string selectedAvailableEffect_ = "";  ///< 利用可能エフェクトの選択
-    std::string selectedActiveEffect_    = "";  ///< アクティブエフェクトの選択
+    std::optional<PostEffectType> selectedAvailableEffect_;  ///< 利用可能エフェクトの選択
+    std::optional<PostEffectType> selectedActiveEffect_;     ///< アクティブエフェクトの選択
 
-    RenderTexture                                                 effectTargetRT_;            ///< エフェクト適用対象用 RT
-    RenderTexture                                                 nonEffectTargetRT_;         ///< 非適用対象用 RT
-    std::vector<RenderTexture>                                    intermediateRTs_;           ///< 中間バッファ（複数エフェクト用）
-    std::unordered_map<std::string, std::unique_ptr<IPostEffect>> effectRegistry_;            ///< エフェクトのレジストリ
-    std::vector<std::string>                                      effectChain_;               ///< エフェクトチェーン
-    std::unordered_map<std::string, TemporaryEffectInfo>          temporaryEffects_;          ///< 一時エフェクトの管理マップ
-    std::vector<std::string>                                      availableEffects_;          ///< 利用可能なエフェクトのリスト（ImGui 用）
-    uint32_t                                                      depthSrvIndex_        = 0;  ///< 深度バッファの SRV
-    uint32_t                                                      dissolveMaskSrvIndex_ = 0;  ///< Dissolve マスクテクスチャの SRV
+    RenderTexture                                                                         effectTargetRT_;            ///< エフェクト適用対象用 RT
+    RenderTexture                                                                         nonEffectTargetRT_;         ///< 非適用対象用 RT
+    std::vector<RenderTexture>                                                            intermediateRTs_;           ///< 中間バッファ（複数エフェクト用）
+    std::array<std::unique_ptr<IPostEffect>, static_cast<size_t>(PostEffectType::Count)> effectRegistry_;            ///< エフェクトのレジストリ（PostEffectType で添字）
+    std::vector<PostEffectType>                                                           effectChain_;               ///< エフェクトチェーン
+    std::unordered_map<PostEffectType, TemporaryEffectInfo>                               temporaryEffects_;          ///< 一時エフェクトの管理マップ
+    uint32_t                                                                              depthSrvIndex_        = 0;  ///< 深度バッファの SRV
+    uint32_t                                                                              dissolveMaskSrvIndex_ = 0;  ///< Dissolve マスクテクスチャの SRV
 
     //クリアカラー
     const Vector4 kEffectTargetClearColor_   = { 0.17f, 0.17f, 0.17f, 1.0f };

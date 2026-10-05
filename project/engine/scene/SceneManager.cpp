@@ -117,20 +117,6 @@ namespace Tako {
   }
 
   void SceneManager::ChangeScene(const std::string& sceneName,
-    const std::string& effectName,
-    float transitionTime)
-  {
-    assert(sceneFactory_);
-
-    if (nextScene_ == nullptr) {
-      TransitionManager::GetInstance()->Start(
-        ITransitionEffect::FADE_OUT, effectName, transitionTime);
-      nextScene_ = sceneFactory_->CreateScene(sceneName);
-      transitionTime_ = transitionTime;
-    }
-  }
-
-  void SceneManager::ChangeScene(const std::string& sceneName,
     std::unique_ptr<ITransitionEffect> effect,
     float transitionTime)
   {
