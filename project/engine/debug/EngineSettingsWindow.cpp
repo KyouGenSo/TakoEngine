@@ -1,6 +1,6 @@
 #include "EngineSettingsWindow.h"
 #include "DebugUIManager.h"
-#include "ImGuiManager.h"
+#include "ImGuiThemes.h"
 #include "WinApp.h"
 #include "DX12Basic.h"
 #include "Object3dBasic.h"
@@ -27,7 +27,6 @@ namespace Tako {
     const char* const kFilePath = "resources/Json/EngineSettings.json";
 
     const char* const kCategoryNames[] = { "Display", "Time", "Rendering", "Audio", "Physics", "Editor" };
-    const char* const kThemeNames[]    = { "MoonLight", "Dark", "Light" };
 
     constexpr int kFPSOptions[] = { 0, 30, 60, 120, 144 };
 
@@ -125,9 +124,9 @@ namespace Tako {
       ImGuiIO& io = ImGui::GetIO();
       const json& editor = root.contains("Editor") ? root["Editor"] : empty;
       io.FontGlobalScale = editor.value("UIScale", io.FontGlobalScale);
-      const int theme = editor.value("Theme", static_cast<int>(theme_));
-      theme_ = static_cast<Theme>(std::clamp(theme, 0, static_cast<int>(Theme::Count) - 1));
-      ApplyTheme();
+      const int themeCount = static_cast<int>(GetImGuiThemes().size());
+      themeIndex_ = std::clamp(editor.value("Theme", themeIndex_), 0, themeCount - 1);
+      ApplyImGuiTheme(themeIndex_);
 
       Log(std::format("Engine settings loaded: {}", kFilePath));
     }
@@ -162,7 +161,7 @@ namespace Tako {
     };
     root["Editor"] = {
       { "UIScale", ImGui::GetIO().FontGlobalScale },
-      { "Theme",   static_cast<int>(theme_) },
+      { "Theme",   themeIndex_ },
     };
 
     std::filesystem::create_directories(std::filesystem::path(kFilePath).parent_path());
@@ -247,10 +246,10 @@ namespace Tako {
   void EngineSettingsWindow::DrawEditor() {
     ImGui::SliderFloat("UI Scale", &ImGui::GetIO().FontGlobalScale, 0.5f, 2.0f, "%.2f");
 
-    int theme = static_cast<int>(theme_);
-    if (ImGui::Combo("Theme", &theme, kThemeNames, static_cast<int>(Theme::Count))) {
-      theme_ = static_cast<Theme>(theme);
-      ApplyTheme();
+    const auto getThemeName = [](void*, int index) { return GetImGuiThemes()[index].name; };
+    const int  themeCount   = static_cast<int>(GetImGuiThemes().size());
+    if (ImGui::Combo("Theme", &themeIndex_, getThemeName, nullptr, themeCount, 12)) {
+      ApplyImGuiTheme(themeIndex_);
     }
   }
 
@@ -262,15 +261,6 @@ namespace Tako {
 
   void EngineSettingsWindow::ApplyMasterVolume() {
     Audio::GetInstance()->SetMasterVolume(isMuted_ ? 0.0f : masterVolume_);
-  }
-
-  void EngineSettingsWindow::ApplyTheme() {
-    switch (theme_) {
-    case Theme::MoonLight: ImGuiManager::SetStyleMoonLight(); break;
-    case Theme::Dark:      ImGui::StyleColorsDark();          break;
-    case Theme::Light:     ImGui::StyleColorsLight();         break;
-    default: break;
-    }
   }
 
 } // namespace Tako

@@ -184,6 +184,9 @@
     <ClCompile Include="engine\imgui\ImGuiManager.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="engine\imgui\ImGuiThemes.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="engine\base\DX12\D3DResourceLeakChecker.cpp" />
     <ClCompile Include="engine\base\DX12\DX12Basic.cpp" />
     <ClCompile Include="engine\io\GlobalVariables.cpp" />
@@ -289,6 +292,7 @@
     <ClInclude Include="engine\audio\Audio.h" />
     <ClInclude Include="engine\3d\Camera\Camera.h" />
     <ClInclude Include="engine\imgui\ImGuiManager.h" />
+    <ClInclude Include="engine\imgui\ImGuiThemes.h" />
     <ClInclude Include="engine\base\DX12\D3DResourceLeakChecker.h" />
     <ClInclude Include="engine\base\DX12\DX12Basic.h" />
     <ClInclude Include="engine\base\DX12\PerFrameConstantRing.h" />

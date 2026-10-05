@@ -171,6 +171,9 @@
     <ClCompile Include="engine\imgui\ImGuiManager.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
+    <ClCompile Include="engine\imgui\ImGuiThemes.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
     <ClCompile Include="engine\audio\Audio.cpp">
       <Filter>audio</Filter>
     </ClCompile>
@@ -483,6 +486,9 @@
       <Filter>func\MathFunc</Filter>
     </ClInclude>
     <ClInclude Include="engine\imgui\ImGuiManager.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\imgui\ImGuiThemes.h">
       <Filter>imgui</Filter>
     </ClInclude>
     <ClInclude Include="engine\io\Input.h">

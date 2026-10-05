@@ -15,7 +15,6 @@ namespace Tako {
 
   private: //構造体
     enum class Category { Display, Time, Rendering, Audio, Physics, Editor, Count };
-    enum class Theme { MoonLight, Dark, Light, Count };
 
   public: //メンバー関数
     /// <summary>
@@ -58,7 +57,6 @@ namespace Tako {
     void DrawEditor();
 
     void ApplyMasterVolume();
-    void ApplyTheme();
 
   private: //メンバー変数
     bool*                 isOpen_           = nullptr;            ///< ウィンドウ表示フラグ（DebugUIManager 所有）
@@ -70,7 +68,7 @@ namespace Tako {
     bool  isMuted_      = false;  ///< true の間はマスター音量 0 を適用し masterVolume_ は保持する
 
     //Editor
-    Theme theme_ = Theme::MoonLight;
+    int themeIndex_ = 0;  ///< GetImGuiThemes() の index
   };
 
 } // namespace Tako
