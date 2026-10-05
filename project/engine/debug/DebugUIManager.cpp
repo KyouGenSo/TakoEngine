@@ -170,10 +170,10 @@ namespace Tako {
       if (ImGui::BeginMenu("View")) {
         ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Main Windows");
         ImGui::Separator();
+        ImGui::MenuItem("Debug Viewport", "F1", &WindowFlag(Window::DebugViewport));
         ImGui::MenuItem("Scene Hierarchy", "F2", &WindowFlag(Window::SceneHierarchy));
         ImGui::MenuItem("Inspector", "F3", &WindowFlag(Window::Inspector));
         ImGui::MenuItem("Game Viewport", "F4", &WindowFlag(Window::GameViewport));
-        ImGui::MenuItem("Debug Viewport", "F1", &WindowFlag(Window::DebugViewport));
         ImGui::MenuItem("Console", "F5", &WindowFlag(Window::Console));
         ImGui::MenuItem("Performance", "F6", &WindowFlag(Window::Performance));
         ImGui::Separator();
