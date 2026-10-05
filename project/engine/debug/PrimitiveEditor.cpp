@@ -1,3 +1,4 @@
+#include "PrimitiveEditor.h"
 #include "DebugUIManager.h"
 #include "PreviewViewport.h"
 #include "Object3d.h"
@@ -21,12 +22,19 @@
 
 namespace Tako {
 
-  DebugUIManager::DebugUIManager(Token) {}
-  DebugUIManager::~DebugUIManager() = default;
+  PrimitiveEditor::PrimitiveEditor() = default;
+  PrimitiveEditor::~PrimitiveEditor() = default;
 
   namespace {
 
     const char* const kPresetDirectory = "resources/Json/PrimitivePresets/";
+
+    using LogType = DebugUIManager::LogType;
+
+    void AddLog(const std::string& message, LogType type)
+    {
+      DebugUIManager::GetInstance()->AddLog(message, type);
+    }
 
     /// <summary>
     /// TextureManager::LoadTexture と同じパス解決規則でファイルの存在を確認する
@@ -87,143 +95,148 @@ namespace Tako {
 
   } // anonymous namespace
 
-  void DebugUIManager::UpdatePrimitiveEditor()
+  void PrimitiveEditor::Update()
   {
-    if (!windowVisibility_["PrimitiveEditor"]) {
+    if (!*isOpen_) {
       // エディタを閉じたらプレビューを破棄
-      primPreviewObject_.reset();
-      primFloorObject_.reset();
+      previewObject_.reset();
+      floorObject_.reset();
       return;
     }
 
-    if (!primPreviewViewport_) {
-      primPreviewViewport_ = std::make_unique<PreviewViewport>();
-      primPreviewViewport_->Initialize(L"PrimitiveEditorPreview");
+    if (!previewViewport_) {
+      previewViewport_ = std::make_unique<PreviewViewport>();
+      previewViewport_->Initialize(L"PrimitiveEditorPreview");
     }
 
-    if (!primPreviewCamera_) {
-      primPreviewCamera_ = std::make_unique<Camera>();
-      primPreviewCamera_->SetAspect(primPreviewViewport_->GetAspect());
+    if (!previewCamera_) {
+      previewCamera_ = std::make_unique<Camera>();
+      previewCamera_->SetAspect(previewViewport_->GetAspect());
     }
 
-    if (!primFloorObject_) {
-      primFloorObject_ = std::make_unique<Object3d>();
-      primFloorObject_->Initialize();
-      primFloorObject_->SetModel(PrimitiveBuilder::CreatePlane({ .width = 10.0f, .height = 10.0f }));
-      primFloorObject_->SetMaterialColor(Vector4(0.35f, 0.35f, 0.35f, 1.0f));
-      primFloorObject_->SetTranslate(Vector3(0.0f, -1.0f, 0.0f));
+    if (!floorObject_) {
+      floorObject_ = std::make_unique<Object3d>();
+      floorObject_->Initialize();
+      floorObject_->SetModel(PrimitiveBuilder::CreatePlane({ .width = 10.0f, .height = 10.0f }));
+      floorObject_->SetMaterialColor(Vector4(0.35f, 0.35f, 0.35f, 1.0f));
+      floorObject_->SetTranslate(Vector3(0.0f, -1.0f, 0.0f));
     }
 
-    if (!primPreviewObject_) {
-      primPreviewObject_ = std::make_unique<Object3d>();
-      primPreviewObject_->Initialize();
-      primParamsDirty_ = true;
+    if (!previewObject_) {
+      previewObject_ = std::make_unique<Object3d>();
+      previewObject_->Initialize();
+      paramsDirty_ = true;
     }
 
     // モデル再生成はコマンド未記録・GPU アイドルのここでのみ行う（ImGui ハンドラ内での差し替えは記録済みコマンドの参照先を壊す）
-    if (primParamsDirty_) {
-      RebuildPrimitivePreview();
-      primParamsDirty_ = false;
+    if (paramsDirty_) {
+      RebuildPreview();
+      paramsDirty_ = false;
     }
 
-    if (primAutoRotate_) {
-      primPreviewRotate_.y += primAutoRotateSpeed_ * FrameTimer::GetInstance()->GetDeltaTime();
+    if (autoRotate_) {
+      previewRotate_.y += autoRotateSpeed_ * FrameTimer::GetInstance()->GetDeltaTime();
     }
-    primPreviewObject_->SetRotate(primPreviewRotate_);
-    primPreviewObject_->SetScale(primPreviewScale_);
-    ApplyPrimitivePreviewSettings();
+    previewObject_->SetRotate(previewRotate_);
+    previewObject_->SetScale(previewScale_);
+    ApplyPreviewSettings();
 
-    primCameraController_.ApplyTo(*primPreviewCamera_);
+    cameraController_.ApplyTo(*previewCamera_);
 
-    primFloorObject_->Update();
-    primPreviewObject_->Update();
+    floorObject_->Update();
+    previewObject_->Update();
   }
 
-  void DebugUIManager::FinalizePrimitiveEditor()
+  void PrimitiveEditor::Finalize()
   {
-    primPreviewObject_.reset();
-    primFloorObject_.reset();
-    primPreviewViewport_.reset();
-    primPreviewCamera_.reset();
+    previewObject_.reset();
+    floorObject_.reset();
+    previewViewport_.reset();
+    previewCamera_.reset();
   }
 
-  void DebugUIManager::RebuildPrimitivePreview()
+  void PrimitiveEditor::RebuildPreview()
   {
-    if (!primPreviewObject_) {
+    if (!previewObject_) {
       return;
     }
 
     std::unique_ptr<Model> model;
     switch (selectedPrimitiveType_) {
-    case PrimitiveType::Cube:     model = PrimitiveBuilder::CreateCube(primCubeParams_);         break;
-    case PrimitiveType::Sphere:   model = PrimitiveBuilder::CreateSphere(primSphereParams_);     break;
-    case PrimitiveType::Plane:    model = PrimitiveBuilder::CreatePlane(primPlaneParams_);       break;
-    case PrimitiveType::Ring:     model = PrimitiveBuilder::CreateRing(primRingParams_);         break;
-    case PrimitiveType::Cylinder: model = PrimitiveBuilder::CreateCylinder(primCylinderParams_); break;
-    case PrimitiveType::Torus:    model = PrimitiveBuilder::CreateTorus(primTorusParams_);       break;
+    case PrimitiveType::Cube:     model = PrimitiveBuilder::CreateCube(cubeParams_);         break;
+    case PrimitiveType::Sphere:   model = PrimitiveBuilder::CreateSphere(sphereParams_);     break;
+    case PrimitiveType::Plane:    model = PrimitiveBuilder::CreatePlane(planeParams_);       break;
+    case PrimitiveType::Ring:     model = PrimitiveBuilder::CreateRing(ringParams_);         break;
+    case PrimitiveType::Cylinder: model = PrimitiveBuilder::CreateCylinder(cylinderParams_); break;
+    case PrimitiveType::Torus:    model = PrimitiveBuilder::CreateTorus(torusParams_);       break;
     }
 
     // 旧 Model は SetModel 内で破棄され、SRV も Mesh のデストラクタで返却される
-    primPreviewObject_->SetModel(std::move(model));
+    previewObject_->SetModel(std::move(model));
   }
 
-  void DebugUIManager::ApplyPrimitivePreviewSettings()
+  void PrimitiveEditor::ApplyPreviewSettings()
   {
-    if (!primPreviewObject_) {
+    if (!previewObject_) {
       return;
     }
     // マテリアル系は Mesh 内データのため Model 差し替えで消える。毎フレーム再適用する
-    primPreviewObject_->SetMaterialColor(primPreviewColor_);
-    primPreviewObject_->SetEnableLighting(primPreviewLighting_);
-    primPreviewObject_->SetTransparent(primPreviewTransparent_);
-    primPreviewObject_->SetShininess(primMaterialShininess_);
-    primPreviewObject_->SetEnableHighlight(primMaterialHighlight_);
-    primPreviewObject_->SetUvTransform(Transform{
-      { primMaterialUvScale_.x, primMaterialUvScale_.y, 1.0f },
-      { 0.0f, 0.0f, primMaterialUvRotate_ },
-      { primMaterialUvOffset_.x, primMaterialUvOffset_.y, 0.0f } });
-    primPreviewObject_->SetTexture(primMaterialTexture_);  // 空/同一パスは Mesh 側で早期 return
+    previewObject_->SetMaterialColor(previewColor_);
+    previewObject_->SetEnableLighting(previewLighting_);
+    previewObject_->SetTransparent(previewTransparent_);
+    previewObject_->SetShininess(materialShininess_);
+    previewObject_->SetEnableHighlight(materialHighlight_);
+    previewObject_->SetUvTransform(Transform{
+      { materialUvScale_.x, materialUvScale_.y, 1.0f },
+      { 0.0f, 0.0f, materialUvRotate_ },
+      { materialUvOffset_.x, materialUvOffset_.y, 0.0f } });
+    previewObject_->SetTexture(materialTexture_);  // 空/同一パスは Mesh 側で早期 return
   }
 
-  void DebugUIManager::DrawPrimitivePreviewPass()
+  void PrimitiveEditor::DrawPreviewPass()
   {
-    if (!windowVisibility_["PrimitiveEditor"] || !primPreviewViewport_ || !primPreviewObject_ || !primPreviewCamera_) {
+    if (!*isOpen_ || !previewViewport_ || !previewObject_ || !previewCamera_) {
       return;
     }
 
-    primPreviewViewport_->BeginPass();
+    previewViewport_->BeginPass();
 
     // プレビューカメラを視点にし、直前は別パスの PSO のため共通描画設定を再適用
-    Object3dBasic::GetInstance()->SetView(*primPreviewCamera_);
+    Object3dBasic::GetInstance()->SetView(*previewCamera_);
     Object3dBasic::GetInstance()->SetCommonRenderSetting();
 
-    if (primShowFloor_ && primFloorObject_) {
-      primFloorObject_->Draw();
+    if (showFloor_ && floorObject_) {
+      floorObject_->Draw();
     }
-    primPreviewObject_->Draw();
+    previewObject_->Draw();
 
-    primPreviewViewport_->EndPass();
+    previewViewport_->EndPass();
   }
 
-  void DebugUIManager::DrawPrimitiveEditor()
+  bool PrimitiveEditor::Draw()
   {
+    if (!*isOpen_) {
+      return false;
+    }
+
+    bool inputCaptured = false;
     ImGui::SetNextWindowSize(ImVec2(1000.0f, 620.0f), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin("Primitive Editor", &windowVisibility_["PrimitiveEditor"])) {
+    if (ImGui::Begin("Primitive Editor", isOpen_)) {
 
       //---------------- 左: プレビュービューポート ----------------//
       // 右端ドラッグで幅調整可。サイズ指定は初期値で、調整結果は imgui.ini に保存される
       ImGui::SetNextWindowSizeConstraints(ImVec2(200.0f, 0.0f), ImVec2(FLT_MAX, FLT_MAX));
       if (ImGui::BeginChild("Viewport##PrimEditor", ImVec2(620.0f, 0.0f), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeX)) {
         if (ImGui::Button("Reset Camera##PrimEditor")) {
-          primCameraController_.Reset();
+          cameraController_.Reset();
         }
         ImGui::SameLine();
-        ImGui::TextDisabled("Speed: %.2f", primCameraController_.moveSpeed);
+        ImGui::TextDisabled("Speed: %.2f", cameraController_.moveSpeed);
         ImGui::TextDisabled("RMB: Look (+WASD/QE Fly, +Wheel Speed) / Alt+LMB: Orbit / MMB: Pan / Wheel: Dolly");
 
-        if (primPreviewViewport_ && primPreviewViewport_->IsInitialized()) {
-          primPreviewViewport_->DrawImGuiImage();
-          isPreviewInputCaptured_ |= primCameraController_.HandleImGuiInput();
+        if (previewViewport_ && previewViewport_->IsInitialized()) {
+          previewViewport_->DrawImGuiImage();
+          inputCaptured |= cameraController_.HandleImGuiInput();
         }
         else {
           ImGui::TextDisabled("Initializing preview...");
@@ -238,84 +251,84 @@ namespace Tako {
         int typeIndex = static_cast<int>(selectedPrimitiveType_);
         if (ImGui::Combo("Type##PrimEditor", &typeIndex, "Cube\0Sphere\0Plane\0Ring\0Cylinder\0Torus\0")) {
           selectedPrimitiveType_ = static_cast<PrimitiveType>(typeIndex);
-          primParamsDirty_ = true;
+          paramsDirty_ = true;
         }
 
         if (ImGui::CollapsingHeader("Shape Parameters##PrimEditor", ImGuiTreeNodeFlags_DefaultOpen)) {
           bool changed = false;
           switch (selectedPrimitiveType_) {
           case PrimitiveType::Cube:
-            changed |= ImGui::DragFloat("Size##PrimCube", &primCubeParams_.size, 0.01f, 0.0f, 1000.0f);
+            changed |= ImGui::DragFloat("Size##PrimCube", &cubeParams_.size, 0.01f, 0.0f, 1000.0f);
             break;
           case PrimitiveType::Sphere:
-            changed |= ImGui::DragFloat("Radius##PrimSphere", &primSphereParams_.radius, 0.01f, 0.0f, 1000.0f);
-            changed |= DragUint("Lon Div##PrimSphere", primSphereParams_.lonDiv, 3, 256);
-            changed |= DragUint("Lat Div##PrimSphere", primSphereParams_.latDiv, 2, 256);
+            changed |= ImGui::DragFloat("Radius##PrimSphere", &sphereParams_.radius, 0.01f, 0.0f, 1000.0f);
+            changed |= DragUint("Lon Div##PrimSphere", sphereParams_.lonDiv, 3, 256);
+            changed |= DragUint("Lat Div##PrimSphere", sphereParams_.latDiv, 2, 256);
             break;
           case PrimitiveType::Plane:
-            changed |= ImGui::DragFloat("Width##PrimPlane", &primPlaneParams_.width, 0.01f, 0.0f, 1000.0f);
-            changed |= ImGui::DragFloat("Height##PrimPlane", &primPlaneParams_.height, 0.01f, 0.0f, 1000.0f);
-            changed |= DragUint("X Seg##PrimPlane", primPlaneParams_.xSeg, 1, 256);
-            changed |= DragUint("Y Seg##PrimPlane", primPlaneParams_.ySeg, 1, 256);
+            changed |= ImGui::DragFloat("Width##PrimPlane", &planeParams_.width, 0.01f, 0.0f, 1000.0f);
+            changed |= ImGui::DragFloat("Height##PrimPlane", &planeParams_.height, 0.01f, 0.0f, 1000.0f);
+            changed |= DragUint("X Seg##PrimPlane", planeParams_.xSeg, 1, 256);
+            changed |= DragUint("Y Seg##PrimPlane", planeParams_.ySeg, 1, 256);
             break;
           case PrimitiveType::Ring:
-            changed |= ImGui::DragFloat("Inner Radius##PrimRing", &primRingParams_.innerRadius, 0.01f, 0.0f, 1000.0f);
-            changed |= ImGui::DragFloat("Outer Radius##PrimRing", &primRingParams_.outerRadius, 0.01f, 0.0f, 1000.0f);
-            changed |= DragUint("Segments##PrimRing", primRingParams_.segments, 3, 512);
-            changed |= DragUint("Ring Seg##PrimRing", primRingParams_.ringSeg, 1, 256);
-            changed |= ImGui::DragFloat("Start Angle##PrimRing", &primRingParams_.startAngleDeg, 1.0f, -720.0f, 720.0f);
-            changed |= ImGui::DragFloat("Sweep Angle##PrimRing", &primRingParams_.sweepAngleDeg, 1.0f, -720.0f, 720.0f);
+            changed |= ImGui::DragFloat("Inner Radius##PrimRing", &ringParams_.innerRadius, 0.01f, 0.0f, 1000.0f);
+            changed |= ImGui::DragFloat("Outer Radius##PrimRing", &ringParams_.outerRadius, 0.01f, 0.0f, 1000.0f);
+            changed |= DragUint("Segments##PrimRing", ringParams_.segments, 3, 512);
+            changed |= DragUint("Ring Seg##PrimRing", ringParams_.ringSeg, 1, 256);
+            changed |= ImGui::DragFloat("Start Angle##PrimRing", &ringParams_.startAngleDeg, 1.0f, -720.0f, 720.0f);
+            changed |= ImGui::DragFloat("Sweep Angle##PrimRing", &ringParams_.sweepAngleDeg, 1.0f, -720.0f, 720.0f);
             break;
           case PrimitiveType::Cylinder:
-            changed |= ImGui::DragFloat("Top Radius##PrimCylinder", &primCylinderParams_.topRadius, 0.01f, 0.0f, 1000.0f);
-            changed |= ImGui::DragFloat("Bottom Radius##PrimCylinder", &primCylinderParams_.bottomRadius, 0.01f, 0.0f, 1000.0f);
-            changed |= ImGui::DragFloat("Height##PrimCylinder", &primCylinderParams_.height, 0.01f, 0.0f, 1000.0f);
-            changed |= DragUint("Radial Div##PrimCylinder", primCylinderParams_.radialDiv, 3, 256);
-            changed |= DragUint("Height Div##PrimCylinder", primCylinderParams_.heightDiv, 1, 256);
-            changed |= ImGui::Checkbox("Cap Top##PrimCylinder", &primCylinderParams_.capTop);
+            changed |= ImGui::DragFloat("Top Radius##PrimCylinder", &cylinderParams_.topRadius, 0.01f, 0.0f, 1000.0f);
+            changed |= ImGui::DragFloat("Bottom Radius##PrimCylinder", &cylinderParams_.bottomRadius, 0.01f, 0.0f, 1000.0f);
+            changed |= ImGui::DragFloat("Height##PrimCylinder", &cylinderParams_.height, 0.01f, 0.0f, 1000.0f);
+            changed |= DragUint("Radial Div##PrimCylinder", cylinderParams_.radialDiv, 3, 256);
+            changed |= DragUint("Height Div##PrimCylinder", cylinderParams_.heightDiv, 1, 256);
+            changed |= ImGui::Checkbox("Cap Top##PrimCylinder", &cylinderParams_.capTop);
             ImGui::SameLine();
-            changed |= ImGui::Checkbox("Cap Bottom##PrimCylinder", &primCylinderParams_.capBottom);
+            changed |= ImGui::Checkbox("Cap Bottom##PrimCylinder", &cylinderParams_.capBottom);
             break;
           case PrimitiveType::Torus:
-            changed |= ImGui::DragFloat("Major Radius##PrimTorus", &primTorusParams_.majorRadius, 0.01f, 0.0f, 1000.0f);
-            changed |= ImGui::DragFloat("Minor Radius##PrimTorus", &primTorusParams_.minorRadius, 0.01f, 0.0f, 1000.0f);
-            changed |= DragUint("Major Div##PrimTorus", primTorusParams_.majorDiv, 3, 256);
-            changed |= DragUint("Minor Div##PrimTorus", primTorusParams_.minorDiv, 3, 256);
+            changed |= ImGui::DragFloat("Major Radius##PrimTorus", &torusParams_.majorRadius, 0.01f, 0.0f, 1000.0f);
+            changed |= ImGui::DragFloat("Minor Radius##PrimTorus", &torusParams_.minorRadius, 0.01f, 0.0f, 1000.0f);
+            changed |= DragUint("Major Div##PrimTorus", torusParams_.majorDiv, 3, 256);
+            changed |= DragUint("Minor Div##PrimTorus", torusParams_.minorDiv, 3, 256);
             break;
           }
           if (changed) {
-            primParamsDirty_ = true;
+            paramsDirty_ = true;
           }
         }
 
         if (ImGui::CollapsingHeader("Display##PrimEditor", ImGuiTreeNodeFlags_DefaultOpen)) {
-          ImGui::DragFloat3("Rotation##PrimEditor", &primPreviewRotate_.x, 0.01f);
-          ImGui::DragFloat3("Scale##PrimEditor", &primPreviewScale_.x, 0.01f, 0.0f, 100.0f);
-          ImGui::Checkbox("Auto Rotate##PrimEditor", &primAutoRotate_);
-          if (primAutoRotate_) {
+          ImGui::DragFloat3("Rotation##PrimEditor", &previewRotate_.x, 0.01f);
+          ImGui::DragFloat3("Scale##PrimEditor", &previewScale_.x, 0.01f, 0.0f, 100.0f);
+          ImGui::Checkbox("Auto Rotate##PrimEditor", &autoRotate_);
+          if (autoRotate_) {
             ImGui::SameLine();
             ImGui::SetNextItemWidth(100.0f);
-            ImGui::DragFloat("Speed##PrimEditor", &primAutoRotateSpeed_, 0.01f, -10.0f, 10.0f);
+            ImGui::DragFloat("Speed##PrimEditor", &autoRotateSpeed_, 0.01f, -10.0f, 10.0f);
           }
-          ImGui::Checkbox("Show Floor##PrimEditor", &primShowFloor_);
+          ImGui::Checkbox("Show Floor##PrimEditor", &showFloor_);
         }
 
         if (ImGui::CollapsingHeader("Material##PrimEditor", ImGuiTreeNodeFlags_DefaultOpen)) {
-          ImGui::ColorEdit4("Color##PrimEditor", &primPreviewColor_.x);
-          ImGui::Checkbox("Lighting##PrimEditor", &primPreviewLighting_);
+          ImGui::ColorEdit4("Color##PrimEditor", &previewColor_.x);
+          ImGui::Checkbox("Lighting##PrimEditor", &previewLighting_);
           ImGui::SameLine();
-          ImGui::Checkbox("Transparent##PrimEditor", &primPreviewTransparent_);
-          ImGui::Checkbox("Highlight##PrimEditor", &primMaterialHighlight_);
+          ImGui::Checkbox("Transparent##PrimEditor", &previewTransparent_);
+          ImGui::Checkbox("Highlight##PrimEditor", &materialHighlight_);
           ImGui::SameLine();
           ImGui::SetNextItemWidth(100.0f);
-          ImGui::DragFloat("Shininess##PrimEditor", &primMaterialShininess_, 1.0f, 1.0f, 1000.0f);
+          ImGui::DragFloat("Shininess##PrimEditor", &materialShininess_, 1.0f, 1.0f, 1000.0f);
 
           // ロード済みテクスチャから選択。手入力パスも入るためプレビューには現在値を表示
-          if (ImGui::BeginCombo("Texture##PrimEditor", primMaterialTexture_.empty() ? "(default: white.dds)" : primMaterialTexture_.c_str())) {
+          if (ImGui::BeginCombo("Texture##PrimEditor", materialTexture_.empty() ? "(default: white.dds)" : materialTexture_.c_str())) {
             for (const std::string& texName : TextureManager::GetInstance()->GetLoadedTextureFileNames()) {
-              const bool selected = (texName == primMaterialTexture_);
+              const bool selected = (texName == materialTexture_);
               if (ImGui::Selectable(texName.c_str(), selected)) {
-                primMaterialTexture_ = texName;
+                materialTexture_ = texName;
               }
               if (selected) {
                 ImGui::SetItemDefaultFocus();
@@ -331,7 +344,7 @@ namespace Tako {
           if (ImGui::Button("Load & Set##PrimTex") && texPathBuffer[0] != '\0') {
             // LoadTexture は失敗時 assert のため事前に存在チェック
             if (TextureFileExists(texPathBuffer)) {
-              primMaterialTexture_ = texPathBuffer;
+              materialTexture_ = texPathBuffer;
             }
             else {
               AddLog(std::string("Primitive Editor: texture not found '") + texPathBuffer + "'", LogType::Error);
@@ -340,17 +353,17 @@ namespace Tako {
           ImGui::SameLine();
           if (ImGui::Button("Clear##PrimTex")) {
             // SetTexture は空文字を無視するため、Model 再生成でデフォルト white.dds に戻す
-            primMaterialTexture_.clear();
-            primParamsDirty_ = true;
+            materialTexture_.clear();
+            paramsDirty_ = true;
           }
 
-          ImGui::DragFloat2("UV Tiling##PrimEditor", &primMaterialUvScale_.x, 0.01f);
-          ImGui::DragFloat2("UV Offset##PrimEditor", &primMaterialUvOffset_.x, 0.01f);
-          ImGui::DragFloat("UV Rotate##PrimEditor", &primMaterialUvRotate_, 0.01f);
+          ImGui::DragFloat2("UV Tiling##PrimEditor", &materialUvScale_.x, 0.01f);
+          ImGui::DragFloat2("UV Offset##PrimEditor", &materialUvOffset_.x, 0.01f);
+          ImGui::DragFloat("UV Rotate##PrimEditor", &materialUvRotate_, 0.01f);
         }
 
         if (ImGui::CollapsingHeader("Output##PrimEditor", ImGuiTreeNodeFlags_DefaultOpen)) {
-          const std::string cppString = GeneratePrimitiveCppString();
+          const std::string cppString = GenerateCppString();
           ImGui::TextWrapped("%s", cppString.c_str());
           if (ImGui::Button("Copy as C++##PrimEditor")) {
             ImGui::SetClipboardText(cppString.c_str());
@@ -359,25 +372,25 @@ namespace Tako {
 
           ImGui::SeparatorText("Preset");
           ImGui::SetNextItemWidth(150.0f);
-          ImGui::InputText("##PrimPresetName", primPresetNameBuffer_, IM_ARRAYSIZE(primPresetNameBuffer_));
+          ImGui::InputText("##PrimPresetName", presetNameBuffer_, IM_ARRAYSIZE(presetNameBuffer_));
           ImGui::SameLine();
-          if (ImGui::Button("Save##PrimPreset") && primPresetNameBuffer_[0] != '\0') {
-            if (SavePrimitivePreset(primPresetNameBuffer_)) {
-              primSelectedPreset_ = primPresetNameBuffer_;
+          if (ImGui::Button("Save##PrimPreset") && presetNameBuffer_[0] != '\0') {
+            if (SavePreset(presetNameBuffer_)) {
+              selectedPreset_ = presetNameBuffer_;
             }
           }
 
           ImGui::SetNextItemWidth(150.0f);
-          if (ImGui::BeginCombo("##PrimPresetList", primSelectedPreset_.empty() ? "(select preset)" : primSelectedPreset_.c_str())) {
+          if (ImGui::BeginCombo("##PrimPresetList", selectedPreset_.empty() ? "(select preset)" : selectedPreset_.c_str())) {
             std::error_code ec;
             for (const auto& entry : std::filesystem::directory_iterator(kPresetDirectory, ec)) {
               if (!entry.is_regular_file() || entry.path().extension() != ".json") {
                 continue;
               }
               const std::string name = entry.path().stem().string();
-              const bool selected = (name == primSelectedPreset_);
+              const bool selected = (name == selectedPreset_);
               if (ImGui::Selectable(name.c_str(), selected)) {
-                primSelectedPreset_ = name;
+                selectedPreset_ = name;
               }
               if (selected) {
                 ImGui::SetItemDefaultFocus();
@@ -386,18 +399,18 @@ namespace Tako {
             ImGui::EndCombo();
           }
           ImGui::SameLine();
-          if (ImGui::Button("Load##PrimPreset") && !primSelectedPreset_.empty()) {
-            LoadPrimitivePreset(primSelectedPreset_);
+          if (ImGui::Button("Load##PrimPreset") && !selectedPreset_.empty()) {
+            LoadPreset(selectedPreset_);
           }
 
           ImGui::SeparatorText("Export OBJ");
           ImGui::SetNextItemWidth(150.0f);
-          ImGui::InputText("##PrimExportName", primExportNameBuffer_, IM_ARRAYSIZE(primExportNameBuffer_));
+          ImGui::InputText("##PrimExportName", exportNameBuffer_, IM_ARRAYSIZE(exportNameBuffer_));
           ImGui::SameLine();
-          if (ImGui::Button("Export##PrimObj") && primExportNameBuffer_[0] != '\0') {
-            const Model* model = primPreviewObject_ ? primPreviewObject_->GetModel() : nullptr;
-            if (model && PrimitiveBuilder::ExportObj(*model, primExportNameBuffer_)) {
-              AddLog(std::string("Primitive Editor: exported 'resources/Model/") + primExportNameBuffer_ + ".obj'", LogType::Info);
+          if (ImGui::Button("Export##PrimObj") && exportNameBuffer_[0] != '\0') {
+            const Model* model = previewObject_ ? previewObject_->GetModel() : nullptr;
+            if (model && PrimitiveBuilder::ExportObj(*model, exportNameBuffer_)) {
+              AddLog(std::string("Primitive Editor: exported 'resources/Model/") + exportNameBuffer_ + ".obj'", LogType::Info);
             }
             else {
               AddLog("Primitive Editor: OBJ export failed", LogType::Error);
@@ -408,22 +421,23 @@ namespace Tako {
       ImGui::EndChild();
     }
     ImGui::End();
+    return inputCaptured;
   }
 
-  std::string DebugUIManager::GeneratePrimitiveCppString() const
+  std::string PrimitiveEditor::GenerateCppString() const
   {
     std::vector<std::string> fields;
 
     switch (selectedPrimitiveType_) {
     case PrimitiveType::Cube: {
       const PrimitiveBuilder::CubeParams def{};
-      const auto& p = primCubeParams_;
+      const auto& p = cubeParams_;
       if (p.size != def.size) fields.push_back(std::format(".size = {}", FloatLit(p.size)));
       return BuildCreateCall("CreateCube", fields);
     }
     case PrimitiveType::Sphere: {
       const PrimitiveBuilder::SphereParams def{};
-      const auto& p = primSphereParams_;
+      const auto& p = sphereParams_;
       if (p.radius != def.radius) fields.push_back(std::format(".radius = {}", FloatLit(p.radius)));
       if (p.lonDiv != def.lonDiv) fields.push_back(std::format(".lonDiv = {}", p.lonDiv));
       if (p.latDiv != def.latDiv) fields.push_back(std::format(".latDiv = {}", p.latDiv));
@@ -431,7 +445,7 @@ namespace Tako {
     }
     case PrimitiveType::Plane: {
       const PrimitiveBuilder::PlaneParams def{};
-      const auto& p = primPlaneParams_;
+      const auto& p = planeParams_;
       if (p.width != def.width) fields.push_back(std::format(".width = {}", FloatLit(p.width)));
       if (p.height != def.height) fields.push_back(std::format(".height = {}", FloatLit(p.height)));
       if (p.xSeg != def.xSeg) fields.push_back(std::format(".xSeg = {}", p.xSeg));
@@ -440,7 +454,7 @@ namespace Tako {
     }
     case PrimitiveType::Ring: {
       const PrimitiveBuilder::RingParams def{};
-      const auto& p = primRingParams_;
+      const auto& p = ringParams_;
       if (p.innerRadius != def.innerRadius) fields.push_back(std::format(".innerRadius = {}", FloatLit(p.innerRadius)));
       if (p.outerRadius != def.outerRadius) fields.push_back(std::format(".outerRadius = {}", FloatLit(p.outerRadius)));
       if (p.segments != def.segments) fields.push_back(std::format(".segments = {}", p.segments));
@@ -451,7 +465,7 @@ namespace Tako {
     }
     case PrimitiveType::Cylinder: {
       const PrimitiveBuilder::CylinderParams def{};
-      const auto& p = primCylinderParams_;
+      const auto& p = cylinderParams_;
       if (p.topRadius != def.topRadius) fields.push_back(std::format(".topRadius = {}", FloatLit(p.topRadius)));
       if (p.bottomRadius != def.bottomRadius) fields.push_back(std::format(".bottomRadius = {}", FloatLit(p.bottomRadius)));
       if (p.height != def.height) fields.push_back(std::format(".height = {}", FloatLit(p.height)));
@@ -463,7 +477,7 @@ namespace Tako {
     }
     case PrimitiveType::Torus: {
       const PrimitiveBuilder::TorusParams def{};
-      const auto& p = primTorusParams_;
+      const auto& p = torusParams_;
       if (p.majorRadius != def.majorRadius) fields.push_back(std::format(".majorRadius = {}", FloatLit(p.majorRadius)));
       if (p.minorRadius != def.minorRadius) fields.push_back(std::format(".minorRadius = {}", FloatLit(p.minorRadius)));
       if (p.majorDiv != def.majorDiv) fields.push_back(std::format(".majorDiv = {}", p.majorDiv));
@@ -474,7 +488,7 @@ namespace Tako {
     return "";
   }
 
-  bool DebugUIManager::SavePrimitivePreset(const std::string& name)
+  bool PrimitiveEditor::SavePreset(const std::string& name)
   {
     using json = nlohmann::json;
 
@@ -484,54 +498,54 @@ namespace Tako {
 
     switch (selectedPrimitiveType_) {
     case PrimitiveType::Cube:
-      params["size"] = primCubeParams_.size;
+      params["size"] = cubeParams_.size;
       break;
     case PrimitiveType::Sphere:
-      params["radius"] = primSphereParams_.radius;
-      params["lonDiv"] = primSphereParams_.lonDiv;
-      params["latDiv"] = primSphereParams_.latDiv;
+      params["radius"] = sphereParams_.radius;
+      params["lonDiv"] = sphereParams_.lonDiv;
+      params["latDiv"] = sphereParams_.latDiv;
       break;
     case PrimitiveType::Plane:
-      params["width"] = primPlaneParams_.width;
-      params["height"] = primPlaneParams_.height;
-      params["xSeg"] = primPlaneParams_.xSeg;
-      params["ySeg"] = primPlaneParams_.ySeg;
+      params["width"] = planeParams_.width;
+      params["height"] = planeParams_.height;
+      params["xSeg"] = planeParams_.xSeg;
+      params["ySeg"] = planeParams_.ySeg;
       break;
     case PrimitiveType::Ring:
-      params["innerRadius"] = primRingParams_.innerRadius;
-      params["outerRadius"] = primRingParams_.outerRadius;
-      params["segments"] = primRingParams_.segments;
-      params["ringSeg"] = primRingParams_.ringSeg;
-      params["startAngleDeg"] = primRingParams_.startAngleDeg;
-      params["sweepAngleDeg"] = primRingParams_.sweepAngleDeg;
+      params["innerRadius"] = ringParams_.innerRadius;
+      params["outerRadius"] = ringParams_.outerRadius;
+      params["segments"] = ringParams_.segments;
+      params["ringSeg"] = ringParams_.ringSeg;
+      params["startAngleDeg"] = ringParams_.startAngleDeg;
+      params["sweepAngleDeg"] = ringParams_.sweepAngleDeg;
       break;
     case PrimitiveType::Cylinder:
-      params["topRadius"] = primCylinderParams_.topRadius;
-      params["bottomRadius"] = primCylinderParams_.bottomRadius;
-      params["height"] = primCylinderParams_.height;
-      params["radialDiv"] = primCylinderParams_.radialDiv;
-      params["heightDiv"] = primCylinderParams_.heightDiv;
-      params["capTop"] = primCylinderParams_.capTop;
-      params["capBottom"] = primCylinderParams_.capBottom;
+      params["topRadius"] = cylinderParams_.topRadius;
+      params["bottomRadius"] = cylinderParams_.bottomRadius;
+      params["height"] = cylinderParams_.height;
+      params["radialDiv"] = cylinderParams_.radialDiv;
+      params["heightDiv"] = cylinderParams_.heightDiv;
+      params["capTop"] = cylinderParams_.capTop;
+      params["capBottom"] = cylinderParams_.capBottom;
       break;
     case PrimitiveType::Torus:
-      params["majorRadius"] = primTorusParams_.majorRadius;
-      params["minorRadius"] = primTorusParams_.minorRadius;
-      params["majorDiv"] = primTorusParams_.majorDiv;
-      params["minorDiv"] = primTorusParams_.minorDiv;
+      params["majorRadius"] = torusParams_.majorRadius;
+      params["minorRadius"] = torusParams_.minorRadius;
+      params["majorDiv"] = torusParams_.majorDiv;
+      params["minorDiv"] = torusParams_.minorDiv;
       break;
     }
 
     json& mat = preset["material"];
-    mat["color"] = { primPreviewColor_.x, primPreviewColor_.y, primPreviewColor_.z, primPreviewColor_.w };
-    mat["lighting"] = primPreviewLighting_;
-    mat["transparent"] = primPreviewTransparent_;
-    mat["highlight"] = primMaterialHighlight_;
-    mat["shininess"] = primMaterialShininess_;
-    mat["texture"] = primMaterialTexture_;
-    mat["uvScale"] = { primMaterialUvScale_.x, primMaterialUvScale_.y };
-    mat["uvOffset"] = { primMaterialUvOffset_.x, primMaterialUvOffset_.y };
-    mat["uvRotate"] = primMaterialUvRotate_;
+    mat["color"] = { previewColor_.x, previewColor_.y, previewColor_.z, previewColor_.w };
+    mat["lighting"] = previewLighting_;
+    mat["transparent"] = previewTransparent_;
+    mat["highlight"] = materialHighlight_;
+    mat["shininess"] = materialShininess_;
+    mat["texture"] = materialTexture_;
+    mat["uvScale"] = { materialUvScale_.x, materialUvScale_.y };
+    mat["uvOffset"] = { materialUvOffset_.x, materialUvOffset_.y };
+    mat["uvRotate"] = materialUvRotate_;
 
     if (!std::filesystem::exists(kPresetDirectory)) {
       std::filesystem::create_directories(kPresetDirectory);
@@ -548,7 +562,7 @@ namespace Tako {
     return true;
   }
 
-  bool DebugUIManager::LoadPrimitivePreset(const std::string& name)
+  bool PrimitiveEditor::LoadPreset(const std::string& name)
   {
     using json = nlohmann::json;
 
@@ -581,51 +595,51 @@ namespace Tako {
       switch (selectedPrimitiveType_) {
       case PrimitiveType::Cube: {
         const PrimitiveBuilder::CubeParams def{};
-        primCubeParams_.size = params.value("size", def.size);
+        cubeParams_.size = params.value("size", def.size);
         break;
       }
       case PrimitiveType::Sphere: {
         const PrimitiveBuilder::SphereParams def{};
-        primSphereParams_.radius = params.value("radius", def.radius);
-        primSphereParams_.lonDiv = params.value("lonDiv", def.lonDiv);
-        primSphereParams_.latDiv = params.value("latDiv", def.latDiv);
+        sphereParams_.radius = params.value("radius", def.radius);
+        sphereParams_.lonDiv = params.value("lonDiv", def.lonDiv);
+        sphereParams_.latDiv = params.value("latDiv", def.latDiv);
         break;
       }
       case PrimitiveType::Plane: {
         const PrimitiveBuilder::PlaneParams def{};
-        primPlaneParams_.width = params.value("width", def.width);
-        primPlaneParams_.height = params.value("height", def.height);
-        primPlaneParams_.xSeg = params.value("xSeg", def.xSeg);
-        primPlaneParams_.ySeg = params.value("ySeg", def.ySeg);
+        planeParams_.width = params.value("width", def.width);
+        planeParams_.height = params.value("height", def.height);
+        planeParams_.xSeg = params.value("xSeg", def.xSeg);
+        planeParams_.ySeg = params.value("ySeg", def.ySeg);
         break;
       }
       case PrimitiveType::Ring: {
         const PrimitiveBuilder::RingParams def{};
-        primRingParams_.innerRadius = params.value("innerRadius", def.innerRadius);
-        primRingParams_.outerRadius = params.value("outerRadius", def.outerRadius);
-        primRingParams_.segments = params.value("segments", def.segments);
-        primRingParams_.ringSeg = params.value("ringSeg", def.ringSeg);
-        primRingParams_.startAngleDeg = params.value("startAngleDeg", def.startAngleDeg);
-        primRingParams_.sweepAngleDeg = params.value("sweepAngleDeg", def.sweepAngleDeg);
+        ringParams_.innerRadius = params.value("innerRadius", def.innerRadius);
+        ringParams_.outerRadius = params.value("outerRadius", def.outerRadius);
+        ringParams_.segments = params.value("segments", def.segments);
+        ringParams_.ringSeg = params.value("ringSeg", def.ringSeg);
+        ringParams_.startAngleDeg = params.value("startAngleDeg", def.startAngleDeg);
+        ringParams_.sweepAngleDeg = params.value("sweepAngleDeg", def.sweepAngleDeg);
         break;
       }
       case PrimitiveType::Cylinder: {
         const PrimitiveBuilder::CylinderParams def{};
-        primCylinderParams_.topRadius = params.value("topRadius", def.topRadius);
-        primCylinderParams_.bottomRadius = params.value("bottomRadius", def.bottomRadius);
-        primCylinderParams_.height = params.value("height", def.height);
-        primCylinderParams_.radialDiv = params.value("radialDiv", def.radialDiv);
-        primCylinderParams_.heightDiv = params.value("heightDiv", def.heightDiv);
-        primCylinderParams_.capTop = params.value("capTop", def.capTop);
-        primCylinderParams_.capBottom = params.value("capBottom", def.capBottom);
+        cylinderParams_.topRadius = params.value("topRadius", def.topRadius);
+        cylinderParams_.bottomRadius = params.value("bottomRadius", def.bottomRadius);
+        cylinderParams_.height = params.value("height", def.height);
+        cylinderParams_.radialDiv = params.value("radialDiv", def.radialDiv);
+        cylinderParams_.heightDiv = params.value("heightDiv", def.heightDiv);
+        cylinderParams_.capTop = params.value("capTop", def.capTop);
+        cylinderParams_.capBottom = params.value("capBottom", def.capBottom);
         break;
       }
       case PrimitiveType::Torus: {
         const PrimitiveBuilder::TorusParams def{};
-        primTorusParams_.majorRadius = params.value("majorRadius", def.majorRadius);
-        primTorusParams_.minorRadius = params.value("minorRadius", def.minorRadius);
-        primTorusParams_.majorDiv = params.value("majorDiv", def.majorDiv);
-        primTorusParams_.minorDiv = params.value("minorDiv", def.minorDiv);
+        torusParams_.majorRadius = params.value("majorRadius", def.majorRadius);
+        torusParams_.minorRadius = params.value("minorRadius", def.minorRadius);
+        torusParams_.majorDiv = params.value("majorDiv", def.majorDiv);
+        torusParams_.minorDiv = params.value("minorDiv", def.minorDiv);
         break;
       }
       }
@@ -634,27 +648,27 @@ namespace Tako {
       const json mat = preset.value("material", json::object());
       const json colorArr = mat.value("color", json::array({ 1.0f, 1.0f, 1.0f, 1.0f }));
       if (colorArr.is_array() && colorArr.size() == 4) {
-        primPreviewColor_ = { colorArr[0].get<float>(), colorArr[1].get<float>(), colorArr[2].get<float>(), colorArr[3].get<float>() };
+        previewColor_ = { colorArr[0].get<float>(), colorArr[1].get<float>(), colorArr[2].get<float>(), colorArr[3].get<float>() };
       }
-      primPreviewLighting_ = mat.value("lighting", true);
-      primPreviewTransparent_ = mat.value("transparent", false);
-      primMaterialHighlight_ = mat.value("highlight", true);
-      primMaterialShininess_ = mat.value("shininess", 15.0f);
-      primMaterialTexture_ = mat.value("texture", std::string());
+      previewLighting_ = mat.value("lighting", true);
+      previewTransparent_ = mat.value("transparent", false);
+      materialHighlight_ = mat.value("highlight", true);
+      materialShininess_ = mat.value("shininess", 15.0f);
+      materialTexture_ = mat.value("texture", std::string());
       const json uvScaleArr = mat.value("uvScale", json::array({ 1.0f, 1.0f }));
       if (uvScaleArr.is_array() && uvScaleArr.size() == 2) {
-        primMaterialUvScale_ = { uvScaleArr[0].get<float>(), uvScaleArr[1].get<float>() };
+        materialUvScale_ = { uvScaleArr[0].get<float>(), uvScaleArr[1].get<float>() };
       }
       const json uvOffsetArr = mat.value("uvOffset", json::array({ 0.0f, 0.0f }));
       if (uvOffsetArr.is_array() && uvOffsetArr.size() == 2) {
-        primMaterialUvOffset_ = { uvOffsetArr[0].get<float>(), uvOffsetArr[1].get<float>() };
+        materialUvOffset_ = { uvOffsetArr[0].get<float>(), uvOffsetArr[1].get<float>() };
       }
-      primMaterialUvRotate_ = mat.value("uvRotate", 0.0f);
+      materialUvRotate_ = mat.value("uvRotate", 0.0f);
 
       // 消えたテクスチャは Apply 時の LoadTexture が assert で落ちるため空にフォールバック
-      if (!primMaterialTexture_.empty() && !TextureFileExists(primMaterialTexture_)) {
-        AddLog("Primitive Editor: preset texture not found '" + primMaterialTexture_ + "'", LogType::Warning);
-        primMaterialTexture_.clear();
+      if (!materialTexture_.empty() && !TextureFileExists(materialTexture_)) {
+        AddLog("Primitive Editor: preset texture not found '" + materialTexture_ + "'", LogType::Warning);
+        materialTexture_.clear();
       }
     }
     catch (const json::exception&) {
@@ -662,7 +676,7 @@ namespace Tako {
       return false;
     }
 
-    primParamsDirty_ = true;
+    paramsDirty_ = true;
     AddLog("Primitive Editor: loaded preset '" + name + "'", LogType::Info);
     return true;
   }

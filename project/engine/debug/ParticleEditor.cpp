@@ -1,3 +1,4 @@
+#include "ParticleEditor.h"
 #include "DebugUIManager.h"
 #include "PreviewViewport.h"
 #include "EmitterManager.h"
@@ -32,14 +33,28 @@ namespace Tako {
     // EmitterManager::SavePreset の保存先と一致させること
     const char* const kParticlePresetDirectory = "resources/Json/ParticlePresets/Presets/";
 
+    using LogType = DebugUIManager::LogType;
+
+    void AddLog(const std::string& message, LogType type) {
+      DebugUIManager::GetInstance()->AddLog(message, type);
+    }
+
   } // anonymous namespace
+
+  ParticleEditor::ParticleEditor() = default;
+  ParticleEditor::~ParticleEditor() = default;
 
   // =====================================================
   // 本体ウィンドウ (3ペイン: リスト / プレビュー / インスペクタ)
   // =====================================================
-  void DebugUIManager::DrawParticleEditor() {
+  bool ParticleEditor::Draw() {
+    if (!*isOpen_) {
+      return false;
+    }
+
+    bool inputCaptured = false;
     ImGui::SetNextWindowSize(ImVec2(1400.0f, 760.0f), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin("Particle Editor", &windowVisibility_["ParticleEditor"])) {
+    if (ImGui::Begin("Particle Editor", isOpen_)) {
       if (!emitterManager_) {
         ImGui::TextColored(ImVec4(1, 1, 0, 1), "EmitterManager not set!");
         ImGui::TextDisabled("Call SetEmitterManager() first");
@@ -69,59 +84,65 @@ namespace Tako {
         // 左/中央ペインは右端ドラッグで幅調整可。ウィンドウリサイズ分は右ペインが吸収する
         ImGui::SetNextWindowSizeConstraints(ImVec2(180.0f, 0.0f), ImVec2(FLT_MAX, FLT_MAX));
         if (ImGui::BeginChild("ListPane##PE", ImVec2(kListPaneWidth, 0.0f), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeX)) {
-          DrawParticleEditorListPane();
+          DrawListPane();
         }
         ImGui::EndChild();
         ImGui::SameLine();
         ImGui::SetNextWindowSizeConstraints(ImVec2(240.0f, 0.0f), ImVec2(FLT_MAX, FLT_MAX));
         if (ImGui::BeginChild("PreviewPane##PE", ImVec2(kPreviewPaneInitialWidth, 0.0f), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeX)) {
-          DrawParticleEditorPreviewPane();
+          inputCaptured = DrawPreviewPane();
         }
         ImGui::EndChild();
         ImGui::SameLine();
         if (ImGui::BeginChild("InspectorPane##PE", ImVec2(0.0f, 0.0f), ImGuiChildFlags_Borders)) {
-          DrawParticleEditorInspectorPane();
+          DrawInspectorPane();
         }
         ImGui::EndChild();
       }
     }
     ImGui::End();
+
+    // 閉じるボタンで閉じたフレームは描かない
+    if (*isOpen_) {
+      DrawVisualization();
+    }
+    return inputCaptured;
   }
 
   // =====================================================
   // プレビューの更新 / 描画パス / 解放
   // =====================================================
-  void DebugUIManager::UpdateParticleEditor() {
-    if (!windowVisibility_["ParticleEditor"]) {
+  void ParticleEditor::Update() {
+    if (!*isOpen_) {
       return;
     }
 
-    if (!particlePreviewViewport_) {
-      particlePreviewViewport_ = std::make_unique<PreviewViewport>();
-      particlePreviewViewport_->Initialize(L"ParticleEditorPreview");
+    if (!previewViewport_) {
+      previewViewport_ = std::make_unique<PreviewViewport>();
+      previewViewport_->Initialize(L"ParticleEditorPreview");
     }
 
-    if (!particlePreviewCamera_) {
-      particlePreviewCamera_ = std::make_unique<Camera>();
-      particlePreviewCamera_->SetAspect(particlePreviewViewport_->GetAspect());
+    if (!previewCamera_) {
+      previewCamera_ = std::make_unique<Camera>();
+      previewCamera_->SetAspect(previewViewport_->GetAspect());
     }
 
-    particleCameraController_.ApplyTo(*particlePreviewCamera_);
+    cameraController_.ApplyTo(*previewCamera_);
   }
 
-  void DebugUIManager::DrawParticlePreviewPass() {
-    if (!windowVisibility_["ParticleEditor"] || !particlePreviewViewport_
-      || !particlePreviewViewport_->IsInitialized() || !particlePreviewCamera_) {
+  void ParticleEditor::DrawPreviewPass() {
+    if (!*isOpen_ || !previewViewport_
+      || !previewViewport_->IsInitialized() || !previewCamera_) {
       return;
     }
 
-    particlePreviewViewport_->BeginPass();
+    previewViewport_->BeginPass();
 
 
     int32_t slot = -1;
     bool drawParticles = true;
     std::shared_ptr<GPUParticleEmitter> selectedEmitter;
-    if (particlePreviewSelectedOnly_) {
+    if (previewSelectedOnly_) {
       if (emitterManager_ && emitterManager_->HasEmitter(selectedEmitterName_)) {
         selectedEmitter = emitterManager_->GetEmitterByName(selectedEmitterName_);
         slot = static_cast<int32_t>(selectedEmitter->GetEmitterId());
@@ -134,10 +155,10 @@ namespace Tako {
     // 床グリッドと Visualizer をプレビューカメラ視点で専用バッファに描く
     LineRenderer* lineRenderer = LineRenderer::GetInstance();
     lineRenderer->BeginPreviewLines();
-    if (particlePreviewShowGrid_) {
+    if (previewShowGrid_) {
       lineRenderer->DrawGrid(500.0f, 500.0f, Vector4(0.35f, 0.35f, 0.35f, 1.0f));
     }
-    if (particlePreviewSelectedOnly_) {
+    if (previewSelectedOnly_) {
       if (showEmitterShapes_ && selectedEmitter && selectedEmitter->IsActive()) {
         DrawEmitterShape(selectedEmitter);
       }
@@ -149,36 +170,36 @@ namespace Tako {
       }
     }
     else {
-      DrawParticleVisualization();
+      DrawVisualization();
     }
     lineRenderer->EndPreviewLines();
-    lineRenderer->DrawPreviewLines(particlePreviewCamera_->GetViewProjectionMatrix());
+    lineRenderer->DrawPreviewLines(previewCamera_->GetViewProjectionMatrix());
 
     if (drawParticles) {
-      GPUParticle::GetInstance()->DrawForCamera(*particlePreviewCamera_, slot);
+      GPUParticle::GetInstance()->DrawForCamera(*previewCamera_, slot);
     }
 
-    particlePreviewViewport_->EndPass();
+    previewViewport_->EndPass();
   }
 
-  void DebugUIManager::FinalizeParticleEditor() {
-    particlePreviewViewport_.reset();
-    particlePreviewCamera_.reset();
+  void ParticleEditor::Finalize() {
+    previewViewport_.reset();
+    previewCamera_.reset();
   }
 
   // =====================================================
   // 左ペイン
   // =====================================================
-  void DebugUIManager::DrawParticleEditorListPane() {
+  void ParticleEditor::DrawListPane() {
     ImGui::SeparatorText("Emitters");
-    DrawParticleEditorEmitterSection();
+    DrawEmitterSection();
     ImGui::SeparatorText("Force Fields");
-    DrawParticleEditorForceFieldSection();
+    DrawForceFieldSection();
     ImGui::SeparatorText("Groups");
-    DrawParticleEditorGroupSection();
+    DrawGroupSection();
   }
 
-  void DebugUIManager::DrawParticleEditorEmitterSection() {
+  void ParticleEditor::DrawEmitterSection() {
     ImGui::Text("Active Emitters: %zu", emitterManager_->GetActiveEmitterCount());
 
     // 新規エミッター作成セクション
@@ -197,7 +218,7 @@ namespace Tako {
             emitterManager_->CreateSphereEmitter(newEmitterNameBuffer_, newEmitterPosition_, newEmitterSphereRadius_, 50, 0.016f);
             AddLog("Created sphere emitter: " + std::string(newEmitterNameBuffer_), LogType::Info);
             selectedEmitterName_ = newEmitterNameBuffer_;
-            particleInspectTarget_ = ParticleInspectTarget::Emitter;
+            inspectTarget_ = InspectTarget::Emitter;
             newEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
           }
         }
@@ -211,7 +232,7 @@ namespace Tako {
             emitterManager_->CreateBoxEmitter(newEmitterNameBuffer_, newEmitterPosition_, newEmitterBoxSize_, newEmitterBoxRotation_, 50, 0.016f);
             AddLog("Created box emitter: " + std::string(newEmitterNameBuffer_), LogType::Info);
             selectedEmitterName_ = newEmitterNameBuffer_;
-            particleInspectTarget_ = ParticleInspectTarget::Emitter;
+            inspectTarget_ = InspectTarget::Emitter;
             newEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
           }
         }
@@ -226,7 +247,7 @@ namespace Tako {
             emitterManager_->CreateTriangleEmitter(newEmitterNameBuffer_, newEmitterPosition_, newEmitterTriV1_, newEmitterTriV2_, newEmitterTriV3_, 50, 0.016f);
             AddLog("Created triangle emitter: " + std::string(newEmitterNameBuffer_), LogType::Info);
             selectedEmitterName_ = newEmitterNameBuffer_;
-            particleInspectTarget_ = ParticleInspectTarget::Emitter;
+            inspectTarget_ = InspectTarget::Emitter;
             newEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
           }
         }
@@ -258,7 +279,7 @@ namespace Tako {
             emitterManager_->CreateMeshEmitterFromModel(newEmitterNameBuffer_, modelNames[newEmitterModelIndex_], 50, 0.016f);
             AddLog("Created mesh emitter: " + std::string(newEmitterNameBuffer_) + " (" + modelNames[newEmitterModelIndex_] + ")", LogType::Info);
             selectedEmitterName_ = newEmitterNameBuffer_;
-            particleInspectTarget_ = ParticleInspectTarget::Emitter;
+            inspectTarget_ = InspectTarget::Emitter;
             newEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
           }
         }
@@ -273,7 +294,7 @@ namespace Tako {
         bool isSelected = (selectedEmitterName_ == name);
         if (ImGui::Selectable(name.c_str(), isSelected)) {
           selectedEmitterName_ = name;
-          particleInspectTarget_ = ParticleInspectTarget::Emitter;
+          inspectTarget_ = InspectTarget::Emitter;
         }
       }
     }
@@ -284,8 +305,8 @@ namespace Tako {
       if (ImGui::Button("Delete##EmitterList")) {
         emitterManager_->RemoveEmitter(selectedEmitterName_);
         selectedEmitterName_.clear();
-        if (particleInspectTarget_ == ParticleInspectTarget::Emitter) {
-          particleInspectTarget_ = ParticleInspectTarget::None;
+        if (inspectTarget_ == InspectTarget::Emitter) {
+          inspectTarget_ = InspectTarget::None;
         }
         AddLog("Deleted emitter", LogType::Info);
       }
@@ -294,7 +315,7 @@ namespace Tako {
         std::string newName = selectedEmitterName_ + "_copy";
         emitterManager_->CreateTemporaryEmitterFrom(selectedEmitterName_, newName, 0.0f);
         selectedEmitterName_ = newName;
-        particleInspectTarget_ = ParticleInspectTarget::Emitter;
+        inspectTarget_ = InspectTarget::Emitter;
         AddLog("Duplicated emitter as: " + newName, LogType::Info);
       }
     }
@@ -352,7 +373,7 @@ namespace Tako {
         if (!newName.empty()) {
           AddLog("Pasted slot " + std::to_string(clipboardSlotIndex_) + " as new emitter: " + newName, LogType::Info);
           selectedEmitterName_ = newName;
-          particleInspectTarget_ = ParticleInspectTarget::Emitter;
+          inspectTarget_ = InspectTarget::Emitter;
         }
         else {
           AddLog("Paste as New failed (slot " + std::to_string(clipboardSlotIndex_) + ")", LogType::Warning);
@@ -367,7 +388,7 @@ namespace Tako {
     }
   }
 
-  void DebugUIManager::DrawParticleEditorForceFieldSection() {
+  void ParticleEditor::DrawForceFieldSection() {
     auto* gpuParticle = GPUParticle::GetInstance();
 
     // フォースフィールドタイプ名の定義
@@ -407,7 +428,7 @@ namespace Tako {
         int32_t idx = gpuParticle->AddForceField(field);
         if (idx >= 0) {
           selectedForceFieldIndex_ = idx;
-          particleInspectTarget_ = ParticleInspectTarget::ForceField;
+          inspectTarget_ = InspectTarget::ForceField;
           AddLog("Added force field: " + std::string(forceTypeNames[newForceFieldTypeIndex_]), LogType::Info);
         }
         else {
@@ -425,7 +446,7 @@ namespace Tako {
         int32_t idx = gpuParticle->AddForceField(field);
         if (idx >= 0) {
           selectedForceFieldIndex_ = idx;
-          particleInspectTarget_ = ParticleInspectTarget::ForceField;
+          inspectTarget_ = InspectTarget::ForceField;
         }
         AddLog("Added gravity force field", LogType::Info);
       }
@@ -440,7 +461,7 @@ namespace Tako {
         int32_t idx = gpuParticle->AddForceField(field);
         if (idx >= 0) {
           selectedForceFieldIndex_ = idx;
-          particleInspectTarget_ = ParticleInspectTarget::ForceField;
+          inspectTarget_ = InspectTarget::ForceField;
         }
         AddLog("Added vortex force field", LogType::Info);
       }
@@ -462,14 +483,14 @@ namespace Tako {
         bool isSelected = (selectedForceFieldIndex_ == i);
         if (ImGui::Selectable(label, isSelected)) {
           selectedForceFieldIndex_ = i;
-          particleInspectTarget_ = ParticleInspectTarget::ForceField;
+          inspectTarget_ = InspectTarget::ForceField;
         }
       }
     }
     ImGui::EndChild();
   }
 
-  void DebugUIManager::DrawParticleEditorGroupSection() {
+  void ParticleEditor::DrawGroupSection() {
     // 新規グループ作成
     if (ImGui::CollapsingHeader("Create Group")) {
       ImGui::InputText("Group Name##NewGroup", newGroupNameBuffer_, sizeof(newGroupNameBuffer_));
@@ -481,7 +502,7 @@ namespace Tako {
         for (int i = 0; i < static_cast<int>(names.size()); i++) {
           if (names[i] == newGroupNameBuffer_) {
             selectedGroupIndex_ = i;
-            particleInspectTarget_ = ParticleInspectTarget::Group;
+            inspectTarget_ = InspectTarget::Group;
             break;
           }
         }
@@ -499,7 +520,7 @@ namespace Tako {
         bool isSelected = (selectedGroupIndex_ == i);
         if (ImGui::Selectable(groupNames[i].c_str(), isSelected)) {
           selectedGroupIndex_ = i;
-          particleInspectTarget_ = ParticleInspectTarget::Group;
+          inspectTarget_ = InspectTarget::Group;
         }
       }
     }
@@ -509,10 +530,10 @@ namespace Tako {
   // =====================================================
   // 中央ペイン (プレビュー)
   // =====================================================
-  void DebugUIManager::DrawParticleEditorPreviewPane() {
-    ImGui::Checkbox("Selected Only##PePrev", &particlePreviewSelectedOnly_);
+  bool ParticleEditor::DrawPreviewPane() {
+    ImGui::Checkbox("Selected Only##PePrev", &previewSelectedOnly_);
     ImGui::SameLine();
-    ImGui::Checkbox("Grid##PePrev", &particlePreviewShowGrid_);
+    ImGui::Checkbox("Grid##PePrev", &previewShowGrid_);
     ImGui::SameLine();
     const bool hasSelection = emitterManager_->HasEmitter(selectedEmitterName_);
     ImGui::BeginDisabled(!hasSelection);
@@ -521,33 +542,34 @@ namespace Tako {
     ImGui::EndDisabled();
     ImGui::SameLine();
     if (ImGui::Button("Reset Camera##PePrev")) {
-      particleCameraController_.Reset();
+      cameraController_.Reset();
     }
     ImGui::SameLine();
-    ImGui::TextDisabled("Speed: %.2f", particleCameraController_.moveSpeed);
+    ImGui::TextDisabled("Speed: %.2f", cameraController_.moveSpeed);
     ImGui::TextDisabled("RMB: Look (+WASD/QE Fly, +Wheel Speed) / Alt+LMB: Orbit / MMB: Pan / Wheel: Dolly");
 
-    if (particlePreviewViewport_ && particlePreviewViewport_->IsInitialized()) {
-      particlePreviewViewport_->DrawImGuiImage();
-      const bool hovered = ImGui::IsItemHovered();
-      isPreviewInputCaptured_ |= particleCameraController_.HandleImGuiInput();
-      if (hasSelection && (focusRequested || (hovered && ImGui::IsKeyPressed(ImGuiKey_F, false)))) {
-        particleCameraController_.Focus(emitterManager_->GetEmitterByName(selectedEmitterName_)->GetPosition());
-      }
-    }
-    else {
+    if (!previewViewport_ || !previewViewport_->IsInitialized()) {
       ImGui::TextDisabled("Initializing preview...");
+      return false;
     }
+
+    previewViewport_->DrawImGuiImage();
+    const bool hovered = ImGui::IsItemHovered();
+    const bool inputCaptured = cameraController_.HandleImGuiInput();
+    if (hasSelection && (focusRequested || (hovered && ImGui::IsKeyPressed(ImGuiKey_F, false)))) {
+      cameraController_.Focus(emitterManager_->GetEmitterByName(selectedEmitterName_)->GetPosition());
+    }
+    return inputCaptured;
   }
 
   // =====================================================
   // 右ペイン (インスペクタ)
   // =====================================================
-  void DebugUIManager::DrawParticleEditorInspectorPane() {
-    switch (particleInspectTarget_) {
-    case ParticleInspectTarget::Emitter:    DrawEmitterInspector();    break;
-    case ParticleInspectTarget::ForceField: DrawForceFieldInspector(); break;
-    case ParticleInspectTarget::Group:      DrawGroupInspector();      break;
+  void ParticleEditor::DrawInspectorPane() {
+    switch (inspectTarget_) {
+    case InspectTarget::Emitter:    DrawEmitterInspector();    break;
+    case InspectTarget::ForceField: DrawForceFieldInspector(); break;
+    case InspectTarget::Group:      DrawGroupInspector();      break;
     default:                                ImGui::TextDisabled("Select an emitter / force field / group"); break;
     }
 
@@ -574,7 +596,7 @@ namespace Tako {
     }
   }
 
-  void DebugUIManager::DrawEmitterInspector() {
+  void ParticleEditor::DrawEmitterInspector() {
     if (!emitterManager_->HasEmitter(selectedEmitterName_)) {
       ImGui::TextDisabled("No emitter selected");
       return;
@@ -1079,24 +1101,24 @@ namespace Tako {
         ImGui::TextDisabled("(no presets found)");
       }
       else {
-        if (ImGui::BeginCombo("Preset##LoadPreset", particleSelectedPreset_.empty() ? "(select)" : particleSelectedPreset_.c_str())) {
+        if (ImGui::BeginCombo("Preset##LoadPreset", selectedPreset_.empty() ? "(select)" : selectedPreset_.c_str())) {
           for (const auto& name : presetNames) {
-            const bool isSelected = (particleSelectedPreset_ == name);
+            const bool isSelected = (selectedPreset_ == name);
             if (ImGui::Selectable(name.c_str(), isSelected)) {
-              particleSelectedPreset_ = name;
+              selectedPreset_ = name;
             }
           }
           ImGui::EndCombo();
         }
         ImGui::InputText("New Name##LoadPreset", newEmitterNameBuffer_, sizeof(newEmitterNameBuffer_));
 
-        ImGui::BeginDisabled(particleSelectedPreset_.empty());
+        ImGui::BeginDisabled(selectedPreset_.empty());
         if (ImGui::Button("Load##LoadPreset")) {
-          const std::string newName = (strlen(newEmitterNameBuffer_) > 0) ? newEmitterNameBuffer_ : particleSelectedPreset_;
-          emitterManager_->LoadPreset(particleSelectedPreset_, newName);
-          AddLog("Loaded preset: " + particleSelectedPreset_ + " as '" + newName + "'", LogType::Info);
+          const std::string newName = (strlen(newEmitterNameBuffer_) > 0) ? newEmitterNameBuffer_ : selectedPreset_;
+          emitterManager_->LoadPreset(selectedPreset_, newName);
+          AddLog("Loaded preset: " + selectedPreset_ + " as '" + newName + "'", LogType::Info);
           selectedEmitterName_ = newName;
-          particleInspectTarget_ = ParticleInspectTarget::Emitter;
+          inspectTarget_ = InspectTarget::Emitter;
           newEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
         }
         ImGui::EndDisabled();
@@ -1104,7 +1126,7 @@ namespace Tako {
     }
   }
 
-  void DebugUIManager::DrawForceFieldInspector() {
+  void ParticleEditor::DrawForceFieldInspector() {
     auto* gpuParticle = GPUParticle::GetInstance();
     const auto& forceFields = gpuParticle->GetForceFields();
 
@@ -1158,13 +1180,13 @@ namespace Tako {
       gpuParticle->RemoveForceField(static_cast<uint32_t>(selectedForceFieldIndex_));
       AddLog("Deleted force field [" + std::to_string(selectedForceFieldIndex_) + "]", LogType::Info);
       selectedForceFieldIndex_ = -1;
-      particleInspectTarget_ = ParticleInspectTarget::None;
+      inspectTarget_ = InspectTarget::None;
     }
     ImGui::SameLine();
     if (ImGui::Button("Clear All##EditFF")) {
       gpuParticle->ClearForceFields();
       selectedForceFieldIndex_ = -1;
-      particleInspectTarget_ = ParticleInspectTarget::None;
+      inspectTarget_ = InspectTarget::None;
       AddLog("Cleared all force fields", LogType::Info);
     }
 
@@ -1214,7 +1236,7 @@ namespace Tako {
     }
   }
 
-  void DebugUIManager::DrawGroupInspector() {
+  void ParticleEditor::DrawGroupInspector() {
     auto groupNames = emitterManager_->GetGroupNames();
 
     if (selectedGroupIndex_ < 0 || selectedGroupIndex_ >= static_cast<int>(groupNames.size())) {
@@ -1266,7 +1288,7 @@ namespace Tako {
     if (ImGui::Button("Delete Group##Group")) {
       emitterManager_->RemoveGroup(groupName);
       selectedGroupIndex_ = -1;
-      particleInspectTarget_ = ParticleInspectTarget::None;
+      inspectTarget_ = InspectTarget::None;
       AddLog("Deleted group: " + groupName, LogType::Info);
     }
   }
@@ -1274,7 +1296,7 @@ namespace Tako {
   // =====================================================
   // パーティクル可視化設定 (メインシーンへの線描画)
   // =====================================================
-  void DebugUIManager::DrawVisualizationSettings() {
+  void ParticleEditor::DrawVisualizationSettings() {
     // === エミッター形状の可視化設定 ===
     if (ImGui::CollapsingHeader("Emitter Shapes", ImGuiTreeNodeFlags_DefaultOpen)) {
       ImGui::Checkbox("Show Emitter Shapes", &showEmitterShapes_);
@@ -1303,7 +1325,7 @@ namespace Tako {
   // =====================================================
   // エミッター形状の描画
   // =====================================================
-  void DebugUIManager::DrawEmitterShape(const std::shared_ptr<GPUParticleEmitter>& emitter) {
+  void ParticleEditor::DrawEmitterShape(const std::shared_ptr<GPUParticleEmitter>& emitter) {
     auto* lineRenderer = LineRenderer::GetInstance();
     Vector3 pos = emitter->GetPosition();
 
@@ -1340,7 +1362,7 @@ namespace Tako {
   // =====================================================
   // フォースフィールドの可視化
   // =====================================================
-  void DebugUIManager::DrawForceFieldVisualization(const ForceFieldData& field, int index) {
+  void ParticleEditor::DrawForceFieldVisualization(const ForceFieldData& field, int index) {
     auto* lineRenderer = LineRenderer::GetInstance();
 
     // 選択中のフォースフィールドは黄色でハイライト
@@ -1505,7 +1527,7 @@ namespace Tako {
   // =====================================================
   // パーティクル可視化の統合描画
   // =====================================================
-  void DebugUIManager::DrawParticleVisualization() {
+  void ParticleEditor::DrawVisualization() {
     if (!emitterManager_) return;
 
     // === エミッター形状の描画 ===

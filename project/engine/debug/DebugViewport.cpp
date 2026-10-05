@@ -1,4 +1,4 @@
-#include "DebugUIManager.h"
+#include "DebugViewport.h"
 
 #ifdef _DEBUG
 
@@ -25,58 +25,61 @@ namespace Tako {
     const Vector4   kGameCameraColor      = { 1.0f, 0.85f, 0.2f, 1.0f };
   }
 
-  void DebugUIManager::UpdateDebugViewport()
+  DebugViewport::DebugViewport() = default;
+  DebugViewport::~DebugViewport() = default;
+
+  void DebugViewport::Update()
   {
-    if (!windowVisibility_["DebugViewport"]) {
-      FinalizeDebugViewport();
+    if (!*isOpen_) {
+      Finalize();
       return;
     }
 
-    if (!debugViewport_) {
-      debugViewport_ = std::make_unique<PreviewViewport>();
-      debugViewport_->Initialize(L"DebugViewport", static_cast<uint32_t>(WinApp::clientWidth), static_cast<uint32_t>(WinApp::clientHeight));
+    if (!viewport_) {
+      viewport_ = std::make_unique<PreviewViewport>();
+      viewport_->Initialize(L"DebugViewport", static_cast<uint32_t>(WinApp::clientWidth), static_cast<uint32_t>(WinApp::clientHeight));
     }
 
-    if (!debugViewCamera_) {
-      debugViewCamera_ = std::make_unique<Camera>();
-      debugViewCamera_->SetAspect(debugViewport_->GetAspect());
+    if (!camera_) {
+      camera_ = std::make_unique<Camera>();
+      camera_->SetAspect(viewport_->GetAspect());
       // 開いた直後はゲームカメラと同じ位置・向きから始める
       if (const Camera* gameCamera = *Object3dBasic::GetInstance()->GetCamera()) {
-        debugCameraController_.SetFromCamera(*gameCamera);
+        cameraController_.SetFromCamera(*gameCamera);
       }
     }
 
-    debugCameraController_.ApplyTo(*debugViewCamera_);
+    cameraController_.ApplyTo(*camera_);
   }
 
-  void DebugUIManager::DrawDebugViewportPass()
+  void DebugViewport::DrawPass()
   {
-    if (!windowVisibility_["DebugViewport"] || !debugViewport_ || !debugViewport_->IsInitialized() || !debugViewCamera_) {
+    if (!*isOpen_ || !viewport_ || !viewport_->IsInitialized() || !camera_) {
       return;
     }
 
-    debugViewport_->BeginPass();
+    viewport_->BeginPass();
 
     // シーンの 3D 描画をデバッグカメラ視点で再実行する。再実行中に積まれる線分（コライダー等）は本編分と重複するので捨てる
     LineRenderer* lineRenderer = LineRenderer::GetInstance();
-    Object3dBasic::GetInstance()->SetView(*debugViewCamera_);
+    Object3dBasic::GetInstance()->SetView(*camera_);
     const uint32_t lineMark = lineRenderer->GetBatchMark();
     SceneManager::GetInstance()->Draw();
     lineRenderer->RollbackBatch(lineMark);
 
-    DecalManager::GetInstance()->DrawAllForView(*debugViewCamera_, debugViewport_->GetDepthResource(), debugViewport_->GetDepthSrvIndex());
-    GPUParticle::GetInstance()->DrawForCamera(*debugViewCamera_);
+    DecalManager::GetInstance()->DrawAllForView(*camera_, viewport_->GetDepthResource(), viewport_->GetDepthSrvIndex());
+    GPUParticle::GetInstance()->DrawForCamera(*camera_);
 
-    const Matrix4x4& viewProjection = debugViewCamera_->GetViewProjectionMatrix();
+    const Matrix4x4& viewProjection = camera_->GetViewProjectionMatrix();
     lineRenderer->DrawForView(viewProjection);
 
     // デバッグビューだけに出すエディタ表示
     lineRenderer->BeginPreviewLines();
-    if (debugViewShowGrid_) {
+    if (showGrid_) {
       lineRenderer->DrawGrid(kGridSize, kGridSubdivision, kGridColor, kGridHeight);
     }
     const Camera* gameCamera = *Object3dBasic::GetInstance()->GetCamera();
-    if (debugViewShowGameCamera_ && gameCamera) {
+    if (showGameCamera_ && gameCamera) {
       // near 面・far 面・それらを結ぶ側面の 12 辺
       const std::array<Vector3, 8> corners = gameCamera->GetFrustumCornersWithCustomFar(kGameCameraFrustumFar);
       for (int i = 0; i < 4; ++i) {
@@ -89,40 +92,46 @@ namespace Tako {
     lineRenderer->EndPreviewLines();
     lineRenderer->DrawPreviewLines(viewProjection);
 
-    debugViewport_->EndPass();
+    viewport_->EndPass();
   }
 
-  void DebugUIManager::DrawDebugViewportWindow()
+  bool DebugViewport::Draw()
   {
-    if (ImGui::Begin("Debug Viewport", &windowVisibility_["DebugViewport"])) {
+    if (!*isOpen_) {
+      return false;
+    }
+
+    bool inputCaptured = false;
+    if (ImGui::Begin("Debug Viewport", isOpen_)) {
       if (ImGui::Button("Sync to Game Camera##DbgView")) {
         if (const Camera* gameCamera = *Object3dBasic::GetInstance()->GetCamera()) {
-          debugCameraController_.SetFromCamera(*gameCamera);
+          cameraController_.SetFromCamera(*gameCamera);
         }
       }
       ImGui::SameLine();
-      ImGui::Checkbox("Grid##DbgView", &debugViewShowGrid_);
+      ImGui::Checkbox("Grid##DbgView", &showGrid_);
       ImGui::SameLine();
-      ImGui::Checkbox("Game Camera##DbgView", &debugViewShowGameCamera_);
+      ImGui::Checkbox("Game Camera##DbgView", &showGameCamera_);
       ImGui::SameLine();
-      ImGui::TextDisabled("Speed: %.2f", debugCameraController_.moveSpeed);
+      ImGui::TextDisabled("Speed: %.2f", cameraController_.moveSpeed);
       ImGui::TextDisabled("RMB: Look (+WASD/QE Fly, +Wheel Speed) / Alt+LMB: Orbit / MMB: Pan / Wheel: Dolly");
 
-      if (debugViewport_ && debugViewport_->IsInitialized()) {
-        debugViewport_->DrawImGuiImage();
-        isPreviewInputCaptured_ |= debugCameraController_.HandleImGuiInput();
+      if (viewport_ && viewport_->IsInitialized()) {
+        viewport_->DrawImGuiImage();
+        inputCaptured = cameraController_.HandleImGuiInput();
       }
       else {
         ImGui::TextDisabled("Initializing viewport...");
       }
     }
     ImGui::End();
+    return inputCaptured;
   }
 
-  void DebugUIManager::FinalizeDebugViewport()
+  void DebugViewport::Finalize()
   {
-    debugViewport_.reset();
-    debugViewCamera_.reset();
+    viewport_.reset();
+    camera_.reset();
   }
 
 } // namespace Tako

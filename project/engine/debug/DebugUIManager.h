@@ -2,23 +2,18 @@
 
 #ifdef _DEBUG
 
+#include <array>
 #include <vector>
 #include <string>
 #include <functional>
 #include <unordered_map>
 #include <chrono>
 #include <memory>
-#include "Vector2.h"
-#include "Vector3.h"
-#include "Vector4.h"
-#include "PrimitiveBuilder.h"
-#include "ViewportCameraController.h"
+#include "PrimitiveEditor.h"
+#include "ParticleEditor.h"
+#include "DebugViewport.h"
 
 namespace Tako {
-
-  class Object3d;
-  class Camera;
-  class PreviewViewport;
 
   /// <summary>
   /// デバッグ UI の統合管理クラス。シーンヒエラルキー、インスペクター、コンソール、パフォーマンスモニターなどを提供
@@ -32,6 +27,27 @@ namespace Tako {
       Info,
       Warning,
       Error
+    };
+
+    /// <summary>
+    /// デバッグ UI のウィンドウ種別
+    /// </summary>
+    enum class Window : int {
+      GameViewport,
+      DebugViewport,
+      SceneHierarchy,
+      Inspector,
+      Console,
+      Performance,
+      EngineStatus,
+      InputDebug,
+      ShadowSettings,
+      CollisionDebug,
+      PostEffect,
+      ParticleEditor,
+      GlobalVariables,
+      PrimitiveEditor,
+      Count
     };
 
     /// <summary>
@@ -49,28 +65,6 @@ namespace Tako {
     struct GameObjectDebugInfo {
       std::string           name;           ///< オブジェクト名
       std::function<void()> drawImGuiFunc;  ///< DrawImGui 関数
-    };
-
-    /// <summary>
-    /// プリミティブエディターの編集対象タイプ
-    /// </summary>
-    enum class PrimitiveType : int {
-      Cube = 0,
-      Sphere,
-      Plane,
-      Ring,
-      Cylinder,
-      Torus
-    };
-
-    /// <summary>
-    /// パーティクルエディターのインスペクタ表示対象
-    /// </summary>
-    enum class ParticleInspectTarget : int {
-      None = 0,
-      Emitter,
-      ForceField,
-      Group
     };
 
   private:
@@ -116,19 +110,19 @@ namespace Tako {
     /// プリミティブエディターのプレビューをオフスクリーン RT へ描画
     /// TakoFramework::Draw() のシーン描画後・ImGui 描画前に呼ぶ
     /// </summary>
-    void DrawPrimitivePreviewPass();
+    void DrawPrimitivePreviewPass() { primitiveEditor_.DrawPreviewPass(); }
 
     /// <summary>
     /// パーティクルエディターのプレビューをオフスクリーン RT へ描画
     /// TakoFramework::Draw() の GPUParticle::Draw() 後・ImGui 描画前に呼ぶ
     /// </summary>
-    void DrawParticlePreviewPass();
+    void DrawParticlePreviewPass() { particleEditor_.DrawPreviewPass(); }
 
     /// <summary>
     /// デバッグビューポートへシーンをデバッグカメラ視点で描画
     /// TakoFramework::Draw() の本編描画後・LineRenderer::Reset() 前に呼ぶ（本編の線分を流用するため）
     /// </summary>
-    void DrawDebugViewportPass();
+    void DrawDebugViewportPass() { debugViewport_.DrawPass(); }
 
     /// <summary>
     /// コンソールにログを追加
@@ -163,10 +157,10 @@ namespace Tako {
     //============================================================
     //Setter
     //============================================================
-    void SetWindowVisible(const std::string& windowName, bool visible);
+    void SetWindowVisible(Window window, bool visible) { WindowFlag(window) = visible; }
     void SetSceneName(const std::string& sceneName) { currentSceneName_ = sceneName; }
-    void SetEmitterManager(class EmitterManager* emitterManager) { emitterManager_ = emitterManager; }
-    void SetForceFieldManager(class ForceFieldManager* forceFieldManager) { forceFieldManager_ = forceFieldManager; }
+    void SetEmitterManager(EmitterManager* emitterManager) { particleEditor_.SetEmitterManager(emitterManager); }
+    void SetForceFieldManager(ForceFieldManager* forceFieldManager) { particleEditor_.SetForceFieldManager(forceFieldManager); }
     void SetEndFlagPtr(bool* pEndFlag) { pEndFlag_ = pEndFlag; }
 
     //============================================================
@@ -174,12 +168,7 @@ namespace Tako {
     //============================================================
     const std::vector<LogEntry>& GetLogs() const { return consoleLogs_; }
 
-    /// <summary>
-    /// ウィンドウの表示状態を取得
-    /// </summary>
-    /// <param name="windowName">ウィンドウ名</param>
-    /// <returns>表示状態</returns>
-    bool IsWindowVisible(const std::string& windowName) const;
+    bool IsWindowVisible(Window window) const { return windowVisibility_[static_cast<size_t>(window)]; }
 
     /// <summary>
     /// カーソルがゲーム描画領域上にあるか。
@@ -193,6 +182,19 @@ namespace Tako {
     const std::string& GetSceneName() const { return currentSceneName_; }
 
   private: //非公開関数
+    /// <summary>
+    /// ウィンドウ表示フラグへの参照（ImGui の p_open やエディターへ渡すアドレスとしても使う）
+    /// </summary>
+    /// <param name="window">ウィンドウ種別</param>
+    /// <returns>表示フラグ</returns>
+    bool& WindowFlag(Window window) { return windowVisibility_[static_cast<size_t>(window)]; }
+
+    /// <summary>
+    /// ウィンドウの表示状態を反転
+    /// </summary>
+    /// <param name="window">ウィンドウ種別</param>
+    void ToggleWindow(Window window) { WindowFlag(window) = !WindowFlag(window); }
+
     /// <summary>
     /// メインメニューバーを描画
     /// </summary>
@@ -244,152 +246,6 @@ namespace Tako {
     void DrawCollisionDebug();
 
     /// <summary>
-    /// デバッグビューポートウィンドウを描画（ツールバー + ビュー画像 + カメラ入力）
-    /// </summary>
-    void DrawDebugViewportWindow();
-
-    /// <summary>
-    /// デバッグビューポートの更新（RT/カメラの生成・非表示時の解放、カメラ操作の反映）
-    /// GPU アイドル区間である Update() から呼ぶこと
-    /// </summary>
-    void UpdateDebugViewport();
-
-    /// <summary>
-    /// デバッグビューポートの GPU リソースとカメラを解放
-    /// </summary>
-    void FinalizeDebugViewport();
-
-    /// <summary>
-    /// パーティクルエディターを描画（3ペイン: リスト / プレビュー / インスペクタ）
-    /// </summary>
-    void DrawParticleEditor();
-
-    /// <summary>
-    /// パーティクルエディターの更新（プレビュー RT/カメラの生成、オービットカメラ反映）
-    /// GPU アイドル区間である Update() から呼ぶこと
-    /// </summary>
-    void UpdateParticleEditor();
-
-    /// <summary>
-    /// パーティクルエディターの GPU リソースを解放
-    /// </summary>
-    void FinalizeParticleEditor();
-
-    /// <summary>
-    /// 左ペイン: エミッター / フォースフィールド / グループの各セクションを描画
-    /// </summary>
-    void DrawParticleEditorListPane();
-
-    /// <summary>
-    /// 左ペイン: エミッター作成フォーム / 一覧 / Delete・Duplicate / クリップボード
-    /// </summary>
-    void DrawParticleEditorEmitterSection();
-
-    /// <summary>
-    /// 左ペイン: フォースフィールド追加フォーム / 一覧
-    /// </summary>
-    void DrawParticleEditorForceFieldSection();
-
-    /// <summary>
-    /// 左ペイン: グループ作成 / 一覧
-    /// </summary>
-    void DrawParticleEditorGroupSection();
-
-    /// <summary>
-    /// 中央ペイン: プレビューツールバー + プレビュー画像 + オービットカメラ入力
-    /// </summary>
-    void DrawParticleEditorPreviewPane();
-
-    /// <summary>
-    /// 右ペイン: 選択対象別インスペクタ + 共通セクション（Scene Presets / Visualization）
-    /// </summary>
-    void DrawParticleEditorInspectorPane();
-
-    /// <summary>
-    /// 選択中エミッターの全プロパティ / リネーム / プリセット保存・読込を描画
-    /// </summary>
-    void DrawEmitterInspector();
-
-    /// <summary>
-    /// 選択中フォースフィールドの編集 / 削除 / FF プリセットを描画
-    /// </summary>
-    void DrawForceFieldInspector();
-
-    /// <summary>
-    /// 選択中グループの操作（Active / 位置 / 所属エミッター管理 / 削除）を描画
-    /// </summary>
-    void DrawGroupInspector();
-
-    /// <summary>
-    /// パーティクル可視化の描画（エミッター形状 + フォースフィールド）
-    /// </summary>
-    void DrawParticleVisualization();
-
-    /// <summary>
-    /// パーティクル可視化設定UIの描画（メインシーンへの線描画の ON/OFF と色）
-    /// </summary>
-    void DrawVisualizationSettings();
-
-    /// <summary>
-    /// 個別エミッターの形状を描画
-    /// </summary>
-    /// <param name="emitter">描画対象のエミッター</param>
-    void DrawEmitterShape(const std::shared_ptr<class GPUParticleEmitter>& emitter);
-
-    /// <summary>
-    /// 個別フォースフィールドの可視化を描画
-    /// </summary>
-    /// <param name="field">描画対象のフォースフィールド</param>
-    /// <param name="index">フィールドのインデックス（ハイライト判定用）</param>
-    void DrawForceFieldVisualization(const struct ForceFieldData& field, int index);
-
-    /// <summary>
-    /// プリミティブエディターウィンドウを描画（ビューポート + パラメータ）
-    /// </summary>
-    void DrawPrimitiveEditor();
-
-    /// <summary>
-    /// プリミティブエディターの更新（プレビュー生成/破棄、dirty 時のモデル再生成、カメラ更新）
-    /// GPU アイドル区間である Update() から呼ぶこと（描画フェーズでのモデル差し替えは危険）
-    /// </summary>
-    void UpdatePrimitiveEditor();
-
-    /// <summary>
-    /// プリミティブエディターの GPU リソースを解放
-    /// </summary>
-    void FinalizePrimitiveEditor();
-
-    /// <summary>
-    /// 現在のパラメータでプレビューモデルを再生成して差し替える
-    /// </summary>
-    void RebuildPrimitivePreview();
-
-    /// <summary>
-    /// 色/ライティング/半透明をプレビューへ再適用（Model 差し替えで消えるため毎フレーム）
-    /// </summary>
-    void ApplyPrimitivePreviewSettings();
-
-    /// <summary>
-    /// 現在のパラメータを PrimitiveBuilder 呼び出しの C++ コード文字列に変換
-    /// </summary>
-    /// <returns>designated initializer 形式のコード（デフォルト値と同じフィールドは省略）</returns>
-    std::string GeneratePrimitiveCppString() const;
-
-    /// <summary>
-    /// 現在のプリミティブ設定を JSON プリセットとして保存
-    /// </summary>
-    /// <param name="name">プリセット名（拡張子なし）</param>
-    /// <returns>成功したら true</returns>
-    bool SavePrimitivePreset(const std::string& name);
-
-    /// <summary>
-    /// JSON プリセットを読み込んで現在の設定へ反映
-    /// </summary>
-    /// <param name="name">プリセット名（拡張子なし）</param>
-    /// <returns>成功したら true</returns>
-    bool LoadPrimitivePreset(const std::string& name);
-
-    /// <summary>
     /// 現在のタイムスタンプを生成
     /// </summary>
     /// <returns>タイムスタンプ文字列</returns>
@@ -405,7 +261,7 @@ namespace Tako {
     bool                  showError_      = true;
     bool                  autoScroll_     = true;
 
-    std::unordered_map<std::string, bool> windowVisibility_;  ///< ウィンドウ表示フラグ
+    std::array<bool, static_cast<size_t>(Window::Count)> windowVisibility_{};  ///< ウィンドウ表示フラグ（Window で添字）
 
     bool isGameViewportHovered_  = false;  ///< 直近フレームでゲーム画像上にカーソルがあったか（DrawGameViewport で更新）
     bool isPreviewInputCaptured_ = false;  ///< エディタプレビュー/デバッグビューがホバー中/操作中か。true の間は次フレームのゲーム入力を遮断する
@@ -425,110 +281,10 @@ namespace Tako {
     //シーン遷移 UI 用
     char sceneNameBuffer_[128] = "";  ///< シーン名入力バッファ
 
-    //パーティクルエディター用
-    class EmitterManager* emitterManager_               = nullptr;
-    std::string           selectedEmitterName_;                     ///< 空 = 未選択
-    char                  newEmitterNameBuffer_[128]    = "";
-    char                  renameEmitterNameBuffer_[128] = "";
-    char                  presetNameBuffer_[128]        = "";
-
-    //グループ管理用
-    int  selectedGroupIndex_      = -1;
-    char newGroupNameBuffer_[128] = "";
-
-    //フォースフィールド管理用
-    class ForceFieldManager* forceFieldManager_       = nullptr;
-    int                      selectedForceFieldIndex_ = -1;
-    char                     ffPresetSaveBuffer_[128] = "";
-    char                     ffPresetLoadBuffer_[128] = "";
-    std::string              currentFFPresetName_;  ///< 最後にロード/保存したFFプリセット名（上書き保存用）
-
-    //パーティクル可視化設定
-    bool    showEmitterShapes_        = false;                       ///< エミッター形状の表示ON/OFF
-    bool    showForceFieldRadius_     = false;                       ///< フォースフィールド影響半径の表示ON/OFF
-    bool    showForceFieldDirection_  = false;                       ///< フォースフィールド方向表示ON/OFF
-    Vector4 emitterColorSphere_       = { 0.0f, 1.0f, 0.0f, 1.0f };  ///< 球エミッター色（緑）
-    Vector4 emitterColorBox_          = { 0.0f, 0.5f, 1.0f, 1.0f };  ///< 箱エミッター色（青）
-    Vector4 emitterColorTriangle_     = { 1.0f, 1.0f, 0.0f, 1.0f };  ///< 三角形エミッター色（黄）
-    Vector4 forceFieldRadiusColor_    = { 1.0f, 0.5f, 0.0f, 0.5f };  ///< フォースフィールド半径色（オレンジ）
-    Vector4 forceFieldDirectionColor_ = { 1.0f, 0.0f, 0.0f, 1.0f };  ///< フォースフィールド方向色（赤）
-    float   forceFieldArrowLength_    = 2.0f;                        ///< フォースフィールド矢印の長さ
-    float   forceFieldArrowHeadSize_  = 0.3f;                        ///< フォースフィールド矢印の先端サイズ
-
-    //デバッグビューポート
-    std::unique_ptr<PreviewViewport> debugViewport_;                     ///< オフスクリーン RT 一式（ウィンドウ表示中のみ生存）
-    std::unique_ptr<Camera>          debugViewCamera_;
-    ViewportCameraController         debugCameraController_;
-    bool                             debugViewShowGrid_       = true;
-    bool                             debugViewShowGameCamera_ = true;  ///< ゲームカメラの視錐台を表示
-
-    //パーティクルエディター 3ペイン/プレビュー
-    ParticleInspectTarget            particleInspectTarget_       = ParticleInspectTarget::None;  ///< インスペクタ表示対象（最後にクリックしたリストで決まる）
-    std::unique_ptr<PreviewViewport> particlePreviewViewport_;
-    std::unique_ptr<Camera>          particlePreviewCamera_;
-    ViewportCameraController         particleCameraController_;
-    bool                             particlePreviewSelectedOnly_ = false;                        ///< true = 選択エミッターのみ描画
-    bool                             particlePreviewShowGrid_     = true;
-    std::string                      particleSelectedPreset_;                                     ///< Load コンボの選択中プリセット名
-
-    //パーティクルエディター 入力状態
-    int     newEmitterTypeIndex_               = 0;
-    Vector3 newEmitterPosition_                = { 0.0f, 0.0f, 0.0f };
-    float   newEmitterSphereRadius_            = 1.0f;
-    Vector3 newEmitterBoxSize_                 = { 1.0f, 1.0f, 1.0f };
-    Vector3 newEmitterBoxRotation_             = { 0.0f, 0.0f, 0.0f };
-    Vector3 newEmitterTriV1_                   = { -1.0f, 0.0f, 0.0f };
-    Vector3 newEmitterTriV2_                   = { 1.0f, 0.0f, 0.0f };
-    Vector3 newEmitterTriV3_                   = { 0.0f, 1.0f, 0.0f };
-    int     newEmitterModelIndex_              = 0;
-    char    newEmitterModelPathBuffer_[256]    = "";
-    int     clipboardSlotIndex_                = 0;
-    int     clipboardPasteModeIndex_           = 0;
-    char    emitterTexturePathBuffer_[256]     = "";
-    char    emitterRenderModelPathBuffer_[256] = "";
-    char    scenePresetNameBuffer_[128]        = "scene_preset";
-    Vector3 groupPositionEdit_                 = { 0.0f, 0.0f, 0.0f };   ///< 全グループ共有の編集値（実位置とは非同期の既存挙動を踏襲）
-    int     groupAddEmitterIndex_              = 0;
-    int     newForceFieldTypeIndex_            = 0;
-    Vector3 newForceFieldPosition_             = { 0.0f, 0.0f, 0.0f };
-    Vector3 newForceFieldDirection_            = { 0.0f, -1.0f, 0.0f };
-    float   newForceFieldStrength_             = 1.0f;
-    float   newForceFieldRadius_               = 0.0f;
-    float   newForceFieldFalloff_              = 1.0f;
-
-    //プリミティブエディター用
-    PrimitiveType                    selectedPrimitiveType_     = PrimitiveType::Cylinder;
-    PrimitiveBuilder::CubeParams     primCubeParams_{};
-    PrimitiveBuilder::SphereParams   primSphereParams_{};
-    PrimitiveBuilder::PlaneParams    primPlaneParams_{};
-    PrimitiveBuilder::RingParams     primRingParams_{};
-    PrimitiveBuilder::CylinderParams primCylinderParams_{};
-    PrimitiveBuilder::TorusParams    primTorusParams_{};
-    std::unique_ptr<Object3d>        primPreviewObject_;                 ///< プレビュー対象（エディタ表示中のみ生存）
-    std::unique_ptr<Object3d>        primFloorObject_;                   ///< 床参照プレーン
-    bool                             primParamsDirty_           = false; ///< 次の Update でモデル再生成（描画コマンド記録済みフレーム内での差し替えは危険）
-    Vector3                          primPreviewRotate_         = {};
-    Vector3                          primPreviewScale_          = { 1.0f, 1.0f, 1.0f };
-    Vector4                          primPreviewColor_          = { 1.0f, 1.0f, 1.0f, 1.0f };
-    bool                             primPreviewLighting_       = true;
-    bool                             primPreviewTransparent_    = false;
-    bool                             primAutoRotate_            = false;
-    float                            primAutoRotateSpeed_       = 1.0f;  ///< 自動回転速度（rad/s）
-    bool                             primShowFloor_             = true;
-    char                             primPresetNameBuffer_[128] = "";
-    std::string                      primSelectedPreset_;                ///< Load コンボの選択中プリセット名
-    float                            primMaterialShininess_     = 15.0f; ///< Mesh::CreateMaterialData の初期値と一致
-    bool                             primMaterialHighlight_     = true;  ///< スペキュラ有効（Mesh 初期値と一致）
-    std::string                      primMaterialTexture_;               ///< 空 = white.dds デフォルト
-    Vector2                          primMaterialUvScale_       = { 1.0f, 1.0f };
-    Vector2                          primMaterialUvOffset_      = { 0.0f, 0.0f };
-    float                            primMaterialUvRotate_      = 0.0f;  ///< ラジアン
-    char                             primExportNameBuffer_[128] = "";    ///< OBJ 出力名（拡張子なし）
-
-    //プリミティブエディター専用ビューポート/カメラ
-    std::unique_ptr<PreviewViewport> primPreviewViewport_;  ///< オフスクリーンRT一式（初回オープン時に生成）
-    std::unique_ptr<Camera>          primPreviewCamera_;
-    ViewportCameraController         primCameraController_;
+    //ツール
+    PrimitiveEditor primitiveEditor_;
+    ParticleEditor  particleEditor_;
+    DebugViewport   debugViewport_;
   };
 
 } // namespace Tako

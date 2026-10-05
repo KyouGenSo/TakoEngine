@@ -135,13 +135,13 @@
     <ClCompile Include="engine\debug\DebugUIManager.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="engine\debug\DebugUIManagerParticleEditor.cpp">
+    <ClCompile Include="engine\debug\ParticleEditor.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="engine\debug\DebugUIManagerPrimitiveEditor.cpp">
+    <ClCompile Include="engine\debug\PrimitiveEditor.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="engine\debug\DebugUIManagerDebugViewport.cpp">
+    <ClCompile Include="engine\debug\DebugViewport.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="engine\debug\ViewportCameraController.cpp">
@@ -242,6 +242,9 @@
     <ClInclude Include="engine\collision\OBBCollider.h" />
     <ClInclude Include="engine\collision\SphereCollider.h" />
     <ClInclude Include="engine\debug\DebugUIManager.h" />
+    <ClInclude Include="engine\debug\ParticleEditor.h" />
+    <ClInclude Include="engine\debug\PrimitiveEditor.h" />
+    <ClInclude Include="engine\debug\DebugViewport.h" />
     <ClInclude Include="engine\debug\ViewportCameraController.h" />
     <ClInclude Include="engine\debug\PreviewViewport.h" />
     <ClInclude Include="engine\effect\Particle\BoxEmitter.h" />

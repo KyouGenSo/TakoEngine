@@ -255,7 +255,7 @@ namespace Tako {
     bool isDrawToSwapChain = true;
 
 #ifdef _DEBUG
-    isDrawToSwapChain = !DebugUIManager::GetInstance()->IsWindowVisible("GameViewport");
+    isDrawToSwapChain = !DebugUIManager::GetInstance()->IsWindowVisible(DebugUIManager::Window::GameViewport);
 #endif
 
     PostEffectManager::GetInstance()->DrawFinalResult(isDrawToSwapChain);

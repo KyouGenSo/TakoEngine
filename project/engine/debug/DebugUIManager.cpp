@@ -31,8 +31,20 @@
 
 namespace Tako {
 
+  namespace {
+    using Window = DebugUIManager::Window;
+
+    // F12 / F10 で一括切り替えするメインウィンドウ
+    constexpr Window kMainWindows[] = {
+      Window::SceneHierarchy, Window::Inspector, Window::GameViewport, Window::Console, Window::Performance
+    };
+  }
+
   // シングルトンインスタンス
   std::unique_ptr<DebugUIManager> DebugUIManager::instance_ = nullptr;
+
+  DebugUIManager::DebugUIManager(Token) {}
+  DebugUIManager::~DebugUIManager() = default;
 
   DebugUIManager* DebugUIManager::GetInstance() {
     if (!instance_) {
@@ -42,21 +54,14 @@ namespace Tako {
   }
 
   void DebugUIManager::Initialize() {
-    // デフォルトウィンドウの表示設定
-    windowVisibility_["GameViewport"] = true;
-    windowVisibility_["DebugViewport"] = false;
-    windowVisibility_["SceneHierarchy"] = true;
-    windowVisibility_["Inspector"] = true;
-    windowVisibility_["Console"] = false;
-    windowVisibility_["Performance"] = false;
-    windowVisibility_["EngineStatus"] = false;
-    windowVisibility_["InputDebug"] = false;
-    windowVisibility_["ShadowSettings"] = false;
-    windowVisibility_["CollisionDebug"] = false;
-    windowVisibility_["PostEffect"] = false;
-    windowVisibility_["ParticleEditor"] = false;
-    windowVisibility_["GlobalVariables"] = false;
-    windowVisibility_["PrimitiveEditor"] = false;
+    // 起動時に開くウィンドウ（それ以外は windowVisibility_ の値初期化で false）
+    WindowFlag(Window::GameViewport) = true;
+    WindowFlag(Window::SceneHierarchy) = true;
+    WindowFlag(Window::Inspector) = true;
+
+    primitiveEditor_.Initialize(&WindowFlag(Window::PrimitiveEditor));
+    particleEditor_.Initialize(&WindowFlag(Window::ParticleEditor));
+    debugViewport_.Initialize(&WindowFlag(Window::DebugViewport));
 
     // 初期ログ
     AddLog("DebugUIManager Initialized", LogType::Info);
@@ -65,50 +70,46 @@ namespace Tako {
 
   void DebugUIManager::Finalize() {
     ClearLogs();
-    FinalizePrimitiveEditor();
-    FinalizeParticleEditor();
-    FinalizeDebugViewport();
+    primitiveEditor_.Finalize();
+    particleEditor_.Finalize();
+    debugViewport_.Finalize();
     instance_.reset();
   }
 
   void DebugUIManager::Update() {
     if (Input::GetInstance()->TriggerKey(DIK_F1)) {
-      windowVisibility_["DebugViewport"] = !windowVisibility_["DebugViewport"];
+      ToggleWindow(Window::DebugViewport);
     }
     if (Input::GetInstance()->TriggerKey(DIK_F2)) {
-      windowVisibility_["SceneHierarchy"] = !windowVisibility_["SceneHierarchy"];
+      ToggleWindow(Window::SceneHierarchy);
     }
     if (Input::GetInstance()->TriggerKey(DIK_F3)) {
-      windowVisibility_["Inspector"] = !windowVisibility_["Inspector"];
+      ToggleWindow(Window::Inspector);
     }
     if (Input::GetInstance()->TriggerKey(DIK_F4)) {
-      windowVisibility_["GameViewport"] = !windowVisibility_["GameViewport"];
+      ToggleWindow(Window::GameViewport);
     }
     if (Input::GetInstance()->TriggerKey(DIK_F5)) {
-      windowVisibility_["Console"] = !windowVisibility_["Console"];
+      ToggleWindow(Window::Console);
     }
     if (Input::GetInstance()->TriggerKey(DIK_F6)) {
-      windowVisibility_["Performance"] = !windowVisibility_["Performance"];
+      ToggleWindow(Window::Performance);
     }
     if (Input::GetInstance()->TriggerKey(DIK_F12)) {
-      windowVisibility_["SceneHierarchy"] = !windowVisibility_["SceneHierarchy"];
-      windowVisibility_["Inspector"] = !windowVisibility_["Inspector"];
-      windowVisibility_["GameViewport"] = !windowVisibility_["GameViewport"];
-      windowVisibility_["Console"] = !windowVisibility_["Console"];
-      windowVisibility_["Performance"] = !windowVisibility_["Performance"];
+      for (Window window : kMainWindows) {
+        ToggleWindow(window);
+      }
     }
     if (Input::GetInstance()->TriggerKey(DIK_F10)) {
-      windowVisibility_["SceneHierarchy"] = true;
-      windowVisibility_["Inspector"] = true;
-      windowVisibility_["GameViewport"] = true;
-      windowVisibility_["Console"] = true;
-      windowVisibility_["Performance"] = true;
+      for (Window window : kMainWindows) {
+        WindowFlag(window) = true;
+      }
     }
 
     // 表示状態に関わらず毎フレーム呼ぶ（非表示検知でプレビューを解放するため）
-    UpdatePrimitiveEditor();
-    UpdateParticleEditor();
-    UpdateDebugViewport();
+    primitiveEditor_.Update();
+    particleEditor_.Update();
+    debugViewport_.Update();
   }
 
   void DebugUIManager::Draw() {
@@ -119,33 +120,32 @@ namespace Tako {
     DrawMainMenuBar();
 
     // 各ウィンドウの描画
-    if (windowVisibility_["SceneHierarchy"]) DrawSceneHierarchy();
-    if (windowVisibility_["Inspector"]) DrawInspector();
-    if (windowVisibility_["Console"]) DrawConsole();
-    if (windowVisibility_["Performance"]) DrawPerformance();
-    if (windowVisibility_["GameViewport"]) DrawGameViewport();
-    if (windowVisibility_["DebugViewport"]) DrawDebugViewportWindow();
-    if (windowVisibility_["EngineStatus"]) DrawEngineStatus();
-    if (windowVisibility_["InputDebug"]) DrawInputDebug();
-    if (windowVisibility_["ShadowSettings"]) DrawShadowSettings();
-    if (windowVisibility_["CollisionDebug"]) DrawCollisionDebug();
-    if (windowVisibility_["ParticleEditor"]) DrawParticleEditor();
-    if (windowVisibility_["ParticleEditor"]) DrawParticleVisualization();
-    if (windowVisibility_["PrimitiveEditor"]) DrawPrimitiveEditor();
+    if (WindowFlag(Window::SceneHierarchy)) DrawSceneHierarchy();
+    if (WindowFlag(Window::Inspector)) DrawInspector();
+    if (WindowFlag(Window::Console)) DrawConsole();
+    if (WindowFlag(Window::Performance)) DrawPerformance();
+    if (WindowFlag(Window::GameViewport)) DrawGameViewport();
+    isPreviewInputCaptured_ |= debugViewport_.Draw();
+    if (WindowFlag(Window::EngineStatus)) DrawEngineStatus();
+    if (WindowFlag(Window::InputDebug)) DrawInputDebug();
+    if (WindowFlag(Window::ShadowSettings)) DrawShadowSettings();
+    if (WindowFlag(Window::CollisionDebug)) DrawCollisionDebug();
+    isPreviewInputCaptured_ |= particleEditor_.Draw();
+    isPreviewInputCaptured_ |= primitiveEditor_.Draw();
 
     // GlobalVariables（グループがない場合は警告を出して閉じる）
-    if (windowVisibility_["GlobalVariables"]) {
+    if (WindowFlag(Window::GlobalVariables)) {
       if (GlobalVariables::GetInstance()->HasGroups()) {
         GlobalVariables::GetInstance()->Update();
       }
       else {
         AddLog("GlobalVariables: No groups registered. Window will not open.", LogType::Warning);
-        windowVisibility_["GlobalVariables"] = false;
+        WindowFlag(Window::GlobalVariables) = false;
       }
     }
 
     // PostEffect は独自の描画を持つ
-    if (windowVisibility_["PostEffect"]) {
+    if (WindowFlag(Window::PostEffect)) {
       PostEffectManager::GetInstance()->DrawImgui();
     }
 
@@ -170,20 +170,20 @@ namespace Tako {
       if (ImGui::BeginMenu("View")) {
         ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Main Windows");
         ImGui::Separator();
-        ImGui::MenuItem("Scene Hierarchy", "F2", &windowVisibility_["SceneHierarchy"]);
-        ImGui::MenuItem("Inspector", "F3", &windowVisibility_["Inspector"]);
-        ImGui::MenuItem("Game Viewport", "F4", &windowVisibility_["GameViewport"]);
-        ImGui::MenuItem("Debug Viewport", "F1", &windowVisibility_["DebugViewport"]);
-        ImGui::MenuItem("Console", "F5", &windowVisibility_["Console"]);
-        ImGui::MenuItem("Performance", "F6", &windowVisibility_["Performance"]);
+        ImGui::MenuItem("Scene Hierarchy", "F2", &WindowFlag(Window::SceneHierarchy));
+        ImGui::MenuItem("Inspector", "F3", &WindowFlag(Window::Inspector));
+        ImGui::MenuItem("Game Viewport", "F4", &WindowFlag(Window::GameViewport));
+        ImGui::MenuItem("Debug Viewport", "F1", &WindowFlag(Window::DebugViewport));
+        ImGui::MenuItem("Console", "F5", &WindowFlag(Window::Console));
+        ImGui::MenuItem("Performance", "F6", &WindowFlag(Window::Performance));
         ImGui::Separator();
         ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Debug Windows");
         ImGui::Separator();
-        ImGui::MenuItem("Engine Status", nullptr, &windowVisibility_["EngineStatus"]);
-        ImGui::MenuItem("Input Debug", nullptr, &windowVisibility_["InputDebug"]);
-        ImGui::MenuItem("Shadow Settings", nullptr, &windowVisibility_["ShadowSettings"]);
-        ImGui::MenuItem("Collision Debug", nullptr, &windowVisibility_["CollisionDebug"]);
-        ImGui::MenuItem("PostEffect Settings", nullptr, &windowVisibility_["PostEffect"]);
+        ImGui::MenuItem("Engine Status", nullptr, &WindowFlag(Window::EngineStatus));
+        ImGui::MenuItem("Input Debug", nullptr, &WindowFlag(Window::InputDebug));
+        ImGui::MenuItem("Shadow Settings", nullptr, &WindowFlag(Window::ShadowSettings));
+        ImGui::MenuItem("Collision Debug", nullptr, &WindowFlag(Window::CollisionDebug));
+        ImGui::MenuItem("PostEffect Settings", nullptr, &WindowFlag(Window::PostEffect));
         ImGui::EndMenu();
       }
 
@@ -196,9 +196,9 @@ namespace Tako {
           CollisionManager::GetInstance()->SetDebugDrawEnabled(!collisionDebug);
         }
 
-        ImGui::MenuItem("Particle Editor", nullptr, &windowVisibility_["ParticleEditor"]);
-        ImGui::MenuItem("Primitive Editor", nullptr, &windowVisibility_["PrimitiveEditor"]);
-        ImGui::MenuItem("Global Variables", nullptr, &windowVisibility_["GlobalVariables"]);
+        ImGui::MenuItem("Particle Editor", nullptr, &WindowFlag(Window::ParticleEditor));
+        ImGui::MenuItem("Primitive Editor", nullptr, &WindowFlag(Window::PrimitiveEditor));
+        ImGui::MenuItem("Global Variables", nullptr, &WindowFlag(Window::GlobalVariables));
 
         ImGui::EndMenu();
       }
@@ -229,7 +229,7 @@ namespace Tako {
   }
 
   void DebugUIManager::DrawSceneHierarchy() {
-    ImGui::Begin("Scene Hierarchy", &windowVisibility_["SceneHierarchy"]);
+    ImGui::Begin("Scene Hierarchy", &WindowFlag(Window::SceneHierarchy));
 
     ImGui::Text("Current Scene: %s", currentSceneName_.c_str());
 
@@ -324,7 +324,7 @@ namespace Tako {
   }
 
   void DebugUIManager::DrawInspector() {
-    ImGui::Begin("Inspector", &windowVisibility_["Inspector"]);
+    ImGui::Begin("Inspector", &WindowFlag(Window::Inspector));
 
     // 選択されたゲームオブジェクトがある場合
     if (selectedObjectIndex_ >= 0 && selectedObjectIndex_ < static_cast<int>(gameObjects_.size())) {
@@ -401,7 +401,7 @@ namespace Tako {
   }
 
   void DebugUIManager::DrawConsole() {
-    ImGui::Begin("Console", &windowVisibility_["Console"]);
+    ImGui::Begin("Console", &WindowFlag(Window::Console));
 
     // 自動スクロールチェックボックス
     ImGui::Checkbox("Auto Scroll", &autoScroll_);
@@ -458,7 +458,7 @@ namespace Tako {
   }
 
   void DebugUIManager::DrawPerformance() {
-    ImGui::Begin("Performance", &windowVisibility_["Performance"]);
+    ImGui::Begin("Performance", &WindowFlag(Window::Performance));
 
     float fps = FrameTimer::GetInstance()->GetFPS();
     float frameTime = 1000.0f / fps;
@@ -494,7 +494,7 @@ namespace Tako {
     isGameViewportHovered_ = false;
 
     // Begin が false（折りたたみ等）の場合は中身を描かない。Begin/End は対で必ず呼ぶ
-    if (ImGui::Begin("Game Viewport", &windowVisibility_["GameViewport"])) {
+    if (ImGui::Begin("Game Viewport", &WindowFlag(Window::GameViewport))) {
 
       // ウィンドウの利用可能サイズを取得
       ImVec2 availableSize = ImGui::GetContentRegionAvail();
@@ -535,7 +535,7 @@ namespace Tako {
 
   bool DebugUIManager::IsCursorOverGameView() const {
     // GameViewport 表示中: ゲーム画像上にカーソルがあるか
-    if (IsWindowVisible("GameViewport")) {
+    if (IsWindowVisible(Window::GameViewport)) {
       return isGameViewportHovered_;
     }
     // 非表示(フルスクリーン直描画)中: いずれの ImGui ウィンドウにもカーソルが無いか
@@ -543,7 +543,7 @@ namespace Tako {
   }
 
   void DebugUIManager::DrawEngineStatus() {
-    ImGui::Begin("Engine Status", &windowVisibility_["EngineStatus"]);
+    ImGui::Begin("Engine Status", &WindowFlag(Window::EngineStatus));
 
     // リソース管理タブ
     if (ImGui::CollapsingHeader("Resource Management")) {
@@ -561,7 +561,7 @@ namespace Tako {
   }
 
   void DebugUIManager::DrawInputDebug() {
-    ImGui::Begin("Input Debug", &windowVisibility_["InputDebug"]);
+    ImGui::Begin("Input Debug", &WindowFlag(Window::InputDebug));
 
     // ゲームパッド情報
     if (ImGui::CollapsingHeader("GamePad", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -697,15 +697,6 @@ namespace Tako {
     selectedObjectIndex_ = -1;
   }
 
-  void DebugUIManager::SetWindowVisible(const std::string& windowName, bool visible) {
-    windowVisibility_[windowName] = visible;
-  }
-
-  bool DebugUIManager::IsWindowVisible(const std::string& windowName) const {
-    auto it = windowVisibility_.find(windowName);
-    return it != windowVisibility_.end() ? it->second : false;
-  }
-
   std::string DebugUIManager::GetCurrentTimestamp() {
     auto localNow = std::chrono::current_zone()->to_local(std::chrono::system_clock::now());
     return std::format("{:%H:%M:%S}", std::chrono::floor<std::chrono::seconds>(localNow));
@@ -715,7 +706,7 @@ namespace Tako {
 
     ShadowRenderer* shadowRenderer = ShadowRenderer::GetInstance();
 
-    ImGui::Begin("Shadow Settings", &windowVisibility_["ShadowSettings"]);
+    ImGui::Begin("Shadow Settings", &WindowFlag(Window::ShadowSettings));
 
     shadowRenderer->DrawImGui();
 
@@ -723,7 +714,7 @@ namespace Tako {
   }
 
   void DebugUIManager::DrawCollisionDebug() {
-    ImGui::Begin("Collision Debug", &windowVisibility_["CollisionDebug"]);
+    ImGui::Begin("Collision Debug", &WindowFlag(Window::CollisionDebug));
 
     CollisionManager* collisionManager = CollisionManager::GetInstance();
 
