@@ -21,6 +21,7 @@
 #include "Logger.h"
 #include "EmitterManager.h"
 #include "GlobalVariables.h"
+#include "Audio.h"
 
 #include <algorithm>
 #include <iomanip>
@@ -41,6 +42,73 @@ namespace Tako {
     constexpr Window kMainWindows[] = {
       Window::SceneHierarchy, Window::Inspector, Window::GameViewport, Window::Console, Window::Performance
     };
+
+    constexpr float  kMenuBarGap        = 6.0f;                               // メニューバーの区切り線の左右に足す余白(px)
+    constexpr float  kMenuBarRightInset = 12.0f;                              // 右端の表示とウィンドウ端の間隔(px)
+    constexpr ImVec4 kPausedColor       = ImVec4(0.25f, 0.50f, 0.95f, 1.0f);  // 一時停止中の強調色
+    constexpr float  kIconButtonAspect  = 1.6f;                               // アイコンボタンの幅 / 高さ
+
+    /// <summary>
+    /// メニューバー用の区切り線（メニューバー内の Separator は縦線になる）
+    /// </summary>
+    void MenuBarSeparator() {
+      ImGui::Dummy(ImVec2(kMenuBarGap, 0.0f));
+      // 既定の Separator 色はメニューバー背景とほぼ同色で見えないため、控えめな文字色を使う
+      ImGui::PushStyleColor(ImGuiCol_Separator, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
+      ImGui::Separator();
+      ImGui::PopStyleColor();
+      ImGui::Dummy(ImVec2(kMenuBarGap, 0.0f));
+    }
+
+    /// <summary>
+    /// MenuBarSeparator が占める幅（右寄せの幅計算用）
+    /// </summary>
+    float MenuBarSeparatorWidth() {
+      // Dummy・縦線(1px)・Dummy の 3 アイテム分の幅と、それぞれの後ろに入る ItemSpacing
+      return kMenuBarGap * 2.0f + 1.0f + ImGui::GetStyle().ItemSpacing.x * 3.0f;
+    }
+
+    enum class ToolbarIcon { Play, Pause, Step };
+
+    /// <summary>
+    /// 図形アイコン付きボタン（既定フォントに記号グリフが無いため DrawList で描く）
+    /// </summary>
+    bool IconButton(const char* id, ToolbarIcon icon, const char* tooltip, bool isActive) {
+      const float height = ImGui::GetFrameHeight();
+      if (isActive) {
+        ImGui::PushStyleColor(ImGuiCol_Button, kPausedColor);
+      }
+      const bool pressed = ImGui::Button(id, ImVec2(height * kIconButtonAspect, height));
+      if (isActive) {
+        ImGui::PopStyleColor();
+      }
+      ImGui::SetItemTooltip("%s", tooltip);
+
+      const ImVec2 rectMin = ImGui::GetItemRectMin();
+      const ImVec2 rectMax = ImGui::GetItemRectMax();
+      const ImVec2 center((rectMin.x + rectMax.x) * 0.5f, (rectMin.y + rectMax.y) * 0.5f);
+      const float  half  = height * 0.25f;  // アイコンの半分の大きさ
+      const ImU32  color = ImGui::GetColorU32(ImGuiCol_Text);
+      ImDrawList*  drawList = ImGui::GetWindowDrawList();
+
+      // 三角形は ImGui の AA 前提に合わせて時計回り（左上 → 右中 → 左下）で渡す
+      switch (icon) {
+      case ToolbarIcon::Play:
+        drawList->AddTriangleFilled(ImVec2(center.x - half * 0.8f, center.y - half), ImVec2(center.x + half, center.y),
+          ImVec2(center.x - half * 0.8f, center.y + half), color);
+        break;
+      case ToolbarIcon::Pause:
+        drawList->AddRectFilled(ImVec2(center.x - half, center.y - half), ImVec2(center.x - half * 0.3f, center.y + half), color);
+        drawList->AddRectFilled(ImVec2(center.x + half * 0.3f, center.y - half), ImVec2(center.x + half, center.y + half), color);
+        break;
+      case ToolbarIcon::Step:
+        drawList->AddTriangleFilled(ImVec2(center.x - half, center.y - half), ImVec2(center.x + half * 0.4f, center.y),
+          ImVec2(center.x - half, center.y + half), color);
+        drawList->AddRectFilled(ImVec2(center.x + half * 0.5f, center.y - half), ImVec2(center.x + half, center.y + half), color);
+        break;
+      }
+      return pressed;
+    }
   }
 
   // シングルトンインスタンス
@@ -98,6 +166,12 @@ namespace Tako {
     }
     if (Input::GetInstance()->TriggerKey(DIK_F6)) {
       ToggleWindow(Window::Performance);
+    }
+    if (Input::GetInstance()->TriggerKey(DIK_F7)) {
+      SetGamePaused(!FrameTimer::GetInstance()->IsPaused());
+    }
+    if (Input::GetInstance()->TriggerKey(DIK_F8)) {
+      StepFrame();
     }
     if (Input::GetInstance()->TriggerKey(DIK_F12)) {
       for (Window window : kMainWindows) {
@@ -195,10 +269,14 @@ namespace Tako {
         ImGui::EndMenu();
       }
 
+      MenuBarSeparator();
+
       if (ImGui::BeginMenu("Edit")) {
         ImGui::MenuItem("Engine Settings...", nullptr, &WindowFlag(Window::EngineSettings));
         ImGui::EndMenu();
       }
+
+      MenuBarSeparator();
 
       if (ImGui::BeginMenu("Window")) {
         ImGui::SeparatorText("Main Windows");
@@ -226,6 +304,8 @@ namespace Tako {
         ImGui::EndMenu();
       }
 
+      MenuBarSeparator();
+
       if (ImGui::BeginMenu("Tools")) {
         ImGui::MenuItem("Particle Editor", nullptr, &WindowFlag(Window::ParticleEditor));
         ImGui::MenuItem("Primitive Editor", nullptr, &WindowFlag(Window::PrimitiveEditor));
@@ -233,7 +313,18 @@ namespace Tako {
         ImGui::EndMenu();
       }
 
+      MenuBarSeparator();
+
       if (ImGui::BeginMenu("Debug")) {
+        bool paused = FrameTimer::GetInstance()->IsPaused();
+        if (ImGui::MenuItem("Pause", "F7", &paused)) {
+          SetGamePaused(paused);
+        }
+        if (ImGui::MenuItem("Step Frame", "F8")) {
+          StepFrame();
+        }
+        ImGui::Separator();
+
         CollisionManager* collision = CollisionManager::GetInstance();
         bool colliderVisible = collision->IsDebugDrawEnabled();
         if (ImGui::MenuItem("Collider Visibility", nullptr, &colliderVisible)) {
@@ -263,6 +354,8 @@ namespace Tako {
         ImGui::EndMenu();
       }
 
+      MenuBarSeparator();
+
       if (ImGui::BeginMenu("Help")) {
         ImGui::MenuItem("ImGui Demo", nullptr, &WindowFlag(Window::ImGuiDemo));
         ImGui::MenuItem("ImGui Metrics", nullptr, &WindowFlag(Window::ImGuiMetrics));
@@ -275,26 +368,76 @@ namespace Tako {
       ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.0f - 40.0f);
       ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "TakoEngine");
 
-      // FPS 表示（右端。文字幅から位置を決める）
-      const float fps = FrameTimer::GetInstance()->GetFPS();
-      const std::string fpsText = std::format("FPS: {:.1f} ({:.1f}ms)", fps, fps > 0.0f ? 1000.0f / fps : 0.0f);
-      const float fpsTextX = ImGui::GetWindowWidth() - ImGui::CalcTextSize(fpsText.c_str()).x - 20.0f;
-
-      ImGui::SetCursorPosX(fpsTextX - 20.0f);
-      ImGui::Text("|");
-
-      ImVec4 fpsColor(1.0f, 0.3f, 0.3f, 1.0f);
-      if (fps >= 55.0f) {
-        fpsColor = ImVec4(0.2f, 1.0f, 0.2f, 1.0f);
-      }
-      else if (fps >= 30.0f) {
-        fpsColor = ImVec4(1.0f, 0.8f, 0.2f, 1.0f);
-      }
-      ImGui::SetCursorPosX(fpsTextX);
-      ImGui::TextColored(fpsColor, "%s", fpsText.c_str());
+      DrawFrameStats();
 
       ImGui::EndMainMenuBar();
     }
+  }
+
+  void DebugUIManager::DrawFrameStats() {
+    constexpr const char* kPausedText = "PAUSED";
+
+    const float       fps      = FrameTimer::GetInstance()->GetFPS();
+    const bool        isPaused = FrameTimer::GetInstance()->IsPaused();
+    const std::string fpsText  = std::format("FPS {:.1f}", fps);
+    const std::string msText   = std::format("{:.1f} ms", fps > 0.0f ? 1000.0f / fps : 0.0f);
+
+    // 右寄せのため描画するアイテムの合計幅を先に求める（各アイテムの後ろには ItemSpacing が入る）
+    const float spacing = ImGui::GetStyle().ItemSpacing.x;
+    float width = ImGui::CalcTextSize(fpsText.c_str()).x + spacing + MenuBarSeparatorWidth() + ImGui::CalcTextSize(msText.c_str()).x;
+    if (isPaused) {
+      width += ImGui::CalcTextSize(kPausedText).x + spacing + MenuBarSeparatorWidth();
+    }
+    ImGui::SetCursorPosX(ImGui::GetWindowWidth() - width - kMenuBarRightInset);
+
+    if (isPaused) {
+      ImGui::TextColored(kPausedColor, "%s", kPausedText);
+      MenuBarSeparator();
+    }
+
+    ImVec4 fpsColor(1.0f, 0.3f, 0.3f, 1.0f);
+    if (fps >= 55.0f) {
+      fpsColor = ImVec4(0.2f, 1.0f, 0.2f, 1.0f);
+    }
+    else if (fps >= 30.0f) {
+      fpsColor = ImVec4(1.0f, 0.8f, 0.2f, 1.0f);
+    }
+    ImGui::TextColored(fpsColor, "%s", fpsText.c_str());
+    MenuBarSeparator();
+    ImGui::TextUnformatted(msText.c_str());
+  }
+
+  void DebugUIManager::DrawPlaybackToolbar() {
+    const bool  isPaused   = FrameTimer::GetInstance()->IsPaused();
+    const float groupWidth = ImGui::GetFrameHeight() * kIconButtonAspect * 2.0f + ImGui::GetStyle().ItemSpacing.x;
+    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (ImGui::GetContentRegionAvail().x - groupWidth) * 0.5f);
+
+    const bool isToggled = isPaused
+      ? IconButton("##Resume", ToolbarIcon::Play, "Resume (F7)", true)
+      : IconButton("##Pause", ToolbarIcon::Pause, "Pause (F7)", false);
+    if (isToggled) {
+      SetGamePaused(!isPaused);
+    }
+
+    ImGui::SameLine();
+    if (IconButton("##Step", ToolbarIcon::Step, "Step (F8)", false)) {
+      StepFrame();
+    }
+  }
+
+  void DebugUIManager::SetGamePaused(bool paused) {
+    FrameTimer* timer = FrameTimer::GetInstance();
+    if (timer->IsPaused() == paused) {
+      return;
+    }
+    timer->SetPaused(paused);
+    Audio::GetInstance()->SetPaused(paused);
+    AddLog(paused ? "Game paused" : "Game resumed", LogType::Info);
+  }
+
+  void DebugUIManager::StepFrame() {
+    SetGamePaused(true);
+    FrameTimer::GetInstance()->RequestStep();
   }
 
   void DebugUIManager::DrawSceneHierarchy() {
@@ -580,8 +723,9 @@ namespace Tako {
 
     // Begin が false（折りたたみ等）の場合は中身を描かない。Begin/End は対で必ず呼ぶ
     if (ImGui::Begin("Game Viewport", &WindowFlag(Window::GameViewport))) {
+      DrawPlaybackToolbar();
 
-      // ウィンドウの利用可能サイズを取得
+      // ウィンドウの利用可能サイズを取得（ツールバーの下の残り領域）
       ImVec2 availableSize = ImGui::GetContentRegionAvail();
 
       // クライアント領域のアスペクト比を計算
@@ -940,6 +1084,8 @@ namespace Tako {
         { "F4",  "Game Viewport" },
         { "F5",  "Console" },
         { "F6",  "Performance" },
+        { "F7",  "Pause / Resume" },
+        { "F8",  "Step Frame" },
         { "F10", "Show Main Windows" },
         { "F11", "Fullscreen" },
         { "F12", "Toggle Main Windows" },

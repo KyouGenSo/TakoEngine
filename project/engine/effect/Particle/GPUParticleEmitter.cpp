@@ -47,6 +47,12 @@ namespace Tako {
       return;
     }
 
+    // 一時停止・TimeScale 0 の間は射出しない（frequency <= 0 の毎フレーム射出も含めて止める）
+    if (deltaTime <= 0.0f) {
+      data_.flags &= ~EFLAG_EMITTING;
+      return;
+    }
+
     // 射出タイマーを更新
     data_.frequencyTime += deltaTime;
 

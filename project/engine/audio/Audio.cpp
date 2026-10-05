@@ -324,6 +324,19 @@ namespace Tako {
     }
   }
 
+  void Audio::SetPaused(bool paused)
+  {
+    if (!xAudio2_) {
+      return;
+    }
+    if (paused) {
+      xAudio2_->StopEngine();
+    }
+    else {
+      xAudio2_->StartEngine();
+    }
+  }
+
   float Audio::GetMasterVolume() const
   {
     float volume = 1.0f;

@@ -41,6 +41,18 @@ void main(uint3 DTid : SV_DispatchThreadID)
     float3 prevPos = gParticles[particleIndex].prevPosition;
     float dt = gPerFrame.deltaTime;
 
+    // 一時停止・TimeScale 0 の間は状態を進めない。Verlet の変位項は dt に比例しないため明示的に止める。
+    // 描画カウントは毎フレーム 0 から数え直すので、生存数の加算だけは行う
+    if (dt <= 0.0f)
+    {
+        uint pausedEid = gParticles[particleIndex].emitterId;
+        if (pausedEid < kMaxEmitters)
+        {
+            InterlockedAdd(gPerEmitterCount[pausedEid], 1);
+        }
+        return;
+    }
+
     // --- 加速度の計算 ---
     float3 acceleration = float3(0.0f, 0.0f, 0.0f);
 

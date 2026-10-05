@@ -135,7 +135,7 @@ namespace Tako {
     }
 
     if (autoRotate_) {
-      previewRotate_.y += autoRotateSpeed_ * FrameTimer::GetInstance()->GetDeltaTime();
+      previewRotate_.y += autoRotateSpeed_ * FrameTimer::GetInstance()->GetUnscaledDeltaTime();
     }
     previewObject_->SetRotate(previewRotate_);
     previewObject_->SetScale(previewScale_);

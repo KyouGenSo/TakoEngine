@@ -31,12 +31,21 @@ namespace Tako {
     //=========================
     //Getter
     //=========================
-    float GetDeltaTime() const { return deltaTime_ * timeScale_; }
+    /// <summary>
+    /// スケール済みの deltaTime（凍結中は 0）
+    /// </summary>
+    float GetDeltaTime() const { return isFrozen_ ? 0.0f : deltaTime_ * timeScale_; }
     float GetUnscaledDeltaTime() const { return deltaTime_; }
     float GetTimeScale() const { return timeScale_; }
     float GetFPS() const { return fps_; }
     float GetDisplayFPS() const { return displayFPS_; }
     float GetGameTime() const { return gameTime_; }
+    bool IsPaused() const { return isPaused_; }
+
+    /// <summary>
+    /// このフレームのゲーム更新を止めるか（一時停止中かつ Step 要求なし。Update で決まる）
+    /// </summary>
+    bool IsFrozen() const { return isFrozen_; }
 
     //=========================
     //Setter
@@ -44,6 +53,16 @@ namespace Tako {
     void SetTimeScale(float scale) { timeScale_ = scale; timeScaleDuration_ = 0.0f; }
     //指定秒数だけスケールを適用し、経過後 1.0 に自動復帰する。duration が 0 以下なら何もしない(永久停止防止)
     void SetTimeScaleForDuration(float scale, float duration) { if (duration <= 0.0f) return; timeScale_ = scale; timeScaleDuration_ = duration; }
+
+    /// <summary>
+    /// 一時停止中はゲーム時間・deltaTime・時間スケールの残り時間を止める（FPS 計測は継続）
+    /// </summary>
+    void SetPaused(bool paused) { isPaused_ = paused; }
+
+    /// <summary>
+    /// 一時停止中に次の Update の 1 フレームだけ進める
+    /// </summary>
+    void RequestStep() { isStepRequested_ = true; }
 
   private: //非公開関数
     void UpdateDeltaTimeAndFPS();
@@ -69,6 +88,11 @@ namespace Tako {
     //1秒ごとにリセットする計測用の累積値
     float timeAccumulator_;
     int   frameCount_;
+
+    //一時停止
+    bool isPaused_        = false;
+    bool isStepRequested_ = false;
+    bool isFrozen_        = false;
   };
 
 } // namespace Tako

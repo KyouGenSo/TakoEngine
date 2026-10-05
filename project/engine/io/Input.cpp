@@ -99,9 +99,9 @@ namespace Tako {
       ZeroMemory(&state_.Gamepad, sizeof(XINPUT_GAMEPAD));
     }
 
-    // 振動タイマーの更新
+    // 振動タイマーの更新（一時停止中に鳴り続けないよう実時間で数える）
     if (isVibrating_ && vibrationDuration_ > 0.0f) {
-      vibrationTimer_ += FrameTimer::GetInstance()->GetDeltaTime();
+      vibrationTimer_ += FrameTimer::GetInstance()->GetUnscaledDeltaTime();
       if (vibrationTimer_ >= vibrationDuration_) {
         StopVibration();
       }

@@ -181,7 +181,11 @@ namespace Tako {
 
     Audio::GetInstance()->Update();
 
-    SceneManager::GetInstance()->Update();
+    // 一時停止中はシーン更新だけ止める。以降の更新は deltaTime が 0 になるため止まって見える
+    // (GPUParticle/Decal は Debug Viewport 用リングのリセットを含むので毎フレーム呼ぶ)
+    if (!FrameTimer::GetInstance()->IsFrozen()) {
+      SceneManager::GetInstance()->Update();
+    }
 
     GPUParticle::GetInstance()->Update();
 

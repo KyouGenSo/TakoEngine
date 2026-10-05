@@ -34,7 +34,16 @@ namespace Tako {
 
   void FrameTimer::Update()
   {
+    const auto prevTime = prevTime_;
     UpdateDeltaTimeAndFPS();
+
+    isFrozen_ = isPaused_ && !isStepRequested_;
+    isStepRequested_ = false;
+    if (isFrozen_) {
+      // 停止していた時間をゲーム時間から除外する（再開時に時間が飛ばないように）
+      startTime_ += prevTime_ - prevTime;
+      return;
+    }
 
     UpdateGameTime();
 

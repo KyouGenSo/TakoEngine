@@ -221,9 +221,29 @@ namespace Tako {
     void RequestSceneChange(const std::string& sceneName);
 
     /// <summary>
+    /// ゲーム更新とサウンドを一時停止/再開する
+    /// </summary>
+    void SetGamePaused(bool paused);
+
+    /// <summary>
+    /// 1 フレームだけ進める（再生中なら一時停止してから進める）
+    /// </summary>
+    void StepFrame();
+
+    /// <summary>
     /// メインメニューバーを描画
     /// </summary>
     void DrawMainMenuBar();
+
+    /// <summary>
+    /// メニューバー右端の一時停止表示と FPS / フレーム時間
+    /// </summary>
+    void DrawFrameStats();
+
+    /// <summary>
+    /// Game Viewport 上部の一時停止/再開/Step ボタン
+    /// </summary>
+    void DrawPlaybackToolbar();
 
     /// <summary>
     /// シーンヒエラルキーウィンドウを描画

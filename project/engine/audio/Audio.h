@@ -159,6 +159,11 @@ public: //メンバー関数
 	/// </summary>
 	void SetMasterVolume(float volume);
 
+	/// <summary>
+	/// XAudio2 エンジンごと全ボイスを一時停止/再開する（再開時は続きから鳴る）
+	/// </summary>
+	void SetPaused(bool paused);
+
 	//==============================================
 	//Getter
 	//==============================================
