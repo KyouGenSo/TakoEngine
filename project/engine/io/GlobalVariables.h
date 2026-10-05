@@ -74,6 +74,11 @@ namespace Tako {
     void SaveFile(const std::string& groupName);
 
     /// <summary>
+    /// 全グループをファイルに書き出す
+    /// </summary>
+    void SaveAllFiles();
+
+    /// <summary>
     /// ディレクトリの全ファイルを読み込む
     /// </summary>
     void LoadFiles();

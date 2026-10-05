@@ -1,6 +1,9 @@
 #include "DebugUIManager.h"
 #include "FrameTimer.h"
 #include "SrvManager.h"
+#include "RtvManager.h"
+#include "DsvManager.h"
+#include "TextureManager.h"
 #include "Object3dBasic.h"
 #include "Light.h"
 #include "Camera.h"
@@ -62,6 +65,7 @@ namespace Tako {
     primitiveEditor_.Initialize(&WindowFlag(Window::PrimitiveEditor));
     particleEditor_.Initialize(&WindowFlag(Window::ParticleEditor));
     debugViewport_.Initialize(&WindowFlag(Window::DebugViewport));
+    engineSettings_.Initialize(&WindowFlag(Window::EngineSettings));
 
     // 初期ログ
     AddLog("DebugUIManager Initialized", LogType::Info);
@@ -126,12 +130,14 @@ namespace Tako {
     if (WindowFlag(Window::Performance)) DrawPerformance();
     if (WindowFlag(Window::GameViewport)) DrawGameViewport();
     isPreviewInputCaptured_ |= debugViewport_.Draw();
-    if (WindowFlag(Window::EngineStatus)) DrawEngineStatus();
+    engineSettings_.Draw();
     if (WindowFlag(Window::InputDebug)) DrawInputDebug();
-    if (WindowFlag(Window::ShadowSettings)) DrawShadowSettings();
     if (WindowFlag(Window::CollisionDebug)) DrawCollisionDebug();
     isPreviewInputCaptured_ |= particleEditor_.Draw();
     isPreviewInputCaptured_ |= primitiveEditor_.Draw();
+    if (WindowFlag(Window::ImGuiDemo)) ImGui::ShowDemoWindow(&WindowFlag(Window::ImGuiDemo));
+    if (WindowFlag(Window::ImGuiMetrics)) ImGui::ShowMetricsWindow(&WindowFlag(Window::ImGuiMetrics));
+    if (WindowFlag(Window::About)) DrawAbout();
 
     // GlobalVariables（グループがない場合は警告を出して閉じる）
     if (WindowFlag(Window::GlobalVariables)) {
@@ -156,50 +162,112 @@ namespace Tako {
 
   void DebugUIManager::DrawMainMenuBar() {
     if (ImGui::BeginMainMenuBar()) {
-      // General メニュー
-      if (ImGui::BeginMenu("General")) {
+      if (ImGui::BeginMenu("File")) {
+        SceneManager* sceneManager = SceneManager::GetInstance();
+        const std::string& currentScene = sceneManager->GetCurrentSceneName();
+
+        if (ImGui::BeginMenu("Scene")) {
+          for (const std::string& name : sceneManager->GetSceneNames()) {
+            if (ImGui::MenuItem(name.c_str(), nullptr, name == currentScene)) {
+              RequestSceneChange(name);
+            }
+          }
+          ImGui::EndMenu();
+        }
+        if (ImGui::MenuItem("Reload Current Scene", nullptr, false, !currentScene.empty())) {
+          RequestSceneChange(currentScene);
+        }
+
+        ImGui::Separator();
+        if (ImGui::MenuItem("Save All Global Variables")) {
+          GlobalVariables::GetInstance()->SaveAllFiles();
+          AddLog("GlobalVariables: all groups saved", LogType::Info);
+        }
+        if (ImGui::MenuItem("Reload Global Variables")) {
+          GlobalVariables::GetInstance()->LoadFiles();
+          AddLog("GlobalVariables: reloaded from files", LogType::Info);
+        }
+
+        ImGui::Separator();
         if (ImGui::MenuItem("Exit", "Alt+F4")) {
           if (pEndFlag_) *pEndFlag_ = true;
         }
         ImGui::EndMenu();
       }
 
-      ImGui::Text(" | ");
+      if (ImGui::BeginMenu("Edit")) {
+        ImGui::MenuItem("Engine Settings...", nullptr, &WindowFlag(Window::EngineSettings));
+        ImGui::EndMenu();
+      }
 
-      // View メニュー
-      if (ImGui::BeginMenu("View")) {
-        ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Main Windows");
-        ImGui::Separator();
+      if (ImGui::BeginMenu("Window")) {
+        ImGui::SeparatorText("Main Windows");
         ImGui::MenuItem("Debug Viewport", "F1", &WindowFlag(Window::DebugViewport));
         ImGui::MenuItem("Scene Hierarchy", "F2", &WindowFlag(Window::SceneHierarchy));
         ImGui::MenuItem("Inspector", "F3", &WindowFlag(Window::Inspector));
         ImGui::MenuItem("Game Viewport", "F4", &WindowFlag(Window::GameViewport));
         ImGui::MenuItem("Console", "F5", &WindowFlag(Window::Console));
         ImGui::MenuItem("Performance", "F6", &WindowFlag(Window::Performance));
-        ImGui::Separator();
-        ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Debug Windows");
-        ImGui::Separator();
-        ImGui::MenuItem("Engine Status", nullptr, &WindowFlag(Window::EngineStatus));
+        ImGui::SeparatorText("Debug Windows");
         ImGui::MenuItem("Input Debug", nullptr, &WindowFlag(Window::InputDebug));
-        ImGui::MenuItem("Shadow Settings", nullptr, &WindowFlag(Window::ShadowSettings));
         ImGui::MenuItem("Collision Debug", nullptr, &WindowFlag(Window::CollisionDebug));
         ImGui::MenuItem("PostEffect Settings", nullptr, &WindowFlag(Window::PostEffect));
+        ImGui::SeparatorText("Layout");
+        if (ImGui::MenuItem("Show Main Windows", "F10")) {
+          for (Window window : kMainWindows) {
+            WindowFlag(window) = true;
+          }
+        }
+        if (ImGui::MenuItem("Toggle Main Windows", "F12")) {
+          for (Window window : kMainWindows) {
+            ToggleWindow(window);
+          }
+        }
         ImGui::EndMenu();
       }
 
-      ImGui::Text(" | ");
-
-      // Tools メニュー
       if (ImGui::BeginMenu("Tools")) {
-        bool collisionDebug = CollisionManager::GetInstance()->IsDebugDrawEnabled();
-        if (ImGui::MenuItem("Collider Visibility", nullptr, collisionDebug)) {
-          CollisionManager::GetInstance()->SetDebugDrawEnabled(!collisionDebug);
-        }
-
         ImGui::MenuItem("Particle Editor", nullptr, &WindowFlag(Window::ParticleEditor));
         ImGui::MenuItem("Primitive Editor", nullptr, &WindowFlag(Window::PrimitiveEditor));
         ImGui::MenuItem("Global Variables", nullptr, &WindowFlag(Window::GlobalVariables));
+        ImGui::EndMenu();
+      }
 
+      if (ImGui::BeginMenu("Debug")) {
+        CollisionManager* collision = CollisionManager::GetInstance();
+        bool colliderVisible = collision->IsDebugDrawEnabled();
+        if (ImGui::MenuItem("Collider Visibility", nullptr, &colliderVisible)) {
+          collision->SetDebugDrawEnabled(colliderVisible);
+        }
+
+        ShadowRenderer* shadow = ShadowRenderer::GetInstance();
+        bool shadowEnabled = shadow->IsEnabled();
+        if (ImGui::MenuItem("Shadows", nullptr, &shadowEnabled)) {
+          shadow->SetEnabled(shadowEnabled);
+        }
+
+        if (ImGui::BeginMenu("Time Scale")) {
+          FrameTimer* timer = FrameTimer::GetInstance();
+          for (float preset : EngineSettingsWindow::kTimeScalePresets) {
+            if (ImGui::MenuItem(std::format("x{}", preset).c_str(), nullptr, timer->GetTimeScale() == preset)) {
+              timer->SetTimeScale(preset);
+            }
+          }
+          ImGui::EndMenu();
+        }
+
+        bool fullScreen = WinApp::GetInstance()->IsFullScreen();
+        if (ImGui::MenuItem("Fullscreen", "F11", &fullScreen)) {
+          engineSettings_.SetFullScreen(fullScreen);
+        }
+        ImGui::EndMenu();
+      }
+
+      if (ImGui::BeginMenu("Help")) {
+        ImGui::MenuItem("ImGui Demo", nullptr, &WindowFlag(Window::ImGuiDemo));
+        ImGui::MenuItem("ImGui Metrics", nullptr, &WindowFlag(Window::ImGuiMetrics));
+        ImGui::Separator();
+        ImGui::MenuItem("About & Shortcuts", nullptr, &WindowFlag(Window::About));
         ImGui::EndMenu();
       }
 
@@ -207,22 +275,23 @@ namespace Tako {
       ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.0f - 40.0f);
       ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "TakoEngine");
 
-      // 区切り線
-      ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 140);
+      // FPS 表示（右端。文字幅から位置を決める）
+      const float fps = FrameTimer::GetInstance()->GetFPS();
+      const std::string fpsText = std::format("FPS: {:.1f} ({:.1f}ms)", fps, fps > 0.0f ? 1000.0f / fps : 0.0f);
+      const float fpsTextX = ImGui::GetWindowWidth() - ImGui::CalcTextSize(fpsText.c_str()).x - 20.0f;
+
+      ImGui::SetCursorPosX(fpsTextX - 20.0f);
       ImGui::Text("|");
 
-      // FPS 表示（右端）
-      ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 120);
-      float fps = FrameTimer::GetInstance()->GetFPS();
+      ImVec4 fpsColor(1.0f, 0.3f, 0.3f, 1.0f);
       if (fps >= 55.0f) {
-        ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "FPS: %.1f", fps);
+        fpsColor = ImVec4(0.2f, 1.0f, 0.2f, 1.0f);
       }
       else if (fps >= 30.0f) {
-        ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "FPS: %.1f", fps);
+        fpsColor = ImVec4(1.0f, 0.8f, 0.2f, 1.0f);
       }
-      else {
-        ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f), "FPS: %.1f", fps);
-      }
+      ImGui::SetCursorPosX(fpsTextX);
+      ImGui::TextColored(fpsColor, "%s", fpsText.c_str());
 
       ImGui::EndMainMenuBar();
     }
@@ -231,7 +300,8 @@ namespace Tako {
   void DebugUIManager::DrawSceneHierarchy() {
     ImGui::Begin("Scene Hierarchy", &WindowFlag(Window::SceneHierarchy));
 
-    ImGui::Text("Current Scene: %s", currentSceneName_.c_str());
+    SceneManager* sceneManager = SceneManager::GetInstance();
+    ImGui::Text("Current Scene: %s", sceneManager->GetCurrentSceneName().c_str());
 
     // シーン遷移 UI
     ImGui::PushItemWidth(120.0f);  // 入力ボックスの幅を設定
@@ -240,19 +310,7 @@ namespace Tako {
     ImGui::SameLine();
     if (ImGui::Button("Change Scene")) {
       if (strlen(sceneNameBuffer_) > 0) {
-
-        // ログに記録
-        std::string logMsg = "Scene change requested: ";
-        logMsg += sceneNameBuffer_;
-        AddLog(logMsg, LogType::Info);
-
-        // シーン遷移を実行
-        SceneManager::GetInstance()->ChangeScene(sceneNameBuffer_);
-
-        // 現在のシーン名を更新（成功したと仮定）
-        currentSceneName_ = sceneNameBuffer_;
-
-        // 入力ボックスをクリア
+        RequestSceneChange(sceneNameBuffer_);
         sceneNameBuffer_[0] = '\0';
       }
       else {
@@ -260,8 +318,11 @@ namespace Tako {
       }
     }
 
-    // 利用可能なシーンのヒント表示
-    ImGui::TextDisabled("Available scenes: title, game");
+    std::string availableScenes;
+    for (const std::string& name : sceneManager->GetSceneNames()) {
+      availableScenes += availableScenes.empty() ? name : ", " + name;
+    }
+    ImGui::TextDisabled("Available scenes: %s", availableScenes.c_str());
 
     ImGui::Separator();
 
@@ -285,6 +346,7 @@ namespace Tako {
         // クリックされたら選択
         if (ImGui::IsItemClicked()) {
           selectedObjectIndex_ = i;
+          selectedEngineObject_ = EngineObject::None;
         }
       }
 
@@ -296,31 +358,23 @@ namespace Tako {
     ImGui::Text("Engine Objects:");
     ImGui::Separator();
 
-    // カメラ情報
-    if (ImGui::TreeNode("Main Camera")) {
-      Camera** cameraPtr = Object3dBasic::GetInstance()->GetCamera();
-      if (cameraPtr && *cameraPtr) {
-        Vector3 pos = (*cameraPtr)->GetTranslate();
-        ImGui::Text("Position: (%.2f, %.2f, %.2f)", pos.x, pos.y, pos.z);
-        Vector3 rot = (*cameraPtr)->GetRotate();
-        ImGui::Text("Rotation: (%.2f, %.2f, %.2f)", rot.x, rot.y, rot.z);
+    constexpr std::pair<EngineObject, const char*> kEngineObjects[] = {
+      { EngineObject::MainCamera,       "Main Camera" },
+      { EngineObject::DirectionalLight, "Directional Light" },
+    };
+    for (const auto& [object, name] : kEngineObjects) {
+      if (ImGui::Selectable(name, selectedEngineObject_ == object)) {
+        selectedEngineObject_ = object;
+        selectedObjectIndex_ = -1;
       }
-      ImGui::TreePop();
-    }
-
-    // ライト情報
-    if (ImGui::TreeNode("Directional Light")) {
-      Light* light = Object3dBasic::GetInstance()->GetLight();
-      if (light) {
-        const Light::DirectionalLight& dirLight = light->GetDirectionalLight();
-        ImGui::Text("Intensity: %.2f", dirLight.intensity);
-        Vector3 dir = dirLight.direction;
-        ImGui::Text("Direction: (%.2f, %.2f, %.2f)", dir.x, dir.y, dir.z);
-      }
-      ImGui::TreePop();
     }
 
     ImGui::End();
+  }
+
+  void DebugUIManager::RequestSceneChange(const std::string& sceneName) {
+    AddLog("Scene change requested: " + sceneName, LogType::Info);
+    SceneManager::GetInstance()->ChangeScene(sceneName);
   }
 
   void DebugUIManager::DrawInspector() {
@@ -337,67 +391,77 @@ namespace Tako {
       if (selectedObject.drawImGuiFunc) {
         selectedObject.drawImGuiFunc();
       }
-
-      ImGui::Spacing();
+    }
+    else if (selectedEngineObject_ == EngineObject::MainCamera) {
+      ImGui::Text("Selected: Main Camera");
       ImGui::Separator();
-      ImGui::Spacing();
+      DrawCameraInspector();
+    }
+    else if (selectedEngineObject_ == EngineObject::DirectionalLight) {
+      ImGui::Text("Selected: Directional Light");
+      ImGui::Separator();
+      DrawLightInspector();
     }
     else {
-      // 何も選択されていない場合
       ImGui::Text("No object selected");
       ImGui::TextDisabled("Select an object from Scene Hierarchy");
-      ImGui::Separator();
-    }
-
-    // Resource Management
-    if (ImGui::CollapsingHeader("Resource Management")) {
-      uint32_t srvAllocated = SrvManager::GetInstance()->GetAllocatedCount();
-      float srvUsageRate = (float)srvAllocated / (float)SrvManager::kMaxSRVCount;
-      ImGui::Text("SRV Usage: %u / %u", srvAllocated, SrvManager::kMaxSRVCount);
-      ImGui::ProgressBar(srvUsageRate, ImVec2(0.0f, 0.0f));
-      ImGui::Text("Textures: ~%u", srvAllocated);
-    }
-
-    // Default Camera Settings
-    if (ImGui::CollapsingHeader("Default Camera Settings")) {
-      Camera** cameraPtr = Object3dBasic::GetInstance()->GetCamera();
-      if (cameraPtr && *cameraPtr) {
-        Camera* camera = *cameraPtr;
-        Vector3 camPos = camera->GetTranslate();
-        Vector3 camRot = camera->GetRotate();
-
-        ImGui::DragFloat3("Camera Position", &camPos.x, 0.1f);
-        ImGui::DragFloat3("Camera Rotation", &camRot.x, 0.01f);
-
-        float fov = camera->GetFovY() * 180.0f / std::numbers::pi_v<float>;
-        if (ImGui::DragFloat("Field of View", &fov, 0.1f, 10.0f, 120.0f)) {
-          camera->SetFovY(fov * std::numbers::pi_v<float> / 180.0f);
-        }
-      }
-    }
-
-    // Light Settings
-    if (ImGui::CollapsingHeader("Light Settings")) {
-      Light* light = Object3dBasic::GetInstance()->GetLight();
-      if (light) {
-        const Light::DirectionalLight& dirLight = light->GetDirectionalLight();
-        Vector3 dir = dirLight.direction;
-        Vector4 color = dirLight.color;
-        float intensity = dirLight.intensity;
-
-        if (ImGui::DragFloat3("Direction", &dir.x, 0.01f)) {
-          Object3dBasic::GetInstance()->SetDirectionalLightDirection(dir);
-        }
-        if (ImGui::ColorEdit4("Color", &color.x)) {
-          Object3dBasic::GetInstance()->SetDirectionalLightColor(color);
-        }
-        if (ImGui::DragFloat("Intensity", &intensity, 0.01f, 0.0f, 10.0f)) {
-          Object3dBasic::GetInstance()->SetDirectionalLightIntensity(intensity);
-        }
-      }
     }
 
     ImGui::End();
+  }
+
+  void DebugUIManager::DrawCameraInspector() {
+    Camera** cameraPtr = Object3dBasic::GetInstance()->GetCamera();
+    if (!cameraPtr || !*cameraPtr) {
+      ImGui::TextDisabled("No camera");
+      return;
+    }
+    Camera* camera = *cameraPtr;
+
+    Vector3 position = camera->GetTranslate();
+    if (ImGui::DragFloat3("Position", &position.x, 0.1f)) {
+      camera->SetTranslate(position);
+    }
+    Vector3 rotation = camera->GetRotate();
+    if (ImGui::DragFloat3("Rotation", &rotation.x, 0.01f)) {
+      camera->SetRotate(rotation);
+    }
+
+    float fov = camera->GetFovY() * 180.0f / std::numbers::pi_v<float>;
+    if (ImGui::DragFloat("Field of View", &fov, 0.1f, 10.0f, 120.0f)) {
+      camera->SetFovY(fov * std::numbers::pi_v<float> / 180.0f);
+    }
+    float nearClip = camera->GetNearClip();
+    if (ImGui::DragFloat("Near Clip", &nearClip, 0.01f, 0.01f, 10.0f)) {
+      camera->SetNearClip(nearClip);
+    }
+    float farClip = camera->GetFarClip();
+    if (ImGui::DragFloat("Far Clip", &farClip, 1.0f, 10.0f, 10000.0f)) {
+      camera->SetFarClip(farClip);
+    }
+  }
+
+  void DebugUIManager::DrawLightInspector() {
+    Light* light = Object3dBasic::GetInstance()->GetLight();
+    if (!light) {
+      ImGui::TextDisabled("No light");
+      return;
+    }
+
+    const Light::DirectionalLight& dirLight = light->GetDirectionalLight();
+    Vector3 dir = dirLight.direction;
+    Vector4 color = dirLight.color;
+    float intensity = dirLight.intensity;
+
+    if (ImGui::DragFloat3("Direction", &dir.x, 0.01f)) {
+      Object3dBasic::GetInstance()->SetDirectionalLightDirection(dir);
+    }
+    if (ImGui::ColorEdit4("Color", &color.x)) {
+      Object3dBasic::GetInstance()->SetDirectionalLightColor(color);
+    }
+    if (ImGui::DragFloat("Intensity", &intensity, 0.01f, 0.0f, 10.0f)) {
+      Object3dBasic::GetInstance()->SetDirectionalLightIntensity(intensity);
+    }
   }
 
   void DebugUIManager::DrawConsole() {
@@ -486,6 +550,27 @@ namespace Tako {
 
     ImGui::Text("Min: %.1f | Max: %.1f | Avg: %.1f", minFPS, maxFPS, avgFPS);
 
+    if (ImGui::CollapsingHeader("Resources", ImGuiTreeNodeFlags_DefaultOpen)) {
+      // index 0 は無効番兵のため使用可能数は最大数 - 1
+      auto drawHeapUsage = [](const char* label, uint32_t allocated, uint32_t max) {
+        const uint32_t usable = max - 1;
+        ImGui::ProgressBar(static_cast<float>(allocated) / static_cast<float>(usable), ImVec2(-FLT_MIN, 0.0f),
+          std::format("{}: {} / {}", label, allocated, usable).c_str());
+      };
+      drawHeapUsage("SRV", SrvManager::GetInstance()->GetAllocatedCount(), SrvManager::kMaxSRVCount);
+      drawHeapUsage("RTV", RtvManager::GetInstance()->GetAllocatedCount(), RtvManager::kMaxRTVCount);
+      drawHeapUsage("DSV", DsvManager::GetInstance()->GetAllocatedCount(), DsvManager::kMaxDSVCount);
+
+      ImGui::Separator();
+      ImGui::Text("Textures:  %zu", TextureManager::GetInstance()->GetLoadedTextureCount());
+      ImGui::Text("Models:    %zu", ModelManager::GetInstance()->GetLoadedModelCount());
+      ImGui::Text("Colliders: %zu", CollisionManager::GetInstance()->GetColliderCount());
+
+      GPUParticle* particle = GPUParticle::GetInstance();
+      ImGui::Text("Emitters:  %u", particle->GetEmitterCount());
+      ImGui::Text("Particles: %u / %u", particle->GetActiveParticleCount(), GPUParticle::GetMaxParticleCount());
+    }
+
     ImGui::End();
   }
 
@@ -540,24 +625,6 @@ namespace Tako {
     }
     // 非表示(フルスクリーン直描画)中: いずれの ImGui ウィンドウにもカーソルが無いか
     return !ImGui::GetIO().WantCaptureMouse;
-  }
-
-  void DebugUIManager::DrawEngineStatus() {
-    ImGui::Begin("Engine Status", &WindowFlag(Window::EngineStatus));
-
-    // リソース管理タブ
-    if (ImGui::CollapsingHeader("Resource Management")) {
-      uint32_t srvAllocated = SrvManager::GetInstance()->GetAllocatedCount();
-      float srvUsageRate = (float)srvAllocated / (float)SrvManager::kMaxSRVCount;
-      ImGui::Text("SRV Usage: %u / %u", srvAllocated, SrvManager::kMaxSRVCount);
-      ImGui::ProgressBar(srvUsageRate, ImVec2(0.0f, 0.0f));
-      ImGui::Separator();
-      ImGui::Text("Textures Loaded: %u", srvAllocated);
-      ImGui::Separator();
-      ImGui::Text("Models: (情報取得不可)");
-    }
-
-    ImGui::End();
   }
 
   void DebugUIManager::DrawInputDebug() {
@@ -700,17 +767,6 @@ namespace Tako {
   std::string DebugUIManager::GetCurrentTimestamp() {
     auto localNow = std::chrono::current_zone()->to_local(std::chrono::system_clock::now());
     return std::format("{:%H:%M:%S}", std::chrono::floor<std::chrono::seconds>(localNow));
-  }
-
-  void DebugUIManager::DrawShadowSettings() {
-
-    ShadowRenderer* shadowRenderer = ShadowRenderer::GetInstance();
-
-    ImGui::Begin("Shadow Settings", &WindowFlag(Window::ShadowSettings));
-
-    shadowRenderer->DrawImGui();
-
-    ImGui::End();
   }
 
   void DebugUIManager::DrawCollisionDebug() {
@@ -867,6 +923,38 @@ namespace Tako {
       ImGui::TextColored(performanceColor, "%s", performanceText);
     }
 
+    ImGui::End();
+  }
+
+  void DebugUIManager::DrawAbout() {
+    if (ImGui::Begin("About", &WindowFlag(Window::About), ImGuiWindowFlags_AlwaysAutoResize)) {
+      ImGui::Text("TakoEngine (DirectX 12)");
+      ImGui::Text("ImGui: %s", IMGUI_VERSION);
+      ImGui::Text("Resolution: %d x %d", WinApp::clientWidth, WinApp::clientHeight);
+
+      ImGui::SeparatorText("Shortcuts");
+      constexpr std::pair<const char*, const char*> kShortcuts[] = {
+        { "F1",  "Debug Viewport" },
+        { "F2",  "Scene Hierarchy" },
+        { "F3",  "Inspector" },
+        { "F4",  "Game Viewport" },
+        { "F5",  "Console" },
+        { "F6",  "Performance" },
+        { "F10", "Show Main Windows" },
+        { "F11", "Fullscreen" },
+        { "F12", "Toggle Main Windows" },
+      };
+      if (ImGui::BeginTable("##Shortcuts", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV)) {
+        for (const auto& [key, action] : kShortcuts) {
+          ImGui::TableNextRow();
+          ImGui::TableNextColumn();
+          ImGui::TextUnformatted(key);
+          ImGui::TableNextColumn();
+          ImGui::TextUnformatted(action);
+        }
+        ImGui::EndTable();
+      }
+    }
     ImGui::End();
   }
 

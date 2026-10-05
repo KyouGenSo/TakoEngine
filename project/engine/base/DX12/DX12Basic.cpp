@@ -162,7 +162,7 @@ namespace Tako {
     UpdateFPSLimiter();
 
     // GPU と OS に画面の交換を行うよう通知する
-    swapChain_->Present(1, 0);
+    swapChain_->Present(vsync_ ? 1 : 0, 0);
 
     // コマンドアロケータをリセット
     hr = commandAllocator_->Reset();
@@ -479,19 +479,22 @@ namespace Tako {
 
   void DX12Basic::UpdateFPSLimiter()
   {
-    // 1/60秒
-    const std::chrono::microseconds kMinFrameTime(static_cast<uint64_t>(1000000.0 / 60.0));
-    // 1/65秒
-    const std::chrono::microseconds kMinCheckTime(static_cast<uint64_t>(1000000.0 / 65.0));
+    if (targetFPS_ <= 0) {
+      referenceTime_ = std::chrono::steady_clock::now();
+      return;
+    }
+
+    const std::chrono::microseconds kMinFrameTime(static_cast<uint64_t>(1000000.0 / targetFPS_));
+    // 目標より少し速いフレームのみ待機させる閾値（+5fps 相当）
+    const std::chrono::microseconds kMinCheckTime(static_cast<uint64_t>(1000000.0 / (targetFPS_ + 5)));
 
     // 現在の時間を取得
     auto currentTime = std::chrono::steady_clock::now();
     // 経過時間を取得
     auto elapsedTime = std::chrono::duration_cast<std::chrono::microseconds>(currentTime - referenceTime_);
 
-    // 経過時間が1/65秒未満の場合
     if (elapsedTime < kMinCheckTime) {
-      // 経過時間が1/60秒未満の間、処理を待機
+      // 1 フレーム分の時間が経つまで待機
       while (std::chrono::steady_clock::now() - referenceTime_ < kMinFrameTime) {
         // 処理を待機
         std::this_thread::sleep_for(std::chrono::microseconds(1));

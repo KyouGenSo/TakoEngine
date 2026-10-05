@@ -217,8 +217,21 @@ namespace Tako {
     }
 
     //============================================================
+    //Setter
+    //============================================================
+    void SetVSync(bool vsync) { vsync_ = vsync; }
+
+    /// <summary>
+    /// フレームレート上限を設定（0 以下で上限なし）
+    /// </summary>
+    void SetTargetFPS(int fps) { targetFPS_ = fps; }
+
+    //============================================================
     //Getter
     //============================================================
+    bool IsVSync() const { return vsync_; }
+    int GetTargetFPS() const { return targetFPS_; }
+
     /// <summary>
     /// 現在のリソース状態を取得
     /// </summary>
@@ -372,7 +385,10 @@ namespace Tako {
 
   private: //メンバー変数
 
-    std::chrono::steady_clock::time_point referenceTime_;  ///< 記録時間（FPS 制御用の基準時刻）
+    //FPS 制御
+    std::chrono::steady_clock::time_point referenceTime_;         ///< 記録時間（FPS 制御用の基準時刻）
+    bool                                  vsync_         = true;
+    int                                   targetFPS_     = 60;    ///< 0 以下で上限なし
 
     static const UINT kRtvHandleCount = 2;  ///< RTV ハンドルの要素数（スワップチェイン用バックバッファ数）
 

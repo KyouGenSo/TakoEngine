@@ -99,11 +99,28 @@ namespace Tako {
     /// </summary>
     static SceneManager* GetInstance();
 
+    /// <summary>
+    /// シーンファクトリーが生成できるシーン名の一覧（ファクトリー未設定なら空）
+    /// </summary>
+    std::vector<std::string> GetSceneNames() const {
+      return sceneFactory_ ? sceneFactory_->GetSceneNames() : std::vector<std::string>{};
+    }
+
+    const std::string& GetCurrentSceneName() const { return currentSceneName_; }
+
+  private: //非公開関数
+    /// <summary>
+    /// 次シーンを生成して予約する。予約済み・生成失敗なら false（遷移演出は開始しないこと）
+    /// </summary>
+    bool ReserveNextScene(const std::string& sceneName, float transitionTime);
+
   private: //メンバー変数
 
     //シーン
-    std::unique_ptr<BaseScene> scene_;      ///< 現在のシーン
-    std::unique_ptr<BaseScene> nextScene_;  ///< 次のシーン
+    std::unique_ptr<BaseScene> scene_;             ///< 現在のシーン
+    std::unique_ptr<BaseScene> nextScene_;         ///< 次のシーン
+    std::string                currentSceneName_;  ///< scene_ の生成に使ったファクトリーのキー
+    std::string                nextSceneName_;
 
     AbstractSceneFactory* sceneFactory_ = nullptr;  ///< シーンファクトリー
 

@@ -1,6 +1,7 @@
 #pragma once
 #include "BaseScene.h"
 #include <string>
+#include <vector>
 #include <memory>
 
 namespace Tako {
@@ -21,6 +22,11 @@ namespace Tako {
     /// シーンの生成
     /// </summary>
     virtual std::unique_ptr<BaseScene> CreateScene(const std::string& sceneName) = 0;
+
+    /// <summary>
+    /// CreateScene が受け付けるシーン名の一覧（デバッグ UI のシーン切替に使う）
+    /// </summary>
+    virtual std::vector<std::string> GetSceneNames() const { return {}; }
   };
 
 } // namespace Tako

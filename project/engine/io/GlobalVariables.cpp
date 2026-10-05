@@ -166,6 +166,13 @@ namespace Tako {
 
   }
 
+  void GlobalVariables::SaveAllFiles()
+  {
+    for (const auto& [groupName, group] : datas_) {
+      SaveFile(groupName);
+    }
+  }
+
   void GlobalVariables::LoadFiles()
   {
     // ディレクトリが存在しない場合はスキップ

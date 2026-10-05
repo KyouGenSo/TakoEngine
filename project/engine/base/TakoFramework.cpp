@@ -102,6 +102,10 @@ namespace Tako {
     DebugUIManager::GetInstance()->AddLog("TakoEngine Initialized", DebugUIManager::LogType::Info);
     DebugUIManager::GetInstance()->AddLog("DirectX 12 Ready", DebugUIManager::LogType::Info);
     DebugUIManager::GetInstance()->AddLog("ImGui Docking Mode Enabled", DebugUIManager::LogType::Info);
+
+    // 設定の適用先（Audio・Shadow 等）が揃ってから読み込む
+    DebugUIManager::GetInstance()->SetToggleFullScreenFunc([this] { ToggleFullScreen(); });
+    DebugUIManager::GetInstance()->LoadEngineSettings();
 #endif
   }
 

@@ -89,6 +89,8 @@ namespace Tako {
     /// <returns>ソート済みのモデル名リスト</returns>
     std::vector<std::string> GetLoadedModelNames() const;
 
+    size_t GetLoadedModelCount() const { return models_.size(); }
+
   private: //メンバー変数
     std::unique_ptr<ModelBasic>                             pModelBasic_;  ///< モデル基本システムへのポインタ
     std::unordered_map<std::string, std::unique_ptr<Model>> models_;       ///< モデルのマップ（キー:ファイル名、値:モデルインスタンス）

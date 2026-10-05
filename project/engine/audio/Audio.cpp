@@ -317,4 +317,20 @@ namespace Tako {
     voiceDatas_.at(voiceHandle)->SetFrequencyRatio(pitch);
   }
 
+  void Audio::SetMasterVolume(float volume)
+  {
+    if (masterVoice_) {
+      masterVoice_->SetVolume(volume);
+    }
+  }
+
+  float Audio::GetMasterVolume() const
+  {
+    float volume = 1.0f;
+    if (masterVoice_) {
+      masterVoice_->GetVolume(&volume);
+    }
+    return volume;
+  }
+
 } // namespace Tako

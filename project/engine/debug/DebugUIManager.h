@@ -12,6 +12,7 @@
 #include "PrimitiveEditor.h"
 #include "ParticleEditor.h"
 #include "DebugViewport.h"
+#include "EngineSettingsWindow.h"
 
 namespace Tako {
 
@@ -39,14 +40,16 @@ namespace Tako {
       Inspector,
       Console,
       Performance,
-      EngineStatus,
+      EngineSettings,
       InputDebug,
-      ShadowSettings,
       CollisionDebug,
       PostEffect,
       ParticleEditor,
       GlobalVariables,
       PrimitiveEditor,
+      ImGuiDemo,
+      ImGuiMetrics,
+      About,
       Count
     };
 
@@ -65,6 +68,16 @@ namespace Tako {
     struct GameObjectDebugInfo {
       std::string           name;           ///< オブジェクト名
       std::function<void()> drawImGuiFunc;  ///< DrawImGui 関数
+    };
+
+  private: //構造体
+    /// <summary>
+    /// Hierarchy で選択できるエンジン側オブジェクト
+    /// </summary>
+    enum class EngineObject {
+      None,
+      MainCamera,
+      DirectionalLight
     };
 
   private:
@@ -125,6 +138,11 @@ namespace Tako {
     void DrawDebugViewportPass() { debugViewport_.DrawPass(); }
 
     /// <summary>
+    /// 保存済みのエンジン設定を読み込み適用する。全システムの初期化後に呼ぶ
+    /// </summary>
+    void LoadEngineSettings() { engineSettings_.Load(); }
+
+    /// <summary>
     /// コンソールにログを追加
     /// </summary>
     /// <param name="message">ログメッセージ</param>
@@ -163,6 +181,11 @@ namespace Tako {
     void SetForceFieldManager(ForceFieldManager* forceFieldManager) { particleEditor_.SetForceFieldManager(forceFieldManager); }
     void SetEndFlagPtr(bool* pEndFlag) { pEndFlag_ = pEndFlag; }
 
+    /// <summary>
+    /// フルスクリーン切替関数（バッファ再生成を伴うため TakoFramework から受け取る）
+    /// </summary>
+    void SetToggleFullScreenFunc(std::function<void()> func) { engineSettings_.SetToggleFullScreenFunc(std::move(func)); }
+
     //============================================================
     //Getter
     //============================================================
@@ -195,6 +218,8 @@ namespace Tako {
     /// <param name="window">ウィンドウ種別</param>
     void ToggleWindow(Window window) { WindowFlag(window) = !WindowFlag(window); }
 
+    void RequestSceneChange(const std::string& sceneName);
+
     /// <summary>
     /// メインメニューバーを描画
     /// </summary>
@@ -209,6 +234,9 @@ namespace Tako {
     /// インスペクターウィンドウを描画
     /// </summary>
     void DrawInspector();
+
+    void DrawCameraInspector();
+    void DrawLightInspector();
 
     /// <summary>
     /// コンソールウィンドウを描画
@@ -226,24 +254,19 @@ namespace Tako {
     void DrawGameViewport();
 
     /// <summary>
-    /// エンジンステータスウィンドウを描画
-    /// </summary>
-    void DrawEngineStatus();
-
-    /// <summary>
     /// 入力デバッグウィンドウを描画
     /// </summary>
     void DrawInputDebug();
 
     /// <summary>
-    /// シャドウ設定ウィンドウを描画
-    /// </summary>
-    void DrawShadowSettings();
-
-    /// <summary>
     /// コリジョンデバッグウィンドウを描画
     /// </summary>
     void DrawCollisionDebug();
+
+    /// <summary>
+    /// エンジン情報とショートカット一覧のウィンドウを描画
+    /// </summary>
+    void DrawAbout();
 
     /// <summary>
     /// 現在のタイムスタンプを生成
@@ -268,7 +291,8 @@ namespace Tako {
 
     //ゲームオブジェクト情報
     std::vector<GameObjectDebugInfo> gameObjects_;
-    int                              selectedObjectIndex_ = -1;  ///< 選択されたオブジェクトのインデックス
+    int                              selectedObjectIndex_  = -1;                  ///< 選択されたオブジェクトのインデックス
+    EngineObject                     selectedEngineObject_ = EngineObject::None;  ///< selectedObjectIndex_ とは排他
 
     //パフォーマンス計測
     float fpsHistory_[100] = { 0 };
@@ -282,9 +306,10 @@ namespace Tako {
     char sceneNameBuffer_[128] = "";  ///< シーン名入力バッファ
 
     //ツール
-    PrimitiveEditor primitiveEditor_;
-    ParticleEditor  particleEditor_;
-    DebugViewport   debugViewport_;
+    PrimitiveEditor      primitiveEditor_;
+    ParticleEditor       particleEditor_;
+    DebugViewport        debugViewport_;
+    EngineSettingsWindow engineSettings_;
   };
 
 } // namespace Tako

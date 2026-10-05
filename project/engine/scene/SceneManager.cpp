@@ -3,6 +3,7 @@
 #include "transition/ITransitionEffect.h"
 #include "transition/FadeTransition.h"
 #include "transition/ScaleTransition.h"
+#include "Logger.h"
 #include <cassert>
 
 namespace Tako {
@@ -28,6 +29,7 @@ namespace Tako {
         }
 
         scene_ = std::move(nextScene_);
+        currentSceneName_ = std::move(nextSceneName_);
         scene_->Initialize();
 
         TransitionManager::GetInstance()->Start(
@@ -80,25 +82,13 @@ namespace Tako {
 
   void SceneManager::ChangeScene(const std::string& sceneName)
   {
-    assert(sceneFactory_);
-
-    // 予約済みなら無視。フェードアウトを開始し次シーンを生成
-    if (nextScene_ == nullptr) {
-      TransitionManager::GetInstance()->Start(
-        ITransitionEffect::FADE_OUT, transitionTime_);
-      nextScene_ = sceneFactory_->CreateScene(sceneName);
-    }
+    ChangeScene(sceneName, transitionTime_);
   }
 
   void SceneManager::ChangeScene(const std::string& sceneName, float transitionTime)
   {
-    assert(sceneFactory_);
-
-    if (nextScene_ == nullptr) {
-      TransitionManager::GetInstance()->Start(
-        ITransitionEffect::FADE_OUT, transitionTime);
-      nextScene_ = sceneFactory_->CreateScene(sceneName);
-      transitionTime_ = transitionTime;
+    if (ReserveNextScene(sceneName, transitionTime)) {
+      TransitionManager::GetInstance()->Start(ITransitionEffect::FADE_OUT, transitionTime);
     }
   }
 
@@ -106,13 +96,8 @@ namespace Tako {
     TransitionManager::EffectType effectType,
     float transitionTime)
   {
-    assert(sceneFactory_);
-
-    if (nextScene_ == nullptr) {
-      TransitionManager::GetInstance()->Start(
-        ITransitionEffect::FADE_OUT, effectType, transitionTime);
-      nextScene_ = sceneFactory_->CreateScene(sceneName);
-      transitionTime_ = transitionTime;
+    if (ReserveNextScene(sceneName, transitionTime)) {
+      TransitionManager::GetInstance()->Start(ITransitionEffect::FADE_OUT, effectType, transitionTime);
     }
   }
 
@@ -120,16 +105,30 @@ namespace Tako {
     std::unique_ptr<ITransitionEffect> effect,
     float transitionTime)
   {
+    if (ReserveNextScene(sceneName, transitionTime)) {
+      TransitionManager::GetInstance()->SetCurrentEffect(std::move(effect));
+      TransitionManager::GetInstance()->Start(ITransitionEffect::FADE_OUT, transitionTime);
+    }
+  }
+
+  bool SceneManager::ReserveNextScene(const std::string& sceneName, float transitionTime)
+  {
     assert(sceneFactory_);
 
-    if (nextScene_ == nullptr) {
-      // 渡されたエフェクトを設定してからフェードアウト開始
-      TransitionManager::GetInstance()->SetCurrentEffect(std::move(effect));
-      TransitionManager::GetInstance()->Start(
-        ITransitionEffect::FADE_OUT, transitionTime);
-      nextScene_ = sceneFactory_->CreateScene(sceneName);
-      transitionTime_ = transitionTime;
+    if (nextScene_) {
+      return false;
     }
+
+    // 生成に失敗した場合はフェードアウトを始めない（フェードインに切り替わらず暗転したままになるため）
+    nextScene_ = sceneFactory_->CreateScene(sceneName);
+    if (!nextScene_) {
+      Logger::Log("SceneManager: failed to create scene \"" + sceneName + "\"\n");
+      return false;
+    }
+
+    nextSceneName_ = sceneName;
+    transitionTime_ = transitionTime;
+    return true;
   }
 
 } // namespace Tako

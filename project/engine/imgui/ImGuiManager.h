@@ -58,7 +58,7 @@ namespace Tako {
     /// <summary>
     /// ImGui のスタイルの設定
     /// </summary>
-    void SetStyleMoonLight();
+    static void SetStyleMoonLight();
 
     /// <summary>
     /// docking 設定

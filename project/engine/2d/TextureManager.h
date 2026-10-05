@@ -134,6 +134,8 @@ namespace Tako {
     /// <returns>ロード済みテクスチャファイル名のソート済みリスト</returns>
     std::vector<std::string> GetLoadedTextureFileNames() const;
 
+    size_t GetLoadedTextureCount() const { return textureData_.size(); }
+
     /// <summary>
     /// エンジン用デフォルトテクスチャの GPU ハンドル取得
     /// </summary>

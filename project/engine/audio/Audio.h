@@ -154,9 +154,16 @@ public: //メンバー関数
 	/// <param name="pitch">ピッチ倍率（1.0が標準、範囲: 0.5 ~ 2.0）</param>
 	void SetPitch(uint32_t voiceHandle, float pitch);
 
+	/// <summary>
+	/// 全ボイスに掛かるマスター音量を設定
+	/// </summary>
+	void SetMasterVolume(float volume);
+
 	//==============================================
 	//Getter
 	//==============================================
+	float GetMasterVolume() const;
+
 	/// <summary>
 	/// サウンドが再生中かどうかを判定
 	/// </summary>

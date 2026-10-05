@@ -375,7 +375,7 @@ void ShadowRenderer::DrawImGui()
 
     // シャドウマップ解像度
     if (shadowMap_) {
-        static int shadowMapSize = shadowMap_->GetShadowMapSize();
+        int shadowMapSize = shadowMap_->GetShadowMapSize();
         const char* sizeNames[] = { "256", "512", "1024", "2048", "4096", "8192" };
         int sizeValues[] = { 256, 512, 1024, 2048, 4096, 8192 };
         int currentSizeIndex = 3; // デフォルトは2048
@@ -391,7 +391,7 @@ void ShadowRenderer::DrawImGui()
         }
 
         // PCF カーネルサイズ
-        static int pcfKernelSize = shadowMap_->GetPCFKernelSize();
+        int pcfKernelSize = shadowMap_->GetPCFKernelSize();
         const char* kernelNames[] = { "1x1 (No PCF)", "3x3", "5x5", "7x7", "9x9" };
         int kernelValues[] = { 1, 3, 5, 7, 9 };
         int currentKernelIndex = 1; // デフォルトは3x3

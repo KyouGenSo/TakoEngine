@@ -129,6 +129,7 @@ namespace Tako {
     void SetPCFKernelSize(int kernelSize);
 
     void SetMaxShadowDistance(float distance) { maxShadowDistance_ = distance; }
+    void SetShadowBias(float bias) { shadowBias_ = bias; }
 
     /// <summary>
     /// インスタンシング用シャドウレンダリング設定を適用
@@ -141,6 +142,13 @@ namespace Tako {
     bool IsRenderingShadow() const { return isRenderingShadow_; }
     bool IsEnabled() const { return shadowEnabled_; }
     float GetMaxShadowDistance() const { return maxShadowDistance_; }
+    float GetShadowBias() const { return shadowBias_; }
+
+    /// <summary>
+    /// 現在のシャドウマップ解像度（サイズ変更は次フレームで反映されるため、変更直後は旧値）
+    /// </summary>
+    uint32_t GetShadowMapSize() const { return shadowMap_ ? shadowMap_->GetShadowMapSize() : ShadowMap::DEFAULT_SHADOW_MAP_SIZE; }
+    int GetPCFKernelSize() const { return shadowMap_ ? shadowMap_->GetPCFKernelSize() : 1; }
 
   private:
     /// <summary>
