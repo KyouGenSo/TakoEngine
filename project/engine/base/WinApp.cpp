@@ -14,6 +14,12 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 
 namespace Tako {
 
+  namespace {
+    DWORD WindowedStyle(bool resizable) {
+      return resizable ? WS_OVERLAPPEDWINDOW : WS_OVERLAPPEDWINDOW & ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
+    }
+  }
+
   std::unique_ptr<WinApp> WinApp::instance_ = nullptr;
 
   std::vector<IWndProcHandler*> WinApp::handlers_;
@@ -43,13 +49,14 @@ namespace Tako {
     RECT wrc = { 0, 0, clientWidth, clientHeight };
 
     //ウィンドウサイズを補正してウィンドウのサイズを計算
-    AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, FALSE);
+    const DWORD style = WindowedStyle(isResizable_);
+    AdjustWindowRect(&wrc, style, FALSE);
 
     //ウィンドウの生成
     hWnd_ = CreateWindow(
       wc_.lpszClassName,             //クラス名
       windowTitle_.c_str(),                //タイトルバーの文字列
-      WS_OVERLAPPEDWINDOW,  // サイズ変更可能で最大化ボタンも有効なウィンドウスタイル
+      style,                    //ウィンドウスタイル
       CW_USEDEFAULT,               //表示 X 座標
       CW_USEDEFAULT,              //表示 Y 座標
       wrc.right - wrc.left,      //ウィンドウ幅
@@ -68,6 +75,18 @@ namespace Tako {
     MSG msg;
 
     droppedFiles_.paths.clear();
+
+    // フルスクリーン中は画面サイズに固定なので予約を捨てる
+    if (requestedClientSize_ && !isFullScreen_) {
+      if (isMaximized_) {
+        ShowWindow(hWnd_, SW_RESTORE);
+      }
+      RECT rect = { 0, 0, requestedClientSize_->first, requestedClientSize_->second };
+      AdjustWindowRect(&rect, static_cast<DWORD>(GetWindowLong(hWnd_, GWL_STYLE)), FALSE);
+      // WM_SIZE がここで同期的に届き、通常のリサイズと同じ経路でバッファを作り直す
+      SetWindowPos(hWnd_, nullptr, 0, 0, rect.right - rect.left, rect.bottom - rect.top, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+    }
+    requestedClientSize_.reset();
 
     while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
       TranslateMessage(&msg);
@@ -167,6 +186,9 @@ namespace Tako {
   void WinApp::SetWindowTitle(const std::wstring& title)
   {
     windowTitle_ = title;
+    if (hWnd_) {
+      SetWindowTextW(hWnd_, windowTitle_.c_str());
+    }
   }
 
   void WinApp::ToggleFullScreen()
@@ -203,9 +225,9 @@ namespace Tako {
       isFullScreen_ = true;
     }
     else {
-      // 元のウィンドウスタイルに戻す（最大化ボタンあり）
+      // 元のウィンドウスタイルに戻す（リサイズ不可なら枠ドラッグ・最大化なし）
       LONG currentStyle = GetWindowLong(hWnd_, GWL_STYLE);
-      SetWindowLong(hWnd_, GWL_STYLE, currentStyle | WS_OVERLAPPEDWINDOW);
+      SetWindowLong(hWnd_, GWL_STYLE, currentStyle | static_cast<LONG>(WindowedStyle(isResizable_)));
 
       // 保存していた位置とサイズに戻す
       SetWindowPos(hWnd_, HWND_TOP,

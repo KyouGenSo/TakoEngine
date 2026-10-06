@@ -1,5 +1,7 @@
 #include "FrameTimer.h"
 
+#include <algorithm>
+
 namespace Tako {
 
   std::unique_ptr<FrameTimer> FrameTimer::instance_ = nullptr;
@@ -64,8 +66,8 @@ namespace Tako {
     timeAccumulator_ += frameDelta;
     frameCount_++;
 
-    // 直近1秒間の平均で deltaTime / FPS を算出
-    deltaTime_ = timeAccumulator_ / frameCount_;
+    // 直近1秒間の平均で deltaTime / FPS を算出。ブレークポイント等で止まった後に dt が跳ねないよう上限で抑える
+    deltaTime_ = std::min(timeAccumulator_ / frameCount_, maxDeltaTime_);
     fps_ = static_cast<float>(frameCount_) / timeAccumulator_;
 
     // 蓄積時間が1秒以上になったら表示用 FPS を更新し計測をリセット

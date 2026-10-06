@@ -86,10 +86,21 @@ namespace Tako {
       std::unique_ptr<ITransitionEffect> effect,
       float transitionTime);
 
+    /// <summary>
+    /// 起動シーンへ遷移なしで切り替える（上書き → 起動シーン → ファクトリー先頭の順に、存在する名前を使う。名前一覧の無いファクトリーでは設定値をそのまま使う）
+    /// </summary>
+    void ChangeToStartupScene();
+
     //======================================================
     //Setter
     //======================================================
     void SetSceneFactory(AbstractSceneFactory* sceneFactory) { sceneFactory_ = sceneFactory; }
+    void SetStartupScene(const std::string& sceneName) { startupScene_ = sceneName; }
+
+    /// <summary>
+    /// 起動シーンを開発時だけ差し替える（空で無効）
+    /// </summary>
+    void SetStartupSceneOverride(const std::string& sceneName) { startupSceneOverride_ = sceneName; }
 
     //======================================================
     //Getter
@@ -107,6 +118,8 @@ namespace Tako {
     }
 
     const std::string& GetCurrentSceneName() const { return currentSceneName_; }
+    const std::string& GetStartupScene() const { return startupScene_; }
+    const std::string& GetStartupSceneOverride() const { return startupSceneOverride_; }
 
   private: //非公開関数
     /// <summary>
@@ -125,6 +138,10 @@ namespace Tako {
     AbstractSceneFactory* sceneFactory_ = nullptr;  ///< シーンファクトリー
 
     float transitionTime_ = 0.5f;  ///< シーン遷移アニメーション時間
+
+    //起動シーン
+    std::string startupScene_;          ///< ProjectSettings で共有
+    std::string startupSceneOverride_;  ///< 個人設定。非空なら startupScene_ より優先
   };
 
 } // namespace Tako

@@ -4,7 +4,9 @@
 #include <filesystem>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "IWndProcHandler.h"
@@ -109,6 +111,11 @@ namespace Tako {
     /// <param name="id">削除するコールバックの識別 ID</param>
     void UnregisterOnResizeFunc(uint32_t id);
 
+    /// <summary>
+    /// 登録済み OnResize コールバックを width/height で一括呼び出し
+    /// </summary>
+    void NotifyResize(int width, int height);
+
     //============================================================
     //Setter
     //============================================================
@@ -121,10 +128,20 @@ namespace Tako {
     void SetWindowSize(int32_t width, int32_t height) { clientWidth = width; clientHeight = height; }
 
     /// <summary>
-    /// ウィンドウのタイトルを設定
+    /// ウィンドウのタイトルを設定（生成後なら表示にも反映する）
     /// </summary>
     /// <param name="title">新しいタイトル</param>
     void SetWindowTitle(const std::wstring& title);
+
+    /// <summary>
+    /// 枠ドラッグと最大化の可否（Initialize 前に設定する）
+    /// </summary>
+    void SetResizable(bool resizable) { isResizable_ = resizable; }
+
+    /// <summary>
+    /// クライアント領域のサイズ変更を次の ProcessMessage 冒頭に予約する（描画途中にバッファを作り直さないため）
+    /// </summary>
+    void RequestClientSize(int32_t width, int32_t height) { requestedClientSize_ = { width, height }; }
 
     //============================================================
     //Getter
@@ -133,6 +150,8 @@ namespace Tako {
     HINSTANCE GetHInstance() const { return wc_.hInstance; }
     bool IsFullScreen() const { return isFullScreen_; }
     bool IsMaximized() const { return isMaximized_; }
+    bool IsResizable() const { return isResizable_; }
+    const std::wstring& GetWindowTitle() const { return windowTitle_; }
 
     /// <summary>
     /// このフレームの ProcessMessage で受け取ったドロップ（DragAcceptFiles で受け付けを有効にした場合のみ届く）
@@ -143,12 +162,6 @@ namespace Tako {
     static int32_t clientWidth;   ///< クライアント領域の幅（ピクセル）
     static int32_t clientHeight;  ///< クライアント領域の高さ（ピクセル）
 
-  private: //非公開関数
-    /// <summary>
-    /// 登録済み OnResize コールバックを width/height で一括呼び出し
-    /// </summary>
-    void NotifyResize(int width, int height);
-
   private: //メンバー変数
     HWND     hWnd_ = nullptr;
     WNDCLASS wc_{};
@@ -157,6 +170,9 @@ namespace Tako {
 
     bool isFullScreen_ = false;
     bool isMaximized_  = false;
+    bool isResizable_  = true;
+
+    std::optional<std::pair<int32_t, int32_t>> requestedClientSize_;  ///< RequestClientSize の予約（幅, 高さ）
 
     RECT windowedRect_ = {};  ///< フルスクリーンから戻る時に使うウィンドウモード時の位置とサイズ
 

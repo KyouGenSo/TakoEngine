@@ -40,6 +40,7 @@ namespace Tako {
     float GetFPS() const { return fps_; }
     float GetDisplayFPS() const { return displayFPS_; }
     float GetGameTime() const { return gameTime_; }
+    float GetMaxDeltaTime() const { return maxDeltaTime_; }
     bool IsPaused() const { return isPaused_; }
 
     /// <summary>
@@ -53,6 +54,7 @@ namespace Tako {
     void SetTimeScale(float scale) { timeScale_ = scale; timeScaleDuration_ = 0.0f; }
     //指定秒数だけスケールを適用し、経過後 1.0 に自動復帰する。duration が 0 以下なら何もしない(永久停止防止)
     void SetTimeScaleForDuration(float scale, float duration) { if (duration <= 0.0f) return; timeScale_ = scale; timeScaleDuration_ = duration; }
+    void SetMaxDeltaTime(float seconds) { maxDeltaTime_ = seconds; }
 
     /// <summary>
     /// 一時停止中はゲーム時間・deltaTime・時間スケールの残り時間を止める（FPS 計測は継続）
@@ -76,6 +78,7 @@ namespace Tako {
     std::chrono::system_clock::time_point prevTime_;
     float                                 deltaTime_;
     float                                 fps_;
+    float                                 maxDeltaTime_ = 0.1f;  ///< 秒。deltaTime_ の上限（FPS 計測には掛けない）
 
     float displayFPS_;
 

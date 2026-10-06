@@ -16,6 +16,7 @@
 #include "DecalManager.h"
 #include "Input.h"
 #include "ProjectSettings.h"
+#include "StringUtility.h"
 
 #ifdef _DEBUG
 #include "DebugUIManager.h"
@@ -28,6 +29,18 @@ namespace Tako {
 
 #pragma region ウィンドウの初期化-------------------------------------------------------------------------------------------------------------------
     winApp_ = WinApp::GetInstance();
+
+    // ウィンドウの生成に使うタイトル・サイズ・スタイルを先に読む。コードで設定済みの値を既定にし、JSON にある項目だけ上書きする
+    ProjectSettings::WindowSettings& window = ProjectSettings::GetWindowSettings();
+    window.productName = StringUtility::ConvertString(winApp_->GetWindowTitle());
+    window.width       = WinApp::clientWidth;
+    window.height      = WinApp::clientHeight;
+    window.resizable   = winApp_->IsResizable();
+    ProjectSettings::LoadWindow();
+    winApp_->SetWindowTitle(StringUtility::ConvertString(window.productName));
+    winApp_->SetWindowSize(window.width, window.height);
+    winApp_->SetResizable(window.resizable);
+
     winApp_->Initialize();
 
     // ウィンドウリサイズ時のコールバックを登録
@@ -100,6 +113,11 @@ namespace Tako {
 
     // 設定の適用先（Audio・Shadow 等）が揃ってから読み込む
     ProjectSettings::Load(dx12_.get());
+
+    // Debug ではこの後に読む個人設定の Fullscreen が優先される
+    if (ProjectSettings::GetWindowSettings().startFullscreen) {
+      ToggleFullScreen();
+    }
 
 #ifdef _DEBUG
     // 初期コンソールログ
@@ -174,6 +192,12 @@ namespace Tako {
     if (winApp_->ProcessMessage()) {
       endFlag_ = true;
       return;
+    }
+
+    // 前フレームの GPU 処理は EndDraw で完了済みなので、ここなら RT を作り直せる。
+    // 自前の RT を持つエフェクトもリサイズ通知で作り直すため、OnWindowResize を直接呼ばず通知経由にする
+    if (dx12_->ConsumeRenderTargetRebuildRequest()) {
+      winApp_->NotifyResize(WinApp::clientWidth, WinApp::clientHeight);
     }
 
     defaultCamera_->Update();
