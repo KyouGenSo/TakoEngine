@@ -186,16 +186,16 @@ namespace Tako {
 
     ImGui::Text("Active Colliders: %d", activeCount);
     for (const auto& [typeID, count] : typeCountMap) {
-      ImGui::Text("  - Type %u: %d", typeID, count);
+      ImGui::Text("  - %s: %d", GetLayerLabel(typeID).c_str(), count);
     }
 
     // 衝突マスク情報
     ImGui::Separator();
     ImGui::Text("=== Collision Masks ===");
     for (const auto& [typeA, typeBSet] : collisionMask_) {
-      ImGui::Text("Type %u can collide with:", typeA);
+      ImGui::Text("%s can collide with:", GetLayerLabel(typeA).c_str());
       for (uint32_t typeB : typeBSet) {
-        ImGui::Text("  - Type %u", typeB);
+        ImGui::Text("  - %s", GetLayerLabel(typeB).c_str());
       }
     }
 
@@ -218,8 +218,8 @@ namespace Tako {
         ImGui::PushID(index++);
         uint32_t typeID = collider->GetTypeID();
 
-        ImGui::Text("Collider %d: TypeID=%u, Active=%s",
-          index - 1, typeID,
+        ImGui::Text("Collider %d: %s, Active=%s",
+          index - 1, GetLayerLabel(typeID).c_str(),
           collider->IsActive() ? "Yes" : "No");
 
         if (AABBCollider* aabb = dynamic_cast<AABBCollider*>(collider)) {
@@ -495,7 +495,57 @@ namespace Tako {
     return distanceSquared < (radius * radius);
   }
 
-  bool CollisionManager::CanCollide(uint32_t typeA, uint32_t typeB) {
+  void CollisionManager::SetLayerNames(std::vector<std::string> names) {
+    if (names.size() > kMaxLayers) {
+      names.resize(kMaxLayers);
+    }
+    layerNames_ = std::move(names);
+  }
+
+  void CollisionManager::RemoveLayer(uint32_t index) {
+    if (index >= layerNames_.size()) {
+      return;
+    }
+    layerNames_.erase(layerNames_.begin() + index);
+    RemapCollisionMasks([index](uint32_t type) -> std::optional<uint32_t> {
+      if (type == index) {
+        return std::nullopt;
+      }
+      return type > index ? type - 1 : type;
+    });
+  }
+
+  void CollisionManager::SwapLayers(uint32_t typeA, uint32_t typeB) {
+    if (typeA >= layerNames_.size() || typeB >= layerNames_.size()) {
+      return;
+    }
+    std::swap(layerNames_[typeA], layerNames_[typeB]);
+    RemapCollisionMasks([typeA, typeB](uint32_t type) -> std::optional<uint32_t> {
+      return type == typeA ? typeB : type == typeB ? typeA : type;
+    });
+  }
+
+  void CollisionManager::RemapCollisionMasks(const std::function<std::optional<uint32_t>(uint32_t)>& remap) {
+    std::unordered_map<uint32_t, std::unordered_set<uint32_t>> remapped;
+    for (const auto& [typeA, others] : collisionMask_) {
+      const std::optional<uint32_t> newA = remap(typeA);
+      if (!newA) {
+        continue;
+      }
+      for (uint32_t typeB : others) {
+        if (const std::optional<uint32_t> newB = remap(typeB)) {
+          remapped[*newA].insert(*newB);
+        }
+      }
+    }
+    collisionMask_ = std::move(remapped);
+  }
+
+  std::string CollisionManager::GetLayerLabel(uint32_t typeID) const {
+    return typeID < layerNames_.size() ? layerNames_[typeID] : "Type " + std::to_string(typeID);
+  }
+
+  bool CollisionManager::CanCollide(uint32_t typeA, uint32_t typeB) const {
     auto it = collisionMask_.find(typeA);
     if (it != collisionMask_.end()) {
       return it->second.find(typeB) != it->second.end();

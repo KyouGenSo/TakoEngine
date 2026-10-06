@@ -2,6 +2,9 @@
 #include "Vector3.h"
 #include "Transform.h"
 
+#include <cstdint>
+#include <type_traits>
+
 namespace Tako {
 
   /// <summary>
@@ -40,6 +43,12 @@ namespace Tako {
     void SetTypeID(uint32_t id) { typeID_ = id; }
     void SetOwner(void* owner) { owner_ = owner; }
 
+    /// <summary>
+    /// 層の enum をキャストせずに渡せる版
+    /// </summary>
+    template<class E> requires std::is_enum_v<E>
+    void SetTypeID(E id) { typeID_ = static_cast<uint32_t>(id); }
+
     //=====================================
     //Getter
     //=====================================
@@ -54,10 +63,16 @@ namespace Tako {
     uint32_t GetTypeID() const { return typeID_; }
     void* GetOwner() const { return owner_; }
 
+    /// <summary>
+    /// 型 ID が層の enum の id と一致するか
+    /// </summary>
+    template<class E> requires std::is_enum_v<E>
+    bool IsType(E id) const { return typeID_ == static_cast<uint32_t>(id); }
+
   protected: //メンバー変数
     //基本状態
     Transform* transform_ = nullptr;  ///< 対象オブジェクトの Transform（位置・回転・スケール情報）
-    uint32_t   typeID_    = 0;        ///< コライダーの型 ID（CollisionTypeIdDef 参照）
+    uint32_t   typeID_    = 0;        ///< コライダーの型 ID（CollisionManager の層名の添字）
     bool       isActive_  = true;     ///< コライダーの有効/無効状態（false の場合は衝突判定を行わない）
     void*      owner_     = nullptr;  ///< このコライダーを所有するオブジェクトへのポインタ
   };
