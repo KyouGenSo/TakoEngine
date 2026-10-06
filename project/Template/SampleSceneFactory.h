@@ -17,5 +17,10 @@ public: // メンバ関数
   /// <returns>生成されたシーンインスタンス（生成失敗時は nullptr）</returns>
   std::unique_ptr<Tako::BaseScene> CreateScene(const std::string& sceneName) override;
 
+  /// <summary>
+  /// 登録済みのシーン名（先頭が起動シーンの既定値。Engine Settings のシーン選択にも使う）
+  /// </summary>
+  std::vector<std::string> GetSceneNames() const override;
+
 };
 

@@ -8,16 +8,12 @@ using namespace Tako;
 
 void SampleGame::Initialize()
 {
-  winApp_->SetWindowSize(1920, 1080);
-
-  winApp_->SetWindowTitle(L"LE4A_12_キョウ_ゲンソ_Slash");
-
+  // ウィンドウのタイトル・サイズと起動シーンは resources/Json/ProjectSettings.json（Engine Settings で編集・保存）
   TakoFramework::Initialize();
 
-  // シーンの初期化
   sceneFactory_ = std::make_unique<SampleSceneFactory>();
   SceneManager::GetInstance()->SetSceneFactory(sceneFactory_.get());
-  SceneManager::GetInstance()->ChangeScene("sample", 0.0f);
+  SceneManager::GetInstance()->ChangeToStartupScene();
 }
 
 void SampleGame::Finalize()
