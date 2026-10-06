@@ -1,6 +1,7 @@
 #pragma once
 #include<Windows.h>
 #include<cstdint>
+#include <filesystem>
 #include <functional>
 #include <memory>
 #include <string>
@@ -39,6 +40,15 @@ namespace Tako {
       }
       return instance_.get();
     }
+
+  public: //構造体
+    /// <summary>
+    /// エクスプローラーなどからウィンドウへドロップされたファイル
+    /// </summary>
+    struct DroppedFiles {
+      std::vector<std::filesystem::path> paths;
+      Vector2                            position;  ///< ドロップ位置（クライアント座標）
+    };
 
   private: //構造体
     /// <summary>
@@ -124,6 +134,11 @@ namespace Tako {
     bool IsFullScreen() const { return isFullScreen_; }
     bool IsMaximized() const { return isMaximized_; }
 
+    /// <summary>
+    /// このフレームの ProcessMessage で受け取ったドロップ（DragAcceptFiles で受け付けを有効にした場合のみ届く）
+    /// </summary>
+    const DroppedFiles& GetDroppedFiles() const { return droppedFiles_; }
+
   public: //メンバー変数
     static int32_t clientWidth;   ///< クライアント領域の幅（ピクセル）
     static int32_t clientHeight;  ///< クライアント領域の高さ（ピクセル）
@@ -144,6 +159,8 @@ namespace Tako {
     bool isMaximized_  = false;
 
     RECT windowedRect_ = {};  ///< フルスクリーンから戻る時に使うウィンドウモード時の位置とサイズ
+
+    DroppedFiles droppedFiles_;  ///< 毎フレーム ProcessMessage の冒頭でクリアする
 
     std::vector<ResizeCallbackEntry> onResizeFuncs_;
     uint32_t                         nextId_        = 1u;  ///< 次に割り当てるコールバック ID

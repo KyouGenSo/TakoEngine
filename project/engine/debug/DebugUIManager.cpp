@@ -129,6 +129,8 @@ namespace Tako {
     WindowFlag(Window::GameViewport) = true;
     WindowFlag(Window::SceneHierarchy) = true;
     WindowFlag(Window::Inspector) = true;
+    WindowFlag(Window::Console) = true;
+    WindowFlag(Window::Assets) = true;
 
     primitiveEditor_.Initialize(&WindowFlag(Window::PrimitiveEditor));
     particleEditor_.Initialize(&WindowFlag(Window::ParticleEditor), &engineSettings_.GetParticleEditorGrid());

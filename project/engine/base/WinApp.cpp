@@ -1,6 +1,9 @@
 #pragma comment(lib, "winmm.lib")
+#pragma comment(lib, "shell32.lib")
 
 #include "WinApp.h"
+
+#include <shellapi.h>
 
 #include <algorithm>
 #include <cassert>
@@ -63,6 +66,8 @@ namespace Tako {
   bool WinApp::ProcessMessage()
   {
     MSG msg;
+
+    droppedFiles_.paths.clear();
 
     while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
       TranslateMessage(&msg);
@@ -132,6 +137,26 @@ namespace Tako {
       }
     }
     break;
+
+    case WM_DROPFILES:
+    {
+      HDROP         drop    = reinterpret_cast<HDROP>(wparam);
+      DroppedFiles& dropped = GetInstance()->droppedFiles_;
+
+      POINT point{};
+      DragQueryPoint(drop, &point);
+      dropped.position = { .x = static_cast<float>(point.x), .y = static_cast<float>(point.y) };
+
+      // index に 0xFFFFFFFF を渡すとファイル数、バッファ nullptr で各パスの文字数（終端除く）が返る
+      const UINT count = DragQueryFileW(drop, 0xFFFFFFFF, nullptr, 0);
+      for (UINT i = 0; i < count; ++i) {
+        std::wstring path(DragQueryFileW(drop, i, nullptr, 0), L'\0');
+        DragQueryFileW(drop, i, path.data(), static_cast<UINT>(path.size() + 1));
+        dropped.paths.emplace_back(std::move(path));
+      }
+      DragFinish(drop);
+    }
+    return 0;
 
     default:;
     }
