@@ -46,6 +46,7 @@ namespace Tako {
     constexpr float  kMenuBarGap        = 6.0f;                               // メニューバーの区切り線の左右に足す余白(px)
     constexpr float  kMenuBarRightInset = 12.0f;                              // 右端の表示とウィンドウ端の間隔(px)
     constexpr ImVec4 kPausedColor       = ImVec4(0.25f, 0.50f, 0.95f, 1.0f);  // 一時停止中の強調色
+    constexpr ImVec4 kWarningColor      = ImVec4(1.00f, 0.80f, 0.20f, 1.0f);  // 対応が必要な状態の表示色
     constexpr float  kIconButtonAspect  = 1.6f;                               // アイコンボタンの幅 / 高さ
 
     /// <summary>
@@ -130,9 +131,10 @@ namespace Tako {
       startupWindows_[static_cast<size_t>(window)] = true;
     }
 
-    primitiveEditor_.Initialize(&WindowFlag(Window::PrimitiveEditor));
-    particleEditor_.Initialize(&WindowFlag(Window::ParticleEditor), &engineSettings_.GetParticleEditorGrid());
-    debugViewport_.Initialize(&WindowFlag(Window::DebugViewport), &engineSettings_.GetDebugViewportGrid());
+    const ViewportCameraSettings* cameraSettings = &engineSettings_.GetViewportCameraSettings();
+    primitiveEditor_.Initialize(&WindowFlag(Window::PrimitiveEditor), cameraSettings);
+    particleEditor_.Initialize(&WindowFlag(Window::ParticleEditor), &engineSettings_.GetParticleEditorGrid(), cameraSettings);
+    debugViewport_.Initialize(&WindowFlag(Window::DebugViewport), &engineSettings_.GetDebugViewportGrid(), cameraSettings);
     engineSettings_.Initialize(&WindowFlag(Window::EngineSettings), startupWindows_);
     assetBrowser_.Initialize(&WindowFlag(Window::Assets));
 
@@ -232,7 +234,11 @@ namespace Tako {
     }
 
     // ImGui 構築はゲーム更新より後なので、判定結果は次フレームの Input::Update で反映される
-    Input::GetInstance()->SetBlocked(isPreviewInputCaptured_);
+    Input* input = Input::GetInstance();
+    input->SetBlocked(isPreviewInputCaptured_);
+    // エディタのパネル操作がゲームに届かないよう、画面外のクリックと入力欄への文字入力を止める
+    input->SetMouseButtonsBlocked(!IsCursorOverGameView());
+    input->SetKeyboardBlocked(ImGui::GetIO().WantTextInput);
 #endif
   }
 
@@ -378,21 +384,31 @@ namespace Tako {
   }
 
   void DebugUIManager::DrawFrameStats() {
-    constexpr const char* kPausedText = "PAUSED";
+    constexpr const char* kPausedText  = "PAUSED";
+    constexpr const char* kRebuildText = "REBUILD REQUIRED";
 
-    const float       fps      = FrameTimer::GetInstance()->GetFPS();
-    const bool        isPaused = FrameTimer::GetInstance()->IsPaused();
-    const std::string fpsText  = std::format("FPS {:.1f}", fps);
-    const std::string msText   = std::format("{:.1f} ms", fps > 0.0f ? 1000.0f / fps : 0.0f);
+    const float       fps               = FrameTimer::GetInstance()->GetFPS();
+    const bool        isPaused          = FrameTimer::GetInstance()->IsPaused();
+    const bool        isRebuildRequired = engineSettings_.IsRebuildRequired();
+    const std::string fpsText           = std::format("FPS {:.1f}", fps);
+    const std::string msText            = std::format("{:.1f} ms", fps > 0.0f ? 1000.0f / fps : 0.0f);
 
     // 右寄せのため描画するアイテムの合計幅を先に求める（各アイテムの後ろには ItemSpacing が入る）
     const float spacing = ImGui::GetStyle().ItemSpacing.x;
     float width = ImGui::CalcTextSize(fpsText.c_str()).x + spacing + MenuBarSeparatorWidth() + ImGui::CalcTextSize(msText.c_str()).x;
+    if (isRebuildRequired) {
+      width += ImGui::CalcTextSize(kRebuildText).x + spacing + MenuBarSeparatorWidth();
+    }
     if (isPaused) {
       width += ImGui::CalcTextSize(kPausedText).x + spacing + MenuBarSeparatorWidth();
     }
     ImGui::SetCursorPosX(ImGui::GetWindowWidth() - width - kMenuBarRightInset);
 
+    if (isRebuildRequired) {
+      ImGui::TextColored(kWarningColor, "%s", kRebuildText);
+      ImGui::SetItemTooltip("Save renamed names in the source files (listed in the Console).\nThe running game keeps the old names until you rebuild and restart");
+      MenuBarSeparator();
+    }
     if (isPaused) {
       ImGui::TextColored(kPausedColor, "%s", kPausedText);
       MenuBarSeparator();
@@ -977,8 +993,8 @@ namespace Tako {
         std::map<uint32_t, int> sortedTypeMap(typeCountMap.begin(), typeCountMap.end());
 
         for (const auto& [typeID, count] : sortedTypeMap) {
-          ImGui::Text("  Type %02u: %d collider%s",
-            typeID, count, count > 1 ? "s" : "");
+          ImGui::Text("  %02u %s: %d collider%s",
+            typeID, collisionManager->GetLayerLabel(typeID).c_str(), count, count > 1 ? "s" : "");
         }
       }
     }
@@ -1010,11 +1026,12 @@ namespace Tako {
 
         // コリジョンペアを表示
         for (const auto& [typeA, typeB] : collisionPairs) {
+          const std::string labelA = collisionManager->GetLayerLabel(typeA);
           if (typeA == typeB) {
-            ImGui::BulletText("Type %02u <-> Type %02u (self-collision)", typeA, typeB);
+            ImGui::BulletText("%s (self-collision)", labelA.c_str());
           }
           else {
-            ImGui::BulletText("Type %02u <-> Type %02u", typeA, typeB);
+            ImGui::BulletText("%s <-> %s", labelA.c_str(), collisionManager->GetLayerLabel(typeB).c_str());
           }
         }
 

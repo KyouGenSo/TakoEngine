@@ -42,6 +42,8 @@ namespace Tako {
     if (!camera_) {
       camera_ = std::make_unique<Camera>();
       camera_->SetAspect(viewport_->GetAspect());
+      // 個人設定の読み込み後に初めて開くので、ここで既定の移動速度を反映する
+      cameraController_.Reset();
       // 開いた直後はゲームカメラと同じ位置・向きから始める
       if (const Camera* gameCamera = *Object3dBasic::GetInstance()->GetCamera()) {
         cameraController_.SetFromCamera(*gameCamera);

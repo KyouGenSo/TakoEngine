@@ -9,6 +9,15 @@ namespace Tako {
   class Camera;
 
   /// <summary>
+  /// 全エディタビュー共通のカメラ操作設定（EngineSettingsWindow 所有）
+  /// </summary>
+  struct ViewportCameraSettings {
+    float moveSpeed       = 5.0f;   ///< Reset 時の飛行速度（unit/s）
+    float lookSensitivity = 1.0f;   ///< 回転速度の倍率
+    float fovY            = 0.45f;  ///< rad。Camera の既定値と同じ
+  };
+
+  /// <summary>
   /// エディタプレビュー用カメラ（UE5 ビューポート準拠）。注視点・距離・回転・移動速度を保持し Camera へ反映する
   /// </summary>
   struct ViewportCameraController {
@@ -38,9 +47,9 @@ namespace Tako {
     void SetFromCamera(const Camera& camera);
 
     /// <summary>
-    /// 初期視点へ戻す
+    /// 初期視点と設定の移動速度へ戻す（settings は保持）
     /// </summary>
-    void Reset() { *this = ViewportCameraController{}; }
+    void Reset();
 
     /// <summary>
     /// pitch/yaw 回転を適用したカメラ前方の単位ベクトル
@@ -63,6 +72,8 @@ namespace Tako {
     float   distance  = 4.0f;                  ///< 注視点からの距離（Alt+左ドラッグの回転半径）
     float   moveSpeed = 5.0f;                  ///< 飛行速度（unit/s）。パン・ホイールの移動量もこれに比例
     Vector3 target    = { 0.0f, 0.0f, 0.0f };  ///< 注視点
+
+    const ViewportCameraSettings* settings = nullptr;  ///< 感度・FOV・Reset 時の速度。nullptr なら既定値
   };
 
 } // namespace Tako

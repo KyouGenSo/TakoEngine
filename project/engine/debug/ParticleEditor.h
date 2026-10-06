@@ -42,7 +42,12 @@ namespace Tako {
     /// </summary>
     /// <param name="isOpen">ウィンドウ表示フラグ（DebugUIManager の表示状態を共有する）</param>
     /// <param name="previewGrid">プレビューの床グリッド設定（EngineSettingsWindow の値を共有する）</param>
-    void Initialize(bool* isOpen, const GridSettings* previewGrid) { isOpen_ = isOpen; previewGrid_ = previewGrid; }
+    /// <param name="cameraSettings">カメラ操作設定（EngineSettingsWindow の値を共有する）</param>
+    void Initialize(bool* isOpen, const GridSettings* previewGrid, const ViewportCameraSettings* cameraSettings) {
+      isOpen_                    = isOpen;
+      previewGrid_               = previewGrid;
+      cameraController_.settings = cameraSettings;
+    }
 
     /// <summary>
     /// GPU リソースを解放

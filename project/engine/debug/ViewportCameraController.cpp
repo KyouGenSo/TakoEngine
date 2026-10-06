@@ -34,12 +34,13 @@ namespace Tako {
     const bool active = ImGui::IsItemActive();
     const bool hovered = ImGui::IsItemHovered();
     const bool looking = active && ImGui::IsMouseDown(ImGuiMouseButton_Right);
+    const float rotateSpeed = kRotateSpeed * (settings ? settings->lookSensitivity : 1.0f);
 
     if (looking) {
       // カメラ位置を固定したまま向きだけ変え、注視点を付け直す
       const Vector3 position = target - Forward() * distance;
-      yaw += io.MouseDelta.x * kRotateSpeed;
-      pitch = std::clamp(pitch + io.MouseDelta.y * kRotateSpeed, -kPitchLimit, kPitchLimit);
+      yaw += io.MouseDelta.x * rotateSpeed;
+      pitch = std::clamp(pitch + io.MouseDelta.y * rotateSpeed, -kPitchLimit, kPitchLimit);
       target = position + Forward() * distance;
 
       Vector3 move = { 0.0f, 0.0f, 0.0f };
@@ -52,8 +53,8 @@ namespace Tako {
       target = target + move * (moveSpeed * io.DeltaTime);
     }
     else if (active && io.KeyAlt && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
-      yaw += io.MouseDelta.x * kRotateSpeed;
-      pitch = std::clamp(pitch + io.MouseDelta.y * kRotateSpeed, -kPitchLimit, kPitchLimit);
+      yaw += io.MouseDelta.x * rotateSpeed;
+      pitch = std::clamp(pitch + io.MouseDelta.y * rotateSpeed, -kPitchLimit, kPitchLimit);
     }
 
     if (active && ImGui::IsMouseDown(ImGuiMouseButton_Middle)) {
@@ -81,10 +82,21 @@ namespace Tako {
 
   void ViewportCameraController::ApplyTo(Camera& camera) const
   {
+    if (settings) {
+      camera.SetFovY(settings->fovY);
+    }
     camera.SetRotate(Vector3(pitch, yaw, 0.0f));
     camera.SetTranslate(target - Forward() * distance);
     camera.Update();
     camera.SetViewProjectionMatrix(camera.GetViewMatrix() * camera.GetProjectionMatrix());
+  }
+
+  void ViewportCameraController::Reset()
+  {
+    *this = ViewportCameraController{ .settings = settings };
+    if (settings) {
+      moveSpeed = settings->moveSpeed;
+    }
   }
 
   void ViewportCameraController::Focus(const Vector3& point)

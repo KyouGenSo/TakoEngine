@@ -112,6 +112,8 @@ namespace Tako {
     if (!previewCamera_) {
       previewCamera_ = std::make_unique<Camera>();
       previewCamera_->SetAspect(previewViewport_->GetAspect());
+      // 個人設定の読み込み後に初めて開くので、ここで既定の移動速度を反映する
+      cameraController_.Reset();
     }
 
     if (!floorObject_) {
