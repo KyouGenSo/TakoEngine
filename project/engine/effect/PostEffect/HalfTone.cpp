@@ -96,8 +96,8 @@ namespace Tako {
   void HalfTone::UpdateScreenSize()
   {
     if (cBufferData_ != nullptr) {
-      cBufferData_->screenSize.x = static_cast<float>(WinApp::clientWidth);
-      cBufferData_->screenSize.y = static_cast<float>(WinApp::clientHeight);
+      cBufferData_->screenSize.x = static_cast<float>(dx12_->GetSceneWidth());
+      cBufferData_->screenSize.y = static_cast<float>(dx12_->GetSceneHeight());
     }
   }
 

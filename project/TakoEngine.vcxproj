@@ -173,6 +173,7 @@
     <ClCompile Include="engine\effect\PostEffect\Dissolve.cpp" />
     <ClCompile Include="engine\effect\PostEffect\Fog.cpp" />
     <ClCompile Include="engine\effect\PostEffect\GaussianBlur.cpp" />
+    <ClCompile Include="engine\effect\PostEffect\FXAA.cpp" />
     <ClCompile Include="engine\effect\PostEffect\GrayScale.cpp" />
     <ClCompile Include="engine\effect\PostEffect\HalfTone.cpp" />
     <ClCompile Include="engine\effect\PostEffect\IPostEffect.cpp" />
@@ -275,6 +276,7 @@
     <ClInclude Include="engine\effect\PostEffect\Dissolve.h" />
     <ClInclude Include="engine\effect\PostEffect\Fog.h" />
     <ClInclude Include="engine\effect\PostEffect\GaussianBlur.h" />
+    <ClInclude Include="engine\effect\PostEffect\FXAA.h" />
     <ClInclude Include="engine\effect\PostEffect\GrayScale.h" />
     <ClInclude Include="engine\effect\PostEffect\HalfTone.h" />
     <ClInclude Include="engine\effect\PostEffect\IPostEffect.h" />
@@ -441,6 +443,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\ScatterCompact.CS.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\FXAA.PS.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>

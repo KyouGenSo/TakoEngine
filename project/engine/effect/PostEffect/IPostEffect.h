@@ -4,6 +4,7 @@
 #include <initializer_list>
 #include <string>
 #include <variant>
+#include <vector>
 #include <wrl.h>
 
 #include "PostEffectStruct.h"
@@ -71,6 +72,11 @@ namespace Tako {
     /// </summary>
     /// <returns>必要な場合 true</returns>
     virtual bool RequiresDepthBuffer() const { return false; }
+
+    /// <summary>
+    /// SetGenericParam で受け付けるパラメータの現在値（プロファイル保存用。並び順がそのまま保存順になる）
+    /// </summary>
+    virtual std::vector<EffectParam> GetGenericParams() const { return {}; }
 
   protected: //構造体
 

@@ -22,10 +22,19 @@
 #include "WhiteNoise.h"
 #include "HalfTone.h"
 #include "GaussianBlur.h"
+#include "FXAA.h"
 #include "EaseFunc.h"
+#include "Logger.h"
+
+#include <json.hpp>
 
 #include <algorithm>
 #include <cmath>
+#include <filesystem>
+#include <format>
+#include <fstream>
+#include <iomanip>
+#include <string_view>
 
 #ifdef _DEBUG
 #include "ImGuiManager.h"
@@ -33,18 +42,80 @@
 
 namespace Tako {
 
+  using json = nlohmann::json;
+
+  // プロファイル保存用。ADL で見つかるよう型と同じ名前空間に置き、static で他翻訳単位と衝突させない
+  static void to_json(json& j, const Vector2& v) { j = { v.x, v.y }; }
+  static void from_json(const json& j, Vector2& v) { v = { j.at(0).get<float>(), j.at(1).get<float>() }; }
+  static void to_json(json& j, const Vector3& v) { j = { v.x, v.y, v.z }; }
+  static void from_json(const json& j, Vector3& v) { v = { j.at(0).get<float>(), j.at(1).get<float>(), j.at(2).get<float>() }; }
+  static void to_json(json& j, const Vector4& v) { j = { v.x, v.y, v.z, v.w }; }
+  static void from_json(const json& j, Vector4& v) { v = { j.at(0).get<float>(), j.at(1).get<float>(), j.at(2).get<float>(), j.at(3).get<float>() }; }
+
+  // 実行時に決まる値（投影逆行列・画面サイズ・時間・ブラー方向）と padding は保存しない
+  NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(VignetteParam, power, range, color)
+  NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(RadialBlurParam, center, blurWidth, sampleCount)
+  NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(RGBSplitParam, redOffset, greenOffset, blueOffset, intensity)
+  NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(BWFilterParam, threshold)
+  NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(LuminanceOutlineParam, outlineThickness)
+  NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DepthOutlineParam, outlineThickness)
+  NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(FogParam, color, density)
+  NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DissolveParam, threshold, edgeThickness, edgeColor)
+  NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(HalfToneParam, dotSize, contrast, angle, dotPattern, colorMode, threshold)
+  NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GaussianBlurParam, sigma, kernelSize)
+  NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(HighLumExtrcatParam, threshold)
+  NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(BloomCombineParam, intensity)
+
   namespace {
 
     // PostEffectType の並びと一致させること。シェーダーファイル名と ImGui 表示名を兼ねる
     constexpr const char* kEffectNames[] = {
       "NoEffect", "GrayScale", "Vignette", "RadialBlur", "RGBSplit", "BWFilter", "LuminanceBasedOutline",
-      "DepthBasedOutline", "Fog", "Bloom", "Dissolve", "WhiteNoise", "HalfTone", "GaussianBlur",
+      "DepthBasedOutline", "Fog", "Bloom", "Dissolve", "WhiteNoise", "HalfTone", "GaussianBlur", "FXAA",
     };
     static_assert(std::size(kEffectNames) == static_cast<size_t>(PostEffectType::Count));
+
+    const std::filesystem::path kProfileDirectory = "resources/Json/PostEffects";
 
     const char* EffectName(PostEffectType type) {
       return kEffectNames[static_cast<size_t>(type)];
     }
+
+    std::optional<PostEffectType> FindEffectType(std::string_view name) {
+      const auto it = std::ranges::find_if(kEffectNames, [name](const char* effectName) { return name == effectName; });
+      if (it == std::end(kEffectNames)) {
+        return std::nullopt;
+      }
+      return static_cast<PostEffectType>(it - std::begin(kEffectNames));
+    }
+
+    std::filesystem::path ProfilePath(const std::string& name) {
+      return kProfileDirectory / (name + ".json");
+    }
+
+    // to_json が定義された（保存対象の）型だけ扱う
+    template<class T>
+    concept SerializableParam = requires(json& j, const T& param) { to_json(j, param); };
+
+    void SetViewportSize(ID3D12GraphicsCommandList* commandList, uint32_t width, uint32_t height) {
+      const D3D12_VIEWPORT viewport{ 0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f, 1.0f };
+      const D3D12_RECT     scissor{ 0, 0, static_cast<LONG>(width), static_cast<LONG>(height) };
+      commandList->RSSetViewports(1, &viewport);
+      commandList->RSSetScissorRects(1, &scissor);
+    }
+
+#ifdef _DEBUG
+    std::vector<std::string> ProfileNames() {
+      std::vector<std::string> names;
+      std::error_code ec;
+      for (const auto& entry : std::filesystem::directory_iterator(kProfileDirectory, ec)) {
+        if (entry.path().extension() == ".json") {
+          names.push_back(entry.path().stem().string());
+        }
+      }
+      return names;
+    }
+#endif
 
   } // anonymous namespace
 
@@ -79,6 +150,7 @@ namespace Tako {
     RegisterEffect(PostEffectType::WhiteNoise, std::make_unique<WhiteNoise>());
     RegisterEffect(PostEffectType::HalfTone, std::make_unique<HalfTone>());
     RegisterEffect(PostEffectType::GaussianBlur, std::make_unique<GaussianBlur>());
+    RegisterEffect(PostEffectType::FXAA, std::make_unique<FXAA>());
 
     // 深度バッファテクスチャの SRV 作成
     depthSrvIndex_ = SrvManager::GetInstance()->Allocate();
@@ -137,17 +209,10 @@ namespace Tako {
   void PostEffectManager::BeginDrawEffectTarget()
   {
     // エフェクト適用対象 RT に描画
-    dx12_->BindSceneRenderTarget({ effectTargetRT_.rtvHandle, dx12_->GetMainDSVHandle(), static_cast<uint32_t>(WinApp::clientWidth), static_cast<uint32_t>(WinApp::clientHeight) });
-
-    float clearColor[] = {
-        kEffectTargetClearColor_.x,
-        kEffectTargetClearColor_.y,
-        kEffectTargetClearColor_.z,
-        kEffectTargetClearColor_.w
-    };
+    dx12_->BindSceneRenderTarget({ effectTargetRT_.rtvHandle, dx12_->GetMainDSVHandle(), dx12_->GetSceneWidth(), dx12_->GetSceneHeight() });
 
     // エフェクト適用対象 RT をクリア
-    dx12_->GetCommandList()->ClearRenderTargetView(effectTargetRT_.rtvHandle, clearColor, 0, nullptr);
+    dx12_->GetCommandList()->ClearRenderTargetView(effectTargetRT_.rtvHandle, &clearColor_.x, 0, nullptr);
   }
 
   void PostEffectManager::BeginDrawNonEffectTarget()
@@ -159,7 +224,7 @@ namespace Tako {
     );
 
     // 非適用対象 RT に描画
-    dx12_->BindSceneRenderTarget({ nonEffectTargetRT_.rtvHandle, dx12_->GetMainDSVHandle(), static_cast<uint32_t>(WinApp::clientWidth), static_cast<uint32_t>(WinApp::clientHeight) });
+    dx12_->BindSceneRenderTarget({ nonEffectTargetRT_.rtvHandle, dx12_->GetNonEffectDSVHandle(), static_cast<uint32_t>(WinApp::clientWidth), static_cast<uint32_t>(WinApp::clientHeight) });
   }
 
   void PostEffectManager::Draw()
@@ -210,6 +275,33 @@ namespace Tako {
 
     if (ImGui::BeginTabBar("PostEffectTab")) {
       if (ImGui::BeginTabItem("PostEffect")) {
+        ImGui::SeparatorText("Profile");
+        ImGui::SetNextItemWidth(160.0f);
+        ImGui::InputText("##ProfileName", profileName_.data(), profileName_.size());
+        ImGui::SameLine();
+        const bool hasName = profileName_[0] != '\0';
+        ImGui::BeginDisabled(!hasName);
+        if (ImGui::Button("Save")) {
+          const bool saved = SaveProfile(profileName_.data());
+          DebugUIManager::GetInstance()->AddLog(std::format("PostEffect profile {}: {}", saved ? "saved" : "save failed", profileName_.data()),
+                                                saved ? DebugUIManager::LogType::Info : DebugUIManager::LogType::Error);
+        }
+        ImGui::EndDisabled();
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(160.0f);
+        if (ImGui::BeginCombo("Load", "Select...")) {
+          for (const std::string& name : ProfileNames()) {
+            if (ImGui::Selectable(name.c_str())) {
+              const bool loaded = LoadProfile(name);
+              DebugUIManager::GetInstance()->AddLog(std::format("PostEffect profile {}: {}", loaded ? "loaded" : "load failed", name),
+                                                    loaded ? DebugUIManager::LogType::Info : DebugUIManager::LogType::Error);
+              std::ranges::fill(profileName_, '\0');
+              name.copy(profileName_.data(), profileName_.size() - 1);
+            }
+          }
+          ImGui::EndCombo();
+        }
+
         ImGui::Text("Post Effects Configuration");
         ImGui::Separator();
 
@@ -222,9 +314,12 @@ namespace Tako {
 
         // 利用可能エフェクトリスト
         ImGui::BeginChild("AvailableList", ImVec2(0, 200), true);
-        // NoEffect はチェーンが空のときの素通し用なので一覧に出さない
+        // NoEffect はチェーンが空のときの素通し用、FXAA はアンチエイリアス設定で掛けるので一覧に出さない
         for (size_t i = static_cast<size_t>(PostEffectType::NoEffect) + 1; i < static_cast<size_t>(PostEffectType::Count); ++i) {
           const PostEffectType type = static_cast<PostEffectType>(i);
+          if (type == PostEffectType::FXAA) {
+            continue;
+          }
           bool isSelected = (selectedAvailableEffect_ == type);
 
           if (ImGui::Selectable(EffectName(type), isSelected)) {
@@ -496,6 +591,92 @@ namespace Tako {
     }
   }
 
+  void PostEffectManager::SetClearColor(const Vector4& color)
+  {
+    clearColor_ = color;
+    // 作成時と異なる色でクリアするとデバッグレイヤーの警告で止まるため、次フレーム先頭で RT ごと作り直す
+    dx12_->RequestRenderTargetRebuild();
+  }
+
+  bool PostEffectManager::SaveProfile(const std::string& name) const
+  {
+    json chain  = json::array();
+    json params = json::object();
+    for (PostEffectType type : effectChain_) {
+      if (temporaryEffects_.contains(type)) {
+        continue;
+      }
+      chain.push_back(EffectName(type));
+
+      json values = json::array();
+      for (const EffectParam& param : effectRegistry_[static_cast<size_t>(type)]->GetGenericParams()) {
+        std::visit([&values]<class T>(const T& value) {
+          if constexpr (SerializableParam<T>) {
+            values.push_back(value);
+          }
+        }, param);
+      }
+      if (!values.empty()) {
+        params[EffectName(type)] = std::move(values);
+      }
+    }
+
+    std::error_code ec;
+    std::filesystem::create_directories(kProfileDirectory, ec);
+    std::ofstream ofs(ProfilePath(name));
+    if (!ofs) {
+      Logger::Log("PostEffect profile save failed: %s", name.c_str());
+      return false;
+    }
+    ofs << std::setw(4) << json{ { "Chain", chain }, { "Params", params } } << std::endl;
+    return true;
+  }
+
+  bool PostEffectManager::LoadProfile(const std::string& name)
+  {
+    std::ifstream ifs(ProfilePath(name));
+    if (!ifs) {
+      Logger::Log("PostEffect profile not found: %s", name.c_str());
+      return false;
+    }
+
+    // 手編集された JSON の型不一致などは例外になるため、そこまでの適用を残して中断する
+    try {
+      const json root = json::parse(ifs);
+
+      ClearEffectChain();
+      for (const json& effectName : root.at("Chain")) {
+        if (const auto type = FindEffectType(effectName.get<std::string>())) {
+          AddEffectToChain(*type);
+        }
+      }
+
+      for (const auto& item : root.at("Params").items()) {
+        const auto type = FindEffectType(item.key());
+        if (!type) {
+          continue;
+        }
+        const json& values = item.value();
+        IPostEffect* effect = effectRegistry_[static_cast<size_t>(*type)].get();
+        // 現在値に上書きするので、保存していない実行時の値はそのまま残る
+        std::vector<EffectParam> current = effect->GetGenericParams();
+        for (size_t i = 0; i < (std::min)(current.size(), values.size()); ++i) {
+          std::visit([&values, i]<class T>(T& value) {
+            if constexpr (SerializableParam<T>) {
+              values[i].get_to(value);
+            }
+          }, current[i]);
+          effect->SetGenericParam(current[i]);
+        }
+      }
+      return true;
+    }
+    catch (const json::exception& e) {
+      Logger::Log("PostEffect profile load failed: %s (%s)", name.c_str(), e.what());
+      return false;
+    }
+  }
+
   bool PostEffectManager::MoveEffectUp(PostEffectType type)
   {
     auto it = std::find(effectChain_.begin(), effectChain_.end(), type);
@@ -632,8 +813,12 @@ namespace Tako {
   //------------------------------- プライベート関数 -------------------------------//
 
   void PostEffectManager::CreateRenderTextures() {
+    // エフェクト適用対象用 RT と中間バッファはシーン解像度、最終表示用の非適用対象 RT はウィンドウ解像度
+    const uint32_t sceneWidth  = dx12_->GetSceneWidth();
+    const uint32_t sceneHeight = dx12_->GetSceneHeight();
+
     // エフェクト適用対象用 RT
-    effectTargetRT_.Create(dx12_, WinApp::clientWidth, WinApp::clientHeight, DXGI_FORMAT_R8G8B8A8_UNORM, kEffectTargetClearColor_);
+    effectTargetRT_.Create(dx12_, sceneWidth, sceneHeight, DXGI_FORMAT_R8G8B8A8_UNORM, clearColor_);
     effectTargetRT_.resource->SetName(L"EffectTargetRT");
     // 初期状態を設定（レンダーテクスチャは RENDER_TARGET として作成される）
     SetInitialResourceState(effectTargetRT_.resource.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET);
@@ -647,7 +832,7 @@ namespace Tako {
     // 中間バッファ
     intermediateRTs_.resize(2);
     for (size_t i = 0; i < intermediateRTs_.size(); ++i) {
-      intermediateRTs_[i].Create(dx12_, WinApp::clientWidth, WinApp::clientHeight, DXGI_FORMAT_R8G8B8A8_UNORM, kEffectTargetClearColor_);
+      intermediateRTs_[i].Create(dx12_, sceneWidth, sceneHeight, DXGI_FORMAT_R8G8B8A8_UNORM, clearColor_);
       intermediateRTs_[i].resource->SetName(L"IntermediateRT");
       // 初期状態を設定
       SetInitialResourceState(intermediateRTs_[i].resource.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET);
@@ -666,15 +851,21 @@ namespace Tako {
 
   void PostEffectManager::ApplyEffectChain()
   {
-    // エフェクトチェーンに NoEffect を自動追加せず、空の場合のみ NoEffect を使用
-    std::vector<PostEffectType> actualChain;
+    const uint32_t sceneWidth  = dx12_->GetSceneWidth();
+    const uint32_t sceneHeight = dx12_->GetSceneHeight();
+    const bool     isScaled    = sceneWidth != static_cast<uint32_t>(WinApp::clientWidth) || sceneHeight != static_cast<uint32_t>(WinApp::clientHeight);
 
-    if (effectChain_.empty()) {
+    std::vector<PostEffectType> actualChain = effectChain_;
+    if (antiAliasing_ == AntiAliasing::FXAA) {
+      actualChain.push_back(PostEffectType::FXAA);
+    }
+    // 最終パスはウィンドウ解像度の nonEffectTarget へ書くため、縮小解像度ならエフェクトとは別に拡大コピーを最後に足す
+    if (actualChain.empty() || isScaled) {
       actualChain.push_back(PostEffectType::NoEffect);
     }
-    else {
-      actualChain = effectChain_;
-    }
+
+    // シーン描画中の途中パスがビューポートを変えていても、チェーンはシーン解像度で回す
+    SetViewportSize(dx12_->GetCommandList(), sceneWidth, sceneHeight);
 
     // 最初の入力はエフェクト適用対象 RT
     TransitionResourceWithTracking(
@@ -721,6 +912,7 @@ namespace Tako {
           D3D12_RESOURCE_STATE_RENDER_TARGET
         );
         dstRtvHandle = nonEffectTargetRT_.rtvHandle;
+        SetViewportSize(dx12_->GetCommandList(), static_cast<uint32_t>(WinApp::clientWidth), static_cast<uint32_t>(WinApp::clientHeight));
       }
       else {
         int bufferIndex = i % 2;

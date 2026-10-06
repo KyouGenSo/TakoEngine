@@ -1689,9 +1689,9 @@ namespace Tako {
     physicsParamsData_->invViewProj = Mat4x4::Inverse(vp);
     physicsParamsData_->cameraPos = camPos;
 
-    // スクリーンサイズ（リサイズ対応）
-    physicsParamsData_->screenWidth = static_cast<float>(WinApp::clientWidth);
-    physicsParamsData_->screenHeight = static_cast<float>(WinApp::clientHeight);
+    // 衝突判定で読む深度バッファの解像度（解像度スケール適用後）
+    physicsParamsData_->screenWidth = static_cast<float>(dx12_->GetSceneWidth());
+    physicsParamsData_->screenHeight = static_cast<float>(dx12_->GetSceneHeight());
   }
 
   int32_t GPUParticle::AddForceField(const ForceFieldData& field)

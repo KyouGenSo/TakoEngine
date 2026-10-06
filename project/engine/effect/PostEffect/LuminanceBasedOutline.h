@@ -47,6 +47,11 @@ namespace Tako {
     //================================================
     void SetParam(const LuminanceOutlineParam& param);
 
+    //================================================
+    //Getter
+    //================================================
+    std::vector<EffectParam> GetGenericParams() const override { return { *cBufferData_ }; }
+
   private: //非公開関数
     /// <summary>
     /// ルートシグネチャを作成

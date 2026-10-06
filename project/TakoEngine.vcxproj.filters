@@ -327,6 +327,9 @@
     <ClCompile Include="engine\effect\PostEffect\GaussianBlur.cpp">
       <Filter>effect\PostEffect</Filter>
     </ClCompile>
+    <ClCompile Include="engine\effect\PostEffect\FXAA.cpp">
+      <Filter>effect\PostEffect</Filter>
+    </ClCompile>
     <ClCompile Include="engine\effect\PostEffect\GrayScale.cpp">
       <Filter>effect\PostEffect</Filter>
     </ClCompile>
@@ -662,6 +665,9 @@
     <ClInclude Include="engine\effect\PostEffect\GaussianBlur.h">
       <Filter>effect\PostEffect</Filter>
     </ClInclude>
+    <ClInclude Include="engine\effect\PostEffect\FXAA.h">
+      <Filter>effect\PostEffect</Filter>
+    </ClInclude>
     <ClInclude Include="engine\effect\PostEffect\GrayScale.h">
       <Filter>effect\PostEffect</Filter>
     </ClInclude>
@@ -785,6 +791,9 @@
       <Filter>shader\PostEffect</Filter>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\GaussianBlur.PS.hlsl">
+      <Filter>shader\PostEffect</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\FXAA.PS.hlsl">
       <Filter>shader\PostEffect</Filter>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\GrayScale.PS.hlsl">

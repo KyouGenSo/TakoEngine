@@ -48,6 +48,8 @@ namespace Tako {
     // ComPtr のエイリアス
     template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
 
+    enum class AntiAliasing { None, FXAA };
+
   private: //構造体
     /// <summary>
     /// 一時エフェクト情報
@@ -213,6 +215,18 @@ namespace Tako {
     /// <returns>交換が成功した場合 true、失敗した場合 false</returns>
     bool SwapEffectsByIndex(int index1, int index2);
 
+    /// <summary>
+    /// 現在のチェーンと各エフェクトのパラメータを resources/Json/PostEffects/{name}.json に保存する（一時エフェクトは除く）
+    /// </summary>
+    /// <returns>書き込めたら true</returns>
+    bool SaveProfile(const std::string& name) const;
+
+    /// <summary>
+    /// プロファイルのチェーンで置き換え、パラメータを適用する（実行時に決まる値は保持）
+    /// </summary>
+    /// <returns>ファイルが無い、または途中で失敗したら false</returns>
+    bool LoadProfile(const std::string& name);
+
     //============================================================
     //Setter
     //============================================================
@@ -264,9 +278,19 @@ namespace Tako {
     /// <param name="textureName">ベーステクスチャの名前</param>
     void SetDissolveBaseTex(const std::string& textureName);
 
+    /// <summary>
+    /// シーン描画先のクリア色を設定し、RT の最適化クリア値を揃えるため描画先の再構築を要求する
+    /// </summary>
+    void SetClearColor(const Vector4& color);
+
+    void SetAntiAliasing(AntiAliasing antiAliasing) { antiAliasing_ = antiAliasing; }
+
     //============================================================
     //Getter
     //============================================================
+    const Vector4& GetClearColor() const { return clearColor_; }
+    AntiAliasing GetAntiAliasing() const { return antiAliasing_; }
+
     /// <summary>
     /// 指定エフェクトが一時エフェクトとして動作中か判定
     /// </summary>
@@ -407,9 +431,12 @@ namespace Tako {
     uint32_t                                                                              depthSrvIndex_        = 0;  ///< 深度バッファの SRV
     uint32_t                                                                              dissolveMaskSrvIndex_ = 0;  ///< Dissolve マスクテクスチャの SRV
 
-    //クリアカラー
-    const Vector4 kEffectTargetClearColor_   = { 0.17f, 0.17f, 0.17f, 1.0f };
-    Vector4       nonEffectTargetClearColor_ = { 0.0f, 0.0f, 0.0f, 0.0f };
+    //クリアカラー・アンチエイリアス
+    Vector4      clearColor_                = { 0.17f, 0.17f, 0.17f, 1.0f };  ///< エフェクト適用対象 RT と中間バッファのクリア色
+    Vector4      nonEffectTargetClearColor_ = { 0.0f, 0.0f, 0.0f, 0.0f };
+    AntiAliasing antiAliasing_              = AntiAliasing::None;
+
+    std::array<char, 64> profileName_{};  ///< PostEffect ウィンドウのプロファイル名入力欄
 
     mutable std::unordered_map<ID3D12Resource*, D3D12_RESOURCE_STATES> resourceStates_;  ///< リソース状態追跡用マップ
 

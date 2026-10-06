@@ -51,6 +51,11 @@ namespace Tako {
     //=================================
     void SetParam(const FogParam& param);
 
+    //=================================
+    //Getter
+    //=================================
+    std::vector<EffectParam> GetGenericParams() const override { return { *fogData_ }; }
+
   private: //非公開関数
     /// <summary>
     /// ルートシグネチャを作成

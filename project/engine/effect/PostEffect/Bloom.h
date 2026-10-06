@@ -68,6 +68,14 @@ namespace Tako {
     void SetParam(const GaussianBlurParam& param);
     void SetParam(const BloomCombineParam& param);
 
+    //==========================================
+    //Getter
+    //==========================================
+    /// <summary>
+    /// ブラーは縦横で sigma/kernelSize を共有するため 1 パス分だけ返す
+    /// </summary>
+    std::vector<EffectParam> GetGenericParams() const override { return { *extractData_, *blurData1_, *combineData_ }; }
+
   private: //非公開関数
     /// <summary>
     /// ルートシグネチャを作成

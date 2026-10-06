@@ -125,7 +125,7 @@ namespace Tako {
 
   void GaussianBlur::CreateRenderTexture()
   {
-    resultRT_.Create(dx12_, WinApp::clientWidth, WinApp::clientHeight, DXGI_FORMAT_R8G8B8A8_UNORM, Vector4(0.0f, 0.0f, 0.0f, 1.0f));
+    resultRT_.Create(dx12_, dx12_->GetSceneWidth(), dx12_->GetSceneHeight(), DXGI_FORMAT_R8G8B8A8_UNORM, Vector4(0.0f, 0.0f, 0.0f, 1.0f));
   }
 
   void GaussianBlur::OnResize(const Vector2& newSize)

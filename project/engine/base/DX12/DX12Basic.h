@@ -12,6 +12,7 @@
 #include "DirectXTex.h"
 #include "DirectXTex.inl"
 #include <unordered_map>
+#include <utility>
 
 #include"Vector4.h"
 
@@ -22,6 +23,9 @@ namespace Tako {
   /// デバイス、コマンドキュー、スワップチェーン管理
   /// </summary>
   class DX12Basic {
+  public: //定数
+    static constexpr float kMinRenderScale = 0.25f;
+
   public: //構造体
     /// <summary>
     /// ComPtr のエイリアス
@@ -216,6 +220,17 @@ namespace Tako {
       InitScissorRect();
     }
 
+    /// <summary>
+    /// 描画先の再構築を次フレーム先頭に要求する（記録中のコマンドが参照する RT を解放しないため）
+    /// </summary>
+    void RequestRenderTargetRebuild() { isRebuildRequested_ = true; }
+
+    /// <summary>
+    /// 再構築要求を取り出し、要求フラグを下ろす
+    /// </summary>
+    /// <returns>要求があれば true</returns>
+    bool ConsumeRenderTargetRebuildRequest() { return std::exchange(isRebuildRequested_, false); }
+
     //============================================================
     //Setter
     //============================================================
@@ -226,11 +241,23 @@ namespace Tako {
     /// </summary>
     void SetTargetFPS(int fps) { targetFPS_ = fps; }
 
+    /// <summary>
+    /// 3D シーンを描く内部解像度の倍率を設定し、描画先の再構築を要求する（UI は常にウィンドウ解像度）
+    /// </summary>
+    void SetRenderScale(float scale);
+
     //============================================================
     //Getter
     //============================================================
     bool IsVSync() const { return vsync_; }
     int GetTargetFPS() const { return targetFPS_; }
+    float GetRenderScale() const { return renderScale_; }
+
+    /// <summary>
+    /// 3D シーンの内部解像度（ウィンドウ解像度 × 倍率、最小 1）
+    /// </summary>
+    uint32_t GetSceneWidth() const;
+    uint32_t GetSceneHeight() const;
 
     /// <summary>
     /// 現在のリソース状態を取得
@@ -260,6 +287,11 @@ namespace Tako {
     ///	</summary>
     /// <returns>メイン DSV の CPU ディスクリプタハンドル</returns>
     D3D12_CPU_DESCRIPTOR_HANDLE GetMainDSVHandle() const;
+
+    /// <summary>
+    /// ウィンドウ解像度で描く非エフェクトパス用の DSV（等倍ならメイン深度、縮小解像度中は専用の深度）
+    /// </summary>
+    D3D12_CPU_DESCRIPTOR_HANDLE GetNonEffectDSVHandle() const;
 
     ID3D12Resource* GetDepthStencilResource() {
       return depthStencilResource_.Get();
@@ -307,6 +339,16 @@ namespace Tako {
     /// 深度バッファの生成
     /// </summary>
     void CreateDepthStencilResource();
+
+    /// <summary>
+    /// DEPTH_WRITE 状態の D32 深度バッファを生成し状態追跡に登録する
+    /// </summary>
+    ComPtr<ID3D12Resource> MakeDepthBuffer(uint32_t width, uint32_t height);
+
+    /// <summary>
+    /// 縮小解像度中だけ、非エフェクトパス用にウィンドウ解像度の深度を作る（等倍なら解放する）
+    /// </summary>
+    void RecreateNonEffectDepthBuffer();
 
     /// <summary>
     /// デスクリプタヒープの初期化
@@ -390,6 +432,10 @@ namespace Tako {
     bool                                  vsync_         = true;
     int                                   targetFPS_     = 60;    ///< 0 以下で上限なし
 
+    //描画先の再構築
+    bool  isRebuildRequested_ = false;  ///< TakoFramework::Update の先頭で消費する
+    float renderScale_        = 1.0f;   ///< kMinRenderScale〜1.0
+
     static const UINT kRtvHandleCount = 2;  ///< RTV ハンドルの要素数（スワップチェイン用バックバッファ数）
 
     mutable std::unordered_map<ID3D12Resource*, D3D12_RESOURCE_STATES> resourceStates_;  ///< リソース状態追跡用マップ（バリア遷移の最適化に使用）
@@ -411,6 +457,10 @@ namespace Tako {
     ComPtr<ID3D12Resource> depthStencilResource_;  ///< 深度バッファリソース（深度テスト用）
 
     uint32_t mainDsvIndex_ = 0;  ///< メイン深度バッファの DSV インデックス（DsvManager 発行）
+
+    ComPtr<ID3D12Resource> nonEffectDepthResource_;  ///< 縮小解像度中だけ作るウィンドウ解像度の深度
+
+    uint32_t nonEffectDsvIndex_ = 0;  ///< nonEffectDepthResource_ の DSV インデックス（初回作成時に確保）
 
     std::array<ComPtr<ID3D12Resource>, 2> swapChainResources_;  ///< スワップチェインのバッファ（ダブルバッファリング用2枚）
 

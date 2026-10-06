@@ -1,5 +1,7 @@
 #include "DX12Basic.h"
+#include <algorithm>
 #include <cassert>
+#include <cmath>
 #include <format>
 #include <thread>
 #ifdef _DEBUG
@@ -85,6 +87,8 @@ namespace Tako {
     }
     DsvManager::GetInstance()->Free(mainDsvIndex_);
     mainDsvIndex_ = DsvManager::kInvalidIndex;
+    DsvManager::GetInstance()->Free(nonEffectDsvIndex_);
+    nonEffectDsvIndex_ = DsvManager::kInvalidIndex;
 
     // RTV/DSV マネージャーの終了処理（内部でリーク検査）
     RtvManager::GetInstance()->Finalize();
@@ -107,6 +111,11 @@ namespace Tako {
   {
     // レンダーテクスチャを描画先に設定
     PostEffectManager::GetInstance()->BeginDrawNonEffectTarget();
+
+    // 縮小解像度中は専用の深度なので、シーン深度とは別にクリアする
+    if (nonEffectDepthResource_) {
+      commandList_->ClearDepthStencilView(GetNonEffectDSVHandle(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+    }
   }
 
   void DX12Basic::SetSwapChain()
@@ -347,10 +356,15 @@ namespace Tako {
 
   void DX12Basic::CreateDepthStencilResource()
   {
+    depthStencilResource_ = MakeDepthBuffer(GetSceneWidth(), GetSceneHeight());
+  }
+
+  DX12Basic::ComPtr<ID3D12Resource> DX12Basic::MakeDepthBuffer(uint32_t width, uint32_t height)
+  {
     // テクスチャの設定
     D3D12_RESOURCE_DESC resourceDesc{};
-    resourceDesc.Width = WinApp::clientWidth; // テクスチャの幅
-    resourceDesc.Height = WinApp::clientHeight; // テクスチャの高さ
+    resourceDesc.Width = width; // テクスチャの幅
+    resourceDesc.Height = height; // テクスチャの高さ
     resourceDesc.MipLevels = 1; // ミップマップレベル
     resourceDesc.DepthOrArraySize = 1; // 奥行き or 配列サイズ
     resourceDesc.Format = DXGI_FORMAT_D32_FLOAT; // フォーマット
@@ -369,18 +383,19 @@ namespace Tako {
     depthClearValue.Format = DXGI_FORMAT_D32_FLOAT; // フォーマット
 
     // Resource の生成
+    ComPtr<ID3D12Resource> resource;
     HRESULT hr = device_->CreateCommittedResource(
       &heapProperties, // ヒープの設定
       D3D12_HEAP_FLAG_NONE, // Heap の特殊な設定。特になし
       &resourceDesc, // リソースの設定
       D3D12_RESOURCE_STATE_DEPTH_WRITE, // リソースの初期状態. DEPTH_WRITE
       &depthClearValue, // クリア値の設定.
-      IID_PPV_ARGS(&depthStencilResource_)); // 生成したリソースの pointer への pointer を取得
+      IID_PPV_ARGS(&resource)); // 生成したリソースの pointer への pointer を取得
     assert(SUCCEEDED(hr));
 
     // 深度バッファの初期状態を追跡マップに登録
-    resourceStates_[depthStencilResource_.Get()] = D3D12_RESOURCE_STATE_DEPTH_WRITE;
-
+    resourceStates_[resource.Get()] = D3D12_RESOURCE_STATE_DEPTH_WRITE;
+    return resource;
   }
 
   void DX12Basic::InitDescriptorHeap()
@@ -507,41 +522,31 @@ namespace Tako {
 
   void DX12Basic::RecreateDepthBuffer()
   {
-    // テクスチャの設定
-    D3D12_RESOURCE_DESC resourceDesc{};
-    resourceDesc.Width = WinApp::clientWidth;
-    resourceDesc.Height = WinApp::clientHeight;
-    resourceDesc.MipLevels = 1;
-    resourceDesc.DepthOrArraySize = 1;
-    resourceDesc.Format = DXGI_FORMAT_D32_FLOAT;
-    resourceDesc.SampleDesc.Count = 1;
-    resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-    resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-
-    // ヒープの設定
-    D3D12_HEAP_PROPERTIES heapProperties{};
-    heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
-
-    // 深度値のクリア設定
-    D3D12_CLEAR_VALUE depthClearValue{};
-    depthClearValue.DepthStencil.Depth = 1.0f;
-    depthClearValue.Format = DXGI_FORMAT_D32_FLOAT;
-
-    // Resource の生成
-    HRESULT hr = device_->CreateCommittedResource(
-      &heapProperties,
-      D3D12_HEAP_FLAG_NONE,
-      &resourceDesc,
-      D3D12_RESOURCE_STATE_DEPTH_WRITE,
-      &depthClearValue,
-      IID_PPV_ARGS(&depthStencilResource_));
-    assert(SUCCEEDED(hr));
-
-    // 深度バッファの初期状態を追跡マップに登録
-    resourceStates_[depthStencilResource_.Get()] = D3D12_RESOURCE_STATE_DEPTH_WRITE;
+    depthStencilResource_ = MakeDepthBuffer(GetSceneWidth(), GetSceneHeight());
 
     // 同じ DSV 枠へビューを作り直す
     InitDSV();
+
+    RecreateNonEffectDepthBuffer();
+  }
+
+  void DX12Basic::RecreateNonEffectDepthBuffer()
+  {
+    if (nonEffectDepthResource_) {
+      RemoveResourceState(nonEffectDepthResource_.Get());
+      nonEffectDepthResource_.Reset();
+    }
+
+    // 等倍ならシーンの深度をそのまま共有する（非エフェクトパスの 3D もシーンと前後関係を取れる）
+    if (GetSceneWidth() == static_cast<uint32_t>(WinApp::clientWidth) && GetSceneHeight() == static_cast<uint32_t>(WinApp::clientHeight)) {
+      return;
+    }
+
+    nonEffectDepthResource_ = MakeDepthBuffer(static_cast<uint32_t>(WinApp::clientWidth), static_cast<uint32_t>(WinApp::clientHeight));
+    if (nonEffectDsvIndex_ == DsvManager::kInvalidIndex) {
+      nonEffectDsvIndex_ = DsvManager::GetInstance()->Allocate();
+    }
+    DsvManager::GetInstance()->CreateDSV(nonEffectDsvIndex_, nonEffectDepthResource_.Get(), DXGI_FORMAT_D32_FLOAT);
   }
 
   void DX12Basic::SetViewPort()
@@ -567,9 +572,34 @@ namespace Tako {
     commandList_->RSSetScissorRects(1, &scissorRect);
   }
 
+  void DX12Basic::SetRenderScale(float scale)
+  {
+    scale = std::clamp(scale, kMinRenderScale, 1.0f);
+    if (scale == renderScale_) {
+      return;
+    }
+    renderScale_ = scale;
+    RequestRenderTargetRebuild();
+  }
+
+  uint32_t DX12Basic::GetSceneWidth() const
+  {
+    return (std::max)(1u, static_cast<uint32_t>(std::lround(WinApp::clientWidth * renderScale_)));
+  }
+
+  uint32_t DX12Basic::GetSceneHeight() const
+  {
+    return (std::max)(1u, static_cast<uint32_t>(std::lround(WinApp::clientHeight * renderScale_)));
+  }
+
   D3D12_CPU_DESCRIPTOR_HANDLE DX12Basic::GetMainDSVHandle() const
   {
     return DsvManager::GetInstance()->GetCpuHandle(mainDsvIndex_);
+  }
+
+  D3D12_CPU_DESCRIPTOR_HANDLE DX12Basic::GetNonEffectDSVHandle() const
+  {
+    return nonEffectDepthResource_ ? DsvManager::GetInstance()->GetCpuHandle(nonEffectDsvIndex_) : GetMainDSVHandle();
   }
 
   Microsoft::WRL::ComPtr<IDxcBlob> DX12Basic::CompileShader(const std::wstring& filePath, const wchar_t* profile)

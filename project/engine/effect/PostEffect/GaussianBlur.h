@@ -61,6 +61,11 @@ namespace Tako {
     //============================================
     void SetParam(const GaussianBlurParam& param);
 
+    //============================================
+    //Getter
+    //============================================
+    std::vector<EffectParam> GetGenericParams() const override { return { *cBufferData1_ }; }
+
   private: //非公開関数
     /// <summary>
     /// ルートシグネチャを作成

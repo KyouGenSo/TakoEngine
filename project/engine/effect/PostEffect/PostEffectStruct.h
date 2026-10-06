@@ -239,6 +239,7 @@ namespace Tako {
     WhiteNoise,
     HalfTone,
     GaussianBlur,
+    FXAA,      ///< アンチエイリアス設定でチェーン末尾に自動で掛ける。チェーンには入れない
     Count
   };
 
