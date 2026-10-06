@@ -29,9 +29,11 @@
 
   <!-- ===================================================
        Visual Studio から F5 起動した時の作業ディレクトリ
-       （exe の隣 = OutDir）に統一。
-       これで「VS から実行」も「exe ダブルクリック」も
-       同じ相対パス解決になる。
+       Debug: VS 既定の $(ProjectDir)。エディタ（Assets・GlobalVariables・
+              各種プリセット）の保存先がソースの resources になる。
+              EngineResources は PreBuildEvent で ProjectDir にも複製する。
+       Release: exe の隣（= OutDir）。exe ダブルクリックと同じ
+              相対パス解決で配布物を確認する。
 
        注意: $(OutDir) は .props 評価時点ではまだ未定義のため
        eager 評価で空になる。$(SolutionDir) と $(Configuration) は
@@ -39,7 +41,7 @@
        OutDir 規約を直接記述する。
        =================================================== -->
   <PropertyGroup>
-    <LocalDebuggerWorkingDirectory>$(SolutionDir)Generated\outputs\$(Configuration)\</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerWorkingDirectory Condition="'$(Configuration)'=='Release'">$(SolutionDir)Generated\outputs\$(Configuration)\</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 
