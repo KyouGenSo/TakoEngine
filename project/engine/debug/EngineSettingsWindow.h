@@ -3,6 +3,7 @@
 #ifdef _DEBUG
 
 #include <functional>
+#include <span>
 
 namespace Tako {
 
@@ -30,12 +31,17 @@ namespace Tako {
     /// 初期化
     /// </summary>
     /// <param name="isOpen">ウィンドウ表示フラグ（DebugUIManager の表示状態を共有する）</param>
-    void Initialize(bool* isOpen) { isOpen_ = isOpen; }
+    /// <param name="startupWindows">起動時に開くウィンドウのフラグ（DebugUIManager 所有、DebugUIManager::Window で添字）</param>
+    void Initialize(bool* isOpen, std::span<bool> startupWindows) {
+      isOpen_         = isOpen;
+      startupWindows_ = startupWindows;
+    }
 
     void Draw();
 
     /// <summary>
     /// 個人設定（フルスクリーン・音量・デバッグ描画・UI）を読み込み適用する（ファイルが無ければ何もしない）
+    /// 起動時に開くウィンドウは読み込むだけで、現在の表示状態は変えない
     /// </summary>
     void LoadEditorSettings();
 
@@ -83,9 +89,10 @@ namespace Tako {
     bool  isMuted_      = false;  ///< true の間はマスター音量 0 を適用し masterVolume_ は保持する
 
     //Editor
-    int          themeIndex_         = 0;                 ///< GetImGuiThemes() の index
-    GridSettings debugViewportGrid_  = { 200.0f, 2.0f };
-    GridSettings particleEditorGrid_ = { 500.0f, 1.0f };
+    int             themeIndex_         = 0;                 ///< GetImGuiThemes() の index
+    GridSettings    debugViewportGrid_  = { 200.0f, 2.0f };
+    GridSettings    particleEditorGrid_ = { 500.0f, 1.0f };
+    std::span<bool> startupWindows_;                         ///< 起動時に開くウィンドウ（DebugUIManager 所有）
   };
 
 } // namespace Tako

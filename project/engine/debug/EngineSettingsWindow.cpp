@@ -23,11 +23,31 @@
 #include <fstream>
 #include <iomanip>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace Tako {
 
   namespace {
-    using json = nlohmann::json;
+    using json   = nlohmann::json;
+    using Window = DebugUIManager::Window;
+
+    // 起動時に開くか選べるウィンドウ（メニュー順）。名前は表示ラベルと保存キーを兼ねる。Engine Settings と Help メニュー系は対象外
+    constexpr std::pair<Window, const char*> kStartupWindowOptions[] = {
+      { Window::DebugViewport,   "Debug Viewport" },
+      { Window::SceneHierarchy,  "Scene Hierarchy" },
+      { Window::Inspector,       "Inspector" },
+      { Window::GameViewport,    "Game Viewport" },
+      { Window::Console,         "Console" },
+      { Window::Performance,     "Performance" },
+      { Window::Assets,          "Assets" },
+      { Window::InputDebug,      "Input Debug" },
+      { Window::CollisionDebug,  "Collision Debug" },
+      { Window::PostEffect,      "PostEffect Settings" },
+      { Window::ParticleEditor,  "Particle Editor" },
+      { Window::PrimitiveEditor, "Primitive Editor" },
+      { Window::GlobalVariables, "Global Variables" },
+    };
 
     // %APPDATA%/TakoEngine/EditorSettings.json。ユーザー単位で複数プロジェクトから共有する。取得できなければ空
     const std::filesystem::path& EditorSettingsPath() {
@@ -178,6 +198,12 @@ namespace Tako {
       ApplyImGuiTheme(themeIndex_);
       LoadGrid(editor, "DebugViewportGrid", debugViewportGrid_);
       LoadGrid(editor, "ParticleEditorGrid", particleEditorGrid_);
+      if (editor.contains("StartupWindows")) {
+        const auto names = editor["StartupWindows"].get<std::vector<std::string>>();
+        for (const auto& [window, name] : kStartupWindowOptions) {
+          startupWindows_[static_cast<size_t>(window)] = std::ranges::find(names, name) != names.end();
+        }
+      }
 
       Log(std::format("Editor settings loaded: {}", EditorSettingsPathText()));
     }
@@ -187,6 +213,13 @@ namespace Tako {
   }
 
   void EngineSettingsWindow::SaveEditorSettings() {
+    json startupWindows = json::array();
+    for (const auto& [window, name] : kStartupWindowOptions) {
+      if (startupWindows_[static_cast<size_t>(window)]) {
+        startupWindows.push_back(name);
+      }
+    }
+
     json root;
     root["Display"] = {
       { "Fullscreen", WinApp::GetInstance()->IsFullScreen() },
@@ -203,6 +236,7 @@ namespace Tako {
       { "Theme",              GetImGuiThemes()[themeIndex_].name },
       { "DebugViewportGrid",  GridToJson(debugViewportGrid_) },
       { "ParticleEditorGrid", GridToJson(particleEditorGrid_) },
+      { "StartupWindows",     startupWindows },
     };
 
     const std::filesystem::path& path = EditorSettingsPath();
@@ -298,6 +332,21 @@ namespace Tako {
     ImGui::SeparatorText("Grid");
     DrawGridSettings("Debug Viewport", debugViewportGrid_);
     DrawGridSettings("Particle Editor", particleEditorGrid_);
+
+    ImGui::SeparatorText("Startup Windows");
+    if (ImGui::Button("Use Current")) {
+      for (const auto& [window, name] : kStartupWindowOptions) {
+        startupWindows_[static_cast<size_t>(window)] = DebugUIManager::GetInstance()->IsWindowVisible(window);
+      }
+    }
+    ImGui::SetItemTooltip("Copy the currently open windows");
+    if (ImGui::BeginTable("##StartupWindows", 2)) {
+      for (const auto& [window, name] : kStartupWindowOptions) {
+        ImGui::TableNextColumn();
+        ImGui::Checkbox(name, &startupWindows_[static_cast<size_t>(window)]);
+      }
+      ImGui::EndTable();
+    }
   }
 
   void EngineSettingsWindow::SetFullScreen(bool fullScreen) {

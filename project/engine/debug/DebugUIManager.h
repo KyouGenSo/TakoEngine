@@ -140,9 +140,12 @@ namespace Tako {
     void DrawDebugViewportPass() { debugViewport_.DrawPass(); }
 
     /// <summary>
-    /// 保存済みの個人設定（テーマ・音量など）を読み込み適用する。全システムの初期化後に呼ぶ
+    /// 保存済みの個人設定（テーマ・音量・起動時に開くウィンドウなど）を読み込み適用する。全システムの初期化後に起動時 1 回だけ呼ぶ
     /// </summary>
-    void LoadEditorSettings() { engineSettings_.LoadEditorSettings(); }
+    void LoadEditorSettings() {
+      engineSettings_.LoadEditorSettings();
+      windowVisibility_ = startupWindows_;
+    }
 
     /// <summary>
     /// コンソールにログを追加
@@ -307,6 +310,7 @@ namespace Tako {
     bool                  autoScroll_     = true;
 
     std::array<bool, static_cast<size_t>(Window::Count)> windowVisibility_{};  ///< ウィンドウ表示フラグ（Window で添字）
+    std::array<bool, static_cast<size_t>(Window::Count)> startupWindows_{};    ///< 起動時に開くウィンドウ（EngineSettingsWindow が編集・保存する）
 
     bool isGameViewportHovered_  = false;  ///< 直近フレームでゲーム画像上にカーソルがあったか（DrawGameViewport で更新）
     bool isPreviewInputCaptured_ = false;  ///< エディタプレビュー/デバッグビューがホバー中/操作中か。true の間は次フレームのゲーム入力を遮断する

@@ -125,17 +125,15 @@ namespace Tako {
   }
 
   void DebugUIManager::Initialize() {
-    // 起動時に開くウィンドウ（それ以外は windowVisibility_ の値初期化で false）
-    WindowFlag(Window::GameViewport) = true;
-    WindowFlag(Window::SceneHierarchy) = true;
-    WindowFlag(Window::Inspector) = true;
-    WindowFlag(Window::Console) = true;
-    WindowFlag(Window::Assets) = true;
+    // 個人設定に起動時ウィンドウが保存されていない場合の既定（LoadEditorSettings で表示状態へ適用される）
+    for (Window window : { Window::GameViewport, Window::SceneHierarchy, Window::Inspector, Window::Console, Window::Assets }) {
+      startupWindows_[static_cast<size_t>(window)] = true;
+    }
 
     primitiveEditor_.Initialize(&WindowFlag(Window::PrimitiveEditor));
     particleEditor_.Initialize(&WindowFlag(Window::ParticleEditor), &engineSettings_.GetParticleEditorGrid());
     debugViewport_.Initialize(&WindowFlag(Window::DebugViewport), &engineSettings_.GetDebugViewportGrid());
-    engineSettings_.Initialize(&WindowFlag(Window::EngineSettings));
+    engineSettings_.Initialize(&WindowFlag(Window::EngineSettings), startupWindows_);
     assetBrowser_.Initialize(&WindowFlag(Window::Assets));
 
     // 初期ログ
