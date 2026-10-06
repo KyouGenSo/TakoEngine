@@ -1,5 +1,6 @@
 #include "ParticleEditor.h"
 #include "DebugUIManager.h"
+#include "EngineSettingsWindow.h"
 #include "PreviewViewport.h"
 #include "EmitterManager.h"
 #include "ForceFieldManager.h"
@@ -156,7 +157,7 @@ namespace Tako {
     LineRenderer* lineRenderer = LineRenderer::GetInstance();
     lineRenderer->BeginPreviewLines();
     if (previewShowGrid_) {
-      lineRenderer->DrawGrid(500.0f, 500.0f, Vector4(0.35f, 0.35f, 0.35f, 1.0f));
+      lineRenderer->DrawGrid(previewGrid_->size, previewGrid_->cellSize, Vector4(0.35f, 0.35f, 0.35f, 1.0f));
     }
     if (previewSelectedOnly_) {
       if (showEmitterShapes_ && selectedEmitter && selectedEmitter->IsActive()) {

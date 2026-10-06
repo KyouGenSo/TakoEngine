@@ -9,6 +9,7 @@ namespace Tako {
 
   class Camera;
   class PreviewViewport;
+  struct GridSettings;
 
   /// <summary>
   /// ゲームカメラとは独立した自由視点カメラでシーンを再描画するデバッグ用ビューポート
@@ -22,7 +23,8 @@ namespace Tako {
     /// 初期化
     /// </summary>
     /// <param name="isOpen">ウィンドウ表示フラグ（DebugUIManager の表示状態を共有する）</param>
-    void Initialize(bool* isOpen) { isOpen_ = isOpen; }
+    /// <param name="grid">床グリッド設定（EngineSettingsWindow の値を共有する）</param>
+    void Initialize(bool* isOpen, const GridSettings* grid) { isOpen_ = isOpen; grid_ = grid; }
 
     /// <summary>
     /// GPU リソースとカメラを解放
@@ -48,7 +50,8 @@ namespace Tako {
     void DrawPass();
 
   private: //メンバー変数
-    bool* isOpen_ = nullptr;  ///< ウィンドウ表示フラグ（DebugUIManager 所有）
+    bool*               isOpen_ = nullptr;  ///< ウィンドウ表示フラグ（DebugUIManager 所有）
+    const GridSettings* grid_   = nullptr;  ///< 床グリッド設定（EngineSettingsWindow 所有）
 
     //ビュー
     std::unique_ptr<PreviewViewport> viewport_;              ///< オフスクリーン RT 一式（ウィンドウ表示中のみ生存）

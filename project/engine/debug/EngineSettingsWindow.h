@@ -7,6 +7,14 @@
 namespace Tako {
 
   /// <summary>
+  /// エディタビューに表示する床グリッドの設定
+  /// </summary>
+  struct GridSettings {
+    float size;      ///< 全長
+    float cellSize;  ///< 1 マスの幅
+  };
+
+  /// <summary>
   /// 表示・時間・描画・音声などエンジン全体の設定を編集するウィンドウ
   /// ゲームに影響する設定は ProjectSettings、個人設定は %APPDATA%/TakoEngine/EditorSettings.json に保存する
   /// </summary>
@@ -44,6 +52,12 @@ namespace Tako {
     /// </summary>
     void SetFullScreen(bool fullScreen);
 
+    //======================================================
+    //Getter
+    //======================================================
+    const GridSettings& GetDebugViewportGrid() const { return debugViewportGrid_; }
+    const GridSettings& GetParticleEditorGrid() const { return particleEditorGrid_; }
+
   private: //非公開関数
     void DrawDisplay();
     void DrawTime();
@@ -69,7 +83,9 @@ namespace Tako {
     bool  isMuted_      = false;  ///< true の間はマスター音量 0 を適用し masterVolume_ は保持する
 
     //Editor
-    int themeIndex_ = 0;  ///< GetImGuiThemes() の index
+    int          themeIndex_         = 0;                 ///< GetImGuiThemes() の index
+    GridSettings debugViewportGrid_  = { 200.0f, 2.0f };
+    GridSettings particleEditorGrid_ = { 500.0f, 1.0f };
   };
 
 } // namespace Tako

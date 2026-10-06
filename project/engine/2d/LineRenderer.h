@@ -32,6 +32,9 @@ namespace Tako {
   public:
     explicit LineRenderer(Token) {}
 
+  public: //定数
+    static constexpr uint32_t kGridMaxCellCount = 1000;  ///< DrawGrid の 1 辺あたり最大マス数（2 枚でもプレビュー線バッファに収まる）
+
   private: //定数
     static constexpr uint32_t kLineMaxCount     = 100000;  ///< 線の最大数
     static constexpr uint32_t kVertexCountLine  = 2;       ///< 線の頂点数
@@ -140,11 +143,11 @@ namespace Tako {
     /// <summary>
     /// グリッドの描画
     /// </summary>
-    /// <param name="size">グリッドのサイズ</param>
-    /// <param name="subdivision">分割数</param>
+    /// <param name="size">全長（マス幅の偶数倍に丸める）</param>
+    /// <param name="cellSize">1 マスの幅</param>
     /// <param name="color">描画色</param>
     /// <param name="height">グリッドを置く Y 座標（深度テストありで床と重ねるときのちらつき回避用）</param>
-    void DrawGrid(const float size, const float subdivision, const Vector4& color, float height = 0.0f);
+    void DrawGrid(const float size, const float cellSize, const Vector4& color, float height = 0.0f);
 
     /// <summary>
     /// 描画

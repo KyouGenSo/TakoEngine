@@ -236,23 +236,21 @@ namespace Tako {
     DrawLine(vertices[3], vertices[7], color);
   }
 
-  void LineRenderer::DrawGrid(const float size, const float subdivision, const Vector4& color, float height)
+  void LineRenderer::DrawGrid(const float size, const float cellSize, const Vector4& color, float height)
   {
-    float halfWidth = size * 0.5f;
-    float every = size / subdivision;
-
-    for (uint32_t xIndex = 0; xIndex <= subdivision; xIndex++) {
-      Vector3 worldStart = Vector3(-halfWidth + every * xIndex, height, halfWidth);
-      Vector3 worldEnd = Vector3(-halfWidth + every * xIndex, height, -halfWidth);
-
-      DrawLine(worldStart, worldEnd, color);
+    // 手編集された設定ファイル由来の 0・負値・NaN を弾く
+    if (!(size > 0.0f) || !(cellSize > 0.0f)) {
+      return;
     }
 
-    for (uint32_t zIndex = 0; zIndex <= subdivision; zIndex++) {
-      Vector3 worldStart = Vector3(halfWidth, height, -halfWidth + every * zIndex);
-      Vector3 worldEnd = Vector3(-halfWidth, height, -halfWidth + every * zIndex);
+    // 分割数を偶数にして原点を通る線を残し、マス幅を保つため全長の側を丸める
+    const int   halfCount = static_cast<int>(std::clamp(std::round(size * 0.5f / cellSize), 1.0f, kGridMaxCellCount * 0.5f));
+    const float halfWidth = cellSize * halfCount;
 
-      DrawLine(worldStart, worldEnd, color);
+    for (int i = -halfCount; i <= halfCount; ++i) {
+      const float offset = cellSize * i;
+      DrawLine(Vector3(offset, height, halfWidth), Vector3(offset, height, -halfWidth), color);
+      DrawLine(Vector3(halfWidth, height, offset), Vector3(-halfWidth, height, offset), color);
     }
 
     // X 軸

@@ -131,8 +131,8 @@ namespace Tako {
     WindowFlag(Window::Inspector) = true;
 
     primitiveEditor_.Initialize(&WindowFlag(Window::PrimitiveEditor));
-    particleEditor_.Initialize(&WindowFlag(Window::ParticleEditor));
-    debugViewport_.Initialize(&WindowFlag(Window::DebugViewport));
+    particleEditor_.Initialize(&WindowFlag(Window::ParticleEditor), &engineSettings_.GetParticleEditorGrid());
+    debugViewport_.Initialize(&WindowFlag(Window::DebugViewport), &engineSettings_.GetDebugViewportGrid());
     engineSettings_.Initialize(&WindowFlag(Window::EngineSettings));
 
     // 初期ログ

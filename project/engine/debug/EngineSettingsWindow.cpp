@@ -8,6 +8,7 @@
 #include "ShadowRenderer.h"
 #include "Audio.h"
 #include "CollisionManager.h"
+#include "LineRenderer.h"
 #include "ProjectSettings.h"
 #include "StringUtility.h"
 
@@ -61,6 +62,29 @@ namespace Tako {
 
     void Log(const std::string& message, DebugUIManager::LogType type = DebugUIManager::LogType::Info) {
       DebugUIManager::GetInstance()->AddLog(message, type);
+    }
+
+    json GridToJson(const GridSettings& grid) {
+      return { { "Size", grid.size }, { "CellSize", grid.cellSize } };
+    }
+
+    void LoadGrid(const json& parent, const char* key, GridSettings& grid) {
+      if (!parent.contains(key)) {
+        return;
+      }
+      const json& node = parent[key];
+      grid.size     = node.value("Size", grid.size);
+      grid.cellSize = node.value("CellSize", grid.cellSize);
+    }
+
+    void DrawGridSettings(const char* label, GridSettings& grid) {
+      constexpr float kMaxCells = static_cast<float>(LineRenderer::kGridMaxCellCount);
+      ImGui::PushID(label);
+      ImGui::TextUnformatted(label);
+      // 互いの値から範囲を決め、DrawGrid のマス数上限で全長が勝手に縮まないようにする
+      ImGui::DragFloat("Size", &grid.size, 1.0f, grid.cellSize * 2.0f, grid.cellSize * kMaxCells, "%.1f", ImGuiSliderFlags_AlwaysClamp);
+      ImGui::DragFloat("Cell Size", &grid.cellSize, 0.01f, grid.size / kMaxCells, grid.size * 0.5f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+      ImGui::PopID();
     }
   }
 
@@ -152,6 +176,8 @@ namespace Tako {
         themeIndex_ = static_cast<int>(it - themes.begin());
       }
       ApplyImGuiTheme(themeIndex_);
+      LoadGrid(editor, "DebugViewportGrid", debugViewportGrid_);
+      LoadGrid(editor, "ParticleEditorGrid", particleEditorGrid_);
 
       Log(std::format("Editor settings loaded: {}", EditorSettingsPathText()));
     }
@@ -173,8 +199,10 @@ namespace Tako {
       { "ColliderDebugDraw", CollisionManager::GetInstance()->IsDebugDrawEnabled() },
     };
     root["Editor"] = {
-      { "UIScale", ImGui::GetIO().FontGlobalScale },
-      { "Theme",   GetImGuiThemes()[themeIndex_].name },
+      { "UIScale",            ImGui::GetIO().FontGlobalScale },
+      { "Theme",              GetImGuiThemes()[themeIndex_].name },
+      { "DebugViewportGrid",  GridToJson(debugViewportGrid_) },
+      { "ParticleEditorGrid", GridToJson(particleEditorGrid_) },
     };
 
     const std::filesystem::path& path = EditorSettingsPath();
@@ -266,6 +294,10 @@ namespace Tako {
     if (ImGui::Combo("Theme", &themeIndex_, getThemeName, nullptr, themeCount, 12)) {
       ApplyImGuiTheme(themeIndex_);
     }
+
+    ImGui::SeparatorText("Grid");
+    DrawGridSettings("Debug Viewport", debugViewportGrid_);
+    DrawGridSettings("Particle Editor", particleEditorGrid_);
   }
 
   void EngineSettingsWindow::SetFullScreen(bool fullScreen) {

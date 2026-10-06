@@ -2,6 +2,7 @@
 
 #ifdef _DEBUG
 
+#include "EngineSettingsWindow.h"
 #include "PreviewViewport.h"
 #include "Camera.h"
 #include "Object3dBasic.h"
@@ -17,8 +18,6 @@
 namespace Tako {
 
   namespace {
-    constexpr float kGridSize             = 200.0f;
-    constexpr float kGridSubdivision      = 100.0f;
     constexpr float kGridHeight           = 0.01f;  // 床と同じ深さだと深度テストでちらつくため少し浮かせる
     constexpr float kGameCameraFrustumFar = 30.0f;  // far クリップ(1000)のままだと視錐台が画面を埋め尽くす
     const Vector4   kGridColor            = { 0.35f, 0.35f, 0.35f, 1.0f };
@@ -76,7 +75,7 @@ namespace Tako {
     // デバッグビューだけに出すエディタ表示
     lineRenderer->BeginPreviewLines();
     if (showGrid_) {
-      lineRenderer->DrawGrid(kGridSize, kGridSubdivision, kGridColor, kGridHeight);
+      lineRenderer->DrawGrid(grid_->size, grid_->cellSize, kGridColor, kGridHeight);
     }
     const Camera* gameCamera = *Object3dBasic::GetInstance()->GetCamera();
     if (showGameCamera_ && gameCamera) {

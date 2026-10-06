@@ -16,6 +16,7 @@ namespace Tako {
   class ForceFieldManager;
   class GPUParticleEmitter;
   struct ForceFieldData;
+  struct GridSettings;
 
   /// <summary>
   /// GPU パーティクルのエミッター / フォースフィールド / グループを編集するエディタ（3ペイン: リスト / プレビュー / インスペクタ）
@@ -40,7 +41,8 @@ namespace Tako {
     /// 初期化
     /// </summary>
     /// <param name="isOpen">ウィンドウ表示フラグ（DebugUIManager の表示状態を共有する）</param>
-    void Initialize(bool* isOpen) { isOpen_ = isOpen; }
+    /// <param name="previewGrid">プレビューの床グリッド設定（EngineSettingsWindow の値を共有する）</param>
+    void Initialize(bool* isOpen, const GridSettings* previewGrid) { isOpen_ = isOpen; previewGrid_ = previewGrid; }
 
     /// <summary>
     /// GPU リソースを解放
@@ -181,6 +183,7 @@ namespace Tako {
     ViewportCameraController         cameraController_;
     bool                             previewSelectedOnly_ = false;                ///< true = 選択エミッターのみ描画
     bool                             previewShowGrid_     = true;
+    const GridSettings*              previewGrid_         = nullptr;              ///< プレビューの床グリッド設定（EngineSettingsWindow 所有）
     std::string                      selectedPreset_;                             ///< Load コンボの選択中プリセット名
 
     //入力状態
