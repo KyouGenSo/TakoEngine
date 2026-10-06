@@ -1,7 +1,14 @@
 #pragma once
 #include "WinApp.h"
 #include<wrl.h>
+#include <algorithm>
+#include <map>
 #include <memory>
+#include <optional>
+#include <span>
+#include <string>
+#include <string_view>
+#include <vector>
 #include "Vector2.h"
 #include "Xinput.h"
 #pragma comment(lib, "XInput.lib")
@@ -64,6 +71,41 @@ namespace Tako {
 
   public: //構造体
     template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>; ///< ComPtr のエイリアス
+
+    enum class Stick { None, Left, Right };
+
+    /// <summary>
+    /// 設定ファイルや UI で使うキー/ボタンの名前
+    /// </summary>
+    template<class T>
+    struct NamedCode {
+      T           code;
+      const char* name;
+    };
+
+    /// <summary>
+    /// どれか 1 つでも押されていればアクションが押されている扱い
+    /// </summary>
+    struct ActionBinding {
+      std::vector<BYTE> keys;          ///< DIK コード
+      std::vector<WORD> buttons;       ///< GamepadButton のビット
+      std::vector<int>  mouseButtons;  ///< PushMouse と同じ番号（0:左 1:右 2:中央 3:X1）
+    };
+
+    /// <summary>
+    /// 4 方向キーとスティックを合成した 2D 軸
+    /// </summary>
+    struct AxisBinding {
+      BYTE  up    = 0;  ///< DIK コード。0 は未割当
+      BYTE  down  = 0;
+      BYTE  left  = 0;
+      BYTE  right = 0;
+      Stick stick = Stick::None;
+    };
+
+    using ActionMap   = std::map<std::string, ActionBinding, std::less<>>;
+    using AxisMap     = std::map<std::string, AxisBinding, std::less<>>;
+    using NameAliases = std::map<std::string, std::string, std::less<>>;  ///< 旧名 → 今の名前（空は削除済み）
 
   public: //メンバー関数
     /// <summary>
@@ -172,6 +214,60 @@ namespace Tako {
     /// </summary>
     void StopVibration();
 
+    /// <summary>
+    /// アクションに割り当てたキー/ボタンのいずれかが押されているか（未定義の名前は assert）
+    /// </summary>
+    bool PushAction(std::string_view name) const;
+
+    /// <summary>
+    /// アクションが押された瞬間か（割当全体で判定するため、複数キーを押し替えても再発火しない）
+    /// </summary>
+    bool TriggerAction(std::string_view name) const;
+
+    /// <summary>
+    /// アクションが離された瞬間か（割当がすべて離れたときのみ true）
+    /// </summary>
+    bool ReleaseAction(std::string_view name) const;
+
+    /// <summary>
+    /// アクション名を変える。旧名で呼ぶコード（再ビルド前）にも新しい名前の割当を返す
+    /// </summary>
+    void RenameAction(const std::string& from, const std::string& to);
+
+    /// <summary>
+    /// アクションを削除する。削除した名前で呼ぶコード（再ビルド前）は assert せず未入力として扱う
+    /// </summary>
+    void RemoveAction(const std::string& name);
+
+    /// <summary>
+    /// 軸名を変える。旧名で呼ぶコード（再ビルド前）にも新しい名前の割当を返す
+    /// </summary>
+    void RenameAxis(const std::string& from, const std::string& to);
+
+    /// <summary>
+    /// 軸を削除する。削除した名前で呼ぶコード（再ビルド前）は assert せず入力なしとして扱う
+    /// </summary>
+    void RemoveAxis(const std::string& name);
+
+    /// <summary>
+    /// 名前表から code の名前を引く
+    /// </summary>
+    /// <returns>表に無ければ nullptr</returns>
+    template<class T>
+    static const char* FindName(std::span<const NamedCode<T>> table, T code) {
+      const auto it = std::ranges::find(table, code, &NamedCode<T>::code);
+      return it != table.end() ? it->name : nullptr;
+    }
+
+    /// <summary>
+    /// 名前表から name の code を引く
+    /// </summary>
+    template<class T>
+    static std::optional<T> FindCode(std::span<const NamedCode<T>> table, std::string_view name) {
+      const auto it = std::ranges::find_if(table, [name](const NamedCode<T>& entry) { return name == entry.name; });
+      return it != table.end() ? std::optional<T>(it->code) : std::nullopt;
+    }
+
     //============================================================
     //Setter
     //============================================================
@@ -196,6 +292,25 @@ namespace Tako {
     /// <param name="blocked">true の間、キーとマウスボタン/移動量を未入力として扱う</param>
     void SetBlocked(bool blocked) { isBlocked_ = blocked; }
 
+    /// <summary>
+    /// マウスボタンだけを未入力として扱う（次の Update から反映。移動量は遮断しない）
+    /// </summary>
+    void SetMouseButtonsBlocked(bool blocked) { isMouseButtonsBlocked_ = blocked; }
+
+    /// <summary>
+    /// キーボードだけを未入力として扱う（次の Update から反映）
+    /// </summary>
+    void SetKeyboardBlocked(bool blocked) { isKeyboardBlocked_ = blocked; }
+
+    /// <summary>
+    /// スティック各軸の入力をこの割合（0〜1）以下なら 0 として扱う
+    /// </summary>
+    void SetLeftStickDeadZone(float deadZone) { leftStickDeadZone_ = deadZone; }
+    void SetRightStickDeadZone(float deadZone) { rightStickDeadZone_ = deadZone; }
+
+    void SetActions(ActionMap actions) { actions_ = std::move(actions); }
+    void SetAxes(AxisMap axes) { axes_ = std::move(axes); }
+
     //============================================================
     //Getter
     //============================================================
@@ -214,14 +329,39 @@ namespace Tako {
     /// <summary>
     /// ゲームパッドの左スティックの値を取得
     /// </summary>
-    /// <returns>正規化された左スティックの値（-1.0 ~ 1.0）</returns>
+    /// <returns>正規化された左スティックの値（-1.0 ~ 1.0）。デッドゾーン内は 0</returns>
     Vector2 GetLeftStick() const;
 
     /// <summary>
     /// ゲームパッドの右スティックの値を取得
     /// </summary>
-    /// <returns>正規化された右スティックの値（-1.0 ~ 1.0）</returns>
+    /// <returns>正規化された右スティックの値（-1.0 ~ 1.0）。デッドゾーン内は 0</returns>
     Vector2 GetRightStick() const;
+
+    /// <summary>
+    /// 軸に割り当てた 4 方向キー（各 -1/0/1）とスティックの和（長さは丸めない。未定義の名前は assert）
+    /// </summary>
+    Vector2 GetAxis(std::string_view name) const;
+
+    float GetLeftStickDeadZone() const { return leftStickDeadZone_; }
+    float GetRightStickDeadZone() const { return rightStickDeadZone_; }
+    ActionMap& GetActions() { return actions_; }
+    AxisMap& GetAxes() { return axes_; }
+
+    /// <summary>
+    /// 割当可能なキーの DIK コードと名前（名前は DIK_ を除いたもの）
+    /// </summary>
+    static std::span<const NamedCode<BYTE>> GetKeyTable();
+
+    /// <summary>
+    /// ゲームパッドボタンのビットと名前（名前は GamepadButton のメンバ名）
+    /// </summary>
+    static std::span<const NamedCode<WORD>> GetButtonTable();
+
+    /// <summary>
+    /// マウスボタンの番号と名前
+    /// </summary>
+    static std::span<const NamedCode<int>> GetMouseButtonTable();
 
     /// <summary>
     /// ゲームパッドの左トリガーの値を取得
@@ -234,6 +374,18 @@ namespace Tako {
     /// </summary>
     /// <returns>正規化されたトリガー値（0.0 ~ 1.0）</returns>
     float GetRightTrigger() const;
+
+  private: //非公開関数
+    /// <summary>
+    /// 実行中に改名した旧名も引ける。削除済みなら nullptr、一度も無かった名前は assert し nullptr を返す
+    /// </summary>
+    const ActionBinding* FindAction(std::string_view name) const;
+
+    /// <summary>
+    /// 割当のいずれかが押されているか
+    /// </summary>
+    /// <param name="previous">true なら前フレームの状態で判定する</param>
+    bool IsActionDown(const ActionBinding& action, bool previous) const;
 
   private: //メンバー変数
     //基盤・入力デバイス
@@ -251,7 +403,9 @@ namespace Tako {
     BYTE keys_[256]     = {};  ///< キーボードの入力状態
     BYTE prevKeys_[256] = {};  ///< 前フレームのキーボード入力状態
 
-    bool isBlocked_ = false;  ///< キーボード/マウス入力の遮断フラグ
+    bool isBlocked_             = false;  ///< キーボード/マウス入力の遮断フラグ
+    bool isMouseButtonsBlocked_ = false;
+    bool isKeyboardBlocked_     = false;
 
     //ゲームパッド
     XINPUT_STATE state_{};              ///< ゲームパッドの状態
@@ -262,6 +416,16 @@ namespace Tako {
     float vibrationDuration_ = 0.0f;   ///< 振動継続時間（秒）。0以下で無限
     float vibrationTimer_    = 0.0f;   ///< 振動経過時間
     bool  isVibrating_       = false;  ///< 振動中フラグ
+
+    //デッドゾーン（既定値は XInput 推奨値）
+    float leftStickDeadZone_  = XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE / 32767.0f;
+    float rightStickDeadZone_ = XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE / 32767.0f;
+
+    //アクションマップ
+    ActionMap   actions_;
+    AxisMap     axes_;
+    NameAliases actionAliases_;  ///< 実行中に改名・削除した旧名。再ビルド前のコードが旧名で呼んでも落ちないよう再起動まで持つ（SetActions でも消さない）
+    NameAliases axisAliases_;
 
   };
 
