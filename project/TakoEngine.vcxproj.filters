@@ -237,6 +237,9 @@
     <ClCompile Include="engine\debug\PreviewViewport.cpp">
       <Filter>debug</Filter>
     </ClCompile>
+    <ClCompile Include="engine\debug\CodeGenerator.cpp">
+      <Filter>debug</Filter>
+    </ClCompile>
     <ClCompile Include="engine\scene\transition\ScaleTransition.cpp">
       <Filter>scene\transition</Filter>
     </ClCompile>
@@ -564,6 +567,9 @@
       <Filter>debug</Filter>
     </ClInclude>
     <ClInclude Include="engine\debug\PreviewViewport.h">
+      <Filter>debug</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\debug\CodeGenerator.h">
       <Filter>debug</Filter>
     </ClInclude>
     <ClInclude Include="engine\scene\transition\ScaleTransition.h">
