@@ -225,6 +225,9 @@
     <ClCompile Include="engine\debug\EngineSettingsWindow.cpp">
       <Filter>debug</Filter>
     </ClCompile>
+    <ClCompile Include="engine\debug\AssetBrowser.cpp">
+      <Filter>debug</Filter>
+    </ClCompile>
     <ClCompile Include="engine\debug\PrimitiveEditor.cpp">
       <Filter>debug</Filter>
     </ClCompile>
@@ -549,6 +552,9 @@
       <Filter>debug</Filter>
     </ClInclude>
     <ClInclude Include="engine\debug\EngineSettingsWindow.h">
+      <Filter>debug</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\debug\AssetBrowser.h">
       <Filter>debug</Filter>
     </ClInclude>
     <ClInclude Include="engine\debug\ViewportCameraController.h">

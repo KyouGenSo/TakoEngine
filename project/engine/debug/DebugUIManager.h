@@ -13,6 +13,7 @@
 #include "ParticleEditor.h"
 #include "DebugViewport.h"
 #include "EngineSettingsWindow.h"
+#include "AssetBrowser.h"
 
 namespace Tako {
 
@@ -40,6 +41,7 @@ namespace Tako {
       Inspector,
       Console,
       Performance,
+      Assets,
       EngineSettings,
       InputDebug,
       CollisionDebug,
@@ -330,6 +332,7 @@ namespace Tako {
     ParticleEditor       particleEditor_;
     DebugViewport        debugViewport_;
     EngineSettingsWindow engineSettings_;
+    AssetBrowser         assetBrowser_;
   };
 
 } // namespace Tako

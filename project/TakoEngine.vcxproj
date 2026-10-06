@@ -147,6 +147,9 @@
     <ClCompile Include="engine\debug\EngineSettingsWindow.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="engine\debug\AssetBrowser.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="engine\debug\ViewportCameraController.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
@@ -254,6 +257,7 @@
     <ClInclude Include="engine\debug\PrimitiveEditor.h" />
     <ClInclude Include="engine\debug\DebugViewport.h" />
     <ClInclude Include="engine\debug\EngineSettingsWindow.h" />
+    <ClInclude Include="engine\debug\AssetBrowser.h" />
     <ClInclude Include="engine\debug\ViewportCameraController.h" />
     <ClInclude Include="engine\debug\PreviewViewport.h" />
     <ClInclude Include="engine\effect\Particle\BoxEmitter.h" />

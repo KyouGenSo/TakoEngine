@@ -40,7 +40,7 @@ namespace Tako {
 
     // F12 / F10 で一括切り替えするメインウィンドウ
     constexpr Window kMainWindows[] = {
-      Window::SceneHierarchy, Window::Inspector, Window::GameViewport, Window::Console, Window::Performance
+      Window::SceneHierarchy, Window::Inspector, Window::GameViewport, Window::Console, Window::Performance, Window::Assets
     };
 
     constexpr float  kMenuBarGap        = 6.0f;                               // メニューバーの区切り線の左右に足す余白(px)
@@ -134,6 +134,7 @@ namespace Tako {
     particleEditor_.Initialize(&WindowFlag(Window::ParticleEditor), &engineSettings_.GetParticleEditorGrid());
     debugViewport_.Initialize(&WindowFlag(Window::DebugViewport), &engineSettings_.GetDebugViewportGrid());
     engineSettings_.Initialize(&WindowFlag(Window::EngineSettings));
+    assetBrowser_.Initialize(&WindowFlag(Window::Assets));
 
     // 初期ログ
     AddLog("DebugUIManager Initialized", LogType::Info);
@@ -203,6 +204,7 @@ namespace Tako {
     if (WindowFlag(Window::Console)) DrawConsole();
     if (WindowFlag(Window::Performance)) DrawPerformance();
     if (WindowFlag(Window::GameViewport)) DrawGameViewport();
+    assetBrowser_.Draw();
     isPreviewInputCaptured_ |= debugViewport_.Draw();
     engineSettings_.Draw();
     if (WindowFlag(Window::InputDebug)) DrawInputDebug();
@@ -286,6 +288,7 @@ namespace Tako {
         ImGui::MenuItem("Game Viewport", "F4", &WindowFlag(Window::GameViewport));
         ImGui::MenuItem("Console", "F5", &WindowFlag(Window::Console));
         ImGui::MenuItem("Performance", "F6", &WindowFlag(Window::Performance));
+        ImGui::MenuItem("Assets", nullptr, &WindowFlag(Window::Assets));
         ImGui::SeparatorText("Debug Windows");
         ImGui::MenuItem("Input Debug", nullptr, &WindowFlag(Window::InputDebug));
         ImGui::MenuItem("Collision Debug", nullptr, &WindowFlag(Window::CollisionDebug));

@@ -136,6 +136,10 @@ namespace Tako {
 
     size_t GetLoadedTextureCount() const { return textureData_.size(); }
 
+    bool IsLoaded(const std::string& fileName) const { return textureData_.contains(fileName); }
+
+    const std::string& GetDirectoryPath() const { return directoryPath_; }
+
     /// <summary>
     /// エンジン用デフォルトテクスチャの GPU ハンドル取得
     /// </summary>
