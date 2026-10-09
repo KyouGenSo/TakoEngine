@@ -31,6 +31,7 @@ namespace Tako {
       std::string           name;         ///< 表示名（UTF-8）
       std::string           textureKey;   ///< TextureManager のキー。サムネイル対象外は空
       bool                  isDirectory;
+      bool                  isSelected;
     };
 
   public: //メンバー関数
@@ -80,6 +81,13 @@ namespace Tako {
     void DrawGrid();
 
     /// <summary>
+    /// ImGui のマルチセレクトが出した選択要求を entries_ に反映する（検索で隠れている項目は選択しない）
+    /// </summary>
+    void ApplySelectionRequests(const ImGuiMultiSelectIO* io);
+
+    std::vector<std::filesystem::path> SelectedPaths() const;
+
+    /// <summary>
     /// グリッドの 1 項目を描画する。未ロードの画像は loadBudget が残っている間だけ読み込む
     /// </summary>
     void DrawItem(const Entry& entry, int& loadBudget);
@@ -87,7 +95,8 @@ namespace Tako {
     /// <summary>
     /// 直前のアイテム（グリッドの項目・ツリーのノード）の右クリックメニュー
     /// </summary>
-    void DrawItemContextMenu(const std::filesystem::path& path, bool isDirectory, const std::string& textureKey);
+    /// <param name="isSelected">true なら Delete は選択中の全項目が対象（ツリーのノードは常に false）</param>
+    void DrawItemContextMenu(const std::filesystem::path& path, bool isDirectory, const std::string& textureKey, bool isSelected);
 
     /// <summary>
     /// グリッドの空き領域の右クリックメニュー
@@ -103,6 +112,16 @@ namespace Tako {
     void ApplyRename();
 
     /// <summary>
+    /// 削除の確認モーダルを開く。Shift を押している間は確認を省いてすぐ削除する
+    /// </summary>
+    void RequestDelete(std::vector<std::filesystem::path> targets);
+
+    /// <summary>
+    /// deleteTargets_ をごみ箱へ移動する
+    /// </summary>
+    void ApplyDelete();
+
+    /// <summary>
     /// parent 直下に "New Folder" を作り、続けて名前変更を開く
     /// </summary>
     void CreateFolder(const std::filesystem::path& parent);
@@ -115,7 +134,6 @@ namespace Tako {
     std::vector<Entry>    entries_;
     std::filesystem::path currentDir_;
     std::filesystem::path pendingDir_;            ///< 次の Draw 冒頭で移動するフォルダ（走査中の entries_ / currentDir_ を書き換えないため）
-    std::filesystem::path selectedPath_;
     bool                  needsRefresh_ = true;
     bool                  revealInTree_ = false;  ///< 次のツリー描画で表示中フォルダまで展開する
 
@@ -129,11 +147,11 @@ namespace Tako {
     ImVec2             windowMax_;
 
     //ポップアップ
-    std::filesystem::path renameTarget_;
-    std::filesystem::path deleteTarget_;
-    char                  renameBuffer_[256] = "";
-    bool                  openRenamePopup_   = false;
-    bool                  openDeletePopup_   = false;
+    std::filesystem::path              renameTarget_;
+    std::vector<std::filesystem::path> deleteTargets_;
+    char                               renameBuffer_[256] = "";
+    bool                               openRenamePopup_   = false;
+    bool                               openDeletePopup_   = false;
   };
 
 } // namespace Tako

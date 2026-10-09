@@ -41,6 +41,9 @@ namespace Tako {
     constexpr const char* kRenamePopup = "Rename##AssetBrowser";
     constexpr const char* kDeletePopup = "Delete##AssetBrowser";
 
+    constexpr size_t      kMaxDeleteListLines = 10;  // 確認モーダルに並べるパスの上限（超えた分は件数だけ出す）
+    constexpr const char* kReadOnlyWarning    = "Assets: EngineResources is a build-time copy and cannot be modified";
+
     /// <summary>
     /// imgui.ini に保存する状態。ini は AssetBrowser の破棄後（DestroyContext 時）にも書き出されるため外に持つ
     /// </summary>
@@ -158,16 +161,19 @@ namespace Tako {
       ShellExecuteW(nullptr, L"open", L"explorer.exe", arguments.c_str(), nullptr, SW_SHOWNORMAL);
     }
 
-    bool MoveToRecycleBin(const fs::path& path) {
-      // pFrom は二重 null 終端のリスト
-      std::wstring from = AbsolutePath(path).wstring();
-      from.push_back(L'\0');
+    void MoveToRecycleBin(const std::vector<fs::path>& paths) {
+      // pFrom は null 区切り・二重 null 終端のリスト
+      std::wstring from;
+      for (const fs::path& path : paths) {
+        from += AbsolutePath(path).wstring();
+        from.push_back(L'\0');
+      }
 
       SHFILEOPSTRUCTW operation{};
       operation.wFunc  = FO_DELETE;
       operation.pFrom  = from.c_str();
       operation.fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI;
-      return SHFileOperationW(&operation) == 0 && !operation.fAnyOperationsAborted;
+      SHFileOperationW(&operation);
     }
 
     void DrawFolderIcon(ImDrawList* drawList, const ImVec2& min, const ImVec2& max) {
@@ -359,12 +365,16 @@ namespace Tako {
   }
 
   void AssetBrowser::ScanEntries() {
+    // 再走査をまたいで選択を保つ（フォルダが変われば一致するパスが無く、全て解除される）
+    std::vector<fs::path> selected = SelectedPaths();
+    std::ranges::sort(selected);
     entries_.clear();
 
     std::error_code ec;
     for (const fs::directory_entry& item : fs::directory_iterator(currentDir_, ec)) {
       const bool isDirectory = item.is_directory(ec);
-      entries_.push_back({ item.path(), ToUtf8(item.path().filename()), isDirectory ? std::string() : ToTextureKey(item.path()), isDirectory });
+      const bool isSelected  = std::ranges::binary_search(selected, item.path());
+      entries_.push_back({ item.path(), ToUtf8(item.path().filename()), isDirectory ? std::string() : ToTextureKey(item.path()), isDirectory, isSelected });
     }
     std::ranges::sort(entries_, [](const Entry& a, const Entry& b) {
       if (a.isDirectory != b.isDirectory) {
@@ -391,7 +401,7 @@ namespace Tako {
 
   void AssetBrowser::ImportFiles(const std::vector<std::filesystem::path>& sources) {
     if (IsEngineCopy(currentDir_)) {
-      Log("Assets: EngineResources is a build-time copy and cannot be modified", LogType::Warning);
+      Log(kReadOnlyWarning, LogType::Warning);
       return;
     }
 
@@ -444,7 +454,12 @@ namespace Tako {
     if (space > 0.0f) {
       ImGui::SetCursorPosX(ImGui::GetCursorPosX() + space);
     }
-    filter_.Draw("##Filter", filterWidth);
+    if (filter_.Draw("##Filter", filterWidth)) {
+      // 検索で隠れた項目が選択に残ると、見えないまま削除対象に入る
+      for (Entry& entry : entries_) {
+        entry.isSelected = entry.isSelected && filter_.PassFilter(entry.name.c_str());
+      }
+    }
     ImGui::SetItemTooltip("Search (\"a,b\" = OR, \"-a\" = exclude)");
   }
 
@@ -471,7 +486,7 @@ namespace Tako {
     if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
       pendingDir_ = folder.path;
     }
-    DrawItemContextMenu(folder.path, true, {});
+    DrawItemContextMenu(folder.path, true, {}, false);
 
     if (isNodeOpen) {
       for (const Folder& child : folder.children) {
@@ -490,9 +505,13 @@ namespace Tako {
     const float spacing = ImGui::GetStyle().ItemSpacing.x;
     const int   columns = (std::max)(1, static_cast<int>((ImGui::GetContentRegionAvail().x + spacing) / (thumbnailSize_ + spacing)));
 
+    // ponytail: 範囲選択の起点は ImGui が添字で覚えるため、再走査後は同じ位置の別項目が起点になる。気になるなら再走査時に起点を捨てる
+    const int itemCount = static_cast<int>(entries_.size());
+    ApplySelectionRequests(ImGui::BeginMultiSelect(ImGuiMultiSelectFlags_ClearOnEscape | ImGuiMultiSelectFlags_ClearOnClickVoid, -1, itemCount));
+
     int loadBudget = kMaxThumbnailLoadsPerFrame;
     int column     = 0;
-    for (int i = 0; i < static_cast<int>(entries_.size()); ++i) {
+    for (int i = 0; i < itemCount; ++i) {
       const Entry& entry = entries_[i];
       if (!filter_.PassFilter(entry.name.c_str())) {
         continue;
@@ -500,19 +519,54 @@ namespace Tako {
       if (column > 0) {
         ImGui::SameLine();
       }
-      ImGui::PushID(i);
+      // 位置でなく名前を ID にする（再走査で並びが変わっても、開いているメニューが別のファイルへ付け替わらない）
+      ImGui::PushID(entry.name.c_str());
+      ImGui::SetNextItemSelectionUserData(i);
       DrawItem(entry, loadBudget);
       ImGui::PopID();
       column = (column + 1) % columns;
     }
+
+    // 修飾キーまで一致した組み合わせだけが反応するので、Shift 併用は別に受ける
+    if (ImGui::Shortcut(ImGuiKey_Delete) || ImGui::Shortcut(ImGuiMod_Shift | ImGuiKey_Delete)) {
+      if (std::vector<fs::path> targets = SelectedPaths(); !targets.empty()) {
+        RequestDelete(std::move(targets));
+      }
+    }
+
+    ApplySelectionRequests(ImGui::EndMultiSelect());
+  }
+
+  void AssetBrowser::ApplySelectionRequests(const ImGuiMultiSelectIO* io) {
+    const int lastIndex = static_cast<int>(entries_.size()) - 1;
+    for (const ImGuiSelectionRequest& request : io->Requests) {
+      // SetAll は範囲を持たないので全件に読み替える
+      const bool isSetAll = request.Type == ImGuiSelectionRequestType_SetAll;
+      // ImGui が覚えている起点の添字は項目数が減った後も残り得るので、範囲内へ収める
+      const int first = isSetAll ? 0 : (std::max)(0, static_cast<int>(request.RangeFirstItem));
+      const int last  = isSetAll ? lastIndex : (std::min)(lastIndex, static_cast<int>(request.RangeLastItem));
+      for (int i = first; i <= last; ++i) {
+        // 検索で隠れている項目は選択させない（見えないまま削除対象に入るのを防ぐ）
+        entries_[i].isSelected = request.Selected && filter_.PassFilter(entries_[i].name.c_str());
+      }
+    }
+  }
+
+  std::vector<std::filesystem::path> AssetBrowser::SelectedPaths() const {
+    std::vector<fs::path> paths;
+    for (const Entry& entry : entries_) {
+      if (entry.isSelected) {
+        paths.push_back(entry.path);
+      }
+    }
+    return paths;
   }
 
   void AssetBrowser::DrawItem(const Entry& entry, int& loadBudget) {
     const ImVec2 pos         = ImGui::GetCursorScreenPos();
     const float  labelHeight = ImGui::GetTextLineHeightWithSpacing();
 
-    if (ImGui::Selectable("##Item", entry.path == selectedPath_, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(thumbnailSize_, thumbnailSize_ + labelHeight))) {
-      selectedPath_ = entry.path;
+    if (ImGui::Selectable("##Item", entry.isSelected, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(thumbnailSize_, thumbnailSize_ + labelHeight))) {
       if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
         if (entry.isDirectory) {
           pendingDir_ = entry.path;
@@ -523,7 +577,7 @@ namespace Tako {
       }
     }
     // ポップアップの End で直前のアイテムは Selectable に戻るので、以降の判定はそのまま使える
-    DrawItemContextMenu(entry.path, entry.isDirectory, entry.textureKey);
+    DrawItemContextMenu(entry.path, entry.isDirectory, entry.textureKey, entry.isSelected);
 
     // スクロール外の項目は読み込みも描画もしない
     if (!ImGui::IsItemVisible()) {
@@ -577,7 +631,7 @@ namespace Tako {
     ImGui::RenderTextEllipsis(drawList, labelMin, labelMax, labelMaxX, labelMaxX, entry.name.c_str(), nullptr, &textSize);
   }
 
-  void AssetBrowser::DrawItemContextMenu(const std::filesystem::path& path, bool isDirectory, const std::string& textureKey) {
+  void AssetBrowser::DrawItemContextMenu(const std::filesystem::path& path, bool isDirectory, const std::string& textureKey, bool isSelected) {
     if (!ImGui::BeginPopupContextItem()) {
       return;
     }
@@ -612,9 +666,11 @@ namespace Tako {
     if (ImGui::MenuItem("Rename", nullptr, false, canModify)) {
       RequestRename(path);
     }
-    if (ImGui::MenuItem("Delete", nullptr, false, canModify)) {
-      deleteTarget_    = path;
-      openDeletePopup_ = true;
+    // 選択中の項目から開いたメニューは、選択全体を削除対象にする
+    std::vector<fs::path> targets     = isSelected ? SelectedPaths() : std::vector<fs::path>{ path };
+    const std::string     deleteLabel = targets.size() > 1 ? std::format("Delete {} items###Delete", targets.size()) : "Delete###Delete";
+    if (ImGui::MenuItem(deleteLabel.c_str(), nullptr, false, canModify)) {
+      RequestDelete(std::move(targets));
     }
     if (isEngineCopy) {
       ImGui::TextDisabled("EngineResources is read-only (build-time copy)");
@@ -673,16 +729,15 @@ namespace Tako {
     }
 
     if (ImGui::BeginPopupModal(kDeletePopup, nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-      ImGui::TextUnformatted("Move to Recycle Bin?");
-      ImGui::TextDisabled("%s", ToUtf8(deleteTarget_).c_str());
+      ImGui::Text("Move %zu item(s) to Recycle Bin?", deleteTargets_.size());
+      for (size_t i = 0; i < (std::min)(deleteTargets_.size(), kMaxDeleteListLines); ++i) {
+        ImGui::TextDisabled("%s", ToUtf8(deleteTargets_[i]).c_str());
+      }
+      if (deleteTargets_.size() > kMaxDeleteListLines) {
+        ImGui::TextDisabled("... and %zu more", deleteTargets_.size() - kMaxDeleteListLines);
+      }
       if (ImGui::Button("Delete")) {
-        if (MoveToRecycleBin(deleteTarget_)) {
-          Log(std::format("Assets: Moved {} to Recycle Bin", ToUtf8(deleteTarget_)));
-        }
-        else {
-          Log(std::format("Assets: Failed to delete {}", ToUtf8(deleteTarget_)), LogType::Error);
-        }
-        needsRefresh_ = true;
+        ApplyDelete();
         ImGui::CloseCurrentPopup();
       }
       ImGui::SameLine();
@@ -719,11 +774,46 @@ namespace Tako {
       return;
     }
 
-    if (IsSameOrAncestor(renameTarget_, selectedPath_)) {
-      selectedPath_ = Rebase(selectedPath_, renameTarget_, destination);
+    // 次の ScanEntries は選択をパスで引き継ぐので、名前が変わった分を先に付け替えておく
+    for (Entry& entry : entries_) {
+      if (IsSameOrAncestor(renameTarget_, entry.path)) {
+        entry.path = Rebase(entry.path, renameTarget_, destination);
+      }
     }
     if (IsSameOrAncestor(renameTarget_, currentDir_)) {
       SetCurrentDir(Rebase(currentDir_, renameTarget_, destination));
+    }
+    needsRefresh_ = true;
+  }
+
+  void AssetBrowser::RequestDelete(std::vector<std::filesystem::path> targets) {
+    // メニューの Delete は無効表示で防げるが、Delete キーには無効表示が無い
+    if (std::ranges::any_of(targets, IsEngineCopy)) {
+      Log(kReadOnlyWarning, LogType::Warning);
+      return;
+    }
+
+    deleteTargets_ = std::move(targets);
+    if (ImGui::GetIO().KeyShift) {
+      ApplyDelete();
+    }
+    else {
+      openDeletePopup_ = true;
+    }
+  }
+
+  void AssetBrowser::ApplyDelete() {
+    MoveToRecycleBin(deleteTargets_);
+
+    // 一括操作は一部だけ成功し得るので、成否は対象ごとに実体の有無で判定する
+    std::error_code ec;
+    for (const fs::path& target : deleteTargets_) {
+      if (fs::exists(target, ec)) {
+        Log(std::format("Assets: Failed to delete {}", ToUtf8(target)), LogType::Error);
+      }
+      else {
+        Log(std::format("Assets: Moved {} to Recycle Bin", ToUtf8(target)));
+      }
     }
     needsRefresh_ = true;
   }
