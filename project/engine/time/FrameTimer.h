@@ -102,8 +102,8 @@ namespace Tako {
     void UpdateTimeScaleDuration();
 
   private: //メンバー変数
-    std::chrono::system_clock::time_point startTime_;
-    std::chrono::system_clock::time_point prevTime_;
+    std::chrono::steady_clock::time_point startTime_;
+    std::chrono::steady_clock::time_point prevTime_;
     float                                 deltaTime_;
     float                                 fps_;
     float                                 maxDeltaTime_ = 0.1f;  ///< 秒。deltaTime_ の上限（FPS 計測には掛けない）
