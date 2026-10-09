@@ -519,10 +519,14 @@ namespace Tako {
     auto elapsedTime = std::chrono::duration_cast<std::chrono::microseconds>(currentTime - referenceTime_);
 
     if (elapsedTime < kMinCheckTime) {
-      // 1 フレーム分の時間が経つまで待機
-      while (std::chrono::steady_clock::now() - referenceTime_ < kMinFrameTime) {
-        // 処理を待機
-        std::this_thread::sleep_for(std::chrono::microseconds(1));
+      // Sleep は OS のタイマー刻みまで寝過ごす（実測で最大約 2.6ms）ため、余裕がある間だけ寝て残りはスピンで合わせる
+      const std::chrono::milliseconds kSleepMargin(2);
+      const auto wakeTime = referenceTime_ + kMinFrameTime;
+      while (std::chrono::steady_clock::now() + kSleepMargin < wakeTime) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      }
+      while (std::chrono::steady_clock::now() < wakeTime) {
+        YieldProcessor();
       }
     }
 
