@@ -95,7 +95,7 @@ namespace Tako {
   struct ParticleCS
   {
     Vector3  translate;     ///< 現在位置
-    Vector3  prevPosition;  ///< 前フレーム位置（Verlet積分用）
+    Vector3  prevPosition;  ///< translate - 60fps 1 フレームあたりの変位（Verlet積分用の速度エンコード）
     Vector3  scale;         ///< 開始時スケール（Emit 時に決定）
     Vector3  endScale;      ///< 終了時スケール（PFLAG_SCALE_FADE が立っているときのみ補間先として使用）
     Vector3  rotate;        ///< 回転（オイラー角、ラジアン）

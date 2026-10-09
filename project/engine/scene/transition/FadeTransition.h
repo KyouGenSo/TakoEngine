@@ -89,7 +89,6 @@ namespace Tako {
     //タイミング
     float duration_;
     float transitionTime_;
-    float transitionSpeed_;
 
     //表示
     float       alpha_;

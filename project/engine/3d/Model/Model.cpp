@@ -107,7 +107,7 @@ namespace Tako {
       // 一時停止中でない場合のみアニメーション時間を更新
       if (!isPaused_) {
         // アニメーション時間の更新（再生速度とタイムスケールを適用）
-        UpdateAnimation(animationSpeed_ / 60.0f * FrameTimer::GetInstance()->GetTimeScale());
+        UpdateAnimation(animationSpeed_ * FrameTimer::GetInstance()->GetDeltaTime());
       }
 
       // ノード階層のアニメーション更新（スキニングの有無に関わらず実行）

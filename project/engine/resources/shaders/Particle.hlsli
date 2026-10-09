@@ -1,5 +1,6 @@
 static const int kMaxParticles = 1000000;
 static const uint kMaxEmitters = 1000; // GPUParticle::kNumMaxEmitter と必ず一致させること
+static const float kReferenceFPS = 60.0f; // 速度・減衰・ノイズ強度の調整基準。FrameRate::kReference と必ず一致させること
 
 // エミッタータイプの定義
 #define EMITTER_TYPE_SPHERE 0
@@ -52,7 +53,7 @@ struct VertexShaderOutput
 struct Particle
 {
     float3 translate;      // 現在位置
-    float3 prevPosition;   // 前フレーム位置（Verlet積分用）
+    float3 prevPosition;   // translate - 60fps 1 フレームあたりの変位（Verlet積分用の速度エンコード）
     float3 scale;          // 開始時スケール
     float3 endScale;       // 終了時スケール（PFLAG_SCALE_FADE のときのみ補間先として使用）
     float3 rotate;         // 回転（オイラー角、ラジアン）

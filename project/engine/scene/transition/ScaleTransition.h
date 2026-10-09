@@ -97,7 +97,6 @@ namespace Tako {
     //タイミング
     float duration_;
     float transitionTime_;
-    float transitionSpeed_;
 
     //パラメータ
     Vector2 center_;     ///< 円の中心位置

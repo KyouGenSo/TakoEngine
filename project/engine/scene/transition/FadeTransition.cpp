@@ -4,6 +4,7 @@
 #include "TextureManager.h"
 #include "WinApp.h"
 #include "ColorFunc.h"
+#include "FrameTimer.h"
 #include <algorithm>
 
 namespace Tako {
@@ -14,7 +15,6 @@ namespace Tako {
     , state_(NONE)
     , duration_(0.0f)
     , transitionTime_(0.0f)
-    , transitionSpeed_(1.0f / 60.0f)
     , alpha_(0.0f)
     , isInitialized_(false)
   {
@@ -26,7 +26,6 @@ namespace Tako {
     , state_(NONE)
     , duration_(0.0f)
     , transitionTime_(0.0f)
-    , transitionSpeed_(1.0f / 60.0f)
     , alpha_(0.0f)
     , isInitialized_(false)
   {
@@ -38,7 +37,6 @@ namespace Tako {
     , state_(NONE)
     , duration_(0.0f)
     , transitionTime_(0.0f)
-    , transitionSpeed_(1.0f / 60.0f)
     , alpha_(0.0f)
     , isInitialized_(false)
   {
@@ -71,14 +69,14 @@ namespace Tako {
 
     case FADE_OUT:
       // フェードアウト（0→1）
-      transitionTime_ += transitionSpeed_;
+      transitionTime_ += FrameTimer::GetInstance()->GetUnscaledDeltaTime();
       transitionTime_ = std::min<float>(transitionTime_, duration_);
       alpha_ = std::clamp(transitionTime_ / duration_, 0.0f, 1.0f);
       break;
 
     case FADE_IN:
       // フェードイン（1→0）
-      transitionTime_ -= transitionSpeed_;
+      transitionTime_ -= FrameTimer::GetInstance()->GetUnscaledDeltaTime();
       if (transitionTime_ <= 0.0f) {
         transitionTime_ = 0.0f;
         state_ = NONE;

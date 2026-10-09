@@ -41,7 +41,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
     float3 prevPos = gParticles[particleIndex].prevPosition;
     float dt = gPerFrame.deltaTime;
 
-    // 一時停止・TimeScale 0 の間は状態を進めない。Verlet の変位項は dt に比例しないため明示的に止める。
+    // 一時停止・TimeScale 0 の間は状態を進めない。
     // 描画カウントは毎フレーム 0 から数え直すので、生存数の加算だけは行う
     if (dt <= 0.0f)
     {
@@ -52,6 +52,12 @@ void main(uint3 DTid : SV_DispatchThreadID)
         }
         return;
     }
+
+    // 初速・減衰・ノイズ強度は 60fps の 1 フレームあたりで調整された値なので、経過フレーム数に換算して適用する
+    float frameScale = dt * kReferenceFPS;
+
+    // prevPosition との差が 60fps 1 フレームあたりの変位（速度）を表す
+    float3 velocity = currentPos - prevPos;
 
     // --- 加速度の計算 ---
     float3 acceleration = float3(0.0f, 0.0f, 0.0f);
@@ -74,7 +80,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
             (gEmitters[eid].flags & EFLAG_CONVERGE_TO_TARGET))
         {
             float3 toTarget = gEmitters[eid].targetPosition - currentPos;
-            float3 vel = (currentPos - prevPos) / max(dt, 0.0001f);
+            float3 vel = velocity * kReferenceFPS;
             acceleration += gEmitters[eid].convergeStiffness * toTarget
                           - gEmitters[eid].convergeDamping * vel;
         }
@@ -98,30 +104,28 @@ void main(uint3 DTid : SV_DispatchThreadID)
                 currentTarget = gParticles[particleIndex].targetLocal;
             }
             float3 toTarget = currentTarget - currentPos;
-            float3 vel = (currentPos - prevPos) / max(dt, 0.0001f);
+            float3 vel = velocity * kReferenceFPS;
             acceleration += gEmitters[eid].lockStiffness * toTarget
                           - gEmitters[eid].lockDamping * vel;
         }
     }
 
     // --- Verlet 積分 ---
-    // フレーム間変位から暗黙速度を導出
-    float3 displacement = currentPos - prevPos;
-
     // 減衰の適用 — per-emitter 値をパーティクルから読む
-    displacement *= gParticles[particleIndex].damping;
+    velocity *= pow(gParticles[particleIndex].damping, frameScale);
 
-    // Curl Noise乱流（速度の擾乱として displacement に加算）
+    // Curl Noise乱流（速度の擾乱として加算）
     if (gParticles[particleIndex].flags & PFLAG_USE_CURL_NOISE)
     {
         // per-emitter 値をパーティクルから読む。noiseTime は全体の時間進行なのでグローバル維持
         float scale = gParticles[particleIndex].noiseScale;
         float3 noisePos = currentPos * scale + float3(0.0f, 0.0f, gPhysicsParams.noiseTime);
-        displacement += curlNoise3D(noisePos) * gParticles[particleIndex].noiseStrength;
+        velocity += curlNoise3D(noisePos) * gParticles[particleIndex].noiseStrength * frameScale;
     }
 
     // 新しい位置を計算
-    float3 newPos = currentPos + displacement + acceleration * dt * dt;
+    float3 stepDisplacement = velocity * frameScale + acceleration * dt * dt;
+    float3 newPos = currentPos + stepDisplacement;
 
     // --- 深度バッファ衝突 ---
     if (gParticles[particleIndex].flags & PFLAG_USE_DEPTH_COLLISION)
@@ -137,12 +141,12 @@ void main(uint3 DTid : SV_DispatchThreadID)
         if (collided)
         {
             // 反射速度が collisionPrev にエンコード済み
-            currentPos = collisionPrev;
+            stepDisplacement = newPos - collisionPrev;
         }
     }
 
-    // 位置の更新
-    gParticles[particleIndex].prevPosition = currentPos;
+    // 位置の更新。このステップの変位を 60fps 1 フレーム分に換算して持たせ、dt が変わっても速度を保つ
+    gParticles[particleIndex].prevPosition = newPos - stepDisplacement / frameScale;
     gParticles[particleIndex].translate = newPos;
 
     gParticles[particleIndex].rotate += gParticles[particleIndex].angularVelocity * dt;
