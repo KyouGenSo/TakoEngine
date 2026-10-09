@@ -171,7 +171,7 @@ namespace Tako {
     UpdateFPSLimiter();
 
     // GPU と OS に画面の交換を行うよう通知する
-    swapChain_->Present(vsync_ ? 1 : 0, 0);
+    swapChain_->Present(vsync_ ? 1 : 0, (!vsync_ && isTearingSupported_) ? DXGI_PRESENT_ALLOW_TEARING : 0);
 
     // コマンドアロケータをリセット
     hr = commandAllocator_->Reset();
@@ -334,6 +334,12 @@ namespace Tako {
 
     swapChainBufferCount_ = 2;
 
+    // フリップモデルで VSync 無効の Present を行うには、対応確認のうえ生成時と Present 時の両方で許可フラグが要る
+    BOOL allowTearing = FALSE;
+    if (SUCCEEDED(dxgiFactory_->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &allowTearing, sizeof(allowTearing)))) {
+      isTearingSupported_ = allowTearing == TRUE;
+    }
+
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc{};
     swapChainDesc.Width = WinApp::clientWidth; // 画面の幅
     swapChainDesc.Height = WinApp::clientHeight; // 画面の高さ
@@ -342,6 +348,7 @@ namespace Tako {
     swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT; // バックバッファとして使用
     swapChainDesc.BufferCount = swapChainBufferCount_; // バッファ数
     swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD; // フリップ後破棄
+    swapChainDesc.Flags = SwapChainFlags();
 
     //コマンドキュー、ウィンドウハンドル、設定を渡して生成する
     hr = dxgiFactory_->CreateSwapChainForHwnd(commandQueue_.Get(),
@@ -352,6 +359,9 @@ namespace Tako {
       reinterpret_cast<IDXGISwapChain1**>(swapChain_.GetAddressOf())
     );
     assert(SUCCEEDED(hr));
+
+    // ティアリング付き Present は排他フルスクリーンで使えないため、DXGI 標準の Alt+Enter 切り替えを止める
+    dxgiFactory_->MakeWindowAssociation(winApp_->GetHWnd(), DXGI_MWA_NO_ALT_ENTER);
   }
 
   void DX12Basic::CreateDepthStencilResource()
@@ -1011,7 +1021,7 @@ namespace Tako {
       width,
       height,
       DXGI_FORMAT_UNKNOWN,  // 既存のフォーマットを使用
-      0
+      SwapChainFlags()      // 生成時と揃えないとティアリング許可が外れる
     );
     assert(SUCCEEDED(hr));
 

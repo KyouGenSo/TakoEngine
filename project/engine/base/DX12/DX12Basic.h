@@ -336,6 +336,11 @@ namespace Tako {
     void CreateSwapChain();
 
     /// <summary>
+    /// スワップチェインの生成とリサイズで揃えて渡すフラグ
+    /// </summary>
+    UINT SwapChainFlags() const { return isTearingSupported_ ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0u; }
+
+    /// <summary>
     /// 深度バッファの生成
     /// </summary>
     void CreateDepthStencilResource();
@@ -428,9 +433,10 @@ namespace Tako {
   private: //メンバー変数
 
     //FPS 制御
-    std::chrono::steady_clock::time_point referenceTime_;         ///< 記録時間（FPS 制御用の基準時刻）
-    bool                                  vsync_         = true;
-    int                                   targetFPS_     = 60;    ///< 0 以下で上限なし
+    std::chrono::steady_clock::time_point referenceTime_;               ///< 記録時間（FPS 制御用の基準時刻）
+    bool                                  vsync_              = true;
+    int                                   targetFPS_          = 60;     ///< 0 以下で上限なし
+    bool                                  isTearingSupported_ = false;  ///< VSync 無効時にティアリング付きで Present できるか
 
     //描画先の再構築
     bool  isRebuildRequested_ = false;  ///< TakoFramework::Update の先頭で消費する
