@@ -150,6 +150,9 @@
     <ClCompile Include="engine\debug\AssetBrowser.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="engine\debug\UILayoutEditor.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="engine\debug\ViewportCameraController.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
@@ -214,6 +217,7 @@
     <ClCompile Include="engine\3d\Object\Object3d.cpp" />
     <ClCompile Include="engine\3d\Object\Object3dBasic.cpp" />
     <ClCompile Include="engine\2d\Sprite.cpp" />
+    <ClCompile Include="engine\2d\UILayout.cpp" />
     <ClCompile Include="engine\2d\SpriteBasic.cpp" />
     <ClCompile Include="engine\func\commonFunc\StringUtility.cpp" />
     <ClCompile Include="engine\2d\TextureManager.cpp" />
@@ -262,6 +266,7 @@
     <ClInclude Include="engine\debug\DebugViewport.h" />
     <ClInclude Include="engine\debug\EngineSettingsWindow.h" />
     <ClInclude Include="engine\debug\AssetBrowser.h" />
+    <ClInclude Include="engine\debug\UILayoutEditor.h" />
     <ClInclude Include="engine\debug\ViewportCameraController.h" />
     <ClInclude Include="engine\debug\PreviewViewport.h" />
     <ClInclude Include="engine\debug\CodeGenerator.h" />
@@ -319,6 +324,7 @@
     <ClInclude Include="engine\3d\Object\Object3d.h" />
     <ClInclude Include="engine\3d\Object\Object3dBasic.h" />
     <ClInclude Include="engine\2d\Sprite.h" />
+    <ClInclude Include="engine\2d\UILayout.h" />
     <ClInclude Include="engine\2d\SpriteBasic.h" />
     <ClInclude Include="engine\func\commonFunc\StringUtility.h" />
     <ClInclude Include="engine\2d\TextureManager.h" />

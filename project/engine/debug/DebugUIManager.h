@@ -14,6 +14,7 @@
 #include "DebugViewport.h"
 #include "EngineSettingsWindow.h"
 #include "AssetBrowser.h"
+#include "UILayoutEditor.h"
 
 namespace Tako {
 
@@ -49,6 +50,7 @@ namespace Tako {
       ParticleEditor,
       GlobalVariables,
       PrimitiveEditor,
+      UIEditor,
       ImGuiDemo,
       ImGuiMetrics,
       About,
@@ -138,6 +140,12 @@ namespace Tako {
     /// TakoFramework::Draw() の本編描画後・LineRenderer::Reset() 前に呼ぶ（本編の線分を流用するため）
     /// </summary>
     void DrawDebugViewportPass() { debugViewport_.DrawPass(); }
+
+    /// <summary>
+    /// UI Editor がシーン外のレイアウトをプレビュー編集中なら、ゲーム画面の上に重ねて描く
+    /// TakoFramework::Draw() の SceneManager::DrawWithoutEffect() 直後に呼ぶ
+    /// </summary>
+    void DrawUILayoutPreviewPass() { uiLayoutEditor_.DrawPreview(); }
 
     /// <summary>
     /// 保存済みの個人設定（テーマ・音量・起動時に開くウィンドウなど）を読み込み適用する。全システムの初期化後に起動時 1 回だけ呼ぶ
@@ -332,6 +340,7 @@ namespace Tako {
     DebugViewport        debugViewport_;
     EngineSettingsWindow engineSettings_;
     AssetBrowser         assetBrowser_;
+    UILayoutEditor       uiLayoutEditor_;
   };
 
 } // namespace Tako

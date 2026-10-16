@@ -13,6 +13,9 @@ namespace Tako {
   /// resources / EngineResources 配下のファイルをフォルダツリーとサムネイルで閲覧するウィンドウ
   /// </summary>
   class AssetBrowser {
+  public: //定数
+    static constexpr const char* kTexturePayload = "TAKO_TEXTURE";  ///< テクスチャ項目の D&D ペイロード型。データは終端付きのテクスチャキー
+
   private: //構造体
     /// <summary>
     /// フォルダツリーのノード

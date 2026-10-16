@@ -137,6 +137,7 @@ namespace Tako {
     debugViewport_.Initialize(&WindowFlag(Window::DebugViewport), &engineSettings_.GetDebugViewportGrid(), cameraSettings);
     engineSettings_.Initialize(&WindowFlag(Window::EngineSettings), startupWindows_);
     assetBrowser_.Initialize(&WindowFlag(Window::Assets));
+    uiLayoutEditor_.Initialize(&WindowFlag(Window::UIEditor));
 
     // 初期ログ
     AddLog("DebugUIManager Initialized", LogType::Info);
@@ -191,6 +192,7 @@ namespace Tako {
     primitiveEditor_.Update();
     particleEditor_.Update();
     debugViewport_.Update();
+    uiLayoutEditor_.Update();
   }
 
   void DebugUIManager::Draw() {
@@ -213,6 +215,7 @@ namespace Tako {
     if (WindowFlag(Window::CollisionDebug)) DrawCollisionDebug();
     isPreviewInputCaptured_ |= particleEditor_.Draw();
     isPreviewInputCaptured_ |= primitiveEditor_.Draw();
+    uiLayoutEditor_.Draw();
     if (WindowFlag(Window::ImGuiDemo)) ImGui::ShowDemoWindow(&WindowFlag(Window::ImGuiDemo));
     if (WindowFlag(Window::ImGuiMetrics)) ImGui::ShowMetricsWindow(&WindowFlag(Window::ImGuiMetrics));
     if (WindowFlag(Window::About)) DrawAbout();
@@ -236,9 +239,9 @@ namespace Tako {
     // ImGui 構築はゲーム更新より後なので、判定結果は次フレームの Input::Update で反映される
     Input* input = Input::GetInstance();
     input->SetBlocked(isPreviewInputCaptured_);
-    // エディタのパネル操作がゲームに届かないよう、画面外のクリックと入力欄への文字入力を止める
+    // エディタのパネル操作がゲームに届かないよう、画面外のクリックと入力欄への文字入力・UI Editor の矢印キー移動を止める
     input->SetMouseButtonsBlocked(!IsCursorOverGameView());
-    input->SetKeyboardBlocked(ImGui::GetIO().WantTextInput);
+    input->SetKeyboardBlocked(ImGui::GetIO().WantTextInput || uiLayoutEditor_.WantsKeyboard());
 #endif
   }
 
@@ -318,6 +321,7 @@ namespace Tako {
       if (ImGui::BeginMenu("Tools")) {
         ImGui::MenuItem("Particle Editor", nullptr, &WindowFlag(Window::ParticleEditor));
         ImGui::MenuItem("Primitive Editor", nullptr, &WindowFlag(Window::PrimitiveEditor));
+        ImGui::MenuItem("UI Editor", nullptr, &WindowFlag(Window::UIEditor));
         ImGui::MenuItem("Global Variables", nullptr, &WindowFlag(Window::GlobalVariables));
         ImGui::EndMenu();
       }
@@ -748,7 +752,7 @@ namespace Tako {
       ImVec2 availableSize = ImGui::GetContentRegionAvail();
 
       // クライアント領域のアスペクト比を計算
-      float aspectRatio = 16.0f / 9.0f;
+      float aspectRatio = static_cast<float>(WinApp::clientWidth) / static_cast<float>((std::max)(WinApp::clientHeight, 1));
 
       // アスペクト比を維持したサイズを計算
       ImVec2 imageSize;
@@ -773,9 +777,15 @@ namespace Tako {
       uint32_t srvIndex = PostEffectManager::GetInstance()->GetFinalResultSrvIndex();
       D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = SrvManager::GetInstance()->GetGPUDescriptorHandle(srvIndex);
       ImGui::Image((ImTextureID)gpuHandle.ptr, imageSize);
+      const ImVec2 imageMin = ImGui::GetItemRectMin();
+      const ImVec2 imageMax = ImGui::GetItemRectMax();
 
       // ゲーム画像の上にカーソルがあるか（レターボックス余白・タイトルバーは除外）
-      isGameViewportHovered_ = ImGui::IsItemHovered();
+      const bool isImageHovered = ImGui::IsItemHovered();
+
+      // UI Editor のギズモがマウスを使う間は、ゲームへクリックを渡さない
+      const bool isGizmoCapturing = uiLayoutEditor_.DrawViewportOverlay(imageMin, imageMax);
+      isGameViewportHovered_ = isImageHovered && !isGizmoCapturing;
     }
 
     ImGui::End();

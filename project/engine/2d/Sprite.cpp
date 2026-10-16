@@ -4,6 +4,7 @@
 #include "TextureManager.h"
 #include "SrvManager.h"
 #include "ColorFunc.h"
+#include <algorithm>
 #ifdef _DEBUG
 #include "ImGuiManager.h"
 #endif
@@ -43,43 +44,57 @@ namespace Tako {
     transform_.rotate = Vector3(0.0f, 0.0f, rotation_);
     transform_.scale = Vector3(size_.x, size_.y, 1.0f);
 
-    // アンカーポイントオフセット
-    float left = 0.0f - anchorPoint_.x;  // 左
-    float right = 1.0f - anchorPoint_.x; // 右
-    float top = 0.0f - anchorPoint_.y;   // 上
-    float bottom = 1.0f - anchorPoint_.y;// 下
+    // 枠の画面 px。合計がサイズを超える軸は比率を保って縮める
+    const float borderLeft   = sliceBorder_.x * sliceScale_;
+    const float borderTop    = sliceBorder_.y * sliceScale_;
+    const float borderRight  = sliceBorder_.z * sliceScale_;
+    const float borderBottom = sliceBorder_.w * sliceScale_;
+    const float borderWidth  = borderLeft + borderRight;
+    const float borderHeight = borderTop + borderBottom;
+    const float fitX = (borderWidth > size_.x && borderWidth > 0.0f) ? (std::max)(size_.x, 0.0f) / borderWidth : 1.0f;
+    const float fitY = (borderHeight > size_.y && borderHeight > 0.0f) ? (std::max)(size_.y, 0.0f) / borderHeight : 1.0f;
 
-    //左右反転
-    if (isFlipX_) {
-      left = -left;
-      right = -right;
-    }
+    // 頂点はサイズ 1 の単位空間なので、枠をサイズ比へ直す
+    const float unitLeft   = size_.x > 0.0f ? borderLeft * fitX / size_.x : 0.0f;
+    const float unitRight  = size_.x > 0.0f ? borderRight * fitX / size_.x : 0.0f;
+    const float unitTop    = size_.y > 0.0f ? borderTop * fitY / size_.y : 0.0f;
+    const float unitBottom = size_.y > 0.0f ? borderBottom * fitY / size_.y : 0.0f;
 
-    // 上下反転
-    if (isFlipY_) {
-      top = -top;
-      bottom = -bottom;
-    }
+    // 4x4 グリッドの線（アンカーポイント基準）。枠が 0 なら内側の線は外周と重なる
+    const float left   = 0.0f - anchorPoint_.x;
+    const float right  = 1.0f - anchorPoint_.x;
+    const float top    = 0.0f - anchorPoint_.y;
+    const float bottom = 1.0f - anchorPoint_.y;
+    const float xs[4]  = { left, left + unitLeft, right - unitRight, right };
+    const float ys[4]  = { top, top + unitTop, bottom - unitBottom, bottom };
 
-    // テクスチャ範囲指定
     const DirectX::TexMetadata& metadata = TextureManager::GetInstance()->GetMetaData(textureIndex_);
-    float texLeft = texTopLeft_.x / metadata.width;
-    float texRight = (texTopLeft_.x + texCutSize_.x) / metadata.width;
-    float texTop = texTopLeft_.y / metadata.height;
-    float texBottom = (texTopLeft_.y + texCutSize_.y) / metadata.height;
+    const float texWidth  = static_cast<float>(metadata.width);
+    const float texHeight = static_cast<float>(metadata.height);
+    const float us[4] = {
+      texTopLeft_.x / texWidth,
+      (texTopLeft_.x + sliceBorder_.x) / texWidth,
+      (texTopLeft_.x + texCutSize_.x - sliceBorder_.z) / texWidth,
+      (texTopLeft_.x + texCutSize_.x) / texWidth,
+    };
+    const float vs[4] = {
+      texTopLeft_.y / texHeight,
+      (texTopLeft_.y + sliceBorder_.y) / texHeight,
+      (texTopLeft_.y + texCutSize_.y - sliceBorder_.w) / texHeight,
+      (texTopLeft_.y + texCutSize_.y) / texHeight,
+    };
 
-    // 頂点リソースにデータを書き込む
-    vertexData_[0].position = { left, bottom, 0.0f, 1.0f }; // 左下
-    vertexData_[0].texCoord = { texLeft, texBottom };
+    // 反転はアンカーポイントを中心とした鏡映
+    const float flipX = isFlipX_ ? -1.0f : 1.0f;
+    const float flipY = isFlipY_ ? -1.0f : 1.0f;
 
-    vertexData_[1].position = { left, top, 0.0f, 1.0f }; // 左上
-    vertexData_[1].texCoord = { texLeft, texTop };
-
-    vertexData_[2].position = { right, bottom, 0.0f, 1.0f }; // 右下
-    vertexData_[2].texCoord = { texRight, texBottom };
-
-    vertexData_[3].position = { right, top, 0.0f, 1.0f }; // 右上
-    vertexData_[3].texCoord = { texRight, texTop };
+    for (uint32_t row = 0; row < 4; ++row) {
+      for (uint32_t col = 0; col < 4; ++col) {
+        VertexData& vertex = vertexData_[row * 4 + col];
+        vertex.position = { xs[col] * flipX, ys[row] * flipY, 0.0f, 1.0f };
+        vertex.texCoord = { us[col], vs[row] };
+      }
+    }
 
     // Sprite の座標変換
     Matrix4x4 worldMatrixSprite = Mat4x4::MakeAffine(transform_.scale, transform_.rotate, transform_.translate);
@@ -108,37 +123,53 @@ namespace Tako {
     // SRV の DescriptorTable を設定,テクスチャを指定
     SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(SpriteBasic::kTextureParam, textureIndex_);
 
-    // 描画
-    SpriteBasic::GetInstance()->GetDX12Basic()->GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0);
+    // 枠が無ければ外周 1 枚板だけ描く
+    const bool isSliced = IsSliced();
+    SpriteBasic::GetInstance()->GetDX12Basic()->GetCommandList()->DrawIndexedInstanced(
+      isSliced ? kSliceIndexCount : kQuadIndexCount, 1, isSliced ? kQuadIndexCount : 0, 0, 0);
   }
 
   void Sprite::CreateVertexData()
   {
     // 頂点リソースを生成
-    vertexResource_ = SpriteBasic::GetInstance()->GetDX12Basic()->MakeBufferResource(sizeof(VertexData) * 4);
+    vertexResource_ = SpriteBasic::GetInstance()->GetDX12Basic()->MakeBufferResource(sizeof(VertexData) * kVertexCount);
 
     // 頂点バッファビューを作成する
     vertexBufferView_.BufferLocation = vertexResource_->GetGPUVirtualAddress();
-    vertexBufferView_.SizeInBytes = sizeof(VertexData) * 4;
+    vertexBufferView_.SizeInBytes = sizeof(VertexData) * kVertexCount;
     vertexBufferView_.StrideInBytes = sizeof(VertexData);
 
     // 頂点リソースをマップ
     vertexResource_->Map(0, nullptr, reinterpret_cast<void**>(&vertexData_));
 
     // インデックスリソースを生成
-    indexResource_ = SpriteBasic::GetInstance()->GetDX12Basic()->MakeBufferResource(sizeof(uint32_t) * 6);
+    constexpr uint32_t kIndexCount = kQuadIndexCount + kSliceIndexCount;
+    indexResource_ = SpriteBasic::GetInstance()->GetDX12Basic()->MakeBufferResource(sizeof(uint32_t) * kIndexCount);
 
     // インデックスバッファビューを作成する
     indexBufferView_.BufferLocation = indexResource_->GetGPUVirtualAddress();
-    indexBufferView_.SizeInBytes = sizeof(uint32_t) * 6;
+    indexBufferView_.SizeInBytes = sizeof(uint32_t) * kIndexCount;
     indexBufferView_.Format = DXGI_FORMAT_R32_UINT;
 
     // インデックスリソースをマップ
     indexResource_->Map(0, nullptr, reinterpret_cast<void**>(&indexData_));
 
-    // 三角形のインデックスデータを作成
-    indexData_[0] = 0; indexData_[1] = 1; indexData_[2] = 2;
-    indexData_[3] = 3; indexData_[4] = 2; indexData_[5] = 1;
+    // 頂点番号は row * 4 + col（row 0 が上）。三角形の並びは左下・左上・右下 / 右上・右下・左上
+    auto writeQuad = [](uint32_t* out, uint32_t leftTop, uint32_t rightTop, uint32_t leftBottom, uint32_t rightBottom) {
+      out[0] = leftBottom; out[1] = leftTop;     out[2] = rightBottom;
+      out[3] = rightTop;   out[4] = rightBottom; out[5] = leftTop;
+    };
+
+    writeQuad(indexData_, 0, 3, 12, 15);
+
+    uint32_t* sliceIndices = indexData_ + kQuadIndexCount;
+    for (uint32_t row = 0; row < 3; ++row) {
+      for (uint32_t col = 0; col < 3; ++col) {
+        const uint32_t leftTop = row * 4 + col;
+        writeQuad(sliceIndices, leftTop, leftTop + 1, leftTop + 4, leftTop + 5);
+        sliceIndices += 6;
+      }
+    }
   }
 
   void Sprite::CreateMaterialData()
@@ -229,6 +260,7 @@ namespace Tako {
     ImGui::Text("Texture Settings");
     ImGui::DragFloat2("Texture Top-Left", &texTopLeft_.x, 1.0f, 0.0f, 4096.0f);
     ImGui::DragFloat2("Texture Cut Size", &texCutSize_.x, 1.0f, 0.0f, 4096.0f);
+    ImGui::DragFloat4("Slice Border (LTRB)", &sliceBorder_.x, 1.0f, 0.0f, 4096.0f);
 
     // テクスチャ情報の表示
     ImGui::Separator();

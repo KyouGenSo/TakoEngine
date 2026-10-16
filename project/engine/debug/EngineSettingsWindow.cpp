@@ -51,6 +51,7 @@ namespace Tako {
       { Window::PostEffect,      "PostEffect Settings" },
       { Window::ParticleEditor,  "Particle Editor" },
       { Window::PrimitiveEditor, "Primitive Editor" },
+      { Window::UIEditor,        "UI Editor" },
       { Window::GlobalVariables, "Global Variables" },
     };
 

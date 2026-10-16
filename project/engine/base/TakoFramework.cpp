@@ -268,6 +268,11 @@ namespace Tako {
 
     SceneManager::GetInstance()->DrawWithoutEffect();
 
+#ifdef _DEBUG
+    // シーンの HUD と同じ RT へ、UI Editor のプレビューを重ねる
+    DebugUIManager::GetInstance()->DrawUILayoutPreviewPass();
+#endif
+
     TransitionManager::GetInstance()->Draw();
 
 #ifdef _DEBUG

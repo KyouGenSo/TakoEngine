@@ -576,6 +576,13 @@ namespace Tako {
         }
       }
     }
+    // テクスチャは UI Editor などへドラッグできる。ツールチップ（ウィンドウ）の End で直前のアイテムは Selectable に戻る
+    if (!entry.textureKey.empty() && ImGui::BeginDragDropSource()) {
+      ImGui::SetDragDropPayload(kTexturePayload, entry.textureKey.c_str(), entry.textureKey.size() + 1);
+      ImGui::TextUnformatted(entry.textureKey.c_str());
+      ImGui::EndDragDropSource();
+    }
+
     // ポップアップの End で直前のアイテムは Selectable に戻るので、以降の判定はそのまま使える
     DrawItemContextMenu(entry.path, entry.isDirectory, entry.textureKey, entry.isSelected);
 

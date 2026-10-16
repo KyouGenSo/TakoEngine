@@ -50,10 +50,8 @@ namespace Tako {
     HRESULT hr;
 
     // テクスチャの読み込み
-    // fileName が "EngineResources/" で始まる場合は directoryPath_ を経由せず、エンジン用パスとして直接読む
     DirectX::ScratchImage image;
-    const std::string filePath = fileName.starts_with("EngineResources/") ? fileName : (directoryPath_ + fileName);
-    std::wstring filePathW = StringUtility::ConvertString(filePath);
+    std::wstring filePathW = StringUtility::ConvertString(GetFilePath(fileName));
 
     if (filePathW.ends_with(L".dds")) {
       // DDS ファイルの読み込み
@@ -113,6 +111,12 @@ namespace Tako {
 
     SrvManager::GetInstance()->Free(it->second.srvIndex);
     textureData_.erase(it);
+  }
+
+  std::string TextureManager::GetFilePath(const std::string& fileName) const
+  {
+    // エンジン用テクスチャは directoryPath_ を経由せず直接読む
+    return fileName.starts_with("EngineResources/") ? fileName : (directoryPath_ + fileName);
   }
 
   void TextureManager::ReleaseIntermediateResources()

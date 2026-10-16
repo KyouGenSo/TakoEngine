@@ -141,6 +141,13 @@ namespace Tako {
     const std::string& GetDirectoryPath() const { return directoryPath_; }
 
     /// <summary>
+    /// LoadTexture に渡すキーから実ファイルのパスを求める（EngineResources/ 始まりはそのまま、それ以外はテクスチャディレクトリ基準）
+    /// </summary>
+    /// <param name="fileName">テクスチャのキー</param>
+    /// <returns>作業ディレクトリ基準のファイルパス</returns>
+    std::string GetFilePath(const std::string& fileName) const;
+
+    /// <summary>
     /// エンジン用デフォルトテクスチャの GPU ハンドル取得
     /// </summary>
     /// <param name="fileName">エンジン用テクスチャファイルの名前</param>

@@ -15,6 +15,11 @@ namespace Tako {
   /// 2D スプライト描画クラス。テクスチャの表示、切り抜き、反転などの機能を提供
   /// </summary>
   class Sprite {
+  private: //定数
+    static constexpr uint32_t kVertexCount     = 16;  ///< 9-slice 用の 4x4 グリッド
+    static constexpr uint32_t kQuadIndexCount  = 6;   ///< 外周 1 枚板（インデックスバッファ先頭）
+    static constexpr uint32_t kSliceIndexCount = 54;  ///< 9 枚分（外周 1 枚板の後ろ）
+
   private: //構造体
     /// <summary>
     /// 頂点データ構造体
@@ -85,6 +90,13 @@ namespace Tako {
     void SetTexCutSize(const Vector2& texCutSize) { texCutSize_ = texCutSize; }
 
     /// <summary>
+    /// 9-slice の枠幅を設定する。四隅は伸縮せず、辺と中央だけが伸びる。全要素 0 で通常描画
+    /// </summary>
+    /// <param name="borderTexPx">枠幅（テクスチャ px、x=左 y=上 z=右 w=下）</param>
+    /// <param name="scale">枠の画面 px ÷ テクスチャ px</param>
+    void SetSlice(const Vector4& borderTexPx, float scale = 1.0f) { sliceBorder_ = borderTexPx; sliceScale_ = scale; }
+
+    /// <summary>
     /// テクスチャをファイルパスから変更する。切り取り範囲は新しいテクスチャ全体に自動フィット
     /// </summary>
     /// <param name="texturePath">変更先テクスチャのファイルパス</param>
@@ -110,8 +122,11 @@ namespace Tako {
     [[nodiscard]] bool GetIsFlipY() const { return isFlipY_; }
     [[nodiscard]] Vector2 GetTexLeftTop() const { return texTopLeft_; }
     [[nodiscard]] Vector2 GetTexCutSize() const { return texCutSize_; }
+    [[nodiscard]] Vector4 GetSliceBorder() const { return sliceBorder_; }
 
   private: //非公開関数
+    bool IsSliced() const { return sliceBorder_.x > 0.0f || sliceBorder_.y > 0.0f || sliceBorder_.z > 0.0f || sliceBorder_.w > 0.0f; }
+
 
     /// <summary>
     /// 頂点データを生成
@@ -172,6 +187,9 @@ namespace Tako {
     bool isFlipX_ = false;  ///< 左右反転
 
     bool isFlipY_ = false;  ///< 上下反転
+
+    Vector4 sliceBorder_ = {};    ///< 9-slice の枠幅（テクスチャ px、左上右下）
+    float   sliceScale_  = 1.0f;  ///< 枠の画面 px ÷ テクスチャ px
   };
 
 } // namespace Tako
