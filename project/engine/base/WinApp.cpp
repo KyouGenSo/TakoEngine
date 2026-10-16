@@ -198,8 +198,11 @@ namespace Tako {
 
   void WinApp::ToggleFullScreen()
   {
-    // SetWindowPos の中で同期的に届く WM_SIZE が clientWidth/Height の更新とリサイズ通知を行う
-    if (!isFullScreen_) {
+    // SetWindowPos の中で同期的に届く WM_SIZE が clientWidth/Height の更新とリサイズ通知を行う。
+    // 通知先が IsFullScreen() で切替後の状態を読めるよう、先に切り替える
+    isFullScreen_ = !isFullScreen_;
+
+    if (isFullScreen_) {
       // ウィンドウスタイルを保存
       LONG currentStyle = GetWindowLong(hWnd_, GWL_STYLE);
 
@@ -220,9 +223,6 @@ namespace Tako {
         mi.rcMonitor.right - mi.rcMonitor.left,
         mi.rcMonitor.bottom - mi.rcMonitor.top,
         SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
-
-      // 状態を更新
-      isFullScreen_ = true;
     }
     else {
       // 元のウィンドウスタイルに戻す（リサイズ不可なら枠ドラッグ・最大化なし）
@@ -235,9 +235,6 @@ namespace Tako {
         windowedRect_.right - windowedRect_.left,
         windowedRect_.bottom - windowedRect_.top,
         SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
-
-      // 状態を更新
-      isFullScreen_ = false;
     }
   }
 
