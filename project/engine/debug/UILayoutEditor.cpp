@@ -8,6 +8,7 @@
 #include "TextureManager.h"
 #include "EnginePaths.h"
 #include "SpriteBasic.h"
+#include "UnsavedChangesModal.h"
 #include "WinApp.h"
 
 #include <algorithm>
@@ -128,7 +129,21 @@ namespace Tako {
   UILayoutEditor::~UILayoutEditor() = default;
 
   void UILayoutEditor::Update() {
+    if (!discardLayout_.empty()) {
+      if (UILayout* gameLayout = FindGameLayout(discardLayout_)) {
+        gameLayout->Load(discardLayout_);
+      }
+      discardLayout_.clear();
+    }
+
     SyncPreview();
+
+    // シーンの切り替えなどでインスタンスごと消えた編集は戻せないので知らせる
+    const std::vector<UILayout*>& instances = UILayout::GetInstances();
+    if (editedLayout_ && std::ranges::find(instances, editedLayout_) == instances.end()) {
+      AddLog(std::format("UI Editor: unsaved changes to '{}' were lost because the layout was unloaded", layoutName_), DebugUIManager::LogType::Warning);
+      editedLayout_ = nullptr;
+    }
 
     UILayout* layout = FindLayout();
     if (!layout) {
@@ -162,6 +177,10 @@ namespace Tako {
         }
       }
     }
+
+    // UI を描く区間の前後で保存内容を比べて編集を検出する（この区間ではゲームのコードが値を変えない）
+    UILayout* const   editing         = FindLayout();
+    const std::string editingSnapshot = editing ? editing->Serialize() : std::string();
 
     bool isEditorFocused = false;
     ImGui::SetNextWindowSize(ImVec2(760.0f, 640.0f), ImGuiCond_FirstUseEver);
@@ -203,6 +222,11 @@ namespace Tako {
       HandleArrowKeys(*selected);
     }
     isViewportFocused_ = false;
+
+    // 途中で別のレイアウトへ切り替えた場合は比べない
+    if (editing && editing == layout && editing->Serialize() != editingSnapshot) {
+      editedLayout_ = editing;
+    }
   }
 
   bool UILayoutEditor::DrawViewportOverlay(const ImVec2& imageMin, const ImVec2& imageMax) {
@@ -220,6 +244,7 @@ namespace Tako {
     }
     const ViewportMapping mapping{ imageMin, { imageSize.x / clientWidth, imageSize.y / clientHeight } };
     UIElement*            selected = FindSelected(*layout);
+    const std::string     snapshot = layout->Serialize();
 
     // 直前のアイテム（ゲーム画像）へのテクスチャのドロップ。選択中がグループならその子、画像なら兄弟として置く
     if (ImGui::BeginDragDropTarget()) {
@@ -350,6 +375,10 @@ namespace Tako {
     }
 
     drawList->PopClipRect();
+
+    if (layout->Serialize() != snapshot) {
+      editedLayout_ = layout;
+    }
     return isCaptured;
   }
 
@@ -403,13 +432,52 @@ namespace Tako {
       isPreviewMode_ = false;
     }
 
-    // ponytail: 切り替えると未保存のプレビュー編集は破棄される。残したくなったら変更フラグで確認ダイアログを出す
     if (preview_ && (!isPreviewMode_ || preview_->GetName() != layoutName_)) {
       preview_.reset();
     }
     if (isPreviewMode_ && !preview_) {
       preview_ = std::make_unique<UILayout>();
       preview_->Load(layoutName_);
+    }
+  }
+
+  void UILayoutEditor::RequestOpen(const OpenRequest& request) {
+    if (editedLayout_) {
+      pendingOpen_             = request;
+      isUnsavedPopupRequested_ = true;
+      return;
+    }
+    Open(request);
+  }
+
+  void UILayoutEditor::Open(const OpenRequest& request) {
+    editedLayout_ = nullptr;
+    if (request.isNew) {
+      // 古いプレビューの破棄（スプライト解放）を伴うので、作成は次の Update で行う
+      pendingNewLayout_ = request.name;
+      return;
+    }
+    layoutName_    = request.name;
+    isPreviewMode_ = request.isPreview;
+    Select(nullptr);
+  }
+
+  bool UILayoutEditor::SaveLayout(const UILayout& layout) {
+    const std::string path = LayoutFilePath(layout.GetName());
+    if (!layout.Save()) {
+      AddLog("UILayout save failed: " + path, DebugUIManager::LogType::Error);
+      return false;
+    }
+    AddLog("UILayout saved: " + path);
+    if (editedLayout_ == &layout) {
+      editedLayout_ = nullptr;
+    }
+    return true;
+  }
+
+  void UILayoutEditor::CollectUnsavedChanges(std::vector<std::string>& out) const {
+    if (editedLayout_) {
+      out.push_back("UI Editor: " + layoutName_);
     }
   }
 
@@ -426,13 +494,14 @@ namespace Tako {
   void UILayoutEditor::DrawToolbar(UILayout* layout) {
     auto open = [this](const std::string& name, bool isPreview) {
       if (name != layoutName_ || isPreview != isPreviewMode_) {
-        layoutName_    = name;
-        isPreviewMode_ = isPreview;
-        Select(nullptr);
+        RequestOpen({ .name = name, .isPreview = isPreview });
       }
     };
 
-    const std::string comboLabel = layoutName_.empty() ? "(none)" : (isPreviewMode_ ? layoutName_ + " (preview)" : layoutName_);
+    std::string comboLabel = layoutName_.empty() ? "(none)" : (isPreviewMode_ ? layoutName_ + " (preview)" : layoutName_);
+    if (layout && layout == editedLayout_) {
+      comboLabel += " *";
+    }
     ImGui::SetNextItemWidth(200.0f);
     if (ImGui::BeginCombo("Layout", comboLabel.c_str())) {
       std::vector<std::string> gameNames;
@@ -471,16 +540,27 @@ namespace Tako {
     }
     DrawNewLayoutPopup();
 
+    std::function<bool()> save;
+    if (layout) {
+      save = [this, layout] { return SaveLayout(*layout); };
+    }
+    const std::string     message = std::format("Layout '{}' has unsaved changes.", layoutName_);
+    const UnsavedChoice   choice  = DrawUnsavedChangesModal("Unsaved Changes##UIEditor", isUnsavedPopupRequested_, message, "Switch", save);
+    if (choice == UnsavedChoice::Proceed && pendingOpen_) {
+      // ゲーム側のレイアウトはメモリ上の編集が残るので、ファイルから読み直して捨てる（保存した場合は同じ内容に戻るだけ）
+      if (layout && layout != preview_.get()) {
+        discardLayout_ = layout->GetName();
+      }
+      Open(*pendingOpen_);
+    }
+    if (choice != UnsavedChoice::None) {
+      pendingOpen_.reset();
+    }
+
     ImGui::BeginDisabled(!layout);
     ImGui::SameLine();
     if (ImGui::Button("Save")) {
-      const std::string path = LayoutFilePath(layout->GetName());
-      if (layout->Save()) {
-        AddLog("UILayout saved: " + path);
-      }
-      else {
-        AddLog("UILayout save failed: " + path, DebugUIManager::LogType::Error);
-      }
+      SaveLayout(*layout);
     }
     ImGui::SameLine();
     if (ImGui::Button("Reload")) {
@@ -533,8 +613,7 @@ namespace Tako {
         newLayoutError_ = "A layout with this name already exists.";
       }
       else {
-        // 古いプレビューの破棄（スプライト解放）を伴うので、作成は次の Update で行う
-        pendingNewLayout_ = name;
+        RequestOpen({ .name = name, .isPreview = true, .isNew = true });
         ImGui::CloseCurrentPopup();
       }
     }
@@ -873,7 +952,8 @@ namespace Tako {
     if (!target) {
       return;
     }
-    const bool isRoot = target == &layout.GetRoot();
+    const bool        isRoot   = target == &layout.GetRoot();
+    const std::string snapshot = layout.Serialize();
 
     switch (pending.op) {
     case PendingOp::AddImage: {
@@ -935,11 +1015,16 @@ namespace Tako {
     }
     case PendingOp::Reload:
       layout.Load(layout.GetName());
-      dragMode_ = DragMode::None;
+      dragMode_     = DragMode::None;
+      editedLayout_ = nullptr;
       AddLog("UILayout reloaded: " + layout.GetName());
-      break;
+      return;
     case PendingOp::None:
       break;
+    }
+
+    if (layout.Serialize() != snapshot) {
+      editedLayout_ = &layout;
     }
   }
 

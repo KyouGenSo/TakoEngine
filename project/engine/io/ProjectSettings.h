@@ -57,6 +57,11 @@ namespace Tako {
     /// </summary>
     /// <returns>書き込めたら true</returns>
     bool Save(DX12Basic* dx12);
+
+    /// <summary>
+    /// Save が書き込む内容（JSON 文字列）
+    /// </summary>
+    std::string Serialize(DX12Basic* dx12);
   }
 
 } // namespace Tako

@@ -48,7 +48,9 @@ namespace Tako {
       const std::string& groupName = itGroup->first;
       Group& group = itGroup->second;
 
-      if (ImGui::CollapsingHeader(groupName.c_str())) {
+      // 未保存の印でラベルが変わっても開閉状態を保つよう、ID はグループ名で固定する
+      const std::string header = std::format("{}{}###{}", groupName, group.isDirty ? " *" : "", groupName);
+      if (ImGui::CollapsingHeader(header.c_str())) {
         ImGui::Indent();
 
         for (std::map<std::string, Item>::iterator itItem = group.items.begin(); itItem != group.items.end(); ++itItem) {
@@ -56,30 +58,32 @@ namespace Tako {
           Item& item = itItem->second;
 
           // 型によって ImGui ウィジェットを切り替え
+          bool isEdited = false;
           if (std::holds_alternative<bool>(item.value)) {
             bool* value = std::get_if<bool>(&item.value);
-            ImGui::Checkbox(itemName.c_str(), value);
+            isEdited = ImGui::Checkbox(itemName.c_str(), value);
           }
           else if (std::holds_alternative<float>(item.value)) {
             float* value = std::get_if<float>(&item.value);
-            ImGui::DragFloat(itemName.c_str(), value, 0.1f);
+            isEdited = ImGui::DragFloat(itemName.c_str(), value, 0.1f);
           }
           else if (std::holds_alternative<Vector2>(item.value)) {
             Vector2* value = std::get_if<Vector2>(&item.value);
-            ImGui::DragFloat2(itemName.c_str(), reinterpret_cast<float*>(value), 0.1f);
+            isEdited = ImGui::DragFloat2(itemName.c_str(), reinterpret_cast<float*>(value), 0.1f);
           }
           else if (std::holds_alternative<Vector3>(item.value)) {
             Vector3* value = std::get_if<Vector3>(&item.value);
-            ImGui::DragFloat3(itemName.c_str(), reinterpret_cast<float*>(value), 0.1f);
+            isEdited = ImGui::DragFloat3(itemName.c_str(), reinterpret_cast<float*>(value), 0.1f);
           }
           else if (std::holds_alternative<Vector4>(item.value)) {
             Vector4* value = std::get_if<Vector4>(&item.value);
-            ImGui::ColorEdit4(itemName.c_str(), reinterpret_cast<float*>(value));
+            isEdited = ImGui::ColorEdit4(itemName.c_str(), reinterpret_cast<float*>(value));
           }
           else if (std::holds_alternative<int32_t>(item.value)) {
             int32_t* value = std::get_if<int32_t>(&item.value);
-            ImGui::DragInt(itemName.c_str(), value, 1);
+            isEdited = ImGui::DragInt(itemName.c_str(), value, 1);
           }
+          group.isDirty |= isEdited;
         }
 
         ImGui::Text("\n");
@@ -163,6 +167,8 @@ namespace Tako {
 
     // ファイルを閉じる
     ofs.close();
+
+    itGroup->second.isDirty = false;
 
   }
 
@@ -261,6 +267,16 @@ namespace Tako {
       }
     }
 
+    datas_[groupName].isDirty = false;
+  }
+
+  void GlobalVariables::CollectUnsavedChanges(std::vector<std::string>& out) const
+  {
+    for (const auto& [groupName, group] : datas_) {
+      if (group.isDirty) {
+        out.push_back("Variables: " + groupName);
+      }
+    }
   }
 
   void GlobalVariables::SetValue(const std::string& groupName, const std::string& key, int32_t value)

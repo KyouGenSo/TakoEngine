@@ -3,7 +3,9 @@
 #ifdef _DEBUG
 
 #include <memory>
+#include <optional>
 #include <string>
+#include <vector>
 #include "imgui.h"
 #include "Vector2.h"
 
@@ -62,6 +64,15 @@ namespace Tako {
       bool        hasClientPos = false;    ///< false なら追加先の親矩形の中心に置く
     };
 
+    /// <summary>
+    /// 編集対象の切り替え先
+    /// </summary>
+    struct OpenRequest {
+      std::string name;
+      bool        isPreview = false;  ///< シーン外のファイルをプレビューで開くか
+      bool        isNew     = false;  ///< name で新規作成するか
+    };
+
   public: //メンバー関数
     UILayoutEditor();
     ~UILayoutEditor();
@@ -98,6 +109,11 @@ namespace Tako {
     /// </summary>
     void DrawPreview();
 
+    /// <summary>
+    /// 未保存の変更があるレイアウトを out に追加する（終了時の確認用）
+    /// </summary>
+    void CollectUnsavedChanges(std::vector<std::string>& out) const;
+
     //========================
     //Getter
     //========================
@@ -121,6 +137,22 @@ namespace Tako {
     /// 新規作成の実行と、編集対象に合わせたプレビューの生成・破棄
     /// </summary>
     void SyncPreview();
+
+    /// <summary>
+    /// 未保存の変更があれば確認モーダルを予約し、無ければすぐ開く
+    /// </summary>
+    void RequestOpen(const OpenRequest& request);
+
+    /// <summary>
+    /// 編集対象を切り替える（新規作成は次の Update で行う）。未保存の印は外す
+    /// </summary>
+    void Open(const OpenRequest& request);
+
+    /// <summary>
+    /// 保存して結果をログに出す。成功したら未保存の印を外す
+    /// </summary>
+    /// <returns>書き込めたら true</returns>
+    bool SaveLayout(const UILayout& layout);
 
     UIElement* FindSelected(UILayout& layout) const;
     void Select(const UIElement* element);
@@ -189,6 +221,12 @@ namespace Tako {
     std::string               pendingNewLayout_;             ///< 次の Update で作る新規レイアウト名
     char                      newLayoutBuffer_[64] = "";
     std::string               newLayoutError_;               ///< 新規作成ポップアップに出す検証エラー
+
+    //未保存の変更
+    const UILayout*            editedLayout_            = nullptr;  ///< 未保存の変更があるインスタンス。シーンが作り直した同名のレイアウトと区別するためポインタで持つ
+    std::optional<OpenRequest> pendingOpen_;                        ///< 確認モーダルの返答待ちの切り替え先
+    bool                       isUnsavedPopupRequested_ = false;
+    std::string                discardLayout_;                      ///< 次の Update でファイルから読み直して編集を捨てるゲーム側のレイアウト
 
     //名前の編集
     char renameBuffer_[128] = "";

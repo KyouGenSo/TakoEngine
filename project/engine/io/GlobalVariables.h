@@ -4,6 +4,7 @@
 #include <cassert>
 #include <memory>
 #include <string>
+#include <vector>
 #include "Vec3Func.h"
 #include "Vector4.h"
 #include "Vector2.h"
@@ -41,7 +42,8 @@ namespace Tako {
     /// グローバル変数のグループ
     /// </summary>
     struct Group {
-      std::map<std::string, Item> items; ///< アイテムのマップ
+      std::map<std::string, Item> items;            ///< アイテムのマップ
+      bool                        isDirty = false;  ///< ImGui で編集して未保存か（SaveFile と LoadFile で下ろす）
     };
 
   public: //メンバー関数
@@ -88,6 +90,11 @@ namespace Tako {
     /// </summary>
     /// <param name="groupName">グループ名</param>
     void LoadFile(const std::string& groupName);
+
+    /// <summary>
+    /// ImGui で編集して未保存のグループを out に追加する（終了時の確認用）
+    /// </summary>
+    void CollectUnsavedChanges(std::vector<std::string>& out) const;
 
     /// <summary>
     /// 項目の追加(int)

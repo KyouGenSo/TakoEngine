@@ -78,6 +78,11 @@ namespace Tako {
     bool Save() const;
 
     /// <summary>
+    /// Save が書き込む内容（JSON 文字列）
+    /// </summary>
+    std::string Serialize() const;
+
+    /// <summary>
     /// 現在のクライアントサイズから全要素の画面矩形を求め、スプライトへ反映する
     /// </summary>
     void Update();

@@ -65,6 +65,11 @@ namespace Tako {
     /// </summary>
     void LoadEditorSettings();
 
+    /// <summary>
+    /// ウィンドウで編集して未保存なら out に追加する（終了時の確認用）
+    /// </summary>
+    void CollectUnsavedChanges(std::vector<std::string>& out) const;
+
     //======================================================
     //Setter
     //======================================================
@@ -123,6 +128,11 @@ namespace Tako {
     /// </summary>
     void SaveEditorSettings();
 
+    /// <summary>
+    /// SaveEditorSettings が書き込む内容（JSON 文字列）
+    /// </summary>
+    std::string SerializeEditorSettings() const;
+
     void ApplyMasterVolume();
 
   private: //メンバー変数
@@ -162,6 +172,8 @@ namespace Tako {
 
     //コード生成
     bool isRebuildRequired_ = false;  ///< Save の改名でソースを書き換えた。実行中のコードは再ビルド・再起動まで古い名前のまま
+
+    bool isDirty_ = false;  ///< ウィンドウで編集して未保存か（Save と Reload で下ろす）
   };
 
 } // namespace Tako

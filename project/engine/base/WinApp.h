@@ -116,6 +116,11 @@ namespace Tako {
     /// </summary>
     void NotifyResize(int width, int height);
 
+    /// <summary>
+    /// ×ボタンと同じ経路でウィンドウを閉じる（SetCloseHandler の確認を通る）
+    /// </summary>
+    void RequestClose() const { PostMessage(hWnd_, WM_CLOSE, 0, 0); }
+
     //============================================================
     //Setter
     //============================================================
@@ -124,6 +129,11 @@ namespace Tako {
     /// </summary>
     /// <param name="handler">登録するウィンドウプロシージャハンドラ</param>
     void SetWndProcHandler(IWndProcHandler* handler) { handlers_.push_back(handler); }
+
+    /// <summary>
+    /// ウィンドウを閉じる要求（×・Alt+F4・RequestClose）で呼ぶ確認。false を返すと閉じない
+    /// </summary>
+    void SetCloseHandler(std::function<bool()> handler) { closeHandler_ = std::move(handler); }
 
     void SetWindowSize(int32_t width, int32_t height) { clientWidth = width; clientHeight = height; }
 
@@ -183,6 +193,8 @@ namespace Tako {
     RECT windowedRect_ = {};  ///< フルスクリーンから戻る時に使うウィンドウモード時の位置とサイズ
 
     DroppedFiles droppedFiles_;  ///< 毎フレーム ProcessMessage の冒頭でクリアする
+
+    std::function<bool()> closeHandler_;  ///< SetCloseHandler の確認（空なら常に閉じる）
 
     std::vector<ResizeCallbackEntry> onResizeFuncs_;
     uint32_t                         nextId_        = 1u;  ///< 次に割り当てるコールバック ID

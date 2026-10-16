@@ -227,6 +227,16 @@ namespace Tako {
     /// <returns>ファイルが無い、または途中で失敗したら false</returns>
     bool LoadProfile(const std::string& name);
 
+    /// <summary>
+    /// SaveProfile が書き込む内容（JSON 文字列）
+    /// </summary>
+    std::string SerializeProfile() const;
+
+    /// <summary>
+    /// PostEffect ウィンドウで編集して未保存なら、そのプロファイルを out に追加する（終了時の確認用）
+    /// </summary>
+    void CollectUnsavedChanges(std::vector<std::string>& out) const;
+
     //============================================================
     //Setter
     //============================================================
@@ -436,7 +446,11 @@ namespace Tako {
     Vector4      nonEffectTargetClearColor_ = { 0.0f, 0.0f, 0.0f, 0.0f };
     AntiAliasing antiAliasing_              = AntiAliasing::None;
 
-    std::array<char, 64> profileName_{};  ///< PostEffect ウィンドウのプロファイル名入力欄
+    //PostEffect ウィンドウ
+    std::array<char, 64> profileName_{};                    ///< プロファイル名入力欄。LoadProfile で読み込んだ名前になる
+    bool                 isProfileDirty_          = false;  ///< ウィンドウで編集して未保存か
+    std::string          pendingProfileLoad_;               ///< 確認モーダルの返答待ちの読み込み先
+    bool                 isUnsavedPopupRequested_ = false;
 
     mutable std::unordered_map<ID3D12Resource*, D3D12_RESOURCE_STATES> resourceStates_;  ///< リソース状態追跡用マップ
 

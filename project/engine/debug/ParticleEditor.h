@@ -2,8 +2,11 @@
 
 #ifdef _DEBUG
 
+#include <functional>
+#include <map>
 #include <memory>
 #include <string>
+#include <vector>
 #include "Vector3.h"
 #include "Vector4.h"
 #include "ViewportCameraController.h"
@@ -72,10 +75,18 @@ namespace Tako {
     /// </summary>
     void DrawPreviewPass();
 
+    /// <summary>
+    /// 未保存の変更があるエミッターを out に追加する（終了時の確認用）
+    /// </summary>
+    void CollectUnsavedChanges(std::vector<std::string>& out) const;
+
     //============================================================
     //Setter
     //============================================================
-    void SetEmitterManager(EmitterManager* emitterManager) { emitterManager_ = emitterManager; }
+    /// <summary>
+    /// 編集対象を差し替える。前の EmitterManager にあった未保存の編集は失われるので警告を出す
+    /// </summary>
+    void SetEmitterManager(EmitterManager* emitterManager);
     void SetForceFieldManager(ForceFieldManager* forceFieldManager) { forceFieldManager_ = forceFieldManager; }
 
   private: //非公開関数
@@ -148,6 +159,25 @@ namespace Tako {
     /// <param name="index">フィールドのインデックス（ハイライト判定用）</param>
     void DrawForceFieldVisualization(const ForceFieldData& field, int index);
 
+    /// <summary>
+    /// エミッターを未保存にする。今のインスタンスを覚えておき、ゲームが同名で作り直したら別物として扱う
+    /// </summary>
+    void MarkUnsaved(const std::string& emitterName);
+
+    /// <summary>
+    /// 消えた、または別のインスタンスに置き換わったエミッターの未保存の印を外す
+    /// </summary>
+    /// <param name="warn">編集が失われたことを警告するか（自分で読み込んで置き換えた直後は false）</param>
+    void PruneUnsavedEmitters(bool warn);
+
+    /// <summary>
+    /// 未保存の編集を上書きし得る読み込み。hasConflict なら確認モーダルを予約し、そうでなければすぐ実行する
+    /// </summary>
+    /// <param name="hasConflict">上書きされる未保存のエミッターがあるか</param>
+    /// <param name="message">確認モーダルの本文</param>
+    /// <param name="load">読み込み処理</param>
+    void RunOrConfirmLoad(bool hasConflict, const std::string& message, std::function<void()> load);
+
   private: //メンバー変数
     bool* isOpen_ = nullptr;  ///< ウィンドウ表示フラグ（DebugUIManager 所有）
 
@@ -168,6 +198,12 @@ namespace Tako {
     char               ffPresetSaveBuffer_[128] = "";
     char               ffPresetLoadBuffer_[128] = "";
     std::string        currentFFPresetName_;  ///< 最後にロード/保存したFFプリセット名（上書き保存用）
+
+    //未保存の変更（フォースフィールドは番号が実行中にずれて識別できず、グループは Save All でしか保存しないので対象外）
+    std::map<std::string, std::weak_ptr<GPUParticleEmitter>> unsavedEmitters_;                  ///< 未保存のエミッター名 → 編集したインスタンス
+    std::function<void()>                                    pendingLoad_;                      ///< 確認モーダルの返答待ちの読み込み
+    std::string                                              pendingLoadMessage_;
+    bool                                                     isUnsavedPopupRequested_ = false;
 
     //パーティクル可視化設定
     bool    showEmitterShapes_        = false;                       ///< エミッター形状の表示ON/OFF

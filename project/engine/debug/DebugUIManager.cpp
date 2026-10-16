@@ -22,6 +22,8 @@
 #include "EmitterManager.h"
 #include "GlobalVariables.h"
 #include "Audio.h"
+#include "BehaviorTreeEditor.h"
+#include "UnsavedChangesModal.h"
 
 #include <algorithm>
 #include <iomanip>
@@ -139,12 +141,16 @@ namespace Tako {
     assetBrowser_.Initialize(&WindowFlag(Window::Assets));
     uiLayoutEditor_.Initialize(&WindowFlag(Window::UIEditor));
 
+    // ×ボタン・Alt+F4 で未保存の変更があれば閉じずに確認する
+    WinApp::GetInstance()->SetCloseHandler([this] { return ConfirmExit(); });
+
     // 初期ログ
     AddLog("DebugUIManager Initialized", LogType::Info);
     AddLog("TakoEngine Ready", LogType::Info);
   }
 
   void DebugUIManager::Finalize() {
+    WinApp::GetInstance()->SetCloseHandler(nullptr);
     ClearLogs();
     primitiveEditor_.Finalize();
     particleEditor_.Finalize();
@@ -236,6 +242,8 @@ namespace Tako {
       PostEffectManager::GetInstance()->DrawImgui();
     }
 
+    DrawExitConfirmation();
+
     // ImGui 構築はゲーム更新より後なので、判定結果は次フレームの Input::Update で反映される
     Input* input = Input::GetInstance();
     input->SetBlocked(isPreviewInputCaptured_);
@@ -243,6 +251,35 @@ namespace Tako {
     input->SetMouseButtonsBlocked(!IsCursorOverGameView());
     input->SetKeyboardBlocked(ImGui::GetIO().WantTextInput || uiLayoutEditor_.WantsKeyboard());
 #endif
+  }
+
+  bool DebugUIManager::ConfirmExit() {
+    unsavedChanges_.clear();
+    uiLayoutEditor_.CollectUnsavedChanges(unsavedChanges_);
+    particleEditor_.CollectUnsavedChanges(unsavedChanges_);
+    primitiveEditor_.CollectUnsavedChanges(unsavedChanges_);
+    engineSettings_.CollectUnsavedChanges(unsavedChanges_);
+    PostEffectManager::GetInstance()->CollectUnsavedChanges(unsavedChanges_);
+    GlobalVariables::GetInstance()->CollectUnsavedChanges(unsavedChanges_);
+    for (const BehaviorTreeEditor* editor : BehaviorTreeEditor::GetInstances()) {
+      editor->CollectUnsavedChanges(unsavedChanges_);
+    }
+
+    if (unsavedChanges_.empty()) {
+      return true;
+    }
+    isExitPopupRequested_ = true;
+    return false;
+  }
+
+  void DebugUIManager::DrawExitConfirmation() {
+    std::string message = "Unsaved changes will be lost:";
+    for (const std::string& item : unsavedChanges_) {
+      message += "\n  " + item;
+    }
+    if (DrawUnsavedChangesModal("Unsaved Changes##Exit", isExitPopupRequested_, message, "Exit") == UnsavedChoice::Proceed && pEndFlag_) {
+      *pEndFlag_ = true;
+    }
   }
 
   void DebugUIManager::DrawMainMenuBar() {
@@ -275,7 +312,7 @@ namespace Tako {
 
         ImGui::Separator();
         if (ImGui::MenuItem("Exit", "Alt+F4")) {
-          if (pEndFlag_) *pEndFlag_ = true;
+          if (ConfirmExit() && pEndFlag_) *pEndFlag_ = true;
         }
         ImGui::EndMenu();
       }

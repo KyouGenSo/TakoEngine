@@ -33,11 +33,11 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
-#include <iomanip>
 #include <string_view>
 
 #ifdef _DEBUG
 #include "ImGuiManager.h"
+#include "UnsavedChangesModal.h"
 #endif
 
 namespace Tako {
@@ -273,33 +273,68 @@ namespace Tako {
 #ifdef _DEBUG
     ImGui::Begin("PostEffect Manager");
 
+    // UI を描く区間の前後で保存内容を比べて編集を検出する（この区間ではゲームのコードがチェーンを変えない）
+    std::string profileSnapshot = SerializeProfile();
+
+    auto saveProfile = [this] {
+      const bool saved = SaveProfile(profileName_.data());
+      DebugUIManager::GetInstance()->AddLog(std::format("PostEffect profile {}: {}", saved ? "saved" : "save failed", profileName_.data()),
+                                            saved ? DebugUIManager::LogType::Info : DebugUIManager::LogType::Error);
+      if (saved) {
+        isProfileDirty_ = false;
+      }
+      return saved;
+    };
+    auto loadProfile = [this, &profileSnapshot](const std::string& name) {
+      // 破棄を選んだ後なので、LoadProfile の上書きの警告は出さない
+      isProfileDirty_ = false;
+      const bool loaded = LoadProfile(name);
+      DebugUIManager::GetInstance()->AddLog(std::format("PostEffect profile {}: {}", loaded ? "loaded" : "load failed", name),
+                                            loaded ? DebugUIManager::LogType::Info : DebugUIManager::LogType::Error);
+      profileSnapshot = SerializeProfile();
+    };
+
     if (ImGui::BeginTabBar("PostEffectTab")) {
       if (ImGui::BeginTabItem("PostEffect")) {
-        ImGui::SeparatorText("Profile");
+        ImGui::SeparatorText(isProfileDirty_ ? "Profile *" : "Profile");
         ImGui::SetNextItemWidth(160.0f);
         ImGui::InputText("##ProfileName", profileName_.data(), profileName_.size());
         ImGui::SameLine();
         const bool hasName = profileName_[0] != '\0';
         ImGui::BeginDisabled(!hasName);
         if (ImGui::Button("Save")) {
-          const bool saved = SaveProfile(profileName_.data());
-          DebugUIManager::GetInstance()->AddLog(std::format("PostEffect profile {}: {}", saved ? "saved" : "save failed", profileName_.data()),
-                                                saved ? DebugUIManager::LogType::Info : DebugUIManager::LogType::Error);
+          saveProfile();
         }
         ImGui::EndDisabled();
         ImGui::SameLine();
         ImGui::SetNextItemWidth(160.0f);
         if (ImGui::BeginCombo("Load", "Select...")) {
           for (const std::string& name : ProfileNames()) {
-            if (ImGui::Selectable(name.c_str())) {
-              const bool loaded = LoadProfile(name);
-              DebugUIManager::GetInstance()->AddLog(std::format("PostEffect profile {}: {}", loaded ? "loaded" : "load failed", name),
-                                                    loaded ? DebugUIManager::LogType::Info : DebugUIManager::LogType::Error);
-              std::ranges::fill(profileName_, '\0');
-              name.copy(profileName_.data(), profileName_.size() - 1);
+            if (!ImGui::Selectable(name.c_str())) {
+              continue;
+            }
+            if (isProfileDirty_) {
+              pendingProfileLoad_      = name;
+              isUnsavedPopupRequested_ = true;
+            }
+            else {
+              loadProfile(name);
             }
           }
           ImGui::EndCombo();
+        }
+
+        std::function<bool()> save;
+        if (hasName) {
+          save = saveProfile;
+        }
+        const std::string   message = std::format("Profile '{}' has unsaved changes.", profileName_.data());
+        const UnsavedChoice choice  = DrawUnsavedChangesModal("Unsaved Changes##PostEffect", isUnsavedPopupRequested_, message, "Load", save);
+        if (choice == UnsavedChoice::Proceed) {
+          loadProfile(pendingProfileLoad_);
+        }
+        if (choice != UnsavedChoice::None) {
+          pendingProfileLoad_.clear();
         }
 
         ImGui::Text("Post Effects Configuration");
@@ -522,6 +557,10 @@ namespace Tako {
     }
 
     ImGui::End();
+
+    if (SerializeProfile() != profileSnapshot) {
+      isProfileDirty_ = true;
+    }
 #endif
   }
 
@@ -600,6 +639,19 @@ namespace Tako {
 
   bool PostEffectManager::SaveProfile(const std::string& name) const
   {
+    std::error_code ec;
+    std::filesystem::create_directories(kProfileDirectory, ec);
+    std::ofstream ofs(ProfilePath(name));
+    if (!ofs) {
+      Logger::Log("PostEffect profile save failed: %s", name.c_str());
+      return false;
+    }
+    ofs << SerializeProfile() << std::endl;
+    return true;
+  }
+
+  std::string PostEffectManager::SerializeProfile() const
+  {
     json chain  = json::array();
     json params = json::object();
     for (PostEffectType type : effectChain_) {
@@ -620,16 +672,14 @@ namespace Tako {
         params[EffectName(type)] = std::move(values);
       }
     }
+    return json{ { "Chain", chain }, { "Params", params } }.dump(4);
+  }
 
-    std::error_code ec;
-    std::filesystem::create_directories(kProfileDirectory, ec);
-    std::ofstream ofs(ProfilePath(name));
-    if (!ofs) {
-      Logger::Log("PostEffect profile save failed: %s", name.c_str());
-      return false;
+  void PostEffectManager::CollectUnsavedChanges(std::vector<std::string>& out) const
+  {
+    if (isProfileDirty_) {
+      out.push_back(std::format("PostEffect Manager: {}", profileName_[0] != '\0' ? profileName_.data() : "(unnamed profile)"));
     }
-    ofs << std::setw(4) << json{ { "Chain", chain }, { "Params", params } } << std::endl;
-    return true;
   }
 
   bool PostEffectManager::LoadProfile(const std::string& name)
@@ -669,6 +719,17 @@ namespace Tako {
           effect->SetGenericParam(current[i]);
         }
       }
+
+#ifdef _DEBUG
+      if (isProfileDirty_) {
+        DebugUIManager::GetInstance()->AddLog(std::format("PostEffect: unsaved profile changes were overwritten by loading '{}'", name),
+                                              DebugUIManager::LogType::Warning);
+      }
+#endif
+      isProfileDirty_ = false;
+      // Save の既定の保存先を、今読み込んだプロファイルにする
+      std::ranges::fill(profileName_, '\0');
+      name.copy(profileName_.data(), profileName_.size() - 1);
       return true;
     }
     catch (const json::exception& e) {

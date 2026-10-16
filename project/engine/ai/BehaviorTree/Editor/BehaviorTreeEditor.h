@@ -2,6 +2,7 @@
 
 #ifdef _DEBUG
 
+#include <functional>
 #include <vector>
 #include <memory>
 #include <unordered_map>
@@ -37,12 +38,12 @@ public: //メンバー関数
   /// <summary>
   /// コンストラクタ。Initialize() を別途呼ぶこと。
   /// </summary>
-  BehaviorTreeEditor() = default;
+  BehaviorTreeEditor();
 
   /// <summary>
   /// デストラクタ。EditorContext が残っていれば Finalize しておくこと。
   /// </summary>
-  ~BehaviorTreeEditor() = default;
+  ~BehaviorTreeEditor();
 
   BehaviorTreeEditor(const BehaviorTreeEditor&) = delete;
   BehaviorTreeEditor& operator=(const BehaviorTreeEditor&) = delete;
@@ -149,14 +150,24 @@ public: //メンバー関数
   /// </summary>
   void Clear();
 
-  //=========================================
+  /// <summary>
+  /// 未保存の変更があれば、そのツリーを out に追加する（終了時の確認用）
+  /// </summary>
+  void CollectUnsavedChanges(std::vector<std::string>& out) const;
+
+  //==========================================================
   //Setter
-  //=========================================
+  //==========================================================
   void SetVisible(bool visible) { isVisible_ = visible; }
 
-  //=========================================
+  //==========================================================
   //Getter
-  //=========================================
+  //==========================================================
+  /// <summary>
+  /// 生存中のエディタ一覧（生成順）
+  /// </summary>
+  static const std::vector<BehaviorTreeEditor*>& GetInstances();
+
   bool IsVisible() const { return isVisible_; }
   const std::string& GetCurrentTreeName() const { return currentTreeName_; }
   bool HasUnsavedChanges() const { return hasUnsavedChanges_; }
@@ -253,6 +264,14 @@ private: //非公開関数
   /// </summary>
   std::string GetTreeFilePath(const std::string& treeName) const;
 
+  /// <summary>
+  /// 未保存の変更があれば確認モーダルを予約して true を返し、無ければすぐ action を実行してその結果を返す
+  /// </summary>
+  /// <param name="actionName">確認モーダルのボタン名に使う操作名（Switch など）</param>
+  /// <param name="action">変更を捨てる操作。成功したら true を返す</param>
+  /// <returns>予約した、または実行に成功したら true</returns>
+  bool RunOrConfirm(const std::string& actionName, std::function<bool()> action);
+
 private: //メンバー変数
   EditorConfig config_;  ///< 注入された初期化設定
 
@@ -283,9 +302,10 @@ private: //メンバー変数
 
   bool hasUnsavedChanges_ = false;  ///< 未保存変更フラグ (CreateNode/DeleteNode/CreateLink 等で true、Save/Load で false)
 
-  bool showUnsavedChangesModal_ = false;  ///< SwitchTree で未保存変更検出時に表示する確認モーダルのトリガー
+  bool showUnsavedChangesModal_ = false;  ///< 未保存の確認モーダルを次の DrawToolbar で開く
 
-  std::string pendingSwitchTarget_;  ///< SwitchTree 未保存確認モーダル経由で切替予定のツリー名
+  std::function<bool()> pendingAction_;      ///< 確認モーダルの返答待ちの操作（ツリーの切り替え・新規作成・複製）
+  std::string           pendingActionName_;  ///< 確認モーダルのボタン名に使う操作名
 };
 
 } // namespace Tako

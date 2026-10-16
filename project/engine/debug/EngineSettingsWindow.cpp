@@ -26,7 +26,6 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
-#include <iomanip>
 #include <string>
 #include <utility>
 #include <vector>
@@ -303,6 +302,9 @@ namespace Tako {
     }
 
     if (ImGui::Begin("Engine Settings", isOpen_)) {
+      // UI を描く区間の前後で保存内容を比べて編集を検出する（この区間ではゲームのコードが値を変えない）
+      const std::string snapshot = ProjectSettings::Serialize(GetDX12()) + SerializeEditorSettings();
+
       // 下段の Save/Reload ボタン分の高さを残す
       const float footerHeight = ImGui::GetFrameHeightWithSpacing();
 
@@ -330,12 +332,17 @@ namespace Tako {
       }
       ImGui::EndChild();
 
-      if (ImGui::Button("Save")) {
+      if (ProjectSettings::Serialize(GetDX12()) + SerializeEditorSettings() != snapshot) {
+        isDirty_ = true;
+      }
+
+      if (ImGui::Button(isDirty_ ? "Save *###Save" : "Save###Save")) {
         const bool saved = ProjectSettings::Save(GetDX12());
         Log(std::format("Project settings {}: {}", saved ? "saved" : "save failed", ProjectSettings::kFilePath),
             saved ? DebugUIManager::LogType::Info : DebugUIManager::LogType::Error);
         SaveGeneratedHeaders();
         SaveEditorSettings();
+        isDirty_ = !saved;
       }
       ImGui::SameLine();
       if (ImGui::Button("Reload")) {
@@ -349,6 +356,7 @@ namespace Tako {
         actionOrigins_.reset();
         axisOrigins_.reset();
         LoadEditorSettings();
+        isDirty_ = false;
       }
       ImGui::SameLine();
       ImGui::TextDisabled("%s", ProjectSettings::kFilePath);
@@ -428,13 +436,28 @@ namespace Tako {
   }
 
   void EngineSettingsWindow::SaveEditorSettings() {
+    const std::filesystem::path& path = EditorSettingsPath();
+    std::error_code ec;
+    std::filesystem::create_directories(path.parent_path(), ec);
+    std::ofstream ofs(path);
+    if (!ofs) {
+      Log(std::format("Editor settings save failed: {}", EditorSettingsPathText()), DebugUIManager::LogType::Error);
+      return;
+    }
+    ofs << SerializeEditorSettings() << std::endl;
+
+    Log(std::format("Editor settings saved: {}", EditorSettingsPathText()));
+  }
+
+  std::string EngineSettingsWindow::SerializeEditorSettings() const {
     // 他プロジェクトの分は起動時に読んだまま残し、このプロジェクトの分だけ差し替える
-    const std::string& playFromScene = SceneManager::GetInstance()->GetStartupSceneOverride();
+    std::map<std::string, std::string> playFromSceneByProject = playFromSceneByProject_;
+    const std::string&                 playFromScene          = SceneManager::GetInstance()->GetStartupSceneOverride();
     if (playFromScene.empty()) {
-      playFromSceneByProject_.erase(ProjectKey());
+      playFromSceneByProject.erase(ProjectKey());
     }
     else {
-      playFromSceneByProject_[ProjectKey()] = playFromScene;
+      playFromSceneByProject[ProjectKey()] = playFromScene;
     }
 
     json startupWindows = json::array();
@@ -462,20 +485,15 @@ namespace Tako {
       { "ParticleEditorGrid", GridToJson(particleEditorGrid_) },
       { "ViewportCamera",     { { "MoveSpeed", viewportCamera_.moveSpeed }, { "Sensitivity", viewportCamera_.lookSensitivity }, { "FovY", viewportCamera_.fovY } } },
       { "StartupWindows",     startupWindows },
-      { "PlayFromScene",      playFromSceneByProject_ },
+      { "PlayFromScene",      playFromSceneByProject },
     };
+    return root.dump(4);
+  }
 
-    const std::filesystem::path& path = EditorSettingsPath();
-    std::error_code ec;
-    std::filesystem::create_directories(path.parent_path(), ec);
-    std::ofstream ofs(path);
-    if (!ofs) {
-      Log(std::format("Editor settings save failed: {}", EditorSettingsPathText()), DebugUIManager::LogType::Error);
-      return;
+  void EngineSettingsWindow::CollectUnsavedChanges(std::vector<std::string>& out) const {
+    if (isDirty_) {
+      out.push_back("Engine Settings");
     }
-    ofs << std::setw(4) << root << std::endl;
-
-    Log(std::format("Editor settings saved: {}", EditorSettingsPathText()));
   }
 
   void EngineSettingsWindow::DrawApplication() {
@@ -504,6 +522,8 @@ namespace Tako {
     bool fullScreen = winApp->IsFullScreen();
     if (ImGui::Checkbox("Fullscreen (F11)", &fullScreen)) {
       SetFullScreen(fullScreen);
+      // 切り替えは次のフレームなので、保存内容の比較では検出できない
+      isDirty_ = true;
     }
 
     DX12Basic* dx12 = GetDX12();

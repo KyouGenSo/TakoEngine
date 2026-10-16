@@ -4,6 +4,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 #include "Vector2.h"
 #include "Vector3.h"
 #include "Vector4.h"
@@ -71,6 +72,11 @@ namespace Tako {
     /// </summary>
     void DrawPreviewPass();
 
+    /// <summary>
+    /// 最後に保存・読込したプリセットから変更していれば out に追加する（終了時の確認用）
+    /// </summary>
+    void CollectUnsavedChanges(std::vector<std::string>& out) const;
+
   private: //非公開関数
     /// <summary>
     /// 現在のパラメータでプレビューモデルを再生成して差し替える
@@ -94,6 +100,11 @@ namespace Tako {
     /// <param name="name">プリセット名（拡張子なし）</param>
     /// <returns>成功したら true</returns>
     bool SavePreset(const std::string& name);
+
+    /// <summary>
+    /// SavePreset が書き込む内容（JSON 文字列）
+    /// </summary>
+    std::string SerializePreset() const;
 
     /// <summary>
     /// JSON プリセットを読み込んで現在の設定へ反映
@@ -133,6 +144,11 @@ namespace Tako {
     Vector2                          materialUvOffset_      = { 0.0f, 0.0f };
     float                            materialUvRotate_      = 0.0f;   ///< ラジアン
     char                             exportNameBuffer_[128] = "";     ///< OBJ 出力名（拡張子なし）
+
+    //プリセットの未保存
+    std::string savedPreset_;                      ///< 最後に保存・読込したときの SerializePreset()。今の値と違えば未保存
+    std::string pendingPresetLoad_;                ///< 確認モーダルの返答待ちの読み込み先
+    bool        isUnsavedPopupRequested_ = false;
 
     //専用ビューポート/カメラ
     std::unique_ptr<PreviewViewport> previewViewport_;  ///< オフスクリーンRT一式（初回オープン時に生成）

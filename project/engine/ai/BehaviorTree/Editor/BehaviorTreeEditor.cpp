@@ -6,6 +6,7 @@
 #include "BTBlackboard.h"
 #include "BTNodeRegistry.h"
 #include "DebugUIManager.h"
+#include "UnsavedChangesModal.h"
 #include <imgui_internal.h>
 #include <algorithm>
 #include <queue>
@@ -17,6 +18,33 @@
 #include <filesystem>
 
 namespace Tako {
+
+namespace {
+
+std::vector<BehaviorTreeEditor*>& Instances() {
+  static std::vector<BehaviorTreeEditor*> instances;
+  return instances;
+}
+
+} // namespace
+
+BehaviorTreeEditor::BehaviorTreeEditor() {
+  Instances().push_back(this);
+}
+
+BehaviorTreeEditor::~BehaviorTreeEditor() {
+  std::erase(Instances(), this);
+}
+
+const std::vector<BehaviorTreeEditor*>& BehaviorTreeEditor::GetInstances() {
+  return Instances();
+}
+
+void BehaviorTreeEditor::CollectUnsavedChanges(std::vector<std::string>& out) const {
+  if (hasUnsavedChanges_) {
+    out.push_back(std::format("{}: {}", config_.windowName, currentTreeName_));
+  }
+}
 
 void BehaviorTreeEditor::Initialize(const EditorConfig& config) {
   config_ = config;
@@ -74,6 +102,10 @@ void BehaviorTreeEditor::Update() {
     if (!pendingNodePositions_.empty()) {
       for (const auto& [id, pos] : pendingNodePositions_) {
         ed::SetNodePosition(id, pos);
+        // ed は位置を整数に丸めるので、移動の検出に使う位置を合わせておく
+        if (EditorNode* node = FindNodeById(id)) {
+          node->position = ed::GetNodePosition(id);
+        }
       }
       pendingNodePositions_.clear();
     }
@@ -147,6 +179,7 @@ void BehaviorTreeEditor::DrawToolbar() {
 
   if (ImGui::Button("Clear##bte_toolbar")) {
     Clear();
+    hasUnsavedChanges_ = true;
     nodeOffsetX = 100.0f;
     nodeOffsetY = 100.0f;
   }
@@ -212,14 +245,14 @@ void BehaviorTreeEditor::DrawToolbar() {
 
     ImGui::Separator();
     if (ImGui::Button("Create##new")) {
-      std::string name = newTreeNameBuf;
+      const std::string name = newTreeNameBuf;
       bool ok = false;
       if (newTreeMode == 0) {
-        ok = !name.empty() && CreateNewTree(name);
+        ok = !name.empty() && RunOrConfirm("Create", [this, name] { return CreateNewTree(name); });
       }
-      else {
-        ok = !name.empty() && !availableTrees.empty()
-          && CreateTreeFromCopy(availableTrees[copySourceIndex], name);
+      else if (!name.empty() && !availableTrees.empty()) {
+        const std::string source = availableTrees[copySourceIndex];
+        ok = RunOrConfirm("Create", [this, source, name] { return CreateTreeFromCopy(source, name); });
       }
       if (ok) {
         newTreeNameBuf[0] = '\0';
@@ -253,35 +286,15 @@ void BehaviorTreeEditor::DrawToolbar() {
     ImGui::EndPopup();
   }
 
-  // 未保存変更モーダル (SwitchTree から発動)
-  if (showUnsavedChangesModal_) {
-    ImGui::OpenPopup("Unsaved Changes##modal");
-    showUnsavedChangesModal_ = false;
+  // 未保存変更モーダル (RunOrConfirm から発動)。保存に失敗したらモーダルを開いたままにする
+  const std::string   unsavedMessage = std::format("Tree '{}' has unsaved changes.", currentTreeName_);
+  const UnsavedChoice unsavedChoice  = DrawUnsavedChangesModal("Unsaved Changes##modal", showUnsavedChangesModal_, unsavedMessage, pendingActionName_,
+                                                               [this] { return SaveTree(currentTreeName_); });
+  if (unsavedChoice == UnsavedChoice::Proceed && pendingAction_) {
+    pendingAction_();
   }
-  if (ImGui::BeginPopupModal("Unsaved Changes##modal", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-    ImGui::Text("Tree '%s' has unsaved changes.", currentTreeName_.c_str());
-    ImGui::Text("Switch to '%s'?", pendingSwitchTarget_.c_str());
-    ImGui::Separator();
-    if (ImGui::Button("Save and Switch##unsaved")) {
-      // 保存成功時のみ切替。失敗 (書き込み権限不足・ディスクエラー等) ならモーダル維持で再操作可能
-      if (SaveTree(currentTreeName_)) {
-        LoadTree(pendingSwitchTarget_);
-        pendingSwitchTarget_.clear();
-        ImGui::CloseCurrentPopup();
-      }
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("Discard and Switch##unsaved")) {
-      LoadTree(pendingSwitchTarget_);
-      pendingSwitchTarget_.clear();
-      ImGui::CloseCurrentPopup();
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("Cancel##unsaved")) {
-      pendingSwitchTarget_.clear();
-      ImGui::CloseCurrentPopup();
-    }
-    ImGui::EndPopup();
+  if (unsavedChoice != UnsavedChoice::None) {
+    pendingAction_ = nullptr;
   }
 
   // ノード作成用 UI
@@ -375,7 +388,15 @@ void BehaviorTreeEditor::DrawToolbar() {
 
 void BehaviorTreeEditor::DrawNodes() {
   for (auto& node : nodes_) {
-    node.position = ed::GetNodePosition(node.id);  // ドラッグ最新位置を同期
+    // 位置の適用待ちのノードは ed にまだ正しい位置が無いので読まない
+    const bool isPositionPending = std::ranges::any_of(pendingNodePositions_, [&node](const auto& pending) { return pending.first == node.id; });
+    if (!isPositionPending) {
+      const ImVec2 position = ed::GetNodePosition(node.id);  // ドラッグ最新位置を同期
+      if (position.x != node.position.x || position.y != node.position.y) {
+        hasUnsavedChanges_ = true;
+      }
+      node.position = position;
+    }
     DrawNode(node);
   }
 }
@@ -785,6 +806,7 @@ void BehaviorTreeEditor::DrawNodeInspector() {
   strncpy_s(nameBuf, node->displayName.c_str(), sizeof(nameBuf) - 1);
   if (ImGui::InputText("Name##inspector", nameBuf, sizeof(nameBuf))) {
     node->displayName = nameBuf;
+    hasUnsavedChanges_ = true;
   }
 
   ImGui::Separator();
@@ -792,8 +814,13 @@ void BehaviorTreeEditor::DrawNodeInspector() {
 
   // ノード自身の DrawImGui でパラメータ編集
   if (node->runtimeNode) {
+    // DrawImGui は編集したかを返さないので、保存されるパラメータの変化で検出する
+    const nlohmann::json parameters = ExtractNodeParameters(*node);
     if (!node->runtimeNode->DrawImGui()) {
       ImGui::TextDisabled("No editable parameters");
+    }
+    else if (ExtractNodeParameters(*node) != parameters) {
+      hasUnsavedChanges_ = true;
     }
   }
   else {
@@ -1335,14 +1362,17 @@ bool BehaviorTreeEditor::DeleteTree(const std::string& treeName) {
 
 void BehaviorTreeEditor::SwitchTree(const std::string& treeName) {
   if (treeName == currentTreeName_) return;
-  if (hasUnsavedChanges_) {
-    // 未保存変更あり → 確認モーダルを次フレームで表示
-    pendingSwitchTarget_ = treeName;
-    showUnsavedChangesModal_ = true;
+  RunOrConfirm("Switch", [this, treeName] { return LoadTree(treeName); });
+}
+
+bool BehaviorTreeEditor::RunOrConfirm(const std::string& actionName, std::function<bool()> action) {
+  if (!hasUnsavedChanges_) {
+    return action();
   }
-  else {
-    LoadTree(treeName);
-  }
+  pendingAction_           = std::move(action);
+  pendingActionName_       = actionName;
+  showUnsavedChangesModal_ = true;
+  return true;
 }
 
 std::vector<std::string> BehaviorTreeEditor::ListAvailableTrees() const {

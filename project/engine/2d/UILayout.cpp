@@ -230,13 +230,6 @@ namespace Tako {
   }
 
   bool UILayout::Save() const {
-    json root;
-    root["referenceResolution"] = referenceResolution_;
-    json& elements = root["elements"] = json::array();
-    for (const std::unique_ptr<UIElement>& child : root_.children) {
-      elements.push_back(WriteElement(*child));
-    }
-
     std::error_code ec;
     std::filesystem::create_directories(kDirectory, ec);
 
@@ -246,8 +239,18 @@ namespace Tako {
       LogWarning(std::format("UILayout: cannot open {} for writing.", path));
       return false;
     }
-    ofs << root.dump(2);
+    ofs << Serialize();
     return static_cast<bool>(ofs);
+  }
+
+  std::string UILayout::Serialize() const {
+    json root;
+    root["referenceResolution"] = referenceResolution_;
+    json& elements = root["elements"] = json::array();
+    for (const std::unique_ptr<UIElement>& child : root_.children) {
+      elements.push_back(WriteElement(*child));
+    }
+    return root.dump(2);
   }
 
   void UILayout::Update() {

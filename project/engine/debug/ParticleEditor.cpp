@@ -16,11 +16,13 @@
 #include "LineRenderer.h"
 #include "OBB.h"
 #include "Camera.h"
+#include "UnsavedChangesModal.h"
 
 #include <algorithm>
 #include <cstring>
 #include <cmath>
 #include <filesystem>
+#include <format>
 #include <numbers>
 
 namespace Tako {
@@ -38,6 +40,17 @@ namespace Tako {
 
     void AddLog(const std::string& message, LogType type) {
       DebugUIManager::GetInstance()->AddLog(message, type);
+    }
+
+    /// <summary>
+    /// プリセットと同じ形式の JSON（emitter が null なら null）
+    /// </summary>
+    nlohmann::json SerializeEmitter(const EmitterManager& emitterManager, const std::shared_ptr<GPUParticleEmitter>& emitter) {
+      nlohmann::json json;
+      if (emitter) {
+        emitterManager.SerializeEmitterToJSON(emitter, json);
+      }
+      return json;
     }
 
   } // anonymous namespace
@@ -61,6 +74,11 @@ namespace Tako {
         ImGui::TextDisabled("Call SetEmitterManager() first");
       }
       else {
+        // 選択中のエミッターの編集を、UI を描く区間の前後の保存内容の変化で検出する（この区間ではゲームのコードが値を変えない）
+        const std::string                         editingName    = selectedEmitterName_;
+        const std::shared_ptr<GPUParticleEmitter> editingEmitter = emitterManager_->GetEmitterByName(editingName);
+        const nlohmann::json                      editingBefore  = SerializeEmitter(*emitterManager_, editingEmitter);
+
         // アクティブパーティクル数の表示
         {
           uint32_t activeCount = GPUParticle::GetInstance()->GetActiveParticleCount();
@@ -99,6 +117,20 @@ namespace Tako {
           DrawInspectorPane();
         }
         ImGui::EndChild();
+
+        // 選択の切り替え・改名・読み込みでインスタンスが変わった場合は比べない
+        const bool isSameEmitter = editingEmitter && selectedEmitterName_ == editingName && emitterManager_->GetEmitterByName(editingName) == editingEmitter;
+        if (isSameEmitter && SerializeEmitter(*emitterManager_, editingEmitter) != editingBefore) {
+          MarkUnsaved(editingName);
+        }
+
+        const UnsavedChoice choice = DrawUnsavedChangesModal("Unsaved Changes##PE", isUnsavedPopupRequested_, pendingLoadMessage_, "Load");
+        if (choice == UnsavedChoice::Proceed && pendingLoad_) {
+          pendingLoad_();
+        }
+        if (choice != UnsavedChoice::None) {
+          pendingLoad_ = nullptr;
+        }
       }
     }
     ImGui::End();
@@ -116,6 +148,10 @@ namespace Tako {
   void ParticleEditor::Update() {
     if (!*isOpen_) {
       return;
+    }
+
+    if (emitterManager_) {
+      PruneUnsavedEmitters(true);
     }
 
     if (!previewViewport_) {
@@ -221,6 +257,7 @@ namespace Tako {
             emitterManager_->CreateSphereEmitter(newEmitterNameBuffer_, newEmitterPosition_, newEmitterSphereRadius_, 50, 0.016f);
             AddLog("Created sphere emitter: " + std::string(newEmitterNameBuffer_), LogType::Info);
             selectedEmitterName_ = newEmitterNameBuffer_;
+            MarkUnsaved(selectedEmitterName_);
             inspectTarget_ = InspectTarget::Emitter;
             newEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
           }
@@ -235,6 +272,7 @@ namespace Tako {
             emitterManager_->CreateBoxEmitter(newEmitterNameBuffer_, newEmitterPosition_, newEmitterBoxSize_, newEmitterBoxRotation_, 50, 0.016f);
             AddLog("Created box emitter: " + std::string(newEmitterNameBuffer_), LogType::Info);
             selectedEmitterName_ = newEmitterNameBuffer_;
+            MarkUnsaved(selectedEmitterName_);
             inspectTarget_ = InspectTarget::Emitter;
             newEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
           }
@@ -250,6 +288,7 @@ namespace Tako {
             emitterManager_->CreateTriangleEmitter(newEmitterNameBuffer_, newEmitterPosition_, newEmitterTriV1_, newEmitterTriV2_, newEmitterTriV3_, 50, 0.016f);
             AddLog("Created triangle emitter: " + std::string(newEmitterNameBuffer_), LogType::Info);
             selectedEmitterName_ = newEmitterNameBuffer_;
+            MarkUnsaved(selectedEmitterName_);
             inspectTarget_ = InspectTarget::Emitter;
             newEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
           }
@@ -282,6 +321,7 @@ namespace Tako {
             emitterManager_->CreateMeshEmitterFromModel(newEmitterNameBuffer_, modelNames[newEmitterModelIndex_], 50, 0.016f);
             AddLog("Created mesh emitter: " + std::string(newEmitterNameBuffer_) + " (" + modelNames[newEmitterModelIndex_] + ")", LogType::Info);
             selectedEmitterName_ = newEmitterNameBuffer_;
+            MarkUnsaved(selectedEmitterName_);
             inspectTarget_ = InspectTarget::Emitter;
             newEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
           }
@@ -295,7 +335,8 @@ namespace Tako {
     if (ImGui::BeginChild("##EmitterList", ImVec2(-FLT_MIN, 180.0f), ImGuiChildFlags_FrameStyle | ImGuiChildFlags_ResizeY)) {
       for (const auto& name : emitterNames) {
         bool isSelected = (selectedEmitterName_ == name);
-        if (ImGui::Selectable(name.c_str(), isSelected)) {
+        const std::string label = std::format("{}{}###{}", name, unsavedEmitters_.contains(name) ? " *" : "", name);
+        if (ImGui::Selectable(label.c_str(), isSelected)) {
           selectedEmitterName_ = name;
           inspectTarget_ = InspectTarget::Emitter;
         }
@@ -307,6 +348,7 @@ namespace Tako {
     if (emitterManager_->HasEmitter(selectedEmitterName_)) {
       if (ImGui::Button("Delete##EmitterList")) {
         emitterManager_->RemoveEmitter(selectedEmitterName_);
+        unsavedEmitters_.erase(selectedEmitterName_);
         selectedEmitterName_.clear();
         if (inspectTarget_ == InspectTarget::Emitter) {
           inspectTarget_ = InspectTarget::None;
@@ -318,6 +360,7 @@ namespace Tako {
         std::string newName = selectedEmitterName_ + "_copy";
         emitterManager_->CreateTemporaryEmitterFrom(selectedEmitterName_, newName, 0.0f);
         selectedEmitterName_ = newName;
+        MarkUnsaved(newName);
         inspectTarget_ = InspectTarget::Emitter;
         AddLog("Duplicated emitter as: " + newName, LogType::Info);
       }
@@ -376,6 +419,7 @@ namespace Tako {
         if (!newName.empty()) {
           AddLog("Pasted slot " + std::to_string(clipboardSlotIndex_) + " as new emitter: " + newName, LogType::Info);
           selectedEmitterName_ = newName;
+          MarkUnsaved(newName);
           inspectTarget_ = InspectTarget::Emitter;
         }
         else {
@@ -585,11 +629,16 @@ namespace Tako {
       if (ImGui::Button("Save All##ScenePreset")) {
         emitterManager_->SaveScenePreset(scenePresetNameBuffer_);
         AddLog("Saved all emitters to: " + std::string(scenePresetNameBuffer_), LogType::Info);
+        unsavedEmitters_.clear();
       }
       ImGui::SameLine();
       if (ImGui::Button("Load All##ScenePreset")) {
-        emitterManager_->LoadScenePreset(scenePresetNameBuffer_);
-        AddLog("Loaded all emitters from: " + std::string(scenePresetNameBuffer_), LogType::Info);
+        const std::string sceneName = scenePresetNameBuffer_;
+        RunOrConfirmLoad(!unsavedEmitters_.empty(), "Emitters with unsaved changes may be replaced by the scene preset.", [this, sceneName] {
+          emitterManager_->LoadScenePreset(sceneName);
+          AddLog("Loaded all emitters from: " + sceneName, LogType::Info);
+          PruneUnsavedEmitters(false);
+        });
       }
     }
 
@@ -612,7 +661,7 @@ namespace Tako {
       return;
     }
 
-    ImGui::Text("Editing: %s", selectedName.c_str());
+    ImGui::Text("Editing: %s%s", selectedName.c_str(), unsavedEmitters_.contains(selectedName) ? " *" : "");
 
     // 名前変更
     ImGui::SetNextItemWidth(200.0f);
@@ -622,6 +671,10 @@ namespace Tako {
       const std::string newName = renameEmitterNameBuffer_;
       if (emitterManager_->RenameEmitter(selectedName, newName)) {
         selectedEmitterName_ = newName;
+        if (auto unsaved = unsavedEmitters_.extract(selectedName)) {
+          unsaved.key() = newName;
+          unsavedEmitters_.insert(std::move(unsaved));
+        }
         AddLog("Renamed emitter: " + selectedName + " -> " + newName, LogType::Info);
         renameEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
       }
@@ -1080,6 +1133,7 @@ namespace Tako {
       if (ImGui::Button("Save as Preset##SavePreset") && strlen(presetNameBuffer_) > 0) {
         emitterManager_->SavePreset(presetNameBuffer_, selectedEmitterName_);
         AddLog("Saved preset: " + std::string(presetNameBuffer_), LogType::Info);
+        unsavedEmitters_.erase(selectedEmitterName_);
         presetNameBuffer_[0] = '\0';  // 入力ボックスをクリア
       }
 
@@ -1087,6 +1141,7 @@ namespace Tako {
       if (ImGui::Button(("Save as \"" + selectedEmitterName_ + "\"##SavePresetCurrent").c_str())) {
         emitterManager_->SavePreset(selectedEmitterName_, selectedEmitterName_);
         AddLog("Saved preset: " + selectedEmitterName_, LogType::Info);
+        unsavedEmitters_.erase(selectedEmitterName_);
       }
 
       ImGui::Separator();
@@ -1117,16 +1172,65 @@ namespace Tako {
 
         ImGui::BeginDisabled(selectedPreset_.empty());
         if (ImGui::Button("Load##LoadPreset")) {
-          const std::string newName = (strlen(newEmitterNameBuffer_) > 0) ? newEmitterNameBuffer_ : selectedPreset_;
-          emitterManager_->LoadPreset(selectedPreset_, newName);
-          AddLog("Loaded preset: " + selectedPreset_ + " as '" + newName + "'", LogType::Info);
-          selectedEmitterName_ = newName;
-          inspectTarget_ = InspectTarget::Emitter;
+          const std::string newName    = (strlen(newEmitterNameBuffer_) > 0) ? newEmitterNameBuffer_ : selectedPreset_;
+          const std::string presetName = selectedPreset_;
+          // 同名のエミッターは置き換わるので、未保存ならその編集が消える
+          RunOrConfirmLoad(unsavedEmitters_.contains(newName), std::format("Emitter '{}' has unsaved changes.", newName), [this, presetName, newName] {
+            emitterManager_->LoadPreset(presetName, newName);
+            AddLog("Loaded preset: " + presetName + " as '" + newName + "'", LogType::Info);
+            PruneUnsavedEmitters(false);
+            selectedEmitterName_ = newName;
+            inspectTarget_       = InspectTarget::Emitter;
+          });
           newEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
         }
         ImGui::EndDisabled();
       }
     }
+  }
+
+  void ParticleEditor::MarkUnsaved(const std::string& emitterName) {
+    unsavedEmitters_[emitterName] = emitterManager_->GetEmitterByName(emitterName);
+  }
+
+  void ParticleEditor::PruneUnsavedEmitters(bool warn) {
+    std::erase_if(unsavedEmitters_, [this, warn](const auto& unsaved) {
+      const auto& [name, edited] = unsaved;
+      const std::shared_ptr<GPUParticleEmitter> current = emitterManager_->GetEmitterByName(name);
+      if (current && current == edited.lock()) {
+        return false;
+      }
+      if (warn) {
+        AddLog(std::format("Particle Editor: unsaved changes to emitter '{}' were lost (removed or recreated by the game)", name), LogType::Warning);
+      }
+      return true;
+    });
+  }
+
+  void ParticleEditor::RunOrConfirmLoad(bool hasConflict, const std::string& message, std::function<void()> load) {
+    if (!hasConflict) {
+      load();
+      return;
+    }
+    pendingLoad_             = std::move(load);
+    pendingLoadMessage_      = message;
+    isUnsavedPopupRequested_ = true;
+  }
+
+  void ParticleEditor::CollectUnsavedChanges(std::vector<std::string>& out) const {
+    for (const auto& unsaved : unsavedEmitters_) {
+      out.push_back(std::format("Particle Editor: emitter '{}'", unsaved.first));
+    }
+  }
+
+  void ParticleEditor::SetEmitterManager(EmitterManager* emitterManager) {
+    if (emitterManager != emitterManager_) {
+      for (const auto& unsaved : unsavedEmitters_) {
+        AddLog(std::format("Particle Editor: unsaved changes to emitter '{}' were lost (the scene was changed)", unsaved.first), LogType::Warning);
+      }
+      unsavedEmitters_.clear();
+    }
+    emitterManager_ = emitterManager;
   }
 
   void ParticleEditor::DrawForceFieldInspector() {

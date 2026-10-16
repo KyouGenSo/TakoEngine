@@ -9,6 +9,7 @@
 #include "TextureManager.h"
 #include "FrameTimer.h"
 #include "ImGuiManager.h"
+#include "UnsavedChangesModal.h"
 
 #include <json.hpp>
 
@@ -16,13 +17,17 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
-#include <iomanip>
 #include <string>
 #include <vector>
 
 namespace Tako {
 
-  PrimitiveEditor::PrimitiveEditor() = default;
+  PrimitiveEditor::PrimitiveEditor()
+  {
+    // 起動時の既定値は保存済みとみなす
+    savedPreset_ = SerializePreset();
+  }
+
   PrimitiveEditor::~PrimitiveEditor() = default;
 
   namespace {
@@ -372,7 +377,8 @@ namespace Tako {
             AddLog("Primitive Editor: copied C++ snippet to clipboard", LogType::Info);
           }
 
-          ImGui::SeparatorText("Preset");
+          const bool isPresetDirty = SerializePreset() != savedPreset_;
+          ImGui::SeparatorText(isPresetDirty ? "Preset *" : "Preset");
           ImGui::SetNextItemWidth(150.0f);
           ImGui::InputText("##PrimPresetName", presetNameBuffer_, IM_ARRAYSIZE(presetNameBuffer_));
           ImGui::SameLine();
@@ -402,7 +408,32 @@ namespace Tako {
           }
           ImGui::SameLine();
           if (ImGui::Button("Load##PrimPreset") && !selectedPreset_.empty()) {
-            LoadPreset(selectedPreset_);
+            if (isPresetDirty) {
+              pendingPresetLoad_       = selectedPreset_;
+              isUnsavedPopupRequested_ = true;
+            }
+            else {
+              LoadPreset(selectedPreset_);
+            }
+          }
+
+          std::function<bool()> save;
+          if (presetNameBuffer_[0] != '\0') {
+            save = [this] {
+              if (!SavePreset(presetNameBuffer_)) {
+                return false;
+              }
+              selectedPreset_ = presetNameBuffer_;
+              return true;
+            };
+          }
+          const UnsavedChoice choice = DrawUnsavedChangesModal("Unsaved Changes##PrimEditor", isUnsavedPopupRequested_,
+                                                               "The current primitive has unsaved changes.", "Load", save);
+          if (choice == UnsavedChoice::Proceed) {
+            LoadPreset(pendingPresetLoad_);
+          }
+          if (choice != UnsavedChoice::None) {
+            pendingPresetLoad_.clear();
           }
 
           ImGui::SeparatorText("Export OBJ");
@@ -492,6 +523,24 @@ namespace Tako {
 
   bool PrimitiveEditor::SavePreset(const std::string& name)
   {
+    if (!std::filesystem::exists(kPresetDirectory)) {
+      std::filesystem::create_directories(kPresetDirectory);
+    }
+
+    std::ofstream ofs(std::string(kPresetDirectory) + name + ".json");
+    if (!ofs.is_open()) {
+      AddLog("Primitive Editor: failed to save preset '" + name + "'", LogType::Error);
+      return false;
+    }
+    savedPreset_ = SerializePreset();
+    ofs << savedPreset_ << std::endl;
+
+    AddLog("Primitive Editor: saved preset '" + name + "'", LogType::Info);
+    return true;
+  }
+
+  std::string PrimitiveEditor::SerializePreset() const
+  {
     using json = nlohmann::json;
 
     json preset;
@@ -548,20 +597,14 @@ namespace Tako {
     mat["uvScale"] = { materialUvScale_.x, materialUvScale_.y };
     mat["uvOffset"] = { materialUvOffset_.x, materialUvOffset_.y };
     mat["uvRotate"] = materialUvRotate_;
+    return preset.dump(2);
+  }
 
-    if (!std::filesystem::exists(kPresetDirectory)) {
-      std::filesystem::create_directories(kPresetDirectory);
+  void PrimitiveEditor::CollectUnsavedChanges(std::vector<std::string>& out) const
+  {
+    if (SerializePreset() != savedPreset_) {
+      out.push_back("Primitive Editor");
     }
-
-    std::ofstream ofs(std::string(kPresetDirectory) + name + ".json");
-    if (!ofs.is_open()) {
-      AddLog("Primitive Editor: failed to save preset '" + name + "'", LogType::Error);
-      return false;
-    }
-    ofs << std::setw(2) << preset << std::endl;
-
-    AddLog("Primitive Editor: saved preset '" + name + "'", LogType::Info);
-    return true;
   }
 
   bool PrimitiveEditor::LoadPreset(const std::string& name)
@@ -679,6 +722,7 @@ namespace Tako {
     }
 
     paramsDirty_ = true;
+    savedPreset_ = SerializePreset();
     AddLog("Primitive Editor: loaded preset '" + name + "'", LogType::Info);
     return true;
   }

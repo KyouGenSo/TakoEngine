@@ -127,6 +127,16 @@ namespace Tako {
 #endif
 
     switch (msg) {
+    case WM_CLOSE:
+    {
+      // 確認で拒まれたら DefWindowProc（DestroyWindow）へ渡さない
+      const std::function<bool()>& closeHandler = GetInstance()->closeHandler_;
+      if (closeHandler && !closeHandler()) {
+        return 0;
+      }
+    }
+    break;
+
     case WM_DESTROY:
       PostQuitMessage(0);
       break;

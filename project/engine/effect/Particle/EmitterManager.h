@@ -277,6 +277,13 @@ namespace Tako {
     void LoadPreset(const std::string& presetName, Object3d* obj3d);
 
     /// <summary>
+    /// エミッターを JSON にシリアライズ（プリセットと同じ形式）
+    /// </summary>
+    /// <param name="emitter">シリアライズするエミッター</param>
+    /// <param name="json">出力先の JSON オブジェクト</param>
+    void SerializeEmitterToJSON(const std::shared_ptr<GPUParticleEmitter>& emitter, nlohmann::json& json) const;
+
+    /// <summary>
     /// エミッター設定をコピー
     /// </summary>
     /// <param name="emitterName">コピー元のエミッター名</param>
@@ -530,13 +537,6 @@ namespace Tako {
     /// <param name="name">エミッター名</param>
     /// <param name="emitter">登録するエミッター</param>
     void AddNamedEmitter(const std::string& name, std::shared_ptr<GPUParticleEmitter> emitter);
-
-    /// <summary>
-    /// エミッターを JSON にシリアライズ
-    /// </summary>
-    /// <param name="emitter">シリアライズするエミッター</param>
-    /// <param name="json">出力先の JSON オブジェクト</param>
-    void SerializeEmitterToJSON(const std::shared_ptr<GPUParticleEmitter>& emitter, nlohmann::json& json) const;
 
     /// <summary>
     /// JSON からエミッターをデシリアライズ

@@ -518,6 +518,9 @@
     <ClInclude Include="engine\imgui\ImGuiThemes.h">
       <Filter>imgui</Filter>
     </ClInclude>
+    <ClInclude Include="engine\imgui\UnsavedChangesModal.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
     <ClInclude Include="engine\io\Input.h">
       <Filter>io</Filter>
     </ClInclude>

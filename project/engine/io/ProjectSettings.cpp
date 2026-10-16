@@ -14,7 +14,6 @@
 #include <array>
 #include <filesystem>
 #include <fstream>
-#include <iomanip>
 #include <optional>
 #include <utility>
 
@@ -288,6 +287,17 @@ namespace Tako {
     }
 
     bool Save(DX12Basic* dx12) {
+      std::error_code ec;
+      std::filesystem::create_directories(std::filesystem::path(kFilePath).parent_path(), ec);
+      std::ofstream ofs(kFilePath);
+      if (!ofs) {
+        return false;
+      }
+      ofs << Serialize(dx12) << std::endl;
+      return true;
+    }
+
+    std::string Serialize(DX12Basic* dx12) {
       const WindowSettings& window     = GetWindowSettings();
       ShadowRenderer*       shadow     = ShadowRenderer::GetInstance();
       PostEffectManager*    postEffect = PostEffectManager::GetInstance();
@@ -321,15 +331,7 @@ namespace Tako {
       };
       root["Physics"] = SavePhysics();
       root["Input"]   = SaveInput();
-
-      std::error_code ec;
-      std::filesystem::create_directories(std::filesystem::path(kFilePath).parent_path(), ec);
-      std::ofstream ofs(kFilePath);
-      if (!ofs) {
-        return false;
-      }
-      ofs << std::setw(4) << root << std::endl;
-      return true;
+      return root.dump(4);
     }
   }
 

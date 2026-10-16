@@ -297,6 +297,16 @@ namespace Tako {
     void DrawAbout();
 
     /// <summary>
+    /// 未保存の変更が無ければ true。あれば一覧を集めて確認モーダルを予約し false を返す（×・Alt+F4・Exit メニューで呼ぶ）
+    /// </summary>
+    bool ConfirmExit();
+
+    /// <summary>
+    /// 終了の確認モーダル。Discard and Exit で終了フラグを立てる
+    /// </summary>
+    void DrawExitConfirmation();
+
+    /// <summary>
     /// 現在のタイムスタンプを生成
     /// </summary>
     /// <returns>タイムスタンプ文字列</returns>
@@ -330,6 +340,10 @@ namespace Tako {
     std::string currentSceneName_ = "Unknown";  ///< 現在のシーン名
 
     bool* pEndFlag_ = nullptr;  ///< アプリケーション終了フラグへのポインタ
+
+    //終了の確認
+    std::vector<std::string> unsavedChanges_;                ///< 確認モーダルに出す未保存の一覧（ConfirmExit で集める）
+    bool                     isExitPopupRequested_ = false;
 
     //シーン遷移 UI 用
     char sceneNameBuffer_[128] = "";  ///< シーン名入力バッファ
