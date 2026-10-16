@@ -18,6 +18,7 @@
 #include <format>
 #include <fstream>
 #include <numbers>
+#include <utility>
 
 namespace Tako {
 
@@ -64,12 +65,12 @@ namespace Tako {
       return std::ranges::find_if(parent.children, [&](const std::unique_ptr<UIElement>& child) { return child.get() == &element; });
     }
 
-    UIElement* FindIn(UIElement& node, const std::string& name) {
-      for (std::unique_ptr<UIElement>& child : node.children) {
+    const UIElement* FindIn(const UIElement& node, const std::string& name) {
+      for (const std::unique_ptr<UIElement>& child : node.children) {
         if (child->name == name) {
           return child.get();
         }
-        if (UIElement* found = FindIn(*child, name)) {
+        if (const UIElement* found = FindIn(*child, name)) {
           return found;
         }
       }
@@ -272,9 +273,184 @@ namespace Tako {
     }
   }
 
+  void UILayout::Draw(const std::string& name) {
+    if (const UIElement* element = Find(name)) {
+      DrawElement(*element);
+    }
+  }
+
   UIElement* UILayout::Find(const std::string& name) {
+    // 探索は const 版に任せる。this が非 const なので、結果の const を外してよい
+    return const_cast<UIElement*>(std::as_const(*this).Find(name));
+  }
+
+  const UIElement* UILayout::Find(const std::string& name) const {
     // ponytail: 毎回 DFS。数百要素を超えるレイアウトが出てきたら名前→要素のマップを持つ
     return FindIn(root_, name);
+  }
+
+  void UILayout::SetVisible(const std::string& name, bool visible) {
+    if (UIElement* element = Find(name)) {
+      element->visible = visible;
+    }
+  }
+
+  void UILayout::SetTexture(const std::string& name, const std::string& texture) {
+    if (UIElement* element = Find(name)) {
+      SetTexture(*element, texture);
+    }
+  }
+
+  void UILayout::SetPosition(const std::string& name, const Vector2& position) {
+    if (UIElement* element = Find(name)) {
+      element->position = position;
+    }
+  }
+
+  void UILayout::SetSize(const std::string& name, const Vector2& size) {
+    if (UIElement* element = Find(name)) {
+      element->size = size;
+    }
+  }
+
+  void UILayout::SetRotation(const std::string& name, float rotation) {
+    if (UIElement* element = Find(name)) {
+      element->rotation = rotation;
+    }
+  }
+
+  void UILayout::SetColor(const std::string& name, const Vector4& color) {
+    if (UIElement* element = Find(name)) {
+      element->color = color;
+    }
+  }
+
+  void UILayout::SetAlpha(const std::string& name, float alpha) {
+    if (UIElement* element = Find(name)) {
+      element->color.w = alpha;
+    }
+  }
+
+  void UILayout::SetAnchor(const std::string& name, const Vector2& anchorMin, const Vector2& anchorMax) {
+    if (UIElement* element = Find(name)) {
+      element->anchorMin = anchorMin;
+      element->anchorMax = anchorMax;
+    }
+  }
+
+  void UILayout::SetAnchor(const std::string& name, const Vector2& anchor) {
+    SetAnchor(name, anchor, anchor);
+  }
+
+  void UILayout::SetPivot(const std::string& name, const Vector2& pivot) {
+    if (UIElement* element = Find(name)) {
+      element->pivot = pivot;
+    }
+  }
+
+  void UILayout::SetUV(const std::string& name, const Vector2& leftTop, const Vector2& size) {
+    if (UIElement* element = Find(name)) {
+      element->uvLeftTop = leftTop;
+      element->uvSize    = size;
+    }
+  }
+
+  void UILayout::SetSliceBorder(const std::string& name, const Vector4& sliceBorder) {
+    if (UIElement* element = Find(name)) {
+      element->sliceBorder = sliceBorder;
+    }
+  }
+
+  void UILayout::SetFlip(const std::string& name, bool flipX, bool flipY) {
+    if (UIElement* element = Find(name)) {
+      element->flipX = flipX;
+      element->flipY = flipY;
+    }
+  }
+
+  bool UILayout::IsVisible(const std::string& name) const {
+    const UIElement* element = Find(name);
+    return element ? element->visible : false;
+  }
+
+  std::string UILayout::GetTexture(const std::string& name) const {
+    const UIElement* element = Find(name);
+    return element ? element->texture : std::string();
+  }
+
+  Vector2 UILayout::GetPosition(const std::string& name) const {
+    const UIElement* element = Find(name);
+    return element ? element->position : Vector2{};
+  }
+
+  Vector2 UILayout::GetSize(const std::string& name) const {
+    const UIElement* element = Find(name);
+    return element ? element->size : Vector2{};
+  }
+
+  float UILayout::GetRotation(const std::string& name) const {
+    const UIElement* element = Find(name);
+    return element ? element->rotation : 0.0f;
+  }
+
+  Vector4 UILayout::GetColor(const std::string& name) const {
+    const UIElement* element = Find(name);
+    return element ? element->color : Vector4{};
+  }
+
+  float UILayout::GetAlpha(const std::string& name) const {
+    const UIElement* element = Find(name);
+    return element ? element->color.w : 0.0f;
+  }
+
+  Vector2 UILayout::GetAnchorMin(const std::string& name) const {
+    const UIElement* element = Find(name);
+    return element ? element->anchorMin : Vector2{};
+  }
+
+  Vector2 UILayout::GetAnchorMax(const std::string& name) const {
+    const UIElement* element = Find(name);
+    return element ? element->anchorMax : Vector2{};
+  }
+
+  Vector2 UILayout::GetPivot(const std::string& name) const {
+    const UIElement* element = Find(name);
+    return element ? element->pivot : Vector2{};
+  }
+
+  Vector2 UILayout::GetUVLeftTop(const std::string& name) const {
+    const UIElement* element = Find(name);
+    return element ? element->uvLeftTop : Vector2{};
+  }
+
+  Vector2 UILayout::GetUVSize(const std::string& name) const {
+    const UIElement* element = Find(name);
+    return element ? element->uvSize : Vector2{};
+  }
+
+  Vector4 UILayout::GetSliceBorder(const std::string& name) const {
+    const UIElement* element = Find(name);
+    return element ? element->sliceBorder : Vector4{};
+  }
+
+  bool UILayout::IsFlipX(const std::string& name) const {
+    const UIElement* element = Find(name);
+    return element ? element->flipX : false;
+  }
+
+  bool UILayout::IsFlipY(const std::string& name) const {
+    const UIElement* element = Find(name);
+    return element ? element->flipY : false;
+  }
+
+  Vector2 UILayout::GetScreenRectMin(const std::string& name) const {
+    const UIElement* element = Find(name);
+    return element ? element->rectMin : Vector2{};
+  }
+
+  Vector2 UILayout::GetScreenRectSize(const std::string& name) const {
+    const UIElement* element = Find(name);
+    return element ? element->rectSize : Vector2{};
   }
 
   void UILayout::SetScreenRect(UIElement& element, const Vector2& rectMin, const Vector2& rectSize) const {

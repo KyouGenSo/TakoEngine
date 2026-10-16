@@ -44,7 +44,8 @@ namespace Tako {
   };
 
   /// <summary>
-  /// JSON に保存した UI 要素ツリーを読み込み、画面サイズに合わせて配置・描画する
+  /// JSON に保存した UI 要素ツリーを読み込み、画面サイズに合わせて配置・描画する。
+  /// 要素名で指定する Setter / Getter は、要素が見つからなければ Setter は何もせず、Getter は 0 / false / 空文字を返す
   /// </summary>
   class UILayout {
   public: //定数
@@ -93,11 +94,18 @@ namespace Tako {
     void Draw();
 
     /// <summary>
+    /// name の要素とその子孫だけを描画する（ポストエフェクトの有無など、描画パスごとに分けて描くとき用）
+    /// </summary>
+    /// <param name="name">要素名。見つからなければ何も描かない</param>
+    void Draw(const std::string& name);
+
+    /// <summary>
     /// 名前で要素を探す。エディタで削除・改名され得るので、ポインタは保持せず毎回引き直す
     /// </summary>
     /// <param name="name">要素名</param>
     /// <returns>見つからなければ nullptr</returns>
     UIElement* Find(const std::string& name);
+    const UIElement* Find(const std::string& name) const;
 
     /// <summary>
     /// 画面矩形がこの値になるよう position と size を逆算する（アンカーとピボットは保つ）
@@ -151,12 +159,92 @@ namespace Tako {
     /// <returns>レイアウト内で重複しない名前</returns>
     std::string MakeUniqueName(const std::string& base);
 
-    //==================================================
+    //============================================================
+    //Setter
+    //============================================================
+    void SetVisible(const std::string& name, bool visible);
+
+    /// <summary>
+    /// テクスチャを差し替え、切り出し範囲をテクスチャ全体に戻す。スプライトを作り直すので描画中には呼ばない
+    /// </summary>
+    void SetTexture(const std::string& name, const std::string& texture);
+
+    void SetPosition(const std::string& name, const Vector2& position);
+    void SetSize(const std::string& name, const Vector2& size);
+
+    /// <summary>
+    /// 回転（度数法）
+    /// </summary>
+    void SetRotation(const std::string& name, float rotation);
+
+    void SetColor(const std::string& name, const Vector4& color);
+
+    /// <summary>
+    /// 色のアルファだけを変える
+    /// </summary>
+    void SetAlpha(const std::string& name, float alpha);
+
+    /// <summary>
+    /// アンカーの値だけを変える（画面上の矩形は保たない）
+    /// </summary>
+    void SetAnchor(const std::string& name, const Vector2& anchorMin, const Vector2& anchorMax);
+
+    /// <summary>
+    /// 伸縮しない 1 点のアンカーにする（anchorMin = anchorMax = anchor）。画面上の矩形は保たない
+    /// </summary>
+    void SetAnchor(const std::string& name, const Vector2& anchor);
+
+    void SetPivot(const std::string& name, const Vector2& pivot);
+
+    /// <summary>
+    /// テクスチャ上の切り出し範囲（テクスチャ px）
+    /// </summary>
+    void SetUV(const std::string& name, const Vector2& leftTop, const Vector2& size);
+
+    /// <summary>
+    /// 9-slice の枠幅（テクスチャ px、左上右下）
+    /// </summary>
+    void SetSliceBorder(const std::string& name, const Vector4& sliceBorder);
+
+    void SetFlip(const std::string& name, bool flipX, bool flipY);
+
+    //============================================================
     //Getter
-    //==================================================
+    //============================================================
     UIElement& GetRoot() { return root_; }
     const std::string& GetName() const { return name_; }
     float GetScale() const { return scale_; }
+
+    bool IsVisible(const std::string& name) const;
+    std::string GetTexture(const std::string& name) const;
+    Vector2 GetPosition(const std::string& name) const;
+    Vector2 GetSize(const std::string& name) const;
+
+    /// <summary>
+    /// 回転（度数法）
+    /// </summary>
+    float GetRotation(const std::string& name) const;
+
+    Vector4 GetColor(const std::string& name) const;
+    float GetAlpha(const std::string& name) const;
+    Vector2 GetAnchorMin(const std::string& name) const;
+    Vector2 GetAnchorMax(const std::string& name) const;
+    Vector2 GetPivot(const std::string& name) const;
+    Vector2 GetUVLeftTop(const std::string& name) const;
+    Vector2 GetUVSize(const std::string& name) const;
+    Vector4 GetSliceBorder(const std::string& name) const;
+    bool IsFlipX(const std::string& name) const;
+    bool IsFlipY(const std::string& name) const;
+
+    /// <summary>
+    /// 直近の Update で求めた画面矩形の左上（クライアント px）。クリックの当たり判定などに使う
+    /// </summary>
+    Vector2 GetScreenRectMin(const std::string& name) const;
+
+    /// <summary>
+    /// 直近の Update で求めた画面矩形のサイズ（クライアント px）
+    /// </summary>
+    Vector2 GetScreenRectSize(const std::string& name) const;
 
 #ifdef _DEBUG
     /// <summary>
