@@ -143,6 +143,11 @@ namespace Tako {
     /// </summary>
     void RequestClientSize(int32_t width, int32_t height) { requestedClientSize_ = { width, height }; }
 
+    /// <summary>
+    /// フルスクリーン切替を次の ProcessMessage 冒頭に予約する（描画途中にバッファを作り直さないため）
+    /// </summary>
+    void RequestFullScreen(bool fullScreen) { requestedFullScreen_ = fullScreen; }
+
     //============================================================
     //Getter
     //============================================================
@@ -173,6 +178,7 @@ namespace Tako {
     bool isResizable_  = true;
 
     std::optional<std::pair<int32_t, int32_t>> requestedClientSize_;  ///< RequestClientSize の予約（幅, 高さ）
+    std::optional<bool>                        requestedFullScreen_;  ///< RequestFullScreen の予約（切替後の状態）
 
     RECT windowedRect_ = {};  ///< フルスクリーンから戻る時に使うウィンドウモード時の位置とサイズ
 

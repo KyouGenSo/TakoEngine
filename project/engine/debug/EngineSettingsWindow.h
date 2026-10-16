@@ -69,12 +69,7 @@ namespace Tako {
     //Setter
     //======================================================
     /// <summary>
-    /// フルスクリーン切替関数（バッファ再生成を伴うため TakoFramework から受け取る）
-    /// </summary>
-    void SetToggleFullScreenFunc(std::function<void()> func) { toggleFullScreen_ = std::move(func); }
-
-    /// <summary>
-    /// 現在の状態と異なる場合のみ切替関数を呼ぶ
+    /// 次フレーム冒頭で切り替える（描画途中にバッファを作り直さないため）
     /// </summary>
     void SetFullScreen(bool fullScreen);
 
@@ -131,9 +126,8 @@ namespace Tako {
     void ApplyMasterVolume();
 
   private: //メンバー変数
-    bool*                 isOpen_           = nullptr;            ///< ウィンドウ表示フラグ（DebugUIManager 所有）
-    std::function<void()> toggleFullScreen_;
-    Category              selectedCategory_ = Category::Display;
+    bool*    isOpen_           = nullptr;            ///< ウィンドウ表示フラグ（DebugUIManager 所有）
+    Category selectedCategory_ = Category::Display;
 
     //Audio
     float masterVolume_ = 1.0f;

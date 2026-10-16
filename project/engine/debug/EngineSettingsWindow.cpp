@@ -1102,9 +1102,7 @@ namespace Tako {
   }
 
   void EngineSettingsWindow::SetFullScreen(bool fullScreen) {
-    if (toggleFullScreen_ && WinApp::GetInstance()->IsFullScreen() != fullScreen) {
-      toggleFullScreen_();
-    }
+    WinApp::GetInstance()->RequestFullScreen(fullScreen);
   }
 
   void EngineSettingsWindow::ApplyMasterVolume() {

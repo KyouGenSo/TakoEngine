@@ -76,6 +76,11 @@ namespace Tako {
 
     droppedFiles_.paths.clear();
 
+    if (requestedFullScreen_ && *requestedFullScreen_ != isFullScreen_) {
+      ToggleFullScreen();
+    }
+    requestedFullScreen_.reset();
+
     // フルスクリーン中は画面サイズに固定なので予約を捨てる
     if (requestedClientSize_ && !isFullScreen_) {
       if (isMaximized_) {
@@ -193,6 +198,7 @@ namespace Tako {
 
   void WinApp::ToggleFullScreen()
   {
+    // SetWindowPos の中で同期的に届く WM_SIZE が clientWidth/Height の更新とリサイズ通知を行う
     if (!isFullScreen_) {
       // ウィンドウスタイルを保存
       LONG currentStyle = GetWindowLong(hWnd_, GWL_STYLE);
@@ -215,12 +221,6 @@ namespace Tako {
         mi.rcMonitor.bottom - mi.rcMonitor.top,
         SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
 
-      // ウィンドウのサイズを取得
-      RECT clientRect;
-      GetClientRect(hWnd_, &clientRect);
-      // クライアント領域のサイズを保存
-      SetWindowSize(clientRect.right - clientRect.left, clientRect.bottom - clientRect.top);
-
       // 状態を更新
       isFullScreen_ = true;
     }
@@ -236,17 +236,9 @@ namespace Tako {
         windowedRect_.bottom - windowedRect_.top,
         SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
 
-      // ウィンドウのサイズを取得
-      RECT clientRect;
-      GetClientRect(hWnd_, &clientRect);
-      // クライアント領域のサイズを保存
-      SetWindowSize(clientRect.right - clientRect.left, clientRect.bottom - clientRect.top);
-
       // 状態を更新
       isFullScreen_ = false;
     }
-
-    NotifyResize(clientWidth, clientHeight);
   }
 
   void WinApp::NotifyResize(int width, int height)

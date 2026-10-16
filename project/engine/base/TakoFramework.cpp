@@ -125,7 +125,6 @@ namespace Tako {
     DebugUIManager::GetInstance()->AddLog("DirectX 12 Ready", DebugUIManager::LogType::Info);
     DebugUIManager::GetInstance()->AddLog("ImGui Docking Mode Enabled", DebugUIManager::LogType::Info);
 
-    DebugUIManager::GetInstance()->SetToggleFullScreenFunc([this] { ToggleFullScreen(); });
     DebugUIManager::GetInstance()->LoadEditorSettings();
 #endif
   }
@@ -339,8 +338,6 @@ namespace Tako {
   void TakoFramework::ToggleFullScreen()
   {
     winApp_->ToggleFullScreen();
-
-    OnWindowResize(WinApp::clientWidth, WinApp::clientHeight);
   }
 
   void TakoFramework::OnWindowResize(uint32_t width, uint32_t height)

@@ -186,11 +186,6 @@ namespace Tako {
     void SetForceFieldManager(ForceFieldManager* forceFieldManager) { particleEditor_.SetForceFieldManager(forceFieldManager); }
     void SetEndFlagPtr(bool* pEndFlag) { pEndFlag_ = pEndFlag; }
 
-    /// <summary>
-    /// フルスクリーン切替関数（バッファ再生成を伴うため TakoFramework から受け取る）
-    /// </summary>
-    void SetToggleFullScreenFunc(std::function<void()> func) { engineSettings_.SetToggleFullScreenFunc(std::move(func)); }
-
     //============================================================
     //Getter
     //============================================================
