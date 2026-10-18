@@ -383,9 +383,7 @@ namespace Tako {
           ImGui::InputText("##PrimPresetName", presetNameBuffer_, IM_ARRAYSIZE(presetNameBuffer_));
           ImGui::SameLine();
           if (ImGui::Button("Save##PrimPreset") && presetNameBuffer_[0] != '\0') {
-            if (SavePreset(presetNameBuffer_)) {
-              selectedPreset_ = presetNameBuffer_;
-            }
+            SavePreset(presetNameBuffer_);
           }
 
           ImGui::SetNextItemWidth(150.0f);
@@ -419,13 +417,7 @@ namespace Tako {
 
           std::function<bool()> save;
           if (presetNameBuffer_[0] != '\0') {
-            save = [this] {
-              if (!SavePreset(presetNameBuffer_)) {
-                return false;
-              }
-              selectedPreset_ = presetNameBuffer_;
-              return true;
-            };
+            save = [this] { return SavePreset(presetNameBuffer_); };
           }
           const UnsavedChoice choice = DrawUnsavedChangesModal("Unsaved Changes##PrimEditor", isUnsavedPopupRequested_,
                                                                "The current primitive has unsaved changes.", "Load", save);
@@ -452,6 +444,11 @@ namespace Tako {
         }
       }
       ImGui::EndChild();
+
+      // Save ボタンは子ウィンドウの中なので、ウィンドウ直下で受ける（プレビュー側にフォーカスがあっても保存できる）
+      if (presetNameBuffer_[0] != '\0' && ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_S)) {
+        SavePreset(presetNameBuffer_);
+      }
     }
     ImGui::End();
     return inputCaptured;
@@ -534,6 +531,7 @@ namespace Tako {
     }
     savedPreset_ = SerializePreset();
     ofs << savedPreset_ << std::endl;
+    selectedPreset_ = name;
 
     AddLog("Primitive Editor: saved preset '" + name + "'", LogType::Info);
     return true;

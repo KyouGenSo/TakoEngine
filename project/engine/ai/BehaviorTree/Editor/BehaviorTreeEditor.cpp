@@ -167,7 +167,7 @@ void BehaviorTreeEditor::DrawToolbar() {
   static std::string selectedNodeType = "BTSelector";  // デフォルト
 
   // === Save / Load / Clear (現在のツリーに対する操作) ===
-  if (ImGui::Button("Save##bte_toolbar")) {
+  if (ImGui::Button("Save##bte_toolbar") || ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_S)) {
     SaveTree(currentTreeName_);
   }
   ImGui::SameLine();

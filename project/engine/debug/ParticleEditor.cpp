@@ -124,6 +124,11 @@ namespace Tako {
           MarkUnsaved(editingName);
         }
 
+        // Save ボタンは閉じられる Preset ヘッダーの中にあるので、ウィンドウ直下で受ける
+        if (inspectTarget_ == InspectTarget::Emitter && emitterManager_->HasEmitter(selectedEmitterName_) && ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_S)) {
+          SaveSelectedEmitter();
+        }
+
         const UnsavedChoice choice = DrawUnsavedChangesModal("Unsaved Changes##PE", isUnsavedPopupRequested_, pendingLoadMessage_, "Load");
         if (choice == UnsavedChoice::Proceed && pendingLoad_) {
           pendingLoad_();
@@ -1139,9 +1144,7 @@ namespace Tako {
 
       // 名前入力なしでエミッター名のまま上書き保存
       if (ImGui::Button(("Save as \"" + selectedEmitterName_ + "\"##SavePresetCurrent").c_str())) {
-        emitterManager_->SavePreset(selectedEmitterName_, selectedEmitterName_);
-        AddLog("Saved preset: " + selectedEmitterName_, LogType::Info);
-        unsavedEmitters_.erase(selectedEmitterName_);
+        SaveSelectedEmitter();
       }
 
       ImGui::Separator();
@@ -1215,6 +1218,12 @@ namespace Tako {
     pendingLoad_             = std::move(load);
     pendingLoadMessage_      = message;
     isUnsavedPopupRequested_ = true;
+  }
+
+  void ParticleEditor::SaveSelectedEmitter() {
+    emitterManager_->SavePreset(selectedEmitterName_, selectedEmitterName_);
+    AddLog("Saved preset: " + selectedEmitterName_, LogType::Info);
+    unsavedEmitters_.erase(selectedEmitterName_);
   }
 
   void ParticleEditor::CollectUnsavedChanges(std::vector<std::string>& out) const {

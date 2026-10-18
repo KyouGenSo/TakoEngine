@@ -95,7 +95,7 @@ namespace Tako {
     std::string GenerateCppString() const;
 
     /// <summary>
-    /// 現在のプリミティブ設定を JSON プリセットとして保存
+    /// 現在のプリミティブ設定を JSON プリセットとして保存する。成功したら読み込みの選択もこの名前にする
     /// </summary>
     /// <param name="name">プリセット名（拡張子なし）</param>
     /// <returns>成功したら true</returns>

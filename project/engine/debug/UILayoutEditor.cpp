@@ -217,7 +217,8 @@ namespace Tako {
 
     UILayout*  layout   = FindLayout();
     UIElement* selected = layout ? FindSelected(*layout) : nullptr;
-    wantsKeyboard_ = selected && !ImGui::GetIO().WantTextInput && (isEditorFocused || (isViewportFocused_ && isViewportEditEnabled_));
+    const bool isFocused = isEditorFocused || (isViewportFocused_ && isViewportEditEnabled_);
+    wantsKeyboard_ = selected && !ImGui::GetIO().WantTextInput && isFocused;
     if (wantsKeyboard_) {
       HandleArrowKeys(*selected);
     }
@@ -226,6 +227,11 @@ namespace Tako {
     // 途中で別のレイアウトへ切り替えた場合は比べない
     if (editing && editing == layout && editing->Serialize() != editingSnapshot) {
       editedLayout_ = editing;
+    }
+
+    // 比べた後に保存して、このフレームの編集も保存済みにする。ビューポートのフォーカスは ImGui のルーティングで届かないので自前で判定する
+    if (layout && isFocused && ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_S)) {
+      SaveLayout(*layout);
     }
   }
 

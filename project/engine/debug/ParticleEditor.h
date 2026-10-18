@@ -178,6 +178,11 @@ namespace Tako {
     /// <param name="load">読み込み処理</param>
     void RunOrConfirmLoad(bool hasConflict, const std::string& message, std::function<void()> load);
 
+    /// <summary>
+    /// 選択中のエミッターを、同じ名前のプリセットへ上書き保存する
+    /// </summary>
+    void SaveSelectedEmitter();
+
   private: //メンバー変数
     bool* isOpen_ = nullptr;  ///< ウィンドウ表示フラグ（DebugUIManager 所有）
 

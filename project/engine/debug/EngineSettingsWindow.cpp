@@ -336,7 +336,7 @@ namespace Tako {
         isDirty_ = true;
       }
 
-      if (ImGui::Button(isDirty_ ? "Save *###Save" : "Save###Save")) {
+      if (ImGui::Button(isDirty_ ? "Save *###Save" : "Save###Save") || ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_S)) {
         const bool saved = ProjectSettings::Save(GetDX12());
         Log(std::format("Project settings {}: {}", saved ? "saved" : "save failed", ProjectSettings::kFilePath),
             saved ? DebugUIManager::LogType::Info : DebugUIManager::LogType::Error);

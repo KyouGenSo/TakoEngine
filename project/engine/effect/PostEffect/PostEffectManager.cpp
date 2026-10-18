@@ -294,6 +294,11 @@ namespace Tako {
       profileSnapshot = SerializeProfile();
     };
 
+    // 編集の比較は End の後なので、まだ編集していない区間の最初で保存する。パラメータは別タブで編集するので Save ボタンには付けない
+    if (profileName_[0] != '\0' && ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_S)) {
+      saveProfile();
+    }
+
     if (ImGui::BeginTabBar("PostEffectTab")) {
       if (ImGui::BeginTabItem("PostEffect")) {
         ImGui::SeparatorText(isProfileDirty_ ? "Profile *" : "Profile");

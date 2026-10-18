@@ -1145,17 +1145,18 @@ namespace Tako {
 
       ImGui::SeparatorText("Shortcuts");
       constexpr std::pair<const char*, const char*> kShortcuts[] = {
-        { "F1",  "Debug Viewport" },
-        { "F2",  "Scene Hierarchy" },
-        { "F3",  "Inspector" },
-        { "F4",  "Game Viewport" },
-        { "F5",  "Console" },
-        { "F6",  "Performance" },
-        { "F7",  "Pause / Resume" },
-        { "F8",  "Step Frame" },
-        { "F10", "Show Main Windows" },
-        { "F11", "Fullscreen" },
-        { "F12", "Toggle Main Windows" },
+        { "F1",     "Debug Viewport" },
+        { "F2",     "Scene Hierarchy" },
+        { "F3",     "Inspector" },
+        { "F4",     "Game Viewport" },
+        { "F5",     "Console" },
+        { "F6",     "Performance" },
+        { "F7",     "Pause / Resume" },
+        { "F8",     "Step Frame" },
+        { "F10",    "Show Main Windows" },
+        { "F11",    "Fullscreen" },
+        { "F12",    "Toggle Main Windows" },
+        { "Ctrl+S", "Save (focused editor)" },
       };
       if (ImGui::BeginTable("##Shortcuts", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV)) {
         for (const auto& [key, action] : kShortcuts) {
