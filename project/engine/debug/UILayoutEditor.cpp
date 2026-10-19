@@ -443,7 +443,7 @@ namespace Tako {
     }
     // 文字の入力中は入力欄の Undo やコピーに任せる
     if (layout && isFocused && !ImGui::GetIO().WantTextInput) {
-      HandleShortcuts();
+      HandleShortcuts(*layout);
     }
   }
 
@@ -911,9 +911,10 @@ namespace Tako {
       "  Shift+click adds to or removes from the selection. Dragging inside a selected element moves the whole selection.\n"
       "  While resizing, Shift keeps the aspect ratio and Alt keeps the center. Ctrl while dragging toggles Snap.\n"
       "  Arrow keys move the selection 1 px (Shift: Grid Size).\n"
-      "Hierarchy: Ctrl+click or Shift+click to select several,\n"
+      "Hierarchy: Ctrl+click or Shift+click to select several, double-click to rename,\n"
       "  drop on the top or bottom of a row to reorder, drop in the middle to make a child.\n"
-      "Ctrl+Z / Ctrl+Y: undo / redo.\n"
+      "Ctrl+Z / Ctrl+Y: undo / redo. Ctrl+C / Ctrl+X / Ctrl+V: copy / cut / paste (also into another layout).\n"
+      "Ctrl+D: duplicate. Delete: delete.\n"
       "Drop textures from Assets onto the viewport, the hierarchy or the Texture field.");
 
     if (layout) {
@@ -1102,6 +1103,9 @@ namespace Tako {
       if (ImGui::MenuItem("Add Group")) {
         Request(PendingOp::AddGroup, {});
       }
+      if (ImGui::MenuItem("Paste", "Ctrl+V", false, !clipboard_.empty())) {
+        Request(PendingOp::Paste, {});
+      }
       ImGui::EndPopup();
     }
   }
@@ -1120,8 +1124,8 @@ namespace Tako {
   }
 
   void UILayoutEditor::DrawTreeNode(UILayout& layout, UIElement& element) {
-    // 右端の表示・ロックのボタンを重ねるため AllowOverlap
-    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth |
+    // 右端の表示・ロックのボタンを重ねるため AllowOverlap。ダブルクリックは名前の変更に使うので、開閉は矢印だけ
+    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth |
       ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowOverlap;
     if (element.children.empty()) {
       flags |= ImGuiTreeNodeFlags_Leaf;
@@ -1145,6 +1149,10 @@ namespace Tako {
     if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
       HandleHierarchyClick(element);
     }
+    if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && !ImGui::IsItemToggledOpen()) {
+      Select(&element);
+      isRenameFocusRequested_ = true;
+    }
 
     if (ImGui::BeginDragDropSource()) {
       ImGui::SetDragDropPayload(kElementPayload, element.name.c_str(), element.name.size() + 1);
@@ -1165,7 +1173,18 @@ namespace Tako {
       if (ImGui::MenuItem("Add Group")) {
         Request(PendingOp::AddGroup, element.name);
       }
-      if (ImGui::MenuItem("Duplicate")) {
+      ImGui::Separator();
+      if (ImGui::MenuItem("Rename")) {
+        Select(&element);
+        isRenameFocusRequested_ = true;
+      }
+      if (ImGui::MenuItem("Copy", "Ctrl+C")) {
+        CopySelection(layout);
+      }
+      if (ImGui::MenuItem("Paste", "Ctrl+V", false, !clipboard_.empty())) {
+        Request(PendingOp::Paste, element.name);
+      }
+      if (ImGui::MenuItem("Duplicate", "Ctrl+D")) {
         RequestOnSelection(PendingOp::Duplicate, layout, element.name);
       }
       ImGui::Separator();
@@ -1176,7 +1195,7 @@ namespace Tako {
         Request(PendingOp::MoveDown, element.name);
       }
       ImGui::Separator();
-      if (ImGui::MenuItem("Delete")) {
+      if (ImGui::MenuItem("Delete", "Delete")) {
         RequestOnSelection(PendingOp::Remove, layout, element.name);
       }
       ImGui::EndPopup();
@@ -1262,6 +1281,10 @@ namespace Tako {
     // 名前は確定時に、空または重複なら取り消す
     if (!isRenaming_) {
       strncpy_s(renameBuffer_, element.name.c_str(), _TRUNCATE);
+    }
+    if (isRenameFocusRequested_) {
+      ImGui::SetKeyboardFocusHere();
+      isRenameFocusRequested_ = false;
     }
     ImGui::InputText("Name", renameBuffer_, sizeof(renameBuffer_));
     isRenaming_ = ImGui::IsItemActive();
@@ -2020,6 +2043,18 @@ namespace Tako {
       }
       std::erase_if(selection_, [&layout](const std::string& name) { return !layout.Find(name); });
       break;
+    case PendingOp::Paste: {
+      // 対象がグループならその子の末尾、画像ならその直後へ（ビューポートへのテクスチャのドロップと同じ）
+      const bool               isInside = isRoot || target->texture.empty();
+      UIElement&               parent   = isInside ? *target : *target->parent;
+      const size_t             index    = isInside ? parent.children.size() : IndexInParent(*target) + 1;
+      std::vector<std::string> names;
+      for (const UIElement* element : layout.InsertElements(parent, clipboard_, index)) {
+        names.push_back(element->name);
+      }
+      SetSelection(std::move(names));
+      break;
+    }
     case PendingOp::MoveUp:
     case PendingOp::MoveDown:
       if (!isRoot) {
@@ -2176,13 +2211,40 @@ namespace Tako {
     SetSelection(std::move(names));
   }
 
-  void UILayoutEditor::HandleShortcuts() {
+  void UILayoutEditor::HandleShortcuts(UILayout& layout) {
+    const UIElement* selected = FindSelected(layout);
     if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_Z)) {
       Request(PendingOp::Undo, {});
     }
     if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_Y) || ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_Z)) {
       Request(PendingOp::Redo, {});
     }
+    if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_V) && !clipboard_.empty()) {
+      Request(PendingOp::Paste, selected ? selected->name : std::string());
+    }
+    if (!selected) {
+      return;
+    }
+
+    const bool isCut = ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_X);
+    if (isCut || ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_C)) {
+      CopySelection(layout);
+    }
+    if (isCut || ImGui::IsKeyChordPressed(ImGuiKey_Delete)) {
+      RequestOnSelection(PendingOp::Remove, layout, selected->name);
+    }
+    if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_D)) {
+      RequestOnSelection(PendingOp::Duplicate, layout, selected->name);
+    }
+  }
+
+  void UILayoutEditor::CopySelection(UILayout& layout) {
+    const std::vector<UIElement*> elements = SelectedTopLevel(layout);
+    if (elements.empty()) {
+      return;
+    }
+    clipboard_ = UILayout::SerializeElements(std::vector<const UIElement*>(elements.begin(), elements.end()));
+    AddLog(std::format("UI Editor: copied {} element(s)", elements.size()));
   }
 
   void UILayoutEditor::CreateFromTexture(UILayout& layout, UIElement& parent, const std::string& texture, const Vector2& clientCenter) {

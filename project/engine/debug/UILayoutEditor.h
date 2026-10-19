@@ -53,6 +53,7 @@ namespace Tako {
       SetTexture,
       Duplicate,
       Remove,
+      Paste,
       MoveUp,
       MoveDown,
       Reparent,
@@ -75,7 +76,7 @@ namespace Tako {
     /// </summary>
     struct Pending {
       PendingOp                op           = PendingOp::None;
-      std::vector<std::string> targets;                 ///< 操作対象（Add 系では追加先の 1 つ）。空ならルート
+      std::vector<std::string> targets;                 ///< 操作対象（Add 系と Paste では追加先の 1 つ）。空ならルート
       std::string              dropTarget;              ///< Reparent の基準の要素（空ならルート）
       DropPlace                dropPlace    = DropPlace::Inside;
       std::string              texture;                 ///< AddTexture / SetTexture のテクスチャキー
@@ -323,9 +324,14 @@ namespace Tako {
     void RestoreState(UILayout& layout, const EditState& state);
 
     /// <summary>
-    /// Undo / Redo のキー操作
+    /// Undo / Redo とコピー・切り取り・貼り付け・複製・削除のキー操作
     /// </summary>
-    void HandleShortcuts();
+    void HandleShortcuts(UILayout& layout);
+
+    /// <summary>
+    /// 選択中の要素を子孫ごと clipboard_ に写す
+    /// </summary>
+    void CopySelection(UILayout& layout);
 
     /// <summary>
     /// 次フレームの Update で実行する操作を登録する（1 フレームに 1 つ。後から登録したものが優先）
@@ -397,11 +403,13 @@ namespace Tako {
     std::vector<EditState>   redoStack_;
     std::optional<EditState> editStart_;                ///< 進行中の操作（ドラッグなど）の前の状態。操作を終えたフレームで undoStack_ に積む
     const UILayout*          historyLayout_ = nullptr;  ///< 履歴の対象。別のインスタンスを編集したら履歴を捨てる
+    std::string              clipboard_;                ///< コピーした要素（UILayout::SerializeElements）
 
     //名前の編集
-    char renameBuffer_[128] = "";
-    bool isRenaming_        = false;
-    bool isRenameRejected_  = false;  ///< 直前の改名が空または重複で取り消されたか
+    char renameBuffer_[128]      = "";
+    bool isRenaming_             = false;
+    bool isRenameRejected_       = false;  ///< 直前の改名が空または重複で取り消されたか
+    bool isRenameFocusRequested_ = false;  ///< 次に Inspector を描くとき Name 欄に入力を移す
 
     //Hierarchy
     char hierarchyFilter_[64] = "";  ///< 空でなければ、名前に含む要素だけを平らに並べる

@@ -167,6 +167,21 @@ namespace Tako {
     UIElement* Duplicate(const UIElement& element);
 
     /// <summary>
+    /// 要素を子孫ごと保存形式（JSON 配列）にする。InsertElements で読み込める
+    /// </summary>
+    /// <param name="elements">書き出す要素（ルート以外）。並び順のまま書く</param>
+    static std::string SerializeElements(const std::vector<const UIElement*>& elements);
+
+    /// <summary>
+    /// SerializeElements の内容を parent の子の index 番目から挿入する。名前が重なるものは連番を付ける
+    /// </summary>
+    /// <param name="parent">挿入先</param>
+    /// <param name="serialized">SerializeElements の戻り値</param>
+    /// <param name="index">最初の要素の位置（範囲外なら末尾）</param>
+    /// <returns>挿入した要素（並び順）</returns>
+    std::vector<UIElement*> InsertElements(UIElement& parent, const std::string& serialized, size_t index);
+
+    /// <summary>
     /// 子孫ごと削除する
     /// </summary>
     /// <param name="element">削除する要素（ルート以外）</param>

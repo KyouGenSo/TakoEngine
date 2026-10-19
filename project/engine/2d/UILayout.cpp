@@ -722,25 +722,41 @@ namespace Tako {
     }
     UIElement&   parent = *element.parent;
     const size_t index  = static_cast<size_t>(FindChild(parent, element) - parent.children.begin());
+    return InsertElements(parent, SerializeElements({ &element }), index + 1).front();
+  }
 
-    // 保存形式を経由して子孫ごと複製し、元の直後へ並べ替える
-    ReadElement(*this, WriteElement(element), parent);
-    std::unique_ptr<UIElement> copy = std::move(parent.children.back());
-    parent.children.pop_back();
-    UIElement* result = copy.get();
-    parent.children.insert(parent.children.begin() + static_cast<std::ptrdiff_t>(index + 1), std::move(copy));
+  std::string UILayout::SerializeElements(const std::vector<const UIElement*>& elements) {
+    json nodes = json::array();
+    for (const UIElement* element : elements) {
+      nodes.push_back(WriteElement(*element));
+    }
+    return nodes.dump();
+  }
 
-    // 前順に見て、元と同名（出現数 2 以上）のものだけ改名する
-    std::vector<UIElement*> copied;
-    CollectSubtree(*result, copied);
-    for (UIElement* node : copied) {
-      if (CountName(root_, node->name) > 1) {
-        node->name = MakeUniqueName(node->name);
-      }
+  std::vector<UIElement*> UILayout::InsertElements(UIElement& parent, const std::string& serialized, size_t index) {
+    // 末尾に読み込んでから index の位置へ移す
+    std::vector<UIElement*> inserted;
+    index = (std::min)(index, parent.children.size());
+    for (const json& node : json::parse(serialized)) {
+      ReadElement(*this, node, parent);
+      std::unique_ptr<UIElement> element = std::move(parent.children.back());
+      parent.children.pop_back();
+      inserted.push_back(element.get());
+      parent.children.insert(parent.children.begin() + static_cast<std::ptrdiff_t>(index++), std::move(element));
     }
 
-    UpdateElement(*result);
-    return result;
+    // 前順に見て、既にある名前と重なった（出現数 2 以上）ものだけ改名する
+    for (UIElement* element : inserted) {
+      std::vector<UIElement*> nodes;
+      CollectSubtree(*element, nodes);
+      for (UIElement* node : nodes) {
+        if (CountName(root_, node->name) > 1) {
+          node->name = MakeUniqueName(node->name);
+        }
+      }
+      UpdateElement(*element);
+    }
+    return inserted;
   }
 
   void UILayout::Remove(UIElement& element) {
