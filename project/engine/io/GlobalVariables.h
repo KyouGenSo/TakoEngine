@@ -8,6 +8,9 @@
 #include "Vec3Func.h"
 #include "Vector4.h"
 #include "Vector2.h"
+#ifdef _DEBUG
+#include "EditTracker.h"
+#endif
 
 namespace Tako {
 
@@ -249,11 +252,26 @@ namespace Tako {
 
     bool HasGroups() const { return !datas_.empty(); }
 
+  private: //非公開関数
+    /// <summary>
+    /// 全グループの今の値（JSON 文字列。Undo / Redo で戻す状態）
+    /// </summary>
+    std::string SerializeGroups() const;
+
+    /// <summary>
+    /// SerializeGroups の値に戻し、グループごとの未保存の印を付け直す。今は無いグループは戻さない
+    /// </summary>
+    void RestoreGroups(const std::string& groups);
+
   private: //メンバー変数
 
     const std::string kDirectoryPath = "resources/Json/GlobalVariables/";  ///< 保存先のファイルパス
 
     std::map<std::string, Group> datas_;  ///< グループのマップ
+
+#ifdef _DEBUG
+    EditTracker<> editTracker_{ { [this] { return SerializeGroups(); }, [this](const std::string& groups) { RestoreGroups(groups); } } };  ///< ImGui での編集の Undo（未保存の印はグループごとの isDirty）
+#endif
   };
 
 } // namespace Tako

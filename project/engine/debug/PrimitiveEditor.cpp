@@ -1,6 +1,5 @@
 #include "PrimitiveEditor.h"
 #include "DebugUIManager.h"
-#include "PreviewViewport.h"
 #include "Object3d.h"
 #include "Object3dBasic.h"
 #include "Camera.h"
@@ -9,7 +8,6 @@
 #include "TextureManager.h"
 #include "FrameTimer.h"
 #include "ImGuiManager.h"
-#include "UnsavedChangesModal.h"
 
 #include <json.hpp>
 
@@ -17,17 +15,14 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <iterator>
 #include <string>
 #include <vector>
 
 namespace Tako {
 
-  PrimitiveEditor::PrimitiveEditor()
-  {
-    // 起動時の既定値は保存済みとみなす
-    savedPreset_ = SerializePreset();
-  }
-
+  // 起動時の既定値は保存済みとみなす（EditTracker は未保存なしで始まる）
+  PrimitiveEditor::PrimitiveEditor() = default;
   PrimitiveEditor::~PrimitiveEditor() = default;
 
   namespace {
@@ -35,11 +30,6 @@ namespace Tako {
     const char* const kPresetDirectory = "resources/Json/PrimitivePresets/";
 
     using LogType = DebugUIManager::LogType;
-
-    void AddLog(const std::string& message, LogType type)
-    {
-      DebugUIManager::GetInstance()->AddLog(message, type);
-    }
 
     /// <summary>
     /// TextureManager::LoadTexture と同じパス解決規則でファイルの存在を確認する
@@ -109,17 +99,7 @@ namespace Tako {
       return;
     }
 
-    if (!previewViewport_) {
-      previewViewport_ = std::make_unique<PreviewViewport>();
-      previewViewport_->Initialize(L"PrimitiveEditorPreview");
-    }
-
-    if (!previewCamera_) {
-      previewCamera_ = std::make_unique<Camera>();
-      previewCamera_->SetAspect(previewViewport_->GetAspect());
-      // 個人設定の読み込み後に初めて開くので、ここで既定の移動速度を反映する
-      cameraController_.Reset();
-    }
+    preview_.Update();
 
     if (!floorObject_) {
       floorObject_ = std::make_unique<Object3d>();
@@ -148,8 +128,6 @@ namespace Tako {
     previewObject_->SetScale(previewScale_);
     ApplyPreviewSettings();
 
-    cameraController_.ApplyTo(*previewCamera_);
-
     floorObject_->Update();
     previewObject_->Update();
   }
@@ -158,8 +136,7 @@ namespace Tako {
   {
     previewObject_.reset();
     floorObject_.reset();
-    previewViewport_.reset();
-    previewCamera_.reset();
+    preview_.Finalize();
   }
 
   void PrimitiveEditor::RebuildPreview()
@@ -202,14 +179,14 @@ namespace Tako {
 
   void PrimitiveEditor::DrawPreviewPass()
   {
-    if (!*isOpen_ || !previewViewport_ || !previewObject_ || !previewCamera_) {
+    if (!*isOpen_ || !preview_.IsReady() || !previewObject_) {
       return;
     }
 
-    previewViewport_->BeginPass();
+    preview_.BeginPass();
 
     // プレビューカメラを視点にし、直前は別パスの PSO のため共通描画設定を再適用
-    Object3dBasic::GetInstance()->SetView(*previewCamera_);
+    Object3dBasic::GetInstance()->SetView(preview_.GetCamera());
     Object3dBasic::GetInstance()->SetCommonRenderSetting();
 
     if (showFloor_ && floorObject_) {
@@ -217,7 +194,7 @@ namespace Tako {
     }
     previewObject_->Draw();
 
-    previewViewport_->EndPass();
+    preview_.EndPass();
   }
 
   bool PrimitiveEditor::Draw()
@@ -229,25 +206,15 @@ namespace Tako {
     bool inputCaptured = false;
     ImGui::SetNextWindowSize(ImVec2(1000.0f, 620.0f), ImGuiCond_FirstUseEver);
     if (ImGui::Begin("Primitive Editor", isOpen_)) {
+      // UI を描く区間の前後で保存内容を比べて編集を検出する
+      presetTracker_.BeginSection();
 
       //---------------- 左: プレビュービューポート ----------------//
       // 右端ドラッグで幅調整可。サイズ指定は初期値で、調整結果は imgui.ini に保存される
       ImGui::SetNextWindowSizeConstraints(ImVec2(200.0f, 0.0f), ImVec2(FLT_MAX, FLT_MAX));
       if (ImGui::BeginChild("Viewport##PrimEditor", ImVec2(620.0f, 0.0f), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeX)) {
-        if (ImGui::Button("Reset Camera##PrimEditor")) {
-          cameraController_.Reset();
-        }
-        ImGui::SameLine();
-        ImGui::TextDisabled("Speed: %.2f", cameraController_.moveSpeed);
-        ImGui::TextDisabled("RMB: Look (+WASD/QE Fly, +Wheel Speed) / Alt+LMB: Orbit / MMB: Pan / Wheel: Dolly");
-
-        if (previewViewport_ && previewViewport_->IsInitialized()) {
-          previewViewport_->DrawImGuiImage();
-          inputCaptured |= cameraController_.HandleImGuiInput();
-        }
-        else {
-          ImGui::TextDisabled("Initializing preview...");
-        }
+        preview_.DrawCameraToolbar();
+        inputCaptured |= preview_.DrawImage();
       }
       ImGui::EndChild();
 
@@ -354,7 +321,7 @@ namespace Tako {
               materialTexture_ = texPathBuffer;
             }
             else {
-              AddLog(std::string("Primitive Editor: texture not found '") + texPathBuffer + "'", LogType::Error);
+              LogToConsole(std::string("Primitive Editor: texture not found '") + texPathBuffer + "'", LogType::Error);
             }
           }
           ImGui::SameLine();
@@ -374,11 +341,10 @@ namespace Tako {
           ImGui::TextWrapped("%s", cppString.c_str());
           if (ImGui::Button("Copy as C++##PrimEditor")) {
             ImGui::SetClipboardText(cppString.c_str());
-            AddLog("Primitive Editor: copied C++ snippet to clipboard", LogType::Info);
+            LogToConsole("Primitive Editor: copied C++ snippet to clipboard", LogType::Info);
           }
 
-          const bool isPresetDirty = SerializePreset() != savedPreset_;
-          ImGui::SeparatorText(isPresetDirty ? "Preset *" : "Preset");
+          ImGui::SeparatorText(presetTracker_.IsEdited() ? "Preset *" : "Preset");
           ImGui::SetNextItemWidth(150.0f);
           ImGui::InputText("##PrimPresetName", presetNameBuffer_, IM_ARRAYSIZE(presetNameBuffer_));
           ImGui::SameLine();
@@ -406,27 +372,17 @@ namespace Tako {
           }
           ImGui::SameLine();
           if (ImGui::Button("Load##PrimPreset") && !selectedPreset_.empty()) {
-            if (isPresetDirty) {
-              pendingPresetLoad_       = selectedPreset_;
-              isUnsavedPopupRequested_ = true;
-            }
-            else {
-              LoadPreset(selectedPreset_);
-            }
+            unsavedPrompt_.RunOrConfirm(presetTracker_.IsEdited(), "The current primitive has unsaved changes.", "Load",
+                                        [this, name = selectedPreset_] { LoadPreset(name); });
           }
+          ImGui::SameLine();
+          presetTracker_.DrawButtons();
 
           std::function<bool()> save;
           if (presetNameBuffer_[0] != '\0') {
             save = [this] { return SavePreset(presetNameBuffer_); };
           }
-          const UnsavedChoice choice = DrawUnsavedChangesModal("Unsaved Changes##PrimEditor", isUnsavedPopupRequested_,
-                                                               "The current primitive has unsaved changes.", "Load", save);
-          if (choice == UnsavedChoice::Proceed) {
-            LoadPreset(pendingPresetLoad_);
-          }
-          if (choice != UnsavedChoice::None) {
-            pendingPresetLoad_.clear();
-          }
+          unsavedPrompt_.Draw("Unsaved Changes##PrimEditor", save);
 
           ImGui::SeparatorText("Export OBJ");
           ImGui::SetNextItemWidth(150.0f);
@@ -435,17 +391,19 @@ namespace Tako {
           if (ImGui::Button("Export##PrimObj") && exportNameBuffer_[0] != '\0') {
             const Model* model = previewObject_ ? previewObject_->GetModel() : nullptr;
             if (model && PrimitiveBuilder::ExportObj(*model, exportNameBuffer_)) {
-              AddLog(std::string("Primitive Editor: exported 'resources/Model/") + exportNameBuffer_ + ".obj'", LogType::Info);
+              LogToConsole(std::string("Primitive Editor: exported 'resources/Model/") + exportNameBuffer_ + ".obj'", LogType::Info);
             }
             else {
-              AddLog("Primitive Editor: OBJ export failed", LogType::Error);
+              LogToConsole("Primitive Editor: OBJ export failed", LogType::Error);
             }
           }
         }
       }
       ImGui::EndChild();
 
-      // Save ボタンは子ウィンドウの中なので、ウィンドウ直下で受ける（プレビュー側にフォーカスがあっても保存できる）
+      presetTracker_.EndSection();
+
+      // 比べた後に保存して、このフレームの編集も保存済みにする。Save ボタンは子ウィンドウの中なので、ウィンドウ直下で受ける（プレビュー側にフォーカスがあっても保存できる）
       if (presetNameBuffer_[0] != '\0' && ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_S)) {
         SavePreset(presetNameBuffer_);
       }
@@ -526,14 +484,14 @@ namespace Tako {
 
     std::ofstream ofs(std::string(kPresetDirectory) + name + ".json");
     if (!ofs.is_open()) {
-      AddLog("Primitive Editor: failed to save preset '" + name + "'", LogType::Error);
+      LogToConsole("Primitive Editor: failed to save preset '" + name + "'", LogType::Error);
       return false;
     }
-    savedPreset_ = SerializePreset();
-    ofs << savedPreset_ << std::endl;
+    ofs << SerializePreset() << std::endl;
     selectedPreset_ = name;
+    presetTracker_.MarkSaved();
 
-    AddLog("Primitive Editor: saved preset '" + name + "'", LogType::Info);
+    LogToConsole("Primitive Editor: saved preset '" + name + "'", LogType::Info);
     return true;
   }
 
@@ -600,24 +558,34 @@ namespace Tako {
 
   void PrimitiveEditor::CollectUnsavedChanges(std::vector<std::string>& out) const
   {
-    if (SerializePreset() != savedPreset_) {
+    if (presetTracker_.IsEdited()) {
       out.push_back("Primitive Editor");
     }
   }
 
   bool PrimitiveEditor::LoadPreset(const std::string& name)
   {
-    using json = nlohmann::json;
-
     std::ifstream ifs(std::string(kPresetDirectory) + name + ".json");
     if (!ifs.is_open()) {
-      AddLog("Primitive Editor: preset '" + name + "' not found", LogType::Error);
+      LogToConsole("Primitive Editor: preset '" + name + "' not found", LogType::Error);
+      return false;
+    }
+    if (!ApplyPreset(std::string(std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>()))) {
+      LogToConsole("Primitive Editor: failed to load preset '" + name + "'", LogType::Error);
       return false;
     }
 
+    presetTracker_.Reset();
+    LogToConsole("Primitive Editor: loaded preset '" + name + "'", LogType::Info);
+    return true;
+  }
+
+  bool PrimitiveEditor::ApplyPreset(const std::string& text)
+  {
+    using json = nlohmann::json;
+
     try {
-      json preset;
-      ifs >> preset;
+      const json preset = json::parse(text);
 
       const std::string typeName = preset.value("type", "");
       int typeIndex = -1;
@@ -628,7 +596,7 @@ namespace Tako {
         }
       }
       if (typeIndex < 0) {
-        AddLog("Primitive Editor: unknown primitive type '" + typeName + "'", LogType::Error);
+        LogToConsole("Primitive Editor: unknown primitive type '" + typeName + "'", LogType::Error);
         return false;
       }
       selectedPrimitiveType_ = static_cast<PrimitiveType>(typeIndex);
@@ -710,18 +678,16 @@ namespace Tako {
 
       // 消えたテクスチャは Apply 時の LoadTexture が assert で落ちるため空にフォールバック
       if (!materialTexture_.empty() && !TextureFileExists(materialTexture_)) {
-        AddLog("Primitive Editor: preset texture not found '" + materialTexture_ + "'", LogType::Warning);
+        LogToConsole("Primitive Editor: preset texture not found '" + materialTexture_ + "'", LogType::Warning);
         materialTexture_.clear();
       }
     }
-    catch (const json::exception&) {
-      AddLog("Primitive Editor: failed to parse preset '" + name + "'", LogType::Error);
+    catch (const json::exception& e) {
+      LogToConsole(std::string("Primitive Editor: failed to parse preset: ") + e.what(), LogType::Error);
       return false;
     }
 
     paramsDirty_ = true;
-    savedPreset_ = SerializePreset();
-    AddLog("Primitive Editor: loaded preset '" + name + "'", LogType::Info);
     return true;
   }
 

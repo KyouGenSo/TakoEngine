@@ -156,6 +156,9 @@
     <ClCompile Include="engine\debug\ViewportCameraController.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="engine\debug\PreviewPanel.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="engine\debug\PreviewViewport.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
@@ -268,6 +271,7 @@
     <ClInclude Include="engine\debug\AssetBrowser.h" />
     <ClInclude Include="engine\debug\UILayoutEditor.h" />
     <ClInclude Include="engine\debug\ViewportCameraController.h" />
+    <ClInclude Include="engine\debug\PreviewPanel.h" />
     <ClInclude Include="engine\debug\PreviewViewport.h" />
     <ClInclude Include="engine\debug\CodeGenerator.h" />
     <ClInclude Include="engine\effect\Particle\BoxEmitter.h" />
@@ -311,11 +315,13 @@
     <ClInclude Include="engine\3d\Camera\Camera.h" />
     <ClInclude Include="engine\imgui\ImGuiManager.h" />
     <ClInclude Include="engine\imgui\ImGuiThemes.h" />
+    <ClInclude Include="engine\imgui\EditTracker.h" />
     <ClInclude Include="engine\imgui\UnsavedChangesModal.h" />
     <ClInclude Include="engine\base\DX12\D3DResourceLeakChecker.h" />
     <ClInclude Include="engine\base\DX12\DX12Basic.h" />
     <ClInclude Include="engine\base\DX12\PerFrameConstantRing.h" />
     <ClInclude Include="engine\io\Input.h" />
+    <ClInclude Include="engine\func\commonFunc\Hash.h" />
     <ClInclude Include="engine\func\commonFunc\Logger.h" />
     <ClInclude Include="engine\math\Matrix4x4.h" />
     <ClInclude Include="engine\func\mathFunc\Mat4x4Func.h" />

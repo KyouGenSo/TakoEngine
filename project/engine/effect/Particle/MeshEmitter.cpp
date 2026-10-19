@@ -8,6 +8,7 @@
 #include "DX12Basic.h"
 #include "ModelStruct.h"
 #include <cstring>
+#include <utility>
 #include <vector>
 #include <cmath>
 #include <algorithm>
@@ -221,7 +222,7 @@ namespace Tako {
       json["meshModelPath"] = spawnModelPath_;
     }
 #ifdef _DEBUG
-    else {
+    else if (!std::exchange(hasWarnedNoModelPath_, true)) {
       DebugUIManager::GetInstance()->AddLog(
         "Serialize: MeshEmitter has no meshModelPath; restorable only via LoadPreset(Object3d*).",
         DebugUIManager::LogType::Warning);

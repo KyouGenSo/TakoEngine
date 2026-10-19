@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 #include "imgui.h"
+#include "EditTracker.h"
 #include "Vector2.h"
 #include "Vector4.h"
 
@@ -29,7 +30,6 @@ namespace Tako {
     static constexpr float  kPreviewDefaultHeight = 240.0f;  ///< Inspector のテクスチャプレビューの初期の高さ（px）。下の縁のドラッグで変えられる
     static constexpr float  kResultDefaultHeight  = 160.0f;  ///< Inspector の 9-slice の結果プレビューの初期の高さ（px）
     static constexpr float  kGuideSnapDistance    = 6.0f;    ///< スマートガイドに吸着する距離（画像上 px）
-    static constexpr size_t kMaxUndoSteps         = 100;     ///< Undo で戻れる手数
 
   private: //構造体
     /// <summary>
@@ -110,6 +110,11 @@ namespace Tako {
       std::string              layout;     ///< UILayout::Serialize()
       std::string              slices;     ///< UILayout::SerializeTextureSlices()
       std::vector<std::string> selection;
+
+      /// <summary>
+      /// 選択だけの違いは 1 手にしない
+      /// </summary>
+      bool operator==(const EditState& other) const { return layout == other.layout && slices == other.slices; }
     };
 
     /// <summary>
@@ -309,13 +314,6 @@ namespace Tako {
     /// <param name="isUndoable">false なら Undo の履歴に積まない（Undo / Redo 自身の操作）</param>
     void TrackLayoutEdit(const UILayout& layout, const EditMark& mark, bool isUndoable = true);
 
-    /// <summary>
-    /// 進行中の操作の前の状態を Undo の 1 手として積み、Redo の履歴を捨てる。内容が変わっていなければ積まない
-    /// </summary>
-    void CommitEdit();
-
-    void ClearHistory();
-
     EditState CaptureState(const UILayout& layout) const;
 
     /// <summary>
@@ -385,12 +383,11 @@ namespace Tako {
     std::string               newLayoutError_;               ///< 新規作成ポップアップに出す検証エラー
 
     //未保存の変更
-    const UILayout*            editedLayout_            = nullptr;  ///< 未保存の変更があるインスタンス。シーンが作り直した同名のレイアウトと区別するためポインタで持つ
-    std::string                cleanSnapshot_;                      ///< editedLayout_ が付く直前の内容。編集でここへ戻れば未保存を外す
-    std::string                cleanSliceSnapshot_;                 ///< isSliceTableEdited_ が付く直前の共有の 9-slice の内容
-    std::optional<OpenRequest> pendingOpen_;                        ///< 確認モーダルの返答待ちの切り替え先
-    bool                       isUnsavedPopupRequested_ = false;
-    std::string                discardLayout_;                      ///< 次の Update でファイルから読み直して編集を捨てるゲーム側のレイアウト
+    const UILayout*      editedLayout_       = nullptr;  ///< 未保存の変更があるインスタンス。シーンが作り直した同名のレイアウトと区別するためポインタで持つ
+    std::string          cleanSnapshot_;                 ///< editedLayout_ が付く直前の内容。編集でここへ戻れば未保存を外す
+    std::string          cleanSliceSnapshot_;            ///< isSliceTableEdited_ が付く直前の共有の 9-slice の内容
+    UnsavedChangesPrompt unsavedPrompt_;                 ///< 未保存のまま別のレイアウトへ切り替えるときの確認
+    std::string          discardLayout_;                 ///< 次の Update でファイルから読み直して編集を捨てるゲーム側のレイアウト
 
     //編集の検出（Serialize は重いので、ハッシュが変わったときだけ作り直す）
     uint64_t    cachedLayoutHash_ = 0;
@@ -399,11 +396,9 @@ namespace Tako {
     std::string cachedSlices_;          ///< 最後に SerializeTextureSlices した内容
 
     //Undo / Redo（開いているレイアウト 1 つの編集だけを持つ）
-    std::vector<EditState>   undoStack_;
-    std::vector<EditState>   redoStack_;
-    std::optional<EditState> editStart_;                ///< 進行中の操作（ドラッグなど）の前の状態。操作を終えたフレームで undoStack_ に積む
-    const UILayout*          historyLayout_ = nullptr;  ///< 履歴の対象。別のインスタンスを編集したら履歴を捨てる
-    std::string              clipboard_;                ///< コピーした要素（UILayout::SerializeElements）
+    EditHistory<EditState> history_;
+    const UILayout*        historyLayout_ = nullptr;  ///< 履歴の対象。別のインスタンスを編集したら履歴を捨てる
+    std::string            clipboard_;                ///< コピーした要素（UILayout::SerializeElements）
 
     //名前の編集
     char renameBuffer_[128]      = "";

@@ -9,7 +9,6 @@
 #include "TextureManager.h"
 #include "EnginePaths.h"
 #include "SpriteBasic.h"
-#include "UnsavedChangesModal.h"
 #include "WinApp.h"
 
 #include <algorithm>
@@ -78,10 +77,6 @@ namespace Tako {
     };
 
     Vector2 Mul(const Vector2& a, const Vector2& b) { return { a.x * b.x, a.y * b.y }; }
-
-    void AddLog(const std::string& message, DebugUIManager::LogType type = DebugUIManager::LogType::Info) {
-      DebugUIManager::GetInstance()->AddLog(message, type);
-    }
 
     bool IsStretched(const UIElement& element) { return element.anchorMin != element.anchorMax; }
 
@@ -342,7 +337,7 @@ namespace Tako {
     // シーンの切り替えなどでインスタンスごと消えた編集は戻せないので知らせる
     const std::vector<UILayout*>& instances = UILayout::GetInstances();
     if (editedLayout_ && std::ranges::find(instances, editedLayout_) == instances.end()) {
-      AddLog(std::format("UI Editor: unsaved changes to '{}' were lost because the layout was unloaded", layoutName_), DebugUIManager::LogType::Warning);
+      LogToConsole(std::format("UI Editor: unsaved changes to '{}' were lost because the layout was unloaded", layoutName_), DebugUIManager::LogType::Warning);
       editedLayout_ = nullptr;
     }
 
@@ -433,8 +428,8 @@ namespace Tako {
     // ドラッグや矢印キーの押し続けは、離すまでを 1 手にまとめる
     const bool isNudging = ImGui::IsKeyDown(ImGuiKey_LeftArrow) || ImGui::IsKeyDown(ImGuiKey_RightArrow) ||
       ImGui::IsKeyDown(ImGuiKey_UpArrow) || ImGui::IsKeyDown(ImGuiKey_DownArrow);
-    if (!ImGui::IsAnyItemActive() && !isNudging) {
-      CommitEdit();
+    if (!ImGui::IsAnyItemActive() && !isNudging && history_.IsRecording()) {
+      history_.Commit({ cachedLayout_, cachedSlices_, selection_ });
     }
 
     // 比べた後に保存して、このフレームの編集も保存済みにする。ビューポートのフォーカスは ImGui のルーティングで届かないので自前で判定する
@@ -679,10 +674,10 @@ namespace Tako {
       preview_->Create(pendingNewLayout_);
       const std::string path = LayoutFilePath(pendingNewLayout_);
       if (preview_->Save()) {
-        AddLog("UILayout created: " + path);
+        LogToConsole("UILayout created: " + path);
       }
       else {
-        AddLog("UILayout create failed: " + path, DebugUIManager::LogType::Error);
+        LogToConsole("UILayout create failed: " + path, DebugUIManager::LogType::Error);
       }
       layoutName_    = pendingNewLayout_;
       isPreviewMode_ = true;
@@ -705,17 +700,22 @@ namespace Tako {
   }
 
   void UILayoutEditor::RequestOpen(const OpenRequest& request) {
-    if (editedLayout_) {
-      pendingOpen_             = request;
-      isUnsavedPopupRequested_ = true;
+    if (!editedLayout_) {
+      Open(request);
       return;
     }
-    Open(request);
+    // ゲーム側のレイアウトはメモリ上の編集が残るので、ファイルから読み直して捨てる（保存した場合は同じ内容に戻るだけ）
+    const UILayout*   layout  = FindLayout();
+    const std::string discard = layout && layout != preview_.get() ? layout->GetName() : std::string();
+    unsavedPrompt_.RunOrConfirm(true, std::format("Layout '{}' has unsaved changes.", layoutName_), "Switch", [this, request, discard] {
+      discardLayout_ = discard;
+      Open(request);
+    });
   }
 
   void UILayoutEditor::Open(const OpenRequest& request) {
     editedLayout_ = nullptr;
-    ClearHistory();
+    history_.Clear();
     if (request.isNew) {
       // 古いプレビューの破棄（スプライト解放）を伴うので、作成は次の Update で行う
       pendingNewLayout_ = request.name;
@@ -732,10 +732,10 @@ namespace Tako {
   bool UILayoutEditor::SaveLayout(const UILayout& layout) {
     const std::string path = LayoutFilePath(layout.GetName());
     if (!layout.Save()) {
-      AddLog("UILayout save failed: " + path, DebugUIManager::LogType::Error);
+      LogToConsole("UILayout save failed: " + path, DebugUIManager::LogType::Error);
       return false;
     }
-    AddLog("UILayout saved: " + path);
+    LogToConsole("UILayout saved: " + path);
     if (editedLayout_ == &layout) {
       editedLayout_ = nullptr;
     }
@@ -743,10 +743,10 @@ namespace Tako {
     // 共有の 9-slice はレイアウトをまたぐが、どのレイアウトの Save でも一緒に保存する
     if (isSliceTableEdited_) {
       if (!UILayout::SaveTextureSlices()) {
-        AddLog(std::string("Texture 9-slice save failed: ") + UILayout::kTextureSlicePath, DebugUIManager::LogType::Error);
+        LogToConsole(std::string("Texture 9-slice save failed: ") + UILayout::kTextureSlicePath, DebugUIManager::LogType::Error);
         return false;
       }
-      AddLog(std::string("Texture 9-slice saved: ") + UILayout::kTextureSlicePath);
+      LogToConsole(std::string("Texture 9-slice saved: ") + UILayout::kTextureSlicePath);
       isSliceTableEdited_ = false;
     }
     return true;
@@ -849,18 +849,7 @@ namespace Tako {
     if (layout) {
       save = [this, layout] { return SaveLayout(*layout); };
     }
-    const std::string     message = std::format("Layout '{}' has unsaved changes.", layoutName_);
-    const UnsavedChoice   choice  = DrawUnsavedChangesModal("Unsaved Changes##UIEditor", isUnsavedPopupRequested_, message, "Switch", save);
-    if (choice == UnsavedChoice::Proceed && pendingOpen_) {
-      // ゲーム側のレイアウトはメモリ上の編集が残るので、ファイルから読み直して捨てる（保存した場合は同じ内容に戻るだけ）
-      if (layout && layout != preview_.get()) {
-        discardLayout_ = layout->GetName();
-      }
-      Open(*pendingOpen_);
-    }
-    if (choice != UnsavedChoice::None) {
-      pendingOpen_.reset();
-    }
+    unsavedPrompt_.Draw("Unsaved Changes##UIEditor", save);
 
     ImGui::BeginDisabled(!layout);
     ImGui::SameLine();
@@ -875,22 +864,13 @@ namespace Tako {
       Request(PendingOp::Reload, {});
     }
     ImGui::SetItemTooltip("Discard unsaved changes to the layout and the shared texture 9-slice settings.");
-    // 進行中の操作（editStart_）も Undo で 1 手として戻せる
     const bool hasHistory = layout && layout == historyLayout_;
     ImGui::SameLine();
-    ImGui::BeginDisabled(!hasHistory || (undoStack_.empty() && !editStart_));
-    if (ImGui::Button("Undo")) {
-      Request(PendingOp::Undo, {});
+    switch (DrawHistoryButtons(hasHistory && history_.CanUndo(), hasHistory && history_.CanRedo())) {
+    case HistoryCommand::Undo: Request(PendingOp::Undo, {}); break;
+    case HistoryCommand::Redo: Request(PendingOp::Redo, {}); break;
+    default: break;
     }
-    ImGui::EndDisabled();
-    ImGui::SetItemTooltip("Ctrl+Z");
-    ImGui::SameLine();
-    ImGui::BeginDisabled(!hasHistory || redoStack_.empty());
-    if (ImGui::Button("Redo")) {
-      Request(PendingOp::Redo, {});
-    }
-    ImGui::EndDisabled();
-    ImGui::SetItemTooltip("Ctrl+Y / Ctrl+Shift+Z");
     ImGui::EndDisabled();
 
     ImGui::Checkbox("Viewport Edit", &isViewportEditEnabled_);
@@ -2101,22 +2081,21 @@ namespace Tako {
       dragMode_           = DragMode::None;
       editedLayout_       = nullptr;
       isSliceTableEdited_ = false;
-      ClearHistory();
-      AddLog("UILayout reloaded: " + layout.GetName());
+      history_.Clear();
+      LogToConsole("UILayout reloaded: " + layout.GetName());
       return;
     case PendingOp::Undo:
     case PendingOp::Redo: {
-      // 進行中の操作も 1 手として積んでから戻す
-      CommitEdit();
-      const bool              isUndo = pending.op == PendingOp::Undo;
-      std::vector<EditState>& from   = isUndo ? undoStack_ : redoStack_;
-      std::vector<EditState>& to     = isUndo ? redoStack_ : undoStack_;
-      if (historyLayout_ != &layout || from.empty()) {
+      if (historyLayout_ != &layout) {
         return;
       }
-      to.push_back(CaptureState(layout));
-      RestoreState(layout, from.back());
-      from.pop_back();
+      // 進行中の操作も 1 手として積んでから戻す（EditHistory の Undo / Redo が積む）
+      const EditState                current = CaptureState(layout);
+      const std::optional<EditState> state   = pending.op == PendingOp::Undo ? history_.Undo(current) : history_.Redo(current);
+      if (!state) {
+        return;
+      }
+      RestoreState(layout, *state);
       TrackLayoutEdit(layout, mark, false);
       return;
     }
@@ -2150,11 +2129,11 @@ namespace Tako {
     // キャッシュは MarkEdit で操作の前の内容になっているので、上書きする前に Undo の 1 手の始まりとして取っておく
     if (isUndoable) {
       if (historyLayout_ != &layout) {
-        ClearHistory();
+        history_.Clear();
         historyLayout_ = &layout;
       }
-      if (!editStart_) {
-        editStart_ = EditState{ cachedLayout_, cachedSlices_, mark.selection };
+      if (!history_.IsRecording()) {
+        history_.Record({ cachedLayout_, cachedSlices_, mark.selection });
       }
     }
 
@@ -2174,27 +2153,6 @@ namespace Tako {
       cachedSlices_     = std::move(after);
       cachedSlicesHash_ = slicesHash;
     }
-  }
-
-  void UILayoutEditor::CommitEdit() {
-    if (!editStart_) {
-      return;
-    }
-    // ドラッグして元の位置へ戻した場合など、内容が変わっていなければ積まない
-    if (editStart_->layout != cachedLayout_ || editStart_->slices != cachedSlices_) {
-      undoStack_.push_back(std::move(*editStart_));
-      if (undoStack_.size() > kMaxUndoSteps) {
-        undoStack_.erase(undoStack_.begin());
-      }
-      redoStack_.clear();
-    }
-    editStart_.reset();
-  }
-
-  void UILayoutEditor::ClearHistory() {
-    undoStack_.clear();
-    redoStack_.clear();
-    editStart_.reset();
   }
 
   UILayoutEditor::EditState UILayoutEditor::CaptureState(const UILayout& layout) const {
@@ -2244,7 +2202,7 @@ namespace Tako {
       return;
     }
     clipboard_ = UILayout::SerializeElements(std::vector<const UIElement*>(elements.begin(), elements.end()));
-    AddLog(std::format("UI Editor: copied {} element(s)", elements.size()));
+    LogToConsole(std::format("UI Editor: copied {} element(s)", elements.size()));
   }
 
   void UILayoutEditor::CreateFromTexture(UILayout& layout, UIElement& parent, const std::string& texture, const Vector2& clientCenter) {

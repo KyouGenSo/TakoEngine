@@ -8,6 +8,7 @@
 #include <functional>
 #include <string>
 #include <string_view>
+#include <utility>
 
 namespace Tako {
 
@@ -67,13 +68,58 @@ namespace Tako {
   /// </summary>
   /// <param name="wasEdited">この編集の前から未保存だったか</param>
   /// <returns>未保存の変更が残っていれば true</returns>
-  inline bool IsStillEdited(bool wasEdited, const std::string& before, const std::string& after, std::string& clean) {
+  template <class State>
+  bool IsStillEdited(bool wasEdited, const State& before, const State& after, State& clean) {
     // ファイルとは比べない。ゲームのコードが実行中に変えた値（表示の切り替えなど）は before に入っているので、未保存に数えない
     if (!wasEdited) {
       clean = before;
     }
-    return after != clean;
+    return !(after == clean);
   }
+
+  /// <summary>
+  /// 未保存の変更を失う操作を、確認モーダルの返答まで保留する
+  /// </summary>
+  class UnsavedChangesPrompt {
+  public: //メンバー関数
+    /// <summary>
+    /// needsConfirm なら action を保留して次の Draw で確認を出し、そうでなければすぐ実行する
+    /// </summary>
+    /// <param name="message">本文（複数行可）</param>
+    /// <param name="actionName">続ける操作の名前。ボタン名（Save and Switch など）に使う</param>
+    void RunOrConfirm(bool needsConfirm, std::string message, std::string actionName, std::function<void()> action) {
+      if (!needsConfirm) {
+        action();
+        return;
+      }
+      message_     = std::move(message);
+      actionName_  = std::move(actionName);
+      action_      = std::move(action);
+      isRequested_ = true;
+    }
+
+    /// <summary>
+    /// 確認モーダル。開いている間は毎フレーム、同じ ID スタックで呼ぶ。続けるを選んだら保留した操作を実行する
+    /// </summary>
+    /// <param name="save">保存処理。空なら Save のボタンを出さない。false を返したら開いたままにする</param>
+    void Draw(const char* popupId, const std::function<bool()>& save = {}) {
+      const UnsavedChoice choice = DrawUnsavedChangesModal(popupId, isRequested_, message_, actionName_, save);
+      if (choice == UnsavedChoice::None) {
+        return;
+      }
+      // 実行中に次の確認を予約できるよう、先に取り出す
+      const std::function<void()> action = std::exchange(action_, nullptr);
+      if (choice == UnsavedChoice::Proceed && action) {
+        action();
+      }
+    }
+
+  private: //メンバー変数
+    std::string           message_;
+    std::string           actionName_;
+    std::function<void()> action_;
+    bool                  isRequested_ = false;
+  };
 
 } // namespace Tako
 

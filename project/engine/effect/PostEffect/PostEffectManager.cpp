@@ -33,11 +33,11 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <iterator>
 #include <string_view>
 
 #ifdef _DEBUG
 #include "ImGuiManager.h"
-#include "UnsavedChangesModal.h"
 #endif
 
 namespace Tako {
@@ -274,34 +274,33 @@ namespace Tako {
     ImGui::Begin("PostEffect Manager");
 
     // UI を描く区間の前後で保存内容を比べて編集を検出する（この区間ではゲームのコードがチェーンを変えない）
-    std::string profileSnapshot = SerializeProfile();
+    profileTracker_.BeginSection();
 
     auto saveProfile = [this] {
       const bool saved = SaveProfile(profileName_.data());
-      DebugUIManager::GetInstance()->AddLog(std::format("PostEffect profile {}: {}", saved ? "saved" : "save failed", profileName_.data()),
-                                            saved ? DebugUIManager::LogType::Info : DebugUIManager::LogType::Error);
+      LogToConsole(std::format("PostEffect profile {}: {}", saved ? "saved" : "save failed", profileName_.data()),
+                   saved ? DebugUIManager::LogType::Info : DebugUIManager::LogType::Error);
       if (saved) {
-        isProfileDirty_ = false;
+        profileTracker_.MarkSaved();
       }
       return saved;
     };
-    auto loadProfile = [this, &profileSnapshot](const std::string& name) {
+    auto loadProfile = [this](const std::string& name) {
       // 破棄を選んだ後なので、LoadProfile の上書きの警告は出さない
-      isProfileDirty_ = false;
+      profileTracker_.Reset();
       const bool loaded = LoadProfile(name);
-      DebugUIManager::GetInstance()->AddLog(std::format("PostEffect profile {}: {}", loaded ? "loaded" : "load failed", name),
-                                            loaded ? DebugUIManager::LogType::Info : DebugUIManager::LogType::Error);
-      profileSnapshot = SerializeProfile();
+      LogToConsole(std::format("PostEffect profile {}: {}", loaded ? "loaded" : "load failed", name),
+                   loaded ? DebugUIManager::LogType::Info : DebugUIManager::LogType::Error);
     };
 
-    // 編集の比較は End の後なので、まだ編集していない区間の最初で保存する。パラメータは別タブで編集するので Save ボタンには付けない
+    // 編集の比較は区間の最後なので、まだ編集していない区間の最初で保存する。パラメータは別タブで編集するので Save ボタンには付けない
     if (profileName_[0] != '\0' && ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_S)) {
       saveProfile();
     }
 
     if (ImGui::BeginTabBar("PostEffectTab")) {
       if (ImGui::BeginTabItem("PostEffect")) {
-        ImGui::SeparatorText(isProfileDirty_ ? "Profile *" : "Profile");
+        ImGui::SeparatorText(profileTracker_.IsEdited() ? "Profile *" : "Profile");
         ImGui::SetNextItemWidth(160.0f);
         ImGui::InputText("##ProfileName", profileName_.data(), profileName_.size());
         ImGui::SameLine();
@@ -315,32 +314,21 @@ namespace Tako {
         ImGui::SetNextItemWidth(160.0f);
         if (ImGui::BeginCombo("Load", "Select...")) {
           for (const std::string& name : ProfileNames()) {
-            if (!ImGui::Selectable(name.c_str())) {
-              continue;
-            }
-            if (isProfileDirty_) {
-              pendingProfileLoad_      = name;
-              isUnsavedPopupRequested_ = true;
-            }
-            else {
-              loadProfile(name);
+            if (ImGui::Selectable(name.c_str())) {
+              unsavedPrompt_.RunOrConfirm(profileTracker_.IsEdited(), std::format("Profile '{}' has unsaved changes.", profileName_.data()), "Load",
+                                          [loadProfile, name] { loadProfile(name); });
             }
           }
           ImGui::EndCombo();
         }
+        ImGui::SameLine();
+        profileTracker_.DrawButtons();
 
         std::function<bool()> save;
         if (hasName) {
           save = saveProfile;
         }
-        const std::string   message = std::format("Profile '{}' has unsaved changes.", profileName_.data());
-        const UnsavedChoice choice  = DrawUnsavedChangesModal("Unsaved Changes##PostEffect", isUnsavedPopupRequested_, message, "Load", save);
-        if (choice == UnsavedChoice::Proceed) {
-          loadProfile(pendingProfileLoad_);
-        }
-        if (choice != UnsavedChoice::None) {
-          pendingProfileLoad_.clear();
-        }
+        unsavedPrompt_.Draw("Unsaved Changes##PostEffect", save);
 
         ImGui::Text("Post Effects Configuration");
         ImGui::Separator();
@@ -561,11 +549,8 @@ namespace Tako {
       ImGui::EndTabBar();
     }
 
+    profileTracker_.EndSection();
     ImGui::End();
-
-    if (const std::string profile = SerializeProfile(); profile != profileSnapshot) {
-      isProfileDirty_ = IsStillEdited(isProfileDirty_, profileSnapshot, profile, cleanProfileSnapshot_);
-    }
 #endif
   }
 
@@ -682,9 +667,13 @@ namespace Tako {
 
   void PostEffectManager::CollectUnsavedChanges(std::vector<std::string>& out) const
   {
-    if (isProfileDirty_) {
+#ifdef _DEBUG
+    if (profileTracker_.IsEdited()) {
       out.push_back(std::format("PostEffect Manager: {}", profileName_[0] != '\0' ? profileName_.data() : "(unnamed profile)"));
     }
+#else
+    (void)out;
+#endif
   }
 
   bool PostEffectManager::LoadProfile(const std::string& name)
@@ -694,16 +683,38 @@ namespace Tako {
       Logger::Log("PostEffect profile not found: %s", name.c_str());
       return false;
     }
+    if (!ApplyProfile(std::string(std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>()))) {
+      Logger::Log("PostEffect profile load failed: %s", name.c_str());
+      return false;
+    }
 
+#ifdef _DEBUG
+    if (profileTracker_.IsEdited()) {
+      LogToConsole(std::format("PostEffect: unsaved profile changes were overwritten by loading '{}'", name), DebugUIManager::LogType::Warning);
+    }
+    profileTracker_.Reset();
+#endif
+    // Save の既定の保存先を、今読み込んだプロファイルにする
+    std::ranges::fill(profileName_, '\0');
+    name.copy(profileName_.data(), profileName_.size() - 1);
+    return true;
+  }
+
+  bool PostEffectManager::ApplyProfile(const std::string& profile)
+  {
     // 手編集された JSON の型不一致などは例外になるため、そこまでの適用を残して中断する
     try {
-      const json root = json::parse(ifs);
+      const json root = json::parse(profile);
 
       ClearEffectChain();
       for (const json& effectName : root.at("Chain")) {
         if (const auto type = FindEffectType(effectName.get<std::string>())) {
           AddEffectToChain(*type);
         }
+      }
+      // 一時エフェクトはプロファイルに入らないので、時間切れまでチェーンに残す
+      for (const auto& temporary : temporaryEffects_) {
+        AddEffectToChain(temporary.first);
       }
 
       for (const auto& item : root.at("Params").items()) {
@@ -724,21 +735,10 @@ namespace Tako {
           effect->SetGenericParam(current[i]);
         }
       }
-
-#ifdef _DEBUG
-      if (isProfileDirty_) {
-        DebugUIManager::GetInstance()->AddLog(std::format("PostEffect: unsaved profile changes were overwritten by loading '{}'", name),
-                                              DebugUIManager::LogType::Warning);
-      }
-#endif
-      isProfileDirty_ = false;
-      // Save の既定の保存先を、今読み込んだプロファイルにする
-      std::ranges::fill(profileName_, '\0');
-      name.copy(profileName_.data(), profileName_.size() - 1);
       return true;
     }
     catch (const json::exception& e) {
-      Logger::Log("PostEffect profile load failed: %s (%s)", name.c_str(), e.what());
+      Logger::Log("PostEffect profile apply failed: %s", e.what());
       return false;
     }
   }

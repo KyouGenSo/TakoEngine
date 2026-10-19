@@ -9,12 +9,11 @@
 #include <vector>
 #include "Vector3.h"
 #include "Vector4.h"
-#include "ViewportCameraController.h"
+#include "PreviewPanel.h"
+#include "EditTracker.h"
 
 namespace Tako {
 
-  class Camera;
-  class PreviewViewport;
   class EmitterManager;
   class ForceFieldManager;
   class GPUParticleEmitter;
@@ -44,6 +43,17 @@ namespace Tako {
       std::string                       clean;    ///< 未保存でなかった最後の内容。新しく作ったエミッターは空なので、戻しても未保存のまま
     };
 
+    /// <summary>
+    /// Undo / Redo で戻すエミッターの内容
+    /// </summary>
+    struct EmitterEdit {
+      std::string                       name;
+      std::weak_ptr<GPUParticleEmitter> emitter;  ///< 編集したインスタンス。ゲームが同じ名前で作り直したら戻さない
+      std::string                       json;     ///< プリセットと同じ形式
+
+      bool operator==(const EmitterEdit& other) const { return name == other.name && json == other.json; }
+    };
+
   public: //メンバー関数
     ParticleEditor();
     ~ParticleEditor();
@@ -55,9 +65,9 @@ namespace Tako {
     /// <param name="previewGrid">プレビューの床グリッド設定（EngineSettingsWindow の値を共有する）</param>
     /// <param name="cameraSettings">カメラ操作設定（EngineSettingsWindow の値を共有する）</param>
     void Initialize(bool* isOpen, const GridSettings* previewGrid, const ViewportCameraSettings* cameraSettings) {
-      isOpen_                    = isOpen;
-      previewGrid_               = previewGrid;
-      cameraController_.settings = cameraSettings;
+      isOpen_      = isOpen;
+      previewGrid_ = previewGrid;
+      preview_.Initialize(L"ParticleEditorPreview", cameraSettings);
     }
 
     /// <summary>
@@ -184,12 +194,14 @@ namespace Tako {
     void PruneUnsavedEmitters(bool warn);
 
     /// <summary>
-    /// 未保存の編集を上書きし得る読み込み。hasConflict なら確認モーダルを予約し、そうでなければすぐ実行する
+    /// 操作の前後でエミッターの内容が変わっていれば、未保存の印を付けて Undo の 1 手にする
     /// </summary>
-    /// <param name="hasConflict">上書きされる未保存のエミッターがあるか</param>
-    /// <param name="message">確認モーダルの本文</param>
-    /// <param name="load">読み込み処理</param>
-    void RunOrConfirmLoad(bool hasConflict, const std::string& message, std::function<void()> load);
+    void FinishEmitterOperation();
+
+    /// <summary>
+    /// エミッターの編集の Undo / Redo。戻した先のエミッターを選択する
+    /// </summary>
+    void RestoreEmitterEdit(bool isUndo);
 
     /// <summary>
     /// 選択中のエミッターを、同じ名前のプリセットへ上書き保存する
@@ -218,10 +230,13 @@ namespace Tako {
     std::string        currentFFPresetName_;  ///< 最後にロード/保存したFFプリセット名（上書き保存用）
 
     //未保存の変更（フォースフィールドは番号が実行中にずれて識別できず、グループは Save All でしか保存しないので対象外）
-    std::map<std::string, UnsavedEmitter> unsavedEmitters_;                  ///< 未保存のエミッター名 → 編集したインスタンスと戻り先
-    std::function<void()>                 pendingLoad_;                      ///< 確認モーダルの返答待ちの読み込み
-    std::string                           pendingLoadMessage_;
-    bool                                  isUnsavedPopupRequested_ = false;
+    std::map<std::string, UnsavedEmitter> unsavedEmitters_;  ///< 未保存のエミッター名 → 編集したインスタンスと戻り先
+    UnsavedChangesPrompt                  unsavedPrompt_;    ///< 未保存のエミッターを上書きし得る読み込みの確認
+
+    //編集の検出と Undo / Redo（未保存の印と同じく、エミッターの編集だけを持つ）
+    EditGate                 editGate_;
+    EditHistory<EmitterEdit> history_;
+    EmitterEdit              operationStart_;  ///< 進行中の操作の前の、選択中のエミッターの内容
 
     //パーティクル可視化設定
     bool    showEmitterShapes_        = false;                       ///< エミッター形状の表示ON/OFF
@@ -236,14 +251,12 @@ namespace Tako {
     float   forceFieldArrowHeadSize_  = 0.3f;                        ///< フォースフィールド矢印の先端サイズ
 
     //3ペイン/プレビュー
-    InspectTarget                    inspectTarget_       = InspectTarget::None;  ///< インスペクタ表示対象（最後にクリックしたリストで決まる）
-    std::unique_ptr<PreviewViewport> previewViewport_;
-    std::unique_ptr<Camera>          previewCamera_;
-    ViewportCameraController         cameraController_;
-    bool                             previewSelectedOnly_ = false;                ///< true = 選択エミッターのみ描画
-    bool                             previewShowGrid_     = true;
-    const GridSettings*              previewGrid_         = nullptr;              ///< プレビューの床グリッド設定（EngineSettingsWindow 所有）
-    std::string                      selectedPreset_;                             ///< Load コンボの選択中プリセット名
+    InspectTarget       inspectTarget_       = InspectTarget::None;  ///< インスペクタ表示対象（最後にクリックしたリストで決まる）
+    PreviewPanel        preview_;
+    bool                previewSelectedOnly_ = false;                ///< true = 選択エミッターのみ描画
+    bool                previewShowGrid_     = true;
+    const GridSettings* previewGrid_         = nullptr;              ///< プレビューの床グリッド設定（EngineSettingsWindow 所有）
+    std::string         selectedPreset_;                             ///< Load コンボの選択中プリセット名
 
     //入力状態
     int     newEmitterTypeIndex_               = 0;

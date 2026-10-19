@@ -310,6 +310,12 @@ namespace Tako {
     std::string PasteEmitterSettingsAsNew(int slotIndex = 0, const std::string& newEmitterName = "");
 
     /// <summary>
+    /// SerializeEmitterToJSON の内容を既存のエミッターへ当てる。位置と射出タイマーは当てず、型固有は型が同じときだけ当てる
+    /// </summary>
+    /// <returns>型固有まで当てたら true（型が違って飛ばしたら false）</returns>
+    bool ApplyAllSettings(GPUParticleEmitter& emitter, const nlohmann::json& json);
+
+    /// <summary>
     /// 指定したスロットのコピー済み設定をクリア
     /// </summary>
     /// <param name="slotIndex">スロット番号（0-4）</param>

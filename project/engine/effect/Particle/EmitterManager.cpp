@@ -938,38 +938,43 @@ namespace Tako {
         Vector2{ json["scaleRangeY"][0], json["scaleRangeY"][1] });
       break;
 
-    case PasteMode::All: {
-      // 射出タイマーだけは共通ブロックに含まれるので退避して復元する。
-      const float savedFrequencyTime = targetEmitter->GetFrequencyTime();
-      ApplyCommonSettingsFromJSON(targetEmitter.get(), json);
-      targetEmitter->SetFrequencyTime(savedFrequencyTime);
-
-      // position 以外の CreateFromJSON 側担当分を明示適用する
-      targetEmitter->SetParticleCount(json["particleCount"].get<uint32_t>());
-      targetEmitter->SetFrequency(json["frequency"].get<float>());
-
-      // コピー元が既定モデル / 既定テクスチャ (キー無し) なら対象もリセットして完全一致させる
-      if (!json.contains("renderModelPath")) {
-        targetEmitter->ResetParticleModel();
-      }
-      if (!json.contains("texturePath")) {
-        targetEmitter->ResetTexture();
-      }
-
-      // 型固有パラメータは型一致時のみ
-      if (slot.type == targetEmitter->GetType()) {
-        targetEmitter->DeserializeTypeSpecific(json);
-      }
+    case PasteMode::All:
+      if (!ApplyAllSettings(*targetEmitter, json)) {
 #ifdef _DEBUG
-      else {
         DebugUIManager::GetInstance()->AddLog(
           "Paste: emitter type mismatch. Type-specific params skipped.", DebugUIManager::LogType::Info);
-      }
 #endif
+      }
       break;
     }
+
+    return true;
+  }
+
+  bool EmitterManager::ApplyAllSettings(GPUParticleEmitter& emitter, const nlohmann::json& json)
+  {
+    // 射出タイマーだけは共通ブロックに含まれるので退避して復元する。
+    const float savedFrequencyTime = emitter.GetFrequencyTime();
+    ApplyCommonSettingsFromJSON(&emitter, json);
+    emitter.SetFrequencyTime(savedFrequencyTime);
+
+    // position 以外の CreateFromJSON 側担当分を明示適用する
+    emitter.SetParticleCount(json["particleCount"].get<uint32_t>());
+    emitter.SetFrequency(json["frequency"].get<float>());
+
+    // コピー元が既定モデル / 既定テクスチャ (キー無し) なら対象もリセットして完全一致させる
+    if (!json.contains("renderModelPath")) {
+      emitter.ResetParticleModel();
+    }
+    if (!json.contains("texturePath")) {
+      emitter.ResetTexture();
     }
 
+    // 型固有パラメータは型一致時のみ
+    if (static_cast<EmitterType>(json["type"].get<uint32_t>()) != emitter.GetType()) {
+      return false;
+    }
+    emitter.DeserializeTypeSpecific(json);
     return true;
   }
 

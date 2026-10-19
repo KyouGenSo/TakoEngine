@@ -4,6 +4,7 @@
 #include "WinApp.h"
 #include "Logger.h"
 #include "StringUtility.h"
+#include "Hash.h"
 #ifdef _DEBUG
 #include "DebugUIManager.h"
 #endif
@@ -206,41 +207,23 @@ namespace Tako {
       return node;
     }
 
-    // ハッシュは FNV-1a（64 bit）
-    constexpr uint64_t kHashBasis = 14695981039346656037ull;
-    constexpr uint64_t kHashPrime = 1099511628211ull;
-
-    void HashBytes(uint64_t& hash, const void* data, size_t size) {
-      const auto* bytes = static_cast<const unsigned char*>(data);
-      for (size_t i = 0; i < size; ++i) {
-        hash = (hash ^ bytes[i]) * kHashPrime;
-      }
-    }
-
-    // float・bool・Vector2 など詰め物の無い型はバイト列のまま混ぜる
+    // UISlice 以外の項目は Fnv1aHasher がそのまま混ぜる
     template <class T>
-      requires std::is_trivially_copyable_v<T>
-    void HashValue(uint64_t& hash, const T& value) {
-      HashBytes(hash, &value, sizeof(value));
+    void HashValue(Fnv1aHasher& hash, const T& value) {
+      hash.Add(value);
     }
 
-    // 長さも混ぜ、隣の文字列との区切りを変えた内容を区別する
-    void HashValue(uint64_t& hash, const std::string& value) {
-      HashValue(hash, value.size());
-      HashBytes(hash, value.data(), value.size());
-    }
-
-    void HashValue(uint64_t& hash, const UISlice& slice) {
-      HashValue(hash, slice.border);
-      HashValue(hash, slice.regionVisible);
+    void HashValue(Fnv1aHasher& hash, const UISlice& slice) {
+      hash.Add(slice.border);
+      hash.Add(slice.regionVisible);
       for (const std::string& texture : slice.regionTextures) {
-        HashValue(hash, texture);
+        hash.Add(texture);
       }
     }
 
-    void HashElement(uint64_t& hash, const UIElement& element) {
+    void HashElement(Fnv1aHasher& hash, const UIElement& element) {
       VisitSavedFields(element, [&hash](const char*, const auto& value) { HashValue(hash, value); });
-      HashValue(hash, element.children.size());
+      hash.Add(element.children.size());
       for (const std::unique_ptr<UIElement>& child : element.children) {
         HashElement(hash, *child);
       }
@@ -413,14 +396,14 @@ namespace Tako {
   }
 
   uint64_t UILayout::HashTextureSlices() {
-    uint64_t hash = kHashBasis;
+    Fnv1aHasher hash;
     for (const auto& [texture, slice] : TextureSlices()) {
       if (slice != kNoSlice) {
-        HashValue(hash, texture);
+        hash.Add(texture);
         HashValue(hash, slice);
       }
     }
-    return hash;
+    return hash.Get();
   }
 
   void UILayout::SetTextureSlice(const std::string& texture, const UISlice& slice) {
@@ -453,13 +436,13 @@ namespace Tako {
   }
 
   uint64_t UILayout::Hash() const {
-    uint64_t hash = kHashBasis;
-    HashValue(hash, referenceResolution_);
-    HashValue(hash, root_.children.size());
+    Fnv1aHasher hash;
+    hash.Add(referenceResolution_);
+    hash.Add(root_.children.size());
     for (const std::unique_ptr<UIElement>& child : root_.children) {
       HashElement(hash, *child);
     }
-    return hash;
+    return hash.Get();
   }
 
   void UILayout::Update() {

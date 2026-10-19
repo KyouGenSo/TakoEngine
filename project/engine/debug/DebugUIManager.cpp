@@ -34,6 +34,7 @@
 #include <cstring>
 #include <chrono>
 #include <format>
+#include <span>
 
 namespace Tako {
 
@@ -50,6 +51,104 @@ namespace Tako {
     constexpr ImVec4 kPausedColor       = ImVec4(0.25f, 0.50f, 0.95f, 1.0f);  // 一時停止中の強調色
     constexpr ImVec4 kWarningColor      = ImVec4(1.00f, 0.80f, 0.20f, 1.0f);  // 対応が必要な状態の表示色
     constexpr float  kIconButtonAspect  = 1.6f;                               // アイコンボタンの幅 / 高さ
+
+    using Shortcut = std::pair<const char*, const char*>;  // キーと操作
+
+    constexpr Shortcut kGeneralShortcuts[] = {
+      { "F1",  "Debug Viewport" },
+      { "F2",  "Scene Hierarchy" },
+      { "F3",  "Inspector" },
+      { "F4",  "Game Viewport" },
+      { "F5",  "Console" },
+      { "F6",  "Performance" },
+      { "F7",  "Pause / Resume" },
+      { "F8",  "Step Frame" },
+      { "F10", "Show Main Windows" },
+      { "F11", "Fullscreen" },
+      { "F12", "Toggle Main Windows" },
+    };
+
+    // UI Editor・Particle・Primitive・PostEffect・Engine Settings・Variables・Behavior Tree の共通（EditTracker / EditHistory）
+    constexpr Shortcut kCommonEditorShortcuts[] = {
+      { "Ctrl+S",                "Save" },
+      { "Ctrl+Z",                "Undo (while typing in a text field, undoes the typing)" },
+      { "Ctrl+Y / Ctrl+Shift+Z", "Redo" },
+    };
+
+    // ViewportCameraController
+    constexpr Shortcut kPreviewCameraShortcuts[] = {
+      { "RMB drag",        "Look" },
+      { "RMB + WASD / QE", "Fly" },
+      { "RMB + Wheel",     "Fly speed" },
+      { "Alt + LMB drag",  "Orbit" },
+      { "MMB drag",        "Pan" },
+      { "Wheel",           "Dolly" },
+    };
+
+    constexpr Shortcut kUIEditorShortcuts[] = {
+      { "Ctrl+S",                     "Save the layout and the shared 9-slice settings" },
+      { "Ctrl+C / Ctrl+X / Ctrl+V",   "Copy / Cut / Paste (also into another layout)" },
+      { "Ctrl+D",                     "Duplicate" },
+      { "Delete",                     "Delete" },
+      { "Arrow keys",                 "Move the selection 1 px (Shift: Grid Size)" },
+      { "Shift+click",                "Add to or remove from the selection (Viewport)" },
+      { "Ctrl+click / Shift+click",   "Select several / a range (Hierarchy)" },
+      { "Double-click",               "Rename (Hierarchy)" },
+      { "Shift / Alt while resizing", "Keep the aspect ratio / the center" },
+      { "Ctrl while dragging",        "Toggle Snap" },
+    };
+
+    constexpr Shortcut kParticleEditorShortcuts[] = {
+      { "Ctrl+S", "Save the selected emitter to its preset" },
+      { "F",      "Focus the preview on the selected emitter (while hovering the preview)" },
+    };
+
+    constexpr Shortcut kPrimitiveEditorShortcuts[] = {
+      { "Ctrl+S", "Save the preset (when a preset name is entered)" },
+    };
+
+    constexpr Shortcut kPostEffectShortcuts[] = {
+      { "Ctrl+S", "Save the profile (when a profile name is entered)" },
+    };
+
+    constexpr Shortcut kEngineSettingsShortcuts[] = {
+      { "Ctrl+S", "Save the project settings, the generated headers and the editor settings" },
+    };
+
+    constexpr Shortcut kVariablesShortcuts[] = {
+      { "Ctrl+S", "Save the changed groups" },
+    };
+
+    // imgui-node-editor の操作（BehaviorTreeEditor の ed::Config のボタン割り当て）
+    constexpr Shortcut kBehaviorTreeShortcuts[] = {
+      { "Ctrl+S",    "Save the tree" },
+      { "Delete",    "Delete the selected nodes and links" },
+      { "F",         "Zoom to the selection (Shift: with margin)" },
+      { "RMB drag",  "Pan" },
+      { "Wheel",     "Zoom" },
+      { "MMB click", "Context menu" },
+    };
+
+    constexpr Shortcut kAssetsShortcuts[] = {
+      { "Delete",       "Move to the Recycle Bin (asks first)" },
+      { "Shift+Delete", "Move to the Recycle Bin without asking" },
+      { "Double-click", "Open a folder, or open a file with its default app" },
+    };
+
+    // About に並べる順
+    constexpr std::pair<const char*, std::span<const Shortcut>> kShortcutSections[] = {
+      { "General",                                            kGeneralShortcuts },
+      { "All Editors",                                        kCommonEditorShortcuts },
+      { "3D Preview (Debug Viewport / Particle / Primitive)", kPreviewCameraShortcuts },
+      { "UI Editor",                                          kUIEditorShortcuts },
+      { "Particle Editor",                                    kParticleEditorShortcuts },
+      { "Primitive Editor",                                   kPrimitiveEditorShortcuts },
+      { "PostEffect",                                         kPostEffectShortcuts },
+      { "Engine Settings",                                    kEngineSettingsShortcuts },
+      { "Variables",                                          kVariablesShortcuts },
+      { "Behavior Tree Editor",                               kBehaviorTreeShortcuts },
+      { "Assets",                                             kAssetsShortcuts },
+    };
 
     /// <summary>
     /// メニューバー用の区切り線（メニューバー内の Separator は縦線になる）
@@ -1144,30 +1243,22 @@ namespace Tako {
       ImGui::Text("Resolution: %d x %d", WinApp::clientWidth, WinApp::clientHeight);
 
       ImGui::SeparatorText("Shortcuts");
-      constexpr std::pair<const char*, const char*> kShortcuts[] = {
-        { "F1",              "Debug Viewport" },
-        { "F2",              "Scene Hierarchy" },
-        { "F3",              "Inspector" },
-        { "F4",              "Game Viewport" },
-        { "F5",              "Console" },
-        { "F6",              "Performance" },
-        { "F7",              "Pause / Resume" },
-        { "F8",              "Step Frame" },
-        { "F10",             "Show Main Windows" },
-        { "F11",             "Fullscreen" },
-        { "F12",             "Toggle Main Windows" },
-        { "Ctrl+S",          "Save (focused editor)" },
-        { "Ctrl+Z / Ctrl+Y", "Undo / Redo (UI Editor)" },
-      };
-      if (ImGui::BeginTable("##Shortcuts", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV)) {
-        for (const auto& [key, action] : kShortcuts) {
-          ImGui::TableNextRow();
-          ImGui::TableNextColumn();
-          ImGui::TextUnformatted(key);
-          ImGui::TableNextColumn();
-          ImGui::TextUnformatted(action);
+      ImGui::TextDisabled("Editor shortcuts work in the focused window.");
+      for (const auto& [section, shortcuts] : kShortcutSections) {
+        const ImGuiTreeNodeFlags flags = shortcuts.data() == kGeneralShortcuts ? ImGuiTreeNodeFlags_DefaultOpen : ImGuiTreeNodeFlags_None;
+        if (!ImGui::CollapsingHeader(section, flags)) {
+          continue;
         }
-        ImGui::EndTable();
+        if (ImGui::BeginTable(section, 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV)) {
+          for (const auto& [key, action] : shortcuts) {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::TextUnformatted(key);
+            ImGui::TableNextColumn();
+            ImGui::TextUnformatted(action);
+          }
+          ImGui::EndTable();
+        }
       }
     }
     ImGui::End();

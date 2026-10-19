@@ -188,6 +188,54 @@ namespace Tako {
         }
       }
 
+      void ApplyWindow(const json& root) {
+        WindowSettings& window = GetWindowSettings();
+        const json& application = Section(root, "Application");
+        window.productName = application.value("ProductName", window.productName);
+
+        const json& display = Section(root, "Display");
+        window.width           = display.value("Width", window.width);
+        window.height          = display.value("Height", window.height);
+        window.startFullscreen = display.value("StartFullscreen", window.startFullscreen);
+        window.resizable       = display.value("Resizable", window.resizable);
+      }
+
+      /// <summary>
+      /// ウィンドウ設定以外を各システムへ適用する
+      /// </summary>
+      void Apply(const json& root, DX12Basic* dx12) {
+        SceneManager* sceneManager = SceneManager::GetInstance();
+        const json& application = Section(root, "Application");
+        sceneManager->SetStartupScene(application.value("StartupScene", sceneManager->GetStartupScene()));
+
+        const json& display = Section(root, "Display");
+        dx12->SetVSync(display.value("VSync", dx12->IsVSync()));
+        dx12->SetTargetFPS(display.value("TargetFPS", dx12->GetTargetFPS()));
+
+        FrameTimer* timer = FrameTimer::GetInstance();
+        const json& time = Section(root, "Time");
+        timer->SetMaxDeltaTime(time.value("MaxDeltaTime", timer->GetMaxDeltaTime()));
+
+        ShadowRenderer* shadow = ShadowRenderer::GetInstance();
+        PostEffectManager* postEffect = PostEffectManager::GetInstance();
+        const json& rendering = Section(root, "Rendering");
+        shadow->SetEnabled(rendering.value("ShadowEnabled", shadow->IsEnabled()));
+        shadow->SetShadowMapSize(rendering.value("ShadowMapSize", shadow->GetShadowMapSize()));
+        shadow->SetPCFKernelSize(rendering.value("PCFKernelSize", shadow->GetPCFKernelSize()));
+        shadow->SetMaxShadowDistance(rendering.value("MaxShadowDistance", shadow->GetMaxShadowDistance()));
+        shadow->SetShadowBias(rendering.value("ShadowBias", shadow->GetShadowBias()));
+        if (rendering.contains("ClearColor")) {
+          const auto color = rendering["ClearColor"].get<std::array<float, 4>>();
+          postEffect->SetClearColor({ color[0], color[1], color[2], color[3] });
+        }
+        const auto antiAliasing = Input::FindCode<PostEffectManager::AntiAliasing>(kAntiAliasingTable, rendering.value("AntiAliasing", std::string("None")));
+        postEffect->SetAntiAliasing(antiAliasing.value_or(PostEffectManager::AntiAliasing::None));
+        dx12->SetRenderScale(rendering.value("RenderScale", dx12->GetRenderScale()));
+
+        LoadPhysics(Section(root, "Physics"));
+        LoadInput(Section(root, "Input"));
+      }
+
       json SavePhysics() {
         CollisionManager* collision = CollisionManager::GetInstance();
         const std::vector<std::string>& names = collision->GetLayerNames();
@@ -222,16 +270,7 @@ namespace Tako {
         if (!root) {
           return false;
         }
-
-        WindowSettings& window = GetWindowSettings();
-        const json& application = Section(*root, "Application");
-        window.productName = application.value("ProductName", window.productName);
-
-        const json& display = Section(*root, "Display");
-        window.width           = display.value("Width", window.width);
-        window.height          = display.value("Height", window.height);
-        window.startFullscreen = display.value("StartFullscreen", window.startFullscreen);
-        window.resizable       = display.value("Resizable", window.resizable);
+        ApplyWindow(*root);
         return true;
       }
       catch (const json::exception& e) {
@@ -247,41 +286,25 @@ namespace Tako {
         if (!root) {
           return false;
         }
-
-        SceneManager* sceneManager = SceneManager::GetInstance();
-        const json& application = Section(*root, "Application");
-        sceneManager->SetStartupScene(application.value("StartupScene", sceneManager->GetStartupScene()));
-
-        const json& display = Section(*root, "Display");
-        dx12->SetVSync(display.value("VSync", dx12->IsVSync()));
-        dx12->SetTargetFPS(display.value("TargetFPS", dx12->GetTargetFPS()));
-
-        FrameTimer* timer = FrameTimer::GetInstance();
-        const json& time = Section(*root, "Time");
-        timer->SetMaxDeltaTime(time.value("MaxDeltaTime", timer->GetMaxDeltaTime()));
-
-        ShadowRenderer* shadow = ShadowRenderer::GetInstance();
-        PostEffectManager* postEffect = PostEffectManager::GetInstance();
-        const json& rendering = Section(*root, "Rendering");
-        shadow->SetEnabled(rendering.value("ShadowEnabled", shadow->IsEnabled()));
-        shadow->SetShadowMapSize(rendering.value("ShadowMapSize", shadow->GetShadowMapSize()));
-        shadow->SetPCFKernelSize(rendering.value("PCFKernelSize", shadow->GetPCFKernelSize()));
-        shadow->SetMaxShadowDistance(rendering.value("MaxShadowDistance", shadow->GetMaxShadowDistance()));
-        shadow->SetShadowBias(rendering.value("ShadowBias", shadow->GetShadowBias()));
-        if (rendering.contains("ClearColor")) {
-          const auto color = rendering["ClearColor"].get<std::array<float, 4>>();
-          postEffect->SetClearColor({ color[0], color[1], color[2], color[3] });
-        }
-        const auto antiAliasing = Input::FindCode<PostEffectManager::AntiAliasing>(kAntiAliasingTable, rendering.value("AntiAliasing", std::string("None")));
-        postEffect->SetAntiAliasing(antiAliasing.value_or(PostEffectManager::AntiAliasing::None));
-        dx12->SetRenderScale(rendering.value("RenderScale", dx12->GetRenderScale()));
-
-        LoadPhysics(Section(*root, "Physics"));
-        LoadInput(Section(*root, "Input"));
+        Apply(*root, dx12);
         return true;
       }
       catch (const json::exception& e) {
         Logger::Log("Project settings load failed: %s", e.what());
+        return false;
+      }
+    }
+
+    bool Deserialize(const std::string& text, DX12Basic* dx12) {
+      // 型不一致などは例外になるため、そこまでの適用を残して中断する
+      try {
+        const json root = json::parse(text);
+        ApplyWindow(root);
+        Apply(root, dx12);
+        return true;
+      }
+      catch (const json::exception& e) {
+        Logger::Log("Project settings apply failed: %s", e.what());
         return false;
       }
     }

@@ -6,9 +6,10 @@
 #include "BTBlackboard.h"
 #include "BTNodeRegistry.h"
 #include "DebugUIManager.h"
-#include "UnsavedChangesModal.h"
+#include "Hash.h"
 #include <imgui_internal.h>
 #include <algorithm>
+#include <cmath>
 #include <queue>
 #include <set>
 #include <unordered_map>
@@ -41,7 +42,7 @@ const std::vector<BehaviorTreeEditor*>& BehaviorTreeEditor::GetInstances() {
 }
 
 void BehaviorTreeEditor::CollectUnsavedChanges(std::vector<std::string>& out) const {
-  if (hasUnsavedChanges_) {
+  if (treeTracker_.IsEdited()) {
     out.push_back(std::format("{}: {}", config_.windowName, currentTreeName_));
   }
 }
@@ -89,6 +90,8 @@ void BehaviorTreeEditor::Update() {
   if (!isVisible_) return;
 
   if (ImGui::Begin(config_.windowName.c_str(), &isVisible_)) {
+    // UI を描く区間の前後でツリーの内容を比べて編集を検出する（Node Inspector は別のウィンドウなので、別の区間で比べる）
+    treeTracker_.BeginSection();
     DrawToolbar();
     ImGui::Separator();
 
@@ -134,14 +137,10 @@ void BehaviorTreeEditor::Update() {
     ed::End();
     ed::SetCurrentEditor(nullptr);
 
+    treeTracker_.EndSection();
     DrawNodeInspector();
   }
   ImGui::End();
-
-  // 編集で、最後に保存・読込した時と同じ内容に戻ったら未保存を外す
-  if (hasUnsavedChanges_ && SerializeTree() == savedTree_) {
-    hasUnsavedChanges_ = false;
-  }
 }
 
 void BehaviorTreeEditor::Clear() {
@@ -149,6 +148,7 @@ void BehaviorTreeEditor::Clear() {
   pins_.clear();
   links_.clear();
   runtimeNodeToEditorId_.clear();
+  parameterHashes_.clear();
   pendingNodePositions_.clear();
 
   // ID 範囲はノード 10000 / ピン 20000 / リンク 30000 で分離 (imgui-node-editor の ID 競合回避)
@@ -184,10 +184,11 @@ void BehaviorTreeEditor::DrawToolbar() {
 
   if (ImGui::Button("Clear##bte_toolbar")) {
     Clear();
-    hasUnsavedChanges_ = true;
     nodeOffsetX = 100.0f;
     nodeOffsetY = 100.0f;
   }
+  ImGui::SameLine();
+  treeTracker_.DrawButtons();
 
   // === マルチツリー: 切替ドロップダウン + 新規/削除 ===
   ImGui::SameLine();
@@ -199,7 +200,7 @@ void BehaviorTreeEditor::DrawToolbar() {
   std::vector<std::string> availableTrees = ListAvailableTrees();
   // 未保存マークを付けて currentTreeName を表示
   std::string comboPreview = currentTreeName_;
-  if (hasUnsavedChanges_) comboPreview += " *";
+  if (treeTracker_.IsEdited()) comboPreview += " *";
 
   ImGui::SetNextItemWidth(160);
   if (ImGui::BeginCombo("##TreeCombo", comboPreview.c_str())) {
@@ -292,15 +293,7 @@ void BehaviorTreeEditor::DrawToolbar() {
   }
 
   // 未保存変更モーダル (RunOrConfirm から発動)。保存に失敗したらモーダルを開いたままにする
-  const std::string   unsavedMessage = std::format("Tree '{}' has unsaved changes.", currentTreeName_);
-  const UnsavedChoice unsavedChoice  = DrawUnsavedChangesModal("Unsaved Changes##modal", showUnsavedChangesModal_, unsavedMessage, pendingActionName_,
-                                                               [this] { return SaveTree(currentTreeName_); });
-  if (unsavedChoice == UnsavedChoice::Proceed && pendingAction_) {
-    pendingAction_();
-  }
-  if (unsavedChoice != UnsavedChoice::None) {
-    pendingAction_ = nullptr;
-  }
+  unsavedPrompt_.Draw("Unsaved Changes##modal", [this] { return SaveTree(currentTreeName_); });
 
   // ノード作成用 UI
   ImGui::SameLine();
@@ -396,11 +389,7 @@ void BehaviorTreeEditor::DrawNodes() {
     // 位置の適用待ちのノードは ed にまだ正しい位置が無いので読まない
     const bool isPositionPending = std::ranges::any_of(pendingNodePositions_, [&node](const auto& pending) { return pending.first == node.id; });
     if (!isPositionPending) {
-      const ImVec2 position = ed::GetNodePosition(node.id);  // ドラッグ最新位置を同期
-      if (position.x != node.position.x || position.y != node.position.y) {
-        hasUnsavedChanges_ = true;
-      }
-      node.position = position;
+      node.position = ed::GetNodePosition(node.id);  // ドラッグ最新位置を同期
     }
     DrawNode(node);
   }
@@ -623,7 +612,6 @@ void BehaviorTreeEditor::HandleLinkCreation() {
           newLink.endNodeId = inputPin->nodeId;
 
           links_.push_back(newLink);
-          hasUnsavedChanges_ = true;
         }
         else if (!canCreateLink) {
           // リンク作成を拒否 (赤色で表示)
@@ -648,7 +636,6 @@ void BehaviorTreeEditor::HandleDeletion() {
             }),
           links_.end()
         );
-        hasUnsavedChanges_ = true;
       }
     }
 
@@ -656,49 +643,7 @@ void BehaviorTreeEditor::HandleDeletion() {
     ed::NodeId deletedNodeId;
     while (ed::QueryDeletedNode(&deletedNodeId)) {
       if (ed::AcceptDeletedItem()) {
-        int nodeId = static_cast<int>(deletedNodeId.Get());
-
-        // ノードに関連するリンクを削除
-        links_.erase(
-          std::remove_if(links_.begin(), links_.end(),
-            [nodeId](const EditorLink& link) {
-              return link.startNodeId == nodeId || link.endNodeId == nodeId;
-            }),
-          links_.end()
-        );
-
-        // ノードのピンを削除
-        EditorNode* node = FindNodeById(nodeId);
-        if (node) {
-          for (int pinId : node->inputPinIds) {
-            pins_.erase(
-              std::remove_if(pins_.begin(), pins_.end(),
-                [pinId](const EditorPin& pin) {
-                  return pin.id == pinId;
-                }),
-              pins_.end()
-            );
-          }
-          for (int pinId : node->outputPinIds) {
-            pins_.erase(
-              std::remove_if(pins_.begin(), pins_.end(),
-                [pinId](const EditorPin& pin) {
-                  return pin.id == pinId;
-                }),
-              pins_.end()
-            );
-          }
-        }
-
-        // ノード自体を削除
-        nodes_.erase(
-          std::remove_if(nodes_.begin(), nodes_.end(),
-            [nodeId](const EditorNode& node) {
-              return node.id == nodeId;
-            }),
-          nodes_.end()
-        );
-        hasUnsavedChanges_ = true;
+        RemoveNode(static_cast<int>(deletedNodeId.Get()));
       }
     }
   }
@@ -786,12 +731,14 @@ void BehaviorTreeEditor::DrawNodeInspector() {
     ImGui::End();
     return;
   }
+  treeTracker_.BeginSection();
 
   ImGui::Text("Inspector");
   ImGui::Separator();
 
   if (selectedNodeId_ < 0) {
     ImGui::TextDisabled("No node selected");
+    treeTracker_.EndSection();
     ImGui::End();
     return;
   }
@@ -799,6 +746,7 @@ void BehaviorTreeEditor::DrawNodeInspector() {
   EditorNode* node = FindNodeById(selectedNodeId_);
   if (!node) {
     ImGui::TextDisabled("Invalid selection");
+    treeTracker_.EndSection();
     ImGui::End();
     return;
   }
@@ -811,27 +759,22 @@ void BehaviorTreeEditor::DrawNodeInspector() {
   strncpy_s(nameBuf, node->displayName.c_str(), sizeof(nameBuf) - 1);
   if (ImGui::InputText("Name##inspector", nameBuf, sizeof(nameBuf))) {
     node->displayName = nameBuf;
-    hasUnsavedChanges_ = true;
   }
 
   ImGui::Separator();
   ImGui::Text("Parameters");
 
-  // ノード自身の DrawImGui でパラメータ編集
+  // ノード自身の DrawImGui でパラメータ編集（編集は区間の前後の比較で見つける）
   if (node->runtimeNode) {
-    // DrawImGui は編集したかを返さないので、保存されるパラメータの変化で検出する
-    const nlohmann::json parameters = ExtractNodeParameters(*node);
     if (!node->runtimeNode->DrawImGui()) {
       ImGui::TextDisabled("No editable parameters");
-    }
-    else if (ExtractNodeParameters(*node) != parameters) {
-      hasUnsavedChanges_ = true;
     }
   }
   else {
     ImGui::TextDisabled("No runtime node");
   }
 
+  treeTracker_.EndSection();
   ImGui::End();
 }
 
@@ -919,8 +862,7 @@ bool BehaviorTreeEditor::LoadFromJSON(const std::string& filepath) {
 
     // ロード直後にキャンバスのビューポートを全ノードへ自動フォーカス
     pendingNavigateToContent_ = true;
-    hasUnsavedChanges_ = false;  // ロード直後は未保存状態をクリア
-    savedTree_         = SerializeTree();
+    treeTracker_.Reset();  // ロード直後は未保存の印と Undo の履歴を捨てる
 
     return true;
   }
@@ -930,6 +872,107 @@ bool BehaviorTreeEditor::LoadFromJSON(const std::string& filepath) {
       DebugUIManager::LogType::Error);
     return false;
   }
+}
+
+std::string BehaviorTreeEditor::SnapshotTree() {
+  nlohmann::json tree = SerializeTree();
+  for (nlohmann::json& link : tree["links"]) {
+    link.erase("id");
+    link.erase("sourcePinId");
+    link.erase("targetPinId");
+  }
+  return tree.dump();
+}
+
+void BehaviorTreeEditor::RestoreTree(const std::string& tree) {
+  const nlohmann::json json      = nlohmann::json::parse(tree);
+  const nlohmann::json& nodesJson = json.at("nodes");
+
+  std::vector<int> removedIds;
+  for (const EditorNode& node : nodes_) {
+    if (std::ranges::none_of(nodesJson, [&node](const nlohmann::json& nodeJson) { return nodeJson["id"] == node.id; })) {
+      removedIds.push_back(node.id);
+    }
+  }
+  for (int nodeId : removedIds) {
+    RemoveNode(nodeId);
+  }
+
+  std::vector<int> nodeOrder;
+  for (const nlohmann::json& nodeJson : nodesJson) {
+    const int    nodeId   = nodeJson["id"].get<int>();
+    const ImVec2 position = ImVec2(nodeJson["position"]["x"], nodeJson["position"]["y"]);
+    EditorNode*  node     = FindNodeById(nodeId);
+    if (!node) {
+      if (CreateNodeWithId(nodeId, nodeJson["type"].get<std::string>(), position) == -1) {
+        continue;
+      }
+      node = FindNodeById(nodeId);
+      pendingNodePositions_.emplace_back(nodeId, node->position);
+    }
+    else if (node->position.x != position.x || node->position.y != position.y) {
+      node->position = position;
+      pendingNodePositions_.emplace_back(nodeId, position);
+    }
+    node->displayName = nodeJson.value("displayName", node->nodeType);
+    ApplyNodeParameters(*node, nodeJson["parameters"]);
+    nextNodeId_ = (std::max)(nextNodeId_, nodeId + 1);
+    nodeOrder.push_back(nodeId);
+  }
+
+  // リンクはノード ID の組で合わせる
+  std::vector<std::pair<int, int>> linkPairs;
+  for (const nlohmann::json& linkJson : json.at("links")) {
+    linkPairs.emplace_back(linkJson["sourceNodeId"].get<int>(), linkJson["targetNodeId"].get<int>());
+  }
+  const auto linkOrder = [&linkPairs](const EditorLink& link) {
+    return std::ranges::find(linkPairs, std::pair(link.startNodeId, link.endNodeId)) - linkPairs.begin();
+  };
+  std::erase_if(links_, [&](const EditorLink& link) { return std::ranges::find(linkPairs, std::pair(link.startNodeId, link.endNodeId)) == linkPairs.end(); });
+  for (const auto& [sourceId, targetId] : linkPairs) {
+    if (std::ranges::none_of(links_, [&](const EditorLink& link) { return link.startNodeId == sourceId && link.endNodeId == targetId; })) {
+      CreateLink(sourceId, targetId);
+    }
+  }
+
+  // 戻した内容を比べたときに元のスナップショットと同じになるよう、並びもそろえる
+  std::ranges::sort(nodes_, {}, [&nodeOrder](const EditorNode& node) { return std::ranges::find(nodeOrder, node.id) - nodeOrder.begin(); });
+  std::ranges::sort(links_, {}, linkOrder);
+}
+
+void BehaviorTreeEditor::RemoveNode(int nodeId) {
+  std::erase_if(links_, [nodeId](const EditorLink& link) { return link.startNodeId == nodeId || link.endNodeId == nodeId; });
+  std::erase_if(pins_, [nodeId](const EditorPin& pin) { return pin.nodeId == nodeId; });
+  std::erase_if(runtimeNodeToEditorId_, [nodeId](const auto& entry) { return entry.second == nodeId; });
+  std::erase_if(nodes_, [nodeId](const EditorNode& node) { return node.id == nodeId; });
+  parameterHashes_.erase(nodeId);
+}
+
+uint64_t BehaviorTreeEditor::HashTree() {
+  if (const EditorNode* selected = FindNodeById(selectedNodeId_)) {
+    UpdateParameterHash(*selected);
+  }
+  Fnv1aHasher hash;
+  hash.Add(nodes_.size());
+  for (const EditorNode& node : nodes_) {
+    hash.Add(node.id);
+    hash.Add(node.nodeType);
+    hash.Add(node.displayName);
+    hash.Add(node.position);
+    hash.Add(parameterHashes_[node.id]);
+  }
+  hash.Add(links_.size());
+  for (const EditorLink& link : links_) {
+    hash.Add(link.startNodeId);
+    hash.Add(link.endNodeId);
+  }
+  return hash.Get();
+}
+
+void BehaviorTreeEditor::UpdateParameterHash(const EditorNode& node) {
+  Fnv1aHasher hash;
+  hash.Add(ExtractNodeParameters(node).dump());
+  parameterHashes_[node.id] = hash.Get();
 }
 
 nlohmann::json BehaviorTreeEditor::SerializeTree() {
@@ -996,8 +1039,7 @@ bool BehaviorTreeEditor::SaveToJSON(const std::string& filepath) {
     DebugUIManager::GetInstance()->AddLog(
       "[BehaviorTreeEditor] Successfully saved to: " + filepath,
       DebugUIManager::LogType::Info);
-    hasUnsavedChanges_ = false;  // 保存直後は未保存状態をクリア
-    savedTree_         = tree;
+    treeTracker_.MarkSaved();  // 保存直後は未保存の印を外す
     return true;
   }
   catch (const std::exception& e) {
@@ -1173,7 +1215,6 @@ void BehaviorTreeEditor::CreateNode(const std::string& nodeType, const ImVec2& p
   // (Add Node ボタンは ed::Begin の外で押されるため、即時 SetNodePosition は効かない)
   if (newId != -1) {
     pendingNodePositions_.emplace_back(newId, position);
-    hasUnsavedChanges_ = true;
   }
 }
 
@@ -1183,7 +1224,8 @@ int BehaviorTreeEditor::CreateNodeWithId(int nodeId, const std::string& nodeType
 
   EditorNode newNode;
   newNode.id = nodeId;
-  newNode.position = position;
+  // ed は SetNodePosition で位置を 0 方向へ切り捨てる（ImRect::Floor）。同じ値にして、位置の適用を編集と見なさないようにする
+  newNode.position = ImVec2(std::trunc(position.x), std::trunc(position.y));
   newNode.nodeType = nodeType;
   newNode.displayName = meta ? meta->displayName : nodeType;
   // NodeMeta::color (NodeColor) を ImGui の ImVec4 に変換 (エディタ描画用)
@@ -1222,6 +1264,7 @@ int BehaviorTreeEditor::CreateNodeWithId(int nodeId, const std::string& nodeType
   }
 
   nodes_.push_back(newNode);
+  UpdateParameterHash(nodes_.back());
 
   // ランタイムノードとエディタ ID のマッピング
   if (newNode.runtimeNode) {
@@ -1268,6 +1311,7 @@ nlohmann::json BehaviorTreeEditor::ExtractNodeParameters(const EditorNode& node)
 void BehaviorTreeEditor::ApplyNodeParameters(EditorNode& node, const nlohmann::json& params) {
   if (!node.runtimeNode || params.empty()) return;
   node.runtimeNode->ApplyParameters(params);
+  UpdateParameterHash(node);
 }
 
 //==========================================================================
@@ -1281,7 +1325,7 @@ std::string BehaviorTreeEditor::GetTreeFilePath(const std::string& treeName) con
 bool BehaviorTreeEditor::LoadTree(const std::string& treeName) {
   currentTreeName_ = treeName;
   bool ok = LoadFromJSON(GetTreeFilePath(treeName));
-  // hasUnsavedChanges_ は LoadFromJSON 内で false にされている
+  // 未保存の印は LoadFromJSON 内で外している
   return ok;
 }
 
@@ -1289,7 +1333,7 @@ bool BehaviorTreeEditor::SaveTree(const std::string& treeName) {
   bool ok = SaveToJSON(GetTreeFilePath(treeName));
   if (ok) {
     currentTreeName_ = treeName;
-    // hasUnsavedChanges_ は SaveToJSON 内で false にされている
+    // 未保存の印は SaveToJSON 内で外している
   }
   return ok;
 }
@@ -1308,8 +1352,9 @@ bool BehaviorTreeEditor::CreateNewTree(const std::string& treeName) {
       DebugUIManager::LogType::Warning);
     return false;
   }
-  // 現在の編集状態をクリアし、新規ツリーを保存
+  // 現在の編集状態と Undo の履歴をクリアし、新規ツリーを保存
   Clear();
+  treeTracker_.Reset();
   currentTreeName_ = treeName;
   return SaveToJSON(treePath);
 }
@@ -1374,12 +1419,10 @@ void BehaviorTreeEditor::SwitchTree(const std::string& treeName) {
 }
 
 bool BehaviorTreeEditor::RunOrConfirm(const std::string& actionName, std::function<bool()> action) {
-  if (!hasUnsavedChanges_) {
+  if (!treeTracker_.IsEdited()) {
     return action();
   }
-  pendingAction_           = std::move(action);
-  pendingActionName_       = actionName;
-  showUnsavedChangesModal_ = true;
+  unsavedPrompt_.RunOrConfirm(true, std::format("Tree '{}' has unsaved changes.", currentTreeName_), actionName, [action = std::move(action)] { action(); });
   return true;
 }
 

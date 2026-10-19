@@ -16,7 +16,6 @@
 #include "LineRenderer.h"
 #include "OBB.h"
 #include "Camera.h"
-#include "UnsavedChangesModal.h"
 
 #include <algorithm>
 #include <cstring>
@@ -37,10 +36,6 @@ namespace Tako {
     const char* const kParticlePresetDirectory = "resources/Json/ParticlePresets/Presets/";
 
     using LogType = DebugUIManager::LogType;
-
-    void AddLog(const std::string& message, LogType type) {
-      DebugUIManager::GetInstance()->AddLog(message, type);
-    }
 
     /// <summary>
     /// プリセットと同じ形式の JSON（emitter が null なら null）
@@ -74,10 +69,14 @@ namespace Tako {
         ImGui::TextDisabled("Call SetEmitterManager() first");
       }
       else {
-        // 選択中のエミッターの編集を、UI を描く区間の前後の保存内容の変化で検出する（この区間ではゲームのコードが値を変えない）
-        const std::string                         editingName    = selectedEmitterName_;
-        const std::shared_ptr<GPUParticleEmitter> editingEmitter = emitterManager_->GetEmitterByName(editingName);
-        const std::string                         editingBefore  = SerializeEmitter(*emitterManager_, editingEmitter).dump();
+        // 選択中のエミッターの編集を、1 回の操作の前後の保存内容の変化で検出する（UI を描く区間ではゲームのコードが値を変えない）
+        if (editGate_.BeginOperation()) {
+          const std::shared_ptr<GPUParticleEmitter> emitter = emitterManager_->GetEmitterByName(selectedEmitterName_);
+          operationStart_ = { selectedEmitterName_, emitter, SerializeEmitter(*emitterManager_, emitter).dump() };
+        }
+
+        // 押された Undo / Redo は、操作の比較の後に行う（戻した内容を編集として数えないため）
+        HistoryCommand historyCommand = DrawHistoryButtons(history_.CanUndo(), history_.CanRedo());
 
         // アクティブパーティクル数の表示
         {
@@ -118,12 +117,14 @@ namespace Tako {
         }
         ImGui::EndChild();
 
-        // 選択の切り替え・改名・読み込みでインスタンスが変わった場合は比べない
-        const bool isSameEmitter = editingEmitter && selectedEmitterName_ == editingName && emitterManager_->GetEmitterByName(editingName) == editingEmitter;
-        if (isSameEmitter) {
-          if (const std::string editingAfter = SerializeEmitter(*emitterManager_, editingEmitter).dump(); editingAfter != editingBefore) {
-            TrackEmitterEdit(editingName, editingEmitter, editingBefore, editingAfter);
-          }
+        if (editGate_.EndOperation()) {
+          FinishEmitterOperation();
+        }
+        if (historyCommand == HistoryCommand::None) {
+          historyCommand = ReadHistoryShortcut();
+        }
+        if (historyCommand != HistoryCommand::None) {
+          RestoreEmitterEdit(historyCommand == HistoryCommand::Undo);
         }
 
         // Save ボタンは閉じられる Preset ヘッダーの中にあるので、ウィンドウ直下で受ける
@@ -131,13 +132,7 @@ namespace Tako {
           SaveSelectedEmitter();
         }
 
-        const UnsavedChoice choice = DrawUnsavedChangesModal("Unsaved Changes##PE", isUnsavedPopupRequested_, pendingLoadMessage_, "Load");
-        if (choice == UnsavedChoice::Proceed && pendingLoad_) {
-          pendingLoad_();
-        }
-        if (choice != UnsavedChoice::None) {
-          pendingLoad_ = nullptr;
-        }
+        unsavedPrompt_.Draw("Unsaved Changes##PE");
       }
     }
     ImGui::End();
@@ -161,28 +156,15 @@ namespace Tako {
       PruneUnsavedEmitters(true);
     }
 
-    if (!previewViewport_) {
-      previewViewport_ = std::make_unique<PreviewViewport>();
-      previewViewport_->Initialize(L"ParticleEditorPreview");
-    }
-
-    if (!previewCamera_) {
-      previewCamera_ = std::make_unique<Camera>();
-      previewCamera_->SetAspect(previewViewport_->GetAspect());
-      // 個人設定の読み込み後に初めて開くので、ここで既定の移動速度を反映する
-      cameraController_.Reset();
-    }
-
-    cameraController_.ApplyTo(*previewCamera_);
+    preview_.Update();
   }
 
   void ParticleEditor::DrawPreviewPass() {
-    if (!*isOpen_ || !previewViewport_
-      || !previewViewport_->IsInitialized() || !previewCamera_) {
+    if (!*isOpen_ || !preview_.IsReady()) {
       return;
     }
 
-    previewViewport_->BeginPass();
+    preview_.BeginPass();
 
 
     int32_t slot = -1;
@@ -219,18 +201,17 @@ namespace Tako {
       DrawVisualization();
     }
     lineRenderer->EndPreviewLines();
-    lineRenderer->DrawPreviewLines(previewCamera_->GetViewProjectionMatrix());
+    lineRenderer->DrawPreviewLines(preview_.GetCamera().GetViewProjectionMatrix());
 
     if (drawParticles) {
-      GPUParticle::GetInstance()->DrawForCamera(*previewCamera_, slot);
+      GPUParticle::GetInstance()->DrawForCamera(preview_.GetCamera(), slot);
     }
 
-    previewViewport_->EndPass();
+    preview_.EndPass();
   }
 
   void ParticleEditor::Finalize() {
-    previewViewport_.reset();
-    previewCamera_.reset();
+    preview_.Finalize();
   }
 
   // =====================================================
@@ -262,7 +243,7 @@ namespace Tako {
         if (ImGui::Button("Create Sphere Emitter##Create")) {
           if (strlen(newEmitterNameBuffer_) > 0) {
             emitterManager_->CreateSphereEmitter(newEmitterNameBuffer_, newEmitterPosition_, newEmitterSphereRadius_, 50, 0.016f);
-            AddLog("Created sphere emitter: " + std::string(newEmitterNameBuffer_), LogType::Info);
+            LogToConsole("Created sphere emitter: " + std::string(newEmitterNameBuffer_), LogType::Info);
             selectedEmitterName_ = newEmitterNameBuffer_;
             MarkUnsaved(selectedEmitterName_);
             inspectTarget_ = InspectTarget::Emitter;
@@ -277,7 +258,7 @@ namespace Tako {
         if (ImGui::Button("Create Box Emitter##Create")) {
           if (strlen(newEmitterNameBuffer_) > 0) {
             emitterManager_->CreateBoxEmitter(newEmitterNameBuffer_, newEmitterPosition_, newEmitterBoxSize_, newEmitterBoxRotation_, 50, 0.016f);
-            AddLog("Created box emitter: " + std::string(newEmitterNameBuffer_), LogType::Info);
+            LogToConsole("Created box emitter: " + std::string(newEmitterNameBuffer_), LogType::Info);
             selectedEmitterName_ = newEmitterNameBuffer_;
             MarkUnsaved(selectedEmitterName_);
             inspectTarget_ = InspectTarget::Emitter;
@@ -293,7 +274,7 @@ namespace Tako {
         if (ImGui::Button("Create Triangle Emitter##Create")) {
           if (strlen(newEmitterNameBuffer_) > 0) {
             emitterManager_->CreateTriangleEmitter(newEmitterNameBuffer_, newEmitterPosition_, newEmitterTriV1_, newEmitterTriV2_, newEmitterTriV3_, 50, 0.016f);
-            AddLog("Created triangle emitter: " + std::string(newEmitterNameBuffer_), LogType::Info);
+            LogToConsole("Created triangle emitter: " + std::string(newEmitterNameBuffer_), LogType::Info);
             selectedEmitterName_ = newEmitterNameBuffer_;
             MarkUnsaved(selectedEmitterName_);
             inspectTarget_ = InspectTarget::Emitter;
@@ -320,13 +301,13 @@ namespace Tako {
         ImGui::SameLine();
         if (ImGui::Button("Load##CreateMesh") && newEmitterModelPathBuffer_[0] != '\0') {
           ModelManager::GetInstance()->LoadModel(newEmitterModelPathBuffer_);
-          AddLog("Loaded model: " + std::string(newEmitterModelPathBuffer_), LogType::Info);
+          LogToConsole("Loaded model: " + std::string(newEmitterModelPathBuffer_), LogType::Info);
         }
 
         if (ImGui::Button("Create Mesh Emitter##Create")) {
           if (strlen(newEmitterNameBuffer_) > 0 && !modelNames.empty()) {
             emitterManager_->CreateMeshEmitterFromModel(newEmitterNameBuffer_, modelNames[newEmitterModelIndex_], 50, 0.016f);
-            AddLog("Created mesh emitter: " + std::string(newEmitterNameBuffer_) + " (" + modelNames[newEmitterModelIndex_] + ")", LogType::Info);
+            LogToConsole("Created mesh emitter: " + std::string(newEmitterNameBuffer_) + " (" + modelNames[newEmitterModelIndex_] + ")", LogType::Info);
             selectedEmitterName_ = newEmitterNameBuffer_;
             MarkUnsaved(selectedEmitterName_);
             inspectTarget_ = InspectTarget::Emitter;
@@ -360,7 +341,7 @@ namespace Tako {
         if (inspectTarget_ == InspectTarget::Emitter) {
           inspectTarget_ = InspectTarget::None;
         }
-        AddLog("Deleted emitter", LogType::Info);
+        LogToConsole("Deleted emitter", LogType::Info);
       }
       ImGui::SameLine();
       if (ImGui::Button("Duplicate##EmitterList")) {
@@ -369,7 +350,7 @@ namespace Tako {
         selectedEmitterName_ = newName;
         MarkUnsaved(newName);
         inspectTarget_ = InspectTarget::Emitter;
-        AddLog("Duplicated emitter as: " + newName, LogType::Info);
+        LogToConsole("Duplicated emitter as: " + newName, LogType::Info);
       }
     }
 
@@ -401,7 +382,7 @@ namespace Tako {
       ImGui::BeginDisabled(!hasSelection);
       if (ImGui::Button("Copy##Clipboard")) {
         if (emitterManager_->CopyEmitterSettings(selectedEmitterName_, clipboardSlotIndex_)) {
-          AddLog("Copied '" + selectedEmitterName_ + "' to slot " + std::to_string(clipboardSlotIndex_), LogType::Info);
+          LogToConsole("Copied '" + selectedEmitterName_ + "' to slot " + std::to_string(clipboardSlotIndex_), LogType::Info);
         }
       }
       ImGui::EndDisabled();
@@ -411,10 +392,10 @@ namespace Tako {
       if (ImGui::Button("Paste##Clipboard")) {
         if (emitterManager_->PasteEmitterSettings(selectedEmitterName_, clipboardSlotIndex_,
           static_cast<EmitterManager::PasteMode>(clipboardPasteModeIndex_))) {
-          AddLog("Pasted slot " + std::to_string(clipboardSlotIndex_) + " to '" + selectedEmitterName_ + "'", LogType::Info);
+          LogToConsole("Pasted slot " + std::to_string(clipboardSlotIndex_) + " to '" + selectedEmitterName_ + "'", LogType::Info);
         }
         else {
-          AddLog("Paste failed (slot " + std::to_string(clipboardSlotIndex_) + ")", LogType::Warning);
+          LogToConsole("Paste failed (slot " + std::to_string(clipboardSlotIndex_) + ")", LogType::Warning);
         }
       }
       ImGui::EndDisabled();
@@ -424,19 +405,19 @@ namespace Tako {
       if (ImGui::Button("Paste as New##Clipboard")) {
         const std::string newName = emitterManager_->PasteEmitterSettingsAsNew(clipboardSlotIndex_);
         if (!newName.empty()) {
-          AddLog("Pasted slot " + std::to_string(clipboardSlotIndex_) + " as new emitter: " + newName, LogType::Info);
+          LogToConsole("Pasted slot " + std::to_string(clipboardSlotIndex_) + " as new emitter: " + newName, LogType::Info);
           selectedEmitterName_ = newName;
           MarkUnsaved(newName);
           inspectTarget_ = InspectTarget::Emitter;
         }
         else {
-          AddLog("Paste as New failed (slot " + std::to_string(clipboardSlotIndex_) + ")", LogType::Warning);
+          LogToConsole("Paste as New failed (slot " + std::to_string(clipboardSlotIndex_) + ")", LogType::Warning);
         }
       }
       ImGui::SameLine();
       if (ImGui::Button("Clear##Clipboard")) {
         emitterManager_->ClearCopiedSettings(clipboardSlotIndex_);
-        AddLog("Cleared clipboard slot " + std::to_string(clipboardSlotIndex_), LogType::Info);
+        LogToConsole("Cleared clipboard slot " + std::to_string(clipboardSlotIndex_), LogType::Info);
       }
       ImGui::EndDisabled();
     }
@@ -483,10 +464,10 @@ namespace Tako {
         if (idx >= 0) {
           selectedForceFieldIndex_ = idx;
           inspectTarget_ = InspectTarget::ForceField;
-          AddLog("Added force field: " + std::string(forceTypeNames[newForceFieldTypeIndex_]), LogType::Info);
+          LogToConsole("Added force field: " + std::string(forceTypeNames[newForceFieldTypeIndex_]), LogType::Info);
         }
         else {
-          AddLog("Failed to add force field: max reached", LogType::Warning);
+          LogToConsole("Failed to add force field: max reached", LogType::Warning);
         }
       }
 
@@ -502,7 +483,7 @@ namespace Tako {
           selectedForceFieldIndex_ = idx;
           inspectTarget_ = InspectTarget::ForceField;
         }
-        AddLog("Added gravity force field", LogType::Info);
+        LogToConsole("Added gravity force field", LogType::Info);
       }
       ImGui::SameLine();
       if (ImGui::Button("Vortex (Y-axis)##Quick")) {
@@ -517,7 +498,7 @@ namespace Tako {
           selectedForceFieldIndex_ = idx;
           inspectTarget_ = InspectTarget::ForceField;
         }
-        AddLog("Added vortex force field", LogType::Info);
+        LogToConsole("Added vortex force field", LogType::Info);
       }
     }
 
@@ -550,7 +531,7 @@ namespace Tako {
       ImGui::InputText("Group Name##NewGroup", newGroupNameBuffer_, sizeof(newGroupNameBuffer_));
       if (ImGui::Button("Create##NewGroup") && strlen(newGroupNameBuffer_) > 0) {
         emitterManager_->CreateGroup(newGroupNameBuffer_);
-        AddLog("Created group: " + std::string(newGroupNameBuffer_), LogType::Info);
+        LogToConsole("Created group: " + std::string(newGroupNameBuffer_), LogType::Info);
         // 作成したグループを選択状態にする
         auto names = emitterManager_->GetGroupNames();
         for (int i = 0; i < static_cast<int>(names.size()); i++) {
@@ -595,23 +576,11 @@ namespace Tako {
     const bool focusRequested = ImGui::Button("Focus (F)##PePrev");
     ImGui::EndDisabled();
     ImGui::SameLine();
-    if (ImGui::Button("Reset Camera##PePrev")) {
-      cameraController_.Reset();
-    }
-    ImGui::SameLine();
-    ImGui::TextDisabled("Speed: %.2f", cameraController_.moveSpeed);
-    ImGui::TextDisabled("RMB: Look (+WASD/QE Fly, +Wheel Speed) / Alt+LMB: Orbit / MMB: Pan / Wheel: Dolly");
+    preview_.DrawCameraToolbar();
 
-    if (!previewViewport_ || !previewViewport_->IsInitialized()) {
-      ImGui::TextDisabled("Initializing preview...");
-      return false;
-    }
-
-    previewViewport_->DrawImGuiImage();
-    const bool hovered = ImGui::IsItemHovered();
-    const bool inputCaptured = cameraController_.HandleImGuiInput();
-    if (hasSelection && (focusRequested || (hovered && ImGui::IsKeyPressed(ImGuiKey_F, false)))) {
-      cameraController_.Focus(emitterManager_->GetEmitterByName(selectedEmitterName_)->GetPosition());
+    const bool inputCaptured = preview_.DrawImage();
+    if (hasSelection && (focusRequested || (preview_.IsImageHovered() && ImGui::IsKeyPressed(ImGuiKey_F, false)))) {
+      preview_.GetController().Focus(emitterManager_->GetEmitterByName(selectedEmitterName_)->GetPosition());
     }
     return inputCaptured;
   }
@@ -635,15 +604,16 @@ namespace Tako {
 
       if (ImGui::Button("Save All##ScenePreset")) {
         emitterManager_->SaveScenePreset(scenePresetNameBuffer_);
-        AddLog("Saved all emitters to: " + std::string(scenePresetNameBuffer_), LogType::Info);
+        LogToConsole("Saved all emitters to: " + std::string(scenePresetNameBuffer_), LogType::Info);
         unsavedEmitters_.clear();
       }
       ImGui::SameLine();
       if (ImGui::Button("Load All##ScenePreset")) {
         const std::string sceneName = scenePresetNameBuffer_;
-        RunOrConfirmLoad(!unsavedEmitters_.empty(), "Emitters with unsaved changes may be replaced by the scene preset.", [this, sceneName] {
+        unsavedPrompt_.RunOrConfirm(!unsavedEmitters_.empty(), "Emitters with unsaved changes may be replaced by the scene preset.", "Load", [this, sceneName] {
           emitterManager_->LoadScenePreset(sceneName);
-          AddLog("Loaded all emitters from: " + sceneName, LogType::Info);
+          history_.Clear();
+          LogToConsole("Loaded all emitters from: " + sceneName, LogType::Info);
           PruneUnsavedEmitters(false);
         });
       }
@@ -682,11 +652,11 @@ namespace Tako {
           unsaved.key() = newName;
           unsavedEmitters_.insert(std::move(unsaved));
         }
-        AddLog("Renamed emitter: " + selectedName + " -> " + newName, LogType::Info);
+        LogToConsole("Renamed emitter: " + selectedName + " -> " + newName, LogType::Info);
         renameEmitterNameBuffer_[0] = '\0';  // 入力ボックスをクリア
       }
       else {
-        AddLog("Rename failed: '" + newName + "' (already exists or invalid)", LogType::Warning);
+        LogToConsole("Rename failed: '" + newName + "' (already exists or invalid)", LogType::Warning);
       }
     }
     ImGui::Separator();
@@ -1139,7 +1109,7 @@ namespace Tako {
 
       if (ImGui::Button("Save as Preset##SavePreset") && strlen(presetNameBuffer_) > 0) {
         emitterManager_->SavePreset(presetNameBuffer_, selectedEmitterName_);
-        AddLog("Saved preset: " + std::string(presetNameBuffer_), LogType::Info);
+        LogToConsole("Saved preset: " + std::string(presetNameBuffer_), LogType::Info);
         unsavedEmitters_.erase(selectedEmitterName_);
         presetNameBuffer_[0] = '\0';  // 入力ボックスをクリア
       }
@@ -1180,9 +1150,9 @@ namespace Tako {
           const std::string newName    = (strlen(newEmitterNameBuffer_) > 0) ? newEmitterNameBuffer_ : selectedPreset_;
           const std::string presetName = selectedPreset_;
           // 同名のエミッターは置き換わるので、未保存ならその編集が消える
-          RunOrConfirmLoad(unsavedEmitters_.contains(newName), std::format("Emitter '{}' has unsaved changes.", newName), [this, presetName, newName] {
+          unsavedPrompt_.RunOrConfirm(unsavedEmitters_.contains(newName), std::format("Emitter '{}' has unsaved changes.", newName), "Load", [this, presetName, newName] {
             emitterManager_->LoadPreset(presetName, newName);
-            AddLog("Loaded preset: " + presetName + " as '" + newName + "'", LogType::Info);
+            LogToConsole("Loaded preset: " + presetName + " as '" + newName + "'", LogType::Info);
             PruneUnsavedEmitters(false);
             selectedEmitterName_ = newName;
             inspectTarget_       = InspectTarget::Emitter;
@@ -1218,25 +1188,56 @@ namespace Tako {
         return false;
       }
       if (warn) {
-        AddLog(std::format("Particle Editor: unsaved changes to emitter '{}' were lost (removed or recreated by the game)", name), LogType::Warning);
+        LogToConsole(std::format("Particle Editor: unsaved changes to emitter '{}' were lost (removed or recreated by the game)", name), LogType::Warning);
       }
       return true;
     });
   }
 
-  void ParticleEditor::RunOrConfirmLoad(bool hasConflict, const std::string& message, std::function<void()> load) {
-    if (!hasConflict) {
-      load();
+  void ParticleEditor::FinishEmitterOperation() {
+    // 操作の間に、改名・読み込み・削除でインスタンスが変わった場合は比べない
+    const std::shared_ptr<GPUParticleEmitter> emitter = operationStart_.emitter.lock();
+    if (!emitter || emitterManager_->GetEmitterByName(operationStart_.name) != emitter) {
       return;
     }
-    pendingLoad_             = std::move(load);
-    pendingLoadMessage_      = message;
-    isUnsavedPopupRequested_ = true;
+    std::string after = SerializeEmitter(*emitterManager_, emitter).dump();
+    if (after == operationStart_.json) {
+      return;
+    }
+    TrackEmitterEdit(operationStart_.name, emitter, operationStart_.json, after);
+    history_.Record(operationStart_);
+    history_.Commit({ operationStart_.name, emitter, std::move(after) });
+  }
+
+  void ParticleEditor::RestoreEmitterEdit(bool isUndo) {
+    const EmitterEdit* target = isUndo ? history_.PeekUndo() : history_.PeekRedo();
+    if (!target) {
+      return;
+    }
+    const std::string                         name    = target->name;
+    const std::shared_ptr<GPUParticleEmitter> emitter = target->emitter.lock();
+    if (!emitter || emitterManager_->GetEmitterByName(name) != emitter) {
+      LogToConsole(std::format("Particle Editor: undo history was cleared because emitter '{}' was removed or recreated", name), LogType::Warning);
+      history_.Clear();
+      return;
+    }
+
+    const std::string                before = SerializeEmitter(*emitterManager_, emitter).dump();
+    const std::optional<EmitterEdit> state  = isUndo ? history_.Undo({ name, emitter, before }) : history_.Redo({ name, emitter, before });
+    if (!state) {
+      return;
+    }
+    const nlohmann::json json = nlohmann::json::parse(state->json);
+    emitterManager_->ApplyAllSettings(*emitter, json);
+    emitter->SetPosition({ json["position"][0], json["position"][1], json["position"][2] });
+    TrackEmitterEdit(name, emitter, before, SerializeEmitter(*emitterManager_, emitter).dump());
+    selectedEmitterName_ = name;
+    inspectTarget_       = InspectTarget::Emitter;
   }
 
   void ParticleEditor::SaveSelectedEmitter() {
     emitterManager_->SavePreset(selectedEmitterName_, selectedEmitterName_);
-    AddLog("Saved preset: " + selectedEmitterName_, LogType::Info);
+    LogToConsole("Saved preset: " + selectedEmitterName_, LogType::Info);
     unsavedEmitters_.erase(selectedEmitterName_);
   }
 
@@ -1249,9 +1250,10 @@ namespace Tako {
   void ParticleEditor::SetEmitterManager(EmitterManager* emitterManager) {
     if (emitterManager != emitterManager_) {
       for (const auto& unsaved : unsavedEmitters_) {
-        AddLog(std::format("Particle Editor: unsaved changes to emitter '{}' were lost (the scene was changed)", unsaved.first), LogType::Warning);
+        LogToConsole(std::format("Particle Editor: unsaved changes to emitter '{}' were lost (the scene was changed)", unsaved.first), LogType::Warning);
       }
       unsavedEmitters_.clear();
+      history_.Clear();
     }
     emitterManager_ = emitterManager;
   }
@@ -1308,7 +1310,7 @@ namespace Tako {
     ImGui::Separator();
     if (ImGui::Button("Delete##EditFF")) {
       gpuParticle->RemoveForceField(static_cast<uint32_t>(selectedForceFieldIndex_));
-      AddLog("Deleted force field [" + std::to_string(selectedForceFieldIndex_) + "]", LogType::Info);
+      LogToConsole("Deleted force field [" + std::to_string(selectedForceFieldIndex_) + "]", LogType::Info);
       selectedForceFieldIndex_ = -1;
       inspectTarget_ = InspectTarget::None;
     }
@@ -1317,7 +1319,7 @@ namespace Tako {
       gpuParticle->ClearForceFields();
       selectedForceFieldIndex_ = -1;
       inspectTarget_ = InspectTarget::None;
-      AddLog("Cleared all force fields", LogType::Info);
+      LogToConsole("Cleared all force fields", LogType::Info);
     }
 
     // --- プリセット保存/読込セクション ---
@@ -1340,7 +1342,7 @@ namespace Tako {
           && strlen(ffPresetSaveBuffer_) > 0) {
         forceFieldManager_->SavePreset(
           ffPresetSaveBuffer_, static_cast<uint32_t>(selectedForceFieldIndex_));
-        AddLog("Saved force field preset: " + std::string(ffPresetSaveBuffer_), LogType::Info);
+        LogToConsole("Saved force field preset: " + std::string(ffPresetSaveBuffer_), LogType::Info);
         currentFFPresetName_ = ffPresetSaveBuffer_;
         ffPresetSaveBuffer_[0] = '\0';
       }
@@ -1350,7 +1352,7 @@ namespace Tako {
         if (ImGui::Button(("Save as \"" + currentFFPresetName_ + "\"##SaveFFCurrent").c_str())) {
           forceFieldManager_->SavePreset(
             currentFFPresetName_, static_cast<uint32_t>(selectedForceFieldIndex_));
-          AddLog("Saved force field preset: " + currentFFPresetName_, LogType::Info);
+          LogToConsole("Saved force field preset: " + currentFFPresetName_, LogType::Info);
         }
       }
     }
@@ -1359,7 +1361,7 @@ namespace Tako {
       ImGui::InputText("Preset Name##LoadFFPreset", ffPresetLoadBuffer_, sizeof(ffPresetLoadBuffer_));
       if (ImGui::Button("Load##LoadFFPreset") && strlen(ffPresetLoadBuffer_) > 0) {
         forceFieldManager_->LoadPreset(ffPresetLoadBuffer_);
-        AddLog("Loaded force field preset: " + std::string(ffPresetLoadBuffer_), LogType::Info);
+        LogToConsole("Loaded force field preset: " + std::string(ffPresetLoadBuffer_), LogType::Info);
         currentFFPresetName_ = ffPresetLoadBuffer_;
         ffPresetLoadBuffer_[0] = '\0';
       }
@@ -1410,7 +1412,7 @@ namespace Tako {
       ImGui::Combo("Add Emitter##Group", &groupAddEmitterIndex_, items.data(), static_cast<int>(items.size()));
       if (ImGui::Button("Add to Group##Group")) {
         emitterManager_->AddToGroup(groupName, allEmitters[groupAddEmitterIndex_]);
-        AddLog("Added " + allEmitters[groupAddEmitterIndex_] + " to group " + groupName, LogType::Info);
+        LogToConsole("Added " + allEmitters[groupAddEmitterIndex_] + " to group " + groupName, LogType::Info);
       }
     }
 
@@ -1419,7 +1421,7 @@ namespace Tako {
       emitterManager_->RemoveGroup(groupName);
       selectedGroupIndex_ = -1;
       inspectTarget_ = InspectTarget::None;
-      AddLog("Deleted group: " + groupName, LogType::Info);
+      LogToConsole("Deleted group: " + groupName, LogType::Info);
     }
   }
 

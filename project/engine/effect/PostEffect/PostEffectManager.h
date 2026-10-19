@@ -16,6 +16,9 @@
 
 #include "Dissolve.h"
 #include "TextureManager.h"
+#ifdef _DEBUG
+#include "EditTracker.h"
+#endif
 
 
 class IPostEffect;
@@ -233,6 +236,12 @@ namespace Tako {
     std::string SerializeProfile() const;
 
     /// <summary>
+    /// SerializeProfile の内容でチェーンを置き換え、パラメータを適用する。一時エフェクトはチェーンに残す
+    /// </summary>
+    /// <returns>途中で失敗したら false（そこまでの適用は残る）</returns>
+    bool ApplyProfile(const std::string& profile);
+
+    /// <summary>
     /// PostEffect ウィンドウで編集して未保存なら、そのプロファイルを out に追加する（終了時の確認用）
     /// </summary>
     void CollectUnsavedChanges(std::vector<std::string>& out) const;
@@ -447,11 +456,11 @@ namespace Tako {
     AntiAliasing antiAliasing_              = AntiAliasing::None;
 
     //PostEffect ウィンドウ
-    std::array<char, 64> profileName_{};                    ///< プロファイル名入力欄。LoadProfile で読み込んだ名前になる
-    bool                 isProfileDirty_          = false;  ///< ウィンドウで編集して未保存か
-    std::string          cleanProfileSnapshot_;             ///< isProfileDirty_ が付く直前のプロファイル。編集でここへ戻れば未保存を外す
-    std::string          pendingProfileLoad_;               ///< 確認モーダルの返答待ちの読み込み先
-    bool                 isUnsavedPopupRequested_ = false;
+    std::array<char, 64> profileName_{};  ///< プロファイル名入力欄。LoadProfile で読み込んだ名前になる
+#ifdef _DEBUG
+    EditTracker<>        profileTracker_{ { [this] { return SerializeProfile(); }, [this](const std::string& profile) { ApplyProfile(profile); } } };
+    UnsavedChangesPrompt unsavedPrompt_;  ///< 未保存のまま別のプロファイルを読み込むときの確認
+#endif
 
     mutable std::unordered_map<ID3D12Resource*, D3D12_RESOURCE_STATES> resourceStates_;  ///< リソース状態追跡用マップ
 

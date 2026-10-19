@@ -140,9 +140,10 @@ namespace Tako {
     void SyncMeshWorld();
 
   private: //メンバー変数
-    Mesh*       mesh_           = nullptr;  ///< 単一メッシュ時のみ非 null (スキニング/エディタ表示用、非所有)
-    Object3d*   boundObject3d_  = nullptr;  ///< 追従先 Object3d (非所有)
-    std::string spawnModelPath_;            ///< JSON 永続化用 スポーン形状モデルのパス (空=パス復元不可)
+    Mesh*        mesh_                 = nullptr;  ///< 単一メッシュ時のみ非 null (スキニング/エディタ表示用、非所有)
+    Object3d*    boundObject3d_        = nullptr;  ///< 追従先 Object3d (非所有)
+    std::string  spawnModelPath_;                  ///< JSON 永続化用 スポーン形状モデルのパス (空=パス復元不可)
+    mutable bool hasWarnedNoModelPath_ = false;    ///< パスが無い警告を出したか（エディタは編集の検出でも保存内容を作るので、1 回だけ出す）
 
     Vector3 offsetRotation_ = { 0.0f, 0.0f, 0.0f };  ///< ローカルオフセット回転 (ラジアン Euler)
     Vector3 offsetScale_    = { 1.0f, 1.0f, 1.0f };  ///< ローカルオフセットスケール

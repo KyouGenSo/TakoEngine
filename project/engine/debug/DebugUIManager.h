@@ -357,6 +357,13 @@ namespace Tako {
     UILayoutEditor       uiLayoutEditor_;
   };
 
+  /// <summary>
+  /// DebugUIManager のコンソールにログを出す
+  /// </summary>
+  inline void LogToConsole(const std::string& message, DebugUIManager::LogType type = DebugUIManager::LogType::Info) {
+    DebugUIManager::GetInstance()->AddLog(message, type);
+  }
+
 } // namespace Tako
 
 #endif // _DEBUG

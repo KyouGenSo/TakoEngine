@@ -62,6 +62,12 @@ namespace Tako {
     /// Save が書き込む内容（JSON 文字列）
     /// </summary>
     std::string Serialize(DX12Basic* dx12);
+
+    /// <summary>
+    /// Serialize の内容を、ウィンドウ設定（GetWindowSettings）と各システムへ適用する。WinApp には適用しない
+    /// </summary>
+    /// <returns>適用できたら true。途中で失敗したら false（そこまでの適用は残る）</returns>
+    bool Deserialize(const std::string& text, DX12Basic* dx12);
   }
 
 } // namespace Tako

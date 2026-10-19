@@ -3,6 +3,7 @@
 #ifdef _DEBUG
 
 #include "ViewportCameraController.h"
+#include "EditTracker.h"
 #include "Vector4.h"
 
 #include <array>
@@ -45,6 +46,22 @@ namespace Tako {
     };
 
     using NameOrigins = std::map<std::string, std::string, std::less<>>;  ///< 今の名前 → 前回 Save 時の名前（Save 後に足した名前は含まない）
+
+    /// <summary>
+    /// Undo / Redo で戻す状態。改名の元の名前は Save のヘッダー生成で使うので、名前と一緒に戻す
+    /// </summary>
+    struct SettingsState {
+      std::string                             project;  ///< ProjectSettings::Serialize
+      std::string                             editor;   ///< SerializeEditorSettings
+      std::optional<std::vector<std::string>> layerOrigins;
+      std::optional<NameOrigins>              actionOrigins;
+      std::optional<NameOrigins>              axisOrigins;
+
+      /// <summary>
+      /// 保存する内容だけを比べる
+      /// </summary>
+      bool operator==(const SettingsState& other) const { return project == other.project && editor == other.editor; }
+    };
 
   public: //メンバー関数
     /// <summary>
@@ -133,6 +150,22 @@ namespace Tako {
     /// </summary>
     std::string SerializeEditorSettings() const;
 
+    /// <summary>
+    /// SerializeEditorSettings の内容を適用する。起動時に開くウィンドウは読み込むだけで、現在の表示状態は変えない
+    /// </summary>
+    /// <returns>途中で失敗したら false（そこまでの適用は残る）</returns>
+    bool DeserializeEditorSettings(const std::string& text);
+
+    /// <summary>
+    /// Undo / Redo で戻す今の状態
+    /// </summary>
+    SettingsState CaptureSettings() const;
+
+    /// <summary>
+    /// CaptureSettings の状態に戻す
+    /// </summary>
+    void RestoreSettings(const SettingsState& state);
+
     void ApplyMasterVolume();
 
   private: //メンバー変数
@@ -173,8 +206,8 @@ namespace Tako {
     //コード生成
     bool isRebuildRequired_ = false;  ///< Save の改名でソースを書き換えた。実行中のコードは再ビルド・再起動まで古い名前のまま
 
-    bool        isDirty_       = false;  ///< ウィンドウで編集して未保存か（Save と Reload で下ろす）
-    std::string cleanSnapshot_;          ///< isDirty_ が付く直前の保存内容。編集でここへ戻れば未保存を外す
+    //編集の検出・未保存の印・Undo（Save と Reload で未保存を外す）
+    EditTracker<SettingsState> settingsTracker_{ { [this] { return CaptureSettings(); }, [this](const SettingsState& state) { RestoreSettings(state); } } };
   };
 
 } // namespace Tako

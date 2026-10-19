@@ -164,6 +164,12 @@ namespace Tako {
     HWND GetHWnd() const { return hWnd_; }
     HINSTANCE GetHInstance() const { return wc_.hInstance; }
     bool IsFullScreen() const { return isFullScreen_; }
+
+    /// <summary>
+    /// RequestFullScreen の予約があれば切り替え後の状態、無ければ今の状態
+    /// </summary>
+    bool IsFullScreenRequested() const { return requestedFullScreen_.value_or(isFullScreen_); }
+
     bool IsMaximized() const { return isMaximized_; }
     bool IsResizable() const { return isResizable_; }
     const std::wstring& GetWindowTitle() const { return windowTitle_; }

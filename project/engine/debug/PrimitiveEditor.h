@@ -10,13 +10,12 @@
 #include "Vector4.h"
 #include "ColorFunc.h"
 #include "PrimitiveBuilder.h"
-#include "ViewportCameraController.h"
+#include "PreviewPanel.h"
+#include "EditTracker.h"
 
 namespace Tako {
 
   class Object3d;
-  class Camera;
-  class PreviewViewport;
 
   /// <summary>
   /// PrimitiveBuilder のパラメータをプレビューしながら調整し、C++ コード / JSON プリセット / OBJ として出力するエディタ
@@ -45,8 +44,8 @@ namespace Tako {
     /// <param name="isOpen">ウィンドウ表示フラグ（DebugUIManager の表示状態を共有する）</param>
     /// <param name="cameraSettings">カメラ操作設定（EngineSettingsWindow の値を共有する）</param>
     void Initialize(bool* isOpen, const ViewportCameraSettings* cameraSettings) {
-      isOpen_                    = isOpen;
-      cameraController_.settings = cameraSettings;
+      isOpen_ = isOpen;
+      preview_.Initialize(L"PrimitiveEditorPreview", cameraSettings);
     }
 
     /// <summary>
@@ -113,6 +112,12 @@ namespace Tako {
     /// <returns>成功したら true</returns>
     bool LoadPreset(const std::string& name);
 
+    /// <summary>
+    /// SerializePreset の内容を現在の設定へ反映し、次の Update でモデルを作り直す
+    /// </summary>
+    /// <returns>解釈できなければ false（途中までの反映は残る）</returns>
+    bool ApplyPreset(const std::string& text);
+
   private: //メンバー変数
     bool* isOpen_ = nullptr;  ///< ウィンドウ表示フラグ（DebugUIManager 所有）
 
@@ -145,15 +150,12 @@ namespace Tako {
     float                            materialUvRotate_      = 0.0f;   ///< ラジアン
     char                             exportNameBuffer_[128] = "";     ///< OBJ 出力名（拡張子なし）
 
-    //プリセットの未保存
-    std::string savedPreset_;                      ///< 最後に保存・読込したときの SerializePreset()。今の値と違えば未保存
-    std::string pendingPresetLoad_;                ///< 確認モーダルの返答待ちの読み込み先
-    bool        isUnsavedPopupRequested_ = false;
+    //プリセットの未保存と Undo
+    EditTracker<>        presetTracker_{ { [this] { return SerializePreset(); }, [this](const std::string& preset) { ApplyPreset(preset); } } };
+    UnsavedChangesPrompt unsavedPrompt_;  ///< 未保存のまま別のプリセットを読み込むときの確認
 
-    //専用ビューポート/カメラ
-    std::unique_ptr<PreviewViewport> previewViewport_;  ///< オフスクリーンRT一式（初回オープン時に生成）
-    std::unique_ptr<Camera>          previewCamera_;
-    ViewportCameraController         cameraController_;
+    //専用ビューポート/カメラ（初回オープン時に生成）
+    PreviewPanel preview_;
   };
 
 } // namespace Tako

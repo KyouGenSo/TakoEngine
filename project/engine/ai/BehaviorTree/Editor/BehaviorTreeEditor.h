@@ -12,6 +12,7 @@
 
 #include "BTNode.h"
 #include "EditorTypes.h"
+#include "EditTracker.h"
 
 namespace ed = ax::NodeEditor;
 
@@ -170,7 +171,7 @@ public: //メンバー関数
 
   bool IsVisible() const { return isVisible_; }
   const std::string& GetCurrentTreeName() const { return currentTreeName_; }
-  bool HasUnsavedChanges() const { return hasUnsavedChanges_; }
+  bool HasUnsavedChanges() const { return treeTracker_.IsEdited(); }
 
 private: //非公開関数
   //--- 描画系 ---
@@ -261,6 +262,33 @@ private: //非公開関数
   /// </summary>
   nlohmann::json SerializeTree();
 
+  /// <summary>
+  /// 編集の比較と Undo に使うツリーの内容。リンクとピンの ID は戻すと振り直されるので含めない（読み込みもノード ID しか使わない）
+  /// </summary>
+  std::string SnapshotTree();
+
+  /// <summary>
+  /// SnapshotTree の内容に戻す。ID が同じノードは作り直さずに値を当てるので、ランタイムノードを共有しているゲーム側のツリーにも
+  /// パラメータの Undo がそのまま効く
+  /// </summary>
+  void RestoreTree(const std::string& tree);
+
+  /// <summary>
+  /// ノードと、そのピン・リンクを消す
+  /// </summary>
+  void RemoveNode(int nodeId);
+
+  /// <summary>
+  /// 編集を見つけるためのツリーのハッシュ。SnapshotTree より軽い。パラメータはノードごとのハッシュを覚えておき、
+  /// UI で変えられる Node Inspector の選択中のノードの分だけ取り直す（ExtractParameters が重いため）
+  /// </summary>
+  uint64_t HashTree();
+
+  /// <summary>
+  /// ノードのパラメータのハッシュを parameterHashes_ に覚える
+  /// </summary>
+  void UpdateParameterHash(const EditorNode& node);
+
   //--- マルチツリー: ファイルパス組み立てヘルパー ---
 
   /// <summary>
@@ -296,7 +324,8 @@ private: //メンバー変数
   float highlightStartTime_       = 0.0f;
   int   selectedNodeId_           = -1;    ///< 現在選択中のノード ID (インスペクター連動)
 
-  std::unordered_map<BTNode*, int> runtimeNodeToEditorId_;  ///< ランタイムノードからエディタ ID への逆引きマップ
+  std::unordered_map<BTNode*, int>  runtimeNodeToEditorId_;  ///< ランタイムノードからエディタ ID への逆引きマップ
+  std::unordered_map<int, uint64_t> parameterHashes_;         ///< ノード ID → パラメータのハッシュ（HashTree 用）
 
   std::vector<std::pair<int, ImVec2>> pendingNodePositions_;  ///< 次フレームの ed::Begin 内で ed::SetNodePosition を呼ぶノード位置の予約リスト。
 
@@ -304,13 +333,8 @@ private: //メンバー変数
 
   std::string currentTreeName_;  ///< 現在編集中のツリー名 (拡張子なし、例: "MainTree")
 
-  bool           hasUnsavedChanges_ = false;  ///< 未保存変更フラグ (CreateNode/DeleteNode/CreateLink 等で true、Save/Load で false)
-  nlohmann::json savedTree_;                  ///< 最後に保存・読込した時の SerializeTree()。編集でこれと同じに戻れば hasUnsavedChanges_ を下ろす
-
-  bool showUnsavedChangesModal_ = false;  ///< 未保存の確認モーダルを次の DrawToolbar で開く
-
-  std::function<bool()> pendingAction_;      ///< 確認モーダルの返答待ちの操作（ツリーの切り替え・新規作成・複製）
-  std::string           pendingActionName_;  ///< 確認モーダルのボタン名に使う操作名
+  EditTracker<>        treeTracker_{ { [this] { return SnapshotTree(); }, [this](const std::string& tree) { RestoreTree(tree); }, [this] { return HashTree(); } } };  ///< 編集の検出・未保存の印・Undo（Save / Load で未保存を外す）
+  UnsavedChangesPrompt unsavedPrompt_;  ///< 未保存のままツリーを切り替える・作るときの確認
 };
 
 } // namespace Tako

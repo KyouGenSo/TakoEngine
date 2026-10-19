@@ -48,6 +48,34 @@ namespace Tako {
       return root;
     }
 
+    /// <summary>
+    /// SerializeGroup の 1 グループ分の値を設定する。json の型から値の型を判別する（配列は要素数で Vector2/3/4 を区別）
+    /// </summary>
+    void ApplyGroup(GlobalVariables& variables, const std::string& groupName, const json& items) {
+      for (json::const_iterator itItem = items.begin(); itItem != items.end(); ++itItem) {
+        const std::string& itemName = itItem.key();
+
+        if (itItem->is_number_integer()) {
+          variables.SetValue(groupName, itemName, itItem->get<int32_t>());
+        }
+        else if (itItem->is_number_float()) {
+          variables.SetValue(groupName, itemName, static_cast<float>(itItem->get<double>()));
+        }
+        else if (itItem->is_array() && itItem->size() == 2) {
+          variables.SetValue(groupName, itemName, Vector2{ itItem->at(0), itItem->at(1) });
+        }
+        else if (itItem->is_array() && itItem->size() == 3) {
+          variables.SetValue(groupName, itemName, Vector3{ itItem->at(0), itItem->at(1), itItem->at(2) });
+        }
+        else if (itItem->is_array() && itItem->size() == 4) {
+          variables.SetValue(groupName, itemName, Vector4{ itItem->at(0), itItem->at(1), itItem->at(2), itItem->at(3) });
+        }
+        else if (itItem->is_boolean()) {
+          variables.SetValue(groupName, itemName, itItem->get<bool>());
+        }
+      }
+    }
+
   } // namespace
 
   std::unique_ptr<GlobalVariables> GlobalVariables::instance_ = nullptr;
@@ -80,6 +108,10 @@ namespace Tako {
       ImGui::End();
       return;
     }
+
+    // UI を描く区間の前後で全グループの値を比べ、Undo の 1 手にする
+    editTracker_.BeginSection();
+    editTracker_.DrawButtons();
 
     // 各グループの処理
     for (std::map<std::string, Group>::iterator itGroup = datas_.begin(); itGroup != datas_.end(); ++itGroup) {
@@ -148,6 +180,7 @@ namespace Tako {
       }
     }
 
+    editTracker_.EndSection();
     ImGui::End();
 #endif
   }
@@ -256,40 +289,31 @@ namespace Tako {
 
     // グループを作成
     CreateGroup(groupName);
-
-    for (json::iterator itItem = itGroup->begin(); itItem != itGroup->end(); ++itItem) {
-      const std::string& itemName = itItem.key();
-
-      // json の型から値の型を判別（配列要素数で Vector2/3/4 を区別）
-      if (itItem->is_number_integer()) {
-        int32_t value = itItem->get<int32_t>();
-        SetValue(groupName, itemName, value);
-      }
-      else if (itItem->is_number_float()) {
-        double value = itItem->get<double>();
-        SetValue(groupName, itemName, static_cast<float>(value));
-      }
-      else if (itItem->is_array() && itItem->size() == 2) {
-        Vector2 value = { itItem->at(0), itItem->at(1) };
-        SetValue(groupName, itemName, value);
-      }
-      else if (itItem->is_array() && itItem->size() == 3) {
-        Vector3 value = { itItem->at(0), itItem->at(1), itItem->at(2) };
-        SetValue(groupName, itemName, value);
-      }
-      else if (itItem->is_array() && itItem->size() == 4) {
-        Vector4 value = { itItem->at(0), itItem->at(1), itItem->at(2), itItem->at(3) };
-        SetValue(groupName, itemName, value);
-      }
-      else if (itItem->is_boolean()) {
-        bool value = itItem->get<bool>();
-        SetValue(groupName, itemName, value);
-      }
-    }
+    ApplyGroup(*this, groupName, *itGroup);
 
     Group& group = datas_[groupName];
     group.isDirty       = false;
     group.savedSnapshot = SerializeGroup(groupName, group).dump();
+  }
+
+  std::string GlobalVariables::SerializeGroups() const
+  {
+    json root = json::object();
+    for (const auto& [groupName, group] : datas_) {
+      root.update(SerializeGroup(groupName, group));
+    }
+    return root.dump();
+  }
+
+  void GlobalVariables::RestoreGroups(const std::string& groups)
+  {
+    const json root = json::parse(groups);
+    for (auto& [groupName, group] : datas_) {
+      if (root.contains(groupName)) {
+        ApplyGroup(*this, groupName, root[groupName]);
+        group.isDirty = SerializeGroup(groupName, group).dump() != group.savedSnapshot;
+      }
+    }
   }
 
   void GlobalVariables::CollectUnsavedChanges(std::vector<std::string>& out) const

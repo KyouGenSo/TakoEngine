@@ -15,7 +15,6 @@
 #include "Input.h"
 #include "StringUtility.h"
 #include "CodeGenerator.h"
-#include "UnsavedChangesModal.h"
 
 #include "imgui.h"
 #include <json.hpp>
@@ -27,6 +26,7 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <iterator>
 #include <string>
 #include <utility>
 #include <vector>
@@ -101,10 +101,6 @@ namespace Tako {
 
     DX12Basic* GetDX12() {
       return Object3dBasic::GetInstance()->GetDX12Basic();
-    }
-
-    void Log(const std::string& message, DebugUIManager::LogType type = DebugUIManager::LogType::Info) {
-      DebugUIManager::GetInstance()->AddLog(message, type);
     }
 
     json GridToJson(const GridSettings& grid) {
@@ -224,12 +220,12 @@ namespace Tako {
       const std::filesystem::path path  = header;
       const std::string           scope = path.stem().string();
       if (!CodeGenerator::IsIdentifier(scope)) {
-        Log(std::format("{} not generated: the file name must be a C++ identifier", header), DebugUIManager::LogType::Error);
+        LogToConsole(std::format("{} not generated: the file name must be a C++ identifier", header), DebugUIManager::LogType::Error);
         return std::nullopt;
       }
       for (const std::string& name : names) {
         if (!CodeGenerator::IsIdentifier(name) || std::ranges::count(names, name) != 1) {
-          Log(std::format("{} not generated: \"{}\" is not a unique C++ identifier", header, name), DebugUIManager::LogType::Error);
+          LogToConsole(std::format("{} not generated: \"{}\" is not a unique C++ identifier", header, name), DebugUIManager::LogType::Error);
           return std::nullopt;
         }
       }
@@ -239,23 +235,23 @@ namespace Tako {
         const std::filesystem::path root = std::filesystem::current_path();
         try {
           const std::vector<std::filesystem::path> files = CodeGenerator::RenameUsages(root, scope, renames);
-          Log(std::format("Renamed {} name(s) of {} in {} file(s)", renames.size(), scope, files.size()));
+          LogToConsole(std::format("Renamed {} name(s) of {} in {} file(s)", renames.size(), scope, files.size()));
           for (const std::filesystem::path& file : files) {
-            Log(std::format("  {}", StringUtility::ConvertString(file.lexically_relative(root).wstring())));
+            LogToConsole(std::format("  {}", StringUtility::ConvertString(file.lexically_relative(root).wstring())));
           }
           changedFiles = files.size();
         }
         catch (const std::filesystem::filesystem_error& e) {
-          Log(std::format("Rename of {} failed: {}", scope, e.what()), DebugUIManager::LogType::Error);
+          LogToConsole(std::format("Rename of {} failed: {}", scope, e.what()), DebugUIManager::LogType::Error);
           return std::nullopt;
         }
       }
 
       if (!write(path, names)) {
-        Log(std::format("Generate failed: {}", header), DebugUIManager::LogType::Error);
+        LogToConsole(std::format("Generate failed: {}", header), DebugUIManager::LogType::Error);
         return std::nullopt;
       }
-      Log(std::format("Generated {} ({})", header, scope));
+      LogToConsole(std::format("Generated {} ({})", header, scope));
       return changedFiles;
     }
 
@@ -304,7 +300,7 @@ namespace Tako {
 
     if (ImGui::Begin("Engine Settings", isOpen_)) {
       // UI を描く区間の前後で保存内容を比べて編集を検出する（この区間ではゲームのコードが値を変えない）
-      const std::string snapshot = ProjectSettings::Serialize(GetDX12()) + SerializeEditorSettings();
+      settingsTracker_.BeginSection();
 
       // 下段の Save/Reload ボタン分の高さを残す
       const float footerHeight = ImGui::GetFrameHeightWithSpacing();
@@ -333,17 +329,17 @@ namespace Tako {
       }
       ImGui::EndChild();
 
-      if (const std::string settings = ProjectSettings::Serialize(GetDX12()) + SerializeEditorSettings(); settings != snapshot) {
-        isDirty_ = IsStillEdited(isDirty_, snapshot, settings, cleanSnapshot_);
-      }
+      settingsTracker_.EndSection();
 
-      if (ImGui::Button(isDirty_ ? "Save *###Save" : "Save###Save") || ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_S)) {
+      if (ImGui::Button(settingsTracker_.IsEdited() ? "Save *###Save" : "Save###Save") || ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_S)) {
         const bool saved = ProjectSettings::Save(GetDX12());
-        Log(std::format("Project settings {}: {}", saved ? "saved" : "save failed", ProjectSettings::kFilePath),
+        LogToConsole(std::format("Project settings {}: {}", saved ? "saved" : "save failed", ProjectSettings::kFilePath),
             saved ? DebugUIManager::LogType::Info : DebugUIManager::LogType::Error);
         SaveGeneratedHeaders();
         SaveEditorSettings();
-        isDirty_ = !saved;
+        if (saved) {
+          settingsTracker_.MarkSaved();
+        }
       }
       ImGui::SameLine();
       if (ImGui::Button("Reload")) {
@@ -351,14 +347,16 @@ namespace Tako {
         ProjectSettings::LoadWindow();
         WinApp::GetInstance()->SetWindowTitle(StringUtility::ConvertString(ProjectSettings::GetWindowSettings().productName));
         const bool loaded = ProjectSettings::Load(GetDX12());
-        Log(std::format("Project settings {}: {}", loaded ? "loaded" : "load failed", ProjectSettings::kFilePath),
+        LogToConsole(std::format("Project settings {}: {}", loaded ? "loaded" : "load failed", ProjectSettings::kFilePath),
             loaded ? DebugUIManager::LogType::Info : DebugUIManager::LogType::Warning);
         layerOrigins_.reset();
         actionOrigins_.reset();
         axisOrigins_.reset();
         LoadEditorSettings();
-        isDirty_ = false;
+        settingsTracker_.Reset();
       }
+      ImGui::SameLine();
+      settingsTracker_.DrawButtons();
       ImGui::SameLine();
       ImGui::TextDisabled("%s", ProjectSettings::kFilePath);
       if (ImGui::BeginItemTooltip()) {
@@ -374,10 +372,22 @@ namespace Tako {
     if (!ifs) {
       return;
     }
+    if (!DeserializeEditorSettings(std::string(std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>()))) {
+      return;
+    }
 
+    // 個人設定なので他の人には見えない。戻し忘れに気付けるよう毎回知らせる
+    const std::string& playFromScene = SceneManager::GetInstance()->GetStartupSceneOverride();
+    if (!playFromScene.empty()) {
+      LogToConsole(std::format("Play From Scene is set: {} (Engine Settings > Application)", playFromScene), DebugUIManager::LogType::Warning);
+    }
+    LogToConsole(std::format("Editor settings loaded: {}", EditorSettingsPathText()));
+  }
+
+  bool EngineSettingsWindow::DeserializeEditorSettings(const std::string& text) {
     // 手編集された JSON の型不一致などは例外になるため、そこまでの適用を残して中断する
     try {
-      const json root  = json::parse(ifs);
+      const json root  = json::parse(text);
       const json empty = json::object();
 
       const json& display = root.contains("Display") ? root["Display"] : empty;
@@ -424,16 +434,25 @@ namespace Tako {
       }
       const auto playFromScene = playFromSceneByProject_.find(ProjectKey());
       sceneManager->SetStartupSceneOverride(playFromScene != playFromSceneByProject_.end() ? playFromScene->second : std::string());
-      // 個人設定なので他の人には見えない。戻し忘れに気付けるよう毎回知らせる
-      if (!sceneManager->GetStartupSceneOverride().empty()) {
-        Log(std::format("Play From Scene is set: {} (Engine Settings > Application)", sceneManager->GetStartupSceneOverride()), DebugUIManager::LogType::Warning);
-      }
-
-      Log(std::format("Editor settings loaded: {}", EditorSettingsPathText()));
+      return true;
     }
     catch (const json::exception& e) {
-      Log(std::format("Editor settings load failed: {}", e.what()), DebugUIManager::LogType::Warning);
+      LogToConsole(std::format("Editor settings load failed: {}", e.what()), DebugUIManager::LogType::Warning);
+      return false;
     }
+  }
+
+  EngineSettingsWindow::SettingsState EngineSettingsWindow::CaptureSettings() const {
+    return { ProjectSettings::Serialize(GetDX12()), SerializeEditorSettings(), layerOrigins_, actionOrigins_, axisOrigins_ };
+  }
+
+  void EngineSettingsWindow::RestoreSettings(const SettingsState& state) {
+    ProjectSettings::Deserialize(state.project, GetDX12());
+    WinApp::GetInstance()->SetWindowTitle(StringUtility::ConvertString(ProjectSettings::GetWindowSettings().productName));
+    DeserializeEditorSettings(state.editor);
+    layerOrigins_  = state.layerOrigins;
+    actionOrigins_ = state.actionOrigins;
+    axisOrigins_   = state.axisOrigins;
   }
 
   void EngineSettingsWindow::SaveEditorSettings() {
@@ -442,12 +461,12 @@ namespace Tako {
     std::filesystem::create_directories(path.parent_path(), ec);
     std::ofstream ofs(path);
     if (!ofs) {
-      Log(std::format("Editor settings save failed: {}", EditorSettingsPathText()), DebugUIManager::LogType::Error);
+      LogToConsole(std::format("Editor settings save failed: {}", EditorSettingsPathText()), DebugUIManager::LogType::Error);
       return;
     }
     ofs << SerializeEditorSettings() << std::endl;
 
-    Log(std::format("Editor settings saved: {}", EditorSettingsPathText()));
+    LogToConsole(std::format("Editor settings saved: {}", EditorSettingsPathText()));
   }
 
   std::string EngineSettingsWindow::SerializeEditorSettings() const {
@@ -470,7 +489,8 @@ namespace Tako {
 
     json root;
     root["Display"] = {
-      { "Fullscreen", WinApp::GetInstance()->IsFullScreen() },
+      // 切り替えは次のフレームなので、同じフレームの比較で編集として見つけられるよう予約の値を書く
+      { "Fullscreen", WinApp::GetInstance()->IsFullScreenRequested() },
     };
     root["Audio"] = {
       { "MasterVolume", masterVolume_ },
@@ -492,7 +512,7 @@ namespace Tako {
   }
 
   void EngineSettingsWindow::CollectUnsavedChanges(std::vector<std::string>& out) const {
-    if (isDirty_) {
+    if (settingsTracker_.IsEdited()) {
       out.push_back("Engine Settings");
     }
   }
@@ -523,8 +543,6 @@ namespace Tako {
     bool fullScreen = winApp->IsFullScreen();
     if (ImGui::Checkbox("Fullscreen (F11)", &fullScreen)) {
       SetFullScreen(fullScreen);
-      // 切り替えは次のフレームなので、保存内容の比較では検出できない
-      isDirty_ = true;
     }
 
     DX12Basic* dx12 = GetDX12();

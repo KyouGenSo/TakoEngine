@@ -53,10 +53,6 @@ namespace Tako {
     };
     SavedState savedState;
 
-    void Log(const std::string& message, LogType type = LogType::Info) {
-      DebugUIManager::GetInstance()->AddLog(message, type);
-    }
-
     std::string ToUtf8(const fs::path& path) {
       return StringUtility::ConvertString(path.generic_wstring());
     }
@@ -149,7 +145,7 @@ namespace Tako {
       // 戻り値は互換のため HINSTANCE 型だが、32 以下はエラーコード
       const INT_PTR code = reinterpret_cast<INT_PTR>(result);
       if (code <= 32) {
-        Log(std::format("Assets: Failed to open {} (ShellExecute error {})", ToUtf8(path), code), LogType::Warning);
+        LogToConsole(std::format("Assets: Failed to open {} (ShellExecute error {})", ToUtf8(path), code), LogType::Warning);
       }
     }
 
@@ -401,7 +397,7 @@ namespace Tako {
 
   void AssetBrowser::ImportFiles(const std::vector<std::filesystem::path>& sources) {
     if (IsEngineCopy(currentDir_)) {
-      Log(kReadOnlyWarning, LogType::Warning);
+      LogToConsole(kReadOnlyWarning, LogType::Warning);
       return;
     }
 
@@ -410,17 +406,17 @@ namespace Tako {
     for (const fs::path& source : sources) {
       // フォルダを自身の配下へコピーすると再帰が終わらない
       if (IsSameOrAncestor(fs::weakly_canonical(source, ec), destinationDir)) {
-        Log(std::format("Assets: Cannot copy {} into itself", ToUtf8(source)), LogType::Warning);
+        LogToConsole(std::format("Assets: Cannot copy {} into itself", ToUtf8(source)), LogType::Warning);
         continue;
       }
 
       const fs::path destination = MakeUniquePath(currentDir_ / source.filename());
       fs::copy(source, destination, fs::copy_options::recursive, ec);
       if (ec) {
-        Log(std::format("Assets: Failed to import {} (error {})", ToUtf8(source), ec.value()), LogType::Error);
+        LogToConsole(std::format("Assets: Failed to import {} (error {})", ToUtf8(source), ec.value()), LogType::Error);
       }
       else {
-        Log(std::format("Assets: Imported {}", ToUtf8(destination)));
+        LogToConsole(std::format("Assets: Imported {}", ToUtf8(destination)));
       }
     }
     needsRefresh_ = true;
@@ -764,7 +760,7 @@ namespace Tako {
   void AssetBrowser::ApplyRename() {
     const std::string newName = renameBuffer_;
     if (newName.empty() || newName.find_first_of("/\\") != std::string::npos) {
-      Log(std::format("Assets: Invalid name \"{}\"", newName), LogType::Warning);
+      LogToConsole(std::format("Assets: Invalid name \"{}\"", newName), LogType::Warning);
       return;
     }
 
@@ -772,12 +768,12 @@ namespace Tako {
     std::error_code ec;
     // 大文字小文字だけの変更は同じ実体を指すので許可する
     if (fs::exists(destination, ec) && !fs::equivalent(renameTarget_, destination, ec)) {
-      Log(std::format("Assets: {} already exists", ToUtf8(destination)), LogType::Warning);
+      LogToConsole(std::format("Assets: {} already exists", ToUtf8(destination)), LogType::Warning);
       return;
     }
     fs::rename(renameTarget_, destination, ec);
     if (ec) {
-      Log(std::format("Assets: Failed to rename {} (error {})", ToUtf8(renameTarget_), ec.value()), LogType::Error);
+      LogToConsole(std::format("Assets: Failed to rename {} (error {})", ToUtf8(renameTarget_), ec.value()), LogType::Error);
       return;
     }
 
@@ -796,7 +792,7 @@ namespace Tako {
   void AssetBrowser::RequestDelete(std::vector<std::filesystem::path> targets) {
     // メニューの Delete は無効表示で防げるが、Delete キーには無効表示が無い
     if (std::ranges::any_of(targets, IsEngineCopy)) {
-      Log(kReadOnlyWarning, LogType::Warning);
+      LogToConsole(kReadOnlyWarning, LogType::Warning);
       return;
     }
 
@@ -816,10 +812,10 @@ namespace Tako {
     std::error_code ec;
     for (const fs::path& target : deleteTargets_) {
       if (fs::exists(target, ec)) {
-        Log(std::format("Assets: Failed to delete {}", ToUtf8(target)), LogType::Error);
+        LogToConsole(std::format("Assets: Failed to delete {}", ToUtf8(target)), LogType::Error);
       }
       else {
-        Log(std::format("Assets: Moved {} to Recycle Bin", ToUtf8(target)));
+        LogToConsole(std::format("Assets: Moved {} to Recycle Bin", ToUtf8(target)));
       }
     }
     needsRefresh_ = true;
@@ -829,7 +825,7 @@ namespace Tako {
     const fs::path  folder = MakeUniquePath(parent / "New Folder");
     std::error_code ec;
     if (!fs::create_directory(folder, ec)) {
-      Log(std::format("Assets: Failed to create {} (error {})", ToUtf8(folder), ec.value()), LogType::Error);
+      LogToConsole(std::format("Assets: Failed to create {} (error {})", ToUtf8(folder), ec.value()), LogType::Error);
       return;
     }
     needsRefresh_ = true;
