@@ -24,7 +24,7 @@ namespace Tako {
   class UILayoutEditor {
   private: //定数
     static constexpr float kHierarchyPaneWidth   = 240.0f;
-    static constexpr float kHandleHalfSize       = 4.0f;    ///< 角ハンドルの描画・当たり判定の半径（画像上 px）
+    static constexpr float kHandleHalfSize       = 4.0f;    ///< 角と辺のハンドルの描画・当たり判定の半径（画像上 px）
     static constexpr float kMinGridSpacing       = 4.0f;    ///< 画像上でこれより細かいグリッドは描かない（px）
     static constexpr float kPreviewDefaultHeight = 240.0f;  ///< Inspector のテクスチャプレビューの初期の高さ（px）。下の縁のドラッグで変えられる
     static constexpr float kResultDefaultHeight  = 160.0f;  ///< Inspector の 9-slice の結果プレビューの初期の高さ（px）
@@ -350,7 +350,7 @@ namespace Tako {
     //ビューポート操作
     bool                                         isViewportEditEnabled_ = true;
     DragMode                                     dragMode_              = DragMode::None;
-    int                                          dragCorner_            = 0;               ///< リサイズ中の角（0:左上 1:右上 2:右下 3:左下）
+    int                                          dragEdges_             = 0;               ///< リサイズ中の辺（HitEdges の bit の和）
     Vector2                                      dragStartMouse_        = {};              ///< ドラッグ開始時のマウス（クライアント px）
     Vector2                                      dragStartRectMin_      = {};              ///< ドラッグ開始時の、動かす矩形（移動は選択を囲む矩形、リサイズは要素の矩形。クライアント px）
     Vector2                                      dragStartRectSize_     = {};

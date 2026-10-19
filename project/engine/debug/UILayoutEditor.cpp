@@ -92,18 +92,12 @@ namespace Tako {
       return static_cast<size_t>(it - siblings.begin());
     }
 
-    /// <summary>
-    /// 角 index（0:左上 1:右上 2:右下 3:左下）の位置
-    /// </summary>
-    Vector2 Corner(const Vector2& rectMin, const Vector2& rectSize, int index) {
-      return { rectMin.x + ((index == 1 || index == 2) ? rectSize.x : 0.0f), rectMin.y + (index >= 2 ? rectSize.y : 0.0f) };
+    float SnapValue(float value, float step) {
+      return step > 0.0f ? std::round(value / step) * step : value;
     }
 
     Vector2 SnapPoint(const Vector2& p, float step) {
-      if (step <= 0.0f) {
-        return p;
-      }
-      return { std::round(p.x / step) * step, std::round(p.y / step) * step };
+      return { SnapValue(p.x, step), SnapValue(p.y, step) };
     }
 
     /// <summary>
@@ -422,16 +416,12 @@ namespace Tako {
       const ImVec2  mouseImage    = ImGui::GetMousePos();
       const Vector2 mouse         = mapping.ToClient(mouseImage);
 
-      // Inspector の要素の角。中を掴むより優先する
-      int hoveredCorner = -1;
+      // Inspector の要素の辺と角（両方の bit）。中を掴むより優先する
+      int hoveredEdges = 0;
       if (selected) {
-        for (int i = 0; i < 4; ++i) {
-          const ImVec2 corner = mapping.ToImage(Corner(selected->rectMin, selected->rectSize, i));
-          if (std::abs(mouseImage.x - corner.x) <= kHandleHalfSize + kHitMargin && std::abs(mouseImage.y - corner.y) <= kHandleHalfSize + kHitMargin) {
-            hoveredCorner = i;
-            break;
-          }
-        }
+        const ImVec2 rectMin = mapping.ToImage(selected->rectMin);
+        const ImVec2 rectMax = mapping.ToImage(selected->rectMin + selected->rectSize);
+        hoveredEdges = HitEdges(mouseImage, { rectMin.x, rectMin.y, rectMax.x, rectMax.y }, rectMin, rectMax, kHandleHalfSize + kHitMargin);
       }
 
       if (isActivated) {
@@ -443,9 +433,9 @@ namespace Tako {
           const UIElement* element = layout->Find(name);
           return element && Contains(*element, mouse);
         });
-        if (hoveredCorner >= 0) {
-          dragMode_   = DragMode::Resize;
-          dragCorner_ = hoveredCorner;
+        if (hoveredEdges != 0) {
+          dragMode_  = DragMode::Resize;
+          dragEdges_ = hoveredEdges;
         }
         else if (ImGui::GetIO().KeyShift) {
           // 選択に足す・外すだけで、ドラッグはしない
@@ -501,6 +491,13 @@ namespace Tako {
         dragMode_      = DragMode::None;
         isClickToPick_ = false;
       }
+
+      if (dragMode_ == DragMode::Resize) {
+        ImGui::SetMouseCursor(EdgeCursor(dragEdges_));
+      }
+      else if (isHovered && !isActive && hoveredEdges != 0) {
+        ImGui::SetMouseCursor(EdgeCursor(hoveredEdges));
+      }
       isCaptured = isHovered || isActive;
       selected   = FindSelected(*layout);
     }
@@ -547,8 +544,13 @@ namespace Tako {
         drawList->AddQuadFilled(ImVec2(p.x, p.y - kAnchorRadius), ImVec2(p.x + kAnchorRadius, p.y), ImVec2(p.x, p.y + kAnchorRadius), ImVec2(p.x - kAnchorRadius, p.y), kAnchorColor);
       }
 
-      for (int i = 0; i < 4; ++i) {
-        const ImVec2 c = mapping.ToImage(Corner(selected->rectMin, selected->rectSize, i));
+      // 角 4 つと辺の中点 4 つ
+      for (int i = 0; i < 9; ++i) {
+        if (i == 4) {
+          continue;
+        }
+        const Vector2 ratio = { static_cast<float>(i % 3) * 0.5f, static_cast<float>(i / 3) * 0.5f };
+        const ImVec2  c     = mapping.ToImage(selected->rectMin + Mul(selected->rectSize, ratio));
         drawList->AddRectFilled(ImVec2(c.x - kHandleHalfSize, c.y - kHandleHalfSize), ImVec2(c.x + kHandleHalfSize, c.y + kHandleHalfSize), kHandleColor);
         drawList->AddRect(ImVec2(c.x - kHandleHalfSize, c.y - kHandleHalfSize), ImVec2(c.x + kHandleHalfSize, c.y + kHandleHalfSize), kSelectionColor);
       }
@@ -804,9 +806,9 @@ namespace Tako {
     ImGui::SameLine();
     ImGui::TextDisabled("(?)");
     ImGui::SetItemTooltip(
-      "Viewport: click to select, drag to move, drag corners to resize.\n"
+      "Viewport: click to select, drag to move, drag an edge or a corner to resize.\n"
       "  Shift+click adds to or removes from the selection. Dragging inside a selected element moves the whole selection.\n"
-      "  Ctrl while dragging toggles Snap.\n"
+      "  While resizing, Shift keeps the aspect ratio and Alt keeps the center. Ctrl while dragging toggles Snap.\n"
       "  Arrow keys move the selection 1 px (Shift: Grid Size).\n"
       "Hierarchy: Ctrl+click or Shift+click to select several.\n"
       "Drop textures from Assets onto the viewport, the hierarchy or the Texture field.");
@@ -1986,24 +1988,75 @@ namespace Tako {
     if (!element) {
       return;
     }
+    const ImGuiIO& io       = ImGui::GetIO();
+    const Vector2  startMax = dragStartRectMin_ + dragStartRectSize_;
+    const Vector2  center   = dragStartRectMin_ + dragStartRectSize_ * 0.5f;
+    const auto     snapX    = [&](float x) { return SnapValue(x, step); };
+    const auto     snapY    = [&](float y) { return SnapValue(y, step); };
 
-    // 掴んだ角だけを動かし、対角は固定する
-    Vector2       rectMin  = dragStartRectMin_;
-    Vector2       rectMax  = dragStartRectMin_ + dragStartRectSize_;
-    const bool    isRight  = dragCorner_ == 1 || dragCorner_ == 2;
-    const bool    isBottom = dragCorner_ >= 2;
-    const Vector2 corner   = SnapPoint(Corner(dragStartRectMin_, dragStartRectSize_, dragCorner_) + delta, step);
-    if (isRight) {
-      rectMax.x = (std::max)(corner.x, rectMin.x);
+    // 掴んだ辺だけを動かし、反対の辺（Alt なら中心）は越えないよう止める
+    const Vector2 leftTopLimit     = io.KeyAlt ? center : startMax;
+    const Vector2 rightBottomLimit = io.KeyAlt ? center : dragStartRectMin_;
+    Vector2       rectMin          = dragStartRectMin_;
+    Vector2       rectMax          = startMax;
+    if (dragEdges_ & kEdgeLeft) {
+      rectMin.x = (std::min)(snapX(dragStartRectMin_.x + delta.x), leftTopLimit.x);
     }
-    else {
-      rectMin.x = (std::min)(corner.x, rectMax.x);
+    if (dragEdges_ & kEdgeRight) {
+      rectMax.x = (std::max)(snapX(startMax.x + delta.x), rightBottomLimit.x);
     }
-    if (isBottom) {
-      rectMax.y = (std::max)(corner.y, rectMin.y);
+    if (dragEdges_ & kEdgeTop) {
+      rectMin.y = (std::min)(snapY(dragStartRectMin_.y + delta.y), leftTopLimit.y);
     }
-    else {
-      rectMin.y = (std::min)(corner.y, rectMax.y);
+    if (dragEdges_ & kEdgeBottom) {
+      rectMax.y = (std::max)(snapY(startMax.y + delta.y), rightBottomLimit.y);
+    }
+
+    // Alt: 反対の辺を中心に対して対称に動かす
+    if (io.KeyAlt) {
+      if (dragEdges_ & kEdgeLeft) {
+        rectMax.x = 2.0f * center.x - rectMin.x;
+      }
+      if (dragEdges_ & kEdgeRight) {
+        rectMin.x = 2.0f * center.x - rectMax.x;
+      }
+      if (dragEdges_ & kEdgeTop) {
+        rectMax.y = 2.0f * center.y - rectMin.y;
+      }
+      if (dragEdges_ & kEdgeBottom) {
+        rectMin.y = 2.0f * center.y - rectMax.y;
+      }
+    }
+
+    // Shift: 開始時の縦横比を保つ。2 軸を動かしたら変化の大きいほうに合わせる。
+    // 固定する側は掴んだ辺の反対（Alt なら中心）、動かしていない軸は中心
+    if (io.KeyShift && dragStartRectSize_.x > 0.0f && dragStartRectSize_.y > 0.0f) {
+      const bool    movesX = (dragEdges_ & (kEdgeLeft | kEdgeRight)) != 0;
+      const bool    movesY = (dragEdges_ & (kEdgeTop | kEdgeBottom)) != 0;
+      const float   scaleX = (rectMax.x - rectMin.x) / dragStartRectSize_.x;
+      const float   scaleY = (rectMax.y - rectMin.y) / dragStartRectSize_.y;
+      const float   scale  = (movesX && movesY) ? (std::max)(scaleX, scaleY) : (movesX ? scaleX : scaleY);
+      const Vector2 size   = dragStartRectSize_ * scale;
+      if (io.KeyAlt || !movesX) {
+        rectMin.x = center.x - size.x * 0.5f;
+        rectMax.x = center.x + size.x * 0.5f;
+      }
+      else if (dragEdges_ & kEdgeLeft) {
+        rectMin.x = rectMax.x - size.x;
+      }
+      else {
+        rectMax.x = rectMin.x + size.x;
+      }
+      if (io.KeyAlt || !movesY) {
+        rectMin.y = center.y - size.y * 0.5f;
+        rectMax.y = center.y + size.y * 0.5f;
+      }
+      else if (dragEdges_ & kEdgeTop) {
+        rectMin.y = rectMax.y - size.y;
+      }
+      else {
+        rectMax.y = rectMin.y + size.y;
+      }
     }
     layout.SetScreenRect(*element, rectMin, rectMax - rectMin);
   }
