@@ -248,6 +248,22 @@ namespace Tako {
     DragAcceptFiles(WinApp::GetInstance()->GetHWnd(), TRUE);
   }
 
+  std::span<const ShortcutBinding<AssetBrowser>> AssetBrowser::Shortcuts() {
+    // 確認の有無は RequestDelete が Shift で決める
+    constexpr auto deleteSelection = [](AssetBrowser& browser) {
+      if (std::vector<fs::path> targets = browser.SelectedPaths(); !targets.empty()) {
+        browser.RequestDelete(std::move(targets));
+      }
+    };
+    // 修飾キーまで一致した組み合わせだけが反応するので、Shift 併用は別の行にする
+    static constexpr ShortcutBinding<AssetBrowser> kShortcuts[] = {
+      { ImGuiKey_Delete,                  ImGuiInputFlags_None, "Move to the Recycle Bin (asks first)",   deleteSelection },
+      { ImGuiMod_Shift | ImGuiKey_Delete, ImGuiInputFlags_None, "Move to the Recycle Bin without asking", deleteSelection },
+      { .description = "Open a folder, or open a file with its default app", .keyLabel = "Double-click" },
+    };
+    return kShortcuts;
+  }
+
   void AssetBrowser::Draw() {
     // ドロップ先の判定には直近フレームのウィンドウ矩形を使う（閉じていれば空なので何も取り込まない）
     const WinApp::DroppedFiles& dropped = WinApp::GetInstance()->GetDroppedFiles();
@@ -523,12 +539,7 @@ namespace Tako {
       column = (column + 1) % columns;
     }
 
-    // 修飾キーまで一致した組み合わせだけが反応するので、Shift 併用は別に受ける
-    if (ImGui::Shortcut(ImGuiKey_Delete) || ImGui::Shortcut(ImGuiMod_Shift | ImGuiKey_Delete)) {
-      if (std::vector<fs::path> targets = SelectedPaths(); !targets.empty()) {
-        RequestDelete(std::move(targets));
-      }
-    }
+    ProcessShortcuts(Shortcuts(), *this);
 
     ApplySelectionRequests(ImGui::EndMultiSelect());
   }

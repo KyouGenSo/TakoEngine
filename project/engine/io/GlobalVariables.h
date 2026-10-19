@@ -10,6 +10,8 @@
 #include "Vector2.h"
 #ifdef _DEBUG
 #include "EditTracker.h"
+#include "ShortcutTable.h"
+#include <span>
 #endif
 
 namespace Tako {
@@ -99,6 +101,13 @@ namespace Tako {
     /// ImGui で編集して未保存のグループを out に追加する（終了時の確認用）
     /// </summary>
     void CollectUnsavedChanges(std::vector<std::string>& out) const;
+
+#ifdef _DEBUG
+    /// <summary>
+    /// キー操作の表。Update のキー処理と About の一覧が使う
+    /// </summary>
+    static std::span<const ShortcutBinding<GlobalVariables>> Shortcuts();
+#endif
 
     /// <summary>
     /// 項目の追加(int)

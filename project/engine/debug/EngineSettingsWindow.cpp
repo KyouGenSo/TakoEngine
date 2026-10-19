@@ -293,6 +293,13 @@ namespace Tako {
     }
   }
 
+  std::span<const ShortcutBinding<EngineSettingsWindow>> EngineSettingsWindow::Shortcuts() {
+    static constexpr ShortcutBinding<EngineSettingsWindow> kShortcuts[] = {
+      { ImGuiMod_Ctrl | ImGuiKey_S, ImGuiInputFlags_None, "Save the project settings, the generated headers and the editor settings", [](EngineSettingsWindow& window) { window.SaveAll(); } },
+    };
+    return kShortcuts;
+  }
+
   void EngineSettingsWindow::Draw() {
     if (!*isOpen_) {
       return;
@@ -331,16 +338,10 @@ namespace Tako {
 
       settingsTracker_.EndSection();
 
-      if (ImGui::Button(settingsTracker_.IsEdited() ? "Save *###Save" : "Save###Save") || ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_S)) {
-        const bool saved = ProjectSettings::Save(GetDX12());
-        LogToConsole(std::format("Project settings {}: {}", saved ? "saved" : "save failed", ProjectSettings::kFilePath),
-            saved ? DebugUIManager::LogType::Info : DebugUIManager::LogType::Error);
-        SaveGeneratedHeaders();
-        SaveEditorSettings();
-        if (saved) {
-          settingsTracker_.MarkSaved();
-        }
+      if (ImGui::Button(settingsTracker_.IsEdited() ? "Save *###Save" : "Save###Save")) {
+        SaveAll();
       }
+      ProcessShortcuts(Shortcuts(), *this);
       ImGui::SameLine();
       if (ImGui::Button("Reload")) {
         // ウィンドウ設定は起動時の値なので、読み直してもタイトル以外は今のウィンドウに反映しない
@@ -453,6 +454,17 @@ namespace Tako {
     layerOrigins_  = state.layerOrigins;
     actionOrigins_ = state.actionOrigins;
     axisOrigins_   = state.axisOrigins;
+  }
+
+  void EngineSettingsWindow::SaveAll() {
+    const bool saved = ProjectSettings::Save(GetDX12());
+    LogToConsole(std::format("Project settings {}: {}", saved ? "saved" : "save failed", ProjectSettings::kFilePath),
+        saved ? DebugUIManager::LogType::Info : DebugUIManager::LogType::Error);
+    SaveGeneratedHeaders();
+    SaveEditorSettings();
+    if (saved) {
+      settingsTracker_.MarkSaved();
+    }
   }
 
   void EngineSettingsWindow::SaveEditorSettings() {

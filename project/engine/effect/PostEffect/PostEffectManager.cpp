@@ -268,6 +268,31 @@ namespace Tako {
     }
   }
 
+#ifdef _DEBUG
+  std::span<const ShortcutBinding<PostEffectManager>> PostEffectManager::Shortcuts()
+  {
+    static constexpr ShortcutBinding<PostEffectManager> kShortcuts[] = {
+      { ImGuiMod_Ctrl | ImGuiKey_S, ImGuiInputFlags_None, "Save the profile (when a profile name is entered)", [](PostEffectManager& manager) {
+        if (manager.profileName_[0] != '\0') {
+          manager.SaveCurrentProfile();
+        }
+      } },
+    };
+    return kShortcuts;
+  }
+
+  bool PostEffectManager::SaveCurrentProfile()
+  {
+    const bool saved = SaveProfile(profileName_.data());
+    LogToConsole(std::format("PostEffect profile {}: {}", saved ? "saved" : "save failed", profileName_.data()),
+                 saved ? DebugUIManager::LogType::Info : DebugUIManager::LogType::Error);
+    if (saved) {
+      profileTracker_.MarkSaved();
+    }
+    return saved;
+  }
+#endif
+
   void PostEffectManager::DrawImgui()
   {
 #ifdef _DEBUG
@@ -276,15 +301,6 @@ namespace Tako {
     // UI を描く区間の前後で保存内容を比べて編集を検出する（この区間ではゲームのコードがチェーンを変えない）
     profileTracker_.BeginSection();
 
-    auto saveProfile = [this] {
-      const bool saved = SaveProfile(profileName_.data());
-      LogToConsole(std::format("PostEffect profile {}: {}", saved ? "saved" : "save failed", profileName_.data()),
-                   saved ? DebugUIManager::LogType::Info : DebugUIManager::LogType::Error);
-      if (saved) {
-        profileTracker_.MarkSaved();
-      }
-      return saved;
-    };
     auto loadProfile = [this](const std::string& name) {
       // 破棄を選んだ後なので、LoadProfile の上書きの警告は出さない
       profileTracker_.Reset();
@@ -294,9 +310,7 @@ namespace Tako {
     };
 
     // 編集の比較は区間の最後なので、まだ編集していない区間の最初で保存する。パラメータは別タブで編集するので Save ボタンには付けない
-    if (profileName_[0] != '\0' && ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_S)) {
-      saveProfile();
-    }
+    ProcessShortcuts(Shortcuts(), *this);
 
     if (ImGui::BeginTabBar("PostEffectTab")) {
       if (ImGui::BeginTabItem("PostEffect")) {
@@ -307,7 +321,7 @@ namespace Tako {
         const bool hasName = profileName_[0] != '\0';
         ImGui::BeginDisabled(!hasName);
         if (ImGui::Button("Save")) {
-          saveProfile();
+          SaveCurrentProfile();
         }
         ImGui::EndDisabled();
         ImGui::SameLine();
@@ -326,7 +340,7 @@ namespace Tako {
 
         std::function<bool()> save;
         if (hasName) {
-          save = saveProfile;
+          save = [this] { return SaveCurrentProfile(); };
         }
         unsavedPrompt_.Draw("Unsaved Changes##PostEffect", save);
 

@@ -28,6 +28,19 @@ namespace Tako {
     }
   }
 
+  std::span<const ShortcutBinding<ViewportCameraController>> ViewportCameraController::Shortcuts()
+  {
+    static constexpr ShortcutBinding<ViewportCameraController> kShortcuts[] = {
+      { .description = "Look",      .keyLabel = "RMB drag" },
+      { .description = "Fly",       .keyLabel = "RMB + WASD / QE" },
+      { .description = "Fly speed", .keyLabel = "RMB + Wheel" },
+      { .description = "Orbit",     .keyLabel = "Alt + LMB drag" },
+      { .description = "Pan",       .keyLabel = "MMB drag" },
+      { .description = "Dolly",     .keyLabel = "Wheel" },
+    };
+    return kShortcuts;
+  }
+
   bool ViewportCameraController::HandleImGuiInput()
   {
     const ImGuiIO& io = ImGui::GetIO();

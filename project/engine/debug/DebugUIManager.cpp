@@ -52,102 +52,21 @@ namespace Tako {
     constexpr ImVec4 kWarningColor      = ImVec4(1.00f, 0.80f, 0.20f, 1.0f);  // 対応が必要な状態の表示色
     constexpr float  kIconButtonAspect  = 1.6f;                               // アイコンボタンの幅 / 高さ
 
-    using Shortcut = std::pair<const char*, const char*>;  // キーと操作
-
-    constexpr Shortcut kGeneralShortcuts[] = {
-      { "F1",  "Debug Viewport" },
-      { "F2",  "Scene Hierarchy" },
-      { "F3",  "Inspector" },
-      { "F4",  "Game Viewport" },
-      { "F5",  "Console" },
-      { "F6",  "Performance" },
-      { "F7",  "Pause / Resume" },
-      { "F8",  "Step Frame" },
-      { "F10", "Show Main Windows" },
-      { "F11", "Fullscreen" },
-      { "F12", "Toggle Main Windows" },
-    };
-
-    // UI Editor・Particle・Primitive・PostEffect・Engine Settings・Variables・Behavior Tree の共通（EditTracker / EditHistory）
-    constexpr Shortcut kCommonEditorShortcuts[] = {
-      { "Ctrl+S",                "Save" },
-      { "Ctrl+Z",                "Undo (while typing in a text field, undoes the typing)" },
-      { "Ctrl+Y / Ctrl+Shift+Z", "Redo" },
-    };
-
-    // ViewportCameraController
-    constexpr Shortcut kPreviewCameraShortcuts[] = {
-      { "RMB drag",        "Look" },
-      { "RMB + WASD / QE", "Fly" },
-      { "RMB + Wheel",     "Fly speed" },
-      { "Alt + LMB drag",  "Orbit" },
-      { "MMB drag",        "Pan" },
-      { "Wheel",           "Dolly" },
-    };
-
-    constexpr Shortcut kUIEditorShortcuts[] = {
-      { "Ctrl+S",                     "Save the layout and the shared 9-slice settings" },
-      { "Ctrl+C / Ctrl+X / Ctrl+V",   "Copy / Cut / Paste (also into another layout)" },
-      { "Ctrl+D",                     "Duplicate" },
-      { "Delete",                     "Delete" },
-      { "Arrow keys",                 "Move the selection 1 px (Shift: Grid Size)" },
-      { "Shift+click",                "Add to or remove from the selection (Viewport)" },
-      { "Ctrl+click / Shift+click",   "Select several / a range (Hierarchy)" },
-      { "Double-click",               "Rename (Hierarchy)" },
-      { "Shift / Alt while resizing", "Keep the aspect ratio / the center" },
-      { "Ctrl while dragging",        "Toggle Snap" },
-    };
-
-    constexpr Shortcut kParticleEditorShortcuts[] = {
-      { "Ctrl+S", "Save the selected emitter to its preset" },
-      { "F",      "Focus the preview on the selected emitter (while hovering the preview)" },
-    };
-
-    constexpr Shortcut kPrimitiveEditorShortcuts[] = {
-      { "Ctrl+S", "Save the preset (when a preset name is entered)" },
-    };
-
-    constexpr Shortcut kPostEffectShortcuts[] = {
-      { "Ctrl+S", "Save the profile (when a profile name is entered)" },
-    };
-
-    constexpr Shortcut kEngineSettingsShortcuts[] = {
-      { "Ctrl+S", "Save the project settings, the generated headers and the editor settings" },
-    };
-
-    constexpr Shortcut kVariablesShortcuts[] = {
-      { "Ctrl+S", "Save the changed groups" },
-    };
-
-    // imgui-node-editor の操作（BehaviorTreeEditor の ed::Config のボタン割り当て）
-    constexpr Shortcut kBehaviorTreeShortcuts[] = {
-      { "Ctrl+S",    "Save the tree" },
-      { "Delete",    "Delete the selected nodes and links" },
-      { "F",         "Zoom to the selection (Shift: with margin)" },
-      { "RMB drag",  "Pan" },
-      { "Wheel",     "Zoom" },
-      { "MMB click", "Context menu" },
-    };
-
-    constexpr Shortcut kAssetsShortcuts[] = {
-      { "Delete",       "Move to the Recycle Bin (asks first)" },
-      { "Shift+Delete", "Move to the Recycle Bin without asking" },
-      { "Double-click", "Open a folder, or open a file with its default app" },
-    };
+    using ShortcutSection = std::pair<const char*, void (*)()>;  // 項目名と、その表を描く関数
 
     // About に並べる順
-    constexpr std::pair<const char*, std::span<const Shortcut>> kShortcutSections[] = {
-      { "General",                                            kGeneralShortcuts },
-      { "All Editors",                                        kCommonEditorShortcuts },
-      { "3D Preview (Debug Viewport / Particle / Primitive)", kPreviewCameraShortcuts },
-      { "UI Editor",                                          kUIEditorShortcuts },
-      { "Particle Editor",                                    kParticleEditorShortcuts },
-      { "Primitive Editor",                                   kPrimitiveEditorShortcuts },
-      { "PostEffect",                                         kPostEffectShortcuts },
-      { "Engine Settings",                                    kEngineSettingsShortcuts },
-      { "Variables",                                          kVariablesShortcuts },
-      { "Behavior Tree Editor",                               kBehaviorTreeShortcuts },
-      { "Assets",                                             kAssetsShortcuts },
+    constexpr ShortcutSection kShortcutSections[] = {
+      { "General",                                            [] { DrawShortcutTable(DebugUIManager::Shortcuts()); } },
+      { "All Editors",                                        [] { DrawShortcutTable(HistoryShortcuts()); } },
+      { "3D Preview (Debug Viewport / Particle / Primitive)", [] { DrawShortcutTable(ViewportCameraController::Shortcuts()); } },
+      { "UI Editor",                                          [] { DrawShortcutTable(UILayoutEditor::Shortcuts()); } },
+      { "Particle Editor",                                    [] { DrawShortcutTable(ParticleEditor::Shortcuts()); } },
+      { "Primitive Editor",                                   [] { DrawShortcutTable(PrimitiveEditor::Shortcuts()); } },
+      { "PostEffect",                                         [] { DrawShortcutTable(PostEffectManager::Shortcuts()); } },
+      { "Engine Settings",                                    [] { DrawShortcutTable(EngineSettingsWindow::Shortcuts()); } },
+      { "Variables",                                          [] { DrawShortcutTable(GlobalVariables::Shortcuts()); } },
+      { "Behavior Tree Editor",                               [] { DrawShortcutTable(BehaviorTreeEditor::Shortcuts()); } },
+      { "Assets",                                             [] { DrawShortcutTable(AssetBrowser::Shortcuts()); } },
     };
 
     /// <summary>
@@ -257,42 +176,33 @@ namespace Tako {
     instance_.reset();
   }
 
-  void DebugUIManager::Update() {
-    if (Input::GetInstance()->TriggerKey(DIK_F1)) {
-      ToggleWindow(Window::DebugViewport);
-    }
-    if (Input::GetInstance()->TriggerKey(DIK_F2)) {
-      ToggleWindow(Window::SceneHierarchy);
-    }
-    if (Input::GetInstance()->TriggerKey(DIK_F3)) {
-      ToggleWindow(Window::Inspector);
-    }
-    if (Input::GetInstance()->TriggerKey(DIK_F4)) {
-      ToggleWindow(Window::GameViewport);
-    }
-    if (Input::GetInstance()->TriggerKey(DIK_F5)) {
-      ToggleWindow(Window::Console);
-    }
-    if (Input::GetInstance()->TriggerKey(DIK_F6)) {
-      ToggleWindow(Window::Performance);
-    }
-    if (Input::GetInstance()->TriggerKey(DIK_F7)) {
-      SetGamePaused(!FrameTimer::GetInstance()->IsPaused());
-    }
-    if (Input::GetInstance()->TriggerKey(DIK_F8)) {
-      StepFrame();
-    }
-    if (Input::GetInstance()->TriggerKey(DIK_F12)) {
-      for (Window window : kMainWindows) {
-        ToggleWindow(window);
-      }
-    }
-    if (Input::GetInstance()->TriggerKey(DIK_F10)) {
-      for (Window window : kMainWindows) {
-        WindowFlag(window) = true;
-      }
-    }
+  std::span<const ShortcutBinding<DebugUIManager>> DebugUIManager::Shortcuts() {
+    static constexpr ShortcutBinding<DebugUIManager> kShortcuts[] = {
+      { ImGuiKey_F1,  ImGuiInputFlags_None, "Debug Viewport",      [](DebugUIManager& manager) { manager.ToggleWindow(Window::DebugViewport); } },
+      { ImGuiKey_F2,  ImGuiInputFlags_None, "Scene Hierarchy",     [](DebugUIManager& manager) { manager.ToggleWindow(Window::SceneHierarchy); } },
+      { ImGuiKey_F3,  ImGuiInputFlags_None, "Inspector",           [](DebugUIManager& manager) { manager.ToggleWindow(Window::Inspector); } },
+      { ImGuiKey_F4,  ImGuiInputFlags_None, "Game Viewport",       [](DebugUIManager& manager) { manager.ToggleWindow(Window::GameViewport); } },
+      { ImGuiKey_F5,  ImGuiInputFlags_None, "Console",             [](DebugUIManager& manager) { manager.ToggleWindow(Window::Console); } },
+      { ImGuiKey_F6,  ImGuiInputFlags_None, "Performance",         [](DebugUIManager& manager) { manager.ToggleWindow(Window::Performance); } },
+      { ImGuiKey_F7,  ImGuiInputFlags_None, "Pause / Resume",      [](DebugUIManager& manager) { manager.SetGamePaused(!FrameTimer::GetInstance()->IsPaused()); } },
+      { ImGuiKey_F8,  ImGuiInputFlags_None, "Step Frame",          [](DebugUIManager& manager) { manager.StepFrame(); } },
+      { ImGuiKey_F10, ImGuiInputFlags_None, "Show Main Windows",   [](DebugUIManager& manager) {
+        for (Window window : kMainWindows) {
+          manager.WindowFlag(window) = true;
+        }
+      } },
+      // 処理はゲーム側の Update（TakoFramework::ToggleFullScreen）
+      { ImGuiKey_F11, ImGuiInputFlags_None, "Fullscreen" },
+      { ImGuiKey_F12, ImGuiInputFlags_None, "Toggle Main Windows", [](DebugUIManager& manager) {
+        for (Window window : kMainWindows) {
+          manager.ToggleWindow(window);
+        }
+      } },
+    };
+    return kShortcuts;
+  }
 
+  void DebugUIManager::Update() {
     // 表示状態に関わらず毎フレーム呼ぶ（非表示検知でプレビューを解放するため）
     primitiveEditor_.Update();
     particleEditor_.Update();
@@ -303,6 +213,11 @@ namespace Tako {
   void DebugUIManager::Draw() {
 #ifdef _DEBUG
     isPreviewInputCaptured_ = false;
+
+    // どのウィンドウにフォーカスがあっても効かせる。文字の入力中は入力欄に任せる
+    if (!ImGui::GetIO().WantTextInput) {
+      ProcessShortcuts(Shortcuts(), *this, ShortcutScope::Global);
+    }
 
     // メインメニューバー
     DrawMainMenuBar();
@@ -1244,20 +1159,12 @@ namespace Tako {
 
       ImGui::SeparatorText("Shortcuts");
       ImGui::TextDisabled("Editor shortcuts work in the focused window.");
-      for (const auto& [section, shortcuts] : kShortcutSections) {
-        const ImGuiTreeNodeFlags flags = shortcuts.data() == kGeneralShortcuts ? ImGuiTreeNodeFlags_DefaultOpen : ImGuiTreeNodeFlags_None;
-        if (!ImGui::CollapsingHeader(section, flags)) {
-          continue;
-        }
-        if (ImGui::BeginTable(section, 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV)) {
-          for (const auto& [key, action] : shortcuts) {
-            ImGui::TableNextRow();
-            ImGui::TableNextColumn();
-            ImGui::TextUnformatted(key);
-            ImGui::TableNextColumn();
-            ImGui::TextUnformatted(action);
-          }
-          ImGui::EndTable();
+      for (const auto& [section, drawTable] : kShortcutSections) {
+        const ImGuiTreeNodeFlags flags = section == kShortcutSections[0].first ? ImGuiTreeNodeFlags_DefaultOpen : ImGuiTreeNodeFlags_None;
+        if (ImGui::CollapsingHeader(section, flags)) {
+          ImGui::PushID(section);
+          drawTable();
+          ImGui::PopID();
         }
       }
     }

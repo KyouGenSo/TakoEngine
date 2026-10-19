@@ -316,6 +316,7 @@
     <ClInclude Include="engine\imgui\ImGuiManager.h" />
     <ClInclude Include="engine\imgui\ImGuiThemes.h" />
     <ClInclude Include="engine\imgui\EditTracker.h" />
+    <ClInclude Include="engine\imgui\ShortcutTable.h" />
     <ClInclude Include="engine\imgui\UnsavedChangesModal.h" />
     <ClInclude Include="engine\base\DX12\D3DResourceLeakChecker.h" />
     <ClInclude Include="engine\base\DX12\DX12Basic.h" />

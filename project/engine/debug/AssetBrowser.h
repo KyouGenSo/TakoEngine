@@ -3,9 +3,11 @@
 #ifdef _DEBUG
 
 #include <filesystem>
+#include <span>
 #include <string>
 #include <vector>
 #include "imgui.h"
+#include "ShortcutTable.h"
 
 namespace Tako {
 
@@ -50,6 +52,11 @@ namespace Tako {
     void Initialize(bool* isOpen);
 
     void Draw();
+
+    /// <summary>
+    /// キー操作とマウス操作の表。Draw のキー処理と About の一覧が使う
+    /// </summary>
+    static std::span<const ShortcutBinding<AssetBrowser>> Shortcuts();
 
   private: //非公開関数
     /// <summary>

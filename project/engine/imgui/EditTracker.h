@@ -3,11 +3,13 @@
 #ifdef _DEBUG
 
 #include "imgui.h"
+#include "ShortcutTable.h"
 #include "UnsavedChangesModal.h"
 
 #include <cstdint>
 #include <functional>
 #include <optional>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
@@ -45,17 +47,24 @@ namespace Tako {
   }
 
   /// <summary>
-  /// Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z。ImGui::Shortcut なのでフォーカス中のウィンドウにだけ届き、入力欄の編集中は入力欄の Undo が優先される。
-  /// ウィンドウの Begin と End の間で呼ぶ
+  /// 全エディタ共通の Undo / Redo のキー
   /// </summary>
-  inline HistoryCommand ReadHistoryShortcut() {
-    if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_Z)) {
-      return HistoryCommand::Undo;
-    }
-    if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_Y) || ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_Z)) {
-      return HistoryCommand::Redo;
-    }
-    return HistoryCommand::None;
+  inline std::span<const ShortcutBinding<HistoryCommand>> HistoryShortcuts() {
+    static constexpr ShortcutBinding<HistoryCommand> kShortcuts[] = {
+      { ImGuiMod_Ctrl | ImGuiKey_Z,                  ImGuiInputFlags_None, "Undo (while typing in a text field, undoes the typing)", [](HistoryCommand& command) { command = HistoryCommand::Undo; } },
+      { ImGuiMod_Ctrl | ImGuiKey_Y,                  ImGuiInputFlags_None, "Redo",                                                   [](HistoryCommand& command) { command = HistoryCommand::Redo; } },
+      { ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_Z, ImGuiInputFlags_None, "Redo",                                                   [](HistoryCommand& command) { command = HistoryCommand::Redo; } },
+    };
+    return kShortcuts;
+  }
+
+  /// <summary>
+  /// HistoryShortcuts のキーで選ばれた操作。FocusedWindow ならウィンドウの Begin と End の間で呼ぶ
+  /// </summary>
+  inline HistoryCommand ReadHistoryShortcut(ShortcutScope scope = ShortcutScope::FocusedWindow) {
+    HistoryCommand command = HistoryCommand::None;
+    ProcessShortcuts(HistoryShortcuts(), command, scope);
+    return command;
   }
 
   /// <summary>

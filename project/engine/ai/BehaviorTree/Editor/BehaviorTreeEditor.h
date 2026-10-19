@@ -6,6 +6,7 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
+#include <span>
 #include <string>
 #include <json.hpp>
 #include <imgui_node_editor.h>
@@ -13,6 +14,7 @@
 #include "BTNode.h"
 #include "EditorTypes.h"
 #include "EditTracker.h"
+#include "ShortcutTable.h"
 
 namespace ed = ax::NodeEditor;
 
@@ -155,6 +157,11 @@ public: //メンバー関数
   /// 未保存の変更があれば、そのツリーを out に追加する（終了時の確認用）
   /// </summary>
   void CollectUnsavedChanges(std::vector<std::string>& out) const;
+
+  /// <summary>
+  /// キー操作とマウス操作の表。ツールバーのキー処理と About の一覧が使う
+  /// </summary>
+  static std::span<const ShortcutBinding<BehaviorTreeEditor>> Shortcuts();
 
   //==========================================================
   //Setter

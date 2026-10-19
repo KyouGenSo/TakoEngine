@@ -98,6 +98,23 @@ namespace Tako {
     datas_.erase(groupName);
   }
 
+#ifdef _DEBUG
+  std::span<const ShortcutBinding<GlobalVariables>> GlobalVariables::Shortcuts()
+  {
+    static constexpr ShortcutBinding<GlobalVariables> kShortcuts[] = {
+      // 開いているグループの区別がないので未保存のグループをすべて保存する。保存のたびに操作が止まらないよう、メッセージボックスは出さない
+      { ImGuiMod_Ctrl | ImGuiKey_S, ImGuiInputFlags_None, "Save the changed groups", [](GlobalVariables& variables) {
+        for (const auto& [groupName, group] : variables.datas_) {
+          if (group.isDirty) {
+            variables.SaveFile(groupName);
+          }
+        }
+      } },
+    };
+    return kShortcuts;
+  }
+#endif
+
   void GlobalVariables::Update()
   {
 #ifdef _DEBUG
@@ -171,14 +188,7 @@ namespace Tako {
       }
     }
 
-    // 開いているグループの区別がないので未保存のグループをすべて保存する。保存のたびに操作が止まらないよう、メッセージボックスは出さない
-    if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_S)) {
-      for (const auto& [groupName, group] : datas_) {
-        if (group.isDirty) {
-          SaveFile(groupName);
-        }
-      }
-    }
+    ProcessShortcuts(Shortcuts(), *this);
 
     editTracker_.EndSection();
     ImGui::End();

@@ -9,6 +9,8 @@
 #include <unordered_map>
 #include <chrono>
 #include <memory>
+#include <span>
+#include "ShortcutTable.h"
 #include "PrimitiveEditor.h"
 #include "ParticleEditor.h"
 #include "DebugViewport.h"
@@ -122,6 +124,11 @@ namespace Tako {
     /// 描画
     /// </summary>
     void Draw();
+
+    /// <summary>
+    /// どのウィンドウでも効く F キー。Draw の最初の処理と About の一覧が使う
+    /// </summary>
+    static std::span<const ShortcutBinding<DebugUIManager>> Shortcuts();
 
     /// <summary>
     /// プリミティブエディターのプレビューをオフスクリーン RT へ描画

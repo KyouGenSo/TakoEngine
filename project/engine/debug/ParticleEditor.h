@@ -5,12 +5,14 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <span>
 #include <string>
 #include <vector>
 #include "Vector3.h"
 #include "Vector4.h"
 #include "PreviewPanel.h"
 #include "EditTracker.h"
+#include "ShortcutTable.h"
 
 namespace Tako {
 
@@ -97,6 +99,11 @@ namespace Tako {
     /// 未保存の変更があるエミッターを out に追加する（終了時の確認用）
     /// </summary>
     void CollectUnsavedChanges(std::vector<std::string>& out) const;
+
+    /// <summary>
+    /// キー操作の表。Draw のキー処理と About の一覧が使う
+    /// </summary>
+    static std::span<const ShortcutBinding<ParticleEditor>> Shortcuts();
 
     //============================================================
     //Setter

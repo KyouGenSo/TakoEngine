@@ -5,11 +5,13 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
 #include "imgui.h"
 #include "EditTracker.h"
+#include "ShortcutTable.h"
 #include "Vector2.h"
 #include "Vector4.h"
 
@@ -172,6 +174,11 @@ namespace Tako {
     /// </summary>
     void CollectUnsavedChanges(std::vector<std::string>& out) const;
 
+    /// <summary>
+    /// キー操作とマウス操作の表。Draw のキー処理と About の一覧が使う
+    /// </summary>
+    static std::span<const ShortcutBinding<UILayoutEditor>> Shortcuts();
+
     //========================
     //Getter
     //========================
@@ -322,9 +329,9 @@ namespace Tako {
     void RestoreState(UILayout& layout, const EditState& state);
 
     /// <summary>
-    /// Undo / Redo とコピー・切り取り・貼り付け・複製・削除のキー操作
+    /// 選択中の要素があれば、選択全体に操作を登録する（RequestOnSelection）
     /// </summary>
-    void HandleShortcuts(UILayout& layout);
+    void RequestOnSelected(PendingOp op);
 
     /// <summary>
     /// 選択中の要素を子孫ごと clipboard_ に写す

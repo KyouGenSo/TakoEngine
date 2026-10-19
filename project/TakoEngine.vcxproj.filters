@@ -527,6 +527,9 @@
     <ClInclude Include="engine\imgui\EditTracker.h">
       <Filter>imgui</Filter>
     </ClInclude>
+    <ClInclude Include="engine\imgui\ShortcutTable.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
     <ClInclude Include="engine\imgui\UnsavedChangesModal.h">
       <Filter>imgui</Filter>
     </ClInclude>

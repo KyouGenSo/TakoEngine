@@ -162,6 +162,19 @@ void BehaviorTreeEditor::Clear() {
   pendingNavigateToContent_ = true;
 }
 
+std::span<const ShortcutBinding<BehaviorTreeEditor>> BehaviorTreeEditor::Shortcuts() {
+  static constexpr ShortcutBinding<BehaviorTreeEditor> kShortcuts[] = {
+    { ImGuiMod_Ctrl | ImGuiKey_S, ImGuiInputFlags_None, "Save the tree", [](BehaviorTreeEditor& editor) { editor.SaveTree(editor.currentTreeName_); } },
+    // 以下は imgui-node-editor の処理（ed::Config のボタン割り当て）
+    { ImGuiKey_Delete, ImGuiInputFlags_None, "Delete the selected nodes and links" },
+    { ImGuiKey_F,      ImGuiInputFlags_None, "Zoom to the selection (Shift: with margin)" },
+    { .description = "Pan",          .keyLabel = "RMB drag" },
+    { .description = "Zoom",         .keyLabel = "Wheel" },
+    { .description = "Context menu", .keyLabel = "MMB click" },
+  };
+  return kShortcuts;
+}
+
 void BehaviorTreeEditor::DrawToolbar() {
   // ノードの段階的オフセット用 (Add Node を連打した時の重なり回避)
   static float nodeOffsetX = 100.0f;
@@ -172,9 +185,10 @@ void BehaviorTreeEditor::DrawToolbar() {
   static std::string selectedNodeType = "BTSelector";  // デフォルト
 
   // === Save / Load / Clear (現在のツリーに対する操作) ===
-  if (ImGui::Button("Save##bte_toolbar") || ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_S)) {
+  if (ImGui::Button("Save##bte_toolbar")) {
     SaveTree(currentTreeName_);
   }
+  ProcessShortcuts(Shortcuts(), *this);
   ImGui::SameLine();
 
   if (ImGui::Button("Load##bte_toolbar")) {

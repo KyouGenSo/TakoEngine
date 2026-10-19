@@ -4,6 +4,7 @@
 
 #include "ViewportCameraController.h"
 #include "EditTracker.h"
+#include "ShortcutTable.h"
 #include "Vector4.h"
 
 #include <array>
@@ -87,6 +88,11 @@ namespace Tako {
     /// </summary>
     void CollectUnsavedChanges(std::vector<std::string>& out) const;
 
+    /// <summary>
+    /// キー操作の表。Draw のキー処理と About の一覧が使う
+    /// </summary>
+    static std::span<const ShortcutBinding<EngineSettingsWindow>> Shortcuts();
+
     //======================================================
     //Setter
     //======================================================
@@ -117,6 +123,11 @@ namespace Tako {
     /// 衝突レイヤー名の編集リストと、Unity の Layer Collision Matrix 相当の三角行列
     /// </summary>
     void DrawCollisionLayers();
+
+    /// <summary>
+    /// プロジェクト設定・生成ヘッダ・個人設定を保存する（Save ボタンと Ctrl+S）
+    /// </summary>
+    void SaveAll();
 
     /// <summary>
     /// 衝突層・入力アクション・入力軸の名前からヘッダを生成し、前回 Save 以降の改名をソース中の使用箇所へ反映する（生成先が空のものは何もしない）

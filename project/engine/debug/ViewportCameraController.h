@@ -2,7 +2,10 @@
 
 #ifdef _DEBUG
 
+#include "ShortcutTable.h"
 #include "Vector3.h"
+
+#include <span>
 
 namespace Tako {
 
@@ -27,6 +30,11 @@ namespace Tako {
     /// </summary>
     /// <returns>プレビューがホバー中または操作中なら true（ゲーム入力の遮断に使う）</returns>
     bool HandleImGuiInput();
+
+    /// <summary>
+    /// HandleImGuiInput が受けるマウスとキーの操作（About の一覧用）
+    /// </summary>
+    static std::span<const ShortcutBinding<ViewportCameraController>> Shortcuts();
 
     /// <summary>
     /// 回転から前方ベクトルを求め、注視点から distance 分引いた位置へカメラを配置し VP 行列を合成する

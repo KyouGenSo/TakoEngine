@@ -53,6 +53,19 @@ namespace Tako {
   ParticleEditor::ParticleEditor() = default;
   ParticleEditor::~ParticleEditor() = default;
 
+  std::span<const ShortcutBinding<ParticleEditor>> ParticleEditor::Shortcuts() {
+    static constexpr ShortcutBinding<ParticleEditor> kShortcuts[] = {
+      { ImGuiMod_Ctrl | ImGuiKey_S, ImGuiInputFlags_None, "Save the selected emitter to its preset", [](ParticleEditor& editor) {
+        if (editor.inspectTarget_ == InspectTarget::Emitter && editor.emitterManager_->HasEmitter(editor.selectedEmitterName_)) {
+          editor.SaveSelectedEmitter();
+        }
+      } },
+      // 処理は DrawPreviewPane（プレビューの上にマウスがあるとき）
+      { ImGuiKey_F, ImGuiInputFlags_None, "Focus the preview on the selected emitter (while hovering the preview)" },
+    };
+    return kShortcuts;
+  }
+
   // =====================================================
   // 本体ウィンドウ (3ペイン: リスト / プレビュー / インスペクタ)
   // =====================================================
@@ -128,9 +141,7 @@ namespace Tako {
         }
 
         // Save ボタンは閉じられる Preset ヘッダーの中にあるので、ウィンドウ直下で受ける
-        if (inspectTarget_ == InspectTarget::Emitter && emitterManager_->HasEmitter(selectedEmitterName_) && ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_S)) {
-          SaveSelectedEmitter();
-        }
+        ProcessShortcuts(Shortcuts(), *this);
 
         unsavedPrompt_.Draw("Unsaved Changes##PE");
       }

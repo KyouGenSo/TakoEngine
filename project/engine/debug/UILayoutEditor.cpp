@@ -432,13 +432,13 @@ namespace Tako {
       history_.Commit({ cachedLayout_, cachedSlices_, selection_ });
     }
 
-    // 比べた後に保存して、このフレームの編集も保存済みにする。ビューポートのフォーカスは ImGui のルーティングで届かないので自前で判定する
-    if (layout && isFocused && ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_S)) {
-      SaveLayout(*layout);
-    }
+    // 比べた後に保存して、このフレームの編集も保存済みにする。ビューポートのフォーカスは ImGui のルーティングで届かないので自前で判定する。
     // 文字の入力中は入力欄の Undo やコピーに任せる
     if (layout && isFocused && !ImGui::GetIO().WantTextInput) {
-      HandleShortcuts(*layout);
+      ProcessShortcuts(Shortcuts(), *this, ShortcutScope::Global);
+      if (const HistoryCommand command = ReadHistoryShortcut(ShortcutScope::Global); command != HistoryCommand::None) {
+        Request(command == HistoryCommand::Undo ? PendingOp::Undo : PendingOp::Redo, {});
+      }
     }
   }
 
@@ -2169,30 +2169,37 @@ namespace Tako {
     SetSelection(std::move(names));
   }
 
-  void UILayoutEditor::HandleShortcuts(UILayout& layout) {
-    const UIElement* selected = FindSelected(layout);
-    if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_Z)) {
-      Request(PendingOp::Undo, {});
-    }
-    if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_Y) || ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_Z)) {
-      Request(PendingOp::Redo, {});
-    }
-    if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_V) && !clipboard_.empty()) {
-      Request(PendingOp::Paste, selected ? selected->name : std::string());
-    }
-    if (!selected) {
-      return;
-    }
+  std::span<const ShortcutBinding<UILayoutEditor>> UILayoutEditor::Shortcuts() {
+    // Draw はレイアウトがあるときだけ処理を呼ぶ
+    static constexpr ShortcutBinding<UILayoutEditor> kShortcuts[] = {
+      { ImGuiMod_Ctrl | ImGuiKey_S, ImGuiInputFlags_None, "Save the layout and the shared 9-slice settings",            [](UILayoutEditor& editor) { editor.SaveLayout(*editor.FindLayout()); } },
+      { ImGuiMod_Ctrl | ImGuiKey_C, ImGuiInputFlags_None, "Copy (can be pasted into another layout)",                   [](UILayoutEditor& editor) { editor.CopySelection(*editor.FindLayout()); } },
+      { ImGuiMod_Ctrl | ImGuiKey_X, ImGuiInputFlags_None, "Cut",                                                        [](UILayoutEditor& editor) {
+        editor.CopySelection(*editor.FindLayout());
+        editor.RequestOnSelected(PendingOp::Remove);
+      } },
+      { ImGuiMod_Ctrl | ImGuiKey_V, ImGuiInputFlags_None, "Paste (after the selected image / into the selected group)", [](UILayoutEditor& editor) {
+        if (!editor.clipboard_.empty()) {
+          const UIElement* selected = editor.FindSelected(*editor.FindLayout());
+          editor.Request(PendingOp::Paste, selected ? selected->name : std::string());
+        }
+      } },
+      { ImGuiMod_Ctrl | ImGuiKey_D, ImGuiInputFlags_None, "Duplicate",                                                  [](UILayoutEditor& editor) { editor.RequestOnSelected(PendingOp::Duplicate); } },
+      { ImGuiKey_Delete,            ImGuiInputFlags_None, "Delete",                                                     [](UILayoutEditor& editor) { editor.RequestOnSelected(PendingOp::Remove); } },
+      { .description = "Move the selection 1 px (Shift: Grid Size)",     .keyLabel = "Arrow keys" },
+      { .description = "Add to or remove from the selection (Viewport)", .keyLabel = "Shift+click" },
+      { .description = "Select several / a range (Hierarchy)",           .keyLabel = "Ctrl+click / Shift+click" },
+      { .description = "Rename (Hierarchy)",                             .keyLabel = "Double-click" },
+      { .description = "Keep the aspect ratio / the center",             .keyLabel = "Shift / Alt while resizing" },
+      { .description = "Toggle Snap",                                    .keyLabel = "Ctrl while dragging" },
+    };
+    return kShortcuts;
+  }
 
-    const bool isCut = ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_X);
-    if (isCut || ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_C)) {
-      CopySelection(layout);
-    }
-    if (isCut || ImGui::IsKeyChordPressed(ImGuiKey_Delete)) {
-      RequestOnSelection(PendingOp::Remove, layout, selected->name);
-    }
-    if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_D)) {
-      RequestOnSelection(PendingOp::Duplicate, layout, selected->name);
+  void UILayoutEditor::RequestOnSelected(PendingOp op) {
+    UILayout* layout = FindLayout();
+    if (const UIElement* selected = layout ? FindSelected(*layout) : nullptr) {
+      RequestOnSelection(op, *layout, selected->name);
     }
   }
 

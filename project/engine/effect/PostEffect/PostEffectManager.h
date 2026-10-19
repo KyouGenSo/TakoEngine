@@ -18,6 +18,8 @@
 #include "TextureManager.h"
 #ifdef _DEBUG
 #include "EditTracker.h"
+#include "ShortcutTable.h"
+#include <span>
 #endif
 
 
@@ -246,6 +248,13 @@ namespace Tako {
     /// </summary>
     void CollectUnsavedChanges(std::vector<std::string>& out) const;
 
+#ifdef _DEBUG
+    /// <summary>
+    /// キー操作の表。DrawImgui のキー処理と About の一覧が使う
+    /// </summary>
+    static std::span<const ShortcutBinding<PostEffectManager>> Shortcuts();
+#endif
+
     //============================================================
     //Setter
     //============================================================
@@ -371,6 +380,13 @@ namespace Tako {
     /// レンダーターゲットの作成
     /// </summary>
     void CreateRenderTextures();
+
+#ifdef _DEBUG
+    /// <summary>
+    /// profileName_ の名前で保存し、結果をログに出す（Save ボタン・Ctrl+S・確認モーダルの Save）
+    /// </summary>
+    bool SaveCurrentProfile();
+#endif
 
     /// <summary>
     /// エフェクトの登録

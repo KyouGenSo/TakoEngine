@@ -197,6 +197,18 @@ namespace Tako {
     preview_.EndPass();
   }
 
+  std::span<const ShortcutBinding<PrimitiveEditor>> PrimitiveEditor::Shortcuts()
+  {
+    static constexpr ShortcutBinding<PrimitiveEditor> kShortcuts[] = {
+      { ImGuiMod_Ctrl | ImGuiKey_S, ImGuiInputFlags_None, "Save the preset (when a preset name is entered)", [](PrimitiveEditor& editor) {
+        if (editor.presetNameBuffer_[0] != '\0') {
+          editor.SavePreset(editor.presetNameBuffer_);
+        }
+      } },
+    };
+    return kShortcuts;
+  }
+
   bool PrimitiveEditor::Draw()
   {
     if (!*isOpen_) {
@@ -404,9 +416,7 @@ namespace Tako {
       presetTracker_.EndSection();
 
       // 比べた後に保存して、このフレームの編集も保存済みにする。Save ボタンは子ウィンドウの中なので、ウィンドウ直下で受ける（プレビュー側にフォーカスがあっても保存できる）
-      if (presetNameBuffer_[0] != '\0' && ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_S)) {
-        SavePreset(presetNameBuffer_);
-      }
+      ProcessShortcuts(Shortcuts(), *this);
     }
     ImGui::End();
     return inputCaptured;
