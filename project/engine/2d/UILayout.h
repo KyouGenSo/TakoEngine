@@ -103,6 +103,11 @@ namespace Tako {
     std::string Serialize() const;
 
     /// <summary>
+    /// Serialize が書き出した内容で要素ツリーを作り直す。名前と保存先は変えない
+    /// </summary>
+    void Deserialize(const std::string& text);
+
+    /// <summary>
     /// Serialize の内容が同じなら同じになる値。Serialize より軽いので、毎フレームの変更の検出に使う
     /// </summary>
     uint64_t Hash() const;
@@ -198,6 +203,11 @@ namespace Tako {
     /// SaveTextureSlices が書き込む内容（JSON 文字列）
     /// </summary>
     static std::string SerializeTextureSlices();
+
+    /// <summary>
+    /// SerializeTextureSlices が書き出した内容で、テクスチャごとの共有の 9-slice を置き換える
+    /// </summary>
+    static void DeserializeTextureSlices(const std::string& text);
 
     /// <summary>
     /// SerializeTextureSlices の内容が同じなら同じになる値

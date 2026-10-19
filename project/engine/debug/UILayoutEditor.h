@@ -23,12 +23,13 @@ namespace Tako {
   /// </summary>
   class UILayoutEditor {
   private: //定数
-    static constexpr float kHierarchyPaneWidth   = 240.0f;
-    static constexpr float kHandleHalfSize       = 4.0f;    ///< 角と辺のハンドルの描画・当たり判定の半径（画像上 px）
-    static constexpr float kMinGridSpacing       = 4.0f;    ///< 画像上でこれより細かいグリッドは描かない（px）
-    static constexpr float kPreviewDefaultHeight = 240.0f;  ///< Inspector のテクスチャプレビューの初期の高さ（px）。下の縁のドラッグで変えられる
-    static constexpr float kResultDefaultHeight  = 160.0f;  ///< Inspector の 9-slice の結果プレビューの初期の高さ（px）
-    static constexpr float kGuideSnapDistance    = 6.0f;    ///< スマートガイドに吸着する距離（画像上 px）
+    static constexpr float  kHierarchyPaneWidth   = 240.0f;
+    static constexpr float  kHandleHalfSize       = 4.0f;    ///< 角と辺のハンドルの描画・当たり判定の半径（画像上 px）
+    static constexpr float  kMinGridSpacing       = 4.0f;    ///< 画像上でこれより細かいグリッドは描かない（px）
+    static constexpr float  kPreviewDefaultHeight = 240.0f;  ///< Inspector のテクスチャプレビューの初期の高さ（px）。下の縁のドラッグで変えられる
+    static constexpr float  kResultDefaultHeight  = 160.0f;  ///< Inspector の 9-slice の結果プレビューの初期の高さ（px）
+    static constexpr float  kGuideSnapDistance    = 6.0f;    ///< スマートガイドに吸着する距離（画像上 px）
+    static constexpr size_t kMaxUndoSteps         = 100;     ///< Undo で戻れる手数
 
   private: //構造体
     /// <summary>
@@ -55,7 +56,9 @@ namespace Tako {
       MoveUp,
       MoveDown,
       Reparent,
-      Reload
+      Reload,
+      Undo,
+      Redo
     };
 
     /// <summary>
@@ -94,8 +97,18 @@ namespace Tako {
     /// 編集を見つける区間の始まりの状態
     /// </summary>
     struct EditMark {
-      uint64_t layoutHash;  ///< UILayout::Hash()
-      uint64_t slicesHash;  ///< UILayout::HashTextureSlices()
+      uint64_t                 layoutHash;  ///< UILayout::Hash()
+      uint64_t                 slicesHash;  ///< UILayout::HashTextureSlices()
+      std::vector<std::string> selection;   ///< Undo で戻す選択
+    };
+
+    /// <summary>
+    /// Undo / Redo で戻す状態
+    /// </summary>
+    struct EditState {
+      std::string              layout;     ///< UILayout::Serialize()
+      std::string              slices;     ///< UILayout::SerializeTextureSlices()
+      std::vector<std::string> selection;
     };
 
     /// <summary>
@@ -129,7 +142,7 @@ namespace Tako {
     void Update();
 
     /// <summary>
-    /// エディタウィンドウを描画し、矢印キー移動を処理する
+    /// エディタウィンドウを描画し、矢印キー移動とショートカットを処理する
     /// </summary>
     void Draw();
 
@@ -183,7 +196,7 @@ namespace Tako {
     void RequestOpen(const OpenRequest& request);
 
     /// <summary>
-    /// 編集対象を切り替える（新規作成は次の Update で行う）。未保存の印は外す
+    /// 編集対象を切り替える（新規作成は次の Update で行う）。未保存の印と Undo の履歴は捨てる
     /// </summary>
     void Open(const OpenRequest& request);
 
@@ -292,7 +305,27 @@ namespace Tako {
     /// 変わったかどうかはハッシュで調べ、変わったときだけ Serialize する
     /// </summary>
     /// <param name="mark">操作の前の MarkEdit(layout)</param>
-    void TrackLayoutEdit(const UILayout& layout, const EditMark& mark);
+    /// <param name="isUndoable">false なら Undo の履歴に積まない（Undo / Redo 自身の操作）</param>
+    void TrackLayoutEdit(const UILayout& layout, const EditMark& mark, bool isUndoable = true);
+
+    /// <summary>
+    /// 進行中の操作の前の状態を Undo の 1 手として積み、Redo の履歴を捨てる。内容が変わっていなければ積まない
+    /// </summary>
+    void CommitEdit();
+
+    void ClearHistory();
+
+    EditState CaptureState(const UILayout& layout) const;
+
+    /// <summary>
+    /// レイアウト・共有の 9-slice・選択を state に戻す。スプライトを作り直すので Update（ApplyPending）で呼ぶ
+    /// </summary>
+    void RestoreState(UILayout& layout, const EditState& state);
+
+    /// <summary>
+    /// Undo / Redo のキー操作
+    /// </summary>
+    void HandleShortcuts();
 
     /// <summary>
     /// 次フレームの Update で実行する操作を登録する（1 フレームに 1 つ。後から登録したものが優先）
@@ -358,6 +391,12 @@ namespace Tako {
     std::string cachedLayout_;          ///< 最後に Serialize した編集対象の内容。区間の間は操作の前の内容
     uint64_t    cachedSlicesHash_ = 0;
     std::string cachedSlices_;          ///< 最後に SerializeTextureSlices した内容
+
+    //Undo / Redo（開いているレイアウト 1 つの編集だけを持つ）
+    std::vector<EditState>   undoStack_;
+    std::vector<EditState>   redoStack_;
+    std::optional<EditState> editStart_;                ///< 進行中の操作（ドラッグなど）の前の状態。操作を終えたフレームで undoStack_ に積む
+    const UILayout*          historyLayout_ = nullptr;  ///< 履歴の対象。別のインスタンスを編集したら履歴を捨てる
 
     //名前の編集
     char renameBuffer_[128] = "";

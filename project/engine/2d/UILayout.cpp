@@ -17,6 +17,7 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <iterator>
 #include <map>
 #include <numbers>
 #include <type_traits>
@@ -323,12 +324,18 @@ namespace Tako {
       LogWarning(std::format("UILayout: {} not found. Starting with an empty layout.", path));
       return;
     }
+    Deserialize(std::string(std::istreambuf_iterator<char>(ifs), {}));
+  }
+
+  void UILayout::Deserialize(const std::string& text) {
+    root_.children.clear();
+    referenceResolution_ = kDefaultReferenceResolution;
 
     try {
-      const json root = json::parse(ifs);
+      const json root = json::parse(text);
       referenceResolution_ = root.value("referenceResolution", kDefaultReferenceResolution);
       if (referenceResolution_.x <= 0.0f || referenceResolution_.y <= 0.0f) {
-        LogWarning(std::format("UILayout: invalid referenceResolution in {}. Using default.", path));
+        LogWarning(std::format("UILayout '{}': invalid referenceResolution. Using default.", name_));
         referenceResolution_ = kDefaultReferenceResolution;
       }
       if (root.contains("elements")) {
@@ -338,7 +345,7 @@ namespace Tako {
       }
     }
     catch (const json::exception& e) {
-      LogWarning(std::format("UILayout: failed to parse {}: {}", path, e.what()));
+      LogWarning(std::format("UILayout '{}': failed to parse: {}", name_, e.what()));
       root_.children.clear();
     }
 
@@ -361,22 +368,26 @@ namespace Tako {
   }
 
   void UILayout::LoadTextureSlices() {
-    std::map<std::string, UISlice>& slices = TextureSlices();
-    slices.clear();
-
     // ファイルが無いのは共有の 9-slice をまだ作っていないだけなので警告しない
     std::ifstream ifs(kTextureSlicePath);
     if (!ifs) {
+      TextureSlices().clear();
       return;
     }
+    DeserializeTextureSlices(std::string(std::istreambuf_iterator<char>(ifs), {}));
+  }
+
+  void UILayout::DeserializeTextureSlices(const std::string& text) {
+    std::map<std::string, UISlice>& slices = TextureSlices();
+    slices.clear();
     try {
-      const json root = json::parse(ifs);
+      const json root = json::parse(text);
       for (const auto& [texture, node] : root.items()) {
         slices[texture] = node.get<UISlice>();
       }
     }
     catch (const json::exception& e) {
-      LogWarning(std::format("UILayout: failed to parse {}: {}", kTextureSlicePath, e.what()));
+      LogWarning(std::format("UILayout: failed to parse the texture 9-slice settings: {}", e.what()));
       slices.clear();
     }
   }

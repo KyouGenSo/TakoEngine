@@ -19,6 +19,7 @@
 #include <cstring>
 #include <filesystem>
 #include <format>
+#include <iterator>
 #include <limits>
 #include <span>
 #include <utility>
@@ -429,9 +430,20 @@ namespace Tako {
       TrackLayoutEdit(*editing, *mark);
     }
 
+    // ドラッグや矢印キーの押し続けは、離すまでを 1 手にまとめる
+    const bool isNudging = ImGui::IsKeyDown(ImGuiKey_LeftArrow) || ImGui::IsKeyDown(ImGuiKey_RightArrow) ||
+      ImGui::IsKeyDown(ImGuiKey_UpArrow) || ImGui::IsKeyDown(ImGuiKey_DownArrow);
+    if (!ImGui::IsAnyItemActive() && !isNudging) {
+      CommitEdit();
+    }
+
     // 比べた後に保存して、このフレームの編集も保存済みにする。ビューポートのフォーカスは ImGui のルーティングで届かないので自前で判定する
     if (layout && isFocused && ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_S)) {
       SaveLayout(*layout);
+    }
+    // 文字の入力中は入力欄の Undo やコピーに任せる
+    if (layout && isFocused && !ImGui::GetIO().WantTextInput) {
+      HandleShortcuts();
     }
   }
 
@@ -703,6 +715,7 @@ namespace Tako {
 
   void UILayoutEditor::Open(const OpenRequest& request) {
     editedLayout_ = nullptr;
+    ClearHistory();
     if (request.isNew) {
       // 古いプレビューの破棄（スプライト解放）を伴うので、作成は次の Update で行う
       pendingNewLayout_ = request.name;
@@ -862,6 +875,22 @@ namespace Tako {
       Request(PendingOp::Reload, {});
     }
     ImGui::SetItemTooltip("Discard unsaved changes to the layout and the shared texture 9-slice settings.");
+    // 進行中の操作（editStart_）も Undo で 1 手として戻せる
+    const bool hasHistory = layout && layout == historyLayout_;
+    ImGui::SameLine();
+    ImGui::BeginDisabled(!hasHistory || (undoStack_.empty() && !editStart_));
+    if (ImGui::Button("Undo")) {
+      Request(PendingOp::Undo, {});
+    }
+    ImGui::EndDisabled();
+    ImGui::SetItemTooltip("Ctrl+Z");
+    ImGui::SameLine();
+    ImGui::BeginDisabled(!hasHistory || redoStack_.empty());
+    if (ImGui::Button("Redo")) {
+      Request(PendingOp::Redo, {});
+    }
+    ImGui::EndDisabled();
+    ImGui::SetItemTooltip("Ctrl+Y / Ctrl+Shift+Z");
     ImGui::EndDisabled();
 
     ImGui::Checkbox("Viewport Edit", &isViewportEditEnabled_);
@@ -884,6 +913,7 @@ namespace Tako {
       "  Arrow keys move the selection 1 px (Shift: Grid Size).\n"
       "Hierarchy: Ctrl+click or Shift+click to select several,\n"
       "  drop on the top or bottom of a row to reorder, drop in the middle to make a child.\n"
+      "Ctrl+Z / Ctrl+Y: undo / redo.\n"
       "Drop textures from Assets onto the viewport, the hierarchy or the Texture field.");
 
     if (layout) {
@@ -2036,8 +2066,25 @@ namespace Tako {
       dragMode_           = DragMode::None;
       editedLayout_       = nullptr;
       isSliceTableEdited_ = false;
+      ClearHistory();
       AddLog("UILayout reloaded: " + layout.GetName());
       return;
+    case PendingOp::Undo:
+    case PendingOp::Redo: {
+      // 進行中の操作も 1 手として積んでから戻す
+      CommitEdit();
+      const bool              isUndo = pending.op == PendingOp::Undo;
+      std::vector<EditState>& from   = isUndo ? undoStack_ : redoStack_;
+      std::vector<EditState>& to     = isUndo ? redoStack_ : undoStack_;
+      if (historyLayout_ != &layout || from.empty()) {
+        return;
+      }
+      to.push_back(CaptureState(layout));
+      RestoreState(layout, from.back());
+      from.pop_back();
+      TrackLayoutEdit(layout, mark, false);
+      return;
+    }
     case PendingOp::None:
       break;
     }
@@ -2046,7 +2093,7 @@ namespace Tako {
   }
 
   UILayoutEditor::EditMark UILayoutEditor::MarkEdit(const UILayout& layout) {
-    const EditMark mark{ layout.Hash(), UILayout::HashTextureSlices() };
+    const EditMark mark{ layout.Hash(), UILayout::HashTextureSlices(), selection_ };
     if (mark.layoutHash != cachedLayoutHash_) {
       cachedLayout_     = layout.Serialize();
       cachedLayoutHash_ = mark.layoutHash;
@@ -2058,23 +2105,83 @@ namespace Tako {
     return mark;
   }
 
-  void UILayoutEditor::TrackLayoutEdit(const UILayout& layout, const EditMark& mark) {
-    // キャッシュは MarkEdit で操作の前の内容になっている
-    if (const uint64_t hash = layout.Hash(); hash != mark.layoutHash) {
+  void UILayoutEditor::TrackLayoutEdit(const UILayout& layout, const EditMark& mark, bool isUndoable) {
+    const uint64_t layoutHash = layout.Hash();
+    const uint64_t slicesHash = UILayout::HashTextureSlices();
+    if (layoutHash == mark.layoutHash && slicesHash == mark.slicesHash) {
+      return;
+    }
+
+    // キャッシュは MarkEdit で操作の前の内容になっているので、上書きする前に Undo の 1 手の始まりとして取っておく
+    if (isUndoable) {
+      if (historyLayout_ != &layout) {
+        ClearHistory();
+        historyLayout_ = &layout;
+      }
+      if (!editStart_) {
+        editStart_ = EditState{ cachedLayout_, cachedSlices_, mark.selection };
+      }
+    }
+
+    if (layoutHash != mark.layoutHash) {
       std::string after = layout.Serialize();
       if (after != cachedLayout_) {
         editedLayout_ = IsStillEdited(editedLayout_ == &layout, cachedLayout_, after, cleanSnapshot_) ? &layout : nullptr;
       }
       cachedLayout_     = std::move(after);
-      cachedLayoutHash_ = hash;
+      cachedLayoutHash_ = layoutHash;
     }
-    if (const uint64_t hash = UILayout::HashTextureSlices(); hash != mark.slicesHash) {
+    if (slicesHash != mark.slicesHash) {
       std::string after = UILayout::SerializeTextureSlices();
       if (after != cachedSlices_) {
         isSliceTableEdited_ = IsStillEdited(isSliceTableEdited_, cachedSlices_, after, cleanSliceSnapshot_);
       }
       cachedSlices_     = std::move(after);
-      cachedSlicesHash_ = hash;
+      cachedSlicesHash_ = slicesHash;
+    }
+  }
+
+  void UILayoutEditor::CommitEdit() {
+    if (!editStart_) {
+      return;
+    }
+    // ドラッグして元の位置へ戻した場合など、内容が変わっていなければ積まない
+    if (editStart_->layout != cachedLayout_ || editStart_->slices != cachedSlices_) {
+      undoStack_.push_back(std::move(*editStart_));
+      if (undoStack_.size() > kMaxUndoSteps) {
+        undoStack_.erase(undoStack_.begin());
+      }
+      redoStack_.clear();
+    }
+    editStart_.reset();
+  }
+
+  void UILayoutEditor::ClearHistory() {
+    undoStack_.clear();
+    redoStack_.clear();
+    editStart_.reset();
+  }
+
+  UILayoutEditor::EditState UILayoutEditor::CaptureState(const UILayout& layout) const {
+    return { layout.Serialize(), UILayout::SerializeTextureSlices(), selection_ };
+  }
+
+  void UILayoutEditor::RestoreState(UILayout& layout, const EditState& state) {
+    layout.Deserialize(state.layout);
+    UILayout::DeserializeTextureSlices(state.slices);
+    dragMode_ = DragMode::None;
+
+    std::vector<std::string> names;
+    std::ranges::copy_if(state.selection, std::back_inserter(names), [&layout](const std::string& name) { return layout.Find(name) != nullptr; });
+    SetSelection(std::move(names));
+  }
+
+  void UILayoutEditor::HandleShortcuts() {
+    if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_Z)) {
+      Request(PendingOp::Undo, {});
+    }
+    if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_Y) || ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_Z)) {
+      Request(PendingOp::Redo, {});
     }
   }
 
