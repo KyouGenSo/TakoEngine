@@ -44,6 +44,8 @@ namespace Tako {
 
     constexpr float kDegToRad = std::numbers::pi_v<float> / 180.0f;
 
+    const UISlice kNoSlice;  ///< 枠なし。9-slice を使わない要素と、共有の登録が無いテクスチャに返す
+
     Vector2 Mul(const Vector2& a, const Vector2& b) { return { a.x * b.x, a.y * b.y }; }
 
     std::string FilePath(const std::string& name) { return std::string(UILayout::kDirectory) + name + ".json"; }
@@ -165,6 +167,7 @@ namespace Tako {
       node["flip"]          = { element.flipX, element.flipY };
       node["uvLeftTop"]     = element.uvLeftTop;
       node["uvSize"]        = element.uvSize;
+      node["sliced"]        = element.isSliced;
       node["sliceOverride"] = element.isSliceOverridden;
       node["visible"]       = element.visible;
       node["locked"]        = element.locked;
@@ -194,6 +197,7 @@ namespace Tako {
       element.size              = node.value("size", element.size);
       element.rotation          = node.value("rotation", element.rotation);
       element.color             = node.value("color", element.color);
+      element.isSliced          = node.value("sliced", element.isSliced);
       element.isSliceOverridden = node.value("sliceOverride", element.isSliceOverridden);
       element.slice             = node.value("slice", element.slice);
       element.visible           = node.value("visible", element.visible);
@@ -341,13 +345,15 @@ namespace Tako {
   }
 
   const UISlice& UILayout::GetTextureSlice(const std::string& texture) {
-    static const UISlice kNone;
     const std::map<std::string, UISlice>& slices = TextureSlices();
     const auto it = slices.find(texture);
-    return it != slices.end() ? it->second : kNone;
+    return it != slices.end() ? it->second : kNoSlice;
   }
 
   const UISlice& UILayout::GetEffectiveSlice(const UIElement& element) {
+    if (!element.isSliced) {
+      return kNoSlice;
+    }
     return element.isSliceOverridden ? element.slice : GetTextureSlice(element.texture);
   }
 
@@ -465,6 +471,7 @@ namespace Tako {
   void UILayout::SetSliceBorder(const std::string& name, const Vector4& sliceBorder) {
     if (UIElement* element = Find(name)) {
       element->slice.border      = sliceBorder;
+      element->isSliced          = true;
       element->isSliceOverridden = true;
     }
   }

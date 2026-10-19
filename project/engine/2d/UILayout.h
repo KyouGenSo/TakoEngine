@@ -42,8 +42,9 @@ namespace Tako {
     Vector4     color             = { 1.0f, 1.0f, 1.0f, 1.0f };
     Vector2     uvLeftTop         = {};                          ///< テクスチャ上の切り出し位置（px）
     Vector2     uvSize            = {};                          ///< テクスチャ上の切り出しサイズ（px）
-    UISlice     slice;                                           ///< この要素だけの 9-slice。isSliceOverridden が false の間は使わない
-    bool        isSliceOverridden = false;                       ///< false ならテクスチャごとの共有の 9-slice を使う（無ければ枠なし）
+    bool        isSliced          = false;                       ///< false なら 9-slice を使わず、画像を要素の大きさに引き伸ばす
+    UISlice     slice;                                           ///< この要素だけの 9-slice。isSliced と isSliceOverridden が両方 true の間だけ使う
+    bool        isSliceOverridden = false;                       ///< isSliced の間、false ならテクスチャごとの共有の 9-slice を使う（無ければ枠なし）
     bool        flipX             = false;
     bool        flipY             = false;
     bool        visible           = true;                        ///< false なら子も描画しない
@@ -234,14 +235,14 @@ namespace Tako {
     void SetUV(const std::string& name, const Vector2& leftTop, const Vector2& size);
 
     /// <summary>
-    /// 9-slice の枠幅（テクスチャ px、左上右下）。要素だけの上書きとして設定し、共有の 9-slice は使わなくなる
+    /// 9-slice の枠幅（テクスチャ px、左上右下）。要素を 9-slice にし、要素だけの上書きとして設定する（共有の 9-slice は使わなくなる）
     /// </summary>
     void SetSliceBorder(const std::string& name, const Vector4& sliceBorder);
 
     void SetFlip(const std::string& name, bool flipX, bool flipY);
 
     /// <summary>
-    /// テクスチャごとの共有の 9-slice を設定する。上書きしていない、このテクスチャの全要素（他のレイアウトも含む）に効く
+    /// テクスチャごとの共有の 9-slice を設定する。このテクスチャを 9-slice で使い、上書きしていない全要素（他のレイアウトも含む）に効く
     /// </summary>
     static void SetTextureSlice(const std::string& texture, const UISlice& slice);
 
@@ -271,7 +272,7 @@ namespace Tako {
     Vector2 GetUVSize(const std::string& name) const;
 
     /// <summary>
-    /// 実際に使っている 9-slice の枠幅（上書きしていなければテクスチャごとの共有の値）
+    /// 実際に使っている 9-slice の枠幅（9-slice でなければ 0、上書きしていなければテクスチャごとの共有の値）
     /// </summary>
     Vector4 GetSliceBorder(const std::string& name) const;
     bool IsFlipX(const std::string& name) const;
@@ -293,7 +294,7 @@ namespace Tako {
     static const UISlice& GetTextureSlice(const std::string& texture);
 
     /// <summary>
-    /// 要素が実際に使う 9-slice（上書きしていなければテクスチャごとの共有の値）
+    /// 要素が実際に使う 9-slice（9-slice でなければ枠なし、上書きしていなければテクスチャごとの共有の値）
     /// </summary>
     static const UISlice& GetEffectiveSlice(const UIElement& element);
 

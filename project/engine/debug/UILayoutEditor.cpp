@@ -181,11 +181,11 @@ namespace Tako {
     }
 
     /// <summary>
-    /// node の子孫のうち、texture を使う要素を描画順に集める（9-slice を上書きしている要素も含む）
+    /// node の子孫のうち、texture を 9-slice で使う要素を描画順に集める（9-slice を上書きしている要素も含む）
     /// </summary>
     void CollectTextureUsers(UIElement& node, const std::string& texture, std::vector<UIElement*>& out) {
       for (std::unique_ptr<UIElement>& child : node.children) {
-        if (child->texture == texture) {
+        if (child->isSliced && child->texture == texture) {
           out.push_back(child.get());
         }
         CollectTextureUsers(*child, texture, out);
@@ -215,6 +215,19 @@ namespace Tako {
         }
         CollectPickable(*child, out);
       }
+    }
+
+    /// <summary>
+    /// 内容が before から after に変わった編集の後も、未保存の変更が残っているか。未保存でなかった最後の内容を clean に覚え、編集で clean に戻れば残っていない
+    /// </summary>
+    /// <param name="wasEdited">この編集の前から未保存だったか</param>
+    /// <returns>未保存の変更が残っていれば true</returns>
+    bool IsStillEdited(bool wasEdited, const std::string& before, const std::string& after, std::string& clean) {
+      // ファイルとは比べない。ゲームのコードが実行中に変えた値（表示の切り替えなど）は before に入っているので、未保存に数えない
+      if (!wasEdited) {
+        clean = before;
+      }
+      return after != clean;
     }
 
     std::string LayoutFilePath(const std::string& name) { return std::string(UILayout::kDirectory) + name + ".json"; }
@@ -344,11 +357,11 @@ namespace Tako {
     isViewportFocused_ = false;
 
     // 途中で別のレイアウトへ切り替えた場合は比べない
-    if (editing && editing == layout && editing->Serialize() != editingSnapshot) {
-      editedLayout_ = editing;
+    if (editing && editing == layout) {
+      TrackLayoutEdit(*editing, editingSnapshot);
     }
-    if (UILayout::SerializeTextureSlices() != sliceSnapshot) {
-      isSliceTableEdited_ = true;
+    if (const std::string slices = UILayout::SerializeTextureSlices(); slices != sliceSnapshot) {
+      isSliceTableEdited_ = IsStillEdited(isSliceTableEdited_, sliceSnapshot, slices, cleanSliceSnapshot_);
     }
 
     // 比べた後に保存して、このフレームの編集も保存済みにする。ビューポートのフォーカスは ImGui のルーティングで届かないので自前で判定する
@@ -503,9 +516,7 @@ namespace Tako {
 
     drawList->PopClipRect();
 
-    if (layout->Serialize() != snapshot) {
-      editedLayout_ = layout;
-    }
+    TrackLayoutEdit(*layout, snapshot);
     return isCaptured;
   }
 
@@ -813,7 +824,8 @@ namespace Tako {
     if (!element.visible) {
       ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
     }
-    const bool isOpen = ImGui::TreeNodeEx("##Node", flags, "%s%s", element.name.c_str(), element.texture.empty() ? "  [Group]" : "");
+    const char* const kind   = element.texture.empty() ? "  [Group]" : (element.isSliced ? "  [9-Slice]" : "");
+    const bool        isOpen = ImGui::TreeNodeEx("##Node", flags, "%s%s", element.name.c_str(), kind);
     if (!element.visible) {
       ImGui::PopStyleColor();
     }
@@ -936,6 +948,20 @@ namespace Tako {
     if (!element.texture.empty() && !element.sprite) {
       ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "Texture not found");
     }
+    if (element.sprite) {
+      ImGui::TextUnformatted("Image Type");
+      ImGui::SameLine();
+      if (ImGui::RadioButton("Simple", !element.isSliced)) {
+        element.isSliced = false;
+      }
+      ImGui::SetItemTooltip("Stretch the whole UV rect to the element size.");
+      ImGui::SameLine();
+      if (ImGui::RadioButton("9-Slice", element.isSliced) && !element.isSliced) {
+        element.isSliced = true;
+        isSliceDragMode_ = true;
+      }
+      ImGui::SetItemTooltip("Keep the corners at their size and stretch only the edges and the center.");
+    }
 
     ImGui::SeparatorText("Rect");
     DrawAnchorPresets(layout, element);
@@ -982,9 +1008,10 @@ namespace Tako {
     }
 
     // 9-slice はコピーを編集し、変わったときだけ書き戻す（共有か要素の上書きかで書き先が違う）
-    UISlice slice;
-    UISlice before;
-    if (element.sprite) {
+    UISlice    slice;
+    UISlice    before;
+    const bool isSliced = element.sprite && element.isSliced;
+    if (isSliced) {
       ImGui::SeparatorText("9-Slice");
       ImGui::TextUnformatted("Source");
       ImGui::SameLine();
@@ -1010,6 +1037,8 @@ namespace Tako {
     // プレビューの高さは要素をまたいで共有するので、要素ごとの ID の外で描く
     if (element.sprite) {
       DrawTexturePreview(element, slice);
+    }
+    if (isSliced) {
       if (isSliceMirrored_) {
         MirrorBorder(slice.border, before.border, element.uvSize);
       }
@@ -1264,16 +1293,20 @@ namespace Tako {
     const Vector2 texSize = { static_cast<float>(metadata.width), static_cast<float>(metadata.height) };
 
     ImGui::SeparatorText("Preview");
-    if (ImGui::RadioButton("9-Slice", isSliceDragMode_)) {
-      isSliceDragMode_ = true;
+    if (element.isSliced) {
+      if (ImGui::RadioButton("9-Slice", isSliceDragMode_)) {
+        isSliceDragMode_ = true;
+      }
+      ImGui::SetItemTooltip("Left drag moves the 9-slice lines (green). Click inside a region to select it.");
+      ImGui::SameLine();
+      if (ImGui::RadioButton("UV", !isSliceDragMode_)) {
+        isSliceDragMode_ = false;
+      }
+      ImGui::SetItemTooltip("Left drag moves or resizes the UV rect (yellow).");
+      ImGui::SameLine();
     }
-    ImGui::SetItemTooltip("Left drag moves the 9-slice lines (green). Click inside a region to select it.");
-    ImGui::SameLine();
-    if (ImGui::RadioButton("UV", !isSliceDragMode_)) {
-      isSliceDragMode_ = false;
-    }
-    ImGui::SetItemTooltip("Left drag moves or resizes the UV rect (yellow).");
-    ImGui::SameLine();
+    // Simple の要素では UV の枠だけを動かす
+    const bool isSliceDrag = element.isSliced && isSliceDragMode_;
     if (ImGui::Button("Fit")) {
       isPreviewFit_ = true;
     }
@@ -1330,7 +1363,7 @@ namespace Tako {
 
     // 動かす線（テクスチャ px、左上右下）
     const Vector4& border = slice.border;
-    const Vector4  lines  = isSliceDragMode_
+    const Vector4  lines  = isSliceDrag
       ? Vector4{ uvMin.x + border.x, uvMin.y + border.y, uvMax.x - border.z, uvMax.y - border.w }
       : Vector4{ uvMin.x, uvMin.y, uvMax.x, uvMax.y };
 
@@ -1342,7 +1375,7 @@ namespace Tako {
       const ImVec2 linesMax = toScreen(lines.z, lines.w);
       hoveredEdges = HitEdges(io.MousePos, { linesMin.x, linesMin.y, linesMax.x, linesMax.y }, spanMin, spanMax, kHandleHalfSize + kHitMargin);
       // UV の枠の中は枠ごと動かす
-      if (hoveredEdges == 0 && !isSliceDragMode_ &&
+      if (hoveredEdges == 0 && !isSliceDrag &&
         io.MousePos.x >= spanMin.x && io.MousePos.x <= spanMax.x && io.MousePos.y >= spanMin.y && io.MousePos.y <= spanMax.y) {
         hoveredEdges = kEdgeAll;
       }
@@ -1353,7 +1386,7 @@ namespace Tako {
         previewDragStartMouse_ = mouseTex;
         previewDragStartLines_ = lines;
       }
-      else if (isSliceDragMode_ && mouseTex.x >= uvMin.x && mouseTex.x <= uvMax.x && mouseTex.y >= uvMin.y && mouseTex.y <= uvMax.y) {
+      else if (isSliceDrag && mouseTex.x >= uvMin.x && mouseTex.x <= uvMax.x && mouseTex.y >= uvMin.y && mouseTex.y <= uvMax.y) {
         // 線以外のクリックは、その位置の区画を選ぶ
         const int col   = mouseTex.x < lines.x ? 0 : (mouseTex.x < lines.z ? 1 : 2);
         const int row   = mouseTex.y < lines.y ? 0 : (mouseTex.y < lines.w ? 1 : 2);
@@ -1383,7 +1416,7 @@ namespace Tako {
         moved.w += deltaY;
       }
 
-      if (isSliceDragMode_) {
+      if (isSliceDrag) {
         // 反対側の線を越えない
         Vector4& edited = slice.border;
         if (edges & kEdgeLeft) {
@@ -1437,12 +1470,12 @@ namespace Tako {
     const ImVec2   rectMin = toScreen(element.uvLeftTop.x, element.uvLeftTop.y);
     const ImVec2   rectMax = toScreen(element.uvLeftTop.x + element.uvSize.x, element.uvLeftTop.y + element.uvSize.y);
     const Vector4& edited  = slice.border;
-    if (isSliceDragMode_) {
+    if (isSliceDrag) {
       const auto [regionMin, regionMax] = RegionRect(element, edited, selectedRegion_);
       drawList->AddRectFilled(toScreen(regionMin.x, regionMin.y), toScreen(regionMax.x, regionMax.y), kRegionFillColor);
     }
-    drawList->AddRect(rectMin, rectMax, kUvColor, 0.0f, 0, isSliceDragMode_ ? 1.0f : 2.0f);
-    if (!isSliceDragMode_) {
+    drawList->AddRect(rectMin, rectMax, kUvColor, 0.0f, 0, isSliceDrag ? 1.0f : 2.0f);
+    if (!isSliceDrag) {
       for (const ImVec2& corner : { rectMin, ImVec2(rectMax.x, rectMin.y), rectMax, ImVec2(rectMin.x, rectMax.y) }) {
         drawList->AddRectFilled(ImVec2(corner.x - kHandleHalfSize, corner.y - kHandleHalfSize), ImVec2(corner.x + kHandleHalfSize, corner.y + kHandleHalfSize), kUvColor);
       }
@@ -1450,10 +1483,10 @@ namespace Tako {
 
     // 9-slice モードでは、枠が 0 の線も UV の辺の上に描いて掴めることを示す。掴める線は太くする
     auto drawSliceLine = [&](int edge, float width, const ImVec2& from, const ImVec2& to) {
-      if (!isSliceDragMode_ && width <= 0.0f) {
+      if (!isSliceDrag && width <= 0.0f) {
         return;
       }
-      drawList->AddLine(from, to, kSliceColor, (isSliceDragMode_ && (hoveredEdges & edge)) ? 3.0f : 1.0f);
+      drawList->AddLine(from, to, kSliceColor, (isSliceDrag && (hoveredEdges & edge)) ? 3.0f : 1.0f);
     };
     const float sliceLeft   = rectMin.x + edited.x * previewZoom_;
     const float sliceTop    = rectMin.y + edited.y * previewZoom_;
@@ -1629,8 +1662,13 @@ namespace Tako {
       break;
     }
 
-    if (layout.Serialize() != snapshot) {
-      editedLayout_ = &layout;
+    TrackLayoutEdit(layout, snapshot);
+  }
+
+  void UILayoutEditor::TrackLayoutEdit(const UILayout& layout, const std::string& before) {
+    const std::string after = layout.Serialize();
+    if (after != before) {
+      editedLayout_ = IsStillEdited(editedLayout_ == &layout, before, after, cleanSnapshot_) ? &layout : nullptr;
     }
   }
 

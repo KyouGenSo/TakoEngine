@@ -209,6 +209,12 @@ namespace Tako {
     void ApplyPending(UILayout& layout);
 
     /// <summary>
+    /// UI の操作の前後で内容が変わっていれば、未保存の印を付ける。操作で未保存でなかった時点の内容に戻ったら外す
+    /// </summary>
+    /// <param name="before">操作の前の layout.Serialize()</param>
+    void TrackLayoutEdit(const UILayout& layout, const std::string& before);
+
+    /// <summary>
     /// 次フレームの Update で実行する操作を登録する（1 フレームに 1 つ。後から登録したものが優先）
     /// </summary>
     void Request(PendingOp op, const std::string& target, const std::string& newParent = {}, const std::string& texture = {});
@@ -246,6 +252,8 @@ namespace Tako {
 
     //未保存の変更
     const UILayout*            editedLayout_            = nullptr;  ///< 未保存の変更があるインスタンス。シーンが作り直した同名のレイアウトと区別するためポインタで持つ
+    std::string                cleanSnapshot_;                      ///< editedLayout_ が付く直前の内容。編集でここへ戻れば未保存を外す
+    std::string                cleanSliceSnapshot_;                 ///< isSliceTableEdited_ が付く直前の共有の 9-slice の内容
     std::optional<OpenRequest> pendingOpen_;                        ///< 確認モーダルの返答待ちの切り替え先
     bool                       isUnsavedPopupRequested_ = false;
     std::string                discardLayout_;                      ///< 次の Update でファイルから読み直して編集を捨てるゲーム側のレイアウト
