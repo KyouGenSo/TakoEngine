@@ -108,6 +108,18 @@ namespace Tako {
       anchorSpan = Mul(parent.rectSize, element.anchorMax - element.anchorMin);
     }
 
+    /// <summary>
+    /// スプライトを描く大きさ。preserveAspect なら切り出し範囲の縦横比を保って矩形に収める（pivot の位置は矩形と同じ）
+    /// </summary>
+    Vector2 DrawSize(const UIElement& element) {
+      const Vector2& rect = element.rectSize;
+      const Vector2& uv   = element.uvSize;
+      if (!element.preserveAspect || element.isSliced || uv.x <= 0.0f || uv.y <= 0.0f) {
+        return rect;
+      }
+      return uv * (std::min)(rect.x / uv.x, rect.y / uv.y);
+    }
+
     std::vector<std::unique_ptr<UIElement>>::iterator FindChild(UIElement& parent, const UIElement& element) {
       return std::ranges::find_if(parent.children, [&](const std::unique_ptr<UIElement>& child) { return child.get() == &element; });
     }
@@ -172,6 +184,7 @@ namespace Tako {
       field("uvLeftTop", element.uvLeftTop);
       field("uvSize", element.uvSize);
       field("sliced", element.isSliced);
+      field("preserveAspect", element.preserveAspect);
       field("sliceOverride", element.isSliceOverridden);
       field("visible", element.visible);
       field("locked", element.locked);
@@ -247,6 +260,7 @@ namespace Tako {
       element.rotation          = node.value("rotation", element.rotation);
       element.color             = node.value("color", element.color);
       element.isSliced          = node.value("sliced", element.isSliced);
+      element.preserveAspect    = node.value("preserveAspect", element.preserveAspect);
       element.isSliceOverridden = node.value("sliceOverride", element.isSliceOverridden);
       element.slice             = node.value("slice", element.slice);
       element.visible           = node.value("visible", element.visible);
@@ -784,7 +798,7 @@ namespace Tako {
       };
       sprite.SetAnchorPoint(spriteAnchor);
       sprite.SetPos(element.rectMin + Mul(element.rectSize, element.pivot));
-      sprite.SetSize(element.rectSize);
+      sprite.SetSize(DrawSize(element));
       sprite.SetRotation(element.rotation * kDegToRad);
       sprite.SetColor(element.color);
       sprite.SetIsFlipX(element.flipX);

@@ -44,6 +44,7 @@ namespace Tako {
     Vector2     uvLeftTop         = {};                          ///< テクスチャ上の切り出し位置（px）
     Vector2     uvSize            = {};                          ///< テクスチャ上の切り出しサイズ（px）
     bool        isSliced          = false;                       ///< false なら 9-slice を使わず、画像を要素の大きさに引き伸ばす
+    bool        preserveAspect    = false;                       ///< isSliced でない間、切り出し範囲の縦横比を保って矩形に収める（枠と当たり判定は矩形のまま）
     UISlice     slice;                                           ///< この要素だけの 9-slice。isSliced と isSliceOverridden が両方 true の間だけ使う
     bool        isSliceOverridden = false;                       ///< isSliced の間、false ならテクスチャごとの共有の 9-slice を使う（無ければ枠なし）
     bool        flipX             = false;

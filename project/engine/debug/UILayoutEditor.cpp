@@ -944,6 +944,10 @@ namespace Tako {
         isSliceDragMode_ = true;
       }
       ImGui::SetItemTooltip("Keep the corners at their size and stretch only the edges and the center.");
+      if (!element.isSliced) {
+        ImGui::Checkbox("Preserve Aspect", &element.preserveAspect);
+        ImGui::SetItemTooltip("Keep the aspect ratio of the UV rect and fit the image inside the element, placed at the pivot.");
+      }
     }
 
     ImGui::SeparatorText("Rect");
