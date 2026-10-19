@@ -59,12 +59,22 @@ namespace Tako {
     };
 
     /// <summary>
+    /// Hierarchy で要素を落とした位置。行の上下 1/4 なら前後、それ以外なら子にする
+    /// </summary>
+    enum class DropPlace {
+      Inside,
+      Before,
+      After
+    };
+
+    /// <summary>
     /// 保留中の操作。要素はフレームをまたいでも追えるよう名前で持つ
     /// </summary>
     struct Pending {
       PendingOp                op           = PendingOp::None;
       std::vector<std::string> targets;                 ///< 操作対象（Add 系では追加先の 1 つ）。空ならルート
-      std::string              newParent;               ///< Reparent の移動先（空ならルート）
+      std::string              dropTarget;              ///< Reparent の基準の要素（空ならルート）
+      DropPlace                dropPlace    = DropPlace::Inside;
       std::string              texture;                 ///< AddTexture / SetTexture のテクスチャキー
       Vector2                  clientPos    = {};       ///< AddTexture の配置中心（クライアント px）
       bool                     hasClientPos = false;    ///< false なら追加先の親矩形の中心に置く
@@ -236,7 +246,7 @@ namespace Tako {
     void HandleHierarchyClick(const UIElement& element);
 
     /// <summary>
-    /// 直前のアイテムを、要素（親の付け替え）とテクスチャ（新規追加）のドロップ先にする
+    /// 直前のアイテムを、要素（並べ替え・親の付け替え）とテクスチャ（新規追加）のドロップ先にする
     /// </summary>
     /// <param name="element">行の要素（null なら空き領域。ルートの末尾へ入れる）</param>
     void AcceptHierarchyDrop(UILayout& layout, const UIElement* element);
@@ -353,6 +363,9 @@ namespace Tako {
     char renameBuffer_[128] = "";
     bool isRenaming_        = false;
     bool isRenameRejected_  = false;  ///< 直前の改名が空または重複で取り消されたか
+
+    //Hierarchy
+    char hierarchyFilter_[64] = "";  ///< 空でなければ、名前に含む要素だけを平らに並べる
 
     //ビューポート操作
     bool                                         isViewportEditEnabled_ = true;

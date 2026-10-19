@@ -159,6 +159,34 @@ namespace Tako {
       }
     }
 
+    bool ContainsIgnoreCase(const std::string& text, const std::string& pattern) {
+      const auto isSame = [](unsigned char a, unsigned char b) { return std::tolower(a) == std::tolower(b); };
+      return !std::ranges::search(text, pattern, isSame).empty();
+    }
+
+    /// <summary>
+    /// node の子孫のうち、名前に filter を含む（大文字と小文字は区別しない）ものを前順に集める
+    /// </summary>
+    void CollectMatches(UIElement& node, const std::string& filter, std::vector<UIElement*>& out) {
+      for (std::unique_ptr<UIElement>& child : node.children) {
+        if (ContainsIgnoreCase(child->name, filter)) {
+          out.push_back(child.get());
+        }
+        CollectMatches(*child, filter, out);
+      }
+    }
+
+    /// <summary>
+    /// 目のアイコン。閉じた目は斜線を引く
+    /// </summary>
+    void DrawEye(ImDrawList* drawList, const ImVec2& center, float radius, bool isOpen, ImU32 color) {
+      drawList->AddEllipse(center, ImVec2(radius, radius * 0.55f), color, 0.0f, 0, 1.2f);
+      drawList->AddCircleFilled(center, radius * 0.3f, color);
+      if (!isOpen) {
+        drawList->AddLine(ImVec2(center.x - radius, center.y + radius * 0.7f), ImVec2(center.x + radius, center.y - radius * 0.7f), color, 1.5f);
+      }
+    }
+
     /// <summary>
     /// 縦 2 本・横 2 本の線のうち、mouse から radius 以内にあるもの（縦と横それぞれ近いほうの 1 本）の辺の bit
     /// </summary>
@@ -854,7 +882,8 @@ namespace Tako {
       "  Shift+click adds to or removes from the selection. Dragging inside a selected element moves the whole selection.\n"
       "  While resizing, Shift keeps the aspect ratio and Alt keeps the center. Ctrl while dragging toggles Snap.\n"
       "  Arrow keys move the selection 1 px (Shift: Grid Size).\n"
-      "Hierarchy: Ctrl+click or Shift+click to select several.\n"
+      "Hierarchy: Ctrl+click or Shift+click to select several,\n"
+      "  drop on the top or bottom of a row to reorder, drop in the middle to make a child.\n"
       "Drop textures from Assets onto the viewport, the hierarchy or the Texture field.");
 
     if (layout) {
@@ -990,10 +1019,28 @@ namespace Tako {
   }
 
   void UILayoutEditor::DrawHierarchy(UILayout& layout) {
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    ImGui::InputTextWithHint("##Filter", "Search", hierarchyFilter_, sizeof(hierarchyFilter_));
+
     hierarchyRows_.clear();
     rangeSelectTarget_.clear();
-    for (std::unique_ptr<UIElement>& child : layout.GetRoot().children) {
-      DrawTreeNode(layout, *child);
+    if (hierarchyFilter_[0] != '\0') {
+      // 絞り込み中は、一致した要素を親子を付けずに並べる
+      std::vector<UIElement*> matches;
+      CollectMatches(layout.GetRoot(), hierarchyFilter_, matches);
+      for (const UIElement* element : matches) {
+        ImGui::PushID(element);
+        if (ImGui::Selectable(element->name.c_str(), IsSelected(element->name))) {
+          HandleHierarchyClick(*element);
+        }
+        ImGui::PopID();
+        hierarchyRows_.push_back(element->name);
+      }
+    }
+    else {
+      for (std::unique_ptr<UIElement>& child : layout.GetRoot().children) {
+        DrawTreeNode(layout, *child);
+      }
     }
 
     // Shift+クリックの範囲は、全部の行を描いてから決める。クリックした行を Inspector の対象（末尾）にする
@@ -1043,7 +1090,7 @@ namespace Tako {
   }
 
   void UILayoutEditor::DrawTreeNode(UILayout& layout, UIElement& element) {
-    // 右端のロックボタンを重ねるため AllowOverlap
+    // 右端の表示・ロックのボタンを重ねるため AllowOverlap
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth |
       ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowOverlap;
     if (element.children.empty()) {
@@ -1105,10 +1152,22 @@ namespace Tako {
       ImGui::EndPopup();
     }
 
-    // 行の右端にロックの切り替え。既定フォントに錠前のアイコン文字が無いので "L" で表す
+    // 行の右端に表示とロックの切り替え。既定フォントに目と錠前のアイコン文字が無いので、目は線で描き、ロックは "L" で表す
     const float lockButtonWidth = ImGui::CalcTextSize("L").x + ImGui::GetStyle().FramePadding.x * 2.0f;
+    const float eyeButtonWidth  = ImGui::GetTextLineHeight() * 1.4f;
     ImGui::SameLine(0.0f, 0.0f);
-    ImGui::SetCursorScreenPos(ImVec2(rowRightX - lockButtonWidth, ImGui::GetCursorScreenPos().y));
+    ImGui::SetCursorScreenPos(ImVec2(rowRightX - lockButtonWidth - eyeButtonWidth, ImGui::GetCursorScreenPos().y));
+    if (ImGui::InvisibleButton("##Visible", ImVec2(eyeButtonWidth, ImGui::GetTextLineHeight()))) {
+      element.visible = !element.visible;
+    }
+    // 表示中は控えめに、非表示は目立たせる
+    const ImU32  eyeColor  = ImGui::GetColorU32((ImGui::IsItemHovered() || !element.visible) ? ImGuiCol_Text : ImGuiCol_TextDisabled);
+    const ImVec2 eyeMin    = ImGui::GetItemRectMin();
+    const ImVec2 eyeMax    = ImGui::GetItemRectMax();
+    const ImVec2 eyeCenter = ImVec2((eyeMin.x + eyeMax.x) * 0.5f, (eyeMin.y + eyeMax.y) * 0.5f);
+    DrawEye(ImGui::GetWindowDrawList(), eyeCenter, (eyeMax.y - eyeMin.y) * 0.45f, element.visible, eyeColor);
+    ImGui::SetItemTooltip(element.visible ? "Hide (also in game)" : "Show");
+    ImGui::SameLine(0.0f, 0.0f);
     ImGui::PushStyleColor(ImGuiCol_Button, element.locked ? ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive) : ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
     ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(element.locked ? ImGuiCol_Text : ImGuiCol_TextDisabled));
     if (ImGui::SmallButton("L")) {
@@ -1131,9 +1190,30 @@ namespace Tako {
       return;
     }
     const std::string name = element ? element->name : std::string();
-    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(kElementPayload)) {
-      RequestOnSelection(PendingOp::Reparent, layout, static_cast<const char*>(payload->Data));
-      pending_.newParent = name;
+
+    // 落とす位置を毎フレーム線（前後）か枠（子）で示し、離したら登録する
+    constexpr ImGuiDragDropFlags kPreviewFlags = ImGuiDragDropFlags_AcceptBeforeDelivery | ImGuiDragDropFlags_AcceptNoDrawDefaultRect;
+    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(kElementPayload, kPreviewFlags)) {
+      const ImVec2    rowMin = ImGui::GetItemRectMin();
+      const ImVec2    rowMax = ImGui::GetItemRectMax();
+      const float     ratio  = (ImGui::GetMousePos().y - rowMin.y) / (std::max)(rowMax.y - rowMin.y, 1.0f);
+      const DropPlace place  = !element ? DropPlace::Inside : (ratio < 0.25f ? DropPlace::Before : (ratio > 0.75f ? DropPlace::After : DropPlace::Inside));
+
+      ImDrawList* drawList = ImGui::GetWindowDrawList();
+      const ImU32 color    = ImGui::GetColorU32(ImGuiCol_DragDropTarget);
+      if (place == DropPlace::Inside) {
+        drawList->AddRect(rowMin, rowMax, color, 0.0f, 0, 2.0f);
+      }
+      else {
+        const float y = place == DropPlace::Before ? rowMin.y : rowMax.y;
+        drawList->AddLine(ImVec2(rowMin.x, y), ImVec2(rowMax.x, y), color, 2.0f);
+      }
+
+      if (payload->IsDelivery()) {
+        RequestOnSelection(PendingOp::Reparent, layout, static_cast<const char*>(payload->Data));
+        pending_.dropTarget = name;
+        pending_.dropPlace  = place;
+      }
     }
     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(AssetBrowser::kTexturePayload)) {
       Request(PendingOp::AddTexture, name, static_cast<const char*>(payload->Data));
@@ -1923,14 +2003,29 @@ namespace Tako {
       }
       break;
     case PendingOp::Reparent: {
-      UIElement* newParent = pending.newParent.empty() ? &layout.GetRoot() : layout.Find(pending.newParent);
-      if (!newParent) {
+      UIElement* reference = pending.dropTarget.empty() ? &layout.GetRoot() : layout.Find(pending.dropTarget);
+      if (!reference) {
         break;
       }
-      // 並び順を保つため、前から順に末尾へ移す
+      // 前後に入れるときは reference の兄弟にする。複数は並び順を保つため、後ろへ入れるときは直前に入れた要素の後ろへ続ける
+      UIElement* previous = reference;
       for (UIElement* element : targets) {
-        if (element != &layout.GetRoot()) {
-          layout.MoveTo(*element, *newParent, (std::numeric_limits<size_t>::max)());
+        if (element == &layout.GetRoot() || element == reference) {
+          continue;
+        }
+        if (pending.dropPlace == DropPlace::Inside || !reference->parent) {
+          layout.MoveTo(*element, *reference, (std::numeric_limits<size_t>::max)());
+          continue;
+        }
+        UIElement& anchor = pending.dropPlace == DropPlace::Before ? *reference : *previous;
+        UIElement& parent = *anchor.parent;
+        size_t     index  = IndexInParent(anchor) + (pending.dropPlace == DropPlace::Before ? 0 : 1);
+        // MoveTo の位置は、自分を抜いた後の並びで数える
+        if (element->parent == &parent && IndexInParent(*element) < index) {
+          --index;
+        }
+        if (layout.MoveTo(*element, parent, index)) {
+          previous = element;
         }
       }
       break;
