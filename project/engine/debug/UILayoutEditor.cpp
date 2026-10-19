@@ -13,12 +13,14 @@
 #include "WinApp.h"
 
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <cmath>
 #include <cstring>
 #include <filesystem>
 #include <format>
 #include <limits>
+#include <span>
 #include <utility>
 #include <vector>
 
@@ -31,6 +33,7 @@ namespace Tako {
     constexpr ImU32 kGridColor      = IM_COL32(255, 255, 255, 40);
     constexpr ImU32 kSelectionColor = IM_COL32(255, 200, 0, 255);
     constexpr ImU32 kSubSelectColor = IM_COL32(255, 200, 0, 130);  ///< Inspector の対象以外の選択中の要素の枠
+    constexpr ImU32 kGuideColor     = IM_COL32(255, 60, 200, 255);
     constexpr ImU32 kHandleColor    = IM_COL32(255, 255, 255, 255);
     constexpr ImU32 kAnchorColor    = IM_COL32(80, 200, 255, 255);
     constexpr ImU32 kUvColor        = IM_COL32(255, 230, 0, 255);
@@ -98,6 +101,33 @@ namespace Tako {
 
     Vector2 SnapPoint(const Vector2& p, float step) {
       return { SnapValue(p.x, step), SnapValue(p.y, step) };
+    }
+
+    /// <summary>
+    /// 1 軸の範囲の端と中央（左・中央・右、または上・中央・下）
+    /// </summary>
+    std::array<float, 3> Features(float min, float size) {
+      return { min, min + size * 0.5f, min + size };
+    }
+
+    /// <summary>
+    /// values のどれかを lines のどれかへ寄せるずれのうち、distance 以内で最も小さいもの
+    /// </summary>
+    /// <param name="guide">寄せた先の線。寄せなければ変えない</param>
+    /// <returns>values に足すずれ（寄せなければ 0）</returns>
+    float SnapToGuide(std::span<const float> values, const std::vector<float>& lines, float distance, std::optional<float>& guide) {
+      float best   = distance;
+      float offset = 0.0f;
+      for (float value : values) {
+        for (float line : lines) {
+          if (std::abs(line - value) <= best) {
+            best   = std::abs(line - value);
+            offset = line - value;
+            guide  = line;
+          }
+        }
+      }
+      return offset;
     }
 
     /// <summary>
@@ -405,6 +435,8 @@ namespace Tako {
       ImGui::EndDragDropTarget();
     }
 
+    guideX_.reset();
+    guideY_.reset();
     bool isCaptured = false;
     if (isViewportEditEnabled_) {
       ImGui::SetCursorScreenPos(imageMin);
@@ -478,7 +510,7 @@ namespace Tako {
 
       if (isActive && dragMode_ != DragMode::None && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
         hasDragged_ = true;
-        UpdateDrag(*layout, mouse);
+        UpdateDrag(*layout, mouse, kGuideSnapDistance / mapping.scale.x);
       }
 
       // 何も無い位置でのクリックなら選択はそのまま
@@ -556,6 +588,15 @@ namespace Tako {
       }
 
       drawList->AddCircle(mapping.ToImage(selected->rectMin + Mul(selected->rectSize, selected->pivot)), 4.0f, kSelectionColor, 0, 2.0f);
+    }
+
+    if (guideX_) {
+      const float x = mapping.ToImage({ *guideX_, 0.0f }).x;
+      drawList->AddLine(ImVec2(x, imageMin.y), ImVec2(x, imageMax.y), kGuideColor);
+    }
+    if (guideY_) {
+      const float y = mapping.ToImage({ 0.0f, *guideY_ }).y;
+      drawList->AddLine(ImVec2(imageMin.x, y), ImVec2(imageMax.x, y), kGuideColor);
     }
 
     drawList->PopClipRect();
@@ -803,6 +844,9 @@ namespace Tako {
     ImGui::SameLine();
     ImGui::SetNextItemWidth(80.0f);
     ImGui::DragFloat("Grid Size", &gridSize_, 1.0f, 1.0f, 512.0f, "%.0f px");
+    ImGui::SameLine();
+    ImGui::Checkbox("Guides", &isGuidesEnabled_);
+    ImGui::SetItemTooltip("While dragging without Snap, snap to the edges and centers of the screen, the parent and the siblings.");
     ImGui::SameLine();
     ImGui::TextDisabled("(?)");
     ImGui::SetItemTooltip(
@@ -1966,16 +2010,25 @@ namespace Tako {
     return nullptr;
   }
 
-  void UILayoutEditor::UpdateDrag(UILayout& layout, const Vector2& mouse) {
+  void UILayoutEditor::UpdateDrag(UILayout& layout, const Vector2& mouse, float guideDistance) {
     const Vector2 delta = mouse - dragStartMouse_;
 
-    // Ctrl を押している間はスナップの ON/OFF を反転する。グリッドは画面空間で丸め、描いた線と一致させる
-    const bool  isSnapping = isSnapEnabled_ != ImGui::GetIO().KeyCtrl;
-    const float step       = isSnapping ? gridSize_ * layout.GetScale() : 0.0f;
+    // Ctrl を押している間はスナップの ON/OFF を反転する。グリッドは画面空間で丸め、描いた線と一致させる。
+    // グリッドを使わない間は、スマートガイドの線へ寄せる
+    const bool         isSnapping = isSnapEnabled_ != ImGui::GetIO().KeyCtrl;
+    const float        step       = isSnapping ? gridSize_ * layout.GetScale() : 0.0f;
+    std::vector<float> guideXs;
+    std::vector<float> guideYs;
+    if (!isSnapping && isGuidesEnabled_) {
+      CollectGuideLines(layout, guideXs, guideYs);
+    }
 
     if (dragMode_ == DragMode::Move) {
       // 選択を囲む矩形を動かし、同じずれを各要素に足す
-      const Vector2 offset = SnapPoint(dragStartRectMin_ + delta, step) - dragStartRectMin_;
+      Vector2 boundsMin = SnapPoint(dragStartRectMin_ + delta, step);
+      boundsMin.x += SnapToGuide(Features(boundsMin.x, dragStartRectSize_.x), guideXs, guideDistance, guideX_);
+      boundsMin.y += SnapToGuide(Features(boundsMin.y, dragStartRectSize_.y), guideYs, guideDistance, guideY_);
+      const Vector2 offset = boundsMin - dragStartRectMin_;
       for (const auto& [name, startMin] : dragStartMins_) {
         if (UIElement* element = layout.Find(name)) {
           layout.SetScreenRect(*element, startMin + offset, element->rectSize);
@@ -1991,8 +2044,8 @@ namespace Tako {
     const ImGuiIO& io       = ImGui::GetIO();
     const Vector2  startMax = dragStartRectMin_ + dragStartRectSize_;
     const Vector2  center   = dragStartRectMin_ + dragStartRectSize_ * 0.5f;
-    const auto     snapX    = [&](float x) { return SnapValue(x, step); };
-    const auto     snapY    = [&](float y) { return SnapValue(y, step); };
+    const auto     snapX    = [&](float x) { x = SnapValue(x, step); return x + SnapToGuide(std::array{ x }, guideXs, guideDistance, guideX_); };
+    const auto     snapY    = [&](float y) { y = SnapValue(y, step); return y + SnapToGuide(std::array{ y }, guideYs, guideDistance, guideY_); };
 
     // 掴んだ辺だけを動かし、反対の辺（Alt なら中心）は越えないよう止める
     const Vector2 leftTopLimit     = io.KeyAlt ? center : startMax;
@@ -2059,6 +2112,33 @@ namespace Tako {
       }
     }
     layout.SetScreenRect(*element, rectMin, rectMax - rectMin);
+  }
+
+  void UILayoutEditor::CollectGuideLines(UILayout& layout, std::vector<float>& xs, std::vector<float>& ys) const {
+    const auto add = [&xs, &ys](const UIElement& element) {
+      for (float x : Features(element.rectMin.x, element.rectSize.x)) {
+        xs.push_back(x);
+      }
+      for (float y : Features(element.rectMin.y, element.rectSize.y)) {
+        ys.push_back(y);
+      }
+    };
+    add(layout.GetRoot());
+
+    // 一緒に動く要素（選択中のもの）の線には寄せない
+    const UIElement* selected = FindSelected(layout);
+    if (!selected) {
+      return;
+    }
+    const UIElement& parent = *selected->parent;
+    if (parent.parent && !IsSelected(parent.name)) {
+      add(parent);
+    }
+    for (const std::unique_ptr<UIElement>& sibling : parent.children) {
+      if (sibling->visible && !IsSelected(sibling->name)) {
+        add(*sibling);
+      }
+    }
   }
 
   void UILayoutEditor::HandleArrowKeys(const std::vector<UIElement*>& elements) const {

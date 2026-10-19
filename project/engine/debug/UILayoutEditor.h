@@ -28,6 +28,7 @@ namespace Tako {
     static constexpr float kMinGridSpacing       = 4.0f;    ///< 画像上でこれより細かいグリッドは描かない（px）
     static constexpr float kPreviewDefaultHeight = 240.0f;  ///< Inspector のテクスチャプレビューの初期の高さ（px）。下の縁のドラッグで変えられる
     static constexpr float kResultDefaultHeight  = 160.0f;  ///< Inspector の 9-slice の結果プレビューの初期の高さ（px）
+    static constexpr float kGuideSnapDistance    = 6.0f;    ///< スマートガイドに吸着する距離（画像上 px）
 
   private: //構造体
     /// <summary>
@@ -307,7 +308,13 @@ namespace Tako {
     /// <summary>
     /// ビューポートのドラッグで、選択中の要素をまとめて移動するか、Inspector の要素をリサイズする
     /// </summary>
-    void UpdateDrag(UILayout& layout, const Vector2& mouse);
+    /// <param name="guideDistance">スマートガイドに吸着する距離（クライアント px）</param>
+    void UpdateDrag(UILayout& layout, const Vector2& mouse, float guideDistance);
+
+    /// <summary>
+    /// スマートガイドの線（クライアント px）。画面と、Inspector の要素の親・選択していない表示中の兄弟の、端と中央
+    /// </summary>
+    void CollectGuideLines(UILayout& layout, std::vector<float>& xs, std::vector<float>& ys) const;
 
     void HandleArrowKeys(const std::vector<UIElement*>& elements) const;
 
@@ -359,10 +366,13 @@ namespace Tako {
     bool                                         isClickToPick_         = false;           ///< ドラッグせずに離したら、クリック位置の要素を選び直すか
     bool                                         isViewportFocused_     = false;           ///< 今フレーム Game Viewport がフォーカス中か（DrawViewportOverlay で更新、Draw で消費）
 
-    //グリッド・スナップ
-    bool  isGridVisible_ = false;
-    bool  isSnapEnabled_ = false;
-    float gridSize_      = 10.0f;  ///< 基準解像度 px
+    //グリッド・スナップ・スマートガイド
+    bool                 isGridVisible_   = false;
+    bool                 isSnapEnabled_   = false;
+    float                gridSize_        = 10.0f;  ///< 基準解像度 px
+    bool                 isGuidesEnabled_ = true;   ///< グリッドのスナップを使わない間、ドラッグ中に端と中央へ吸着する
+    std::optional<float> guideX_;                   ///< 今フレーム吸着した縦の線（クライアント px）
+    std::optional<float> guideY_;
 
     //テクスチャプレビュー
     float   previewZoom_           = 1.0f;  ///< プレビュー px ÷ テクスチャ px
