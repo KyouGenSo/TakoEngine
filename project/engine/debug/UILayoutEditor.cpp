@@ -297,9 +297,8 @@ namespace Tako {
     }
 
     // UI を描く区間の前後で保存内容を比べて編集を検出する（この区間ではゲームのコードが値を変えない）
-    UILayout* const   editing         = FindLayout();
-    const std::string editingSnapshot = editing ? editing->Serialize() : std::string();
-    const std::string sliceSnapshot   = UILayout::SerializeTextureSlices();
+    UILayout* const               editing = FindLayout();
+    const std::optional<EditMark> mark    = editing ? std::optional(MarkEdit(*editing)) : std::nullopt;
 
     bool isEditorFocused = false;
     ImGui::SetNextWindowSize(ImVec2(760.0f, 640.0f), ImGuiCond_FirstUseEver);
@@ -345,10 +344,7 @@ namespace Tako {
 
     // 途中で別のレイアウトへ切り替えた場合は比べない
     if (editing && editing == layout) {
-      TrackLayoutEdit(*editing, editingSnapshot);
-    }
-    if (const std::string slices = UILayout::SerializeTextureSlices(); slices != sliceSnapshot) {
-      isSliceTableEdited_ = IsStillEdited(isSliceTableEdited_, sliceSnapshot, slices, cleanSliceSnapshot_);
+      TrackLayoutEdit(*editing, *mark);
     }
 
     // 比べた後に保存して、このフレームの編集も保存済みにする。ビューポートのフォーカスは ImGui のルーティングで届かないので自前で判定する
@@ -372,7 +368,7 @@ namespace Tako {
     }
     const ViewportMapping mapping{ imageMin, { imageSize.x / clientWidth, imageSize.y / clientHeight } };
     UIElement*            selected = FindSelected(*layout);
-    const std::string     snapshot = layout->Serialize();
+    const EditMark        mark     = MarkEdit(*layout);
 
     // 直前のアイテム（ゲーム画像）へのテクスチャのドロップ。選択中がグループならその子、画像なら兄弟として置く
     if (ImGui::BeginDragDropTarget()) {
@@ -503,7 +499,7 @@ namespace Tako {
 
     drawList->PopClipRect();
 
-    TrackLayoutEdit(*layout, snapshot);
+    TrackLayoutEdit(*layout, mark);
     return isCaptured;
   }
 
@@ -1575,8 +1571,8 @@ namespace Tako {
     if (!target) {
       return;
     }
-    const bool        isRoot   = target == &layout.GetRoot();
-    const std::string snapshot = layout.Serialize();
+    const bool     isRoot = target == &layout.GetRoot();
+    const EditMark mark   = MarkEdit(layout);
 
     switch (pending.op) {
     case PendingOp::AddImage: {
@@ -1649,13 +1645,39 @@ namespace Tako {
       break;
     }
 
-    TrackLayoutEdit(layout, snapshot);
+    TrackLayoutEdit(layout, mark);
   }
 
-  void UILayoutEditor::TrackLayoutEdit(const UILayout& layout, const std::string& before) {
-    const std::string after = layout.Serialize();
-    if (after != before) {
-      editedLayout_ = IsStillEdited(editedLayout_ == &layout, before, after, cleanSnapshot_) ? &layout : nullptr;
+  UILayoutEditor::EditMark UILayoutEditor::MarkEdit(const UILayout& layout) {
+    const EditMark mark{ layout.Hash(), UILayout::HashTextureSlices() };
+    if (mark.layoutHash != cachedLayoutHash_) {
+      cachedLayout_     = layout.Serialize();
+      cachedLayoutHash_ = mark.layoutHash;
+    }
+    if (mark.slicesHash != cachedSlicesHash_) {
+      cachedSlices_     = UILayout::SerializeTextureSlices();
+      cachedSlicesHash_ = mark.slicesHash;
+    }
+    return mark;
+  }
+
+  void UILayoutEditor::TrackLayoutEdit(const UILayout& layout, const EditMark& mark) {
+    // キャッシュは MarkEdit で操作の前の内容になっている
+    if (const uint64_t hash = layout.Hash(); hash != mark.layoutHash) {
+      std::string after = layout.Serialize();
+      if (after != cachedLayout_) {
+        editedLayout_ = IsStillEdited(editedLayout_ == &layout, cachedLayout_, after, cleanSnapshot_) ? &layout : nullptr;
+      }
+      cachedLayout_     = std::move(after);
+      cachedLayoutHash_ = hash;
+    }
+    if (const uint64_t hash = UILayout::HashTextureSlices(); hash != mark.slicesHash) {
+      std::string after = UILayout::SerializeTextureSlices();
+      if (after != cachedSlices_) {
+        isSliceTableEdited_ = IsStillEdited(isSliceTableEdited_, cachedSlices_, after, cleanSliceSnapshot_);
+      }
+      cachedSlices_     = std::move(after);
+      cachedSlicesHash_ = hash;
     }
   }
 

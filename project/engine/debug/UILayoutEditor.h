@@ -2,6 +2,7 @@
 
 #ifdef _DEBUG
 
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
@@ -75,6 +76,14 @@ namespace Tako {
       bool        isPreview  = false;  ///< シーン外のファイルをプレビューで開くか
       bool        isNew      = false;  ///< name で新規作成するか
       std::string selectName;          ///< 開いた後に選ぶ要素名（空なら選ばない）
+    };
+
+    /// <summary>
+    /// 編集を見つける区間の始まりの状態
+    /// </summary>
+    struct EditMark {
+      uint64_t layoutHash;  ///< UILayout::Hash()
+      uint64_t slicesHash;  ///< UILayout::HashTextureSlices()
     };
 
   public: //メンバー関数
@@ -209,10 +218,16 @@ namespace Tako {
     void ApplyPending(UILayout& layout);
 
     /// <summary>
-    /// UI の操作の前後で内容が変わっていれば、未保存の印を付ける。操作で未保存でなかった時点の内容に戻ったら外す
+    /// UI の操作の前に呼び、TrackLayoutEdit に渡す。ゲームのコードが前の区間の後に内容を変えていたら、ここで取り直す
     /// </summary>
-    /// <param name="before">操作の前の layout.Serialize()</param>
-    void TrackLayoutEdit(const UILayout& layout, const std::string& before);
+    EditMark MarkEdit(const UILayout& layout);
+
+    /// <summary>
+    /// UI の操作の前後で内容が変わっていれば、未保存の印を付ける。操作で未保存でなかった時点の内容に戻ったら外す。
+    /// 変わったかどうかはハッシュで調べ、変わったときだけ Serialize する
+    /// </summary>
+    /// <param name="mark">操作の前の MarkEdit(layout)</param>
+    void TrackLayoutEdit(const UILayout& layout, const EditMark& mark);
 
     /// <summary>
     /// 次フレームの Update で実行する操作を登録する（1 フレームに 1 つ。後から登録したものが優先）
@@ -257,6 +272,12 @@ namespace Tako {
     std::optional<OpenRequest> pendingOpen_;                        ///< 確認モーダルの返答待ちの切り替え先
     bool                       isUnsavedPopupRequested_ = false;
     std::string                discardLayout_;                      ///< 次の Update でファイルから読み直して編集を捨てるゲーム側のレイアウト
+
+    //編集の検出（Serialize は重いので、ハッシュが変わったときだけ作り直す）
+    uint64_t    cachedLayoutHash_ = 0;
+    std::string cachedLayout_;          ///< 最後に Serialize した編集対象の内容。区間の間は操作の前の内容
+    uint64_t    cachedSlicesHash_ = 0;
+    std::string cachedSlices_;          ///< 最後に SerializeTextureSlices した内容
 
     //名前の編集
     char renameBuffer_[128] = "";

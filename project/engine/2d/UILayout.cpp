@@ -19,6 +19,7 @@
 #include <fstream>
 #include <map>
 #include <numbers>
+#include <type_traits>
 #include <utility>
 
 namespace Tako {
@@ -153,34 +154,82 @@ namespace Tako {
       }
     }
 
-    json WriteElement(const UIElement& element) {
-      json node;
-      node["name"]          = element.name;
-      node["texture"]       = element.texture;
-      node["anchorMin"]     = element.anchorMin;
-      node["anchorMax"]     = element.anchorMax;
-      node["pivot"]         = element.pivot;
-      node["position"]      = element.position;
-      node["size"]          = element.size;
-      node["rotation"]      = element.rotation;
-      node["color"]         = element.color;
-      node["flip"]          = { element.flipX, element.flipY };
-      node["uvLeftTop"]     = element.uvLeftTop;
-      node["uvSize"]        = element.uvSize;
-      node["sliced"]        = element.isSliced;
-      node["sliceOverride"] = element.isSliceOverridden;
-      node["visible"]       = element.visible;
-      node["locked"]        = element.locked;
+    /// <summary>
+    /// 保存する項目（子は除く）を field(キー, 値) へ順に渡す。WriteElement と HashElement が同じ項目を見るためのもの
+    /// </summary>
+    template <class Field>
+    void VisitSavedFields(const UIElement& element, Field&& field) {
+      field("name", element.name);
+      field("texture", element.texture);
+      field("anchorMin", element.anchorMin);
+      field("anchorMax", element.anchorMax);
+      field("pivot", element.pivot);
+      field("position", element.position);
+      field("size", element.size);
+      field("rotation", element.rotation);
+      field("color", element.color);
+      field("flip", std::array<bool, 2>{ element.flipX, element.flipY });
+      field("uvLeftTop", element.uvLeftTop);
+      field("uvSize", element.uvSize);
+      field("sliced", element.isSliced);
+      field("sliceOverride", element.isSliceOverridden);
+      field("visible", element.visible);
+      field("locked", element.locked);
       // 共有の 9-slice を使う要素には書かない（共有側の値と紛れないように）
       if (element.isSliceOverridden) {
-        node["slice"] = element.slice;
+        field("slice", element.slice);
       }
+    }
+
+    json WriteElement(const UIElement& element) {
+      json node;
+      VisitSavedFields(element, [&node](const char* key, const auto& value) { node[key] = value; });
 
       json& children = node["children"] = json::array();
       for (const std::unique_ptr<UIElement>& child : element.children) {
         children.push_back(WriteElement(*child));
       }
       return node;
+    }
+
+    // ハッシュは FNV-1a（64 bit）
+    constexpr uint64_t kHashBasis = 14695981039346656037ull;
+    constexpr uint64_t kHashPrime = 1099511628211ull;
+
+    void HashBytes(uint64_t& hash, const void* data, size_t size) {
+      const auto* bytes = static_cast<const unsigned char*>(data);
+      for (size_t i = 0; i < size; ++i) {
+        hash = (hash ^ bytes[i]) * kHashPrime;
+      }
+    }
+
+    // float・bool・Vector2 など詰め物の無い型はバイト列のまま混ぜる
+    template <class T>
+      requires std::is_trivially_copyable_v<T>
+    void HashValue(uint64_t& hash, const T& value) {
+      HashBytes(hash, &value, sizeof(value));
+    }
+
+    // 長さも混ぜ、隣の文字列との区切りを変えた内容を区別する
+    void HashValue(uint64_t& hash, const std::string& value) {
+      HashValue(hash, value.size());
+      HashBytes(hash, value.data(), value.size());
+    }
+
+    void HashValue(uint64_t& hash, const UISlice& slice) {
+      HashValue(hash, slice.border);
+      HashValue(hash, slice.regionVisible);
+      for (const std::string& texture : slice.regionTextures) {
+        HashValue(hash, texture);
+      }
+    }
+
+    void HashElement(uint64_t& hash, const UIElement& element) {
+      VisitSavedFields(element, [&hash](const char*, const auto& value) { HashValue(hash, value); });
+      HashValue(hash, element.children.size());
+      for (const std::unique_ptr<UIElement>& child : element.children) {
+        HashElement(hash, *child);
+      }
     }
 
     /// <summary>
@@ -338,6 +387,17 @@ namespace Tako {
     return root.dump(2);
   }
 
+  uint64_t UILayout::HashTextureSlices() {
+    uint64_t hash = kHashBasis;
+    for (const auto& [texture, slice] : TextureSlices()) {
+      if (slice != kNoSlice) {
+        HashValue(hash, texture);
+        HashValue(hash, slice);
+      }
+    }
+    return hash;
+  }
+
   void UILayout::SetTextureSlice(const std::string& texture, const UISlice& slice) {
     if (!texture.empty()) {
       TextureSlices()[texture] = slice;
@@ -365,6 +425,16 @@ namespace Tako {
       elements.push_back(WriteElement(*child));
     }
     return root.dump(2);
+  }
+
+  uint64_t UILayout::Hash() const {
+    uint64_t hash = kHashBasis;
+    HashValue(hash, referenceResolution_);
+    HashValue(hash, root_.children.size());
+    for (const std::unique_ptr<UIElement>& child : root_.children) {
+      HashElement(hash, *child);
+    }
+    return hash;
   }
 
   void UILayout::Update() {
