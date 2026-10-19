@@ -137,6 +137,11 @@ void BehaviorTreeEditor::Update() {
     DrawNodeInspector();
   }
   ImGui::End();
+
+  // 編集で、最後に保存・読込した時と同じ内容に戻ったら未保存を外す
+  if (hasUnsavedChanges_ && SerializeTree() == savedTree_) {
+    hasUnsavedChanges_ = false;
+  }
 }
 
 void BehaviorTreeEditor::Clear() {
@@ -915,6 +920,7 @@ bool BehaviorTreeEditor::LoadFromJSON(const std::string& filepath) {
     // ロード直後にキャンバスのビューポートを全ノードへ自動フォーカス
     pendingNavigateToContent_ = true;
     hasUnsavedChanges_ = false;  // ロード直後は未保存状態をクリア
+    savedTree_         = SerializeTree();
 
     return true;
   }
@@ -926,9 +932,39 @@ bool BehaviorTreeEditor::LoadFromJSON(const std::string& filepath) {
   }
 }
 
+nlohmann::json BehaviorTreeEditor::SerializeTree() {
+  nlohmann::json json;
+
+  // 位置は DrawNodes が毎フレーム ed から写しているもの（追加直後で ed にまだ位置が無いノードは予約した位置）
+  json["nodes"] = nlohmann::json::array();
+  for (const auto& node : nodes_) {
+    nlohmann::json nodeJson;
+    nodeJson["id"] = node.id;
+    nodeJson["type"] = node.nodeType;
+    nodeJson["displayName"] = node.displayName;
+    nodeJson["position"]["x"] = node.position.x;
+    nodeJson["position"]["y"] = node.position.y;
+    nodeJson["parameters"] = ExtractNodeParameters(node);
+    json["nodes"].push_back(nodeJson);
+  }
+
+  json["links"] = nlohmann::json::array();
+  for (const auto& link : links_) {
+    nlohmann::json linkJson;
+    linkJson["id"] = link.id;
+    linkJson["sourceNodeId"] = link.startNodeId;
+    linkJson["targetNodeId"] = link.endNodeId;
+    linkJson["sourcePinId"] = link.startPinId;
+    linkJson["targetPinId"] = link.endPinId;
+    json["links"].push_back(linkJson);
+  }
+  return json;
+}
+
 bool BehaviorTreeEditor::SaveToJSON(const std::string& filepath) {
   try {
-    nlohmann::json json;
+    const nlohmann::json tree = SerializeTree();
+    nlohmann::json       json = tree;
 
     json["version"] = "1.0";
 
@@ -941,35 +977,6 @@ bool BehaviorTreeEditor::SaveToJSON(const std::string& filepath) {
     json["metadata"]["name"] = "Behavior Tree";
     json["metadata"]["created"] = timestamp;
     json["metadata"]["modified"] = timestamp;
-
-    // ノード情報を保存 (位置は imgui-node-editor の現在状態から取得して JSON と同期)
-    ed::SetCurrentEditor(editorContext_);
-    json["nodes"] = nlohmann::json::array();
-    for (const auto& node : nodes_) {
-      nlohmann::json nodeJson;
-      nodeJson["id"] = node.id;
-      nodeJson["type"] = node.nodeType;
-      nodeJson["displayName"] = node.displayName;
-      // ユーザーがドラッグで動かした最新位置を ed から取得
-      ImVec2 currentPos = ed::GetNodePosition(node.id);
-      nodeJson["position"]["x"] = currentPos.x;
-      nodeJson["position"]["y"] = currentPos.y;
-      nodeJson["parameters"] = ExtractNodeParameters(node);
-      json["nodes"].push_back(nodeJson);
-    }
-    ed::SetCurrentEditor(nullptr);
-
-    // リンク情報を保存
-    json["links"] = nlohmann::json::array();
-    for (const auto& link : links_) {
-      nlohmann::json linkJson;
-      linkJson["id"] = link.id;
-      linkJson["sourceNodeId"] = link.startNodeId;
-      linkJson["targetNodeId"] = link.endNodeId;
-      linkJson["sourcePinId"] = link.startPinId;
-      linkJson["targetPinId"] = link.endPinId;
-      json["links"].push_back(linkJson);
-    }
 
     // ディレクトリが存在しない場合は作成
     std::filesystem::path filePath(filepath);
@@ -990,6 +997,7 @@ bool BehaviorTreeEditor::SaveToJSON(const std::string& filepath) {
       "[BehaviorTreeEditor] Successfully saved to: " + filepath,
       DebugUIManager::LogType::Info);
     hasUnsavedChanges_ = false;  // 保存直後は未保存状態をクリア
+    savedTree_         = tree;
     return true;
   }
   catch (const std::exception& e) {

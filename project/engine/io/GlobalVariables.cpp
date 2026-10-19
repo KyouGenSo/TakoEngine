@@ -12,6 +12,44 @@ using json = nlohmann::json;
 
 namespace Tako {
 
+  namespace {
+
+    /// <summary>
+    /// SaveFile が書き込む内容
+    /// </summary>
+    json SerializeGroup(const std::string& groupName, const GlobalVariables::Group& group) {
+      json root = json::object();
+      root[groupName] = json::object();
+
+      for (const auto& [itemName, item] : group.items) {
+        // 型に応じて json へ書き出し
+        if (std::holds_alternative<bool>(item.value)) {
+          root[groupName][itemName] = std::get<bool>(item.value);
+        }
+        else if (std::holds_alternative<float>(item.value)) {
+          root[groupName][itemName] = std::get<float>(item.value);
+        }
+        else if (std::holds_alternative<Vector2>(item.value)) {
+          Vector2 value = std::get<Vector2>(item.value);
+          root[groupName][itemName] = json::array({ value.x, value.y });
+        }
+        else if (std::holds_alternative<Vector3>(item.value)) {
+          Vector3 value = std::get<Vector3>(item.value);
+          root[groupName][itemName] = json::array({ value.x, value.y, value.z });
+        }
+        else if (std::holds_alternative<Vector4>(item.value)) {
+          Vector4 value = std::get<Vector4>(item.value);
+          root[groupName][itemName] = json::array({ value.x, value.y, value.z, value.w });
+        }
+        else if (std::holds_alternative<int32_t>(item.value)) {
+          root[groupName][itemName] = std::get<int32_t>(item.value);
+        }
+      }
+      return root;
+    }
+
+  } // namespace
+
   std::unique_ptr<GlobalVariables> GlobalVariables::instance_ = nullptr;
 
   GlobalVariables* GlobalVariables::GetInstance()
@@ -83,7 +121,10 @@ namespace Tako {
             int32_t* value = std::get_if<int32_t>(&item.value);
             isEdited = ImGui::DragInt(itemName.c_str(), value, 1);
           }
-          group.isDirty |= isEdited;
+          // 編集で、最後に保存・読込した時と同じ内容に戻ったら未保存を外す
+          if (isEdited) {
+            group.isDirty = SerializeGroup(groupName, group).dump() != group.savedSnapshot;
+          }
         }
 
         ImGui::Text("\n");
@@ -117,38 +158,7 @@ namespace Tako {
     std::map<std::string, Group>::iterator itGroup = datas_.find(groupName);
     assert(itGroup != datas_.end());
 
-    json root;
-
-    root = json::object();
-    root[groupName] = json::object();
-
-    for (std::map<std::string, Item>::iterator itItem = itGroup->second.items.begin(); itItem != itGroup->second.items.end(); ++itItem) {
-      const std::string& itemName = itItem->first;
-      Item& item = itItem->second;
-
-      // 型に応じて json へ書き出し
-      if (std::holds_alternative<bool>(item.value)) {
-        root[groupName][itemName] = std::get<bool>(item.value);
-      }
-      else if (std::holds_alternative<float>(item.value)) {
-        root[groupName][itemName] = std::get<float>(item.value);
-      }
-      else if (std::holds_alternative<Vector2>(item.value)) {
-        Vector2 value = std::get<Vector2>(item.value);
-        root[groupName][itemName] = json::array({ value.x, value.y });
-      }
-      else if (std::holds_alternative<Vector3>(item.value)) {
-        Vector3 value = std::get<Vector3>(item.value);
-        root[groupName][itemName] = json::array({ value.x, value.y, value.z });
-      }
-      else if (std::holds_alternative<Vector4>(item.value)) {
-        Vector4 value = std::get<Vector4>(item.value);
-        root[groupName][itemName] = json::array({ value.x, value.y, value.z, value.w });
-      }
-      else if (std::holds_alternative<int32_t>(item.value)) {
-        root[groupName][itemName] = std::get<int32_t>(item.value);
-      }
-    }
+    const json root = SerializeGroup(groupName, itGroup->second);
 
     // ディレクトリが存在しない場合は作成
     std::filesystem::path directoryPath(kDirectoryPath);
@@ -177,7 +187,8 @@ namespace Tako {
     // ファイルを閉じる
     ofs.close();
 
-    itGroup->second.isDirty = false;
+    itGroup->second.isDirty       = false;
+    itGroup->second.savedSnapshot = root.dump();
 
   }
 
@@ -276,7 +287,9 @@ namespace Tako {
       }
     }
 
-    datas_[groupName].isDirty = false;
+    Group& group = datas_[groupName];
+    group.isDirty       = false;
+    group.savedSnapshot = SerializeGroup(groupName, group).dump();
   }
 
   void GlobalVariables::CollectUnsavedChanges(std::vector<std::string>& out) const

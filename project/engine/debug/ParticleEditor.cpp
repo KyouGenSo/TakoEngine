@@ -77,7 +77,7 @@ namespace Tako {
         // 選択中のエミッターの編集を、UI を描く区間の前後の保存内容の変化で検出する（この区間ではゲームのコードが値を変えない）
         const std::string                         editingName    = selectedEmitterName_;
         const std::shared_ptr<GPUParticleEmitter> editingEmitter = emitterManager_->GetEmitterByName(editingName);
-        const nlohmann::json                      editingBefore  = SerializeEmitter(*emitterManager_, editingEmitter);
+        const std::string                         editingBefore  = SerializeEmitter(*emitterManager_, editingEmitter).dump();
 
         // アクティブパーティクル数の表示
         {
@@ -120,8 +120,10 @@ namespace Tako {
 
         // 選択の切り替え・改名・読み込みでインスタンスが変わった場合は比べない
         const bool isSameEmitter = editingEmitter && selectedEmitterName_ == editingName && emitterManager_->GetEmitterByName(editingName) == editingEmitter;
-        if (isSameEmitter && SerializeEmitter(*emitterManager_, editingEmitter) != editingBefore) {
-          MarkUnsaved(editingName);
+        if (isSameEmitter) {
+          if (const std::string editingAfter = SerializeEmitter(*emitterManager_, editingEmitter).dump(); editingAfter != editingBefore) {
+            TrackEmitterEdit(editingName, editingEmitter, editingBefore, editingAfter);
+          }
         }
 
         // Save ボタンは閉じられる Preset ヘッダーの中にあるので、ウィンドウ直下で受ける
@@ -1193,14 +1195,26 @@ namespace Tako {
   }
 
   void ParticleEditor::MarkUnsaved(const std::string& emitterName) {
-    unsavedEmitters_[emitterName] = emitterManager_->GetEmitterByName(emitterName);
+    unsavedEmitters_[emitterName] = { emitterManager_->GetEmitterByName(emitterName), {} };
+  }
+
+  void ParticleEditor::TrackEmitterEdit(const std::string& emitterName, const std::shared_ptr<GPUParticleEmitter>& emitter, const std::string& before, const std::string& after) {
+    const auto  it        = unsavedEmitters_.find(emitterName);
+    const bool  wasEdited = it != unsavedEmitters_.end();
+    std::string clean     = wasEdited ? it->second.clean : std::string();
+    if (IsStillEdited(wasEdited, before, after, clean)) {
+      unsavedEmitters_[emitterName] = { emitter, std::move(clean) };
+    }
+    else {
+      unsavedEmitters_.erase(emitterName);
+    }
   }
 
   void ParticleEditor::PruneUnsavedEmitters(bool warn) {
     std::erase_if(unsavedEmitters_, [this, warn](const auto& unsaved) {
       const auto& [name, edited] = unsaved;
       const std::shared_ptr<GPUParticleEmitter> current = emitterManager_->GetEmitterByName(name);
-      if (current && current == edited.lock()) {
+      if (current && current == edited.emitter.lock()) {
         return false;
       }
       if (warn) {

@@ -173,7 +173,8 @@ namespace Tako {
     //コード生成
     bool isRebuildRequired_ = false;  ///< Save の改名でソースを書き換えた。実行中のコードは再ビルド・再起動まで古い名前のまま
 
-    bool isDirty_ = false;  ///< ウィンドウで編集して未保存か（Save と Reload で下ろす）
+    bool        isDirty_       = false;  ///< ウィンドウで編集して未保存か（Save と Reload で下ろす）
+    std::string cleanSnapshot_;          ///< isDirty_ が付く直前の保存内容。編集でここへ戻れば未保存を外す
   };
 
 } // namespace Tako

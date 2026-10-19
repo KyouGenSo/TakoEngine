@@ -256,6 +256,10 @@ private: //非公開関数
   /// JSON からノードのパラメータを適用
   /// </summary>
   void ApplyNodeParameters(EditorNode& node, const nlohmann::json& params);
+  /// <summary>
+  /// SaveToJSON が書くノードとリンク（version と metadata を除く）
+  /// </summary>
+  nlohmann::json SerializeTree();
 
   //--- マルチツリー: ファイルパス組み立てヘルパー ---
 
@@ -300,7 +304,8 @@ private: //メンバー変数
 
   std::string currentTreeName_;  ///< 現在編集中のツリー名 (拡張子なし、例: "MainTree")
 
-  bool hasUnsavedChanges_ = false;  ///< 未保存変更フラグ (CreateNode/DeleteNode/CreateLink 等で true、Save/Load で false)
+  bool           hasUnsavedChanges_ = false;  ///< 未保存変更フラグ (CreateNode/DeleteNode/CreateLink 等で true、Save/Load で false)
+  nlohmann::json savedTree_;                  ///< 最後に保存・読込した時の SerializeTree()。編集でこれと同じに戻れば hasUnsavedChanges_ を下ろす
 
   bool showUnsavedChangesModal_ = false;  ///< 未保存の確認モーダルを次の DrawToolbar で開く
 

@@ -15,6 +15,7 @@
 #include "Input.h"
 #include "StringUtility.h"
 #include "CodeGenerator.h"
+#include "UnsavedChangesModal.h"
 
 #include "imgui.h"
 #include <json.hpp>
@@ -332,8 +333,8 @@ namespace Tako {
       }
       ImGui::EndChild();
 
-      if (ProjectSettings::Serialize(GetDX12()) + SerializeEditorSettings() != snapshot) {
-        isDirty_ = true;
+      if (const std::string settings = ProjectSettings::Serialize(GetDX12()) + SerializeEditorSettings(); settings != snapshot) {
+        isDirty_ = IsStillEdited(isDirty_, snapshot, settings, cleanSnapshot_);
       }
 
       if (ImGui::Button(isDirty_ ? "Save *###Save" : "Save###Save") || ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_S)) {

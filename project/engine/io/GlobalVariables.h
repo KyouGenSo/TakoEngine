@@ -42,8 +42,9 @@ namespace Tako {
     /// グローバル変数のグループ
     /// </summary>
     struct Group {
-      std::map<std::string, Item> items;            ///< アイテムのマップ
-      bool                        isDirty = false;  ///< ImGui で編集して未保存か（SaveFile と LoadFile で下ろす）
+      std::map<std::string, Item> items;                  ///< アイテムのマップ
+      bool                        isDirty       = false;  ///< ImGui で編集して未保存か（SaveFile と LoadFile で下ろす）
+      std::string                 savedSnapshot;          ///< 最後に SaveFile / LoadFile した時の内容。編集でこれと同じに戻れば isDirty を下ろす
     };
 
   public: //メンバー関数

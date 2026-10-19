@@ -563,8 +563,8 @@ namespace Tako {
 
     ImGui::End();
 
-    if (SerializeProfile() != profileSnapshot) {
-      isProfileDirty_ = true;
+    if (const std::string profile = SerializeProfile(); profile != profileSnapshot) {
+      isProfileDirty_ = IsStillEdited(isProfileDirty_, profileSnapshot, profile, cleanProfileSnapshot_);
     }
 #endif
   }

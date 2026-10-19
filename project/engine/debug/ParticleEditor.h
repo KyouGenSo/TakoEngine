@@ -36,6 +36,14 @@ namespace Tako {
       Group
     };
 
+    /// <summary>
+    /// 未保存のエミッター
+    /// </summary>
+    struct UnsavedEmitter {
+      std::weak_ptr<GPUParticleEmitter> emitter;  ///< 編集したインスタンス
+      std::string                       clean;    ///< 未保存でなかった最後の内容。新しく作ったエミッターは空なので、戻しても未保存のまま
+    };
+
   public: //メンバー関数
     ParticleEditor();
     ~ParticleEditor();
@@ -165,6 +173,11 @@ namespace Tako {
     void MarkUnsaved(const std::string& emitterName);
 
     /// <summary>
+    /// UI の操作で内容が before から after に変わったエミッターに、未保存の印を付ける。未保存でなかった時点の内容に戻ったら外す
+    /// </summary>
+    void TrackEmitterEdit(const std::string& emitterName, const std::shared_ptr<GPUParticleEmitter>& emitter, const std::string& before, const std::string& after);
+
+    /// <summary>
     /// 消えた、または別のインスタンスに置き換わったエミッターの未保存の印を外す
     /// </summary>
     /// <param name="warn">編集が失われたことを警告するか（自分で読み込んで置き換えた直後は false）</param>
@@ -205,10 +218,10 @@ namespace Tako {
     std::string        currentFFPresetName_;  ///< 最後にロード/保存したFFプリセット名（上書き保存用）
 
     //未保存の変更（フォースフィールドは番号が実行中にずれて識別できず、グループは Save All でしか保存しないので対象外）
-    std::map<std::string, std::weak_ptr<GPUParticleEmitter>> unsavedEmitters_;                  ///< 未保存のエミッター名 → 編集したインスタンス
-    std::function<void()>                                    pendingLoad_;                      ///< 確認モーダルの返答待ちの読み込み
-    std::string                                              pendingLoadMessage_;
-    bool                                                     isUnsavedPopupRequested_ = false;
+    std::map<std::string, UnsavedEmitter> unsavedEmitters_;                  ///< 未保存のエミッター名 → 編集したインスタンスと戻り先
+    std::function<void()>                 pendingLoad_;                      ///< 確認モーダルの返答待ちの読み込み
+    std::string                           pendingLoadMessage_;
+    bool                                  isUnsavedPopupRequested_ = false;
 
     //パーティクル可視化設定
     bool    showEmitterShapes_        = false;                       ///< エミッター形状の表示ON/OFF

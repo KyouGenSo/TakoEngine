@@ -449,6 +449,7 @@ namespace Tako {
     //PostEffect ウィンドウ
     std::array<char, 64> profileName_{};                    ///< プロファイル名入力欄。LoadProfile で読み込んだ名前になる
     bool                 isProfileDirty_          = false;  ///< ウィンドウで編集して未保存か
+    std::string          cleanProfileSnapshot_;             ///< isProfileDirty_ が付く直前のプロファイル。編集でここへ戻れば未保存を外す
     std::string          pendingProfileLoad_;               ///< 確認モーダルの返答待ちの読み込み先
     bool                 isUnsavedPopupRequested_ = false;
 

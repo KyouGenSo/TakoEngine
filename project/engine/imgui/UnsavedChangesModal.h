@@ -6,6 +6,7 @@
 
 #include <format>
 #include <functional>
+#include <string>
 #include <string_view>
 
 namespace Tako {
@@ -59,6 +60,19 @@ namespace Tako {
     }
     ImGui::EndPopup();
     return choice;
+  }
+
+  /// <summary>
+  /// 内容が before から after に変わった編集の後も、未保存の変更が残っているか。未保存でなかった最後の内容を clean に覚え、編集で clean に戻れば残っていない
+  /// </summary>
+  /// <param name="wasEdited">この編集の前から未保存だったか</param>
+  /// <returns>未保存の変更が残っていれば true</returns>
+  inline bool IsStillEdited(bool wasEdited, const std::string& before, const std::string& after, std::string& clean) {
+    // ファイルとは比べない。ゲームのコードが実行中に変えた値（表示の切り替えなど）は before に入っているので、未保存に数えない
+    if (!wasEdited) {
+      clean = before;
+    }
+    return after != clean;
   }
 
 } // namespace Tako
