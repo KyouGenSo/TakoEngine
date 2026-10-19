@@ -6,6 +6,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 #include "imgui.h"
 #include "Vector2.h"
@@ -57,15 +58,15 @@ namespace Tako {
     };
 
     /// <summary>
-    /// 保留中の操作。要素はフレームをまたいでも追えるよう名前で持つ（空ならルート）
+    /// 保留中の操作。要素はフレームをまたいでも追えるよう名前で持つ
     /// </summary>
     struct Pending {
-      PendingOp   op           = PendingOp::None;
-      std::string target;                  ///< 操作対象（Add 系では追加先の親）
-      std::string newParent;               ///< Reparent の移動先
-      std::string texture;                 ///< AddTexture / SetTexture のテクスチャキー
-      Vector2     clientPos    = {};       ///< AddTexture の配置中心（クライアント px）
-      bool        hasClientPos = false;    ///< false なら追加先の親矩形の中心に置く
+      PendingOp                op           = PendingOp::None;
+      std::vector<std::string> targets;                 ///< 操作対象（Add 系では追加先の 1 つ）。空ならルート
+      std::string              newParent;               ///< Reparent の移動先（空ならルート）
+      std::string              texture;                 ///< AddTexture / SetTexture のテクスチャキー
+      Vector2                  clientPos    = {};       ///< AddTexture の配置中心（クライアント px）
+      bool                     hasClientPos = false;    ///< false なら追加先の親矩形の中心に置く
     };
 
     /// <summary>
@@ -84,6 +85,20 @@ namespace Tako {
     struct EditMark {
       uint64_t layoutHash;  ///< UILayout::Hash()
       uint64_t slicesHash;  ///< UILayout::HashTextureSlices()
+    };
+
+    /// <summary>
+    /// 選択中の要素をそろえる位置。Distribute は間の隙間を等しくする
+    /// </summary>
+    enum class AlignOp {
+      Left,
+      CenterX,
+      Right,
+      Top,
+      CenterY,
+      Bottom,
+      DistributeX,
+      DistributeY
     };
 
   public: //メンバー関数
@@ -167,10 +182,44 @@ namespace Tako {
     /// <returns>書き込めたら true</returns>
     bool SaveLayout(const UILayout& layout);
 
+    /// <summary>
+    /// Inspector で編集する要素（選択の末尾）
+    /// </summary>
     UIElement* FindSelected(UILayout& layout) const;
+
+    bool IsSelected(const std::string& name) const;
+
+    /// <summary>
+    /// 選択を element 1 つにする（null なら選択を外す）
+    /// </summary>
     void Select(const UIElement* element);
 
+    /// <summary>
+    /// element を選択に足す（選択中なら外す）。足した要素が Inspector の対象になる
+    /// </summary>
+    void ToggleSelect(const UIElement& element);
+
+    /// <summary>
+    /// 選択を置き換え、Inspector の要素ごとの状態（名前の入力・プレビューの表示範囲）を戻す
+    /// </summary>
+    void SetSelection(std::vector<std::string> names);
+
+    /// <summary>
+    /// 選択中の要素を前順に集める。選択中の要素の子孫は、親と一緒に動くので除く
+    /// </summary>
+    std::vector<UIElement*> SelectedTopLevel(UILayout& layout) const;
+
     void DrawToolbar(UILayout* layout);
+
+    /// <summary>
+    /// 選択中の要素をそろえるボタンの行
+    /// </summary>
+    void DrawAlignButtons(UILayout& layout);
+
+    /// <summary>
+    /// 1 つなら親の矩形に、2 つ以上なら選択を囲む矩形にそろえる。画面上の位置だけを変える（回転は見ない）
+    /// </summary>
+    void AlignSelection(UILayout& layout, AlignOp op);
 
     /// <summary>
     /// 名前を検証して pendingNewLayout_ に積む。実際の作成は次の Update
@@ -178,13 +227,18 @@ namespace Tako {
     void DrawNewLayoutPopup();
 
     void DrawHierarchy(UILayout& layout);
-    void DrawTreeNode(UIElement& element);
+    void DrawTreeNode(UILayout& layout, UIElement& element);
+
+    /// <summary>
+    /// Hierarchy の行のクリック。Ctrl で選択に足す・外す、Shift でアンカーからの範囲を選ぶ（範囲は全行を描いた後に決める）
+    /// </summary>
+    void HandleHierarchyClick(const UIElement& element);
 
     /// <summary>
     /// 直前のアイテムを、要素（親の付け替え）とテクスチャ（新規追加）のドロップ先にする
     /// </summary>
-    /// <param name="parentName">ドロップ後の親の要素名（空ならルート）</param>
-    void AcceptHierarchyDrop(const std::string& parentName);
+    /// <param name="element">行の要素（null なら空き領域。ルートの末尾へ入れる）</param>
+    void AcceptHierarchyDrop(UILayout& layout, const UIElement* element);
     void DrawInspector(UILayout& layout, UIElement& element);
 
     /// <summary>
@@ -232,7 +286,13 @@ namespace Tako {
     /// <summary>
     /// 次フレームの Update で実行する操作を登録する（1 フレームに 1 つ。後から登録したものが優先）
     /// </summary>
-    void Request(PendingOp op, const std::string& target, const std::string& newParent = {}, const std::string& texture = {});
+    /// <param name="target">操作対象の要素名（空ならルート）</param>
+    void Request(PendingOp op, const std::string& target, const std::string& texture = {});
+
+    /// <summary>
+    /// name が選択中なら選択全体（SelectedTopLevel）に、そうでなければ name だけに操作を登録する
+    /// </summary>
+    void RequestOnSelection(PendingOp op, UILayout& layout, const std::string& name);
 
     /// <summary>
     /// テクスチャを原寸で parent の子として追加し、clientCenter を中心に置いて選択する
@@ -245,18 +305,21 @@ namespace Tako {
     UIElement* PickTopmost(UILayout& layout, const Vector2& clientPos) const;
 
     /// <summary>
-    /// ビューポートのドラッグで選択要素を移動・リサイズする
+    /// ビューポートのドラッグで、選択中の要素をまとめて移動するか、Inspector の要素をリサイズする
     /// </summary>
-    void UpdateDrag(UILayout& layout, UIElement& element, const Vector2& mouse);
+    void UpdateDrag(UILayout& layout, const Vector2& mouse);
 
-    void HandleArrowKeys(UIElement& element) const;
+    void HandleArrowKeys(const std::vector<UIElement*>& elements) const;
 
   private: //メンバー変数
     bool* isOpen_ = nullptr;
 
     //選択（Reload やシーン再生成で要素が作り直されても追えるよう名前で持つ）
-    std::string layoutName_;
-    std::string selectedName_;
+    std::string              layoutName_;
+    std::vector<std::string> selection_;          ///< 末尾が Inspector で編集する要素
+    std::string              rangeAnchor_;        ///< Hierarchy の Shift+クリックの範囲の起点（最後に Shift なしでクリックした要素）
+    std::string              rangeSelectTarget_;  ///< 今フレームの Shift+クリックで範囲の終点にする要素
+    std::vector<std::string> hierarchyRows_;      ///< 今フレームの Hierarchy に描いた行（上から順）
 
     //プレビュー（今のシーンが読み込んでいないレイアウトを、エディタ自前のインスタンスで開く）
     std::unique_ptr<UILayout> preview_;
@@ -285,15 +348,16 @@ namespace Tako {
     bool isRenameRejected_  = false;  ///< 直前の改名が空または重複で取り消されたか
 
     //ビューポート操作
-    bool     isViewportEditEnabled_ = true;
-    DragMode dragMode_              = DragMode::None;
-    int      dragCorner_            = 0;               ///< リサイズ中の角（0:左上 1:右上 2:右下 3:左下）
-    Vector2  dragStartMouse_        = {};              ///< ドラッグ開始時のマウス（クライアント px）
-    Vector2  dragStartRectMin_      = {};              ///< ドラッグ開始時の画面矩形（クライアント px）
-    Vector2  dragStartRectSize_     = {};
-    bool     hasDragged_            = false;           ///< 今回の押下でドラッグしたか
-    bool     isClickToPick_         = false;           ///< ドラッグせずに離したら、クリック位置の要素を選び直すか
-    bool     isViewportFocused_     = false;           ///< 今フレーム Game Viewport がフォーカス中か（DrawViewportOverlay で更新、Draw で消費）
+    bool                                         isViewportEditEnabled_ = true;
+    DragMode                                     dragMode_              = DragMode::None;
+    int                                          dragCorner_            = 0;               ///< リサイズ中の角（0:左上 1:右上 2:右下 3:左下）
+    Vector2                                      dragStartMouse_        = {};              ///< ドラッグ開始時のマウス（クライアント px）
+    Vector2                                      dragStartRectMin_      = {};              ///< ドラッグ開始時の、動かす矩形（移動は選択を囲む矩形、リサイズは要素の矩形。クライアント px）
+    Vector2                                      dragStartRectSize_     = {};
+    std::vector<std::pair<std::string, Vector2>> dragStartMins_;                           ///< 移動する要素ごとの、ドラッグ開始時の画面矩形の左上
+    bool                                         hasDragged_            = false;           ///< 今回の押下でドラッグしたか
+    bool                                         isClickToPick_         = false;           ///< ドラッグせずに離したら、クリック位置の要素を選び直すか
+    bool                                         isViewportFocused_     = false;           ///< 今フレーム Game Viewport がフォーカス中か（DrawViewportOverlay で更新、Draw で消費）
 
     //グリッド・スナップ
     bool  isGridVisible_ = false;

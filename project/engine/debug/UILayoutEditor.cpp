@@ -30,6 +30,7 @@ namespace Tako {
 
     constexpr ImU32 kGridColor      = IM_COL32(255, 255, 255, 40);
     constexpr ImU32 kSelectionColor = IM_COL32(255, 200, 0, 255);
+    constexpr ImU32 kSubSelectColor = IM_COL32(255, 200, 0, 130);  ///< Inspector の対象以外の選択中の要素の枠
     constexpr ImU32 kHandleColor    = IM_COL32(255, 255, 255, 255);
     constexpr ImU32 kAnchorColor    = IM_COL32(80, 200, 255, 255);
     constexpr ImU32 kUvColor        = IM_COL32(255, 230, 0, 255);
@@ -103,6 +104,35 @@ namespace Tako {
         return p;
       }
       return { std::round(p.x / step) * step, std::round(p.y / step) * step };
+    }
+
+    /// <summary>
+    /// 要素の画面矩形をすべて囲む矩形
+    /// </summary>
+    /// <returns>左上と右下</returns>
+    std::pair<Vector2, Vector2> Bounds(const std::vector<UIElement*>& elements) {
+      Vector2 boundsMin = elements.front()->rectMin;
+      Vector2 boundsMax = boundsMin + elements.front()->rectSize;
+      for (const UIElement* element : elements) {
+        const Vector2 rectMax = element->rectMin + element->rectSize;
+        boundsMin = { (std::min)(boundsMin.x, element->rectMin.x), (std::min)(boundsMin.y, element->rectMin.y) };
+        boundsMax = { (std::max)(boundsMax.x, rectMax.x), (std::max)(boundsMax.y, rectMax.y) };
+      }
+      return { boundsMin, boundsMax };
+    }
+
+    /// <summary>
+    /// node の子孫のうち、selection に含まれるものを前順に集める。含まれる要素の子孫は見ない
+    /// </summary>
+    void CollectTopLevel(UIElement& node, const std::vector<std::string>& selection, std::vector<UIElement*>& out) {
+      for (std::unique_ptr<UIElement>& child : node.children) {
+        if (std::ranges::find(selection, child->name) != selection.end()) {
+          out.push_back(child.get());
+        }
+        else {
+          CollectTopLevel(*child, selection, out);
+        }
+      }
     }
 
     /// <summary>
@@ -338,7 +368,7 @@ namespace Tako {
     const bool isFocused = isEditorFocused || (isViewportFocused_ && isViewportEditEnabled_);
     wantsKeyboard_ = selected && !ImGui::GetIO().WantTextInput && isFocused;
     if (wantsKeyboard_) {
-      HandleArrowKeys(*selected);
+      HandleArrowKeys(SelectedTopLevel(*layout));
     }
     isViewportFocused_ = false;
 
@@ -374,7 +404,7 @@ namespace Tako {
     if (ImGui::BeginDragDropTarget()) {
       if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(AssetBrowser::kTexturePayload)) {
         const UIElement* parent = selected ? (selected->texture.empty() ? selected : selected->parent) : nullptr;
-        Request(PendingOp::AddTexture, (parent && parent->parent) ? parent->name : std::string(), {}, static_cast<const char*>(payload->Data));
+        Request(PendingOp::AddTexture, (parent && parent->parent) ? parent->name : std::string(), static_cast<const char*>(payload->Data));
         pending_.clientPos    = mapping.ToClient(ImGui::GetMousePos());
         pending_.hasClientPos = true;
       }
@@ -392,56 +422,79 @@ namespace Tako {
       const ImVec2  mouseImage    = ImGui::GetMousePos();
       const Vector2 mouse         = mapping.ToClient(mouseImage);
 
+      // Inspector の要素の角。中を掴むより優先する
+      int hoveredCorner = -1;
+      if (selected) {
+        for (int i = 0; i < 4; ++i) {
+          const ImVec2 corner = mapping.ToImage(Corner(selected->rectMin, selected->rectSize, i));
+          if (std::abs(mouseImage.x - corner.x) <= kHandleHalfSize + kHitMargin && std::abs(mouseImage.y - corner.y) <= kHandleHalfSize + kHitMargin) {
+            hoveredCorner = i;
+            break;
+          }
+        }
+      }
+
       if (isActivated) {
         dragMode_      = DragMode::None;
         hasDragged_    = false;
         isClickToPick_ = false;
 
-        // 選択中の角ハンドルを最優先で掴む
-        if (selected) {
-          for (int i = 0; i < 4; ++i) {
-            const ImVec2 corner = mapping.ToImage(Corner(selected->rectMin, selected->rectSize, i));
-            if (std::abs(mouseImage.x - corner.x) <= kHandleHalfSize + kHitMargin && std::abs(mouseImage.y - corner.y) <= kHandleHalfSize + kHitMargin) {
-              dragMode_   = DragMode::Resize;
-              dragCorner_ = i;
-              break;
-            }
+        const bool isOnSelection = std::ranges::any_of(selection_, [&](const std::string& name) {
+          const UIElement* element = layout->Find(name);
+          return element && Contains(*element, mouse);
+        });
+        if (hoveredCorner >= 0) {
+          dragMode_   = DragMode::Resize;
+          dragCorner_ = hoveredCorner;
+        }
+        else if (ImGui::GetIO().KeyShift) {
+          // 選択に足す・外すだけで、ドラッグはしない
+          if (UIElement* picked = PickTopmost(*layout, mouse)) {
+            ToggleSelect(*picked);
           }
         }
-
-        // Unity の Rect Tool と同じく、選択中の矩形の中は選択中を掴む（子の画像や全画面の背景に選択を奪われない）。
-        // ドラッグせずに離したときだけ、クリック位置の要素を選び直す
-        if (dragMode_ == DragMode::None && selected && Contains(*selected, mouse)) {
+        else if (isOnSelection) {
+          // Unity の Rect Tool と同じく、選択中の矩形の中は選択中を掴む（子の画像や全画面の背景に選択を奪われない）。
+          // ドラッグせずに離したときだけ、クリック位置の要素を選び直す
           dragMode_      = DragMode::Move;
           isClickToPick_ = true;
         }
-
-        if (dragMode_ == DragMode::None) {
+        else {
           UIElement* picked = PickTopmost(*layout, mouse);
           Select(picked);
-          selected = picked;
-          if (selected) {
+          if (picked) {
             dragMode_ = DragMode::Move;
           }
         }
+        selected = FindSelected(*layout);
 
-        if (selected) {
-          dragStartMouse_    = mouse;
+        // 移動は選択全体を囲む矩形を、リサイズは Inspector の要素の矩形を動かす
+        dragStartMins_.clear();
+        dragStartMouse_ = mouse;
+        if (dragMode_ == DragMode::Move) {
+          const std::vector<UIElement*> moving = SelectedTopLevel(*layout);
+          for (const UIElement* element : moving) {
+            dragStartMins_.emplace_back(element->name, element->rectMin);
+          }
+          const auto [boundsMin, boundsMax] = Bounds(moving);
+          dragStartRectMin_  = boundsMin;
+          dragStartRectSize_ = boundsMax - boundsMin;
+        }
+        else if (dragMode_ == DragMode::Resize) {
           dragStartRectMin_  = selected->rectMin;
           dragStartRectSize_ = selected->rectSize;
         }
       }
 
-      if (isActive && selected && dragMode_ != DragMode::None && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
+      if (isActive && dragMode_ != DragMode::None && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
         hasDragged_ = true;
-        UpdateDrag(*layout, *selected, mouse);
+        UpdateDrag(*layout, mouse);
       }
 
       // 何も無い位置でのクリックなら選択はそのまま
       if (isDeactivated && isClickToPick_ && !hasDragged_) {
         if (UIElement* picked = PickTopmost(*layout, mouse)) {
           Select(picked);
-          selected = picked;
         }
       }
       if (!isActive) {
@@ -449,6 +502,7 @@ namespace Tako {
         isClickToPick_ = false;
       }
       isCaptured = isHovered || isActive;
+      selected   = FindSelected(*layout);
     }
 
     ImDrawList* drawList = ImGui::GetWindowDrawList();
@@ -471,6 +525,11 @@ namespace Tako {
     }
 
     // ponytail: 枠とハンドルは回転前の矩形。回転した要素の正確な枠が要るなら 4 隅を回転して描く
+    for (const std::string& name : selection_) {
+      if (const UIElement* element = layout->Find(name); element && element != selected) {
+        drawList->AddRect(mapping.ToImage(element->rectMin), mapping.ToImage(element->rectMin + element->rectSize), kSubSelectColor, 0.0f, 0, 1.0f);
+      }
+    }
     if (selected) {
       drawList->AddRect(mapping.ToImage(selected->rectMin), mapping.ToImage(selected->rectMin + selected->rectSize), kSelectionColor, 0.0f, 0, 1.5f);
 
@@ -581,7 +640,9 @@ namespace Tako {
     layoutName_    = request.name;
     isPreviewMode_ = request.isPreview;
     Select(nullptr);
-    selectedName_ = request.selectName;
+    if (!request.selectName.empty()) {
+      SetSelection({ request.selectName });
+    }
   }
 
   bool UILayoutEditor::SaveLayout(const UILayout& layout) {
@@ -617,14 +678,38 @@ namespace Tako {
   }
 
   UIElement* UILayoutEditor::FindSelected(UILayout& layout) const {
-    return selectedName_.empty() ? nullptr : layout.Find(selectedName_);
+    return selection_.empty() ? nullptr : layout.Find(selection_.back());
+  }
+
+  bool UILayoutEditor::IsSelected(const std::string& name) const {
+    return std::ranges::find(selection_, name) != selection_.end();
   }
 
   void UILayoutEditor::Select(const UIElement* element) {
-    selectedName_     = element ? element->name : std::string();
+    SetSelection(element ? std::vector<std::string>{ element->name } : std::vector<std::string>{});
+    rangeAnchor_ = element ? element->name : std::string();
+  }
+
+  void UILayoutEditor::ToggleSelect(const UIElement& element) {
+    std::vector<std::string> names = selection_;
+    if (std::erase(names, element.name) == 0) {
+      names.push_back(element.name);
+    }
+    SetSelection(std::move(names));
+    rangeAnchor_ = element.name;
+  }
+
+  void UILayoutEditor::SetSelection(std::vector<std::string> names) {
+    selection_        = std::move(names);
     isRenaming_       = false;
     isRenameRejected_ = false;
     isPreviewFit_     = true;
+  }
+
+  std::vector<UIElement*> UILayoutEditor::SelectedTopLevel(UILayout& layout) const {
+    std::vector<UIElement*> elements;
+    CollectTopLevel(layout.GetRoot(), selection_, elements);
+    return elements;
   }
 
   void UILayoutEditor::DrawToolbar(UILayout* layout) {
@@ -720,9 +805,15 @@ namespace Tako {
     ImGui::TextDisabled("(?)");
     ImGui::SetItemTooltip(
       "Viewport: click to select, drag to move, drag corners to resize.\n"
-      "Dragging inside the selected element moves it, even over its children.\n"
-      "Ctrl while dragging toggles Snap. Arrow keys move 1 px (Shift: Grid Size).\n"
+      "  Shift+click adds to or removes from the selection. Dragging inside a selected element moves the whole selection.\n"
+      "  Ctrl while dragging toggles Snap.\n"
+      "  Arrow keys move the selection 1 px (Shift: Grid Size).\n"
+      "Hierarchy: Ctrl+click or Shift+click to select several.\n"
       "Drop textures from Assets onto the viewport, the hierarchy or the Texture field.");
+
+    if (layout) {
+      DrawAlignButtons(*layout);
+    }
 
     if (layout && layout == preview_.get()) {
       const std::string code = std::format("layout.Load(\"{}\");", layout->GetName());
@@ -731,6 +822,90 @@ namespace Tako {
       if (ImGui::SmallButton("Copy")) {
         ImGui::SetClipboardText(code.c_str());
       }
+    }
+  }
+
+  void UILayoutEditor::DrawAlignButtons(UILayout& layout) {
+    constexpr std::pair<const char*, AlignOp> kAligns[] = {
+      { "Left", AlignOp::Left }, { "Center", AlignOp::CenterX }, { "Right", AlignOp::Right },
+      { "Top", AlignOp::Top },   { "Middle", AlignOp::CenterY }, { "Bottom", AlignOp::Bottom },
+    };
+    const size_t count = SelectedTopLevel(layout).size();
+
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextUnformatted("Align");
+    ImGui::BeginDisabled(count == 0);
+    for (const auto& [label, op] : kAligns) {
+      ImGui::SameLine();
+      if (ImGui::Button(label)) {
+        AlignSelection(layout, op);
+      }
+    }
+    ImGui::EndDisabled();
+    ImGui::BeginDisabled(count < 3);
+    ImGui::SameLine();
+    if (ImGui::Button("Distribute H")) {
+      AlignSelection(layout, AlignOp::DistributeX);
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Distribute V")) {
+      AlignSelection(layout, AlignOp::DistributeY);
+    }
+    ImGui::EndDisabled();
+    ImGui::SameLine();
+    ImGui::TextDisabled("(?)");
+    ImGui::SetItemTooltip(
+      "One element aligns to its parent. Two or more align to the box around them.\n"
+      "Distribute: three or more elements get equal gaps; the first and the last stay.");
+  }
+
+  void UILayoutEditor::AlignSelection(UILayout& layout, AlignOp op) {
+    const std::vector<UIElement*> elements = SelectedTopLevel(layout);
+    if (elements.empty()) {
+      return;
+    }
+    const UIElement& parent                = *elements.front()->parent;
+    const auto       [boundsMin, boundsMax] = elements.size() == 1 ? std::pair(parent.rectMin, parent.rectMin + parent.rectSize) : Bounds(elements);
+
+    if (op == AlignOp::DistributeX || op == AlignOp::DistributeY) {
+      if (elements.size() < 3) {
+        return;
+      }
+      // 左（上）から順に、同じ隙間を空けて並べ直す
+      const bool isX    = op == AlignOp::DistributeX;
+      const auto start  = [isX](const UIElement* element) { return isX ? element->rectMin.x : element->rectMin.y; };
+      const auto length = [isX](const UIElement* element) { return isX ? element->rectSize.x : element->rectSize.y; };
+      std::vector<UIElement*> sorted = elements;
+      std::ranges::sort(sorted, {}, start);
+      float total = 0.0f;
+      for (const UIElement* element : sorted) {
+        total += length(element);
+      }
+      const float span   = isX ? boundsMax.x - boundsMin.x : boundsMax.y - boundsMin.y;
+      const float gap    = (span - total) / static_cast<float>(sorted.size() - 1);
+      float       cursor = isX ? boundsMin.x : boundsMin.y;
+      for (UIElement* element : sorted) {
+        Vector2 rectMin = element->rectMin;
+        (isX ? rectMin.x : rectMin.y) = cursor;
+        layout.SetScreenRect(*element, rectMin, element->rectSize);
+        cursor += length(element) + gap;
+      }
+      return;
+    }
+
+    for (UIElement* element : elements) {
+      const Vector2 size    = element->rectSize;
+      Vector2       rectMin = element->rectMin;
+      switch (op) {
+      case AlignOp::Left:    rectMin.x = boundsMin.x; break;
+      case AlignOp::CenterX: rectMin.x = (boundsMin.x + boundsMax.x - size.x) * 0.5f; break;
+      case AlignOp::Right:   rectMin.x = boundsMax.x - size.x; break;
+      case AlignOp::Top:     rectMin.y = boundsMin.y; break;
+      case AlignOp::CenterY: rectMin.y = (boundsMin.y + boundsMax.y - size.y) * 0.5f; break;
+      case AlignOp::Bottom:  rectMin.y = boundsMax.y - size.y; break;
+      default: break;
+      }
+      layout.SetScreenRect(*element, rectMin, size);
     }
   }
 
@@ -769,8 +944,25 @@ namespace Tako {
   }
 
   void UILayoutEditor::DrawHierarchy(UILayout& layout) {
+    hierarchyRows_.clear();
+    rangeSelectTarget_.clear();
     for (std::unique_ptr<UIElement>& child : layout.GetRoot().children) {
-      DrawTreeNode(*child);
+      DrawTreeNode(layout, *child);
+    }
+
+    // Shift+クリックの範囲は、全部の行を描いてから決める。クリックした行を Inspector の対象（末尾）にする
+    if (!rangeSelectTarget_.empty()) {
+      const auto anchor = std::ranges::find(hierarchyRows_, rangeAnchor_);
+      const auto target = std::ranges::find(hierarchyRows_, rangeSelectTarget_);
+      if (anchor == hierarchyRows_.end()) {
+        Select(layout.Find(rangeSelectTarget_));
+      }
+      else {
+        std::vector<std::string> names((std::min)(anchor, target), (std::max)(anchor, target) + 1);
+        std::erase(names, rangeSelectTarget_);
+        names.push_back(rangeSelectTarget_);
+        SetSelection(std::move(names));
+      }
     }
 
     // 残りの空き領域: クリックで選択解除、ドロップでルート直下へ、右クリックで追加
@@ -779,7 +971,7 @@ namespace Tako {
     if (ImGui::IsItemClicked()) {
       Select(nullptr);
     }
-    AcceptHierarchyDrop({});
+    AcceptHierarchyDrop(layout, nullptr);
     if (ImGui::BeginPopupContextItem("##HierarchyBlankMenu")) {
       if (ImGui::MenuItem("Add Image")) {
         Request(PendingOp::AddImage, {});
@@ -791,16 +983,30 @@ namespace Tako {
     }
   }
 
-  void UILayoutEditor::DrawTreeNode(UIElement& element) {
+  void UILayoutEditor::HandleHierarchyClick(const UIElement& element) {
+    const ImGuiIO& io = ImGui::GetIO();
+    if (io.KeyShift) {
+      rangeSelectTarget_ = element.name;
+    }
+    else if (io.KeyCtrl) {
+      ToggleSelect(element);
+    }
+    else {
+      Select(&element);
+    }
+  }
+
+  void UILayoutEditor::DrawTreeNode(UILayout& layout, UIElement& element) {
     // 右端のロックボタンを重ねるため AllowOverlap
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth |
       ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowOverlap;
     if (element.children.empty()) {
       flags |= ImGuiTreeNodeFlags_Leaf;
     }
-    if (element.name == selectedName_) {
+    if (IsSelected(element.name)) {
       flags |= ImGuiTreeNodeFlags_Selected;
     }
+    hierarchyRows_.push_back(element.name);
 
     ImGui::PushID(&element);
     const float rowRightX = ImGui::GetCursorScreenPos().x + ImGui::GetContentRegionAvail().x;
@@ -814,7 +1020,7 @@ namespace Tako {
     }
 
     if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
-      Select(&element);
+      HandleHierarchyClick(element);
     }
 
     if (ImGui::BeginDragDropSource()) {
@@ -822,10 +1028,13 @@ namespace Tako {
       ImGui::TextUnformatted(element.name.c_str());
       ImGui::EndDragDropSource();
     }
-    AcceptHierarchyDrop(element.name);
+    AcceptHierarchyDrop(layout, &element);
 
     if (ImGui::BeginPopupContextItem()) {
-      Select(&element);
+      // 選択中の行なら選択を保ち、まとめて操作する
+      if (!IsSelected(element.name)) {
+        Select(&element);
+      }
       const size_t index = IndexInParent(element);
       if (ImGui::MenuItem("Add Image")) {
         Request(PendingOp::AddImage, element.name);
@@ -834,7 +1043,7 @@ namespace Tako {
         Request(PendingOp::AddGroup, element.name);
       }
       if (ImGui::MenuItem("Duplicate")) {
-        Request(PendingOp::Duplicate, element.name);
+        RequestOnSelection(PendingOp::Duplicate, layout, element.name);
       }
       ImGui::Separator();
       if (ImGui::MenuItem("Move Up", nullptr, false, index > 0)) {
@@ -845,7 +1054,7 @@ namespace Tako {
       }
       ImGui::Separator();
       if (ImGui::MenuItem("Delete")) {
-        Request(PendingOp::Remove, element.name);
+        RequestOnSelection(PendingOp::Remove, layout, element.name);
       }
       ImGui::EndPopup();
     }
@@ -864,22 +1073,24 @@ namespace Tako {
 
     if (isOpen) {
       for (std::unique_ptr<UIElement>& child : element.children) {
-        DrawTreeNode(*child);
+        DrawTreeNode(layout, *child);
       }
       ImGui::TreePop();
     }
     ImGui::PopID();
   }
 
-  void UILayoutEditor::AcceptHierarchyDrop(const std::string& parentName) {
+  void UILayoutEditor::AcceptHierarchyDrop(UILayout& layout, const UIElement* element) {
     if (!ImGui::BeginDragDropTarget()) {
       return;
     }
+    const std::string name = element ? element->name : std::string();
     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(kElementPayload)) {
-      Request(PendingOp::Reparent, static_cast<const char*>(payload->Data), parentName);
+      RequestOnSelection(PendingOp::Reparent, layout, static_cast<const char*>(payload->Data));
+      pending_.newParent = name;
     }
     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(AssetBrowser::kTexturePayload)) {
-      Request(PendingOp::AddTexture, parentName, {}, static_cast<const char*>(payload->Data));
+      Request(PendingOp::AddTexture, name, static_cast<const char*>(payload->Data));
     }
     ImGui::EndDragDropTarget();
   }
@@ -887,6 +1098,10 @@ namespace Tako {
   void UILayoutEditor::DrawInspector(UILayout& layout, UIElement& element) {
     // 要素ごとに ID を分け、別要素の選択中に前の要素の入力確定が流れ込まないようにする
     ImGui::PushID(&element);
+
+    if (selection_.size() > 1) {
+      ImGui::TextDisabled("%zu elements selected. Editing the last selected one.", selection_.size());
+    }
 
     // 名前は確定時に、空または重複なら取り消す
     if (!isRenaming_) {
@@ -898,8 +1113,11 @@ namespace Tako {
       const std::string newName = renameBuffer_;
       isRenameRejected_ = newName.empty() || (newName != element.name && layout.Find(newName));
       if (!isRenameRejected_) {
-        element.name  = newName;
-        selectedName_ = newName;
+        std::ranges::replace(selection_, element.name, newName);
+        if (rangeAnchor_ == element.name) {
+          rangeAnchor_ = newName;
+        }
+        element.name = newName;
       }
     }
     if (isRenameRejected_) {
@@ -913,18 +1131,18 @@ namespace Tako {
     ImGui::SeparatorText("Texture");
     if (ImGui::BeginCombo("Texture", element.texture.empty() ? "(none)" : element.texture.c_str())) {
       if (ImGui::Selectable("(none)", element.texture.empty())) {
-        Request(PendingOp::SetTexture, element.name, {}, {});
+        Request(PendingOp::SetTexture, element.name);
       }
       for (const std::string& name : TextureManager::GetInstance()->GetLoadedTextureFileNames()) {
         if (ImGui::Selectable(name.c_str(), name == element.texture)) {
-          Request(PendingOp::SetTexture, element.name, {}, name);
+          Request(PendingOp::SetTexture, element.name, name);
         }
       }
       ImGui::EndCombo();
     }
     if (ImGui::BeginDragDropTarget()) {
       if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(AssetBrowser::kTexturePayload)) {
-        Request(PendingOp::SetTexture, element.name, {}, static_cast<const char*>(payload->Data));
+        Request(PendingOp::SetTexture, element.name, static_cast<const char*>(payload->Data));
       }
       ImGui::EndDragDropTarget();
     }
@@ -1560,8 +1778,21 @@ namespace Tako {
     ImGui::EndChild();
   }
 
-  void UILayoutEditor::Request(PendingOp op, const std::string& target, const std::string& newParent, const std::string& texture) {
-    pending_ = Pending{ .op = op, .target = target, .newParent = newParent, .texture = texture };
+  void UILayoutEditor::Request(PendingOp op, const std::string& target, const std::string& texture) {
+    pending_ = Pending{ .op = op, .targets = target.empty() ? std::vector<std::string>() : std::vector<std::string>{ target }, .texture = texture };
+  }
+
+  void UILayoutEditor::RequestOnSelection(PendingOp op, UILayout& layout, const std::string& name) {
+    std::vector<std::string> targets;
+    if (IsSelected(name)) {
+      for (const UIElement* element : SelectedTopLevel(layout)) {
+        targets.push_back(element->name);
+      }
+    }
+    else {
+      targets.push_back(name);
+    }
+    pending_ = Pending{ .op = op, .targets = std::move(targets) };
   }
 
   void UILayoutEditor::ApplyPending(UILayout& layout) {
@@ -1571,12 +1802,22 @@ namespace Tako {
       return;
     }
 
-    UIElement* target = pending.target.empty() ? &layout.GetRoot() : layout.Find(pending.target);
-    if (!target) {
+    // 前のフレームから消えた対象は飛ばす
+    std::vector<UIElement*> targets;
+    for (const std::string& name : pending.targets) {
+      if (UIElement* element = layout.Find(name)) {
+        targets.push_back(element);
+      }
+    }
+    if (pending.targets.empty()) {
+      targets.push_back(&layout.GetRoot());
+    }
+    if (targets.empty()) {
       return;
     }
-    const bool     isRoot = target == &layout.GetRoot();
-    const EditMark mark   = MarkEdit(layout);
+    UIElement* const target = targets.front();
+    const bool       isRoot = target == &layout.GetRoot();
+    const EditMark   mark   = MarkEdit(layout);
 
     switch (pending.op) {
     case PendingOp::AddImage: {
@@ -1605,18 +1846,23 @@ namespace Tako {
         isPreviewFit_ = true;
       }
       break;
-    case PendingOp::Duplicate:
-      if (!isRoot) {
-        Select(layout.Duplicate(*target));
-      }
-      break;
-    case PendingOp::Remove:
-      if (!isRoot) {
-        layout.Remove(*target);
-        if (!FindSelected(layout)) {
-          Select(nullptr);
+    case PendingOp::Duplicate: {
+      std::vector<std::string> copies;
+      for (UIElement* element : targets) {
+        if (element != &layout.GetRoot()) {
+          copies.push_back(layout.Duplicate(*element)->name);
         }
       }
+      SetSelection(std::move(copies));
+      break;
+    }
+    case PendingOp::Remove:
+      for (UIElement* element : targets) {
+        if (element != &layout.GetRoot()) {
+          layout.Remove(*element);
+        }
+      }
+      std::erase_if(selection_, [&layout](const std::string& name) { return !layout.Find(name); });
       break;
     case PendingOp::MoveUp:
     case PendingOp::MoveDown:
@@ -1632,8 +1878,14 @@ namespace Tako {
       break;
     case PendingOp::Reparent: {
       UIElement* newParent = pending.newParent.empty() ? &layout.GetRoot() : layout.Find(pending.newParent);
-      if (!isRoot && newParent) {
-        layout.MoveTo(*target, *newParent, (std::numeric_limits<size_t>::max)());
+      if (!newParent) {
+        break;
+      }
+      // 並び順を保つため、前から順に末尾へ移す
+      for (UIElement* element : targets) {
+        if (element != &layout.GetRoot()) {
+          layout.MoveTo(*element, *newParent, (std::numeric_limits<size_t>::max)());
+        }
       }
       break;
     }
@@ -1712,7 +1964,7 @@ namespace Tako {
     return nullptr;
   }
 
-  void UILayoutEditor::UpdateDrag(UILayout& layout, UIElement& element, const Vector2& mouse) {
+  void UILayoutEditor::UpdateDrag(UILayout& layout, const Vector2& mouse) {
     const Vector2 delta = mouse - dragStartMouse_;
 
     // Ctrl を押している間はスナップの ON/OFF を反転する。グリッドは画面空間で丸め、描いた線と一致させる
@@ -1720,7 +1972,18 @@ namespace Tako {
     const float step       = isSnapping ? gridSize_ * layout.GetScale() : 0.0f;
 
     if (dragMode_ == DragMode::Move) {
-      layout.SetScreenRect(element, SnapPoint(dragStartRectMin_ + delta, step), dragStartRectSize_);
+      // 選択を囲む矩形を動かし、同じずれを各要素に足す
+      const Vector2 offset = SnapPoint(dragStartRectMin_ + delta, step) - dragStartRectMin_;
+      for (const auto& [name, startMin] : dragStartMins_) {
+        if (UIElement* element = layout.Find(name)) {
+          layout.SetScreenRect(*element, startMin + offset, element->rectSize);
+        }
+      }
+      return;
+    }
+
+    UIElement* element = FindSelected(layout);
+    if (!element) {
       return;
     }
 
@@ -1742,23 +2005,27 @@ namespace Tako {
     else {
       rectMin.y = (std::min)(corner.y, rectMax.y);
     }
-    layout.SetScreenRect(element, rectMin, rectMax - rectMin);
+    layout.SetScreenRect(*element, rectMin, rectMax - rectMin);
   }
 
-  void UILayoutEditor::HandleArrowKeys(UIElement& element) const {
+  void UILayoutEditor::HandleArrowKeys(const std::vector<UIElement*>& elements) const {
     // position は基準解像度 px なので、画面サイズに関係なく 1 単位ずつ動く
-    const float step = ImGui::GetIO().KeyShift ? gridSize_ : 1.0f;
+    const float   step  = ImGui::GetIO().KeyShift ? gridSize_ : 1.0f;
+    Vector2       delta = {};
     if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow)) {
-      element.position.x -= step;
+      delta.x -= step;
     }
     if (ImGui::IsKeyPressed(ImGuiKey_RightArrow)) {
-      element.position.x += step;
+      delta.x += step;
     }
     if (ImGui::IsKeyPressed(ImGuiKey_UpArrow)) {
-      element.position.y -= step;
+      delta.y -= step;
     }
     if (ImGui::IsKeyPressed(ImGuiKey_DownArrow)) {
-      element.position.y += step;
+      delta.y += step;
+    }
+    for (UIElement* element : elements) {
+      element->position = element->position + delta;
     }
   }
 
