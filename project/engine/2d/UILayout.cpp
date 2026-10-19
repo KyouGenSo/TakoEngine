@@ -17,6 +17,7 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <map>
 #include <numbers>
 #include <utility>
 
@@ -29,6 +30,15 @@ namespace Tako {
   static void from_json(const json& j, Vector2& v) { v = { j.at(0).get<float>(), j.at(1).get<float>() }; }
   static void to_json(json& j, const Vector4& v) { j = { v.x, v.y, v.z, v.w }; }
   static void from_json(const json& j, Vector4& v) { v = { j.at(0).get<float>(), j.at(1).get<float>(), j.at(2).get<float>(), j.at(3).get<float>() }; }
+  static void to_json(json& j, const UISlice& s) { j = { { "border", s.border }, { "visible", s.regionVisible }, { "textures", s.regionTextures } }; }
+  static void from_json(const json& j, UISlice& s) {
+    const UISlice defaults;
+    s.border         = j.value("border", defaults.border);
+    s.regionVisible  = j.value("visible", defaults.regionVisible);
+    s.regionTextures = j.value("textures", defaults.regionTextures);
+  }
+
+  static_assert(UISlice::kRegionCount == Sprite::kRegionCount);
 
   namespace {
 
@@ -51,6 +61,40 @@ namespace Tako {
       return instances;
     }
 #endif
+
+    /// <summary>
+    /// テクスチャキー → 共有の 9-slice。最初の参照時にファイルから読む。std::map なので保存順が安定する
+    /// </summary>
+    std::map<std::string, UISlice>& TextureSlices() {
+      static std::map<std::string, UISlice> slices;
+      static bool                           isLoaded = false;
+      if (!isLoaded) {
+        isLoaded = true;
+        UILayout::LoadTextureSlices();
+      }
+      return slices;
+    }
+
+    /// <summary>
+    /// 未読み込みなら読み込む。JSON の誤記で LoadTexture の assert に落ちないよう、先にファイルの有無を確かめる
+    /// </summary>
+    /// <returns>読み込み済みになれば true。空のキーやファイルが無い場合は false</returns>
+    bool EnsureTextureLoaded(const std::string& texture) {
+      if (texture.empty()) {
+        return false;
+      }
+      TextureManager* textureManager = TextureManager::GetInstance();
+      if (textureManager->IsLoaded(texture)) {
+        return true;
+      }
+      const std::string path = textureManager->GetFilePath(texture);
+      if (!std::filesystem::exists(StringUtility::ConvertString(path))) {
+        LogWarning(std::format("UILayout: texture not found: {}", path));
+        return false;
+      }
+      textureManager->LoadTexture(texture);
+      return true;
+    }
 
     /// <summary>
     /// 親矩形上のアンカー範囲（左上と幅）を求める
@@ -109,21 +153,25 @@ namespace Tako {
 
     json WriteElement(const UIElement& element) {
       json node;
-      node["name"]        = element.name;
-      node["texture"]     = element.texture;
-      node["anchorMin"]   = element.anchorMin;
-      node["anchorMax"]   = element.anchorMax;
-      node["pivot"]       = element.pivot;
-      node["position"]    = element.position;
-      node["size"]        = element.size;
-      node["rotation"]    = element.rotation;
-      node["color"]       = element.color;
-      node["flip"]        = { element.flipX, element.flipY };
-      node["uvLeftTop"]   = element.uvLeftTop;
-      node["uvSize"]      = element.uvSize;
-      node["sliceBorder"] = element.sliceBorder;
-      node["visible"]     = element.visible;
-      node["locked"]      = element.locked;
+      node["name"]          = element.name;
+      node["texture"]       = element.texture;
+      node["anchorMin"]     = element.anchorMin;
+      node["anchorMax"]     = element.anchorMax;
+      node["pivot"]         = element.pivot;
+      node["position"]      = element.position;
+      node["size"]          = element.size;
+      node["rotation"]      = element.rotation;
+      node["color"]         = element.color;
+      node["flip"]          = { element.flipX, element.flipY };
+      node["uvLeftTop"]     = element.uvLeftTop;
+      node["uvSize"]        = element.uvSize;
+      node["sliceOverride"] = element.isSliceOverridden;
+      node["visible"]       = element.visible;
+      node["locked"]        = element.locked;
+      // 共有の 9-slice を使う要素には書かない（共有側の値と紛れないように）
+      if (element.isSliceOverridden) {
+        node["slice"] = element.slice;
+      }
 
       json& children = node["children"] = json::array();
       for (const std::unique_ptr<UIElement>& child : element.children) {
@@ -137,18 +185,19 @@ namespace Tako {
     /// </summary>
     void ReadElement(UILayout& layout, const json& node, UIElement& parent) {
       UIElement& element = *parent.children.emplace_back(std::make_unique<UIElement>());
-      element.parent      = &parent;
-      element.name        = node.value("name", std::string("Element"));
-      element.anchorMin   = node.value("anchorMin", element.anchorMin);
-      element.anchorMax   = node.value("anchorMax", element.anchorMax);
-      element.pivot       = node.value("pivot", element.pivot);
-      element.position    = node.value("position", element.position);
-      element.size        = node.value("size", element.size);
-      element.rotation    = node.value("rotation", element.rotation);
-      element.color       = node.value("color", element.color);
-      element.sliceBorder = node.value("sliceBorder", element.sliceBorder);
-      element.visible     = node.value("visible", element.visible);
-      element.locked      = node.value("locked", element.locked);
+      element.parent            = &parent;
+      element.name              = node.value("name", std::string("Element"));
+      element.anchorMin         = node.value("anchorMin", element.anchorMin);
+      element.anchorMax         = node.value("anchorMax", element.anchorMax);
+      element.pivot             = node.value("pivot", element.pivot);
+      element.position          = node.value("position", element.position);
+      element.size              = node.value("size", element.size);
+      element.rotation          = node.value("rotation", element.rotation);
+      element.color             = node.value("color", element.color);
+      element.isSliceOverridden = node.value("sliceOverride", element.isSliceOverridden);
+      element.slice             = node.value("slice", element.slice);
+      element.visible           = node.value("visible", element.visible);
+      element.locked            = node.value("locked", element.locked);
 
       const std::array<bool, 2> flip = node.value("flip", std::array<bool, 2>{});
       element.flipX = flip[0];
@@ -242,6 +291,64 @@ namespace Tako {
     }
     ofs << Serialize();
     return static_cast<bool>(ofs);
+  }
+
+  void UILayout::LoadTextureSlices() {
+    std::map<std::string, UISlice>& slices = TextureSlices();
+    slices.clear();
+
+    // ファイルが無いのは共有の 9-slice をまだ作っていないだけなので警告しない
+    std::ifstream ifs(kTextureSlicePath);
+    if (!ifs) {
+      return;
+    }
+    try {
+      const json root = json::parse(ifs);
+      for (const auto& [texture, node] : root.items()) {
+        slices[texture] = node.get<UISlice>();
+      }
+    }
+    catch (const json::exception& e) {
+      LogWarning(std::format("UILayout: failed to parse {}: {}", kTextureSlicePath, e.what()));
+      slices.clear();
+    }
+  }
+
+  bool UILayout::SaveTextureSlices() {
+    std::ofstream ofs(kTextureSlicePath);
+    if (!ofs) {
+      LogWarning(std::format("UILayout: cannot open {} for writing.", kTextureSlicePath));
+      return false;
+    }
+    ofs << SerializeTextureSlices();
+    return static_cast<bool>(ofs);
+  }
+
+  std::string UILayout::SerializeTextureSlices() {
+    json root = json::object();
+    for (const auto& [texture, slice] : TextureSlices()) {
+      if (slice != UISlice{}) {
+        root[texture] = slice;
+      }
+    }
+    return root.dump(2);
+  }
+
+  void UILayout::SetTextureSlice(const std::string& texture, const UISlice& slice) {
+    if (!texture.empty()) {
+      TextureSlices()[texture] = slice;
+    }
+  }
+
+  const UISlice& UILayout::GetTextureSlice(const std::string& texture) {
+    static const UISlice kNone;
+    const std::map<std::string, UISlice>& slices = TextureSlices();
+    const auto it = slices.find(texture);
+    return it != slices.end() ? it->second : kNone;
+  }
+
+  const UISlice& UILayout::GetEffectiveSlice(const UIElement& element) {
+    return element.isSliceOverridden ? element.slice : GetTextureSlice(element.texture);
   }
 
   std::string UILayout::Serialize() const {
@@ -357,7 +464,8 @@ namespace Tako {
 
   void UILayout::SetSliceBorder(const std::string& name, const Vector4& sliceBorder) {
     if (UIElement* element = Find(name)) {
-      element->sliceBorder = sliceBorder;
+      element->slice.border      = sliceBorder;
+      element->isSliceOverridden = true;
     }
   }
 
@@ -430,7 +538,7 @@ namespace Tako {
 
   Vector4 UILayout::GetSliceBorder(const std::string& name) const {
     const UIElement* element = Find(name);
-    return element ? element->sliceBorder : Vector4{};
+    return element ? GetEffectiveSlice(*element).border : Vector4{};
   }
 
   bool UILayout::IsFlipX(const std::string& name) const {
@@ -479,21 +587,10 @@ namespace Tako {
     element.texture   = texture;
     element.uvLeftTop = {};
     element.uvSize    = {};
-    if (texture.empty()) {
+    // 読み込めなくてもキーは残し、保存で消えないようにする
+    if (!EnsureTextureLoaded(texture)) {
       element.sprite.reset();
       return;
-    }
-
-    TextureManager* textureManager = TextureManager::GetInstance();
-    if (!textureManager->IsLoaded(texture)) {
-      // JSON の誤記で LoadTexture の assert に落ちないよう、先に存在を確かめる。キーは残して保存で消えないようにする
-      const std::string path = textureManager->GetFilePath(texture);
-      if (!std::filesystem::exists(StringUtility::ConvertString(path))) {
-        LogWarning(std::format("UILayout: texture not found: {}", path));
-        element.sprite.reset();
-        return;
-      }
-      textureManager->LoadTexture(texture);
     }
 
     if (element.sprite) {
@@ -617,7 +714,18 @@ namespace Tako {
       sprite.SetIsFlipY(element.flipY);
       sprite.SetTexLeftTop(element.uvLeftTop);
       sprite.SetTexCutSize(element.uvSize);
-      sprite.SetSlice(element.sliceBorder, scale_);
+
+      const UISlice& slice = GetEffectiveSlice(element);
+      sprite.SetSlice(slice.border, scale_);
+      for (int region = 0; region < UISlice::kRegionCount; ++region) {
+        sprite.SetRegionVisible(region, slice.regionVisible[region]);
+        // 読み込みはキーが変わったときだけ（無いファイルの警告を毎フレーム出さない）
+        const std::string& texture = slice.regionTextures[region];
+        if (texture != sprite.GetRegionTexture(region)) {
+          EnsureTextureLoaded(texture);
+          sprite.SetRegionTexture(region, texture);
+        }
+      }
       sprite.Update();
     }
 

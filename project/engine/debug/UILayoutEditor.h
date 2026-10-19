@@ -8,21 +8,24 @@
 #include <vector>
 #include "imgui.h"
 #include "Vector2.h"
+#include "Vector4.h"
 
 namespace Tako {
 
   class UILayout;
   struct UIElement;
+  struct UISlice;
 
   /// <summary>
   /// 生存中の UILayout を編集するエディタ（Hierarchy / Inspector のウィンドウと、Game Viewport 上のギズモ）
   /// </summary>
   class UILayoutEditor {
   private: //定数
-    static constexpr float kHierarchyPaneWidth = 240.0f;
-    static constexpr float kHandleHalfSize     = 4.0f;    ///< 角ハンドルの描画・当たり判定の半径（画像上 px）
-    static constexpr float kMinGridSpacing     = 4.0f;    ///< 画像上でこれより細かいグリッドは描かない（px）
-    static constexpr float kPreviewMaxHeight   = 160.0f;  ///< Inspector のテクスチャプレビューの最大高さ（px）
+    static constexpr float kHierarchyPaneWidth   = 240.0f;
+    static constexpr float kHandleHalfSize       = 4.0f;    ///< 角ハンドルの描画・当たり判定の半径（画像上 px）
+    static constexpr float kMinGridSpacing       = 4.0f;    ///< 画像上でこれより細かいグリッドは描かない（px）
+    static constexpr float kPreviewDefaultHeight = 240.0f;  ///< Inspector のテクスチャプレビューの初期の高さ（px）。下の縁のドラッグで変えられる
+    static constexpr float kResultDefaultHeight  = 160.0f;  ///< Inspector の 9-slice の結果プレビューの初期の高さ（px）
 
   private: //構造体
     /// <summary>
@@ -69,8 +72,9 @@ namespace Tako {
     /// </summary>
     struct OpenRequest {
       std::string name;
-      bool        isPreview = false;  ///< シーン外のファイルをプレビューで開くか
-      bool        isNew     = false;  ///< name で新規作成するか
+      bool        isPreview  = false;  ///< シーン外のファイルをプレビューで開くか
+      bool        isNew      = false;  ///< name で新規作成するか
+      std::string selectName;          ///< 開いた後に選ぶ要素名（空なら選ばない）
     };
 
   public: //メンバー関数
@@ -149,7 +153,7 @@ namespace Tako {
     void Open(const OpenRequest& request);
 
     /// <summary>
-    /// 保存して結果をログに出す。成功したら未保存の印を外す
+    /// 保存して結果をログに出す。テクスチャごとの共有の 9-slice に変更があれば一緒に保存する。成功したら未保存の印を外す
     /// </summary>
     /// <returns>書き込めたら true</returns>
     bool SaveLayout(const UILayout& layout);
@@ -180,9 +184,27 @@ namespace Tako {
     void DrawAnchorPresets(UILayout& layout, UIElement& element);
 
     /// <summary>
-    /// テクスチャ全体を表示し、切り出し範囲（黄）と 9-slice の線（緑）を重ねる
+    /// 9-slice の枠・区画の設定と、要素のサイズに対する警告を描く
     /// </summary>
-    void DrawTexturePreview(const UIElement& element);
+    /// <param name="slice">編集する値（呼び出し側が共有か要素の上書きへ書き戻す）</param>
+    void DrawSliceSettings(const UILayout& layout, UIElement& element, UISlice& slice);
+
+    /// <summary>
+    /// element と同じテクスチャを使う要素（開いている全レイアウト）を一覧にするボタンとポップアップ。選ぶとその要素へ移動する
+    /// </summary>
+    void DrawSliceUsers(const UIElement& element);
+
+    /// <summary>
+    /// テクスチャと切り出し範囲（黄）・9-slice の線（緑）を、拡大・移動できるキャンバスに描く。
+    /// 左ドラッグで 9-slice の線または切り出し範囲を動かし、9-slice モードのクリックで区画を選ぶ
+    /// </summary>
+    /// <param name="slice">編集する 9-slice（呼び出し側が書き戻す）</param>
+    void DrawTexturePreview(UIElement& element, UISlice& slice);
+
+    /// <summary>
+    /// 要素の今の画面サイズで 9-slice を切った結果を、ゲームと同じ計算（Sprite::CalcSliceGrid）で描く。反転と回転は反映しない
+    /// </summary>
+    void DrawSliceResult(const UILayout& layout, const UIElement& element, const UISlice& slice);
 
     void ApplyPending(UILayout& layout);
 
@@ -248,6 +270,20 @@ namespace Tako {
     bool  isGridVisible_ = false;
     bool  isSnapEnabled_ = false;
     float gridSize_      = 10.0f;  ///< 基準解像度 px
+
+    //テクスチャプレビュー
+    float   previewZoom_           = 1.0f;  ///< プレビュー px ÷ テクスチャ px
+    Vector2 previewOrigin_         = {};    ///< テクスチャ左上のキャンバス内の位置（プレビュー px）
+    bool    isPreviewFit_          = true;  ///< true の間は毎フレーム、テクスチャと切り出し範囲が全部収まるように合わせる。拡大や移動をすると false
+    bool    isSliceDragMode_       = true;  ///< 左ドラッグで動かすのが 9-slice の線か（false なら切り出し範囲）
+    int     previewDragEdges_      = 0;     ///< ドラッグ中の辺（左 1・上 2・右 4・下 8 の和。0 ならドラッグしていない）
+    Vector2 previewDragStartMouse_ = {};    ///< ドラッグ開始時のマウス（テクスチャ px）
+    Vector4 previewDragStartLines_ = {};    ///< ドラッグ開始時の、動かす線の位置（テクスチャ px、左上右下）
+
+    //9-slice
+    int  selectedRegion_     = 4;      ///< 編集中の区画（UISlice の並び。4 は中央）
+    bool isSliceMirrored_    = false;  ///< 左右・上下の枠を同じ値にそろえるか
+    bool isSliceTableEdited_ = false;  ///< テクスチャごとの共有の 9-slice に未保存の変更があるか
 
     //キーボード
     bool wantsKeyboard_ = false;

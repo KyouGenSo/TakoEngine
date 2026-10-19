@@ -44,56 +44,35 @@ namespace Tako {
     transform_.rotate = Vector3(0.0f, 0.0f, rotation_);
     transform_.scale = Vector3(size_.x, size_.y, 1.0f);
 
-    // 枠の画面 px。合計がサイズを超える軸は比率を保って縮める
-    const float borderLeft   = sliceBorder_.x * sliceScale_;
-    const float borderTop    = sliceBorder_.y * sliceScale_;
-    const float borderRight  = sliceBorder_.z * sliceScale_;
-    const float borderBottom = sliceBorder_.w * sliceScale_;
-    const float borderWidth  = borderLeft + borderRight;
-    const float borderHeight = borderTop + borderBottom;
-    const float fitX = (borderWidth > size_.x && borderWidth > 0.0f) ? (std::max)(size_.x, 0.0f) / borderWidth : 1.0f;
-    const float fitY = (borderHeight > size_.y && borderHeight > 0.0f) ? (std::max)(size_.y, 0.0f) / borderHeight : 1.0f;
-
-    // 頂点はサイズ 1 の単位空間なので、枠をサイズ比へ直す
-    const float unitLeft   = size_.x > 0.0f ? borderLeft * fitX / size_.x : 0.0f;
-    const float unitRight  = size_.x > 0.0f ? borderRight * fitX / size_.x : 0.0f;
-    const float unitTop    = size_.y > 0.0f ? borderTop * fitY / size_.y : 0.0f;
-    const float unitBottom = size_.y > 0.0f ? borderBottom * fitY / size_.y : 0.0f;
-
-    // 4x4 グリッドの線（アンカーポイント基準）。枠が 0 なら内側の線は外周と重なる
-    const float left   = 0.0f - anchorPoint_.x;
-    const float right  = 1.0f - anchorPoint_.x;
-    const float top    = 0.0f - anchorPoint_.y;
-    const float bottom = 1.0f - anchorPoint_.y;
-    const float xs[4]  = { left, left + unitLeft, right - unitRight, right };
-    const float ys[4]  = { top, top + unitTop, bottom - unitBottom, bottom };
-
     const DirectX::TexMetadata& metadata = TextureManager::GetInstance()->GetMetaData(textureIndex_);
-    const float texWidth  = static_cast<float>(metadata.width);
-    const float texHeight = static_cast<float>(metadata.height);
-    const float us[4] = {
-      texTopLeft_.x / texWidth,
-      (texTopLeft_.x + sliceBorder_.x) / texWidth,
-      (texTopLeft_.x + texCutSize_.x - sliceBorder_.z) / texWidth,
-      (texTopLeft_.x + texCutSize_.x) / texWidth,
-    };
-    const float vs[4] = {
-      texTopLeft_.y / texHeight,
-      (texTopLeft_.y + sliceBorder_.y) / texHeight,
-      (texTopLeft_.y + texCutSize_.y - sliceBorder_.w) / texHeight,
-      (texTopLeft_.y + texCutSize_.y) / texHeight,
-    };
+    const SliceGrid grid = CalcSliceGrid(size_, sliceBorder_, sliceScale_, texTopLeft_, texCutSize_, { static_cast<float>(metadata.width), static_cast<float>(metadata.height) });
 
     // 反転はアンカーポイントを中心とした鏡映
     const float flipX = isFlipX_ ? -1.0f : 1.0f;
     const float flipY = isFlipY_ ? -1.0f : 1.0f;
 
-    for (uint32_t row = 0; row < 4; ++row) {
-      for (uint32_t col = 0; col < 4; ++col) {
-        VertexData& vertex = vertexData_[row * 4 + col];
-        vertex.position = { xs[col] * flipX, ys[row] * flipY, 0.0f, 1.0f };
-        vertex.texCoord = { us[col], vs[row] };
+    // 頂点の並びは左上・右上・左下・右下
+    auto writeQuad = [&](uint32_t base, float left, float top, float right, float bottom, const Vector2& uvMin, const Vector2& uvMax) {
+      const float xs[2] = { (left - anchorPoint_.x) * flipX, (right - anchorPoint_.x) * flipX };
+      const float ys[2] = { (top - anchorPoint_.y) * flipY, (bottom - anchorPoint_.y) * flipY };
+      for (uint32_t i = 0; i < 4; ++i) {
+        const uint32_t col = i % 2;
+        const uint32_t row = i / 2;
+        vertexData_[base + i].position = { xs[col], ys[row], 0.0f, 1.0f };
+        vertexData_[base + i].texCoord = { col == 0 ? uvMin.x : uvMax.x, row == 0 ? uvMin.y : uvMax.y };
       }
+    };
+
+    writeQuad(0, grid.xs[0], grid.ys[0], grid.xs[3], grid.ys[3], { grid.us[0], grid.vs[0] }, { grid.us[3], grid.vs[3] });
+
+    // 区画は頂点を共有しない。別画像の区画はその画像全体（UV 0..1）を使うため
+    for (int region = 0; region < kRegionCount; ++region) {
+      const int     col     = region % 3;
+      const int     row     = region / 3;
+      const bool    isOwn   = regionTextureIndices_[region] != 0;
+      const Vector2 uvMin   = isOwn ? Vector2{ 0.0f, 0.0f } : Vector2{ grid.us[col], grid.vs[row] };
+      const Vector2 uvMax   = isOwn ? Vector2{ 1.0f, 1.0f } : Vector2{ grid.us[col + 1], grid.vs[row + 1] };
+      writeQuad(4 + static_cast<uint32_t>(region) * 4, grid.xs[col], grid.ys[row], grid.xs[col + 1], grid.ys[row + 1], uvMin, uvMax);
     }
 
     // Sprite の座標変換
@@ -120,13 +99,90 @@ namespace Tako {
     // 座標変換行列 CBuffer の場所を設定
     SpriteBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(SpriteBasic::kTransformParam, transformationMatrixResource_->GetGPUVirtualAddress());
 
-    // SRV の DescriptorTable を設定,テクスチャを指定
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(SpriteBasic::kTextureParam, textureIndex_);
+    ID3D12GraphicsCommandList* commandList = SpriteBasic::GetInstance()->GetDX12Basic()->GetCommandList();
+    if (!IsSliced()) {
+      SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(SpriteBasic::kTextureParam, textureIndex_);
+      commandList->DrawIndexedInstanced(kQuadIndexCount, 1, 0, 0, 0);
+      return;
+    }
 
-    // 枠が無ければ外周 1 枚板だけ描く
-    const bool isSliced = IsSliced();
-    SpriteBasic::GetInstance()->GetDX12Basic()->GetCommandList()->DrawIndexedInstanced(
-      isSliced ? kSliceIndexCount : kQuadIndexCount, 1, isSliced ? kQuadIndexCount : 0, 0, 0);
+    // 表示する区画のうち、同じテクスチャが続くものは 1 回で描く（区画の設定が無ければ 9 枚を 1 回）
+    constexpr uint32_t kIndicesPerRegion = kSliceIndexCount / kRegionCount;
+    int                runStart          = -1;
+    uint32_t           runTexture        = 0;
+    auto flush = [&](int end) {
+      if (runStart < 0) {
+        return;
+      }
+      SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(SpriteBasic::kTextureParam, runTexture);
+      commandList->DrawIndexedInstanced(static_cast<uint32_t>(end - runStart) * kIndicesPerRegion, 1, kQuadIndexCount + static_cast<uint32_t>(runStart) * kIndicesPerRegion, 0, 0);
+      runStart = -1;
+    };
+    for (int region = 0; region < kRegionCount; ++region) {
+      const uint32_t texture = regionTextureIndices_[region] != 0 ? regionTextureIndices_[region] : textureIndex_;
+      if (runStart >= 0 && (!regionVisible_[region] || texture != runTexture)) {
+        flush(region);
+      }
+      if (regionVisible_[region] && runStart < 0) {
+        runStart   = region;
+        runTexture = texture;
+      }
+    }
+    flush(kRegionCount);
+  }
+
+  Sprite::SliceGrid Sprite::CalcSliceGrid(const Vector2& size, const Vector4& borderTexPx, float scale, const Vector2& texLeftTop, const Vector2& texCutSize, const Vector2& texSize)
+  {
+    // 枠の画面 px。合計がサイズを超える軸は比率を保って縮める
+    const float borderLeft   = borderTexPx.x * scale;
+    const float borderTop    = borderTexPx.y * scale;
+    const float borderRight  = borderTexPx.z * scale;
+    const float borderBottom = borderTexPx.w * scale;
+    const float borderWidth  = borderLeft + borderRight;
+    const float borderHeight = borderTop + borderBottom;
+    const float fitX = (borderWidth > size.x && borderWidth > 0.0f) ? (std::max)(size.x, 0.0f) / borderWidth : 1.0f;
+    const float fitY = (borderHeight > size.y && borderHeight > 0.0f) ? (std::max)(size.y, 0.0f) / borderHeight : 1.0f;
+
+    // 単位空間なので、枠をサイズ比へ直す。枠が 0 なら内側の線は外周と重なる
+    const float unitLeft   = size.x > 0.0f ? borderLeft * fitX / size.x : 0.0f;
+    const float unitRight  = size.x > 0.0f ? borderRight * fitX / size.x : 0.0f;
+    const float unitTop    = size.y > 0.0f ? borderTop * fitY / size.y : 0.0f;
+    const float unitBottom = size.y > 0.0f ? borderBottom * fitY / size.y : 0.0f;
+
+    return SliceGrid{
+      .xs = { 0.0f, unitLeft, 1.0f - unitRight, 1.0f },
+      .ys = { 0.0f, unitTop, 1.0f - unitBottom, 1.0f },
+      .us = {
+        texLeftTop.x / texSize.x,
+        (texLeftTop.x + borderTexPx.x) / texSize.x,
+        (texLeftTop.x + texCutSize.x - borderTexPx.z) / texSize.x,
+        (texLeftTop.x + texCutSize.x) / texSize.x,
+      },
+      .vs = {
+        texLeftTop.y / texSize.y,
+        (texLeftTop.y + borderTexPx.y) / texSize.y,
+        (texLeftTop.y + texCutSize.y - borderTexPx.w) / texSize.y,
+        (texLeftTop.y + texCutSize.y) / texSize.y,
+      },
+    };
+  }
+
+  void Sprite::SetRegionTexture(int region, const std::string& texturePath)
+  {
+    if (regionTextures_[region] == texturePath) {
+      return;
+    }
+    // 読み込めなかったキーも覚えておき、毎フレーム引き直さない
+    regionTextures_[region] = texturePath;
+    TextureManager* textureManager = TextureManager::GetInstance();
+    regionTextureIndices_[region] = (!texturePath.empty() && textureManager->IsLoaded(texturePath)) ? textureManager->GetSRVIndex(texturePath) : 0;
+  }
+
+  bool Sprite::IsSliced() const
+  {
+    const bool hasBorder = sliceBorder_.x > 0.0f || sliceBorder_.y > 0.0f || sliceBorder_.z > 0.0f || sliceBorder_.w > 0.0f;
+    return hasBorder || std::ranges::find(regionVisible_, false) != regionVisible_.end() ||
+      std::ranges::any_of(regionTextureIndices_, [](uint32_t index) { return index != 0; });
   }
 
   void Sprite::CreateVertexData()
@@ -154,21 +210,13 @@ namespace Tako {
     // インデックスリソースをマップ
     indexResource_->Map(0, nullptr, reinterpret_cast<void**>(&indexData_));
 
-    // 頂点番号は row * 4 + col（row 0 が上）。三角形の並びは左下・左上・右下 / 右上・右下・左上
-    auto writeQuad = [](uint32_t* out, uint32_t leftTop, uint32_t rightTop, uint32_t leftBottom, uint32_t rightBottom) {
-      out[0] = leftBottom; out[1] = leftTop;     out[2] = rightBottom;
-      out[3] = rightTop;   out[4] = rightBottom; out[5] = leftTop;
-    };
-
-    writeQuad(indexData_, 0, 3, 12, 15);
-
-    uint32_t* sliceIndices = indexData_ + kQuadIndexCount;
-    for (uint32_t row = 0; row < 3; ++row) {
-      for (uint32_t col = 0; col < 3; ++col) {
-        const uint32_t leftTop = row * 4 + col;
-        writeQuad(sliceIndices, leftTop, leftTop + 1, leftTop + 4, leftTop + 5);
-        sliceIndices += 6;
-      }
+    // 四角形 1 枚は 4 頂点（左上・右上・左下・右下）。外周 1 枚板が先頭、続いて区画が行順。
+    // 三角形の並びは左下・左上・右下 / 右上・右下・左上
+    for (uint32_t quad = 0; quad < 1 + kRegionCount; ++quad) {
+      const uint32_t base = quad * 4;
+      uint32_t*      out  = indexData_ + quad * kQuadIndexCount;
+      out[0] = base + 2; out[1] = base + 0; out[2] = base + 3;
+      out[3] = base + 1; out[4] = base + 3; out[5] = base + 0;
     }
   }
 

@@ -1,6 +1,7 @@
 #pragma once
 #include "Vector2.h"
 #include "Vector4.h"
+#include <array>
 #include <memory>
 #include <string>
 #include <vector>
@@ -8,6 +9,19 @@
 namespace Tako {
 
   class Sprite;
+
+  /// <summary>
+  /// 9-slice の設定。テクスチャごとの共有値と、要素ごとの上書きの両方に使う
+  /// </summary>
+  struct UISlice {
+    static constexpr int kRegionCount = 9;  ///< 区画の並びは行順（0:左上 … 4:中央 … 8:右下）
+
+    Vector4                               border         = {};                                                        ///< 枠幅（テクスチャ px、左上右下）。切り出し範囲の各辺から測る
+    std::array<bool, kRegionCount>        regionVisible  = { true, true, true, true, true, true, true, true, true };  ///< 中央を false にすると枠だけを描く
+    std::array<std::string, kRegionCount> regionTextures;                                                             ///< 区画ごとの別画像のキー。空なら本体の画像のその区画。画像全体を区画いっぱいに引き伸ばす
+
+    bool operator==(const UISlice&) const = default;
+  };
 
   /// <summary>
   /// UILayout の 1 要素。親の矩形に対してアンカーとピボットで配置する
@@ -18,21 +32,22 @@ namespace Tako {
 
     //保存データ
     std::string name;
-    std::string texture;                                   ///< TextureManager のキー。空なら描画しないグループ
-    Vector2     anchorMin   = { 0.5f, 0.5f };              ///< 親矩形内の基準 (0..1)。Min と Max が異なる軸は親に合わせて伸縮する
-    Vector2     anchorMax   = { 0.5f, 0.5f };
-    Vector2     pivot       = { 0.5f, 0.5f };              ///< 自身の基準点 (0..1)。回転の中心も兼ねる
-    Vector2     position    = {};                          ///< アンカー基準点から pivot までのずれ（基準解像度 px）
-    Vector2     size        = { 100.0f, 100.0f };          ///< 伸縮しない軸はサイズ、伸縮する軸はアンカー幅との差分（基準解像度 px）
-    float       rotation    = 0.0f;                        ///< 度数法。子には継承しない
-    Vector4     color       = { 1.0f, 1.0f, 1.0f, 1.0f };
-    Vector2     uvLeftTop   = {};                          ///< テクスチャ上の切り出し位置（px）
-    Vector2     uvSize      = {};                          ///< テクスチャ上の切り出しサイズ（px）
-    Vector4     sliceBorder = {};                          ///< 9-slice の枠幅（テクスチャ px、左上右下）
-    bool        flipX       = false;
-    bool        flipY       = false;
-    bool        visible     = true;                        ///< false なら子も描画しない
-    bool        locked      = false;                       ///< エディタ専用。true ならビューポートのクリックで選ばれない
+    std::string texture;                                         ///< TextureManager のキー。空なら描画しないグループ
+    Vector2     anchorMin         = { 0.5f, 0.5f };              ///< 親矩形内の基準 (0..1)。Min と Max が異なる軸は親に合わせて伸縮する
+    Vector2     anchorMax         = { 0.5f, 0.5f };
+    Vector2     pivot             = { 0.5f, 0.5f };              ///< 自身の基準点 (0..1)。回転の中心も兼ねる
+    Vector2     position          = {};                          ///< アンカー基準点から pivot までのずれ（基準解像度 px）
+    Vector2     size              = { 100.0f, 100.0f };          ///< 伸縮しない軸はサイズ、伸縮する軸はアンカー幅との差分（基準解像度 px）
+    float       rotation          = 0.0f;                        ///< 度数法。子には継承しない
+    Vector4     color             = { 1.0f, 1.0f, 1.0f, 1.0f };
+    Vector2     uvLeftTop         = {};                          ///< テクスチャ上の切り出し位置（px）
+    Vector2     uvSize            = {};                          ///< テクスチャ上の切り出しサイズ（px）
+    UISlice     slice;                                           ///< この要素だけの 9-slice。isSliceOverridden が false の間は使わない
+    bool        isSliceOverridden = false;                       ///< false ならテクスチャごとの共有の 9-slice を使う（無ければ枠なし）
+    bool        flipX             = false;
+    bool        flipY             = false;
+    bool        visible           = true;                        ///< false なら子も描画しない
+    bool        locked            = false;                       ///< エディタ専用。true ならビューポートのクリックで選ばれない
 
     std::vector<std::unique_ptr<UIElement>> children;  ///< 並び順が描画順（後ろほど手前）
 
@@ -49,7 +64,8 @@ namespace Tako {
   /// </summary>
   class UILayout {
   public: //定数
-    static constexpr const char* kDirectory = "resources/Json/UI/";
+    static constexpr const char* kDirectory        = "resources/Json/UI/";
+    static constexpr const char* kTextureSlicePath = "resources/Json/TextureSlices.json";  ///< テクスチャごとの共有の 9-slice。kDirectory の中に置くとレイアウト一覧に混ざる
 
   private: //定数
     static constexpr Vector2 kDefaultReferenceResolution = { 1920.0f, 1080.0f };
@@ -159,6 +175,22 @@ namespace Tako {
     /// <returns>レイアウト内で重複しない名前</returns>
     std::string MakeUniqueName(const std::string& base);
 
+    /// <summary>
+    /// テクスチャごとの共有の 9-slice を kTextureSlicePath から読み直す（未保存の変更は捨てる）。最初の参照時にも自動で読む
+    /// </summary>
+    static void LoadTextureSlices();
+
+    /// <summary>
+    /// テクスチャごとの共有の 9-slice を kTextureSlicePath へ保存する。既定値と同じものは書かない
+    /// </summary>
+    /// <returns>書き込めたら true</returns>
+    static bool SaveTextureSlices();
+
+    /// <summary>
+    /// SaveTextureSlices が書き込む内容（JSON 文字列）
+    /// </summary>
+    static std::string SerializeTextureSlices();
+
     //============================================================
     //Setter
     //============================================================
@@ -202,11 +234,16 @@ namespace Tako {
     void SetUV(const std::string& name, const Vector2& leftTop, const Vector2& size);
 
     /// <summary>
-    /// 9-slice の枠幅（テクスチャ px、左上右下）
+    /// 9-slice の枠幅（テクスチャ px、左上右下）。要素だけの上書きとして設定し、共有の 9-slice は使わなくなる
     /// </summary>
     void SetSliceBorder(const std::string& name, const Vector4& sliceBorder);
 
     void SetFlip(const std::string& name, bool flipX, bool flipY);
+
+    /// <summary>
+    /// テクスチャごとの共有の 9-slice を設定する。上書きしていない、このテクスチャの全要素（他のレイアウトも含む）に効く
+    /// </summary>
+    static void SetTextureSlice(const std::string& texture, const UISlice& slice);
 
     //============================================================
     //Getter
@@ -232,6 +269,10 @@ namespace Tako {
     Vector2 GetPivot(const std::string& name) const;
     Vector2 GetUVLeftTop(const std::string& name) const;
     Vector2 GetUVSize(const std::string& name) const;
+
+    /// <summary>
+    /// 実際に使っている 9-slice の枠幅（上書きしていなければテクスチャごとの共有の値）
+    /// </summary>
     Vector4 GetSliceBorder(const std::string& name) const;
     bool IsFlipX(const std::string& name) const;
     bool IsFlipY(const std::string& name) const;
@@ -245,6 +286,16 @@ namespace Tako {
     /// 直近の Update で求めた画面矩形のサイズ（クライアント px）
     /// </summary>
     Vector2 GetScreenRectSize(const std::string& name) const;
+
+    /// <summary>
+    /// テクスチャごとの共有の 9-slice。登録が無ければ既定値（枠なし）
+    /// </summary>
+    static const UISlice& GetTextureSlice(const std::string& texture);
+
+    /// <summary>
+    /// 要素が実際に使う 9-slice（上書きしていなければテクスチャごとの共有の値）
+    /// </summary>
+    static const UISlice& GetEffectiveSlice(const UIElement& element);
 
 #ifdef _DEBUG
     /// <summary>
