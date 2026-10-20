@@ -14,6 +14,7 @@ namespace Tako {
   enum class ShaderPass : uint8_t {
     Forward,       ///< 本編の色を描く
     ShadowCaster,  ///< シャドウマップへ深度だけを描く
+    Mask,          ///< ObjectMask へ描画物の maskId を書く（オブジェクト単位のポストエフェクト用）
     Count
   };
 

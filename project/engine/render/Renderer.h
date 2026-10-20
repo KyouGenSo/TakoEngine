@@ -100,9 +100,14 @@ namespace Tako {
     void RenderShadows(const DrawList& list);
 
     /// <summary>
-    /// 描画キュー・sortingOrder・奥行きの順に並べ、現在の描画先へ描く
+    /// 描画キューが [minQueue, maxQueue) の描画物を、描画キュー・sortingOrder・奥行きの順に並べて現在の描画先へ描く
     /// </summary>
-    void RenderList(const DrawList& list, const RenderView& view);
+    void RenderList(const DrawList& list, const RenderView& view, int32_t minQueue = INT32_MIN, int32_t maxQueue = INT32_MAX);
+
+    /// <summary>
+    /// maskId を持つ描画物の maskId を、現在の描画先（R8_UINT の ObjectMask）へ書く
+    /// </summary>
+    void RenderMask(const DrawList& list, const RenderView& view);
 
     /// <summary>
     /// submit 内で登録した描画物だけを、その場で指定の視点で描く（エディタのプレビュー用）

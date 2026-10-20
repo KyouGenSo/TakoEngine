@@ -36,11 +36,11 @@ namespace Tako {
   }
 
   void PreviewPanel::BeginPass() {
-    viewport_->BeginPass();
+    viewport_->BeginPass(postProcess_.HasEnabledEffects());
   }
 
   void PreviewPanel::EndPass() {
-    viewport_->EndPass();
+    viewport_->EndPass(&postProcess_, camera_.get());
   }
 
   void PreviewPanel::DrawCameraToolbar() {

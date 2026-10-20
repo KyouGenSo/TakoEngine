@@ -1,38 +1,26 @@
 #pragma once
-#include <d3d12.h>
 #include <array>
+#include <cstdint>
 #include <memory>
-#include <optional>
+#include <string>
+#include <string_view>
 #include <unordered_map>
-#include <string>
-#include <wrl.h>
+#include <vector>
 
-#include "IPostEffect.h"
-#include "Vector2.h"
-#include"Vector4.h"
 #include "PostEffectStruct.h"
-#include <variant>
-#include <string>
-
-#include "Dissolve.h"
-#include "TextureManager.h"
+#include "PostProcess.h"
 #ifdef _DEBUG
+#include <span>
 #include "EditTracker.h"
 #include "ShortcutTable.h"
-#include <span>
 #endif
-
-
-class IPostEffect;
-class DX12Basic;
 
 namespace Tako {
 
-  class Camera;
+  class DX12Basic;
 
   /// <summary>
-  /// ポストエフェクト管理クラス
-  /// エフェクトチェーンシステムで複数エフェクトの連続適用を制御
+  /// 本編のポストエフェクトスタックの窓口。組み込みエフェクトの登録・一時エフェクトのフェード・プロファイルの保存と読み込み・編集 UI を受け持つ
   /// </summary>
   class PostEffectManager {
   private: // シングルトン設定
@@ -49,10 +37,6 @@ namespace Tako {
     PostEffectManager& operator=(const PostEffectManager&) = delete;
 
   public: //構造体
-
-    // ComPtr のエイリアス
-    template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
-
     enum class AntiAliasing { None, FXAA };
 
   private: //構造体
@@ -60,115 +44,53 @@ namespace Tako {
     /// 一時エフェクト情報
     /// </summary>
     struct TemporaryEffectInfo {
-      float duration;           ///< 持続時間（秒）
-      float elapsedTime;        ///< 経過時間（秒）
-      EasingType easing;        ///< イージング種別
+      float       duration;     ///< 持続時間（秒）
+      float       elapsedTime;  ///< 経過時間（秒）
+      EasingType  easing;       ///< イージング種別
       EffectParam baseParam;    ///< 基本パラメータ（開始時の値）
     };
 
   public: //メンバー関数
-
-    /// <summary>
-    /// シングルトンインスタンスを取得
-    /// </summary>
-    /// <returns>PostEffectManager のインスタンスポインタ</returns>
     static PostEffectManager* GetInstance();
 
     /// <summary>
-    /// ポストエフェクトマネージャーを初期化
-    /// レンダーテクスチャの作成と全エフェクトの登録を行う
+    /// 組み込みのエフェクトを登録する。スタックにエフェクトを足すより前に呼ぶ
     /// </summary>
-    /// <param name="dx12">DirectX 12基盤クラスのポインタ</param>
     void Initialize(DX12Basic* dx12);
 
-    /// <summary>
-    /// ポストエフェクトマネージャーを終了
-    /// シングルトンインスタンスを解放する
-    /// </summary>
     static void Finalize();
 
     /// <summary>
-    /// エフェクトチェーンに指定されたエフェクトを追加
-    /// 追加されたエフェクトは描画時に適用順序に従って実行される
+    /// 定義の既定値でエフェクトを本編スタックの末尾に追加する
     /// </summary>
-    /// <param name="type">追加するエフェクト</param>
-    void AddEffectToChain(PostEffectType type);
+    /// <param name="name">エフェクトの名前</param>
+    /// <param name="maskId">0 なら画面全体。それ以外は Object3d::SetMaskId が一致する描画物だけに掛ける</param>
+    /// <returns>インスタンスの id（未登録の名前なら 0）</returns>
+    uint32_t AddEffect(std::string_view name, uint32_t maskId = 0);
 
     /// <summary>
-    /// エフェクトチェーンから指定されたエフェクトを削除
+    /// param でエフェクトを本編スタックの末尾に追加する
     /// </summary>
-    /// <param name="type">削除するエフェクト</param>
-    void RemoveEffectFromChain(PostEffectType type);
+    /// <returns>インスタンスの id（未登録の名前なら 0）</returns>
+    uint32_t AddEffect(std::string_view name, const EffectParam& param, uint32_t maskId = 0);
+
+    void RemoveEffect(uint32_t id);
 
     /// <summary>
-    /// エフェクトチェーンをクリアして全エフェクトを削除
+    /// 一時エフェクトも含めて全て外す
     /// </summary>
-    void ClearEffectChain();
+    void ClearEffects();
 
     /// <summary>
-    /// エフェクト適用対象のレンダーターゲットへの描画を開始
-    /// この関数の後に描画されたオブジェクトにはポストエフェクトが適用される
+    /// 一時的なエフェクトを掛ける。duration 秒でフェードアウトして自動で外れる。同名の一時エフェクトが動作中ならそれを最初からやり直す
     /// </summary>
-    void BeginDrawEffectTarget();
-
-    /// <summary>
-    /// エフェクト非適用対象のレンダーターゲットへの描画を開始
-    /// この関数の後に描画されたオブジェクトにはポストエフェクトが適用されない
-    /// </summary>
-    void BeginDrawNonEffectTarget();
-
-    /// <summary>
-    /// エフェクトチェーンを適用して描画処理を実行
-    /// 内部で ApplyEffectChain を呼び出す
-    /// </summary>
-    void Draw();
-
-    /// <summary>
-    /// 最終的なエフェクト適用結果を描画
-    /// </summary>
-    /// <param name="drawToSwapChain">スワップチェーンに描画するかどうか（デフォルト: true）</param>
-    void DrawFinalResult(bool drawToSwapChain = true);
-
-    /// <summary>
-    /// ImGui デバッグ UI を描画
-    /// エフェクトチェーン管理とパラメータ調整用の UI を表示する
-    /// </summary>
-    void DrawImgui();
-
-    /// <summary>
-    /// レンダーテクスチャを現在のウィンドウサイズで再生成
-    /// ウィンドウリサイズ時などに呼び出される
-    /// </summary>
-    void RecreateRenderTexture();
-
-    /// <summary>
-    /// 一時的なポストエフェクトを適用
-    /// 指定した持続時間でフェードアウトし、終了後に自動削除される
-    /// </summary>
-    /// <typeparam name="ParamType">エフェクトパラメータの型</typeparam>
-    /// <param name="type">エフェクト</param>
+    /// <param name="name">エフェクトの名前</param>
     /// <param name="duration">持続時間（秒）</param>
     /// <param name="param">開始時のパラメータ</param>
-    /// <param name="easing">イージング種別（デフォルト: EaseOut）</param>
-    template<typename ParamType>
-    void ApplyTemporaryEffect(
-      PostEffectType type,
-      float duration,
-      const ParamType& param,
-      EasingType easing = EasingType::EaseOut)
-    {
-      if (!IsEffectInChain(type)) {
-        AddEffectToChain(type);
-      }
-      SetEffectParam(type, param);
-
-      TemporaryEffectInfo info;
-      info.duration = duration;
-      info.elapsedTime = 0.0f;
-      info.easing = easing;
-      info.baseParam = EffectParam(param);
-      temporaryEffects_[type] = info;
-    }
+    /// <param name="easing">イージング種別</param>
+    /// <param name="maskId">掛ける描画物の maskId（0 なら画面全体）</param>
+    /// <returns>インスタンスの id（未登録の名前なら 0）</returns>
+    uint32_t ApplyTemporaryEffect(std::string_view name, float duration, const EffectParam& param, EasingType easing = EasingType::EaseOut, uint32_t maskId = 0);
 
     /// <summary>
     /// 一時エフェクトの更新処理（毎フレーム呼び出し）
@@ -176,58 +98,26 @@ namespace Tako {
     /// <param name="deltaTime">前フレームからの経過時間（秒）</param>
     void Update(float deltaTime);
 
-    /// <summary>
-    /// 一時エフェクトをキャンセル
-    /// </summary>
-    /// <param name="type">キャンセルするエフェクト</param>
-    void CancelTemporaryEffect(PostEffectType type);
+    void CancelTemporaryEffect(uint32_t id);
 
     /// <summary>
-    /// 指定されたエフェクトをチェーン内で1つ上に移動
+    /// 本編スタックを input→output へ掛ける（アンチエイリアス設定を含む）
     /// </summary>
-    /// <param name="type">移動するエフェクト</param>
-    /// <returns>移動が成功した場合 true、失敗した場合 false</returns>
-    bool MoveEffectUp(PostEffectType type);
+    void Execute(const PostEffectFrame& frame, RenderTexture& input, RenderTexture& output) const { stack_.Execute(frame, input, output, antiAliasing_ == AntiAliasing::FXAA); }
 
     /// <summary>
-    /// 指定されたエフェクトをチェーン内で1つ下に移動
+    /// ImGui デバッグ UI を描画
     /// </summary>
-    /// <param name="type">移動するエフェクト</param>
-    /// <returns>移動が成功した場合 true、失敗した場合 false</returns>
-    bool MoveEffectDown(PostEffectType type);
+    void DrawImgui();
 
     /// <summary>
-    /// 指定されたエフェクトをチェーン内の特定位置に移動
-    /// </summary>
-    /// <param name="type">移動するエフェクト</param>
-    /// <param name="newPosition">移動先の位置（0から始まるインデックス）</param>
-    /// <returns>移動が成功した場合 true、失敗した場合 false</returns>
-    bool MoveEffectToPosition(PostEffectType type, int newPosition);
-
-    /// <summary>
-    /// チェーン内の2つのエフェクトの位置を交換
-    /// </summary>
-    /// <param name="type1">1つ目のエフェクト</param>
-    /// <param name="type2">2つ目のエフェクト</param>
-    /// <returns>交換が成功した場合 true、失敗した場合 false</returns>
-    bool SwapEffects(PostEffectType type1, PostEffectType type2);
-
-    /// <summary>
-    /// チェーン内の2つのエフェクトをインデックスで指定して位置を交換
-    /// </summary>
-    /// <param name="index1">1つ目のエフェクトのインデックス</param>
-    /// <param name="index2">2つ目のエフェクトのインデックス</param>
-    /// <returns>交換が成功した場合 true、失敗した場合 false</returns>
-    bool SwapEffectsByIndex(int index1, int index2);
-
-    /// <summary>
-    /// 現在のチェーンと各エフェクトのパラメータを resources/Json/PostEffects/{name}.json に保存する（一時エフェクトは除く）
+    /// 現在のスタックと各エフェクトのパラメータを resources/Json/PostEffects/{name}.json に保存する（一時エフェクトは除く）
     /// </summary>
     /// <returns>書き込めたら true</returns>
     bool SaveProfile(const std::string& name) const;
 
     /// <summary>
-    /// プロファイルのチェーンで置き換え、パラメータを適用する（実行時に決まる値は保持）
+    /// プロファイルのスタックで置き換える（一時エフェクトは残す）
     /// </summary>
     /// <returns>ファイルが無い、または途中で失敗したら false</returns>
     bool LoadProfile(const std::string& name);
@@ -238,7 +128,7 @@ namespace Tako {
     std::string SerializeProfile() const;
 
     /// <summary>
-    /// SerializeProfile の内容でチェーンを置き換え、パラメータを適用する。一時エフェクトはチェーンに残す
+    /// SerializeProfile の内容でスタックを置き換える。一時エフェクトはスタックに残す
     /// </summary>
     /// <returns>途中で失敗したら false（そこまでの適用は残る）</returns>
     bool ApplyProfile(const std::string& profile);
@@ -259,149 +149,43 @@ namespace Tako {
     //Setter
     //============================================================
     /// <summary>
-    /// 指定されたエフェクトのパラメータを設定
+    /// インスタンスのパラメータを設定する
     /// </summary>
-    /// <param name="type">エフェクト</param>
-    /// <param name="param">設定するパラメータ（EffectParam 型）</param>
-    /// <returns>設定が成功した場合 true、未登録またはパラメータ型が一致しない場合 false</returns>
-    bool SetEffectParam(PostEffectType type, const EffectParam& param);
+    /// <returns>id が無い、またはパラメータの型がエフェクトと違えば false</returns>
+    bool SetEffectParam(uint32_t id, const EffectParam& param);
 
     /// <summary>
-    /// 指定されたエフェクトのパラメータを設定（テンプレート版）
-    /// 任意の型のパラメータを受け取り、内部で EffectParam に変換する
+    /// Dissolve が読むマスクテクスチャを設定
     /// </summary>
-    /// <typeparam name="ParamType">パラメータの型</typeparam>
-    /// <param name="type">エフェクト</param>
-    /// <param name="param">設定するパラメータ</param>
-    /// <returns>設定が成功した場合 true、未登録またはパラメータ型が一致しない場合 false</returns>
-    template<typename ParamType>
-    bool SetEffectParam(PostEffectType type, const ParamType& param) {
-      return SetEffectParam(type, EffectParam(param));
-    }
+    void SetDissolveMaskTex(const std::string& textureName);
 
     /// <summary>
-    /// ポストエフェクトで使用するカメラを設定
-    /// 深度ベースエフェクト等でカメラ情報が必要な場合に使用
+    /// Dissolve が溶けた部分に出すテクスチャを設定
     /// </summary>
-    /// <param name="camera">設定するカメラのポインタ</param>
-    void SetCamera(Camera* camera) {
-      if (camera) {
-        camera_ = camera;
-      }
-    }
-
-    /// <summary>
-    /// ディゾルブエフェクト用のマスクテクスチャを設定
-    /// </summary>
-    /// <param name="textureName">マスクテクスチャの名前</param>
-    void SetDissolveMaskTex(const std::string& textureName) {
-      if (!textureName.empty()) {
-        dissolveMaskSrvIndex_ = TextureManager::GetInstance()->GetSRVIndex(textureName);
-      }
-    }
-
-    /// <summary>
-    /// ディゾルブエフェクト用のベーステクスチャを設定
-    /// </summary>
-    /// <param name="textureName">ベーステクスチャの名前</param>
     void SetDissolveBaseTex(const std::string& textureName);
-
-    /// <summary>
-    /// シーン描画先のクリア色を設定し、RT の最適化クリア値を揃えるため描画先の再構築を要求する
-    /// </summary>
-    void SetClearColor(const Vector4& color);
 
     void SetAntiAliasing(AntiAliasing antiAliasing) { antiAliasing_ = antiAliasing; }
 
     //============================================================
     //Getter
     //============================================================
-    const Vector4& GetClearColor() const { return clearColor_; }
     AntiAliasing GetAntiAliasing() const { return antiAliasing_; }
-
-    /// <summary>
-    /// 指定エフェクトが一時エフェクトとして動作中か判定
-    /// </summary>
-    /// <param name="type">エフェクト</param>
-    /// <returns>一時エフェクトとして動作中なら true</returns>
-    bool IsTemporaryEffectActive(PostEffectType type) const;
-
-    /// <summary>
-    /// 指定されたエフェクトのチェーン内での位置を取得
-    /// </summary>
-    /// <param name="type">エフェクト</param>
-    /// <returns>エフェクトの位置（0から始まるインデックス）、見つからない場合は-1</returns>
-    int GetEffectPosition(PostEffectType type) const;
-
-    /// <summary>
-    /// 指定されたエフェクトがチェーン内に存在するか判定
-    /// </summary>
-    /// <param name="type">エフェクト</param>
-    /// <returns>チェーン内に存在する場合 true、存在しない場合 false</returns>
-    bool IsEffectInChain(PostEffectType type) const;
-
-    /// <summary>
-    /// エフェクトチェーンのサイズ（登録されているエフェクト数）を取得
-    /// </summary>
-    /// <returns>エフェクトチェーンのサイズ</returns>
-    size_t GetEffectChainSize() const;
-
-    /// <summary>
-    /// 指定位置にあるエフェクトを取得
-    /// </summary>
-    /// <param name="position">取得する位置（0から始まるインデックス）</param>
-    /// <returns>指定位置のエフェクト、範囲外の場合は nullopt</returns>
-    std::optional<PostEffectType> GetEffectAtPosition(int position) const;
-
-    /// <summary>
-    /// エフェクトチェーン全体を取得
-    /// </summary>
-    /// <returns>適用順のエフェクトのリスト</returns>
-    std::vector<PostEffectType> GetEffectChain() const;
-
-    D3D12_CPU_DESCRIPTOR_HANDLE GetCurrentRTVHandle() const { return effectTargetRT_.rtvHandle; }
-
-    /// <summary>
-    /// 最終的なエフェクト適用結果の SRV インデックスを取得
-    /// ImGui でのテクスチャ表示などに使用
-    /// </summary>
-    /// <returns>最終結果テクスチャの SRV インデックス</returns>
-    uint32_t GetFinalResultSrvIndex() const;
-
-    /// <summary>
-    /// 最終的なエフェクト適用結果のリソースを取得
-    /// ImGui でのテクスチャ表示などに使用
-    /// </summary>
-    /// <returns>最終結果テクスチャのリソースポインタ</returns>
-    ID3D12Resource* GetFinalResultResource() const;
+    bool UsesObjectMask() const { return stack_.UsesObjectMask(); }
+    bool IsTemporaryEffectActive(uint32_t id) const { return temporaryEffects_.contains(id); }
 
   private: //非公開関数
-    /// <summary>
-    /// レンダーターゲットの作成
-    /// </summary>
-    void CreateRenderTextures();
+    void RegisterBuiltinEffects();
 
 #ifdef _DEBUG
     /// <summary>
     /// profileName_ の名前で保存し、結果をログに出す（Save ボタン・Ctrl+S・確認モーダルの Save）
     /// </summary>
     bool SaveCurrentProfile();
-#endif
 
-    /// <summary>
-    /// エフェクトの登録
-    /// </summary>
-    void RegisterEffect(PostEffectType type, std::unique_ptr<IPostEffect> effect);
+    void DrawStackTab();
 
-    /// <summary>
-    /// エフェクトを適用
-    /// </summary>
-    void ApplyEffectChain();
-
-    /// <summary>
-    /// ImGui エフェクトパラメータタブを描画
-    /// </summary>
     void DrawEffectParametersTab();
+#endif
 
     /// <summary>
     /// イージング関数を適用
@@ -420,29 +204,17 @@ namespace Tako {
     EffectParam ApplyFadeToParam(const EffectParam& param, float fadeFactor) const;
 
   private: //メンバー変数
-    DX12Basic* dx12_ = nullptr;  ///< DX12の基本情報
-    Camera*    camera_ = nullptr;  ///< カメラ情報
-
-    //UI 用の選択状態
-    std::optional<PostEffectType> selectedAvailableEffect_;  ///< 利用可能エフェクトの選択
-    std::optional<PostEffectType> selectedActiveEffect_;     ///< アクティブエフェクトの選択
-
-    RenderTexture                                                                         effectTargetRT_;            ///< エフェクト適用対象用 RT
-    RenderTexture                                                                         nonEffectTargetRT_;         ///< 非適用対象用 RT
-    std::vector<RenderTexture>                                                            intermediateRTs_;           ///< 中間バッファ（複数エフェクト用）
-    std::array<std::unique_ptr<IPostEffect>, static_cast<size_t>(PostEffectType::Count)> effectRegistry_;            ///< エフェクトのレジストリ（PostEffectType で添字）
-    std::vector<PostEffectType>                                                           effectChain_;               ///< エフェクトチェーン
-    std::unordered_map<PostEffectType, TemporaryEffectInfo>                               temporaryEffects_;          ///< 一時エフェクトの管理マップ
-    uint32_t                                                                              depthSrvIndex_        = 0;  ///< 深度バッファの SRV
-    uint32_t                                                                              dissolveMaskSrvIndex_ = 0;  ///< Dissolve マスクテクスチャの SRV
-
-    //クリアカラー・アンチエイリアス
-    Vector4      clearColor_                = { 0.17f, 0.17f, 0.17f, 1.0f };  ///< エフェクト適用対象 RT と中間バッファのクリア色
-    Vector4      nonEffectTargetClearColor_ = { 0.0f, 0.0f, 0.0f, 0.0f };
-    AntiAliasing antiAliasing_              = AntiAliasing::None;
+    DX12Basic*                                        dx12_                 = nullptr;
+    PostProcessStack                                  stack_;                                      ///< 本編のエフェクト（並び順に掛ける）
+    std::unordered_map<uint32_t, TemporaryEffectInfo> temporaryEffects_;                           ///< インスタンス id ごとの一時エフェクト
+    uint32_t                                          dissolveMaskSrvIndex_ = 0;                   ///< Dissolve のマスクテクスチャの SRV（0 ならエンジン既定の noise0）
+    uint32_t                                          dissolveBaseSrvIndex_ = 0;                   ///< Dissolve で溶けた部分のテクスチャの SRV（0 ならエンジン既定の black）
+    AntiAliasing                                      antiAliasing_         = AntiAliasing::None;
 
     //PostEffect ウィンドウ
-    std::array<char, 64> profileName_{};  ///< プロファイル名入力欄。LoadProfile で読み込んだ名前になる
+    std::string          selectedAvailableEffect_;      ///< 追加する定義の名前
+    uint32_t             selectedActiveEffect_    = 0;  ///< 選択中のインスタンス id
+    std::array<char, 64> profileName_{};                ///< プロファイル名入力欄。LoadProfile で読み込んだ名前になる
 #ifdef _DEBUG
     EditTracker<>        profileTracker_{ { [this] { return SerializeProfile(); }, [this](const std::string& profile) { ApplyProfile(profile); } } };
     UnsavedChangesPrompt unsavedPrompt_;  ///< 未保存のまま別のプロファイルを読み込むときの確認

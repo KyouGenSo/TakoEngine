@@ -6,7 +6,9 @@
 #include "SrvManager.h"
 #include "RtvManager.h"
 #include "DsvManager.h"
+#include "PostProcess.h"
 #include "Renderer.h"
+#include "RenderPipeline.h"
 #include "ImGuiManager.h"
 
 #include <cassert>
@@ -26,7 +28,7 @@ namespace Tako {
 
   void PreviewViewport::Initialize(const wchar_t* debugName, uint32_t width, uint32_t height, const Vector4& clearColor)
   {
-    if (renderTexture_) {
+    if (color_.resource) {
       return;
     }
 
@@ -37,17 +39,9 @@ namespace Tako {
 
     const std::wstring namePrefix = debugName;
 
-    // RT
-    dx12_->CreateRenderTextureResource(renderTexture_, width_, height_, kColorFormat, clearColor_);
-    renderTexture_->SetName((namePrefix + L"RT").c_str());
-
-    rtvIndex_ = RtvManager::GetInstance()->Allocate();
-    RtvManager::GetInstance()->CreateRTV(rtvIndex_, renderTexture_.Get(), kColorFormat);
-    rtvHandle_ = RtvManager::GetInstance()->GetCpuHandle(rtvIndex_);
-
-    srvIndex_ = SrvManager::GetInstance()->Allocate();
-    // 半透明描画で RT のアルファが 1 未満になると ImGui::Image がウィンドウ背景とブレンドしてしまうため、アルファ強制 1.0 で作る
-    SrvManager::GetInstance()->CreateSRVForTexture2D(srvIndex_, renderTexture_.Get(), kColorFormat, 1, true);
+    // RT。半透明描画で RT のアルファが 1 未満になると ImGui::Image がウィンドウ背景とブレンドしてしまうため、SRV はアルファ強制 1.0 で作る
+    color_.Create(dx12_, width_, height_, kColorFormat, clearColor_, true);
+    color_.resource->SetName((namePrefix + L"RT").c_str());
 
     // 深度バッファ
     D3D12_RESOURCE_DESC depthDesc{};
@@ -89,43 +83,50 @@ namespace Tako {
 
   void PreviewViewport::Finalize()
   {
-    if (!renderTexture_) {
+    if (!color_.resource) {
       return;
     }
 
     SrvManager* srvManager = SrvManager::GetInstance();
-    if (srvManager && srvManager->IsAllocated(srvIndex_)) {
-      srvManager->Free(srvIndex_);
+    if (srvManager && srvManager->IsAllocated(color_.srvIndex)) {
+      srvManager->Free(color_.srvIndex);
     }
     if (srvManager && srvManager->IsAllocated(depthSrvIndex_)) {
       srvManager->Free(depthSrvIndex_);
     }
-    RtvManager::GetInstance()->Free(rtvIndex_);
+    RtvManager::GetInstance()->Free(color_.rtvIndex);
     DsvManager::GetInstance()->Free(dsvIndex_);
-    renderTexture_.Reset();
+    color_ = {};
     depthBuffer_.Reset();
-    rtvIndex_ = 0;
     dsvIndex_ = 0;
-    srvIndex_ = 0;
     depthSrvIndex_ = 0;
     dx12_ = nullptr;
   }
 
-  void PreviewViewport::BeginPass()
+  void PreviewViewport::BeginPass(bool postProcess)
   {
-    dx12_->GetContext().Transition(renderTexture_, D3D12_RESOURCE_STATE_RENDER_TARGET);
+    // ポストエフェクトを掛けるときはシーンを一時 RT へ描き、EndPass で color_ へ書き出す
+    sceneTarget_ = postProcess ? &RenderPipeline::GetInstance()->GetGraph().Acquire({ width_, height_, kColorFormat, clearColor_ }) : &color_;
+
+    dx12_->GetContext().Transition(sceneTarget_->resource, D3D12_RESOURCE_STATE_RENDER_TARGET);
     dx12_->GetContext().Transition(depthBuffer_, D3D12_RESOURCE_STATE_DEPTH_WRITE);
     // RT サイズのビューポートで記録し、途中のシャドウ/デカールパスがここへ戻れるようにする
-    dx12_->BindSceneRenderTarget({ rtvHandle_, dsvHandle_, width_, height_ });
-    const float clearColor[4] = { clearColor_.x, clearColor_.y, clearColor_.z, clearColor_.w };
+    dx12_->BindSceneRenderTarget({ sceneTarget_->rtvHandle, dsvHandle_, width_, height_ });
     ID3D12GraphicsCommandList* commandList = dx12_->GetCommandList();
-    commandList->ClearRenderTargetView(rtvHandle_, clearColor, 0, nullptr);
+    commandList->ClearRenderTargetView(sceneTarget_->rtvHandle, &clearColor_.x, 0, nullptr);
     commandList->ClearDepthStencilView(dsvHandle_, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
   }
 
-  void PreviewViewport::EndPass()
+  void PreviewViewport::EndPass(const PostProcessStack* stack, const Camera* camera)
   {
-    dx12_->GetContext().Transition(renderTexture_, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    if (sceneTarget_ != &color_) {
+      RenderGraph& graph = RenderPipeline::GetInstance()->GetGraph();
+      const PostEffectFrame frame{ dx12_, &graph, camera, &depthBuffer_, depthSrvIndex_, nullptr, width_, height_ };
+      stack->Execute(frame, *sceneTarget_, color_);
+      graph.Release(*sceneTarget_);
+    }
+    sceneTarget_ = nullptr;
+    dx12_->GetContext().Transition(color_.resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
   }
 
   void PreviewViewport::DrawImGuiImage() const
@@ -146,7 +147,7 @@ namespace Tako {
     cursorPos.y += (availableSize.y - imageSize.y) * 0.5f;
     ImGui::SetCursorPos(cursorPos);
 
-    D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = SrvManager::GetInstance()->GetGPUDescriptorHandle(srvIndex_);
+    D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = SrvManager::GetInstance()->GetGPUDescriptorHandle(color_.srvIndex);
     // ボタンにしておくとドラッグ中はマウスを掴み続け、ウィンドウ移動にも奪われない
     ImGui::InvisibleButton("##PreviewImage", imageSize,
       ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight | ImGuiButtonFlags_MouseButtonMiddle);

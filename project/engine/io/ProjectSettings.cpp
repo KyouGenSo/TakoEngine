@@ -4,6 +4,7 @@
 #include "SceneManager.h"
 #include "FrameTimer.h"
 #include "PostEffectManager.h"
+#include "RenderPipeline.h"
 #include "CollisionManager.h"
 #include "Input.h"
 #include "Logger.h"
@@ -226,7 +227,7 @@ namespace Tako {
         shadow->SetShadowBias(rendering.value("ShadowBias", shadow->GetShadowBias()));
         if (rendering.contains("ClearColor")) {
           const auto color = rendering["ClearColor"].get<std::array<float, 4>>();
-          postEffect->SetClearColor({ color[0], color[1], color[2], color[3] });
+          RenderPipeline::GetInstance()->SetClearColor({ color[0], color[1], color[2], color[3] });
         }
         const auto antiAliasing = Input::FindCode<PostEffectManager::AntiAliasing>(kAntiAliasingTable, rendering.value("AntiAliasing", std::string("None")));
         postEffect->SetAntiAliasing(antiAliasing.value_or(PostEffectManager::AntiAliasing::None));
@@ -324,7 +325,7 @@ namespace Tako {
       const WindowSettings& window     = GetWindowSettings();
       ShadowRenderer*       shadow     = ShadowRenderer::GetInstance();
       PostEffectManager*    postEffect = PostEffectManager::GetInstance();
-      const Vector4&        clearColor = postEffect->GetClearColor();
+      const Vector4&        clearColor = RenderPipeline::GetInstance()->GetClearColor();
 
       json root;
       root["Application"] = {

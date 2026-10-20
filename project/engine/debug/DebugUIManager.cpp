@@ -10,6 +10,7 @@
 #include "Input.h"
 #include "CollisionManager.h"
 #include "PostEffectManager.h"
+#include "RenderPipeline.h"
 #include "WinApp.h"
 #include "DX12Basic.h"
 #include "ModelManager.h"
@@ -838,7 +839,7 @@ namespace Tako {
       ImGui::SetCursorPos(cursorPos);
 
       // ゲーム画面を表示
-      uint32_t srvIndex = PostEffectManager::GetInstance()->GetFinalResultSrvIndex();
+      uint32_t srvIndex = RenderPipeline::GetInstance()->GetFinalSrvIndex();
       D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = SrvManager::GetInstance()->GetGPUDescriptorHandle(srvIndex);
       ImGui::Image((ImTextureID)gpuHandle.ptr, imageSize);
       const ImVec2 imageMin = ImGui::GetItemRectMin();

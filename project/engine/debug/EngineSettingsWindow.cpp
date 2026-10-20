@@ -10,6 +10,7 @@
 #include "CollisionManager.h"
 #include "LineRenderer.h"
 #include "PostEffectManager.h"
+#include "RenderPipeline.h"
 #include "ProjectSettings.h"
 #include "SceneManager.h"
 #include "Input.h"
@@ -635,7 +636,7 @@ namespace Tako {
 
     ImGui::SeparatorText("Output");
     if (!isClearColorDirty_) {
-      clearColorEdit_ = postEffect->GetClearColor();
+      clearColorEdit_ = RenderPipeline::GetInstance()->GetClearColor();
     }
     isClearColorDirty_ |= ImGui::ColorEdit4("Clear Color", &clearColorEdit_.x);
 
@@ -653,7 +654,7 @@ namespace Tako {
     // RT を作り直す設定は、ドラッグやカラーピッカーの操作を終えてから 1 回だけ適用する
     if (!ImGui::IsAnyItemActive()) {
       if (isClearColorDirty_) {
-        postEffect->SetClearColor(clearColorEdit_);
+        RenderPipeline::GetInstance()->SetClearColor(clearColorEdit_);
         isClearColorDirty_ = false;
       }
       if (isRenderScaleDirty_) {

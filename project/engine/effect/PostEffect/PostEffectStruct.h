@@ -1,45 +1,13 @@
 #pragma once
 #include <cstdint>
 #include <variant>
-#include <d3d12.h>
-#include <wrl.h>
 
 #include "Matrix4x4.h"
 #include "Vector2.h"
 #include "vector3.h"
 #include "Vector4.h"
-#include "GpuResource.h"
 
 namespace Tako {
-
-  class DX12Basic;
-
-  /// <summary>
-  /// レンダーターゲット構造体
-  /// ポストエフェクトの中間バッファとして使用
-  /// </summary>
-  struct RenderTexture {
-    GpuResource                 resource;
-    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle{};
-    uint32_t                    rtvIndex  = 0;
-    uint32_t                    srvIndex  = 0;
-
-    /// <summary>
-    /// リソース生成と RTV/SRV の確保・ビュー生成
-    /// </summary>
-    /// <param name="dx12">DirectX 12基盤システムのポインタ</param>
-    /// <param name="width">テクスチャの幅（ピクセル）</param>
-    /// <param name="height">テクスチャの高さ（ピクセル）</param>
-    /// <param name="format">ピクセルフォーマット</param>
-    /// <param name="clearColor">クリアカラー</param>
-    /// <param name="forceOpaqueAlpha">SRV の α を常に 1 として読ませる (最終表示用 RT 向け)</param>
-    void Create(DX12Basic* dx12, uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4& clearColor, bool forceOpaqueAlpha = false);
-
-    /// <summary>
-    /// リソース解放と RTV/SRV インデックスの返却
-    /// </summary>
-    void Release();
-  };
 
   /// <summary>
   /// ビネット効果パラメータ
@@ -60,50 +28,20 @@ namespace Tako {
   /// </summary>
   struct BloomParam
   {
-    float   intensity;
-    float   threshold;   ///< 高輝度抽出のしきい値
-    float   sigma;       ///< ガウシアンブラーのシグマ
-    int     kernelSize;
-    Vector2 direction;   ///< ブラー方向
-    int     padding1;
-    int     padding2;
+    float intensity;
+    float threshold;   ///< 高輝度抽出のしきい値
+    float sigma;       ///< ガウシアンブラーのシグマ
+    int   kernelSize;
   };
 
-  struct NewBloomParam
-  {
-    float   intensity;
-    float   threshold;
-    float   sigma;
-    Vector2 direction;
-    Vector2 texelSize;
-    int     sampleCount;
-    int     iteration;
-    int     padding3;
-    int     padding4;
-  };
-
-  struct HighLumExtrcatParam
-  {
-    float threshold;
-  };
-
+  /// <summary>
+  /// ガウシアンブラーのパラメータ。direction はパスごとに決めるので設定しなくてよい
+  /// </summary>
   struct GaussianBlurParam
   {
     float   sigma;
     int     kernelSize;
     Vector2 direction;
-  };
-
-  struct BloomCombineParam
-  {
-    float intensity;
-  };
-
-  // Shader 用のカメラ
-  struct CameraForGPU
-  {
-    float nearPlane;
-    float farPlane;
   };
 
   struct FogParam
@@ -192,23 +130,23 @@ namespace Tako {
     float   padding;
   };
 
+  /// <summary>
+  /// エフェクトのパラメータ（std::monostate はパラメータを持たないエフェクト）。中身はそのまま gParam の定数バッファになる
+  /// </summary>
   using EffectParam = std::variant<
+    std::monostate,
     VignetteParam,
     BloomParam,
-    NewBloomParam,
     FogParam,
     RadialBlurParam,
     BWFilterParam,
     RGBSplitParam,
     LuminanceOutlineParam,
     DepthOutlineParam,
-    CameraForGPU,
     DissolveParam,
     WhiteNoiseParam,
     HalfToneParam,
-    GaussianBlurParam,
-    HighLumExtrcatParam,
-    BloomCombineParam
+    GaussianBlurParam
   >;
 
   /// <summary>
@@ -220,28 +158,6 @@ namespace Tako {
     EaseOut,    ///< イーズアウト（減速）
     EaseIn,     ///< イーズイン（加速）
     EaseInOut   ///< イーズインアウト
-  };
-
-  /// <summary>
-  /// ポストエフェクト種別
-  /// </summary>
-  enum class PostEffectType : int {
-    NoEffect,  ///< チェーンが空のときの素通しコピー
-    GrayScale,
-    Vignette,
-    RadialBlur,
-    RGBSplit,
-    BWFilter,
-    LuminanceBasedOutline,
-    DepthBasedOutline,
-    Fog,
-    Bloom,
-    Dissolve,
-    WhiteNoise,
-    HalfTone,
-    GaussianBlur,
-    FXAA,      ///< アンチエイリアス設定でチェーン末尾に自動で掛ける。チェーンには入れない
-    Count
   };
 
 } // namespace Tako

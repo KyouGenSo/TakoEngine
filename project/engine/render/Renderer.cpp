@@ -92,7 +92,7 @@ namespace Tako {
     shadow->EndShadowPass();
   }
 
-  void Renderer::RenderList(const DrawList& list, const RenderView& view)
+  void Renderer::RenderList(const DrawList& list, const RenderView& view, int32_t minQueue, int32_t maxQueue)
   {
     const std::span<const DrawItem> items = list.GetItems();
 
@@ -102,6 +102,9 @@ namespace Tako {
       int32_t queue = item.material->GetRenderQueue();
       if (item.transparent) {
         queue = (std::max)(queue, ShaderAsset::kQueueTransparent);
+      }
+      if (queue < minQueue || queue >= maxQueue) {
+        continue;
       }
       // 半透明は奥から手前へ。不透明は登録順のまま描く
       float depthKey = 0.0f;
@@ -137,6 +140,27 @@ namespace Tako {
         hasCurrent = true;
       }
       DrawItemGeometry(item, true);
+    }
+  }
+
+  void Renderer::RenderMask(const DrawList& list, const RenderView& view)
+  {
+    CommandContext& context = dx12_->GetContext();
+    GraphicsPipelineDesc current{};
+    bool hasCurrent = false;
+    for (const DrawItem& item : list.GetItems()) {
+      GraphicsPipelineDesc pipeline;
+      if (item.maskId == 0 || !item.material->GetPipeline(ShaderPass::Mask, item.instanceSrv != 0, pipeline)) {
+        continue;
+      }
+      if (!hasCurrent || !(pipeline == current)) {
+        context.SetGraphicsPipeline(pipeline);
+        context.Graphics().BindCBV("gView"_id, view.constants);
+        current = pipeline;
+        hasCurrent = true;
+      }
+      context.Graphics().BindConstants("gMaskParam"_id, item.maskId);
+      DrawItemGeometry(item, false);
     }
   }
 
@@ -202,11 +226,20 @@ namespace Tako {
     GraphicsPipelineDesc shadowCasterInstanced = shadowCaster;
     shadowCasterInstanced.vs = library.Get(L"ShadowMapInstanced.VS.hlsl", ShaderStage::Vertex);
 
+    // シーンの深度で隠れた画素には書かない。整数の RT なのでブレンドしない
+    // ponytail: インスタンシング版は無い。InstancedObject3d に maskId を付けるときに足す
+    GraphicsPipelineDesc mask;
+    mask.vs = library.Get(L"Mask.VS.hlsl", ShaderStage::Vertex);
+    mask.ps = library.Get(L"Mask.PS.hlsl", ShaderStage::Pixel);
+    mask.vertexLayout = VertexLayout::Position;
+    mask.renderState = { .blend = BlendMode::Opaque, .depthWrite = false };
+
     ShaderAsset& litShader = RegisterShader("Lit");
     litShader.SetPass(ShaderPass::Forward, lit);
     litShader.SetPass(ShaderPass::Forward, litInstanced, true);
     litShader.SetPass(ShaderPass::ShadowCaster, shadowCaster);
     litShader.SetPass(ShaderPass::ShadowCaster, shadowCasterInstanced, true);
+    litShader.SetPass(ShaderPass::Mask, mask);
 
     // 最遠面として描くので深度は書き込まない
     GraphicsPipelineDesc skyBox;

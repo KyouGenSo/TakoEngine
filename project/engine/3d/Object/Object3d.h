@@ -116,6 +116,11 @@ public: // メンバー関数
   void SetSortingOrder(int32_t sortingOrder) { sortingOrder_ = sortingOrder; }
 
   /// <summary>
+  /// 同じ maskId のポストエフェクトをこのオブジェクトの画素だけに掛ける（0 で解除、1〜255）
+  /// </summary>
+  void SetMaskId(uint32_t maskId) { maskId_ = maskId; }
+
+  /// <summary>
   /// メッシュの描画に使うマテリアルを差し替える（nullptr で既定に戻す）
   /// </summary>
   /// <param name="meshIndex">モデル内のメッシュ番号</param>
@@ -262,9 +267,10 @@ private: // メンバー変数
   std::string parentJointName_;
   Transform   attachmentOffset_{};
 
-  bool    isTransparent_ = false;  ///< 半透明描画モードフラグ
-  bool    castShadow_    = true;
-  int32_t sortingOrder_  = 0;
+  bool     isTransparent_ = false;  ///< 半透明描画モードフラグ
+  bool     castShadow_    = true;
+  int32_t  sortingOrder_  = 0;
+  uint32_t maskId_        = 0;
 
   //アニメーションの上乗せ
   AnimationPlayer animator_;

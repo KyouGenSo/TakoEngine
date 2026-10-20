@@ -70,6 +70,8 @@ namespace Tako {
       isOpen_      = isOpen;
       previewGrid_ = previewGrid;
       preview_.Initialize(L"ParticleEditorPreview", cameraSettings);
+      // 加算合成の重なりが光って見えるよう、本編の既定より低いしきい値で掛ける
+      previewBloomId_ = preview_.GetPostProcess().Add("Bloom", BloomParam{ .intensity = 1.0f, .threshold = 0.5f, .sigma = 2.0f, .kernelSize = 10 });
     }
 
     /// <summary>
@@ -262,6 +264,7 @@ namespace Tako {
     PreviewPanel        preview_;
     bool                previewSelectedOnly_ = false;                ///< true = 選択エミッターのみ描画
     bool                previewShowGrid_     = true;
+    uint32_t            previewBloomId_      = 0;                    ///< preview_ のポストエフェクトに足した Bloom
     const GridSettings* previewGrid_         = nullptr;              ///< プレビューの床グリッド設定（EngineSettingsWindow 所有）
     std::string         selectedPreset_;                             ///< Load コンボの選択中プリセット名
 

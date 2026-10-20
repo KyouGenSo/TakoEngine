@@ -8,6 +8,7 @@
 #include "Renderer.h"
 #include "LineRenderer.h"
 #include "PostEffectManager.h"
+#include "RenderPipeline.h"
 #include "GPUParticle.h"
 #include "TransitionManager.h"
 #include "FrameTimer.h"
@@ -56,6 +57,9 @@ namespace Tako {
     // SrvManager を先に初期化（ImGuiManager が使用するため）
     SrvManager::GetInstance()->Initialize(dx12_.get());
 
+    // エディタのプレビューがエフェクトを名前で引くので、エディタより先に登録する
+    PostEffectManager::GetInstance()->Initialize(dx12_.get());
+
 #ifdef _DEBUG
     // ImGuiManager の初期化（SrvManager のディスクリプタヒープを使用）
     imguiManager_ = std::make_unique<ImGuiManager>();
@@ -93,11 +97,8 @@ namespace Tako {
     LineRenderer::GetInstance()->SetCamera(defaultCamera_.get());
     LineRenderer::GetInstance()->Initialize(dx12_.get());
 
-    PostEffectManager::GetInstance()->Initialize(dx12_.get());
+    RenderPipeline::GetInstance()->Initialize(dx12_.get());
 
-    PostEffectManager::GetInstance()->SetCamera(defaultCamera_.get());
-
-    // DecalManager の初期化（PostEffectManager の後、深度SRVを作成するため）
     DecalManager::GetInstance()->Initialize(dx12_.get());
     DecalManager::GetInstance()->SetCamera(defaultCamera_.get());
 
@@ -138,6 +139,8 @@ namespace Tako {
 
     // Initialize の逆順で終了処理を実行
     TransitionManager::GetInstance()->Finalize();
+
+    RenderPipeline::GetInstance()->Finalize();
 
     PostEffectManager::GetInstance()->Finalize();
 
@@ -234,57 +237,25 @@ namespace Tako {
 
   void TakoFramework::Draw()
   {
-    /// ============================================= ///
-    /// ------------------シーン描画-------------------///
-    /// ============================================= ///
-
-    //ポストエフェクト適用対象のレンダーテクスチャを描画先に設定
-    PostEffectManager::GetInstance()->BeginDrawEffectTarget();
-
     SrvManager::GetInstance()->BeginDraw();
 
-    // シーンの描画物を登録してから、影とシーンを描く
+    // シーン（ポストエフェクトを掛ける描画物）と UI（掛けない描画物）を登録してから、まとめて描く
     Renderer* renderer = Renderer::GetInstance();
     renderer->BeginFrame();
     renderer->BeginSubmit(renderer->GetSceneList());
     SceneManager::GetInstance()->Draw();
     renderer->EndSubmit();
-    renderer->RenderShadows(renderer->GetSceneList());
-    renderer->RenderList(renderer->GetSceneList(), renderer->GetMainView());
-
-    DecalManager::GetInstance()->DrawAll();
-
-#ifdef _DEBUG
-    DecalManager::GetInstance()->DrawAllDebug();
-#endif
-
-    GPUParticle::GetInstance()->Draw();
-
-    LineRenderer::GetInstance()->Draw();
-
-    /// ===================================================== ///
-    /// ------------------ポストエフェクト描画-------------------///
-    /// ===================================================== ///
-
-    PostEffectManager::GetInstance()->Draw();
-
-    /// ===================================================== ///
-    /// ------------ポストエフェクト非適用対象の描画---------------///
-    /// ===================================================== ///
-    // ポストエフェクト非適用対象のレンダーテクスチャを描画先に設定
-    PostEffectManager::GetInstance()->BeginDrawNonEffectTarget();
 
     renderer->BeginSubmit(renderer->GetOverlayList());
     SceneManager::GetInstance()->DrawWithoutEffect();
-
 #ifdef _DEBUG
     // シーンの HUD と同じ RT へ、UI Editor のプレビューを重ねる
     DebugUIManager::GetInstance()->DrawUILayoutPreviewPass();
 #endif
-
     TransitionManager::GetInstance()->Draw();
     renderer->EndSubmit();
-    renderer->RenderList(renderer->GetOverlayList(), renderer->GetMainView());
+
+    RenderPipeline::GetInstance()->Render();
 
 #ifdef _DEBUG
     // 本編で積んだ線分を別視点でも描くため Reset より前に行う
@@ -309,7 +280,7 @@ namespace Tako {
     isDrawToSwapChain = !DebugUIManager::GetInstance()->IsWindowVisible(DebugUIManager::Window::GameViewport);
 #endif
 
-    PostEffectManager::GetInstance()->DrawFinalResult(isDrawToSwapChain);
+    RenderPipeline::GetInstance()->Present(isDrawToSwapChain);
 
 
     /// ========================================= ///
@@ -368,8 +339,8 @@ namespace Tako {
     // バッファのリサイズ
     dx12_->ResizeBuffers(width, height);
 
-    // レンダーテクスチャの再作成（PostEffect 用）
-    PostEffectManager::GetInstance()->RecreateRenderTexture();
+    // シーン色・最終結果の RT の再作成
+    RenderPipeline::GetInstance()->OnResize();
 
     // デカール深度 SRV の再作成
     DecalManager::GetInstance()->OnResize();

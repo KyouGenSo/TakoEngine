@@ -133,6 +133,7 @@ void Object3d::Draw()
 	item.sortingOrder = sortingOrder_;
 	item.transparent = isTransparent_;
 	item.castShadow = castShadow_;
+	item.maskId = maskId_;
 	model_->Draw(item, world);
 }
 

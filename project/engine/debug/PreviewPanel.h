@@ -3,6 +3,7 @@
 #ifdef _DEBUG
 
 #include <memory>
+#include "PostProcess.h"
 #include "ViewportCameraController.h"
 
 namespace Tako {
@@ -71,12 +72,14 @@ namespace Tako {
 
     Camera&                   GetCamera() { return *camera_; }
     ViewportCameraController& GetController() { return controller_; }
+    PostProcessStack&         GetPostProcess() { return postProcess_; }
 
   private: //メンバー変数
     const wchar_t*                   debugName_      = L"Preview";
     std::unique_ptr<PreviewViewport> viewport_;
     std::unique_ptr<Camera>          camera_;
     ViewportCameraController         controller_;
+    PostProcessStack                 postProcess_;                  ///< プレビューに掛けるポストエフェクト（本編とは別）
     bool                             isImageHovered_ = false;
   };
 

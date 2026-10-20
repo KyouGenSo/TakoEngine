@@ -194,24 +194,7 @@
     <ClCompile Include="engine\effect\Particle\MeshEmitter.cpp" />
     <ClCompile Include="engine\effect\Particle\SphereEmitter.cpp" />
     <ClCompile Include="engine\effect\Particle\TriangleEmitter.cpp" />
-    <ClCompile Include="engine\effect\PostEffect\Bloom.cpp" />
-    <ClCompile Include="engine\effect\PostEffect\BWFilter.cpp" />
-    <ClCompile Include="engine\effect\PostEffect\DepthBasedOutline.cpp" />
-    <ClCompile Include="engine\effect\PostEffect\Dissolve.cpp" />
-    <ClCompile Include="engine\effect\PostEffect\Fog.cpp" />
-    <ClCompile Include="engine\effect\PostEffect\GaussianBlur.cpp" />
-    <ClCompile Include="engine\effect\PostEffect\FXAA.cpp" />
-    <ClCompile Include="engine\effect\PostEffect\GrayScale.cpp" />
-    <ClCompile Include="engine\effect\PostEffect\HalfTone.cpp" />
-    <ClCompile Include="engine\effect\PostEffect\IPostEffect.cpp" />
-    <ClCompile Include="engine\effect\PostEffect\LuminanceBasedOutline.cpp" />
-    <ClCompile Include="engine\effect\PostEffect\NoEffect.cpp" />
     <ClCompile Include="engine\effect\PostEffect\PostEffectManager.cpp" />
-    <ClCompile Include="engine\effect\PostEffect\PostEffectStruct.cpp" />
-    <ClCompile Include="engine\effect\PostEffect\RadialBlur.cpp" />
-    <ClCompile Include="engine\effect\PostEffect\RGBSplit.cpp" />
-    <ClCompile Include="engine\effect\PostEffect\Vignette.cpp" />
-    <ClCompile Include="engine\effect\PostEffect\WhiteNoise.cpp" />
     <ClCompile Include="engine\imgui\ImGuiManager.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
@@ -269,6 +252,9 @@
     <ClCompile Include="engine\base\DX12\PipelineCache.cpp" />
     <ClCompile Include="engine\render\Material.cpp" />
     <ClCompile Include="engine\render\Renderer.cpp" />
+    <ClCompile Include="engine\render\RenderGraph.cpp" />
+    <ClCompile Include="engine\render\PostProcess.cpp" />
+    <ClCompile Include="engine\render\RenderPipeline.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\3d\Decal\Decal.h" />
@@ -310,24 +296,8 @@
     <ClInclude Include="engine\effect\Particle\ParticleStruct.h" />
     <ClInclude Include="engine\effect\Particle\SphereEmitter.h" />
     <ClInclude Include="engine\effect\Particle\TriangleEmitter.h" />
-    <ClInclude Include="engine\effect\PostEffect\Bloom.h" />
-    <ClInclude Include="engine\effect\PostEffect\BWFilter.h" />
-    <ClInclude Include="engine\effect\PostEffect\DepthBasedOutline.h" />
-    <ClInclude Include="engine\effect\PostEffect\Dissolve.h" />
-    <ClInclude Include="engine\effect\PostEffect\Fog.h" />
-    <ClInclude Include="engine\effect\PostEffect\GaussianBlur.h" />
-    <ClInclude Include="engine\effect\PostEffect\FXAA.h" />
-    <ClInclude Include="engine\effect\PostEffect\GrayScale.h" />
-    <ClInclude Include="engine\effect\PostEffect\HalfTone.h" />
-    <ClInclude Include="engine\effect\PostEffect\IPostEffect.h" />
-    <ClInclude Include="engine\effect\PostEffect\LuminanceBasedOutline.h" />
-    <ClInclude Include="engine\effect\PostEffect\NoEffect.h" />
     <ClInclude Include="engine\effect\PostEffect\PostEffectManager.h" />
     <ClInclude Include="engine\effect\PostEffect\PostEffectStruct.h" />
-    <ClInclude Include="engine\effect\PostEffect\RadialBlur.h" />
-    <ClInclude Include="engine\effect\PostEffect\RGBSplit.h" />
-    <ClInclude Include="engine\effect\PostEffect\Vignette.h" />
-    <ClInclude Include="engine\effect\PostEffect\WhiteNoise.h" />
     <ClInclude Include="engine\io\GlobalVariables.h" />
     <ClInclude Include="engine\io\ProjectSettings.h" />
     <ClInclude Include="engine\io\SceneLoader.h" />
@@ -414,6 +384,9 @@
     <ClInclude Include="engine\render\Material.h" />
     <ClInclude Include="engine\render\Renderer.h" />
     <ClInclude Include="engine\render\ShaderAsset.h" />
+    <ClInclude Include="engine\render\RenderGraph.h" />
+    <ClInclude Include="engine\render\PostProcess.h" />
+    <ClInclude Include="engine\render\RenderPipeline.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">
@@ -600,6 +573,18 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\WhiteNoise.PS.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\Mask.VS.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\Mask.PS.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\MaskComposite.PS.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>

@@ -345,58 +345,7 @@
     <ClCompile Include="engine\effect\Particle\GPUParticle.cpp">
       <Filter>effect\Particle</Filter>
     </ClCompile>
-    <ClCompile Include="engine\effect\PostEffect\Bloom.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\PostEffect\BWFilter.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\PostEffect\DepthBasedOutline.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\PostEffect\Dissolve.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\PostEffect\Fog.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\PostEffect\GaussianBlur.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\PostEffect\FXAA.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\PostEffect\GrayScale.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\PostEffect\HalfTone.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\PostEffect\IPostEffect.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\PostEffect\LuminanceBasedOutline.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\PostEffect\NoEffect.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
     <ClCompile Include="engine\effect\PostEffect\PostEffectManager.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\PostEffect\PostEffectStruct.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\PostEffect\RadialBlur.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\PostEffect\RGBSplit.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\PostEffect\Vignette.cpp">
-      <Filter>effect\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\effect\PostEffect\WhiteNoise.cpp">
       <Filter>effect\PostEffect</Filter>
     </ClCompile>
     <ClCompile Include="engine\3d\Model\BoneTracker.cpp">
@@ -460,6 +409,15 @@
       <Filter>render</Filter>
     </ClCompile>
     <ClCompile Include="engine\render\Renderer.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\render\RenderGraph.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\render\PostProcess.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\render\RenderPipeline.cpp">
       <Filter>render</Filter>
     </ClCompile>
   </ItemGroup>
@@ -743,58 +701,10 @@
     <ClInclude Include="engine\effect\Particle\ParticleStruct.h">
       <Filter>effect\Particle</Filter>
     </ClInclude>
-    <ClInclude Include="engine\effect\PostEffect\Bloom.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\PostEffect\BWFilter.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\PostEffect\DepthBasedOutline.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\PostEffect\Dissolve.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\PostEffect\Fog.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\PostEffect\GaussianBlur.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\PostEffect\FXAA.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\PostEffect\GrayScale.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\PostEffect\HalfTone.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\PostEffect\IPostEffect.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\PostEffect\LuminanceBasedOutline.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\PostEffect\NoEffect.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
     <ClInclude Include="engine\effect\PostEffect\PostEffectManager.h">
       <Filter>effect\PostEffect</Filter>
     </ClInclude>
     <ClInclude Include="engine\effect\PostEffect\PostEffectStruct.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\PostEffect\RadialBlur.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\PostEffect\RGBSplit.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\PostEffect\Vignette.h">
-      <Filter>effect\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\effect\PostEffect\WhiteNoise.h">
       <Filter>effect\PostEffect</Filter>
     </ClInclude>
     <ClInclude Include="engine\3d\Model\BoneTracker.h">
@@ -891,6 +801,15 @@
       <Filter>render</Filter>
     </ClInclude>
     <ClInclude Include="engine\render\ShaderAsset.h">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\RenderGraph.h">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\PostProcess.h">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\RenderPipeline.h">
       <Filter>render</Filter>
     </ClInclude>
   </ItemGroup>
@@ -1026,6 +945,15 @@
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\ScatterCompact.CS.hlsl">
       <Filter>shader\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\Mask.VS.hlsl">
+      <Filter>shader\3D</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\Mask.PS.hlsl">
+      <Filter>shader\3D</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\MaskComposite.PS.hlsl">
+      <Filter>shader\PostEffect</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

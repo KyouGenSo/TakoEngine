@@ -35,6 +35,9 @@ namespace Tako {
     bool    depthSort    = true;  ///< false なら登録順を保つ（スクリーン空間の描画物）
     bool    transparent  = false; ///< マテリアルに関わらず両面・深度書き込みなし・半透明キュー以降で描く
     bool    castShadow   = true;  ///< シャドウマップへ描くか（シェーダーが ShadowCaster パスを持つ場合）
+
+    //オブジェクト単位のポストエフェクト
+    uint32_t maskId = 0;  ///< 0 以外なら Mask パスで ObjectMask に書く（1〜255）
   };
 
   /// <summary>

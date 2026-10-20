@@ -581,6 +581,10 @@ namespace Tako {
     ImGui::SameLine();
     ImGui::Checkbox("Grid##PePrev", &previewShowGrid_);
     ImGui::SameLine();
+    if (PostEffectInstance* bloom = preview_.GetPostProcess().Find(previewBloomId_)) {
+      ImGui::Checkbox("Bloom##PePrev", &bloom->enabled);
+      ImGui::SameLine();
+    }
     const bool hasSelection = emitterManager_->HasEmitter(selectedEmitterName_);
     ImGui::BeginDisabled(!hasSelection);
     // 注視点を選択エミッターの位置へ (Mesh エミッターはローカルオフセットの場合あり)
