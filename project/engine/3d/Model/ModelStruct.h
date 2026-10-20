@@ -98,7 +98,7 @@ namespace Tako {
   /// マテリアル構造体（GPU 用）
   /// シェーダーに送信される材質パラメータ
   /// </summary>
-  struct Material
+  struct MaterialConstants
   {
     Vector4   color;              ///< マテリアルカラー（RGBA）
     int32_t   enableLighting;     ///< ライティング有効フラグ（0=無効, 1=有効）

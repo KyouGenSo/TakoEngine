@@ -4,7 +4,7 @@
 #include <wrl/client.h>
 
 #include "Matrix4x4.h"
-#include "PipelineCache.h"
+#include "Material.h"
 #include "TextureManager.h"
 #include "Transform.h"
 #include "Vector2.h"
@@ -29,7 +29,7 @@ public: // 構造体
     Vector4 position;
   };
 
-  struct Material
+  struct MaterialConstants
   {
     Vector4 color;
   };
@@ -47,6 +47,10 @@ public: // メンバー関数
   /// <param name="texturePath">キューブマップテクスチャのパス</param>
   void Initialize(const std::string& texturePath);
   void Update();
+
+  /// <summary>
+  /// 描画リストへ登録する
+  /// </summary>
   void Draw();
 
   //===========================================
@@ -61,6 +65,7 @@ public: // メンバー関数
   /// </summary>
   void SetTexture(const std::string& texturePath) {
     textureIndex_ = TextureManager::GetInstance()->GetSRVIndex(texturePath);
+    material_->SetTexture("gSkyBoxTexture"_id, textureIndex_);
   }
 
   //===========================================
@@ -69,7 +74,6 @@ public: // メンバー関数
   uint32_t GetTextureIndex() const { return textureIndex_; }
 
 private: // プライベートメンバー関数
-  void CreatePipeline();
   void CreateVertexData();
   void CreateIndexData();
   void CreateMaterialData();
@@ -82,18 +86,17 @@ private: // メンバ変数
 
   DX12Basic* dx12_ = nullptr;
 
-  GraphicsPipelineDesc pipeline_{};
+  std::unique_ptr<Material> material_;
 
   //バッファリソース
   ComPtr<ID3D12Resource> vertexResource_;
   ComPtr<ID3D12Resource> indexResource_;
-  ComPtr<ID3D12Resource> materialResource_;
   ComPtr<ID3D12Resource> transformationMatrixResource_;
 
   //各バッファのマップ済みポインタ
   VertexData*           vertexData_               = nullptr;
   uint32_t*             indexData_                = nullptr;
-  Material*             materialData_             = nullptr;
+  MaterialConstants*    materialData_             = nullptr;
   TransformationMatrix* transformationMatrixData_ = nullptr;
 
   D3D12_VERTEX_BUFFER_VIEW vertexBufferView_ = {};

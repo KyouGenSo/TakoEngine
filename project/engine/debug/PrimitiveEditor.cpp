@@ -1,7 +1,7 @@
 #include "PrimitiveEditor.h"
 #include "DebugUIManager.h"
 #include "Object3d.h"
-#include "Object3dBasic.h"
+#include "Renderer.h"
 #include "Camera.h"
 #include "Model.h"
 #include "PrimitiveBuilder.h"
@@ -185,14 +185,14 @@ namespace Tako {
 
     preview_.BeginPass();
 
-    // プレビューカメラを視点にし、直前は別パスの PSO のため共通描画設定を再適用
-    Object3dBasic::GetInstance()->SetView(preview_.GetCamera());
-    Object3dBasic::GetInstance()->SetCommonRenderSetting();
-
-    if (showFloor_ && floorObject_) {
-      floorObject_->Draw();
-    }
-    previewObject_->Draw();
+    // プレビュー用の描画物だけをプレビューカメラ視点で描く
+    Renderer* renderer = Renderer::GetInstance();
+    renderer->RenderImmediate(renderer->MakeView(preview_.GetCamera()), [this] {
+      if (showFloor_ && floorObject_) {
+        floorObject_->Draw();
+      }
+      previewObject_->Draw();
+    });
 
     preview_.EndPass();
   }

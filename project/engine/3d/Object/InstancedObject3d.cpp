@@ -1,6 +1,6 @@
 #include "InstancedObject3d.h"
 #include "DX12Basic.h"
-#include "Object3dBasic.h"
+#include "Renderer.h"
 #include "Model.h"
 #include "ModelManager.h"
 #include "SrvManager.h"
@@ -41,7 +41,7 @@ void InstancedObject3d::Initialize(const std::string& modelFileName) {
 }
 
 void InstancedObject3d::CreateInstanceBuffer() {
-  DX12Basic* dx12 = Object3dBasic::GetInstance()->GetDX12Basic();
+  DX12Basic* dx12 = Renderer::GetInstance()->GetDX12Basic();
 
   // インスタンスバッファの作成（StructuredBuffer）
   D3D12_HEAP_PROPERTIES heapProperties{};
@@ -205,25 +205,10 @@ void InstancedObject3d::Draw() {
     return;
   }
 
-  DX12Basic* dx12 = Object3dBasic::GetInstance()->GetDX12Basic();
-  const bool isRenderingShadow = ShadowRenderer::GetInstance()->IsRenderingShadow();
-  if (isRenderingShadow) {
-    ShadowRenderer::GetInstance()->SetInstancedRenderState();
-  }
-  else {
-    Object3dBasic::GetInstance()->SetInstancedRenderSetting();
-  }
-
-  dx12->GetContext().Graphics().BindSRV("gInstanceData"_id, instanceSrvIndex_);
-  model_->DrawInstanced(static_cast<uint32_t>(instances_.size()));
-
-  // 後続の通常の Object3d が同じパイプラインを前提に描けるよう戻す
-  if (isRenderingShadow) {
-    ShadowRenderer::GetInstance()->SetRenderState();
-  }
-  else {
-    Object3dBasic::GetInstance()->SetCommonRenderSetting();
-  }
+  DrawItem item;
+  item.instanceCount = static_cast<uint32_t>(instances_.size());
+  item.instanceSrv = instanceSrvIndex_;
+  model_->DrawInstanced(item);
 }
 
 void InstancedObject3d::ClearAllInstances() {

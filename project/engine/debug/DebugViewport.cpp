@@ -5,7 +5,7 @@
 #include "EngineSettingsWindow.h"
 #include "PreviewViewport.h"
 #include "Camera.h"
-#include "Object3dBasic.h"
+#include "Renderer.h"
 #include "SceneManager.h"
 #include "DecalManager.h"
 #include "GPUParticle.h"
@@ -45,7 +45,7 @@ namespace Tako {
       // 個人設定の読み込み後に初めて開くので、ここで既定の移動速度を反映する
       cameraController_.Reset();
       // 開いた直後はゲームカメラと同じ位置・向きから始める
-      if (const Camera* gameCamera = *Object3dBasic::GetInstance()->GetCamera()) {
+      if (const Camera* gameCamera = *Renderer::GetInstance()->GetCamera()) {
         cameraController_.SetFromCamera(*gameCamera);
       }
     }
@@ -61,12 +61,10 @@ namespace Tako {
 
     viewport_->BeginPass();
 
-    // シーンの 3D 描画をデバッグカメラ視点で再実行する。再実行中に積まれる線分（コライダー等）は本編分と重複するので捨てる
+    // 本編で登録したシーンの描画物をデバッグカメラ視点で描く
+    Renderer* renderer = Renderer::GetInstance();
+    renderer->RenderList(renderer->GetSceneList(), renderer->MakeView(*camera_));
     LineRenderer* lineRenderer = LineRenderer::GetInstance();
-    Object3dBasic::GetInstance()->SetView(*camera_);
-    const uint32_t lineMark = lineRenderer->GetBatchMark();
-    SceneManager::GetInstance()->Draw();
-    lineRenderer->RollbackBatch(lineMark);
 
     DecalManager::GetInstance()->DrawAllForView(*camera_, viewport_->GetDepthResource(), viewport_->GetDepthSrvIndex());
     GPUParticle::GetInstance()->DrawForCamera(*camera_);
@@ -79,7 +77,7 @@ namespace Tako {
     if (showGrid_) {
       lineRenderer->DrawGrid(grid_->size, grid_->cellSize, kGridColor, kGridHeight);
     }
-    const Camera* gameCamera = *Object3dBasic::GetInstance()->GetCamera();
+    const Camera* gameCamera = *Renderer::GetInstance()->GetCamera();
     if (showGameCamera_ && gameCamera) {
       // near 面・far 面・それらを結ぶ側面の 12 辺
       const std::array<Vector3, 8> corners = gameCamera->GetFrustumCornersWithCustomFar(kGameCameraFrustumFar);
@@ -105,7 +103,7 @@ namespace Tako {
     bool inputCaptured = false;
     if (ImGui::Begin("Debug Viewport", isOpen_)) {
       if (ImGui::Button("Sync to Game Camera##DbgView")) {
-        if (const Camera* gameCamera = *Object3dBasic::GetInstance()->GetCamera()) {
+        if (const Camera* gameCamera = *Renderer::GetInstance()->GetCamera()) {
           cameraController_.SetFromCamera(*gameCamera);
         }
       }

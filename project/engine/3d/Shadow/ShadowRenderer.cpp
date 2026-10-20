@@ -1,6 +1,5 @@
 #include "ShadowRenderer.h"
 #include "DX12Basic.h"
-#include "Object3dBasic.h"
 #include "Light.h"
 #include "SrvManager.h"
 #include <cassert>
@@ -41,10 +40,6 @@ void ShadowRenderer::Initialize(DX12Basic* dx12)
     // ShadowMap を内部で生成
     shadowMap_ = std::make_unique<ShadowMap>();
     shadowMap_->Initialize(dx12_);
-
-    // シャドウ用のパイプラインを作成（通常 / インスタンシング）
-    shadowPipeline_          = MakeShadowPipeline(L"ShadowMap.VS.hlsl");
-    shadowInstancedPipeline_ = MakeShadowPipeline(L"ShadowMapInstanced.VS.hlsl");
 
     // 定数バッファを作成
     CreateConstantBuffer();
@@ -101,9 +96,6 @@ void ShadowRenderer::BeginShadowPass()
 
     // シャドウマップレンダリングを開始
     shadowMap_->BeginShadowMapRender();
-
-    // シャドウレンダリング設定を適用
-    SetRenderState();
 }
 
 void ShadowRenderer::EndShadowPass()
@@ -120,11 +112,6 @@ void ShadowRenderer::EndShadowPass()
     dx12_->RestoreSceneRenderTarget();
 }
 
-void ShadowRenderer::SetRenderState()
-{
-    BindShadowPipeline(shadowPipeline_);
-}
-
 void ShadowRenderer::SetShadowForMainPass()
 {
     if (isRenderingShadow_) {
@@ -137,24 +124,6 @@ void ShadowRenderer::SetShadowForMainPass()
     if (shadowMap_) {
         binder.BindSRV("gShadowMap"_id, shadowMap_->GetSrvIndex());
     }
-}
-
-GraphicsPipelineDesc ShadowRenderer::MakeShadowPipeline(const wchar_t* vsFileName) const
-{
-    // フロントフェースカリングでピーターパニングを緩和する。深度だけを書くのでピクセルシェーダーは使わない
-    GraphicsPipelineDesc desc;
-    desc.vs = dx12_->GetShaderLibrary().Get(vsFileName, ShaderStage::Vertex);
-    desc.vertexLayout = VertexLayout::Position;
-    desc.renderState.cull = CullMode::Front;
-    desc.renderState.depthFunc = D3D12_COMPARISON_FUNC_LESS;
-    return desc;
-}
-
-void ShadowRenderer::BindShadowPipeline(const GraphicsPipelineDesc& pipeline)
-{
-    CommandContext& context = dx12_->GetContext();
-    context.SetGraphicsPipeline(pipeline);
-    context.Graphics().BindCBV("gShadowConstants"_id, shadowConstantBuffer_->GetGPUVirtualAddress());
 }
 
 void ShadowRenderer::CreateConstantBuffer()
@@ -190,11 +159,6 @@ void ShadowRenderer::SetPCFKernelSize(int kernelSize)
     if (shadowMap_) {
         shadowMap_->SetPCFKernelSize(kernelSize);
     }
-}
-
-void ShadowRenderer::SetInstancedRenderState()
-{
-    BindShadowPipeline(shadowInstancedPipeline_);
 }
 
 void ShadowRenderer::DrawImGui()

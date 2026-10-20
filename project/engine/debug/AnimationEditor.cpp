@@ -6,9 +6,8 @@
 #include "Model.h"
 #include "ModelManager.h"
 #include "Object3d.h"
-#include "Object3dBasic.h"
+#include "Renderer.h"
 #include "PrimitiveBuilder.h"
-#include "SpriteBasic.h"
 #include "UILayout.h"
 #include <algorithm>
 #include <cmath>
@@ -246,7 +245,6 @@ namespace Tako {
     if (!*isOpen_ || !ownedLayout_ || FindTargetLayout() != ownedLayout_.get()) {
       return;
     }
-    SpriteBasic::GetInstance()->SetCommonRenderSetting();
     ownedLayout_->Draw();
   }
 
@@ -257,12 +255,12 @@ namespace Tako {
 
     preview_.BeginPass();
 
-    // プレビューカメラを視点にし、直前は別パスの PSO のため共通描画設定を再適用
-    Object3dBasic::GetInstance()->SetView(preview_.GetCamera());
-    Object3dBasic::GetInstance()->SetCommonRenderSetting();
-
-    floorObject_->Draw();
-    previewObject_->Draw();
+    // プレビュー用の描画物だけをプレビューカメラ視点で描く
+    Renderer* renderer = Renderer::GetInstance();
+    renderer->RenderImmediate(renderer->MakeView(preview_.GetCamera()), [this] {
+      floorObject_->Draw();
+      previewObject_->Draw();
+    });
 
     preview_.EndPass();
   }

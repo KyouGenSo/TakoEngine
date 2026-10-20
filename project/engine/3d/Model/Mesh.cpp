@@ -2,7 +2,7 @@
 #include "DX12Basic.h"
 #include "Mat4x4Func.h"
 #include "ModelBasic.h"
-#include "Object3dBasic.h"
+#include "Renderer.h"
 #include "SrvManager.h"
 #include "TextureManager.h"
 
@@ -55,53 +55,13 @@ namespace Tako {
     }
   }
 
-  void Mesh::Draw()
+  void Mesh::Submit(DrawItem item) const
   {
-    // スキニング対応版の描画処理
-    D3D12_VERTEX_BUFFER_VIEW vbvToUse = hasSkinning_ ? skinnedVertexBufferView_ : vertexBufferView_;
-    dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &vbvToUse);
-    dx12_->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
-
-    BindMaterial();
-
-    dx12_->GetContext().DrawIndexedInstanced(static_cast<UINT>(indices_.size()), 1, 0, 0, 0);
-  }
-
-  void Mesh::DrawWithCurrentTransform()
-  {
-    // スキニング対応版の描画処理
-    D3D12_VERTEX_BUFFER_VIEW vbvToUse = hasSkinning_ ? skinnedVertexBufferView_ : vertexBufferView_;
-    dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &vbvToUse);
-    dx12_->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
-
-    dx12_->GetContext().Graphics().BindCBV("gTransformationMatrix"_id, transformationResource_->GetGPUVirtualAddress());
-    BindMaterial();
-
-    dx12_->GetContext().DrawIndexedInstanced(static_cast<UINT>(indices_.size()), 1, 0, 0, 0);
-  }
-
-  void Mesh::DrawInstanced(uint32_t instanceCount)
-  {
-    // インスタンシング描画（スキニングは未対応）
-    if (hasSkinning_) {
-#ifdef _DEBUG
-      DebugUIManager::GetInstance()->AddLog(
-        "Instanced drawing is not supported for skinned meshes",
-        DebugUIManager::LogType::Warning);
-#endif
-
-      return;
-    }
-
-    // 頂点バッファビューを設定
-    dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView_);
-
-    // インデックスバッファビューを設定
-    dx12_->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
-
-    BindMaterial();
-
-    dx12_->GetContext().DrawIndexedInstanced(static_cast<UINT>(indices_.size()), instanceCount, 0, 0, 0);
+    item.material = item.material ? item.material : &GetMaterial();
+    item.vertexBuffer = hasSkinning_ ? &skinnedVertexBufferView_ : &vertexBufferView_;
+    item.indexBuffer = &indexBufferView_;
+    item.indexCount = static_cast<uint32_t>(indices_.size());
+    Renderer::GetInstance()->Submit(item);
   }
 
   void Mesh::UpdateTransformation(const Matrix4x4& world)
@@ -131,6 +91,14 @@ namespace Tako {
     TextureManager::GetInstance()->LoadTexture(fileName);
     textureData_.texturePath = fileName;
     textureData_.textureIndex = TextureManager::GetInstance()->GetSRVIndex(fileName);
+    material_->SetTexture("gTexture"_id, textureData_.textureIndex);
+  }
+
+  void Mesh::SetEnvironmentTexture(uint32_t envTextureIndex)
+  {
+    envTextureIndex_ = envTextureIndex;
+    // シェーダーは enableEnvMap が無効でも宣言を持つので、未設定でも有効なテクスチャを渡す
+    material_->SetTexture("gEnvironmentMap"_id, envTextureIndex != 0 ? envTextureIndex : TextureManager::GetInstance()->GetEngineDefaultSRVIndex("white.png"));
   }
 
   void Mesh::ReleaseSRVIndex()
@@ -272,17 +240,6 @@ namespace Tako {
   ///                PRIVATE METHODS                ///
   ///-----------------------------------------------///
 
-  void Mesh::BindMaterial()
-  {
-    // シャドウパスのシェーダーはマテリアルを使わないため、渡しても無視される
-    CommandContext::ShaderBinder binder = dx12_->GetContext().Graphics();
-    binder.BindCBV("gMaterial"_id, materialResource_->GetGPUVirtualAddress());
-    binder.BindSRV("gTexture"_id, textureData_.textureIndex);
-
-    // 環境マップが無効、または未設定なら既定テクスチャを渡す
-    const bool useEnvMap = materialData_->enableEnvMap && envTextureIndex_ != 0;
-    binder.BindSRV("gEnvironmentMap"_id, useEnvMap ? envTextureIndex_ : TextureManager::GetInstance()->GetEngineDefaultSRVIndex("white.png"));
-  }
   void Mesh::CreateVertexData()
   {
     // 頂点リソースを生成
@@ -334,11 +291,10 @@ namespace Tako {
 
   void Mesh::CreateMaterialData()
   {
-    // マテリアルリソースを生成
-    materialResource_ = dx12_->MakeBufferResource(sizeof(Material));
-
-    // マテリアルリソースをマップ
-    materialResource_->Map(0, nullptr, reinterpret_cast<void**>(&materialData_));
+    material_ = std::make_unique<Material>(dx12_, Renderer::GetInstance()->FindShader("Lit"));
+    materialData_ = &material_->Constants<MaterialConstants>();
+    material_->SetTexture("gTexture"_id, textureData_.textureIndex);
+    SetEnvironmentTexture(0);
 
     // マテリアルデータの初期値を書き込む
     materialData_->color = textureData_.baseColor;

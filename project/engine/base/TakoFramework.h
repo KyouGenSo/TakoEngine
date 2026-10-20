@@ -89,7 +89,7 @@ namespace Tako {
 
     std::unique_ptr<AbstractSceneFactory> sceneFactory_;  ///< シーンファクトリー（シーン生成用）
 
-    uint32_t spriteBasicOnresizeId_ = 0;
+    uint32_t rendererOnResizeId_ = 0;
 
     bool endFlag_ = false;  ///< アプリケーション終了フラグ
   };

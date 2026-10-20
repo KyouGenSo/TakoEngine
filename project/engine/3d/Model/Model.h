@@ -1,4 +1,5 @@
 #pragma once
+#include "DrawList.h"
 #include <d3d12.h>
 #include <unordered_map>
 #include <map>
@@ -56,16 +57,17 @@ namespace Tako {
     void Update();
 
     /// <summary>
-    /// 描画
+    /// 各メッシュを描画リストへ登録する（スキニングはこの時点で計算する）
     /// </summary>
-    /// <param name="world">ワールド変換行列</param>
-    void Draw(Matrix4x4 world);
+    /// <param name="item">描画物ごとの値（変換行列・並び順など）</param>
+    /// <param name="world">マルチメッシュのノード階層を解くワールド行列</param>
+    void Draw(const DrawItem& item, const Matrix4x4& world);
 
     /// <summary>
-    /// インスタンシング描画
+    /// 各メッシュをインスタンシング描画として登録する（スキニングは未対応）
     /// </summary>
-    /// <param name="instanceCount">描画するインスタンス数</param>
-    void DrawInstanced(uint32_t instanceCount);
+    /// <param name="item">インスタンス数と gInstanceData を設定した描画物</param>
+    void DrawInstanced(const DrawItem& item);
 
     /// <summary>
     /// obj ファイルの読み込む
@@ -106,6 +108,11 @@ namespace Tako {
     void SetEnableEnvMap(bool enableEnvMap);
     void SetEnvMapCoefficient(float coefficient);
     void SetTexture(const std::string& fileName);
+
+    /// <summary>
+    /// メッシュの描画に使うマテリアルを差し替える（nullptr で既定に戻す）
+    /// </summary>
+    void SetMaterial(size_t meshIndex, std::shared_ptr<Material> material);
     static void SetShowSkeletonDebug(bool show) { s_showSkeletonDebug = show; }
     void SetAnimationSpeed(float speed) { animationSpeed_ = speed; }
 
@@ -222,7 +229,7 @@ namespace Tako {
     /// <param name="node">処理対象のノード</param>
     /// <param name="parentGlobalMatrix">親ノードのグローバル変換行列</param>
     /// <param name="world">ワールド変換行列</param>
-    void ProcessNodeHierarchy(const Node& node, const Matrix4x4& parentGlobalMatrix, Matrix4x4 world);
+    void ProcessNodeHierarchy(const Node& node, const Matrix4x4& parentGlobalMatrix, const Matrix4x4& world, const DrawItem& item);
 
     /// <summary>
     /// Skeleton のデバグ用描画

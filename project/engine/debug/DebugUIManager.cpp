@@ -4,7 +4,7 @@
 #include "RtvManager.h"
 #include "DsvManager.h"
 #include "TextureManager.h"
-#include "Object3dBasic.h"
+#include "Renderer.h"
 #include "Light.h"
 #include "Camera.h"
 #include "Input.h"
@@ -641,7 +641,7 @@ namespace Tako {
   }
 
   void DebugUIManager::DrawCameraInspector() {
-    Camera** cameraPtr = Object3dBasic::GetInstance()->GetCamera();
+    Camera** cameraPtr = Renderer::GetInstance()->GetCamera();
     if (!cameraPtr || !*cameraPtr) {
       ImGui::TextDisabled("No camera");
       return;
@@ -672,7 +672,7 @@ namespace Tako {
   }
 
   void DebugUIManager::DrawLightInspector() {
-    Light* light = Object3dBasic::GetInstance()->GetLight();
+    Light* light = Renderer::GetInstance()->GetLight();
     if (!light) {
       ImGui::TextDisabled("No light");
       return;
@@ -684,13 +684,13 @@ namespace Tako {
     float intensity = dirLight.intensity;
 
     if (ImGui::DragFloat3("Direction", &dir.x, 0.01f)) {
-      Object3dBasic::GetInstance()->SetDirectionalLightDirection(dir);
+      Renderer::GetInstance()->GetLight()->SetDirectionalLightDirection(dir);
     }
     if (ImGui::ColorEdit4("Color", &color.x)) {
-      Object3dBasic::GetInstance()->SetDirectionalLightColor(color);
+      Renderer::GetInstance()->GetLight()->SetDirectionalLightColor(color);
     }
     if (ImGui::DragFloat("Intensity", &intensity, 0.01f, 0.0f, 10.0f)) {
-      Object3dBasic::GetInstance()->SetDirectionalLightIntensity(intensity);
+      Renderer::GetInstance()->GetLight()->SetDirectionalLightIntensity(intensity);
     }
   }
 

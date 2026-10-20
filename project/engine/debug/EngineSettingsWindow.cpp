@@ -3,7 +3,7 @@
 #include "ImGuiThemes.h"
 #include "WinApp.h"
 #include "DX12Basic.h"
-#include "Object3dBasic.h"
+#include "Renderer.h"
 #include "FrameTimer.h"
 #include "ShadowRenderer.h"
 #include "Audio.h"
@@ -102,7 +102,7 @@ namespace Tako {
     }
 
     DX12Basic* GetDX12() {
-      return Object3dBasic::GetInstance()->GetDX12Basic();
+      return Renderer::GetInstance()->GetDX12Basic();
     }
 
     json GridToJson(const GridSettings& grid) {

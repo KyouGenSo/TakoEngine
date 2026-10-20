@@ -9,6 +9,9 @@
 #include<string>
 #include <d3d12.h>
 #include<wrl.h>
+#include <memory>
+
+#include "Material.h"
 
 namespace Tako {
 
@@ -48,7 +51,7 @@ namespace Tako {
     /// <summary>
     /// マテリアルデータ構造体
     /// </summary>
-    struct Material
+    struct MaterialConstants
     {
       Vector4 color;
       Matrix4x4 uvTransform;
@@ -80,7 +83,7 @@ namespace Tako {
     void Update();
 
     /// <summary>
-    /// 描画
+    /// 描画リストへ登録する（登録順に描かれる）
     /// </summary>
     void Draw();
 
@@ -116,6 +119,11 @@ namespace Tako {
     void SetTexCutSize(const Vector2& texCutSize) { texCutSize_ = texCutSize; }
 
     /// <summary>
+    /// 同じ描画キューの中での描画順（小さいほど先）
+    /// </summary>
+    void SetSortingOrder(int32_t sortingOrder) { sortingOrder_ = sortingOrder; }
+
+    /// <summary>
     /// 9-slice の枠幅を設定する。四隅は伸縮せず、辺と中央だけが伸びる。全要素 0 で通常描画
     /// </summary>
     /// <param name="borderTexPx">枠幅（テクスチャ px、x=左 y=上 z=右 w=下）</param>
@@ -147,7 +155,8 @@ namespace Tako {
     //Getter
     //============================================================
     [[nodiscard]] Transform GetTransform() const { return transform_; }
-    [[nodiscard]] Material* GetMaterialData() const { return materialData_; }
+    [[nodiscard]] MaterialConstants* GetMaterialData() const { return materialData_; }
+    [[nodiscard]] Material& GetMaterial() const { return *material_; }
     [[nodiscard]] Vector4 GetColor() const { return materialData_->color; }
     [[nodiscard]] Vector2 GetPos() const { return pos_; }
     [[nodiscard]] float GetRotation() const { return rotation_; }
@@ -195,13 +204,12 @@ namespace Tako {
     //バッファリソース
     ComPtr<ID3D12Resource> vertexResource_;
     ComPtr<ID3D12Resource> indexResource_;
-    ComPtr<ID3D12Resource> materialResource_;
     ComPtr<ID3D12Resource> transformationMatrixResource_;
 
     //バッファリソース内のデータを参照するためのポインタ
     VertexData*           vertexData_               = nullptr;
     uint32_t*             indexData_                = nullptr;
-    Material*             materialData_             = nullptr;
+    MaterialConstants*    materialData_             = nullptr;  ///< material_ の定数
     TransformationMatrix* transformationMatrixData_ = nullptr;
 
     D3D12_VERTEX_BUFFER_VIEW vertexBufferView_ = {};  ///< 頂点バッファビュー
@@ -228,6 +236,9 @@ namespace Tako {
 
     Vector4 sliceBorder_ = {};    ///< 9-slice の枠幅（テクスチャ px、左上右下）
     float   sliceScale_  = 1.0f;  ///< 枠の画面 px ÷ テクスチャ px
+
+    std::unique_ptr<Material> material_;
+    int32_t                   sortingOrder_ = 0;
 
     //9-slice の区画
     std::array<bool, kRegionCount>        regionVisible_        = { true, true, true, true, true, true, true, true, true };

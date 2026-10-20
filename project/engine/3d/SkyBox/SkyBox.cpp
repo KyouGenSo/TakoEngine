@@ -1,5 +1,5 @@
 #include "SkyBox.h"
-#include "Object3dBasic.h"
+#include "Renderer.h"
 #include "TextureManager.h"
 #include "SrvManager.h"
 #include "DX12Basic.h"
@@ -20,15 +20,14 @@ void SkyBox::Initialize(const std::string& texturePath)
 
   worldMatrix_ = Mat4x4::MakeIdentity();
 
-  dx12_ = Object3dBasic::GetInstance()->GetDX12Basic();
+  dx12_ = Renderer::GetInstance()->GetDX12Basic();
 
-  CreatePipeline();
   CreateVertexData();
   CreateIndexData();
   CreateMaterialData();
   CreateTransformationMatrixData();
 
-  textureIndex_ = TextureManager::GetInstance()->GetSRVIndex(texturePath);
+  SetTexture(texturePath);
 }
 
 void SkyBox::Update()
@@ -40,31 +39,15 @@ void SkyBox::Update()
 
 void SkyBox::Draw()
 {
-  CommandContext& context = dx12_->GetContext();
-  context.SetGraphicsPipeline(pipeline_);
-
-  ID3D12GraphicsCommandList* commandList = dx12_->GetCommandList();
-  commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
-  commandList->IASetIndexBuffer(&indexBufferView_);
-
-  CommandContext::ShaderBinder binder = context.Graphics();
-  binder.BindCBV("gTransformationMatrix"_id, transformationMatrixResource_->GetGPUVirtualAddress());
-  binder.BindSRV("gSkyBoxTexture"_id, textureIndex_);
-  binder.BindCBV("gMaterial"_id, materialResource_->GetGPUVirtualAddress());
-  // 本編/デバッグビューのどちらで呼ばれても現在の視点で描く
-  binder.BindCBV("gView"_id, Object3dBasic::GetInstance()->GetViewAddress());
-
-  context.DrawIndexedInstanced(36, 1, 0, 0, 0);
-}
-
-void SkyBox::CreatePipeline()
-{
-  ShaderLibrary& library = dx12_->GetShaderLibrary();
-  pipeline_.vs = library.Get(L"SkyBox.VS.hlsl", ShaderStage::Vertex);
-  pipeline_.ps = library.Get(L"SkyBox.PS.hlsl", ShaderStage::Pixel);
-  pipeline_.vertexLayout = VertexLayout::Position;
-  // 最遠面として描くので深度は書き込まない
-  pipeline_.renderState.depthWrite = false;
+  DrawItem item;
+  item.material = material_.get();
+  item.vertexBuffer = &vertexBufferView_;
+  item.indexBuffer = &indexBufferView_;
+  item.indexCount = 36;
+  item.transform = transformationMatrixResource_->GetGPUVirtualAddress();
+  item.depthSort = false;
+  item.castShadow = false;
+  Renderer::GetInstance()->Submit(item);
 }
 
 void SkyBox::CreateVertexData()
@@ -136,8 +119,8 @@ void SkyBox::CreateIndexData()
 
 void SkyBox::CreateMaterialData()
 {
-  materialResource_ = dx12_->MakeBufferResource(sizeof(Material));
-  materialResource_->Map(0, nullptr, reinterpret_cast<void**>(&materialData_));
+  material_ = std::make_unique<Material>(dx12_, Renderer::GetInstance()->FindShader("SkyBox"));
+  materialData_ = &material_->Constants<MaterialConstants>();
   materialData_->color = Color::kWhite;
 }
 

@@ -3,8 +3,9 @@
 #ifdef _DEBUG
 #include "DebugUIManager.h"
 #endif
+#include "Camera.h"
 #include "Object3d.h"
-#include "Object3dBasic.h"
+#include "Renderer.h"
 
 #include <fstream>
 #include <cassert>
@@ -162,10 +163,9 @@ namespace Tako {
 
     for (auto& objectData : levelData.objects) {
       if (objectData.type == "CAMERA") {
-        Object3dBasic* object3dBasic = Object3dBasic::GetInstance();
-
-        object3dBasic->SetCameraTranslate(objectData.transform.translate);
-        object3dBasic->SetCameraRotation(objectData.transform.rotate);
+        Camera* camera = *Renderer::GetInstance()->GetCamera();
+        camera->SetTranslate(objectData.transform.translate);
+        camera->SetRotate(objectData.transform.rotate);
 
         continue; // カメラは Object3d ではないのでスキップ
       }

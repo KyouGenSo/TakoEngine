@@ -1,6 +1,5 @@
 #include "ScaleTransition.h"
 #include "Sprite.h"
-#include "SpriteBasic.h"
 #include "TextureManager.h"
 #include "WinApp.h"
 #include "ColorFunc.h"
@@ -139,7 +138,6 @@ namespace Tako {
       return;
     }
 
-    SpriteBasic::GetInstance()->SetCommonRenderSetting();
 
     circleSprite_->Draw();
   }

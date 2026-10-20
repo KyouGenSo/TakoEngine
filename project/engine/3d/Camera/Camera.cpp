@@ -29,7 +29,7 @@ namespace Tako {
 
     projectionMatrix_ = Mat4x4::MakePerspective(fovY_, aspect_, nearZ_, farZ_);
 
-    // viewProjectionMatrix_ は Object3dBasic::Update で合成するためここでは更新しない
+    // viewProjectionMatrix_ は Renderer::Update で合成するためここでは更新しない
     //viewProjectionMatrix_ = Mat4x4::Multiply(viewMatrix_, projectionMatrix_);
   }
 

@@ -5,8 +5,7 @@
 #include "TextureManager.h"
 #include "SceneManager.h"
 #include "ModelManager.h"
-#include "Object3dBasic.h"
-#include "SpriteBasic.h"
+#include "Renderer.h"
 #include "LineRenderer.h"
 #include "PostEffectManager.h"
 #include "GPUParticle.h"
@@ -74,11 +73,10 @@ namespace Tako {
 
     ModelManager::GetInstance()->Initialize(dx12_.get());
 
+    // モデルの読み込みでマテリアルを作るので先に用意する
+    Renderer::GetInstance()->Initialize(dx12_.get());
+
     LoadResources();
-
-    Object3dBasic::GetInstance()->Initialize(dx12_.get());
-
-    SpriteBasic::GetInstance()->Initialize(dx12_.get());
 
     FrameTimer::GetInstance()->Initialize();
 
@@ -86,10 +84,10 @@ namespace Tako {
     defaultCamera_->SetRotate(Vector3(0.2f, 0.0f, 0.0f));
     defaultCamera_->SetTranslate(Vector3(0.0f, 9.0f, -34.0f));
 
-    Object3dBasic::GetInstance()->SetCamera(defaultCamera_.get());
+    Renderer::GetInstance()->SetCamera(defaultCamera_.get());
 
     ShadowRenderer::GetInstance()->Initialize(dx12_.get());
-    ShadowRenderer::GetInstance()->SetLight(Object3dBasic::GetInstance()->GetLight());
+    ShadowRenderer::GetInstance()->SetLight(Renderer::GetInstance()->GetLight());
     ShadowRenderer::GetInstance()->SetCamera(defaultCamera_.get());
 
     LineRenderer::GetInstance()->SetCamera(defaultCamera_.get());
@@ -105,7 +103,7 @@ namespace Tako {
 
     TransitionManager::GetInstance()->Initialize();
 
-    spriteBasicOnresizeId_ = winApp_->RegisterOnResizeFunc(std::bind(&SpriteBasic::OnResize, SpriteBasic::GetInstance(), std::placeholders::_1));
+    rendererOnResizeId_ = winApp_->RegisterOnResizeFunc(std::bind(&Renderer::OnResize, Renderer::GetInstance(), std::placeholders::_1));
 
     GPUParticle::GetInstance()->Initialize(dx12_.get(), defaultCamera_.get());
 
@@ -134,7 +132,7 @@ namespace Tako {
     // シーンマネージャーの終了処理（最初に実行）
     SceneManager::GetInstance()->Finalize();
 
-    winApp_->UnregisterOnResizeFunc(spriteBasicOnresizeId_);
+    winApp_->UnregisterOnResizeFunc(rendererOnResizeId_);
 
     GPUParticle::GetInstance()->Finalize();
 
@@ -153,9 +151,7 @@ namespace Tako {
 
     FrameTimer::GetInstance()->Finalize();
 
-    SpriteBasic::GetInstance()->Finalize();
-
-    Object3dBasic::GetInstance()->Finalize();
+    Renderer::GetInstance()->Finalize();
 
     ModelManager::GetInstance()->Finalize();
 
@@ -230,7 +226,7 @@ namespace Tako {
 
     LineRenderer::GetInstance()->Update();
 
-    Object3dBasic::GetInstance()->Update();
+    Renderer::GetInstance()->Update();
 
     ShadowRenderer::GetInstance()->Update();
 
@@ -247,7 +243,14 @@ namespace Tako {
 
     SrvManager::GetInstance()->BeginDraw();
 
+    // シーンの描画物を登録してから、影とシーンを描く
+    Renderer* renderer = Renderer::GetInstance();
+    renderer->BeginFrame();
+    renderer->BeginSubmit(renderer->GetSceneList());
     SceneManager::GetInstance()->Draw();
+    renderer->EndSubmit();
+    renderer->RenderShadows(renderer->GetSceneList());
+    renderer->RenderList(renderer->GetSceneList(), renderer->GetMainView());
 
     DecalManager::GetInstance()->DrawAll();
 
@@ -271,6 +274,7 @@ namespace Tako {
     // ポストエフェクト非適用対象のレンダーテクスチャを描画先に設定
     PostEffectManager::GetInstance()->BeginDrawNonEffectTarget();
 
+    renderer->BeginSubmit(renderer->GetOverlayList());
     SceneManager::GetInstance()->DrawWithoutEffect();
 
 #ifdef _DEBUG
@@ -279,6 +283,8 @@ namespace Tako {
 #endif
 
     TransitionManager::GetInstance()->Draw();
+    renderer->EndSubmit();
+    renderer->RenderList(renderer->GetOverlayList(), renderer->GetMainView());
 
 #ifdef _DEBUG
     // 本編で積んだ線分を別視点でも描くため Reset より前に行う

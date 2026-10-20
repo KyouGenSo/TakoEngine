@@ -141,7 +141,7 @@ namespace Tako {
     static std::vector<std::string> ListAnimationFiles();
 
     /// <summary>
-    /// メインカメラ（Object3dBasic のカメラ）
+    /// メインカメラ（Renderer のカメラ）
     /// </summary>
     static Camera* MainCamera();
 

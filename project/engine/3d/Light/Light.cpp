@@ -1,6 +1,5 @@
 #include "Light.h"
 #include "DX12Basic.h"
-#include "Object3dBasic.h"
 #include "SrvManager.h"
 #include <numbers>
 

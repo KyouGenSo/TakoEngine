@@ -6,7 +6,7 @@
 #include "SrvManager.h"
 #include "RtvManager.h"
 #include "DsvManager.h"
-#include "Object3dBasic.h"
+#include "Renderer.h"
 #include "ImGuiManager.h"
 
 #include <cassert>
@@ -30,7 +30,7 @@ namespace Tako {
       return;
     }
 
-    dx12_ = Object3dBasic::GetInstance()->GetDX12Basic();
+    dx12_ = Renderer::GetInstance()->GetDX12Basic();
     width_ = width;
     height_ = height;
     clearColor_ = clearColor;

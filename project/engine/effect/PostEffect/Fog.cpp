@@ -7,7 +7,7 @@
 #include "SrvManager.h"
 #include "StringUtility.h"
 #include "ColorFunc.h"
-#include "Object3dBasic.h"
+#include "Renderer.h"
 #include "Camera.h"
 #include "EnginePaths.h"
 
@@ -80,8 +80,8 @@ namespace Tako {
     cameraResource_->Map(0, nullptr, reinterpret_cast<void**>(&cameraData_));
 
     // 初期値を設定
-    cameraData_->farPlane = (*Object3dBasic::GetInstance()->GetCamera())->GetFarClip();
-    cameraData_->nearPlane = (*Object3dBasic::GetInstance()->GetCamera())->GetNearClip();
+    cameraData_->farPlane = (*Renderer::GetInstance()->GetCamera())->GetFarClip();
+    cameraData_->nearPlane = (*Renderer::GetInstance()->GetCamera())->GetNearClip();
 
     // unmap
     cameraResource_->Unmap(0, nullptr);

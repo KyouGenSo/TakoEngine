@@ -28,7 +28,7 @@ namespace Tako {
     void Initialize(const wchar_t* debugName, uint32_t width = 1280, uint32_t height = 720, const Vector4& clearColor = { 0.10f, 0.10f, 0.12f, 1.0f });
 
     /// <summary>
-    /// GPU リソースとディスクリプタを解放する（Object3dBasic の Finalize 後でも安全）
+    /// GPU リソースとディスクリプタを解放する（Renderer の Finalize 後でも安全）
     /// </summary>
     void Finalize();
 
@@ -57,7 +57,7 @@ namespace Tako {
     uint32_t GetDepthSrvIndex() const { return depthSrvIndex_; }
 
   private: //メンバー変数
-    DX12Basic*                  dx12_          = nullptr;  ///< Finalize 時に使う（Object3dBasic より後に破棄され得るため生成時に保持）
+    DX12Basic*                  dx12_          = nullptr;  ///< Finalize 時に使う（Renderer より後に破棄され得るため生成時に保持）
     GpuResource                 renderTexture_;
     GpuResource                 depthBuffer_;
     D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle_{};

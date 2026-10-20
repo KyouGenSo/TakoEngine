@@ -1,6 +1,7 @@
 #include"Sprite.h"
 
-#include"SpriteBasic.h"
+#include "Renderer.h"
+#include "DX12Basic.h"
 #include "TextureManager.h"
 #include "SrvManager.h"
 #include "ColorFunc.h"
@@ -77,8 +78,8 @@ namespace Tako {
 
     // Sprite の座標変換
     Matrix4x4 worldMatrixSprite = Mat4x4::MakeAffine(transform_.scale, transform_.rotate, transform_.translate);
-    Matrix4x4 viewMat = SpriteBasic::GetInstance()->GetViewMatrix();
-    Matrix4x4 projectionMat = SpriteBasic::GetInstance()->GetProjectionMatrix();
+    Matrix4x4 viewMat = Renderer::GetInstance()->GetScreenViewMatrix();
+    Matrix4x4 projectionMat = Renderer::GetInstance()->GetScreenProjectionMatrix();
     Matrix4x4 wvpMatrixSprite = Mat4x4::Multiply(worldMatrixSprite, Mat4x4::Multiply(viewMat, projectionMat));
 
     transformationMatrixData_->WVP = wvpMatrixSprite;
@@ -87,19 +88,20 @@ namespace Tako {
 
   void Sprite::Draw()
   {
-    DX12Basic* dx12 = SpriteBasic::GetInstance()->GetDX12Basic();
-    ID3D12GraphicsCommandList* commandList = dx12->GetCommandList();
-    commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
-    commandList->IASetIndexBuffer(&indexBufferView_);
-
-    CommandContext& context = dx12->GetContext();
-    CommandContext::ShaderBinder binder = context.Graphics();
-    binder.BindCBV("gMaterial"_id, materialResource_->GetGPUVirtualAddress());
-    binder.BindCBV("gTransformationMatrix"_id, transformationMatrixResource_->GetGPUVirtualAddress());
+    Renderer* renderer = Renderer::GetInstance();
+    DrawItem item;
+    item.material = material_.get();
+    item.vertexBuffer = &vertexBufferView_;
+    item.indexBuffer = &indexBufferView_;
+    item.transform = transformationMatrixResource_->GetGPUVirtualAddress();
+    item.sortingOrder = sortingOrder_;
+    item.depthSort = false;
+    item.castShadow = false;
 
     if (!IsSliced()) {
-      binder.BindSRV("gTexture"_id, textureIndex_);
-      context.DrawIndexedInstanced(kQuadIndexCount, 1, 0, 0, 0);
+      item.indexCount = kQuadIndexCount;
+      item.textureOverride = textureIndex_;
+      renderer->Submit(item);
       return;
     }
 
@@ -111,8 +113,10 @@ namespace Tako {
       if (runStart < 0) {
         return;
       }
-      binder.BindSRV("gTexture"_id, runTexture);
-      context.DrawIndexedInstanced(static_cast<uint32_t>(end - runStart) * kIndicesPerRegion, 1, kQuadIndexCount + static_cast<uint32_t>(runStart) * kIndicesPerRegion, 0, 0);
+      item.indexCount = static_cast<uint32_t>(end - runStart) * kIndicesPerRegion;
+      item.startIndex = kQuadIndexCount + static_cast<uint32_t>(runStart) * kIndicesPerRegion;
+      item.textureOverride = runTexture;
+      renderer->Submit(item);
       runStart = -1;
     };
     for (int region = 0; region < kRegionCount; ++region) {
@@ -185,7 +189,7 @@ namespace Tako {
   void Sprite::CreateVertexData()
   {
     // 頂点リソースを生成
-    vertexResource_ = SpriteBasic::GetInstance()->GetDX12Basic()->MakeBufferResource(sizeof(VertexData) * kVertexCount);
+    vertexResource_ = Renderer::GetInstance()->GetDX12Basic()->MakeBufferResource(sizeof(VertexData) * kVertexCount);
 
     // 頂点バッファビューを作成する
     vertexBufferView_.BufferLocation = vertexResource_->GetGPUVirtualAddress();
@@ -197,7 +201,7 @@ namespace Tako {
 
     // インデックスリソースを生成
     constexpr uint32_t kIndexCount = kQuadIndexCount + kSliceIndexCount;
-    indexResource_ = SpriteBasic::GetInstance()->GetDX12Basic()->MakeBufferResource(sizeof(uint32_t) * kIndexCount);
+    indexResource_ = Renderer::GetInstance()->GetDX12Basic()->MakeBufferResource(sizeof(uint32_t) * kIndexCount);
 
     // インデックスバッファビューを作成する
     indexBufferView_.BufferLocation = indexResource_->GetGPUVirtualAddress();
@@ -219,11 +223,9 @@ namespace Tako {
 
   void Sprite::CreateMaterialData()
   {
-    // マテリアルリソースを生成
-    materialResource_ = SpriteBasic::GetInstance()->GetDX12Basic()->MakeBufferResource(sizeof(Material));
-
-    // マテリアルリソースをマップ
-    materialResource_->Map(0, nullptr, reinterpret_cast<void**>(&materialData_));
+    Renderer* renderer = Renderer::GetInstance();
+    material_ = std::make_unique<Material>(renderer->GetDX12Basic(), renderer->FindShader("Sprite"));
+    materialData_ = &material_->Constants<MaterialConstants>();
 
     // マテリアルデータの初期値を書き込む
     materialData_->color = Color::kWhite;
@@ -233,7 +235,7 @@ namespace Tako {
   void Sprite::CreateTransformationMatrixData()
   {
     // 座標変換行列リソースを生成
-    transformationMatrixResource_ = SpriteBasic::GetInstance()->GetDX12Basic()->MakeBufferResource(sizeof(TransformationMatrix));
+    transformationMatrixResource_ = Renderer::GetInstance()->GetDX12Basic()->MakeBufferResource(sizeof(TransformationMatrix));
 
     // 座標変換行列リソースをマップ
     transformationMatrixResource_->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixData_));

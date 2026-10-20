@@ -5,6 +5,8 @@
 #include "ModelStruct.h"
 #include "Object3d.h"
 #include "GpuResource.h"
+#include "DrawList.h"
+#include "Material.h"
 
 namespace Tako {
 
@@ -38,20 +40,10 @@ namespace Tako {
       const TextureData& textureData);
 
     /// <summary>
-    /// 描画
+    /// ジオメトリとマテリアルを足して描画リストへ登録する
     /// </summary>
-    void Draw();
-
-    /// <summary>
-    /// 現在の変換行列で描画
-    /// </summary>
-    void DrawWithCurrentTransform();
-
-    /// <summary>
-    /// インスタンシング描画
-    /// </summary>
-    /// <param name="instanceCount">インスタンス数</param>
-    void DrawInstanced(uint32_t instanceCount);
+    /// <param name="item">描画物ごとの値（変換行列・インスタンス・並び順など）</param>
+    void Submit(DrawItem item) const;
 
     /// <summary>
     /// 座標変換行列の更新
@@ -94,7 +86,10 @@ namespace Tako {
     void SetEnableLighting(bool enableLighting) { materialData_->enableLighting = enableLighting; }
     void SetEnableHighlight(bool enableHighlight) { materialData_->enableHighlight = enableHighlight; }
     void SetMaterialColor(const Vector4& color) { materialData_->color = color; }
-    void SetEnvironmentTexture(uint32_t envTextureIndex) { envTextureIndex_ = envTextureIndex; }
+    /// <summary>
+    /// 環境マップを設定する（0 なら既定の白テクスチャ）
+    /// </summary>
+    void SetEnvironmentTexture(uint32_t envTextureIndex);
     void SetEnableEnvMap(bool enableEnvMap) { materialData_->enableEnvMap = static_cast<int32_t>(enableEnvMap); }
     void SetEnvMapCoefficient(float coefficient) { materialData_->envMapCoefficient = coefficient; }
 
@@ -116,6 +111,11 @@ namespace Tako {
     void SetName(const std::string& name) { name_ = name; }
     void SetVisible(bool isVisible) { isVisible_ = isVisible; }
 
+    /// <summary>
+    /// 描画に使うマテリアルを差し替える（nullptr で既定のマテリアルに戻す）
+    /// </summary>
+    void SetMaterial(std::shared_ptr<Material> material) { overrideMaterial_ = std::move(material); }
+
     //============================================================
     //Getter
     //============================================================
@@ -123,6 +123,14 @@ namespace Tako {
     float GetShininess() const { return materialData_->shininess; }
     const TextureData& GetTextureData() const { return textureData_; }
     bool HasSkinning() const { return hasSkinning_; }
+    Material& GetDefaultMaterial() { return *material_; }
+
+    /// <summary>
+    /// 描画に使うマテリアル（差し替えがあればそちら）
+    /// </summary>
+    const Material& GetMaterial() const { return overrideMaterial_ ? *overrideMaterial_ : *material_; }
+
+    D3D12_GPU_VIRTUAL_ADDRESS GetTransformAddress() const { return transformationResource_->GetGPUVirtualAddress(); }
     GpuResource& GetUAVVertexResource() { return uavVertexOutputResource_; }
     uint32_t GetVertexSrvIndex() { return vertexSrvIndex_; }
     uint32_t GetInfluenceSrvIndex() { return influenceSrvIndex_; }
@@ -163,12 +171,6 @@ namespace Tako {
     bool IsVisible() const { return isVisible_; }
 
   private: //非公開関数
-    /// <summary>
-    /// マテリアル・テクスチャ・環境マップを現在のパイプラインへ渡す
-    /// </summary>
-    void BindMaterial();
-
-
     /// <summary>
     /// 頂点データを生成
     /// </summary>
@@ -215,8 +217,11 @@ namespace Tako {
     //リソース
     Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource_;          ///< 頂点バッファリソース
     Microsoft::WRL::ComPtr<ID3D12Resource> indexResource_;           ///< インデックスバッファリソース
-    Microsoft::WRL::ComPtr<ID3D12Resource> materialResource_;        ///< マテリアルバッファリソース
     Microsoft::WRL::ComPtr<ID3D12Resource> transformationResource_;  ///< 変換行列バッファリソース
+
+    //マテリアル
+    std::unique_ptr<Material> material_;          ///< モデルファイルから作る既定のマテリアル（Setter はこれを書き換える）
+    std::shared_ptr<Material> overrideMaterial_;  ///< 描画に使う差し替え先（無ければ material_）
 
     //バッファビュー
     D3D12_VERTEX_BUFFER_VIEW vertexBufferView_;         ///< 頂点バッファビュー
@@ -225,7 +230,7 @@ namespace Tako {
 
     //バッファリソース内のデータを指すポインタ
     VertexData*                     vertexData_         = nullptr;  ///< 頂点データへのポインタ
-    Material*                       materialData_       = nullptr;  ///< マテリアルデータへのポインタ
+    MaterialConstants*              materialData_       = nullptr;  ///< material_ の定数
     Object3d::TransformationMatrix* transformationData_ = nullptr;  ///< 変換行列データへのポインタ
 
     //SRV インデックス

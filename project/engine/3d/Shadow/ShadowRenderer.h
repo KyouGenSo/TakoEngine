@@ -5,7 +5,6 @@
 #include "Matrix4x4.h"
 #include "Vector2.h"
 #include "ShadowMap.h"
-#include "PipelineCache.h"
 
 namespace Tako {
 
@@ -97,11 +96,6 @@ namespace Tako {
     void SetCamera(Camera* camera) { camera_ = camera; }
 
     /// <summary>
-    /// シャドウレンダリング設定を適用
-    /// </summary>
-    void SetRenderState();
-
-    /// <summary>
     /// 通常レンダリング時のシャドウ設定を適用
     /// </summary>
     void SetShadowForMainPass();
@@ -129,11 +123,6 @@ namespace Tako {
     void SetMaxShadowDistance(float distance) { maxShadowDistance_ = distance; }
     void SetShadowBias(float bias) { shadowBias_ = bias; }
 
-    /// <summary>
-    /// インスタンシング用シャドウレンダリング設定を適用
-    /// </summary>
-    void SetInstancedRenderState();
-
     //=======================================
     //Getter
     //=======================================
@@ -146,19 +135,10 @@ namespace Tako {
     /// 現在のシャドウマップ解像度（サイズ変更は次フレームで反映されるため、変更直後は旧値）
     /// </summary>
     uint32_t GetShadowMapSize() const { return shadowMap_ ? shadowMap_->GetShadowMapSize() : ShadowMap::DEFAULT_SHADOW_MAP_SIZE; }
+    D3D12_GPU_VIRTUAL_ADDRESS GetShadowConstantsAddress() const { return shadowConstantBuffer_->GetGPUVirtualAddress(); }
     int GetPCFKernelSize() const { return shadowMap_ ? shadowMap_->GetPCFKernelSize() : 1; }
 
   private:
-    /// <summary>
-    /// 深度だけを書くパイプラインの作成（通常 / インスタンシング共通）
-    /// </summary>
-    /// <param name="vsFileName">使用する頂点シェーダーのファイル名</param>
-    GraphicsPipelineDesc MakeShadowPipeline(const wchar_t* vsFileName) const;
-
-    /// <summary>
-    /// パイプラインを切り替えてシャドウ定数を渡す
-    /// </summary>
-    void BindShadowPipeline(const GraphicsPipelineDesc& pipeline);
 
     /// <summary>
     /// 定数バッファの作成
@@ -172,9 +152,6 @@ namespace Tako {
     std::unique_ptr<ShadowMap> shadowMap_;            ///< シャドウマップ管理クラスへのポインタ
     Light*                     light_     = nullptr;  ///< ライトシステムへの参照（ライト位置・方向取得用）
     Camera*                    camera_    = nullptr;  ///< カメラへの参照（視錐台カリング用）
-
-    GraphicsPipelineDesc shadowPipeline_{};           ///< 通常シャドウ描画
-    GraphicsPipelineDesc shadowInstancedPipeline_{};  ///< インスタンシングシャドウ描画
 
     Microsoft::WRL::ComPtr<ID3D12Resource> shadowConstantBuffer_;  ///< シャドウパラメータ用定数バッファ
 

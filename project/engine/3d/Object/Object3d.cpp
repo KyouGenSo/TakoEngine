@@ -1,6 +1,6 @@
 #include "Object3d.h"
 #include "DX12Basic.h"
-#include "Object3dbasic.h"
+#include "Renderer.h"
 #include "Model.h"
 #include"ModelManager.h"
 #include "SrvManager.h"
@@ -122,29 +122,24 @@ void Object3d::Update()
 
 void Object3d::Draw()
 {
-	if (!isAnimationVisible_) {
+	if (!isAnimationVisible_ || !model_) {
 		return;
 	}
 
-	// 半透明モードなら PSO を一時的に切り替え (CullMode=NONE で両面描画 + 深度書き込み無効)
-	// シャドウマップレンダリング中はシャドウ用 PSO が既にセットされているのでスキップ
-	const bool useTransparentPso = isTransparent_ && !ShadowRenderer::GetInstance()->IsRenderingShadow();
-	if (useTransparentPso) {
-		Object3dBasic::GetInstance()->SetTransparentRenderSetting();
-	}
+	const Matrix4x4& world = transformationMatData_->world;
+	DrawItem item;
+	item.transform = transformationMatResource_->GetGPUVirtualAddress();
+	item.sortPosition = { world.m[3][0], world.m[3][1], world.m[3][2] };
+	item.sortingOrder = sortingOrder_;
+	item.transparent = isTransparent_;
+	item.castShadow = castShadow_;
+	model_->Draw(item, world);
+}
 
-	// シャドウパスと通常パスのシェーダーは同じ名前で変換行列を受ける
-	Object3dBasic::GetInstance()->GetDX12Basic()->GetContext().Graphics().BindCBV("gTransformationMatrix"_id, transformationMatResource_->GetGPUVirtualAddress());
-
-	// モデルの描画
-	if (model_)
-	{
-		model_->Draw(transformationMatData_->world);
-	}
-
-	// 半透明モードで PSO を切り替えていた場合、後続の不透明 Object3d への影響を防ぐため通常 PSO に戻す
-	if (useTransparentPso) {
-		Object3dBasic::GetInstance()->SetCommonRenderSetting();
+void Object3d::SetMaterial(size_t meshIndex, std::shared_ptr<Material> material)
+{
+	if (model_) {
+		model_->SetMaterial(meshIndex, std::move(material));
 	}
 }
 
@@ -337,7 +332,7 @@ Matrix4x4 Object3d::GetWorldMatrix() const
 void Object3d::CreateTransformationMatrixData()
 {
 	// 座標変換行列リソースを生成
-	transformationMatResource_ = Object3dBasic::GetInstance()->GetDX12Basic()->MakeBufferResource(sizeof(TransformationMatrix));
+	transformationMatResource_ = Renderer::GetInstance()->GetDX12Basic()->MakeBufferResource(sizeof(TransformationMatrix));
 
 	// 座標変換行列リソースをマップ
 	transformationMatResource_->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatData_));

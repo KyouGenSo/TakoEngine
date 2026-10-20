@@ -124,7 +124,7 @@ namespace Tako {
     void Update();
 
     /// <summary>
-    /// 表示中の要素を親→子の順に描画する。SpriteBasic::SetCommonRenderSetting の後に呼ぶ
+    /// 表示中の要素を親→子の順に描画リストへ登録する（登録順に描かれる）
     /// </summary>
     void Draw();
 

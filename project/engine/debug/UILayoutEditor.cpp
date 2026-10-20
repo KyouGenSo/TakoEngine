@@ -8,7 +8,6 @@
 #include "DebugUIManager.h"
 #include "TextureManager.h"
 #include "EnginePaths.h"
-#include "SpriteBasic.h"
 #include "WinApp.h"
 
 #include <algorithm>
@@ -645,7 +644,6 @@ namespace Tako {
     if (!*isOpen_ || !preview_ || FindLayout() != preview_.get()) {
       return;
     }
-    SpriteBasic::GetInstance()->SetCommonRenderSetting();
     preview_->Draw();
   }
 

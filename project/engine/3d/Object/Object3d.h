@@ -10,10 +10,12 @@
 #include "Mat4x4Func.h"
 #include "Transform.h"
 #include "AnimationPlayer.h"
+#include "DrawList.h"
 
 namespace Tako {
 
 class Model;
+class Material;
 
 /// <summary>
 /// 3D オブジェクト基底クラス
@@ -22,7 +24,7 @@ class Model;
 class Object3d {
 
 public: // 構造体
-  // 座標変換行列データ（VP は Object3dBasic の視点 CB 側で掛ける）
+  // 座標変換行列データ（VP は Renderer が渡す視点 CB 側で掛ける）
   struct TransformationMatrix
   {
     Matrix4x4 world;
@@ -52,7 +54,7 @@ public: // メンバー関数
   void Update();
 
   /// <summary>
-  /// 描画
+  /// 描画リストへ登録する
   /// </summary>
   void Draw();
 
@@ -101,10 +103,24 @@ public: // メンバー関数
   void SetMaterialColor(const Vector4& color);
 
   /// <summary>
-  /// 半透明描画モードを設定 (両面描画 + 深度書き込み無効 PSO を使用)
+  /// 半透明描画モードを設定 (両面描画 + 深度書き込み無効で、半透明キューの奥から順に描く)
   /// </summary>
   /// <param name="isTransparent">半透明描画モードにする場合 true</param>
   void SetTransparent(bool isTransparent) { isTransparent_ = isTransparent; }
+
+  void SetCastShadow(bool castShadow) { castShadow_ = castShadow; }
+
+  /// <summary>
+  /// 同じ描画キューの中での描画順（小さいほど先）
+  /// </summary>
+  void SetSortingOrder(int32_t sortingOrder) { sortingOrder_ = sortingOrder; }
+
+  /// <summary>
+  /// メッシュの描画に使うマテリアルを差し替える（nullptr で既定に戻す）
+  /// </summary>
+  /// <param name="meshIndex">モデル内のメッシュ番号</param>
+  /// <param name="material">差し替えるマテリアル（複数の Object3d で共有してよい）</param>
+  void SetMaterial(size_t meshIndex, std::shared_ptr<Material> material);
 
   /// <summary>
   /// UV トランスフォームを設定
@@ -186,6 +202,8 @@ public: // メンバー関数
   Vector4 GetMaterialColor() const;
 
   bool IsTransparent() const { return isTransparent_; }
+  bool CastsShadow() const { return castShadow_; }
+  int32_t GetSortingOrder() const { return sortingOrder_; }
 
   /// <summary>
   /// メッシュ名を指定して表示状態を取得
@@ -244,7 +262,9 @@ private: // メンバー変数
   std::string parentJointName_;
   Transform   attachmentOffset_{};
 
-  bool isTransparent_ = false;  ///< 半透明描画モードフラグ (true なら Draw 内で TransparentRenderSetting に一時切り替え)
+  bool    isTransparent_ = false;  ///< 半透明描画モードフラグ
+  bool    castShadow_    = true;
+  int32_t sortingOrder_  = 0;
 
   //アニメーションの上乗せ
   AnimationPlayer animator_;

@@ -121,6 +121,9 @@
     <Filter Include="animation">
       <UniqueIdentifier>{a208f3c6-fbfa-4177-af8a-2141a191dc1c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="render">
+      <UniqueIdentifier>{ad42ecf3-0a8a-4e63-8898-6609c923636f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\func\mathFunc\Mat4x4Func.cpp">
@@ -139,9 +142,6 @@
       <Filter>2d</Filter>
     </ClCompile>
     <ClCompile Include="engine\2d\UILayout.cpp">
-      <Filter>2d</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\2d\SpriteBasic.cpp">
       <Filter>2d</Filter>
     </ClCompile>
     <ClCompile Include="engine\2d\TextureManager.cpp">
@@ -295,9 +295,6 @@
       <Filter>3d\Object</Filter>
     </ClCompile>
     <ClCompile Include="engine\3d\Object\Object3d.cpp">
-      <Filter>3d\Object</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\3d\Object\Object3dBasic.cpp">
       <Filter>3d\Object</Filter>
     </ClCompile>
     <ClCompile Include="engine\3d\Model\Mesh.cpp">
@@ -459,6 +456,12 @@
     <ClCompile Include="engine\base\DX12\PipelineCache.cpp">
       <Filter>base\DX12</Filter>
     </ClCompile>
+    <ClCompile Include="engine\render\Material.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\render\Renderer.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\math\Matrix4x4.h">
@@ -495,9 +498,6 @@
       <Filter>2d</Filter>
     </ClInclude>
     <ClInclude Include="engine\2d\UILayout.h">
-      <Filter>2d</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\2d\SpriteBasic.h">
       <Filter>2d</Filter>
     </ClInclude>
     <ClInclude Include="engine\audio\Audio.h">
@@ -687,9 +687,6 @@
       <Filter>3d\Object</Filter>
     </ClInclude>
     <ClInclude Include="engine\3d\Object\Object3d.h">
-      <Filter>3d\Object</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\3d\Object\Object3dBasic.h">
       <Filter>3d\Object</Filter>
     </ClInclude>
     <ClInclude Include="engine\3d\Model\Mesh.h">
@@ -883,6 +880,18 @@
     </ClInclude>
     <ClInclude Include="engine\base\DX12\RenderState.h">
       <Filter>base\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\DrawList.h">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\Material.h">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\Renderer.h">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\ShaderAsset.h">
+      <Filter>render</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

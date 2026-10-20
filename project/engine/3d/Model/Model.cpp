@@ -7,7 +7,6 @@
 #include "Mat4x4Func.h"
 #include "QuatFunc.h"
 #include "ColorFunc.h"
-#include "Object3dBasic.h"
 #include "ShadowRenderer.h"
 #include "FrameTimer.h"
 
@@ -128,31 +127,23 @@ namespace Tako {
     }
   }
 
-  void Model::Draw(Matrix4x4 world)
+  void Model::Draw(const DrawItem& item, const Matrix4x4& world)
   {
     // スキニング処理の実行（ComputeShader による頂点変形）
     ExecuteSkinning();
 
-    // スキニングモデルの場合
-    if (hasSkeleton_) {
-      // スキニングモデルは各メッシュを直接描画（スキニング済みの頂点を使用）
+    if (hasSkeleton_ || meshes_.size() <= 1) {
+      // スキニングモデルと単一メッシュは描画物の変換行列でそのまま描く
       for (auto& mesh : meshes_) {
         if (!mesh->IsVisible()) continue;
-        mesh->Draw();
-      }
-    }
-    else if (meshes_.size() <= 1) {
-      // 単一メッシュモデルの場合
-      for (auto& mesh : meshes_) {
-        if (!mesh->IsVisible()) continue;
-        mesh->Draw();
+        mesh->Submit(item);
       }
     }
     else {
       // マルチメッシュモデル（スキニングなし）の場合はノード階層で描画
       // アニメーションがある場合は、更新された rootNode の localMatrix を使用
       Matrix4x4 rootTransform = hasAnimation_ ? rootNode_.localMatrix : Mat4x4::MakeIdentity();
-      ProcessNodeHierarchy(rootNode_, rootTransform, world);
+      ProcessNodeHierarchy(rootNode_, rootTransform, world, item);
     }
 
     // skeleton の描画
@@ -163,7 +154,7 @@ namespace Tako {
 #endif
   }
 
-  void Model::DrawInstanced(uint32_t instanceCount)
+  void Model::DrawInstanced(const DrawItem& item)
   {
     // インスタンシング描画ではスキニングは未対応
     if (hasSkeleton_) {
@@ -176,17 +167,16 @@ namespace Tako {
       return;
     }
 
-#ifdef _DEBUG
-    // シャドウパス中の場合はデバッグログ出力
-    if (ShadowRenderer::GetInstance()->IsRenderingShadow()) {
-      DebugUIManager::GetInstance()->AddLog("Drawing instanced model in shadow pass: " + std::to_string(instanceCount) + " instances", DebugUIManager::LogType::Info);
-    }
-#endif
-
-    // 各メッシュをインスタンシング描画
     for (auto& mesh : meshes_) {
       if (!mesh->IsVisible()) continue;
-      mesh->DrawInstanced(instanceCount);
+      mesh->Submit(item);
+    }
+  }
+
+  void Model::SetMaterial(size_t meshIndex, std::shared_ptr<Material> material)
+  {
+    if (meshIndex < meshes_.size()) {
+      meshes_[meshIndex]->SetMaterial(std::move(material));
     }
   }
 
@@ -554,7 +544,7 @@ namespace Tako {
     return joint.skeletonSpaceMatrix * worldMatrix;
   }
 
-  void Model::ProcessNodeHierarchy(const Node& node, const Matrix4x4& parentGlobalMatrix, Matrix4x4 world)
+  void Model::ProcessNodeHierarchy(const Node& node, const Matrix4x4& parentGlobalMatrix, const Matrix4x4& world, const DrawItem& item)
   {
     // このノードのグローバル行列を計算（親の変換を適用）
     Matrix4x4 globalMatrix = Mat4x4::Multiply(node.localMatrix, parentGlobalMatrix);
@@ -568,17 +558,17 @@ namespace Tako {
         // メッシュのワールド変換行列を計算
         Matrix4x4 meshWorldMatrix = Mat4x4::Multiply(globalMatrix, world);
 
-        // メッシュのトランスフォーム情報を更新
+        // メッシュのトランスフォーム情報を更新し、その変換行列で描く
         meshes_[meshIndex]->UpdateTransformation(meshWorldMatrix);
-
-        // 更新されたトランスフォーム情報で描画
-        meshes_[meshIndex]->DrawWithCurrentTransform();
+        DrawItem meshItem = item;
+        meshItem.transform = meshes_[meshIndex]->GetTransformAddress();
+        meshes_[meshIndex]->Submit(meshItem);
       }
     }
 
     // 子ノードを再帰的に処理
     for (const Node& child : node.children) {
-      ProcessNodeHierarchy(child, globalMatrix, world);
+      ProcessNodeHierarchy(child, globalMatrix, world, item);
     }
   }
 

@@ -5,7 +5,7 @@
 #include "DebugViewport.h"
 #include "FrameTimer.h"
 #include "LineRenderer.h"
-#include "Object3dBasic.h"
+#include "Renderer.h"
 #include "Vec3Func.h"
 #include "ImGuiManager.h"
 #include <algorithm>
@@ -968,7 +968,7 @@ namespace Tako {
   }
 
   Camera* CameraAnimationEditor::MainCamera() {
-    return *Object3dBasic::GetInstance()->GetCamera();
+    return *Renderer::GetInstance()->GetCamera();
   }
 
   float CameraAnimationEditor::SnapToGrid(float time) const {

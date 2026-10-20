@@ -5,7 +5,6 @@
 #include "DebugUIManager.h"
 #endif
 #include "StringUtility.h"
-#include "Object3dbasic.h"
 #include "Camera.h"
 #include "IPostEffect.h"
 #include "NoEffect.h"
