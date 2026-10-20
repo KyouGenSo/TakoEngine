@@ -95,8 +95,8 @@ namespace Tako {
       }
     }
 
-    bool IsStepProperty(AnimProperty property) {
-      return property == AnimProperty::Frame || property == AnimProperty::Visible;
+    float FrameCount(const AnimTrack& track) {
+      return static_cast<float>(track.columns * track.rows);
     }
 
   } // namespace
@@ -709,11 +709,20 @@ namespace Tako {
       }
 
       if (track.property == AnimProperty::Frame) {
+        const float previousCount = FrameCount(track);
+        bool        isGridChanged = false;
         if (ImGui::InputInt("Columns", &track.columns)) {
           track.columns = (std::max)(track.columns, 1);
+          isGridChanged = true;
         }
         if (ImGui::InputInt("Rows", &track.rows)) {
-          track.rows = (std::max)(track.rows, 1);
+          track.rows    = (std::max)(track.rows, 1);
+          isGridChanged = true;
+        }
+        // 足したときの「0 → コマ数」の 2 キーのままなら、末尾をコマ数に合わせる（手で打ち直したキーは触らない）
+        std::vector<AnimKey>& keys = track.keys;
+        if (isGridChanged && keys.size() == 2 && keys.front().value == 0.0f && keys.back().value == previousCount) {
+          keys.back().value = FrameCount(track);
         }
       }
 
@@ -777,12 +786,13 @@ namespace Tako {
         if (ImGui::InputInt("Frame", &frame)) {
           key.value = static_cast<float>((std::max)(frame, 0));
         }
+        ImGui::SetItemTooltip("Between keys the value is eased and rounded down to a frame.\nTo give every frame the same time, set the last key to the frame count (e.g. 0 -> 10 for 10 frames).");
       }
       else {
         ImGui::DragFloat("Value", &key.value, track.property <= AnimProperty::TranslateZ ? 1.0f : 0.01f, 0.0f, 0.0f, std::format("%.3f {}", UnitOf(track.property)).c_str());
       }
 
-      if (!IsStepProperty(track.property)) {
+      if (!GetAnimPropertyInfo(track.property).isStep) {
         EaseCombo("Ease", key.ease);
         ImGui::SetItemTooltip("How the value moves from this key to the next one.");
         if (key.ease == EaseType::CubicBezier) {
@@ -1047,8 +1057,15 @@ namespace Tako {
       if (exists) {
         continue;
       }
-      AnimTrack& track = tracks.emplace_back(AnimTrack{ .target = target, .property = property });
-      track.keys.push_back(AnimKey{ .time = time, .value = GetAnimPropertyInfo(property).restValue, .ease = EaseType::OutCubic, .id = clip_->IssueId() });
+      AnimTrack&              track = tracks.emplace_back(AnimTrack{ .target = target, .property = property });
+      const AnimPropertyInfo& info  = GetAnimPropertyInfo(property);
+      if (property == AnimProperty::Frame && clip_->GetDuration() > 0.0f) {
+        // 全コマを等間隔で出す「0 秒＝0 → 末尾＝コマ数」で始める。末尾の値は Columns / Rows に合わせて変わる
+        track.keys.push_back(AnimKey{ .time = 0.0f, .value = 0.0f, .ease = info.defaultEase, .id = clip_->IssueId() });
+        track.keys.push_back(AnimKey{ .time = clip_->GetDuration(), .value = FrameCount(track), .ease = info.defaultEase, .id = clip_->IssueId() });
+        continue;
+      }
+      track.keys.push_back(AnimKey{ .time = time, .value = info.restValue, .ease = info.defaultEase, .id = clip_->IssueId() });
     }
     timeline_.SetSelectedTrack(static_cast<int>(tracks.size()) - 1);
   }
@@ -1097,7 +1114,7 @@ namespace Tako {
       }
     }
     const uint32_t id = clip_->IssueId();
-    track.keys.push_back(AnimKey{ .time = time, .value = AnimationClip::EvaluateTrack(track, time), .ease = EaseType::OutCubic, .id = id });
+    track.keys.push_back(AnimKey{ .time = time, .value = AnimationClip::EvaluateTrack(track, time), .ease = GetAnimPropertyInfo(track.property).defaultEase, .id = id });
     clip_->SortByTime();
     timeline_.SetSelection({ id });
   }

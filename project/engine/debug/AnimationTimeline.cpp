@@ -39,10 +39,6 @@ namespace Tako {
       drawList->AddPolyline(points, 4, IM_COL32(20, 20, 20, 255), ImDrawFlags_Closed, 1.0f);
     }
 
-    bool IsStepTrack(const AnimTrack& track) {
-      return track.property == AnimProperty::Frame || track.property == AnimProperty::Visible;
-    }
-
   } // namespace
 
   void AnimationTimeline::Draw(AnimationClip& clip, float& playhead, float height) {
@@ -227,7 +223,7 @@ namespace Tako {
       drawList->AddText(ImVec2(x + 11.0f, top), kDimTextColor, event.name.c_str());
     }
 
-    // キー。区間は細い線でつなぎ、補間しない区間（Constant・Frame・Visible）は四角にする
+    // キー。区間は細い線でつなぎ、補間しない区間（Constant・Visible）は四角にする
     for (size_t i = 0; i < tracks.size(); ++i) {
       const AnimTrack& track   = tracks[i];
       const float      centerY = RowTop(static_cast<int>(i) + 1) + kRowHeight * 0.5f;
@@ -236,7 +232,7 @@ namespace Tako {
         drawList->AddLine(ImVec2(TimeToX(track.keys[k].time), centerY), ImVec2(TimeToX(track.keys[k + 1].time), centerY), (color & 0x00FFFFFF) | 0x80000000, 2.0f);
       }
       for (const AnimKey& key : track.keys) {
-        const bool isSquare = IsStepTrack(track) || key.ease == EaseType::Constant;
+        const bool isSquare = GetAnimPropertyInfo(track.property).isStep || key.ease == EaseType::Constant;
         DrawDiamond(drawList, ImVec2(TimeToX(key.time), centerY), kKeySize, IsSelected(key.id) ? kSelectedKeyColor : color, isSquare);
       }
     }
@@ -459,7 +455,7 @@ namespace Tako {
     }
     else {
       AnimTrack& track = clip.GetTracks()[row - 1];
-      track.keys.push_back(AnimKey{ .time = time, .value = AnimationClip::EvaluateTrack(track, time), .ease = EaseType::OutCubic, .id = id });
+      track.keys.push_back(AnimKey{ .time = time, .value = AnimationClip::EvaluateTrack(track, time), .ease = GetAnimPropertyInfo(track.property).defaultEase, .id = id });
       selectedTrack_ = row - 1;
     }
     clip.SortByTime();

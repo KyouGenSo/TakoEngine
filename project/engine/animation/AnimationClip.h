@@ -20,17 +20,19 @@ namespace Tako {
     RotateX, RotateY, RotateZ,
     ScaleX, ScaleY, ScaleZ,
     ColorR, ColorG, ColorB, ColorA,
-    Frame,    ///< スプライトシートのコマ番号（UI のみ）
+    Frame,    ///< スプライトシートのコマ番号（UI のみ）。値を切り捨てた番号を出す
     Visible,  ///< 0.5 以上で表示
     Count
   };
 
   /// <summary>
-  /// AnimProperty の保存名と静止時の値
+  /// AnimProperty の保存名と、キーの既定値・補間の扱い
   /// </summary>
   struct AnimPropertyInfo {
     const char* name;
-    float       restValue;  ///< 上乗せしても見た目が変わらない値
+    float       restValue;    ///< 上乗せしても見た目が変わらない値
+    EaseType    defaultEase;  ///< 新しく打つキーの ease
+    bool        isStep;       ///< true ならキーの ease によらず次のキーまで値を保つ
   };
 
   /// <summary>
@@ -182,7 +184,7 @@ namespace Tako {
     [[nodiscard]] AnimEvent* FindEvent(uint32_t id);
 
     /// <summary>
-    /// time のトラックの値。キーより前は最初の値、後は最後の値。Frame と Visible は補間しない
+    /// time のトラックの値。キーより前は最初の値、後は最後の値。Visible は補間しない
     /// </summary>
     [[nodiscard]] static float EvaluateTrack(const AnimTrack& track, float time);
 

@@ -19,14 +19,17 @@ namespace Tako {
 
   namespace {
 
+    constexpr EaseType kOutCubic = EaseType::OutCubic;
+
     // AnimProperty と同じ並び
     constexpr AnimPropertyInfo kPropertyInfos[] = {
-      { "TranslateX", 0.0f }, { "TranslateY", 0.0f }, { "TranslateZ", 0.0f },
-      { "RotateX", 0.0f }, { "RotateY", 0.0f }, { "RotateZ", 0.0f },
-      { "ScaleX", 1.0f }, { "ScaleY", 1.0f }, { "ScaleZ", 1.0f },
-      { "ColorR", 1.0f }, { "ColorG", 1.0f }, { "ColorB", 1.0f }, { "ColorA", 1.0f },
-      { "Frame", 0.0f },
-      { "Visible", 1.0f },
+      { "TranslateX", 0.0f, kOutCubic, false }, { "TranslateY", 0.0f, kOutCubic, false }, { "TranslateZ", 0.0f, kOutCubic, false },
+      { "RotateX", 0.0f, kOutCubic, false }, { "RotateY", 0.0f, kOutCubic, false }, { "RotateZ", 0.0f, kOutCubic, false },
+      { "ScaleX", 1.0f, kOutCubic, false }, { "ScaleY", 1.0f, kOutCubic, false }, { "ScaleZ", 1.0f, kOutCubic, false },
+      { "ColorR", 1.0f, kOutCubic, false }, { "ColorG", 1.0f, kOutCubic, false }, { "ColorB", 1.0f, kOutCubic, false }, { "ColorA", 1.0f, kOutCubic, false },
+      // Linear で 0 → コマ数 とつなぐと、全コマを同じ時間ずつ出す
+      { "Frame", 0.0f, EaseType::Linear, false },
+      { "Visible", 1.0f, EaseType::Constant, true },
     };
     static_assert(std::size(kPropertyInfos) == static_cast<size_t>(AnimProperty::Count));
 
@@ -47,10 +50,6 @@ namespace Tako {
 #ifdef _DEBUG
       DebugUIManager::GetInstance()->AddLog(message, DebugUIManager::LogType::Warning);
 #endif
-    }
-
-    bool IsStepProperty(AnimProperty property) {
-      return property == AnimProperty::Frame || property == AnimProperty::Visible;
     }
 
   } // namespace
@@ -377,7 +376,7 @@ namespace Tako {
     const AnimKey& to   = *next;
     const AnimKey& from = *(next - 1);
     const float    span = to.time - from.time;
-    if (IsStepProperty(track.property) || from.ease == EaseType::Constant || span <= 0.0f) {
+    if (GetAnimPropertyInfo(track.property).isStep || from.ease == EaseType::Constant || span <= 0.0f) {
       return from.value;
     }
     const float t = Ease::Evaluate(from.ease, (time - from.time) / span, from.bezierP1.x, from.bezierP1.y, from.bezierP2.x, from.bezierP2.y);
