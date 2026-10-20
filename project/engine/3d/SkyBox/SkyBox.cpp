@@ -5,21 +5,12 @@
 #include "DX12Basic.h"
 #include "Mat4x4Func.h"
 #include "ColorFunc.h"
-#include "EnginePaths.h"
 
 #ifdef _DEBUG
 #include "DebugUIManager.h"
 #endif
 
 namespace Tako {
-
-namespace {
-  // スカイボックス RS のルートパラメータ番号
-  constexpr UINT kTransformParam = 0;  ///< b0 (VS): 座標変換行列
-  constexpr UINT kTextureParam   = 1;  ///< t0 (PS): キューブマップテクスチャ
-  constexpr UINT kMaterialParam  = 2;  ///< b0 (PS): マテリアル
-  constexpr UINT kViewParam      = 3;  ///< b1 (VS): 視点
-}
 
 void SkyBox::Initialize(const std::string& texturePath)
 {
@@ -31,7 +22,7 @@ void SkyBox::Initialize(const std::string& texturePath)
 
   dx12_ = Object3dBasic::GetInstance()->GetDX12Basic();
 
-  CreatePSO();
+  CreatePipeline();
   CreateVertexData();
   CreateIndexData();
   CreateMaterialData();
@@ -49,166 +40,31 @@ void SkyBox::Update()
 
 void SkyBox::Draw()
 {
-  dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
+  CommandContext& context = dx12_->GetContext();
+  context.SetGraphicsPipeline(pipeline_);
 
-  dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
+  ID3D12GraphicsCommandList* commandList = dx12_->GetCommandList();
+  commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
+  commandList->IASetIndexBuffer(&indexBufferView_);
 
-  dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+  CommandContext::ShaderBinder binder = context.Graphics();
+  binder.BindCBV("gTransformationMatrix"_id, transformationMatrixResource_->GetGPUVirtualAddress());
+  binder.BindSRV("gSkyBoxTexture"_id, textureIndex_);
+  binder.BindCBV("gMaterial"_id, materialResource_->GetGPUVirtualAddress());
+  // 本編/デバッグビューのどちらで呼ばれても現在の視点で描く
+  binder.BindCBV("gView"_id, Object3dBasic::GetInstance()->GetViewAddress());
 
-  dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView_);
-
-  dx12_->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
-
-  // 座標変換行列 CBV (b0)
-  dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(kTransformParam, transformationMatrixResource_->GetGPUVirtualAddress());
-
-  // テクスチャ SRV (t0)
-  SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(kTextureParam, textureIndex_);
-
-  // マテリアル CBV (b0, PS)
-  dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(kMaterialParam, materialResource_->GetGPUVirtualAddress());
-
-  // 視点 CBV (b1, VS)。本編/デバッグビューのどちらで呼ばれても現在の視点で描く
-  dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(kViewParam, Object3dBasic::GetInstance()->GetViewAddress());
-
-  dx12_->GetCommandList()->DrawIndexedInstanced(36, 1, 0, 0, 0);
+  context.DrawIndexedInstanced(36, 1, 0, 0, 0);
 }
 
-void SkyBox::CreateRootSignature()
+void SkyBox::CreatePipeline()
 {
-  HRESULT hr;
-
-  // rootSignature の生成
-  D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
-  descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-
-  // Sampler の設定
-  D3D12_STATIC_SAMPLER_DESC samplerDesc[1]{};
-  samplerDesc[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-  samplerDesc[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-  samplerDesc[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-  samplerDesc[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-  samplerDesc[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-  samplerDesc[0].MaxLOD = D3D12_FLOAT32_MAX;
-  samplerDesc[0].ShaderRegister = 0;
-  samplerDesc[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-  descriptionRootSignature.pStaticSamplers = samplerDesc;
-  descriptionRootSignature.NumStaticSamplers = _countof(samplerDesc);
-
-  // DescriptorRange の設定。
-  D3D12_DESCRIPTOR_RANGE textureDescriptorRange[1] = {};
-  textureDescriptorRange[0].BaseShaderRegister = 0;
-  textureDescriptorRange[0].NumDescriptors = 1;
-  textureDescriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-  textureDescriptorRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-
-  // RootParameter の設定。
-  D3D12_ROOT_PARAMETER rootParameters[4] = {};
-  // TransformationMatrix
-  rootParameters[kTransformParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-  rootParameters[kTransformParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-  rootParameters[kTransformParam].Descriptor.ShaderRegister = 0;
-
-  // Texture
-  rootParameters[kTextureParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-  rootParameters[kTextureParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-  rootParameters[kTextureParam].DescriptorTable.pDescriptorRanges = textureDescriptorRange;
-  rootParameters[kTextureParam].DescriptorTable.NumDescriptorRanges = _countof(textureDescriptorRange);
-
-  // Material
-  rootParameters[kMaterialParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-  rootParameters[kMaterialParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-  rootParameters[kMaterialParam].Descriptor.ShaderRegister = 0;
-
-  // View
-  rootParameters[kViewParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-  rootParameters[kViewParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-  rootParameters[kViewParam].Descriptor.ShaderRegister = 1;
-
-  descriptionRootSignature.pParameters = rootParameters;
-  descriptionRootSignature.NumParameters = _countof(rootParameters);
-
-  Microsoft::WRL::ComPtr<ID3DBlob> signatureBlob = nullptr;
-  Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
-
-  // ルートシグネチャをシリアライズ
-  hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
-  if (FAILED(hr))
-  {
-#ifdef _DEBUG
-    DebugUIManager::GetInstance()->AddLog(
-      static_cast<char*>(errorBlob->GetBufferPointer()),
-      DebugUIManager::LogType::Error);
-#endif
-
-    assert(false);
-  }
-  // ルートシグネチャを生成
-  hr = dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature_.GetAddressOf()));
-  assert(SUCCEEDED(hr));
-}
-
-void SkyBox::CreatePSO()
-{
-  HRESULT hr;
-
-  // RootSignature の生成
-  CreateRootSignature();
-
-  // InputLayout
-  D3D12_INPUT_ELEMENT_DESC inputElementDescs[1]{};
-  inputElementDescs[0].SemanticName = "POSITION";
-  inputElementDescs[0].SemanticIndex = 0;
-  inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-  inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-
-  D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
-  inputLayoutDesc.pInputElementDescs = inputElementDescs;
-  inputLayoutDesc.NumElements = _countof(inputElementDescs);
-
-  // BlendState
-  D3D12_BLEND_DESC blendDesc{};
-  blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
-
-  // RasterizerState
-  D3D12_RASTERIZER_DESC rasterizerDesc{};
-  rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
-  rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
-
-  // shader のコンパイル
-  Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = dx12_->CompileShader(EnginePaths::ShaderPath(L"SkyBox.VS.hlsl"), L"vs_6_0");
-  assert(vertexShaderBlob != nullptr);
-
-  Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = dx12_->CompileShader(EnginePaths::ShaderPath(L"SkyBox.PS.hlsl"), L"ps_6_0");
-  assert(pixelShaderBlob != nullptr);
-
-  // DepthStencilState の設定
-  D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
-  depthStencilDesc.DepthEnable = true;
-  depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO; // 深度は書き込まない（最遠面として描く）
-  depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-
-  // PSO の設定
-  D3D12_GRAPHICS_PIPELINE_STATE_DESC pipelineStateDesc{};
-  pipelineStateDesc.pRootSignature = rootSignature_.Get();
-  pipelineStateDesc.InputLayout = inputLayoutDesc;
-  pipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-  pipelineStateDesc.RasterizerState = rasterizerDesc;
-  pipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() };
-  pipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
-  pipelineStateDesc.BlendState = blendDesc;
-  pipelineStateDesc.DepthStencilState = depthStencilDesc;
-  pipelineStateDesc.NumRenderTargets = 1;
-  pipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-  pipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-  pipelineStateDesc.SampleDesc.Count = 1;
-  pipelineStateDesc.DepthStencilState = depthStencilDesc;
-  pipelineStateDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
-
-  // PSO の生成
-  hr = dx12_->GetDevice()->CreateGraphicsPipelineState(&pipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
-  assert(SUCCEEDED(hr));
-
+  ShaderLibrary& library = dx12_->GetShaderLibrary();
+  pipeline_.vs = library.Get(L"SkyBox.VS.hlsl", ShaderStage::Vertex);
+  pipeline_.ps = library.Get(L"SkyBox.PS.hlsl", ShaderStage::Pixel);
+  pipeline_.vertexLayout = VertexLayout::Position;
+  // 最遠面として描くので深度は書き込まない
+  pipeline_.renderState.depthWrite = false;
 }
 
 void SkyBox::CreateVertexData()

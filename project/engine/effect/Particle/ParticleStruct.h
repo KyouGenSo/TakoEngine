@@ -4,6 +4,7 @@
 #include "vector3.h"
 #include "vector4.h"
 #include "Matrix4x4.h"
+#include "RenderState.h"
 
 namespace Tako {
 
@@ -60,15 +61,6 @@ namespace Tako {
     Box = 1,       ///< 箱型エミッター
     Triangle = 2,  ///< 三角形エミッター
     Mesh = 3       ///< メッシュエミッター
-  };
-
-  /// <summary>
-  /// パーティクル描画ブレンドモード (per-emitter)
-  /// </summary>
-  enum class ParticleBlendMode : uint32_t {
-    Add    = 0,  ///< 加算         (SrcBlend=SRC_ALPHA, DestBlend=ONE)
-    Screen = 1,  ///< スクリーン   (SrcBlend=INV_DEST_COLOR, DestBlend=ONE) — 既定 (旧挙動互換)
-    Alpha  = 2   ///< アルファ合成 (SrcBlend=SRC_ALPHA, DestBlend=INV_SRC_ALPHA)
   };
 
   /// <summary>
@@ -272,7 +264,7 @@ namespace Tako {
     float noiseStrength;         ///< Curl Noise の強度
 
     //--- 描画設定 (per-emitter) ---
-    uint32_t blendMode;        ///< 描画ブレンドモード (ParticleBlendMode: 0=Add, 1=Screen, 2=Alpha)
+    uint32_t blendMode;        ///< 描画ブレンドモード (BlendMode の値)
     uint32_t textureSrvIndex;  ///< 使用テクスチャの SRV インデックス (0 で既定テクスチャ circle.dds にフォールバック)
 
     //--- 描画モデル (per-emitter)。スポーン形状(mesh* 群)とは独立。0 で既定の板ポリにフォールバック ---
@@ -309,7 +301,7 @@ namespace Tako {
       lockStiffness(20.0f), lockDamping(3.0f),
       damping(0.99f), collisionRestitution(0.5f), particleRadius(0.5f),
       noiseScale(0.05f), noiseStrength(0.001f),
-      blendMode(static_cast<uint32_t>(ParticleBlendMode::Add)), textureSrvIndex(0),
+      blendMode(static_cast<uint32_t>(BlendMode::Add)), textureSrvIndex(0),
       renderVertexSrvIndex(0), renderIndexSrvIndex(0), renderIndexCount(0)
     {}
   };

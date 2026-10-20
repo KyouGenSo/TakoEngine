@@ -7,6 +7,7 @@
 #include "Camera.h"
 #include "Matrix4x4.h"
 #include "GpuResource.h"
+#include "PipelineCache.h"
 
 namespace Tako {
 
@@ -33,13 +34,6 @@ namespace Tako {
 
   public:
     explicit DecalManager(Token) {}
-
-  public: //定数
-    // デカール RS のルートパラメータ番号
-    static constexpr UINT kViewDataParam     = 0;  ///< b0: ビュー情報
-    static constexpr UINT kDecalDataParam    = 1;  ///< b1: デカール情報
-    static constexpr UINT kDepthTextureParam = 2;  ///< t0: シーン深度
-    static constexpr UINT kDecalTextureParam = 3;  ///< t1: デカールテクスチャ
 
   public: //メンバー関数
 
@@ -147,14 +141,9 @@ namespace Tako {
   private: // プライベートメンバー関数
 
     /// <summary>
-    /// ルートシグネチャの作成
+    /// パイプラインの作成
     /// </summary>
-    void CreateRootSignature();
-
-    /// <summary>
-    /// パイプラインステートの生成
-    /// </summary>
-    void CreatePSO();
+    void CreatePipeline();
 
     /// <summary>
     /// 単位キューブメッシュの作成
@@ -167,10 +156,9 @@ namespace Tako {
     void CreateDepthSRV();
 
   private: // メンバー変数
-    DX12Basic*                                  dx12_               = nullptr;  ///< DirectX12基盤システムへの参照
-    Camera*                                     camera_               = nullptr;  ///< カメラへのポインタ
-    Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;                   ///< ルートシグネチャ
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;                   ///< パイプラインステート
+    DX12Basic*           dx12_       = nullptr;  ///< DirectX12基盤システムへの参照
+    Camera*              camera_     = nullptr;  ///< カメラへのポインタ
+    GraphicsPipelineDesc pipeline_{};            ///< デカール描画
 
     //単位キューブメッシュ
     Microsoft::WRL::ComPtr<ID3D12Resource> cubeVertexBuffer_;  ///< キューブ頂点バッファ

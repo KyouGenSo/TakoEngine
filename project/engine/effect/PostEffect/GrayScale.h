@@ -35,16 +35,6 @@ namespace Tako {
     /// </summary>
     void DrawImgui() override;
 
-  private: //非公開関数
-    /// <summary>
-    /// ルートシグネチャを作成
-    /// </summary>
-    void CreateRootSignature() override;
-
-    /// <summary>
-    /// パイプラインステートオブジェクトを作成
-    /// </summary>
-    void CreatePSO() override;
   };
 
 } // namespace Tako

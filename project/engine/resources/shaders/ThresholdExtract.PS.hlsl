@@ -1,16 +1,16 @@
 #include "FullScreen.hlsli"
+#include "Common.hlsli"
 
-cbuffer Param : register(b0)
+cbuffer gParam : register(b0)
 {
     float threshold;
 };
 
 Texture2D<float4> gTexture : register(t0);
-SamplerState gSampler : register(s0);
 
 float4 main(VertexShaderOutput input) : SV_TARGET
 {
-    float4 color = gTexture.Sample(gSampler, input.texCoord);
+    float4 color = gTexture.Sample(gLinearWrap, input.texCoord);
     
     // 輝度計算（RGB→輝度への変換）
     float brightness = dot(color.rgb, float3(0.299, 0.587, 0.114));

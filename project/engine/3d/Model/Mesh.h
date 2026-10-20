@@ -163,6 +163,11 @@ namespace Tako {
     bool IsVisible() const { return isVisible_; }
 
   private: //非公開関数
+    /// <summary>
+    /// マテリアル・テクスチャ・環境マップを現在のパイプラインへ渡す
+    /// </summary>
+    void BindMaterial();
+
 
     /// <summary>
     /// 頂点データを生成

@@ -133,14 +133,8 @@ void Object3d::Draw()
 		Object3dBasic::GetInstance()->SetTransparentRenderSetting();
 	}
 
-	// シャドウマップレンダリング中は異なるルートパラメータインデックスを使用
-	if (ShadowRenderer::GetInstance()->IsRenderingShadow()) {
-		// シャドウパスは座標変換行列のみ設定
-		Object3dBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(ShadowRenderer::kShadowPassTransformParam, transformationMatResource_->GetGPUVirtualAddress());
-	} else {
-		// 通常のルートシグネチャのインデックス
-		Object3dBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(Object3dBasic::kTransformParam, transformationMatResource_->GetGPUVirtualAddress());
-	}
+	// シャドウパスと通常パスのシェーダーは同じ名前で変換行列を受ける
+	Object3dBasic::GetInstance()->GetDX12Basic()->GetContext().Graphics().BindCBV("gTransformationMatrix"_id, transformationMatResource_->GetGPUVirtualAddress());
 
 	// モデルの描画
 	if (model_)

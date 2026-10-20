@@ -1,7 +1,7 @@
 #include "FullScreen.hlsli"
+#include "Common.hlsli"
 
 Texture2D<float4> gTexture : register(t0);
-SamplerState gSampler : register(s0);
 
 // FXAA (Lottes) の軽量版。輝度勾配に垂直な方向へサンプルを伸ばして段差をぼかす
 static const float kReduceMin = 1.0f / 128.0f;
@@ -11,7 +11,7 @@ static const float3 kLuma = float3(0.299f, 0.587f, 0.114f);
 
 float3 SampleRGB(float2 uv)
 {
-    return gTexture.SampleLevel(gSampler, uv, 0.0f).rgb;
+    return gTexture.SampleLevel(gLinearClamp, uv, 0.0f).rgb;
 }
 
 float4 main(VertexShaderOutput input) : SV_TARGET
@@ -21,7 +21,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     const float2 texel = 1.0f / size;
     const float2 uv = input.texCoord;
 
-    const float4 center = gTexture.SampleLevel(gSampler, uv, 0.0f);
+    const float4 center = gTexture.SampleLevel(gLinearClamp, uv, 0.0f);
     const float lumaNW = dot(SampleRGB(uv + float2(-1.0f, -1.0f) * texel), kLuma);
     const float lumaNE = dot(SampleRGB(uv + float2(1.0f, -1.0f) * texel), kLuma);
     const float lumaSW = dot(SampleRGB(uv + float2(-1.0f, 1.0f) * texel), kLuma);

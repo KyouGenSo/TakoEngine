@@ -21,55 +21,22 @@ namespace Tako {
     [[maybe_unused]] uint32_t depthSrvIndex,
     [[maybe_unused]] const Vector4& clearColor)
   {
-    dx12_->GetCommandList()->OMSetRenderTargets(1,
-      &outputRtvHandle,
-      false,
-      nullptr);
-
-
-    // エフェクト適用シェーダーの設定
-    dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
-    dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
-
-    // プリミティブトポロジーの設定（フルスクリーン三角形用）
-    dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-
-    // レンダーテクスチャ A をシェーダーリソースとして設定
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(kInputTextureParam, inputSrvIndex);
-
-    // フルスクリーン三角形描画
-    dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+    BeginFullScreenPass(outputRtvHandle, inputSrvIndex);
+    DrawFullScreen();
   }
 
   void NoEffect::ApplyToBackBuffer(uint32_t inputSrvIndex)
   {
-    // エフェクト適用シェーダーの設定
-    dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
-    dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
-
-    // プリミティブトポロジーの設定（フルスクリーン三角形用）
-    dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-
-    // レンダーテクスチャ A をシェーダーリソースとして設定
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(kInputTextureParam, inputSrvIndex);
-
-    // フルスクリーン三角形描画
-    dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+    // 描画先は SetSwapChain で設定済みのバックバッファ
+    CommandContext& context = dx12_->GetContext();
+    context.SetGraphicsPipeline(GetPipeline());
+    context.Graphics().BindSRV("gTexture"_id, inputSrvIndex);
+    DrawFullScreen();
   }
 
   void NoEffect::DrawImgui()
   {
 
-  }
-
-  void NoEffect::CreateRootSignature()
-  {
-    BuildRootSignature({ {RootParam::SrvTable, 0} });
-  }
-
-  void NoEffect::CreatePSO()
-  {
-    BuildFullScreenPSO();
   }
 
 } // namespace Tako

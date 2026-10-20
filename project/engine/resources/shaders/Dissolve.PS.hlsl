@@ -1,4 +1,5 @@
 #include "FullScreen.hlsli"
+#include "Common.hlsli"
 
 struct DissolvePram
 {
@@ -11,7 +12,6 @@ ConstantBuffer<DissolvePram> gParam : register(b0);
 Texture2D<float4> gTexture : register(t0);     // シーンのカラーテクスチャ
 Texture2D<float> gMaskTexture : register(t1);  // マスクテクスチャ
 Texture2D<float4> gBaseTexture : register(t2); // 下地のカラーテクスチャ
-SamplerState gSampler : register(s0);
 
 struct PixelShaderOutput
 {
@@ -22,9 +22,9 @@ float4 main(VertexShaderOutput input) : SV_TARGET
 {
     PixelShaderOutput output;
 
-    float4 baseColor = gBaseTexture.Sample(gSampler, input.texCoord);
+    float4 baseColor = gBaseTexture.Sample(gLinearWrap, input.texCoord);
 
-    float mask = gMaskTexture.Sample(gSampler, input.texCoord);
+    float mask = gMaskTexture.Sample(gLinearWrap, input.texCoord);
 
     // マスクが閾値以下なら下地の色を使う
     if (mask <= gParam.threshold)
@@ -39,7 +39,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     }
     float edge = 1.0f - smoothstep(gParam.threshold, edgeJudge, mask);
 
-    output.color = gTexture.Sample(gSampler, input.texCoord);
+    output.color = gTexture.Sample(gLinearWrap, input.texCoord);
 
     output.color.rgb += edge * gParam.edgeColor.rgb;
 

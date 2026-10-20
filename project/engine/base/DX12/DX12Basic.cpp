@@ -19,7 +19,6 @@
 
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3d12.lib")
-#pragma comment(lib, "dxcompiler.lib")
 #pragma comment(lib, "dxguid.lib")
 
 namespace Tako {
@@ -59,7 +58,7 @@ namespace Tako {
 
     InitScissorRect();
 
-    CreateDXCCompiler();
+    shaderLibrary_.Initialize();
 
   }
 
@@ -99,11 +98,10 @@ namespace Tako {
     context_.Transition(swapChainResources_[backBufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET);
     context_.Transition(depthStencilResource_, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
-    ID3D12GraphicsCommandList* commandList = context_.GetCommandList();
-    commandList->OMSetRenderTargets(1, &rtvHandle_[backBufferIndex], false, nullptr);
+    context_.SetRenderTarget(&rtvHandle_[backBufferIndex], kColorFormat, nullptr, DXGI_FORMAT_UNKNOWN);
 
     float clearColor[] = { 0.17f, 0.17f, 0.17f, 1.0f };
-    commandList->ClearRenderTargetView(rtvHandle_[backBufferIndex], clearColor, 0, nullptr);
+    context_.GetCommandList()->ClearRenderTargetView(rtvHandle_[backBufferIndex], clearColor, 0, nullptr);
 
     SetViewPort();
   }
@@ -265,7 +263,9 @@ namespace Tako {
     hr = device_->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(&commandQueue_));
     assert(SUCCEEDED(hr));
 
-    context_.Initialize(device_.Get());
+    pipelineCache_.Initialize(device_.Get());
+
+    context_.Initialize(device_.Get(), &pipelineCache_, &uploadAllocator_);
 
     uploadAllocator_.Initialize(device_.Get(), kUploadAllocatorCapacity);
   }
@@ -285,7 +285,7 @@ namespace Tako {
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc{};
     swapChainDesc.Width = WinApp::clientWidth; // 画面の幅
     swapChainDesc.Height = WinApp::clientHeight; // 画面の高さ
-    swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // 色の形式(バックバッファのフォーマット)
+    swapChainDesc.Format = kColorFormat; // 色の形式(バックバッファのフォーマット)
     swapChainDesc.SampleDesc.Count = 1; // マルチサンプルしない
     swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT; // バックバッファとして使用
     swapChainDesc.BufferCount = swapChainBufferCount_; // バッファ数
@@ -319,7 +319,7 @@ namespace Tako {
     resourceDesc.Height = height; // テクスチャの高さ
     resourceDesc.MipLevels = 1; // ミップマップレベル
     resourceDesc.DepthOrArraySize = 1; // 奥行き or 配列サイズ
-    resourceDesc.Format = DXGI_FORMAT_D32_FLOAT; // フォーマット
+    resourceDesc.Format = kDepthFormat; // フォーマット
     resourceDesc.SampleDesc.Count = 1; // サンプル数、１固定
     resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D; // 2次元
     resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL; // 深度ステンシルとして使う
@@ -332,7 +332,7 @@ namespace Tako {
     D3D12_CLEAR_VALUE depthClearValue{};
     // クリア値
     depthClearValue.DepthStencil.Depth = 1.0f; // 1.0f(最大値)でクリア
-    depthClearValue.Format = DXGI_FORMAT_D32_FLOAT; // フォーマット
+    depthClearValue.Format = kDepthFormat; // フォーマット
 
     // Resource の生成
     GpuResource depthBuffer;
@@ -368,7 +368,7 @@ namespace Tako {
       if (swapChainRtvIndices_[i] == RtvManager::kInvalidIndex) {
         swapChainRtvIndices_[i] = RtvManager::GetInstance()->Allocate();
       }
-      RtvManager::GetInstance()->CreateRTV(swapChainRtvIndices_[i], swapChainResources_[i].Get(), DXGI_FORMAT_R8G8B8A8_UNORM);
+      RtvManager::GetInstance()->CreateRTV(swapChainRtvIndices_[i], swapChainResources_[i].Get(), kColorFormat);
       rtvHandle_[i] = RtvManager::GetInstance()->GetCpuHandle(swapChainRtvIndices_[i]);
     }
   }
@@ -379,7 +379,7 @@ namespace Tako {
     if (mainDsvIndex_ == DsvManager::kInvalidIndex) {
       mainDsvIndex_ = DsvManager::GetInstance()->Allocate();
     }
-    DsvManager::GetInstance()->CreateDSV(mainDsvIndex_, depthStencilResource_.Get(), DXGI_FORMAT_D32_FLOAT);
+    DsvManager::GetInstance()->CreateDSV(mainDsvIndex_, depthStencilResource_.Get(), kDepthFormat);
   }
 
   void DX12Basic::InitFence()
@@ -414,23 +414,6 @@ namespace Tako {
     scissorRect_.right = WinApp::clientWidth;
     scissorRect_.top = 0;
     scissorRect_.bottom = WinApp::clientHeight;
-  }
-
-  void DX12Basic::CreateDXCCompiler()
-  {
-    HRESULT hr;
-    // DXCUtilities の生成
-    hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils_));
-    assert(SUCCEEDED(hr));
-
-    // DXC コンパイラの生成
-    hr = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&dxcCompiler_));
-    assert(SUCCEEDED(hr));
-
-    // IncludeHandler の生成
-    hr = dxcUtils_->CreateDefaultIncludeHandler(&includeHandler_);
-    assert(SUCCEEDED(hr));
-
   }
 
   void DX12Basic::InitFPSLimiter()
@@ -495,7 +478,7 @@ namespace Tako {
     if (nonEffectDsvIndex_ == DsvManager::kInvalidIndex) {
       nonEffectDsvIndex_ = DsvManager::GetInstance()->Allocate();
     }
-    DsvManager::GetInstance()->CreateDSV(nonEffectDsvIndex_, nonEffectDepthResource_.Get(), DXGI_FORMAT_D32_FLOAT);
+    DsvManager::GetInstance()->CreateDSV(nonEffectDsvIndex_, nonEffectDepthResource_.Get(), kDepthFormat);
   }
 
   void DX12Basic::SetViewPort()
@@ -514,8 +497,8 @@ namespace Tako {
   void DX12Basic::RestoreSceneRenderTarget()
   {
     const SceneRenderTarget& target = sceneRenderTarget_;
+    context_.SetRenderTarget(&target.rtv, target.rtvFormat, target.dsv.ptr != 0 ? &target.dsv : nullptr, target.dsvFormat);
     ID3D12GraphicsCommandList* commandList = context_.GetCommandList();
-    commandList->OMSetRenderTargets(1, &target.rtv, FALSE, target.dsv.ptr != 0 ? &target.dsv : nullptr);
 
     const D3D12_VIEWPORT viewport{ 0.0f, 0.0f, static_cast<float>(target.width), static_cast<float>(target.height), 0.0f, 1.0f };
     const D3D12_RECT scissorRect{ 0, 0, static_cast<LONG>(target.width), static_cast<LONG>(target.height) };
@@ -551,71 +534,6 @@ namespace Tako {
   D3D12_CPU_DESCRIPTOR_HANDLE DX12Basic::GetNonEffectDSVHandle() const
   {
     return nonEffectDepthResource_ ? DsvManager::GetInstance()->GetCpuHandle(nonEffectDsvIndex_) : GetMainDSVHandle();
-  }
-
-  Microsoft::WRL::ComPtr<IDxcBlob> DX12Basic::CompileShader(const std::wstring& filePath, const wchar_t* profile)
-  {
-    //hlsl ファイルを読み込む
-#ifdef _DEBUG
-    DebugUIManager::GetInstance()->AddLog(
-      StringUtility::ConvertString(
-        std::format(L"Begin CompileShader, path:{}, profile:{}", filePath, profile)),
-      DebugUIManager::LogType::Info);
-#endif
-
-    Microsoft::WRL::ComPtr<IDxcBlobEncoding> shaderSource = nullptr;
-    HRESULT hr = dxcUtils_->LoadFile(filePath.c_str(), nullptr, &shaderSource);
-    assert(SUCCEEDED(hr));
-
-    DxcBuffer shaderSourceBuffer;
-    shaderSourceBuffer.Ptr = shaderSource->GetBufferPointer();
-    shaderSourceBuffer.Size = shaderSource->GetBufferSize();
-    shaderSourceBuffer.Encoding = DXC_CP_UTF8;
-
-    //コンパイルオプション
-    LPCWSTR arguments[] = {
-      filePath.c_str(),
-      L"-E", L"main",
-      L"-T", profile,
-      L"-Zi", //デバッグ情報を出力
-      L"-Qembed_debug", //デバッグ情報を埋め込む
-      L"-Od", //最適化なし
-      L"-Zpr", //行数情報を出力
-    };
-
-    //コンパイル
-    Microsoft::WRL::ComPtr<IDxcResult> shaderResult = nullptr;
-    hr = dxcCompiler_->Compile(
-      &shaderSourceBuffer,
-      arguments, _countof(arguments),
-      includeHandler_.Get(),
-      IID_PPV_ARGS(&shaderResult));
-    assert(SUCCEEDED(hr));
-
-    //エラーメッセージを取得
-    Microsoft::WRL::ComPtr<IDxcBlobUtf8> shaderError = nullptr;
-    shaderResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&shaderError), nullptr);
-    if (shaderError != nullptr && shaderError->GetStringLength() != 0) {
-#ifdef _DEBUG
-      DebugUIManager::GetInstance()->AddLog(shaderError->GetStringPointer(), DebugUIManager::LogType::Error);
-#endif
-
-      assert(false);
-    }
-
-    //コンパイル結果を取得
-    Microsoft::WRL::ComPtr<IDxcBlob> shaderBlob = nullptr;
-    hr = shaderResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&shaderBlob), nullptr);
-    assert(SUCCEEDED(hr));
-
-#ifdef _DEBUG
-    DebugUIManager::GetInstance()->AddLog(
-      StringUtility::ConvertString(
-        std::format(L"Compile Succeeded, path:{}, prefile:{}", filePath, profile)),
-      DebugUIManager::LogType::Info);
-#endif
-
-    return shaderBlob;
   }
 
   Microsoft::WRL::ComPtr<ID3D12Resource> DX12Basic::MakeBufferResource(size_t sizeInBytes)

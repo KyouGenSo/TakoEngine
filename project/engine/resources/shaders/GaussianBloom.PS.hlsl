@@ -1,4 +1,5 @@
 #include "FullScreen.hlsli"
+#include "Common.hlsli"
 
 cbuffer BloomParam : register(b0)
 {
@@ -13,7 +14,6 @@ cbuffer BloomParam : register(b0)
 
 Texture2D<float4> gHighLumTex : register(t0);
 Texture2D<float4> gShrinkTex : register(t1);
-SamplerState gSampler : register(s0);
 
 float4 Get5x5GaussianBlur(Texture2D<float4> tex, SamplerState smp, float2 uv, float dx, float dy, float4 rect)
 {
@@ -62,11 +62,11 @@ float4 main(VertexShaderOutput input) : SV_TARGET
 
     for (int i = 0; i < iteration; ++i)
     {
-        bloomAccum += Get5x5GaussianBlur(gShrinkTex, gSampler, input.texCoord * uvSize + uvOffset, dx, dy, float4(uvOffset, uvOffset + uvSize));
+        bloomAccum += Get5x5GaussianBlur(gShrinkTex, gLinearWrap, input.texCoord * uvSize + uvOffset, dx, dy, float4(uvOffset, uvOffset + uvSize));
         uvOffset.y += uvSize.y;
         uvSize *= 0.5f;
     }
 
-    float4 bloomColor = Get5x5GaussianBlur(gHighLumTex, gSampler, input.texCoord, dx, dy, float4(0, 0, 1, 1)) + saturate(bloomAccum);
+    float4 bloomColor = Get5x5GaussianBlur(gHighLumTex, gLinearWrap, input.texCoord, dx, dy, float4(0, 0, 1, 1)) + saturate(bloomAccum);
     return bloomColor;
 }

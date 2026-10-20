@@ -276,10 +276,10 @@ namespace Tako {
     void SetTemporary(bool isTemporary, float lifeTime = 0.0f);
 
     /// <summary>
-    /// 描画ブレンドモードを設定（加算 / スクリーン / アルファ）
+    /// 描画ブレンドモードを設定
     /// </summary>
-    /// <param name="mode">ParticleBlendMode</param>
-    void SetBlendMode(ParticleBlendMode mode) { data_.blendMode = static_cast<uint32_t>(mode); }
+    /// <param name="mode">ブレンドモード</param>
+    void SetBlendMode(BlendMode mode) { data_.blendMode = static_cast<uint32_t>(mode); }
 
     /// <summary>
     /// ビルボード(カメラ追従)の ON/OFF を設定。既定 ON。
@@ -364,7 +364,7 @@ namespace Tako {
     [[nodiscard]] float GetParticleRadius() const { return data_.particleRadius; }
     [[nodiscard]] float GetNoiseScale() const { return data_.noiseScale; }
     [[nodiscard]] float GetNoiseStrength() const { return data_.noiseStrength; }
-    [[nodiscard]] ParticleBlendMode GetBlendMode() const { return static_cast<ParticleBlendMode>(data_.blendMode); }
+    [[nodiscard]] BlendMode GetBlendMode() const { return static_cast<BlendMode>(data_.blendMode); }
     [[nodiscard]] bool IsBillboard() const { return (data_.flags & EFLAG_BILLBOARD) != 0; }
     [[nodiscard]] uint32_t GetTextureSrvIndex() const { return data_.textureSrvIndex; }
     [[nodiscard]] bool HasParticleModel() const { return data_.renderIndexCount != 0; }

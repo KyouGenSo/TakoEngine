@@ -4,17 +4,16 @@
 /// ============================================ ///
 
 #include "Decal.hlsli"
+#include "Common.hlsli"
 
 ConstantBuffer<ViewData> gViewData : register(b0);
 ConstantBuffer<DecalData> gDecalData : register(b1);
 
 // 深度テクスチャ（t0）
 Texture2D<float> gDepthTexture : register(t0);
-SamplerState gPointSampler : register(s0);
 
 // デカールテクスチャ（t1、テクスチャモード時のみ使用）
 Texture2D<float4> gDecalTexture : register(t1);
-SamplerState gLinearSampler : register(s1);
 
 /// 円形マスク
 float CircleMask(float2 xz, float softness) {
@@ -53,7 +52,7 @@ PixelOutput main(VertexShaderOutput input) {
     float2 screenUV = input.pos.xy / float2(gViewData.screenWidth, gViewData.screenHeight);
 
     // 深度テクスチャをサンプリング
-    float depth = gDepthTexture.Sample(gPointSampler, screenUV);
+    float depth = gDepthTexture.Sample(gPointClamp, screenUV);
 
     // 深度が最大（何も描画されていない領域）なら破棄
     if (depth >= 1.0) {
@@ -86,7 +85,7 @@ PixelOutput main(VertexShaderOutput input) {
     if (gDecalData.useTexture == 1) {
         // テクスチャモード: localPos.xz + 0.5 で [0,1] UV に変換
         float2 uv = xz + 0.5;
-        float4 texColor = gDecalTexture.Sample(gLinearSampler, uv);
+        float4 texColor = gDecalTexture.Sample(gLinearClamp, uv);
         output.color = texColor * gDecalData.color;
         output.color.a *= texColor.a;
         return output;

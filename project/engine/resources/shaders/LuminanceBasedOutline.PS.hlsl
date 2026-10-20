@@ -1,14 +1,14 @@
 #include "FullScreen.hlsli"
+#include "Common.hlsli"
 
 struct DepthBasedOutlineParams
 {
     float outlineThickness;
 };
 
-ConstantBuffer<DepthBasedOutlineParams> gParams : register(b0);
+ConstantBuffer<DepthBasedOutlineParams> gParam : register(b0);
 
 Texture2D<float4> gTexture : register(t0);
-SamplerState gSampler : register(s0);
 
 static const float kPrewittHorizontalKernel[3][3] =
 {
@@ -53,7 +53,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
         for (int y = 0; y < 3; ++y)
         {
             float2 texcoord = input.texCoord + kIndex3x3[x][y] * uvStepSize;
-            float3 fetchColor = gTexture.Sample(gSampler, texcoord).rgb;
+            float3 fetchColor = gTexture.Sample(gLinearWrap, texcoord).rgb;
             float luminance = GetLuminance(fetchColor);
             difference.x += luminance * kPrewittHorizontalKernel[x][y];
             difference.y += luminance * kPreWittVerticalKernel[x][y];
@@ -61,10 +61,10 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     }
 
     float weight = length(difference);
-    weight = saturate(weight * gParams.outlineThickness);
+    weight = saturate(weight * gParam.outlineThickness);
 
     PixelShaderOutput output;
-    output.color.rgb = (1.0f - weight) * gTexture.Sample(gSampler, input.texCoord).rgb;
+    output.color.rgb = (1.0f - weight) * gTexture.Sample(gLinearWrap, input.texCoord).rgb;
     output.color.a = 1.0f;
 
     return output.color;

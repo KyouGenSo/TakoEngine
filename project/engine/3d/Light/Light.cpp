@@ -34,17 +34,11 @@ namespace Tako {
 
   void Light::PreDraw()
   {
-    // 平行光源 CBV (b1)
-    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(Object3dBasic::kDirectionalLightParam, directionalLightResource_->GetGPUVirtualAddress());
-
-    // 点光源 SRV (t1)
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(Object3dBasic::kPointLightParam, pointLightSrvIndex_);
-
-    // スポットライト SRV (t2)
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(Object3dBasic::kSpotLightParam, spotLightSrvIndex_);
-
-    // ライト定数 CBV (b3)
-    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(Object3dBasic::kLightConstantsParam, lightConstantsResource_->GetGPUVirtualAddress());
+    CommandContext::ShaderBinder binder = dx12_->GetContext().Graphics();
+    binder.BindCBV("gDirectionalLight"_id, directionalLightResource_->GetGPUVirtualAddress());
+    binder.BindSRV("gPointLights"_id, pointLightSrvIndex_);
+    binder.BindSRV("gSpotLight"_id, spotLightSrvIndex_);
+    binder.BindCBV("LightConstants"_id, lightConstantsResource_->GetGPUVirtualAddress());
   }
 
   void Light::SetDirectionalLight(const Vector3& direction, const Vector4& color, int32_t lightType, float intensity)

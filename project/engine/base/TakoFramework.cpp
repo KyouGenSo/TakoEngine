@@ -193,6 +193,11 @@ namespace Tako {
       return;
     }
 
+#ifdef _DEBUG
+    // GPU は前フレームを描き終えているので、ここで PSO を作り直してよい
+    dx12_->GetShaderLibrary().ReloadChangedShaders();
+#endif
+
     // 前フレームの GPU 処理は EndDraw で完了済みなので、ここなら RT を作り直せる。
     // 自前の RT を持つエフェクトもリサイズ通知で作り直すため、OnWindowResize を直接呼ばず通知経由にする
     if (dx12_->ConsumeRenderTargetRebuildRequest()) {
@@ -315,6 +320,9 @@ namespace Tako {
     imguiManager_->End();
 
     imguiManager_->Draw();
+
+    // ImGui はコマンドリストを直接操作するので、記憶しているパイプラインと束縛を捨てる
+    dx12_->GetContext().InvalidateState();
 #endif
 
 

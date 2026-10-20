@@ -22,26 +22,9 @@ namespace Tako {
   {
     cBufferData_->time = FrameTimer::GetInstance()->GetGameTime();
 
-    dx12_->GetCommandList()->OMSetRenderTargets(1,
-      &outputRtvHandle,
-      false,
-      nullptr);
-
-    // エフェクト適用シェーダーの設定
-    dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
-    dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
-
-    // プリミティブトポロジーの設定（フルスクリーン三角形用）
-    dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-
-    // パラメータリソースの設定
-    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(kParameterCbvParam, cBufferResource_->GetGPUVirtualAddress());
-
-    // レンダーテクスチャ A をシェーダーリソースとして設定
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(kInputTextureParam, inputSrvIndex);
-
-    // フルスクリーン三角形描画
-    dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+    BeginFullScreenPass(outputRtvHandle, inputSrvIndex)
+      .BindCBV("gParam"_id, cBufferResource_->GetGPUVirtualAddress());
+    DrawFullScreen();
   }
 
   void WhiteNoise::DrawImgui()
@@ -63,16 +46,6 @@ namespace Tako {
       return;
     }
     cBufferData_->time = param.time;
-  }
-
-  void WhiteNoise::CreateRootSignature()
-  {
-    BuildRootSignature({ {RootParam::SrvTable, 0}, {RootParam::Cbv, 0} });
-  }
-
-  void WhiteNoise::CreatePSO()
-  {
-    BuildFullScreenPSO();
   }
 
   void WhiteNoise::CreateCBV()

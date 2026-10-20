@@ -266,6 +266,9 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="engine\base\DX12\CommandContext.cpp" />
+    <ClCompile Include="engine\base\DX12\ShaderLibrary.cpp" />
+    <ClCompile Include="engine\base\DX12\ShaderBindingLayout.cpp" />
+    <ClCompile Include="engine\base\DX12\PipelineCache.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\3d\Decal\Decal.h" />
@@ -405,6 +408,10 @@
     <ClInclude Include="engine\base\DX12\CommandContext.h" />
     <ClInclude Include="engine\base\DX12\GpuResource.h" />
     <ClInclude Include="engine\base\DX12\UploadAllocator.h" />
+    <ClInclude Include="engine\base\DX12\ShaderLibrary.h" />
+    <ClInclude Include="engine\base\DX12\ShaderBindingLayout.h" />
+    <ClInclude Include="engine\base\DX12\PipelineCache.h" />
+    <ClInclude Include="engine\base\DX12\RenderState.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">
@@ -648,6 +655,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
+    <None Include="engine\resources\shaders\Common.hlsli" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

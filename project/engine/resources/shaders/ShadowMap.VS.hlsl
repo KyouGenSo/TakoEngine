@@ -12,14 +12,14 @@ struct VertexOutput
 };
 
 // ワールド変換行列
-cbuffer TransformationMatrix : register(b0)
+cbuffer gTransformationMatrix : register(b0)
 {
     float4x4 World;
     float4x4 WorldIT;
 };
 
 // ライトビュープロジェクション行列
-cbuffer ShadowTransform : register(b4)
+cbuffer gShadowConstants : register(b4)
 {
     float4x4 lightViewProj;
     float shadowBias;

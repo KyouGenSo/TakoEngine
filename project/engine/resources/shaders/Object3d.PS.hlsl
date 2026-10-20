@@ -1,5 +1,6 @@
 #include "Object3d.hlsli"
 #include "View.hlsli"
+#include "Common.hlsli"
 
 struct Material
 {
@@ -59,14 +60,12 @@ ConstantBuffer<View> gView : register(b2);
 ConstantBuffer<ShadowConstants> gShadowConstants : register(b4);
 
 Texture2D<float4> gTexture : register(t0);
-SamplerState gSampler : register(s0);
 
 StructuredBuffer<PointLight> gPointLights : register(t1);
 StructuredBuffer<SpotLight> gSpotLight : register(t2);
 
 TextureCube<float4> gEnvironmentMap : register(t3);
 Texture2D<float> gShadowMap : register(t4); // シャドウマップ
-SamplerComparisonState gShadowSampler : register(s1); // シャドウマップ用比較サンプラー
 
 // シャドウファクターを計算（動的PCF）
 float CalculateShadowFactor(float3 worldPos, float3 normal)
@@ -113,7 +112,7 @@ float CalculateShadowFactor(float3 worldPos, float3 normal)
         for (int y = -kernelRadius; y <= kernelRadius; ++y)
         {
             float2 offset = float2(x, y) * texelSize;
-            shadowFactor += gShadowMap.SampleCmpLevelZero(gShadowSampler,
+            shadowFactor += gShadowMap.SampleCmpLevelZero(gShadowCmp,
                            shadowTexCoord + offset, currentDepth);
             sampleCount += 1.0;
         }
@@ -128,7 +127,7 @@ PixelShaderOutput main(VertexShaderOutput input)
     PixelShaderOutput output;
     
     float4 transformedUV = mul(float4(input.texcoord, 0, 1), gMaterial.uvTransform);
-    float4 texColor = gTexture.Sample(gSampler, transformedUV.xy);
+    float4 texColor = gTexture.Sample(gLinearWrap, transformedUV.xy);
     
     // シャドウファクターを計算
     float shadowFactor = 1.0; // デフォルトでは影なし
@@ -250,7 +249,7 @@ PixelShaderOutput main(VertexShaderOutput input)
         // 環境マップをサンプリングして反射色を取得
             float3 cameraToPos = normalize(input.worldPos - gView.worldPos);
             float3 refelectedVector = reflect(cameraToPos, normalize(input.normal));
-            float4 environmentColor = gEnvironmentMap.Sample(gSampler, refelectedVector);
+            float4 environmentColor = gEnvironmentMap.Sample(gLinearWrap, refelectedVector);
 
             output.color.rgb += environmentColor.rgb * gMaterial.envMapCoefficient;
         }
@@ -263,7 +262,7 @@ PixelShaderOutput main(VertexShaderOutput input)
         //　環境マップを単純に加算（ライティング無効なので反射ベクトルはカメラ方向の逆を使用）
             float3 cameraToPos = normalize(input.worldPos - gView.worldPos);
             float3 refelectedVector = reflect(cameraToPos, normalize(input.normal));
-            float4 environmentColor = gEnvironmentMap.Sample(gSampler, refelectedVector);
+            float4 environmentColor = gEnvironmentMap.Sample(gLinearWrap, refelectedVector);
 
             output.color.rgb += environmentColor.rgb * gMaterial.envMapCoefficient;
         }

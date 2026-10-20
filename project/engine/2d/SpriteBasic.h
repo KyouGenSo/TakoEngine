@@ -26,12 +26,6 @@ namespace Tako {
   public:
     explicit SpriteBasic(Token) {}
 
-  public: //定数
-    // スプライト RS のルートパラメータ番号
-    static constexpr UINT kMaterialParam  = 0;  ///< b0 (PS): マテリアル
-    static constexpr UINT kTransformParam = 1;  ///< b0 (VS): 変換行列
-    static constexpr UINT kTextureParam   = 2;  ///< t0 (PS): テクスチャ
-
   public: //メンバー関数
 
     // ComPtr のエイリアス
@@ -73,21 +67,15 @@ namespace Tako {
 
   private: //非公開関数
     /// <summary>
-    /// ルートシグネチャの作成
+    /// パイプラインの作成
     /// </summary>
-    void CreateRootSignature();
-
-    /// <summary>
-    /// パイプラインステートの生成
-    /// </summary>
-    void CreatePSO();
+    void CreatePipeline();
 
   private: //メンバー変数
-    DX12Basic*                  dx12_;                       ///< DX12Basic クラスのインスタンス
-    ComPtr<ID3D12RootSignature> rootSignature_;                ///< ルートシグネチャ
-    ComPtr<ID3D12PipelineState> pipelineState_;                ///< パイプラインステート
-    Matrix4x4                   viewMatrixSprite_       = {};  ///< ビュー行列
-    Matrix4x4                   projectionMatrixSprite_ = {};  ///< プロジェクション行列
+    DX12Basic*           dx12_;                         ///< DX12Basic クラスのインスタンス
+    GraphicsPipelineDesc pipeline_{};                   ///< スプライト描画
+    Matrix4x4            viewMatrixSprite_       = {};  ///< ビュー行列
+    Matrix4x4            projectionMatrixSprite_ = {};  ///< プロジェクション行列
   };
 
 } // namespace Tako

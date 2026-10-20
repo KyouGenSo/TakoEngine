@@ -7,6 +7,7 @@
 #include "Matrix4x4.h"
 #include "Light.h"
 #include "SkyBox.h"
+#include "PipelineCache.h"
 
 class DX12Basic;
 
@@ -34,24 +35,6 @@ private: // シングルトン設定
 
 public:
 	explicit Object3dBasic(Token) {}
-
-public: //定数
-
-	// 通常/インスタンシング共通のルートパラメータ番号
-	static constexpr UINT kMaterialParam         = 0;   ///< b0 (PS): マテリアル
-	static constexpr UINT kTransformParam        = 1;   ///< b0 (VS): 変換行列（通常 RS）
-	static constexpr UINT kTextureParam          = 2;   ///< t0 (PS): テクスチャ
-	static constexpr UINT kDirectionalLightParam = 3;   ///< b1 (PS): 平行光源
-	static constexpr UINT kViewParam             = 4;   ///< b2 (ALL): 視点（VP・カメラ位置）
-	static constexpr UINT kPointLightParam       = 5;   ///< t1 (PS): 点光源
-	static constexpr UINT kSpotLightParam        = 6;   ///< t2 (PS): スポットライト
-	static constexpr UINT kLightConstantsParam   = 7;   ///< b3 (PS): ライト数
-	static constexpr UINT kEnvMapParam           = 8;   ///< t3 (PS): 環境マップ
-	static constexpr UINT kShadowConstantsParam  = 9;   ///< b4 (ALL): シャドウ定数
-	static constexpr UINT kShadowMapParam        = 10;  ///< t4 (PS): シャドウマップ
-
-	// インスタンシング RS 専用（通常 RS の変換行列の枠を使う）
-	static constexpr UINT kInstanceDataParam = 1;  ///< t5 (VS): インスタンスデータ
 
 public: //構造体
 	/// <summary>
@@ -187,41 +170,23 @@ public: // メンバー関数
 private: // プライベートメンバー関数
 
 	/// <summary>
-	/// ルートシグネチャの作成
+	/// 通常・半透明・インスタンシングのパイプラインを用意する
 	/// </summary>
-	void CreateRootSignature();
+	void CreatePipelines();
 
 	/// <summary>
-	/// パイプラインステートの生成
+	/// パイプラインを切り替え、視点・ライト・シャドウの共通値を渡す
 	/// </summary>
-	void CreatePSO();
-
-	/// <summary>
-	/// インスタンシング用ルートシグネチャの作成
-	/// </summary>
-	void CreateInstancedRootSignature();
-
-	/// <summary>
-	/// インスタンシング用パイプラインステートの生成
-	/// </summary>
-	void CreateInstancedPSO();
-
-	/// <summary>
-	/// 半透明描画用パイプラインステートの生成 (CullMode=NONE, DepthWriteMask=ZERO)
-	/// RootSignature は通常描画用と共有
-	/// </summary>
-	void CreateTransparentPSO();
+	void BindRenderSetting(const GraphicsPipelineDesc& pipeline);
 
 private: // メンバー変数
-	DX12Basic*                                  dx12_                    = nullptr;  ///< DirectX12基盤システムへの参照
-	Camera*                                     camera_                    = nullptr;  ///< デフォルトカメラへのポインタ
-	std::unique_ptr<Light>                      light_;                                ///< ライティングシステムへのポインタ
-	D3D12_GPU_VIRTUAL_ADDRESS                   currentViewAddress_        = 0;        ///< 描画設定でバインドする視点 CB
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;                        ///< 通常描画用ルートシグネチャ
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;                        ///< 通常描画用パイプラインステート
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> instancedRootSignature_;               ///< インスタンシング描画用ルートシグネチャ
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> instancedPipelineState_;               ///< インスタンシング描画用パイプラインステート
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> transparentPipelineState_;             ///< 半透明描画用パイプラインステート (両面描画 + 深度書き込み無効)
+	DX12Basic*                dx12_                  = nullptr;  ///< DirectX12基盤システムへの参照
+	Camera*                   camera_                = nullptr;  ///< デフォルトカメラへのポインタ
+	std::unique_ptr<Light>    light_;                            ///< ライティングシステムへのポインタ
+	D3D12_GPU_VIRTUAL_ADDRESS currentViewAddress_    = 0;        ///< 描画設定でバインドする視点 CB
+	GraphicsPipelineDesc      pipeline_{};                       ///< 通常描画
+	GraphicsPipelineDesc      transparentPipeline_{};            ///< 半透明描画 (両面描画 + 深度書き込み無効)
+	GraphicsPipelineDesc      instancedPipeline_{};              ///< インスタンシング描画
 };
 
 } // namespace Tako

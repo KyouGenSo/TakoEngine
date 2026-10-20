@@ -4,6 +4,7 @@
 #include <wrl/client.h>
 
 #include "Matrix4x4.h"
+#include "PipelineCache.h"
 #include "TextureManager.h"
 #include "Transform.h"
 #include "Vector2.h"
@@ -68,8 +69,7 @@ public: // メンバー関数
   uint32_t GetTextureIndex() const { return textureIndex_; }
 
 private: // プライベートメンバー関数
-  void CreateRootSignature();
-  void CreatePSO();
+  void CreatePipeline();
   void CreateVertexData();
   void CreateIndexData();
   void CreateMaterialData();
@@ -82,9 +82,7 @@ private: // メンバ変数
 
   DX12Basic* dx12_ = nullptr;
 
-  Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;
-
-  Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;
+  GraphicsPipelineDesc pipeline_{};
 
   //バッファリソース
   ComPtr<ID3D12Resource> vertexResource_;

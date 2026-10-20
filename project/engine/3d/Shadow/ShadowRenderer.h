@@ -5,6 +5,7 @@
 #include "Matrix4x4.h"
 #include "Vector2.h"
 #include "ShadowMap.h"
+#include "PipelineCache.h"
 
 namespace Tako {
 
@@ -36,9 +37,6 @@ namespace Tako {
 
   public: //定数
     // シャドウパス RS のルートパラメータ番号
-    static constexpr UINT kShadowPassTransformParam    = 0;  ///< b0 (VS): 変換行列
-    static constexpr UINT kShadowPassShadowCbvParam    = 1;  ///< b4 (VS): シャドウ定数
-    static constexpr UINT kShadowPassInstanceDataParam = 2;  ///< t5 (VS): インスタンスデータ（インスタンシング RS のみ）
 
   private: //構造体
     /// <summary>
@@ -152,20 +150,15 @@ namespace Tako {
 
   private:
     /// <summary>
-    /// シャドウ用ルートシグネチャの作成（通常 / インスタンシング共通）
+    /// 深度だけを書くパイプラインの作成（通常 / インスタンシング共通）
     /// </summary>
-    /// <param name="instanced">true の場合、末尾にインスタンスデータ用 SRV テーブル（t5）を追加</param>
-    /// <returns>生成したルートシグネチャ</returns>
-    Microsoft::WRL::ComPtr<ID3D12RootSignature> CreateShadowRootSignature(bool instanced);
+    /// <param name="vsFileName">使用する頂点シェーダーのファイル名</param>
+    GraphicsPipelineDesc MakeShadowPipeline(const wchar_t* vsFileName) const;
 
     /// <summary>
-    /// シャドウ用パイプラインステート（深度のみ）の作成（通常 / インスタンシング共通）
+    /// パイプラインを切り替えてシャドウ定数を渡す
     /// </summary>
-    /// <param name="rootSignature">バインドするルートシグネチャ</param>
-    /// <param name="vsFileName">使用する頂点シェーダーのファイル名</param>
-    /// <returns>生成したパイプラインステート</returns>
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> CreateShadowPipelineState(
-        ID3D12RootSignature* rootSignature, const wchar_t* vsFileName);
+    void BindShadowPipeline(const GraphicsPipelineDesc& pipeline);
 
     /// <summary>
     /// 定数バッファの作成
@@ -180,11 +173,8 @@ namespace Tako {
     Light*                     light_     = nullptr;  ///< ライトシステムへの参照（ライト位置・方向取得用）
     Camera*                    camera_    = nullptr;  ///< カメラへの参照（視錐台カリング用）
 
-    Microsoft::WRL::ComPtr<ID3D12RootSignature> shadowRootSignature_;  ///< 通常シャドウ描画用ルートシグネチャ
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> shadowPipelineState_;  ///< 通常シャドウ描画用パイプラインステート
-
-    Microsoft::WRL::ComPtr<ID3D12RootSignature> shadowInstancedRootSignature_;  ///< インスタンシングシャドウ描画用ルートシグネチャ
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> shadowInstancedPipelineState_;  ///< インスタンシングシャドウ描画用パイプラインステート
+    GraphicsPipelineDesc shadowPipeline_{};           ///< 通常シャドウ描画
+    GraphicsPipelineDesc shadowInstancedPipeline_{};  ///< インスタンシングシャドウ描画
 
     Microsoft::WRL::ComPtr<ID3D12Resource> shadowConstantBuffer_;  ///< シャドウパラメータ用定数バッファ
 

@@ -1,4 +1,5 @@
 #include "FullScreen.hlsli"
+#include "Common.hlsli"
 
 static const float PI = 3.14159265f;
 
@@ -13,7 +14,6 @@ struct BloomParam
 
 ConstantBuffer<BloomParam> gBloomParam : register(b0);
 Texture2D<float4> gTexture : register(t0);
-SamplerState gSampler : register(s0);
 
 struct PixelShaderOutput
 {
@@ -27,7 +27,7 @@ float Gaussian(float x, float sigma)
 
 float4 BloomExtract(float2 texcoord)
 {
-    float4 color = gTexture.Sample(gSampler, texcoord);
+    float4 color = gTexture.Sample(gLinearWrap, texcoord);
 
     float brightness = dot(color.rgb, float3(0.299, 0.587, 0.114));
 
@@ -122,7 +122,7 @@ float4 SquareGaussianBlur(float2 texcoord, float2 texSize)
 float4 main(VertexShaderOutput input) : SV_TARGET
 {
     PixelShaderOutput output;
-    output.color = gTexture.Sample(gSampler, input.texCoord);
+    output.color = gTexture.Sample(gLinearWrap, input.texCoord);
     output.color.a = 1.0f;
     
     float2 texSize;

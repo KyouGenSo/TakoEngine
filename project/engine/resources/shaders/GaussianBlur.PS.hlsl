@@ -1,8 +1,9 @@
 #include "FullScreen.hlsli"
+#include "Common.hlsli"
 
 static const float PI = 3.14159265f;
 
-cbuffer Param : register(b0)
+cbuffer gParam : register(b0)
 {
     float gSigma;
     int kernelSize;
@@ -10,7 +11,6 @@ cbuffer Param : register(b0)
 };
 
 Texture2D<float4> gTexture : register(t0);
-SamplerState gSampler : register(s0);
 
 struct PixelShaderOutput
 {
@@ -39,7 +39,7 @@ float4 GaussianBlur(float2 texcoord, float2 texSize, float2 dir)
         
         float weight = Gaussian(float(karnelStep), gSigma) + Gaussian(float(karnelStep + 1), gSigma);
 
-        result.xyz += gTexture.Sample(gSampler, uvOffset).xyz * weight;
+        result.xyz += gTexture.Sample(gLinearClamp, uvOffset).xyz * weight;
         
         sum += weight;
     }
@@ -52,7 +52,7 @@ float4 GaussianBlur(float2 texcoord, float2 texSize, float2 dir)
 float4 main(VertexShaderOutput input) : SV_TARGET
 {
     PixelShaderOutput output;
-    output.color = gTexture.Sample(gSampler, input.texCoord);
+    output.color = gTexture.Sample(gLinearClamp, input.texCoord);
     output.color.a = 1.0f;
     
     float2 texSize;

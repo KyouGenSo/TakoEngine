@@ -2,7 +2,6 @@
 #include <cassert>
 
 #include "Mat4x4Func.h"
-#include "EnginePaths.h"
 
 #ifdef _DEBUG
 #include "DebugUIManager.h"
@@ -30,8 +29,7 @@ namespace Tako {
       static_cast<float>(WinApp::clientWidth), static_cast<float>(WinApp::clientHeight),
       0.0f, 100.0f);
 
-    // パイプラインステートの生成
-    CreatePSO();
+    CreatePipeline();
   }
 
   void SpriteBasic::Finalize()
@@ -41,14 +39,7 @@ namespace Tako {
 
   void SpriteBasic::SetCommonRenderSetting()
   {
-    // ルートシグネチャの設定
-    dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
-
-    // パイプラインステートの設定
-    dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
-
-    // トポロジの設定
-    dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    dx12_->GetContext().SetGraphicsPipeline(pipeline_);
   }
 
   void SpriteBasic::OnResize(const Vector2& size)
@@ -59,161 +50,13 @@ namespace Tako {
       0.0f, 100.0f);
   }
 
-  void SpriteBasic::CreateRootSignature()
+  void SpriteBasic::CreatePipeline()
   {
-    HRESULT hr;
-
-    // rootSignature の生成
-    D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
-    descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-
-    // Sampler の設定
-    D3D12_STATIC_SAMPLER_DESC samplerDesc[1]{};
-    samplerDesc[0].Filter = D3D12_FILTER_MIN_MAG_MIP_POINT; // テクスチャの補間方法
-    samplerDesc[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
-    samplerDesc[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
-    samplerDesc[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // テクスチャの繰り返し方法
-    samplerDesc[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER; // 比較しない
-    samplerDesc[0].MaxLOD = D3D12_FLOAT32_MAX; // ミップマップの最大 LOD
-    samplerDesc[0].ShaderRegister = 0; // レジスタ番号
-    samplerDesc[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-    descriptionRootSignature.pStaticSamplers = samplerDesc;
-    descriptionRootSignature.NumStaticSamplers = _countof(samplerDesc);
-
-    // DescriptorRange の設定。
-    D3D12_DESCRIPTOR_RANGE descriptorRange[1] = {};
-    descriptorRange[0].BaseShaderRegister = 0; // レジスタ番号
-    descriptorRange[0].NumDescriptors = 1; // ディスクリプタ数
-    descriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRV を使う
-    descriptorRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
-
-    D3D12_DESCRIPTOR_RANGE descriptorRangeForPointLight[1] = {};
-    descriptorRangeForPointLight[0].BaseShaderRegister = 0; // レジスタ番号
-    descriptorRangeForPointLight[0].NumDescriptors = 1; // ディスクリプタ数
-    descriptorRangeForPointLight[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRV を使う
-    descriptorRangeForPointLight[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offset を自動計算
-
-    // RootParameter の設定。複数設定できるので配列
-    D3D12_ROOT_PARAMETER rootParameters[3] = {};
-
-    // Material
-    rootParameters[kMaterialParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-    rootParameters[kMaterialParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-    rootParameters[kMaterialParam].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
-
-    // TransformationMatrix
-    rootParameters[kTransformParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-    rootParameters[kTransformParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // 頂点シェーダーで使う
-    rootParameters[kTransformParam].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド 
-
-    // Texture
-    rootParameters[kTextureParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // ディスクリプタテーブルを使う
-    rootParameters[kTextureParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-    rootParameters[kTextureParam].DescriptorTable.pDescriptorRanges = descriptorRange; // ディスクリプタレンジを設定
-    rootParameters[kTextureParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange); // レンジの数
-
-    descriptionRootSignature.pParameters = rootParameters;
-    descriptionRootSignature.NumParameters = _countof(rootParameters);
-
-    Microsoft::WRL::ComPtr<ID3DBlob> signatureBlob = nullptr;
-    Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
-
-    hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
-    if (FAILED(hr)) {
-#ifdef _DEBUG
-      DebugUIManager::GetInstance()->AddLog(
-        reinterpret_cast<char*>(errorBlob->GetBufferPointer()),
-        DebugUIManager::LogType::Error);
-#endif
-
-      assert(false);
-    }
-
-    hr = dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature_.GetAddressOf()));
-    assert(SUCCEEDED(hr));
-  }
-
-  void SpriteBasic::CreatePSO()
-  {
-
-    HRESULT hr;
-
-    // RootSignature の生成
-    CreateRootSignature();
-
-    // InputLayout
-    D3D12_INPUT_ELEMENT_DESC inputElementDescs[2] = {};
-    inputElementDescs[0].SemanticName = "POSITION";
-    inputElementDescs[0].SemanticIndex = 0;
-    inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-    inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-
-    inputElementDescs[1].SemanticName = "TEXCOORD";
-    inputElementDescs[1].SemanticIndex = 0;
-    inputElementDescs[1].Format = DXGI_FORMAT_R32G32_FLOAT;
-    inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-
-    D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
-    inputLayoutDesc.pInputElementDescs = inputElementDescs;
-    inputLayoutDesc.NumElements = _countof(inputElementDescs);
-
-    // BlendState
-    D3D12_BLEND_DESC blendDesc{};
-    blendDesc.RenderTarget[0].BlendEnable = true;
-    blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
-    blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
-    blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
-    blendDesc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
-    blendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
-    blendDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
-    blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
-
-    // RasterizerState
-    D3D12_RASTERIZER_DESC rasterizerDesc{};
-    // 三角形の中を塗りつぶす
-    rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
-    // 裏面を表示しない
-    rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
-
-    // shader のコンパイル
-    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = dx12_->CompileShader(EnginePaths::ShaderPath(L"Sprite.VS.hlsl"), L"vs_6_0");
-    assert(vertexShaderBlob != nullptr);
-
-    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = dx12_->CompileShader(EnginePaths::ShaderPath(L"Sprite.PS.hlsl"), L"ps_6_0");
-    assert(pixelShaderBlob != nullptr);
-
-    // DepthStencilState
-    D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
-    // depth の機能を有効化にする
-    depthStencilDesc.DepthEnable = false;
-    // 書き込みします
-    depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-    // 深度の比較方法
-    depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-
-    // PSO の生成
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
-    graphicsPipelineStateDesc.pRootSignature = rootSignature_.Get();
-    graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
-    graphicsPipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() };
-    graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
-    graphicsPipelineStateDesc.BlendState = blendDesc;
-    graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
-    // 書き込む RTV の情報
-    graphicsPipelineStateDesc.NumRenderTargets = 1;
-    graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-    // 利用するトポロジ（形状）のタイプ。三角形
-    graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-    // どのように画面に色を打ち込むかの設定
-    graphicsPipelineStateDesc.SampleDesc.Count = 1;
-    graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-    // DepthStencil の設定
-    graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
-    graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
-
-    // 実際に生成
-    hr = dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
-    assert(SUCCEEDED(hr));
+    ShaderLibrary& library = dx12_->GetShaderLibrary();
+    pipeline_.vs = library.Get(L"Sprite.VS.hlsl", ShaderStage::Vertex);
+    pipeline_.ps = library.Get(L"Sprite.PS.hlsl", ShaderStage::Pixel);
+    pipeline_.vertexLayout = VertexLayout::Sprite;
+    pipeline_.renderState = { .blend = BlendMode::Alpha, .cull = CullMode::None, .depthTest = false, .depthWrite = false };
   }
 
 } // namespace Tako

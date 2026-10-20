@@ -206,33 +206,24 @@ void InstancedObject3d::Draw() {
   }
 
   DX12Basic* dx12 = Object3dBasic::GetInstance()->GetDX12Basic();
-  ID3D12GraphicsCommandList* commandList = dx12->GetCommandList();
-
-  // シャドウレンダリング中かどうかをチェック
-  if (ShadowRenderer::GetInstance()->IsRenderingShadow()) {
-    // インスタンシング用シャドウレンダリング設定
+  const bool isRenderingShadow = ShadowRenderer::GetInstance()->IsRenderingShadow();
+  if (isRenderingShadow) {
     ShadowRenderer::GetInstance()->SetInstancedRenderState();
-
-    // インスタンスバッファの SRV をセット（ルートパラメータ2: t5レジスタ）
-    D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = SrvManager::GetInstance()->GetGPUDescriptorHandle(instanceSrvIndex_);
-    dx12->GetCommandList()->SetGraphicsRootDescriptorTable(ShadowRenderer::kShadowPassInstanceDataParam, gpuHandle);
-
-    // モデルの各メッシュをインスタンシング描画
-    model_->DrawInstanced(static_cast<uint32_t>(instances_.size()));
-
-    return;
+  }
+  else {
+    Object3dBasic::GetInstance()->SetInstancedRenderSetting();
   }
 
-  // 通常レンダリングの場合：インスタンシング描画
-  // インスタンシング用のレンダリング設定（視点 CB もここでバインドされる）
-  Object3dBasic::GetInstance()->SetInstancedRenderSetting();
-
-  // インスタンスバッファの SRV をセット（t5 レジスタ）
-  D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = SrvManager::GetInstance()->GetGPUDescriptorHandle(instanceSrvIndex_);
-  commandList->SetGraphicsRootDescriptorTable(Object3dBasic::kInstanceDataParam, gpuHandle);
-
-  // モデルの各メッシュをインスタンシング描画
+  dx12->GetContext().Graphics().BindSRV("gInstanceData"_id, instanceSrvIndex_);
   model_->DrawInstanced(static_cast<uint32_t>(instances_.size()));
+
+  // 後続の通常の Object3d が同じパイプラインを前提に描けるよう戻す
+  if (isRenderingShadow) {
+    ShadowRenderer::GetInstance()->SetRenderState();
+  }
+  else {
+    Object3dBasic::GetInstance()->SetCommonRenderSetting();
+  }
 }
 
 void InstancedObject3d::ClearAllInstances() {

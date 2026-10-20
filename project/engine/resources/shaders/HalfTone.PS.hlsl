@@ -1,6 +1,7 @@
 #include "FullScreen.hlsli"
+#include "Common.hlsli"
 
-cbuffer HalfToneParam : register(b0)
+cbuffer gParam : register(b0)
 {
     float dotSize;
     float contrast;
@@ -13,7 +14,6 @@ cbuffer HalfToneParam : register(b0)
 }
 
 Texture2D<float4> gTexture : register(t0);
-SamplerState gSampler : register(s0);
 
 // 2D回転行列
 float2x2 GetRotationMatrix(float angle)
@@ -85,7 +85,7 @@ float3 CMYKHalftone(float4 originalColor, float2 texCoord, float2 screenSize, fl
 
 float4 main(VertexShaderOutput input) : SV_TARGET
 {
-    float4 originalColor = gTexture.Sample(gSampler, input.texCoord);
+    float4 originalColor = gTexture.Sample(gLinearWrap, input.texCoord);
 
     if (colorMode == 1) // CMYK風カラーハーフトーン
     {
@@ -114,7 +114,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
         float2 relativePosition = pixelPosition - gridCenterPosition;
         
         // グリッド中心の明度を取得（グリッドサイズ全体の代表値として）
-        float gridLuminance = dot(gTexture.Sample(gSampler, gridTexCoord).rgb, float3(0.299, 0.587, 0.114));
+        float gridLuminance = dot(gTexture.Sample(gLinearWrap, gridTexCoord).rgb, float3(0.299, 0.587, 0.114));
         gridLuminance = saturate((gridLuminance - threshold) / (1.0 - threshold));
         
         // 明度に基づいてドットのサイズを決定（暗い部分ほど大きなドット）

@@ -1,5 +1,6 @@
 #include "FullScreen.hlsli"
 #include "Random.hlsli"
+#include "Common.hlsli"
 
 struct Param
 {
@@ -8,7 +9,6 @@ struct Param
 
 ConstantBuffer<Param> gParam : register(b0);
 Texture2D<float4> gTexture : register(t0);
-SamplerState gSampler : register(s0);
 
 struct PixelShaderOutput
 {
@@ -18,7 +18,7 @@ struct PixelShaderOutput
 float4 main(VertexShaderOutput input) : SV_TARGET
 {
     PixelShaderOutput output;
-    output.color = gTexture.Sample(gSampler, input.texCoord);
+    output.color = gTexture.Sample(gLinearWrap, input.texCoord);
 
     float random = rand2dTo1d(input.texCoord * gParam.time);
 

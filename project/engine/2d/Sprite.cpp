@@ -87,22 +87,19 @@ namespace Tako {
 
   void Sprite::Draw()
   {
-    // 頂点バッファビューの設定
-    SpriteBasic::GetInstance()->GetDX12Basic()->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView_);
+    DX12Basic* dx12 = SpriteBasic::GetInstance()->GetDX12Basic();
+    ID3D12GraphicsCommandList* commandList = dx12->GetCommandList();
+    commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
+    commandList->IASetIndexBuffer(&indexBufferView_);
 
-    // インデックスバッファビューの設定
-    SpriteBasic::GetInstance()->GetDX12Basic()->GetCommandList()->IASetIndexBuffer(&indexBufferView_);
+    CommandContext& context = dx12->GetContext();
+    CommandContext::ShaderBinder binder = context.Graphics();
+    binder.BindCBV("gMaterial"_id, materialResource_->GetGPUVirtualAddress());
+    binder.BindCBV("gTransformationMatrix"_id, transformationMatrixResource_->GetGPUVirtualAddress());
 
-    // マテリアル CBuffer の場所を設定
-    SpriteBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(SpriteBasic::kMaterialParam, materialResource_->GetGPUVirtualAddress());
-
-    // 座標変換行列 CBuffer の場所を設定
-    SpriteBasic::GetInstance()->GetDX12Basic()->GetCommandList()->SetGraphicsRootConstantBufferView(SpriteBasic::kTransformParam, transformationMatrixResource_->GetGPUVirtualAddress());
-
-    ID3D12GraphicsCommandList* commandList = SpriteBasic::GetInstance()->GetDX12Basic()->GetCommandList();
     if (!IsSliced()) {
-      SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(SpriteBasic::kTextureParam, textureIndex_);
-      commandList->DrawIndexedInstanced(kQuadIndexCount, 1, 0, 0, 0);
+      binder.BindSRV("gTexture"_id, textureIndex_);
+      context.DrawIndexedInstanced(kQuadIndexCount, 1, 0, 0, 0);
       return;
     }
 
@@ -114,8 +111,8 @@ namespace Tako {
       if (runStart < 0) {
         return;
       }
-      SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(SpriteBasic::kTextureParam, runTexture);
-      commandList->DrawIndexedInstanced(static_cast<uint32_t>(end - runStart) * kIndicesPerRegion, 1, kQuadIndexCount + static_cast<uint32_t>(runStart) * kIndicesPerRegion, 0, 0);
+      binder.BindSRV("gTexture"_id, runTexture);
+      context.DrawIndexedInstanced(static_cast<uint32_t>(end - runStart) * kIndicesPerRegion, 1, kQuadIndexCount + static_cast<uint32_t>(runStart) * kIndicesPerRegion, 0, 0);
       runStart = -1;
     };
     for (int region = 0; region < kRegionCount; ++region) {

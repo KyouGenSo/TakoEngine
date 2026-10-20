@@ -1,4 +1,5 @@
 #include "FullScreen.hlsli"
+#include "Common.hlsli"
 
 struct Param
 {
@@ -9,7 +10,6 @@ struct Param
 
 ConstantBuffer<Param> gParam : register(b0);
 Texture2D<float4> gTexture : register(t0);
-SamplerState gSampler : register(s0);
 
 struct PixelShaderOutput
 {
@@ -24,7 +24,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     for (int32_t sampleIndex = 0; sampleIndex < gParam.sampleCount; ++sampleIndex)
     {
         float2 sampleOffset = input.texCoord + dir * gParam.blurWidth * float(sampleIndex);
-        outputColor.rgb += gTexture.Sample(gSampler, sampleOffset).rgb;
+        outputColor.rgb += gTexture.Sample(gLinearClamp, sampleOffset).rgb;
     }
 
     outputColor *= rcp(float(gParam.sampleCount));

@@ -1,4 +1,5 @@
 #include "FullScreen.hlsli"
+#include "Common.hlsli"
 
 struct DepthBasedOutlineParams
 {
@@ -6,11 +7,10 @@ struct DepthBasedOutlineParams
     float outlineThickness;
 };
 
-ConstantBuffer<DepthBasedOutlineParams> gParams : register(b0);
+ConstantBuffer<DepthBasedOutlineParams> gParam : register(b0);
 
 Texture2D<float4> gTexture : register(t0);
 Texture2D<float> gDepthTexture : register(t1); // シーンの深度テクスチャ
-SamplerState gSampler : register(s0);
 
 static const float kPrewittHorizontalKernel[3][3] =
 {
@@ -50,8 +50,8 @@ float4 main(VertexShaderOutput input) : SV_TARGET
         for (int y = 0; y < 3; ++y)
         {
             float2 texcoord = input.texCoord + kIndex3x3[x][y] * uvStepSize;
-            float ndcDepth = gDepthTexture.Sample(gSampler, texcoord); // NDC座標系の深度値を取得
-            float4 viewSpace = mul(float4(0.0f, 0.0f, ndcDepth, 1.0f), gParams.projectionInverse);
+            float ndcDepth = gDepthTexture.Sample(gPointWrap, texcoord); // NDC座標系の深度値を取得
+            float4 viewSpace = mul(float4(0.0f, 0.0f, ndcDepth, 1.0f), gParam.projectionInverse);
             float viewZ = viewSpace.z * rcp(viewSpace.w); // 同次座標系からデカルト座標系に変換
             difference.x += viewZ * kPrewittHorizontalKernel[x][y];
             difference.y += viewZ * kPreWittVerticalKernel[x][y];
@@ -59,10 +59,10 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     }
 
     float weight = length(difference);
-    weight = saturate(weight * gParams.outlineThickness); // アウトラインの太さを調整
+    weight = saturate(weight * gParam.outlineThickness); // アウトラインの太さを調整
 
     PixelShaderOutput output;
-    output.color.rgb = (1.0f - weight) * gTexture.Sample(gSampler, input.texCoord).rgb;
+    output.color.rgb = (1.0f - weight) * gTexture.Sample(gPointWrap, input.texCoord).rgb;
     output.color.a = 1.0f;
 
     return output.color;

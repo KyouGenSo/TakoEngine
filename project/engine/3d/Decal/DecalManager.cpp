@@ -4,7 +4,6 @@
 #include "Camera.h"
 #include "SrvManager.h"
 #include "Mat4x4Func.h"
-#include "EnginePaths.h"
 
 #ifdef _DEBUG
 #include "DebugUIManager.h"
@@ -28,7 +27,7 @@ namespace Tako {
 
     CreateCubeMesh();
     CreateDepthSRV();
-    CreatePSO();
+    CreatePipeline();
   }
 
   void DecalManager::Finalize()
@@ -65,22 +64,18 @@ namespace Tako {
 
     // 描画先 RT のビューポートを保ったまま、DSV を外して RTV だけ再バインド
     dx12_->RestoreSceneRenderTarget();
-    dx12_->GetCommandList()->OMSetRenderTargets(1, &target.rtv, false, nullptr);
-
-    // PSO / RootSignature をセット
-    dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
-    dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
-    dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    CommandContext& context = dx12_->GetContext();
+    context.SetRenderTarget(&target.rtv, target.rtvFormat, nullptr, DXGI_FORMAT_UNKNOWN);
+    context.SetGraphicsPipeline(pipeline_);
 
     // キューブメッシュの VBV / IBV をバインド
-    dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &cubeVBV_);
-    dx12_->GetCommandList()->IASetIndexBuffer(&cubeIBV_);
+    ID3D12GraphicsCommandList* commandList = dx12_->GetCommandList();
+    commandList->IASetVertexBuffers(0, 1, &cubeVBV_);
+    commandList->IASetIndexBuffer(&cubeIBV_);
 
-    // ViewData CBV をバインド
-    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(kViewDataParam, viewDataAddress);
-
-    // 深度 SRV をバインド
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(kDepthTextureParam, depthSrvIndex);
+    CommandContext::ShaderBinder binder = context.Graphics();
+    binder.BindCBV("gViewData"_id, viewDataAddress);
+    binder.BindSRV("gDepthTexture"_id, depthSrvIndex);
   }
 
   void DecalManager::EndDraw(GpuResource& depthResource)
@@ -148,170 +143,16 @@ namespace Tako {
   }
 
   // ルートシグネチャの作成
-  void DecalManager::CreateRootSignature()
+  void DecalManager::CreatePipeline()
   {
-    HRESULT hr;
-
-    D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
-    descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-
-    // サンプラーの設定（2つ）
-    D3D12_STATIC_SAMPLER_DESC samplerDesc[2]{};
-    // s0: Point / Clamp（深度テクスチャ用）
-    samplerDesc[0].Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
-    samplerDesc[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-    samplerDesc[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-    samplerDesc[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-    samplerDesc[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-    samplerDesc[0].MaxLOD = D3D12_FLOAT32_MAX;
-    samplerDesc[0].ShaderRegister = 0;
-    samplerDesc[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-
-    // s1: Linear / Clamp（デカールテクスチャ用）
-    samplerDesc[1].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-    samplerDesc[1].AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-    samplerDesc[1].AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-    samplerDesc[1].AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-    samplerDesc[1].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-    samplerDesc[1].MaxLOD = D3D12_FLOAT32_MAX;
-    samplerDesc[1].ShaderRegister = 1;
-    samplerDesc[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-
-    descriptionRootSignature.pStaticSamplers = samplerDesc;
-    descriptionRootSignature.NumStaticSamplers = _countof(samplerDesc);
-
-    // DescriptorRange: 深度テクスチャ（t0）
-    D3D12_DESCRIPTOR_RANGE descriptorRangeDepth[1] = {};
-    descriptorRangeDepth[0].BaseShaderRegister = 0;
-    descriptorRangeDepth[0].NumDescriptors = 1;
-    descriptorRangeDepth[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-    descriptorRangeDepth[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-
-    // DescriptorRange: デカールテクスチャ（t1）
-    D3D12_DESCRIPTOR_RANGE descriptorRangeDecalTex[1] = {};
-    descriptorRangeDecalTex[0].BaseShaderRegister = 1;
-    descriptorRangeDecalTex[0].NumDescriptors = 1;
-    descriptorRangeDecalTex[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-    descriptorRangeDecalTex[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-
-    // RootParameter の設定（4パラメータ）
-    D3D12_ROOT_PARAMETER rootParameters[4] = {};
-
-    // RP#0: ViewData CBV（b0, ALL）
-    rootParameters[kViewDataParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-    rootParameters[kViewDataParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-    rootParameters[kViewDataParam].Descriptor.ShaderRegister = 0;
-
-    // RP#1: DecalData CBV（b1, ALL）
-    rootParameters[kDecalDataParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-    rootParameters[kDecalDataParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-    rootParameters[kDecalDataParam].Descriptor.ShaderRegister = 1;
-
-    // RP#2: 深度テクスチャ SRV Table（t0, PIXEL）
-    rootParameters[kDepthTextureParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[kDepthTextureParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-    rootParameters[kDepthTextureParam].DescriptorTable.pDescriptorRanges = descriptorRangeDepth;
-    rootParameters[kDepthTextureParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeDepth);
-
-    // RP#3: デカールテクスチャ SRV Table（t1, PIXEL）
-    rootParameters[kDecalTextureParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[kDecalTextureParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-    rootParameters[kDecalTextureParam].DescriptorTable.pDescriptorRanges = descriptorRangeDecalTex;
-    rootParameters[kDecalTextureParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeDecalTex);
-
-    descriptionRootSignature.pParameters = rootParameters;
-    descriptionRootSignature.NumParameters = _countof(rootParameters);
-
-    Microsoft::WRL::ComPtr<ID3DBlob> signatureBlob = nullptr;
-    Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
-
-    hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
-    if (FAILED(hr)) {
-#ifdef _DEBUG
-      DebugUIManager::GetInstance()->AddLog(
-        static_cast<char*>(errorBlob->GetBufferPointer()),
-        DebugUIManager::LogType::Error);
-#endif
-      assert(false);
-    }
-
-    hr = dx12_->GetDevice()->CreateRootSignature(
-      0,
-      signatureBlob->GetBufferPointer(),
-      signatureBlob->GetBufferSize(),
-      IID_PPV_ARGS(rootSignature_.GetAddressOf())
-    );
-    assert(SUCCEEDED(hr));
+    ShaderLibrary& library = dx12_->GetShaderLibrary();
+    pipeline_.vs = library.Get(L"Decal.VS.hlsl", ShaderStage::Vertex);
+    pipeline_.ps = library.Get(L"Decal.PS.hlsl", ShaderStage::Pixel);
+    pipeline_.vertexLayout = VertexLayout::Position;
+    // キューブの内側に視点が入っても描けるよう両面を描き、深度は自前の深度テクスチャで判定する
+    pipeline_.renderState = { .blend = BlendMode::Alpha, .cull = CullMode::None, .depthTest = false, .depthWrite = false };
   }
 
-  // パイプラインステートの生成
-  void DecalManager::CreatePSO()
-  {
-    HRESULT hr;
-
-    // RootSignature の生成
-    CreateRootSignature();
-
-    // InputLayout: POSITION (float4) のみ
-    D3D12_INPUT_ELEMENT_DESC inputElementDescs[1] = {};
-    inputElementDescs[0].SemanticName = "POSITION";
-    inputElementDescs[0].SemanticIndex = 0;
-    inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-    inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-
-    D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
-    inputLayoutDesc.pInputElementDescs = inputElementDescs;
-    inputLayoutDesc.NumElements = _countof(inputElementDescs);
-
-    // BlendState: SrcAlpha / InvSrcAlpha（標準アルファブレンド）
-    D3D12_BLEND_DESC blendDesc{};
-    blendDesc.RenderTarget[0].BlendEnable = true;
-    blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
-    blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
-    blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
-    blendDesc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
-    blendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
-    blendDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
-    blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
-
-    // RasterizerState: CullMode = NONE（キューブ内側からも描画）
-    D3D12_RASTERIZER_DESC rasterizerDesc{};
-    rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
-    rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
-
-    // シェーダーのコンパイル
-    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = dx12_->CompileShader(EnginePaths::ShaderPath(L"Decal.VS.hlsl"), L"vs_6_0");
-    assert(vertexShaderBlob != nullptr);
-
-    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = dx12_->CompileShader(EnginePaths::ShaderPath(L"Decal.PS.hlsl"), L"ps_6_0");
-    assert(pixelShaderBlob != nullptr);
-
-    // DepthStencilState: 深度テスト・書き込み無効
-    D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
-    depthStencilDesc.DepthEnable = false;
-    depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
-
-    // PSO の生成
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
-    graphicsPipelineStateDesc.pRootSignature = rootSignature_.Get();
-    graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
-    graphicsPipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() };
-    graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
-    graphicsPipelineStateDesc.BlendState = blendDesc;
-    graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
-    graphicsPipelineStateDesc.NumRenderTargets = 1;
-    graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-    graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-    graphicsPipelineStateDesc.SampleDesc.Count = 1;
-    graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-    graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
-    graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_UNKNOWN; // DSV バインドなし
-
-    hr = dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
-    assert(SUCCEEDED(hr));
-  }
-
-  // 単位キューブメッシュの作成（[-0.5, 0.5] 範囲の 8 頂点 / 36 インデックス）
   void DecalManager::CreateCubeMesh()
   {
     // 8 頂点（float4: x, y, z, w）

@@ -17,10 +17,6 @@ namespace Tako {
     ) override;
 
     void DrawImgui() override {}
-
-  private: //非公開関数
-    void CreateRootSignature() override;
-    void CreatePSO() override;
   };
 
 } // namespace Tako

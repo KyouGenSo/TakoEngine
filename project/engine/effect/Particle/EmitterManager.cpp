@@ -1278,7 +1278,7 @@ namespace Tako {
 
     // 描画設定 (per-emitter)。
     if (json.contains("blendMode")) {
-      emitter->SetBlendMode(static_cast<ParticleBlendMode>(json["blendMode"].get<uint32_t>()));
+      emitter->SetBlendMode(static_cast<BlendMode>(json["blendMode"].get<uint32_t>()));
     }
     if (json.contains("billboard")) {
       emitter->SetBillboard(json["billboard"].get<bool>());

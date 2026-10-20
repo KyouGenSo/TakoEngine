@@ -1,4 +1,5 @@
 #include "SkyBox.hlsli"
+#include "Common.hlsli"
 
 struct PixelShaderOutput
 {
@@ -13,12 +14,11 @@ struct Material
 ConstantBuffer<Material> gMaterial : register(b0);
 
 TextureCube<float32_t4> gSkyBoxTexture : register(t0);
-SamplerState gSampler : register(s0);
 
 PixelShaderOutput main(VertexShaderOutput input)
 {
     PixelShaderOutput output;
-    float4 texColor = gSkyBoxTexture.Sample(gSampler, input.texcoord);
+    float4 texColor = gSkyBoxTexture.Sample(gLinearWrap, input.texcoord);
     output.color = texColor * gMaterial.color;
     return output;
 }

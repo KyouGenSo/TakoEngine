@@ -201,14 +201,9 @@ namespace Tako {
 
   private: //非公開関数
     /// <summary>
-    /// ルートシグネチャの作成
+    /// 通常とプレビュー用のパイプラインを作成
     /// </summary>
-    void CreateRootSignature();
-
-    /// <summary>
-    /// パイプラインステートの生成
-    /// </summary>
-    void CreatePSO();
+    void CreatePipelines();
 
     /// <summary>
     /// 線の頂点データを生成
@@ -218,14 +213,14 @@ namespace Tako {
     void CreateLineVertexData(LineData* lineData, uint32_t lineCount = kLineMaxCount);
 
     /// <summary>
-    /// 頂点バッファの指定範囲を VP と PSO を指定して描画する
+    /// 頂点バッファの指定範囲を VP とパイプラインを指定して描画する
     /// </summary>
     /// <param name="lineData">描画する頂点バッファ</param>
     /// <param name="startVertex">描画開始頂点</param>
     /// <param name="vertexCount">描画頂点数</param>
     /// <param name="viewProjection">ビュープロジェクション行列</param>
-    /// <param name="pipelineState">使用する PSO</param>
-    void DrawRange(const LineData& lineData, uint32_t startVertex, uint32_t vertexCount, const Matrix4x4& viewProjection, ID3D12PipelineState* pipelineState);
+    /// <param name="pipeline">使用するパイプライン</param>
+    void DrawRange(const LineData& lineData, uint32_t startVertex, uint32_t vertexCount, const Matrix4x4& viewProjection, const GraphicsPipelineDesc& pipeline);
 
   private: //メンバー変数
 
@@ -235,19 +230,17 @@ namespace Tako {
 
     uint32_t lineIndex_ = 0;  ///< 線の頂点書き込みカーソル
 
-    Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;  ///< ルートシグネチャ
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;  ///< パイプラインステート
-
+    GraphicsPipelineDesc pipeline_{};  ///< 深度テストなしの通常描画
 
     std::unique_ptr<LineData> lineData_;  ///< 線データ
 
 #ifdef _DEBUG
     //エディタプレビュー用線分描画
-    std::unique_ptr<LineData>                   previewLineData_;                   ///< プレビュー専用頂点バッファ（メインバッチと GPU 実行前の上書き競合を避けるため分離）
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> previewPipelineState_;              ///< 深度テストあり（書き込みなし）のプレビュー用 PSO
-    uint32_t                                    previewLineIndex_       = 0;
-    uint32_t                                    previewDrawStart_       = 0;        ///< 次の DrawPreviewLines が描き始める頂点（同一フレームの前回描画分を除く）
-    bool                                        previewBatchMode_       = false;    ///< true 中は DrawLine 系がプレビューバッファへ書く
+    std::unique_ptr<LineData> previewLineData_;            ///< プレビュー専用頂点バッファ（メインバッチと GPU 実行前の上書き競合を避けるため分離）
+    GraphicsPipelineDesc      previewPipeline_{};          ///< 深度テストあり（書き込みなし）のプレビュー用
+    uint32_t                  previewLineIndex_  = 0;
+    uint32_t                  previewDrawStart_  = 0;      ///< 次の DrawPreviewLines が描き始める頂点（同一フレームの前回描画分を除く）
+    bool                      previewBatchMode_  = false;  ///< true 中は DrawLine 系がプレビューバッファへ書く
 #endif // _DEBUG
   };
 

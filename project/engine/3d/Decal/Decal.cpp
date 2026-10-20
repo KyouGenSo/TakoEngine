@@ -63,19 +63,15 @@ namespace Tako {
 
     DX12Basic* dx12 = DecalManager::GetInstance()->GetDX12Basic();
 
-    // DecalData CBV をバインド
-    dx12->GetCommandList()->SetGraphicsRootConstantBufferView(
-      DecalManager::kDecalDataParam,
-      decalDataBuffer_->GetGPUVirtualAddress()
-    );
+    CommandContext::ShaderBinder binder = dx12->GetContext().Graphics();
+    binder.BindCBV("gDecalData"_id, decalDataBuffer_->GetGPUVirtualAddress());
 
-    // テクスチャモード時: デカールテクスチャ SRV をバインド
-    if (useTexture_ && textureSrvIndex_ != 0) {
-      SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(DecalManager::kDecalTextureParam, textureSrvIndex_);
-    }
+    // テクスチャを使わないデカールでもシェーダーは t1 を読みうるので既定テクスチャを渡す
+    const bool hasTexture = useTexture_ && textureSrvIndex_ != 0;
+    binder.BindSRV("gDecalTexture"_id, hasTexture ? textureSrvIndex_ : TextureManager::GetInstance()->GetEngineDefaultSRVIndex("white.png"));
 
     // インデックス付きドローコール（36 インデックス = 12 三角形のキューブ）
-    dx12->GetCommandList()->DrawIndexedInstanced(36, 1, 0, 0, 0);
+    dx12->GetContext().DrawIndexedInstanced(36, 1, 0, 0, 0);
   }
 
   void Decal::SetTexture(const std::string& textureName)

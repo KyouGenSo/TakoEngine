@@ -28,9 +28,9 @@ namespace Tako {
   void Bloom::Initialize(DX12Basic* dx12, const std::string& shaderName)
   {
     IPostEffect::Initialize(dx12, shaderName);
-    CreatePSO("ThresholdExtract");
-    CreatePSO("GaussianBlur");
-    CreatePSO("BloomCombine");
+    extractPipeline_ = MakeFullScreenPipeline(L"ThresholdExtract.PS.hlsl");
+    blurPipeline_ = MakeFullScreenPipeline(L"GaussianBlur.PS.hlsl");
+    combinePipeline_ = MakeFullScreenPipeline(L"BloomCombine.PS.hlsl");
     CreateCBV();
     CreateRenderTexture();
 
@@ -45,50 +45,36 @@ namespace Tako {
 
   void Bloom::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, [[maybe_unused]] uint32_t depthSrvIndex, [[maybe_unused]] const Vector4& clearColor)
   {
+    CommandContext& context = dx12_->GetContext();
+
     //---------------------------Pass1 HighLunExtract---------------------------//
-    DrawFullScreenPass(rootSignatures_["ThresholdExtract"].Get(), pipelineStates_["ThresholdExtract"].Get(),
-      highLumRT_.rtvHandle, extractCBufferRes_->GetGPUVirtualAddress(), inputSrvIndex);
+    BeginFullScreenPass(extractPipeline_, highLumRT_.rtvHandle, inputSrvIndex)
+      .BindCBV("gParam"_id, extractCBufferRes_->GetGPUVirtualAddress());
+    DrawFullScreen();
 
     //---------------------------Pass2 HorizontalBlur---------------------------//
-    dx12_->GetContext().Transition(highLumRT_.resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-
-    DrawFullScreenPass(rootSignatures_["GaussianBlur"].Get(), pipelineStates_["GaussianBlur"].Get(),
-      blurRT_.rtvHandle, blurCBufferRes1_->GetGPUVirtualAddress(), highLumRT_.srvIndex);
+    context.Transition(highLumRT_.resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    BeginFullScreenPass(blurPipeline_, blurRT_.rtvHandle, highLumRT_.srvIndex)
+      .BindCBV("gParam"_id, blurCBufferRes1_->GetGPUVirtualAddress());
+    DrawFullScreen();
 
     //---------------------------Pass3 VerticalBlur---------------------------//
-    dx12_->GetContext().Transition(blurRT_.resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-
-    DrawFullScreenPass(rootSignatures_["GaussianBlur"].Get(), pipelineStates_["GaussianBlur"].Get(),
-      resultRT_.rtvHandle, blurCBufferRes2_->GetGPUVirtualAddress(), blurRT_.srvIndex);
+    context.Transition(blurRT_.resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    BeginFullScreenPass(blurPipeline_, resultRT_.rtvHandle, blurRT_.srvIndex)
+      .BindCBV("gParam"_id, blurCBufferRes2_->GetGPUVirtualAddress());
+    DrawFullScreen();
 
     //---------------------------Pass4 Combine---------------------------//
-    dx12_->GetContext().Transition(resultRT_.resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-
-    dx12_->GetCommandList()->OMSetRenderTargets(1,
-      &outputRtvHandle,
-      false,
-      nullptr);
-
-    dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignatures_["BloomCombine"].Get());
-    dx12_->GetCommandList()->SetPipelineState(pipelineStates_["BloomCombine"].Get());
-
-    dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-
-    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(kParameterCbvParam, combineCBufferRes_->GetGPUVirtualAddress());
-
-    // t0=元画像, t1(スロット2)=ブラー結果
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(kInputTextureParam, inputSrvIndex);
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(kBlurTextureParam, resultRT_.srvIndex);
-
-    dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
-
+    context.Transition(resultRT_.resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    CommandContext::ShaderBinder binder = BeginFullScreenPass(combinePipeline_, outputRtvHandle, inputSrvIndex);
+    binder.BindCBV("gParam"_id, combineCBufferRes_->GetGPUVirtualAddress());
+    binder.BindSRV("gBloomTexture"_id, resultRT_.srvIndex);
+    DrawFullScreen();
 
     //---------------------------リソースステートを戻す---------------------------//
-    dx12_->GetContext().Transition(highLumRT_.resource, D3D12_RESOURCE_STATE_RENDER_TARGET);
-
-    dx12_->GetContext().Transition(blurRT_.resource, D3D12_RESOURCE_STATE_RENDER_TARGET);
-
-    dx12_->GetContext().Transition(resultRT_.resource, D3D12_RESOURCE_STATE_RENDER_TARGET);
+    context.Transition(highLumRT_.resource, D3D12_RESOURCE_STATE_RENDER_TARGET);
+    context.Transition(blurRT_.resource, D3D12_RESOURCE_STATE_RENDER_TARGET);
+    context.Transition(resultRT_.resource, D3D12_RESOURCE_STATE_RENDER_TARGET);
   }
 
   void Bloom::DrawImgui()
@@ -151,139 +137,6 @@ namespace Tako {
       return;
     }
     combineData_->intensity = param.intensity;
-  }
-
-  void Bloom::CreateRootSignature()
-  {
-    // Bloom はパス毎に rootSignatures_/pipelineStates_ を構築するため、基底の単一 rootSignature_ は未使用
-  }
-
-  void Bloom::CreateRootSignature(const std::string& shaderName)
-  {
-    shaderName;
-    HRESULT hr;
-
-    // rootSignature の生成
-    D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature;
-    descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-
-    // Sampler の設定
-    D3D12_STATIC_SAMPLER_DESC samplerDesc[1]{};
-    samplerDesc[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-    samplerDesc[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-    samplerDesc[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-    samplerDesc[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-    samplerDesc[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-    samplerDesc[0].MaxLOD = D3D12_FLOAT32_MAX;
-    samplerDesc[0].ShaderRegister = 0;
-    samplerDesc[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-    descriptionRootSignature.pStaticSamplers = samplerDesc;
-    descriptionRootSignature.NumStaticSamplers = _countof(samplerDesc);
-
-    D3D12_DESCRIPTOR_RANGE descriptorRangesForTex1[1] = {};
-    descriptorRangesForTex1[0].BaseShaderRegister = 0;
-    descriptorRangesForTex1[0].NumDescriptors = 1;
-    descriptorRangesForTex1[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-    descriptorRangesForTex1[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-
-    D3D12_DESCRIPTOR_RANGE descriptorRangesForTex2[1] = {};
-    descriptorRangesForTex2[0].BaseShaderRegister = 1;
-    descriptorRangesForTex2[0].NumDescriptors = 1;
-    descriptorRangesForTex2[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-    descriptorRangesForTex2[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-
-    D3D12_ROOT_PARAMETER rootParameters[3] = {};
-
-    // Texture1
-    rootParameters[kInputTextureParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[kInputTextureParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-    rootParameters[kInputTextureParam].DescriptorTable.pDescriptorRanges = descriptorRangesForTex1;
-    rootParameters[kInputTextureParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangesForTex1);
-
-    // Param
-    rootParameters[kParameterCbvParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-    rootParameters[kParameterCbvParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-    rootParameters[kParameterCbvParam].Descriptor.ShaderRegister = 0;
-
-    // Texture2
-    rootParameters[kBlurTextureParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[kBlurTextureParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-    rootParameters[kBlurTextureParam].DescriptorTable.pDescriptorRanges = descriptorRangesForTex2;
-    rootParameters[kBlurTextureParam].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangesForTex2);
-
-    descriptionRootSignature.pParameters = rootParameters;
-    descriptionRootSignature.NumParameters = _countof(rootParameters);
-
-    Microsoft::WRL::ComPtr<ID3DBlob> signatureBlob = nullptr;
-    Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
-
-    hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
-    if (FAILED(hr)) {
-#ifdef _DEBUG
-      DebugUIManager::GetInstance()->AddLog(reinterpret_cast<char*>(errorBlob->GetBufferPointer()), DebugUIManager::LogType::Error);
-#endif
-      assert(false);
-    }
-
-    hr = dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignatures_[shaderName].GetAddressOf()));
-    assert(SUCCEEDED(hr));
-  }
-
-  void Bloom::CreatePSO()
-  {
-    // Bloom はパス毎に pipelineStates_ を構築するため、基底の単一 pipelineState_ は未使用
-  }
-
-  void Bloom::CreatePSO(const std::string& shaderName)
-  {
-    CreateRootSignature(shaderName);
-
-    HRESULT hr;
-
-    // InputLayout
-    D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
-    inputLayoutDesc.pInputElementDescs = nullptr;
-    inputLayoutDesc.NumElements = 0;
-
-    // BlendState
-    D3D12_BLEND_DESC blendDesc{};
-    blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
-
-    // RasterizerState
-    D3D12_RASTERIZER_DESC rasterizerDesc{};
-    rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
-    rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
-
-    // shader のコンパイル
-    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = dx12_->CompileShader(EnginePaths::ShaderPath(L"FullScreen.VS.hlsl"), L"vs_6_0");
-    assert(vertexShaderBlob != nullptr);
-
-    std::wstring psPath = EnginePaths::ShaderPath(StringUtility::ConvertString(shaderName) + L".PS.hlsl");
-    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = dx12_->CompileShader(psPath, L"ps_6_0");
-    assert(pixelShaderBlob != nullptr);
-
-    // DepthStencilState
-    D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
-    depthStencilDesc.DepthEnable = false;
-
-    // PSO の生成
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
-    graphicsPipelineStateDesc.pRootSignature = rootSignatures_[shaderName].Get();
-    graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
-    graphicsPipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() };
-    graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
-    graphicsPipelineStateDesc.BlendState = blendDesc;
-    graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
-    graphicsPipelineStateDesc.NumRenderTargets = 1;
-    graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-    graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-    graphicsPipelineStateDesc.SampleDesc.Count = 1;
-    graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-    graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
-    graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_UNKNOWN;
-
-    hr = dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineStates_[shaderName]));
-    assert(SUCCEEDED(hr));
   }
 
   void Bloom::CreateCBV()

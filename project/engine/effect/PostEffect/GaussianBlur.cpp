@@ -44,14 +44,15 @@ namespace Tako {
   void GaussianBlur::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, [[maybe_unused]] uint32_t depthSrvIndex, [[maybe_unused]] const Vector4& clearColor)
   {
     // Pass1: 入力テクスチャを1方向にブラーして resultRT_ へ
-    DrawFullScreenPass(rootSignature_.Get(), pipelineState_.Get(), resultRT_.rtvHandle,
-      cBufferResource1_->GetGPUVirtualAddress(), inputSrvIndex);
+    BeginFullScreenPass(resultRT_.rtvHandle, inputSrvIndex)
+      .BindCBV("gParam"_id, cBufferResource1_->GetGPUVirtualAddress());
+    DrawFullScreen();
 
     // Pass2: resultRT_ を直交方向にブラーして出力先へ
     dx12_->GetContext().Transition(resultRT_.resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-
-    DrawFullScreenPass(rootSignature_.Get(), pipelineState_.Get(), outputRtvHandle,
-      cBufferResource2_->GetGPUVirtualAddress(), resultRT_.srvIndex);
+    BeginFullScreenPass(outputRtvHandle, resultRT_.srvIndex)
+      .BindCBV("gParam"_id, cBufferResource2_->GetGPUVirtualAddress());
+    DrawFullScreen();
 
     dx12_->GetContext().Transition(resultRT_.resource, D3D12_RESOURCE_STATE_RENDER_TARGET);
   }
@@ -88,16 +89,6 @@ namespace Tako {
     }
     cBufferData2_->sigma = param.sigma;
     cBufferData2_->kernelSize = param.kernelSize;
-  }
-
-  void GaussianBlur::CreateRootSignature()
-  {
-    BuildRootSignature({ {RootParam::SrvTable, 0}, {RootParam::Cbv, 0} }, SamplerFilterMode::Linear, SamplerAddressMode::Clamp);
-  }
-
-  void GaussianBlur::CreatePSO()
-  {
-    BuildFullScreenPSO();
   }
 
   void GaussianBlur::CreateCBV()
@@ -138,6 +129,5 @@ namespace Tako {
 
     CreateRenderTexture();
   }
-
 
 } // namespace Tako

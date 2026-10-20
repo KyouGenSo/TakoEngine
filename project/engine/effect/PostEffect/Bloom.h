@@ -1,6 +1,4 @@
 #pragma once
-#include <unordered_map>
-
 #include "IPostEffect.h"
 #include "Vector2.h"
 
@@ -13,9 +11,6 @@ namespace Tako {
   /// </summary>
   class Bloom : public IPostEffect
   {
-  private: //定数
-    static constexpr uint32_t kBlurTextureParam = 2;  ///< t1: ブラー結果テクスチャ（BloomCombine 用）
-
   public: //メンバー関数
     /// <summary>
     /// デストラクタ
@@ -78,28 +73,6 @@ namespace Tako {
 
   private: //非公開関数
     /// <summary>
-    /// ルートシグネチャを作成
-    /// </summary>
-    void CreateRootSignature() override;
-
-    /// <summary>
-    /// ルートシグネチャを作成（シェーダー名指定）
-    /// </summary>
-    /// <param name="shaderName">シェーダー名</param>
-    void CreateRootSignature(const std::string& shaderName);
-
-    /// <summary>
-    /// パイプラインステートオブジェクトを作成
-    /// </summary>
-    void CreatePSO() override;
-
-    /// <summary>
-    /// パイプラインステートオブジェクトを作成（シェーダー名指定）
-    /// </summary>
-    /// <param name="shaderName">シェーダー名</param>
-    void CreatePSO(const std::string& shaderName);
-
-    /// <summary>
     /// 定数バッファビューを作成
     /// </summary>
     void CreateCBV();
@@ -116,9 +89,10 @@ namespace Tako {
 
   private: //メンバー変数
 
-    std::unordered_map <std::string, ComPtr<ID3D12RootSignature>> rootSignatures_;  ///< ルートシグネチャ
-
-    std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> pipelineStates_;  ///< パイプラインステート
+    //パスごとの全画面描画
+    GraphicsPipelineDesc extractPipeline_{};  ///< 高輝度の抽出
+    GraphicsPipelineDesc blurPipeline_{};     ///< 1 方向のガウスぼかし
+    GraphicsPipelineDesc combinePipeline_{};  ///< 元画像への合成
 
     ComPtr<ID3D12Resource> extractCBufferRes_;
     HighLumExtrcatParam*   extractData_       = nullptr;

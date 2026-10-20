@@ -450,6 +450,15 @@
     <ClCompile Include="engine\base\DX12\CommandContext.cpp">
       <Filter>base\DX12</Filter>
     </ClCompile>
+    <ClCompile Include="engine\base\DX12\ShaderLibrary.cpp">
+      <Filter>base\DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\base\DX12\ShaderBindingLayout.cpp">
+      <Filter>base\DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\base\DX12\PipelineCache.cpp">
+      <Filter>base\DX12</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\math\Matrix4x4.h">
@@ -863,6 +872,18 @@
     <ClInclude Include="engine\base\DX12\UploadAllocator.h">
       <Filter>base\DX12</Filter>
     </ClInclude>
+    <ClInclude Include="engine\base\DX12\ShaderLibrary.h">
+      <Filter>base\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\base\DX12\ShaderBindingLayout.h">
+      <Filter>base\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\base\DX12\PipelineCache.h">
+      <Filter>base\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\base\DX12\RenderState.h">
+      <Filter>base\DX12</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="engine\resources\shaders\Bloom.PS.hlsl">
@@ -1036,6 +1057,9 @@
       <Filter>shader\2D</Filter>
     </None>
     <None Include="engine\resources\shaders\Random.hlsli">
+      <Filter>shader</Filter>
+    </None>
+    <None Include="engine\resources\shaders\Common.hlsli">
       <Filter>shader</Filter>
     </None>
   </ItemGroup>

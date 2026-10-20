@@ -9,6 +9,7 @@
 #include "ParticleStruct.h"
 #include "ModelStruct.h"
 #include "GpuResource.h"
+#include "PipelineCache.h"
 
 namespace Tako {
 
@@ -223,41 +224,9 @@ namespace Tako {
     //リソース作成関連
     //============================================================
     /// <summary>
-    /// ルートシグネチャの作成
+    /// 描画とコンピュートの各パイプラインを用意する
     /// </summary>
-    void CreateRS();
-
-    /// <summary>
-    /// 描画用パイプラインステートの生成 (ブレンドモード別)
-    /// </summary>
-    /// <param name="blendDesc">ブレンドステート</param>
-    /// <param name="outPSO">生成された PSO の出力先</param>
-    void CreateDrawPSO(const D3D12_BLEND_DESC& blendDesc, Microsoft::WRL::ComPtr<ID3D12PipelineState>& outPSO);
-
-    /// <summary>
-    /// ブレンドモード値に対応する描画 PSO を取得
-    /// </summary>
-    /// <param name="blendMode">0=Add, 1=Screen, 2=Alpha</param>
-    /// <returns>対応する PSO </returns>
-    ID3D12PipelineState* GetBlendPSO(uint32_t blendMode) const;
-
-    /// <summary>
-    /// InitCS ルートシグネチャの作成
-    /// </summary>
-    void CreateInitComputeRS();
-
-    /// <summary>
-    /// EmitParticleCS ルートシグネチャの作成
-    /// </summary>
-    void CreateEmitParticleComputeRS();
-
-    /// <summary>
-    /// コンピュートシェーダーのパイプラインステートを生成
-    /// </summary>
-    /// <param name="RS">ルートシグネチャ</param>
-    /// <param name="PSO">パイプラインステート</param>
-    /// <param name="shaderName">シェーダーファイル名</param>
-    void CreateComputeShaderPSO(Microsoft::WRL::ComPtr<ID3D12RootSignature>& RS, Microsoft::WRL::ComPtr<ID3D12PipelineState>& PSO, const std::wstring& shaderName);
+    void CreatePipelines();
 
     /// <summary>
     /// 既定の描画モデル(板ポリ)を生成する。
@@ -304,26 +273,6 @@ namespace Tako {
     /// ExecuteIndirect 用コマンドシグネチャの生成 。
     /// </summary>
     void CreateCommandSignature();
-
-    /// <summary>
-    /// ResetCounters CS のルートシグネチャ作成
-    /// </summary>
-    void CreateResetCountersRS();
-
-    /// <summary>
-    /// BuildDrawArgs CS のルートシグネチャ作成
-    /// </summary>
-    void CreateBuildDrawArgsRS();
-
-    /// <summary>
-    /// ScatterCompact CS のルートシグネチャ作成
-    /// </summary>
-    void CreateScatterCompactRS();
-
-    /// <summary>
-    /// IntegrateAll CS ルートシグネチャの作成
-    /// </summary>
-    void CreateIntegrateAllComputeRS();
 
     /// <summary>
     /// フォースフィールドリソースの生成
@@ -376,21 +325,14 @@ namespace Tako {
     Camera*     camera_;                ///< カメラへのポインタ
     ModelData   modelData_;               ///< モデルデータ
 
-    //ルートシグネチャ
-    Microsoft::WRL::ComPtr<ID3D12RootSignature> RS_;              ///< 描画用ルートシグネチャ
-    Microsoft::WRL::ComPtr<ID3D12RootSignature> initComputeRS_;   ///< 初期化コンピュートシェーダー用ルートシグネチャ
-    Microsoft::WRL::ComPtr<ID3D12RootSignature> emitParticleRS_;  ///< パーティクル射出コンピュートシェーダー用ルートシグネチャ
-    Microsoft::WRL::ComPtr<ID3D12RootSignature> integrateAllRS_;  ///< IntegrateAll コンピュートシェーダー用ルートシグネチャ
-
-    //描画用パイプラインステート (ブレンドモード別: 加算 / スクリーン / アルファ)
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> psoAdd_;
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> psoScreen_;
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> psoAlpha_;
-
-    //コンピュートシェーダー用パイプラインステート
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> initComputePSO_;   ///< 初期化コンピュートシェーダー用パイプラインステート
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> emitParticlePSO_;  ///< パーティクル射出コンピュートシェーダー用パイプラインステート
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> integrateAllPSO_;  ///< IntegrateAll コンピュートシェーダー用パイプラインステート
+    //パイプライン
+    GraphicsPipelineDesc drawPipeline_{};            ///< 描画（ブレンドはエミッターごとに差し替える）
+    ComputePipelineDesc  initPipeline_{};            ///< パーティクルとフリーリストの初期化
+    ComputePipelineDesc  emitPipeline_{};            ///< 射出
+    ComputePipelineDesc  integratePipeline_{};       ///< 物理・寿命の更新
+    ComputePipelineDesc  resetCountersPipeline_{};   ///< per-emitter 生存数のクリア
+    ComputePipelineDesc  buildDrawArgsPipeline_{};   ///< Indirect 引数の構築
+    ComputePipelineDesc  scatterCompactPipeline_{};  ///< 生存 index の詰め直し
 
     //パーティクルリソース
     GpuResource particleResource_;      ///< パーティクルデータ用 GPU リソース
@@ -452,13 +394,6 @@ namespace Tako {
     GpuResource                                    drawArgsResource_;             ///< Indirect 描画引数バッファ (D3D12_DRAW_ARGUMENTS 配列 × kNumMaxEmitter)
     uint32_t                                       drawArgsUavIndex_        = 0;
 
-    //コンパクション用 CS の RS/PSO
-    Microsoft::WRL::ComPtr<ID3D12RootSignature> resetCountersRS_;
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> resetCountersPSO_;
-    Microsoft::WRL::ComPtr<ID3D12RootSignature> buildDrawArgsRS_;
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> buildDrawArgsPSO_;
-    Microsoft::WRL::ComPtr<ID3D12RootSignature> scatterCompactRS_;
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> scatterCompactPSO_;
 
     //描画テンプレート
     Microsoft::WRL::ComPtr<ID3D12Resource>                  emitterIndexCountResource_;            ///< per-emitter 描画モデルのインデクスカウンタバッファ。BuildDrawArgs が DRAW 引数の VertexCountPerInstance に使う。

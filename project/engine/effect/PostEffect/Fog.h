@@ -8,10 +8,6 @@ namespace Tako {
   /// </summary>
   class Fog : public IPostEffect
   {
-  private: //定数
-    static constexpr uint32_t kDepthTextureParam = 2;  ///< t1: シーン深度
-    static constexpr uint32_t kCameraCbvParam    = 3;  ///< b1: カメラ（near/far）
-
   public: //メンバー関数
     /// <summary>
     /// 初期化
@@ -57,16 +53,6 @@ namespace Tako {
     std::vector<EffectParam> GetGenericParams() const override { return { *fogData_ }; }
 
   private: //非公開関数
-    /// <summary>
-    /// ルートシグネチャを作成
-    /// </summary>
-    void CreateRootSignature() override;
-
-    /// <summary>
-    /// パイプラインステートオブジェクトを作成
-    /// </summary>
-    void CreatePSO() override;
-
     /// <summary>
     /// 定数バッファビューを作成
     /// </summary>

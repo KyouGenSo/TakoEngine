@@ -1,12 +1,13 @@
 #pragma once
 #include <cstdint>
 #include <d3d12.h>
-#include <initializer_list>
 #include <string>
+#include <string_view>
 #include <variant>
 #include <vector>
 #include <wrl.h>
 
+#include "CommandContext.h"
 #include "PostEffectStruct.h"
 
 namespace Tako {
@@ -18,16 +19,10 @@ namespace Tako {
   /// ポストエフェクト基底インターフェースクラス
   /// Bloom、Vignette、RadialBlur など各種ポストエフェクトの共通インターフェースを定義
   /// 各エフェクトはこのクラスを継承し、Apply()メソッドで独自の画像処理を実装
-  /// ルートシグネチャと PSO の管理、ImGui デバッグ UI 統合をサポート
+  /// シェーダーは入力テクスチャを gTexture、パラメータを gParam という名前で受ける
   /// </summary>
   class IPostEffect
   {
-  public: //定数
-    // 全派生エフェクト共通のルートパラメータ番号。BuildRootSignature は宣言リスト順がスロット順になるため、
-    // 各派生は先頭を入力テクスチャ SRV、次をパラメータ CBV の順で宣言する（固有パラメータは 2 以降）
-    static constexpr uint32_t kInputTextureParam = 0;  ///< t0: 入力テクスチャ
-    static constexpr uint32_t kParameterCbvParam = 1;  ///< b0: エフェクトパラメータ
-
   public: //メンバー関数
     /// <summary>
     /// デストラクタ
@@ -38,7 +33,7 @@ namespace Tako {
     /// 初期化
     /// </summary>
     /// <param name="dx12">DirectX12基盤</param>
-    /// <param name="shaderName">シェーダー名</param>
+    /// <param name="shaderName">シェーダー名（shaderName.PS.hlsl を全画面描画に使う）</param>
     virtual void Initialize(DX12Basic* dx12, const std::string& shaderName);
 
     /// <summary>
@@ -83,62 +78,43 @@ namespace Tako {
     // ComPtr のエイリアス
     template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
 
-    /// <summary>
-    /// サンプラー補間モード
-    /// </summary>
-    enum class SamplerFilterMode { Linear, Point };
-
-    /// <summary>
-    /// サンプラーアドレスモード (U/V に適用。W は常に WRAP)
-    /// </summary>
-    enum class SamplerAddressMode { Wrap, Clamp };
-
-    /// <summary>
-    /// ルートパラメータ指定。宣言順がそのままルートパラメータのスロット順になる
-    /// </summary>
-    struct RootParam {
-      enum Kind { SrvTable, Cbv } kind;  ///< SRV ディスクリプタテーブル or CBV
-      uint32_t shaderRegister;           ///< t#/b# のレジスタ番号
-    };
-
   protected: //メンバー関数
 
     /// <summary>
-    /// ルートシグネチャを作成
+    /// FullScreen.VS と指定した PS で全画面を描くパイプライン
     /// </summary>
-    virtual void CreateRootSignature() = 0;
+    /// <param name="psFile">ピクセルシェーダーのファイル名</param>
+    GraphicsPipelineDesc MakeFullScreenPipeline(std::wstring_view psFile) const;
 
     /// <summary>
-    /// パイプラインステートオブジェクトを作成
+    /// 描画先とパイプラインを設定し、入力テクスチャを gTexture に渡す。追加の値を渡してから DrawFullScreen を呼ぶ
     /// </summary>
-    virtual void CreatePSO() = 0;
+    /// <param name="pipeline">全画面描画のパイプライン</param>
+    /// <param name="outputRtv">描画先の RTV</param>
+    /// <param name="inputSrvIndex">入力テクスチャの SRV インデックス</param>
+    /// <returns>追加の値を渡す窓口</returns>
+    CommandContext::ShaderBinder BeginFullScreenPass(const GraphicsPipelineDesc& pipeline, D3D12_CPU_DESCRIPTOR_HANDLE outputRtv, uint32_t inputSrvIndex);
 
     /// <summary>
-    /// 指定したルートパラメータ列と静的サンプラー1個で rootSignature_ を構築
+    /// shaderName.PS のパイプラインで BeginFullScreenPass する
     /// </summary>
-    void BuildRootSignature(std::initializer_list<RootParam> params,
-                            SamplerFilterMode filter = SamplerFilterMode::Linear,
-                            SamplerAddressMode addrUV = SamplerAddressMode::Wrap);
+    CommandContext::ShaderBinder BeginFullScreenPass(D3D12_CPU_DESCRIPTOR_HANDLE outputRtv, uint32_t inputSrvIndex) { return BeginFullScreenPass(GetPipeline(), outputRtv, inputSrvIndex); }
 
     /// <summary>
-    /// FullScreen.VS + shaderName_.PS の全画面描画 PSO を pipelineState_ に構築
+    /// 全画面三角形を描く
     /// </summary>
-    void BuildFullScreenPSO();
+    void DrawFullScreen();
 
     /// <summary>
-    /// 全画面1パスを描画する (RTV設定→RS/PSO→トポロジ→CBV(b0)→SRVテーブル(t0)→Draw)。
-    /// 単一入力テクスチャのポストエフェクトパス共通処理
+    /// shaderName.PS の全画面描画パイプライン（初めて使うときに作る）
     /// </summary>
-    void DrawFullScreenPass(ID3D12RootSignature* rootSig, ID3D12PipelineState* pso,
-                            D3D12_CPU_DESCRIPTOR_HANDLE outputRtv,
-                            D3D12_GPU_VIRTUAL_ADDRESS cbvAddress, uint32_t inputSrvIndex);
+    const GraphicsPipelineDesc& GetPipeline();
 
   protected: //メンバー変数
 
-    DX12Basic*                  dx12_        = nullptr;  ///< DirectX12基盤システムへの参照
-    std::string                 shaderName_;               ///< 使用するシェーダーのファイル名（拡張子なし）
-    ComPtr<ID3D12RootSignature> rootSignature_;            ///< このエフェクト用のルートシグネチャ
-    ComPtr<ID3D12PipelineState> pipelineState_;            ///< このエフェクト用のパイプラインステート
+    DX12Basic*           dx12_       = nullptr;  ///< DirectX12基盤システムへの参照
+    std::string          shaderName_;              ///< 使用するシェーダーのファイル名（拡張子なし）
+    GraphicsPipelineDesc pipeline_{};              ///< GetPipeline が作る shaderName.PS の全画面描画
   };
 
 } // namespace Tako

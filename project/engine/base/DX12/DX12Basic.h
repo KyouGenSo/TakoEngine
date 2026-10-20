@@ -8,12 +8,13 @@
 #include<wrl.h>
 #include <d3d12.h>
 #include <dxgi1_6.h>
-#include<dxcapi.h>
 #include <utility>
 
 #include"Vector4.h"
 #include "CommandContext.h"
 #include "GpuResource.h"
+#include "PipelineCache.h"
+#include "ShaderLibrary.h"
 #include "UploadAllocator.h"
 
 namespace Tako {
@@ -24,7 +25,10 @@ namespace Tako {
   /// </summary>
   class DX12Basic {
   public: //定数
-    static constexpr float kMinRenderScale = 0.25f;
+    static constexpr float       kMinRenderScale  = 0.25f;
+    static constexpr DXGI_FORMAT kColorFormat     = DXGI_FORMAT_R8G8B8A8_UNORM;  ///< スワップチェインとシーン描画先のカラー
+    static constexpr DXGI_FORMAT kDepthFormat     = DXGI_FORMAT_D32_FLOAT;       ///< シーン深度の DSV
+    static constexpr DXGI_FORMAT kDepthReadFormat = DXGI_FORMAT_R32_FLOAT;       ///< シーン深度を SRV で読むとき
 
   private: //定数
     static constexpr size_t kUploadAllocatorCapacity = 4 * 1024 * 1024;  ///< 1 フレームの一時定数の総量（バイト）
@@ -40,9 +44,11 @@ namespace Tako {
     /// </summary>
     struct SceneRenderTarget {
       D3D12_CPU_DESCRIPTOR_HANDLE rtv{};
-      D3D12_CPU_DESCRIPTOR_HANDLE dsv{};       ///< ptr == 0 なら深度なし
-      uint32_t                    width  = 0;
-      uint32_t                    height = 0;
+      D3D12_CPU_DESCRIPTOR_HANDLE dsv{};                       ///< ptr == 0 なら深度なし
+      uint32_t                    width     = 0;
+      uint32_t                    height    = 0;
+      DXGI_FORMAT                 rtvFormat = kColorFormat;
+      DXGI_FORMAT                 dsvFormat = kDepthFormat;
     };
 
   public: //メンバー関数
@@ -77,14 +83,6 @@ namespace Tako {
     /// コマンド完了まで待機
     /// </summary>
     void WaitForGPU();
-
-    /// <summary>
-    /// シェーダーをコンパイル
-    /// </summary>
-    /// <param name="filePath">シェーダーファイルのパス</param>
-    /// <param name="profile">シェーダープロファイル（例: vs_6_0, ps_6_0）</param>
-    /// <returns>コンパイル済みシェーダーのバイナリ</returns>
-    ComPtr<IDxcBlob> CompileShader(const std::wstring& filePath, const wchar_t* profile);
 
     /// <summary>
     /// バッファリソースの生成
@@ -200,6 +198,8 @@ namespace Tako {
 
     CommandContext& GetContext() { return context_; }
 
+    ShaderLibrary& GetShaderLibrary() { return shaderLibrary_; }
+
     UploadAllocator& GetUploadAllocator() { return uploadAllocator_; }
 
     ID3D12CommandQueue* GetCommandQueue() {
@@ -314,11 +314,6 @@ namespace Tako {
     void InitScissorRect();
 
     /// <summary>
-    /// DXC コンパイラの生成
-    /// </summary>
-    void CreateDXCCompiler();
-
-    /// <summary>
     /// FPS 制御初期化
     /// </summary>
     void InitFPSLimiter();
@@ -373,6 +368,10 @@ namespace Tako {
 
     ComPtr<ID3D12CommandQueue> commandQueue_;  ///< コマンドキュー（GPU 実行キュー）
 
+    ShaderLibrary shaderLibrary_;  ///< シェーダーのコンパイルとキャッシュ
+
+    PipelineCache pipelineCache_;  ///< ルートシグネチャと PSO のキャッシュ（context_ が描画時に引く）
+
     CommandContext context_;  ///< 唯一のコマンドリストとバリアの予約
 
     UploadAllocator uploadAllocator_;  ///< 1 フレームだけ使う定数の置き場（EndDraw で空に戻す）
@@ -406,12 +405,6 @@ namespace Tako {
     D3D12_RECT scissorRect_;  ///< シザリング矩形（描画範囲の制限）
 
     SceneRenderTarget sceneRenderTarget_{};  ///< 現在のシーン描画先（BindSceneRenderTarget で更新）
-
-    ComPtr<IDxcUtils> dxcUtils_ = nullptr;  ///< DXC ユーティリティ（シェーダーコンパイル補助）
-
-    ComPtr<IDxcCompiler3> dxcCompiler_ = nullptr;  ///< DXC コンパイラ（HLSL → DXIL 変換）
-
-    ComPtr<IDxcIncludeHandler> includeHandler_ = nullptr;  ///< デフォルトインクルードハンドラー（シェーダーファイルのインクルード処理）
 
   };
 

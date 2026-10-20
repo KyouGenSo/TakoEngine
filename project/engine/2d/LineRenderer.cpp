@@ -1,6 +1,5 @@
 #include "LineRenderer.h"
 #include "OBB.h"
-#include "EnginePaths.h"
 #include <cassert>
 #include <cmath>
 #include <numbers>
@@ -11,11 +10,6 @@
 #endif // DEBUG
 
 namespace Tako {
-
-  namespace {
-    // ライン描画 RS のルートパラメータ番号
-    constexpr UINT kTransformParam = 0;  ///< b0 (VS): 座標変換行列
-  }
 
   std::unique_ptr<LineRenderer> LineRenderer::instance_ = nullptr;
 
@@ -31,8 +25,7 @@ namespace Tako {
   {
     dx12_ = dx12;
 
-    // パイプラインステートの生成
-    CreatePSO();
+    CreatePipelines();
 
     // 線の頂点データを生成
     lineData_ = std::make_unique<LineData>();
@@ -265,22 +258,20 @@ namespace Tako {
 
   void LineRenderer::DrawForView(const Matrix4x4& viewProjection)
   {
-    DrawRange(*lineData_, 0, lineIndex_, viewProjection, pipelineState_.Get());
+    DrawRange(*lineData_, 0, lineIndex_, viewProjection, pipeline_);
   }
 
-  void LineRenderer::DrawRange(const LineData& lineData, uint32_t startVertex, uint32_t vertexCount, const Matrix4x4& viewProjection, ID3D12PipelineState* pipelineState)
+  void LineRenderer::DrawRange(const LineData& lineData, uint32_t startVertex, uint32_t vertexCount, const Matrix4x4& viewProjection, const GraphicsPipelineDesc& pipeline)
   {
     if (vertexCount == 0) return;
 
-    ID3D12GraphicsCommandList* commandList = dx12_->GetCommandList();
-    commandList->SetGraphicsRootSignature(rootSignature_.Get());
-    commandList->SetPipelineState(pipelineState);
-    commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
-    commandList->IASetVertexBuffers(0, 1, &lineData.vertexBufferView);
-    commandList->SetGraphicsRootConstantBufferView(kTransformParam, dx12_->GetUploadAllocator().Push(TransformationMatrix{ viewProjection }));
+    CommandContext& context = dx12_->GetContext();
+    context.SetGraphicsPipeline(pipeline);
+    dx12_->GetCommandList()->IASetVertexBuffers(0, 1, &lineData.vertexBufferView);
+    context.Graphics().BindConstants("gTransformationMatrix"_id, TransformationMatrix{ viewProjection });
 
     // 全線分を1インスタンスで一括描画
-    commandList->DrawInstanced(vertexCount, 1, startVertex, 0);
+    context.DrawInstanced(vertexCount, 1, startVertex, 0);
   }
 
   void LineRenderer::Reset()
@@ -292,122 +283,24 @@ namespace Tako {
   void LineRenderer::DrawPreviewLines(const Matrix4x4& viewProjection)
   {
     // 同一フレームの先行描画分はまだ GPU が読むので上書きせず、その後ろだけ描く
-    DrawRange(*previewLineData_, previewDrawStart_, previewLineIndex_ - previewDrawStart_, viewProjection, previewPipelineState_.Get());
+    DrawRange(*previewLineData_, previewDrawStart_, previewLineIndex_ - previewDrawStart_, viewProjection, previewPipeline_);
     previewDrawStart_ = previewLineIndex_;
   }
 #endif // _DEBUG
 
-  void LineRenderer::CreateRootSignature()
+  void LineRenderer::CreatePipelines()
   {
-    HRESULT hr;
-
-    // rootSignature の生成
-    D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
-    descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-
-    // RootParameter の設定。複数設定できるので配列
-    D3D12_ROOT_PARAMETER rootParameters[1] = {};
-
-    rootParameters[kTransformParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファビューを使う
-    rootParameters[kTransformParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // 頂点シェーダーで使う
-    rootParameters[kTransformParam].Descriptor.ShaderRegister = 0; // レジスタ番号とバインド
-
-    descriptionRootSignature.pParameters = rootParameters;
-    descriptionRootSignature.NumParameters = _countof(rootParameters);
-
-    Microsoft::WRL::ComPtr<ID3DBlob> signatureBlob = nullptr;
-    Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
-
-    hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
-    if (FAILED(hr)) {
-#ifdef _DEBUG
-      DebugUIManager::GetInstance()->AddLog(
-        reinterpret_cast<char*>(errorBlob->GetBufferPointer()),
-        DebugUIManager::LogType::Error);
-#endif
-
-      assert(false);
-    }
-
-    hr = dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(rootSignature_.GetAddressOf()));
-    assert(SUCCEEDED(hr));
-  }
-
-  void LineRenderer::CreatePSO()
-  {
-    HRESULT hr;
-
-    // RootSignature の生成
-    CreateRootSignature();
-
-    // InputLayout
-    D3D12_INPUT_ELEMENT_DESC inputElementDescs[2] = {};
-    inputElementDescs[0].SemanticName = "POSITION";
-    inputElementDescs[0].SemanticIndex = 0;
-    inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-    inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-
-    inputElementDescs[1].SemanticName = "COLOR";
-    inputElementDescs[1].SemanticIndex = 0;
-    inputElementDescs[1].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-    inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-
-    D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
-    inputLayoutDesc.pInputElementDescs = inputElementDescs;
-    inputLayoutDesc.NumElements = _countof(inputElementDescs);
-
-    // BlendState
-    D3D12_BLEND_DESC blendDesc{};
-    blendDesc.RenderTarget[0].BlendEnable = true;
-    blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
-    blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
-    blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
-    blendDesc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
-    blendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
-    blendDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
-    blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
-
-    // RasterizerState
-    D3D12_RASTERIZER_DESC rasterizerDesc{};
-    rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
-    rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
-
-    // shader のコンパイル
-    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = dx12_->CompileShader(EnginePaths::ShaderPath(L"LineRenderer.VS.hlsl"), L"vs_6_0");
-    assert(vertexShaderBlob != nullptr);
-
-    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = dx12_->CompileShader(EnginePaths::ShaderPath(L"LineRenderer.PS.hlsl"), L"ps_6_0");
-    assert(pixelShaderBlob != nullptr);
-
-    // PSO の生成
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
-    graphicsPipelineStateDesc.pRootSignature = rootSignature_.Get();
-    graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
-    graphicsPipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() };
-    graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
-    graphicsPipelineStateDesc.BlendState = blendDesc;
-    graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
-    // 書き込む RTV の情報
-    graphicsPipelineStateDesc.NumRenderTargets = 1;
-    graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-    // 利用するトポロジ（形状）のタイプ。ライン
-    graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
-    // どのように画面に色を打ち込むかの設定
-    graphicsPipelineStateDesc.SampleDesc.Count = 1;
-    graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-
-    // 実際に生成
-    hr = dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&pipelineState_));
-    assert(SUCCEEDED(hr));
+    ShaderLibrary& library = dx12_->GetShaderLibrary();
+    pipeline_.vs = library.Get(L"LineRenderer.VS.hlsl", ShaderStage::Vertex);
+    pipeline_.ps = library.Get(L"LineRenderer.PS.hlsl", ShaderStage::Pixel);
+    pipeline_.vertexLayout = VertexLayout::Line;
+    pipeline_.renderState = { .blend = BlendMode::Alpha, .cull = CullMode::None, .depthTest = false, .depthWrite = false };
+    pipeline_.topology = D3D_PRIMITIVE_TOPOLOGY_LINELIST;
 
 #ifdef _DEBUG
     // プレビュー用: グリッドや視錐台がモデルの手前に透けないよう深度テストだけ行う
-    graphicsPipelineStateDesc.DepthStencilState.DepthEnable = true;
-    graphicsPipelineStateDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
-    graphicsPipelineStateDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-    graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
-    hr = dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&previewPipelineState_));
-    assert(SUCCEEDED(hr));
+    previewPipeline_ = pipeline_;
+    previewPipeline_.renderState.depthTest = true;
 #endif // _DEBUG
   }
 

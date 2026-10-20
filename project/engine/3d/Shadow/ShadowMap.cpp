@@ -94,10 +94,10 @@ void ShadowMap::BeginShadowMapRender()
 {
   dx12_->GetContext().Transition(shadowMapResource_, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 
-  ID3D12GraphicsCommandList* commandList = dx12_->GetCommandList();
+  // カラーターゲットなしで深度だけ書く
+  dx12_->GetContext().SetRenderTarget(nullptr, DXGI_FORMAT_UNKNOWN, &dsvHandle_, kShadowDepthFormat);
 
-  // レンダーターゲットを null に設定（深度のみ）
-  commandList->OMSetRenderTargets(0, nullptr, FALSE, &dsvHandle_);
+  ID3D12GraphicsCommandList* commandList = dx12_->GetCommandList();
 
   // 深度バッファをクリア
   commandList->ClearDepthStencilView(dsvHandle_, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);

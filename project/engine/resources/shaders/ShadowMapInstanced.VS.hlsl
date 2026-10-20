@@ -24,7 +24,7 @@ struct InstanceData
 StructuredBuffer<InstanceData> gInstanceData : register(t5);
 
 // シャドウ変換行列
-cbuffer ShadowTransform : register(b4)
+cbuffer gShadowConstants : register(b4)
 {
     float4x4 lightViewProj;
     float shadowBias;

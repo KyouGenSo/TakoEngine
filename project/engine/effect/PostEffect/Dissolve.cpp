@@ -25,32 +25,11 @@ namespace Tako {
 
   void Dissolve::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, uint32_t maskSrvIndex, [[maybe_unused]] const Vector4& clearColor)
   {
-    dx12_->GetCommandList()->OMSetRenderTargets(1,
-      &outputRtvHandle,
-      false,
-      nullptr);
-
-    // エフェクト適用シェーダーの設定
-    dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
-    dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
-
-    // プリミティブトポロジーの設定（フルスクリーン三角形用）
-    dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-
-    // パラメータリソースの設定
-    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(kParameterCbvParam, cBufferResource_->GetGPUVirtualAddress());
-
-    // レンダーテクスチャ A をシェーダーリソースとして設定
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(kInputTextureParam, inputSrvIndex);
-
-    // マスクテクスチャをシェーダーリソースとして設定
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(kMaskTextureParam, maskSrvIndex);
-
-    // ベーステクスチャをシェーダーリソースとして設定
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(kBaseTextureParam, baseTexSrvIndex_);
-
-    // フルスクリーン三角形描画
-    dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+    CommandContext::ShaderBinder binder = BeginFullScreenPass(outputRtvHandle, inputSrvIndex);
+    binder.BindCBV("gParam"_id, cBufferResource_->GetGPUVirtualAddress());
+    binder.BindSRV("gMaskTexture"_id, maskSrvIndex);
+    binder.BindSRV("gBaseTexture"_id, baseTexSrvIndex_);
+    DrawFullScreen();
   }
 
   void Dissolve::DrawImgui()
@@ -79,16 +58,6 @@ namespace Tako {
     cBufferData_->threshold = param.threshold;
     cBufferData_->edgeThickness = param.edgeThickness;
     cBufferData_->edgeColor = param.edgeColor;
-  }
-
-  void Dissolve::CreateRootSignature()
-  {
-    BuildRootSignature({ {RootParam::SrvTable, 0}, {RootParam::Cbv, 0}, {RootParam::SrvTable, 1}, {RootParam::SrvTable, 2} });
-  }
-
-  void Dissolve::CreatePSO()
-  {
-    BuildFullScreenPSO();
   }
 
   void Dissolve::CreateCBV()

@@ -1,7 +1,7 @@
 #include "Particle.hlsli"
+#include "Common.hlsli"
 
 Texture2D<float4> gTexture : register(t0);
-SamplerState gSampler : register(s0);
 
 struct PixelShaderOutput
 {
@@ -12,7 +12,7 @@ PixelShaderOutput main(VertexShaderOutput input)
 {
     PixelShaderOutput output;
     
-    float4 textureColor = gTexture.Sample(gSampler, input.texcoord);
+    float4 textureColor = gTexture.Sample(gLinearWrap, input.texcoord);
     
     output.color = textureColor * input.color;
     

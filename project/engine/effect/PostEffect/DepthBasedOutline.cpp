@@ -25,29 +25,10 @@ namespace Tako {
   {
     dx12_->GetContext().Transition(dx12_->GetDepthStencilResource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
-    dx12_->GetCommandList()->OMSetRenderTargets(1,
-      &outputRtvHandle,
-      false,
-      nullptr);
-
-    // エフェクト適用シェーダーの設定
-    dx12_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
-    dx12_->GetCommandList()->SetPipelineState(pipelineState_.Get());
-
-    // プリミティブトポロジーの設定（フルスクリーン三角形用）
-    dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-
-    // パラメータリソースの設定
-    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(kParameterCbvParam, cBufferResource_->GetGPUVirtualAddress());
-
-    // 深度テクスチャをシェーダーリソースとして設定
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(kDepthTextureParam, depthSrvIndex);
-
-    // レンダーテクスチャ A をシェーダーリソースとして設定
-    SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(kInputTextureParam, inputSrvIndex);
-
-    // フルスクリーン三角形描画
-    dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
+    CommandContext::ShaderBinder binder = BeginFullScreenPass(outputRtvHandle, inputSrvIndex);
+    binder.BindCBV("gParam"_id, cBufferResource_->GetGPUVirtualAddress());
+    binder.BindSRV("gDepthTexture"_id, depthSrvIndex);
+    DrawFullScreen();
 
     dx12_->GetContext().Transition(dx12_->GetDepthStencilResource(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
   }
@@ -79,16 +60,6 @@ namespace Tako {
   void DepthBasedOutline::SetInvProjectionMatrix(const Matrix4x4& invProjectionMatrix)
   {
     cBufferData_->projectionInverse = invProjectionMatrix;
-  }
-
-  void DepthBasedOutline::CreateRootSignature()
-  {
-    BuildRootSignature({ {RootParam::SrvTable, 0}, {RootParam::Cbv, 0}, {RootParam::SrvTable, 1} }, SamplerFilterMode::Point);
-  }
-
-  void DepthBasedOutline::CreatePSO()
-  {
-    BuildFullScreenPSO();
   }
 
   void DepthBasedOutline::CreateCBV()

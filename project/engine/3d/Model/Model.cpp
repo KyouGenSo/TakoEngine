@@ -1093,7 +1093,7 @@ namespace Tako {
     modelBasic_->SetSkinningCSSetting();
 
     // 共有パレット（ボーン行列）の SRV を設定
-    SrvManager::GetInstance()->SetComputeRootDescriptorTable(ModelBasic::kPaletteParam, paletteSrvIndex_);
+    dx12_->GetContext().Compute().BindSRV("gMatrixPalette"_id, paletteSrvIndex_);
 
     // 各メッシュごとにスキニング計算を実行
     for (auto& mesh : meshes_) {
@@ -1104,16 +1104,6 @@ namespace Tako {
 
       // スキニング計算を実行
       mesh->SkinningCompute();
-    }
-
-    // シャドウマップレンダリング中は設定を維持
-    if (!ShadowRenderer::GetInstance()->IsRenderingShadow()) {
-      // 通常レンダリング時は共通レンダリング設定に戻す
-      Object3dBasic::GetInstance()->SetCommonRenderSetting();
-    }
-    else {
-      // シャドウマップレンダリング中はシャドウレンダラーの設定を使用
-      ShadowRenderer::GetInstance()->SetRenderState();
     }
   }
 

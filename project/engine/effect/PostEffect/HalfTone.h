@@ -60,16 +60,6 @@ namespace Tako {
 
   private: //非公開関数
     /// <summary>
-    /// ルートシグネチャを作成
-    /// </summary>
-    void CreateRootSignature() override;
-
-    /// <summary>
-    /// パイプラインステートオブジェクトを作成
-    /// </summary>
-    void CreatePSO() override;
-
-    /// <summary>
     /// 定数バッファビューを作成
     /// </summary>
     void CreateCBV();

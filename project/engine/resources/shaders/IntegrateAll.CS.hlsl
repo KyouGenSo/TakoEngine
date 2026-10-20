@@ -3,6 +3,7 @@
 #include "PhysicsParams.hlsli"
 #include "PerlinNoise3D.hlsli"
 #include "DepthCollision.hlsli"
+#include "Common.hlsli"
 
 // リソースバインディング
 RWStructuredBuffer<Particle> gParticles : register(u0);
@@ -14,7 +15,6 @@ StructuredBuffer<ForceField> gForceFields : register(t0);
 Texture2D<float> gDepthBuffer : register(t1);
 StructuredBuffer<Emitter> gEmitters : register(t2); // emitter 逆引き
 
-SamplerState gDepthSampler : register(s0);
 
 ConstantBuffer<PerFrame> gPerFrame : register(b0);
 ConstantBuffer<PhysicsParams> gPhysicsParams : register(b1);
@@ -136,7 +136,7 @@ void main(uint3 DTid : SV_DispatchThreadID)
             gPhysicsParams.viewProj, gPhysicsParams.invViewProj,
             gPhysicsParams.screenSize, gPhysicsParams.cameraPos,
             gParticles[particleIndex].collisionRestitution, gParticles[particleIndex].particleRadius,
-            gPhysicsParams.depthBias, gDepthBuffer, gDepthSampler);
+            gPhysicsParams.depthBias, gDepthBuffer, gPointClamp);
 
         if (collided)
         {

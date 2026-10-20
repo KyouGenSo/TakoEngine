@@ -3,6 +3,8 @@
 #include <d3d12.h>
 #include<wrl.h>
 
+#include "PipelineCache.h"
+
 namespace Tako {
 
   class DX12Basic;
@@ -13,14 +15,6 @@ namespace Tako {
   /// </summary>
   class ModelBasic
   {
-  public: //定数
-    // スキニング CS のルートパラメータ番号
-    static constexpr UINT kPaletteParam      = 0;  ///< t0: パレット（ボーン行列）
-    static constexpr UINT kVertexInputParam  = 1;  ///< t1: 入力頂点
-    static constexpr UINT kInfluenceParam    = 2;  ///< t2: 頂点影響度
-    static constexpr UINT kVertexOutputParam = 3;  ///< u0: 出力頂点
-    static constexpr UINT kSkinningInfoParam = 4;  ///< b0: スキニング情報
-
   public: //メンバー関数
     /// <summary>
     /// 初期化
@@ -45,23 +39,11 @@ namespace Tako {
     const std::string& GetDirectoryFolderName() const { return directoryFolderName_; }
     const std::string& GetModelFolderName() const { return modelFolderName_; }
 
-  private: //非公開関数
-    /// <summary>
-    /// ルートシグネチャの作成
-    /// </summary>
-    void CreateCSRootSignature();
-
-    /// <summary>
-    /// パイプラインステートの生成
-    /// </summary>
-    void CreateCSPSO();
-
   private: //メンバー変数
-    DX12Basic*                                  dx12_;               ///< DirectX12基盤システムへのポインタ
-    std::string                                 directoryFolderName_;  ///< ディレクトリフォルダパス
-    std::string                                 modelFolderName_;      ///< モデルフォルダ名
-    Microsoft::WRL::ComPtr<ID3D12RootSignature> csRootSignature_;      ///< コンピュートシェーダー用ルートシグネチャ
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> csPipelineState_;      ///< コンピュートシェーダー用パイプラインステート
+    DX12Basic*          dx12_;                 ///< DirectX12基盤システムへのポインタ
+    std::string         directoryFolderName_;  ///< ディレクトリフォルダパス
+    std::string         modelFolderName_;      ///< モデルフォルダ名
+    ComputePipelineDesc skinningPipeline_{};   ///< スキニング CS
   };
 
 } // namespace Tako

@@ -15,19 +15,9 @@
 namespace Tako {
 
 namespace {
-    // --- パイプライン関連の固定値 ---
-    constexpr DXGI_FORMAT kShadowDepthFormat          = DXGI_FORMAT_D32_FLOAT; ///< シャドウ深度の DSV フォーマット
-    constexpr float       kShadowDepthBiasClamp       = 0.01f;                 ///< 深度バイアスの上限（暴走防止）
-    constexpr float       kShadowSlopeScaledDepthBias = 0.0f;                  ///< ラスタライザの勾配比例バイアス（現状は無効=0）
-
     // --- 定数バッファ初期値 ---
     constexpr float kDefaultShadowMapSizeF = 2048.0f; ///< 解像度の初期値（DEFAULT_SHADOW_MAP_SIZE に対応）
     constexpr float kDefaultPcfKernelSizeF = 3.0f;    ///< PCF カーネルサイズの初期値
-
-    // --- シャドウ VS のルートシグネチャで使う HLSL レジスタ番号 ---
-    constexpr UINT kTransformRegister       = 0; ///< b0: TransformationMatrix
-    constexpr UINT kShadowConstantsRegister = 4; ///< b4: ShadowConstants
-    constexpr UINT kInstanceDataRegister    = 5; ///< t5: インスタンスデータ（StructuredBuffer）
 }
 
 // 静的メンバ変数の定義
@@ -53,10 +43,8 @@ void ShadowRenderer::Initialize(DX12Basic* dx12)
     shadowMap_->Initialize(dx12_);
 
     // シャドウ用のパイプラインを作成（通常 / インスタンシング）
-    shadowRootSignature_          = CreateShadowRootSignature(false);
-    shadowPipelineState_          = CreateShadowPipelineState(shadowRootSignature_.Get(), L"ShadowMap.VS.hlsl");
-    shadowInstancedRootSignature_ = CreateShadowRootSignature(true);
-    shadowInstancedPipelineState_ = CreateShadowPipelineState(shadowInstancedRootSignature_.Get(), L"ShadowMapInstanced.VS.hlsl");
+    shadowPipeline_          = MakeShadowPipeline(L"ShadowMap.VS.hlsl");
+    shadowInstancedPipeline_ = MakeShadowPipeline(L"ShadowMapInstanced.VS.hlsl");
 
     // 定数バッファを作成
     CreateConstantBuffer();
@@ -134,170 +122,39 @@ void ShadowRenderer::EndShadowPass()
 
 void ShadowRenderer::SetRenderState()
 {
-    // シャドウ用ルートシグネチャの設定
-    dx12_->GetCommandList()->SetGraphicsRootSignature(shadowRootSignature_.Get());
-
-    // シャドウ用パイプラインステートの設定
-    dx12_->GetCommandList()->SetPipelineState(shadowPipelineState_.Get());
-
-    // トポロジの設定
-    dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-    // シャドウ定数バッファの設定（b4）
-    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(kShadowPassShadowCbvParam, shadowConstantBuffer_->GetGPUVirtualAddress());
+    BindShadowPipeline(shadowPipeline_);
 }
 
 void ShadowRenderer::SetShadowForMainPass()
 {
-    // 通常レンダリング時のシャドウ設定
-    if (!isRenderingShadow_ && shadowConstantBuffer_) {
-        // シャドウ定数バッファの設定（b4）
-        dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(Object3dBasic::kShadowConstantsParam, shadowConstantBuffer_->GetGPUVirtualAddress());
+    if (isRenderingShadow_) {
+        return;
     }
-
-    // シャドウマップの設定（t4 SRV テーブル）
-    if (!isRenderingShadow_ && shadowMap_) {
-        SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(Object3dBasic::kShadowMapParam, shadowMap_->GetSrvIndex());
+    CommandContext::ShaderBinder binder = dx12_->GetContext().Graphics();
+    if (shadowConstantBuffer_) {
+        binder.BindCBV("gShadowConstants"_id, shadowConstantBuffer_->GetGPUVirtualAddress());
+    }
+    if (shadowMap_) {
+        binder.BindSRV("gShadowMap"_id, shadowMap_->GetSrvIndex());
     }
 }
 
-Microsoft::WRL::ComPtr<ID3D12RootSignature> ShadowRenderer::CreateShadowRootSignature(bool instanced)
+GraphicsPipelineDesc ShadowRenderer::MakeShadowPipeline(const wchar_t* vsFileName) const
 {
-    // Sampler の設定（シャドウマップ生成時は実質不要だが、ルートシグネチャの最小構成として設定）
-    D3D12_STATIC_SAMPLER_DESC samplerDesc[1]{};
-    samplerDesc[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-    samplerDesc[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-    samplerDesc[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-    samplerDesc[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-    samplerDesc[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-    samplerDesc[0].MaxLOD = D3D12_FLOAT32_MAX;
-    samplerDesc[0].ShaderRegister = 0;
-    samplerDesc[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-
-    // インスタンスデータ用ディスクリプタレンジ（instanced=true のときのみ参照）
-    D3D12_DESCRIPTOR_RANGE instanceRange[1] = {};
-    instanceRange[0].BaseShaderRegister = kInstanceDataRegister; // t5
-    instanceRange[0].NumDescriptors = 1;
-    instanceRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-    instanceRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-
-    // RootParameter
-    D3D12_ROOT_PARAMETER rootParameters[3] = {};
-
-    // Parameter 0: TransformationMatrix (b0)
-    rootParameters[kShadowPassTransformParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-    rootParameters[kShadowPassTransformParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-    rootParameters[kShadowPassTransformParam].Descriptor.ShaderRegister = kTransformRegister;
-
-    // Parameter 1: ShadowConstants (b4)
-    rootParameters[kShadowPassShadowCbvParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-    rootParameters[kShadowPassShadowCbvParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-    rootParameters[kShadowPassShadowCbvParam].Descriptor.ShaderRegister = kShadowConstantsRegister;
-
-    UINT numParameters = 2;
-    if (instanced) {
-        // Parameter 2: Instance Data (t5) - ディスクリプタテーブル
-        rootParameters[kShadowPassInstanceDataParam].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-        rootParameters[kShadowPassInstanceDataParam].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-        rootParameters[kShadowPassInstanceDataParam].DescriptorTable.pDescriptorRanges = instanceRange;
-        rootParameters[kShadowPassInstanceDataParam].DescriptorTable.NumDescriptorRanges = _countof(instanceRange);
-        numParameters = 3;
-    }
-
-    D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
-    descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-    descriptionRootSignature.pStaticSamplers = samplerDesc;
-    descriptionRootSignature.NumStaticSamplers = _countof(samplerDesc);
-    descriptionRootSignature.pParameters = rootParameters;
-    descriptionRootSignature.NumParameters = numParameters;
-
-    Microsoft::WRL::ComPtr<ID3DBlob> signatureBlob = nullptr;
-    Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
-
-    HRESULT hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
-    if (FAILED(hr))
-    {
-#ifdef _DEBUG
-        // errorBlob は失敗理由によっては生成されないため null チェック必須
-        if (errorBlob) {
-            DebugUIManager::GetInstance()->AddLog(
-              static_cast<char*>(errorBlob->GetBufferPointer()),
-              DebugUIManager::LogType::Error);
-        }
-#endif
-
-        assert(false);
-        return nullptr; // Release では assert が無効化されるため、null の signatureBlob を参照する前に抜ける
-    }
-
-    Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature;
-    hr = dx12_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(),
-        signatureBlob->GetBufferSize(), IID_PPV_ARGS(&rootSignature));
-    assert(SUCCEEDED(hr));
-
-    return rootSignature;
+    // フロントフェースカリングでピーターパニングを緩和する。深度だけを書くのでピクセルシェーダーは使わない
+    GraphicsPipelineDesc desc;
+    desc.vs = dx12_->GetShaderLibrary().Get(vsFileName, ShaderStage::Vertex);
+    desc.vertexLayout = VertexLayout::Position;
+    desc.renderState.cull = CullMode::Front;
+    desc.renderState.depthFunc = D3D12_COMPARISON_FUNC_LESS;
+    return desc;
 }
 
-Microsoft::WRL::ComPtr<ID3D12PipelineState> ShadowRenderer::CreateShadowPipelineState(
-    ID3D12RootSignature* rootSignature, const wchar_t* vsFileName)
+void ShadowRenderer::BindShadowPipeline(const GraphicsPipelineDesc& pipeline)
 {
-    // InputLayout（位置のみ）
-    D3D12_INPUT_ELEMENT_DESC inputElementDescs[1] = {};
-    inputElementDescs[0].SemanticName = "POSITION";
-    inputElementDescs[0].SemanticIndex = 0;
-    inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-    inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-
-    D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
-    inputLayoutDesc.pInputElementDescs = inputElementDescs;
-    inputLayoutDesc.NumElements = _countof(inputElementDescs);
-
-    // BlendState（深度のみなのでカラー出力しない）
-    D3D12_BLEND_DESC blendDesc{};
-    blendDesc.RenderTarget[0].RenderTargetWriteMask = 0;
-
-    // RasterizerState（フロントフェースカリングでピーターパニングを緩和）
-    D3D12_RASTERIZER_DESC rasterizerDesc{};
-    rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
-    rasterizerDesc.CullMode = D3D12_CULL_MODE_FRONT;
-    rasterizerDesc.SlopeScaledDepthBias = kShadowSlopeScaledDepthBias;
-    rasterizerDesc.DepthBiasClamp = kShadowDepthBiasClamp;
-
-    // 頂点シェーダーのコンパイル（ピクセルシェーダーは深度のみなので不要）
-    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = dx12_->CompileShader(
-        EnginePaths::ShaderPath(vsFileName), L"vs_6_0");
-    assert(vertexShaderBlob != nullptr);
-
-    // DepthStencilState
-    D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
-    depthStencilDesc.DepthEnable = true;
-    depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-    depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
-
-    // シャドウ PSO の生成
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
-    graphicsPipelineStateDesc.pRootSignature = rootSignature;
-    graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
-    graphicsPipelineStateDesc.VS = {
-        vertexShaderBlob->GetBufferPointer(),
-        vertexShaderBlob->GetBufferSize()
-    };
-    graphicsPipelineStateDesc.PS = { nullptr, 0 }; // ピクセルシェーダーなし
-    graphicsPipelineStateDesc.BlendState = blendDesc;
-    graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
-    graphicsPipelineStateDesc.NumRenderTargets = 0; // カラーターゲットなし
-    graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-    graphicsPipelineStateDesc.SampleDesc.Count = 1;
-    graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-    graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
-    graphicsPipelineStateDesc.DSVFormat = kShadowDepthFormat;
-
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState;
-    HRESULT hr = dx12_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc,
-        IID_PPV_ARGS(&pipelineState));
-    assert(SUCCEEDED(hr));
-
-    return pipelineState;
+    CommandContext& context = dx12_->GetContext();
+    context.SetGraphicsPipeline(pipeline);
+    context.Graphics().BindCBV("gShadowConstants"_id, shadowConstantBuffer_->GetGPUVirtualAddress());
 }
 
 void ShadowRenderer::CreateConstantBuffer()
@@ -337,19 +194,7 @@ void ShadowRenderer::SetPCFKernelSize(int kernelSize)
 
 void ShadowRenderer::SetInstancedRenderState()
 {
-    if (!shadowInstancedRootSignature_ || !shadowInstancedPipelineState_) return;
-
-    // インスタンシング用シャドウルートシグネチャの設定
-    dx12_->GetCommandList()->SetGraphicsRootSignature(shadowInstancedRootSignature_.Get());
-
-    // インスタンシング用シャドウパイプラインステートの設定
-    dx12_->GetCommandList()->SetPipelineState(shadowInstancedPipelineState_.Get());
-
-    // トポロジの設定
-    dx12_->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-    // シャドウ定数バッファの設定（b4）
-    dx12_->GetCommandList()->SetGraphicsRootConstantBufferView(kShadowPassShadowCbvParam, shadowConstantBuffer_->GetGPUVirtualAddress());
+    BindShadowPipeline(shadowInstancedPipeline_);
 }
 
 void ShadowRenderer::DrawImGui()
