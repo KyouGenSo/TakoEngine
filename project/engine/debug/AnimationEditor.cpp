@@ -296,6 +296,7 @@ namespace Tako {
       { .description = "Move the key's value (vertical) and time (horizontal) in the value graph", .keyLabel = "Drag" },
       { .description = "Move along one axis only in the value graph",                             .keyLabel = "Shift+Drag" },
       { .description = "Add a key at that time and value in the value graph",                     .keyLabel = "Double-click" },
+      { .description = "Shape a CubicBezier segment of the selected keys in the value graph",     .keyLabel = "Drag a handle" },
     };
     return kShortcuts;
   }

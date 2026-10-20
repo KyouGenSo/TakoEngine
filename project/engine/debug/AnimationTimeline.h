@@ -30,7 +30,8 @@ namespace Tako {
       None,
       Scrub,
       Move,
-      CurveMove,  ///< 値グラフでキーの値と時刻を動かす
+      CurveMove,    ///< 値グラフでキーの値と時刻を動かす
+      CurveHandle,  ///< 値グラフで CubicBezier の制御点を動かす
       RectSelect,
       Pan
     };
@@ -56,6 +57,18 @@ namespace Tako {
 
       [[nodiscard]] float ValueToY(float value) const { return bottom - (value - minValue) / (maxValue - minValue) * (bottom - top); }
       [[nodiscard]] float YToValue(float y) const { return minValue + (bottom - y) / (bottom - top) * (maxValue - minValue); }
+    };
+
+    /// <summary>
+    /// 値グラフに出す CubicBezier の制御点 1 つ。時刻と値はグラフ上の位置
+    /// </summary>
+    struct BezierHandle {
+      uint32_t keyId;        ///< 区間の始めのキー（ease を持つ方）
+      int      index;        ///< 1 なら bezierP1、2 なら bezierP2
+      float    anchorTime;   ///< 線の根元のキー（P1 は区間の始め、P2 は終わり）
+      float    anchorValue;
+      float    time;
+      float    value;
     };
 
   public: //メンバー関数
@@ -124,7 +137,7 @@ namespace Tako {
     void DrawRows(const AnimationClip& clip, ImDrawList* drawList);
     void DrawRuler(const AnimationClip& clip, ImDrawList* drawList, float playhead);
     void HandleInput(AnimationClip& clip, float& playhead);
-    void HandleCurveInput(AnimationClip& clip, AnimTrack& track, float& playhead, bool isHovered);
+    void HandleCurveInput(AnimationClip& clip, AnimTrack& track, const std::vector<BezierHandle>& handles, float& playhead, bool isHovered);
 
     /// <summary>
     /// Ctrl+ホイールの拡大縮小、Shift+ホイールの横スクロール、中ボタンのパン。originX はキーを並べる列の左にある見出し列の左端
@@ -155,6 +168,17 @@ namespace Tako {
     uint32_t HitTestCurve(const AnimTrack& track, ImVec2 position) const;
 
     /// <summary>
+    /// 選択中のキーにつながる CubicBezier の区間の制御点
+    /// </summary>
+    std::vector<BezierHandle> BezierHandles(const AnimTrack& track) const;
+
+    /// <summary>
+    /// 値グラフで position の付近にある制御点
+    /// </summary>
+    /// <returns>無ければ nullptr</returns>
+    const BezierHandle* HitTestHandle(const std::vector<BezierHandle>& handles, ImVec2 position) const;
+
+    /// <summary>
     /// ダブルクリックした行の time にキー（イベント行ならイベント）を足して選ぶ
     /// </summary>
     void AddAt(AnimationClip& clip, int row, float time);
@@ -171,6 +195,13 @@ namespace Tako {
     /// 縦の移動で値を、横の移動で時刻を動かす。Shift なら多く動いた方の軸だけを使う
     /// </summary>
     void UpdateCurveMove(AnimationClip& clip, AnimProperty property, float& playhead);
+
+    /// <summary>
+    /// 掴んだ制御点を、区間の中の割合（x は時間で 0～1、y は進み具合）で動かす
+    /// </summary>
+    void UpdateHandleMove(AnimTrack& track);
+
+    [[nodiscard]] bool IsCurveDragging() const { return operation_ == Operation::CurveMove || operation_ == Operation::CurveHandle; }
     void FinishRectSelect(const AnimationClip& clip);
 
     /// <summary>
@@ -223,8 +254,11 @@ namespace Tako {
     uint32_t              pendingSingle_  = 0;                ///< 選択中のものを押して動かさずに離したら、これだけを選ぶ
 
     //値グラフ
-    CurveView curveView_;          ///< 直近の DrawCurve の範囲。CurveMove の間は縦の範囲を変えない
-    uint32_t  curveAnchorId_ = 0;  ///< 値グラフで掴んだキー
+    CurveView curveView_;           ///< 直近の DrawCurve の範囲。値グラフでドラッグしている間は縦の範囲を変えない
+    uint32_t  curveAnchorId_ = 0;   ///< 値グラフで掴んだキー
+    uint32_t  handleKeyId_   = 0;   ///< 掴んだ制御点を持つキー
+    int       handleIndex_   = 0;   ///< 掴んだ制御点（1 なら bezierP1、2 なら bezierP2）
+    Vector2   handleStart_   = {};  ///< 掴んだときの制御点
   };
 
 } // namespace Tako

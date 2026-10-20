@@ -24,6 +24,8 @@ namespace Tako {
     constexpr ImU32 kEventColor        = IM_COL32(120, 220, 160, 255);
     constexpr ImU32 kSelectRectColor   = IM_COL32(100, 150, 255, 50);
     constexpr ImU32 kSelectBorderColor = IM_COL32(100, 150, 255, 200);
+    constexpr ImU32 kHandleColor       = IM_COL32(220, 220, 220, 255);  ///< CubicBezier の制御点
+    constexpr ImU32 kHandleLineColor   = IM_COL32(160, 160, 160, 160);
 
     constexpr float kRulerSteps[] = { 0.01f, 0.02f, 0.05f, 0.1f, 0.2f, 0.5f, 1.0f, 2.0f, 5.0f, 10.0f };
     constexpr float kMinRulerSpacing = 64.0f;  ///< 目盛りラベルどうしの最小間隔（px）
@@ -133,12 +135,17 @@ namespace Tako {
       minValue = (std::min)(minValue, 0.0f);
       maxValue = (std::max)(maxValue, 1.0f);
     }
+    const std::vector<BezierHandle> handles = BezierHandles(track);
+    for (const BezierHandle& handle : handles) {
+      minValue = (std::min)(minValue, handle.value);
+      maxValue = (std::max)(maxValue, handle.value);
+    }
     if (maxValue - minValue < 1e-4f) {
       minValue -= 0.5f;
       maxValue += 0.5f;
     }
     // ドラッグ中は縦の範囲を変えない（範囲の外へ動かしたときに 1px あたりの値が毎フレーム変わり、キーが暴れるため）
-    if (operation_ != Operation::CurveMove) {
+    if (!IsCurveDragging()) {
       const float padding = (maxValue - minValue) * 0.1f;
       curveView_.minValue = minValue - padding;
       curveView_.maxValue = maxValue + padding;
@@ -149,8 +156,8 @@ namespace Tako {
     drawList->AddText(ImVec2(canvasMin.x + 6.0f, canvasMin.y + 4.0f), kTextColor, TrackLabel(track).c_str());
     drawList->AddText(ImVec2(canvasMin.x + 6.0f, canvasMin.y + 22.0f), kDimTextColor, std::format("max {:.3g}", maxValue).c_str());
     drawList->AddText(ImVec2(canvasMin.x + 6.0f, curveView_.bottom - 16.0f), kDimTextColor, std::format("min {:.3g}", minValue).c_str());
-    if (canvasSize.y > 110.0f) {
-      drawList->AddText(ImVec2(canvasMin.x + 6.0f, canvasMin.y + 44.0f), kDimTextColor, "Drag a key: value / time\nShift+Drag: one axis\nDouble-click: add a key");
+    if (canvasSize.y > 130.0f) {
+      drawList->AddText(ImVec2(canvasMin.x + 6.0f, canvasMin.y + 44.0f), kDimTextColor, "Drag a key: value / time\nShift+Drag: one axis\nDouble-click: add a key\nDrag a handle: Bezier shape");
     }
 
     drawList->PushClipRect(ImVec2(plotLeft, canvasMin.y), ImVec2(plotRight, canvasMin.y + canvasSize.y), true);
@@ -166,7 +173,19 @@ namespace Tako {
       drawList->AddLine(ImVec2(x0, curveView_.ValueToY(samples[i - 1])), ImVec2(x1, curveView_.ValueToY(samples[i])), color, 2.0f);
     }
     const bool     isHovered = ImGui::IsWindowHovered();
-    const uint32_t hovered   = isHovered ? HitTestCurve(track, ImGui::GetIO().MousePos) : 0;
+    const ImVec2   mouse     = ImGui::GetIO().MousePos;
+    const uint32_t hovered   = isHovered ? HitTestCurve(track, mouse) : 0;
+
+    // 制御点はキーの下に描く（重なったらキーを掴む）
+    const BezierHandle* hoveredHandle = isHovered && hovered == 0 ? HitTestHandle(handles, mouse) : nullptr;
+    for (const BezierHandle& handle : handles) {
+      const ImVec2 anchor(CurveTimeToX(handle.anchorTime), curveView_.ValueToY(handle.anchorValue));
+      const ImVec2 point(CurveTimeToX(handle.time), curveView_.ValueToY(handle.value));
+      const bool   isGrabbed = operation_ == Operation::CurveHandle && handle.keyId == handleKeyId_ && handle.index == handleIndex_;
+      drawList->AddLine(anchor, point, kHandleLineColor, 1.0f);
+      drawList->AddRectFilled(ImVec2(point.x - 3.5f, point.y - 3.5f), ImVec2(point.x + 3.5f, point.y + 3.5f), &handle == hoveredHandle || isGrabbed ? kSelectedKeyColor : kHandleColor);
+    }
+
     for (const AnimKey& key : track.keys) {
       const float radius = key.id == hovered ? 5.5f : 4.0f;
       drawList->AddCircleFilled(ImVec2(CurveTimeToX(key.time), curveView_.ValueToY(key.value)), radius, IsSelected(key.id) ? kSelectedKeyColor : color);
@@ -176,7 +195,7 @@ namespace Tako {
     drawList->AddLine(ImVec2(playheadX, canvasMin.y), ImVec2(playheadX, canvasMin.y + canvasSize.y), kPlayheadColor, 1.5f);
     drawList->PopClipRect();
 
-    HandleCurveInput(clip, track, playhead, isHovered);
+    HandleCurveInput(clip, track, handles, playhead, isHovered);
 
     ImGui::EndChild();
   }
@@ -402,7 +421,7 @@ namespace Tako {
     }
   }
 
-  void AnimationTimeline::HandleCurveInput(AnimationClip& clip, AnimTrack& track, float& playhead, bool isHovered) {
+  void AnimationTimeline::HandleCurveInput(AnimationClip& clip, AnimTrack& track, const std::vector<BezierHandle>& handles, float& playhead, bool isHovered) {
     const ImGuiIO& io       = ImGui::GetIO();
     const ImVec2   mouse    = io.MousePos;
     const float    duration = clip.GetDuration();
@@ -413,7 +432,7 @@ namespace Tako {
     }
 
     // ダブルクリックは、その時刻とカーソルの高さの値でキーを足す
-    if (isInPlot && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && HitTestCurve(track, mouse) == 0) {
+    if (isInPlot && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && HitTestCurve(track, mouse) == 0 && !HitTestHandle(handles, mouse)) {
       AddAt(clip, selectedTrack_ + 1, Snap(std::clamp(CurveXToTime(mouse.x), 0.0f, duration)));
       if (AnimKey* key = clip.FindKey(selection_.front())) {
         key->value = QuantizeValue(track.property, curveView_.YToValue(mouse.y));
@@ -429,6 +448,15 @@ namespace Tako {
           playhead = dragAnchorTime_;
         }
       }
+      else if (const BezierHandle* handle = HitTestHandle(handles, mouse)) {
+        // 選択は変えない（区間のキーの選択が外れると制御点が消えるため）
+        const AnimKey* key = clip.FindKey(handle->keyId);
+        handleKeyId_ = handle->keyId;
+        handleIndex_ = handle->index;
+        handleStart_ = handle->index == 1 ? key->bezierP1 : key->bezierP2;
+        dragStart_   = mouse;
+        operation_   = Operation::CurveHandle;
+      }
       else if (!io.KeyCtrl) {
         selection_.clear();
       }
@@ -441,6 +469,16 @@ namespace Tako {
       }
       if (const AnimKey* key = clip.FindKey(curveAnchorId_)) {
         ImGui::SetTooltip("%.3f s  /  %.3f", key->time, key->value);
+      }
+    }
+
+    if (operation_ == Operation::CurveHandle && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+      if (ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
+        UpdateHandleMove(track);
+      }
+      if (const AnimKey* key = clip.FindKey(handleKeyId_)) {
+        const Vector2& point = handleIndex_ == 1 ? key->bezierP1 : key->bezierP2;
+        ImGui::SetTooltip("P%d  (%.2f, %.2f)", handleIndex_, point.x, point.y);
       }
     }
 
@@ -552,6 +590,41 @@ namespace Tako {
     return 0;
   }
 
+  std::vector<AnimationTimeline::BezierHandle> AnimationTimeline::BezierHandles(const AnimTrack& track) const {
+    std::vector<BezierHandle> handles;
+    if (GetAnimPropertyInfo(track.property).isStep) {
+      return handles;
+    }
+    for (size_t i = 0; i + 1 < track.keys.size(); ++i) {
+      const AnimKey& from = track.keys[i];
+      const AnimKey& to   = track.keys[i + 1];
+      if (from.ease != EaseType::CubicBezier || to.time <= from.time || (!IsSelected(from.id) && !IsSelected(to.id))) {
+        continue;
+      }
+      // 制御点は区間の中の割合（x は時間、y は始めから終わりへの進み具合）なので、区間の大きさを掛けてグラフ上の位置にする
+      const float span = to.time - from.time;
+      const float rise = to.value - from.value;
+      auto        add  = [&](int index, const Vector2& point, const AnimKey& anchor) {
+        handles.push_back({ from.id, index, anchor.time, anchor.value, from.time + std::clamp(point.x, 0.0f, 1.0f) * span, from.value + point.y * rise });
+      };
+      add(1, from.bezierP1, from);
+      add(2, from.bezierP2, to);
+    }
+    return handles;
+  }
+
+  const AnimationTimeline::BezierHandle* AnimationTimeline::HitTestHandle(const std::vector<BezierHandle>& handles, ImVec2 position) const {
+    constexpr float kRadius = 6.0f;
+    for (const BezierHandle& handle : handles) {
+      const float dx = CurveTimeToX(handle.time) - position.x;
+      const float dy = curveView_.ValueToY(handle.value) - position.y;
+      if (dx * dx + dy * dy <= kRadius * kRadius) {
+        return &handle;
+      }
+    }
+    return nullptr;
+  }
+
   void AnimationTimeline::AddAt(AnimationClip& clip, int row, float time) {
     const uint32_t id = clip.IssueId();
     if (row == 0) {
@@ -644,6 +717,29 @@ namespace Tako {
     else {
       clip.SortByTime();
       playhead = dragAnchorTime_;
+    }
+  }
+
+  void AnimationTimeline::UpdateHandleMove(AnimTrack& track) {
+    const auto it = std::ranges::find(track.keys, handleKeyId_, &AnimKey::id);
+    if (it == track.keys.end() || it + 1 == track.keys.end()) {
+      return;
+    }
+    AnimKey&       from = *it;
+    const AnimKey& to   = *(it + 1);
+    const float    span = to.time - from.time;
+    const float    rise = to.value - from.value;
+    if (span <= 0.0f) {
+      return;
+    }
+
+    // 掴んだ位置からの差で動かす（押した所が制御点の中心からずれていても飛ばない）
+    const ImVec2 mouse = ImGui::GetIO().MousePos;
+    Vector2&     point = handleIndex_ == 1 ? from.bezierP1 : from.bezierP2;
+    point.x = std::clamp(handleStart_.x + (CurveXToTime(mouse.x) - CurveXToTime(dragStart_.x)) / span, 0.0f, 1.0f);
+    // 始めと終わりの値が同じ区間は y が形に効かないので変えない（割るものが 0 になる）
+    if (std::abs(rise) > 1e-6f) {
+      point.y = handleStart_.y + (curveView_.YToValue(mouse.y) - curveView_.YToValue(dragStart_.y)) / rise;
     }
   }
 
