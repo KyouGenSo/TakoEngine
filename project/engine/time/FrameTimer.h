@@ -68,6 +68,11 @@ namespace Tako {
     float GetFPS() const { return fps_; }
     float GetDisplayFPS() const { return displayFPS_; }
     float GetGameTime() const { return gameTime_; }
+
+    /// <summary>
+    /// GetDeltaTime の累計（時間スケールと一時停止を反映した経過秒）
+    /// </summary>
+    float GetScaledTime() const { return scaledTime_; }
     float GetMaxDeltaTime() const { return maxDeltaTime_; }
     bool IsPaused() const { return isPaused_; }
 
@@ -111,6 +116,7 @@ namespace Tako {
     float displayFPS_;
 
     float gameTime_;
+    float scaledTime_ = 0.0f;
 
     //残り秒数が0以下の間はスケールを維持し続ける
     float timeScale_;

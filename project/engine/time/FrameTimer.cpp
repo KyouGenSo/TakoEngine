@@ -48,6 +48,7 @@ namespace Tako {
     }
 
     UpdateGameTime();
+    scaledTime_ += GetDeltaTime();
 
     UpdateTimeScaleDuration();
   }

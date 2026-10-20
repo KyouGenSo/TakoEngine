@@ -50,6 +50,9 @@ namespace Tako {
     const UISlice kNoSlice;  ///< 枠なし。9-slice を使わない要素と、共有の登録が無いテクスチャに返す
 
     Vector2 Mul(const Vector2& a, const Vector2& b) { return { a.x * b.x, a.y * b.y }; }
+    Vector2 Div(const Vector2& a, const Vector2& b) { return { a.x / b.x, a.y / b.y }; }
+    Vector4 Mul(const Vector4& a, const Vector4& b) { return { a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w }; }
+    Vector2 XY(const Vector3& v) { return { v.x, v.y }; }
 
     std::string FilePath(const std::string& name) { return std::string(UILayout::kDirectory) + name + ".json"; }
 
@@ -113,9 +116,8 @@ namespace Tako {
     /// <summary>
     /// スプライトを描く大きさ。preserveAspect なら切り出し範囲の縦横比を保って矩形に収める（pivot の位置は矩形と同じ）
     /// </summary>
-    Vector2 DrawSize(const UIElement& element) {
+    Vector2 DrawSize(const UIElement& element, const Vector2& uv) {
       const Vector2& rect = element.rectSize;
-      const Vector2& uv   = element.uvSize;
       if (!element.preserveAspect || element.isSliced || uv.x <= 0.0f || uv.y <= 0.0f) {
         return rect;
       }
@@ -157,7 +159,7 @@ namespace Tako {
     }
 
     void DrawElement(const UIElement& element) {
-      if (!element.visible) {
+      if (!element.visible || !element.animPose.visible) {
         return;
       }
       if (element.sprite) {
@@ -451,14 +453,24 @@ namespace Tako {
     // 基準解像度の画面が収まる倍率（Unity CanvasScaler の Expand と同じ）
     scale_ = (std::min)(client.x / referenceResolution_.x, client.y / referenceResolution_.y);
 
-    root_.rectMin  = {};
-    root_.rectSize = client;
+    animator_.Update();
+
+    // ルートの上乗せはレイアウト全体を画面中心基準で動かす
+    root_.animPose = animator_.Evaluate(root_.name);
+    const AnimationPose& pose = root_.animPose;
+    root_.animScale = XY(pose.scale);
+    root_.animColor = pose.color;
+    root_.rectSize  = Mul(client, root_.animScale);
+    root_.rectMin   = (client - root_.rectSize) * 0.5f + XY(pose.translate) * scale_;
     for (std::unique_ptr<UIElement>& child : root_.children) {
       UpdateElement(*child);
     }
   }
 
   void UILayout::Draw() {
+    if (!root_.animPose.visible) {
+      return;
+    }
     for (const std::unique_ptr<UIElement>& child : root_.children) {
       DrawElement(*child);
     }
@@ -652,11 +664,18 @@ namespace Tako {
       return;
     }
 
+    // ComputeRect の逆算。アニメーションの上乗せで大きさが 0 の間は逆算できないので変えない
+    const Vector2 unit      = element.parent->animScale * scale_;
+    const Vector2 animScale = XY(element.animPose.scale);
+    if (unit.x == 0.0f || unit.y == 0.0f || animScale.x == 0.0f || animScale.y == 0.0f) {
+      return;
+    }
+
     Vector2 anchorMin{};
     Vector2 anchorSpan{};
     AnchorRange(element, anchorMin, anchorSpan);
-    element.size     = (rectSize - anchorSpan) / scale_;
-    element.position = (rectMin + Mul(rectSize, element.pivot) - anchorMin - Mul(anchorSpan, element.pivot)) / scale_;
+    element.size     = Div(Div(rectSize, animScale) - anchorSpan, unit);
+    element.position = Div(rectMin + Mul(rectSize, element.pivot) - anchorMin - Mul(anchorSpan, element.pivot), unit) - XY(element.animPose.translate);
 
     ComputeRect(element);
 
@@ -796,10 +815,22 @@ namespace Tako {
   }
 
   void UILayout::UpdateElement(UIElement& element) {
+    element.animPose  = animator_.Evaluate(element.name);
+    element.animColor = Mul(element.parent->animColor, element.animPose.color);
     ComputeRect(element);
 
     if (element.sprite) {
-      Sprite& sprite = *element.sprite;
+      Sprite&              sprite = *element.sprite;
+      const AnimationPose& pose   = element.animPose;
+
+      // スプライトシートのコマは切り出し範囲を columns×rows に等分した 1 マス
+      Vector2 uvLeftTop = element.uvLeftTop;
+      Vector2 uvSize    = element.uvSize;
+      if (pose.frame >= 0) {
+        const int frame = (std::min)(pose.frame, pose.columns * pose.rows - 1);
+        uvSize    = Div(element.uvSize, { static_cast<float>(pose.columns), static_cast<float>(pose.rows) });
+        uvLeftTop = element.uvLeftTop + Mul(uvSize, { static_cast<float>(frame % pose.columns), static_cast<float>(frame / pose.columns) });
+      }
 
       // Sprite の反転はアンカーポイント中心の鏡映なので、反転した軸はアンカーを 1-pivot にして矩形を保つ
       const Vector2 spriteAnchor = {
@@ -808,13 +839,13 @@ namespace Tako {
       };
       sprite.SetAnchorPoint(spriteAnchor);
       sprite.SetPos(element.rectMin + Mul(element.rectSize, element.pivot));
-      sprite.SetSize(DrawSize(element));
-      sprite.SetRotation(element.rotation * kDegToRad);
-      sprite.SetColor(element.color);
+      sprite.SetSize(DrawSize(element, uvSize));
+      sprite.SetRotation((element.rotation + pose.rotate.z) * kDegToRad);
+      sprite.SetColor(Mul(element.color, element.animColor));
       sprite.SetIsFlipX(element.flipX);
       sprite.SetIsFlipY(element.flipY);
-      sprite.SetTexLeftTop(element.uvLeftTop);
-      sprite.SetTexCutSize(element.uvSize);
+      sprite.SetTexLeftTop(uvLeftTop);
+      sprite.SetTexCutSize(uvSize);
 
       const UISlice& slice = GetEffectiveSlice(element);
       sprite.SetSlice(slice.border, scale_);
@@ -840,9 +871,15 @@ namespace Tako {
     Vector2 anchorSpan{};
     AnchorRange(element, anchorMin, anchorSpan);
 
-    element.rectSize = anchorSpan + element.size * scale_;
-    const Vector2 pivotPos = anchorMin + Mul(anchorSpan, element.pivot) + element.position * scale_;
-    element.rectMin = pivotPos - Mul(element.rectSize, element.pivot);
+    // 親の上乗せの拡大を子の position と size にも掛け、子も一緒に拡大縮小させる。自分の拡大は pivot 中心
+    const AnimationPose& pose      = element.animPose;
+    const Vector2        unit      = element.parent->animScale * scale_;
+    const Vector2        animScale = XY(pose.scale);
+
+    element.rectSize = Mul(anchorSpan + Mul(element.size, unit), animScale);
+    const Vector2 pivotPos = anchorMin + Mul(anchorSpan, element.pivot) + Mul(element.position + XY(pose.translate), unit);
+    element.rectMin   = pivotPos - Mul(element.rectSize, element.pivot);
+    element.animScale = Mul(element.parent->animScale, animScale);
   }
 
 } // namespace Tako

@@ -118,6 +118,9 @@
     <Filter Include="ai\BehaviorTree\Editor">
       <UniqueIdentifier>{fadb2f6d-f4fa-43de-b6e1-2db0ed66eb5d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="animation">
+      <UniqueIdentifier>{a208f3c6-fbfa-4177-af8a-2141a191dc1c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\func\mathFunc\Mat4x4Func.cpp">
@@ -243,6 +246,12 @@
     <ClCompile Include="engine\debug\CameraAnimationCurveEditor.cpp">
       <Filter>debug</Filter>
     </ClCompile>
+    <ClCompile Include="engine\debug\AnimationEditor.cpp">
+      <Filter>debug</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\debug\AnimationTimeline.cpp">
+      <Filter>debug</Filter>
+    </ClCompile>
     <ClCompile Include="engine\debug\PrimitiveEditor.cpp">
       <Filter>debug</Filter>
     </ClCompile>
@@ -275,6 +284,12 @@
     </ClCompile>
     <ClCompile Include="engine\3d\Camera\CameraAnimation.cpp">
       <Filter>3d\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\animation\AnimationClip.cpp">
+      <Filter>animation</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\animation\AnimationPlayer.cpp">
+      <Filter>animation</Filter>
     </ClCompile>
     <ClCompile Include="engine\3d\Object\InstancedObject3d.cpp">
       <Filter>3d\Object</Filter>
@@ -611,6 +626,12 @@
     <ClInclude Include="engine\debug\CameraAnimationCurveEditor.h">
       <Filter>debug</Filter>
     </ClInclude>
+    <ClInclude Include="engine\debug\AnimationEditor.h">
+      <Filter>debug</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\debug\AnimationTimeline.h">
+      <Filter>debug</Filter>
+    </ClInclude>
     <ClInclude Include="engine\debug\ViewportCameraController.h">
       <Filter>debug</Filter>
     </ClInclude>
@@ -643,6 +664,12 @@
     </ClInclude>
     <ClInclude Include="engine\3d\Camera\CameraAnimation.h">
       <Filter>3d\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\animation\AnimationClip.h">
+      <Filter>animation</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\animation\AnimationPlayer.h">
+      <Filter>animation</Filter>
     </ClInclude>
     <ClInclude Include="engine\3d\Camera\CameraKeyframe.h">
       <Filter>3d\Camera</Filter>

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iterator>
 #include <numbers>
 
 namespace Tako {
@@ -328,6 +329,64 @@ namespace Tako {
       float by = 3.0f * (y2 - y1) - cy;
       float ay = 1.0f - cy - by;
       return ((ay * u + by) * u + cy) * u;
+    }
+
+    // ============================================================
+    // EaseType で選ぶ
+    // ============================================================
+    namespace {
+
+      struct EaseEntry {
+        const char* name;
+        float (*function)(float);
+      };
+
+      // EaseType と同じ並び。CubicBezier と Constant は引数が違うので Evaluate で分ける
+      constexpr EaseEntry kEaseTable[] = {
+        { "Linear", Linear },
+        { "InQuad", InQuad }, { "OutQuad", OutQuad }, { "InOutQuad", InOutQuad },
+        { "InCubic", InCubic }, { "OutCubic", OutCubic }, { "InOutCubic", InOutCubic },
+        { "InQuart", InQuart }, { "OutQuart", OutQuart }, { "InOutQuart", InOutQuart },
+        { "InQuint", InQuint }, { "OutQuint", OutQuint }, { "InOutQuint", InOutQuint },
+        { "InSine", InSine }, { "OutSine", OutSine }, { "InOutSine", InOutSine },
+        { "InExpo", InExpo }, { "OutExpo", OutExpo }, { "InOutExpo", InOutExpo },
+        { "InCirc", InCirc }, { "OutCirc", OutCirc }, { "InOutCirc", InOutCirc },
+        { "InBack", InBack }, { "OutBack", OutBack }, { "InOutBack", InOutBack },
+        { "InElastic", InElastic }, { "OutElastic", OutElastic }, { "InOutElastic", InOutElastic },
+        { "InBounce", InBounce }, { "OutBounce", OutBounce }, { "InOutBounce", InOutBounce },
+        { "SmoothStep", SmoothStep }, { "SmootherStep", SmootherStep },
+        { "CubicBezier", nullptr },
+        { "Constant", nullptr },
+      };
+      static_assert(std::size(kEaseTable) == static_cast<size_t>(EaseType::Count));
+
+    } // namespace
+
+    float Evaluate(EaseType type, float t, float x1, float y1, float x2, float y2) {
+      switch (type) {
+      case EaseType::CubicBezier:
+        return CubicBezier(t, x1, y1, x2, y2);
+      case EaseType::Constant:
+        return t >= 1.0f ? 1.0f : 0.0f;
+      default:
+        break;
+      }
+      const size_t index = static_cast<size_t>(type);
+      return index < std::size(kEaseTable) ? kEaseTable[index].function(t) : t;
+    }
+
+    const char* ToString(EaseType type) {
+      const size_t index = static_cast<size_t>(type);
+      return index < std::size(kEaseTable) ? kEaseTable[index].name : kEaseTable[0].name;
+    }
+
+    std::optional<EaseType> FromString(std::string_view name) {
+      for (size_t i = 0; i < std::size(kEaseTable); ++i) {
+        if (name == kEaseTable[i].name) {
+          return static_cast<EaseType>(i);
+        }
+      }
+      return std::nullopt;
     }
 
   } // namespace Ease

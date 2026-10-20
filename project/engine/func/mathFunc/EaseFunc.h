@@ -1,6 +1,30 @@
 #pragma once
+#include <cstdint>
+#include <optional>
+#include <string_view>
 
 namespace Tako {
+
+  /// <summary>
+  /// データから選ぶためのイージングの種類。Ease の関数と同じ並び・同じ名前
+  /// </summary>
+  enum class EaseType : uint8_t {
+    Linear,
+    InQuad, OutQuad, InOutQuad,
+    InCubic, OutCubic, InOutCubic,
+    InQuart, OutQuart, InOutQuart,
+    InQuint, OutQuint, InOutQuint,
+    InSine, OutSine, InOutSine,
+    InExpo, OutExpo, InOutExpo,
+    InCirc, OutCirc, InOutCirc,
+    InBack, OutBack, InOutBack,
+    InElastic, OutElastic, InOutElastic,
+    InBounce, OutBounce, InOutBounce,
+    SmoothStep, SmootherStep,
+    CubicBezier,  ///< 制御点 (x1,y1),(x2,y2) で評価する
+    Constant,     ///< t が 1 になるまで 0 のまま（次のキーまで値を保つ）
+    Count
+  };
 
   /// <summary>
   /// イージング関数ユーティリティ名前空間
@@ -170,6 +194,22 @@ namespace Tako {
     /// x1/x2 は [0,1] に clamp。y1/y2 は自由で、範囲外にすると行き過ぎて戻る動きも作れる
     /// </summary>
     float CubicBezier(float t, float x1, float y1, float x2, float y2);
+
+    // --- EaseType で選ぶ ---
+    /// <summary>
+    /// type の関数で t を変換する。制御点は CubicBezier のときだけ使う
+    /// </summary>
+    float Evaluate(EaseType type, float t, float x1 = 0.42f, float y1 = 0.0f, float x2 = 0.58f, float y2 = 1.0f);
+
+    /// <summary>
+    /// 関数名と同じ表記（"OutBack" など）。範囲外は "Linear"
+    /// </summary>
+    const char* ToString(EaseType type);
+
+    /// <summary>
+    /// ToString の逆。該当なしなら空
+    /// </summary>
+    std::optional<EaseType> FromString(std::string_view name);
 
   } // namespace Ease
 

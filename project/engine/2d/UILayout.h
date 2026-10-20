@@ -1,4 +1,5 @@
 #pragma once
+#include "AnimationPlayer.h"
 #include "Vector2.h"
 #include "Vector4.h"
 #include <array>
@@ -57,8 +58,13 @@ namespace Tako {
     //実行時データ
     UIElement*              parent   = nullptr;
     std::unique_ptr<Sprite> sprite;              ///< texture が空、または読み込めなかった場合は null
-    Vector2                 rectMin  = {};       ///< 直近の Update で求めた画面矩形の左上（クライアント px）
-    Vector2                 rectSize = {};       ///< 直近の Update で求めた画面矩形のサイズ（クライアント px）
+    Vector2                 rectMin  = {};       ///< 直近の Update で求めた画面矩形の左上（クライアント px）。アニメーションの上乗せ込み
+    Vector2                 rectSize = {};       ///< 直近の Update で求めた画面矩形のサイズ（クライアント px）。アニメーションの上乗せ込み
+
+    //アニメーションの上乗せ（実行時データ。Update で毎回求め直す）
+    AnimationPose animPose;
+    Vector2       animScale = { 1.0f, 1.0f };              ///< 親から受け継いだ分を含む拡大率。子の position と size に掛ける
+    Vector4       animColor = { 1.0f, 1.0f, 1.0f, 1.0f };  ///< 親から受け継いだ分を含む色。color に掛ける
   };
 
   /// <summary>
@@ -287,6 +293,11 @@ namespace Tako {
     //Getter
     //============================================================
     UIElement& GetRoot() { return root_; }
+
+    /// <summary>
+    /// このレイアウトの要素を動かすアニメーション。対象は要素名で、空文字はルート（レイアウト全体）
+    /// </summary>
+    AnimationPlayer& GetAnimator() { return animator_; }
     const std::string& GetName() const { return name_; }
     float GetScale() const { return scale_; }
 
@@ -356,6 +367,8 @@ namespace Tako {
     Vector2     referenceResolution_ = kDefaultReferenceResolution;  ///< position/size の基準となる画面サイズ
     float       scale_               = 1.0f;                         ///< 基準解像度 px → クライアント px
     UIElement   root_;                                               ///< 画面全体を表す見えないルート
+
+    AnimationPlayer animator_;
   };
 
 } // namespace Tako

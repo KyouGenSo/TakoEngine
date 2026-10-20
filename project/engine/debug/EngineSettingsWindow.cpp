@@ -53,6 +53,7 @@ namespace Tako {
       { Window::PrimitiveEditor,       "Primitive Editor" },
       { Window::UIEditor,              "UI Editor" },
       { Window::CameraAnimationEditor, "Camera Animation Editor" },
+      { Window::AnimationEditor,       "Animation Editor" },
       { Window::GlobalVariables,       "Global Variables" },
     };
 

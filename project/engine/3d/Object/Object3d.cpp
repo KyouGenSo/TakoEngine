@@ -8,7 +8,17 @@
 #include "Logger.h"
 #include "ColorFunc.h"
 
+#include <numbers>
+
 namespace Tako {
+
+namespace {
+
+constexpr float kDegToRad = std::numbers::pi_v<float> / 180.0f;
+
+Vector4 Multiply(const Vector4& a, const Vector4& b) { return { a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w }; }
+
+} // namespace
 
 Object3d::Object3d() = default;
 
@@ -44,6 +54,11 @@ void Object3d::Update()
 	{
 		model_->Update();
 	}
+
+	animator_.Update();
+	const AnimationPose pose = animator_.Evaluate("");
+	ApplyAnimationColor(pose.color);
+	isAnimationVisible_ = pose.visible;
 
 	// 親 Joint へのアタッチメント処理
 	if (IsAttached() && parentObject_ && parentObject_->GetModel())
@@ -83,23 +98,34 @@ void Object3d::Update()
 		modelLocalMatrix = model_->GetLocalMatrix();
 	}
 
+	// アニメーションの上乗せはローカル空間で掛ける。worldMatrix_ は上乗せ前のまま残す（アタッチ中で更新されないフレームに重ね掛けしないため）
+	Matrix4x4 world = worldMatrix_;
+	if (pose.translate != Vector3{ 0.0f, 0.0f, 0.0f } || pose.rotate != Vector3{ 0.0f, 0.0f, 0.0f } || pose.scale != Vector3{ 1.0f, 1.0f, 1.0f })
+	{
+		world = Mat4x4::MakeAffine(pose.scale, pose.rotate * kDegToRad, pose.translate) * world;
+	}
+
 	// 座標変換行列データに書き込む
 	if (model_)
 	{
 		if (model_->HasSkeleton())
 		{
-			transformationMatData_->world = worldMatrix_;
-			transformationMatData_->worldInvTranspose = Mat4x4::InverseTranspose(worldMatrix_);
+			transformationMatData_->world = world;
+			transformationMatData_->worldInvTranspose = Mat4x4::InverseTranspose(world);
 		} else
 		{
-			transformationMatData_->world = modelLocalMatrix * worldMatrix_;
-			transformationMatData_->worldInvTranspose = Mat4x4::InverseTranspose(modelLocalMatrix * worldMatrix_);
+			transformationMatData_->world = modelLocalMatrix * world;
+			transformationMatData_->worldInvTranspose = Mat4x4::InverseTranspose(modelLocalMatrix * world);
 		}
 	}
 }
 
 void Object3d::Draw()
 {
+	if (!isAnimationVisible_) {
+		return;
+	}
+
 	// 半透明モードなら PSO を一時的に切り替え (CullMode=NONE で両面描画 + 深度書き込み無効)
 	// シャドウマップレンダリング中はシャドウ用 PSO が既にセットされているのでスキップ
 	const bool useTransparentPso = isTransparent_ && !ShadowRenderer::GetInstance()->IsRenderingShadow();
@@ -147,6 +173,9 @@ void Object3d::SetModel(const std::string& fileName)
 
   // 新しいモデルをセット（ModelManager から Clone を取得）
   model_ = ModelManager::GetInstance()->GetModel(fileName);
+
+  // 新しいモデルには上乗せの色がまだ書かれていないので、次の Update で元の色から掛け直させる
+  animColor_ = Color::kWhite;
 }
 
 void Object3d::SetModel(std::unique_ptr<Model> model)
@@ -159,23 +188,44 @@ void Object3d::SetModel(std::unique_ptr<Model> model)
   }
 
   model_ = std::move(model);
+  animColor_ = Color::kWhite;
 }
 
 void Object3d::SetMaterialColor(const Vector4& color)
 {
   if (model_)
   {
-    model_->SetMaterialColor(color);
+    baseColor_ = color;
+    model_->SetMaterialColor(Multiply(color, animColor_));
   }
 }
 
 Vector4 Object3d::GetMaterialColor() const
 {
+  if (animColor_ != Color::kWhite)
+  {
+    return baseColor_;
+  }
   if (model_)
   {
     return model_->GetMaterialColor();
   }
   return Color::kWhite;
+}
+
+void Object3d::ApplyAnimationColor(const Vector4& color)
+{
+  if (!model_ || color == animColor_)
+  {
+    return;
+  }
+  // 上乗せを始める時点の色を元の色として覚える
+  if (animColor_ == Color::kWhite)
+  {
+    baseColor_ = model_->GetMaterialColor();
+  }
+  animColor_ = color;
+  model_->SetMaterialColor(Multiply(baseColor_, animColor_));
 }
 
 void Object3d::SetUvTransform(const Transform& uvTransform)

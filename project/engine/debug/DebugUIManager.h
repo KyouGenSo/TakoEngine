@@ -18,6 +18,7 @@
 #include "AssetBrowser.h"
 #include "UILayoutEditor.h"
 #include "CameraAnimationEditor.h"
+#include "AnimationEditor.h"
 
 namespace Tako {
 
@@ -55,6 +56,7 @@ namespace Tako {
       PrimitiveEditor,
       UIEditor,
       CameraAnimationEditor,
+      AnimationEditor,
       ImGuiDemo,
       ImGuiMetrics,
       About,
@@ -145,6 +147,12 @@ namespace Tako {
     void DrawParticlePreviewPass() { particleEditor_.DrawPreviewPass(); }
 
     /// <summary>
+    /// アニメーションエディタの 3D プレビューをオフスクリーン RT へ描画
+    /// TakoFramework::Draw() のシーン描画後・ImGui 描画前に呼ぶ
+    /// </summary>
+    void DrawAnimationPreviewPass() { animationEditor_.DrawPreviewPass(); }
+
+    /// <summary>
     /// デバッグビューポートへシーンをデバッグカメラ視点で描画
     /// TakoFramework::Draw() の本編描画後・LineRenderer::Reset() 前に呼ぶ（本編の線分を流用するため）
     /// </summary>
@@ -154,7 +162,10 @@ namespace Tako {
     /// UI Editor がシーン外のレイアウトをプレビュー編集中なら、ゲーム画面の上に重ねて描く
     /// TakoFramework::Draw() の SceneManager::DrawWithoutEffect() 直後に呼ぶ
     /// </summary>
-    void DrawUILayoutPreviewPass() { uiLayoutEditor_.DrawPreview(); }
+    void DrawUILayoutPreviewPass() {
+      uiLayoutEditor_.DrawPreview();
+      animationEditor_.DrawLayoutPreview();
+    }
 
     /// <summary>
     /// 保存済みの個人設定（テーマ・音量・起動時に開くウィンドウなど）を読み込み適用する。全システムの初期化後に起動時 1 回だけ呼ぶ
@@ -365,6 +376,7 @@ namespace Tako {
     AssetBrowser          assetBrowser_;
     UILayoutEditor        uiLayoutEditor_;
     CameraAnimationEditor cameraAnimationEditor_;
+    AnimationEditor       animationEditor_;
   };
 
   /// <summary>

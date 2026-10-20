@@ -286,6 +286,7 @@ namespace Tako {
     // 各エディターのプレビューをオフスクリーン RT へ描画
     DebugUIManager::GetInstance()->DrawPrimitivePreviewPass();
     DebugUIManager::GetInstance()->DrawParticlePreviewPass();
+    DebugUIManager::GetInstance()->DrawAnimationPreviewPass();
 #endif
 
     /// ============================================= ///

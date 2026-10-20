@@ -9,6 +9,7 @@
 #include "vector4.h"
 #include "Mat4x4Func.h"
 #include "Transform.h"
+#include "AnimationPlayer.h"
 
 namespace Tako {
 
@@ -209,11 +210,21 @@ public: // メンバー関数
   /// </summary>
   Matrix4x4 GetWorldMatrix() const;
 
+  /// <summary>
+  /// トランスフォームと色に上乗せするアニメーション。target が空のトラックだけが効く
+  /// </summary>
+  AnimationPlayer& GetAnimator() { return animator_; }
+
 private: // プライベートメンバー関数
   /// <summary>
   /// 座標変換行列データの生成
   /// </summary>
   void CreateTransformationMatrixData();
+
+  /// <summary>
+  /// 上乗せの色が変わったときだけ、元の色に掛けてモデルへ書き込む
+  /// </summary>
+  void ApplyAnimationColor(const Vector4& color);
 
 private: // メンバー変数
   std::unique_ptr<Model> model_;
@@ -234,6 +245,12 @@ private: // メンバー変数
   Transform   attachmentOffset_{};
 
   bool isTransparent_ = false;  ///< 半透明描画モードフラグ (true なら Draw 内で TransparentRenderSetting に一時切り替え)
+
+  //アニメーションの上乗せ
+  AnimationPlayer animator_;
+  Vector4         animColor_          = { 1.0f, 1.0f, 1.0f, 1.0f };  ///< モデルへ書き込み済みの上乗せの色
+  Vector4         baseColor_          = { 1.0f, 1.0f, 1.0f, 1.0f };  ///< 上乗せ前の色。animColor_ が白でない間だけ有効
+  bool            isAnimationVisible_ = true;
 };
 
 } // namespace Tako

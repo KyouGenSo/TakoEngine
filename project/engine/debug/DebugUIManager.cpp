@@ -61,6 +61,7 @@ namespace Tako {
       { "3D Preview (Debug Viewport / Particle / Primitive)", [] { DrawShortcutTable(ViewportCameraController::Shortcuts()); } },
       { "UI Editor",                                          [] { DrawShortcutTable(UILayoutEditor::Shortcuts()); } },
       { "Camera Animation Editor",                            [] { DrawShortcutTable(CameraAnimationEditor::Shortcuts()); } },
+      { "Animation Editor",                                   [] { DrawShortcutTable(AnimationEditor::Shortcuts()); } },
       { "Particle Editor",                                    [] { DrawShortcutTable(ParticleEditor::Shortcuts()); } },
       { "Primitive Editor",                                   [] { DrawShortcutTable(PrimitiveEditor::Shortcuts()); } },
       { "PostEffect",                                         [] { DrawShortcutTable(PostEffectManager::Shortcuts()); } },
@@ -160,6 +161,7 @@ namespace Tako {
     assetBrowser_.Initialize(&WindowFlag(Window::Assets));
     uiLayoutEditor_.Initialize(&WindowFlag(Window::UIEditor));
     cameraAnimationEditor_.Initialize(&WindowFlag(Window::CameraAnimationEditor), &debugViewport_);
+    animationEditor_.Initialize(&WindowFlag(Window::AnimationEditor), cameraSettings);
 
     // ×ボタン・Alt+F4 で未保存の変更があれば閉じずに確認する
     WinApp::GetInstance()->SetCloseHandler([this] { return ConfirmExit(); });
@@ -175,6 +177,7 @@ namespace Tako {
     primitiveEditor_.Finalize();
     particleEditor_.Finalize();
     debugViewport_.Finalize();
+    animationEditor_.Finalize();
     instance_.reset();
   }
 
@@ -211,6 +214,7 @@ namespace Tako {
     debugViewport_.Update();
     uiLayoutEditor_.Update();
     cameraAnimationEditor_.Update();
+    animationEditor_.Update();
   }
 
   void DebugUIManager::Draw() {
@@ -240,6 +244,7 @@ namespace Tako {
     isPreviewInputCaptured_ |= primitiveEditor_.Draw();
     uiLayoutEditor_.Draw();
     cameraAnimationEditor_.Draw();
+    isPreviewInputCaptured_ |= animationEditor_.Draw();
     if (WindowFlag(Window::ImGuiDemo)) ImGui::ShowDemoWindow(&WindowFlag(Window::ImGuiDemo));
     if (WindowFlag(Window::ImGuiMetrics)) ImGui::ShowMetricsWindow(&WindowFlag(Window::ImGuiMetrics));
     if (WindowFlag(Window::About)) DrawAbout();
@@ -275,6 +280,7 @@ namespace Tako {
     unsavedChanges_.clear();
     uiLayoutEditor_.CollectUnsavedChanges(unsavedChanges_);
     cameraAnimationEditor_.CollectUnsavedChanges(unsavedChanges_);
+    animationEditor_.CollectUnsavedChanges(unsavedChanges_);
     particleEditor_.CollectUnsavedChanges(unsavedChanges_);
     primitiveEditor_.CollectUnsavedChanges(unsavedChanges_);
     engineSettings_.CollectUnsavedChanges(unsavedChanges_);
@@ -379,6 +385,7 @@ namespace Tako {
         ImGui::MenuItem("Primitive Editor", nullptr, &WindowFlag(Window::PrimitiveEditor));
         ImGui::MenuItem("UI Editor", nullptr, &WindowFlag(Window::UIEditor));
         ImGui::MenuItem("Camera Animation Editor", nullptr, &WindowFlag(Window::CameraAnimationEditor));
+        ImGui::MenuItem("Animation Editor", nullptr, &WindowFlag(Window::AnimationEditor));
         ImGui::MenuItem("Global Variables", nullptr, &WindowFlag(Window::GlobalVariables));
         ImGui::EndMenu();
       }
