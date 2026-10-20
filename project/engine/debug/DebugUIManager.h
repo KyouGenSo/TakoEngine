@@ -13,6 +13,7 @@
 #include "ShortcutTable.h"
 #include "PrimitiveEditor.h"
 #include "ParticleEditor.h"
+#include "MaterialEditor.h"
 #include "DebugViewport.h"
 #include "EngineSettingsWindow.h"
 #include "AssetBrowser.h"
@@ -57,6 +58,7 @@ namespace Tako {
       UIEditor,
       CameraAnimationEditor,
       AnimationEditor,
+      MaterialEditor,
       ImGuiDemo,
       ImGuiMetrics,
       About,
@@ -377,6 +379,7 @@ namespace Tako {
     UILayoutEditor        uiLayoutEditor_;
     CameraAnimationEditor cameraAnimationEditor_;
     AnimationEditor       animationEditor_;
+    MaterialEditor        materialEditor_;
   };
 
   /// <summary>

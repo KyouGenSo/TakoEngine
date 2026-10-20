@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <d3d12.h>
+#include <iterator>
 
 namespace Tako {
 
@@ -18,6 +19,11 @@ namespace Tako {
   };
 
   enum class CullMode : uint8_t { None, Front, Back };
+
+  // 保存ファイルと編集 UI で使う名前。並びは列挙の値と一致させる
+  inline constexpr const char* kBlendModeNames[] = { "Add", "Screen", "Alpha", "Opaque", "Multiply", "Premultiplied" };
+  inline constexpr const char* kCullModeNames[]  = { "None", "Front", "Back" };
+  static_assert(std::size(kBlendModeNames) == static_cast<size_t>(BlendMode::Count));
 
   /// <summary>
   /// 頂点バッファのレイアウト。描画するデータの種類ごとに 1 つ

@@ -6,6 +6,7 @@
 #include "Vector2.h"
 #include "vector3.h"
 #include "Vector4.h"
+#include "MaterialPropertyLayout.h"
 
 namespace Tako {
 
@@ -131,7 +132,7 @@ namespace Tako {
   };
 
   /// <summary>
-  /// エフェクトのパラメータ（std::monostate はパラメータを持たないエフェクト）。中身はそのまま gParam の定数バッファになる
+  /// エフェクトのパラメータ（std::monostate はパラメータを持たないエフェクト、PropertyBlock は .shader.json で登録したエフェクト）。中身はそのまま gParam の定数バッファになる
   /// </summary>
   using EffectParam = std::variant<
     std::monostate,
@@ -146,7 +147,8 @@ namespace Tako {
     DissolveParam,
     WhiteNoiseParam,
     HalfToneParam,
-    GaussianBlurParam
+    GaussianBlurParam,
+    PropertyBlock
   >;
 
   /// <summary>

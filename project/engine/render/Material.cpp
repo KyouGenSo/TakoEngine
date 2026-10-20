@@ -8,13 +8,31 @@
 namespace Tako {
 
   Material::Material(DX12Basic* dx12, const ShaderAsset* shader)
-    : dx12_(dx12), shader_(shader)
+    : dx12_(dx12)
   {
-    assert(shader_ && "Material: shader is null");
+    SetShader(shader);
+  }
+
+  void Material::SetShader(const ShaderAsset* shader)
+  {
+    assert(shader && "Material: shader is null");
+    shader_ = shader;
     if (const GraphicsPipelineDesc* forward = shader_->GetPass(ShaderPass::Forward)) {
       renderState_ = forward->renderState;
     }
     renderQueue_ = shader_->GetDefaultQueue();
+  }
+
+  std::span<uint8_t> Material::GetConstantBytes(size_t size)
+  {
+    if (size != constantSize_ && size != 0) {
+      // 記録済みのコマンドが古い定数バッファを指していることがあるので、フレームの終わりまで残す
+      if (constantBuffer_) {
+        dx12_->ReleaseAfterFrame(std::move(constantBuffer_));
+      }
+      AllocateConstants(size);
+    }
+    return { constants_, constantSize_ };
   }
 
   std::unique_ptr<Material> Material::Clone() const

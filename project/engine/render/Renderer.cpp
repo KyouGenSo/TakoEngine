@@ -201,6 +201,16 @@ namespace Tako {
     return it != shaders_.end() ? it->second.get() : nullptr;
   }
 
+  std::vector<std::string> Renderer::GetShaderNames() const
+  {
+    std::vector<std::string> names;
+    for (const auto& shader : shaders_) {
+      names.push_back(shader.first);
+    }
+    std::ranges::sort(names);
+    return names;
+  }
+
   void Renderer::RegisterBuiltinShaders()
   {
     ShaderLibrary& library = dx12_->GetShaderLibrary();

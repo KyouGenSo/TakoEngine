@@ -9,6 +9,7 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <utility>
+#include <vector>
 
 #include"Vector4.h"
 #include "CommandContext.h"
@@ -156,6 +157,11 @@ namespace Tako {
     /// </summary>
     /// <returns>要求があれば true</returns>
     bool ConsumeRenderTargetRebuildRequest() { return std::exchange(isRebuildRequested_, false); }
+
+    /// <summary>
+    /// 記録中のコマンドが参照しているかもしれないリソースを、GPU がこのフレームを描き終える（EndDraw）まで保持してから解放する
+    /// </summary>
+    void ReleaseAfterFrame(ComPtr<ID3D12Resource> resource) { pendingReleases_.push_back(std::move(resource)); }
 
     //============================================================
     //Setter
@@ -375,6 +381,8 @@ namespace Tako {
     CommandContext context_;  ///< 唯一のコマンドリストとバリアの予約
 
     UploadAllocator uploadAllocator_;  ///< 1 フレームだけ使う定数の置き場（EndDraw で空に戻す）
+
+    std::vector<ComPtr<ID3D12Resource>> pendingReleases_;  ///< ReleaseAfterFrame で預かったリソース（EndDraw で解放）
 
     ComPtr<IDXGISwapChain4> swapChain_;  ///< スワップチェイン（ダブルバッファリング管理）
 

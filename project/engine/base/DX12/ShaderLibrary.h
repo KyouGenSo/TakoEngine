@@ -98,6 +98,11 @@ namespace Tako {
     const Shader* Get(std::wstring_view file, ShaderStage stage) { return Get(ShaderKey{ std::wstring(file), stage }); }
 
     /// <summary>
+    /// Get と同じだが、初めてのコンパイルに失敗したら nullptr を返す（データファイルから指定されたシェーダー用）
+    /// </summary>
+    const Shader* TryGet(const ShaderKey& key);
+
+    /// <summary>
     /// 本体か include 先が更新されたシェーダーを再コンパイルする。失敗したものは前の結果を使い続ける
     /// </summary>
     /// <returns>1 つでも差し替えたら true</returns>

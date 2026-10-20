@@ -2,6 +2,7 @@
 #include <cassert>
 #include <cstdint>
 #include <memory>
+#include <span>
 #include <utility>
 #include <vector>
 #include <wrl.h>
@@ -53,6 +54,12 @@ namespace Tako {
     /// <summary>
     /// 定数とテクスチャを現在のパイプラインへ渡す
     /// </summary>
+    /// <summary>
+    /// 定数をバイト列で扱う（リフレクションのレイアウトで値を読み書きするマテリアル用）。
+    /// size が今と違えば 0 で埋めて確保し直す（値は呼び出し側で入れ直す）。Constants と同じマテリアルで混ぜない
+    /// </summary>
+    std::span<uint8_t> GetConstantBytes(size_t size);
+
     void Bind(CommandContext::ShaderBinder& binder) const;
 
     /// <summary>
@@ -78,10 +85,16 @@ namespace Tako {
     void SetDepthWrite(bool depthWrite) { renderState_.depthWrite = depthWrite; }
     void SetRenderQueue(int32_t queue) { renderQueue_ = queue; }
 
+    /// <summary>
+    /// シェーダーを替え、描画設定と描画キューをそのシェーダーの既定に戻す（定数とテクスチャは残す）
+    /// </summary>
+    void SetShader(const ShaderAsset* shader);
+
     //=========================================
     //Getter
     //=========================================
     const ShaderAsset* GetShader() const { return shader_; }
+    std::span<const uint8_t> GetConstantBytes() const { return { constants_, constantSize_ }; }
     const RenderState& GetRenderState() const { return renderState_; }
     int32_t GetRenderQueue() const { return renderQueue_; }
 

@@ -1,6 +1,7 @@
 #include "PostProcess.h"
 
 #include <algorithm>
+#include <cstring>
 #include <type_traits>
 
 #include "DX12Basic.h"
@@ -50,8 +51,15 @@ namespace Tako {
         if (definition.setup) {
           definition.setup(frame, value, binder);
         }
-        std::visit([&binder]<class T>(const T& constants) {
-          if constexpr (!std::is_same_v<T, std::monostate>) {
+        std::visit([&]<class T>(const T& constants) {
+          if constexpr (std::is_same_v<T, PropertyBlock>) {
+            if (!constants.bytes.empty()) {
+              const UploadAllocator::Allocation allocation = frame.dx12->GetUploadAllocator().Allocate(constants.bytes.size());
+              std::memcpy(allocation.cpu, constants.bytes.data(), constants.bytes.size());
+              binder.BindCBV("gParam"_id, allocation.gpu);
+            }
+          }
+          else if constexpr (!std::is_same_v<T, std::monostate>) {
             binder.BindConstants("gParam"_id, constants);
           }
         }, value);

@@ -52,6 +52,7 @@ namespace Tako {
       { Window::PostEffect,            "PostEffect Settings" },
       { Window::ParticleEditor,        "Particle Editor" },
       { Window::PrimitiveEditor,       "Primitive Editor" },
+      { Window::MaterialEditor,        "Material Editor" },
       { Window::UIEditor,              "UI Editor" },
       { Window::CameraAnimationEditor, "Camera Animation Editor" },
       { Window::AnimationEditor,       "Animation Editor" },

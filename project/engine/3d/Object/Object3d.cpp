@@ -18,12 +18,28 @@ constexpr float kDegToRad = std::numbers::pi_v<float> / 180.0f;
 
 Vector4 Multiply(const Vector4& a, const Vector4& b) { return { a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w }; }
 
+#ifdef _DEBUG
+std::vector<Object3d*>& LiveObjects()
+{
+  static std::vector<Object3d*> objects;
+  return objects;
+}
+#endif
+
 } // namespace
 
-Object3d::Object3d() = default;
+Object3d::Object3d()
+{
+#ifdef _DEBUG
+  LiveObjects().push_back(this);
+#endif
+}
 
 Object3d::~Object3d()
 {
+#ifdef _DEBUG
+  std::erase(LiveObjects(), this);
+#endif
   if (model_) {
     model_->Finalize();
   }
@@ -163,6 +179,7 @@ void Object3d::SetModel(const std::string& fileName)
 
   // 新しいモデルをセット（ModelManager から Clone を取得）
   model_ = ModelManager::GetInstance()->GetModel(fileName);
+  modelName_ = fileName;
 
   // 新しいモデルには上乗せの色がまだ書かれていないので、次の Update で元の色から掛け直させる
   animColor_ = Color::kWhite;
@@ -178,8 +195,16 @@ void Object3d::SetModel(std::unique_ptr<Model> model)
   }
 
   model_ = std::move(model);
+  modelName_.clear();
   animColor_ = Color::kWhite;
 }
+
+#ifdef _DEBUG
+const std::vector<Object3d*>& Object3d::GetLiveObjects()
+{
+  return LiveObjects();
+}
+#endif
 
 void Object3d::SetMaterialColor(const Vector4& color)
 {

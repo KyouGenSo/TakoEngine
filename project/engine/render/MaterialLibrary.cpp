@@ -1,0 +1,389 @@
+#include "MaterialLibrary.h"
+
+#include <algorithm>
+#include <filesystem>
+#include <fstream>
+#include <iterator>
+#include <optional>
+
+#include "DX12Basic.h"
+#include "Logger.h"
+#include "Material.h"
+#include "PostProcess.h"
+#include "Renderer.h"
+#include "StringUtility.h"
+#include "TextureManager.h"
+
+namespace Tako {
+
+  using json = nlohmann::json;
+
+  namespace {
+
+    const std::filesystem::path kShaderDirectory   = "resources/Shaders";
+    const std::filesystem::path kMaterialDirectory = "resources/Materials";
+    constexpr std::string_view  kMaterialExtension = ".mat.json";
+
+    std::filesystem::path MaterialPath(const std::string& name)
+    {
+      return kMaterialDirectory / (name + std::string(kMaterialExtension));
+    }
+
+    std::optional<std::string> ReadText(const std::filesystem::path& path)
+    {
+      std::ifstream ifs(path);
+      if (!ifs) {
+        return std::nullopt;
+      }
+      return std::string(std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>());
+    }
+
+    template<class T, size_t N>
+    std::optional<T> FindByName(const char* const (&names)[N], const std::string& name)
+    {
+      for (size_t i = 0; i < N; ++i) {
+        if (name == names[i]) {
+          return static_cast<T>(i);
+        }
+      }
+      return std::nullopt;
+    }
+
+    /// <summary>
+    /// JSON に書かれた描画設定だけを state に上書きする
+    /// </summary>
+    void ReadRenderState(const json& source, RenderState& state)
+    {
+      if (const auto blend = FindByName<BlendMode>(kBlendModeNames, source.value("Blend", std::string()))) {
+        state.blend = *blend;
+      }
+      if (const auto cull = FindByName<CullMode>(kCullModeNames, source.value("Cull", std::string()))) {
+        state.cull = *cull;
+      }
+      state.depthTest = source.value("DepthTest", state.depthTest);
+      state.depthWrite = source.value("DepthWrite", state.depthWrite);
+    }
+
+  } // anonymous namespace
+
+  std::unique_ptr<MaterialLibrary> MaterialLibrary::instance_ = nullptr;
+
+  MaterialLibrary* MaterialLibrary::GetInstance()
+  {
+    if (!instance_) {
+      instance_ = std::make_unique<MaterialLibrary>(Token{});
+    }
+    return instance_.get();
+  }
+
+  void MaterialLibrary::Initialize(DX12Basic* dx12)
+  {
+    dx12_ = dx12;
+    std::error_code ec;
+    for (const auto& entry : std::filesystem::directory_iterator(kShaderDirectory, ec)) {
+      if (entry.path().filename().string().ends_with(".shader.json")) {
+        LoadShaderFile(entry.path().string());
+      }
+    }
+  }
+
+  void MaterialLibrary::Finalize()
+  {
+    instance_.reset();
+  }
+
+  void MaterialLibrary::Update()
+  {
+#ifdef _DEBUG
+    for (auto& [name, asset] : assets_) {
+      const std::shared_ptr<const MaterialPropertyLayout> layout = GetLayout(*asset.material->GetShader());
+      if (layout == asset.layout) {
+        continue;
+      }
+      // 新しく増えた値は 0 から始め、残った値は名前で移す（同じ大きさでもオフセットはずれ得る）
+      const json values = asset.layout->SerializeValues(asset.material->GetConstantBytes());
+      asset.layout = layout;
+      const std::span<uint8_t> bytes = asset.material->GetConstantBytes(layout->constantSize);
+      std::ranges::fill(bytes, uint8_t{ 0 });
+      layout->DeserializeValues(values, bytes);
+      FitTextures(asset);
+    }
+#endif
+  }
+
+  std::shared_ptr<Material> MaterialLibrary::Load(const std::string& name)
+  {
+    if (std::shared_ptr<Material> loaded = Find(name)) {
+      return loaded;
+    }
+    const std::optional<std::string> text = ReadText(MaterialPath(name));
+    if (!text) {
+      Logger::Log("Material not found: %s", name.c_str());
+      return nullptr;
+    }
+
+    // 書かれたシェーダーで作ってから、値と描画設定を当てはめる
+    std::string shaderName;
+    try {
+      shaderName = json::parse(*text).at("Shader").get<std::string>();
+    }
+    catch (const json::exception& e) {
+      Logger::Log("Material load failed: %s (%s)", name.c_str(), e.what());
+      return nullptr;
+    }
+    if (!Create(name, shaderName) || !Apply(name, *text)) {
+      assets_.erase(name);
+      return nullptr;
+    }
+    return assets_.at(name).material;
+  }
+
+  std::shared_ptr<Material> MaterialLibrary::Create(const std::string& name, const std::string& shaderName)
+  {
+    const ShaderAsset* shader = Renderer::GetInstance()->FindShader(shaderName);
+    if (!shader) {
+      Logger::Log("Material shader not registered: %s", shaderName.c_str());
+      return nullptr;
+    }
+
+    Asset& asset = assets_[name];
+    if (!asset.material) {
+      asset.material = std::make_shared<Material>(dx12_, shader);
+    }
+    else {
+      asset.material->SetShader(shader);
+    }
+    asset.layout = GetLayout(*shader);
+    asset.material->GetConstantBytes(asset.layout->constantSize);
+    FitTextures(asset);
+    return asset.material;
+  }
+
+  bool MaterialLibrary::Save(const std::string& name) const
+  {
+    if (!Find(name)) {
+      return false;
+    }
+    std::error_code ec;
+    std::filesystem::create_directories(kMaterialDirectory, ec);
+    std::ofstream ofs(MaterialPath(name));
+    if (!ofs) {
+      Logger::Log("Material save failed: %s", name.c_str());
+      return false;
+    }
+    ofs << Serialize(name) << std::endl;
+    return true;
+  }
+
+  std::string MaterialLibrary::Serialize(const std::string& name) const
+  {
+    const auto it = assets_.find(name);
+    if (it == assets_.end()) {
+      return {};
+    }
+    const Asset&       asset    = it->second;
+    const Material&    material = *asset.material;
+    const RenderState& state    = material.GetRenderState();
+    const json root = {
+      { "Shader",     material.GetShader()->GetName() },
+      { "Queue",      material.GetRenderQueue() },
+      { "Blend",      kBlendModeNames[static_cast<size_t>(state.blend)] },
+      { "Cull",       kCullModeNames[static_cast<size_t>(state.cull)] },
+      { "DepthTest",  state.depthTest },
+      { "DepthWrite", state.depthWrite },
+      { "Values",     asset.layout->SerializeValues(material.GetConstantBytes()) },
+      { "Textures",   asset.textures },
+    };
+    return root.dump(4);
+  }
+
+  bool MaterialLibrary::Apply(const std::string& name, const std::string& text)
+  {
+    const auto it = assets_.find(name);
+    if (it == assets_.end()) {
+      return false;
+    }
+    Asset& asset = it->second;
+
+    try {
+      const json         root   = json::parse(text);
+      const ShaderAsset* shader = Renderer::GetInstance()->FindShader(root.at("Shader").get<std::string>());
+      if (!shader) {
+        Logger::Log("Material shader not registered: %s", root.at("Shader").get<std::string>().c_str());
+        return false;
+      }
+
+      // シェーダーを替えても、同じ名前の値は引き継ぐ
+      Material&  material = *asset.material;
+      const json previous = asset.layout->SerializeValues(material.GetConstantBytes());
+      if (material.GetShader() != shader) {
+        material.SetShader(shader);
+      }
+      asset.layout = GetLayout(*shader);
+      const std::span<uint8_t> bytes = material.GetConstantBytes(asset.layout->constantSize);
+      std::ranges::fill(bytes, uint8_t{ 0 });
+      asset.layout->DeserializeValues(previous, bytes);
+      asset.layout->DeserializeValues(root.value("Values", json::object()), bytes);
+
+      // 書いていない描画設定はシェーダーの既定にする
+      const GraphicsPipelineDesc* forward = shader->GetPass(ShaderPass::Forward);
+      RenderState                 state   = forward ? forward->renderState : RenderState{};
+      ReadRenderState(root, state);
+      material.SetBlendMode(state.blend);
+      material.SetCullMode(state.cull);
+      material.SetDepthTest(state.depthTest);
+      material.SetDepthWrite(state.depthWrite);
+      material.SetRenderQueue(root.value("Queue", shader->GetDefaultQueue()));
+
+      asset.textures = root.value("Textures", std::map<std::string, std::string>{});
+      FitTextures(asset);
+      return true;
+    }
+    catch (const json::exception& e) {
+      Logger::Log("Material apply failed: %s (%s)", name.c_str(), e.what());
+      return false;
+    }
+  }
+
+  bool MaterialLibrary::DrawValues(const std::string& name)
+  {
+    const auto it = assets_.find(name);
+    if (it == assets_.end()) {
+      return false;
+    }
+    Asset& asset = it->second;
+    return asset.layout->DrawImGui(asset.material->GetConstantBytes(asset.layout->constantSize));
+  }
+
+  std::shared_ptr<const MaterialPropertyLayout> MaterialLibrary::GetLayout(const ShaderAsset& shader)
+  {
+    const GraphicsPipelineDesc* forward = shader.GetPass(ShaderPass::Forward);
+    const Shader*               ps      = forward ? forward->ps : nullptr;
+    ShaderInfo&                 info    = shaders_[shader.GetName()];
+    // ホットリロードで PS のバージョンが上がったら作り直す
+    const uint32_t version = ps ? ps->GetVersion() : 0;
+    if (!info.layout || info.version != version) {
+      info.layout = MaterialPropertyLayout::Reflect(ps ? ps->GetReflection() : nullptr, "gMaterial", info.ranges);
+      info.version = version;
+    }
+    return info.layout;
+  }
+
+  std::vector<std::string> MaterialLibrary::GetMaterialFileNames() const
+  {
+    std::vector<std::string> names;
+    std::error_code ec;
+    for (const auto& entry : std::filesystem::directory_iterator(kMaterialDirectory, ec)) {
+      const std::string fileName = entry.path().filename().string();
+      if (fileName.ends_with(kMaterialExtension)) {
+        names.push_back(fileName.substr(0, fileName.size() - kMaterialExtension.size()));
+      }
+    }
+    return names;
+  }
+
+  std::shared_ptr<Material> MaterialLibrary::Find(const std::string& name) const
+  {
+    const auto it = assets_.find(name);
+    return it != assets_.end() ? it->second.material : nullptr;
+  }
+
+  void MaterialLibrary::LoadShaderFile(const std::string& path)
+  {
+    const std::optional<std::string> text = ReadText(path);
+    if (!text) {
+      return;
+    }
+
+    try {
+      const json         root    = json::parse(*text);
+      const std::string  name    = root.at("Name").get<std::string>();
+      ShaderLibrary&     library = dx12_->GetShaderLibrary();
+      ShaderInfo&        info    = shaders_[name];
+      // value() の戻り値は一時オブジェクトなので、items() で回す前に受けておく
+      const json properties = root.value("Properties", json::object());
+      for (const auto& [property, range] : properties.items()) {
+        if (range.is_array() && range.size() == 2) {
+          info.ranges[property] = { range[0].get<float>(), range[1].get<float>() };
+        }
+      }
+
+      // 描画物のシェーダー
+      if (const auto forward = root.find("Forward"); forward != root.end()) {
+        GraphicsPipelineDesc pipeline;
+        pipeline.vs = library.TryGet({ StringUtility::ConvertString(forward->value("VS", std::string("Object3D.VS.hlsl"))), ShaderStage::Vertex });
+        pipeline.ps = library.TryGet({ StringUtility::ConvertString(forward->at("PS").get<std::string>()), ShaderStage::Pixel });
+        if (!pipeline.vs || !pipeline.ps) {
+          Logger::Log("Shader asset skipped (compile failed): %s", path.c_str());
+          return;
+        }
+        pipeline.vertexLayout = VertexLayout::Mesh;
+        pipeline.renderState.blend = BlendMode::Alpha;
+        ReadRenderState(*forward, pipeline.renderState);
+
+        Renderer*    renderer = Renderer::GetInstance();
+        ShaderAsset& shader   = renderer->RegisterShader(name);
+        // 色を決めないパス（影・マスク）は Fallback のシェーダーのものを使う
+        if (const ShaderAsset* fallback = renderer->FindShader(root.value("Fallback", std::string()))) {
+          for (ShaderPass pass : { ShaderPass::ShadowCaster, ShaderPass::Mask }) {
+            for (bool instanced : { false, true }) {
+              if (const GraphicsPipelineDesc* source = fallback->GetPass(pass, instanced)) {
+                shader.SetPass(pass, *source, instanced);
+              }
+            }
+          }
+        }
+        shader.SetPass(ShaderPass::Forward, pipeline);
+        shader.SetDefaultQueue(root.value("Queue", ShaderAsset::kQueueGeometry));
+      }
+
+      // ポストエフェクト
+      if (const auto post = root.find("PostEffect"); post != root.end()) {
+        const std::wstring psFile = StringUtility::ConvertString(post->at("PS").get<std::string>());
+        const Shader*      ps     = library.TryGet({ psFile, ShaderStage::Pixel });
+        if (!ps) {
+          Logger::Log("Post effect skipped (compile failed): %s", path.c_str());
+          return;
+        }
+        PropertyBlock block{ MaterialPropertyLayout::Reflect(ps->GetReflection(), "gParam", info.ranges), {} };
+        block.bytes.resize(block.layout->constantSize);
+        block.layout->DeserializeValues(root.value("Defaults", json::object()), block.bytes);
+        RegisterPostEffect(name, { .pixelShader = psFile, .defaultParam = std::move(block), .usesDepth = post->value("UsesDepth", false) });
+      }
+    }
+    catch (const json::exception& e) {
+      Logger::Log("Shader asset load failed: %s (%s)", path.c_str(), e.what());
+    }
+  }
+
+  void MaterialLibrary::FitTextures(Asset& asset) const
+  {
+    Material&                       material = *asset.material;
+    const std::vector<std::string>& slots    = asset.layout->textures;
+    std::erase_if(asset.textures, [&](const auto& texture) {
+      if (std::ranges::find(slots, texture.first) != slots.end()) {
+        return false;
+      }
+      material.SetTexture(MakeShaderParamId(texture.first), 0);
+      return true;
+    });
+
+    TextureManager* textureManager = TextureManager::GetInstance();
+    for (const std::string& slot : slots) {
+      uint32_t   srvIndex = textureManager->GetEngineDefaultSRVIndex("white.png");
+      const auto file     = asset.textures.find(slot);
+      if (file != asset.textures.end() && !file->second.empty()) {
+        // 無いファイルを読もうとすると TextureManager が止まるので、先に確かめる
+        if (textureManager->IsLoaded(file->second) || std::filesystem::exists(textureManager->GetFilePath(file->second))) {
+          textureManager->LoadTexture(file->second);
+          srvIndex = textureManager->GetSRVIndex(file->second);
+        }
+        else {
+          Logger::Log("Material texture not found: %s", file->second.c_str());
+        }
+      }
+      material.SetTexture(MakeShaderParamId(slot), srvIndex);
+    }
+  }
+
+} // namespace Tako

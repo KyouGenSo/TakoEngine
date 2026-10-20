@@ -255,6 +255,9 @@
     <ClCompile Include="engine\render\RenderGraph.cpp" />
     <ClCompile Include="engine\render\PostProcess.cpp" />
     <ClCompile Include="engine\render\RenderPipeline.cpp" />
+    <ClCompile Include="engine\render\MaterialPropertyLayout.cpp" />
+    <ClCompile Include="engine\render\MaterialLibrary.cpp" />
+    <ClCompile Include="engine\debug\MaterialEditor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\3d\Decal\Decal.h" />
@@ -387,6 +390,9 @@
     <ClInclude Include="engine\render\RenderGraph.h" />
     <ClInclude Include="engine\render\PostProcess.h" />
     <ClInclude Include="engine\render\RenderPipeline.h" />
+    <ClInclude Include="engine\render\MaterialPropertyLayout.h" />
+    <ClInclude Include="engine\render\MaterialLibrary.h" />
+    <ClInclude Include="engine\debug\MaterialEditor.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">

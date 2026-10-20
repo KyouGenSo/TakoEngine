@@ -201,6 +201,18 @@ public: // メンバー関数
   }
 
   /// <summary>
+  /// SetModel に渡したファイル名（Model を直接渡した場合は空）
+  /// </summary>
+  const std::string& GetModelName() const { return modelName_; }
+
+#ifdef _DEBUG
+  /// <summary>
+  /// 生存中の Object3d（エディタでマテリアルを割り当てる先の一覧）
+  /// </summary>
+  static const std::vector<Object3d*>& GetLiveObjects();
+#endif
+
+  /// <summary>
   /// マテリアルカラーを取得
   /// </summary>
   /// <returns>マテリアルカラー（RGBA）</returns>
@@ -251,6 +263,7 @@ private: // プライベートメンバー関数
 
 private: // メンバー変数
   std::unique_ptr<Model> model_;
+  std::string            modelName_;
   Transform              transform_;
 
   //バッファリソース

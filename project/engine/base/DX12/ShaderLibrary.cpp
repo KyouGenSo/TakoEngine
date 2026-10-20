@@ -96,14 +96,24 @@ namespace Tako {
 
   const Shader* ShaderLibrary::Get(const ShaderKey& key)
   {
-    std::unique_ptr<Shader>& slot = shaders_[MakeCacheKey(key)];
-    if (!slot) {
-      slot = std::make_unique<Shader>();
-      slot->key_ = key;
-      [[maybe_unused]] const bool compiled = Compile(*slot);
-      assert(compiled && "ShaderLibrary: compile failed");
+    const Shader* shader = TryGet(key);
+    assert(shader && "ShaderLibrary: compile failed");
+    return shader;
+  }
+
+  const Shader* ShaderLibrary::TryGet(const ShaderKey& key)
+  {
+    const std::wstring cacheKey = MakeCacheKey(key);
+    if (const auto it = shaders_.find(cacheKey); it != shaders_.end()) {
+      return it->second.get();
     }
-    return slot.get();
+    // 失敗したキーは登録しないので、ファイルを直せば次の呼び出しでコンパイルし直す
+    auto shader = std::make_unique<Shader>();
+    shader->key_ = key;
+    if (!Compile(*shader)) {
+      return nullptr;
+    }
+    return (shaders_[cacheKey] = std::move(shader)).get();
   }
 
   bool ShaderLibrary::ReloadChangedShaders()
@@ -151,11 +161,14 @@ namespace Tako {
 
     const std::wstring pathText = path.wstring();
     const std::wstring includeDir = path.parent_path().wstring();
+    // ゲーム側のシェーダーからもエンジンの .hlsli を include できるようにする
+    const std::wstring engineIncludeDir = engineShaderDir_.wstring();
     std::vector<LPCWSTR> arguments = {
       pathText.c_str(),
       L"-E", key.entry.c_str(),
       L"-T", Profile(key.stage),
       L"-I", includeDir.c_str(),
+      L"-I", engineIncludeDir.c_str(),
       L"-Zpr",  // 行列を行優先で詰める（C++ 側の Matrix4x4 と合わせる）
 #ifdef _DEBUG
       L"-Zi", L"-Qembed_debug", L"-Od",

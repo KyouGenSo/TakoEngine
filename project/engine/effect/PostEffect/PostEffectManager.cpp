@@ -43,6 +43,8 @@ namespace Tako {
   NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DissolveParam, threshold, edgeThickness, edgeColor)
   NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(HalfToneParam, dotSize, contrast, angle, dotPattern, colorMode, threshold)
   NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GaussianBlurParam, sigma, kernelSize)
+  static void to_json(json& j, const PropertyBlock& block) { j = block.layout->SerializeValues(block.bytes); }
+  static void from_json(const json& j, PropertyBlock& block) { block.layout->DeserializeValues(j, block.bytes); }
 
   namespace {
 
@@ -202,6 +204,12 @@ namespace Tako {
     {
       ImGui::DragFloat("Blur Sigma", &param.sigma, 0.01f, 0.0f, 50.0f);
       ImGui::DragInt("Blur Kernel Size", &param.kernelSize, 1.0f, 1, 100);
+    }
+
+    // .shader.json で登録したエフェクトはシェーダーのリフレクションから UI を作る
+    void DrawParam(PropertyBlock& param)
+    {
+      param.layout->DrawImGui(param.bytes);
     }
 #endif
 

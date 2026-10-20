@@ -151,6 +151,11 @@ namespace Tako {
     /// </summary>
     const ShaderAsset* FindShader(std::string_view name) const;
 
+    /// <summary>
+    /// 登録したシェーダーの名前（名前順）
+    /// </summary>
+    std::vector<std::string> GetShaderNames() const;
+
   private: //非公開関数
     void RegisterBuiltinShaders();
 

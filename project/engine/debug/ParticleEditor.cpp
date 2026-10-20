@@ -850,11 +850,8 @@ namespace Tako {
     // 描画設定 (per-emitter): ブレンドモード / ビルボード / テクスチャ / メッシュ形状描画
     if (ImGui::CollapsingHeader("Render Settings")) {
       // ブレンドモード
-      // 並びは BlendMode の値と一致させる
-      static const char* kBlendLabels[] = { "Add", "Screen", "Alpha", "Opaque", "Multiply", "Premultiplied" };
-      static_assert(IM_ARRAYSIZE(kBlendLabels) == static_cast<size_t>(BlendMode::Count));
       int blend = static_cast<int>(emitter->GetBlendMode());
-      if (ImGui::Combo("Blend Mode##Render", &blend, kBlendLabels, IM_ARRAYSIZE(kBlendLabels))) {
+      if (ImGui::Combo("Blend Mode##Render", &blend, kBlendModeNames, IM_ARRAYSIZE(kBlendModeNames))) {
         emitter->SetBlendMode(static_cast<BlendMode>(blend));
       }
 

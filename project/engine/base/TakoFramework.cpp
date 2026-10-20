@@ -9,6 +9,7 @@
 #include "LineRenderer.h"
 #include "PostEffectManager.h"
 #include "RenderPipeline.h"
+#include "MaterialLibrary.h"
 #include "GPUParticle.h"
 #include "TransitionManager.h"
 #include "FrameTimer.h"
@@ -99,6 +100,9 @@ namespace Tako {
 
     RenderPipeline::GetInstance()->Initialize(dx12_.get());
 
+    // データファイルのシェーダーとポストエフェクトを登録する（Renderer と PostEffectManager の後）
+    MaterialLibrary::GetInstance()->Initialize(dx12_.get());
+
     DecalManager::GetInstance()->Initialize(dx12_.get());
     DecalManager::GetInstance()->SetCamera(defaultCamera_.get());
 
@@ -139,6 +143,8 @@ namespace Tako {
 
     // Initialize の逆順で終了処理を実行
     TransitionManager::GetInstance()->Finalize();
+
+    MaterialLibrary::GetInstance()->Finalize();
 
     RenderPipeline::GetInstance()->Finalize();
 
@@ -195,6 +201,7 @@ namespace Tako {
 #ifdef _DEBUG
     // GPU は前フレームを描き終えているので、ここで PSO を作り直してよい
     dx12_->GetShaderLibrary().ReloadChangedShaders();
+    MaterialLibrary::GetInstance()->Update();
 #endif
 
     // 前フレームの GPU 処理は EndDraw で完了済みなので、ここなら RT を作り直せる。

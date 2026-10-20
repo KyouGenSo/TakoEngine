@@ -420,6 +420,15 @@
     <ClCompile Include="engine\render\RenderPipeline.cpp">
       <Filter>render</Filter>
     </ClCompile>
+    <ClCompile Include="engine\render\MaterialPropertyLayout.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\render\MaterialLibrary.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\debug\MaterialEditor.cpp">
+      <Filter>debug</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\math\Matrix4x4.h">
@@ -811,6 +820,15 @@
     </ClInclude>
     <ClInclude Include="engine\render\RenderPipeline.h">
       <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\MaterialPropertyLayout.h">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\MaterialLibrary.h">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\debug\MaterialEditor.h">
+      <Filter>debug</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -127,6 +127,7 @@ namespace Tako {
     // GPU の完了を待ったので、このフレームのコマンドと一時定数はもう読まれない
     context_.Reset();
     uploadAllocator_.Reset();
+    pendingReleases_.clear();
   }
 
   void DX12Basic::WaitForGPU()
