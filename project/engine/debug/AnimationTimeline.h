@@ -30,16 +30,32 @@ namespace Tako {
       None,
       Scrub,
       Move,
+      CurveMove,  ///< 値グラフでキーの値と時刻を動かす
       RectSelect,
       Pan
     };
 
     /// <summary>
-    /// 移動を始めたときの時刻（並び替えで位置が変わるので id で引き直す）
+    /// 移動を始めたときの時刻と値（並び替えで位置が変わるので id で引き直す）
     /// </summary>
     struct DragItem {
       uint32_t id;
       float    startTime;
+      float    startValue = 0.0f;  ///< 値グラフで動かすときだけ使う
+    };
+
+    /// <summary>
+    /// 値グラフの縦の範囲と、値と画面の y の変換
+    /// </summary>
+    struct CurveView {
+      float originX  = 0.0f;  ///< 見出し列の左端（スクリーン座標）
+      float top      = 0.0f;
+      float bottom   = 0.0f;
+      float minValue = 0.0f;
+      float maxValue = 1.0f;
+
+      [[nodiscard]] float ValueToY(float value) const { return bottom - (value - minValue) / (maxValue - minValue) * (bottom - top); }
+      [[nodiscard]] float YToValue(float y) const { return minValue + (bottom - y) / (bottom - top) * (maxValue - minValue); }
     };
 
   public: //メンバー関数
@@ -49,9 +65,9 @@ namespace Tako {
     void Draw(AnimationClip& clip, float& playhead, float height);
 
     /// <summary>
-    /// 選択中のトラックの値の変化を、ドープシートと同じ時間軸で描く（表示のみ）
+    /// 選択中のトラックの値の変化を、ドープシートと同じ時間軸で描く。キーのドラッグで値と時刻を、ダブルクリックでキーを足す
     /// </summary>
-    void DrawCurve(const AnimationClip& clip, float playhead);
+    void DrawCurve(AnimationClip& clip, float& playhead);
 
     /// <summary>
     /// 削除・Undo・読み直しで無くなったキーとイベントを選択から外す
@@ -108,6 +124,23 @@ namespace Tako {
     void DrawRows(const AnimationClip& clip, ImDrawList* drawList);
     void DrawRuler(const AnimationClip& clip, ImDrawList* drawList, float playhead);
     void HandleInput(AnimationClip& clip, float& playhead);
+    void HandleCurveInput(AnimationClip& clip, AnimTrack& track, float& playhead, bool isHovered);
+
+    /// <summary>
+    /// Ctrl+ホイールの拡大縮小、Shift+ホイールの横スクロール、中ボタンのパン。originX はキーを並べる列の左にある見出し列の左端
+    /// </summary>
+    /// <returns>パン中なら true（ほかの操作を受けない）</returns>
+    bool HandleViewInput(float originX, float duration, bool isHovered);
+
+    /// <summary>
+    /// キーかイベントを押したときの選択。Ctrl なら足し引きし、選択中のものを押したら離すまで複数選択を保つ
+    /// </summary>
+    void SelectOnPress(uint32_t id, bool isToggle);
+
+    /// <summary>
+    /// 左ボタンを離したときに、進行中の操作を終える（何度呼んでも同じ）
+    /// </summary>
+    void FinishDrag(const AnimationClip& clip);
 
     /// <summary>
     /// 行 row の時刻 x 付近にあるキーかイベントの id
@@ -116,12 +149,28 @@ namespace Tako {
     uint32_t HitTest(const AnimationClip& clip, int row, float x) const;
 
     /// <summary>
+    /// 値グラフで position の付近にある track のキーの id
+    /// </summary>
+    /// <returns>無ければ 0</returns>
+    uint32_t HitTestCurve(const AnimTrack& track, ImVec2 position) const;
+
+    /// <summary>
     /// ダブルクリックした行の time にキー（イベント行ならイベント）を足して選ぶ
     /// </summary>
     void AddAt(AnimationClip& clip, int row, float time);
 
     void BeginMove(AnimationClip& clip, uint32_t anchorId);
     void UpdateMove(AnimationClip& clip, float& playhead);
+
+    /// <summary>
+    /// 値グラフで、track の選択中のキーを動かし始める
+    /// </summary>
+    void BeginCurveMove(const AnimTrack& track, uint32_t anchorId);
+
+    /// <summary>
+    /// 縦の移動で値を、横の移動で時刻を動かす。Shift なら多く動いた方の軸だけを使う
+    /// </summary>
+    void UpdateCurveMove(AnimationClip& clip, AnimProperty property, float& playhead);
     void FinishRectSelect(const AnimationClip& clip);
 
     /// <summary>
@@ -132,6 +181,8 @@ namespace Tako {
     [[nodiscard]] float RowTop(int row) const { return origin_.y + kRulerHeight + kRowHeight * static_cast<float>(row); }
     [[nodiscard]] float TimeToX(float time) const { return origin_.x + kLabelWidth + (time - offset_) * pixelsPerSecond_; }
     [[nodiscard]] float XToTime(float screenX) const { return (screenX - origin_.x - kLabelWidth) / pixelsPerSecond_ + offset_; }
+    [[nodiscard]] float CurveTimeToX(float time) const { return curveView_.originX + kLabelWidth + (time - offset_) * pixelsPerSecond_; }
+    [[nodiscard]] float CurveXToTime(float screenX) const { return (screenX - curveView_.originX - kLabelWidth) / pixelsPerSecond_ + offset_; }
 
     /// <summary>
     /// 目盛りの間隔（ラベルが重ならない最小の切りのよい値）
@@ -170,6 +221,10 @@ namespace Tako {
     std::vector<DragItem> dragItems_;
     float                 dragAnchorTime_ = 0.0f;
     uint32_t              pendingSingle_  = 0;                ///< 選択中のものを押して動かさずに離したら、これだけを選ぶ
+
+    //値グラフ
+    CurveView curveView_;          ///< 直近の DrawCurve の範囲。CurveMove の間は縦の範囲を変えない
+    uint32_t  curveAnchorId_ = 0;  ///< 値グラフで掴んだキー
   };
 
 } // namespace Tako

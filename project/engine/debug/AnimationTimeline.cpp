@@ -39,6 +39,17 @@ namespace Tako {
       drawList->AddPolyline(points, 4, IM_COL32(20, 20, 20, 255), ImDrawFlags_Closed, 1.0f);
     }
 
+    /// <summary>
+    /// 値グラフで動かした値を、プロパティが取る値に丸める（Frame は 0 以上の整数、Visible は 0 か 1）
+    /// </summary>
+    float QuantizeValue(AnimProperty property, float value) {
+      switch (property) {
+      case AnimProperty::Frame:   return (std::max)(std::round(value), 0.0f);
+      case AnimProperty::Visible: return value >= 0.5f ? 1.0f : 0.0f;
+      default:                    return value;
+      }
+    }
+
   } // namespace
 
   void AnimationTimeline::Draw(AnimationClip& clip, float& playhead, float height) {
@@ -74,19 +85,19 @@ namespace Tako {
     ImGui::EndChild();
   }
 
-  void AnimationTimeline::DrawCurve(const AnimationClip& clip, float playhead) {
-    if (!ImGui::BeginChild("Curve", ImVec2(0.0f, 0.0f), ImGuiChildFlags_Borders)) {
+  void AnimationTimeline::DrawCurve(AnimationClip& clip, float& playhead) {
+    if (!ImGui::BeginChild("Curve", ImVec2(0.0f, 0.0f), ImGuiChildFlags_Borders, ImGuiWindowFlags_NoScrollWithMouse)) {
       ImGui::EndChild();
       return;
     }
 
-    const std::vector<AnimTrack>& tracks = clip.GetTracks();
+    std::vector<AnimTrack>& tracks = clip.GetTracks();
     if (selectedTrack_ < 0 || selectedTrack_ >= static_cast<int>(tracks.size()) || tracks[selectedTrack_].keys.empty()) {
       ImGui::TextDisabled("Select a track with keys to see its values over time.");
       ImGui::EndChild();
       return;
     }
-    const AnimTrack& track = tracks[selectedTrack_];
+    AnimTrack& track = tracks[selectedTrack_];
 
     ImDrawList* drawList = ImGui::GetWindowDrawList();
     const ImVec2 canvasMin  = ImGui::GetCursorScreenPos();
@@ -98,8 +109,9 @@ namespace Tako {
     // ドープシートと同じ時間軸にするため、横方向は同じ原点からの距離で描く
     const float plotLeft  = canvasMin.x + kLabelWidth;
     const float plotRight = canvasMin.x + canvasSize.x;
-    auto timeToX = [&](float time) { return canvasMin.x + kLabelWidth + (time - offset_) * pixelsPerSecond_; };
-    auto xToTime = [&](float x) { return (x - canvasMin.x - kLabelWidth) / pixelsPerSecond_ + offset_; };
+    curveView_.originX = canvasMin.x;
+    curveView_.top     = canvasMin.y + 4.0f;
+    curveView_.bottom  = canvasMin.y + canvasSize.y - 4.0f;
 
     // 表示中の範囲の値を折れ線にする
     const int          sampleCount = (std::max)(static_cast<int>((plotRight - plotLeft) / 3.0f), 2);
@@ -108,7 +120,7 @@ namespace Tako {
     float              maxValue = std::numeric_limits<float>::lowest();
     for (int i = 0; i < sampleCount; ++i) {
       const float x = plotLeft + (plotRight - plotLeft) * static_cast<float>(i) / static_cast<float>(sampleCount - 1);
-      samples[i] = AnimationClip::EvaluateTrack(track, xToTime(x));
+      samples[i] = AnimationClip::EvaluateTrack(track, CurveXToTime(x));
       minValue   = (std::min)(minValue, samples[i]);
       maxValue   = (std::max)(maxValue, samples[i]);
     }
@@ -116,43 +128,55 @@ namespace Tako {
       minValue = (std::min)(minValue, key.value);
       maxValue = (std::max)(maxValue, key.value);
     }
+    // Visible は 0 と 1 しか取らないので、ドラッグで切り替えてもキーが範囲の外へ出ないよう両方を入れておく
+    if (track.property == AnimProperty::Visible) {
+      minValue = (std::min)(minValue, 0.0f);
+      maxValue = (std::max)(maxValue, 1.0f);
+    }
     if (maxValue - minValue < 1e-4f) {
       minValue -= 0.5f;
       maxValue += 0.5f;
     }
-    const float padding = (maxValue - minValue) * 0.1f;
-    minValue -= padding;
-    maxValue += padding;
-
-    const float top    = canvasMin.y + 4.0f;
-    const float bottom = canvasMin.y + canvasSize.y - 4.0f;
-    auto valueToY = [&](float value) { return bottom - (value - minValue) / (maxValue - minValue) * (bottom - top); };
+    // ドラッグ中は縦の範囲を変えない（範囲の外へ動かしたときに 1px あたりの値が毎フレーム変わり、キーが暴れるため）
+    if (operation_ != Operation::CurveMove) {
+      const float padding = (maxValue - minValue) * 0.1f;
+      curveView_.minValue = minValue - padding;
+      curveView_.maxValue = maxValue + padding;
+    }
 
     drawList->AddRectFilled(canvasMin, ImVec2(plotRight, canvasMin.y + canvasSize.y), kBackgroundColor);
     drawList->AddRectFilled(canvasMin, ImVec2(plotLeft, canvasMin.y + canvasSize.y), kLabelColor);
     drawList->AddText(ImVec2(canvasMin.x + 6.0f, canvasMin.y + 4.0f), kTextColor, TrackLabel(track).c_str());
-    drawList->AddText(ImVec2(canvasMin.x + 6.0f, canvasMin.y + 22.0f), kDimTextColor, std::format("max {:.3g}", maxValue - padding).c_str());
-    drawList->AddText(ImVec2(canvasMin.x + 6.0f, bottom - 16.0f), kDimTextColor, std::format("min {:.3g}", minValue + padding).c_str());
+    drawList->AddText(ImVec2(canvasMin.x + 6.0f, canvasMin.y + 22.0f), kDimTextColor, std::format("max {:.3g}", maxValue).c_str());
+    drawList->AddText(ImVec2(canvasMin.x + 6.0f, curveView_.bottom - 16.0f), kDimTextColor, std::format("min {:.3g}", minValue).c_str());
+    if (canvasSize.y > 110.0f) {
+      drawList->AddText(ImVec2(canvasMin.x + 6.0f, canvasMin.y + 44.0f), kDimTextColor, "Drag a key: value / time\nShift+Drag: one axis\nDouble-click: add a key");
+    }
 
     drawList->PushClipRect(ImVec2(plotLeft, canvasMin.y), ImVec2(plotRight, canvasMin.y + canvasSize.y), true);
 
     // 静止時の値（上乗せが効いていない高さ）
-    const float restY = valueToY(GetAnimPropertyInfo(track.property).restValue);
+    const float restY = curveView_.ValueToY(GetAnimPropertyInfo(track.property).restValue);
     drawList->AddLine(ImVec2(plotLeft, restY), ImVec2(plotRight, restY), kGridColor);
 
     const ImU32 color = TrackColor(track.property);
     for (int i = 1; i < sampleCount; ++i) {
       const float x0 = plotLeft + (plotRight - plotLeft) * static_cast<float>(i - 1) / static_cast<float>(sampleCount - 1);
       const float x1 = plotLeft + (plotRight - plotLeft) * static_cast<float>(i) / static_cast<float>(sampleCount - 1);
-      drawList->AddLine(ImVec2(x0, valueToY(samples[i - 1])), ImVec2(x1, valueToY(samples[i])), color, 2.0f);
+      drawList->AddLine(ImVec2(x0, curveView_.ValueToY(samples[i - 1])), ImVec2(x1, curveView_.ValueToY(samples[i])), color, 2.0f);
     }
+    const bool     isHovered = ImGui::IsWindowHovered();
+    const uint32_t hovered   = isHovered ? HitTestCurve(track, ImGui::GetIO().MousePos) : 0;
     for (const AnimKey& key : track.keys) {
-      drawList->AddCircleFilled(ImVec2(timeToX(key.time), valueToY(key.value)), 4.0f, IsSelected(key.id) ? kSelectedKeyColor : color);
+      const float radius = key.id == hovered ? 5.5f : 4.0f;
+      drawList->AddCircleFilled(ImVec2(CurveTimeToX(key.time), curveView_.ValueToY(key.value)), radius, IsSelected(key.id) ? kSelectedKeyColor : color);
     }
 
-    const float playheadX = timeToX(playhead);
+    const float playheadX = CurveTimeToX(playhead);
     drawList->AddLine(ImVec2(playheadX, canvasMin.y), ImVec2(playheadX, canvasMin.y + canvasSize.y), kPlayheadColor, 1.5f);
     drawList->PopClipRect();
+
+    HandleCurveInput(clip, track, playhead, isHovered);
 
     ImGui::EndChild();
   }
@@ -285,33 +309,11 @@ namespace Tako {
     const bool     isInKeys   = mouse.x > origin_.x + kLabelWidth;
     const float    duration   = clip.GetDuration();
 
-    // ホイール：Ctrl でカーソル位置を中心に拡大縮小、Shift で横、無しで縦にスクロール
-    if (isHovered && io.MouseWheel != 0.0f) {
-      if (io.KeyCtrl) {
-        const float timeAtMouse = XToTime(mouse.x);
-        pixelsPerSecond_ = std::clamp(pixelsPerSecond_ * (io.MouseWheel > 0.0f ? 1.2f : 1.0f / 1.2f), kMinPixelsPerSecond, kMaxPixelsPerSecond);
-        offset_          = timeAtMouse - (mouse.x - origin_.x - kLabelWidth) / pixelsPerSecond_;
-      }
-      else if (io.KeyShift) {
-        offset_ -= io.MouseWheel * 60.0f / pixelsPerSecond_;
-      }
-      else {
-        ImGui::SetScrollY(ImGui::GetScrollY() - io.MouseWheel * kRowHeight * 3.0f);
-      }
-      ClampOffset(duration);
+    // 修飾キー無しのホイールは行の縦スクロール
+    if (isHovered && io.MouseWheel != 0.0f && !io.KeyCtrl && !io.KeyShift) {
+      ImGui::SetScrollY(ImGui::GetScrollY() - io.MouseWheel * kRowHeight * 3.0f);
     }
-
-    if (isHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Middle)) {
-      operation_      = Operation::Pan;
-      dragStart_      = mouse;
-      panStartOffset_ = offset_;
-    }
-    if (operation_ == Operation::Pan) {
-      offset_ = panStartOffset_ - (mouse.x - dragStart_.x) / pixelsPerSecond_;
-      ClampOffset(duration);
-      if (ImGui::IsMouseReleased(ImGuiMouseButton_Middle)) {
-        operation_ = Operation::None;
-      }
+    if (HandleViewInput(origin_.x, duration, isHovered)) {
       return;
     }
 
@@ -359,21 +361,7 @@ namespace Tako {
           selectedTrack_ = row - 1;
         }
         if (const uint32_t hit = HitTest(clip, row, mouse.x); hit != 0) {
-          if (io.KeyCtrl) {
-            if (IsSelected(hit)) {
-              std::erase(selection_, hit);
-            }
-            else {
-              selection_.push_back(hit);
-            }
-          }
-          else if (IsSelected(hit)) {
-            // 複数選択のまま動かせるよう選択を保つ。動かさずに離したらこれだけを選ぶ
-            pendingSingle_ = hit;
-          }
-          else {
-            selection_ = { hit };
-          }
+          SelectOnPress(hit, io.KeyCtrl);
           if (IsSelected(hit)) {
             BeginMove(clip, hit);
             playhead = dragAnchorTime_;
@@ -410,16 +398,120 @@ namespace Tako {
     }
 
     if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
-      if (operation_ == Operation::RectSelect) {
-        FinishRectSelect(clip);
-      }
-      if (pendingSingle_ != 0) {
-        selection_ = { pendingSingle_ };
-      }
-      operation_     = Operation::None;
-      pendingSingle_ = 0;
-      dragItems_.clear();
+      FinishDrag(clip);
     }
+  }
+
+  void AnimationTimeline::HandleCurveInput(AnimationClip& clip, AnimTrack& track, float& playhead, bool isHovered) {
+    const ImGuiIO& io       = ImGui::GetIO();
+    const ImVec2   mouse    = io.MousePos;
+    const float    duration = clip.GetDuration();
+    const bool     isInPlot = isHovered && mouse.x > curveView_.originX + kLabelWidth;
+
+    if (HandleViewInput(curveView_.originX, duration, isHovered)) {
+      return;
+    }
+
+    // ダブルクリックは、その時刻とカーソルの高さの値でキーを足す
+    if (isInPlot && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && HitTestCurve(track, mouse) == 0) {
+      AddAt(clip, selectedTrack_ + 1, Snap(std::clamp(CurveXToTime(mouse.x), 0.0f, duration)));
+      if (AnimKey* key = clip.FindKey(selection_.front())) {
+        key->value = QuantizeValue(track.property, curveView_.YToValue(mouse.y));
+      }
+      return;
+    }
+
+    if (isInPlot && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+      if (const uint32_t hit = HitTestCurve(track, mouse); hit != 0) {
+        SelectOnPress(hit, io.KeyCtrl);
+        if (IsSelected(hit)) {
+          BeginCurveMove(track, hit);
+          playhead = dragAnchorTime_;
+        }
+      }
+      else if (!io.KeyCtrl) {
+        selection_.clear();
+      }
+    }
+
+    if (operation_ == Operation::CurveMove && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+      if (ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
+        pendingSingle_ = 0;
+        UpdateCurveMove(clip, track.property, playhead);
+      }
+      if (const AnimKey* key = clip.FindKey(curveAnchorId_)) {
+        ImGui::SetTooltip("%.3f s  /  %.3f", key->time, key->value);
+      }
+    }
+
+    // 先に呼ばれる HandleInput が終えていれば何もしない（ドープシートが描かれないフレームのため）
+    if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+      FinishDrag(clip);
+    }
+  }
+
+  bool AnimationTimeline::HandleViewInput(float originX, float duration, bool isHovered) {
+    const ImGuiIO& io    = ImGui::GetIO();
+    const ImVec2   mouse = io.MousePos;
+
+    // Ctrl+ホイールでカーソル位置を中心に拡大縮小、Shift+ホイールで横にスクロール
+    if (isHovered && io.MouseWheel != 0.0f && (io.KeyCtrl || io.KeyShift)) {
+      if (io.KeyCtrl) {
+        const float keysLeft    = originX + kLabelWidth;
+        const float timeAtMouse = (mouse.x - keysLeft) / pixelsPerSecond_ + offset_;
+        pixelsPerSecond_ = std::clamp(pixelsPerSecond_ * (io.MouseWheel > 0.0f ? 1.2f : 1.0f / 1.2f), kMinPixelsPerSecond, kMaxPixelsPerSecond);
+        offset_          = timeAtMouse - (mouse.x - keysLeft) / pixelsPerSecond_;
+      }
+      else {
+        offset_ -= io.MouseWheel * 60.0f / pixelsPerSecond_;
+      }
+      ClampOffset(duration);
+    }
+
+    if (isHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Middle)) {
+      operation_      = Operation::Pan;
+      dragStart_      = mouse;
+      panStartOffset_ = offset_;
+    }
+    if (operation_ != Operation::Pan) {
+      return false;
+    }
+    offset_ = panStartOffset_ - (mouse.x - dragStart_.x) / pixelsPerSecond_;
+    ClampOffset(duration);
+    if (ImGui::IsMouseReleased(ImGuiMouseButton_Middle)) {
+      operation_ = Operation::None;
+    }
+    return true;
+  }
+
+  void AnimationTimeline::SelectOnPress(uint32_t id, bool isToggle) {
+    if (isToggle) {
+      if (IsSelected(id)) {
+        std::erase(selection_, id);
+      }
+      else {
+        selection_.push_back(id);
+      }
+    }
+    else if (IsSelected(id)) {
+      // 複数選択のまま動かせるよう選択を保つ。動かさずに離したらこれだけを選ぶ
+      pendingSingle_ = id;
+    }
+    else {
+      selection_ = { id };
+    }
+  }
+
+  void AnimationTimeline::FinishDrag(const AnimationClip& clip) {
+    if (operation_ == Operation::RectSelect) {
+      FinishRectSelect(clip);
+    }
+    if (pendingSingle_ != 0) {
+      selection_ = { pendingSingle_ };
+    }
+    operation_     = Operation::None;
+    pendingSingle_ = 0;
+    dragItems_.clear();
   }
 
   uint32_t AnimationTimeline::HitTest(const AnimationClip& clip, int row, float x) const {
@@ -442,6 +534,18 @@ namespace Tako {
     const std::vector<AnimKey>& keys = tracks[row - 1].keys;
     for (auto it = keys.rbegin(); it != keys.rend(); ++it) {
       if (std::abs(TimeToX(it->time) - x) <= radius) {
+        return it->id;
+      }
+    }
+    return 0;
+  }
+
+  uint32_t AnimationTimeline::HitTestCurve(const AnimTrack& track, ImVec2 position) const {
+    constexpr float kRadius = 6.0f;
+    for (auto it = track.keys.rbegin(); it != track.keys.rend(); ++it) {
+      const float dx = CurveTimeToX(it->time) - position.x;
+      const float dy = curveView_.ValueToY(it->value) - position.y;
+      if (dx * dx + dy * dy <= kRadius * kRadius) {
         return it->id;
       }
     }
@@ -496,6 +600,51 @@ namespace Tako {
     }
     clip.SortByTime();
     playhead = dragAnchorTime_ + delta;
+  }
+
+  void AnimationTimeline::BeginCurveMove(const AnimTrack& track, uint32_t anchorId) {
+    // 選択はほかのトラックのキーやイベントも含むので、表示中のトラックのキーだけを動かす
+    dragItems_.clear();
+    for (const AnimKey& key : track.keys) {
+      if (IsSelected(key.id)) {
+        dragItems_.push_back({ key.id, key.time, key.value });
+      }
+      if (key.id == anchorId) {
+        dragAnchorTime_ = key.time;
+      }
+    }
+    curveAnchorId_ = anchorId;
+    dragStart_     = ImGui::GetIO().MousePos;
+    operation_     = Operation::CurveMove;
+  }
+
+  void AnimationTimeline::UpdateCurveMove(AnimationClip& clip, AnimProperty property, float& playhead) {
+    // 横に少し動くまでは時刻を変えない（縦だけ動かしたつもりでも、時刻がスナップ間隔へ丸め直されてしまうため）
+    constexpr float kTimeDeadZone = 4.0f;  // px
+
+    const ImGuiIO& io = ImGui::GetIO();
+    const float    dx = io.MousePos.x - dragStart_.x;
+    const float    dy = io.MousePos.y - dragStart_.y;
+    const bool     movesTime  = std::abs(dx) >= kTimeDeadZone && (!io.KeyShift || std::abs(dx) >= std::abs(dy));
+    const bool     movesValue = !io.KeyShift || std::abs(dy) > std::abs(dx);
+
+    // 縦の範囲はドラッグ中は変わらないので、始点との差がそのまま値の差になる
+    const float valueDelta = movesValue ? curveView_.YToValue(io.MousePos.y) - curveView_.YToValue(dragStart_.y) : 0.0f;
+    for (const DragItem& item : dragItems_) {
+      if (AnimKey* key = clip.FindKey(item.id)) {
+        key->value = QuantizeValue(property, item.startValue + valueDelta);
+        if (!movesTime) {
+          key->time = item.startTime;
+        }
+      }
+    }
+    if (movesTime) {
+      UpdateMove(clip, playhead);
+    }
+    else {
+      clip.SortByTime();
+      playhead = dragAnchorTime_;
+    }
   }
 
   void AnimationTimeline::FinishRectSelect(const AnimationClip& clip) {

@@ -210,13 +210,13 @@ namespace Tako {
       ImGui::SameLine();
       ImGui::TextDisabled("Double-click a row to add a key / event. Ctrl+Wheel: zoom, Middle-drag: pan, Right-click a label: track menu");
 
-      // 再生中に目盛りで時刻を動かしたら、そこから再生を続ける
+      // 再生中に目盛りやキーのドラッグで時刻を動かしたら、そこから再生を続ける
       const float playheadBefore = playhead_;
       timeline_.Draw(*clip_, playhead_, ImGui::GetContentRegionAvail().y * 0.62f);
+      timeline_.DrawCurve(*clip_, playhead_);
       if (playhead_ != playheadBefore) {
         playElapsed_ = playhead_;
       }
-      timeline_.DrawCurve(*clip_, playhead_);
     }
     ImGui::EndChild();
 
@@ -293,6 +293,9 @@ namespace Tako {
       { ImGuiMod_Ctrl | ImGuiKey_S, ImGuiInputFlags_None,   "Save",                                     [](AnimationEditor& editor) { editor.Save(); } },
       { ImGuiKey_Delete,            ImGuiInputFlags_None,   "Delete selected keys and events",          [](AnimationEditor& editor) { editor.DeleteSelection(); } },
       { ImGuiKey_Escape,            ImGuiInputFlags_None,   "Deselect",                                 [](AnimationEditor& editor) { editor.timeline_.ClearSelection(); } },
+      { .description = "Move the key's value (vertical) and time (horizontal) in the value graph", .keyLabel = "Drag" },
+      { .description = "Move along one axis only in the value graph",                             .keyLabel = "Shift+Drag" },
+      { .description = "Add a key at that time and value in the value graph",                     .keyLabel = "Double-click" },
     };
     return kShortcuts;
   }
