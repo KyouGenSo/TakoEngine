@@ -39,20 +39,21 @@ namespace Tako {
 
     // 起動時に開くか選べるウィンドウ（メニュー順）。名前は表示ラベルと保存キーを兼ねる。Engine Settings と Help メニュー系は対象外
     constexpr std::pair<Window, const char*> kStartupWindowOptions[] = {
-      { Window::DebugViewport,   "Debug Viewport" },
-      { Window::SceneHierarchy,  "Scene Hierarchy" },
-      { Window::Inspector,       "Inspector" },
-      { Window::GameViewport,    "Game Viewport" },
-      { Window::Console,         "Console" },
-      { Window::Performance,     "Performance" },
-      { Window::Assets,          "Assets" },
-      { Window::InputDebug,      "Input Debug" },
-      { Window::CollisionDebug,  "Collision Debug" },
-      { Window::PostEffect,      "PostEffect Settings" },
-      { Window::ParticleEditor,  "Particle Editor" },
-      { Window::PrimitiveEditor, "Primitive Editor" },
-      { Window::UIEditor,        "UI Editor" },
-      { Window::GlobalVariables, "Global Variables" },
+      { Window::DebugViewport,         "Debug Viewport" },
+      { Window::SceneHierarchy,        "Scene Hierarchy" },
+      { Window::Inspector,             "Inspector" },
+      { Window::GameViewport,          "Game Viewport" },
+      { Window::Console,               "Console" },
+      { Window::Performance,           "Performance" },
+      { Window::Assets,                "Assets" },
+      { Window::InputDebug,            "Input Debug" },
+      { Window::CollisionDebug,        "Collision Debug" },
+      { Window::PostEffect,            "PostEffect Settings" },
+      { Window::ParticleEditor,        "Particle Editor" },
+      { Window::PrimitiveEditor,       "Primitive Editor" },
+      { Window::UIEditor,              "UI Editor" },
+      { Window::CameraAnimationEditor, "Camera Animation Editor" },
+      { Window::GlobalVariables,       "Global Variables" },
     };
 
     // %APPDATA%/TakoEngine/EditorSettings.json。ユーザー単位で複数プロジェクトから共有する。取得できなければ空

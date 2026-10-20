@@ -153,6 +153,15 @@
     <ClCompile Include="engine\debug\UILayoutEditor.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="engine\debug\CameraAnimationEditor.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="engine\debug\CameraAnimationTimeline.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="engine\debug\CameraAnimationCurveEditor.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="engine\debug\ViewportCameraController.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
@@ -168,6 +177,7 @@
     <ClCompile Include="engine\2d\LineRenderer.cpp" />
     <ClCompile Include="engine\audio\Audio.cpp" />
     <ClCompile Include="engine\3d\Camera\Camera.cpp" />
+    <ClCompile Include="engine\3d\Camera\CameraAnimation.cpp" />
     <ClCompile Include="engine\effect\Particle\BoxEmitter.cpp" />
     <ClCompile Include="engine\effect\Particle\EmitterManager.cpp" />
     <ClCompile Include="engine\effect\Particle\ForceFieldManager.cpp" />
@@ -270,6 +280,9 @@
     <ClInclude Include="engine\debug\EngineSettingsWindow.h" />
     <ClInclude Include="engine\debug\AssetBrowser.h" />
     <ClInclude Include="engine\debug\UILayoutEditor.h" />
+    <ClInclude Include="engine\debug\CameraAnimationEditor.h" />
+    <ClInclude Include="engine\debug\CameraAnimationTimeline.h" />
+    <ClInclude Include="engine\debug\CameraAnimationCurveEditor.h" />
     <ClInclude Include="engine\debug\ViewportCameraController.h" />
     <ClInclude Include="engine\debug\PreviewPanel.h" />
     <ClInclude Include="engine\debug\PreviewViewport.h" />
@@ -313,6 +326,8 @@
     <ClInclude Include="engine\scene\BaseScene.h" />
     <ClInclude Include="engine\audio\Audio.h" />
     <ClInclude Include="engine\3d\Camera\Camera.h" />
+    <ClInclude Include="engine\3d\Camera\CameraAnimation.h" />
+    <ClInclude Include="engine\3d\Camera\CameraKeyframe.h" />
     <ClInclude Include="engine\imgui\ImGuiManager.h" />
     <ClInclude Include="engine\imgui\ImGuiThemes.h" />
     <ClInclude Include="engine\imgui\EditTracker.h" />

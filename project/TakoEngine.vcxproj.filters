@@ -234,6 +234,15 @@
     <ClCompile Include="engine\debug\UILayoutEditor.cpp">
       <Filter>debug</Filter>
     </ClCompile>
+    <ClCompile Include="engine\debug\CameraAnimationEditor.cpp">
+      <Filter>debug</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\debug\CameraAnimationTimeline.cpp">
+      <Filter>debug</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\debug\CameraAnimationCurveEditor.cpp">
+      <Filter>debug</Filter>
+    </ClCompile>
     <ClCompile Include="engine\debug\PrimitiveEditor.cpp">
       <Filter>debug</Filter>
     </ClCompile>
@@ -262,6 +271,9 @@
       <Filter>math</Filter>
     </ClCompile>
     <ClCompile Include="engine\3d\Camera\Camera.cpp">
+      <Filter>3d\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3d\Camera\CameraAnimation.cpp">
       <Filter>3d\Camera</Filter>
     </ClCompile>
     <ClCompile Include="engine\3d\Object\InstancedObject3d.cpp">
@@ -590,6 +602,15 @@
     <ClInclude Include="engine\debug\UILayoutEditor.h">
       <Filter>debug</Filter>
     </ClInclude>
+    <ClInclude Include="engine\debug\CameraAnimationEditor.h">
+      <Filter>debug</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\debug\CameraAnimationTimeline.h">
+      <Filter>debug</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\debug\CameraAnimationCurveEditor.h">
+      <Filter>debug</Filter>
+    </ClInclude>
     <ClInclude Include="engine\debug\ViewportCameraController.h">
       <Filter>debug</Filter>
     </ClInclude>
@@ -618,6 +639,12 @@
       <Filter>math</Filter>
     </ClInclude>
     <ClInclude Include="engine\3d\Camera\Camera.h">
+      <Filter>3d\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\Camera\CameraAnimation.h">
+      <Filter>3d\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\Camera\CameraKeyframe.h">
       <Filter>3d\Camera</Filter>
     </ClInclude>
     <ClInclude Include="engine\3d\Object\InstancedObject3d.h">

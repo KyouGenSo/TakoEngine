@@ -54,6 +54,15 @@ namespace Tako {
     /// </summary>
     void DrawPass();
 
+    //==========================================================================
+    //Getter
+    //==========================================================================
+    /// <summary>
+    /// デバッグ視点のカメラ
+    /// </summary>
+    /// <returns>ウィンドウを閉じている間は nullptr</returns>
+    const Camera* GetCamera() const { return camera_.get(); }
+
   private: //メンバー変数
     bool*               isOpen_ = nullptr;  ///< ウィンドウ表示フラグ（DebugUIManager 所有）
     const GridSettings* grid_   = nullptr;  ///< 床グリッド設定（EngineSettingsWindow 所有）

@@ -17,6 +17,7 @@
 #include "EngineSettingsWindow.h"
 #include "AssetBrowser.h"
 #include "UILayoutEditor.h"
+#include "CameraAnimationEditor.h"
 
 namespace Tako {
 
@@ -53,6 +54,7 @@ namespace Tako {
       GlobalVariables,
       PrimitiveEditor,
       UIEditor,
+      CameraAnimationEditor,
       ImGuiDemo,
       ImGuiMetrics,
       About,
@@ -356,12 +358,13 @@ namespace Tako {
     char sceneNameBuffer_[128] = "";  ///< シーン名入力バッファ
 
     //ツール
-    PrimitiveEditor      primitiveEditor_;
-    ParticleEditor       particleEditor_;
-    DebugViewport        debugViewport_;
-    EngineSettingsWindow engineSettings_;
-    AssetBrowser         assetBrowser_;
-    UILayoutEditor       uiLayoutEditor_;
+    PrimitiveEditor       primitiveEditor_;
+    ParticleEditor        particleEditor_;
+    DebugViewport         debugViewport_;
+    EngineSettingsWindow  engineSettings_;
+    AssetBrowser          assetBrowser_;
+    UILayoutEditor        uiLayoutEditor_;
+    CameraAnimationEditor cameraAnimationEditor_;
   };
 
   /// <summary>
