@@ -23,9 +23,7 @@ namespace Tako {
 
   void DepthBasedOutline::Apply(uint32_t inputSrvIndex, D3D12_CPU_DESCRIPTOR_HANDLE outputRtvHandle, uint32_t depthSrvIndex, [[maybe_unused]] const Vector4& clearColor)
   {
-    dx12_->TransitionResourceState(D3D12_RESOURCE_STATE_DEPTH_WRITE,
-      D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-      dx12_->GetDepthStencilResource());
+    dx12_->GetContext().Transition(dx12_->GetDepthStencilResource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
     dx12_->GetCommandList()->OMSetRenderTargets(1,
       &outputRtvHandle,
@@ -51,9 +49,7 @@ namespace Tako {
     // フルスクリーン三角形描画
     dx12_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
 
-    dx12_->TransitionResourceState(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-      D3D12_RESOURCE_STATE_DEPTH_WRITE,
-      dx12_->GetDepthStencilResource());
+    dx12_->GetContext().Transition(dx12_->GetDepthStencilResource(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
   }
 
   void DepthBasedOutline::DrawImgui()

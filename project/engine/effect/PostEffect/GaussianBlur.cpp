@@ -48,16 +48,12 @@ namespace Tako {
       cBufferResource1_->GetGPUVirtualAddress(), inputSrvIndex);
 
     // Pass2: resultRT_ を直交方向にブラーして出力先へ
-    SetBarrier(resultRT_.resource.Get(),
-      D3D12_RESOURCE_STATE_RENDER_TARGET,
-      D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    dx12_->GetContext().Transition(resultRT_.resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
     DrawFullScreenPass(rootSignature_.Get(), pipelineState_.Get(), outputRtvHandle,
       cBufferResource2_->GetGPUVirtualAddress(), resultRT_.srvIndex);
 
-    SetBarrier(resultRT_.resource.Get(),
-      D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-      D3D12_RESOURCE_STATE_RENDER_TARGET);
+    dx12_->GetContext().Transition(resultRT_.resource, D3D12_RESOURCE_STATE_RENDER_TARGET);
   }
 
   void GaussianBlur::DrawImgui()
@@ -143,16 +139,5 @@ namespace Tako {
     CreateRenderTexture();
   }
 
-  void GaussianBlur::SetBarrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter)
-  {
-    D3D12_RESOURCE_BARRIER barrier{};
-    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-    barrier.Transition.pResource = resource;
-    barrier.Transition.StateBefore = stateBefore;
-    barrier.Transition.StateAfter = stateAfter;
-
-    dx12_->GetCommandList()->ResourceBarrier(1, &barrier);
-  }
 
 } // namespace Tako

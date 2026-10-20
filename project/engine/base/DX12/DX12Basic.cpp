@@ -8,7 +8,6 @@
 #include "DebugUIManager.h"
 #endif
 #include "StringUtility.h"
-#include "PostEffectManager.h"
 #include "RtvManager.h"
 #include "DsvManager.h"
 
@@ -18,7 +17,6 @@
 #include"imgui_impl_dx12.h"
 #endif
 
-#include"externals/DirectXTex/d3dx12.h"
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxcompiler.lib")
@@ -35,10 +33,6 @@ namespace Tako {
   {
     assert(winApp);
     this->winApp_ = winApp;
-
-    commandQueue_ = nullptr;
-    commandList_ = nullptr;
-    commandAllocator_ = nullptr;
 
     InitFPSLimiter();
 
@@ -98,89 +92,43 @@ namespace Tako {
     CloseHandle(fenceEvent_);
   }
 
-  void DX12Basic::SetEffectRenderTexture()
-  {
-    // レンダーテクスチャを描画先に設定
-    PostEffectManager::GetInstance()->BeginDrawEffectTarget();
-
-    // 深度ステンシルをクリア
-    commandList_->ClearDepthStencilView(GetMainDSVHandle(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-  }
-
-  void DX12Basic::SetNonEffectRenderTexture()
-  {
-    // レンダーテクスチャを描画先に設定
-    PostEffectManager::GetInstance()->BeginDrawNonEffectTarget();
-
-    // 縮小解像度中は専用の深度なので、シーン深度とは別にクリアする
-    if (nonEffectDepthResource_) {
-      commandList_->ClearDepthStencilView(GetNonEffectDSVHandle(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-    }
-  }
-
   void DX12Basic::SetSwapChain()
   {
-
-    // バッグバッファのインデックスを取得
     UINT backBufferIndex = swapChain_->GetCurrentBackBufferIndex();
 
-    // スワップチェーンバッファの状態を追跡しながら RENDER_TARGET 状態に遷移
-    TransitionResourceWithTracking(swapChainResources_[backBufferIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET);
+    context_.Transition(swapChainResources_[backBufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET);
+    context_.Transition(depthStencilResource_, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
-    // 深度バッファの状態を追跡しながら PIXEL_SHADER_RESOURCE 状態に遷移
-    TransitionResourceWithTracking(depthStencilResource_.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    ID3D12GraphicsCommandList* commandList = context_.GetCommandList();
+    commandList->OMSetRenderTargets(1, &rtvHandle_[backBufferIndex], false, nullptr);
 
-    // 描画先の RTV を設定
-    commandList_->OMSetRenderTargets(1, &rtvHandle_[backBufferIndex], false, nullptr);
-
-    // クリアカラー
     float clearColor[] = { 0.17f, 0.17f, 0.17f, 1.0f };
-
-    // 画面の色をクリア
-    commandList_->ClearRenderTargetView(rtvHandle_[backBufferIndex], clearColor, 0, nullptr);
+    commandList->ClearRenderTargetView(rtvHandle_[backBufferIndex], clearColor, 0, nullptr);
 
     SetViewPort();
-
   }
 
   void DX12Basic::EndDraw()
   {
-    HRESULT	hr;
-
-    // バッグバッファのインデックスを取得
     UINT backBufferIndex = swapChain_->GetCurrentBackBufferIndex();
 
-    // スワップチェーンバッファの状態を追跡しながら PRESENT 状態に遷移
-    TransitionResourceWithTracking(swapChainResources_[backBufferIndex].Get(), D3D12_RESOURCE_STATE_PRESENT);
+    context_.Transition(swapChainResources_[backBufferIndex], D3D12_RESOURCE_STATE_PRESENT);
+    context_.Transition(depthStencilResource_, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 
-    // 深度バッファの状態を追跡しながら DEPTH_WRITE 状態に遷移
-    TransitionResourceWithTracking(depthStencilResource_.Get(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
+    context_.Close();
 
-    // コマンドリストのクローズ
-    hr = commandList_->Close();
-    assert(SUCCEEDED(hr));
+    ID3D12CommandList* commandLists[] = { context_.GetCommandList() };
+    commandQueue_->ExecuteCommandLists(_countof(commandLists), commandLists);
 
-    // GPU にコマンドリストの実行を行わせる
-    Microsoft::WRL::ComPtr<ID3D12CommandList> commandLists[] = { commandList_.Get() };
-    commandQueue_->ExecuteCommandLists(_countof(commandLists), commandLists->GetAddressOf());
-
-    // コマンド完了まで待機
     WaitForGPU();
 
-    // FPS 制御更新
     UpdateFPSLimiter();
 
-    // GPU と OS に画面の交換を行うよう通知する
     swapChain_->Present(vsync_ ? 1 : 0, (!vsync_ && isTearingSupported_) ? DXGI_PRESENT_ALLOW_TEARING : 0);
 
-    // コマンドアロケータをリセット
-    hr = commandAllocator_->Reset();
-    assert(SUCCEEDED(hr));
-
-    // コマンドリストをリセット
-    hr = commandList_->Reset(commandAllocator_.Get(), nullptr);
-    assert(SUCCEEDED(hr));
-
+    // GPU の完了を待ったので、このフレームのコマンドと一時定数はもう読まれない
+    context_.Reset();
+    uploadAllocator_.Reset();
   }
 
   void DX12Basic::WaitForGPU()
@@ -317,15 +265,9 @@ namespace Tako {
     hr = device_->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(&commandQueue_));
     assert(SUCCEEDED(hr));
 
-    // コマンドアロケータの生成
-    hr = device_->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator_));
-    assert(SUCCEEDED(hr));
+    context_.Initialize(device_.Get());
 
-    // コマンドリストの生成
-    hr = device_->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator_.Get(), nullptr, IID_PPV_ARGS(&commandList_));
-    assert(SUCCEEDED(hr));
-
-
+    uploadAllocator_.Initialize(device_.Get(), kUploadAllocatorCapacity);
   }
 
   void DX12Basic::CreateSwapChain()
@@ -369,7 +311,7 @@ namespace Tako {
     depthStencilResource_ = MakeDepthBuffer(GetSceneWidth(), GetSceneHeight());
   }
 
-  DX12Basic::ComPtr<ID3D12Resource> DX12Basic::MakeDepthBuffer(uint32_t width, uint32_t height)
+  GpuResource DX12Basic::MakeDepthBuffer(uint32_t width, uint32_t height)
   {
     // テクスチャの設定
     D3D12_RESOURCE_DESC resourceDesc{};
@@ -393,19 +335,18 @@ namespace Tako {
     depthClearValue.Format = DXGI_FORMAT_D32_FLOAT; // フォーマット
 
     // Resource の生成
-    ComPtr<ID3D12Resource> resource;
+    GpuResource depthBuffer;
     HRESULT hr = device_->CreateCommittedResource(
       &heapProperties, // ヒープの設定
       D3D12_HEAP_FLAG_NONE, // Heap の特殊な設定。特になし
       &resourceDesc, // リソースの設定
       D3D12_RESOURCE_STATE_DEPTH_WRITE, // リソースの初期状態. DEPTH_WRITE
       &depthClearValue, // クリア値の設定.
-      IID_PPV_ARGS(&resource)); // 生成したリソースの pointer への pointer を取得
+      IID_PPV_ARGS(&depthBuffer.resource)); // 生成したリソースの pointer への pointer を取得
     assert(SUCCEEDED(hr));
 
-    // 深度バッファの初期状態を追跡マップに登録
-    resourceStates_[resource.Get()] = D3D12_RESOURCE_STATE_DEPTH_WRITE;
-    return resource;
+    depthBuffer.state = D3D12_RESOURCE_STATE_DEPTH_WRITE;
+    return depthBuffer;
   }
 
   void DX12Basic::InitDescriptorHeap()
@@ -419,12 +360,9 @@ namespace Tako {
   {
     for (UINT i = 0; i < kRtvHandleCount; ++i) {
       // SwapChain から Resource を取得
-      HRESULT hr = swapChain_->GetBuffer(i, IID_PPV_ARGS(&swapChainResources_[i]));
+      HRESULT hr = swapChain_->GetBuffer(i, IID_PPV_ARGS(&swapChainResources_[i].resource));
       assert(SUCCEEDED(hr));
-
-      // スワップチェーンバッファの初期状態を追跡マップに登録
-      // DirectX 12ではスワップチェーンバッファは初期状態が PRESENT
-      resourceStates_[swapChainResources_[i].Get()] = D3D12_RESOURCE_STATE_PRESENT;
+      swapChainResources_[i].state = D3D12_RESOURCE_STATE_PRESENT;
 
       // 初回のみ RTV 枠を確保し、リサイズ時は同じ枠へビューを作り直す
       if (swapChainRtvIndices_[i] == RtvManager::kInvalidIndex) {
@@ -546,10 +484,7 @@ namespace Tako {
 
   void DX12Basic::RecreateNonEffectDepthBuffer()
   {
-    if (nonEffectDepthResource_) {
-      RemoveResourceState(nonEffectDepthResource_.Get());
-      nonEffectDepthResource_.Reset();
-    }
+    nonEffectDepthResource_.Reset();
 
     // 等倍ならシーンの深度をそのまま共有する（非エフェクトパスの 3D もシーンと前後関係を取れる）
     if (GetSceneWidth() == static_cast<uint32_t>(WinApp::clientWidth) && GetSceneHeight() == static_cast<uint32_t>(WinApp::clientHeight)) {
@@ -565,8 +500,9 @@ namespace Tako {
 
   void DX12Basic::SetViewPort()
   {
-    commandList_->RSSetViewports(1, &viewport_);
-    commandList_->RSSetScissorRects(1, &scissorRect_);
+    ID3D12GraphicsCommandList* commandList = context_.GetCommandList();
+    commandList->RSSetViewports(1, &viewport_);
+    commandList->RSSetScissorRects(1, &scissorRect_);
   }
 
   void DX12Basic::BindSceneRenderTarget(const SceneRenderTarget& target)
@@ -578,12 +514,13 @@ namespace Tako {
   void DX12Basic::RestoreSceneRenderTarget()
   {
     const SceneRenderTarget& target = sceneRenderTarget_;
-    commandList_->OMSetRenderTargets(1, &target.rtv, FALSE, target.dsv.ptr != 0 ? &target.dsv : nullptr);
+    ID3D12GraphicsCommandList* commandList = context_.GetCommandList();
+    commandList->OMSetRenderTargets(1, &target.rtv, FALSE, target.dsv.ptr != 0 ? &target.dsv : nullptr);
 
     const D3D12_VIEWPORT viewport{ 0.0f, 0.0f, static_cast<float>(target.width), static_cast<float>(target.height), 0.0f, 1.0f };
     const D3D12_RECT scissorRect{ 0, 0, static_cast<LONG>(target.width), static_cast<LONG>(target.height) };
-    commandList_->RSSetViewports(1, &viewport);
-    commandList_->RSSetScissorRects(1, &scissorRect);
+    commandList->RSSetViewports(1, &viewport);
+    commandList->RSSetScissorRects(1, &scissorRect);
   }
 
   void DX12Basic::SetRenderScale(float scale)
@@ -740,7 +677,7 @@ namespace Tako {
 
   }
 
-  void DX12Basic::CreateResourceForUAV(ComPtr<ID3D12Resource>& uavResource, UINT sizeInBytes)
+  void DX12Basic::CreateResourceForUAV(GpuResource& uavResource, UINT sizeInBytes)
   {
     D3D12_RESOURCE_DESC bufferDesc = {};
     bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
@@ -761,69 +698,12 @@ namespace Tako {
       &bufferDesc,
       D3D12_RESOURCE_STATE_COMMON,
       nullptr,
-      IID_PPV_ARGS(&uavResource));
+      IID_PPV_ARGS(&uavResource.resource));
     assert(SUCCEEDED(hr));
+    uavResource.state = D3D12_RESOURCE_STATE_COMMON;
   }
 
-  Microsoft::WRL::ComPtr<ID3D12Resource> DX12Basic::MakeTextureResource(const DirectX::TexMetadata& metaData)
-  {
-    // テクスチャの設定
-    D3D12_RESOURCE_DESC resourceDesc{};
-    resourceDesc.Width = static_cast<UINT>(metaData.width); // テクスチャの幅
-    resourceDesc.Height = static_cast<UINT>(metaData.height); // テクスチャの高さ
-    resourceDesc.DepthOrArraySize = static_cast<UINT16>(metaData.arraySize); // 配列サイズ
-    resourceDesc.MipLevels = static_cast<UINT16>(metaData.mipLevels); // ミップマップレベル
-    resourceDesc.Format = metaData.format; // フォーマット
-    resourceDesc.SampleDesc.Count = 1; // サンプル数
-    resourceDesc.Dimension = static_cast<D3D12_RESOURCE_DIMENSION>(metaData.dimension); // テクスチャの次元
-
-    // ヒープの設定
-    D3D12_HEAP_PROPERTIES heapProperties{};
-    heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT; // VRAM 上に作る
-
-    // Resource の設定
-    Microsoft::WRL::ComPtr<ID3D12Resource> textureResource = nullptr;
-
-    HRESULT hr = device_->CreateCommittedResource(
-      &heapProperties, // ヒープの設定
-      D3D12_HEAP_FLAG_NONE, // Heap の特殊な設定。特になし
-      &resourceDesc, // リソースの設定
-      D3D12_RESOURCE_STATE_COPY_DEST, // リソースの初期状態. データ転送される設定
-      nullptr, // クリア値の設定。
-      IID_PPV_ARGS(&textureResource)); // 生成したリソースの pointer への pointer を取得
-    assert(SUCCEEDED(hr));
-
-    return textureResource;
-  }
-
-  void DX12Basic::CreateTextureResource(ComPtr<ID3D12Resource>& textureResource, const DirectX::TexMetadata& metaData)
-  {
-    // テクスチャの設定
-    D3D12_RESOURCE_DESC resourceDesc{};
-    resourceDesc.Width = static_cast<UINT>(metaData.width); // テクスチャの幅
-    resourceDesc.Height = static_cast<UINT>(metaData.height); // テクスチャの高さ
-    resourceDesc.DepthOrArraySize = static_cast<UINT16>(metaData.arraySize); // 配列サイズ
-    resourceDesc.MipLevels = static_cast<UINT16>(metaData.mipLevels); // ミップマップレベル
-    resourceDesc.Format = metaData.format; // フォーマット
-    resourceDesc.SampleDesc.Count = 1; // サンプル数
-    resourceDesc.Dimension = static_cast<D3D12_RESOURCE_DIMENSION>(metaData.dimension); // テクスチャの次元
-
-    // ヒープの設定
-    D3D12_HEAP_PROPERTIES heapProperties{};
-    heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT; // VRAM 上に作る
-
-    HRESULT hr = device_->CreateCommittedResource(
-      &heapProperties, // ヒープの設定
-      D3D12_HEAP_FLAG_NONE, // Heap の特殊な設定。特になし
-      &resourceDesc, // リソースの設定
-      D3D12_RESOURCE_STATE_COPY_DEST, // リソースの初期状態. データ転送される設定
-      nullptr, // クリア値の設定。今回は使わないので nullptr
-      IID_PPV_ARGS(&textureResource)); // 生成したリソースの pointer への pointer を取得
-    assert(SUCCEEDED(hr));
-
-  }
-
-  void DX12Basic::CreateRenderTextureResource(ComPtr<ID3D12Resource>& rendertextureResource, uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4& clearColor)
+  void DX12Basic::CreateRenderTextureResource(GpuResource& rendertextureResource, uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4& clearColor)
   {
     // テクスチャの設定
     D3D12_RESOURCE_DESC resourceDesc{};
@@ -855,54 +735,9 @@ namespace Tako {
       &resourceDesc, // リソースの設定
       D3D12_RESOURCE_STATE_RENDER_TARGET, // リソースの初期状態. レンダーターゲットとして使う
       &clearValue, // クリア値の設定
-      IID_PPV_ARGS(&rendertextureResource)); // 生成したリソースの pointer への pointer を取得
+      IID_PPV_ARGS(&rendertextureResource.resource)); // 生成したリソースの pointer への pointer を取得
     assert(SUCCEEDED(hr));
-  }
-
-  Microsoft::WRL::ComPtr<ID3D12Resource> DX12Basic::UploadTextureData(const Microsoft::WRL::ComPtr<ID3D12Resource>& textureResource, const DirectX::ScratchImage& mipImages)
-  {
-    std::vector<D3D12_SUBRESOURCE_DATA> subresources;
-
-    // subresources の配列を作る
-    DirectX::PrepareUpload(device_.Get(), mipImages.GetImages(), mipImages.GetImageCount(), mipImages.GetMetadata(), subresources);
-
-    // intermediateResource に必要なサイズを取得
-    uint64_t intermediateSize = GetRequiredIntermediateSize(textureResource.Get(), 0, static_cast<UINT>(subresources.size()));
-
-    // intermediateResource を作成
-    Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource = MakeBufferResource(intermediateSize);
-    intermediateResource->SetName(L"IntermediateResource");
-
-    // intermediateResource に Subresource のデータを書き込み、texture に転送するコマンドを積む
-    UpdateSubresources(commandList_.Get(), textureResource.Get(), intermediateResource.Get(), 0, 0, static_cast<UINT>(subresources.size()), subresources.data());
-
-    // ResourceBarrier を使って ResourceState を変更
-    D3D12_RESOURCE_BARRIER barrier{};
-    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-    barrier.Transition.pResource = textureResource.Get();
-    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-    barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-    barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
-    commandList_->ResourceBarrier(1, &barrier);
-
-    return intermediateResource;
-  }
-
-  DirectX::ScratchImage DX12Basic::LoadTexture(const std::string& filePath)
-  {
-    // テクスチャの読み込み
-    DirectX::ScratchImage image;
-    std::wstring filePathW = StringUtility::ConvertString(filePath);
-    HRESULT hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
-    assert(SUCCEEDED(hr));
-
-    // mipmap を生成
-    DirectX::ScratchImage mipImages{};
-    hr = DirectX::GenerateMipMaps(image.GetImages(), image.GetImageCount(), image.GetMetadata(), DirectX::TEX_FILTER_SRGB, 0, mipImages);
-    assert(SUCCEEDED(hr));
-
-    return mipImages;
+    rendertextureResource.state = D3D12_RESOURCE_STATE_RENDER_TARGET;
   }
 
   D3D12_CPU_DESCRIPTOR_HANDLE DX12Basic::GetCPUDescriptorHandle(ID3D12DescriptorHeap* descriptorHeap, uint32_t descriptorSize, uint32_t index)
@@ -917,93 +752,6 @@ namespace Tako {
     D3D12_GPU_DESCRIPTOR_HANDLE handle = descriptorHeap->GetGPUDescriptorHandleForHeapStart();
     handle.ptr += (descriptorSize * index);
     return handle;
-  }
-
-  void DX12Basic::SetBackBufferBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter)
-  {
-    // バッグバッファのインデックスを取得
-    UINT backBufferIndex = swapChain_->GetCurrentBackBufferIndex();
-
-    D3D12_RESOURCE_BARRIER barrier{};
-    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-    barrier.Transition.pResource = swapChainResources_[backBufferIndex].Get();
-    barrier.Transition.StateBefore = stateBefore;
-    barrier.Transition.StateAfter = stateAfter;
-    commandList_->ResourceBarrier(1, &barrier);
-
-  }
-
-  void DX12Basic::TransitionResourceState(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter, ID3D12Resource* resource)
-  {
-    D3D12_RESOURCE_BARRIER barrier{};
-    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-    barrier.Transition.pResource = resource;
-    barrier.Transition.StateBefore = stateBefore;
-    barrier.Transition.StateAfter = stateAfter;
-    commandList_->ResourceBarrier(1, &barrier);
-
-    // リソース状態を更新
-    resourceStates_[resource] = stateAfter;
-  }
-
-  void DX12Basic::TransitionResourceWithTracking(ID3D12Resource* resource, D3D12_RESOURCE_STATES newState)
-  {
-    // 現在の状態を取得（未追跡の場合は COMMON と仮定）
-    D3D12_RESOURCE_STATES currentState = D3D12_RESOURCE_STATE_COMMON;
-    auto it = resourceStates_.find(resource);
-    if (it != resourceStates_.end()) {
-      currentState = it->second;
-    }
-
-    // 状態が同じなら何もしない
-    if (currentState == newState) {
-      return;
-    }
-
-    // バリア遷移を実行
-    D3D12_RESOURCE_BARRIER barrier{};
-    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-    barrier.Transition.pResource = resource;
-    barrier.Transition.StateBefore = currentState;
-    barrier.Transition.StateAfter = newState;
-    commandList_->ResourceBarrier(1, &barrier);
-
-    // 新しい状態を記録
-    resourceStates_[resource] = newState;
-  }
-
-  D3D12_RESOURCE_STATES DX12Basic::GetResourceState(ID3D12Resource* resource) const
-  {
-    auto it = resourceStates_.find(resource);
-    if (it != resourceStates_.end()) {
-      return it->second;
-    }
-    // 未追跡の場合は COMMON を返す
-    return D3D12_RESOURCE_STATE_COMMON;
-  }
-
-  void DX12Basic::SetInitialResourceState(ID3D12Resource* resource, D3D12_RESOURCE_STATES initialState)
-  {
-    // バリア遷移なしで、状態のみを記録
-    resourceStates_[resource] = initialState;
-  }
-
-  void DX12Basic::RemoveResourceState(ID3D12Resource* resource)
-  {
-    // 状態追跡マップから該当エントリを削除（無ければ何もしない）
-    resourceStates_.erase(resource);
-  }
-
-  void DX12Basic::SetUAVBarrier(ID3D12Resource* resource)
-  {
-    D3D12_RESOURCE_BARRIER barrier{};
-    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-    barrier.UAV.pResource = resource;
-    commandList_->ResourceBarrier(1, &barrier);
   }
 
   void DX12Basic::ResizeBuffers(uint32_t width, uint32_t height)

@@ -238,7 +238,7 @@ namespace Tako {
     /// ============================================= ///
 
     //ポストエフェクト適用対象のレンダーテクスチャを描画先に設定
-    dx12_->SetEffectRenderTexture();
+    PostEffectManager::GetInstance()->BeginDrawEffectTarget();
 
     SrvManager::GetInstance()->BeginDraw();
 
@@ -264,7 +264,7 @@ namespace Tako {
     /// ------------ポストエフェクト非適用対象の描画---------------///
     /// ===================================================== ///
     // ポストエフェクト非適用対象のレンダーテクスチャを描画先に設定
-    dx12_->SetNonEffectRenderTexture();
+    PostEffectManager::GetInstance()->BeginDrawNonEffectTarget();
 
     SceneManager::GetInstance()->DrawWithoutEffect();
 

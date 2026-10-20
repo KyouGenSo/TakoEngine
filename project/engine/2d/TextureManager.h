@@ -7,6 +7,8 @@
 #include <memory>
 #include"DirectXTex.h"
 
+#include "GpuResource.h"
+
 namespace Tako {
 
   class DX12Basic;
@@ -37,7 +39,7 @@ namespace Tako {
     {
       std::string fileName;
       DirectX::TexMetadata metadata;
-      Microsoft::WRL::ComPtr<ID3D12Resource> resource;
+      GpuResource resource;
       Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource;
       uint32_t srvIndex;
       D3D12_CPU_DESCRIPTOR_HANDLE srvCpuHandle;
@@ -167,6 +169,23 @@ namespace Tako {
     /// <param name="fileName">エンジン用テクスチャファイルの名前</param>
     /// <returns>SRV インデックス</returns>
     uint32_t GetEngineDefaultSRVIndex(const std::string& fileName);
+
+  private: //非公開関数
+
+    /// <summary>
+    /// COPY_DEST 状態のテクスチャリソースを生成する
+    /// </summary>
+    /// <param name="metaData">テクスチャのメタデータ（サイズ、フォーマット等）</param>
+    GpuResource MakeTextureResource(const DirectX::TexMetadata& metaData);
+
+    /// <summary>
+    /// 中間バッファ経由の転送を積み、テクスチャを読み取り状態へ遷移させる
+    /// </summary>
+    /// <param name="texture">転送先のテクスチャリソース</param>
+    /// <param name="mipImages">転送するミップマップ画像データ</param>
+    /// <returns>アップロード用の中間バッファリソース（転送完了まで保持必要）</returns>
+    [[nodiscard]]
+    Microsoft::WRL::ComPtr<ID3D12Resource> UploadTextureData(GpuResource& texture, const DirectX::ScratchImage& mipImages);
 
   private: //メンバー変数
 

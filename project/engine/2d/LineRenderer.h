@@ -7,7 +7,6 @@
 #include <memory>
 #include "Camera.h"
 #include "AABB.h"
-#include "PerFrameConstantRing.h"
 
 // ComPtr のエイリアス
 template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
@@ -38,7 +37,6 @@ namespace Tako {
   private: //定数
     static constexpr uint32_t kLineMaxCount     = 100000;  ///< 線の最大数
     static constexpr uint32_t kVertexCountLine  = 2;       ///< 線の頂点数
-    static constexpr uint32_t kMaxDrawsPerFrame = 8;       ///< 1 フレームで描画できる回数（本編/デバッグビュー/プレビューの視点ごと）
 
 #ifdef _DEBUG
     static constexpr uint32_t kPreviewLineMaxCount = 8192;  ///< プレビュー用線分の最大数
@@ -240,7 +238,6 @@ namespace Tako {
     Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;  ///< ルートシグネチャ
     Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;  ///< パイプラインステート
 
-    PerFrameConstantRing<TransformationMatrix> transformRing_;  ///< 描画ごとの VP（1 フレームで複数視点を併存させる）
 
     std::unique_ptr<LineData> lineData_;  ///< 線データ
 

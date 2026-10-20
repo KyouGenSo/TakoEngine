@@ -34,9 +34,6 @@ namespace Tako {
     // パイプラインステートの生成
     CreatePSO();
 
-    // 描画ごとの VP を置く CB
-    transformRing_.Initialize(dx12_->GetDevice(), kMaxDrawsPerFrame);
-
     // 線の頂点データを生成
     lineData_ = std::make_unique<LineData>();
     CreateLineVertexData(lineData_.get());
@@ -62,7 +59,6 @@ namespace Tako {
 
   void LineRenderer::Update()
   {
-    transformRing_.Reset();
 #ifdef _DEBUG
     previewLineIndex_ = 0;
     previewDrawStart_ = 0;
@@ -281,7 +277,7 @@ namespace Tako {
     commandList->SetPipelineState(pipelineState);
     commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
     commandList->IASetVertexBuffers(0, 1, &lineData.vertexBufferView);
-    commandList->SetGraphicsRootConstantBufferView(kTransformParam, transformRing_.Push({ viewProjection }));
+    commandList->SetGraphicsRootConstantBufferView(kTransformParam, dx12_->GetUploadAllocator().Push(TransformationMatrix{ viewProjection }));
 
     // 全線分を1インスタンスで一括描画
     commandList->DrawInstanced(vertexCount, 1, startVertex, 0);

@@ -40,7 +40,6 @@ namespace Tako {
     // RT
     dx12_->CreateRenderTextureResource(renderTexture_, width_, height_, kColorFormat, clearColor_);
     renderTexture_->SetName((namePrefix + L"RT").c_str());
-    dx12_->SetInitialResourceState(renderTexture_.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET);
 
     rtvIndex_ = RtvManager::GetInstance()->Allocate();
     RtvManager::GetInstance()->CreateRTV(rtvIndex_, renderTexture_.Get(), kColorFormat);
@@ -75,11 +74,10 @@ namespace Tako {
       &depthDesc,
       D3D12_RESOURCE_STATE_DEPTH_WRITE,
       &depthClear,
-      IID_PPV_ARGS(&depthBuffer_));
+      IID_PPV_ARGS(&depthBuffer_.resource));
     assert(SUCCEEDED(hr));
     depthBuffer_->SetName((namePrefix + L"Depth").c_str());
-    // デカールが SRV として読むため状態を追跡する
-    dx12_->SetInitialResourceState(depthBuffer_.Get(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
+    depthBuffer_.state = D3D12_RESOURCE_STATE_DEPTH_WRITE;
 
     dsvIndex_ = DsvManager::GetInstance()->Allocate();
     DsvManager::GetInstance()->CreateDSV(dsvIndex_, depthBuffer_.Get(), kDepthFormat);
@@ -104,11 +102,6 @@ namespace Tako {
     }
     RtvManager::GetInstance()->Free(rtvIndex_);
     DsvManager::GetInstance()->Free(dsvIndex_);
-    // 解放済みアドレスが別リソースに再利用された際の誤った状態遷移を防ぐ
-    if (dx12_) {
-      dx12_->RemoveResourceState(renderTexture_.Get());
-      dx12_->RemoveResourceState(depthBuffer_.Get());
-    }
     renderTexture_.Reset();
     depthBuffer_.Reset();
     rtvIndex_ = 0;
@@ -120,20 +113,19 @@ namespace Tako {
 
   void PreviewViewport::BeginPass()
   {
-    ID3D12GraphicsCommandList* commandList = dx12_->GetCommandList();
-
-    dx12_->TransitionResourceWithTracking(renderTexture_.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET);
-    dx12_->TransitionResourceWithTracking(depthBuffer_.Get(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
+    dx12_->GetContext().Transition(renderTexture_, D3D12_RESOURCE_STATE_RENDER_TARGET);
+    dx12_->GetContext().Transition(depthBuffer_, D3D12_RESOURCE_STATE_DEPTH_WRITE);
     // RT サイズのビューポートで記録し、途中のシャドウ/デカールパスがここへ戻れるようにする
     dx12_->BindSceneRenderTarget({ rtvHandle_, dsvHandle_, width_, height_ });
     const float clearColor[4] = { clearColor_.x, clearColor_.y, clearColor_.z, clearColor_.w };
+    ID3D12GraphicsCommandList* commandList = dx12_->GetCommandList();
     commandList->ClearRenderTargetView(rtvHandle_, clearColor, 0, nullptr);
     commandList->ClearDepthStencilView(dsvHandle_, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
   }
 
   void PreviewViewport::EndPass()
   {
-    dx12_->TransitionResourceWithTracking(renderTexture_.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    dx12_->GetContext().Transition(renderTexture_, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
   }
 
   void PreviewViewport::DrawImGuiImage() const

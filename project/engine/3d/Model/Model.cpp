@@ -1077,7 +1077,7 @@ namespace Tako {
     // UAV バリアを設定
     for (auto& mesh : meshes_) {
       if (mesh->HasSkinning()) {
-        dx12_->SetUAVBarrier(mesh->GetUAVVertexResource());
+        dx12_->GetContext().UavBarrier(mesh->GetUAVVertexResource());
       }
     }
   }

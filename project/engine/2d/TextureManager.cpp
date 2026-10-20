@@ -3,6 +3,7 @@
 #include "DX12Basic.h"
 #include "StringUtility.h"
 #include "EnginePaths.h"
+#include "externals/DirectXTex/d3dx12.h"
 #include <algorithm>
 #include <cassert>
 
@@ -80,8 +81,8 @@ namespace Tako {
 
     textureData.fileName = fileName;
     textureData.metadata = mipImages.GetMetadata();
-    textureData.resource = dx12_->MakeTextureResource(textureData.metadata);
-    textureData.intermediateResource = dx12_->UploadTextureData(textureData.resource, mipImages);
+    textureData.resource = MakeTextureResource(textureData.metadata);
+    textureData.intermediateResource = UploadTextureData(textureData.resource, mipImages);
 
     // テクスチャデータの SRV インデックスを設定
     textureData.srvIndex = SrvManager::GetInstance()->Allocate();
@@ -218,6 +219,49 @@ namespace Tako {
   uint32_t TextureManager::GetEngineDefaultSRVIndex(const std::string& fileName)
   {
     return GetSRVIndex(EnginePaths::TexturePath(fileName));
+  }
+
+  GpuResource TextureManager::MakeTextureResource(const DirectX::TexMetadata& metaData)
+  {
+    D3D12_RESOURCE_DESC resourceDesc{};
+    resourceDesc.Width = static_cast<UINT>(metaData.width);
+    resourceDesc.Height = static_cast<UINT>(metaData.height);
+    resourceDesc.DepthOrArraySize = static_cast<UINT16>(metaData.arraySize);
+    resourceDesc.MipLevels = static_cast<UINT16>(metaData.mipLevels);
+    resourceDesc.Format = metaData.format;
+    resourceDesc.SampleDesc.Count = 1;
+    resourceDesc.Dimension = static_cast<D3D12_RESOURCE_DIMENSION>(metaData.dimension);
+
+    D3D12_HEAP_PROPERTIES heapProperties{};
+    heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+
+    GpuResource texture;
+    HRESULT hr = dx12_->GetDevice()->CreateCommittedResource(
+      &heapProperties,
+      D3D12_HEAP_FLAG_NONE,
+      &resourceDesc,
+      D3D12_RESOURCE_STATE_COPY_DEST,
+      nullptr,
+      IID_PPV_ARGS(&texture.resource));
+    assert(SUCCEEDED(hr));
+    texture.state = D3D12_RESOURCE_STATE_COPY_DEST;
+    return texture;
+  }
+
+  Microsoft::WRL::ComPtr<ID3D12Resource> TextureManager::UploadTextureData(GpuResource& texture, const DirectX::ScratchImage& mipImages)
+  {
+    std::vector<D3D12_SUBRESOURCE_DATA> subresources;
+    DirectX::PrepareUpload(dx12_->GetDevice(), mipImages.GetImages(), mipImages.GetImageCount(), mipImages.GetMetadata(), subresources);
+
+    uint64_t intermediateSize = GetRequiredIntermediateSize(texture.Get(), 0, static_cast<UINT>(subresources.size()));
+    Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource = dx12_->MakeBufferResource(intermediateSize);
+    intermediateResource->SetName(L"IntermediateResource");
+
+    UpdateSubresources(dx12_->GetCommandList(), texture.Get(), intermediateResource.Get(), 0, 0, static_cast<UINT>(subresources.size()), subresources.data());
+
+    dx12_->GetContext().Transition(texture, D3D12_RESOURCE_STATE_GENERIC_READ);
+
+    return intermediateResource;
   }
 
 } // namespace Tako

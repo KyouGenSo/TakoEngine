@@ -404,36 +404,6 @@ namespace Tako {
     void DrawEffectParametersTab();
 
     /// <summary>
-    /// リソースバリアを設定
-    /// </summary>
-    /// <param name="stateBefore">遷移前の状態</param>
-    /// <param name="stateAfter">遷移後の状態</param>
-    void SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
-
-    /// <summary>
-    /// 指定リソースのバリアを設定
-    /// </summary>
-    /// <param name="resource">対象リソース</param>
-    /// <param name="stateBefore">遷移前の状態</param>
-    /// <param name="stateAfter">遷移後の状態</param>
-    void SetBarrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
-
-    /// <summary>
-    /// 状態追跡付きバリア遷移
-    /// </summary>
-    void TransitionResourceWithTracking(ID3D12Resource* resource, D3D12_RESOURCE_STATES newState);
-
-    /// <summary>
-    /// リソース状態取得
-    /// </summary>
-    D3D12_RESOURCE_STATES GetResourceState(ID3D12Resource* resource) const;
-
-    /// <summary>
-    /// 初期リソース状態設定（バリア遷移なし）
-    /// </summary>
-    void SetInitialResourceState(ID3D12Resource* resource, D3D12_RESOURCE_STATES initialState);
-
-    /// <summary>
     /// イージング関数を適用
     /// </summary>
     /// <param name="t">進行度（0.0〜1.0）</param>
@@ -477,9 +447,6 @@ namespace Tako {
     EditTracker<>        profileTracker_{ { [this] { return SerializeProfile(); }, [this](const std::string& profile) { ApplyProfile(profile); } } };
     UnsavedChangesPrompt unsavedPrompt_;  ///< 未保存のまま別のプロファイルを読み込むときの確認
 #endif
-
-    mutable std::unordered_map<ID3D12Resource*, D3D12_RESOURCE_STATES> resourceStates_;  ///< リソース状態追跡用マップ
-
   };
 
 } // namespace Tako

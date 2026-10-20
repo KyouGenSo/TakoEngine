@@ -4,6 +4,7 @@
 #include <wrl.h>
 #include "ModelStruct.h"
 #include "Object3d.h"
+#include "GpuResource.h"
 
 namespace Tako {
 
@@ -122,7 +123,7 @@ namespace Tako {
     float GetShininess() const { return materialData_->shininess; }
     const TextureData& GetTextureData() const { return textureData_; }
     bool HasSkinning() const { return hasSkinning_; }
-    ID3D12Resource* GetUAVVertexResource() { return uavVertexOutputResource_.Get(); }
+    GpuResource& GetUAVVertexResource() { return uavVertexOutputResource_; }
     uint32_t GetVertexSrvIndex() { return vertexSrvIndex_; }
     uint32_t GetInfluenceSrvIndex() { return influenceSrvIndex_; }
     uint32_t GetUAVIndex() { return uavIndex_; }
@@ -233,7 +234,7 @@ namespace Tako {
 
     //スキニングリソース
     Microsoft::WRL::ComPtr<ID3D12Resource> influenceResource_;        ///< インフルエンスバッファリソース
-    Microsoft::WRL::ComPtr<ID3D12Resource> uavVertexOutputResource_;  ///< UAV 頂点出力リソース
+    GpuResource                            uavVertexOutputResource_;  ///< UAV 頂点出力リソース
     Microsoft::WRL::ComPtr<ID3D12Resource> skinningInfoResource_;     ///< スキニング情報バッファリソース
 
     uint32_t influenceSrvIndex_     = 0;  ///< インフルエンス SRV インデックス

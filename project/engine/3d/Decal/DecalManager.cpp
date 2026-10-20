@@ -27,7 +27,6 @@ namespace Tako {
     dx12_ = dx12;
 
     CreateCubeMesh();
-    viewDataRing_.Initialize(dx12_->GetDevice(), kMaxViewsPerFrame);
     CreateDepthSRV();
     CreatePSO();
   }
@@ -49,7 +48,7 @@ namespace Tako {
     CreateDepthSRV();
   }
 
-  void DecalManager::BeginDraw(const Camera& camera, ID3D12Resource* depthResource, uint32_t depthSrvIndex)
+  void DecalManager::BeginDraw(const Camera& camera, GpuResource& depthResource, uint32_t depthSrvIndex)
   {
     const DX12Basic::SceneRenderTarget& target = dx12_->GetSceneRenderTarget();
 
@@ -59,10 +58,10 @@ namespace Tako {
     viewData.invViewProj = Mat4x4::Inverse(viewData.viewProj);
     viewData.screenWidth = static_cast<float>(target.width);
     viewData.screenHeight = static_cast<float>(target.height);
-    const D3D12_GPU_VIRTUAL_ADDRESS viewDataAddress = viewDataRing_.Push(viewData);
+    const D3D12_GPU_VIRTUAL_ADDRESS viewDataAddress = dx12_->GetUploadAllocator().Push(viewData);
 
     // 深度バッファを PIXEL_SHADER_RESOURCE に遷移
-    dx12_->TransitionResourceWithTracking(depthResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    dx12_->GetContext().Transition(depthResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
     // 描画先 RT のビューポートを保ったまま、DSV を外して RTV だけ再バインド
     dx12_->RestoreSceneRenderTarget();
@@ -84,10 +83,10 @@ namespace Tako {
     SrvManager::GetInstance()->SetGraphicsRootDescriptorTable(kDepthTextureParam, depthSrvIndex);
   }
 
-  void DecalManager::EndDraw(ID3D12Resource* depthResource)
+  void DecalManager::EndDraw(GpuResource& depthResource)
   {
     // 深度バッファを DEPTH_WRITE に復帰
-    dx12_->TransitionResourceWithTracking(depthResource, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+    dx12_->GetContext().Transition(depthResource, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 
     // シーン描画先（RTV + DSV）を再バインド
     dx12_->RestoreSceneRenderTarget();
@@ -107,8 +106,6 @@ namespace Tako {
 
   void DecalManager::UpdateAll()
   {
-    viewDataRing_.Reset();
-
     for (Decal* decal : decals_) {
       if (decal) {
         decal->Update();
@@ -121,7 +118,7 @@ namespace Tako {
     DrawAllForView(*camera_, dx12_->GetDepthStencilResource(), depthSrvIndex_);
   }
 
-  void DecalManager::DrawAllForView(const Camera& camera, ID3D12Resource* depthResource, uint32_t depthSrvIndex)
+  void DecalManager::DrawAllForView(const Camera& camera, GpuResource& depthResource, uint32_t depthSrvIndex)
   {
     if (decals_.empty()) return;
 
@@ -383,7 +380,7 @@ namespace Tako {
     depthSrvIndex_ = SrvManager::GetInstance()->Allocate();
     SrvManager::GetInstance()->CreateSRVForTexture2D(
       depthSrvIndex_,
-      dx12_->GetDepthStencilResource(),
+      dx12_->GetDepthStencilResource().Get(),
       DXGI_FORMAT_R32_FLOAT,
       1
     );

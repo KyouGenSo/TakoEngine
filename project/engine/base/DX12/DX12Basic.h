@@ -9,12 +9,12 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include<dxcapi.h>
-#include "DirectXTex.h"
-#include "DirectXTex.inl"
-#include <unordered_map>
 #include <utility>
 
 #include"Vector4.h"
+#include "CommandContext.h"
+#include "GpuResource.h"
+#include "UploadAllocator.h"
 
 namespace Tako {
 
@@ -25,6 +25,9 @@ namespace Tako {
   class DX12Basic {
   public: //定数
     static constexpr float kMinRenderScale = 0.25f;
+
+  private: //定数
+    static constexpr size_t kUploadAllocatorCapacity = 4 * 1024 * 1024;  ///< 1 フレームの一時定数の総量（バイト）
 
   public: //構造体
     /// <summary>
@@ -59,16 +62,6 @@ namespace Tako {
     /// 終了処理
     /// </summary>
     void Finalize();
-
-    /// <summary>
-    /// renderTexture を設定
-    /// </summary>
-    void SetEffectRenderTexture();
-
-    /// <summary>
-    /// エフェクトなしレンダーテクスチャを設定
-    /// </summary>
-    void SetNonEffectRenderTexture();
 
     /// <summary>
     /// swapChain を設定
@@ -108,86 +101,21 @@ namespace Tako {
     void CreateBufferResource(ComPtr<ID3D12Resource>& bufferResource, size_t sizeInBytes);
 
     /// <summary>
-    /// UAV リソースの生成
+    /// UAV リソースの生成（COMMON 状態で作られる）
     /// </summary>
     /// <param name="uavResource">出力先の UAV リソース</param>
     /// <param name="sizeInBytes">リソースサイズ（バイト）</param>
-    void CreateResourceForUAV(ComPtr<ID3D12Resource>& uavResource, UINT sizeInBytes);
+    void CreateResourceForUAV(GpuResource& uavResource, UINT sizeInBytes);
 
     /// <summary>
-    /// テクスチャリソースの生成
-    /// </summary>
-    /// <param name="metaData">テクスチャのメタデータ（サイズ、フォーマット等）</param>
-    /// <returns>生成されたテクスチャリソース</returns>
-    ComPtr<ID3D12Resource> MakeTextureResource(const DirectX::TexMetadata& metaData);
-
-    /// <summary>
-    /// テクスチャリソースの生成（参照版）
-    /// </summary>
-    /// <param name="textureResource">出力先のテクスチャリソース</param>
-    /// <param name="metaData">テクスチャのメタデータ（サイズ、フォーマット等）</param>
-    void CreateTextureResource(ComPtr<ID3D12Resource>& textureResource, const DirectX::TexMetadata& metaData);
-
-    /// <summary>
-    /// レンダーテクスチャリソースの生成
+    /// レンダーテクスチャリソースの生成（RENDER_TARGET 状態で作られる）
     /// </summary>
     /// <param name="rendertextureResource">出力先のレンダーテクスチャリソース</param>
     /// <param name="width">テクスチャの幅（ピクセル）</param>
     /// <param name="height">テクスチャの高さ（ピクセル）</param>
     /// <param name="format">ピクセルフォーマット（例: DXGI_FORMAT_R8G8B8A8_UNORM）</param>
     /// <param name="clearColor">クリアカラー（RGBA、各要素0.0-1.0）</param>
-    void CreateRenderTextureResource(ComPtr<ID3D12Resource>& rendertextureResource, uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4& clearColor);
-
-    /// <summary>
-    /// テクスチャリソースの転送
-    /// </summary>
-    /// <param name="texture">転送先のテクスチャリソース</param>
-    /// <param name="mipImages">転送するミップマップ画像データ</param>
-    /// <returns>アップロード用の中間バッファリソース（転送完了まで保持必要）</returns>
-    [[nodiscard]]
-    ComPtr<ID3D12Resource> UploadTextureData(const ComPtr<ID3D12Resource>& texture, const DirectX::ScratchImage& mipImages);
-
-    /// <summary>
-    /// テクスチャファイルの読み込み
-    /// </summary>
-    /// <param name="filePath">テクスチャファイルのパス（.png, .jpg 等）</param>
-    /// <returns>読み込まれた画像データ</returns>
-    static DirectX::ScratchImage LoadTexture(const std::string& filePath);
-
-    /// <summary>
-    /// トランジションバリアの設定
-    /// </summary>
-    /// <param name="stateBefore">遷移前のリソース状態</param>
-    /// <param name="stateAfter">遷移後のリソース状態</param>
-    /// <param name="resource">対象リソース</param>
-    void TransitionResourceState(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter, ID3D12Resource* resource);
-
-    /// <summary>
-    /// リソース状態追跡付きバリア遷移
-    /// </summary>
-    /// <param name="resource">対象リソース</param>
-    /// <param name="newState">新しいリソース状態</param>
-    void TransitionResourceWithTracking(ID3D12Resource* resource, D3D12_RESOURCE_STATES newState);
-
-    /// <summary>
-    /// リソースの初期状態を設定（バリア遷移なし）
-    /// </summary>
-    /// <param name="resource">対象リソース</param>
-    /// <param name="initialState">初期状態</param>
-    void SetInitialResourceState(ID3D12Resource* resource, D3D12_RESOURCE_STATES initialState);
-
-    /// <summary>
-    /// リソースの状態追跡エントリを削除（リソースを破棄/再作成する前に呼ぶ）
-    /// 解放済みポインタのエントリが残り、アドレス再利用時に誤った状態遷移を起こすのを防ぐ。
-    /// </summary>
-    /// <param name="resource">対象リソース</param>
-    void RemoveResourceState(ID3D12Resource* resource);
-
-    /// <summary>
-    /// UAV リソースバリアの設定
-    /// </summary>
-    /// <param name="resource">対象 UAV リソース</param>
-    void SetUAVBarrier(ID3D12Resource* resource);
+    void CreateRenderTextureResource(GpuResource& rendertextureResource, uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4& clearColor);
 
     /// <summary>
     /// ビューポートとシザリング矩形をセット
@@ -259,20 +187,20 @@ namespace Tako {
     uint32_t GetSceneWidth() const;
     uint32_t GetSceneHeight() const;
 
-    /// <summary>
-    /// 現在のリソース状態を取得
-    /// </summary>
-    /// <param name="resource">対象リソース</param>
-    /// <returns>現在のリソース状態</returns>
-    D3D12_RESOURCE_STATES GetResourceState(ID3D12Resource* resource) const;
-
     ID3D12Device* GetDevice() {
       return device_.Get();
     }
 
+    /// <summary>
+    /// 予約済みのバリアを発行してからコマンドリストを返す
+    /// </summary>
     ID3D12GraphicsCommandList* GetCommandList() {
-      return commandList_.Get();
+      return context_.GetCommandList();
     }
+
+    CommandContext& GetContext() { return context_; }
+
+    UploadAllocator& GetUploadAllocator() { return uploadAllocator_; }
 
     ID3D12CommandQueue* GetCommandQueue() {
       return commandQueue_.Get();
@@ -293,8 +221,8 @@ namespace Tako {
     /// </summary>
     D3D12_CPU_DESCRIPTOR_HANDLE GetNonEffectDSVHandle() const;
 
-    ID3D12Resource* GetDepthStencilResource() {
-      return depthStencilResource_.Get();
+    GpuResource& GetDepthStencilResource() {
+      return depthStencilResource_;
     }
 
     IDXGISwapChain4* GetSwapChain() {
@@ -346,9 +274,9 @@ namespace Tako {
     void CreateDepthStencilResource();
 
     /// <summary>
-    /// DEPTH_WRITE 状態の D32 深度バッファを生成し状態追跡に登録する
+    /// DEPTH_WRITE 状態の D32 深度バッファを生成する
     /// </summary>
-    ComPtr<ID3D12Resource> MakeDepthBuffer(uint32_t width, uint32_t height);
+    GpuResource MakeDepthBuffer(uint32_t width, uint32_t height);
 
     /// <summary>
     /// 縮小解像度中だけ、非エフェクトパス用にウィンドウ解像度の深度を作る（等倍なら解放する）
@@ -423,13 +351,6 @@ namespace Tako {
     /// <returns>GPU ディスクリプタハンドル</returns>
     static D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(ID3D12DescriptorHeap* descriptorHeap, uint32_t descriptorSize, uint32_t index);
 
-    /// <summary>
-    /// バックバッファのバリアを設定
-    /// </summary>
-    /// <param name="stateBefore">遷移前のリソース状態</param>
-    /// <param name="stateAfter">遷移後のリソース状態</param>
-    void SetBackBufferBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
-
   private: //メンバー変数
 
     //FPS 制御
@@ -444,8 +365,6 @@ namespace Tako {
 
     static const UINT kRtvHandleCount = 2;  ///< RTV ハンドルの要素数（スワップチェイン用バックバッファ数）
 
-    mutable std::unordered_map<ID3D12Resource*, D3D12_RESOURCE_STATES> resourceStates_;  ///< リソース状態追跡用マップ（バリア遷移の最適化に使用）
-
     WinApp* winApp_ = nullptr;  ///< ウィンドウクラスポインター（ウィンドウサイズ等の取得に使用）
 
     ComPtr<ID3D12Device> device_;  ///< DirectX 12デバイス（リソース生成の中心オブジェクト）
@@ -454,21 +373,21 @@ namespace Tako {
 
     ComPtr<ID3D12CommandQueue> commandQueue_;  ///< コマンドキュー（GPU 実行キュー）
 
-    ComPtr<ID3D12CommandAllocator> commandAllocator_;  ///< コマンドアロケータ（コマンドリストのメモリ管理）
+    CommandContext context_;  ///< 唯一のコマンドリストとバリアの予約
 
-    ComPtr<ID3D12GraphicsCommandList> commandList_;  ///< コマンドリスト（描画コマンドの記録）
+    UploadAllocator uploadAllocator_;  ///< 1 フレームだけ使う定数の置き場（EndDraw で空に戻す）
 
     ComPtr<IDXGISwapChain4> swapChain_;  ///< スワップチェイン（ダブルバッファリング管理）
 
-    ComPtr<ID3D12Resource> depthStencilResource_;  ///< 深度バッファリソース（深度テスト用）
+    GpuResource depthStencilResource_;  ///< 深度バッファリソース（深度テスト用）
 
     uint32_t mainDsvIndex_ = 0;  ///< メイン深度バッファの DSV インデックス（DsvManager 発行）
 
-    ComPtr<ID3D12Resource> nonEffectDepthResource_;  ///< 縮小解像度中だけ作るウィンドウ解像度の深度
+    GpuResource nonEffectDepthResource_;  ///< 縮小解像度中だけ作るウィンドウ解像度の深度
 
     uint32_t nonEffectDsvIndex_ = 0;  ///< nonEffectDepthResource_ の DSV インデックス（初回作成時に確保）
 
-    std::array<ComPtr<ID3D12Resource>, 2> swapChainResources_;  ///< スワップチェインのバッファ（ダブルバッファリング用2枚）
+    std::array<GpuResource, 2> swapChainResources_;  ///< スワップチェインのバッファ（ダブルバッファリング用2枚）
 
     UINT swapChainBufferCount_;  ///< スワップチェインのバッファのカウント（通常2）
 

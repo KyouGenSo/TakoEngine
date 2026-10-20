@@ -50,25 +50,19 @@ namespace Tako {
       highLumRT_.rtvHandle, extractCBufferRes_->GetGPUVirtualAddress(), inputSrvIndex);
 
     //---------------------------Pass2 HorizontalBlur---------------------------//
-    SetBarrier(highLumRT_.resource.Get(),
-      D3D12_RESOURCE_STATE_RENDER_TARGET,
-      D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    dx12_->GetContext().Transition(highLumRT_.resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
     DrawFullScreenPass(rootSignatures_["GaussianBlur"].Get(), pipelineStates_["GaussianBlur"].Get(),
       blurRT_.rtvHandle, blurCBufferRes1_->GetGPUVirtualAddress(), highLumRT_.srvIndex);
 
     //---------------------------Pass3 VerticalBlur---------------------------//
-    SetBarrier(blurRT_.resource.Get(),
-      D3D12_RESOURCE_STATE_RENDER_TARGET,
-      D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    dx12_->GetContext().Transition(blurRT_.resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
     DrawFullScreenPass(rootSignatures_["GaussianBlur"].Get(), pipelineStates_["GaussianBlur"].Get(),
       resultRT_.rtvHandle, blurCBufferRes2_->GetGPUVirtualAddress(), blurRT_.srvIndex);
 
     //---------------------------Pass4 Combine---------------------------//
-    SetBarrier(resultRT_.resource.Get(),
-      D3D12_RESOURCE_STATE_RENDER_TARGET,
-      D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    dx12_->GetContext().Transition(resultRT_.resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
     dx12_->GetCommandList()->OMSetRenderTargets(1,
       &outputRtvHandle,
@@ -90,17 +84,11 @@ namespace Tako {
 
 
     //---------------------------リソースステートを戻す---------------------------//
-    SetBarrier(highLumRT_.resource.Get(),
-      D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-      D3D12_RESOURCE_STATE_RENDER_TARGET);
+    dx12_->GetContext().Transition(highLumRT_.resource, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
-    SetBarrier(blurRT_.resource.Get(),
-      D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-      D3D12_RESOURCE_STATE_RENDER_TARGET);
+    dx12_->GetContext().Transition(blurRT_.resource, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
-    SetBarrier(resultRT_.resource.Get(),
-      D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-      D3D12_RESOURCE_STATE_RENDER_TARGET);
+    dx12_->GetContext().Transition(resultRT_.resource, D3D12_RESOURCE_STATE_RENDER_TARGET);
   }
 
   void Bloom::DrawImgui()
@@ -350,16 +338,5 @@ namespace Tako {
     CreateRenderTexture();
   }
 
-  void Bloom::SetBarrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter)
-  {
-    D3D12_RESOURCE_BARRIER barrier{};
-    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-    barrier.Transition.pResource = resource;
-    barrier.Transition.StateBefore = stateBefore;
-    barrier.Transition.StateAfter = stateAfter;
-
-    dx12_->GetCommandList()->ResourceBarrier(1, &barrier);
-  }
 
 } // namespace Tako

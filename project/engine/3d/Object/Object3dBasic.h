@@ -7,7 +7,6 @@
 #include "Matrix4x4.h"
 #include "Light.h"
 #include "SkyBox.h"
-#include "PerFrameConstantRing.h"
 
 class DX12Basic;
 
@@ -53,9 +52,6 @@ public: //定数
 
 	// インスタンシング RS 専用（通常 RS の変換行列の枠を使う）
 	static constexpr UINT kInstanceDataParam = 1;  ///< t5 (VS): インスタンスデータ
-
-private: //定数
-	static constexpr uint32_t kMaxViewsPerFrame = 4;  ///< 1 フレームで SetView できる回数（本編/デバッグビュー/プレビュー）
 
 public: //構造体
 	/// <summary>
@@ -220,7 +216,6 @@ private: // メンバー変数
 	DX12Basic*                                  dx12_                    = nullptr;  ///< DirectX12基盤システムへの参照
 	Camera*                                     camera_                    = nullptr;  ///< デフォルトカメラへのポインタ
 	std::unique_ptr<Light>                      light_;                                ///< ライティングシステムへのポインタ
-	PerFrameConstantRing<ViewConstants>         viewRing_;                             ///< 視点 CB（1 フレームで複数視点を併存させる）
 	D3D12_GPU_VIRTUAL_ADDRESS                   currentViewAddress_        = 0;        ///< 描画設定でバインドする視点 CB
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;                        ///< 通常描画用ルートシグネチャ
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;                        ///< 通常描画用パイプラインステート

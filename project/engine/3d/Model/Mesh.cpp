@@ -319,15 +319,7 @@ namespace Tako {
     // 既にこのフレームでスキニングが実行されていたらスキップ
     if (skinningComputedThisFrame_) return;
 
-    // 初回以外は (VBV | SRV) → UAV への遷移が必要
-    static bool isFirstCompute = true;
-    if (!isFirstCompute) {
-      dx12_->TransitionResourceState(
-        D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-        D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-        uavVertexOutputResource_.Get());
-    }
-    isFirstCompute = false;
+    dx12_->GetContext().Transition(uavVertexOutputResource_, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
     SrvManager* srvManager = SrvManager::GetInstance();
 
@@ -348,10 +340,8 @@ namespace Tako {
       static_cast<UINT>(vertices_.size() + 1023) / 1024, 1, 1);
 
     // 描画 (VBV) とパーティクル emit (SRV) の両方で読めるよう OR 状態に遷移
-    dx12_->TransitionResourceState(
-      D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-      D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-      uavVertexOutputResource_.Get());
+    dx12_->GetContext().Transition(uavVertexOutputResource_,
+      D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
     skinningComputedThisFrame_ = true;
   }

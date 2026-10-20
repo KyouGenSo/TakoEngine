@@ -265,6 +265,7 @@
     <ClCompile Include="engine\ai\BehaviorTree\Editor\BehaviorTreeEditor.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="engine\base\DX12\CommandContext.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\3d\Decal\Decal.h" />
@@ -347,7 +348,6 @@
     <ClInclude Include="engine\imgui\UnsavedChangesModal.h" />
     <ClInclude Include="engine\base\DX12\D3DResourceLeakChecker.h" />
     <ClInclude Include="engine\base\DX12\DX12Basic.h" />
-    <ClInclude Include="engine\base\DX12\PerFrameConstantRing.h" />
     <ClInclude Include="engine\io\Input.h" />
     <ClInclude Include="engine\func\commonFunc\Hash.h" />
     <ClInclude Include="engine\func\commonFunc\Logger.h" />
@@ -402,6 +402,9 @@
     <ClInclude Include="engine\ai\BehaviorTree\Runtime\BehaviorTree.h" />
     <ClInclude Include="engine\ai\BehaviorTree\Editor\EditorTypes.h" />
     <ClInclude Include="engine\ai\BehaviorTree\Editor\BehaviorTreeEditor.h" />
+    <ClInclude Include="engine\base\DX12\CommandContext.h" />
+    <ClInclude Include="engine\base\DX12\GpuResource.h" />
+    <ClInclude Include="engine\base\DX12\UploadAllocator.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">

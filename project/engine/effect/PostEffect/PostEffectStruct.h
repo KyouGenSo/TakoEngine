@@ -8,6 +8,7 @@
 #include "Vector2.h"
 #include "vector3.h"
 #include "Vector4.h"
+#include "GpuResource.h"
 
 namespace Tako {
 
@@ -18,10 +19,10 @@ namespace Tako {
   /// ポストエフェクトの中間バッファとして使用
   /// </summary>
   struct RenderTexture {
-    Microsoft::WRL::ComPtr<ID3D12Resource> resource;
-    D3D12_CPU_DESCRIPTOR_HANDLE            rtvHandle{};
-    uint32_t                               rtvIndex  = 0;
-    uint32_t                               srvIndex  = 0;
+    GpuResource                 resource;
+    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle{};
+    uint32_t                    rtvIndex  = 0;
+    uint32_t                    srvIndex  = 0;
 
     /// <summary>
     /// リソース生成と RTV/SRV の確保・ビュー生成

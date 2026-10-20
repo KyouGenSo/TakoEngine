@@ -8,7 +8,7 @@
 #include "SrvManager.h"
 #include "ParticleStruct.h"
 #include "ModelStruct.h"
-#include "PerFrameConstantRing.h"
+#include "GpuResource.h"
 
 namespace Tako {
 
@@ -393,9 +393,9 @@ namespace Tako {
     Microsoft::WRL::ComPtr<ID3D12PipelineState> integrateAllPSO_;  ///< IntegrateAll コンピュートシェーダー用パイプラインステート
 
     //パーティクルリソース
-    Microsoft::WRL::ComPtr<ID3D12Resource> particleResource_;      ///< パーティクルデータ用 GPU リソース
-    uint32_t                               particleUavIndex_ = 0;  ///< パーティクルリソースの UAV インデックス
-    uint32_t                               particleSrvIndex_ = 0;  ///< パーティクルリソースの SRV インデックス
+    GpuResource particleResource_;      ///< パーティクルデータ用 GPU リソース
+    uint32_t    particleUavIndex_ = 0;  ///< パーティクルリソースの UAV インデックス
+    uint32_t    particleSrvIndex_ = 0;  ///< パーティクルリソースの SRV インデックス
 
     //定数バッファ
     Microsoft::WRL::ComPtr<ID3D12Resource> perViewResource_;   ///< PerView 定数バッファリソース
@@ -411,10 +411,10 @@ namespace Tako {
     std::vector<std::pair<uint32_t, float>>          retiringSlots_;     ///< 退役中スロット。射出停止後もパーティクル全滅まで描画継続するため保持する。
 
     //FreeList
-    Microsoft::WRL::ComPtr<ID3D12Resource> freeListIndexResource_;      ///< FreeList インデックス用 GPU リソース
-    uint32_t                               freeListIndexUavIndex_ = 0;  ///< FreeList インデックスの UAV インデックス
-    Microsoft::WRL::ComPtr<ID3D12Resource> freeListResource_;           ///< FreeList 用 GPU リソース
-    uint32_t                               freeListUavIndex_      = 0;  ///< FreeList の UAV インデックス
+    GpuResource freeListIndexResource_;      ///< FreeList インデックス用 GPU リソース
+    uint32_t    freeListIndexUavIndex_ = 0;  ///< FreeList インデックスの UAV インデックス
+    GpuResource freeListResource_;           ///< FreeList 用 GPU リソース
+    uint32_t    freeListUavIndex_      = 0;  ///< FreeList の UAV インデックス
 
 #ifdef _DEBUG
     //Readback: アクティブパーティクル数取得
@@ -422,10 +422,6 @@ namespace Tako {
     uint32_t                               activeParticleCount_           = 0;   ///< CPU 側で読み取ったアクティブパーティクル数（表示用キャッシュ）
     uint32_t                               readbackFrameCounter_          = 0;   ///< Readback 間引きカウンタ（フレーム数）
     static const uint32_t                  kReadbackInterval              = 10;  ///< Readback 実行間隔（フレーム数）
-
-    //本編以外の視点描画（デバッグビュー/エディタプレビュー）
-    static constexpr uint32_t     kMaxExtraViewsPerFrame = 4;  ///< 1 フレームで DrawForCamera できる回数
-    PerFrameConstantRing<PerView> extraViewRing_;              ///< 視点ごとの PerView CB（本編と同一フレームで別視点を併存させる）
 #endif
 
     //物理シミュレーション関連
@@ -445,15 +441,15 @@ namespace Tako {
 
     //Indirect 描画 / コンパクション関連
     Microsoft::WRL::ComPtr<ID3D12CommandSignature> drawCommandSignature_;         ///< ExecuteIndirect 用コマンドシグネチャ
-    Microsoft::WRL::ComPtr<ID3D12Resource>         perEmitterCountResource_;      ///< per-emitter の今フレーム生存パーティクル数バッファ
+    GpuResource                                    perEmitterCountResource_;      ///< per-emitter の今フレーム生存パーティクル数バッファ
     uint32_t                                       perEmitterCountUavIndex_ = 0;
-    Microsoft::WRL::ComPtr<ID3D12Resource>         drawIndexResource_;            ///< コンパクション済み生存パーティクル index リスト。per-instance 頂点ストリーム (drawIndexVBV_) としてもバインドする
+    GpuResource                                    drawIndexResource_;            ///< コンパクション済み生存パーティクル index リスト。per-instance 頂点ストリーム (drawIndexVBV_) としてもバインドする
     uint32_t                                       drawIndexUavIndex_       = 0;
     uint32_t                                       drawIndexSrvIndex_       = 0;
     D3D12_VERTEX_BUFFER_VIEW                       drawIndexVBV_{};
-    Microsoft::WRL::ComPtr<ID3D12Resource>         scatterCursorResource_;        ///< スキャッタ書き込みカーソル
+    GpuResource                                    scatterCursorResource_;        ///< スキャッタ書き込みカーソル
     uint32_t                                       scatterCursorUavIndex_   = 0;
-    Microsoft::WRL::ComPtr<ID3D12Resource>         drawArgsResource_;             ///< Indirect 描画引数バッファ (D3D12_DRAW_ARGUMENTS 配列 × kNumMaxEmitter)
+    GpuResource                                    drawArgsResource_;             ///< Indirect 描画引数バッファ (D3D12_DRAW_ARGUMENTS 配列 × kNumMaxEmitter)
     uint32_t                                       drawArgsUavIndex_        = 0;
 
     //コンパクション用 CS の RS/PSO

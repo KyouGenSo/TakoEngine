@@ -156,7 +156,7 @@ namespace Tako {
     depthSrvIndex_ = SrvManager::GetInstance()->Allocate();
     SrvManager::GetInstance()->CreateSRVForTexture2D(
       depthSrvIndex_,
-      dx12_->GetDepthStencilResource(),
+      dx12_->GetDepthStencilResource().Get(),
       DXGI_FORMAT_R32_FLOAT,
       1
     );
@@ -211,20 +211,25 @@ namespace Tako {
     // エフェクト適用対象 RT に描画
     dx12_->BindSceneRenderTarget({ effectTargetRT_.rtvHandle, dx12_->GetMainDSVHandle(), dx12_->GetSceneWidth(), dx12_->GetSceneHeight() });
 
-    // エフェクト適用対象 RT をクリア
-    dx12_->GetCommandList()->ClearRenderTargetView(effectTargetRT_.rtvHandle, &clearColor_.x, 0, nullptr);
+    // エフェクト適用対象 RT と深度をクリア
+    ID3D12GraphicsCommandList* commandList = dx12_->GetCommandList();
+    commandList->ClearRenderTargetView(effectTargetRT_.rtvHandle, &clearColor_.x, 0, nullptr);
+    commandList->ClearDepthStencilView(dx12_->GetMainDSVHandle(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
   }
 
   void PostEffectManager::BeginDrawNonEffectTarget()
   {
     // nonEffectTargetRT を RENDER_TARGET 状態にして記録
-    TransitionResourceWithTracking(
-      nonEffectTargetRT_.resource.Get(),
-      D3D12_RESOURCE_STATE_RENDER_TARGET
-    );
+    dx12_->GetContext().Transition(nonEffectTargetRT_.resource, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
     // 非適用対象 RT に描画
-    dx12_->BindSceneRenderTarget({ nonEffectTargetRT_.rtvHandle, dx12_->GetNonEffectDSVHandle(), static_cast<uint32_t>(WinApp::clientWidth), static_cast<uint32_t>(WinApp::clientHeight) });
+    const D3D12_CPU_DESCRIPTOR_HANDLE nonEffectDsv = dx12_->GetNonEffectDSVHandle();
+    dx12_->BindSceneRenderTarget({ nonEffectTargetRT_.rtvHandle, nonEffectDsv, static_cast<uint32_t>(WinApp::clientWidth), static_cast<uint32_t>(WinApp::clientHeight) });
+
+    // 縮小解像度中は専用の深度なので、シーン深度とは別にクリアする
+    if (nonEffectDsv.ptr != dx12_->GetMainDSVHandle().ptr) {
+      dx12_->GetCommandList()->ClearDepthStencilView(nonEffectDsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+    }
   }
 
   void PostEffectManager::Draw()
@@ -238,10 +243,7 @@ namespace Tako {
     if (drawToSwapChain) {
 
       // 非適用対象 RT をシェーダーリソースに遷移
-      TransitionResourceWithTracking(
-        nonEffectTargetRT_.resource.Get(),
-        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
-      );
+      dx12_->GetContext().Transition(nonEffectTargetRT_.resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
       // スワップチェインに描画
       dx12_->SetSwapChain();
@@ -252,19 +254,13 @@ namespace Tako {
         noEffect->ApplyToBackBuffer(nonEffectTargetRT_.srvIndex);
       }
 
-      TransitionResourceWithTracking(
-        nonEffectTargetRT_.resource.Get(),
-        D3D12_RESOURCE_STATE_RENDER_TARGET
-      );
+      dx12_->GetContext().Transition(nonEffectTargetRT_.resource, D3D12_RESOURCE_STATE_RENDER_TARGET);
     }
     else {
       dx12_->SetSwapChain();
 
       // 非適用対象 RT をシェーダーリソースに遷移
-      TransitionResourceWithTracking(
-        nonEffectTargetRT_.resource.Get(),
-        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
-      );
+      dx12_->GetContext().Transition(nonEffectTargetRT_.resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
     }
   }
 
@@ -570,19 +566,6 @@ namespace Tako {
 
   void PostEffectManager::RecreateRenderTexture()
   {
-    // 古いリソースの状態追跡エントリを削除
-    if (effectTargetRT_.resource) {
-      resourceStates_.erase(effectTargetRT_.resource.Get());
-    }
-    if (nonEffectTargetRT_.resource) {
-      resourceStates_.erase(nonEffectTargetRT_.resource.Get());
-    }
-    for (auto& rt : intermediateRTs_) {
-      if (rt.resource) {
-        resourceStates_.erase(rt.resource.Get());
-      }
-    }
-
     // 既存のリソースを解放
     effectTargetRT_.Release();
     nonEffectTargetRT_.Release();
@@ -597,7 +580,7 @@ namespace Tako {
     // 深度バッファの SRV も更新
     SrvManager::GetInstance()->CreateSRVForTexture2D(
       depthSrvIndex_,
-      dx12_->GetDepthStencilResource(),
+      dx12_->GetDepthStencilResource().Get(),
       DXGI_FORMAT_R32_FLOAT,
       1
     );
@@ -900,22 +883,16 @@ namespace Tako {
     // エフェクト適用対象用 RT
     effectTargetRT_.Create(dx12_, sceneWidth, sceneHeight, DXGI_FORMAT_R8G8B8A8_UNORM, clearColor_);
     effectTargetRT_.resource->SetName(L"EffectTargetRT");
-    // 初期状態を設定（レンダーテクスチャは RENDER_TARGET として作成される）
-    SetInitialResourceState(effectTargetRT_.resource.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET);
 
     // 非適用対象用 RT (最終表示用のため SRV は α=1 固定で読ませ、ImGui 表示での背景透けを防ぐ)
     nonEffectTargetRT_.Create(dx12_, WinApp::clientWidth, WinApp::clientHeight, DXGI_FORMAT_R8G8B8A8_UNORM, nonEffectTargetClearColor_, true);
     nonEffectTargetRT_.resource->SetName(L"NonEffectTargetRT");
-    // 初期状態を設定
-    SetInitialResourceState(nonEffectTargetRT_.resource.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET);
 
     // 中間バッファ
     intermediateRTs_.resize(2);
     for (size_t i = 0; i < intermediateRTs_.size(); ++i) {
       intermediateRTs_[i].Create(dx12_, sceneWidth, sceneHeight, DXGI_FORMAT_R8G8B8A8_UNORM, clearColor_);
       intermediateRTs_[i].resource->SetName(L"IntermediateRT");
-      // 初期状態を設定
-      SetInitialResourceState(intermediateRTs_[i].resource.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET);
     }
   }
 
@@ -948,10 +925,7 @@ namespace Tako {
     SetViewportSize(dx12_->GetCommandList(), sceneWidth, sceneHeight);
 
     // 最初の入力はエフェクト適用対象 RT
-    TransitionResourceWithTracking(
-      effectTargetRT_.resource.Get(),
-      D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
-    );
+    dx12_->GetContext().Transition(effectTargetRT_.resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
     // 深度バッファチェック
     bool needsDepthBuffer = false;
@@ -963,11 +937,7 @@ namespace Tako {
     }
 
     if (needsDepthBuffer) {
-      dx12_->TransitionResourceState(
-        D3D12_RESOURCE_STATE_DEPTH_WRITE,
-        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-        dx12_->GetDepthStencilResource()
-      );
+      dx12_->GetContext().Transition(dx12_->GetDepthStencilResource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
     }
 
     // 中間バッファの状態追跡
@@ -987,10 +957,7 @@ namespace Tako {
 
       if (isLastEffect) {
         // 最後のエフェクトは nonEffectTargetRT に描画するため、RENDER_TARGET 状態に遷移
-        TransitionResourceWithTracking(
-          nonEffectTargetRT_.resource.Get(),
-          D3D12_RESOURCE_STATE_RENDER_TARGET
-        );
+        dx12_->GetContext().Transition(nonEffectTargetRT_.resource, D3D12_RESOURCE_STATE_RENDER_TARGET);
         dstRtvHandle = nonEffectTargetRT_.rtvHandle;
         SetViewportSize(dx12_->GetCommandList(), static_cast<uint32_t>(WinApp::clientWidth), static_cast<uint32_t>(WinApp::clientHeight));
       }
@@ -999,10 +966,7 @@ namespace Tako {
         auto& intermediateRT = intermediateRTs_[bufferIndex];
 
         if (intermediateRTStates[bufferIndex]) {
-          TransitionResourceWithTracking(
-            intermediateRT.resource.Get(),
-            D3D12_RESOURCE_STATE_RENDER_TARGET
-          );
+          dx12_->GetContext().Transition(intermediateRT.resource, D3D12_RESOURCE_STATE_RENDER_TARGET);
           intermediateRTStates[bufferIndex] = false;
         }
 
@@ -1028,10 +992,7 @@ namespace Tako {
         int bufferIndex = i % 2;
         auto& usedRT = intermediateRTs_[bufferIndex];
 
-        TransitionResourceWithTracking(
-          usedRT.resource.Get(),
-          D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
-        );
+        dx12_->GetContext().Transition(usedRT.resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
         intermediateRTStates[bufferIndex] = true;
 
         srcSrvIndex = usedRT.srvIndex;
@@ -1040,25 +1001,15 @@ namespace Tako {
 
     // リソース復元
     if (needsDepthBuffer) {
-      dx12_->TransitionResourceState(
-        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-        D3D12_RESOURCE_STATE_DEPTH_WRITE,
-        dx12_->GetDepthStencilResource()
-      );
+      dx12_->GetContext().Transition(dx12_->GetDepthStencilResource(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
     }
 
-    TransitionResourceWithTracking(
-      effectTargetRT_.resource.Get(),
-      D3D12_RESOURCE_STATE_RENDER_TARGET
-    );
+    dx12_->GetContext().Transition(effectTargetRT_.resource, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
     for (size_t i = 0; i < intermediateRTs_.size(); ++i) {
       if (intermediateRTStates[i]) {
         auto& rt = intermediateRTs_[i];
-        TransitionResourceWithTracking(
-          rt.resource.Get(),
-          D3D12_RESOURCE_STATE_RENDER_TARGET
-        );
+        dx12_->GetContext().Transition(rt.resource, D3D12_RESOURCE_STATE_RENDER_TARGET);
       }
     }
   }
@@ -1089,63 +1040,6 @@ namespace Tako {
       }
     }
 #endif
-  }
-
-  void PostEffectManager::SetBarrier(D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter)
-  {
-    stateBefore;
-    // この関数は廃止予定。代わりに TransitionResourceWithTracking を使用
-    TransitionResourceWithTracking(effectTargetRT_.resource.Get(), stateAfter);
-  }
-
-  void PostEffectManager::SetBarrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter)
-  {
-    // stateBefore は使用せず、TransitionResourceWithTracking で状態追跡を使用
-    stateBefore; // 未使用パラメータの警告を抑制
-    TransitionResourceWithTracking(resource, stateAfter);
-  }
-
-  void PostEffectManager::TransitionResourceWithTracking(ID3D12Resource* resource, D3D12_RESOURCE_STATES newState)
-  {
-    // 現在の状態を取得（未追跡の場合は COMMON と仮定）
-    D3D12_RESOURCE_STATES currentState = D3D12_RESOURCE_STATE_COMMON;
-    auto it = resourceStates_.find(resource);
-    if (it != resourceStates_.end()) {
-      currentState = it->second;
-    }
-
-    // 状態が同じなら何もしない
-    if (currentState == newState) {
-      return;
-    }
-
-    // バリア遷移
-    D3D12_RESOURCE_BARRIER barrier{};
-    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-    barrier.Transition.pResource = resource;
-    barrier.Transition.StateBefore = currentState;
-    barrier.Transition.StateAfter = newState;
-    dx12_->GetCommandList()->ResourceBarrier(1, &barrier);
-
-    // 新しい状態を記録
-    resourceStates_[resource] = newState;
-  }
-
-  D3D12_RESOURCE_STATES PostEffectManager::GetResourceState(ID3D12Resource* resource) const
-  {
-    auto it = resourceStates_.find(resource);
-    if (it != resourceStates_.end()) {
-      return it->second;
-    }
-    // 未追跡の場合は COMMON を返す
-    return D3D12_RESOURCE_STATE_COMMON;
-  }
-
-  void PostEffectManager::SetInitialResourceState(ID3D12Resource* resource, D3D12_RESOURCE_STATES initialState)
-  {
-    // バリア遷移なしで、状態のみを記録
-    resourceStates_[resource] = initialState;
   }
 
   void PostEffectManager::Update(float deltaTime)

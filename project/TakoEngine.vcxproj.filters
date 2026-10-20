@@ -447,6 +447,9 @@
     <ClCompile Include="engine\effect\Particle\MeshEmitter.cpp">
       <Filter>effect\Particle\Emitter</Filter>
     </ClCompile>
+    <ClCompile Include="engine\base\DX12\CommandContext.cpp">
+      <Filter>base\DX12</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\math\Matrix4x4.h">
@@ -504,9 +507,6 @@
       <Filter>base\DX12</Filter>
     </ClInclude>
     <ClInclude Include="engine\base\DX12\DX12Basic.h">
-      <Filter>base\DX12</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\base\DX12\PerFrameConstantRing.h">
       <Filter>base\DX12</Filter>
     </ClInclude>
     <ClInclude Include="engine\base\DX12\SrvManager.h">
@@ -853,6 +853,15 @@
     </ClInclude>
     <ClInclude Include="engine\effect\Particle\MeshEmitter.h">
       <Filter>effect\Particle\Emitter</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\base\DX12\CommandContext.h">
+      <Filter>base\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\base\DX12\GpuResource.h">
+      <Filter>base\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\base\DX12\UploadAllocator.h">
+      <Filter>base\DX12</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -7,6 +7,7 @@
 #include <wrl.h>
 
 #include "Vector4.h"
+#include "GpuResource.h"
 
 namespace Tako {
 
@@ -50,24 +51,24 @@ namespace Tako {
     //============================================================
     //Getter
     //============================================================
-    bool IsInitialized() const { return renderTexture_ != nullptr; }
+    bool IsInitialized() const { return static_cast<bool>(renderTexture_); }
     float GetAspect() const { return static_cast<float>(width_) / static_cast<float>(height_); }
-    ID3D12Resource* GetDepthResource() const { return depthBuffer_.Get(); }
+    GpuResource& GetDepthResource() { return depthBuffer_; }
     uint32_t GetDepthSrvIndex() const { return depthSrvIndex_; }
 
   private: //メンバー変数
-    DX12Basic*                             dx12_          = nullptr;  ///< Finalize 時に使う（Object3dBasic より後に破棄され得るため生成時に保持）
-    Microsoft::WRL::ComPtr<ID3D12Resource> renderTexture_;
-    Microsoft::WRL::ComPtr<ID3D12Resource> depthBuffer_;
-    D3D12_CPU_DESCRIPTOR_HANDLE            rtvHandle_{};
-    D3D12_CPU_DESCRIPTOR_HANDLE            dsvHandle_{};
-    uint32_t                               rtvIndex_      = 0;
-    uint32_t                               dsvIndex_      = 0;
-    uint32_t                               srvIndex_      = 0;
-    uint32_t                               depthSrvIndex_ = 0;        ///< デカールが深度を読むための SRV
-    uint32_t                               width_         = 0;
-    uint32_t                               height_        = 0;
-    Vector4                                clearColor_{};
+    DX12Basic*                  dx12_          = nullptr;  ///< Finalize 時に使う（Object3dBasic より後に破棄され得るため生成時に保持）
+    GpuResource                 renderTexture_;
+    GpuResource                 depthBuffer_;
+    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle_{};
+    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle_{};
+    uint32_t                    rtvIndex_      = 0;
+    uint32_t                    dsvIndex_      = 0;
+    uint32_t                    srvIndex_      = 0;
+    uint32_t                    depthSrvIndex_ = 0;        ///< デカールが深度を読むための SRV
+    uint32_t                    width_         = 0;
+    uint32_t                    height_        = 0;
+    Vector4                     clearColor_{};
   };
 
 } // namespace Tako

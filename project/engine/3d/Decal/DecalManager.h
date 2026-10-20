@@ -6,7 +6,7 @@
 
 #include "Camera.h"
 #include "Matrix4x4.h"
-#include "PerFrameConstantRing.h"
+#include "GpuResource.h"
 
 namespace Tako {
 
@@ -71,14 +71,14 @@ namespace Tako {
     /// <param name="camera">描画視点のカメラ</param>
     /// <param name="depthResource">描画先の深度バッファ</param>
     /// <param name="depthSrvIndex">depthResource の SRV インデックス</param>
-    void BeginDraw(const Camera& camera, ID3D12Resource* depthResource, uint32_t depthSrvIndex);
+    void BeginDraw(const Camera& camera, GpuResource& depthResource, uint32_t depthSrvIndex);
 
     /// <summary>
     /// デカール描画パスの終了
     /// 深度バッファを DEPTH_WRITE に復帰、シーン描画先（RTV + DSV）を再バインド
     /// </summary>
     /// <param name="depthResource">BeginDraw に渡した深度バッファ</param>
-    void EndDraw(ID3D12Resource* depthResource);
+    void EndDraw(GpuResource& depthResource);
 
     /// <summary>
     /// デカールを登録
@@ -106,7 +106,7 @@ namespace Tako {
     /// <param name="camera">描画視点のカメラ</param>
     /// <param name="depthResource">描画先の深度バッファ</param>
     /// <param name="depthSrvIndex">depthResource の SRV インデックス</param>
-    void DrawAllForView(const Camera& camera, ID3D12Resource* depthResource, uint32_t depthSrvIndex);
+    void DrawAllForView(const Camera& camera, GpuResource& depthResource, uint32_t depthSrvIndex);
 
     /// <summary>
     /// 登録済み全デカールのデバッグ描画
@@ -177,10 +177,6 @@ namespace Tako {
     Microsoft::WRL::ComPtr<ID3D12Resource> cubeIndexBuffer_;   ///< キューブインデックスバッファ
     D3D12_VERTEX_BUFFER_VIEW               cubeVBV_{};         ///< 頂点バッファビュー
     D3D12_INDEX_BUFFER_VIEW                cubeIBV_{};         ///< インデックスバッファビュー
-
-    //ViewData 定数バッファ
-    static constexpr uint32_t         kMaxViewsPerFrame = 4;  ///< 1 フレームで描画できる視点数（本編/デバッグビュー）
-    PerFrameConstantRing<ViewDataGPU> viewDataRing_;          ///< 視点ごとの ViewData（1 フレームで複数視点を併存させる）
 
     //深度 SRV
     uint32_t depthSrvIndex_ = 0;  ///< 深度テクスチャの SRV インデックス

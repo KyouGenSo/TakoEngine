@@ -27,8 +27,6 @@ void Object3dBasic::Initialize(DX12Basic* dx12)
 {
 	dx12_ = dx12;
 
-	viewRing_.Initialize(dx12_->GetDevice(), kMaxViewsPerFrame);
-
 	CreatePSO();
 	CreateInstancedPSO();
 	CreateTransparentPSO();
@@ -43,8 +41,7 @@ void Object3dBasic::Update()
 {
 	camera_->SetViewProjectionMatrix(camera_->GetViewMatrix() * camera_->GetProjectionMatrix());
 
-	// 前フレームの視点を破棄し、本編カメラを既定の視点にする
-	viewRing_.Reset();
+	// 本編カメラを既定の視点にする
 	SetView(*camera_);
 
   light_->Update();
@@ -52,7 +49,7 @@ void Object3dBasic::Update()
 
 void Object3dBasic::SetView(const Camera& camera)
 {
-	currentViewAddress_ = viewRing_.Push({ camera.GetViewMatrix() * camera.GetProjectionMatrix(), camera.GetTranslate(), 0.0f });
+	currentViewAddress_ = dx12_->GetUploadAllocator().Push(ViewConstants{ camera.GetViewMatrix() * camera.GetProjectionMatrix(), camera.GetTranslate(), 0.0f });
 }
 
 void Object3dBasic::Finalize()

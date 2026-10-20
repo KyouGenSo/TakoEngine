@@ -92,14 +92,6 @@ namespace Tako {
     /// </summary>
     void RecreateRenderTexture();
 
-    /// <summary>
-    /// リソースバリアを設定
-    /// </summary>
-    /// <param name="resource">対象リソース</param>
-    /// <param name="stateBefore">遷移前の状態</param>
-    /// <param name="stateAfter">遷移後の状態</param>
-    void SetBarrier(ID3D12Resource* resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
-
   private: //メンバー変数
 
     ComPtr<ID3D12Resource> cBufferResource1_;
