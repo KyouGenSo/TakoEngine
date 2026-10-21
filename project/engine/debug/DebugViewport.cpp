@@ -63,7 +63,7 @@ namespace Tako {
 
     // 本編で登録したシーンの描画物を、本編と同じ順（不透明→デカール→半透明）でデバッグカメラ視点で描く
     Renderer*                  renderer = Renderer::GetInstance();
-    const Renderer::RenderView view     = renderer->MakeView(*camera_);
+    const Renderer::RenderView view     = renderer->MakeView(*camera_, viewport_->GetSize());
     renderer->RenderList(renderer->GetSceneList(), view, INT32_MIN, ShaderAsset::kQueueTransparent);
     DecalManager::GetInstance()->DrawAllForView(*camera_, viewport_->GetDepthResource(), viewport_->GetDepthSrvIndex());
     renderer->RenderList(renderer->GetSceneList(), view, ShaderAsset::kQueueTransparent);

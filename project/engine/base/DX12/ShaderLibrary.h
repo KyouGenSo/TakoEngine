@@ -108,13 +108,24 @@ namespace Tako {
     /// <returns>1 つでも差し替えたら true</returns>
     bool ReloadChangedShaders();
 
+    /// <summary>
+    /// ShaderKey::file の実際のパス
+    /// </summary>
+    std::filesystem::path ResolvePath(const std::wstring& file) const;
+
+    //=====================================
+    //Getter
+    //=====================================
+    /// <summary>
+    /// file の最後のコンパイルが失敗していれば、そのエラー文（成功していれば nullptr）
+    /// </summary>
+    const std::string* FindCompileError(const std::wstring& file) const;
+
   private: //非公開関数
     /// <summary>
     /// コンパイルして shader に書き込む。失敗時は shader を変更しない
     /// </summary>
     bool Compile(Shader& shader);
-
-    std::filesystem::path ResolvePath(const std::wstring& file) const;
 
   private: //メンバー変数
     Microsoft::WRL::ComPtr<IDxcUtils>       utils_;
@@ -124,6 +135,7 @@ namespace Tako {
 
     std::unordered_map<std::wstring, std::unique_ptr<Shader>> shaders_;          ///< キーを連結した文字列で引く
     std::chrono::steady_clock::time_point                     lastReloadCheck_{};
+    std::unordered_map<std::wstring, std::string>             compileErrors_;    ///< ShaderKey::file ごとの最後の失敗
   };
 
 } // namespace Tako

@@ -25,6 +25,9 @@ namespace Tako {
   inline constexpr const char* kCullModeNames[]  = { "None", "Front", "Back" };
   static_assert(std::size(kBlendModeNames) == static_cast<size_t>(BlendMode::Count));
 
+  // D3D12_COMPARISON_FUNC の名前。添字は値 - 1（NEVER = 1 〜 ALWAYS = 8）
+  inline constexpr const char* kDepthFuncNames[] = { "Never", "Less", "Equal", "LessEqual", "Greater", "NotEqual", "GreaterEqual", "Always" };
+
   /// <summary>
   /// 頂点バッファのレイアウト。描画するデータの種類ごとに 1 つ
   /// </summary>

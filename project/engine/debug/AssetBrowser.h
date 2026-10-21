@@ -164,6 +164,11 @@ namespace Tako {
     bool                               openDeletePopup_   = false;
   };
 
+  /// <summary>
+  /// OS の関連付けアプリで開く（フォルダはエクスプローラー）
+  /// </summary>
+  void OpenWithShell(const std::filesystem::path& path);
+
 } // namespace Tako
 
 #endif // _DEBUG

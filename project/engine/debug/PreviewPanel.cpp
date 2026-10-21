@@ -28,6 +28,7 @@ namespace Tako {
       controller_.Reset();
     }
     controller_.ApplyTo(*camera_);
+    postProcess_.RefreshLayouts();
   }
 
   void PreviewPanel::Finalize() {
@@ -61,6 +62,10 @@ namespace Tako {
     viewport_->DrawImGuiImage();
     isImageHovered_ = ImGui::IsItemHovered();
     return controller_.HandleImGuiInput();
+  }
+
+  Vector2 PreviewPanel::GetSize() const {
+    return viewport_->GetSize();
   }
 
   bool PreviewPanel::IsReady() const {

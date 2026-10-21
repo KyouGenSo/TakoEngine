@@ -28,19 +28,21 @@ namespace Tako {
     RenderTexture* objectMask = nullptr;  ///< 描画物の maskId を書いた R8_UINT。nullptr ならマスク付きのエフェクトは飛ばす
     uint32_t       width      = 0;        ///< 入力の解像度
     uint32_t       height     = 0;
+
+    D3D12_GPU_VIRTUAL_ADDRESS view = 0;  ///< gView（Renderer::MakeView。0 なら渡さない）
   };
 
   /// <summary>
   /// 名前で登録するポストエフェクトの中身。単パスなら pixelShader と defaultParam だけで作れる
   /// </summary>
   struct PostEffectDefinition {
-    std::wstring pixelShader;           ///< 単パス: FullScreen.VS とこの PS で描く。入力は gTexture、パラメータは gParam で受ける
+    std::wstring pixelShader;           ///< 単パス: FullScreen.VS とこの PS で描く。入力は gTexture、パラメータは gParam、視点・時間・画面サイズは gView で受ける
     EffectParam  defaultParam;          ///< 追加したときの値。型でパラメータの種類が決まる
     bool         usesDepth    = false;  ///< 単パス: シーンの深度を gDepthTexture で読む
     bool         hidden       = false;  ///< エフェクトの一覧に出さない
 
     /// <summary>
-    /// 単パス: 実行時に決まる値を param に入れ、gTexture・gParam・gDepthTexture 以外の値を渡す
+    /// 単パス: 実行時に決まる値を param に入れ、gTexture・gParam・gDepthTexture・gView 以外の値を渡す
     /// </summary>
     std::function<void(const PostEffectFrame&, EffectParam& param, CommandContext::ShaderBinder&)> setup;
 
@@ -77,6 +79,12 @@ namespace Tako {
   std::span<const std::string> GetPostEffectNames();
 
   /// <summary>
+  /// param が PropertyBlock で、名前の定義の並び（PS のホットリロードで作り直したもの）と違えば、値を名前で移して定義の並びにする
+  /// </summary>
+  /// <returns>移したら true</returns>
+  bool RefreshPropertyLayout(std::string_view name, EffectParam& param);
+
+  /// <summary>
   /// FullScreen.VS と psFile で全画面三角形を描くパイプライン
   /// </summary>
   GraphicsPipelineDesc MakeFullScreenPipeline(ShaderLibrary& library, std::wstring_view psFile);
@@ -111,6 +119,11 @@ namespace Tako {
     void Remove(uint32_t id);
 
     void Clear() { effects_.clear(); }
+
+    /// <summary>
+    /// 全エフェクトに RefreshPropertyLayout を掛ける
+    /// </summary>
+    void RefreshLayouts();
 
     /// <summary>
     /// 有効なエフェクトを順に input→output へ掛ける。大きさが違えば最後に拡大コピーする

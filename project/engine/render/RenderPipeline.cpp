@@ -94,7 +94,7 @@ namespace Tako {
 
     //------------------------------ ポストエフェクト ------------------------------//
     RunPasses(RenderEvent::BeforePostProcess);
-    const PostEffectFrame frame{ dx12_, &graph_, *renderer->GetCamera(), &depth, depthSrvIndex_, objectMask, sceneColor_.width, sceneColor_.height };
+    const PostEffectFrame frame{ dx12_, &graph_, *renderer->GetCamera(), &depth, depthSrvIndex_, objectMask, sceneColor_.width, sceneColor_.height, view.constants };
     postEffect->Execute(frame, sceneColor_, final_);
     if (objectMask) {
       graph_.Release(*objectMask);

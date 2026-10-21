@@ -1,5 +1,7 @@
 #pragma once
+#include <chrono>
 #include <cstdint>
+#include <filesystem>
 #include <map>
 #include <memory>
 #include <string>
@@ -12,26 +14,31 @@ namespace Tako {
 
   class DX12Basic;
   class Material;
+  class Shader;
   class ShaderAsset;
 
   /// <summary>
   /// データファイルから作るシェーダーとマテリアルの置き場。C++ を書かずにシェーダーを追加して描画物に使えるようにする。
   ///
-  /// EngineResources/shaders/*.shader.json と resources/Shaders/*.shader.json（起動時に全て読む）
+  /// EngineResources/shaders/*.shader.json と resources/Shaders/*.shader.json（起動時に全て読み、Debug では保存すると読み直す）
   ///   { "Name": "Hologram", "Fallback": "Lit", "Queue": 3000,
-  ///     "Forward": { "VS": "Object3D.VS.hlsl", "PS": "resources/Shaders/Hologram.PS.hlsl", "Blend": "Add", "Cull": "None", "DepthTest": true, "DepthWrite": false },
+  ///     "Forward": { "VS": "Object3D.VS.hlsl", "PS": "resources/Shaders/Hologram.PS.hlsl", "Blend": "Add", "Cull": "None", "DepthTest": true, "DepthWrite": false, "DepthFunc": "LessEqual" },
   ///     "Properties": { "speed": [0, 10] } }
   ///   Forward があれば描画物のシェーダー（定数は gMaterial、書いていないパスは Fallback から借りる）、
-  ///   "PostEffect": { "PS": "...", "UsesDepth": false } があればポストエフェクト（定数は gParam）として登録する。
+  ///   "PostEffect": { "PS": "...", "Textures": { "gNoise": "noise.png" } } があればポストエフェクト（定数は gParam）として登録する。
+  ///   ポストエフェクトの PS は gView（時間・画面サイズ・逆行列）と、宣言していれば gDepthTexture も受け取れる。
   ///   "Defaults": { "color": [1, 1, 1, 1] } は値の初期値。Forward も PostEffect も無ければ、登録済みの同名シェーダーに範囲と初期値だけを足す。
   ///   ファイル名だけのシェーダーはエンジンのもの、パス付きは作業ディレクトリ基準
   ///
   /// resources/Materials/{name}.mat.json
-  ///   { "Shader": "Hologram", "Queue": 3000, "Blend": "Add", "Cull": "None", "DepthTest": true, "DepthWrite": false,
+  ///   { "Shader": "Hologram", "Queue": 3000, "Blend": "Add", "Cull": "None", "DepthTest": true, "DepthWrite": false, "DepthFunc": "LessEqual",
   ///     "Values": { "color": [0, 1, 1, 0.5] }, "Textures": { "gTexture": "uvChecker.png" } }
   ///   Shader 以外は省略でき、省略した描画設定はシェーダーの既定、テクスチャは白になる
   /// </summary>
   class MaterialLibrary {
+  private: //定数
+    static constexpr std::chrono::milliseconds kShaderCheckInterval{ 500 };  ///< .shader.json の更新を調べる間隔
+
   private: // シングルトン設定
     static std::unique_ptr<MaterialLibrary> instance_;
 
@@ -54,9 +61,12 @@ namespace Tako {
 
     struct ShaderInfo {
       std::map<std::string, std::pair<float, float>> ranges;       ///< .shader.json の Properties
-      nlohmann::json                                 defaults;     ///< .shader.json の Defaults（値の初期値）
+      nlohmann::json                                 defaults;               ///< .shader.json の Defaults（値の初期値）
       std::shared_ptr<const MaterialPropertyLayout>  layout;
-      uint32_t                                       version = 0;  ///< layout を作ったときの PS のバージョン
+      uint32_t                                       version           = 0;  ///< layout を作ったときの PS のバージョン
+      std::string                                    path;                   ///< 読んだ .shader.json
+      const Shader*                                  postEffectPs      = nullptr;
+      uint32_t                                       postEffectVersion = 0;  ///< ポストエフェクトを登録したときの PS のバージョン
     };
 
   public: //メンバー関数
@@ -70,9 +80,22 @@ namespace Tako {
     void Finalize();
 
     /// <summary>
-    /// シェーダーのホットリロードで定数の並びが変わったマテリアルへ、値を名前で移す（Debug）
+    /// 更新された .shader.json を読み直し、シェーダーのホットリロードで定数の並びが変わったマテリアルへ値を名前で移す（Debug）
     /// </summary>
     void Update();
+
+    /// <summary>
+    /// .shader.json を読み、シェーダーとポストエフェクトを登録し直す
+    /// </summary>
+    /// <returns>読めない・コンパイルできなければ false（今の登録を残す）</returns>
+    bool LoadShaderFile(const std::string& path);
+
+    /// <summary>
+    /// .shader.json の内容で登録し直す（エディタの保存前の内容に使う）
+    /// </summary>
+    /// <param name="path">内容の元のファイル（PS の再コンパイル時に読み直す先）</param>
+    /// <returns>読めない・コンパイルできなければ false（今の登録を残す）</returns>
+    bool ApplyShaderText(const std::string& path, const std::string& text);
 
     /// <summary>
     /// resources/Materials/{name}.mat.json を読む。読み込み済みなら同じマテリアルを返す（複数の描画物で共有する）
@@ -118,13 +141,16 @@ namespace Tako {
     std::vector<std::string> GetMaterialFileNames() const;
 
     /// <summary>
+    /// 読む対象の .shader.json（エンジン → ゲームの順、フォルダ内は名前順）
+    /// </summary>
+    std::vector<std::string> GetShaderFiles() const;
+
+    /// <summary>
     /// 読み込み済み（または作成済み）のマテリアル（無ければ nullptr）
     /// </summary>
     std::shared_ptr<Material> Find(const std::string& name) const;
 
   private: //非公開関数
-    void LoadShaderFile(const std::string& path);
-
     /// <summary>
     /// 定数を 0 → シェーダーの Defaults → previous の順で入れ直す（asset.layout の大きさで確保し直す）
     /// </summary>
@@ -139,6 +165,10 @@ namespace Tako {
     DX12Basic*                        dx12_    = nullptr;
     std::map<std::string, Asset>      assets_;             ///< マテリアル名ごと
     std::map<std::string, ShaderInfo> shaders_;            ///< シェーダー名ごと
+
+    //.shader.json の更新の検出
+    std::map<std::string, std::filesystem::file_time_type> shaderFileTimes_;  ///< 最後に読んだときの更新時刻
+    std::chrono::steady_clock::time_point                  lastShaderCheck_{};
   };
 
 } // namespace Tako

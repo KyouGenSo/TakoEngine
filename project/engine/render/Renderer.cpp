@@ -6,6 +6,7 @@
 
 #include "Camera.h"
 #include "DX12Basic.h"
+#include "FrameTimer.h"
 #include "Mat4x4Func.h"
 #include "Material.h"
 #include "ShadowRenderer.h"
@@ -45,7 +46,7 @@ namespace Tako {
   void Renderer::Update()
   {
     camera_->SetViewProjectionMatrix(camera_->GetViewMatrix() * camera_->GetProjectionMatrix());
-    mainView_ = MakeView(*camera_);
+    mainView_ = MakeView(*camera_, { static_cast<float>(dx12_->GetSceneWidth()), static_cast<float>(dx12_->GetSceneHeight()) });
 
     light_->Update();
   }
@@ -175,9 +176,17 @@ namespace Tako {
     RenderList(list, view);
   }
 
-  Renderer::RenderView Renderer::MakeView(const Camera& camera)
+  Renderer::RenderView Renderer::MakeView(const Camera& camera, const Vector2& screenSize)
   {
-    const ViewConstants constants{ camera.GetViewMatrix() * camera.GetProjectionMatrix(), camera.GetTranslate(), 0.0f };
+    const Matrix4x4     viewProjection = camera.GetViewMatrix() * camera.GetProjectionMatrix();
+    const ViewConstants constants{
+      .viewProjection        = viewProjection,
+      .worldPosition         = camera.GetTranslate(),
+      .time                  = FrameTimer::GetInstance()->GetGameTime(),
+      .viewProjectionInverse = Mat4x4::Inverse(viewProjection),
+      .projectionInverse     = Mat4x4::Inverse(camera.GetProjectionMatrix()),
+      .screenSize            = screenSize,
+    };
     return { dx12_->GetUploadAllocator().Push(constants), camera.GetTranslate() };
   }
 

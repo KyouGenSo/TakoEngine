@@ -187,7 +187,7 @@ namespace Tako {
 
     // プレビュー用の描画物だけをプレビューカメラ視点で描く
     Renderer* renderer = Renderer::GetInstance();
-    renderer->RenderImmediate(renderer->MakeView(preview_.GetCamera()), [this] {
+    renderer->RenderImmediate(renderer->MakeView(preview_.GetCamera(), preview_.GetSize()), [this] {
       if (showFloor_ && floorObject_) {
         floorObject_->Draw();
       }

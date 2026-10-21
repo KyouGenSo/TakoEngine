@@ -4,6 +4,7 @@
 
 #include <memory>
 #include "PostProcess.h"
+#include "Vector2.h"
 #include "ViewportCameraController.h"
 
 namespace Tako {
@@ -71,6 +72,7 @@ namespace Tako {
     bool IsImageHovered() const { return isImageHovered_; }
 
     Camera&                   GetCamera() { return *camera_; }
+    Vector2                   GetSize() const;
     ViewportCameraController& GetController() { return controller_; }
     PostProcessStack&         GetPostProcess() { return postProcess_; }
 

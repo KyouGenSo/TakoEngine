@@ -1,6 +1,7 @@
 #include "MaterialLibrary.h"
 
 #include <algorithm>
+#include <d3d12shader.h>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -24,6 +25,7 @@ namespace Tako {
     const std::filesystem::path kShaderDirectory   = "resources/Shaders";
     const std::filesystem::path kMaterialDirectory = "resources/Materials";
     constexpr std::string_view  kMaterialExtension = ".mat.json";
+    constexpr std::string_view  kShaderExtension   = ".shader.json";
 
     std::filesystem::path MaterialPath(const std::string& name)
     {
@@ -37,6 +39,37 @@ namespace Tako {
         return std::nullopt;
       }
       return std::string(std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>());
+    }
+
+    std::filesystem::file_time_type LastWriteTime(const std::filesystem::path& path)
+    {
+      std::error_code error;
+      const auto time = std::filesystem::last_write_time(path, error);
+      return error ? std::filesystem::file_time_type{} : time;
+    }
+
+    /// <summary>
+    /// テクスチャを読み、SRV インデックスにする（空・見つからなければ white.png）
+    /// </summary>
+    uint32_t ResolveTexture(const std::string& file)
+    {
+      TextureManager* textureManager = TextureManager::GetInstance();
+      if (file.empty()) {
+        return textureManager->GetEngineDefaultSRVIndex("white.png");
+      }
+      // 無いファイルを読もうとすると TextureManager が止まるので、先に確かめる
+      if (!textureManager->IsLoaded(file) && !std::filesystem::exists(textureManager->GetFilePath(file))) {
+        Logger::Log("Texture not found: %s", file.c_str());
+        return textureManager->GetEngineDefaultSRVIndex("white.png");
+      }
+      textureManager->LoadTexture(file);
+      return textureManager->GetSRVIndex(file);
+    }
+
+    bool Declares(const Shader& shader, const char* name)
+    {
+      D3D12_SHADER_INPUT_BIND_DESC bind{};
+      return shader.GetReflection() && SUCCEEDED(shader.GetReflection()->GetResourceBindingDescByName(name, &bind));
     }
 
     template<class T, size_t N>
@@ -63,6 +96,9 @@ namespace Tako {
       }
       state.depthTest = source.value("DepthTest", state.depthTest);
       state.depthWrite = source.value("DepthWrite", state.depthWrite);
+      if (const auto func = FindByName<int>(kDepthFuncNames, source.value("DepthFunc", std::string()))) {
+        state.depthFunc = static_cast<D3D12_COMPARISON_FUNC>(*func + 1);
+      }
     }
 
   } // anonymous namespace
@@ -80,14 +116,9 @@ namespace Tako {
   void MaterialLibrary::Initialize(DX12Basic* dx12)
   {
     dx12_ = dx12;
-    // エンジンの組み込みシェーダーへの追記（Lit の初期値など）を先に読む
-    for (const std::filesystem::path directory : { std::filesystem::path(EnginePaths::kEngineShaders), kShaderDirectory }) {
-      std::error_code ec;
-      for (const auto& entry : std::filesystem::directory_iterator(directory, ec)) {
-        if (entry.path().filename().string().ends_with(".shader.json")) {
-          LoadShaderFile(entry.path().string());
-        }
-      }
+    for (const std::string& path : GetShaderFiles()) {
+      shaderFileTimes_[path] = LastWriteTime(path);
+      LoadShaderFile(path);
     }
   }
 
@@ -99,6 +130,32 @@ namespace Tako {
   void MaterialLibrary::Update()
   {
 #ifdef _DEBUG
+    // 追加・保存された .shader.json を読み直す
+    const auto now = std::chrono::steady_clock::now();
+    if (now - lastShaderCheck_ >= kShaderCheckInterval) {
+      lastShaderCheck_ = now;
+      for (const std::string& path : GetShaderFiles()) {
+        const std::filesystem::file_time_type time = LastWriteTime(path);
+        const auto [it, added] = shaderFileTimes_.try_emplace(path, time);
+        if (added || it->second != time) {
+          it->second = time;
+          LoadShaderFile(path);
+        }
+      }
+    }
+
+    // PS が再コンパイルされたポストエフェクトは、パラメータの並びを作り直すために登録し直す
+    std::vector<std::string> recompiled;
+    for (auto& [name, info] : shaders_) {
+      if (info.postEffectPs && info.postEffectPs->GetVersion() != info.postEffectVersion) {
+        info.postEffectVersion = info.postEffectPs->GetVersion();
+        recompiled.push_back(info.path);
+      }
+    }
+    for (const std::string& path : recompiled) {
+      LoadShaderFile(path);
+    }
+
     for (auto& [name, asset] : assets_) {
       const std::shared_ptr<const MaterialPropertyLayout> layout = GetLayout(*asset.material->GetShader());
       if (layout == asset.layout) {
@@ -193,6 +250,7 @@ namespace Tako {
       { "Cull",       kCullModeNames[static_cast<size_t>(state.cull)] },
       { "DepthTest",  state.depthTest },
       { "DepthWrite", state.depthWrite },
+      { "DepthFunc",  kDepthFuncNames[state.depthFunc - 1] },
       { "Values",     asset.layout->SerializeValues(material.GetConstantBytes()) },
       { "Textures",   asset.textures },
     };
@@ -233,6 +291,7 @@ namespace Tako {
       material.SetCullMode(state.cull);
       material.SetDepthTest(state.depthTest);
       material.SetDepthWrite(state.depthWrite);
+      material.SetDepthFunc(state.depthFunc);
       material.SetRenderQueue(root.value("Queue", shader->GetDefaultQueue()));
 
       asset.textures = root.value("Textures", std::map<std::string, std::string>{});
@@ -282,24 +341,64 @@ namespace Tako {
     return names;
   }
 
+  std::vector<std::string> MaterialLibrary::GetShaderFiles() const
+  {
+    std::vector<std::string> files;
+    for (const std::filesystem::path& directory : { std::filesystem::path(EnginePaths::kEngineShaders), kShaderDirectory }) {
+      std::vector<std::string> found;
+      std::error_code ec;
+      for (const auto& entry : std::filesystem::directory_iterator(directory, ec)) {
+        if (entry.path().filename().string().ends_with(kShaderExtension)) {
+          found.push_back(entry.path().generic_string());
+        }
+      }
+      std::ranges::sort(found);
+      files.insert(files.end(), found.begin(), found.end());
+    }
+    return files;
+  }
+
   std::shared_ptr<Material> MaterialLibrary::Find(const std::string& name) const
   {
     const auto it = assets_.find(name);
     return it != assets_.end() ? it->second.material : nullptr;
   }
 
-  void MaterialLibrary::LoadShaderFile(const std::string& path)
+  bool MaterialLibrary::LoadShaderFile(const std::string& path)
   {
     const std::optional<std::string> text = ReadText(path);
-    if (!text) {
-      return;
-    }
+    return text && ApplyShaderText(path, *text);
+  }
 
+  bool MaterialLibrary::ApplyShaderText(const std::string& path, const std::string& text)
+  {
     try {
-      const json         root    = json::parse(*text);
-      const std::string  name    = root.at("Name").get<std::string>();
-      ShaderLibrary&     library = dx12_->GetShaderLibrary();
-      ShaderInfo&        info    = shaders_[name];
+      const json        root    = json::parse(text);
+      const std::string name    = root.at("Name").get<std::string>();
+      ShaderLibrary&    library = dx12_->GetShaderLibrary();
+      const auto        forward = root.find("Forward");
+      const auto        post    = root.find("PostEffect");
+
+      // 先に全てコンパイルし、失敗したら今の登録を残す
+      GraphicsPipelineDesc pipeline;
+      if (forward != root.end()) {
+        pipeline.vs = library.TryGet({ StringUtility::ConvertString(forward->value("VS", std::string("Object3D.VS.hlsl"))), ShaderStage::Vertex });
+        pipeline.ps = library.TryGet({ StringUtility::ConvertString(forward->at("PS").get<std::string>()), ShaderStage::Pixel });
+      }
+      std::wstring  postPsFile;
+      const Shader* postPs = nullptr;
+      if (post != root.end()) {
+        postPsFile = StringUtility::ConvertString(post->at("PS").get<std::string>());
+        postPs = library.TryGet({ postPsFile, ShaderStage::Pixel });
+      }
+      if ((forward != root.end() && (!pipeline.vs || !pipeline.ps)) || (post != root.end() && !postPs)) {
+        Logger::Log("Shader asset skipped (compile failed): %s", path.c_str());
+        return false;
+      }
+
+      ShaderInfo& info = shaders_[name];
+      info.path = path;
+      info.ranges.clear();
       // value() の戻り値は一時オブジェクトなので、items() で回す前に受けておく
       const json properties = root.value("Properties", json::object());
       for (const auto& [property, range] : properties.items()) {
@@ -308,22 +407,18 @@ namespace Tako {
         }
       }
       info.defaults = root.value("Defaults", json::object());
+      info.layout.reset();
 
       // 描画物のシェーダー
-      if (const auto forward = root.find("Forward"); forward != root.end()) {
-        GraphicsPipelineDesc pipeline;
-        pipeline.vs = library.TryGet({ StringUtility::ConvertString(forward->value("VS", std::string("Object3D.VS.hlsl"))), ShaderStage::Vertex });
-        pipeline.ps = library.TryGet({ StringUtility::ConvertString(forward->at("PS").get<std::string>()), ShaderStage::Pixel });
-        if (!pipeline.vs || !pipeline.ps) {
-          Logger::Log("Shader asset skipped (compile failed): %s", path.c_str());
-          return;
-        }
+      if (forward != root.end()) {
         pipeline.vertexLayout = VertexLayout::Mesh;
         pipeline.renderState.blend = BlendMode::Alpha;
         ReadRenderState(*forward, pipeline.renderState);
 
         Renderer*    renderer = Renderer::GetInstance();
         ShaderAsset& shader   = renderer->RegisterShader(name);
+        // 読み直しで Fallback を外したときに、前の影・マスクのパスを残さない
+        shader = ShaderAsset(name);
         // 色を決めないパス（影・マスク）は Fallback のシェーダーのものを使う
         if (const ShaderAsset* fallback = renderer->FindShader(root.value("Fallback", std::string()))) {
           for (ShaderPass pass : { ShaderPass::ShadowCaster, ShaderPass::Mask }) {
@@ -339,21 +434,36 @@ namespace Tako {
       }
 
       // ポストエフェクト
-      if (const auto post = root.find("PostEffect"); post != root.end()) {
-        const std::wstring psFile = StringUtility::ConvertString(post->at("PS").get<std::string>());
-        const Shader*      ps     = library.TryGet({ psFile, ShaderStage::Pixel });
-        if (!ps) {
-          Logger::Log("Post effect skipped (compile failed): %s", path.c_str());
-          return;
-        }
-        PropertyBlock block{ MaterialPropertyLayout::Reflect(ps->GetReflection(), "gParam", info.ranges), {} };
+      if (post != root.end()) {
+        PropertyBlock block{ MaterialPropertyLayout::Reflect(postPs->GetReflection(), "gParam", info.ranges), {} };
         block.bytes.resize(block.layout->constantSize);
         block.layout->DeserializeValues(info.defaults, block.bytes);
-        RegisterPostEffect(name, { .pixelShader = psFile, .defaultParam = std::move(block), .usesDepth = post->value("UsesDepth", false) });
+
+        // gTexture（入力の画面）以外のテクスチャには Textures のファイルを渡す
+        std::vector<std::pair<ShaderParamId, uint32_t>> textures;
+        const json files = post->value("Textures", json::object());
+        for (const std::string& slot : block.layout->textures) {
+          if (slot != "gTexture") {
+            textures.emplace_back(MakeShaderParamId(slot), ResolveTexture(files.value(slot, std::string())));
+          }
+        }
+        PostEffectDefinition definition{ .pixelShader = postPsFile, .defaultParam = std::move(block), .usesDepth = Declares(*postPs, "gDepthTexture") };
+        if (!textures.empty()) {
+          definition.setup = [textures](const PostEffectFrame&, EffectParam&, CommandContext::ShaderBinder& binder) {
+            for (const auto& [id, srvIndex] : textures) {
+              binder.BindSRV(id, srvIndex);
+            }
+          };
+        }
+        RegisterPostEffect(name, std::move(definition));
+        info.postEffectPs = postPs;
+        info.postEffectVersion = postPs->GetVersion();
       }
+      return true;
     }
     catch (const json::exception& e) {
       Logger::Log("Shader asset load failed: %s (%s)", path.c_str(), e.what());
+      return false;
     }
   }
 
@@ -377,21 +487,9 @@ namespace Tako {
       return true;
     });
 
-    TextureManager* textureManager = TextureManager::GetInstance();
     for (const std::string& slot : slots) {
-      uint32_t   srvIndex = textureManager->GetEngineDefaultSRVIndex("white.png");
-      const auto file     = asset.textures.find(slot);
-      if (file != asset.textures.end() && !file->second.empty()) {
-        // 無いファイルを読もうとすると TextureManager が止まるので、先に確かめる
-        if (textureManager->IsLoaded(file->second) || std::filesystem::exists(textureManager->GetFilePath(file->second))) {
-          textureManager->LoadTexture(file->second);
-          srvIndex = textureManager->GetSRVIndex(file->second);
-        }
-        else {
-          Logger::Log("Material texture not found: %s", file->second.c_str());
-        }
-      }
-      material.SetTexture(MakeShaderParamId(slot), srvIndex);
+      const auto file = asset.textures.find(slot);
+      material.SetTexture(MakeShaderParamId(slot), ResolveTexture(file != asset.textures.end() ? file->second : std::string()));
     }
   }
 

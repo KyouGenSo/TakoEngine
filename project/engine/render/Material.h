@@ -52,14 +52,14 @@ namespace Tako {
     }
 
     /// <summary>
-    /// 定数とテクスチャを現在のパイプラインへ渡す
-    /// </summary>
-    /// <summary>
     /// 定数をバイト列で扱う（リフレクションのレイアウトで値を読み書きするマテリアル用）。
     /// size が今と違えば 0 で埋めて確保し直す（値は呼び出し側で入れ直す）。Constants と同じマテリアルで混ぜない
     /// </summary>
     std::span<uint8_t> GetConstantBytes(size_t size);
 
+    /// <summary>
+    /// 定数とテクスチャを現在のパイプラインへ渡す
+    /// </summary>
     void Bind(CommandContext::ShaderBinder& binder) const;
 
     /// <summary>
@@ -83,6 +83,7 @@ namespace Tako {
     void SetCullMode(CullMode cull) { renderState_.cull = cull; }
     void SetDepthTest(bool depthTest) { renderState_.depthTest = depthTest; }
     void SetDepthWrite(bool depthWrite) { renderState_.depthWrite = depthWrite; }
+    void SetDepthFunc(D3D12_COMPARISON_FUNC depthFunc) { renderState_.depthFunc = depthFunc; }
     void SetRenderQueue(int32_t queue) { renderQueue_ = queue; }
 
     /// <summary>

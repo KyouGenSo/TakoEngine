@@ -43,7 +43,11 @@ namespace Tako {
     struct ViewConstants {
       Matrix4x4 viewProjection;
       Vector3   worldPosition;
-      float     padding;
+      float     time;                   ///< ゲーム開始からの秒数（FrameTimer::GetGameTime）
+      Matrix4x4 viewProjectionInverse;
+      Matrix4x4 projectionInverse;
+      Vector2   screenSize;             ///< 描画先の画素数
+      Vector2   padding;
     };
 
     /// <summary>
@@ -117,7 +121,8 @@ namespace Tako {
     /// <summary>
     /// カメラの視点定数をこのフレームのアップロード領域に書く
     /// </summary>
-    RenderView MakeView(const Camera& camera);
+    /// <param name="screenSize">描画先の画素数（シェーダーの gView.screenSize）</param>
+    RenderView MakeView(const Camera& camera, const Vector2& screenSize);
 
     /// <summary>
     /// シェーダーを名前で登録する（同名があればそれを返す）

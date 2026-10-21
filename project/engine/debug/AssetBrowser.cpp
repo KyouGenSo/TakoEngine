@@ -138,18 +138,6 @@ namespace Tako {
     }
 
     /// <summary>
-    /// OS の関連付けアプリで開く（フォルダはエクスプローラー）
-    /// </summary>
-    void OpenWithShell(const fs::path& path) {
-      const HINSTANCE result = ShellExecuteW(nullptr, L"open", AbsolutePath(path).c_str(), nullptr, nullptr, SW_SHOWNORMAL);
-      // 戻り値は互換のため HINSTANCE 型だが、32 以下はエラーコード
-      const INT_PTR code = reinterpret_cast<INT_PTR>(result);
-      if (code <= 32) {
-        LogToConsole(std::format("Assets: Failed to open {} (ShellExecute error {})", ToUtf8(path), code), LogType::Warning);
-      }
-    }
-
-    /// <summary>
     /// 親フォルダをエクスプローラーで開き、path を選択状態にする
     /// </summary>
     void ShowInExplorer(const fs::path& path) {
@@ -224,6 +212,15 @@ namespace Tako {
       buffer->appendf("[%s][State]\n", handler->TypeName);
       buffer->appendf("CurrentDir=%s\n", savedState.currentDir.c_str());
       buffer->appendf("ThumbnailSize=%.0f\n\n", savedState.thumbnailSize);
+    }
+  }
+
+  void OpenWithShell(const std::filesystem::path& path) {
+    const HINSTANCE result = ShellExecuteW(nullptr, L"open", AbsolutePath(path).c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+    // 戻り値は互換のため HINSTANCE 型だが、32 以下はエラーコード
+    const INT_PTR code = reinterpret_cast<INT_PTR>(result);
+    if (code <= 32) {
+      LogToConsole(std::format("Failed to open {} (ShellExecute error {})", ToUtf8(path), code), LogType::Warning);
     }
   }
 

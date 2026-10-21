@@ -173,6 +173,11 @@ namespace Tako {
     if (ImGui::Checkbox("Depth Write", &state.depthWrite)) {
       material.SetDepthWrite(state.depthWrite);
     }
+    int depthFunc = static_cast<int>(state.depthFunc) - 1;
+    if (ImGui::Combo("Depth Func", &depthFunc, kDepthFuncNames, IM_ARRAYSIZE(kDepthFuncNames))) {
+      material.SetDepthFunc(static_cast<D3D12_COMPARISON_FUNC>(depthFunc + 1));
+    }
+    ImGui::SetItemTooltip("Greater draws only where something else is in front (x-ray)");
 
     ImGui::SeparatorText("Properties");
     library->DrawValues(selected_);

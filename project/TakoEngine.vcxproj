@@ -119,6 +119,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="engine\debug\ShaderEditor.cpp" />
     <ClCompile Include="engine\debug\ObjectSettingsEditor.cpp" />
     <ClCompile Include="engine\3d\Object\ObjectSettings.cpp" />
     <ClCompile Include="engine\3d\Decal\Decal.cpp" />
@@ -262,6 +263,7 @@
     <ClCompile Include="engine\debug\MaterialEditor.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\debug\ShaderEditor.h" />
     <ClInclude Include="engine\debug\ObjectSettingsEditor.h" />
     <ClInclude Include="engine\3d\Object\ObjectSettings.h" />
     <ClInclude Include="engine\3d\Decal\Decal.h" />

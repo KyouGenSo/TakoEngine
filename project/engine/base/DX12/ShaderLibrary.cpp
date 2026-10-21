@@ -151,11 +151,16 @@ namespace Tako {
   {
     const ShaderKey& key = shader.key_;
     const std::filesystem::path path = ResolvePath(key.file);
+    // エディタに出せるよう、失敗の文をファイルごとに残す
+    const auto fail = [&](const std::string& message) {
+      Log(message, LogLevel::Error);
+      compileErrors_[key.file] = message;
+      return false;
+    };
 
     Microsoft::WRL::ComPtr<IDxcBlobEncoding> source;
     if (FAILED(utils_->LoadFile(path.c_str(), nullptr, &source))) {
-      Log(std::format("Shader not found: {}", path.string()), LogLevel::Error);
-      return false;
+      return fail(std::format("Shader not found: {}", path.string()));
     }
     const DxcBuffer sourceBuffer{ source->GetBufferPointer(), source->GetBufferSize(), DXC_CP_UTF8 };
 
@@ -198,8 +203,7 @@ namespace Tako {
     }
     const bool hasMessages = messages && messages->GetStringLength() != 0;
     if (FAILED(hr) || FAILED(status)) {
-      Log(std::format("Shader compile error: {}\n{}", path.string(), hasMessages ? messages->GetStringPointer() : ""), LogLevel::Error);
-      return false;
+      return fail(std::format("Shader compile error: {}\n{}", path.string(), hasMessages ? messages->GetStringPointer() : ""));
     }
     if (hasMessages) {
       Log(std::format("Shader compile warning: {}\n{}", path.string(), messages->GetStringPointer()), LogLevel::Warning);
@@ -210,16 +214,15 @@ namespace Tako {
     result->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&blob), nullptr);
     result->GetOutput(DXC_OUT_REFLECTION, IID_PPV_ARGS(&reflectionBlob), nullptr);
     if (!blob || !reflectionBlob) {
-      Log(std::format("Shader output missing: {}", path.string()), LogLevel::Error);
-      return false;
+      return fail(std::format("Shader output missing: {}", path.string()));
     }
     const DxcBuffer reflectionBuffer{ reflectionBlob->GetBufferPointer(), reflectionBlob->GetBufferSize(), 0 };
     Microsoft::WRL::ComPtr<ID3D12ShaderReflection> reflection;
     if (FAILED(utils_->CreateReflection(&reflectionBuffer, IID_PPV_ARGS(&reflection)))) {
-      Log(std::format("Shader reflection failed: {}", path.string()), LogLevel::Error);
-      return false;
+      return fail(std::format("Shader reflection failed: {}", path.string()));
     }
 
+    compileErrors_.erase(key.file);
     shader.blob_ = blob;
     shader.reflection_ = reflection;
     ++shader.version_;
@@ -238,6 +241,12 @@ namespace Tako {
   {
     const std::filesystem::path path(file);
     return path.has_parent_path() ? path : engineShaderDir_ / path;
+  }
+
+  const std::string* ShaderLibrary::FindCompileError(const std::wstring& file) const
+  {
+    const auto it = compileErrors_.find(file);
+    return it != compileErrors_.end() ? &it->second : nullptr;
   }
 
 } // namespace Tako

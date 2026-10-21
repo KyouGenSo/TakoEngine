@@ -289,6 +289,14 @@ namespace Tako {
 
   void PostEffectManager::Update(float deltaTime)
   {
+    // JSON のポストエフェクトの PS が再コンパイルされたら、パラメータを新しい並びへ移す
+    stack_.RefreshLayouts();
+    for (auto& [id, info] : temporaryEffects_) {
+      if (const PostEffectInstance* effect = stack_.Find(id)) {
+        RefreshPropertyLayout(effect->name, info.baseParam);
+      }
+    }
+
     for (auto it = temporaryEffects_.begin(); it != temporaryEffects_.end();) {
       TemporaryEffectInfo& info = it->second;
       info.elapsedTime += deltaTime;

@@ -47,6 +47,10 @@ namespace Tako {
         if (definition.usesDepth) {
           binder.BindSRV("gDepthTexture"_id, frame.depthSrv);
         }
+        // 宣言していないシェーダーには何もしない
+        if (frame.view != 0) {
+          binder.BindCBV("gView"_id, frame.view);
+        }
         EffectParam value = param;
         if (definition.setup) {
           definition.setup(frame, value, binder);
@@ -123,6 +127,23 @@ namespace Tako {
     return GetRegistry().names;
   }
 
+  bool RefreshPropertyLayout(std::string_view name, EffectParam& param)
+  {
+    PropertyBlock*              block      = std::get_if<PropertyBlock>(&param);
+    const PostEffectDefinition* definition = FindPostEffect(name);
+    const PropertyBlock*        latest     = definition ? std::get_if<PropertyBlock>(&definition->defaultParam) : nullptr;
+    if (!block || !latest || block->layout == latest->layout) {
+      return false;
+    }
+    // 新しく増えた値は定義の初期値から始める
+    PropertyBlock refreshed = *latest;
+    if (block->layout) {
+      refreshed.layout->DeserializeValues(block->layout->SerializeValues(block->bytes), refreshed.bytes);
+    }
+    *block = std::move(refreshed);
+    return true;
+  }
+
   GraphicsPipelineDesc MakeFullScreenPipeline(ShaderLibrary& library, std::wstring_view psFile)
   {
     GraphicsPipelineDesc pipeline;
@@ -168,6 +189,13 @@ namespace Tako {
     }
     effects_.push_back({ nextId_, std::string(name), param, maskId });
     return nextId_++;
+  }
+
+  void PostProcessStack::RefreshLayouts()
+  {
+    for (PostEffectInstance& effect : effects_) {
+      RefreshPropertyLayout(effect.name, effect.param);
+    }
   }
 
   void PostProcessStack::Remove(uint32_t id)

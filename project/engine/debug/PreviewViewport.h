@@ -6,6 +6,7 @@
 #include <d3d12.h>
 #include <wrl.h>
 
+#include "Vector2.h"
 #include "Vector4.h"
 #include "GpuResource.h"
 #include "RenderGraph.h"
@@ -60,6 +61,7 @@ namespace Tako {
     //============================================================
     bool IsInitialized() const { return static_cast<bool>(color_.resource); }
     float GetAspect() const { return static_cast<float>(width_) / static_cast<float>(height_); }
+    Vector2 GetSize() const { return { static_cast<float>(width_), static_cast<float>(height_) }; }
     GpuResource& GetDepthResource() { return depthBuffer_; }
     uint32_t GetDepthSrvIndex() const { return depthSrvIndex_; }
 
