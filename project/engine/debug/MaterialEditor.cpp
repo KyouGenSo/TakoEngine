@@ -5,6 +5,7 @@
 #include <format>
 #include <json.hpp>
 
+#include "AssetBrowser.h"
 #include "DebugUIManager.h"
 #include "ImGuiManager.h"
 #include "Material.h"
@@ -214,10 +215,11 @@ namespace Tako {
       for (const std::string& slot : layout->textures) {
         std::array<char, 128> file{};
         current["Textures"].value(slot, std::string()).copy(file.data(), file.size() - 1);
-        // 打ち終えたときだけ読み込む（途中の名前で TextureManager を探さない）
+        // 打ち終えたときか、アセットウィンドウから落とされたときだけ読み込む（途中の名前で TextureManager を探さない）
         ImGui::InputTextWithHint(slot.c_str(), "white.png", file.data(), file.size());
-        if (ImGui::IsItemDeactivatedAfterEdit()) {
-          current["Textures"][slot] = file.data();
+        const std::optional<std::string> dropped = AcceptTextureDrop();
+        if (ImGui::IsItemDeactivatedAfterEdit() || dropped) {
+          current["Textures"][slot] = dropped.value_or(file.data());
           applyCurrent();
         }
       }

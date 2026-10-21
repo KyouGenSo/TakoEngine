@@ -3,6 +3,7 @@
 #ifdef _DEBUG
 
 #include <filesystem>
+#include <optional>
 #include <span>
 #include <string>
 #include <vector>
@@ -168,6 +169,11 @@ namespace Tako {
   /// OS の関連付けアプリで開く（フォルダはエクスプローラー）
   /// </summary>
   void OpenWithShell(const std::filesystem::path& path);
+
+  /// <summary>
+  /// 直前のアイテムへのテクスチャのドロップ（アセットウィンドウから）。落とされたフレームだけキーを返す
+  /// </summary>
+  std::optional<std::string> AcceptTextureDrop();
 
 } // namespace Tako
 

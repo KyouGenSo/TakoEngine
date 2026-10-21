@@ -440,7 +440,15 @@ float4 main(VertexShaderOutput input) : SV_TARGET
       ImGui::PushID("Textures");
       json textures = post.value("Textures", json::object());
       for (const std::string& slot : layout->textures) {
-        if (slot != "gTexture" && TextField(slot.c_str(), textures, slot.c_str(), "white.png")) {
+        if (slot == "gTexture") {
+          continue;
+        }
+        bool edited = TextField(slot.c_str(), textures, slot.c_str(), "white.png");
+        if (const std::optional<std::string> dropped = AcceptTextureDrop()) {
+          textures[slot] = *dropped;
+          edited = true;
+        }
+        if (edited) {
           post["Textures"] = textures;
           changed = true;
         }

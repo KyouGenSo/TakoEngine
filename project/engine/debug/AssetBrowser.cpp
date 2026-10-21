@@ -224,6 +224,18 @@ namespace Tako {
     }
   }
 
+  std::optional<std::string> AcceptTextureDrop() {
+    if (!ImGui::BeginDragDropTarget()) {
+      return std::nullopt;
+    }
+    std::optional<std::string> key;
+    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(AssetBrowser::kTexturePayload)) {
+      key = static_cast<const char*>(payload->Data);
+    }
+    ImGui::EndDragDropTarget();
+    return key;
+  }
+
   AssetBrowser::~AssetBrowser() {
     CloseWatches();
   }
