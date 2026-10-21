@@ -437,6 +437,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
 
     // gTexture（入力の画面）以外のテクスチャのファイル
     if (layout) {
+      ImGui::PushID("Textures");
       json textures = post.value("Textures", json::object());
       for (const std::string& slot : layout->textures) {
         if (slot != "gTexture" && TextField(slot.c_str(), textures, slot.c_str(), "white.png")) {
@@ -444,6 +445,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
           changed = true;
         }
       }
+      ImGui::PopID();
     }
     return changed;
   }
@@ -452,7 +454,9 @@ float4 main(VertexShaderOutput input) : SV_TARGET
   {
     bool changed = false;
 
+    // 範囲と初期値は同じプロパティ名をラベルにするので、区間ごとに ID を分ける
     ImGui::SeparatorText("Properties (slider range)");
+    ImGui::PushID("Ranges");
     json ranges = document_.value("Properties", json::object());
     for (const MaterialProperty& property : layout.properties) {
       if (property.type == MaterialProperty::Type::Unsupported || property.isColor) {
@@ -475,14 +479,17 @@ float4 main(VertexShaderOutput input) : SV_TARGET
         changed = true;
       }
     }
+    ImGui::PopID();
 
     ImGui::SeparatorText("Defaults");
+    ImGui::PushID("Defaults");
     std::vector<uint8_t> bytes(layout.constantSize);
     layout.DeserializeValues(document_.value("Defaults", json::object()), bytes);
     if (layout.DrawImGui(bytes)) {
       document_["Defaults"] = layout.SerializeValues(bytes);
       changed = true;
     }
+    ImGui::PopID();
     return changed;
   }
 
