@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <d3d12.h>
 #include <iterator>
+#include <optional>
 
 namespace Tako {
 
@@ -51,6 +52,27 @@ namespace Tako {
     D3D12_COMPARISON_FUNC depthFunc  = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 
     bool operator==(const RenderState&) const = default;
+  };
+
+  /// <summary>
+  /// RenderState のうち、値のある項目だけを上書きする（マテリアルがシェーダーの描画設定に重ねる）
+  /// </summary>
+  struct RenderStateOverride {
+    std::optional<BlendMode>             blend;
+    std::optional<CullMode>              cull;
+    std::optional<bool>                  depthTest;
+    std::optional<bool>                  depthWrite;
+    std::optional<D3D12_COMPARISON_FUNC> depthFunc;
+
+    RenderState ApplyTo(RenderState state) const
+    {
+      state.blend      = blend.value_or(state.blend);
+      state.cull       = cull.value_or(state.cull);
+      state.depthTest  = depthTest.value_or(state.depthTest);
+      state.depthWrite = depthWrite.value_or(state.depthWrite);
+      state.depthFunc  = depthFunc.value_or(state.depthFunc);
+      return state;
+    }
   };
 
 } // namespace Tako

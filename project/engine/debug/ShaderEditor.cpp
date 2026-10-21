@@ -422,7 +422,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
       ImGui::EndCombo();
     }
     ImGui::SetItemTooltip("Shadow and mask passes are borrowed from this shader");
-    DrawNote("Render state is copied when a material is created. Change existing materials in Material Editor");
+    DrawNote("Materials use these values for the items they do not override in Material Editor");
     return changed;
   }
 

@@ -84,20 +84,44 @@ namespace Tako {
     }
 
     /// <summary>
-    /// JSON に書かれた描画設定だけを state に上書きする
+    /// JSON に書かれた描画設定だけを読む（書いていない項目は値なし）
     /// </summary>
-    void ReadRenderState(const json& source, RenderState& state)
+    RenderStateOverride ReadRenderStateOverride(const json& source)
     {
-      if (const auto blend = FindByName<BlendMode>(kBlendModeNames, source.value("Blend", std::string()))) {
-        state.blend = *blend;
+      RenderStateOverride state;
+      state.blend = FindByName<BlendMode>(kBlendModeNames, source.value("Blend", std::string()));
+      state.cull = FindByName<CullMode>(kCullModeNames, source.value("Cull", std::string()));
+      if (const auto depthTest = source.find("DepthTest"); depthTest != source.end()) {
+        state.depthTest = depthTest->get<bool>();
       }
-      if (const auto cull = FindByName<CullMode>(kCullModeNames, source.value("Cull", std::string()))) {
-        state.cull = *cull;
+      if (const auto depthWrite = source.find("DepthWrite"); depthWrite != source.end()) {
+        state.depthWrite = depthWrite->get<bool>();
       }
-      state.depthTest = source.value("DepthTest", state.depthTest);
-      state.depthWrite = source.value("DepthWrite", state.depthWrite);
       if (const auto func = FindByName<int>(kDepthFuncNames, source.value("DepthFunc", std::string()))) {
         state.depthFunc = static_cast<D3D12_COMPARISON_FUNC>(*func + 1);
+      }
+      return state;
+    }
+
+    /// <summary>
+    /// 値のある描画設定だけを JSON に書く
+    /// </summary>
+    void WriteRenderStateOverride(const RenderStateOverride& state, json& target)
+    {
+      if (state.blend) {
+        target["Blend"] = kBlendModeNames[static_cast<size_t>(*state.blend)];
+      }
+      if (state.cull) {
+        target["Cull"] = kCullModeNames[static_cast<size_t>(*state.cull)];
+      }
+      if (state.depthTest) {
+        target["DepthTest"] = *state.depthTest;
+      }
+      if (state.depthWrite) {
+        target["DepthWrite"] = *state.depthWrite;
+      }
+      if (state.depthFunc) {
+        target["DepthFunc"] = kDepthFuncNames[*state.depthFunc - 1];
       }
     }
 
@@ -240,20 +264,18 @@ namespace Tako {
     if (it == assets_.end()) {
       return {};
     }
-    const Asset&       asset    = it->second;
-    const Material&    material = *asset.material;
-    const RenderState& state    = material.GetRenderState();
-    const json root = {
-      { "Shader",     material.GetShader()->GetName() },
-      { "Queue",      material.GetRenderQueue() },
-      { "Blend",      kBlendModeNames[static_cast<size_t>(state.blend)] },
-      { "Cull",       kCullModeNames[static_cast<size_t>(state.cull)] },
-      { "DepthTest",  state.depthTest },
-      { "DepthWrite", state.depthWrite },
-      { "DepthFunc",  kDepthFuncNames[state.depthFunc - 1] },
-      { "Values",     asset.layout->SerializeValues(material.GetConstantBytes()) },
-      { "Textures",   asset.textures },
+    const Asset&    asset    = it->second;
+    const Material& material = *asset.material;
+    json root = {
+      { "Shader",   material.GetShader()->GetName() },
+      { "Values",   asset.layout->SerializeValues(material.GetConstantBytes()) },
+      { "Textures", asset.textures },
     };
+    // 上書きした描画設定だけを書く（書いていない項目はシェーダーの値に追従する）
+    WriteRenderStateOverride(material.GetStateOverride(), root);
+    if (const std::optional<int32_t> queue = material.GetQueueOverride()) {
+      root["Queue"] = *queue;
+    }
     return root.dump(4);
   }
 
@@ -283,16 +305,10 @@ namespace Tako {
       ResetValues(asset, previous);
       asset.layout->DeserializeValues(root.value("Values", json::object()), material.GetConstantBytes(asset.layout->constantSize));
 
-      // 書いていない描画設定はシェーダーの既定にする
-      const GraphicsPipelineDesc* forward = shader->GetPass(ShaderPass::Forward);
-      RenderState                 state   = forward ? forward->renderState : RenderState{};
-      ReadRenderState(root, state);
-      material.SetBlendMode(state.blend);
-      material.SetCullMode(state.cull);
-      material.SetDepthTest(state.depthTest);
-      material.SetDepthWrite(state.depthWrite);
-      material.SetDepthFunc(state.depthFunc);
-      material.SetRenderQueue(root.value("Queue", shader->GetDefaultQueue()));
+      // 書いていない描画設定はシェーダーの値を使う
+      material.SetStateOverride(ReadRenderStateOverride(root));
+      const auto queue = root.find("Queue");
+      material.SetQueueOverride(queue != root.end() ? std::optional<int32_t>(queue->get<int32_t>()) : std::nullopt);
 
       asset.textures = root.value("Textures", std::map<std::string, std::string>{});
       FitTextures(asset);
@@ -413,7 +429,7 @@ namespace Tako {
       if (forward != root.end()) {
         pipeline.vertexLayout = VertexLayout::Mesh;
         pipeline.renderState.blend = BlendMode::Alpha;
-        ReadRenderState(*forward, pipeline.renderState);
+        pipeline.renderState = ReadRenderStateOverride(*forward).ApplyTo(pipeline.renderState);
 
         Renderer*    renderer = Renderer::GetInstance();
         ShaderAsset& shader   = renderer->RegisterShader(name);

@@ -2,6 +2,7 @@
 #include <cassert>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <span>
 #include <utility>
 #include <vector>
@@ -20,7 +21,7 @@ namespace Tako {
   class Material {
   public: //メンバー関数
     /// <summary>
-    /// シェーダーの既定の描画設定と描画キューで作る
+    /// 描画設定と描画キューはシェーダーの値を使う（Set* で上書きできる）
     /// </summary>
     /// <param name="dx12">定数バッファの生成に使う</param>
     /// <param name="shader">使うシェーダー</param>
@@ -79,15 +80,25 @@ namespace Tako {
     /// </summary>
     void SetTexture(ShaderParamId id, uint32_t srvIndex);
 
-    void SetBlendMode(BlendMode blend) { renderState_.blend = blend; }
-    void SetCullMode(CullMode cull) { renderState_.cull = cull; }
-    void SetDepthTest(bool depthTest) { renderState_.depthTest = depthTest; }
-    void SetDepthWrite(bool depthWrite) { renderState_.depthWrite = depthWrite; }
-    void SetDepthFunc(D3D12_COMPARISON_FUNC depthFunc) { renderState_.depthFunc = depthFunc; }
-    void SetRenderQueue(int32_t queue) { renderQueue_ = queue; }
+    void SetBlendMode(BlendMode blend) { stateOverride_.blend = blend; }
+    void SetCullMode(CullMode cull) { stateOverride_.cull = cull; }
+    void SetDepthTest(bool depthTest) { stateOverride_.depthTest = depthTest; }
+    void SetDepthWrite(bool depthWrite) { stateOverride_.depthWrite = depthWrite; }
+    void SetDepthFunc(D3D12_COMPARISON_FUNC depthFunc) { stateOverride_.depthFunc = depthFunc; }
+    void SetRenderQueue(int32_t queue) { queueOverride_ = queue; }
 
     /// <summary>
-    /// シェーダーを替え、描画設定と描画キューをそのシェーダーの既定に戻す（定数とテクスチャは残す）
+    /// 描画設定の上書きをまとめて置き換える（値の無い項目はシェーダーの値を使う）
+    /// </summary>
+    void SetStateOverride(const RenderStateOverride& stateOverride) { stateOverride_ = stateOverride; }
+
+    /// <summary>
+    /// 描画キューの上書きを置き換える（nullopt ならシェーダーの描画キューを使う）
+    /// </summary>
+    void SetQueueOverride(std::optional<int32_t> queue) { queueOverride_ = queue; }
+
+    /// <summary>
+    /// シェーダーを替える（描画設定の上書き・定数・テクスチャは残す）
     /// </summary>
     void SetShader(const ShaderAsset* shader);
 
@@ -96,8 +107,18 @@ namespace Tako {
     //=========================================
     const ShaderAsset* GetShader() const { return shader_; }
     std::span<const uint8_t> GetConstantBytes() const { return { constants_, constantSize_ }; }
-    const RenderState& GetRenderState() const { return renderState_; }
-    int32_t GetRenderQueue() const { return renderQueue_; }
+    const RenderStateOverride& GetStateOverride() const { return stateOverride_; }
+    std::optional<int32_t> GetQueueOverride() const { return queueOverride_; }
+
+    /// <summary>
+    /// Forward パスで使う描画設定（シェーダーの値に上書きを重ねたもの）
+    /// </summary>
+    RenderState GetRenderState() const;
+
+    /// <summary>
+    /// 描画キュー（上書きが無ければシェーダーの値）
+    /// </summary>
+    int32_t GetRenderQueue() const { return queueOverride_.value_or(shader_->GetDefaultQueue()); }
 
     /// <summary>
     /// 名前に割り当てたテクスチャの SRV インデックス（未割り当てなら 0）
@@ -111,9 +132,9 @@ namespace Tako {
     DX12Basic*         dx12_   = nullptr;
     const ShaderAsset* shader_ = nullptr;
 
-    //描画設定
-    RenderState renderState_{};                                ///< Forward パスで使う（シェーダーの既定から上書きできる）
-    int32_t     renderQueue_   = ShaderAsset::kQueueGeometry;
+    //描画設定（シェーダーの Forward パスの値に重ねる）
+    RenderStateOverride    stateOverride_;
+    std::optional<int32_t> queueOverride_;  ///< 無ければシェーダーの描画キュー
 
     //定数
     Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_;

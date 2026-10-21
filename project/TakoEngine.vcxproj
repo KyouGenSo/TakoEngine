@@ -264,6 +264,7 @@
     <ClCompile Include="engine\debug\MaterialEditor.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\imgui\OverrideField.h" />
     <ClInclude Include="engine\debug\RenderPipelineWindow.h" />
     <ClInclude Include="engine\debug\ShaderEditor.h" />
     <ClInclude Include="engine\debug\ObjectSettingsEditor.h" />

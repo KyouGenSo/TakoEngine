@@ -10,41 +10,9 @@
 #include "ImGuiManager.h"
 #include "MaterialLibrary.h"
 #include "Object3d.h"
+#include "OverrideField.h"
 
 namespace Tako {
-
-  namespace {
-
-    /// <summary>
-    /// 「上書きする」のチェックと入力欄の 1 行。チェックを外した間は、コードの値を灰色で出す
-    /// </summary>
-    /// <param name="codeValue">上書きしないときの値（チェックを入れたときの初期値にもする）</param>
-    /// <param name="widget">bool(const char* label, T& value)。値を変えたら true</param>
-    /// <returns>設定を変えたら true</returns>
-    template<class T, class Widget>
-    bool OverrideField(const char* label, std::optional<T>& value, const T& codeValue, Widget&& widget)
-    {
-      ImGui::PushID(label);
-      bool changed = false;
-      bool enabled = value.has_value();
-      if (ImGui::Checkbox("##Override", &enabled)) {
-        value   = enabled ? std::optional<T>(codeValue) : std::nullopt;
-        changed = true;
-      }
-      ImGui::SetItemTooltip("Override the value set in code");
-      ImGui::SameLine();
-      ImGui::BeginDisabled(!enabled);
-      T shown = value.value_or(codeValue);
-      if (widget(label, shown) && enabled) {
-        value   = shown;
-        changed = true;
-      }
-      ImGui::EndDisabled();
-      ImGui::PopID();
-      return changed;
-    }
-
-  } // anonymous namespace
 
   std::span<const ShortcutBinding<ObjectSettingsEditor>> ObjectSettingsEditor::Shortcuts()
   {

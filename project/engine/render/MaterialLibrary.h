@@ -33,7 +33,7 @@ namespace Tako {
   /// resources/Materials/{name}.mat.json
   ///   { "Shader": "Hologram", "Queue": 3000, "Blend": "Add", "Cull": "None", "DepthTest": true, "DepthWrite": false, "DepthFunc": "LessEqual",
   ///     "Values": { "color": [0, 1, 1, 0.5] }, "Textures": { "gTexture": "uvChecker.png" } }
-  ///   Shader 以外は省略でき、省略した描画設定はシェーダーの既定、テクスチャは白になる
+  ///   Shader 以外は省略でき、省略した描画設定はシェーダーの値を使い（シェーダーを直すと追従する）、テクスチャは白になる
   /// </summary>
   class MaterialLibrary {
   private: //定数

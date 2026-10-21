@@ -48,6 +48,7 @@ namespace Tako {
     int32_t                   minQueue         = INT32_MIN;  ///< 描画キューが [minQueue, maxQueue) の描画物だけ描く
     int32_t                   maxQueue         = INT32_MAX;
     std::span<const uint32_t> nameIds;                       ///< 空でなければ DrawItem::nameId が含まれる描画物だけ描く
+    std::span<const uint32_t> excludeNameIds;                ///< DrawItem::nameId が含まれる描画物は描かない
     const Material*           overrideMaterial = nullptr;    ///< 全ての描画物をこのマテリアル（の描画設定）で描く
   };
 

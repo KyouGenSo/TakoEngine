@@ -443,6 +443,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\imgui\OverrideField.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
     <ClInclude Include="engine\debug\RenderPipelineWindow.h">
       <Filter>debug</Filter>
     </ClInclude>

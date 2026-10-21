@@ -100,7 +100,7 @@ namespace Tako {
 
     RunPasses(RenderEvent::BeforeShadow);
     step("Shadows", [&] { renderer->RenderShadows(scene); });
-    step("Opaque", [&] { renderer->RenderList(scene, view, { .maxQueue = ShaderAsset::kQueueTransparent }); });
+    step("Opaque", [&] { renderer->RenderList(scene, view, { .maxQueue = ShaderAsset::kQueueTransparent, .excludeNameIds = replacedIds_ }); });
     RunPasses(RenderEvent::AfterOpaque);
 
     step("Decals", [&] {
@@ -111,7 +111,7 @@ namespace Tako {
     });
     RunPasses(RenderEvent::BeforeTransparent);
 
-    step("Transparent", [&] { renderer->RenderList(scene, view, { .minQueue = ShaderAsset::kQueueTransparent }); });
+    step("Transparent", [&] { renderer->RenderList(scene, view, { .minQueue = ShaderAsset::kQueueTransparent, .excludeNameIds = replacedIds_ }); });
     step("Particles", [&] { GPUParticle::GetInstance()->Draw(); });
     step("Lines", [&] { LineRenderer::GetInstance()->Draw(); });
     RunPasses(RenderEvent::AfterTransparent);
@@ -228,6 +228,7 @@ namespace Tako {
         { "Queue",    kQueueFilterNames[static_cast<size_t>(pass.queue)] },
         { "Objects",  pass.objects },
         { "Material", pass.material },
+        { "Replace",  pass.replace },
       });
     }
     return json{ { "Passes", passes } }.dump(4);
@@ -246,6 +247,7 @@ namespace Tako {
         pass.queue    = FromName(kQueueFilterNames, entry.value("Queue", std::string()), QueueFilter::All);
         pass.objects  = entry.value("Objects", std::vector<std::string>{});
         pass.material = entry.value("Material", std::string());
+        pass.replace  = entry.value("Replace", false);
       }
     }
     catch (const json::exception& e) {
@@ -260,6 +262,7 @@ namespace Tako {
   void RenderPipeline::RefreshObjectPasses()
   {
     objectPasses_.clear();
+    replacedIds_.clear();
     for (const ObjectPassSettings& settings : objectPassSettings_) {
       ObjectPass& pass = objectPasses_.emplace_back();
       if (!settings.material.empty()) {
@@ -267,6 +270,10 @@ namespace Tako {
       }
       for (const std::string& object : settings.objects) {
         pass.objectIds.push_back(MakeShaderParamId(object));
+      }
+      // パスが描けるときだけ本来の描画から外す（マテリアルを読めなかったパスは描かないので、消えないよう外さない）
+      if (settings.enabled && settings.replace && (settings.material.empty() || pass.material)) {
+        replacedIds_.insert(replacedIds_.end(), pass.objectIds.begin(), pass.objectIds.end());
       }
     }
   }

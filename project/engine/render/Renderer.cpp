@@ -103,6 +103,9 @@ namespace Tako {
       if (!filter.nameIds.empty() && std::ranges::find(filter.nameIds, item.nameId) == filter.nameIds.end()) {
         continue;
       }
+      if (std::ranges::find(filter.excludeNameIds, item.nameId) != filter.excludeNameIds.end()) {
+        continue;
+      }
       // 差し替えるときも、描画キューは描画物自身のもので絞り込み・並べる
       int32_t queue = item.material->GetRenderQueue();
       if (item.transparent) {

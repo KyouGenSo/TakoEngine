@@ -17,10 +17,6 @@ namespace Tako {
   {
     assert(shader && "Material: shader is null");
     shader_ = shader;
-    if (const GraphicsPipelineDesc* forward = shader_->GetPass(ShaderPass::Forward)) {
-      renderState_ = forward->renderState;
-    }
-    renderQueue_ = shader_->GetDefaultQueue();
   }
 
   std::span<uint8_t> Material::GetConstantBytes(size_t size)
@@ -38,8 +34,8 @@ namespace Tako {
   std::unique_ptr<Material> Material::Clone() const
   {
     auto clone = std::make_unique<Material>(dx12_, shader_);
-    clone->renderState_ = renderState_;
-    clone->renderQueue_ = renderQueue_;
+    clone->stateOverride_ = stateOverride_;
+    clone->queueOverride_ = queueOverride_;
     clone->textures_ = textures_;
     if (constants_) {
       clone->AllocateConstants(constantSize_);
@@ -66,9 +62,15 @@ namespace Tako {
     }
     pipeline = *source;
     if (pass == ShaderPass::Forward) {
-      pipeline.renderState = renderState_;
+      pipeline.renderState = stateOverride_.ApplyTo(source->renderState);
     }
     return true;
+  }
+
+  RenderState Material::GetRenderState() const
+  {
+    const GraphicsPipelineDesc* forward = shader_->GetPass(ShaderPass::Forward);
+    return stateOverride_.ApplyTo(forward ? forward->renderState : RenderState{});
   }
 
   void Material::SetTexture(ShaderParamId id, uint32_t srvIndex)

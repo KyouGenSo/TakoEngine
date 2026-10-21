@@ -8,11 +8,30 @@
 #include "DebugUIManager.h"
 #include "ImGuiManager.h"
 #include "Material.h"
+#include "OverrideField.h"
 #include "Renderer.h"
 
 namespace Tako {
 
   using json = nlohmann::json;
+
+  namespace {
+
+    /// <summary>
+    /// 名前の表から列挙の値を選ぶ。offset は「値 - 添字」（D3D12_COMPARISON_FUNC は 1 から始まる）
+    /// </summary>
+    template<class T, size_t N>
+    bool EnumCombo(const char* label, T& value, const char* const (&names)[N], int offset = 0)
+    {
+      int index = static_cast<int>(value) - offset;
+      if (!ImGui::Combo(label, &index, names, static_cast<int>(N))) {
+        return false;
+      }
+      value = static_cast<T>(index + offset);
+      return true;
+    }
+
+  } // anonymous namespace
 
   std::span<const ShortcutBinding<MaterialEditor>> MaterialEditor::Shortcuts()
   {
@@ -151,33 +170,40 @@ namespace Tako {
       ImGui::EndCombo();
     }
 
+    // チェックを入れた項目だけシェーダーの値を上書きする（外した項目はシェーダーの変更に追従する）
     ImGui::SeparatorText("Render State");
-    int queue = material.GetRenderQueue();
-    if (ImGui::DragInt("Queue", &queue, 1.0f, 0, 5000)) {
-      material.SetRenderQueue(queue);
-    }
+    ImGui::TextDisabled("Unchecked items use the shader's value (Shader Editor)");
+    const ShaderAsset&          shader    = *material.GetShader();
+    const GraphicsPipelineDesc* forward   = shader.GetPass(ShaderPass::Forward);
+    const RenderState           inherited = forward ? forward->renderState : RenderState{};
+    RenderStateOverride         state     = material.GetStateOverride();
+    std::optional<int32_t>      queue     = material.GetQueueOverride();
+    bool                        changed   = false;
+
+    changed |= OverrideField<int32_t>("Queue", queue, shader.GetDefaultQueue(), [](const char* label, int32_t& value) {
+      return ImGui::DragInt(label, &value, 1.0f, 0, 5000);
+    });
     ImGui::SetItemTooltip("Background 1000 / Geometry 2000 / Transparent 3000 (sorted back to front) / Overlay 4000");
-    RenderState state = material.GetRenderState();
-    int blend = static_cast<int>(state.blend);
-    if (ImGui::Combo("Blend", &blend, kBlendModeNames, IM_ARRAYSIZE(kBlendModeNames))) {
-      material.SetBlendMode(static_cast<BlendMode>(blend));
-    }
-    int cull = static_cast<int>(state.cull);
-    if (ImGui::Combo("Cull", &cull, kCullModeNames, IM_ARRAYSIZE(kCullModeNames))) {
-      material.SetCullMode(static_cast<CullMode>(cull));
-    }
-    if (ImGui::Checkbox("Depth Test", &state.depthTest)) {
-      material.SetDepthTest(state.depthTest);
-    }
-    ImGui::SameLine();
-    if (ImGui::Checkbox("Depth Write", &state.depthWrite)) {
-      material.SetDepthWrite(state.depthWrite);
-    }
-    int depthFunc = static_cast<int>(state.depthFunc) - 1;
-    if (ImGui::Combo("Depth Func", &depthFunc, kDepthFuncNames, IM_ARRAYSIZE(kDepthFuncNames))) {
-      material.SetDepthFunc(static_cast<D3D12_COMPARISON_FUNC>(depthFunc + 1));
-    }
+    changed |= OverrideField<BlendMode>("Blend", state.blend, inherited.blend, [](const char* label, BlendMode& value) {
+      return EnumCombo(label, value, kBlendModeNames);
+    });
+    changed |= OverrideField<CullMode>("Cull", state.cull, inherited.cull, [](const char* label, CullMode& value) {
+      return EnumCombo(label, value, kCullModeNames);
+    });
+    changed |= OverrideField<bool>("Depth Test", state.depthTest, inherited.depthTest, [](const char* label, bool& value) {
+      return ImGui::Checkbox(label, &value);
+    });
+    changed |= OverrideField<bool>("Depth Write", state.depthWrite, inherited.depthWrite, [](const char* label, bool& value) {
+      return ImGui::Checkbox(label, &value);
+    });
+    changed |= OverrideField<D3D12_COMPARISON_FUNC>("Depth Func", state.depthFunc, inherited.depthFunc, [](const char* label, D3D12_COMPARISON_FUNC& value) {
+      return EnumCombo(label, value, kDepthFuncNames, 1);
+    });
     ImGui::SetItemTooltip("Greater draws only where something else is in front (x-ray)");
+    if (changed) {
+      material.SetStateOverride(state);
+      material.SetQueueOverride(queue);
+    }
 
     ImGui::SeparatorText("Properties");
     library->DrawValues(selected_);

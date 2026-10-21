@@ -57,6 +57,7 @@ namespace Tako {
     QueueFilter              queue   = QueueFilter::All;
     std::vector<std::string> objects;   ///< Object3d の名前（空なら全ての描画物）
     std::string              material;  ///< resources/Materials のマテリアル名（空なら各描画物のマテリアル）
+    bool                     replace = false;  ///< objects を本来の描画（不透明・半透明）から外し、このパスでだけ描く（影とマスクは本来のまま）
   };
 
   /// <summary>
@@ -74,7 +75,7 @@ namespace Tako {
   /// シーン色と最終結果の RT、一時 RT のプール、差し込んだパスを持つ。
   ///
   /// resources/Json/RenderPasses.json（オブジェクトパス。並びは同じ位置での実行順）
-  ///   { "Passes": [ { "Name": "PlayerXRay", "Event": "AfterTransparent", "Enabled": true, "Queue": "All", "Objects": ["Player"], "Material": "XRay" } ] }
+  ///   { "Passes": [ { "Name": "PlayerXRay", "Event": "AfterTransparent", "Enabled": true, "Queue": "All", "Objects": ["Player"], "Material": "XRay", "Replace": false } ] }
   /// </summary>
   class RenderPipeline {
   private: // シングルトン設定
@@ -216,6 +217,7 @@ namespace Tako {
     uint32_t                        nextPassId_ = 1;
     std::vector<ObjectPassSettings> objectPassSettings_;
     std::vector<ObjectPass>         objectPasses_;      ///< objectPassSettings_ と同じ並び
+    std::vector<uint32_t>           replacedIds_;       ///< Replace のパスで描くので、本来の描画から外す名前の FNV-1a
 
     std::vector<FrameStep> frameSteps_;
   };

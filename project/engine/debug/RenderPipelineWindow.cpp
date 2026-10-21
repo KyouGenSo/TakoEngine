@@ -95,7 +95,7 @@ namespace Tako {
     tracker_.DrawButtons();
     ImGui::SameLine();
     ImGui::TextDisabled(tracker_.IsEdited() ? "RenderPasses.json *" : "RenderPasses.json");
-    ImGui::TextDisabled("Each pass redraws the named objects with the material at the event (after the passes added in code)");
+    ImGui::TextDisabled("Each pass draws the named objects again with the material at the event (Replace: only there)");
 
     // 選べる名前は、設定のある名前と生存中の Object3d の名前
     std::vector<std::string> objectNames = ObjectSettings::GetInstance()->GetNames();
@@ -177,6 +177,10 @@ namespace Tako {
       changed = true;
     }
     ImGui::SetItemTooltip("Opaque = render queue below 3000, Transparent = 3000 and above (the object's own material)");
+
+    changed |= ImGui::Checkbox("Replace", &pass.replace);
+    ImGui::SetItemTooltip("Draw the objects only in this pass (removed from the normal opaque / transparent draw).\n"
+                          "Shadows and the object mask stay as they are. Needs Objects (ignored when Objects is (all))");
 
     if (ImGui::BeginCombo("Material", pass.material.empty() ? "(object's own)" : pass.material.c_str())) {
       if (ImGui::Selectable("(object's own)", pass.material.empty())) {
