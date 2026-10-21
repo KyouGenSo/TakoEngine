@@ -126,6 +126,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="engine\debug\RenderPipelineWindow.cpp">
+      <Filter>debug</Filter>
+    </ClCompile>
     <ClCompile Include="engine\debug\ShaderEditor.cpp">
       <Filter>debug</Filter>
     </ClCompile>
@@ -440,6 +443,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\debug\RenderPipelineWindow.h">
+      <Filter>debug</Filter>
+    </ClInclude>
     <ClInclude Include="engine\debug\ShaderEditor.h">
       <Filter>debug</Filter>
     </ClInclude>

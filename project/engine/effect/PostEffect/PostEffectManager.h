@@ -171,6 +171,7 @@ namespace Tako {
     //============================================================
     AntiAliasing GetAntiAliasing() const { return antiAliasing_; }
     bool UsesObjectMask() const { return stack_.UsesObjectMask(); }
+    const PostProcessStack& GetStack() const { return stack_; }
     bool IsTemporaryEffectActive(uint32_t id) const { return temporaryEffects_.contains(id); }
 
   private: //非公開関数

@@ -104,9 +104,9 @@ namespace Tako {
     void RenderShadows(const DrawList& list);
 
     /// <summary>
-    /// 描画キューが [minQueue, maxQueue) の描画物を、描画キュー・sortingOrder・奥行きの順に並べて現在の描画先へ描く
+    /// filter に合う描画物を、描画キュー・sortingOrder・奥行きの順に並べて現在の描画先へ描く
     /// </summary>
-    void RenderList(const DrawList& list, const RenderView& view, int32_t minQueue = INT32_MIN, int32_t maxQueue = INT32_MAX);
+    void RenderList(const DrawList& list, const RenderView& view, const DrawFilter& filter = {});
 
     /// <summary>
     /// maskId を持つ描画物の maskId を、現在の描画先（R8_UINT の ObjectMask）へ書く
@@ -172,7 +172,8 @@ namespace Tako {
     /// <summary>
     /// ジオメトリと描画物ごとの値を渡して描く
     /// </summary>
-    void DrawItemGeometry(const DrawItem& item, bool bindMaterial);
+    /// <param name="material">渡すマテリアル（nullptr なら渡さない。影・マスクのパス）</param>
+    void DrawItemGeometry(const DrawItem& item, const Material* material);
 
   private: //メンバー変数
     DX12Basic*             dx12_   = nullptr;

@@ -88,23 +88,27 @@ namespace Tako {
         current = pipeline;
         hasCurrent = true;
       }
-      DrawItemGeometry(item, false);
+      DrawItemGeometry(item, nullptr);
     }
     shadow->EndShadowPass();
   }
 
-  void Renderer::RenderList(const DrawList& list, const RenderView& view, int32_t minQueue, int32_t maxQueue)
+  void Renderer::RenderList(const DrawList& list, const RenderView& view, const DrawFilter& filter)
   {
     const std::span<const DrawItem> items = list.GetItems();
 
     sortEntries_.clear();
     for (uint32_t i = 0; i < items.size(); ++i) {
       const DrawItem& item = items[i];
+      if (!filter.nameIds.empty() && std::ranges::find(filter.nameIds, item.nameId) == filter.nameIds.end()) {
+        continue;
+      }
+      // 差し替えるときも、描画キューは描画物自身のもので絞り込み・並べる
       int32_t queue = item.material->GetRenderQueue();
       if (item.transparent) {
         queue = (std::max)(queue, ShaderAsset::kQueueTransparent);
       }
-      if (queue < minQueue || queue >= maxQueue) {
+      if (queue < filter.minQueue || queue >= filter.maxQueue) {
         continue;
       }
       // 半透明は奥から手前へ。不透明は登録順のまま描く
@@ -125,12 +129,15 @@ namespace Tako {
     GraphicsPipelineDesc current{};
     bool hasCurrent = false;
     for (const SortEntry& entry : sortEntries_) {
-      const DrawItem& item = items[entry.index];
+      const DrawItem&      item     = items[entry.index];
+      const Material&      material = filter.overrideMaterial ? *filter.overrideMaterial : *item.material;
       GraphicsPipelineDesc pipeline;
-      if (!item.material->GetPipeline(ShaderPass::Forward, item.instanceSrv != 0, pipeline)) {
+      // インスタンシング版のパスが無いシェーダー（.shader.json のもの）では、インスタンシングの描画物は描かない
+      if (!material.GetPipeline(ShaderPass::Forward, item.instanceSrv != 0, pipeline)) {
         continue;
       }
-      if (item.transparent) {
+      // 差し替えたマテリアルの描画設定はそのまま使う
+      if (item.transparent && !filter.overrideMaterial) {
         pipeline.renderState.cull = CullMode::None;
         pipeline.renderState.depthWrite = false;
       }
@@ -140,7 +147,7 @@ namespace Tako {
         current = pipeline;
         hasCurrent = true;
       }
-      DrawItemGeometry(item, true);
+      DrawItemGeometry(item, &material);
     }
   }
 
@@ -161,7 +168,7 @@ namespace Tako {
         hasCurrent = true;
       }
       context.Graphics().BindConstants("gMaskParam"_id, item.maskId);
-      DrawItemGeometry(item, false);
+      DrawItemGeometry(item, nullptr);
     }
   }
 
@@ -290,7 +297,7 @@ namespace Tako {
     ShadowRenderer::GetInstance()->SetShadowForMainPass();
   }
 
-  void Renderer::DrawItemGeometry(const DrawItem& item, bool bindMaterial)
+  void Renderer::DrawItemGeometry(const DrawItem& item, const Material* material)
   {
     CommandContext& context = dx12_->GetContext();
     ID3D12GraphicsCommandList* commandList = context.GetCommandList();
@@ -304,9 +311,9 @@ namespace Tako {
     if (item.instanceSrv != 0) {
       binder.BindSRV("gInstanceData"_id, item.instanceSrv);
     }
-    if (bindMaterial) {
-      item.material->Bind(binder);
-      if (item.textureOverride != 0) {
+    if (material) {
+      material->Bind(binder);
+      if (item.textureOverride != 0 && material == item.material) {
         binder.BindSRV("gTexture"_id, item.textureOverride);
       }
     }

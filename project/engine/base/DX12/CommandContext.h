@@ -143,6 +143,11 @@ namespace Tako {
 
     const RenderTargetFormats& GetRenderTargetFormats() const { return renderTargetFormats_; }
 
+    /// <summary>
+    /// これまでの描画命令の数（増え続ける。差を取って区間の描画回数にする）
+    /// </summary>
+    uint32_t GetDrawCount() const { return drawCount_; }
+
   private: //非公開関数
     /// <summary>
     /// 描画直前に、現在の設定と描画先に合う PSO を有効にする
@@ -176,6 +181,7 @@ namespace Tako {
     ID3D12PipelineState*   graphicsPso_    = nullptr;
     ID3D12PipelineState*   computePso_     = nullptr;
     D3D_PRIMITIVE_TOPOLOGY activeTopology_ = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+    uint32_t               drawCount_      = 0;
   };
 
 } // namespace Tako

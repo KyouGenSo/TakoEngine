@@ -16,6 +16,7 @@
 #include "MaterialEditor.h"
 #include "ObjectSettingsEditor.h"
 #include "ShaderEditor.h"
+#include "RenderPipelineWindow.h"
 #include "DebugViewport.h"
 #include "EngineSettingsWindow.h"
 #include "AssetBrowser.h"
@@ -63,6 +64,7 @@ namespace Tako {
       MaterialEditor,
       ObjectSettings,
       ShaderEditor,
+      RenderPipeline,
       ImGuiDemo,
       ImGuiMetrics,
       About,
@@ -386,6 +388,7 @@ namespace Tako {
     MaterialEditor        materialEditor_;
     ObjectSettingsEditor  objectSettingsEditor_;
     ShaderEditor          shaderEditor_;
+    RenderPipelineWindow  renderPipelineWindow_;
   };
 
   /// <summary>

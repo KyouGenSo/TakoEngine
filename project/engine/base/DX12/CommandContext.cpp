@@ -220,6 +220,7 @@ namespace Tako {
 
   void CommandContext::PrepareDraw()
   {
+    ++drawCount_;
     FlushBarriers();
     assert(graphics_.layout && "CommandContext: draw without a graphics pipeline");
 

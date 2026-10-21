@@ -105,6 +105,7 @@ namespace Tako {
     MaterialLibrary::GetInstance()->Initialize(dx12_.get());
     // 名前ごとの描画設定（マテリアルを読むので MaterialLibrary の後）
     ObjectSettings::GetInstance()->Load();
+    RenderPipeline::GetInstance()->LoadObjectPasses();
 
     DecalManager::GetInstance()->Initialize(dx12_.get());
     DecalManager::GetInstance()->SetCamera(defaultCamera_.get());

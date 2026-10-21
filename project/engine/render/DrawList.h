@@ -42,6 +42,16 @@ namespace Tako {
   };
 
   /// <summary>
+  /// Renderer::RenderList で描く描画物の絞り込みと、マテリアルの差し替え
+  /// </summary>
+  struct DrawFilter {
+    int32_t                   minQueue         = INT32_MIN;  ///< 描画キューが [minQueue, maxQueue) の描画物だけ描く
+    int32_t                   maxQueue         = INT32_MAX;
+    std::span<const uint32_t> nameIds;                       ///< 空でなければ DrawItem::nameId が含まれる描画物だけ描く
+    const Material*           overrideMaterial = nullptr;    ///< 全ての描画物をこのマテリアル（の描画設定）で描く
+  };
+
+  /// <summary>
   /// 1 フレームに登録された描画物の一覧
   /// </summary>
   class DrawList {

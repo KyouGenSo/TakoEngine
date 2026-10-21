@@ -55,6 +55,7 @@ namespace Tako {
       { Window::MaterialEditor,        "Material Editor" },
       { Window::ObjectSettings,        "Object Settings" },
       { Window::ShaderEditor,          "Shader Editor" },
+      { Window::RenderPipeline,        "Render Pipeline" },
       { Window::UIEditor,              "UI Editor" },
       { Window::CameraAnimationEditor, "Camera Animation Editor" },
       { Window::AnimationEditor,       "Animation Editor" },
