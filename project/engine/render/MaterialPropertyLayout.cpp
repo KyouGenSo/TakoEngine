@@ -55,7 +55,12 @@ namespace Tako {
         default: break;
         }
       }
-      property.isColor = property.type == MaterialProperty::Type::Float && property.components >= 3 && ContainsIgnoreCase(name, "color");
+      // -Zpr で行優先に詰めた 4 列の行列は、行が 16 バイトずつ隙間なく並ぶので float の並びとして扱う
+      else if (desc.Elements == 0 && desc.Class == D3D_SVC_MATRIX_ROWS && desc.Type == D3D_SVT_FLOAT && desc.Columns == 4) {
+        property.type = MaterialProperty::Type::Float;
+        property.components = desc.Rows * 4;
+      }
+      property.isColor = property.type == MaterialProperty::Type::Float && (property.components == 3 || property.components == 4) && ContainsIgnoreCase(name, "color");
       if (const auto range = ranges.find(name); range != ranges.end()) {
         property.min = range->second.first;
         property.max = range->second.second;
@@ -98,7 +103,8 @@ namespace Tako {
           AddMembers(variable->GetType(), variableDesc.StartOffset, prefix, ranges, layout->properties);
         }
       }
-      else if (bind.Type == D3D_SIT_TEXTURE && bind.Dimension == D3D_SRV_DIMENSION_TEXTURE2D && std::ranges::find(kEngineTextures, name) == std::end(kEngineTextures)) {
+      else if (bind.Type == D3D_SIT_TEXTURE && (bind.Dimension == D3D_SRV_DIMENSION_TEXTURE2D || bind.Dimension == D3D_SRV_DIMENSION_TEXTURECUBE)
+               && std::ranges::find(kEngineTextures, name) == std::end(kEngineTextures)) {
         layout->textures.emplace_back(name);
       }
     }
@@ -175,7 +181,12 @@ namespace Tako {
         }
         else {
           const float speed = hasRange ? (property.max - property.min) / 200.0f : 0.01f;
-          changed |= ImGui::DragScalarN(property.name.c_str(), ImGuiDataType_Float, data, count, speed, hasRange ? &property.min : nullptr, hasRange ? &property.max : nullptr);
+          // 行列は 1 行（4 成分）ずつ出す
+          const int width = (std::min)(count, 4);
+          for (int i = 0; i < count; i += width) {
+            const std::string label = count > 4 ? std::format("{}[{}]", property.name, i / 4) : property.name;
+            changed |= ImGui::DragScalarN(label.c_str(), ImGuiDataType_Float, static_cast<float*>(data) + i, width, speed, hasRange ? &property.min : nullptr, hasRange ? &property.max : nullptr);
+          }
         }
         break;
       case MaterialProperty::Type::Int: {

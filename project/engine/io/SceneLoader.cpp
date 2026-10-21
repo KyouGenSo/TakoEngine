@@ -185,6 +185,8 @@ namespace Tako {
 
       object3d->SetTransform(objectData.transform);
 
+      object3d->SetName(objectData.name);
+
       loadedScene->AddObject(objectData.name, std::move(object3d));
     }
 

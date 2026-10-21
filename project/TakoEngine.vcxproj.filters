@@ -126,6 +126,12 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="engine\debug\ObjectSettingsEditor.cpp">
+      <Filter>debug</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3d\Object\ObjectSettings.cpp">
+      <Filter>3d\Object</Filter>
+    </ClCompile>
     <ClCompile Include="engine\func\mathFunc\Mat4x4Func.cpp">
       <Filter>func\MathFunc</Filter>
     </ClCompile>
@@ -431,6 +437,12 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\debug\ObjectSettingsEditor.h">
+      <Filter>debug</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\Object\ObjectSettings.h">
+      <Filter>3d\Object</Filter>
+    </ClInclude>
     <ClInclude Include="engine\math\Matrix4x4.h">
       <Filter>math</Filter>
     </ClInclude>

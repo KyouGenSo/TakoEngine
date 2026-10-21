@@ -2,6 +2,7 @@
 #include <d3d12.h>
 #include <wrl.h>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 #include "vector2.h"
@@ -29,6 +30,16 @@ public: // 構造体
   {
     Matrix4x4 world;
     Matrix4x4 worldInvTranspose;
+  };
+
+private: // 構造体
+  // ObjectSettings を当てる前にコードで設定されていた値（設定の項目を消したときに戻す先）
+  struct CodeFlags
+  {
+    bool     transparent;
+    bool     castShadow;
+    int32_t  sortingOrder;
+    uint32_t maskId;
   };
 
 public: // メンバー関数
@@ -90,6 +101,11 @@ public: // メンバー関数
   /// </summary>
   /// <param name="model">所有権を渡す Model（unique_ptr）</param>
   void SetModel(std::unique_ptr<Model> model);
+
+  /// <summary>
+  /// 名前を付ける。同じ名前の ObjectSettings（UI で編集・保存する描画設定）を次の描画から当てる
+  /// </summary>
+  void SetName(const std::string& name);
 
   void SetTransform(const Transform& transform) { transform_ = transform; }
   void SetScale(const Vector3& scale) { transform_.scale = scale; }
@@ -205,9 +221,11 @@ public: // メンバー関数
   /// </summary>
   const std::string& GetModelName() const { return modelName_; }
 
+  const std::string& GetName() const { return name_; }
+
 #ifdef _DEBUG
   /// <summary>
-  /// 生存中の Object3d（エディタでマテリアルを割り当てる先の一覧）
+  /// 生存中の Object3d（Object Settings エディタの一覧）
   /// </summary>
   static const std::vector<Object3d*>& GetLiveObjects();
 #endif
@@ -221,6 +239,7 @@ public: // メンバー関数
   bool IsTransparent() const { return isTransparent_; }
   bool CastsShadow() const { return castShadow_; }
   int32_t GetSortingOrder() const { return sortingOrder_; }
+  uint32_t GetMaskId() const { return maskId_; }
 
   /// <summary>
   /// メッシュ名を指定して表示状態を取得
@@ -261,6 +280,11 @@ private: // プライベートメンバー関数
   /// </summary>
   void ApplyAnimationColor(const Vector4& color);
 
+  /// <summary>
+  /// 名前の ObjectSettings を、コードで設定した値の上に重ねる
+  /// </summary>
+  void ApplyObjectSettings();
+
 private: // メンバー変数
   std::unique_ptr<Model> model_;
   std::string            modelName_;
@@ -284,6 +308,13 @@ private: // メンバー変数
   bool     castShadow_    = true;
   int32_t  sortingOrder_  = 0;
   uint32_t maskId_        = 0;
+
+  //名前ごとの描画設定
+  std::string               name_;
+  uint32_t                  nameId_          = 0;  ///< name_ の FNV-1a（0 は名前なし）
+  uint32_t                  settingsVersion_ = 0;  ///< 当てた ObjectSettings のバージョン
+  std::optional<CodeFlags>  codeFlags_;
+  std::shared_ptr<Material> settingsMaterial_;     ///< 全メッシュに使う（nullptr ならメッシュのマテリアル）
 
   //アニメーションの上乗せ
   AnimationPlayer animator_;

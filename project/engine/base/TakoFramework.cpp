@@ -10,6 +10,7 @@
 #include "PostEffectManager.h"
 #include "RenderPipeline.h"
 #include "MaterialLibrary.h"
+#include "ObjectSettings.h"
 #include "GPUParticle.h"
 #include "TransitionManager.h"
 #include "FrameTimer.h"
@@ -102,6 +103,8 @@ namespace Tako {
 
     // データファイルのシェーダーとポストエフェクトを登録する（Renderer と PostEffectManager の後）
     MaterialLibrary::GetInstance()->Initialize(dx12_.get());
+    // 名前ごとの描画設定（マテリアルを読むので MaterialLibrary の後）
+    ObjectSettings::GetInstance()->Load();
 
     DecalManager::GetInstance()->Initialize(dx12_.get());
     DecalManager::GetInstance()->SetCamera(defaultCamera_.get());
@@ -143,6 +146,8 @@ namespace Tako {
 
     // Initialize の逆順で終了処理を実行
     TransitionManager::GetInstance()->Finalize();
+
+    ObjectSettings::GetInstance()->Finalize();
 
     MaterialLibrary::GetInstance()->Finalize();
 

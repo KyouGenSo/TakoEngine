@@ -1,0 +1,16 @@
+{
+    "Name": "Lit",
+    "Properties": {
+        "shininess": [0, 100],
+        "envMapCoefficient": [0, 1]
+    },
+    "Defaults": {
+        "color": [1, 1, 1, 1],
+        "enableLighting": 1,
+        "uvTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        "shininess": 15,
+        "envMapCoefficient": 1,
+        "enableHighlight": 1,
+        "enableEnvMap": 0
+    }
+}

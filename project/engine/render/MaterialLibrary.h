@@ -17,12 +17,13 @@ namespace Tako {
   /// <summary>
   /// データファイルから作るシェーダーとマテリアルの置き場。C++ を書かずにシェーダーを追加して描画物に使えるようにする。
   ///
-  /// resources/Shaders/*.shader.json（起動時に全て読む）
+  /// EngineResources/shaders/*.shader.json と resources/Shaders/*.shader.json（起動時に全て読む）
   ///   { "Name": "Hologram", "Fallback": "Lit", "Queue": 3000,
   ///     "Forward": { "VS": "Object3D.VS.hlsl", "PS": "resources/Shaders/Hologram.PS.hlsl", "Blend": "Add", "Cull": "None", "DepthTest": true, "DepthWrite": false },
   ///     "Properties": { "speed": [0, 10] } }
   ///   Forward があれば描画物のシェーダー（定数は gMaterial、書いていないパスは Fallback から借りる）、
-  ///   "PostEffect": { "PS": "...", "UsesDepth": false } があればポストエフェクト（定数は gParam、初期値は "Defaults"）として登録する。
+  ///   "PostEffect": { "PS": "...", "UsesDepth": false } があればポストエフェクト（定数は gParam）として登録する。
+  ///   "Defaults": { "color": [1, 1, 1, 1] } は値の初期値。Forward も PostEffect も無ければ、登録済みの同名シェーダーに範囲と初期値だけを足す。
   ///   ファイル名だけのシェーダーはエンジンのもの、パス付きは作業ディレクトリ基準
   ///
   /// resources/Materials/{name}.mat.json
@@ -53,6 +54,7 @@ namespace Tako {
 
     struct ShaderInfo {
       std::map<std::string, std::pair<float, float>> ranges;       ///< .shader.json の Properties
+      nlohmann::json                                 defaults;     ///< .shader.json の Defaults（値の初期値）
       std::shared_ptr<const MaterialPropertyLayout>  layout;
       uint32_t                                       version = 0;  ///< layout を作ったときの PS のバージョン
     };
@@ -61,7 +63,7 @@ namespace Tako {
     static MaterialLibrary* GetInstance();
 
     /// <summary>
-    /// resources/Shaders の .shader.json を読み、シェーダーとポストエフェクトを登録する。Renderer と PostEffectManager の初期化後に呼ぶ
+    /// エンジンとゲームの .shader.json を読み、シェーダーとポストエフェクトを登録する。Renderer と PostEffectManager の初期化後に呼ぶ
     /// </summary>
     void Initialize(DX12Basic* dx12);
 
@@ -122,6 +124,11 @@ namespace Tako {
 
   private: //非公開関数
     void LoadShaderFile(const std::string& path);
+
+    /// <summary>
+    /// 定数を 0 → シェーダーの Defaults → previous の順で入れ直す（asset.layout の大きさで確保し直す）
+    /// </summary>
+    void ResetValues(Asset& asset, const nlohmann::json& previous);
 
     /// <summary>
     /// レイアウトに無いテクスチャを外し、レイアウトにあって未設定のものを白にする

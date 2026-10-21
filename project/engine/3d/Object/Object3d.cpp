@@ -7,6 +7,8 @@
 #include "ShadowRenderer.h"
 #include "Logger.h"
 #include "ColorFunc.h"
+#include "ObjectSettings.h"
+#include "ShaderBindingLayout.h"
 
 #include <numbers>
 
@@ -138,6 +140,9 @@ void Object3d::Update()
 
 void Object3d::Draw()
 {
+	if (!name_.empty() && settingsVersion_ != ObjectSettings::GetInstance()->GetVersion()) {
+		ApplyObjectSettings();
+	}
 	if (!isAnimationVisible_ || !model_) {
 		return;
 	}
@@ -150,7 +155,33 @@ void Object3d::Draw()
 	item.transparent = isTransparent_;
 	item.castShadow = castShadow_;
 	item.maskId = maskId_;
+	item.nameId = nameId_;
+	item.material = settingsMaterial_.get();
 	model_->Draw(item, world);
+}
+
+void Object3d::SetName(const std::string& name)
+{
+	name_ = name;
+	nameId_ = name.empty() ? 0 : MakeShaderParamId(name);
+	settingsVersion_ = 0;
+}
+
+void Object3d::ApplyObjectSettings()
+{
+	if (!codeFlags_) {
+		codeFlags_ = CodeFlags{ isTransparent_, castShadow_, sortingOrder_, maskId_ };
+	}
+	ObjectSettings*        settings  = ObjectSettings::GetInstance();
+	const ObjectOverrides* overrides = settings->Find(name_);
+	const ObjectOverrides  none{};
+	const ObjectOverrides& entry     = overrides ? *overrides : none;
+	isTransparent_ = entry.transparent.value_or(codeFlags_->transparent);
+	castShadow_ = entry.castShadow.value_or(codeFlags_->castShadow);
+	sortingOrder_ = entry.sortingOrder.value_or(codeFlags_->sortingOrder);
+	maskId_ = entry.maskId.value_or(codeFlags_->maskId);
+	settingsMaterial_ = entry.loadedMaterial;
+	settingsVersion_ = settings->GetVersion();
 }
 
 void Object3d::SetMaterial(size_t meshIndex, std::shared_ptr<Material> material)

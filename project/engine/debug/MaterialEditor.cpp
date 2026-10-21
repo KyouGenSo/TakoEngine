@@ -8,9 +8,6 @@
 #include "DebugUIManager.h"
 #include "ImGuiManager.h"
 #include "Material.h"
-#include "Mesh.h"
-#include "Model.h"
-#include "Object3d.h"
 #include "Renderer.h"
 
 namespace Tako {
@@ -46,7 +43,6 @@ namespace Tako {
       if (ImGui::BeginChild("Material##MatEditor", ImVec2(0.0f, 0.0f), ImGuiChildFlags_Borders)) {
         if (std::shared_ptr<Material> material = MaterialLibrary::GetInstance()->Find(selected_)) {
           DrawMaterialPane(*material);
-          DrawTargets(material);
         }
         else {
           ImGui::TextDisabled("Select or create a material");
@@ -138,6 +134,7 @@ namespace Tako {
     }
     ImGui::SameLine();
     tracker_.DrawButtons();
+    ImGui::TextDisabled("Assign to objects in Tools > Object Settings");
 
     // シェーダーと描画設定・テクスチャのファイル名は保存内容を書き換えて当てはめる（値は名前で引き継がれる）
     json       current      = json::parse(library->Serialize(selected_));
@@ -194,39 +191,6 @@ namespace Tako {
         }
       }
     }
-  }
-
-  void MaterialEditor::DrawTargets(const std::shared_ptr<Material>& material)
-  {
-    ImGui::SeparatorText("Objects");
-    ImGui::TextDisabled("Applies to every mesh of the object until the object is destroyed");
-    if (ImGui::BeginChild("Targets##MatEditor", ImVec2(0.0f, 0.0f), ImGuiChildFlags_Borders)) {
-      for (Object3d* object : Object3d::GetLiveObjects()) {
-        Model* model = object->GetModel();
-        if (!model || model->GetMeshCount() == 0) {
-          continue;
-        }
-        ImGui::PushID(object);
-        const Vector3& position = object->GetTranslate();
-        const bool     applied  = &model->GetMesh(0)->GetMaterial() == material.get();
-        ImGui::Text("%s (%.1f, %.1f, %.1f)%s", object->GetModelName().empty() ? "(model)" : object->GetModelName().c_str(),
-                    position.x, position.y, position.z, applied ? "  [applied]" : "");
-        ImGui::SameLine();
-        if (ImGui::SmallButton("Apply")) {
-          for (size_t i = 0; i < model->GetMeshCount(); ++i) {
-            object->SetMaterial(i, material);
-          }
-        }
-        ImGui::SameLine();
-        if (ImGui::SmallButton("Reset")) {
-          for (size_t i = 0; i < model->GetMeshCount(); ++i) {
-            object->SetMaterial(i, nullptr);
-          }
-        }
-        ImGui::PopID();
-      }
-    }
-    ImGui::EndChild();
   }
 
 } // namespace Tako

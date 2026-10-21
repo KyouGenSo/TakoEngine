@@ -36,8 +36,9 @@ namespace Tako {
     bool    transparent  = false; ///< マテリアルに関わらず両面・深度書き込みなし・半透明キュー以降で描く
     bool    castShadow   = true;  ///< シャドウマップへ描くか（シェーダーが ShadowCaster パスを持つ場合）
 
-    //オブジェクト単位のポストエフェクト
+    //オブジェクト単位のポストエフェクト・描画パスの絞り込み
     uint32_t maskId = 0;  ///< 0 以外なら Mask パスで ObjectMask に書く（1〜255）
+    uint32_t nameId = 0;  ///< Object3d の名前の FNV-1a（0 は名前なし）
   };
 
   /// <summary>

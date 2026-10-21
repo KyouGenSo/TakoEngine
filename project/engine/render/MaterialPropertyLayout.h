@@ -22,7 +22,7 @@ namespace Tako {
 
     std::string name;                      ///< 入れ子の構造体は "a.b"
     Type        type       = Type::Float;
-    uint32_t    components = 1;            ///< 1〜4（ベクトルの要素数）
+    uint32_t    components = 1;            ///< 1〜4（ベクトルの要素数）。行列は 行数×4
     uint32_t    offset     = 0;            ///< 定数バッファ先頭からのバイト数
     bool        isColor    = false;        ///< 名前に color を含む float3/float4（色の編集 UI にする）
     float       min        = 0.0f;         ///< min == max なら範囲なし
@@ -35,7 +35,7 @@ namespace Tako {
   struct MaterialPropertyLayout {
     uint32_t                      constantSize = 0;  ///< 定数バッファの大きさ（0 なら定数なし）
     std::vector<MaterialProperty> properties;
-    std::vector<std::string>      textures;          ///< Texture2D の名前（エンジンが描画時に渡すものは除く）
+    std::vector<std::string>      textures;          ///< Texture2D と TextureCube の名前（エンジンが描画時に渡すものは除く）
 
     /// <summary>
     /// ps の cbufferName の定数バッファとテクスチャから作る

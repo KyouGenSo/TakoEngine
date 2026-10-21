@@ -53,6 +53,7 @@ namespace Tako {
       { Window::ParticleEditor,        "Particle Editor" },
       { Window::PrimitiveEditor,       "Primitive Editor" },
       { Window::MaterialEditor,        "Material Editor" },
+      { Window::ObjectSettings,        "Object Settings" },
       { Window::UIEditor,              "UI Editor" },
       { Window::CameraAnimationEditor, "Camera Animation Editor" },
       { Window::AnimationEditor,       "Animation Editor" },

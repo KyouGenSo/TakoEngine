@@ -16,7 +16,7 @@ namespace Tako {
   class Material;
 
   /// <summary>
-  /// .mat.json の編集ウィンドウ。値の UI はシェーダーのリフレクションから作り、編集中のマテリアルを生存中の Object3d に割り当てられる
+  /// .mat.json の編集ウィンドウ。値の UI はシェーダーのリフレクションから作る（Object3d への割り当ては ObjectSettingsEditor）
   /// </summary>
   class MaterialEditor {
   public: //メンバー関数
@@ -49,11 +49,6 @@ namespace Tako {
     void DrawListPane();
 
     void DrawMaterialPane(Material& material);
-
-    /// <summary>
-    /// 生存中の Object3d へ割り当て・解除する
-    /// </summary>
-    void DrawTargets(const std::shared_ptr<Material>& material);
 
   private: //メンバー変数
     bool*                isOpen_     = nullptr;  ///< ウィンドウ表示フラグ（DebugUIManager 所有）

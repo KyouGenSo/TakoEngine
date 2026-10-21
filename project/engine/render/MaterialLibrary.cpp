@@ -7,6 +7,7 @@
 #include <optional>
 
 #include "DX12Basic.h"
+#include "EnginePaths.h"
 #include "Logger.h"
 #include "Material.h"
 #include "PostProcess.h"
@@ -79,10 +80,13 @@ namespace Tako {
   void MaterialLibrary::Initialize(DX12Basic* dx12)
   {
     dx12_ = dx12;
-    std::error_code ec;
-    for (const auto& entry : std::filesystem::directory_iterator(kShaderDirectory, ec)) {
-      if (entry.path().filename().string().ends_with(".shader.json")) {
-        LoadShaderFile(entry.path().string());
+    // エンジンの組み込みシェーダーへの追記（Lit の初期値など）を先に読む
+    for (const std::filesystem::path directory : { std::filesystem::path(EnginePaths::kEngineShaders), kShaderDirectory }) {
+      std::error_code ec;
+      for (const auto& entry : std::filesystem::directory_iterator(directory, ec)) {
+        if (entry.path().filename().string().ends_with(".shader.json")) {
+          LoadShaderFile(entry.path().string());
+        }
       }
     }
   }
@@ -100,12 +104,10 @@ namespace Tako {
       if (layout == asset.layout) {
         continue;
       }
-      // 新しく増えた値は 0 から始め、残った値は名前で移す（同じ大きさでもオフセットはずれ得る）
+      // 新しく増えた値は初期値から始め、残った値は名前で移す（同じ大きさでもオフセットはずれ得る）
       const json values = asset.layout->SerializeValues(asset.material->GetConstantBytes());
       asset.layout = layout;
-      const std::span<uint8_t> bytes = asset.material->GetConstantBytes(layout->constantSize);
-      std::ranges::fill(bytes, uint8_t{ 0 });
-      layout->DeserializeValues(values, bytes);
+      ResetValues(asset, values);
       FitTextures(asset);
     }
 #endif
@@ -154,7 +156,7 @@ namespace Tako {
       asset.material->SetShader(shader);
     }
     asset.layout = GetLayout(*shader);
-    asset.material->GetConstantBytes(asset.layout->constantSize);
+    ResetValues(asset, json::object());
     FitTextures(asset);
     return asset.material;
   }
@@ -220,10 +222,8 @@ namespace Tako {
         material.SetShader(shader);
       }
       asset.layout = GetLayout(*shader);
-      const std::span<uint8_t> bytes = material.GetConstantBytes(asset.layout->constantSize);
-      std::ranges::fill(bytes, uint8_t{ 0 });
-      asset.layout->DeserializeValues(previous, bytes);
-      asset.layout->DeserializeValues(root.value("Values", json::object()), bytes);
+      ResetValues(asset, previous);
+      asset.layout->DeserializeValues(root.value("Values", json::object()), material.GetConstantBytes(asset.layout->constantSize));
 
       // 書いていない描画設定はシェーダーの既定にする
       const GraphicsPipelineDesc* forward = shader->GetPass(ShaderPass::Forward);
@@ -307,6 +307,7 @@ namespace Tako {
           info.ranges[property] = { range[0].get<float>(), range[1].get<float>() };
         }
       }
+      info.defaults = root.value("Defaults", json::object());
 
       // 描画物のシェーダー
       if (const auto forward = root.find("Forward"); forward != root.end()) {
@@ -347,13 +348,21 @@ namespace Tako {
         }
         PropertyBlock block{ MaterialPropertyLayout::Reflect(ps->GetReflection(), "gParam", info.ranges), {} };
         block.bytes.resize(block.layout->constantSize);
-        block.layout->DeserializeValues(root.value("Defaults", json::object()), block.bytes);
+        block.layout->DeserializeValues(info.defaults, block.bytes);
         RegisterPostEffect(name, { .pixelShader = psFile, .defaultParam = std::move(block), .usesDepth = post->value("UsesDepth", false) });
       }
     }
     catch (const json::exception& e) {
       Logger::Log("Shader asset load failed: %s (%s)", path.c_str(), e.what());
     }
+  }
+
+  void MaterialLibrary::ResetValues(Asset& asset, const json& previous)
+  {
+    const std::span<uint8_t> bytes = asset.material->GetConstantBytes(asset.layout->constantSize);
+    std::ranges::fill(bytes, uint8_t{ 0 });
+    asset.layout->DeserializeValues(shaders_[asset.material->GetShader()->GetName()].defaults, bytes);
+    asset.layout->DeserializeValues(previous, bytes);
   }
 
   void MaterialLibrary::FitTextures(Asset& asset) const
