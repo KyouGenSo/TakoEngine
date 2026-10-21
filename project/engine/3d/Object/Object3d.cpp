@@ -7,9 +7,13 @@
 #include "ShadowRenderer.h"
 #include "Logger.h"
 #include "ColorFunc.h"
+#include "MaterialLibrary.h"
+#include "MaterialPropertyLayout.h"
 #include "ObjectSettings.h"
 #include "ShaderBindingLayout.h"
+#include "ShaderLibrary.h"
 
+#include <cstring>
 #include <numbers>
 
 namespace Tako {
@@ -19,6 +23,44 @@ namespace {
 constexpr float kDegToRad = std::numbers::pi_v<float> / 180.0f;
 
 Vector4 Multiply(const Vector4& a, const Vector4& b) { return { a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w }; }
+
+// コードの上書きも ObjectSettings も無い描画フラグの値
+const DrawItem kDefaultItem{};
+
+const ResolvedMaterial kNoSettings{};
+
+/// <summary>
+/// コード ＞ ObjectSettings ＞ 既定 の順に、ある中で一番上の値
+/// </summary>
+template<class T>
+T Pick(const std::optional<T>& code, const ObjectOverrides* settings, std::optional<T> ObjectOverrides::* field, T fallback)
+{
+  if (code) {
+    return *code;
+  }
+  return settings && settings->*field ? *(settings->*field) : fallback;
+}
+
+/// <summary>
+/// マテリアルの "color"（無ければ白）
+/// </summary>
+Vector4 ReadColor(const Material& material)
+{
+  Vector4 color = Color::kWhite;
+  const GraphicsPipelineDesc* forward = material.GetShader()->GetPass(ShaderPass::Forward);
+  if (!forward || !forward->ps) {
+    return color;
+  }
+  const std::span<const uint8_t> constants = material.GetConstantBytes();
+  const MaterialProperty*        property  = MaterialPropertyLayout::ForShader(*forward->ps)->Find(MakeShaderParamId("color"));
+  if (property && property->type == MaterialProperty::Type::Float) {
+    const size_t size = (std::min)(property->components, 4u) * sizeof(float);
+    if (property->offset + size <= constants.size()) {
+      std::memcpy(&color, constants.data() + property->offset, size);
+    }
+  }
+  return color;
+}
 
 #ifdef _DEBUG
 std::vector<Object3d*>& LiveObjects()
@@ -140,55 +182,116 @@ void Object3d::Update()
 
 void Object3d::Draw()
 {
-	if (!name_.empty() && settingsVersion_ != ObjectSettings::GetInstance()->GetVersion()) {
-		ApplyObjectSettings();
-	}
-	if (!isAnimationVisible_ || !model_) {
+	const ObjectOverrides* settings = FindSettings();
+	if (!isAnimationVisible_ || !model_ || (settings && !settings->visible.value_or(true))) {
 		return;
+	}
+	if (slotsDirty_ || builtSettingsVersion_ != ObjectSettings::GetInstance()->GetVersion() || builtPropertiesVersion_ != code_.properties.GetVersion()) {
+		RebuildDrawSlots(settings);
 	}
 
 	const Matrix4x4& world = transformationMatData_->world;
 	DrawItem item;
 	item.transform = transformationMatResource_->GetGPUVirtualAddress();
 	item.sortPosition = { world.m[3][0], world.m[3][1], world.m[3][2] };
-	item.sortingOrder = sortingOrder_;
-	item.transparent = isTransparent_;
-	item.castShadow = castShadow_;
-	item.maskId = maskId_;
+	item.sortingOrder = Pick(code_.sortingOrder, settings, &ObjectOverrides::sortingOrder, kDefaultItem.sortingOrder);
+	item.transparent = Pick(code_.transparent, settings, &ObjectOverrides::transparent, kDefaultItem.transparent);
+	item.castShadow = Pick(code_.castShadow, settings, &ObjectOverrides::castShadow, kDefaultItem.castShadow);
+	item.maskId = Pick(code_.maskId, settings, &ObjectOverrides::maskId, kDefaultItem.maskId);
 	item.nameId = nameId_;
-	item.material = settingsMaterial_.get();
-	model_->Draw(item, world);
+	model_->Draw(item, world, drawSlots_);
 }
 
 void Object3d::SetName(const std::string& name)
 {
 	name_ = name;
 	nameId_ = name.empty() ? 0 : MakeShaderParamId(name);
-	settingsVersion_ = 0;
+	slotsDirty_ = true;
 }
 
-void Object3d::ApplyObjectSettings()
+const ObjectOverrides* Object3d::FindSettings() const
 {
-	if (!codeFlags_) {
-		codeFlags_ = CodeFlags{ isTransparent_, castShadow_, sortingOrder_, maskId_ };
+	return name_.empty() ? nullptr : ObjectSettings::GetInstance()->Find(name_);
+}
+
+const Material& Object3d::GetSlotMaterial(size_t meshIndex, const ObjectOverrides* settings) const
+{
+	if (meshIndex < code_.materials.size() && code_.materials[meshIndex]) {
+		return *code_.materials[meshIndex];
 	}
-	ObjectSettings*        settings  = ObjectSettings::GetInstance();
-	const ObjectOverrides* overrides = settings->Find(name_);
-	const ObjectOverrides  none{};
-	const ObjectOverrides& entry     = overrides ? *overrides : none;
-	isTransparent_ = entry.transparent.value_or(codeFlags_->transparent);
-	castShadow_ = entry.castShadow.value_or(codeFlags_->castShadow);
-	sortingOrder_ = entry.sortingOrder.value_or(codeFlags_->sortingOrder);
-	maskId_ = entry.maskId.value_or(codeFlags_->maskId);
-	settingsMaterial_ = entry.loadedMaterial;
-	settingsVersion_ = settings->GetVersion();
+	const Mesh*             mesh     = model_->GetMesh(meshIndex);
+	const ResolvedMaterial& resolved = settings ? settings->Resolve(mesh->GetName()) : kNoSettings;
+	return resolved.material ? *resolved.material : mesh->GetMaterial();
+}
+
+void Object3d::RebuildDrawSlots(const ObjectOverrides* settings)
+{
+	// 登録済みの DrawItem が同じフレームの間 slotProperties_ の要素を指すので、大きさが変わらなければ確保し直さない
+	const size_t meshCount = model_->GetMeshCount();
+	drawSlots_.resize(meshCount);
+	slotProperties_.resize(meshCount);
+	slotMaterials_.resize(meshCount);
+	for (size_t i = 0; i < meshCount; ++i) {
+		const Mesh*             mesh     = model_->GetMesh(i);
+		const ResolvedMaterial& resolved = settings ? settings->Resolve(mesh->GetName()) : kNoSettings;
+
+		// どのマテリアルで描くか：コード ＞ ObjectSettings ＞ モデルの既定
+		slotMaterials_[i] = i < code_.materials.size() && code_.materials[i] ? code_.materials[i] : resolved.material;
+		const Material& material = slotMaterials_[i] ? *slotMaterials_[i] : mesh->GetMaterial();
+
+		// 値は ObjectSettings の上にコードを重ね、アニメーションの上乗せの色を最後に掛ける
+		MaterialPropertyBlock& properties = slotProperties_[i];
+		properties.Clear();
+		properties.Merge(resolved.properties);
+		properties.Merge(code_.properties);
+		if (animColor_ != Color::kWhite) {
+			properties.SetVector("color", Multiply(properties.GetVector("color").value_or(ReadColor(material)), animColor_));
+		}
+
+		bool visible = mesh->IsVisible();
+		if (const auto code = code_.meshVisible.find(mesh->GetName()); code != code_.meshVisible.end()) {
+			visible = code->second;
+		}
+		else if (settings) {
+			if (const auto entry = settings->meshes.find(mesh->GetName()); entry != settings->meshes.end() && entry->second.visible) {
+				visible = *entry->second.visible;
+			}
+		}
+
+		drawSlots_[i] = { .material = &material, .properties = properties.IsEmpty() ? nullptr : &properties, .visible = visible };
+	}
+	slotsDirty_ = false;
+	builtSettingsVersion_ = ObjectSettings::GetInstance()->GetVersion();
+	builtPropertiesVersion_ = code_.properties.GetVersion();
 }
 
 void Object3d::SetMaterial(size_t meshIndex, std::shared_ptr<Material> material)
 {
-	if (model_) {
-		model_->SetMaterial(meshIndex, std::move(material));
+	if (code_.materials.size() <= meshIndex) {
+		code_.materials.resize(meshIndex + 1);
 	}
+	code_.materials[meshIndex] = std::move(material);
+	slotsDirty_ = true;
+}
+
+bool Object3d::IsTransparent() const
+{
+	return Pick(code_.transparent, FindSettings(), &ObjectOverrides::transparent, kDefaultItem.transparent);
+}
+
+bool Object3d::CastsShadow() const
+{
+	return Pick(code_.castShadow, FindSettings(), &ObjectOverrides::castShadow, kDefaultItem.castShadow);
+}
+
+int32_t Object3d::GetSortingOrder() const
+{
+	return Pick(code_.sortingOrder, FindSettings(), &ObjectOverrides::sortingOrder, kDefaultItem.sortingOrder);
+}
+
+uint32_t Object3d::GetMaskId() const
+{
+	return Pick(code_.maskId, FindSettings(), &ObjectOverrides::maskId, kDefaultItem.maskId);
 }
 
 void Object3d::DrawImGui()
@@ -211,9 +314,7 @@ void Object3d::SetModel(const std::string& fileName)
   // 新しいモデルをセット（ModelManager から Clone を取得）
   model_ = ModelManager::GetInstance()->GetModel(fileName);
   modelName_ = fileName;
-
-  // 新しいモデルには上乗せの色がまだ書かれていないので、次の Update で元の色から掛け直させる
-  animColor_ = Color::kWhite;
+  slotsDirty_ = true;
 }
 
 void Object3d::SetModel(std::unique_ptr<Model> model)
@@ -227,7 +328,7 @@ void Object3d::SetModel(std::unique_ptr<Model> model)
 
   model_ = std::move(model);
   modelName_.clear();
-  animColor_ = Color::kWhite;
+  slotsDirty_ = true;
 }
 
 #ifdef _DEBUG
@@ -237,117 +338,143 @@ const std::vector<Object3d*>& Object3d::GetLiveObjects()
 }
 #endif
 
-void Object3d::SetMaterialColor(const Vector4& color)
+void Object3d::SetMaterialColor(const std::optional<Vector4>& color)
 {
-  if (model_)
-  {
-    baseColor_ = color;
-    model_->SetMaterialColor(Multiply(color, animColor_));
+  if (color) {
+    code_.properties.SetVector("color", *color);
+  }
+  else {
+    code_.properties.Clear("color");
   }
 }
 
 Vector4 Object3d::GetMaterialColor() const
 {
-  if (animColor_ != Color::kWhite)
-  {
-    return baseColor_;
+  if (const std::optional<Vector4> color = code_.properties.GetVector("color")) {
+    return *color;
   }
-  if (model_)
-  {
-    return model_->GetMaterialColor();
+  return GetBaseMaterialColor();
+}
+
+Vector4 Object3d::GetBaseMaterialColor() const
+{
+  if (!model_ || model_->GetMeshCount() == 0) {
+    return Color::kWhite;
   }
-  return Color::kWhite;
+  const ObjectOverrides*  settings = FindSettings();
+  const ResolvedMaterial& resolved = settings ? settings->Resolve(model_->GetMesh(0)->GetName()) : kNoSettings;
+  return resolved.properties.GetVector("color").value_or(ReadColor(GetSlotMaterial(0, settings)));
 }
 
 void Object3d::ApplyAnimationColor(const Vector4& color)
 {
-  if (!model_ || color == animColor_)
-  {
-    return;
-  }
-  // 上乗せを始める時点の色を元の色として覚える
-  if (animColor_ == Color::kWhite)
-  {
-    baseColor_ = model_->GetMaterialColor();
-  }
-  animColor_ = color;
-  model_->SetMaterialColor(Multiply(baseColor_, animColor_));
-}
-
-void Object3d::SetUvTransform(const Transform& uvTransform)
-{
-  if (model_)
-  {
-    model_->SetUvTransform(uvTransform);
+  if (color != animColor_) {
+    animColor_ = color;
+    slotsDirty_ = true;
   }
 }
 
-void Object3d::SetShininess(float shininess)
+void Object3d::SetUvTransform(const std::optional<Transform>& uvTransform)
 {
-	if (model_)
-	{
-		model_->SetShininess(shininess);
-	}
+  if (uvTransform) {
+    code_.properties.SetMatrix("uvTransform", Mat4x4::MakeAffine(uvTransform->scale, uvTransform->rotate, uvTransform->translate));
+  }
+  else {
+    code_.properties.Clear("uvTransform");
+  }
 }
 
-void Object3d::SetEnableLighting(bool enableLighting)
+void Object3d::SetShininess(std::optional<float> shininess)
 {
-	if (model_)
-	{
-		model_->SetEnableLighting(enableLighting);
-	}
+  if (shininess) {
+    code_.properties.SetFloat("shininess", *shininess);
+  }
+  else {
+    code_.properties.Clear("shininess");
+  }
 }
 
-void Object3d::SetEnableHighlight(bool enableHighlight)
+void Object3d::SetEnableLighting(std::optional<bool> enableLighting)
 {
-	if (model_)
-	{
-		model_->SetEnableHighlight(enableHighlight);
-	}
+  if (enableLighting) {
+    code_.properties.SetInt("enableLighting", *enableLighting ? 1 : 0);
+  }
+  else {
+    code_.properties.Clear("enableLighting");
+  }
 }
 
-void Object3d::SetEnableEnvMap(bool enableEnvMap)
+void Object3d::SetEnableHighlight(std::optional<bool> enableHighlight)
 {
-  if (model_)
-  {
-    model_->SetEnableEnvMap(enableEnvMap);
+  if (enableHighlight) {
+    code_.properties.SetInt("enableHighlight", *enableHighlight ? 1 : 0);
+  }
+  else {
+    code_.properties.Clear("enableHighlight");
+  }
+}
+
+void Object3d::SetEnableEnvMap(std::optional<bool> enableEnvMap)
+{
+  if (enableEnvMap) {
+    code_.properties.SetInt("enableEnvMap", *enableEnvMap ? 1 : 0);
+  }
+  else {
+    code_.properties.Clear("enableEnvMap");
   }
 }
 
 void Object3d::SetEnvironmentTexture(uint32_t textureIndex)
 {
-  if (model_)
-  {
-    model_->SetEnvironmentTexture(textureIndex);
+  if (textureIndex != 0) {
+    code_.properties.SetTexture("gEnvironmentMap", textureIndex);
+  }
+  else {
+    code_.properties.Clear("gEnvironmentMap");
   }
 }
 
-void Object3d::SetEnvMapCoefficient(float coefficient)
+void Object3d::SetEnvMapCoefficient(std::optional<float> coefficient)
 {
-  if (model_)
-  {
-    model_->SetEnvMapCoefficient(coefficient);
+  if (coefficient) {
+    code_.properties.SetFloat("envMapCoefficient", *coefficient);
+  }
+  else {
+    code_.properties.Clear("envMapCoefficient");
   }
 }
 
 void Object3d::SetTexture(const std::string& fileName)
 {
-  if (model_)
-  {
-    model_->SetTexture(fileName);
+  if (!fileName.empty()) {
+    code_.properties.SetTexture("gTexture", MaterialLibrary::ResolveTexture(fileName));
+  }
+  else {
+    code_.properties.Clear("gTexture");
   }
 }
 
-void Object3d::SetMeshVisible(const std::string& name, bool visible)
+void Object3d::SetMeshVisible(const std::string& name, std::optional<bool> visible)
 {
-  if (model_)
-  {
-    model_->SetMeshVisible(name, visible);
+  if (visible) {
+    code_.meshVisible.insert_or_assign(name, *visible);
   }
+  else {
+    code_.meshVisible.erase(name);
+  }
+  slotsDirty_ = true;
 }
 
 bool Object3d::IsMeshVisible(const std::string& name) const
 {
+  if (const auto code = code_.meshVisible.find(name); code != code_.meshVisible.end()) {
+    return code->second;
+  }
+  if (const ObjectOverrides* settings = FindSettings()) {
+    if (const auto entry = settings->meshes.find(name); entry != settings->meshes.end() && entry->second.visible) {
+      return *entry->second.visible;
+    }
+  }
   return model_ ? model_->IsMeshVisible(name) : false;
 }
 

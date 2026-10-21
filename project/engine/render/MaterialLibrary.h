@@ -132,6 +132,12 @@ namespace Tako {
     /// </summary>
     std::shared_ptr<const MaterialPropertyLayout> GetLayout(const ShaderAsset& shader);
 
+    /// <summary>
+    /// テクスチャを読み、SRV インデックスにする（空・見つからなければ white.png）
+    /// </summary>
+    /// <param name="file">TextureManager のキー（テクスチャフォルダからの相対パスか、EngineResources/ から始まるパス）</param>
+    static uint32_t ResolveTexture(const std::string& file);
+
     //=========================================
     //Getter
     //=========================================

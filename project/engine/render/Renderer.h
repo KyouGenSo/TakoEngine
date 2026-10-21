@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "CommandContext.h"
 #include "DrawList.h"
 #include "Light.h"
 #include "Matrix4x4.h"
@@ -174,6 +175,12 @@ namespace Tako {
     /// </summary>
     /// <param name="material">渡すマテリアル（nullptr なら渡さない。影・マスクのパス）</param>
     void DrawItemGeometry(const DrawItem& item, const Material* material);
+
+    /// <summary>
+    /// 描画物ごとの値を重ねた定数とテクスチャを、マテリアルの分の上から渡す
+    /// </summary>
+    /// <param name="instanced">インスタンシング版のパスで描くか（値の並びを読む PS が変わる）</param>
+    void BindProperties(const MaterialPropertyBlock& properties, const Material& material, bool instanced, CommandContext::ShaderBinder& binder);
 
   private: //メンバー変数
     DX12Basic*             dx12_   = nullptr;

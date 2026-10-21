@@ -1,6 +1,8 @@
 #pragma once
 #include <d3d12.h>
 #include <wrl.h>
+#include <functional>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -12,15 +14,23 @@
 #include "Transform.h"
 #include "AnimationPlayer.h"
 #include "DrawList.h"
+#include "MaterialPropertyBlock.h"
 
 namespace Tako {
 
 class Model;
 class Material;
+struct ObjectOverrides;
 
 /// <summary>
 /// 3D オブジェクト基底クラス
-/// Transform 管理とモデル描画機能
+/// Transform 管理とモデル描画機能。
+///
+/// 描画の設定（マテリアル・値・描画フラグ・メッシュの表示）は、項目ごとに次の中で一番上にあるものを毎フレーム使う。
+///   1. コードの Set〇〇（std::nullopt を渡すと外す。SetMaterial は nullptr）
+///   2. 同じ名前の ObjectSettings（UI で編集・保存する設定）
+///   3. 既定（マテリアルの値・モデルの既定のマテリアル・DrawItem の初期値）
+/// 値（色など）は描くときにマテリアルの同じ名前の値へ重ねるので、どのマテリアルで描いても効く
 /// </summary>
 class Object3d {
 
@@ -32,14 +42,18 @@ public: // 構造体
     Matrix4x4 worldInvTranspose;
   };
 
-private: // 構造体
-  // ObjectSettings を当てる前にコードで設定されていた値（設定の項目を消したときに戻す先）
-  struct CodeFlags
+  /// <summary>
+  /// コードで Set した上書き。外すまで ObjectSettings と既定より優先する
+  /// </summary>
+  struct CodeOverrides
   {
-    bool     transparent;
-    bool     castShadow;
-    int32_t  sortingOrder;
-    uint32_t maskId;
+    std::optional<bool>                      transparent;
+    std::optional<bool>                      castShadow;
+    std::optional<int32_t>                   sortingOrder;
+    std::optional<uint32_t>                  maskId;
+    std::vector<std::shared_ptr<Material>>   materials;     ///< メッシュ番号順（nullptr は上書きなし）
+    std::map<std::string, bool, std::less<>> meshVisible;   ///< メッシュ名ごと
+    MaterialPropertyBlock                    properties;    ///< マテリアルの値とテクスチャ（"color"・"gTexture" など）
   };
 
 public: // メンバー関数
@@ -113,90 +127,95 @@ public: // メンバー関数
   void SetTranslate(const Vector3& translate) { transform_.translate = translate; }
 
   /// <summary>
-  /// マテリアルカラーを設定
+  /// マテリアルの "color" を上書きする（どのマテリアルで描いても、同じ名前の値に効く）
   /// </summary>
-  /// <param name="color">マテリアルカラー（RGBA）</param>
-  void SetMaterialColor(const Vector4& color);
+  /// <param name="color">RGBA（std::nullopt で上書きを外す）</param>
+  void SetMaterialColor(const std::optional<Vector4>& color);
 
   /// <summary>
   /// 半透明描画モードを設定 (両面描画 + 深度書き込み無効で、半透明キューの奥から順に描く)
   /// </summary>
-  /// <param name="isTransparent">半透明描画モードにする場合 true</param>
-  void SetTransparent(bool isTransparent) { isTransparent_ = isTransparent; }
+  /// <param name="isTransparent">半透明描画モードにする場合 true（std::nullopt で上書きを外す）</param>
+  void SetTransparent(std::optional<bool> isTransparent) { code_.transparent = isTransparent; }
 
-  void SetCastShadow(bool castShadow) { castShadow_ = castShadow; }
+  void SetCastShadow(std::optional<bool> castShadow) { code_.castShadow = castShadow; }
 
   /// <summary>
-  /// 同じ描画キューの中での描画順（小さいほど先）
+  /// 同じ描画キューの中での描画順（小さいほど先。std::nullopt で上書きを外す）
   /// </summary>
-  void SetSortingOrder(int32_t sortingOrder) { sortingOrder_ = sortingOrder; }
+  void SetSortingOrder(std::optional<int32_t> sortingOrder) { code_.sortingOrder = sortingOrder; }
 
   /// <summary>
-  /// 同じ maskId のポストエフェクトをこのオブジェクトの画素だけに掛ける（0 で解除、1〜255）
+  /// 同じ maskId のポストエフェクトをこのオブジェクトの画素だけに掛ける（0 で解除、1〜255。std::nullopt で上書きを外す）
   /// </summary>
-  void SetMaskId(uint32_t maskId) { maskId_ = maskId; }
+  void SetMaskId(std::optional<uint32_t> maskId) { code_.maskId = maskId; }
 
   /// <summary>
-  /// メッシュの描画に使うマテリアルを差し替える（nullptr で既定に戻す）
+  /// メッシュの描画に使うマテリアルを差し替える（nullptr で上書きを外す）
   /// </summary>
   /// <param name="meshIndex">モデル内のメッシュ番号</param>
   /// <param name="material">差し替えるマテリアル（複数の Object3d で共有してよい）</param>
   void SetMaterial(size_t meshIndex, std::shared_ptr<Material> material);
 
   /// <summary>
-  /// UV トランスフォームを設定
+  /// UV トランスフォーム（"uvTransform"）を設定する（std::nullopt で上書きを外す）
   /// </summary>
   /// <param name="uvTransform">UV トランスフォーム情報</param>
-  void SetUvTransform(const Transform& uvTransform);
+  void SetUvTransform(const std::optional<Transform>& uvTransform);
 
   /// <summary>
-  /// 環境マップテクスチャを設定
+  /// 環境マップテクスチャ（"gEnvironmentMap"）を設定する
   /// </summary>
-  /// <param name="textureIndex">テクスチャインデックス</param>
+  /// <param name="textureIndex">SRV インデックス（0 で上書きを外す）</param>
   void SetEnvironmentTexture(uint32_t textureIndex);
 
   /// <summary>
-  /// 環境マップの係数を設定
+  /// 環境マップの係数（"envMapCoefficient"）を設定する（std::nullopt で上書きを外す）
   /// </summary>
   /// <param name="coefficient">環境マップ係数</param>
-  void SetEnvMapCoefficient(float coefficient);
+  void SetEnvMapCoefficient(std::optional<float> coefficient);
 
   /// <summary>
-  /// 通常テクスチャを差し替える
+  /// 通常テクスチャ（"gTexture"）を差し替える
   /// </summary>
-  /// <param name="fileName">"resources/Texture/" 相対名、または "EngineResources/" プレフィックス付きパス</param>
+  /// <param name="fileName">"resources/Texture/" 相対名、または "EngineResources/" プレフィックス付きパス（空で上書きを外す）</param>
   void SetTexture(const std::string& fileName);
 
   /// <summary>
-  /// 光沢度を設定
+  /// 光沢度（"shininess"）を設定する（std::nullopt で上書きを外す）
   /// </summary>
   /// <param name="shininess">光沢度</param>
-  void SetShininess(float shininess);
+  void SetShininess(std::optional<float> shininess);
 
   /// <summary>
-  /// ライティングの有効/無効を設定
+  /// ライティングの有効/無効（"enableLighting"）を設定する（std::nullopt で上書きを外す）
   /// </summary>
   /// <param name="enableLighting">ライティングを有効にするか</param>
-  void SetEnableLighting(bool enableLighting);
+  void SetEnableLighting(std::optional<bool> enableLighting);
 
   /// <summary>
-  /// ハイライトの有効/無効を設定
+  /// ハイライトの有効/無効（"enableHighlight"）を設定する（std::nullopt で上書きを外す）
   /// </summary>
   /// <param name="enableHighlight">ハイライトを有効にするか</param>
-  void SetEnableHighlight(bool enableHighlight);
+  void SetEnableHighlight(std::optional<bool> enableHighlight);
 
   /// <summary>
-  /// 環境マップの有効/無効を設定
+  /// 環境マップの有効/無効（"enableEnvMap"）を設定する（std::nullopt で上書きを外す）
   /// </summary>
   /// <param name="enableEnvMap">環境マップを有効にするか</param>
-  void SetEnableEnvMap(bool enableEnvMap);
+  void SetEnableEnvMap(std::optional<bool> enableEnvMap);
 
   /// <summary>
   /// メッシュ名を指定して表示・非表示を設定
   /// </summary>
   /// <param name="name">メッシュ名</param>
-  /// <param name="visible">表示する場合 true</param>
-  void SetMeshVisible(const std::string& name, bool visible);
+  /// <param name="visible">表示する場合 true（std::nullopt で上書きを外す）</param>
+  void SetMeshVisible(const std::string& name, std::optional<bool> visible);
+
+  /// <summary>
+  /// コードで上書きするマテリアルの値（名前で Set / Clear する。カスタムシェーダーの値にも使える）
+  /// </summary>
+  MaterialPropertyBlock& GetMaterialProperties() { return code_.properties; }
 
   void SetAttachmentTranslate(const Vector3& offset) { attachmentOffset_.translate = offset; }
   void SetAttachmentRotate(const Vector3& offset) { attachmentOffset_.rotate = offset; }
@@ -231,22 +250,33 @@ public: // メンバー関数
 #endif
 
   /// <summary>
-  /// マテリアルカラーを取得
+  /// 最初のメッシュを描く色（コード ＞ ObjectSettings ＞ マテリアルの値。アニメーションの上乗せは含まない）
   /// </summary>
   /// <returns>マテリアルカラー（RGBA）</returns>
   Vector4 GetMaterialColor() const;
 
-  bool IsTransparent() const { return isTransparent_; }
-  bool CastsShadow() const { return castShadow_; }
-  int32_t GetSortingOrder() const { return sortingOrder_; }
-  uint32_t GetMaskId() const { return maskId_; }
+  /// <summary>
+  /// コードで Set した色を除いた、最初のメッシュの色（ObjectSettings の Values ＞ 描くマテリアルの値）。点滅やフェードの基準に使う
+  /// </summary>
+  Vector4 GetBaseMaterialColor() const;
+
+  // コード ＞ ObjectSettings ＞ 既定 で決まった値
+  bool IsTransparent() const;
+  bool CastsShadow() const;
+  int32_t GetSortingOrder() const;
+  uint32_t GetMaskId() const;
 
   /// <summary>
-  /// メッシュ名を指定して表示状態を取得
+  /// メッシュ名を指定して表示状態を取得（コード ＞ ObjectSettings ＞ モデル）
   /// </summary>
   /// <param name="name">メッシュ名</param>
   /// <returns>表示中なら true</returns>
   bool IsMeshVisible(const std::string& name) const;
+
+  /// <summary>
+  /// コードで Set した上書き（Object Settings エディタの表示用）
+  /// </summary>
+  const CodeOverrides& GetCodeOverrides() const { return code_; }
 
   /// <summary>
   /// モデルが持つ全メッシュ名のリストを取得
@@ -276,14 +306,24 @@ private: // プライベートメンバー関数
   void CreateTransformationMatrixData();
 
   /// <summary>
-  /// 上乗せの色が変わったときだけ、元の色に掛けてモデルへ書き込む
+  /// アニメーションの上乗せの色が変わったら、次の描画で "color" に掛け直させる
   /// </summary>
   void ApplyAnimationColor(const Vector4& color);
 
   /// <summary>
-  /// 名前の ObjectSettings を、コードで設定した値の上に重ねる
+  /// 名前の ObjectSettings（名前が無い・設定が無ければ nullptr）
   /// </summary>
-  void ApplyObjectSettings();
+  const ObjectOverrides* FindSettings() const;
+
+  /// <summary>
+  /// メッシュのマテリアル（コード ＞ ObjectSettings ＞ モデルの既定）
+  /// </summary>
+  const Material& GetSlotMaterial(size_t meshIndex, const ObjectOverrides* settings) const;
+
+  /// <summary>
+  /// メッシュごとのマテリアル・値・表示を、コードの上書き・ObjectSettings・既定から作り直す
+  /// </summary>
+  void RebuildDrawSlots(const ObjectOverrides* settings);
 
 private: // メンバー変数
   std::unique_ptr<Model> model_;
@@ -304,22 +344,22 @@ private: // メンバー変数
   std::string parentJointName_;
   Transform   attachmentOffset_{};
 
-  bool     isTransparent_ = false;  ///< 半透明描画モードフラグ
-  bool     castShadow_    = true;
-  int32_t  sortingOrder_  = 0;
-  uint32_t maskId_        = 0;
+  //描画の設定
+  std::string   name_;
+  uint32_t      nameId_ = 0;  ///< name_ の FNV-1a（0 は名前なし）
+  CodeOverrides code_;
 
-  //名前ごとの描画設定
-  std::string               name_;
-  uint32_t                  nameId_          = 0;  ///< name_ の FNV-1a（0 は名前なし）
-  uint32_t                  settingsVersion_ = 0;  ///< 当てた ObjectSettings のバージョン
-  std::optional<CodeFlags>  codeFlags_;
-  std::shared_ptr<Material> settingsMaterial_;     ///< 全メッシュに使う（nullptr ならメッシュのマテリアル）
+  //メッシュごとの描画の値（RebuildDrawSlots で作る。DrawItem がフレームの終わりまで指す）
+  std::vector<MeshDrawSlot>              drawSlots_;
+  std::vector<MaterialPropertyBlock>     slotProperties_;
+  std::vector<std::shared_ptr<Material>> slotMaterials_;                  ///< drawSlots_ が指すマテリアルを、次に作り直すまで持つ（nullptr はモデルの既定）
+  bool                                   slotsDirty_             = true;  ///< コードのマテリアル・表示・名前・モデル・アニメーションの色が変わった
+  uint32_t                               builtSettingsVersion_   = 0;     ///< 作ったときの ObjectSettings のバージョン
+  uint32_t                               builtPropertiesVersion_ = 0;     ///< 作ったときの code_.properties のバージョン
 
   //アニメーションの上乗せ
   AnimationPlayer animator_;
-  Vector4         animColor_          = { 1.0f, 1.0f, 1.0f, 1.0f };  ///< モデルへ書き込み済みの上乗せの色
-  Vector4         baseColor_          = { 1.0f, 1.0f, 1.0f, 1.0f };  ///< 上乗せ前の色。animColor_ が白でない間だけ有効
+  Vector4         animColor_          = { 1.0f, 1.0f, 1.0f, 1.0f };  ///< "color" に掛ける上乗せの色
   bool            isAnimationVisible_ = true;
 };
 

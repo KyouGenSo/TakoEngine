@@ -33,6 +33,11 @@ namespace Tako {
     std::unique_ptr<Material> Clone() const;
 
     /// <summary>
+    /// source のシェーダー・描画設定・定数・テクスチャを写す（定数の大きさが同じなら今の定数バッファへ書く）
+    /// </summary>
+    void CopyFrom(const Material& source);
+
+    /// <summary>
     /// 定数（シェーダー側の gMaterial）を型として読み書きする。初めて呼んだときに sizeof(T) で確保する
     /// </summary>
     template<class T>

@@ -48,24 +48,6 @@ namespace Tako {
       return error ? std::filesystem::file_time_type{} : time;
     }
 
-    /// <summary>
-    /// テクスチャを読み、SRV インデックスにする（空・見つからなければ white.png）
-    /// </summary>
-    uint32_t ResolveTexture(const std::string& file)
-    {
-      TextureManager* textureManager = TextureManager::GetInstance();
-      if (file.empty()) {
-        return textureManager->GetEngineDefaultSRVIndex("white.png");
-      }
-      // 無いファイルを読もうとすると TextureManager が止まるので、先に確かめる
-      if (!textureManager->IsLoaded(file) && !std::filesystem::exists(textureManager->GetFilePath(file))) {
-        Logger::Log("Texture not found: %s", file.c_str());
-        return textureManager->GetEngineDefaultSRVIndex("white.png");
-      }
-      textureManager->LoadTexture(file);
-      return textureManager->GetSRVIndex(file);
-    }
-
     bool Declares(const Shader& shader, const char* name)
     {
       D3D12_SHADER_INPUT_BIND_DESC bind{};
@@ -342,6 +324,21 @@ namespace Tako {
       info.version = version;
     }
     return info.layout;
+  }
+
+  uint32_t MaterialLibrary::ResolveTexture(const std::string& file)
+  {
+    TextureManager* textureManager = TextureManager::GetInstance();
+    if (file.empty()) {
+      return textureManager->GetEngineDefaultSRVIndex("white.png");
+    }
+    // 無いファイルを読もうとすると TextureManager が止まるので、先に確かめる
+    if (!textureManager->IsLoaded(file) && !std::filesystem::exists(textureManager->GetFilePath(file))) {
+      Logger::Log("Texture not found: %s", file.c_str());
+      return textureManager->GetEngineDefaultSRVIndex("white.png");
+    }
+    textureManager->LoadTexture(file);
+    return textureManager->GetSRVIndex(file);
   }
 
   std::vector<std::string> MaterialLibrary::GetMaterialFileNames() const

@@ -34,14 +34,19 @@ namespace Tako {
   std::unique_ptr<Material> Material::Clone() const
   {
     auto clone = std::make_unique<Material>(dx12_, shader_);
-    clone->stateOverride_ = stateOverride_;
-    clone->queueOverride_ = queueOverride_;
-    clone->textures_ = textures_;
-    if (constants_) {
-      clone->AllocateConstants(constantSize_);
-      std::memcpy(clone->constants_, constants_, constantSize_);
-    }
+    clone->CopyFrom(*this);
     return clone;
+  }
+
+  void Material::CopyFrom(const Material& source)
+  {
+    shader_ = source.shader_;
+    stateOverride_ = source.stateOverride_;
+    queueOverride_ = source.queueOverride_;
+    textures_ = source.textures_;
+    if (source.constants_) {
+      std::memcpy(GetConstantBytes(source.constantSize_).data(), source.constants_, source.constantSize_);
+    }
   }
 
   void Material::Bind(CommandContext::ShaderBinder& binder) const

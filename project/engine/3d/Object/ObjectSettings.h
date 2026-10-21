@@ -6,29 +6,68 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
+
+#include <json.hpp>
+
+#include "MaterialPropertyBlock.h"
 
 namespace Tako {
 
   class Material;
 
   /// <summary>
-  /// 1 つの名前の描画設定。値の無い項目はコードで設定した値を使う
+  /// マテリアルの差し替えと値の上書き（全メッシュ用とメッシュ名ごとで共通）
   /// </summary>
-  struct ObjectOverrides {
-    std::optional<std::string> material;        ///< resources/Materials のマテリアル名（全メッシュに使う）
-    std::optional<uint32_t>    maskId;
-    std::optional<int32_t>     sortingOrder;
-    std::optional<bool>        castShadow;
-    std::optional<bool>        transparent;
-    std::shared_ptr<Material>  loadedMaterial;  ///< material を読んだもの（保存しない。読めなければ nullptr）
+  struct MaterialOverrides {
+    std::optional<std::string>         material;                             ///< resources/Materials のマテリアル名（空ならモデルの既定のマテリアル）
+    nlohmann::json                     values   = nlohmann::json::object();  ///< 上書きする値（シェーダーの定数名 → 値。無い値は引き継ぐ）
+    std::map<std::string, std::string> textures;                             ///< 上書きするテクスチャ（シェーダーのテクスチャ名 → ファイル）
+  };
+
+  /// <summary>
+  /// メッシュ名ごとの設定。Material はこちらを優先し、Values と Textures は全メッシュ用の上に重ねる
+  /// </summary>
+  struct MeshOverrides : MaterialOverrides {
+    std::optional<bool> visible;
+  };
+
+  /// <summary>
+  /// 1 つのメッシュに当てるマテリアルと値（MarkChanged で作る。保存しない）
+  /// </summary>
+  struct ResolvedMaterial {
+    std::shared_ptr<Material> material;    ///< 共有のマテリアル（nullptr ならモデルの既定のマテリアル）
+    MaterialPropertyBlock     properties;  ///< Values と Textures（描くときにマテリアルの値へ重ねる）
+  };
+
+  /// <summary>
+  /// 1 つの名前の描画設定。値の無い項目は既定を使う（Object3d のコードで Set した値はこれより優先）
+  /// </summary>
+  struct ObjectOverrides : MaterialOverrides {
+    std::optional<bool>                                  visible;
+    std::optional<uint32_t>                              maskId;
+    std::optional<int32_t>                               sortingOrder;
+    std::optional<bool>                                  castShadow;
+    std::optional<bool>                                  transparent;
+    std::map<std::string, MeshOverrides, std::less<>>    meshes;          ///< メッシュ名ごと
+    ResolvedMaterial                                     resolved;        ///< 全メッシュ用（保存しない）
+    std::map<std::string, ResolvedMaterial, std::less<>> resolvedMeshes;  ///< マテリアルを設定したメッシュ名ごと（保存しない）
+
+    /// <summary>
+    /// メッシュに当てるマテリアル（メッシュ名のマテリアル設定が無ければ全メッシュ用）
+    /// </summary>
+    const ResolvedMaterial& Resolve(std::string_view mesh) const;
   };
 
   /// <summary>
   /// Object3d の名前ごとの描画設定。同じ名前の Object3d は描画時にこの設定を当てる。
   ///
   /// resources/Json/ObjectSettings.json
-  ///   { "Boss": { "Material": "Hologram", "MaskId": 1, "SortingOrder": 0, "CastShadow": false, "Transparent": true } }
+  ///   { "Boss": { "Visible": true, "MaskId": 1, "SortingOrder": 0, "CastShadow": false, "Transparent": true,
+  ///               "Material": "Hologram", "Values": { "color": [1, 0, 0, 1] }, "Textures": { "gTexture": "noise.png" },
+  ///               "Meshes": { "Sword": { "Visible": false, "Material": "XRay", "Values": {}, "Textures": {} } } } }
+  ///   Values と Textures はマテリアルを書き換えず、描くときにそのメッシュを描くマテリアルの同じ名前の値へ重ねる
   /// </summary>
   class ObjectSettings {
   private: // シングルトン設定

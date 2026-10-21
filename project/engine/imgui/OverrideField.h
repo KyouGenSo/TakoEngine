@@ -27,11 +27,14 @@ namespace Tako {
     ImGui::SetItemTooltip("Checked: use this value. Unchecked: use the inherited value (gray)");
     ImGui::SameLine();
     ImGui::BeginDisabled(!enabled);
+    // 複数行の入力欄（行列など）も 2 行目以降を 1 行目にそろえる
+    ImGui::BeginGroup();
     T shown = value.value_or(inherited);
     if (widget(label, shown) && enabled) {
       value   = shown;
       changed = true;
     }
+    ImGui::EndGroup();
     ImGui::EndDisabled();
     ImGui::PopID();
     return changed;

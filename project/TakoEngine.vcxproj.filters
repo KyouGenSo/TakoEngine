@@ -126,6 +126,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="engine\render\MaterialPropertyBlock.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
     <ClCompile Include="engine\debug\RenderPipelineWindow.cpp">
       <Filter>debug</Filter>
     </ClCompile>
@@ -443,6 +446,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\render\MaterialPropertyBlock.h">
+      <Filter>render</Filter>
+    </ClInclude>
     <ClInclude Include="engine\imgui\OverrideField.h">
       <Filter>imgui</Filter>
     </ClInclude>

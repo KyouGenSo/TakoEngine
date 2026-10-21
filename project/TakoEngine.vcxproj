@@ -119,6 +119,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="engine\render\MaterialPropertyBlock.cpp" />
     <ClCompile Include="engine\debug\RenderPipelineWindow.cpp" />
     <ClCompile Include="engine\debug\ShaderEditor.cpp" />
     <ClCompile Include="engine\debug\ObjectSettingsEditor.cpp" />
@@ -264,6 +265,7 @@
     <ClCompile Include="engine\debug\MaterialEditor.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\render\MaterialPropertyBlock.h" />
     <ClInclude Include="engine\imgui\OverrideField.h" />
     <ClInclude Include="engine\debug\RenderPipelineWindow.h" />
     <ClInclude Include="engine\debug\ShaderEditor.h" />

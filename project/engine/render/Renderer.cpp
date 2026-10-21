@@ -9,6 +9,9 @@
 #include "FrameTimer.h"
 #include "Mat4x4Func.h"
 #include "Material.h"
+#include "MaterialPropertyBlock.h"
+#include "MaterialPropertyLayout.h"
+#include "ShaderLibrary.h"
 #include "ShadowRenderer.h"
 #include "WinApp.h"
 
@@ -300,6 +303,23 @@ namespace Tako {
     ShadowRenderer::GetInstance()->SetShadowForMainPass();
   }
 
+  void Renderer::BindProperties(const MaterialPropertyBlock& properties, const Material& material, bool instanced, CommandContext::ShaderBinder& binder)
+  {
+    // マテリアルの定数の写しに描画物の値を重ね、この描画だけの gMaterial として渡す（マテリアル自体は書き換えない）
+    const std::span<const uint8_t> constants = material.GetConstantBytes();
+    const GraphicsPipelineDesc*    forward   = material.GetShader()->GetPass(ShaderPass::Forward, instanced);
+    if (properties.HasValues() && !constants.empty() && forward && forward->ps) {
+      const UploadAllocator::Allocation allocation = dx12_->GetUploadAllocator().Allocate(constants.size());
+      const std::span<uint8_t>          copy(static_cast<uint8_t*>(allocation.cpu), constants.size());
+      std::ranges::copy(constants, copy.begin());
+      properties.Apply(*MaterialPropertyLayout::ForShader(*forward->ps), copy);
+      binder.BindCBV("gMaterial"_id, allocation.gpu);
+    }
+    for (const auto& [id, srvIndex] : properties.GetTextures()) {
+      binder.BindSRV(id, srvIndex);
+    }
+  }
+
   void Renderer::DrawItemGeometry(const DrawItem& item, const Material* material)
   {
     CommandContext& context = dx12_->GetContext();
@@ -318,6 +338,9 @@ namespace Tako {
       material->Bind(binder);
       if (item.textureOverride != 0 && material == item.material) {
         binder.BindSRV("gTexture"_id, item.textureOverride);
+      }
+      if (item.properties) {
+        BindProperties(*item.properties, *material, item.instanceSrv != 0, binder);
       }
     }
     context.DrawIndexedInstanced(item.indexCount, item.instanceCount, item.startIndex, 0, 0);

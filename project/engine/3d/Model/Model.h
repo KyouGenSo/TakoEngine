@@ -3,6 +3,7 @@
 #include <d3d12.h>
 #include <unordered_map>
 #include <map>
+#include <span>
 #include<wrl.h>
 #include "ModelStruct.h"
 
@@ -61,7 +62,8 @@ namespace Tako {
     /// </summary>
     /// <param name="item">描画物ごとの値（変換行列・並び順など）</param>
     /// <param name="world">マルチメッシュのノード階層を解くワールド行列</param>
-    void Draw(const DrawItem& item, const Matrix4x4& world);
+    /// <param name="slots">メッシュ番号ごとの値（空ならメッシュ自身のマテリアルと表示で描く）</param>
+    void Draw(const DrawItem& item, const Matrix4x4& world, std::span<const MeshDrawSlot> slots = {});
 
     /// <summary>
     /// 各メッシュをインスタンシング描画として登録する（スキニングは未対応）
@@ -229,7 +231,12 @@ namespace Tako {
     /// <param name="node">処理対象のノード</param>
     /// <param name="parentGlobalMatrix">親ノードのグローバル変換行列</param>
     /// <param name="world">ワールド変換行列</param>
-    void ProcessNodeHierarchy(const Node& node, const Matrix4x4& parentGlobalMatrix, const Matrix4x4& world, const DrawItem& item);
+    void ProcessNodeHierarchy(const Node& node, const Matrix4x4& parentGlobalMatrix, const Matrix4x4& world, const DrawItem& item, std::span<const MeshDrawSlot> slots);
+
+    /// <summary>
+    /// メッシュ番号のスロットの値を item に入れて登録する（非表示なら登録しない）
+    /// </summary>
+    void SubmitMesh(size_t meshIndex, DrawItem item, std::span<const MeshDrawSlot> slots) const;
 
     /// <summary>
     /// Skeleton のデバグ用描画

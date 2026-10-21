@@ -9,6 +9,7 @@
 namespace Tako {
 
   class Material;
+  class MaterialPropertyBlock;
 
   /// <summary>
   /// 描画物 1 つ分。ジオメトリ・マテリアル・描画物ごとの値を持ち、描画はパスを回すときにまとめて行う
@@ -25,9 +26,10 @@ namespace Tako {
     uint32_t                        instanceCount = 1;
 
     //描画物ごとの値
-    D3D12_GPU_VIRTUAL_ADDRESS transform       = 0;  ///< gTransformationMatrix（0 なら渡さない）
-    uint32_t                  instanceSrv     = 0;  ///< 0 以外ならインスタンシング版で描き、gInstanceData に渡す
-    uint32_t                  textureOverride = 0;  ///< 0 以外ならマテリアルの gTexture の代わりに渡す
+    D3D12_GPU_VIRTUAL_ADDRESS    transform       = 0;        ///< gTransformationMatrix（0 なら渡さない）
+    uint32_t                     instanceSrv     = 0;        ///< 0 以外ならインスタンシング版で描き、gInstanceData に渡す
+    uint32_t                     textureOverride = 0;        ///< 0 以外ならマテリアルの gTexture の代わりに渡す
+    const MaterialPropertyBlock* properties      = nullptr;  ///< 描くマテリアル（パスの差し替え先も）の同じ名前の値・テクスチャに重ねる（フレーム中は参照先が生きていること）
 
     //並び順・パスへの参加
     Vector3 sortPosition{};       ///< 奥から手前へ並べるときのワールド座標
@@ -39,6 +41,15 @@ namespace Tako {
     //オブジェクト単位のポストエフェクト・描画パスの絞り込み
     uint32_t maskId = 0;  ///< 0 以外なら Mask パスで ObjectMask に書く（1〜255）
     uint32_t nameId = 0;  ///< Object3d の名前の FNV-1a（0 は名前なし）
+  };
+
+  /// <summary>
+  /// モデルのメッシュ 1 つを描くときに DrawItem へ入れる値（Object3d がコードの上書き・ObjectSettings・既定から決める）
+  /// </summary>
+  struct MeshDrawSlot {
+    const Material*              material   = nullptr;  ///< nullptr ならメッシュのマテリアル
+    const MaterialPropertyBlock* properties = nullptr;  ///< 描画物ごとの値（nullptr なら無し）
+    bool                         visible    = true;
   };
 
   /// <summary>

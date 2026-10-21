@@ -127,23 +127,22 @@ namespace Tako {
     }
   }
 
-  void Model::Draw(const DrawItem& item, const Matrix4x4& world)
+  void Model::Draw(const DrawItem& item, const Matrix4x4& world, std::span<const MeshDrawSlot> slots)
   {
     // スキニング処理の実行（ComputeShader による頂点変形）
     ExecuteSkinning();
 
     if (hasSkeleton_ || meshes_.size() <= 1) {
       // スキニングモデルと単一メッシュは描画物の変換行列でそのまま描く
-      for (auto& mesh : meshes_) {
-        if (!mesh->IsVisible()) continue;
-        mesh->Submit(item);
+      for (size_t i = 0; i < meshes_.size(); ++i) {
+        SubmitMesh(i, item, slots);
       }
     }
     else {
       // マルチメッシュモデル（スキニングなし）の場合はノード階層で描画
       // アニメーションがある場合は、更新された rootNode の localMatrix を使用
       Matrix4x4 rootTransform = hasAnimation_ ? rootNode_.localMatrix : Mat4x4::MakeIdentity();
-      ProcessNodeHierarchy(rootNode_, rootTransform, world, item);
+      ProcessNodeHierarchy(rootNode_, rootTransform, world, item, slots);
     }
 
     // skeleton の描画
@@ -544,7 +543,7 @@ namespace Tako {
     return joint.skeletonSpaceMatrix * worldMatrix;
   }
 
-  void Model::ProcessNodeHierarchy(const Node& node, const Matrix4x4& parentGlobalMatrix, const Matrix4x4& world, const DrawItem& item)
+  void Model::ProcessNodeHierarchy(const Node& node, const Matrix4x4& parentGlobalMatrix, const Matrix4x4& world, const DrawItem& item, std::span<const MeshDrawSlot> slots)
   {
     // このノードのグローバル行列を計算（親の変換を適用）
     Matrix4x4 globalMatrix = Mat4x4::Multiply(node.localMatrix, parentGlobalMatrix);
@@ -552,9 +551,6 @@ namespace Tako {
     // このノードに関連付けられたメッシュを処理
     for (int meshIndex : node.meshIndices) {
       if (meshIndex < static_cast<int>(meshes_.size())) {
-        // 非表示メッシュはスキップ
-        if (!meshes_[meshIndex]->IsVisible()) continue;
-
         // メッシュのワールド変換行列を計算
         Matrix4x4 meshWorldMatrix = Mat4x4::Multiply(globalMatrix, world);
 
@@ -562,14 +558,31 @@ namespace Tako {
         meshes_[meshIndex]->UpdateTransformation(meshWorldMatrix);
         DrawItem meshItem = item;
         meshItem.transform = meshes_[meshIndex]->GetTransformAddress();
-        meshes_[meshIndex]->Submit(meshItem);
+        SubmitMesh(meshIndex, meshItem, slots);
       }
     }
 
     // 子ノードを再帰的に処理
     for (const Node& child : node.children) {
-      ProcessNodeHierarchy(child, globalMatrix, world, item);
+      ProcessNodeHierarchy(child, globalMatrix, world, item, slots);
     }
+  }
+
+  void Model::SubmitMesh(size_t meshIndex, DrawItem item, std::span<const MeshDrawSlot> slots) const
+  {
+    if (meshIndex >= slots.size()) {
+      if (meshes_[meshIndex]->IsVisible()) {
+        meshes_[meshIndex]->Submit(item);
+      }
+      return;
+    }
+    const MeshDrawSlot& slot = slots[meshIndex];
+    if (!slot.visible) {
+      return;
+    }
+    item.material   = slot.material ? slot.material : item.material;
+    item.properties = slot.properties;
+    meshes_[meshIndex]->Submit(item);
   }
 
   ///-----------------------------------------------///

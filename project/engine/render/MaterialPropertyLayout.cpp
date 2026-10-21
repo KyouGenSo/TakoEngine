@@ -6,6 +6,9 @@
 #include <d3d12shader.h>
 #include <format>
 #include <string>
+#include <unordered_map>
+
+#include "ShaderLibrary.h"
 
 #ifdef _DEBUG
 #include "imgui.h"
@@ -45,7 +48,7 @@ namespace Tako {
         return;
       }
 
-      MaterialProperty property{ .name = name, .type = MaterialProperty::Type::Unsupported, .components = desc.Columns, .offset = offset };
+      MaterialProperty property{ .name = name, .id = MakeShaderParamId(name), .type = MaterialProperty::Type::Unsupported, .components = desc.Columns, .offset = offset };
       if (desc.Elements == 0 && (desc.Class == D3D_SVC_SCALAR || desc.Class == D3D_SVC_VECTOR)) {
         switch (desc.Type) {
         case D3D_SVT_FLOAT: property.type = MaterialProperty::Type::Float; break;
@@ -111,6 +114,28 @@ namespace Tako {
     return layout;
   }
 
+  std::shared_ptr<const MaterialPropertyLayout> MaterialPropertyLayout::ForShader(const Shader& ps)
+  {
+    struct Entry {
+      uint32_t                                      version = 0;
+      std::shared_ptr<const MaterialPropertyLayout> layout;
+    };
+    // Shader は ShaderLibrary が終了まで持ち、ホットリロードでも同じアドレスのまま中身を替える
+    static std::unordered_map<const Shader*, Entry> cache;
+    Entry& entry = cache[&ps];
+    if (!entry.layout || entry.version != ps.GetVersion()) {
+      entry.layout  = Reflect(ps.GetReflection(), "gMaterial", {});
+      entry.version = ps.GetVersion();
+    }
+    return entry.layout;
+  }
+
+  const MaterialProperty* MaterialPropertyLayout::Find(ShaderParamId id) const
+  {
+    const auto it = std::ranges::find(properties, id, &MaterialProperty::id);
+    return it != properties.end() ? &*it : nullptr;
+  }
+
   json MaterialPropertyLayout::SerializeValues(std::span<const uint8_t> constants) const
   {
     json values = json::object();
@@ -164,52 +189,72 @@ namespace Tako {
 
   bool MaterialPropertyLayout::DrawImGui(std::span<uint8_t> constants) const
   {
-#ifdef _DEBUG
     bool changed = false;
     for (const MaterialProperty& property : properties) {
-      if (!Fits(property, constants.size())) {
-        ImGui::TextDisabled("%s (unsupported type)", property.name.c_str());
-        continue;
+      changed |= DrawPropertyImGui(property, constants);
+    }
+    return changed;
+  }
+
+  bool MaterialPropertyLayout::DrawPropertyImGui(const MaterialProperty& property, std::span<uint8_t> constants) const
+  {
+#ifdef _DEBUG
+    if (!Fits(property, constants.size())) {
+      ImGui::TextDisabled("%s (unsupported type)", property.name.c_str());
+      return false;
+    }
+    void*      data     = constants.data() + property.offset;
+    const int  count    = static_cast<int>(property.components);
+    const bool hasRange = property.min < property.max;
+    bool       changed  = false;
+    switch (property.type) {
+    case MaterialProperty::Type::Float:
+      if (property.isColor) {
+        changed = count == 3 ? ImGui::ColorEdit3(property.name.c_str(), static_cast<float*>(data)) : ImGui::ColorEdit4(property.name.c_str(), static_cast<float*>(data));
       }
-      void*      data     = constants.data() + property.offset;
-      const int  count    = static_cast<int>(property.components);
-      const bool hasRange = property.min < property.max;
-      switch (property.type) {
-      case MaterialProperty::Type::Float:
-        if (property.isColor) {
-          changed |= count == 3 ? ImGui::ColorEdit3(property.name.c_str(), static_cast<float*>(data)) : ImGui::ColorEdit4(property.name.c_str(), static_cast<float*>(data));
+      else {
+        const float speed = hasRange ? (property.max - property.min) / 200.0f : 0.01f;
+        // 行列は 1 行（4 成分）ずつ出す
+        const int width = (std::min)(count, 4);
+        for (int i = 0; i < count; i += width) {
+          const std::string label = count > 4 ? std::format("{}[{}]", property.name, i / 4) : property.name;
+          changed |= ImGui::DragScalarN(label.c_str(), ImGuiDataType_Float, static_cast<float*>(data) + i, width, speed, hasRange ? &property.min : nullptr, hasRange ? &property.max : nullptr);
         }
-        else {
-          const float speed = hasRange ? (property.max - property.min) / 200.0f : 0.01f;
-          // 行列は 1 行（4 成分）ずつ出す
-          const int width = (std::min)(count, 4);
-          for (int i = 0; i < count; i += width) {
-            const std::string label = count > 4 ? std::format("{}[{}]", property.name, i / 4) : property.name;
-            changed |= ImGui::DragScalarN(label.c_str(), ImGuiDataType_Float, static_cast<float*>(data) + i, width, speed, hasRange ? &property.min : nullptr, hasRange ? &property.max : nullptr);
-          }
-        }
-        break;
-      case MaterialProperty::Type::Int: {
-        const int32_t min = static_cast<int32_t>(property.min);
-        const int32_t max = static_cast<int32_t>(property.max);
-        changed |= ImGui::DragScalarN(property.name.c_str(), ImGuiDataType_S32, data, count, 0.1f, hasRange ? &min : nullptr, hasRange ? &max : nullptr);
-        break;
       }
-      case MaterialProperty::Type::UInt: {
-        const uint32_t min = static_cast<uint32_t>((std::max)(property.min, 0.0f));
-        const uint32_t max = static_cast<uint32_t>((std::max)(property.max, 0.0f));
-        changed |= ImGui::DragScalarN(property.name.c_str(), ImGuiDataType_U32, data, count, 0.1f, hasRange ? &min : nullptr, hasRange ? &max : nullptr);
-        break;
-      }
-      default:
-        break;
-      }
+      break;
+    case MaterialProperty::Type::Int: {
+      const int32_t min = static_cast<int32_t>(property.min);
+      const int32_t max = static_cast<int32_t>(property.max);
+      changed = ImGui::DragScalarN(property.name.c_str(), ImGuiDataType_S32, data, count, 0.1f, hasRange ? &min : nullptr, hasRange ? &max : nullptr);
+      break;
+    }
+    case MaterialProperty::Type::UInt: {
+      const uint32_t min = static_cast<uint32_t>((std::max)(property.min, 0.0f));
+      const uint32_t max = static_cast<uint32_t>((std::max)(property.max, 0.0f));
+      changed = ImGui::DragScalarN(property.name.c_str(), ImGuiDataType_U32, data, count, 0.1f, hasRange ? &min : nullptr, hasRange ? &max : nullptr);
+      break;
+    }
+    default:
+      break;
     }
     return changed;
 #else
+    (void)property;
     (void)constants;
     return false;
 #endif
+  }
+
+  bool MaterialPropertyLayout::DrawValueImGui(const MaterialProperty& property, json& value) const
+  {
+    // 作業用の定数へ入れて同じ UI で編集し、変わったらその値だけを JSON へ戻す
+    std::vector<uint8_t> constants(constantSize);
+    DeserializeValues({ { property.name, value } }, constants);
+    if (!DrawPropertyImGui(property, constants)) {
+      return false;
+    }
+    value = SerializeValues(constants)[property.name];
+    return true;
   }
 
 } // namespace Tako
