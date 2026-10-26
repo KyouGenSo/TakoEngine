@@ -430,15 +430,13 @@ namespace Tako {
 
         Renderer*    renderer = Renderer::GetInstance();
         ShaderAsset& shader   = renderer->RegisterShader(name);
-        // 読み直しで Fallback を外したときに、前の影・マスクのパスを残さない
+        // 読み直しで Fallback を外したときに、前の影のパスを残さない
         shader = ShaderAsset(name);
-        // 色を決めないパス（影・マスク）は Fallback のシェーダーのものを使う
+        // 色を決めない影のパスは Fallback のシェーダーのものを使う
         if (const ShaderAsset* fallback = renderer->FindShader(root.value("Fallback", std::string()))) {
-          for (ShaderPass pass : { ShaderPass::ShadowCaster, ShaderPass::Mask }) {
-            for (bool instanced : { false, true }) {
-              if (const GraphicsPipelineDesc* source = fallback->GetPass(pass, instanced)) {
-                shader.SetPass(pass, *source, instanced);
-              }
+          for (bool instanced : { false, true }) {
+            if (const GraphicsPipelineDesc* source = fallback->GetPass(ShaderPass::ShadowCaster, instanced)) {
+              shader.SetPass(ShaderPass::ShadowCaster, *source, instanced);
             }
           }
         }

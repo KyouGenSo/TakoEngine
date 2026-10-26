@@ -28,7 +28,6 @@ public: // メンバ関数
   /// 描画
   /// </summary>
   void Draw() override;
-  void DrawWithoutEffect() override;
 
   /// <summary>
   /// ImGuiの描画

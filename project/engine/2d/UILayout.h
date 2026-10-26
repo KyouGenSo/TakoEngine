@@ -51,6 +51,7 @@ namespace Tako {
     bool        flipX             = false;
     bool        flipY             = false;
     bool        visible           = true;                        ///< false なら子も描画しない
+    bool        postEffect        = false;                       ///< true ならポストエフェクトを掛ける（子にも掛かる）。false なら画面の UI としてポストエフェクトの後に描く
     bool        locked            = false;                       ///< エディタ専用。true ならビューポートのクリックで選ばれない
 
     std::vector<std::unique_ptr<UIElement>> children;  ///< 並び順が描画順（後ろほど手前）

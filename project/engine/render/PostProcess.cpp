@@ -27,7 +27,6 @@ namespace Tako {
     struct Step {
       const PostEffectDefinition* definition;
       const EffectParam*          param;
-      uint32_t                    maskId;
     };
 
     const EffectParam          kNoParam;
@@ -79,26 +78,36 @@ namespace Tako {
       }
     }
 
-    void Apply(const PostEffectFrame& frame, const Step& step, RenderTexture& input, RenderTexture& output)
+    std::vector<Step> CollectSteps(std::span<const PostEffectInstance> effects, uint32_t maskId)
     {
-      if (step.maskId == 0) {
-        Run(frame, *step.definition, *step.param, input, output);
-        return;
+      std::vector<Step> steps;
+      for (const PostEffectInstance& effect : effects) {
+        const PostEffectDefinition* definition = FindPostEffect(effect.name);
+        if (effect.enabled && definition && effect.maskId == maskId) {
+          steps.push_back({ definition, &effect.param });
+        }
       }
+      return steps;
+    }
 
-      // 一度画面全体に掛けてから、maskId が一致する画素だけを採る
-      RenderGraph& graph = *frame.graph;
-      RenderTexture& effected = graph.Acquire(RenderGraph::DescOf(input));
-      Run(frame, *step.definition, *step.param, input, effected);
-      graph.AddPass({ RenderGraph::Read(input.resource), RenderGraph::Read(effected.resource), RenderGraph::Read(frame.objectMask->resource), RenderGraph::Write(output.resource) }, [&] {
-        CommandContext::ShaderBinder binder = BeginFullScreen(frame, L"MaskComposite.PS.hlsl", output);
-        binder.BindSRV("gTexture"_id, input.srvIndex);
-        binder.BindSRV("gEffected"_id, effected.srvIndex);
-        binder.BindSRV("gObjectMask"_id, frame.objectMask->srvIndex);
-        binder.BindConstants("gMaskParam"_id, step.maskId);
-        DrawFullScreen(frame);
-      });
-      graph.Release(effected);
+    /// <summary>
+    /// steps を順に掛ける。途中は input の解像度の一時 RT へ交互に書く
+    /// </summary>
+    /// <param name="last">nullptr でなければ最後の手順はここへ書く</param>
+    /// <returns>最後に書いた RT（手順が無ければ input）。input・last 以外なら呼び出し側が Release する</returns>
+    RenderTexture* RunSteps(const PostEffectFrame& frame, std::span<const Step> steps, RenderTexture& input, RenderTexture* last)
+    {
+      RenderGraph&   graph  = *frame.graph;
+      RenderTexture* source = &input;
+      for (size_t i = 0; i < steps.size(); ++i) {
+        RenderTexture& target = (last && i + 1 == steps.size()) ? *last : graph.Acquire(RenderGraph::DescOf(input));
+        Run(frame, *steps[i].definition, *steps[i].param, *source, target);
+        if (source != &input) {
+          graph.Release(*source);
+        }
+        source = &target;
+      }
+      return source;
     }
 
   } // anonymous namespace
@@ -156,9 +165,10 @@ namespace Tako {
     return pipeline;
   }
 
-  CommandContext::ShaderBinder BeginFullScreen(const PostEffectFrame& frame, std::wstring_view psFile, RenderTexture& output)
+  CommandContext::ShaderBinder BeginFullScreen(const PostEffectFrame& frame, std::wstring_view psFile, RenderTexture& output, BlendMode blend)
   {
-    const GraphicsPipelineDesc pipeline = MakeFullScreenPipeline(frame.dx12->GetShaderLibrary(), psFile);
+    GraphicsPipelineDesc pipeline = MakeFullScreenPipeline(frame.dx12->GetShaderLibrary(), psFile);
+    pipeline.renderState.blend = blend;
 
     CommandContext& context = frame.dx12->GetContext();
     context.SetRenderTarget(&output.rtvHandle, output.format, nullptr, DXGI_FORMAT_UNKNOWN);
@@ -205,35 +215,33 @@ namespace Tako {
 
   void PostProcessStack::Execute(const PostEffectFrame& frame, RenderTexture& input, RenderTexture& output, bool antiAliasing) const
   {
-    std::vector<Step> steps;
-    for (const PostEffectInstance& effect : effects_) {
-      const PostEffectDefinition* definition = FindPostEffect(effect.name);
-      if (effect.enabled && definition && (effect.maskId == 0 || frame.objectMask)) {
-        steps.push_back({ definition, &effect.param, effect.maskId });
-      }
-    }
+    std::vector<Step> steps = CollectSteps(effects_, 0);
     if (antiAliasing) {
-      steps.push_back({ &kAntiAliasing, &kNoParam, 0 });
+      steps.push_back({ &kAntiAliasing, &kNoParam });
     }
 
-    // 途中のエフェクトは入力の解像度で一時 RT へ交互に書き、出力と同じ大きさなら最後だけ出力へ直接書く
-    RenderGraph&   graph    = *frame.graph;
+    // 出力と同じ大きさなら最後のエフェクトは出力へ直接書く
     const bool     sameSize = input.width == output.width && input.height == output.height;
-    RenderTexture* source   = &input;
-    for (size_t i = 0; i < steps.size(); ++i) {
-      RenderTexture& target = (sameSize && i + 1 == steps.size()) ? output : graph.Acquire(RenderGraph::DescOf(input));
-      Apply(frame, steps[i], *source, target);
-      if (source != &input) {
-        graph.Release(*source);
-      }
-      source = &target;
-    }
-
+    RenderTexture* source   = RunSteps(frame, steps, input, sameSize ? &output : nullptr);
     if (source != &output) {
       Run(frame, kCopy, kNoParam, *source, output);
       if (source != &input) {
-        graph.Release(*source);
+        frame.graph->Release(*source);
       }
+    }
+  }
+
+  void PostProcessStack::ExecuteMasked(const PostEffectFrame& frame, uint32_t maskId, RenderTexture& layer, RenderTexture& target) const
+  {
+    RenderTexture* effected = RunSteps(frame, CollectSteps(effects_, maskId), layer, nullptr);
+    // 描画物の外の (0,0,0,0) は何も変えず、α=0 で色だけある画素（Bloom の光など）は加算になる
+    frame.graph->AddPass({ RenderGraph::Read(effected->resource), RenderGraph::Write(target.resource) }, [&] {
+      CommandContext::ShaderBinder binder = BeginFullScreen(frame, kCopy.pixelShader, target, BlendMode::Premultiplied);
+      binder.BindSRV("gTexture"_id, effected->srvIndex);
+      DrawFullScreen(frame);
+    });
+    if (effected != &layer) {
+      frame.graph->Release(*effected);
     }
   }
 
@@ -248,9 +256,17 @@ namespace Tako {
     return std::ranges::any_of(effects_, &PostEffectInstance::enabled);
   }
 
-  bool PostProcessStack::UsesObjectMask() const
+  std::vector<uint32_t> PostProcessStack::GetMaskIds() const
   {
-    return std::ranges::any_of(effects_, [](const PostEffectInstance& effect) { return effect.enabled && effect.maskId != 0; });
+    std::vector<uint32_t> maskIds;
+    for (const PostEffectInstance& effect : effects_) {
+      if (effect.enabled && effect.maskId != 0) {
+        maskIds.push_back(effect.maskId);
+      }
+    }
+    std::ranges::sort(maskIds);
+    maskIds.erase(std::ranges::unique(maskIds).begin(), maskIds.end());
+    return maskIds;
   }
 
 } // namespace Tako

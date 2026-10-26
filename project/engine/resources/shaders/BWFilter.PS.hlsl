@@ -18,5 +18,5 @@ float4 main(VertexShaderOutput input) : SV_TARGET
 
     float value = luminance >= gParam.threshold ? 1.0f : 0.0f;
 
-    return float4(value, value, value, 1.0f);
+    return float4(value, value, value, 1.0f) * color.a;
 }

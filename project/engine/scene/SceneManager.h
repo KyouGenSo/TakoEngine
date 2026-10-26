@@ -39,11 +39,6 @@ namespace Tako {
     void Draw();
 
     /// <summary>
-    /// エフェクトなしで描画
-    /// </summary>
-    void DrawWithoutEffect();
-
-    /// <summary>
     /// imgui の描画
     /// </summary>
     void DrawImGui();

@@ -14,7 +14,6 @@ namespace Tako {
   enum class ShaderPass : uint8_t {
     Forward,       ///< 本編の色を描く
     ShadowCaster,  ///< シャドウマップへ深度だけを描く
-    Mask,          ///< ObjectMask へ描画物の maskId を書く（オブジェクト単位のポストエフェクト用）
     Count
   };
 
@@ -27,7 +26,7 @@ namespace Tako {
     static constexpr int32_t kQueueBackground  = 1000;
     static constexpr int32_t kQueueGeometry    = 2000;
     static constexpr int32_t kQueueTransparent = 3000;  ///< これ以上は奥から手前へ並べて描く
-    static constexpr int32_t kQueueOverlay     = 4000;
+    static constexpr int32_t kQueueOverlay     = 4000;  ///< これ以上はポストエフェクトの後に描く（画面の UI）
 
   public: //メンバー関数
     explicit ShaderAsset(std::string name) : name_(std::move(name)) {}

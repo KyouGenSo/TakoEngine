@@ -61,12 +61,12 @@ namespace Tako {
 
     viewport_->BeginPass();
 
-    // 本編で登録したシーンの描画物を、本編と同じ順（不透明→デカール→半透明）でデバッグカメラ視点で描く
+    // 本編で登録したシーンの描画物を、本編と同じ順（不透明→デカール→半透明）でデバッグカメラ視点で描く。画面の UI（kQueueOverlay 以上）は描かない
     Renderer*                  renderer = Renderer::GetInstance();
     const Renderer::RenderView view     = renderer->MakeView(*camera_, viewport_->GetSize());
     renderer->RenderList(renderer->GetSceneList(), view, { .maxQueue = ShaderAsset::kQueueTransparent });
     DecalManager::GetInstance()->DrawAllForView(*camera_, viewport_->GetDepthResource(), viewport_->GetDepthSrvIndex());
-    renderer->RenderList(renderer->GetSceneList(), view, { .minQueue = ShaderAsset::kQueueTransparent });
+    renderer->RenderList(renderer->GetSceneList(), view, { .minQueue = ShaderAsset::kQueueTransparent, .maxQueue = ShaderAsset::kQueueOverlay });
     LineRenderer* lineRenderer = LineRenderer::GetInstance();
     GPUParticle::GetInstance()->DrawForCamera(*camera_);
 

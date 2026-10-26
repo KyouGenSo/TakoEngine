@@ -74,19 +74,38 @@ namespace Tako {
     frameSteps_.clear();
 #endif
 
-    Renderer*                         renderer = Renderer::GetInstance();
-    const Renderer::RenderView&       view     = renderer->GetMainView();
-    const DrawList&                   scene    = renderer->GetSceneList();
-    CommandContext&                   context  = dx12_->GetContext();
-    GpuResource&                      depth    = dx12_->GetDepthStencilResource();
-    const D3D12_CPU_DESCRIPTOR_HANDLE sceneDsv = dx12_->GetMainDSVHandle();
+    Renderer*                         renderer   = Renderer::GetInstance();
+    PostEffectManager*                postEffect = PostEffectManager::GetInstance();
+    const Renderer::RenderView&       view       = renderer->GetMainView();
+    const DrawList&                   scene      = renderer->GetSceneList();
+    CommandContext&                   context    = dx12_->GetContext();
+    GpuResource&                      depth      = dx12_->GetDepthStencilResource();
+    const D3D12_CPU_DESCRIPTOR_HANDLE sceneDsv   = dx12_->GetMainDSVHandle();
     const DX12Basic::SceneRenderTarget sceneTarget{ sceneColor_.rtvHandle, sceneDsv, sceneColor_.width, sceneColor_.height };
+    const PostEffectFrame frame{ dx12_, &graph_, *renderer->GetCamera(), &depth, depthSrvIndex_, sceneColor_.width, sceneColor_.height, view.constants };
+
+    // マスク付きのエフェクトが掛かる描画物は、本編の不透明・半透明から外して別に描く
+    const std::vector<uint32_t> maskIds = postEffect->GetMaskIds();
 
     // 手順を 1 つ行い、名前と描画回数を記録する
     const auto step = [&](std::string_view label, const auto& draw) {
       const uint32_t firstDraw = context.GetDrawCount();
       draw();
       RecordStep(label, firstDraw);
+    };
+
+    // 手順の名前に、その段で掛ける maskId のエフェクトを並べる（エフェクトごとの描画回数は数えない）
+    const auto effectLabel = [&](std::string label, [[maybe_unused]] uint32_t maskId) {
+#ifdef _DEBUG
+      const char* separator = ": ";
+      for (const PostEffectInstance& effect : postEffect->GetStack().GetEffects()) {
+        if (effect.enabled && effect.maskId == maskId) {
+          label += separator + effect.name;
+          separator = ", ";
+        }
+      }
+#endif
+      return label;
     };
 
     //------------------------------ シーン ------------------------------//
@@ -100,7 +119,7 @@ namespace Tako {
 
     RunPasses(RenderEvent::BeforeShadow);
     step("Shadows", [&] { renderer->RenderShadows(scene); });
-    step("Opaque", [&] { renderer->RenderList(scene, view, { .maxQueue = ShaderAsset::kQueueTransparent, .excludeNameIds = replacedIds_ }); });
+    step("Opaque", [&] { renderer->RenderList(scene, view, { .maxQueue = ShaderAsset::kQueueTransparent, .excludeNameIds = replacedIds_, .excludeMaskIds = maskIds }); });
     RunPasses(RenderEvent::AfterOpaque);
 
     step("Decals", [&] {
@@ -109,48 +128,39 @@ namespace Tako {
       DecalManager::GetInstance()->DrawAllDebug();
 #endif
     });
+
+    //------------------------------ マスク付きの描画物 ------------------------------//
+    // maskId ごとに (0,0,0,0) の RT へ描いて（シーンの深度で隠れた部分は描かず、深度は書く）エフェクトを掛け、シーンへ重ねる。
+    // 奥の背景はシーンに描いてあるので、エフェクトで描画物の外へ広がった・ずれた所にも背景が正しく出る
+    for (const uint32_t& maskId : maskIds) {
+      step(effectLabel(std::format("Mask {}", maskId), maskId), [&] {
+        RenderTexture& layer = graph_.Acquire(RenderGraph::DescOf(sceneColor_));
+        graph_.AddPass({ RenderGraph::Write(layer.resource), RenderGraph::DepthWrite(depth) }, [&] {
+          dx12_->BindSceneRenderTarget({ layer.rtvHandle, sceneDsv, layer.width, layer.height });
+          const float zero[4] = {};
+          context.GetCommandList()->ClearRenderTargetView(layer.rtvHandle, zero, 0, nullptr);
+          renderer->RenderList(scene, view, { .excludeNameIds = replacedIds_, .maskIds = std::span(&maskId, 1) });
+        });
+        postEffect->ExecuteMasked(frame, maskId, layer, sceneColor_);
+        graph_.Release(layer);
+      });
+    }
+    if (!maskIds.empty()) {
+      context.Transition(depth, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+      dx12_->BindSceneRenderTarget(sceneTarget);
+    }
     RunPasses(RenderEvent::BeforeTransparent);
 
-    step("Transparent", [&] { renderer->RenderList(scene, view, { .minQueue = ShaderAsset::kQueueTransparent, .excludeNameIds = replacedIds_ }); });
+    step("Transparent", [&] {
+      renderer->RenderList(scene, view, { .minQueue = ShaderAsset::kQueueTransparent, .maxQueue = ShaderAsset::kQueueOverlay, .excludeNameIds = replacedIds_, .excludeMaskIds = maskIds });
+    });
     step("Particles", [&] { GPUParticle::GetInstance()->Draw(); });
     step("Lines", [&] { LineRenderer::GetInstance()->Draw(); });
     RunPasses(RenderEvent::AfterTransparent);
 
-    //------------------------------ マスク ------------------------------//
-    // シーンの深度で隠れた部分を除いて maskId を書く。マスク付きのエフェクトが無いフレームは作らない
-    PostEffectManager* postEffect = PostEffectManager::GetInstance();
-    RenderTexture*     objectMask = nullptr;
-    if (postEffect->UsesObjectMask()) {
-      objectMask = &graph_.Acquire({ sceneColor_.width, sceneColor_.height, DXGI_FORMAT_R8_UINT });
-      step("Object Mask", [&] {
-        graph_.AddPass({ RenderGraph::Write(objectMask->resource), RenderGraph::DepthWrite(depth) }, [&] {
-          dx12_->BindSceneRenderTarget({ objectMask->rtvHandle, sceneDsv, objectMask->width, objectMask->height, DXGI_FORMAT_R8_UINT });
-          const float zero[4] = {};
-          context.GetCommandList()->ClearRenderTargetView(objectMask->rtvHandle, zero, 0, nullptr);
-          renderer->RenderMask(scene, view);
-        });
-      });
-      dx12_->BindSceneRenderTarget(sceneTarget);
-    }
-
     //------------------------------ ポストエフェクト ------------------------------//
     RunPasses(RenderEvent::BeforePostProcess);
-    const PostEffectFrame frame{ dx12_, &graph_, *renderer->GetCamera(), &depth, depthSrvIndex_, objectMask, sceneColor_.width, sceneColor_.height, view.constants };
-    std::string postLabel = "Post Process";
-#ifdef _DEBUG
-    // 掛けたエフェクトを手順の名前に並べる（エフェクトごとの描画回数は数えない）
-    const char* separator = ": ";
-    for (const PostEffectInstance& effect : postEffect->GetStack().GetEffects()) {
-      if (effect.enabled) {
-        postLabel += separator + effect.name + (effect.maskId != 0 ? std::format(" [mask {}]", effect.maskId) : "");
-        separator = ", ";
-      }
-    }
-#endif
-    step(postLabel, [&] { postEffect->Execute(frame, sceneColor_, final_); });
-    if (objectMask) {
-      graph_.Release(*objectMask);
-    }
+    step(effectLabel("Post Process", 0), [&] { postEffect->Execute(frame, sceneColor_, final_); });
 
     //------------------------------ UI ------------------------------//
     // 縮小解像度でなければ UI もシーンの深度を使う（縮小中はウィンドウ解像度の専用深度を、差し込んだパスより前にクリアする）
@@ -163,7 +173,7 @@ namespace Tako {
     }
     RunPasses(RenderEvent::AfterPostProcess);
     RunPasses(RenderEvent::BeforeUI);
-    step("UI", [&] { renderer->RenderList(renderer->GetOverlayList(), view); });
+    step("UI", [&] { renderer->RenderList(scene, view, { .minQueue = ShaderAsset::kQueueOverlay }); });
     RunPasses(RenderEvent::AfterUI);
   }
 
@@ -287,7 +297,8 @@ namespace Tako {
 
   void RenderPipeline::CreateRenderTargets()
   {
-    sceneColor_.Create(dx12_, dx12_->GetSceneWidth(), dx12_->GetSceneHeight(), DX12Basic::kColorFormat, clearColor_);
+    // ポストエフェクトは乗算済み α を受けるので、全画面の入力は α=1 で読ませる（クリア色や不透明ブレンドのシェーダーが書いた α に左右されない）
+    sceneColor_.Create(dx12_, dx12_->GetSceneWidth(), dx12_->GetSceneHeight(), DX12Basic::kColorFormat, clearColor_, true);
     sceneColor_.resource->SetName(L"SceneColor");
 
     // 最終表示用なので SRV は α=1 固定で読ませ、ImGui 表示での背景透けを防ぐ
@@ -325,7 +336,7 @@ namespace Tako {
       if (!settings.enabled || settings.event != event || (!settings.material.empty() && !pass.material)) {
         continue;
       }
-      DrawFilter filter{ .nameIds = pass.objectIds, .overrideMaterial = pass.material.get() };
+      DrawFilter filter{ .maxQueue = ShaderAsset::kQueueOverlay, .nameIds = pass.objectIds, .overrideMaterial = pass.material.get() };
       if (settings.queue == QueueFilter::Opaque) {
         filter.maxQueue = ShaderAsset::kQueueTransparent;
       }

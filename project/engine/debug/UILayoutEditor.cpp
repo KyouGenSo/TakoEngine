@@ -1284,6 +1284,9 @@ namespace Tako {
     ImGui::SameLine();
     ImGui::Checkbox("Locked", &element.locked);
     ImGui::SetItemTooltip("Editor only: a locked element is not selected by clicking in the Game Viewport.");
+    ImGui::SameLine();
+    ImGui::Checkbox("Post Effect", &element.postEffect);
+    ImGui::SetItemTooltip("Draw before the post effects so they apply (children too).\nUnchecked draws after them as screen UI.");
 
     ImGui::SeparatorText("Texture");
     if (ImGui::BeginCombo("Texture", element.texture.empty() ? "(none)" : element.texture.c_str())) {

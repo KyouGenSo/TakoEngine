@@ -122,7 +122,7 @@ namespace Tako {
     if (sceneTarget_ != &color_) {
       RenderGraph& graph = RenderPipeline::GetInstance()->GetGraph();
       const D3D12_GPU_VIRTUAL_ADDRESS view = camera ? Renderer::GetInstance()->MakeView(*camera, GetSize()).constants : 0;
-      const PostEffectFrame frame{ dx12_, &graph, camera, &depthBuffer_, depthSrvIndex_, nullptr, width_, height_, view };
+      const PostEffectFrame frame{ dx12_, &graph, camera, &depthBuffer_, depthSrvIndex_, width_, height_, view };
       stack->Execute(frame, *sceneTarget_, color_);
       graph.Release(*sceneTarget_);
     }

@@ -21,8 +21,9 @@ namespace Tako {
 
       target.BlendEnable = true;
       target.BlendOp = D3D12_BLEND_OP_ADD;
+      // α は覆う割合として重ねる。不透明でクリアした RT は 1 のまま、(0,0,0,0) でクリアした RT は描いた分だけ増える
       target.SrcBlendAlpha = D3D12_BLEND_ONE;
-      target.DestBlendAlpha = D3D12_BLEND_ZERO;
+      target.DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
       target.BlendOpAlpha = D3D12_BLEND_OP_ADD;
       switch (mode) {
       case BlendMode::Add:

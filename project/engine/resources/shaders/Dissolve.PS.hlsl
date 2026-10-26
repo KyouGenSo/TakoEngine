@@ -26,10 +26,12 @@ float4 main(VertexShaderOutput input) : SV_TARGET
 
     float mask = gMaskTexture.Sample(gLinearWrap, input.texCoord);
 
-    // マスクが閾値以下なら下地の色を使う
+    output.color = gTexture.Sample(gLinearWrap, input.texCoord);
+
+    // マスクが閾値以下なら下地の色を使う（入力の α で覆う範囲を保つ）
     if (mask <= gParam.threshold)
     {
-        return baseColor;
+        return baseColor * output.color.a;
     }
 
     float edgeJudge = gParam.threshold + gParam.edgeThickness;
@@ -39,9 +41,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     }
     float edge = 1.0f - smoothstep(gParam.threshold, edgeJudge, mask);
 
-    output.color = gTexture.Sample(gLinearWrap, input.texCoord);
-
-    output.color.rgb += edge * gParam.edgeColor.rgb;
+    output.color.rgb += edge * gParam.edgeColor.rgb * output.color.a;
 
     return output.color;
 

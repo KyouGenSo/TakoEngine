@@ -27,14 +27,9 @@ namespace Tako {
     virtual void Update() = 0;
 
     /// <summary>
-    /// 描画
+    /// 描画物を登録する。描画キューが kQueueOverlay 以上の物（既定のスプライト）はポストエフェクトの後に描かれる
     /// </summary>
     virtual void Draw() = 0;
-
-    /// <summary>
-    /// エフェクトなしで描画
-    /// </summary>
-    virtual void DrawWithoutEffect() = 0;
 
     /// <summary>
     /// ImGui の描画

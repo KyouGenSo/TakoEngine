@@ -90,7 +90,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     if (colorMode == 1) // CMYK風カラーハーフトーン
     {
         float3 cmykResult = CMYKHalftone(originalColor, input.texCoord, screenSize, dotSize, contrast);
-        return float4(cmykResult, originalColor.a);
+        return float4(cmykResult, 1.0f) * originalColor.a;
     }
     else // 従来のモノクロハーフトーン
     {

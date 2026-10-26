@@ -165,7 +165,7 @@ namespace Tako {
 
     /// <summary>
     /// シーン外のレイアウトをプレビュー編集中なら、ゲーム画面の上に重ねて描く。
-    /// TakoFramework::Draw() の SceneManager::DrawWithoutEffect() 直後に呼ぶ
+    /// TakoFramework::Draw() の SceneManager::Draw() 直後に呼ぶ
     /// </summary>
     void DrawPreview();
 

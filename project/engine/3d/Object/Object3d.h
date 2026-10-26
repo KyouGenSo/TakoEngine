@@ -146,7 +146,7 @@ public: // メンバー関数
   void SetSortingOrder(std::optional<int32_t> sortingOrder) { code_.sortingOrder = sortingOrder; }
 
   /// <summary>
-  /// 同じ maskId のポストエフェクトをこのオブジェクトの画素だけに掛ける（0 で解除、1〜255。std::nullopt で上書きを外す）
+  /// 同じ maskId のポストエフェクトをこのオブジェクトだけに掛ける。効果は輪郭の外へも広がる（0 で解除、1〜255。std::nullopt で上書きを外す）
   /// </summary>
   void SetMaskId(std::optional<uint32_t> maskId) { code_.maskId = maskId; }
 

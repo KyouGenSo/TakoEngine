@@ -23,5 +23,6 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     // トーンマッピング的な処理で自然な明るさに戻す
     //result = result / (1.0 + result);
     
-    return float4(result, 1.0f);
+    // α は元画像のまま。描画物の外では α=0 で光だけ残り、重ねるときに加算になる
+    return float4(result, baseColor.a);
 }

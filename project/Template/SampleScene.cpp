@@ -69,36 +69,6 @@ void SampleScene::Draw()
 
 }
 
-void SampleScene::DrawWithoutEffect()
-{
-  /// ================================== ///
-  ///              描画処理               ///
-  /// ================================== ///
-
-  //------------------背景Spriteの描画------------------//
-  // スプライト共通描画設定
-  SpriteBasic::GetInstance()->SetCommonRenderSetting();
-
-
-
-
-  //-------------------Modelの描画-------------------//
-  // 3Dモデル共通描画設定
-  Object3dBasic::GetInstance()->SetCommonRenderSetting();
-
-
-
-
-
-  //------------------前景Spriteの描画------------------//
-  // スプライト共通描画設定
-  SpriteBasic::GetInstance()->SetCommonRenderSetting();
-
-
-
-
-}
-
 void SampleScene::DrawImGui()
 {
 #ifdef _DEBUG

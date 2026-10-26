@@ -54,13 +54,6 @@ namespace Tako {
     }
   }
 
-  void SceneManager::DrawWithoutEffect()
-  {
-    if (scene_) {
-      scene_->DrawWithoutEffect();
-    }
-  }
-
   void SceneManager::DrawImGui()
   {
     if (scene_) {

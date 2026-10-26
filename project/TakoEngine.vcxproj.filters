@@ -997,15 +997,6 @@
     <FxCompile Include="engine\resources\shaders\ScatterCompact.CS.hlsl">
       <Filter>shader\Particle</Filter>
     </FxCompile>
-    <FxCompile Include="engine\resources\shaders\Mask.VS.hlsl">
-      <Filter>shader\3D</Filter>
-    </FxCompile>
-    <FxCompile Include="engine\resources\shaders\Mask.PS.hlsl">
-      <Filter>shader\3D</Filter>
-    </FxCompile>
-    <FxCompile Include="engine\resources\shaders\MaskComposite.PS.hlsl">
-      <Filter>shader\PostEffect</Filter>
-    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="engine\resources\shaders\FullScreen.hlsli">

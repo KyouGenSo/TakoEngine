@@ -252,15 +252,11 @@ namespace Tako {
   {
     SrvManager::GetInstance()->BeginDraw();
 
-    // シーン（ポストエフェクトを掛ける描画物）と UI（掛けない描画物）を登録してから、まとめて描く
+    // 描画物を全て登録してから、まとめて描く。ポストエフェクトの前後は描画キューで分かれる（kQueueOverlay 以上が後）
     Renderer* renderer = Renderer::GetInstance();
     renderer->BeginFrame();
     renderer->BeginSubmit(renderer->GetSceneList());
     SceneManager::GetInstance()->Draw();
-    renderer->EndSubmit();
-
-    renderer->BeginSubmit(renderer->GetOverlayList());
-    SceneManager::GetInstance()->DrawWithoutEffect();
 #ifdef _DEBUG
     // シーンの HUD と同じ RT へ、UI Editor のプレビューを重ねる
     DebugUIManager::GetInstance()->DrawUILayoutPreviewPass();

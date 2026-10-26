@@ -110,11 +110,6 @@ namespace Tako {
     void RenderList(const DrawList& list, const RenderView& view, const DrawFilter& filter = {});
 
     /// <summary>
-    /// maskId を持つ描画物の maskId を、現在の描画先（R8_UINT の ObjectMask）へ書く
-    /// </summary>
-    void RenderMask(const DrawList& list, const RenderView& view);
-
-    /// <summary>
     /// submit 内で登録した描画物だけを、その場で指定の視点で描く（エディタのプレビュー用）
     /// </summary>
     void RenderImmediate(const RenderView& view, const std::function<void()>& submit);
@@ -148,7 +143,6 @@ namespace Tako {
     Light* GetLight() const { return light_.get(); }
     const RenderView& GetMainView() const { return mainView_; }
     DrawList& GetSceneList() { return sceneList_; }
-    DrawList& GetOverlayList() { return overlayList_; }
     const Matrix4x4& GetScreenViewMatrix() const { return screenView_; }
     const Matrix4x4& GetScreenProjectionMatrix() const { return screenProjection_; }
 
@@ -173,7 +167,7 @@ namespace Tako {
     /// <summary>
     /// ジオメトリと描画物ごとの値を渡して描く
     /// </summary>
-    /// <param name="material">渡すマテリアル（nullptr なら渡さない。影・マスクのパス）</param>
+    /// <param name="material">渡すマテリアル（nullptr なら渡さない。影のパス）</param>
     void DrawItemGeometry(const DrawItem& item, const Material* material);
 
     /// <summary>
@@ -193,8 +187,7 @@ namespace Tako {
     Matrix4x4 screenProjection_{};
 
     //登録
-    DrawList               sceneList_;              ///< ポストエフェクトを掛ける描画物
-    DrawList               overlayList_;            ///< ポストエフェクトの後に重ねる描画物
+    DrawList               sceneList_;              ///< 本編の描画物（描画キューが kQueueOverlay 以上の物はポストエフェクトの後に描く）
     DrawList*              current_     = nullptr;  ///< Submit の登録先
     std::vector<SortEntry> sortEntries_;            ///< RenderList の作業領域
 

@@ -730,7 +730,8 @@ namespace Tako {
         if (ImGui::InputInt("Mask ID", &maskId)) {
           effect.maskId = static_cast<uint32_t>(std::clamp(maskId, 0, 255));
         }
-        ImGui::SetItemTooltip("0 = whole screen. Otherwise only objects with the same Object3d::SetMaskId");
+        ImGui::SetItemTooltip("0 = whole screen. Otherwise applied to objects with the same Object3d::SetMaskId,\n"
+                              "before transparent objects and whole-screen effects (the result can spread outside the objects)");
         std::visit([](auto& param) { DrawParam(param); }, effect.param);
       }
       ImGui::PopID();

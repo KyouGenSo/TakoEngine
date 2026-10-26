@@ -36,7 +36,7 @@ float4 FogColor(float2 texcoord)
     float fogFactor = exp(-linearDepth * gParam.density);
     fogFactor = saturate(fogFactor);
 
-    float4 finalColor = lerp(gParam.color, sceneColor, fogFactor);
+    float4 finalColor = float4(lerp(gParam.color.rgb * sceneColor.a, sceneColor.rgb, fogFactor), sceneColor.a);
 
     return finalColor;
 }

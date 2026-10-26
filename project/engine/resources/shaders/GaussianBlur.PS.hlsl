@@ -39,7 +39,7 @@ float4 GaussianBlur(float2 texcoord, float2 texSize, float2 dir)
         
         float weight = Gaussian(float(karnelStep), gSigma) + Gaussian(float(karnelStep + 1), gSigma);
 
-        result.xyz += gTexture.Sample(gLinearClamp, uvOffset).xyz * weight;
+        result += gTexture.Sample(gLinearClamp, uvOffset) * weight;
         
         sum += weight;
     }
@@ -58,8 +58,8 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     float2 texSize;
     gTexture.GetDimensions(texSize.x, texSize.y);
     
+    // α も一緒にぼかし、描画物の外へにじんだ分を半透明にする
     float4 resultColor = GaussianBlur(input.texCoord, texSize, direction);
-    resultColor.a = 1.0f;
 
     //resultColor.rgb += output.color.rgb;
     

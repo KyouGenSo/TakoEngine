@@ -39,7 +39,7 @@ namespace Tako {
     bool    castShadow   = true;  ///< シャドウマップへ描くか（シェーダーが ShadowCaster パスを持つ場合）
 
     //オブジェクト単位のポストエフェクト・描画パスの絞り込み
-    uint32_t maskId = 0;  ///< 0 以外なら Mask パスで ObjectMask に書く（1〜255）
+    uint32_t maskId = 0;  ///< 同じ maskId の有効なポストエフェクトがあれば、シーンとは別の RT に描いてエフェクトを掛けてから重ねる（1〜255）
     uint32_t nameId = 0;  ///< Object3d の名前の FNV-1a（0 は名前なし）
   };
 
@@ -60,6 +60,8 @@ namespace Tako {
     int32_t                   maxQueue         = INT32_MAX;
     std::span<const uint32_t> nameIds;                       ///< 空でなければ DrawItem::nameId が含まれる描画物だけ描く
     std::span<const uint32_t> excludeNameIds;                ///< DrawItem::nameId が含まれる描画物は描かない
+    std::span<const uint32_t> maskIds;                       ///< 空でなければ DrawItem::maskId が含まれる描画物だけ描く
+    std::span<const uint32_t> excludeMaskIds;                ///< DrawItem::maskId が含まれる描画物は描かない
     const Material*           overrideMaterial = nullptr;    ///< 全ての描画物をこのマテリアル（の描画設定）で描く
   };
 

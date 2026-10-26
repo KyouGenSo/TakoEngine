@@ -64,8 +64,8 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     weight = saturate(weight * gParam.outlineThickness);
 
     PixelShaderOutput output;
-    output.color.rgb = (1.0f - weight) * gTexture.Sample(gLinearWrap, input.texCoord).rgb;
-    output.color.a = 1.0f;
+    const float4 center = gTexture.Sample(gLinearWrap, input.texCoord);
+    output.color = float4((1.0f - weight) * center.rgb, center.a);
 
     return output.color;
 }

@@ -19,19 +19,13 @@ struct PixelShaderOutput
 float4 main(VertexShaderOutput input) : SV_TARGET
 {
     float2 dir = input.texCoord - gParam.center;
-    float3 outputColor = float3(0.0f, 0.0f, 0.0f);
+    float4 outputColor = float4(0.0f, 0.0f, 0.0f, 0.0f);
 
     for (int32_t sampleIndex = 0; sampleIndex < gParam.sampleCount; ++sampleIndex)
     {
         float2 sampleOffset = input.texCoord + dir * gParam.blurWidth * float(sampleIndex);
-        outputColor.rgb += gTexture.Sample(gLinearClamp, sampleOffset).rgb;
+        outputColor += gTexture.Sample(gLinearClamp, sampleOffset);
     }
 
-    outputColor *= rcp(float(gParam.sampleCount));
-
-    PixelShaderOutput output;
-    output.color.rgb = outputColor;
-    output.color.a = 1.0f;
-
-    return output.color;
+    return outputColor * rcp(float(gParam.sampleCount));
 }

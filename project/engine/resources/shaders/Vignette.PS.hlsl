@@ -27,7 +27,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     
     vignette = saturate(pow(vignette, gParam.power));
 
-    output.color.rgb = lerp(output.color.rgb, gParam.color, 1.0f - vignette);
+    output.color.rgb = lerp(output.color.rgb, gParam.color * output.color.a, 1.0f - vignette);
     
     return output.color;
 

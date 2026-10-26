@@ -311,7 +311,7 @@ namespace Tako {
 
     const auto checkbox = [](const char* label, bool& value) { return ImGui::Checkbox(label, &value); };
     changed |= OverrideField<bool>("Visible", overrides.visible, true, checkbox);
-    ImGui::SetItemTooltip("Unchecked hides the object (also from shadows, render passes and the object mask)");
+    ImGui::SetItemTooltip("Unchecked hides the object (also from shadows and render passes)");
 
     changed |= OverrideField<uint32_t>("Mask ID", overrides.maskId, defaults.maskId, [](const char* label, uint32_t& value) {
       int id = static_cast<int>(value);
@@ -321,7 +321,7 @@ namespace Tako {
       value = static_cast<uint32_t>(std::clamp(id, 0, 255));
       return true;
     });
-    ImGui::SetItemTooltip("0 = none. Post effects with the same Mask ID apply only to this object");
+    ImGui::SetItemTooltip("0 = none. Post effects with the same Mask ID apply only to this object (the result can spread outside it)");
     DrawCodeMark(code && code->maskId, "SetMaskId");
 
     changed |= OverrideField<int32_t>("Sorting Order", overrides.sortingOrder, defaults.sortingOrder, [](const char* label, int32_t& value) {

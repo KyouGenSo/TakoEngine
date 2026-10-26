@@ -168,7 +168,7 @@ namespace Tako {
 
     /// <summary>
     /// UI Editor がシーン外のレイアウトをプレビュー編集中なら、ゲーム画面の上に重ねて描く
-    /// TakoFramework::Draw() の SceneManager::DrawWithoutEffect() 直後に呼ぶ
+    /// TakoFramework::Draw() の SceneManager::Draw() 直後に呼ぶ
     /// </summary>
     void DrawUILayoutPreviewPass() {
       uiLayoutEditor_.DrawPreview();

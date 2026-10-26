@@ -1,4 +1,6 @@
 #include "UILayout.h"
+#include "Material.h"
+#include "ShaderAsset.h"
 #include "Sprite.h"
 #include "TextureManager.h"
 #include "WinApp.h"
@@ -158,6 +160,15 @@ namespace Tako {
       }
     }
 
+    bool UsesPostEffect(const UIElement& element) {
+      for (const UIElement* node = &element; node; node = node->parent) {
+        if (node->postEffect) {
+          return true;
+        }
+      }
+      return false;
+    }
+
     void DrawElement(const UIElement& element) {
       if (!element.visible || !element.animPose.visible) {
         return;
@@ -191,6 +202,7 @@ namespace Tako {
       field("preserveAspect", element.preserveAspect);
       field("sliceOverride", element.isSliceOverridden);
       field("visible", element.visible);
+      field("postEffect", element.postEffect);
       field("locked", element.locked);
       // 共有の 9-slice を使う要素には書かない（共有側の値と紛れないように）
       if (element.isSliceOverridden) {
@@ -250,6 +262,7 @@ namespace Tako {
       element.isSliceOverridden = node.value("sliceOverride", element.isSliceOverridden);
       element.slice             = node.value("slice", element.slice);
       element.visible           = node.value("visible", element.visible);
+      element.postEffect        = node.value("postEffect", element.postEffect);
       element.locked            = node.value("locked", element.locked);
 
       const std::array<bool, 2> flip = node.value("flip", std::array<bool, 2>{});
@@ -846,6 +859,8 @@ namespace Tako {
       sprite.SetIsFlipY(element.flipY);
       sprite.SetTexLeftTop(uvLeftTop);
       sprite.SetTexCutSize(uvSize);
+      // ポストエフェクトの前後は描画キューで決まる（kQueueOverlay 以上は後）
+      sprite.GetMaterial().SetRenderQueue(UsesPostEffect(element) ? ShaderAsset::kQueueTransparent : ShaderAsset::kQueueOverlay);
 
       const UISlice& slice = GetEffectiveSlice(element);
       sprite.SetSlice(slice.border, scale_);

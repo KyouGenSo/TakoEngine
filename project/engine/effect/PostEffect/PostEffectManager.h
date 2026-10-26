@@ -106,6 +106,11 @@ namespace Tako {
     void Execute(const PostEffectFrame& frame, RenderTexture& input, RenderTexture& output) const { stack_.Execute(frame, input, output, antiAliasing_ == AntiAliasing::FXAA); }
 
     /// <summary>
+    /// 本編スタックの maskId のエフェクトを layer へ掛け、target へ重ねる
+    /// </summary>
+    void ExecuteMasked(const PostEffectFrame& frame, uint32_t maskId, RenderTexture& layer, RenderTexture& target) const { stack_.ExecuteMasked(frame, maskId, layer, target); }
+
+    /// <summary>
     /// ImGui デバッグ UI を描画
     /// </summary>
     void DrawImgui();
@@ -170,7 +175,7 @@ namespace Tako {
     //Getter
     //============================================================
     AntiAliasing GetAntiAliasing() const { return antiAliasing_; }
-    bool UsesObjectMask() const { return stack_.UsesObjectMask(); }
+    std::vector<uint32_t> GetMaskIds() const { return stack_.GetMaskIds(); }
     const PostProcessStack& GetStack() const { return stack_; }
     bool IsTemporaryEffectActive(uint32_t id) const { return temporaryEffects_.contains(id); }
 
