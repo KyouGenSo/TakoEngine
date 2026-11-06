@@ -355,13 +355,23 @@ namespace Tako {
     const auto now = std::chrono::steady_clock::now();
     if (now - lastShaderCheck_ >= kShaderCheckInterval) {
       lastShaderCheck_ = now;
-      for (const std::string& path : GetShaderFiles()) {
+      const std::vector<std::string> files = GetShaderFiles();
+      for (const std::string& path : files) {
         const std::filesystem::file_time_type time = LastWriteTime(path);
         const auto [it, added] = shaderFileTimes_.try_emplace(path, time);
         if (added || it->second != time) {
           it->second = time;
           LoadShaderFile(path);
         }
+      }
+      // 消えたファイルのポストエフェクトを外す（描画物のシェーダーはマテリアルが指しているので残す）
+      for (auto it = shaderFileTimes_.begin(); it != shaderFileTimes_.end();) {
+        if (std::ranges::find(files, it->first) != files.end()) {
+          ++it;
+          continue;
+        }
+        UnregisterPostEffects(it->first);
+        it = shaderFileTimes_.erase(it);
       }
     }
 
@@ -637,6 +647,7 @@ namespace Tako {
       std::vector<PostEffectPass>             postPasses;
       std::shared_ptr<MaterialPropertyLayout> postLayout;
       std::optional<RenderEvent>              postEvent;
+      std::vector<ShaderParamId>              postFade;
       if (post != root.end()) {
         if (const std::string error = BuildPostEffectPasses(library, *post, ranges, postPasses, postLayout); !error.empty()) {
           return fail(error);
@@ -647,7 +658,21 @@ namespace Tako {
             return fail("unknown Event " + eventName);
           }
         }
+        // 一時エフェクトで弱める値（"Fade": "intensity" か ["intensity", "strength"]）
+        if (const auto fade = post->find("Fade"); fade != post->end()) {
+          const std::vector<std::string> names = fade->is_string() ? std::vector<std::string>{ fade->get<std::string>() } : fade->get<std::vector<std::string>>();
+          for (const std::string& value : names) {
+            const MaterialProperty* property = postLayout->Find(MakeShaderParamId(value));
+            if (!property || property->type != MaterialProperty::Type::Float) {
+              return fail("Fade " + value + " is not a float value of gParam");
+            }
+            postFade.push_back(property->id);
+          }
+        }
       }
+
+      // このファイルから前に登録したポストエフェクトのうち、名前を変えた・PostEffect を消したものを外す
+      UnregisterPostEffects(path, post != root.end() ? std::string_view(name) : std::string_view());
 
       ShaderInfo& info = shaders_[name];
       info.path = path;
@@ -686,6 +711,7 @@ namespace Tako {
         RegisterPostEffect(name, {
           .defaultParam = std::move(block),
           .event        = postEvent,
+          .fadeValues   = std::move(postFade),
           .execute      = [passes = std::move(postPasses)](const PostEffectFrame& frame, const EffectParam& param, RenderTexture& input, RenderTexture& output) {
             ExecutePostEffectPasses(passes, frame, param, input, output);
           },
@@ -696,6 +722,16 @@ namespace Tako {
     }
     catch (const json::exception& e) {
       return fail(e.what());
+    }
+  }
+
+  void MaterialLibrary::UnregisterPostEffects(const std::string& path, std::string_view keep)
+  {
+    for (auto& [name, info] : shaders_) {
+      if (info.path == path && name != keep && !info.postEffectShaders.empty()) {
+        UnregisterPostEffect(name);
+        info.postEffectShaders.clear();
+      }
     }
   }
 

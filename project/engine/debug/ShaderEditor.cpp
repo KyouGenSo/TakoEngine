@@ -660,6 +660,42 @@ float4 main(VertexShaderOutput input) : SV_TARGET
       }
       ImGui::PopID();
     }
+
+    // 一時エフェクトで時間とともに弱める値（float の値だけ選べる）
+    if (layout && std::ranges::any_of(layout->properties, [](const MaterialProperty& property) { return property.type == MaterialProperty::Type::Float; })) {
+      ImGui::SeparatorText("Fade");
+      DrawNote("Checked values go down to 0 over the duration of a temporary effect (PostEffectManager::ApplyTemporaryEffect)");
+      json fade = post.value("Fade", json::array());
+      if (fade.is_string()) {
+        fade = json::array({ fade });
+      }
+      bool fadeEdited = false;
+      for (const MaterialProperty& property : layout->properties) {
+        if (property.type != MaterialProperty::Type::Float) {
+          continue;
+        }
+        const auto it = std::find(fade.begin(), fade.end(), json(property.name));
+        bool       on = it != fade.end();
+        if (ImGui::Checkbox(std::format("{}##Fade", property.name).c_str(), &on)) {
+          if (on) {
+            fade.push_back(property.name);
+          }
+          else {
+            fade.erase(it);
+          }
+          fadeEdited = true;
+        }
+      }
+      if (fadeEdited) {
+        if (fade.empty()) {
+          post.erase("Fade");
+        }
+        else {
+          post["Fade"] = fade;
+        }
+        changed = true;
+      }
+    }
     return changed;
   }
 

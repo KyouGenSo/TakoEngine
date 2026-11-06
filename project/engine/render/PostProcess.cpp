@@ -125,6 +125,17 @@ namespace Tako {
     registry.definitions.push_back(std::move(definition));
   }
 
+  void UnregisterPostEffect(std::string_view name)
+  {
+    Registry& registry = GetRegistry();
+    const auto it = std::ranges::find(registry.names, name);
+    if (it == registry.names.end()) {
+      return;
+    }
+    registry.definitions.erase(registry.definitions.begin() + (it - registry.names.begin()));
+    registry.names.erase(it);
+  }
+
   const PostEffectDefinition* FindPostEffect(std::string_view name)
   {
     const Registry& registry = GetRegistry();

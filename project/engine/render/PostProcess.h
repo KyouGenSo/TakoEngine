@@ -52,6 +52,11 @@ namespace Tako {
     std::optional<RenderEvent> event;
 
     /// <summary>
+    /// 一時エフェクト（PostEffectManager::ApplyTemporaryEffect）で時間とともに 0 へ弱める値の ID（PropertyBlock のパラメータ用）
+    /// </summary>
+    std::vector<ShaderParamId> fadeValues;
+
+    /// <summary>
     /// 単パス: 実行時に決まる値を param に入れ、gTexture・gParam・gDepthTexture・gView 以外の値を渡す
     /// </summary>
     std::function<void(const PostEffectFrame&, EffectParam& param, CommandContext::ShaderBinder&)> setup;
@@ -77,6 +82,11 @@ namespace Tako {
   /// 定義を名前で登録する（同名は上書き）
   /// </summary>
   void RegisterPostEffect(const std::string& name, PostEffectDefinition definition);
+
+  /// <summary>
+  /// 名前の定義を外す（無ければ何もしない）。スタックに残ったインスタンスは描かれなくなる
+  /// </summary>
+  void UnregisterPostEffect(std::string_view name);
 
   /// <summary>
   /// 名前の定義（無ければ nullptr）

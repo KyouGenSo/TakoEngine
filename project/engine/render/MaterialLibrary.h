@@ -5,6 +5,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -30,6 +31,7 @@ namespace Tako {
   ///   複数パスは "PostEffect": { "Passes": [ { "PS": "...", "Entry": "BlurX", "Inputs": { "gTexture": "bright" }, "Output": "blurX", "Scale": 0.5 }, ... ] }。
   ///   Inputs は Source（エフェクトの入力）か前のパスの Output 名、書かない gTexture は Source、最後のパスがエフェクトの出力へ書く。gParam は全パスで 1 つの値の組。
   ///   "Event": "BeforeTransparent" で掛ける位置を選べる（RenderEvent の名前。書かなければ半透明の後のポストエフェクトの段）。
+  ///   "Fade": ["intensity"] は一時エフェクト（PostEffectManager::ApplyTemporaryEffect）で時間とともに 0 へ弱める gParam の float の値。
   ///   "Entry" は PS のエントリポイント（既定 main）。ポストエフェクトの PS は gView（時間・画面サイズ・逆行列）と、宣言していれば gDepthTexture も受け取れる。
   ///   "Defaults": { "color": [1, 1, 1, 1] } は値の初期値。Forward も PostEffect も無ければ、登録済みの同名シェーダーに範囲と初期値だけを足す。
   ///   ファイル名だけのシェーダーはエンジンのもの、パス付きは作業ディレクトリ基準
@@ -165,6 +167,12 @@ namespace Tako {
     std::shared_ptr<Material> Find(const std::string& name) const;
 
   private: //非公開関数
+    /// <summary>
+    /// path の .shader.json から登録したポストエフェクトを外す（ファイルを消した・名前を変えた・PostEffect を消したとき）
+    /// </summary>
+    /// <param name="keep">外さない名前（読み直したファイルが今も登録する名前）</param>
+    void UnregisterPostEffects(const std::string& path, std::string_view keep = {});
+
     /// <summary>
     /// 定数を 0 → シェーダーの Defaults → previous の順で入れ直す（asset.layout の大きさで確保し直す）
     /// </summary>

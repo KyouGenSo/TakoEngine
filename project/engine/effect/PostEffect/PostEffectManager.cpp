@@ -5,6 +5,7 @@
 #include "FrameTimer.h"
 #include "Logger.h"
 #include "Mat4x4Func.h"
+#include "MaterialPropertyBlock.h"
 #include "TextureManager.h"
 #ifdef _DEBUG
 #include "DebugUIManager.h"
@@ -14,6 +15,7 @@
 #include <json.hpp>
 
 #include <algorithm>
+#include <cstring>
 #include <filesystem>
 #include <format>
 #include <fstream>
@@ -289,6 +291,20 @@ namespace Tako {
 
   void PostEffectManager::Update(float deltaTime)
   {
+    // .shader.json を消した・名前を変えたなどで定義が無くなったエフェクトは外す
+    std::vector<uint32_t> orphaned;
+    for (const PostEffectInstance& effect : stack_.GetEffects()) {
+      if (!FindPostEffect(effect.name)) {
+        orphaned.push_back(effect.id);
+#ifdef _DEBUG
+        LogToConsole(std::format("PostEffect: '{}' was removed from the stack because it is no longer registered", effect.name), DebugUIManager::LogType::Warning);
+#endif
+      }
+    }
+    for (const uint32_t id : orphaned) {
+      RemoveEffect(id);
+    }
+
     // JSON のポストエフェクトの PS が再コンパイルされたら、パラメータを新しい並びへ移す
     stack_.RefreshLayouts();
     for (auto& [id, info] : temporaryEffects_) {
@@ -308,7 +324,8 @@ namespace Tako {
 
       const float fadeFactor = 1.0f - ApplyEasing(info.elapsedTime / info.duration, info.easing);
       if (PostEffectInstance* effect = stack_.Find(it->first)) {
-        effect->param = ApplyFadeToParam(info.baseParam, fadeFactor);
+        const PostEffectDefinition* definition = FindPostEffect(effect->name);
+        effect->param = ApplyFadeToParam(info.baseParam, fadeFactor, definition ? std::span<const ShaderParamId>(definition->fadeValues) : std::span<const ShaderParamId>());
       }
       ++it;
     }
@@ -329,6 +346,27 @@ namespace Tako {
       return false;
     }
     effect->param = param;
+    return true;
+  }
+
+  bool PostEffectManager::SetEffectValues(uint32_t id, std::string_view name, std::span<const float> values)
+  {
+    PostEffectInstance* effect = stack_.Find(id);
+    PropertyBlock*      block  = effect ? std::get_if<PropertyBlock>(&effect->param) : nullptr;
+    if (!block || !block->layout->Find(MakeShaderParamId(name))) {
+      Logger::Log("PostEffect value not found: %.*s (id %u)", static_cast<int>(name.size()), name.data(), id);
+      return false;
+    }
+    // 描画物の値と同じ書き方（整数への変換・成分の過不足）にそろえる
+    MaterialPropertyBlock change;
+    change.SetValues(name, values);
+    change.Apply(*block->layout, block->bytes);
+    // 一時エフェクトは毎フレーム開始時の値から弱め直すので、そちらも替える
+    if (const auto temporary = temporaryEffects_.find(id); temporary != temporaryEffects_.end()) {
+      if (PropertyBlock* base = std::get_if<PropertyBlock>(&temporary->second.baseParam)) {
+        change.Apply(*base->layout, base->bytes);
+      }
+    }
     return true;
   }
 
@@ -761,9 +799,9 @@ namespace Tako {
     }
   }
 
-  EffectParam PostEffectManager::ApplyFadeToParam(const EffectParam& param, float fadeFactor) const
+  EffectParam PostEffectManager::ApplyFadeToParam(const EffectParam& param, float fadeFactor, std::span<const ShaderParamId> fadeValues) const
   {
-    return std::visit([fadeFactor](auto&& arg) -> EffectParam {
+    return std::visit([fadeFactor, fadeValues](auto&& arg) -> EffectParam {
       using T = std::decay_t<decltype(arg)>;
 
       if constexpr (std::is_same_v<T, VignetteParam>) {
@@ -789,6 +827,23 @@ namespace Tako {
       else if constexpr (std::is_same_v<T, GaussianBlurParam>) {
         GaussianBlurParam result = arg;
         result.sigma *= fadeFactor;
+        return result;
+      }
+      else if constexpr (std::is_same_v<T, PropertyBlock>) {
+        PropertyBlock result = arg;
+        for (const ShaderParamId id : fadeValues) {
+          const MaterialProperty* property = result.layout ? result.layout->Find(id) : nullptr;
+          if (!property || property->type != MaterialProperty::Type::Float || property->offset + property->components * sizeof(float) > result.bytes.size()) {
+            continue;
+          }
+          for (uint32_t c = 0; c < property->components; ++c) {
+            uint8_t* target = result.bytes.data() + property->offset + c * sizeof(float);
+            float    value  = 0.0f;
+            std::memcpy(&value, target, sizeof(value));
+            value *= fadeFactor;
+            std::memcpy(target, &value, sizeof(value));
+          }
+        }
         return result;
       }
       else {

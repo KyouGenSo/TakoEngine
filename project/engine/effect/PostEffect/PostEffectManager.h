@@ -2,6 +2,7 @@
 #include <array>
 #include <cstdint>
 #include <memory>
+#include <span>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -10,7 +11,6 @@
 #include "PostEffectStruct.h"
 #include "PostProcess.h"
 #ifdef _DEBUG
-#include <span>
 #include "EditTracker.h"
 #include "ShortcutTable.h"
 #endif
@@ -82,7 +82,8 @@ namespace Tako {
     void ClearEffects();
 
     /// <summary>
-    /// 一時的なエフェクトを掛ける。duration 秒でフェードアウトして自動で外れる。同名の一時エフェクトが動作中ならそれを最初からやり直す
+    /// 一時的なエフェクトを掛ける。duration 秒でフェードアウトして自動で外れる。同名の一時エフェクトが動作中ならそれを最初からやり直す。
+    /// .shader.json のエフェクトは "Fade" に書いた値を弱める（param は FindPostEffect(name)->defaultParam から作り、値は SetEffectValue で替えられる）
     /// </summary>
     /// <param name="name">エフェクトの名前</param>
     /// <param name="duration">持続時間（秒）</param>
@@ -170,6 +171,15 @@ namespace Tako {
     bool SetEffectParam(uint32_t id, const EffectParam& param);
 
     /// <summary>
+    /// .shader.json のエフェクトの値を名前で設定する（多い成分は使わず、足りない成分は今の値のまま）。一時エフェクトなら弱める前の値も替える
+    /// </summary>
+    /// <returns>id が無い、.shader.json のエフェクトでない、または名前の値が無ければ false</returns>
+    bool SetEffectValues(uint32_t id, std::string_view name, std::span<const float> values);
+
+    bool SetEffectValue(uint32_t id, std::string_view name, float value) { return SetEffectValues(id, name, std::span<const float>(&value, 1)); }
+    bool SetEffectValue(uint32_t id, std::string_view name, const Vector4& value) { return SetEffectValues(id, name, std::span<const float>(&value.x, 4)); }
+
+    /// <summary>
     /// Dissolve が読むマスクテクスチャを設定
     /// </summary>
     void SetDissolveMaskTex(const std::string& textureName);
@@ -216,8 +226,9 @@ namespace Tako {
     /// </summary>
     /// <param name="param">基本パラメータ</param>
     /// <param name="fadeFactor">フェード係数（0.0〜1.0）</param>
+    /// <param name="fadeValues">PropertyBlock のパラメータで弱める値（定義の fadeValues）</param>
     /// <returns>フェード適用後のパラメータ</returns>
-    EffectParam ApplyFadeToParam(const EffectParam& param, float fadeFactor) const;
+    EffectParam ApplyFadeToParam(const EffectParam& param, float fadeFactor, std::span<const ShaderParamId> fadeValues) const;
 
   private: //メンバー変数
     DX12Basic*                                        dx12_                 = nullptr;
