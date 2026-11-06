@@ -75,6 +75,12 @@ namespace Tako {
     return E_NOINTERFACE;
   }
 
+  bool Shader::Declares(const char* name) const
+  {
+    D3D12_SHADER_INPUT_BIND_DESC bind{};
+    return reflection_ && SUCCEEDED(reflection_->GetResourceBindingDescByName(name, &bind));
+  }
+
   void ShaderLibrary::Initialize()
   {
     HRESULT hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&utils_));

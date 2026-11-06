@@ -158,6 +158,110 @@ float4 main(VertexShaderOutput input) : SV_TARGET
       return true;
     }
 
+    constexpr const char* kFileInput = "(Textures file)";
+
+    /// <summary>
+    /// パスの見出しと、並べ替え・削除のボタン（押されたパスを raised・removed に入れる。反映は ApplyPassEdits）
+    /// </summary>
+    /// <param name="note">見出しの後ろに付ける説明</param>
+    void DrawPassHeader(size_t index, size_t count, std::string_view note, std::optional<size_t>& raised, std::optional<size_t>& removed)
+    {
+      ImGui::TextUnformatted(std::format("Pass {}{}", index + 1, note).c_str());
+      ImGui::SameLine();
+      ImGui::BeginDisabled(index == 0);
+      if (ImGui::ArrowButton("Up", ImGuiDir_Up)) {
+        raised = index;
+      }
+      ImGui::EndDisabled();
+      ImGui::SameLine();
+      ImGui::BeginDisabled(index + 1 == count);
+      if (ImGui::ArrowButton("Down", ImGuiDir_Down)) {
+        raised = index + 1;
+      }
+      ImGui::EndDisabled();
+      ImGui::SameLine();
+      ImGui::BeginDisabled(count == 1);
+      if (ImGui::SmallButton("Remove")) {
+        removed = index;
+      }
+      ImGui::EndDisabled();
+    }
+
+    /// <summary>
+    /// DrawPassHeader で押されたボタンを passes に反映する（raised は 1 つ前のパスと入れ替える）
+    /// </summary>
+    /// <returns>並びを変えたら true</returns>
+    bool ApplyPassEdits(json& passes, std::optional<size_t> raised, std::optional<size_t> removed)
+    {
+      if (removed) {
+        passes.erase(*removed);
+        return true;
+      }
+      if (raised) {
+        std::swap(passes[*raised - 1], passes[*raised]);
+        return true;
+      }
+      return false;
+    }
+
+    /// <summary>
+    /// パスの PS が宣言するテクスチャごとに、読む画像（Source・前のパスの Output・Textures のファイル）を選ぶ
+    /// </summary>
+    /// <returns>内容を変えたら true</returns>
+    bool DrawPassInputs(ShaderLibrary& library, json& passes, size_t index)
+    {
+      json&             pass = passes[index];
+      const std::string file = pass.value("PS", std::string());
+      const Shader*     ps   = file.empty() ? nullptr : library.TryGet({ StringUtility::ConvertString(file), ShaderStage::Pixel, StringUtility::ConvertString(pass.value("Entry", std::string("main"))) });
+      if (!ps) {
+        return false;
+      }
+
+      std::vector<std::string> sources = { "Source" };
+      for (size_t i = 0; i < index; ++i) {
+        if (const std::string output = passes[i].value("Output", std::string()); !output.empty()) {
+          sources.push_back(output);
+        }
+      }
+
+      json inputs  = pass.value("Inputs", json::object());
+      bool changed = false;
+      for (const std::string& slot : MaterialPropertyLayout::Reflect(ps->GetReflection(), "gParam", {})->textures) {
+        // 書かないときに読むもの（gTexture はエフェクトの入力、他は Textures のファイル）
+        const bool        isMain   = slot == "gTexture";
+        const std::string fallback = isMain ? "Source" : kFileInput;
+        const std::string current  = inputs.value(slot, fallback);
+        if (!ImGui::BeginCombo(slot.c_str(), current.c_str())) {
+          continue;
+        }
+        std::vector<std::string> options = sources;
+        if (!isMain) {
+          options.insert(options.begin(), kFileInput);
+        }
+        for (const std::string& option : options) {
+          if (ImGui::Selectable(option.c_str(), option == current) && option != current) {
+            if (option == fallback) {
+              inputs.erase(slot);
+            }
+            else {
+              inputs[slot] = option;
+            }
+            changed = true;
+          }
+        }
+        ImGui::EndCombo();
+      }
+      if (changed) {
+        if (inputs.empty()) {
+          pass.erase("Inputs");
+        }
+        else {
+          pass["Inputs"] = inputs;
+        }
+      }
+      return changed;
+    }
+
   } // anonymous namespace
 
   std::span<const ShortcutBinding<ShaderEditor>> ShaderEditor::Shortcuts()
@@ -331,23 +435,29 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     }
     ImGui::SetItemTooltip("Compile the HLSL again and re-register (use after fixing a compile error)");
 
-    ShaderLibrary&    library = Renderer::GetInstance()->GetDX12Basic()->GetShaderLibrary();
-    const std::string ps      = FindPixelShader();
-    if (!ps.empty()) {
+    ShaderLibrary&                 library = Renderer::GetInstance()->GetDX12Basic()->GetShaderLibrary();
+    const std::vector<std::string> shaders = FindPixelShaders();
+    for (size_t i = 0; i < shaders.size(); ++i) {
       ImGui::SameLine();
-      if (ImGui::Button("Open HLSL")) {
-        OpenWithShell(library.ResolvePath(StringUtility::ConvertString(ps)));
+      const std::string label = shaders.size() == 1 ? std::string("Open HLSL") : std::format("Open {}##{}", std::filesystem::path(shaders[i]).filename().string(), i);
+      if (ImGui::Button(label.c_str())) {
+        OpenWithShell(library.ResolvePath(StringUtility::ConvertString(shaders[i])));
       }
     }
 
-    // 登録の状態と、最後のコンパイルエラー
+    // 登録の状態と、最後のコンパイル・読み込みのエラー
     const bool registered = isPost ? FindPostEffect(name) != nullptr : Renderer::GetInstance()->FindShader(name) != nullptr;
     ImGui::TextDisabled(registered ? "Registered" : "Not registered");
-    if (const std::string* error = ps.empty() ? nullptr : library.FindCompileError(StringUtility::ConvertString(ps))) {
-      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.4f, 0.4f, 1.0f));
-      ImGui::TextWrapped("%s", error->c_str());
-      ImGui::PopStyleColor();
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.4f, 0.4f, 1.0f));
+    for (const std::string& ps : shaders) {
+      if (const std::string* error = library.FindCompileError(StringUtility::ConvertString(ps))) {
+        ImGui::TextWrapped("%s", error->c_str());
+      }
     }
+    if (const std::string* error = MaterialLibrary::GetInstance()->FindLoadError(selected_)) {
+      ImGui::TextWrapped("%s", error->c_str());
+    }
+    ImGui::PopStyleColor();
     if (readOnly) {
       DrawNote("Engine file (build-time copy). Edit the source in engine/resources/shaders");
     }
@@ -386,17 +496,41 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     bool  changed = false;
 
     ImGui::SeparatorText("Object");
-    changed |= TextField("VS", forward, "VS", "Object3D.VS.hlsl");
-    changed |= TextField("PS", forward, "PS", "resources/Shaders/Name.PS.hlsl");
-    ImGui::SetItemTooltip("A file name only is an engine shader. A path is relative to the working directory");
+    DrawNote("Passes draw the same object in order. Materials override the render state of the first pass and own its values; later passes can read only those values and textures");
 
-    // 書いていない項目は読み込み側（MaterialLibrary）の既定と同じものを選んでいるとして出す
-    changed |= NameCombo("Blend", forward, "Blend", kBlendModeNames, "Alpha");
-    changed |= NameCombo("Cull", forward, "Cull", kCullModeNames, "Back");
-    changed |= BoolField("Depth Test", forward, "DepthTest", true);
-    ImGui::SameLine();
-    changed |= BoolField("Depth Write", forward, "DepthWrite", true);
-    changed |= NameCombo("Depth Func", forward, "DepthFunc", kDepthFuncNames, "LessEqual");
+    // 1 つのオブジェクトは 1 パスとして見せ、編集したら配列で書く
+    json                  passes       = forward.is_array() ? forward : json::array({ forward });
+    bool                  passesEdited = false;
+    std::optional<size_t> raised;
+    std::optional<size_t> removed;
+    for (size_t i = 0; i < passes.size(); ++i) {
+      json& pass = passes[i];
+      ImGui::PushID(static_cast<int>(i));
+      DrawPassHeader(i, passes.size(), i == 0 ? " (material overrides apply)" : "", raised, removed);
+      passesEdited |= TextField("VS", pass, "VS", "Object3D.VS.hlsl");
+      passesEdited |= TextField("PS", pass, "PS", "resources/Shaders/Name.PS.hlsl");
+      ImGui::SetItemTooltip("A file name only is an engine shader. A path is relative to the working directory");
+      passesEdited |= TextField("Entry", pass, "Entry", "main");
+
+      // 書いていない項目は読み込み側（MaterialLibrary）の既定と同じものを選んでいるとして出す
+      passesEdited |= NameCombo("Blend", pass, "Blend", kBlendModeNames, "Alpha");
+      passesEdited |= NameCombo("Cull", pass, "Cull", kCullModeNames, "Back");
+      passesEdited |= BoolField("Depth Test", pass, "DepthTest", true);
+      ImGui::SameLine();
+      passesEdited |= BoolField("Depth Write", pass, "DepthWrite", true);
+      passesEdited |= NameCombo("Depth Func", pass, "DepthFunc", kDepthFuncNames, "LessEqual");
+      ImGui::PopID();
+    }
+    if (ImGui::Button("Add Pass##Forward")) {
+      json copy = passes.back();
+      passes.push_back(std::move(copy));
+      passesEdited = true;
+    }
+    passesEdited |= ApplyPassEdits(passes, raised, removed);
+    if (passesEdited) {
+      forward = std::move(passes);
+      changed = true;
+    }
 
     int queue = document_.value("Queue", ShaderAsset::kQueueGeometry);
     if (ImGui::DragInt("Queue", &queue, 1.0f, 0, 5000)) {
@@ -432,17 +566,88 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     bool  changed = false;
 
     ImGui::SeparatorText("Post Effect");
-    changed |= TextField("PS##Post", post, "PS", "resources/Shaders/Name.PS.hlsl");
-    DrawNote("gTexture = screen, gView = time / screenSize / inverse matrices, gDepthTexture = scene depth");
+    DrawNote("gTexture = Source (the effect input) unless Inputs says otherwise, gView = time / screenSize / inverse matrices, gDepthTexture = scene depth. Every pass shares gParam");
 
-    // gTexture（入力の画面）以外のテクスチャのファイル
-    if (layout) {
+    // 書かなければ半透明の後のポストエフェクトの段
+    constexpr const char* kStackEvent = "(post process stack)";
+    const std::string     event       = post.value("Event", std::string());
+    if (ImGui::BeginCombo("Event", event.empty() ? kStackEvent : event.c_str())) {
+      if (ImGui::Selectable(kStackEvent, event.empty()) && !event.empty()) {
+        post.erase("Event");
+        changed = true;
+      }
+      for (const char* name : kRenderEventNames) {
+        if (ImGui::Selectable(name, event == name) && event != name) {
+          post["Event"] = name;
+          changed = true;
+        }
+      }
+      ImGui::EndCombo();
+    }
+    ImGui::SetItemTooltip("Where the effect is applied. Before the post process stack the input is the scene, after it the final image (AfterUI includes the UI). Effects with a mask ignore this");
+
+    // "PS" だけの書き方は 1 パスとして見せ、編集したら Passes で書く
+    json passes = post.value("Passes", json::array());
+    if (passes.empty()) {
+      json single = json::object();
+      for (const char* key : { "PS", "Entry" }) {
+        if (const auto it = post.find(key); it != post.end()) {
+          single[key] = *it;
+        }
+      }
+      passes.push_back(std::move(single));
+    }
+
+    ShaderLibrary&        library      = Renderer::GetInstance()->GetDX12Basic()->GetShaderLibrary();
+    bool                  passesEdited = false;
+    std::optional<size_t> raised;
+    std::optional<size_t> removed;
+    for (size_t i = 0; i < passes.size(); ++i) {
+      json&      pass = passes[i];
+      const bool last = i + 1 == passes.size();
+      ImGui::PushID(static_cast<int>(i));
+      DrawPassHeader(i, passes.size(), last ? " (writes the result)" : "", raised, removed);
+
+      passesEdited |= TextField("PS", pass, "PS", "resources/Shaders/Name.PS.hlsl");
+      ImGui::SetItemTooltip("A file name only is an engine shader. A path is relative to the working directory");
+      passesEdited |= TextField("Entry", pass, "Entry", "main");
+      if (!last) {
+        passesEdited |= TextField("Output", pass, "Output", "name read by later passes");
+        float scale = pass.value("Scale", 1.0f);
+        if (ImGui::DragFloat("Scale", &scale, 0.01f, 0.01f, 4.0f)) {
+          pass["Scale"] = scale;
+          passesEdited = true;
+        }
+        ImGui::SetItemTooltip("Size relative to the effect input (0.5 = half resolution)");
+      }
+      passesEdited |= DrawPassInputs(library, passes, i);
+      ImGui::PopID();
+    }
+
+    if (ImGui::Button("Add Pass##Post")) {
+      // 新しいパスが結果を書くので、今の最後のパスには名前を付けて新しいパスから読む
+      json& previous = passes.back();
+      if (previous.value("Output", std::string()).empty()) {
+        previous["Output"] = std::format("pass{}", passes.size());
+      }
+      json added = { { "PS", previous.value("PS", std::string()) }, { "Inputs", { { "gTexture", previous["Output"] } } } };
+      passes.push_back(std::move(added));
+      passesEdited = true;
+    }
+    passesEdited |= ApplyPassEdits(passes, raised, removed);
+    if (passesEdited) {
+      post.erase("PS");
+      post.erase("Entry");
+      post["Passes"] = std::move(passes);
+      changed = true;
+    }
+
+    // Inputs で選ばなかったテクスチャのファイル（全パス共通）
+    if (layout && !layout->textures.empty()) {
+      ImGui::SeparatorText("Textures");
       ImGui::PushID("Textures");
       json textures = post.value("Textures", json::object());
       for (const std::string& slot : layout->textures) {
-        if (slot == "gTexture") {
-          continue;
-        }
         bool edited = TextField(slot.c_str(), textures, slot.c_str(), "white.png");
         if (const std::optional<std::string> dropped = AcceptTextureDrop()) {
           textures[slot] = *dropped;
@@ -501,14 +706,33 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     return changed;
   }
 
-  std::string ShaderEditor::FindPixelShader() const
+  std::vector<std::string> ShaderEditor::FindPixelShaders() const
   {
-    for (const char* key : { "Forward", "PostEffect" }) {
-      if (const auto it = document_.find(key); it != document_.end() && it->is_object()) {
-        return it->value("PS", std::string());
+    std::vector<std::string> files;
+    const auto add = [&files](const json& node) {
+      const std::string ps = node.is_object() ? node.value("PS", std::string()) : std::string();
+      if (!ps.empty() && std::ranges::find(files, ps) == files.end()) {
+        files.push_back(ps);
+      }
+    };
+    // Forward はパスの配列でもよい
+    if (const auto forward = document_.find("Forward"); forward != document_.end()) {
+      if (forward->is_array()) {
+        for (const json& pass : *forward) {
+          add(pass);
+        }
+      }
+      else {
+        add(*forward);
       }
     }
-    return {};
+    if (const auto post = document_.find("PostEffect"); post != document_.end() && post->is_object()) {
+      add(*post);
+      for (const json& pass : post->value("Passes", json::array())) {
+        add(pass);
+      }
+    }
+    return files;
   }
 
   bool ShaderEditor::IsReadOnly() const

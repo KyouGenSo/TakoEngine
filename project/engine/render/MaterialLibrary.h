@@ -24,9 +24,13 @@ namespace Tako {
   ///   { "Name": "Hologram", "Fallback": "Lit", "Queue": 3000,
   ///     "Forward": { "VS": "Object3D.VS.hlsl", "PS": "resources/Shaders/Hologram.PS.hlsl", "Blend": "Add", "Cull": "None", "DepthTest": true, "DepthWrite": false, "DepthFunc": "LessEqual" },
   ///     "Properties": { "speed": [0, 10] } }
-  ///   Forward があれば描画物のシェーダー（定数は gMaterial、書いていないパスは Fallback から借りる）、
+  ///   Forward があれば描画物のシェーダー（定数は gMaterial、書いていないパスは Fallback から借りる）。
+  ///   Forward をパスの配列にすると上から順に同じ描画物を描く。1 番目のパスがマテリアルの描画設定の上書きと値の並びを受け持ち、他のパスはその値とテクスチャだけを読める。
   ///   "PostEffect": { "PS": "...", "Textures": { "gNoise": "noise.png" } } があればポストエフェクト（定数は gParam）として登録する。
-  ///   ポストエフェクトの PS は gView（時間・画面サイズ・逆行列）と、宣言していれば gDepthTexture も受け取れる。
+  ///   複数パスは "PostEffect": { "Passes": [ { "PS": "...", "Entry": "BlurX", "Inputs": { "gTexture": "bright" }, "Output": "blurX", "Scale": 0.5 }, ... ] }。
+  ///   Inputs は Source（エフェクトの入力）か前のパスの Output 名、書かない gTexture は Source、最後のパスがエフェクトの出力へ書く。gParam は全パスで 1 つの値の組。
+  ///   "Event": "BeforeTransparent" で掛ける位置を選べる（RenderEvent の名前。書かなければ半透明の後のポストエフェクトの段）。
+  ///   "Entry" は PS のエントリポイント（既定 main）。ポストエフェクトの PS は gView（時間・画面サイズ・逆行列）と、宣言していれば gDepthTexture も受け取れる。
   ///   "Defaults": { "color": [1, 1, 1, 1] } は値の初期値。Forward も PostEffect も無ければ、登録済みの同名シェーダーに範囲と初期値だけを足す。
   ///   ファイル名だけのシェーダーはエンジンのもの、パス付きは作業ディレクトリ基準
   ///
@@ -60,13 +64,12 @@ namespace Tako {
     };
 
     struct ShaderInfo {
-      std::map<std::string, std::pair<float, float>> ranges;       ///< .shader.json の Properties
-      nlohmann::json                                 defaults;               ///< .shader.json の Defaults（値の初期値）
-      std::shared_ptr<const MaterialPropertyLayout>  layout;
-      uint32_t                                       version           = 0;  ///< layout を作ったときの PS のバージョン
-      std::string                                    path;                   ///< 読んだ .shader.json
-      const Shader*                                  postEffectPs      = nullptr;
-      uint32_t                                       postEffectVersion = 0;  ///< ポストエフェクトを登録したときの PS のバージョン
+      std::map<std::string, std::pair<float, float>>  ranges;                 ///< .shader.json の Properties
+      nlohmann::json                                  defaults;               ///< .shader.json の Defaults（値の初期値）
+      std::shared_ptr<const MaterialPropertyLayout>   layout;
+      uint32_t                                        version           = 0;  ///< layout を作ったときの PS のバージョン
+      std::string                                     path;                   ///< 読んだ .shader.json
+      std::vector<std::pair<const Shader*, uint32_t>> postEffectShaders;      ///< ポストエフェクトの各パスの PS と、登録したときのバージョン
     };
 
   public: //メンバー関数
@@ -96,6 +99,11 @@ namespace Tako {
     /// <param name="path">内容の元のファイル（PS の再コンパイル時に読み直す先）</param>
     /// <returns>読めない・コンパイルできなければ false（今の登録を残す）</returns>
     bool ApplyShaderText(const std::string& path, const std::string& text);
+
+    /// <summary>
+    /// path の最後の読み込みが失敗していれば、その理由（成功していれば nullptr）
+    /// </summary>
+    const std::string* FindLoadError(const std::string& path) const;
 
     /// <summary>
     /// resources/Materials/{name}.mat.json を読む。読み込み済みなら同じマテリアルを返す（複数の描画物で共有する）
@@ -175,6 +183,7 @@ namespace Tako {
     //.shader.json の更新の検出
     std::map<std::string, std::filesystem::file_time_type> shaderFileTimes_;  ///< 最後に読んだときの更新時刻
     std::chrono::steady_clock::time_point                  lastShaderCheck_{};
+    std::map<std::string, std::string>                     loadErrors_;       ///< .shader.json のパスごとの最後の失敗の理由
   };
 
 } // namespace Tako

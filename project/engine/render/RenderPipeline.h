@@ -8,6 +8,7 @@
 #include <string_view>
 #include <vector>
 
+#include "RenderEvent.h"
 #include "RenderGraph.h"
 #include "Vector4.h"
 
@@ -15,21 +16,7 @@ namespace Tako {
 
   class DX12Basic;
   class Material;
-
-  /// <summary>
-  /// 本編の描画で追加のパスを差し込める位置（Unity の RenderPassEvent に相当）
-  /// </summary>
-  enum class RenderEvent : uint8_t {
-    BeforeShadow,
-    AfterOpaque,        ///< 不透明の直後（デカールの前）
-    BeforeTransparent,  ///< デカールの後、半透明の前
-    AfterTransparent,   ///< 半透明・パーティクル・線の後
-    BeforePostProcess,
-    AfterPostProcess,   ///< 描画先は最終結果の RT（UI の前）
-    BeforeUI,
-    AfterUI,
-    Count
-  };
+  struct PostEffectFrame;
 
   /// <summary>
   /// オブジェクトパスで描く描画物を、描画キューで絞る
@@ -42,9 +29,7 @@ namespace Tako {
   };
 
   // 保存ファイルと編集 UI で使う名前。並びは列挙の値と一致させる
-  inline constexpr const char* kRenderEventNames[] = { "BeforeShadow", "AfterOpaque", "BeforeTransparent", "AfterTransparent", "BeforePostProcess", "AfterPostProcess", "BeforeUI", "AfterUI" };
   inline constexpr const char* kQueueFilterNames[] = { "All", "Opaque", "Transparent" };
-  static_assert(std::size(kRenderEventNames) == static_cast<size_t>(RenderEvent::Count));
   static_assert(std::size(kQueueFilterNames) == static_cast<size_t>(QueueFilter::Count));
 
   /// <summary>
@@ -194,9 +179,10 @@ namespace Tako {
     void ReleaseRenderTargets();
 
     /// <summary>
-    /// event の位置に差し込んだパス（コード → オブジェクトパスの順）を実行する
+    /// event の位置に差し込んだパス（コード → オブジェクトパス → その位置のポストエフェクトの順）を実行する
     /// </summary>
-    void RunPasses(RenderEvent event);
+    /// <param name="target">その位置の描画先の色。ポストエフェクトはここへ掛け、掛けたら target と dsv を描画先に戻す</param>
+    void RunPasses(RenderEvent event, const PostEffectFrame& frame, RenderTexture& target, D3D12_CPU_DESCRIPTOR_HANDLE dsv);
 
     /// <summary>
     /// 手順を記録する（Debug のみ）

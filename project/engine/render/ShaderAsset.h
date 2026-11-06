@@ -1,8 +1,10 @@
 #pragma once
 #include <array>
 #include <cstdint>
+#include <span>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "PipelineCache.h"
 
@@ -44,11 +46,17 @@ namespace Tako {
     //=========================================
     void SetDefaultQueue(int32_t queue) { defaultQueue_ = queue; }
 
+    /// <summary>
+    /// Forward の後に同じ描画物を続けて描くパス（Unity の Shader の 2 つ目以降の Pass に相当。通常版のみで、描画設定はマテリアルで上書きしない）
+    /// </summary>
+    void SetExtraForwardPasses(std::vector<GraphicsPipelineDesc> passes) { extraForward_ = std::move(passes); }
+
     //=========================================
     //Getter
     //=========================================
     const std::string& GetName() const { return name_; }
     int32_t GetDefaultQueue() const { return defaultQueue_; }
+    std::span<const GraphicsPipelineDesc> GetExtraForwardPasses() const { return extraForward_; }
 
     /// <summary>
     /// パスのパイプライン。登録されていなければ nullptr
@@ -65,6 +73,7 @@ namespace Tako {
   private: //メンバー変数
     std::string                                                                  name_;
     std::array<GraphicsPipelineDesc, static_cast<size_t>(ShaderPass::Count) * 2> passes_{};
+    std::vector<GraphicsPipelineDesc>                                            extraForward_;
     int32_t                                                                      defaultQueue_ = kQueueGeometry;  ///< マテリアルを作ったときの描画キュー
   };
 

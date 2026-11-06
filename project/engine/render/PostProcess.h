@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <functional>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -8,12 +9,14 @@
 
 #include "CommandContext.h"
 #include "PostEffectStruct.h"
+#include "RenderEvent.h"
 #include "RenderGraph.h"
 
 namespace Tako {
 
   class Camera;
   class DX12Basic;
+  class Shader;
   class ShaderLibrary;
 
   /// <summary>
@@ -41,6 +44,12 @@ namespace Tako {
     EffectParam  defaultParam;          ///< 追加したときの値。型でパラメータの種類が決まる
     bool         usesDepth    = false;  ///< 単パス: シーンの深度を gDepthTexture で読む
     bool         hidden       = false;  ///< エフェクトの一覧に出さない
+
+    /// <summary>
+    /// 掛ける位置。無ければ半透明の後のポストエフェクトの段。ポストエフェクトの段より前はシーン、後は最終結果（AfterUI は UI まで）に掛ける。
+    /// maskId のあるインスタンスはマスクの段で掛けるので使わない
+    /// </summary>
+    std::optional<RenderEvent> event;
 
     /// <summary>
     /// 単パス: 実行時に決まる値を param に入れ、gTexture・gParam・gDepthTexture・gView 以外の値を渡す
@@ -91,10 +100,20 @@ namespace Tako {
   GraphicsPipelineDesc MakeFullScreenPipeline(ShaderLibrary& library, std::wstring_view psFile);
 
   /// <summary>
+  /// FullScreen.VS と ps で全画面三角形を描くパイプライン
+  /// </summary>
+  GraphicsPipelineDesc MakeFullScreenPipeline(ShaderLibrary& library, const Shader& ps);
+
+  /// <summary>
   /// output を描画先・ビューポートにし、FullScreen.VS と psFile のパイプラインを設定する。値を渡してから DrawFullScreen を呼ぶ
   /// </summary>
   /// <param name="blend">output への合成方法</param>
   CommandContext::ShaderBinder BeginFullScreen(const PostEffectFrame& frame, std::wstring_view psFile, RenderTexture& output, BlendMode blend = BlendMode::Opaque);
+
+  /// <summary>
+  /// BeginFullScreen と同じだが、エントリポイントや define を指定してコンパイルした ps を使う
+  /// </summary>
+  CommandContext::ShaderBinder BeginFullScreen(const PostEffectFrame& frame, const Shader& ps, RenderTexture& output, BlendMode blend = BlendMode::Opaque);
 
   /// <summary>
   /// 全画面三角形を描く
@@ -128,12 +147,18 @@ namespace Tako {
     void RefreshLayouts();
 
     /// <summary>
-    /// maskId が 0 の有効なエフェクトを順に input→output へ掛ける。大きさが違えば最後に拡大コピーする
+    /// maskId が 0 で定義に event の無い有効なエフェクトを順に input→output へ掛ける。大きさが違えば最後に拡大コピーする
     /// </summary>
     /// <param name="antiAliasing">最後に FXAA を掛ける</param>
     /// <param name="afterEffects">エフェクトを掛け終えた input と同じ解像度の結果を受け取り、拡大コピーの前に描き足す（空なら呼ばない）</param>
     void Execute(const PostEffectFrame& frame, RenderTexture& input, RenderTexture& output, bool antiAliasing = false,
                  const std::function<void(RenderTexture&)>& afterEffects = {}) const;
+
+    /// <summary>
+    /// 定義の event が一致する maskId 0 の有効なエフェクトを target へ順に掛ける（一時 RT へ書いてから target へ写す）
+    /// </summary>
+    /// <returns>掛けたら true（target は描画先、深度はシェーダーリソースの状態になり得る）</returns>
+    bool ExecuteAt(const PostEffectFrame& frame, RenderEvent event, RenderTexture& target) const;
 
     /// <summary>
     /// maskId の有効なエフェクトを layer へ順に掛け、target の上へ乗算済み α で重ねる

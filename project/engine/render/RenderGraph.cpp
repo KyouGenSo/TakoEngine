@@ -90,7 +90,7 @@ namespace Tako {
     }
   }
 
-  void RenderGraph::AddPass(std::initializer_list<Access> accesses, const std::function<void()>& execute)
+  void RenderGraph::AddPass(std::span<const Access> accesses, const std::function<void()>& execute)
   {
     CommandContext& context = dx12_->GetContext();
     for (const Access& access : accesses) {

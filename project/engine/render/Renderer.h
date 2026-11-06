@@ -3,6 +3,7 @@
 #include <d3d12.h>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -110,6 +111,11 @@ namespace Tako {
     void RenderList(const DrawList& list, const RenderView& view, const DrawFilter& filter = {});
 
     /// <summary>
+    /// filter に合う描画物のシェーダー（Forward の全パスの PS）のどれかが name のリソースを宣言しているか
+    /// </summary>
+    bool AnyDeclares(const DrawList& list, const DrawFilter& filter, const char* name) const;
+
+    /// <summary>
     /// submit 内で登録した描画物だけを、その場で指定の視点で描く（エディタのプレビュー用）
     /// </summary>
     void RenderImmediate(const RenderView& view, const std::function<void()>& submit);
@@ -134,6 +140,11 @@ namespace Tako {
     //Setter
     //=========================================
     void SetCamera(Camera* camera) { camera_ = camera; }
+
+    /// <summary>
+    /// シェーダーへ gOpaqueTexture として渡す SRV（0 なら黒）。RenderPipeline が半透明の前に写した画面を入れる
+    /// </summary>
+    void SetOpaqueTexture(uint32_t srvIndex) { opaqueTextureSrv_ = srvIndex; }
 
     //=========================================
     //Getter
@@ -160,6 +171,11 @@ namespace Tako {
     void RegisterBuiltinShaders();
 
     /// <summary>
+    /// filter に合えば描画物の描画キュー（合わなければ値なし）
+    /// </summary>
+    static std::optional<int32_t> FilterQueue(const DrawItem& item, const DrawFilter& filter);
+
+    /// <summary>
     /// 視点・ライト・シャドウを現在のパイプラインへ渡す
     /// </summary>
     void BindGlobals(const RenderView& view);
@@ -177,10 +193,11 @@ namespace Tako {
     void BindProperties(const MaterialPropertyBlock& properties, const Material& material, bool instanced, CommandContext::ShaderBinder& binder);
 
   private: //メンバー変数
-    DX12Basic*             dx12_   = nullptr;
-    Camera*                camera_ = nullptr;  ///< 本編カメラ
+    DX12Basic*             dx12_             = nullptr;
+    Camera*                camera_           = nullptr;  ///< 本編カメラ
     std::unique_ptr<Light> light_;
-    RenderView             mainView_{};       ///< Update で本編カメラから作る
+    RenderView             mainView_{};                  ///< Update で本編カメラから作る
+    uint32_t               opaqueTextureSrv_ = 0;        ///< gOpaqueTexture（0 なら黒）
 
     //スクリーン空間（スプライト）
     Matrix4x4 screenView_{};

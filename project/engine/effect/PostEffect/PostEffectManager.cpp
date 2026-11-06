@@ -660,6 +660,9 @@ namespace Tako {
       if (effect.maskId != 0) {
         label += std::format(" [mask {}]", effect.maskId);
       }
+      else if (const PostEffectDefinition* definition = FindPostEffect(effect.name); definition && definition->event) {
+        label += std::format(" @{}", kRenderEventNames[static_cast<size_t>(*definition->event)]);
+      }
       if (temporaryEffects_.contains(effect.id)) {
         label += " (temporary)";
       }

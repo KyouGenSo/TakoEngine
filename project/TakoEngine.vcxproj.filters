@@ -854,6 +854,9 @@
     <ClInclude Include="engine\render\RenderPipeline.h">
       <Filter>render</Filter>
     </ClInclude>
+    <ClInclude Include="engine\render\RenderEvent.h">
+      <Filter>render</Filter>
+    </ClInclude>
     <ClInclude Include="engine\render\MaterialPropertyLayout.h">
       <Filter>render</Filter>
     </ClInclude>

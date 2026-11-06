@@ -115,6 +115,12 @@ namespace Tako {
     void ExecuteMasked(const PostEffectFrame& frame, uint32_t maskId, RenderTexture& layer, RenderTexture& target) const { stack_.ExecuteMasked(frame, maskId, layer, target); }
 
     /// <summary>
+    /// 本編スタックのうち、定義の event が一致するエフェクトを target へ掛ける
+    /// </summary>
+    /// <returns>掛けたら true</returns>
+    bool ExecuteAt(const PostEffectFrame& frame, RenderEvent event, RenderTexture& target) const { return stack_.ExecuteAt(frame, event, target); }
+
+    /// <summary>
     /// ImGui デバッグ UI を描画
     /// </summary>
     void DrawImgui();

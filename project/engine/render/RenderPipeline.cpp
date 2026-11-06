@@ -117,10 +117,10 @@ namespace Tako {
     commandList->ClearRenderTargetView(sceneColor_.rtvHandle, &clearColor_.x, 0, nullptr);
     commandList->ClearDepthStencilView(sceneDsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
-    RunPasses(RenderEvent::BeforeShadow);
+    RunPasses(RenderEvent::BeforeShadow, frame, sceneColor_, sceneDsv);
     step("Shadows", [&] { renderer->RenderShadows(scene); });
     step("Opaque", [&] { renderer->RenderList(scene, view, { .maxQueue = ShaderAsset::kQueueTransparent, .excludeNameIds = replacedIds_, .excludeMaskIds = maskIds, .postEffect = true }); });
-    RunPasses(RenderEvent::AfterOpaque);
+    RunPasses(RenderEvent::AfterOpaque, frame, sceneColor_, sceneDsv);
 
     step("Decals", [&] {
       DecalManager::GetInstance()->DrawAll();
@@ -149,17 +149,39 @@ namespace Tako {
       context.Transition(depth, D3D12_RESOURCE_STATE_DEPTH_WRITE);
       dx12_->BindSceneRenderTarget(sceneTarget);
     }
-    RunPasses(RenderEvent::BeforeTransparent);
+    RunPasses(RenderEvent::BeforeTransparent, frame, sceneColor_, sceneDsv);
 
-    step("Transparent", [&] {
-      renderer->RenderList(scene, view, { .minQueue = ShaderAsset::kQueueTransparent, .maxQueue = ShaderAsset::kQueueOverlay, .excludeNameIds = replacedIds_, .excludeMaskIds = maskIds, .postEffect = true });
-    });
+    //------------------------------ 半透明 ------------------------------//
+    // 半透明のシェーダーが gOpaqueTexture を宣言していれば、ここまでの画面を写して渡す（URP の Opaque Texture）
+    const DrawFilter transparentFilter{ .minQueue = ShaderAsset::kQueueTransparent, .maxQueue = ShaderAsset::kQueueOverlay, .excludeNameIds = replacedIds_,
+                                        .excludeMaskIds = maskIds, .postEffect = true };
+    RenderTexture* opaqueTexture = nullptr;
+    if (renderer->AnyDeclares(scene, transparentFilter, "gOpaqueTexture")) {
+      step("Opaque Texture", [&] {
+        opaqueTexture = &graph_.Acquire(RenderGraph::DescOf(sceneColor_));
+        graph_.AddPass({ RenderGraph::Read(sceneColor_.resource), RenderGraph::Write(opaqueTexture->resource) }, [&] {
+          CommandContext::ShaderBinder binder = BeginFullScreen(frame, L"NoEffect.PS.hlsl", *opaqueTexture);
+          binder.BindSRV("gTexture"_id, sceneColor_.srvIndex);
+          DrawFullScreen(frame);
+        });
+        context.Transition(opaqueTexture->resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        context.Transition(sceneColor_.resource, D3D12_RESOURCE_STATE_RENDER_TARGET);
+        dx12_->BindSceneRenderTarget(sceneTarget);
+      });
+      renderer->SetOpaqueTexture(opaqueTexture->srvIndex);
+    }
+
+    step("Transparent", [&] { renderer->RenderList(scene, view, transparentFilter); });
     step("Particles", [&] { GPUParticle::GetInstance()->Draw(); });
     step("Lines", [&] { LineRenderer::GetInstance()->Draw(); });
-    RunPasses(RenderEvent::AfterTransparent);
+    RunPasses(RenderEvent::AfterTransparent, frame, sceneColor_, sceneDsv);
+    if (opaqueTexture) {
+      renderer->SetOpaqueTexture(0);
+      graph_.Release(*opaqueTexture);
+    }
 
     //------------------------------ ポストエフェクト ------------------------------//
-    RunPasses(RenderEvent::BeforePostProcess);
+    RunPasses(RenderEvent::BeforePostProcess, frame, sceneColor_, sceneDsv);
     // Post Effect をオフにした描画物は、全画面のエフェクトを掛け終えた後、拡大コピーの前にシーンの深度で前後を判定して描く。
     // ponytail: 手前の半透明・パーティクルはその画素で隠れる（Unity の After post-process と同じ）。避けるなら手前の半透明を別の RT にも描いて重ねる
     std::function<void(RenderTexture&)> drawNoPostEffect;
@@ -182,10 +204,10 @@ namespace Tako {
     if (uiDsv.ptr != sceneDsv.ptr) {
       context.GetCommandList()->ClearDepthStencilView(uiDsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
     }
-    RunPasses(RenderEvent::AfterPostProcess);
-    RunPasses(RenderEvent::BeforeUI);
+    RunPasses(RenderEvent::AfterPostProcess, frame, final_, uiDsv);
+    RunPasses(RenderEvent::BeforeUI, frame, final_, uiDsv);
     step("UI", [&] { renderer->RenderList(scene, view, { .minQueue = ShaderAsset::kQueueOverlay }); });
-    RunPasses(RenderEvent::AfterUI);
+    RunPasses(RenderEvent::AfterUI, frame, final_, uiDsv);
   }
 
   void RenderPipeline::Present(bool copyFinalResult)
@@ -325,7 +347,7 @@ namespace Tako {
     final_.Release();
   }
 
-  void RenderPipeline::RunPasses(RenderEvent event)
+  void RenderPipeline::RunPasses(RenderEvent event, const PostEffectFrame& frame, RenderTexture& target, D3D12_CPU_DESCRIPTOR_HANDLE dsv)
   {
     CommandContext& context = dx12_->GetContext();
     RecordStep(kRenderEventNames[static_cast<size_t>(event)], context.GetDrawCount(), 0, true);
@@ -358,6 +380,31 @@ namespace Tako {
       renderer->RenderList(renderer->GetSceneList(), renderer->GetMainView(), filter);
       RecordStep(settings.name, firstDraw, 1);
     }
+
+    // この位置のポストエフェクトは、ここまでに描いた結果へ掛けて target へ戻す
+    PostEffectManager* postEffect = PostEffectManager::GetInstance();
+    PostEffectFrame    eventFrame = frame;
+    eventFrame.width = target.width;
+    eventFrame.height = target.height;
+    const uint32_t firstDraw = context.GetDrawCount();
+    if (!postEffect->ExecuteAt(eventFrame, event, target)) {
+      return;
+    }
+    context.Transition(dx12_->GetDepthStencilResource(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
+    dx12_->BindSceneRenderTarget({ target.rtvHandle, dsv, target.width, target.height });
+
+    std::string label = "Post Effects";
+#ifdef _DEBUG
+    const char* separator = ": ";
+    for (const PostEffectInstance& effect : postEffect->GetStack().GetEffects()) {
+      const PostEffectDefinition* definition = FindPostEffect(effect.name);
+      if (effect.enabled && effect.maskId == 0 && definition && definition->event == event) {
+        label += separator + effect.name;
+        separator = ", ";
+      }
+    }
+#endif
+    RecordStep(label, firstDraw, 1);
   }
 
   void RenderPipeline::RecordStep([[maybe_unused]] std::string_view label, [[maybe_unused]] uint32_t firstDraw, [[maybe_unused]] uint8_t depth, [[maybe_unused]] bool isEvent)

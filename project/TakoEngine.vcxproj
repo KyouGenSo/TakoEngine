@@ -401,6 +401,7 @@
     <ClInclude Include="engine\render\RenderGraph.h" />
     <ClInclude Include="engine\render\PostProcess.h" />
     <ClInclude Include="engine\render\RenderPipeline.h" />
+    <ClInclude Include="engine\render\RenderEvent.h" />
     <ClInclude Include="engine\render\MaterialPropertyLayout.h" />
     <ClInclude Include="engine\render\MaterialLibrary.h" />
     <ClInclude Include="engine\debug\MaterialEditor.h" />

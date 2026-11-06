@@ -74,7 +74,7 @@ namespace Tako {
     bool DrawForward();
 
     /// <summary>
-    /// ポストエフェクトの項目（PS・追加のテクスチャ）
+    /// ポストエフェクトの項目（パスの一覧と、Inputs で選ばなかったテクスチャのファイル）
     /// </summary>
     /// <returns>内容を変えたら true</returns>
     bool DrawPostEffect(const MaterialPropertyLayout* layout);
@@ -86,9 +86,9 @@ namespace Tako {
     bool DrawProperties(const MaterialPropertyLayout& layout);
 
     /// <summary>
-    /// 編集中のファイルの PS（無ければ空）
+    /// 編集中のファイルが使う PS（重複なし）
     /// </summary>
-    std::string FindPixelShader() const;
+    std::vector<std::string> FindPixelShaders() const;
 
     /// <summary>
     /// エンジンのファイル（ビルド時のコピーなので保存しない）

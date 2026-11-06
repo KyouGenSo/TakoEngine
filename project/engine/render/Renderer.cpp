@@ -13,6 +13,7 @@
 #include "MaterialPropertyLayout.h"
 #include "ShaderLibrary.h"
 #include "ShadowRenderer.h"
+#include "TextureManager.h"
 #include "WinApp.h"
 
 namespace Tako {
@@ -101,39 +102,20 @@ namespace Tako {
 
     sortEntries_.clear();
     for (uint32_t i = 0; i < items.size(); ++i) {
-      const DrawItem& item = items[i];
-      if (!filter.nameIds.empty() && std::ranges::find(filter.nameIds, item.nameId) == filter.nameIds.end()) {
-        continue;
-      }
-      if (std::ranges::find(filter.excludeNameIds, item.nameId) != filter.excludeNameIds.end()) {
-        continue;
-      }
-      if (!filter.maskIds.empty() && std::ranges::find(filter.maskIds, item.maskId) == filter.maskIds.end()) {
-        continue;
-      }
-      if (std::ranges::find(filter.excludeMaskIds, item.maskId) != filter.excludeMaskIds.end()) {
-        continue;
-      }
-      if (filter.postEffect && item.postEffect != *filter.postEffect) {
-        continue;
-      }
-      // 差し替えるときも、描画キューは描画物自身のもので絞り込み・並べる
-      int32_t queue = item.material->GetRenderQueue();
-      if (item.transparent) {
-        queue = (std::max)(queue, ShaderAsset::kQueueTransparent);
-      }
-      if (queue < filter.minQueue || queue >= filter.maxQueue) {
+      const DrawItem&              item  = items[i];
+      const std::optional<int32_t> queue = FilterQueue(item, filter);
+      if (!queue) {
         continue;
       }
       // 半透明は奥から手前へ。不透明は登録順のまま描く
       float depthKey = 0.0f;
-      if (queue >= ShaderAsset::kQueueTransparent && item.depthSort) {
+      if (*queue >= ShaderAsset::kQueueTransparent && item.depthSort) {
         const float dx = item.sortPosition.x - view.position.x;
         const float dy = item.sortPosition.y - view.position.y;
         const float dz = item.sortPosition.z - view.position.z;
         depthKey = -(dx * dx + dy * dy + dz * dz);
       }
-      sortEntries_.push_back({ queue, item.sortingOrder, depthKey, i });
+      sortEntries_.push_back({ *queue, item.sortingOrder, depthKey, i });
     }
     std::stable_sort(sortEntries_.begin(), sortEntries_.end(), [](const SortEntry& a, const SortEntry& b) {
       return std::tie(a.queue, a.sortingOrder, a.depthKey) < std::tie(b.queue, b.sortingOrder, b.depthKey);
@@ -162,7 +144,61 @@ namespace Tako {
         hasCurrent = true;
       }
       DrawItemGeometry(item, &material);
+
+      // 2 番目以降のパスは同じ描画物を続けて描く（描画設定は各パスのもの）
+      if (item.instanceSrv == 0) {
+        for (const GraphicsPipelineDesc& extra : material.GetShader()->GetExtraForwardPasses()) {
+          if (!(extra == current)) {
+            context.SetGraphicsPipeline(extra);
+            BindGlobals(view);
+            current = extra;
+          }
+          DrawItemGeometry(item, &material);
+        }
+      }
     }
+  }
+
+  bool Renderer::AnyDeclares(const DrawList& list, const DrawFilter& filter, const char* name) const
+  {
+    const auto declares = [name](const GraphicsPipelineDesc& pass) { return pass.ps && pass.ps->Declares(name); };
+    // ponytail: 描画物ごとにリフレクションを引く。描画物が数千になるならシェーダーのバージョンごとに覚える
+    return std::ranges::any_of(list.GetItems(), [&](const DrawItem& item) {
+      if (!FilterQueue(item, filter)) {
+        return false;
+      }
+      const ShaderAsset&          shader  = *(filter.overrideMaterial ? filter.overrideMaterial : item.material)->GetShader();
+      const GraphicsPipelineDesc* forward = shader.GetPass(ShaderPass::Forward, item.instanceSrv != 0);
+      return (forward && declares(*forward)) || std::ranges::any_of(shader.GetExtraForwardPasses(), declares);
+    });
+  }
+
+  std::optional<int32_t> Renderer::FilterQueue(const DrawItem& item, const DrawFilter& filter)
+  {
+    if (!filter.nameIds.empty() && std::ranges::find(filter.nameIds, item.nameId) == filter.nameIds.end()) {
+      return std::nullopt;
+    }
+    if (std::ranges::find(filter.excludeNameIds, item.nameId) != filter.excludeNameIds.end()) {
+      return std::nullopt;
+    }
+    if (!filter.maskIds.empty() && std::ranges::find(filter.maskIds, item.maskId) == filter.maskIds.end()) {
+      return std::nullopt;
+    }
+    if (std::ranges::find(filter.excludeMaskIds, item.maskId) != filter.excludeMaskIds.end()) {
+      return std::nullopt;
+    }
+    if (filter.postEffect && item.postEffect != *filter.postEffect) {
+      return std::nullopt;
+    }
+    // 差し替えるときも、描画キューは描画物自身のもので絞り込み・並べる
+    int32_t queue = item.material->GetRenderQueue();
+    if (item.transparent) {
+      queue = (std::max)(queue, ShaderAsset::kQueueTransparent);
+    }
+    if (queue < filter.minQueue || queue >= filter.maxQueue) {
+      return std::nullopt;
+    }
+    return queue;
   }
 
   void Renderer::RenderImmediate(const RenderView& view, const std::function<void()>& submit)
@@ -276,7 +312,10 @@ namespace Tako {
 
   void Renderer::BindGlobals(const RenderView& view)
   {
-    dx12_->GetContext().Graphics().BindCBV("gView"_id, view.constants);
+    CommandContext::ShaderBinder binder = dx12_->GetContext().Graphics();
+    binder.BindCBV("gView"_id, view.constants);
+    // ponytail: 写していないとき（半透明の段の外・マスクのレイヤー・プレビュー）は黒を読む。そこでも要るなら各段で写す
+    binder.BindSRV("gOpaqueTexture"_id, opaqueTextureSrv_ != 0 ? opaqueTextureSrv_ : TextureManager::GetInstance()->GetEngineDefaultSRVIndex("black.png"));
     light_->PreDraw();
     ShadowRenderer::GetInstance()->SetShadowForMainPass();
   }

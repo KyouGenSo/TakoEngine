@@ -45,6 +45,11 @@ namespace Tako {
     /// </summary>
     uint32_t GetVersion() const { return version_; }
 
+    /// <summary>
+    /// name のリソース（定数バッファ・テクスチャなど）を宣言しているか
+    /// </summary>
+    bool Declares(const char* name) const;
+
   private: //メンバー変数
     friend class ShaderLibrary;
 

@@ -78,12 +78,13 @@ namespace Tako {
       }
     }
 
-    std::vector<Step> CollectSteps(std::span<const PostEffectInstance> effects, uint32_t maskId)
+    /// <param name="event">maskId 0 のときに選ぶ定義の event（マスク付きは位置を問わない）</param>
+    std::vector<Step> CollectSteps(std::span<const PostEffectInstance> effects, uint32_t maskId, std::optional<RenderEvent> event = std::nullopt)
     {
       std::vector<Step> steps;
       for (const PostEffectInstance& effect : effects) {
         const PostEffectDefinition* definition = FindPostEffect(effect.name);
-        if (effect.enabled && definition && effect.maskId == maskId) {
+        if (effect.enabled && definition && effect.maskId == maskId && (maskId != 0 || definition->event == event)) {
           steps.push_back({ definition, &effect.param });
         }
       }
@@ -155,9 +156,14 @@ namespace Tako {
 
   GraphicsPipelineDesc MakeFullScreenPipeline(ShaderLibrary& library, std::wstring_view psFile)
   {
+    return MakeFullScreenPipeline(library, *library.Get(psFile, ShaderStage::Pixel));
+  }
+
+  GraphicsPipelineDesc MakeFullScreenPipeline(ShaderLibrary& library, const Shader& ps)
+  {
     GraphicsPipelineDesc pipeline;
     pipeline.vs = library.Get(L"FullScreen.VS.hlsl", ShaderStage::Vertex);
-    pipeline.ps = library.Get(psFile, ShaderStage::Pixel);
+    pipeline.ps = &ps;
     pipeline.renderState.cull = CullMode::None;
     pipeline.renderState.depthTest = false;
     pipeline.renderState.depthWrite = false;
@@ -167,7 +173,12 @@ namespace Tako {
 
   CommandContext::ShaderBinder BeginFullScreen(const PostEffectFrame& frame, std::wstring_view psFile, RenderTexture& output, BlendMode blend)
   {
-    GraphicsPipelineDesc pipeline = MakeFullScreenPipeline(frame.dx12->GetShaderLibrary(), psFile);
+    return BeginFullScreen(frame, *frame.dx12->GetShaderLibrary().Get(psFile, ShaderStage::Pixel), output, blend);
+  }
+
+  CommandContext::ShaderBinder BeginFullScreen(const PostEffectFrame& frame, const Shader& ps, RenderTexture& output, BlendMode blend)
+  {
+    GraphicsPipelineDesc pipeline = MakeFullScreenPipeline(frame.dx12->GetShaderLibrary(), ps);
     pipeline.renderState.blend = blend;
 
     CommandContext& context = frame.dx12->GetContext();
@@ -234,6 +245,19 @@ namespace Tako {
         frame.graph->Release(*source);
       }
     }
+  }
+
+  bool PostProcessStack::ExecuteAt(const PostEffectFrame& frame, RenderEvent event, RenderTexture& target) const
+  {
+    const std::vector<Step> steps = CollectSteps(effects_, 0, event);
+    if (steps.empty()) {
+      return false;
+    }
+    // 読みながら同じ RT へは書けないので、一時 RT に書いてから写す（URP の Full Screen Pass も入力をコピーする）
+    RenderTexture* result = RunSteps(frame, steps, target, nullptr);
+    Run(frame, kCopy, kNoParam, *result, target);
+    frame.graph->Release(*result);
+    return true;
   }
 
   void PostProcessStack::ExecuteMasked(const PostEffectFrame& frame, uint32_t maskId, RenderTexture& layer, RenderTexture& target) const

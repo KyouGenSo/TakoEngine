@@ -4,6 +4,7 @@
 #include <functional>
 #include <initializer_list>
 #include <memory>
+#include <span>
 #include <vector>
 
 #include "GpuResource.h"
@@ -88,7 +89,9 @@ namespace Tako {
     /// <summary>
     /// accesses のリソースを指定の状態にしてから execute を実行する
     /// </summary>
-    void AddPass(std::initializer_list<Access> accesses, const std::function<void()>& execute);
+    void AddPass(std::span<const Access> accesses, const std::function<void()>& execute);
+
+    void AddPass(std::initializer_list<Access> accesses, const std::function<void()>& execute) { AddPass(std::span(accesses.begin(), accesses.size()), execute); }
 
     static Access Read(GpuResource& resource) { return { resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE }; }
     static Access Write(GpuResource& resource) { return { resource, D3D12_RESOURCE_STATE_RENDER_TARGET }; }

@@ -1,11 +1,13 @@
 #include "MaterialLibrary.h"
 
 #include <algorithm>
-#include <d3d12shader.h>
+#include <cstring>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <iterator>
 #include <optional>
+#include <span>
 
 #include "DX12Basic.h"
 #include "EnginePaths.h"
@@ -46,12 +48,6 @@ namespace Tako {
       std::error_code error;
       const auto time = std::filesystem::last_write_time(path, error);
       return error ? std::filesystem::file_time_type{} : time;
-    }
-
-    bool Declares(const Shader& shader, const char* name)
-    {
-      D3D12_SHADER_INPUT_BIND_DESC bind{};
-      return shader.GetReflection() && SUCCEEDED(shader.GetReflection()->GetResourceBindingDescByName(name, &bind));
     }
 
     template<class T, size_t N>
@@ -107,6 +103,225 @@ namespace Tako {
       }
     }
 
+    /// <summary>
+    /// .shader.json のポストエフェクトの 1 パス（読み込み時に名前を解決したもの）
+    /// </summary>
+    struct PostEffectPass {
+      const Shader*                                   ps        = nullptr;
+      std::vector<std::pair<ShaderParamId, int32_t>>  inputs;               ///< スロット → 読む画像（-1 はエフェクトの入力、0 以上はそのパスの出力）
+      std::vector<std::pair<ShaderParamId, uint32_t>> textures;             ///< スロット → Textures のファイルの SRV
+      float                                           scale     = 1.0f;     ///< エフェクトの入力に対する大きさ。最後のパスはエフェクトの出力へ書くので使わない
+      bool                                            usesDepth = false;
+    };
+
+    /// <summary>
+    /// part の値が全て whole の同じ名前・同じ位置・同じ型にあるか（whole の値の組を part のパスへそのまま渡せるか）
+    /// </summary>
+    bool ReadsSameValues(const MaterialPropertyLayout& whole, const MaterialPropertyLayout& part)
+    {
+      return part.constantSize <= whole.constantSize && std::ranges::all_of(part.properties, [&whole](const MaterialProperty& property) {
+        const MaterialProperty* same = whole.Find(property.id);
+        return same && same->offset == property.offset && same->type == property.type && same->components == property.components;
+      });
+    }
+
+    /// <summary>
+    /// "Forward"（パスの配列か 1 つのパス）をコンパイルする。1 番目のパスの gMaterial とテクスチャがマテリアルの値になる
+    /// </summary>
+    /// <returns>読めなければ理由（読めたら空）</returns>
+    std::string BuildForwardPasses(ShaderLibrary& library, const json& forward, std::vector<GraphicsPipelineDesc>& passes)
+    {
+      const json passList = forward.is_array() ? forward : json::array({ forward });
+      if (passList.empty()) {
+        return "Forward needs at least one pass";
+      }
+      std::shared_ptr<MaterialPropertyLayout> values;
+      for (size_t i = 0; i < passList.size(); ++i) {
+        const json&           entry    = passList[i];
+        const std::string     label    = std::format("Pass {}", i + 1);
+        GraphicsPipelineDesc& pipeline = passes.emplace_back();
+        pipeline.vs = library.TryGet({ StringUtility::ConvertString(entry.value("VS", std::string("Object3D.VS.hlsl"))), ShaderStage::Vertex });
+        pipeline.ps = library.TryGet({ StringUtility::ConvertString(entry.at("PS").get<std::string>()), ShaderStage::Pixel,
+                                       StringUtility::ConvertString(entry.value("Entry", std::string("main"))) });
+        if (!pipeline.vs || !pipeline.ps) {
+          return label + ": compile failed";
+        }
+        pipeline.vertexLayout = VertexLayout::Mesh;
+        pipeline.renderState.blend = BlendMode::Alpha;
+        pipeline.renderState = ReadRenderStateOverride(entry).ApplyTo(pipeline.renderState);
+
+        if (i == 0) {
+          values = MaterialPropertyLayout::Reflect(pipeline.ps->GetReflection(), "gMaterial", {});
+          continue;
+        }
+        // 他のパスはマテリアルが持つ値とテクスチャだけを読める
+        for (const Shader* shader : { pipeline.vs, pipeline.ps }) {
+          const std::shared_ptr<MaterialPropertyLayout> reflected = MaterialPropertyLayout::Reflect(shader->GetReflection(), "gMaterial", {});
+          if (!ReadsSameValues(*values, *reflected)) {
+            return label + ": gMaterial has values that differ from the first pass";
+          }
+          for (const std::string& texture : reflected->textures) {
+            if (std::ranges::find(values->textures, texture) == values->textures.end()) {
+              return std::format("{}: {} is not declared by the first pass", label, texture);
+            }
+          }
+        }
+      }
+      return {};
+    }
+
+    /// <summary>
+    /// "PostEffect" の Passes（無ければ PostEffect 自体を 1 パスとする）をコンパイルし、入出力の名前を解決する
+    /// </summary>
+    /// <param name="layout">全パスで共通の gParam の並びと、Textures で渡すスロットを受け取る</param>
+    /// <returns>読めなければ理由（読めたら空）</returns>
+    std::string BuildPostEffectPasses(ShaderLibrary& library, const json& post, const std::map<std::string, std::pair<float, float>>& ranges,
+                                      std::vector<PostEffectPass>& passes, std::shared_ptr<MaterialPropertyLayout>& layout)
+    {
+      const json passList = post.contains("Passes") ? post.at("Passes") : json::array({ post });
+      if (!passList.is_array() || passList.empty()) {
+        return "PostEffect needs PS or Passes";
+      }
+      const json               files = post.value("Textures", json::object());
+      std::vector<std::string> outputs;  ///< パスごとの Output の名前
+      layout = std::make_shared<MaterialPropertyLayout>();
+      bool hasParam = false;
+
+      for (size_t i = 0; i < passList.size(); ++i) {
+        const json&       entry = passList[i];
+        const bool        last  = i + 1 == passList.size();
+        const std::string label = std::format("Pass {}", i + 1);
+        PostEffectPass&   pass  = passes.emplace_back();
+
+        const std::wstring file = StringUtility::ConvertString(entry.at("PS").get<std::string>());
+        pass.ps = library.TryGet({ file, ShaderStage::Pixel, StringUtility::ConvertString(entry.value("Entry", std::string("main"))) });
+        if (!pass.ps) {
+          return label + ": compile failed";
+        }
+        pass.usesDepth = pass.ps->Declares("gDepthTexture");
+        if (!last) {
+          pass.scale = entry.value("Scale", 1.0f);
+          if (!(pass.scale > 0.0f)) {
+            return label + ": Scale must be greater than 0";
+          }
+        }
+
+        // 値の組は 1 つなので、他のパスはそれと同じ位置の値だけを読める（Unity の SRP Batcher が全 Pass に同じ定数を求めるのと同じ考え）
+        const std::shared_ptr<MaterialPropertyLayout> reflected = MaterialPropertyLayout::Reflect(pass.ps->GetReflection(), "gParam", ranges);
+        if (pass.ps->Declares("gParam")) {
+          if (!hasParam) {
+            layout->constantSize = reflected->constantSize;
+            layout->properties   = reflected->properties;
+            hasParam = true;
+          }
+          else if (!ReadsSameValues(*layout, *reflected)) {
+            return label + ": gParam has values that differ from the first pass that declares it";
+          }
+        }
+
+        // 書かない gTexture はエフェクトの入力、Inputs にも gTexture にも当たらないスロットは Textures のファイル
+        const json inputs = entry.value("Inputs", json::object());
+        for (const auto& [slot, source] : inputs.items()) {
+          if (std::ranges::find(reflected->textures, slot) == reflected->textures.end()) {
+            return std::format("{}: the shader does not declare {}", label, slot);
+          }
+        }
+        for (const std::string& slot : reflected->textures) {
+          const ShaderParamId id     = MakeShaderParamId(slot);
+          const auto          source = inputs.find(slot);
+          const std::string   name   = source != inputs.end() ? source->get<std::string>() : (slot == "gTexture" ? "Source" : "");
+          if (name.empty()) {
+            pass.textures.emplace_back(id, MaterialLibrary::ResolveTexture(files.value(slot, std::string())));
+            if (std::ranges::find(layout->textures, slot) == layout->textures.end()) {
+              layout->textures.push_back(slot);
+            }
+            continue;
+          }
+          if (name == "Source") {
+            pass.inputs.emplace_back(id, -1);
+            continue;
+          }
+          const auto produced = std::ranges::find(outputs, name);
+          if (produced == outputs.end()) {
+            return std::format("{}: {} is not an Output of an earlier pass", label, name);
+          }
+          pass.inputs.emplace_back(id, static_cast<int32_t>(produced - outputs.begin()));
+        }
+
+        const std::string output = last ? std::string() : entry.value("Output", std::string());
+        if (!last && output.empty()) {
+          return label + ": Output is required except on the last pass";
+        }
+        if (output == "Source" || (!output.empty() && std::ranges::find(outputs, output) != outputs.end())) {
+          return std::format("{}: Output {} is already used", label, output);
+        }
+        outputs.push_back(output);
+      }
+      return {};
+    }
+
+    /// <summary>
+    /// passes を順に描く。途中のパスは縮小した一時 RT へ書き、最後のパスは output へ書く
+    /// ponytail: 途中の RT はエフェクトの最後までまとめて借りる。VRAM が厳しければ最後に読むパスの後で返す
+    /// </summary>
+    void ExecutePostEffectPasses(std::span<const PostEffectPass> passes, const PostEffectFrame& frame, const EffectParam& param, RenderTexture& input, RenderTexture& output)
+    {
+      RenderGraph& graph = *frame.graph;
+
+      // 定数は 1 回だけ書き、全パスで同じものを渡す
+      D3D12_GPU_VIRTUAL_ADDRESS constants = 0;
+      if (const PropertyBlock* block = std::get_if<PropertyBlock>(&param); block && !block->bytes.empty()) {
+        const UploadAllocator::Allocation allocation = frame.dx12->GetUploadAllocator().Allocate(block->bytes.size());
+        std::memcpy(allocation.cpu, block->bytes.data(), block->bytes.size());
+        constants = allocation.gpu;
+      }
+
+      std::vector<RenderTexture*> written(passes.size(), nullptr);
+      const auto source = [&](int32_t index) -> RenderTexture& { return index < 0 ? input : *written[index]; };
+      std::vector<RenderGraph::Access> accesses;
+
+      for (size_t i = 0; i < passes.size(); ++i) {
+        const PostEffectPass& pass = passes[i];
+        const auto scaled = [&](uint32_t size) { return (std::max)(1u, static_cast<uint32_t>(static_cast<float>(size) * pass.scale)); };
+        RenderTexture& target = i + 1 == passes.size() ? output : graph.Acquire({ scaled(input.width), scaled(input.height), input.format });
+        written[i] = &target;
+
+        accesses.clear();
+        for (const auto& [slot, index] : pass.inputs) {
+          accesses.push_back(RenderGraph::Read(source(index).resource));
+        }
+        if (pass.usesDepth) {
+          accesses.push_back(RenderGraph::Read(*frame.depth));
+        }
+        accesses.push_back(RenderGraph::Write(target.resource));
+
+        graph.AddPass(accesses, [&] {
+          CommandContext::ShaderBinder binder = BeginFullScreen(frame, *pass.ps, target);
+          for (const auto& [slot, index] : pass.inputs) {
+            binder.BindSRV(slot, source(index).srvIndex);
+          }
+          for (const auto& [slot, srvIndex] : pass.textures) {
+            binder.BindSRV(slot, srvIndex);
+          }
+          if (pass.usesDepth) {
+            binder.BindSRV("gDepthTexture"_id, frame.depthSrv);
+          }
+          // 宣言していないシェーダーには何もしない
+          if (frame.view != 0) {
+            binder.BindCBV("gView"_id, frame.view);
+          }
+          if (constants != 0) {
+            binder.BindCBV("gParam"_id, constants);
+          }
+          DrawFullScreen(frame);
+        });
+      }
+
+      for (size_t i = 0; i + 1 < passes.size(); ++i) {
+        graph.Release(*written[i]);
+      }
+    }
+
   } // anonymous namespace
 
   std::unique_ptr<MaterialLibrary> MaterialLibrary::instance_ = nullptr;
@@ -153,8 +368,12 @@ namespace Tako {
     // PS が再コンパイルされたポストエフェクトは、パラメータの並びを作り直すために登録し直す
     std::vector<std::string> recompiled;
     for (auto& [name, info] : shaders_) {
-      if (info.postEffectPs && info.postEffectPs->GetVersion() != info.postEffectVersion) {
-        info.postEffectVersion = info.postEffectPs->GetVersion();
+      bool changed = false;
+      for (auto& [ps, version] : info.postEffectShaders) {
+        changed |= ps->GetVersion() != version;
+        version = ps->GetVersion();
+      }
+      if (changed) {
         recompiled.push_back(info.path);
       }
     }
@@ -385,6 +604,12 @@ namespace Tako {
 
   bool MaterialLibrary::ApplyShaderText(const std::string& path, const std::string& text)
   {
+    const auto fail = [&](const std::string& reason) {
+      Logger::Log("Shader asset skipped: %s (%s)", path.c_str(), reason.c_str());
+      loadErrors_[path] = reason;
+      return false;
+    };
+
     try {
       const json        root    = json::parse(text);
       const std::string name    = root.at("Name").get<std::string>();
@@ -393,41 +618,45 @@ namespace Tako {
       const auto        post    = root.find("PostEffect");
 
       // 先に全てコンパイルし、失敗したら今の登録を残す
-      GraphicsPipelineDesc pipeline;
+      std::vector<GraphicsPipelineDesc> forwardPasses;
       if (forward != root.end()) {
-        pipeline.vs = library.TryGet({ StringUtility::ConvertString(forward->value("VS", std::string("Object3D.VS.hlsl"))), ShaderStage::Vertex });
-        pipeline.ps = library.TryGet({ StringUtility::ConvertString(forward->at("PS").get<std::string>()), ShaderStage::Pixel });
+        if (const std::string error = BuildForwardPasses(library, *forward, forwardPasses); !error.empty()) {
+          return fail(error);
+        }
       }
-      std::wstring  postPsFile;
-      const Shader* postPs = nullptr;
+
+      // value() の戻り値は一時オブジェクトなので、items() で回す前に受けておく
+      std::map<std::string, std::pair<float, float>> ranges;
+      const json properties = root.value("Properties", json::object());
+      for (const auto& [property, range] : properties.items()) {
+        if (range.is_array() && range.size() == 2) {
+          ranges[property] = { range[0].get<float>(), range[1].get<float>() };
+        }
+      }
+
+      std::vector<PostEffectPass>             postPasses;
+      std::shared_ptr<MaterialPropertyLayout> postLayout;
+      std::optional<RenderEvent>              postEvent;
       if (post != root.end()) {
-        postPsFile = StringUtility::ConvertString(post->at("PS").get<std::string>());
-        postPs = library.TryGet({ postPsFile, ShaderStage::Pixel });
-      }
-      if ((forward != root.end() && (!pipeline.vs || !pipeline.ps)) || (post != root.end() && !postPs)) {
-        Logger::Log("Shader asset skipped (compile failed): %s", path.c_str());
-        return false;
+        if (const std::string error = BuildPostEffectPasses(library, *post, ranges, postPasses, postLayout); !error.empty()) {
+          return fail(error);
+        }
+        if (const std::string eventName = post->value("Event", std::string()); !eventName.empty()) {
+          postEvent = FindByName<RenderEvent>(kRenderEventNames, eventName);
+          if (!postEvent) {
+            return fail("unknown Event " + eventName);
+          }
+        }
       }
 
       ShaderInfo& info = shaders_[name];
       info.path = path;
-      info.ranges.clear();
-      // value() の戻り値は一時オブジェクトなので、items() で回す前に受けておく
-      const json properties = root.value("Properties", json::object());
-      for (const auto& [property, range] : properties.items()) {
-        if (range.is_array() && range.size() == 2) {
-          info.ranges[property] = { range[0].get<float>(), range[1].get<float>() };
-        }
-      }
+      info.ranges = std::move(ranges);
       info.defaults = root.value("Defaults", json::object());
       info.layout.reset();
 
       // 描画物のシェーダー
       if (forward != root.end()) {
-        pipeline.vertexLayout = VertexLayout::Mesh;
-        pipeline.renderState.blend = BlendMode::Alpha;
-        pipeline.renderState = ReadRenderStateOverride(*forward).ApplyTo(pipeline.renderState);
-
         Renderer*    renderer = Renderer::GetInstance();
         ShaderAsset& shader   = renderer->RegisterShader(name);
         // 読み直しで Fallback を外したときに、前の影のパスを残さない
@@ -440,42 +669,40 @@ namespace Tako {
             }
           }
         }
-        shader.SetPass(ShaderPass::Forward, pipeline);
+        shader.SetPass(ShaderPass::Forward, forwardPasses.front());
+        shader.SetExtraForwardPasses({ forwardPasses.begin() + 1, forwardPasses.end() });
         shader.SetDefaultQueue(root.value("Queue", ShaderAsset::kQueueGeometry));
       }
 
-      // ポストエフェクト
+      // ポストエフェクト（1 パスでも複数パスでも同じ経路で描く）
       if (post != root.end()) {
-        PropertyBlock block{ MaterialPropertyLayout::Reflect(postPs->GetReflection(), "gParam", info.ranges), {} };
+        info.postEffectShaders.clear();
+        for (const PostEffectPass& pass : postPasses) {
+          info.postEffectShaders.emplace_back(pass.ps, pass.ps->GetVersion());
+        }
+        PropertyBlock block{ std::move(postLayout), {} };
         block.bytes.resize(block.layout->constantSize);
         block.layout->DeserializeValues(info.defaults, block.bytes);
-
-        // gTexture（入力の画面）以外のテクスチャには Textures のファイルを渡す
-        std::vector<std::pair<ShaderParamId, uint32_t>> textures;
-        const json files = post->value("Textures", json::object());
-        for (const std::string& slot : block.layout->textures) {
-          if (slot != "gTexture") {
-            textures.emplace_back(MakeShaderParamId(slot), ResolveTexture(files.value(slot, std::string())));
-          }
-        }
-        PostEffectDefinition definition{ .pixelShader = postPsFile, .defaultParam = std::move(block), .usesDepth = Declares(*postPs, "gDepthTexture") };
-        if (!textures.empty()) {
-          definition.setup = [textures](const PostEffectFrame&, EffectParam&, CommandContext::ShaderBinder& binder) {
-            for (const auto& [id, srvIndex] : textures) {
-              binder.BindSRV(id, srvIndex);
-            }
-          };
-        }
-        RegisterPostEffect(name, std::move(definition));
-        info.postEffectPs = postPs;
-        info.postEffectVersion = postPs->GetVersion();
+        RegisterPostEffect(name, {
+          .defaultParam = std::move(block),
+          .event        = postEvent,
+          .execute      = [passes = std::move(postPasses)](const PostEffectFrame& frame, const EffectParam& param, RenderTexture& input, RenderTexture& output) {
+            ExecutePostEffectPasses(passes, frame, param, input, output);
+          },
+        });
       }
+      loadErrors_.erase(path);
       return true;
     }
     catch (const json::exception& e) {
-      Logger::Log("Shader asset load failed: %s (%s)", path.c_str(), e.what());
-      return false;
+      return fail(e.what());
     }
+  }
+
+  const std::string* MaterialLibrary::FindLoadError(const std::string& path) const
+  {
+    const auto it = loadErrors_.find(path);
+    return it != loadErrors_.end() ? &it->second : nullptr;
   }
 
   void MaterialLibrary::ResetValues(Asset& asset, const json& previous)
