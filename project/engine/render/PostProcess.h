@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <span>
 #include <string>
@@ -8,6 +9,7 @@
 #include <vector>
 
 #include "CommandContext.h"
+#include "MaterialPropertyBlock.h"
 #include "PostEffectStruct.h"
 #include "RenderEvent.h"
 #include "RenderGraph.h"
@@ -68,14 +70,28 @@ namespace Tako {
   };
 
   /// <summary>
+  /// .shader.json のポストエフェクトに使う resources/Materials/{name}.mat.json（UE の Post Process Material の Material Instance に相当）。
+  /// MaterialLibrary が持ち、編集するとこれを指す全インスタンスに次のフレームから反映される
+  /// </summary>
+  struct PostEffectMaterial {
+    std::string           name;
+    std::string           shader;  ///< 定義の名前
+    MaterialPropertyBlock values;  ///< Values と Textures（名前で持つので、PS の値の並びが変わっても移さなくてよい）
+  };
+
+  /// <summary>
   /// スタックに並べたエフェクト 1 つ。同じ定義を何個並べてもよい
   /// </summary>
   struct PostEffectInstance {
     uint32_t    id      = 0;     ///< スタック内で一意（0 は無効）
     std::string name;            ///< 定義の名前
-    EffectParam param;
+    EffectParam param;           ///< 描くときの値。定義が PropertyBlock なら PostProcessStack::ResolveValues が毎フレーム作り直す
     uint32_t    maskId  = 0;     ///< 0 なら画面全体。それ以外は maskId が一致する描画物だけを描いた画像に掛けてシーンへ重ねる（描画物の外へも広がる）
     bool        enabled = true;
+
+    //.shader.json のエフェクトの値（定義の既定値 → material → overrides の順に重ねる）
+    std::shared_ptr<const PostEffectMaterial> material;   ///< 無ければ定義の既定値
+    MaterialPropertyBlock                     overrides;  ///< このインスタンスだけの値（Unity の Volume の Override に相当）
   };
 
   /// <summary>
@@ -99,10 +115,10 @@ namespace Tako {
   std::span<const std::string> GetPostEffectNames();
 
   /// <summary>
-  /// param が PropertyBlock で、名前の定義の並び（PS のホットリロードで作り直したもの）と違えば、値を名前で移して定義の並びにする
+  /// 定義が PropertyBlock なら、effect.param を定義の既定値に material と overrides を重ねて作り直す（型付きの定義なら何もしない）。
+  /// material のシェーダーを替えていれば name も追従させる
   /// </summary>
-  /// <returns>移したら true</returns>
-  bool RefreshPropertyLayout(std::string_view name, EffectParam& param);
+  void ResolvePostEffectValues(PostEffectInstance& effect);
 
   /// <summary>
   /// FullScreen.VS と psFile で全画面三角形を描くパイプライン
@@ -152,9 +168,9 @@ namespace Tako {
     void Clear() { effects_.clear(); }
 
     /// <summary>
-    /// 全エフェクトに RefreshPropertyLayout を掛ける
+    /// 全エフェクトに ResolvePostEffectValues を掛ける（毎フレーム、描く前に呼ぶ）
     /// </summary>
-    void RefreshLayouts();
+    void ResolveValues();
 
     /// <summary>
     /// maskId が 0 で定義に event の無い有効なエフェクトを順に input→output へ掛ける。大きさが違えば最後に拡大コピーする

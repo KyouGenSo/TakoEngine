@@ -148,23 +148,6 @@ namespace Tako {
     return GetRegistry().names;
   }
 
-  bool RefreshPropertyLayout(std::string_view name, EffectParam& param)
-  {
-    PropertyBlock*              block      = std::get_if<PropertyBlock>(&param);
-    const PostEffectDefinition* definition = FindPostEffect(name);
-    const PropertyBlock*        latest     = definition ? std::get_if<PropertyBlock>(&definition->defaultParam) : nullptr;
-    if (!block || !latest || block->layout == latest->layout) {
-      return false;
-    }
-    // 新しく増えた値は定義の初期値から始める
-    PropertyBlock refreshed = *latest;
-    if (block->layout) {
-      refreshed.layout->DeserializeValues(block->layout->SerializeValues(block->bytes), refreshed.bytes);
-    }
-    *block = std::move(refreshed);
-    return true;
-  }
-
   GraphicsPipelineDesc MakeFullScreenPipeline(ShaderLibrary& library, std::wstring_view psFile)
   {
     return MakeFullScreenPipeline(library, *library.Get(psFile, ShaderStage::Pixel));
@@ -223,10 +206,35 @@ namespace Tako {
     return nextId_++;
   }
 
-  void PostProcessStack::RefreshLayouts()
+  void ResolvePostEffectValues(PostEffectInstance& effect)
+  {
+    if (effect.material && effect.material->shader != effect.name) {
+      effect.name = effect.material->shader;
+    }
+    const PostEffectDefinition* definition = FindPostEffect(effect.name);
+    const PropertyBlock*        defaults   = definition ? std::get_if<PropertyBlock>(&definition->defaultParam) : nullptr;
+    if (!defaults) {
+      return;
+    }
+    PropertyBlock* block = std::get_if<PropertyBlock>(&effect.param);
+    if (!block) {
+      block = &effect.param.emplace<PropertyBlock>();
+    }
+    // 値を名前で重ねるので、PS のホットリロードで並びが変わっても今の並びで作り直せる。assign は 2 回目から確保しない
+    block->layout = defaults->layout;
+    block->bytes.assign(defaults->bytes.begin(), defaults->bytes.end());
+    block->textures.clear();
+    if (effect.material) {
+      effect.material->values.Apply(*block->layout, block->bytes);
+      block->textures.assign(effect.material->values.GetTextures().begin(), effect.material->values.GetTextures().end());
+    }
+    effect.overrides.Apply(*block->layout, block->bytes);
+  }
+
+  void PostProcessStack::ResolveValues()
   {
     for (PostEffectInstance& effect : effects_) {
-      RefreshPropertyLayout(effect.name, effect.param);
+      ResolvePostEffectValues(effect);
     }
   }
 

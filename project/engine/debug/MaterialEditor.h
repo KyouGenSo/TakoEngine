@@ -16,7 +16,8 @@ namespace Tako {
   class Material;
 
   /// <summary>
-  /// .mat.json の編集ウィンドウ。値の UI はシェーダーのリフレクションから作る（Object3d への割り当ては ObjectSettingsEditor）
+  /// .mat.json の編集ウィンドウ。値の UI はシェーダーのリフレクションから作る。
+  /// 描画物のマテリアルは ObjectSettingsEditor で、ポストエフェクトのマテリアルは PostEffect Settings で使う
   /// </summary>
   class MaterialEditor {
   public: //メンバー関数
@@ -49,6 +50,11 @@ namespace Tako {
     void DrawListPane();
 
     void DrawMaterialPane(Material& material);
+
+    /// <summary>
+    /// ポストエフェクトのマテリアルの欄（描画設定は無く、値とテクスチャだけ）
+    /// </summary>
+    void DrawPostEffectPane();
 
   private: //メンバー変数
     bool*                isOpen_     = nullptr;  ///< ウィンドウ表示フラグ（DebugUIManager 所有）

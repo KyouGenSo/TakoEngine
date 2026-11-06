@@ -91,8 +91,9 @@ namespace Tako {
   /// レイアウトと値の組。C++ の構造体を持たないポストエフェクトのパラメータに使う
   /// </summary>
   struct PropertyBlock {
-    std::shared_ptr<const MaterialPropertyLayout> layout;
-    std::vector<uint8_t>                          bytes;
+    std::shared_ptr<const MaterialPropertyLayout>   layout;
+    std::vector<uint8_t>                            bytes;
+    std::vector<std::pair<ShaderParamId, uint32_t>> textures;  ///< .shader.json の Textures の代わりに渡すテクスチャ（マテリアルの Textures）
   };
 
 } // namespace Tako

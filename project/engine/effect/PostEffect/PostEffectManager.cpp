@@ -5,11 +5,13 @@
 #include "FrameTimer.h"
 #include "Logger.h"
 #include "Mat4x4Func.h"
+#include "MaterialLibrary.h"
 #include "MaterialPropertyBlock.h"
 #include "TextureManager.h"
 #ifdef _DEBUG
 #include "DebugUIManager.h"
 #include "ImGuiManager.h"
+#include "OverrideField.h"
 #endif
 
 #include <json.hpp>
@@ -45,8 +47,6 @@ namespace Tako {
   NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DissolveParam, threshold, edgeThickness, edgeColor)
   NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(HalfToneParam, dotSize, contrast, angle, dotPattern, colorMode, threshold)
   NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GaussianBlurParam, sigma, kernelSize)
-  static void to_json(json& j, const PropertyBlock& block) { j = block.layout->SerializeValues(block.bytes); }
-  static void from_json(const json& j, PropertyBlock& block) { block.layout->DeserializeValues(j, block.bytes); }
 
   namespace {
 
@@ -56,9 +56,32 @@ namespace Tako {
       return kProfileDirectory / (name + ".json");
     }
 
-    // to_json が定義された（保存対象の）型だけ扱う
+    // to_json が定義された（保存対象の）型だけ扱う。PropertyBlock はインスタンスの上書きだけを保存するので含めない
     template<class T>
     concept SerializableParam = requires(json& j, const T& param) { to_json(j, param); };
+
+    /// <summary>
+    /// .shader.json のエフェクト（値を PropertyBlock で持つ定義）の既定値。型付きのエフェクトや未登録なら nullptr
+    /// </summary>
+    const PropertyBlock* FindDefaults(std::string_view name)
+    {
+      const PostEffectDefinition* definition = FindPostEffect(name);
+      return definition ? std::get_if<PropertyBlock>(&definition->defaultParam) : nullptr;
+    }
+
+    /// <summary>
+    /// overrides にある値だけを JSON にする（解決済みの param は次の Resolve まで古いので、保存と EditTracker の比較には使わない）
+    /// </summary>
+    json SerializeOverrides(const MaterialPropertyLayout& layout, const MaterialPropertyBlock& overrides)
+    {
+      std::vector<uint8_t> bytes(layout.constantSize);
+      overrides.Apply(layout, bytes);
+      json values = layout.SerializeValues(bytes);
+      for (auto it = values.begin(); it != values.end();) {
+        it = overrides.Has(it.key()) ? std::next(it) : values.erase(it);
+      }
+      return values;
+    }
 
     /// <summary>
     /// input を direction の向きにぼかして output へ書く
@@ -124,6 +147,14 @@ namespace Tako {
         }
       }
       return names;
+    }
+
+    /// <summary>
+    /// 一覧の表示名（マテリアルを使うものは「マテリアル (シェーダー)」）
+    /// </summary>
+    std::string DisplayName(const PostEffectInstance& effect)
+    {
+      return effect.material ? std::format("{} ({})", effect.material->name, effect.name) : effect.name;
     }
 
     // パラメータの型ごとの編集 UI
@@ -207,12 +238,6 @@ namespace Tako {
       ImGui::DragFloat("Blur Sigma", &param.sigma, 0.01f, 0.0f, 50.0f);
       ImGui::DragInt("Blur Kernel Size", &param.kernelSize, 1.0f, 1, 100);
     }
-
-    // .shader.json で登録したエフェクトはシェーダーのリフレクションから UI を作る
-    void DrawParam(PropertyBlock& param)
-    {
-      param.layout->DrawImGui(param.bytes);
-    }
 #endif
 
   } // anonymous namespace
@@ -257,6 +282,22 @@ namespace Tako {
     return id;
   }
 
+  uint32_t PostEffectManager::AddMaterialEffect(std::string_view material, uint32_t maskId)
+  {
+    std::shared_ptr<const PostEffectMaterial> loaded = MaterialLibrary::GetInstance()->LoadPostEffect(std::string(material));
+    if (!loaded) {
+      Logger::Log("PostEffect material not found: %.*s", static_cast<int>(material.size()), material.data());
+      return 0;
+    }
+    const uint32_t id = AddEffect(loaded->shader, maskId);
+    if (PostEffectInstance* effect = stack_.Find(id)) {
+      effect->material = std::move(loaded);
+      // 次の Update を待つと 1 フレームだけシェーダーの既定値で描かれるので、すぐ作る
+      Resolve(*effect);
+    }
+    return id;
+  }
+
   void PostEffectManager::RemoveEffect(uint32_t id)
   {
     stack_.Remove(id);
@@ -274,7 +315,7 @@ namespace Tako {
     uint32_t id = 0;
     for (const auto& temporary : temporaryEffects_) {
       const PostEffectInstance* effect = stack_.Find(temporary.first);
-      if (effect && effect->name == name && effect->maskId == maskId) {
+      if (effect && !effect->material && effect->name == name && effect->maskId == maskId) {
         id = temporary.first;
         break;
       }
@@ -286,7 +327,44 @@ namespace Tako {
       return 0;
     }
     temporaryEffects_[id] = { duration, 0.0f, easing, param };
+    Resolve(*stack_.Find(id));
     return id;
+  }
+
+  uint32_t PostEffectManager::ApplyTemporaryMaterialEffect(std::string_view material, float duration, EasingType easing, uint32_t maskId)
+  {
+    uint32_t id = 0;
+    for (const auto& temporary : temporaryEffects_) {
+      const PostEffectInstance* effect = stack_.Find(temporary.first);
+      if (effect && effect->material && effect->material->name == material && effect->maskId == maskId) {
+        id = temporary.first;
+        break;
+      }
+    }
+    if (id == 0) {
+      id = AddMaterialEffect(material, maskId);
+    }
+    if (id == 0) {
+      return 0;
+    }
+    temporaryEffects_[id] = { duration, 0.0f, easing, {} };
+    Resolve(*stack_.Find(id));
+    return id;
+  }
+
+  void PostEffectManager::Resolve(PostEffectInstance& effect)
+  {
+    ResolvePostEffectValues(effect);
+    const auto temporary = temporaryEffects_.find(effect.id);
+    if (temporary == temporaryEffects_.end()) {
+      return;
+    }
+    // .shader.json のエフェクトは作り直した値から、型付きのエフェクトは開始時の値から弱める
+    const TemporaryEffectInfo&  info       = temporary->second;
+    const float                 fadeFactor = 1.0f - ApplyEasing(info.elapsedTime / info.duration, info.easing);
+    const PostEffectDefinition* definition = FindPostEffect(effect.name);
+    const EffectParam&          base       = std::holds_alternative<PropertyBlock>(effect.param) ? effect.param : info.baseParam;
+    effect.param = ApplyFadeToParam(base, fadeFactor, definition ? std::span<const ShaderParamId>(definition->fadeValues) : std::span<const ShaderParamId>());
   }
 
   void PostEffectManager::Update(float deltaTime)
@@ -305,29 +383,19 @@ namespace Tako {
       RemoveEffect(id);
     }
 
-    // JSON のポストエフェクトの PS が再コンパイルされたら、パラメータを新しい並びへ移す
-    stack_.RefreshLayouts();
-    for (auto& [id, info] : temporaryEffects_) {
-      if (const PostEffectInstance* effect = stack_.Find(id)) {
-        RefreshPropertyLayout(effect->name, info.baseParam);
-      }
-    }
-
     for (auto it = temporaryEffects_.begin(); it != temporaryEffects_.end();) {
-      TemporaryEffectInfo& info = it->second;
-      info.elapsedTime += deltaTime;
-      if (info.elapsedTime >= info.duration) {
+      it->second.elapsedTime += deltaTime;
+      if (it->second.elapsedTime >= it->second.duration) {
         stack_.Remove(it->first);
         it = temporaryEffects_.erase(it);
         continue;
       }
-
-      const float fadeFactor = 1.0f - ApplyEasing(info.elapsedTime / info.duration, info.easing);
-      if (PostEffectInstance* effect = stack_.Find(it->first)) {
-        const PostEffectDefinition* definition = FindPostEffect(effect->name);
-        effect->param = ApplyFadeToParam(info.baseParam, fadeFactor, definition ? std::span<const ShaderParamId>(definition->fadeValues) : std::span<const ShaderParamId>());
-      }
       ++it;
+    }
+
+    // マテリアルの編集・PS のホットリロード・フェードを反映する
+    for (PostEffectInstance& effect : stack_.GetEffects()) {
+      Resolve(effect);
     }
   }
 
@@ -345,28 +413,28 @@ namespace Tako {
       Logger::Log("PostEffect parameter mismatch (id %u)", id);
       return false;
     }
+    // .shader.json のエフェクトの param は Resolve で作り直すので、値は上書きとして持つ
+    if (const PropertyBlock* block = std::get_if<PropertyBlock>(&param)) {
+      effect->overrides.Clear();
+      effect->overrides.SetValues(block->layout->SerializeValues(block->bytes));
+      Resolve(*effect);
+      return true;
+    }
     effect->param = param;
     return true;
   }
 
   bool PostEffectManager::SetEffectValues(uint32_t id, std::string_view name, std::span<const float> values)
   {
-    PostEffectInstance* effect = stack_.Find(id);
-    PropertyBlock*      block  = effect ? std::get_if<PropertyBlock>(&effect->param) : nullptr;
-    if (!block || !block->layout->Find(MakeShaderParamId(name))) {
+    PostEffectInstance*  effect   = stack_.Find(id);
+    const PropertyBlock* defaults = effect ? FindDefaults(effect->name) : nullptr;
+    if (!defaults || !defaults->layout->Find(MakeShaderParamId(name))) {
       Logger::Log("PostEffect value not found: %.*s (id %u)", static_cast<int>(name.size()), name.data(), id);
       return false;
     }
     // 描画物の値と同じ書き方（整数への変換・成分の過不足）にそろえる
-    MaterialPropertyBlock change;
-    change.SetValues(name, values);
-    change.Apply(*block->layout, block->bytes);
-    // 一時エフェクトは毎フレーム開始時の値から弱め直すので、そちらも替える
-    if (const auto temporary = temporaryEffects_.find(id); temporary != temporaryEffects_.end()) {
-      if (PropertyBlock* base = std::get_if<PropertyBlock>(&temporary->second.baseParam)) {
-        change.Apply(*base->layout, base->bytes);
-      }
-    }
+    effect->overrides.SetValues(name, values);
+    Resolve(*effect);
     return true;
   }
 
@@ -470,11 +538,22 @@ namespace Tako {
         continue;
       }
       json entry = { { "Name", effect.name } };
-      std::visit([&entry]<class T>(const T& value) {
-        if constexpr (SerializableParam<T>) {
-          entry["Param"] = value;
+      if (effect.material) {
+        entry["Material"] = effect.material->name;
+      }
+      // .shader.json のエフェクトは上書きした値だけ（書いていない値はマテリアルかシェーダーの Defaults に追従する）
+      if (const PropertyBlock* defaults = FindDefaults(effect.name)) {
+        if (json values = SerializeOverrides(*defaults->layout, effect.overrides); !values.empty()) {
+          entry["Param"] = std::move(values);
         }
-      }, effect.param);
+      }
+      else {
+        std::visit([&entry]<class T>(const T& value) {
+          if constexpr (SerializableParam<T>) {
+            entry["Param"] = value;
+          }
+        }, effect.param);
+      }
       if (effect.maskId != 0) {
         entry["MaskId"] = effect.maskId;
       }
@@ -537,21 +616,36 @@ namespace Tako {
       stack_.Clear();
 
       for (const json& entry : root.at("Effects")) {
-        const std::string           name       = entry.at("Name").get<std::string>();
-        const PostEffectDefinition* definition = FindPostEffect(name);
-        if (!definition) {
+        // マテリアルのシェーダーを替えていても、マテリアルの今のシェーダーで置く
+        std::shared_ptr<const PostEffectMaterial> material;
+        if (const auto materialName = entry.find("Material"); materialName != entry.end()) {
+          material = MaterialLibrary::GetInstance()->LoadPostEffect(materialName->get<std::string>());
+          if (!material) {
+            Logger::Log("PostEffect profile: material not found: %s", materialName->get<std::string>().c_str());
+            continue;
+          }
+        }
+        const uint32_t      id     = stack_.Add(material ? material->shader : entry.at("Name").get<std::string>(), entry.value("MaskId", 0u));
+        PostEffectInstance* effect = stack_.Find(id);
+        if (!effect) {
           continue;
         }
-        EffectParam param = definition->defaultParam;
+        effect->enabled  = entry.value("Enabled", true);
+        effect->material = std::move(material);
+        // .shader.json のエフェクトの Param は上書きした値（前の形式の全ての値も、全てを上書きしたものとして読める）
         if (const auto value = entry.find("Param"); value != entry.end()) {
-          std::visit([&value]<class T>(T& typed) {
-            if constexpr (SerializableParam<T>) {
-              value->get_to(typed);
-            }
-          }, param);
+          if (std::holds_alternative<PropertyBlock>(effect->param)) {
+            effect->overrides.SetValues(*value);
+          }
+          else {
+            std::visit([&value]<class T>(T& typed) {
+              if constexpr (SerializableParam<T>) {
+                value->get_to(typed);
+              }
+            }, effect->param);
+          }
         }
-        const uint32_t id = stack_.Add(name, param, entry.value("MaskId", 0u));
-        stack_.Find(id)->enabled = entry.value("Enabled", true);
+        Resolve(*effect);
       }
 
       std::ranges::move(temporaries, std::back_inserter(stack_.GetEffects()));
@@ -672,13 +766,23 @@ namespace Tako {
       }
       if (ImGui::Selectable(name.c_str(), selectedAvailableEffect_ == name)) {
         selectedAvailableEffect_ = name;
+        selectedAvailableMaterial_.clear();
+      }
+    }
+    // シェーダーの値違い（UE の Material Instance に相当）。Material Editor で作る
+    ImGui::SeparatorText("Materials");
+    for (const std::string& name : MaterialLibrary::GetInstance()->GetPostEffectMaterialNames()) {
+      const std::shared_ptr<const PostEffectMaterial> material = MaterialLibrary::GetInstance()->LoadPostEffect(name);
+      if (ImGui::Selectable(std::format("{} ({})", name, material->shader).c_str(), selectedAvailableMaterial_ == name)) {
+        selectedAvailableMaterial_ = name;
+        selectedAvailableEffect_.clear();
       }
     }
     ImGui::EndChild();
 
-    ImGui::BeginDisabled(selectedAvailableEffect_.empty());
+    ImGui::BeginDisabled(selectedAvailableEffect_.empty() && selectedAvailableMaterial_.empty());
     if (ImGui::Button("Add Effect", ImVec2(-1, 0))) {
-      selectedActiveEffect_ = AddEffect(selectedAvailableEffect_);
+      selectedActiveEffect_ = selectedAvailableMaterial_.empty() ? AddEffect(selectedAvailableEffect_) : AddMaterialEffect(selectedAvailableMaterial_);
     }
     ImGui::EndDisabled();
 
@@ -694,7 +798,7 @@ namespace Tako {
     }
     for (size_t i = 0; i < effects.size(); ++i) {
       const PostEffectInstance& effect = effects[i];
-      std::string label = std::format("{}. {}", i + 1, effect.name);
+      std::string label = std::format("{}. {}", i + 1, DisplayName(effect));
       if (effect.maskId != 0) {
         label += std::format(" [mask {}]", effect.maskId);
       }
@@ -765,7 +869,7 @@ namespace Tako {
     for (size_t i = 0; i < effects.size(); ++i) {
       PostEffectInstance& effect = effects[i];
       ImGui::PushID(static_cast<int>(effect.id));
-      if (ImGui::CollapsingHeader(std::format("[{}] {}", i + 1, effect.name).c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
+      if (ImGui::CollapsingHeader(std::format("[{}] {}", i + 1, DisplayName(effect)).c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::Checkbox("Enabled", &effect.enabled);
         int maskId = static_cast<int>(effect.maskId);
         if (ImGui::InputInt("Mask ID", &maskId)) {
@@ -773,10 +877,69 @@ namespace Tako {
         }
         ImGui::SetItemTooltip("0 = whole screen. Otherwise applied to objects with the same Object3d::SetMaskId,\n"
                               "before transparent objects and whole-screen effects (the result can spread outside the objects)");
-        std::visit([](auto& param) { DrawParam(param); }, effect.param);
+        if (const PropertyBlock* defaults = FindDefaults(effect.name)) {
+          if (DrawMaterialValues(effect, *defaults)) {
+            Resolve(effect);
+          }
+        }
+        else {
+          std::visit([]<class T>(T& param) {
+            if constexpr (!std::is_same_v<T, PropertyBlock>) {
+              DrawParam(param);
+            }
+          }, effect.param);
+        }
       }
       ImGui::PopID();
     }
+  }
+
+  bool PostEffectManager::DrawMaterialValues(PostEffectInstance& effect, const PropertyBlock& defaults)
+  {
+    MaterialLibrary* library = MaterialLibrary::GetInstance();
+    bool             changed = false;
+
+    // UE の Post Process Volume に Material Instance を置くのと同じ。マテリアル自体は Material Editor で直す
+    const std::string current = effect.material ? effect.material->name : std::string();
+    if (ImGui::BeginCombo("Material", current.empty() ? "(shader defaults)" : current.c_str())) {
+      if (ImGui::Selectable("(shader defaults)", current.empty())) {
+        effect.material.reset();
+        changed = true;
+      }
+      for (const std::string& name : library->GetPostEffectMaterialNames()) {
+        if (ImGui::Selectable(name.c_str(), name == current)) {
+          effect.material = library->LoadPostEffect(name);
+          changed = true;
+        }
+      }
+      ImGui::EndCombo();
+    }
+    ImGui::SetItemTooltip("Values come from the material (Material Editor), then the checked values below.\nEditing the material changes every effect that uses it");
+
+    // チェックを入れた値だけこのインスタンスで上書きする（外すとマテリアルの値に戻る。Unity の Volume の Override と同じ）
+    std::vector<uint8_t> bytes = defaults.bytes;
+    if (effect.material) {
+      effect.material->values.Apply(*defaults.layout, bytes);
+    }
+    const json inherited = defaults.layout->SerializeValues(bytes);
+    const json overrides = SerializeOverrides(*defaults.layout, effect.overrides);
+    for (const MaterialProperty& property : defaults.layout->properties) {
+      if (property.type == MaterialProperty::Type::Unsupported) {
+        continue;
+      }
+      const auto          found = overrides.find(property.name);
+      std::optional<json> value = found != overrides.end() ? std::optional<json>(*found) : std::nullopt;
+      if (OverrideField<json>(property.name.c_str(), value, inherited.value(property.name, json()), [&](const char*, json& edited) { return defaults.layout->DrawValueImGui(property, edited); })) {
+        if (value) {
+          effect.overrides.SetValues(json{ { property.name, *value } });
+        }
+        else {
+          effect.overrides.Clear(property.name);
+        }
+        changed = true;
+      }
+    }
+    return changed;
   }
 #endif
 

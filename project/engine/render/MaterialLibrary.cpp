@@ -50,6 +50,15 @@ namespace Tako {
       return error ? std::filesystem::file_time_type{} : time;
     }
 
+    /// <summary>
+    /// .shader.json のポストエフェクト（値を PropertyBlock で持つ定義）の既定値。組み込みの型付きエフェクトや未登録なら nullptr
+    /// </summary>
+    const PropertyBlock* FindPostEffectDefaults(const std::string& shader)
+    {
+      const PostEffectDefinition* definition = FindPostEffect(shader);
+      return definition ? std::get_if<PropertyBlock>(&definition->defaultParam) : nullptr;
+    }
+
     template<class T, size_t N>
     std::optional<T> FindByName(const char* const (&names)[N], const std::string& name)
     {
@@ -269,8 +278,9 @@ namespace Tako {
       RenderGraph& graph = *frame.graph;
 
       // 定数は 1 回だけ書き、全パスで同じものを渡す
+      const PropertyBlock*      block     = std::get_if<PropertyBlock>(&param);
       D3D12_GPU_VIRTUAL_ADDRESS constants = 0;
-      if (const PropertyBlock* block = std::get_if<PropertyBlock>(&param); block && !block->bytes.empty()) {
+      if (block && !block->bytes.empty()) {
         const UploadAllocator::Allocation allocation = frame.dx12->GetUploadAllocator().Allocate(block->bytes.size());
         std::memcpy(allocation.cpu, block->bytes.data(), block->bytes.size());
         constants = allocation.gpu;
@@ -300,8 +310,15 @@ namespace Tako {
           for (const auto& [slot, index] : pass.inputs) {
             binder.BindSRV(slot, source(index).srvIndex);
           }
+          // マテリアルが同じスロットのテクスチャを持てば、.shader.json の Textures の代わりに渡す
           for (const auto& [slot, srvIndex] : pass.textures) {
-            binder.BindSRV(slot, srvIndex);
+            uint32_t srv = srvIndex;
+            if (block) {
+              if (const auto replaced = std::ranges::find(block->textures, slot, &std::pair<ShaderParamId, uint32_t>::first); replaced != block->textures.end()) {
+                srv = replaced->second;
+              }
+            }
+            binder.BindSRV(slot, srv);
           }
           if (pass.usesDepth) {
             binder.BindSRV("gDepthTexture"_id, frame.depthSrv);
@@ -340,6 +357,19 @@ namespace Tako {
     for (const std::string& path : GetShaderFiles()) {
       shaderFileTimes_[path] = LastWriteTime(path);
       LoadShaderFile(path);
+    }
+
+    // PostEffect Settings の一覧に出すため、ポストエフェクトのマテリアルだけ先に読む（描画物のマテリアルは使うときに読む）
+    // ponytail: 起動後に足したファイルやシェーダーを直してから読めるようになったものは、Material Editor で開くまで一覧に出ない
+    for (const std::string& name : GetMaterialFileNames()) {
+      const std::optional<std::string> text = ReadText(MaterialPath(name));
+      if (!text) {
+        continue;
+      }
+      const json root = json::parse(*text, nullptr, false);
+      if (root.is_object() && root.contains("Shader") && root["Shader"].is_string() && FindPostEffectDefaults(root["Shader"].get<std::string>())) {
+        LoadAsset(name);
+      }
     }
   }
 
@@ -392,6 +422,10 @@ namespace Tako {
     }
 
     for (auto& [name, asset] : assets_) {
+      // ポストエフェクトのマテリアルは値を名前で持つので移さなくてよい
+      if (!asset.material) {
+        continue;
+      }
       const std::shared_ptr<const MaterialPropertyLayout> layout = GetLayout(*asset.material->GetShader());
       if (layout == asset.layout) {
         continue;
@@ -407,40 +441,46 @@ namespace Tako {
 
   std::shared_ptr<Material> MaterialLibrary::Load(const std::string& name)
   {
-    if (std::shared_ptr<Material> loaded = Find(name)) {
-      return loaded;
-    }
-    const std::optional<std::string> text = ReadText(MaterialPath(name));
-    if (!text) {
-      Logger::Log("Material not found: %s", name.c_str());
+    if (!LoadAsset(name)) {
       return nullptr;
     }
-
-    // 書かれたシェーダーで作ってから、値と描画設定を当てはめる
-    std::string shaderName;
-    try {
-      shaderName = json::parse(*text).at("Shader").get<std::string>();
+    const Asset& asset = assets_.at(name);
+    if (!asset.material) {
+      Logger::Log("Material %s is for post effects (add it in PostEffect Settings)", name.c_str());
     }
-    catch (const json::exception& e) {
-      Logger::Log("Material load failed: %s (%s)", name.c_str(), e.what());
-      return nullptr;
-    }
-    if (!Create(name, shaderName) || !Apply(name, *text)) {
-      assets_.erase(name);
-      return nullptr;
-    }
-    return assets_.at(name).material;
+    return asset.material;
   }
 
-  std::shared_ptr<Material> MaterialLibrary::Create(const std::string& name, const std::string& shaderName)
+  std::shared_ptr<const PostEffectMaterial> MaterialLibrary::LoadPostEffect(const std::string& name)
   {
+    return LoadAsset(name) ? assets_.at(name).post : nullptr;
+  }
+
+  bool MaterialLibrary::Create(const std::string& name, const std::string& shaderName)
+  {
+    // 用途はシェーダーで決まる（UE の Material Domain と同じ）
+    if (FindPostEffectDefaults(shaderName)) {
+      Asset& asset = assets_[name];
+      asset.material.reset();
+      asset.layout.reset();
+      if (!asset.post) {
+        asset.post = std::make_shared<PostEffectMaterial>();
+      }
+      asset.post->name   = name;
+      asset.post->shader = shaderName;
+      asset.post->values.Clear();
+      asset.textures.clear();
+      return true;
+    }
+
     const ShaderAsset* shader = Renderer::GetInstance()->FindShader(shaderName);
     if (!shader) {
       Logger::Log("Material shader not registered: %s", shaderName.c_str());
-      return nullptr;
+      return false;
     }
 
     Asset& asset = assets_[name];
+    asset.post.reset();
     if (!asset.material) {
       asset.material = std::make_shared<Material>(dx12_, shader);
     }
@@ -450,12 +490,12 @@ namespace Tako {
     asset.layout = GetLayout(*shader);
     ResetValues(asset, json::object());
     FitTextures(asset);
-    return asset.material;
+    return true;
   }
 
   bool MaterialLibrary::Save(const std::string& name) const
   {
-    if (!Find(name)) {
+    if (!assets_.contains(name)) {
       return false;
     }
     std::error_code ec;
@@ -475,7 +515,18 @@ namespace Tako {
     if (it == assets_.end()) {
       return {};
     }
-    const Asset&    asset    = it->second;
+    const Asset& asset = it->second;
+    if (asset.post) {
+      // 描画物のマテリアルと同じく全ての値を書く（シェーダーの Defaults を後で変えても、保存したマテリアルは変わらない）
+      json values = json::object();
+      if (const PropertyBlock* defaults = FindPostEffectDefaults(asset.post->shader)) {
+        std::vector<uint8_t> bytes = defaults->bytes;
+        asset.post->values.Apply(*defaults->layout, bytes);
+        values = defaults->layout->SerializeValues(bytes);
+      }
+      return json{ { "Shader", asset.post->shader }, { "Values", values }, { "Textures", asset.textures } }.dump(4);
+    }
+
     const Material& material = *asset.material;
     json root = {
       { "Shader",   material.GetShader()->GetName() },
@@ -499,8 +550,23 @@ namespace Tako {
     Asset& asset = it->second;
 
     try {
-      const json         root   = json::parse(text);
-      const ShaderAsset* shader = Renderer::GetInstance()->FindShader(root.at("Shader").get<std::string>());
+      const json        root       = json::parse(text);
+      const std::string shaderName = root.at("Shader").get<std::string>();
+      // 用途の違うシェーダーへは替えない（Create で作り直す）
+      if (asset.post) {
+        if (!FindPostEffectDefaults(shaderName)) {
+          Logger::Log("Material shader is not a post effect: %s", shaderName.c_str());
+          return false;
+        }
+        asset.post->shader = shaderName;
+        asset.post->values.Clear();
+        asset.post->values.SetValues(root.value("Values", json::object()));
+        asset.textures = root.value("Textures", std::map<std::string, std::string>{});
+        FitTextures(asset);
+        return true;
+      }
+
+      const ShaderAsset* shader = Renderer::GetInstance()->FindShader(shaderName);
       if (!shader) {
         Logger::Log("Material shader not registered: %s", root.at("Shader").get<std::string>().c_str());
         return false;
@@ -538,6 +604,20 @@ namespace Tako {
       return false;
     }
     Asset& asset = it->second;
+    if (asset.post) {
+      // 既定値に重ねたバイト列で編集し、変えたら全ての値を名前で持ち直す
+      const PropertyBlock* defaults = FindPostEffectDefaults(asset.post->shader);
+      if (!defaults) {
+        return false;
+      }
+      std::vector<uint8_t> bytes = defaults->bytes;
+      asset.post->values.Apply(*defaults->layout, bytes);
+      if (!defaults->layout->DrawImGui(bytes)) {
+        return false;
+      }
+      asset.post->values.SetValues(defaults->layout->SerializeValues(bytes));
+      return true;
+    }
     return asset.layout->DrawImGui(asset.material->GetConstantBytes(asset.layout->constantSize));
   }
 
@@ -606,6 +686,61 @@ namespace Tako {
     return it != assets_.end() ? it->second.material : nullptr;
   }
 
+  bool MaterialLibrary::IsPostEffectMaterial(const std::string& name) const
+  {
+    const auto it = assets_.find(name);
+    return it != assets_.end() && it->second.post;
+  }
+
+  std::vector<std::string> MaterialLibrary::GetPostEffectMaterialNames() const
+  {
+    std::vector<std::string> names;
+    for (const auto& [name, asset] : assets_) {
+      if (asset.post) {
+        names.push_back(name);
+      }
+    }
+    return names;
+  }
+
+  std::vector<std::string> MaterialLibrary::GetPostEffectShaderNames() const
+  {
+    std::vector<std::string> names;
+    for (const std::string& name : GetPostEffectNames()) {
+      if (!FindPostEffect(name)->hidden && FindPostEffectDefaults(name)) {
+        names.push_back(name);
+      }
+    }
+    return names;
+  }
+
+  bool MaterialLibrary::LoadAsset(const std::string& name)
+  {
+    if (assets_.contains(name)) {
+      return true;
+    }
+    const std::optional<std::string> text = ReadText(MaterialPath(name));
+    if (!text) {
+      Logger::Log("Material not found: %s", name.c_str());
+      return false;
+    }
+
+    // 書かれたシェーダーで作ってから、値と描画設定を当てはめる
+    std::string shaderName;
+    try {
+      shaderName = json::parse(*text).at("Shader").get<std::string>();
+    }
+    catch (const json::exception& e) {
+      Logger::Log("Material load failed: %s (%s)", name.c_str(), e.what());
+      return false;
+    }
+    if (!Create(name, shaderName) || !Apply(name, *text)) {
+      assets_.erase(name);
+      return false;
+    }
+    return true;
+  }
+
   bool MaterialLibrary::LoadShaderFile(const std::string& path)
   {
     const std::optional<std::string> text = ReadText(path);
@@ -626,6 +761,10 @@ namespace Tako {
       ShaderLibrary&    library = dx12_->GetShaderLibrary();
       const auto        forward = root.find("Forward");
       const auto        post    = root.find("PostEffect");
+      // マテリアルの用途はシェーダーで決まるので、1 つのシェーダーは 1 つの用途にする（UE の Material Domain と同じ）
+      if (forward != root.end() && post != root.end()) {
+        return fail("Forward and PostEffect cannot be in one shader (make two shaders that share an .hlsli)");
+      }
 
       // 先に全てコンパイルし、失敗したら今の登録を残す
       std::vector<GraphicsPipelineDesc> forwardPasses;
@@ -751,6 +890,20 @@ namespace Tako {
 
   void MaterialLibrary::FitTextures(Asset& asset) const
   {
+    if (asset.post) {
+      // 書いていないスロットは .shader.json の Textures のまま描くので、白を入れない
+      const PropertyBlock* defaults = FindPostEffectDefaults(asset.post->shader);
+      const std::vector<std::string> slots = defaults ? defaults->layout->textures : std::vector<std::string>();
+      std::erase_if(asset.textures, [&](const auto& texture) { return texture.second.empty() || std::ranges::find(slots, texture.first) == slots.end(); });
+      for (const std::string& slot : slots) {
+        asset.post->values.Clear(slot);
+        if (const auto file = asset.textures.find(slot); file != asset.textures.end()) {
+          asset.post->values.SetTexture(slot, ResolveTexture(file->second));
+        }
+      }
+      return;
+    }
+
     Material&                       material = *asset.material;
     const std::vector<std::string>& slots    = asset.layout->textures;
     std::erase_if(asset.textures, [&](const auto& texture) {

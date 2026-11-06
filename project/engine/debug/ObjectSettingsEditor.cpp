@@ -342,7 +342,9 @@ namespace Tako {
                           "Transparent objects and particles in front of it are hidden where they overlap it. Mask ID effects do not apply");
     DrawCodeMark(code && code->postEffect, "SetPostEffect");
 
-    const std::vector<std::string> materials = MaterialLibrary::GetInstance()->GetMaterialFileNames();
+    // ポストエフェクトのマテリアルは描画物に使えないので出さない
+    std::vector<std::string> materials = MaterialLibrary::GetInstance()->GetMaterialFileNames();
+    std::erase_if(materials, [](const std::string& name) { return MaterialLibrary::GetInstance()->IsPostEffectMaterial(name); });
     ImGui::SeparatorText("Material (all meshes)");
     changed |= DrawMaterialOverrides(overrides, nullptr, object, object ? 0 : kNoMesh, materials);
 

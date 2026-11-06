@@ -47,7 +47,7 @@ namespace Tako {
       float       duration;     ///< 持続時間（秒）
       float       elapsedTime;  ///< 経過時間（秒）
       EasingType  easing;       ///< イージング種別
-      EffectParam baseParam;    ///< 基本パラメータ（開始時の値）
+      EffectParam baseParam;    ///< 型付きのエフェクトの開始時の値（.shader.json のエフェクトは作り直した param から弱めるので使わない）
     };
 
   public: //メンバー関数
@@ -74,6 +74,13 @@ namespace Tako {
     /// <returns>インスタンスの id（未登録の名前なら 0）</returns>
     uint32_t AddEffect(std::string_view name, const EffectParam& param, uint32_t maskId = 0);
 
+    /// <summary>
+    /// ポストエフェクトのマテリアル（resources/Materials/{material}.mat.json）の値でエフェクトを本編スタックの末尾に追加する。
+    /// マテリアルを Material Editor で直すと、このエフェクトにもその場で反映される
+    /// </summary>
+    /// <returns>インスタンスの id（マテリアルが無い、またはポストエフェクトのマテリアルでなければ 0）</returns>
+    uint32_t AddMaterialEffect(std::string_view material, uint32_t maskId = 0);
+
     void RemoveEffect(uint32_t id);
 
     /// <summary>
@@ -83,7 +90,7 @@ namespace Tako {
 
     /// <summary>
     /// 一時的なエフェクトを掛ける。duration 秒でフェードアウトして自動で外れる。同名の一時エフェクトが動作中ならそれを最初からやり直す。
-    /// .shader.json のエフェクトは "Fade" に書いた値を弱める（param は FindPostEffect(name)->defaultParam から作り、値は SetEffectValue で替えられる）
+    /// .shader.json のエフェクトは "Fade" に書いた値を弱める（param の全ての値を上書きにする。マテリアルの値で掛けるなら ApplyTemporaryMaterialEffect）
     /// </summary>
     /// <param name="name">エフェクトの名前</param>
     /// <param name="duration">持続時間（秒）</param>
@@ -92,6 +99,13 @@ namespace Tako {
     /// <param name="maskId">掛ける描画物の maskId（0 なら画面全体）</param>
     /// <returns>インスタンスの id（未登録の名前なら 0）</returns>
     uint32_t ApplyTemporaryEffect(std::string_view name, float duration, const EffectParam& param, EasingType easing = EasingType::EaseOut, uint32_t maskId = 0);
+
+    /// <summary>
+    /// ポストエフェクトのマテリアルの値で一時的なエフェクトを掛ける。シェーダーの "Fade" に書いた値を duration 秒で 0 へ弱めて自動で外す。
+    /// 同じマテリアル・同じ maskId の一時エフェクトが動作中ならそれを最初からやり直す
+    /// </summary>
+    /// <returns>インスタンスの id（マテリアルが無い、またはポストエフェクトのマテリアルでなければ 0）</returns>
+    uint32_t ApplyTemporaryMaterialEffect(std::string_view material, float duration, EasingType easing = EasingType::EaseOut, uint32_t maskId = 0);
 
     /// <summary>
     /// 一時エフェクトの更新処理（毎フレーム呼び出し）
@@ -165,13 +179,13 @@ namespace Tako {
     //Setter
     //============================================================
     /// <summary>
-    /// インスタンスのパラメータを設定する
+    /// インスタンスのパラメータを設定する（.shader.json のエフェクトは全ての値をこのインスタンスの上書きにする）
     /// </summary>
     /// <returns>id が無い、またはパラメータの型がエフェクトと違えば false</returns>
     bool SetEffectParam(uint32_t id, const EffectParam& param);
 
     /// <summary>
-    /// .shader.json のエフェクトの値を名前で設定する（多い成分は使わず、足りない成分は今の値のまま）。一時エフェクトなら弱める前の値も替える
+    /// .shader.json のエフェクトの値を、このインスタンスだけ名前で上書きする（多い成分は使わず、足りない成分はマテリアルの値のまま）。マテリアル自体は変えない
     /// </summary>
     /// <returns>id が無い、.shader.json のエフェクトでない、または名前の値が無ければ false</returns>
     bool SetEffectValues(uint32_t id, std::string_view name, std::span<const float> values);
@@ -202,7 +216,19 @@ namespace Tako {
   private: //非公開関数
     void RegisterBuiltinEffects();
 
+    /// <summary>
+    /// effect の param を作り直し（ResolvePostEffectValues）、一時エフェクトなら今の経過時間で弱める
+    /// </summary>
+    void Resolve(PostEffectInstance& effect);
+
 #ifdef _DEBUG
+    /// <summary>
+    /// .shader.json のエフェクトのマテリアルと、値ごとの上書きの欄
+    /// </summary>
+    /// <param name="defaults">effect の定義の既定値</param>
+    /// <returns>変えたら true</returns>
+    bool DrawMaterialValues(PostEffectInstance& effect, const PropertyBlock& defaults);
+
     /// <summary>
     /// profileName_ の名前で保存し、結果をログに出す（Save ボタン・Ctrl+S・確認モーダルの Save）
     /// </summary>
@@ -240,6 +266,7 @@ namespace Tako {
 
     //PostEffect ウィンドウ
     std::string          selectedAvailableEffect_;      ///< 追加する定義の名前
+    std::string          selectedAvailableMaterial_;    ///< 追加するマテリアルの名前（selectedAvailableEffect_ と片方だけ使う）
     uint32_t             selectedActiveEffect_    = 0;  ///< 選択中のインスタンス id
     std::array<char, 64> profileName_{};                ///< プロファイル名入力欄。LoadProfile で読み込んだ名前になる
 #ifdef _DEBUG

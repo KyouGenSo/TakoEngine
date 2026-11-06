@@ -17,6 +17,7 @@ namespace Tako {
   class Material;
   class Shader;
   class ShaderAsset;
+  struct PostEffectMaterial;
 
   /// <summary>
   /// データファイルから作るシェーダーとマテリアルの置き場。C++ を書かずにシェーダーを追加して描画物に使えるようにする。
@@ -25,7 +26,7 @@ namespace Tako {
   ///   { "Name": "Hologram", "Fallback": "Lit", "Queue": 3000,
   ///     "Forward": { "VS": "Object3D.VS.hlsl", "PS": "resources/Shaders/Hologram.PS.hlsl", "Blend": "Add", "Cull": "None", "DepthTest": true, "DepthWrite": false, "DepthFunc": "LessEqual" },
   ///     "Properties": { "speed": [0, 10] } }
-  ///   Forward があれば描画物のシェーダー（定数は gMaterial、書いていないパスは Fallback から借りる）。
+  ///   Forward があれば描画物のシェーダー（定数は gMaterial、書いていないパスは Fallback から借りる）。Forward と PostEffect は同じファイルに書けない（用途はシェーダーごとに 1 つ）。
   ///   Forward をパスの配列にすると上から順に同じ描画物を描く。1 番目のパスがマテリアルの描画設定の上書きと値の並びを受け持ち、他のパスはその値とテクスチャだけを読める。
   ///   "PostEffect": { "PS": "...", "Textures": { "gNoise": "noise.png" } } があればポストエフェクト（定数は gParam）として登録する。
   ///   複数パスは "PostEffect": { "Passes": [ { "PS": "...", "Entry": "BlurX", "Inputs": { "gTexture": "bright" }, "Output": "blurX", "Scale": 0.5 }, ... ] }。
@@ -39,7 +40,9 @@ namespace Tako {
   /// resources/Materials/{name}.mat.json
   ///   { "Shader": "Hologram", "Queue": 3000, "Blend": "Add", "Cull": "None", "DepthTest": true, "DepthWrite": false, "DepthFunc": "LessEqual",
   ///     "Values": { "color": [0, 1, 1, 0.5] }, "Textures": { "gTexture": "uvChecker.png" } }
-  ///   Shader 以外は省略でき、省略した描画設定はシェーダーの値を使い（シェーダーを直すと追従する）、テクスチャは白になる
+  ///   Shader 以外は省略でき、省略した描画設定はシェーダーの値を使い（シェーダーを直すと追従する）、テクスチャは白になる。
+  ///   Shader がポストエフェクトならポストエフェクトのマテリアル（UE の Post Process Material の Material Instance に相当）。
+  ///   使うのは Values と Textures だけで、PostEffect Settings や PostEffectManager::AddMaterialEffect でスタックに置く。書かないテクスチャは .shader.json の Textures のまま
   /// </summary>
   class MaterialLibrary {
   private: //定数
@@ -60,7 +63,8 @@ namespace Tako {
 
   private: //構造体
     struct Asset {
-      std::shared_ptr<Material>                     material;
+      std::shared_ptr<Material>                     material;  ///< 描画物のシェーダーのとき
+      std::shared_ptr<PostEffectMaterial>           post;      ///< ポストエフェクトのシェーダーのとき（material と layout は null）
       std::shared_ptr<const MaterialPropertyLayout> layout;    ///< 値を書いたときのレイアウト（ホットリロードで変わったら名前で移す）
       std::map<std::string, std::string>            textures;  ///< テクスチャ名 → ファイル（保存用）
     };
@@ -110,14 +114,20 @@ namespace Tako {
     /// <summary>
     /// resources/Materials/{name}.mat.json を読む。読み込み済みなら同じマテリアルを返す（複数の描画物で共有する）
     /// </summary>
-    /// <returns>読めなければ nullptr</returns>
+    /// <returns>読めない、またはポストエフェクトのマテリアルなら nullptr</returns>
     std::shared_ptr<Material> Load(const std::string& name);
 
     /// <summary>
-    /// shaderName の既定値で新しいマテリアルを作る（保存するまでファイルは無い）
+    /// ポストエフェクトのマテリアルを読む。読み込み済みなら同じものを返す（中身は Material Editor の編集でその場で変わる）
     /// </summary>
-    /// <returns>シェーダーが無ければ nullptr</returns>
-    std::shared_ptr<Material> Create(const std::string& name, const std::string& shaderName);
+    /// <returns>読めない、または描画物のマテリアルなら nullptr</returns>
+    std::shared_ptr<const PostEffectMaterial> LoadPostEffect(const std::string& name);
+
+    /// <summary>
+    /// shaderName の既定値で新しいマテリアルを作る（保存するまでファイルは無い）。用途はシェーダーで決まる
+    /// </summary>
+    /// <returns>シェーダーが無ければ false</returns>
+    bool Create(const std::string& name, const std::string& shaderName);
 
     bool Save(const std::string& name) const;
 
@@ -162,11 +172,32 @@ namespace Tako {
     std::vector<std::string> GetShaderFiles() const;
 
     /// <summary>
-    /// 読み込み済み（または作成済み）のマテリアル（無ければ nullptr）
+    /// 読み込み済み（または作成済み）の描画物のマテリアル（無い、またはポストエフェクトのマテリアルなら nullptr）
     /// </summary>
     std::shared_ptr<Material> Find(const std::string& name) const;
 
+    /// <summary>
+    /// 読み込み済み（または作成済み）のポストエフェクトのマテリアルか
+    /// </summary>
+    bool IsPostEffectMaterial(const std::string& name) const;
+
+    /// <summary>
+    /// 読み込み済み（または作成済み）のポストエフェクトのマテリアルの名前
+    /// </summary>
+    std::vector<std::string> GetPostEffectMaterialNames() const;
+
+    /// <summary>
+    /// ポストエフェクトのマテリアルに使えるシェーダー（.shader.json の PostEffect）の名前
+    /// </summary>
+    std::vector<std::string> GetPostEffectShaderNames() const;
+
   private: //非公開関数
+    /// <summary>
+    /// resources/Materials/{name}.mat.json を、書かれたシェーダーの用途で読む（読み込み済みなら何もしない）
+    /// </summary>
+    /// <returns>読めなければ false</returns>
+    bool LoadAsset(const std::string& name);
+
     /// <summary>
     /// path の .shader.json から登録したポストエフェクトを外す（ファイルを消した・名前を変えた・PostEffect を消したとき）
     /// </summary>
@@ -179,7 +210,7 @@ namespace Tako {
     void ResetValues(Asset& asset, const nlohmann::json& previous);
 
     /// <summary>
-    /// レイアウトに無いテクスチャを外し、レイアウトにあって未設定のものを白にする
+    /// レイアウトに無いテクスチャを外し、レイアウトにあって未設定のものを白にする（ポストエフェクトのマテリアルは未設定のものを .shader.json の Textures のままにする）
     /// </summary>
     void FitTextures(Asset& asset) const;
 

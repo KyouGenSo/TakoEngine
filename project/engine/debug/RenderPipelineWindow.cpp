@@ -106,7 +106,9 @@ namespace Tako {
     }
     std::ranges::sort(objectNames);
     objectNames.erase(std::ranges::unique(objectNames).begin(), objectNames.end());
-    const std::vector<std::string> materials = MaterialLibrary::GetInstance()->GetMaterialFileNames();
+    // ポストエフェクトのマテリアルは描画物に使えないので出さない
+    std::vector<std::string> materials = MaterialLibrary::GetInstance()->GetMaterialFileNames();
+    std::erase_if(materials, [](const std::string& name) { return MaterialLibrary::GetInstance()->IsPostEffectMaterial(name); });
 
     RenderPipeline*                  pipeline = RenderPipeline::GetInstance();
     std::vector<ObjectPassSettings>& passes   = pipeline->GetObjectPasses();

@@ -28,7 +28,7 @@ namespace Tako {
       controller_.Reset();
     }
     controller_.ApplyTo(*camera_);
-    postProcess_.RefreshLayouts();
+    postProcess_.ResolveValues();
   }
 
   void PreviewPanel::Finalize() {

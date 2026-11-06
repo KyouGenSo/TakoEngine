@@ -10,6 +10,7 @@
 #include "ImGuiManager.h"
 #include "Material.h"
 #include "OverrideField.h"
+#include "PostProcess.h"
 #include "Renderer.h"
 
 namespace Tako {
@@ -64,6 +65,9 @@ namespace Tako {
         if (std::shared_ptr<Material> material = MaterialLibrary::GetInstance()->Find(selected_)) {
           DrawMaterialPane(*material);
         }
+        else if (MaterialLibrary::GetInstance()->IsPostEffectMaterial(selected_)) {
+          DrawPostEffectPane();
+        }
         else {
           ImGui::TextDisabled("Select or create a material");
         }
@@ -87,7 +91,9 @@ namespace Tako {
 
   void MaterialEditor::Select(const std::string& name)
   {
-    if (!MaterialLibrary::GetInstance()->Load(name)) {
+    // 描画物のマテリアルでも LoadPostEffect で読み込みは済む（戻り値が nullptr になるだけ）
+    MaterialLibrary* library = MaterialLibrary::GetInstance();
+    if (!library->LoadPostEffect(name) && !library->Load(name)) {
       LogToConsole(std::format("Material load failed: {}", name), DebugUIManager::LogType::Error);
       return;
     }
@@ -113,7 +119,8 @@ namespace Tako {
   {
     ImGui::SeparatorText("Materials");
     for (const std::string& name : MaterialLibrary::GetInstance()->GetMaterialFileNames()) {
-      if (ImGui::Selectable(name.c_str(), name == selected_) && name != selected_) {
+      const std::string label = MaterialLibrary::GetInstance()->IsPostEffectMaterial(name) ? std::format("{}  (PostEffect)##{}", name, name) : name;
+      if (ImGui::Selectable(label.c_str(), name == selected_) && name != selected_) {
         unsavedPrompt_.RunOrConfirm(tracker_.IsEdited(), std::format("Material '{}' has unsaved changes.", selected_), "Open",
                                     [this, name] { Select(name); });
       }
@@ -124,9 +131,16 @@ namespace Tako {
     ImGui::SetNextItemWidth(-1.0f);
     ImGui::InputTextWithHint("##NewName", "name", newName_.data(), newName_.size());
     ImGui::SetNextItemWidth(-1.0f);
+    // 用途はシェーダーで決まる（UE の Material Domain と同じ）
     if (ImGui::BeginCombo("##NewShader", newShader_.c_str())) {
       for (const std::string& shader : Renderer::GetInstance()->GetShaderNames()) {
         if (ImGui::Selectable(shader.c_str(), shader == newShader_)) {
+          newShader_ = shader;
+        }
+      }
+      ImGui::SeparatorText("PostEffect");
+      for (const std::string& shader : MaterialLibrary::GetInstance()->GetPostEffectShaderNames()) {
+        if (ImGui::Selectable(std::format("{}##post", shader).c_str(), shader == newShader_)) {
           newShader_ = shader;
         }
       }
@@ -217,6 +231,60 @@ namespace Tako {
         current["Textures"].value(slot, std::string()).copy(file.data(), file.size() - 1);
         // 打ち終えたときか、アセットウィンドウから落とされたときだけ読み込む（途中の名前で TextureManager を探さない）
         ImGui::InputTextWithHint(slot.c_str(), "white.png", file.data(), file.size());
+        const std::optional<std::string> dropped = AcceptTextureDrop();
+        if (ImGui::IsItemDeactivatedAfterEdit() || dropped) {
+          current["Textures"][slot] = dropped.value_or(file.data());
+          applyCurrent();
+        }
+      }
+    }
+  }
+
+  void MaterialEditor::DrawPostEffectPane()
+  {
+    MaterialLibrary* library = MaterialLibrary::GetInstance();
+
+    ImGui::SeparatorText(tracker_.IsEdited() ? std::format("{} *", selected_).c_str() : selected_.c_str());
+    if (ImGui::Button("Save")) {
+      Save();
+    }
+    ImGui::SameLine();
+    tracker_.DrawButtons();
+    ImGui::TextDisabled("Add to the stack in PostEffect Settings (Materials). Edits apply to every effect that uses this material");
+
+    // シェーダーとテクスチャのファイル名は保存内容を書き換えて当てはめる（値は名前で引き継がれる）
+    json              current      = json::parse(library->Serialize(selected_));
+    const std::string shader       = current.value("Shader", std::string());
+    const auto        applyCurrent = [&] { library->Apply(selected_, current.dump()); };
+
+    // 用途の違うシェーダーへは替えられない（描画物のマテリアルは新しく作る）
+    if (ImGui::BeginCombo("Shader", shader.c_str())) {
+      for (const std::string& name : library->GetPostEffectShaderNames()) {
+        if (ImGui::Selectable(name.c_str(), name == shader)) {
+          current["Shader"] = name;
+          applyCurrent();
+        }
+      }
+      ImGui::EndCombo();
+    }
+
+    const PostEffectDefinition* definition = FindPostEffect(shader);
+    const PropertyBlock*        defaults   = definition ? std::get_if<PropertyBlock>(&definition->defaultParam) : nullptr;
+    if (!defaults) {
+      ImGui::TextDisabled("Shader not registered (check the error in Shader Editor)");
+      return;
+    }
+
+    ImGui::SeparatorText("Properties");
+    library->DrawValues(selected_);
+
+    if (!defaults->layout->textures.empty()) {
+      ImGui::SeparatorText("Textures");
+      for (const std::string& slot : defaults->layout->textures) {
+        std::array<char, 128> file{};
+        current["Textures"].value(slot, std::string()).copy(file.data(), file.size() - 1);
+        // 空なら .shader.json の Textures のまま描く
+        ImGui::InputTextWithHint(slot.c_str(), "(shader's texture)", file.data(), file.size());
         const std::optional<std::string> dropped = AcceptTextureDrop();
         if (ImGui::IsItemDeactivatedAfterEdit() || dropped) {
           current["Textures"][slot] = dropped.value_or(file.data());
