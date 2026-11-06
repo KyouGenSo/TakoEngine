@@ -103,7 +103,11 @@ namespace Tako {
     /// <summary>
     /// 本編スタックを input→output へ掛ける（アンチエイリアス設定を含む）
     /// </summary>
-    void Execute(const PostEffectFrame& frame, RenderTexture& input, RenderTexture& output) const { stack_.Execute(frame, input, output, antiAliasing_ == AntiAliasing::FXAA); }
+    /// <param name="afterEffects">PostProcessStack::Execute と同じ（拡大コピーの前に描き足す）</param>
+    void Execute(const PostEffectFrame& frame, RenderTexture& input, RenderTexture& output, const std::function<void(RenderTexture&)>& afterEffects = {}) const
+    {
+      stack_.Execute(frame, input, output, antiAliasing_ == AntiAliasing::FXAA, afterEffects);
+    }
 
     /// <summary>
     /// 本編スタックの maskId のエフェクトを layer へ掛け、target へ重ねる

@@ -114,6 +114,9 @@ namespace Tako {
       if (std::ranges::find(filter.excludeMaskIds, item.maskId) != filter.excludeMaskIds.end()) {
         continue;
       }
+      if (filter.postEffect && item.postEffect != *filter.postEffect) {
+        continue;
+      }
       // 差し替えるときも、描画キューは描画物自身のもので絞り込み・並べる
       int32_t queue = item.material->GetRenderQueue();
       if (item.transparent) {

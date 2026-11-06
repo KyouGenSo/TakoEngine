@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <d3d12.h>
+#include <optional>
 #include <span>
 #include <vector>
 
@@ -37,6 +38,7 @@ namespace Tako {
     bool    depthSort    = true;  ///< false なら登録順を保つ（スクリーン空間の描画物）
     bool    transparent  = false; ///< マテリアルに関わらず両面・深度書き込みなし・半透明キュー以降で描く
     bool    castShadow   = true;  ///< シャドウマップへ描くか（シェーダーが ShadowCaster パスを持つ場合）
+    bool    postEffect   = true;  ///< false なら画面全体のポストエフェクトの後に、シーンの深度で前後を判定して描く（マスク付きのエフェクトも掛からない）
 
     //オブジェクト単位のポストエフェクト・描画パスの絞り込み
     uint32_t maskId = 0;  ///< 同じ maskId の有効なポストエフェクトがあれば、シーンとは別の RT に描いてエフェクトを掛けてから重ねる（1〜255）
@@ -62,6 +64,7 @@ namespace Tako {
     std::span<const uint32_t> excludeNameIds;                ///< DrawItem::nameId が含まれる描画物は描かない
     std::span<const uint32_t> maskIds;                       ///< 空でなければ DrawItem::maskId が含まれる描画物だけ描く
     std::span<const uint32_t> excludeMaskIds;                ///< DrawItem::maskId が含まれる描画物は描かない
+    std::optional<bool>       postEffect;                    ///< 値があれば DrawItem::postEffect が一致する描画物だけ描く
     const Material*           overrideMaterial = nullptr;    ///< 全ての描画物をこのマテリアル（の描画設定）で描く
   };
 

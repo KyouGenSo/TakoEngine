@@ -131,7 +131,9 @@ namespace Tako {
     /// maskId が 0 の有効なエフェクトを順に input→output へ掛ける。大きさが違えば最後に拡大コピーする
     /// </summary>
     /// <param name="antiAliasing">最後に FXAA を掛ける</param>
-    void Execute(const PostEffectFrame& frame, RenderTexture& input, RenderTexture& output, bool antiAliasing = false) const;
+    /// <param name="afterEffects">エフェクトを掛け終えた input と同じ解像度の結果を受け取り、拡大コピーの前に描き足す（空なら呼ばない）</param>
+    void Execute(const PostEffectFrame& frame, RenderTexture& input, RenderTexture& output, bool antiAliasing = false,
+                 const std::function<void(RenderTexture&)>& afterEffects = {}) const;
 
     /// <summary>
     /// maskId の有効なエフェクトを layer へ順に掛け、target の上へ乗算済み α で重ねる

@@ -198,6 +198,7 @@ void Object3d::Draw()
 	item.transparent = Pick(code_.transparent, settings, &ObjectOverrides::transparent, kDefaultItem.transparent);
 	item.castShadow = Pick(code_.castShadow, settings, &ObjectOverrides::castShadow, kDefaultItem.castShadow);
 	item.maskId = Pick(code_.maskId, settings, &ObjectOverrides::maskId, kDefaultItem.maskId);
+	item.postEffect = Pick(code_.postEffect, settings, &ObjectOverrides::postEffect, kDefaultItem.postEffect);
 	item.nameId = nameId_;
 	model_->Draw(item, world, drawSlots_);
 }

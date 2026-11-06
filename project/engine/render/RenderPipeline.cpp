@@ -119,7 +119,7 @@ namespace Tako {
 
     RunPasses(RenderEvent::BeforeShadow);
     step("Shadows", [&] { renderer->RenderShadows(scene); });
-    step("Opaque", [&] { renderer->RenderList(scene, view, { .maxQueue = ShaderAsset::kQueueTransparent, .excludeNameIds = replacedIds_, .excludeMaskIds = maskIds }); });
+    step("Opaque", [&] { renderer->RenderList(scene, view, { .maxQueue = ShaderAsset::kQueueTransparent, .excludeNameIds = replacedIds_, .excludeMaskIds = maskIds, .postEffect = true }); });
     RunPasses(RenderEvent::AfterOpaque);
 
     step("Decals", [&] {
@@ -139,7 +139,7 @@ namespace Tako {
           dx12_->BindSceneRenderTarget({ layer.rtvHandle, sceneDsv, layer.width, layer.height });
           const float zero[4] = {};
           context.GetCommandList()->ClearRenderTargetView(layer.rtvHandle, zero, 0, nullptr);
-          renderer->RenderList(scene, view, { .excludeNameIds = replacedIds_, .maskIds = std::span(&maskId, 1) });
+          renderer->RenderList(scene, view, { .excludeNameIds = replacedIds_, .maskIds = std::span(&maskId, 1), .postEffect = true });
         });
         postEffect->ExecuteMasked(frame, maskId, layer, sceneColor_);
         graph_.Release(layer);
@@ -152,7 +152,7 @@ namespace Tako {
     RunPasses(RenderEvent::BeforeTransparent);
 
     step("Transparent", [&] {
-      renderer->RenderList(scene, view, { .minQueue = ShaderAsset::kQueueTransparent, .maxQueue = ShaderAsset::kQueueOverlay, .excludeNameIds = replacedIds_, .excludeMaskIds = maskIds });
+      renderer->RenderList(scene, view, { .minQueue = ShaderAsset::kQueueTransparent, .maxQueue = ShaderAsset::kQueueOverlay, .excludeNameIds = replacedIds_, .excludeMaskIds = maskIds, .postEffect = true });
     });
     step("Particles", [&] { GPUParticle::GetInstance()->Draw(); });
     step("Lines", [&] { LineRenderer::GetInstance()->Draw(); });
@@ -160,7 +160,18 @@ namespace Tako {
 
     //------------------------------ ポストエフェクト ------------------------------//
     RunPasses(RenderEvent::BeforePostProcess);
-    step(effectLabel("Post Process", 0), [&] { postEffect->Execute(frame, sceneColor_, final_); });
+    // Post Effect をオフにした描画物は、全画面のエフェクトを掛け終えた後、拡大コピーの前にシーンの深度で前後を判定して描く。
+    // ponytail: 手前の半透明・パーティクルはその画素で隠れる（Unity の After post-process と同じ）。避けるなら手前の半透明を別の RT にも描いて重ねる
+    std::function<void(RenderTexture&)> drawNoPostEffect;
+    if (std::ranges::any_of(scene.GetItems(), [](const DrawItem& item) { return !item.postEffect; })) {
+      drawNoPostEffect = [&](RenderTexture& target) {
+        graph_.AddPass({ RenderGraph::Write(target.resource), RenderGraph::DepthWrite(depth) }, [&] {
+          dx12_->BindSceneRenderTarget({ target.rtvHandle, sceneDsv, target.width, target.height });
+          renderer->RenderList(scene, view, { .maxQueue = ShaderAsset::kQueueOverlay, .excludeNameIds = replacedIds_, .postEffect = false });
+        });
+      };
+    }
+    step(effectLabel("Post Process", 0), [&] { postEffect->Execute(frame, sceneColor_, final_, drawNoPostEffect); });
 
     //------------------------------ UI ------------------------------//
     // 縮小解像度でなければ UI もシーンの深度を使う（縮小中はウィンドウ解像度の専用深度を、差し込んだパスより前にクリアする）

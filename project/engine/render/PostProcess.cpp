@@ -213,7 +213,8 @@ namespace Tako {
     std::erase_if(effects_, [id](const PostEffectInstance& effect) { return effect.id == id; });
   }
 
-  void PostProcessStack::Execute(const PostEffectFrame& frame, RenderTexture& input, RenderTexture& output, bool antiAliasing) const
+  void PostProcessStack::Execute(const PostEffectFrame& frame, RenderTexture& input, RenderTexture& output, bool antiAliasing,
+                                 const std::function<void(RenderTexture&)>& afterEffects) const
   {
     std::vector<Step> steps = CollectSteps(effects_, 0);
     if (antiAliasing) {
@@ -223,6 +224,10 @@ namespace Tako {
     // 出力と同じ大きさなら最後のエフェクトは出力へ直接書く
     const bool     sameSize = input.width == output.width && input.height == output.height;
     RenderTexture* source   = RunSteps(frame, steps, input, sameSize ? &output : nullptr);
+    // source はここでは常に input の解像度（同じ大きさなら output そのもの）
+    if (afterEffects) {
+      afterEffects(*source);
+    }
     if (source != &output) {
       Run(frame, kCopy, kNoParam, *source, output);
       if (source != &input) {

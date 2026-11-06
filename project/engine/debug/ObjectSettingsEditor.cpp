@@ -337,6 +337,11 @@ namespace Tako {
     ImGui::SetItemTooltip("Double-sided, no depth write, drawn in the transparent queue (back to front)");
     DrawCodeMark(code && code->transparent, "SetTransparent");
 
+    changed |= OverrideField<bool>("Post Effect", overrides.postEffect, defaults.postEffect, checkbox);
+    ImGui::SetItemTooltip("Unchecked draws the object after the whole-screen post effects, tested against the scene depth.\n"
+                          "Transparent objects and particles in front of it are hidden where they overlap it. Mask ID effects do not apply");
+    DrawCodeMark(code && code->postEffect, "SetPostEffect");
+
     const std::vector<std::string> materials = MaterialLibrary::GetInstance()->GetMaterialFileNames();
     ImGui::SeparatorText("Material (all meshes)");
     changed |= DrawMaterialOverrides(overrides, nullptr, object, object ? 0 : kNoMesh, materials);

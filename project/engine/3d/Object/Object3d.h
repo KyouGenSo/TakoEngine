@@ -51,6 +51,7 @@ public: // 構造体
     std::optional<bool>                      castShadow;
     std::optional<int32_t>                   sortingOrder;
     std::optional<uint32_t>                  maskId;
+    std::optional<bool>                      postEffect;
     std::vector<std::shared_ptr<Material>>   materials;     ///< メッシュ番号順（nullptr は上書きなし）
     std::map<std::string, bool, std::less<>> meshVisible;   ///< メッシュ名ごと
     MaterialPropertyBlock                    properties;    ///< マテリアルの値とテクスチャ（"color"・"gTexture" など）
@@ -149,6 +150,11 @@ public: // メンバー関数
   /// 同じ maskId のポストエフェクトをこのオブジェクトだけに掛ける。効果は輪郭の外へも広がる（0 で解除、1〜255。std::nullopt で上書きを外す）
   /// </summary>
   void SetMaskId(std::optional<uint32_t> maskId) { code_.maskId = maskId; }
+
+  /// <summary>
+  /// false なら画面全体のポストエフェクトを掛けず、その後にシーンの深度で前後を判定して描く（std::nullopt で上書きを外す）
+  /// </summary>
+  void SetPostEffect(std::optional<bool> postEffect) { code_.postEffect = postEffect; }
 
   /// <summary>
   /// メッシュの描画に使うマテリアルを差し替える（nullptr で上書きを外す）

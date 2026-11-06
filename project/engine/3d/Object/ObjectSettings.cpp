@@ -130,6 +130,7 @@ namespace Tako {
       Write(entry, "SortingOrder", overrides.sortingOrder);
       Write(entry, "CastShadow", overrides.castShadow);
       Write(entry, "Transparent", overrides.transparent);
+      Write(entry, "PostEffect", overrides.postEffect);
       json meshes = json::object();
       for (const auto& [meshName, mesh] : overrides.meshes) {
         json meshEntry = json::object();
@@ -163,6 +164,7 @@ namespace Tako {
         Read(entry, "SortingOrder", overrides.sortingOrder);
         Read(entry, "CastShadow", overrides.castShadow);
         Read(entry, "Transparent", overrides.transparent);
+        Read(entry, "PostEffect", overrides.postEffect);
         const json meshes = entry.value("Meshes", json::object());
         for (const auto& [meshName, meshEntry] : meshes.items()) {
           MeshOverrides& mesh = overrides.meshes[meshName];

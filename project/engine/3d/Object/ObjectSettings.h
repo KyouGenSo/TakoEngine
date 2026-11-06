@@ -50,6 +50,7 @@ namespace Tako {
     std::optional<int32_t>                               sortingOrder;
     std::optional<bool>                                  castShadow;
     std::optional<bool>                                  transparent;
+    std::optional<bool>                                  postEffect;
     std::map<std::string, MeshOverrides, std::less<>>    meshes;          ///< メッシュ名ごと
     ResolvedMaterial                                     resolved;        ///< 全メッシュ用（保存しない）
     std::map<std::string, ResolvedMaterial, std::less<>> resolvedMeshes;  ///< マテリアルを設定したメッシュ名ごと（保存しない）
@@ -64,7 +65,7 @@ namespace Tako {
   /// Object3d の名前ごとの描画設定。同じ名前の Object3d は描画時にこの設定を当てる。
   ///
   /// resources/Json/ObjectSettings.json
-  ///   { "Boss": { "Visible": true, "MaskId": 1, "SortingOrder": 0, "CastShadow": false, "Transparent": true,
+  ///   { "Boss": { "Visible": true, "MaskId": 1, "SortingOrder": 0, "CastShadow": false, "Transparent": true, "PostEffect": false,
   ///               "Material": "Hologram", "Values": { "color": [1, 0, 0, 1] }, "Textures": { "gTexture": "noise.png" },
   ///               "Meshes": { "Sword": { "Visible": false, "Material": "XRay", "Values": {}, "Textures": {} } } } }
   ///   Values と Textures はマテリアルを書き換えず、描くときにそのメッシュを描くマテリアルの同じ名前の値へ重ねる
