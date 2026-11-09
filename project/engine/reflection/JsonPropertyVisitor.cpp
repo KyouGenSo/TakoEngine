@@ -44,50 +44,86 @@ namespace Tako {
   //JsonWriteVisitor
   //==================================================================
 
+  nlohmann::json& JsonWriteVisitor::Slot(const char* key)
+  {
+    nlohmann::json& top = *stack_.back();
+    if (key) { return top[key]; }
+    top.push_back(nullptr);
+    return top.back();
+  }
+
+  bool JsonWriteVisitor::BeginStruct(const char* key, const PropertyMeta& meta)
+  {
+    if (!IsSaved(meta)) { return false; }
+    nlohmann::json& slot = Slot(key);
+    slot = nlohmann::json::object();
+    stack_.push_back(&slot);
+    return true;
+  }
+
+  void JsonWriteVisitor::EndStruct()
+  {
+    stack_.pop_back();
+  }
+
+  bool JsonWriteVisitor::BeginArray(const char* key, const PropertyMeta& meta, [[maybe_unused]] size_t& count)
+  {
+    if (!IsSaved(meta)) { return false; }
+    nlohmann::json& slot = Slot(key);
+    slot = nlohmann::json::array();
+    stack_.push_back(&slot);
+    return true;
+  }
+
+  void JsonWriteVisitor::EndArray()
+  {
+    stack_.pop_back();
+  }
+
   void JsonWriteVisitor::Visit(const char* key, bool& value, const PropertyMeta& meta)
   {
-    if (IsSaved(meta)) { out_[key] = value; }
+    if (IsSaved(meta)) { Slot(key) = value; }
   }
 
   void JsonWriteVisitor::Visit(const char* key, int32_t& value, const PropertyMeta& meta)
   {
-    if (IsSaved(meta)) { out_[key] = value; }
+    if (IsSaved(meta)) { Slot(key) = value; }
   }
 
   void JsonWriteVisitor::Visit(const char* key, uint32_t& value, const PropertyMeta& meta)
   {
-    if (IsSaved(meta)) { out_[key] = value; }
+    if (IsSaved(meta)) { Slot(key) = value; }
   }
 
   void JsonWriteVisitor::Visit(const char* key, float& value, const PropertyMeta& meta)
   {
-    if (IsSaved(meta)) { out_[key] = value; }
+    if (IsSaved(meta)) { Slot(key) = value; }
   }
 
   void JsonWriteVisitor::Visit(const char* key, Vector2& value, const PropertyMeta& meta)
   {
-    if (IsSaved(meta)) { out_[key] = nlohmann::json::array({ value.x, value.y }); }
+    if (IsSaved(meta)) { Slot(key) = nlohmann::json::array({ value.x, value.y }); }
   }
 
   void JsonWriteVisitor::Visit(const char* key, Vector3& value, const PropertyMeta& meta)
   {
-    if (IsSaved(meta)) { out_[key] = ToJson(value); }
+    if (IsSaved(meta)) { Slot(key) = ToJson(value); }
   }
 
   void JsonWriteVisitor::Visit(const char* key, Vector4& value, const PropertyMeta& meta)
   {
-    if (IsSaved(meta)) { out_[key] = nlohmann::json::array({ value.x, value.y, value.z, value.w }); }
+    if (IsSaved(meta)) { Slot(key) = nlohmann::json::array({ value.x, value.y, value.z, value.w }); }
   }
 
   void JsonWriteVisitor::Visit(const char* key, std::string& value, const PropertyMeta& meta)
   {
-    if (IsSaved(meta)) { out_[key] = value; }
+    if (IsSaved(meta)) { Slot(key) = value; }
   }
 
   void JsonWriteVisitor::Visit(const char* key, Transform& value, const PropertyMeta& meta)
   {
     if (IsSaved(meta)) {
-      out_[key] = { { "scale", ToJson(value.scale) }, { "rotate", ToJson(value.rotate) }, { "translate", ToJson(value.translate) } };
+      Slot(key) = { { "scale", ToJson(value.scale) }, { "rotate", ToJson(value.rotate) }, { "translate", ToJson(value.translate) } };
     }
   }
 
@@ -97,9 +133,9 @@ namespace Tako {
     // 名前の無い値は数値で残す（TENUM に無い値でも失わないため）
     const char* name = meta.enumInfo && (meta.flags & kPropEnumAsInt) == 0 ? meta.enumInfo->FindName(value) : nullptr;
     if (name) {
-      out_[key] = name;
+      Slot(key) = name;
     } else {
-      out_[key] = value;
+      Slot(key) = value;
     }
   }
 
@@ -107,11 +143,44 @@ namespace Tako {
   //JsonReadVisitor
   //==================================================================
 
-  const nlohmann::json* JsonReadVisitor::Find(const char* key, const PropertyMeta& meta) const
+  const nlohmann::json* JsonReadVisitor::Find(const char* key, const PropertyMeta& meta)
   {
-    if (!IsSaved(meta) || !in_.is_object()) { return nullptr; }
-    auto it = in_.find(key);
-    return it != in_.end() ? &*it : nullptr;
+    if (!IsSaved(meta)) { return nullptr; }
+    Frame& top = stack_.back();
+    if (!key) {
+      if (!top.node->is_array() || top.nextIndex >= top.node->size()) { return nullptr; }
+      return &(*top.node)[top.nextIndex++];
+    }
+    if (!top.node->is_object()) { return nullptr; }
+    auto it = top.node->find(key);
+    return it != top.node->end() ? &*it : nullptr;
+  }
+
+  bool JsonReadVisitor::BeginStruct(const char* key, const PropertyMeta& meta)
+  {
+    const nlohmann::json* j = Find(key, meta);
+    if (!j || !j->is_object()) { return false; }
+    stack_.push_back({ j, 0 });
+    return true;
+  }
+
+  void JsonReadVisitor::EndStruct()
+  {
+    stack_.pop_back();
+  }
+
+  bool JsonReadVisitor::BeginArray(const char* key, const PropertyMeta& meta, size_t& count)
+  {
+    const nlohmann::json* j = Find(key, meta);
+    if (!j || !j->is_array()) { return false; }
+    count = j->size();
+    stack_.push_back({ j, 0 });
+    return true;
+  }
+
+  void JsonReadVisitor::EndArray()
+  {
+    stack_.pop_back();
   }
 
   void JsonReadVisitor::Visit(const char* key, bool& value, const PropertyMeta& meta)

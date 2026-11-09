@@ -4,11 +4,12 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 namespace Tako {
 
   /// <summary>
-  /// RunReflectionSelfTest が使う型。TakoHeaderTool が読みにくい書き方（{} 初期化、文字列の中の =、入れ子の enum）を含める
+  /// RunReflectionSelfTest が使う型。TakoHeaderTool が読みにくい書き方（{} 初期化、文字列の中の =、入れ子の enum / TSTRUCT、vector）を含める
   /// </summary>
   TCLASS()
   class ReflectionSelfTestObject : public TObject {
@@ -17,6 +18,18 @@ namespace Tako {
   public: //構造体
     TENUM()
     enum class Mode : uint8_t { First, Second = 5, Third };
+
+    TSTRUCT()
+    struct Entry {
+      GENERATED_STRUCT_BODY()
+
+      TPROPERTY(Edit)
+      float weight = 1.0f;
+      TPROPERTY(Edit)
+      Mode mode = Mode::First;
+      TPROPERTY(Edit)
+      std::vector<int32_t> values;
+    };
 
   public: //メンバー変数
     TPROPERTY(Edit, Category = "Test", ClampMin = 0, ClampMax = 10, Speed = 0.5)
@@ -35,6 +48,14 @@ namespace Tako {
     Mode modeAsInt_ = Mode::Third;
     TPROPERTY(Edit, Transient)
     float transient_ = 7.0f;
+    TPROPERTY(Edit)
+    Entry entry_;
+    TPROPERTY(Edit)
+    std::vector<Entry> entries_;
+    TPROPERTY(Edit)
+    std::vector<float> weights_{ 1.0f, 2.0f };
+    TPROPERTY(Edit)
+    std::vector<Mode> modes_;
   };
 
 #ifdef _DEBUG

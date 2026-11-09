@@ -21,6 +21,15 @@ namespace Tako {
     bool HasDrawn() const { return hasDrawn_; }
 
   protected: //非公開関数
+    bool BeginStruct(const char* key, const PropertyMeta& meta) override;
+    void EndStruct() override;
+
+    /// <summary>
+    /// 「名前 (個数)」の見出しと + / - を出す。+ / - で count を変える
+    /// </summary>
+    bool BeginArray(const char* key, const PropertyMeta& meta, size_t& count) override;
+    void EndArray() override;
+
     void Visit(const char* key, bool& value, const PropertyMeta& meta) override;
     void Visit(const char* key, int32_t& value, const PropertyMeta& meta) override;
     void Visit(const char* key, uint32_t& value, const PropertyMeta& meta) override;
@@ -44,10 +53,24 @@ namespace Tako {
     /// </summary>
     void End(const PropertyMeta& meta, bool changed);
 
+    /// <summary>
+    /// 開いた TreeNode の中へ入る。中の Category の見出しは外と別に数える
+    /// </summary>
+    void EnterNested();
+
+    /// <summary>
+    /// EnterNested と Begin で積んだものを戻す
+    /// </summary>
+    void LeaveNested();
+
   private: //メンバー変数
-    const char* category_ = "";
-    bool        changed_  = false;
-    bool        hasDrawn_ = false;
+    const char*              category_ = "";
+    const char*              label_    = "";   ///< Begin が決めた入力欄の名前。配列の要素は "[i]"
+    char                     indexLabel_[16]{};
+    std::vector<int>         indices_;          ///< 開いている配列ごとの、次の要素の番号
+    std::vector<const char*> nestedCategories_; ///< 入る前の category_
+    bool                     changed_  = false;
+    bool                     hasDrawn_ = false;
   };
 
   /// <summary>

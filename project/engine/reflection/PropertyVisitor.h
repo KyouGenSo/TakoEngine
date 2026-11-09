@@ -10,6 +10,7 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include <vector>
 
 namespace Tako {
 
@@ -72,6 +73,20 @@ namespace Tako {
     const EnumInfo*       enumInfo    = nullptr;  ///< TENUM の enum だけ
   };
 
+  class PropertyVisitor;
+
+  template<class T>
+  struct IsStdVector : std::false_type {};
+
+  template<class T, class Allocator>
+  struct IsStdVector<std::vector<T, Allocator>> : std::true_type {};
+
+  /// <summary>
+  /// 生成された Reflect を持つ型（TSTRUCT）
+  /// </summary>
+  template<class T>
+  concept ReflectedStruct = requires(T& value, PropertyVisitor& visitor) { value.Reflect(visitor); };
+
   /// <summary>
   /// Reflect が TPROPERTY を 1 つずつ渡す相手。保存・読み込み・Inspector がそれぞれ派生する
   /// </summary>
@@ -80,8 +95,9 @@ namespace Tako {
     virtual ~PropertyVisitor() = default;
 
     /// <summary>
-    /// 生成された Reflect が呼ぶ入口。enum は int64_t にして渡す
+    /// 生成された Reflect が呼ぶ入口。enum は int64_t にして渡し、TSTRUCT と std::vector は中へ降りる
     /// </summary>
+    /// <param name="key">保存キー。nullptr なら配列の要素</param>
     template<class T>
     void operator()(const char* key, T& value, const PropertyMeta& meta)
     {
@@ -89,12 +105,32 @@ namespace Tako {
         int64_t raw = static_cast<int64_t>(value);
         VisitEnum(key, raw, meta);
         value = static_cast<T>(raw);
+      } else if constexpr (IsStdVector<T>::value) {
+        VisitVector(key, value, meta);
+      } else if constexpr (ReflectedStruct<T>) {
+        if (BeginStruct(key, meta)) {
+          value.Reflect(*this);
+          EndStruct();
+        }
       } else {
         Visit(key, value, meta);
       }
     }
 
   protected: //非公開関数
+    /// <summary>
+    /// TSTRUCT の中へ入る。false なら中身を渡さない（EndStruct も呼ばない）
+    /// </summary>
+    virtual bool BeginStruct(const char* key, const PropertyMeta& meta) = 0;
+    virtual void EndStruct() = 0;
+
+    /// <summary>
+    /// std::vector の中へ入る。count を書き換えると要素数がその数になる
+    /// </summary>
+    /// <returns>false なら要素を渡さない（EndArray も呼ばない）</returns>
+    virtual bool BeginArray(const char* key, const PropertyMeta& meta, size_t& count) = 0;
+    virtual void EndArray() = 0;
+
     virtual void Visit(const char* key, bool& value, const PropertyMeta& meta) = 0;
     virtual void Visit(const char* key, int32_t& value, const PropertyMeta& meta) = 0;
     virtual void Visit(const char* key, uint32_t& value, const PropertyMeta& meta) = 0;
@@ -105,6 +141,27 @@ namespace Tako {
     virtual void Visit(const char* key, std::string& value, const PropertyMeta& meta) = 0;
     virtual void Visit(const char* key, Transform& value, const PropertyMeta& meta) = 0;
     virtual void VisitEnum(const char* key, int64_t& value, const PropertyMeta& meta) = 0;
+
+  private: //非公開関数
+    template<class T>
+    void VisitVector(const char* key, std::vector<T>& values, const PropertyMeta& meta)
+    {
+      static_assert(!std::is_same_v<T, bool>, "std::vector<bool> は要素の参照を取れないので TPROPERTY にできない");
+      size_t     count  = values.size();
+      const bool isOpen = BeginArray(key, meta, count);
+      // 増えた分は最後の要素の写しにする（Unity の + と同じ）
+      if (count > values.size() && !values.empty()) {
+        const T last = values.back();
+        values.resize(count, last);
+      } else {
+        values.resize(count);
+      }
+      if (!isOpen) { return; }
+      for (T& element : values) {
+        (*this)(nullptr, element, meta);
+      }
+      EndArray();
+    }
   };
 
 } // namespace Tako

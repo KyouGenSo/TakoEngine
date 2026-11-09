@@ -1,5 +1,5 @@
 // TakoReflection.props から RoslynCodeTaskFactory で読み込む MSBuild タスク。
-// ヘッダーの TCLASS / TENUM / TPROPERTY を読み、StaticType・GetType・Reflect の定義と型の登録関数を 1 つの .cpp に書き出す。
+// ヘッダーの TCLASS / TSTRUCT / TENUM / TPROPERTY を読み、StaticType・GetType・Reflect の定義と型の登録関数を 1 つの .cpp に書き出す。
 // MSBuild のプロセスはビルドをまたいで再利用されるので、このファイルを変えたら VS を再起動しないと反映されないことがある。
 using System;
 using System.Collections.Generic;
@@ -44,6 +44,8 @@ public class TakoHeaderTool : Task
     {
         public string Name;
         public string Base;
+        public bool IsStruct;
+        public ClassDecl Owner;  // TSTRUCT を入れ子で書いたときの外側
         public List<string> Namespaces = new List<string>();
         public bool HasGeneratedBody;
         public List<PropertyDecl> Properties = new List<PropertyDecl>();
@@ -72,7 +74,8 @@ public class TakoHeaderTool : Task
             string path = item.ItemSpec;
             if (!File.Exists(path)) continue;
             string text = File.ReadAllText(path);
-            if (text.IndexOf("TCLASS(", StringComparison.Ordinal) < 0 && text.IndexOf("TENUM(", StringComparison.Ordinal) < 0) continue;
+            if (text.IndexOf("TCLASS(", StringComparison.Ordinal) < 0 && text.IndexOf("TSTRUCT(", StringComparison.Ordinal) < 0
+                && text.IndexOf("TENUM(", StringComparison.Ordinal) < 0) continue;
             ParseHeader(path, text);
         }
 
@@ -232,7 +235,7 @@ public class TakoHeaderTool : Task
             int line = LineOf(lineStarts, t.Start);
             Scope current = scopes.Count > 0 ? scopes.Peek() : null;
 
-            if (t.Text == "TCLASS" || t.Text == "TENUM" || t.Text == "TPROPERTY")
+            if (t.Text == "TCLASS" || t.Text == "TSTRUCT" || t.Text == "TENUM" || t.Text == "TPROPERTY")
             {
                 if (lineDepth[line - 1] > guardDepth)
                 {
@@ -256,15 +259,18 @@ public class TakoHeaderTool : Task
                     continue;
                 }
             }
-            else if (t.Text == "TCLASS")
+            else if (t.Text == "TCLASS" || t.Text == "TSTRUCT")
             {
+                bool isStruct = t.Text == "TSTRUCT";
                 int j = SkipParens(tokens, i + 1);
-                ClassDecl decl = ParseClassHead(path, tokens, ref j, lineStarts);
+                ClassDecl decl = ParseClassHead(path, tokens, ref j, lineStarts, t.Text);
                 if (decl != null)
                 {
+                    decl.IsStruct = isStruct;
                     if (current != null && current.Class != null)
                     {
-                        Error(path, decl.Line, "TCLASS を他のクラスの中に書けない");
+                        if (isStruct) decl.Owner = current.Class;
+                        else Error(path, decl.Line, "TCLASS を他のクラスの中に書けない");
                     }
                     decl.Namespaces = scopes.Reverse().Where(s => !string.IsNullOrEmpty(s.Namespace)).Select(s => s.Namespace).ToList();
                     classes_.Add(decl);
@@ -294,7 +300,7 @@ public class TakoHeaderTool : Task
                 int argsEnd = SkipParens(tokens, i + 1);
                 if (current == null || current.Class == null)
                 {
-                    Error(path, line, "TPROPERTY は TCLASS の本体の直下に書く");
+                    Error(path, line, "TPROPERTY は TCLASS / TSTRUCT の本体の直下に書く");
                     i = argsEnd;
                     continue;
                 }
@@ -303,9 +309,17 @@ public class TakoHeaderTool : Task
                 i = next;
                 continue;
             }
-            else if (t.Text == "GENERATED_BODY")
+            else if (t.Text == "GENERATED_BODY" || t.Text == "GENERATED_STRUCT_BODY")
             {
-                if (current != null && current.Class != null) current.Class.HasGeneratedBody = true;
+                if (current != null && current.Class != null)
+                {
+                    bool wantsStruct = t.Text == "GENERATED_STRUCT_BODY";
+                    if (wantsStruct != current.Class.IsStruct)
+                    {
+                        Error(path, line, current.Class.IsStruct ? "TSTRUCT には GENERATED_STRUCT_BODY() を書く" : "TCLASS には GENERATED_BODY() を書く");
+                    }
+                    current.Class.HasGeneratedBody = true;
+                }
             }
             else if (t.Text == "{")
             {
@@ -339,18 +353,18 @@ public class TakoHeaderTool : Task
     }
 
     // class/struct 名 [final] [: 継承] { まで読む。成功すると j は "{" を指す
-    private ClassDecl ParseClassHead(string path, List<Token> tokens, ref int j, int[] lineStarts)
+    private ClassDecl ParseClassHead(string path, List<Token> tokens, ref int j, int[] lineStarts, string marker)
     {
         if (j >= tokens.Count || (tokens[j].Text != "class" && tokens[j].Text != "struct"))
         {
-            Error(path, LineOf(lineStarts, tokens[Math.Min(j, tokens.Count - 1)].Start), "TCLASS() の後に class か struct が必要");
+            Error(path, LineOf(lineStarts, tokens[Math.Min(j, tokens.Count - 1)].Start), marker + "() の後に class か struct が必要");
             return null;
         }
         int line = LineOf(lineStarts, tokens[j].Start);
         j++;
         if (j >= tokens.Count || tokens[j].Kind != TokenKind.Identifier)
         {
-            Error(path, line, "TCLASS のクラス名が読めない");
+            Error(path, line, marker + " のクラス名が読めない");
             return null;
         }
         var decl = new ClassDecl { Name = tokens[j].Text, File = path, Line = line };
@@ -374,10 +388,15 @@ public class TakoHeaderTool : Task
         }
         if (j >= tokens.Count || tokens[j].Text != "{")
         {
-            Error(path, line, "TCLASS " + decl.Name + " の本体が見つからない");
+            Error(path, line, marker + " " + decl.Name + " の本体が見つからない");
             return null;
         }
-        if (string.IsNullOrEmpty(decl.Base))
+        if (marker == "TSTRUCT")
+        {
+            // ponytail: 基底の Reflect を呼ぶ仕組みが要るので、継承が必要になったら足す
+            if (!string.IsNullOrEmpty(decl.Base)) Error(path, line, "TSTRUCT " + decl.Name + " は継承できない");
+        }
+        else if (string.IsNullOrEmpty(decl.Base))
         {
             Error(path, line, "TCLASS " + decl.Name + " は TObject かその派生を継承する");
             return null;
@@ -542,20 +561,24 @@ public class TakoHeaderTool : Task
         {
             if (!c.HasGeneratedBody)
             {
-                Error(c.File, c.Line, "TCLASS " + c.Name + " の本体に GENERATED_BODY() が無い");
+                Error(c.File, c.Line, c.IsStruct
+                    ? "TSTRUCT " + c.Name + " の本体に GENERATED_STRUCT_BODY() が無い"
+                    : "TCLASS " + c.Name + " の本体に GENERATED_BODY() が無い");
                 continue;
             }
-            GenerateClass(sb, c);
+            if (c.IsStruct) GenerateStruct(sb, c);
+            else GenerateClass(sb, c);
         }
+        List<ClassDecl> registered = classes_.Where(c => !c.IsStruct).ToList();
 
         sb.AppendLine("namespace Tako {");
         sb.AppendLine();
         sb.AppendLine("  void RegisterTypes_" + ModuleName + "()");
         sb.AppendLine("  {");
-        if (classes_.Count > 0)
+        if (registered.Count > 0)
         {
             sb.AppendLine("    TypeRegistry* registry = TypeRegistry::GetInstance();");
-            foreach (ClassDecl c in classes_)
+            foreach (ClassDecl c in registered)
             {
                 sb.AppendLine("    registry->Register(" + QualifiedName(c) + "::StaticType());");
             }
@@ -594,10 +617,44 @@ public class TakoHeaderTool : Task
         sb.AppendLine();
     }
 
+    private void GenerateStruct(StringBuilder sb, ClassDecl c)
+    {
+        foreach (string ns in c.Namespaces) sb.AppendLine("namespace " + ns + " {");
+        sb.AppendLine();
+        sb.AppendLine("void " + NestedName(c) + "::Reflect(::Tako::PropertyVisitor& v)");
+        sb.AppendLine("{");
+        if (c.Properties.Count == 0) sb.AppendLine("  (void)v;");
+        foreach (PropertyDecl p in c.Properties)
+        {
+            GenerateProperty(sb, c, p);
+        }
+        sb.AppendLine("}");
+        sb.AppendLine();
+        foreach (string ns in c.Namespaces) sb.AppendLine("} // namespace " + ns);
+        sb.AppendLine();
+    }
+
+    // 名前空間の中での名前（入れ子の TSTRUCT は Outer::Inner）
+    private static string NestedName(ClassDecl c)
+    {
+        return c.Owner != null ? NestedName(c.Owner) + "::" + c.Name : c.Name;
+    }
+
+    // std::vector<X> なら X、それ以外はそのまま
+    private static string ElementType(string typeText)
+    {
+        const string vectorPrefix = "std::vector";
+        if (!typeText.StartsWith(vectorPrefix, StringComparison.Ordinal)) return typeText;
+        string rest = typeText.Substring(vectorPrefix.Length).Trim();
+        if (!rest.StartsWith("<") || !rest.EndsWith(">")) return typeText;
+        return rest.Substring(1, rest.Length - 2).Trim();
+    }
+
     private void GenerateProperty(StringBuilder sb, ClassDecl c, PropertyDecl p)
     {
         string key = p.Member.EndsWith("_") ? p.Member.Substring(0, p.Member.Length - 1) : p.Member;
-        bool isBool = p.TypeText == "bool";
+        string elementType = ElementType(p.TypeText);
+        bool isBool = elementType == "bool";
 
         string displayName = null;
         string category = null;
@@ -621,13 +678,13 @@ public class TakoHeaderTool : Task
         }
         if (displayName == null) displayName = "\"" + MakeDisplayName(key, isBool) + "\"";
 
-        EnumDecl enumDecl = FindEnum(c, p);
+        EnumDecl enumDecl = FindEnum(c, p, elementType);
         if (enumDecl != null)
         {
             sb.AppendLine("  static constexpr ::Tako::EnumEntry kEnumEntries_" + key + "[] = {");
             foreach (string e in enumDecl.Enumerators)
             {
-                sb.AppendLine("    { \"" + e + "\", static_cast<int64_t>(" + p.TypeText + "::" + e + ") },");
+                sb.AppendLine("    { \"" + e + "\", static_cast<int64_t>(" + elementType + "::" + e + ") },");
             }
             sb.AppendLine("  };");
             sb.AppendLine("  static constexpr ::Tako::EnumInfo kEnumInfo_" + key + "{ kEnumEntries_" + key + " };");
@@ -646,9 +703,9 @@ public class TakoHeaderTool : Task
     }
 
     // 型の最後の識別子が同じ名前の TENUM を探す。同じ名前が複数あれば、同じクラスの中で宣言したものを使う
-    private EnumDecl FindEnum(ClassDecl c, PropertyDecl p)
+    private EnumDecl FindEnum(ClassDecl c, PropertyDecl p, string elementType)
     {
-        string simpleName = p.TypeText;
+        string simpleName = elementType;
         int colon = simpleName.LastIndexOf("::", StringComparison.Ordinal);
         if (colon >= 0) simpleName = simpleName.Substring(colon + 2);
         List<EnumDecl> candidates = enums_.Where(e => e.Name == simpleName).ToList();
