@@ -1,29 +1,6 @@
 #include "BTParallel.h"
 
-#ifdef _DEBUG
-#include "imgui.h"
-#endif
-
 namespace Tako {
-
-  namespace {
-    BTParallel::Policy PolicyFromString(const std::string& s) {
-      if (s == "AllSuccess") return BTParallel::Policy::AllSuccess;
-      if (s == "AnySuccess") return BTParallel::Policy::AnySuccess;
-      if (s == "MainChild")  return BTParallel::Policy::MainChild;
-      // 未知文字列は MainChild にフォールバック
-      return BTParallel::Policy::MainChild;
-    }
-
-    const char* PolicyToString(BTParallel::Policy p) {
-      switch (p) {
-      case BTParallel::Policy::AllSuccess: return "AllSuccess";
-      case BTParallel::Policy::AnySuccess: return "AnySuccess";
-      case BTParallel::Policy::MainChild:  return "MainChild";
-      }
-      return "MainChild";
-    }
-  } // namespace
 
   BTParallel::BTParallel(Policy policy)
     : policy_(policy)
@@ -134,30 +111,5 @@ namespace Tako {
     BTComposite::Reset();    // 全子 Reset + currentChildIndex_ = 0
     childStatuses_.clear();
   }
-
-  void BTParallel::ApplyParameters(const nlohmann::json& params) {
-    if (params.contains("policy") && params["policy"].is_string()) {
-      policy_ = PolicyFromString(params["policy"].get<std::string>());
-    }
-  }
-
-  nlohmann::json BTParallel::ExtractParameters() const {
-    return nlohmann::json{
-        { "policy", PolicyToString(policy_) }
-    };
-  }
-
-#ifdef _DEBUG
-  bool BTParallel::DrawImGui() {
-    bool changed = false;
-    const char* items[] = { "AllSuccess", "AnySuccess", "MainChild" };
-    int currentIndex = static_cast<int>(policy_);
-    if (ImGui::Combo("Policy", &currentIndex, items, IM_ARRAYSIZE(items))) {
-      policy_ = static_cast<Policy>(currentIndex);
-      changed = true;
-    }
-    return changed;
-  }
-#endif
 
 } // namespace Tako

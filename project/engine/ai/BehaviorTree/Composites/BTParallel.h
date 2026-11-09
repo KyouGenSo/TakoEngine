@@ -9,11 +9,15 @@ namespace Tako {
   /// 全ての子ノードを 1 フレームで並列に Execute し、
   /// 終了判定は Policy に応じて切り替える。
   /// </summary>
+  TCLASS()
   class BTParallel : public BTComposite {
+    GENERATED_BODY()
+
   public: //構造体
     /// <summary>
-    /// 終了判定ポリシー。
+    /// 終了判定ポリシー。保存は列挙子の名前
     /// </summary>
+    TENUM()
     enum class Policy : uint32_t {
       /// <summary>
       /// 全ての子が Success → Success。
@@ -55,26 +59,6 @@ namespace Tako {
     /// </summary>
     void Reset() override;
 
-    /// <summary>
-    /// JSON からパラメータを適用 (policy: "AllSuccess" / "AnySuccess" / "MainChild")。
-    /// </summary>
-    /// <param name="params">パラメータ JSON</param>
-    void ApplyParameters(const nlohmann::json& params) override;
-
-    /// <summary>
-    /// パラメータを JSON として抽出。
-    /// </summary>
-    /// <returns>policy フィールドを含む JSON</returns>
-    nlohmann::json ExtractParameters() const override;
-
-#ifdef _DEBUG
-    /// <summary>
-    /// ImGui でパラメータ編集 UI を描画 (Debug 限定)。
-    /// </summary>
-    /// <returns>変更があれば true</returns>
-    bool DrawImGui() override;
-#endif
-
     //===========================
     //Setter
     //===========================
@@ -86,6 +70,7 @@ namespace Tako {
     Policy GetPolicy() const { return policy_; }
 
   private: //メンバー変数
+    TPROPERTY(Edit)
     Policy                    policy_;         ///< ポリシー
     std::vector<BTNodeStatus> childStatuses_;  ///< 各子ノードの最新ステータス (初回 Execute 時に children_.size() に合わせて初期化)。一度 Success/Failure になった子は再 Execute されずに状態を保持する (ポリシー判定用)
   };

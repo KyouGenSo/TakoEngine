@@ -129,6 +129,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="engine\ai\BehaviorTree\Core\BTNode.cpp">
+      <Filter>ai\BehaviorTree\Core</Filter>
+    </ClCompile>
     <ClCompile Include="engine\imgui\ImGuiPropertyVisitor.cpp">
       <Filter>imgui</Filter>
     </ClCompile>

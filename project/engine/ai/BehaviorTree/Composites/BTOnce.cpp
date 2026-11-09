@@ -1,9 +1,5 @@
 #include "BTOnce.h"
 
-#ifdef _DEBUG
-#include "imgui.h"
-#endif
-
 namespace Tako {
 
   BTOnce::BTOnce() {
@@ -27,28 +23,5 @@ namespace Tako {
     status_ = childStatus;
     return status_;
   }
-
-  void BTOnce::ApplyParameters(const nlohmann::json& params) {
-    if (params.contains("maxUses") && params["maxUses"].is_number_integer()) {
-      maxUses_ = params["maxUses"].get<int>();
-    }
-  }
-
-  nlohmann::json BTOnce::ExtractParameters() const {
-    return nlohmann::json{
-        { "maxUses", maxUses_ }
-    };
-  }
-
-#ifdef _DEBUG
-  bool BTOnce::DrawImGui() {
-    bool changed = false;
-    if (ImGui::InputInt("MaxUses", &maxUses_)) {
-      if (maxUses_ < 1) maxUses_ = 1;
-      changed = true;
-    }
-    return changed;
-  }
-#endif
 
 } // namespace Tako

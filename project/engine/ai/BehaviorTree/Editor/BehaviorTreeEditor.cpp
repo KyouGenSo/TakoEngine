@@ -780,9 +780,7 @@ void BehaviorTreeEditor::DrawNodeInspector() {
 
   // ノード自身の DrawImGui でパラメータ編集（編集は区間の前後の比較で見つける）
   if (node->runtimeNode) {
-    if (!node->runtimeNode->DrawImGui()) {
-      ImGui::TextDisabled("No editable parameters");
-    }
+    node->runtimeNode->DrawImGui();
   }
   else {
     ImGui::TextDisabled("No runtime node");

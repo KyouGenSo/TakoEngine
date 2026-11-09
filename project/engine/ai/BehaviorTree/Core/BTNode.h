@@ -1,4 +1,6 @@
 #pragma once
+#include "TObject.h"
+
 #include <memory>
 #include <vector>
 #include <string>
@@ -18,9 +20,12 @@ namespace Tako {
   };
 
   /// <summary>
-  /// ビヘイビアツリーノードの基底クラス。
+  /// ビヘイビアツリーノードの基底クラス。パラメータは派生クラスの TPROPERTY で決まる
   /// </summary>
-  class BTNode {
+  TCLASS()
+  class BTNode : public TObject {
+    GENERATED_BODY()
+
   public: //メンバー関数
     virtual ~BTNode() = default;
 
@@ -41,29 +46,23 @@ namespace Tako {
     }
 
     /// <summary>
-    /// JSON からパラメータを適用 (ロード時)。
-    /// 既定実装は何もしない (パラメータを持たないノード用)。
+    /// JSON からパラメータを適用 (ロード時)。既定は TPROPERTY を読む
     /// </summary>
     /// <param name="params">パラメータ JSON</param>
-    virtual void ApplyParameters(const nlohmann::json& params) {
-      (void)params;
-    }
+    virtual void ApplyParameters(const nlohmann::json& params);
 
     /// <summary>
-    /// パラメータを JSON として抽出 (保存用)。
-    /// 既定実装は空オブジェクトを返す (パラメータを持たないノード用)。
+    /// パラメータを JSON として抽出 (保存用)。既定は TPROPERTY を書く（無ければ null）
     /// </summary>
     /// <returns>パラメータ JSON</returns>
-    virtual nlohmann::json ExtractParameters() const {
-      return {};
-    }
+    virtual nlohmann::json ExtractParameters() const;
 
 #ifdef _DEBUG
     /// <summary>
-    /// ImGui でパラメータ編集 UI を描画 (Debug ビルド限定、エディタ用)。
+    /// ImGui でパラメータ編集 UI を描画 (Debug ビルド限定、エディタ用)。既定は TPROPERTY の自動 UI
     /// </summary>
     /// <returns>パラメータ変更があれば true</returns>
-    virtual bool DrawImGui() { return false; }
+    virtual bool DrawImGui();
 #endif
 
     //===================================

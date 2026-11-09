@@ -121,6 +121,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="engine\ai\BehaviorTree\Core\BTNode.cpp" />
     <ClCompile Include="engine\imgui\ImGuiPropertyVisitor.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>

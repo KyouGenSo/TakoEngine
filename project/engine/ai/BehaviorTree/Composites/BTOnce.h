@@ -9,7 +9,10 @@ namespace Tako {
   /// 上限到達後は子を実行せず Failure を返す。
   /// 子が Success を返した時のみ消費し、Failure / Running は透過する。
   /// </summary>
+  TCLASS()
   class BTOnce : public BTComposite {
+    GENERATED_BODY()
+
   public: //メンバー関数
     BTOnce();
 
@@ -22,26 +25,6 @@ namespace Tako {
     /// <param name="blackboard">ブラックボード</param>
     /// <returns>実行結果</returns>
     BTNodeStatus Execute(BTBlackboard* blackboard) override;
-
-    /// <summary>
-    /// JSON からパラメータを適用。
-    /// </summary>
-    /// <param name="params">パラメータ JSON</param>
-    void ApplyParameters(const nlohmann::json& params) override;
-
-    /// <summary>
-    /// パラメータを JSON として抽出。
-    /// </summary>
-    /// <returns>maxUses フィールドを含む JSON</returns>
-    nlohmann::json ExtractParameters() const override;
-
-#ifdef _DEBUG
-    /// <summary>
-    /// ImGui でパラメータ編集 UI を描画。
-    /// </summary>
-    /// <returns>変更があれば true</returns>
-    bool DrawImGui() override;
-#endif
 
     //===========================
     //Setter
@@ -56,6 +39,7 @@ namespace Tako {
     int GetUsedCount() const { return usedCount_; }
 
   private: //メンバー変数
+    TPROPERTY(Edit, ClampMin = 1)
     int maxUses_   = 1;  ///< 成功を許可する回数
     int usedCount_ = 0;  ///< 成功した回数。Reset() では消さず戦闘中ラッチを保持する (ツリー再生成で 0 に戻る)
   };

@@ -8,7 +8,10 @@ namespace Tako {
   /// コンポジットノードの基底クラス。
   /// 複数の子ノードを持つノード (Sequence / Selector / Parallel / RandomSelector など)。
   /// </summary>
+  TCLASS()
   class BTComposite : public BTNode {
+    GENERATED_BODY()
+
   public: //メンバー関数
     BTComposite() = default;
 
