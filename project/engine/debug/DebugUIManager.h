@@ -15,6 +15,7 @@
 #include "ParticleEditor.h"
 #include "MaterialEditor.h"
 #include "ObjectSettingsEditor.h"
+#include "SceneEditor.h"
 #include "ShaderEditor.h"
 #include "RenderPipelineWindow.h"
 #include "DebugViewport.h"
@@ -267,6 +268,11 @@ namespace Tako {
     void StepFrame();
 
     /// <summary>
+    /// Play 中なら Stop（Play を始めたシーンを作り直し、Play 前の中身に戻す）、Edit 中なら Play
+    /// </summary>
+    void TogglePlay();
+
+    /// <summary>
     /// メインメニューバーを描画
     /// </summary>
     void DrawMainMenuBar();
@@ -387,6 +393,7 @@ namespace Tako {
     AnimationEditor       animationEditor_;
     MaterialEditor        materialEditor_;
     ObjectSettingsEditor  objectSettingsEditor_;
+    SceneEditor           sceneEditor_;
     ShaderEditor          shaderEditor_;
     RenderPipelineWindow  renderPipelineWindow_;
   };

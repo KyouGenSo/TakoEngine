@@ -129,6 +129,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="engine\debug\SceneEditor.cpp">
+      <Filter>debug</Filter>
+    </ClCompile>
     <ClCompile Include="engine\scene\Prefab.cpp">
       <Filter>scene</Filter>
     </ClCompile>
@@ -482,6 +485,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\debug\SceneEditor.h">
+      <Filter>debug</Filter>
+    </ClInclude>
     <ClInclude Include="engine\scene\Prefab.h">
       <Filter>scene</Filter>
     </ClInclude>

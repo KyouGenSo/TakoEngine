@@ -68,6 +68,7 @@ namespace Tako {
       { "Primitive Editor",                                   [] { DrawShortcutTable(PrimitiveEditor::Shortcuts()); } },
       { "Material Editor",                                    [] { DrawShortcutTable(MaterialEditor::Shortcuts()); } },
       { "Object Settings",                                    [] { DrawShortcutTable(ObjectSettingsEditor::Shortcuts()); } },
+      { "Scene Hierarchy / Inspector (Actors)",               [] { DrawShortcutTable(SceneEditor::Shortcuts()); } },
       { "Shader Editor",                                      [] { DrawShortcutTable(ShaderEditor::Shortcuts()); } },
       { "Render Pipeline",                                    [] { DrawShortcutTable(RenderPipelineWindow::Shortcuts()); } },
       { "PostEffect",                                         [] { DrawShortcutTable(PostEffectManager::Shortcuts()); } },
@@ -97,7 +98,7 @@ namespace Tako {
       return kMenuBarGap * 2.0f + 1.0f + ImGui::GetStyle().ItemSpacing.x * 3.0f;
     }
 
-    enum class ToolbarIcon { Play, Pause, Step };
+    enum class ToolbarIcon { Play, Pause, Step, Stop };
 
     /// <summary>
     /// 図形アイコン付きボタン（既定フォントに記号グリフが無いため DrawList で描く）
@@ -134,6 +135,9 @@ namespace Tako {
         drawList->AddTriangleFilled(ImVec2(center.x - half, center.y - half), ImVec2(center.x + half * 0.4f, center.y),
           ImVec2(center.x - half, center.y + half), color);
         drawList->AddRectFilled(ImVec2(center.x + half * 0.5f, center.y - half), ImVec2(center.x + half, center.y + half), color);
+        break;
+      case ToolbarIcon::Stop:
+        drawList->AddRectFilled(ImVec2(center.x - half * 0.8f, center.y - half * 0.8f), ImVec2(center.x + half * 0.8f, center.y + half * 0.8f), color);
         break;
       }
       return pressed;
@@ -201,6 +205,7 @@ namespace Tako {
       { ImGuiKey_F6,  ImGuiInputFlags_None, "Performance",         [](DebugUIManager& manager) { manager.ToggleWindow(Window::Performance); } },
       { ImGuiKey_F7,  ImGuiInputFlags_None, "Pause / Resume",      [](DebugUIManager& manager) { manager.SetGamePaused(!FrameTimer::GetInstance()->IsPaused()); } },
       { ImGuiKey_F8,  ImGuiInputFlags_None, "Step Frame",          [](DebugUIManager& manager) { manager.StepFrame(); } },
+      { ImGuiKey_F9,  ImGuiInputFlags_None, "Play / Stop (Edit)",  [](DebugUIManager& manager) { manager.TogglePlay(); } },
       { ImGuiKey_F10, ImGuiInputFlags_None, "Show Main Windows",   [](DebugUIManager& manager) {
         for (Window window : kMainWindows) {
           manager.WindowFlag(window) = true;
@@ -225,6 +230,7 @@ namespace Tako {
     uiLayoutEditor_.Update();
     cameraAnimationEditor_.Update();
     animationEditor_.Update();
+    sceneEditor_.Update();
   }
 
   void DebugUIManager::Draw() {
@@ -299,6 +305,7 @@ namespace Tako {
     primitiveEditor_.CollectUnsavedChanges(unsavedChanges_);
     materialEditor_.CollectUnsavedChanges(unsavedChanges_);
     objectSettingsEditor_.CollectUnsavedChanges(unsavedChanges_);
+    sceneEditor_.CollectUnsavedChanges(unsavedChanges_);
     shaderEditor_.CollectUnsavedChanges(unsavedChanges_);
     renderPipelineWindow_.CollectUnsavedChanges(unsavedChanges_);
     engineSettings_.CollectUnsavedChanges(unsavedChanges_);
@@ -518,8 +525,21 @@ namespace Tako {
 
   void DebugUIManager::DrawPlaybackToolbar() {
     const bool  isPaused   = FrameTimer::GetInstance()->IsPaused();
-    const float groupWidth = ImGui::GetFrameHeight() * kIconButtonAspect * 2.0f + ImGui::GetStyle().ItemSpacing.x;
+    const float groupWidth = ImGui::GetFrameHeight() * kIconButtonAspect * 3.0f + ImGui::GetStyle().ItemSpacing.x * 2.0f;
     ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (ImGui::GetContentRegionAvail().x - groupWidth) * 0.5f);
+
+    // Edit 中は Play、Play 中は Stop。Stop は遷移中には押せない
+    SceneManager* sceneManager = SceneManager::GetInstance();
+    const bool    isPlaying    = sceneManager->IsPlaying();
+    ImGui::BeginDisabled(isPlaying && !sceneManager->CanStop());
+    const bool isPlayToggled = isPlaying
+      ? IconButton("##Stop", ToolbarIcon::Stop, "Stop: back to Edit and restore the scene (F9)", false)
+      : IconButton("##Play", ToolbarIcon::Play, "Play from Edit (F9)", true);
+    ImGui::EndDisabled();
+    if (isPlayToggled) {
+      TogglePlay();
+    }
+    ImGui::SameLine();
 
     const bool isToggled = isPaused
       ? IconButton("##Resume", ToolbarIcon::Play, "Resume (F7)", true)
@@ -549,6 +569,19 @@ namespace Tako {
     FrameTimer::GetInstance()->RequestStep();
   }
 
+  void DebugUIManager::TogglePlay() {
+    SceneManager* sceneManager = SceneManager::GetInstance();
+    if (sceneManager->IsPlaying()) {
+      if (sceneManager->CanStop()) {
+        sceneManager->RequestStop();
+        AddLog("Stop: back to Edit", LogType::Info);
+      }
+    } else {
+      sceneManager->RequestPlay();
+      AddLog("Play", LogType::Info);
+    }
+  }
+
   void DebugUIManager::DrawSceneHierarchy() {
     ImGui::Begin("Scene Hierarchy", &WindowFlag(Window::SceneHierarchy));
 
@@ -576,6 +609,13 @@ namespace Tako {
     }
     ImGui::TextDisabled("Available scenes: %s", availableScenes.c_str());
 
+    ImGui::TextDisabled("Mode: %s", sceneManager->IsPlaying() ? "Play" : "Edit (game update stopped)");
+
+    if (sceneEditor_.DrawHierarchy()) {
+      selectedObjectIndex_  = -1;
+      selectedEngineObject_ = EngineObject::None;
+    }
+
     ImGui::Separator();
 
     // ゲームオブジェクト一覧（選択可能）
@@ -599,6 +639,7 @@ namespace Tako {
         if (ImGui::IsItemClicked()) {
           selectedObjectIndex_ = i;
           selectedEngineObject_ = EngineObject::None;
+          sceneEditor_.ClearSelection();
         }
       }
 
@@ -618,6 +659,7 @@ namespace Tako {
       if (ImGui::Selectable(name, selectedEngineObject_ == object)) {
         selectedEngineObject_ = object;
         selectedObjectIndex_ = -1;
+        sceneEditor_.ClearSelection();
       }
     }
 
@@ -632,8 +674,11 @@ namespace Tako {
   void DebugUIManager::DrawInspector() {
     ImGui::Begin("Inspector", &WindowFlag(Window::Inspector));
 
+    if (sceneEditor_.HasSelection()) {
+      sceneEditor_.DrawInspector();
+    }
     // 選択されたゲームオブジェクトがある場合
-    if (selectedObjectIndex_ >= 0 && selectedObjectIndex_ < static_cast<int>(gameObjects_.size())) {
+    else if (selectedObjectIndex_ >= 0 && selectedObjectIndex_ < static_cast<int>(gameObjects_.size())) {
       // 選択されたオブジェクトの情報を表示
       const auto& selectedObject = gameObjects_[selectedObjectIndex_];
       ImGui::Text("Selected: %s", selectedObject.name.c_str());
