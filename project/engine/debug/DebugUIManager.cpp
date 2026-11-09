@@ -21,7 +21,6 @@
 #include "GPUParticle.h"
 #include "Logger.h"
 #include "EmitterManager.h"
-#include "GlobalVariables.h"
 #include "Audio.h"
 #include "BehaviorTreeEditor.h"
 #include "UnsavedChangesModal.h"
@@ -73,7 +72,6 @@ namespace Tako {
       { "Render Pipeline",                                    [] { DrawShortcutTable(RenderPipelineWindow::Shortcuts()); } },
       { "PostEffect",                                         [] { DrawShortcutTable(PostEffectManager::Shortcuts()); } },
       { "Engine Settings",                                    [] { DrawShortcutTable(EngineSettingsWindow::Shortcuts()); } },
-      { "Variables",                                          [] { DrawShortcutTable(GlobalVariables::Shortcuts()); } },
       { "Behavior Tree Editor",                               [] { DrawShortcutTable(BehaviorTreeEditor::Shortcuts()); } },
       { "Assets",                                             [] { DrawShortcutTable(AssetBrowser::Shortcuts()); } },
     };
@@ -269,17 +267,6 @@ namespace Tako {
     if (WindowFlag(Window::ImGuiMetrics)) ImGui::ShowMetricsWindow(&WindowFlag(Window::ImGuiMetrics));
     if (WindowFlag(Window::About)) DrawAbout();
 
-    // GlobalVariables（グループがない場合は警告を出して閉じる）
-    if (WindowFlag(Window::GlobalVariables)) {
-      if (GlobalVariables::GetInstance()->HasGroups()) {
-        GlobalVariables::GetInstance()->Update();
-      }
-      else {
-        AddLog("GlobalVariables: No groups registered. Window will not open.", LogType::Warning);
-        WindowFlag(Window::GlobalVariables) = false;
-      }
-    }
-
     // PostEffect は独自の描画を持つ
     if (WindowFlag(Window::PostEffect)) {
       PostEffectManager::GetInstance()->DrawImgui();
@@ -310,7 +297,6 @@ namespace Tako {
     renderPipelineWindow_.CollectUnsavedChanges(unsavedChanges_);
     engineSettings_.CollectUnsavedChanges(unsavedChanges_);
     PostEffectManager::GetInstance()->CollectUnsavedChanges(unsavedChanges_);
-    GlobalVariables::GetInstance()->CollectUnsavedChanges(unsavedChanges_);
     for (const BehaviorTreeEditor* editor : BehaviorTreeEditor::GetInstances()) {
       editor->CollectUnsavedChanges(unsavedChanges_);
     }
@@ -348,16 +334,6 @@ namespace Tako {
         }
         if (ImGui::MenuItem("Reload Current Scene", nullptr, false, !currentScene.empty())) {
           RequestSceneChange(currentScene);
-        }
-
-        ImGui::Separator();
-        if (ImGui::MenuItem("Save All Global Variables")) {
-          GlobalVariables::GetInstance()->SaveAllFiles();
-          AddLog("GlobalVariables: all groups saved", LogType::Info);
-        }
-        if (ImGui::MenuItem("Reload Global Variables")) {
-          GlobalVariables::GetInstance()->LoadFiles();
-          AddLog("GlobalVariables: reloaded from files", LogType::Info);
         }
 
         ImGui::Separator();
@@ -415,7 +391,6 @@ namespace Tako {
         ImGui::MenuItem("UI Editor", nullptr, &WindowFlag(Window::UIEditor));
         ImGui::MenuItem("Camera Animation Editor", nullptr, &WindowFlag(Window::CameraAnimationEditor));
         ImGui::MenuItem("Animation Editor", nullptr, &WindowFlag(Window::AnimationEditor));
-        ImGui::MenuItem("Global Variables", nullptr, &WindowFlag(Window::GlobalVariables));
         ImGui::EndMenu();
       }
 

@@ -228,7 +228,6 @@
     </ClCompile>
     <ClCompile Include="engine\base\DX12\D3DResourceLeakChecker.cpp" />
     <ClCompile Include="engine\base\DX12\DX12Basic.cpp" />
-    <ClCompile Include="engine\io\GlobalVariables.cpp" />
     <ClCompile Include="engine\io\Input.cpp" />
     <ClCompile Include="engine\io\ProjectSettings.cpp" />
     <ClCompile Include="engine\func\commonFunc\Logger.cpp" />
@@ -348,7 +347,6 @@
     <ClInclude Include="engine\effect\Particle\TriangleEmitter.h" />
     <ClInclude Include="engine\effect\PostEffect\PostEffectManager.h" />
     <ClInclude Include="engine\effect\PostEffect\PostEffectStruct.h" />
-    <ClInclude Include="engine\io\GlobalVariables.h" />
     <ClInclude Include="engine\io\ProjectSettings.h" />
     <ClInclude Include="engine\io\SceneLoader.h" />
     <ClInclude Include="engine\math\AABB.h" />

@@ -62,7 +62,6 @@ namespace Tako {
       { Window::UIEditor,              "UI Editor" },
       { Window::CameraAnimationEditor, "Camera Animation Editor" },
       { Window::AnimationEditor,       "Animation Editor" },
-      { Window::GlobalVariables,       "Global Variables" },
     };
 
     // %APPDATA%/TakoEngine/EditorSettings.json。ユーザー単位で複数プロジェクトから共有する。取得できなければ空

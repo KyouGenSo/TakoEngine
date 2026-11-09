@@ -29,7 +29,7 @@
 
   <!-- ===================================================
        Visual Studio から F5 起動した時の作業ディレクトリ
-       Debug: VS 既定の $(ProjectDir)。エディタ（Assets・GlobalVariables・
+       Debug: VS 既定の $(ProjectDir)。エディタ（Assets・GameSettings・
               各種プリセット）の保存先がソースの resources になる。
               EngineResources は PreBuildEvent で ProjectDir にも複製する。
        Release: exe の隣（= OutDir）。exe ダブルクリックと同じ

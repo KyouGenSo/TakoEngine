@@ -57,7 +57,6 @@ namespace Tako {
       CollisionDebug,
       PostEffect,
       ParticleEditor,
-      GlobalVariables,
       PrimitiveEditor,
       UIEditor,
       CameraAnimationEditor,
