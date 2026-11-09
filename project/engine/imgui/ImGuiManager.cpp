@@ -4,9 +4,44 @@
 #include"WinApp.h"
 #include"DX12Basic.h"
 #include"SrvManager.h"
+#include "Logger.h"
 #include <cassert>
+#include <filesystem>
+#include <ShlObj.h>
 
 namespace Tako {
+
+  namespace {
+    /// <summary>
+    /// 既定フォントに Windows の日本語フォントの字形を合成する。見つからなければ英字だけのまま
+    /// </summary>
+    void AddFontsWithJapanese(ImFontAtlas* fonts)
+    {
+      fonts->AddFontDefault();
+
+      std::filesystem::path fontDir;
+      PWSTR                 knownFolder = nullptr;
+      if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_Fonts, 0, nullptr, &knownFolder))) {
+        fontDir = knownFolder;
+      }
+      // 失敗時も解放が必要
+      CoTaskMemFree(knownFolder);
+
+      for (const wchar_t* name : { L"meiryo.ttc", L"YuGothM.ttc", L"msgothic.ttc" }) {
+        const std::filesystem::path path = fontDir / name;
+        std::error_code             ec;
+        if (!std::filesystem::exists(path, ec)) {
+          continue;
+        }
+        ImFontConfig config;
+        config.MergeMode   = true;
+        config.OversampleH = 1;  // 字形が約 3000 あるため、横の拡大を止めてアトラスを半分にする
+        fonts->AddFontFromFileTTF(reinterpret_cast<const char*>(path.u8string().c_str()), 13.0f, &config, fonts->GetGlyphRangesJapanese());
+        return;
+      }
+      Logger::Log("ImGui: no Japanese font found in the Fonts folder. Japanese text is shown as '?'\n");
+    }
+  }
 
   void ImGuiManager::Initialize(WinApp* winApp, DX12Basic* dx12, bool isDocking)
   {
@@ -22,6 +57,7 @@ namespace Tako {
     // スケールの調整（DPI スケーリングに対応）
     ImGuiIO& io = ImGui::GetIO();
     io.FontGlobalScale = 1.0f;
+    AddFontsWithJapanese(io.Fonts);
 
     // スタイルの設定
     //ImGui::StyleColorsDark();
