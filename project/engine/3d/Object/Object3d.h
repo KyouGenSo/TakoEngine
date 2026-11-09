@@ -128,6 +128,11 @@ public: // メンバー関数
   void SetTranslate(const Vector3& translate) { transform_.translate = translate; }
 
   /// <summary>
+  /// Transform の後に掛ける親の行列（Joint にアタッチしていないときだけ効く。std::nullopt で外す）
+  /// </summary>
+  void SetParentMatrix(const std::optional<Matrix4x4>& parentMatrix) { parentMatrix_ = parentMatrix; }
+
+  /// <summary>
   /// マテリアルの "color" を上書きする（どのマテリアルで描いても、同じ名前の値に効く）
   /// </summary>
   /// <param name="color">RGBA（std::nullopt で上書きを外す）</param>
@@ -349,6 +354,8 @@ private: // メンバー変数
   Object3d*   parentObject_       = nullptr;
   std::string parentJointName_;
   Transform   attachmentOffset_{};
+
+  std::optional<Matrix4x4> parentMatrix_;
 
   //描画の設定
   std::string   name_;

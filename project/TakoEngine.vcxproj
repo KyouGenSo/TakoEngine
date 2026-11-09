@@ -121,6 +121,11 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="engine\scene\Prefab.cpp" />
+    <ClCompile Include="engine\scene\ColliderComponent.cpp" />
+    <ClCompile Include="engine\scene\MeshComponent.cpp" />
+    <ClCompile Include="engine\scene\Actor.cpp" />
+    <ClCompile Include="engine\scene\BaseScene.cpp" />
     <ClCompile Include="engine\ai\BehaviorTree\Core\BTNode.cpp" />
     <ClCompile Include="engine\imgui\ImGuiPropertyVisitor.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
@@ -275,6 +280,11 @@
     <ClCompile Include="engine\debug\MaterialEditor.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\scene\Prefab.h" />
+    <ClInclude Include="engine\scene\ColliderComponent.h" />
+    <ClInclude Include="engine\scene\MeshComponent.h" />
+    <ClInclude Include="engine\scene\Actor.h" />
+    <ClInclude Include="engine\scene\Component.h" />
     <ClInclude Include="engine\imgui\ImGuiPropertyVisitor.h" />
     <ClInclude Include="engine\reflection\ReflectionSelfTest.h" />
     <ClInclude Include="engine\reflection\JsonPropertyVisitor.h" />

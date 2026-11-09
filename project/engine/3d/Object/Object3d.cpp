@@ -149,6 +149,9 @@ void Object3d::Update()
 	{
     // トランスフォームでワールド行列を作る
     worldMatrix_ = Mat4x4::MakeAffine(transform_.scale, transform_.rotate, transform_.translate);
+    if (parentMatrix_) {
+      worldMatrix_ = worldMatrix_ * *parentMatrix_;
+    }
 	}
 
 	// モデルのローカル行列を取得

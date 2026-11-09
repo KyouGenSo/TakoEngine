@@ -232,6 +232,9 @@ namespace Tako {
 
     Audio::GetInstance()->Update();
 
+    // Actor の生成・削除と Play / Stop は、一時停止中もここで行う（前のフレームの GPU 処理は EndDraw で終わっている）
+    SceneManager::GetInstance()->UpdateAlways();
+
     // 一時停止中はシーン更新だけ止める。以降の更新は deltaTime が 0 になるため止まって見える
     // (GPUParticle/Decal は Debug Viewport 用リングのリセットを含むので毎フレーム呼ぶ)
     if (!FrameTimer::GetInstance()->IsFrozen()) {

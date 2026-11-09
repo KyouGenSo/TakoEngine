@@ -3,7 +3,11 @@
 #include "transition/ITransitionEffect.h"
 #include "transition/FadeTransition.h"
 #include "transition/ScaleTransition.h"
+#include "FrameTimer.h"
 #include "Logger.h"
+
+#include <json.hpp>
+
 #include <algorithm>
 #include <cassert>
 
@@ -19,19 +23,45 @@ namespace Tako {
     return instance_.get();
   }
 
+  SceneManager::SceneManager(Token) {}
+
+  SceneManager::~SceneManager() = default;
+
+  void SceneManager::UpdateAlways()
+  {
+    const PlayRequest request = std::exchange(playRequest_, PlayRequest::None);
+    if (request == PlayRequest::Play && scene_ && !isPlaying_) {
+      playSnapshot_  = std::make_unique<nlohmann::json>(scene_->Save());
+      playSceneName_ = currentSceneName_;
+      isPlaying_     = true;
+      scene_->BeginPlay();
+    } else if (request == PlayRequest::Stop && CanStop()) {
+      isPlaying_ = false;
+      // 起動から Play していた（Play 前の中身が無い）ならファイルから作り直す
+      const std::string sceneName = playSceneName_.empty() ? currentSceneName_ : playSceneName_;
+      ReloadSceneImmediate(sceneName, playSnapshot_.get());
+      playSnapshot_.reset();
+      playSceneName_.clear();
+    }
+
+    if (scene_) {
+      scene_->UpdateAlways();
+    }
+  }
+
   void SceneManager::Update()
   {
     // フェードアウト完了後に次シーンへ切り替え、フェードインを開始
     if (nextScene_) {
       if (TransitionManager::GetInstance()->IsFinished()) {
         if (scene_) {
-          scene_->Finalize();
+          scene_->Shutdown();
           scene_.reset();
         }
 
         scene_ = std::move(nextScene_);
         currentSceneName_ = std::move(nextSceneName_);
-        scene_->Initialize();
+        scene_->Start(currentSceneName_, nullptr, isPlaying_);
 
         TransitionManager::GetInstance()->Start(
           ITransitionEffect::FADE_IN, transitionTime_);
@@ -40,8 +70,8 @@ namespace Tako {
       }
     }
 
-    if (scene_) {
-      scene_->Update();
+    if (scene_ && isPlaying_) {
+      scene_->UpdateFrame(FrameTimer::GetInstance()->GetDeltaTime());
     }
 
     TransitionManager::GetInstance()->Update();
@@ -50,7 +80,7 @@ namespace Tako {
   void SceneManager::Draw()
   {
     if (scene_) {
-      scene_->Draw();
+      scene_->DrawFrame();
     }
   }
 
@@ -64,7 +94,7 @@ namespace Tako {
   void SceneManager::Finalize()
   {
     if (scene_) {
-      scene_->Finalize();
+      scene_->Shutdown();
       scene_.reset();
     }
     if (nextScene_) {
@@ -105,6 +135,27 @@ namespace Tako {
     }
   }
 
+  void SceneManager::RequestPlay()
+  {
+    playRequest_ = PlayRequest::Play;
+  }
+
+  void SceneManager::RequestStop()
+  {
+    playRequest_ = PlayRequest::Stop;
+  }
+
+  std::vector<std::string> SceneManager::GetSceneNames() const
+  {
+    std::vector<std::string> names = sceneFactory_ ? sceneFactory_->GetSceneNames() : std::vector<std::string>{};
+    for (std::string& file : BaseScene::GetSceneFileNames()) {
+      if (std::ranges::find(names, file) == names.end()) {
+        names.push_back(std::move(file));
+      }
+    }
+    return names;
+  }
+
   void SceneManager::ChangeToStartupScene()
   {
     const std::vector<std::string> names = GetSceneNames();
@@ -132,7 +183,7 @@ namespace Tako {
     }
 
     // 生成に失敗した場合はフェードアウトを始めない（フェードインに切り替わらず暗転したままになるため）
-    nextScene_ = sceneFactory_->CreateScene(sceneName);
+    nextScene_ = CreateScene(sceneName);
     if (!nextScene_) {
       Logger::Log("SceneManager: failed to create scene \"" + sceneName + "\"\n");
       return false;
@@ -141,6 +192,39 @@ namespace Tako {
     nextSceneName_ = sceneName;
     transitionTime_ = transitionTime;
     return true;
+  }
+
+  std::unique_ptr<BaseScene> SceneManager::CreateScene(const std::string& sceneName) const
+  {
+    // 名前一覧を返さないファクトリーは、どの名前でも先に試す
+    const std::vector<std::string> factoryNames = sceneFactory_->GetSceneNames();
+    if (factoryNames.empty() || std::ranges::find(factoryNames, sceneName) != factoryNames.end()) {
+      if (std::unique_ptr<BaseScene> scene = sceneFactory_->CreateScene(sceneName)) {
+        return scene;
+      }
+    }
+    if (BaseScene::HasSceneFile(sceneName)) {
+      return std::make_unique<BaseScene>();
+    }
+    return nullptr;
+  }
+
+  void SceneManager::ReloadSceneImmediate(const std::string& sceneName, const nlohmann::json* snapshot)
+  {
+    std::unique_ptr<BaseScene> scene = CreateScene(sceneName);
+    if (!scene) {
+      Logger::Log("SceneManager: failed to recreate scene \"" + sceneName + "\"\n");
+      return;
+    }
+    if (scene_) {
+      scene_->Shutdown();
+      scene_.reset();
+    }
+    scene_            = std::move(scene);
+    currentSceneName_ = sceneName;
+    scene_->Start(currentSceneName_, snapshot, isPlaying_);
+    // 手書きのシーンの Object3d は Update で行列を作るので、止める前に 1 回だけ回す
+    scene_->UpdateHooksOnce();
   }
 
 } // namespace Tako

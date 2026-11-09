@@ -129,6 +129,21 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="engine\scene\Prefab.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\scene\ColliderComponent.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\scene\MeshComponent.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\scene\Actor.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\scene\BaseScene.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
     <ClCompile Include="engine\ai\BehaviorTree\Core\BTNode.cpp">
       <Filter>ai\BehaviorTree\Core</Filter>
     </ClCompile>
@@ -467,6 +482,21 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\scene\Prefab.h">
+      <Filter>scene</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\scene\ColliderComponent.h">
+      <Filter>scene</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\scene\MeshComponent.h">
+      <Filter>scene</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\scene\Actor.h">
+      <Filter>scene</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\scene\Component.h">
+      <Filter>scene</Filter>
+    </ClInclude>
     <ClInclude Include="engine\imgui\ImGuiPropertyVisitor.h">
       <Filter>imgui</Filter>
     </ClInclude>
