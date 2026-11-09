@@ -9,7 +9,7 @@ namespace Tako {
   /// </summary>
   class SphereCollider : public Collider {
   public: //メンバー関数
-    SphereCollider() = default;
+    SphereCollider() : Collider(ColliderShape::Sphere) {}
     virtual ~SphereCollider() = default;
 
     //===================================

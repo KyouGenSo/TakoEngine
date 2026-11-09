@@ -8,6 +8,11 @@
 namespace Tako {
 
   /// <summary>
+  /// コライダーの形状。CollisionManager が判定関数の振り分けに使う
+  /// </summary>
+  enum class ColliderShape : uint8_t { AABB, Sphere, OBB };
+
+  /// <summary>
   /// 衝突判定用の基底クラス。全てのコライダーはこのクラスを継承する
   /// </summary>
   class Collider {
@@ -62,6 +67,7 @@ namespace Tako {
     bool IsActive() const { return isActive_; }
     uint32_t GetTypeID() const { return typeID_; }
     void* GetOwner() const { return owner_; }
+    ColliderShape GetShape() const { return shape_; }
 
     /// <summary>
     /// 型 ID が層の enum の id と一致するか
@@ -69,12 +75,16 @@ namespace Tako {
     template<class E> requires std::is_enum_v<E>
     bool IsType(E id) const { return typeID_ == static_cast<uint32_t>(id); }
 
+  protected: //メンバー関数
+    explicit Collider(ColliderShape shape) : shape_(shape) {}
+
   protected: //メンバー変数
     //基本状態
-    Transform* transform_ = nullptr;  ///< 対象オブジェクトの Transform（位置・回転・スケール情報）
-    uint32_t   typeID_    = 0;        ///< コライダーの型 ID（CollisionManager の層名の添字）
-    bool       isActive_  = true;     ///< コライダーの有効/無効状態（false の場合は衝突判定を行わない）
-    void*      owner_     = nullptr;  ///< このコライダーを所有するオブジェクトへのポインタ
+    Transform*    transform_ = nullptr;  ///< 対象オブジェクトの Transform（位置・回転・スケール情報）
+    uint32_t      typeID_    = 0;        ///< コライダーの型 ID（CollisionManager の層名の添字）
+    bool          isActive_  = true;     ///< コライダーの有効/無効状態（false の場合は衝突判定を行わない）
+    void*         owner_     = nullptr;  ///< このコライダーを所有するオブジェクトへのポインタ
+    ColliderShape shape_;                ///< 派生クラスの ctor が決める。生成後は変えない
   };
 
 } // namespace Tako

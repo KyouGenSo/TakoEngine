@@ -5,6 +5,7 @@
 #include "LineRenderer.h"
 #include "ColorFunc.h"
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <unordered_map>
 
@@ -13,6 +14,11 @@
 #endif
 
 namespace Tako {
+
+  namespace {
+    // 平行な辺の外積がほぼ 0 になる軸で、誤差による誤った分離判定を防ぐ
+    constexpr float kParallelEpsilon = 1e-6f;
+  }
 
   std::unique_ptr<CollisionManager> CollisionManager::instance_ = nullptr;
 
@@ -38,34 +44,44 @@ namespace Tako {
   }
 
   void CollisionManager::CheckAllCollisions() {
-    previousCollisions_ = currentCollisions_;
+    const auto start = std::chrono::steady_clock::now();
+
+    std::swap(previousCollisions_, currentCollisions_);
     currentCollisions_.clear();
 
-    auto itA = colliders_.begin();
-    for (; itA != colliders_.end(); ++itA) {
-      Collider* colliderA = *itA;
-
-      if (!colliderA || !colliderA->IsActive()) {
-        continue;
-      }
-
-      auto itB = itA;
-      ++itB;
-
-      for (; itB != colliders_.end(); ++itB) {
-        Collider* colliderB = *itB;
-
-        if (!colliderB || !colliderB->IsActive()) {
-          continue;
-        }
-
-        if (!CanCollide(colliderA->GetTypeID(), colliderB->GetTypeID())) {
-          continue;
-        }
-
-        CheckCollisionPair(colliderA, colliderB);
+    for (std::vector<Proxy>& proxies : layerProxies_) {
+      proxies.clear();
+    }
+    for (Collider* collider : colliders_) {
+      if (collider && collider->IsActive() && collider->GetTypeID() < kMaxLayers) {
+        layerProxies_[collider->GetTypeID()].push_back(MakeProxy(collider));
       }
     }
+
+    // 当たる層の組だけを回す。同じ層同士は i < j の組だけ
+    testedPairCount_ = 0;
+    for (uint32_t typeA = 0; typeA < kMaxLayers; ++typeA) {
+      const std::vector<Proxy>& proxiesA = layerProxies_[typeA];
+      if (proxiesA.empty()) {
+        continue;
+      }
+      for (uint32_t typeB = typeA; typeB < kMaxLayers; ++typeB) {
+        if (!CanCollide(typeA, typeB)) {
+          continue;
+        }
+        const std::vector<Proxy>& proxiesB = layerProxies_[typeB];
+        for (size_t i = 0; i < proxiesA.size(); ++i) {
+          for (size_t j = (typeA == typeB) ? i + 1 : 0; j < proxiesB.size(); ++j) {
+            ++testedPairCount_;
+            if (Intersects(proxiesA[i], proxiesB[j])) {
+              currentCollisions_.insert(MakeOrderedPair(proxiesA[i].collider, proxiesB[j].collider));
+            }
+          }
+        }
+      }
+    }
+
+    lastCheckMs_ = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - start).count();
 
     for (const auto& pair : currentCollisions_) {
       if (previousCollisions_.find(pair) == previousCollisions_.end()) {
@@ -93,7 +109,7 @@ namespace Tako {
   }
 
   void CollisionManager::RemoveCollider(Collider* collider) {
-    colliders_.remove(collider);
+    std::erase(colliders_, collider);
 
     // Enter/Exit 判定の整合性のため、衝突履歴からも該当ペアを除去
     auto currentIt = currentCollisions_.begin();
@@ -118,13 +134,18 @@ namespace Tako {
   }
 
   void CollisionManager::SetCollisionMask(uint32_t typeA, uint32_t typeB, bool canCollide) {
+    if (typeA >= kMaxLayers || typeB >= kMaxLayers) {
+      return;
+    }
+    const uint32_t bitA = 1u << typeA;
+    const uint32_t bitB = 1u << typeB;
     if (canCollide) {
-      collisionMask_[typeA].insert(typeB);
-      collisionMask_[typeB].insert(typeA);
+      collisionMask_[typeA] |= bitB;
+      collisionMask_[typeB] |= bitA;
     }
     else {
-      collisionMask_[typeA].erase(typeB);
-      collisionMask_[typeB].erase(typeA);
+      collisionMask_[typeA] &= ~bitB;
+      collisionMask_[typeB] &= ~bitA;
     }
   }
 
@@ -139,27 +160,23 @@ namespace Tako {
       return Color::FromHSV(std::fmod(typeID * 0.618033988749895f, 1.0f), 0.7f, 1.0f, 0.5f);
       };
 
-    int drawCount = 0;
     for (Collider* collider : colliders_) {
       if (!collider || !collider->IsActive()) continue;
 
       Vector4 color = GetColorByType(collider->GetTypeID());
 
-      if (AABBCollider* aabb = dynamic_cast<AABBCollider*>(collider)) {
-        AABB box = aabb->GetAABB();
-        lineRenderer->DrawAABB(box, color);
-        drawCount++;
+      switch (collider->GetShape()) {
+      case ColliderShape::AABB:
+        lineRenderer->DrawAABB(static_cast<AABBCollider*>(collider)->GetAABB(), color);
+        break;
+      case ColliderShape::Sphere: {
+        SphereCollider* sphere = static_cast<SphereCollider*>(collider);
+        lineRenderer->DrawSphere(sphere->GetCenter(), sphere->GetRadius(), color);
+        break;
       }
-      else if (SphereCollider* sphere = dynamic_cast<SphereCollider*>(collider)) {
-        Vector3 center = sphere->GetCenter();
-        float radius = sphere->GetRadius();
-        lineRenderer->DrawSphere(center, radius, color);
-        drawCount++;
-      }
-      else if (OBBCollider* obb = dynamic_cast<OBBCollider*>(collider)) {
-        OBB obbData = obb->GetOBB();
-        lineRenderer->DrawOBB(obbData, color);
-        drawCount++;
+      case ColliderShape::OBB:
+        lineRenderer->DrawOBB(static_cast<OBBCollider*>(collider)->GetOBB(), color);
+        break;
       }
     }
   }
@@ -192,10 +209,15 @@ namespace Tako {
     // 衝突マスク情報
     ImGui::Separator();
     ImGui::Text("=== Collision Masks ===");
-    for (const auto& [typeA, typeBSet] : collisionMask_) {
+    for (uint32_t typeA = 0; typeA < kMaxLayers; ++typeA) {
+      if (collisionMask_[typeA] == 0) {
+        continue;
+      }
       ImGui::Text("%s can collide with:", GetLayerLabel(typeA).c_str());
-      for (uint32_t typeB : typeBSet) {
-        ImGui::Text("  - %s", GetLayerLabel(typeB).c_str());
+      for (uint32_t typeB = 0; typeB < kMaxLayers; ++typeB) {
+        if (CanCollide(typeA, typeB)) {
+          ImGui::Text("  - %s", GetLayerLabel(typeB).c_str());
+        }
       }
     }
 
@@ -203,6 +225,7 @@ namespace Tako {
     ImGui::Separator();
     ImGui::Text("=== Current Collisions ===");
     ImGui::Text("Active Collision Pairs: %zu", currentCollisions_.size());
+    ImGui::Text("Tested Pairs: %zu (%.3f ms)", testedPairCount_, lastCheckMs_);
 
     // デバッグ描画設定
     ImGui::Separator();
@@ -222,22 +245,28 @@ namespace Tako {
           index - 1, GetLayerLabel(typeID).c_str(),
           collider->IsActive() ? "Yes" : "No");
 
-        if (AABBCollider* aabb = dynamic_cast<AABBCollider*>(collider)) {
-          AABB box = aabb->GetAABB();
+        switch (collider->GetShape()) {
+        case ColliderShape::AABB: {
+          AABB box = static_cast<AABBCollider*>(collider)->GetAABB();
           ImGui::Text("  AABB: min(%.1f,%.1f,%.1f) max(%.1f,%.1f,%.1f)",
             box.min.x, box.min.y, box.min.z,
             box.max.x, box.max.y, box.max.z);
+          break;
         }
-        else if (SphereCollider* sphere = dynamic_cast<SphereCollider*>(collider)) {
+        case ColliderShape::Sphere: {
+          SphereCollider* sphere = static_cast<SphereCollider*>(collider);
           Vector3 center = sphere->GetCenter();
           ImGui::Text("  Sphere: center(%.1f,%.1f,%.1f) radius=%.1f",
             center.x, center.y, center.z, sphere->GetRadius());
+          break;
         }
-        else if (OBBCollider* obb = dynamic_cast<OBBCollider*>(collider)) {
-          OBB obbData = obb->GetOBB();
+        case ColliderShape::OBB: {
+          OBB obbData = static_cast<OBBCollider*>(collider)->GetOBB();
           ImGui::Text("  OBB: center(%.1f,%.1f,%.1f) halfExtents(%.1f,%.1f,%.1f)",
             obbData.center.x, obbData.center.y, obbData.center.z,
             obbData.halfExtents.x, obbData.halfExtents.y, obbData.halfExtents.z);
+          break;
+        }
         }
 
         ImGui::PopID();
@@ -248,251 +277,121 @@ namespace Tako {
 #endif
   }
 
-  void CollisionManager::CheckCollisionPair(Collider* colliderA, Collider* colliderB) {
-    bool isColliding = false;
+  CollisionManager::Proxy CollisionManager::MakeProxy(Collider* collider) {
+    Proxy proxy{};
+    proxy.collider = collider;
+    proxy.shape    = collider->GetShape();
 
-    AABBCollider* aabbA = dynamic_cast<AABBCollider*>(colliderA);
-    AABBCollider* aabbB = dynamic_cast<AABBCollider*>(colliderB);
-    SphereCollider* sphereA = dynamic_cast<SphereCollider*>(colliderA);
-    SphereCollider* sphereB = dynamic_cast<SphereCollider*>(colliderB);
-    OBBCollider* obbA = dynamic_cast<OBBCollider*>(colliderA);
-    OBBCollider* obbB = dynamic_cast<OBBCollider*>(colliderB);
-
-    if (obbA && obbB) {
-      isColliding = CheckOBBvsOBB(obbA, obbB);
+    switch (proxy.shape) {
+    case ColliderShape::AABB: {
+      AABBCollider* aabb = static_cast<AABBCollider*>(collider);
+      const Vector3 half = aabb->GetSize() * 0.5f;
+      proxy.center  = aabb->GetCenter();
+      proxy.half[0] = half.x;
+      proxy.half[1] = half.y;
+      proxy.half[2] = half.z;
+      proxy.axis[0] = { 1.0f, 0.0f, 0.0f };
+      proxy.axis[1] = { 0.0f, 1.0f, 0.0f };
+      proxy.axis[2] = { 0.0f, 0.0f, 1.0f };
+      break;
     }
-    else if (obbA && aabbB) {
-      isColliding = CheckOBBvsAABB(obbA, aabbB);
+    case ColliderShape::Sphere: {
+      SphereCollider* sphere = static_cast<SphereCollider*>(collider);
+      proxy.center = sphere->GetCenter();
+      proxy.radius = sphere->GetRadius();
+      break;
     }
-    else if (aabbA && obbB) {
-      isColliding = CheckOBBvsAABB(obbB, aabbA);
+    case ColliderShape::OBB: {
+      const OBB obb = static_cast<OBBCollider*>(collider)->GetOBB();
+      proxy.center  = obb.center;
+      proxy.half[0] = obb.halfExtents.x;
+      proxy.half[1] = obb.halfExtents.y;
+      proxy.half[2] = obb.halfExtents.z;
+      for (int i = 0; i < 3; ++i) {
+        proxy.axis[i] = obb.GetAxis(i);
+      }
+      break;
     }
-    else if (obbA && sphereB) {
-      isColliding = CheckOBBvsSphere(obbA, sphereB);
     }
-    else if (sphereA && obbB) {
-      isColliding = CheckOBBvsSphere(obbB, sphereA);
-    }
-    else if (aabbA && aabbB) {
-      isColliding = CheckAABBvsAABB(aabbA, aabbB);
-    }
-    else if (sphereA && sphereB) {
-      isColliding = CheckSphereVsSphere(sphereA, sphereB);
-    }
-    else if (aabbA && sphereB) {
-      isColliding = CheckAABBvsSphere(aabbA, sphereB);
-    }
-    else if (sphereA && aabbB) {
-      isColliding = CheckAABBvsSphere(aabbB, sphereA);
-    }
-
-    if (isColliding) {
-      currentCollisions_.insert(MakeOrderedPair(colliderA, colliderB));
-    }
+    return proxy;
   }
 
-  bool CollisionManager::CheckAABBvsAABB(AABBCollider* a, AABBCollider* b) {
-    AABB aabbA = a->GetAABB();
-    AABB aabbB = b->GetAABB();
-
-    if (aabbA.min.x > aabbB.max.x || aabbB.min.x > aabbA.max.x) return false;
-    if (aabbA.min.y > aabbB.max.y || aabbB.min.y > aabbA.max.y) return false;
-    if (aabbA.min.z > aabbB.max.z || aabbB.min.z > aabbA.max.z) return false;
-
-    return true;
+  bool CollisionManager::Intersects(const Proxy& a, const Proxy& b) {
+    const bool sphereA = a.shape == ColliderShape::Sphere;
+    const bool sphereB = b.shape == ColliderShape::Sphere;
+    if (sphereA && sphereB) return SphereVsSphere(a, b);
+    if (sphereA) return BoxVsSphere(b, a);
+    if (sphereB) return BoxVsSphere(a, b);
+    return BoxVsBox(a, b);
   }
 
-  bool CollisionManager::CheckSphereVsSphere(SphereCollider* a, SphereCollider* b) {
-    Vector3 posA = a->GetCenter();
-    Vector3 posB = b->GetCenter();
-    Vector3 diff = posB - posA;
-    float distance = diff.Length();
-
-    return distance < (a->GetRadius() + b->GetRadius());
+  bool CollisionManager::SphereVsSphere(const Proxy& a, const Proxy& b) {
+    const Vector3 diff      = b.center - a.center;
+    const float   radiusSum = a.radius + b.radius;
+    return diff.LengthSquared() < radiusSum * radiusSum;
   }
 
-  bool CollisionManager::CheckAABBvsSphere(AABBCollider* aabb, SphereCollider* sphere) {
-    AABB box = aabb->GetAABB();
-    Vector3 sphereCenter = sphere->GetCenter();
-    float radius = sphere->GetRadius();
-
-    float closestX = std::clamp(sphereCenter.x, box.min.x, box.max.x);
-    float closestY = std::clamp(sphereCenter.y, box.min.y, box.max.y);
-    float closestZ = std::clamp(sphereCenter.z, box.min.z, box.max.z);
-
-    Vector3 closestPoint = { closestX, closestY, closestZ };
-    Vector3 diff = sphereCenter - closestPoint;
-    float distanceSquared = diff.x * diff.x + diff.y * diff.y + diff.z * diff.z;
-
-    return distanceSquared < (radius * radius);
-  }
-
-  bool CollisionManager::CheckOBBvsOBB(OBBCollider* a, OBBCollider* b) {
-    OBB obbA = a->GetOBB();
-    OBB obbB = b->GetOBB();
-
-    // 分離軸定理（SAT）を使用
-    // 15個の軸をチェック（各 OBB の3軸 + 9個のクロス積軸）
-
-    // OBB の軸を取得
-    Vector3 axesA[3] = { obbA.GetAxis(0), obbA.GetAxis(1), obbA.GetAxis(2) };
-    Vector3 axesB[3] = { obbB.GetAxis(0), obbB.GetAxis(1), obbB.GetAxis(2) };
-
-    // 中心間のベクトル
-    Vector3 t = obbB.center - obbA.center;
-
-    // 各 OBB の3軸をチェック
+  bool CollisionManager::BoxVsSphere(const Proxy& box, const Proxy& sphere) {
+    // 箱の軸ごとに球の中心をクランプして最近点を求める（AABB は軸がワールド軸なだけで同じ式）
+    const Vector3 local   = sphere.center - box.center;
+    Vector3       closest = box.center;
     for (int i = 0; i < 3; ++i) {
-      // A's axes
-      float rA = obbA.halfExtents.x * std::abs(axesA[0].Dot(axesA[i])) +
-        obbA.halfExtents.y * std::abs(axesA[1].Dot(axesA[i])) +
-        obbA.halfExtents.z * std::abs(axesA[2].Dot(axesA[i]));
-      float rB = obbB.halfExtents.x * std::abs(axesB[0].Dot(axesA[i])) +
-        obbB.halfExtents.y * std::abs(axesB[1].Dot(axesA[i])) +
-        obbB.halfExtents.z * std::abs(axesB[2].Dot(axesA[i]));
-      if (std::abs(t.Dot(axesA[i])) > rA + rB) return false;
-
-      // B's axes
-      rA = obbA.halfExtents.x * std::abs(axesA[0].Dot(axesB[i])) +
-        obbA.halfExtents.y * std::abs(axesA[1].Dot(axesB[i])) +
-        obbA.halfExtents.z * std::abs(axesA[2].Dot(axesB[i]));
-      rB = obbB.halfExtents.x * std::abs(axesB[0].Dot(axesB[i])) +
-        obbB.halfExtents.y * std::abs(axesB[1].Dot(axesB[i])) +
-        obbB.halfExtents.z * std::abs(axesB[2].Dot(axesB[i]));
-      if (std::abs(t.Dot(axesB[i])) > rA + rB) return false;
+      const float distance = std::clamp(local.Dot(box.axis[i]), -box.half[i], box.half[i]);
+      closest += box.axis[i] * distance;
     }
 
-    // クロス積軸のチェック（9軸）
+    const Vector3 diff = sphere.center - closest;
+    return diff.LengthSquared() < sphere.radius * sphere.radius;
+  }
+
+  bool CollisionManager::BoxVsBox(const Proxy& a, const Proxy& b) {
+    const Vector3 d = b.center - a.center;
+
+    if (a.shape == ColliderShape::AABB && b.shape == ColliderShape::AABB) {
+      return std::abs(d.x) <= a.half[0] + b.half[0]
+          && std::abs(d.y) <= a.half[1] + b.half[1]
+          && std::abs(d.z) <= a.half[2] + b.half[2];
+    }
+
+    // 分離軸定理（Ericsson『Real-Time Collision Detection』4.4.1）。
+    // B の軸を A の座標系で表した R を先に作り、15 軸とも正規化せずに投影半径を比べる
+    float R[3][3];
+    float absR[3][3];
+    float t[3];
     for (int i = 0; i < 3; ++i) {
+      t[i] = d.Dot(a.axis[i]);
       for (int j = 0; j < 3; ++j) {
-        // 軸のクロス積を計算
-        Vector3 axis = axesA[i].Cross(axesB[j]);
-        float axisLength = axis.Length();
+        R[i][j]    = a.axis[i].Dot(b.axis[j]);
+        absR[i][j] = std::abs(R[i][j]) + kParallelEpsilon;
+      }
+    }
 
-        // 平行軸の場合（クロス積がゼロベクトル）はスキップ
-        if (axisLength < 0.0001f) continue;
+    // A の 3 軸
+    for (int i = 0; i < 3; ++i) {
+      const float rb = b.half[0] * absR[i][0] + b.half[1] * absR[i][1] + b.half[2] * absR[i][2];
+      if (std::abs(t[i]) > a.half[i] + rb) return false;
+    }
 
-        // 軸を正規化
-        axis = axis / axisLength;
+    // B の 3 軸
+    for (int j = 0; j < 3; ++j) {
+      const float ra = a.half[0] * absR[0][j] + a.half[1] * absR[1][j] + a.half[2] * absR[2][j];
+      if (std::abs(t[0] * R[0][j] + t[1] * R[1][j] + t[2] * R[2][j]) > ra + b.half[j]) return false;
+    }
 
-        // 各 OBB の頂点を軸に投影して半径を計算
-        float rA = obbA.halfExtents.x * std::abs(axesA[0].Dot(axis)) +
-          obbA.halfExtents.y * std::abs(axesA[1].Dot(axis)) +
-          obbA.halfExtents.z * std::abs(axesA[2].Dot(axis));
-        float rB = obbB.halfExtents.x * std::abs(axesB[0].Dot(axis)) +
-          obbB.halfExtents.y * std::abs(axesB[1].Dot(axis)) +
-          obbB.halfExtents.z * std::abs(axesB[2].Dot(axis));
-
-        // 分離軸定理の判定
-        if (std::abs(t.Dot(axis)) > rA + rB) return false;
+    // A の軸 i と B の軸 j の外積 9 軸
+    for (int i = 0; i < 3; ++i) {
+      const int i1 = (i + 1) % 3;
+      const int i2 = (i + 2) % 3;
+      for (int j = 0; j < 3; ++j) {
+        const int   j1 = (j + 1) % 3;
+        const int   j2 = (j + 2) % 3;
+        const float ra = a.half[i1] * absR[i2][j] + a.half[i2] * absR[i1][j];
+        const float rb = b.half[j1] * absR[i][j2] + b.half[j2] * absR[i][j1];
+        if (std::abs(t[i2] * R[i1][j] - t[i1] * R[i2][j]) > ra + rb) return false;
       }
     }
 
     return true;
-  }
-
-  bool CollisionManager::CheckOBBvsAABB(OBBCollider* obb, AABBCollider* aabb) {
-    OBB obbData = obb->GetOBB();
-    AABB aabbData = aabb->GetAABB();
-
-    // AABB を OBB として扱う（回転なし）
-    OBB aabbAsOBB;
-    aabbAsOBB.center = (aabbData.min + aabbData.max) * 0.5f;
-    aabbAsOBB.halfExtents = (aabbData.max - aabbData.min) * 0.5f;
-    aabbAsOBB.orientation = Mat4x4::MakeIdentity();
-
-    // OBB 同士の判定として処理（簡略版）
-    Vector3 axes[3] = { obbData.GetAxis(0), obbData.GetAxis(1), obbData.GetAxis(2) };
-    Vector3 t = aabbAsOBB.center - obbData.center;
-
-    // OBB の3軸でチェック
-    for (int i = 0; i < 3; ++i) {
-      float rOBB = obbData.halfExtents.x * std::abs(axes[0].Dot(axes[i])) +
-        obbData.halfExtents.y * std::abs(axes[1].Dot(axes[i])) +
-        obbData.halfExtents.z * std::abs(axes[2].Dot(axes[i]));
-      float rAABB = aabbAsOBB.halfExtents.x * std::abs(axes[i].x) +
-        aabbAsOBB.halfExtents.y * std::abs(axes[i].y) +
-        aabbAsOBB.halfExtents.z * std::abs(axes[i].z);
-      if (std::abs(t.Dot(axes[i])) > rOBB + rAABB) return false;
-    }
-
-    // AABB の3軸（ワールド軸）でチェック
-    Vector3 worldAxes[3] = {
-      Vector3(1.0f, 0.0f, 0.0f),
-      Vector3(0.0f, 1.0f, 0.0f),
-      Vector3(0.0f, 0.0f, 1.0f)
-    };
-
-    for (int i = 0; i < 3; ++i) {
-      float rOBB = obbData.halfExtents.x * std::abs(axes[0].Dot(worldAxes[i])) +
-        obbData.halfExtents.y * std::abs(axes[1].Dot(worldAxes[i])) +
-        obbData.halfExtents.z * std::abs(axes[2].Dot(worldAxes[i]));
-      float rAABB = aabbAsOBB.halfExtents.x * std::abs(worldAxes[i].x) +
-        aabbAsOBB.halfExtents.y * std::abs(worldAxes[i].y) +
-        aabbAsOBB.halfExtents.z * std::abs(worldAxes[i].z);
-      if (std::abs(t.Dot(worldAxes[i])) > rOBB + rAABB) return false;
-    }
-
-    // クロス積軸のチェック（OBB の軸×ワールド軸の9軸）
-    for (int i = 0; i < 3; ++i) {
-      for (int j = 0; j < 3; ++j) {
-        // OBB の軸とワールド軸のクロス積
-        Vector3 axis = axes[i].Cross(worldAxes[j]);
-        float axisLength = axis.Length();
-
-        // 平行軸の場合（クロス積がゼロベクトル）はスキップ
-        if (axisLength < 0.0001f) continue;
-
-        // 軸を正規化
-        axis = axis / axisLength;
-
-        // OBB の投影半径を計算
-        float rOBB = obbData.halfExtents.x * std::abs(axes[0].Dot(axis)) +
-          obbData.halfExtents.y * std::abs(axes[1].Dot(axis)) +
-          obbData.halfExtents.z * std::abs(axes[2].Dot(axis));
-
-        // AABB の投影半径を計算
-        float rAABB = aabbAsOBB.halfExtents.x * std::abs(axis.x) +
-          aabbAsOBB.halfExtents.y * std::abs(axis.y) +
-          aabbAsOBB.halfExtents.z * std::abs(axis.z);
-
-        // 分離軸定理の判定
-        if (std::abs(t.Dot(axis)) > rOBB + rAABB) return false;
-      }
-    }
-
-    return true;
-  }
-
-  bool CollisionManager::CheckOBBvsSphere(OBBCollider* obb, SphereCollider* sphere) {
-    OBB obbData = obb->GetOBB();
-    Vector3 sphereCenter = sphere->GetCenter();
-    float radius = sphere->GetRadius();
-
-    // OBB のローカル座標系での球の中心を計算
-    Vector3 localSphereCenter = sphereCenter - obbData.center;
-
-    // 最近点を計算
-    Vector3 closestPoint = obbData.center;
-    Vector3 axes[3] = { obbData.GetAxis(0), obbData.GetAxis(1), obbData.GetAxis(2) };
-
-    // halfExtents を配列として扱う
-    float halfExtents[3] = { obbData.halfExtents.x, obbData.halfExtents.y, obbData.halfExtents.z };
-
-    for (int i = 0; i < 3; ++i) {
-      float distance = localSphereCenter.Dot(axes[i]);
-
-      // 軸に沿った範囲内にクランプ
-      distance = std::clamp(distance, -halfExtents[i], halfExtents[i]);
-
-      closestPoint += axes[i] * distance;
-    }
-
-    // 最近点と球の中心の距離を計算
-    Vector3 diff = sphereCenter - closestPoint;
-    float distanceSquared = diff.LengthSquared();
-
-    return distanceSquared < (radius * radius);
   }
 
   void CollisionManager::SetLayerNames(std::vector<std::string> names) {
@@ -526,19 +425,26 @@ namespace Tako {
   }
 
   void CollisionManager::RemapCollisionMasks(const std::function<std::optional<uint32_t>(uint32_t)>& remap) {
-    std::unordered_map<uint32_t, std::unordered_set<uint32_t>> remapped;
-    for (const auto& [typeA, others] : collisionMask_) {
-      const std::optional<uint32_t> newA = remap(typeA);
-      if (!newA) {
+    std::array<uint32_t, kMaxLayers> remapped{};
+    for (uint32_t typeA = 0; typeA < kMaxLayers; ++typeA) {
+      if (collisionMask_[typeA] == 0) {
         continue;
       }
-      for (uint32_t typeB : others) {
-        if (const std::optional<uint32_t> newB = remap(typeB)) {
-          remapped[*newA].insert(*newB);
+      const std::optional<uint32_t> newA = remap(typeA);
+      if (!newA || *newA >= kMaxLayers) {
+        continue;
+      }
+      for (uint32_t typeB = 0; typeB < kMaxLayers; ++typeB) {
+        if (!CanCollide(typeA, typeB)) {
+          continue;
+        }
+        const std::optional<uint32_t> newB = remap(typeB);
+        if (newB && *newB < kMaxLayers) {
+          remapped[*newA] |= 1u << *newB;
         }
       }
     }
-    collisionMask_ = std::move(remapped);
+    collisionMask_ = remapped;
   }
 
   std::string CollisionManager::GetLayerLabel(uint32_t typeID) const {
@@ -546,11 +452,7 @@ namespace Tako {
   }
 
   bool CollisionManager::CanCollide(uint32_t typeA, uint32_t typeB) const {
-    auto it = collisionMask_.find(typeA);
-    if (it != collisionMask_.end()) {
-      return it->second.find(typeB) != it->second.end();
-    }
-    return false;
+    return typeA < kMaxLayers && typeB < kMaxLayers && ((collisionMask_[typeA] >> typeB) & 1u) != 0;
   }
 
   CollisionManager::CollisionPair CollisionManager::MakeOrderedPair(Collider* a, Collider* b) {

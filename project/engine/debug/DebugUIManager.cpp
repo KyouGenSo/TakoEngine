@@ -32,6 +32,7 @@
 #include <sstream>
 #include <set>
 #include <map>
+#include <unordered_map>
 #include <cstring>
 #include <chrono>
 #include <format>
@@ -1096,28 +1097,22 @@ namespace Tako {
 
     // コリジョンマスク情報
     if (ImGui::CollapsingHeader("Collision Masks")) {
-      const auto& masks = collisionManager->GetCollisionMasks();
+      // マスクは対称なので typeA <= typeB の組だけ集める
+      std::vector<std::pair<uint32_t, uint32_t>> collisionPairs;
+      for (uint32_t typeA = 0; typeA < CollisionManager::kMaxLayers; ++typeA) {
+        for (uint32_t typeB = typeA; typeB < CollisionManager::kMaxLayers; ++typeB) {
+          if (collisionManager->CanCollide(typeA, typeB)) {
+            collisionPairs.push_back({ typeA, typeB });
+          }
+        }
+      }
 
-      if (masks.empty()) {
+      if (collisionPairs.empty()) {
         ImGui::TextDisabled("No collision masks configured");
       }
       else {
         ImGui::Text("Active collision pairs:");
         ImGui::Spacing();
-
-        // すべてのマスク情報を収集して整理
-        std::set<std::pair<uint32_t, uint32_t>> collisionPairs;
-        for (const auto& [typeA, typeBSet] : masks) {
-          for (uint32_t typeB : typeBSet) {
-            // 小さい番号を先にして重複を避ける
-            if (typeA <= typeB) {
-              collisionPairs.insert({ typeA, typeB });
-            }
-            else {
-              collisionPairs.insert({ typeB, typeA });
-            }
-          }
-        }
 
         // コリジョンペアを表示
         for (const auto& [typeA, typeB] : collisionPairs) {
@@ -1137,21 +1132,15 @@ namespace Tako {
 
     // パフォーマンス情報
     if (ImGui::CollapsingHeader("Performance")) {
-      size_t colliderCount = collisionManager->GetColliderCount();
+      // 層ごとに分けて当たる層の組だけ判定するので、総当たり数ではなく実際に判定したペア数を出す
+      const size_t testedPairs = collisionManager->GetTestedPairCount();
+      ImGui::Text("Tested pairs: %zu", testedPairs);
+      ImGui::Text("Check time: %.3f ms", collisionManager->GetLastCheckMs());
+
       const auto& masks = collisionManager->GetCollisionMasks();
-
-      // ブロードフェーズの計算量（最悪ケース）
-      size_t maxPairs = colliderCount * (colliderCount - 1) / 2;
-      ImGui::Text("Max possible pairs: %zu", maxPairs);
-
-      // マスクによる最適化の効果を表示
-      if (!masks.empty()) {
-        ImGui::Text("Collision masks: Active");
-        ImGui::TextDisabled("Reducing unnecessary checks");
-      }
-      else {
+      if (std::ranges::all_of(masks, [](uint32_t mask) { return mask == 0; })) {
         ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "No masks configured");
-        ImGui::TextDisabled("All types check against all types");
+        ImGui::TextDisabled("No pairs are tested");
       }
 
       ImGui::Spacing();
@@ -1160,15 +1149,15 @@ namespace Tako {
       ImVec4 performanceColor;
       const char* performanceText;
 
-      if (maxPairs < 100) {
+      if (testedPairs < 100) {
         performanceColor = ImVec4(0.2f, 1.0f, 0.2f, 1.0f);
         performanceText = "Excellent";
       }
-      else if (maxPairs < 500) {
+      else if (testedPairs < 500) {
         performanceColor = ImVec4(0.7f, 1.0f, 0.2f, 1.0f);
         performanceText = "Good";
       }
-      else if (maxPairs < 2000) {
+      else if (testedPairs < 2000) {
         performanceColor = ImVec4(1.0f, 0.8f, 0.2f, 1.0f);
         performanceText = "Moderate";
       }

@@ -10,7 +10,7 @@ namespace Tako {
   /// </summary>
   class AABBCollider : public Collider {
   public: //メンバー関数
-    AABBCollider() = default;
+    AABBCollider() : Collider(ColliderShape::AABB) {}
     virtual ~AABBCollider() = default;
 
     //===================================

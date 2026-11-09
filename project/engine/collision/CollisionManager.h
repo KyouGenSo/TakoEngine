@@ -1,7 +1,7 @@
 #pragma once
+#include <array>
+#include <cstdint>
 #include <functional>
-#include <list>
-#include <unordered_map>
 #include <unordered_set>
 #include <memory>
 #include <optional>
@@ -13,16 +13,12 @@
 
 namespace Tako {
 
-  class AABBCollider;
-  class SphereCollider;
-  class OBBCollider;
-
   /// <summary>
   /// 衝突判定を一元管理するシングルトンマネージャー。コライダーの登録、衝突検出、衝突マスク管理を行う
   /// </summary>
   class CollisionManager {
   public: //定数
-    static constexpr size_t kMaxLayers = 32;  ///< 層名の上限（Unity / Godot と同じ）
+    static constexpr size_t kMaxLayers = 32;  ///< 層名の上限（Unity / Godot と同じ）。層ごとの当たり表は uint32_t 1 個のビット
 
   private: //構造体
     using CollisionPair = std::pair<Collider*, Collider*>;
@@ -32,6 +28,18 @@ namespace Tako {
         auto h2 = std::hash<void*>{}(p.second);
         return h1 ^ (h2 << 1);
       }
+    };
+
+    /// <summary>
+    /// 1 フレーム分のワールド形状。AABB はワールド軸を向いた箱として OBB と同じ形で持つ
+    /// </summary>
+    struct Proxy {
+      Collider*     collider;
+      ColliderShape shape;
+      Vector3       center;
+      float         half[3];   ///< 箱の各軸の半サイズ
+      Vector3       axis[3];   ///< 箱の正規化済みの軸（AABB はワールド軸）
+      float         radius;    ///< 球の半径
     };
 
   public: //メンバー関数
@@ -89,7 +97,7 @@ namespace Tako {
     /// <summary>
     /// 全ての型の組み合わせを衝突しない状態に戻す
     /// </summary>
-    void ClearCollisionMasks() { collisionMask_.clear(); }
+    void ClearCollisionMasks() { collisionMask_.fill(0); }
 
     /// <summary>
     /// 層を削除し、後ろの層の名前と衝突マスクを 1 つ前へ詰める（コライダーに設定済みの型 ID は変わらない）
@@ -105,7 +113,7 @@ namespace Tako {
     //Setter
     //============================================================
     /// <summary>
-    /// 指定した型同士の衝突判定を有効/無効化
+    /// 指定した型同士の衝突判定を有効/無効化（kMaxLayers 以上の型 ID は無視する）
     /// </summary>
     /// <param name="typeA">型 A</param>
     /// <param name="typeB">型 B</param>
@@ -132,9 +140,15 @@ namespace Tako {
     //============================================================
     bool IsDebugDrawEnabled() const { return debugDrawEnabled_; }
     size_t GetColliderCount() const { return colliders_.size(); }
-    const std::list<Collider*>& GetColliders() const { return colliders_; }
-    const std::unordered_map<uint32_t, std::unordered_set<uint32_t>>& GetCollisionMasks() const { return collisionMask_; }
+    const std::vector<Collider*>& GetColliders() const { return colliders_; }
     std::vector<std::string>& GetLayerNames() { return layerNames_; }
+    size_t GetTestedPairCount() const { return testedPairCount_; }
+    float GetLastCheckMs() const { return lastCheckMs_; }
+
+    /// <summary>
+    /// 添字 = 型 A、ビット b = 型 B と衝突する
+    /// </summary>
+    const std::array<uint32_t, kMaxLayers>& GetCollisionMasks() const { return collisionMask_; }
 
     /// <summary>
     /// 表示用の型名（層名があれば層名、無ければ "Type N"）
@@ -142,7 +156,7 @@ namespace Tako {
     std::string GetLayerLabel(uint32_t typeID) const;
 
     /// <summary>
-    /// 型 A と型 B が衝突判定の対象か
+    /// 型 A と型 B が衝突判定の対象か（kMaxLayers 以上の型 ID は常に false）
     /// </summary>
     bool CanCollide(uint32_t typeA, uint32_t typeB) const;
 
@@ -156,16 +170,14 @@ namespace Tako {
     explicit CollisionManager(Token) {}
 
   private:
-    // 形状を判別して対応する判定関数へ振り分け、衝突時のみ currentCollisions_ にペアを登録する
-    void CheckCollisionPair(Collider* colliderA, Collider* colliderB);
+    // コライダーのワールド形状を 1 回だけ計算して Proxy に詰める
+    static Proxy MakeProxy(Collider* collider);
 
     // 以下は交差有無のみを返す（接触点・貫通深度は算出しない）。true=交差
-    bool CheckAABBvsAABB(AABBCollider* a, AABBCollider* b);
-    bool CheckSphereVsSphere(SphereCollider* a, SphereCollider* b);
-    bool CheckAABBvsSphere(AABBCollider* aabb, SphereCollider* sphere);
-    bool CheckOBBvsOBB(OBBCollider* a, OBBCollider* b);
-    bool CheckOBBvsAABB(OBBCollider* obb, AABBCollider* aabb);
-    bool CheckOBBvsSphere(OBBCollider* obb, SphereCollider* sphere);
+    static bool Intersects(const Proxy& a, const Proxy& b);
+    static bool SphereVsSphere(const Proxy& a, const Proxy& b);
+    static bool BoxVsSphere(const Proxy& box, const Proxy& sphere);
+    static bool BoxVsBox(const Proxy& a, const Proxy& b);
 
     CollisionPair MakeOrderedPair(Collider* a, Collider* b);
 
@@ -174,13 +186,20 @@ namespace Tako {
 
   private: //メンバー変数
     //登録コライダーと衝突マスク
-    std::list<Collider*>                                       colliders_;
-    std::unordered_map<uint32_t, std::unordered_set<uint32_t>> collisionMask_;
-    std::vector<std::string>                                   layerNames_;     ///< 添字 = 型 ID。意味付けはゲーム側の型 ID 定義に合わせる
+    std::vector<Collider*>           colliders_;
+    std::array<uint32_t, kMaxLayers> collisionMask_{};  ///< 添字 = 型 A、ビット b = 型 B と衝突する（対称に保つ）
+    std::vector<std::string>         layerNames_;       ///< 添字 = 型 ID。意味付けはゲーム側の型 ID 定義に合わせる
+
+    //判定の作業領域。毎フレーム clear するだけで容量は残す
+    std::array<std::vector<Proxy>, kMaxLayers> layerProxies_;  ///< 添字 = 型 ID。アクティブなコライダーだけ入る
 
     //衝突ペアの前フレーム/現フレーム追跡
     std::unordered_set<CollisionPair, PairHash> previousCollisions_;
     std::unordered_set<CollisionPair, PairHash> currentCollisions_;
+
+    //計測（直近の CheckAllCollisions 1 回分）
+    size_t testedPairCount_ = 0;     ///< 形状の交差判定まで進んだペア数
+    float  lastCheckMs_     = 0.0f;  ///< 判定にかかった時間。Enter/Stay/Exit の通知は含まない
 
     static std::unique_ptr<CollisionManager> instance_;  ///< シングルトン
 

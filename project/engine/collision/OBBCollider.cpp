@@ -3,7 +3,8 @@
 namespace Tako {
 
   OBBCollider::OBBCollider()
-    : size_(1.0f, 1.0f, 1.0f)
+    : Collider(ColliderShape::OBB)
+    , size_(1.0f, 1.0f, 1.0f)
     , offset_(0.0f, 0.0f, 0.0f) {
     orientation_ = Mat4x4::MakeIdentity();
   }
