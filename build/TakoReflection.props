@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!-- ===================================================
+       リフレクションのコード生成
+       ClInclude の TCLASS / TENUM / TPROPERTY を TakoHeaderTool が読み、
+       $(IntDir)TakoReflection.gen.cpp を書き出す。
+       Microsoft.Cpp.targets より前に import する（BuildGenerateSourcesTargets は先に足した値の後ろへ既定の段階を足す）。
+       TakoReflectionModule は登録関数の名前（RegisterTypes_<名前>）。エンジンは Engine、ゲームは Game。
+       =================================================== -->
+  <PropertyGroup>
+    <TakoReflectionModule Condition="'$(TakoReflectionModule)'==''">Game</TakoReflectionModule>
+    <BuildGenerateSourcesTargets>$(BuildGenerateSourcesTargets);TakoGenerateReflection</BuildGenerateSourcesTargets>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ClCompile Include="$(IntDir)TakoReflection.gen.cpp" />
+  </ItemGroup>
+
+  <UsingTask TaskName="TakoHeaderTool" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <Headers ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+      <OutputFile ParameterType="System.String" Required="true" />
+      <ModuleName ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Code Type="Class" Language="cs" Source="$(MSBuildThisFileDirectory)TakoHeaderTool.cs" />
+    </Task>
+  </UsingTask>
+
+  <Target Name="TakoGenerateReflection" Condition="'$(DesignTimeBuild)'!='true'">
+    <TakoHeaderTool Headers="@(ClInclude->'%(FullPath)')" OutputFile="$(IntDir)TakoReflection.gen.cpp" ModuleName="$(TakoReflectionModule)" />
+  </Target>
+
+</Project>

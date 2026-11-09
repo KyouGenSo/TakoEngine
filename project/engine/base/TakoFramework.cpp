@@ -19,6 +19,8 @@
 #include "Input.h"
 #include "ProjectSettings.h"
 #include "StringUtility.h"
+#include "TypeRegistry.h"
+#include "ReflectionSelfTest.h"
 
 #ifdef _DEBUG
 #include "DebugUIManager.h"
@@ -28,6 +30,12 @@ namespace Tako {
 
   void TakoFramework::Initialize()
   {
+    // 保存したファイルの "type" から物を作れるよう、最初に型を登録する（RegisterTypes_Game はゲーム側の生成ファイルにある）
+    RegisterTypes_Engine();
+    RegisterTypes_Game();
+#ifdef _DEBUG
+    RunReflectionSelfTest();
+#endif
 
 #pragma region ウィンドウの初期化-------------------------------------------------------------------------------------------------------------------
     winApp_ = WinApp::GetInstance();

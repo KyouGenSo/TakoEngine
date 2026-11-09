@@ -124,8 +124,26 @@
     <Filter Include="render">
       <UniqueIdentifier>{ad42ecf3-0a8a-4e63-8898-6609c923636f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="reflection">
+      <UniqueIdentifier>{cd3ab674-ec6d-4560-8d82-8af383e1d81c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="engine\imgui\ImGuiPropertyVisitor.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\reflection\ReflectionSelfTest.cpp">
+      <Filter>reflection</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\reflection\JsonPropertyVisitor.cpp">
+      <Filter>reflection</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\reflection\TypeRegistry.cpp">
+      <Filter>reflection</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\reflection\TObject.cpp">
+      <Filter>reflection</Filter>
+    </ClCompile>
     <ClCompile Include="engine\render\MaterialPropertyBlock.cpp">
       <Filter>render</Filter>
     </ClCompile>
@@ -446,6 +464,27 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\imgui\ImGuiPropertyVisitor.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\reflection\ReflectionSelfTest.h">
+      <Filter>reflection</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\reflection\JsonPropertyVisitor.h">
+      <Filter>reflection</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\reflection\PropertyVisitor.h">
+      <Filter>reflection</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\reflection\TypeRegistry.h">
+      <Filter>reflection</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\reflection\TObject.h">
+      <Filter>reflection</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\reflection\Reflection.h">
+      <Filter>reflection</Filter>
+    </ClInclude>
     <ClInclude Include="engine\render\MaterialPropertyBlock.h">
       <Filter>render</Filter>
     </ClInclude>
