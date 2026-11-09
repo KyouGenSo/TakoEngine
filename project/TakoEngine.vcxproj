@@ -121,6 +121,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="engine\reflection\GameSettings.cpp" />
     <ClCompile Include="engine\scene\ScriptComponent.cpp" />
     <ClCompile Include="engine\debug\SceneEditor.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
@@ -284,6 +285,7 @@
     <ClCompile Include="engine\debug\MaterialEditor.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\reflection\GameSettings.h" />
     <ClInclude Include="engine\scene\Script.h" />
     <ClInclude Include="engine\scene\ScriptComponent.h" />
     <ClInclude Include="engine\debug\SceneEditor.h" />

@@ -17,6 +17,8 @@
 
 namespace Tako {
 
+  struct TypeInfo;
+
   /// <summary>
   /// エディタビューに表示する床グリッドの設定
   /// </summary>
@@ -54,6 +56,7 @@ namespace Tako {
     struct SettingsState {
       std::string                             project;  ///< ProjectSettings::Serialize
       std::string                             editor;   ///< SerializeEditorSettings
+      std::string                             game;     ///< SerializeGameSettings
       std::optional<std::vector<std::string>> layerOrigins;
       std::optional<NameOrigins>              actionOrigins;
       std::optional<NameOrigins>              axisOrigins;
@@ -61,7 +64,7 @@ namespace Tako {
       /// <summary>
       /// 保存する内容だけを比べる
       /// </summary>
-      bool operator==(const SettingsState& other) const { return project == other.project && editor == other.editor; }
+      bool operator==(const SettingsState& other) const { return project == other.project && editor == other.editor && game == other.game; }
     };
 
   public: //メンバー関数
@@ -125,9 +128,16 @@ namespace Tako {
     void DrawCollisionLayers();
 
     /// <summary>
-    /// プロジェクト設定・生成ヘッダ・個人設定を保存する（Save ボタンと Ctrl+S）
+    /// プロジェクト設定・生成ヘッダ・個人設定・GameSettings を保存する（Save ボタンと Ctrl+S）
     /// </summary>
     void SaveAll();
+
+    /// <summary>
+    /// 全 GameSettings の値（型名 → TPROPERTY の JSON）
+    /// </summary>
+    std::string SerializeGameSettings() const;
+
+    void DeserializeGameSettings(const std::string& text);
 
     /// <summary>
     /// 衝突層・入力アクション・入力軸の名前からヘッダを生成し、前回 Save 以降の改名をソース中の使用箇所へ反映する（生成先が空のものは何もしない）
@@ -180,8 +190,9 @@ namespace Tako {
     void ApplyMasterVolume();
 
   private: //メンバー変数
-    bool*    isOpen_           = nullptr;            ///< ウィンドウ表示フラグ（DebugUIManager 所有）
-    Category selectedCategory_ = Category::Display;
+    bool*           isOpen_               = nullptr;            ///< ウィンドウ表示フラグ（DebugUIManager 所有）
+    Category        selectedCategory_     = Category::Display;
+    const TypeInfo* selectedGameSettings_ = nullptr;            ///< Game 欄で選んだ GameSettings の型。選んでいる間は selectedCategory_ より優先
 
     //Audio
     float masterVolume_ = 1.0f;

@@ -16,6 +16,9 @@
 #include "Input.h"
 #include "StringUtility.h"
 #include "CodeGenerator.h"
+#include "GameSettings.h"
+#include "ImGuiPropertyVisitor.h"
+#include "JsonPropertyVisitor.h"
 
 #include "imgui.h"
 #include <json.hpp>
@@ -321,25 +324,47 @@ namespace Tako {
 
       ImGui::BeginChild("##Categories", ImVec2(120.0f, -footerHeight), ImGuiChildFlags_Borders);
       for (int i = 0; i < static_cast<int>(Category::Count); ++i) {
-        if (ImGui::Selectable(kCategoryNames[i], static_cast<int>(selectedCategory_) == i)) {
-          selectedCategory_ = static_cast<Category>(i);
+        if (ImGui::Selectable(kCategoryNames[i], !selectedGameSettings_ && static_cast<int>(selectedCategory_) == i)) {
+          selectedCategory_     = static_cast<Category>(i);
+          selectedGameSettings_ = nullptr;
         }
+      }
+      const std::vector<const TypeInfo*> gameSettingsTypes = GameSettings::GetTypes();
+      if (!gameSettingsTypes.empty()) {
+        ImGui::SeparatorText("Game");
+      }
+      for (const TypeInfo* type : gameSettingsTypes) {
+        // 一覧が狭いので、型名の末尾の Settings は省く
+        std::string_view label = type->name;
+        if (label.size() > 8 && label.ends_with("Settings")) {
+          label.remove_suffix(8);
+        }
+        ImGui::PushID(type->name);
+        if (ImGui::Selectable(std::string(label).c_str(), selectedGameSettings_ == type)) {
+          selectedGameSettings_ = type;
+        }
+        ImGui::PopID();
       }
       ImGui::EndChild();
 
       ImGui::SameLine();
 
       ImGui::BeginChild("##Content", ImVec2(0.0f, -footerHeight));
-      switch (selectedCategory_) {
-      case Category::Application: DrawApplication(); break;
-      case Category::Display:     DrawDisplay();     break;
-      case Category::Time:        DrawTime();        break;
-      case Category::Rendering:   DrawRendering();   break;
-      case Category::Audio:       DrawAudio();       break;
-      case Category::Physics:     DrawPhysics();     break;
-      case Category::Input:       DrawInput();       break;
-      case Category::Editor:      DrawEditor();      break;
-      default: break;
+      if (selectedGameSettings_) {
+        DrawProperties(GameSettings::Get(*selectedGameSettings_));
+      }
+      else {
+        switch (selectedCategory_) {
+        case Category::Application: DrawApplication(); break;
+        case Category::Display:     DrawDisplay();     break;
+        case Category::Time:        DrawTime();        break;
+        case Category::Rendering:   DrawRendering();   break;
+        case Category::Audio:       DrawAudio();       break;
+        case Category::Physics:     DrawPhysics();     break;
+        case Category::Input:       DrawInput();       break;
+        case Category::Editor:      DrawEditor();      break;
+        default: break;
+        }
       }
       ImGui::EndChild();
 
@@ -361,12 +386,15 @@ namespace Tako {
         actionOrigins_.reset();
         axisOrigins_.reset();
         LoadEditorSettings();
+        for (const TypeInfo* type : GameSettings::GetTypes()) {
+          GameSettings::Get(*type).Reload();
+        }
         settingsTracker_.Reset();
       }
       ImGui::SameLine();
       settingsTracker_.DrawButtons();
       ImGui::SameLine();
-      ImGui::TextDisabled("%s", ProjectSettings::kFilePath);
+      ImGui::TextDisabled("%s", selectedGameSettings_ ? GameSettings::GetPath(*selectedGameSettings_).c_str() : ProjectSettings::kFilePath);
       if (ImGui::BeginItemTooltip()) {
         ImGui::Text("Editor settings: %s", EditorSettingsPathText().c_str());
         ImGui::EndTooltip();
@@ -451,13 +479,14 @@ namespace Tako {
   }
 
   EngineSettingsWindow::SettingsState EngineSettingsWindow::CaptureSettings() const {
-    return { ProjectSettings::Serialize(GetDX12()), SerializeEditorSettings(), layerOrigins_, actionOrigins_, axisOrigins_ };
+    return { ProjectSettings::Serialize(GetDX12()), SerializeEditorSettings(), SerializeGameSettings(), layerOrigins_, actionOrigins_, axisOrigins_ };
   }
 
   void EngineSettingsWindow::RestoreSettings(const SettingsState& state) {
     ProjectSettings::Deserialize(state.project, GetDX12());
     WinApp::GetInstance()->SetWindowTitle(StringUtility::ConvertString(ProjectSettings::GetWindowSettings().productName));
     DeserializeEditorSettings(state.editor);
+    DeserializeGameSettings(state.game);
     layerOrigins_  = state.layerOrigins;
     actionOrigins_ = state.actionOrigins;
     axisOrigins_   = state.axisOrigins;
@@ -469,8 +498,35 @@ namespace Tako {
         saved ? DebugUIManager::LogType::Info : DebugUIManager::LogType::Error);
     SaveGeneratedHeaders();
     SaveEditorSettings();
-    if (saved) {
+    bool isGameSaved = true;
+    for (const TypeInfo* type : GameSettings::GetTypes()) {
+      const bool isTypeSaved = GameSettings::Get(*type).Save();
+      LogToConsole(std::format("Game settings {}: {}", isTypeSaved ? "saved" : "save failed", GameSettings::GetPath(*type)),
+          isTypeSaved ? DebugUIManager::LogType::Info : DebugUIManager::LogType::Error);
+      isGameSaved &= isTypeSaved;
+    }
+    if (saved && isGameSaved) {
       settingsTracker_.MarkSaved();
+    }
+  }
+
+  std::string EngineSettingsWindow::SerializeGameSettings() const {
+    json root = json::object();
+    for (const TypeInfo* type : GameSettings::GetTypes()) {
+      root[type->name] = WriteProperties(GameSettings::Get(*type));
+    }
+    return root.dump();
+  }
+
+  void EngineSettingsWindow::DeserializeGameSettings(const std::string& text) {
+    const json root = json::parse(text, nullptr, false);
+    if (!root.is_object()) {
+      return;
+    }
+    for (const TypeInfo* type : GameSettings::GetTypes()) {
+      if (auto it = root.find(type->name); it != root.end()) {
+        ReadProperties(GameSettings::Get(*type), *it);
+      }
     }
   }
 

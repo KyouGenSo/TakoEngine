@@ -129,6 +129,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="engine\reflection\GameSettings.cpp">
+      <Filter>reflection</Filter>
+    </ClCompile>
     <ClCompile Include="engine\scene\ScriptComponent.cpp">
       <Filter>scene</Filter>
     </ClCompile>
@@ -488,6 +491,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\reflection\GameSettings.h">
+      <Filter>reflection</Filter>
+    </ClInclude>
     <ClInclude Include="engine\scene\Script.h">
       <Filter>scene</Filter>
     </ClInclude>
