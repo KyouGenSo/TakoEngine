@@ -254,6 +254,7 @@ namespace Tako {
     nlohmann::json out;
     JsonWriteVisitor visitor(out);
     object.Reflect(visitor);
+    object.PostSave(out);
     return out;
   }
 

@@ -6,6 +6,7 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <string_view>
 #include <vector>
 #include "imgui.h"
 #include "ShortcutTable.h"
@@ -13,11 +14,12 @@
 namespace Tako {
 
   /// <summary>
-  /// resources / EngineResources 配下のファイルをフォルダツリーとサムネイルで閲覧するウィンドウ
+  /// resources / Script / EngineResources 配下のファイルをフォルダツリーとサムネイルで閲覧するウィンドウ
   /// </summary>
   class AssetBrowser {
   public: //定数
     static constexpr const char* kTexturePayload = "TAKO_TEXTURE";  ///< テクスチャ項目の D&D ペイロード型。データは終端付きのテクスチャキー
+    static constexpr const char* kScriptPayload  = "TAKO_SCRIPT";   ///< スクリプト（.h / .cpp）の D&D ペイロード型。データは終端付きの型名
 
   private: //構造体
     /// <summary>
@@ -171,9 +173,24 @@ namespace Tako {
   void OpenWithShell(const std::filesystem::path& path);
 
   /// <summary>
+  /// ソースファイルを、そのファイルをプロジェクトに含むソリューションを開いている VS で開く。そういう VS が無ければ OpenWithShell
+  /// </summary>
+  void OpenSourceFile(const std::filesystem::path& path);
+
+  /// <summary>
+  /// Script フォルダから「型名.h」を探して OpenSourceFile で開く
+  /// </summary>
+  void OpenScriptFile(std::string_view typeName);
+
+  /// <summary>
   /// 直前のアイテムへのテクスチャのドロップ（アセットウィンドウから）。落とされたフレームだけキーを返す
   /// </summary>
   std::optional<std::string> AcceptTextureDrop();
+
+  /// <summary>
+  /// 直前のアイテムへのスクリプトのドロップ（アセットウィンドウから）。落とされたフレームだけ型名を返す
+  /// </summary>
+  std::optional<std::string> AcceptScriptDrop();
 
 } // namespace Tako
 

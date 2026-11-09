@@ -129,6 +129,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="engine\scene\ScriptComponent.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
     <ClCompile Include="engine\debug\SceneEditor.cpp">
       <Filter>debug</Filter>
     </ClCompile>
@@ -485,6 +488,12 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\scene\Script.h">
+      <Filter>scene</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\scene\ScriptComponent.h">
+      <Filter>scene</Filter>
+    </ClInclude>
     <ClInclude Include="engine\debug\SceneEditor.h">
       <Filter>debug</Filter>
     </ClInclude>

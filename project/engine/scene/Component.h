@@ -8,7 +8,7 @@ namespace Tako {
   class Actor;
 
   /// <summary>
-  /// Actor に付ける機能の単位（UE の UActorComponent）。C++ のスクリプトはこれを継承する
+  /// Actor に付ける機能の単位（UE の UActorComponent）。C++ のスクリプトは Script を継承し、ScriptComponent に入れる
   /// </summary>
   TCLASS()
   class Component : public TObject {
@@ -59,6 +59,7 @@ namespace Tako {
 
   private: //メンバー変数
     friend class Actor;
+    friend class ScriptComponent;
 
     Actor*      owner_ = nullptr;
     std::string name_;            ///< Actor の中で一意。保存ファイルのキー

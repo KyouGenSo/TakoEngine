@@ -32,6 +32,12 @@ namespace Tako {
     /// <param name="raw">読んだ JSON そのもの</param>
     virtual void PostLoad([[maybe_unused]] const nlohmann::json& raw) {}
 
+    /// <summary>
+    /// TPROPERTY を JSON に書いた後に呼ばれる。TPROPERTY で表せない中身（持っている別の TObject など）を足す
+    /// </summary>
+    /// <param name="out">書いた JSON。TPROPERTY が無ければ null</param>
+    virtual void PostSave([[maybe_unused]] nlohmann::json& out) {}
+
 #ifdef _DEBUG
     /// <summary>
     /// 自動の UI の後に描く追加の UI

@@ -8,6 +8,8 @@
 #include "ImGuiPropertyVisitor.h"
 #include "Prefab.h"
 #include "SceneManager.h"
+#include "Script.h"
+#include "ScriptComponent.h"
 #include "TypeRegistry.h"
 
 #include "imgui.h"
@@ -322,16 +324,23 @@ namespace Tako {
       return;
     }
     for (const TypeInfo* type : TypeRegistry::GetInstance()->GetCreatableTypes(Component::StaticType())) {
-      if (!ImGui::MenuItem(type->name)) {
+      // スクリプトは Script の中に入れて使う
+      if (type->IsChildOf(Script::StaticType())) {
+        continue;
+      }
+      const bool  isScript = type == &ScriptComponent::StaticType();
+      const char* label    = isScript ? "Script" : type->name;
+      if (!ImGui::MenuItem(label)) {
         continue;
       }
       const ActorId     id       = actor.GetId();
       const std::string typeName = type->name;
-      Request([id, typeName](BaseScene& scene) {
+      const std::string name     = isScript ? "Script" : "";
+      Request([id, typeName, name](BaseScene& scene) {
         Actor*                   owner  = scene.FindActor(id);
         std::unique_ptr<TObject> object = TypeRegistry::GetInstance()->Create(typeName);
         if (owner && object) {
-          owner->AddComponent(std::unique_ptr<Component>(static_cast<Component*>(object.release())), "");
+          owner->AddComponent(std::unique_ptr<Component>(static_cast<Component*>(object.release())), name);
           scene.MarkChanged();
         }
       });

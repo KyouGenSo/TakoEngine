@@ -4,10 +4,13 @@
 #include "WinApp.h"
 #include "EnginePaths.h"
 #include "StringUtility.h"
+#include "Script.h"
+#include "TypeRegistry.h"
 
 #include "imgui_internal.h"
 
 #include <shellapi.h>
+#include <wrl/client.h>
 
 #include <algorithm>
 #include <cctype>
@@ -24,7 +27,8 @@ namespace Tako {
 
     using LogType = DebugUIManager::LogType;
 
-    constexpr const char* kGameRoot = "resources";
+    constexpr const char* kGameRoot   = "resources";
+    constexpr const char* kScriptRoot = "Script";  // C++ スクリプトの置き場所（作業ディレクトリ＝ゲームのプロジェクトのフォルダからの相対）
 
     constexpr float kTreeInitialWidth = 200.0f;
     constexpr float kMinThumbnailSize = 32.0f;
@@ -192,6 +196,101 @@ namespace Tako {
       drawList->AddImage(texture, ImVec2(center.x - half.x, center.y - half.y), ImVec2(center.x + half.x, center.y + half.y));
     }
 
+    bool HasExtension(const fs::path& path, std::initializer_list<std::wstring_view> extensions) {
+      const std::wstring extension = path.extension().wstring();
+      return std::ranges::any_of(extensions, [&](std::wstring_view candidate) { return _wcsicmp(extension.c_str(), candidate.data()) == 0; });
+    }
+
+    bool IsSourceFile(const fs::path& path) {
+      return HasExtension(path, { L".h", L".hpp", L".cpp", L".hlsl", L".hlsli" });
+    }
+
+    /// <summary>
+    /// ファイル名（拡張子なし）と同じ名前の、作れる Script の型。.h / .cpp 以外か、見つからなければ nullptr
+    /// </summary>
+    const TypeInfo* FindScriptType(const fs::path& path) {
+      if (!HasExtension(path, { L".h", L".cpp" })) {
+        return nullptr;
+      }
+      const TypeInfo* type = TypeRegistry::GetInstance()->Find(ToUtf8(path.stem()));
+      return type && type->create && type->IsChildOf(Script::StaticType()) ? type : nullptr;
+    }
+
+    /// <summary>
+    /// IDispatch のメンバーを名前で呼ぶ（引数は 1 つまで）
+    /// </summary>
+    bool InvokeByName(IDispatch* target, const wchar_t* name, WORD flags, VARIANT* result, VARIANT* argument = nullptr) {
+      DISPID   id      = 0;
+      LPOLESTR names[] = { const_cast<LPOLESTR>(name) };
+      if (FAILED(target->GetIDsOfNames(IID_NULL, names, 1, LOCALE_USER_DEFAULT, &id))) {
+        return false;
+      }
+      DISPPARAMS parameters{ argument, nullptr, argument ? 1u : 0u, 0u };
+      return SUCCEEDED(target->Invoke(id, IID_NULL, LOCALE_USER_DEFAULT, flags, &parameters, result, nullptr, nullptr));
+    }
+
+    Microsoft::WRL::ComPtr<IDispatch> GetDispatchByName(IDispatch* target, const wchar_t* name, VARIANT* argument = nullptr) {
+      VARIANT result;
+      VariantInit(&result);
+      Microsoft::WRL::ComPtr<IDispatch> out;
+      if (InvokeByName(target, name, DISPATCH_METHOD | DISPATCH_PROPERTYGET, &result, argument) && result.vt == VT_DISPATCH && result.pdispVal) {
+        out.Attach(result.pdispVal);
+        return out;
+      }
+      VariantClear(&result);
+      return out;
+    }
+
+    /// <summary>
+    /// 実行中の VS（ROT の "!VisualStudio.DTE."）のうち、path をプロジェクトに含むものの DTE で開く。プロジェクトの一員として開くので IntelliSense が効く
+    /// </summary>
+    /// <returns>そういう VS が無ければ false</returns>
+    bool OpenInVisualStudio(const fs::path& path) {
+      using Microsoft::WRL::ComPtr;
+      ComPtr<IRunningObjectTable> table;
+      ComPtr<IEnumMoniker>        monikers;
+      ComPtr<IBindCtx>            context;
+      if (FAILED(GetRunningObjectTable(0, &table)) || FAILED(table->EnumRunning(&monikers)) || FAILED(CreateBindCtx(0, &context))) {
+        return false;
+      }
+
+      const std::wstring file = AbsolutePath(path).wstring();
+      ComPtr<IMoniker>   moniker;
+      while (monikers->Next(1, &moniker, nullptr) == S_OK) {
+        LPOLESTR   displayName = nullptr;
+        const bool isDte       = SUCCEEDED(moniker->GetDisplayName(context.Get(), nullptr, &displayName)) && std::wstring_view(displayName).starts_with(L"!VisualStudio.DTE.");
+        CoTaskMemFree(displayName);
+        ComPtr<IUnknown>  object;
+        ComPtr<IDispatch> dte;
+        if (!isDte || FAILED(table->GetObject(moniker.Get(), &object)) || FAILED(object.As(&dte))) {
+          continue;
+        }
+
+        VARIANT fileArgument;
+        fileArgument.vt      = VT_BSTR;
+        fileArgument.bstrVal = SysAllocString(file.c_str());
+        bool                    isOpened = false;
+        const ComPtr<IDispatch> solution = GetDispatchByName(dte.Get(), L"Solution");
+        if (solution && GetDispatchByName(solution.Get(), L"FindProjectItem", &fileArgument)) {
+          const ComPtr<IDispatch> operations = GetDispatchByName(dte.Get(), L"ItemOperations");
+          VARIANT                 window;
+          VariantInit(&window);
+          isOpened = operations && InvokeByName(operations.Get(), L"OpenFile", DISPATCH_METHOD, &window, &fileArgument);
+          VariantClear(&window);
+          if (const ComPtr<IDispatch> mainWindow = isOpened ? GetDispatchByName(dte.Get(), L"MainWindow") : nullptr) {
+            // 前面にいるこのプロセスが許可しないと、VS は自分を前に出せない
+            AllowSetForegroundWindow(ASFW_ANY);
+            InvokeByName(mainWindow.Get(), L"Activate", DISPATCH_METHOD, nullptr);
+          }
+        }
+        VariantClear(&fileArgument);
+        if (isOpened) {
+          return true;
+        }
+      }
+      return false;
+    }
+
     void* SettingsReadOpen(ImGuiContext*, ImGuiSettingsHandler*, const char*) {
       return &savedState;
     }
@@ -222,6 +321,36 @@ namespace Tako {
     if (code <= 32) {
       LogToConsole(std::format("Failed to open {} (ShellExecute error {})", ToUtf8(path), code), LogType::Warning);
     }
+  }
+
+  void OpenSourceFile(const std::filesystem::path& path) {
+    if (!OpenInVisualStudio(path)) {
+      OpenWithShell(path);
+    }
+  }
+
+  void OpenScriptFile(std::string_view typeName) {
+    const std::wstring fileName = StringUtility::ConvertString(std::string(typeName)) + L".h";
+    std::error_code    ec;
+    for (const fs::directory_entry& item : fs::recursive_directory_iterator(kScriptRoot, ec)) {
+      if (item.path().filename() == fileName) {
+        OpenSourceFile(item.path());
+        return;
+      }
+    }
+    LogToConsole(std::format("Script file not found: {}/**/{}.h", kScriptRoot, typeName), LogType::Warning);
+  }
+
+  std::optional<std::string> AcceptScriptDrop() {
+    if (!ImGui::BeginDragDropTarget()) {
+      return std::nullopt;
+    }
+    std::optional<std::string> typeName;
+    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(AssetBrowser::kScriptPayload)) {
+      typeName = static_cast<const char*>(payload->Data);
+    }
+    ImGui::EndDragDropTarget();
+    return typeName;
   }
 
   std::optional<std::string> AcceptTextureDrop() {
@@ -354,7 +483,7 @@ namespace Tako {
     CloseWatches();
     roots_.clear();
     std::error_code ec;
-    for (const fs::path& root : { fs::path(kGameRoot), EngineRootPath() }) {
+    for (const fs::path& root : { fs::path(kGameRoot), fs::path(kScriptRoot), EngineRootPath() }) {
       if (!fs::is_directory(root, ec)) {
         continue;
       }
@@ -587,6 +716,9 @@ namespace Tako {
         if (entry.isDirectory) {
           pendingDir_ = entry.path;
         }
+        else if (IsSourceFile(entry.path)) {
+          OpenSourceFile(entry.path);
+        }
         else {
           OpenWithShell(entry.path);
         }
@@ -596,6 +728,12 @@ namespace Tako {
     if (!entry.textureKey.empty() && ImGui::BeginDragDropSource()) {
       ImGui::SetDragDropPayload(kTexturePayload, entry.textureKey.c_str(), entry.textureKey.size() + 1);
       ImGui::TextUnformatted(entry.textureKey.c_str());
+      ImGui::EndDragDropSource();
+    }
+    // スクリプトは Inspector の Script 欄へドラッグできる
+    if (const TypeInfo* script = entry.isDirectory ? nullptr : FindScriptType(entry.path); script && ImGui::BeginDragDropSource()) {
+      ImGui::SetDragDropPayload(kScriptPayload, script->name, std::strlen(script->name) + 1);
+      ImGui::Text("Script: %s", script->name);
       ImGui::EndDragDropSource();
     }
 
@@ -662,6 +800,9 @@ namespace Tako {
     if (ImGui::MenuItem("Open")) {
       if (isDirectory) {
         pendingDir_ = path;
+      }
+      else if (IsSourceFile(path)) {
+        OpenSourceFile(path);
       }
       else {
         OpenWithShell(path);
