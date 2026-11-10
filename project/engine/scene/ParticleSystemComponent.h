@@ -38,6 +38,11 @@ namespace Tako {
     /// </summary>
     void SetActive(bool active);
 
+    /// <summary>
+    /// このエミッターの写しを今の位置に作り、lifeTime 秒だけ出す（爆発など 1 回きりの演出）。コンポーネントが消えても最後まで出る
+    /// </summary>
+    void EmitTemporary(float lifeTime);
+
     //=====================================
     //Getter
     //=====================================

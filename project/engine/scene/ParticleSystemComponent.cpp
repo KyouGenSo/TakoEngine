@@ -41,6 +41,17 @@ namespace Tako {
     }
   }
 
+  void ParticleSystemComponent::EmitTemporary(float lifeTime)
+  {
+    EnsureLoaded();
+    if (!manager_ || emitterName_.empty()) {
+      return;
+    }
+    static uint32_t serial = 0;
+    manager_->SetEmitterPosition(emitterName_, Mat4x4::Transform(GetOwner()->GetWorldMatrix(), offset_));
+    manager_->CreateTemporaryEmitterFrom(emitterName_, std::format("{}:temp{}", emitterName_, ++serial), lifeTime);
+  }
+
   std::shared_ptr<GPUParticleEmitter> ParticleSystemComponent::GetEmitter()
   {
     EnsureLoaded();
