@@ -4,6 +4,7 @@
 
 #include "EngineSettingsWindow.h"
 #include "PreviewViewport.h"
+#include "SceneEditor.h"
 #include "Camera.h"
 #include "Renderer.h"
 #include "SceneManager.h"
@@ -12,6 +13,8 @@
 #include "LineRenderer.h"
 #include "WinApp.h"
 #include "ImGuiManager.h"
+
+#include <ImGuizmo.h>
 
 #include <array>
 
@@ -101,6 +104,9 @@ namespace Tako {
       return false;
     }
 
+    // ギズモの 1 フレーム分の状態を始める（ImGui の他のウィンドウの外で呼ぶ）
+    ImGuizmo::BeginFrame();
+
     bool inputCaptured = false;
     if (ImGui::Begin("Debug Viewport", isOpen_)) {
       if (ImGui::Button("Sync to Game Camera##DbgView")) {
@@ -115,10 +121,15 @@ namespace Tako {
       ImGui::SameLine();
       ImGui::TextDisabled("Speed: %.2f", cameraController_.moveSpeed);
       ImGui::TextDisabled("RMB: Look (+WASD/QE Fly, +Wheel Speed) / Alt+LMB: Orbit / MMB: Pan / Wheel: Dolly");
+      sceneEditor_->DrawGizmoToolbar();
 
       if (viewport_ && viewport_->IsInitialized()) {
-        viewport_->DrawImGuiImage();
-        inputCaptured = cameraController_.HandleImGuiInput();
+        // ImGuizmo はカーソルの下に ImGui のアイテムがあると掴めないので、ギズモの上では画像をボタンにしない
+        viewport_->DrawImGuiImage(!isGizmoHot_);
+        const ImVec2 imageMin = ImGui::GetItemRectMin();
+        const ImVec2 imageMax = ImGui::GetItemRectMax();
+        inputCaptured = isGizmoHot_ || cameraController_.HandleImGuiInput();
+        isGizmoHot_   = sceneEditor_->DrawGizmo(*camera_, imageMin, imageMax);
       }
       else {
         ImGui::TextDisabled("Initializing viewport...");

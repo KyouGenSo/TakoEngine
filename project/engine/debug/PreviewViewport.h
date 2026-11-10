@@ -54,7 +54,8 @@ namespace Tako {
     /// 現在の ImGui ウィンドウ残り領域へアスペクト維持レターボックスで中央配置描画する。
     /// 画像は左/右/中ボタンを受けるアイテムとして置くため、直後の IsItemHovered/IsItemActive で操作を判定できる
     /// </summary>
-    void DrawImGuiImage() const;
+    /// <param name="isInteractive">false ならマウスを受けない画像として置く（上に重ねた物にクリックを渡すとき）</param>
+    void DrawImGuiImage(bool isInteractive = true) const;
 
     //============================================================
     //Getter

@@ -166,7 +166,7 @@ namespace Tako {
     objectSettingsEditor_.Initialize(&WindowFlag(Window::ObjectSettings));
     shaderEditor_.Initialize(&WindowFlag(Window::ShaderEditor));
     renderPipelineWindow_.Initialize(&WindowFlag(Window::RenderPipeline));
-    debugViewport_.Initialize(&WindowFlag(Window::DebugViewport), &engineSettings_.GetDebugViewportGrid(), cameraSettings);
+    debugViewport_.Initialize(&WindowFlag(Window::DebugViewport), &engineSettings_.GetDebugViewportGrid(), cameraSettings, &sceneEditor_);
     engineSettings_.Initialize(&WindowFlag(Window::EngineSettings), startupWindows_);
     assetBrowser_.Initialize(&WindowFlag(Window::Assets));
     uiLayoutEditor_.Initialize(&WindowFlag(Window::UIEditor));

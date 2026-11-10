@@ -9,6 +9,7 @@ namespace Tako {
 
   class Camera;
   class PreviewViewport;
+  class SceneEditor;
   struct GridSettings;
 
   /// <summary>
@@ -25,10 +26,12 @@ namespace Tako {
     /// <param name="isOpen">ウィンドウ表示フラグ（DebugUIManager の表示状態を共有する）</param>
     /// <param name="grid">床グリッド設定（EngineSettingsWindow の値を共有する）</param>
     /// <param name="cameraSettings">カメラ操作設定（EngineSettingsWindow の値を共有する）</param>
-    void Initialize(bool* isOpen, const GridSettings* grid, const ViewportCameraSettings* cameraSettings) {
+    /// <param name="sceneEditor">選んだ Actor のギズモをこのビューに描く</param>
+    void Initialize(bool* isOpen, const GridSettings* grid, const ViewportCameraSettings* cameraSettings, SceneEditor* sceneEditor) {
       isOpen_                    = isOpen;
       grid_                      = grid;
       cameraController_.settings = cameraSettings;
+      sceneEditor_               = sceneEditor;
     }
 
     /// <summary>
@@ -64,8 +67,9 @@ namespace Tako {
     const Camera* GetCamera() const { return camera_.get(); }
 
   private: //メンバー変数
-    bool*               isOpen_ = nullptr;  ///< ウィンドウ表示フラグ（DebugUIManager 所有）
-    const GridSettings* grid_   = nullptr;  ///< 床グリッド設定（EngineSettingsWindow 所有）
+    bool*               isOpen_      = nullptr;  ///< ウィンドウ表示フラグ（DebugUIManager 所有）
+    const GridSettings* grid_        = nullptr;  ///< 床グリッド設定（EngineSettingsWindow 所有）
+    SceneEditor*        sceneEditor_ = nullptr;  ///< DebugUIManager 所有
 
     //ビュー
     std::unique_ptr<PreviewViewport> viewport_;              ///< オフスクリーン RT 一式（ウィンドウ表示中のみ生存）
@@ -73,6 +77,7 @@ namespace Tako {
     ViewportCameraController         cameraController_;
     bool                             showGrid_       = true;
     bool                             showGameCamera_ = true;  ///< ゲームカメラの視錐台を表示
+    bool                             isGizmoHot_     = false; ///< 前のフレームでギズモの上にカーソルがあった・掴んでいた
   };
 
 } // namespace Tako

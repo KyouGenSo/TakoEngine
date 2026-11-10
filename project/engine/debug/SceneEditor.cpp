@@ -4,11 +4,13 @@
 #include "Actor.h"
 #include "AssetBrowser.h"
 #include "BaseScene.h"
+#include "Camera.h"
 #include "CameraComponent.h"
 #include "Component.h"
 #include "DebugUIManager.h"
 #include "ImGuiPropertyVisitor.h"
 #include "LightComponent.h"
+#include "Mat4x4Func.h"
 #include "Prefab.h"
 #include "SceneManager.h"
 #include "Script.h"
@@ -17,6 +19,7 @@
 
 #include "imgui.h"
 
+#include <ImGuizmo.h>
 #include <json.hpp>
 
 #include <filesystem>
@@ -211,6 +214,60 @@ namespace Tako {
       tracker_.EndSection();
       ProcessShortcuts(Shortcuts(), *this);
     }
+  }
+
+  void SceneEditor::DrawGizmoToolbar()
+  {
+    ImGui::RadioButton("Move (W)", &gizmoOperation_, 0);
+    ImGui::SameLine();
+    ImGui::RadioButton("Rotate (E)", &gizmoOperation_, 1);
+    ImGui::SameLine();
+    ImGui::RadioButton("Scale (R)", &gizmoOperation_, 2);
+    ImGui::SameLine();
+    ImGui::Checkbox("Local", &isGizmoLocal_);
+    ImGui::SetItemTooltip("Off: move and rotate along the world axes");
+  }
+
+  bool SceneEditor::DrawGizmo(const Camera& camera, const ImVec2& imageMin, const ImVec2& imageMax)
+  {
+    Actor*     actor = GetSelected();
+    BaseScene* scene = GetScene();
+    if (!actor || !scene) {
+      return false;
+    }
+    // 右ボタンを押している間の W / E は、ビューのカメラの移動に使う
+    if (ImGui::IsWindowHovered() && !ImGui::IsMouseDown(ImGuiMouseButton_Right) && !ImGui::GetIO().WantTextInput) {
+      if (ImGui::IsKeyPressed(ImGuiKey_W)) { gizmoOperation_ = 0; }
+      if (ImGui::IsKeyPressed(ImGuiKey_E)) { gizmoOperation_ = 1; }
+      if (ImGui::IsKeyPressed(ImGuiKey_R)) { gizmoOperation_ = 2; }
+    }
+    SyncTracker(*scene);
+    const bool editing = IsEditing();
+    if (editing) {
+      tracker_.BeginSection();
+    }
+
+    static constexpr ImGuizmo::OPERATION kOperations[] = { ImGuizmo::TRANSLATE, ImGuizmo::ROTATE, ImGuizmo::SCALE };
+    ImGuizmo::SetOrthographic(false);
+    // 既定では視点に合わせて軸の向きを反転して描くが、矢印が + の向きを指さなくなるので切る
+    ImGuizmo::AllowAxisFlip(false);
+    ImGuizmo::SetDrawlist();
+    ImGuizmo::SetRect(imageMin.x, imageMin.y, imageMax.x - imageMin.x, imageMax.y - imageMin.y);
+    // 拡大は軸に沿ってしか意味が無いので、いつもローカル
+    const ImGuizmo::MODE mode = isGizmoLocal_ || gizmoOperation_ == 2 ? ImGuizmo::LOCAL : ImGuizmo::WORLD;
+    Matrix4x4 world = actor->GetWorldMatrix();
+    if (ImGuizmo::Manipulate(&camera.GetViewMatrix().m[0][0], &camera.GetProjectionMatrix().m[0][0], kOperations[gizmoOperation_], mode, &world.m[0][0])) {
+      const Actor*    parent = actor->GetParent();
+      const Matrix4x4 local  = parent ? world * Mat4x4::Inverse(parent->GetWorldMatrix()) : world;
+      Transform&      transform = actor->GetTransform();
+      Mat4x4::Decompose(local, transform.translate, transform.rotate, transform.scale);
+      scene->MarkChanged();
+    }
+
+    if (editing) {
+      tracker_.EndSection();
+    }
+    return ImGuizmo::IsOver() || ImGuizmo::IsUsing();
   }
 
   void SceneEditor::Update()

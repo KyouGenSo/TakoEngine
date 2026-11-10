@@ -16,6 +16,7 @@ namespace Tako {
 
   class Actor;
   class BaseScene;
+  class Camera;
   class Component;
 
   // Hierarchy の行をドラッグしたときのデータ（ActorId）
@@ -41,6 +42,18 @@ namespace Tako {
     /// Inspector に選んだ Actor とコンポーネントを描く
     /// </summary>
     void DrawInspector();
+
+    /// <summary>
+    /// ギズモの種類（移動・回転・拡大）とローカル / ワールドの切り替えを 1 行に描く
+    /// </summary>
+    void DrawGizmoToolbar();
+
+    /// <summary>
+    /// 選んだ Actor のギズモを、今のウィンドウの画像の上に描く。動かした結果は Actor の Transform（親からの相対）に戻す
+    /// </summary>
+    /// <param name="camera">画像を描いたカメラ</param>
+    /// <returns>ギズモの上にカーソルがあるか、掴んでいれば true（カメラ操作に入力を渡さないため）</returns>
+    bool DrawGizmo(const Camera& camera, const ImVec2& imageMin, const ImVec2& imageMax);
 
     /// <summary>
     /// 予約した操作を行う。DebugUIManager::Update から呼ぶ（前のフレームの GPU 処理が終わった後なので消してよい）
@@ -134,6 +147,8 @@ namespace Tako {
     std::array<char, 64>                         prefabName_{};  ///< 「プレハブとして保存」の名前
     std::array<char, 64>                         newSceneName_{};
     std::string                                  trackedScene_;
+    int                                          gizmoOperation_ = 0;     ///< 0 移動 / 1 回転 / 2 拡大
+    bool                                         isGizmoLocal_   = true;
 
     //未保存と Undo（Edit 中だけ。Play 中の変更は Stop で捨てる）
     EditTracker<> tracker_{ { [this] { return SerializeScene(); },
