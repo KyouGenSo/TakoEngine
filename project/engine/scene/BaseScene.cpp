@@ -79,7 +79,7 @@ namespace Tako {
 
   void BaseScene::UpdateFrame(float deltaTime)
   {
-    // Tick の中でポーズが切り替わっても、このフレームの残りは同じ扱いにする
+    // Tick の中でポーズが切り替わっても、このフレームの Tick と LateTick は同じ扱いにする
     const bool isPaused = isPaused_;
     for (size_t i = 0; i < actors_.size(); ++i) {
       actors_[i]->Tick(deltaTime, isPaused);
@@ -87,7 +87,8 @@ namespace Tako {
     for (size_t i = 0; i < actors_.size(); ++i) {
       actors_[i]->LateTick(deltaTime, isPaused);
     }
-    if (!isPaused) {
+    // 当たり判定は、ポーズに入ったフレームから止める
+    if (!isPaused_) {
       Update();
     }
   }

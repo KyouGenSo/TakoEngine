@@ -176,8 +176,6 @@ namespace Tako {
 
   bool SceneManager::ReserveNextScene(const std::string& sceneName, float transitionTime)
   {
-    assert(sceneFactory_);
-
     if (nextScene_) {
       return false;
     }
@@ -196,11 +194,13 @@ namespace Tako {
 
   std::unique_ptr<BaseScene> SceneManager::CreateScene(const std::string& sceneName) const
   {
-    // 名前一覧を返さないファクトリーは、どの名前でも先に試す
-    const std::vector<std::string> factoryNames = sceneFactory_->GetSceneNames();
-    if (factoryNames.empty() || std::ranges::find(factoryNames, sceneName) != factoryNames.end()) {
-      if (std::unique_ptr<BaseScene> scene = sceneFactory_->CreateScene(sceneName)) {
-        return scene;
+    // ファクトリーは無くてもよい（シーンファイルだけのゲーム）。名前一覧を返さないファクトリーは、どの名前でも先に試す
+    if (sceneFactory_) {
+      const std::vector<std::string> factoryNames = sceneFactory_->GetSceneNames();
+      if (factoryNames.empty() || std::ranges::find(factoryNames, sceneName) != factoryNames.end()) {
+        if (std::unique_ptr<BaseScene> scene = sceneFactory_->CreateScene(sceneName)) {
+          return scene;
+        }
       }
     }
     if (BaseScene::HasSceneFile(sceneName)) {
