@@ -89,15 +89,6 @@ namespace Tako {
     };
 
   private: //構造体
-    /// <summary>
-    /// Hierarchy で選択できるエンジン側オブジェクト
-    /// </summary>
-    enum class EngineObject {
-      None,
-      MainCamera,
-      DirectionalLight
-    };
-
   private:
     static std::unique_ptr<DebugUIManager> instance_;  ///< シングルトン
     struct Token {};  ///< 外部からの直接生成を防ぐ生成キー
@@ -301,9 +292,6 @@ namespace Tako {
     /// </summary>
     void DrawInspector();
 
-    void DrawCameraInspector();
-    void DrawLightInspector();
-
     /// <summary>
     /// コンソールウィンドウを描画
     /// </summary>
@@ -369,7 +357,6 @@ namespace Tako {
     //ゲームオブジェクト情報
     std::vector<GameObjectDebugInfo> gameObjects_;
     int                              selectedObjectIndex_  = -1;                  ///< 選択されたオブジェクトのインデックス
-    EngineObject                     selectedEngineObject_ = EngineObject::None;  ///< selectedObjectIndex_ とは排他
 
     //パフォーマンス計測
     float fpsHistory_[100] = { 0 };

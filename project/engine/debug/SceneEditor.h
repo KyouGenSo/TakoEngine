@@ -87,6 +87,11 @@ namespace Tako {
 
     void DrawCreateMenu();
 
+    /// <summary>
+    /// 名前を入れて、カメラと平行光源だけのシーンを作って開く
+    /// </summary>
+    void DrawNewScenePopup();
+
     void DrawActorMenu(Actor& actor);
 
     void DrawComponent(Actor& actor, Component& component);
@@ -113,6 +118,7 @@ namespace Tako {
     uint64_t                                     selected_ = 0;  ///< 選んだ Actor の ID（作り直しをまたいでも同じ）
     std::vector<std::function<void(BaseScene&)>> requests_;
     std::array<char, 64>                         prefabName_{};  ///< 「プレハブとして保存」の名前
+    std::array<char, 64>                         newSceneName_{};
     std::string                                  trackedScene_;
 
     //未保存と Undo（Edit 中だけ。Play 中の変更は Stop で捨てる）

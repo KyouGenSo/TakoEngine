@@ -5,8 +5,6 @@
 #include "DsvManager.h"
 #include "TextureManager.h"
 #include "Renderer.h"
-#include "Light.h"
-#include "Camera.h"
 #include "Input.h"
 #include "CollisionManager.h"
 #include "PostEffectManager.h"
@@ -27,7 +25,6 @@
 
 #include <algorithm>
 #include <iomanip>
-#include <numbers>
 #include <sstream>
 #include <set>
 #include <map>
@@ -605,8 +602,7 @@ namespace Tako {
     ImGui::TextDisabled("Mode: %s", sceneManager->IsPlaying() ? "Play" : "Edit (game update stopped)");
 
     if (sceneEditor_.DrawHierarchy()) {
-      selectedObjectIndex_  = -1;
-      selectedEngineObject_ = EngineObject::None;
+      selectedObjectIndex_ = -1;
     }
 
     ImGui::Separator();
@@ -631,29 +627,12 @@ namespace Tako {
         // クリックされたら選択
         if (ImGui::IsItemClicked()) {
           selectedObjectIndex_ = i;
-          selectedEngineObject_ = EngineObject::None;
           sceneEditor_.ClearSelection();
         }
       }
 
       ImGui::Spacing();
       ImGui::Separator();
-    }
-
-    // エンジンオブジェクト
-    ImGui::Text("Engine Objects:");
-    ImGui::Separator();
-
-    constexpr std::pair<EngineObject, const char*> kEngineObjects[] = {
-      { EngineObject::MainCamera,       "Main Camera" },
-      { EngineObject::DirectionalLight, "Directional Light" },
-    };
-    for (const auto& [object, name] : kEngineObjects) {
-      if (ImGui::Selectable(name, selectedEngineObject_ == object)) {
-        selectedEngineObject_ = object;
-        selectedObjectIndex_ = -1;
-        sceneEditor_.ClearSelection();
-      }
     }
 
     ImGui::End();
@@ -682,76 +661,12 @@ namespace Tako {
         selectedObject.drawImGuiFunc();
       }
     }
-    else if (selectedEngineObject_ == EngineObject::MainCamera) {
-      ImGui::Text("Selected: Main Camera");
-      ImGui::Separator();
-      DrawCameraInspector();
-    }
-    else if (selectedEngineObject_ == EngineObject::DirectionalLight) {
-      ImGui::Text("Selected: Directional Light");
-      ImGui::Separator();
-      DrawLightInspector();
-    }
     else {
       ImGui::Text("No object selected");
       ImGui::TextDisabled("Select an object from Scene Hierarchy");
     }
 
     ImGui::End();
-  }
-
-  void DebugUIManager::DrawCameraInspector() {
-    Camera** cameraPtr = Renderer::GetInstance()->GetCamera();
-    if (!cameraPtr || !*cameraPtr) {
-      ImGui::TextDisabled("No camera");
-      return;
-    }
-    Camera* camera = *cameraPtr;
-
-    Vector3 position = camera->GetTranslate();
-    if (ImGui::DragFloat3("Position", &position.x, 0.1f)) {
-      camera->SetTranslate(position);
-    }
-    Vector3 rotation = camera->GetRotate();
-    if (ImGui::DragFloat3("Rotation", &rotation.x, 0.01f)) {
-      camera->SetRotate(rotation);
-    }
-
-    float fov = camera->GetFovY() * 180.0f / std::numbers::pi_v<float>;
-    if (ImGui::DragFloat("Field of View", &fov, 0.1f, 10.0f, 120.0f)) {
-      camera->SetFovY(fov * std::numbers::pi_v<float> / 180.0f);
-    }
-    float nearClip = camera->GetNearClip();
-    if (ImGui::DragFloat("Near Clip", &nearClip, 0.01f, 0.01f, 10.0f)) {
-      camera->SetNearClip(nearClip);
-    }
-    float farClip = camera->GetFarClip();
-    if (ImGui::DragFloat("Far Clip", &farClip, 1.0f, 10.0f, 10000.0f)) {
-      camera->SetFarClip(farClip);
-    }
-  }
-
-  void DebugUIManager::DrawLightInspector() {
-    Light* light = Renderer::GetInstance()->GetLight();
-    if (!light) {
-      ImGui::TextDisabled("No light");
-      return;
-    }
-
-    const Light::DirectionalLight& dirLight = light->GetDirectionalLight();
-    Vector3 dir = dirLight.direction;
-    Vector4 color = dirLight.color;
-    float intensity = dirLight.intensity;
-
-    if (ImGui::DragFloat3("Direction", &dir.x, 0.01f)) {
-      Renderer::GetInstance()->GetLight()->SetDirectionalLightDirection(dir);
-    }
-    if (ImGui::ColorEdit4("Color", &color.x)) {
-      Renderer::GetInstance()->GetLight()->SetDirectionalLightColor(color);
-    }
-    if (ImGui::DragFloat("Intensity", &intensity, 0.01f, 0.0f, 10.0f)) {
-      Renderer::GetInstance()->GetLight()->SetDirectionalLightIntensity(intensity);
-    }
   }
 
   void DebugUIManager::DrawConsole() {

@@ -121,6 +121,10 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="engine\scene\PostProcessComponent.cpp" />
+    <ClCompile Include="engine\scene\SkyBoxComponent.cpp" />
+    <ClCompile Include="engine\scene\LightComponent.cpp" />
+    <ClCompile Include="engine\scene\CameraComponent.cpp" />
     <ClCompile Include="engine\reflection\GameSettings.cpp" />
     <ClCompile Include="engine\scene\ScriptComponent.cpp" />
     <ClCompile Include="engine\debug\SceneEditor.cpp">
@@ -284,6 +288,10 @@
     <ClCompile Include="engine\debug\MaterialEditor.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\scene\PostProcessComponent.h" />
+    <ClInclude Include="engine\scene\SkyBoxComponent.h" />
+    <ClInclude Include="engine\scene\LightComponent.h" />
+    <ClInclude Include="engine\scene\CameraComponent.h" />
     <ClInclude Include="engine\reflection\GameSettings.h" />
     <ClInclude Include="engine\scene\Script.h" />
     <ClInclude Include="engine\scene\ScriptComponent.h" />

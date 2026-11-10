@@ -129,6 +129,18 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="engine\scene\PostProcessComponent.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\scene\SkyBoxComponent.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\scene\LightComponent.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\scene\CameraComponent.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
     <ClCompile Include="engine\reflection\GameSettings.cpp">
       <Filter>reflection</Filter>
     </ClCompile>
@@ -488,6 +500,18 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\scene\PostProcessComponent.h">
+      <Filter>scene</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\scene\SkyBoxComponent.h">
+      <Filter>scene</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\scene\LightComponent.h">
+      <Filter>scene</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\scene\CameraComponent.h">
+      <Filter>scene</Filter>
+    </ClInclude>
     <ClInclude Include="engine\reflection\GameSettings.h">
       <Filter>reflection</Filter>
     </ClInclude>

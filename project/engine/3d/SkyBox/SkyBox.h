@@ -44,7 +44,7 @@ public: // メンバー関数
   /// <summary>
   /// 指定キューブマップテクスチャでスカイボックスを初期化
   /// </summary>
-  /// <param name="texturePath">キューブマップテクスチャのパス</param>
+  /// <param name="texturePath">キューブマップテクスチャのパス（空なら後で SetTexture する）</param>
   void Initialize(const std::string& texturePath);
   void Update();
 
@@ -63,10 +63,8 @@ public: // メンバー関数
   /// <summary>
   /// テクスチャを差し替え（TextureManager から SRV インデックスを取得して保持）
   /// </summary>
-  void SetTexture(const std::string& texturePath) {
-    textureIndex_ = TextureManager::GetInstance()->GetSRVIndex(texturePath);
-    material_->SetTexture("gSkyBoxTexture"_id, textureIndex_);
-  }
+  /// <returns>キューブマップでなければ（読めなかったときを含む）記録を出して false。テクスチャは今のまま</returns>
+  bool SetTexture(const std::string& texturePath);
 
   //===========================================
   //Getter

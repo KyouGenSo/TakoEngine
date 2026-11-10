@@ -5,6 +5,7 @@
 #include "DX12Basic.h"
 #include "Mat4x4Func.h"
 #include "ColorFunc.h"
+#include "Logger.h"
 
 #ifdef _DEBUG
 #include "DebugUIManager.h"
@@ -27,7 +28,22 @@ void SkyBox::Initialize(const std::string& texturePath)
   CreateMaterialData();
   CreateTransformationMatrixData();
 
-  SetTexture(texturePath);
+  if (!texturePath.empty()) {
+    SetTexture(texturePath);
+  }
+}
+
+bool SkyBox::SetTexture(const std::string& texturePath)
+{
+  // 読めないファイルは白い 2D テクスチャに代わるので、それも断る
+  TextureManager* textureManager = TextureManager::GetInstance();
+  if (!textureManager->GetMetaData(texturePath).IsCubemap()) {
+    Logger::Log("SkyBox: not a cubemap: %s", texturePath.c_str());
+    return false;
+  }
+  textureIndex_ = textureManager->GetSRVIndex(texturePath);
+  material_->SetTexture("gSkyBoxTexture"_id, textureIndex_);
+  return true;
 }
 
 void SkyBox::Update()

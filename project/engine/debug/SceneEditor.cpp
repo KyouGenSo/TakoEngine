@@ -4,9 +4,11 @@
 #include "Actor.h"
 #include "AssetBrowser.h"
 #include "BaseScene.h"
+#include "CameraComponent.h"
 #include "Component.h"
 #include "DebugUIManager.h"
 #include "ImGuiPropertyVisitor.h"
+#include "LightComponent.h"
 #include "Prefab.h"
 #include "SceneManager.h"
 #include "Script.h"
@@ -16,6 +18,10 @@
 #include "imgui.h"
 
 #include <json.hpp>
+
+#include <filesystem>
+#include <fstream>
+#include <numbers>
 
 namespace Tako {
 
@@ -72,6 +78,36 @@ namespace Tako {
       scene.Load(before);
     }
 
+    /// <summary>
+    /// カメラと平行光源だけのシーンファイルを書く（Unity の新しいシーンと同じ中身）
+    /// </summary>
+    bool WriteNewScene(const std::string& name)
+    {
+      Actor camera;
+      camera.SetName("Main Camera");
+      camera.SetTransform({ { 1.0f, 1.0f, 1.0f }, { 0.2f, 0.0f, 0.0f }, { 0.0f, 9.0f, -34.0f } });
+      camera.AddComponent<CameraComponent>();
+
+      // +Z を前に向けるので、x を回すと斜め下を照らす
+      Actor light;
+      light.SetName("Directional Light");
+      light.SetTransform({ { 1.0f, 1.0f, 1.0f }, { std::numbers::pi_v<float> / 3.0f, std::numbers::pi_v<float> / 6.0f, 0.0f }, { 0.0f, 10.0f, 0.0f } });
+      light.AddComponent<LightComponent>();
+
+      nlohmann::json actors = nlohmann::json::array({ camera.Save(), light.Save() });
+      // ID は読むときに振る
+      for (nlohmann::json& actor : actors) {
+        actor.erase("id");
+      }
+      std::filesystem::create_directories(std::filesystem::path(BaseScene::GetScenePath(name)).parent_path());
+      std::ofstream file(BaseScene::GetScenePath(name));
+      if (!file) {
+        return false;
+      }
+      file << nlohmann::json{ { "actors", std::move(actors) } }.dump(2);
+      return true;
+    }
+
   } // namespace
 
   bool SceneEditor::DrawHierarchy()
@@ -99,6 +135,18 @@ namespace Tako {
     }
     if (ImGui::BeginPopup("CreateActor")) {
       DrawCreateMenu();
+      ImGui::EndPopup();
+    }
+    ImGui::SameLine();
+    ImGui::BeginDisabled(!editing);
+    if (ImGui::SmallButton("New")) {
+      newSceneName_[0] = '\0';
+      ImGui::OpenPopup("NewScene");
+    }
+    ImGui::EndDisabled();
+    ImGui::SetItemTooltip("Create a scene with a camera and a directional light, then open it");
+    if (ImGui::BeginPopup("NewScene")) {
+      DrawNewScenePopup();
       ImGui::EndPopup();
     }
     ImGui::SameLine();
@@ -254,6 +302,29 @@ namespace Tako {
         RequestSpawn(prefab);
       }
     }
+  }
+
+  void SceneEditor::DrawNewScenePopup()
+  {
+    ImGui::SetNextItemWidth(200.0f);
+    const bool entered = ImGui::InputTextWithHint("##NewSceneName", "scene name", newSceneName_.data(), newSceneName_.size(), ImGuiInputTextFlags_EnterReturnsTrue);
+    const std::string name = newSceneName_.data();
+    const bool exists = BaseScene::HasSceneFile(name);
+    if (exists) {
+      ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.2f, 1.0f), "%s.scene.json already exists", name.c_str());
+    }
+    ImGui::BeginDisabled(name.empty() || exists);
+    if ((ImGui::Button("Create") || entered) && !name.empty() && !exists) {
+      if (WriteNewScene(name)) {
+        DebugUIManager::GetInstance()->AddLog("Created scene: " + BaseScene::GetScenePath(name), DebugUIManager::LogType::Info);
+        SceneManager::GetInstance()->ChangeScene(name);
+      }
+      else {
+        DebugUIManager::GetInstance()->AddLog("Failed to write " + BaseScene::GetScenePath(name), DebugUIManager::LogType::Error);
+      }
+      ImGui::CloseCurrentPopup();
+    }
+    ImGui::EndDisabled();
   }
 
   void SceneEditor::RequestSpawn(const std::string& typeOrPrefab)
