@@ -183,19 +183,20 @@ namespace Tako {
   }
 
   void DebugUIManager::RegisterAssetOpeners() {
-    // 開く先の窓も表示する
-    auto opener = [this](Window window, std::function<void(const std::string&)> open) {
-      return [this, window, open = std::move(open)](const std::string& value) {
+    // 開く先の窓を表示して前に出す（ドッキングで別のタブの裏にあることがある）
+    auto opener = [this](Window window, const char* title, std::function<void(const std::string&)> open) {
+      return [this, window, title, open = std::move(open)](const std::string& value) {
         WindowFlag(window) = true;
+        focusRequest_      = title;
         open(value);
       };
     };
-    SetAssetOpener("Material", opener(Window::MaterialEditor, [this](const std::string& name) { materialEditor_.RequestOpen(name); }));
-    SetAssetOpener("AnimationClip", opener(Window::AnimationEditor, [this](const std::string& name) { animationEditor_.RequestOpen(name); }));
-    SetAssetOpener("UILayout", opener(Window::UIEditor, [this](const std::string& name) { uiLayoutEditor_.OpenLayout(name); }));
-    SetAssetOpener("ParticlePreset", opener(Window::ParticleEditor, [this](const std::string& name) { particleEditor_.OpenPreset(name); }));
-    SetAssetOpener("PostEffectProfile", opener(Window::PostEffect, [](const std::string& name) { PostEffectManager::GetInstance()->LoadProfile(name); }));
-    SetAssetOpener("Prefab", opener(Window::SceneHierarchy, [this](const std::string& name) { sceneEditor_.RequestSpawn(name); }));
+    SetAssetOpener("Material", opener(Window::MaterialEditor, "Material Editor", [this](const std::string& name) { materialEditor_.RequestOpen(name); }));
+    SetAssetOpener("AnimationClip", opener(Window::AnimationEditor, "Animation Editor", [this](const std::string& name) { animationEditor_.RequestOpen(name); }));
+    SetAssetOpener("UILayout", opener(Window::UIEditor, "UI Editor", [this](const std::string& name) { uiLayoutEditor_.OpenLayout(name); }));
+    SetAssetOpener("ParticlePreset", opener(Window::ParticleEditor, "Particle Editor", [this](const std::string& name) { particleEditor_.OpenPreset(name); }));
+    SetAssetOpener("PostEffectProfile", opener(Window::PostEffect, "PostEffect Manager", [](const std::string& name) { PostEffectManager::GetInstance()->LoadProfile(name); }));
+    SetAssetOpener("Prefab", opener(Window::SceneHierarchy, "Scene Hierarchy", [this](const std::string& name) { sceneEditor_.RequestSpawn(name); }));
     SetAssetOpener("Scene", [this](const std::string& name) { RequestSceneChange(name); });
   }
 
@@ -291,6 +292,12 @@ namespace Tako {
     }
 
     DrawExitConfirmation();
+
+    // 窓を初めて開いたフレームはまだ作られていないので、見つかるまで次のフレームでも試す
+    if (focusRequest_ && ImGui::FindWindowByName(focusRequest_)) {
+      ImGui::SetWindowFocus(focusRequest_);
+      focusRequest_ = nullptr;
+    }
 
     // ImGui 構築はゲーム更新より後なので、判定結果は次フレームの Input::Update で反映される
     Input* input = Input::GetInstance();

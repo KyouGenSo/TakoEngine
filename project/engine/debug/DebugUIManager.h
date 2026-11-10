@@ -350,8 +350,9 @@ namespace Tako {
     std::array<bool, static_cast<size_t>(Window::Count)> windowVisibility_{};  ///< ウィンドウ表示フラグ（Window で添字）
     std::array<bool, static_cast<size_t>(Window::Count)> startupWindows_{};    ///< 起動時に開くウィンドウ（EngineSettingsWindow が編集・保存する）
 
-    bool isGameViewportHovered_  = false;  ///< 直近フレームでゲーム画像上にカーソルがあったか（DrawGameViewport で更新）
-    bool isPreviewInputCaptured_ = false;  ///< エディタプレビュー/デバッグビューがホバー中/操作中か。true の間は次フレームのゲーム入力を遮断する
+    bool        isGameViewportHovered_  = false;    ///< 直近フレームでゲーム画像上にカーソルがあったか（DrawGameViewport で更新）
+    bool        isPreviewInputCaptured_ = false;    ///< エディタプレビュー/デバッグビューがホバー中/操作中か。true の間は次フレームのゲーム入力を遮断する
+    const char* focusRequest_           = nullptr;  ///< Assets から開いた窓の名前。Draw の終わりに前に出す
 
     //ゲームオブジェクト情報
     std::vector<GameObjectDebugInfo> gameObjects_;
