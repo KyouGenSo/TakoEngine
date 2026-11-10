@@ -243,6 +243,7 @@ namespace Tako {
     primitiveEditor_.Update();
     BaseScene* scene = SceneManager::GetInstance()->GetCurrentScene();
     particleEditor_.SetEmitterManager(scene ? &scene->GetEmitterManager() : nullptr);
+    particleEditor_.SetForceFieldManager(scene ? &scene->GetForceFieldManager() : nullptr);
     particleEditor_.Update();
     debugViewport_.Update();
     uiLayoutEditor_.Update();

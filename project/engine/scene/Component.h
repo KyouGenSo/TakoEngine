@@ -33,6 +33,11 @@ namespace Tako {
     virtual void LateTick([[maybe_unused]] float deltaTime) {}
 
     /// <summary>
+    /// true を返すと、シーンのポーズ中（BaseScene::SetPaused）も Tick と LateTick が呼ばれる。ポーズのメニューなどに使う
+    /// </summary>
+    virtual bool TickWhilePaused() const { return false; }
+
+    /// <summary>
     /// Play が終わるとき、または外される・消されるときに呼ばれる（BeginPlay を呼んだものだけ）
     /// </summary>
     virtual void EndPlay() {}

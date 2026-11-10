@@ -3,6 +3,7 @@
 #include "Camera.h"
 #include "CollisionManager.h"
 #include "EmitterManager.h"
+#include "ForceFieldManager.h"
 #include "GPUParticle.h"
 #include "Light.h"
 #include "Logger.h"
@@ -46,8 +47,11 @@ namespace Tako {
   } // namespace
 
   BaseScene::BaseScene()
-    : emitterManager_(std::make_unique<EmitterManager>(GPUParticle::GetInstance()))
+    : forceFieldManager_(std::make_unique<ForceFieldManager>(GPUParticle::GetInstance()))
+    , emitterManager_(std::make_unique<EmitterManager>(GPUParticle::GetInstance()))
   {
+    // シーンプリセットの保存と読み込みで、フォースフィールドも一緒に扱う
+    emitterManager_->SetForceFieldManager(forceFieldManager_.get());
   }
 
   BaseScene::~BaseScene() = default;
@@ -75,13 +79,17 @@ namespace Tako {
 
   void BaseScene::UpdateFrame(float deltaTime)
   {
+    // Tick の中でポーズが切り替わっても、このフレームの残りは同じ扱いにする
+    const bool isPaused = isPaused_;
     for (size_t i = 0; i < actors_.size(); ++i) {
-      actors_[i]->Tick(deltaTime);
+      actors_[i]->Tick(deltaTime, isPaused);
     }
     for (size_t i = 0; i < actors_.size(); ++i) {
-      actors_[i]->LateTick(deltaTime);
+      actors_[i]->LateTick(deltaTime, isPaused);
     }
-    Update();
+    if (!isPaused) {
+      Update();
+    }
   }
 
   void BaseScene::UpdateAlways()

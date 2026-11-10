@@ -29,6 +29,8 @@ namespace Tako {
 
     void LateTick(float deltaTime) override;
 
+    bool TickWhilePaused() const override;
+
     void EndPlay() override;
 
     /// <summary>

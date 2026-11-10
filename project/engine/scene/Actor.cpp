@@ -51,18 +51,22 @@ namespace Tako {
     }
   }
 
-  void Actor::Tick(float deltaTime)
+  void Actor::Tick(float deltaTime, bool isPaused)
   {
     // Tick の中で足されても要素の参照が壊れないよう添字で回す
     for (size_t i = 0; i < components_.size(); ++i) {
-      components_[i]->Tick(deltaTime);
+      if (!isPaused || components_[i]->TickWhilePaused()) {
+        components_[i]->Tick(deltaTime);
+      }
     }
   }
 
-  void Actor::LateTick(float deltaTime)
+  void Actor::LateTick(float deltaTime, bool isPaused)
   {
     for (size_t i = 0; i < components_.size(); ++i) {
-      components_[i]->LateTick(deltaTime);
+      if (!isPaused || components_[i]->TickWhilePaused()) {
+        components_[i]->LateTick(deltaTime);
+      }
     }
   }
 

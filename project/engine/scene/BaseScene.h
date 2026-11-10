@@ -11,6 +11,7 @@ namespace Tako {
 
   class Actor;
   class EmitterManager;
+  class ForceFieldManager;
 
   using ActorId = uint64_t;
 
@@ -37,7 +38,8 @@ namespace Tako {
     void Start(const std::string& sceneName, const nlohmann::json* snapshot, bool playing);
 
     /// <summary>
-    /// Play 中だけ呼ぶ。全 Actor の Tick → 全 Actor の LateTick → Update
+    /// Play 中だけ呼ぶ。全 Actor の Tick → 全 Actor の LateTick → Update。
+    /// ポーズ中は TickWhilePaused のコンポーネントだけ動かし、Update（当たり判定など）は呼ばない
     /// </summary>
     void UpdateFrame(float deltaTime);
 
@@ -126,12 +128,19 @@ namespace Tako {
 
     bool IsPlaying() const { return isPlaying_; }
 
+    bool IsPaused() const { return isPaused_; }
+
     const std::vector<std::unique_ptr<Actor>>& GetActors() const { return actors_; }
 
     /// <summary>
     /// このシーンのエミッター（パーティクル）。シーンと一緒に消える
     /// </summary>
     EmitterManager& GetEmitterManager() const { return *emitterManager_; }
+
+    /// <summary>
+    /// このシーンのフォースフィールド（パーティクルに掛かる力）。シーンと一緒に消える
+    /// </summary>
+    ForceFieldManager& GetForceFieldManager() const { return *forceFieldManager_; }
 
     Actor* FindActor(ActorId id) const;
 
@@ -143,6 +152,14 @@ namespace Tako {
     uint64_t GetRevision() const { return revision_; }
 
     void MarkChanged() { ++revision_; }
+
+    //=====================================
+    //Setter
+    //=====================================
+    /// <summary>
+    /// ゲームの進行を止める（UE の SetGamePaused）。描画は続く
+    /// </summary>
+    void SetPaused(bool paused) { isPaused_ = paused; }
 
   protected: //メンバー関数
     friend class SceneManager;
@@ -189,7 +206,9 @@ namespace Tako {
     Actor* AddPending(std::unique_ptr<Actor> actor);
 
   private: //メンバー変数
-    // Actor のコンポーネントがエミッターを消すので、Actor より先に宣言して後に消す
+    // Actor のコンポーネントがエミッターを消すので、Actor より先に宣言して後に消す。
+    // EmitterManager は ForceFieldManager を指すので、ForceFieldManager をさらに先に宣言する
+    std::unique_ptr<ForceFieldManager>  forceFieldManager_;
     std::unique_ptr<EmitterManager>     emitterManager_;
     std::string                         sceneName_;
     std::vector<std::unique_ptr<Actor>> actors_;
@@ -199,6 +218,7 @@ namespace Tako {
     ActorId                             nextId_    = 1;
     uint64_t                            revision_  = 0;
     bool                                isPlaying_ = false;
+    bool                                isPaused_  = false;
   };
 
 } // namespace Tako

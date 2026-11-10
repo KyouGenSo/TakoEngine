@@ -58,14 +58,15 @@ namespace Tako {
 
     void BeginPlay();
 
-    void Tick(float deltaTime);
+    /// <param name="isPaused">true なら TickWhilePaused のコンポーネントだけ呼ぶ</param>
+    void Tick(float deltaTime, bool isPaused = false);
 
     void EndPlay();
 
     /// <summary>
     /// 全 Actor の Tick の後に呼ばれる
     /// </summary>
-    void LateTick(float deltaTime);
+    void LateTick(float deltaTime, bool isPaused = false);
 
     void Draw();
 

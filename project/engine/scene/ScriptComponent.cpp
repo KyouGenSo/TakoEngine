@@ -31,6 +31,11 @@ namespace Tako {
     if (instance_) { instance_->LateTick(deltaTime); }
   }
 
+  bool ScriptComponent::TickWhilePaused() const
+  {
+    return instance_ && instance_->TickWhilePaused();
+  }
+
   void ScriptComponent::EndPlay()
   {
     if (instance_) { instance_->EndPlay(); }

@@ -15,6 +15,25 @@ namespace Tako {
 
   namespace {
 
+    /// <summary>
+    /// Tick と LateTick が呼ばれた回数を数える
+    /// </summary>
+    class TickCounter final : public Component {
+    public: //メンバー関数
+      explicit TickCounter(bool ticksWhilePaused) : ticksWhilePaused_(ticksWhilePaused) {}
+
+      void Tick([[maybe_unused]] float deltaTime) override { ++ticks; }
+      void LateTick([[maybe_unused]] float deltaTime) override { ++lateTicks; }
+      bool TickWhilePaused() const override { return ticksWhilePaused_; }
+
+    public: //メンバー変数
+      int ticks     = 0;
+      int lateTicks = 0;
+
+    private: //メンバー変数
+      bool ticksWhilePaused_;
+    };
+
     bool IsNear(const Matrix4x4& a, const Matrix4x4& b)
     {
       for (int row = 0; row < 4; ++row) {
@@ -87,6 +106,15 @@ namespace Tako {
     scene.Destroy(parent);
     scene.UpdateAlways();
     assert(!scene.FindActor(childId) && !scene.FindActor(grandchildId) && scene.GetActors().size() == 1);
+
+    // ポーズ中は TickWhilePaused のコンポーネントだけが動く
+    auto* normal = static_cast<TickCounter*>(other->AddComponent(std::make_unique<TickCounter>(false), "Normal"));
+    auto* always = static_cast<TickCounter*>(other->AddComponent(std::make_unique<TickCounter>(true), "Always"));
+    scene.UpdateFrame(0.016f);
+    assert(normal->ticks == 1 && normal->lateTicks == 1 && always->ticks == 1);
+    scene.SetPaused(true);
+    scene.UpdateFrame(0.016f);
+    assert(normal->ticks == 1 && normal->lateTicks == 1 && always->ticks == 2 && always->lateTicks == 2);
   }
 
 } // namespace Tako

@@ -209,7 +209,6 @@ namespace Tako {
     //============================================================
     void SetWindowVisible(Window window, bool visible) { WindowFlag(window) = visible; }
     void SetSceneName(const std::string& sceneName) { currentSceneName_ = sceneName; }
-    void SetForceFieldManager(ForceFieldManager* forceFieldManager) { particleEditor_.SetForceFieldManager(forceFieldManager); }
     void SetEndFlagPtr(bool* pEndFlag) { pEndFlag_ = pEndFlag; }
 
     //============================================================
