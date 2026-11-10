@@ -510,7 +510,10 @@ Matrix4x4 Object3d::GetWorldMatrix() const
 {
 	// トランスフォームからワールド行列を作成
 	Matrix4x4 worldMatrix = Mat4x4::MakeAffine(transform_.scale, transform_.rotate, transform_.translate);
-	
+	if (parentMatrix_) {
+		worldMatrix = worldMatrix * *parentMatrix_;
+	}
+
 	// モデルのローカル行列を考慮
 	if (model_ && !model_->HasSkeleton())
 	{

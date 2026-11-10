@@ -23,6 +23,11 @@ namespace Tako {
     MeshComponent();
     ~MeshComponent() override;
 
+    /// <summary>
+    /// 描画物の位置を Actor に合わせる。描画物に付けた Mesh エミッターが、同じフレームの位置で出せるようにする
+    /// </summary>
+    void LateTick(float deltaTime) override;
+
     void Draw() override;
 
     /// <summary>
@@ -76,6 +81,11 @@ namespace Tako {
     /// Model の欄が変わっていれば読み直す
     /// </summary>
     void EnsureLoaded();
+
+    /// <summary>
+    /// Offset と Actor のワールド行列を描画物に渡す。非表示の間も渡す（描画物の位置を使う物があるため）
+    /// </summary>
+    void SyncTransform();
 
   private: //メンバー変数
     TPROPERTY(Edit, Asset = "Model")

@@ -19,6 +19,11 @@ namespace Tako {
 
   MeshComponent::~MeshComponent() = default;
 
+  void MeshComponent::LateTick([[maybe_unused]] float deltaTime)
+  {
+    SyncTransform();
+  }
+
   void MeshComponent::Draw()
   {
     EnsureLoaded();
@@ -27,13 +32,18 @@ namespace Tako {
       object_->SetOverrides(&overrides_);
       overridesDirty_ = false;
     }
+    SyncTransform();
     if (!object_->GetModel() || !visible_) {
       return;
     }
-    object_->SetTransform(offset_);
-    object_->SetParentMatrix(GetOwner()->GetWorldMatrix());
     object_->Update();
     object_->Draw();
+  }
+
+  void MeshComponent::SyncTransform()
+  {
+    object_->SetTransform(offset_);
+    object_->SetParentMatrix(GetOwner()->GetWorldMatrix());
   }
 
   void MeshComponent::SetGeneratedModel(std::unique_ptr<Model> model)

@@ -5,6 +5,8 @@
 #include "Actor.h"
 #include "BaseScene.h"
 #include "Mat4x4Func.h"
+#include "MeshComponent.h"
+#include "Object3d.h"
 
 #include <json.hpp>
 
@@ -122,6 +124,12 @@ namespace Tako {
     scene.Destroy(parent);
     scene.UpdateAlways();
     assert(!scene.FindActor(childId) && !scene.FindActor(grandchildId) && scene.GetActors().size() == 1);
+
+    // MeshComponent の描画物は、LateTick の後に Actor と同じワールド行列を返す（Mesh エミッターがこれで位置を決める）
+    auto* mesh = static_cast<MeshComponent*>(other->AddComponent(std::make_unique<MeshComponent>(), "Mesh"));
+    other->GetTransform().translate = { 4.0f, 5.0f, 6.0f };
+    scene.UpdateFrame(0.016f);
+    assert(IsNear(mesh->GetObject3d()->GetWorldMatrix(), other->GetWorldMatrix()));
 
     // ポーズ中は TickWhilePaused のコンポーネントだけが動く
     auto* normal = static_cast<TickCounter*>(other->AddComponent(std::make_unique<TickCounter>(false), "Normal"));
