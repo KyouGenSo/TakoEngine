@@ -21,7 +21,7 @@ struct EditorNode {
   BTNodePtr        runtimeNode;   ///< 実際の実行時ノード (ランタイムインスタンス)
   std::vector<int> inputPinIds;   ///< 入力ピン ID 群 (親接続用、通常 1 個)
   std::vector<int> outputPinIds;  ///< 出力ピン ID 群 (子接続用、コンポジットなら 1 個以上)
-  ImVec4           color;         ///< ノード描画色 (BTNodeRegistry の NodeMeta から取得)
+  ImVec4           color;         ///< ノード描画色 (TCLASS の Color)
 };
 
 /// <summary>

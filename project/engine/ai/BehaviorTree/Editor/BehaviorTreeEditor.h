@@ -20,6 +20,8 @@ namespace ed = ax::NodeEditor;
 
 namespace Tako {
 
+class BehaviorTreeComponent;
+
 /// <summary>
 /// BehaviorTreeEditor の初期化設定。
 /// </summary>
@@ -34,7 +36,7 @@ struct EditorConfig {
 /// <summary>
 /// ビヘイビアツリー用の汎用ノードエディタ。
 /// imgui-node-editor を直接使用してビヘイビアツリーを視覚的に編集する。
-/// ノード型は BTNodeRegistry に事前登録する必要がある。
+/// ノードの型と表示名・分類・色は、TCLASS を付けた BTNode の派生から集める。
 /// </summary>
 class BehaviorTreeEditor {
 public: //メンバー関数
@@ -181,6 +183,12 @@ public: //メンバー関数
   bool HasUnsavedChanges() const { return treeTracker_.IsEdited(); }
 
 private: //非公開関数
+  /// <summary>
+  /// Play 中に今のツリーを動かしているコンポーネントがあれば、エディタのノードをそのまま実行側に渡し（値の変更がすぐ効く）、
+  /// 実行中のノードを光らせる。ノードは実行中の状態を持つので、渡す相手は同時に 1 つだけ
+  /// </summary>
+  void LinkRunningTree();
+
   //--- 描画系 ---
   void DrawNodes();
   /// <summary>
@@ -325,6 +333,8 @@ private: //メンバー変数
   int nextPinId_  = 20000;  ///< ID カウンタ (ピン: 20000 番台)
 
   bool isVisible_ = false;
+
+  BehaviorTreeComponent* linked_ = nullptr;  ///< エディタのノードを渡してあるコンポーネント。居なくなれば nullptr に戻す
 
   bool  pendingNavigateToContent_ = true;  ///< 次の ed::End 前に ed::NavigateToContent() を呼んでビューを全ノードに合わせるフラグ。初回起動・LoadFromJSON 後に true。ナビゲート完了後 false に戻す。
   int   highlightedNodeId_        = -1;    ///< ハイライト中のノード ID (-1 ならハイライトなし)

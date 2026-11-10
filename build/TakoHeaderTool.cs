@@ -47,6 +47,7 @@ public class TakoHeaderTool : Task
         public bool IsStruct;
         public ClassDecl Owner;  // TSTRUCT を入れ子で書いたときの外側
         public List<string> Namespaces = new List<string>();
+        public List<KeyValuePair<string, string>> Specifiers = new List<KeyValuePair<string, string>>();
         public bool HasGeneratedBody;
         public List<PropertyDecl> Properties = new List<PropertyDecl>();
         public string File;
@@ -262,11 +263,16 @@ public class TakoHeaderTool : Task
             else if (t.Text == "TCLASS" || t.Text == "TSTRUCT")
             {
                 bool isStruct = t.Text == "TSTRUCT";
-                int j = SkipParens(tokens, i + 1);
+                int argsEnd = SkipParens(tokens, i + 1);
+                int j = argsEnd;
                 ClassDecl decl = ParseClassHead(path, tokens, ref j, lineStarts, t.Text);
                 if (decl != null)
                 {
                     decl.IsStruct = isStruct;
+                    foreach (int[] item in SplitArguments(tokens, i + 1, argsEnd))
+                    {
+                        AddClassSpecifier(path, line, code, tokens, item[0], item[1], decl);
+                    }
                     if (current != null && current.Class != null)
                     {
                         if (isStruct) decl.Owner = current.Class;
@@ -350,6 +356,54 @@ public class TakoHeaderTool : Task
             }
         }
         return tokens.Count;
+    }
+
+    // かっこの中をトップレベルのカンマで区切り、各項目の [最初のトークン, 最後のトークンの次] を返す。argsStart は "("、argsEnd は ")" の次
+    private static List<int[]> SplitArguments(List<Token> tokens, int argsStart, int argsEnd)
+    {
+        var items = new List<int[]>();
+        int itemStart = argsStart + 1;
+        int depth = 0;
+        for (int j = argsStart + 1; j < argsEnd; j++)
+        {
+            string s = tokens[j].Text;
+            bool last = j == argsEnd - 1;
+            if (s == "(" || s == "{" || s == "[") depth++;
+            else if ((s == ")" || s == "}" || s == "]") && !last) depth--;
+            if ((depth == 0 && s == ",") || last)
+            {
+                if (j > itemStart) items.Add(new[] { itemStart, j });
+                itemStart = j + 1;
+            }
+        }
+        return items;
+    }
+
+    // TCLASS(名前 = 値) の 1 項目を読む
+    private void AddClassSpecifier(string path, int line, string code, List<Token> tokens, int start, int end, ClassDecl decl)
+    {
+        string key = tokens[start].Text;
+        if (decl.IsStruct)
+        {
+            Error(path, line, "TSTRUCT に指定子は付けられない");
+            return;
+        }
+        if (end - start < 3 || tokens[start + 1].Text != "=")
+        {
+            Error(path, line, "TCLASS の指定子は「名前 = 値」で書く: " + code.Substring(tokens[start].Start, tokens[end - 1].End - tokens[start].Start));
+            return;
+        }
+        string value = code.Substring(tokens[start + 2].Start, tokens[end - 1].End - tokens[start + 2].Start).Trim();
+        if (key == "DisplayName" || key == "Category")
+        {
+            if (!value.StartsWith("\"")) Error(path, line, key + " には文字列を書く（例: " + key + " = \"...\"）");
+        }
+        else if (key != "Color")
+        {
+            Error(path, line, "知らない TCLASS の指定子: " + key);
+            return;
+        }
+        decl.Specifiers.Add(new KeyValuePair<string, string>(key, value));
     }
 
     // class/struct 名 [final] [: 継承] { まで読む。成功すると j は "{" を指す
@@ -447,28 +501,17 @@ public class TakoHeaderTool : Task
     {
         var prop = new PropertyDecl { Line = line };
 
-        // 指定子: トップレベルのカンマで区切り、各項目は「名前」か「名前 = 値」
-        int itemStart = argsStart + 1;
-        int depth = 0;
-        for (int j = argsStart + 1; j < argsEnd; j++)
+        // 指定子: 各項目は「名前」か「名前 = 値」
+        foreach (int[] item in SplitArguments(tokens, argsStart, argsEnd))
         {
-            string s = tokens[j].Text;
-            bool last = j == argsEnd - 1;
-            if (s == "(" || s == "{" || s == "[") depth++;
-            else if ((s == ")" || s == "}" || s == "]") && !last) depth--;
-            if ((depth == 0 && s == ",") || last)
-            {
-                int itemEnd = j;
-                if (itemEnd > itemStart) AddSpecifier(path, line, code, tokens, itemStart, itemEnd, prop);
-                itemStart = j + 1;
-            }
+            AddSpecifier(path, line, code, tokens, item[0], item[1], prop);
         }
 
         // 宣言: 最初のトップレベルの "=" か "{" が初期化子の始まり。その直前の識別子がメンバー名
         int declStart = argsEnd;
         int k = declStart;
         int initStart = -1;
-        depth = 0;
+        int depth = 0;
         while (k < tokens.Count)
         {
             string s = tokens[k].Text;
@@ -599,7 +642,13 @@ public class TakoHeaderTool : Task
         sb.AppendLine();
         sb.AppendLine("const ::Tako::TypeInfo& " + c.Name + "::StaticType()");
         sb.AppendLine("{");
-        sb.AppendLine("  static const ::Tako::TypeInfo type{ \"" + c.Name + "\", &" + c.Base + "::StaticType(), ::Tako::MakeTypeCreator<" + c.Name + ">() };");
+        Func<string, string, string> specifier = (key, fallback) =>
+        {
+            var found = c.Specifiers.Where(s => s.Key == key).ToList();
+            return found.Count > 0 ? found[found.Count - 1].Value : fallback;
+        };
+        sb.AppendLine("  static const ::Tako::TypeInfo type{ \"" + c.Name + "\", &" + c.Base + "::StaticType(), ::Tako::MakeTypeCreator<" + c.Name + ">(), "
+            + specifier("DisplayName", "\"\"") + ", " + specifier("Category", "\"\"") + ", " + specifier("Color", "0") + " };");
         sb.AppendLine("  return type;");
         sb.AppendLine("}");
         sb.AppendLine();

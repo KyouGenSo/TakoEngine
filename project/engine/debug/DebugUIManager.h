@@ -24,6 +24,7 @@
 #include "UILayoutEditor.h"
 #include "CameraAnimationEditor.h"
 #include "AnimationEditor.h"
+#include "BehaviorTreeEditor.h"
 
 namespace Tako {
 
@@ -381,6 +382,7 @@ namespace Tako {
     UILayoutEditor        uiLayoutEditor_;
     CameraAnimationEditor cameraAnimationEditor_;
     AnimationEditor       animationEditor_;
+    BehaviorTreeEditor    behaviorTreeEditor_;
     MaterialEditor        materialEditor_;
     ObjectSettingsEditor  objectSettingsEditor_;
     SceneEditor           sceneEditor_;

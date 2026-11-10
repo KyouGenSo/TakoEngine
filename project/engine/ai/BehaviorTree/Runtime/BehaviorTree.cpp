@@ -1,7 +1,6 @@
 #include "BehaviorTree.h"
 #include "BTChildSort.h"
 #include "BTComposite.h"
-#include "BTNodeRegistry.h"
 #include <fstream>
 
 namespace Tako {
@@ -138,7 +137,7 @@ namespace Tako {
     visitedNodes.insert(nodeId);
 
     std::string nodeType = nodeJson["type"];
-    BTNodePtr node = BTNodeRegistry::GetInstance()->Create(nodeType);
+    BTNodePtr node = BTNode::Create(nodeType);
     if (!node) {
       return nullptr;
     }

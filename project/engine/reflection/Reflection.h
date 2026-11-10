@@ -6,7 +6,10 @@ namespace Tako {
 }
 
 // TakoHeaderTool（build/TakoHeaderTool.cs）が読む印。展開すると何も残らない
-//   TCLASS()             : クラスの直前。TObject の派生にだけ付けられる
+//   TCLASS(指定子...)    : クラスの直前。TObject の派生にだけ付けられる。指定子は TypeInfo に入る（どれも省ける）
+//     DisplayName = "..." : エディタの一覧に出す名前
+//     Category = "..."    : エディタの一覧の分類（BT のノードなら "Composite" "Decorator" "Action" "Condition"）
+//     Color = 0xRRGGBB    : エディタで見分ける色
 //   TSTRUCT()            : 値として持つ構造体の直前。継承できない。TCLASS / TSTRUCT の中にも書ける
 //   TENUM()              : enum の直前。Inspector と保存で列挙子の名前を使う
 //   TPROPERTY(指定子...) : メンバー変数の直前の行

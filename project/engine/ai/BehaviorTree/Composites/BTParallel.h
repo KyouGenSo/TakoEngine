@@ -9,7 +9,7 @@ namespace Tako {
   /// 全ての子ノードを 1 フレームで並列に Execute し、
   /// 終了判定は Policy に応じて切り替える。
   /// </summary>
-  TCLASS()
+  TCLASS(DisplayName = "Parallel", Category = "Composite", Color = 0x66B366)
   class BTParallel : public BTComposite {
     GENERATED_BODY()
 

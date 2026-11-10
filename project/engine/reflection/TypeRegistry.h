@@ -1,6 +1,7 @@
 #pragma once
 #include "TObject.h"
 
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <string>
@@ -18,7 +19,10 @@ namespace Tako {
 
     const char*     name;
     const TypeInfo* base;
-    CreateFunc      create;  ///< 抽象クラスと既定コンストラクタの無いクラスは nullptr
+    CreateFunc      create;            ///< 抽象クラスと既定コンストラクタの無いクラスは nullptr
+    const char*     displayName = "";  ///< TCLASS(DisplayName = "...")。エディタの一覧に出す名前。空なら name を使う
+    const char*     category    = "";  ///< TCLASS(Category = "...")。エディタの一覧の分類
+    uint32_t        color       = 0;   ///< TCLASS(Color = 0xRRGGBB)。エディタで見分ける色。0 は指定なし
 
     /// <summary>
     /// other と同じ型かその派生なら true

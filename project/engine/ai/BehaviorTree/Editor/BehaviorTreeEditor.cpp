@@ -4,7 +4,9 @@
 #include "BTChildSort.h"
 #include "BTComposite.h"
 #include "BTBlackboard.h"
-#include "BTNodeRegistry.h"
+#include "BehaviorTree.h"
+#include "BehaviorTreeComponent.h"
+#include "TypeRegistry.h"
 #include "DebugUIManager.h"
 #include "Hash.h"
 #include <imgui_internal.h>
@@ -25,6 +27,13 @@ namespace {
 std::vector<BehaviorTreeEditor*>& Instances() {
   static std::vector<BehaviorTreeEditor*> instances;
   return instances;
+}
+
+// ノードの一覧に出す分類の順（TCLASS の Category）
+constexpr const char* kNodeCategories[] = { "Composite", "Action", "Condition", "Decorator" };
+
+const char* DisplayNameOf(const TypeInfo& type) {
+  return type.displayName[0] != '\0' ? type.displayName : type.name;
 }
 
 } // namespace
@@ -49,8 +58,6 @@ void BehaviorTreeEditor::CollectUnsavedChanges(std::vector<std::string>& out) co
 
 void BehaviorTreeEditor::Initialize(const EditorConfig& config) {
   config_ = config;
-
-  BTNodeRegistry::GetInstance()->Initialize();
 
   std::error_code ec;
   std::filesystem::create_directories(config_.btJsonDir, ec);
@@ -86,9 +93,31 @@ void BehaviorTreeEditor::Finalize() {
   Clear();
 }
 
+void BehaviorTreeEditor::LinkRunningTree() {
+  BehaviorTreeComponent* found = nullptr;
+  for (BehaviorTreeComponent* component : BehaviorTreeComponent::GetPlaying()) {
+    if (component->GetTreeName() == currentTreeName_) {
+      found = component;
+      break;
+    }
+  }
+  if (found != linked_) {
+    linked_ = found;
+    if (linked_) {
+      linked_->GetTree().SetRootNode(BuildRuntimeTree());
+    }
+  }
+  HighlightRunningNode(linked_ ? linked_->GetTree().GetCurrentRunningNode() : nullptr);
+}
+
 void BehaviorTreeEditor::Update() {
   if (!isVisible_) return;
 
+  LinkRunningTree();
+
+  // 既定の大きさや、imgui.ini に残った小さい値のままだと、ツールバーもキャンバスも入らない
+  ImGui::SetNextWindowSize(ImVec2(960.0f, 600.0f), ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowSizeConstraints(ImVec2(640.0f, 400.0f), ImVec2(FLT_MAX, FLT_MAX));
   if (ImGui::Begin(config_.windowName.c_str(), &isVisible_)) {
     // UI を描く区間の前後でツリーの内容を比べて編集を検出する（Node Inspector は別のウィンドウなので、別の区間で比べる）
     treeTracker_.BeginSection();
@@ -144,6 +173,8 @@ void BehaviorTreeEditor::Update() {
 }
 
 void BehaviorTreeEditor::Clear() {
+  // ノードを作り直すので、次の Update で実行側に渡し直す
+  linked_ = nullptr;
   nodes_.clear();
   pins_.clear();
   links_.clear();
@@ -188,6 +219,14 @@ void BehaviorTreeEditor::DrawToolbar() {
   if (ImGui::Button("Save##bte_toolbar")) {
     SaveTree(currentTreeName_);
   }
+  ImGui::SameLine();
+  ImGui::BeginDisabled(linked_ == nullptr);
+  if (ImGui::Button("Apply to Running##bte_toolbar")) {
+    linked_->GetTree().SetRootNode(BuildRuntimeTree());
+  }
+  ImGui::EndDisabled();
+  ImGui::SetItemTooltip(linked_ ? "Rebuild the running tree from this graph (parameter edits already apply live; use this after adding or relinking nodes)"
+                                : "Enabled while an actor's BehaviorTreeComponent is playing this tree");
   ProcessShortcuts(Shortcuts(), *this);
   ImGui::SameLine();
 
@@ -316,48 +355,16 @@ void BehaviorTreeEditor::DrawToolbar() {
   ImGui::Text("Node Type:");
   ImGui::SameLine();
 
-  // 全ノードタイプを Registry から動的に収集
+  // ノードの型を TCLASS の Category ごとに集める
   static std::vector<std::string> allNodeTypes;
   static std::vector<std::string> allDisplayNames;
   allNodeTypes.clear();
   allDisplayNames.clear();
-
-  auto* registry = BTNodeRegistry::GetInstance();
-
-  // Composite ノード
-  auto compositeTypes = registry->GetTypesByCategory(NodeCategory::Composite);
-  for (const auto& type : compositeTypes) {
-    allNodeTypes.push_back(type);
-    const NodeMeta* meta = registry->GetMeta(type);
-    std::string displayName = meta ? meta->displayName : type;
-    allDisplayNames.push_back("[Composite] " + displayName);
-  }
-
-  // Action ノード
-  auto actionTypes = registry->GetTypesByCategory(NodeCategory::Action);
-  for (const auto& type : actionTypes) {
-    allNodeTypes.push_back(type);
-    const NodeMeta* meta = registry->GetMeta(type);
-    std::string displayName = meta ? meta->displayName : type;
-    allDisplayNames.push_back("[Action] " + displayName);
-  }
-
-  // Condition ノード
-  auto conditionTypes = registry->GetTypesByCategory(NodeCategory::Condition);
-  for (const auto& type : conditionTypes) {
-    allNodeTypes.push_back(type);
-    const NodeMeta* meta = registry->GetMeta(type);
-    std::string displayName = meta ? meta->displayName : type;
-    allDisplayNames.push_back("[Condition] " + displayName);
-  }
-
-  // Decorator ノード (将来の拡張用)
-  auto decoratorTypes = registry->GetTypesByCategory(NodeCategory::Decorator);
-  for (const auto& type : decoratorTypes) {
-    allNodeTypes.push_back(type);
-    const NodeMeta* meta = registry->GetMeta(type);
-    std::string displayName = meta ? meta->displayName : type;
-    allDisplayNames.push_back("[Decorator] " + displayName);
+  for (const char* category : kNodeCategories) {
+    for (const TypeInfo* type : BTNode::GetTypes(category)) {
+      allNodeTypes.push_back(type->name);
+      allDisplayNames.push_back(std::format("[{}] {}", category, DisplayNameOf(*type)));
+    }
   }
 
   // ドロップダウンリスト
@@ -684,51 +691,13 @@ void BehaviorTreeEditor::DrawContextMenu() {
     ImGui::Text("Create Node");
     ImGui::Separator();
 
-    auto* registry = BTNodeRegistry::GetInstance();
-
-    if (ImGui::BeginMenu("Composite Nodes")) {
-      auto types = registry->GetTypesByCategory(NodeCategory::Composite);
-      for (const auto& nodeType : types) {
-        const NodeMeta* meta = registry->GetMeta(nodeType);
-        std::string displayName = meta ? meta->displayName : nodeType;
-        if (ImGui::MenuItem(displayName.c_str())) {
-          CreateNode(nodeType, canvasPos);
-        }
+    for (const char* category : kNodeCategories) {
+      if (!ImGui::BeginMenu(std::format("{} Nodes", category).c_str())) {
+        continue;
       }
-      ImGui::EndMenu();
-    }
-
-    if (ImGui::BeginMenu("Action Nodes")) {
-      auto types = registry->GetTypesByCategory(NodeCategory::Action);
-      for (const auto& nodeType : types) {
-        const NodeMeta* meta = registry->GetMeta(nodeType);
-        std::string displayName = meta ? meta->displayName : nodeType;
-        if (ImGui::MenuItem(displayName.c_str())) {
-          CreateNode(nodeType, canvasPos);
-        }
-      }
-      ImGui::EndMenu();
-    }
-
-    if (ImGui::BeginMenu("Condition Nodes")) {
-      auto types = registry->GetTypesByCategory(NodeCategory::Condition);
-      for (const auto& nodeType : types) {
-        const NodeMeta* meta = registry->GetMeta(nodeType);
-        std::string displayName = meta ? meta->displayName : nodeType;
-        if (ImGui::MenuItem(displayName.c_str())) {
-          CreateNode(nodeType, canvasPos);
-        }
-      }
-      ImGui::EndMenu();
-    }
-
-    if (ImGui::BeginMenu("Decorator Nodes")) {
-      auto types = registry->GetTypesByCategory(NodeCategory::Decorator);
-      for (const auto& nodeType : types) {
-        const NodeMeta* meta = registry->GetMeta(nodeType);
-        std::string displayName = meta ? meta->displayName : nodeType;
-        if (ImGui::MenuItem(displayName.c_str())) {
-          CreateNode(nodeType, canvasPos);
+      for (const TypeInfo* type : BTNode::GetTypes(category)) {
+        if (ImGui::MenuItem(DisplayNameOf(*type))) {
+          CreateNode(type->name, canvasPos);
         }
       }
       ImGui::EndMenu();
@@ -1231,22 +1200,21 @@ void BehaviorTreeEditor::CreateNode(const std::string& nodeType, const ImVec2& p
 }
 
 int BehaviorTreeEditor::CreateNodeWithId(int nodeId, const std::string& nodeType, const ImVec2& position) {
-  auto* registry = BTNodeRegistry::GetInstance();
-  const NodeMeta* meta = registry->GetMeta(nodeType);
+  const TypeInfo* type = TypeRegistry::GetInstance()->Find(nodeType);
 
   EditorNode newNode;
   newNode.id = nodeId;
   // ed は SetNodePosition で位置を 0 方向へ切り捨てる（ImRect::Floor）。同じ値にして、位置の適用を編集と見なさないようにする
   newNode.position = ImVec2(std::trunc(position.x), std::trunc(position.y));
   newNode.nodeType = nodeType;
-  newNode.displayName = meta ? meta->displayName : nodeType;
-  // NodeMeta::color (NodeColor) を ImGui の ImVec4 に変換 (エディタ描画用)
-  newNode.color = meta
-    ? ImVec4(meta->color.r, meta->color.g, meta->color.b, meta->color.a)
+  newNode.displayName = type ? DisplayNameOf(*type) : nodeType;
+  // TCLASS の Color (0xRRGGBB)。書いていなければ灰色
+  newNode.color = type && type->color != 0
+    ? ImVec4(((type->color >> 16) & 0xFF) / 255.0f, ((type->color >> 8) & 0xFF) / 255.0f, (type->color & 0xFF) / 255.0f, 1.0f)
     : ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
 
   // ランタイムノードを生成
-  newNode.runtimeNode = registry->Create(nodeType);
+  newNode.runtimeNode = BTNode::Create(nodeType);
   if (!newNode.runtimeNode) {
     DebugUIManager::GetInstance()->AddLog(
       "[BehaviorTreeEditor] Failed to create runtime node for type: " + nodeType,
@@ -1264,8 +1232,7 @@ int BehaviorTreeEditor::CreateNodeWithId(int nodeId, const std::string& nodeType
   newNode.inputPinIds.push_back(inputPin.id);
 
   // 出力ピンを作成 (コンポジットノードのみ)
-  bool isComposite = meta ? meta->isComposite : false;
-  if (isComposite) {
+  if (newNode.runtimeNode->IsComposite()) {
     EditorPin outputPin;
     outputPin.id = nextPinId_++;
     outputPin.nodeId = nodeId;
@@ -1295,11 +1262,7 @@ void BehaviorTreeEditor::BuildRuntimeTreeRecursive(int nodeId, BTNodePtr& outNod
   outNode = editorNode->runtimeNode;
 
   // コンポジットノードの場合、子ノードを追加
-  auto* registry = BTNodeRegistry::GetInstance();
-  const NodeMeta* meta = registry->GetMeta(editorNode->nodeType);
-  bool isComposite = meta ? meta->isComposite : false;
-
-  if (isComposite) {
+  if (outNode->IsComposite()) {
     auto compositeNode = std::dynamic_pointer_cast<BTComposite>(outNode);
     if (compositeNode) {
       compositeNode->ClearChildren();

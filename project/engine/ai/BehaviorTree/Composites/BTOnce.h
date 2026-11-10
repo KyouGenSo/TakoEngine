@@ -9,7 +9,7 @@ namespace Tako {
   /// 上限到達後は子を実行せず Failure を返す。
   /// 子が Success を返した時のみ消費し、Failure / Running は透過する。
   /// </summary>
-  TCLASS()
+  TCLASS(DisplayName = "Once", Category = "Decorator", Color = 0xCCCC4D)
   class BTOnce : public BTComposite {
     GENERATED_BODY()
 

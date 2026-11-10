@@ -73,6 +73,7 @@ namespace Tako {
       { "AnimationClip",     { { AnimationClip::kDirectory } }, { ".json" } },
       { "UILayout",          { { UILayout::kDirectory } }, { ".json" } },
       { "PostEffectProfile", { { "resources/Json/PostEffects/" } }, { ".json" } },
+      { "BehaviorTree",      { { "resources/Json/BT/" } }, { ".json" } },
       { "Sound",             { { "resources/Sound/" } }, { ".wav", ".mp3" }, true },
       { "Script",            { { "Script/" } }, { ".h", ".cpp" } },
     };

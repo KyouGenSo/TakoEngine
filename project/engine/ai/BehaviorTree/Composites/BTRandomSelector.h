@@ -11,7 +11,10 @@ namespace Tako {
   /// 子ノードをランダムな順序で実行し、最初の Success で停止する。
   /// 連続選択防止のため、前回成功した子が先頭に来た場合は他要素とスワップする。
   /// </summary>
+  TCLASS(DisplayName = "RandomSelector", Category = "Composite", Color = 0x9966B3)
   class BTRandomSelector : public BTComposite {
+    GENERATED_BODY()
+
   public: //メンバー関数
     BTRandomSelector();
 

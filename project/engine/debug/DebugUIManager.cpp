@@ -173,6 +173,7 @@ namespace Tako {
     uiLayoutEditor_.Initialize(&WindowFlag(Window::UIEditor));
     cameraAnimationEditor_.Initialize(&WindowFlag(Window::CameraAnimationEditor), &debugViewport_);
     animationEditor_.Initialize(&WindowFlag(Window::AnimationEditor), cameraSettings);
+    behaviorTreeEditor_.Initialize({});
     RegisterAssetOpeners();
 
     // ×ボタン・Alt+F4 で未保存の変更があれば閉じずに確認する
@@ -199,6 +200,12 @@ namespace Tako {
     SetAssetOpener("PostEffectProfile", opener(Window::PostEffect, "PostEffect Manager", [](const std::string& name) { PostEffectManager::GetInstance()->LoadProfile(name); }));
     SetAssetOpener("Prefab", opener(Window::SceneHierarchy, "Scene Hierarchy", [this](const std::string& name) { sceneEditor_.RequestSpawn(name); }));
     SetAssetOpener("Scene", [this](const std::string& name) { RequestSceneChange(name); });
+    SetAssetOpener("BehaviorTree", [this](const std::string& name) {
+      behaviorTreeEditor_.SetVisible(true);
+      focusRequest_ = "Behavior Tree Editor";
+      // 未保存の変更があれば、エディタが確認を出してから切り替える
+      behaviorTreeEditor_.SwitchTree(name);
+    });
   }
 
   void DebugUIManager::Finalize() {
@@ -208,6 +215,7 @@ namespace Tako {
     particleEditor_.Finalize();
     debugViewport_.Finalize();
     animationEditor_.Finalize();
+    behaviorTreeEditor_.Finalize();
     instance_.reset();
   }
 
@@ -280,6 +288,7 @@ namespace Tako {
     uiLayoutEditor_.Draw();
     cameraAnimationEditor_.Draw();
     isPreviewInputCaptured_ |= animationEditor_.Draw();
+    behaviorTreeEditor_.Update();
     materialEditor_.Draw();
     objectSettingsEditor_.Draw();
     shaderEditor_.Draw();
@@ -419,6 +428,9 @@ namespace Tako {
         ImGui::MenuItem("UI Editor", nullptr, &WindowFlag(Window::UIEditor));
         ImGui::MenuItem("Camera Animation Editor", nullptr, &WindowFlag(Window::CameraAnimationEditor));
         ImGui::MenuItem("Animation Editor", nullptr, &WindowFlag(Window::AnimationEditor));
+        if (ImGui::MenuItem("Behavior Tree Editor", nullptr, behaviorTreeEditor_.IsVisible())) {
+          behaviorTreeEditor_.SetVisible(!behaviorTreeEditor_.IsVisible());
+        }
         ImGui::EndMenu();
       }
 

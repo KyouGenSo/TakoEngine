@@ -13,7 +13,7 @@ namespace Tako {
   /// <summary>
   /// ビヘイビアツリー実行ラッパ。
   /// ルートノードとブラックボードを保持し、Tick() で 1 フレーム実行する。
-  /// JSON ロード/セーブは現状プレースホルダ。実際の JSON IO は BehaviorTreeEditor が担当する想定。
+  /// ツリーのファイルは BehaviorTreeEditor が書き、LoadFromJSON が読む。
   /// </summary>
   class BehaviorTree {
   public: //メンバー関数
@@ -37,7 +37,6 @@ namespace Tako {
 
     /// <summary>
     /// JSON ファイルからツリーを読み込む。
-    /// (現状はプレースホルダ。BehaviorTreeEditor 側で JSON IO を実装している)
     /// </summary>
     /// <param name="filepath">読み込み元 JSON ファイルパス</param>
     /// <returns>成功すれば true</returns>
@@ -72,7 +71,7 @@ namespace Tako {
 
     /// <summary>
     /// JSON のノード定義からツリーを再帰的に構築。
-    /// BTNodeRegistry::Create でノード生成、リンク情報で子ノードを接続する。
+    /// BTNode::Create でノード生成、リンク情報で子ノードを接続する。
     /// </summary>
     BTNodePtr BuildNodeFromJSON(
       const nlohmann::json& nodeJson,

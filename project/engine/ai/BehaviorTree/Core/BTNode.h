@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include <string_view>
 #include <json.hpp>
 
 namespace Tako {
@@ -28,6 +29,17 @@ namespace Tako {
 
   public: //メンバー関数
     virtual ~BTNode() = default;
+
+    /// <summary>
+    /// 型名から BTNode の派生を作る（TCLASS を付けた型はすべて作れる）
+    /// </summary>
+    /// <returns>知らない型か、BTNode の派生でなければ nullptr</returns>
+    static std::shared_ptr<BTNode> Create(std::string_view typeName);
+
+    /// <summary>
+    /// 作れるノードの型のうち、TCLASS の Category が category のもの（名前順）。Category を書いていない型は "Action" に入る
+    /// </summary>
+    static std::vector<const TypeInfo*> GetTypes(std::string_view category);
 
     /// <summary>
     /// ノードの実行

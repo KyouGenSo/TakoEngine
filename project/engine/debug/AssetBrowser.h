@@ -182,7 +182,7 @@ namespace Tako {
   /// </summary>
   void OpenScriptFile(std::string_view typeName);
 
-  // アセットの種類（kind）："Texture" "Cubemap" "Model" "Material" "Scene" "Prefab" "ParticlePreset" "AnimationClip" "UILayout"
+  // アセットの種類（kind）："Texture" "Cubemap" "Model" "Material" "Scene" "Prefab" "ParticlePreset" "AnimationClip" "UILayout" "BehaviorTree"
   // "PostEffectProfile" "Sound" "Script"。値（value）は、その種類を読む関数に渡す文字列（テクスチャのキー・モデルのパス・名前・型名など）
 
   /// <summary>

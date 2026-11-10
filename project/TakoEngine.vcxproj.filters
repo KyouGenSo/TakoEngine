@@ -1,6 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="ai\BehaviorTree\Nodes">
+      <UniqueIdentifier>{20b22fa2-09d4-4b4d-a168-bbaed99c09b7}</UniqueIdentifier>
+    </Filter>
     <Filter Include="2d">
       <UniqueIdentifier>{96a37cec-2159-4694-b32f-d49c81cbfbd5}</UniqueIdentifier>
     </Filter>
@@ -129,6 +132,12 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="engine\scene\BehaviorTreeComponent.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\ai\BehaviorTree\Nodes\BTActorNodes.cpp">
+      <Filter>ai\BehaviorTree\Nodes</Filter>
+    </ClCompile>
     <ClCompile Include="engine\debug\NewScript.cpp">
       <Filter>debug</Filter>
     </ClCompile>
@@ -468,9 +477,6 @@
     <ClCompile Include="engine\ai\BehaviorTree\Composites\BTOnce.cpp">
       <Filter>ai\BehaviorTree\Composites</Filter>
     </ClCompile>
-    <ClCompile Include="engine\ai\BehaviorTree\Runtime\BTNodeRegistry.cpp">
-      <Filter>ai\BehaviorTree\Runtime</Filter>
-    </ClCompile>
     <ClCompile Include="engine\ai\BehaviorTree\Runtime\BehaviorTree.cpp">
       <Filter>ai\BehaviorTree\Runtime</Filter>
     </ClCompile>
@@ -518,6 +524,12 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\scene\BehaviorTreeComponent.h">
+      <Filter>scene</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\ai\BehaviorTree\Nodes\BTActorNodes.h">
+      <Filter>ai\BehaviorTree\Nodes</Filter>
+    </ClInclude>
     <ClInclude Include="engine\debug\NewScript.h">
       <Filter>debug</Filter>
     </ClInclude>
@@ -942,12 +954,6 @@
       <Filter>ai\BehaviorTree\Composites</Filter>
     </ClInclude>
     <ClInclude Include="engine\ai\BehaviorTree\Runtime\BTChildSort.h">
-      <Filter>ai\BehaviorTree\Runtime</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\ai\BehaviorTree\Runtime\BTNodeMeta.h">
-      <Filter>ai\BehaviorTree\Runtime</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\ai\BehaviorTree\Runtime\BTNodeRegistry.h">
       <Filter>ai\BehaviorTree\Runtime</Filter>
     </ClInclude>
     <ClInclude Include="engine\ai\BehaviorTree\Runtime\BehaviorTree.h">
