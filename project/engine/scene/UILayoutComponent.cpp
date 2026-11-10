@@ -16,7 +16,7 @@ namespace Tako {
   {
     EnsureLoaded();
     // 読んでいなければ名前が無い
-    if (instance_->GetName().empty()) {
+    if (instance_->GetName().empty() || !visible_) {
       return;
     }
     instance_->SetSortingOrder(sortingOrder_);

@@ -16,6 +16,8 @@ namespace Tako {
   void ParticleSystemComponent::BeginPlay()
   {
     isPlaying_ = true;
+    // 他のスクリプトが BeginPlay から名前で引けるよう、ここで作っておく
+    EnsureLoaded();
     SetActive(playOnStart_);
   }
 
@@ -28,65 +30,79 @@ namespace Tako {
   void ParticleSystemComponent::Draw()
   {
     EnsureLoaded();
-    if (manager_ && !emitterName_.empty()) {
-      manager_->SetEmitterPosition(emitterName_, Mat4x4::Transform(GetOwner()->GetWorldMatrix(), offset_));
+    // Edit 中はいつも Actor の位置へ置く（エディタで動かした結果が見えるように）
+    if (manager_ && !activeName_.empty() && (followActor_ || !isPlaying_)) {
+      manager_->SetEmitterPosition(activeName_, GetEmitPosition());
     }
   }
 
   void ParticleSystemComponent::SetActive(bool active)
   {
     isActive_ = active;
-    if (manager_ && !emitterName_.empty()) {
-      manager_->SetEmitterActive(emitterName_, isPlaying_ && isActive_);
+    if (manager_ && !activeName_.empty()) {
+      manager_->SetEmitterActive(activeName_, isPlaying_ && isActive_);
     }
   }
 
   void ParticleSystemComponent::EmitTemporary(float lifeTime)
   {
     EnsureLoaded();
-    if (!manager_ || emitterName_.empty()) {
+    if (!manager_ || activeName_.empty()) {
       return;
     }
     static uint32_t serial = 0;
-    manager_->SetEmitterPosition(emitterName_, Mat4x4::Transform(GetOwner()->GetWorldMatrix(), offset_));
-    manager_->CreateTemporaryEmitterFrom(emitterName_, std::format("{}:temp{}", emitterName_, ++serial), lifeTime);
+    manager_->SetEmitterPosition(activeName_, GetEmitPosition());
+    manager_->CreateTemporaryEmitterFrom(activeName_, std::format("{}:temp{}", activeName_, ++serial), lifeTime);
   }
 
   std::shared_ptr<GPUParticleEmitter> ParticleSystemComponent::GetEmitter()
   {
     EnsureLoaded();
-    return manager_ && !emitterName_.empty() ? manager_->GetEmitterByName(emitterName_) : nullptr;
+    return manager_ && !activeName_.empty() ? manager_->GetEmitterByName(activeName_) : nullptr;
   }
 
   void ParticleSystemComponent::EnsureLoaded()
   {
     BaseScene* scene = GetOwner()->GetScene();
-    if (!scene || preset_ == loadedPreset_) {
+    if (!scene || (preset_ == loadedPreset_ && emitterName_ == loadedEmitterName_)) {
       return;
     }
     RemoveEmitter();
-    loadedPreset_ = preset_;
+    loadedPreset_      = preset_;
+    loadedEmitterName_ = emitterName_;
     if (preset_.empty()) {
       return;
     }
-    // Undo などで作り直したコンポーネントと古いものが 1 フレーム重なるので、作るたびに違う名前にする
+    // 名前を決めていないときは、Undo などで作り直したコンポーネントと古いものが 1 フレーム重なるので、作るたびに違う名前にする
     static uint32_t serial = 0;
-    manager_     = &scene->GetEmitterManager();
-    emitterName_ = std::format("Actor{}:{}:{}", GetOwner()->GetId(), GetName(), ++serial);
-    manager_->LoadPreset(preset_, emitterName_);
-    if (manager_->HasEmitter(emitterName_)) {
-      manager_->SetEmitterActive(emitterName_, isPlaying_ && isActive_);
-    } else {
-      emitterName_.clear();
+    manager_    = &scene->GetEmitterManager();
+    activeName_ = emitterName_.empty() ? std::format("Actor{}:{}:{}", GetOwner()->GetId(), GetName(), ++serial) : emitterName_;
+    manager_->LoadPreset(preset_, activeName_);
+    created_ = manager_->GetEmitterByName(activeName_);
+    if (created_.expired()) {
+      activeName_.clear();
+      return;
     }
+    manager_->SetEmitterActive(activeName_, isPlaying_ && isActive_);
+    manager_->SetEmitterPosition(activeName_, GetEmitPosition());
   }
 
   void ParticleSystemComponent::RemoveEmitter()
   {
-    if (manager_ && !emitterName_.empty()) {
-      manager_->RemoveEmitter(emitterName_);
+    // 決めた名前のエミッターは、作り直した別のコンポーネントの物に替わっていることがある。自分が作った物だけを消す
+    if (manager_ && !activeName_.empty()) {
+      const std::shared_ptr<GPUParticleEmitter> mine = created_.lock();
+      if (mine && manager_->GetEmitterByName(activeName_) == mine) {
+        manager_->RemoveEmitter(activeName_);
+      }
     }
-    emitterName_.clear();
+    activeName_.clear();
+    created_.reset();
+  }
+
+  Vector3 ParticleSystemComponent::GetEmitPosition() const
+  {
+    return Mat4x4::Transform(GetOwner()->GetWorldMatrix(), offset_);
   }
 
 } // namespace Tako

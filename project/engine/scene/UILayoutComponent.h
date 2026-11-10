@@ -33,6 +33,13 @@ namespace Tako {
     /// </summary>
     UILayout& GetLayout();
 
+    bool IsVisible() const { return visible_; }
+
+    //=====================================
+    //Setter
+    //=====================================
+    void SetVisible(bool visible) { visible_ = visible; }
+
   private: //非公開関数
     /// <summary>
     /// レイアウトの名前が変わっていれば読み直す
@@ -44,6 +51,8 @@ namespace Tako {
     std::string layout_;
     TPROPERTY(Edit, Tooltip = "他のレイアウトとの重なり順。大きいほど手前（同じ値なら、シーンの並びで後ろの Actor が手前）")
     int32_t     sortingOrder_ = 0;
+    TPROPERTY(Edit, Tooltip = "オフなら描かない（ポーズのメニューなど、スクリプトが出すもの）")
+    bool        visible_      = true;
 
     std::unique_ptr<UILayout> instance_;
     std::string               loadedLayout_;
