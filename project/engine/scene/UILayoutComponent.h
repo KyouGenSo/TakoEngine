@@ -28,9 +28,15 @@ namespace Tako {
     //Getter
     //=====================================
     /// <summary>
-    /// 要素を探して表示を切り替えるなど、スクリプトから使う
+    /// 要素を探して表示を切り替えるなど、スクリプトから使う。まだ読んでいなければここで読むので、BeginPlay からも使える
     /// </summary>
-    UILayout& GetLayout() const { return *instance_; }
+    UILayout& GetLayout();
+
+  private: //非公開関数
+    /// <summary>
+    /// レイアウトの名前が変わっていれば読み直す
+    /// </summary>
+    void EnsureLoaded();
 
   private: //メンバー変数
     TPROPERTY(Edit, Asset = "UILayout")

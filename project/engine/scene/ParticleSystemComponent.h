@@ -2,11 +2,13 @@
 #include "Component.h"
 #include "Vector3.h"
 
+#include <memory>
 #include <string>
 
 namespace Tako {
 
   class EmitterManager;
+  class GPUParticleEmitter;
 
   /// <summary>
   /// パーティクルのプリセットを、Actor の位置から出す（Unity の ParticleSystem、UE の NiagaraComponent）。
@@ -28,7 +30,29 @@ namespace Tako {
     /// </summary>
     void Draw() override;
 
+    //=====================================
+    //Setter
+    //=====================================
+    /// <summary>
+    /// 出す・止める（Play 中だけ出る）
+    /// </summary>
+    void SetActive(bool active);
+
+    //=====================================
+    //Getter
+    //=====================================
+    /// <summary>
+    /// 数や頻度を変えるなど、スクリプトから使う。まだ作っていなければここで作るので、BeginPlay からも使える
+    /// </summary>
+    /// <returns>プリセットが空か、読めなければ nullptr</returns>
+    std::shared_ptr<GPUParticleEmitter> GetEmitter();
+
   private: //非公開関数
+    /// <summary>
+    /// プリセットの名前が変わっていれば、エミッターを作り直す
+    /// </summary>
+    void EnsureLoaded();
+
     void RemoveEmitter();
 
   private: //メンバー変数
@@ -43,6 +67,7 @@ namespace Tako {
     std::string     emitterName_;
     std::string     loadedPreset_;
     bool            isPlaying_    = false;
+    bool            isActive_     = false;    ///< 出している（playOnStart か SetActive）
   };
 
 } // namespace Tako
