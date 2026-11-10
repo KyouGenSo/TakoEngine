@@ -18,8 +18,7 @@ namespace Tako {
   /// </summary>
   class AssetBrowser {
   public: //定数
-    static constexpr const char* kTexturePayload = "TAKO_TEXTURE";  ///< テクスチャ項目の D&D ペイロード型。データは終端付きのテクスチャキー
-    static constexpr const char* kScriptPayload  = "TAKO_SCRIPT";   ///< スクリプト（.h / .cpp）の D&D ペイロード型。データは終端付きの型名
+    static constexpr const char* kAssetPayload = "TAKO_ASSET";  ///< ファイルの D&D ペイロード型。データは作業ディレクトリからの終端付き UTF-8 パス（区切りは /）
 
   private: //構造体
     /// <summary>
@@ -182,15 +181,33 @@ namespace Tako {
   /// </summary>
   void OpenScriptFile(std::string_view typeName);
 
-  /// <summary>
-  /// 直前のアイテムへのテクスチャのドロップ（アセットウィンドウから）。落とされたフレームだけキーを返す
-  /// </summary>
-  std::optional<std::string> AcceptTextureDrop();
+  // アセットの種類（kind）："Texture" "Cubemap" "Model" "Material" "Scene" "Prefab" "ParticlePreset" "AnimationClip" "UILayout"
+  // "PostEffectProfile" "Sound" "Script"。値（value）は、その種類を読む関数に渡す文字列（テクスチャのキー・モデルのパス・名前・型名など）
 
   /// <summary>
-  /// 直前のアイテムへのスクリプトのドロップ（アセットウィンドウから）。落とされたフレームだけ型名を返す
+  /// path が kind のファイルなら値。違えば nullopt
   /// </summary>
-  std::optional<std::string> AcceptScriptDrop();
+  std::optional<std::string> ToAssetValue(std::string_view kind, const std::filesystem::path& path);
+
+  /// <summary>
+  /// 値のファイルのパス。見つからなければ空
+  /// </summary>
+  std::filesystem::path ToAssetPath(std::string_view kind, std::string_view value);
+
+  /// <summary>
+  /// kind のファイルの値の一覧（名前順）
+  /// </summary>
+  std::vector<std::string> ListAssets(std::string_view kind);
+
+  /// <summary>
+  /// 開いているドロップ先（BeginDragDropTarget の中）で、kind のファイルを受け取る。違う種類は受け取らず、ドロップ先も光らせない。落とされたフレームだけ値を返す
+  /// </summary>
+  std::optional<std::string> AcceptAssetPayload(std::string_view kind);
+
+  /// <summary>
+  /// 直前のアイテムへの kind のファイルのドロップ。落とされたフレームだけ値を返す
+  /// </summary>
+  std::optional<std::string> AcceptAssetDrop(std::string_view kind);
 
 } // namespace Tako
 

@@ -1,6 +1,8 @@
 #include "AssetBrowser.h"
+#include "AnimationClip.h"
 #include "DebugUIManager.h"
 #include "TextureManager.h"
+#include "UILayout.h"
 #include "WinApp.h"
 #include "EnginePaths.h"
 #include "StringUtility.h"
@@ -39,8 +41,56 @@ namespace Tako {
     // ponytail: 1 フレームの読み込み枚数上限。大きい画像が多く引っかかるなら非同期読み込みへ
     constexpr int kMaxThumbnailLoadsPerFrame = 4;
 
-    // TextureManager は小文字 ".dds" 以外を WIC で読み、失敗時 assert するため大文字拡張子は含めない
-    constexpr std::string_view kImageExtensions[] = { ".png", ".jpg", ".jpeg", ".bmp", ".dds" };
+    /// <summary>
+    /// 種類のファイルを探すフォルダ（作業ディレクトリから、末尾 /）。keepDir なら値はフォルダ込みのパス、でなければフォルダからの相対
+    /// </summary>
+    struct AssetRoot {
+      std::string_view dir;
+      bool             keepDir = false;
+    };
+
+    struct AssetKind {
+      std::string_view              name;
+      std::vector<AssetRoot>        roots;
+      std::vector<std::string_view> extensions;             ///< ファイル名の末尾と比べる（".mat.json" のように 2 段のものもある）
+      bool                          keepExtension = false;  ///< 値に拡張子を残す（ファイル名で読む種類）
+    };
+
+    // TextureManager は小文字 ".dds" 以外を WIC で読むので、拡張子は大文字小文字を区別して比べる
+    const std::vector<std::string_view> kImageExtensions = { ".png", ".jpg", ".jpeg", ".bmp", ".dds" };
+
+    // フォルダは TakoFramework が TextureManager・Audio に渡すもの、ModelBasic・MaterialLibrary・Prefab・BaseScene・EmitterManager・PostEffectManager が読むものと同じ
+    const AssetKind kAssetKinds[] = {
+      { "Texture",           { { "resources/Texture/" }, { "EngineResources/", true } }, kImageExtensions, true },
+      { "Cubemap",           { { "resources/Texture/" }, { "EngineResources/", true } }, { ".dds" }, true },
+      { "Model",             { { "resources/Model/" }, { "EngineResources/Model/", true } }, { ".gltf", ".glb", ".obj", ".fbx" }, true },
+      { "Material",          { { "resources/Materials/" } }, { ".mat.json" } },
+      { "Scene",             { { "resources/Json/Scenes/" } }, { ".scene.json" } },
+      { "Prefab",            { { "resources/Json/Prefabs/" } }, { ".prefab.json" } },
+      { "ParticlePreset",    { { "resources/Json/ParticlePresets/Presets/" } }, { ".json" } },
+      { "AnimationClip",     { { AnimationClip::kDirectory } }, { ".json" } },
+      { "UILayout",          { { UILayout::kDirectory } }, { ".json" } },
+      { "PostEffectProfile", { { "resources/Json/PostEffects/" } }, { ".json" } },
+      { "Sound",             { { "resources/Sound/" } }, { ".wav", ".mp3" }, true },
+      { "Script",            { { "Script/" } }, { ".h", ".cpp" } },
+    };
+
+    const AssetKind* FindAssetKind(std::string_view name) {
+      const auto it = std::ranges::find(kAssetKinds, name, &AssetKind::name);
+      return it != std::end(kAssetKinds) ? &*it : nullptr;
+    }
+
+    /// <summary>
+    /// fileName の末尾に合う拡張子。合わなければ空
+    /// </summary>
+    std::string_view MatchExtension(const AssetKind& kind, std::string_view fileName) {
+      for (std::string_view extension : kind.extensions) {
+        if (fileName.size() > extension.size() && fileName.ends_with(extension)) {
+          return extension;
+        }
+      }
+      return {};
+    }
 
     constexpr const char* kRenamePopup = "Rename##AssetBrowser";
     constexpr const char* kDeletePopup = "Delete##AssetBrowser";
@@ -84,26 +134,6 @@ namespace Tako {
     /// </summary>
     bool IsEngineCopy(const fs::path& path) {
       return IsSameOrAncestor(EngineRootPath(), path);
-    }
-
-    /// <summary>
-    /// TextureManager::LoadTexture のパス解決規則に合わせたキー（サムネイル対象外は空）
-    /// </summary>
-    std::string ToTextureKey(const fs::path& path) {
-      const std::string extension = ToUtf8(path.extension());
-      if (std::ranges::find(kImageExtensions, std::string_view(extension)) == std::end(kImageExtensions)) {
-        return {};
-      }
-
-      const std::string  genericPath = ToUtf8(path);
-      const std::string& textureDir  = TextureManager::GetInstance()->GetDirectoryPath();
-      if (genericPath.starts_with(textureDir)) {
-        return genericPath.substr(textureDir.size());
-      }
-      if (genericPath.starts_with(EnginePaths::kEngineRoot)) {
-        return genericPath;
-      }
-      return {};
     }
 
     std::string ExtensionLabel(const std::string& fileName) {
@@ -330,39 +360,124 @@ namespace Tako {
   }
 
   void OpenScriptFile(std::string_view typeName) {
-    const std::wstring fileName = StringUtility::ConvertString(std::string(typeName)) + L".h";
-    std::error_code    ec;
-    for (const fs::directory_entry& item : fs::recursive_directory_iterator(kScriptRoot, ec)) {
-      if (item.path().filename() == fileName) {
-        OpenSourceFile(item.path());
-        return;
+    const fs::path path = ToAssetPath("Script", typeName);
+    if (path.empty()) {
+      LogToConsole(std::format("Script file not found: {}/**/{}.h", kScriptRoot, typeName), LogType::Warning);
+      return;
+    }
+    OpenSourceFile(path);
+  }
+
+  std::optional<std::string> ToAssetValue(std::string_view kindName, const std::filesystem::path& path) {
+    const AssetKind* kind = FindAssetKind(kindName);
+    if (!kind) {
+      return std::nullopt;
+    }
+    const std::string      generic   = ToUtf8(path);
+    const std::string_view extension = MatchExtension(*kind, generic);
+    if (extension.empty()) {
+      return std::nullopt;
+    }
+    // スクリプトはフォルダに関係なく、ファイル名と同じ名前の型
+    if (kind->name == "Script") {
+      const TypeInfo* type = FindScriptType(path);
+      return type ? std::optional<std::string>(type->name) : std::nullopt;
+    }
+    for (const AssetRoot& root : kind->roots) {
+      if (!generic.starts_with(root.dir)) {
+        continue;
+      }
+      std::string value = root.keepDir ? generic : generic.substr(root.dir.size());
+      if (!kind->keepExtension) {
+        value.resize(value.size() - extension.size());
+      }
+      return value;
+    }
+    return std::nullopt;
+  }
+
+  std::filesystem::path ToAssetPath(std::string_view kindName, std::string_view value) {
+    const AssetKind* kind = FindAssetKind(kindName);
+    if (!kind || value.empty()) {
+      return {};
+    }
+    std::error_code ec;
+    if (kind->name == "Script") {
+      const std::wstring fileName = StringUtility::ConvertString(std::string(value)) + L".h";
+      for (const fs::directory_entry& item : fs::recursive_directory_iterator(kScriptRoot, ec)) {
+        if (item.path().filename() == fileName) {
+          return item.path();
+        }
+      }
+      return {};
+    }
+    for (const AssetRoot& root : kind->roots) {
+      if (root.keepDir) {
+        if (value.starts_with(root.dir) && fs::exists(FromUtf8(std::string(value)), ec)) {
+          return FromUtf8(std::string(value));
+        }
+        continue;
+      }
+      const std::string base = std::string(root.dir) + std::string(value);
+      if (kind->keepExtension) {
+        if (fs::exists(FromUtf8(base), ec)) {
+          return FromUtf8(base);
+        }
+        continue;
+      }
+      for (std::string_view extension : kind->extensions) {
+        if (const fs::path candidate = FromUtf8(base + std::string(extension)); fs::exists(candidate, ec)) {
+          return candidate;
+        }
       }
     }
-    LogToConsole(std::format("Script file not found: {}/**/{}.h", kScriptRoot, typeName), LogType::Warning);
+    return {};
   }
 
-  std::optional<std::string> AcceptScriptDrop() {
+  std::vector<std::string> ListAssets(std::string_view kindName) {
+    std::vector<std::string> values;
+    const AssetKind*         kind = FindAssetKind(kindName);
+    if (!kind) {
+      return values;
+    }
+    for (const AssetRoot& root : kind->roots) {
+      std::error_code ec;
+      for (fs::recursive_directory_iterator it(FromUtf8(std::string(root.dir)), ec), end; !ec && it != end; it.increment(ec)) {
+        if (!it->is_regular_file(ec)) {
+          continue;
+        }
+        if (std::optional<std::string> value = ToAssetValue(kindName, it->path())) {
+          values.push_back(std::move(*value));
+        }
+      }
+    }
+    // スクリプトは .h と .cpp が同じ値になる
+    std::ranges::sort(values, LessIgnoreCase);
+    const auto [first, last] = std::ranges::unique(values);
+    values.erase(first, last);
+    return values;
+  }
+
+  std::optional<std::string> AcceptAssetPayload(std::string_view kind) {
+    // 先に種類を確かめ、違う種類では Accept を呼ばない（呼ぶとドロップ先が光る）
+    const ImGuiPayload* dragging = ImGui::GetDragDropPayload();
+    if (!dragging || !dragging->IsDataType(AssetBrowser::kAssetPayload)) {
+      return std::nullopt;
+    }
+    std::optional<std::string> value = ToAssetValue(kind, FromUtf8(static_cast<const char*>(dragging->Data)));
+    if (!value || !ImGui::AcceptDragDropPayload(AssetBrowser::kAssetPayload)) {
+      return std::nullopt;
+    }
+    return value;
+  }
+
+  std::optional<std::string> AcceptAssetDrop(std::string_view kind) {
     if (!ImGui::BeginDragDropTarget()) {
       return std::nullopt;
     }
-    std::optional<std::string> typeName;
-    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(AssetBrowser::kScriptPayload)) {
-      typeName = static_cast<const char*>(payload->Data);
-    }
+    std::optional<std::string> value = AcceptAssetPayload(kind);
     ImGui::EndDragDropTarget();
-    return typeName;
-  }
-
-  std::optional<std::string> AcceptTextureDrop() {
-    if (!ImGui::BeginDragDropTarget()) {
-      return std::nullopt;
-    }
-    std::optional<std::string> key;
-    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(AssetBrowser::kTexturePayload)) {
-      key = static_cast<const char*>(payload->Data);
-    }
-    ImGui::EndDragDropTarget();
-    return key;
+    return value;
   }
 
   AssetBrowser::~AssetBrowser() {
@@ -524,7 +639,7 @@ namespace Tako {
     for (const fs::directory_entry& item : fs::directory_iterator(currentDir_, ec)) {
       const bool isDirectory = item.is_directory(ec);
       const bool isSelected  = std::ranges::binary_search(selected, item.path());
-      entries_.push_back({ item.path(), ToUtf8(item.path().filename()), isDirectory ? std::string() : ToTextureKey(item.path()), isDirectory, isSelected });
+      entries_.push_back({ item.path(), ToUtf8(item.path().filename()), isDirectory ? std::string() : ToAssetValue("Texture", item.path()).value_or(std::string()), isDirectory, isSelected });
     }
     std::ranges::sort(entries_, [](const Entry& a, const Entry& b) {
       if (a.isDirectory != b.isDirectory) {
@@ -724,16 +839,11 @@ namespace Tako {
         }
       }
     }
-    // テクスチャは UI Editor などへドラッグできる。ツールチップ（ウィンドウ）の End で直前のアイテムは Selectable に戻る
-    if (!entry.textureKey.empty() && ImGui::BeginDragDropSource()) {
-      ImGui::SetDragDropPayload(kTexturePayload, entry.textureKey.c_str(), entry.textureKey.size() + 1);
-      ImGui::TextUnformatted(entry.textureKey.c_str());
-      ImGui::EndDragDropSource();
-    }
-    // スクリプトは Inspector の Script 欄へドラッグできる
-    if (const TypeInfo* script = entry.isDirectory ? nullptr : FindScriptType(entry.path); script && ImGui::BeginDragDropSource()) {
-      ImGui::SetDragDropPayload(kScriptPayload, script->name, std::strlen(script->name) + 1);
-      ImGui::Text("Script: %s", script->name);
+    // ファイルはどれもドラッグでき、受け取る側が種類を見て選ぶ。ツールチップ（ウィンドウ）の End で直前のアイテムは Selectable に戻る
+    if (!entry.isDirectory && ImGui::BeginDragDropSource()) {
+      const std::string path = ToUtf8(entry.path);
+      ImGui::SetDragDropPayload(kAssetPayload, path.c_str(), path.size() + 1);
+      ImGui::TextUnformatted(entry.name.c_str());
       ImGui::EndDragDropSource();
     }
 

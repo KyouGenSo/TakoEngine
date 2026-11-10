@@ -231,7 +231,7 @@ namespace Tako {
         current["Textures"].value(slot, std::string()).copy(file.data(), file.size() - 1);
         // 打ち終えたときか、アセットウィンドウから落とされたときだけ読み込む（途中の名前で TextureManager を探さない）
         ImGui::InputTextWithHint(slot.c_str(), "white.png", file.data(), file.size());
-        const std::optional<std::string> dropped = AcceptTextureDrop();
+        const std::optional<std::string> dropped = AcceptAssetDrop("Texture");
         if (ImGui::IsItemDeactivatedAfterEdit() || dropped) {
           current["Textures"][slot] = dropped.value_or(file.data());
           applyCurrent();
@@ -285,7 +285,7 @@ namespace Tako {
         current["Textures"].value(slot, std::string()).copy(file.data(), file.size() - 1);
         // 空なら .shader.json の Textures のまま描く
         ImGui::InputTextWithHint(slot.c_str(), "(shader's texture)", file.data(), file.size());
-        const std::optional<std::string> dropped = AcceptTextureDrop();
+        const std::optional<std::string> dropped = AcceptAssetDrop("Texture");
         if (ImGui::IsItemDeactivatedAfterEdit() || dropped) {
           current["Textures"][slot] = dropped.value_or(file.data());
           applyCurrent();

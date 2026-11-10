@@ -111,7 +111,7 @@ namespace Tako {
     } else {
       // 一覧を開いている間は直前のアイテムが一覧の中のものになるので、閉じているときだけ受け付ける
       ImGui::SetItemTooltip("Drop a script from the Assets window (Script folder)");
-      if (std::optional<std::string> dropped = AcceptScriptDrop()) { selected = *dropped; }
+      if (std::optional<std::string> dropped = AcceptAssetDrop("Script")) { selected = *dropped; }
     }
     ImGui::SameLine();
     ImGui::BeginDisabled(script_.empty());

@@ -460,9 +460,9 @@ namespace Tako {
 
     // 直前のアイテム（ゲーム画像）へのテクスチャのドロップ。選択中がグループならその子、画像なら兄弟として置く
     if (ImGui::BeginDragDropTarget()) {
-      if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(AssetBrowser::kTexturePayload)) {
+      if (const std::optional<std::string> texture = AcceptAssetPayload("Texture")) {
         const UIElement* parent = selected ? (selected->texture.empty() ? selected : selected->parent) : nullptr;
-        Request(PendingOp::AddTexture, (parent && parent->parent) ? parent->name : std::string(), static_cast<const char*>(payload->Data));
+        Request(PendingOp::AddTexture, (parent && parent->parent) ? parent->name : std::string(), *texture);
         pending_.clientPos    = mapping.ToClient(ImGui::GetMousePos());
         pending_.hasClientPos = true;
       }
@@ -1242,8 +1242,8 @@ namespace Tako {
         pending_.dropPlace  = place;
       }
     }
-    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(AssetBrowser::kTexturePayload)) {
-      Request(PendingOp::AddTexture, name, static_cast<const char*>(payload->Data));
+    if (const std::optional<std::string> texture = AcceptAssetPayload("Texture")) {
+      Request(PendingOp::AddTexture, name, *texture);
     }
     ImGui::EndDragDropTarget();
   }
@@ -1301,8 +1301,8 @@ namespace Tako {
       ImGui::EndCombo();
     }
     if (ImGui::BeginDragDropTarget()) {
-      if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(AssetBrowser::kTexturePayload)) {
-        Request(PendingOp::SetTexture, element.name, static_cast<const char*>(payload->Data));
+      if (const std::optional<std::string> texture = AcceptAssetPayload("Texture")) {
+        Request(PendingOp::SetTexture, element.name, *texture);
       }
       ImGui::EndDragDropTarget();
     }
@@ -1545,8 +1545,8 @@ namespace Tako {
       ImGui::EndCombo();
     }
     if (ImGui::BeginDragDropTarget()) {
-      if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(AssetBrowser::kTexturePayload)) {
-        regionTexture = static_cast<const char*>(payload->Data);
+      if (const std::optional<std::string> texture = AcceptAssetPayload("Texture")) {
+        regionTexture = *texture;
       }
       ImGui::EndDragDropTarget();
     }

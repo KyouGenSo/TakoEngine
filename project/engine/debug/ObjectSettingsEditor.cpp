@@ -154,7 +154,7 @@ namespace Tako {
           value.copy(buffer.data(), buffer.size() - 1);
           // 打ち終えたときか、アセットウィンドウから落とされたときだけ読み込む（途中の名前で TextureManager を探さない）
           ImGui::InputTextWithHint(label, "(inherited)", buffer.data(), buffer.size());
-          const std::optional<std::string> dropped = AcceptTextureDrop();
+          const std::optional<std::string> dropped = AcceptAssetDrop("Texture");
           if (ImGui::IsItemDeactivatedAfterEdit() || dropped) {
             value = dropped.value_or(buffer.data());
             return true;
