@@ -23,6 +23,8 @@ namespace Tako {
     ScriptComponent();
     ~ScriptComponent() override;
 
+    void Awake() override;
+
     void BeginPlay() override;
 
     void Tick(float deltaTime) override;

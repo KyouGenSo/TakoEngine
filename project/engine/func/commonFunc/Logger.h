@@ -23,6 +23,11 @@ namespace Tako {
     /// <param name="format">フォーマット文字列</param>
     /// <param name="...">可変長引数</param>
     void Log(const char* format, ...);
+
+    /// <summary>
+    /// Log の内容をもう 1 か所（エディタの Console）にも渡す。nullptr で外す
+    /// </summary>
+    void SetSink(void (*sink)(const std::string& message));
   }
 
 } // namespace Tako

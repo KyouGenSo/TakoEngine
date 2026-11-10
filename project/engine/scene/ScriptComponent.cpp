@@ -15,6 +15,11 @@ namespace Tako {
 
   ScriptComponent::~ScriptComponent() = default;
 
+  void ScriptComponent::Awake()
+  {
+    if (instance_) { instance_->Awake(); }
+  }
+
   void ScriptComponent::BeginPlay()
   {
     hasBegunPlay_ = true;
@@ -103,7 +108,10 @@ namespace Tako {
     instance_->owner_ = GetOwner();
     instance_->name_  = GetName();
     ReadProperties(*instance_, values);
-    if (hasBegunPlay_) { instance_->BeginPlay(); }
+    if (hasBegunPlay_) {
+      instance_->Awake();
+      instance_->BeginPlay();
+    }
   }
 
 #ifdef _DEBUG

@@ -13,10 +13,10 @@ namespace Tako {
     RemoveEmitter();
   }
 
-  void ParticleSystemComponent::BeginPlay()
+  void ParticleSystemComponent::Awake()
   {
     isPlaying_ = true;
-    // 他のスクリプトが BeginPlay から名前で引けるよう、ここで作っておく
+    // 他のスクリプトが BeginPlay から名前で引いて操作できるよう、BeginPlay より前に作って初期の状態にしておく
     EnsureLoaded();
     SetActive(playOnStart_);
   }

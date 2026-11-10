@@ -22,7 +22,7 @@ namespace Tako {
   public: //メンバー関数
     ~ParticleSystemComponent() override;
 
-    void BeginPlay() override;
+    void Awake() override;
 
     void EndPlay() override;
 

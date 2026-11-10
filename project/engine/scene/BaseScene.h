@@ -64,6 +64,11 @@ namespace Tako {
     void BeginPlay();
 
     /// <summary>
+    /// actors の全コンポーネントの Awake を呼んでから、BeginPlay を呼ぶ（どちらも TCLASS(Order) の順）。Play 中に Actor を作り直したときにも使う
+    /// </summary>
+    void BeginPlayActors(const std::vector<Actor*>& actors);
+
+    /// <summary>
     /// Stop で作り直した後、手書きの物の行列を作るためにフックの Update を 1 回だけ呼ぶ
     /// </summary>
     void UpdateHooksOnce() { Update(); }

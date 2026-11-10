@@ -21,6 +21,9 @@ namespace Tako {
     raw->name_  = MakeUniqueName(std::move(name), *raw);
     raw->owner_ = this;
     components_.push_back(std::move(component));
+    if (hasAwoken_) {
+      raw->Awake();
+    }
     if (hasBegunPlay_) {
       raw->BeginPlay();
     }
@@ -38,35 +41,6 @@ namespace Tako {
   {
     if (scene_) {
       scene_->Destroy(this);
-    }
-  }
-
-  void Actor::BeginPlay()
-  {
-    hasBegunPlay_ = true;
-    // BeginPlay の中で足されたものは AddComponent が BeginPlay を呼ぶので、最初にあった分だけ回す
-    const size_t count = components_.size();
-    for (size_t i = 0; i < count; ++i) {
-      components_[i]->BeginPlay();
-    }
-  }
-
-  void Actor::Tick(float deltaTime, bool isPaused)
-  {
-    // Tick の中で足されても要素の参照が壊れないよう添字で回す
-    for (size_t i = 0; i < components_.size(); ++i) {
-      if (!isPaused || components_[i]->TickWhilePaused()) {
-        components_[i]->Tick(deltaTime);
-      }
-    }
-  }
-
-  void Actor::LateTick(float deltaTime, bool isPaused)
-  {
-    for (size_t i = 0; i < components_.size(); ++i) {
-      if (!isPaused || components_[i]->TickWhilePaused()) {
-        components_[i]->LateTick(deltaTime);
-      }
     }
   }
 
@@ -104,6 +78,7 @@ namespace Tako {
       component->EndPlay();
     }
     hasBegunPlay_ = false;
+    hasAwoken_    = false;
   }
 
   void Actor::Draw()
@@ -153,7 +128,7 @@ namespace Tako {
 
     auto it = json.find("components");
     if (it == json.end() || !it->is_object()) {
-      if (wasPlaying) { BeginPlay(); }
+      if (wasPlaying) { scene_->BeginPlayActors({ this }); }
       return;
     }
     // nlohmann のオブジェクトはキーの順に並ぶので、保存した順に並べ直してから作る
@@ -175,7 +150,7 @@ namespace Tako {
         ReadProperties(*component, *properties);
       }
     }
-    if (wasPlaying) { BeginPlay(); }
+    if (wasPlaying) { scene_->BeginPlayActors({ this }); }
   }
 
   Matrix4x4 Actor::GetWorldMatrix() const
@@ -217,6 +192,12 @@ namespace Tako {
   Actor* Actor::Resolve(const ActorRef& ref) const
   {
     return scene_ && ref.id != 0 ? scene_->FindActor(ref.id) : nullptr;
+  }
+
+  bool Actor::Has(const TypeInfo& type) const
+  {
+    if (FindScript(type)) { return true; }
+    return std::ranges::any_of(components_, [&type](const std::unique_ptr<Component>& component) { return component->IsA(type); });
   }
 
   Script* Actor::FindScript(const TypeInfo& type) const

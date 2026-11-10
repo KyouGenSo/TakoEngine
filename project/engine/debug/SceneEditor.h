@@ -121,7 +121,14 @@ namespace Tako {
 
     void DrawComponent(Actor& actor, Component& component);
 
+    /// <summary>
+    /// TCLASS(Requires = ...) の相手が同じ Actor に無ければ、警告と Add ボタンを出す。スクリプトは中身の型で見る
+    /// </summary>
+    void DrawRequirement(Actor& actor, Component& component);
+
     void DrawAddComponent(Actor& actor);
+
+    void RequestAddComponent(uint64_t actor, const std::string& typeName, const std::string& name);
 
     std::string SerializeScene() const;
 

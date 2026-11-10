@@ -42,7 +42,7 @@ namespace Tako {
     }
 
     /// <summary>
-    /// Play 中なら BeginPlay も呼ぶ
+    /// Play 中なら Awake と BeginPlay も呼ぶ
     /// </summary>
     Component* AddComponent(std::unique_ptr<Component> component, std::string name);
 
@@ -56,17 +56,10 @@ namespace Tako {
     /// </summary>
     void Destroy();
 
-    void BeginPlay();
-
-    /// <param name="isPaused">true なら TickWhilePaused のコンポーネントだけ呼ぶ</param>
-    void Tick(float deltaTime, bool isPaused = false);
-
-    void EndPlay();
-
     /// <summary>
-    /// 全 Actor の Tick の後に呼ばれる
+    /// コンポーネントの EndPlay を呼ぶ。Awake / BeginPlay / Tick / LateTick は、シーンが全 Actor のコンポーネントを TCLASS(Order) の順に並べて呼ぶ
     /// </summary>
-    void LateTick(float deltaTime, bool isPaused = false);
+    void EndPlay();
 
     void Draw();
 
@@ -162,6 +155,11 @@ namespace Tako {
     Component* FindComponent(const std::string& name) const;
 
     /// <summary>
+    /// type か type の派生の、コンポーネントかスクリプトを持っていれば true
+    /// </summary>
+    bool Has(const TypeInfo& type) const;
+
+    /// <summary>
     /// ScriptComponent に入っている T か T の派生のスクリプト。無ければ nullptr
     /// </summary>
     template<class T>
@@ -201,6 +199,7 @@ namespace Tako {
     BaseScene*                              scene_          = nullptr;
     std::vector<std::unique_ptr<Component>> components_;
     std::vector<Component*>                 pendingRemoves_;
+    bool                                    hasAwoken_      = false;
     bool                                    hasBegunPlay_   = false;
   };
 

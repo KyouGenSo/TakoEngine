@@ -303,6 +303,11 @@ namespace Tako {
     void DrawExitConfirmation();
 
     /// <summary>
+    /// Console の一覧にだけ足す（VS の出力には出さない）
+    /// </summary>
+    void PushLog(const std::string& message, LogType type);
+
+    /// <summary>
     /// 現在のタイムスタンプを生成
     /// </summary>
     /// <returns>タイムスタンプ文字列</returns>

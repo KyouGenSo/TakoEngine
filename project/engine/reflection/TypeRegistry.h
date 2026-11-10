@@ -23,6 +23,8 @@ namespace Tako {
     const char*     displayName = "";  ///< TCLASS(DisplayName = "...")。エディタの一覧に出す名前。空なら name を使う
     const char*     category    = "";  ///< TCLASS(Category = "...")。エディタの一覧の分類
     uint32_t        color       = 0;   ///< TCLASS(Color = 0xRRGGBB)。エディタで見分ける色。0 は指定なし
+    const char*     required    = "";  ///< TCLASS(Requires = "型名")。同じ Actor に要るコンポーネントの型名
+    int32_t         order       = 0;   ///< TCLASS(Order = n)。BeginPlay / Tick / LateTick を呼ぶ順（小さいほど先）
 
     /// <summary>
     /// other と同じ型かその派生なら true

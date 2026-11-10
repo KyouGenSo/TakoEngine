@@ -7,6 +7,7 @@
 #include "SceneEditor.h"
 #include "SceneManager.h"
 #include "TObject.h"
+#include "TypeRegistry.h"
 
 #include "imgui.h"
 
@@ -47,6 +48,17 @@ namespace Tako {
       float hi = 0.0f;
       GetRange(meta, lo, hi);
       return ImGui::DragScalarN(label, ImGuiDataType_Float, v, count, SpeedOr(meta, 0.1f), &lo, &hi, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+    }
+
+    /// <summary>
+    /// Required の欄が空なら、枠を赤くする
+    /// </summary>
+    /// <returns>true なら、欄を描いた後に PopStyleColor を呼ぶ</returns>
+    bool PushRequiredColor(const PropertyMeta& meta, bool isEmpty)
+    {
+      if (!isEmpty || (meta.flags & kPropRequired) == 0) { return false; }
+      ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.55f, 0.15f, 0.15f, 1.0f));
+      return true;
     }
 
   } // namespace
@@ -218,14 +230,17 @@ namespace Tako {
   void ImGuiPropertyVisitor::Visit(const char* key, std::string& value, const PropertyMeta& meta)
   {
     if (!Begin(key, meta)) { return; }
+    const bool isMarked = PushRequiredColor(meta, value.empty());
+    bool       changed  = false;
     if (meta.asset[0] != '\0') {
-      End(meta, DrawAsset(value, meta));
-      return;
+      changed = DrawAsset(value, meta);
+    } else {
+      char buffer[256];
+      strncpy_s(buffer, value.c_str(), _TRUNCATE);
+      changed = ImGui::InputText(label_, buffer, sizeof(buffer));
+      if (changed) { value = buffer; }
     }
-    char buffer[256];
-    strncpy_s(buffer, value.c_str(), _TRUNCATE);
-    const bool changed = ImGui::InputText(label_, buffer, sizeof(buffer));
-    if (changed) { value = buffer; }
+    if (isMarked) { ImGui::PopStyleColor(); }
     End(meta, changed);
   }
 
@@ -287,6 +302,10 @@ namespace Tako {
     const Actor*     target = scene && value.id != 0 ? scene->FindActor(value.id) : nullptr;
     const std::string preview = target ? target->GetName() : value.id == 0 ? std::string("(none)") : std::format("Missing (id {})", value.id);
 
+    // 型名が見つからなければ絞らない
+    const TypeInfo* wanted   = meta.actorWith[0] != '\0' ? TypeRegistry::GetInstance()->Find(meta.actorWith) : nullptr;
+    const bool      isMarked = PushRequiredColor(meta, target == nullptr);
+
     ActorId selected = value.id;
     if (ImGui::BeginCombo(label_, preview.c_str(), ImGuiComboFlags_HeightLarge)) {
       if (ImGui::Selectable("(none)", value.id == 0)) {
@@ -294,6 +313,7 @@ namespace Tako {
       }
       if (scene) {
         for (const std::unique_ptr<Actor>& actor : scene->GetActors()) {
+          if (wanted && !actor->Has(*wanted)) { continue; }
           ImGui::PushID(static_cast<int>(actor->GetId()));
           if (ImGui::Selectable(actor->GetName().c_str(), actor->GetId() == value.id)) {
             selected = actor->GetId();
@@ -310,11 +330,16 @@ namespace Tako {
       }
       if (ImGui::BeginDragDropTarget()) {
         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(kActorPayload)) {
-          selected = *static_cast<const ActorId*>(payload->Data);
+          const ActorId dropped = *static_cast<const ActorId*>(payload->Data);
+          const Actor*  actor   = scene ? scene->FindActor(dropped) : nullptr;
+          if (!wanted || (actor && actor->Has(*wanted))) {
+            selected = dropped;
+          }
         }
         ImGui::EndDragDropTarget();
       }
     }
+    if (isMarked) { ImGui::PopStyleColor(); }
     const bool changed = selected != value.id;
     value.id = selected;
     End(meta, changed);

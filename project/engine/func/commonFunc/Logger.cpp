@@ -20,11 +20,21 @@ namespace Tako {
 
         return std::string(buffer.data());
       }
+
+      void (*sink)(const std::string& message) = nullptr;
     }
 
     void Log(const std::string& message)
     {
       OutputDebugStringA(message.c_str());
+      if (detail::sink) {
+        detail::sink(message);
+      }
+    }
+
+    void SetSink(void (*sink)(const std::string& message))
+    {
+      detail::sink = sink;
     }
 
     void Log(const char* format, ...)

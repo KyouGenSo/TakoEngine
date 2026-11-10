@@ -10,6 +10,8 @@ namespace Tako {
 //     DisplayName = "..." : エディタの一覧に出す名前
 //     Category = "..."    : エディタの一覧の分類（BT のノードなら "Composite" "Decorator" "Action" "Condition"）
 //     Color = 0xRRGGBB    : エディタで見分ける色
+//     Requires = "型名"   : 同じ Actor に要るコンポーネント。無ければ Inspector が警告と Add ボタンを出す
+//     Order = n           : コンポーネント / スクリプトの Awake・BeginPlay・Tick・LateTick を呼ぶ順（既定 0、小さいほど先。同じなら Hierarchy の並び）
 //   TSTRUCT()            : 値として持つ構造体の直前。継承できない。TCLASS / TSTRUCT の中にも書ける
 //   TENUM()              : enum の直前。Inspector と保存で列挙子の名前を使う
 //   TPROPERTY(指定子...) : メンバー変数の直前の行
@@ -24,6 +26,8 @@ namespace Tako {
 //     EnumAsInt           : enum を名前でなく数値で保存する
 //     Tooltip / DisplayName = "..." : 説明と表示名（表示名の既定はメンバー名を単語に分けたもの）
 //     Asset = "Model"     : std::string をアセットの欄（一覧から選ぶ・Assets からドロップ・Open）で編集する。種類は AssetBrowser.h の kind
+//     ActorWith = "型名"  : ActorRef の一覧を、その型（派生も含む）のコンポーネントかスクリプトを持つ Actor に絞る
+//     Required            : ActorRef / std::string が空の間、Inspector で欄を赤くする
 #define TCLASS(...)
 #define TSTRUCT(...)
 #define TENUM(...)

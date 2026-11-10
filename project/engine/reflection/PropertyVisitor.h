@@ -22,6 +22,7 @@ namespace Tako {
   inline constexpr uint32_t kPropColor     = 1u << 3;
   inline constexpr uint32_t kPropEnumAsInt = 1u << 4;
   inline constexpr uint32_t kPropAngle     = 1u << 5;
+  inline constexpr uint32_t kPropRequired  = 1u << 6;
 
   /// <summary>
   /// TENUM の列挙子 1 つ
@@ -73,6 +74,7 @@ namespace Tako {
     uint32_t              flags       = 0;
     const EnumInfo*       enumInfo    = nullptr;  ///< TENUM の enum だけ
     const char*           asset       = "";       ///< アセットの種類（AssetBrowser.h の kind）。空でなければ文字列をアセットの欄で編集する
+    const char*           actorWith   = "";       ///< ActorRef の一覧を、この型（派生も含む）のコンポーネントかスクリプトを持つ Actor に絞る
   };
 
   class PropertyVisitor;

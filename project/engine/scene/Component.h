@@ -18,12 +18,19 @@ namespace Tako {
     ~Component() override = default;
 
     /// <summary>
-    /// Play が始まったとき、または Play 中に足されたときに 1 回呼ばれる
+    /// BeginPlay の前に 1 回呼ばれる。同時にシーンへ入る全 Actor の Awake が済んでから、BeginPlay が始まる。
+    /// 他の BeginPlay から名前や参照で引かれる物は、ここで用意する
+    /// </summary>
+    virtual void Awake() {}
+
+    /// <summary>
+    /// Play が始まったとき、または Play 中に足されたときに 1 回呼ばれる。
+    /// 呼ぶ順は TCLASS(Order = n) の小さい順（同じなら Hierarchy の並び、同じ Actor の中ではコンポーネントの並び）。Awake / Tick / LateTick も同じ
     /// </summary>
     virtual void BeginPlay() {}
 
     /// <summary>
-    /// Play 中だけ毎フレーム呼ばれる
+    /// Play 中だけ毎フレーム呼ばれる。Tick の中で足されたコンポーネントは、次のフレームから呼ばれる
     /// </summary>
     virtual void Tick([[maybe_unused]] float deltaTime) {}
 

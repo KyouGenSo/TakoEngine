@@ -501,6 +501,7 @@ namespace Tako {
     bool isKept = true;
     const std::string header = component.GetName() + "  (" + component.GetType().name + ")";
     if (ImGui::CollapsingHeader(header.c_str(), &isKept, ImGuiTreeNodeFlags_DefaultOpen)) {
+      DrawRequirement(actor, component);
       if (DrawProperties(component)) {
         actor.GetScene()->MarkChanged();
       }
@@ -517,6 +518,47 @@ namespace Tako {
       });
     }
     ImGui::PopID();
+  }
+
+  void SceneEditor::DrawRequirement(Actor& actor, Component& component)
+  {
+    const TypeInfo* type = &component.GetType();
+    if (component.IsA<ScriptComponent>()) {
+      if (const Script* script = static_cast<ScriptComponent&>(component).GetScript()) {
+        type = &script->GetType();
+      }
+    }
+    for (; type; type = type->base) {
+      if (type->required[0] == '\0') {
+        continue;
+      }
+      const TypeInfo* required = TypeRegistry::GetInstance()->Find(type->required);
+      if (required && actor.Has(*required)) {
+        continue;
+      }
+      ImGui::TextColored(ImVec4(1.0f, 0.75f, 0.2f, 1.0f), required ? "Needs %s on this actor" : "Needs %s (unknown type)", type->required);
+      // スクリプトは Script コンポーネントの中に入れる物なので、ここからは足さない
+      if (required && required->create && !required->IsChildOf(Script::StaticType())) {
+        ImGui::SameLine();
+        ImGui::PushID(type->required);
+        if (ImGui::SmallButton("Add")) {
+          RequestAddComponent(actor.GetId(), type->required, "");
+        }
+        ImGui::PopID();
+      }
+    }
+  }
+
+  void SceneEditor::RequestAddComponent(uint64_t actor, const std::string& typeName, const std::string& name)
+  {
+    Request([actor, typeName, name](BaseScene& scene) {
+      Actor*                   owner  = scene.FindActor(actor);
+      std::unique_ptr<TObject> object = TypeRegistry::GetInstance()->Create(typeName);
+      if (owner && object) {
+        owner->AddComponent(std::unique_ptr<Component>(static_cast<Component*>(object.release())), name);
+        scene.MarkChanged();
+      }
+    });
   }
 
   void SceneEditor::DrawAddComponent(Actor& actor)
@@ -537,17 +579,7 @@ namespace Tako {
       if (!ImGui::MenuItem(label)) {
         continue;
       }
-      const ActorId     id       = actor.GetId();
-      const std::string typeName = type->name;
-      const std::string name     = isScript ? "Script" : "";
-      Request([id, typeName, name](BaseScene& scene) {
-        Actor*                   owner  = scene.FindActor(id);
-        std::unique_ptr<TObject> object = TypeRegistry::GetInstance()->Create(typeName);
-        if (owner && object) {
-          owner->AddComponent(std::unique_ptr<Component>(static_cast<Component*>(object.release())), name);
-          scene.MarkChanged();
-        }
-      });
+      RequestAddComponent(actor.GetId(), type->name, isScript ? "Script" : "");
     }
     ImGui::Separator();
     if (ImGui::MenuItem("New Script...")) {

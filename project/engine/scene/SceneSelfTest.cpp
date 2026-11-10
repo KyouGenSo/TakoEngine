@@ -7,11 +7,14 @@
 #include "Mat4x4Func.h"
 #include "MeshComponent.h"
 #include "Object3d.h"
+#include "TypeRegistry.h"
 
 #include <json.hpp>
 
 #include <cassert>
 #include <cmath>
+#include <string>
+#include <vector>
 
 namespace Tako {
 
@@ -50,6 +53,26 @@ namespace Tako {
 
     private: //メンバー変数
       bool ticksWhilePaused_;
+    };
+
+    /// <summary>
+    /// 呼ばれた順を共有の記録に書く。order は TCLASS(Order = n) の代わり
+    /// </summary>
+    class CallRecorder final : public Component {
+    public: //メンバー関数
+      CallRecorder(std::vector<std::string>& calls, std::string label, int32_t order)
+        : calls_(calls), label_(std::move(label)), type_{ "CallRecorder", &Component::StaticType(), nullptr, "", "", 0, "", order } {}
+
+      void Awake() override { calls_.push_back("awake " + label_); }
+      void BeginPlay() override { calls_.push_back("begin " + label_); }
+      void Tick([[maybe_unused]] float deltaTime) override { calls_.push_back("tick " + label_); }
+
+      const TypeInfo& GetType() const override { return type_; }
+
+    private: //メンバー変数
+      std::vector<std::string>& calls_;
+      std::string               label_;
+      TypeInfo                  type_;
     };
 
     bool IsNear(const Matrix4x4& a, const Matrix4x4& b)
@@ -148,6 +171,19 @@ namespace Tako {
     auto*  resolver = static_cast<ResolveOnBeginPlay*>(first->AddComponent(std::make_unique<ResolveOnBeginPlay>(ActorRef{ second->GetId() }), "Resolver"));
     playing.UpdateAlways();
     assert(resolver->resolved == second);
+
+    // 全部の Awake が済んでから BeginPlay。Order の小さい物が先で、同じなら並び順。Tick も同じ順
+    std::vector<std::string> calls;
+    Actor* late = playing.Spawn("Actor");
+    late->AddComponent(std::make_unique<CallRecorder>(calls, "late", 10), "Recorder");
+    Actor* mixed = playing.Spawn("Actor");
+    mixed->AddComponent(std::make_unique<CallRecorder>(calls, "normal", 0), "Recorder");
+    mixed->AddComponent(std::make_unique<CallRecorder>(calls, "early", -10), "Early");
+    playing.UpdateAlways();
+    assert((calls == std::vector<std::string>{ "awake early", "awake normal", "awake late", "begin early", "begin normal", "begin late" }));
+    calls.clear();
+    playing.UpdateFrame(0.016f);
+    assert((calls == std::vector<std::string>{ "tick early", "tick normal", "tick late" }));
   }
 
 } // namespace Tako

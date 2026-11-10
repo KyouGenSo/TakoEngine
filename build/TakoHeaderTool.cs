@@ -64,8 +64,8 @@ public class TakoHeaderTool : Task
     private readonly List<EnumDecl> enums_ = new List<EnumDecl>();
     private readonly List<string> reflectedHeaders_ = new List<string>();
 
-    private static readonly HashSet<string> kFlagSpecifiers = new HashSet<string> { "Edit", "Visible", "Transient", "Color", "EnumAsInt", "Angle" };
-    private static readonly HashSet<string> kStringSpecifiers = new HashSet<string> { "Category", "Tooltip", "DisplayName", "Asset" };
+    private static readonly HashSet<string> kFlagSpecifiers = new HashSet<string> { "Edit", "Visible", "Transient", "Color", "EnumAsInt", "Angle", "Required" };
+    private static readonly HashSet<string> kStringSpecifiers = new HashSet<string> { "Category", "Tooltip", "DisplayName", "Asset", "ActorWith" };
     private static readonly HashSet<string> kNumberSpecifiers = new HashSet<string> { "ClampMin", "ClampMax", "Speed" };
 
     public override bool Execute()
@@ -394,11 +394,11 @@ public class TakoHeaderTool : Task
             return;
         }
         string value = code.Substring(tokens[start + 2].Start, tokens[end - 1].End - tokens[start + 2].Start).Trim();
-        if (key == "DisplayName" || key == "Category")
+        if (key == "DisplayName" || key == "Category" || key == "Requires")
         {
             if (!value.StartsWith("\"")) Error(path, line, key + " には文字列を書く（例: " + key + " = \"...\"）");
         }
-        else if (key != "Color")
+        else if (key != "Color" && key != "Order")
         {
             Error(path, line, "知らない TCLASS の指定子: " + key);
             return;
@@ -551,6 +551,10 @@ public class TakoHeaderTool : Task
         {
             Error(path, line, "Asset は std::string（か、その std::vector）にだけ付けられる");
         }
+        if (prop.Specifiers.Any(s => s.Key == "ActorWith") && ElementType(prop.TypeText) != "ActorRef" && ElementType(prop.TypeText) != "Tako::ActorRef")
+        {
+            Error(path, line, "ActorWith は ActorRef（か、その std::vector）にだけ付けられる");
+        }
         return prop;
     }
 
@@ -648,7 +652,7 @@ public class TakoHeaderTool : Task
             return found.Count > 0 ? found[found.Count - 1].Value : fallback;
         };
         sb.AppendLine("  static const ::Tako::TypeInfo type{ \"" + c.Name + "\", &" + c.Base + "::StaticType(), ::Tako::MakeTypeCreator<" + c.Name + ">(), "
-            + specifier("DisplayName", "\"\"") + ", " + specifier("Category", "\"\"") + ", " + specifier("Color", "0") + " };");
+            + specifier("DisplayName", "\"\"") + ", " + specifier("Category", "\"\"") + ", " + specifier("Color", "0") + ", " + specifier("Requires", "\"\"") + ", " + specifier("Order", "0") + " };");
         sb.AppendLine("  return type;");
         sb.AppendLine("}");
         sb.AppendLine();
@@ -716,6 +720,7 @@ public class TakoHeaderTool : Task
         string max = null;
         string speed = null;
         string asset = null;
+        string actorWith = null;
         var flags = new List<string>();
         foreach (KeyValuePair<string, string> s in p.Specifiers)
         {
@@ -728,6 +733,7 @@ public class TakoHeaderTool : Task
                 case "ClampMax": max = s.Value; break;
                 case "Speed": speed = s.Value; break;
                 case "Asset": asset = s.Value; break;
+                case "ActorWith": actorWith = s.Value; break;
                 default: flags.Add("::Tako::kProp" + s.Key); break;
             }
         }
@@ -755,6 +761,7 @@ public class TakoHeaderTool : Task
         if (flags.Count > 0) fields.Add(".flags = " + string.Join(" | ", flags));
         if (enumDecl != null) fields.Add(".enumInfo = &kEnumInfo_" + key);
         if (asset != null) fields.Add(".asset = " + asset);
+        if (actorWith != null) fields.Add(".actorWith = " + actorWith);
         sb.AppendLine("  v(\"" + key + "\", " + p.Member + ", { " + string.Join(", ", fields) + " });");
     }
 

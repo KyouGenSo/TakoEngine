@@ -10,6 +10,8 @@
 #include "PostEffectManager.h"
 #include "Prefab.h"
 #include "Renderer.h"
+#include "Script.h"
+#include "ScriptComponent.h"
 #include "ShadowRenderer.h"
 #include "TypeRegistry.h"
 
@@ -42,6 +44,35 @@ namespace Tako {
       renderer->GetLight()->ResetDirectionalLight();
       ShadowRenderer::GetInstance()->SetMaxShadowDistance(ShadowRenderer::kDefaultMaxShadowDistance);
       PostEffectManager::GetInstance()->ClearEffects();
+    }
+
+    /// <summary>
+    /// TCLASS(Order = n)。Script コンポーネントは、中のスクリプトの値
+    /// </summary>
+    int32_t OrderOf(const Component& component)
+    {
+      if (component.IsA<ScriptComponent>()) {
+        if (const Script* script = static_cast<const ScriptComponent&>(component).GetScript()) {
+          return script->GetType().order;
+        }
+      }
+      return component.GetType().order;
+    }
+
+    /// <summary>
+    /// actors のコンポーネントを、呼ぶ順に並べる。Order の小さい順で、同じ値なら Actor の並び、その中ではコンポーネントの並び
+    /// </summary>
+    template<class Actors>
+    std::vector<Component*> OrderedComponents(const Actors& actors)
+    {
+      std::vector<Component*> components;
+      for (const auto& actor : actors) {
+        for (const std::unique_ptr<Component>& component : actor->GetComponents()) {
+          components.push_back(component.get());
+        }
+      }
+      std::ranges::stable_sort(components, {}, [](const Component* component) { return OrderOf(*component); });
+      return components;
     }
 
   } // namespace
@@ -81,11 +112,18 @@ namespace Tako {
   {
     // Tick の中でポーズが切り替わっても、このフレームの Tick と LateTick は同じ扱いにする
     const bool isPaused = isPaused_;
-    for (size_t i = 0; i < actors_.size(); ++i) {
-      actors_[i]->Tick(deltaTime, isPaused);
+    // 外すのも消すのも次のフレームの頭なので、回している間にポインタは無効にならない
+    // ponytail: 毎フレーム並べ直す。重くなったら、Actor の出入りとスクリプトの差し替えのときだけ作り直す
+    const std::vector<Component*> components = OrderedComponents(actors_);
+    for (Component* component : components) {
+      if (!isPaused || component->TickWhilePaused()) {
+        component->Tick(deltaTime);
+      }
     }
-    for (size_t i = 0; i < actors_.size(); ++i) {
-      actors_[i]->LateTick(deltaTime, isPaused);
+    for (Component* component : components) {
+      if (!isPaused || component->TickWhilePaused()) {
+        component->LateTick(deltaTime);
+      }
     }
     // 当たり判定は、ポーズに入ったフレームから止める
     if (!isPaused_) {
@@ -127,9 +165,25 @@ namespace Tako {
     RelinkHierarchy();
     // 全部をシーンに入れて親子を張ってから呼ぶ（BeginPlay の中で、同時に入った他の Actor を ActorRef や親子で引けるように）
     if (isPlaying_) {
-      for (Actor* actor : entered) {
-        actor->BeginPlay();
-      }
+      BeginPlayActors(entered);
+    }
+  }
+
+  void BaseScene::BeginPlayActors(const std::vector<Actor*>& actors)
+  {
+    // この中で足されたコンポーネントは、AddComponent が Awake と BeginPlay を呼ぶ
+    const std::vector<Component*> components = OrderedComponents(actors);
+    for (Actor* actor : actors) {
+      actor->hasAwoken_ = true;
+    }
+    for (Component* component : components) {
+      component->Awake();
+    }
+    for (Actor* actor : actors) {
+      actor->hasBegunPlay_ = true;
+    }
+    for (Component* component : components) {
+      component->BeginPlay();
     }
   }
 
@@ -156,9 +210,11 @@ namespace Tako {
   void BaseScene::BeginPlay()
   {
     isPlaying_ = true;
-    for (size_t i = 0; i < actors_.size(); ++i) {
-      actors_[i]->BeginPlay();
+    std::vector<Actor*> actors;
+    for (const std::unique_ptr<Actor>& actor : actors_) {
+      actors.push_back(actor.get());
     }
+    BeginPlayActors(actors);
   }
 
   void BaseScene::Update()

@@ -17,6 +17,7 @@
 
 #ifdef _DEBUG
 #include "DebugUIManager.h"
+#include <set>
 #endif
 
 namespace Tako {
@@ -262,7 +263,18 @@ namespace Tako {
   GPUParticleEmitter* EmitterManager::FindEmitter(const std::string& name)
   {
     auto it = emitterMap_.find(name);
-    return it != emitterMap_.end() ? it->second.get() : nullptr;
+    if (it != emitterMap_.end()) {
+      return it->second.get();
+    }
+#ifdef _DEBUG
+    // 毎フレーム呼ばれる Set 系から来るので、同じ名前は 1 回だけ出す
+    // ponytail: 起動中ずっと覚える。シーンごとに出し直すなら、メンバーにして RemoveAllEmitters で消す
+    static std::set<std::string> warned;
+    if (warned.insert(name).second) {
+      DebugUIManager::GetInstance()->AddLog("Emitter '" + name + "' was not found (set by name)", DebugUIManager::LogType::Warning);
+    }
+#endif
+    return nullptr;
   }
 
   void EmitterManager::SetEmitterPosition(const std::string& name, const Vector3& position)

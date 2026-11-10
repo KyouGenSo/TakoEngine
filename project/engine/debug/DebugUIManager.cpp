@@ -179,6 +179,14 @@ namespace Tako {
     // ×ボタン・Alt+F4 で未保存の変更があれば閉じずに確認する
     WinApp::GetInstance()->SetCloseHandler([this] { return ConfirmExit(); });
 
+    // Logger::Log（VS の出力だけだった物）も Console に出す。末尾の改行は落とす
+    Logger::SetSink([](const std::string& message) {
+      const size_t end = message.find_last_not_of("\r\n");
+      if (end != std::string::npos) {
+        GetInstance()->PushLog(message.substr(0, end + 1), LogType::Info);
+      }
+    });
+
     // 初期ログ
     AddLog("DebugUIManager Initialized", LogType::Info);
     AddLog("TakoEngine Ready", LogType::Info);
@@ -210,6 +218,7 @@ namespace Tako {
 
   void DebugUIManager::Finalize() {
     WinApp::GetInstance()->SetCloseHandler(nullptr);
+    Logger::SetSink(nullptr);
     ClearLogs();
     primitiveEditor_.Finalize();
     particleEditor_.Finalize();
@@ -907,12 +916,15 @@ namespace Tako {
   }
 
   void DebugUIManager::AddLog(const std::string& message, LogType type) {
+    OutputDebugStringA((message + "\n").c_str());
+    PushLog(message, type);
+  }
+
+  void DebugUIManager::PushLog(const std::string& message, LogType type) {
     LogEntry entry;
     entry.type = type;
     entry.message = message;
     entry.timestamp = GetCurrentTimestamp();
-
-    Logger::Log(message + "\n"); // 外部ロガーにも出力
 
     consoleLogs_.push_back(entry);
 
