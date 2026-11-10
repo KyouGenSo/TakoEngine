@@ -35,8 +35,7 @@ namespace Tako {
     /// <summary>
     /// Hierarchy に Actor の一覧と追加・削除のメニューを描く
     /// </summary>
-    /// <returns>Actor を選んだフレームは true（他の選択を外すため）</returns>
-    bool DrawHierarchy();
+    void DrawHierarchy();
 
     /// <summary>
     /// Inspector に選んだ Actor とコンポーネントを描く
@@ -111,8 +110,7 @@ namespace Tako {
     /// <summary>
     /// Hierarchy の 1 行と、その子の行。別の行をここへ落とすと子になる
     /// </summary>
-    /// <param name="isSelected">この行か子の行を選んだら true にする</param>
-    void DrawActorRow(Actor& actor, bool& isSelected);
+    void DrawActorRow(Actor& actor);
 
     /// <summary>
     /// child の親を parent にする（0 で外す）。Update で行う

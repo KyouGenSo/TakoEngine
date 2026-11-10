@@ -114,11 +114,11 @@ namespace Tako {
 
   } // namespace
 
-  bool SceneEditor::DrawHierarchy()
+  void SceneEditor::DrawHierarchy()
   {
     BaseScene* scene = GetScene();
     if (!scene) {
-      return false;
+      return;
     }
     SyncTracker(*scene);
     const bool editing = IsEditing();
@@ -156,10 +156,9 @@ namespace Tako {
     ImGui::SameLine();
     ImGui::TextDisabled("%s.scene.json%s", scene->GetSceneName().c_str(), tracker_.IsEdited() ? " *" : "");
 
-    bool isSelected = false;
     for (const std::unique_ptr<Actor>& actor : scene->GetActors()) {
       if (!actor->GetParent()) {
-        DrawActorRow(*actor, isSelected);
+        DrawActorRow(*actor);
       }
     }
     if (scene->GetActors().empty()) {
@@ -181,7 +180,6 @@ namespace Tako {
       tracker_.EndSection();
       ProcessShortcuts(Shortcuts(), *this);
     }
-    return isSelected;
   }
 
   void SceneEditor::DrawInspector()
@@ -383,7 +381,7 @@ namespace Tako {
     Request([typeOrPrefab](BaseScene& scene) { scene.Spawn(typeOrPrefab); });
   }
 
-  void SceneEditor::DrawActorRow(Actor& actor, bool& isSelected)
+  void SceneEditor::DrawActorRow(Actor& actor)
   {
     ImGui::PushID(std::to_string(actor.GetId()).c_str());
     const std::string  label = actor.GetPrefab().empty() ? actor.GetName() : actor.GetName() + "  [" + actor.GetPrefab() + "]";
@@ -396,8 +394,7 @@ namespace Tako {
     }
     const bool isOpen = ImGui::TreeNodeEx("##Row", flags, "%s", label.c_str());
     if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
-      selected_  = actor.GetId();
-      isSelected = true;
+      selected_ = actor.GetId();
     }
     if (ImGui::BeginDragDropSource()) {
       const ActorId id = actor.GetId();
@@ -406,8 +403,7 @@ namespace Tako {
       ImGui::EndDragDropSource();
     }
     if (ImGui::BeginPopupContextItem("ActorMenu")) {
-      selected_  = actor.GetId();
-      isSelected = true;
+      selected_ = actor.GetId();
       DrawActorMenu(actor);
       ImGui::EndPopup();
     }
@@ -422,7 +418,7 @@ namespace Tako {
     }
     if (isOpen) {
       for (Actor* child : actor.GetChildren()) {
-        DrawActorRow(*child, isSelected);
+        DrawActorRow(*child);
       }
       ImGui::TreePop();
     }

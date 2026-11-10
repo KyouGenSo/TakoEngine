@@ -81,14 +81,6 @@ namespace Tako {
       std::string timestamp;
     };
 
-    /// <summary>
-    /// ゲームオブジェクトデバッグ情報
-    /// </summary>
-    struct GameObjectDebugInfo {
-      std::string           name;           ///< オブジェクト名
-      std::function<void()> drawImGuiFunc;  ///< DrawImGui 関数
-    };
-
   private: //構造体
   private:
     static std::unique_ptr<DebugUIManager> instance_;  ///< シングルトン
@@ -187,29 +179,10 @@ namespace Tako {
     /// </summary>
     void ClearLogs();
 
-    /// <summary>
-    /// ゲームオブジェクトを登録
-    /// </summary>
-    /// <param name="name">オブジェクト名</param>
-    /// <param name="drawImGuiFunc">ImGui 描画関数</param>
-    void RegisterGameObject(const std::string& name, std::function<void()> drawImGuiFunc);
-
-    /// <summary>
-    /// ゲームオブジェクトの登録を解除
-    /// </summary>
-    /// <param name="name">オブジェクト名</param>
-    void UnregisterGameObject(const std::string& name);
-
-    /// <summary>
-    /// ゲームオブジェクトをクリア
-    /// </summary>
-    void ClearGameObjects();
-
     //============================================================
     //Setter
     //============================================================
     void SetWindowVisible(Window window, bool visible) { WindowFlag(window) = visible; }
-    void SetSceneName(const std::string& sceneName) { currentSceneName_ = sceneName; }
     void SetEndFlagPtr(bool* pEndFlag) { pEndFlag_ = pEndFlag; }
 
     //============================================================
@@ -227,8 +200,6 @@ namespace Tako {
     /// </summary>
     /// <returns>カーソルがゲーム描画領域上にある場合 true</returns>
     bool IsCursorOverGameView() const;
-
-    const std::string& GetSceneName() const { return currentSceneName_; }
 
   private: //非公開関数
     /// <summary>
@@ -354,15 +325,9 @@ namespace Tako {
     bool        isPreviewInputCaptured_ = false;    ///< エディタプレビュー/デバッグビューがホバー中/操作中か。true の間は次フレームのゲーム入力を遮断する
     const char* focusRequest_           = nullptr;  ///< Assets から開いた窓の名前。Draw の終わりに前に出す
 
-    //ゲームオブジェクト情報
-    std::vector<GameObjectDebugInfo> gameObjects_;
-    int                              selectedObjectIndex_ = -1;  ///< 選択されたオブジェクトのインデックス
-
     //パフォーマンス計測
     float fpsHistory_[100] = { 0 };
     int   fpsHistoryIndex_ = 0;
-
-    std::string currentSceneName_ = "Unknown";  ///< 現在のシーン名
 
     bool* pEndFlag_ = nullptr;  ///< アプリケーション終了フラグへのポインタ
 

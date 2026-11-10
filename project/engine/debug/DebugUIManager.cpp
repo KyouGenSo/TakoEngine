@@ -626,39 +626,7 @@ namespace Tako {
 
     ImGui::TextDisabled("Mode: %s", sceneManager->IsPlaying() ? "Play" : "Edit (game update stopped)");
 
-    if (sceneEditor_.DrawHierarchy()) {
-      selectedObjectIndex_ = -1;
-    }
-
-    ImGui::Separator();
-
-    // ゲームオブジェクト一覧（選択可能）
-    if (!gameObjects_.empty()) {
-      ImGui::Text("Game Objects:");
-      ImGui::Separator();
-
-      for (int i = 0; i < static_cast<int>(gameObjects_.size()); i++) {
-        ImGuiTreeNodeFlags nodeFlags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
-
-        // 選択されているオブジェクトはハイライト表示
-        if (selectedObjectIndex_ == i) {
-          nodeFlags |= ImGuiTreeNodeFlags_Selected;
-        }
-
-        // オブジェクト名を表示（クリック可能）
-        ImGui::TreeNodeEx(reinterpret_cast<void*>(static_cast<intptr_t>(i)),
-          nodeFlags, "%s", gameObjects_[i].name.c_str());
-
-        // クリックされたら選択
-        if (ImGui::IsItemClicked()) {
-          selectedObjectIndex_ = i;
-          sceneEditor_.ClearSelection();
-        }
-      }
-
-      ImGui::Spacing();
-      ImGui::Separator();
-    }
+    sceneEditor_.DrawHierarchy();
 
     ImGui::End();
   }
@@ -673,18 +641,6 @@ namespace Tako {
 
     if (sceneEditor_.HasSelection()) {
       sceneEditor_.DrawInspector();
-    }
-    // 選択されたゲームオブジェクトがある場合
-    else if (selectedObjectIndex_ >= 0 && selectedObjectIndex_ < static_cast<int>(gameObjects_.size())) {
-      // 選択されたオブジェクトの情報を表示
-      const auto& selectedObject = gameObjects_[selectedObjectIndex_];
-      ImGui::Text("Selected: %s", selectedObject.name.c_str());
-      ImGui::Separator();
-
-      // オブジェクトの DrawImGui 関数を呼び出す
-      if (selectedObject.drawImGuiFunc) {
-        selectedObject.drawImGuiFunc();
-      }
     }
     else {
       ImGui::Text("No object selected");
@@ -968,37 +924,6 @@ namespace Tako {
 
   void DebugUIManager::ClearLogs() {
     consoleLogs_.clear();
-  }
-
-  void DebugUIManager::RegisterGameObject(const std::string& name, std::function<void()> drawImGuiFunc) {
-    // 同じ名前のオブジェクトがあるか確認
-    for (auto& obj : gameObjects_) {
-      if (obj.name == name) {
-        // 既存のオブジェクトを更新
-        obj.drawImGuiFunc = drawImGuiFunc;
-        return;
-      }
-    }
-    // 新規登録
-    gameObjects_.push_back({ name, drawImGuiFunc });
-  }
-
-  void DebugUIManager::UnregisterGameObject(const std::string& name) {
-    gameObjects_.erase(
-      std::remove_if(gameObjects_.begin(), gameObjects_.end(),
-        [&name](const GameObjectDebugInfo& obj) { return obj.name == name; }),
-      gameObjects_.end()
-    );
-
-    // 選択インデックスの調整
-    if (selectedObjectIndex_ >= static_cast<int>(gameObjects_.size())) {
-      selectedObjectIndex_ = -1;
-    }
-  }
-
-  void DebugUIManager::ClearGameObjects() {
-    gameObjects_.clear();
-    selectedObjectIndex_ = -1;
   }
 
   std::string DebugUIManager::GetCurrentTimestamp() {
