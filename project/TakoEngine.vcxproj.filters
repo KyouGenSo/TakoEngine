@@ -129,6 +129,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="engine\debug\NewScript.cpp">
+      <Filter>debug</Filter>
+    </ClCompile>
     <ClCompile Include="engine\scene\SceneSelfTest.cpp">
       <Filter>scene</Filter>
     </ClCompile>
@@ -515,6 +518,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\debug\NewScript.h">
+      <Filter>debug</Filter>
+    </ClInclude>
     <ClInclude Include="engine\scene\SceneSelfTest.h">
       <Filter>scene</Filter>
     </ClInclude>

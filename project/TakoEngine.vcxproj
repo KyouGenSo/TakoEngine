@@ -121,6 +121,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="engine\debug\NewScript.cpp" />
     <ClCompile Include="engine\scene\SceneSelfTest.cpp" />
     <ClCompile Include="engine\scene\UILayoutComponent.cpp" />
     <ClCompile Include="engine\scene\AudioSourceComponent.cpp" />
@@ -293,6 +294,7 @@
     <ClCompile Include="engine\debug\MaterialEditor.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\debug\NewScript.h" />
     <ClInclude Include="engine\scene\SceneSelfTest.h" />
     <ClInclude Include="engine\scene\ActorRef.h" />
     <ClInclude Include="engine\scene\UILayoutComponent.h" />

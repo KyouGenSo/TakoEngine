@@ -11,6 +11,7 @@
 #include "ImGuiPropertyVisitor.h"
 #include "LightComponent.h"
 #include "Mat4x4Func.h"
+#include "NewScript.h"
 #include "Prefab.h"
 #include "SceneManager.h"
 #include "Script.h"
@@ -552,6 +553,11 @@ namespace Tako {
         }
       });
     }
+    ImGui::Separator();
+    if (ImGui::MenuItem("New Script...")) {
+      RequestNewScriptPopup("Script");
+    }
+    ImGui::SetItemTooltip("Create a C++ script file. It appears in the Script field after the game is rebuilt");
     ImGui::EndPopup();
   }
 

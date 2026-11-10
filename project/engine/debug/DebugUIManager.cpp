@@ -22,6 +22,7 @@
 #include "EmitterManager.h"
 #include "Audio.h"
 #include "BehaviorTreeEditor.h"
+#include "NewScript.h"
 #include "UnsavedChangesModal.h"
 
 #include <algorithm>
@@ -292,6 +293,7 @@ namespace Tako {
     }
 
     DrawExitConfirmation();
+    DrawNewScriptPopup();
 
     // 窓を初めて開いたフレームはまだ作られていないので、見つかるまで次のフレームでも試す
     if (focusRequest_ && ImGui::FindWindowByName(focusRequest_)) {

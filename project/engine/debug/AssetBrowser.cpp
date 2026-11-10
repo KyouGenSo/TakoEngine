@@ -6,6 +6,7 @@
 #include "WinApp.h"
 #include "EnginePaths.h"
 #include "StringUtility.h"
+#include "NewScript.h"
 #include "Script.h"
 #include "TypeRegistry.h"
 
@@ -1011,6 +1012,9 @@ namespace Tako {
 
     if (ImGui::MenuItem("New Folder", nullptr, false, !IsEngineCopy(currentDir_))) {
       CreateFolder(currentDir_);
+    }
+    if (IsSameOrAncestor(kScriptRoot, currentDir_) && ImGui::MenuItem("New Script...")) {
+      RequestNewScriptPopup(currentDir_.generic_string());
     }
     if (ImGui::MenuItem("Show in Explorer")) {
       OpenWithShell(currentDir_);
