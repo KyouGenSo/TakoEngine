@@ -21,15 +21,7 @@ namespace Tako {
 
   void MeshComponent::Draw()
   {
-    if (model_ != loadedModel_) {
-      // 無いファイルはモデル無しになる（記録は ModelManager が 1 回だけ出す）
-      if (model_.empty()) {
-        object_->SetModel(std::unique_ptr<Model>());
-      } else {
-        object_->SetModel(model_);
-      }
-      loadedModel_ = model_;
-    }
+    EnsureLoaded();
     if (overridesDirty_) {
       overrides_.ResolveMaterials();
       object_->SetOverrides(&overrides_);
@@ -42,6 +34,33 @@ namespace Tako {
     object_->SetParentMatrix(GetOwner()->GetWorldMatrix());
     object_->Update();
     object_->Draw();
+  }
+
+  void MeshComponent::SetGeneratedModel(std::unique_ptr<Model> model)
+  {
+    object_->SetModel(std::move(model));
+    // Model の欄（空）は読み込み済みの扱いにして、EnsureLoaded に消させない
+    loadedModel_ = model_;
+  }
+
+  Object3d* MeshComponent::GetObject3d()
+  {
+    EnsureLoaded();
+    return object_.get();
+  }
+
+  void MeshComponent::EnsureLoaded()
+  {
+    if (model_ == loadedModel_) {
+      return;
+    }
+    // 無いファイルはモデル無しになる（記録は ModelManager が 1 回だけ出す）
+    if (model_.empty()) {
+      object_->SetModel(std::unique_ptr<Model>());
+    } else {
+      object_->SetModel(model_);
+    }
+    loadedModel_ = model_;
   }
 
   void MeshComponent::PostLoad(const nlohmann::json& raw)

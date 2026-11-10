@@ -10,7 +10,7 @@ namespace Tako {
 
     Object3d* FindTarget(const Actor& owner)
     {
-      const MeshComponent* mesh = owner.GetComponent<MeshComponent>();
+      MeshComponent* mesh = owner.GetComponent<MeshComponent>();
       return mesh ? mesh->GetObject3d() : nullptr;
     }
 

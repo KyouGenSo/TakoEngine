@@ -8,6 +8,7 @@
 
 namespace Tako {
 
+  class Model;
   class Object3d;
 
   /// <summary>
@@ -49,6 +50,11 @@ namespace Tako {
     void SetVisible(bool visible) { visible_ = visible; }
 
     /// <summary>
+    /// ファイルではなく、コードで作ったモデル（PrimitiveBuilder の球など）を描く。Model の欄は空にしておく
+    /// </summary>
+    void SetGeneratedModel(std::unique_ptr<Model> model);
+
+    /// <summary>
     /// Actor からのずれ。揺らす演出など、Actor の位置を変えずに見た目だけ動かすのに使う
     /// </summary>
     void SetOffset(const Transform& offset) { offset_ = offset; }
@@ -56,11 +62,20 @@ namespace Tako {
     //=====================================
     //Getter
     //=====================================
-    Object3d* GetObject3d() const { return object_.get(); }
+    /// <summary>
+    /// 描画物。色を変える・Mesh エミッターの形にするなど、スクリプトから使う。まだ読んでいなければここでモデルを読むので、BeginPlay からも使える
+    /// </summary>
+    Object3d* GetObject3d();
 
     bool IsVisible() const { return visible_; }
 
     const Transform& GetOffset() const { return offset_; }
+
+  private: //非公開関数
+    /// <summary>
+    /// Model の欄が変わっていれば読み直す
+    /// </summary>
+    void EnsureLoaded();
 
   private: //メンバー変数
     TPROPERTY(Edit, Asset = "Model")
