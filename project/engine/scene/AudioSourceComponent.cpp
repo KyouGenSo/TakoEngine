@@ -1,11 +1,21 @@
 #include "AudioSourceComponent.h"
+#include "Actor.h"
 #include "Audio.h"
 
 namespace Tako {
 
   void AudioSourceComponent::BeginPlay()
   {
-    if (playOnStart_) {
+    if (playOnStart_ && GetOwner()->IsActiveInHierarchy()) {
+      Play();
+    }
+  }
+
+  void AudioSourceComponent::OnActiveChanged(bool active)
+  {
+    if (!active) {
+      Stop();
+    } else if (playOnStart_ && GetOwner()->HasBegunPlay()) {
       Play();
     }
   }

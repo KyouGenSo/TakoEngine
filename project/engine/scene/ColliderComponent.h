@@ -38,6 +38,8 @@ namespace Tako {
 
     void EndPlay() override;
 
+    void OnActiveChanged(bool active) override;
+
     void PostEditChange() override;
 
 #ifdef _DEBUG
@@ -59,6 +61,21 @@ namespace Tako {
     /// 当たり判定を一時的に止める・戻す（攻撃の間だけ当てるなど）
     /// </summary>
     void SetActive(bool active);
+
+    /// <summary>
+    /// 実行中に形を変える（球の半径）
+    /// </summary>
+    void SetRadius(float radius);
+
+    /// <summary>
+    /// 実行中に形を変える（Box の全長）
+    /// </summary>
+    void SetSize(const Vector3& size);
+
+    /// <summary>
+    /// Actor からのずれ
+    /// </summary>
+    void SetOffset(const Vector3& offset);
 
     //=====================================
     //Getter

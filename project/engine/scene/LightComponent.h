@@ -22,6 +22,11 @@ namespace Tako {
 
     void Draw() override;
 
+    /// <summary>
+    /// 平行光源は Draw を止めても最後の値が残るので、オフになったら強さを 0 にする
+    /// </summary>
+    void OnActiveChanged(bool active) override;
+
   private: //メンバー変数
     TPROPERTY(Edit)
     Type    type_           = Type::Directional;

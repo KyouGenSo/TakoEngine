@@ -10,6 +10,7 @@
 #include "DebugUIManager.h"
 #include "ImGuiPropertyVisitor.h"
 #include "LightComponent.h"
+#include "JsonPropertyVisitor.h"
 #include "Mat4x4Func.h"
 #include "NewScript.h"
 #include "Prefab.h"
@@ -23,8 +24,11 @@
 #include <ImGuizmo.h>
 #include <json.hpp>
 
+#include <algorithm>
+#include <cmath>
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <numbers>
 
 namespace Tako {
@@ -37,7 +41,8 @@ namespace Tako {
     }
 
     /// <summary>
-    /// id の Actor を、今の値のまま name のプレハブにする（同じプレハブの他の物は、差分を保ったまま新しいプレハブに乗り換える）
+    /// id の Actor と子孫を、今の値のまま name のプレハブにする（同じプレハブを置いた他の組は、差分を保ったまま新しい内容に乗り換える）。
+    /// 置いた組の途中の Actor から同じ名前で呼ばれたら（Apply）、組の根から書く
     /// </summary>
     void MakePrefab(BaseScene& scene, ActorId id, const std::string& name)
     {
@@ -45,14 +50,46 @@ namespace Tako {
       if (!actor || name.empty()) {
         return;
       }
+      if (actor->GetPrefab() == name) {
+        if (Actor* root = scene.FindActor(actor->GetPrefabRoot())) { actor = root; }
+      }
+      const ActorId        rootId = actor->GetId();
+      const nlohmann::json tree   = SaveActorTree(*actor);
+
+      // 同じプレハブから置いた Actor は今の番号を保ち（他の組の差分が同じ Actor に当たるように）、新しい Actor には続きの番号を振る
+      ActorIdMap nodes;
+      ActorId    nextNode = 1;
+      for (const nlohmann::json& entry : tree["actors"]) {
+        const ActorId entryId = entry.value("id", ActorId{ 0 });
+        if (entry.value("prefab", std::string{}) == name && entry.value("root", entryId) == rootId) {
+          nodes[entryId] = entry.value("node", ActorId{ 0 });
+          nextNode       = (std::max)(nextNode, nodes[entryId] + 1);
+        }
+      }
+      for (const nlohmann::json& entry : tree["actors"]) {
+        if (const ActorId entryId = entry.value("id", ActorId{ 0 }); !nodes.contains(entryId)) {
+          nodes[entryId] = nextNode++;
+        }
+      }
+
       // 書き換える前のプレハブとの差分で全体を取っておき、書いた後に読み直す
       nlohmann::json before = scene.Save();
       for (nlohmann::json& entry : before["actors"]) {
-        if (entry.value("id", ActorId{ 0 }) == id) {
-          entry = { { "id", id }, { "prefab", name } };
+        const ActorId entryId = entry.value("id", ActorId{ 0 });
+        if (auto node = nodes.find(entryId); node != nodes.end()) {
+          nlohmann::json placed = { { "id", entryId }, { "prefab", name }, { "node", node->second } };
+          if (entryId != rootId) {
+            placed["root"] = rootId;
+          } else if (const Actor* parent = actor->GetParent()) {
+            placed["overrides"] = nlohmann::json::array({ { { "op", "add" }, { "path", "/parent" }, { "value", parent->GetId() } } });
+          }
+          entry = std::move(placed);
+        } else if (entry.value("prefab", std::string{}) == name && entry.value("root", ActorId{ 0 }) == rootId) {
+          // 組の外へ出した Actor は、プレハブから消える。つながりを切って、今の値のまま残す
+          if (Actor* moved = scene.FindActor(entryId)) { entry = moved->Save(); }
         }
       }
-      if (!SavePrefab(name, *actor)) {
+      if (!SavePrefab(name, MakePrefabContent(tree, nodes))) {
         DebugUIManager::GetInstance()->AddLog("Failed to save prefab: " + GetPrefabPath(name), DebugUIManager::LogType::Error);
         return;
       }
@@ -61,19 +98,25 @@ namespace Tako {
     }
 
     /// <summary>
-    /// プレハブとの差分を、名前・Transform・親以外は捨てる
+    /// id の Actor が入っている組の、プレハブとの差分を捨てる。根の名前・Transform・親は残す
     /// </summary>
     void RevertToPrefab(BaseScene& scene, ActorId id)
     {
+      const Actor* actor = scene.FindActor(id);
+      if (!actor) {
+        return;
+      }
+      const ActorId  rootId = actor->GetPrefabRoot();
       nlohmann::json before = scene.Save();
       for (nlohmann::json& entry : before["actors"]) {
-        if (entry.value("id", ActorId{ 0 }) != id || !entry.contains("overrides")) {
+        const ActorId entryId = entry.value("id", ActorId{ 0 });
+        if (entry.value("root", entryId) != rootId || !entry.contains("overrides")) {
           continue;
         }
         nlohmann::json kept = nlohmann::json::array();
         for (const nlohmann::json& operation : entry["overrides"]) {
           const std::string path = operation.value("path", std::string{});
-          if (path.starts_with("/properties/name") || path.starts_with("/properties/transform") || path == "/parent") {
+          if (entryId == rootId && (path.starts_with("/properties/name") || path.starts_with("/properties/transform") || path == "/parent")) {
             kept.push_back(operation);
           }
         }
@@ -81,6 +124,46 @@ namespace Tako {
       }
       scene.Load(before);
     }
+
+    /// <summary>
+    /// id の Actor が入っている組の、プレハブとのつながりを切る（値はそのまま）
+    /// </summary>
+    void UnpackPrefab(BaseScene& scene, ActorId id)
+    {
+      const Actor* actor = scene.FindActor(id);
+      if (!actor || actor->GetPrefab().empty()) {
+        return;
+      }
+      const ActorId rootId = actor->GetPrefabRoot();
+      for (const std::unique_ptr<Actor>& other : scene.GetActors()) {
+        if (!other->GetPrefab().empty() && other->GetPrefabRoot() == rootId) {
+          other->SetPrefabLink({}, 0, 0);
+        }
+      }
+      scene.MarkChanged();
+    }
+
+    // + Add に出す定番（Actor の名前、付けるコンポーネント、その TPROPERTY）
+    struct ActorPreset {
+      const char* name;
+      const char* component;
+      const char* properties;
+    };
+    constexpr ActorPreset kActorPresets[] = {
+      { "Camera", "CameraComponent", "{}" },
+      { "Directional Light", "LightComponent", R"({"type":"Directional"})" },
+      { "Point Light", "LightComponent", R"({"type":"Point"})" },
+      { "Mesh", "MeshComponent", "{}" },
+      { "UI Layout", "UILayoutComponent", "{}" },
+      { "Particle System", "ParticleSystemComponent", "{}" },
+    };
+
+    // クリップボードの JSON が、このエディタの物かを見分けるキー
+    constexpr const char* kClipboardScene     = "takoScene";
+    constexpr const char* kClipboardComponent = "takoComponent";
+
+    // Ctrl を押している間のギズモの刻み（移動は長さ、回転は度、拡大は倍率）
+    constexpr float kGizmoSnaps[][3] = { { 0.5f, 0.5f, 0.5f }, { 15.0f, 15.0f, 15.0f }, { 0.1f, 0.1f, 0.1f } };
 
     /// <summary>
     /// カメラと平行光源だけのシーンファイルを書く（Unity の新しいシーンと同じ中身）
@@ -164,12 +247,10 @@ namespace Tako {
     if (scene->GetActors().empty()) {
       ImGui::TextDisabled("No actors (+ Add to create one)");
     }
-    // 一覧の下の空き：プレハブを落とすと生成、Actor を落とすと親を外す
+    // 一覧の下の空き：プレハブかモデルを落とすと生成、Actor を落とすと親を外す
     ImGui::Dummy(ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetTextLineHeight() * 2.0f));
     if (ImGui::BeginDragDropTarget()) {
-      if (std::optional<std::string> prefab = AcceptAssetPayload("Prefab")) {
-        RequestSpawn(*prefab);
-      }
+      AcceptSpawnDrops();
       if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(kActorPayload)) {
         RequestParent(*static_cast<const ActorId*>(payload->Data), 0);
       }
@@ -254,8 +335,9 @@ namespace Tako {
     ImGuizmo::SetRect(imageMin.x, imageMin.y, imageMax.x - imageMin.x, imageMax.y - imageMin.y);
     // 拡大は軸に沿ってしか意味が無いので、いつもローカル
     const ImGuizmo::MODE mode = isGizmoLocal_ || gizmoOperation_ == 2 ? ImGuizmo::LOCAL : ImGuizmo::WORLD;
-    Matrix4x4 world = actor->GetWorldMatrix();
-    if (ImGuizmo::Manipulate(&camera.GetViewMatrix().m[0][0], &camera.GetProjectionMatrix().m[0][0], kOperations[gizmoOperation_], mode, &world.m[0][0])) {
+    Matrix4x4    world = actor->GetWorldMatrix();
+    const float* snap  = ImGui::GetIO().KeyCtrl ? kGizmoSnaps[gizmoOperation_] : nullptr;
+    if (ImGuizmo::Manipulate(&camera.GetViewMatrix().m[0][0], &camera.GetProjectionMatrix().m[0][0], kOperations[gizmoOperation_], mode, &world.m[0][0], nullptr, snap)) {
       const Actor*    parent = actor->GetParent();
       const Matrix4x4 local  = parent ? world * Mat4x4::Inverse(parent->GetWorldMatrix()) : world;
       Transform&      transform = actor->GetTransform();
@@ -267,6 +349,51 @@ namespace Tako {
       tracker_.EndSection();
     }
     return ImGuizmo::IsOver() || ImGuizmo::IsUsing();
+  }
+
+  void SceneEditor::PickActor(const Camera& camera, const ImVec2& imageMin, const ImVec2& imageMax)
+  {
+    BaseScene* scene = GetScene();
+    if (!scene) {
+      return;
+    }
+    // ponytail: 原点の近く（見かけの大きさに合わせた円）で選ぶ。大きい物を面で選べるようにするなら、モデルの箱とレイで判定する
+    constexpr float kMinRadius = 12.0f;
+    constexpr float kMaxRadius = 80.0f;
+    const Matrix4x4 viewProjection = camera.GetViewMatrix() * camera.GetProjectionMatrix();
+    const ImVec2    mouse          = ImGui::GetMousePos();
+    const float     width          = imageMax.x - imageMin.x;
+    const float     height         = imageMax.y - imageMin.y;
+    ActorId         picked         = 0;
+    float           pickedDepth    = (std::numeric_limits<float>::max)();
+    for (const std::unique_ptr<Actor>& actor : scene->GetActors()) {
+      const Transform world = actor->GetWorldTransform();
+      const Vector3&  p     = world.translate;
+      const auto&     m     = viewProjection.m;
+      const float     depth = p.x * m[0][3] + p.y * m[1][3] + p.z * m[2][3] + m[3][3];
+      if (depth <= 0.0f || depth >= pickedDepth) {
+        continue;
+      }
+      const float x      = imageMin.x + ((p.x * m[0][0] + p.y * m[1][0] + p.z * m[2][0] + m[3][0]) / depth * 0.5f + 0.5f) * width;
+      const float y      = imageMin.y + (0.5f - (p.x * m[0][1] + p.y * m[1][1] + p.z * m[2][1] + m[3][1]) / depth * 0.5f) * height;
+      const float size   = (std::max)({ std::abs(world.scale.x), std::abs(world.scale.y), std::abs(world.scale.z) });
+      const float radius = std::clamp(size * 0.5f * camera.GetProjectionMatrix().m[1][1] / depth * height * 0.5f, kMinRadius, kMaxRadius);
+      if ((x - mouse.x) * (x - mouse.x) + (y - mouse.y) * (y - mouse.y) <= radius * radius) {
+        picked      = actor->GetId();
+        pickedDepth = depth;
+      }
+    }
+    selected_ = picked;
+  }
+
+  bool SceneEditor::GetSelectedPosition(Vector3& position) const
+  {
+    const Actor* actor = GetSelected();
+    if (!actor) {
+      return false;
+    }
+    position = actor->GetWorldPosition();
+    return true;
   }
 
   void SceneEditor::Update()
@@ -297,6 +424,12 @@ namespace Tako {
           const ActorId id = editor.selected_;
           editor.Request([id](BaseScene& scene) { scene.Destroy(scene.FindActor(id)); });
         } },
+      { ImGuiMod_Ctrl | ImGuiKey_D, ImGuiInputFlags_None, "Duplicate the selected actor and its children", [](SceneEditor& editor) { editor.RequestDuplicate(editor.selected_); } },
+      { ImGuiMod_Ctrl | ImGuiKey_C, ImGuiInputFlags_None, "Copy the selected actor and its children", [](SceneEditor& editor) { editor.CopySelection(); } },
+      { ImGuiMod_Ctrl | ImGuiKey_V, ImGuiInputFlags_None, "Paste the copied actors (also into another scene)", [](SceneEditor& editor) { editor.PasteClipboard(); } },
+      { ImGuiKey_None, ImGuiInputFlags_None, "Debug Viewport: select the actor near the cursor (click near its origin)", nullptr, "LMB" },
+      { ImGuiKey_F, ImGuiInputFlags_None, "Debug Viewport: move the camera to the selected actor", nullptr },
+      { ImGuiKey_None, ImGuiInputFlags_None, "Debug Viewport: snap the gizmo (move 0.5, rotate 15 deg, scale 0.1)", nullptr, "Ctrl + drag" },
     };
     return kShortcuts;
   }
@@ -342,6 +475,11 @@ namespace Tako {
         RequestSpawn(type->name);
       }
     }
+    for (const ActorPreset& preset : kActorPresets) {
+      if (ImGui::MenuItem(preset.name)) {
+        RequestSpawnWith(preset.name, preset.component, preset.properties);
+      }
+    }
     const std::vector<std::string> prefabs = GetPrefabNames();
     if (!prefabs.empty()) {
       ImGui::SeparatorText("Prefabs");
@@ -381,10 +519,73 @@ namespace Tako {
     Request([typeOrPrefab](BaseScene& scene) { scene.Spawn(typeOrPrefab); });
   }
 
+  void SceneEditor::RequestSpawnWith(const std::string& name, const std::string& componentType, const std::string& properties)
+  {
+    Request([name, componentType, properties](BaseScene& scene) {
+      Actor*                   actor  = scene.Spawn("Actor");
+      std::unique_ptr<TObject> object = TypeRegistry::GetInstance()->Create(componentType);
+      if (!actor || !object || !object->IsA<Component>()) {
+        return;
+      }
+      actor->SetName(name);
+      Component* component = actor->AddComponent(std::unique_ptr<Component>(static_cast<Component*>(object.release())), "");
+      ReadProperties(*component, nlohmann::json::parse(properties));
+    });
+  }
+
+  void SceneEditor::AcceptSpawnDrops()
+  {
+    if (std::optional<std::string> prefab = AcceptAssetPayload("Prefab")) {
+      RequestSpawn(*prefab);
+    }
+    if (std::optional<std::string> model = AcceptAssetPayload("Model")) {
+      RequestSpawnWith(std::filesystem::path(*model).stem().string(), "MeshComponent", nlohmann::json{ { "model", *model } }.dump());
+    }
+  }
+
+  void SceneEditor::RequestDuplicate(uint64_t actor)
+  {
+    Request([actor](BaseScene& scene) {
+      Actor* source = scene.FindActor(actor);
+      if (!source) { return; }
+      if (Actor* copy = scene.SpawnTree(SaveActorTree(*source), true)) {
+        copy->SetName(source->GetName() + " Copy");
+      }
+    });
+  }
+
+  void SceneEditor::CopySelection()
+  {
+    Actor*     actor = GetSelected();
+    BaseScene* scene = GetScene();
+    if (!actor || !scene) {
+      return;
+    }
+    nlohmann::json tree   = SaveActorTree(*actor);
+    tree[kClipboardScene] = scene->GetSceneName();
+    ImGui::SetClipboardText(tree.dump().c_str());
+  }
+
+  void SceneEditor::PasteClipboard()
+  {
+    const char* text = ImGui::GetClipboardText();
+    if (!text) {
+      return;
+    }
+    nlohmann::json tree = nlohmann::json::parse(text, nullptr, false);
+    if (tree.is_discarded() || !tree.is_object() || !tree.contains(kClipboardScene)) {
+      return;
+    }
+    Request([tree = std::move(tree)](BaseScene& scene) {
+      // 同じシーンで写した物なら、組の外への親と ActorRef をそのまま使える
+      scene.SpawnTree(tree, tree.value(kClipboardScene, std::string{}) == scene.GetSceneName());
+    });
+  }
+
   void SceneEditor::DrawActorRow(Actor& actor)
   {
     ImGui::PushID(std::to_string(actor.GetId()).c_str());
-    const std::string  label = actor.GetPrefab().empty() ? actor.GetName() : actor.GetName() + "  [" + actor.GetPrefab() + "]";
+    const std::string  label = actor.IsPrefabRoot() ? actor.GetName() + "  [" + actor.GetPrefab() + "]" : actor.GetName();
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen;
     if (actor.GetChildren().empty()) {
       flags |= ImGuiTreeNodeFlags_Leaf;
@@ -392,7 +593,14 @@ namespace Tako {
     if (selected_ == actor.GetId()) {
       flags |= ImGuiTreeNodeFlags_Selected;
     }
+    const bool isInactive = !actor.IsActiveInHierarchy();
+    if (isInactive) {
+      ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
+    }
     const bool isOpen = ImGui::TreeNodeEx("##Row", flags, "%s", label.c_str());
+    if (isInactive) {
+      ImGui::PopStyleColor();
+    }
     if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
       selected_ = actor.GetId();
     }
@@ -408,9 +616,7 @@ namespace Tako {
       ImGui::EndPopup();
     }
     if (ImGui::BeginDragDropTarget()) {
-      if (std::optional<std::string> prefab = AcceptAssetPayload("Prefab")) {
-        RequestSpawn(*prefab);
-      }
+      AcceptSpawnDrops();
       if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(kActorPayload)) {
         RequestParent(*static_cast<const ActorId*>(payload->Data), actor.GetId());
       }
@@ -442,16 +648,15 @@ namespace Tako {
   void SceneEditor::DrawActorMenu(Actor& actor)
   {
     const ActorId id = actor.GetId();
-    if (ImGui::MenuItem("Duplicate")) {
-      Request([id](BaseScene& scene) {
-        Actor* source = scene.FindActor(id);
-        if (!source) { return; }
-        nlohmann::json json = SavePrefabInstance(*source);
-        json.erase("id");
-        if (Actor* copy = scene.SpawnFromSave(json)) {
-          copy->SetName(source->GetName() + " Copy");
-        }
-      });
+    if (ImGui::MenuItem("Duplicate", "Ctrl+D")) {
+      RequestDuplicate(id);
+    }
+    ImGui::SetItemTooltip("Children are duplicated too");
+    if (ImGui::MenuItem("Copy", "Ctrl+C")) {
+      CopySelection();
+    }
+    if (ImGui::MenuItem("Paste", "Ctrl+V")) {
+      PasteClipboard();
     }
     if (ImGui::MenuItem("Delete", "Del")) {
       Request([id](BaseScene& scene) { scene.Destroy(scene.FindActor(id)); });
@@ -476,16 +681,21 @@ namespace Tako {
       if (ImGui::MenuItem("Apply to Prefab")) {
         Request([id, prefab](BaseScene& scene) { MakePrefab(scene, id, prefab); });
       }
-      ImGui::SetItemTooltip("Write this actor's values to %s. Other instances keep their own overrides", prefab.c_str());
+      ImGui::SetItemTooltip("Write this actor group (the prefab root and its children) to %s. Other instances keep their own overrides", prefab.c_str());
       if (ImGui::MenuItem("Revert to Prefab")) {
         Request([id](BaseScene& scene) { RevertToPrefab(scene, id); });
       }
-      ImGui::SetItemTooltip("Discard overrides except name and transform");
+      ImGui::SetItemTooltip("Discard overrides of the whole group, except the root's name, transform and parent");
+      if (ImGui::MenuItem("Unpack")) {
+        Request([id](BaseScene& scene) { UnpackPrefab(scene, id); });
+      }
+      ImGui::SetItemTooltip("Cut the link to the prefab and keep the current values (needed before deleting a child for good)");
     }
     ImGui::SetNextItemWidth(140.0f);
     ImGui::InputTextWithHint("##PrefabName", "prefab name", prefabName_.data(), prefabName_.size());
     ImGui::SameLine();
     ImGui::BeginDisabled(prefabName_[0] == '\0');
+    ImGui::SetItemTooltip("Children are saved into the prefab too");
     if (ImGui::Button("Save as Prefab")) {
       const std::string name = prefabName_.data();
       Request([id, name](BaseScene& scene) { MakePrefab(scene, id, name); });
@@ -500,7 +710,12 @@ namespace Tako {
     ImGui::PushID(component.GetName().c_str());
     bool isKept = true;
     const std::string header = component.GetName() + "  (" + component.GetType().name + ")";
-    if (ImGui::CollapsingHeader(header.c_str(), &isKept, ImGuiTreeNodeFlags_DefaultOpen)) {
+    const bool        isOpen = ImGui::CollapsingHeader(header.c_str(), &isKept, ImGuiTreeNodeFlags_DefaultOpen);
+    if (ImGui::BeginPopupContextItem("ComponentMenu")) {
+      DrawComponentMenu(actor, component);
+      ImGui::EndPopup();
+    }
+    if (isOpen) {
       DrawRequirement(actor, component);
       if (DrawProperties(component)) {
         actor.GetScene()->MarkChanged();
@@ -518,6 +733,33 @@ namespace Tako {
       });
     }
     ImGui::PopID();
+  }
+
+  void SceneEditor::DrawComponentMenu(Actor& actor, Component& component)
+  {
+    if (ImGui::MenuItem("Copy Values")) {
+      const nlohmann::json copied = { { kClipboardComponent, component.GetType().name }, { "properties", WriteProperties(component) } };
+      ImGui::SetClipboardText(copied.dump().c_str());
+    }
+    ImGui::SetItemTooltip("Values changed while playing are discarded on Stop. Copy them here, stop, then paste");
+
+    const char*          text   = ImGui::GetClipboardText();
+    const nlohmann::json copied = text ? nlohmann::json::parse(text, nullptr, false) : nlohmann::json();
+    const bool           fits   = copied.is_object() && copied.value(kClipboardComponent, std::string{}) == component.GetType().name;
+    if (ImGui::MenuItem("Paste Values", nullptr, false, fits)) {
+      const ActorId     id   = actor.GetId();
+      const std::string name = component.GetName();
+      // Script コンポーネントはスクリプトを作り直すことがあるので、描画の外で読む
+      Request([id, name, properties = copied.value("properties", nlohmann::json())](BaseScene& scene) {
+        Actor* owner = scene.FindActor(id);
+        if (Component* target = owner ? owner->FindComponent(name) : nullptr) {
+          ReadProperties(*target, properties);
+          target->PostEditChange();
+          scene.MarkChanged();
+        }
+      });
+    }
+    ImGui::SetItemTooltip("Paste values copied from a component of the same type");
   }
 
   void SceneEditor::DrawRequirement(Actor& actor, Component& component)

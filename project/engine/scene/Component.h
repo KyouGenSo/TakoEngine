@@ -55,6 +55,17 @@ namespace Tako {
     virtual void Draw() {}
 
     /// <summary>
+    /// Actor の Active（自分か親のどれか）が切り替わった次のフレームの頭に呼ばれる（Edit 中も）。
+    /// オフの間は Tick / LateTick / Draw が呼ばれないので、それ以外で動いている物（当たり判定・音・エミッター）をここで止める
+    /// </summary>
+    virtual void OnActiveChanged([[maybe_unused]] bool active) {}
+
+    /// <summary>
+    /// 同じ Actor の他のコンポーネントが、これから外される（Edit 中も）。そのコンポーネントの物を指しているなら、ここで離す
+    /// </summary>
+    virtual void OnSiblingRemoved([[maybe_unused]] Component* removed) {}
+
+    /// <summary>
     /// 同じ Actor の ColliderComponent が当たり始めた。other は相手の Actor（Actor でないコライダーなら nullptr）
     /// </summary>
     virtual void OnCollisionEnter([[maybe_unused]] Actor* other) {}

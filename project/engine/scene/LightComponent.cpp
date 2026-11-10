@@ -39,4 +39,12 @@ namespace Tako {
     }
   }
 
+  void LightComponent::OnActiveChanged(bool active)
+  {
+    if (!active && type_ == Type::Directional) {
+      Light* light = Renderer::GetInstance()->GetLight();
+      light->SetDirectionalLight(light->GetDirectionalLight().direction, color_, light->GetDirectionalLight().lightType, 0.0f);
+    }
+  }
+
 } // namespace Tako

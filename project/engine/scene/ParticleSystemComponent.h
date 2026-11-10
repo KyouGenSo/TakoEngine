@@ -9,11 +9,14 @@ namespace Tako {
 
   class EmitterManager;
   class GPUParticleEmitter;
+  class Model;
+  class Object3d;
 
   /// <summary>
   /// パーティクルのプリセットを、Actor の位置から出す（Unity の ParticleSystem、UE の NiagaraComponent）。
   /// エミッターはシーンの EmitterManager に置き、Play 中だけ出す。
-  /// Emitter Name を決めておくと、スクリプトは EmitterManager からその名前で引いて、出す・止める・動かすを行える
+  /// Emitter Name を決めておくと、スクリプトは EmitterManager からその名前で引いて、出す・止める・動かすを行える。
+  /// Bind To Mesh をオンにすると、Mesh エミッターのプリセットを、同じ Actor の MeshComponent のモデルの表面から出す
   /// </summary>
   TCLASS()
   class ParticleSystemComponent : public Component {
@@ -23,6 +26,13 @@ namespace Tako {
     ~ParticleSystemComponent() override;
 
     void Awake() override;
+
+    void OnActiveChanged(bool active) override;
+
+    /// <summary>
+    /// 結び付けた MeshComponent が外されるなら、エミッターを消す
+    /// </summary>
+    void OnSiblingRemoved(Component* removed) override;
 
     void EndPlay() override;
 
@@ -74,12 +84,17 @@ namespace Tako {
     bool        followActor_ = true;
     TPROPERTY(Edit, Tooltip = "Actor からの位置（Actor の回転と大きさが掛かる）", Speed = 0.05)
     Vector3     offset_      = {};
+    TPROPERTY(Edit, Tooltip = "Mesh エミッターのプリセットを、同じ Actor の MeshComponent のモデルの表面から出し、その動きに付いていかせる（位置は MeshComponent が決める）。モデルが入るまでは作らずに待つ")
+    bool        bindToMesh_  = false;
 
     EmitterManager*                   manager_           = nullptr;  ///< activeName_ を置いた先（シーンの物。Actor より後に消える）
     std::string                       activeName_;                   ///< 今のエミッターの名前（emitterName_ か、自動で付けた名前）
     std::weak_ptr<GPUParticleEmitter> created_;                      ///< 自分が作ったエミッター（同じ名前の別物と見分ける）
     std::string                       loadedPreset_;
     std::string                       loadedEmitterName_;
+    bool                              loadedBindToMesh_  = false;
+    Object3d*                         boundObject_       = nullptr;  ///< 結び付けた MeshComponent の描画物（結び付けていなければ nullptr）
+    const Model*                      boundModel_        = nullptr;  ///< 結び付けたときのモデル。替わったら作り直す
     bool                              isPlaying_         = false;
     bool                              isActive_          = false;    ///< 出している（playOnStart か SetActive）
   };

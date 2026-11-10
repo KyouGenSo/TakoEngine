@@ -20,6 +20,11 @@ namespace Tako {
     void EndPlay() override;
 
     /// <summary>
+    /// オフで止め、オンで（Play On Start なら）最初から鳴らす
+    /// </summary>
+    void OnActiveChanged(bool active) override;
+
+    /// <summary>
     /// 鳴っている音の音量を変える
     /// </summary>
     void PostEditChange() override;

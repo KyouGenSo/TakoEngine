@@ -87,12 +87,32 @@ namespace Tako {
 
     void SetTransform(const Transform& transform) { transform_ = transform; }
 
-    void SetPrefab(const std::string& prefab) { prefab_ = prefab; }
+    /// <summary>
+    /// 元にしたプレハブとのつながり。prefab を空にすると切れる（Unpack）
+    /// </summary>
+    /// <param name="node">プレハブの中の番号</param>
+    /// <param name="root">組の根の ID。自分が根なら 0</param>
+    void SetPrefabLink(const std::string& prefab, ActorId node, ActorId root)
+    {
+      prefab_     = prefab;
+      prefabNode_ = node;
+      prefabRoot_ = root;
+    }
+
+    /// <summary>
+    /// オフにすると、この Actor と子は Tick / LateTick / Draw が呼ばれない。コンポーネントには次のフレームの頭で OnActiveChanged が届く
+    /// </summary>
+    void SetActive(bool active) { active_ = active; }
 
     /// <summary>
     /// ワールドでの位置がこの値になるよう、Transform の translate を決める
     /// </summary>
     void SetWorldPosition(const Vector3& position);
+
+    /// <summary>
+    /// ワールドでの位置・回転・大きさがこの値になるよう、Transform を決める（親が動いても、ワールドに置いたままにしたい子に毎フレーム使う）
+    /// </summary>
+    void SetWorldTransform(const Transform& world);
 
     //=====================================
     //Getter
@@ -136,7 +156,29 @@ namespace Tako {
     /// </summary>
     const std::string& GetPrefab() const { return prefab_; }
 
+    /// <summary>
+    /// プレハブの中の番号（プレハブの物でなければ 0）
+    /// </summary>
+    ActorId GetPrefabNode() const { return prefabNode_; }
+
+    /// <summary>
+    /// 同じプレハブから一緒に置かれた組の、根の ID
+    /// </summary>
+    ActorId GetPrefabRoot() const { return prefabRoot_ != 0 ? prefabRoot_ : id_; }
+
+    bool IsPrefabRoot() const { return !prefab_.empty() && prefabRoot_ == 0; }
+
     bool HasBegunPlay() const { return hasBegunPlay_; }
+
+    /// <summary>
+    /// 自分の Active の値（親は見ない）
+    /// </summary>
+    bool IsActive() const { return active_; }
+
+    /// <summary>
+    /// 自分と親が全部オンなら true
+    /// </summary>
+    bool IsActiveInHierarchy() const;
 
     const std::vector<std::unique_ptr<Component>>& GetComponents() const { return components_; }
 
@@ -188,6 +230,8 @@ namespace Tako {
   private: //メンバー変数
     TPROPERTY(Edit)
     std::string                                        name_ = "Actor";
+    TPROPERTY(Edit, DisplayName = "Active", Tooltip = "オフなら、この Actor と子は動かず、描かれず、当たらない")
+    bool                                               active_ = true;
     TPROPERTY(Edit)
     Transform transform_{ { 1.0f, 1.0f, 1.0f }, {}, {} };
 
@@ -196,10 +240,13 @@ namespace Tako {
     Actor*                                  parent_         = nullptr;  ///< parentId_ の Actor。BaseScene が張る
     std::vector<Actor*>                     children_;
     std::string                             prefab_;
+    ActorId                                 prefabNode_     = 0;
+    ActorId                                 prefabRoot_     = 0;        ///< 0 は自分が根
     BaseScene*                              scene_          = nullptr;
     std::vector<std::unique_ptr<Component>> components_;
     std::vector<Component*>                 pendingRemoves_;
     bool                                    hasAwoken_      = false;
+    bool                                    wasActive_      = true;     ///< 前に OnActiveChanged で伝えた IsActiveInHierarchy
     bool                                    hasBegunPlay_   = false;
   };
 

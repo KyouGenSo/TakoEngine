@@ -7,6 +7,7 @@
 #include "Mat4x4Func.h"
 #include "MeshComponent.h"
 #include "Object3d.h"
+#include "Prefab.h"
 #include "TypeRegistry.h"
 
 #include <json.hpp>
@@ -46,10 +47,17 @@ namespace Tako {
       void Tick([[maybe_unused]] float deltaTime) override { ++ticks; }
       void LateTick([[maybe_unused]] float deltaTime) override { ++lateTicks; }
       bool TickWhilePaused() const override { return ticksWhilePaused_; }
+      void OnActiveChanged(bool active) override
+      {
+        isActive = active;
+        ++activeChanges;
+      }
 
     public: //メンバー変数
-      int ticks     = 0;
-      int lateTicks = 0;
+      int  ticks         = 0;
+      int  lateTicks     = 0;
+      int  activeChanges = 0;
+      bool isActive      = true;
 
     private: //メンバー変数
       bool ticksWhilePaused_;
@@ -184,6 +192,97 @@ namespace Tako {
     calls.clear();
     playing.UpdateFrame(0.016f);
     assert((calls == std::vector<std::string>{ "tick early", "tick normal", "tick late" }));
+
+    // 親をオフにすると子も Tick しない。切り替えは、次のフレームの頭で OnActiveChanged に届く
+    Actor* group  = playing.Spawn("Actor");
+    Actor* member = playing.Spawn("Actor");
+    auto*  counter = static_cast<TickCounter*>(member->AddComponent(std::make_unique<TickCounter>(false), "Counter"));
+    playing.UpdateAlways();
+    assert(member->SetParent(group));
+    group->SetActive(false);
+    playing.UpdateAlways();
+    playing.UpdateFrame(0.016f);
+    assert(counter->activeChanges == 1 && !counter->isActive && counter->ticks == 0);
+    group->SetActive(true);
+    playing.UpdateAlways();
+    playing.UpdateFrame(0.016f);
+    assert(counter->activeChanges == 2 && counter->isActive && counter->ticks == 1);
+
+    // ID の付け替え：組の中の親と ActorRef は新しい ID、組の外の相手は外す。根の無い Actor は、プレハブとのつながりを失う
+    nlohmann::json entries = nlohmann::json::array({
+      { { "id", ActorId{ 5 } }, { "properties", { { "inner", { { "actor", ActorId{ 6 } } } }, { "outer", { { "actor", ActorId{ 99 } } } } } } },
+      { { "id", ActorId{ 6 } }, { "parent", ActorId{ 5 } }, { "prefab", "P" }, { "node", ActorId{ 2 } }, { "root", ActorId{ 77 } } },
+    });
+    RemapActorIds(entries, { { 5, 10 }, { 6, 11 } }, false);
+    assert(entries[0]["id"] == 10 && entries[0]["properties"]["inner"]["actor"] == 11 && entries[0]["properties"]["outer"]["actor"] == 0);
+    assert(entries[1]["id"] == 11 && entries[1]["parent"] == 10 && !entries[1].contains("prefab") && !entries[1].contains("root"));
+
+    // 組の複製：子も写り、写しの子は写しの根に付く
+    BaseScene stage;
+    Actor*    body = stage.Spawn("Actor");
+    Actor*    arm  = stage.Spawn("Actor");
+    stage.UpdateAlways();
+    body->SetName("Body");
+    arm->SetName("Arm");
+    assert(arm->SetParent(body));
+    Actor* copy = stage.SpawnTree(SaveActorTree(*body), true);
+    stage.UpdateAlways();
+    assert(copy && copy != body && body->GetChildren().size() == 1);
+    assert(copy->GetChildren().size() == 1 && copy->GetChildren()[0] != arm && copy->GetChildren()[0]->GetName() == "Arm");
+
+    // 組をプレハブにして置く：根と子が出て、子は根の組に入る
+    const nlohmann::json tree    = SaveActorTree(*body);
+    const ActorIdMap     nodes   = { { body->GetId(), 1 }, { arm->GetId(), 2 } };
+    const char*          kGroup  = "__SelfTestGroup";
+    const char*          kSingle = "__SelfTestSingle";
+    SetPrefabInMemory(kGroup, MakePrefabContent(tree, nodes));
+    BaseScene placedScene;
+    Actor*    placed = placedScene.Spawn(kGroup);
+    placedScene.UpdateAlways();
+    assert(placed && placed->IsPrefabRoot() && placed->GetChildren().size() == 1);
+    Actor* placedArm = placed->GetChildren()[0];
+    assert(placedArm->GetPrefabRoot() == placed->GetId() && placedArm->GetPrefabNode() == 2 && !placedArm->IsPrefabRoot());
+
+    // 置いた物は差分で保存され、読み直しても同じ
+    placedArm->GetTransform().translate = { 1.0f, 2.0f, 3.0f };
+    const nlohmann::json placedSaved = placedScene.Save();
+    assert(placedSaved["actors"].size() == 2 && !placedSaved["actors"][1].contains("type") && placedSaved["actors"][1]["root"] == placed->GetId());
+    BaseScene reloaded;
+    reloaded.Load(placedSaved);
+    reloaded.UpdateAlways();
+    assert(reloaded.Save() == placedSaved);
+    Actor* reloadedArm = reloaded.FindActor(placedArm->GetId());
+    assert(reloadedArm && reloadedArm->GetParent() == reloaded.FindActor(placed->GetId()) && reloadedArm->GetTransform().translate.y == 2.0f);
+
+    // プレハブに Actor を足すと、置いてある組にも出る。前からの差分は残る
+    nlohmann::json grown = MakePrefabContent(tree, nodes);
+    grown["actors"].push_back({ { "id", ActorId{ 3 } }, { "parent", ActorId{ 1 } }, { "type", "Actor" }, { "properties", { { "name", "Tail" } } } });
+    SetPrefabInMemory(kGroup, grown);
+    BaseScene grownScene;
+    grownScene.Load(placedSaved);
+    grownScene.UpdateAlways();
+    Actor* tail = grownScene.FindActor("Tail");
+    assert(grownScene.GetActors().size() == 3 && tail && tail->GetParent() == grownScene.FindActor(placed->GetId()) && tail->GetPrefabNode() == 3);
+    assert(grownScene.FindActor(placedArm->GetId())->GetTransform().translate.y == 2.0f);
+
+    // プレハブの根を動かしても、置いた根は動かない（根の Transform はいつも差分として持つ）
+    grown["actors"][0]["properties"]["transform"]["translate"] = { 9.0f, 9.0f, 9.0f };
+    SetPrefabInMemory(kGroup, grown);
+    BaseScene movedScene;
+    movedScene.Load(placedSaved);
+    movedScene.UpdateAlways();
+    assert(movedScene.FindActor(placed->GetId())->GetTransform().translate.x == placed->GetTransform().translate.x);
+
+    // Actor 1 つだった頃のプレハブと、node の無い保存も読める
+    SetPrefabInMemory(kSingle, { { "type", "Actor" }, { "properties", { { "name", "Single" } } } });
+    BaseScene legacy;
+    legacy.Load({ { "actors", nlohmann::json::array({ { { "id", ActorId{ 4 } }, { "prefab", kSingle } } }) } });
+    legacy.UpdateAlways();
+    const Actor* single = legacy.FindActor(ActorId{ 4 });
+    assert(single && single->GetName() == "Single" && single->IsPrefabRoot() && single->GetPrefabNode() == 1);
+
+    SetPrefabInMemory(kGroup, nullptr);
+    SetPrefabInMemory(kSingle, nullptr);
   }
 
 } // namespace Tako

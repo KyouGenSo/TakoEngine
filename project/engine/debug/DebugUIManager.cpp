@@ -203,6 +203,7 @@ namespace Tako {
     };
     SetAssetOpener("Material", opener(Window::MaterialEditor, "Material Editor", [this](const std::string& name) { materialEditor_.RequestOpen(name); }));
     SetAssetOpener("AnimationClip", opener(Window::AnimationEditor, "Animation Editor", [this](const std::string& name) { animationEditor_.RequestOpen(name); }));
+    SetAssetOpener("CameraAnimation", opener(Window::CameraAnimationEditor, "Camera Animation Editor", [this](const std::string& name) { cameraAnimationEditor_.RequestOpen(name); }));
     SetAssetOpener("UILayout", opener(Window::UIEditor, "UI Editor", [this](const std::string& name) { uiLayoutEditor_.OpenLayout(name); }));
     SetAssetOpener("ParticlePreset", opener(Window::ParticleEditor, "Particle Editor", [this](const std::string& name) { particleEditor_.OpenPreset(name); }));
     SetAssetOpener("PostEffectProfile", opener(Window::PostEffect, "PostEffect Manager", [](const std::string& name) { PostEffectManager::GetInstance()->LoadProfile(name); }));

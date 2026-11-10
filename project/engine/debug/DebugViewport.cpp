@@ -6,6 +6,7 @@
 #include "PreviewViewport.h"
 #include "SceneEditor.h"
 #include "Camera.h"
+#include "Vector3.h"
 #include "Renderer.h"
 #include "SceneManager.h"
 #include "DecalManager.h"
@@ -129,7 +130,20 @@ namespace Tako {
         const ImVec2 imageMin = ImGui::GetItemRectMin();
         const ImVec2 imageMax = ImGui::GetItemRectMax();
         inputCaptured = isGizmoHot_ || cameraController_.HandleImGuiInput();
-        isGizmoHot_   = sceneEditor_->DrawGizmo(*camera_, imageMin, imageMax);
+        const bool wasGizmoHot = isGizmoHot_;
+        isGizmoHot_ = sceneEditor_->DrawGizmo(*camera_, imageMin, imageMax);
+
+        // 左クリックで選ぶ（ギズモを掴むクリックと、Alt + 左ドラッグの回転は除く）。F で選んだ Actor へ寄せる
+        const ImGuiIO& io = ImGui::GetIO();
+        if (ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect(imageMin, imageMax)) {
+          if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !io.KeyAlt && !wasGizmoHot && !isGizmoHot_) {
+            sceneEditor_->PickActor(*camera_, imageMin, imageMax);
+          }
+          Vector3 focus;
+          if (ImGui::IsKeyPressed(ImGuiKey_F) && !io.WantTextInput && !ImGui::IsMouseDown(ImGuiMouseButton_Right) && sceneEditor_->GetSelectedPosition(focus)) {
+            cameraController_.Focus(focus);
+          }
+        }
       }
       else {
         ImGui::TextDisabled("Initializing viewport...");

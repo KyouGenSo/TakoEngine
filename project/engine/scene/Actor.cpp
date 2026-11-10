@@ -69,6 +69,13 @@ namespace Tako {
     transform_.translate = parent_ ? Mat4x4::Transform(Mat4x4::Inverse(parent_->GetWorldMatrix()), position) : position;
   }
 
+  void Actor::SetWorldTransform(const Transform& world)
+  {
+    const Matrix4x4 matrix = Mat4x4::MakeAffine(world.scale, world.rotate, world.translate);
+    const Matrix4x4 local  = parent_ ? matrix * Mat4x4::Inverse(parent_->GetWorldMatrix()) : matrix;
+    Mat4x4::Decompose(local, transform_.translate, transform_.rotate, transform_.scale);
+  }
+
   void Actor::EndPlay()
   {
     if (!hasBegunPlay_) {
@@ -83,9 +90,21 @@ namespace Tako {
 
   void Actor::Draw()
   {
+    const bool isActive = IsActiveInHierarchy();
     for (const std::unique_ptr<Component>& component : components_) {
-      component->Draw();
+      // Script コンポーネントは、予約されたスクリプトの差し替えを Draw で行うので、オフでも呼ぶ（スクリプトの Draw は呼ばれない）
+      if (isActive || component->IsA<ScriptComponent>()) {
+        component->Draw();
+      }
     }
+  }
+
+  bool Actor::IsActiveInHierarchy() const
+  {
+    for (const Actor* actor = this; actor; actor = actor->parent_) {
+      if (!actor->active_) { return false; }
+    }
+    return true;
   }
 
   nlohmann::json Actor::Save()
@@ -216,6 +235,9 @@ namespace Tako {
       auto it = std::ranges::find_if(components_, [removed](const std::unique_ptr<Component>& c) { return c.get() == removed; });
       if (it == components_.end()) { continue; }
       if (hasBegunPlay_) { (*it)->EndPlay(); }
+      for (const std::unique_ptr<Component>& sibling : components_) {
+        if (sibling.get() != removed) { sibling->OnSiblingRemoved(removed); }
+      }
       components_.erase(it);
     }
     pendingRemoves_.clear();

@@ -1,4 +1,5 @@
 #include "ScriptComponent.h"
+#include "Actor.h"
 #include "JsonPropertyVisitor.h"
 #include "Logger.h"
 #include "Script.h"
@@ -52,7 +53,17 @@ namespace Tako {
     if (builtScript_ != script_) {
       RebuildInstance(instance_ ? WriteProperties(*instance_) : missingValues_);
     }
-    if (instance_) { instance_->Draw(); }
+    if (instance_ && GetOwner()->IsActiveInHierarchy()) { instance_->Draw(); }
+  }
+
+  void ScriptComponent::OnActiveChanged(bool active)
+  {
+    if (instance_) { instance_->OnActiveChanged(active); }
+  }
+
+  void ScriptComponent::OnSiblingRemoved(Component* removed)
+  {
+    if (instance_) { instance_->OnSiblingRemoved(removed); }
   }
 
   void ScriptComponent::OnCollisionEnter(Actor* other)

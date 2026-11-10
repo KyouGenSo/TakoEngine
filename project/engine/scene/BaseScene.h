@@ -77,15 +77,17 @@ namespace Tako {
     //Actor
     //=====================================
     /// <summary>
-    /// 型名かプレハブ名から Actor を作る。シーンに入るのは次のフレームの頭
+    /// 型名かプレハブ名から Actor を作る。プレハブなら組（根と子孫）を全部作る。シーンに入るのは次のフレームの頭
     /// </summary>
-    /// <returns>作れなければ nullptr</returns>
+    /// <returns>作った Actor（プレハブなら根）。作れなければ nullptr</returns>
     Actor* Spawn(std::string_view typeOrPrefab);
 
     /// <summary>
-    /// Save の 1 件から Actor を作る（複製・貼り付け用。ID が重なれば振り直す）。シーンに入るのは次のフレームの頭
+    /// SaveActorTree の内容から組を作る（複製・貼り付け）。ID は振り直し、組の中の親と ActorRef は新しい ID を指す。シーンに入るのは次のフレームの頭
     /// </summary>
-    Actor* SpawnFromSave(const nlohmann::json& json);
+    /// <param name="keepsOuterRefs">組の外への親と ActorRef を、true なら残す（同じシーンの中の複製）、false なら外す（別のシーンからの貼り付け）</param>
+    /// <returns>根。作れなければ nullptr</returns>
+    Actor* SpawnTree(const nlohmann::json& tree, bool keepsOuterRefs);
 
     /// <summary>
     /// 次のフレームの頭で消す。子も一緒に消える
@@ -196,14 +198,9 @@ namespace Tako {
 
   private: //非公開関数
     /// <summary>
-    /// JSON 1 件から Actor を作る。ID が無いか重なれば振り直す
+    /// 全部の値が入った JSON 1 件（Actor::Save の形。prefab / node / root があれば、プレハブとのつながりも張る）から Actor を作る
     /// </summary>
     std::unique_ptr<Actor> CreateActor(const nlohmann::json& json);
-
-    /// <summary>
-    /// 型名かプレハブ名から、まだシーンに入れていない Actor を作る
-    /// </summary>
-    std::unique_ptr<Actor> CreateActor(std::string_view typeOrPrefab);
 
     /// <summary>
     /// ID を決めて、次のフレームの頭にシーンへ入る列に足す

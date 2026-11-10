@@ -1,5 +1,6 @@
 #include "AssetBrowser.h"
 #include "AnimationClip.h"
+#include "CameraAnimation.h"
 #include "DebugUIManager.h"
 #include "TextureManager.h"
 #include "UILayout.h"
@@ -71,6 +72,7 @@ namespace Tako {
       { "Prefab",            { { "resources/Json/Prefabs/" } }, { ".prefab.json" } },
       { "ParticlePreset",    { { "resources/Json/ParticlePresets/Presets/" } }, { ".json" } },
       { "AnimationClip",     { { AnimationClip::kDirectory } }, { ".json" } },
+      { "CameraAnimation",   { { CameraAnimation::kDirectory } }, { ".json" } },
       { "UILayout",          { { UILayout::kDirectory } }, { ".json" } },
       { "PostEffectProfile", { { "resources/Json/PostEffects/" } }, { ".json" } },
       { "BehaviorTree",      { { "resources/Json/BT/" } }, { ".json" } },

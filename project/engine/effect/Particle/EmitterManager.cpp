@@ -426,13 +426,13 @@ namespace Tako {
 
   void EmitterManager::RemoveAllEmitters()
   {
+    if (emitterMap_.empty()) return; // すでに空の場合は何もしない
+
 #ifdef _DEBUG
     DebugUIManager::GetInstance()->AddLog(
       "RemoveAllEmitters: Removing all emitters (" + std::to_string(emitterMap_.size()) + " emitters)",
       DebugUIManager::LogType::Info);
 #endif
-
-    if (emitterMap_.empty()) return; // すでに空の場合は何もしない
 
     // GPUParticle へ登録解除を通知するため 1 つずつ処理する
     for (auto& val : emitterMap_ | std::views::values) {

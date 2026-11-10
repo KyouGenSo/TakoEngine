@@ -40,6 +40,10 @@ namespace Tako {
     /// </summary>
     void Draw() override;
 
+    void OnActiveChanged(bool active) override;
+
+    void OnSiblingRemoved(Component* removed) override;
+
     void OnCollisionEnter(Actor* other) override;
     void OnCollisionStay(Actor* other) override;
     void OnCollisionExit(Actor* other) override;

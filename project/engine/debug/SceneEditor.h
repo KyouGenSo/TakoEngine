@@ -18,6 +18,7 @@ namespace Tako {
   class BaseScene;
   class Camera;
   class Component;
+  struct Vector3;
 
   // Hierarchy の行をドラッグしたときのデータ（ActorId）
   inline constexpr const char* kActorPayload = "TAKO_ACTOR";
@@ -53,6 +54,18 @@ namespace Tako {
     /// <param name="camera">画像を描いたカメラ</param>
     /// <returns>ギズモの上にカーソルがあるか、掴んでいれば true（カメラ操作に入力を渡さないため）</returns>
     bool DrawGizmo(const Camera& camera, const ImVec2& imageMin, const ImVec2& imageMax);
+
+    /// <summary>
+    /// 画像の上のカーソルに一番近い Actor を選ぶ（無ければ選択を外す）。Actor の原点の近くを選ぶ
+    /// </summary>
+    /// <param name="camera">画像を描いたカメラ</param>
+    void PickActor(const Camera& camera, const ImVec2& imageMin, const ImVec2& imageMax);
+
+    /// <summary>
+    /// 選んだ Actor のワールドでの位置
+    /// </summary>
+    /// <returns>選んでいなければ false</returns>
+    bool GetSelectedPosition(Vector3& position) const;
 
     /// <summary>
     /// 予約した操作を行う。DebugUIManager::Update から呼ぶ（前のフレームの GPU 処理が終わった後なので消してよい）
@@ -117,9 +130,40 @@ namespace Tako {
     /// </summary>
     void RequestParent(uint64_t child, uint64_t parent);
 
+    /// <summary>
+    /// 名前を付けた Actor に、コンポーネントを 1 つ付けて出す（+ Add の定番と、Assets からのドロップ）
+    /// </summary>
+    /// <param name="properties">コンポーネントの TPROPERTY に読ませる JSON の文字列</param>
+    void RequestSpawnWith(const std::string& name, const std::string& componentType, const std::string& properties);
+
+    /// <summary>
+    /// 開いているドロップ先で、Assets からのプレハブとモデルを受け取って Actor を出す
+    /// </summary>
+    void AcceptSpawnDrops();
+
+    /// <summary>
+    /// actor と子孫を複製する（Update で行う）。組の中の親と ActorRef は、複製どうしを指す
+    /// </summary>
+    void RequestDuplicate(uint64_t actor);
+
+    /// <summary>
+    /// 選んだ Actor と子孫を、クリップボードに JSON の文字列で置く
+    /// </summary>
+    void CopySelection();
+
+    /// <summary>
+    /// クリップボードの Actor を今のシーンに出す（別のシーンで写した物も貼れる）
+    /// </summary>
+    void PasteClipboard();
+
     void DrawActorMenu(Actor& actor);
 
     void DrawComponent(Actor& actor, Component& component);
+
+    /// <summary>
+    /// コンポーネントの見出しの右クリック。値をクリップボードに写す・同じ型の値を貼る（Play 中に写して、Stop の後に貼れる）
+    /// </summary>
+    void DrawComponentMenu(Actor& actor, Component& component);
 
     /// <summary>
     /// TCLASS(Requires = ...) の相手が同じ Actor に無ければ、警告と Add ボタンを出す。スクリプトは中身の型で見る

@@ -21,6 +21,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <map>
 
 namespace Tako {
 
@@ -115,13 +116,16 @@ namespace Tako {
     // 外すのも消すのも次のフレームの頭なので、回している間にポインタは無効にならない
     // ponytail: 毎フレーム並べ直す。重くなったら、Actor の出入りとスクリプトの差し替えのときだけ作り直す
     const std::vector<Component*> components = OrderedComponents(actors_);
+    const auto ticks = [isPaused](const Component* component) {
+      return (!isPaused || component->TickWhilePaused()) && component->GetOwner()->IsActiveInHierarchy();
+    };
     for (Component* component : components) {
-      if (!isPaused || component->TickWhilePaused()) {
+      if (ticks(component)) {
         component->Tick(deltaTime);
       }
     }
     for (Component* component : components) {
-      if (!isPaused || component->TickWhilePaused()) {
+      if (ticks(component)) {
         component->LateTick(deltaTime);
       }
     }
@@ -166,6 +170,19 @@ namespace Tako {
     // 全部をシーンに入れて親子を張ってから呼ぶ（BeginPlay の中で、同時に入った他の Actor を ActorRef や親子で引けるように）
     if (isPlaying_) {
       BeginPlayActors(entered);
+    }
+
+    // BeginPlay の後に伝える（最初からオフの Actor は、BeginPlay で登録した物をここで止める）
+    for (size_t i = 0; i < actors_.size(); ++i) {
+      Actor&     actor    = *actors_[i];
+      const bool isActive = actor.IsActiveInHierarchy();
+      if (isActive == actor.wasActive_) {
+        continue;
+      }
+      actor.wasActive_ = isActive;
+      for (size_t j = 0; j < actor.components_.size(); ++j) {
+        actor.components_[j]->OnActiveChanged(isActive);
+      }
     }
   }
 
@@ -225,18 +242,61 @@ namespace Tako {
 
   Actor* BaseScene::Spawn(std::string_view typeOrPrefab)
   {
-    std::unique_ptr<Actor> actor = CreateActor(typeOrPrefab);
-    if (!actor) {
-      Logger::Log("BaseScene: \"%.*s\" is neither an Actor type nor a prefab\n", static_cast<int>(typeOrPrefab.size()), typeOrPrefab.data());
-      return nullptr;
+    if (const TypeInfo* type = TypeRegistry::GetInstance()->Find(typeOrPrefab); type && type->IsChildOf(Actor::StaticType())) {
+      if (std::unique_ptr<TObject> object = TypeRegistry::GetInstance()->Create(typeOrPrefab)) {
+        std::unique_ptr<Actor> actor(static_cast<Actor*>(object.release()));
+        actor->SetName(std::string(typeOrPrefab));
+        return AddPending(std::move(actor));
+      }
     }
-    return AddPending(std::move(actor));
+
+    const std::vector<ActorId> nodes = GetPrefabNodes(typeOrPrefab);
+    ActorIdMap ids;
+    for (ActorId node : nodes) {
+      ids[node] = nextId_++;
+    }
+    Actor* root = nullptr;
+    for (ActorId node : nodes) {
+      nlohmann::json json = ResolvePrefabNode(typeOrPrefab, node, ids, nullptr);
+      json["prefab"] = std::string(typeOrPrefab);
+      json["node"]   = node;
+      if (root) {
+        json["root"] = root->GetId();
+      }
+      if (std::unique_ptr<Actor> actor = CreateActor(json)) {
+        Actor* added = AddPending(std::move(actor));
+        if (!root) { root = added; }
+      }
+    }
+    if (!root) {
+      Logger::Log("BaseScene: \"%.*s\" is neither an Actor type nor a prefab\n", static_cast<int>(typeOrPrefab.size()), typeOrPrefab.data());
+    }
+    return root;
   }
 
-  Actor* BaseScene::SpawnFromSave(const nlohmann::json& json)
+  Actor* BaseScene::SpawnTree(const nlohmann::json& tree, bool keepsOuterRefs)
   {
-    std::unique_ptr<Actor> actor = CreateActor(json);
-    return actor ? AddPending(std::move(actor)) : nullptr;
+    auto found = tree.find("actors");
+    if (found == tree.end() || !found->is_array()) {
+      return nullptr;
+    }
+    nlohmann::json entries = *found;
+    ActorIdMap     ids;
+    for (const nlohmann::json& entry : entries) {
+      if (const ActorId id = entry.value("id", ActorId{ 0 }); id != 0) {
+        ids[id] = nextId_++;
+      }
+    }
+    RemapActorIds(entries, ids, keepsOuterRefs);
+    Actor* root = nullptr;
+    for (const nlohmann::json& entry : entries) {
+      if (std::unique_ptr<Actor> actor = CreateActor(entry)) {
+        Actor* added = AddPending(std::move(actor));
+        if (!root) { root = added; }
+      }
+    }
+    RelinkHierarchy();
+    return root;
   }
 
   void BaseScene::Destroy(Actor* actor)
@@ -298,13 +358,24 @@ namespace Tako {
 
   nlohmann::json BaseScene::Save()
   {
-    nlohmann::json actors = nlohmann::json::array();
+    std::vector<Actor*> saved;
     for (const auto* list : { &actors_, &pendingSpawns_ }) {
       for (const std::unique_ptr<Actor>& actor : *list) {
         if (std::ranges::find(pendingDestroys_, actor.get()) == pendingDestroys_.end()) {
-          actors.push_back(SavePrefabInstance(*actor));
+          saved.push_back(actor.get());
         }
       }
+    }
+    // プレハブから置いた組ごとに「プレハブの中の番号 → シーンの ID」を集める（組の中の親と ActorRef を、差分にしないため）
+    std::map<ActorId, ActorIdMap> instances;
+    for (const Actor* actor : saved) {
+      if (!actor->GetPrefab().empty()) {
+        instances[actor->GetPrefabRoot()][actor->GetPrefabNode()] = actor->GetId();
+      }
+    }
+    nlohmann::json actors = nlohmann::json::array();
+    for (Actor* actor : saved) {
+      actors.push_back(SavePrefabInstance(*actor, instances[actor->GetPrefabRoot()]));
     }
     return { { "actors", std::move(actors) } };
   }
@@ -322,12 +393,82 @@ namespace Tako {
     nextId_ = 1;
 
     if (auto it = json.find("actors"); it != json.end() && it->is_array()) {
+      nlohmann::json entries = *it;
       // 先に保存された ID を全部取っておき、無い物や重なった物だけ振り直す
-      for (const nlohmann::json& entry : *it) {
+      for (const nlohmann::json& entry : entries) {
         nextId_ = (std::max)(nextId_, entry.value("id", ActorId{ 0 }) + 1);
       }
-      for (const nlohmann::json& entry : *it) {
-        if (std::unique_ptr<Actor> actor = CreateActor(entry)) {
+
+      // プレハブから置いた物（type を持たず、差分だけの物）を、組ごとにまとめる
+      struct Instance {
+        std::string prefab;
+        ActorIdMap  ids;  ///< プレハブの中の番号 → シーンの ID
+      };
+      const auto isPlaced = [](const nlohmann::json& entry) {
+        return !entry.contains("type") && entry.contains("prefab") && entry["prefab"].is_string();
+      };
+      std::map<ActorId, Instance> instances;
+      for (nlohmann::json& entry : entries) {
+        if (!isPlaced(entry)) {
+          continue;
+        }
+        const std::string          prefab = entry["prefab"].get<std::string>();
+        const std::vector<ActorId> nodes  = GetPrefabNodes(prefab);
+        if (nodes.empty()) {
+          continue;
+        }
+        if (entry.value("id", ActorId{ 0 }) == 0) {
+          entry["id"] = nextId_++;
+        }
+        // node の無い物は、Actor 1 つのプレハブだった頃の保存
+        if (!entry.contains("node")) {
+          entry["node"] = nodes.front();
+        }
+        const ActorId id   = entry["id"].get<ActorId>();
+        Instance&     item = instances[entry.value("root", id)];
+        item.prefab = prefab;
+        item.ids[entry["node"].get<ActorId>()] = id;
+      }
+      // プレハブに後から足された Actor を、置いてある組にも足す（根が残っている組だけ）
+      for (auto& [root, item] : instances) {
+        const std::vector<ActorId> nodes = GetPrefabNodes(item.prefab);
+        if (!item.ids.contains(nodes.front())) {
+          continue;
+        }
+        for (ActorId node : nodes) {
+          if (!item.ids.contains(node)) {
+            item.ids[node] = nextId_;
+            entries.push_back({ { "id", nextId_++ }, { "prefab", item.prefab }, { "node", node }, { "root", root } });
+          }
+        }
+      }
+
+      for (const nlohmann::json& entry : entries) {
+        if (!isPlaced(entry)) {
+          if (std::unique_ptr<Actor> actor = CreateActor(entry)) {
+            AddPending(std::move(actor));
+          }
+          continue;
+        }
+        const std::string prefab    = entry["prefab"].get<std::string>();
+        const ActorId     id        = entry.value("id", ActorId{ 0 });
+        const ActorId     root      = entry.value("root", id);
+        const auto        overrides = entry.find("overrides");
+        const auto        instance  = instances.find(root);
+        nlohmann::json    resolved;
+        if (instance != instances.end()) {
+          resolved = ResolvePrefabNode(prefab, entry.value("node", ActorId{ 0 }), instance->second.ids, overrides != entry.end() ? &*overrides : nullptr);
+        }
+        if (resolved.is_null()) {
+          Logger::Log("BaseScene: actor %llu was skipped because the prefab \"%s\" (or the actor in it) no longer exists\n", static_cast<unsigned long long>(id), prefab.c_str());
+          continue;
+        }
+        resolved["prefab"] = prefab;
+        resolved["node"]   = entry["node"];
+        if (root != id) {
+          resolved["root"] = root;
+        }
+        if (std::unique_ptr<Actor> actor = CreateActor(resolved)) {
           AddPending(std::move(actor));
         }
       }
@@ -393,33 +534,16 @@ namespace Tako {
 
   std::unique_ptr<Actor> BaseScene::CreateActor(const nlohmann::json& json)
   {
-    const nlohmann::json resolved = ResolvePrefabInstance(json);
-    const std::string    type     = resolved.value("type", std::string("Actor"));
+    const std::string        type   = json.value("type", std::string("Actor"));
     std::unique_ptr<TObject> object = TypeRegistry::GetInstance()->Create(type);
     if (!object || !object->IsA<Actor>()) {
       Logger::Log("BaseScene: actor type \"%s\" is unknown and was skipped\n", type.c_str());
       return nullptr;
     }
     std::unique_ptr<Actor> actor(static_cast<Actor*>(object.release()));
-    actor->Load(resolved);
-    actor->SetPrefab(json.value("prefab", std::string{}));
+    actor->Load(json);
+    actor->SetPrefabLink(json.value("prefab", std::string{}), json.value("node", ActorId{ 0 }), json.value("root", ActorId{ 0 }));
     return actor;
-  }
-
-  std::unique_ptr<Actor> BaseScene::CreateActor(std::string_view typeOrPrefab)
-  {
-    if (const TypeInfo* type = TypeRegistry::GetInstance()->Find(typeOrPrefab); type && type->IsChildOf(Actor::StaticType())) {
-      std::unique_ptr<TObject> object = TypeRegistry::GetInstance()->Create(typeOrPrefab);
-      if (object) {
-        std::unique_ptr<Actor> actor(static_cast<Actor*>(object.release()));
-        actor->SetName(std::string(typeOrPrefab));
-        return actor;
-      }
-    }
-    if (HasPrefab(typeOrPrefab)) {
-      return CreateActor(nlohmann::json{ { "prefab", std::string(typeOrPrefab) } });
-    }
-    return nullptr;
   }
 
   Actor* BaseScene::AddPending(std::unique_ptr<Actor> actor)

@@ -61,7 +61,7 @@ namespace Tako {
       collider_ = std::make_unique<ComponentCollider<SphereCollider>>(this);
     }
     collider_->SetOwner(GetOwner());
-    collider_->SetActive(isActive_);
+    collider_->SetActive(isActive_ && GetOwner()->IsActiveInHierarchy());
     LateTick(0.0f);
     ApplyShape();
 
@@ -95,12 +95,37 @@ namespace Tako {
     collider_.reset();
   }
 
+  void ColliderComponent::OnActiveChanged(bool active)
+  {
+    if (collider_) {
+      collider_->SetActive(isActive_ && active);
+    }
+  }
+
   void ColliderComponent::SetActive(bool active)
   {
     isActive_ = active;
     if (collider_) {
-      collider_->SetActive(active);
+      collider_->SetActive(active && GetOwner()->IsActiveInHierarchy());
     }
+  }
+
+  void ColliderComponent::SetRadius(float radius)
+  {
+    radius_ = radius;
+    PostEditChange();
+  }
+
+  void ColliderComponent::SetSize(const Vector3& size)
+  {
+    size_ = size;
+    PostEditChange();
+  }
+
+  void ColliderComponent::SetOffset(const Vector3& offset)
+  {
+    offset_ = offset;
+    PostEditChange();
   }
 
   void ColliderComponent::PostEditChange()
