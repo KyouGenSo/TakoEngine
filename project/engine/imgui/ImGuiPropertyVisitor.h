@@ -75,13 +75,13 @@ namespace Tako {
     bool DrawAsset(std::string& value, const PropertyMeta& meta);
 
   private: //メンバー変数
-    const char*              category_ = "";
-    const char*              label_    = "";   ///< Begin が決めた入力欄の名前。配列の要素は "[i]"
+    const char*              category_         = "";
+    const char*              label_            = "";     ///< Begin が決めた入力欄の名前。配列の要素は "[i]"
     char                     indexLabel_[16]{};
-    std::vector<int>         indices_;          ///< 開いている配列ごとの、次の要素の番号
-    std::vector<const char*> nestedCategories_; ///< 入る前の category_
-    bool                     changed_  = false;
-    bool                     hasDrawn_ = false;
+    std::vector<int>         indices_;                   ///< 開いている配列ごとの、次の要素の番号
+    std::vector<const char*> nestedCategories_;          ///< 入る前の category_
+    bool                     changed_          = false;
+    bool                     hasDrawn_         = false;
   };
 
   /// <summary>

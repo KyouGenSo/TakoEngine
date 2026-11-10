@@ -81,7 +81,7 @@ namespace Tako {
     TPROPERTY(Edit, Asset = "Model")
     std::string model_;
     TPROPERTY(Edit, DisplayName = "Offset")
-    Transform   offset_ = { { 1.0f, 1.0f, 1.0f }, {}, {} };
+    Transform   offset_  = { { 1.0f, 1.0f, 1.0f }, {}, {} };
     TPROPERTY(Edit, Tooltip = "オフなら描かない（影も落とさない）")
     bool        visible_ = true;
 

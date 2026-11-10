@@ -324,9 +324,9 @@ private: //メンバー変数
 
   ed::EditorContext*          editorContext_ = nullptr;  ///< imgui-node-editor のエディタコンテキスト
   std::unique_ptr<ed::Config> editorConfig_;             ///< imgui-node-editor の設定
-  std::vector<EditorNode> nodes_;  ///< エディタ上のノード一覧
-  std::vector<EditorLink> links_;  ///< エディタ上のリンク一覧
-  std::vector<EditorPin>  pins_;   ///< エディタ上のピン一覧
+  std::vector<EditorNode>     nodes_;                    ///< エディタ上のノード一覧
+  std::vector<EditorLink>     links_;                    ///< エディタ上のリンク一覧
+  std::vector<EditorPin>      pins_;                     ///< エディタ上のピン一覧
 
   int nextNodeId_ = 10000;  ///< ID カウンタ (ノード: 10000 番台で他エディタと分離)
   int nextLinkId_ = 30000;  ///< ID カウンタ (リンク: 30000 番台)
@@ -342,7 +342,7 @@ private: //メンバー変数
   int   selectedNodeId_           = -1;    ///< 現在選択中のノード ID (インスペクター連動)
 
   std::unordered_map<BTNode*, int>  runtimeNodeToEditorId_;  ///< ランタイムノードからエディタ ID への逆引きマップ
-  std::unordered_map<int, uint64_t> parameterHashes_;         ///< ノード ID → パラメータのハッシュ（HashTree 用）
+  std::unordered_map<int, uint64_t> parameterHashes_;        ///< ノード ID → パラメータのハッシュ（HashTree 用）
 
   std::vector<std::pair<int, ImVec2>> pendingNodePositions_;  ///< 次フレームの ed::Begin 内で ed::SetNodePosition を呼ぶノード位置の予約リスト。
 
@@ -350,8 +350,8 @@ private: //メンバー変数
 
   std::string currentTreeName_;  ///< 現在編集中のツリー名 (拡張子なし、例: "MainTree")
 
-  EditTracker<>        treeTracker_{ { [this] { return SnapshotTree(); }, [this](const std::string& tree) { RestoreTree(tree); }, [this] { return HashTree(); } } };  ///< 編集の検出・未保存の印・Undo（Save / Load で未保存を外す）
-  UnsavedChangesPrompt unsavedPrompt_;  ///< 未保存のままツリーを切り替える・作るときの確認
+  EditTracker<> treeTracker_{ { [this] { return SnapshotTree(); }, [this](const std::string& tree) { RestoreTree(tree); }, [this] { return HashTree(); } } };               ///< 編集の検出・未保存の印・Undo（Save / Load で未保存を外す）
+  UnsavedChangesPrompt                                                                                                                                     unsavedPrompt_;  ///< 未保存のままツリーを切り替える・作るときの確認
 };
 
 } // namespace Tako

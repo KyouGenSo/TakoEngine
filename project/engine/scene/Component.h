@@ -72,7 +72,7 @@ namespace Tako {
     friend class ScriptComponent;
 
     Actor*      owner_ = nullptr;
-    std::string name_;            ///< Actor の中で一意。保存ファイルのキー
+    std::string name_;             ///< Actor の中で一意。保存ファイルのキー
   };
 
 } // namespace Tako

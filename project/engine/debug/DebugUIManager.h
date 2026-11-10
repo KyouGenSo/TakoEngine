@@ -356,7 +356,7 @@ namespace Tako {
 
     //ゲームオブジェクト情報
     std::vector<GameObjectDebugInfo> gameObjects_;
-    int                              selectedObjectIndex_  = -1;                  ///< 選択されたオブジェクトのインデックス
+    int                              selectedObjectIndex_ = -1;  ///< 選択されたオブジェクトのインデックス
 
     //パフォーマンス計測
     float fpsHistory_[100] = { 0 };

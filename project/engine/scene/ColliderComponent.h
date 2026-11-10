@@ -75,19 +75,19 @@ namespace Tako {
 
   private: //メンバー変数
     TPROPERTY(Edit)
-    Shape shape_ = Shape::Sphere;
+    Shape                           shape_    = Shape::Sphere;
     TPROPERTY(Edit, ClampMin = 0, Speed = 0.05)
-    float radius_ = 1.0f;
+    float                           radius_   = 1.0f;
     TPROPERTY(Edit, Tooltip = "Box の全長", ClampMin = 0, Speed = 0.05)
     Vector3 size_{ 1.0f, 1.0f, 1.0f };
     TPROPERTY(Edit, Speed = 0.05)
-    Vector3 offset_{};
+    Vector3                         offset_{};
     TPROPERTY()
-    uint32_t layer_ = kActorLayer;
+    uint32_t                        layer_    = kActorLayer;
 
     std::unique_ptr<Collider> collider_;
-    bool                      isActive_ = true;
-    Transform                 worldTransform_{};  ///< 親のある Actor のときだけ使う
+    bool                      isActive_         = true;
+    Transform                 worldTransform_{};         ///< 親のある Actor のときだけ使う
   };
 
 } // namespace Tako

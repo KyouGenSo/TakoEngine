@@ -189,19 +189,19 @@ namespace Tako {
 
   private: //メンバー変数
     TPROPERTY(Edit)
-    std::string name_ = "Actor";
+    std::string                                        name_ = "Actor";
     TPROPERTY(Edit)
     Transform transform_{ { 1.0f, 1.0f, 1.0f }, {}, {} };
 
-    ActorId                                 id_           = 0;        ///< シーンの中で一意。0 は未割り当て
-    ActorId                                 parentId_     = 0;        ///< 保存する親。0 は親なし
-    Actor*                                  parent_       = nullptr;  ///< parentId_ の Actor。BaseScene が張る
+    ActorId                                 id_             = 0;        ///< シーンの中で一意。0 は未割り当て
+    ActorId                                 parentId_       = 0;        ///< 保存する親。0 は親なし
+    Actor*                                  parent_         = nullptr;  ///< parentId_ の Actor。BaseScene が張る
     std::vector<Actor*>                     children_;
     std::string                             prefab_;
-    BaseScene*                              scene_        = nullptr;
+    BaseScene*                              scene_          = nullptr;
     std::vector<std::unique_ptr<Component>> components_;
     std::vector<Component*>                 pendingRemoves_;
-    bool                                    hasBegunPlay_ = false;
+    bool                                    hasBegunPlay_   = false;
   };
 
 } // namespace Tako

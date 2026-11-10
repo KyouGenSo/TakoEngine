@@ -142,9 +142,9 @@ namespace Tako {
     uint64_t GetSceneRevision() const;
 
   private: //メンバー変数
-    uint64_t                                     selected_ = 0;  ///< 選んだ Actor の ID（作り直しをまたいでも同じ）
+    uint64_t                                     selected_       = 0;     ///< 選んだ Actor の ID（作り直しをまたいでも同じ）
     std::vector<std::function<void(BaseScene&)>> requests_;
-    std::array<char, 64>                         prefabName_{};  ///< 「プレハブとして保存」の名前
+    std::array<char, 64>                         prefabName_{};           ///< 「プレハブとして保存」の名前
     std::array<char, 64>                         newSceneName_{};
     std::string                                  trackedScene_;
     int                                          gizmoOperation_ = 0;     ///< 0 移動 / 1 回転 / 2 拡大

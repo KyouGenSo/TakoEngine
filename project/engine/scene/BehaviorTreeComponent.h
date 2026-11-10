@@ -43,7 +43,7 @@ namespace Tako {
     TPROPERTY(Edit, Asset = "BehaviorTree")
     std::string tree_;
     TPROPERTY(Edit, Tooltip = "毎フレーム自動で実行する。スクリプトが GetTree().Tick を呼ぶなら外す")
-    bool autoTick_ = true;
+    bool        autoTick_ = true;
 
     std::unique_ptr<BehaviorTree> runtime_;
   };

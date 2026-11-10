@@ -214,11 +214,11 @@ namespace Tako {
     std::vector<std::unique_ptr<Actor>> actors_;
     std::vector<std::unique_ptr<Actor>> pendingSpawns_;
     std::vector<Actor*>                 pendingDestroys_;
-    std::vector<std::unique_ptr<Actor>> retired_;          ///< Load で外した Actor。次の UpdateAlways で消す
-    ActorId                             nextId_    = 1;
-    uint64_t                            revision_  = 0;
-    bool                                isPlaying_ = false;
-    bool                                isPaused_  = false;
+    std::vector<std::unique_ptr<Actor>> retired_;                    ///< Load で外した Actor。次の UpdateAlways で消す
+    ActorId                             nextId_            = 1;
+    uint64_t                            revision_          = 0;
+    bool                                isPlaying_         = false;
+    bool                                isPaused_          = false;
   };
 
 } // namespace Tako

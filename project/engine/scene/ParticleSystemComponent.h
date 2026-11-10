@@ -75,13 +75,13 @@ namespace Tako {
     TPROPERTY(Edit, Tooltip = "Actor からの位置（Actor の回転と大きさが掛かる）", Speed = 0.05)
     Vector3     offset_      = {};
 
-    EmitterManager*                   manager_ = nullptr;  ///< activeName_ を置いた先（シーンの物。Actor より後に消える）
-    std::string                       activeName_;         ///< 今のエミッターの名前（emitterName_ か、自動で付けた名前）
-    std::weak_ptr<GPUParticleEmitter> created_;            ///< 自分が作ったエミッター（同じ名前の別物と見分ける）
+    EmitterManager*                   manager_           = nullptr;  ///< activeName_ を置いた先（シーンの物。Actor より後に消える）
+    std::string                       activeName_;                   ///< 今のエミッターの名前（emitterName_ か、自動で付けた名前）
+    std::weak_ptr<GPUParticleEmitter> created_;                      ///< 自分が作ったエミッター（同じ名前の別物と見分ける）
     std::string                       loadedPreset_;
     std::string                       loadedEmitterName_;
-    bool            isPlaying_    = false;
-    bool            isActive_     = false;    ///< 出している（playOnStart か SetActive）
+    bool                              isPlaying_         = false;
+    bool                              isActive_          = false;    ///< 出している（playOnStart か SetActive）
   };
 
 } // namespace Tako
