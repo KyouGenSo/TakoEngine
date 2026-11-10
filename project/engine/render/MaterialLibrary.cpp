@@ -638,16 +638,7 @@ namespace Tako {
   uint32_t MaterialLibrary::ResolveTexture(const std::string& file)
   {
     TextureManager* textureManager = TextureManager::GetInstance();
-    if (file.empty()) {
-      return textureManager->GetEngineDefaultSRVIndex("white.png");
-    }
-    // 無いファイルを読もうとすると TextureManager が止まるので、先に確かめる
-    if (!textureManager->IsLoaded(file) && !std::filesystem::exists(textureManager->GetFilePath(file))) {
-      Logger::Log("Texture not found: %s", file.c_str());
-      return textureManager->GetEngineDefaultSRVIndex("white.png");
-    }
-    textureManager->LoadTexture(file);
-    return textureManager->GetSRVIndex(file);
+    return file.empty() ? textureManager->GetEngineDefaultSRVIndex("white.png") : textureManager->GetSRVIndex(file);
   }
 
   std::vector<std::string> MaterialLibrary::GetMaterialFileNames() const

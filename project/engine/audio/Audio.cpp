@@ -2,6 +2,7 @@
 #include "miniaudio.h"
 
 #include "Audio.h"
+#include "Logger.h"
 #include <cassert>
 #include <algorithm>
 #include <fstream>
@@ -76,7 +77,7 @@ namespace Tako {
     std::erase_if(voiceDatas_, [](const auto& voiceData) { return voiceData.second == nullptr; });
   }
 
-  uint32_t Audio::LoadWaveFile(const std::string& filename)
+  std::optional<uint32_t> Audio::LoadWaveFile(const std::string& filename)
   {
     // ファイル名の重複チェック
     for (uint32_t i = 0; i < nextSoundIndex_; ++i) {
@@ -93,7 +94,9 @@ namespace Tako {
     std::ifstream file;
     // バイナリモードで開く
     file.open(directoryPath_ + filename, std::ios::binary);
-    assert(file.is_open());
+    if (!file.is_open()) {
+      return LoadFailed(filename);
+    }
 
     RiffHeader riff;
 
@@ -111,7 +114,7 @@ namespace Tako {
     } while (!file.eof());
 
     if (strncmp(riff.chunk.id, "RIFF", 4) != 0 || strncmp(riff.type, "WAVE", 4) != 0) {
-      assert(false);
+      return LoadFailed(filename);
     }
 
     FormatChunk format = {};
@@ -128,10 +131,9 @@ namespace Tako {
 
     } while (!file.eof());
 
-    if (strncmp(format.chunk.id, "fmt ", 4) != 0) {
-      assert(false);
+    if (strncmp(format.chunk.id, "fmt ", 4) != 0 || format.chunk.size > sizeof(format.fmt)) {
+      return LoadFailed(filename);
     }
-    assert(format.chunk.size <= sizeof(format.fmt));
     file.read(reinterpret_cast<char*>(&format.fmt), format.chunk.size);
 
 
@@ -149,7 +151,7 @@ namespace Tako {
     } while (!file.eof());
 
     if (strncmp(data.id, "data", 4) != 0) {
-      assert(false);
+      return LoadFailed(filename);
     }
 
     auto pBuffer = std::make_unique<char[]>(data.size);
@@ -171,7 +173,7 @@ namespace Tako {
     return handle;
   }
 
-  uint32_t Audio::LoadMP3File(const std::string& filename)
+  std::optional<uint32_t> Audio::LoadMP3File(const std::string& filename)
   {
     // ファイル名の重複チェック
     for (uint32_t i = 0; i < nextSoundIndex_; ++i) {
@@ -187,12 +189,12 @@ namespace Tako {
     ma_decoder decoder;
     ma_decoder_config config = ma_decoder_config_init(ma_format_f32, 0, 0); // native チャンネル、サンプルレートで float 出力
     if (ma_decoder_init_file(fullPath.c_str(), &config, &decoder) != MA_SUCCESS) {
-      return 0;
+      return LoadFailed(filename);
     }
     ma_uint64 totalFrames = 0;
     if (ma_decoder_get_length_in_pcm_frames(&decoder, &totalFrames) != MA_SUCCESS) {
       ma_decoder_uninit(&decoder);
-      return 0;
+      return LoadFailed(filename);
     }
     // チャンネル数、サンプルレートは decoder から取得（ゼロの場合は config の値を使用）
     ma_uint32 channels = decoder.outputChannels;
@@ -222,6 +224,15 @@ namespace Tako {
     uint32_t handle = nextSoundIndex_;
     nextSoundIndex_++;
     return handle;
+  }
+
+  std::nullopt_t Audio::LoadFailed(const std::string& filename)
+  {
+    // 毎フレーム呼ばれても記録は 1 回
+    if (failedFiles_.insert(filename).second) {
+      Logger::Log("Sound not found or unreadable: %s", (directoryPath_ + filename).c_str());
+    }
+    return std::nullopt;
   }
 
   void Audio::SoundUnload(SoundData* soundData)

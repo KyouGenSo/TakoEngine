@@ -2,6 +2,7 @@
 #include<string>
 #include<vector>
 #include<unordered_map>
+#include<unordered_set>
 #include<wrl.h>
 #include <d3d12.h>
 #include <memory>
@@ -66,7 +67,7 @@ namespace Tako {
     void Finalize();
 
     /// <summary>
-    /// テクスチャファイルの読み込み
+    /// テクスチャファイルの読み込み（読めなければ記録を 1 回出して何もしない）
     /// </summary>
     /// <param name="fileName">読み込むテクスチャファイルの名前</param>
     void LoadTexture(const std::string& fileName);
@@ -94,6 +95,8 @@ namespace Tako {
     //============================================================
     //Getter
     //============================================================
+    // ファイル名で引く Getter は、読んでいなければその場で読む。読めなければ EngineResources の white.png を返す
+
     /// <summary>
     /// テクスチャのインデックスから GPU ハンドルを取得
     /// </summary>
@@ -173,6 +176,11 @@ namespace Tako {
   private: //非公開関数
 
     /// <summary>
+    /// 読み込み済みのデータ。無ければ読み、読めなければ white.png（それも無ければ nullptr）
+    /// </summary>
+    const TextureData* Acquire(const std::string& fileName);
+
+    /// <summary>
     /// COPY_DEST 状態のテクスチャリソースを生成する
     /// </summary>
     /// <param name="metaData">テクスチャのメタデータ（サイズ、フォーマット等）</param>
@@ -194,6 +202,7 @@ namespace Tako {
     std::string directoryPath_;  ///< テクスチャ格納ディレクトリ
 
     std::unordered_map<std::string, TextureData> textureData_;  ///< テクスチャデータ配列
+    std::unordered_set<std::string>              failedFiles_;  ///< 読めなかったキー（毎フレーム読み直さない）
 
   };
 

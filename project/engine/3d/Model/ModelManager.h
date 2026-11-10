@@ -52,7 +52,7 @@ namespace Tako {
     void Finalize();
 
     /// <summary>
-    /// モデルの読み込み
+    /// モデルの読み込み（ファイルが無ければ記録を 1 回出して何もしない）
     /// </summary>
     /// <param name="fileName">モデルファイル名</param>
     void LoadModel(const std::string& fileName);
@@ -67,17 +67,17 @@ namespace Tako {
     //Getter
     //============================================================
     /// <summary>
-    /// モデルの検索
+    /// モデルのクローン。読んでいなければその場で読む
     /// </summary>
     /// <param name="fileName">モデルファイル名</param>
-    /// <returns>モデルポインタ（見つからない場合 nullptr）</returns>
+    /// <returns>モデルのクローン（ファイルが無ければ nullptr）</returns>
     std::unique_ptr<Model> GetModel(const std::string& fileName);
 
     /// <summary>
-    /// エンジン用モデルの取得
+    /// エンジン用モデルのクローン。読んでいなければその場で読む
     /// </summary>
     /// <param name="fileName">エンジン用モデルファイル名</param>
-    /// <returns>モデルポインタ（クローン）</returns>
+    /// <returns>モデルのクローン（ファイルが無ければ nullptr）</returns>
     std::unique_ptr<Model> GetEngineModel(const std::string& fileName);
 
     ModelBasic* GetModelBasic() { return pModelBasic_.get(); }
@@ -91,9 +91,16 @@ namespace Tako {
 
     size_t GetLoadedModelCount() const { return models_.size(); }
 
+  private: //非公開関数
+    /// <summary>
+    /// path があれば true。無ければ key ごとに 1 回だけ記録を出す
+    /// </summary>
+    bool CanLoad(const std::string& key, const std::string& path);
+
   private: //メンバー変数
     std::unique_ptr<ModelBasic>                             pModelBasic_;  ///< モデル基本システムへのポインタ
     std::unordered_map<std::string, std::unique_ptr<Model>> models_;       ///< モデルのマップ（キー:ファイル名、値:モデルインスタンス）
+    std::unordered_set<std::string>                         failedFiles_;  ///< 無かったキー
   };
 
 } // namespace Tako

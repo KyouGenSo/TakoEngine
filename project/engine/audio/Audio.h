@@ -2,8 +2,10 @@
 #include<fstream>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <array>
 #include <memory>
+#include <optional>
 #include <wrl.h>
 #include "xaudio2.h"
 #pragma comment(lib, "xaudio2.lib")
@@ -83,15 +85,15 @@ public: //メンバー関数
 	/// WAVE ファイルの読み込み
 	/// </summary>
 	/// <param name="filename">ファイル名（directoryPath 基準の相対パス）</param>
-	/// <returns>サウンドデータハンドル</returns>
-	uint32_t LoadWaveFile(const std::string& filename);
+	/// <returns>サウンドデータハンドル（読めなければ記録を 1 回出して nullopt）</returns>
+	std::optional<uint32_t> LoadWaveFile(const std::string& filename);
 
 	/// <summary>
 	/// MP3ファイルの読み込み（miniaudio 使用）
 	/// </summary>
 	/// <param name="filename">ファイル名（directoryPath 基準の相対パス）</param>
-	/// <returns>サウンドデータハンドル</returns>
-	uint32_t LoadMP3File(const std::string& filename);
+	/// <returns>サウンドデータハンドル（読めなければ記録を 1 回出して nullopt）</returns>
+	std::optional<uint32_t> LoadMP3File(const std::string& filename);
 
 	/// <summary>
 	/// サウンドデータの解放
@@ -176,6 +178,9 @@ public: //メンバー関数
 	/// <returns>再生中の場合 true</returns>
 	bool IsPlaying(uint32_t voiceHandle);
 
+private: //非公開関数
+	std::nullopt_t LoadFailed(const std::string& filename);
+
 private: //メンバー変数
     Microsoft::WRL::ComPtr<IXAudio2> xAudio2_;  ///< XAudio2
 
@@ -190,6 +195,8 @@ private: //メンバー変数
     std::unordered_map<uint32_t, XAUDIO2_VOICE_STATE> voiceStates_;  ///< 未使用
 
     std::string directoryPath_;
+
+    std::unordered_set<std::string> failedFiles_;  ///< 読めなかったファイル名（記録を 1 回にする）
 
     uint32_t nextSoundIndex_  = 0u;  ///< 次に割り当てるサウンドデータ番号（= 返すサウンドハンドル）
     uint32_t nextVoiceHandle_ = 0u;  ///< 次に割り当てるボイスハンドル。Play ごとに加算し再利用しない

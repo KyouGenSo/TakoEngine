@@ -5,7 +5,6 @@
 #include "TextureManager.h"
 #include "WinApp.h"
 #include "Logger.h"
-#include "StringUtility.h"
 #include "Hash.h"
 #ifdef _DEBUG
 #include "DebugUIManager.h"
@@ -86,7 +85,7 @@ namespace Tako {
     }
 
     /// <summary>
-    /// 未読み込みなら読み込む。JSON の誤記で LoadTexture の assert に落ちないよう、先にファイルの有無を確かめる
+    /// 未読み込みなら読み込む
     /// </summary>
     /// <returns>読み込み済みになれば true。空のキーやファイルが無い場合は false</returns>
     bool EnsureTextureLoaded(const std::string& texture) {
@@ -94,16 +93,8 @@ namespace Tako {
         return false;
       }
       TextureManager* textureManager = TextureManager::GetInstance();
-      if (textureManager->IsLoaded(texture)) {
-        return true;
-      }
-      const std::string path = textureManager->GetFilePath(texture);
-      if (!std::filesystem::exists(StringUtility::ConvertString(path))) {
-        LogWarning(std::format("UILayout: texture not found: {}", path));
-        return false;
-      }
       textureManager->LoadTexture(texture);
-      return true;
+      return textureManager->IsLoaded(texture);
     }
 
     /// <summary>

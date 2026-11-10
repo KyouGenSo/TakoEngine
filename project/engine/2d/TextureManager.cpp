@@ -3,6 +3,7 @@
 #include "DX12Basic.h"
 #include "StringUtility.h"
 #include "EnginePaths.h"
+#include "Logger.h"
 #include "externals/DirectXTex/d3dx12.h"
 #include <algorithm>
 #include <cassert>
@@ -55,14 +56,17 @@ namespace Tako {
     std::wstring filePathW = StringUtility::ConvertString(GetFilePath(fileName));
 
     if (filePathW.ends_with(L".dds")) {
-      // DDS ファイルの読み込み
       hr = DirectX::LoadFromDDSFile(filePathW.c_str(), DirectX::DDS_FLAGS_NONE, nullptr, image);
-      assert(SUCCEEDED(hr));
     }
     else {
-      // WIC ファイルの読み込み
       hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
-      assert(SUCCEEDED(hr));
+    }
+    if (FAILED(hr)) {
+      // 毎フレーム引かれても記録は 1 回
+      if (failedFiles_.insert(fileName).second) {
+        Logger::Log("Texture not found or unreadable: %s", fileName.c_str());
+      }
+      return;
     }
 
     // mipmap を生成
@@ -127,27 +131,32 @@ namespace Tako {
     }
   }
 
+  const TextureManager::TextureData* TextureManager::Acquire(const std::string& fileName)
+  {
+    if (auto it = textureData_.find(fileName); it != textureData_.end()) {
+      return &it->second;
+    }
+    if (!failedFiles_.contains(fileName)) {
+      LoadTexture(fileName);
+      if (auto it = textureData_.find(fileName); it != textureData_.end()) {
+        return &it->second;
+      }
+    }
+    auto fallback = textureData_.find(EnginePaths::TexturePath("white.png"));
+    return fallback != textureData_.end() ? &fallback->second : nullptr;
+  }
+
   D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetSRVGPUHandle(const std::string& fileName)
   {
-    auto it = textureData_.find(fileName);
-    assert(it != textureData_.end() && "TextureManager::GetSRVGPUHandle: texture not loaded");
-    if (it == textureData_.end()) {
-      return {};
-    }
-
-    return it->second.srvGpuHandle;
+    const TextureData* data = Acquire(fileName);
+    return data ? data->srvGpuHandle : D3D12_GPU_DESCRIPTOR_HANDLE{};
   }
 
   const DirectX::TexMetadata& TextureManager::GetMetaData(const std::string& fileName)
   {
-    auto it = textureData_.find(fileName);
-    assert(it != textureData_.end() && "TextureManager::GetMetaData: texture not loaded");
-    if (it == textureData_.end()) {
-      static const DirectX::TexMetadata empty{};
-      return empty;
-    }
-
-    return it->second.metadata;
+    static const DirectX::TexMetadata empty{};
+    const TextureData* data = Acquire(fileName);
+    return data ? data->metadata : empty;
   }
 
   const DirectX::TexMetadata& TextureManager::GetMetaData(uint32_t srvIndex)
@@ -164,13 +173,8 @@ namespace Tako {
 
   uint32_t TextureManager::GetSRVIndex(const std::string& fileName)
   {
-    auto it = textureData_.find(fileName);
-    assert(it != textureData_.end() && "TextureManager::GetSRVIndex: texture not loaded");
-    if (it == textureData_.end()) {
-      return 0;
-    }
-
-    return it->second.srvIndex;
+    const TextureData* data = Acquire(fileName);
+    return data ? data->srvIndex : 0;
   }
 
   const std::string& TextureManager::GetFileName(uint32_t srvIndex)

@@ -176,7 +176,10 @@ namespace Tako {
     // 読み込めなかったキーも覚えておき、毎フレーム引き直さない
     regionTextures_[region] = texturePath;
     TextureManager* textureManager = TextureManager::GetInstance();
-    regionTextureIndices_[region] = (!texturePath.empty() && textureManager->IsLoaded(texturePath)) ? textureManager->GetSRVIndex(texturePath) : 0;
+    if (!texturePath.empty()) {
+      textureManager->LoadTexture(texturePath);
+    }
+    regionTextureIndices_[region] = textureManager->IsLoaded(texturePath) ? textureManager->GetSRVIndex(texturePath) : 0;
   }
 
   bool Sprite::IsSliced() const

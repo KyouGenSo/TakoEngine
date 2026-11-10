@@ -2,8 +2,10 @@
 
 #include"DX12Basic.h"
 #include "EnginePaths.h"
+#include "Logger.h"
 #include <ranges>
 #include <algorithm>
+#include <filesystem>
 
 #ifdef _DEBUG
 #include "DebugUIManager.h"
@@ -62,6 +64,9 @@ namespace Tako {
       return;
     }
 
+    if (!CanLoad(fileName, pModelBasic_->GetDirectoryFolderName() + "/" + pModelBasic_->GetModelFolderName() + "/" + fileName)) {
+      return;
+    }
 
     // 新しい Model インスタンスを作成
     std::unique_ptr<Model> newModel = std::make_unique<Model>();
@@ -78,20 +83,23 @@ namespace Tako {
       return GetEngineModel(fileName.substr(EnginePaths::kEngineModels.size()));
     }
 
-    if (models_.contains(fileName)) {
-      // モデルがすでに存在する場合はクローンを返す
-      return models_.at(fileName)->Clone();
+    if (!models_.contains(fileName)) {
+      LoadModel(fileName);
     }
+    const auto it = models_.find(fileName);
+    return it != models_.end() ? it->second->Clone() : nullptr;
+  }
 
-    // 新しい Model インスタンスを作成
-    auto newModel = std::make_unique<Model>();
-    newModel->Initialize(pModelBasic_.get(), fileName);
-
-    // モデルデータの登録
-    Model* modelPtr = newModel.get();
-    models_.insert(std::make_pair(fileName, std::move(newModel)));
-
-    return modelPtr->Clone();
+  bool ModelManager::CanLoad(const std::string& key, const std::string& path)
+  {
+    if (std::filesystem::exists(path)) {
+      return true;
+    }
+    // 毎フレーム引かれても記録は 1 回
+    if (failedFiles_.insert(key).second) {
+      Logger::Log("Model not found: %s", path.c_str());
+    }
+    return false;
   }
 
   std::vector<std::string> ModelManager::GetLoadedModelNames() const
@@ -120,6 +128,10 @@ namespace Tako {
       return;
     }
 
+    if (!CanLoad(key, key)) {
+      return;
+    }
+
     // ModelBasic のディレクトリを一時的にエンジン用に切り替え
     const std::string savedDir = pModelBasic_->GetDirectoryFolderName();
     const std::string savedModelDir = pModelBasic_->GetModelFolderName();
@@ -144,8 +156,8 @@ namespace Tako {
     if (!models_.contains(key)) {
       LoadEngineModel(fileName);
     }
-
-    return models_.at(key)->Clone();
+    const auto it = models_.find(key);
+    return it != models_.end() ? it->second->Clone() : nullptr;
   }
 
 } // namespace Tako
