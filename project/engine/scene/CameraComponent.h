@@ -16,6 +16,11 @@ namespace Tako {
   public: //メンバー関数
     void Draw() override;
 
+    //=====================================
+    //Setter
+    //=====================================
+    void SetFovY(float fovY) { fovY_ = fovY; }
+
   private: //メンバー変数
     TPROPERTY(Edit, Angle, DisplayName = "Field Of View", Tooltip = "縦の視野角", ClampMin = 1, ClampMax = 179)
     float   fovY_     = Camera::kDefaultFovY;
