@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace Tako {
@@ -61,7 +62,19 @@ namespace Tako {
 
     void EndPlay();
 
+    /// <summary>
+    /// 全 Actor の Tick の後に呼ばれる
+    /// </summary>
+    void LateTick(float deltaTime);
+
     void Draw();
+
+    /// <summary>
+    /// 親を替える（nullptr で外す）。自分の子孫を親にはできない
+    /// </summary>
+    /// <param name="keepWorld">true なら見た目の位置・向き・大きさを保つよう Transform を計算し直す</param>
+    /// <returns>替えられなければ false</returns>
+    bool SetParent(Actor* parent, bool keepWorld = true);
 
     /// <summary>
     /// 型・ID・TPROPERTY・コンポーネントを JSON にする（シーンファイルとプレハブの 1 件）
@@ -82,6 +95,11 @@ namespace Tako {
 
     void SetPrefab(const std::string& prefab) { prefab_ = prefab; }
 
+    /// <summary>
+    /// ワールドでの位置がこの値になるよう、Transform の translate を決める
+    /// </summary>
+    void SetWorldPosition(const Vector3& position);
+
     //=====================================
     //Getter
     //=====================================
@@ -94,9 +112,28 @@ namespace Tako {
     const Transform& GetTransform() const { return transform_; }
 
     /// <summary>
-    /// Transform から作るワールド行列
+    /// Transform（親からの相対）に親のワールド行列を掛けたもの
     /// </summary>
     Matrix4x4 GetWorldMatrix() const;
+
+    /// <summary>
+    /// ワールドでの位置・回転・大きさ。親が無ければ Transform と同じ
+    /// </summary>
+    Transform GetWorldTransform() const;
+
+    Vector3 GetWorldPosition() const;
+
+    Actor* GetParent() const { return parent_; }
+
+    /// <summary>
+    /// 直接の子（シーンの並び順）
+    /// </summary>
+    const std::vector<Actor*>& GetChildren() const { return children_; }
+
+    /// <summary>
+    /// 直接の子を名前で探す。無ければ nullptr
+    /// </summary>
+    Actor* FindChild(std::string_view name) const;
 
     BaseScene* GetScene() const { return scene_; }
 
@@ -156,6 +193,9 @@ namespace Tako {
     Transform transform_{ { 1.0f, 1.0f, 1.0f }, {}, {} };
 
     ActorId                                 id_           = 0;        ///< シーンの中で一意。0 は未割り当て
+    ActorId                                 parentId_     = 0;        ///< 保存する親。0 は親なし
+    Actor*                                  parent_       = nullptr;  ///< parentId_ の Actor。BaseScene が張る
+    std::vector<Actor*>                     children_;
     std::string                             prefab_;
     BaseScene*                              scene_        = nullptr;
     std::vector<std::unique_ptr<Component>> components_;

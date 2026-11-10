@@ -17,7 +17,7 @@ namespace Tako {
   void LightComponent::Draw()
   {
     const Vector3 direction = Mat4x4::TransformNormal(GetOwner()->GetWorldMatrix(), Vector3(0.0f, 0.0f, 1.0f)).Normalize();
-    const Vector3 position  = GetOwner()->GetTransform().translate;
+    const Vector3 position  = GetOwner()->GetWorldPosition();
     Light*        light     = Renderer::GetInstance()->GetLight();
     switch (type_) {
       case Type::Directional:

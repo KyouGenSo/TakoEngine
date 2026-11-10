@@ -37,7 +37,7 @@ namespace Tako {
     void Start(const std::string& sceneName, const nlohmann::json* snapshot, bool playing);
 
     /// <summary>
-    /// Play 中だけ呼ぶ。全 Actor の Tick → Update
+    /// Play 中だけ呼ぶ。全 Actor の Tick → 全 Actor の LateTick → Update
     /// </summary>
     void UpdateFrame(float deltaTime);
 
@@ -81,9 +81,19 @@ namespace Tako {
     Actor* SpawnFromSave(const nlohmann::json& json);
 
     /// <summary>
-    /// 次のフレームの頭で消す
+    /// 次のフレームの頭で消す。子も一緒に消える
     /// </summary>
     void Destroy(Actor* actor);
+
+    /// <summary>
+    /// 同じ親の中で、並びを 1 つ前（direction < 0）か後ろへ動かす。Tick と保存はこの並び順
+    /// </summary>
+    void MoveActor(Actor* actor, int direction);
+
+    /// <summary>
+    /// 全 Actor の親と子のポインタを、保存してある親の ID から張り直す（Actor の出入りと親の変更の後に呼ぶ）
+    /// </summary>
+    void RelinkHierarchy();
 
     /// <summary>
     /// 全 Actor を JSON にする（シーンファイルの中身）

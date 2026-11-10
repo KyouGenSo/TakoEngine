@@ -78,6 +78,9 @@ namespace Tako {
     for (size_t i = 0; i < actors_.size(); ++i) {
       actors_[i]->Tick(deltaTime);
     }
+    for (size_t i = 0; i < actors_.size(); ++i) {
+      actors_[i]->LateTick(deltaTime);
+    }
     Update();
   }
 
@@ -85,9 +88,14 @@ namespace Tako {
   {
     retired_.clear();
 
+    // 親と子を一緒に消すとき、先に消えた方を EndPlay の中で触らないよう、全部の EndPlay を済ませてから消す
+    for (Actor* destroyed : pendingDestroys_) {
+      if (std::ranges::any_of(actors_, [destroyed](const auto& a) { return a.get() == destroyed; })) {
+        destroyed->EndPlay();
+      }
+    }
     for (Actor* destroyed : pendingDestroys_) {
       if (auto it = std::ranges::find_if(actors_, [destroyed](const auto& a) { return a.get() == destroyed; }); it != actors_.end()) {
-        (*it)->EndPlay();
         actors_.erase(it);
       } else if (auto spawn = std::ranges::find_if(pendingSpawns_, [destroyed](const auto& a) { return a.get() == destroyed; }); spawn != pendingSpawns_.end()) {
         pendingSpawns_.erase(spawn);
@@ -109,6 +117,7 @@ namespace Tako {
         raw->BeginPlay();
       }
     }
+    RelinkHierarchy();
   }
 
   void BaseScene::DrawFrame()
@@ -163,9 +172,58 @@ namespace Tako {
 
   void BaseScene::Destroy(Actor* actor)
   {
-    if (actor && std::ranges::find(pendingDestroys_, actor) == pendingDestroys_.end()) {
-      pendingDestroys_.push_back(actor);
-      MarkChanged();
+    if (!actor || std::ranges::find(pendingDestroys_, actor) != pendingDestroys_.end()) {
+      return;
+    }
+    pendingDestroys_.push_back(actor);
+    MarkChanged();
+    for (Actor* child : actor->GetChildren()) {
+      Destroy(child);
+    }
+  }
+
+  void BaseScene::MoveActor(Actor* actor, int direction)
+  {
+    auto self = std::ranges::find_if(actors_, [actor](const auto& a) { return a.get() == actor; });
+    if (self == actors_.end() || direction == 0) {
+      return;
+    }
+    // 同じ親を持つ隣の Actor のすぐ前（後ろ）へ差し込む。入れ替えにしないのは、間にある他の Actor の並びを変えないため
+    const auto isSibling = [actor](const std::unique_ptr<Actor>& other) { return other->GetParent() == actor->GetParent(); };
+    if (direction < 0) {
+      auto previous = std::find_if(std::make_reverse_iterator(self), actors_.rend(), isSibling);
+      if (previous == actors_.rend()) { return; }
+      std::rotate(std::prev(previous.base()), self, std::next(self));
+    } else {
+      auto next = std::find_if(std::next(self), actors_.end(), isSibling);
+      if (next == actors_.end()) { return; }
+      std::rotate(self, std::next(self), std::next(next));
+    }
+    RelinkHierarchy();
+    MarkChanged();
+  }
+
+  void BaseScene::RelinkHierarchy()
+  {
+    for (const auto* list : { &actors_, &pendingSpawns_ }) {
+      for (const std::unique_ptr<Actor>& actor : *list) {
+        actor->children_.clear();
+      }
+    }
+    for (const auto* list : { &actors_, &pendingSpawns_ }) {
+      for (const std::unique_ptr<Actor>& actor : *list) {
+        Actor* parent = actor->parentId_ != 0 ? FindActor(actor->parentId_) : nullptr;
+        if (parent == actor.get()) {
+          parent = nullptr;
+        }
+        actor->parent_ = parent;
+        if (parent) {
+          parent->children_.push_back(actor.get());
+        } else {
+          // 無い ID を残すと、後でその ID をもらった Actor の子になってしまう
+          actor->parentId_ = 0;
+        }
+      }
     }
   }
 
@@ -205,6 +263,7 @@ namespace Tako {
         }
       }
     }
+    RelinkHierarchy();
     MarkChanged();
   }
 

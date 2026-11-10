@@ -85,6 +85,8 @@ namespace Tako {
   {
     nlohmann::json json = actor.Save();
     json.erase("id");
+    // 親はシーンごとの物なので、プレハブには入れない
+    json.erase("parent");
     std::filesystem::create_directories(kPrefabsDirectory);
     std::ofstream file(GetPrefabPath(name));
     if (!file) {

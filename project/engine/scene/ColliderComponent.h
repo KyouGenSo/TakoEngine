@@ -1,5 +1,6 @@
 #pragma once
 #include "Component.h"
+#include "Transform.h"
 #include "Vector3.h"
 
 #include <cstdint>
@@ -29,6 +30,11 @@ namespace Tako {
     ~ColliderComponent() override;
 
     void BeginPlay() override;
+
+    /// <summary>
+    /// 親のある Actor では、ワールドの Transform を計算してコライダーに渡す
+    /// </summary>
+    void LateTick(float deltaTime) override;
 
     void EndPlay() override;
 
@@ -65,6 +71,7 @@ namespace Tako {
     uint32_t layer_ = kActorLayer;
 
     std::unique_ptr<Collider> collider_;
+    Transform                 worldTransform_{};  ///< 親のある Actor のときだけ使う
   };
 
 } // namespace Tako

@@ -28,6 +28,11 @@ namespace Tako {
     virtual void Tick([[maybe_unused]] float deltaTime) {}
 
     /// <summary>
+    /// 全 Actor の Tick の後、シーンの Update（当たり判定）の前に呼ばれる。他の Actor が動いた後の位置を使う処理を書く
+    /// </summary>
+    virtual void LateTick([[maybe_unused]] float deltaTime) {}
+
+    /// <summary>
     /// Play が終わるとき、または外される・消されるときに呼ばれる（BeginPlay を呼んだものだけ）
     /// </summary>
     virtual void EndPlay() {}

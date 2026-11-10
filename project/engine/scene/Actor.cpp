@@ -59,6 +59,38 @@ namespace Tako {
     }
   }
 
+  void Actor::LateTick(float deltaTime)
+  {
+    for (size_t i = 0; i < components_.size(); ++i) {
+      components_[i]->LateTick(deltaTime);
+    }
+  }
+
+  bool Actor::SetParent(Actor* parent, bool keepWorld)
+  {
+    for (const Actor* ancestor = parent; ancestor; ancestor = ancestor->parent_) {
+      if (ancestor == this) { return false; }
+    }
+    if (parent == parent_) { return true; }
+    const Matrix4x4 world = GetWorldMatrix();
+    parent_   = parent;
+    parentId_ = parent ? parent->id_ : 0;
+    if (keepWorld) {
+      const Matrix4x4 local = parent ? world * Mat4x4::Inverse(parent->GetWorldMatrix()) : world;
+      Mat4x4::Decompose(local, transform_.translate, transform_.rotate, transform_.scale);
+    }
+    if (scene_) {
+      scene_->RelinkHierarchy();
+      scene_->MarkChanged();
+    }
+    return true;
+  }
+
+  void Actor::SetWorldPosition(const Vector3& position)
+  {
+    transform_.translate = parent_ ? Mat4x4::Transform(Mat4x4::Inverse(parent_->GetWorldMatrix()), position) : position;
+  }
+
   void Actor::EndPlay()
   {
     if (!hasBegunPlay_) {
@@ -88,12 +120,16 @@ namespace Tako {
         { "properties", WriteProperties(component) },
       };
     }
-    return {
+    nlohmann::json json = {
       { "id", id_ },
       { "type", GetType().name },
       { "properties", WriteProperties(*this) },
       { "components", std::move(components) },
     };
+    if (parentId_ != 0) {
+      json["parent"] = parentId_;
+    }
+    return json;
   }
 
   void Actor::Load(const nlohmann::json& json)
@@ -101,6 +137,7 @@ namespace Tako {
     if (auto it = json.find("id"); it != json.end() && it->is_number_unsigned()) {
       id_ = it->get<ActorId>();
     }
+    parentId_ = json.value("parent", ActorId{ 0 });
     if (auto it = json.find("properties"); it != json.end()) {
       ReadProperties(*this, *it);
     }
@@ -139,7 +176,30 @@ namespace Tako {
 
   Matrix4x4 Actor::GetWorldMatrix() const
   {
-    return Mat4x4::MakeAffine(transform_.scale, transform_.rotate, transform_.translate);
+    const Matrix4x4 local = Mat4x4::MakeAffine(transform_.scale, transform_.rotate, transform_.translate);
+    return parent_ ? local * parent_->GetWorldMatrix() : local;
+  }
+
+  Transform Actor::GetWorldTransform() const
+  {
+    if (!parent_) { return transform_; }
+    Transform world;
+    Mat4x4::Decompose(GetWorldMatrix(), world.translate, world.rotate, world.scale);
+    return world;
+  }
+
+  Vector3 Actor::GetWorldPosition() const
+  {
+    const Matrix4x4 world = GetWorldMatrix();
+    return { world.m[3][0], world.m[3][1], world.m[3][2] };
+  }
+
+  Actor* Actor::FindChild(std::string_view name) const
+  {
+    for (Actor* child : children_) {
+      if (child->GetName() == name) { return child; }
+    }
+    return nullptr;
   }
 
   Component* Actor::FindComponent(const std::string& name) const

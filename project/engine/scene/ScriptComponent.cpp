@@ -26,6 +26,11 @@ namespace Tako {
     if (instance_) { instance_->Tick(deltaTime); }
   }
 
+  void ScriptComponent::LateTick(float deltaTime)
+  {
+    if (instance_) { instance_->LateTick(deltaTime); }
+  }
+
   void ScriptComponent::EndPlay()
   {
     if (instance_) { instance_->EndPlay(); }

@@ -578,20 +578,20 @@ namespace Tako {
     {
       Vector3 rotation;
 
-      // XYZ 順序での抽出
-      float sy = std::sqrt(matrix.m[0][0] * matrix.m[0][0] + matrix.m[1][0] * matrix.m[1][0]);
+      // MakeRotateXYZ（行ベクトルで Rx * Ry * Rz）の逆。m[0][2] = -sin(y)
+      float cosY = std::sqrt(matrix.m[0][0] * matrix.m[0][0] + matrix.m[0][1] * matrix.m[0][1]);
 
-      bool singular = sy < 1e-6; // ジンバルロック判定
+      bool singular = cosY < 1e-6; // ジンバルロック判定
 
       if (!singular) {
-        rotation.x = std::atan2(matrix.m[2][1], matrix.m[2][2]);
-        rotation.y = std::atan2(-matrix.m[2][0], sy);
-        rotation.z = std::atan2(matrix.m[1][0], matrix.m[0][0]);
+        rotation.x = std::atan2(matrix.m[1][2], matrix.m[2][2]);
+        rotation.y = std::atan2(-matrix.m[0][2], cosY);
+        rotation.z = std::atan2(matrix.m[0][1], matrix.m[0][0]);
       }
       else {
-        // ジンバルロックの場合
-        rotation.x = std::atan2(-matrix.m[1][2], matrix.m[1][1]);
-        rotation.y = std::atan2(-matrix.m[2][0], sy);
+        // y が ±90 度のときは x と z を分けられないので、z を 0 にして x に寄せる
+        rotation.x = std::atan2(-matrix.m[2][1], matrix.m[1][1]);
+        rotation.y = std::atan2(-matrix.m[0][2], cosY);
         rotation.z = 0.0f;
       }
 

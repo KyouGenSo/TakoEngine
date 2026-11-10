@@ -129,6 +129,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="engine\scene\SceneSelfTest.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
     <ClCompile Include="engine\scene\UILayoutComponent.cpp">
       <Filter>scene</Filter>
     </ClCompile>
@@ -512,6 +515,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\scene\SceneSelfTest.h">
+      <Filter>scene</Filter>
+    </ClInclude>
     <ClInclude Include="engine\scene\ActorRef.h">
       <Filter>scene</Filter>
     </ClInclude>

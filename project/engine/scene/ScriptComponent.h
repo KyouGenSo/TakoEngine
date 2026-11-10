@@ -27,6 +27,8 @@ namespace Tako {
 
     void Tick(float deltaTime) override;
 
+    void LateTick(float deltaTime) override;
+
     void EndPlay() override;
 
     /// <summary>

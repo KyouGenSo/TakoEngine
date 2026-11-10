@@ -57,7 +57,7 @@ namespace Tako {
     }
 
     /// <summary>
-    /// プレハブとの差分を、名前と Transform 以外は捨てる
+    /// プレハブとの差分を、名前・Transform・親以外は捨てる
     /// </summary>
     void RevertToPrefab(BaseScene& scene, ActorId id)
     {
@@ -69,7 +69,7 @@ namespace Tako {
         nlohmann::json kept = nlohmann::json::array();
         for (const nlohmann::json& operation : entry["overrides"]) {
           const std::string path = operation.value("path", std::string{});
-          if (path.starts_with("/properties/name") || path.starts_with("/properties/transform")) {
+          if (path.starts_with("/properties/name") || path.starts_with("/properties/transform") || path == "/parent") {
             kept.push_back(operation);
           }
         }
@@ -154,36 +154,23 @@ namespace Tako {
 
     bool isSelected = false;
     for (const std::unique_ptr<Actor>& actor : scene->GetActors()) {
-      ImGui::PushID(std::to_string(actor->GetId()).c_str());
-      const std::string label = actor->GetPrefab().empty() ? actor->GetName() : actor->GetName() + "  [" + actor->GetPrefab() + "]";
-      if (ImGui::Selectable(label.c_str(), selected_ == actor->GetId())) {
-        selected_  = actor->GetId();
-        isSelected = true;
+      if (!actor->GetParent()) {
+        DrawActorRow(*actor, isSelected);
       }
-      if (ImGui::BeginDragDropSource()) {
-        const ActorId id = actor->GetId();
-        ImGui::SetDragDropPayload(kActorPayload, &id, sizeof(id));
-        ImGui::TextUnformatted(actor->GetName().c_str());
-        ImGui::EndDragDropSource();
-      }
-      if (ImGui::BeginPopupContextItem("ActorMenu")) {
-        selected_  = actor->GetId();
-        isSelected = true;
-        DrawActorMenu(*actor);
-        ImGui::EndPopup();
-      }
-      if (std::optional<std::string> prefab = AcceptAssetDrop("Prefab")) {
-        RequestSpawn(*prefab);
-      }
-      ImGui::PopID();
     }
     if (scene->GetActors().empty()) {
       ImGui::TextDisabled("No actors (+ Add to create one)");
     }
-    // 一覧の下の空きにもプレハブを落とせるようにする
+    // 一覧の下の空き：プレハブを落とすと生成、Actor を落とすと親を外す
     ImGui::Dummy(ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetTextLineHeight() * 2.0f));
-    if (std::optional<std::string> prefab = AcceptAssetDrop("Prefab")) {
-      RequestSpawn(*prefab);
+    if (ImGui::BeginDragDropTarget()) {
+      if (std::optional<std::string> prefab = AcceptAssetPayload("Prefab")) {
+        RequestSpawn(*prefab);
+      }
+      if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(kActorPayload)) {
+        RequestParent(*static_cast<const ActorId*>(payload->Data), 0);
+      }
+      ImGui::EndDragDropTarget();
     }
 
     if (editing) {
@@ -338,6 +325,66 @@ namespace Tako {
     Request([typeOrPrefab](BaseScene& scene) { scene.Spawn(typeOrPrefab); });
   }
 
+  void SceneEditor::DrawActorRow(Actor& actor, bool& isSelected)
+  {
+    ImGui::PushID(std::to_string(actor.GetId()).c_str());
+    const std::string  label = actor.GetPrefab().empty() ? actor.GetName() : actor.GetName() + "  [" + actor.GetPrefab() + "]";
+    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen;
+    if (actor.GetChildren().empty()) {
+      flags |= ImGuiTreeNodeFlags_Leaf;
+    }
+    if (selected_ == actor.GetId()) {
+      flags |= ImGuiTreeNodeFlags_Selected;
+    }
+    const bool isOpen = ImGui::TreeNodeEx("##Row", flags, "%s", label.c_str());
+    if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
+      selected_  = actor.GetId();
+      isSelected = true;
+    }
+    if (ImGui::BeginDragDropSource()) {
+      const ActorId id = actor.GetId();
+      ImGui::SetDragDropPayload(kActorPayload, &id, sizeof(id));
+      ImGui::TextUnformatted(actor.GetName().c_str());
+      ImGui::EndDragDropSource();
+    }
+    if (ImGui::BeginPopupContextItem("ActorMenu")) {
+      selected_  = actor.GetId();
+      isSelected = true;
+      DrawActorMenu(actor);
+      ImGui::EndPopup();
+    }
+    if (ImGui::BeginDragDropTarget()) {
+      if (std::optional<std::string> prefab = AcceptAssetPayload("Prefab")) {
+        RequestSpawn(*prefab);
+      }
+      if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(kActorPayload)) {
+        RequestParent(*static_cast<const ActorId*>(payload->Data), actor.GetId());
+      }
+      ImGui::EndDragDropTarget();
+    }
+    if (isOpen) {
+      for (Actor* child : actor.GetChildren()) {
+        DrawActorRow(*child, isSelected);
+      }
+      ImGui::TreePop();
+    }
+    ImGui::PopID();
+  }
+
+  void SceneEditor::RequestParent(uint64_t child, uint64_t parent)
+  {
+    Request([child, parent](BaseScene& scene) {
+      Actor* childActor  = scene.FindActor(child);
+      Actor* parentActor = parent != 0 ? scene.FindActor(parent) : nullptr;
+      if (!childActor || (parent != 0 && !parentActor)) {
+        return;
+      }
+      if (!childActor->SetParent(parentActor)) {
+        DebugUIManager::GetInstance()->AddLog("An actor cannot be parented to itself or to one of its children", DebugUIManager::LogType::Warning);
+      }
+    });
+  }
+
   void SceneEditor::DrawActorMenu(Actor& actor)
   {
     const ActorId id = actor.GetId();
@@ -355,6 +402,19 @@ namespace Tako {
     if (ImGui::MenuItem("Delete", "Del")) {
       Request([id](BaseScene& scene) { scene.Destroy(scene.FindActor(id)); });
     }
+    ImGui::SetItemTooltip("Children are deleted too");
+
+    ImGui::SeparatorText("Hierarchy");
+    if (ImGui::MenuItem("Unparent", nullptr, false, actor.GetParent() != nullptr)) {
+      RequestParent(id, 0);
+    }
+    if (ImGui::MenuItem("Move Up")) {
+      Request([id](BaseScene& scene) { scene.MoveActor(scene.FindActor(id), -1); });
+    }
+    if (ImGui::MenuItem("Move Down")) {
+      Request([id](BaseScene& scene) { scene.MoveActor(scene.FindActor(id), 1); });
+    }
+    ImGui::SetItemTooltip("Actors tick and are saved in this order. Drop a row onto another to parent it");
 
     ImGui::SeparatorText("Prefab");
     if (!actor.GetPrefab().empty()) {

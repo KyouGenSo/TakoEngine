@@ -21,6 +21,7 @@
 #include "StringUtility.h"
 #include "TypeRegistry.h"
 #include "ReflectionSelfTest.h"
+#include "SceneSelfTest.h"
 
 #ifdef _DEBUG
 #include "DebugUIManager.h"
@@ -135,6 +136,8 @@ namespace Tako {
     }
 
 #ifdef _DEBUG
+    RunSceneSelfTest();
+
     // 初期コンソールログ
     DebugUIManager::GetInstance()->AddLog("TakoEngine Initialized", DebugUIManager::LogType::Info);
     DebugUIManager::GetInstance()->AddLog("DirectX 12 Ready", DebugUIManager::LogType::Info);

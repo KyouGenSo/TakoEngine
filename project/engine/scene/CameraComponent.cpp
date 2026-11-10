@@ -20,7 +20,7 @@ namespace Tako {
     }
     // ポインタは影・線・デカール・パーティクルも同じものを持っているので、差し替えずに値を写す
     Camera*          camera    = *Renderer::GetInstance()->GetCamera();
-    const Transform& transform = GetOwner()->GetTransform();
+    const Transform  transform = GetOwner()->GetWorldTransform();
     camera->SetRotate(transform.rotate);
     camera->SetTranslate(transform.translate);
     camera->SetFovY(fovY_);

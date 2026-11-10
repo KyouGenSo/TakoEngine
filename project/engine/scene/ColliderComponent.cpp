@@ -60,9 +60,8 @@ namespace Tako {
     } else {
       collider_ = std::make_unique<ComponentCollider<SphereCollider>>(this);
     }
-    // Actor はフラットなので、Actor の Transform がそのままワールドの Transform
-    collider_->SetTransform(&GetOwner()->GetTransform());
     collider_->SetOwner(GetOwner());
+    LateTick(0.0f);
     ApplyShape();
 
     CollisionManager* manager = CollisionManager::GetInstance();
@@ -70,6 +69,20 @@ namespace Tako {
       manager->SetCollisionMask(kActorLayer, kActorLayer, true);
     }
     manager->AddCollider(collider_.get());
+  }
+
+  void ColliderComponent::LateTick([[maybe_unused]] float deltaTime)
+  {
+    if (!collider_) {
+      return;
+    }
+    // 親が無ければ Actor の Transform がそのままワールド（写さずに指すので、Tick の後の値がそのまま当たり判定に使われる）
+    if (!GetOwner()->GetParent()) {
+      collider_->SetTransform(&GetOwner()->GetTransform());
+      return;
+    }
+    worldTransform_ = GetOwner()->GetWorldTransform();
+    collider_->SetTransform(&worldTransform_);
   }
 
   void ColliderComponent::EndPlay()

@@ -121,6 +121,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="engine\scene\SceneSelfTest.cpp" />
     <ClCompile Include="engine\scene\UILayoutComponent.cpp" />
     <ClCompile Include="engine\scene\AudioSourceComponent.cpp" />
     <ClCompile Include="engine\scene\AnimatorComponent.cpp" />
@@ -292,6 +293,7 @@
     <ClCompile Include="engine\debug\MaterialEditor.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\scene\SceneSelfTest.h" />
     <ClInclude Include="engine\scene\ActorRef.h" />
     <ClInclude Include="engine\scene\UILayoutComponent.h" />
     <ClInclude Include="engine\scene\AudioSourceComponent.h" />

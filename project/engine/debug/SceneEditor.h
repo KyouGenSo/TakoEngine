@@ -95,6 +95,17 @@ namespace Tako {
     /// </summary>
     void DrawNewScenePopup();
 
+    /// <summary>
+    /// Hierarchy の 1 行と、その子の行。別の行をここへ落とすと子になる
+    /// </summary>
+    /// <param name="isSelected">この行か子の行を選んだら true にする</param>
+    void DrawActorRow(Actor& actor, bool& isSelected);
+
+    /// <summary>
+    /// child の親を parent にする（0 で外す）。Update で行う
+    /// </summary>
+    void RequestParent(uint64_t child, uint64_t parent);
+
     void DrawActorMenu(Actor& actor);
 
     void DrawComponent(Actor& actor, Component& component);
