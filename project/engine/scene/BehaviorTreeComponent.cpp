@@ -31,7 +31,7 @@ namespace Tako {
     std::erase(Playing(), this);
   }
 
-  void BehaviorTreeComponent::BeginPlay()
+  void BehaviorTreeComponent::Awake()
   {
     runtime_->GetBlackboard()->SetPtr<Actor>(kBTOwnerKey, GetOwner());
     if (tree_.empty()) {

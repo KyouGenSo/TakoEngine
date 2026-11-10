@@ -29,7 +29,10 @@ namespace Tako {
     ColliderComponent();
     ~ColliderComponent() override;
 
-    void BeginPlay() override;
+    /// <summary>
+    /// コライダーを作って登録する。他の BeginPlay から触れるよう、BeginPlay より前に行う
+    /// </summary>
+    void Awake() override;
 
     /// <summary>
     /// 親のある Actor では、ワールドの Transform を計算してコライダーに渡す

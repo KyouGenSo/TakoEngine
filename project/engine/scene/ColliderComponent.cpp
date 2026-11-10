@@ -53,7 +53,7 @@ namespace Tako {
     EndPlay();
   }
 
-  void ColliderComponent::BeginPlay()
+  void ColliderComponent::Awake()
   {
     if (shape_ == Shape::Box) {
       collider_ = std::make_unique<ComponentCollider<OBBCollider>>(this);

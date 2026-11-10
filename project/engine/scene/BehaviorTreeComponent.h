@@ -21,7 +21,10 @@ namespace Tako {
     BehaviorTreeComponent();
     ~BehaviorTreeComponent() override;
 
-    void BeginPlay() override;
+    /// <summary>
+    /// ツリーを読む。スクリプトが BeginPlay でツリーを使えるよう、BeginPlay より前に行う
+    /// </summary>
+    void Awake() override;
 
     void Tick(float deltaTime) override;
 

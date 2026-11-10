@@ -8,6 +8,7 @@
 #include "TypeRegistry.h"
 
 #include <algorithm>
+#include <cmath>
 
 namespace Tako {
 
@@ -71,6 +72,13 @@ namespace Tako {
 
   void Actor::SetWorldTransform(const Transform& world)
   {
+    // 親の大きさが 0 だと逆行列が作れないので、そのままにする（親と一緒に見えなくなっている）
+    if (parent_) {
+      const Vector3 parentScale = parent_->GetWorldTransform().scale;
+      if (std::abs(parentScale.x * parentScale.y * parentScale.z) < 1e-6f) {
+        return;
+      }
+    }
     const Matrix4x4 matrix = Mat4x4::MakeAffine(world.scale, world.rotate, world.translate);
     const Matrix4x4 local  = parent_ ? matrix * Mat4x4::Inverse(parent_->GetWorldMatrix()) : matrix;
     Mat4x4::Decompose(local, transform_.translate, transform_.rotate, transform_.scale);

@@ -110,7 +110,8 @@ namespace Tako {
     void SetWorldPosition(const Vector3& position);
 
     /// <summary>
-    /// ワールドでの位置・回転・大きさがこの値になるよう、Transform を決める（親が動いても、ワールドに置いたままにしたい子に毎フレーム使う）
+    /// ワールドでの位置・回転・大きさがこの値になるよう、Transform を決める（親が動いても、ワールドに置いたままにしたい子に毎フレーム使う）。
+    /// 親の大きさが 0 の間は何もしない
     /// </summary>
     void SetWorldTransform(const Transform& world);
 
