@@ -71,6 +71,7 @@ namespace Tako {
     float                 speed       = 0.0f;     ///< 0 なら型ごとの既定
     uint32_t              flags       = 0;
     const EnumInfo*       enumInfo    = nullptr;  ///< TENUM の enum だけ
+    const char*           asset       = "";       ///< アセットの種類（AssetBrowser.h の kind）。空でなければ文字列をアセットの欄で編集する
   };
 
   class PropertyVisitor;

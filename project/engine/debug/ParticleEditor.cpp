@@ -1261,6 +1261,19 @@ namespace Tako {
     }
   }
 
+  void ParticleEditor::OpenPreset(const std::string& name) {
+    if (!emitterManager_) {
+      LogToConsole("Particle Editor: this scene has no EmitterManager", LogType::Warning);
+      return;
+    }
+    // 同じ名前で読むので、Save でプリセットへ書き戻せる
+    if (!emitterManager_->HasEmitter(name)) {
+      emitterManager_->LoadPreset(name, name);
+    }
+    selectedEmitterName_ = name;
+    inspectTarget_       = InspectTarget::Emitter;
+  }
+
   void ParticleEditor::SetEmitterManager(EmitterManager* emitterManager) {
     if (emitterManager != emitterManager_) {
       for (const auto& unsaved : unsavedEmitters_) {

@@ -63,6 +63,12 @@ namespace Tako {
     /// </summary>
     void LeaveNested();
 
+    /// <summary>
+    /// Asset 指定子の文字列を、種類のファイルの一覧・Assets からのドロップ・Open で編集する
+    /// </summary>
+    /// <returns>値が変わったら true</returns>
+    bool DrawAsset(std::string& value, const PropertyMeta& meta);
+
   private: //メンバー変数
     const char*              category_ = "";
     const char*              label_    = "";   ///< Begin が決めた入力欄の名前。配列の要素は "[i]"

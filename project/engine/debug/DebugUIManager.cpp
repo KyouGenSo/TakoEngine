@@ -174,6 +174,7 @@ namespace Tako {
     uiLayoutEditor_.Initialize(&WindowFlag(Window::UIEditor));
     cameraAnimationEditor_.Initialize(&WindowFlag(Window::CameraAnimationEditor), &debugViewport_);
     animationEditor_.Initialize(&WindowFlag(Window::AnimationEditor), cameraSettings);
+    RegisterAssetOpeners();
 
     // ×ボタン・Alt+F4 で未保存の変更があれば閉じずに確認する
     WinApp::GetInstance()->SetCloseHandler([this] { return ConfirmExit(); });
@@ -181,6 +182,23 @@ namespace Tako {
     // 初期ログ
     AddLog("DebugUIManager Initialized", LogType::Info);
     AddLog("TakoEngine Ready", LogType::Info);
+  }
+
+  void DebugUIManager::RegisterAssetOpeners() {
+    // 開く先の窓も表示する
+    auto opener = [this](Window window, std::function<void(const std::string&)> open) {
+      return [this, window, open = std::move(open)](const std::string& value) {
+        WindowFlag(window) = true;
+        open(value);
+      };
+    };
+    SetAssetOpener("Material", opener(Window::MaterialEditor, [this](const std::string& name) { materialEditor_.RequestOpen(name); }));
+    SetAssetOpener("AnimationClip", opener(Window::AnimationEditor, [this](const std::string& name) { animationEditor_.RequestOpen(name); }));
+    SetAssetOpener("UILayout", opener(Window::UIEditor, [this](const std::string& name) { uiLayoutEditor_.OpenLayout(name); }));
+    SetAssetOpener("ParticlePreset", opener(Window::ParticleEditor, [this](const std::string& name) { particleEditor_.OpenPreset(name); }));
+    SetAssetOpener("PostEffectProfile", opener(Window::PostEffect, [](const std::string& name) { PostEffectManager::GetInstance()->LoadProfile(name); }));
+    SetAssetOpener("Prefab", opener(Window::SceneHierarchy, [this](const std::string& name) { sceneEditor_.RequestSpawn(name); }));
+    SetAssetOpener("Scene", [this](const std::string& name) { RequestSceneChange(name); });
   }
 
   void DebugUIManager::Finalize() {

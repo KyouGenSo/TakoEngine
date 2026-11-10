@@ -50,7 +50,7 @@ namespace Tako {
 
 #ifdef _DEBUG
     /// <summary>
-    /// Script 欄（一覧から選ぶ・Assets からドロップする・Open で VS で開く）とスクリプトのプロパティ
+    /// スクリプトのプロパティ（Script 欄は Asset 指定子の欄）
     /// </summary>
     bool DrawCustomImGui() override;
 #endif
@@ -78,7 +78,7 @@ namespace Tako {
     void RebuildInstance(const nlohmann::json& values);
 
   private: //メンバー変数
-    TPROPERTY()
+    TPROPERTY(Edit, Asset = "Script")
     std::string script_;
 
     std::unique_ptr<Script> instance_;

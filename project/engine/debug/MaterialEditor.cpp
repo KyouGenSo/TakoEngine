@@ -115,14 +115,22 @@ namespace Tako {
     return saved;
   }
 
+  void MaterialEditor::RequestOpen(const std::string& name)
+  {
+    if (name == selected_) {
+      return;
+    }
+    unsavedPrompt_.RunOrConfirm(tracker_.IsEdited(), std::format("Material '{}' has unsaved changes.", selected_), "Open",
+                                [this, name] { Select(name); });
+  }
+
   void MaterialEditor::DrawListPane()
   {
     ImGui::SeparatorText("Materials");
     for (const std::string& name : MaterialLibrary::GetInstance()->GetMaterialFileNames()) {
       const std::string label = MaterialLibrary::GetInstance()->IsPostEffectMaterial(name) ? std::format("{}  (PostEffect)##{}", name, name) : name;
-      if (ImGui::Selectable(label.c_str(), name == selected_) && name != selected_) {
-        unsavedPrompt_.RunOrConfirm(tracker_.IsEdited(), std::format("Material '{}' has unsaved changes.", selected_), "Open",
-                                    [this, name] { Select(name); });
+      if (ImGui::Selectable(label.c_str(), name == selected_)) {
+        RequestOpen(name);
       }
     }
 

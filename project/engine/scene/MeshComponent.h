@@ -33,7 +33,7 @@ namespace Tako {
     Object3d* GetObject3d() const { return object_.get(); }
 
   private: //メンバー変数
-    TPROPERTY(Edit, Tooltip = "resources/Model からのパス。エンジンのモデルは EngineResources/Model/ から書く")
+    TPROPERTY(Edit, Asset = "Model")
     std::string model_;
     TPROPERTY(Edit, Tooltip = "Object Settings の名前（空なら使わない）")
     std::string settingsName_;

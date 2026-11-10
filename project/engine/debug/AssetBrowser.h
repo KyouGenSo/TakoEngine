@@ -3,6 +3,7 @@
 #ifdef _DEBUG
 
 #include <filesystem>
+#include <functional>
 #include <optional>
 #include <span>
 #include <string>
@@ -208,6 +209,16 @@ namespace Tako {
   /// 直前のアイテムへの kind のファイルのドロップ。落とされたフレームだけ値を返す
   /// </summary>
   std::optional<std::string> AcceptAssetDrop(std::string_view kind);
+
+  /// <summary>
+  /// kind のファイルを開く処理を登録する（Assets のダブルクリックとアセットの欄の Open が使う）
+  /// </summary>
+  void SetAssetOpener(std::string_view kind, std::function<void(const std::string& value)> opener);
+
+  /// <summary>
+  /// 値のファイルを開く。kind の処理が登録されていなければ、ソースファイルは VS で、他は関連付けで開く
+  /// </summary>
+  void OpenAsset(std::string_view kind, const std::string& value);
 
 } // namespace Tako
 

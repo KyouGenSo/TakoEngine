@@ -52,6 +52,11 @@ namespace Tako {
     void ClearSelection() { selected_ = 0; }
 
     /// <summary>
+    /// 型かプレハブの名前の Actor を、Update で今のシーンに出す
+    /// </summary>
+    void RequestSpawn(const std::string& typeOrPrefab);
+
+    /// <summary>
     /// キー操作の表。Draw のキー処理と About の一覧が使う
     /// </summary>
     static std::span<const ShortcutBinding<SceneEditor>> Shortcuts();

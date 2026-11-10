@@ -2,6 +2,7 @@
 
 #include "SceneEditor.h"
 #include "Actor.h"
+#include "AssetBrowser.h"
 #include "BaseScene.h"
 #include "Component.h"
 #include "DebugUIManager.h"
@@ -117,10 +118,18 @@ namespace Tako {
         DrawActorMenu(*actor);
         ImGui::EndPopup();
       }
+      if (std::optional<std::string> prefab = AcceptAssetDrop("Prefab")) {
+        RequestSpawn(*prefab);
+      }
       ImGui::PopID();
     }
     if (scene->GetActors().empty()) {
       ImGui::TextDisabled("No actors (+ Add to create one)");
+    }
+    // 一覧の下の空きにもプレハブを落とせるようにする
+    ImGui::Dummy(ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetTextLineHeight() * 2.0f));
+    if (std::optional<std::string> prefab = AcceptAssetDrop("Prefab")) {
+      RequestSpawn(*prefab);
     }
 
     if (editing) {
@@ -233,8 +242,7 @@ namespace Tako {
     for (const TypeInfo* type : TypeRegistry::GetInstance()->GetCreatableTypes(Actor::StaticType())) {
       const std::string name = type == &Actor::StaticType() ? "Empty Actor" : type->name;
       if (ImGui::MenuItem(name.c_str())) {
-        const std::string typeName = type->name;
-        Request([typeName](BaseScene& scene) { scene.Spawn(typeName); });
+        RequestSpawn(type->name);
       }
     }
     const std::vector<std::string> prefabs = GetPrefabNames();
@@ -243,9 +251,14 @@ namespace Tako {
     }
     for (const std::string& prefab : prefabs) {
       if (ImGui::MenuItem(prefab.c_str())) {
-        Request([prefab](BaseScene& scene) { scene.Spawn(prefab); });
+        RequestSpawn(prefab);
       }
     }
+  }
+
+  void SceneEditor::RequestSpawn(const std::string& typeOrPrefab)
+  {
+    Request([typeOrPrefab](BaseScene& scene) { scene.Spawn(typeOrPrefab); });
   }
 
   void SceneEditor::DrawActorMenu(Actor& actor)

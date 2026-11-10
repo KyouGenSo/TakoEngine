@@ -5,7 +5,6 @@
 #include "TypeRegistry.h"
 
 #ifdef _DEBUG
-#include "AssetBrowser.h"
 #include "ImGuiPropertyVisitor.h"
 #include "imgui.h"
 #endif
@@ -100,35 +99,14 @@ namespace Tako {
 #ifdef _DEBUG
   bool ScriptComponent::DrawCustomImGui()
   {
-    std::string selected = script_;
-    const bool  isOpen   = ImGui::BeginCombo("Script", script_.empty() ? "None" : script_.c_str());
-    if (isOpen) {
-      if (ImGui::Selectable("None", script_.empty())) { selected.clear(); }
-      for (const TypeInfo* type : TypeRegistry::GetInstance()->GetCreatableTypes(Script::StaticType())) {
-        if (ImGui::Selectable(type->name, script_ == type->name)) { selected = type->name; }
-      }
-      ImGui::EndCombo();
-    } else {
-      // 一覧を開いている間は直前のアイテムが一覧の中のものになるので、閉じているときだけ受け付ける
-      ImGui::SetItemTooltip("Drop a script from the Assets window (Script folder)");
-      if (std::optional<std::string> dropped = AcceptAssetDrop("Script")) { selected = *dropped; }
-    }
-    ImGui::SameLine();
-    ImGui::BeginDisabled(script_.empty());
-    if (ImGui::SmallButton("Open")) { OpenScriptFile(script_); }
-    ImGui::EndDisabled();
-
-    const bool isChanged = selected != script_;
-    script_              = selected;
-
     if (instance_ && builtScript_ == script_) {
       ImGui::SeparatorText(instance_->GetType().name);
-      return DrawProperties(*instance_) || isChanged;
+      return DrawProperties(*instance_);
     }
     if (!missingValues_.is_null() && builtScript_ == script_) {
       ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.2f, 1.0f), "Script \"%s\" was not found (values are kept)", script_.c_str());
     }
-    return isChanged;
+    return false;
   }
 #endif
 

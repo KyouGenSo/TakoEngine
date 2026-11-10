@@ -20,6 +20,7 @@ namespace Tako {
 //     Angle               : ラジアンの float を度で編集する（ClampMin / ClampMax / Speed も度）
 //     EnumAsInt           : enum を名前でなく数値で保存する
 //     Tooltip / DisplayName = "..." : 説明と表示名（表示名の既定はメンバー名を単語に分けたもの）
+//     Asset = "Model"     : std::string をアセットの欄（一覧から選ぶ・Assets からドロップ・Open）で編集する。種類は AssetBrowser.h の kind
 #define TCLASS(...)
 #define TSTRUCT(...)
 #define TENUM(...)

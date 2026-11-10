@@ -794,6 +794,15 @@ namespace Tako {
     return elements;
   }
 
+  void UILayoutEditor::OpenLayout(const std::string& name) {
+    const bool inScene = std::ranges::any_of(UILayout::GetInstances(), [&](const UILayout* candidate) {
+      return candidate != preview_.get() && candidate->GetName() == name;
+    });
+    if (name != layoutName_ || isPreviewMode_ == inScene) {
+      RequestOpen({ .name = name, .isPreview = !inScene });
+    }
+  }
+
   void UILayoutEditor::DrawToolbar(UILayout* layout) {
     auto open = [this](const std::string& name, bool isPreview) {
       if (name != layoutName_ || isPreview != isPreviewMode_) {

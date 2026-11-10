@@ -175,6 +175,11 @@ namespace Tako {
     void CollectUnsavedChanges(std::vector<std::string>& out) const;
 
     /// <summary>
+    /// name を開く。今のシーンが読み込んでいればそれを、無ければプレビューで開く（未保存なら確認する）
+    /// </summary>
+    void OpenLayout(const std::string& name);
+
+    /// <summary>
     /// キー操作とマウス操作の表。Draw のキー処理と About の一覧が使う
     /// </summary>
     static std::span<const ShortcutBinding<UILayoutEditor>> Shortcuts();

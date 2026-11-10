@@ -257,6 +257,11 @@ namespace Tako {
     void RequestSceneChange(const std::string& sceneName);
 
     /// <summary>
+    /// Assets のダブルクリックとアセットの欄の Open で、種類ごとに開くエディタを登録する
+    /// </summary>
+    void RegisterAssetOpeners();
+
+    /// <summary>
     /// ゲーム更新とサウンドを一時停止/再開する
     /// </summary>
     void SetGamePaused(bool paused);

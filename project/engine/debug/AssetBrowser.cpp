@@ -19,6 +19,7 @@
 #include <cstdio>
 #include <cstring>
 #include <format>
+#include <map>
 #include <string_view>
 #include <system_error>
 
@@ -78,6 +79,11 @@ namespace Tako {
     const AssetKind* FindAssetKind(std::string_view name) {
       const auto it = std::ranges::find(kAssetKinds, name, &AssetKind::name);
       return it != std::end(kAssetKinds) ? &*it : nullptr;
+    }
+
+    std::map<std::string, std::function<void(const std::string&)>, std::less<>>& AssetOpeners() {
+      static std::map<std::string, std::function<void(const std::string&)>, std::less<>> openers;
+      return openers;
     }
 
     /// <summary>
@@ -233,6 +239,24 @@ namespace Tako {
 
     bool IsSourceFile(const fs::path& path) {
       return HasExtension(path, { L".h", L".hpp", L".cpp", L".hlsl", L".hlsli" });
+    }
+
+    /// <summary>
+    /// 開く処理が登録された種類のファイルなら、それで開く
+    /// </summary>
+    /// <returns>そういう種類でなければ false</returns>
+    bool OpenInRegisteredEditor(const fs::path& path) {
+      for (const AssetKind& kind : kAssetKinds) {
+        const auto opener = AssetOpeners().find(kind.name);
+        if (opener == AssetOpeners().end()) {
+          continue;
+        }
+        if (const std::optional<std::string> value = ToAssetValue(kind.name, path)) {
+          opener->second(*value);
+          return true;
+        }
+      }
+      return false;
     }
 
     /// <summary>
@@ -478,6 +502,31 @@ namespace Tako {
     std::optional<std::string> value = AcceptAssetPayload(kind);
     ImGui::EndDragDropTarget();
     return value;
+  }
+
+  void SetAssetOpener(std::string_view kind, std::function<void(const std::string& value)> opener) {
+    AssetOpeners().insert_or_assign(std::string(kind), std::move(opener));
+  }
+
+  void OpenAsset(std::string_view kind, const std::string& value) {
+    if (value.empty()) {
+      return;
+    }
+    if (const auto it = AssetOpeners().find(kind); it != AssetOpeners().end()) {
+      it->second(value);
+      return;
+    }
+    const fs::path path = ToAssetPath(kind, value);
+    if (path.empty()) {
+      LogToConsole(std::format("{} not found: {}", kind, value), LogType::Warning);
+      return;
+    }
+    if (IsSourceFile(path)) {
+      OpenSourceFile(path);
+    }
+    else {
+      OpenWithShell(path);
+    }
   }
 
   AssetBrowser::~AssetBrowser() {
@@ -831,11 +880,13 @@ namespace Tako {
         if (entry.isDirectory) {
           pendingDir_ = entry.path;
         }
-        else if (IsSourceFile(entry.path)) {
-          OpenSourceFile(entry.path);
-        }
-        else {
-          OpenWithShell(entry.path);
+        else if (!OpenInRegisteredEditor(entry.path)) {
+          if (IsSourceFile(entry.path)) {
+            OpenSourceFile(entry.path);
+          }
+          else {
+            OpenWithShell(entry.path);
+          }
         }
       }
     }

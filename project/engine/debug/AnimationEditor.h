@@ -94,6 +94,11 @@ namespace Tako {
     void CollectUnsavedChanges(std::vector<std::string>& out) const;
 
     /// <summary>
+    /// 未保存なら確認してから name を開く
+    /// </summary>
+    void RequestOpen(const std::string& name);
+
+    /// <summary>
     /// キー操作の表。Draw のキー処理と About の一覧が使う
     /// </summary>
     static std::span<const ShortcutBinding<AnimationEditor>> Shortcuts();
@@ -114,11 +119,6 @@ namespace Tako {
     /// </summary>
     /// <returns>ファイルが無く開けなければ false</returns>
     bool Open(const std::string& name);
-
-    /// <summary>
-    /// 未保存なら確認してから name を開く
-    /// </summary>
-    void RequestOpen(const std::string& name);
 
     /// <summary>
     /// 未保存なら確認してからファイルの内容に戻す

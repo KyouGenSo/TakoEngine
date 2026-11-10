@@ -103,6 +103,11 @@ namespace Tako {
     void CollectUnsavedChanges(std::vector<std::string>& out) const;
 
     /// <summary>
+    /// プリセットと同じ名前のエミッターを選ぶ。無ければ、その名前でプリセットを読み込んでから選ぶ
+    /// </summary>
+    void OpenPreset(const std::string& name);
+
+    /// <summary>
     /// キー操作の表。Draw のキー処理と About の一覧が使う
     /// </summary>
     static std::span<const ShortcutBinding<ParticleEditor>> Shortcuts();

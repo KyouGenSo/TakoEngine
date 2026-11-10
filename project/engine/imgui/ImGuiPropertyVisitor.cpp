@@ -1,6 +1,7 @@
 #ifdef _DEBUG
 
 #include "ImGuiPropertyVisitor.h"
+#include "AssetBrowser.h"
 #include "TObject.h"
 
 #include "imgui.h"
@@ -212,11 +213,51 @@ namespace Tako {
   void ImGuiPropertyVisitor::Visit(const char* key, std::string& value, const PropertyMeta& meta)
   {
     if (!Begin(key, meta)) { return; }
+    if (meta.asset[0] != '\0') {
+      End(meta, DrawAsset(value, meta));
+      return;
+    }
     char buffer[256];
     strncpy_s(buffer, value.c_str(), _TRUNCATE);
     const bool changed = ImGui::InputText(label_, buffer, sizeof(buffer));
     if (changed) { value = buffer; }
     End(meta, changed);
+  }
+
+  bool ImGuiPropertyVisitor::DrawAsset(std::string& value, const PropertyMeta& meta)
+  {
+    std::optional<std::string> selected;
+    // 右に Open のボタンを置く分だけ狭める
+    ImGui::SetNextItemWidth(ImGui::CalcItemWidth() - ImGui::CalcTextSize("Open").x - ImGui::GetStyle().FramePadding.x * 2.0f - ImGui::GetStyle().ItemInnerSpacing.x);
+    if (ImGui::BeginCombo(label_, value.empty() ? "(none)" : value.c_str(), ImGuiComboFlags_HeightLarge)) {
+      if (ImGui::Selectable("(none)", value.empty())) {
+        selected = std::string();
+      }
+      for (const std::string& candidate : ListAssets(meta.asset)) {
+        if (ImGui::Selectable(candidate.c_str(), candidate == value)) {
+          selected = candidate;
+        }
+      }
+      ImGui::EndCombo();
+    }
+    else {
+      // 一覧を開いている間は直前のアイテムが一覧の中のものになるので、閉じているときだけ受け付ける
+      ImGui::SetItemTooltip("%s", meta.tooltip[0] != '\0' ? meta.tooltip : "Pick from the list or drop a file from the Assets window");
+      if (std::optional<std::string> dropped = AcceptAssetDrop(meta.asset)) {
+        selected = std::move(dropped);
+      }
+    }
+    ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+    ImGui::BeginDisabled(value.empty());
+    if (ImGui::SmallButton("Open")) {
+      OpenAsset(meta.asset, value);
+    }
+    ImGui::EndDisabled();
+    if (!selected || *selected == value) {
+      return false;
+    }
+    value = std::move(*selected);
+    return true;
   }
 
   void ImGuiPropertyVisitor::Visit(const char* key, Transform& value, const PropertyMeta& meta)

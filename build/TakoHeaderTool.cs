@@ -64,7 +64,7 @@ public class TakoHeaderTool : Task
     private readonly List<string> reflectedHeaders_ = new List<string>();
 
     private static readonly HashSet<string> kFlagSpecifiers = new HashSet<string> { "Edit", "Visible", "Transient", "Color", "EnumAsInt", "Angle" };
-    private static readonly HashSet<string> kStringSpecifiers = new HashSet<string> { "Category", "Tooltip", "DisplayName" };
+    private static readonly HashSet<string> kStringSpecifiers = new HashSet<string> { "Category", "Tooltip", "DisplayName", "Asset" };
     private static readonly HashSet<string> kNumberSpecifiers = new HashSet<string> { "ClampMin", "ClampMax", "Speed" };
 
     public override bool Execute()
@@ -504,6 +504,10 @@ public class TakoHeaderTool : Task
         }
         prop.Member = tokens[nameIndex].Text;
         prop.TypeText = NormalizeSpaces(code.Substring(tokens[declStart].Start, tokens[nameIndex - 1].End - tokens[declStart].Start));
+        if (prop.Specifiers.Any(s => s.Key == "Asset") && ElementType(prop.TypeText) != "std::string")
+        {
+            Error(path, line, "Asset は std::string（か、その std::vector）にだけ付けられる");
+        }
         return prop;
     }
 
@@ -662,6 +666,7 @@ public class TakoHeaderTool : Task
         string min = null;
         string max = null;
         string speed = null;
+        string asset = null;
         var flags = new List<string>();
         foreach (KeyValuePair<string, string> s in p.Specifiers)
         {
@@ -673,6 +678,7 @@ public class TakoHeaderTool : Task
                 case "ClampMin": min = s.Value; break;
                 case "ClampMax": max = s.Value; break;
                 case "Speed": speed = s.Value; break;
+                case "Asset": asset = s.Value; break;
                 default: flags.Add("::Tako::kProp" + s.Key); break;
             }
         }
@@ -699,6 +705,7 @@ public class TakoHeaderTool : Task
         if (speed != null) fields.Add(".speed = static_cast<float>(" + speed + ")");
         if (flags.Count > 0) fields.Add(".flags = " + string.Join(" | ", flags));
         if (enumDecl != null) fields.Add(".enumInfo = &kEnumInfo_" + key);
+        if (asset != null) fields.Add(".asset = " + asset);
         sb.AppendLine("  v(\"" + key + "\", " + p.Member + ", { " + string.Join(", ", fields) + " });");
     }
 
