@@ -10,6 +10,7 @@
 namespace Tako {
 
   class Actor;
+  class EmitterManager;
 
   using ActorId = uint64_t;
 
@@ -117,6 +118,11 @@ namespace Tako {
 
     const std::vector<std::unique_ptr<Actor>>& GetActors() const { return actors_; }
 
+    /// <summary>
+    /// このシーンのエミッター（パーティクル）。シーンと一緒に消える
+    /// </summary>
+    EmitterManager& GetEmitterManager() const { return *emitterManager_; }
+
     Actor* FindActor(ActorId id) const;
 
     Actor* FindActor(std::string_view name) const;
@@ -142,7 +148,7 @@ namespace Tako {
     virtual void Finalize() {}
 
     /// <summary>
-    /// 更新。Actor の Tick の後に呼ばれる。既定は CollisionManager の当たり判定だけ（手書きのシーンは自分で呼ぶ）
+    /// 更新。Actor の Tick の後に呼ばれる。既定は CollisionManager の当たり判定と、一時エミッターの寿命（手書きのシーンは自分で呼ぶ）
     /// </summary>
     virtual void Update();
 
@@ -173,6 +179,8 @@ namespace Tako {
     Actor* AddPending(std::unique_ptr<Actor> actor);
 
   private: //メンバー変数
+    // Actor のコンポーネントがエミッターを消すので、Actor より先に宣言して後に消す
+    std::unique_ptr<EmitterManager>     emitterManager_;
     std::string                         sceneName_;
     std::vector<std::unique_ptr<Actor>> actors_;
     std::vector<std::unique_ptr<Actor>> pendingSpawns_;

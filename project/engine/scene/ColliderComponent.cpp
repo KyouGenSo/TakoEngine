@@ -4,6 +4,12 @@
 #include "OBBCollider.h"
 #include "SphereCollider.h"
 
+#ifdef _DEBUG
+#include "imgui.h"
+
+#include <format>
+#endif
+
 namespace Tako {
 
   namespace {
@@ -82,6 +88,28 @@ namespace Tako {
       ApplyShape();
     }
   }
+
+#ifdef _DEBUG
+  bool ColliderComponent::DrawCustomImGui()
+  {
+    const std::vector<std::string>& names = CollisionManager::GetInstance()->GetLayerNames();
+    auto label = [&](uint32_t layer) {
+      return layer < names.size() && !names[layer].empty() ? std::format("{}: {}", layer, names[layer]) : std::format("{}: Layer {}", layer, layer);
+    };
+    bool changed = false;
+    if (ImGui::BeginCombo("Layer", label(layer_).c_str())) {
+      for (uint32_t layer = 0; layer < CollisionManager::kMaxLayers; ++layer) {
+        if (ImGui::Selectable(label(layer).c_str(), layer == layer_) && layer != layer_) {
+          layer_  = layer;
+          changed = true;
+        }
+      }
+      ImGui::EndCombo();
+    }
+    ImGui::SetItemTooltip("Layer names and which layers collide are set in Engine Settings > Physics. %u collides only with other actors by default", kActorLayer);
+    return changed;
+  }
+#endif
 
   void ColliderComponent::Notify(Collider* other, void (Component::* handler)(Actor*))
   {

@@ -129,6 +129,18 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="engine\scene\UILayoutComponent.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\scene\AudioSourceComponent.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\scene\AnimatorComponent.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\scene\ParticleSystemComponent.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
     <ClCompile Include="engine\scene\PostProcessComponent.cpp">
       <Filter>scene</Filter>
     </ClCompile>
@@ -500,6 +512,18 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\scene\UILayoutComponent.h">
+      <Filter>scene</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\scene\AudioSourceComponent.h">
+      <Filter>scene</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\scene\AnimatorComponent.h">
+      <Filter>scene</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\scene\ParticleSystemComponent.h">
+      <Filter>scene</Filter>
+    </ClInclude>
     <ClInclude Include="engine\scene\PostProcessComponent.h">
       <Filter>scene</Filter>
     </ClInclude>

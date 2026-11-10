@@ -14,6 +14,7 @@
 #include "ModelManager.h"
 #include "ShadowRenderer.h"
 #include "SceneManager.h"
+#include "BaseScene.h"
 #include "imgui_internal.h"
 #include "LineRenderer.h"
 #include "GPUParticle.h"
@@ -238,6 +239,8 @@ namespace Tako {
   void DebugUIManager::Update() {
     // 表示状態に関わらず毎フレーム呼ぶ（非表示検知でプレビューを解放するため）
     primitiveEditor_.Update();
+    BaseScene* scene = SceneManager::GetInstance()->GetCurrentScene();
+    particleEditor_.SetEmitterManager(scene ? &scene->GetEmitterManager() : nullptr);
     particleEditor_.Update();
     debugViewport_.Update();
     uiLayoutEditor_.Update();

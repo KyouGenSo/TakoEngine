@@ -2,6 +2,8 @@
 #include "Actor.h"
 #include "Camera.h"
 #include "CollisionManager.h"
+#include "EmitterManager.h"
+#include "GPUParticle.h"
 #include "Light.h"
 #include "Logger.h"
 #include "PostEffectManager.h"
@@ -43,7 +45,10 @@ namespace Tako {
 
   } // namespace
 
-  BaseScene::BaseScene() = default;
+  BaseScene::BaseScene()
+    : emitterManager_(std::make_unique<EmitterManager>(GPUParticle::GetInstance()))
+  {
+  }
 
   BaseScene::~BaseScene() = default;
 
@@ -137,6 +142,7 @@ namespace Tako {
   void BaseScene::Update()
   {
     CollisionManager::GetInstance()->CheckAllCollisions();
+    emitterManager_->Update();
   }
 
   Actor* BaseScene::Spawn(std::string_view typeOrPrefab)

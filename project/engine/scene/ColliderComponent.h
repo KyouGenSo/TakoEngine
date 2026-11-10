@@ -34,6 +34,13 @@ namespace Tako {
 
     void PostEditChange() override;
 
+#ifdef _DEBUG
+    /// <summary>
+    /// Layer 欄（Engine Settings の Physics で付けた層の名前から選ぶ）
+    /// </summary>
+    bool DrawCustomImGui() override;
+#endif
+
     /// <summary>
     /// コライダーからの当たりを、同じ Actor の全コンポーネントへ渡す
     /// </summary>
@@ -54,7 +61,7 @@ namespace Tako {
     Vector3 size_{ 1.0f, 1.0f, 1.0f };
     TPROPERTY(Edit, Speed = 0.05)
     Vector3 offset_{};
-    TPROPERTY(Edit, Tooltip = "CollisionManager の層。31 はアクターどうしだけが当たる", ClampMax = 31)
+    TPROPERTY()
     uint32_t layer_ = kActorLayer;
 
     std::unique_ptr<Collider> collider_;

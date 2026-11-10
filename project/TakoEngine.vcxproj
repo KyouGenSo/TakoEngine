@@ -121,6 +121,10 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="engine\scene\UILayoutComponent.cpp" />
+    <ClCompile Include="engine\scene\AudioSourceComponent.cpp" />
+    <ClCompile Include="engine\scene\AnimatorComponent.cpp" />
+    <ClCompile Include="engine\scene\ParticleSystemComponent.cpp" />
     <ClCompile Include="engine\scene\PostProcessComponent.cpp" />
     <ClCompile Include="engine\scene\SkyBoxComponent.cpp" />
     <ClCompile Include="engine\scene\LightComponent.cpp" />
@@ -288,6 +292,10 @@
     <ClCompile Include="engine\debug\MaterialEditor.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\scene\UILayoutComponent.h" />
+    <ClInclude Include="engine\scene\AudioSourceComponent.h" />
+    <ClInclude Include="engine\scene\AnimatorComponent.h" />
+    <ClInclude Include="engine\scene\ParticleSystemComponent.h" />
     <ClInclude Include="engine\scene\PostProcessComponent.h" />
     <ClInclude Include="engine\scene\SkyBoxComponent.h" />
     <ClInclude Include="engine\scene\LightComponent.h" />
