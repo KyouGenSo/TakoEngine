@@ -1,30 +1,15 @@
 #include "MeshComponent.h"
 #include "Actor.h"
-#include "EnginePaths.h"
+#include "Logger.h"
 #include "Model.h"
-#include "ModelBasic.h"
-#include "ModelManager.h"
 #include "Object3d.h"
 
-#include <filesystem>
+#ifdef _DEBUG
+#include "ObjectSettingsEditor.h"
+#include "imgui.h"
+#endif
 
 namespace Tako {
-
-  namespace {
-
-    /// <summary>
-    /// 入力の途中の名前を読みに行かないよう、ファイルがあるときだけ true
-    /// </summary>
-    bool ModelFileExists(const std::string& model)
-    {
-      if (model.starts_with(EnginePaths::kEngineModels)) {
-        return std::filesystem::is_regular_file(model);
-      }
-      ModelBasic* basic = ModelManager::GetInstance()->GetModelBasic();
-      return std::filesystem::is_regular_file(basic->GetDirectoryFolderName() + "/" + basic->GetModelFolderName() + "/" + model);
-    }
-
-  } // namespace
 
   MeshComponent::MeshComponent()
     : object_(std::make_unique<Object3d>())
@@ -37,19 +22,20 @@ namespace Tako {
   void MeshComponent::Draw()
   {
     if (model_ != loadedModel_) {
+      // 無いファイルはモデル無しになる（記録は ModelManager が 1 回だけ出す）
       if (model_.empty()) {
         object_->SetModel(std::unique_ptr<Model>());
-        loadedModel_.clear();
-      } else if (ModelFileExists(model_)) {
+      } else {
         object_->SetModel(model_);
-        loadedModel_ = model_;
       }
+      loadedModel_ = model_;
     }
-    if (settingsName_ != appliedSettingsName_) {
-      object_->SetName(settingsName_);
-      appliedSettingsName_ = settingsName_;
+    if (overridesDirty_) {
+      overrides_.ResolveMaterials();
+      object_->SetOverrides(&overrides_);
+      overridesDirty_ = false;
     }
-    if (loadedModel_.empty()) {
+    if (!object_->GetModel()) {
       return;
     }
     object_->SetTransform(offset_);
@@ -57,5 +43,37 @@ namespace Tako {
     object_->Update();
     object_->Draw();
   }
+
+  void MeshComponent::PostLoad(const nlohmann::json& raw)
+  {
+    try {
+      overrides_ = ObjectOverrides::Load(raw.value("renderSettings", nlohmann::json::object()));
+    } catch (const nlohmann::json::exception& e) {
+      Logger::Log("MeshComponent: renderSettings could not be read: %s", e.what());
+      overrides_ = {};
+    }
+    overridesDirty_ = true;
+  }
+
+  void MeshComponent::PostSave(nlohmann::json& out)
+  {
+    nlohmann::json settings = overrides_.Save();
+    if (!settings.empty()) {
+      out["renderSettings"] = std::move(settings);
+    }
+  }
+
+#ifdef _DEBUG
+  bool MeshComponent::DrawCustomImGui()
+  {
+    if (!ImGui::TreeNode("Rendering")) {
+      return false;
+    }
+    const bool changed = DrawObjectOverrides(overrides_, object_.get());
+    ImGui::TreePop();
+    overridesDirty_ |= changed;
+    return changed;
+  }
+#endif
 
 } // namespace Tako

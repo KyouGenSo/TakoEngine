@@ -28,7 +28,7 @@ struct ObjectOverrides;
 ///
 /// 描画の設定（マテリアル・値・描画フラグ・メッシュの表示）は、項目ごとに次の中で一番上にあるものを毎フレーム使う。
 ///   1. コードの Set〇〇（std::nullopt を渡すと外す。SetMaterial は nullptr）
-///   2. 同じ名前の ObjectSettings（UI で編集・保存する設定）
+///   2. SetOverrides で渡された設定（MeshComponent が持つもの）か、同じ名前の ObjectSettings（UI で編集・保存する設定）
 ///   3. 既定（マテリアルの値・モデルの既定のマテリアル・DrawItem の初期値）
 /// 値（色など）は描くときにマテリアルの同じ名前の値へ重ねるので、どのマテリアルで描いても効く
 /// </summary>
@@ -121,6 +121,12 @@ public: // メンバー関数
   /// 名前を付ける。同じ名前の ObjectSettings（UI で編集・保存する描画設定）を次の描画から当てる
   /// </summary>
   void SetName(const std::string& name);
+
+  /// <summary>
+  /// 名前で引く ObjectSettings の代わりに overrides を当てる（持ち主が持ち続ける。nullptr で名前で引く形に戻す）。
+  /// 中身を書き換えたら、もう一度呼んで作り直させる
+  /// </summary>
+  void SetOverrides(const ObjectOverrides* overrides) { overrides_ = overrides; slotsDirty_ = true; }
 
   void SetTransform(const Transform& transform) { transform_ = transform; }
   void SetScale(const Vector3& scale) { transform_.scale = scale; }
@@ -322,7 +328,7 @@ private: // プライベートメンバー関数
   void ApplyAnimationColor(const Vector4& color);
 
   /// <summary>
-  /// 名前の ObjectSettings（名前が無い・設定が無ければ nullptr）
+  /// SetOverrides で渡された設定か、名前の ObjectSettings（どちらも無ければ nullptr）
   /// </summary>
   const ObjectOverrides* FindSettings() const;
 
@@ -360,6 +366,7 @@ private: // メンバー変数
   //描画の設定
   std::string   name_;
   uint32_t      nameId_ = 0;  ///< name_ の FNV-1a（0 は名前なし）
+  const ObjectOverrides* overrides_ = nullptr;
   CodeOverrides code_;
 
   //メッシュごとの描画の値（RebuildDrawSlots で作る。DrawItem がフレームの終わりまで指す）

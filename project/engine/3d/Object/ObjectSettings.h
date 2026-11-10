@@ -59,6 +59,21 @@ namespace Tako {
     /// メッシュに当てるマテリアル（メッシュ名のマテリアル設定が無ければ全メッシュ用）
     /// </summary>
     const ResolvedMaterial& Resolve(std::string_view mesh) const;
+
+    /// <summary>
+    /// ObjectSettings.json の 1 件の形にする（値の無い項目は書かない）
+    /// </summary>
+    nlohmann::json Save() const;
+
+    /// <summary>
+    /// Save の形から読む（型が違えば nlohmann::json の例外を投げる）
+    /// </summary>
+    static ObjectOverrides Load(const nlohmann::json& entry);
+
+    /// <summary>
+    /// マテリアルを読み、resolved と resolvedMeshes を作り直す
+    /// </summary>
+    void ResolveMaterials();
   };
 
   /// <summary>

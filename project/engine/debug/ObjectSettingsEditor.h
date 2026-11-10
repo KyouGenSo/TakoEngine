@@ -13,6 +13,15 @@
 
 namespace Tako {
 
+  class Object3d;
+
+  /// <summary>
+  /// 描画設定 1 件分の欄（描画フラグ・全メッシュのマテリアル・メッシュごとの表示とマテリアル）。灰色は既定、印はコードで上書き中
+  /// </summary>
+  /// <param name="object">既定の値・メッシュ名・コードの上書きを読む Object3d（無ければ nullptr）</param>
+  /// <returns>変わったら true（呼び出し側がマテリアルを解決し直す）</returns>
+  bool DrawObjectOverrides(ObjectOverrides& overrides, const Object3d* object);
+
   /// <summary>
   /// ObjectSettings（Object3d の名前ごとの描画設定）の編集ウィンドウ。生存中の Object3d を名前でまとめて並べる
   /// </summary>

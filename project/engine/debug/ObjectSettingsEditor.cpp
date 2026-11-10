@@ -177,6 +177,77 @@ namespace Tako {
 
   } // anonymous namespace
 
+  bool DrawObjectOverrides(ObjectOverrides& overrides, const Object3d* object)
+  {
+    const Object3d::CodeOverrides* code     = object ? &object->GetCodeOverrides() : nullptr;
+    const DrawItem                 defaults{};
+    bool                           changed  = false;
+
+    const auto checkbox = [](const char* label, bool& value) { return ImGui::Checkbox(label, &value); };
+    changed |= OverrideField<bool>("Visible", overrides.visible, true, checkbox);
+    ImGui::SetItemTooltip("Unchecked hides the object (also from shadows and render passes)");
+
+    changed |= OverrideField<uint32_t>("Mask ID", overrides.maskId, defaults.maskId, [](const char* label, uint32_t& value) {
+      int id = static_cast<int>(value);
+      if (!ImGui::InputInt(label, &id)) {
+        return false;
+      }
+      value = static_cast<uint32_t>(std::clamp(id, 0, 255));
+      return true;
+    });
+    ImGui::SetItemTooltip("0 = none. Post effects with the same Mask ID apply only to this object (the result can spread outside it)");
+    DrawCodeMark(code && code->maskId, "SetMaskId");
+
+    changed |= OverrideField<int32_t>("Sorting Order", overrides.sortingOrder, defaults.sortingOrder, [](const char* label, int32_t& value) {
+      return ImGui::DragInt(label, &value, 0.2f);
+    });
+    ImGui::SetItemTooltip("Draw order within the same render queue (smaller first)");
+    DrawCodeMark(code && code->sortingOrder, "SetSortingOrder");
+
+    changed |= OverrideField<bool>("Cast Shadow", overrides.castShadow, defaults.castShadow, checkbox);
+    DrawCodeMark(code && code->castShadow, "SetCastShadow");
+
+    changed |= OverrideField<bool>("Transparent", overrides.transparent, defaults.transparent, checkbox);
+    ImGui::SetItemTooltip("Double-sided, no depth write, drawn in the transparent queue (back to front)");
+    DrawCodeMark(code && code->transparent, "SetTransparent");
+
+    changed |= OverrideField<bool>("Post Effect", overrides.postEffect, defaults.postEffect, checkbox);
+    ImGui::SetItemTooltip("Unchecked draws the object after the whole-screen post effects, tested against the scene depth.\n"
+                          "Transparent objects and particles in front of it are hidden where they overlap it. Mask ID effects do not apply");
+    DrawCodeMark(code && code->postEffect, "SetPostEffect");
+
+    // ポストエフェクトのマテリアルは描画物に使えないので出さない
+    std::vector<std::string> materials = MaterialLibrary::GetInstance()->GetMaterialFileNames();
+    std::erase_if(materials, [](const std::string& name) { return MaterialLibrary::GetInstance()->IsPostEffectMaterial(name); });
+    ImGui::SeparatorText("Material (all meshes)");
+    changed |= DrawMaterialOverrides(overrides, nullptr, object, object ? 0 : kNoMesh, materials);
+
+    // 生存中のオブジェクトのメッシュ（モデルの順）と、設定だけにあるメッシュ名
+    ImGui::SeparatorText("Meshes");
+    std::vector<std::string> meshNames = object ? object->GetMeshNames() : std::vector<std::string>{};
+    const size_t             liveCount = meshNames.size();
+    for (const auto& [meshName, mesh] : overrides.meshes) {
+      if (std::ranges::find(meshNames, meshName) == meshNames.end()) {
+        meshNames.push_back(meshName);
+      }
+    }
+    if (meshNames.empty()) {
+      ImGui::TextDisabled("No model");
+    }
+    for (size_t i = 0; i < meshNames.size(); ++i) {
+      const std::string& meshName = meshNames[i];
+      if (!ImGui::TreeNode(std::format("{}##Mesh{}", meshName.empty() ? "(unnamed)" : meshName, i).c_str())) {
+        continue;
+      }
+      MeshOverrides& mesh = overrides.meshes[meshName];
+      changed |= OverrideField<bool>("Visible", mesh.visible, i < liveCount ? object->GetModel()->IsMeshVisible(meshName) : true, checkbox);
+      DrawCodeMark(code && code->meshVisible.contains(meshName), "SetMeshVisible");
+      changed |= DrawMaterialOverrides(mesh, &overrides, object, i < liveCount ? i : kNoMesh, materials);
+      ImGui::TreePop();
+    }
+    return changed;
+  }
+
   std::span<const ShortcutBinding<ObjectSettingsEditor>> ObjectSettingsEditor::Shortcuts()
   {
     static constexpr ShortcutBinding<ObjectSettingsEditor> kShortcuts[] = {
@@ -293,86 +364,17 @@ namespace Tako {
     }
 
     // 灰色の値は既定（エンジンの初期値・マテリアル・モデル）。コードの上書きは同じ名前の最初の Object3d から読み、印で出す
-    const auto&                    objects  = Object3d::GetLiveObjects();
-    const auto                     found    = std::ranges::find_if(objects, [&](const Object3d* object) { return object->GetName() == selected_; });
-    const Object3d*                object   = found != objects.end() ? *found : nullptr;
-    const Object3d::CodeOverrides* code     = object ? &object->GetCodeOverrides() : nullptr;
-    const DrawItem                 defaults{};
+    const auto&     objects = Object3d::GetLiveObjects();
+    const auto      found   = std::ranges::find_if(objects, [&](const Object3d* object) { return object->GetName() == selected_; });
+    const Object3d* object  = found != objects.end() ? *found : nullptr;
     ImGui::TextDisabled("Priority: code (Object3d::Set...) > these settings > default (gray)");
     if (!object) {
       ImGui::TextDisabled("No live object has this name");
     }
 
-    ObjectSettings*  settings  = ObjectSettings::GetInstance();
-    ObjectOverrides& overrides = settings->Edit(selected_);
-    bool             changed   = false;
-
+    ObjectSettings* settings = ObjectSettings::GetInstance();
     ImGui::SeparatorText(selected_.c_str());
-
-    const auto checkbox = [](const char* label, bool& value) { return ImGui::Checkbox(label, &value); };
-    changed |= OverrideField<bool>("Visible", overrides.visible, true, checkbox);
-    ImGui::SetItemTooltip("Unchecked hides the object (also from shadows and render passes)");
-
-    changed |= OverrideField<uint32_t>("Mask ID", overrides.maskId, defaults.maskId, [](const char* label, uint32_t& value) {
-      int id = static_cast<int>(value);
-      if (!ImGui::InputInt(label, &id)) {
-        return false;
-      }
-      value = static_cast<uint32_t>(std::clamp(id, 0, 255));
-      return true;
-    });
-    ImGui::SetItemTooltip("0 = none. Post effects with the same Mask ID apply only to this object (the result can spread outside it)");
-    DrawCodeMark(code && code->maskId, "SetMaskId");
-
-    changed |= OverrideField<int32_t>("Sorting Order", overrides.sortingOrder, defaults.sortingOrder, [](const char* label, int32_t& value) {
-      return ImGui::DragInt(label, &value, 0.2f);
-    });
-    ImGui::SetItemTooltip("Draw order within the same render queue (smaller first)");
-    DrawCodeMark(code && code->sortingOrder, "SetSortingOrder");
-
-    changed |= OverrideField<bool>("Cast Shadow", overrides.castShadow, defaults.castShadow, checkbox);
-    DrawCodeMark(code && code->castShadow, "SetCastShadow");
-
-    changed |= OverrideField<bool>("Transparent", overrides.transparent, defaults.transparent, checkbox);
-    ImGui::SetItemTooltip("Double-sided, no depth write, drawn in the transparent queue (back to front)");
-    DrawCodeMark(code && code->transparent, "SetTransparent");
-
-    changed |= OverrideField<bool>("Post Effect", overrides.postEffect, defaults.postEffect, checkbox);
-    ImGui::SetItemTooltip("Unchecked draws the object after the whole-screen post effects, tested against the scene depth.\n"
-                          "Transparent objects and particles in front of it are hidden where they overlap it. Mask ID effects do not apply");
-    DrawCodeMark(code && code->postEffect, "SetPostEffect");
-
-    // ポストエフェクトのマテリアルは描画物に使えないので出さない
-    std::vector<std::string> materials = MaterialLibrary::GetInstance()->GetMaterialFileNames();
-    std::erase_if(materials, [](const std::string& name) { return MaterialLibrary::GetInstance()->IsPostEffectMaterial(name); });
-    ImGui::SeparatorText("Material (all meshes)");
-    changed |= DrawMaterialOverrides(overrides, nullptr, object, object ? 0 : kNoMesh, materials);
-
-    // 生存中のオブジェクトのメッシュ（モデルの順）と、設定だけにあるメッシュ名
-    ImGui::SeparatorText("Meshes");
-    std::vector<std::string> meshNames = object ? object->GetMeshNames() : std::vector<std::string>{};
-    const size_t             liveCount = meshNames.size();
-    for (const auto& [meshName, mesh] : overrides.meshes) {
-      if (std::ranges::find(meshNames, meshName) == meshNames.end()) {
-        meshNames.push_back(meshName);
-      }
-    }
-    if (meshNames.empty()) {
-      ImGui::TextDisabled("No live object has this name");
-    }
-    for (size_t i = 0; i < meshNames.size(); ++i) {
-      const std::string& meshName = meshNames[i];
-      if (!ImGui::TreeNode(std::format("{}##Mesh{}", meshName.empty() ? "(unnamed)" : meshName, i).c_str())) {
-        continue;
-      }
-      MeshOverrides& mesh = overrides.meshes[meshName];
-      changed |= OverrideField<bool>("Visible", mesh.visible, i < liveCount ? object->GetModel()->IsMeshVisible(meshName) : true, checkbox);
-      DrawCodeMark(code && code->meshVisible.contains(meshName), "SetMeshVisible");
-      changed |= DrawMaterialOverrides(mesh, &overrides, object, i < liveCount ? i : kNoMesh, materials);
-      ImGui::TreePop();
-    }
-
-    if (changed) {
+    if (DrawObjectOverrides(settings->Edit(selected_), object)) {
       settings->MarkChanged();
     }
   }

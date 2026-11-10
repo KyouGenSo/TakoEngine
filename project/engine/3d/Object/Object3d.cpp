@@ -215,6 +215,9 @@ void Object3d::SetName(const std::string& name)
 
 const ObjectOverrides* Object3d::FindSettings() const
 {
+	if (overrides_) {
+		return overrides_;
+	}
 	return name_.empty() ? nullptr : ObjectSettings::GetInstance()->Find(name_);
 }
 

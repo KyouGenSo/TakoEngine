@@ -1,5 +1,6 @@
 #pragma once
 #include "Component.h"
+#include "ObjectSettings.h"
 #include "Transform.h"
 
 #include <memory>
@@ -10,7 +11,8 @@ namespace Tako {
   class Object3d;
 
   /// <summary>
-  /// Actor の位置にモデルを描く。モデルの読み替えは描画の直前に行う（GPU が使用中のモデルを消さないため）
+  /// Actor の位置にモデルを描く（Unity の MeshFilter + MeshRenderer）。マテリアルと描画フラグは自分で持ち、シーンとプレハブに保存する。
+  /// モデルの読み替えとマテリアルの解決は描画の直前に行う（GPU が使用中の物を消さないため）
   /// </summary>
   TCLASS()
   class MeshComponent : public Component {
@@ -21,6 +23,23 @@ namespace Tako {
     ~MeshComponent() override;
 
     void Draw() override;
+
+    /// <summary>
+    /// renderSettings（ObjectSettings.json の 1 件と同じ形）を読む
+    /// </summary>
+    void PostLoad(const nlohmann::json& raw) override;
+
+    /// <summary>
+    /// 描画設定があれば renderSettings として out に足す
+    /// </summary>
+    void PostSave(nlohmann::json& out) override;
+
+#ifdef _DEBUG
+    /// <summary>
+    /// Rendering の欄（Object Settings ウィンドウの 1 件分と同じ）
+    /// </summary>
+    bool DrawCustomImGui() override;
+#endif
 
     //=====================================
     //Setter
@@ -35,14 +54,13 @@ namespace Tako {
   private: //メンバー変数
     TPROPERTY(Edit, Asset = "Model")
     std::string model_;
-    TPROPERTY(Edit, Tooltip = "Object Settings の名前（空なら使わない）")
-    std::string settingsName_;
     TPROPERTY(Edit, DisplayName = "Offset")
-    Transform offset_{ { 1.0f, 1.0f, 1.0f }, {}, {} };
+    Transform   offset_ = { { 1.0f, 1.0f, 1.0f }, {}, {} };
 
     std::unique_ptr<Object3d> object_;
     std::string               loadedModel_;
-    std::string               appliedSettingsName_;
+    ObjectOverrides           overrides_;              ///< object_ が SetOverrides で指す
+    bool                      overridesDirty_ = true;  ///< 次の Draw でマテリアルを解決し直す
   };
 
 } // namespace Tako

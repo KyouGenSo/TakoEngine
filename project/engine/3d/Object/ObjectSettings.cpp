@@ -82,6 +82,72 @@ namespace Tako {
     return it != resolvedMeshes.end() ? it->second : resolved;
   }
 
+  json ObjectOverrides::Save() const
+  {
+    json entry = json::object();
+    Write(entry, "Visible", visible);
+    WriteMaterial(entry, *this);
+    Write(entry, "MaskId", maskId);
+    Write(entry, "SortingOrder", sortingOrder);
+    Write(entry, "CastShadow", castShadow);
+    Write(entry, "Transparent", transparent);
+    Write(entry, "PostEffect", postEffect);
+    json meshEntries = json::object();
+    for (const auto& [meshName, mesh] : meshes) {
+      json meshEntry = json::object();
+      Write(meshEntry, "Visible", mesh.visible);
+      WriteMaterial(meshEntry, mesh);
+      if (!meshEntry.empty()) {
+        meshEntries[meshName] = std::move(meshEntry);
+      }
+    }
+    if (!meshEntries.empty()) {
+      entry["Meshes"] = std::move(meshEntries);
+    }
+    return entry;
+  }
+
+  ObjectOverrides ObjectOverrides::Load(const json& entry)
+  {
+    ObjectOverrides overrides;
+    Read(entry, "Visible", overrides.visible);
+    ReadMaterial(entry, overrides);
+    Read(entry, "MaskId", overrides.maskId);
+    Read(entry, "SortingOrder", overrides.sortingOrder);
+    Read(entry, "CastShadow", overrides.castShadow);
+    Read(entry, "Transparent", overrides.transparent);
+    Read(entry, "PostEffect", overrides.postEffect);
+    // items() は元の JSON を参照するので、回す前に受けておく
+    const json meshEntries = entry.value("Meshes", json::object());
+    for (const auto& [meshName, meshEntry] : meshEntries.items()) {
+      MeshOverrides& mesh = overrides.meshes[meshName];
+      Read(meshEntry, "Visible", mesh.visible);
+      ReadMaterial(meshEntry, mesh);
+    }
+    return overrides;
+  }
+
+  void ObjectOverrides::ResolveMaterials()
+  {
+    resolved = ResolveMaterial(*this);
+    resolvedMeshes.clear();
+    for (const auto& [meshName, mesh] : meshes) {
+      if (!HasMaterialSettings(mesh)) {
+        continue;
+      }
+      // 全メッシュ用の設定に、メッシュ名の設定を重ねる
+      MaterialOverrides merged = static_cast<const MaterialOverrides&>(*this);
+      if (mesh.material) {
+        merged.material = mesh.material;
+      }
+      merged.values.update(mesh.values);
+      for (const auto& [slot, file] : mesh.textures) {
+        merged.textures.insert_or_assign(slot, file);
+      }
+      resolvedMeshes.emplace(meshName, ResolveMaterial(merged));
+    }
+  }
+
   std::unique_ptr<ObjectSettings> ObjectSettings::instance_ = nullptr;
 
   ObjectSettings* ObjectSettings::GetInstance()
@@ -123,26 +189,7 @@ namespace Tako {
   {
     json root = json::object();
     for (const auto& [name, overrides] : entries_) {
-      json entry = json::object();
-      Write(entry, "Visible", overrides.visible);
-      WriteMaterial(entry, overrides);
-      Write(entry, "MaskId", overrides.maskId);
-      Write(entry, "SortingOrder", overrides.sortingOrder);
-      Write(entry, "CastShadow", overrides.castShadow);
-      Write(entry, "Transparent", overrides.transparent);
-      Write(entry, "PostEffect", overrides.postEffect);
-      json meshes = json::object();
-      for (const auto& [meshName, mesh] : overrides.meshes) {
-        json meshEntry = json::object();
-        Write(meshEntry, "Visible", mesh.visible);
-        WriteMaterial(meshEntry, mesh);
-        if (!meshEntry.empty()) {
-          meshes[meshName] = std::move(meshEntry);
-        }
-      }
-      if (!meshes.empty()) {
-        entry["Meshes"] = std::move(meshes);
-      }
+      json entry = overrides.Save();
       if (!entry.empty()) {
         root[name] = std::move(entry);
       }
@@ -157,20 +204,7 @@ namespace Tako {
       // items() は元の JSON を参照するので、回す前に受けておく
       const json root = json::parse(text);
       for (const auto& [name, entry] : root.items()) {
-        ObjectOverrides& overrides = entries[name];
-        Read(entry, "Visible", overrides.visible);
-        ReadMaterial(entry, overrides);
-        Read(entry, "MaskId", overrides.maskId);
-        Read(entry, "SortingOrder", overrides.sortingOrder);
-        Read(entry, "CastShadow", overrides.castShadow);
-        Read(entry, "Transparent", overrides.transparent);
-        Read(entry, "PostEffect", overrides.postEffect);
-        const json meshes = entry.value("Meshes", json::object());
-        for (const auto& [meshName, meshEntry] : meshes.items()) {
-          MeshOverrides& mesh = overrides.meshes[meshName];
-          Read(meshEntry, "Visible", mesh.visible);
-          ReadMaterial(meshEntry, mesh);
-        }
+        entries[name] = ObjectOverrides::Load(entry);
       }
     }
     catch (const json::exception& e) {
@@ -190,23 +224,7 @@ namespace Tako {
   void ObjectSettings::MarkChanged()
   {
     for (auto& [name, overrides] : entries_) {
-      overrides.resolved = ResolveMaterial(overrides);
-      overrides.resolvedMeshes.clear();
-      for (const auto& [meshName, mesh] : overrides.meshes) {
-        if (!HasMaterialSettings(mesh)) {
-          continue;
-        }
-        // 全メッシュ用の設定に、メッシュ名の設定を重ねる
-        MaterialOverrides merged = static_cast<const MaterialOverrides&>(overrides);
-        if (mesh.material) {
-          merged.material = mesh.material;
-        }
-        merged.values.update(mesh.values);
-        for (const auto& [slot, file] : mesh.textures) {
-          merged.textures.insert_or_assign(slot, file);
-        }
-        overrides.resolvedMeshes.emplace(meshName, ResolveMaterial(merged));
-      }
+      overrides.ResolveMaterials();
     }
     ++version_;
   }
