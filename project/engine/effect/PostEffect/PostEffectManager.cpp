@@ -308,6 +308,7 @@ namespace Tako {
   {
     stack_.Clear();
     temporaryEffects_.clear();
+    loadedProfile_.clear();
   }
 
   uint32_t PostEffectManager::ApplyTemporaryEffect(std::string_view name, float duration, const EffectParam& param, EasingType easing, uint32_t maskId)
@@ -578,6 +579,7 @@ namespace Tako {
 
   bool PostEffectManager::LoadProfile(const std::string& name)
   {
+    loadedProfile_ = name;
     std::ifstream ifs(ProfilePath(name));
     if (!ifs) {
       Logger::Log("PostEffect profile not found: %s", name.c_str());

@@ -228,10 +228,6 @@ void ShadowRenderer::DrawImGui()
         ImGui::Separator();
         ImGui::Text("Light Settings");
 
-        // 最大シャドウ距離の設定
-        if (ImGui::DragFloat("Max Shadow Distance", &maxShadowDistance_, 1.0f, 5.0f, 500.0f, "%.1f")) {
-        }
-
         bool autoUpdatePos = light_->GetAutoUpdatePosition();
         if (ImGui::Checkbox("Auto Update Light Position", &autoUpdatePos)) {
             light_->SetAutoUpdatePosition(autoUpdatePos);

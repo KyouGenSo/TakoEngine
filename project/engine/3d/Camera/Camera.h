@@ -11,6 +11,11 @@ namespace Tako {
   /// </summary>
   class Camera
   {
+  public: //定数
+    static constexpr float kDefaultFovY     = 0.45f;  ///< rad
+    static constexpr float kDefaultNearClip = 0.1f;
+    static constexpr float kDefaultFarClip  = 1000.0f;
+
   public: //メンバー関数
 
     /// <summary>

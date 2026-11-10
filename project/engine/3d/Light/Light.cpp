@@ -1,7 +1,6 @@
 #include "Light.h"
 #include "DX12Basic.h"
 #include "SrvManager.h"
-#include <numbers>
 
 #include "Mat4x4Func.h"
 #include "ColorFunc.h"
@@ -25,10 +24,42 @@ namespace Tako {
     CreateLightConstants();
   }
 
-  void Light::Update()
+  void Light::BeginFrame()
   {
-    lightConstantsData_->numPointLights = static_cast<int>(pointLightIndexList_.size());
-    lightConstantsData_->numSpotLights = static_cast<int>(spotLightIndexList_.size());
+    lightConstantsData_->numPointLights = 0;
+    lightConstantsData_->numSpotLights  = 0;
+  }
+
+  void Light::AddPointLight(const PointLight& light)
+  {
+    int& count = lightConstantsData_->numPointLights;
+    if (count < MAX_POINT_LIGHT) {
+      pointLightData_[count] = light;
+      pointLightData_[count].enable = true;
+      ++count;
+    }
+  }
+
+  void Light::AddSpotLight(const SpotLight& light)
+  {
+    int& count = lightConstantsData_->numSpotLights;
+    if (count < MAX_SPOT_LIGHT) {
+      spotLightData_[count] = light;
+      spotLightData_[count].enable = true;
+      ++count;
+    }
+  }
+
+  void Light::ResetDirectionalLight()
+  {
+    directionalLightData_->direction      = Vector3(0.0f, -1.0f, 0.0f);
+    directionalLightData_->color          = Color::kWhite;
+    directionalLightData_->lightType      = 1;  // 0:Lambert 1:Half-Lambert
+    directionalLightData_->intensity      = 1.0f;
+    directionalLightData_->position       = sceneCenter_;
+    directionalLightData_->viewMatrix     = Mat4x4::MakeIdentity();
+    directionalLightData_->projMatrix     = Mat4x4::MakeIdentity();
+    directionalLightData_->viewProjMatrix = Mat4x4::MakeIdentity();
   }
 
   void Light::PreDraw()
@@ -61,63 +92,13 @@ namespace Tako {
     }
   }
 
-  void Light::SetPointLight(const Vector3& position, const Vector4& color, float intensity, float radius, float decay, bool enable, int index)
-  {
-    if (index >= Light::MAX_POINT_LIGHT) {
-      return;
-    }
-
-    // index が未使用ならリストを伸ばして点灯数に反映
-    if (pointLightIndexList_.size() <= index && index <= Light::MAX_POINT_LIGHT) {
-      pointLightIndexList_.resize(index + 1);
-    }
-
-    pointLightData_[index].position = position;
-    pointLightData_[index].color = color;
-    pointLightData_[index].intensity = intensity;
-    pointLightData_[index].radius = radius;
-    pointLightData_[index].decay = decay;
-    pointLightData_[index].enable = enable;
-  }
-
-  void Light::SetSpotLight(const Vector3& position, const Vector3& direction, const Vector4& color, float intensity, float distance, float decay, float cosAngle, bool enable, int index)
-  {
-    if (index >= Light::MAX_SPOT_LIGHT) {
-      return;
-    }
-    // index が未使用ならリストを伸ばして点灯数に反映
-    if (spotLightIndexList_.size() <= index && index <= Light::MAX_SPOT_LIGHT) {
-      spotLightIndexList_.resize(index + 1);
-    }
-
-    spotLightData_[index].color = color;
-    spotLightData_[index].position = position;
-    spotLightData_[index].intensity = intensity;
-    spotLightData_[index].direction = direction;
-    spotLightData_[index].distance = distance;
-    spotLightData_[index].decay = decay;
-    spotLightData_[index].cosAngle = cosAngle;
-    spotLightData_[index].enable = enable;
-  }
-
   void Light::CreateDirectionalLightData()
   {
     directionalLightResource_ = dx12_->MakeBufferResource(sizeof(DirectionalLight) * Light::MAX_DIRECTIONAL_LIGHT);
 
     directionalLightResource_->Map(0, nullptr, reinterpret_cast<void**>(&directionalLightData_));
 
-    directionalLightData_->direction = Vector3(0.0f, -1.0f, 0.0f);
-
-    directionalLightData_->color = Color::kWhite;
-
-    directionalLightData_->lightType = 1;                          // 0:Lambert 1:Half-Lambert
-
-    directionalLightData_->intensity = 1.0f;
-
-    directionalLightData_->position = Vector3(0.0f, 0.0f, 0.0f);
-    directionalLightData_->viewMatrix = Mat4x4::MakeIdentity();
-    directionalLightData_->projMatrix = Mat4x4::MakeIdentity();
-    directionalLightData_->viewProjMatrix = Mat4x4::MakeIdentity();
+    ResetDirectionalLight();
   }
 
   void Light::CreatePointLightData()
@@ -125,13 +106,6 @@ namespace Tako {
     pointLightResource_ = dx12_->MakeBufferResource(sizeof(PointLight) * Light::MAX_POINT_LIGHT);
 
     pointLightResource_->Map(0, nullptr, reinterpret_cast<void**>(&pointLightData_));
-
-    pointLightData_[0].position = Vector3(0.0f, 2.0f, 0.0f);
-    pointLightData_[0].color = Color::kWhite;
-    pointLightData_[0].intensity = 1.0f;
-    pointLightData_[0].radius = 10.0f;
-    pointLightData_[0].decay = 1.0f;
-    pointLightData_[0].enable = false;
 
     pointLightSrvIndex_ = SrvManager::GetInstance()->Allocate();
     SrvManager::GetInstance()->CreateSRVForStructuredBuffer(pointLightSrvIndex_, pointLightResource_.Get(), Light::MAX_POINT_LIGHT, sizeof(PointLight));
@@ -142,15 +116,6 @@ namespace Tako {
     spotLightResource_ = dx12_->MakeBufferResource(sizeof(SpotLight) * Light::MAX_SPOT_LIGHT);
 
     spotLightResource_->Map(0, nullptr, reinterpret_cast<void**>(&spotLightData_));
-
-    spotLightData_[0].position = Vector3(0.0f, 0.0f, 0.0f);
-    spotLightData_[0].direction = Vector3(-1.0f, -1.0f, 0.0f);
-    spotLightData_[0].color = Color::kWhite;
-    spotLightData_[0].intensity = 1.0f;
-    spotLightData_[0].distance = 10.0f;
-    spotLightData_[0].decay = 1.0f;
-    spotLightData_[0].cosAngle = std::cos(std::numbers::pi_v<float> / 3.0f); // コーン半角60度
-    spotLightData_[0].enable = false;
 
     spotLightSrvIndex_ = SrvManager::GetInstance()->Allocate();
     SrvManager::GetInstance()->CreateSRVForStructuredBuffer(spotLightSrvIndex_, spotLightResource_.Get(), Light::MAX_SPOT_LIGHT, sizeof(SpotLight));

@@ -223,7 +223,6 @@ namespace Tako {
         shadow->SetEnabled(rendering.value("ShadowEnabled", shadow->IsEnabled()));
         shadow->SetShadowMapSize(rendering.value("ShadowMapSize", shadow->GetShadowMapSize()));
         shadow->SetPCFKernelSize(rendering.value("PCFKernelSize", shadow->GetPCFKernelSize()));
-        shadow->SetMaxShadowDistance(rendering.value("MaxShadowDistance", shadow->GetMaxShadowDistance()));
         shadow->SetShadowBias(rendering.value("ShadowBias", shadow->GetShadowBias()));
         if (rendering.contains("ClearColor")) {
           const auto color = rendering["ClearColor"].get<std::array<float, 4>>();
@@ -347,7 +346,6 @@ namespace Tako {
         { "ShadowEnabled",     shadow->IsEnabled() },
         { "ShadowMapSize",     shadow->GetShadowMapSize() },
         { "PCFKernelSize",     shadow->GetPCFKernelSize() },
-        { "MaxShadowDistance", shadow->GetMaxShadowDistance() },
         { "ShadowBias",        shadow->GetShadowBias() },
         { "ClearColor",        { clearColor.x, clearColor.y, clearColor.z, clearColor.w } },
         { "AntiAliasing",      Input::FindName<PostEffectManager::AntiAliasing>(kAntiAliasingTable, postEffect->GetAntiAliasing()) },

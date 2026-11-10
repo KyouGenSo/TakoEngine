@@ -82,7 +82,26 @@ namespace Tako {
     ~Light();
 
     void Initialize(DX12Basic* dx12);
-    void Update();
+
+    /// <summary>
+    /// 点光源とスポットライトを 0 個に戻す。描画物を登録する前に毎フレーム呼ぶ（ライトは描画物と同じく Draw で登録する）
+    /// </summary>
+    void BeginFrame();
+
+    /// <summary>
+    /// このフレームの点光源に足す（MAX_POINT_LIGHT を超えた分は捨てる）
+    /// </summary>
+    void AddPointLight(const PointLight& light);
+
+    /// <summary>
+    /// このフレームのスポットライトに足す（MAX_SPOT_LIGHT を超えた分は捨てる）
+    /// </summary>
+    void AddSpotLight(const SpotLight& light);
+
+    /// <summary>
+    /// 平行光源を初期値（真下向き・白・強さ 1・Half-Lambert）に戻す
+    /// </summary>
+    void ResetDirectionalLight();
 
     /// <summary>
     /// ライト用の各リソースをルートシグネチャにバインドする
@@ -118,37 +137,6 @@ namespace Tako {
     void SetAutoUpdatePosition(bool enable) { autoUpdatePosition_ = enable; }
     void SetSceneCenter(const Vector3& center) { sceneCenter_ = center; }
 
-    // PointLight
-    /// <summary>
-    /// index 番の点光源をまとめて設定
-    /// </summary>
-    void SetPointLight(const Vector3& position, const Vector4& color, float intensity, float radius, float decay, bool enable, int index);
-    void SetPointLightColor(const Vector4& color, int index) { pointLightData_[index].color = color; }
-    void SetPointLightPos(const Vector3& position, int index) { pointLightData_[index].position = position; }
-    void SetPointLightIntensity(float intensity, int index) { pointLightData_[index].intensity = intensity; }
-    void SetPointLightRadius(float radius, int index) { pointLightData_[index].radius = radius; }
-    void SetPointLightDecay(float decay, int index) { pointLightData_[index].decay = decay; }
-    void SetPointLightEnable(bool enable, int index) { pointLightData_[index].enable = enable; }
-
-    // SpotLight
-    /// <summary>
-    /// index 番のスポットライトをまとめて設定
-    /// </summary>
-    /// <param name="cosAngle">コーン半角のコサイン</param>
-    void SetSpotLight(const Vector3& position, const Vector3& direction, const Vector4& color, float intensity, float distance, float decay, float cosAngle, bool enable, int index);
-    void SetSpotLightColor(const Vector4& color, int index) { spotLightData_[index].color = color; }
-    void SetSpotLightPos(const Vector3& position, int index) { spotLightData_[index].position = position; }
-    void SetSpotLightIntensity(float intensity, int index) { spotLightData_[index].intensity = intensity; }
-    void SetSpotLightDirection(const Vector3& direction, int index) { spotLightData_[index].direction = direction; }
-    void SetSpotLightDistance(float distance, int index) { spotLightData_[index].distance = distance; }
-    void SetSpotLightDecay(float decay, int index) { spotLightData_[index].decay = decay; }
-
-    /// <summary>
-    /// スポットライトのコーン半角のコサインを設定
-    /// </summary>
-    void SetSpotLightCosAngle(float cosAngle, int index) { spotLightData_[index].cosAngle = cosAngle; }
-    void SetSpotLightEnable(bool enable, int index) { spotLightData_[index].enable = enable; }
-
     //============================================================
     //Getter
     //============================================================
@@ -181,10 +169,6 @@ namespace Tako {
     //SRVインデックス
     uint32_t pointLightSrvIndex_ = 0;
     uint32_t spotLightSrvIndex_  = 0;
-
-    //有効ライトのインデックスリスト
-    std::vector<uint32_t> pointLightIndexList_;  ///< サイズ = 有効な点光源数
-    std::vector<uint32_t> spotLightIndexList_;   ///< サイズ = 有効なスポットライト数
 
     //シャドウマップ自動更新
     bool    autoUpdatePosition_ = true;

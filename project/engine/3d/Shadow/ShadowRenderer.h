@@ -35,7 +35,7 @@ namespace Tako {
     explicit ShadowRenderer(Token) {}
 
   public: //定数
-    // シャドウパス RS のルートパラメータ番号
+    static constexpr float kDefaultMaxShadowDistance = 50.0f;
 
   private: //構造体
     /// <summary>
@@ -158,7 +158,7 @@ namespace Tako {
     bool  shadowEnabled_ = true;     ///< シャドウ有効/無効フラグ
     float shadowBias_    = 0.0001f;  ///< 深度比較の最小マージン（数値誤差吸収用のごく小さい固定値）
 
-    float maxShadowDistance_ = 50.0f;  ///< 影を表示する最大距離（カメラからの距離）
+    float maxShadowDistance_ = kDefaultMaxShadowDistance;  ///< 影を表示する最大距離（カメラからの距離）。シーンの平行光源が決める
 
     bool isRenderingShadow_ = false;  ///< 現在シャドウパス中かどうかのフラグ
   };

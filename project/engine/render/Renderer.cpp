@@ -51,13 +51,12 @@ namespace Tako {
   {
     camera_->SetViewProjectionMatrix(camera_->GetViewMatrix() * camera_->GetProjectionMatrix());
     mainView_ = MakeView(*camera_, { static_cast<float>(dx12_->GetSceneWidth()), static_cast<float>(dx12_->GetSceneHeight()) });
-
-    light_->Update();
   }
 
   void Renderer::BeginFrame()
   {
     sceneList_.Clear();
+    light_->BeginFrame();
   }
 
   void Renderer::Submit(const DrawItem& item)

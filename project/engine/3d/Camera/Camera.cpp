@@ -9,10 +9,10 @@ namespace Tako {
 
   Camera::Camera() :
     transform_({ Vector3(1.0f, 1.0f, 1.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 0.0f) }),
-    fovY_(0.45f),
+    fovY_(kDefaultFovY),
     aspect_(static_cast<float>(WinApp::clientWidth) / static_cast<float>(WinApp::clientHeight)),
-    nearZ_(0.1f),
-    farZ_(1000.0f),
+    nearZ_(kDefaultNearClip),
+    farZ_(kDefaultFarClip),
     worldMatrix_(Mat4x4::MakeAffine(transform_.scale, transform_.rotate, transform_.translate)),
     viewMatrix_(Mat4x4::Inverse(worldMatrix_)),
     projectionMatrix_(Mat4x4::MakePerspective(fovY_, aspect_, nearZ_, farZ_)),

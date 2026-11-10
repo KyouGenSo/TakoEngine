@@ -1,8 +1,13 @@
 #include "BaseScene.h"
 #include "Actor.h"
+#include "Camera.h"
 #include "CollisionManager.h"
+#include "Light.h"
 #include "Logger.h"
+#include "PostEffectManager.h"
 #include "Prefab.h"
+#include "Renderer.h"
+#include "ShadowRenderer.h"
 #include "TypeRegistry.h"
 
 #include <json.hpp>
@@ -19,6 +24,23 @@ namespace Tako {
     constexpr std::string_view kScenesDirectory = "resources/Json/Scenes/";
     constexpr std::string_view kSceneExtension  = ".scene.json";
 
+    /// <summary>
+    /// シーンやコンポーネントが変える描画の状態を既定に戻す（前のシーンや Play 中の値を持ち越さない）。
+    /// カメラの位置と向きは、コードのシーンもカメラのコンポーネントも毎回決めるので戻さない
+    /// </summary>
+    void ResetRenderState()
+    {
+      Renderer* renderer = Renderer::GetInstance();
+      if (Camera* camera = *renderer->GetCamera()) {
+        camera->SetFovY(Camera::kDefaultFovY);
+        camera->SetNearClip(Camera::kDefaultNearClip);
+        camera->SetFarClip(Camera::kDefaultFarClip);
+      }
+      renderer->GetLight()->ResetDirectionalLight();
+      ShadowRenderer::GetInstance()->SetMaxShadowDistance(ShadowRenderer::kDefaultMaxShadowDistance);
+      PostEffectManager::GetInstance()->ClearEffects();
+    }
+
   } // namespace
 
   BaseScene::BaseScene() = default;
@@ -29,6 +51,7 @@ namespace Tako {
   {
     sceneName_ = sceneName;
     isPlaying_ = playing;
+    ResetRenderState();
     Initialize();
 
     if (snapshot) {

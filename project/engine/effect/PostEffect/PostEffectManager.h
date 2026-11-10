@@ -213,6 +213,11 @@ namespace Tako {
     const PostProcessStack& GetStack() const { return stack_; }
     bool IsTemporaryEffectActive(uint32_t id) const { return temporaryEffects_.contains(id); }
 
+    /// <summary>
+    /// 最後に LoadProfile に渡した名前（読めなかったときも同じ。ClearEffects で空になる）
+    /// </summary>
+    const std::string& GetLoadedProfile() const { return loadedProfile_; }
+
   private: //非公開関数
     void RegisterBuiltinEffects();
 
@@ -263,6 +268,7 @@ namespace Tako {
     uint32_t                                          dissolveMaskSrvIndex_ = 0;                   ///< Dissolve のマスクテクスチャの SRV（0 ならエンジン既定の noise0）
     uint32_t                                          dissolveBaseSrvIndex_ = 0;                   ///< Dissolve で溶けた部分のテクスチャの SRV（0 ならエンジン既定の black）
     AntiAliasing                                      antiAliasing_         = AntiAliasing::None;
+    std::string                                       loadedProfile_;
 
     //PostEffect ウィンドウ
     std::string          selectedAvailableEffect_;      ///< 追加する定義の名前
