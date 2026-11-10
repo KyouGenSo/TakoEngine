@@ -292,6 +292,7 @@
     <ClCompile Include="engine\debug\MaterialEditor.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\scene\ActorRef.h" />
     <ClInclude Include="engine\scene\UILayoutComponent.h" />
     <ClInclude Include="engine\scene\AudioSourceComponent.h" />
     <ClInclude Include="engine\scene\AnimatorComponent.h" />

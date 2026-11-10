@@ -18,6 +18,9 @@ namespace Tako {
   class BaseScene;
   class Component;
 
+  // Hierarchy の行をドラッグしたときのデータ（ActorId）
+  inline constexpr const char* kActorPayload = "TAKO_ACTOR";
+
   /// <summary>
   /// 今のシーンの Actor を Hierarchy と Inspector で編集する。シーンを変える操作は予約し、Update（描画の前）で行う
   /// </summary>

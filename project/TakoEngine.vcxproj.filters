@@ -512,6 +512,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\scene\ActorRef.h">
+      <Filter>scene</Filter>
+    </ClInclude>
     <ClInclude Include="engine\scene\UILayoutComponent.h">
       <Filter>scene</Filter>
     </ClInclude>

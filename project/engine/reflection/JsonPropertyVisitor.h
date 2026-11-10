@@ -29,6 +29,7 @@ namespace Tako {
     void Visit(const char* key, Vector4& value, const PropertyMeta& meta) override;
     void Visit(const char* key, std::string& value, const PropertyMeta& meta) override;
     void Visit(const char* key, Transform& value, const PropertyMeta& meta) override;
+    void Visit(const char* key, ActorRef& value, const PropertyMeta& meta) override;
     void VisitEnum(const char* key, int64_t& value, const PropertyMeta& meta) override;
 
   private: //非公開関数
@@ -62,6 +63,7 @@ namespace Tako {
     void Visit(const char* key, Vector4& value, const PropertyMeta& meta) override;
     void Visit(const char* key, std::string& value, const PropertyMeta& meta) override;
     void Visit(const char* key, Transform& value, const PropertyMeta& meta) override;
+    void Visit(const char* key, ActorRef& value, const PropertyMeta& meta) override;
     void VisitEnum(const char* key, int64_t& value, const PropertyMeta& meta) override;
 
   private: //非公開関数

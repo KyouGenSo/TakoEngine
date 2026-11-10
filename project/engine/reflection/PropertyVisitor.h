@@ -1,4 +1,5 @@
 #pragma once
+#include "ActorRef.h"
 #include "Transform.h"
 #include "Vector2.h"
 #include "Vector3.h"
@@ -141,6 +142,7 @@ namespace Tako {
     virtual void Visit(const char* key, Vector4& value, const PropertyMeta& meta) = 0;
     virtual void Visit(const char* key, std::string& value, const PropertyMeta& meta) = 0;
     virtual void Visit(const char* key, Transform& value, const PropertyMeta& meta) = 0;
+    virtual void Visit(const char* key, ActorRef& value, const PropertyMeta& meta) = 0;
     virtual void VisitEnum(const char* key, int64_t& value, const PropertyMeta& meta) = 0;
 
   private: //非公開関数

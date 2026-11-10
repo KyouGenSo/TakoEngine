@@ -3,6 +3,8 @@
 #include "JsonPropertyVisitor.h"
 #include "Logger.h"
 #include "Mat4x4Func.h"
+#include "Script.h"
+#include "ScriptComponent.h"
 #include "TypeRegistry.h"
 
 #include <algorithm>
@@ -144,6 +146,21 @@ namespace Tako {
   {
     for (const std::unique_ptr<Component>& component : components_) {
       if (component->GetName() == name) { return component.get(); }
+    }
+    return nullptr;
+  }
+
+  Actor* Actor::Resolve(const ActorRef& ref) const
+  {
+    return scene_ && ref.id != 0 ? scene_->FindActor(ref.id) : nullptr;
+  }
+
+  Script* Actor::FindScript(const TypeInfo& type) const
+  {
+    for (const std::unique_ptr<Component>& component : components_) {
+      if (!component->IsA<ScriptComponent>()) { continue; }
+      Script* script = static_cast<ScriptComponent*>(component.get())->GetScript();
+      if (script && script->IsA(type)) { return script; }
     }
     return nullptr;
   }

@@ -39,6 +39,11 @@ namespace Tako {
     void Visit(const char* key, Vector4& value, const PropertyMeta& meta) override;
     void Visit(const char* key, std::string& value, const PropertyMeta& meta) override;
     void Visit(const char* key, Transform& value, const PropertyMeta& meta) override;
+
+    /// <summary>
+    /// 今のシーンの Actor の一覧から選ぶ。Hierarchy の行をドロップしても入る
+    /// </summary>
+    void Visit(const char* key, ActorRef& value, const PropertyMeta& meta) override;
     void VisitEnum(const char* key, int64_t& value, const PropertyMeta& meta) override;
 
   private: //非公開関数

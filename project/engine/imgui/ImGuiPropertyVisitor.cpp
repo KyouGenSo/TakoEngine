@@ -1,13 +1,18 @@
 #ifdef _DEBUG
 
 #include "ImGuiPropertyVisitor.h"
+#include "Actor.h"
 #include "AssetBrowser.h"
+#include "BaseScene.h"
+#include "SceneEditor.h"
+#include "SceneManager.h"
 #include "TObject.h"
 
 #include "imgui.h"
 
 #include <cstdio>
 #include <cstring>
+#include <format>
 #include <limits>
 #include <numbers>
 
@@ -272,6 +277,46 @@ namespace Tako {
       changed      = true;
     }
     changed |= ImGui::DragFloat3("Scale", &value.scale.x, 0.01f);
+    End(meta, changed);
+  }
+
+  void ImGuiPropertyVisitor::Visit(const char* key, ActorRef& value, const PropertyMeta& meta)
+  {
+    if (!Begin(key, meta)) { return; }
+    const BaseScene* scene  = SceneManager::GetInstance()->GetCurrentScene();
+    const Actor*     target = scene && value.id != 0 ? scene->FindActor(value.id) : nullptr;
+    const std::string preview = target ? target->GetName() : value.id == 0 ? std::string("(none)") : std::format("Missing (id {})", value.id);
+
+    ActorId selected = value.id;
+    if (ImGui::BeginCombo(label_, preview.c_str(), ImGuiComboFlags_HeightLarge)) {
+      if (ImGui::Selectable("(none)", value.id == 0)) {
+        selected = 0;
+      }
+      if (scene) {
+        for (const std::unique_ptr<Actor>& actor : scene->GetActors()) {
+          ImGui::PushID(static_cast<int>(actor->GetId()));
+          if (ImGui::Selectable(actor->GetName().c_str(), actor->GetId() == value.id)) {
+            selected = actor->GetId();
+          }
+          ImGui::PopID();
+        }
+      }
+      ImGui::EndCombo();
+    }
+    else {
+      // 一覧を開いている間は直前のアイテムが一覧の中のものになるので、閉じているときだけ受け付ける
+      if (meta.tooltip[0] == '\0') {
+        ImGui::SetItemTooltip("Pick from the list or drop an actor from the Scene Hierarchy");
+      }
+      if (ImGui::BeginDragDropTarget()) {
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(kActorPayload)) {
+          selected = *static_cast<const ActorId*>(payload->Data);
+        }
+        ImGui::EndDragDropTarget();
+      }
+    }
+    const bool changed = selected != value.id;
+    value.id = selected;
     End(meta, changed);
   }
 

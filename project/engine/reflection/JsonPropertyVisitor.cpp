@@ -127,6 +127,12 @@ namespace Tako {
     }
   }
 
+  void JsonWriteVisitor::Visit(const char* key, ActorRef& value, const PropertyMeta& meta)
+  {
+    // 数値だけにしない（ID を付け替える処理が、他の数値と見分けられるようにする）
+    if (IsSaved(meta)) { Slot(key) = { { "actor", value.id } }; }
+  }
+
   void JsonWriteVisitor::VisitEnum(const char* key, int64_t& value, const PropertyMeta& meta)
   {
     if (!IsSaved(meta)) { return; }
@@ -232,6 +238,13 @@ namespace Tako {
     if (auto it = j->find("scale"); it != j->end()) { ReadVector3(*it, value.scale); }
     if (auto it = j->find("rotate"); it != j->end()) { ReadVector3(*it, value.rotate); }
     if (auto it = j->find("translate"); it != j->end()) { ReadVector3(*it, value.translate); }
+  }
+
+  void JsonReadVisitor::Visit(const char* key, ActorRef& value, const PropertyMeta& meta)
+  {
+    const nlohmann::json* j = Find(key, meta);
+    if (!j || !j->is_object()) { return; }
+    if (auto it = j->find("actor"); it != j->end() && it->is_number_unsigned()) { value.id = it->get<ActorId>(); }
   }
 
   void JsonReadVisitor::VisitEnum(const char* key, int64_t& value, const PropertyMeta& meta)

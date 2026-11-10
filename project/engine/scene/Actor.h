@@ -1,4 +1,5 @@
 #pragma once
+#include "ActorRef.h"
 #include "Component.h"
 #include "Matrix4x4.h"
 #include "TObject.h"
@@ -14,8 +15,7 @@
 namespace Tako {
 
   class BaseScene;
-
-  using ActorId = uint64_t;
+  class Script;
 
   /// <summary>
   /// シーンに置く物（UE の AActor）。見た目や動きはコンポーネントで足す。継承して独自の Actor も作れる
@@ -123,6 +123,17 @@ namespace Tako {
 
     Component* FindComponent(const std::string& name) const;
 
+    /// <summary>
+    /// ScriptComponent に入っている T か T の派生のスクリプト。無ければ nullptr
+    /// </summary>
+    template<class T>
+    T* GetScript() const { return static_cast<T*>(FindScript(T::StaticType())); }
+
+    /// <summary>
+    /// ref が指す同じシーンの Actor。指していないか、もう無ければ nullptr
+    /// </summary>
+    Actor* Resolve(const ActorRef& ref) const;
+
   private: //非公開関数
     friend class BaseScene;
 
@@ -135,6 +146,8 @@ namespace Tako {
     /// name が空なら型名にし、他のコンポーネントと重ならない名前にする
     /// </summary>
     std::string MakeUniqueName(std::string name, const Component& component) const;
+
+    Script* FindScript(const TypeInfo& type) const;
 
   private: //メンバー変数
     TPROPERTY(Edit)

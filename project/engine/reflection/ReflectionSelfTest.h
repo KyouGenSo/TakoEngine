@@ -1,4 +1,5 @@
 #pragma once
+#include "ActorRef.h"
 #include "TObject.h"
 #include "Vector3.h"
 
@@ -56,6 +57,8 @@ namespace Tako {
     std::vector<float> weights_{ 1.0f, 2.0f };
     TPROPERTY(Edit)
     std::vector<Mode> modes_;
+    TPROPERTY(Edit)
+    ActorRef target_;
   };
 
 #ifdef _DEBUG

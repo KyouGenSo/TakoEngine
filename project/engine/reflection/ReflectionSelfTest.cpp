@@ -31,6 +31,7 @@ namespace Tako {
     source.entries_[1].values = { 7 };
     source.weights_ = { 5.0f };
     source.modes_   = { Mode::Third, Mode::First };
+    source.target_  = { 12 };
 
     const nlohmann::json json = WriteProperties(source);
     assert(json["value"] == 4.5f);
@@ -42,6 +43,7 @@ namespace Tako {
     assert(json["entries"].size() == 2 && json["entries"][1]["mode"] == "Second");
     assert(json["weights"] == nlohmann::json::array({ 5.0f }));
     assert(json["modes"] == nlohmann::json::array({ "Third", "First" }));
+    assert(json["target"]["actor"] == 12);
 
     ReflectionSelfTestObject loaded;
     ReadProperties(loaded, json);
@@ -59,6 +61,7 @@ namespace Tako {
     assert(loaded.entries_[1].weight == 4.0f && loaded.entries_[1].values == source.entries_[1].values);
     assert(loaded.weights_ == source.weights_);
     assert(loaded.modes_ == source.modes_);
+    assert(loaded.target_.id == 12);
 
     // キーが無ければ既定値のまま。enum は数値でも読める
     ReflectionSelfTestObject partial;

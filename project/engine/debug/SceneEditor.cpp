@@ -160,6 +160,12 @@ namespace Tako {
         selected_  = actor->GetId();
         isSelected = true;
       }
+      if (ImGui::BeginDragDropSource()) {
+        const ActorId id = actor->GetId();
+        ImGui::SetDragDropPayload(kActorPayload, &id, sizeof(id));
+        ImGui::TextUnformatted(actor->GetName().c_str());
+        ImGui::EndDragDropSource();
+      }
       if (ImGui::BeginPopupContextItem("ActorMenu")) {
         selected_  = actor->GetId();
         isSelected = true;
