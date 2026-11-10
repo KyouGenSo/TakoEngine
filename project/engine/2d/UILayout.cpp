@@ -160,15 +160,16 @@ namespace Tako {
       return false;
     }
 
-    void DrawElement(const UIElement& element) {
+    void DrawElement(const UIElement& element, int32_t sortingOrder) {
       if (!element.visible || !element.animPose.visible) {
         return;
       }
       if (element.sprite) {
+        element.sprite->SetSortingOrder(sortingOrder);
         element.sprite->Draw();
       }
       for (const std::unique_ptr<UIElement>& child : element.children) {
-        DrawElement(*child);
+        DrawElement(*child, sortingOrder);
       }
     }
 
@@ -476,13 +477,13 @@ namespace Tako {
       return;
     }
     for (const std::unique_ptr<UIElement>& child : root_.children) {
-      DrawElement(*child);
+      DrawElement(*child, sortingOrder_);
     }
   }
 
   void UILayout::Draw(const std::string& name) {
     if (const UIElement* element = Find(name)) {
-      DrawElement(*element);
+      DrawElement(*element, sortingOrder_);
     }
   }
 

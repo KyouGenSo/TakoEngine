@@ -1,6 +1,7 @@
 #pragma once
 #include "Component.h"
 
+#include <cstdint>
 #include <memory>
 #include <string>
 
@@ -41,6 +42,8 @@ namespace Tako {
   private: //メンバー変数
     TPROPERTY(Edit, Asset = "UILayout")
     std::string layout_;
+    TPROPERTY(Edit, Tooltip = "他のレイアウトとの重なり順。大きいほど手前（同じ値なら、シーンの並びで後ろの Actor が手前）")
+    int32_t     sortingOrder_ = 0;
 
     std::unique_ptr<UILayout> instance_;
     std::string               loadedLayout_;

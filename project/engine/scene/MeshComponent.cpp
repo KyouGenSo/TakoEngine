@@ -35,7 +35,7 @@ namespace Tako {
       object_->SetOverrides(&overrides_);
       overridesDirty_ = false;
     }
-    if (!object_->GetModel()) {
+    if (!object_->GetModel() || !visible_) {
       return;
     }
     object_->SetTransform(offset_);

@@ -61,6 +61,7 @@ namespace Tako {
       collider_ = std::make_unique<ComponentCollider<SphereCollider>>(this);
     }
     collider_->SetOwner(GetOwner());
+    collider_->SetActive(isActive_);
     LateTick(0.0f);
     ApplyShape();
 
@@ -92,6 +93,14 @@ namespace Tako {
     }
     CollisionManager::GetInstance()->RemoveCollider(collider_.get());
     collider_.reset();
+  }
+
+  void ColliderComponent::SetActive(bool active)
+  {
+    isActive_ = active;
+    if (collider_) {
+      collider_->SetActive(active);
+    }
   }
 
   void ColliderComponent::PostEditChange()

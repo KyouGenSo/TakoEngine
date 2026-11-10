@@ -16,6 +16,22 @@ namespace Tako {
   namespace {
 
     /// <summary>
+    /// BeginPlay の時点で、同じシーンの相手（ActorRef）を引けたかを覚える
+    /// </summary>
+    class ResolveOnBeginPlay final : public Component {
+    public: //メンバー関数
+      explicit ResolveOnBeginPlay(ActorRef target) : target_(target) {}
+
+      void BeginPlay() override { resolved = GetOwner()->Resolve(target_); }
+
+    public: //メンバー変数
+      Actor* resolved = nullptr;
+
+    private: //メンバー変数
+      ActorRef target_;
+    };
+
+    /// <summary>
     /// Tick と LateTick が呼ばれた回数を数える
     /// </summary>
     class TickCounter final : public Component {
@@ -115,6 +131,15 @@ namespace Tako {
     scene.SetPaused(true);
     scene.UpdateFrame(0.016f);
     assert(normal->ticks == 1 && normal->lateTicks == 1 && always->ticks == 2 && always->lateTicks == 2);
+
+    // 同時にシーンへ入る Actor は、並びで後ろの相手でも BeginPlay の中で引ける
+    BaseScene playing;
+    playing.BeginPlay();
+    Actor* first  = playing.Spawn("Actor");
+    Actor* second = playing.Spawn("Actor");
+    auto*  resolver = static_cast<ResolveOnBeginPlay*>(first->AddComponent(std::make_unique<ResolveOnBeginPlay>(ActorRef{ second->GetId() }), "Resolver"));
+    playing.UpdateAlways();
+    assert(resolver->resolved == second);
   }
 
 } // namespace Tako

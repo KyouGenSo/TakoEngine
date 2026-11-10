@@ -119,14 +119,18 @@ namespace Tako {
     // BeginPlay の中で Spawn されても壊れないよう、取り出してから入れる
     std::vector<std::unique_ptr<Actor>> spawns = std::move(pendingSpawns_);
     pendingSpawns_.clear();
+    std::vector<Actor*> entered;
     for (std::unique_ptr<Actor>& actor : spawns) {
-      Actor* raw = actor.get();
+      entered.push_back(actor.get());
       actors_.push_back(std::move(actor));
-      if (isPlaying_) {
-        raw->BeginPlay();
-      }
     }
     RelinkHierarchy();
+    // 全部をシーンに入れて親子を張ってから呼ぶ（BeginPlay の中で、同時に入った他の Actor を ActorRef や親子で引けるように）
+    if (isPlaying_) {
+      for (Actor* actor : entered) {
+        actor->BeginPlay();
+      }
+    }
   }
 
   void BaseScene::DrawFrame()

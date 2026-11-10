@@ -130,6 +130,11 @@ namespace Tako {
     void Draw();
 
     /// <summary>
+    /// 他のレイアウトとの重なり順。大きいほど手前に描かれる（同じ値なら、後から描いた方が手前）
+    /// </summary>
+    void SetSortingOrder(int32_t sortingOrder) { sortingOrder_ = sortingOrder; }
+
+    /// <summary>
     /// name の要素とその子孫だけを描画する（ポストエフェクトの有無など、描画パスごとに分けて描くとき用）
     /// </summary>
     /// <param name="name">要素名。見つからなければ何も描かない</param>
@@ -299,6 +304,7 @@ namespace Tako {
     /// このレイアウトの要素を動かすアニメーション。対象は要素名で、空文字はルート（レイアウト全体）
     /// </summary>
     AnimationPlayer& GetAnimator() { return animator_; }
+    int32_t GetSortingOrder() const { return sortingOrder_; }
     const std::string& GetName() const { return name_; }
     float GetScale() const { return scale_; }
 
@@ -368,6 +374,7 @@ namespace Tako {
     Vector2     referenceResolution_ = kDefaultReferenceResolution;  ///< position/size の基準となる画面サイズ
     float       scale_               = 1.0f;                         ///< 基準解像度 px → クライアント px
     UIElement   root_;                                               ///< 画面全体を表す見えないルート
+    int32_t     sortingOrder_        = 0;                            ///< 全要素のスプライトに渡す
 
     AnimationPlayer animator_;
   };

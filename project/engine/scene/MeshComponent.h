@@ -46,16 +46,29 @@ namespace Tako {
     //=====================================
     void SetModel(const std::string& model) { model_ = model; }
 
+    void SetVisible(bool visible) { visible_ = visible; }
+
+    /// <summary>
+    /// Actor からのずれ。揺らす演出など、Actor の位置を変えずに見た目だけ動かすのに使う
+    /// </summary>
+    void SetOffset(const Transform& offset) { offset_ = offset; }
+
     //=====================================
     //Getter
     //=====================================
     Object3d* GetObject3d() const { return object_.get(); }
+
+    bool IsVisible() const { return visible_; }
+
+    const Transform& GetOffset() const { return offset_; }
 
   private: //メンバー変数
     TPROPERTY(Edit, Asset = "Model")
     std::string model_;
     TPROPERTY(Edit, DisplayName = "Offset")
     Transform   offset_ = { { 1.0f, 1.0f, 1.0f }, {}, {} };
+    TPROPERTY(Edit, Tooltip = "オフなら描かない（影も落とさない）")
+    bool        visible_ = true;
 
     std::unique_ptr<Object3d> object_;
     std::string               loadedModel_;

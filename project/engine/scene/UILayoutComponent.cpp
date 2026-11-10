@@ -19,6 +19,7 @@ namespace Tako {
     if (instance_->GetName().empty()) {
       return;
     }
+    instance_->SetSortingOrder(sortingOrder_);
     instance_->Update();
     instance_->Draw();
   }

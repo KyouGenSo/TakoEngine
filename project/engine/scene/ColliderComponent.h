@@ -52,6 +52,21 @@ namespace Tako {
     /// </summary>
     void Notify(Collider* other, void (Component::* handler)(Actor*));
 
+    //=====================================
+    //Setter
+    //=====================================
+    /// <summary>
+    /// 当たり判定を一時的に止める・戻す（攻撃の間だけ当てるなど）
+    /// </summary>
+    void SetActive(bool active);
+
+    //=====================================
+    //Getter
+    //=====================================
+    bool IsActive() const { return isActive_; }
+
+    uint32_t GetLayer() const { return layer_; }
+
   private: //非公開関数
     /// <summary>
     /// 形の値をコライダーへ写す
@@ -71,6 +86,7 @@ namespace Tako {
     uint32_t layer_ = kActorLayer;
 
     std::unique_ptr<Collider> collider_;
+    bool                      isActive_ = true;
     Transform                 worldTransform_{};  ///< 親のある Actor のときだけ使う
   };
 
