@@ -112,10 +112,12 @@ namespace Tako {
     }
   }
 
-  void ViewportCameraController::Focus(const Vector3& point)
+  void ViewportCameraController::Focus(const Vector3& point, float radius)
   {
     target = point;
-    distance = kFocusDistance;
+    // 球が縦の画角にちょうど収まる距離（横は縦より広い）
+    const float fovY = settings ? settings->fovY : ViewportCameraSettings{}.fovY;
+    distance = radius > 0.0f ? (std::max)(radius / std::sin(fovY * 0.5f), kMinDistance) : kFocusDistance;
   }
 
   void ViewportCameraController::SetFromCamera(const Camera& camera)

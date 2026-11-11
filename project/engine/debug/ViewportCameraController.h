@@ -43,10 +43,11 @@ namespace Tako {
     void ApplyTo(Camera& camera) const;
 
     /// <summary>
-    /// 注視点を指定位置へ移し、距離を初期値へ戻す
+    /// 注視点を指定位置へ移し、そこを中心とする球が画面に収まる距離にする
     /// </summary>
     /// <param name="point">新しい注視点</param>
-    void Focus(const Vector3& point);
+    /// <param name="radius">収める球の半径（0 なら距離を初期値へ戻す）</param>
+    void Focus(const Vector3& point, float radius = 0.0f);
 
     /// <summary>
     /// カメラの位置と向きに合わせる（注視点は現在の distance だけ前方に置く）

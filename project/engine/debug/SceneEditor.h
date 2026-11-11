@@ -67,10 +67,10 @@ namespace Tako {
     void PickActor(const Camera& camera, const ImVec2& imageMin, const ImVec2& imageMax);
 
     /// <summary>
-    /// 選んだ Actor のワールドでの位置
+    /// 選んだ Actor 全部（子孫も含む）の原点と、描かれているメッシュを囲む球
     /// </summary>
     /// <returns>選んでいなければ false</returns>
-    bool GetSelectedPosition(Vector3& position) const;
+    bool GetSelectionBounds(Vector3& center, float& radius) const;
 
     /// <summary>
     /// 予約した操作を行う。DebugUIManager::Update から呼ぶ（前のフレームの GPU 処理が終わった後なので消してよい）

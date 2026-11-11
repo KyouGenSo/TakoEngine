@@ -9,6 +9,7 @@
 
 #include <assimp/scene.h>
 
+#include "AABB.h"
 #include "Mesh.h"
 
 namespace Tako {
@@ -77,6 +78,13 @@ namespace Tako {
     /// <param name="world">Draw に渡すのと同じワールド行列</param>
     /// <param name="slots">Draw に渡すのと同じ、メッシュ番号ごとの値</param>
     std::optional<float> Raycast(const Vector3& origin, const Vector3& direction, const Matrix4x4& world, std::span<const MeshDrawSlot> slots = {}) const;
+
+    /// <summary>
+    /// 表示中のメッシュを全部囲む、ワールドの箱。Draw と同じ行列で求め、表示中のメッシュが無ければ値なし
+    /// </summary>
+    /// <param name="world">Draw に渡すのと同じワールド行列</param>
+    /// <param name="slots">Draw に渡すのと同じ、メッシュ番号ごとの値</param>
+    std::optional<AABB> GetWorldBounds(const Matrix4x4& world, std::span<const MeshDrawSlot> slots = {}) const;
 
     /// <summary>
     /// obj ファイルの読み込む
@@ -244,6 +252,12 @@ namespace Tako {
     /// メッシュ番号のスロットの値を item に入れて登録する（非表示なら登録しない）
     /// </summary>
     void SubmitMesh(size_t meshIndex, DrawItem item, std::span<const MeshDrawSlot> slots) const;
+
+    /// <summary>
+    /// 表示中のメッシュごとに、Draw で使うのと同じワールド行列を fn(メッシュ, 行列) へ渡す
+    /// </summary>
+    template<class Fn>
+    void ForEachVisibleMesh(const Matrix4x4& world, std::span<const MeshDrawSlot> slots, Fn&& fn) const;
 
     /// <summary>
     /// Skeleton のデバグ用描画

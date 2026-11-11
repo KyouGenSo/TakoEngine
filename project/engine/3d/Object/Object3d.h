@@ -11,6 +11,7 @@
 #include "vector3.h"
 #include "vector4.h"
 #include "Mat4x4Func.h"
+#include "AABB.h"
 #include "Transform.h"
 #include "AnimationPlayer.h"
 #include "DrawList.h"
@@ -317,6 +318,11 @@ public: // メンバー関数
   std::optional<float> Raycast(const Vector3& origin, const Vector3& direction) const;
 
   /// <summary>
+  /// 最後に Update した位置で、表示中のメッシュを全部囲むワールドの箱。描かない設定のときは値なし
+  /// </summary>
+  std::optional<AABB> GetWorldBounds() const;
+
+  /// <summary>
   /// トランスフォームと色に上乗せするアニメーション。target が空のトラックだけが効く
   /// </summary>
   AnimationPlayer& GetAnimator() { return animator_; }
@@ -336,6 +342,11 @@ private: // プライベートメンバー関数
   /// SetOverrides で渡された設定か、名前の ObjectSettings（どちらも無ければ nullptr）
   /// </summary>
   const ObjectOverrides* FindSettings() const;
+
+  /// <summary>
+  /// Draw が描く状態か（モデルがあり、アニメーションと設定で非表示になっていない）
+  /// </summary>
+  bool IsDrawn() const;
 
   /// <summary>
   /// メッシュのマテリアル（コード ＞ ObjectSettings ＞ モデルの既定）

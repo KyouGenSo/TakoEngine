@@ -38,6 +38,23 @@ namespace Tako {
 
   namespace {
 
+    /// <summary>
+    /// actor の、描かれている MeshComponent ごとに fn を呼ぶ
+    /// </summary>
+    template<class Fn>
+    void ForEachDrawnMesh(const Actor& actor, Fn&& fn)
+    {
+      if (!actor.IsActiveInHierarchy()) {
+        return;
+      }
+      for (const std::unique_ptr<Component>& component : actor.GetComponents()) {
+        MeshComponent* mesh = component->IsA<MeshComponent>() ? static_cast<MeshComponent*>(component.get()) : nullptr;
+        if (mesh && mesh->IsVisible()) {
+          fn(*mesh);
+        }
+      }
+    }
+
     bool IsEditing()
     {
       return !SceneManager::GetInstance()->IsPlaying();
@@ -446,20 +463,13 @@ namespace Tako {
     ActorId       picked    = 0;
     float         nearest   = (std::numeric_limits<float>::max)();
     for (const std::unique_ptr<Actor>& actor : scene->GetActors()) {
-      if (!actor->IsActiveInHierarchy()) {
-        continue;
-      }
-      for (const std::unique_ptr<Component>& component : actor->GetComponents()) {
-        MeshComponent* mesh = component->IsA<MeshComponent>() ? static_cast<MeshComponent*>(component.get()) : nullptr;
-        if (!mesh || !mesh->IsVisible()) {
-          continue;
-        }
-        const std::optional<float> hit = mesh->GetObject3d()->Raycast(origin, direction);
+      ForEachDrawnMesh(*actor, [&](MeshComponent& mesh) {
+        const std::optional<float> hit = mesh.GetObject3d()->Raycast(origin, direction);
         if (hit && *hit < nearest) {
           picked  = actor->GetId();
           nearest = *hit;
         }
-      }
+      });
     }
 
     // メッシュに当たらなければ、原点の近くの Actor にする（メッシュの無い物と、遠くて点にしか見えない物のため）
@@ -521,13 +531,38 @@ namespace Tako {
     }
   }
 
-  bool SceneEditor::GetSelectedPosition(Vector3& position) const
+  bool SceneEditor::GetSelectionBounds(Vector3& center, float& radius) const
   {
-    const Actor* actor = GetSelected();
-    if (!actor) {
+    BaseScene* scene = GetScene();
+    if (!scene || selection_.empty()) {
       return false;
     }
-    position = actor->GetWorldPosition();
+    constexpr float kLimit = (std::numeric_limits<float>::max)();
+    AABB            bounds{ { kLimit, kLimit, kLimit }, { -kLimit, -kLimit, -kLimit } };
+    const auto      add = [&bounds](const Vector3& p) {
+      bounds.min = { (std::min)(bounds.min.x, p.x), (std::min)(bounds.min.y, p.y), (std::min)(bounds.min.z, p.z) };
+      bounds.max = { (std::max)(bounds.max.x, p.x), (std::max)(bounds.max.y, p.y), (std::max)(bounds.max.z, p.z) };
+    };
+    // 原点も入れる（ギズモが出る場所。メッシュの無い Actor はこれだけになる）
+    const auto visit = [&](const auto& self, const Actor& actor) -> void {
+      add(actor.GetWorldPosition());
+      ForEachDrawnMesh(actor, [&](MeshComponent& mesh) {
+        if (const std::optional<AABB> box = mesh.GetObject3d()->GetWorldBounds()) {
+          add(box->min);
+          add(box->max);
+        }
+      });
+      for (const Actor* child : actor.GetChildren()) {
+        self(self, *child);
+      }
+    };
+    for (const uint64_t id : selection_) {
+      if (const Actor* actor = scene->FindActor(id)) {
+        visit(visit, *actor);
+      }
+    }
+    center = (bounds.min + bounds.max) * 0.5f;
+    radius = (bounds.max - bounds.min).Length() * 0.5f;
     return true;
   }
 
@@ -637,7 +672,7 @@ namespace Tako {
       { ImGuiKey_None, ImGuiInputFlags_None, "Hierarchy / Debug Viewport: add to or remove from the selection", nullptr, "Ctrl + LMB" },
       { ImGuiKey_None, ImGuiInputFlags_None, "Hierarchy: select every row between the last selected one and this one", nullptr, "Shift + LMB" },
       { ImGuiKey_None, ImGuiInputFlags_None, "Debug Viewport: select the actor under the cursor (click its mesh)", nullptr, "LMB" },
-      { ImGuiKey_F, ImGuiInputFlags_None, "Debug Viewport: move the camera to the selected actor", nullptr },
+      { ImGuiKey_F, ImGuiInputFlags_None, "Debug Viewport: move the camera so that the selection fits in the view", nullptr },
       { ImGuiKey_None, ImGuiInputFlags_None, "Debug Viewport: snap the gizmo (move 0.5, rotate 15 deg, scale 0.1)", nullptr, "Ctrl + drag" },
     };
     return kShortcuts;

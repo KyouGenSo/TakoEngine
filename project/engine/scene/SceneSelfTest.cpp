@@ -190,7 +190,17 @@ namespace Tako {
     assert(!cast({ 2.0f, 3.0f, 4.0f }, {}, { 104.0f, 5.2f, -4.0f }, forward));
     assert(!cast({ 2.0f, 3.0f, 4.0f }, {}, from, { 0.0f, 0.0f, -1.0f }));
     assert(!cast({ 0.0f, 3.0f, 4.0f }, {}, from, forward));
-    other->GetTransform().scale = { 1.0f, 1.0f, 1.0f };
+
+    // 囲む箱は、拡大と回転の後のワールドの大きさになる（Y 軸で 90 度回すと、X と Z の幅が入れ替わる）
+    cast({ 2.0f, 3.0f, 4.0f }, {}, from, forward);
+    std::optional<AABB> bounds = cube->GetWorldBounds();
+    const Vector3 extent{ half.x * 2.0f, half.y * 3.0f, half.z * 4.0f };
+    assert(bounds && (bounds->min - (Vector3{ 4.0f, 5.0f, 6.0f } - extent)).Length() < 0.001f && (bounds->max - (Vector3{ 4.0f, 5.0f, 6.0f } + extent)).Length() < 0.001f);
+    cast({ 2.0f, 3.0f, 4.0f }, { 0.0f, std::numbers::pi_v<float> * 0.5f, 0.0f }, from, forward);
+    bounds = cube->GetWorldBounds();
+    assert(bounds && std::abs((bounds->max.x - bounds->min.x) - half.z * 8.0f) < 0.001f && std::abs((bounds->max.z - bounds->min.z) - half.x * 4.0f) < 0.001f);
+    other->GetTransform().scale  = { 1.0f, 1.0f, 1.0f };
+    other->GetTransform().rotate = {};
 
     // ポーズ中は TickWhilePaused のコンポーネントだけが動く
     auto* normal = static_cast<TickCounter*>(other->AddComponent(std::make_unique<TickCounter>(false), "Normal"));

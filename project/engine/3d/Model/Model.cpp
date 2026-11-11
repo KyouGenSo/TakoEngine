@@ -13,6 +13,7 @@
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <fstream>
@@ -587,35 +588,28 @@ namespace Tako {
     }
   }
 
-  std::optional<float> Model::Raycast(const Vector3& origin, const Vector3& direction, const Matrix4x4& world, std::span<const MeshDrawSlot> slots) const
+  template<class Fn>
+  void Model::ForEachVisibleMesh(const Matrix4x4& world, std::span<const MeshDrawSlot> slots, Fn&& fn) const
   {
-    std::optional<float> nearest;
-    const auto test = [&](size_t meshIndex, const Matrix4x4& meshWorld) {
-      // 表示の決まりは SubmitMesh と同じ。つぶれたメッシュは見えず、逆行列も作れない
-      const bool isVisible = meshIndex < slots.size() ? slots[meshIndex].visible : meshes_[meshIndex]->IsVisible();
-      if (!isVisible || IsFlattened(meshWorld)) {
-        return;
-      }
-      // 向きを正規化しないので、ローカルで求めた t がそのままワールドでの t になる
-      const Matrix4x4            toLocal = Mat4x4::Inverse(meshWorld);
-      const std::optional<float> hit     = meshes_[meshIndex]->Raycast(Mat4x4::Transform(toLocal, origin), Mat4x4::TransformNormal(toLocal, direction));
-      if (hit && (!nearest || *hit < *nearest)) {
-        nearest = hit;
+    // 表示の決まりは SubmitMesh と同じ
+    const auto call = [&](size_t meshIndex, const Matrix4x4& meshWorld) {
+      if (meshIndex < slots.size() ? slots[meshIndex].visible : meshes_[meshIndex]->IsVisible()) {
+        fn(*meshes_[meshIndex], meshWorld);
       }
     };
 
     // メッシュごとの行列は Draw と同じ
     if (hasSkeleton_ || meshes_.size() <= 1) {
       for (size_t i = 0; i < meshes_.size(); ++i) {
-        test(i, world);
+        call(i, world);
       }
-      return nearest;
+      return;
     }
     const auto visit = [&](const auto& self, const Node& node, const Matrix4x4& parentGlobalMatrix) -> void {
       const Matrix4x4 globalMatrix = Mat4x4::Multiply(node.localMatrix, parentGlobalMatrix);
       for (int meshIndex : node.meshIndices) {
         if (meshIndex < static_cast<int>(meshes_.size())) {
-          test(static_cast<size_t>(meshIndex), Mat4x4::Multiply(globalMatrix, world));
+          call(static_cast<size_t>(meshIndex), Mat4x4::Multiply(globalMatrix, world));
         }
       }
       for (const Node& child : node.children) {
@@ -623,7 +617,44 @@ namespace Tako {
       }
     };
     visit(visit, rootNode_, hasAnimation_ ? rootNode_.localMatrix : Mat4x4::MakeIdentity());
+  }
+
+  std::optional<float> Model::Raycast(const Vector3& origin, const Vector3& direction, const Matrix4x4& world, std::span<const MeshDrawSlot> slots) const
+  {
+    std::optional<float> nearest;
+    ForEachVisibleMesh(world, slots, [&](const Mesh& mesh, const Matrix4x4& meshWorld) {
+      // つぶれたメッシュは見えず、逆行列も作れない
+      if (IsFlattened(meshWorld)) {
+        return;
+      }
+      // 向きを正規化しないので、ローカルで求めた t がそのままワールドでの t になる
+      const Matrix4x4            toLocal = Mat4x4::Inverse(meshWorld);
+      const std::optional<float> hit     = mesh.Raycast(Mat4x4::Transform(toLocal, origin), Mat4x4::TransformNormal(toLocal, direction));
+      if (hit && (!nearest || *hit < *nearest)) {
+        nearest = hit;
+      }
+    });
     return nearest;
+  }
+
+  std::optional<AABB> Model::GetWorldBounds(const Matrix4x4& world, std::span<const MeshDrawSlot> slots) const
+  {
+    std::optional<AABB> bounds;
+    ForEachVisibleMesh(world, slots, [&](const Mesh& mesh, const Matrix4x4& meshWorld) {
+      const Vector3& localMin = mesh.GetAABBLocalMin();
+      const Vector3& localMax = mesh.GetAABBLocalMax();
+      // 回した箱を囲むので、8 つの角を全部移す
+      // ponytail: スキニング付きはバインドポーズの箱（Mesh::Raycast と同じ割り切り）
+      for (int corner = 0; corner < 8; ++corner) {
+        const Vector3 p = Mat4x4::Transform(meshWorld, { (corner & 1) ? localMax.x : localMin.x, (corner & 2) ? localMax.y : localMin.y, (corner & 4) ? localMax.z : localMin.z });
+        if (!bounds) {
+          bounds = AABB{ p, p };
+        }
+        bounds->min = { (std::min)(bounds->min.x, p.x), (std::min)(bounds->min.y, p.y), (std::min)(bounds->min.z, p.z) };
+        bounds->max = { (std::max)(bounds->max.x, p.x), (std::max)(bounds->max.y, p.y), (std::max)(bounds->max.z, p.z) };
+      }
+    });
+    return bounds;
   }
 
   void Model::SubmitMesh(size_t meshIndex, DrawItem item, std::span<const MeshDrawSlot> slots) const

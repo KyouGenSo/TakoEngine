@@ -17,6 +17,7 @@
 
 #include <ImGuizmo.h>
 
+#include <algorithm>
 #include <array>
 
 namespace Tako {
@@ -24,6 +25,7 @@ namespace Tako {
   namespace {
     constexpr float kGridHeight           = 0.01f;  // 床と同じ深さだと深度テストでちらつくため少し浮かせる
     constexpr float kGameCameraFrustumFar = 30.0f;  // far クリップ(1000)のままだと視錐台が画面を埋め尽くす
+    constexpr float kMaxFocusFarRatio     = 0.5f;   // F で寄せる距離の上限（far クリップに対する割合）
     const Vector4   kGridColor            = { 0.35f, 0.35f, 0.35f, 1.0f };
     const Vector4   kGameCameraColor      = { 1.0f, 0.85f, 0.2f, 1.0f };
   }
@@ -142,8 +144,11 @@ namespace Tako {
             sceneEditor_->PickActor(*camera_, imageMin, imageMax);
           }
           Vector3 focus;
-          if (ImGui::IsKeyPressed(ImGuiKey_F) && !io.WantTextInput && !ImGui::IsMouseDown(ImGuiMouseButton_Right) && sceneEditor_->GetSelectedPosition(focus)) {
-            cameraController_.Focus(focus);
+          float   radius = 0.0f;
+          if (ImGui::IsKeyPressed(ImGuiKey_F) && !io.WantTextInput && !ImGui::IsMouseDown(ImGuiMouseButton_Right) && sceneEditor_->GetSelectionBounds(focus, radius)) {
+            cameraController_.Focus(focus, radius);
+            // 地面のような大きい物は、全体が収まる距離まで引くと far クリップの外に出て何も映らなくなる
+            cameraController_.distance = (std::min)(cameraController_.distance, camera_->GetFarClip() * kMaxFocusFarRatio);
           }
         }
       }

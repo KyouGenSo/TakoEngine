@@ -523,14 +523,20 @@ Matrix4x4 Object3d::GetWorldMatrix() const
 	return worldMatrix;
 }
 
+bool Object3d::IsDrawn() const
+{
+	const ObjectOverrides* settings = FindSettings();
+	return isAnimationVisible_ && model_ && (!settings || settings->visible.value_or(true));
+}
+
 std::optional<float> Object3d::Raycast(const Vector3& origin, const Vector3& direction) const
 {
-	// 描かない条件は Draw と同じ
-	const ObjectOverrides* settings = FindSettings();
-	if (!isAnimationVisible_ || !model_ || (settings && !settings->visible.value_or(true))) {
-		return std::nullopt;
-	}
-	return model_->Raycast(origin, direction, transformationMatData_->world, drawSlots_);
+	return IsDrawn() ? model_->Raycast(origin, direction, transformationMatData_->world, drawSlots_) : std::nullopt;
+}
+
+std::optional<AABB> Object3d::GetWorldBounds() const
+{
+	return IsDrawn() ? model_->GetWorldBounds(transformationMatData_->world, drawSlots_) : std::nullopt;
 }
 
 void Object3d::CreateTransformationMatrixData()
