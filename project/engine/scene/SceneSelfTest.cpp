@@ -7,6 +7,7 @@
 #include "Logger.h"
 #include "Mat4x4Func.h"
 #include "MeshComponent.h"
+#include "Model.h"
 #include "Object3d.h"
 #include "Prefab.h"
 #include "TypeRegistry.h"
@@ -16,6 +17,8 @@
 #include <any>
 #include <cassert>
 #include <cmath>
+#include <numbers>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -163,6 +166,31 @@ namespace Tako {
     other->GetTransform().translate = { 4.0f, 5.0f, 6.0f };
     scene.UpdateFrame(0.016f);
     assert(IsNear(mesh->GetObject3d()->GetWorldMatrix(), other->GetWorldMatrix()));
+
+    // レイは、描く位置のメッシュの面までの距離を返す。外れたレイ・逆向きのレイ・つぶれたメッシュには当たらない
+    mesh->SetModel("EngineResources/Model/white_cube.gltf");
+    Object3d*     cube = mesh->GetObject3d();
+    const Mesh*   box  = cube->GetModel()->GetMesh();
+    const Vector3 half = (box->GetAABBLocalMax() - box->GetAABBLocalMin()) * 0.5f;
+    // 面の中心は 2 枚の三角形の境目なので、少しずらした所を通す
+    const Vector3 from{ 4.1f, 5.2f, -4.0f };
+    const Vector3 forward{ 0.0f, 0.0f, 1.0f };
+    const auto    cast = [&](const Vector3& scale, const Vector3& rotate, const Vector3& origin, const Vector3& direction) {
+      other->GetTransform().scale  = scale;
+      other->GetTransform().rotate = rotate;
+      scene.UpdateFrame(0.016f);
+      cube->Update();
+      return cube->Raycast(origin, direction);
+    };
+    std::optional<float> hit = cast({ 2.0f, 3.0f, 4.0f }, {}, from, forward);
+    assert(hit && std::abs(*hit - (10.0f - half.z * 4.0f)) < 0.001f);
+    // Y 軸で 90 度回すと、ローカルの X がレイの向きに来る
+    hit = cast({ 2.0f, 3.0f, 4.0f }, { 0.0f, std::numbers::pi_v<float> * 0.5f, 0.0f }, from, forward);
+    assert(hit && std::abs(*hit - (10.0f - half.x * 2.0f)) < 0.001f);
+    assert(!cast({ 2.0f, 3.0f, 4.0f }, {}, { 104.0f, 5.2f, -4.0f }, forward));
+    assert(!cast({ 2.0f, 3.0f, 4.0f }, {}, from, { 0.0f, 0.0f, -1.0f }));
+    assert(!cast({ 0.0f, 3.0f, 4.0f }, {}, from, forward));
+    other->GetTransform().scale = { 1.0f, 1.0f, 1.0f };
 
     // ポーズ中は TickWhilePaused のコンポーネントだけが動く
     auto* normal = static_cast<TickCounter*>(other->AddComponent(std::make_unique<TickCounter>(false), "Normal"));

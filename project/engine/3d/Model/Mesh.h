@@ -1,6 +1,7 @@
 // ReSharper disable CppClangTidyClangDiagnosticInvalidUtf8
 #pragma once
 #include <d3d12.h>
+#include <optional>
 #include <wrl.h>
 #include "ModelStruct.h"
 #include "Object3d.h"
@@ -56,6 +57,11 @@ namespace Tako {
     /// </summary>
     /// <returns>クローンされたメッシュの unique_ptr</returns>
     std::unique_ptr<Mesh> Clone() const;
+
+    /// <summary>
+    /// レイが当たる一番手前の位置（origin + direction * t の t）。メッシュのローカル空間で調べ、当たらなければ値なし
+    /// </summary>
+    std::optional<float> Raycast(const Vector3& origin, const Vector3& direction) const;
 
     //スキニング関連
     /// <summary>

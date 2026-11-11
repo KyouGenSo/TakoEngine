@@ -312,6 +312,11 @@ public: // メンバー関数
   Matrix4x4 GetWorldMatrix() const;
 
   /// <summary>
+  /// レイが、最後に Update した位置のメッシュに当たる一番手前の位置（origin + direction * t の t）。描かない設定のときと、当たらないときは値なし
+  /// </summary>
+  std::optional<float> Raycast(const Vector3& origin, const Vector3& direction) const;
+
+  /// <summary>
   /// トランスフォームと色に上乗せするアニメーション。target が空のトラックだけが効く
   /// </summary>
   AnimationPlayer& GetAnimator() { return animator_; }

@@ -12,7 +12,9 @@
 #include "LightComponent.h"
 #include "JsonPropertyVisitor.h"
 #include "Mat4x4Func.h"
+#include "MeshComponent.h"
 #include "NewScript.h"
+#include "Object3d.h"
 #include "Prefab.h"
 #include "SceneManager.h"
 #include "Script.h"
@@ -30,6 +32,7 @@
 #include <fstream>
 #include <limits>
 #include <numbers>
+#include <optional>
 
 namespace Tako {
 
@@ -430,30 +433,52 @@ namespace Tako {
     if (!scene) {
       return;
     }
-    // ponytail: 原点の近く（見かけの大きさに合わせた円）で選ぶ。大きい物を面で選べるようにするなら、モデルの箱とレイで判定する
-    constexpr float kMinRadius = 12.0f;
-    constexpr float kMaxRadius = 80.0f;
+    constexpr float kOriginRadius = 12.0f;
     const Matrix4x4 viewProjection = camera.GetViewMatrix() * camera.GetProjectionMatrix();
     const ImVec2    mouse          = ImGui::GetMousePos();
     const float     width          = imageMax.x - imageMin.x;
     const float     height         = imageMax.y - imageMin.y;
-    ActorId         picked         = 0;
-    float           pickedDepth    = (std::numeric_limits<float>::max)();
+
+    // 描かれているメッシュのうち、マウスの下で一番手前にある物を選ぶ
+    const Vector3 origin    = camera.GetTranslate();
+    const Vector3 farPoint  = Mat4x4::Transform(Mat4x4::Inverse(viewProjection), { (mouse.x - imageMin.x) / width * 2.0f - 1.0f, 1.0f - (mouse.y - imageMin.y) / height * 2.0f, 1.0f });
+    const Vector3 direction = (farPoint - origin).Normalize();
+    ActorId       picked    = 0;
+    float         nearest   = (std::numeric_limits<float>::max)();
     for (const std::unique_ptr<Actor>& actor : scene->GetActors()) {
-      const Transform world = actor->GetWorldTransform();
-      const Vector3&  p     = world.translate;
-      const auto&     m     = viewProjection.m;
-      const float     depth = p.x * m[0][3] + p.y * m[1][3] + p.z * m[2][3] + m[3][3];
-      if (depth <= 0.0f || depth >= pickedDepth) {
+      if (!actor->IsActiveInHierarchy()) {
         continue;
       }
-      const float x      = imageMin.x + ((p.x * m[0][0] + p.y * m[1][0] + p.z * m[2][0] + m[3][0]) / depth * 0.5f + 0.5f) * width;
-      const float y      = imageMin.y + (0.5f - (p.x * m[0][1] + p.y * m[1][1] + p.z * m[2][1] + m[3][1]) / depth * 0.5f) * height;
-      const float size   = (std::max)({ std::abs(world.scale.x), std::abs(world.scale.y), std::abs(world.scale.z) });
-      const float radius = std::clamp(size * 0.5f * camera.GetProjectionMatrix().m[1][1] / depth * height * 0.5f, kMinRadius, kMaxRadius);
-      if ((x - mouse.x) * (x - mouse.x) + (y - mouse.y) * (y - mouse.y) <= radius * radius) {
-        picked      = actor->GetId();
-        pickedDepth = depth;
+      for (const std::unique_ptr<Component>& component : actor->GetComponents()) {
+        MeshComponent* mesh = component->IsA<MeshComponent>() ? static_cast<MeshComponent*>(component.get()) : nullptr;
+        if (!mesh || !mesh->IsVisible()) {
+          continue;
+        }
+        const std::optional<float> hit = mesh->GetObject3d()->Raycast(origin, direction);
+        if (hit && *hit < nearest) {
+          picked  = actor->GetId();
+          nearest = *hit;
+        }
+      }
+    }
+
+    // メッシュに当たらなければ、原点の近くの Actor にする（メッシュの無い物と、遠くて点にしか見えない物のため）
+    // ponytail: メッシュの無い物は、後ろにメッシュがあると選べない。選べるようにするなら、目印を描いてそれを判定に足す
+    if (picked == 0) {
+      float pickedDepth = (std::numeric_limits<float>::max)();
+      for (const std::unique_ptr<Actor>& actor : scene->GetActors()) {
+        const Vector3 p     = actor->GetWorldTransform().translate;
+        const auto&   m     = viewProjection.m;
+        const float   depth = p.x * m[0][3] + p.y * m[1][3] + p.z * m[2][3] + m[3][3];
+        if (depth <= 0.0f || depth >= pickedDepth) {
+          continue;
+        }
+        const float x = imageMin.x + ((p.x * m[0][0] + p.y * m[1][0] + p.z * m[2][0] + m[3][0]) / depth * 0.5f + 0.5f) * width;
+        const float y = imageMin.y + (0.5f - (p.x * m[0][1] + p.y * m[1][1] + p.z * m[2][1] + m[3][1]) / depth * 0.5f) * height;
+        if ((x - mouse.x) * (x - mouse.x) + (y - mouse.y) * (y - mouse.y) <= kOriginRadius * kOriginRadius) {
+          picked      = actor->GetId();
+          pickedDepth = depth;
+        }
       }
     }
     if (ImGui::GetIO().KeyCtrl) {
@@ -611,7 +636,7 @@ namespace Tako {
       { ImGuiMod_Ctrl | ImGuiKey_V, ImGuiInputFlags_None, "Paste the copied actors (also into another scene)", [](SceneEditor& editor) { editor.PasteClipboard(); } },
       { ImGuiKey_None, ImGuiInputFlags_None, "Hierarchy / Debug Viewport: add to or remove from the selection", nullptr, "Ctrl + LMB" },
       { ImGuiKey_None, ImGuiInputFlags_None, "Hierarchy: select every row between the last selected one and this one", nullptr, "Shift + LMB" },
-      { ImGuiKey_None, ImGuiInputFlags_None, "Debug Viewport: select the actor near the cursor (click near its origin)", nullptr, "LMB" },
+      { ImGuiKey_None, ImGuiInputFlags_None, "Debug Viewport: select the actor under the cursor (click its mesh)", nullptr, "LMB" },
       { ImGuiKey_F, ImGuiInputFlags_None, "Debug Viewport: move the camera to the selected actor", nullptr },
       { ImGuiKey_None, ImGuiInputFlags_None, "Debug Viewport: snap the gizmo (move 0.5, rotate 15 deg, scale 0.1)", nullptr, "Ctrl + drag" },
     };

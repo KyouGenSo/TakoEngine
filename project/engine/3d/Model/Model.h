@@ -72,6 +72,13 @@ namespace Tako {
     void DrawInstanced(const DrawItem& item);
 
     /// <summary>
+    /// レイが表示中のメッシュに当たる一番手前の位置（origin + direction * t の t）。Draw と同じ行列で調べ、当たらなければ値なし
+    /// </summary>
+    /// <param name="world">Draw に渡すのと同じワールド行列</param>
+    /// <param name="slots">Draw に渡すのと同じ、メッシュ番号ごとの値</param>
+    std::optional<float> Raycast(const Vector3& origin, const Vector3& direction, const Matrix4x4& world, std::span<const MeshDrawSlot> slots = {}) const;
+
+    /// <summary>
     /// obj ファイルの読み込む
     ///	</summary>
     /// <param name="directoryPath">モデルファイルのディレクトリパス</param>

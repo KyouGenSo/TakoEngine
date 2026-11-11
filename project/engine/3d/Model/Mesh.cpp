@@ -10,7 +10,78 @@
 #include "DebugUIManager.h"
 #endif
 
+#include <algorithm>
+#include <limits>
+
 namespace Tako {
+
+  namespace {
+
+    // 隣の三角形との境目を通るレイが、丸めでどちらにも当たらなくなるのを防ぐ（重心座標での幅）
+    constexpr float kEdgeTolerance = 1.0e-5f;
+
+    /// <summary>
+    /// レイが箱に入る位置（origin + direction * t の t）。始点が箱の中なら 0、当たらなければ値なし
+    /// </summary>
+    std::optional<float> IntersectRayBox(const Vector3& origin, const Vector3& direction, const Vector3& boxMin, const Vector3& boxMax)
+    {
+      const float origins[]    = { origin.x, origin.y, origin.z };
+      const float directions[] = { direction.x, direction.y, direction.z };
+      const float mins[]       = { boxMin.x, boxMin.y, boxMin.z };
+      const float maxs[]       = { boxMax.x, boxMax.y, boxMax.z };
+      float       tNear        = 0.0f;
+      float       tFar         = (std::numeric_limits<float>::max)();
+      for (int axis = 0; axis < 3; ++axis) {
+        // 軸に平行なレイは割れないので、その軸の範囲に居るかだけを見る
+        if (directions[axis] == 0.0f) {
+          if (origins[axis] < mins[axis] || origins[axis] > maxs[axis]) {
+            return std::nullopt;
+          }
+          continue;
+        }
+        float t1 = (mins[axis] - origins[axis]) / directions[axis];
+        float t2 = (maxs[axis] - origins[axis]) / directions[axis];
+        if (t1 > t2) {
+          std::swap(t1, t2);
+        }
+        tNear = (std::max)(tNear, t1);
+        tFar  = (std::min)(tFar, t2);
+        if (tNear > tFar) {
+          return std::nullopt;
+        }
+      }
+      return tNear;
+    }
+
+    /// <summary>
+    /// レイが三角形に当たる位置（origin + direction * t の t）。表裏は区別しない（Möller–Trumbore）
+    /// </summary>
+    std::optional<float> IntersectRayTriangle(const Vector3& origin, const Vector3& direction, const Vector3& a, const Vector3& b, const Vector3& c)
+    {
+      const Vector3 edge1       = b - a;
+      const Vector3 edge2       = c - a;
+      const Vector3 p           = direction.Cross(edge2);
+      const float   determinant = edge1.Dot(p);
+      // レイが面と平行か、面積の無い三角形
+      if (determinant == 0.0f) {
+        return std::nullopt;
+      }
+      const float   inverse = 1.0f / determinant;
+      const Vector3 s       = origin - a;
+      const float   u       = s.Dot(p) * inverse;
+      if (u < -kEdgeTolerance || u > 1.0f + kEdgeTolerance) {
+        return std::nullopt;
+      }
+      const Vector3 q = s.Cross(edge1);
+      const float   v = direction.Dot(q) * inverse;
+      if (v < -kEdgeTolerance || u + v > 1.0f + kEdgeTolerance) {
+        return std::nullopt;
+      }
+      const float t = edge2.Dot(q) * inverse;
+      return t >= 0.0f ? std::optional<float>(t) : std::nullopt;
+    }
+
+  } // namespace
 
   Mesh::~Mesh()
   {
@@ -53,6 +124,32 @@ namespace Tako {
         if (v.position.z > aabbLocalMax_.z) aabbLocalMax_.z = v.position.z;
       }
     }
+  }
+
+  std::optional<float> Mesh::Raycast(const Vector3& origin, const Vector3& direction) const
+  {
+    if (vertices_.empty()) {
+      return std::nullopt;
+    }
+    const std::optional<float> boxHit = IntersectRayBox(origin, direction, aabbLocalMin_, aabbLocalMax_);
+    // ponytail: スキニング後の形は GPU にしか無いので、バインドポーズの箱で代える。正確にするならジョイントごとの箱を持つ
+    if (!boxHit || hasSkinning_) {
+      return boxHit;
+    }
+
+    // ponytail: 三角形を全部調べる（呼ぶのはクリックしたときだけ）。重いモデルで遅ければ BVH を作る
+    const auto position = [this](uint32_t index) {
+      const Vector4& p = vertices_[index].position;
+      return Vector3{ p.x, p.y, p.z };
+    };
+    std::optional<float> nearest;
+    for (size_t i = 0; i + 2 < indices_.size(); i += 3) {
+      const std::optional<float> hit = IntersectRayTriangle(origin, direction, position(indices_[i]), position(indices_[i + 1]), position(indices_[i + 2]));
+      if (hit && (!nearest || *hit < *nearest)) {
+        nearest = hit;
+      }
+    }
+    return nearest;
   }
 
   void Mesh::Submit(DrawItem item) const

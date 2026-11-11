@@ -127,6 +127,8 @@ namespace Tako {
       if (viewport_ && viewport_->IsInitialized()) {
         // ImGuizmo はカーソルの下に ImGui のアイテムがあると掴めないので、ギズモの上では画像をボタンにしない
         viewport_->DrawImGuiImage(!isGizmoHot_);
+        // 画像は押した瞬間にアクティブになり、その間 IsWindowHovered は false を返す。画像そのものの上に居るかで判定する
+        const bool   isImageHovered = ImGui::IsItemHovered();
         const ImVec2 imageMin = ImGui::GetItemRectMin();
         const ImVec2 imageMax = ImGui::GetItemRectMax();
         inputCaptured = isGizmoHot_ || cameraController_.HandleImGuiInput();
@@ -135,7 +137,7 @@ namespace Tako {
 
         // 左クリックで選ぶ（ギズモを掴むクリックと、Alt + 左ドラッグの回転は除く）。F で選んだ Actor へ寄せる
         const ImGuiIO& io = ImGui::GetIO();
-        if (ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect(imageMin, imageMax)) {
+        if (isImageHovered) {
           if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !io.KeyAlt && !wasGizmoHot && !isGizmoHot_) {
             sceneEditor_->PickActor(*camera_, imageMin, imageMax);
           }

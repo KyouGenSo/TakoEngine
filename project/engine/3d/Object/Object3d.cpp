@@ -523,6 +523,16 @@ Matrix4x4 Object3d::GetWorldMatrix() const
 	return worldMatrix;
 }
 
+std::optional<float> Object3d::Raycast(const Vector3& origin, const Vector3& direction) const
+{
+	// 描かない条件は Draw と同じ
+	const ObjectOverrides* settings = FindSettings();
+	if (!isAnimationVisible_ || !model_ || (settings && !settings->visible.value_or(true))) {
+		return std::nullopt;
+	}
+	return model_->Raycast(origin, direction, transformationMatData_->world, drawSlots_);
+}
+
 void Object3d::CreateTransformationMatrixData()
 {
 	// 座標変換行列リソースを生成

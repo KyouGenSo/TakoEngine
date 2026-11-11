@@ -14,6 +14,7 @@
 #include <assimp/postprocess.h>
 
 #include <cassert>
+#include <cmath>
 #include <fstream>
 #include <set>
 #include <sstream>
@@ -24,6 +25,24 @@
 #endif
 
 namespace Tako {
+
+  namespace {
+
+    constexpr float kMinDeterminant = 1.0e-20f;
+
+    /// <summary>
+    /// 拡大が 0 の軸があって、逆行列を作れない行列か
+    /// </summary>
+    bool IsFlattened(const Matrix4x4& matrix)
+    {
+      const auto& m = matrix.m;
+      const float determinant = m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1])
+                              - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
+                              + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+      return std::abs(determinant) < kMinDeterminant;
+    }
+
+  } // namespace
 
   // 静的メンバー変数の定義
   bool Model::s_showSkeletonDebug = false;
@@ -566,6 +585,45 @@ namespace Tako {
     for (const Node& child : node.children) {
       ProcessNodeHierarchy(child, globalMatrix, world, item, slots);
     }
+  }
+
+  std::optional<float> Model::Raycast(const Vector3& origin, const Vector3& direction, const Matrix4x4& world, std::span<const MeshDrawSlot> slots) const
+  {
+    std::optional<float> nearest;
+    const auto test = [&](size_t meshIndex, const Matrix4x4& meshWorld) {
+      // 表示の決まりは SubmitMesh と同じ。つぶれたメッシュは見えず、逆行列も作れない
+      const bool isVisible = meshIndex < slots.size() ? slots[meshIndex].visible : meshes_[meshIndex]->IsVisible();
+      if (!isVisible || IsFlattened(meshWorld)) {
+        return;
+      }
+      // 向きを正規化しないので、ローカルで求めた t がそのままワールドでの t になる
+      const Matrix4x4            toLocal = Mat4x4::Inverse(meshWorld);
+      const std::optional<float> hit     = meshes_[meshIndex]->Raycast(Mat4x4::Transform(toLocal, origin), Mat4x4::TransformNormal(toLocal, direction));
+      if (hit && (!nearest || *hit < *nearest)) {
+        nearest = hit;
+      }
+    };
+
+    // メッシュごとの行列は Draw と同じ
+    if (hasSkeleton_ || meshes_.size() <= 1) {
+      for (size_t i = 0; i < meshes_.size(); ++i) {
+        test(i, world);
+      }
+      return nearest;
+    }
+    const auto visit = [&](const auto& self, const Node& node, const Matrix4x4& parentGlobalMatrix) -> void {
+      const Matrix4x4 globalMatrix = Mat4x4::Multiply(node.localMatrix, parentGlobalMatrix);
+      for (int meshIndex : node.meshIndices) {
+        if (meshIndex < static_cast<int>(meshes_.size())) {
+          test(static_cast<size_t>(meshIndex), Mat4x4::Multiply(globalMatrix, world));
+        }
+      }
+      for (const Node& child : node.children) {
+        self(self, child, globalMatrix);
+      }
+    };
+    visit(visit, rootNode_, hasAnimation_ ? rootNode_.localMatrix : Mat4x4::MakeIdentity());
+    return nearest;
   }
 
   void Model::SubmitMesh(size_t meshIndex, DrawItem item, std::span<const MeshDrawSlot> slots) const

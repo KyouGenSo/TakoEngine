@@ -61,7 +61,7 @@ namespace Tako {
     bool DrawGizmo(const Camera& camera, const ImVec2& imageMin, const ImVec2& imageMax);
 
     /// <summary>
-    /// 画像の上のカーソルに一番近い Actor を選ぶ（無ければ選択を外す）。Actor の原点の近くを選ぶ。Ctrl を押していれば、選択に足す・外す
+    /// カーソルの下で一番手前にあるメッシュの Actor を選ぶ。メッシュが無ければ原点の近くの Actor、それも無ければ選択を外す。Ctrl を押していれば、選択に足す・外す
     /// </summary>
     /// <param name="camera">画像を描いたカメラ</param>
     void PickActor(const Camera& camera, const ImVec2& imageMin, const ImVec2& imageMax);
