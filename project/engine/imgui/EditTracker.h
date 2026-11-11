@@ -318,6 +318,19 @@ namespace Tako {
     void MarkSaved() { isEdited_ = false; }
 
     /// <summary>
+    /// UI の区間の外でコードが内容を変えたときに、Undo の 1 手として積み、未保存の印を付ける
+    /// </summary>
+    /// <param name="before">変える前に serialize した内容</param>
+    void RecordExternalChange(const State& before) {
+      State after = callbacks_.serialize();
+      RecordChange(before, after);
+      current_ = std::move(after);
+      if (callbacks_.hash) {
+        currentHash_ = startHash_ = callbacks_.hash();
+      }
+    }
+
+    /// <summary>
     /// 読み込んだ・切り替えた。未保存の印と履歴を捨て、進行中の操作も比べない
     /// </summary>
     void Reset() {

@@ -160,6 +160,41 @@ namespace Tako {
       scene.MarkChanged();
     }
 
+    void CollectInOrder(Actor& actor, std::vector<Actor*>& out)
+    {
+      out.push_back(&actor);
+      for (Actor* child : actor.GetChildren()) {
+        CollectInOrder(*child, out);
+      }
+    }
+
+    /// <summary>
+    /// Hierarchy に並ぶ順（親の次に子）の全 Actor
+    /// </summary>
+    std::vector<Actor*> GetHierarchyOrder(const BaseScene& scene)
+    {
+      std::vector<Actor*> order;
+      for (const std::unique_ptr<Actor>& actor : scene.GetActors()) {
+        if (!actor->GetParent()) {
+          CollectInOrder(*actor, order);
+        }
+      }
+      return order;
+    }
+
+    /// <summary>
+    /// Stop の後に読み込む値。component が空なら Actor 自身の値
+    /// </summary>
+    /// <returns>JSON の文字列。コンポーネントが無ければ空</returns>
+    std::string CaptureKeptValues(Actor& actor, const std::string& component)
+    {
+      if (component.empty()) {
+        return nlohmann::json{ { "properties", WriteProperties(actor) } }.dump();
+      }
+      Component* target = actor.FindComponent(component);
+      return target ? nlohmann::json{ { "type", target->GetType().name }, { "properties", WriteProperties(*target) } }.dump() : std::string();
+    }
+
     // + Add に出す定番（Actor の名前、付けるコンポーネント、その TPROPERTY）
     struct ActorPreset {
       const char* name;
@@ -269,9 +304,12 @@ namespace Tako {
     if (ImGui::BeginDragDropTarget()) {
       AcceptSpawnDrops();
       if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(kActorPayload)) {
-        RequestParent(*static_cast<const ActorId*>(payload->Data), 0);
+        RequestParentDropped(*static_cast<const ActorId*>(payload->Data), 0);
       }
       ImGui::EndDragDropTarget();
+    }
+    if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+      pressedRow_ = 0;
     }
 
     if (editing) {
@@ -287,6 +325,11 @@ namespace Tako {
     if (!actor || !scene) {
       return;
     }
+    if (selection_.size() > 1) {
+      ImGui::Text("%d actors selected", static_cast<int>(selection_.size()));
+      ImGui::TextDisabled("Select one actor to edit its values. Delete, duplicate, copy, parenting and the gizmo apply to all of them");
+      return;
+    }
     SyncTracker(*scene);
     const bool editing = IsEditing();
     if (editing) {
@@ -296,6 +339,21 @@ namespace Tako {
     ImGui::Text("Actor: %s", actor->GetName().c_str());
     ImGui::TextDisabled("%s  id %llu%s%s", actor->GetType().name, static_cast<unsigned long long>(actor->GetId()),
       actor->GetPrefab().empty() ? "" : "  prefab: ", actor->GetPrefab().c_str());
+    if (!editing) {
+      bool keepsActor = IsKept(actor->GetId(), "");
+      if (ImGui::Checkbox("Keep on Stop", &keepsActor)) {
+        ToggleKeep(*actor, "");
+      }
+      ImGui::SetItemTooltip("After Stop, load this actor's own values (name, active, transform) as they are at that moment. One undo step");
+      ImGui::SameLine();
+      if (ImGui::SmallButton("Keep All")) {
+        if (!IsKept(actor->GetId(), "")) { ToggleKeep(*actor, ""); }
+        for (const std::unique_ptr<Component>& component : actor->GetComponents()) {
+          if (!IsKept(actor->GetId(), component->GetName())) { ToggleKeep(*actor, component->GetName()); }
+        }
+      }
+      ImGui::SetItemTooltip("Keep the actor's own values and every component's values. A single component: right-click its header");
+    }
     ImGui::Separator();
 
     if (DrawProperties(*actor)) {
@@ -352,13 +410,11 @@ namespace Tako {
     ImGuizmo::SetRect(imageMin.x, imageMin.y, imageMax.x - imageMin.x, imageMax.y - imageMin.y);
     // 拡大は軸に沿ってしか意味が無いので、いつもローカル
     const ImGuizmo::MODE mode = isGizmoLocal_ || gizmoOperation_ == 2 ? ImGuizmo::LOCAL : ImGuizmo::WORLD;
-    Matrix4x4    world = actor->GetWorldMatrix();
-    const float* snap  = ImGui::GetIO().KeyCtrl ? kGizmoSnaps[gizmoOperation_] : nullptr;
+    const Matrix4x4 before = actor->GetWorldMatrix();
+    Matrix4x4       world  = before;
+    const float*    snap   = ImGui::GetIO().KeyCtrl ? kGizmoSnaps[gizmoOperation_] : nullptr;
     if (ImGuizmo::Manipulate(&camera.GetViewMatrix().m[0][0], &camera.GetProjectionMatrix().m[0][0], kOperations[gizmoOperation_], mode, &world.m[0][0], nullptr, snap)) {
-      const Actor*    parent = actor->GetParent();
-      const Matrix4x4 local  = parent ? world * Mat4x4::Inverse(parent->GetWorldMatrix()) : world;
-      Transform&      transform = actor->GetTransform();
-      Mat4x4::Decompose(local, transform.translate, transform.rotate, transform.scale);
+      MoveSelection(before, world);
       scene->MarkChanged();
     }
 
@@ -400,7 +456,44 @@ namespace Tako {
         pickedDepth = depth;
       }
     }
-    selected_ = picked;
+    if (ImGui::GetIO().KeyCtrl) {
+      if (picked != 0) { Select(*scene, picked, true, false); }
+    } else if (picked != 0) {
+      Select(*scene, picked, false, false);
+    } else {
+      ClearSelection();
+    }
+  }
+
+  void SceneEditor::MoveSelection(const Matrix4x4& before, const Matrix4x4& after)
+  {
+    Actor* primary = GetSelected();
+    if (!primary) {
+      return;
+    }
+    const auto toLocal = [](const Actor& actor, const Matrix4x4& world) {
+      const Actor* parent = actor.GetParent();
+      return parent ? world * Mat4x4::Inverse(parent->GetWorldMatrix()) : world;
+    };
+    // 拡大は、それぞれの大きさに同じ倍率を掛ける（行列の差を掛けると、向きの違う物がゆがむ）
+    Transform resized;
+    Mat4x4::Decompose(toLocal(*primary, after), resized.translate, resized.rotate, resized.scale);
+    const Vector3&  oldScale = primary->GetTransform().scale;
+    const Vector3   ratio{ oldScale.x != 0.0f ? resized.scale.x / oldScale.x : 1.0f, oldScale.y != 0.0f ? resized.scale.y / oldScale.y : 1.0f,
+                           oldScale.z != 0.0f ? resized.scale.z / oldScale.z : 1.0f };
+    const Matrix4x4 delta = Mat4x4::Inverse(before) * after;
+
+    // 先祖も選んである物は、先祖と一緒に動くので触らない
+    for (Actor* target : GetTopLevelSelection()) {
+      Transform& transform = target->GetTransform();
+      if (target == primary) {
+        transform = resized;
+      } else if (gizmoOperation_ == 2) {
+        transform.scale = { transform.scale.x * ratio.x, transform.scale.y * ratio.y, transform.scale.z * ratio.z };
+      } else {
+        Mat4x4::Decompose(toLocal(*target, target->GetWorldMatrix() * delta), transform.translate, transform.rotate, transform.scale);
+      }
+    }
   }
 
   bool SceneEditor::GetSelectedPosition(Vector3& position) const
@@ -424,6 +517,81 @@ namespace Tako {
     for (const auto& request : requests) {
       request(*scene);
     }
+
+    // 消えた Actor を選択から外す
+    std::erase_if(selection_, [scene](uint64_t id) { return !scene->FindActor(id); });
+    if (!IsSelected(selected_)) {
+      selected_ = selection_.empty() ? 0 : selection_.back();
+    }
+
+    // Play 中は、残す印を付けた物の値を控え続ける（Stop はこの関数の前に行われるので、止まった後では読めない）
+    const bool isPlaying = !IsEditing();
+    if (isPlaying && scene->GetSceneName() == keptScene_) {
+      for (auto& [key, values] : kept_) {
+        if (Actor* actor = scene->FindActor(key.first)) {
+          if (std::string captured = CaptureKeptValues(*actor, key.second); !captured.empty()) {
+            values = std::move(captured);
+          }
+        }
+      }
+    } else if (!isPlaying && wasPlaying_ && !kept_.empty()) {
+      ApplyKept(*scene);
+    }
+    wasPlaying_ = isPlaying;
+  }
+
+  void SceneEditor::ToggleKeep(Actor& actor, const std::string& component)
+  {
+    const std::string& sceneName = actor.GetScene()->GetSceneName();
+    if (sceneName != keptScene_) {
+      kept_.clear();
+      keptScene_ = sceneName;
+    }
+    const std::pair<uint64_t, std::string> key{ actor.GetId(), component };
+    if (kept_.erase(key) == 0) {
+      kept_[key] = CaptureKeptValues(actor, component);
+    }
+  }
+
+  void SceneEditor::ApplyKept(BaseScene& scene)
+  {
+    const std::map<std::pair<uint64_t, std::string>, std::string> kept = std::move(kept_);
+    kept_.clear();
+    DebugUIManager* console = DebugUIManager::GetInstance();
+    if (scene.GetSceneName() != keptScene_) {
+      console->AddLog("Kept values were discarded: they belong to the scene \"" + keptScene_ + "\"", DebugUIManager::LogType::Warning);
+      return;
+    }
+    const std::string before  = SerializeScene();
+    int               applied = 0;
+    for (const auto& [key, text] : kept) {
+      const std::string    label  = "actor " + std::to_string(key.first) + (key.second.empty() ? "" : " / " + key.second);
+      const nlohmann::json values = nlohmann::json::parse(text, nullptr, false);
+      Actor*               actor  = scene.FindActor(key.first);
+      Component*           target = actor && !key.second.empty() ? actor->FindComponent(key.second) : nullptr;
+      const bool           fits   = actor && values.is_object() && (key.second.empty() || (target && values.value("type", std::string{}) == target->GetType().name));
+      if (!fits) {
+        console->AddLog("Kept values were not applied (not in the scene before Play): " + label, DebugUIManager::LogType::Warning);
+        continue;
+      }
+      if (target) {
+        ReadProperties(*target, values.value("properties", nlohmann::json::object()));
+        target->PostEditChange();
+      } else {
+        ReadProperties(*actor, values.value("properties", nlohmann::json::object()));
+      }
+      ++applied;
+    }
+    if (applied > 0) {
+      scene.MarkChanged();
+      tracker_.RecordExternalChange(before);
+      console->AddLog("Kept " + std::to_string(applied) + " value set(s) from Play (Ctrl+Z in Scene Hierarchy to undo, Ctrl+S to save)", DebugUIManager::LogType::Info);
+    }
+  }
+
+  bool SceneEditor::IsKept(uint64_t actor, const std::string& component) const
+  {
+    return kept_.contains({ actor, component });
   }
 
   void SceneEditor::CollectUnsavedChanges(std::vector<std::string>& out) const
@@ -437,13 +605,12 @@ namespace Tako {
   {
     static constexpr ShortcutBinding<SceneEditor> kShortcuts[] = {
       { ImGuiMod_Ctrl | ImGuiKey_S, ImGuiInputFlags_None, "Save the scene file", [](SceneEditor& editor) { editor.Save(); } },
-      { ImGuiKey_Delete, ImGuiInputFlags_None, "Delete the selected actor", [](SceneEditor& editor) {
-          const ActorId id = editor.selected_;
-          editor.Request([id](BaseScene& scene) { scene.Destroy(scene.FindActor(id)); });
-        } },
-      { ImGuiMod_Ctrl | ImGuiKey_D, ImGuiInputFlags_None, "Duplicate the selected actor and its children", [](SceneEditor& editor) { editor.RequestDuplicate(editor.selected_); } },
-      { ImGuiMod_Ctrl | ImGuiKey_C, ImGuiInputFlags_None, "Copy the selected actor and its children", [](SceneEditor& editor) { editor.CopySelection(); } },
+      { ImGuiKey_Delete, ImGuiInputFlags_None, "Delete the selected actors", [](SceneEditor& editor) { editor.RequestDestroySelection(); } },
+      { ImGuiMod_Ctrl | ImGuiKey_D, ImGuiInputFlags_None, "Duplicate the selected actors and their children", [](SceneEditor& editor) { editor.RequestDuplicateSelection(); } },
+      { ImGuiMod_Ctrl | ImGuiKey_C, ImGuiInputFlags_None, "Copy the selected actors and their children", [](SceneEditor& editor) { editor.CopySelection(); } },
       { ImGuiMod_Ctrl | ImGuiKey_V, ImGuiInputFlags_None, "Paste the copied actors (also into another scene)", [](SceneEditor& editor) { editor.PasteClipboard(); } },
+      { ImGuiKey_None, ImGuiInputFlags_None, "Hierarchy / Debug Viewport: add to or remove from the selection", nullptr, "Ctrl + LMB" },
+      { ImGuiKey_None, ImGuiInputFlags_None, "Hierarchy: select every row between the last selected one and this one", nullptr, "Shift + LMB" },
       { ImGuiKey_None, ImGuiInputFlags_None, "Debug Viewport: select the actor near the cursor (click near its origin)", nullptr, "LMB" },
       { ImGuiKey_F, ImGuiInputFlags_None, "Debug Viewport: move the camera to the selected actor", nullptr },
       { ImGuiKey_None, ImGuiInputFlags_None, "Debug Viewport: snap the gizmo (move 0.5, rotate 15 deg, scale 0.1)", nullptr, "Ctrl + drag" },
@@ -571,15 +738,37 @@ namespace Tako {
     });
   }
 
+  void SceneEditor::RequestDuplicateSelection()
+  {
+    for (const Actor* actor : GetTopLevelSelection()) {
+      RequestDuplicate(actor->GetId());
+    }
+  }
+
+  void SceneEditor::RequestDestroySelection()
+  {
+    // 子は親と一緒に消える
+    for (const Actor* actor : GetTopLevelSelection()) {
+      const ActorId id = actor->GetId();
+      Request([id](BaseScene& scene) { scene.Destroy(scene.FindActor(id)); });
+    }
+  }
+
   void SceneEditor::CopySelection()
   {
-    Actor*     actor = GetSelected();
-    BaseScene* scene = GetScene();
-    if (!actor || !scene) {
+    const std::vector<Actor*> roots = GetTopLevelSelection();
+    BaseScene*                scene = GetScene();
+    if (roots.empty() || !scene) {
       return;
     }
-    nlohmann::json tree   = SaveActorTree(*actor);
-    tree[kClipboardScene] = scene->GetSceneName();
+    // 選んだ木を 1 つの配列に並べる（貼るときに、それぞれの根が元の親の下に入る）
+    nlohmann::json actors = nlohmann::json::array();
+    for (Actor* root : roots) {
+      for (nlohmann::json& entry : SaveActorTree(*root)["actors"]) {
+        actors.push_back(std::move(entry));
+      }
+    }
+    const nlohmann::json tree = { { "actors", std::move(actors) }, { kClipboardScene, scene->GetSceneName() } };
     ImGui::SetClipboardText(tree.dump().c_str());
   }
 
@@ -615,7 +804,7 @@ namespace Tako {
     if (actor.GetChildren().empty()) {
       flags |= ImGuiTreeNodeFlags_Leaf;
     }
-    if (selected_ == actor.GetId()) {
+    if (IsSelected(actor.GetId())) {
       flags |= ImGuiTreeNodeFlags_Selected;
     }
     const bool isInactive = !actor.IsActiveInHierarchy();
@@ -626,8 +815,20 @@ namespace Tako {
     if (isInactive) {
       ImGui::PopStyleColor();
     }
+    const ImGuiIO& io          = ImGui::GetIO();
+    const bool     isPlainPick = !io.KeyCtrl && !io.KeyShift && IsSelected(actor.GetId()) && selection_.size() > 1;
     if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
-      selected_ = actor.GetId();
+      // 選んである行の素のクリックは、まとめてドラッグする始まりかもしれないので、離すまで選び直さない
+      if (isPlainPick) {
+        pressedRow_ = actor.GetId();
+      } else {
+        Select(*actor.GetScene(), actor.GetId(), io.KeyCtrl, io.KeyShift);
+      }
+    } else if (isPlainPick && pressedRow_ == actor.GetId() && ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+      const ImVec2 dragged = ImGui::GetMouseDragDelta(ImGuiMouseButton_Left);
+      if (dragged.x == 0.0f && dragged.y == 0.0f) {
+        Select(*actor.GetScene(), actor.GetId(), false, false);
+      }
     }
     if (ImGui::BeginDragDropSource()) {
       const ActorId id = actor.GetId();
@@ -636,14 +837,17 @@ namespace Tako {
       ImGui::EndDragDropSource();
     }
     if (ImGui::BeginPopupContextItem("ActorMenu")) {
-      selected_ = actor.GetId();
+      // 選択の外の行で開いたら、その行だけを選び直す
+      if (!IsSelected(actor.GetId())) {
+        Select(*actor.GetScene(), actor.GetId(), false, false);
+      }
       DrawActorMenu(actor);
       ImGui::EndPopup();
     }
     if (ImGui::BeginDragDropTarget()) {
       AcceptSpawnDrops();
       if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(kActorPayload)) {
-        RequestParent(*static_cast<const ActorId*>(payload->Data), actor.GetId());
+        RequestParentDropped(*static_cast<const ActorId*>(payload->Data), actor.GetId());
       }
       ImGui::EndDragDropTarget();
     }
@@ -670,13 +874,62 @@ namespace Tako {
     });
   }
 
+  void SceneEditor::RequestParentDropped(uint64_t dragged, uint64_t parent)
+  {
+    if (!IsSelected(dragged)) {
+      RequestParent(dragged, parent);
+      return;
+    }
+    for (const Actor* actor : GetTopLevelSelection()) {
+      if (actor->GetId() != parent) {
+        RequestParent(actor->GetId(), parent);
+      }
+    }
+  }
+
+  void SceneEditor::Select(BaseScene& scene, uint64_t id, bool adds, bool extends)
+  {
+    if (extends && selected_ != 0) {
+      const std::vector<Actor*> order = GetHierarchyOrder(scene);
+      const auto indexOf = [&order](uint64_t target) {
+        return static_cast<size_t>(std::ranges::find(order, target, &Actor::GetId) - order.begin());
+      };
+      const size_t from  = indexOf(selected_);
+      const size_t to    = indexOf(id);
+      const size_t first = (std::min)(from, to);
+      const size_t last  = (std::min)((std::max)(from, to), order.empty() ? 0 : order.size() - 1);
+      if (!adds) {
+        selection_.clear();
+      }
+      for (size_t i = first; i <= last && i < order.size(); ++i) {
+        if (!IsSelected(order[i]->GetId())) { selection_.push_back(order[i]->GetId()); }
+      }
+      selected_ = id;
+      return;
+    }
+    if (!adds) {
+      selection_ = { id };
+      selected_  = id;
+      return;
+    }
+    if (auto it = std::ranges::find(selection_, id); it != selection_.end()) {
+      selection_.erase(it);
+      if (selected_ == id) {
+        selected_ = selection_.empty() ? 0 : selection_.back();
+      }
+    } else {
+      selection_.push_back(id);
+      selected_ = id;
+    }
+  }
+
   void SceneEditor::DrawActorMenu(Actor& actor)
   {
     const ActorId id = actor.GetId();
     if (ImGui::MenuItem("Duplicate", "Ctrl+D")) {
-      RequestDuplicate(id);
+      RequestDuplicateSelection();
     }
-    ImGui::SetItemTooltip("Children are duplicated too");
+    ImGui::SetItemTooltip("All selected actors. Children are duplicated too");
     if (ImGui::MenuItem("Copy", "Ctrl+C")) {
       CopySelection();
     }
@@ -684,9 +937,9 @@ namespace Tako {
       PasteClipboard();
     }
     if (ImGui::MenuItem("Delete", "Del")) {
-      Request([id](BaseScene& scene) { scene.Destroy(scene.FindActor(id)); });
+      RequestDestroySelection();
     }
-    ImGui::SetItemTooltip("Children are deleted too");
+    ImGui::SetItemTooltip("All selected actors. Children are deleted too");
 
     ImGui::SeparatorText("Hierarchy");
     if (ImGui::MenuItem("Unparent", nullptr, false, actor.GetParent() != nullptr)) {
@@ -698,7 +951,7 @@ namespace Tako {
     if (ImGui::MenuItem("Move Down")) {
       Request([id](BaseScene& scene) { scene.MoveActor(scene.FindActor(id), 1); });
     }
-    ImGui::SetItemTooltip("Actors tick and are saved in this order. Drop a row onto another to parent it");
+    ImGui::SetItemTooltip("Only this actor. Actors are saved in this order. Drop a row onto another to parent it (all selected rows move together)");
 
     ImGui::SeparatorText("Prefab");
     if (!actor.GetPrefab().empty()) {
@@ -734,7 +987,8 @@ namespace Tako {
   {
     ImGui::PushID(component.GetName().c_str());
     bool isKept = true;
-    const std::string header = component.GetName() + "  (" + component.GetType().name + ")";
+    // 印で文字が変わっても開閉の状態を保つよう、ID は ### の後ろで固定する
+    const std::string header = component.GetName() + "  (" + component.GetType().name + ")" + (IsKept(actor.GetId(), component.GetName()) ? "  [keep]" : "") + "###Header";
     const bool        isOpen = ImGui::CollapsingHeader(header.c_str(), &isKept, ImGuiTreeNodeFlags_DefaultOpen);
     if (ImGui::BeginPopupContextItem("ComponentMenu")) {
       DrawComponentMenu(actor, component);
@@ -762,11 +1016,18 @@ namespace Tako {
 
   void SceneEditor::DrawComponentMenu(Actor& actor, Component& component)
   {
+    if (!IsEditing()) {
+      if (ImGui::MenuItem("Keep Values on Stop", nullptr, IsKept(actor.GetId(), component.GetName()))) {
+        ToggleKeep(actor, component.GetName());
+      }
+      ImGui::SetItemTooltip("After Stop, load the values this component has at that moment into the same component. One undo step");
+      ImGui::Separator();
+    }
     if (ImGui::MenuItem("Copy Values")) {
       const nlohmann::json copied = { { kClipboardComponent, component.GetType().name }, { "properties", WriteProperties(component) } };
       ImGui::SetClipboardText(copied.dump().c_str());
     }
-    ImGui::SetItemTooltip("Values changed while playing are discarded on Stop. Copy them here, stop, then paste");
+    ImGui::SetItemTooltip("Copy the values to the clipboard (to paste into another component of the same type)");
 
     const char*          text   = ImGui::GetClipboardText();
     const nlohmann::json copied = text ? nlohmann::json::parse(text, nullptr, false) : nlohmann::json();
@@ -879,6 +1140,30 @@ namespace Tako {
   {
     BaseScene* scene = GetScene();
     return scene && selected_ != 0 ? scene->FindActor(selected_) : nullptr;
+  }
+
+  bool SceneEditor::IsSelected(uint64_t id) const
+  {
+    return id != 0 && std::ranges::find(selection_, id) != selection_.end();
+  }
+
+  std::vector<Actor*> SceneEditor::GetTopLevelSelection() const
+  {
+    std::vector<Actor*> roots;
+    BaseScene*          scene = GetScene();
+    if (!scene) {
+      return roots;
+    }
+    for (Actor* actor : GetHierarchyOrder(*scene)) {
+      bool isCovered = !IsSelected(actor->GetId());
+      for (const Actor* ancestor = actor->GetParent(); ancestor && !isCovered; ancestor = ancestor->GetParent()) {
+        isCovered = IsSelected(ancestor->GetId());
+      }
+      if (!isCovered) {
+        roots.push_back(actor);
+      }
+    }
+    return roots;
   }
 
   uint64_t SceneEditor::GetSceneRevision() const
