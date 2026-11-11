@@ -267,6 +267,7 @@
     <ClCompile Include="engine\base\DX12\DsvManager.cpp" />
     <ClCompile Include="engine\base\DX12\SrvManager.cpp" />
     <ClCompile Include="engine\base\TakoFramework.cpp" />
+    <ClCompile Include="engine\base\WinMain.cpp" />
     <ClCompile Include="engine\scene\SceneManager.cpp" />
     <ClCompile Include="engine\func\mathFunc\QuatFunc.cpp" />
     <ClCompile Include="engine\3d\Model\Mesh.cpp" />

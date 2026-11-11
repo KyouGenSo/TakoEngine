@@ -243,7 +243,7 @@ namespace Tako {
           manager.WindowFlag(window) = true;
         }
       } },
-      // 処理はゲーム側の Update（TakoFramework::ToggleFullScreen）
+      // 処理は TakoFramework::Update（Release でも効くよう、この表ではなく Input で読む）
       { ImGuiKey_F11, ImGuiInputFlags_None, "Fullscreen" },
       { ImGuiKey_F12, ImGuiInputFlags_None, "Toggle Main Windows", [](DebugUIManager& manager) {
         for (Window window : kMainWindows) {

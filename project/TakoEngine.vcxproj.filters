@@ -288,6 +288,9 @@
     <ClCompile Include="engine\base\TakoFramework.cpp">
       <Filter>base</Filter>
     </ClCompile>
+    <ClCompile Include="engine\base\WinMain.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
     <ClCompile Include="engine\scene\SceneManager.cpp">
       <Filter>scene</Filter>
     </ClCompile>

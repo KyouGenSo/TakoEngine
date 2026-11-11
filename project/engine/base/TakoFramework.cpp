@@ -142,6 +142,9 @@ namespace Tako {
 
     DebugUIManager::GetInstance()->LoadEditorSettings();
 #endif
+
+    // 個人設定の起動シーン（LoadEditorSettings が読む）が入った後に切り替える
+    SceneManager::GetInstance()->ChangeToStartupScene();
   }
 
   void TakoFramework::Finalize()
@@ -202,6 +205,11 @@ namespace Tako {
 
   void TakoFramework::Update()
   {
+    // 切り替えは SetWindowPos の中で ResizeBuffers まで同期的に走るので、前フレームの GPU 処理が終わっているここで行う
+    if (Input::GetInstance()->TriggerKey(DIK_F11)) {
+      ToggleFullScreen();
+    }
+
     // ウィンドウメッセージの取得
     if (winApp_->ProcessMessage()) {
       endFlag_ = true;
