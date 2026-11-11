@@ -63,7 +63,10 @@ namespace Tako {
         const ActorId entryId = entry.value("id", ActorId{ 0 });
         if (entry.value("prefab", std::string{}) == name && entry.value("root", entryId) == rootId) {
           nodes[entryId] = entry.value("node", ActorId{ 0 });
-          nextNode       = (std::max)(nextNode, nodes[entryId] + 1);
+          // 中に置いたプレハブから来た、計算で決めた番号は大きいので、続きの番号の元にしない
+          if ((nodes[entryId] & kImplicitPrefabNode) == 0) {
+            nextNode = (std::max)(nextNode, nodes[entryId] + 1);
+          }
         }
       }
       for (const nlohmann::json& entry : tree["actors"]) {
@@ -89,7 +92,7 @@ namespace Tako {
           if (Actor* moved = scene.FindActor(entryId)) { entry = moved->Save(); }
         }
       }
-      if (!SavePrefab(name, MakePrefabContent(tree, nodes))) {
+      if (!SavePrefab(name, MakePrefabContent(name, tree, nodes))) {
         DebugUIManager::GetInstance()->AddLog("Failed to save prefab: " + GetPrefabPath(name), DebugUIManager::LogType::Error);
         return;
       }
@@ -98,7 +101,7 @@ namespace Tako {
     }
 
     /// <summary>
-    /// id の Actor が入っている組の、プレハブとの差分を捨てる。根の名前・Transform・親は残す
+    /// id の Actor が入っている組の、プレハブとの差分を捨てる（消した子も戻る）。根の名前・Transform・親は残す
     /// </summary>
     void RevertToPrefab(BaseScene& scene, ActorId id)
     {
@@ -113,6 +116,7 @@ namespace Tako {
         if (entry.value("root", entryId) != rootId || !entry.contains("overrides")) {
           continue;
         }
+        entry.erase("removed");
         nlohmann::json kept = nlohmann::json::array();
         for (const nlohmann::json& operation : entry["overrides"]) {
           const std::string path = operation.value("path", std::string{});
@@ -126,7 +130,8 @@ namespace Tako {
     }
 
     /// <summary>
-    /// id の Actor が入っている組の、プレハブとのつながりを切る（値はそのまま）
+    /// id の Actor が入っている組の、プレハブとのつながりを切る（値はそのまま）。
+    /// ほどくのは 1 段だけで、中に置いてあった別のプレハブは、置いた物として残る
     /// </summary>
     void UnpackPrefab(BaseScene& scene, ActorId id)
     {
@@ -134,10 +139,22 @@ namespace Tako {
       if (!actor || actor->GetPrefab().empty()) {
         return;
       }
-      const ActorId rootId = actor->GetPrefabRoot();
+      const ActorId       rootId = actor->GetPrefabRoot();
+      std::vector<Actor*> group;
+      ActorIdMap          ids;  // プレハブの中の番号 → シーンの ID
       for (const std::unique_ptr<Actor>& other : scene.GetActors()) {
         if (!other->GetPrefab().empty() && other->GetPrefabRoot() == rootId) {
-          other->SetPrefabLink({}, 0, 0);
+          group.push_back(other.get());
+          ids[other->GetPrefabNode()] = other->GetId();
+        }
+      }
+      for (Actor* member : group) {
+        const PrefabLink inner     = GetNestedPrefabLink(member->GetPrefab(), member->GetPrefabNode());
+        const auto       innerRoot = ids.find(inner.root);
+        if (inner.prefab.empty() || (inner.root != 0 && innerRoot == ids.end())) {
+          member->SetPrefabLink({}, 0, 0);
+        } else {
+          member->SetPrefabLink(inner.prefab, inner.node, inner.root != 0 ? innerRoot->second : 0);
         }
       }
       scene.MarkChanged();
@@ -585,7 +602,15 @@ namespace Tako {
   void SceneEditor::DrawActorRow(Actor& actor)
   {
     ImGui::PushID(std::to_string(actor.GetId()).c_str());
-    const std::string  label = actor.IsPrefabRoot() ? actor.GetName() + "  [" + actor.GetPrefab() + "]" : actor.GetName();
+    std::string label = actor.GetName();
+    if (actor.IsPrefabRoot()) {
+      label += "  [" + actor.GetPrefab() + "]";
+    } else if (!actor.GetPrefab().empty()) {
+      // 組の中に置いた別のプレハブの根
+      if (const PrefabLink inner = GetNestedPrefabLink(actor.GetPrefab(), actor.GetPrefabNode()); !inner.prefab.empty() && inner.root == 0) {
+        label += "  [" + inner.prefab + "]";
+      }
+    }
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen;
     if (actor.GetChildren().empty()) {
       flags |= ImGuiTreeNodeFlags_Leaf;
@@ -689,7 +714,7 @@ namespace Tako {
       if (ImGui::MenuItem("Unpack")) {
         Request([id](BaseScene& scene) { UnpackPrefab(scene, id); });
       }
-      ImGui::SetItemTooltip("Cut the link to the prefab and keep the current values (needed before deleting a child for good)");
+      ImGui::SetItemTooltip("Cut the link to the prefab and keep the current values. Prefabs placed inside it stay linked to their own prefab");
     }
     ImGui::SetNextItemWidth(140.0f);
     ImGui::InputTextWithHint("##PrefabName", "prefab name", prefabName_.data(), prefabName_.size());

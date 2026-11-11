@@ -2,6 +2,7 @@
 #include <Windows.h>
 #include <cstdarg>
 #include <cstdio>
+#include <utility>
 #include <vector>
 
 namespace Tako {
@@ -21,7 +22,7 @@ namespace Tako {
         return std::string(buffer.data());
       }
 
-      void (*sink)(const std::string& message) = nullptr;
+      Sink sink = nullptr;
     }
 
     void Log(const std::string& message)
@@ -32,9 +33,9 @@ namespace Tako {
       }
     }
 
-    void SetSink(void (*sink)(const std::string& message))
+    Sink SetSink(Sink sink)
     {
-      detail::sink = sink;
+      return std::exchange(detail::sink, sink);
     }
 
     void Log(const char* format, ...)

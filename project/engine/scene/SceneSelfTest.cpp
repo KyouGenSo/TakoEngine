@@ -4,6 +4,7 @@
 
 #include "Actor.h"
 #include "BaseScene.h"
+#include "Logger.h"
 #include "Mat4x4Func.h"
 #include "MeshComponent.h"
 #include "Object3d.h"
@@ -235,7 +236,7 @@ namespace Tako {
     const ActorIdMap     nodes   = { { body->GetId(), 1 }, { arm->GetId(), 2 } };
     const char*          kGroup  = "__SelfTestGroup";
     const char*          kSingle = "__SelfTestSingle";
-    SetPrefabInMemory(kGroup, MakePrefabContent(tree, nodes));
+    SetPrefabInMemory(kGroup, MakePrefabContent(kGroup, tree, nodes));
     BaseScene placedScene;
     Actor*    placed = placedScene.Spawn(kGroup);
     placedScene.UpdateAlways();
@@ -255,7 +256,7 @@ namespace Tako {
     assert(reloadedArm && reloadedArm->GetParent() == reloaded.FindActor(placed->GetId()) && reloadedArm->GetTransform().translate.y == 2.0f);
 
     // プレハブに Actor を足すと、置いてある組にも出る。前からの差分は残る
-    nlohmann::json grown = MakePrefabContent(tree, nodes);
+    nlohmann::json grown = MakePrefabContent(kGroup, tree, nodes);
     grown["actors"].push_back({ { "id", ActorId{ 3 } }, { "parent", ActorId{ 1 } }, { "type", "Actor" }, { "properties", { { "name", "Tail" } } } });
     SetPrefabInMemory(kGroup, grown);
     BaseScene grownScene;
@@ -281,8 +282,79 @@ namespace Tako {
     const Actor* single = legacy.FindActor(ActorId{ 4 });
     assert(single && single->GetName() == "Single" && single->IsPrefabRoot() && single->GetPrefabNode() == 1);
 
-    SetPrefabInMemory(kGroup, nullptr);
-    SetPrefabInMemory(kSingle, nullptr);
+    // 置いた組の子を消して保存すると、読み直しても戻らない（根が removed に覚える）
+    SetPrefabInMemory(kGroup, MakePrefabContent(kGroup, tree, nodes));
+    BaseScene trimmed;
+    Actor*    trimmedRoot = trimmed.Spawn(kGroup);
+    trimmed.UpdateAlways();
+    trimmed.Destroy(trimmedRoot->GetChildren()[0]);
+    trimmed.UpdateAlways();
+    const nlohmann::json trimmedSaved = trimmed.Save();
+    assert(trimmedSaved["actors"].size() == 1 && trimmedSaved["actors"][0]["removed"] == nlohmann::json::array({ ActorId{ 2 } }));
+    BaseScene trimmedLoaded;
+    trimmedLoaded.Load(trimmedSaved);
+    trimmedLoaded.UpdateAlways();
+    assert(trimmedLoaded.GetActors().size() == 1 && trimmedLoaded.Save() == trimmedSaved);
+
+    // 消した子は戻らないまま、プレハブに後から足した Actor は出る
+    SetPrefabInMemory(kGroup, grown);
+    BaseScene trimmedGrown;
+    trimmedGrown.Load(trimmedSaved);
+    trimmedGrown.UpdateAlways();
+    assert(trimmedGrown.GetActors().size() == 2 && trimmedGrown.FindActor("Tail") && !trimmedGrown.FindActor("Arm"));
+
+    // 入れ子：別のプレハブを置いた物を子に持つ組をプレハブにすると、その子は「置いた物」として書かれる
+    const char* kInner = "__SelfTestInner";
+    const char* kOuter = "__SelfTestOuter";
+    SetPrefabInMemory(kInner, { { "actors", nlohmann::json::array({ { { "id", ActorId{ 1 } }, { "type", "Actor" }, { "properties", { { "name", "Blade" } } } } }) } });
+    BaseScene workshop;
+    Actor*    holder = workshop.Spawn("Actor");
+    Actor*    blade  = workshop.Spawn(kInner);
+    workshop.UpdateAlways();
+    holder->SetName("Holder");
+    assert(blade->SetParent(holder));
+    const nlohmann::json outer = MakePrefabContent(kOuter, SaveActorTree(*holder), { { holder->GetId(), 1 }, { blade->GetId(), 2 } });
+    assert(outer["actors"].size() == 2 && !outer["actors"][1].contains("type") && outer["actors"][1]["prefab"] == kInner);
+    SetPrefabInMemory(kOuter, outer);
+    assert(GetNestedPrefabLink(kOuter, 2).prefab == kInner && GetNestedPrefabLink(kOuter, 1).prefab.empty());
+
+    // 内側を書き換えると、外側を置いた物にも出る（変えた値と、足した Actor）
+    BaseScene armory;
+    Actor*    placedHolder = armory.Spawn(kOuter);
+    armory.UpdateAlways();
+    assert(placedHolder && placedHolder->GetChildren().size() == 1 && placedHolder->GetChildren()[0]->GetPrefab() == kOuter);
+    const nlohmann::json armorySaved = armory.Save();
+    SetPrefabInMemory(kInner, { { "actors", nlohmann::json::array({
+      { { "id", ActorId{ 1 } }, { "type", "Actor" }, { "properties", { { "name", "Blade" }, { "active", false } } } },
+      { { "id", ActorId{ 2 } }, { "parent", ActorId{ 1 } }, { "type", "Actor" }, { "properties", { { "name", "Gem" } } } },
+    }) } });
+    BaseScene armoryLoaded;
+    armoryLoaded.Load(armorySaved);
+    armoryLoaded.UpdateAlways();
+    Actor* loadedHolder = armoryLoaded.FindActor(placedHolder->GetId());
+    Actor* loadedBlade  = armoryLoaded.FindActor("Blade");
+    Actor* gem          = armoryLoaded.FindActor("Gem");
+    assert(armoryLoaded.GetActors().size() == 3 && loadedBlade && !loadedBlade->IsActive() && gem && gem->GetParent() == loadedBlade);
+    assert(gem->GetPrefab() == kOuter && (gem->GetPrefabNode() & kImplicitPrefabNode) != 0);
+
+    // 外側を置いた組から書き直しても（Apply）、入れ子は写しにならない
+    const nlohmann::json reapplied = MakePrefabContent(kOuter, SaveActorTree(*loadedHolder),
+      { { loadedHolder->GetId(), 1 }, { loadedBlade->GetId(), 2 }, { gem->GetId(), gem->GetPrefabNode() } });
+    assert(reapplied["actors"].size() == 3 && reapplied["actors"][0].contains("type"));
+    assert(reapplied["actors"][1]["prefab"] == kInner && reapplied["actors"][2]["prefab"] == kInner && reapplied["actors"][2]["root"] == 2);
+
+    // 循環（内側の中に外側）は、その分を落として止まる。わざと出す警告は Console に出さない
+    SetPrefabInMemory(kInner, { { "actors", nlohmann::json::array({
+      { { "id", ActorId{ 1 } }, { "type", "Actor" }, { "properties", { { "name", "Blade" } } } },
+      { { "id", ActorId{ 2 } }, { "prefab", kOuter }, { "node", ActorId{ 1 } } },
+    }) } });
+    const Logger::Sink console = Logger::SetSink(nullptr);
+    assert(GetPrefabNodes(kOuter).size() == 2 && GetPrefabNodes(kInner).size() == 1);
+    Logger::SetSink(console);
+
+    for (const char* name : { kGroup, kSingle, kInner, kOuter }) {
+      SetPrefabInMemory(name, nullptr);
+    }
   }
 
 } // namespace Tako

@@ -21,7 +21,6 @@
 #include <filesystem>
 #include <fstream>
 #include <iterator>
-#include <map>
 
 namespace Tako {
 
@@ -358,26 +357,15 @@ namespace Tako {
 
   nlohmann::json BaseScene::Save()
   {
-    std::vector<Actor*> saved;
+    nlohmann::json actors = nlohmann::json::array();
     for (const auto* list : { &actors_, &pendingSpawns_ }) {
       for (const std::unique_ptr<Actor>& actor : *list) {
         if (std::ranges::find(pendingDestroys_, actor.get()) == pendingDestroys_.end()) {
-          saved.push_back(actor.get());
+          actors.push_back(SaveActorEntry(*actor));
         }
       }
     }
-    // プレハブから置いた組ごとに「プレハブの中の番号 → シーンの ID」を集める（組の中の親と ActorRef を、差分にしないため）
-    std::map<ActorId, ActorIdMap> instances;
-    for (const Actor* actor : saved) {
-      if (!actor->GetPrefab().empty()) {
-        instances[actor->GetPrefabRoot()][actor->GetPrefabNode()] = actor->GetId();
-      }
-    }
-    nlohmann::json actors = nlohmann::json::array();
-    for (Actor* actor : saved) {
-      actors.push_back(SavePrefabInstance(*actor, instances[actor->GetPrefabRoot()]));
-    }
-    return { { "actors", std::move(actors) } };
+    return { { "actors", CollapsePlacedActors(actors) } };
   }
 
   void BaseScene::Load(const nlohmann::json& json)
@@ -393,82 +381,14 @@ namespace Tako {
     nextId_ = 1;
 
     if (auto it = json.find("actors"); it != json.end() && it->is_array()) {
-      nlohmann::json entries = *it;
       // 先に保存された ID を全部取っておき、無い物や重なった物だけ振り直す
-      for (const nlohmann::json& entry : entries) {
+      for (const nlohmann::json& entry : *it) {
         nextId_ = (std::max)(nextId_, entry.value("id", ActorId{ 0 }) + 1);
       }
-
-      // プレハブから置いた物（type を持たず、差分だけの物）を、組ごとにまとめる
-      struct Instance {
-        std::string prefab;
-        ActorIdMap  ids;  ///< プレハブの中の番号 → シーンの ID
-      };
-      const auto isPlaced = [](const nlohmann::json& entry) {
-        return !entry.contains("type") && entry.contains("prefab") && entry["prefab"].is_string();
-      };
-      std::map<ActorId, Instance> instances;
-      for (nlohmann::json& entry : entries) {
-        if (!isPlaced(entry)) {
-          continue;
-        }
-        const std::string          prefab = entry["prefab"].get<std::string>();
-        const std::vector<ActorId> nodes  = GetPrefabNodes(prefab);
-        if (nodes.empty()) {
-          continue;
-        }
-        if (entry.value("id", ActorId{ 0 }) == 0) {
-          entry["id"] = nextId_++;
-        }
-        // node の無い物は、Actor 1 つのプレハブだった頃の保存
-        if (!entry.contains("node")) {
-          entry["node"] = nodes.front();
-        }
-        const ActorId id   = entry["id"].get<ActorId>();
-        Instance&     item = instances[entry.value("root", id)];
-        item.prefab = prefab;
-        item.ids[entry["node"].get<ActorId>()] = id;
-      }
-      // プレハブに後から足された Actor を、置いてある組にも足す（根が残っている組だけ）
-      for (auto& [root, item] : instances) {
-        const std::vector<ActorId> nodes = GetPrefabNodes(item.prefab);
-        if (!item.ids.contains(nodes.front())) {
-          continue;
-        }
-        for (ActorId node : nodes) {
-          if (!item.ids.contains(node)) {
-            item.ids[node] = nextId_;
-            entries.push_back({ { "id", nextId_++ }, { "prefab", item.prefab }, { "node", node }, { "root", root } });
-          }
-        }
-      }
-
+      // プレハブから置いた物を全部の値に開く。プレハブに後から足された Actor には、新しい ID を振る
+      const nlohmann::json entries = ExpandPlacedActors(*it, [this](ActorId, ActorId) { return nextId_++; });
       for (const nlohmann::json& entry : entries) {
-        if (!isPlaced(entry)) {
-          if (std::unique_ptr<Actor> actor = CreateActor(entry)) {
-            AddPending(std::move(actor));
-          }
-          continue;
-        }
-        const std::string prefab    = entry["prefab"].get<std::string>();
-        const ActorId     id        = entry.value("id", ActorId{ 0 });
-        const ActorId     root      = entry.value("root", id);
-        const auto        overrides = entry.find("overrides");
-        const auto        instance  = instances.find(root);
-        nlohmann::json    resolved;
-        if (instance != instances.end()) {
-          resolved = ResolvePrefabNode(prefab, entry.value("node", ActorId{ 0 }), instance->second.ids, overrides != entry.end() ? &*overrides : nullptr);
-        }
-        if (resolved.is_null()) {
-          Logger::Log("BaseScene: actor %llu was skipped because the prefab \"%s\" (or the actor in it) no longer exists\n", static_cast<unsigned long long>(id), prefab.c_str());
-          continue;
-        }
-        resolved["prefab"] = prefab;
-        resolved["node"]   = entry["node"];
-        if (root != id) {
-          resolved["root"] = root;
-        }
-        if (std::unique_ptr<Actor> actor = CreateActor(resolved)) {
+        if (std::unique_ptr<Actor> actor = CreateActor(entry)) {
           AddPending(std::move(actor));
         }
       }

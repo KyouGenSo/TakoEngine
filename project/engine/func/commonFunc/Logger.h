@@ -24,10 +24,13 @@ namespace Tako {
     /// <param name="...">可変長引数</param>
     void Log(const char* format, ...);
 
+    using Sink = void (*)(const std::string& message);
+
     /// <summary>
     /// Log の内容をもう 1 か所（エディタの Console）にも渡す。nullptr で外す
     /// </summary>
-    void SetSink(void (*sink)(const std::string& message));
+    /// <returns>前に渡してあった物（一時的に外して、戻すときに使う）</returns>
+    Sink SetSink(Sink sink);
   }
 
 } // namespace Tako
