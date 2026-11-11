@@ -176,7 +176,7 @@ namespace Tako {
     }
     ImGui::SameLine();
     tracker_.DrawButtons();
-    ImGui::TextDisabled("Assign to objects in Tools > Object Settings");
+    ImGui::TextDisabled("Assign to objects in Inspector > MeshComponent > Rendering");
 
     // シェーダーと描画設定・テクスチャのファイル名は保存内容を書き換えて当てはめる（値は名前で引き継がれる）
     json       current      = json::parse(library->Serialize(selected_));

@@ -2,7 +2,6 @@
 
 #include "Input.h"
 #include "SceneManager.h"
-#include "SampleSceneFactory.h"
 
 using namespace Tako;
 
@@ -11,8 +10,7 @@ void SampleGame::Initialize()
   // ウィンドウのタイトル・サイズと起動シーンは resources/Json/ProjectSettings.json（Engine Settings で編集・保存）
   TakoFramework::Initialize();
 
-  sceneFactory_ = std::make_unique<SampleSceneFactory>();
-  SceneManager::GetInstance()->SetSceneFactory(sceneFactory_.get());
+  // シーンは resources/Json/Scenes のシーンファイルから作る（エディタで Actor を置いて保存する）
   SceneManager::GetInstance()->ChangeToStartupScene();
 }
 

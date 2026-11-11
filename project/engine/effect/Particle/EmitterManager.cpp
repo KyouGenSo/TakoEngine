@@ -5,7 +5,6 @@
 #include "TriangleEmitter.h"
 #include "MeshEmitter.h"
 #include "Object3d.h"
-#include "ForceFieldManager.h"
 #include "FrameTimer.h"
 #include "TextureManager.h"
 #include <algorithm>
@@ -604,109 +603,6 @@ namespace Tako {
   //========================================
   // JSON 保存・読み込み機能
   //========================================
-
-  void EmitterManager::SaveScenePreset(const std::string& filename)
-  {
-    using json = nlohmann::json;
-    json root;
-
-    const std::string directory = "resources/Json/ParticlePresets/";
-    if (!std::filesystem::exists(directory)) {
-      std::filesystem::create_directories(directory);
-    }
-
-    root["emitters"] = json::object();
-    for (const auto& [name, emitter] : emitterMap_) {
-      json emitterJson;
-      SerializeEmitterToJSON(emitter, emitterJson);
-      root["emitters"][name] = emitterJson;
-    }
-
-    // グループ情報も保存
-    root["groups"] = json::object();
-    for (const auto& [groupName, group] : groupMap_) {
-      json groupJson;
-      groupJson["name"] = group.name;
-      groupJson["emitters"] = group.emitterNames;
-      groupJson["isActive"] = group.isActive;
-      root["groups"][groupName] = groupJson;
-    }
-
-    // フォースフィールドも統合保存（連携設定済みの場合のみ）
-    if (forceFieldManager_) {
-      forceFieldManager_->SerializeAllToJSON(root);
-    }
-
-    // ファイルに書き込み
-    std::string filepath = directory + filename + ".json";
-    std::ofstream ofs(filepath);
-    if (ofs.is_open()) {
-      ofs << std::setw(2) << root << std::endl;
-      ofs.close();
-#ifdef _DEBUG
-      DebugUIManager::GetInstance()->AddLog("Saved emitters to: " + filepath, DebugUIManager::LogType::Info);
-#endif
-
-    }
-    else {
-#ifdef _DEBUG
-      DebugUIManager::GetInstance()->AddLog(
-        "Failed to save emitters to: " + filepath, DebugUIManager::LogType::Error);
-#endif
-
-    }
-  }
-
-  void EmitterManager::LoadScenePreset(const std::string& filename)
-  {
-    using json = nlohmann::json;
-
-    const std::string directory = "resources/Json/ParticlePresets/";
-    std::string filepath = directory + filename + ".json";
-
-    std::ifstream ifs(filepath);
-    if (!ifs.is_open()) {
-#ifdef _DEBUG
-      DebugUIManager::GetInstance()->AddLog(
-        "Failed to load emitters from: " + filepath, DebugUIManager::LogType::Error);
-#endif
-
-      return;
-    }
-
-    json root;
-    ifs >> root;
-    ifs.close();
-
-    // エミッターを読み込み (meshModelPath を持たない Mesh エミッタは警告 + スキップ)
-    if (root.contains("emitters")) {
-      for (auto& [name, emitterJson] : root["emitters"].items()) {
-        auto emitter = DeserializeEmitterFromJSON(emitterJson);
-        if (emitter) {
-          AddNamedEmitter(name, std::move(emitter));
-        }
-      }
-    }
-
-    // グループを読み込み
-    if (root.contains("groups")) {
-      for (auto& [groupName, groupJson] : root["groups"].items()) {
-        EmitterGroup group;
-        group.name = groupJson["name"];
-        group.emitterNames = groupJson["emitters"].get<std::vector<std::string>>();
-        group.isActive = groupJson["isActive"];
-        groupMap_[groupName] = group;
-      }
-    }
-
-    // フォースフィールドも統合読込（連携設定済み + JSON にキー存在の場合のみ）
-    if (forceFieldManager_) {
-      forceFieldManager_->DeserializeAllFromJSON(root);
-    }
-#ifdef _DEBUG
-    DebugUIManager::GetInstance()->AddLog("Loaded emitters from: " + filepath, DebugUIManager::LogType::Info);
-#endif
-  }
 
   void EmitterManager::SavePreset(const std::string& presetName, const std::string& emitterName)
   {

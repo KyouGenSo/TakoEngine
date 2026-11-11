@@ -149,7 +149,7 @@ namespace Tako {
     bool DrawPreviewPane();
 
     /// <summary>
-    /// 右ペイン: 選択対象別インスペクタ + 共通セクション（Scene Presets / Visualization）
+    /// 右ペイン: 選択対象別インスペクタ + 共通セクション（Visualization）
     /// </summary>
     void DrawInspectorPane();
 
@@ -288,7 +288,6 @@ namespace Tako {
     int     clipboardPasteModeIndex_           = 0;
     char    emitterTexturePathBuffer_[256]     = "";
     char    emitterRenderModelPathBuffer_[256] = "";
-    char    scenePresetNameBuffer_[128]        = "scene_preset";
     Vector3 groupPositionEdit_                 = { 0.0f, 0.0f, 0.0f };   ///< 全グループ共有の編集値（実位置とは非同期の既存挙動を踏襲）
     int     groupAddEmitterIndex_              = 0;
     int     newForceFieldTypeIndex_            = 0;

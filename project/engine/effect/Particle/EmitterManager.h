@@ -16,7 +16,6 @@ namespace Tako {
   class TriangleEmitter;
   class MeshEmitter;
   class Object3d;
-  class ForceFieldManager;
 
   /// <summary>
   /// エミッターグループ情報構造体
@@ -226,22 +225,6 @@ namespace Tako {
     void RemoveGroup(const std::string& groupName);
 
     /// <summary>
-    /// エミッター設定を JSON ファイルに保存
-    /// </summary>
-    /// <param name="filename">ファイル名</param>
-    void SaveScenePreset(const std::string& filename);
-
-    /// <summary>
-    /// JSON ファイルからエミッター設定を読み込み
-    /// </summary>
-    /// <param name="filename">ファイル名</param>
-    /// <remarks>
-    /// Mesh エミッタは <c>meshModelPath</c> から自己完結で復元する。
-    /// パスを持たない (Object3d バインド前提の) Mesh エミッタは警告ログを出してスキップ。
-    /// </remarks>
-    void LoadScenePreset(const std::string& filename);
-
-    /// <summary>
     /// エミッター設定をプリセットとして保存
     /// </summary>
     /// <param name="presetName">プリセット名</param>
@@ -442,14 +425,6 @@ namespace Tako {
     /// <param name="position">位置</param>
     void SetGroupPosition(const std::string& groupName, const Vector3& position);
 
-    /// <summary>
-    /// フォースフィールドマネージャを設定（弱参照、所有しない）
-    /// 設定済みの場合、SaveScenePreset/LoadScenePreset でフォースフィールドも統合保存/読込される
-    /// 未設定の場合はエミッタ・グループのみが対象（後方互換動作）
-    /// </summary>
-    /// <param name="manager">ForceFieldManager へのポインタ（nullptr で連携無効）</param>
-    void SetForceFieldManager(ForceFieldManager* manager) { forceFieldManager_ = manager; }
-
     //============================================================
     //Getter
     //============================================================
@@ -571,8 +546,6 @@ namespace Tako {
     std::unordered_map<std::string, EmitterGroup>                        groupMap_;    ///< グループ名からグループ情報へのマップ
 
     std::array<CopiedSettings, kCopySlotCount> copiedSettingsSlots_;  ///< コピーバッファ
-
-    ForceFieldManager* forceFieldManager_ = nullptr;  ///< フォースフィールドマネージャへの弱参照（シーン統合保存連携用、nullable）
   };
 
 } // namespace Tako

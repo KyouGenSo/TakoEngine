@@ -1,5 +1,5 @@
 #pragma once
-#include "AbstractSceneFactory.h"
+#include "BaseScene.h"
 #include "TransitionManager.h"
 
 #include <json_fwd.hpp>
@@ -50,11 +50,6 @@ namespace Tako {
     void Draw();
 
     /// <summary>
-    /// imgui の描画
-    /// </summary>
-    void DrawImGui();
-
-    /// <summary>
     /// 終了処理
     /// </summary>
     void Finalize();
@@ -93,7 +88,7 @@ namespace Tako {
       float transitionTime);
 
     /// <summary>
-    /// 起動シーンへ遷移なしで切り替える（上書き → 起動シーン → ファクトリー先頭の順に、存在する名前を使う。名前一覧の無いファクトリーでは設定値をそのまま使う）
+    /// 起動シーンへ遷移なしで切り替える（上書き → 起動シーン → 一覧の先頭の順に、シーンファイルのある名前を使う）
     /// </summary>
     void ChangeToStartupScene();
 
@@ -110,7 +105,6 @@ namespace Tako {
     //======================================================
     //Setter
     //======================================================
-    void SetSceneFactory(AbstractSceneFactory* sceneFactory) { sceneFactory_ = sceneFactory; }
     void SetStartupScene(const std::string& sceneName) { startupScene_ = sceneName; }
 
     /// <summary>
@@ -127,10 +121,7 @@ namespace Tako {
     static SceneManager* GetInstance();
 
     /// <summary>
-    /// シーンファクトリーが生成できるシーン名の一覧（ファクトリー未設定なら空）
-    /// </summary>
-    /// <summary>
-    /// シーンファクトリーが生成できるシーン名とシーンファイルの名前の一覧
+    /// resources/Json/Scenes にあるシーンファイルの名前の一覧
     /// </summary>
     std::vector<std::string> GetSceneNames() const;
 
@@ -159,7 +150,7 @@ namespace Tako {
     bool ReserveNextScene(const std::string& sceneName, float transitionTime);
 
     /// <summary>
-    /// ファクトリーに名前があればそのシーン、無くてシーンファイルがあれば BaseScene を作る
+    /// シーンファイルがあれば、空のシーンを作る（中身は Start が読む）。無ければ nullptr
     /// </summary>
     std::unique_ptr<BaseScene> CreateScene(const std::string& sceneName) const;
 
@@ -173,10 +164,8 @@ namespace Tako {
     //シーン
     std::unique_ptr<BaseScene> scene_;             ///< 現在のシーン
     std::unique_ptr<BaseScene> nextScene_;         ///< 次のシーン
-    std::string                currentSceneName_;  ///< scene_ の生成に使ったファクトリーのキー
+    std::string                currentSceneName_;  ///< scene_ のシーンファイルの名前
     std::string                nextSceneName_;
-
-    AbstractSceneFactory* sceneFactory_ = nullptr;  ///< シーンファクトリー
 
     float transitionTime_ = 0.5f;  ///< シーン遷移アニメーション時間
 

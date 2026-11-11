@@ -65,7 +65,6 @@ namespace Tako {
       { "Particle Editor",                                    [] { DrawShortcutTable(ParticleEditor::Shortcuts()); } },
       { "Primitive Editor",                                   [] { DrawShortcutTable(PrimitiveEditor::Shortcuts()); } },
       { "Material Editor",                                    [] { DrawShortcutTable(MaterialEditor::Shortcuts()); } },
-      { "Object Settings",                                    [] { DrawShortcutTable(ObjectSettingsEditor::Shortcuts()); } },
       { "Scene Hierarchy / Inspector (Actors)",               [] { DrawShortcutTable(SceneEditor::Shortcuts()); } },
       { "Shader Editor",                                      [] { DrawShortcutTable(ShaderEditor::Shortcuts()); } },
       { "Render Pipeline",                                    [] { DrawShortcutTable(RenderPipelineWindow::Shortcuts()); } },
@@ -164,7 +163,6 @@ namespace Tako {
     primitiveEditor_.Initialize(&WindowFlag(Window::PrimitiveEditor), cameraSettings);
     particleEditor_.Initialize(&WindowFlag(Window::ParticleEditor), &engineSettings_.GetParticleEditorGrid(), cameraSettings);
     materialEditor_.Initialize(&WindowFlag(Window::MaterialEditor));
-    objectSettingsEditor_.Initialize(&WindowFlag(Window::ObjectSettings));
     shaderEditor_.Initialize(&WindowFlag(Window::ShaderEditor));
     renderPipelineWindow_.Initialize(&WindowFlag(Window::RenderPipeline));
     debugViewport_.Initialize(&WindowFlag(Window::DebugViewport), &engineSettings_.GetDebugViewportGrid(), cameraSettings, &sceneEditor_);
@@ -300,7 +298,6 @@ namespace Tako {
     isPreviewInputCaptured_ |= animationEditor_.Draw();
     behaviorTreeEditor_.Update();
     materialEditor_.Draw();
-    objectSettingsEditor_.Draw();
     shaderEditor_.Draw();
     renderPipelineWindow_.Draw();
     if (WindowFlag(Window::ImGuiDemo)) ImGui::ShowDemoWindow(&WindowFlag(Window::ImGuiDemo));
@@ -338,7 +335,6 @@ namespace Tako {
     particleEditor_.CollectUnsavedChanges(unsavedChanges_);
     primitiveEditor_.CollectUnsavedChanges(unsavedChanges_);
     materialEditor_.CollectUnsavedChanges(unsavedChanges_);
-    objectSettingsEditor_.CollectUnsavedChanges(unsavedChanges_);
     sceneEditor_.CollectUnsavedChanges(unsavedChanges_);
     shaderEditor_.CollectUnsavedChanges(unsavedChanges_);
     renderPipelineWindow_.CollectUnsavedChanges(unsavedChanges_);
@@ -432,7 +428,6 @@ namespace Tako {
         ImGui::MenuItem("Particle Editor", nullptr, &WindowFlag(Window::ParticleEditor));
         ImGui::MenuItem("Primitive Editor", nullptr, &WindowFlag(Window::PrimitiveEditor));
         ImGui::MenuItem("Material Editor", nullptr, &WindowFlag(Window::MaterialEditor));
-        ImGui::MenuItem("Object Settings", nullptr, &WindowFlag(Window::ObjectSettings));
         ImGui::MenuItem("Shader Editor", nullptr, &WindowFlag(Window::ShaderEditor));
         ImGui::MenuItem("Render Pipeline", nullptr, &WindowFlag(Window::RenderPipeline));
         ImGui::MenuItem("UI Editor", nullptr, &WindowFlag(Window::UIEditor));

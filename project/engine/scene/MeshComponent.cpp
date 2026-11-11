@@ -5,7 +5,7 @@
 #include "Object3d.h"
 
 #ifdef _DEBUG
-#include "ObjectSettingsEditor.h"
+#include "ObjectOverridesEditor.h"
 #include "imgui.h"
 #endif
 
@@ -33,6 +33,10 @@ namespace Tako {
       overridesDirty_ = false;
     }
     SyncTransform();
+    // Render Pipeline のオブジェクトパスが、Actor の名前で描く物を選ぶ
+    if (object_->GetName() != GetOwner()->GetName()) {
+      object_->SetName(GetOwner()->GetName());
+    }
     if (!object_->GetModel() || !visible_) {
       return;
     }

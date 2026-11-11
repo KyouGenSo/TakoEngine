@@ -13,9 +13,7 @@
 namespace Tako {
 
   namespace {
-    constexpr const char* kSceneDirectory = "resources/Json/ForceFieldPresets/";
     constexpr const char* kPresetDirectory = "resources/Json/ParticlePresets/ForceFieldPresets/";
-    constexpr const char* kSceneJsonKey = "forceFields";
   }
 
   ForceFieldManager::ForceFieldManager(GPUParticle* particleSystem)
@@ -33,70 +31,6 @@ namespace Tako {
   //========================================
   // ファイル単位 API
   //========================================
-
-  void ForceFieldManager::SaveScenePreset(const std::string& filename)
-  {
-    using json = nlohmann::json;
-    json root;
-
-    if (!std::filesystem::exists(kSceneDirectory)) {
-      std::filesystem::create_directories(kSceneDirectory);
-    }
-
-    SerializeAllToJSON(root);
-
-    const std::string filepath = std::string(kSceneDirectory) + filename + ".json";
-    std::ofstream ofs(filepath);
-    if (ofs.is_open()) {
-      ofs << std::setw(2) << root << std::endl;
-      ofs.close();
-#ifdef _DEBUG
-      DebugUIManager::GetInstance()->AddLog(
-        "Saved force fields to: " + filepath, DebugUIManager::LogType::Info);
-#endif
-    }
-    else {
-#ifdef _DEBUG
-      DebugUIManager::GetInstance()->AddLog(
-        "Failed to save force fields to: " + filepath, DebugUIManager::LogType::Error);
-#endif
-    }
-  }
-
-  void ForceFieldManager::LoadScenePreset(const std::string& filename)
-  {
-    using json = nlohmann::json;
-
-    const std::string filepath = std::string(kSceneDirectory) + filename + ".json";
-    std::ifstream ifs(filepath);
-    if (!ifs.is_open()) {
-#ifdef _DEBUG
-      DebugUIManager::GetInstance()->AddLog(
-        "Failed to load force fields from: " + filepath, DebugUIManager::LogType::Error);
-#endif
-      return;
-    }
-
-    json root;
-    try {
-      ifs >> root;
-    }
-    catch ([[maybe_unused]] const json::exception& e) {
-#ifdef _DEBUG
-      DebugUIManager::GetInstance()->AddLog(
-        std::string("ForceField scene JSON parse error: ") + e.what(), DebugUIManager::LogType::Error);
-#endif
-      return;
-    }
-    ifs.close();
-
-    DeserializeAllFromJSON(root);
-
-#ifdef _DEBUG
-    DebugUIManager::GetInstance()->AddLog(
-      "Loaded force fields from: " + filepath, DebugUIManager::LogType::Info);
-#endif
-  }
 
   void ForceFieldManager::SavePreset(const std::string& presetName, uint32_t forceFieldIndex)
   {
@@ -188,58 +122,6 @@ namespace Tako {
       "Loaded force field preset '" + presetName + "' (index " + std::to_string(addedIndex) + ")",
       DebugUIManager::LogType::Info);
 #endif
-  }
-
-  //========================================
-  // JSON object 単位 API（シーン統合保存連携）
-  //========================================
-
-  void ForceFieldManager::SerializeAllToJSON(nlohmann::json& root) const
-  {
-    using json = nlohmann::json;
-
-    json arr = json::array();
-    const auto& fields = particleSystem_->GetForceFields();
-    for (const auto& field : fields) {
-      json fieldJson;
-      SerializeForceFieldToJSON(field, fieldJson);
-      arr.push_back(fieldJson);
-    }
-    root[kSceneJsonKey] = arr;
-  }
-
-  void ForceFieldManager::DeserializeAllFromJSON(const nlohmann::json& root)
-  {
-    using json = nlohmann::json;
-
-    try {
-      if (!root.contains(kSceneJsonKey) || !root[kSceneJsonKey].is_array()) {
-        // 後方互換: forceFields キー不在のシーンプリセットはスキップ
-        return;
-      }
-
-      for (const auto& fieldJson : root[kSceneJsonKey]) {
-        ForceFieldData field{};
-        if (!DeserializeForceFieldFromJSON(fieldJson, field)) {
-          continue;
-        }
-        const int32_t addedIndex = particleSystem_->AddForceField(field);
-        if (addedIndex < 0) {
-#ifdef _DEBUG
-          DebugUIManager::GetInstance()->AddLog(
-            "AddForceField failed during scene load (max " + std::to_string(GPUParticle::kMaxForceFields) + " reached)",
-            DebugUIManager::LogType::Warning);
-#endif
-          break;
-        }
-      }
-    }
-    catch ([[maybe_unused]] const json::exception& e) {
-#ifdef _DEBUG
-      DebugUIManager::GetInstance()->AddLog(
-        std::string("ForceField scene deserialization error: ") + e.what(), DebugUIManager::LogType::Error);
-#endif
-    }
   }
 
   //========================================

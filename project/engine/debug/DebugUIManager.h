@@ -14,7 +14,6 @@
 #include "PrimitiveEditor.h"
 #include "ParticleEditor.h"
 #include "MaterialEditor.h"
-#include "ObjectSettingsEditor.h"
 #include "SceneEditor.h"
 #include "ShaderEditor.h"
 #include "RenderPipelineWindow.h"
@@ -63,7 +62,6 @@ namespace Tako {
       CameraAnimationEditor,
       AnimationEditor,
       MaterialEditor,
-      ObjectSettings,
       ShaderEditor,
       RenderPipeline,
       ImGuiDemo,
@@ -354,7 +352,6 @@ namespace Tako {
     AnimationEditor       animationEditor_;
     BehaviorTreeEditor    behaviorTreeEditor_;
     MaterialEditor        materialEditor_;
-    ObjectSettingsEditor  objectSettingsEditor_;
     SceneEditor           sceneEditor_;
     ShaderEditor          shaderEditor_;
     RenderPipelineWindow  renderPipelineWindow_;

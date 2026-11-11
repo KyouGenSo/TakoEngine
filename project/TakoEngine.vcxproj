@@ -154,8 +154,8 @@
     <ClCompile Include="engine\render\MaterialPropertyBlock.cpp" />
     <ClCompile Include="engine\debug\RenderPipelineWindow.cpp" />
     <ClCompile Include="engine\debug\ShaderEditor.cpp" />
-    <ClCompile Include="engine\debug\ObjectSettingsEditor.cpp" />
-    <ClCompile Include="engine\3d\Object\ObjectSettings.cpp" />
+    <ClCompile Include="engine\debug\ObjectOverridesEditor.cpp" />
+    <ClCompile Include="engine\3d\Object\ObjectOverrides.cpp" />
     <ClCompile Include="engine\3d\Decal\Decal.cpp" />
     <ClCompile Include="engine\3d\Decal\DecalManager.cpp" />
     <ClCompile Include="engine\3d\Model\BoneTracker.cpp" />
@@ -244,7 +244,6 @@
     <ClCompile Include="engine\io\ProjectSettings.cpp" />
     <ClCompile Include="engine\func\commonFunc\Logger.cpp" />
     <ClCompile Include="engine\3d\Light\Light.cpp" />
-    <ClCompile Include="engine\io\SceneLoader.cpp" />
     <ClCompile Include="engine\math\RandomEngine.cpp" />
     <ClCompile Include="engine\scene\TransitionManager.cpp" />
     <ClCompile Include="engine\scene\transition\ScaleTransition.cpp" />
@@ -328,8 +327,8 @@
     <ClInclude Include="engine\imgui\OverrideField.h" />
     <ClInclude Include="engine\debug\RenderPipelineWindow.h" />
     <ClInclude Include="engine\debug\ShaderEditor.h" />
-    <ClInclude Include="engine\debug\ObjectSettingsEditor.h" />
-    <ClInclude Include="engine\3d\Object\ObjectSettings.h" />
+    <ClInclude Include="engine\debug\ObjectOverridesEditor.h" />
+    <ClInclude Include="engine\3d\Object\ObjectOverrides.h" />
     <ClInclude Include="engine\3d\Decal\Decal.h" />
     <ClInclude Include="engine\3d\Decal\DecalManager.h" />
     <ClInclude Include="engine\3d\Model\BoneTracker.h" />
@@ -372,13 +371,11 @@
     <ClInclude Include="engine\effect\PostEffect\PostEffectManager.h" />
     <ClInclude Include="engine\effect\PostEffect\PostEffectStruct.h" />
     <ClInclude Include="engine\io\ProjectSettings.h" />
-    <ClInclude Include="engine\io\SceneLoader.h" />
     <ClInclude Include="engine\math\AABB.h" />
     <ClInclude Include="engine\2d\LineRenderer.h" />
     <ClInclude Include="engine\math\OBB.h" />
     <ClInclude Include="engine\math\Quaternion.h" />
     <ClInclude Include="engine\math\RandomEngine.h" />
-    <ClInclude Include="engine\scene\AbstractSceneFactory.h" />
     <ClInclude Include="engine\scene\BaseScene.h" />
     <ClInclude Include="engine\audio\Audio.h" />
     <ClInclude Include="engine\3d\Camera\Camera.h" />

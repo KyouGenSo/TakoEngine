@@ -1,6 +1,6 @@
 #pragma once
 #include "Component.h"
-#include "ObjectSettings.h"
+#include "ObjectOverrides.h"
 #include "Transform.h"
 
 #include <memory>
@@ -31,7 +31,7 @@ namespace Tako {
     void Draw() override;
 
     /// <summary>
-    /// renderSettings（ObjectSettings.json の 1 件と同じ形）を読む
+    /// renderSettings（ObjectOverrides::Save の形）を読む
     /// </summary>
     void PostLoad(const nlohmann::json& raw) override;
 
@@ -42,7 +42,7 @@ namespace Tako {
 
 #ifdef _DEBUG
     /// <summary>
-    /// Rendering の欄（Object Settings ウィンドウの 1 件分と同じ）
+    /// Rendering の欄（描画フラグと、マテリアル・値・テクスチャの上書き）
     /// </summary>
     bool DrawCustomImGui() override;
 #endif

@@ -46,7 +46,7 @@ namespace Tako {
   };
 
   /// <summary>
-  /// モデルのメッシュ 1 つを描くときに DrawItem へ入れる値（Object3d がコードの上書き・ObjectSettings・既定から決める）
+  /// モデルのメッシュ 1 つを描くときに DrawItem へ入れる値（Object3d がコードの上書き・設定・既定から決める）
   /// </summary>
   struct MeshDrawSlot {
     const Material*              material   = nullptr;  ///< nullptr ならメッシュのマテリアル

@@ -85,13 +85,6 @@ namespace Tako {
     }
   }
 
-  void SceneManager::DrawImGui()
-  {
-    if (scene_) {
-      scene_->DrawImGui();
-    }
-  }
-
   void SceneManager::Finalize()
   {
     if (scene_) {
@@ -156,24 +149,14 @@ namespace Tako {
 
   std::vector<std::string> SceneManager::GetSceneNames() const
   {
-    std::vector<std::string> names = sceneFactory_ ? sceneFactory_->GetSceneNames() : std::vector<std::string>{};
-    for (std::string& file : BaseScene::GetSceneFileNames()) {
-      if (std::ranges::find(names, file) == names.end()) {
-        names.push_back(std::move(file));
-      }
-    }
-    return names;
+    return BaseScene::GetSceneFileNames();
   }
 
   void SceneManager::ChangeToStartupScene()
   {
     const std::vector<std::string> names = GetSceneNames();
-    // 名前一覧を返さないファクトリーでは確かめようがないので、設定された名前をそのまま使う（不明ならファクトリーが失敗を返す）
-    const auto exists = [&names](const std::string& name) {
-      return !name.empty() && (names.empty() || std::ranges::find(names, name) != names.end());
-    };
     for (const std::string& name : { startupSceneOverride_, startupScene_ }) {
-      if (exists(name)) {
+      if (std::ranges::find(names, name) != names.end()) {
         ChangeScene(name, 0.0f);
         return;
       }
@@ -203,19 +186,7 @@ namespace Tako {
 
   std::unique_ptr<BaseScene> SceneManager::CreateScene(const std::string& sceneName) const
   {
-    // ファクトリーは無くてもよい（シーンファイルだけのゲーム）。名前一覧を返さないファクトリーは、どの名前でも先に試す
-    if (sceneFactory_) {
-      const std::vector<std::string> factoryNames = sceneFactory_->GetSceneNames();
-      if (factoryNames.empty() || std::ranges::find(factoryNames, sceneName) != factoryNames.end()) {
-        if (std::unique_ptr<BaseScene> scene = sceneFactory_->CreateScene(sceneName)) {
-          return scene;
-        }
-      }
-    }
-    if (BaseScene::HasSceneFile(sceneName)) {
-      return std::make_unique<BaseScene>();
-    }
-    return nullptr;
+    return BaseScene::HasSceneFile(sceneName) ? std::make_unique<BaseScene>() : nullptr;
   }
 
   void SceneManager::ReloadSceneImmediate(const std::string& sceneName, const nlohmann::json* snapshot)
@@ -232,8 +203,6 @@ namespace Tako {
     scene_            = std::move(scene);
     currentSceneName_ = sceneName;
     scene_->Start(currentSceneName_, snapshot, isPlaying_);
-    // 手書きのシーンの Object3d は Update で行列を作るので、止める前に 1 回だけ回す
-    scene_->UpdateHooksOnce();
   }
 
 } // namespace Tako

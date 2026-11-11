@@ -95,8 +95,6 @@ namespace Tako {
     : forceFieldManager_(std::make_unique<ForceFieldManager>(GPUParticle::GetInstance()))
     , emitterManager_(std::make_unique<EmitterManager>(GPUParticle::GetInstance()))
   {
-    // シーンプリセットの保存と読み込みで、フォースフィールドも一緒に扱う
-    emitterManager_->SetForceFieldManager(forceFieldManager_.get());
   }
 
   BaseScene::~BaseScene() = default;
@@ -106,7 +104,6 @@ namespace Tako {
     sceneName_ = sceneName;
     isPlaying_ = playing;
     ResetRenderState();
-    Initialize();
 
     if (snapshot) {
       Load(*snapshot);
@@ -220,7 +217,6 @@ namespace Tako {
 
   void BaseScene::DrawFrame()
   {
-    Draw();
     for (const std::unique_ptr<Actor>& actor : actors_) {
       actor->Draw();
     }
@@ -235,7 +231,6 @@ namespace Tako {
     pendingSpawns_.clear();
     pendingDestroys_.clear();
     retired_.clear();
-    Finalize();
   }
 
   void BaseScene::BeginPlay()

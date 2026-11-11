@@ -29,7 +29,7 @@ struct ObjectOverrides;
 ///
 /// 描画の設定（マテリアル・値・描画フラグ・メッシュの表示）は、項目ごとに次の中で一番上にあるものを毎フレーム使う。
 ///   1. コードの Set〇〇（std::nullopt を渡すと外す。SetMaterial は nullptr）
-///   2. SetOverrides で渡された設定（MeshComponent が持つもの）か、同じ名前の ObjectSettings（UI で編集・保存する設定）
+///   2. SetOverrides で渡された設定（MeshComponent が持ち、Inspector で編集・保存する）
 ///   3. 既定（マテリアルの値・モデルの既定のマテリアル・DrawItem の初期値）
 /// 値（色など）は描くときにマテリアルの同じ名前の値へ重ねるので、どのマテリアルで描いても効く
 /// </summary>
@@ -44,7 +44,7 @@ public: // 構造体
   };
 
   /// <summary>
-  /// コードで Set した上書き。外すまで ObjectSettings と既定より優先する
+  /// コードで Set した上書き。外すまで設定と既定より優先する
   /// </summary>
   struct CodeOverrides
   {
@@ -119,12 +119,12 @@ public: // メンバー関数
   void SetModel(std::unique_ptr<Model> model);
 
   /// <summary>
-  /// 名前を付ける。同じ名前の ObjectSettings（UI で編集・保存する描画設定）を次の描画から当てる
+  /// 名前を付ける。Render Pipeline のオブジェクトパスが、この名前で描く物を選ぶ
   /// </summary>
   void SetName(const std::string& name);
 
   /// <summary>
-  /// 名前で引く ObjectSettings の代わりに overrides を当てる（持ち主が持ち続ける。nullptr で名前で引く形に戻す）。
+  /// 描画の設定を当てる（持ち主が持ち続ける。nullptr で外す）。
   /// 中身を書き換えたら、もう一度呼んで作り直させる
   /// </summary>
   void SetOverrides(const ObjectOverrides* overrides) { overrides_ = overrides; slotsDirty_ = true; }
@@ -262,37 +262,37 @@ public: // メンバー関数
 
 #ifdef _DEBUG
   /// <summary>
-  /// 生存中の Object3d（Object Settings エディタの一覧）
+  /// 生存中の Object3d（Render Pipeline ウィンドウが、名前の一覧に使う）
   /// </summary>
   static const std::vector<Object3d*>& GetLiveObjects();
 #endif
 
   /// <summary>
-  /// 最初のメッシュを描く色（コード ＞ ObjectSettings ＞ マテリアルの値。アニメーションの上乗せは含まない）
+  /// 最初のメッシュを描く色（コード ＞ 設定 ＞ マテリアルの値。アニメーションの上乗せは含まない）
   /// </summary>
   /// <returns>マテリアルカラー（RGBA）</returns>
   Vector4 GetMaterialColor() const;
 
   /// <summary>
-  /// コードで Set した色を除いた、最初のメッシュの色（ObjectSettings の Values ＞ 描くマテリアルの値）。点滅やフェードの基準に使う
+  /// コードで Set した色を除いた、最初のメッシュの色（設定の Values ＞ 描くマテリアルの値）。点滅やフェードの基準に使う
   /// </summary>
   Vector4 GetBaseMaterialColor() const;
 
-  // コード ＞ ObjectSettings ＞ 既定 で決まった値
+  // コード ＞ 設定 ＞ 既定 で決まった値
   bool IsTransparent() const;
   bool CastsShadow() const;
   int32_t GetSortingOrder() const;
   uint32_t GetMaskId() const;
 
   /// <summary>
-  /// メッシュ名を指定して表示状態を取得（コード ＞ ObjectSettings ＞ モデル）
+  /// メッシュ名を指定して表示状態を取得（コード ＞ 設定 ＞ モデル）
   /// </summary>
   /// <param name="name">メッシュ名</param>
   /// <returns>表示中なら true</returns>
   bool IsMeshVisible(const std::string& name) const;
 
   /// <summary>
-  /// コードで Set した上書き（Object Settings エディタの表示用）
+  /// コードで Set した上書き（Inspector の Rendering 欄が、上書き中の印を出すのに使う）
   /// </summary>
   const CodeOverrides& GetCodeOverrides() const { return code_; }
 
@@ -339,22 +339,17 @@ private: // プライベートメンバー関数
   void ApplyAnimationColor(const Vector4& color);
 
   /// <summary>
-  /// SetOverrides で渡された設定か、名前の ObjectSettings（どちらも無ければ nullptr）
-  /// </summary>
-  const ObjectOverrides* FindSettings() const;
-
-  /// <summary>
   /// Draw が描く状態か（モデルがあり、アニメーションと設定で非表示になっていない）
   /// </summary>
   bool IsDrawn() const;
 
   /// <summary>
-  /// メッシュのマテリアル（コード ＞ ObjectSettings ＞ モデルの既定）
+  /// メッシュのマテリアル（コード ＞ 設定 ＞ モデルの既定）
   /// </summary>
   const Material& GetSlotMaterial(size_t meshIndex, const ObjectOverrides* settings) const;
 
   /// <summary>
-  /// メッシュごとのマテリアル・値・表示を、コードの上書き・ObjectSettings・既定から作り直す
+  /// メッシュごとのマテリアル・値・表示を、コードの上書き・設定・既定から作り直す
   /// </summary>
   void RebuildDrawSlots(const ObjectOverrides* settings);
 
@@ -389,8 +384,7 @@ private: // メンバー変数
   std::vector<MeshDrawSlot>              drawSlots_;
   std::vector<MaterialPropertyBlock>     slotProperties_;
   std::vector<std::shared_ptr<Material>> slotMaterials_;                  ///< drawSlots_ が指すマテリアルを、次に作り直すまで持つ（nullptr はモデルの既定）
-  bool                                   slotsDirty_             = true;  ///< コードのマテリアル・表示・名前・モデル・アニメーションの色が変わった
-  uint32_t                               builtSettingsVersion_   = 0;     ///< 作ったときの ObjectSettings のバージョン
+  bool                                   slotsDirty_             = true;  ///< コードのマテリアル・表示・設定・モデル・アニメーションの色が変わった
   uint32_t                               builtPropertiesVersion_ = 0;     ///< 作ったときの code_.properties のバージョン
 
   //アニメーションの上乗せ

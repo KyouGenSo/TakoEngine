@@ -1,12 +1,7 @@
-#include "ObjectSettings.h"
-
-#include <filesystem>
-#include <fstream>
-#include <iterator>
+#include "ObjectOverrides.h"
 
 #include <json.hpp>
 
-#include "Logger.h"
 #include "MaterialLibrary.h"
 
 namespace Tako {
@@ -14,8 +9,6 @@ namespace Tako {
   using json = nlohmann::json;
 
   namespace {
-
-    const std::filesystem::path kSettingsPath = "resources/Json/ObjectSettings.json";
 
     template<class T>
     void Read(const json& entry, const char* key, std::optional<T>& value)
@@ -146,104 +139,6 @@ namespace Tako {
       }
       resolvedMeshes.emplace(meshName, ResolveMaterial(merged));
     }
-  }
-
-  std::unique_ptr<ObjectSettings> ObjectSettings::instance_ = nullptr;
-
-  ObjectSettings* ObjectSettings::GetInstance()
-  {
-    if (!instance_) {
-      instance_ = std::make_unique<ObjectSettings>(Token{});
-    }
-    return instance_.get();
-  }
-
-  void ObjectSettings::Load()
-  {
-    std::ifstream ifs(kSettingsPath);
-    if (!ifs) {
-      return;
-    }
-    Apply(std::string(std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>()));
-  }
-
-  void ObjectSettings::Finalize()
-  {
-    instance_.reset();
-  }
-
-  bool ObjectSettings::Save() const
-  {
-    std::error_code ec;
-    std::filesystem::create_directories(kSettingsPath.parent_path(), ec);
-    std::ofstream ofs(kSettingsPath);
-    if (!ofs) {
-      Logger::Log("Object settings save failed: %s", kSettingsPath.string().c_str());
-      return false;
-    }
-    ofs << Serialize() << std::endl;
-    return true;
-  }
-
-  std::string ObjectSettings::Serialize() const
-  {
-    json root = json::object();
-    for (const auto& [name, overrides] : entries_) {
-      json entry = overrides.Save();
-      if (!entry.empty()) {
-        root[name] = std::move(entry);
-      }
-    }
-    return root.dump(4);
-  }
-
-  bool ObjectSettings::Apply(const std::string& text)
-  {
-    std::map<std::string, ObjectOverrides, std::less<>> entries;
-    try {
-      // items() は元の JSON を参照するので、回す前に受けておく
-      const json root = json::parse(text);
-      for (const auto& [name, entry] : root.items()) {
-        entries[name] = ObjectOverrides::Load(entry);
-      }
-    }
-    catch (const json::exception& e) {
-      Logger::Log("Object settings load failed: %s", e.what());
-      return false;
-    }
-    entries_ = std::move(entries);
-    MarkChanged();
-    return true;
-  }
-
-  ObjectOverrides& ObjectSettings::Edit(const std::string& name)
-  {
-    return entries_[name];
-  }
-
-  void ObjectSettings::MarkChanged()
-  {
-    for (auto& [name, overrides] : entries_) {
-      overrides.ResolveMaterials();
-    }
-    ++version_;
-  }
-
-
-  const ObjectOverrides* ObjectSettings::Find(std::string_view name) const
-  {
-    const auto it = entries_.find(name);
-    return it != entries_.end() ? &it->second : nullptr;
-  }
-
-  std::vector<std::string> ObjectSettings::GetNames() const
-  {
-    std::vector<std::string> names;
-    names.reserve(entries_.size());
-    for (const auto& [name, overrides] : entries_) {
-      names.push_back(name);
-    }
-    return names;
   }
 
 } // namespace Tako

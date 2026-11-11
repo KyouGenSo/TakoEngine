@@ -11,7 +11,6 @@
 #include "ImGuiManager.h"
 #include "MaterialLibrary.h"
 #include "Object3d.h"
-#include "ObjectSettings.h"
 
 namespace Tako {
 
@@ -97,8 +96,8 @@ namespace Tako {
     ImGui::TextDisabled(tracker_.IsEdited() ? "RenderPasses.json *" : "RenderPasses.json");
     ImGui::TextDisabled("Each pass draws the named objects again with the material at the event (Replace: only there)");
 
-    // 選べる名前は、設定のある名前と生存中の Object3d の名前
-    std::vector<std::string> objectNames = ObjectSettings::GetInstance()->GetNames();
+    // 選べる名前は、生存中の Object3d の名前（MeshComponent は Actor の名前を付ける）
+    std::vector<std::string> objectNames;
     for (const Object3d* object : Object3d::GetLiveObjects()) {
       if (!object->GetName().empty()) {
         objectNames.push_back(object->GetName());

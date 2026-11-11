@@ -219,10 +219,10 @@
     <ClCompile Include="engine\debug\ShaderEditor.cpp">
       <Filter>debug</Filter>
     </ClCompile>
-    <ClCompile Include="engine\debug\ObjectSettingsEditor.cpp">
+    <ClCompile Include="engine\debug\ObjectOverridesEditor.cpp">
       <Filter>debug</Filter>
     </ClCompile>
-    <ClCompile Include="engine\3d\Object\ObjectSettings.cpp">
+    <ClCompile Include="engine\3d\Object\ObjectOverrides.cpp">
       <Filter>3d\Object</Filter>
     </ClCompile>
     <ClCompile Include="engine\func\mathFunc\Mat4x4Func.cpp">
@@ -299,9 +299,6 @@
     </ClCompile>
     <ClCompile Include="engine\time\FrameTimer.cpp">
       <Filter>time</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\io\SceneLoader.cpp">
-      <Filter>io</Filter>
     </ClCompile>
     <ClCompile Include="engine\collision\AABBCollider.cpp">
       <Filter>collision</Filter>
@@ -623,10 +620,10 @@
     <ClInclude Include="engine\debug\ShaderEditor.h">
       <Filter>debug</Filter>
     </ClInclude>
-    <ClInclude Include="engine\debug\ObjectSettingsEditor.h">
+    <ClInclude Include="engine\debug\ObjectOverridesEditor.h">
       <Filter>debug</Filter>
     </ClInclude>
-    <ClInclude Include="engine\3d\Object\ObjectSettings.h">
+    <ClInclude Include="engine\3d\Object\ObjectOverrides.h">
       <Filter>3d\Object</Filter>
     </ClInclude>
     <ClInclude Include="engine\math\Matrix4x4.h">
@@ -737,9 +734,6 @@
     <ClInclude Include="engine\io\Input.h">
       <Filter>io</Filter>
     </ClInclude>
-    <ClInclude Include="engine\scene\AbstractSceneFactory.h">
-      <Filter>scene</Filter>
-    </ClInclude>
     <ClInclude Include="engine\scene\BaseScene.h">
       <Filter>scene</Filter>
     </ClInclude>
@@ -748,9 +742,6 @@
     </ClInclude>
     <ClInclude Include="engine\time\FrameTimer.h">
       <Filter>time</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\io\SceneLoader.h">
-      <Filter>io</Filter>
     </ClInclude>
     <ClInclude Include="engine\collision\AABBCollider.h">
       <Filter>collision</Filter>

@@ -11,8 +11,7 @@ namespace Tako {
 
   /// <summary>
   /// フォースフィールド管理クラス
-  /// GPUParticle が保持するフォースフィールドの JSON 永続化（個別プリセット保存/読込、
-  /// シーン全体への統合保存）。
+  /// GPUParticle が保持するフォースフィールドの JSON 永続化（個別プリセット保存/読込）。
   /// </summary>
   class ForceFieldManager
   {
@@ -27,18 +26,6 @@ namespace Tako {
     /// デストラクタ
     /// </summary>
     ~ForceFieldManager();
-
-    /// <summary>
-    /// 全フォースフィールドを ScenePreset JSON ファイルに保存
-    /// </summary>
-    /// <param name="filename">拡張子なしのファイル名</param>
-    void SaveScenePreset(const std::string& filename);
-
-    /// <summary>
-    /// ScenePreset JSON ファイルから全フォースフィールドを読み込み
-    /// </summary>
-    /// <param name="filename">拡張子なしのファイル名</param>
-    void LoadScenePreset(const std::string& filename);
 
     /// <summary>
     /// 指定インデックスのフォースフィールドを個別プリセットとして保存
@@ -61,19 +48,6 @@ namespace Tako {
     /// <param name="outField">[out] 読み込み結果</param>
     /// <returns>読み込み成功で true / ファイル不在・JSON 不正で false</returns>
     bool LoadPresetToData(const std::string& presetName, ForceFieldData& outField) const;
-
-    /// <summary>
-    /// 全フォースフィールドを root JSON の "forceFields" 配列に書き込む
-    /// EmitterManager::SaveScenePreset から呼ばれる
-    /// </summary>
-    /// <param name="root">書き込み先 JSON（"forceFields" キーが追加される）</param>
-    void SerializeAllToJSON(nlohmann::json& root) const;
-
-    /// <summary>
-    /// root JSON の "forceFields" 配列から全フォースフィールドを復元
-    /// </summary>
-    /// <param name="root">読み込み元 JSON</param>
-    void DeserializeAllFromJSON(const nlohmann::json& root);
 
     /// <summary>
     /// 指定位置に作用する力ベクトルの合計を CPU 側で評価する。

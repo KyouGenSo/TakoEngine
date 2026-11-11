@@ -3,7 +3,6 @@
 #include "DX12Basic.h"
 #include "D3DResourceLeakChecker.h"
 #include "Camera.h"
-#include "AbstractSceneFactory.h"
 
 #include <memory>
 
@@ -86,8 +85,6 @@ namespace Tako {
 #endif
 
     std::unique_ptr<Camera> defaultCamera_;  ///< デフォルトカメラ
-
-    std::unique_ptr<AbstractSceneFactory> sceneFactory_;  ///< シーンファクトリー（シーン生成用）
 
     uint32_t rendererOnResizeId_ = 0;
 

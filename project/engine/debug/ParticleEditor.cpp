@@ -613,27 +613,6 @@ namespace Tako {
 
     ImGui::Separator();
 
-    // 全体保存/読み込み
-    if (ImGui::CollapsingHeader("Scene Presets")) {
-      ImGui::InputText("Scene Name##ScenePreset", scenePresetNameBuffer_, sizeof(scenePresetNameBuffer_));
-
-      if (ImGui::Button("Save All##ScenePreset")) {
-        emitterManager_->SaveScenePreset(scenePresetNameBuffer_);
-        LogToConsole("Saved all emitters to: " + std::string(scenePresetNameBuffer_), LogType::Info);
-        unsavedEmitters_.clear();
-      }
-      ImGui::SameLine();
-      if (ImGui::Button("Load All##ScenePreset")) {
-        const std::string sceneName = scenePresetNameBuffer_;
-        unsavedPrompt_.RunOrConfirm(!unsavedEmitters_.empty(), "Emitters with unsaved changes may be replaced by the scene preset.", "Load", [this, sceneName] {
-          emitterManager_->LoadScenePreset(sceneName);
-          history_.Clear();
-          LogToConsole("Loaded all emitters from: " + sceneName, LogType::Info);
-          PruneUnsavedEmitters(false);
-        });
-      }
-    }
-
     // メインシーンへの可視化設定
     if (ImGui::CollapsingHeader("Visualization")) {
       DrawVisualizationSettings();

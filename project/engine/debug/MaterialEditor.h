@@ -17,7 +17,7 @@ namespace Tako {
 
   /// <summary>
   /// .mat.json の編集ウィンドウ。値の UI はシェーダーのリフレクションから作る。
-  /// 描画物のマテリアルは ObjectSettingsEditor で、ポストエフェクトのマテリアルは PostEffect Settings で使う
+  /// 描画物のマテリアルは Inspector の MeshComponent > Rendering で、ポストエフェクトのマテリアルは PostEffect Settings で使う
   /// </summary>
   class MaterialEditor {
   public: //メンバー関数

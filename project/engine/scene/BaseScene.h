@@ -17,21 +17,20 @@ namespace Tako {
   using ActorId = uint64_t;
 
   /// <summary>
-  /// 全てのシーンの基底クラス。Actor の入れ物で、シーンファイル（resources/Json/Scenes/名前.scene.json）から中身を読む。
-  /// 手書きのシーンは Initialize などのフックを override する
+  /// シーン。Actor の入れ物で、シーンファイル（resources/Json/Scenes/名前.scene.json）から中身を読む
   /// </summary>
   class BaseScene
   {
   public: //メンバー関数
     BaseScene();
 
-    virtual ~BaseScene();
+    ~BaseScene();
 
     //=====================================
     //SceneManager が呼ぶ。順番の決まりはここで守る
     //=====================================
     /// <summary>
-    /// Initialize → シーンファイル（snapshot があればそれ）を読む → playing なら BeginPlay
+    /// シーンファイル（snapshot があればそれ）を読む → playing なら BeginPlay
     /// </summary>
     /// <param name="sceneName">シーンファイルの名前</param>
     /// <param name="snapshot">Stop で戻す内容（nullptr ならファイル）</param>
@@ -39,8 +38,8 @@ namespace Tako {
     void Start(const std::string& sceneName, const nlohmann::json* snapshot, bool playing);
 
     /// <summary>
-    /// Play 中だけ呼ぶ。全 Actor の Tick → 全 Actor の LateTick → Update。
-    /// ポーズ中は TickWhilePaused のコンポーネントだけ動かし、Update（当たり判定など）は呼ばない
+    /// Play 中だけ呼ぶ。全 Actor の Tick → 全 Actor の LateTick → 当たり判定と、一時エミッターの寿命。
+    /// ポーズ中は TickWhilePaused のコンポーネントだけ動かし、当たり判定は呼ばない
     /// </summary>
     void UpdateFrame(float deltaTime);
 
@@ -50,12 +49,12 @@ namespace Tako {
     void UpdateAlways();
 
     /// <summary>
-    /// Draw → 全 Actor を描画に登録
+    /// 全 Actor を描画に登録
     /// </summary>
     void DrawFrame();
 
     /// <summary>
-    /// 全 Actor の EndPlay と破棄 → Finalize。Actor はここで先に消す（派生シーンのメンバーより後に消えて、消えた物を触らないため）
+    /// 全 Actor の EndPlay と破棄
     /// </summary>
     void Shutdown();
 
@@ -68,11 +67,6 @@ namespace Tako {
     /// actors の全コンポーネントの Awake を呼んでから、BeginPlay を呼ぶ（どちらも TCLASS(Order) の順）。Play 中に Actor を作り直したときにも使う
     /// </summary>
     void BeginPlayActors(const std::vector<Actor*>& actors);
-
-    /// <summary>
-    /// Stop で作り直した後、手書きの物の行列を作るためにフックの Update を 1 回だけ呼ぶ
-    /// </summary>
-    void UpdateHooksOnce() { Update(); }
 
     //=====================================
     //Actor
@@ -180,35 +174,12 @@ namespace Tako {
     /// </summary>
     void SetPaused(bool paused) { isPaused_ = paused; }
 
-  protected: //メンバー関数
-    friend class SceneManager;
-
-    /// <summary>
-    /// 初期化。シーンファイルを読む前に呼ばれる
-    /// </summary>
-    virtual void Initialize() {}
-
-    /// <summary>
-    /// 終了処理。Actor を消した後に呼ばれる
-    /// </summary>
-    virtual void Finalize() {}
-
-    /// <summary>
-    /// 更新。Actor の Tick の後に呼ばれる。既定は CollisionManager の当たり判定と、一時エミッターの寿命（手書きのシーンは自分で呼ぶ）
-    /// </summary>
-    virtual void Update();
-
-    /// <summary>
-    /// 描画物を登録する。描画キューが kQueueOverlay 以上の物（既定のスプライト）はポストエフェクトの後に描かれる
-    /// </summary>
-    virtual void Draw() {}
-
-    /// <summary>
-    /// ImGui の描画
-    /// </summary>
-    virtual void DrawImGui() {}
-
   private: //非公開関数
+    /// <summary>
+    /// CollisionManager の当たり判定と、一時エミッターの寿命
+    /// </summary>
+    void Update();
+
     /// <summary>
     /// 全部の値が入った JSON 1 件（Actor::Save の形。prefab / node / root があれば、プレハブとのつながりも張る）から Actor を作る
     /// </summary>
@@ -220,8 +191,7 @@ namespace Tako {
     Actor* AddPending(std::unique_ptr<Actor> actor);
 
   private: //メンバー変数
-    // Actor のコンポーネントがエミッターを消すので、Actor より先に宣言して後に消す。
-    // EmitterManager は ForceFieldManager を指すので、ForceFieldManager をさらに先に宣言する
+    // Actor のコンポーネントがエミッターを消すので、Actor より先に宣言して後に消す
     std::unique_ptr<ForceFieldManager>  forceFieldManager_;
     std::unique_ptr<EmitterManager>     emitterManager_;
     std::string                         sceneName_;
