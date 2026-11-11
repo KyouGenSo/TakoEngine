@@ -181,6 +181,11 @@ namespace Tako {
     /// </summary>
     bool IsActiveInHierarchy() const;
 
+    /// <summary>
+    /// Inspector の Tags に tag があれば true（探すのは BaseScene::FindActorsWithTag）
+    /// </summary>
+    bool HasTag(std::string_view tag) const;
+
     const std::vector<std::unique_ptr<Component>>& GetComponents() const { return components_; }
 
     /// <summary>
@@ -235,6 +240,8 @@ namespace Tako {
     bool                                               active_ = true;
     TPROPERTY(Edit)
     Transform transform_{ { 1.0f, 1.0f, 1.0f }, {}, {} };
+    TPROPERTY(Edit, Tooltip = "スクリプトが HasTag や FindActorsWithTag で探すための印")
+    std::vector<std::string>                           tags_;
 
     ActorId                                 id_             = 0;        ///< シーンの中で一意。0 は未割り当て
     ActorId                                 parentId_       = 0;        ///< 保存する親。0 は親なし

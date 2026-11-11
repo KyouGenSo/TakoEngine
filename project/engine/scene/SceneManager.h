@@ -143,6 +143,11 @@ namespace Tako {
     /// </summary>
     bool CanStop() const { return isPlaying_ && !nextScene_; }
 
+    /// <summary>
+    /// シーンを替えても残る値（スコア、選んだステージなど）。キーと値はゲームが決める。エディタの Stop で空に戻る
+    /// </summary>
+    nlohmann::json& GetSessionData();
+
     const std::string& GetCurrentSceneName() const { return currentSceneName_; }
     const std::string& GetStartupScene() const { return startupScene_; }
     const std::string& GetStartupSceneOverride() const { return startupSceneOverride_; }
@@ -184,6 +189,7 @@ namespace Tako {
     PlayRequest                     playRequest_ = PlayRequest::None;
     std::unique_ptr<nlohmann::json> playSnapshot_;                     ///< Edit から Play に入ったときの中身。Stop で戻す
     std::string                     playSceneName_;                    ///< Play を始めたシーン
+    std::unique_ptr<nlohmann::json> sessionData_;                      ///< GetSessionData の中身。最初に使うときに作る
   };
 
 } // namespace Tako

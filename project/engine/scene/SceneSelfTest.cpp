@@ -13,6 +13,7 @@
 
 #include <json.hpp>
 
+#include <any>
 #include <cassert>
 #include <cmath>
 #include <string>
@@ -208,6 +209,45 @@ namespace Tako {
     playing.UpdateAlways();
     playing.UpdateFrame(0.016f);
     assert(counter->activeChanges == 2 && counter->isActive && counter->ticks == 1);
+
+    // タイマー：1 回の物は 1 回だけ、繰り返す物は取り消すまで呼ばれる。ポーズ中は進まない
+    Actor* clock = playing.Spawn("Actor");
+    auto*  probe = static_cast<TickCounter*>(clock->AddComponent(std::make_unique<TickCounter>(false), "Probe"));
+    playing.UpdateAlways();
+    int once     = 0;
+    int repeated = 0;
+    probe->SetTimer(0.045f, [&once] { ++once; });
+    const TimerId repeating = probe->SetTimer(0.033f, [&repeated] { ++repeated; }, true);
+    for (int frame = 0; frame < 10; ++frame) {
+      playing.UpdateFrame(0.01f);
+    }
+    assert(once == 1 && repeated == 3);
+    probe->ClearTimer(repeating);
+    probe->SetTimer(0.005f, [&once] { ++once; });
+    playing.SetPaused(true);
+    playing.UpdateFrame(0.01f);
+    assert(once == 1);
+    playing.SetPaused(false);
+    for (int frame = 0; frame < 10; ++frame) {
+      playing.UpdateFrame(0.01f);
+    }
+    assert(once == 2 && repeated == 3);
+
+    // イベント：受け取ると決めた名前だけが届き、コンポーネントを外すと届かなくなる
+    int heard = 0;
+    probe->Subscribe("Ping", [&heard](const std::any& payload) { heard += std::any_cast<int>(payload); });
+    playing.SendEvent("Ping", 5);
+    playing.SendEvent("Other", 1);
+    assert(heard == 5);
+    clock->RemoveComponent(probe);
+    playing.UpdateAlways();
+    playing.SendEvent("Ping", 5);
+    assert(heard == 5);
+
+    // タグ
+    clock->Load({ { "properties", { { "tags", nlohmann::json::array({ "Enemy" }) } } } });
+    assert(clock->HasTag("Enemy") && !clock->HasTag("Friend"));
+    assert(playing.FindActorsWithTag("Enemy") == std::vector<Actor*>{ clock } && playing.FindActorsWithTag("Friend").empty());
 
     // ID の付け替え：組の中の親と ActorRef は新しい ID、組の外の相手は外す。根の無い Actor は、プレハブとのつながりを失う
     nlohmann::json entries = nlohmann::json::array({

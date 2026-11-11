@@ -1,6 +1,7 @@
 #pragma once
 #include <json_fwd.hpp>
 
+#include <any>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -95,6 +96,12 @@ namespace Tako {
     void Destroy(Actor* actor);
 
     /// <summary>
+    /// name を Component::Subscribe で受け取っている全コンポーネント（スクリプトも）の関数を、その場で呼ぶ
+    /// </summary>
+    /// <param name="payload">受け取る側に渡す値。型は送る側と受け取る側で決める（std::any_cast で取り出す）</param>
+    void SendEvent(std::string_view name, const std::any& payload = {});
+
+    /// <summary>
     /// 同じ親の中で、並びを 1 つ前（direction < 0）か後ろへ動かす。Tick と保存はこの並び順
     /// </summary>
     void MoveActor(Actor* actor, int direction);
@@ -152,6 +159,11 @@ namespace Tako {
     Actor* FindActor(ActorId id) const;
 
     Actor* FindActor(std::string_view name) const;
+
+    /// <summary>
+    /// Inspector の Tags に tag を持つ全 Actor（シーンの並び順）
+    /// </summary>
+    std::vector<Actor*> FindActorsWithTag(std::string_view tag) const;
 
     /// <summary>
     /// Actor の追加・削除・値の変更のたびに増える番号（Undo の比較を省くのに使う）

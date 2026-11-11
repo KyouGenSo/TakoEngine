@@ -75,6 +75,20 @@ namespace Tako {
       return components;
     }
 
+    /// <summary>
+    /// component と、Script コンポーネントなら中のスクリプトにも行う（タイマーと受け取る関数は、それぞれが自分で持つ）
+    /// </summary>
+    template<class Function>
+    void ForSelfAndScript(Component& component, Function&& function)
+    {
+      function(component);
+      if (component.IsA<ScriptComponent>()) {
+        if (Script* script = static_cast<ScriptComponent&>(component).GetScript()) {
+          function(*script);
+        }
+      }
+    }
+
   } // namespace
 
   BaseScene::BaseScene()
@@ -120,6 +134,7 @@ namespace Tako {
     };
     for (Component* component : components) {
       if (ticks(component)) {
+        ForSelfAndScript(*component, [deltaTime](Component& target) { target.AdvanceTimers(deltaTime); });
         component->Tick(deltaTime);
       }
     }
@@ -310,6 +325,18 @@ namespace Tako {
     }
   }
 
+  void BaseScene::SendEvent(std::string_view name, const std::any& payload)
+  {
+    // ponytail: 全コンポーネントを回す。送る回数や Actor の数で重くなったら、名前ごとの受け取りの表にする
+    // 受け取った側がコンポーネントを足しても壊れないよう、添字で回す
+    for (size_t i = 0; i < actors_.size(); ++i) {
+      const std::vector<std::unique_ptr<Component>>& components = actors_[i]->GetComponents();
+      for (size_t j = 0; j < components.size(); ++j) {
+        ForSelfAndScript(*components[j], [&](Component& target) { target.HandleEvent(name, payload); });
+      }
+    }
+  }
+
   void BaseScene::MoveActor(Actor* actor, int direction)
   {
     auto self = std::ranges::find_if(actors_, [actor](const auto& a) { return a.get() == actor; });
@@ -450,6 +477,17 @@ namespace Tako {
       }
     }
     return nullptr;
+  }
+
+  std::vector<Actor*> BaseScene::FindActorsWithTag(std::string_view tag) const
+  {
+    std::vector<Actor*> found;
+    for (const auto* list : { &actors_, &pendingSpawns_ }) {
+      for (const std::unique_ptr<Actor>& actor : *list) {
+        if (actor->HasTag(tag)) { found.push_back(actor.get()); }
+      }
+    }
+    return found;
   }
 
   std::unique_ptr<Actor> BaseScene::CreateActor(const nlohmann::json& json)

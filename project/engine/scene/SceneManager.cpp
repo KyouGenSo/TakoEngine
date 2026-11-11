@@ -42,6 +42,7 @@ namespace Tako {
       ReloadSceneImmediate(sceneName, playSnapshot_.get());
       playSnapshot_.reset();
       playSceneName_.clear();
+      sessionData_.reset();
     }
 
     if (scene_) {
@@ -133,6 +134,14 @@ namespace Tako {
       TransitionManager::GetInstance()->SetCurrentEffect(std::move(effect));
       TransitionManager::GetInstance()->Start(ITransitionEffect::FADE_OUT, transitionTime);
     }
+  }
+
+  nlohmann::json& SceneManager::GetSessionData()
+  {
+    if (!sessionData_) {
+      sessionData_ = std::make_unique<nlohmann::json>(nlohmann::json::object());
+    }
+    return *sessionData_;
   }
 
   void SceneManager::RequestPlay()

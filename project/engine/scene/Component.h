@@ -1,11 +1,22 @@
 #pragma once
 #include "TObject.h"
 
+#include <any>
+#include <cstdint>
+#include <functional>
 #include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 namespace Tako {
 
   class Actor;
+
+  /// <summary>
+  /// Component::SetTimer が返す番号。0 は無効
+  /// </summary>
+  using TimerId = uint64_t;
 
   /// <summary>
   /// Actor に付ける機能の単位（UE の UActorComponent）。C++ のスクリプトは Script を継承し、ScriptComponent に入れる
@@ -74,6 +85,45 @@ namespace Tako {
 
     virtual void OnCollisionExit([[maybe_unused]] Actor* other) {}
 
+    /// <summary>
+    /// seconds 秒後に callback を呼ぶ。loops なら seconds 秒ごとに呼び続ける。
+    /// Tick と同じ条件で進み（ポーズ中と、Actor がオフの間は止まる）、このコンポーネントが消えると一緒に消える
+    /// </summary>
+    /// <returns>ClearTimer に渡す番号</returns>
+    TimerId SetTimer(float seconds, std::function<void()> callback, bool loops = false)
+    {
+      timers_.push_back({ nextTimerId_, seconds, seconds, loops, std::move(callback) });
+      return nextTimerId_++;
+    }
+
+    /// <summary>
+    /// SetTimer を取り消す。タイマーの関数の中からも呼べる
+    /// </summary>
+    void ClearTimer(TimerId id)
+    {
+      for (Timer& timer : timers_) {
+        if (timer.id == id) { timer.id = 0; }
+      }
+    }
+
+    /// <summary>
+    /// BaseScene::SendEvent で送られた name を handler で受け取る。このコンポーネントが消えると、受け取りも終わる
+    /// </summary>
+    void Subscribe(std::string name, std::function<void(const std::any& payload)> handler)
+    {
+      eventHandlers_.emplace_back(std::move(name), std::move(handler));
+    }
+
+    /// <summary>
+    /// タイマーを進め、時間の来た物を呼ぶ。シーンが Tick の前に呼ぶ
+    /// </summary>
+    void AdvanceTimers(float deltaTime);
+
+    /// <summary>
+    /// name を受け取る関数を呼ぶ。BaseScene::SendEvent が呼ぶ
+    /// </summary>
+    void HandleEvent(std::string_view name, const std::any& payload);
+
     //=====================================
     //Getter
     //=====================================
@@ -85,12 +135,58 @@ namespace Tako {
     // 直接は作らない（Add Component の一覧にも出ない）
     Component() = default;
 
+  private: //構造体
+    struct Timer {
+      TimerId               id;         ///< 0 は取り消し済み（次の AdvanceTimers で外す）
+      float                 interval;
+      float                 remaining;
+      bool                  loops;
+      std::function<void()> callback;
+    };
+
   private: //メンバー変数
     friend class Actor;
     friend class ScriptComponent;
 
-    Actor*      owner_ = nullptr;
-    std::string name_;             ///< Actor の中で一意。保存ファイルのキー
+    Actor*                                                                     owner_       = nullptr;
+    std::string                                                                name_;                   ///< Actor の中で一意。保存ファイルのキー
+    std::vector<Timer>                                                         timers_;
+    TimerId                                                                    nextTimerId_ = 1;
+    std::vector<std::pair<std::string, std::function<void(const std::any&)>>> eventHandlers_;
   };
+
+  inline void Component::AdvanceTimers(float deltaTime)
+  {
+    // 呼んだ関数が SetTimer / ClearTimer しても壊れないよう、添字で回して最後にまとめて外す。この中で足された物は次のフレームから進む
+    const size_t count = timers_.size();
+    for (size_t i = 0; i < count; ++i) {
+      if (timers_[i].id == 0) {
+        continue;
+      }
+      timers_[i].remaining -= deltaTime;
+      if (timers_[i].remaining > 0.0f) {
+        continue;
+      }
+      const std::function<void()> callback = timers_[i].callback;
+      if (timers_[i].loops) {
+        timers_[i].remaining += timers_[i].interval;
+      } else {
+        timers_[i].id = 0;
+      }
+      callback();
+    }
+    std::erase_if(timers_, [](const Timer& timer) { return timer.id == 0; });
+  }
+
+  inline void Component::HandleEvent(std::string_view name, const std::any& payload)
+  {
+    // 呼んだ関数が Subscribe しても壊れないよう、添字で回して関数は写してから呼ぶ
+    for (size_t i = 0; i < eventHandlers_.size(); ++i) {
+      if (eventHandlers_[i].first == name) {
+        const std::function<void(const std::any&)> handler = eventHandlers_[i].second;
+        handler(payload);
+      }
+    }
+  }
 
 } // namespace Tako

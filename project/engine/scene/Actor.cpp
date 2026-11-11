@@ -115,6 +115,11 @@ namespace Tako {
     return true;
   }
 
+  bool Actor::HasTag(std::string_view tag) const
+  {
+    return std::ranges::find(tags_, tag) != tags_.end();
+  }
+
   nlohmann::json Actor::Save()
   {
     nlohmann::json components = nlohmann::json::object();
