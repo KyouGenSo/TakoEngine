@@ -152,6 +152,11 @@ namespace Tako {
     void Select(BaseScene& scene, uint64_t id, bool adds, bool extends);
 
     /// <summary>
+    /// 今のシーンの Actor を全部選ぶ（最後に選んだ物は、Hierarchy の一番下）
+    /// </summary>
+    void SelectAll();
+
+    /// <summary>
     /// 選んだ全部を消す（Update で行う）
     /// </summary>
     void RequestDestroySelection();
@@ -233,6 +238,11 @@ namespace Tako {
     static BaseScene* GetScene();
 
     /// <summary>
+    /// Edit 中だけ Undo / Redo で戻せる（Play 中に戻すと、実行中のシーンを Play 前の内容で上書きする）
+    /// </summary>
+    static bool CanRestoreScene();
+
+    /// <summary>
     /// 最後に選んだ Actor
     /// </summary>
     Actor* GetSelected() const;
@@ -265,9 +275,10 @@ namespace Tako {
     bool                                                    wasPlaying_ = false;
 
     //未保存と Undo（Edit 中だけ。Play 中の変更は Stop で捨てる。残す印を付けた値だけ、Stop の後に 1 手として入る）
-    EditTracker<> tracker_{ { [this] { return SerializeScene(); },
-                              [this](const std::string& text) { RestoreScene(text); },
-                              [this] { return GetSceneRevision(); } } };
+    EditTracker<> tracker_{ "Scene", { [this] { return SerializeScene(); },
+                                       [this](const std::string& text) { RestoreScene(text); },
+                                       [this] { return GetSceneRevision(); },
+                                       [] { return CanRestoreScene(); } } };
   };
 
 } // namespace Tako

@@ -240,8 +240,6 @@ void BehaviorTreeEditor::DrawToolbar() {
     nodeOffsetX = 100.0f;
     nodeOffsetY = 100.0f;
   }
-  ImGui::SameLine();
-  treeTracker_.DrawButtons();
 
   // === マルチツリー: 切替ドロップダウン + 新規/削除 ===
   ImGui::SameLine();

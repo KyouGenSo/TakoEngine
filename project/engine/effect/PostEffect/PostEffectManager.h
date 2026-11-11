@@ -138,7 +138,8 @@ namespace Tako {
     /// <summary>
     /// ImGui デバッグ UI を描画
     /// </summary>
-    void DrawImgui();
+    /// <param name="isOpen">ウィンドウ表示フラグ（DebugUIManager の表示状態を共有する）</param>
+    void DrawImgui(bool* isOpen);
 
     /// <summary>
     /// 現在のスタックと各エフェクトのパラメータを resources/Json/PostEffects/{name}.json に保存する（一時エフェクトは除く）
@@ -276,7 +277,7 @@ namespace Tako {
     uint32_t             selectedActiveEffect_    = 0;  ///< 選択中のインスタンス id
     std::array<char, 64> profileName_{};                ///< プロファイル名入力欄。LoadProfile で読み込んだ名前になる
 #ifdef _DEBUG
-    EditTracker<>        profileTracker_{ { [this] { return SerializeProfile(); }, [this](const std::string& profile) { ApplyProfile(profile); } } };
+    EditTracker<>        profileTracker_{ "PostEffect Editor", { [this] { return SerializeProfile(); }, [this](const std::string& profile) { ApplyProfile(profile); } } };
     UnsavedChangesPrompt unsavedPrompt_;  ///< 未保存のまま別のプロファイルを読み込むときの確認
 #endif
   };

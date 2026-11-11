@@ -174,8 +174,6 @@ namespace Tako {
     if (ImGui::Button("Save")) {
       Save();
     }
-    ImGui::SameLine();
-    tracker_.DrawButtons();
     ImGui::TextDisabled("Assign to objects in Inspector > MeshComponent > Rendering");
 
     // シェーダーと描画設定・テクスチャのファイル名は保存内容を書き換えて当てはめる（値は名前で引き継がれる）
@@ -256,9 +254,7 @@ namespace Tako {
     if (ImGui::Button("Save")) {
       Save();
     }
-    ImGui::SameLine();
-    tracker_.DrawButtons();
-    ImGui::TextDisabled("Add to the stack in PostEffect Settings (Materials). Edits apply to every effect that uses this material");
+    ImGui::TextDisabled("Add to the stack in PostEffect Editor (Materials). Edits apply to every effect that uses this material");
 
     // シェーダーとテクスチャのファイル名は保存内容を書き換えて当てはめる（値は名前で引き継がれる）
     json              current      = json::parse(library->Serialize(selected_));

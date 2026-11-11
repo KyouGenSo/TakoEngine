@@ -11,6 +11,7 @@
 #include <memory>
 #include <span>
 #include "ShortcutTable.h"
+#include "EditTracker.h"
 #include "PrimitiveEditor.h"
 #include "ParticleEditor.h"
 #include "MaterialEditor.h"
@@ -241,6 +242,11 @@ namespace Tako {
     void DrawMainMenuBar();
 
     /// <summary>
+    /// メニューかキーで選ばれた Undo / Redo を行う。このフレームの操作を各エディタが履歴に積み終えた後（Draw の最後）に呼ぶ
+    /// </summary>
+    void ApplyHistoryRequest();
+
+    /// <summary>
     /// メニューバー右端の一時停止表示と FPS / フレーム時間
     /// </summary>
     void DrawFrameStats();
@@ -340,6 +346,10 @@ namespace Tako {
 
     //シーン遷移 UI 用
     char sceneNameBuffer_[128] = "";  ///< シーン名入力バッファ
+
+    //全エディタで 1 本の Undo / Redo（履歴を持つツールより前に宣言し、後で破棄する）
+    UndoJournal    undoJournal_;
+    HistoryCommand historyRequest_ = HistoryCommand::None;  ///< メニューで選んだ操作。Draw の最後に行う
 
     //ツール
     PrimitiveEditor       primitiveEditor_;

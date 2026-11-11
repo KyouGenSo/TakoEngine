@@ -42,7 +42,7 @@ namespace Tako {
   ///     "Values": { "color": [0, 1, 1, 0.5] }, "Textures": { "gTexture": "uvChecker.png" } }
   ///   Shader 以外は省略でき、省略した描画設定はシェーダーの値を使い（シェーダーを直すと追従する）、テクスチャは白になる。
   ///   Shader がポストエフェクトならポストエフェクトのマテリアル（UE の Post Process Material の Material Instance に相当）。
-  ///   使うのは Values と Textures だけで、PostEffect Settings や PostEffectManager::AddMaterialEffect でスタックに置く。書かないテクスチャは .shader.json の Textures のまま
+  ///   使うのは Values と Textures だけで、PostEffect Editor や PostEffectManager::AddMaterialEffect でスタックに置く。書かないテクスチャは .shader.json の Textures のまま
   /// </summary>
   class MaterialLibrary {
   private: //定数

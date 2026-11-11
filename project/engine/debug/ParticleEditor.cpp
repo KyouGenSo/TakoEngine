@@ -88,9 +88,6 @@ namespace Tako {
           operationStart_ = { selectedEmitterName_, emitter, SerializeEmitter(*emitterManager_, emitter).dump() };
         }
 
-        // 押された Undo / Redo は、操作の比較の後に行う（戻した内容を編集として数えないため）
-        HistoryCommand historyCommand = DrawHistoryButtons(history_.CanUndo(), history_.CanRedo());
-
         // アクティブパーティクル数の表示
         {
           uint32_t activeCount = GPUParticle::GetInstance()->GetActiveParticleCount();
@@ -132,12 +129,6 @@ namespace Tako {
 
         if (editGate_.EndOperation()) {
           FinishEmitterOperation();
-        }
-        if (historyCommand == HistoryCommand::None) {
-          historyCommand = ReadHistoryShortcut();
-        }
-        if (historyCommand != HistoryCommand::None) {
-          RestoreEmitterEdit(historyCommand == HistoryCommand::Undo);
         }
 
         // Save ボタンは閉じられる Preset ヘッダーの中にあるので、ウィンドウ直下で受ける

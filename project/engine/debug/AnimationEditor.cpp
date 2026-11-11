@@ -328,13 +328,6 @@ namespace Tako {
     }
 
     if (ImGui::BeginMenu("Edit", clip_ != nullptr)) {
-      if (ImGui::MenuItem("Undo", "Ctrl+Z", false, tracker_.CanUndo())) {
-        tracker_.Undo();
-      }
-      if (ImGui::MenuItem("Redo", "Ctrl+Y", false, tracker_.CanRedo())) {
-        tracker_.Redo();
-      }
-      ImGui::Separator();
       if (ImGui::MenuItem("Copy", "Ctrl+C", false, hasSelection)) {
         CopySelection();
       }
@@ -409,8 +402,6 @@ namespace Tako {
       RequestReload();
     }
     ImGui::SetItemTooltip("Discard unsaved changes and read the file again.");
-    ImGui::SameLine();
-    tracker_.DrawButtons();
     ImGui::EndDisabled();
 
     if (clip_) {

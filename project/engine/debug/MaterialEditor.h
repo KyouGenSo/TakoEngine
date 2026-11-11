@@ -17,7 +17,7 @@ namespace Tako {
 
   /// <summary>
   /// .mat.json の編集ウィンドウ。値の UI はシェーダーのリフレクションから作る。
-  /// 描画物のマテリアルは Inspector の MeshComponent > Rendering で、ポストエフェクトのマテリアルは PostEffect Settings で使う
+  /// 描画物のマテリアルは Inspector の MeshComponent > Rendering で、ポストエフェクトのマテリアルは PostEffect Editor で使う
   /// </summary>
   class MaterialEditor {
   public: //メンバー関数
@@ -68,8 +68,8 @@ namespace Tako {
     std::string          newShader_  = "Lit";    ///< 新規作成に使うシェーダー
 
     //未保存と Undo
-    EditTracker<>        tracker_{ { [this] { return MaterialLibrary::GetInstance()->Serialize(selected_); },
-                                     [this](const std::string& text) { MaterialLibrary::GetInstance()->Apply(selected_, text); } } };
+    EditTracker<>        tracker_{ "Material Editor", { [this] { return MaterialLibrary::GetInstance()->Serialize(selected_); },
+                                                        [this](const std::string& text) { MaterialLibrary::GetInstance()->Apply(selected_, text); } } };
     UnsavedChangesPrompt unsavedPrompt_;  ///< 未保存のまま別のマテリアルを開くときの確認
   };
 

@@ -426,8 +426,6 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     if (ImGui::Button("Save")) {
       Save();
     }
-    ImGui::SameLine();
-    tracker_.DrawButtons();
     ImGui::EndDisabled();
     ImGui::SameLine();
     if (ImGui::Button("Reload")) {

@@ -158,7 +158,7 @@ namespace Tako {
     char                             exportNameBuffer_[128] = "";     ///< OBJ 出力名（拡張子なし）
 
     //プリセットの未保存と Undo
-    EditTracker<>        presetTracker_{ { [this] { return SerializePreset(); }, [this](const std::string& preset) { ApplyPreset(preset); } } };
+    EditTracker<>        presetTracker_{ "Primitive Editor", { [this] { return SerializePreset(); }, [this](const std::string& preset) { ApplyPreset(preset); } } };
     UnsavedChangesPrompt unsavedPrompt_;  ///< 未保存のまま別のプリセットを読み込むときの確認
 
     //専用ビューポート/カメラ（初回オープン時に生成）

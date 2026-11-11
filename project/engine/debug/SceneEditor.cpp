@@ -574,8 +574,17 @@ namespace Tako {
     if (!scene) {
       return;
     }
+    // 予約した操作は UI の区間の外で行うので、ここで前後を比べて Undo の 1 手にする（Play 中の変更は積まない）
+    const bool tracks = !requests.empty() && IsEditing();
+    if (tracks) {
+      SyncTracker(*scene);
+    }
+    const std::string before = tracks ? SerializeScene() : std::string();
     for (const auto& request : requests) {
       request(*scene);
+    }
+    if (tracks) {
+      tracker_.RecordExternalChange(before);
     }
 
     // 消えた Actor を選択から外す
@@ -645,7 +654,7 @@ namespace Tako {
     if (applied > 0) {
       scene.MarkChanged();
       tracker_.RecordExternalChange(before);
-      console->AddLog("Kept " + std::to_string(applied) + " value set(s) from Play (Ctrl+Z in Scene Hierarchy to undo, Ctrl+S to save)", DebugUIManager::LogType::Info);
+      console->AddLog("Kept " + std::to_string(applied) + " value set(s) from Play (Ctrl+Z to undo, Ctrl+S in Scene Hierarchy to save)", DebugUIManager::LogType::Info);
     }
   }
 
@@ -668,7 +677,13 @@ namespace Tako {
       { ImGuiKey_Delete, ImGuiInputFlags_None, "Delete the selected actors", [](SceneEditor& editor) { editor.RequestDestroySelection(); } },
       { ImGuiMod_Ctrl | ImGuiKey_D, ImGuiInputFlags_None, "Duplicate the selected actors and their children", [](SceneEditor& editor) { editor.RequestDuplicateSelection(); } },
       { ImGuiMod_Ctrl | ImGuiKey_C, ImGuiInputFlags_None, "Copy the selected actors and their children", [](SceneEditor& editor) { editor.CopySelection(); } },
+      { ImGuiMod_Ctrl | ImGuiKey_X, ImGuiInputFlags_None, "Cut the selected actors and their children", [](SceneEditor& editor) {
+        editor.CopySelection();
+        editor.RequestDestroySelection();
+      } },
       { ImGuiMod_Ctrl | ImGuiKey_V, ImGuiInputFlags_None, "Paste the copied actors (also into another scene)", [](SceneEditor& editor) { editor.PasteClipboard(); } },
+      { ImGuiMod_Ctrl | ImGuiKey_A, ImGuiInputFlags_None, "Select every actor", [](SceneEditor& editor) { editor.SelectAll(); } },
+      { ImGuiKey_Escape, ImGuiInputFlags_None, "Deselect", [](SceneEditor& editor) { editor.ClearSelection(); } },
       { ImGuiKey_None, ImGuiInputFlags_None, "Hierarchy / Debug Viewport: add to or remove from the selection", nullptr, "Ctrl + LMB" },
       { ImGuiKey_None, ImGuiInputFlags_None, "Hierarchy: select every row between the last selected one and this one", nullptr, "Shift + LMB" },
       { ImGuiKey_None, ImGuiInputFlags_None, "Debug Viewport: select the actor under the cursor (click its mesh)", nullptr, "LMB" },
@@ -805,6 +820,19 @@ namespace Tako {
     }
   }
 
+  void SceneEditor::SelectAll()
+  {
+    BaseScene* scene = GetScene();
+    if (!scene) {
+      return;
+    }
+    selection_.clear();
+    for (const Actor* actor : GetHierarchyOrder(*scene)) {
+      selection_.push_back(actor->GetId());
+    }
+    selected_ = selection_.empty() ? 0 : selection_.back();
+  }
+
   void SceneEditor::RequestDestroySelection()
   {
     // 子は親と一緒に消える
@@ -824,7 +852,9 @@ namespace Tako {
     // 選んだ木を 1 つの配列に並べる（貼るときに、それぞれの根が元の親の下に入る）
     nlohmann::json actors = nlohmann::json::array();
     for (Actor* root : roots) {
-      for (nlohmann::json& entry : SaveActorTree(*root)["actors"]) {
+      // 範囲 for の式に直接書くと、戻り値の一時オブジェクトがループの前に破棄される
+      nlohmann::json saved = SaveActorTree(*root);
+      for (nlohmann::json& entry : saved["actors"]) {
         actors.push_back(std::move(entry));
       }
     }
@@ -1194,6 +1224,11 @@ namespace Tako {
   BaseScene* SceneEditor::GetScene()
   {
     return SceneManager::GetInstance()->GetCurrentScene();
+  }
+
+  bool SceneEditor::CanRestoreScene()
+  {
+    return IsEditing();
   }
 
   Actor* SceneEditor::GetSelected() const

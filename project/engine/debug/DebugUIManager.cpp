@@ -68,7 +68,7 @@ namespace Tako {
       { "Scene Hierarchy / Inspector (Actors)",               [] { DrawShortcutTable(SceneEditor::Shortcuts()); } },
       { "Shader Editor",                                      [] { DrawShortcutTable(ShaderEditor::Shortcuts()); } },
       { "Render Pipeline",                                    [] { DrawShortcutTable(RenderPipelineWindow::Shortcuts()); } },
-      { "PostEffect",                                         [] { DrawShortcutTable(PostEffectManager::Shortcuts()); } },
+      { "PostEffect Editor",                                  [] { DrawShortcutTable(PostEffectManager::Shortcuts()); } },
       { "Engine Settings",                                    [] { DrawShortcutTable(EngineSettingsWindow::Shortcuts()); } },
       { "Behavior Tree Editor",                               [] { DrawShortcutTable(BehaviorTreeEditor::Shortcuts()); } },
       { "Assets",                                             [] { DrawShortcutTable(AssetBrowser::Shortcuts()); } },
@@ -154,6 +154,9 @@ namespace Tako {
   }
 
   void DebugUIManager::Initialize() {
+    RunUndoJournalSelfTest();
+    UndoJournal::Current() = &undoJournal_;
+
     // 個人設定に起動時ウィンドウが保存されていない場合の既定（LoadEditorSettings で表示状態へ適用される）
     for (Window window : { Window::GameViewport, Window::SceneHierarchy, Window::Inspector, Window::Console, Window::Assets }) {
       startupWindows_[static_cast<size_t>(window)] = true;
@@ -204,7 +207,7 @@ namespace Tako {
     SetAssetOpener("CameraAnimation", opener(Window::CameraAnimationEditor, "Camera Animation Editor", [this](const std::string& name) { cameraAnimationEditor_.RequestOpen(name); }));
     SetAssetOpener("UILayout", opener(Window::UIEditor, "UI Editor", [this](const std::string& name) { uiLayoutEditor_.OpenLayout(name); }));
     SetAssetOpener("ParticlePreset", opener(Window::ParticleEditor, "Particle Editor", [this](const std::string& name) { particleEditor_.OpenPreset(name); }));
-    SetAssetOpener("PostEffectProfile", opener(Window::PostEffect, "PostEffect Manager", [](const std::string& name) { PostEffectManager::GetInstance()->LoadProfile(name); }));
+    SetAssetOpener("PostEffectProfile", opener(Window::PostEffect, "PostEffect Editor",[](const std::string& name) { PostEffectManager::GetInstance()->LoadProfile(name); }));
     SetAssetOpener("Prefab", opener(Window::SceneHierarchy, "Scene Hierarchy", [this](const std::string& name) { sceneEditor_.RequestSpawn(name); }));
     SetAssetOpener("Scene", [this](const std::string& name) { RequestSceneChange(name); });
     SetAssetOpener("BehaviorTree", [this](const std::string& name) {
@@ -216,6 +219,8 @@ namespace Tako {
   }
 
   void DebugUIManager::Finalize() {
+    // この後に消える履歴（ゲームが持つエディタなど）が、破棄した順番に触らないようにする
+    UndoJournal::Current() = nullptr;
     WinApp::GetInstance()->SetCloseHandler(nullptr);
     Logger::SetSink(nullptr);
     ClearLogs();
@@ -306,11 +311,12 @@ namespace Tako {
 
     // PostEffect は独自の描画を持つ
     if (WindowFlag(Window::PostEffect)) {
-      PostEffectManager::GetInstance()->DrawImgui();
+      PostEffectManager::GetInstance()->DrawImgui(&WindowFlag(Window::PostEffect));
     }
 
     DrawExitConfirmation();
     DrawNewScriptPopup();
+    ApplyHistoryRequest();
 
     // 窓を初めて開いたフレームはまだ作られていないので、見つかるまで次のフレームでも試す
     if (focusRequest_ && ImGui::FindWindowByName(focusRequest_)) {
@@ -361,7 +367,31 @@ namespace Tako {
     }
   }
 
+  void DebugUIManager::ApplyHistoryRequest() {
+    HistoryCommand command = std::exchange(historyRequest_, HistoryCommand::None);
+    // 文字の入力中の Ctrl+Z は、入力欄の Undo に任せる
+    if (command == HistoryCommand::None && !ImGui::GetIO().WantTextInput) {
+      command = ReadHistoryShortcut();
+    }
+    // 操作の途中（EditGate::EndOperation と同じ判定）と、確認モーダルの間は戻さない
+    if (command == HistoryCommand::None || ImGui::IsAnyItemActive() || ImGui::IsAnyMouseDown() || ImGui::GetTopMostPopupModal()) {
+      return;
+    }
+    undoJournal_.Apply(command == HistoryCommand::Undo);
+  }
+
   void DebugUIManager::DrawMainMenuBar() {
+    MenuTarget& target = GetMenuTarget();
+    // 前のフレームに相手が取り出さなかった操作は捨てる（相手が描かれなかったときに、後から走らないようにする）
+    target.pending = ImGuiKey_None;
+
+    // 直前にフォーカスのあったエディタへ、そのキーが押されたのと同じ操作を送る項目。相手の表に無ければ押せない
+    const auto targetItem = [&target](const char* label, ImGuiKeyChord chord) {
+      if (ImGui::MenuItem(label, ImGui::GetKeyChordName(chord), false, target.Has(chord))) {
+        target.pending = chord;
+      }
+    };
+
     if (ImGui::BeginMainMenuBar()) {
       if (ImGui::BeginMenu("File")) {
         SceneManager* sceneManager = SceneManager::GetInstance();
@@ -380,6 +410,12 @@ namespace Tako {
         }
 
         ImGui::Separator();
+        targetItem(std::format("Save{}###Save", target.name.empty() ? "" : std::format(" ({})", target.name)).c_str(), ImGuiMod_Ctrl | ImGuiKey_S);
+
+        ImGui::Separator();
+        ImGui::MenuItem("Engine Settings...", nullptr, &WindowFlag(Window::EngineSettings));
+
+        ImGui::Separator();
         if (ImGui::MenuItem("Exit", "Alt+F4")) {
           if (ConfirmExit() && pEndFlag_) *pEndFlag_ = true;
         }
@@ -389,13 +425,38 @@ namespace Tako {
       MenuBarSeparator();
 
       if (ImGui::BeginMenu("Edit")) {
-        ImGui::MenuItem("Engine Settings...", nullptr, &WindowFlag(Window::EngineSettings));
+        // 全エディタで 1 本の履歴。括弧は、次に戻る手を積んだエディタ
+        const auto historyItem = [this](const char* label, ImGuiKeyChord chord, bool isUndo) {
+          const UndoJournal::Client* client  = undoJournal_.Peek(isUndo);
+          const bool                 enabled = undoJournal_.CanApply(isUndo);
+          const std::string          text    = std::format("{}{}###{}", label, client ? std::format(" ({})", client->GetName()) : "", label);
+          if (ImGui::MenuItem(text.c_str(), ImGui::GetKeyChordName(chord), false, enabled)) {
+            historyRequest_ = isUndo ? HistoryCommand::Undo : HistoryCommand::Redo;
+          }
+          if (client && !enabled && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+            ImGui::SetTooltip("%s cannot be restored now (stop playing first)", client->GetName());
+          }
+        };
+        historyItem("Undo", ImGuiMod_Ctrl | ImGuiKey_Z, true);
+        historyItem("Redo", ImGuiMod_Ctrl | ImGuiKey_Y, false);
+
+        ImGui::Separator();
+        ImGui::TextDisabled("%s", target.name.empty() ? "No editor focused" : target.name.c_str());
+        targetItem("Cut", ImGuiMod_Ctrl | ImGuiKey_X);
+        targetItem("Copy", ImGuiMod_Ctrl | ImGuiKey_C);
+        targetItem("Paste", ImGuiMod_Ctrl | ImGuiKey_V);
+        targetItem("Duplicate", ImGuiMod_Ctrl | ImGuiKey_D);
+        targetItem("Delete", ImGuiKey_Delete);
+
+        ImGui::Separator();
+        targetItem("Select All", ImGuiMod_Ctrl | ImGuiKey_A);
+        targetItem("Deselect All", ImGuiKey_Escape);
         ImGui::EndMenu();
       }
 
       MenuBarSeparator();
 
-      if (ImGui::BeginMenu("Window")) {
+      if (ImGui::BeginMenu("View")) {
         ImGui::SeparatorText("Main Windows");
         ImGui::MenuItem("Debug Viewport", "F1", &WindowFlag(Window::DebugViewport));
         ImGui::MenuItem("Scene Hierarchy", "F2", &WindowFlag(Window::SceneHierarchy));
@@ -404,10 +465,22 @@ namespace Tako {
         ImGui::MenuItem("Console", "F5", &WindowFlag(Window::Console));
         ImGui::MenuItem("Performance", "F6", &WindowFlag(Window::Performance));
         ImGui::MenuItem("Assets", nullptr, &WindowFlag(Window::Assets));
+        ImGui::SeparatorText("Editors");
+        ImGui::MenuItem("Particle Editor", nullptr, &WindowFlag(Window::ParticleEditor));
+        ImGui::MenuItem("Primitive Editor", nullptr, &WindowFlag(Window::PrimitiveEditor));
+        ImGui::MenuItem("Material Editor", nullptr, &WindowFlag(Window::MaterialEditor));
+        ImGui::MenuItem("Shader Editor", nullptr, &WindowFlag(Window::ShaderEditor));
+        ImGui::MenuItem("Render Pipeline", nullptr, &WindowFlag(Window::RenderPipeline));
+        ImGui::MenuItem("PostEffect Editor", nullptr, &WindowFlag(Window::PostEffect));
+        ImGui::MenuItem("UI Editor", nullptr, &WindowFlag(Window::UIEditor));
+        ImGui::MenuItem("Camera Animation Editor", nullptr, &WindowFlag(Window::CameraAnimationEditor));
+        ImGui::MenuItem("Animation Editor", nullptr, &WindowFlag(Window::AnimationEditor));
+        if (ImGui::MenuItem("Behavior Tree Editor", nullptr, behaviorTreeEditor_.IsVisible())) {
+          behaviorTreeEditor_.SetVisible(!behaviorTreeEditor_.IsVisible());
+        }
         ImGui::SeparatorText("Debug Windows");
         ImGui::MenuItem("Input Debug", nullptr, &WindowFlag(Window::InputDebug));
         ImGui::MenuItem("Collision Debug", nullptr, &WindowFlag(Window::CollisionDebug));
-        ImGui::MenuItem("PostEffect Settings", nullptr, &WindowFlag(Window::PostEffect));
         ImGui::SeparatorText("Layout");
         if (ImGui::MenuItem("Show Main Windows", "F10")) {
           for (Window window : kMainWindows) {
@@ -418,23 +491,6 @@ namespace Tako {
           for (Window window : kMainWindows) {
             ToggleWindow(window);
           }
-        }
-        ImGui::EndMenu();
-      }
-
-      MenuBarSeparator();
-
-      if (ImGui::BeginMenu("Tools")) {
-        ImGui::MenuItem("Particle Editor", nullptr, &WindowFlag(Window::ParticleEditor));
-        ImGui::MenuItem("Primitive Editor", nullptr, &WindowFlag(Window::PrimitiveEditor));
-        ImGui::MenuItem("Material Editor", nullptr, &WindowFlag(Window::MaterialEditor));
-        ImGui::MenuItem("Shader Editor", nullptr, &WindowFlag(Window::ShaderEditor));
-        ImGui::MenuItem("Render Pipeline", nullptr, &WindowFlag(Window::RenderPipeline));
-        ImGui::MenuItem("UI Editor", nullptr, &WindowFlag(Window::UIEditor));
-        ImGui::MenuItem("Camera Animation Editor", nullptr, &WindowFlag(Window::CameraAnimationEditor));
-        ImGui::MenuItem("Animation Editor", nullptr, &WindowFlag(Window::AnimationEditor));
-        if (ImGui::MenuItem("Behavior Tree Editor", nullptr, behaviorTreeEditor_.IsVisible())) {
-          behaviorTreeEditor_.SetVisible(!behaviorTreeEditor_.IsVisible());
         }
         ImGui::EndMenu();
       }
@@ -1092,7 +1148,7 @@ namespace Tako {
       ImGui::Text("Resolution: %d x %d", WinApp::clientWidth, WinApp::clientHeight);
 
       ImGui::SeparatorText("Shortcuts");
-      ImGui::TextDisabled("Editor shortcuts work in the focused window.");
+      ImGui::TextDisabled("Editor shortcuts work in the focused window. Undo / Redo share one history across all editors.");
       for (const auto& [section, drawTable] : kShortcutSections) {
         const ImGuiTreeNodeFlags flags = section == kShortcutSections[0].first ? ImGuiTreeNodeFlags_DefaultOpen : ImGuiTreeNodeFlags_None;
         if (ImGui::CollapsingHeader(section, flags)) {

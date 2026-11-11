@@ -91,8 +91,6 @@ namespace Tako {
       Save();
     }
     ImGui::SameLine();
-    tracker_.DrawButtons();
-    ImGui::SameLine();
     ImGui::TextDisabled(tracker_.IsEdited() ? "RenderPasses.json *" : "RenderPasses.json");
     ImGui::TextDisabled("Each pass draws the named objects again with the material at the event (Replace: only there)");
 

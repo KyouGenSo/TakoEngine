@@ -200,8 +200,8 @@ namespace Tako {
     CameraAnimation::Pose                lastPreviewPose_;              ///< 直近にメインカメラへ書いた姿勢。終えたとき、ゲームが書き直した値は戻さない
 
     //未保存と Undo
-    EditTracker<>        tracker_{ { [this] { return animation_ ? animation_->ToJson().dump() : std::string(); },
-                                     [this](const std::string& state) { if (animation_) animation_->FromJson(nlohmann::json::parse(state)); } } };
+    EditTracker<>        tracker_{ "Camera Animation Editor", { [this] { return animation_ ? animation_->ToJson().dump() : std::string(); },
+                                                                [this](const std::string& state) { if (animation_) animation_->FromJson(nlohmann::json::parse(state)); } } };
     UnsavedChangesPrompt unsavedPrompt_;  ///< 未保存のまま別のアニメーションを開く・読み直すときの確認
 
     //名前入力ポップアップ

@@ -52,8 +52,8 @@ namespace Tako {
     bool* isOpen_ = nullptr;  ///< ウィンドウ表示フラグ（DebugUIManager 所有）
 
     //未保存と Undo
-    EditTracker<> tracker_{ { [] { return RenderPipeline::GetInstance()->SerializeObjectPasses(); },
-                              [](const std::string& text) { RenderPipeline::GetInstance()->ApplyObjectPasses(text); } } };
+    EditTracker<> tracker_{ "Render Pipeline", { [] { return RenderPipeline::GetInstance()->SerializeObjectPasses(); },
+                                                 [](const std::string& text) { RenderPipeline::GetInstance()->ApplyObjectPasses(text); } } };
   };
 
 } // namespace Tako

@@ -229,7 +229,7 @@ namespace Tako {
     bool isRebuildRequired_ = false;  ///< Save の改名でソースを書き換えた。実行中のコードは再ビルド・再起動まで古い名前のまま
 
     //編集の検出・未保存の印・Undo（Save と Reload で未保存を外す）
-    EditTracker<SettingsState> settingsTracker_{ { [this] { return CaptureSettings(); }, [this](const SettingsState& state) { RestoreSettings(state); } } };
+    EditTracker<SettingsState> settingsTracker_{ "Engine Settings", { [this] { return CaptureSettings(); }, [this](const SettingsState& state) { RestoreSettings(state); } } };
   };
 
 } // namespace Tako

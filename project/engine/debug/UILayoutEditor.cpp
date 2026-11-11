@@ -154,6 +154,13 @@ namespace Tako {
       }
     }
 
+    void CollectNames(const UIElement& node, std::vector<std::string>& out) {
+      for (const std::unique_ptr<UIElement>& child : node.children) {
+        out.push_back(child->name);
+        CollectNames(*child, out);
+      }
+    }
+
     bool ContainsIgnoreCase(const std::string& text, const std::string& pattern) {
       const auto isSame = [](unsigned char a, unsigned char b) { return std::tolower(a) == std::tolower(b); };
       return !std::ranges::search(text, pattern, isSame).empty();
@@ -432,12 +439,14 @@ namespace Tako {
     }
 
     // 比べた後に保存して、このフレームの編集も保存済みにする。ビューポートのフォーカスは ImGui のルーティングで届かないので自前で判定する。
-    // 文字の入力中は入力欄の Undo やコピーに任せる
-    if (layout && isFocused && !ImGui::GetIO().WantTextInput) {
-      ProcessShortcuts(Shortcuts(), *this, ShortcutScope::Global);
-      if (const HistoryCommand command = ReadHistoryShortcut(ShortcutScope::Global); command != HistoryCommand::None) {
-        Request(command == HistoryCommand::Undo ? PendingOp::Undo : PendingOp::Redo, {});
+    // 文字の入力中は入力欄のコピーなどに任せる
+    if (layout && !ImGui::GetIO().WantTextInput) {
+      // ビューポートにフォーカスがある間も、メインメニューの相手として名乗る
+      const ImGuiKeyChord menuChord = ClaimMenuTarget(ImHashStr("UI Editor"), "UI Editor", isFocused, Shortcuts());
+      if (isFocused) {
+        ProcessShortcuts(Shortcuts(), *this, ShortcutScope::Global);
       }
+      RunShortcut(Shortcuts(), *this, menuChord);
     }
   }
 
@@ -788,6 +797,12 @@ namespace Tako {
     isPreviewFit_     = true;
   }
 
+  void UILayoutEditor::SelectAll(UILayout& layout) {
+    std::vector<std::string> names;
+    CollectNames(layout.GetRoot(), names);
+    SetSelection(std::move(names));
+  }
+
   std::vector<UIElement*> UILayoutEditor::SelectedTopLevel(UILayout& layout) const {
     std::vector<UIElement*> elements;
     CollectTopLevel(layout.GetRoot(), selection_, elements);
@@ -871,13 +886,6 @@ namespace Tako {
       Request(PendingOp::Reload, {});
     }
     ImGui::SetItemTooltip("Discard unsaved changes to the layout and the shared texture 9-slice settings.");
-    const bool hasHistory = layout && layout == historyLayout_;
-    ImGui::SameLine();
-    switch (DrawHistoryButtons(hasHistory && history_.CanUndo(), hasHistory && history_.CanRedo())) {
-    case HistoryCommand::Undo: Request(PendingOp::Undo, {}); break;
-    case HistoryCommand::Redo: Request(PendingOp::Redo, {}); break;
-    default: break;
-    }
     ImGui::EndDisabled();
 
     ImGui::Checkbox("Viewport Edit", &isViewportEditEnabled_);
@@ -2196,6 +2204,8 @@ namespace Tako {
       } },
       { ImGuiMod_Ctrl | ImGuiKey_D, ImGuiInputFlags_None, "Duplicate",                                                  [](UILayoutEditor& editor) { editor.RequestOnSelected(PendingOp::Duplicate); } },
       { ImGuiKey_Delete,            ImGuiInputFlags_None, "Delete",                                                     [](UILayoutEditor& editor) { editor.RequestOnSelected(PendingOp::Remove); } },
+      { ImGuiMod_Ctrl | ImGuiKey_A, ImGuiInputFlags_None, "Select All",                                                 [](UILayoutEditor& editor) { editor.SelectAll(*editor.FindLayout()); } },
+      { ImGuiKey_Escape,            ImGuiInputFlags_None, "Deselect",                                                   [](UILayoutEditor& editor) { editor.SetSelection({}); } },
       { .description = "Move the selection 1 px (Shift: Grid Size)",     .keyLabel = "Arrow keys" },
       { .description = "Add to or remove from the selection (Viewport)", .keyLabel = "Shift+click" },
       { .description = "Select several / a range (Hierarchy)",           .keyLabel = "Ctrl+click / Shift+click" },

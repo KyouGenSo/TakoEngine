@@ -249,7 +249,7 @@ namespace Tako {
 
     //編集の検出と Undo / Redo（未保存の印と同じく、エミッターの編集だけを持つ）
     EditGate                 editGate_;
-    EditHistory<EmitterEdit> history_;
+    EditHistory<EmitterEdit> history_{ "Particle Editor", [this](bool isUndo) { RestoreEmitterEdit(isUndo); } };
     EmitterEdit              operationStart_;  ///< 進行中の操作の前の、選択中のエミッターの内容
 
     //パーティクル可視化設定

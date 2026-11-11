@@ -247,6 +247,11 @@ namespace Tako {
     void SetSelection(std::vector<std::string> names);
 
     /// <summary>
+    /// グループの中も含めて全部の要素を選ぶ
+    /// </summary>
+    void SelectAll(UILayout& layout);
+
+    /// <summary>
     /// 選択中の要素を前順に集める。選択中の要素の子孫は、親と一緒に動くので除く
     /// </summary>
     std::vector<UIElement*> SelectedTopLevel(UILayout& layout) const;
@@ -408,7 +413,7 @@ namespace Tako {
     std::string cachedSlices_;          ///< 最後に SerializeTextureSlices した内容
 
     //Undo / Redo（開いているレイアウト 1 つの編集だけを持つ）
-    EditHistory<EditState> history_;
+    EditHistory<EditState> history_{ "UI Editor", [this](bool isUndo) { Request(isUndo ? PendingOp::Undo : PendingOp::Redo, {}); } };
     const UILayout*        historyLayout_ = nullptr;  ///< 履歴の対象。別のインスタンスを編集したら履歴を捨てる
     std::string            clipboard_;                ///< コピーした要素（UILayout::SerializeElements）
 

@@ -50,17 +50,17 @@ namespace Tako {
       { Window::Console,               "Console" },
       { Window::Performance,           "Performance" },
       { Window::Assets,                "Assets" },
-      { Window::InputDebug,            "Input Debug" },
-      { Window::CollisionDebug,        "Collision Debug" },
-      { Window::PostEffect,            "PostEffect Settings" },
       { Window::ParticleEditor,        "Particle Editor" },
       { Window::PrimitiveEditor,       "Primitive Editor" },
       { Window::MaterialEditor,        "Material Editor" },
       { Window::ShaderEditor,          "Shader Editor" },
       { Window::RenderPipeline,        "Render Pipeline" },
+      { Window::PostEffect,            "PostEffect Editor" },
       { Window::UIEditor,              "UI Editor" },
       { Window::CameraAnimationEditor, "Camera Animation Editor" },
       { Window::AnimationEditor,       "Animation Editor" },
+      { Window::InputDebug,            "Input Debug" },
+      { Window::CollisionDebug,        "Collision Debug" },
     };
 
     // %APPDATA%/TakoEngine/EditorSettings.json。ユーザー単位で複数プロジェクトから共有する。取得できなければ空
@@ -389,8 +389,6 @@ namespace Tako {
         }
         settingsTracker_.Reset();
       }
-      ImGui::SameLine();
-      settingsTracker_.DrawButtons();
       ImGui::SameLine();
       ImGui::TextDisabled("%s", selectedGameSettings_ ? GameSettings::GetPath(*selectedGameSettings_).c_str() : ProjectSettings::kFilePath);
       if (ImGui::BeginItemTooltip()) {

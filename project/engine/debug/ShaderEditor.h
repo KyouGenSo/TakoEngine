@@ -104,8 +104,8 @@ namespace Tako {
     Kind                            newKind_ = Kind::Object;
 
     //未保存と Undo
-    EditTracker<>        tracker_{ { [this] { return document_.dump(4); },
-                                     [this](const std::string& text) { document_ = nlohmann::json::parse(text, nullptr, false); ApplyDocument(); } } };
+    EditTracker<>        tracker_{ "Shader Editor", { [this] { return document_.dump(4); },
+                                                      [this](const std::string& text) { document_ = nlohmann::json::parse(text, nullptr, false); ApplyDocument(); } } };
     UnsavedChangesPrompt unsavedPrompt_;  ///< 未保存のまま別のファイルを開くときの確認
   };
 

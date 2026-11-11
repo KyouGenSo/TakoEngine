@@ -570,7 +570,7 @@ namespace Tako {
   {
 #ifdef _DEBUG
     if (profileTracker_.IsEdited()) {
-      out.push_back(std::format("PostEffect Manager: {}", profileName_[0] != '\0' ? profileName_.data() : "(unnamed profile)"));
+      out.push_back(std::format("PostEffect Editor: {}", profileName_[0] != '\0' ? profileName_.data() : "(unnamed profile)"));
     }
 #else
     (void)out;
@@ -686,10 +686,10 @@ namespace Tako {
   }
 #endif
 
-  void PostEffectManager::DrawImgui()
+  void PostEffectManager::DrawImgui(bool* isOpen)
   {
 #ifdef _DEBUG
-    ImGui::Begin("PostEffect Manager");
+    ImGui::Begin("PostEffect Editor", isOpen);
 
     // UI を描く区間の前後で保存内容を比べて編集を検出する（この区間ではゲームのコードがスタックを変えない）
     profileTracker_.BeginSection();
@@ -711,6 +711,8 @@ namespace Tako {
 
     profileTracker_.EndSection();
     ImGui::End();
+#else
+    (void)isOpen;
 #endif
   }
 
@@ -746,8 +748,6 @@ namespace Tako {
       }
       ImGui::EndCombo();
     }
-    ImGui::SameLine();
-    profileTracker_.DrawButtons();
 
     std::function<bool()> save;
     if (hasName) {

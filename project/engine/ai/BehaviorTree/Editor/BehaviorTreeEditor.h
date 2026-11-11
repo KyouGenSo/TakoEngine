@@ -350,7 +350,7 @@ private: //メンバー変数
 
   std::string currentTreeName_;  ///< 現在編集中のツリー名 (拡張子なし、例: "MainTree")
 
-  EditTracker<> treeTracker_{ { [this] { return SnapshotTree(); }, [this](const std::string& tree) { RestoreTree(tree); }, [this] { return HashTree(); } } };               ///< 編集の検出・未保存の印・Undo（Save / Load で未保存を外す）
+  EditTracker<> treeTracker_{ "Behavior Tree Editor", { [this] { return SnapshotTree(); }, [this](const std::string& tree) { RestoreTree(tree); }, [this] { return HashTree(); } } };               ///< 編集の検出・未保存の印・Undo（Save / Load で未保存を外す）
   UnsavedChangesPrompt                                                                                                                                     unsavedPrompt_;  ///< 未保存のままツリーを切り替える・作るときの確認
 };
 

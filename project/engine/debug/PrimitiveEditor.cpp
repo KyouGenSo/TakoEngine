@@ -387,8 +387,6 @@ namespace Tako {
             unsavedPrompt_.RunOrConfirm(presetTracker_.IsEdited(), "The current primitive has unsaved changes.", "Load",
                                         [this, name = selectedPreset_] { LoadPreset(name); });
           }
-          ImGui::SameLine();
-          presetTracker_.DrawButtons();
 
           std::function<bool()> save;
           if (presetNameBuffer_[0] != '\0') {

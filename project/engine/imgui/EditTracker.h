@@ -6,6 +6,8 @@
 #include "ShortcutTable.h"
 #include "UnsavedChangesModal.h"
 
+#include <algorithm>
+#include <cassert>
 #include <cstdint>
 #include <functional>
 #include <optional>
@@ -17,7 +19,7 @@
 namespace Tako {
 
   /// <summary>
-  /// Undo / Redo のボタンかキーで選ばれた操作
+  /// Undo / Redo のメニューかキーで選ばれた操作
   /// </summary>
   enum class HistoryCommand {
     None,
@@ -26,57 +28,160 @@ namespace Tako {
   };
 
   /// <summary>
-  /// Undo / Redo のボタン（できないときは無効）。ツールバーの行に置く
-  /// </summary>
-  inline HistoryCommand DrawHistoryButtons(bool canUndo, bool canRedo) {
-    HistoryCommand command = HistoryCommand::None;
-    ImGui::BeginDisabled(!canUndo);
-    if (ImGui::Button("Undo")) {
-      command = HistoryCommand::Undo;
-    }
-    ImGui::EndDisabled();
-    ImGui::SetItemTooltip("Ctrl+Z");
-    ImGui::SameLine();
-    ImGui::BeginDisabled(!canRedo);
-    if (ImGui::Button("Redo")) {
-      command = HistoryCommand::Redo;
-    }
-    ImGui::EndDisabled();
-    ImGui::SetItemTooltip("Ctrl+Y / Ctrl+Shift+Z");
-    return command;
-  }
-
-  /// <summary>
   /// 全エディタ共通の Undo / Redo のキー
   /// </summary>
   inline std::span<const ShortcutBinding<HistoryCommand>> HistoryShortcuts() {
     static constexpr ShortcutBinding<HistoryCommand> kShortcuts[] = {
-      { ImGuiMod_Ctrl | ImGuiKey_Z,                  ImGuiInputFlags_None, "Undo (while typing in a text field, undoes the typing)", [](HistoryCommand& command) { command = HistoryCommand::Undo; } },
-      { ImGuiMod_Ctrl | ImGuiKey_Y,                  ImGuiInputFlags_None, "Redo",                                                   [](HistoryCommand& command) { command = HistoryCommand::Redo; } },
-      { ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_Z, ImGuiInputFlags_None, "Redo",                                                   [](HistoryCommand& command) { command = HistoryCommand::Redo; } },
+      { ImGuiMod_Ctrl | ImGuiKey_Z,                  ImGuiInputFlags_None, "Undo the last edit in any editor (while typing in a text field, undoes the typing)", [](HistoryCommand& command) { command = HistoryCommand::Undo; } },
+      { ImGuiMod_Ctrl | ImGuiKey_Y,                  ImGuiInputFlags_None, "Redo",                                                                               [](HistoryCommand& command) { command = HistoryCommand::Redo; } },
+      { ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_Z, ImGuiInputFlags_None, "Redo",                                                                               [](HistoryCommand& command) { command = HistoryCommand::Redo; } },
     };
     return kShortcuts;
   }
 
   /// <summary>
-  /// HistoryShortcuts のキーで選ばれた操作。FocusedWindow ならウィンドウの Begin と End の間で呼ぶ
+  /// HistoryShortcuts のキーで選ばれた操作。フォーカスと文字の入力中かは呼び出し側で判定する
   /// </summary>
-  inline HistoryCommand ReadHistoryShortcut(ShortcutScope scope = ShortcutScope::FocusedWindow) {
+  inline HistoryCommand ReadHistoryShortcut() {
     HistoryCommand command = HistoryCommand::None;
-    ProcessShortcuts(HistoryShortcuts(), command, scope);
+    ProcessShortcuts(HistoryShortcuts(), command, ShortcutScope::Global);
     return command;
   }
 
   /// <summary>
-  /// Undo / Redo の履歴。編集が始まったら Record で前の状態を覚え、操作を終えたら Commit で 1 手として積む
+  /// 全エディタで 1 本の Undo / Redo の順番。状態は各 EditHistory が持ち、ここは「どの履歴が手を積んだか」だけを積んだ順に覚える
+  /// </summary>
+  class UndoJournal {
+  public: //構造体
+    /// <summary>
+    /// 順番に並ぶ履歴 1 つ分（EditHistory の基底）
+    /// </summary>
+    class Client {
+    public: //メンバー関数
+      Client(const char* name, std::function<void(bool isUndo)> apply, std::function<bool()> canApply = {})
+        : name_(name), apply_(std::move(apply)), canApply_(std::move(canApply)) {}
+      // UndoJournal が this を持つので複製しない
+      Client(const Client&) = delete;
+      Client& operator=(const Client&) = delete;
+
+      //========================================
+      //Getter
+      //========================================
+      const char* GetName() const { return name_; }
+
+    protected: //非公開関数
+      virtual ~Client() { Forget(); }
+
+      /// <summary>
+      /// 手を積んだ。全体の Redo の側は捨てる
+      /// </summary>
+      void NotifyCommit();
+
+      /// <summary>
+      /// 上限で一番古い手を捨てた
+      /// </summary>
+      void NotifyTrim();
+
+      /// <summary>
+      /// 履歴を捨てた。全体の順から自分の手を全部外す
+      /// </summary>
+      void Forget();
+
+      virtual void ClearRedo() = 0;
+
+    private: //メンバー変数
+      friend class UndoJournal;
+
+      const char*                      name_;      ///< メニューに出す名前
+      std::function<void(bool isUndo)> apply_;     ///< 自分の履歴を 1 手戻す（isUndo）か、やり直す
+      std::function<bool()>            canApply_;  ///< 省略可。false の間は、全体の順もこの履歴の手より先へ進まない
+    };
+
+  public: //メンバー関数
+    /// <summary>
+    /// 一番新しい手を積んだ履歴に 1 手戻させる（isUndo）か、最後に戻した履歴にやり直させる
+    /// </summary>
+    void Apply(bool isUndo) {
+      if (!CanApply(isUndo)) {
+        return;
+      }
+      std::vector<Client*>& from   = isUndo ? undo_ : redo_;
+      Client*               client = from.back();
+      // 相手が戻せなくても（対象が消えていた等）順は進める。同じ手で止まり続けないようにする
+      // ponytail: 進行中の操作を相手が積んでから戻すと、その 1 手は Redo できない（NotifyCommit が redo_ を捨てる）。要るなら、戻す前に全部の履歴へ進行中の操作を積ませる
+      from.pop_back();
+      (isUndo ? redo_ : undo_).push_back(client);
+      client->apply_(isUndo);
+    }
+
+    //========================================
+    //Getter
+    //========================================
+    /// <summary>
+    /// 今の順番（DebugUIManager が持つ）。null の間は、どの履歴も順番に積まない
+    /// </summary>
+    static UndoJournal*& Current() {
+      static UndoJournal* current = nullptr;
+      return current;
+    }
+
+    /// <summary>
+    /// 次の Undo（isUndo）か Redo の相手（無ければ nullptr）
+    /// </summary>
+    const Client* Peek(bool isUndo) const {
+      const std::vector<Client*>& from = isUndo ? undo_ : redo_;
+      return from.empty() ? nullptr : from.back();
+    }
+
+    bool CanApply(bool isUndo) const {
+      const Client* client = Peek(isUndo);
+      return client && (!client->canApply_ || client->canApply_());
+    }
+
+  private: //メンバー変数
+    std::vector<Client*> undo_;  ///< 手を積んだ順（後ろが新しい）
+    std::vector<Client*> redo_;  ///< 戻した順（後ろが次にやり直す手）
+  };
+
+  inline void UndoJournal::Client::NotifyCommit() {
+    UndoJournal* journal = Current();
+    if (!journal) {
+      return;
+    }
+    for (Client* client : journal->redo_) {
+      client->ClearRedo();
+    }
+    journal->redo_.clear();
+    journal->undo_.push_back(this);
+  }
+
+  inline void UndoJournal::Client::NotifyTrim() {
+    if (UndoJournal* journal = Current()) {
+      if (const auto oldest = std::ranges::find(journal->undo_, this); oldest != journal->undo_.end()) {
+        journal->undo_.erase(oldest);
+      }
+    }
+  }
+
+  inline void UndoJournal::Client::Forget() {
+    if (UndoJournal* journal = Current()) {
+      std::erase(journal->undo_, this);
+      std::erase(journal->redo_, this);
+    }
+  }
+
+  /// <summary>
+  /// Undo / Redo の履歴。編集が始まったら Record で前の状態を覚え、操作を終えたら Commit で 1 手として積む。積んだ手は UndoJournal の順に入る
   /// </summary>
   /// <typeparam name="State">戻す状態。== が false なら別の手とみなす</typeparam>
   template <class State>
-  class EditHistory {
+  class EditHistory : public UndoJournal::Client {
   public: //定数
     static constexpr size_t kMaxSteps = 100;  ///< 戻れる手数
 
   public: //メンバー関数
+    using UndoJournal::Client::Client;
+
     /// <summary>
     /// 進行中の操作の前の状態を覚える。すでに覚えていれば何もしない（ドラッグ中の毎フレームの変化を 1 手にまとめる）
     /// </summary>
@@ -97,8 +202,10 @@ namespace Tako {
         undo_.push_back(std::move(*pending_));
         if (undo_.size() > kMaxSteps) {
           undo_.erase(undo_.begin());
+          NotifyTrim();
         }
         redo_.clear();
+        NotifyCommit();
       }
       pending_.reset();
     }
@@ -125,6 +232,7 @@ namespace Tako {
       undo_.clear();
       redo_.clear();
       pending_.reset();
+      Forget();
     }
 
     //========================================
@@ -153,6 +261,8 @@ namespace Tako {
     bool IsRecording() const { return pending_.has_value(); }
 
   private: //非公開関数
+    void ClearRedo() override { redo_.clear(); }
+
     static std::optional<State> Move(std::vector<State>& from, std::vector<State>& to, const State& current) {
       if (from.empty()) {
         return std::nullopt;
@@ -257,12 +367,15 @@ namespace Tako {
     /// </summary>
     struct Callbacks {
       std::function<State()>            serialize;
-      std::function<void(const State&)> restore;  ///< Undo / Redo で state に戻す
-      std::function<uint64_t()>         hash;     ///< 省略可。渡すと、ハッシュが変わったときだけ serialize する
+      std::function<void(const State&)> restore;     ///< Undo / Redo で state に戻す
+      std::function<uint64_t()>         hash;        ///< 省略可。渡すと、ハッシュが変わったときだけ serialize する
+      std::function<bool()>             canRestore;  ///< 省略可。false の間は Undo / Redo で戻さない
     };
 
   public: //メンバー関数
-    explicit EditTracker(Callbacks callbacks) : callbacks_(std::move(callbacks)) {}
+    /// <param name="name">Undo / Redo のメニューに出す名前</param>
+    EditTracker(const char* name, Callbacks callbacks)
+      : callbacks_(std::move(callbacks)), history_(name, [this](bool isUndo) { Restore(isUndo); }, callbacks_.canRestore) {}
 
     /// <summary>
     /// UI の区間の始まり。ウィンドウの Begin の直後に毎フレーム呼ぶ。操作が始まったフレームだけ、操作の前の内容を取る
@@ -284,33 +397,13 @@ namespace Tako {
     }
 
     /// <summary>
-    /// UI の区間の終わり。ウィンドウの End の前に毎フレーム呼ぶ。操作を終えたら前後を比べ、変わっていれば未保存の印を付けて Undo の 1 手にする。
-    /// Ctrl+Z / Ctrl+Y もここで受ける
+    /// UI の区間の終わり。ウィンドウの End の前に毎フレーム呼ぶ。操作を終えたら前後を比べ、変わっていれば未保存の印を付けて Undo の 1 手にする
     /// </summary>
     void EndSection() {
       if (gate_.EndOperation()) {
         FinishOperation();
       }
-      switch (ReadHistoryShortcut()) {
-      case HistoryCommand::Undo: Undo(); break;
-      case HistoryCommand::Redo: Redo(); break;
-      default: break;
-      }
     }
-
-    /// <summary>
-    /// Undo / Redo のボタン。ツールバーの行に置く
-    /// </summary>
-    void DrawButtons() {
-      switch (DrawHistoryButtons(CanUndo(), CanRedo())) {
-      case HistoryCommand::Undo: Undo(); break;
-      case HistoryCommand::Redo: Redo(); break;
-      default: break;
-      }
-    }
-
-    void Undo() { Restore(true); }
-    void Redo() { Restore(false); }
 
     /// <summary>
     /// 保存した。次の編集から、今の内容を未保存でない内容として比べる
@@ -380,6 +473,9 @@ namespace Tako {
       isEdited_ = IsStillEdited(isEdited_, before, after, clean_);
     }
 
+    /// <summary>
+    /// 1 手戻す（isUndo）か、やり直す。UndoJournal が全体の順に沿って呼ぶ
+    /// </summary>
     void Restore(bool isUndo) {
       // 操作の途中で戻す場合は、そこまでの編集を 1 手にしてから戻す
       const State before = callbacks_.serialize();
@@ -414,6 +510,48 @@ namespace Tako {
     State              clean_;             ///< isEdited_ が付く直前の内容。編集でここへ戻れば未保存を外す
     EditHistory<State> history_;
   };
+
+  /// <summary>
+  /// UndoJournal が 2 つの履歴の手を、積んだ順に戻すかを確かめる（起動時に 1 回）
+  /// </summary>
+  inline void RunUndoJournalSelfTest() {
+    UndoJournal        journal;
+    UndoJournal* const previous = std::exchange(UndoJournal::Current(), &journal);
+
+    int              a = 0;
+    int              b = 0;
+    EditHistory<int> historyA{ "A", [&](bool isUndo) { if (const std::optional<int> state = isUndo ? historyA.Undo(a) : historyA.Redo(a)) { a = *state; } } };
+    EditHistory<int> historyB{ "B", [&](bool isUndo) { if (const std::optional<int> state = isUndo ? historyB.Undo(b) : historyB.Redo(b)) { b = *state; } } };
+    const auto       edit = [](EditHistory<int>& history, int& value, int next) {
+      history.Record(value);
+      value = next;
+      history.Commit(value);
+    };
+
+    edit(historyA, a, 1);
+    edit(historyB, b, 1);
+    edit(historyA, a, 2);
+
+    // 新しい順に、積んだ履歴が戻す
+    journal.Apply(true);
+    assert(a == 1 && b == 1);
+    journal.Apply(true);
+    assert(a == 1 && b == 0);
+    journal.Apply(false);
+    assert(a == 1 && b == 1);
+
+    // 新しい手で、別の履歴の Redo も捨てる
+    edit(historyB, b, 5);
+    assert(!journal.CanApply(false) && !historyA.CanRedo());
+
+    // 捨てた履歴の手は、順からも消える
+    historyB.Clear();
+    journal.Apply(true);
+    assert(a == 0 && b == 5);
+    assert(!journal.CanApply(true));
+
+    UndoJournal::Current() = previous;
+  }
 
 } // namespace Tako
 

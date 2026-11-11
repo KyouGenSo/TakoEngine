@@ -359,7 +359,7 @@ namespace Tako {
       LoadShaderFile(path);
     }
 
-    // PostEffect Settings の一覧に出すため、ポストエフェクトのマテリアルだけ先に読む（描画物のマテリアルは使うときに読む）
+    // PostEffect Editor の一覧に出すため、ポストエフェクトのマテリアルだけ先に読む（描画物のマテリアルは使うときに読む）
     // ponytail: 起動後に足したファイルやシェーダーを直してから読めるようになったものは、Material Editor で開くまで一覧に出ない
     for (const std::string& name : GetMaterialFileNames()) {
       const std::optional<std::string> text = ReadText(MaterialPath(name));
@@ -446,7 +446,7 @@ namespace Tako {
     }
     const Asset& asset = assets_.at(name);
     if (!asset.material) {
-      Logger::Log("Material %s is for post effects (add it in PostEffect Settings)", name.c_str());
+      Logger::Log("Material %s is for post effects (add it in PostEffect Editor)", name.c_str());
     }
     return asset.material;
   }
