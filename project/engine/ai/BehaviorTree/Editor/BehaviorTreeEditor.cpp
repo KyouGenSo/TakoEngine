@@ -33,6 +33,10 @@ std::vector<BehaviorTreeEditor*>& Instances() {
 // ノードの一覧に出す分類の順（TCLASS の Category）
 constexpr const char* kNodeCategories[] = { "Composite", "Action", "Condition", "Decorator" };
 
+constexpr float kInspectorInitialWidth = 320.0f;
+constexpr float kInspectorMinWidth     = 160.0f;
+constexpr float kInspectorMaxWidth     = 480.0f;
+
 const char* DisplayNameOf(const TypeInfo& type) {
   return type.displayName[0] != '\0' ? type.displayName : type.name;
 }
@@ -121,55 +125,71 @@ void BehaviorTreeEditor::Update() {
   ImGui::SetNextWindowSizeConstraints(ImVec2(640.0f, 400.0f), ImVec2(FLT_MAX, FLT_MAX));
   // ### の後ろが ID なので、imgui.ini とフォーカスの指定は windowName のまま
   if (ImGui::Begin(std::format(ICON_FA_DIAGRAM_PROJECT "  {0}###{0}", config_.windowName).c_str(), &isVisible_)) {
-    // UI を描く区間の前後でツリーの内容を比べて編集を検出する（Node Inspector は別のウィンドウなので、別の区間で比べる）
+    // UI を描く区間の前後でツリーの内容を比べて編集を検出する
     treeTracker_.BeginSection();
     DrawToolbar();
     ImGui::Separator();
 
-    ed::SetCurrentEditor(editorContext_);
-    ed::Begin(config_.canvasName.c_str());
+    //---------------- 左: キャンバス ----------------//
+    // 右端ドラッグで幅調整可。サイズ指定は初期値で、調整結果は imgui.ini に保存される。
+    // 保存されるのはキャンバスの幅なので、Inspector の幅が範囲に収まるように制約する（ウィンドウを狭めても外へ押し出されず、広げた分はキャンバスに回る）
+    const float availWidth = ImGui::GetContentRegionAvail().x;
+    ImGui::SetNextWindowSizeConstraints(ImVec2(ImMax(availWidth - kInspectorMaxWidth, 0.0f), 0.0f), ImVec2(ImMax(availWidth - kInspectorMinWidth, 0.0f), FLT_MAX));
+    // ed は最初のフレームだけキャンバスを 2 回レイアウトに出すので、スクロールバーを許すと 1 フレームだけ出る
+    if (ImGui::BeginChild("Canvas##BTE", ImVec2(availWidth - kInspectorInitialWidth, 0.0f), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeX,
+          ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
+      ed::SetCurrentEditor(editorContext_);
+      ed::Begin(config_.canvasName.c_str());
 
-    DrawNodes();
-    DrawLinks();
+      DrawNodes();
+      DrawLinks();
 
-    // Add Node で予約された新規ノード位置を 1 回だけ適用 (ed::Begin の外では効かないため)
-    if (!pendingNodePositions_.empty()) {
-      for (const auto& [id, pos] : pendingNodePositions_) {
-        ed::SetNodePosition(id, pos);
-        // ed は位置を整数に丸めるので、移動の検出に使う位置を合わせておく
-        if (EditorNode* node = FindNodeById(id)) {
-          node->position = ed::GetNodePosition(id);
+      // Add Node で予約された新規ノード位置を 1 回だけ適用 (ed::Begin の外では効かないため)
+      if (!pendingNodePositions_.empty()) {
+        for (const auto& [id, pos] : pendingNodePositions_) {
+          ed::SetNodePosition(id, pos);
+          // ed は位置を整数に丸めるので、移動の検出に使う位置を合わせておく
+          if (EditorNode* node = FindNodeById(id)) {
+            node->position = ed::GetNodePosition(id);
+          }
+        }
+        pendingNodePositions_.clear();
+      }
+
+      HandleLinkCreation();
+      HandleDeletion();
+
+      // 選択ノードの取得は ed::End() 前に実行必須
+      {
+        int selectedCount = ed::GetSelectedObjectCount();
+        if (selectedCount > 0) {
+          std::vector<ed::NodeId> selectedNodes(selectedCount);
+          int nodeCount = ed::GetSelectedNodes(selectedNodes.data(), selectedCount);
+          selectedNodeId_ = (nodeCount > 0) ? static_cast<int>(selectedNodes[0].Get()) : -1;
+        }
+        else {
+          selectedNodeId_ = -1;
         }
       }
-      pendingNodePositions_.clear();
-    }
 
-    HandleLinkCreation();
-    HandleDeletion();
-
-    // 選択ノードの取得は ed::End() 前に実行必須
-    {
-      int selectedCount = ed::GetSelectedObjectCount();
-      if (selectedCount > 0) {
-        std::vector<ed::NodeId> selectedNodes(selectedCount);
-        int nodeCount = ed::GetSelectedNodes(selectedNodes.data(), selectedCount);
-        selectedNodeId_ = (nodeCount > 0) ? static_cast<int>(selectedNodes[0].Get()) : -1;
+      if (pendingNavigateToContent_) {
+        ed::NavigateToContent(0.0f);
+        pendingNavigateToContent_ = false;
       }
-      else {
-        selectedNodeId_ = -1;
-      }
-    }
 
-    if (pendingNavigateToContent_) {
-      ed::NavigateToContent(0.0f);
-      pendingNavigateToContent_ = false;
+      ed::End();
+      ed::SetCurrentEditor(nullptr);
     }
+    ImGui::EndChild();
 
-    ed::End();
-    ed::SetCurrentEditor(nullptr);
+    //---------------- 右: Node Inspector ----------------//
+    ImGui::SameLine();
+    if (ImGui::BeginChild(config_.nodeInspectorName.c_str(), ImVec2(0.0f, 0.0f), ImGuiChildFlags_Borders)) {
+      DrawNodeInspector();
+    }
+    ImGui::EndChild();
 
     treeTracker_.EndSection();
-    DrawNodeInspector();
   }
   ImGui::End();
 }
@@ -712,27 +732,17 @@ void BehaviorTreeEditor::DrawContextMenu() {
 }
 
 void BehaviorTreeEditor::DrawNodeInspector() {
-  if (!ImGui::Begin(config_.nodeInspectorName.c_str())) {
-    ImGui::End();
-    return;
-  }
-  treeTracker_.BeginSection();
-
   ImGui::Text("Inspector");
   ImGui::Separator();
 
   if (selectedNodeId_ < 0) {
     ImGui::TextDisabled("No node selected");
-    treeTracker_.EndSection();
-    ImGui::End();
     return;
   }
 
   EditorNode* node = FindNodeById(selectedNodeId_);
   if (!node) {
     ImGui::TextDisabled("Invalid selection");
-    treeTracker_.EndSection();
-    ImGui::End();
     return;
   }
 
@@ -756,9 +766,6 @@ void BehaviorTreeEditor::DrawNodeInspector() {
   else {
     ImGui::TextDisabled("No runtime node");
   }
-
-  treeTracker_.EndSection();
-  ImGui::End();
 }
 
 bool BehaviorTreeEditor::LoadFromJSON(const std::string& filepath) {

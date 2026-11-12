@@ -29,7 +29,7 @@ struct EditorConfig {
   std::string btJsonDir         = "resources/Json/BT/";           ///< BT 関連 JSON の配置ディレクトリ。存在しない場合は Initialize で自動生成。
   std::string initialTreeFile   = "";                             ///< 初期ロードするツリーのファイル名 (拡張子付き、btJsonDir 配下)。空なら初回ロードしない。
   std::string windowName        = "Behavior Tree Editor";         ///< メインエディタウィンドウの ImGui ウィンドウ名 (imgui.ini 位置/サイズの保存キー)。
-  std::string nodeInspectorName = "Node Inspector##BTE";          ///< ノードインスペクタウィンドウの ImGui ウィンドウ名。
+  std::string nodeInspectorName = "Node Inspector##BTE";          ///< ノードインスペクタのペイン（子ウィンドウ）の ImGui ID。
   std::string canvasName        = "Behavior Tree Editor Canvas";  ///< imgui-node-editor の Canvas 名。
 };
 
