@@ -17,6 +17,8 @@
 - `UpdateEngine.bat`（エンジンを入れる・更新する）
 - 新しいリリースの通知（Engine Settings > Editor > Check for Updates。1 日 1 回）
 - 配置ファイル（imgui.ini）が無いときの既定のウィンドウの並び
+- クラッシュ対策。未保存のシーンの中身を `Generated/Recovery/` に書いておき（Play の前・コンパイルの前・未保存のまま 2 分ごと）、正常に終了しなかった次の起動で、読み込むか捨てるかを聞く
+- 落ちたときに `Generated/Crashes/` へミニダンプを書く（Visual Studio で開くと、落ちた場所と呼び出し履歴が見える）。落ちた次の起動は、Play ではなく Edit で始まる
 - 配る用の zip（SDK）を作る `tools/package_sdk.ps1` と、zip だけでプロジェクトを作ってビルドできるかを確かめる `tools/test_sdk.ps1`。タグ `v*` の push で両方を流してリリースに添付するワークフロー（`.github/workflows/Release.yml`）
 
 ### 変更

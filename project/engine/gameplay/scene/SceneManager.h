@@ -122,6 +122,11 @@ namespace Tako {
     /// </summary>
     void SetStartupSceneOverride(const std::string& sceneName) { startupSceneOverride_ = sceneName; }
 
+    /// <summary>
+    /// 起動シーンを Play ではなく Edit で始める。ChangeToStartupScene の前に呼ぶ
+    /// </summary>
+    void StartInEdit() { isPlaying_ = false; }
+
     //======================================================
     //Getter
     //======================================================

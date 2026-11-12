@@ -131,6 +131,9 @@ namespace Tako {
     RunUndoJournalSelfTest();
     UndoJournal::Current() = &undoJournal_;
 
+    // この起動が書き始める前に読む（残っていれば、前回は正常に終了していない）
+    pendingRecoveries_ = SceneRecovery::ReadAll();
+
     // 個人設定に起動時ウィンドウが保存されていない場合の既定（LoadEditorSettings で表示状態へ適用される）
     for (Window window : { Window::GameViewport, Window::SceneHierarchy, Window::Inspector, Window::Console, Window::Assets }) {
       startupWindows_[static_cast<size_t>(window)] = true;
@@ -195,6 +198,8 @@ namespace Tako {
   void DebugUIManager::Finalize() {
     // この後に消える履歴（ゲームが持つエディタなど）が、破棄した順番に触らないようにする
     UndoJournal::Current() = nullptr;
+    // 未保存の変更は、終了の確認で捨てると決まっている
+    sceneEditor_.DiscardRecovery();
     WinApp::GetInstance()->SetCloseHandler(nullptr);
     Logger::SetSink(nullptr);
     ClearLogs();
@@ -240,7 +245,12 @@ namespace Tako {
 
     const bool wasCompiling = scriptCompiler_.IsCompiling();
     scriptCompiler_.Update();
-    if (scriptCompiler_.IsCompiling()) {
+    // ビルドが始まったら（ボタン・キー・自動のどれでも）、差し替わった後のコードで落ちても未保存の変更が残るようにする
+    if (scriptCompiler_.IsCompiling() && !wasCompiling_) {
+      sceneEditor_.SaveRecovery();
+    }
+    wasCompiling_ = scriptCompiler_.IsCompiling();
+    if (wasCompiling_) {
       return;
     }
     // 自分のビルドが終わったフレームはすぐ見る。それ以外（VS など外でのビルド）は 1 秒おきに見る
@@ -266,6 +276,7 @@ namespace Tako {
     if (!sceneManager->CanReloadModule()) {
       return;
     }
+    sceneEditor_.SaveRecovery();
     const bool  wasPlaying = sceneManager->IsPlaying();
     std::string tree;
     const bool  isReloaded = GameModule::Reload([&] {
@@ -339,6 +350,7 @@ namespace Tako {
     }
 
     DrawExitConfirmation();
+    DrawRecoveryPrompt();
     DrawNewScriptPopup();
     DrawNewProjectPopup();
     ApplyHistoryRequest();
@@ -390,6 +402,39 @@ namespace Tako {
     if (DrawUnsavedChangesModal("Unsaved Changes##Exit", isExitPopupRequested_, message, "Exit") == UnsavedChoice::Proceed && pEndFlag_) {
       *pEndFlag_ = true;
     }
+  }
+
+  void DebugUIManager::DrawRecoveryPrompt() {
+    constexpr const char* kPopupName = "Restore Unsaved Changes";
+    // 1 つ読み込み終えてから、次を聞く
+    if (pendingRecoveries_.empty() || sceneEditor_.IsRecovering()) {
+      return;
+    }
+    if (!ImGui::IsPopupOpen(kPopupName)) {
+      ImGui::OpenPopup(kPopupName);
+    }
+    if (!ImGui::BeginPopupModal(kPopupName, nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+      return;
+    }
+    const SceneRecovery::Entry& entry = pendingRecoveries_.front();
+    ImGui::Text("The editor did not exit normally last time.");
+    ImGui::Text("Unsaved changes of the scene \"%s\" were kept.", entry.sceneName.c_str());
+    ImGui::TextDisabled("If it crashed, a dump that Visual Studio can open is in Generated/Crashes");
+    ImGui::Spacing();
+    const bool isRestored  = ImGui::Button(ICON_FA_ROTATE_LEFT "  Restore");
+    ImGui::SameLine();
+    const bool isDiscarded = ImGui::Button("Discard");
+    if (isRestored) {
+      sceneEditor_.RequestRecovery(entry.sceneName, entry.content);
+    }
+    else if (isDiscarded) {
+      SceneRecovery::Remove(entry.sceneName);
+    }
+    if (isRestored || isDiscarded) {
+      pendingRecoveries_.erase(pendingRecoveries_.begin());
+      ImGui::CloseCurrentPopup();
+    }
+    ImGui::EndPopup();
   }
 
   void DebugUIManager::ApplyHistoryRequest() {
@@ -701,6 +746,8 @@ namespace Tako {
         AddLog("Stop: back to Edit", LogType::Info);
       }
     } else {
+      // スクリプトが Play 中に落ちても、Edit の未保存の変更が残るようにする
+      sceneEditor_.SaveRecovery();
       sceneManager->RequestPlay();
       AddLog("Play", LogType::Info);
     }

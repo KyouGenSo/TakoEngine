@@ -25,6 +25,7 @@
 #include "SceneSelfTest.h"
 
 #ifdef _DEBUG
+#include "CrashHandler.h"
 #include "DebugUIManager.h"
 #endif
 
@@ -32,6 +33,12 @@ namespace Tako {
 
   void TakoFramework::Initialize()
   {
+#ifdef _DEBUG
+    // ゲームの DLL を読む前に入れる（スクリプトの static の初期化で落ちたときも書けるように）
+    InstallCrashHandler();
+    const bool hasCrashedLastTime = ConsumeCrashMarker();
+#endif
+
     // 保存したファイルの "type" から物を作れるよう、最初に型を登録する
     RegisterTypes_Engine();
     GameModule::Load();
@@ -143,6 +150,14 @@ namespace Tako {
     DebugUIManager::GetInstance()->AddLog("ImGui Docking Mode Enabled", DebugUIManager::LogType::Info);
 
     DebugUIManager::GetInstance()->LoadEditorSettings();
+#endif
+
+#ifdef _DEBUG
+    if (hasCrashedLastTime) {
+      // スクリプトが Play 中に落ちたのなら、Play で始めると同じ所でまた落ちる。Edit で始めて、直してから Play できるようにする
+      SceneManager::GetInstance()->StartInEdit();
+      DebugUIManager::GetInstance()->AddLog("The editor crashed last time (a dump is in Generated/Crashes). Started in Edit instead of Play", DebugUIManager::LogType::Warning);
+    }
 #endif
 
     // 個人設定の起動シーン（LoadEditorSettings が読む）が入った後に切り替える

@@ -26,6 +26,7 @@
 #include "CameraAnimationEditor.h"
 #include "AnimationEditor.h"
 #include "BehaviorTreeEditor.h"
+#include "SceneRecovery.h"
 #include "ScriptCompiler.h"
 #include "UpdateChecker.h"
 
@@ -331,6 +332,11 @@ namespace Tako {
     void DrawExitConfirmation();
 
     /// <summary>
+    /// 前回の起動が落ちて、未保存のシーンの中身が残っていれば、読み込むか捨てるかを聞く
+    /// </summary>
+    void DrawRecoveryPrompt();
+
+    /// <summary>
     /// Console の一覧にだけ足す（VS の出力には出さない）
     /// </summary>
     void PushLog(const std::string& message, LogType type);
@@ -371,6 +377,9 @@ namespace Tako {
     ScriptCompiler                        scriptCompiler_;
     std::chrono::steady_clock::time_point lastModuleCheck_;         ///< Game.dll の更新時刻を最後に見た時刻（外でビルドされた DLL は 1 秒おきに見る）
     int                                   outdatedChecks_ = 0;      ///< Game.dll が変わったのを続けて見た回数
+    bool                                  wasCompiling_   = false;  ///< 前のフレームにビルド中だった
+
+    std::vector<SceneRecovery::Entry> pendingRecoveries_;  ///< 前回の起動が残した、未保存のシーンの中身（聞き終えた物から消す）
 
     //終了の確認
     std::vector<std::string> unsavedChanges_;                ///< 確認モーダルに出す未保存の一覧（ConfirmExit で集める）

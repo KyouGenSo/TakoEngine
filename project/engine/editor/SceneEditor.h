@@ -6,6 +6,7 @@
 #include "ShortcutTable.h"
 
 #include <array>
+#include <chrono>
 #include <cstdint>
 #include <functional>
 #include <map>
@@ -87,6 +88,21 @@ namespace Tako {
     /// </summary>
     void CollectUnsavedChanges(std::vector<std::string>& out) const;
 
+    /// <summary>
+    /// 未保存の変更があれば、エディタが落ちたときのために今の中身を書いておく（Edit 中だけ）
+    /// </summary>
+    void SaveRecovery();
+
+    /// <summary>
+    /// 落ちる前に書いてあった中身を、Update でシーンへ読み込む。Play 中なら Stop し、別のシーンなら切り替えてから読む
+    /// </summary>
+    void RequestRecovery(std::string sceneName, std::string content);
+
+    /// <summary>
+    /// 今のシーンについて書いてあった中身を消す（正常に終了するとき）
+    /// </summary>
+    void DiscardRecovery();
+
     void ClearSelection()
     {
       selected_ = 0;
@@ -110,6 +126,11 @@ namespace Tako {
     /// 選んだ Actor が今のシーンにあれば true
     /// </summary>
     bool HasSelection() const;
+
+    /// <summary>
+    /// RequestRecovery の読み込みが、まだ終わっていなければ true
+    /// </summary>
+    bool IsRecovering() const { return !recoveryScene_.empty(); }
 
   private: //非公開関数
     /// <summary>
@@ -185,6 +206,11 @@ namespace Tako {
     /// 印を付けた物の値を、Stop で作り直したシーンの同じ Actor・同じコンポーネントへ読み込む（まとめて Undo の 1 手）
     /// </summary>
     void ApplyKept(BaseScene& scene);
+
+    /// <summary>
+    /// RequestRecovery の中身を読み込める状態（Edit 中・そのシーン）になっていれば読み込む。まだなら、そこへ近づける
+    /// </summary>
+    void ApplyRecovery(BaseScene& scene);
 
     /// <summary>
     /// 名前を付けた Actor に、コンポーネントを 1 つ付けて出す（+ Add の定番と、Assets からのドロップ）
@@ -288,6 +314,11 @@ namespace Tako {
     std::map<std::pair<uint64_t, std::string>, std::string> kept_;                ///< （Actor の ID, コンポーネントの名前）→ 最後に控えた値（JSON の文字列）
     std::string                                             keptScene_;           ///< 印を付けたシーン（Stop で別のシーンへ戻ったら当てない）
     bool                                                    wasPlaying_ = false;
+
+    //落ちたときのための控え
+    std::string                           recoveryScene_;     ///< RequestRecovery で受け取ったシーン。空なら読み込むものは無い
+    std::string                           recoveryContent_;
+    std::chrono::steady_clock::time_point lastRecoveryTime_;  ///< 最後に控えを書いた時刻
 
     //未保存と Undo（Edit 中だけ。Play 中の変更は Stop で捨てる。残す印を付けた値だけ、Stop の後に 1 手として入る）
     EditTracker<> tracker_{ "Scene", { [this] { return SerializeScene(); },

@@ -18,6 +18,7 @@
 #include "Object3d.h"
 #include "Prefab.h"
 #include "SceneManager.h"
+#include "SceneRecovery.h"
 #include "Script.h"
 #include "ScriptComponent.h"
 #include "TypeRegistry.h"
@@ -39,6 +40,9 @@
 namespace Tako {
 
   namespace {
+
+    // 未保存のまま、この時間がたつごとに控えを書く
+    constexpr std::chrono::seconds kRecoveryInterval{ 120 };
 
     const Vector4   kSelectionBoxColor       = { 1.0f, 1.0f, 0.0f, 1.0f };
     constexpr float kSelectionBoxMarginRatio = 0.02f;  // 箱の対角線の長さに対する、外へ広げる幅の割合
@@ -696,6 +700,9 @@ namespace Tako {
     if (!scene) {
       return;
     }
+    if (IsRecovering()) {
+      ApplyRecovery(*scene);
+    }
     // 予約した操作は UI の区間の外で行うので、ここで前後を比べて Undo の 1 手にする（Play 中の変更は積まない）
     const bool tracks = !requests.empty() && IsEditing();
     if (tracks) {
@@ -729,6 +736,67 @@ namespace Tako {
       ApplyKept(*scene);
     }
     wasPlaying_ = isPlaying;
+
+    if (std::chrono::steady_clock::now() - lastRecoveryTime_ > kRecoveryInterval) {
+      SaveRecovery();
+    }
+  }
+
+  void SceneEditor::SaveRecovery()
+  {
+    if (!IsEditing() || !tracker_.IsEdited() || !GetScene()) {
+      return;
+    }
+    SceneRecovery::Write(trackedScene_, SerializeScene());
+    lastRecoveryTime_ = std::chrono::steady_clock::now();
+  }
+
+  void SceneEditor::RequestRecovery(std::string sceneName, std::string content)
+  {
+    recoveryScene_   = std::move(sceneName);
+    recoveryContent_ = std::move(content);
+  }
+
+  void SceneEditor::DiscardRecovery()
+  {
+    if (!trackedScene_.empty()) {
+      SceneRecovery::Remove(trackedScene_);
+    }
+  }
+
+  void SceneEditor::ApplyRecovery(BaseScene& scene)
+  {
+    DebugUIManager*      console      = DebugUIManager::GetInstance();
+    SceneManager*        sceneManager = SceneManager::GetInstance();
+    const nlohmann::json content      = nlohmann::json::parse(recoveryContent_, nullptr, false);
+    if (content.is_discarded() || !BaseScene::HasSceneFile(recoveryScene_)) {
+      console->AddLog("The unsaved changes of the scene \"" + recoveryScene_ + "\" could not be restored (the scene file or the saved content is missing)", DebugUIManager::LogType::Warning);
+      SceneRecovery::Remove(recoveryScene_);
+      recoveryScene_.clear();
+      recoveryContent_.clear();
+      return;
+    }
+    // Stop とシーンの切り替えは、どちらも次のフレーム以降に終わる。終わるまで毎フレームここへ来る
+    if (sceneManager->IsPlaying()) {
+      if (sceneManager->CanStop()) {
+        sceneManager->RequestStop();
+      }
+      return;
+    }
+    if (scene.GetSceneName() != recoveryScene_) {
+      if (sceneManager->CanReloadModule()) {
+        sceneManager->ChangeScene(recoveryScene_, 0.0f);
+      }
+      return;
+    }
+
+    SyncTracker(scene);
+    const std::string before = SerializeScene();
+    scene.Load(content);
+    tracker_.RecordExternalChange(before);
+    console->AddLog("Restored the unsaved changes of the scene \"" + recoveryScene_ + "\" (Ctrl+Z to undo, Ctrl+S in Scene Hierarchy to save)", DebugUIManager::LogType::Info);
+    recoveryScene_.clear();
+    recoveryContent_.clear();
   }
 
   void SceneEditor::ToggleKeep(Actor& actor, const std::string& component)
@@ -836,6 +904,7 @@ namespace Tako {
       return false;
     }
     tracker_.MarkSaved();
+    SceneRecovery::Remove(scene->GetSceneName());
     DebugUIManager::GetInstance()->AddLog("Saved scene: " + BaseScene::GetScenePath(scene->GetSceneName()), DebugUIManager::LogType::Info);
     return true;
   }
@@ -843,6 +912,10 @@ namespace Tako {
   void SceneEditor::SyncTracker(const BaseScene& scene)
   {
     if (scene.GetSceneName() != trackedScene_) {
+      // 前のシーンの変更は、保存したか捨てたかのどちらか
+      if (!trackedScene_.empty()) {
+        SceneRecovery::Remove(trackedScene_);
+      }
       tracker_.Reset();
       trackedScene_ = scene.GetSceneName();
     }

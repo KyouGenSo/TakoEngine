@@ -171,6 +171,12 @@
     <ClCompile Include="engine\editor\UpdateChecker.cpp">
       <Filter>editor</Filter>
     </ClCompile>
+    <ClCompile Include="engine\editor\SceneRecovery.cpp">
+      <Filter>editor</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\editor\CrashHandler.cpp">
+      <Filter>editor</Filter>
+    </ClCompile>
     <ClCompile Include="engine\editor\ScriptCompiler.cpp">
       <Filter>editor</Filter>
     </ClCompile>
@@ -588,6 +594,12 @@
       <Filter>editor</Filter>
     </ClInclude>
     <ClInclude Include="engine\editor\UpdateChecker.h">
+      <Filter>editor</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\editor\SceneRecovery.h">
+      <Filter>editor</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\editor\CrashHandler.h">
       <Filter>editor</Filter>
     </ClInclude>
     <ClInclude Include="engine\editor\ScriptCompiler.h">
