@@ -1,0 +1,11 @@
+# ビルド結果
+Generated/
+.vs/
+*.user
+
+# エンジン。UpdateEngine.bat が、.takoproject に書いてあるバージョンを入れる
+Engine/
+
+# ビルドがエンジンから写す物と、エディタの個人の配置
+GameProject/EngineResources/
+GameProject/imgui.ini

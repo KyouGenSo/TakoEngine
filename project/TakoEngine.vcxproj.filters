@@ -162,6 +162,9 @@
     <ClCompile Include="engine\editor\ChildProcess.cpp">
       <Filter>editor</Filter>
     </ClCompile>
+    <ClCompile Include="engine\editor\ProjectBrowser.cpp">
+      <Filter>editor</Filter>
+    </ClCompile>
     <ClCompile Include="engine\editor\ScriptCompiler.cpp">
       <Filter>editor</Filter>
     </ClCompile>
@@ -570,6 +573,9 @@
       <Filter>editor</Filter>
     </ClInclude>
     <ClInclude Include="engine\editor\ChildProcess.h">
+      <Filter>editor</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\editor\ProjectBrowser.h">
       <Filter>editor</Filter>
     </ClInclude>
     <ClInclude Include="engine\editor\ScriptCompiler.h">

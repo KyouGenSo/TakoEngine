@@ -1,0 +1,137 @@
+{
+  "actors": [
+    {
+      "type": "Actor",
+      "properties": {
+        "name": "Main Camera",
+        "transform": {
+          "scale": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "rotate": [
+            0.2,
+            0.0,
+            0.0
+          ],
+          "translate": [
+            0.0,
+            9.0,
+            -34.0
+          ]
+        }
+      },
+      "components": {
+        "CameraComponent": {
+          "type": "CameraComponent",
+          "order": 0,
+          "properties": {}
+        }
+      }
+    },
+    {
+      "type": "Actor",
+      "properties": {
+        "name": "Directional Light",
+        "transform": {
+          "scale": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "rotate": [
+            1.0471975511965976,
+            0.5235987755982988,
+            0.0
+          ],
+          "translate": [
+            0.0,
+            10.0,
+            0.0
+          ]
+        }
+      },
+      "components": {
+        "LightComponent": {
+          "type": "LightComponent",
+          "order": 0,
+          "properties": {
+            "type": "Directional"
+          }
+        }
+      }
+    },
+    {
+      "type": "Actor",
+      "properties": {
+        "name": "Sky",
+        "transform": {
+          "scale": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "rotate": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "translate": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "components": {
+        "SkyBoxComponent": {
+          "type": "SkyBoxComponent",
+          "order": 0,
+          "properties": {
+            "texture": "EngineResources/Texture/my_skybox.dds"
+          }
+        }
+      }
+    },
+    {
+      "type": "Actor",
+      "properties": {
+        "name": "Cube",
+        "transform": {
+          "scale": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "rotate": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "translate": [
+            0.0,
+            2.0,
+            0.0
+          ]
+        }
+      },
+      "components": {
+        "MeshComponent": {
+          "type": "MeshComponent",
+          "order": 0,
+          "properties": {
+            "model": "EngineResources/Model/white_cube.gltf"
+          }
+        },
+        "Spinner": {
+          "type": "ScriptComponent",
+          "order": 1,
+          "properties": {
+            "script": "Spinner"
+          }
+        }
+      }
+    }
+  ]
+}

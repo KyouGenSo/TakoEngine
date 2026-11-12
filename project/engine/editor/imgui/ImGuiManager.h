@@ -86,6 +86,7 @@ namespace Tako {
     DX12Basic* dx12_ = nullptr;  ///< DX12Basic クラスのインスタンス
 
     bool isDocking_ = false;
+    bool needsDefaultLayout_ = false;  ///< 配置ファイル（imgui.ini）が無い。最初のフレームで既定の並びを作る
 
     uint32_t fontSrvIndex_ = 0;  ///< フォント用の SRV インデックス（SrvManager で確保）
 

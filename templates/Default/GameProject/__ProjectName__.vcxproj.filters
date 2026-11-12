@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Script">
+      <UniqueIdentifier>{5b0a3c1e-6f1d-4a57-9c35-0c9f0f6a9d01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Script\Sample">
+      <UniqueIdentifier>{5b0a3c1e-6f1d-4a57-9c35-0c9f0f6a9d02}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source">
+      <UniqueIdentifier>{5b0a3c1e-6f1d-4a57-9c35-0c9f0f6a9d03}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Script\Sample\Spinner.cpp">
+      <Filter>Script\Sample</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Script\Sample\Spinner.h">
+      <Filter>Script\Sample</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

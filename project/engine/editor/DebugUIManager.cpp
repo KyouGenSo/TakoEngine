@@ -25,6 +25,8 @@
 #include "BehaviorTreeEditor.h"
 #include "GameModule.h"
 #include "NewScript.h"
+#include "Project.h"
+#include "ProjectBrowser.h"
 #include "UnsavedChangesModal.h"
 
 #include <algorithm>
@@ -336,6 +338,7 @@ namespace Tako {
 
     DrawExitConfirmation();
     DrawNewScriptPopup();
+    DrawNewProjectPopup();
     ApplyHistoryRequest();
 
     // 窓を初めて開いたフレームはまだ作られていないので、見つかるまで次のフレームでも試す
@@ -431,6 +434,9 @@ namespace Tako {
 
         ImGui::Separator();
         targetItem(std::format(ICON_FA_FLOPPY_DISK "  Save{}###Save", target.name.empty() ? "" : std::format(" ({})", target.name)).c_str(), ImGuiMod_Ctrl | ImGuiKey_S);
+
+        ImGui::Separator();
+        DrawProjectMenuItems();
 
         ImGui::Separator();
         ImGui::MenuItem(ICON_FA_GEAR "  Engine Settings...", nullptr, &WindowFlag(Window::EngineSettings));
@@ -1174,6 +1180,7 @@ namespace Tako {
     // 中身の幅で決まるウィンドウなので、左ラベルの列（ウィンドウの幅の割合）は使わない
     if (ImGui::Begin(WindowTitle::kAbout, &WindowFlag(Window::About), ImGuiWindowFlags_AlwaysAutoResize)) {
       ImGui::Text("TakoEngine (DirectX 12)");
+      ImGui::TextDisabled("Project: %s", StringUtility::ConvertString(Project::GetRoot().wstring()).c_str());
       ImGui::TextDisabled("ImGui %s   %d x %d", IMGUI_VERSION, WinApp::clientWidth, WinApp::clientHeight);
 
       ImGui::SeparatorText("Shortcuts");

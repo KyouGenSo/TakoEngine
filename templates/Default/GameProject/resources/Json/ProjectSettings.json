@@ -1,0 +1,6 @@
+{
+    "Application": {
+        "ProductName": "__ProjectName__",
+        "StartupScene": "Main"
+    }
+}

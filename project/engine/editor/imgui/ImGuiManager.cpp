@@ -8,6 +8,8 @@
 #include "EnginePaths.h"
 #include "ImGuiThemes.h"
 #include "IconsFontAwesome6.h"
+#include "EditorUI.h"
+#include "imgui_internal.h"
 #include <cassert>
 #include <filesystem>
 #include <ShlObj.h>
@@ -110,6 +112,8 @@ namespace Tako {
     isDocking_ = isDocking;
 
     ImGui::CreateContext();
+    // 新しいプロジェクトと、clone した直後は配置ファイルが無い
+    needsDefaultLayout_ = isDocking && !std::filesystem::exists(ImGui::GetIO().IniFilename);
 
     // スケールの調整（DPI スケーリングに対応）
     ImGuiIO& io = ImGui::GetIO();
@@ -212,6 +216,25 @@ namespace Tako {
   void ImGuiManager::SetDockSpaceViewPort()
   {
     ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+    if (needsDefaultLayout_) {
+      needsDefaultLayout_ = false;
+      // 左に Hierarchy、右に Inspector、下に Assets と Console、中央に 2 つのビューをタブで並べる
+      ImGui::DockBuilderRemoveNode(dockspace_id);
+      ImGui::DockBuilderAddNode(dockspace_id, static_cast<ImGuiDockNodeFlags>(ImGuiDockNodeFlags_DockSpace) | ImGuiDockNodeFlags_PassthruCentralNode);
+      ImGui::DockBuilderSetNodeSize(dockspace_id, ImGui::GetMainViewport()->WorkSize);
+      ImGuiID       center  = dockspace_id;
+      ImGuiID       assets  = ImGui::DockBuilderSplitNode(center, ImGuiDir_Down, 0.27f, nullptr, &center);
+      const ImGuiID left    = ImGui::DockBuilderSplitNode(center, ImGuiDir_Left, 0.18f, nullptr, &center);
+      const ImGuiID right   = ImGui::DockBuilderSplitNode(center, ImGuiDir_Right, 0.30f, nullptr, &center);
+      const ImGuiID console = ImGui::DockBuilderSplitNode(assets, ImGuiDir_Right, 0.40f, nullptr, &assets);
+      ImGui::DockBuilderDockWindow(WindowTitle::kSceneHierarchy, left);
+      ImGui::DockBuilderDockWindow(WindowTitle::kInspector, right);
+      ImGui::DockBuilderDockWindow(WindowTitle::kGameViewport, center);
+      ImGui::DockBuilderDockWindow(WindowTitle::kDebugViewport, center);
+      ImGui::DockBuilderDockWindow(WindowTitle::kAssets, assets);
+      ImGui::DockBuilderDockWindow(WindowTitle::kConsole, console);
+      ImGui::DockBuilderFinish(dockspace_id);
+    }
     ImGui::DockSpaceOverViewport(dockspace_id, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
   }
 
