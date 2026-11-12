@@ -18,6 +18,8 @@
 #include <json.hpp>
 
 #include <algorithm>
+#include <array>
+#include <bit>
 #include <cstring>
 #include <filesystem>
 #include <format>
@@ -38,7 +40,7 @@ namespace Tako {
 
   // 実行時に決まる値（投影逆行列・画面サイズ・時間・ブラー方向）と padding は保存しない
   NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(VignetteParam, power, range, color)
-  NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(BloomParam, intensity, threshold, sigma, kernelSize)
+  NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(BloomParam, intensity, threshold, scatter, tint)
   NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(RadialBlurParam, center, blurWidth, sampleCount)
   NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(RGBSplitParam, redOffset, greenOffset, blueOffset, intensity)
   NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(BWFilterParam, threshold)
@@ -107,35 +109,57 @@ namespace Tako {
     }
 
     /// <summary>
-    /// 高輝度部分を抜き出してぼかし、元の画像に加算する
+    /// 明るい所を半分ずつ縮小しながらぼかし、拡大しながら混ぜて元の画像に足す
     /// </summary>
     void ExecuteBloom(const PostEffectFrame& frame, const EffectParam& param, RenderTexture& input, RenderTexture& output)
     {
-      const BloomParam& bloom = std::get<BloomParam>(param);
-      RenderGraph&      graph = *frame.graph;
-      RenderTexture&    bright = graph.Acquire(RenderGraph::DescOf(input));
-      RenderTexture&    blurX  = graph.Acquire(RenderGraph::DescOf(input));
-      RenderTexture&    blurY  = graph.Acquire(RenderGraph::DescOf(input));
+      // 8 段目の 1 テクセルは入力の 256 画素。1080p ではこれで光が画面全体に届く
+      constexpr int kMaxMips = 8;
 
-      graph.AddPass({ RenderGraph::Read(input.resource), RenderGraph::Write(bright.resource) }, [&] {
-        CommandContext::ShaderBinder binder = BeginFullScreen(frame, L"ThresholdExtract.PS.hlsl", bright);
+      const BloomParam& bloom   = std::get<BloomParam>(param);
+      RenderGraph&      graph   = *frame.graph;
+      ShaderLibrary&    library = frame.dx12->GetShaderLibrary();
+      const auto        shader  = [&library](const wchar_t* entry) -> const Shader& { return *library.Get({ L"Bloom.PS.hlsl", ShaderStage::Pixel, entry }); };
+
+      // 半分の解像度から始め、長い辺が 4 画素を下回る前に止める（Unity URP と同じ数え方）
+      const uint32_t longSide = (std::max)(input.width, input.height) / 2;
+      const int      mipCount = std::clamp(static_cast<int>(std::bit_width(longSide)) - 2, 1, kMaxMips);
+
+      // 8bit だと薄い光の階調が足りないので浮動小数にする（1 画素 4 バイトは入力と同じ）
+      std::array<RenderTexture*, kMaxMips> mips{};
+      for (int i = 0; i < mipCount; ++i) {
+        mips[i] = &graph.Acquire({ (std::max)(1u, input.width >> (i + 1)), (std::max)(1u, input.height >> (i + 1)), DXGI_FORMAT_R11G11B10_FLOAT });
+      }
+
+      const auto draw = [&](const wchar_t* entry, RenderTexture& source, RenderTexture& target, BlendMode blend) {
+        graph.AddPass({ RenderGraph::Read(source.resource), RenderGraph::Write(target.resource) }, [&] {
+          CommandContext::ShaderBinder binder = BeginFullScreen(frame, shader(entry), target, blend);
+          binder.BindSRV("gTexture"_id, source.srvIndex);
+          binder.BindConstants("gParam"_id, bloom);
+          DrawFullScreen(frame);
+        });
+      };
+
+      draw(L"Prefilter", input, *mips[0], BlendMode::Opaque);
+      for (int i = 1; i < mipCount; ++i) {
+        draw(L"Downsample", *mips[i - 1], *mips[i], BlendMode::Opaque);
+      }
+      // Upsample が α に入れた割合で、1 段大きいミップと混ぜる
+      for (int i = mipCount - 1; i > 0; --i) {
+        draw(L"Upsample", *mips[i], *mips[i - 1], BlendMode::Alpha);
+      }
+
+      graph.AddPass({ RenderGraph::Read(input.resource), RenderGraph::Read(mips[0]->resource), RenderGraph::Write(output.resource) }, [&] {
+        CommandContext::ShaderBinder binder = BeginFullScreen(frame, shader(L"Combine"), output);
         binder.BindSRV("gTexture"_id, input.srvIndex);
-        binder.BindConstants("gParam"_id, bloom.threshold);
+        binder.BindSRV("gBloomTexture"_id, mips[0]->srvIndex);
+        binder.BindConstants("gParam"_id, bloom);
         DrawFullScreen(frame);
       });
-      BlurPass(frame, bright, blurX, bloom.sigma, bloom.kernelSize, { 1.0f, 0.0f });
-      BlurPass(frame, blurX, blurY, bloom.sigma, bloom.kernelSize, { 0.0f, 1.0f });
-      graph.AddPass({ RenderGraph::Read(input.resource), RenderGraph::Read(blurY.resource), RenderGraph::Write(output.resource) }, [&] {
-        CommandContext::ShaderBinder binder = BeginFullScreen(frame, L"BloomCombine.PS.hlsl", output);
-        binder.BindSRV("gTexture"_id, input.srvIndex);
-        binder.BindSRV("gBloomTexture"_id, blurY.srvIndex);
-        binder.BindConstants("gParam"_id, bloom.intensity);
-        DrawFullScreen(frame);
-      });
 
-      graph.Release(bright);
-      graph.Release(blurX);
-      graph.Release(blurY);
+      for (int i = 0; i < mipCount; ++i) {
+        graph.Release(*mips[i]);
+      }
     }
 
 #ifdef _DEBUG
@@ -173,8 +197,8 @@ namespace Tako {
     {
       UI::DragFloat("Bloom Intensity", &param.intensity, 0.01f, 0.0f, 10.0f);
       UI::DragFloat("Bloom Threshold", &param.threshold, 0.01f, 0.0f, 1.0f);
-      UI::DragFloat("Bloom Sigma", &param.sigma, 0.01f, 0.0f, 50.0f);
-      UI::DragInt("Bloom Kernel Size", &param.kernelSize, 1.0f, 1, 100);
+      UI::DragFloat("Bloom Scatter", &param.scatter, 0.01f, 0.0f, 1.0f);
+      UI::ColorEdit3("Bloom Tint", &param.tint.x);
     }
 
     void DrawParam(FogParam& param)
@@ -485,7 +509,7 @@ namespace Tako {
       },
     });
 
-    RegisterPostEffect("Bloom", { .defaultParam = BloomParam{ .intensity = 1.0f, .threshold = 1.0f, .sigma = 2.0f, .kernelSize = 10 }, .execute = ExecuteBloom });
+    RegisterPostEffect("Bloom", { .defaultParam = BloomParam{ .intensity = 1.0f, .threshold = 0.9f, .scatter = 0.7f }, .execute = ExecuteBloom });
 
     RegisterPostEffect("Dissolve", {
       .pixelShader  = L"Dissolve.PS.hlsl",

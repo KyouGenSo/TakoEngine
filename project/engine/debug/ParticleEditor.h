@@ -71,7 +71,7 @@ namespace Tako {
       previewGrid_ = previewGrid;
       preview_.Initialize(L"ParticleEditorPreview", cameraSettings);
       // 加算合成の重なりが光って見えるよう、本編の既定より低いしきい値で掛ける
-      previewBloomId_ = preview_.GetPostProcess().Add("Bloom", BloomParam{ .intensity = 1.0f, .threshold = 0.5f, .sigma = 2.0f, .kernelSize = 10 });
+      previewBloomId_ = preview_.GetPostProcess().Add("Bloom", BloomParam{ .intensity = 1.0f, .threshold = 0.5f, .scatter = 0.7f });
     }
 
     /// <summary>

@@ -1024,9 +1024,6 @@
     <FxCompile Include="engine\resources\shaders\Bloom.PS.hlsl">
       <Filter>shader\PostEffect</Filter>
     </FxCompile>
-    <FxCompile Include="engine\resources\shaders\BloomCombine.PS.hlsl">
-      <Filter>shader\PostEffect</Filter>
-    </FxCompile>
     <FxCompile Include="engine\resources\shaders\BWFilter.PS.hlsl">
       <Filter>shader\PostEffect</Filter>
     </FxCompile>
@@ -1040,9 +1037,6 @@
       <Filter>shader\PostEffect</Filter>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\FullScreen.VS.hlsl">
-      <Filter>shader\PostEffect</Filter>
-    </FxCompile>
-    <FxCompile Include="engine\resources\shaders\GaussianBloom.PS.hlsl">
       <Filter>shader\PostEffect</Filter>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\GaussianBlur.PS.hlsl">
@@ -1064,9 +1058,6 @@
       <Filter>shader\PostEffect</Filter>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\RadialBlur.PS.hlsl">
-      <Filter>shader\PostEffect</Filter>
-    </FxCompile>
-    <FxCompile Include="engine\resources\shaders\ThresholdExtract.PS.hlsl">
       <Filter>shader\PostEffect</Filter>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\Vignette.PS.hlsl">

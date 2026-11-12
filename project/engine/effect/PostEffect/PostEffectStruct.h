@@ -29,10 +29,12 @@ namespace Tako {
   /// </summary>
   struct BloomParam
   {
-    float intensity;
-    float threshold;   ///< 高輝度抽出のしきい値
-    float sigma;       ///< ガウシアンブラーのシグマ
-    int   kernelSize;
+    float   intensity;
+    float   threshold;  ///< これより明るい所が光る。境目はしきい値の半分の幅でなだらかにつなぐ
+    float   scatter;    ///< 光の広がり（0.0〜1.0）
+    float   padding;
+    Vector3 tint{ 1.0f, 1.0f, 1.0f };
+    float   padding2;
   };
 
   /// <summary>
