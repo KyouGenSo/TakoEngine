@@ -11,9 +11,12 @@
     <TakoEngineRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..'))</TakoEngineRoot>
     <TakoEngineSrc>$(TakoEngineRoot)project\engine\</TakoEngineSrc>
     <TakoEngineExternals>$(TakoEngineRoot)project\externals\</TakoEngineExternals>
-    <!-- エンジンのビルド結果はエンジンのフォルダーに出す（ソースでも SDK でも同じ形になる）。 -->
-    <TakoEngineBinDir>$(TakoEngineRoot)bin\$(Configuration)\</TakoEngineBinDir>
-    <TakoEngineObjDir>$(TakoEngineRoot)obj\$(ProjectName)\$(Configuration)\</TakoEngineObjDir>
+    <!-- エンジンのビルド結果はエンジンのフォルダーに出す（ソースでも SDK でも同じ形になる）。
+         TakoBuildSuffix は、コンパイラのオプションを変えたビルド（tools/package_sdk.ps1 の /GL なしの Release）を、
+         普段のビルドと別のフォルダーに分けるための物。同じフォルダーで /GL の有無を切り替えると、
+         静的ライブラリの PDB の型の記録が食い違う（リンクで LNK4020）。 -->
+    <TakoEngineBinDir>$(TakoEngineRoot)bin\$(Configuration)$(TakoBuildSuffix)\</TakoEngineBinDir>
+    <TakoEngineObjDir>$(TakoEngineRoot)obj\$(ProjectName)\$(Configuration)$(TakoBuildSuffix)\</TakoEngineObjDir>
   </PropertyGroup>
 
   <!-- ===================================================

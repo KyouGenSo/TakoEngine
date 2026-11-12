@@ -1,0 +1,37 @@
+name: Release
+# v で始まるタグを push すると、SDK の zip を作ってリリースに添付する（UpdateEngine.bat と、エディタの更新の通知がこれを見る）
+on:
+  push:
+   tags:
+    - "v*"
+
+permissions:
+ contents: write
+
+jobs:
+ package:
+  runs-on: windows-2025-vs2026
+
+  steps:
+   - name: Checkout
+     uses: actions/checkout@v4
+
+   - name: Check that the tag matches VERSION
+     shell: pwsh
+     run: |
+      $version = (Get-Content VERSION -TotalCount 1).Trim()
+      if ("v$version" -ne "${{ github.ref_name }}") { throw "tag ${{ github.ref_name }} does not match VERSION ($version)" }
+
+   - name: Build and package the SDK
+     shell: pwsh
+     run: ./tools/package_sdk.ps1
+
+   - name: Create a project from the SDK and build it
+     shell: pwsh
+     run: ./tools/test_sdk.ps1
+
+   - name: Publish the release
+     shell: pwsh
+     env:
+      GH_TOKEN: ${{ github.token }}
+     run: gh release create "${{ github.ref_name }}" (Get-Item dist/*.zip).FullName --title "TakoEngine ${{ github.ref_name }}" --notes "See CHANGELOG.md"

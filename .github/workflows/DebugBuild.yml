@@ -2,7 +2,7 @@ name: DebugBuild
 on:
   push:
    branches:
-    - Ver1.1_Devlop
+    - Ver2.0
 
 env: 
  SOLUTION_FILE_PATH: project/TakoEngine.sln

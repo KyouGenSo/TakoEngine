@@ -17,6 +17,7 @@
 - `UpdateEngine.bat`（エンジンを入れる・更新する）
 - 新しいリリースの通知（Engine Settings > Editor > Check for Updates。1 日 1 回）
 - 配置ファイル（imgui.ini）が無いときの既定のウィンドウの並び
+- 配る用の zip（SDK）を作る `tools/package_sdk.ps1` と、zip だけでプロジェクトを作ってビルドできるかを確かめる `tools/test_sdk.ps1`。タグ `v*` の push で両方を流してリリースに添付するワークフロー（`.github/workflows/Release.yml`）
 
 ### 変更
 - エンジンのビルド結果は、エンジンのフォルダーの `bin/`・`obj/` に出る（ゲームの `Generated/` には出ない）

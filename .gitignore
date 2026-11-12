@@ -340,3 +340,6 @@ project/application/imgui.ini
 # エンジンのビルド結果（TakoEngineCommon.props の TakoEngineBinDir / TakoEngineObjDir）
 /bin/
 /obj/
+
+# tools/package_sdk.ps1 が作る SDK の zip
+/dist/
