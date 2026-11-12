@@ -668,6 +668,9 @@ void BehaviorTreeEditor::HandleLinkCreation() {
 
 void BehaviorTreeEditor::HandleDeletion() {
   if (ed::BeginDelete()) {
+    // ed は削除を、キーやメニューの入力の次のフレームに知らせる。そのフレームは入力が無く treeTracker_ の区間が比べないので、ここで積む
+    const std::string before = SnapshotTree();
+
     // リンクの削除
     ed::LinkId deletedLinkId;
     while (ed::QueryDeletedLink(&deletedLinkId)) {
@@ -689,6 +692,8 @@ void BehaviorTreeEditor::HandleDeletion() {
         RemoveNode(static_cast<int>(deletedNodeId.Get()));
       }
     }
+
+    treeTracker_.RecordExternalChange(before);
   }
   ed::EndDelete();
 }
