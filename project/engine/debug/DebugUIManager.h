@@ -145,6 +145,12 @@ namespace Tako {
     void DrawAnimationPreviewPass() { animationEditor_.DrawPreviewPass(); }
 
     /// <summary>
+    /// マテリアルエディターのプレビューをオフスクリーン RT へ描画
+    /// TakoFramework::Draw() のシーン描画後・ImGui 描画前に呼ぶ
+    /// </summary>
+    void DrawMaterialPreviewPass() { materialEditor_.DrawPreviewPass(); }
+
+    /// <summary>
     /// デバッグビューポートへシーンをデバッグカメラ視点で描画
     /// TakoFramework::Draw() の本編描画後・LineRenderer::Reset() 前に呼ぶ（本編の線分を流用するため）
     /// </summary>

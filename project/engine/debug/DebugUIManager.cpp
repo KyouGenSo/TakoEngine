@@ -117,7 +117,7 @@ namespace Tako {
     const ViewportCameraSettings* cameraSettings = &engineSettings_.GetViewportCameraSettings();
     primitiveEditor_.Initialize(&WindowFlag(Window::PrimitiveEditor), cameraSettings);
     particleEditor_.Initialize(&WindowFlag(Window::ParticleEditor), &engineSettings_.GetParticleEditorGrid(), cameraSettings);
-    materialEditor_.Initialize(&WindowFlag(Window::MaterialEditor));
+    materialEditor_.Initialize(&WindowFlag(Window::MaterialEditor), cameraSettings);
     shaderEditor_.Initialize(&WindowFlag(Window::ShaderEditor));
     renderPipelineWindow_.Initialize(&WindowFlag(Window::RenderPipeline));
     debugViewport_.Initialize(&WindowFlag(Window::DebugViewport), &engineSettings_.GetDebugViewportGrid(), cameraSettings, &sceneEditor_);
@@ -177,6 +177,7 @@ namespace Tako {
     Logger::SetSink(nullptr);
     ClearLogs();
     primitiveEditor_.Finalize();
+    materialEditor_.Finalize();
     particleEditor_.Finalize();
     debugViewport_.Finalize();
     animationEditor_.Finalize();
@@ -214,6 +215,7 @@ namespace Tako {
   void DebugUIManager::Update() {
     // 表示状態に関わらず毎フレーム呼ぶ（非表示検知でプレビューを解放するため）
     primitiveEditor_.Update();
+    materialEditor_.Update();
     BaseScene* scene = SceneManager::GetInstance()->GetCurrentScene();
     particleEditor_.SetEmitterManager(scene ? &scene->GetEmitterManager() : nullptr);
     particleEditor_.SetForceFieldManager(scene ? &scene->GetForceFieldManager() : nullptr);
@@ -254,7 +256,7 @@ namespace Tako {
     cameraAnimationEditor_.Draw();
     isPreviewInputCaptured_ |= animationEditor_.Draw();
     behaviorTreeEditor_.Update();
-    materialEditor_.Draw();
+    isPreviewInputCaptured_ |= materialEditor_.Draw();
     shaderEditor_.Draw();
     renderPipelineWindow_.Draw();
     if (WindowFlag(Window::ImGuiDemo)) ImGui::ShowDemoWindow(&WindowFlag(Window::ImGuiDemo));

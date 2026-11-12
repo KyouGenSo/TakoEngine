@@ -3,22 +3,69 @@
 #ifdef _DEBUG
 #include "EditorUI.h"
 
+#include <algorithm>
 #include <format>
+#include <iterator>
 #include <json.hpp>
 
 #include "AssetBrowser.h"
 #include "DebugUIManager.h"
 #include "ImGuiManager.h"
 #include "Material.h"
+#include "Model.h"
+#include "ModelManager.h"
+#include "Object3d.h"
 #include "OverrideField.h"
 #include "PostProcess.h"
+#include "PrimitiveBuilder.h"
 #include "Renderer.h"
+#include "ShaderLibrary.h"
 
 namespace Tako {
 
   using json = nlohmann::json;
 
+  MaterialEditor::MaterialEditor() = default;
+  MaterialEditor::~MaterialEditor() = default;
+
   namespace {
+
+    constexpr float kPreviewHeight = 260.0f;  ///< プレビュー画像の高さの初期値（px）
+
+    /// <summary>
+    /// プレビューに選べるプリミティブ
+    /// </summary>
+    struct PreviewPrimitive {
+      const char*            name;
+      std::unique_ptr<Model> (*create)();
+    };
+
+    const PreviewPrimitive kPreviewPrimitives[] = {
+      { "Sphere",   [] { return PrimitiveBuilder::CreateSphere(); } },
+      { "Cube",     [] { return PrimitiveBuilder::CreateCube(); } },
+      { "Plane",    [] { return PrimitiveBuilder::CreatePlane(); } },
+      { "Cylinder", [] { return PrimitiveBuilder::CreateCylinder(); } },
+      { "Torus",    [] { return PrimitiveBuilder::CreateTorus(); } },
+    };
+
+    /// <summary>
+    /// メッシュに貼れるシェーダーか（Sprite や SkyBox のシェーダーは、頂点の並びと受け取る値が違う）
+    /// </summary>
+    bool IsMeshShader(const ShaderAsset& shader)
+    {
+      const GraphicsPipelineDesc* forward = shader.GetPass(ShaderPass::Forward);
+      return forward && forward->vertexLayout == VertexLayout::Mesh;
+    }
+
+    /// <summary>
+    /// Forward のどれかのパスが gOpaqueTexture を読むか
+    /// </summary>
+    bool ReadsOpaqueTexture(const ShaderAsset& shader)
+    {
+      const auto                  declares = [](const GraphicsPipelineDesc& pass) { return pass.ps && pass.ps->Declares("gOpaqueTexture"); };
+      const GraphicsPipelineDesc* forward  = shader.GetPass(ShaderPass::Forward);
+      return (forward && declares(*forward)) || std::ranges::any_of(shader.GetExtraForwardPasses(), declares);
+    }
 
     /// <summary>
     /// 名前の表から列挙の値を選ぶ。offset は「値 - 添字」（D3D12_COMPARISON_FUNC は 1 から始まる）
@@ -44,13 +91,101 @@ namespace Tako {
     return kShortcuts;
   }
 
-  void MaterialEditor::Draw()
+  void MaterialEditor::Update()
   {
     if (!*isOpen_) {
+      // エディタを閉じたらプレビューを破棄
+      previewObject_.reset();
+      floorObject_.reset();
       return;
     }
 
-    ImGui::SetNextWindowSize(ImVec2(820.0f, 560.0f), ImGuiCond_FirstUseEver);
+    // ポストエフェクトのマテリアルを選んでいる間だけ、プレビュー専用のスタックに 1 つ置く（値は preview_.Update が毎フレーム作り直す）
+    MaterialLibrary*                                library = MaterialLibrary::GetInstance();
+    const std::shared_ptr<const PostEffectMaterial> post    = library->IsPostEffectMaterial(selected_) ? library->LoadPostEffect(selected_) : nullptr;
+    PostProcessStack&                               stack   = preview_.GetPostProcess();
+    if ((stack.GetEffects().empty() ? nullptr : stack.GetEffects().front().material) != post) {
+      stack.Clear();
+      if (PostEffectInstance* effect = post ? stack.Find(stack.Add(post->shader)) : nullptr) {
+        effect->material = post;
+      }
+    }
+
+    preview_.Update();
+
+    if (!floorObject_) {
+      floorObject_ = std::make_unique<Object3d>();
+      floorObject_->Initialize();
+      floorObject_->SetModel(PrimitiveBuilder::CreatePlane({ .width = 10.0f, .height = 10.0f }));
+      floorObject_->SetMaterialColor(Vector4(0.35f, 0.35f, 0.35f, 1.0f));
+      floorObject_->SetTranslate(Vector3(0.0f, -1.0f, 0.0f));
+    }
+
+    if (!previewObject_) {
+      previewObject_ = std::make_unique<Object3d>();
+      previewObject_->Initialize();
+      isMeshDirty_ = true;
+    }
+
+    // モデルの差し替えはコマンド未記録・GPU アイドルのここでのみ行う（ImGui ハンドラ内での差し替えは記録済みコマンドの参照先を壊す）
+    if (isMeshDirty_) {
+      if (previewModel_.empty()) {
+        previewObject_->SetModel(kPreviewPrimitives[previewPrimitive_].create());
+      }
+      else {
+        previewObject_->SetModel(previewModel_);
+      }
+      isMeshDirty_ = false;
+    }
+
+    // メッシュ用でないシェーダーとポストエフェクトのマテリアルは、モデルの既定のマテリアルで描く
+    std::shared_ptr<Material> material = library->Find(selected_);
+    if (material && !IsMeshShader(*material->GetShader())) {
+      material.reset();
+    }
+    if (const Model* model = previewObject_->GetModel()) {
+      for (size_t i = 0; i < model->GetMeshCount(); ++i) {
+        previewObject_->SetMaterial(i, material);
+      }
+    }
+
+    floorObject_->Update();
+    previewObject_->Update();
+  }
+
+  void MaterialEditor::Finalize()
+  {
+    previewObject_.reset();
+    floorObject_.reset();
+    preview_.Finalize();
+  }
+
+  void MaterialEditor::DrawPreviewPass()
+  {
+    if (!*isOpen_ || !preview_.IsReady() || !previewObject_) {
+      return;
+    }
+
+    preview_.BeginPass();
+
+    // プレビュー用の描画物だけをプレビューカメラ視点で描く
+    Renderer* renderer = Renderer::GetInstance();
+    renderer->RenderImmediate(renderer->MakeView(preview_.GetCamera(), preview_.GetSize()), [this] {
+      floorObject_->Draw();
+      previewObject_->Draw();
+    });
+
+    preview_.EndPass();
+  }
+
+  bool MaterialEditor::Draw()
+  {
+    if (!*isOpen_) {
+      return false;
+    }
+
+    bool inputCaptured = false;
+    ImGui::SetNextWindowSize(ImVec2(820.0f, 720.0f), ImGuiCond_FirstUseEver);
     if (ImGui::Begin(WindowTitle::kMaterialEditor, isOpen_)) {
       // UI を描く区間の前後で保存内容を比べて編集を検出する
       tracker_.BeginSection();
@@ -63,11 +198,27 @@ namespace Tako {
 
       ImGui::SameLine();
       if (ImGui::BeginChild("Material##MatEditor", ImVec2(0.0f, 0.0f), ImGuiChildFlags_Borders)) {
-        if (std::shared_ptr<Material> material = MaterialLibrary::GetInstance()->Find(selected_)) {
-          DrawMaterialPane(*material);
-        }
-        else if (MaterialLibrary::GetInstance()->IsPostEffectMaterial(selected_)) {
-          DrawPostEffectPane();
+        const std::shared_ptr<Material> material = MaterialLibrary::GetInstance()->Find(selected_);
+        if (material || MaterialLibrary::GetInstance()->IsPostEffectMaterial(selected_)) {
+          if (UI::IconButton(ICON_FA_FLOPPY_DISK, "Save (Ctrl+S)")) {
+            Save();
+          }
+          ImGui::SameLine();
+          ImGui::AlignTextToFramePadding();
+          ImGui::Text("%s%s", selected_.c_str(), tracker_.IsEdited() ? " *" : "");
+
+          inputCaptured = DrawPreview();
+
+          // 設定だけをスクロールさせ、プレビューは見えたままにする
+          if (ImGui::BeginChild("Settings##MatEditor")) {
+            if (material) {
+              DrawMaterialPane(*material);
+            }
+            else {
+              DrawPostEffectPane();
+            }
+          }
+          ImGui::EndChild();
         }
         else {
           ImGui::TextDisabled("Select or create a material");
@@ -81,6 +232,7 @@ namespace Tako {
       ProcessShortcuts(Shortcuts(), *this);
     }
     ImGui::End();
+    return inputCaptured;
   }
 
   void MaterialEditor::CollectUnsavedChanges(std::vector<std::string>& out) const
@@ -167,16 +319,54 @@ namespace Tako {
     ImGui::EndDisabled();
   }
 
+  bool MaterialEditor::DrawPreview()
+  {
+    bool inputCaptured = false;
+    // 下端ドラッグで高さを調整できる。サイズ指定は初期値で、調整結果は imgui.ini に保存される
+    if (ImGui::BeginChild("Preview##MatEditor", ImVec2(0.0f, kPreviewHeight), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeY)) {
+      inputCaptured = preview_.DrawImage();
+    }
+    ImGui::EndChild();
+
+    preview_.DrawCameraToolbar();
+    ImGui::SameLine();
+    ImGui::TextUnformatted("Mesh");
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(220.0f);
+    if (ImGui::BeginCombo("##PreviewMesh", previewModel_.empty() ? kPreviewPrimitives[previewPrimitive_].name : previewModel_.c_str(), ImGuiComboFlags_HeightLarge)) {
+      for (size_t i = 0; i < std::size(kPreviewPrimitives); ++i) {
+        if (ImGui::Selectable(kPreviewPrimitives[i].name, previewModel_.empty() && i == previewPrimitive_)) {
+          previewPrimitive_ = i;
+          previewModel_.clear();
+          isMeshDirty_ = true;
+        }
+      }
+      ImGui::SeparatorText("Models");
+      for (const std::string& model : ModelManager::GetInstance()->GetLoadedModelNames()) {
+        if (ImGui::Selectable(model.c_str(), model == previewModel_)) {
+          previewModel_ = model;
+          isMeshDirty_  = true;
+        }
+      }
+      ImGui::EndCombo();
+    }
+
+    if (const std::shared_ptr<Material> material = MaterialLibrary::GetInstance()->Find(selected_)) {
+      if (!IsMeshShader(*material->GetShader())) {
+        ImGui::TextDisabled("This shader is not for meshes (showing the default material)");
+      }
+      else if (ReadsOpaqueTexture(*material->GetShader())) {
+        // ponytail: プレビューでは写していないので黒を読む。要るなら PreviewViewport で床を描いた後の描画先を写して渡す
+        ImGui::TextDisabled("gOpaqueTexture is black in the preview");
+      }
+    }
+    return inputCaptured;
+  }
+
   void MaterialEditor::DrawMaterialPane(Material& material)
   {
     MaterialLibrary* library = MaterialLibrary::GetInstance();
 
-    if (UI::IconButton(ICON_FA_FLOPPY_DISK, "Save (Ctrl+S)")) {
-      Save();
-    }
-    ImGui::SameLine();
-    ImGui::AlignTextToFramePadding();
-    ImGui::Text("%s%s", selected_.c_str(), tracker_.IsEdited() ? " *" : "");
     ImGui::TextDisabled("Assign to objects in Inspector > MeshComponent > Rendering");
 
     // シェーダーと描画設定・テクスチャのファイル名は保存内容を書き換えて当てはめる（値は名前で引き継がれる）
@@ -253,12 +443,6 @@ namespace Tako {
   {
     MaterialLibrary* library = MaterialLibrary::GetInstance();
 
-    if (UI::IconButton(ICON_FA_FLOPPY_DISK, "Save (Ctrl+S)")) {
-      Save();
-    }
-    ImGui::SameLine();
-    ImGui::AlignTextToFramePadding();
-    ImGui::Text("%s%s", selected_.c_str(), tracker_.IsEdited() ? " *" : "");
     ImGui::TextDisabled("Add to the stack in PostEffect Editor (Materials). Edits apply to every effect that uses this material");
 
     // シェーダーとテクスチャのファイル名は保存内容を書き換えて当てはめる（値は名前で引き継がれる）

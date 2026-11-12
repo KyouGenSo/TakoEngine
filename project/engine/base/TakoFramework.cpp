@@ -293,6 +293,7 @@ namespace Tako {
     DebugUIManager::GetInstance()->DrawPrimitivePreviewPass();
     DebugUIManager::GetInstance()->DrawParticlePreviewPass();
     DebugUIManager::GetInstance()->DrawAnimationPreviewPass();
+    DebugUIManager::GetInstance()->DrawMaterialPreviewPass();
 #endif
 
     /// ============================================= ///
