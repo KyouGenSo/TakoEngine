@@ -459,6 +459,8 @@ namespace Tako {
         }
       }
 
+      DebugUIManager::GetInstance()->GetScriptCompiler().SetAutoCompile(editor.value("AutoCompile", true));
+
       SceneManager* sceneManager = SceneManager::GetInstance();
       if (editor.contains("PlayFromScene") && editor["PlayFromScene"].is_object()) {
         playFromSceneByProject_ = editor["PlayFromScene"].get<std::map<std::string, std::string>>();
@@ -525,6 +527,21 @@ namespace Tako {
     }
   }
 
+  void EngineSettingsWindow::ReleaseForModuleReload() {
+    moduleReloadGameSettings_ = SerializeGameSettings();
+    moduleReloadSelection_    = selectedGameSettings_ ? selectedGameSettings_->name : "";
+    selectedGameSettings_     = nullptr;
+  }
+
+  void EngineSettingsWindow::RestoreAfterModuleReload() {
+    DeserializeGameSettings(moduleReloadGameSettings_);
+    selectedGameSettings_ = moduleReloadSelection_.empty() ? nullptr : TypeRegistry::GetInstance()->Find(moduleReloadSelection_);
+    moduleReloadGameSettings_.clear();
+    moduleReloadSelection_.clear();
+    // Save の改名で書き換えたソースも、ビルドし直した DLL には入っている
+    isRebuildRequired_ = false;
+  }
+
   void EngineSettingsWindow::SaveEditorSettings() {
     const std::filesystem::path& path = EditorSettingsPath();
     std::error_code ec;
@@ -577,6 +594,7 @@ namespace Tako {
       { "ViewportCamera",     { { "MoveSpeed", viewportCamera_.moveSpeed }, { "Sensitivity", viewportCamera_.lookSensitivity }, { "FovY", viewportCamera_.fovY } } },
       { "StartupWindows",     startupWindows },
       { "PlayFromScene",      playFromSceneByProject },
+      { "AutoCompile",        DebugUIManager::GetInstance()->GetScriptCompiler().IsAutoCompile() },
     };
     return root.dump(4);
   }
@@ -1186,6 +1204,14 @@ namespace Tako {
     if (UI::Combo("Theme", &themeIndex_, getThemeName, nullptr, themeCount, 12)) {
       ApplyImGuiTheme(themeIndex_);
     }
+
+    ImGui::SeparatorText("Scripts");
+    ScriptCompiler& compiler      = DebugUIManager::GetInstance()->GetScriptCompiler();
+    bool            isAutoCompile = compiler.IsAutoCompile();
+    if (UI::Checkbox("Auto Compile", &isAutoCompile)) {
+      compiler.SetAutoCompile(isAutoCompile);
+    }
+    ImGui::SetItemTooltip("Compile and reload the scripts when the editor gets focus and a source file under Script or Source has changed");
 
     ImGui::SeparatorText("Viewport Camera");
     UI::DragFloat("Default Move Speed", &viewportCamera_.moveSpeed, 0.1f, 0.05f, 500.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);

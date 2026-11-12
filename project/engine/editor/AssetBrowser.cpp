@@ -320,7 +320,7 @@ namespace Tako {
     /// 実行中の VS（ROT の "!VisualStudio.DTE."）のうち、path をプロジェクトに含むものの DTE で開く。プロジェクトの一員として開くので IntelliSense が効く
     /// </summary>
     /// <returns>そういう VS が無ければ false</returns>
-    bool OpenInVisualStudio(const fs::path& path) {
+    bool OpenInVisualStudio(const fs::path& path, int line) {
       using Microsoft::WRL::ComPtr;
       ComPtr<IRunningObjectTable> table;
       ComPtr<IEnumMoniker>        monikers;
@@ -352,6 +352,16 @@ namespace Tako {
           VariantInit(&window);
           isOpened = operations && InvokeByName(operations.Get(), L"OpenFile", DISPATCH_METHOD, &window, &fileArgument);
           VariantClear(&window);
+          if (isOpened && line > 0) {
+            const ComPtr<IDispatch> document  = GetDispatchByName(dte.Get(), L"ActiveDocument");
+            const ComPtr<IDispatch> selection = document ? GetDispatchByName(document.Get(), L"Selection") : nullptr;
+            VARIANT                 lineArgument;
+            lineArgument.vt   = VT_I4;
+            lineArgument.lVal = line;
+            if (selection) {
+              InvokeByName(selection.Get(), L"GotoLine", DISPATCH_METHOD, nullptr, &lineArgument);
+            }
+          }
           if (const ComPtr<IDispatch> mainWindow = isOpened ? GetDispatchByName(dte.Get(), L"MainWindow") : nullptr) {
             // 前面にいるこのプロセスが許可しないと、VS は自分を前に出せない
             AllowSetForegroundWindow(ASFW_ANY);
@@ -398,8 +408,8 @@ namespace Tako {
     }
   }
 
-  void OpenSourceFile(const std::filesystem::path& path) {
-    if (!OpenInVisualStudio(path)) {
+  void OpenSourceFile(const std::filesystem::path& path, int line) {
+    if (!OpenInVisualStudio(path, line)) {
       OpenWithShell(path);
     }
   }

@@ -3,6 +3,7 @@
 #include "NewScript.h"
 #include "EditorUI.h"
 #include "DebugUIManager.h"
+#include "Project.h"
 #include "TypeRegistry.h"
 
 #include "imgui.h"
@@ -14,7 +15,6 @@
 #include <fstream>
 #include <iterator>
 #include <optional>
-#include <vector>
 
 namespace Tako {
 
@@ -103,21 +103,6 @@ namespace Tako {
       return true;
     }
 
-    /// <summary>
-    /// 作業フォルダにただ 1 つある .vcxproj。無いか複数あれば空
-    /// </summary>
-    fs::path FindProjectFile()
-    {
-      std::vector<fs::path> found;
-      std::error_code       error;
-      for (const fs::directory_entry& entry : fs::directory_iterator(".", error)) {
-        if (entry.is_regular_file() && entry.path().extension() == ".vcxproj") {
-          found.push_back(entry.path());
-        }
-      }
-      return found.size() == 1 ? found[0] : fs::path();
-    }
-
   } // namespace
 
   std::string CreateScriptFiles(const std::string& name, const std::string& directory)
@@ -134,7 +119,7 @@ namespace Tako {
     if (fs::exists(header, error) || fs::exists(source, error)) {
       return std::format("{} already exists", header.generic_string());
     }
-    const fs::path project = FindProjectFile();
+    const fs::path project = Project::GetProjectFile();
     if (project.empty()) {
       return "The working folder must contain exactly one .vcxproj";
     }
@@ -209,8 +194,10 @@ namespace Tako {
       popupError = CreateScriptFiles(nameBuffer, popupDirectory);
       if (popupError.empty()) {
         DebugUIManager::GetInstance()->AddLog(
-          std::format("Created {0}/{1}.h and {1}.cpp. Build the game to use it (Visual Studio asks to reload the project)", popupDirectory, nameBuffer),
+          std::format("Created {0}/{1}.h and {1}.cpp (Visual Studio asks to reload the project)", popupDirectory, nameBuffer),
           DebugUIManager::LogType::Info);
+        // 新しい型は、ビルドして DLL を差し替えると一覧に出る
+        DebugUIManager::GetInstance()->GetScriptCompiler().Compile();
         isCreated = true;
       }
     }

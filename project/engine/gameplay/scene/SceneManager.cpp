@@ -147,6 +147,37 @@ namespace Tako {
     playRequest_ = PlayRequest::Stop;
   }
 
+  void SceneManager::UnloadSceneForModuleReload()
+  {
+    if (!scene_) {
+      return;
+    }
+    if (isPlaying_) {
+      // 起動から Play していた（Play 前の中身が無い）ならファイルから作り直す
+      moduleReloadScene_    = playSceneName_.empty() ? currentSceneName_ : playSceneName_;
+      moduleReloadSnapshot_ = std::move(playSnapshot_);
+      isPlaying_            = false;
+      playRequest_          = PlayRequest::None;
+      playSceneName_.clear();
+      sessionData_.reset();
+    } else {
+      moduleReloadScene_    = currentSceneName_;
+      moduleReloadSnapshot_ = std::make_unique<nlohmann::json>(scene_->Save());
+    }
+    scene_->Shutdown();
+    scene_.reset();
+  }
+
+  void SceneManager::RestoreSceneAfterModuleReload()
+  {
+    if (moduleReloadScene_.empty()) {
+      return;
+    }
+    ReloadSceneImmediate(moduleReloadScene_, moduleReloadSnapshot_.get());
+    moduleReloadSnapshot_.reset();
+    moduleReloadScene_.clear();
+  }
+
   std::vector<std::string> SceneManager::GetSceneNames() const
   {
     return BaseScene::GetSceneFileNames();

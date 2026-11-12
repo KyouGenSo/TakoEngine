@@ -92,6 +92,16 @@ namespace Tako {
     void CollectUnsavedChanges(std::vector<std::string>& out) const;
 
     /// <summary>
+    /// ゲームの DLL を差し替える前に、GameSettings の値（未保存の編集も）を控え、DLL の型を指すポインタを捨てる
+    /// </summary>
+    void ReleaseForModuleReload();
+
+    /// <summary>
+    /// 作り直された GameSettings へ、ReleaseForModuleReload で控えた値を戻す
+    /// </summary>
+    void RestoreAfterModuleReload();
+
+    /// <summary>
     /// キー操作の表。Draw のキー処理と About の一覧が使う
     /// </summary>
     static std::span<const ShortcutBinding<EngineSettingsWindow>> Shortcuts();
@@ -224,6 +234,10 @@ namespace Tako {
     std::span<bool>        startupWindows_;                         ///< 起動時に開くウィンドウ（DebugUIManager 所有）
 
     std::map<std::string, std::string> playFromSceneByProject_;  ///< 作業ディレクトリ → 開発用起動シーン。個人設定ファイルは全プロジェクト共通のため分けて持つ
+
+    //ゲームの DLL の差し替え
+    std::string moduleReloadGameSettings_;  ///< SerializeGameSettings
+    std::string moduleReloadSelection_;     ///< selectedGameSettings_ の型名
 
     //コード生成
     bool isRebuildRequired_ = false;  ///< Save の改名でソースを書き換えた。実行中のコードは再ビルド・再起動まで古い名前のまま

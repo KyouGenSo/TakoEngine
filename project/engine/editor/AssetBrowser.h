@@ -176,7 +176,8 @@ namespace Tako {
   /// <summary>
   /// ソースファイルを、そのファイルをプロジェクトに含むソリューションを開いている VS で開く。そういう VS が無ければ OpenWithShell
   /// </summary>
-  TAKO_API void OpenSourceFile(const std::filesystem::path& path);
+  /// <param name="line">VS で開いたときに移動する行（1 から。0 なら動かさない）</param>
+  TAKO_API void OpenSourceFile(const std::filesystem::path& path, int line = 0);
 
   /// <summary>
   /// Script フォルダから「型名.h」を探して OpenSourceFile で開く

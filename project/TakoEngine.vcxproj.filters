@@ -159,6 +159,12 @@
     <ClCompile Include="engine\editor\Project.cpp">
       <Filter>editor</Filter>
     </ClCompile>
+    <ClCompile Include="engine\editor\ChildProcess.cpp">
+      <Filter>editor</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\editor\ScriptCompiler.cpp">
+      <Filter>editor</Filter>
+    </ClCompile>
     <ClCompile Include="engine\gameplay\scene\SceneSelfTest.cpp">
       <Filter>gameplay\scene</Filter>
     </ClCompile>
@@ -561,6 +567,12 @@
       <Filter>editor</Filter>
     </ClInclude>
     <ClInclude Include="engine\editor\Project.h">
+      <Filter>editor</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\editor\ChildProcess.h">
+      <Filter>editor</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\editor\ScriptCompiler.h">
       <Filter>editor</Filter>
     </ClInclude>
     <ClInclude Include="engine\gameplay\scene\SceneSelfTest.h">

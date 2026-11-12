@@ -156,6 +156,17 @@ public: //メンバー関数
   void Clear();
 
   /// <summary>
+  /// ゲームの DLL を差し替える前に、ノード（その DLL の型の物を含む）を全部手放す
+  /// </summary>
+  /// <returns>RestoreAfterModuleReload に渡す木の内容</returns>
+  std::string ReleaseForModuleReload();
+
+  /// <summary>
+  /// ReleaseForModuleReload で手放した木を作り直す。型が無くなったノードは落とす
+  /// </summary>
+  void RestoreAfterModuleReload(const std::string& tree);
+
+  /// <summary>
   /// 未保存の変更があれば、そのツリーを out に追加する（終了時の確認用）
   /// </summary>
   void CollectUnsavedChanges(std::vector<std::string>& out) const;

@@ -102,6 +102,16 @@ namespace Tako {
     /// </summary>
     void RequestStop();
 
+    /// <summary>
+    /// ゲームの DLL を差し替える前に呼ぶ。Play 中なら Stop と同じく Play 前の中身に戻す。作り直すための中身を控えて、シーンを消す
+    /// </summary>
+    void UnloadSceneForModuleReload();
+
+    /// <summary>
+    /// UnloadSceneForModuleReload で消したシーンを、Edit で作り直す
+    /// </summary>
+    void RestoreSceneAfterModuleReload();
+
     //======================================================
     //Setter
     //======================================================
@@ -133,6 +143,11 @@ namespace Tako {
     /// 遷移中でなければ true（Stop は遷移中に作り直せない）
     /// </summary>
     bool CanStop() const { return isPlaying_ && !nextScene_; }
+
+    /// <summary>
+    /// 遷移中でなければ true（次のシーンを持っている間は、ゲームの DLL を差し替えない）
+    /// </summary>
+    bool CanReloadModule() const { return !nextScene_; }
 
     /// <summary>
     /// シーンを替えても残る値（スコア、選んだステージなど）。キーと値はゲームが決める。エディタの Stop で空に戻る
@@ -179,6 +194,10 @@ namespace Tako {
     std::unique_ptr<nlohmann::json> playSnapshot_;                     ///< Edit から Play に入ったときの中身。Stop で戻す
     std::string                     playSceneName_;                    ///< Play を始めたシーン
     std::unique_ptr<nlohmann::json> sessionData_;                      ///< GetSessionData の中身。最初に使うときに作る
+
+    //ゲームの DLL の差し替え
+    std::unique_ptr<nlohmann::json> moduleReloadSnapshot_;  ///< 作り直す中身。空ならシーンファイルから読む
+    std::string                     moduleReloadScene_;     ///< 作り直すシーン。空なら、消したシーンは無い
   };
 
 } // namespace Tako

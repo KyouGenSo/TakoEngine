@@ -26,6 +26,7 @@
 #include "CameraAnimationEditor.h"
 #include "AnimationEditor.h"
 #include "BehaviorTreeEditor.h"
+#include "ScriptCompiler.h"
 
 namespace Tako {
 
@@ -122,6 +123,11 @@ namespace Tako {
     void Draw();
 
     /// <summary>
+    /// スクリプトのビルドを進め、ビルドし直した Game.dll があれば差し替える。フレームの最初（前のフレームの GPU 処理が終わった後）に呼ぶ
+    /// </summary>
+    void UpdateGameModule();
+
+    /// <summary>
     /// どのウィンドウでも効く F キー。Draw の最初の処理と About の一覧が使う
     /// </summary>
     static std::span<const ShortcutBinding<DebugUIManager>> Shortcuts();
@@ -196,6 +202,8 @@ namespace Tako {
     //============================================================
     const std::vector<LogEntry>& GetLogs() const { return consoleLogs_; }
 
+    ScriptCompiler& GetScriptCompiler() { return scriptCompiler_; }
+
     bool IsWindowVisible(Window window) const { return windowVisibility_[static_cast<size_t>(window)]; }
 
     /// <summary>
@@ -222,6 +230,11 @@ namespace Tako {
     void ToggleWindow(Window window) { WindowFlag(window) = !WindowFlag(window); }
 
     void RequestSceneChange(const std::string& sceneName);
+
+    /// <summary>
+    /// ゲームの DLL の型の物（シーン・BT エディタの木・GameSettings）を消して DLL を差し替え、作り直す。Play 中なら Edit に戻る
+    /// </summary>
+    void ReloadGameModule();
 
     /// <summary>
     /// Assets のダブルクリックとアセットの欄の Open で、種類ごとに開くエディタを登録する
@@ -347,6 +360,11 @@ namespace Tako {
     int   fpsHistoryIndex_ = 0;
 
     bool* pEndFlag_ = nullptr;  ///< アプリケーション終了フラグへのポインタ
+
+    //スクリプトのビルドと差し替え
+    ScriptCompiler                        scriptCompiler_;
+    std::chrono::steady_clock::time_point lastModuleCheck_;         ///< Game.dll の更新時刻を最後に見た時刻（外でビルドされた DLL は 1 秒おきに見る）
+    int                                   outdatedChecks_ = 0;      ///< Game.dll が変わったのを続けて見た回数
 
     //終了の確認
     std::vector<std::string> unsavedChanges_;                ///< 確認モーダルに出す未保存の一覧（ConfirmExit で集める）

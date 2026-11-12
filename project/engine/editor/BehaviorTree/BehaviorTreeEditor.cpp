@@ -214,6 +214,16 @@ void BehaviorTreeEditor::Clear() {
   pendingNavigateToContent_ = true;
 }
 
+std::string BehaviorTreeEditor::ReleaseForModuleReload() {
+  std::string tree = SnapshotTree();
+  Clear();
+  return tree;
+}
+
+void BehaviorTreeEditor::RestoreAfterModuleReload(const std::string& tree) {
+  RestoreTree(tree);
+}
+
 std::span<const ShortcutBinding<BehaviorTreeEditor>> BehaviorTreeEditor::Shortcuts() {
   static constexpr ShortcutBinding<BehaviorTreeEditor> kShortcuts[] = {
     { ImGuiMod_Ctrl | ImGuiKey_S, ImGuiInputFlags_None, "Save the tree", [](BehaviorTreeEditor& editor) { editor.SaveTree(editor.currentTreeName_); } },

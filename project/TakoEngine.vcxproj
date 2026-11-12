@@ -100,6 +100,12 @@
     <ClCompile Include="engine\gameplay\component\BehaviorTreeComponent.cpp" />
     <ClCompile Include="engine\gameplay\ai\BehaviorTree\Nodes\BTActorNodes.cpp" />
     <ClCompile Include="engine\editor\NewScript.cpp" />
+    <ClCompile Include="engine\editor\ChildProcess.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="engine\editor\ScriptCompiler.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="engine\editor\Project.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
@@ -283,6 +289,8 @@
     <ClInclude Include="engine\gameplay\ai\BehaviorTree\Nodes\BTActorNodes.h" />
     <ClInclude Include="engine\editor\NewScript.h" />
     <ClInclude Include="engine\editor\Project.h" />
+    <ClInclude Include="engine\editor\ChildProcess.h" />
+    <ClInclude Include="engine\editor\ScriptCompiler.h" />
     <ClInclude Include="engine\gameplay\scene\SceneSelfTest.h" />
     <ClInclude Include="engine\gameplay\actor\ActorRef.h" />
     <ClInclude Include="engine\gameplay\component\UILayoutComponent.h" />

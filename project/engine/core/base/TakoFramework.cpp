@@ -227,6 +227,8 @@ namespace Tako {
     // GPU は前フレームを描き終えているので、ここで PSO を作り直してよい
     dx12_->GetShaderLibrary().ReloadChangedShaders();
     MaterialLibrary::GetInstance()->Update();
+    // シーンを消して作り直すので、このフレームの更新が始まる前に行う
+    DebugUIManager::GetInstance()->UpdateGameModule();
 #endif
 
     // 前フレームの GPU 処理は EndDraw で完了済みなので、ここなら RT を作り直せる。

@@ -19,13 +19,16 @@
 #include "LineRenderer.h"
 #include "GPUParticle.h"
 #include "Logger.h"
+#include "StringUtility.h"
 #include "EmitterManager.h"
 #include "Audio.h"
 #include "BehaviorTreeEditor.h"
+#include "GameModule.h"
 #include "NewScript.h"
 #include "UnsavedChangesModal.h"
 
 #include <algorithm>
+#include <cctype>
 #include <iomanip>
 #include <sstream>
 #include <set>
@@ -70,6 +73,23 @@ namespace Tako {
       { "Behavior Tree Editor",                               [] { DrawShortcutTable(BehaviorTreeEditor::Shortcuts()); } },
       { "Assets",                                             [] { DrawShortcutTable(AssetBrowser::Shortcuts()); } },
     };
+
+    /// <summary>
+    /// 「ファイル(行[,列]): …」で始まるログ（コンパイラのエラー）なら、そのファイルの行を VS で開く
+    /// </summary>
+    void OpenLogLocation(const std::string& message) {
+      // ドライブ名の「:」の後ろから探す（C:\...(12,5): error ...）
+      const size_t open  = message.find('(', 2);
+      const size_t close = open == std::string::npos ? open : message.find_first_of(",)", open);
+      if (close == std::string::npos || close == open + 1 || !std::all_of(message.begin() + open + 1, message.begin() + close, [](unsigned char c) { return std::isdigit(c); })) {
+        return;
+      }
+      const std::filesystem::path path = StringUtility::ConvertString(message.substr(0, open));
+      std::error_code             error;
+      if (std::filesystem::is_regular_file(path, error)) {
+        OpenSourceFile(path, std::stoi(message.substr(open + 1, close - open - 1)));
+      }
+    }
 
     /// <summary>
     /// メニューバー用の区切り線（メニューバー内の Separator は縦線になる）
@@ -196,6 +216,7 @@ namespace Tako {
       { ImGuiKey_F7,  ImGuiInputFlags_None, "Pause / Resume",      [](DebugUIManager& manager) { manager.SetGamePaused(!FrameTimer::GetInstance()->IsPaused()); } },
       { ImGuiKey_F8,  ImGuiInputFlags_None, "Step Frame",          [](DebugUIManager& manager) { manager.StepFrame(); } },
       { ImGuiKey_F9,  ImGuiInputFlags_None, "Play / Stop (Edit)",  [](DebugUIManager& manager) { manager.TogglePlay(); } },
+      { ImGuiMod_Ctrl | ImGuiKey_B, ImGuiInputFlags_None, "Compile Scripts", [](DebugUIManager& manager) { manager.scriptCompiler_.Compile(); } },
       { ImGuiKey_F10, ImGuiInputFlags_None, "Show Main Windows",   [](DebugUIManager& manager) {
         for (Window window : kMainWindows) {
           manager.WindowFlag(window) = true;
@@ -210,6 +231,51 @@ namespace Tako {
       } },
     };
     return kShortcuts;
+  }
+
+  void DebugUIManager::UpdateGameModule() {
+    const bool wasCompiling = scriptCompiler_.IsCompiling();
+    scriptCompiler_.Update();
+    if (scriptCompiler_.IsCompiling()) {
+      return;
+    }
+    // 自分のビルドが終わったフレームはすぐ見る。それ以外（VS など外でのビルド）は 1 秒おきに見る
+    const auto now = std::chrono::steady_clock::now();
+    if (!wasCompiling && now - lastModuleCheck_ < std::chrono::seconds(1)) {
+      return;
+    }
+    lastModuleCheck_ = now;
+    if (!GameModule::IsOutdated()) {
+      outdatedChecks_ = 0;
+      return;
+    }
+    // 外でのビルドは、DLL の後に PDB を書き終えるまで待つ（2 回続けて見えてから差し替える）
+    if (!wasCompiling && ++outdatedChecks_ < 2) {
+      return;
+    }
+    outdatedChecks_ = 0;
+    ReloadGameModule();
+  }
+
+  void DebugUIManager::ReloadGameModule() {
+    SceneManager* sceneManager = SceneManager::GetInstance();
+    if (!sceneManager->CanReloadModule()) {
+      return;
+    }
+    const bool  wasPlaying = sceneManager->IsPlaying();
+    std::string tree;
+    const bool  isReloaded = GameModule::Reload([&] {
+      tree = behaviorTreeEditor_.ReleaseForModuleReload();
+      engineSettings_.ReleaseForModuleReload();
+      sceneManager->UnloadSceneForModuleReload();
+    });
+    if (!isReloaded) {
+      return;
+    }
+    sceneManager->RestoreSceneAfterModuleReload();
+    engineSettings_.RestoreAfterModuleReload();
+    behaviorTreeEditor_.RestoreAfterModuleReload(tree);
+    AddLog(wasPlaying ? "Scripts reloaded (Play was stopped)" : "Scripts reloaded");
   }
 
   void DebugUIManager::Update() {
@@ -447,6 +513,11 @@ namespace Tako {
       }
 
       if (ImGui::BeginMenu("Debug")) {
+        if (ImGui::MenuItem(ICON_FA_HAMMER "  Compile Scripts", "Ctrl+B", false, !scriptCompiler_.IsCompiling())) {
+          scriptCompiler_.Compile();
+        }
+        ImGui::Separator();
+
         bool paused = FrameTimer::GetInstance()->IsPaused();
         if (ImGui::MenuItem("Pause", "F7", &paused)) {
           SetGamePaused(paused);
@@ -506,10 +577,12 @@ namespace Tako {
   void DebugUIManager::DrawFrameStats() {
     constexpr const char* kPausedText  = "PAUSED";
     constexpr const char* kRebuildText = "REBUILD REQUIRED";
+    constexpr const char* kCompileText = "COMPILING";
 
     const float       fps               = FrameTimer::GetInstance()->GetFPS();
     const bool        isPaused          = FrameTimer::GetInstance()->IsPaused();
     const bool        isRebuildRequired = engineSettings_.IsRebuildRequired();
+    const bool        isCompiling       = scriptCompiler_.IsCompiling();
     const std::string fpsText           = std::format("FPS {:.1f}", fps);
     const std::string msText            = std::format("{:.1f} ms", fps > 0.0f ? 1000.0f / fps : 0.0f);
 
@@ -521,6 +594,9 @@ namespace Tako {
     }
     if (isPaused) {
       width += ImGui::CalcTextSize(kPausedText).x + spacing + MenuBarSeparatorWidth();
+    }
+    if (isCompiling) {
+      width += ImGui::CalcTextSize(kCompileText).x + spacing + MenuBarSeparatorWidth();
     }
     ImGui::SetCursorPosX(ImGui::GetWindowWidth() - width - kMenuBarRightInset);
 
@@ -534,6 +610,10 @@ namespace Tako {
       ImGui::TextColored(colors.info, "%s", kPausedText);
       MenuBarSeparator();
     }
+    if (isCompiling) {
+      ImGui::TextColored(colors.info, "%s", kCompileText);
+      MenuBarSeparator();
+    }
 
     const ImVec4& fpsColor = fps >= 55.0f ? colors.success : fps >= 30.0f ? colors.warning : colors.error;
     ImGui::TextColored(fpsColor, "%s", fpsText.c_str());
@@ -543,7 +623,8 @@ namespace Tako {
 
   void DebugUIManager::DrawPlaybackToolbar() {
     const bool  isPaused   = FrameTimer::GetInstance()->IsPaused();
-    const float groupWidth = ImGui::GetFrameHeight() * 3.0f + ImGui::GetStyle().ItemSpacing.x * 2.0f;
+    // ボタン 4 つと、その間の区切り線
+    const float groupWidth = ImGui::GetFrameHeight() * 4.0f + ImGui::GetStyle().ItemSpacing.x * 4.0f + 1.0f;
     ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (std::max)(0.0f, (ImGui::GetContentRegionAvail().x - groupWidth) * 0.5f));
 
     // Edit 中は Play、Play 中は Stop。Stop は遷移中には押せない
@@ -570,6 +651,14 @@ namespace Tako {
     if (UI::IconButton(ICON_FA_FORWARD_STEP "##Step", "Step (F8)")) {
       StepFrame();
     }
+
+    UI::ToolbarSeparator();
+    const bool isCompiling = scriptCompiler_.IsCompiling();
+    ImGui::BeginDisabled(isCompiling);
+    if (UI::IconButton(ICON_FA_HAMMER "##Compile", isCompiling ? "Compiling the scripts..." : "Compile the scripts and reload (Ctrl+B)")) {
+      scriptCompiler_.Compile();
+    }
+    ImGui::EndDisabled();
   }
 
   void DebugUIManager::SetGamePaused(bool paused) {
@@ -711,6 +800,9 @@ namespace Tako {
       }
       // ponytail: 1 行 1 アイテムにするため、時刻も種類の色で出す。時刻だけ薄くするなら行を分け、ImGuiListClipper で見える行だけ描く
       ImGui::TextColored(logStyle.color, "%s  %s  %s", logStyle.icon, log.timestamp.c_str(), log.message.c_str());
+      if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+        OpenLogLocation(log.message);
+      }
     }
 
     // 一番下を見ているときだけ追う（上へ戻して読んでいる間は動かさない）
