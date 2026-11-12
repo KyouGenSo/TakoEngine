@@ -11,10 +11,11 @@
 namespace Tako {
 
   class Camera;
+  class Light;
   class PreviewViewport;
 
   /// <summary>
-  /// エディタの 3D プレビュー。オフスクリーンの描画先・カメラ・カメラ操作と、その ImGui 表示をまとめる
+  /// エディタの 3D プレビュー。オフスクリーンの描画先・カメラ・カメラ操作・ライトと、その ImGui 表示をまとめる
   /// </summary>
   class PreviewPanel {
   public: //メンバー関数
@@ -22,19 +23,19 @@ namespace Tako {
     ~PreviewPanel();
 
     /// <summary>
-    /// 初期化（描画先とカメラは最初の Update で作る）
+    /// 初期化（描画先・カメラ・ライトは最初の Update で作る）
     /// </summary>
     /// <param name="debugName">描画先のリソース名の接頭辞</param>
     /// <param name="cameraSettings">感度・FOV・Reset 時の速度（EngineSettingsWindow 所有）</param>
     void Initialize(const wchar_t* debugName, const ViewportCameraSettings* cameraSettings);
 
     /// <summary>
-    /// 初回に描画先とカメラを作り、カメラ操作をカメラへ反映する。エディタを開いている間、更新フェーズで毎フレーム呼ぶ
+    /// 初回に描画先・カメラ・ライトを作り、カメラ操作をカメラへ反映する。エディタを開いている間、更新フェーズで毎フレーム呼ぶ
     /// </summary>
     void Update();
 
     /// <summary>
-    /// 描画先とカメラを解放する
+    /// 描画先・カメラ・ライトを解放する
     /// </summary>
     void Finalize();
 
@@ -44,7 +45,7 @@ namespace Tako {
     void BeginPass();
 
     /// <summary>
-    /// submit 内で登録した描画物をプレビューのカメラで描く。BeginPass〜EndPass の間に呼ぶ。
+    /// submit 内で登録した描画物をプレビューのカメラとライトで描く（本編の影は受けない）。BeginPass〜EndPass の間に呼ぶ。
     /// 半透明の段のシェーダーが gOpaqueTexture を読むなら、不透明まで描いた画面を写して渡す（本編と同じ規則）
     /// </summary>
     void Render(const std::function<void()>& submit);
@@ -87,6 +88,7 @@ namespace Tako {
     const wchar_t*                   debugName_      = L"Preview";
     std::unique_ptr<PreviewViewport> viewport_;
     std::unique_ptr<Camera>          camera_;
+    std::unique_ptr<Light>           light_;                        ///< プレビューだけを照らす平行光（シーンのライトは使わない）
     ViewportCameraController         controller_;
     PostProcessStack                 postProcess_;                  ///< プレビューに掛けるポストエフェクト（本編とは別）
     bool                             isImageHovered_ = false;
