@@ -254,7 +254,9 @@
     <ClCompile Include="engine\graphics\3d\Model\ModelBasic.cpp" />
     <ClCompile Include="engine\graphics\3d\Model\ModelManager.cpp" />
     <ClCompile Include="engine\graphics\3d\Object\Object3d.cpp" />
+    <ClCompile Include="engine\graphics\2d\Font.cpp" />
     <ClCompile Include="engine\graphics\2d\Sprite.cpp" />
+    <ClCompile Include="engine\graphics\2d\Text.cpp" />
     <ClCompile Include="engine\graphics\2d\UILayout.cpp" />
     <ClCompile Include="engine\core\utility\StringUtility.cpp" />
     <ClCompile Include="engine\graphics\render\TextureManager.cpp" />
@@ -401,7 +403,9 @@
     <ClInclude Include="engine\graphics\3d\Model\ModelBasic.h" />
     <ClInclude Include="engine\graphics\3d\Model\ModelManager.h" />
     <ClInclude Include="engine\graphics\3d\Object\Object3d.h" />
+    <ClInclude Include="engine\graphics\2d\Font.h" />
     <ClInclude Include="engine\graphics\2d\Sprite.h" />
+    <ClInclude Include="engine\graphics\2d\Text.h" />
     <ClInclude Include="engine\graphics\2d\UILayout.h" />
     <ClInclude Include="engine\core\utility\StringUtility.h" />
     <ClInclude Include="engine\graphics\render\TextureManager.h" />
@@ -626,6 +630,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\Sprite.VS.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\Text.PS.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>

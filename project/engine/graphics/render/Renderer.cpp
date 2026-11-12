@@ -307,6 +307,14 @@ namespace Tako {
     ShaderAsset& spriteShader = RegisterShader("Sprite");
     spriteShader.SetPass(ShaderPass::Forward, sprite);
     spriteShader.SetDefaultQueue(ShaderAsset::kQueueOverlay);
+
+    // 文字。頂点は Sprite と同じで、ピクセルシェーダーが距離場のアトラスから字の縁を作る
+    GraphicsPipelineDesc text = sprite;
+    text.ps = library.Get(L"Text.PS.hlsl", ShaderStage::Pixel);
+
+    ShaderAsset& textShader = RegisterShader("Text");
+    textShader.SetPass(ShaderPass::Forward, text);
+    textShader.SetDefaultQueue(ShaderAsset::kQueueOverlay);
   }
 
   void Renderer::BindGlobals(const RenderView& view)

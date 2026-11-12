@@ -2,6 +2,7 @@
 #include "Material.h"
 #include "ShaderAsset.h"
 #include "Sprite.h"
+#include "Text.h"
 #include "TextureManager.h"
 #include "WinApp.h"
 #include "Logger.h"
@@ -40,6 +41,21 @@ namespace Tako {
     s.border         = j.value("border", defaults.border);
     s.regionVisible  = j.value("visible", defaults.regionVisible);
     s.regionTextures = j.value("textures", defaults.regionTextures);
+  }
+  static void to_json(json& j, const UIText& t) {
+    j = { { "string", t.string }, { "font", t.font }, { "size", t.size }, { "align", t.align }, { "lineSpacing", t.lineSpacing },
+          { "wrap", t.wrap }, { "outlineColor", t.outlineColor }, { "outlineWidth", t.outlineWidth } };
+  }
+  static void from_json(const json& j, UIText& t) {
+    const UIText defaults;
+    t.string       = j.value("string", defaults.string);
+    t.font         = j.value("font", defaults.font);
+    t.size         = j.value("size", defaults.size);
+    t.align        = j.value("align", defaults.align);
+    t.lineSpacing  = j.value("lineSpacing", defaults.lineSpacing);
+    t.wrap         = j.value("wrap", defaults.wrap);
+    t.outlineColor = j.value("outlineColor", defaults.outlineColor);
+    t.outlineWidth = j.value("outlineWidth", defaults.outlineWidth);
   }
 
   static_assert(UISlice::kRegionCount == Sprite::kRegionCount);
@@ -168,6 +184,10 @@ namespace Tako {
         element.sprite->SetSortingOrder(sortingOrder);
         element.sprite->Draw();
       }
+      if (element.textMesh) {
+        element.textMesh->SetSortingOrder(sortingOrder);
+        element.textMesh->Draw();
+      }
       for (const std::unique_ptr<UIElement>& child : element.children) {
         DrawElement(*child, sortingOrder);
       }
@@ -200,6 +220,10 @@ namespace Tako {
       if (element.isSliceOverridden) {
         field("slice", element.slice);
       }
+      // 画像の要素には書かない（"text" があることが、文字の要素の印になる）
+      if (element.text) {
+        field("text", *element.text);
+      }
     }
 
     json WriteElement(const UIElement& element) {
@@ -225,6 +249,17 @@ namespace Tako {
       for (const std::string& texture : slice.regionTextures) {
         hash.Add(texture);
       }
+    }
+
+    void HashValue(Fnv1aHasher& hash, const UIText& text) {
+      hash.Add(text.string);
+      hash.Add(text.font);
+      hash.Add(text.size);
+      hash.Add(text.align);
+      hash.Add(text.lineSpacing);
+      hash.Add(text.wrap);
+      hash.Add(text.outlineColor);
+      hash.Add(text.outlineWidth);
     }
 
     void HashElement(Fnv1aHasher& hash, const UIElement& element) {
@@ -256,6 +291,9 @@ namespace Tako {
       element.visible           = node.value("visible", element.visible);
       element.postEffect        = node.value("postEffect", element.postEffect);
       element.locked            = node.value("locked", element.locked);
+      if (node.contains("text")) {
+        element.text = node["text"].get<UIText>();
+      }
 
       const std::array<bool, 2> flip = node.value("flip", std::array<bool, 2>{});
       element.flipX = flip[0];
@@ -653,6 +691,17 @@ namespace Tako {
     return element ? element->flipY : false;
   }
 
+  void UILayout::SetText(const std::string& name, const std::string& text) {
+    if (UIElement* element = Find(name); element && element->text) {
+      element->text->string = text;
+    }
+  }
+
+  std::string UILayout::GetText(const std::string& name) const {
+    const UIElement* element = Find(name);
+    return element && element->text ? element->text->string : std::string();
+  }
+
   Vector2 UILayout::GetScreenRectMin(const std::string& name) const {
     const UIElement* element = Find(name);
     return element ? element->rectMin : Vector2{};
@@ -866,6 +915,35 @@ namespace Tako {
         }
       }
       sprite.Update();
+    }
+
+    if (element.text) {
+      if (!element.textMesh) {
+        element.textMesh = std::make_unique<Text>();
+      }
+      const UIText& text = *element.text;
+      Text&         mesh = *element.textMesh;
+
+      // 字組みは基準解像度 px のまま行い、画面への拡大は行列に任せる（ウィンドウの大きさや拡大のアニメで頂点を作り直さない）。
+      // 箱は ComputeRect の矩形から自分の拡大を除いたもの。親の拡大が 0 の間は求められないので前の字組みのままにする
+      Vector2 anchorMin{};
+      Vector2 anchorSpan{};
+      AnchorRange(element, anchorMin, anchorSpan);
+      const Vector2 parentUnit = element.parent->animScale * scale_;
+      if (parentUnit.x != 0.0f && parentUnit.y != 0.0f) {
+        mesh.SetLayout({ .string = text.string, .font = text.font, .size = text.size, .boxSize = Div(anchorSpan, parentUnit) + element.size,
+          .pivot = element.pivot, .align = text.align, .lineSpacing = text.lineSpacing, .wrap = text.wrap });
+      }
+      mesh.SetPos(element.rectMin + Mul(element.rectSize, element.pivot));
+      mesh.SetRotation((element.rotation + element.animPose.rotate.z) * kDegToRad);
+      mesh.SetScale(element.animScale * scale_);
+      mesh.SetColor(Mul(element.color, element.animColor));
+      mesh.SetOutline(Mul(text.outlineColor, element.animColor), text.outlineWidth);
+      mesh.GetMaterial().SetRenderQueue(UsesPostEffect(element) ? ShaderAsset::kQueueTransparent : ShaderAsset::kQueueOverlay);
+      mesh.Update();
+    }
+    else {
+      element.textMesh.reset();
     }
 
     for (std::unique_ptr<UIElement>& child : element.children) {

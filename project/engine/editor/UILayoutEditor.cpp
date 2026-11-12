@@ -5,6 +5,7 @@
 
 #include "UILayout.h"
 #include "Sprite.h"
+#include "Font.h"
 #include "AssetBrowser.h"
 #include "DebugUIManager.h"
 #include "TextureManager.h"
@@ -78,6 +79,23 @@ namespace Tako {
     Vector2 Mul(const Vector2& a, const Vector2& b) { return { a.x * b.x, a.y * b.y }; }
 
     bool IsStretched(const UIElement& element) { return element.anchorMin != element.anchorMax; }
+
+    /// <summary>
+    /// 画像も文字も持たない、子を入れるための要素か
+    /// </summary>
+    bool IsGroup(const UIElement& element) { return element.texture.empty() && !element.text; }
+
+    /// <summary>
+    /// 入力に合わせて std::string の長さを変える、ImGui::InputText のコールバック
+    /// </summary>
+    int ResizeStringCallback(ImGuiInputTextCallbackData* data) {
+      if (data->EventFlag == ImGuiInputTextFlags_CallbackResize) {
+        auto* string = static_cast<std::string*>(data->UserData);
+        string->resize(static_cast<size_t>(data->BufTextLen));
+        data->Buf = string->data();
+      }
+      return 0;
+    }
 
     bool Contains(const UIElement& element, const Vector2& p) {
       return p.x >= element.rectMin.x && p.y >= element.rectMin.y &&
@@ -283,7 +301,7 @@ namespace Tako {
         if (!child->visible) {
           continue;
         }
-        if (child->sprite && !child->locked) {
+        if ((child->sprite || child->text) && !child->locked) {
           out.push_back(child.get());
         }
         CollectPickable(*child, out);
@@ -459,7 +477,7 @@ namespace Tako {
     // 直前のアイテム（ゲーム画像）へのテクスチャのドロップ。選択中がグループならその子、画像なら兄弟として置く
     if (ImGui::BeginDragDropTarget()) {
       if (const std::optional<std::string> texture = AcceptAssetPayload("Texture")) {
-        const UIElement* parent = selected ? (selected->texture.empty() ? selected : selected->parent) : nullptr;
+        const UIElement* parent = selected ? (IsGroup(*selected) ? selected : selected->parent) : nullptr;
         Request(PendingOp::AddTexture, (parent && parent->parent) ? parent->name : std::string(), *texture);
         pending_.clientPos    = mapping.ToClient(ImGui::GetMousePos());
         pending_.hasClientPos = true;
@@ -1088,6 +1106,9 @@ namespace Tako {
       if (ImGui::MenuItem("Add Group")) {
         Request(PendingOp::AddGroup, {});
       }
+      if (ImGui::MenuItem("Add Text")) {
+        Request(PendingOp::AddText, {});
+      }
       if (ImGui::MenuItem("Paste", "Ctrl+V", false, !clipboard_.empty())) {
         Request(PendingOp::Paste, {});
       }
@@ -1125,7 +1146,7 @@ namespace Tako {
     if (!element.visible) {
       ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
     }
-    const char* const kind   = element.texture.empty() ? "  [Group]" : (element.isSliced ? "  [9-Slice]" : "");
+    const char* const kind   = element.text ? "  [Text]" : (element.texture.empty() ? "  [Group]" : (element.isSliced ? "  [9-Slice]" : ""));
     const bool        isOpen = ImGui::TreeNodeEx("##Node", flags, "%s%s", element.name.c_str(), kind);
     if (!element.visible) {
       ImGui::PopStyleColor();
@@ -1157,6 +1178,9 @@ namespace Tako {
       }
       if (ImGui::MenuItem("Add Group")) {
         Request(PendingOp::AddGroup, element.name);
+      }
+      if (ImGui::MenuItem("Add Text")) {
+        Request(PendingOp::AddText, element.name);
       }
       ImGui::Separator();
       if (ImGui::MenuItem("Rename")) {
@@ -1292,43 +1316,48 @@ namespace Tako {
     ImGui::Checkbox("Post Effect", &element.postEffect);
     ImGui::SetItemTooltip("Draw before the post effects so they apply (children too).\nUnchecked draws after them as screen UI.");
 
-    ImGui::SeparatorText("Texture");
-    if (UI::BeginCombo("Texture", element.texture.empty() ? "(none)" : element.texture.c_str())) {
-      if (ImGui::Selectable("(none)", element.texture.empty())) {
-        Request(PendingOp::SetTexture, element.name);
-      }
-      for (const std::string& name : TextureManager::GetInstance()->GetLoadedTextureFileNames()) {
-        if (ImGui::Selectable(name.c_str(), name == element.texture)) {
-          Request(PendingOp::SetTexture, element.name, name);
+    if (element.text) {
+      DrawTextSettings(*element.text);
+    }
+    else {
+      ImGui::SeparatorText("Texture");
+      if (UI::BeginCombo("Texture", element.texture.empty() ? "(none)" : element.texture.c_str())) {
+        if (ImGui::Selectable("(none)", element.texture.empty())) {
+          Request(PendingOp::SetTexture, element.name);
         }
+        for (const std::string& name : TextureManager::GetInstance()->GetLoadedTextureFileNames()) {
+          if (ImGui::Selectable(name.c_str(), name == element.texture)) {
+            Request(PendingOp::SetTexture, element.name, name);
+          }
+        }
+        ImGui::EndCombo();
       }
-      ImGui::EndCombo();
-    }
-    if (ImGui::BeginDragDropTarget()) {
-      if (const std::optional<std::string> texture = AcceptAssetPayload("Texture")) {
-        Request(PendingOp::SetTexture, element.name, *texture);
+      if (ImGui::BeginDragDropTarget()) {
+        if (const std::optional<std::string> texture = AcceptAssetPayload("Texture")) {
+          Request(PendingOp::SetTexture, element.name, *texture);
+        }
+        ImGui::EndDragDropTarget();
       }
-      ImGui::EndDragDropTarget();
-    }
-    if (!element.texture.empty() && !element.sprite) {
-      ImGui::TextColored(GetEditorColors().error, "Texture not found");
-    }
-    if (element.sprite) {
-      ImGui::TextUnformatted("Image Type");
-      ImGui::SameLine();
-      if (ImGui::RadioButton("Simple", !element.isSliced)) {
-        element.isSliced = false;
+      if (!element.texture.empty() && !element.sprite) {
+        ImGui::TextColored(GetEditorColors().error, "Texture not found");
       }
-      ImGui::SetItemTooltip("Stretch the whole UV rect to the element size.");
-      ImGui::SameLine();
-      if (ImGui::RadioButton("9-Slice", element.isSliced) && !element.isSliced) {
-        element.isSliced = true;
-        isSliceDragMode_ = true;
-      }
-      ImGui::SetItemTooltip("Keep the corners at their size and stretch only the edges and the center.");
-      if (!element.isSliced) {
-        UI::Checkbox("Preserve Aspect", &element.preserveAspect);
-        ImGui::SetItemTooltip("Keep the aspect ratio of the UV rect and fit the image inside the element, placed at the pivot.");
+      if (element.sprite) {
+        ImGui::TextUnformatted("Image Type");
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Simple", !element.isSliced)) {
+          element.isSliced = false;
+        }
+        ImGui::SetItemTooltip("Stretch the whole UV rect to the element size.");
+        ImGui::SameLine();
+        if (ImGui::RadioButton("9-Slice", element.isSliced) && !element.isSliced) {
+          element.isSliced = true;
+          isSliceDragMode_ = true;
+        }
+        ImGui::SetItemTooltip("Keep the corners at their size and stretch only the edges and the center.");
+        if (!element.isSliced) {
+          UI::Checkbox("Preserve Aspect", &element.preserveAspect);
+          ImGui::SetItemTooltip("Keep the aspect ratio of the UV rect and fit the image inside the element, placed at the pivot.");
+        }
       }
     }
 
@@ -1352,9 +1381,11 @@ namespace Tako {
 
     ImGui::SeparatorText("Appearance");
     UI::ColorEdit4("Color", &element.color.x);
-    ImGui::Checkbox("Flip X", &element.flipX);
-    ImGui::SameLine();
-    ImGui::Checkbox("Flip Y", &element.flipY);
+    if (!element.text) {
+      ImGui::Checkbox("Flip X", &element.flipX);
+      ImGui::SameLine();
+      ImGui::Checkbox("Flip Y", &element.flipY);
+    }
 
     if (element.sprite) {
       UI::DragFloat2("UV Left Top", &element.uvLeftTop.x, 1.0f, 0.0f, 8192.0f, "%.0f");
@@ -1422,6 +1453,54 @@ namespace Tako {
         }
       }
     }
+  }
+
+  void UILayoutEditor::DrawTextSettings(UIText& text) {
+    ImGui::SeparatorText("Text");
+
+    // std::string をそのまま編集し、長さはコールバックで合わせる
+    const ImVec2 inputSize(-FLT_MIN, ImGui::GetTextLineHeight() * 4.0f + ImGui::GetStyle().FramePadding.y * 2.0f);
+    ImGui::InputTextMultiline("##String", text.string.data(), text.string.capacity() + 1, inputSize, ImGuiInputTextFlags_CallbackResize, ResizeStringCallback, &text.string);
+
+    if (UI::BeginCombo("Font", text.font.empty() ? "(default)" : text.font.c_str())) {
+      if (ImGui::Selectable("(default)", text.font.empty())) {
+        text.font.clear();
+      }
+      for (const std::string& font : ListAssets("Font")) {
+        if (ImGui::Selectable(font.c_str(), font == text.font)) {
+          text.font = font;
+        }
+      }
+      ImGui::EndCombo();
+    }
+    if (ImGui::BeginDragDropTarget()) {
+      if (const std::optional<std::string> font = AcceptAssetPayload("Font")) {
+        text.font = *font;
+      }
+      ImGui::EndDragDropTarget();
+    }
+    ImGui::SetItemTooltip("Put .ttf / .otf files in %s to add fonts.", Font::kDirectory);
+
+    UI::DragFloat("Size", &text.size, 0.5f, 1.0f, 1024.0f, "%.1f px");
+
+    // 揃えは 0 / 0.5 / 1 の 3 つから選ぶ
+    int alignX = static_cast<int>(std::round(text.align.x * 2.0f));
+    int alignY = static_cast<int>(std::round(text.align.y * 2.0f));
+    if (UI::Combo("Align X", &alignX, "Left\0Center\0Right\0")) {
+      text.align.x = static_cast<float>(alignX) * 0.5f;
+    }
+    if (UI::Combo("Align Y", &alignY, "Top\0Middle\0Bottom\0")) {
+      text.align.y = static_cast<float>(alignY) * 0.5f;
+    }
+
+    UI::DragFloat("Line Spacing", &text.lineSpacing, 0.01f, 0.1f, 10.0f, "%.2f");
+    UI::Checkbox("Wrap", &text.wrap);
+    ImGui::SetItemTooltip("Wrap lines at the element width. A word wider than the element overflows.");
+
+    // 距離場が持つ範囲（Font::kSpread）より太くはできない
+    const float maxOutline = text.size * static_cast<float>(Font::kSpread) / Font::kBakeSize * 0.9f;
+    UI::DragFloat("Outline Width", &text.outlineWidth, 0.1f, 0.0f, maxOutline, "%.1f px");
+    UI::ColorEdit4("Outline Color", &text.outlineColor.x);
   }
 
   void UILayoutEditor::DrawSliceUsers(const UIElement& element) {
@@ -1999,6 +2078,13 @@ namespace Tako {
       Select(element);
       break;
     }
+    case PendingOp::AddText: {
+      UIElement* element = layout.AddChild(*target, "Text");
+      element->text.emplace().string = "Text";
+      element->size = { 300.0f, 60.0f };
+      Select(element);
+      break;
+    }
     case PendingOp::AddTexture: {
       const Vector2 center = pending.hasClientPos ? pending.clientPos : target->rectMin + target->rectSize * 0.5f;
       CreateFromTexture(layout, *target, pending.texture, center);
@@ -2029,8 +2115,8 @@ namespace Tako {
       std::erase_if(selection_, [&layout](const std::string& name) { return !layout.Find(name); });
       break;
     case PendingOp::Paste: {
-      // 対象がグループならその子の末尾、画像ならその直後へ（ビューポートへのテクスチャのドロップと同じ）
-      const bool               isInside = isRoot || target->texture.empty();
+      // 対象がグループならその子の末尾、画像や文字ならその直後へ（ビューポートへのテクスチャのドロップと同じ）
+      const bool               isInside = isRoot || IsGroup(*target);
       UIElement&               parent   = isInside ? *target : *target->parent;
       const size_t             index    = isInside ? parent.children.size() : IndexInParent(*target) + 1;
       std::vector<std::string> names;

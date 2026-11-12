@@ -2,6 +2,7 @@
 #include "AnimationClip.h"
 #include "CameraAnimation.h"
 #include "DebugUIManager.h"
+#include "Font.h"
 #include "ImGuiManager.h"
 #include "TextureManager.h"
 #include "UILayout.h"
@@ -78,6 +79,7 @@ namespace Tako {
       { "PostEffectProfile", { { "resources/Json/PostEffects/" } }, { ".json" } },
       { "BehaviorTree",      { { "resources/Json/BT/" } }, { ".json" } },
       { "Sound",             { { "resources/Sound/" } }, { ".wav", ".mp3" }, true },
+      { "Font",              { { Font::kDirectory }, { EnginePaths::kEngineFonts, true } }, { ".ttf", ".otf" }, true },
       { "Script",            { { "Script/" } }, { ".h", ".cpp" } },
     };
 
@@ -237,6 +239,7 @@ namespace Tako {
       { "PostEffectProfile", ICON_FA_FILM },
       { "BehaviorTree",      ICON_FA_DIAGRAM_PROJECT },
       { "Sound",             ICON_FA_MUSIC },
+      { "Font",              ICON_FA_FONT },
       { "Texture",           ICON_FA_IMAGE },
     };
 

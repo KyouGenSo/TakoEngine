@@ -20,6 +20,7 @@ namespace Tako {
   class UILayout;
   struct UIElement;
   struct UISlice;
+  struct UIText;
 
   /// <summary>
   /// 生存中の UILayout を編集するエディタ（Hierarchy / Inspector のウィンドウと、Game Viewport 上のギズモ）
@@ -51,6 +52,7 @@ namespace Tako {
       None,
       AddImage,
       AddGroup,
+      AddText,
       AddTexture,
       SetTexture,
       Duplicate,
@@ -289,6 +291,11 @@ namespace Tako {
     void DrawInspector(UILayout& layout, UIElement& element);
 
     /// <summary>
+    /// 文字の要素の欄（文字列・フォント・大きさ・揃え・折り返し・縁取り）
+    /// </summary>
+    void DrawTextSettings(UIText& text);
+
+    /// <summary>
     /// Unity と同じ 4x4 のアンカープリセット。押しても画面上の矩形は保つ（Shift でピボットも、Alt で位置も合わせる）
     /// </summary>
     void DrawAnchorPresets(UILayout& layout, UIElement& element);
@@ -365,7 +372,7 @@ namespace Tako {
     void CreateFromTexture(UILayout& layout, UIElement& parent, const std::string& texture, const Vector2& clientCenter);
 
     /// <summary>
-    /// 描画順で最前面にある、表示中かつテクスチャを持ちロックされていない要素のうち clientPos を含むもの
+    /// 描画順で最前面にある、表示中かつ画像か文字を持ちロックされていない要素のうち clientPos を含むもの
     /// </summary>
     UIElement* PickTopmost(UILayout& layout, const Vector2& clientPos) const;
 

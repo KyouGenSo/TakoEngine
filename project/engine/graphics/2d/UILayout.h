@@ -5,12 +5,14 @@
 #include <array>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
 namespace Tako {
 
   class Sprite;
+  class Text;
 
   /// <summary>
   /// 9-slice の設定。テクスチャごとの共有値と、要素ごとの上書きの両方に使う
@@ -23,6 +25,22 @@ namespace Tako {
     std::array<std::string, kRegionCount> regionTextures;                                                             ///< 区画ごとの別画像のキー。空なら本体の画像のその区画。画像全体を区画いっぱいに引き伸ばす
 
     bool operator==(const UISlice&) const = default;
+  };
+
+  /// <summary>
+  /// 文字の要素の設定。長さは基準解像度 px
+  /// </summary>
+  struct UIText {
+    std::string string;                                     ///< UTF-8。\n で改行
+    std::string font;                                       ///< Font のキー。空なら既定のフォント
+    float       size         = 32.0f;                       ///< em の大きさ
+    Vector2     align        = {};                          ///< 要素の矩形の中の寄せ方 (0..1)。x は 0 で左・1 で右、y は 0 で上・1 で下
+    float       lineSpacing  = 1.0f;                        ///< 行送りの倍率
+    bool        wrap         = true;                        ///< 矩形の幅で折り返すか（収まらない 1 語ははみ出す）
+    Vector4     outlineColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+    float       outlineWidth = 0.0f;                        ///< 0 なら縁取りなし
+
+    bool operator==(const UIText&) const = default;
   };
 
   /// <summary>
@@ -54,11 +72,15 @@ namespace Tako {
     bool        postEffect        = false;                       ///< true ならポストエフェクトを掛ける（子にも掛かる）。false なら画面の UI としてポストエフェクトの後に描く
     bool        locked            = false;                       ///< エディタ専用。true ならビューポートのクリックで選ばれない
 
+    //文字（保存データ）
+    std::optional<UIText> text;  ///< 値があれば文字の要素。矩形の中に color の色で描く（flip と切り出し範囲は効かない）
+
     std::vector<std::unique_ptr<UIElement>> children;  ///< 並び順が描画順（後ろほど手前）
 
     //実行時データ
     UIElement*              parent   = nullptr;
     std::unique_ptr<Sprite> sprite;              ///< texture が空、または読み込めなかった場合は null
+    std::unique_ptr<Text>   textMesh;            ///< text が無ければ null
     Vector2                 rectMin  = {};       ///< 直近の Update で求めた画面矩形の左上（クライアント px）。アニメーションの上乗せ込み
     Vector2                 rectSize = {};       ///< 直近の Update で求めた画面矩形のサイズ（クライアント px）。アニメーションの上乗せ込み
 
@@ -291,6 +313,11 @@ namespace Tako {
     void SetFlip(const std::string& name, bool flipX, bool flipY);
 
     /// <summary>
+    /// 文字の要素の文字列（UTF-8）を変える。文字の要素でなければ何もしない
+    /// </summary>
+    void SetText(const std::string& name, const std::string& text);
+
+    /// <summary>
     /// テクスチャごとの共有の 9-slice を設定する。このテクスチャを 9-slice で使い、上書きしていない全要素（他のレイアウトも含む）に効く
     /// </summary>
     static void SetTextureSlice(const std::string& texture, const UISlice& slice);
@@ -332,6 +359,11 @@ namespace Tako {
     Vector4 GetSliceBorder(const std::string& name) const;
     bool IsFlipX(const std::string& name) const;
     bool IsFlipY(const std::string& name) const;
+
+    /// <summary>
+    /// 文字の要素の文字列（文字の要素でなければ空文字）
+    /// </summary>
+    std::string GetText(const std::string& name) const;
 
     /// <summary>
     /// 直近の Update で求めた画面矩形の左上（クライアント px）。クリックの当たり判定などに使う

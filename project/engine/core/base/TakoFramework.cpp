@@ -1,6 +1,7 @@
 #include "TakoFramework.h"
 
 #include "Audio.h"
+#include "Font.h"
 #include "SrvManager.h"
 #include "TextureManager.h"
 #include "SceneManager.h"
@@ -179,6 +180,8 @@ namespace Tako {
 
     ModelManager::GetInstance()->Finalize();
 
+    Font::Finalize();
+
     TextureManager::GetInstance()->Finalize();
 
 #ifdef _DEBUG
@@ -235,6 +238,8 @@ namespace Tako {
     Input::GetInstance()->Update();
 
     Audio::GetInstance()->Update();
+
+    Font::BeginFrame();
 
     // Actor の生成・削除と Play / Stop は、一時停止中もここで行う（前のフレームの GPU 処理は EndDraw で終わっている）
     SceneManager::GetInstance()->UpdateAlways();

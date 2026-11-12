@@ -252,7 +252,13 @@
     <ClCompile Include="engine\core\math\ColorFunc.cpp">
       <Filter>core\math</Filter>
     </ClCompile>
+    <ClCompile Include="engine\graphics\2d\Font.cpp">
+      <Filter>graphics\2d</Filter>
+    </ClCompile>
     <ClCompile Include="engine\graphics\2d\Sprite.cpp">
+      <Filter>graphics\2d</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\graphics\2d\Text.cpp">
       <Filter>graphics\2d</Filter>
     </ClCompile>
     <ClCompile Include="engine\graphics\2d\UILayout.cpp">
@@ -674,7 +680,13 @@
     <ClInclude Include="engine\graphics\3d\Line\LineRenderer.h">
       <Filter>graphics\3d\Line</Filter>
     </ClInclude>
+    <ClInclude Include="engine\graphics\2d\Font.h">
+      <Filter>graphics\2d</Filter>
+    </ClInclude>
     <ClInclude Include="engine\graphics\2d\Sprite.h">
+      <Filter>graphics\2d</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\graphics\2d\Text.h">
       <Filter>graphics\2d</Filter>
     </ClInclude>
     <ClInclude Include="engine\graphics\2d\UILayout.h">
@@ -1145,6 +1157,9 @@
       <Filter>shader\2D</Filter>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\Sprite.VS.hlsl">
+      <Filter>shader\2D</Filter>
+    </FxCompile>
+    <FxCompile Include="engine\resources\shaders\Text.PS.hlsl">
       <Filter>shader\2D</Filter>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\BuildDrawArgs.CS.hlsl">
