@@ -1,4 +1,5 @@
 #include "ParticleEditor.h"
+#include "EditorUI.h"
 #include "DebugUIManager.h"
 #include "EngineSettingsWindow.h"
 #include "PreviewViewport.h"
@@ -76,10 +77,9 @@ namespace Tako {
 
     bool inputCaptured = false;
     ImGui::SetNextWindowSize(ImVec2(1400.0f, 760.0f), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin("Particle Editor", isOpen_)) {
+    if (ImGui::Begin(WindowTitle::kParticleEditor, isOpen_)) {
       if (!emitterManager_) {
-        ImGui::TextColored(ImVec4(1, 1, 0, 1), "EmitterManager not set!");
-        ImGui::TextDisabled("Call SetEmitterManager() first");
+        ImGui::TextColored(GetEditorColors().warning, ICON_FA_TRIANGLE_EXCLAMATION "  No scene is loaded, so there is no EmitterManager to edit");
       }
       else {
         // 選択中のエミッターの編集を、1 回の操作の前後の保存内容の変化で検出する（UI を描く区間ではゲームのコードが値を変えない）
@@ -94,18 +94,10 @@ namespace Tako {
           uint32_t maxCount = GPUParticle::GetMaxParticleCount();
           float usage = static_cast<float>(activeCount) / static_cast<float>(maxCount);
 
-          ImVec4 color;
-          if (usage < 0.5f) {
-            color = ImVec4(0.2f, 1.0f, 0.2f, 1.0f);
-          } else if (usage < 0.8f) {
-            color = ImVec4(1.0f, 1.0f, 0.2f, 1.0f);
-          } else {
-            color = ImVec4(1.0f, 0.2f, 0.2f, 1.0f);
-          }
-
-          ImGui::TextColored(color, "Active Particles: %u / %u (%.1f%%)",
-            activeCount, maxCount, usage * 100.0f);
-          ImGui::ProgressBar(usage, ImVec2(-1, 0), "");
+          const EditorColors& colors = GetEditorColors();
+          ImGui::PushStyleColor(ImGuiCol_PlotHistogram, usage < 0.5f ? colors.success : usage < 0.8f ? colors.warning : colors.error);
+          ImGui::ProgressBar(usage, ImVec2(-1, 0), std::format("Active Particles: {} / {} ({:.1f}%)", activeCount, maxCount, usage * 100.0f).c_str());
+          ImGui::PopStyleColor();
         }
         ImGui::Separator();
 
@@ -233,16 +225,16 @@ namespace Tako {
 
     // 新規エミッター作成セクション
     if (ImGui::CollapsingHeader("Create New Emitter")) {
-      ImGui::InputText("Name##CreateEmitter", newEmitterNameBuffer_, sizeof(newEmitterNameBuffer_));
+      UI::InputText("Name##CreateEmitter", newEmitterNameBuffer_, sizeof(newEmitterNameBuffer_));
 
-      ImGui::Combo("Type##CreateEmitter", &newEmitterTypeIndex_, "Sphere\0Box\0Triangle\0Mesh\0");
+      UI::Combo("Type##CreateEmitter", &newEmitterTypeIndex_, "Sphere\0Box\0Triangle\0Mesh\0");
 
-      ImGui::DragFloat3("Position##CreateEmitter", &newEmitterPosition_.x, 0.1f);
+      UI::DragFloat3("Position##CreateEmitter", &newEmitterPosition_.x, 0.1f);
 
       if (newEmitterTypeIndex_ == 0) {  // Sphere
-        ImGui::DragFloat("Radius##CreateSphere", &newEmitterSphereRadius_, 0.1f, 0.1f, 10.0f);
+        UI::DragFloat("Radius##CreateSphere", &newEmitterSphereRadius_, 0.1f, 0.1f, 10.0f);
 
-        if (ImGui::Button("Create Sphere Emitter##Create")) {
+        if (ImGui::Button(ICON_FA_PLUS "  Create Sphere Emitter##Create")) {
           if (strlen(newEmitterNameBuffer_) > 0) {
             emitterManager_->CreateSphereEmitter(newEmitterNameBuffer_, newEmitterPosition_, newEmitterSphereRadius_, 50, 0.016f);
             LogToConsole("Created sphere emitter: " + std::string(newEmitterNameBuffer_), LogType::Info);
@@ -254,10 +246,10 @@ namespace Tako {
         }
       }
       else if (newEmitterTypeIndex_ == 1) {  // Box
-        ImGui::DragFloat3("Size##CreateBox", &newEmitterBoxSize_.x, 0.1f);
-        ImGui::DragFloat3("Rotation##CreateBox", &newEmitterBoxRotation_.x, 0.1f);
+        UI::DragFloat3("Size##CreateBox", &newEmitterBoxSize_.x, 0.1f);
+        UI::DragFloat3("Rotation##CreateBox", &newEmitterBoxRotation_.x, 0.1f);
 
-        if (ImGui::Button("Create Box Emitter##Create")) {
+        if (ImGui::Button(ICON_FA_PLUS "  Create Box Emitter##Create")) {
           if (strlen(newEmitterNameBuffer_) > 0) {
             emitterManager_->CreateBoxEmitter(newEmitterNameBuffer_, newEmitterPosition_, newEmitterBoxSize_, newEmitterBoxRotation_, 50, 0.016f);
             LogToConsole("Created box emitter: " + std::string(newEmitterNameBuffer_), LogType::Info);
@@ -269,11 +261,11 @@ namespace Tako {
         }
       }
       else if (newEmitterTypeIndex_ == 2) {  // Triangle
-        ImGui::DragFloat3("Vertex 1##CreateTriangle", &newEmitterTriV1_.x, 0.1f);
-        ImGui::DragFloat3("Vertex 2##CreateTriangle", &newEmitterTriV2_.x, 0.1f);
-        ImGui::DragFloat3("Vertex 3##CreateTriangle", &newEmitterTriV3_.x, 0.1f);
+        UI::DragFloat3("Vertex 1##CreateTriangle", &newEmitterTriV1_.x, 0.1f);
+        UI::DragFloat3("Vertex 2##CreateTriangle", &newEmitterTriV2_.x, 0.1f);
+        UI::DragFloat3("Vertex 3##CreateTriangle", &newEmitterTriV3_.x, 0.1f);
 
-        if (ImGui::Button("Create Triangle Emitter##Create")) {
+        if (ImGui::Button(ICON_FA_PLUS "  Create Triangle Emitter##Create")) {
           if (strlen(newEmitterNameBuffer_) > 0) {
             emitterManager_->CreateTriangleEmitter(newEmitterNameBuffer_, newEmitterPosition_, newEmitterTriV1_, newEmitterTriV2_, newEmitterTriV3_, 50, 0.016f);
             LogToConsole("Created triangle emitter: " + std::string(newEmitterNameBuffer_), LogType::Info);
@@ -292,21 +284,22 @@ namespace Tako {
           std::vector<const char*> items;
           items.reserve(modelNames.size());
           for (const auto& s : modelNames) items.push_back(s.c_str());
-          ImGui::Combo("Model##CreateMesh", &newEmitterModelIndex_, items.data(), static_cast<int>(items.size()));
+          UI::Combo("Model##CreateMesh", &newEmitterModelIndex_, items.data(), static_cast<int>(items.size()));
         }
         else {
           ImGui::TextDisabled("(no loaded models - load one below)");
         }
 
         // 未ロードのモデルをパス指定でロード
-        ImGui::InputText("Model Path##CreateMesh", newEmitterModelPathBuffer_, sizeof(newEmitterModelPathBuffer_));
-        ImGui::SameLine();
-        if (ImGui::Button("Load##CreateMesh") && newEmitterModelPathBuffer_[0] != '\0') {
+        UI::LabelWithButtons("Model Path", 1);
+        ImGui::InputText("##ModelPath##CreateMesh", newEmitterModelPathBuffer_, sizeof(newEmitterModelPathBuffer_));
+        UI::SameLineInner();
+        if (UI::IconButton(ICON_FA_FOLDER_OPEN "##CreateMesh", "Load the file") && newEmitterModelPathBuffer_[0] != '\0') {
           ModelManager::GetInstance()->LoadModel(newEmitterModelPathBuffer_);
           LogToConsole("Loaded model: " + std::string(newEmitterModelPathBuffer_), LogType::Info);
         }
 
-        if (ImGui::Button("Create Mesh Emitter##Create")) {
+        if (ImGui::Button(ICON_FA_PLUS "  Create Mesh Emitter##Create")) {
           if (strlen(newEmitterNameBuffer_) > 0 && !modelNames.empty()) {
             emitterManager_->CreateMeshEmitterFromModel(newEmitterNameBuffer_, modelNames[newEmitterModelIndex_], 50, 0.016f);
             LogToConsole("Created mesh emitter: " + std::string(newEmitterNameBuffer_) + " (" + modelNames[newEmitterModelIndex_] + ")", LogType::Info);
@@ -336,7 +329,7 @@ namespace Tako {
 
     // 選択したエミッターの操作
     if (emitterManager_->HasEmitter(selectedEmitterName_)) {
-      if (ImGui::Button("Delete##EmitterList")) {
+      if (ImGui::Button(ICON_FA_TRASH_CAN "  Delete##EmitterList")) {
         emitterManager_->RemoveEmitter(selectedEmitterName_);
         unsavedEmitters_.erase(selectedEmitterName_);
         selectedEmitterName_.clear();
@@ -346,7 +339,7 @@ namespace Tako {
         LogToConsole("Deleted emitter", LogType::Info);
       }
       ImGui::SameLine();
-      if (ImGui::Button("Duplicate##EmitterList")) {
+      if (ImGui::Button(ICON_FA_CLONE "  Duplicate##EmitterList")) {
         std::string newName = selectedEmitterName_ + "_copy";
         emitterManager_->CreateTemporaryEmitterFrom(selectedEmitterName_, newName, 0.0f);
         selectedEmitterName_ = newName;
@@ -376,13 +369,13 @@ namespace Tako {
       }
 
       // 並び順は EmitterManager::PasteMode の enum 値順と一致させる
-      ImGui::Combo("Paste Mode##Clipboard", &clipboardPasteModeIndex_, "All\0Color Only\0Velocity Only\0Scale Only\0");
+      UI::Combo("Paste Mode##Clipboard", &clipboardPasteModeIndex_, "All\0Color Only\0Velocity Only\0Scale Only\0");
 
       const bool hasSelection = emitterManager_->HasEmitter(selectedEmitterName_);
       const bool slotHasData = emitterManager_->HasCopiedSettings(clipboardSlotIndex_);
 
       ImGui::BeginDisabled(!hasSelection);
-      if (ImGui::Button("Copy##Clipboard")) {
+      if (ImGui::Button(ICON_FA_COPY "  Copy##Clipboard")) {
         if (emitterManager_->CopyEmitterSettings(selectedEmitterName_, clipboardSlotIndex_)) {
           LogToConsole("Copied '" + selectedEmitterName_ + "' to slot " + std::to_string(clipboardSlotIndex_), LogType::Info);
         }
@@ -391,7 +384,7 @@ namespace Tako {
 
       ImGui::SameLine();
       ImGui::BeginDisabled(!hasSelection || !slotHasData);
-      if (ImGui::Button("Paste##Clipboard")) {
+      if (ImGui::Button(ICON_FA_PASTE "  Paste##Clipboard")) {
         if (emitterManager_->PasteEmitterSettings(selectedEmitterName_, clipboardSlotIndex_,
           static_cast<EmitterManager::PasteMode>(clipboardPasteModeIndex_))) {
           LogToConsole("Pasted slot " + std::to_string(clipboardSlotIndex_) + " to '" + selectedEmitterName_ + "'", LogType::Info);
@@ -404,7 +397,7 @@ namespace Tako {
 
       ImGui::SameLine();
       ImGui::BeginDisabled(!slotHasData);
-      if (ImGui::Button("Paste as New##Clipboard")) {
+      if (ImGui::Button(ICON_FA_PASTE "  Paste as New##Clipboard")) {
         const std::string newName = emitterManager_->PasteEmitterSettingsAsNew(clipboardSlotIndex_);
         if (!newName.empty()) {
           LogToConsole("Pasted slot " + std::to_string(clipboardSlotIndex_) + " as new emitter: " + newName, LogType::Info);
@@ -417,7 +410,7 @@ namespace Tako {
         }
       }
       ImGui::SameLine();
-      if (ImGui::Button("Clear##Clipboard")) {
+      if (ImGui::Button(ICON_FA_ERASER "  Clear##Clipboard")) {
         emitterManager_->ClearCopiedSettings(clipboardSlotIndex_);
         LogToConsole("Cleared clipboard slot " + std::to_string(clipboardSlotIndex_), LogType::Info);
       }
@@ -435,24 +428,24 @@ namespace Tako {
 
     // --- 新規フォースフィールド追加 ---
     if (ImGui::CollapsingHeader("Add Force Field")) {
-      ImGui::Combo("Type##NewFF", &newForceFieldTypeIndex_, "Gravity\0Directional\0Vortex\0Attract\0Repel\0");
+      UI::Combo("Type##NewFF", &newForceFieldTypeIndex_, "Gravity\0Directional\0Vortex\0Attract\0Repel\0");
 
-      ImGui::DragFloat3("Position##NewFF", &newForceFieldPosition_.x, 0.1f);
+      UI::DragFloat3("Position##NewFF", &newForceFieldPosition_.x, 0.1f);
 
       // タイプに応じた方向ガイド
       if (newForceFieldTypeIndex_ == 0 || newForceFieldTypeIndex_ == 1) {
-        ImGui::DragFloat3("Direction##NewFF", &newForceFieldDirection_.x, 0.1f);
+        UI::DragFloat3("Direction##NewFF", &newForceFieldDirection_.x, 0.1f);
       }
       else if (newForceFieldTypeIndex_ == 2) {
-        ImGui::DragFloat3("Rotation Axis##NewFF", &newForceFieldDirection_.x, 0.1f);
+        UI::DragFloat3("Rotation Axis##NewFF", &newForceFieldDirection_.x, 0.1f);
       }
 
-      ImGui::DragFloat("Strength##NewFF", &newForceFieldStrength_, 0.1f, 0.0f, 100.0f);
-      ImGui::DragFloat("Radius##NewFF", &newForceFieldRadius_, 0.1f, 0.0f, 100.0f);
+      UI::DragFloat("Strength##NewFF", &newForceFieldStrength_, 0.1f, 0.0f, 100.0f);
+      UI::DragFloat("Radius##NewFF", &newForceFieldRadius_, 0.1f, 0.0f, 100.0f);
       if (ImGui::IsItemHovered()) ImGui::SetTooltip("0 = infinite range");
-      ImGui::DragFloat("Falloff##NewFF", &newForceFieldFalloff_, 0.1f, 0.0f, 10.0f);
+      UI::DragFloat("Falloff##NewFF", &newForceFieldFalloff_, 0.1f, 0.0f, 10.0f);
 
-      if (ImGui::Button("Add##NewFF")) {
+      if (ImGui::Button(ICON_FA_PLUS "  Add##NewFF")) {
         ForceFieldData field{};
         field.type = static_cast<uint32_t>(newForceFieldTypeIndex_);
         field.position = newForceFieldPosition_;
@@ -530,8 +523,8 @@ namespace Tako {
   void ParticleEditor::DrawGroupSection() {
     // 新規グループ作成
     if (ImGui::CollapsingHeader("Create Group")) {
-      ImGui::InputText("Group Name##NewGroup", newGroupNameBuffer_, sizeof(newGroupNameBuffer_));
-      if (ImGui::Button("Create##NewGroup") && strlen(newGroupNameBuffer_) > 0) {
+      UI::InputText("Group Name##NewGroup", newGroupNameBuffer_, sizeof(newGroupNameBuffer_));
+      if (ImGui::Button(ICON_FA_PLUS "  Create##NewGroup") && strlen(newGroupNameBuffer_) > 0) {
         emitterManager_->CreateGroup(newGroupNameBuffer_);
         LogToConsole("Created group: " + std::string(newGroupNameBuffer_), LogType::Info);
         // 作成したグループを選択状態にする
@@ -568,18 +561,18 @@ namespace Tako {
   // 中央ペイン (プレビュー)
   // =====================================================
   bool ParticleEditor::DrawPreviewPane() {
-    ImGui::Checkbox("Selected Only##PePrev", &previewSelectedOnly_);
+    UI::IconToggle(ICON_FA_FILTER "##PePrev", "Show only the selected emitter", &previewSelectedOnly_);
     ImGui::SameLine();
-    ImGui::Checkbox("Grid##PePrev", &previewShowGrid_);
+    UI::IconToggle(ICON_FA_BORDER_ALL "##PePrev", "Grid", &previewShowGrid_);
     ImGui::SameLine();
     if (PostEffectInstance* bloom = preview_.GetPostProcess().Find(previewBloomId_)) {
-      ImGui::Checkbox("Bloom##PePrev", &bloom->enabled);
+      UI::IconToggle(ICON_FA_SUN "##PePrev", "Bloom", &bloom->enabled);
       ImGui::SameLine();
     }
     const bool hasSelection = emitterManager_->HasEmitter(selectedEmitterName_);
     ImGui::BeginDisabled(!hasSelection);
     // 注視点を選択エミッターの位置へ (Mesh エミッターはローカルオフセットの場合あり)
-    const bool focusRequested = ImGui::Button("Focus (F)##PePrev");
+    const bool focusRequested = UI::IconButton(ICON_FA_CROSSHAIRS "##PePrev", "Focus on the selected emitter (F)");
     ImGui::EndDisabled();
     ImGui::SameLine();
     preview_.DrawCameraToolbar();
@@ -629,7 +622,7 @@ namespace Tako {
     ImGui::SetNextItemWidth(200.0f);
     ImGui::InputText("##RenameEmitter", renameEmitterNameBuffer_, sizeof(renameEmitterNameBuffer_));
     ImGui::SameLine();
-    if (ImGui::Button("Rename##RenameEmitter") && strlen(renameEmitterNameBuffer_) > 0) {
+    if (ImGui::Button(ICON_FA_PEN "  Rename##RenameEmitter") && strlen(renameEmitterNameBuffer_) > 0) {
       const std::string newName = renameEmitterNameBuffer_;
       if (emitterManager_->RenameEmitter(selectedName, newName)) {
         selectedEmitterName_ = newName;
@@ -650,7 +643,7 @@ namespace Tako {
     if (ImGui::CollapsingHeader("Basic Properties", ImGuiTreeNodeFlags_DefaultOpen)) {
       const bool isMeshEmitter = (emitter->GetType() == EmitterType::Mesh);
       Vector3 pos = emitter->GetPosition();
-      if (ImGui::DragFloat3(isMeshEmitter ? "Position (Local Offset)##Properties" : "Position##Properties", &pos.x, 0.1f)) {
+      if (UI::DragFloat3(isMeshEmitter ? "Position (Local Offset)##Properties" : "Position##Properties", &pos.x, 0.1f)) {
         emitter->SetPosition(pos);
       }
       if (isMeshEmitter && ImGui::IsItemHovered()) {
@@ -658,42 +651,42 @@ namespace Tako {
       }
 
       bool isActive = emitter->IsActive();
-      if (ImGui::Checkbox("Active", &isActive)) {
+      if (UI::Checkbox("Active", &isActive)) {
         emitter->SetActive(isActive);
       }
 
       bool isEmitting = emitter->IsEmitting();
-      if (ImGui::Checkbox("Emitting", &isEmitting)) {
+      if (UI::Checkbox("Emitting", &isEmitting)) {
         emitter->SetEmitting(isEmitting);
       }
 
       bool isNormalize = emitter->IsNormalize();
-      if (ImGui::Checkbox("Normalize", &isNormalize)) {
+      if (UI::Checkbox("Normalize", &isNormalize)) {
         emitter->SetNormalize(isNormalize);
       }
 
       bool useForceField = emitter->IsUseForceField();
-      if (ImGui::Checkbox("Use ForceField", &useForceField)) {
+      if (UI::Checkbox("Use ForceField", &useForceField)) {
         emitter->SetUseForceField(useForceField);
       }
 
       bool useCurlNoise = emitter->IsUseCurlNoise();
-      if (ImGui::Checkbox("Use Curl Noise", &useCurlNoise)) {
+      if (UI::Checkbox("Use Curl Noise", &useCurlNoise)) {
         emitter->SetUseCurlNoise(useCurlNoise);
       }
 
       bool useDepthCollision = emitter->IsUseDepthCollision();
-      if (ImGui::Checkbox("Use Depth Collision", &useDepthCollision)) {
+      if (UI::Checkbox("Use Depth Collision", &useDepthCollision)) {
         emitter->SetUseDepthCollision(useDepthCollision);
       }
 
       int count = emitter->GetParticleCount();
-      if (ImGui::DragInt("Particle Count", &count, 1, 1, 1000)) {
+      if (UI::DragInt("Particle Count", &count, 1.0f, 1, 1000)) {
         emitter->SetParticleCount(count);
       }
 
       float frequency = emitter->GetFrequency();
-      if (ImGui::DragFloat("Frequency", &frequency, 0.001f, 0.001f, 1.0f)) {
+      if (UI::DragFloat("Frequency", &frequency, 0.001f, 0.001f, 1.0f)) {
         emitter->SetFrequency(frequency);
       }
     }
@@ -724,7 +717,7 @@ namespace Tako {
         }
       }
       else {
-        if (ImGui::SmallButton("Reset to Auto")) {
+        if (ImGui::SmallButton(ICON_FA_ROTATE_LEFT "  Reset to Auto")) {
           emitter->SetRandomFlags(0u);
         }
       }
@@ -732,7 +725,7 @@ namespace Tako {
 
       auto drawRandomCheckbox = [&](const char* label, uint32_t flag) {
         bool enabled = (randomFlags & flag) != 0u;
-        if (ImGui::Checkbox(label, &enabled)) {
+        if (UI::Checkbox(label, &enabled)) {
           if (enabled) emitter->EnableRandom(flag);
           else        emitter->DisableRandom(flag);
         }
@@ -740,48 +733,60 @@ namespace Tako {
 
       Vector2 scaleX = emitter->GetScaleRangeX();
       Vector2 scaleY = emitter->GetScaleRangeY();
+      UI::Label("Scale Range X");
       drawRandomCheckbox("##RandScaleX", ERAND_SCALE_X);
-      ImGui::SameLine();
-      if (ImGui::DragFloat2("Scale Range X", &scaleX.x, 0.01f)) {
+      UI::SameLineInner();
+      ImGui::SetNextItemWidth(-FLT_MIN);
+      if (ImGui::DragFloat2("##Scale Range X", &scaleX.x, 0.01f)) {
         emitter->SetScaleRangeX(scaleX);
       }
+      UI::Label("Scale Range Y");
       drawRandomCheckbox("##RandScaleY", ERAND_SCALE_Y);
-      ImGui::SameLine();
-      if (ImGui::DragFloat2("Scale Range Y", &scaleY.x, 0.01f)) {
+      UI::SameLineInner();
+      ImGui::SetNextItemWidth(-FLT_MIN);
+      if (ImGui::DragFloat2("##Scale Range Y", &scaleY.x, 0.01f)) {
         emitter->SetScaleRangeY(scaleY);
       }
 
       Vector2 velX = emitter->GetVelRangeX();
       Vector2 velY = emitter->GetVelRangeY();
       Vector2 velZ = emitter->GetVelRangeZ();
+      UI::Label("Velocity Range X");
       drawRandomCheckbox("##RandVelX", ERAND_VEL_X);
-      ImGui::SameLine();
-      if (ImGui::DragFloat2("Velocity Range X", &velX.x, 0.1f)) {
+      UI::SameLineInner();
+      ImGui::SetNextItemWidth(-FLT_MIN);
+      if (ImGui::DragFloat2("##Velocity Range X", &velX.x, 0.1f)) {
         emitter->SetVelRangeX(velX);
       }
+      UI::Label("Velocity Range Y");
       drawRandomCheckbox("##RandVelY", ERAND_VEL_Y);
-      ImGui::SameLine();
-      if (ImGui::DragFloat2("Velocity Range Y", &velY.x, 0.1f)) {
+      UI::SameLineInner();
+      ImGui::SetNextItemWidth(-FLT_MIN);
+      if (ImGui::DragFloat2("##Velocity Range Y", &velY.x, 0.1f)) {
         emitter->SetVelRangeY(velY);
       }
+      UI::Label("Velocity Range Z");
       drawRandomCheckbox("##RandVelZ", ERAND_VEL_Z);
-      ImGui::SameLine();
-      if (ImGui::DragFloat2("Velocity Range Z", &velZ.x, 0.1f)) {
+      UI::SameLineInner();
+      ImGui::SetNextItemWidth(-FLT_MIN);
+      if (ImGui::DragFloat2("##Velocity Range Z", &velZ.x, 0.1f)) {
         emitter->SetVelRangeZ(velZ);
       }
 
       // Normalize ON 時のみ有効な速さ範囲 (方向=velRange、速さ=speedRange)
       ImGui::BeginDisabled(!emitter->IsNormalize());
       Vector2 speedRange = emitter->GetSpeedRange();
-      if (ImGui::DragFloat2("Speed Range (Normalize)", &speedRange.x, 0.1f)) {
+      if (UI::DragFloat2("Speed Range (Normalize)", &speedRange.x, 0.1f)) {
         emitter->SetSpeedRange(speedRange);
       }
       ImGui::EndDisabled();
 
       Vector2 lifeTime = emitter->GetLifeTimeRange();
+      UI::Label("LifeTime Range");
       drawRandomCheckbox("##RandLifeTime", ERAND_LIFETIME);
-      ImGui::SameLine();
-      if (ImGui::DragFloat2("LifeTime Range", &lifeTime.x, 0.01f, 0.01f, 10.0f)) {
+      UI::SameLineInner();
+      ImGui::SetNextItemWidth(-FLT_MIN);
+      if (ImGui::DragFloat2("##LifeTime Range", &lifeTime.x, 0.01f, 0.01f, 10.0f)) {
         emitter->SetLifeTimeRange(lifeTime);
       }
 
@@ -789,16 +794,16 @@ namespace Tako {
       ImGui::Separator();
       Vector3 rotateMin = emitter->GetRotateMin();
       Vector3 rotateMax = emitter->GetRotateMax();
-      bool rotateChanged = ImGui::DragFloat3("Rotate Min (deg)", &rotateMin.x, 1.0f);
-      rotateChanged |= ImGui::DragFloat3("Rotate Max (deg)", &rotateMax.x, 1.0f);
+      bool rotateChanged = UI::DragFloat3("Rotate Min (deg)", &rotateMin.x, 1.0f);
+      rotateChanged |= UI::DragFloat3("Rotate Max (deg)", &rotateMax.x, 1.0f);
       if (rotateChanged) {
         emitter->SetRotateRange(rotateMin, rotateMax);
       }
 
       Vector3 angularVelMin = emitter->GetAngularVelMin();
       Vector3 angularVelMax = emitter->GetAngularVelMax();
-      bool angularVelChanged = ImGui::DragFloat3("Angular Vel Min (deg/s)", &angularVelMin.x, 1.0f);
-      angularVelChanged |= ImGui::DragFloat3("Angular Vel Max (deg/s)", &angularVelMax.x, 1.0f);
+      bool angularVelChanged = UI::DragFloat3("Angular Vel Min (deg/s)", &angularVelMin.x, 1.0f);
+      angularVelChanged |= UI::DragFloat3("Angular Vel Max (deg/s)", &angularVelMax.x, 1.0f);
       if (angularVelChanged) {
         emitter->SetAngularVelocityRange(angularVelMin, angularVelMax);
       }
@@ -809,10 +814,10 @@ namespace Tako {
       Vector4 startColor = emitter->GetStartColor();
       Vector4 endColor = emitter->GetEndColor();
 
-      if (ImGui::ColorEdit4("Start Color", &startColor.x)) {
+      if (UI::ColorEdit4("Start Color", &startColor.x)) {
         emitter->SetStartColor(startColor);
       }
-      if (ImGui::ColorEdit4("End Color", &endColor.x)) {
+      if (UI::ColorEdit4("End Color", &endColor.x)) {
         emitter->SetEndColor(endColor);
       }
     }
@@ -821,13 +826,13 @@ namespace Tako {
     if (ImGui::CollapsingHeader("Render Settings")) {
       // ブレンドモード
       int blend = static_cast<int>(emitter->GetBlendMode());
-      if (ImGui::Combo("Blend Mode##Render", &blend, kBlendModeNames, IM_ARRAYSIZE(kBlendModeNames))) {
+      if (UI::Combo("Blend Mode##Render", &blend, kBlendModeNames, IM_ARRAYSIZE(kBlendModeNames))) {
         emitter->SetBlendMode(static_cast<BlendMode>(blend));
       }
 
       // ビルボード ON/OFF
       bool billboard = emitter->IsBillboard();
-      if (ImGui::Checkbox("Billboard (camera-facing)", &billboard)) {
+      if (UI::Checkbox("Billboard (camera-facing)", &billboard)) {
         emitter->SetBillboard(billboard);
       }
       ImGui::SameLine();
@@ -850,7 +855,7 @@ namespace Tako {
         std::vector<const char*> items;
         items.reserve(texNames.size());
         for (const auto& s : texNames) items.push_back(s.c_str());
-        if (ImGui::Combo("Texture##Render", &curIdx, items.data(), static_cast<int>(items.size()))) {
+        if (UI::Combo("Texture##Render", &curIdx, items.data(), static_cast<int>(items.size()))) {
           if (curIdx >= 0 && curIdx < static_cast<int>(texNames.size())) {
             emitter->SetTexture(texNames[curIdx]);
           }
@@ -858,9 +863,10 @@ namespace Tako {
       }
 
       // 新規テクスチャの読込 (パス指定)
-      ImGui::InputText("Texture Path##Render", emitterTexturePathBuffer_, sizeof(emitterTexturePathBuffer_));
-      ImGui::SameLine();
-      if (ImGui::Button("Load & Set##Render") && emitterTexturePathBuffer_[0] != '\0') {
+      UI::LabelWithButtons("Texture Path", 1);
+      ImGui::InputText("##TexturePath##Render", emitterTexturePathBuffer_, sizeof(emitterTexturePathBuffer_));
+      UI::SameLineInner();
+      if (UI::IconButton(ICON_FA_FOLDER_OPEN "##Render", "Load the file and use it") && emitterTexturePathBuffer_[0] != '\0') {
         emitter->SetTexture(emitterTexturePathBuffer_);
       }
 
@@ -878,7 +884,7 @@ namespace Tako {
         std::vector<const char*> modelItems;
         modelItems.reserve(modelNames.size());
         for (const auto& s : modelNames) modelItems.push_back(s.c_str());
-        if (ImGui::Combo("Model##Render", &curModelIdx, modelItems.data(), static_cast<int>(modelItems.size()))) {
+        if (UI::Combo("Model##Render", &curModelIdx, modelItems.data(), static_cast<int>(modelItems.size()))) {
           if (curModelIdx >= 0 && curModelIdx < static_cast<int>(modelNames.size())) {
             emitter->SetParticleModel(modelNames[curModelIdx]);
           }
@@ -886,14 +892,15 @@ namespace Tako {
       }
 
       // 新規モデルをパス指定でロードして描画モデルに設定
-      ImGui::InputText("Model Path##Render", emitterRenderModelPathBuffer_, sizeof(emitterRenderModelPathBuffer_));
-      ImGui::SameLine();
-      if (ImGui::Button("Load & Set##RenderModel") && emitterRenderModelPathBuffer_[0] != '\0') {
+      UI::LabelWithButtons("Model Path", 1);
+      ImGui::InputText("##ModelPath##Render", emitterRenderModelPathBuffer_, sizeof(emitterRenderModelPathBuffer_));
+      UI::SameLineInner();
+      if (UI::IconButton(ICON_FA_FOLDER_OPEN "##RenderModel", "Load the file and use it") && emitterRenderModelPathBuffer_[0] != '\0') {
         emitter->SetParticleModel(emitterRenderModelPathBuffer_);
       }
 
       // 既定の板ポリに戻す
-      if (ImGui::Button("Reset to Quad##Render")) {
+      if (ImGui::Button(ICON_FA_ROTATE_LEFT "  Reset to Quad##Render")) {
         emitter->ResetParticleModel();
       }
     }
@@ -902,16 +909,16 @@ namespace Tako {
     if (ImGui::CollapsingHeader("Spawn Location")) {
       static const char* kSpawnLocationLabels[] = { "Inside", "Surface", "Edge" };
       int currentLoc = static_cast<int>(emitter->GetSpawnLocation());
-      if (ImGui::Combo("Location##SpawnLocation", &currentLoc, kSpawnLocationLabels, IM_ARRAYSIZE(kSpawnLocationLabels))) {
+      if (UI::Combo("Location##SpawnLocation", &currentLoc, kSpawnLocationLabels, IM_ARRAYSIZE(kSpawnLocationLabels))) {
         emitter->SetSpawnLocation(static_cast<SpawnLocation>(currentLoc));
       }
       // 形状ごとの対応状況を警告表示
       EmitterType etype = emitter->GetType();
       if (etype == EmitterType::Sphere && currentLoc == static_cast<int>(SpawnLocation::Edge)) {
-        ImGui::TextColored(ImVec4(1, 0.7f, 0, 1), "Sphere has no vertices: Edge falls back to Surface");
+        ImGui::TextColored(GetEditorColors().warning, "Sphere has no vertices: Edge falls back to Surface");
       }
       if (etype == EmitterType::Triangle && currentLoc == static_cast<int>(SpawnLocation::Inside)) {
-        ImGui::TextColored(ImVec4(1, 0.7f, 0, 1), "Triangle is 2D: Inside falls back to Surface");
+        ImGui::TextColored(GetEditorColors().warning, "Triangle is 2D: Inside falls back to Surface");
       }
     }
 
@@ -920,15 +927,15 @@ namespace Tako {
       bool spawnLockOn = emitter->IsSpawnLock();
       float lockK = emitter->GetLockStiffness();
       float lockD = emitter->GetLockDamping();
-      if (ImGui::Checkbox("Lock To Spawn", &spawnLockOn)) {
+      if (UI::Checkbox("Lock To Spawn", &spawnLockOn)) {
         emitter->SetSpawnLock(spawnLockOn, lockK, lockD);
       }
       ImGui::TextDisabled("Each particle is pulled back to its spawn position (per-particle spring).");
       ImGui::TextDisabled("Combined with Mesh emitter: particles stick to mesh surface and follow rotation/movement.");
-      if (ImGui::DragFloat("Lock Stiffness (k)", &lockK, 0.1f, 0.0f, 200.0f)) {
+      if (UI::DragFloat("Lock Stiffness (k)", &lockK, 0.1f, 0.0f, 200.0f)) {
         emitter->SetSpawnLock(spawnLockOn, lockK, lockD);
       }
-      if (ImGui::DragFloat("Lock Damping (d)", &lockD, 0.05f, 0.0f, 50.0f)) {
+      if (UI::DragFloat("Lock Damping (d)", &lockD, 0.05f, 0.0f, 50.0f)) {
         emitter->SetSpawnLock(spawnLockOn, lockK, lockD);
       }
     }
@@ -936,20 +943,20 @@ namespace Tako {
     // Per-Emitter Target 収束
     if (ImGui::CollapsingHeader("Target Convergence")) {
       bool convergeOn = emitter->IsConvergeToTarget();
-      if (ImGui::Checkbox("Converge To Target", &convergeOn)) {
+      if (UI::Checkbox("Converge To Target", &convergeOn)) {
         emitter->SetConvergeToTarget(convergeOn);
       }
       ImGui::TextDisabled("Spring-damper force pulls all particles to targetPosition");
       Vector3 targetPos = emitter->GetTargetPosition();
-      if (ImGui::DragFloat3("Target Position", &targetPos.x, 0.1f)) {
+      if (UI::DragFloat3("Target Position", &targetPos.x, 0.1f)) {
         emitter->SetTargetPosition(targetPos);
       }
       float stiffness = emitter->GetConvergeStiffness();
-      if (ImGui::DragFloat("Stiffness (k)", &stiffness, 0.1f, 0.0f, 100.0f)) {
+      if (UI::DragFloat("Stiffness (k)", &stiffness, 0.1f, 0.0f, 100.0f)) {
         emitter->SetConvergeParameters(stiffness, emitter->GetConvergeDamping());
       }
       float damping = emitter->GetConvergeDamping();
-      if (ImGui::DragFloat("Damping (d)", &damping, 0.05f, 0.0f, 20.0f)) {
+      if (UI::DragFloat("Damping (d)", &damping, 0.05f, 0.0f, 20.0f)) {
         emitter->SetConvergeParameters(emitter->GetConvergeStiffness(), damping);
       }
       ImGui::TextDisabled("Use BindTargetPosition(const Vector3*) in code for dynamic tracking.");
@@ -959,7 +966,7 @@ namespace Tako {
     if (ImGui::CollapsingHeader("Death Style")) {
       // アルファフェード
       bool useAlphaFade = emitter->IsUseAlphaFade();
-      if (ImGui::Checkbox("Enable Alpha Fade", &useAlphaFade)) {
+      if (UI::Checkbox("Enable Alpha Fade", &useAlphaFade)) {
         emitter->SetAlphaFade(useAlphaFade);
       }
       ImGui::SameLine();
@@ -967,13 +974,13 @@ namespace Tako {
 
       // スケール縮小
       bool useScaleFade = emitter->IsUseScaleFade();
-      if (ImGui::Checkbox("Enable Scale Fade", &useScaleFade)) {
+      if (UI::Checkbox("Enable Scale Fade", &useScaleFade)) {
         emitter->SetScaleFade(useScaleFade, emitter->GetEndScaleDefault());
       }
       ImGui::SameLine();
       ImGui::TextDisabled("(scale -> endScale over lifetime)");
       Vector3 endScale = emitter->GetEndScaleDefault();
-      if (ImGui::DragFloat3("End Scale", &endScale.x, 0.01f, 0.0f, 10.0f)) {
+      if (UI::DragFloat3("End Scale", &endScale.x, 0.01f, 0.0f, 10.0f)) {
         emitter->SetEndScaleDefault(endScale);
       }
       ImGui::TextDisabled("Independent flags. Both ON = shrink with fade. Both OFF = stays visible until death.");
@@ -983,7 +990,7 @@ namespace Tako {
     if (ImGui::CollapsingHeader("Type-Specific Settings")) {
       if (auto sphereEmitter = std::dynamic_pointer_cast<SphereEmitter>(emitter)) {
         float radius = sphereEmitter->GetRadius();
-        if (ImGui::DragFloat("Radius##TypeSpecific", &radius, 0.1f, 0.1f, 100.0f)) {
+        if (UI::DragFloat("Radius##TypeSpecific", &radius, 0.1f, 0.1f, 100.0f)) {
           sphereEmitter->SetRadius(radius);
         }
       }
@@ -991,10 +998,10 @@ namespace Tako {
         Vector3 size = boxEmitter->GetSize();
         Vector3 rotation = boxEmitter->GetRotation();
 
-        if (ImGui::DragFloat3("Size##TypeSpecific", &size.x, 0.1f)) {
+        if (UI::DragFloat3("Size##TypeSpecific", &size.x, 0.1f)) {
           boxEmitter->SetSize(size);
         }
-        if (ImGui::DragFloat3("Rotation##TypeSpecific", &rotation.x, 0.1f)) {
+        if (UI::DragFloat3("Rotation##TypeSpecific", &rotation.x, 0.1f)) {
           boxEmitter->SetRotation(rotation);
         }
       }
@@ -1004,9 +1011,9 @@ namespace Tako {
         Vector3 v3 = triangleEmitter->GetVertex3();
 
         bool changed = false;
-        changed |= ImGui::DragFloat3("Vertex 1##TypeSpecific", &v1.x, 0.1f);
-        changed |= ImGui::DragFloat3("Vertex 2##TypeSpecific", &v2.x, 0.1f);
-        changed |= ImGui::DragFloat3("Vertex 3##TypeSpecific", &v3.x, 0.1f);
+        changed |= UI::DragFloat3("Vertex 1##TypeSpecific", &v1.x, 0.1f);
+        changed |= UI::DragFloat3("Vertex 2##TypeSpecific", &v2.x, 0.1f);
+        changed |= UI::DragFloat3("Vertex 3##TypeSpecific", &v3.x, 0.1f);
 
         if (changed) {
           triangleEmitter->SetVertices(v1, v2, v3);
@@ -1015,11 +1022,11 @@ namespace Tako {
       else if (auto meshEmitter = std::dynamic_pointer_cast<MeshEmitter>(emitter)) {
         // ローカルオフセット (平行移動は Basic Properties の Position)
         Vector3 offsetRotation = meshEmitter->GetOffsetRotation();
-        if (ImGui::DragFloat3("Offset Rotation##TypeSpecific", &offsetRotation.x, 0.01f)) {
+        if (UI::DragFloat3("Offset Rotation##TypeSpecific", &offsetRotation.x, 0.01f)) {
           meshEmitter->SetOffsetRotation(offsetRotation);
         }
         Vector3 offsetScale = meshEmitter->GetOffsetScale();
-        if (ImGui::DragFloat3("Offset Scale##TypeSpecific", &offsetScale.x, 0.01f)) {
+        if (UI::DragFloat3("Offset Scale##TypeSpecific", &offsetScale.x, 0.01f)) {
           meshEmitter->SetOffsetScale(offsetScale);
         }
         ImGui::TextDisabled("Position (Basic Properties) acts as local offset translation.");
@@ -1047,7 +1054,7 @@ namespace Tako {
           ImGui::Text("Aggregated model (%u tris)", edata.meshTriangleCount);
         }
         else {
-          ImGui::TextColored(ImVec4(1, 0.5f, 0.5f, 1), "No spawn shape (0 triangles)!");
+          ImGui::TextColored(GetEditorColors().error, "No spawn shape (0 triangles)!");
         }
       }
     }
@@ -1055,31 +1062,31 @@ namespace Tako {
     // 物理 / Curl Noise（per-emitter）
     if (ImGui::CollapsingHeader("Physics & Noise##Properties")) {
       float damping = emitter->GetDamping();
-      if (ImGui::SliderFloat("Damping##P", &damping, 0.9f, 1.0f, "%.4f")) {
+      if (UI::SliderFloat("Damping##P", &damping, 0.9f, 1.0f, "%.4f")) {
         emitter->SetDamping(damping);
       }
       if (ImGui::IsItemHovered()) ImGui::SetTooltip("Per-frame velocity damping (0.99 recommended)");
 
       float restitution = emitter->GetCollisionRestitution();
-      if (ImGui::SliderFloat("Restitution##P", &restitution, 0.0f, 1.0f, "%.3f")) {
+      if (UI::SliderFloat("Restitution##P", &restitution, 0.0f, 1.0f, "%.3f")) {
         emitter->SetCollisionRestitution(restitution);
       }
       if (ImGui::IsItemHovered()) ImGui::SetTooltip("Collision restitution (0.0=absorb, 1.0=fully elastic)");
 
       float pRadius = emitter->GetParticleRadius();
-      if (ImGui::DragFloat("Particle Radius##P", &pRadius, 0.001f, 0.001f, 1.0f, "%.4f")) {
+      if (UI::DragFloat("Particle Radius##P", &pRadius, 0.001f, 0.001f, 1.0f, "%.4f")) {
         emitter->SetParticleRadius(pRadius);
       }
       if (ImGui::IsItemHovered()) ImGui::SetTooltip("Particle radius used in depth collision");
 
       float noiseScale = emitter->GetNoiseScale();
-      if (ImGui::SliderFloat("Noise Scale##P", &noiseScale, 0.01f, 10.0f, "%.3f")) {
+      if (UI::SliderFloat("Noise Scale##P", &noiseScale, 0.01f, 10.0f, "%.3f")) {
         emitter->SetNoiseScale(noiseScale);
       }
       if (ImGui::IsItemHovered()) ImGui::SetTooltip("Curl Noise spatial scale (small=large eddies, large=fine detail)");
 
       float noiseStrength = emitter->GetNoiseStrength();
-      if (ImGui::SliderFloat("Noise Strength##P", &noiseStrength, 0.001f, 1.0f, "%.4f")) {
+      if (UI::SliderFloat("Noise Strength##P", &noiseStrength, 0.001f, 1.0f, "%.4f")) {
         emitter->SetNoiseStrength(noiseStrength);
       }
       if (ImGui::IsItemHovered()) ImGui::SetTooltip("Curl Noise strength (0.01-0.1=subtle, 0.5+=strong turbulence)");
@@ -1089,9 +1096,9 @@ namespace Tako {
 
     // プリセット保存/読込
     if (ImGui::CollapsingHeader("Preset")) {
-      ImGui::InputText("Preset Name##SavePreset", presetNameBuffer_, sizeof(presetNameBuffer_));
+      UI::InputText("Preset Name##SavePreset", presetNameBuffer_, sizeof(presetNameBuffer_));
 
-      if (ImGui::Button("Save as Preset##SavePreset") && strlen(presetNameBuffer_) > 0) {
+      if (ImGui::Button(ICON_FA_FLOPPY_DISK "  Save as Preset##SavePreset") && strlen(presetNameBuffer_) > 0) {
         emitterManager_->SavePreset(presetNameBuffer_, selectedEmitterName_);
         LogToConsole("Saved preset: " + std::string(presetNameBuffer_), LogType::Info);
         unsavedEmitters_.erase(selectedEmitterName_);
@@ -1118,7 +1125,7 @@ namespace Tako {
         ImGui::TextDisabled("(no presets found)");
       }
       else {
-        if (ImGui::BeginCombo("Preset##LoadPreset", selectedPreset_.empty() ? "(select)" : selectedPreset_.c_str())) {
+        if (UI::BeginCombo("Preset##LoadPreset", selectedPreset_.empty() ? "(select)" : selectedPreset_.c_str())) {
           for (const auto& name : presetNames) {
             const bool isSelected = (selectedPreset_ == name);
             if (ImGui::Selectable(name.c_str(), isSelected)) {
@@ -1127,10 +1134,10 @@ namespace Tako {
           }
           ImGui::EndCombo();
         }
-        ImGui::InputText("New Name##LoadPreset", newEmitterNameBuffer_, sizeof(newEmitterNameBuffer_));
+        UI::InputText("New Name##LoadPreset", newEmitterNameBuffer_, sizeof(newEmitterNameBuffer_));
 
         ImGui::BeginDisabled(selectedPreset_.empty());
-        if (ImGui::Button("Load##LoadPreset")) {
+        if (ImGui::Button(ICON_FA_FOLDER_OPEN "  Load##LoadPreset")) {
           const std::string newName    = (strlen(newEmitterNameBuffer_) > 0) ? newEmitterNameBuffer_ : selectedPreset_;
           const std::string presetName = selectedPreset_;
           // 同名のエミッターは置き換わるので、未保存ならその編集が消える
@@ -1278,26 +1285,26 @@ namespace Tako {
 
     // タイプ変更
     int editType = static_cast<int>(editField.type);
-    if (ImGui::Combo("Type##EditFF", &editType, "Gravity\0Directional\0Vortex\0Attract\0Repel\0")) {
+    if (UI::Combo("Type##EditFF", &editType, "Gravity\0Directional\0Vortex\0Attract\0Repel\0")) {
       editField.type = static_cast<uint32_t>(editType);
       changed = true;
     }
 
-    changed |= ImGui::DragFloat3("Position##EditFF", &editField.position.x, 0.1f);
+    changed |= UI::DragFloat3("Position##EditFF", &editField.position.x, 0.1f);
 
     // タイプに応じたラベル
     if (editField.type == static_cast<uint32_t>(ForceFieldType::Vortex)) {
-      changed |= ImGui::DragFloat3("Rotation Axis##EditFF", &editField.direction.x, 0.1f);
+      changed |= UI::DragFloat3("Rotation Axis##EditFF", &editField.direction.x, 0.1f);
     }
     else if (editField.type == static_cast<uint32_t>(ForceFieldType::Gravity) ||
              editField.type == static_cast<uint32_t>(ForceFieldType::Directional)) {
-      changed |= ImGui::DragFloat3("Direction##EditFF", &editField.direction.x, 0.1f);
+      changed |= UI::DragFloat3("Direction##EditFF", &editField.direction.x, 0.1f);
     }
 
-    changed |= ImGui::DragFloat("Strength##EditFF", &editField.strength, 0.1f, 0.0f, 100.0f);
-    changed |= ImGui::DragFloat("Radius##EditFF", &editField.radius, 0.1f, 0.0f, 100.0f);
+    changed |= UI::DragFloat("Strength##EditFF", &editField.strength, 0.1f, 0.0f, 100.0f);
+    changed |= UI::DragFloat("Radius##EditFF", &editField.radius, 0.1f, 0.0f, 100.0f);
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("0 = infinite range");
-    changed |= ImGui::DragFloat("Falloff##EditFF", &editField.falloff, 0.1f, 0.0f, 10.0f);
+    changed |= UI::DragFloat("Falloff##EditFF", &editField.falloff, 0.1f, 0.0f, 10.0f);
 
     if (changed) {
       gpuParticle->UpdateForceField(static_cast<uint32_t>(selectedForceFieldIndex_), editField);
@@ -1305,14 +1312,14 @@ namespace Tako {
 
     // 削除ボタン
     ImGui::Separator();
-    if (ImGui::Button("Delete##EditFF")) {
+    if (ImGui::Button(ICON_FA_TRASH_CAN "  Delete##EditFF")) {
       gpuParticle->RemoveForceField(static_cast<uint32_t>(selectedForceFieldIndex_));
       LogToConsole("Deleted force field [" + std::to_string(selectedForceFieldIndex_) + "]", LogType::Info);
       selectedForceFieldIndex_ = -1;
       inspectTarget_ = InspectTarget::None;
     }
     ImGui::SameLine();
-    if (ImGui::Button("Clear All##EditFF")) {
+    if (ImGui::Button(ICON_FA_ERASER "  Clear All##EditFF")) {
       gpuParticle->ClearForceFields();
       selectedForceFieldIndex_ = -1;
       inspectTarget_ = InspectTarget::None;
@@ -1329,12 +1336,12 @@ namespace Tako {
     }
 
     if (ImGui::CollapsingHeader("Save Force Field Preset")) {
-      ImGui::InputText("Preset Name##SaveFFPreset", ffPresetSaveBuffer_, sizeof(ffPresetSaveBuffer_));
+      UI::InputText("Preset Name##SaveFFPreset", ffPresetSaveBuffer_, sizeof(ffPresetSaveBuffer_));
 
       const bool hasSelection = (selectedForceFieldIndex_ >= 0
         && selectedForceFieldIndex_ < static_cast<int>(forceFields.size()));
 
-      if (ImGui::Button("Save##SaveFFPreset")
+      if (ImGui::Button(ICON_FA_FLOPPY_DISK "  Save##SaveFFPreset")
           && hasSelection
           && strlen(ffPresetSaveBuffer_) > 0) {
         forceFieldManager_->SavePreset(
@@ -1355,8 +1362,8 @@ namespace Tako {
     }
 
     if (ImGui::CollapsingHeader("Load Force Field Preset")) {
-      ImGui::InputText("Preset Name##LoadFFPreset", ffPresetLoadBuffer_, sizeof(ffPresetLoadBuffer_));
-      if (ImGui::Button("Load##LoadFFPreset") && strlen(ffPresetLoadBuffer_) > 0) {
+      UI::InputText("Preset Name##LoadFFPreset", ffPresetLoadBuffer_, sizeof(ffPresetLoadBuffer_));
+      if (ImGui::Button(ICON_FA_FOLDER_OPEN "  Load##LoadFFPreset") && strlen(ffPresetLoadBuffer_) > 0) {
         forceFieldManager_->LoadPreset(ffPresetLoadBuffer_);
         LogToConsole("Loaded force field preset: " + std::string(ffPresetLoadBuffer_), LogType::Info);
         currentFFPresetName_ = ffPresetLoadBuffer_;
@@ -1378,12 +1385,12 @@ namespace Tako {
 
     // グループアクティブ切り替え
     bool isActive = emitterManager_->IsGroupActive(groupName);
-    if (ImGui::Checkbox("Group Active##Group", &isActive)) {
+    if (UI::Checkbox("Group Active##Group", &isActive)) {
       emitterManager_->SetGroupActive(groupName, isActive);
     }
 
     // グループ位置調整
-    if (ImGui::DragFloat3("Group Position##Group", &groupPositionEdit_.x, 0.1f)) {
+    if (UI::DragFloat3("Group Position##Group", &groupPositionEdit_.x, 0.1f)) {
       emitterManager_->SetGroupPosition(groupName, groupPositionEdit_);
     }
 
@@ -1406,15 +1413,15 @@ namespace Tako {
         items.push_back(name.c_str());
       }
       if (groupAddEmitterIndex_ >= static_cast<int>(allEmitters.size())) groupAddEmitterIndex_ = 0;
-      ImGui::Combo("Add Emitter##Group", &groupAddEmitterIndex_, items.data(), static_cast<int>(items.size()));
-      if (ImGui::Button("Add to Group##Group")) {
+      UI::Combo("Add Emitter##Group", &groupAddEmitterIndex_, items.data(), static_cast<int>(items.size()));
+      if (ImGui::Button(ICON_FA_PLUS "  Add to Group##Group")) {
         emitterManager_->AddToGroup(groupName, allEmitters[groupAddEmitterIndex_]);
         LogToConsole("Added " + allEmitters[groupAddEmitterIndex_] + " to group " + groupName, LogType::Info);
       }
     }
 
     // グループ削除
-    if (ImGui::Button("Delete Group##Group")) {
+    if (ImGui::Button(ICON_FA_TRASH_CAN "  Delete Group##Group")) {
       emitterManager_->RemoveGroup(groupName);
       selectedGroupIndex_ = -1;
       inspectTarget_ = InspectTarget::None;
@@ -1428,25 +1435,25 @@ namespace Tako {
   void ParticleEditor::DrawVisualizationSettings() {
     // === エミッター形状の可視化設定 ===
     if (ImGui::CollapsingHeader("Emitter Shapes", ImGuiTreeNodeFlags_DefaultOpen)) {
-      ImGui::Checkbox("Show Emitter Shapes", &showEmitterShapes_);
+      UI::Checkbox("Show Emitter Shapes", &showEmitterShapes_);
 
       if (showEmitterShapes_) {
-        ImGui::ColorEdit4("Sphere Color##EmVis", &emitterColorSphere_.x);
-        ImGui::ColorEdit4("Box Color##EmVis", &emitterColorBox_.x);
-        ImGui::ColorEdit4("Triangle Color##EmVis", &emitterColorTriangle_.x);
+        UI::ColorEdit4("Sphere Color##EmVis", &emitterColorSphere_.x);
+        UI::ColorEdit4("Box Color##EmVis", &emitterColorBox_.x);
+        UI::ColorEdit4("Triangle Color##EmVis", &emitterColorTriangle_.x);
       }
     }
 
     // === フォースフィールドの可視化設定 ===
     if (ImGui::CollapsingHeader("Force Field Visualization", ImGuiTreeNodeFlags_DefaultOpen)) {
-      ImGui::Checkbox("Show Radius##FFVis", &showForceFieldRadius_);
-      ImGui::Checkbox("Show Direction##FFVis", &showForceFieldDirection_);
+      UI::Checkbox("Show Radius##FFVis", &showForceFieldRadius_);
+      UI::Checkbox("Show Direction##FFVis", &showForceFieldDirection_);
 
       if (showForceFieldRadius_ || showForceFieldDirection_) {
-        ImGui::ColorEdit4("Radius Color##FFVis", &forceFieldRadiusColor_.x);
-        ImGui::ColorEdit4("Direction Color##FFVis", &forceFieldDirectionColor_.x);
-        ImGui::DragFloat("Arrow Length##FFVis", &forceFieldArrowLength_, 0.1f, 0.1f, 20.0f);
-        ImGui::DragFloat("Arrow Head Size##FFVis", &forceFieldArrowHeadSize_, 0.01f, 0.05f, 1.0f);
+        UI::ColorEdit4("Radius Color##FFVis", &forceFieldRadiusColor_.x);
+        UI::ColorEdit4("Direction Color##FFVis", &forceFieldDirectionColor_.x);
+        UI::DragFloat("Arrow Length##FFVis", &forceFieldArrowLength_, 0.1f, 0.1f, 20.0f);
+        UI::DragFloat("Arrow Head Size##FFVis", &forceFieldArrowHeadSize_, 0.01f, 0.05f, 1.0f);
       }
     }
   }

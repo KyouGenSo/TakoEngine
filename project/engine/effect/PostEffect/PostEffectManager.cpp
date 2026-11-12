@@ -9,6 +9,7 @@
 #include "MaterialPropertyBlock.h"
 #include "TextureManager.h"
 #ifdef _DEBUG
+#include "EditorUI.h"
 #include "DebugUIManager.h"
 #include "ImGuiManager.h"
 #include "OverrideField.h"
@@ -163,80 +164,80 @@ namespace Tako {
 
     void DrawParam(VignetteParam& param)
     {
-      ImGui::DragFloat("Vignette Power", &param.power, 0.01f, 0.0f, 10.0f);
-      ImGui::DragFloat("Vignette Range", &param.range, 0.01f, 0.0f, 100.0f);
-      ImGui::ColorEdit3("Vignette Color", &param.color.x);
+      UI::DragFloat("Vignette Power", &param.power, 0.01f, 0.0f, 10.0f);
+      UI::DragFloat("Vignette Range", &param.range, 0.01f, 0.0f, 100.0f);
+      UI::ColorEdit3("Vignette Color", &param.color.x);
     }
 
     void DrawParam(BloomParam& param)
     {
-      ImGui::DragFloat("Bloom Intensity", &param.intensity, 0.01f, 0.0f, 10.0f);
-      ImGui::DragFloat("Bloom Threshold", &param.threshold, 0.01f, 0.0f, 1.0f);
-      ImGui::DragFloat("Bloom Sigma", &param.sigma, 0.01f, 0.0f, 50.0f);
-      ImGui::DragInt("Bloom Kernel Size", &param.kernelSize, 1.0f, 1, 100);
+      UI::DragFloat("Bloom Intensity", &param.intensity, 0.01f, 0.0f, 10.0f);
+      UI::DragFloat("Bloom Threshold", &param.threshold, 0.01f, 0.0f, 1.0f);
+      UI::DragFloat("Bloom Sigma", &param.sigma, 0.01f, 0.0f, 50.0f);
+      UI::DragInt("Bloom Kernel Size", &param.kernelSize, 1.0f, 1, 100);
     }
 
     void DrawParam(FogParam& param)
     {
-      ImGui::ColorEdit4("FogColor", &param.color.x);
-      ImGui::DragFloat("Density", &param.density, 0.001f, 0.0f, 1.0f);
+      UI::ColorEdit4("FogColor", &param.color.x);
+      UI::DragFloat("Density", &param.density, 0.001f, 0.0f, 1.0f);
     }
 
     void DrawParam(RadialBlurParam& param)
     {
-      ImGui::DragFloat2("RadialBlur Center", &param.center.x, 0.01f, 0.0f, 1.0f, "%.3f");
-      ImGui::DragFloat("RadialBlur Width", &param.blurWidth, 0.001f, 0.0f, 1.0f, "%.3f");
-      ImGui::DragInt("RadialBlur Sample Count", &param.sampleCount, 1, 1, 1024, "%d");
+      UI::DragFloat2("RadialBlur Center", &param.center.x, 0.01f, 0.0f, 1.0f, "%.3f");
+      UI::DragFloat("RadialBlur Width", &param.blurWidth, 0.001f, 0.0f, 1.0f, "%.3f");
+      UI::DragInt("RadialBlur Sample Count", &param.sampleCount, 1.0f, 1, 1024, "%d");
     }
 
     void DrawParam(BWFilterParam& param)
     {
-      ImGui::DragFloat("BWFilter Threshold", &param.threshold, 0.01f, 0.0f, 1.0f, "%.2f");
+      UI::DragFloat("BWFilter Threshold", &param.threshold, 0.01f, 0.0f, 1.0f, "%.2f");
     }
 
     void DrawParam(RGBSplitParam& param)
     {
-      ImGui::DragFloat2("Red Offset", &param.redOffset.x, 0.01f, -1.0f, 1.0f);
-      ImGui::DragFloat2("Green Offset", &param.greenOffset.x, 0.01f, -1.0f, 1.0f);
-      ImGui::DragFloat2("Blue Offset", &param.blueOffset.x, 0.01f, -1.0f, 1.0f);
-      ImGui::DragFloat("RGBSplit Intensity", &param.intensity, 0.01f, 0.0f, 1.0f);
+      UI::DragFloat2("Red Offset", &param.redOffset.x, 0.01f, -1.0f, 1.0f);
+      UI::DragFloat2("Green Offset", &param.greenOffset.x, 0.01f, -1.0f, 1.0f);
+      UI::DragFloat2("Blue Offset", &param.blueOffset.x, 0.01f, -1.0f, 1.0f);
+      UI::DragFloat("RGBSplit Intensity", &param.intensity, 0.01f, 0.0f, 1.0f);
     }
 
     void DrawParam(LuminanceOutlineParam& param)
     {
-      ImGui::DragFloat("LuminanceBasedOutline Thickness", &param.outlineThickness, 0.01f, 0.0f, 100.0f, "%.2f");
+      UI::DragFloat("LuminanceBasedOutline Thickness", &param.outlineThickness, 0.01f, 0.0f, 100.0f, "%.2f");
     }
 
     void DrawParam(DepthOutlineParam& param)
     {
-      ImGui::DragFloat("DepthBasedOutline Thickness", &param.outlineThickness, 0.01f, 0.0f, 100.0f, "%.2f");
+      UI::DragFloat("DepthBasedOutline Thickness", &param.outlineThickness, 0.01f, 0.0f, 100.0f, "%.2f");
     }
 
     void DrawParam(DissolveParam& param)
     {
-      ImGui::DragFloat("Dissolve Threshold", &param.threshold, 0.01f, 0.0f, 1.0f);
-      ImGui::DragFloat("Edge Thickness", &param.edgeThickness, 0.01f, 0.0f, 1.0f);
-      ImGui::ColorEdit4("Edge Color", &param.edgeColor.x);
+      UI::DragFloat("Dissolve Threshold", &param.threshold, 0.01f, 0.0f, 1.0f);
+      UI::DragFloat("Edge Thickness", &param.edgeThickness, 0.01f, 0.0f, 1.0f);
+      UI::ColorEdit4("Edge Color", &param.edgeColor.x);
     }
 
     void DrawParam(HalfToneParam& param)
     {
-      ImGui::DragFloat("Dot Size", &param.dotSize, 1.0f, 1.0f, 50.0f);
-      ImGui::DragFloat("Contrast", &param.contrast, 0.01f, 0.1f, 3.0f);
-      ImGui::DragFloat("Angle", &param.angle, 0.01f, 0.0f, 6.28f);
-      ImGui::DragFloat("Threshold", &param.threshold, 0.01f, 0.0f, 1.0f);
+      UI::DragFloat("Dot Size", &param.dotSize, 1.0f, 1.0f, 50.0f);
+      UI::DragFloat("Contrast", &param.contrast, 0.01f, 0.1f, 3.0f);
+      UI::DragFloat("Angle", &param.angle, 0.01f, 0.0f, 6.28f);
+      UI::DragFloat("Threshold", &param.threshold, 0.01f, 0.0f, 1.0f);
 
       const char* patterns[] = { "Circle", "Square", "Diamond" };
-      ImGui::Combo("Dot Pattern", &param.dotPattern, patterns, 3);
+      UI::Combo("Dot Pattern", &param.dotPattern, patterns, 3);
 
       const char* colorModes[] = { "Monochrome", "CMYK" };
-      ImGui::Combo("Color Mode", &param.colorMode, colorModes, 2);
+      UI::Combo("Color Mode", &param.colorMode, colorModes, 2);
     }
 
     void DrawParam(GaussianBlurParam& param)
     {
-      ImGui::DragFloat("Blur Sigma", &param.sigma, 0.01f, 0.0f, 50.0f);
-      ImGui::DragInt("Blur Kernel Size", &param.kernelSize, 1.0f, 1, 100);
+      UI::DragFloat("Blur Sigma", &param.sigma, 0.01f, 0.0f, 50.0f);
+      UI::DragInt("Blur Kernel Size", &param.kernelSize, 1.0f, 1, 100);
     }
 #endif
 
@@ -689,7 +690,7 @@ namespace Tako {
   void PostEffectManager::DrawImgui(bool* isOpen)
   {
 #ifdef _DEBUG
-    ImGui::Begin("PostEffect Editor", isOpen);
+    ImGui::Begin(WindowTitle::kPostEffectEditor, isOpen);
 
     // UI を描く区間の前後で保存内容を比べて編集を検出する（この区間ではゲームのコードがスタックを変えない）
     profileTracker_.BeginSection();
@@ -733,13 +734,13 @@ namespace Tako {
     ImGui::SameLine();
     const bool hasName = profileName_[0] != '\0';
     ImGui::BeginDisabled(!hasName);
-    if (ImGui::Button("Save")) {
+    if (UI::IconButton(ICON_FA_FLOPPY_DISK, "Save the profile (Ctrl+S)")) {
       SaveCurrentProfile();
     }
     ImGui::EndDisabled();
     ImGui::SameLine();
     ImGui::SetNextItemWidth(160.0f);
-    if (ImGui::BeginCombo("Load", "Select...")) {
+    if (ImGui::BeginCombo("##Load", ICON_FA_FOLDER_OPEN "  Load...")) {
       for (const std::string& name : ProfileNames()) {
         if (ImGui::Selectable(name.c_str())) {
           unsavedPrompt_.RunOrConfirm(profileTracker_.IsEdited(), std::format("Profile '{}' has unsaved changes.", profileName_.data()), "Load",
@@ -783,7 +784,7 @@ namespace Tako {
     ImGui::EndChild();
 
     ImGui::BeginDisabled(selectedAvailableEffect_.empty() && selectedAvailableMaterial_.empty());
-    if (ImGui::Button("Add Effect", ImVec2(-1, 0))) {
+    if (ImGui::Button(ICON_FA_PLUS "  Add Effect", ImVec2(-1, 0))) {
       selectedActiveEffect_ = selectedAvailableMaterial_.empty() ? AddEffect(selectedAvailableEffect_) : AddMaterialEffect(selectedAvailableMaterial_);
     }
     ImGui::EndDisabled();
@@ -796,7 +797,7 @@ namespace Tako {
     ImGui::Separator();
     ImGui::BeginChild("ActiveList", ImVec2(0, 200), true);
     if (effects.empty()) {
-      ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "No effects active");
+      ImGui::TextDisabled("No effects active");
     }
     for (size_t i = 0; i < effects.size(); ++i) {
       const PostEffectInstance& effect = effects[i];
@@ -824,7 +825,7 @@ namespace Tako {
     bool         hasSelection = selected < effects.size();
 
     ImGui::BeginDisabled(!hasSelection);
-    if (ImGui::Button("Remove Effect", ImVec2(-1, 0))) {
+    if (ImGui::Button(ICON_FA_TRASH_CAN "  Remove Effect", ImVec2(-1, 0))) {
       RemoveEffect(selectedActiveEffect_);
       selectedActiveEffect_ = 0;
       hasSelection = false;
@@ -833,19 +834,19 @@ namespace Tako {
 
     ImGui::Spacing();
     ImGui::BeginDisabled(!hasSelection || selected == 0);
-    if (ImGui::Button("Move Up", ImVec2(80, 0))) {
+    if (ImGui::Button(ICON_FA_ARROW_UP "  Move Up", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 0))) {
       std::swap(effects[selected], effects[selected - 1]);
     }
     ImGui::EndDisabled();
     ImGui::SameLine();
     ImGui::BeginDisabled(!hasSelection || selected + 1 >= effects.size());
-    if (ImGui::Button("Move Down", ImVec2(-1, 0))) {
+    if (ImGui::Button(ICON_FA_ARROW_DOWN "  Move Down", ImVec2(-1, 0))) {
       std::swap(effects[selected], effects[selected + 1]);
     }
     ImGui::EndDisabled();
 
     ImGui::Spacing();
-    if (ImGui::Button("Clear All", ImVec2(80, 0))) {
+    if (ImGui::Button("Clear All", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 0))) {
       ClearEffects();
       selectedActiveEffect_ = 0;
     }
@@ -863,7 +864,7 @@ namespace Tako {
   {
     std::vector<PostEffectInstance>& effects = stack_.GetEffects();
     if (effects.empty()) {
-      ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "No active effects to configure");
+      ImGui::TextDisabled("No active effects to configure");
       ImGui::TextWrapped("Switch to the 'PostEffect' tab to enable effects first.");
       return;
     }
@@ -872,9 +873,9 @@ namespace Tako {
       PostEffectInstance& effect = effects[i];
       ImGui::PushID(static_cast<int>(effect.id));
       if (ImGui::CollapsingHeader(std::format("[{}] {}", i + 1, DisplayName(effect)).c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::Checkbox("Enabled", &effect.enabled);
+        UI::Checkbox("Enabled", &effect.enabled);
         int maskId = static_cast<int>(effect.maskId);
-        if (ImGui::InputInt("Mask ID", &maskId)) {
+        if (UI::InputInt("Mask ID", &maskId)) {
           effect.maskId = static_cast<uint32_t>(std::clamp(maskId, 0, 255));
         }
         ImGui::SetItemTooltip("0 = whole screen. Otherwise applied to objects with the same Object3d::SetMaskId,\n"
@@ -903,7 +904,7 @@ namespace Tako {
 
     // UE の Post Process Volume に Material Instance を置くのと同じ。マテリアル自体は Material Editor で直す
     const std::string current = effect.material ? effect.material->name : std::string();
-    if (ImGui::BeginCombo("Material", current.empty() ? "(shader defaults)" : current.c_str())) {
+    if (UI::BeginCombo("Material", current.empty() ? "(shader defaults)" : current.c_str())) {
       if (ImGui::Selectable("(shader defaults)", current.empty())) {
         effect.material.reset();
         changed = true;

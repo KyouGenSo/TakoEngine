@@ -1,6 +1,7 @@
 #include "ShaderEditor.h"
 
 #ifdef _DEBUG
+#include "EditorUI.h"
 
 #include <algorithm>
 #include <cctype>
@@ -105,7 +106,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     {
       std::array<char, 256> buffer{};
       node.value(key, std::string()).copy(buffer.data(), buffer.size() - 1);
-      ImGui::InputTextWithHint(label, hint, buffer.data(), buffer.size());
+      UI::InputTextWithHint(label, hint, buffer.data(), buffer.size());
       if (!ImGui::IsItemDeactivatedAfterEdit()) {
         return false;
       }
@@ -131,7 +132,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
       if (index < 0) {
         index = indexOf(fallback);
       }
-      if (!ImGui::Combo(label, &index, names, static_cast<int>(N))) {
+      if (!UI::Combo(label, &index, names, static_cast<int>(N))) {
         return false;
       }
       node[key] = names[index];
@@ -151,7 +152,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     bool BoolField(const char* label, json& node, const char* key, bool fallback)
     {
       bool value = node.value(key, fallback);
-      if (!ImGui::Checkbox(label, &value)) {
+      if (!UI::Checkbox(label, &value)) {
         return false;
       }
       node[key] = value;
@@ -169,21 +170,22 @@ float4 main(VertexShaderOutput input) : SV_TARGET
       ImGui::TextUnformatted(std::format("Pass {}{}", index + 1, note).c_str());
       ImGui::SameLine();
       ImGui::BeginDisabled(index == 0);
-      if (ImGui::ArrowButton("Up", ImGuiDir_Up)) {
+      if (ImGui::SmallButton(ICON_FA_ARROW_UP "##Up")) {
         raised = index;
       }
       ImGui::EndDisabled();
       ImGui::SameLine();
       ImGui::BeginDisabled(index + 1 == count);
-      if (ImGui::ArrowButton("Down", ImGuiDir_Down)) {
+      if (ImGui::SmallButton(ICON_FA_ARROW_DOWN "##Down")) {
         raised = index + 1;
       }
       ImGui::EndDisabled();
       ImGui::SameLine();
       ImGui::BeginDisabled(count == 1);
-      if (ImGui::SmallButton("Remove")) {
+      if (ImGui::SmallButton(ICON_FA_TRASH_CAN "##Remove")) {
         removed = index;
       }
+      ImGui::SetItemTooltip("Remove this pass");
       ImGui::EndDisabled();
     }
 
@@ -231,7 +233,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
         const bool        isMain   = slot == "gTexture";
         const std::string fallback = isMain ? "Source" : kFileInput;
         const std::string current  = inputs.value(slot, fallback);
-        if (!ImGui::BeginCombo(slot.c_str(), current.c_str())) {
+        if (!UI::BeginCombo(slot.c_str(), current.c_str())) {
           continue;
         }
         std::vector<std::string> options = sources;
@@ -279,7 +281,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     }
 
     ImGui::SetNextWindowSize(ImVec2(820.0f, 620.0f), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin("Shader Editor", isOpen_)) {
+    if (ImGui::Begin(WindowTitle::kShaderEditor, isOpen_)) {
       // 外のエディタで保存されたら読み直す（編集中なら上書きしない）
       if (!selected_.empty() && !tracker_.IsEdited() && LastWriteTime(selected_) != fileTime_) {
         Select(selected_);
@@ -403,7 +405,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     const bool        valid = std::ranges::all_of(name, [](unsigned char c) { return std::isalnum(c) || c == '_'; });
     const bool        taken = Renderer::GetInstance()->FindShader(name) || FindPostEffect(name) || std::filesystem::exists(kShaderDirectory / (name + ".shader.json"));
     ImGui::BeginDisabled(name.empty() || !valid || taken);
-    if (ImGui::Button("Create", ImVec2(-1.0f, 0.0f))) {
+    if (ImGui::Button(ICON_FA_PLUS "  Create", ImVec2(-1.0f, 0.0f))) {
       unsavedPrompt_.RunOrConfirm(tracker_.IsEdited(), std::format("Shader '{}' has unsaved changes.", selected_), "Create", [this, name] {
         Create(name, newKind_);
         newName_.fill('\0');
@@ -421,23 +423,24 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     const bool        isPost   = document_.contains("PostEffect") && !document_.contains("Forward");
     const bool        readOnly = IsReadOnly();
 
-    ImGui::SeparatorText(tracker_.IsEdited() ? std::format("{} *", name).c_str() : name.c_str());
     ImGui::BeginDisabled(readOnly);
-    if (ImGui::Button("Save")) {
+    if (UI::IconButton(ICON_FA_FLOPPY_DISK, readOnly ? "Engine shaders are read-only" : "Save (Ctrl+S)")) {
       Save();
     }
     ImGui::EndDisabled();
     ImGui::SameLine();
-    if (ImGui::Button("Reload")) {
+    if (UI::IconButton(ICON_FA_ROTATE, "Compile the HLSL again and re-register (use after fixing a compile error)")) {
       ApplyDocument();
     }
-    ImGui::SetItemTooltip("Compile the HLSL again and re-register (use after fixing a compile error)");
+    ImGui::SameLine();
+    ImGui::AlignTextToFramePadding();
+    ImGui::Text("%s%s", name.c_str(), tracker_.IsEdited() ? " *" : "");
 
     ShaderLibrary&                 library = Renderer::GetInstance()->GetDX12Basic()->GetShaderLibrary();
     const std::vector<std::string> shaders = FindPixelShaders();
     for (size_t i = 0; i < shaders.size(); ++i) {
       ImGui::SameLine();
-      const std::string label = shaders.size() == 1 ? std::string("Open HLSL") : std::format("Open {}##{}", std::filesystem::path(shaders[i]).filename().string(), i);
+      const std::string label = shaders.size() == 1 ? std::string(ICON_FA_FILE_CODE "  Open HLSL") : std::format(ICON_FA_FILE_CODE "  Open {}##{}", std::filesystem::path(shaders[i]).filename().string(), i);
       if (ImGui::Button(label.c_str())) {
         OpenWithShell(library.ResolvePath(StringUtility::ConvertString(shaders[i])));
       }
@@ -446,7 +449,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     // 登録の状態と、最後のコンパイル・読み込みのエラー
     const bool registered = isPost ? FindPostEffect(name) != nullptr : Renderer::GetInstance()->FindShader(name) != nullptr;
     ImGui::TextDisabled(registered ? "Registered" : "Not registered");
-    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.4f, 0.4f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_Text, GetEditorColors().error);
     for (const std::string& ps : shaders) {
       if (const std::string* error = library.FindCompileError(StringUtility::ConvertString(ps))) {
         ImGui::TextWrapped("%s", error->c_str());
@@ -514,12 +517,11 @@ float4 main(VertexShaderOutput input) : SV_TARGET
       passesEdited |= NameCombo("Blend", pass, "Blend", kBlendModeNames, "Alpha");
       passesEdited |= NameCombo("Cull", pass, "Cull", kCullModeNames, "Back");
       passesEdited |= BoolField("Depth Test", pass, "DepthTest", true);
-      ImGui::SameLine();
       passesEdited |= BoolField("Depth Write", pass, "DepthWrite", true);
       passesEdited |= NameCombo("Depth Func", pass, "DepthFunc", kDepthFuncNames, "LessEqual");
       ImGui::PopID();
     }
-    if (ImGui::Button("Add Pass##Forward")) {
+    if (ImGui::Button(ICON_FA_PLUS "  Add Pass##Forward")) {
       json copy = passes.back();
       passes.push_back(std::move(copy));
       passesEdited = true;
@@ -531,7 +533,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     }
 
     int queue = document_.value("Queue", ShaderAsset::kQueueGeometry);
-    if (ImGui::DragInt("Queue", &queue, 1.0f, 0, 5000)) {
+    if (UI::DragInt("Queue", &queue, 1.0f, 0, 5000)) {
       document_["Queue"] = queue;
       changed = true;
     }
@@ -540,7 +542,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     // 影・マスクのパスを借りる先
     const std::string name     = document_.value("Name", std::string());
     const std::string fallback = document_.value("Fallback", std::string());
-    if (ImGui::BeginCombo("Fallback", fallback.empty() ? "(none)" : fallback.c_str())) {
+    if (UI::BeginCombo("Fallback", fallback.empty() ? "(none)" : fallback.c_str())) {
       if (ImGui::Selectable("(none)", fallback.empty())) {
         document_.erase("Fallback");
         changed = true;
@@ -569,7 +571,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     // 書かなければ半透明の後のポストエフェクトの段
     constexpr const char* kStackEvent = "(post process stack)";
     const std::string     event       = post.value("Event", std::string());
-    if (ImGui::BeginCombo("Event", event.empty() ? kStackEvent : event.c_str())) {
+    if (UI::BeginCombo("Event", event.empty() ? kStackEvent : event.c_str())) {
       if (ImGui::Selectable(kStackEvent, event.empty()) && !event.empty()) {
         post.erase("Event");
         changed = true;
@@ -612,7 +614,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
       if (!last) {
         passesEdited |= TextField("Output", pass, "Output", "name read by later passes");
         float scale = pass.value("Scale", 1.0f);
-        if (ImGui::DragFloat("Scale", &scale, 0.01f, 0.01f, 4.0f)) {
+        if (UI::DragFloat("Scale", &scale, 0.01f, 0.01f, 4.0f)) {
           pass["Scale"] = scale;
           passesEdited = true;
         }
@@ -622,7 +624,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
       ImGui::PopID();
     }
 
-    if (ImGui::Button("Add Pass##Post")) {
+    if (ImGui::Button(ICON_FA_PLUS "  Add Pass##Post")) {
       // 新しいパスが結果を書くので、今の最後のパスには名前を付けて新しいパスから読む
       json& previous = passes.back();
       if (previous.value("Output", std::string()).empty()) {
@@ -674,7 +676,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
         }
         const auto it = std::find(fade.begin(), fade.end(), json(property.name));
         bool       on = it != fade.end();
-        if (ImGui::Checkbox(std::format("{}##Fade", property.name).c_str(), &on)) {
+        if (UI::Checkbox(std::format("{}##Fade", property.name).c_str(), &on)) {
           if (on) {
             fade.push_back(property.name);
           }
@@ -714,7 +716,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
         range[0] = (*it)[0].get<float>();
         range[1] = (*it)[1].get<float>();
       }
-      if (ImGui::DragFloat2(property.name.c_str(), range, 0.01f)) {
+      if (UI::DragFloat2(property.name.c_str(), range, 0.01f)) {
         // min == max は範囲なし
         if (range[0] == range[1]) {
           ranges.erase(property.name);

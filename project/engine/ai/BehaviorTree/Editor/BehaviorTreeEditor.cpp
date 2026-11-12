@@ -1,6 +1,7 @@
 #ifdef _DEBUG
 
 #include "BehaviorTreeEditor.h"
+#include "EditorUI.h"
 #include "BTChildSort.h"
 #include "BTComposite.h"
 #include "BTBlackboard.h"
@@ -118,7 +119,8 @@ void BehaviorTreeEditor::Update() {
   // 既定の大きさや、imgui.ini に残った小さい値のままだと、ツールバーもキャンバスも入らない
   ImGui::SetNextWindowSize(ImVec2(960.0f, 600.0f), ImGuiCond_FirstUseEver);
   ImGui::SetNextWindowSizeConstraints(ImVec2(640.0f, 400.0f), ImVec2(FLT_MAX, FLT_MAX));
-  if (ImGui::Begin(config_.windowName.c_str(), &isVisible_)) {
+  // ### の後ろが ID なので、imgui.ini とフォーカスの指定は windowName のまま
+  if (ImGui::Begin(std::format(ICON_FA_DIAGRAM_PROJECT "  {0}###{0}", config_.windowName).c_str(), &isVisible_)) {
     // UI を描く区間の前後でツリーの内容を比べて編集を検出する（Node Inspector は別のウィンドウなので、別の区間で比べる）
     treeTracker_.BeginSection();
     DrawToolbar();
@@ -216,12 +218,12 @@ void BehaviorTreeEditor::DrawToolbar() {
   static std::string selectedNodeType = "BTSelector";  // デフォルト
 
   // === Save / Load / Clear (現在のツリーに対する操作) ===
-  if (ImGui::Button("Save##bte_toolbar")) {
+  if (ImGui::Button(ICON_FA_FLOPPY_DISK "  Save##bte_toolbar")) {
     SaveTree(currentTreeName_);
   }
   ImGui::SameLine();
   ImGui::BeginDisabled(linked_ == nullptr);
-  if (ImGui::Button("Apply to Running##bte_toolbar")) {
+  if (ImGui::Button(ICON_FA_CHECK "  Apply to Running##bte_toolbar")) {
     linked_->GetTree().SetRootNode(BuildRuntimeTree());
   }
   ImGui::EndDisabled();
@@ -230,21 +232,19 @@ void BehaviorTreeEditor::DrawToolbar() {
   ProcessShortcuts(Shortcuts(), *this);
   ImGui::SameLine();
 
-  if (ImGui::Button("Load##bte_toolbar")) {
+  if (ImGui::Button(ICON_FA_FOLDER_OPEN "  Load##bte_toolbar")) {
     LoadTree(currentTreeName_);
   }
   ImGui::SameLine();
 
-  if (ImGui::Button("Clear##bte_toolbar")) {
+  if (ImGui::Button(ICON_FA_ERASER "  Clear##bte_toolbar")) {
     Clear();
     nodeOffsetX = 100.0f;
     nodeOffsetY = 100.0f;
   }
 
   // === マルチツリー: 切替ドロップダウン + 新規/削除 ===
-  ImGui::SameLine();
-  ImGui::TextDisabled("|");
-  ImGui::SameLine();
+  UI::ToolbarSeparator();
   ImGui::Text("Tree:");
   ImGui::SameLine();
 
@@ -266,11 +266,11 @@ void BehaviorTreeEditor::DrawToolbar() {
   }
 
   ImGui::SameLine();
-  if (ImGui::Button("+ New##bte_tree")) {
+  if (ImGui::Button(ICON_FA_FILE_CIRCLE_PLUS "  New##bte_tree")) {
     ImGui::OpenPopup("New Tree##popup");
   }
   ImGui::SameLine();
-  if (ImGui::Button("- Delete##bte_tree")) {
+  if (ImGui::Button(ICON_FA_TRASH_CAN "  Delete##bte_tree")) {
     ImGui::OpenPopup("Delete Tree##popup");
   }
 
@@ -301,7 +301,7 @@ void BehaviorTreeEditor::DrawToolbar() {
     }
 
     ImGui::Separator();
-    if (ImGui::Button("Create##new")) {
+    if (ImGui::Button(ICON_FA_PLUS "  Create##new")) {
       const std::string name = newTreeNameBuf;
       bool ok = false;
       if (newTreeMode == 0) {
@@ -392,7 +392,7 @@ void BehaviorTreeEditor::DrawToolbar() {
 
     ImGui::SameLine();
 
-    if (ImGui::Button("Add Node##bte_toolbar")) {
+    if (ImGui::Button(ICON_FA_PLUS "  Add Node##bte_toolbar")) {
       ImVec2 centerPos = ImVec2(nodeOffsetX, nodeOffsetY);
       nodeOffsetX += 30.0f;
       nodeOffsetY += 20.0f;
@@ -457,6 +457,9 @@ void BehaviorTreeEditor::DrawNode(const EditorNode& node) {
 
   ed::BeginNode(node.id);
   ImGui::PushID(node.id);
+  // ノードの面は種類の色（暗め）で塗るので、中の文字はテーマに関係なく明るい色にする
+  ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(235, 235, 235, 255));
+  ImGui::PushStyleColor(ImGuiCol_TextDisabled, IM_COL32(170, 170, 170, 255));
 
   const float nodeWidth = 200.0f;
   const float barHeight = 24.0f;
@@ -502,7 +505,7 @@ void BehaviorTreeEditor::DrawNode(const EditorNode& node) {
   ImGui::Text("%s", titleText);
 
   // ノードタイプを小さく表示 (中央揃え)
-  ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
+  ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
   ImGui::SetWindowFontScale(0.85f);
   float typeWidth = ImGui::CalcTextSize(node.nodeType.c_str()).x * 0.85f;
   ImGui::Dummy(ImVec2((nodeWidth - typeWidth) * 0.5f, 0));
@@ -556,6 +559,7 @@ void BehaviorTreeEditor::DrawNode(const EditorNode& node) {
     ImGui::SetCursorPos(savedPos);
   }
 
+  ImGui::PopStyleColor(2);
   ImGui::PopID();
   ed::EndNode();
 
@@ -738,7 +742,7 @@ void BehaviorTreeEditor::DrawNodeInspector() {
   // 表示名編集
   char nameBuf[256];
   strncpy_s(nameBuf, node->displayName.c_str(), sizeof(nameBuf) - 1);
-  if (ImGui::InputText("Name##inspector", nameBuf, sizeof(nameBuf))) {
+  if (UI::InputText("Name##inspector", nameBuf, sizeof(nameBuf))) {
     node->displayName = nameBuf;
   }
 

@@ -13,7 +13,7 @@ namespace Tako {
   /// Actor をビヘイビアツリーで動かす。Play が始まるとツリーのファイル（resources/Json/BT/名前.json）を読む。
   /// Blackboard の "owner"（kBTOwnerKey）にこの Actor が入る。Blackboard は作った時からあるので、スクリプトは BeginPlay で他の値を入れられる
   /// </summary>
-  TCLASS()
+  TCLASS(DisplayName = "Behavior Tree")
   class BehaviorTreeComponent : public Component {
     GENERATED_BODY()
 

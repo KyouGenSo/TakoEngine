@@ -37,6 +37,11 @@ namespace Tako {
     static std::span<const ShortcutBinding<ViewportCameraController>> Shortcuts();
 
     /// <summary>
+    /// ツールバーに置く操作の案内。? にカーソルを合わせると Shortcuts の一覧、その右に今の飛行速度
+    /// </summary>
+    void DrawHelp() const;
+
+    /// <summary>
     /// 回転から前方ベクトルを求め、注視点から distance 分引いた位置へカメラを配置し VP 行列を合成する
     /// </summary>
     /// <param name="camera">反映先カメラ</param>

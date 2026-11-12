@@ -4,7 +4,7 @@
 
 #include "PreviewViewport.h"
 #include "Camera.h"
-#include "imgui.h"
+#include "EditorUI.h"
 
 namespace Tako {
 
@@ -45,12 +45,11 @@ namespace Tako {
   }
 
   void PreviewPanel::DrawCameraToolbar() {
-    if (ImGui::Button("Reset Camera")) {
+    if (UI::IconButton(ICON_FA_HOUSE, "Reset camera")) {
       controller_.Reset();
     }
     ImGui::SameLine();
-    ImGui::TextDisabled("Speed: %.2f", controller_.moveSpeed);
-    ImGui::TextDisabled("RMB: Look (+WASD/QE Fly, +Wheel Speed) / Alt+LMB: Orbit / MMB: Pan / Wheel: Dolly");
+    controller_.DrawHelp();
   }
 
   bool PreviewPanel::DrawImage() {

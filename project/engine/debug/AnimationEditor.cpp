@@ -1,6 +1,7 @@
 #ifdef _DEBUG
 
 #include "AnimationEditor.h"
+#include "EditorUI.h"
 #include "DebugUIManager.h"
 #include "FrameTimer.h"
 #include "Model.h"
@@ -34,7 +35,7 @@ namespace Tako {
     bool InputString(const char* label, std::string& value) {
       char buffer[128];
       strncpy_s(buffer, value.c_str(), _TRUNCATE);
-      if (!ImGui::InputText(label, buffer, sizeof(buffer))) {
+      if (!UI::InputText(label, buffer, sizeof(buffer))) {
         return false;
       }
       value = buffer;
@@ -50,7 +51,7 @@ namespace Tako {
 
     bool EaseCombo(const char* label, EaseType& ease) {
       bool isChanged = false;
-      if (ImGui::BeginCombo(label, Ease::ToString(ease), ImGuiComboFlags_HeightLarge)) {
+      if (UI::BeginCombo(label, Ease::ToString(ease), ImGuiComboFlags_HeightLarge)) {
         for (int i = 0; i < static_cast<int>(EaseType::Count); ++i) {
           const EaseType type = static_cast<EaseType>(i);
           if (ImGui::Selectable(Ease::ToString(type), type == ease)) {
@@ -80,9 +81,9 @@ namespace Tako {
       auto toScreen = [&](float t, float value) {
         return ImVec2(min.x + t * size.x, max.y - (value - kMin) / (kMax - kMin) * size.y);
       };
-      drawList->AddRectFilled(min, max, IM_COL32(30, 30, 30, 255));
-      drawList->AddLine(toScreen(0.0f, 0.0f), toScreen(1.0f, 0.0f), IM_COL32(70, 70, 70, 255));
-      drawList->AddLine(toScreen(0.0f, 1.0f), toScreen(1.0f, 1.0f), IM_COL32(70, 70, 70, 255));
+      drawList->AddRectFilled(min, max, ImGui::GetColorU32(ImGuiCol_FrameBg));
+      drawList->AddLine(toScreen(0.0f, 0.0f), toScreen(1.0f, 0.0f), ImGui::GetColorU32(ImGuiCol_Border));
+      drawList->AddLine(toScreen(0.0f, 1.0f), toScreen(1.0f, 1.0f), ImGui::GetColorU32(ImGuiCol_Border));
 
       ImVec2 previous = toScreen(0.0f, 0.0f);
       for (int i = 1; i <= kSample; ++i) {
@@ -157,7 +158,7 @@ namespace Tako {
     }
 
     ImGui::SetNextWindowSize(ImVec2(1280, 780), ImGuiCond_FirstUseEver);
-    if (!ImGui::Begin("Animation Editor", isOpen_, ImGuiWindowFlags_MenuBar)) {
+    if (!ImGui::Begin(WindowTitle::kAnimationEditor, isOpen_, ImGuiWindowFlags_MenuBar)) {
       ImGui::End();
       return false;
     }
@@ -190,7 +191,7 @@ namespace Tako {
     const float  bodyHeight      = avail.y - ImGui::GetFrameHeightWithSpacing();
 
     if (ImGui::BeginChild("Sheet", ImVec2(avail.x * 0.68f, bodyHeight))) {
-      if (ImGui::Button("+ Track")) {
+      if (ImGui::Button(ICON_FA_PLUS "  Track")) {
         ImGui::OpenPopup(kAddTrackPopupId);
       }
       DrawAddTrackPopup();
@@ -366,7 +367,7 @@ namespace Tako {
       DrawShortcutTable(HistoryShortcuts());
       ImGui::PopID();
       ImGui::Separator();
-      if (ImGui::Button("Close")) {
+      if (ImGui::Button(ICON_FA_XMARK "  Close")) {
         ImGui::CloseCurrentPopup();
       }
       ImGui::EndPopup();
@@ -376,7 +377,7 @@ namespace Tako {
   void AnimationEditor::DrawToolbar() {
     const std::string comboLabel = (name_.empty() ? std::string("(none)") : name_) + (tracker_.IsEdited() ? " *" : "");
     ImGui::SetNextItemWidth(240.0f);
-    if (ImGui::BeginCombo("Clip", comboLabel.c_str())) {
+    if (ImGui::BeginCombo("##Clip", comboLabel.c_str())) {
       for (const std::string& name : ListJsonFiles(AnimationClip::kDirectory)) {
         if (ImGui::Selectable(name.c_str(), name == name_)) {
           RequestOpen(name);
@@ -384,21 +385,21 @@ namespace Tako {
       }
       ImGui::EndCombo();
     }
-    ImGui::SetItemTooltip("Clips are shared by name, so the game plays the edits right away.");
+    ImGui::SetItemTooltip("Clip. Clips are shared by name, so the game plays the edits right away.");
 
     ImGui::SameLine();
-    if (ImGui::Button("New...")) {
+    if (ImGui::Button(ICON_FA_FILE_CIRCLE_PLUS "  New...")) {
       OpenNamePopup(NamePopup::New);
     }
 
     ImGui::BeginDisabled(!clip_);
     ImGui::SameLine();
-    if (ImGui::Button(tracker_.IsEdited() ? "Save *###Save" : "Save###Save")) {
+    if (ImGui::Button(tracker_.IsEdited() ? ICON_FA_FLOPPY_DISK "  Save *###Save" : ICON_FA_FLOPPY_DISK "  Save###Save")) {
       Save();
     }
     ImGui::SetItemTooltip("Ctrl+S");
     ImGui::SameLine();
-    if (ImGui::Button("Reload")) {
+    if (ImGui::Button(ICON_FA_ROTATE "  Reload")) {
       RequestReload();
     }
     ImGui::SetItemTooltip("Discard unsaved changes and read the file again.");
@@ -447,7 +448,7 @@ namespace Tako {
     const std::string name    = nameBuffer_;
     const bool        isTaken = IsNameTaken(name);
     if (isTaken) {
-      ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "'%s' already exists", name.c_str());
+      ImGui::TextColored(GetEditorColors().warning, "'%s' already exists", name.c_str());
     }
 
     const bool canApply = !name.empty() && !isTaken;
@@ -548,21 +549,20 @@ namespace Tako {
   }
 
   void AnimationEditor::DrawPlaybackControls() {
-    if (ImGui::Button(isPlaying_ ? "||" : ">", ImVec2(36, 0))) {
+    if (UI::IconButton(isPlaying_ ? ICON_FA_PAUSE "##Play" : ICON_FA_PLAY "##Play", "Play / Pause (Space)", isPlaying_)) {
       TogglePlay();
     }
-    ImGui::SetItemTooltip("Space");
     ImGui::SameLine();
-    if (ImGui::Button("[]", ImVec2(36, 0))) {
+    if (UI::IconButton(ICON_FA_STOP, "Stop and go back to the start")) {
       isPlaying_ = false;
       playhead_  = 0.0f;
     }
     ImGui::SameLine();
-    if (ImGui::Button("|<", ImVec2(36, 0))) {
+    if (UI::IconButton(ICON_FA_BACKWARD_STEP, "Go to the start")) {
       playhead_ = playElapsed_ = 0.0f;
     }
     ImGui::SameLine();
-    if (ImGui::Button(">|", ImVec2(36, 0))) {
+    if (UI::IconButton(ICON_FA_FORWARD_STEP, "Go to the end")) {
       playhead_ = playElapsed_ = clip_->GetDuration();
     }
 
@@ -576,13 +576,10 @@ namespace Tako {
     }
 
     ImGui::SameLine();
-    ImGui::Checkbox("Preview", &isPreviewEnabled_);
-    ImGui::SetItemTooltip("While on, the target shows the pose at the playhead instead of what the game plays.");
+    UI::IconToggle(ICON_FA_EYE "##Preview", "Preview: while on, the target shows the pose at the playhead instead of what the game plays", &isPreviewEnabled_);
 
-    ImGui::SameLine();
-    ImGui::TextDisabled("|");
-    ImGui::SameLine();
-    if (ImGui::Button("Play on Target")) {
+    UI::ToolbarSeparator();
+    if (ImGui::Button(ICON_FA_PLAY "  Play on Target")) {
       PlayOnTarget();
     }
     ImGui::SetItemTooltip("Turns Preview off and plays the saved-or-edited clip with the real AnimationPlayer (delay and events included).");
@@ -590,7 +587,7 @@ namespace Tako {
     ImGui::SetNextItemWidth(70.0f);
     ImGui::DragFloat("Delay", &playDelay_, 0.01f, 0.0f, 10.0f, "%.2f s");
     ImGui::SameLine();
-    if (ImGui::Button("Stop on Target")) {
+    if (ImGui::Button(ICON_FA_STOP "  Stop on Target")) {
       StopOnTarget();
     }
   }
@@ -675,7 +672,7 @@ namespace Tako {
     else {
       AnimTrack& track = tracks[trackIndex];
       if (previewMode_ == PreviewMode::UI || !track.target.empty()) {
-        if (ImGui::BeginCombo("Target", track.target.empty() ? "(Bound)" : track.target.c_str(), ImGuiComboFlags_HeightLarge)) {
+        if (UI::BeginCombo("Target", track.target.empty() ? "(Bound)" : track.target.c_str(), ImGuiComboFlags_HeightLarge)) {
           if (ImGui::Selectable("(Bound)", track.target.empty())) {
             track.target.clear();
           }
@@ -687,11 +684,11 @@ namespace Tako {
           ImGui::EndCombo();
         }
         if (previewMode_ == PreviewMode::Object3D) {
-          ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "Object3d ignores tracks with a target. Set it to (Bound).");
+          ImGui::TextColored(GetEditorColors().warning, "Object3d ignores tracks with a target. Set it to (Bound).");
         }
       }
 
-      if (ImGui::BeginCombo("Property", GetAnimPropertyInfo(track.property).name, ImGuiComboFlags_HeightLarge)) {
+      if (UI::BeginCombo("Property", GetAnimPropertyInfo(track.property).name, ImGuiComboFlags_HeightLarge)) {
         for (int i = 0; i < static_cast<int>(AnimProperty::Count); ++i) {
           const AnimProperty property = static_cast<AnimProperty>(i);
           if (ImGui::Selectable(GetAnimPropertyInfo(property).name, property == track.property)) {
@@ -704,11 +701,11 @@ namespace Tako {
       if (track.property == AnimProperty::Frame) {
         const float previousCount = FrameCount(track);
         bool        isGridChanged = false;
-        if (ImGui::InputInt("Columns", &track.columns)) {
+        if (UI::InputInt("Columns", &track.columns)) {
           track.columns = (std::max)(track.columns, 1);
           isGridChanged = true;
         }
-        if (ImGui::InputInt("Rows", &track.rows)) {
+        if (UI::InputInt("Rows", &track.rows)) {
           track.rows    = (std::max)(track.rows, 1);
           isGridChanged = true;
         }
@@ -719,7 +716,7 @@ namespace Tako {
         }
       }
 
-      if (ImGui::Button("Delete Track")) {
+      if (ImGui::Button(ICON_FA_TRASH_CAN "  Delete Track")) {
         tracks.erase(tracks.begin() + trackIndex);
         timeline_.SetSelectedTrack(-1);
       }
@@ -764,35 +761,35 @@ namespace Tako {
       ImGui::TextUnformatted(AnimationTimeline::TrackLabel(track).c_str());
 
       float time = key.time;
-      if (ImGui::DragFloat("Time", &time, 0.005f, 0.0f, clip_->GetDuration(), "%.3f s")) {
+      if (UI::DragFloat("Time", &time, 0.005f, 0.0f, clip_->GetDuration(), "%.3f s")) {
         newKeyTime = std::clamp(timeline_.Snap(time), 0.0f, clip_->GetDuration());
       }
 
       if (track.property == AnimProperty::Visible) {
         bool isVisible = key.value >= 0.5f;
-        if (ImGui::Checkbox("Visible", &isVisible)) {
+        if (UI::Checkbox("Visible", &isVisible)) {
           key.value = isVisible ? 1.0f : 0.0f;
         }
       }
       else if (track.property == AnimProperty::Frame) {
         int frame = static_cast<int>(key.value);
-        if (ImGui::InputInt("Frame", &frame)) {
+        if (UI::InputInt("Frame", &frame)) {
           key.value = static_cast<float>((std::max)(frame, 0));
         }
         ImGui::SetItemTooltip("Between keys the value is eased and rounded down to a frame.\nTo give every frame the same time, set the last key to the frame count (e.g. 0 -> 10 for 10 frames).");
       }
       else {
-        ImGui::DragFloat("Value", &key.value, track.property <= AnimProperty::TranslateZ ? 1.0f : 0.01f, 0.0f, 0.0f, std::format("%.3f {}", UnitOf(track.property)).c_str());
+        UI::DragFloat("Value", &key.value, track.property <= AnimProperty::TranslateZ ? 1.0f : 0.01f, 0.0f, 0.0f, std::format("%.3f {}", UnitOf(track.property)).c_str());
       }
 
       if (!GetAnimPropertyInfo(track.property).isStep) {
         EaseCombo("Ease", key.ease);
         ImGui::SetItemTooltip("How the value moves from this key to the next one.");
         if (key.ease == EaseType::CubicBezier) {
-          if (ImGui::DragFloat2("Bezier P1", &key.bezierP1.x, 0.01f)) {
+          if (UI::DragFloat2("Bezier P1", &key.bezierP1.x, 0.01f)) {
             key.bezierP1.x = std::clamp(key.bezierP1.x, 0.0f, 1.0f);
           }
-          if (ImGui::DragFloat2("Bezier P2", &key.bezierP2.x, 0.01f)) {
+          if (UI::DragFloat2("Bezier P2", &key.bezierP2.x, 0.01f)) {
             key.bezierP2.x = std::clamp(key.bezierP2.x, 0.0f, 1.0f);
           }
         }
@@ -815,7 +812,7 @@ namespace Tako {
       InputString("Name", event.name);
       ImGui::SetItemTooltip("Passed to PlayOptions::onEvent when playback passes this time.");
       float time = event.time;
-      if (ImGui::DragFloat("Time##Event", &time, 0.005f, 0.0f, clip_->GetDuration(), "%.3f s")) {
+      if (UI::DragFloat("Time##Event", &time, 0.005f, 0.0f, clip_->GetDuration(), "%.3f s")) {
         newEventTime = std::clamp(timeline_.Snap(time), 0.0f, clip_->GetDuration());
       }
     }
@@ -834,7 +831,7 @@ namespace Tako {
     }
 
     ImGui::Spacing();
-    if (ImGui::Button("Delete Selected", ImVec2(-1, 0))) {
+    if (ImGui::Button(ICON_FA_TRASH_CAN "  Delete Selected", ImVec2(-1, 0))) {
       DeleteSelection();
     }
   }
@@ -845,7 +842,7 @@ namespace Tako {
       keyCount += track.keys.size();
     }
     if (isPreviewEnabled_) {
-      ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.8f, 1.0f), "[PREVIEW]");
+      ImGui::TextColored(GetEditorColors().info, ICON_FA_EYE "  PREVIEW");
       ImGui::SameLine();
     }
     ImGui::Text("Tracks: %zu | Keys: %zu | Events: %zu | Selected: %zu",

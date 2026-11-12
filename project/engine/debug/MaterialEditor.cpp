@@ -1,6 +1,7 @@
 #include "MaterialEditor.h"
 
 #ifdef _DEBUG
+#include "EditorUI.h"
 
 #include <format>
 #include <json.hpp>
@@ -26,7 +27,7 @@ namespace Tako {
     bool EnumCombo(const char* label, T& value, const char* const (&names)[N], int offset = 0)
     {
       int index = static_cast<int>(value) - offset;
-      if (!ImGui::Combo(label, &index, names, static_cast<int>(N))) {
+      if (!UI::Combo(label, &index, names, static_cast<int>(N))) {
         return false;
       }
       value = static_cast<T>(index + offset);
@@ -50,7 +51,7 @@ namespace Tako {
     }
 
     ImGui::SetNextWindowSize(ImVec2(820.0f, 560.0f), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin("Material Editor", isOpen_)) {
+    if (ImGui::Begin(WindowTitle::kMaterialEditor, isOpen_)) {
       // UI を描く区間の前後で保存内容を比べて編集を検出する
       tracker_.BeginSection();
 
@@ -155,7 +156,7 @@ namespace Tako {
       ImGui::EndCombo();
     }
     ImGui::BeginDisabled(newName_[0] == '\0');
-    if (ImGui::Button("Create", ImVec2(-1.0f, 0.0f))) {
+    if (ImGui::Button(ICON_FA_PLUS "  Create", ImVec2(-1.0f, 0.0f))) {
       const std::string name = newName_.data();
       unsavedPrompt_.RunOrConfirm(tracker_.IsEdited(), std::format("Material '{}' has unsaved changes.", selected_), "Create", [this, name] {
         if (MaterialLibrary::GetInstance()->Create(name, newShader_) && MaterialLibrary::GetInstance()->Save(name)) {
@@ -170,17 +171,19 @@ namespace Tako {
   {
     MaterialLibrary* library = MaterialLibrary::GetInstance();
 
-    ImGui::SeparatorText(tracker_.IsEdited() ? std::format("{} *", selected_).c_str() : selected_.c_str());
-    if (ImGui::Button("Save")) {
+    if (UI::IconButton(ICON_FA_FLOPPY_DISK, "Save (Ctrl+S)")) {
       Save();
     }
+    ImGui::SameLine();
+    ImGui::AlignTextToFramePadding();
+    ImGui::Text("%s%s", selected_.c_str(), tracker_.IsEdited() ? " *" : "");
     ImGui::TextDisabled("Assign to objects in Inspector > MeshComponent > Rendering");
 
     // シェーダーと描画設定・テクスチャのファイル名は保存内容を書き換えて当てはめる（値は名前で引き継がれる）
     json       current      = json::parse(library->Serialize(selected_));
     const auto applyCurrent = [&] { library->Apply(selected_, current.dump()); };
 
-    if (ImGui::BeginCombo("Shader", material.GetShader()->GetName().c_str())) {
+    if (UI::BeginCombo("Shader", material.GetShader()->GetName().c_str())) {
       for (const std::string& shader : Renderer::GetInstance()->GetShaderNames()) {
         if (ImGui::Selectable(shader.c_str(), shader == material.GetShader()->GetName())) {
           // 描画設定は新しいシェーダーの既定にする
@@ -202,7 +205,7 @@ namespace Tako {
     bool                        changed   = false;
 
     changed |= OverrideField<int32_t>("Queue", queue, shader.GetDefaultQueue(), [](const char* label, int32_t& value) {
-      return ImGui::DragInt(label, &value, 1.0f, 0, 5000);
+      return UI::DragInt(label, &value, 1.0f, 0, 5000);
     });
     ImGui::SetItemTooltip("Background 1000 / Geometry 2000 / Transparent 3000 (sorted back to front) / Overlay 4000");
     changed |= OverrideField<BlendMode>("Blend", state.blend, inherited.blend, [](const char* label, BlendMode& value) {
@@ -212,10 +215,10 @@ namespace Tako {
       return EnumCombo(label, value, kCullModeNames);
     });
     changed |= OverrideField<bool>("Depth Test", state.depthTest, inherited.depthTest, [](const char* label, bool& value) {
-      return ImGui::Checkbox(label, &value);
+      return UI::Checkbox(label, &value);
     });
     changed |= OverrideField<bool>("Depth Write", state.depthWrite, inherited.depthWrite, [](const char* label, bool& value) {
-      return ImGui::Checkbox(label, &value);
+      return UI::Checkbox(label, &value);
     });
     changed |= OverrideField<D3D12_COMPARISON_FUNC>("Depth Func", state.depthFunc, inherited.depthFunc, [](const char* label, D3D12_COMPARISON_FUNC& value) {
       return EnumCombo(label, value, kDepthFuncNames, 1);
@@ -236,7 +239,7 @@ namespace Tako {
         std::array<char, 128> file{};
         current["Textures"].value(slot, std::string()).copy(file.data(), file.size() - 1);
         // 打ち終えたときか、アセットウィンドウから落とされたときだけ読み込む（途中の名前で TextureManager を探さない）
-        ImGui::InputTextWithHint(slot.c_str(), "white.png", file.data(), file.size());
+        UI::InputTextWithHint(slot.c_str(), "white.png", file.data(), file.size());
         const std::optional<std::string> dropped = AcceptAssetDrop("Texture");
         if (ImGui::IsItemDeactivatedAfterEdit() || dropped) {
           current["Textures"][slot] = dropped.value_or(file.data());
@@ -250,10 +253,12 @@ namespace Tako {
   {
     MaterialLibrary* library = MaterialLibrary::GetInstance();
 
-    ImGui::SeparatorText(tracker_.IsEdited() ? std::format("{} *", selected_).c_str() : selected_.c_str());
-    if (ImGui::Button("Save")) {
+    if (UI::IconButton(ICON_FA_FLOPPY_DISK, "Save (Ctrl+S)")) {
       Save();
     }
+    ImGui::SameLine();
+    ImGui::AlignTextToFramePadding();
+    ImGui::Text("%s%s", selected_.c_str(), tracker_.IsEdited() ? " *" : "");
     ImGui::TextDisabled("Add to the stack in PostEffect Editor (Materials). Edits apply to every effect that uses this material");
 
     // シェーダーとテクスチャのファイル名は保存内容を書き換えて当てはめる（値は名前で引き継がれる）
@@ -262,7 +267,7 @@ namespace Tako {
     const auto        applyCurrent = [&] { library->Apply(selected_, current.dump()); };
 
     // 用途の違うシェーダーへは替えられない（描画物のマテリアルは新しく作る）
-    if (ImGui::BeginCombo("Shader", shader.c_str())) {
+    if (UI::BeginCombo("Shader", shader.c_str())) {
       for (const std::string& name : library->GetPostEffectShaderNames()) {
         if (ImGui::Selectable(name.c_str(), name == shader)) {
           current["Shader"] = name;
@@ -288,7 +293,7 @@ namespace Tako {
         std::array<char, 128> file{};
         current["Textures"].value(slot, std::string()).copy(file.data(), file.size() - 1);
         // 空なら .shader.json の Textures のまま描く
-        ImGui::InputTextWithHint(slot.c_str(), "(shader's texture)", file.data(), file.size());
+        UI::InputTextWithHint(slot.c_str(), "(shader's texture)", file.data(), file.size());
         const std::optional<std::string> dropped = AcceptAssetDrop("Texture");
         if (ImGui::IsItemDeactivatedAfterEdit() || dropped) {
           current["Textures"][slot] = dropped.value_or(file.data());

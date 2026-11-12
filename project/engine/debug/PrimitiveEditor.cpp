@@ -1,4 +1,5 @@
 #include "PrimitiveEditor.h"
+#include "EditorUI.h"
 #include "DebugUIManager.h"
 #include "Object3d.h"
 #include "Renderer.h"
@@ -49,7 +50,7 @@ namespace Tako {
     bool DragUint(const char* label, uint32_t& value, int minValue, int maxValue)
     {
       int v = static_cast<int>(value);
-      if (ImGui::DragInt(label, &v, 1.0f, minValue, maxValue)) {
+      if (UI::DragInt(label, &v, 1.0f, minValue, maxValue)) {
         value = static_cast<uint32_t>(std::clamp(v, minValue, maxValue));
         return true;
       }
@@ -217,7 +218,7 @@ namespace Tako {
 
     bool inputCaptured = false;
     ImGui::SetNextWindowSize(ImVec2(1000.0f, 620.0f), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin("Primitive Editor", isOpen_)) {
+    if (ImGui::Begin(WindowTitle::kPrimitiveEditor, isOpen_)) {
       // UI を描く区間の前後で保存内容を比べて編集を検出する
       presetTracker_.BeginSection();
 
@@ -235,7 +236,7 @@ namespace Tako {
       if (ImGui::BeginChild("Params##PrimEditor", ImVec2(0.0f, 0.0f), ImGuiChildFlags_Borders)) {
 
         int typeIndex = static_cast<int>(selectedPrimitiveType_);
-        if (ImGui::Combo("Type##PrimEditor", &typeIndex, "Cube\0Sphere\0Plane\0Ring\0Cylinder\0Torus\0")) {
+        if (UI::Combo("Type##PrimEditor", &typeIndex, "Cube\0Sphere\0Plane\0Ring\0Cylinder\0Torus\0")) {
           selectedPrimitiveType_ = static_cast<PrimitiveType>(typeIndex);
           paramsDirty_ = true;
         }
@@ -244,40 +245,39 @@ namespace Tako {
           bool changed = false;
           switch (selectedPrimitiveType_) {
           case PrimitiveType::Cube:
-            changed |= ImGui::DragFloat("Size##PrimCube", &cubeParams_.size, 0.01f, 0.0f, 1000.0f);
+            changed |= UI::DragFloat("Size##PrimCube", &cubeParams_.size, 0.01f, 0.0f, 1000.0f);
             break;
           case PrimitiveType::Sphere:
-            changed |= ImGui::DragFloat("Radius##PrimSphere", &sphereParams_.radius, 0.01f, 0.0f, 1000.0f);
+            changed |= UI::DragFloat("Radius##PrimSphere", &sphereParams_.radius, 0.01f, 0.0f, 1000.0f);
             changed |= DragUint("Lon Div##PrimSphere", sphereParams_.lonDiv, 3, 256);
             changed |= DragUint("Lat Div##PrimSphere", sphereParams_.latDiv, 2, 256);
             break;
           case PrimitiveType::Plane:
-            changed |= ImGui::DragFloat("Width##PrimPlane", &planeParams_.width, 0.01f, 0.0f, 1000.0f);
-            changed |= ImGui::DragFloat("Height##PrimPlane", &planeParams_.height, 0.01f, 0.0f, 1000.0f);
+            changed |= UI::DragFloat("Width##PrimPlane", &planeParams_.width, 0.01f, 0.0f, 1000.0f);
+            changed |= UI::DragFloat("Height##PrimPlane", &planeParams_.height, 0.01f, 0.0f, 1000.0f);
             changed |= DragUint("X Seg##PrimPlane", planeParams_.xSeg, 1, 256);
             changed |= DragUint("Y Seg##PrimPlane", planeParams_.ySeg, 1, 256);
             break;
           case PrimitiveType::Ring:
-            changed |= ImGui::DragFloat("Inner Radius##PrimRing", &ringParams_.innerRadius, 0.01f, 0.0f, 1000.0f);
-            changed |= ImGui::DragFloat("Outer Radius##PrimRing", &ringParams_.outerRadius, 0.01f, 0.0f, 1000.0f);
+            changed |= UI::DragFloat("Inner Radius##PrimRing", &ringParams_.innerRadius, 0.01f, 0.0f, 1000.0f);
+            changed |= UI::DragFloat("Outer Radius##PrimRing", &ringParams_.outerRadius, 0.01f, 0.0f, 1000.0f);
             changed |= DragUint("Segments##PrimRing", ringParams_.segments, 3, 512);
             changed |= DragUint("Ring Seg##PrimRing", ringParams_.ringSeg, 1, 256);
-            changed |= ImGui::DragFloat("Start Angle##PrimRing", &ringParams_.startAngleDeg, 1.0f, -720.0f, 720.0f);
-            changed |= ImGui::DragFloat("Sweep Angle##PrimRing", &ringParams_.sweepAngleDeg, 1.0f, -720.0f, 720.0f);
+            changed |= UI::DragFloat("Start Angle##PrimRing", &ringParams_.startAngleDeg, 1.0f, -720.0f, 720.0f);
+            changed |= UI::DragFloat("Sweep Angle##PrimRing", &ringParams_.sweepAngleDeg, 1.0f, -720.0f, 720.0f);
             break;
           case PrimitiveType::Cylinder:
-            changed |= ImGui::DragFloat("Top Radius##PrimCylinder", &cylinderParams_.topRadius, 0.01f, 0.0f, 1000.0f);
-            changed |= ImGui::DragFloat("Bottom Radius##PrimCylinder", &cylinderParams_.bottomRadius, 0.01f, 0.0f, 1000.0f);
-            changed |= ImGui::DragFloat("Height##PrimCylinder", &cylinderParams_.height, 0.01f, 0.0f, 1000.0f);
+            changed |= UI::DragFloat("Top Radius##PrimCylinder", &cylinderParams_.topRadius, 0.01f, 0.0f, 1000.0f);
+            changed |= UI::DragFloat("Bottom Radius##PrimCylinder", &cylinderParams_.bottomRadius, 0.01f, 0.0f, 1000.0f);
+            changed |= UI::DragFloat("Height##PrimCylinder", &cylinderParams_.height, 0.01f, 0.0f, 1000.0f);
             changed |= DragUint("Radial Div##PrimCylinder", cylinderParams_.radialDiv, 3, 256);
             changed |= DragUint("Height Div##PrimCylinder", cylinderParams_.heightDiv, 1, 256);
-            changed |= ImGui::Checkbox("Cap Top##PrimCylinder", &cylinderParams_.capTop);
-            ImGui::SameLine();
-            changed |= ImGui::Checkbox("Cap Bottom##PrimCylinder", &cylinderParams_.capBottom);
+            changed |= UI::Checkbox("Cap Top##PrimCylinder", &cylinderParams_.capTop);
+            changed |= UI::Checkbox("Cap Bottom##PrimCylinder", &cylinderParams_.capBottom);
             break;
           case PrimitiveType::Torus:
-            changed |= ImGui::DragFloat("Major Radius##PrimTorus", &torusParams_.majorRadius, 0.01f, 0.0f, 1000.0f);
-            changed |= ImGui::DragFloat("Minor Radius##PrimTorus", &torusParams_.minorRadius, 0.01f, 0.0f, 1000.0f);
+            changed |= UI::DragFloat("Major Radius##PrimTorus", &torusParams_.majorRadius, 0.01f, 0.0f, 1000.0f);
+            changed |= UI::DragFloat("Minor Radius##PrimTorus", &torusParams_.minorRadius, 0.01f, 0.0f, 1000.0f);
             changed |= DragUint("Major Div##PrimTorus", torusParams_.majorDiv, 3, 256);
             changed |= DragUint("Minor Div##PrimTorus", torusParams_.minorDiv, 3, 256);
             break;
@@ -288,29 +288,24 @@ namespace Tako {
         }
 
         if (ImGui::CollapsingHeader("Display##PrimEditor", ImGuiTreeNodeFlags_DefaultOpen)) {
-          ImGui::DragFloat3("Rotation##PrimEditor", &previewRotate_.x, 0.01f);
-          ImGui::DragFloat3("Scale##PrimEditor", &previewScale_.x, 0.01f, 0.0f, 100.0f);
-          ImGui::Checkbox("Auto Rotate##PrimEditor", &autoRotate_);
+          UI::DragFloat3("Rotation##PrimEditor", &previewRotate_.x, 0.01f);
+          UI::DragFloat3("Scale##PrimEditor", &previewScale_.x, 0.01f, 0.0f, 100.0f);
+          UI::Checkbox("Auto Rotate##PrimEditor", &autoRotate_);
           if (autoRotate_) {
-            ImGui::SameLine();
-            ImGui::SetNextItemWidth(100.0f);
-            ImGui::DragFloat("Speed##PrimEditor", &autoRotateSpeed_, 0.01f, -10.0f, 10.0f);
+            UI::DragFloat("Auto Rotate Speed##PrimEditor", &autoRotateSpeed_, 0.01f, -10.0f, 10.0f);
           }
-          ImGui::Checkbox("Show Floor##PrimEditor", &showFloor_);
+          UI::Checkbox("Show Floor##PrimEditor", &showFloor_);
         }
 
         if (ImGui::CollapsingHeader("Material##PrimEditor", ImGuiTreeNodeFlags_DefaultOpen)) {
-          ImGui::ColorEdit4("Color##PrimEditor", &previewColor_.x);
-          ImGui::Checkbox("Lighting##PrimEditor", &previewLighting_);
-          ImGui::SameLine();
-          ImGui::Checkbox("Transparent##PrimEditor", &previewTransparent_);
-          ImGui::Checkbox("Highlight##PrimEditor", &materialHighlight_);
-          ImGui::SameLine();
-          ImGui::SetNextItemWidth(100.0f);
-          ImGui::DragFloat("Shininess##PrimEditor", &materialShininess_, 1.0f, 1.0f, 1000.0f);
+          UI::ColorEdit4("Color##PrimEditor", &previewColor_.x);
+          UI::Checkbox("Lighting##PrimEditor", &previewLighting_);
+          UI::Checkbox("Transparent##PrimEditor", &previewTransparent_);
+          UI::Checkbox("Highlight##PrimEditor", &materialHighlight_);
+          UI::DragFloat("Shininess##PrimEditor", &materialShininess_, 1.0f, 1.0f, 1000.0f);
 
           // ロード済みテクスチャから選択。手入力パスも入るためプレビューには現在値を表示
-          if (ImGui::BeginCombo("Texture##PrimEditor", materialTexture_.empty() ? "(default: white.dds)" : materialTexture_.c_str())) {
+          if (UI::BeginCombo("Texture##PrimEditor", materialTexture_.empty() ? "(default: white.dds)" : materialTexture_.c_str())) {
             for (const std::string& texName : TextureManager::GetInstance()->GetLoadedTextureFileNames()) {
               const bool selected = (texName == materialTexture_);
               if (ImGui::Selectable(texName.c_str(), selected)) {
@@ -324,10 +319,10 @@ namespace Tako {
           }
 
           static char texPathBuffer[256] = "";
-          ImGui::SetNextItemWidth(150.0f);
-          ImGui::InputText("##PrimTexPath", texPathBuffer, sizeof(texPathBuffer));
-          ImGui::SameLine();
-          if (ImGui::Button("Load & Set##PrimTex") && texPathBuffer[0] != '\0') {
+          UI::LabelWithButtons("Texture File", 2);
+          ImGui::InputTextWithHint("##PrimTexPath", "file name in resources/Texture", texPathBuffer, sizeof(texPathBuffer));
+          UI::SameLineInner();
+          if (UI::IconButton(ICON_FA_FILE_IMPORT "##PrimTex", "Load the file and use it") && texPathBuffer[0] != '\0') {
             // LoadTexture は失敗時 assert のため事前に存在チェック
             if (TextureFileExists(texPathBuffer)) {
               materialTexture_ = texPathBuffer;
@@ -336,35 +331,35 @@ namespace Tako {
               LogToConsole(std::string("Primitive Editor: texture not found '") + texPathBuffer + "'", LogType::Error);
             }
           }
-          ImGui::SameLine();
-          if (ImGui::Button("Clear##PrimTex")) {
+          UI::SameLineInner();
+          if (UI::IconButton(ICON_FA_XMARK "##PrimTex", "Clear: back to the default white texture")) {
             // SetTexture は空文字を無視するため、Model 再生成でデフォルト white.dds に戻す
             materialTexture_.clear();
             paramsDirty_ = true;
           }
 
-          ImGui::DragFloat2("UV Tiling##PrimEditor", &materialUvScale_.x, 0.01f);
-          ImGui::DragFloat2("UV Offset##PrimEditor", &materialUvOffset_.x, 0.01f);
-          ImGui::DragFloat("UV Rotate##PrimEditor", &materialUvRotate_, 0.01f);
+          UI::DragFloat2("UV Tiling##PrimEditor", &materialUvScale_.x, 0.01f);
+          UI::DragFloat2("UV Offset##PrimEditor", &materialUvOffset_.x, 0.01f);
+          UI::DragFloat("UV Rotate##PrimEditor", &materialUvRotate_, 0.01f);
         }
 
         if (ImGui::CollapsingHeader("Output##PrimEditor", ImGuiTreeNodeFlags_DefaultOpen)) {
           const std::string cppString = GenerateCppString();
           ImGui::TextWrapped("%s", cppString.c_str());
-          if (ImGui::Button("Copy as C++##PrimEditor")) {
+          if (ImGui::Button(ICON_FA_COPY "  Copy as C++##PrimEditor")) {
             ImGui::SetClipboardText(cppString.c_str());
             LogToConsole("Primitive Editor: copied C++ snippet to clipboard", LogType::Info);
           }
 
           ImGui::SeparatorText(presetTracker_.IsEdited() ? "Preset *" : "Preset");
-          ImGui::SetNextItemWidth(150.0f);
-          ImGui::InputText("##PrimPresetName", presetNameBuffer_, IM_ARRAYSIZE(presetNameBuffer_));
-          ImGui::SameLine();
-          if (ImGui::Button("Save##PrimPreset") && presetNameBuffer_[0] != '\0') {
+          UI::LabelWithButtons("Save As", 1);
+          ImGui::InputTextWithHint("##PrimPresetName", "preset name", presetNameBuffer_, IM_ARRAYSIZE(presetNameBuffer_));
+          UI::SameLineInner();
+          if (UI::IconButton(ICON_FA_FLOPPY_DISK "##PrimPreset", "Save the preset (Ctrl+S)") && presetNameBuffer_[0] != '\0') {
             SavePreset(presetNameBuffer_);
           }
 
-          ImGui::SetNextItemWidth(150.0f);
+          UI::LabelWithButtons("Load", 1);
           if (ImGui::BeginCombo("##PrimPresetList", selectedPreset_.empty() ? "(select preset)" : selectedPreset_.c_str())) {
             std::error_code ec;
             for (const auto& entry : std::filesystem::directory_iterator(kPresetDirectory, ec)) {
@@ -382,8 +377,8 @@ namespace Tako {
             }
             ImGui::EndCombo();
           }
-          ImGui::SameLine();
-          if (ImGui::Button("Load##PrimPreset") && !selectedPreset_.empty()) {
+          UI::SameLineInner();
+          if (UI::IconButton(ICON_FA_FOLDER_OPEN "##PrimPreset", "Load the selected preset") && !selectedPreset_.empty()) {
             unsavedPrompt_.RunOrConfirm(presetTracker_.IsEdited(), "The current primitive has unsaved changes.", "Load",
                                         [this, name = selectedPreset_] { LoadPreset(name); });
           }
@@ -395,10 +390,10 @@ namespace Tako {
           unsavedPrompt_.Draw("Unsaved Changes##PrimEditor", save);
 
           ImGui::SeparatorText("Export OBJ");
-          ImGui::SetNextItemWidth(150.0f);
-          ImGui::InputText("##PrimExportName", exportNameBuffer_, IM_ARRAYSIZE(exportNameBuffer_));
-          ImGui::SameLine();
-          if (ImGui::Button("Export##PrimObj") && exportNameBuffer_[0] != '\0') {
+          UI::LabelWithButtons("File Name", 1);
+          ImGui::InputTextWithHint("##PrimExportName", "name (saved to resources/Model as .obj)", exportNameBuffer_, IM_ARRAYSIZE(exportNameBuffer_));
+          UI::SameLineInner();
+          if (UI::IconButton(ICON_FA_FILE_EXPORT "##PrimObj", "Export as OBJ") && exportNameBuffer_[0] != '\0') {
             const Model* model = previewObject_ ? previewObject_->GetModel() : nullptr;
             if (model && PrimitiveBuilder::ExportObj(*model, exportNameBuffer_)) {
               LogToConsole(std::string("Primitive Editor: exported 'resources/Model/") + exportNameBuffer_ + ".obj'", LogType::Info);

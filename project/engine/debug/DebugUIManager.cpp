@@ -46,11 +46,8 @@ namespace Tako {
       Window::SceneHierarchy, Window::Inspector, Window::GameViewport, Window::Console, Window::Performance, Window::Assets
     };
 
-    constexpr float  kMenuBarGap        = 6.0f;                               // メニューバーの区切り線の左右に足す余白(px)
-    constexpr float  kMenuBarRightInset = 12.0f;                              // 右端の表示とウィンドウ端の間隔(px)
-    constexpr ImVec4 kPausedColor       = ImVec4(0.25f, 0.50f, 0.95f, 1.0f);  // 一時停止中の強調色
-    constexpr ImVec4 kWarningColor      = ImVec4(1.00f, 0.80f, 0.20f, 1.0f);  // 対応が必要な状態の表示色
-    constexpr float  kIconButtonAspect  = 1.6f;                               // アイコンボタンの幅 / 高さ
+    constexpr float kMenuBarGap        = 6.0f;   // メニューバーの区切り線の左右に足す余白(px)
+    constexpr float kMenuBarRightInset = 12.0f;  // 右端の表示とウィンドウ端の間隔(px)
 
     using ShortcutSection = std::pair<const char*, void (*)()>;  // 項目名と、その表を描く関数
 
@@ -92,51 +89,6 @@ namespace Tako {
     float MenuBarSeparatorWidth() {
       // Dummy・縦線(1px)・Dummy の 3 アイテム分の幅と、それぞれの後ろに入る ItemSpacing
       return kMenuBarGap * 2.0f + 1.0f + ImGui::GetStyle().ItemSpacing.x * 3.0f;
-    }
-
-    enum class ToolbarIcon { Play, Pause, Step, Stop };
-
-    /// <summary>
-    /// 図形アイコン付きボタン（既定フォントに記号グリフが無いため DrawList で描く）
-    /// </summary>
-    bool IconButton(const char* id, ToolbarIcon icon, const char* tooltip, bool isActive) {
-      const float height = ImGui::GetFrameHeight();
-      if (isActive) {
-        ImGui::PushStyleColor(ImGuiCol_Button, kPausedColor);
-      }
-      const bool pressed = ImGui::Button(id, ImVec2(height * kIconButtonAspect, height));
-      if (isActive) {
-        ImGui::PopStyleColor();
-      }
-      ImGui::SetItemTooltip("%s", tooltip);
-
-      const ImVec2 rectMin = ImGui::GetItemRectMin();
-      const ImVec2 rectMax = ImGui::GetItemRectMax();
-      const ImVec2 center((rectMin.x + rectMax.x) * 0.5f, (rectMin.y + rectMax.y) * 0.5f);
-      const float  half  = height * 0.25f;  // アイコンの半分の大きさ
-      const ImU32  color = ImGui::GetColorU32(ImGuiCol_Text);
-      ImDrawList*  drawList = ImGui::GetWindowDrawList();
-
-      // 三角形は ImGui の AA 前提に合わせて時計回り（左上 → 右中 → 左下）で渡す
-      switch (icon) {
-      case ToolbarIcon::Play:
-        drawList->AddTriangleFilled(ImVec2(center.x - half * 0.8f, center.y - half), ImVec2(center.x + half, center.y),
-          ImVec2(center.x - half * 0.8f, center.y + half), color);
-        break;
-      case ToolbarIcon::Pause:
-        drawList->AddRectFilled(ImVec2(center.x - half, center.y - half), ImVec2(center.x - half * 0.3f, center.y + half), color);
-        drawList->AddRectFilled(ImVec2(center.x + half * 0.3f, center.y - half), ImVec2(center.x + half, center.y + half), color);
-        break;
-      case ToolbarIcon::Step:
-        drawList->AddTriangleFilled(ImVec2(center.x - half, center.y - half), ImVec2(center.x + half * 0.4f, center.y),
-          ImVec2(center.x - half, center.y + half), color);
-        drawList->AddRectFilled(ImVec2(center.x + half * 0.5f, center.y - half), ImVec2(center.x + half, center.y + half), color);
-        break;
-      case ToolbarIcon::Stop:
-        drawList->AddRectFilled(ImVec2(center.x - half * 0.8f, center.y - half * 0.8f), ImVec2(center.x + half * 0.8f, center.y + half * 0.8f), color);
-        break;
-      }
-      return pressed;
     }
   }
 
@@ -202,17 +154,17 @@ namespace Tako {
         open(value);
       };
     };
-    SetAssetOpener("Material", opener(Window::MaterialEditor, "Material Editor", [this](const std::string& name) { materialEditor_.RequestOpen(name); }));
-    SetAssetOpener("AnimationClip", opener(Window::AnimationEditor, "Animation Editor", [this](const std::string& name) { animationEditor_.RequestOpen(name); }));
-    SetAssetOpener("CameraAnimation", opener(Window::CameraAnimationEditor, "Camera Animation Editor", [this](const std::string& name) { cameraAnimationEditor_.RequestOpen(name); }));
-    SetAssetOpener("UILayout", opener(Window::UIEditor, "UI Editor", [this](const std::string& name) { uiLayoutEditor_.OpenLayout(name); }));
-    SetAssetOpener("ParticlePreset", opener(Window::ParticleEditor, "Particle Editor", [this](const std::string& name) { particleEditor_.OpenPreset(name); }));
-    SetAssetOpener("PostEffectProfile", opener(Window::PostEffect, "PostEffect Editor",[](const std::string& name) { PostEffectManager::GetInstance()->LoadProfile(name); }));
-    SetAssetOpener("Prefab", opener(Window::SceneHierarchy, "Scene Hierarchy", [this](const std::string& name) { sceneEditor_.RequestSpawn(name); }));
+    SetAssetOpener("Material", opener(Window::MaterialEditor, WindowTitle::kMaterialEditor, [this](const std::string& name) { materialEditor_.RequestOpen(name); }));
+    SetAssetOpener("AnimationClip", opener(Window::AnimationEditor, WindowTitle::kAnimationEditor, [this](const std::string& name) { animationEditor_.RequestOpen(name); }));
+    SetAssetOpener("CameraAnimation", opener(Window::CameraAnimationEditor, WindowTitle::kCameraAnimationEditor, [this](const std::string& name) { cameraAnimationEditor_.RequestOpen(name); }));
+    SetAssetOpener("UILayout", opener(Window::UIEditor, WindowTitle::kUIEditor, [this](const std::string& name) { uiLayoutEditor_.OpenLayout(name); }));
+    SetAssetOpener("ParticlePreset", opener(Window::ParticleEditor, WindowTitle::kParticleEditor, [this](const std::string& name) { particleEditor_.OpenPreset(name); }));
+    SetAssetOpener("PostEffectProfile", opener(Window::PostEffect, WindowTitle::kPostEffectEditor,[](const std::string& name) { PostEffectManager::GetInstance()->LoadProfile(name); }));
+    SetAssetOpener("Prefab", opener(Window::SceneHierarchy, WindowTitle::kSceneHierarchy, [this](const std::string& name) { sceneEditor_.RequestSpawn(name); }));
     SetAssetOpener("Scene", [this](const std::string& name) { RequestSceneChange(name); });
     SetAssetOpener("BehaviorTree", [this](const std::string& name) {
       behaviorTreeEditor_.SetVisible(true);
-      focusRequest_ = "Behavior Tree Editor";
+      focusRequest_ = WindowTitle::kBehaviorTreeEditor;
       // 未保存の変更があれば、エディタが確認を出してから切り替える
       behaviorTreeEditor_.SwitchTree(name);
     });
@@ -397,7 +349,7 @@ namespace Tako {
         SceneManager* sceneManager = SceneManager::GetInstance();
         const std::string& currentScene = sceneManager->GetCurrentSceneName();
 
-        if (ImGui::BeginMenu("Scene")) {
+        if (ImGui::BeginMenu(ICON_FA_MOUNTAIN_SUN "  Scene")) {
           for (const std::string& name : sceneManager->GetSceneNames()) {
             if (ImGui::MenuItem(name.c_str(), nullptr, name == currentScene)) {
               RequestSceneChange(name);
@@ -405,24 +357,22 @@ namespace Tako {
           }
           ImGui::EndMenu();
         }
-        if (ImGui::MenuItem("Reload Current Scene", nullptr, false, !currentScene.empty())) {
+        if (ImGui::MenuItem(ICON_FA_ROTATE "  Reload Current Scene", nullptr, false, !currentScene.empty())) {
           RequestSceneChange(currentScene);
         }
 
         ImGui::Separator();
-        targetItem(std::format("Save{}###Save", target.name.empty() ? "" : std::format(" ({})", target.name)).c_str(), ImGuiMod_Ctrl | ImGuiKey_S);
+        targetItem(std::format(ICON_FA_FLOPPY_DISK "  Save{}###Save", target.name.empty() ? "" : std::format(" ({})", target.name)).c_str(), ImGuiMod_Ctrl | ImGuiKey_S);
 
         ImGui::Separator();
-        ImGui::MenuItem("Engine Settings...", nullptr, &WindowFlag(Window::EngineSettings));
+        ImGui::MenuItem(ICON_FA_GEAR "  Engine Settings...", nullptr, &WindowFlag(Window::EngineSettings));
 
         ImGui::Separator();
-        if (ImGui::MenuItem("Exit", "Alt+F4")) {
+        if (ImGui::MenuItem(ICON_FA_RIGHT_FROM_BRACKET "  Exit", "Alt+F4")) {
           if (ConfirmExit() && pEndFlag_) *pEndFlag_ = true;
         }
         ImGui::EndMenu();
       }
-
-      MenuBarSeparator();
 
       if (ImGui::BeginMenu("Edit")) {
         // 全エディタで 1 本の履歴。括弧は、次に戻る手を積んだエディタ
@@ -437,65 +387,62 @@ namespace Tako {
             ImGui::SetTooltip("%s cannot be restored now (stop playing first)", client->GetName());
           }
         };
-        historyItem("Undo", ImGuiMod_Ctrl | ImGuiKey_Z, true);
-        historyItem("Redo", ImGuiMod_Ctrl | ImGuiKey_Y, false);
+        historyItem(ICON_FA_ROTATE_LEFT "  Undo", ImGuiMod_Ctrl | ImGuiKey_Z, true);
+        historyItem(ICON_FA_ROTATE_RIGHT "  Redo", ImGuiMod_Ctrl | ImGuiKey_Y, false);
 
         ImGui::Separator();
         ImGui::TextDisabled("%s", target.name.empty() ? "No editor focused" : target.name.c_str());
-        targetItem("Cut", ImGuiMod_Ctrl | ImGuiKey_X);
-        targetItem("Copy", ImGuiMod_Ctrl | ImGuiKey_C);
-        targetItem("Paste", ImGuiMod_Ctrl | ImGuiKey_V);
-        targetItem("Duplicate", ImGuiMod_Ctrl | ImGuiKey_D);
-        targetItem("Delete", ImGuiKey_Delete);
+        targetItem(ICON_FA_SCISSORS "  Cut", ImGuiMod_Ctrl | ImGuiKey_X);
+        targetItem(ICON_FA_COPY "  Copy", ImGuiMod_Ctrl | ImGuiKey_C);
+        targetItem(ICON_FA_PASTE "  Paste", ImGuiMod_Ctrl | ImGuiKey_V);
+        targetItem(ICON_FA_CLONE "  Duplicate", ImGuiMod_Ctrl | ImGuiKey_D);
+        targetItem(ICON_FA_TRASH_CAN "  Delete", ImGuiKey_Delete);
 
         ImGui::Separator();
-        targetItem("Select All", ImGuiMod_Ctrl | ImGuiKey_A);
-        targetItem("Deselect All", ImGuiKey_Escape);
+        targetItem(ICON_FA_SQUARE_CHECK "  Select All", ImGuiMod_Ctrl | ImGuiKey_A);
+        targetItem(ICON_FA_SQUARE "  Deselect All", ImGuiKey_Escape);
         ImGui::EndMenu();
       }
 
-      MenuBarSeparator();
-
       if (ImGui::BeginMenu("View")) {
+        // 項目の名前とアイコンは、開くウィンドウのタブと同じ物を出す
         ImGui::SeparatorText("Main Windows");
-        ImGui::MenuItem("Debug Viewport", "F1", &WindowFlag(Window::DebugViewport));
-        ImGui::MenuItem("Scene Hierarchy", "F2", &WindowFlag(Window::SceneHierarchy));
-        ImGui::MenuItem("Inspector", "F3", &WindowFlag(Window::Inspector));
-        ImGui::MenuItem("Game Viewport", "F4", &WindowFlag(Window::GameViewport));
-        ImGui::MenuItem("Console", "F5", &WindowFlag(Window::Console));
-        ImGui::MenuItem("Performance", "F6", &WindowFlag(Window::Performance));
-        ImGui::MenuItem("Assets", nullptr, &WindowFlag(Window::Assets));
+        ImGui::MenuItem(WindowTitle::kDebugViewport, "F1", &WindowFlag(Window::DebugViewport));
+        ImGui::MenuItem(WindowTitle::kSceneHierarchy, "F2", &WindowFlag(Window::SceneHierarchy));
+        ImGui::MenuItem(WindowTitle::kInspector, "F3", &WindowFlag(Window::Inspector));
+        ImGui::MenuItem(WindowTitle::kGameViewport, "F4", &WindowFlag(Window::GameViewport));
+        ImGui::MenuItem(WindowTitle::kConsole, "F5", &WindowFlag(Window::Console));
+        ImGui::MenuItem(WindowTitle::kPerformance, "F6", &WindowFlag(Window::Performance));
+        ImGui::MenuItem(WindowTitle::kAssets, nullptr, &WindowFlag(Window::Assets));
         ImGui::SeparatorText("Editors");
-        ImGui::MenuItem("Particle Editor", nullptr, &WindowFlag(Window::ParticleEditor));
-        ImGui::MenuItem("Primitive Editor", nullptr, &WindowFlag(Window::PrimitiveEditor));
-        ImGui::MenuItem("Material Editor", nullptr, &WindowFlag(Window::MaterialEditor));
-        ImGui::MenuItem("Shader Editor", nullptr, &WindowFlag(Window::ShaderEditor));
-        ImGui::MenuItem("Render Pipeline", nullptr, &WindowFlag(Window::RenderPipeline));
-        ImGui::MenuItem("PostEffect Editor", nullptr, &WindowFlag(Window::PostEffect));
-        ImGui::MenuItem("UI Editor", nullptr, &WindowFlag(Window::UIEditor));
-        ImGui::MenuItem("Camera Animation Editor", nullptr, &WindowFlag(Window::CameraAnimationEditor));
-        ImGui::MenuItem("Animation Editor", nullptr, &WindowFlag(Window::AnimationEditor));
-        if (ImGui::MenuItem("Behavior Tree Editor", nullptr, behaviorTreeEditor_.IsVisible())) {
+        ImGui::MenuItem(WindowTitle::kParticleEditor, nullptr, &WindowFlag(Window::ParticleEditor));
+        ImGui::MenuItem(WindowTitle::kPrimitiveEditor, nullptr, &WindowFlag(Window::PrimitiveEditor));
+        ImGui::MenuItem(WindowTitle::kMaterialEditor, nullptr, &WindowFlag(Window::MaterialEditor));
+        ImGui::MenuItem(WindowTitle::kShaderEditor, nullptr, &WindowFlag(Window::ShaderEditor));
+        ImGui::MenuItem(WindowTitle::kRenderPipeline, nullptr, &WindowFlag(Window::RenderPipeline));
+        ImGui::MenuItem(WindowTitle::kPostEffectEditor, nullptr, &WindowFlag(Window::PostEffect));
+        ImGui::MenuItem(WindowTitle::kUIEditor, nullptr, &WindowFlag(Window::UIEditor));
+        ImGui::MenuItem(WindowTitle::kCameraAnimationEditor, nullptr, &WindowFlag(Window::CameraAnimationEditor));
+        ImGui::MenuItem(WindowTitle::kAnimationEditor, nullptr, &WindowFlag(Window::AnimationEditor));
+        if (ImGui::MenuItem(WindowTitle::kBehaviorTreeEditor, nullptr, behaviorTreeEditor_.IsVisible())) {
           behaviorTreeEditor_.SetVisible(!behaviorTreeEditor_.IsVisible());
         }
         ImGui::SeparatorText("Debug Windows");
-        ImGui::MenuItem("Input Debug", nullptr, &WindowFlag(Window::InputDebug));
-        ImGui::MenuItem("Collision Debug", nullptr, &WindowFlag(Window::CollisionDebug));
+        ImGui::MenuItem(WindowTitle::kInputDebug, nullptr, &WindowFlag(Window::InputDebug));
+        ImGui::MenuItem(WindowTitle::kCollisionDebug, nullptr, &WindowFlag(Window::CollisionDebug));
         ImGui::SeparatorText("Layout");
-        if (ImGui::MenuItem("Show Main Windows", "F10")) {
+        if (ImGui::MenuItem(ICON_FA_TABLE_COLUMNS "  Show Main Windows", "F10")) {
           for (Window window : kMainWindows) {
             WindowFlag(window) = true;
           }
         }
-        if (ImGui::MenuItem("Toggle Main Windows", "F12")) {
+        if (ImGui::MenuItem(ICON_FA_EYE_SLASH "  Toggle Main Windows", "F12")) {
           for (Window window : kMainWindows) {
             ToggleWindow(window);
           }
         }
         ImGui::EndMenu();
       }
-
-      MenuBarSeparator();
 
       if (ImGui::BeginMenu("Debug")) {
         bool paused = FrameTimer::GetInstance()->IsPaused();
@@ -536,8 +483,6 @@ namespace Tako {
         ImGui::EndMenu();
       }
 
-      MenuBarSeparator();
-
       if (ImGui::BeginMenu("Help")) {
         ImGui::MenuItem("ImGui Demo", nullptr, &WindowFlag(Window::ImGuiDemo));
         ImGui::MenuItem("ImGui Metrics", nullptr, &WindowFlag(Window::ImGuiMetrics));
@@ -546,9 +491,9 @@ namespace Tako {
         ImGui::EndMenu();
       }
 
-      // 中央にエンジン名を表示
-      ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.0f - 40.0f);
-      ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "TakoEngine");
+      constexpr const char* kEngineName = "TakoEngine";
+      ImGui::SetCursorPosX((ImGui::GetWindowWidth() - ImGui::CalcTextSize(kEngineName).x) * 0.5f);
+      ImGui::TextDisabled("%s", kEngineName);
 
       DrawFrameStats();
 
@@ -577,23 +522,18 @@ namespace Tako {
     }
     ImGui::SetCursorPosX(ImGui::GetWindowWidth() - width - kMenuBarRightInset);
 
+    const EditorColors& colors = GetEditorColors();
     if (isRebuildRequired) {
-      ImGui::TextColored(kWarningColor, "%s", kRebuildText);
+      ImGui::TextColored(colors.warning, "%s", kRebuildText);
       ImGui::SetItemTooltip("Save renamed names in the source files (listed in the Console).\nThe running game keeps the old names until you rebuild and restart");
       MenuBarSeparator();
     }
     if (isPaused) {
-      ImGui::TextColored(kPausedColor, "%s", kPausedText);
+      ImGui::TextColored(colors.info, "%s", kPausedText);
       MenuBarSeparator();
     }
 
-    ImVec4 fpsColor(1.0f, 0.3f, 0.3f, 1.0f);
-    if (fps >= 55.0f) {
-      fpsColor = ImVec4(0.2f, 1.0f, 0.2f, 1.0f);
-    }
-    else if (fps >= 30.0f) {
-      fpsColor = ImVec4(1.0f, 0.8f, 0.2f, 1.0f);
-    }
+    const ImVec4& fpsColor = fps >= 55.0f ? colors.success : fps >= 30.0f ? colors.warning : colors.error;
     ImGui::TextColored(fpsColor, "%s", fpsText.c_str());
     MenuBarSeparator();
     ImGui::TextUnformatted(msText.c_str());
@@ -601,16 +541,16 @@ namespace Tako {
 
   void DebugUIManager::DrawPlaybackToolbar() {
     const bool  isPaused   = FrameTimer::GetInstance()->IsPaused();
-    const float groupWidth = ImGui::GetFrameHeight() * kIconButtonAspect * 3.0f + ImGui::GetStyle().ItemSpacing.x * 2.0f;
-    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (ImGui::GetContentRegionAvail().x - groupWidth) * 0.5f);
+    const float groupWidth = ImGui::GetFrameHeight() * 3.0f + ImGui::GetStyle().ItemSpacing.x * 2.0f;
+    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (std::max)(0.0f, (ImGui::GetContentRegionAvail().x - groupWidth) * 0.5f));
 
     // Edit 中は Play、Play 中は Stop。Stop は遷移中には押せない
     SceneManager* sceneManager = SceneManager::GetInstance();
     const bool    isPlaying    = sceneManager->IsPlaying();
     ImGui::BeginDisabled(isPlaying && !sceneManager->CanStop());
     const bool isPlayToggled = isPlaying
-      ? IconButton("##Stop", ToolbarIcon::Stop, "Stop: back to Edit and restore the scene (F9)", false)
-      : IconButton("##Play", ToolbarIcon::Play, "Play from Edit (F9)", true);
+      ? UI::IconButton(ICON_FA_STOP "##Stop", "Stop: back to Edit and restore the scene (F9)", true)
+      : UI::IconButton(ICON_FA_PLAY "##Play", "Play from Edit (F9)");
     ImGui::EndDisabled();
     if (isPlayToggled) {
       TogglePlay();
@@ -618,14 +558,14 @@ namespace Tako {
     ImGui::SameLine();
 
     const bool isToggled = isPaused
-      ? IconButton("##Resume", ToolbarIcon::Play, "Resume (F7)", true)
-      : IconButton("##Pause", ToolbarIcon::Pause, "Pause (F7)", false);
+      ? UI::IconButton(ICON_FA_PLAY "##Resume", "Resume (F7)", true)
+      : UI::IconButton(ICON_FA_PAUSE "##Pause", "Pause (F7)");
     if (isToggled) {
       SetGamePaused(!isPaused);
     }
 
     ImGui::SameLine();
-    if (IconButton("##Step", ToolbarIcon::Step, "Step (F8)", false)) {
+    if (UI::IconButton(ICON_FA_FORWARD_STEP "##Step", "Step (F8)")) {
       StepFrame();
     }
   }
@@ -659,33 +599,30 @@ namespace Tako {
   }
 
   void DebugUIManager::DrawSceneHierarchy() {
-    ImGui::Begin("Scene Hierarchy", &WindowFlag(Window::SceneHierarchy));
+    ImGui::Begin(WindowTitle::kSceneHierarchy, &WindowFlag(Window::SceneHierarchy));
 
-    SceneManager* sceneManager = SceneManager::GetInstance();
-    ImGui::Text("Current Scene: %s", sceneManager->GetCurrentSceneName().c_str());
+    SceneManager*      sceneManager = SceneManager::GetInstance();
+    const std::string& currentScene = sceneManager->GetCurrentSceneName();
+    const bool         isPlaying    = sceneManager->IsPlaying();
+    const char*        modeText     = isPlaying ? ICON_FA_PLAY "  Play" : ICON_FA_PEN "  Edit";
 
-    // シーン遷移 UI
-    ImGui::PushItemWidth(120.0f);  // 入力ボックスの幅を設定
-    ImGui::InputText("##SceneName", sceneNameBuffer_, sizeof(sceneNameBuffer_));
-    ImGui::PopItemWidth();
+    // シーンの切り替え（選ぶと切り替わる）と、右端に Edit / Play の印
+    ImGui::SetNextItemWidth(-(ImGui::CalcTextSize(modeText).x + ImGui::GetStyle().ItemSpacing.x));
+    if (ImGui::BeginCombo("##Scene", std::format(ICON_FA_MOUNTAIN_SUN "  {}", currentScene).c_str())) {
+      for (const std::string& name : sceneManager->GetSceneNames()) {
+        if (ImGui::Selectable(name.c_str(), name == currentScene)) {
+          RequestSceneChange(name);
+        }
+      }
+      ImGui::EndCombo();
+    }
+    else {
+      ImGui::SetItemTooltip("Current scene. Pick another one to switch (the current one reloads)");
+    }
     ImGui::SameLine();
-    if (ImGui::Button("Change Scene")) {
-      if (strlen(sceneNameBuffer_) > 0) {
-        RequestSceneChange(sceneNameBuffer_);
-        sceneNameBuffer_[0] = '\0';
-      }
-      else {
-        AddLog("Scene name is empty", LogType::Warning);
-      }
-    }
-
-    std::string availableScenes;
-    for (const std::string& name : sceneManager->GetSceneNames()) {
-      availableScenes += availableScenes.empty() ? name : ", " + name;
-    }
-    ImGui::TextDisabled("Available scenes: %s", availableScenes.c_str());
-
-    ImGui::TextDisabled("Mode: %s", sceneManager->IsPlaying() ? "Play" : "Edit (game update stopped)");
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextColored(isPlaying ? GetEditorColors().success : ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled), "%s", modeText);
+    ImGui::SetItemTooltip(isPlaying ? "Playing. Changes are discarded on Stop" : "Editing: the game update is stopped");
 
     sceneEditor_.DrawHierarchy();
 
@@ -698,69 +635,84 @@ namespace Tako {
   }
 
   void DebugUIManager::DrawInspector() {
-    ImGui::Begin("Inspector", &WindowFlag(Window::Inspector));
+    ImGui::Begin(WindowTitle::kInspector, &WindowFlag(Window::Inspector));
 
     if (sceneEditor_.HasSelection()) {
       sceneEditor_.DrawInspector();
     }
     else {
-      ImGui::Text("No object selected");
-      ImGui::TextDisabled("Select an object from Scene Hierarchy");
+      ImGui::TextDisabled("Select an actor in the Scene Hierarchy");
     }
 
     ImGui::End();
   }
 
   void DebugUIManager::DrawConsole() {
-    ImGui::Begin("Console", &WindowFlag(Window::Console));
+    ImGui::Begin(WindowTitle::kConsole, &WindowFlag(Window::Console));
 
-    // 自動スクロールチェックボックス
-    ImGui::Checkbox("Auto Scroll", &autoScroll_);
-    // フィルタボタン
-    if (ImGui::Button("Clear")) {
+    // 種類ごとの表示：アイコン・色・表示するか（LogType の順）
+    struct LogStyle {
+      const char* icon;
+      ImVec4      color;
+      bool*       isShown;
+      const char* name;
+    };
+    const EditorColors& colors = GetEditorColors();
+    const LogStyle logStyles[] = {
+      { ICON_FA_CIRCLE_INFO,          ImGui::GetStyleColorVec4(ImGuiCol_Text), &showInfo_,    "Info" },
+      { ICON_FA_TRIANGLE_EXCLAMATION, colors.warning,                          &showWarning_, "Warning" },
+      { ICON_FA_CIRCLE_XMARK,         colors.error,                            &showError_,   "Error" },
+    };
+    int counts[std::size(logStyles)] = {};
+    for (const LogEntry& log : consoleLogs_) {
+      ++counts[static_cast<size_t>(log.type)];
+    }
+
+    if (UI::IconButton(ICON_FA_TRASH_CAN, "Clear")) {
       ClearLogs();
     }
+    UI::ToolbarSeparator();
+    for (size_t i = 0; i < std::size(logStyles); ++i) {
+      const LogStyle& logStyle = logStyles[i];
+      if (i > 0) {
+        ImGui::SameLine();
+      }
+      // 件数を種類の色にすると ON の背景の上で読めないテーマがあるので、アイコンだけ種類の色にする。ボタンの文字は 1 色なので、中身は自分で描く
+      const std::string count     = std::to_string(counts[i]);
+      const ImVec2      padding   = ImGui::GetStyle().FramePadding;
+      const float       iconWidth = ImGui::CalcTextSize(logStyle.icon).x + ImGui::GetStyle().ItemInnerSpacing.x;
+      ImGui::PushStyleColor(ImGuiCol_Button, *logStyle.isShown ? colors.toggleOn : ImGui::GetStyleColorVec4(ImGuiCol_Button));
+      if (ImGui::Button(std::format("###{}", logStyle.name).c_str(), ImVec2(iconWidth + ImGui::CalcTextSize(count.c_str()).x + padding.x * 2.0f, 0.0f))) {
+        *logStyle.isShown = !*logStyle.isShown;
+      }
+      ImGui::PopStyleColor();
+      ImGui::SetItemTooltip("Show %s", logStyle.name);
+      const ImVec2 textPos(ImGui::GetItemRectMin().x + padding.x, ImGui::GetItemRectMin().y + padding.y);
+      ImGui::GetWindowDrawList()->AddText(textPos, ImGui::GetColorU32(logStyle.color), logStyle.icon);
+      ImGui::GetWindowDrawList()->AddText(ImVec2(textPos.x + iconWidth, textPos.y), ImGui::GetColorU32(ImGuiCol_Text), count.c_str());
+    }
     ImGui::SameLine();
-    ImGui::Checkbox("Info", &showInfo_);
+    // 右端の自動スクロールのボタンの分を残す
+    ImGui::SetNextItemWidth(-(ImGui::GetFrameHeight() + ImGui::GetStyle().ItemSpacing.x));
+    if (ImGui::InputTextWithHint("##Filter", ICON_FA_MAGNIFYING_GLASS "  Filter (\"a,b\" = OR, \"-a\" = exclude)", consoleFilter_.InputBuf, IM_ARRAYSIZE(consoleFilter_.InputBuf))) {
+      consoleFilter_.Build();
+    }
     ImGui::SameLine();
-    ImGui::Checkbox("Warning", &showWarning_);
-    ImGui::SameLine();
-    ImGui::Checkbox("Error", &showError_);
+    UI::IconToggle(ICON_FA_ANGLES_DOWN, "Auto scroll: follow new logs while the view is at the bottom", &autoScroll_);
 
-    ImGui::Separator();
+    ImGui::BeginChild("ScrollingRegion", ImVec2(0, 0), ImGuiChildFlags_Borders, ImGuiWindowFlags_HorizontalScrollbar);
 
-    // ログ表示
-    ImGui::BeginChild("ScrollingRegion", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
-
-    for (const auto& log : consoleLogs_) {
-      if ((log.type == LogType::Info && !showInfo_) ||
-        (log.type == LogType::Warning && !showWarning_) ||
-        (log.type == LogType::Error && !showError_)) {
+    for (const LogEntry& log : consoleLogs_) {
+      const LogStyle& logStyle = logStyles[static_cast<size_t>(log.type)];
+      if (!*logStyle.isShown || !consoleFilter_.PassFilter(log.message.c_str())) {
         continue;
       }
-
-      ImVec4 color;
-      const char* prefix = "";
-      switch (log.type) {
-      case LogType::Info:
-        color = ImVec4(0.8f, 0.8f, 0.8f, 1.0f);
-        prefix = "[INFO]";
-        break;
-      case LogType::Warning:
-        color = ImVec4(1.0f, 1.0f, 0.0f, 1.0f);
-        prefix = "[WARNING]";
-        break;
-      case LogType::Error:
-        color = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
-        prefix = "[ERROR]";
-        break;
-      }
-
-      ImGui::TextColored(color, "%s %s %s", log.timestamp.c_str(), prefix, log.message.c_str());
+      // ponytail: 1 行 1 アイテムにするため、時刻も種類の色で出す。時刻だけ薄くするなら行を分け、ImGuiListClipper で見える行だけ描く
+      ImGui::TextColored(logStyle.color, "%s  %s  %s", logStyle.icon, log.timestamp.c_str(), log.message.c_str());
     }
 
-    // 自動スクロール
-    if (autoScroll_) {
+    // 一番下を見ているときだけ追う（上へ戻して読んでいる間は動かさない）
+    if (autoScroll_ && ImGui::GetScrollY() >= ImGui::GetScrollMaxY()) {
       ImGui::SetScrollHereY(1.0f);
     }
 
@@ -769,20 +721,20 @@ namespace Tako {
   }
 
   void DebugUIManager::DrawPerformance() {
-    ImGui::Begin("Performance", &WindowFlag(Window::Performance));
+    ImGui::Begin(WindowTitle::kPerformance, &WindowFlag(Window::Performance));
 
     float fps = FrameTimer::GetInstance()->GetFPS();
     float frameTime = 1000.0f / fps;
 
-    ImGui::Text("Current FPS: %.1f", fps);
-    ImGui::Text("Frame Time: %.2f ms", frameTime);
+    UI::Value("FPS", "%.1f", fps);
+    UI::Value("Frame Time", "%.2f ms", frameTime);
 
     // FPS グラフ
     fpsHistory_[fpsHistoryIndex_] = fps;
     fpsHistoryIndex_ = (fpsHistoryIndex_ + 1) % 100;
 
-    ImGui::PlotLines("FPS History", fpsHistory_, 100, fpsHistoryIndex_,
-      nullptr, 0.0f, 120.0f, ImVec2(0, 80));
+    ImGui::PlotLines("##FPS History", fpsHistory_, 100, fpsHistoryIndex_,
+      nullptr, 0.0f, 120.0f, ImVec2(-FLT_MIN, 80));
 
     // 統計情報
     float minFPS = 120.0f, maxFPS = 0.0f, avgFPS = 0.0f;
@@ -795,7 +747,7 @@ namespace Tako {
     }
     avgFPS /= 100.0f;
 
-    ImGui::Text("Min: %.1f | Max: %.1f | Avg: %.1f", minFPS, maxFPS, avgFPS);
+    UI::Value("Min / Max / Avg", "%.1f / %.1f / %.1f", minFPS, maxFPS, avgFPS);
 
     if (ImGui::CollapsingHeader("Resources", ImGuiTreeNodeFlags_DefaultOpen)) {
       // index 0 は無効番兵のため使用可能数は最大数 - 1
@@ -809,13 +761,13 @@ namespace Tako {
       drawHeapUsage("DSV", DsvManager::GetInstance()->GetAllocatedCount(), DsvManager::kMaxDSVCount);
 
       ImGui::Separator();
-      ImGui::Text("Textures:  %zu", TextureManager::GetInstance()->GetLoadedTextureCount());
-      ImGui::Text("Models:    %zu", ModelManager::GetInstance()->GetLoadedModelCount());
-      ImGui::Text("Colliders: %zu", CollisionManager::GetInstance()->GetColliderCount());
+      UI::Value("Textures", "%zu", TextureManager::GetInstance()->GetLoadedTextureCount());
+      UI::Value("Models", "%zu", ModelManager::GetInstance()->GetLoadedModelCount());
+      UI::Value("Colliders", "%zu", CollisionManager::GetInstance()->GetColliderCount());
 
       GPUParticle* particle = GPUParticle::GetInstance();
-      ImGui::Text("Emitters:  %u", particle->GetEmitterCount());
-      ImGui::Text("Particles: %u / %u", particle->GetActiveParticleCount(), GPUParticle::GetMaxParticleCount());
+      UI::Value("Emitters", "%u", particle->GetEmitterCount());
+      UI::Value("Particles", "%u / %u", particle->GetActiveParticleCount(), GPUParticle::GetMaxParticleCount());
     }
 
     ImGui::End();
@@ -826,7 +778,7 @@ namespace Tako {
     isGameViewportHovered_ = false;
 
     // Begin が false（折りたたみ等）の場合は中身を描かない。Begin/End は対で必ず呼ぶ
-    if (ImGui::Begin("Game Viewport", &WindowFlag(Window::GameViewport))) {
+    if (ImGui::Begin(WindowTitle::kGameViewport, &WindowFlag(Window::GameViewport))) {
       DrawPlaybackToolbar();
 
       // ウィンドウの利用可能サイズを取得（ツールバーの下の残り領域）
@@ -882,7 +834,7 @@ namespace Tako {
   }
 
   void DebugUIManager::DrawInputDebug() {
-    ImGui::Begin("Input Debug", &WindowFlag(Window::InputDebug));
+    ImGui::Begin(WindowTitle::kInputDebug, &WindowFlag(Window::InputDebug));
 
     // ゲームパッド情報
     if (ImGui::CollapsingHeader("GamePad", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -890,7 +842,7 @@ namespace Tako {
       bool connected = input->IsConnect();
 
       if (connected) {
-        ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "GamePad: Connected");
+        ImGui::TextColored(GetEditorColors().success, "GamePad: Connected");
 
         // スティック値
         Vector2 leftStick = input->GetLeftStick();
@@ -931,7 +883,7 @@ namespace Tako {
           if (i > 0 && i % 4 != 0) ImGui::SameLine();
           bool pressed = input->PushButton(GamepadButton::ALL[i]);
           if (pressed) {
-            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "[%s]", buttonNames[i]);
+            ImGui::TextColored(GetEditorColors().success, "[%s]", buttonNames[i]);
           }
           else {
             ImGui::Text("[%s]", buttonNames[i]);
@@ -939,7 +891,7 @@ namespace Tako {
         }
       }
       else {
-        ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "GamePad: Not Connected");
+        ImGui::TextColored(GetEditorColors().error, "GamePad: Not Connected");
       }
     }
 
@@ -954,13 +906,13 @@ namespace Tako {
 
       ImGui::Text("Buttons: ");
       ImGui::SameLine();
-      if (leftClick) ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "[L]");
+      if (leftClick) ImGui::TextColored(GetEditorColors().success, "[L]");
       else ImGui::Text("[L]");
       ImGui::SameLine();
-      if (rightClick) ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "[R]");
+      if (rightClick) ImGui::TextColored(GetEditorColors().success, "[R]");
       else ImGui::Text("[R]");
       ImGui::SameLine();
-      if (middleClick) ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "[M]");
+      if (middleClick) ImGui::TextColored(GetEditorColors().success, "[M]");
       else ImGui::Text("[M]");
     }
 
@@ -996,23 +948,14 @@ namespace Tako {
   }
 
   void DebugUIManager::DrawCollisionDebug() {
-    ImGui::Begin("Collision Debug", &WindowFlag(Window::CollisionDebug));
+    ImGui::Begin(WindowTitle::kCollisionDebug, &WindowFlag(Window::CollisionDebug));
 
     CollisionManager* collisionManager = CollisionManager::GetInstance();
 
-    // ヘッダー
-    ImGui::Text("Collision System");
-    ImGui::Separator();
-
-    // デバッグワイヤーフレーム表示の ON/OFF
     bool debugDraw = collisionManager->IsDebugDrawEnabled();
-    if (ImGui::Checkbox("##ShowWireframes", &debugDraw)) {
+    if (UI::Checkbox("Debug Draw", &debugDraw)) {
       collisionManager->SetDebugDrawEnabled(debugDraw);
     }
-    ImGui::SameLine();
-    ImGui::Text(debugDraw ? "Debug Draw: ON" : "Debug Draw: OFF");
-
-    ImGui::Separator();
 
     // 統計情報
     if (ImGui::CollapsingHeader("Statistics", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -1037,8 +980,7 @@ namespace Tako {
         }
       }
 
-      // 総数と内訳
-      ImGui::Text("Total Colliders: %zu", totalColliders);
+      UI::Value("Total Colliders", "%zu", totalColliders);
 
       // アクティブ/非アクティブの比率表示
       if (totalColliders > 0) {
@@ -1100,52 +1042,45 @@ namespace Tako {
     // パフォーマンス情報
     if (ImGui::CollapsingHeader("Performance")) {
       // 層ごとに分けて当たる層の組だけ判定するので、総当たり数ではなく実際に判定したペア数を出す
-      const size_t testedPairs = collisionManager->GetTestedPairCount();
-      ImGui::Text("Tested pairs: %zu", testedPairs);
-      ImGui::Text("Check time: %.3f ms", collisionManager->GetLastCheckMs());
+      const size_t        testedPairs = collisionManager->GetTestedPairCount();
+      const EditorColors& colors      = GetEditorColors();
+      UI::Value("Tested Pairs", "%zu", testedPairs);
+      UI::Value("Check Time", "%.3f ms", collisionManager->GetLastCheckMs());
 
       const auto& masks = collisionManager->GetCollisionMasks();
       if (std::ranges::all_of(masks, [](uint32_t mask) { return mask == 0; })) {
-        ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "No masks configured");
+        ImGui::TextColored(colors.warning, "No masks configured");
         ImGui::TextDisabled("No pairs are tested");
       }
 
-      ImGui::Spacing();
-
-      // パフォーマンスレベルのインジケーター
-      ImVec4 performanceColor;
-      const char* performanceText;
-
+      // 判定したペア数の目安
+      const ImVec4* loadColor = &colors.error;
+      const char*   loadText  = "Heavy";
       if (testedPairs < 100) {
-        performanceColor = ImVec4(0.2f, 1.0f, 0.2f, 1.0f);
-        performanceText = "Excellent";
+        loadColor = &colors.success;
+        loadText  = "Excellent";
       }
       else if (testedPairs < 500) {
-        performanceColor = ImVec4(0.7f, 1.0f, 0.2f, 1.0f);
-        performanceText = "Good";
+        loadColor = &colors.success;
+        loadText  = "Good";
       }
       else if (testedPairs < 2000) {
-        performanceColor = ImVec4(1.0f, 0.8f, 0.2f, 1.0f);
-        performanceText = "Moderate";
+        loadColor = &colors.warning;
+        loadText  = "Moderate";
       }
-      else {
-        performanceColor = ImVec4(1.0f, 0.3f, 0.3f, 1.0f);
-        performanceText = "Heavy";
-      }
-
-      ImGui::Text("Performance Load: ");
-      ImGui::SameLine();
-      ImGui::TextColored(performanceColor, "%s", performanceText);
+      UI::Label("Load");
+      ImGui::AlignTextToFramePadding();
+      ImGui::TextColored(*loadColor, "%s", loadText);
     }
 
     ImGui::End();
   }
 
   void DebugUIManager::DrawAbout() {
-    if (ImGui::Begin("About", &WindowFlag(Window::About), ImGuiWindowFlags_AlwaysAutoResize)) {
+    // 中身の幅で決まるウィンドウなので、左ラベルの列（ウィンドウの幅の割合）は使わない
+    if (ImGui::Begin(WindowTitle::kAbout, &WindowFlag(Window::About), ImGuiWindowFlags_AlwaysAutoResize)) {
       ImGui::Text("TakoEngine (DirectX 12)");
-      ImGui::Text("ImGui: %s", IMGUI_VERSION);
-      ImGui::Text("Resolution: %d x %d", WinApp::clientWidth, WinApp::clientHeight);
+      ImGui::TextDisabled("ImGui %s   %d x %d", IMGUI_VERSION, WinApp::clientWidth, WinApp::clientHeight);
 
       ImGui::SeparatorText("Shortcuts");
       ImGui::TextDisabled("Editor shortcuts work in the focused window. Undo / Redo share one history across all editors.");

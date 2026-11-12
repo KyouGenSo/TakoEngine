@@ -18,7 +18,7 @@ namespace Tako {
   /// Emitter Name を決めておくと、スクリプトは EmitterManager からその名前で引いて、出す・止める・動かすを行える。
   /// Bind To Mesh をオンにすると、Mesh エミッターのプリセットを、同じ Actor の MeshComponent のモデルの表面から出す
   /// </summary>
-  TCLASS()
+  TCLASS(DisplayName = "Particle System")
   class ParticleSystemComponent : public Component {
     GENERATED_BODY()
 

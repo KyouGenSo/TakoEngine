@@ -13,7 +13,7 @@ namespace Tako {
   /// <summary>
   /// Actor の Transform に付く当たり判定。Play 中だけ CollisionManager に登録し、当たりを同じ Actor の全コンポーネントへ渡す
   /// </summary>
-  TCLASS()
+  TCLASS(DisplayName = "Collider")
   class ColliderComponent : public Component {
     GENERATED_BODY()
 

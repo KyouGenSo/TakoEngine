@@ -2,6 +2,7 @@
 #include "AnimationClip.h"
 #include "CameraAnimation.h"
 #include "DebugUIManager.h"
+#include "ImGuiManager.h"
 #include "TextureManager.h"
 #include "UILayout.h"
 #include "WinApp.h"
@@ -17,7 +18,6 @@
 #include <wrl/client.h>
 
 #include <algorithm>
-#include <cctype>
 #include <cstdio>
 #include <cstring>
 #include <format>
@@ -39,6 +39,7 @@ namespace Tako {
     constexpr float kMinThumbnailSize = 32.0f;
     constexpr float kMaxThumbnailSize = 256.0f;
     constexpr float kIconPaddingRatio = 0.12f;                           // アイコン周囲の余白（サムネイルサイズ比）
+    constexpr float kLargeIconRatio   = 0.8f;                            // 種類のアイコンの大きさ（余白を除いた枠の高さ比）
     constexpr ImU32 kFolderColor      = IM_COL32(214, 172, 92, 255);
 
     // ponytail: 1 フレームの読み込み枚数上限。大きい画像が多く引っかかるなら非同期読み込みへ
@@ -146,16 +147,6 @@ namespace Tako {
       return IsSameOrAncestor(EngineRootPath(), path);
     }
 
-    std::string ExtensionLabel(const std::string& fileName) {
-      const size_t dot = fileName.rfind('.');
-      if (dot == std::string::npos) {
-        return {};
-      }
-      std::string label = fileName.substr(dot + 1);
-      std::ranges::transform(label, label.begin(), [](unsigned char c) { return static_cast<char>(std::toupper(c)); });
-      return label;
-    }
-
     /// <summary>
     /// 既に存在する場合は "name (n).ext" の空き番号を探す
     /// </summary>
@@ -204,26 +195,14 @@ namespace Tako {
       SHFileOperationW(&operation);
     }
 
-    void DrawFolderIcon(ImDrawList* drawList, const ImVec2& min, const ImVec2& max) {
-      const float width    = max.x - min.x;
-      const float height   = max.y - min.y;
-      const float rounding = width * 0.06f;
-      // タブと本体を同色で重ね、フォルダのシルエットにする
-      drawList->AddRectFilled(ImVec2(min.x, min.y + height * 0.12f), ImVec2(min.x + width * 0.45f, min.y + height * 0.32f), kFolderColor, rounding);
-      drawList->AddRectFilled(ImVec2(min.x, min.y + height * 0.22f), ImVec2(max.x, max.y - height * 0.08f), kFolderColor, rounding);
-    }
-
     /// <summary>
-    /// 縦長の用紙形に拡張子ラベルを載せたファイルアイコン
+    /// 大きいアイコン 1 字を [min, max] の中央に描く（icon は ImGuiManager::kLargeIcons にある字）
     /// </summary>
-    void DrawFileIcon(ImDrawList* drawList, const ImVec2& min, const ImVec2& max, const std::string& label) {
-      const float  width    = max.x - min.x;
-      const float  rounding = width * 0.06f;
-      const ImVec2 pageMin(min.x + width * 0.15f, min.y);
-      const ImVec2 pageMax(max.x - width * 0.15f, max.y);
-      drawList->AddRectFilled(pageMin, pageMax, ImGui::GetColorU32(ImGuiCol_Button), rounding);
-      drawList->AddRect(pageMin, pageMax, ImGui::GetColorU32(ImGuiCol_Border), rounding);
-      ImGui::RenderTextClipped(pageMin, pageMax, label.c_str(), nullptr, nullptr, ImVec2(0.5f, 0.5f));
+    void DrawLargeIcon(ImDrawList* drawList, const char* icon, ImU32 color, const ImVec2& min, const ImVec2& max) {
+      ImFont*      font = ImGuiManager::GetLargeIconFont();
+      const float  size = (max.y - min.y) * kLargeIconRatio;
+      const ImVec2 textSize = font->CalcTextSizeA(size, FLT_MAX, 0.0f, icon);
+      drawList->AddText(font, size, ImVec2((min.x + max.x - textSize.x) * 0.5f, (min.y + max.y - textSize.y) * 0.5f), color, icon);
     }
 
     /// <summary>
@@ -243,6 +222,41 @@ namespace Tako {
 
     bool IsSourceFile(const fs::path& path) {
       return HasExtension(path, { L".h", L".hpp", L".cpp", L".hlsl", L".hlsli" });
+    }
+
+    // 種類ごとのアイコン（ImGuiManager::kLargeIcons にある字）。上から順に比べ、最初に合った種類を使う
+    constexpr std::pair<std::string_view, const char*> kKindIcons[] = {
+      { "Model",             ICON_FA_CUBE },
+      { "Material",          ICON_FA_PALETTE },
+      { "Scene",             ICON_FA_MOUNTAIN_SUN },
+      { "Prefab",            ICON_FA_CUBES },
+      { "ParticlePreset",    ICON_FA_WAND_MAGIC_SPARKLES },
+      { "AnimationClip",     ICON_FA_PERSON_RUNNING },
+      { "CameraAnimation",   ICON_FA_VIDEO },
+      { "UILayout",          ICON_FA_TABLE_COLUMNS },
+      { "PostEffectProfile", ICON_FA_FILM },
+      { "BehaviorTree",      ICON_FA_DIAGRAM_PROJECT },
+      { "Sound",             ICON_FA_MUSIC },
+      { "Texture",           ICON_FA_IMAGE },
+    };
+
+    /// <summary>
+    /// ファイルの種類を表すアイコン。アセットの種類に合わなければ拡張子で決める
+    /// </summary>
+    const char* FileIcon(const fs::path& path) {
+      for (const auto& [kind, icon] : kKindIcons) {
+        if (ToAssetValue(kind, path)) {
+          return icon;
+        }
+      }
+      if (IsSourceFile(path)) {
+        // 一覧では名前が途中で切れるので、同じ名前のヘッダーとソースをアイコンで見分ける
+        return HasExtension(path, { L".h", L".hpp", L".hlsli" }) ? ICON_FA_FILE_LINES : ICON_FA_FILE_CODE;
+      }
+      if (HasExtension(path, { L".ttf", L".otf" })) {
+        return ICON_FA_FONT;
+      }
+      return HasExtension(path, { L".json", L".txt", L".ini" }) ? ICON_FA_FILE_LINES : ICON_FA_FILE;
     }
 
     /// <summary>
@@ -597,7 +611,7 @@ namespace Tako {
       ScanEntries();
     }
 
-    if (ImGui::Begin("Assets", isOpen_)) {
+    if (ImGui::Begin(WindowTitle::kAssets, isOpen_)) {
       windowMin_ = ImGui::GetWindowPos();
       windowMax_ = ImVec2(windowMin_.x + ImGui::GetWindowWidth(), windowMin_.y + ImGui::GetWindowHeight());
 
@@ -621,7 +635,7 @@ namespace Tako {
       DrawBackgroundContextMenu();
       ImGui::EndChild();
       ImGui::SetNextItemWidth(ImGui::GetFontSize() * 10.0f);
-      if (ImGui::SliderFloat("Size", &thumbnailSize_, kMinThumbnailSize, kMaxThumbnailSize, "%.0f")) {
+      if (ImGui::SliderFloat("##Size", &thumbnailSize_, kMinThumbnailSize, kMaxThumbnailSize, "Size %.0f")) {
         savedState.thumbnailSize = thumbnailSize_;
         ImGui::MarkIniSettingsDirty();
       }
@@ -692,7 +706,8 @@ namespace Tako {
     for (const fs::directory_entry& item : fs::directory_iterator(currentDir_, ec)) {
       const bool isDirectory = item.is_directory(ec);
       const bool isSelected  = std::ranges::binary_search(selected, item.path());
-      entries_.push_back({ item.path(), ToUtf8(item.path().filename()), isDirectory ? std::string() : ToAssetValue("Texture", item.path()).value_or(std::string()), isDirectory, isSelected });
+      entries_.push_back({ item.path(), ToUtf8(item.path().filename()), isDirectory ? std::string() : ToAssetValue("Texture", item.path()).value_or(std::string()),
+        isDirectory ? ICON_FA_FOLDER : FileIcon(item.path()), isDirectory, isSelected });
     }
     std::ranges::sort(entries_, [](const Entry& a, const Entry& b) {
       if (a.isDirectory != b.isDirectory) {
@@ -745,17 +760,20 @@ namespace Tako {
   }
 
   void AssetBrowser::DrawToolbar() {
-    if (ImGui::Button("Refresh")) {
+    if (UI::IconButton(ICON_FA_ROTATE, "Refresh")) {
       needsRefresh_ = true;
     }
 
+    // パンくずは枠の無いボタンにする（ホバーしたときだけ背景が出る）
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
     fs::path partial;
     int      depth = 0;
     for (const fs::path& part : currentDir_) {
       partial /= part;
       ImGui::SameLine();
       if (depth > 0) {
-        ImGui::TextDisabled(">");
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextDisabled(ICON_FA_CHEVRON_RIGHT);
         ImGui::SameLine();
       }
       ImGui::PushID(depth++);
@@ -764,15 +782,15 @@ namespace Tako {
       }
       ImGui::PopID();
     }
+    ImGui::PopStyleColor();
 
     // 検索欄を右端に寄せる
     ImGui::SameLine();
-    const float filterWidth = ImGui::GetFontSize() * 12.0f;
-    const float space       = ImGui::GetContentRegionAvail().x - filterWidth;
-    if (space > 0.0f) {
-      ImGui::SetCursorPosX(ImGui::GetCursorPosX() + space);
-    }
-    if (filter_.Draw("##Filter", filterWidth)) {
+    const float filterWidth = ImGui::GetFontSize() * 14.0f;
+    UI::AlignRight(filterWidth);
+    ImGui::SetNextItemWidth(filterWidth);
+    if (ImGui::InputTextWithHint("##Filter", ICON_FA_MAGNIFYING_GLASS "  Search", filter_.InputBuf, IM_ARRAYSIZE(filter_.InputBuf))) {
+      filter_.Build();
       // 検索で隠れた項目が選択に残ると、見えないまま削除対象に入る
       for (Entry& entry : entries_) {
         entry.isSelected = entry.isSelected && filter_.PassFilter(entry.name.c_str());
@@ -796,7 +814,7 @@ namespace Tako {
     if (revealInTree_ && !isCurrent && IsSameOrAncestor(folder.path, currentDir_)) {
       ImGui::SetNextItemOpen(true);
     }
-    const bool isNodeOpen = ImGui::TreeNodeEx(folder.name.c_str(), flags);
+    const bool isNodeOpen = ImGui::TreeNodeEx(folder.name.c_str(), flags, ICON_FA_FOLDER "  %s", folder.name.c_str());
     if (revealInTree_ && isCurrent && !ImGui::IsItemVisible()) {
       ImGui::SetScrollHereY();
     }
@@ -942,11 +960,8 @@ namespace Tako {
       const ImTextureID texture = static_cast<ImTextureID>(textureManager->GetSRVGPUHandle(entry.textureKey).ptr);
       DrawFitImage(drawList, texture, static_cast<float>(metadata->width), static_cast<float>(metadata->height), iconMin, iconMax);
     }
-    else if (entry.isDirectory) {
-      DrawFolderIcon(drawList, iconMin, iconMax);
-    }
     else {
-      DrawFileIcon(drawList, iconMin, iconMax, ExtensionLabel(entry.name));
+      DrawLargeIcon(drawList, entry.icon, entry.isDirectory ? kFolderColor : ImGui::GetColorU32(ImGuiCol_Text, 0.75f), iconMin, iconMax);
     }
 
     // 収まる名前は中央寄せ、はみ出す名前は末尾を "..." で省略
@@ -962,7 +977,7 @@ namespace Tako {
       return;
     }
 
-    if (ImGui::MenuItem("Open")) {
+    if (ImGui::MenuItem(ICON_FA_ARROW_UP_RIGHT_FROM_SQUARE "  Open")) {
       if (isDirectory) {
         pendingDir_ = path;
       }
@@ -973,15 +988,15 @@ namespace Tako {
         OpenWithShell(path);
       }
     }
-    if (ImGui::MenuItem("Show in Explorer")) {
+    if (ImGui::MenuItem(ICON_FA_FOLDER_OPEN "  Show in Explorer")) {
       ShowInExplorer(path);
     }
 
     ImGui::Separator();
-    if (ImGui::MenuItem("Copy Path")) {
+    if (ImGui::MenuItem(ICON_FA_COPY "  Copy Path")) {
       ImGui::SetClipboardText(ToUtf8(path).c_str());
     }
-    if (!textureKey.empty() && ImGui::MenuItem("Copy Texture Key")) {
+    if (!textureKey.empty() && ImGui::MenuItem(ICON_FA_KEY "  Copy Texture Key")) {
       ImGui::SetClipboardText(textureKey.c_str());
     }
 
@@ -989,15 +1004,15 @@ namespace Tako {
     const bool isEngineCopy = IsEngineCopy(path);
     // ルート（親を持たない）は名前変更・削除させない
     const bool canModify = !isEngineCopy && path.has_parent_path();
-    if (isDirectory && ImGui::MenuItem("New Folder", nullptr, false, !isEngineCopy)) {
+    if (isDirectory && ImGui::MenuItem(ICON_FA_FOLDER_PLUS "  New Folder", nullptr, false, !isEngineCopy)) {
       CreateFolder(path);
     }
-    if (ImGui::MenuItem("Rename", nullptr, false, canModify)) {
+    if (ImGui::MenuItem(ICON_FA_PEN "  Rename", nullptr, false, canModify)) {
       RequestRename(path);
     }
     // 選択中の項目から開いたメニューは、選択全体を削除対象にする
     std::vector<fs::path> targets     = isSelected ? SelectedPaths() : std::vector<fs::path>{ path };
-    const std::string     deleteLabel = targets.size() > 1 ? std::format("Delete {} items###Delete", targets.size()) : "Delete###Delete";
+    const std::string     deleteLabel = targets.size() > 1 ? std::format(ICON_FA_TRASH_CAN "  Delete {} items###Delete", targets.size()) : ICON_FA_TRASH_CAN "  Delete###Delete";
     if (ImGui::MenuItem(deleteLabel.c_str(), nullptr, false, canModify)) {
       RequestDelete(std::move(targets));
     }
@@ -1013,20 +1028,20 @@ namespace Tako {
       return;
     }
 
-    if (ImGui::MenuItem("New Folder", nullptr, false, !IsEngineCopy(currentDir_))) {
+    if (ImGui::MenuItem(ICON_FA_FOLDER_PLUS "  New Folder", nullptr, false, !IsEngineCopy(currentDir_))) {
       CreateFolder(currentDir_);
     }
-    if (IsSameOrAncestor(kScriptRoot, currentDir_) && ImGui::MenuItem("New Script...")) {
+    if (IsSameOrAncestor(kScriptRoot, currentDir_) && ImGui::MenuItem(ICON_FA_FILE_CIRCLE_PLUS "  New Script...")) {
       RequestNewScriptPopup(currentDir_.generic_string());
     }
-    if (ImGui::MenuItem("Show in Explorer")) {
+    if (ImGui::MenuItem(ICON_FA_FOLDER_OPEN "  Show in Explorer")) {
       OpenWithShell(currentDir_);
     }
-    if (ImGui::MenuItem("Copy Path")) {
+    if (ImGui::MenuItem(ICON_FA_COPY "  Copy Path")) {
       ImGui::SetClipboardText(ToUtf8(currentDir_).c_str());
     }
     ImGui::Separator();
-    if (ImGui::MenuItem("Refresh")) {
+    if (ImGui::MenuItem(ICON_FA_ROTATE "  Refresh")) {
       needsRefresh_ = true;
     }
 
@@ -1068,7 +1083,7 @@ namespace Tako {
       if (deleteTargets_.size() > kMaxDeleteListLines) {
         ImGui::TextDisabled("... and %zu more", deleteTargets_.size() - kMaxDeleteListLines);
       }
-      if (ImGui::Button("Delete")) {
+      if (ImGui::Button(ICON_FA_TRASH_CAN "  Delete")) {
         ApplyDelete();
         ImGui::CloseCurrentPopup();
       }

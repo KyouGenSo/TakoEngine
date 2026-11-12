@@ -10,7 +10,7 @@ namespace Tako {
   /// <summary>
   /// 音を鳴らす（Unity の AudioSource、UE の AudioComponent。3D の定位は無い）。Play が始まったら鳴らし、終わったら止める
   /// </summary>
-  TCLASS()
+  TCLASS(DisplayName = "Audio Source")
   class AudioSourceComponent : public Component {
     GENERATED_BODY()
 

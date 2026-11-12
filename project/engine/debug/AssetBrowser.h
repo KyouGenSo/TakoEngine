@@ -38,6 +38,7 @@ namespace Tako {
       std::filesystem::path path;
       std::string           name;         ///< 表示名（UTF-8）
       std::string           textureKey;   ///< TextureManager のキー。サムネイル対象外は空
+      const char*           icon;         ///< サムネイルが無いときに出す、種類のアイコン
       bool                  isDirectory;
       bool                  isSelected;
     };

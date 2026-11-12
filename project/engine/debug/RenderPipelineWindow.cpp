@@ -1,6 +1,7 @@
 #include "RenderPipelineWindow.h"
 
 #ifdef _DEBUG
+#include "EditorUI.h"
 
 #include <algorithm>
 #include <array>
@@ -46,7 +47,7 @@ namespace Tako {
     }
 
     ImGui::SetNextWindowSize(ImVec2(640.0f, 560.0f), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin("Render Pipeline", isOpen_)) {
+    if (ImGui::Begin(WindowTitle::kRenderPipeline, isOpen_)) {
       // UI を描く区間の前後で保存内容を比べて編集を検出する
       tracker_.BeginSection();
 
@@ -87,11 +88,12 @@ namespace Tako {
 
   void RenderPipelineWindow::DrawPassesTab()
   {
-    if (ImGui::Button("Save")) {
+    if (UI::IconButton(ICON_FA_FLOPPY_DISK, "Save (Ctrl+S)")) {
       Save();
     }
     ImGui::SameLine();
-    ImGui::TextDisabled(tracker_.IsEdited() ? "RenderPasses.json *" : "RenderPasses.json");
+    ImGui::AlignTextToFramePadding();
+    ImGui::Text(tracker_.IsEdited() ? "RenderPasses.json *" : "RenderPasses.json");
     ImGui::TextDisabled("Each pass draws the named objects again with the material at the event (Replace: only there)");
 
     // 選べる名前は、生存中の Object3d の名前（MeshComponent は Actor の名前を付ける）
@@ -117,20 +119,21 @@ namespace Tako {
 
       // 同じ位置のパスは上から順に描く
       ImGui::BeginDisabled(i == 0);
-      if (ImGui::SmallButton("Up")) {
+      if (ImGui::SmallButton(ICON_FA_ARROW_UP "##Up")) {
         std::swap(passes[i], passes[i - 1]);
         changed = true;
       }
       ImGui::EndDisabled();
       ImGui::SameLine();
       ImGui::BeginDisabled(i + 1 == passes.size());
-      if (ImGui::SmallButton("Down")) {
+      if (ImGui::SmallButton(ICON_FA_ARROW_DOWN "##Down")) {
         std::swap(passes[i], passes[i + 1]);
         changed = true;
       }
       ImGui::EndDisabled();
       ImGui::SameLine();
-      const bool remove = ImGui::SmallButton("Delete");
+      const bool remove = ImGui::SmallButton(ICON_FA_TRASH_CAN "##Delete");
+      ImGui::SetItemTooltip("Delete this pass");
       ImGui::PopID();
       if (remove) {
         passes.erase(passes.begin() + static_cast<std::ptrdiff_t>(i));
@@ -140,7 +143,7 @@ namespace Tako {
     }
 
     ImGui::Separator();
-    if (ImGui::Button("Add Pass")) {
+    if (ImGui::Button(ICON_FA_PLUS "  Add Pass")) {
       passes.push_back({ .name = std::format("Pass{}", passes.size() + 1) });
       changed = true;
     }
@@ -164,24 +167,24 @@ namespace Tako {
     }
 
     int event = static_cast<int>(pass.event);
-    if (ImGui::Combo("Event", &event, kRenderEventNames, static_cast<int>(std::size(kRenderEventNames)))) {
+    if (UI::Combo("Event", &event, kRenderEventNames, static_cast<int>(std::size(kRenderEventNames)))) {
       pass.event = static_cast<RenderEvent>(event);
       changed = true;
     }
     ImGui::SetItemTooltip("%s", kRenderEventTargets[event]);
 
     int queue = static_cast<int>(pass.queue);
-    if (ImGui::Combo("Queue", &queue, kQueueFilterNames, static_cast<int>(std::size(kQueueFilterNames)))) {
+    if (UI::Combo("Queue", &queue, kQueueFilterNames, static_cast<int>(std::size(kQueueFilterNames)))) {
       pass.queue = static_cast<QueueFilter>(queue);
       changed = true;
     }
     ImGui::SetItemTooltip("Opaque = render queue below 3000, Transparent = 3000 and above (the object's own material)");
 
-    changed |= ImGui::Checkbox("Replace", &pass.replace);
+    changed |= UI::Checkbox("Replace", &pass.replace);
     ImGui::SetItemTooltip("Draw the objects only in this pass (removed from the normal opaque / transparent draw).\n"
                           "Shadows and the object mask stay as they are. Needs Objects (ignored when Objects is (all))");
 
-    if (ImGui::BeginCombo("Material", pass.material.empty() ? "(object's own)" : pass.material.c_str())) {
+    if (UI::BeginCombo("Material", pass.material.empty() ? "(object's own)" : pass.material.c_str())) {
       if (ImGui::Selectable("(object's own)", pass.material.empty())) {
         pass.material.clear();
         changed = true;

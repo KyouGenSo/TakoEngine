@@ -1,4 +1,5 @@
 #include "EngineSettingsWindow.h"
+#include "EditorUI.h"
 #include "DebugUIManager.h"
 #include "ImGuiThemes.h"
 #include "WinApp.h"
@@ -100,9 +101,6 @@ namespace Tako {
 
     constexpr float kBindingLabelOffset = 140.0f;  ///< アクション/軸名の右に割当を並べ始める x 位置
 
-    constexpr ImVec4 kErrorColor   = { 1.0f, 0.3f, 0.3f, 1.0f };
-    constexpr ImVec4 kWarningColor = { 1.0f, 0.8f, 0.2f, 1.0f };
-
     std::string FPSLabel(int fps) {
       return fps > 0 ? std::to_string(fps) : "Unlimited";
     }
@@ -129,15 +127,15 @@ namespace Tako {
       ImGui::PushID(label);
       ImGui::TextUnformatted(label);
       // 互いの値から範囲を決め、DrawGrid のマス数上限で全長が勝手に縮まないようにする
-      ImGui::DragFloat("Size", &grid.size, 1.0f, grid.cellSize * 2.0f, grid.cellSize * kMaxCells, "%.1f", ImGuiSliderFlags_AlwaysClamp);
-      ImGui::DragFloat("Cell Size", &grid.cellSize, 0.01f, grid.size / kMaxCells, grid.size * 0.5f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+      UI::DragFloat("Size", &grid.size, 1.0f, grid.cellSize * 2.0f, grid.cellSize * kMaxCells, "%.1f", ImGuiSliderFlags_AlwaysClamp);
+      UI::DragFloat("Cell Size", &grid.cellSize, 0.01f, grid.size / kMaxCells, grid.size * 0.5f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
       ImGui::PopID();
     }
 
     bool InputString(const char* label, std::string& value, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = nullptr) {
       std::array<char, 64> buffer{};
       value.copy(buffer.data(), buffer.size() - 1);
-      if (!ImGui::InputText(label, buffer.data(), buffer.size(), flags, callback)) {
+      if (!UI::InputText(label, buffer.data(), buffer.size(), flags, callback)) {
         return false;
       }
       value = buffer.data();
@@ -209,7 +207,7 @@ namespace Tako {
       }
       std::string scope = std::filesystem::path(header).stem().string();
       if (!CodeGenerator::IsIdentifier(scope)) {
-        ImGui::TextColored(kErrorColor, "File name must be a C++ identifier (used as the generated name)");
+        ImGui::TextColored(GetEditorColors().error, "File name must be a C++ identifier (used as the generated name)");
         return std::nullopt;
       }
       return scope;
@@ -269,7 +267,7 @@ namespace Tako {
     bool SceneCombo(const char* label, std::string& scene, const char* noneLabel = nullptr) {
       bool changed = false;
       const char* preview = scene.empty() && noneLabel ? noneLabel : scene.c_str();
-      if (ImGui::BeginCombo(label, preview)) {
+      if (UI::BeginCombo(label, preview)) {
         if (noneLabel && ImGui::Selectable(noneLabel, scene.empty())) {
           scene.clear();
           changed = true;
@@ -313,7 +311,7 @@ namespace Tako {
       return;
     }
 
-    if (ImGui::Begin("Engine Settings", isOpen_)) {
+    if (ImGui::Begin(WindowTitle::kEngineSettings, isOpen_)) {
       // UI を描く区間の前後で保存内容を比べて編集を検出する（この区間ではゲームのコードが値を変えない）
       settingsTracker_.BeginSection();
 
@@ -368,12 +366,12 @@ namespace Tako {
 
       settingsTracker_.EndSection();
 
-      if (ImGui::Button(settingsTracker_.IsEdited() ? "Save *###Save" : "Save###Save")) {
+      if (UI::IconButton(ICON_FA_FLOPPY_DISK, "Save (Ctrl+S)")) {
         SaveAll();
       }
       ProcessShortcuts(Shortcuts(), *this);
       ImGui::SameLine();
-      if (ImGui::Button("Reload")) {
+      if (UI::IconButton(ICON_FA_ROTATE, "Reload from the files (unsaved changes are lost)")) {
         // ウィンドウ設定は起動時の値なので、読み直してもタイトル以外は今のウィンドウに反映しない
         ProjectSettings::LoadWindow();
         WinApp::GetInstance()->SetWindowTitle(StringUtility::ConvertString(ProjectSettings::GetWindowSettings().productName));
@@ -390,7 +388,8 @@ namespace Tako {
         settingsTracker_.Reset();
       }
       ImGui::SameLine();
-      ImGui::TextDisabled("%s", selectedGameSettings_ ? GameSettings::GetPath(*selectedGameSettings_).c_str() : ProjectSettings::kFilePath);
+      ImGui::AlignTextToFramePadding();
+      ImGui::TextDisabled("%s%s", selectedGameSettings_ ? GameSettings::GetPath(*selectedGameSettings_).c_str() : ProjectSettings::kFilePath, settingsTracker_.IsEdited() ? " *" : "");
       if (ImGui::BeginItemTooltip()) {
         ImGui::Text("Editor settings: %s", EditorSettingsPathText().c_str());
         ImGui::EndTooltip();
@@ -612,18 +611,18 @@ namespace Tako {
     ImGui::Text("Resolution: %d x %d", WinApp::clientWidth, WinApp::clientHeight);
 
     bool fullScreen = winApp->IsFullScreen();
-    if (ImGui::Checkbox("Fullscreen (F11)", &fullScreen)) {
+    if (UI::Checkbox("Fullscreen (F11)", &fullScreen)) {
       SetFullScreen(fullScreen);
     }
 
     DX12Basic* dx12 = GetDX12();
     bool vsync = dx12->IsVSync();
-    if (ImGui::Checkbox("VSync", &vsync)) {
+    if (UI::Checkbox("VSync", &vsync)) {
       dx12->SetVSync(vsync);
     }
 
     const int targetFPS = dx12->GetTargetFPS();
-    if (ImGui::BeginCombo("FPS Limit", FPSLabel(targetFPS).c_str())) {
+    if (UI::BeginCombo("FPS Limit", FPSLabel(targetFPS).c_str())) {
       for (int fps : kFPSOptions) {
         if (ImGui::Selectable(FPSLabel(fps).c_str(), fps == targetFPS)) {
           dx12->SetTargetFPS(fps);
@@ -635,7 +634,7 @@ namespace Tako {
     ImGui::SeparatorText("Window (Startup)");
     ProjectSettings::WindowSettings& window = ProjectSettings::GetWindowSettings();
     int size[2] = { window.width, window.height };
-    if (ImGui::InputInt2("Size", size)) {
+    if (UI::InputInt2("Size", size)) {
       window.width  = (std::max)(size[0], 1);
       window.height = (std::max)(size[1], 1);
     }
@@ -650,12 +649,12 @@ namespace Tako {
       ImGui::EndCombo();
     }
     ImGui::BeginDisabled(winApp->IsFullScreen());
-    if (ImGui::Button("Apply to Window")) {
+    if (ImGui::Button(ICON_FA_CHECK "  Apply to Window")) {
       winApp->RequestClientSize(window.width, window.height);
     }
     ImGui::EndDisabled();
-    ImGui::Checkbox("Start Fullscreen", &window.startFullscreen);
-    ImGui::Checkbox("Resizable", &window.resizable);
+    UI::Checkbox("Start Fullscreen", &window.startFullscreen);
+    UI::Checkbox("Resizable", &window.resizable);
     ImGui::SetItemTooltip("Applied from the next launch");
   }
 
@@ -663,7 +662,7 @@ namespace Tako {
     FrameTimer* timer = FrameTimer::GetInstance();
 
     float timeScale = timer->GetTimeScale();
-    if (ImGui::SliderFloat("Time Scale", &timeScale, 0.0f, 2.0f, "%.2f")) {
+    if (UI::SliderFloat("Time Scale", &timeScale, 0.0f, 2.0f, "%.2f")) {
       timer->SetTimeScale(timeScale);
     }
     for (float preset : kTimeScalePresets) {
@@ -676,7 +675,7 @@ namespace Tako {
     ImGui::TextDisabled("Affects only code using GetDeltaTime / GetTimeScale");
 
     float maxDeltaTime = timer->GetMaxDeltaTime();
-    if (ImGui::SliderFloat("Max Delta Time", &maxDeltaTime, 1.0f / 60.0f, 1.0f, "%.3f s", ImGuiSliderFlags_AlwaysClamp)) {
+    if (UI::SliderFloat("Max Delta Time", &maxDeltaTime, 1.0f / 60.0f, 1.0f, "%.3f s", ImGuiSliderFlags_AlwaysClamp)) {
       timer->SetMaxDeltaTime(maxDeltaTime);
     }
     ImGui::SetItemTooltip("Upper limit of delta time after a stall (breakpoint, window drag)");
@@ -694,17 +693,17 @@ namespace Tako {
     if (!isClearColorDirty_) {
       clearColorEdit_ = RenderPipeline::GetInstance()->GetClearColor();
     }
-    isClearColorDirty_ |= ImGui::ColorEdit4("Clear Color", &clearColorEdit_.x);
+    isClearColorDirty_ |= UI::ColorEdit4("Clear Color", &clearColorEdit_.x);
 
     int antiAliasing = static_cast<int>(postEffect->GetAntiAliasing());
-    if (ImGui::Combo("Anti-Aliasing", &antiAliasing, kAntiAliasingNames, IM_ARRAYSIZE(kAntiAliasingNames))) {
+    if (UI::Combo("Anti-Aliasing", &antiAliasing, kAntiAliasingNames, IM_ARRAYSIZE(kAntiAliasingNames))) {
       postEffect->SetAntiAliasing(static_cast<PostEffectManager::AntiAliasing>(antiAliasing));
     }
 
     if (!isRenderScaleDirty_) {
       renderScaleEdit_ = dx12->GetRenderScale();
     }
-    isRenderScaleDirty_ |= ImGui::SliderFloat("Render Scale", &renderScaleEdit_, DX12Basic::kMinRenderScale, 1.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+    isRenderScaleDirty_ |= UI::SliderFloat("Render Scale", &renderScaleEdit_, DX12Basic::kMinRenderScale, 1.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
     ImGui::TextDisabled("Internal: %u x %u (UI stays at window resolution)", dx12->GetSceneWidth(), dx12->GetSceneHeight());
 
     // RT を作り直す設定は、ドラッグやカラーピッカーの操作を終えてから 1 回だけ適用する
@@ -724,10 +723,10 @@ namespace Tako {
   }
 
   void EngineSettingsWindow::DrawAudio() {
-    if (ImGui::SliderFloat("Master Volume", &masterVolume_, 0.0f, 1.0f, "%.2f")) {
+    if (UI::SliderFloat("Master Volume", &masterVolume_, 0.0f, 1.0f, "%.2f")) {
       ApplyMasterVolume();
     }
-    if (ImGui::Checkbox("Mute", &isMuted_)) {
+    if (UI::Checkbox("Mute", &isMuted_)) {
       ApplyMasterVolume();
     }
   }
@@ -735,7 +734,7 @@ namespace Tako {
   void EngineSettingsWindow::DrawPhysics() {
     CollisionManager* collision = CollisionManager::GetInstance();
     bool debugDraw = collision->IsDebugDrawEnabled();
-    if (ImGui::Checkbox("Collider Debug Draw", &debugDraw)) {
+    if (UI::Checkbox("Collider Debug Draw", &debugDraw)) {
       collision->SetDebugDrawEnabled(debugDraw);
     }
 
@@ -770,23 +769,23 @@ namespace Tako {
       InputString("##Name", names[i], ImGuiInputTextFlags_CallbackCharFilter, IdentifierCharFilter);
       ImGui::SameLine();
       ImGui::BeginDisabled(i == 0);
-      if (ImGui::ArrowButton("##Up", ImGuiDir_Up)) {
+      if (UI::IconButton(ICON_FA_ARROW_UP, "Move up")) {
         swapIndex = i - 1;
       }
       ImGui::EndDisabled();
       ImGui::SameLine();
       ImGui::BeginDisabled(i + 1 == names.size());
-      if (ImGui::ArrowButton("##Down", ImGuiDir_Down)) {
+      if (UI::IconButton(ICON_FA_ARROW_DOWN, "Move down")) {
         swapIndex = i;
       }
       ImGui::EndDisabled();
       ImGui::SameLine();
-      if (ImGui::Button("x")) {
+      if (UI::IconButton(ICON_FA_XMARK, "Remove")) {
         removeIndex = i;
       }
       if (!IsValidLayerName(names, i)) {
         ImGui::SameLine();
-        ImGui::TextColored(kErrorColor, "!");
+        ImGui::TextColored(GetEditorColors().error, ICON_FA_TRIANGLE_EXCLAMATION);
         ImGui::SetItemTooltip("Must be a unique C++ identifier");
       }
       ImGui::PopID();
@@ -805,13 +804,13 @@ namespace Tako {
     }
 
     ImGui::BeginDisabled(names.size() >= CollisionManager::kMaxLayers);
-    if (ImGui::Button("Add Layer")) {
+    if (ImGui::Button(ICON_FA_PLUS "  Add Layer")) {
       names.push_back(std::format("Layer{}", names.size()));
       layerOrigins_->emplace_back();
     }
     ImGui::EndDisabled();
     if (isLayerIdChanged_) {
-      ImGui::PushStyleColor(ImGuiCol_Text, kWarningColor);
+      ImGui::PushStyleColor(ImGuiCol_Text, GetEditorColors().warning);
       ImGui::TextWrapped("Layer IDs changed. Running colliders keep the old IDs until you Save, rebuild and restart");
       ImGui::PopStyleColor();
     }
@@ -905,7 +904,7 @@ namespace Tako {
     ImGui::SetItemTooltip("Click to rename");
     if (!CodeGenerator::IsIdentifier(name)) {
       ImGui::SameLine();
-      ImGui::TextColored(kErrorColor, "!");
+      ImGui::TextColored(GetEditorColors().error, ICON_FA_TRIANGLE_EXCLAMATION);
       ImGui::SetItemTooltip("Not a C++ identifier: the name header cannot be generated");
     }
 
@@ -919,7 +918,7 @@ namespace Tako {
       const std::string newName   = renameBuffer_.data();
       const bool        isValid   = CodeGenerator::IsIdentifier(newName) && (newName == name || !isTaken(newName));
       if (!isValid) {
-        ImGui::TextColored(kErrorColor, "Must be a unique C++ identifier");
+        ImGui::TextColored(GetEditorColors().error, "Must be a unique C++ identifier");
       }
       if (isEntered && isValid) {
         if (newName != name) {
@@ -937,11 +936,11 @@ namespace Tako {
     UpdateBindingCapture();
 
     float leftDeadZone = input->GetLeftStickDeadZone();
-    if (ImGui::SliderFloat("Left Stick Dead Zone", &leftDeadZone, 0.0f, 0.9f, "%.2f")) {
+    if (UI::SliderFloat("Left Stick Dead Zone", &leftDeadZone, 0.0f, 0.9f, "%.2f")) {
       input->SetLeftStickDeadZone(leftDeadZone);
     }
     float rightDeadZone = input->GetRightStickDeadZone();
-    if (ImGui::SliderFloat("Right Stick Dead Zone", &rightDeadZone, 0.0f, 0.9f, "%.2f")) {
+    if (UI::SliderFloat("Right Stick Dead Zone", &rightDeadZone, 0.0f, 0.9f, "%.2f")) {
       input->SetRightStickDeadZone(rightDeadZone);
     }
     if (input->IsConnect()) {
@@ -1031,9 +1030,10 @@ namespace Tako {
         ImGui::EndPopup();
       }
       ImGui::SameLine();
-      if (ImGui::SmallButton("x")) {
+      if (ImGui::SmallButton(ICON_FA_XMARK)) {
         removedAction = name;
       }
+      ImGui::SetItemTooltip("Remove this action");
       ImGui::PopID();
     }
     ImGui::PopID();
@@ -1051,7 +1051,7 @@ namespace Tako {
     ImGui::InputText("##NewAction", newActionName_.data(), newActionName_.size(), ImGuiInputTextFlags_CallbackCharFilter, IdentifierCharFilter);
     ImGui::SameLine();
     ImGui::BeginDisabled(!CodeGenerator::IsIdentifier(newActionName_.data()));
-    if (ImGui::Button("Add Action")) {
+    if (ImGui::Button(ICON_FA_PLUS "  Add Action")) {
       actions.try_emplace(newActionName_.data());
       newActionName_.fill('\0');
     }
@@ -1092,9 +1092,10 @@ namespace Tako {
       }
       ImGui::SetItemTooltip("Stick added to the keys");
       ImGui::SameLine();
-      if (ImGui::SmallButton("x")) {
+      if (ImGui::SmallButton(ICON_FA_XMARK)) {
         removedAxis = name;
       }
+      ImGui::SetItemTooltip("Remove this axis");
       ImGui::SameLine();
       const Vector2 value = input->GetAxis(name);
       ImGui::TextDisabled("(%.2f, %.2f)", value.x, value.y);
@@ -1113,7 +1114,7 @@ namespace Tako {
     ImGui::InputText("##NewAxis", newAxisName_.data(), newAxisName_.size(), ImGuiInputTextFlags_CallbackCharFilter, IdentifierCharFilter);
     ImGui::SameLine();
     ImGui::BeginDisabled(!CodeGenerator::IsIdentifier(newAxisName_.data()));
-    if (ImGui::Button("Add Axis")) {
+    if (ImGui::Button(ICON_FA_PLUS "  Add Axis")) {
       axes.try_emplace(newAxisName_.data());
       newAxisName_.fill('\0');
     }
@@ -1178,19 +1179,19 @@ namespace Tako {
   }
 
   void EngineSettingsWindow::DrawEditor() {
-    ImGui::SliderFloat("UI Scale", &ImGui::GetIO().FontGlobalScale, 0.5f, 2.0f, "%.2f");
+    UI::SliderFloat("UI Scale", &ImGui::GetIO().FontGlobalScale, 0.5f, 2.0f, "%.2f");
 
     const auto getThemeName = [](void*, int index) { return GetImGuiThemes()[index].name; };
     const int  themeCount   = static_cast<int>(GetImGuiThemes().size());
-    if (ImGui::Combo("Theme", &themeIndex_, getThemeName, nullptr, themeCount, 12)) {
+    if (UI::Combo("Theme", &themeIndex_, getThemeName, nullptr, themeCount, 12)) {
       ApplyImGuiTheme(themeIndex_);
     }
 
     ImGui::SeparatorText("Viewport Camera");
-    ImGui::DragFloat("Default Move Speed", &viewportCamera_.moveSpeed, 0.1f, 0.05f, 500.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+    UI::DragFloat("Default Move Speed", &viewportCamera_.moveSpeed, 0.1f, 0.05f, 500.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
     ImGui::SetItemTooltip("Speed on first open and after Reset");
-    ImGui::SliderFloat("Look Sensitivity", &viewportCamera_.lookSensitivity, 0.1f, 3.0f, "%.2f");
-    ImGui::SliderAngle("FOV", &viewportCamera_.fovY, 10.0f, 120.0f);
+    UI::SliderFloat("Look Sensitivity", &viewportCamera_.lookSensitivity, 0.1f, 3.0f, "%.2f");
+    UI::SliderAngle("FOV", &viewportCamera_.fovY, 10.0f, 120.0f);
 
     ImGui::SeparatorText("Grid");
     DrawGridSettings("Debug Viewport", debugViewportGrid_);

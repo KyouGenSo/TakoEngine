@@ -28,6 +28,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <limits>
@@ -53,6 +54,79 @@ namespace Tako {
           fn(*mesh);
         }
       }
+    }
+
+    struct ComponentIcon {
+      const char* type;
+      const char* icon;
+    };
+
+    // コンポーネントの型ごとのアイコン。上にある物ほど、Hierarchy の行のアイコンに優先して使う（Actor の見た目を決める物が上）
+    constexpr ComponentIcon kComponentIcons[] = {
+      { "CameraComponent",         ICON_FA_VIDEO },
+      { "LightComponent",          ICON_FA_LIGHTBULB },
+      { "SkyBoxComponent",         ICON_FA_CLOUD },
+      { "PostProcessComponent",    ICON_FA_WAND_MAGIC_SPARKLES },
+      { "MeshComponent",           ICON_FA_CUBE },
+      { "ParticleSystemComponent", ICON_FA_BURST },
+      { "UILayoutComponent",       ICON_FA_OBJECT_GROUP },
+      { "AudioSourceComponent",    ICON_FA_VOLUME_HIGH },
+      { "AnimatorComponent",       ICON_FA_PERSON_RUNNING },
+      { "BehaviorTreeComponent",   ICON_FA_DIAGRAM_PROJECT },
+      { "ColliderComponent",       ICON_FA_VECTOR_SQUARE },
+      { "ScriptComponent",         ICON_FA_CODE },
+    };
+
+    constexpr const char* kPrefabIcon = ICON_FA_CUBES;  // Assets のプレハブと同じ
+
+    const char* GetComponentIcon(std::string_view typeName)
+    {
+      for (const ComponentIcon& entry : kComponentIcons) {
+        if (typeName == entry.type) {
+          return entry.icon;
+        }
+      }
+      return ICON_FA_PUZZLE_PIECE;
+    }
+
+    std::string WithIcon(const char* icon, std::string_view text)
+    {
+      return std::string(icon) + "  " + std::string(text);
+    }
+
+    /// <summary>
+    /// actor が根になっているプレハブの名前。組の中に置いた別のプレハブの根も含む
+    /// </summary>
+    /// <returns>プレハブの根でなければ空</returns>
+    std::string GetRootedPrefab(const Actor& actor)
+    {
+      if (actor.IsPrefabRoot()) {
+        return actor.GetPrefab();
+      }
+      if (!actor.GetPrefab().empty()) {
+        if (const PrefabLink inner = GetNestedPrefabLink(actor.GetPrefab(), actor.GetPrefabNode()); !inner.prefab.empty() && inner.root == 0) {
+          return inner.prefab;
+        }
+      }
+      return {};
+    }
+
+    /// <summary>
+    /// Hierarchy の行に出すアイコン。プレハブの根はプレハブ、それ以外は持っているコンポーネントのうち kComponentIcons で一番上の物
+    /// </summary>
+    const char* GetActorIcon(const Actor& actor)
+    {
+      if (!GetRootedPrefab(actor).empty()) {
+        return kPrefabIcon;
+      }
+      for (const ComponentIcon& entry : kComponentIcons) {
+        for (const std::unique_ptr<Component>& component : actor.GetComponents()) {
+          if (std::strcmp(component->GetType().name, entry.type) == 0) {
+            return entry.icon;
+          }
+        }
+      }
+      return ICON_FA_CIRCLE_DOT;
     }
 
     bool IsEditing()
@@ -281,15 +355,13 @@ namespace Tako {
       tracker_.BeginSection();
     }
 
-    ImGui::SeparatorText("Actors");
     ImGui::BeginDisabled(!editing);
-    if (ImGui::SmallButton("Save")) {
+    if (UI::IconButton(ICON_FA_FLOPPY_DISK, editing ? "Save the scene file (Ctrl+S)" : "Stop to save. Changes made while playing are discarded on Stop")) {
       Save();
     }
     ImGui::EndDisabled();
-    ImGui::SetItemTooltip(editing ? "Save the scene file (Ctrl+S)" : "Stop to save. Changes made while playing are discarded on Stop");
     ImGui::SameLine();
-    if (ImGui::SmallButton("+ Add")) {
+    if (UI::IconButton(ICON_FA_PLUS, "Add an actor")) {
       ImGui::OpenPopup("CreateActor");
     }
     if (ImGui::BeginPopup("CreateActor")) {
@@ -298,18 +370,19 @@ namespace Tako {
     }
     ImGui::SameLine();
     ImGui::BeginDisabled(!editing);
-    if (ImGui::SmallButton("New")) {
+    if (UI::IconButton(ICON_FA_FILE_CIRCLE_PLUS, "New scene: create a scene with a camera and a directional light, then open it")) {
       newSceneName_[0] = '\0';
       ImGui::OpenPopup("NewScene");
     }
     ImGui::EndDisabled();
-    ImGui::SetItemTooltip("Create a scene with a camera and a directional light, then open it");
     if (ImGui::BeginPopup("NewScene")) {
       DrawNewScenePopup();
       ImGui::EndPopup();
     }
     ImGui::SameLine();
+    ImGui::AlignTextToFramePadding();
     ImGui::TextDisabled("%s.scene.json%s", scene->GetSceneName().c_str(), tracker_.IsEdited() ? " *" : "");
+    ImGui::Separator();
 
     for (const std::unique_ptr<Actor>& actor : scene->GetActors()) {
       if (!actor->GetParent()) {
@@ -317,7 +390,7 @@ namespace Tako {
       }
     }
     if (scene->GetActors().empty()) {
-      ImGui::TextDisabled("No actors (+ Add to create one)");
+      ImGui::TextDisabled("No actors (" ICON_FA_PLUS " to create one)");
     }
     // 一覧の下の空き：プレハブかモデルを落とすと生成、Actor を落とすと親を外す
     ImGui::Dummy(ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetTextLineHeight() * 2.0f));
@@ -356,7 +429,7 @@ namespace Tako {
       tracker_.BeginSection();
     }
 
-    ImGui::Text("Actor: %s", actor->GetName().c_str());
+    ImGui::Text("%s  %s", GetActorIcon(*actor), actor->GetName().c_str());
     ImGui::TextDisabled("%s  id %llu%s%s", actor->GetType().name, static_cast<unsigned long long>(actor->GetId()),
       actor->GetPrefab().empty() ? "" : "  prefab: ", actor->GetPrefab().c_str());
     if (!editing) {
@@ -393,14 +466,21 @@ namespace Tako {
 
   void SceneEditor::DrawGizmoToolbar()
   {
-    ImGui::RadioButton("Move (W)", &gizmoOperation_, 0);
+    static constexpr std::pair<const char*, const char*> kOperations[] = {
+      { ICON_FA_ARROWS_UP_DOWN_LEFT_RIGHT,           "Move (W)" },
+      { ICON_FA_ROTATE,                              "Rotate (E)" },
+      { ICON_FA_UP_RIGHT_AND_DOWN_LEFT_FROM_CENTER,  "Scale (R)" },
+    };
+    for (int i = 0; i < static_cast<int>(std::size(kOperations)); ++i) {
+      if (i > 0) {
+        ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x * 0.5f);
+      }
+      if (UI::IconButton(kOperations[i].first, kOperations[i].second, gizmoOperation_ == i)) {
+        gizmoOperation_ = i;
+      }
+    }
     ImGui::SameLine();
-    ImGui::RadioButton("Rotate (E)", &gizmoOperation_, 1);
-    ImGui::SameLine();
-    ImGui::RadioButton("Scale (R)", &gizmoOperation_, 2);
-    ImGui::SameLine();
-    ImGui::Checkbox("Local", &isGizmoLocal_);
-    ImGui::SetItemTooltip("Off: move and rotate along the world axes");
+    UI::IconToggle(ICON_FA_CUBE "##Local", "Local axes (off: move and rotate along the world axes)", &isGizmoLocal_);
   }
 
   bool SceneEditor::DrawGizmo(const Camera& camera, const ImVec2& imageMin, const ImVec2& imageMax)
@@ -730,12 +810,12 @@ namespace Tako {
   {
     for (const TypeInfo* type : TypeRegistry::GetInstance()->GetCreatableTypes(Actor::StaticType())) {
       const std::string name = type == &Actor::StaticType() ? "Empty Actor" : type->name;
-      if (ImGui::MenuItem(name.c_str())) {
+      if (ImGui::MenuItem(WithIcon(ICON_FA_CIRCLE_DOT, name).c_str())) {
         RequestSpawn(type->name);
       }
     }
     for (const ActorPreset& preset : kActorPresets) {
-      if (ImGui::MenuItem(preset.name)) {
+      if (ImGui::MenuItem(WithIcon(GetComponentIcon(preset.component), preset.name).c_str())) {
         RequestSpawnWith(preset.name, preset.component, preset.properties);
       }
     }
@@ -744,7 +824,7 @@ namespace Tako {
       ImGui::SeparatorText("Prefabs");
     }
     for (const std::string& prefab : prefabs) {
-      if (ImGui::MenuItem(prefab.c_str())) {
+      if (ImGui::MenuItem(WithIcon(kPrefabIcon, prefab).c_str())) {
         RequestSpawn(prefab);
       }
     }
@@ -757,10 +837,10 @@ namespace Tako {
     const std::string name = newSceneName_.data();
     const bool exists = BaseScene::HasSceneFile(name);
     if (exists) {
-      ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.2f, 1.0f), "%s.scene.json already exists", name.c_str());
+      ImGui::TextColored(GetEditorColors().warning, "%s.scene.json already exists", name.c_str());
     }
     ImGui::BeginDisabled(name.empty() || exists);
-    if ((ImGui::Button("Create") || entered) && !name.empty() && !exists) {
+    if ((ImGui::Button(ICON_FA_PLUS "  Create") || entered) && !name.empty() && !exists) {
       if (WriteNewScene(name)) {
         DebugUIManager::GetInstance()->AddLog("Created scene: " + BaseScene::GetScenePath(name), DebugUIManager::LogType::Info);
         SceneManager::GetInstance()->ChangeScene(name);
@@ -881,15 +961,6 @@ namespace Tako {
   void SceneEditor::DrawActorRow(Actor& actor)
   {
     ImGui::PushID(std::to_string(actor.GetId()).c_str());
-    std::string label = actor.GetName();
-    if (actor.IsPrefabRoot()) {
-      label += "  [" + actor.GetPrefab() + "]";
-    } else if (!actor.GetPrefab().empty()) {
-      // 組の中に置いた別のプレハブの根
-      if (const PrefabLink inner = GetNestedPrefabLink(actor.GetPrefab(), actor.GetPrefabNode()); !inner.prefab.empty() && inner.root == 0) {
-        label += "  [" + inner.prefab + "]";
-      }
-    }
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen;
     if (actor.GetChildren().empty()) {
       flags |= ImGuiTreeNodeFlags_Leaf;
@@ -901,7 +972,7 @@ namespace Tako {
     if (isInactive) {
       ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
     }
-    const bool isOpen = ImGui::TreeNodeEx("##Row", flags, "%s", label.c_str());
+    const bool isOpen = ImGui::TreeNodeEx("##Row", flags, "%s  %s", GetActorIcon(actor), actor.GetName().c_str());
     if (isInactive) {
       ImGui::PopStyleColor();
     }
@@ -940,6 +1011,11 @@ namespace Tako {
         RequestParentDropped(*static_cast<const ActorId*>(payload->Data), actor.GetId());
       }
       ImGui::EndDragDropTarget();
+    }
+    // 行のクリックやドロップの判定が済んでから描く（先に描くと、判定の相手がこの文字になる）
+    if (const std::string prefab = GetRootedPrefab(actor); !prefab.empty()) {
+      ImGui::SameLine();
+      ImGui::TextDisabled("[%s]", prefab.c_str());
     }
     if (isOpen) {
       for (Actor* child : actor.GetChildren()) {
@@ -1016,29 +1092,29 @@ namespace Tako {
   void SceneEditor::DrawActorMenu(Actor& actor)
   {
     const ActorId id = actor.GetId();
-    if (ImGui::MenuItem("Duplicate", "Ctrl+D")) {
+    if (ImGui::MenuItem(ICON_FA_CLONE "  Duplicate", "Ctrl+D")) {
       RequestDuplicateSelection();
     }
     ImGui::SetItemTooltip("All selected actors. Children are duplicated too");
-    if (ImGui::MenuItem("Copy", "Ctrl+C")) {
+    if (ImGui::MenuItem(ICON_FA_COPY "  Copy", "Ctrl+C")) {
       CopySelection();
     }
-    if (ImGui::MenuItem("Paste", "Ctrl+V")) {
+    if (ImGui::MenuItem(ICON_FA_PASTE "  Paste", "Ctrl+V")) {
       PasteClipboard();
     }
-    if (ImGui::MenuItem("Delete", "Del")) {
+    if (ImGui::MenuItem(ICON_FA_TRASH_CAN "  Delete", "Del")) {
       RequestDestroySelection();
     }
     ImGui::SetItemTooltip("All selected actors. Children are deleted too");
 
     ImGui::SeparatorText("Hierarchy");
-    if (ImGui::MenuItem("Unparent", nullptr, false, actor.GetParent() != nullptr)) {
+    if (ImGui::MenuItem(ICON_FA_LINK_SLASH "  Unparent", nullptr, false, actor.GetParent() != nullptr)) {
       RequestParent(id, 0);
     }
-    if (ImGui::MenuItem("Move Up")) {
+    if (ImGui::MenuItem(ICON_FA_ARROW_UP "  Move Up")) {
       Request([id](BaseScene& scene) { scene.MoveActor(scene.FindActor(id), -1); });
     }
-    if (ImGui::MenuItem("Move Down")) {
+    if (ImGui::MenuItem(ICON_FA_ARROW_DOWN "  Move Down")) {
       Request([id](BaseScene& scene) { scene.MoveActor(scene.FindActor(id), 1); });
     }
     ImGui::SetItemTooltip("Only this actor. Actors are saved in this order. Drop a row onto another to parent it (all selected rows move together)");
@@ -1046,15 +1122,15 @@ namespace Tako {
     ImGui::SeparatorText("Prefab");
     if (!actor.GetPrefab().empty()) {
       const std::string prefab = actor.GetPrefab();
-      if (ImGui::MenuItem("Apply to Prefab")) {
+      if (ImGui::MenuItem(ICON_FA_UPLOAD "  Apply to Prefab")) {
         Request([id, prefab](BaseScene& scene) { MakePrefab(scene, id, prefab); });
       }
       ImGui::SetItemTooltip("Write this actor group (the prefab root and its children) to %s. Other instances keep their own overrides", prefab.c_str());
-      if (ImGui::MenuItem("Revert to Prefab")) {
+      if (ImGui::MenuItem(ICON_FA_ROTATE_LEFT "  Revert to Prefab")) {
         Request([id](BaseScene& scene) { RevertToPrefab(scene, id); });
       }
       ImGui::SetItemTooltip("Discard overrides of the whole group, except the root's name, transform and parent");
-      if (ImGui::MenuItem("Unpack")) {
+      if (ImGui::MenuItem(ICON_FA_BOX_OPEN "  Unpack")) {
         Request([id](BaseScene& scene) { UnpackPrefab(scene, id); });
       }
       ImGui::SetItemTooltip("Cut the link to the prefab and keep the current values. Prefabs placed inside it stay linked to their own prefab");
@@ -1064,7 +1140,7 @@ namespace Tako {
     ImGui::SameLine();
     ImGui::BeginDisabled(prefabName_[0] == '\0');
     ImGui::SetItemTooltip("Children are saved into the prefab too");
-    if (ImGui::Button("Save as Prefab")) {
+    if (ImGui::Button(ICON_FA_FLOPPY_DISK "  Save as Prefab")) {
       const std::string name = prefabName_.data();
       Request([id, name](BaseScene& scene) { MakePrefab(scene, id, name); });
       prefabName_[0] = '\0';
@@ -1078,7 +1154,9 @@ namespace Tako {
     ImGui::PushID(component.GetName().c_str());
     bool isKept = true;
     // 印で文字が変わっても開閉の状態を保つよう、ID は ### の後ろで固定する
-    const std::string header = component.GetName() + "  (" + component.GetType().name + ")" + (IsKept(actor.GetId(), component.GetName()) ? "  [keep]" : "") + "###Header";
+    // 名前を変えていないコンポーネントは名前と型が同じなので、型は出さない
+    const std::string typeNote = component.GetName() == component.GetType().name ? std::string() : std::string("  (") + component.GetType().name + ")";
+    const std::string header   = WithIcon(GetComponentIcon(component.GetType().name), component.GetName()) + typeNote + (IsKept(actor.GetId(), component.GetName()) ? "  [keep]" : "") + "###Header";
     const bool        isOpen = ImGui::CollapsingHeader(header.c_str(), &isKept, ImGuiTreeNodeFlags_DefaultOpen);
     if (ImGui::BeginPopupContextItem("ComponentMenu")) {
       DrawComponentMenu(actor, component);
@@ -1107,13 +1185,13 @@ namespace Tako {
   void SceneEditor::DrawComponentMenu(Actor& actor, Component& component)
   {
     if (!IsEditing()) {
-      if (ImGui::MenuItem("Keep Values on Stop", nullptr, IsKept(actor.GetId(), component.GetName()))) {
+      if (ImGui::MenuItem(ICON_FA_THUMBTACK "  Keep Values on Stop", nullptr, IsKept(actor.GetId(), component.GetName()))) {
         ToggleKeep(actor, component.GetName());
       }
       ImGui::SetItemTooltip("After Stop, load the values this component has at that moment into the same component. One undo step");
       ImGui::Separator();
     }
-    if (ImGui::MenuItem("Copy Values")) {
+    if (ImGui::MenuItem(ICON_FA_COPY "  Copy Values")) {
       const nlohmann::json copied = { { kClipboardComponent, component.GetType().name }, { "properties", WriteProperties(component) } };
       ImGui::SetClipboardText(copied.dump().c_str());
     }
@@ -1122,7 +1200,7 @@ namespace Tako {
     const char*          text   = ImGui::GetClipboardText();
     const nlohmann::json copied = text ? nlohmann::json::parse(text, nullptr, false) : nlohmann::json();
     const bool           fits   = copied.is_object() && copied.value(kClipboardComponent, std::string{}) == component.GetType().name;
-    if (ImGui::MenuItem("Paste Values", nullptr, false, fits)) {
+    if (ImGui::MenuItem(ICON_FA_PASTE "  Paste Values", nullptr, false, fits)) {
       const ActorId     id   = actor.GetId();
       const std::string name = component.GetName();
       // Script コンポーネントはスクリプトを作り直すことがあるので、描画の外で読む
@@ -1154,12 +1232,12 @@ namespace Tako {
       if (required && actor.Has(*required)) {
         continue;
       }
-      ImGui::TextColored(ImVec4(1.0f, 0.75f, 0.2f, 1.0f), required ? "Needs %s on this actor" : "Needs %s (unknown type)", type->required);
+      ImGui::TextColored(GetEditorColors().warning, required ? ICON_FA_TRIANGLE_EXCLAMATION "  Needs %s on this actor" : ICON_FA_TRIANGLE_EXCLAMATION "  Needs %s (unknown type)", type->required);
       // スクリプトは Script コンポーネントの中に入れる物なので、ここからは足さない
       if (required && required->create && !required->IsChildOf(Script::StaticType())) {
         ImGui::SameLine();
         ImGui::PushID(type->required);
-        if (ImGui::SmallButton("Add")) {
+        if (ImGui::SmallButton(ICON_FA_PLUS "  Add")) {
           RequestAddComponent(actor.GetId(), type->required, "");
         }
         ImGui::PopID();
@@ -1179,31 +1257,99 @@ namespace Tako {
     });
   }
 
+  void SceneEditor::RequestAddScript(uint64_t actor, const std::string& script)
+  {
+    Request([actor, script](BaseScene& scene) {
+      if (Actor* owner = scene.FindActor(actor)) {
+        owner->AddComponent<ScriptComponent>("Script")->SetScript(script);
+        scene.MarkChanged();
+      }
+    });
+  }
+
   void SceneEditor::DrawAddComponent(Actor& actor)
   {
-    if (ImGui::Button("Add Component")) {
-      ImGui::OpenPopup("AddComponent");
+    constexpr const char* kPopupName   = "AddComponent";
+    constexpr float       kVisibleRows = 16.0f;  // これを超えた分は一覧の中でスクロールする。エンジンのコンポーネント（11 個）の下に、スクリプトの先頭が見える数
+
+    if (ImGui::Button(ICON_FA_PLUS "  Add Component", ImVec2(-FLT_MIN, 0.0f))) {
+      ImGui::OpenPopup(kPopupName);
+      componentFilter_.Clear();
     }
-    if (!ImGui::BeginPopup("AddComponent")) {
+    // ボタンと同じ幅で真下に出す。下に入りきらない位置なら、ボタンの上へ開く
+    const ImVec2         buttonMin   = ImGui::GetItemRectMin();
+    const ImVec2         buttonMax   = ImGui::GetItemRectMax();
+    const float          rowHeight   = ImGui::GetFrameHeight();
+    const float          listHeight  = (rowHeight + ImGui::GetStyle().ItemSpacing.y) * kVisibleRows;
+    // 検索欄・区切り・New Script の分を一覧の高さに足した、窓の高さの上限の見積もり
+    const float          popupHeight = listHeight + rowHeight * 3.0f + ImGui::GetStyle().WindowPadding.y * 2.0f;
+    const ImGuiViewport* viewport    = ImGui::GetMainViewport();
+    const bool           opensUpward = buttonMax.y + popupHeight > viewport->WorkPos.y + viewport->WorkSize.y;
+    ImGui::SetNextWindowPos(opensUpward ? buttonMin : ImVec2(buttonMin.x, buttonMax.y), ImGuiCond_Always, ImVec2(0.0f, opensUpward ? 1.0f : 0.0f));
+    ImGui::SetNextWindowSize(ImVec2(buttonMax.x - buttonMin.x, 0.0f));
+    if (!ImGui::BeginPopup(kPopupName)) {
       return;
     }
-    for (const TypeInfo* type : TypeRegistry::GetInstance()->GetCreatableTypes(Component::StaticType())) {
-      // スクリプトは Script の中に入れて使う
-      if (type->IsChildOf(Script::StaticType())) {
-        continue;
-      }
-      const bool  isScript = type == &ScriptComponent::StaticType();
-      const char* label    = isScript ? "Script" : type->name;
-      if (!ImGui::MenuItem(label)) {
-        continue;
-      }
-      RequestAddComponent(actor.GetId(), type->name, isScript ? "Script" : "");
+
+    if (ImGui::IsWindowAppearing()) {
+      ImGui::SetKeyboardFocusHere();
     }
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    const bool entered = ImGui::InputTextWithHint("##Search", ICON_FA_MAGNIFYING_GLASS "  Search", componentFilter_.InputBuf, IM_ARRAYSIZE(componentFilter_.InputBuf), ImGuiInputTextFlags_EnterReturnsTrue);
+    componentFilter_.Build();
+
+    bool isChosen = false;
+    bool isFirst  = true;  // 絞り込んだ一番上の行。Enter で足す
+    const auto row = [&](const char* icon, const char* name, const char* tooltip = nullptr) {
+      if (!componentFilter_.PassFilter(name)) {
+        return false;
+      }
+      const bool isPicked = ImGui::Selectable(WithIcon(icon, name).c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.0f, rowHeight)) || (entered && isFirst);
+      if (tooltip) {
+        ImGui::SetItemTooltip("%s", tooltip);
+      }
+      isFirst = false;
+      isChosen |= isPicked;
+      return isPicked;
+    };
+
+    ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.0f, 0.5f));
+    ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 0.0f), ImVec2(FLT_MAX, listHeight));
+    if (ImGui::BeginChild("List", ImVec2(0.0f, 0.0f), ImGuiChildFlags_AutoResizeY)) {
+      for (const TypeInfo* type : TypeRegistry::GetInstance()->GetCreatableTypes(Component::StaticType())) {
+        // スクリプトと、それを入れる Script コンポーネントは下にまとめる
+        if (type->IsChildOf(Script::StaticType()) || type == &ScriptComponent::StaticType()) {
+          continue;
+        }
+        if (row(GetComponentIcon(type->name), type->displayName[0] != '\0' ? type->displayName : type->name)) {
+          RequestAddComponent(actor.GetId(), type->name, "");
+        }
+      }
+      // 絞り込み中は見出しを出さない（下に 1 行も残らないことがある）
+      if (!componentFilter_.IsActive()) {
+        ImGui::SeparatorText("Scripts");
+      }
+      for (const TypeInfo* script : TypeRegistry::GetInstance()->GetCreatableTypes(Script::StaticType())) {
+        if (row(ICON_FA_CODE, script->name)) {
+          RequestAddScript(actor.GetId(), script->name);
+        }
+      }
+      if (row(ICON_FA_CODE, "Empty Script", "A Script component with no script. Pick one in its Script field later")) {
+        RequestAddScript(actor.GetId(), "");
+      }
+    }
+    ImGui::EndChild();
+
     ImGui::Separator();
-    if (ImGui::MenuItem("New Script...")) {
+    if (ImGui::Selectable(ICON_FA_FILE_CIRCLE_PLUS "  New Script...", false, ImGuiSelectableFlags_None, ImVec2(0.0f, rowHeight))) {
       RequestNewScriptPopup("Script");
     }
-    ImGui::SetItemTooltip("Create a C++ script file. It appears in the Script field after the game is rebuilt");
+    ImGui::SetItemTooltip("Create a C++ script file. It appears in this list after the game is rebuilt");
+    ImGui::PopStyleVar();
+
+    if (isChosen) {
+      ImGui::CloseCurrentPopup();
+    }
     ImGui::EndPopup();
   }
 

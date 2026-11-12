@@ -1,6 +1,7 @@
 #ifdef _DEBUG
 
 #include "ImGuiPropertyVisitor.h"
+#include "EditorUI.h"
 #include "Actor.h"
 #include "AssetBrowser.h"
 #include "BaseScene.h"
@@ -47,7 +48,7 @@ namespace Tako {
       float lo = 0.0f;
       float hi = 0.0f;
       GetRange(meta, lo, hi);
-      return ImGui::DragScalarN(label, ImGuiDataType_Float, v, count, SpeedOr(meta, 0.1f), &lo, &hi, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+      return UI::DragScalarN(label, ImGuiDataType_Float, v, count, SpeedOr(meta, 0.1f), &lo, &hi, "%.3f", ImGuiSliderFlags_AlwaysClamp);
     }
 
     /// <summary>
@@ -57,7 +58,8 @@ namespace Tako {
     bool PushRequiredColor(const PropertyMeta& meta, bool isEmpty)
     {
       if (!isEmpty || (meta.flags & kPropRequired) == 0) { return false; }
-      ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.55f, 0.15f, 0.15f, 1.0f));
+      const ImVec4& error = GetEditorColors().error;
+      ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(error.x, error.y, error.z, 0.35f));
       return true;
     }
 
@@ -131,13 +133,13 @@ namespace Tako {
       ImGui::SetItemTooltip("%s", meta.tooltip);
     }
     ImGui::SameLine();
-    if (ImGui::SmallButton("+")) {
+    if (ImGui::SmallButton(ICON_FA_PLUS)) {
       ++count;
       changed_ = true;
     }
     ImGui::SameLine();
     ImGui::BeginDisabled(count == 0);
-    if (ImGui::SmallButton("-")) {
+    if (ImGui::SmallButton(ICON_FA_MINUS)) {
       --count;
       changed_ = true;
     }
@@ -171,7 +173,7 @@ namespace Tako {
   void ImGuiPropertyVisitor::Visit(const char* key, bool& value, const PropertyMeta& meta)
   {
     if (!Begin(key, meta)) { return; }
-    End(meta, ImGui::Checkbox(label_, &value));
+    End(meta, UI::Checkbox(label_, &value));
   }
 
   void ImGuiPropertyVisitor::Visit(const char* key, int32_t& value, const PropertyMeta& meta)
@@ -180,7 +182,7 @@ namespace Tako {
     int32_t lo = 0;
     int32_t hi = 0;
     GetRange(meta, lo, hi);
-    End(meta, ImGui::DragScalar(label_, ImGuiDataType_S32, &value, SpeedOr(meta, 1.0f), &lo, &hi, nullptr, ImGuiSliderFlags_AlwaysClamp));
+    End(meta, UI::DragScalar(label_, ImGuiDataType_S32, &value, SpeedOr(meta, 1.0f), &lo, &hi, nullptr, ImGuiSliderFlags_AlwaysClamp));
   }
 
   void ImGuiPropertyVisitor::Visit(const char* key, uint32_t& value, const PropertyMeta& meta)
@@ -189,7 +191,7 @@ namespace Tako {
     uint32_t lo = 0;
     uint32_t hi = 0;
     GetRange(meta, lo, hi);
-    End(meta, ImGui::DragScalar(label_, ImGuiDataType_U32, &value, SpeedOr(meta, 1.0f), &lo, &hi, nullptr, ImGuiSliderFlags_AlwaysClamp));
+    End(meta, UI::DragScalar(label_, ImGuiDataType_U32, &value, SpeedOr(meta, 1.0f), &lo, &hi, nullptr, ImGuiSliderFlags_AlwaysClamp));
   }
 
   void ImGuiPropertyVisitor::Visit(const char* key, float& value, const PropertyMeta& meta)
@@ -216,14 +218,14 @@ namespace Tako {
   void ImGuiPropertyVisitor::Visit(const char* key, Vector3& value, const PropertyMeta& meta)
   {
     if (!Begin(key, meta)) { return; }
-    const bool changed = (meta.flags & kPropColor) ? ImGui::ColorEdit3(label_, &value.x) : DragFloats(label_, &value.x, 3, meta);
+    const bool changed = (meta.flags & kPropColor) ? UI::ColorEdit3(label_, &value.x) : DragFloats(label_, &value.x, 3, meta);
     End(meta, changed);
   }
 
   void ImGuiPropertyVisitor::Visit(const char* key, Vector4& value, const PropertyMeta& meta)
   {
     if (!Begin(key, meta)) { return; }
-    const bool changed = (meta.flags & kPropColor) ? ImGui::ColorEdit4(label_, &value.x) : DragFloats(label_, &value.x, 4, meta);
+    const bool changed = (meta.flags & kPropColor) ? UI::ColorEdit4(label_, &value.x) : DragFloats(label_, &value.x, 4, meta);
     End(meta, changed);
   }
 
@@ -237,7 +239,7 @@ namespace Tako {
     } else {
       char buffer[256];
       strncpy_s(buffer, value.c_str(), _TRUNCATE);
-      changed = ImGui::InputText(label_, buffer, sizeof(buffer));
+      changed = UI::InputText(label_, buffer, sizeof(buffer));
       if (changed) { value = buffer; }
     }
     if (isMarked) { ImGui::PopStyleColor(); }
@@ -247,9 +249,10 @@ namespace Tako {
   bool ImGuiPropertyVisitor::DrawAsset(std::string& value, const PropertyMeta& meta)
   {
     std::optional<std::string> selected;
+    UI::Label(label_);
     // 右に Open のボタンを置く分だけ狭める
-    ImGui::SetNextItemWidth(ImGui::CalcItemWidth() - ImGui::CalcTextSize("Open").x - ImGui::GetStyle().FramePadding.x * 2.0f - ImGui::GetStyle().ItemInnerSpacing.x);
-    if (ImGui::BeginCombo(label_, value.empty() ? "(none)" : value.c_str(), ImGuiComboFlags_HeightLarge)) {
+    ImGui::SetNextItemWidth(-(ImGui::GetFrameHeight() + ImGui::GetStyle().ItemInnerSpacing.x));
+    if (ImGui::BeginCombo(UI::HiddenLabel(label_), value.empty() ? "(none)" : value.c_str(), ImGuiComboFlags_HeightLarge)) {
       if (ImGui::Selectable("(none)", value.empty())) {
         selected = std::string();
       }
@@ -269,7 +272,7 @@ namespace Tako {
     }
     ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
     ImGui::BeginDisabled(value.empty());
-    if (ImGui::SmallButton("Open")) {
+    if (UI::IconButton(ICON_FA_ARROW_UP_RIGHT_FROM_SQUARE, "Open in its editor")) {
       OpenAsset(meta.asset, value);
     }
     ImGui::EndDisabled();
@@ -284,14 +287,14 @@ namespace Tako {
   {
     if (!Begin(key, meta)) { return; }
     ImGui::SeparatorText(label_);
-    bool changed = ImGui::DragFloat3("Translate", &value.translate.x, SpeedOr(meta, 0.1f));
+    bool changed = UI::DragFloat3("Translate", &value.translate.x, SpeedOr(meta, 0.1f));
     // 回転は度で見せ、ラジアンで持つ
     Vector3 degrees = { value.rotate.x * kRadToDeg, value.rotate.y * kRadToDeg, value.rotate.z * kRadToDeg };
-    if (ImGui::DragFloat3("Rotate", &degrees.x, 0.5f)) {
+    if (UI::DragFloat3("Rotate", &degrees.x, 0.5f)) {
       value.rotate = { degrees.x / kRadToDeg, degrees.y / kRadToDeg, degrees.z / kRadToDeg };
       changed      = true;
     }
-    changed |= ImGui::DragFloat3("Scale", &value.scale.x, 0.01f);
+    changed |= UI::DragFloat3("Scale", &value.scale.x, 0.01f);
     End(meta, changed);
   }
 
@@ -307,7 +310,7 @@ namespace Tako {
     const bool      isMarked = PushRequiredColor(meta, target == nullptr);
 
     ActorId selected = value.id;
-    if (ImGui::BeginCombo(label_, preview.c_str(), ImGuiComboFlags_HeightLarge)) {
+    if (UI::BeginCombo(label_, preview.c_str(), ImGuiComboFlags_HeightLarge)) {
       if (ImGui::Selectable("(none)", value.id == 0)) {
         selected = 0;
       }
@@ -351,7 +354,7 @@ namespace Tako {
     bool changed = false;
     if (meta.enumInfo) {
       const char* current = meta.enumInfo->FindName(value);
-      if (ImGui::BeginCombo(label_, current ? current : "?")) {
+      if (UI::BeginCombo(label_, current ? current : "?")) {
         for (const EnumEntry& entry : meta.enumInfo->entries) {
           if (ImGui::Selectable(entry.name, entry.value == value)) {
             changed = entry.value != value;
@@ -361,7 +364,7 @@ namespace Tako {
         ImGui::EndCombo();
       }
     } else {
-      changed = ImGui::DragScalar(label_, ImGuiDataType_S64, &value, 1.0f);
+      changed = UI::DragScalar(label_, ImGuiDataType_S64, &value, 1.0f);
     }
     End(meta, changed);
   }

@@ -41,6 +41,18 @@ namespace Tako {
     return kShortcuts;
   }
 
+  void ViewportCameraController::DrawHelp() const
+  {
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextDisabled(ICON_FA_CIRCLE_QUESTION);
+    if (ImGui::BeginItemTooltip()) {
+      DrawShortcutTable(Shortcuts());
+      ImGui::EndTooltip();
+    }
+    ImGui::SameLine();
+    ImGui::TextDisabled("Speed %.2f", moveSpeed);
+  }
+
   bool ViewportCameraController::HandleImGuiInput()
   {
     const ImGuiIO& io = ImGui::GetIO();

@@ -130,7 +130,6 @@ namespace Tako {
 
     //スタイル設定
     KeyframeStyle keyframeStyle_ = KeyframeStyle::DIAMOND;
-    ImU32         gridColor_     = IM_COL32(60, 60, 60, 255);
     ImU32         playheadColor_ = IM_COL32(255, 100, 100, 255);
     ImU32         selectedColor_ = IM_COL32(255, 200, 100, 255);
     ImU32         hoveredColor_  = IM_COL32(200, 200, 255, 255);

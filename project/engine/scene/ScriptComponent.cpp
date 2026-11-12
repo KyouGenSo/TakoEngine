@@ -6,6 +6,7 @@
 #include "TypeRegistry.h"
 
 #ifdef _DEBUG
+#include "ImGuiThemes.h"
 #include "ImGuiPropertyVisitor.h"
 #include "imgui.h"
 #endif
@@ -133,7 +134,7 @@ namespace Tako {
       return DrawProperties(*instance_);
     }
     if (!missingValues_.is_null() && builtScript_ == script_) {
-      ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.2f, 1.0f), "Script \"%s\" was not found (values are kept)", script_.c_str());
+      ImGui::TextColored(GetEditorColors().warning, "Script \"%s\" was not found (values are kept)", script_.c_str());
     }
     return false;
   }

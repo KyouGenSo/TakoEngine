@@ -8,7 +8,7 @@ namespace Tako {
   /// <summary>
   /// シーンのポストエフェクトをプロファイルで決める（UE の PostProcessVolume の、範囲を持たない形）
   /// </summary>
-  TCLASS()
+  TCLASS(DisplayName = "Post Process")
   class PostProcessComponent : public Component {
     GENERATED_BODY()
 

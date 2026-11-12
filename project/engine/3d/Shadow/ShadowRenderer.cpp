@@ -7,6 +7,7 @@
 #include "EnginePaths.h"
 
 #ifdef _DEBUG
+#include "EditorUI.h"
 #include "DebugUIManager.h"
 #include "ImGuiManager.h"
 #endif
@@ -165,7 +166,7 @@ void ShadowRenderer::DrawImGui()
 {
 #ifdef _DEBUG
     // シャドウの有効/無効
-    ImGui::Checkbox("Enable Shadow", &shadowEnabled_);
+    UI::Checkbox("Enable Shadow", &shadowEnabled_);
 
     // シャドウ品質プリセット
     ImGui::Separator();
@@ -174,7 +175,7 @@ void ShadowRenderer::DrawImGui()
     const char* qualityNames[] = { "Low (512x512, NO PCF)", "Medium (1024x1024, PCF 3x3)",
                                     "High (2048x2048, PCF 5x5)", "Ultra (4096x4096, PCF 7x7)",
                                     "Super (8192x8192, PCF 9x9)" };
-    if (ImGui::Combo("Quality Preset", &shadowQuality, qualityNames, IM_ARRAYSIZE(qualityNames))) {
+    if (UI::Combo("Quality Preset", &shadowQuality, qualityNames, IM_ARRAYSIZE(qualityNames))) {
         SetShadowQuality(shadowQuality);
     }
 
@@ -194,7 +195,7 @@ void ShadowRenderer::DrawImGui()
                 break;
             }
         }
-        if (ImGui::Combo("Shadow Map Size", &currentSizeIndex, sizeNames, IM_ARRAYSIZE(sizeNames))) {
+        if (UI::Combo("Shadow Map Size", &currentSizeIndex, sizeNames, IM_ARRAYSIZE(sizeNames))) {
             shadowMapSize = sizeValues[currentSizeIndex];
             SetShadowMapSize(shadowMapSize);
         }
@@ -210,7 +211,7 @@ void ShadowRenderer::DrawImGui()
                 break;
             }
         }
-        if (ImGui::Combo("PCF Kernel Size", &currentKernelIndex, kernelNames, IM_ARRAYSIZE(kernelNames))) {
+        if (UI::Combo("PCF Kernel Size", &currentKernelIndex, kernelNames, IM_ARRAYSIZE(kernelNames))) {
             pcfKernelSize = kernelValues[currentKernelIndex];
             SetPCFKernelSize(pcfKernelSize);
         }
@@ -219,7 +220,7 @@ void ShadowRenderer::DrawImGui()
     // バイアス設定
     ImGui::Separator();
     ImGui::Text("Bias Settings");
-    if (ImGui::DragFloat("Shadow Bias", &shadowBias_, 0.00001f, 0.0f, 0.01f, "%.6f")) {
+    if (UI::DragFloat("Shadow Bias", &shadowBias_, 0.00001f, 0.0f, 0.01f, "%.6f")) {
     }
 
 
@@ -229,19 +230,19 @@ void ShadowRenderer::DrawImGui()
         ImGui::Text("Light Settings");
 
         bool autoUpdatePos = light_->GetAutoUpdatePosition();
-        if (ImGui::Checkbox("Auto Update Light Position", &autoUpdatePos)) {
+        if (UI::Checkbox("Auto Update Light Position", &autoUpdatePos)) {
             light_->SetAutoUpdatePosition(autoUpdatePos);
         }
 
         if (!autoUpdatePos) {
             Vector3 lightPos = light_->GetDirectionalLight().position;
-            if (ImGui::DragFloat3("Light Position", &lightPos.x, 0.1f, -50.0f, 50.0f)) {
+            if (UI::DragFloat3("Light Position", &lightPos.x, 0.1f, -50.0f, 50.0f)) {
                 light_->SetDirectionalLightPosition(lightPos);
             }
         }
 
         Vector3 sceneCenter = light_->GetSceneCenter();
-        if (ImGui::DragFloat3("Scene Center", &sceneCenter.x, 0.1f, -50.0f, 50.0f)) {
+        if (UI::DragFloat3("Scene Center", &sceneCenter.x, 0.1f, -50.0f, 50.0f)) {
             light_->SetSceneCenter(sceneCenter);
         }
     }

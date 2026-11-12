@@ -11,6 +11,7 @@ namespace Tako::EnginePaths {
   inline constexpr std::string_view kEngineShaders  = "EngineResources/shaders/";
   inline constexpr std::string_view kEngineTextures = "EngineResources/Texture/";
   inline constexpr std::string_view kEngineModels   = "EngineResources/Model/";
+  inline constexpr std::string_view kEngineFonts    = "EngineResources/Fonts/";
 
   inline constexpr std::wstring_view kEngineShadersW = L"EngineResources/shaders/";
 

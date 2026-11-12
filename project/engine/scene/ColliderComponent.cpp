@@ -5,6 +5,7 @@
 #include "SphereCollider.h"
 
 #ifdef _DEBUG
+#include "EditorUI.h"
 #include "imgui.h"
 
 #include <format>
@@ -144,7 +145,7 @@ namespace Tako {
       return layer < names.size() && !names[layer].empty() ? std::format("{}: {}", layer, names[layer]) : std::format("{}: Layer {}", layer, layer);
     };
     bool changed = false;
-    if (ImGui::BeginCombo("Layer", label(layer_).c_str())) {
+    if (UI::BeginCombo("Layer", label(layer_).c_str())) {
       for (uint32_t layer = 0; layer < CollisionManager::kMaxLayers; ++layer) {
         if (ImGui::Selectable(label(layer).c_str(), layer == layer_) && layer != layer_) {
           layer_  = layer;

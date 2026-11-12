@@ -7,6 +7,7 @@
 #include "ColorFunc.h"
 #include <algorithm>
 #ifdef _DEBUG
+#include "EditorUI.h"
 #include "ImGuiManager.h"
 #endif
 
@@ -278,25 +279,25 @@ namespace Tako {
 #ifdef _DEBUG
     // Transform 設定
     ImGui::Text("Transform Settings");
-    ImGui::DragFloat2("Position", &pos_.x, 1.0f);
+    UI::DragFloat2("Position", &pos_.x, 1.0f);
 
     // 回転角度（度数表示）
     float rotationDegrees = rotation_ * 57.2958f; // ラジアンから度に変換
-    if (ImGui::DragFloat("Rotation (degrees)", &rotationDegrees, 1.0f, -360.0f, 360.0f)) {
+    if (UI::DragFloat("Rotation (degrees)", &rotationDegrees, 1.0f, -360.0f, 360.0f)) {
       rotation_ = rotationDegrees * 0.0174533f; // 度からラジアンに変換
     }
 
-    ImGui::DragFloat2("Size", &size_.x, 1.0f, 0.0f, 2000.0f);
+    UI::DragFloat2("Size", &size_.x, 1.0f, 0.0f, 2000.0f);
 
     ImGui::Separator();
 
     // 描画設定
     ImGui::Text("Rendering Settings");
-    ImGui::DragFloat2("Anchor Point", &anchorPoint_.x, 0.01f, 0.0f, 1.0f);
+    UI::DragFloat2("Anchor Point", &anchorPoint_.x, 0.01f, 0.0f, 1.0f);
 
     // 色設定
     if (materialData_) {
-      ImGui::ColorEdit4("Color", &materialData_->color.x);
+      UI::ColorEdit4("Color", &materialData_->color.x);
     }
 
     // フリップ設定
@@ -308,9 +309,9 @@ namespace Tako {
 
     // テクスチャ設定
     ImGui::Text("Texture Settings");
-    ImGui::DragFloat2("Texture Top-Left", &texTopLeft_.x, 1.0f, 0.0f, 4096.0f);
-    ImGui::DragFloat2("Texture Cut Size", &texCutSize_.x, 1.0f, 0.0f, 4096.0f);
-    ImGui::DragFloat4("Slice Border (LTRB)", &sliceBorder_.x, 1.0f, 0.0f, 4096.0f);
+    UI::DragFloat2("Texture Top-Left", &texTopLeft_.x, 1.0f, 0.0f, 4096.0f);
+    UI::DragFloat2("Texture Cut Size", &texCutSize_.x, 1.0f, 0.0f, 4096.0f);
+    UI::DragFloat4("Slice Border (LTRB)", &sliceBorder_.x, 1.0f, 0.0f, 4096.0f);
 
     // テクスチャ情報の表示
     ImGui::Separator();

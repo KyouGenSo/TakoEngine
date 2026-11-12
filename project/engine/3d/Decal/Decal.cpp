@@ -8,6 +8,7 @@
 #include "ColorFunc.h"
 
 #ifdef _DEBUG
+#include "EditorUI.h"
 #include "ImGuiManager.h"
 #include "LineRenderer.h"
 #include "OBB.h"
@@ -91,7 +92,7 @@ namespace Tako {
 #ifdef _DEBUG
     // === Transform ===
     ImGui::Text("Transform");
-    ImGui::DragFloat3("Translate", &transform_.translate.x, 0.1f);
+    UI::DragFloat3("Translate", &transform_.translate.x, 0.1f);
 
     // 回転角度（度数表示）
     Vector3 rotateDeg = {
@@ -99,7 +100,7 @@ namespace Tako {
       transform_.rotate.y * 57.2958f,
       transform_.rotate.z * 57.2958f
     };
-    if (ImGui::DragFloat3("Rotate (deg)", &rotateDeg.x, 1.0f, -360.0f, 360.0f)) {
+    if (UI::DragFloat3("Rotate (deg)", &rotateDeg.x, 1.0f, -360.0f, 360.0f)) {
       transform_.rotate = {
         rotateDeg.x * 0.0174533f,
         rotateDeg.y * 0.0174533f,
@@ -107,15 +108,15 @@ namespace Tako {
       };
     }
 
-    ImGui::DragFloat3("Scale", &transform_.scale.x, 0.1f, 0.01f, 100.0f);
+    UI::DragFloat3("Scale", &transform_.scale.x, 0.1f, 0.01f, 100.0f);
 
     ImGui::Separator();
 
     // === Rendering ===
     ImGui::Text("Rendering");
-    ImGui::ColorEdit4("Color", &color_.x);
-    ImGui::Checkbox("Visible", &isVisible_);
-    ImGui::Checkbox("DebugViewVisible", &isDebugViewVisible_);
+    UI::ColorEdit4("Color", &color_.x);
+    UI::Checkbox("Visible", &isVisible_);
+    UI::Checkbox("DebugViewVisible", &isDebugViewVisible_);
 
     ImGui::Separator();
 
@@ -123,25 +124,25 @@ namespace Tako {
     ImGui::Text("Shape");
     const char* shapeNames[] = { "Circle", "Fan", "Rectangle" };
     int currentShape = static_cast<int>(shape_);
-    if (ImGui::Combo("Shape", &currentShape, shapeNames, IM_ARRAYSIZE(shapeNames))) {
+    if (UI::Combo("Shape", &currentShape, shapeNames, IM_ARRAYSIZE(shapeNames))) {
       shape_ = static_cast<DecalShape>(currentShape);
     }
 
     // 扇形パラメータ（Fan 選択時のみ表示）
     if (shape_ == DecalShape::Fan) {
       float halfAngleDeg = fanHalfAngle_ * 57.2958f;
-      if (ImGui::DragFloat("Fan Half Angle (deg)", &halfAngleDeg, 1.0f, 0.0f, 180.0f)) {
+      if (UI::DragFloat("Fan Half Angle (deg)", &halfAngleDeg, 1.0f, 0.0f, 180.0f)) {
         fanHalfAngle_ = halfAngleDeg * 0.0174533f;
       }
     }
 
-    ImGui::DragFloat("Edge Softness", &edgeSoftness_, 0.01f, 0.0f, 1.0f);
+    UI::DragFloat("Edge Softness", &edgeSoftness_, 0.01f, 0.0f, 1.0f);
 
     ImGui::Separator();
 
     // === Texture ===
     ImGui::Text("Texture");
-    ImGui::Checkbox("Use Texture", &useTexture_);
+    UI::Checkbox("Use Texture", &useTexture_);
     if (useTexture_) {
       ImGui::Text("SRV Index: %u", textureSrvIndex_);
     }

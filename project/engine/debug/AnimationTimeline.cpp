@@ -1,6 +1,7 @@
 #ifdef _DEBUG
 
 #include "AnimationTimeline.h"
+#include "EditorUI.h"
 #include <algorithm>
 #include <cmath>
 #include <format>
@@ -10,22 +11,23 @@ namespace Tako {
 
   namespace {
 
-    constexpr ImU32 kBackgroundColor   = IM_COL32(36, 36, 36, 255);
-    constexpr ImU32 kRowColor          = IM_COL32(44, 44, 44, 255);
-    constexpr ImU32 kRowAltColor       = IM_COL32(40, 40, 40, 255);
-    constexpr ImU32 kSelectedRowColor  = IM_COL32(52, 60, 78, 255);
-    constexpr ImU32 kLabelColor        = IM_COL32(56, 56, 56, 255);
-    constexpr ImU32 kTextColor         = IM_COL32(210, 210, 210, 255);
-    constexpr ImU32 kDimTextColor      = IM_COL32(140, 140, 140, 255);
-    constexpr ImU32 kGridColor         = IM_COL32(60, 60, 60, 255);
+    // 面・線・文字はテーマの色から取る（テーマを替えると付いてくる）。キーや再生ヘッドなど、データを見分ける色は下の固定の値
+    ImU32 BackgroundColor()  { return ImGui::GetColorU32(ImGuiCol_FrameBg); }
+    ImU32 RowColor()         { return UI::MixColor(ImGuiCol_FrameBg, ImGuiCol_Text, 0.05f); }
+    ImU32 RowAltColor()      { return UI::MixColor(ImGuiCol_FrameBg, ImGuiCol_Text, 0.025f); }
+    ImU32 SelectedRowColor() { return ImGui::GetColorU32(ImGuiCol_Header); }
+    ImU32 LabelColor()       { return ImGui::GetColorU32(ImGuiCol_FrameBgHovered); }
+    ImU32 TextColor()        { return ImGui::GetColorU32(ImGuiCol_Text); }
+    ImU32 DimTextColor()     { return ImGui::GetColorU32(ImGuiCol_TextDisabled); }
+    ImU32 GridColor()        { return ImGui::GetColorU32(ImGuiCol_Border); }
+    ImU32 HandleColor()      { return ImGui::GetColorU32(ImGuiCol_Text); }
+    ImU32 HandleLineColor()  { return ImGui::GetColorU32(ImGuiCol_TextDisabled); }
     constexpr ImU32 kOutsideColor      = IM_COL32(0, 0, 0, 70);      ///< duration より後ろの暗幕
     constexpr ImU32 kPlayheadColor     = IM_COL32(255, 90, 90, 255);
     constexpr ImU32 kSelectedKeyColor  = IM_COL32(255, 170, 40, 255);
     constexpr ImU32 kEventColor        = IM_COL32(120, 220, 160, 255);
     constexpr ImU32 kSelectRectColor   = IM_COL32(100, 150, 255, 50);
     constexpr ImU32 kSelectBorderColor = IM_COL32(100, 150, 255, 200);
-    constexpr ImU32 kHandleColor       = IM_COL32(220, 220, 220, 255);  ///< CubicBezier の制御点
-    constexpr ImU32 kHandleLineColor   = IM_COL32(160, 160, 160, 160);
 
     constexpr float kRulerSteps[] = { 0.01f, 0.02f, 0.05f, 0.1f, 0.2f, 0.5f, 1.0f, 2.0f, 5.0f, 10.0f };
     constexpr float kMinRulerSpacing = 64.0f;  ///< 目盛りラベルどうしの最小間隔（px）
@@ -151,20 +153,20 @@ namespace Tako {
       curveView_.maxValue = maxValue + padding;
     }
 
-    drawList->AddRectFilled(canvasMin, ImVec2(plotRight, canvasMin.y + canvasSize.y), kBackgroundColor);
-    drawList->AddRectFilled(canvasMin, ImVec2(plotLeft, canvasMin.y + canvasSize.y), kLabelColor);
-    drawList->AddText(ImVec2(canvasMin.x + 6.0f, canvasMin.y + 4.0f), kTextColor, TrackLabel(track).c_str());
-    drawList->AddText(ImVec2(canvasMin.x + 6.0f, canvasMin.y + 22.0f), kDimTextColor, std::format("max {:.3g}", maxValue).c_str());
-    drawList->AddText(ImVec2(canvasMin.x + 6.0f, curveView_.bottom - 16.0f), kDimTextColor, std::format("min {:.3g}", minValue).c_str());
+    drawList->AddRectFilled(canvasMin, ImVec2(plotRight, canvasMin.y + canvasSize.y), BackgroundColor());
+    drawList->AddRectFilled(canvasMin, ImVec2(plotLeft, canvasMin.y + canvasSize.y), LabelColor());
+    drawList->AddText(ImVec2(canvasMin.x + 6.0f, canvasMin.y + 4.0f), TextColor(), TrackLabel(track).c_str());
+    drawList->AddText(ImVec2(canvasMin.x + 6.0f, canvasMin.y + 22.0f), DimTextColor(), std::format("max {:.3g}", maxValue).c_str());
+    drawList->AddText(ImVec2(canvasMin.x + 6.0f, curveView_.bottom - 16.0f), DimTextColor(), std::format("min {:.3g}", minValue).c_str());
     if (canvasSize.y > 130.0f) {
-      drawList->AddText(ImVec2(canvasMin.x + 6.0f, canvasMin.y + 44.0f), kDimTextColor, "Drag a key: value / time\nShift+Drag: one axis\nDouble-click: add a key\nDrag a handle: Bezier shape");
+      drawList->AddText(ImVec2(canvasMin.x + 6.0f, canvasMin.y + 44.0f), DimTextColor(), "Drag a key: value / time\nShift+Drag: one axis\nDouble-click: add a key\nDrag a handle: Bezier shape");
     }
 
     drawList->PushClipRect(ImVec2(plotLeft, canvasMin.y), ImVec2(plotRight, canvasMin.y + canvasSize.y), true);
 
     // 静止時の値（上乗せが効いていない高さ）
     const float restY = curveView_.ValueToY(GetAnimPropertyInfo(track.property).restValue);
-    drawList->AddLine(ImVec2(plotLeft, restY), ImVec2(plotRight, restY), kGridColor);
+    drawList->AddLine(ImVec2(plotLeft, restY), ImVec2(plotRight, restY), GridColor());
 
     const ImU32 color = TrackColor(track.property);
     for (int i = 1; i < sampleCount; ++i) {
@@ -182,8 +184,8 @@ namespace Tako {
       const ImVec2 anchor(CurveTimeToX(handle.anchorTime), curveView_.ValueToY(handle.anchorValue));
       const ImVec2 point(CurveTimeToX(handle.time), curveView_.ValueToY(handle.value));
       const bool   isGrabbed = operation_ == Operation::CurveHandle && handle.keyId == handleKeyId_ && handle.index == handleIndex_;
-      drawList->AddLine(anchor, point, kHandleLineColor, 1.0f);
-      drawList->AddRectFilled(ImVec2(point.x - 3.5f, point.y - 3.5f), ImVec2(point.x + 3.5f, point.y + 3.5f), &handle == hoveredHandle || isGrabbed ? kSelectedKeyColor : kHandleColor);
+      drawList->AddLine(anchor, point, HandleLineColor(), 1.0f);
+      drawList->AddRectFilled(ImVec2(point.x - 3.5f, point.y - 3.5f), ImVec2(point.x + 3.5f, point.y + 3.5f), &handle == hoveredHandle || isGrabbed ? kSelectedKeyColor : HandleColor());
     }
 
     for (const AnimKey& key : track.keys) {
@@ -237,9 +239,9 @@ namespace Tako {
     const float keysLeft   = origin_.x + kLabelWidth;
     const float rowsBottom = RowTop(static_cast<int>(tracks.size()) + 1);
 
-    drawList->AddRectFilled(ImVec2(keysLeft, RowTop(0)), ImVec2(right, rowsBottom), kBackgroundColor);
+    drawList->AddRectFilled(ImVec2(keysLeft, RowTop(0)), ImVec2(right, rowsBottom), BackgroundColor());
     for (int row = 0; row <= static_cast<int>(tracks.size()); ++row) {
-      const ImU32 color = row - 1 == selectedTrack_ ? kSelectedRowColor : (row % 2 == 0 ? kRowColor : kRowAltColor);
+      const ImU32 color = row - 1 == selectedTrack_ ? SelectedRowColor() : (row % 2 == 0 ? RowColor() : RowAltColor());
       drawList->AddRectFilled(ImVec2(keysLeft, RowTop(row)), ImVec2(right, RowTop(row) + kRowHeight), color);
     }
 
@@ -248,7 +250,7 @@ namespace Tako {
     // スナップ格子。細かすぎると見えないので目盛りの間隔に落とす
     const float gridStep = snapInterval_ * pixelsPerSecond_ >= kMinGridSpacing ? snapInterval_ : RulerStep();
     for (float time = std::floor(offset_ / gridStep) * gridStep; TimeToX(time) < right; time += gridStep) {
-      drawList->AddLine(ImVec2(TimeToX(time), RowTop(0)), ImVec2(TimeToX(time), rowsBottom), kGridColor);
+      drawList->AddLine(ImVec2(TimeToX(time), RowTop(0)), ImVec2(TimeToX(time), rowsBottom), GridColor());
     }
 
     const float endX = TimeToX(clip.GetDuration());
@@ -263,7 +265,7 @@ namespace Tako {
       const ImU32 color = IsSelected(event.id) ? kSelectedKeyColor : kEventColor;
       drawList->AddLine(ImVec2(x, top), ImVec2(x, top + kRowHeight - 6.0f), color, 2.0f);
       drawList->AddTriangleFilled(ImVec2(x, top), ImVec2(x + 9.0f, top + 4.0f), ImVec2(x, top + 8.0f), color);
-      drawList->AddText(ImVec2(x + 11.0f, top), kDimTextColor, event.name.c_str());
+      drawList->AddText(ImVec2(x + 11.0f, top), DimTextColor(), event.name.c_str());
     }
 
     // キー。区間は細い線でつなぎ、補間しない区間（Constant・Visible）は四角にする
@@ -282,15 +284,15 @@ namespace Tako {
     drawList->PopClipRect();
 
     // 見出しの列はキーの上に描く（左へスクロールしたキーを隠す）
-    drawList->AddRectFilled(ImVec2(origin_.x, RowTop(0)), ImVec2(keysLeft, rowsBottom), kLabelColor);
+    drawList->AddRectFilled(ImVec2(origin_.x, RowTop(0)), ImVec2(keysLeft, rowsBottom), LabelColor());
     drawList->AddText(ImVec2(origin_.x + 6.0f, RowTop(0) + 4.0f), kEventColor, "Events");
     for (size_t i = 0; i < tracks.size(); ++i) {
       const float top = RowTop(static_cast<int>(i) + 1);
       if (static_cast<int>(i) == selectedTrack_) {
-        drawList->AddRectFilled(ImVec2(origin_.x, top), ImVec2(keysLeft, top + kRowHeight), kSelectedRowColor);
+        drawList->AddRectFilled(ImVec2(origin_.x, top), ImVec2(keysLeft, top + kRowHeight), SelectedRowColor());
       }
       drawList->AddRectFilled(ImVec2(origin_.x + 4.0f, top + 6.0f), ImVec2(origin_.x + 8.0f, top + kRowHeight - 6.0f), TrackColor(tracks[i].property));
-      drawList->AddText(ImVec2(origin_.x + 14.0f, top + 4.0f), kTextColor, TrackLabel(tracks[i]).c_str());
+      drawList->AddText(ImVec2(origin_.x + 14.0f, top + 4.0f), TextColor(), TrackLabel(tracks[i]).c_str());
     }
   }
 
@@ -299,15 +301,15 @@ namespace Tako {
     const float keysLeft = origin_.x + kLabelWidth;
     const float bottom   = origin_.y + kRulerHeight;
 
-    drawList->AddRectFilled(origin_, ImVec2(right, bottom), kLabelColor);
-    drawList->AddText(ImVec2(origin_.x + 6.0f, origin_.y + 4.0f), kTextColor, std::format("{:.2f} / {:.2f} s", playhead, clip.GetDuration()).c_str());
+    drawList->AddRectFilled(origin_, ImVec2(right, bottom), LabelColor());
+    drawList->AddText(ImVec2(origin_.x + 6.0f, origin_.y + 4.0f), TextColor(), std::format("{:.2f} / {:.2f} s", playhead, clip.GetDuration()).c_str());
 
     drawList->PushClipRect(ImVec2(keysLeft, origin_.y), ImVec2(right, origin_.y + 10000.0f), true);
     const float step = RulerStep();
     for (float time = std::floor(offset_ / step) * step; TimeToX(time) < right; time += step) {
       const float x = TimeToX(time);
-      drawList->AddLine(ImVec2(x, bottom - 6.0f), ImVec2(x, bottom), kDimTextColor);
-      drawList->AddText(ImVec2(x + 3.0f, origin_.y + 3.0f), kDimTextColor, std::format("{:.{}f}", time + 0.0f, step < 0.1f ? 2 : 1).c_str());
+      drawList->AddLine(ImVec2(x, bottom - 6.0f), ImVec2(x, bottom), DimTextColor());
+      drawList->AddText(ImVec2(x + 3.0f, origin_.y + 3.0f), DimTextColor(), std::format("{:.{}f}", time + 0.0f, step < 0.1f ? 2 : 1).c_str());
     }
 
     // 再生ヘッドは目盛りから最後の行まで通す

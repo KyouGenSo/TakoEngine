@@ -5,6 +5,7 @@
 #include <cstdint>
 
 #include"imgui.h"
+#include "IconsFontAwesome6.h"
 #include <d3d12.h>
 #include<wrl.h>
 
@@ -18,6 +19,13 @@ namespace Tako {
   /// </summary>
   class ImGuiManager
   {
+  public: //定数
+    // 大きいアイコンのフォントに焼く字。GetLargeIconFont で描くアイコンはここに足す
+    static constexpr const char* kLargeIcons =
+      ICON_FA_FOLDER ICON_FA_FILE ICON_FA_FILE_CODE ICON_FA_FILE_LINES ICON_FA_CUBE ICON_FA_CUBES ICON_FA_MUSIC ICON_FA_IMAGE
+      ICON_FA_FILM ICON_FA_PALETTE ICON_FA_WAND_MAGIC_SPARKLES ICON_FA_DIAGRAM_PROJECT ICON_FA_TABLE_COLUMNS ICON_FA_VIDEO ICON_FA_FONT
+      ICON_FA_MOUNTAIN_SUN ICON_FA_PERSON_RUNNING;
+
   public: //メンバー関数
 
     /// <summary>
@@ -56,9 +64,10 @@ namespace Tako {
     void OnWindowResize();
 
     /// <summary>
-    /// ImGui のスタイルの設定
+    /// 大きいアイコン（Assets の一覧など）を描くフォント。kLargeIcons の字だけを持つ
     /// </summary>
-    static void SetStyleMoonLight();
+    /// <returns>フォントのファイルが揃っていなければ、普通のフォント（アイコンは '?' になる）</returns>
+    static ImFont* GetLargeIconFont() { return largeIconFont_ ? largeIconFont_ : ImGui::GetFont(); }
 
     /// <summary>
     /// docking 設定
@@ -79,6 +88,8 @@ namespace Tako {
     bool isDocking_ = false;
 
     uint32_t fontSrvIndex_ = 0;  ///< フォント用の SRV インデックス（SrvManager で確保）
+
+    static inline ImFont* largeIconFont_ = nullptr;
 
   };
 

@@ -21,6 +21,7 @@
 #include <sstream>
 
 #ifdef _DEBUG
+#include "EditorUI.h"
 #include "DebugUIManager.h"
 #include <imgui.h>
 #endif
@@ -733,12 +734,12 @@ namespace Tako {
 
       // 再生/一時停止ボタン
       if (isPaused_) {
-        if (ImGui::Button("Resume")) {
+        if (ImGui::Button(ICON_FA_PLAY "  Resume")) {
           isPaused_ = false;
         }
       }
       else {
-        if (ImGui::Button("Pause")) {
+        if (ImGui::Button(ICON_FA_PAUSE "  Pause")) {
           isPaused_ = true;
         }
       }
@@ -746,7 +747,7 @@ namespace Tako {
       // 再生速度スライダー
       ImGui::SliderFloat("Speed", &animationSpeed_, -10.0f, 100.0f, "%.2f");
       ImGui::SameLine();
-      if (ImGui::Button("Reset Speed")) {
+      if (ImGui::Button(ICON_FA_ROTATE_LEFT "  Reset Speed")) {
         animationSpeed_ = 1.0f;
       }
 
@@ -772,7 +773,7 @@ namespace Tako {
 
         // 現在のアニメーションは異なる色で表示
         if (isCurrentAnimation) {
-          ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.2f, 1.0f, 0.2f, 1.0f)); // 緑色
+          ImGui::PushStyleColor(ImGuiCol_Text, GetEditorColors().success); // 緑色
         }
 
         // アニメーション名と長さを表示
@@ -794,11 +795,11 @@ namespace Tako {
     // メッシュ表示制御（メッシュ単位で描画 ON/OFF を切り替え）
     if (ImGui::CollapsingHeader("Mesh Visibility")) {
       ImGui::Text("Total Meshes: %zu", meshes_.size());
-      if (ImGui::Button("Show All")) {
+      if (ImGui::Button(ICON_FA_EYE "  Show All")) {
         for (auto& mesh : meshes_) mesh->SetVisible(true);
       }
       ImGui::SameLine();
-      if (ImGui::Button("Hide All")) {
+      if (ImGui::Button(ICON_FA_EYE_SLASH "  Hide All")) {
         for (auto& mesh : meshes_) mesh->SetVisible(false);
       }
       ImGui::Separator();
@@ -812,7 +813,7 @@ namespace Tako {
         if (label.empty()) {
           label = "mesh_" + std::to_string(i);
         }
-        if (ImGui::Checkbox(label.c_str(), &visible)) {
+        if (UI::Checkbox(label.c_str(), &visible)) {
           meshes_[i]->SetVisible(visible);
         }
         ImGui::PopID();
@@ -822,7 +823,7 @@ namespace Tako {
 
     if (hasSkeleton_) {
       // 3D ビジュアライゼーションのトグル
-      ImGui::Checkbox("Show 3D Skeleton", &s_showSkeletonDebug);
+      UI::Checkbox("Show 3D Skeleton", &s_showSkeletonDebug);
       ImGui::Separator();
 
       ImGui::Text("Total Joints: %zu", skeleton_.joints.size());
@@ -837,7 +838,7 @@ namespace Tako {
         expandState_ = 2;  // collapse all
       }
       ImGui::SameLine();
-      if (ImGui::Button("Reset")) {
+      if (ImGui::Button(ICON_FA_ROTATE_LEFT "  Reset")) {
         expandState_ = 0;  // normal
       }
 
@@ -885,9 +886,9 @@ namespace Tako {
 
     // アイコンと色の設定
     const char* icon = isRoot ? "[ROOT]" : (isLeaf ? "[LEAF]" : "");
-    ImVec4 textColor = isRoot ? ImVec4(0.2f, 1.0f, 0.2f, 1.0f) :  // 緑
-      isLeaf ? ImVec4(0.7f, 0.7f, 0.7f, 1.0f) :  // 灰色
-      ImVec4(1.0f, 1.0f, 1.0f, 1.0f);   // 白
+    ImVec4 textColor = isRoot ? GetEditorColors().success :  // 緑
+      isLeaf ? ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled) :  // 灰色
+      ImGui::GetStyleColorVec4(ImGuiCol_Text);   // 白
 
     // 階層に応じたインデントを適用（固定の小さめの値を使用）
     const float indentAmount = 12.0f;
@@ -919,7 +920,7 @@ namespace Tako {
       ImGui::Indent();
 
       // 親子関係の情報
-      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
+      ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
       if (joint.parentIndex.has_value()) {
         const Joint& parentJoint = skeleton_.joints[*joint.parentIndex];
         ImGui::Text("Parent: %s [%d]", parentJoint.name.c_str(), *joint.parentIndex);
@@ -985,7 +986,7 @@ namespace Tako {
     }
 
     // アニメーションがあるノードは緑色、ないノードは白色
-    ImVec4 textColor = hasNodeAnimation ? ImVec4(0.2f, 1.0f, 0.2f, 1.0f) : ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+    ImVec4 textColor = hasNodeAnimation ? GetEditorColors().success : ImGui::GetStyleColorVec4(ImGuiCol_Text);
 
     // メッシュ情報の表示
     std::string meshInfo = "";
@@ -1011,7 +1012,7 @@ namespace Tako {
       ImGui::Indent();
 
       // Transform 情報を表示
-      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
+      ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
       ImGui::Text("Transform:");
       ImGui::Text("  Translate: (%.3f, %.3f, %.3f)",
         node.transform.translate.x, node.transform.translate.y, node.transform.translate.z);

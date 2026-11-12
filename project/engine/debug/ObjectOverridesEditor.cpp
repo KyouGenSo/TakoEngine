@@ -1,6 +1,7 @@
 #include "ObjectOverridesEditor.h"
 
 #ifdef _DEBUG
+#include "EditorUI.h"
 
 #include <algorithm>
 #include <array>
@@ -43,7 +44,7 @@ namespace Tako {
         return;
       }
       ImGui::SameLine();
-      ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "code");
+      ImGui::TextColored(GetEditorColors().warning, "code");
       ImGui::SetItemTooltip("Overridden in code by Object3d::%s.\nThis value has no effect until the code removes it (std::nullopt)", setter);
     }
 
@@ -87,7 +88,7 @@ namespace Tako {
       const std::string inheritedMaterial = parent && parent->material ? *parent->material : std::string();
       changed |= OverrideField<std::string>("Material", overrides.material, inheritedMaterial, [&](const char* label, std::string& value) {
         bool picked = false;
-        if (ImGui::BeginCombo(label, value.empty() ? "(model default)" : value.c_str())) {
+        if (UI::BeginCombo(label, value.empty() ? "(model default)" : value.c_str())) {
           if (ImGui::Selectable("(model default)", value.empty())) {
             value.clear();
             picked = true;
@@ -154,7 +155,7 @@ namespace Tako {
           std::array<char, 128> buffer{};
           value.copy(buffer.data(), buffer.size() - 1);
           // 打ち終えたときか、アセットウィンドウから落とされたときだけ読み込む（途中の名前で TextureManager を探さない）
-          ImGui::InputTextWithHint(label, "(inherited)", buffer.data(), buffer.size());
+          UI::InputTextWithHint(label, "(inherited)", buffer.data(), buffer.size());
           const std::optional<std::string> dropped = AcceptAssetDrop("Texture");
           if (ImGui::IsItemDeactivatedAfterEdit() || dropped) {
             value = dropped.value_or(buffer.data());
@@ -184,13 +185,13 @@ namespace Tako {
     const DrawItem                 defaults{};
     bool                           changed  = false;
 
-    const auto checkbox = [](const char* label, bool& value) { return ImGui::Checkbox(label, &value); };
+    const auto checkbox = [](const char* label, bool& value) { return UI::Checkbox(label, &value); };
     changed |= OverrideField<bool>("Visible", overrides.visible, true, checkbox);
     ImGui::SetItemTooltip("Unchecked hides the object (also from shadows and render passes)");
 
     changed |= OverrideField<uint32_t>("Mask ID", overrides.maskId, defaults.maskId, [](const char* label, uint32_t& value) {
       int id = static_cast<int>(value);
-      if (!ImGui::InputInt(label, &id)) {
+      if (!UI::InputInt(label, &id)) {
         return false;
       }
       value = static_cast<uint32_t>(std::clamp(id, 0, 255));
@@ -200,7 +201,7 @@ namespace Tako {
     DrawCodeMark(code && code->maskId, "SetMaskId");
 
     changed |= OverrideField<int32_t>("Sorting Order", overrides.sortingOrder, defaults.sortingOrder, [](const char* label, int32_t& value) {
-      return ImGui::DragInt(label, &value, 0.2f);
+      return UI::DragInt(label, &value, 0.2f);
     });
     ImGui::SetItemTooltip("Draw order within the same render queue (smaller first)");
     DrawCodeMark(code && code->sortingOrder, "SetSortingOrder");

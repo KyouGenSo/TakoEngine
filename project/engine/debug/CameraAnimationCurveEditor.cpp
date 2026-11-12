@@ -1,6 +1,7 @@
 #ifdef _DEBUG
 
 #include "CameraAnimationCurveEditor.h"
+#include "EditorUI.h"
 #include <algorithm>
 #include <cmath>
 #include <format>
@@ -73,7 +74,7 @@ namespace Tako {
     graphPos_ = ImGui::GetCursorScreenPos();
     ImVec2 graphMax = ImVec2(graphPos_.x + graphSize_.x, graphPos_.y + graphSize_.y);
 
-    drawList->AddRectFilled(graphPos_, graphMax, IM_COL32(30, 30, 30, 255));
+    drawList->AddRectFilled(graphPos_, graphMax, ImGui::GetColorU32(ImGuiCol_FrameBg));
 
     if (showGrid_) {
       DrawGrid();
@@ -109,7 +110,7 @@ namespace Tako {
         drawList->AddLine(
           ImVec2(p.x, graphPos_.y),
           ImVec2(p.x, graphPos_.y + graphSize_.y),
-          IM_COL32(60, 60, 60, 255));
+          ImGui::GetColorU32(ImGuiCol_Border));
       }
     }
 
@@ -121,7 +122,7 @@ namespace Tako {
         drawList->AddLine(
           ImVec2(graphPos_.x, p.y),
           ImVec2(graphPos_.x + graphSize_.x, p.y),
-          IM_COL32(60, 60, 60, 255));
+          ImGui::GetColorU32(ImGuiCol_Border));
       }
     }
   }
@@ -133,14 +134,14 @@ namespace Tako {
     ImVec2 xAxisStart = ValueToGraph(0, 0);
     ImVec2 xAxisEnd = ValueToGraph(timeRange_, 0);
     if (xAxisStart.y >= graphPos_.y && xAxisStart.y <= graphPos_.y + graphSize_.y) {
-      drawList->AddLine(xAxisStart, xAxisEnd, IM_COL32(100, 100, 100, 255), 2.0f);
+      drawList->AddLine(xAxisStart, xAxisEnd, ImGui::GetColorU32(ImGuiCol_TextDisabled), 2.0f);
     }
 
     // Y 軸（値 = 時刻0の垂直線）
     ImVec2 yAxisStart = ValueToGraph(0, valueRangeMin_);
     ImVec2 yAxisEnd = ValueToGraph(0, valueRangeMax_);
     if (yAxisStart.x >= graphPos_.x && yAxisStart.x <= graphPos_.x + graphSize_.x) {
-      drawList->AddLine(yAxisStart, yAxisEnd, IM_COL32(100, 100, 100, 255), 2.0f);
+      drawList->AddLine(yAxisStart, yAxisEnd, ImGui::GetColorU32(ImGuiCol_TextDisabled), 2.0f);
     }
   }
 
@@ -199,7 +200,7 @@ namespace Tako {
     ImDrawList* drawList = ImGui::GetWindowDrawList();
 
     float radius = isSelected ? 6.0f : 4.0f;
-    ImU32 fillColor = isSelected ? IM_COL32(255, 200, 100, 255) : IM_COL32(255, 255, 255, 255);
+    ImU32 fillColor = isSelected ? IM_COL32(255, 200, 100, 255) : ImGui::GetColorU32(ImGuiCol_Text);
     ImU32 borderColor = IM_COL32(0, 0, 0, 255);
 
     drawList->AddCircleFilled(ImVec2(x, y), radius, fillColor);
@@ -209,7 +210,7 @@ namespace Tako {
       const CameraKeyframe& kf = animation_->GetKeyframe(index);
       float value = GetCurveValue(kf, activeCurve_);
       std::string label = std::format("{:.2f}", value);
-      drawList->AddText(ImVec2(x + 10, y - 10), IM_COL32(255, 255, 255, 255), label.c_str());
+      drawList->AddText(ImVec2(x + 10, y - 10), ImGui::GetColorU32(ImGuiCol_Text), label.c_str());
     }
   }
 
@@ -238,8 +239,8 @@ namespace Tako {
     ImVec2 h2 = ValueToGraph(kf1.time + kf1.bezierP2.x * dt, v1 + kf1.bezierP2.y * (v2 - v1));
 
     ImDrawList* drawList = ImGui::GetWindowDrawList();
-    drawList->AddLine(anchor1, h1, IM_COL32(200, 200, 200, 180), 1.0f);
-    drawList->AddLine(anchor2, h2, IM_COL32(200, 200, 200, 180), 1.0f);
+    drawList->AddLine(anchor1, h1, ImGui::GetColorU32(ImGuiCol_TextDisabled), 1.0f);
+    drawList->AddLine(anchor2, h2, ImGui::GetColorU32(ImGuiCol_TextDisabled), 1.0f);
     drawList->AddCircleFilled(h1, 5.0f, IM_COL32(255, 150, 50, 255));
     drawList->AddCircle(h1, 5.0f, IM_COL32(0, 0, 0, 255), 0, 2.0f);
     drawList->AddCircleFilled(h2, 5.0f, IM_COL32(50, 150, 255, 255));
@@ -257,7 +258,7 @@ namespace Tako {
     ImGui::PopItemWidth();
 
     ImGui::SameLine();
-    if (ImGui::Button("Apply")) {
+    if (ImGui::Button(ICON_FA_CHECK "  Apply")) {
       const int selected = SelectedIndex();
       if (selected >= 0) {
         CameraKeyframe kf = animation_->GetKeyframe(selected);
@@ -279,11 +280,11 @@ namespace Tako {
     ImGui::SameLine();
     ImGui::Checkbox("Show Handles", &showTangents_);
 
-    ImGui::DragFloat("Zoom X", &zoomX_, 0.01f, 0.1f, 10.0f);
-    ImGui::DragFloat("Zoom Y", &zoomY_, 0.01f, 0.1f, 10.0f);
+    UI::DragFloat("Zoom X", &zoomX_, 0.01f, 0.1f, 10.0f);
+    UI::DragFloat("Zoom Y", &zoomY_, 0.01f, 0.1f, 10.0f);
 
-    ImGui::DragFloat("Time Range", &timeRange_, 0.1f, 1.0f, 60.0f);
-    ImGui::DragFloat2("Value Range", &valueRangeMin_, 0.1f);
+    UI::DragFloat("Time Range", &timeRange_, 0.1f, 1.0f, 60.0f);
+    UI::DragFloat2("Value Range", &valueRangeMin_, 0.1f);
   }
 
   void CameraAnimationCurveEditor::HandleMouseInput() {

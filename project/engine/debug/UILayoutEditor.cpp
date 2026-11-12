@@ -1,6 +1,7 @@
 #include "UILayoutEditor.h"
 
 #ifdef _DEBUG
+#include "EditorUI.h"
 
 #include "UILayout.h"
 #include "Sprite.h"
@@ -48,7 +49,6 @@ namespace Tako {
     constexpr int kEdgeBottom = 8;
     constexpr int kEdgeAll    = kEdgeLeft | kEdgeTop | kEdgeRight | kEdgeBottom;
 
-    constexpr ImVec4 kWarningColor    = ImVec4(1.0f, 0.8f, 0.2f, 1.0f);
     constexpr ImU32  kRegionFillColor = IM_COL32(0, 255, 0, 40);
     constexpr ImU32  kResultLineColor = IM_COL32(255, 255, 255, 60);
     constexpr ImU32  kLabelBackColor  = IM_COL32(0, 0, 0, 160);
@@ -175,17 +175,6 @@ namespace Tako {
           out.push_back(child.get());
         }
         CollectMatches(*child, filter, out);
-      }
-    }
-
-    /// <summary>
-    /// 目のアイコン。閉じた目は斜線を引く
-    /// </summary>
-    void DrawEye(ImDrawList* drawList, const ImVec2& center, float radius, bool isOpen, ImU32 color) {
-      drawList->AddEllipse(center, ImVec2(radius, radius * 0.55f), color, 0.0f, 0, 1.2f);
-      drawList->AddCircleFilled(center, radius * 0.3f, color);
-      if (!isOpen) {
-        drawList->AddLine(ImVec2(center.x - radius, center.y + radius * 0.7f), ImVec2(center.x + radius, center.y - radius * 0.7f), color, 1.5f);
       }
     }
 
@@ -386,7 +375,7 @@ namespace Tako {
 
     bool isEditorFocused = false;
     ImGui::SetNextWindowSize(ImVec2(760.0f, 640.0f), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin("UI Editor", isOpen_)) {
+    if (ImGui::Begin(WindowTitle::kUIEditor, isOpen_)) {
       isEditorFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
       DrawToolbar(FindLayout());
 
@@ -830,7 +819,7 @@ namespace Tako {
       comboLabel += " *";
     }
     ImGui::SetNextItemWidth(200.0f);
-    if (ImGui::BeginCombo("Layout", comboLabel.c_str())) {
+    if (ImGui::BeginCombo("##Layout", comboLabel.c_str())) {
       std::vector<std::string> gameNames;
       for (UILayout* candidate : UILayout::GetInstances()) {
         const std::string& name = candidate->GetName();
@@ -860,7 +849,7 @@ namespace Tako {
     }
 
     ImGui::SameLine();
-    if (ImGui::Button("New...")) {
+    if (ImGui::Button(ICON_FA_FILE_CIRCLE_PLUS "  New...")) {
       newLayoutBuffer_[0] = '\0';
       newLayoutError_.clear();
       ImGui::OpenPopup("New UI Layout");
@@ -877,30 +866,30 @@ namespace Tako {
     ImGui::SameLine();
     // 共有の 9-slice の変更はレイアウト名の * に出ないので、ボタンにも付ける
     const bool isUnsaved = (layout && layout == editedLayout_) || isSliceTableEdited_;
-    if (ImGui::Button(isUnsaved ? "Save *###Save" : "Save###Save")) {
+    if (ImGui::Button(isUnsaved ? ICON_FA_FLOPPY_DISK "  Save *###Save" : ICON_FA_FLOPPY_DISK "  Save###Save")) {
       SaveLayout(*layout);
     }
     ImGui::SetItemTooltip("Save the layout and the shared texture 9-slice settings (Ctrl+S).");
     ImGui::SameLine();
-    if (ImGui::Button("Reload")) {
+    if (ImGui::Button(ICON_FA_ROTATE "  Reload")) {
       Request(PendingOp::Reload, {});
     }
     ImGui::SetItemTooltip("Discard unsaved changes to the layout and the shared texture 9-slice settings.");
     ImGui::EndDisabled();
 
-    ImGui::Checkbox("Viewport Edit", &isViewportEditEnabled_);
+    UI::IconToggle(ICON_FA_ARROW_POINTER "##ViewportEdit", "Viewport Edit: select and move elements in the Game Viewport", &isViewportEditEnabled_);
     ImGui::SameLine();
-    ImGui::Checkbox("Grid", &isGridVisible_);
+    UI::IconToggle(ICON_FA_BORDER_ALL "##Grid", "Show the grid", &isGridVisible_);
     ImGui::SameLine();
-    ImGui::Checkbox("Snap", &isSnapEnabled_);
+    UI::IconToggle(ICON_FA_MAGNET "##Snap", "Snap to the grid", &isSnapEnabled_);
     ImGui::SameLine();
-    ImGui::SetNextItemWidth(80.0f);
-    ImGui::DragFloat("Grid Size", &gridSize_, 1.0f, 1.0f, 512.0f, "%.0f px");
+    ImGui::SetNextItemWidth(ImGui::GetFontSize() * 7.0f);
+    ImGui::DragFloat("##GridSize", &gridSize_, 1.0f, 1.0f, 512.0f, "Grid %.0f px");
     ImGui::SameLine();
-    ImGui::Checkbox("Guides", &isGuidesEnabled_);
-    ImGui::SetItemTooltip("While dragging without Snap, snap to the edges and centers of the screen, the parent and the siblings.");
+    UI::IconToggle(ICON_FA_RULER_COMBINED "##Guides", "Guides: while dragging without Snap, snap to the edges and centers of the screen, the parent and the siblings", &isGuidesEnabled_);
     ImGui::SameLine();
-    ImGui::TextDisabled("(?)");
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextDisabled(ICON_FA_CIRCLE_QUESTION);
     ImGui::SetItemTooltip(
       "Viewport: click to select, drag to move, drag an edge or a corner to resize.\n"
       "  Shift+click adds to or removes from the selection. Dragging inside a selected element moves the whole selection.\n"
@@ -918,9 +907,9 @@ namespace Tako {
 
     if (layout && layout == preview_.get()) {
       const std::string code = std::format("layout.Load(\"{}\");", layout->GetName());
-      ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.3f, 1.0f), "Preview (not loaded by the current scene). Use in code: %s", code.c_str());
+      ImGui::TextColored(GetEditorColors().warning, "Preview (not loaded by the current scene). Use in code: %s", code.c_str());
       ImGui::SameLine();
-      if (ImGui::SmallButton("Copy")) {
+      if (ImGui::SmallButton(ICON_FA_COPY "  Copy")) {
         ImGui::SetClipboardText(code.c_str());
       }
     }
@@ -954,7 +943,8 @@ namespace Tako {
     }
     ImGui::EndDisabled();
     ImGui::SameLine();
-    ImGui::TextDisabled("(?)");
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextDisabled(ICON_FA_CIRCLE_QUESTION);
     ImGui::SetItemTooltip(
       "One element aligns to its parent. Two or more align to the box around them.\n"
       "Distribute: three or more elements get equal gaps; the first and the last stay.");
@@ -1020,7 +1010,7 @@ namespace Tako {
       ImGui::SetKeyboardFocusHere();
     }
     const bool isEntered = ImGui::InputText("Name", newLayoutBuffer_, sizeof(newLayoutBuffer_), ImGuiInputTextFlags_EnterReturnsTrue);
-    if (ImGui::Button("Create") || isEntered) {
+    if (ImGui::Button(ICON_FA_PLUS "  Create") || isEntered) {
       const std::string name = newLayoutBuffer_;
       if (!IsValidLayoutName(name)) {
         newLayoutError_ = "Use only letters, digits, '_' and '-'.";
@@ -1038,7 +1028,7 @@ namespace Tako {
       ImGui::CloseCurrentPopup();
     }
     if (!newLayoutError_.empty()) {
-      ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "%s", newLayoutError_.c_str());
+      ImGui::TextColored(GetEditorColors().error, "%s", newLayoutError_.c_str());
     }
 
     ImGui::EndPopup();
@@ -1196,25 +1186,22 @@ namespace Tako {
       ImGui::EndPopup();
     }
 
-    // 行の右端に表示とロックの切り替え。既定フォントに目と錠前のアイコン文字が無いので、目は線で描き、ロックは "L" で表す
-    const float lockButtonWidth = ImGui::CalcTextSize("L").x + ImGui::GetStyle().FramePadding.x * 2.0f;
-    const float eyeButtonWidth  = ImGui::GetTextLineHeight() * 1.4f;
+    // 行の右端に表示とロックの切り替え
+    const float lockButtonWidth = ImGui::CalcTextSize(ICON_FA_LOCK).x + ImGui::GetStyle().FramePadding.x * 2.0f;
+    const float eyeButtonWidth  = ImGui::CalcTextSize(ICON_FA_EYE).x + ImGui::GetStyle().FramePadding.x * 2.0f;
     ImGui::SameLine(0.0f, 0.0f);
     ImGui::SetCursorScreenPos(ImVec2(rowRightX - lockButtonWidth - eyeButtonWidth, ImGui::GetCursorScreenPos().y));
     if (ImGui::InvisibleButton("##Visible", ImVec2(eyeButtonWidth, ImGui::GetTextLineHeight()))) {
       element.visible = !element.visible;
     }
     // 表示中は控えめに、非表示は目立たせる
-    const ImU32  eyeColor  = ImGui::GetColorU32((ImGui::IsItemHovered() || !element.visible) ? ImGuiCol_Text : ImGuiCol_TextDisabled);
-    const ImVec2 eyeMin    = ImGui::GetItemRectMin();
-    const ImVec2 eyeMax    = ImGui::GetItemRectMax();
-    const ImVec2 eyeCenter = ImVec2((eyeMin.x + eyeMax.x) * 0.5f, (eyeMin.y + eyeMax.y) * 0.5f);
-    DrawEye(ImGui::GetWindowDrawList(), eyeCenter, (eyeMax.y - eyeMin.y) * 0.45f, element.visible, eyeColor);
+    const ImU32 eyeColor = ImGui::GetColorU32((ImGui::IsItemHovered() || !element.visible) ? ImGuiCol_Text : ImGuiCol_TextDisabled);
+    ImGui::GetWindowDrawList()->AddText(ImVec2(ImGui::GetItemRectMin().x + ImGui::GetStyle().FramePadding.x, ImGui::GetItemRectMin().y), eyeColor, element.visible ? ICON_FA_EYE : ICON_FA_EYE_SLASH);
     ImGui::SetItemTooltip(element.visible ? "Hide (also in game)" : "Show");
     ImGui::SameLine(0.0f, 0.0f);
     ImGui::PushStyleColor(ImGuiCol_Button, element.locked ? ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive) : ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
     ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(element.locked ? ImGuiCol_Text : ImGuiCol_TextDisabled));
-    if (ImGui::SmallButton("L")) {
+    if (ImGui::SmallButton(element.locked ? ICON_FA_LOCK "##Lock" : ICON_FA_LOCK_OPEN "##Lock")) {
       element.locked = !element.locked;
     }
     ImGui::PopStyleColor(2);
@@ -1281,7 +1268,7 @@ namespace Tako {
       ImGui::SetKeyboardFocusHere();
       isRenameFocusRequested_ = false;
     }
-    ImGui::InputText("Name", renameBuffer_, sizeof(renameBuffer_));
+    UI::InputText("Name", renameBuffer_, sizeof(renameBuffer_));
     isRenaming_ = ImGui::IsItemActive();
     if (ImGui::IsItemDeactivatedAfterEdit()) {
       const std::string newName = renameBuffer_;
@@ -1295,7 +1282,7 @@ namespace Tako {
       }
     }
     if (isRenameRejected_) {
-      ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "Name must be non-empty and unique in this layout.");
+      ImGui::TextColored(GetEditorColors().error, "Name must be non-empty and unique in this layout.");
     }
     ImGui::Checkbox("Visible", &element.visible);
     ImGui::SameLine();
@@ -1306,7 +1293,7 @@ namespace Tako {
     ImGui::SetItemTooltip("Draw before the post effects so they apply (children too).\nUnchecked draws after them as screen UI.");
 
     ImGui::SeparatorText("Texture");
-    if (ImGui::BeginCombo("Texture", element.texture.empty() ? "(none)" : element.texture.c_str())) {
+    if (UI::BeginCombo("Texture", element.texture.empty() ? "(none)" : element.texture.c_str())) {
       if (ImGui::Selectable("(none)", element.texture.empty())) {
         Request(PendingOp::SetTexture, element.name);
       }
@@ -1324,7 +1311,7 @@ namespace Tako {
       ImGui::EndDragDropTarget();
     }
     if (!element.texture.empty() && !element.sprite) {
-      ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "Texture not found");
+      ImGui::TextColored(GetEditorColors().error, "Texture not found");
     }
     if (element.sprite) {
       ImGui::TextUnformatted("Image Type");
@@ -1340,7 +1327,7 @@ namespace Tako {
       }
       ImGui::SetItemTooltip("Keep the corners at their size and stretch only the edges and the center.");
       if (!element.isSliced) {
-        ImGui::Checkbox("Preserve Aspect", &element.preserveAspect);
+        UI::Checkbox("Preserve Aspect", &element.preserveAspect);
         ImGui::SetItemTooltip("Keep the aspect ratio of the UV rect and fit the image inside the element, placed at the pivot.");
       }
     }
@@ -1352,26 +1339,26 @@ namespace Tako {
     const Vector2 rectMin  = element.rectMin;
     const Vector2 rectSize = element.rectSize;
     bool          isAnchorEdited = false;
-    isAnchorEdited |= ImGui::DragFloat2("Anchor Min", &element.anchorMin.x, 0.01f, 0.0f, 1.0f);
-    isAnchorEdited |= ImGui::DragFloat2("Anchor Max", &element.anchorMax.x, 0.01f, 0.0f, 1.0f);
-    isAnchorEdited |= ImGui::DragFloat2("Pivot", &element.pivot.x, 0.01f, 0.0f, 1.0f);
+    isAnchorEdited |= UI::DragFloat2("Anchor Min", &element.anchorMin.x, 0.01f, 0.0f, 1.0f);
+    isAnchorEdited |= UI::DragFloat2("Anchor Max", &element.anchorMax.x, 0.01f, 0.0f, 1.0f);
+    isAnchorEdited |= UI::DragFloat2("Pivot", &element.pivot.x, 0.01f, 0.0f, 1.0f);
     if (isAnchorEdited) {
       element.anchorMax = { (std::max)(element.anchorMin.x, element.anchorMax.x), (std::max)(element.anchorMin.y, element.anchorMax.y) };
       layout.SetScreenRect(element, rectMin, rectSize);
     }
-    ImGui::DragFloat2("Position", &element.position.x, 1.0f);
-    ImGui::DragFloat2(IsStretched(element) ? "Size Delta###Size" : "Size###Size", &element.size.x, 1.0f);
-    ImGui::DragFloat("Rotation", &element.rotation, 0.5f, -360.0f, 360.0f, "%.1f deg");
+    UI::DragFloat2("Position", &element.position.x, 1.0f);
+    UI::DragFloat2(IsStretched(element) ? "Size Delta###Size" : "Size###Size", &element.size.x, 1.0f);
+    UI::DragFloat("Rotation", &element.rotation, 0.5f, -360.0f, 360.0f, "%.1f deg");
 
     ImGui::SeparatorText("Appearance");
-    ImGui::ColorEdit4("Color", &element.color.x);
+    UI::ColorEdit4("Color", &element.color.x);
     ImGui::Checkbox("Flip X", &element.flipX);
     ImGui::SameLine();
     ImGui::Checkbox("Flip Y", &element.flipY);
 
     if (element.sprite) {
-      ImGui::DragFloat2("UV Left Top", &element.uvLeftTop.x, 1.0f, 0.0f, 8192.0f, "%.0f");
-      ImGui::DragFloat2("UV Size", &element.uvSize.x, 1.0f, 0.0f, 8192.0f, "%.0f");
+      UI::DragFloat2("UV Left Top", &element.uvLeftTop.x, 1.0f, 0.0f, 8192.0f, "%.0f");
+      UI::DragFloat2("UV Size", &element.uvSize.x, 1.0f, 0.0f, 8192.0f, "%.0f");
       if (ImGui::Button("Fit UV")) {
         const DirectX::TexMetadata& metadata = TextureManager::GetInstance()->GetMetaData(element.texture);
         element.uvLeftTop = {};
@@ -1487,7 +1474,7 @@ namespace Tako {
     // 説明と警告は長いので、インスペクターの幅で折り返す
     ImGui::PushTextWrapPos(0.0f);
     if (element.isSliceOverridden) {
-      if (ImGui::Button("Save as Texture Default")) {
+      if (ImGui::Button(ICON_FA_FLOPPY_DISK "  Save as Texture Default")) {
         UILayout::SetTextureSlice(element.texture, slice);
       }
       ImGui::SetItemTooltip("Copy this element's 9-slice to the shared 9-slice of %s.", element.texture.c_str());
@@ -1498,7 +1485,7 @@ namespace Tako {
       ImGui::TextDisabled("Edits apply to all of them (in every layout).");
     }
 
-    ImGui::DragFloat4("Border", &slice.border.x, 1.0f, 0.0f, 4096.0f, "%.0f");
+    UI::DragFloat4("Border", &slice.border.x, 1.0f, 0.0f, 4096.0f, "%.0f");
     ImGui::SetItemTooltip("Left, Top, Right, Bottom in texture px, measured from each edge of the UV rect.\nCorners keep this size on screen; edges stretch along one axis and the center stretches along both.");
     float all = slice.border.x;
     ImGui::SetNextItemWidth(ImGui::CalcItemWidth() * 0.5f);
@@ -1514,13 +1501,13 @@ namespace Tako {
     const float sumX  = slice.border.x + slice.border.z;
     const float sumY  = slice.border.y + slice.border.w;
     if (sumX * scale > element.rectSize.x) {
-      ImGui::TextColored(kWarningColor, "L + R (%.0f px on screen) is wider than the element (%.0f px). Corners are shrunk to fit and the center is not drawn.", sumX * scale, element.rectSize.x);
+      ImGui::TextColored(GetEditorColors().warning, "L + R (%.0f px on screen) is wider than the element (%.0f px). Corners are shrunk to fit and the center is not drawn.", sumX * scale, element.rectSize.x);
     }
     if (sumY * scale > element.rectSize.y) {
-      ImGui::TextColored(kWarningColor, "T + B (%.0f px on screen) is taller than the element (%.0f px). Corners are shrunk to fit and the center is not drawn.", sumY * scale, element.rectSize.y);
+      ImGui::TextColored(GetEditorColors().warning, "T + B (%.0f px on screen) is taller than the element (%.0f px). Corners are shrunk to fit and the center is not drawn.", sumY * scale, element.rectSize.y);
     }
     if (sumX > element.uvSize.x || sumY > element.uvSize.y) {
-      ImGui::TextColored(kWarningColor, "The border is larger than the UV rect (%.0f x %.0f), so the center region is flipped.", element.uvSize.x, element.uvSize.y);
+      ImGui::TextColored(GetEditorColors().warning, "The border is larger than the UV rect (%.0f x %.0f), so the center region is flipped.", element.uvSize.x, element.uvSize.y);
     }
     ImGui::PopTextWrapPos();
 
@@ -1545,12 +1532,12 @@ namespace Tako {
 
     const auto [regionMin, regionMax] = RegionRect(element, slice.border, selectedRegion_);
     ImGui::Text("%s: %.0f x %.0f px at (%.0f, %.0f)", kRegionNames[selectedRegion_], regionMax.x - regionMin.x, regionMax.y - regionMin.y, regionMin.x, regionMin.y);
-    ImGui::Checkbox("Visible##Region", &slice.regionVisible[selectedRegion_]);
+    UI::Checkbox("Visible##Region", &slice.regionVisible[selectedRegion_]);
     ImGui::SetItemTooltip(selectedRegion_ == kCenterRegion ? "Unchecked: draw only the border (Fill Center off)." : "Unchecked: this region is not drawn.");
 
     // 区画ごとの別画像。区画の大きさは枠で決まり、画像はその区画いっぱいに引き伸ばす
     std::string& regionTexture = slice.regionTextures[selectedRegion_];
-    if (ImGui::BeginCombo("Region Texture", regionTexture.empty() ? "(element texture)" : regionTexture.c_str())) {
+    if (UI::BeginCombo("Region Texture", regionTexture.empty() ? "(element texture)" : regionTexture.c_str())) {
       if (ImGui::Selectable("(element texture)", regionTexture.empty())) {
         regionTexture.clear();
       }
@@ -1572,7 +1559,7 @@ namespace Tako {
     TextureManager* textureManager = TextureManager::GetInstance();
     const bool      isOwnLoaded    = !regionTexture.empty() && textureManager->IsLoaded(regionTexture);
     ImGui::BeginDisabled(regionTexture.empty());
-    if (ImGui::Button("Clear##RegionTexture")) {
+    if (ImGui::Button(ICON_FA_ERASER "  Clear##RegionTexture")) {
       regionTexture.clear();
     }
     ImGui::EndDisabled();

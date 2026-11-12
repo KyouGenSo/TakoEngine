@@ -1,6 +1,7 @@
 #ifdef _DEBUG
 
 #include "CameraAnimationEditor.h"
+#include "EditorUI.h"
 #include "DebugUIManager.h"
 #include "DebugViewport.h"
 #include "FrameTimer.h"
@@ -109,7 +110,7 @@ namespace Tako {
     }
 
     ImGui::SetNextWindowSize(ImVec2(1200, 800), ImGuiCond_FirstUseEver);
-    if (!ImGui::Begin("Camera Animation Editor", isOpen_, ImGuiWindowFlags_MenuBar)) {
+    if (!ImGui::Begin(WindowTitle::kCameraAnimationEditor, isOpen_, ImGuiWindowFlags_MenuBar)) {
       ImGui::End();
       return;
     }
@@ -315,7 +316,7 @@ namespace Tako {
       DrawShortcutTable(HistoryShortcuts());
       ImGui::PopID();
       ImGui::Separator();
-      if (ImGui::Button("Close")) {
+      if (ImGui::Button(ICON_FA_XMARK "  Close")) {
         ImGui::CloseCurrentPopup();
       }
       ImGui::EndPopup();
@@ -331,7 +332,7 @@ namespace Tako {
       comboLabel += " *";
     }
     ImGui::SetNextItemWidth(240.0f);
-    if (ImGui::BeginCombo("Animation", comboLabel.c_str())) {
+    if (ImGui::BeginCombo("##Animation", comboLabel.c_str())) {
       std::vector<std::string> sceneNames;
       for (CameraAnimation* candidate : CameraAnimation::GetInstances()) {
         const std::string& name = candidate->GetAnimationName();
@@ -356,21 +357,21 @@ namespace Tako {
       }
       ImGui::EndCombo();
     }
-    ImGui::SetItemTooltip("Animations loaded by the scene are edited in place, so the game uses the edits right away.");
+    ImGui::SetItemTooltip("Animation. Ones loaded by the scene are edited in place, so the game uses the edits right away.");
 
     ImGui::SameLine();
-    if (ImGui::Button("New...")) {
+    if (ImGui::Button(ICON_FA_FILE_CIRCLE_PLUS "  New...")) {
       OpenNamePopup(NamePopup::New);
     }
 
     ImGui::BeginDisabled(!animation_);
     ImGui::SameLine();
-    if (ImGui::Button(tracker_.IsEdited() ? "Save *###Save" : "Save###Save")) {
+    if (ImGui::Button(tracker_.IsEdited() ? ICON_FA_FLOPPY_DISK "  Save *###Save" : ICON_FA_FLOPPY_DISK "  Save###Save")) {
       Save();
     }
     ImGui::SetItemTooltip("Ctrl+S");
     ImGui::SameLine();
-    if (ImGui::Button("Reload")) {
+    if (ImGui::Button(ICON_FA_ROTATE "  Reload")) {
       RequestReload();
     }
     ImGui::SetItemTooltip("Discard unsaved changes and read the file again.");
@@ -404,7 +405,7 @@ namespace Tako {
     const std::string name = nameBuffer_;
     const bool        isTaken = IsNameTaken(name);
     if (isTaken) {
-      ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "'%s' already exists", name.c_str());
+      ImGui::TextColored(GetEditorColors().warning, "'%s' already exists", name.c_str());
     }
 
     const bool canApply = !name.empty() && !isTaken;
@@ -467,23 +468,23 @@ namespace Tako {
 
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(15, 8));
 
-    if (ImGui::Button(isPlaying_ ? "||" : ">", ImVec2(40, 0))) {
+    if (UI::IconButton(isPlaying_ ? ICON_FA_PAUSE "##Play" : ICON_FA_PLAY "##Play", "Play / Pause (Space)", isPlaying_)) {
       TogglePlay();
     }
 
     ImGui::SameLine();
-    if (ImGui::Button("[]", ImVec2(40, 0))) {
+    if (UI::IconButton(ICON_FA_STOP, "Stop and go back to the start")) {
       isPlaying_ = false;
       playhead_ = 0.0f;
     }
 
     ImGui::SameLine();
-    if (ImGui::Button("|<", ImVec2(40, 0))) {
+    if (UI::IconButton(ICON_FA_BACKWARD_STEP, "Go to the start")) {
       playhead_ = 0.0f;
     }
 
     ImGui::SameLine();
-    if (ImGui::Button(">|", ImVec2(40, 0))) {
+    if (UI::IconButton(ICON_FA_FORWARD_STEP, "Go to the end")) {
       playhead_ = duration;
     }
 
@@ -504,8 +505,7 @@ namespace Tako {
     }
 
     ImGui::SameLine();
-    ImGui::Checkbox("Preview", &isPreviewEnabled_);
-    ImGui::SetItemTooltip("While on, the main camera follows the playhead (overrides the game camera). The start blend of Smooth Blend is not previewed.");
+    UI::IconToggle(ICON_FA_EYE "##Preview", "Preview: while on, the main camera follows the playhead (overrides the game camera). The start blend of Smooth Blend is not previewed", &isPreviewEnabled_);
 
     ImGui::PopStyleVar();
 
@@ -541,7 +541,8 @@ namespace Tako {
     // スクラブ用スライダー。プレビュー中は背景色を変える
     if (duration > 0.0f) {
       if (isPreviewEnabled_) {
-        ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.2f, 0.4f, 1.0f));
+        const ImVec4& info = GetEditorColors().info;
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(info.x, info.y, info.z, 0.3f));
       }
       ImGui::SliderFloat("##Timeline", &playhead_, 0.0f, duration, "%.2fs");
       if (isPreviewEnabled_) {
@@ -565,7 +566,7 @@ namespace Tako {
 
     const char* captureSources[] = { "Main Camera", "Debug Viewport" };
     int captureSourceIndex = static_cast<int>(captureSource_);
-    if (ImGui::Combo("Capture From", &captureSourceIndex, captureSources, 2)) {
+    if (UI::Combo("Capture From", &captureSourceIndex, captureSources, 2)) {
       captureSource_ = static_cast<CaptureSource>(captureSourceIndex);
     }
     if (captureSource_ == CaptureSource::DebugViewport && !CaptureSourceCamera()) {
@@ -576,7 +577,7 @@ namespace Tako {
     if (ImGui::CollapsingHeader("Start Mode Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
       const char* startModes[] = { "Jump Cut", "Smooth Blend" };
       int startModeIndex = static_cast<int>(animation_->GetStartMode());
-      if (ImGui::Combo("Start Mode", &startModeIndex, startModes, 2)) {
+      if (UI::Combo("Start Mode", &startModeIndex, startModes, 2)) {
         animation_->SetStartMode(static_cast<CameraAnimation::StartMode>(startModeIndex));
       }
 
@@ -589,7 +590,7 @@ namespace Tako {
 
       if (animation_->GetStartMode() == CameraAnimation::StartMode::SMOOTH_BLEND) {
         float blendDuration = animation_->GetBlendDuration();
-        if (ImGui::DragFloat("Blend Duration (sec)", &blendDuration, 0.01f, 0.1f, 2.0f)) {
+        if (UI::DragFloat("Blend Duration (sec)", &blendDuration, 0.01f, 0.1f, 2.0f)) {
           animation_->SetBlendDuration(blendDuration);
         }
 
@@ -606,12 +607,12 @@ namespace Tako {
       ImGui::Text("Current Target: ");
       ImGui::SameLine();
       if (target) {
-        ImGui::TextColored(ImVec4(0.2f, 0.8f, 0.2f, 1.0f), "Set by the game");
+        ImGui::TextColored(GetEditorColors().success, "Set by the game");
         ImGui::TextWrapped("Keyframes with TARGET_RELATIVE coordinate type use this target as reference.");
       }
       else {
-        ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "None");
-        ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.2f, 1.0f),
+        ImGui::TextColored(ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled), "None");
+        ImGui::TextColored(GetEditorColors().warning,
           "TARGET_RELATIVE keyframes will use world coordinates. The game sets the target with CameraAnimation::SetTarget().");
       }
 
@@ -622,13 +623,13 @@ namespace Tako {
       static float newKeyTime = 0.0f;
       static int coordTypeIndex = 0; // 0: WORLD, 1: TARGET_RELATIVE
 
-      ImGui::DragFloat("Time (seconds)", &newKeyTime, 0.01f, 0.0f, 10.0f);
+      UI::DragFloat("Time (seconds)", &newKeyTime, 0.01f, 0.0f, 10.0f);
 
       const char* coordTypes[] = { "World", "Target Relative" };
-      ImGui::Combo("Coordinate Type##AddFrame", &coordTypeIndex, coordTypes, 2);
+      UI::Combo("Coordinate Type##AddFrame", &coordTypeIndex, coordTypes, 2);
 
       if (coordTypeIndex == 1 && !target) {
-        ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f),
+        ImGui::TextColored(GetEditorColors().warning,
           "Warning: No target set. Will use world coordinates.");
       }
 
@@ -636,7 +637,7 @@ namespace Tako {
       const auto coordinateType = static_cast<CameraKeyframe::CoordinateType>(coordTypeIndex);
 
       ImGui::BeginDisabled(CaptureSourceCamera() == nullptr);
-      if (ImGui::Button("Add from Current Camera")) {
+      if (ImGui::Button(ICON_FA_PLUS "  Add from Current Camera")) {
         animation_->AddKeyframe(CaptureCamera(time, coordinateType));
 
         // 次の追加に備えて時刻を進める
@@ -645,7 +646,7 @@ namespace Tako {
       ImGui::EndDisabled();
 
       ImGui::SameLine();
-      if (ImGui::Button("Add Default")) {
+      if (ImGui::Button(ICON_FA_PLUS "  Add Default")) {
         CameraKeyframe defaultKf;
         defaultKf.time = time;
         defaultKf.position = Vector3(0.0f, 5.0f, -10.0f);
@@ -678,7 +679,7 @@ namespace Tako {
           ImGui::Text("Keyframe %d", idx);
           ImGui::Separator();
 
-          if (ImGui::DragFloat("Time", &kf.time, 0.01f, 0.0f, animation_->GetDuration())) {
+          if (UI::DragFloat("Time", &kf.time, 0.01f, 0.0f, animation_->GetDuration())) {
             if (enableGridSnap_) {
               kf.time = SnapToGrid(kf.time);
             }
@@ -687,23 +688,23 @@ namespace Tako {
 
           const char* coordTypes[] = { "World", "Target Relative" };
           int currentCoordType = static_cast<int>(kf.coordinateType);
-          if (ImGui::Combo("Coordinate Type##FrameParam", &currentCoordType, coordTypes, 2)) {
+          if (UI::Combo("Coordinate Type##FrameParam", &currentCoordType, coordTypes, 2)) {
             kf.coordinateType = static_cast<CameraKeyframe::CoordinateType>(currentCoordType);
             changed = true;
           }
 
           if (kf.coordinateType == CameraKeyframe::CoordinateType::TARGET_RELATIVE) {
             if (target) {
-              ImGui::TextColored(ImVec4(0.2f, 0.8f, 0.8f, 1.0f), "Position is offset from target");
+              ImGui::TextColored(GetEditorColors().info, "Position is offset from target");
             }
             else {
-              ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "No target! Using world coordinates");
+              ImGui::TextColored(GetEditorColors().warning, "No target! Using world coordinates");
             }
           }
 
           const char* posLabel = (kf.coordinateType == CameraKeyframe::CoordinateType::TARGET_RELATIVE)
             ? "Position (Offset)" : "Position";
-          if (ImGui::DragFloat3(posLabel, &kf.position.x, 0.1f)) {
+          if (UI::DragFloat3(posLabel, &kf.position.x, 0.1f)) {
             changed = true;
           }
 
@@ -713,7 +714,7 @@ namespace Tako {
             kf.rotation.y * 180.0f / std::numbers::pi_v<float>,
             kf.rotation.z * 180.0f / std::numbers::pi_v<float>
           };
-          if (ImGui::DragFloat3("Rotation", &rotDeg.x, 1.0f)) {
+          if (UI::DragFloat3("Rotation", &rotDeg.x, 1.0f)) {
             kf.rotation = {
               rotDeg.x * std::numbers::pi_v<float> / 180.0f,
               rotDeg.y * std::numbers::pi_v<float> / 180.0f,
@@ -724,14 +725,14 @@ namespace Tako {
 
           // 度数で表示・編集（内部はラジアン）
           float fovDeg = kf.fov * 180.0f / std::numbers::pi_v<float>;
-          if (ImGui::DragFloat("FOV", &fovDeg, 0.5f, 10.0f, 120.0f)) {
+          if (UI::DragFloat("FOV", &fovDeg, 0.5f, 10.0f, 120.0f)) {
             kf.fov = fovDeg * std::numbers::pi_v<float> / 180.0f;
             changed = true;
           }
 
           const char* interpTypes[] = { "Linear", "Ease In", "Ease Out", "Ease In-Out", "Cubic Bezier" };
           int currentType = static_cast<int>(kf.interpolation);
-          if (ImGui::Combo("Interpolation", &currentType, interpTypes, 5)) {
+          if (UI::Combo("Interpolation", &currentType, interpTypes, 5)) {
             kf.interpolation = static_cast<CameraKeyframe::InterpolationType>(currentType);
             changed = true;
           }
@@ -741,11 +742,11 @@ namespace Tako {
           }
 
           if (kf.interpolation == CameraKeyframe::InterpolationType::CUBIC_BEZIER) {
-            if (ImGui::DragFloat2("Bezier P1", &kf.bezierP1.x, 0.01f)) {
+            if (UI::DragFloat2("Bezier P1", &kf.bezierP1.x, 0.01f)) {
               kf.bezierP1.x = std::clamp(kf.bezierP1.x, 0.0f, 1.0f);
               changed = true;
             }
-            if (ImGui::DragFloat2("Bezier P2", &kf.bezierP2.x, 0.01f)) {
+            if (UI::DragFloat2("Bezier P2", &kf.bezierP2.x, 0.01f)) {
               kf.bezierP2.x = std::clamp(kf.bezierP2.x, 0.0f, 1.0f);
               changed = true;
             }
@@ -753,12 +754,12 @@ namespace Tako {
 
           const char* pathTypes[] = { "Linear", "Catmull-Rom" };
           int currentPathType = static_cast<int>(kf.pathType);
-          if (ImGui::Combo("Path Type", &currentPathType, pathTypes, 2)) {
+          if (UI::Combo("Path Type", &currentPathType, pathTypes, 2)) {
             kf.pathType = static_cast<CameraKeyframe::PathType>(currentPathType);
             changed = true;
           }
 
-          if (ImGui::Button("Apply Path to All Keyframes")) {
+          if (ImGui::Button(ICON_FA_CHECK "  Apply Path to All Keyframes")) {
             for (size_t i = 0; i < animation_->GetKeyframeCount(); ++i) {
               CameraKeyframe pathKf = animation_->GetKeyframe(i);
               pathKf.pathType = kf.pathType;
@@ -771,7 +772,7 @@ namespace Tako {
           }
 
           ImGui::BeginDisabled(CaptureSourceCamera() == nullptr);
-          if (ImGui::Button("Apply Current Camera")) {
+          if (ImGui::Button(ICON_FA_CHECK "  Apply Current Camera")) {
             const CameraKeyframe captured = CaptureCamera(kf.time, kf.coordinateType);
             kf.position = captured.position;
             kf.rotation = captured.rotation;
@@ -781,13 +782,9 @@ namespace Tako {
           ImGui::EndDisabled();
 
           ImGui::Spacing();
-          ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.2f, 0.2f, 1.0f));
-          ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.9f, 0.3f, 0.3f, 1.0f));
-          ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.0f, 0.1f, 0.1f, 1.0f));
-          if (ImGui::Button("Delete Keyframe", ImVec2(-1, 0))) {
+          if (UI::DangerButton(ICON_FA_TRASH_CAN "  Delete Keyframe", ImVec2(-1, 0))) {
             DeleteSelectedKeyframes();
           }
-          ImGui::PopStyleColor(3);
         }
       }
       else {
@@ -796,9 +793,9 @@ namespace Tako {
 
         // 適用はボタン押下時にまとめて実行
         static Vector3 offsetPos = { 0, 0, 0 };
-        ImGui::DragFloat3("Offset Position", &offsetPos.x, 0.1f);
+        UI::DragFloat3("Offset Position", &offsetPos.x, 0.1f);
 
-        if (ImGui::Button("Apply Offset")) {
+        if (ImGui::Button(ICON_FA_CHECK "  Apply Offset")) {
           for (uint32_t id : selectedKeyframes_) {
             const int idx = animation_->FindKeyframeIndex(id);
             if (idx >= 0) {
@@ -813,13 +810,9 @@ namespace Tako {
         }
 
         ImGui::Spacing();
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.2f, 0.2f, 1.0f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.9f, 0.3f, 0.3f, 1.0f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.0f, 0.1f, 0.1f, 1.0f));
-        if (ImGui::Button("Delete Selected Keyframes", ImVec2(-1, 0))) {
+        if (UI::DangerButton(ICON_FA_TRASH_CAN "  Delete Selected Keyframes", ImVec2(-1, 0))) {
           DeleteSelectedKeyframes();
         }
-        ImGui::PopStyleColor(3);
       }
     }
   }
@@ -828,9 +821,7 @@ namespace Tako {
     ImGui::Separator();
 
     if (isPreviewEnabled_) {
-      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.2f, 1.0f, 0.8f, 1.0f));
-      ImGui::Text("[PREVIEW]");
-      ImGui::PopStyleColor();
+      ImGui::TextColored(GetEditorColors().info, ICON_FA_EYE "  PREVIEW");
       ImGui::SameLine();
     }
 

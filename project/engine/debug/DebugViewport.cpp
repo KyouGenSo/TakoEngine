@@ -1,6 +1,7 @@
 #include "DebugViewport.h"
 
 #ifdef _DEBUG
+#include "EditorUI.h"
 
 #include "EngineSettingsWindow.h"
 #include "PreviewViewport.h"
@@ -111,20 +112,20 @@ namespace Tako {
     ImGuizmo::BeginFrame();
 
     bool inputCaptured = false;
-    if (ImGui::Begin("Debug Viewport", isOpen_)) {
-      if (ImGui::Button("Sync to Game Camera##DbgView")) {
+    if (ImGui::Begin(WindowTitle::kDebugViewport, isOpen_)) {
+      sceneEditor_->DrawGizmoToolbar();
+      UI::ToolbarSeparator();
+      UI::IconToggle(ICON_FA_BORDER_ALL "##Grid", "Grid", &showGrid_);
+      ImGui::SameLine();
+      UI::IconToggle(ICON_FA_VIDEO "##GameCamera", "Show the game camera", &showGameCamera_);
+      ImGui::SameLine();
+      if (UI::IconButton(ICON_FA_CAMERA_ROTATE, "Move this view to the game camera")) {
         if (const Camera* gameCamera = *Renderer::GetInstance()->GetCamera()) {
           cameraController_.SetFromCamera(*gameCamera);
         }
       }
-      ImGui::SameLine();
-      ImGui::Checkbox("Grid##DbgView", &showGrid_);
-      ImGui::SameLine();
-      ImGui::Checkbox("Game Camera##DbgView", &showGameCamera_);
-      ImGui::SameLine();
-      ImGui::TextDisabled("Speed: %.2f", cameraController_.moveSpeed);
-      ImGui::TextDisabled("RMB: Look (+WASD/QE Fly, +Wheel Speed) / Alt+LMB: Orbit / MMB: Pan / Wheel: Dolly");
-      sceneEditor_->DrawGizmoToolbar();
+      UI::ToolbarSeparator();
+      cameraController_.DrawHelp();
 
       if (viewport_ && viewport_->IsInitialized()) {
         // ImGuizmo はカーソルの下に ImGui のアイテムがあると掴めないので、ギズモの上では画像をボタンにしない

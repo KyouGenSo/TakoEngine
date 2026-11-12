@@ -11,7 +11,7 @@ namespace Tako {
   /// 同じ Actor の MeshComponent のモデルを動かす。AnimationClip（Animation Editor で作るもの）は Play 中に再生し、
   /// モデルに入っているスケルタルアニメーションは Edit 中も名前で切り替える
   /// </summary>
-  TCLASS()
+  TCLASS(DisplayName = "Animator")
   class AnimatorComponent : public Component {
     GENERATED_BODY()
 

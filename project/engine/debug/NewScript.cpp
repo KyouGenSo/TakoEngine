@@ -1,6 +1,7 @@
 #ifdef _DEBUG
 
 #include "NewScript.h"
+#include "EditorUI.h"
 #include "DebugUIManager.h"
 #include "TypeRegistry.h"
 
@@ -199,9 +200,9 @@ namespace Tako {
     }
     const bool entered = ImGui::InputTextWithHint("##Name", "ClassName", nameBuffer, sizeof(nameBuffer), ImGuiInputTextFlags_EnterReturnsTrue);
     if (!popupError.empty()) {
-      ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.2f, 1.0f), "%s", popupError.c_str());
+      ImGui::TextColored(GetEditorColors().warning, "%s", popupError.c_str());
     }
-    const bool create = ImGui::Button("Create");
+    const bool create = ImGui::Button(ICON_FA_PLUS "  Create");
     ImGui::SameLine();
     const bool cancel = ImGui::Button("Cancel") || ImGui::IsKeyPressed(ImGuiKey_Escape);
     if (entered || create) {

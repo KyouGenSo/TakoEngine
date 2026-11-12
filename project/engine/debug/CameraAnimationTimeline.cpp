@@ -1,6 +1,7 @@
 #ifdef _DEBUG
 
 #include "CameraAnimationTimeline.h"
+#include "EditorUI.h"
 #include <algorithm>
 #include <cmath>
 #include <format>
@@ -47,7 +48,7 @@ namespace Tako {
 
       drawList->AddRectFilled(canvasPos,
         ImVec2(canvasPos.x + canvasSize.x, canvasPos.y + canvasSize.y),
-        IM_COL32(40, 40, 40, 255));
+        ImGui::GetColorU32(ImGuiCol_FrameBg));
 
       DrawGrid();
 
@@ -114,7 +115,7 @@ namespace Tako {
     drawList->AddRectFilled(
       ImVec2(canvasPos.x + trackLabelWidth_, canvasPos.y),
       ImVec2(canvasPos.x + canvasSize.x, canvasPos.y + rulerHeight_),
-      IM_COL32(50, 50, 50, 255));
+      ImGui::GetColorU32(ImGuiCol_FrameBgHovered));
 
     float duration = animation_->GetDuration();
     float timeStep = 1.0f / zoom_;
@@ -134,12 +135,12 @@ namespace Tako {
       drawList->AddLine(
         ImVec2(canvasPos.x + x, canvasPos.y + rulerHeight_ - 10),
         ImVec2(canvasPos.x + x, canvasPos.y + rulerHeight_),
-        IM_COL32(200, 200, 200, 255));
+        ImGui::GetColorU32(ImGuiCol_Text));
 
       std::string label = std::format("{:.1f}", time);
       drawList->AddText(
         ImVec2(canvasPos.x + x - 10, canvasPos.y + 2),
-        IM_COL32(200, 200, 200, 255),
+        ImGui::GetColorU32(ImGuiCol_Text),
         label.c_str());
 
       // 副目盛り（0.1秒刻み）
@@ -151,7 +152,7 @@ namespace Tako {
           drawList->AddLine(
             ImVec2(canvasPos.x + subX, canvasPos.y + rulerHeight_ - 5),
             ImVec2(canvasPos.x + subX, canvasPos.y + rulerHeight_),
-            IM_COL32(100, 100, 100, 255));
+            ImGui::GetColorU32(ImGuiCol_TextDisabled));
         }
       }
     }
@@ -173,7 +174,7 @@ namespace Tako {
       drawList->AddLine(
         ImVec2(canvasPos.x + x, canvasPos.y + rulerHeight_),
         ImVec2(canvasPos.x + x, canvasPos.y + canvasSize.y),
-        gridColor_, 1.0f);
+        ImGui::GetColorU32(ImGuiCol_Border), 1.0f);
     }
 
     // 水平線（トラック境界）
@@ -183,7 +184,7 @@ namespace Tako {
         drawList->AddLine(
           ImVec2(canvasPos.x + trackLabelWidth_, yPos),
           ImVec2(canvasPos.x + canvasSize.x, yPos),
-          gridColor_, 1.0f);
+          ImGui::GetColorU32(ImGuiCol_Border), 1.0f);
         yPos += trackHeight_;
       }
     }
@@ -217,20 +218,20 @@ namespace Tako {
     ImVec2 canvasPos = ImGui::GetCursorScreenPos();
     ImVec2 canvasSize = ImGui::GetContentRegionAvail();
 
-    ImVec2 labelPos = ImVec2(canvasPos.x + 5, yPos + 5);
-    drawList->AddText(labelPos, IM_COL32(200, 200, 200, 255), GetTrackName(trackType));
-
-    // ラベル背景
+    // ラベル背景（文字より先に描く。後に描くと文字が背景に隠れる）
     drawList->AddRectFilled(
       ImVec2(canvasPos.x, yPos),
       ImVec2(canvasPos.x + trackLabelWidth_, yPos + trackHeight_),
-      IM_COL32(60, 60, 60, 255));
+      ImGui::GetColorU32(ImGuiCol_FrameBgHovered));
+
+    ImVec2 labelPos = ImVec2(canvasPos.x + 5, yPos + 5);
+    drawList->AddText(labelPos, ImGui::GetColorU32(ImGuiCol_Text), GetTrackName(trackType));
 
     // トラック背景
     drawList->AddRectFilled(
       ImVec2(canvasPos.x + trackLabelWidth_, yPos),
       ImVec2(canvasPos.x + canvasSize.x, yPos + trackHeight_),
-      IM_COL32(45, 45, 45, 255));
+      UI::MixColor(ImGuiCol_FrameBg, ImGuiCol_Text, 0.04f));
 
     for (size_t i = 0; i < animation_->GetKeyframeCount(); ++i) {
       const CameraKeyframe& kf = animation_->GetKeyframe(i);
@@ -285,12 +286,12 @@ namespace Tako {
         ImVec2(center.x - size, center.y)       // 左
       };
       drawList->AddConvexPolyFilled(points, 4, color);
-      drawList->AddPolyline(points, 4, IM_COL32(255, 255, 255, 200), ImDrawFlags_Closed, 2.0f);
+      drawList->AddPolyline(points, 4, ImGui::GetColorU32(ImGuiCol_Text, 0.8f), ImDrawFlags_Closed, 2.0f);
       break;
     }
     case KeyframeStyle::CIRCLE:
       drawList->AddCircleFilled(center, size, color);
-      drawList->AddCircle(center, size, IM_COL32(255, 255, 255, 200), 0, 2.0f);
+      drawList->AddCircle(center, size, ImGui::GetColorU32(ImGuiCol_Text, 0.8f), 0, 2.0f);
       break;
 
     case KeyframeStyle::SQUARE:
@@ -301,7 +302,7 @@ namespace Tako {
       drawList->AddRect(
         ImVec2(center.x - size, center.y - size),
         ImVec2(center.x + size, center.y + size),
-        IM_COL32(255, 255, 255, 200), 0.0f, 0, 2.0f);
+        ImGui::GetColorU32(ImGuiCol_Text, 0.8f), 0.0f, 0, 2.0f);
       break;
 
     case KeyframeStyle::TRIANGLE: {
@@ -312,7 +313,7 @@ namespace Tako {
       };
       drawList->AddTriangleFilled(points[0], points[1], points[2], color);
       drawList->AddTriangle(points[0], points[1], points[2],
-        IM_COL32(255, 255, 255, 200), 2.0f);
+        ImGui::GetColorU32(ImGuiCol_Text, 0.8f), 2.0f);
       break;
     }
     }
@@ -623,7 +624,7 @@ namespace Tako {
 
   ImU32 CameraAnimationTimeline::GetTrackColor(TrackType track) const {
     switch (track) {
-    case TrackType::SUMMARY: return IM_COL32(200, 200, 200, 255);
+    case TrackType::SUMMARY: return ImGui::GetColorU32(ImGuiCol_Text);
     case TrackType::POSITION_X: return IM_COL32(255, 100, 100, 255);
     case TrackType::POSITION_Y: return IM_COL32(100, 255, 100, 255);
     case TrackType::POSITION_Z: return IM_COL32(100, 100, 255, 255);
@@ -631,7 +632,7 @@ namespace Tako {
     case TrackType::ROTATION_Y: return IM_COL32(200, 255, 100, 255);
     case TrackType::ROTATION_Z: return IM_COL32(100, 200, 255, 255);
     case TrackType::FOV: return IM_COL32(255, 255, 100, 255);
-    default: return IM_COL32(150, 150, 150, 255);
+    default: return ImGui::GetColorU32(ImGuiCol_TextDisabled);
     }
   }
 

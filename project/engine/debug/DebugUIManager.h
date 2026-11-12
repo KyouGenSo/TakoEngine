@@ -11,6 +11,7 @@
 #include <memory>
 #include <span>
 #include "ShortcutTable.h"
+#include "EditorUI.h"
 #include "EditTracker.h"
 #include "PrimitiveEditor.h"
 #include "ParticleEditor.h"
@@ -326,6 +327,7 @@ namespace Tako {
     bool                  showWarning_    = true;
     bool                  showError_      = true;
     bool                  autoScroll_     = true;
+    ImGuiTextFilter       consoleFilter_;
 
     std::array<bool, static_cast<size_t>(Window::Count)> windowVisibility_{};  ///< ウィンドウ表示フラグ（Window で添字）
     std::array<bool, static_cast<size_t>(Window::Count)> startupWindows_{};    ///< 起動時に開くウィンドウ（EngineSettingsWindow が編集・保存する）
@@ -343,9 +345,6 @@ namespace Tako {
     //終了の確認
     std::vector<std::string> unsavedChanges_;                ///< 確認モーダルに出す未保存の一覧（ConfirmExit で集める）
     bool                     isExitPopupRequested_ = false;
-
-    //シーン遷移 UI 用
-    char sceneNameBuffer_[128] = "";  ///< シーン名入力バッファ
 
     //全エディタで 1 本の Undo / Redo（履歴を持つツールより前に宣言し、後で破棄する）
     UndoJournal    undoJournal_;

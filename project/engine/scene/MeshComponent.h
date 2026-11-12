@@ -15,7 +15,7 @@ namespace Tako {
   /// Actor の位置にモデルを描く（Unity の MeshFilter + MeshRenderer）。マテリアルと描画フラグは自分で持ち、シーンとプレハブに保存する。
   /// モデルの読み替えとマテリアルの解決は描画の直前に行う（GPU が使用中の物を消さないため）
   /// </summary>
-  TCLASS()
+  TCLASS(DisplayName = "Mesh")
   class MeshComponent : public Component {
     GENERATED_BODY()
 

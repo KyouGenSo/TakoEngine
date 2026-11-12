@@ -1,9 +1,9 @@
 #include "ImGuiThemes.h"
-#include "ImGuiManager.h"
 #include "ColorFunc.h"
 
-#include "imgui.h"
+#include "imgui_internal.h"
 
+#include <algorithm>
 #include <cassert>
 #include <cstdint>
 
@@ -22,34 +22,55 @@ namespace Tako {
       uint32_t accent2;   ///< グラフ・ドロップ先
     };
 
-    struct Shape {
-      float  windowRounding;    ///< Window / Child / Popup
-      float  frameRounding;     ///< Frame / Grab / Tab / Scrollbar
-      float  windowBorderSize;
-      float  frameBorderSize;
-      ImVec2 windowPadding;
-      ImVec2 framePadding;
-      ImVec2 itemSpacing;
-    };
+    EditorColors editorColors;
 
-    struct PaletteTheme {
-      Palette palette;
-      Shape   shape;
-    };
+    /// <summary>
+    /// 全テーマ共通の形（余白・間隔・角丸・枠線）。既定値の style に設定する
+    /// </summary>
+    void ApplyEditorShape(ImGuiStyle& style) {
+      style.WindowPadding            = ImVec2(8.0f, 8.0f);
+      style.FramePadding             = ImVec2(6.0f, 4.0f);
+      style.CellPadding              = ImVec2(6.0f, 3.0f);
+      style.ItemSpacing              = ImVec2(8.0f, 5.0f);
+      style.ItemInnerSpacing         = ImVec2(6.0f, 4.0f);
+      style.IndentSpacing            = 16.0f;
+      style.ScrollbarSize            = 12.0f;
+      style.GrabMinSize              = 10.0f;
+      style.WindowBorderSize         = 1.0f;
+      style.ChildBorderSize          = 1.0f;
+      style.PopupBorderSize          = 1.0f;
+      style.FrameBorderSize          = 0.0f;
+      style.TabBorderSize            = 0.0f;
+      style.TabBarOverlineSize       = 2.0f;
+      style.DockingSeparatorSize     = 2.0f;
+      style.SeparatorTextBorderSize  = 1.0f;
+      style.SeparatorTextPadding     = ImVec2(8.0f, 4.0f);
+      style.WindowRounding           = 4.0f;
+      style.ChildRounding            = 4.0f;
+      style.PopupRounding            = 4.0f;
+      style.FrameRounding            = 3.0f;
+      style.GrabRounding             = 3.0f;
+      style.TabRounding              = 4.0f;
+      style.ScrollbarRounding        = 6.0f;
+      style.WindowTitleAlign         = ImVec2(0.0f, 0.5f);
+      style.WindowMenuButtonPosition = ImGuiDir_None;  // タブの左の三角（折りたたみ）は出さない
+      style.ColorButtonPosition      = ImGuiDir_Right;
+      style.DisabledAlpha            = 0.5f;
+    }
 
-    void ApplyShape(ImGuiStyle& style, const Shape& shape) {
-      style.WindowRounding    = shape.windowRounding;
-      style.ChildRounding     = shape.windowRounding;
-      style.PopupRounding     = shape.windowRounding;
-      style.FrameRounding     = shape.frameRounding;
-      style.GrabRounding      = shape.frameRounding;
-      style.TabRounding       = shape.frameRounding;
-      style.ScrollbarRounding = shape.frameRounding;
-      style.WindowBorderSize  = shape.windowBorderSize;
-      style.FrameBorderSize   = shape.frameBorderSize;
-      style.WindowPadding     = shape.windowPadding;
-      style.FramePadding      = shape.framePadding;
-      style.ItemSpacing       = shape.itemSpacing;
+    /// <summary>
+    /// 状態の色を、背景の明るさに合う組から選ぶ
+    /// </summary>
+    EditorColors MakeEditorColors(const ImGuiStyle& style) {
+      const ImVec4& background  = style.Colors[ImGuiCol_WindowBg];
+      const bool    isLight     = background.x * 0.299f + background.y * 0.587f + background.z * 0.114f > 0.5f;
+      EditorColors  colors      = isLight
+        ? EditorColors{ ImVec4(0.10f, 0.50f, 0.22f, 1.0f), ImVec4(0.60f, 0.40f, 0.00f, 1.0f), ImVec4(0.81f, 0.13f, 0.18f, 1.0f), ImVec4(0.04f, 0.41f, 0.85f, 1.0f), {} }
+        : EditorColors{ ImVec4(0.35f, 0.85f, 0.45f, 1.0f), ImVec4(1.00f, 0.78f, 0.25f, 1.0f), ImVec4(1.00f, 0.42f, 0.42f, 1.0f), ImVec4(0.40f, 0.72f, 1.00f, 1.0f), {} };
+      // 強調色が白や灰のテーマでも見えるよう、ボタンの色と文字の色の間を取る
+      colors.toggleOn = ImLerp(style.Colors[ImGuiCol_Button], style.Colors[ImGuiCol_Text], 0.3f);
+      colors.toggleOn.w = 1.0f;
+      return colors;
     }
 
     void ApplyPalette(ImGuiStyle& style, const Palette& palette) {
@@ -89,8 +110,9 @@ namespace Tako {
       colors[ImGuiCol_Button]                    = surface0;
       colors[ImGuiCol_ButtonHovered]             = surface1;
       colors[ImGuiCol_ButtonActive]              = surface2;
-      colors[ImGuiCol_Header]                    = surface0;
-      colors[ImGuiCol_HeaderHovered]             = surface1;
+      // 選択中の行が背景に埋もれないよう、ウィジェットの通常時より 1 段明るくする
+      colors[ImGuiCol_Header]                    = surface1;
+      colors[ImGuiCol_HeaderHovered]             = Vector4::Lerp(surface1, surface2, 0.5f);
       colors[ImGuiCol_HeaderActive]              = surface2;
       colors[ImGuiCol_Separator]                 = surface1;
       colors[ImGuiCol_SeparatorHovered]          = Color::WithAlpha(accent, 0.78f);
@@ -129,23 +151,19 @@ namespace Tako {
       }
     }
 
-    void ApplyPaletteTheme(ImGuiStyle& style, const PaletteTheme& theme) {
-      ApplyShape(style, theme.shape);
-      ApplyPalette(style, theme.palette);
-    }
-
-    // Monochrome 以外の配色は各テーマ公式のパレット値。サイズは独自
-    constexpr PaletteTheme kMonochrome       = { { 0x0f0f0f, 0x171717, 0x262626, 0x363636, 0x4a4a4a, 0xe6e6e6, 0xffffff, 0xa6a6a6 }, {  0.0f, 0.0f, 1.0f, 1.0f, { 10.0f, 10.0f }, {  6.0f, 4.0f }, { 8.0f, 6.0f } } };
-    constexpr PaletteTheme kCatppuccinMocha  = { { 0x181825, 0x1e1e2e, 0x313244, 0x45475a, 0x585b70, 0xcdd6f4, 0xcba6f7, 0xfab387 }, { 10.0f, 6.0f, 0.0f, 0.0f, { 12.0f, 12.0f }, { 10.0f, 5.0f }, { 8.0f, 6.0f } } };
-    constexpr PaletteTheme kCatppuccinLatte  = { { 0xe6e9ef, 0xeff1f5, 0xccd0da, 0xbcc0cc, 0xacb0be, 0x4c4f69, 0x8839ef, 0xfe640b }, { 10.0f, 6.0f, 0.0f, 0.0f, { 12.0f, 12.0f }, { 10.0f, 5.0f }, { 8.0f, 6.0f } } };
-    constexpr PaletteTheme kNord             = { { 0x2e3440, 0x2e3440, 0x3b4252, 0x434c5e, 0x4c566a, 0xd8dee9, 0x88c0d0, 0xebcb8b }, {  4.0f, 3.0f, 1.0f, 0.0f, { 10.0f, 10.0f }, {  8.0f, 4.0f }, { 8.0f, 6.0f } } };
-    constexpr PaletteTheme kDracula          = { { 0x21222c, 0x282a36, 0x343746, 0x44475a, 0x6272a4, 0xf8f8f2, 0xbd93f9, 0xff79c6 }, {  6.0f, 4.0f, 0.0f, 0.0f, { 10.0f, 10.0f }, {  8.0f, 4.0f }, { 8.0f, 5.0f } } };
-    constexpr PaletteTheme kGruvbox          = { { 0x1d2021, 0x282828, 0x3c3836, 0x504945, 0x665c54, 0xebdbb2, 0xfabd2f, 0xfe8019 }, {  2.0f, 2.0f, 1.0f, 0.0f, {  8.0f,  8.0f }, {  6.0f, 3.0f }, { 8.0f, 4.0f } } };
-    constexpr PaletteTheme kTokyoNight       = { { 0x16161e, 0x1a1b26, 0x292e42, 0x3b4261, 0x545c7e, 0xc0caf5, 0x7aa2f7, 0xff9e64 }, {  8.0f, 5.0f, 0.0f, 0.0f, { 12.0f, 10.0f }, {  8.0f, 4.0f }, { 8.0f, 6.0f } } };
-    constexpr PaletteTheme kOneDark          = { { 0x21252b, 0x282c34, 0x2c313a, 0x3e4452, 0x4e5666, 0xabb2bf, 0x61afef, 0xe5c07b }, {  4.0f, 2.0f, 1.0f, 0.0f, {  8.0f,  8.0f }, {  6.0f, 4.0f }, { 8.0f, 4.0f } } };
-    constexpr PaletteTheme kMonokai          = { { 0x1e1f1c, 0x272822, 0x34352f, 0x3e3d32, 0x75715e, 0xf8f8f2, 0xf92672, 0xa6e22e }, {  0.0f, 0.0f, 1.0f, 0.0f, {  8.0f,  8.0f }, {  4.0f, 3.0f }, { 8.0f, 4.0f } } };
+    // Monochrome 以外の配色は各テーマ公式のパレット値
+    constexpr Palette kMonochrome      = { 0x0f0f0f, 0x171717, 0x262626, 0x363636, 0x4a4a4a, 0xe6e6e6, 0xffffff, 0xa6a6a6 };
+    constexpr Palette kCatppuccinMocha = { 0x181825, 0x1e1e2e, 0x313244, 0x45475a, 0x585b70, 0xcdd6f4, 0xcba6f7, 0xfab387 };
+    constexpr Palette kCatppuccinLatte = { 0xe6e9ef, 0xeff1f5, 0xccd0da, 0xbcc0cc, 0xacb0be, 0x4c4f69, 0x8839ef, 0xfe640b };
+    constexpr Palette kNord            = { 0x2e3440, 0x2e3440, 0x3b4252, 0x434c5e, 0x4c566a, 0xd8dee9, 0x88c0d0, 0xebcb8b };
+    constexpr Palette kDracula         = { 0x21222c, 0x282a36, 0x343746, 0x44475a, 0x6272a4, 0xf8f8f2, 0xbd93f9, 0xff79c6 };
+    constexpr Palette kGruvbox         = { 0x1d2021, 0x282828, 0x3c3836, 0x504945, 0x665c54, 0xebdbb2, 0xfabd2f, 0xfe8019 };
+    constexpr Palette kTokyoNight      = { 0x16161e, 0x1a1b26, 0x292e42, 0x3b4261, 0x545c7e, 0xc0caf5, 0x7aa2f7, 0xff9e64 };
+    constexpr Palette kOneDark         = { 0x21252b, 0x282c34, 0x2c313a, 0x3e4452, 0x4e5666, 0xabb2bf, 0x61afef, 0xe5c07b };
+    constexpr Palette kMonokai         = { 0x1e1f1c, 0x272822, 0x34352f, 0x3e3d32, 0x75715e, 0xf8f8f2, 0xf92672, 0xa6e22e };
 
     // 以下は ImThemes (https://github.com/Patitotective/ImThemes) 収録テーマ。MIT License, Copyright (c) 2022 Patitotective
+    // 形（余白・角丸など）の行は ApplyImGuiTheme が捨て、配色だけを使う
     // >>> gen_imgui_themes.py の生成範囲（手で編集しない）
 
     // Unreal（作者: dev0-1）
@@ -888,12 +906,68 @@ namespace Tako {
 
     // <<< gen_imgui_themes.py の生成範囲ここまで
 
+    void StyleMoonLight(ImGuiStyle& style) {
+      style.Colors[ImGuiCol_Text] = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+      style.Colors[ImGuiCol_TextDisabled] = ImVec4(0.2745098173618317f, 0.3176470696926117f, 0.4509803950786591f, 1.0f);
+      style.Colors[ImGuiCol_WindowBg] = ImVec4(0.0784313753247261f, 0.08627451211214066f, 0.1019607856869698f, 1.0f);
+      style.Colors[ImGuiCol_ChildBg] = ImVec4(0.09411764889955521f, 0.1019607856869698f, 0.1176470592617989f, 1.0f);
+      style.Colors[ImGuiCol_PopupBg] = ImVec4(0.0784313753247261f, 0.08627451211214066f, 0.1019607856869698f, 1.0f);
+      style.Colors[ImGuiCol_Border] = ImVec4(0.1568627506494522f, 0.168627455830574f, 0.1921568661928177f, 1.0f);
+      style.Colors[ImGuiCol_BorderShadow] = ImVec4(0.0784313753247261f, 0.08627451211214066f, 0.1019607856869698f, 1.0f);
+      style.Colors[ImGuiCol_FrameBg] = ImVec4(0.1137254908680916f, 0.125490203499794f, 0.1529411822557449f, 1.0f);
+      style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.1568627506494522f, 0.168627455830574f, 0.1921568661928177f, 1.0f);
+      style.Colors[ImGuiCol_FrameBgActive] = ImVec4(0.1568627506494522f, 0.168627455830574f, 0.1921568661928177f, 1.0f);
+      style.Colors[ImGuiCol_TitleBg] = ImVec4(0.0470588244497776f, 0.05490196123719215f, 0.07058823853731155f, 1.0f);
+      style.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.0470588244497776f, 0.05490196123719215f, 0.07058823853731155f, 1.0f);
+      style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.0784313753247261f, 0.08627451211214066f, 0.1019607856869698f, 1.0f);
+      style.Colors[ImGuiCol_MenuBarBg] = ImVec4(0.09803921729326248f, 0.105882354080677f, 0.1215686276555061f, 1.0f);
+      style.Colors[ImGuiCol_ScrollbarBg] = ImVec4(0.0470588244497776f, 0.05490196123719215f, 0.07058823853731155f, 1.0f);
+      style.Colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.1176470592617989f, 0.1333333402872086f, 0.1490196138620377f, 1.0f);
+      style.Colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.1568627506494522f, 0.168627455830574f, 0.1921568661928177f, 1.0f);
+      style.Colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.1176470592617989f, 0.1333333402872086f, 0.1490196138620377f, 1.0f);
+      style.Colors[ImGuiCol_CheckMark] = ImVec4(0.9725490212440491f, 1.0f, 0.4980392158031464f, 1.0f);
+      style.Colors[ImGuiCol_SliderGrab] = ImVec4(0.9725490212440491f, 1.0f, 0.4980392158031464f, 1.0f);
+      style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(1.0f, 0.7960784435272217f, 0.4980392158031464f, 1.0f);
+      style.Colors[ImGuiCol_Button] = ImVec4(0.1176470592617989f, 0.1333333402872086f, 0.1490196138620377f, 1.0f);
+      style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.1803921610116959f, 0.1882352977991104f, 0.196078434586525f, 1.0f);
+      style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.1529411822557449f, 0.1529411822557449f, 0.1529411822557449f, 1.0f);
+      style.Colors[ImGuiCol_Header] = ImVec4(0.1411764770746231f, 0.1647058874368668f, 0.2078431397676468f, 1.0f);
+      style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.105882354080677f, 0.105882354080677f, 0.105882354080677f, 1.0f);
+      style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.0784313753247261f, 0.08627451211214066f, 0.1019607856869698f, 1.0f);
+      style.Colors[ImGuiCol_Separator] = ImVec4(0.1294117718935013f, 0.1490196138620377f, 0.1921568661928177f, 1.0f);
+      style.Colors[ImGuiCol_SeparatorHovered] = ImVec4(0.1568627506494522f, 0.1843137294054031f, 0.250980406999588f, 1.0f);
+      style.Colors[ImGuiCol_SeparatorActive] = ImVec4(0.1568627506494522f, 0.1843137294054031f, 0.250980406999588f, 1.0f);
+      style.Colors[ImGuiCol_ResizeGrip] = ImVec4(0.1450980454683304f, 0.1450980454683304f, 0.1450980454683304f, 1.0f);
+      style.Colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.9725490212440491f, 1.0f, 0.4980392158031464f, 1.0f);
+      style.Colors[ImGuiCol_ResizeGripActive] = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+      style.Colors[ImGuiCol_Tab] = ImVec4(0.0784313753247261f, 0.08627451211214066f, 0.1019607856869698f, 1.0f);
+      style.Colors[ImGuiCol_TabHovered] = ImVec4(0.1176470592617989f, 0.1333333402872086f, 0.1490196138620377f, 1.0f);
+      style.Colors[ImGuiCol_TabActive] = ImVec4(0.1176470592617989f, 0.1333333402872086f, 0.1490196138620377f, 1.0f);
+      style.Colors[ImGuiCol_TabUnfocused] = ImVec4(0.0784313753247261f, 0.08627451211214066f, 0.1019607856869698f, 1.0f);
+      style.Colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.125490203499794f, 0.2745098173618317f, 0.572549045085907f, 1.0f);
+      style.Colors[ImGuiCol_PlotLines] = ImVec4(0.5215686559677124f, 0.6000000238418579f, 0.7019608020782471f, 1.0f);
+      style.Colors[ImGuiCol_PlotLinesHovered] = ImVec4(0.03921568766236305f, 0.9803921580314636f, 0.9803921580314636f, 1.0f);
+      style.Colors[ImGuiCol_PlotHistogram] = ImVec4(0.8823529481887817f, 0.7960784435272217f, 0.5607843399047852f, 1.0f);
+      style.Colors[ImGuiCol_PlotHistogramHovered] = ImVec4(0.95686274766922f, 0.95686274766922f, 0.95686274766922f, 1.0f);
+      style.Colors[ImGuiCol_TableHeaderBg] = ImVec4(0.0470588244497776f, 0.05490196123719215f, 0.07058823853731155f, 1.0f);
+      style.Colors[ImGuiCol_TableBorderStrong] = ImVec4(0.0470588244497776f, 0.05490196123719215f, 0.07058823853731155f, 1.0f);
+      style.Colors[ImGuiCol_TableBorderLight] = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
+      style.Colors[ImGuiCol_TableRowBg] = ImVec4(0.1176470592617989f, 0.1333333402872086f, 0.1490196138620377f, 1.0f);
+      style.Colors[ImGuiCol_TableRowBgAlt] = ImVec4(0.09803921729326248f, 0.105882354080677f, 0.1215686276555061f, 1.0f);
+      style.Colors[ImGuiCol_TextSelectedBg] = ImVec4(0.9372549057006836f, 0.9372549057006836f, 0.9372549057006836f, 1.0f);
+      style.Colors[ImGuiCol_DragDropTarget] = ImVec4(0.4980392158031464f, 0.5137255191802979f, 1.0f, 1.0f);
+      style.Colors[ImGuiCol_NavHighlight] = ImVec4(0.2666666805744171f, 0.2901960909366608f, 1.0f, 1.0f);
+      style.Colors[ImGuiCol_NavWindowingHighlight] = ImVec4(0.4980392158031464f, 0.5137255191802979f, 1.0f, 1.0f);
+      style.Colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.196078434586525f, 0.1764705926179886f, 0.5450980663299561f, 0.501960813999176f);
+      style.Colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.196078434586525f, 0.1764705926179886f, 0.5450980663299561f, 0.501960813999176f);
+    }
+
     // 個人設定には name で保存するため、既存の name を変えると保存済みの選択が外れる
     constexpr ImGuiTheme kThemes[] = {
-      { "MoonLight",        [](ImGuiStyle&) { ImGuiManager::SetStyleMoonLight(); } },
+      { "MoonLight",        StyleMoonLight },
       { "Dark",             [](ImGuiStyle& style) { ImGui::StyleColorsDark(&style); } },
       { "Light",            [](ImGuiStyle& style) { ImGui::StyleColorsLight(&style); } },
-      { "Monochrome",       [](ImGuiStyle& style) { ApplyPaletteTheme(style, kMonochrome); } },
+      { "Monochrome",       [](ImGuiStyle& style) { ApplyPalette(style, kMonochrome); } },
       { "Unreal",           StyleUnreal },
       { "Visual Studio",    StyleVisualStudio },
       { "Photoshop",        StylePhotoshop },
@@ -905,14 +979,14 @@ namespace Tako {
       { "Enemymouse",       StyleEnemymouse },
       { "Gold",             StyleGold },
       { "Bootstrap Dark",   StyleBootstrapDark },
-      { "Catppuccin Mocha", [](ImGuiStyle& style) { ApplyPaletteTheme(style, kCatppuccinMocha); } },
-      { "Catppuccin Latte", [](ImGuiStyle& style) { ApplyPaletteTheme(style, kCatppuccinLatte); } },
-      { "Nord",             [](ImGuiStyle& style) { ApplyPaletteTheme(style, kNord); } },
-      { "Dracula",          [](ImGuiStyle& style) { ApplyPaletteTheme(style, kDracula); } },
-      { "Gruvbox",          [](ImGuiStyle& style) { ApplyPaletteTheme(style, kGruvbox); } },
-      { "Tokyo Night",      [](ImGuiStyle& style) { ApplyPaletteTheme(style, kTokyoNight); } },
-      { "OneDark",          [](ImGuiStyle& style) { ApplyPaletteTheme(style, kOneDark); } },
-      { "Monokai",          [](ImGuiStyle& style) { ApplyPaletteTheme(style, kMonokai); } },
+      { "Catppuccin Mocha", [](ImGuiStyle& style) { ApplyPalette(style, kCatppuccinMocha); } },
+      { "Catppuccin Latte", [](ImGuiStyle& style) { ApplyPalette(style, kCatppuccinLatte); } },
+      { "Nord",             [](ImGuiStyle& style) { ApplyPalette(style, kNord); } },
+      { "Dracula",          [](ImGuiStyle& style) { ApplyPalette(style, kDracula); } },
+      { "Gruvbox",          [](ImGuiStyle& style) { ApplyPalette(style, kGruvbox); } },
+      { "Tokyo Night",      [](ImGuiStyle& style) { ApplyPalette(style, kTokyoNight); } },
+      { "OneDark",          [](ImGuiStyle& style) { ApplyPalette(style, kOneDark); } },
+      { "Monokai",          [](ImGuiStyle& style) { ApplyPalette(style, kMonokai); } },
     };
 
   } // namespace
@@ -921,11 +995,21 @@ namespace Tako {
     return kThemes;
   }
 
+  const EditorColors& GetEditorColors() {
+    return editorColors;
+  }
+
   void ApplyImGuiTheme(int index) {
     assert(0 <= index && index < static_cast<int>(std::size(kThemes)));
+    // テーマが形も書いていることがあるので、別の style に適用して配色だけを取り出す
+    ImGuiStyle themed;
+    kThemes[index].apply(themed);
+
     ImGuiStyle& style = ImGui::GetStyle();
     style = ImGuiStyle();
-    kThemes[index].apply(style);
+    ApplyEditorShape(style);
+    std::ranges::copy(themed.Colors, style.Colors);
+    editorColors = MakeEditorColors(style);
   }
 
 } // namespace Tako

@@ -6,6 +6,7 @@
 #include "imgui_internal.h"
 
 #include <algorithm>
+#include <cstring>
 #include <span>
 #include <string>
 #include <utility>
@@ -76,7 +77,12 @@ namespace Tako {
         }
         target.window = window;
         target.frame  = frame;
-        target.name.assign(name, ImGui::FindRenderedTextEnd(name));
+        // アイコン付きのウィンドウ名（TAKO_WINDOW_TITLE）は、### の後ろが名前
+        if (const char* id = std::strstr(name, "###")) {
+          target.name = id + 3;
+        } else {
+          target.name.assign(name, ImGui::FindRenderedTextEnd(name));
+        }
         target.chords.clear();
       }
       for (const ShortcutBinding<Owner>& binding : table) {

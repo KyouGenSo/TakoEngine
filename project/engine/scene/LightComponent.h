@@ -9,7 +9,7 @@ namespace Tako {
   /// <summary>
   /// Actor の位置から、Actor の +Z の向きへ照らすライト。毎フレーム Draw で登録する（平行光源は 1 つだけなので、後に描いたものが勝つ）
   /// </summary>
-  TCLASS()
+  TCLASS(DisplayName = "Light")
   class LightComponent : public Component {
     GENERATED_BODY()
 

@@ -11,6 +11,7 @@
 #include "ShaderLibrary.h"
 
 #ifdef _DEBUG
+#include "EditorUI.h"
 #include "imgui.h"
 #endif
 
@@ -210,7 +211,7 @@ namespace Tako {
     switch (property.type) {
     case MaterialProperty::Type::Float:
       if (property.isColor) {
-        changed = count == 3 ? ImGui::ColorEdit3(property.name.c_str(), static_cast<float*>(data)) : ImGui::ColorEdit4(property.name.c_str(), static_cast<float*>(data));
+        changed = count == 3 ? UI::ColorEdit3(property.name.c_str(), static_cast<float*>(data)) : UI::ColorEdit4(property.name.c_str(), static_cast<float*>(data));
       }
       else {
         const float speed = hasRange ? (property.max - property.min) / 200.0f : 0.01f;
@@ -218,20 +219,20 @@ namespace Tako {
         const int width = (std::min)(count, 4);
         for (int i = 0; i < count; i += width) {
           const std::string label = count > 4 ? std::format("{}[{}]", property.name, i / 4) : property.name;
-          changed |= ImGui::DragScalarN(label.c_str(), ImGuiDataType_Float, static_cast<float*>(data) + i, width, speed, hasRange ? &property.min : nullptr, hasRange ? &property.max : nullptr);
+          changed |= UI::DragScalarN(label.c_str(), ImGuiDataType_Float, static_cast<float*>(data) + i, width, speed, hasRange ? &property.min : nullptr, hasRange ? &property.max : nullptr);
         }
       }
       break;
     case MaterialProperty::Type::Int: {
       const int32_t min = static_cast<int32_t>(property.min);
       const int32_t max = static_cast<int32_t>(property.max);
-      changed = ImGui::DragScalarN(property.name.c_str(), ImGuiDataType_S32, data, count, 0.1f, hasRange ? &min : nullptr, hasRange ? &max : nullptr);
+      changed = UI::DragScalarN(property.name.c_str(), ImGuiDataType_S32, data, count, 0.1f, hasRange ? &min : nullptr, hasRange ? &max : nullptr);
       break;
     }
     case MaterialProperty::Type::UInt: {
       const uint32_t min = static_cast<uint32_t>((std::max)(property.min, 0.0f));
       const uint32_t max = static_cast<uint32_t>((std::max)(property.max, 0.0f));
-      changed = ImGui::DragScalarN(property.name.c_str(), ImGuiDataType_U32, data, count, 0.1f, hasRange ? &min : nullptr, hasRange ? &max : nullptr);
+      changed = UI::DragScalarN(property.name.c_str(), ImGuiDataType_U32, data, count, 0.1f, hasRange ? &min : nullptr, hasRange ? &max : nullptr);
       break;
     }
     default:

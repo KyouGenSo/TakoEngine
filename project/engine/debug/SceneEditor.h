@@ -221,9 +221,18 @@ namespace Tako {
     /// </summary>
     void DrawRequirement(Actor& actor, Component& component);
 
+    /// <summary>
+    /// Add Component のボタンと、その下に開く一覧（検索・コンポーネント・スクリプト）
+    /// </summary>
     void DrawAddComponent(Actor& actor);
 
     void RequestAddComponent(uint64_t actor, const std::string& typeName, const std::string& name);
+
+    /// <summary>
+    /// Script コンポーネントを足して script を入れる（Update で行う）
+    /// </summary>
+    /// <param name="script">Script の派生の型名。空なら中身の無い Script コンポーネント</param>
+    void RequestAddScript(uint64_t actor, const std::string& script);
 
     std::string SerializeScene() const;
 
@@ -265,6 +274,7 @@ namespace Tako {
     std::vector<std::function<void(BaseScene&)>> requests_;
     std::array<char, 64>                         prefabName_{};           ///< 「プレハブとして保存」の名前
     std::array<char, 64>                         newSceneName_{};
+    ImGuiTextFilter                              componentFilter_;        ///< Add Component の一覧の絞り込み
     std::string                                  trackedScene_;
     int                                          gizmoOperation_ = 0;     ///< 0 移動 / 1 回転 / 2 拡大
     bool                                         isGizmoLocal_   = true;
