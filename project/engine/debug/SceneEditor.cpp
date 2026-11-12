@@ -10,6 +10,7 @@
 #include "DebugUIManager.h"
 #include "ImGuiPropertyVisitor.h"
 #include "LightComponent.h"
+#include "LineRenderer.h"
 #include "JsonPropertyVisitor.h"
 #include "Mat4x4Func.h"
 #include "MeshComponent.h"
@@ -38,6 +39,9 @@
 namespace Tako {
 
   namespace {
+
+    const Vector4   kSelectionBoxColor       = { 1.0f, 1.0f, 0.0f, 1.0f };
+    constexpr float kSelectionBoxMarginRatio = 0.02f;  // 箱の対角線の長さに対する、外へ広げる幅の割合
 
     /// <summary>
     /// actor の、描かれている MeshComponent ごとに fn を呼ぶ
@@ -644,6 +648,44 @@ namespace Tako {
     center = (bounds.min + bounds.max) * 0.5f;
     radius = (bounds.max - bounds.min).Length() * 0.5f;
     return true;
+  }
+
+  void SceneEditor::DrawSelectionBoxes() const
+  {
+    BaseScene* scene = GetScene();
+    if (!scene) {
+      return;
+    }
+    for (const uint64_t id : selection_) {
+      const Actor* selected = scene->FindActor(id);
+      if (!selected) {
+        continue;
+      }
+      std::optional<AABB> bounds;
+      const auto visit = [&](const auto& self, const Actor& actor) -> void {
+        ForEachDrawnMesh(actor, [&](MeshComponent& mesh) {
+          const std::optional<AABB> box = mesh.GetObject3d()->GetWorldBounds();
+          if (!box) {
+            return;
+          }
+          if (!bounds) {
+            bounds = *box;
+          }
+          bounds->min = { (std::min)(bounds->min.x, box->min.x), (std::min)(bounds->min.y, box->min.y), (std::min)(bounds->min.z, box->min.z) };
+          bounds->max = { (std::max)(bounds->max.x, box->max.x), (std::max)(bounds->max.y, box->max.y), (std::max)(bounds->max.z, box->max.z) };
+        });
+        for (const Actor* child : actor.GetChildren()) {
+          self(self, *child);
+        }
+      };
+      visit(visit, *selected);
+      // ponytail: ワールド軸の箱なので、回すと大きさが変わる。向きに沿わせるなら Object3d にローカルの箱を返す関数を足す
+      if (bounds) {
+        // 軸に沿った箱形のメッシュだと線が面と重なり、深度テストで欠けるので、少し外へ広げる
+        const Vector3 margin = Vector3(1.0f, 1.0f, 1.0f) * ((bounds->max - bounds->min).Length() * kSelectionBoxMarginRatio);
+        LineRenderer::GetInstance()->DrawAABB({ bounds->min - margin, bounds->max + margin }, kSelectionBoxColor);
+      }
+    }
   }
 
   void SceneEditor::Update()

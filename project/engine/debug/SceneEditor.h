@@ -73,6 +73,11 @@ namespace Tako {
     bool GetSelectionBounds(Vector3& center, float& radius) const;
 
     /// <summary>
+    /// 選んだ Actor ごとに、描かれているメッシュ（子孫も含む）を囲むワールド軸の箱を LineRenderer へ送る
+    /// </summary>
+    void DrawSelectionBoxes() const;
+
+    /// <summary>
     /// 予約した操作を行う。DebugUIManager::Update から呼ぶ（前のフレームの GPU 処理が終わった後なので消してよい）
     /// </summary>
     void Update();
