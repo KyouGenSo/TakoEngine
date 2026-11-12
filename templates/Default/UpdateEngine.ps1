@@ -112,7 +112,8 @@ if (Test-Path $changelog) {
   }
 }
 
-$project | Add-Member -NotePropertyName engineVersion -NotePropertyValue $target -Force
-$project | ConvertTo-Json | Set-Content $marker.FullName -Encoding UTF8
+# engineVersion の値だけを書き換える（ConvertTo-Json で書き直すと、BOM が付き、キーの順と字下げが変わる）
+$text = [IO.File]::ReadAllText($marker.FullName)
+[IO.File]::WriteAllText($marker.FullName, ($text -replace '("engineVersion"\s*:\s*)"[^"]*"', "`${1}`"$target`""))
 Write-Host ""
 Write-Host "TakoEngine $target にしました。ゲームのソリューションをビルドし直してから、エディタを開いてください。" -ForegroundColor Green

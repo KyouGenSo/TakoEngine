@@ -8,6 +8,7 @@
 #include "StringUtility.h"
 #ifdef _DEBUG
 #include "DebugUIManager.h"
+#include "Project.h"
 #endif
 
 #pragma comment(lib, "dxcompiler.lib")
@@ -92,8 +93,9 @@ namespace Tako {
 
     engineShaderDir_ = std::filesystem::path(EnginePaths::kEngineShadersW);
 #ifdef _DEBUG
-    // 作業ディレクトリのシェーダーはビルド時のコピーなので、編集が即反映されるようソースを直接読む
-    const std::filesystem::path sourceDir = std::filesystem::path(__FILE__).parent_path().parent_path().parent_path() / L"resources" / L"shaders";
+    // 作業ディレクトリのシェーダーはビルド時のコピーなので、編集が即反映されるようソースを直接読む。
+    // 場所は動いているエンジンから決める（ビルドしたときのパスだと、SDK が別の場所にある開発用のソースを読む）
+    const std::filesystem::path sourceDir = Project::GetEngineRoot() / L"project" / L"engine" / L"resources" / L"shaders";
     if (std::filesystem::is_directory(sourceDir)) {
       engineShaderDir_ = sourceDir;
     }

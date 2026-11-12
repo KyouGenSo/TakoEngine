@@ -26,6 +26,7 @@
 - エンジンの include パスの一覧は `build/TakoEngineCommon.props` の 1 か所になった。engine 以下にフォルダーを足したら、ここに 1 行足す
 - ゲームのビルドは、エンジンのライブラリを `Engine/TakoEngine/bin/` から直接リンクする（プロジェクト参照は要らない）
 - `RandomEngine` の乱数ジェネレータは `.cpp` の中に移した（使い方は変わらない）
+- Debug でエンジンのシェーダーのソースを探す場所を、ビルドしたときのパスではなく、動いているエンジンのフォルダーから決めるようにした（SDK は、SDK の中のシェーダーを読む）
 
 ### 直しが要る変更（ゲーム側）
 - ゲームの `.vcxproj`：Debug の `ConfigurationType` を `DynamicLibrary` にする。エンジン・imgui・DirectXTex への `ProjectReference` を消す
