@@ -3,6 +3,7 @@
 #include "Project.h"
 #include "ChildProcess.h"
 #include "Logger.h"
+#include "ProjectMigration.h"
 #include "StringUtility.h"
 
 #include <json.hpp>
@@ -12,7 +13,9 @@
 #include <commdlg.h>
 #include <shellapi.h>
 #include <algorithm>
+#include <cassert>
 #include <cctype>
+#include <charconv>
 #include <format>
 #include <fstream>
 #include <iterator>
@@ -29,6 +32,7 @@ namespace Tako::Project {
     using nlohmann::json;
 
     constexpr const wchar_t* kDialogTitle       = L"TakoEditor";
+    constexpr const char*    kMarkerExtension   = ".takoproject";
     constexpr size_t         kMaxRecentProjects = 10;
 
     // 新しいプロジェクトに作っておく空のフォルダー（git は空のフォルダーを持てないので、テンプレートには入れられない）
@@ -60,6 +64,21 @@ namespace Tako::Project {
     void ShowError(const std::string& message)
     {
       MessageBoxW(nullptr, StringUtility::ConvertString(message).c_str(), kDialogTitle, MB_OK | MB_ICONERROR);
+    }
+
+    /// <summary>
+    /// folder にある .takoproject
+    /// </summary>
+    /// <returns>無ければ空</returns>
+    fs::path FindMarker(const fs::path& folder)
+    {
+      std::error_code error;
+      for (const fs::directory_entry& entry : fs::directory_iterator(folder, error)) {
+        if (entry.is_regular_file(error) && entry.path().extension() == kMarkerExtension) {
+          return entry.path();
+        }
+      }
+      return {};
     }
 
     /// <summary>
@@ -138,6 +157,64 @@ namespace Tako::Project {
     }
 
     /// <summary>
+    /// .takoproject を読み、保存形式が古ければ直し、エンジンのバージョンを今の物に進める
+    /// </summary>
+    /// <returns>開いてよければ true（だめな理由は表示してある）</returns>
+    bool CheckVersions()
+    {
+      const fs::path marker = FindMarker(root);
+      if (marker.empty()) {
+        // .takoproject の無いプロジェクトは、今の形式として開く
+        return true;
+      }
+      json data = ReadJson(marker);
+      if (!data.is_object()) {
+        data = json::object();
+      }
+      const int         formatVersion = data.value("formatVersion", kFormatVersion);
+      const std::string projectEngine = data.value("engineVersion", std::string());
+      const std::string engine        = GetEngineVersion();
+
+      if (formatVersion > kFormatVersion) {
+        ShowError(std::format("This project uses save format {}, but this engine (TakoEngine {}) reads up to format {}.\n"
+                              "Update the engine with UpdateEngine.bat in the project folder.", formatVersion, engine, kFormatVersion));
+        return false;
+      }
+      if (!projectEngine.empty() && !engine.empty() && CompareVersions(projectEngine, engine) > 0) {
+        const std::wstring message = StringUtility::ConvertString(std::format(
+          "This project was last opened with TakoEngine {}, and this engine is {} (older).\n"
+          "Run UpdateEngine.bat in the project folder to update the engine.\n\nOpen it anyway?", projectEngine, engine));
+        if (MessageBoxW(nullptr, message.c_str(), kDialogTitle, MB_YESNO | MB_ICONWARNING) != IDYES) {
+          return false;
+        }
+      }
+      if (formatVersion < kFormatVersion) {
+        const std::wstring message = StringUtility::ConvertString(std::format(
+          "The saved files of this project are in an older format ({}). They will be converted to format {}.\n"
+          "A copy of resources/Json is saved to Generated/Backup first.", formatVersion, kFormatVersion));
+        if (MessageBoxW(nullptr, message.c_str(), kDialogTitle, MB_OKCANCEL | MB_ICONINFORMATION) != IDOK) {
+          return false;
+        }
+        const std::string error = ProjectMigration::Run(root, formatVersion);
+        if (!error.empty()) {
+          ShowError("The project could not be converted:\n" + error);
+          return false;
+        }
+      }
+
+      // 新しいエンジンで開いたら番号を進める（チームの他の人が古いエンジンで開くと、上の確認が出る）
+      const bool isEngineNewer = !engine.empty() && (projectEngine.empty() || CompareVersions(engine, projectEngine) > 0);
+      if (formatVersion < kFormatVersion || isEngineNewer) {
+        data["formatVersion"] = kFormatVersion;
+        if (isEngineNewer) {
+          data["engineVersion"] = engine;
+        }
+        WriteJson(marker, data);
+      }
+      return true;
+    }
+
+    /// <summary>
     /// requested（ルートのフォルダーか .takoproject）のプロジェクトを開く
     /// </summary>
     /// <returns>開けなければ false（理由は表示してある）</returns>
@@ -152,6 +229,9 @@ namespace Tako::Project {
       fs::current_path(root / "GameProject", error);
       if (error) {
         ShowError("GameProject was not found in:\n" + ToUtf8(root));
+        return false;
+      }
+      if (!CheckVersions()) {
         return false;
       }
       // 普段はゲームのビルドが写す。ビルドする前でも起動できるよう、無ければここで写す
@@ -207,6 +287,8 @@ namespace Tako::Project {
 
   std::optional<int> Startup()
   {
+    assert(CompareVersions("2.10.0", "2.9.9") > 0 && CompareVersions("v2.1", "2.1.0") == 0 && CompareVersions("2.1.0", "2.1.1") < 0);
+
     int                       argc = 0;
     LPWSTR* const             argv = CommandLineToArgvW(GetCommandLineW(), &argc);
     std::vector<std::wstring> arguments;
@@ -338,6 +420,28 @@ namespace Tako::Project {
     dialog.nMaxFile    = MAX_PATH;
     dialog.Flags       = OFN_NOCHANGEDIR | OFN_FILEMUSTEXIST;
     return GetOpenFileNameW(&dialog) ? fs::path(buffer).parent_path() : fs::path();
+  }
+
+  int CompareVersions(std::string_view a, std::string_view b)
+  {
+    // 数字でない物（v や .）を読み飛ばして、次の数を取り出す。もう無ければ 0
+    const auto next = [](std::string_view& text) {
+      while (!text.empty() && !std::isdigit(static_cast<unsigned char>(text.front()))) {
+        text.remove_prefix(1);
+      }
+      int        value = 0;
+      const auto end   = std::from_chars(text.data(), text.data() + text.size(), value).ptr;
+      text.remove_prefix(static_cast<size_t>(end - text.data()));
+      return value;
+    };
+    while (!a.empty() || !b.empty()) {
+      const int left  = next(a);
+      const int right = next(b);
+      if (left != right) {
+        return left < right ? -1 : 1;
+      }
+    }
+    return 0;
   }
 
   const fs::path& GetRoot()

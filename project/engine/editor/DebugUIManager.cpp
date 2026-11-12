@@ -236,6 +236,8 @@ namespace Tako {
   }
 
   void DebugUIManager::UpdateGameModule() {
+    updateChecker_.Update();
+
     const bool wasCompiling = scriptCompiler_.IsCompiling();
     scriptCompiler_.Update();
     if (scriptCompiler_.IsCompiling()) {
@@ -570,9 +572,9 @@ namespace Tako {
         ImGui::EndMenu();
       }
 
-      constexpr const char* kEngineName = "TakoEngine";
-      ImGui::SetCursorPosX((ImGui::GetWindowWidth() - ImGui::CalcTextSize(kEngineName).x) * 0.5f);
-      ImGui::TextDisabled("%s", kEngineName);
+      static const std::string engineName = "TakoEngine " + Project::GetEngineVersion();
+      ImGui::SetCursorPosX((ImGui::GetWindowWidth() - ImGui::CalcTextSize(engineName.c_str()).x) * 0.5f);
+      ImGui::TextDisabled("%s", engineName.c_str());
 
       DrawFrameStats();
 
@@ -584,6 +586,7 @@ namespace Tako {
     constexpr const char* kPausedText  = "PAUSED";
     constexpr const char* kRebuildText = "REBUILD REQUIRED";
     constexpr const char* kCompileText = "COMPILING";
+    const std::string     updateText   = updateChecker_.GetNewVersion().empty() ? std::string() : "UPDATE " + updateChecker_.GetNewVersion();
 
     const float       fps               = FrameTimer::GetInstance()->GetFPS();
     const bool        isPaused          = FrameTimer::GetInstance()->IsPaused();
@@ -604,6 +607,9 @@ namespace Tako {
     if (isCompiling) {
       width += ImGui::CalcTextSize(kCompileText).x + spacing + MenuBarSeparatorWidth();
     }
+    if (!updateText.empty()) {
+      width += ImGui::CalcTextSize(updateText.c_str()).x + spacing + MenuBarSeparatorWidth();
+    }
     ImGui::SetCursorPosX(ImGui::GetWindowWidth() - width - kMenuBarRightInset);
 
     const EditorColors& colors = GetEditorColors();
@@ -618,6 +624,11 @@ namespace Tako {
     }
     if (isCompiling) {
       ImGui::TextColored(colors.info, "%s", kCompileText);
+      MenuBarSeparator();
+    }
+    if (!updateText.empty()) {
+      ImGui::TextColored(colors.warning, "%s", updateText.c_str());
+      ImGui::SetItemTooltip("A newer TakoEngine release is available.\nClose the editor and run UpdateEngine.bat in the project folder");
       MenuBarSeparator();
     }
 
@@ -1179,7 +1190,7 @@ namespace Tako {
   void DebugUIManager::DrawAbout() {
     // 中身の幅で決まるウィンドウなので、左ラベルの列（ウィンドウの幅の割合）は使わない
     if (ImGui::Begin(WindowTitle::kAbout, &WindowFlag(Window::About), ImGuiWindowFlags_AlwaysAutoResize)) {
-      ImGui::Text("TakoEngine (DirectX 12)");
+      ImGui::Text("TakoEngine %s (DirectX 12)", Project::GetEngineVersion().c_str());
       ImGui::TextDisabled("Project: %s", StringUtility::ConvertString(Project::GetRoot().wstring()).c_str());
       ImGui::TextDisabled("ImGui %s   %d x %d", IMGUI_VERSION, WinApp::clientWidth, WinApp::clientHeight);
 

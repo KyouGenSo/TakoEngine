@@ -27,6 +27,7 @@
 #include "AnimationEditor.h"
 #include "BehaviorTreeEditor.h"
 #include "ScriptCompiler.h"
+#include "UpdateChecker.h"
 
 namespace Tako {
 
@@ -177,6 +178,9 @@ namespace Tako {
     void LoadEditorSettings() {
       engineSettings_.LoadEditorSettings();
       windowVisibility_ = startupWindows_;
+      if (engineSettings_.IsUpdateCheckEnabled()) {
+        updateChecker_.Start();
+      }
     }
 
     /// <summary>
@@ -360,6 +364,8 @@ namespace Tako {
     int   fpsHistoryIndex_ = 0;
 
     bool* pEndFlag_ = nullptr;  ///< アプリケーション終了フラグへのポインタ
+
+    UpdateChecker updateChecker_;  ///< エンジンの新しいリリースの確認
 
     //スクリプトのビルドと差し替え
     ScriptCompiler                        scriptCompiler_;

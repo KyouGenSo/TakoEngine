@@ -460,6 +460,7 @@ namespace Tako {
       }
 
       DebugUIManager::GetInstance()->GetScriptCompiler().SetAutoCompile(editor.value("AutoCompile", true));
+      isUpdateCheckEnabled_ = editor.value("CheckForUpdates", true);
 
       SceneManager* sceneManager = SceneManager::GetInstance();
       if (editor.contains("PlayFromScene") && editor["PlayFromScene"].is_object()) {
@@ -595,6 +596,7 @@ namespace Tako {
       { "StartupWindows",     startupWindows },
       { "PlayFromScene",      playFromSceneByProject },
       { "AutoCompile",        DebugUIManager::GetInstance()->GetScriptCompiler().IsAutoCompile() },
+      { "CheckForUpdates",    isUpdateCheckEnabled_ },
     };
     return root.dump(4);
   }
@@ -1212,6 +1214,10 @@ namespace Tako {
       compiler.SetAutoCompile(isAutoCompile);
     }
     ImGui::SetItemTooltip("Compile and reload the scripts when the editor gets focus and a source file under Script or Source has changed");
+
+    ImGui::SeparatorText("Updates");
+    UI::Checkbox("Check for Updates", &isUpdateCheckEnabled_);
+    ImGui::SetItemTooltip("Ask GitHub once a day, at startup, whether a newer TakoEngine release exists");
 
     ImGui::SeparatorText("Viewport Camera");
     UI::DragFloat("Default Move Speed", &viewportCamera_.moveSpeed, 0.1f, 0.05f, 500.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);

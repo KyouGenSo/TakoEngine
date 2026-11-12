@@ -121,6 +121,7 @@ namespace Tako {
     const GridSettings& GetParticleEditorGrid() const { return particleEditorGrid_; }
     const ViewportCameraSettings& GetViewportCameraSettings() const { return viewportCamera_; }
     bool IsRebuildRequired() const { return isRebuildRequired_; }
+    bool IsUpdateCheckEnabled() const { return isUpdateCheckEnabled_; }
 
   private: //非公開関数
     void DrawApplication();
@@ -234,6 +235,8 @@ namespace Tako {
     std::span<bool>        startupWindows_;                         ///< 起動時に開くウィンドウ（DebugUIManager 所有）
 
     std::map<std::string, std::string> playFromSceneByProject_;  ///< 作業ディレクトリ → 開発用起動シーン。個人設定ファイルは全プロジェクト共通のため分けて持つ
+
+    bool isUpdateCheckEnabled_ = true;  ///< 起動時に、エンジンの新しいリリースがあるかを GitHub に聞く（1 日 1 回）
 
     //ゲームの DLL の差し替え
     std::string moduleReloadGameSettings_;  ///< SerializeGameSettings

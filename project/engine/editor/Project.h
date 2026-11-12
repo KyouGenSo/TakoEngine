@@ -13,6 +13,9 @@
 /// </summary>
 namespace Tako::Project {
 
+  // プロジェクトの保存形式の番号。保存の形を変えたら 1 つ上げ、ProjectMigration.cpp の表に、古い形から直す手順を足す
+  inline constexpr int kFormatVersion = 1;
+
   /// <summary>
   /// コマンドラインを読んでプロジェクトを開き、作業フォルダーを GameProject に移す。
   ///   --project ルート : そのプロジェクトを開く（.takoproject のパスでもよい）
@@ -39,6 +42,12 @@ namespace Tako::Project {
   /// </summary>
   /// <returns>選んだプロジェクトのルート。取り消したら空</returns>
   TAKO_API std::filesystem::path BrowseForProject();
+
+  /// <summary>
+  /// 「2.10.3」のようなバージョンを、数として比べる（先頭の v は無視する）
+  /// </summary>
+  /// <returns>a が新しければ正、同じなら 0、古ければ負</returns>
+  TAKO_API int CompareVersions(std::string_view a, std::string_view b);
 
   //=====================================
   //Getter

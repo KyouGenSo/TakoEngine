@@ -106,6 +106,12 @@
     <ClCompile Include="engine\editor\ProjectBrowser.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="engine\editor\ProjectMigration.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="engine\editor\UpdateChecker.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="engine\editor\ScriptCompiler.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
@@ -294,6 +300,8 @@
     <ClInclude Include="engine\editor\Project.h" />
     <ClInclude Include="engine\editor\ChildProcess.h" />
     <ClInclude Include="engine\editor\ProjectBrowser.h" />
+    <ClInclude Include="engine\editor\ProjectMigration.h" />
+    <ClInclude Include="engine\editor\UpdateChecker.h" />
     <ClInclude Include="engine\editor\ScriptCompiler.h" />
     <ClInclude Include="engine\gameplay\scene\SceneSelfTest.h" />
     <ClInclude Include="engine\gameplay\actor\ActorRef.h" />

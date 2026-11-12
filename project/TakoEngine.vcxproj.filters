@@ -165,6 +165,12 @@
     <ClCompile Include="engine\editor\ProjectBrowser.cpp">
       <Filter>editor</Filter>
     </ClCompile>
+    <ClCompile Include="engine\editor\ProjectMigration.cpp">
+      <Filter>editor</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\editor\UpdateChecker.cpp">
+      <Filter>editor</Filter>
+    </ClCompile>
     <ClCompile Include="engine\editor\ScriptCompiler.cpp">
       <Filter>editor</Filter>
     </ClCompile>
@@ -576,6 +582,12 @@
       <Filter>editor</Filter>
     </ClInclude>
     <ClInclude Include="engine\editor\ProjectBrowser.h">
+      <Filter>editor</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\editor\ProjectMigration.h">
+      <Filter>editor</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\editor\UpdateChecker.h">
       <Filter>editor</Filter>
     </ClInclude>
     <ClInclude Include="engine\editor\ScriptCompiler.h">
