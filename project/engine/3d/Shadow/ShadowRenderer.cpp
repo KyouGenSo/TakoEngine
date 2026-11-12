@@ -113,14 +113,15 @@ void ShadowRenderer::EndShadowPass()
     dx12_->RestoreSceneRenderTarget();
 }
 
-void ShadowRenderer::SetShadowForMainPass()
+void ShadowRenderer::SetShadowForMainPass(bool receiveShadow)
 {
     if (isRenderingShadow_) {
         return;
     }
     CommandContext::ShaderBinder binder = dx12_->GetContext().Graphics();
     if (shadowConstantBuffer_) {
-        binder.BindCBV("gShadowConstants"_id, shadowConstantBuffer_->GetGPUVirtualAddress());
+        // 影を受けない視点には、ゼロ埋め（enableShadow = 0）の定数をこのフレームのアップロード領域から渡す
+        binder.BindCBV("gShadowConstants"_id, receiveShadow ? shadowConstantBuffer_->GetGPUVirtualAddress() : dx12_->GetUploadAllocator().Push(ShadowConstants{}));
     }
     if (shadowMap_) {
         binder.BindSRV("gShadowMap"_id, shadowMap_->GetSrvIndex());

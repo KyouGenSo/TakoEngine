@@ -62,7 +62,7 @@ namespace Tako {
     directionalLightData_->viewProjMatrix = Mat4x4::MakeIdentity();
   }
 
-  void Light::PreDraw()
+  void Light::PreDraw() const
   {
     CommandContext::ShaderBinder binder = dx12_->GetContext().Graphics();
     binder.BindCBV("gDirectionalLight"_id, directionalLightResource_->GetGPUVirtualAddress());

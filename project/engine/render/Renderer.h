@@ -56,8 +56,9 @@ namespace Tako {
     /// 描画に使う視点。定数はそのフレームのアップロード領域にある
     /// </summary>
     struct RenderView {
-      D3D12_GPU_VIRTUAL_ADDRESS constants = 0;  ///< gView
-      Vector3                   position{};      ///< 半透明の並べ替えに使うカメラ位置
+      D3D12_GPU_VIRTUAL_ADDRESS constants = 0;        ///< gView
+      Vector3                   position{};           ///< 半透明の並べ替えに使うカメラ位置
+      const Light*              light     = nullptr;  ///< この視点だけのライト（nullptr なら本編のライト）。指定すると本編の影は受けない
     };
 
   private: //構造体

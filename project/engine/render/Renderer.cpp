@@ -315,8 +315,9 @@ namespace Tako {
     binder.BindCBV("gView"_id, view.constants);
     // ponytail: 写していないとき（半透明の段の外・マスクのレイヤー・RenderImmediate）は黒を読む。そこでも要るなら各段で写す
     binder.BindSRV("gOpaqueTexture"_id, opaqueTextureSrv_ != 0 ? opaqueTextureSrv_ : TextureManager::GetInstance()->GetEngineDefaultSRVIndex("black.png"));
-    light_->PreDraw();
-    ShadowRenderer::GetInstance()->SetShadowForMainPass();
+    (view.light ? view.light : light_.get())->PreDraw();
+    // シャドウマップは本編のライトから描いた物なので、自前のライトを持つ視点には渡さない
+    ShadowRenderer::GetInstance()->SetShadowForMainPass(view.light == nullptr);
   }
 
   void Renderer::BindProperties(const MaterialPropertyBlock& properties, const Material& material, bool instanced, CommandContext::ShaderBinder& binder)

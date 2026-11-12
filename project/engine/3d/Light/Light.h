@@ -106,7 +106,7 @@ namespace Tako {
     /// <summary>
     /// ライト用の各リソースをルートシグネチャにバインドする
     /// </summary>
-    void PreDraw();
+    void PreDraw() const;
 
     /// <summary>
     /// カメラ視錐台を覆う平行光源のシャドウ行列（view/proj/viewProj）を計算する

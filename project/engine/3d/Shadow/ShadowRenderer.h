@@ -98,7 +98,8 @@ namespace Tako {
     /// <summary>
     /// 通常レンダリング時のシャドウ設定を適用
     /// </summary>
-    void SetShadowForMainPass();
+    /// <param name="receiveShadow">false なら影を受けない定数を渡す（本編のライトを使わない視点）</param>
+    void SetShadowForMainPass(bool receiveShadow = true);
 
     void SetEnabled(bool enabled) { shadowEnabled_ = enabled; }
 
