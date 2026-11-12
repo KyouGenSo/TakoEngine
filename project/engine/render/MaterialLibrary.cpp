@@ -117,9 +117,10 @@ namespace Tako {
     /// </summary>
     struct PostEffectPass {
       const Shader*                                   ps        = nullptr;
-      std::vector<std::pair<ShaderParamId, int32_t>>  inputs;               ///< スロット → 読む画像（-1 はエフェクトの入力、0 以上はそのパスの出力）
-      std::vector<std::pair<ShaderParamId, uint32_t>> textures;             ///< スロット → Textures のファイルの SRV
-      float                                           scale     = 1.0f;     ///< エフェクトの入力に対する大きさ。最後のパスはエフェクトの出力へ書くので使わない
+      std::vector<std::pair<ShaderParamId, int32_t>>  inputs;                           ///< スロット → 読む画像（-1 はエフェクトの入力、0 以上はそのパスの出力）
+      std::vector<std::pair<ShaderParamId, uint32_t>> textures;                         ///< スロット → Textures のファイルの SRV
+      float                                           scale     = 1.0f;                 ///< エフェクトの入力に対する大きさ。最後のパスはエフェクトの出力へ書くので使わない
+      DXGI_FORMAT                                     format    = DXGI_FORMAT_UNKNOWN;  ///< 一時 RT のフォーマット。UNKNOWN はエフェクトの入力と同じ。最後のパスでは使わない
       bool                                            usesDepth = false;
     };
 
@@ -213,6 +214,13 @@ namespace Tako {
           if (!(pass.scale > 0.0f)) {
             return label + ": Scale must be greater than 0";
           }
+          if (const std::string formatName = entry.value("Format", std::string()); !formatName.empty()) {
+            const auto known = std::ranges::find_if(kPostEffectFormats, [&formatName](const auto& candidate) { return formatName == candidate.first; });
+            if (known == std::end(kPostEffectFormats)) {
+              return std::format("{}: unknown Format {}", label, formatName);
+            }
+            pass.format = known->second;
+          }
         }
 
         // 値の組は 1 つなので、他のパスはそれと同じ位置の値だけを読める（Unity の SRP Batcher が全 Pass に同じ定数を求めるのと同じ考え）
@@ -293,7 +301,8 @@ namespace Tako {
       for (size_t i = 0; i < passes.size(); ++i) {
         const PostEffectPass& pass = passes[i];
         const auto scaled = [&](uint32_t size) { return (std::max)(1u, static_cast<uint32_t>(static_cast<float>(size) * pass.scale)); };
-        RenderTexture& target = i + 1 == passes.size() ? output : graph.Acquire({ scaled(input.width), scaled(input.height), input.format });
+        const DXGI_FORMAT format = pass.format != DXGI_FORMAT_UNKNOWN ? pass.format : input.format;
+        RenderTexture& target = i + 1 == passes.size() ? output : graph.Acquire({ scaled(input.width), scaled(input.height), format });
         written[i] = &target;
 
         accesses.clear();

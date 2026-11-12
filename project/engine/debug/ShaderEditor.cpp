@@ -619,6 +619,23 @@ float4 main(VertexShaderOutput input) : SV_TARGET
           passesEdited = true;
         }
         ImGui::SetItemTooltip("Size relative to the effect input (0.5 = half resolution)");
+
+        constexpr const char* kInputFormat = "(same as input)";
+        const std::string     formatName   = pass.value("Format", std::string());
+        if (UI::BeginCombo("Format", formatName.empty() ? kInputFormat : formatName.c_str())) {
+          if (ImGui::Selectable(kInputFormat, formatName.empty()) && !formatName.empty()) {
+            pass.erase("Format");
+            passesEdited = true;
+          }
+          for (const auto& known : kPostEffectFormats) {
+            if (ImGui::Selectable(known.first, formatName == known.first) && formatName != known.first) {
+              pass["Format"] = known.first;
+              passesEdited = true;
+            }
+          }
+          ImGui::EndCombo();
+        }
+        ImGui::SetItemTooltip("Format of the render target this pass writes. Fewer channels and bits use less memory. FLOAT keeps values above 1 and faint gradients. A channel the format lacks reads as 0 (alpha as 1)");
       }
       passesEdited |= DrawPassInputs(library, passes, i);
       ImGui::PopID();

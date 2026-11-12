@@ -31,6 +31,7 @@ namespace Tako {
   ///   "PostEffect": { "PS": "...", "Textures": { "gNoise": "noise.png" } } があればポストエフェクト（定数は gParam）として登録する。
   ///   複数パスは "PostEffect": { "Passes": [ { "PS": "...", "Entry": "BlurX", "Inputs": { "gTexture": "bright" }, "Output": "blurX", "Scale": 0.5 }, ... ] }。
   ///   Inputs は Source（エフェクトの入力）か前のパスの Output 名、書かない gTexture は Source、最後のパスがエフェクトの出力へ書く。gParam は全パスで 1 つの値の組。
+  ///   途中のパスの一時 RT は "Scale"（入力に対する大きさ）と "Format": "R16G16B16A16_FLOAT"（kPostEffectFormats の名前。書かなければ入力と同じ）で決まる。
   ///   "Event": "BeforeTransparent" で掛ける位置を選べる（RenderEvent の名前。書かなければ半透明の後のポストエフェクトの段）。
   ///   "Fade": ["intensity"] は一時エフェクト（PostEffectManager::ApplyTemporaryEffect）で時間とともに 0 へ弱める gParam の float の値。
   ///   "Entry" は PS のエントリポイント（既定 main）。ポストエフェクトの PS は gView（時間・画面サイズ・逆行列）と、宣言していれば gDepthTexture も受け取れる。

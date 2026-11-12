@@ -6,6 +6,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "CommandContext.h"
@@ -67,6 +68,24 @@ namespace Tako {
     /// 複数パス: input を読んで output へ書く（pixelShader と setup は使わない）
     /// </summary>
     std::function<void(const PostEffectFrame&, const EffectParam& param, RenderTexture& input, RenderTexture& output)> execute;
+  };
+
+  /// <summary>
+  /// .shader.json の "Format" に書ける名前。ポストエフェクトの途中のパスが書く一時 RT のフォーマットになる。
+  /// DX12 が描画先と線形フィルタを必ずサポートする、整数でないフォーマット（機能レベル 11.0 の必須）
+  /// </summary>
+  inline constexpr std::pair<const char*, DXGI_FORMAT> kPostEffectFormats[] = {
+    { "R8_UNORM",           DXGI_FORMAT_R8_UNORM },
+    { "R8G8_UNORM",         DXGI_FORMAT_R8G8_UNORM },
+    { "R8G8B8A8_UNORM",     DXGI_FORMAT_R8G8B8A8_UNORM },
+    { "R10G10B10A2_UNORM",  DXGI_FORMAT_R10G10B10A2_UNORM },
+    { "R11G11B10_FLOAT",    DXGI_FORMAT_R11G11B10_FLOAT },
+    { "R16_FLOAT",          DXGI_FORMAT_R16_FLOAT },
+    { "R16G16_FLOAT",       DXGI_FORMAT_R16G16_FLOAT },
+    { "R16G16B16A16_FLOAT", DXGI_FORMAT_R16G16B16A16_FLOAT },
+    { "R32_FLOAT",          DXGI_FORMAT_R32_FLOAT },
+    { "R32G32_FLOAT",       DXGI_FORMAT_R32G32_FLOAT },
+    { "R32G32B32A32_FLOAT", DXGI_FORMAT_R32G32B32A32_FLOAT },
   };
 
   /// <summary>
