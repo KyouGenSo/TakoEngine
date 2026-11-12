@@ -147,6 +147,11 @@ namespace Tako {
   void DrawFullScreen(const PostEffectFrame& frame);
 
   /// <summary>
+  /// source を一時 RT へ写して返す（返した RT はシェーダーリソース、source は描画先の状態になる）。使い終えたら frame.graph へ Release する
+  /// </summary>
+  RenderTexture& CopyToTemporary(const PostEffectFrame& frame, RenderTexture& source);
+
+  /// <summary>
   /// ポストエフェクトを並べた順に掛ける（Unity の Volume の Override 一覧に相当）
   /// </summary>
   class PostProcessStack {

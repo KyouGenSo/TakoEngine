@@ -142,7 +142,7 @@ namespace Tako {
     void SetCamera(Camera* camera) { camera_ = camera; }
 
     /// <summary>
-    /// シェーダーへ gOpaqueTexture として渡す SRV（0 なら黒）。RenderPipeline が半透明の前に写した画面を入れる
+    /// シェーダーへ gOpaqueTexture として渡す SRV（0 なら黒）。半透明の前に写した画面を入れる（本編は RenderPipeline、プレビューと Debug Viewport は PreviewViewport）
     /// </summary>
     void SetOpaqueTexture(uint32_t srvIndex) { opaqueTextureSrv_ = srvIndex; }
 

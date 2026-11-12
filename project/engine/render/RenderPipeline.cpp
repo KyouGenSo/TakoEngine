@@ -158,14 +158,7 @@ namespace Tako {
     RenderTexture* opaqueTexture = nullptr;
     if (renderer->AnyDeclares(scene, transparentFilter, "gOpaqueTexture")) {
       step("Opaque Texture", [&] {
-        opaqueTexture = &graph_.Acquire(RenderGraph::DescOf(sceneColor_));
-        graph_.AddPass({ RenderGraph::Read(sceneColor_.resource), RenderGraph::Write(opaqueTexture->resource) }, [&] {
-          CommandContext::ShaderBinder binder = BeginFullScreen(frame, L"NoEffect.PS.hlsl", *opaqueTexture);
-          binder.BindSRV("gTexture"_id, sceneColor_.srvIndex);
-          DrawFullScreen(frame);
-        });
-        context.Transition(opaqueTexture->resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-        context.Transition(sceneColor_.resource, D3D12_RESOURCE_STATE_RENDER_TARGET);
+        opaqueTexture = &CopyToTemporary(frame, sceneColor_);
         dx12_->BindSceneRenderTarget(sceneTarget);
       });
       renderer->SetOpaqueTexture(opaqueTexture->srvIndex);

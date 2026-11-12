@@ -5,6 +5,7 @@
 #include "PreviewViewport.h"
 #include "Camera.h"
 #include "EditorUI.h"
+#include "Renderer.h"
 
 namespace Tako {
 
@@ -38,6 +39,23 @@ namespace Tako {
 
   void PreviewPanel::BeginPass() {
     viewport_->BeginPass(postProcess_.HasEnabledEffects());
+  }
+
+  void PreviewPanel::Render(const std::function<void()>& submit) {
+    Renderer*                  renderer = Renderer::GetInstance();
+    const Renderer::RenderView view     = renderer->MakeView(*camera_, GetSize());
+
+    DrawList list;
+    renderer->BeginSubmit(list);
+    submit();
+    renderer->EndSubmit();
+
+    const DrawFilter transparent{ .minQueue = ShaderAsset::kQueueTransparent };
+    renderer->RenderList(list, view, { .maxQueue = ShaderAsset::kQueueTransparent });
+    if (renderer->AnyDeclares(list, transparent, "gOpaqueTexture")) {
+      viewport_->CaptureOpaqueTexture();
+    }
+    renderer->RenderList(list, view, transparent);
   }
 
   void PreviewPanel::EndPass() {

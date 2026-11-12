@@ -43,6 +43,11 @@ namespace Tako {
     void BeginPass(bool postProcess = false);
 
     /// <summary>
+    /// BeginPass〜EndPass の間に呼ぶ。ここまで描いた画面を写し、以降の描画物へ gOpaqueTexture として渡す（EndPass で外す）
+    /// </summary>
+    void CaptureOpaqueTexture();
+
+    /// <summary>
     /// BeginPass で postProcess を指定していれば stack を掛けてプレビューの RT へ書き、ImGui がサンプルするため PIXEL_SHADER_RESOURCE へ遷移する。
     /// RT/ビューポートの復帰は後段パスに任せる
     /// </summary>
@@ -70,6 +75,7 @@ namespace Tako {
     DX12Basic*                  dx12_          = nullptr;  ///< Finalize 時に使う（Renderer より後に破棄され得るため生成時に保持）
     RenderTexture               color_;                    ///< ImGui に表示する RT
     RenderTexture*              sceneTarget_   = nullptr;  ///< BeginPass〜EndPass の描画先（color_ か、ポストエフェクト前の一時 RT）
+    RenderTexture*              opaqueTexture_ = nullptr;  ///< CaptureOpaqueTexture で写した一時 RT（EndPass で返す）
     GpuResource                 depthBuffer_;
     D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle_{};
     uint32_t                    dsvIndex_      = 0;

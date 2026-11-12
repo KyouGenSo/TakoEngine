@@ -313,7 +313,7 @@ namespace Tako {
   {
     CommandContext::ShaderBinder binder = dx12_->GetContext().Graphics();
     binder.BindCBV("gView"_id, view.constants);
-    // ponytail: 写していないとき（半透明の段の外・マスクのレイヤー・プレビュー）は黒を読む。そこでも要るなら各段で写す
+    // ponytail: 写していないとき（半透明の段の外・マスクのレイヤー・RenderImmediate）は黒を読む。そこでも要るなら各段で写す
     binder.BindSRV("gOpaqueTexture"_id, opaqueTextureSrv_ != 0 ? opaqueTextureSrv_ : TextureManager::GetInstance()->GetEngineDefaultSRVIndex("black.png"));
     light_->PreDraw();
     ShadowRenderer::GetInstance()->SetShadowForMainPass();

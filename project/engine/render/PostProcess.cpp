@@ -191,6 +191,16 @@ namespace Tako {
     frame.dx12->GetContext().DrawInstanced(3, 1, 0, 0);
   }
 
+  RenderTexture& CopyToTemporary(const PostEffectFrame& frame, RenderTexture& source)
+  {
+    RenderTexture& copy = frame.graph->Acquire(RenderGraph::DescOf(source));
+    Run(frame, kCopy, kNoParam, source, copy);
+    CommandContext& context = frame.dx12->GetContext();
+    context.Transition(copy.resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    context.Transition(source.resource, D3D12_RESOURCE_STATE_RENDER_TARGET);
+    return copy;
+  }
+
   uint32_t PostProcessStack::Add(std::string_view name, uint32_t maskId)
   {
     const PostEffectDefinition* definition = FindPostEffect(name);

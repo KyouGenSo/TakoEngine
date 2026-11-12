@@ -2,6 +2,7 @@
 
 #ifdef _DEBUG
 
+#include <functional>
 #include <memory>
 #include "PostProcess.h"
 #include "Vector2.h"
@@ -41,6 +42,12 @@ namespace Tako {
     /// 描画先を RENDER_TARGET にしてクリアする。IsReady のときだけ呼ぶ
     /// </summary>
     void BeginPass();
+
+    /// <summary>
+    /// submit 内で登録した描画物をプレビューのカメラで描く。BeginPass〜EndPass の間に呼ぶ。
+    /// 半透明の段のシェーダーが gOpaqueTexture を読むなら、不透明まで描いた画面を写して渡す（本編と同じ規則）
+    /// </summary>
+    void Render(const std::function<void()>& submit);
 
     /// <summary>
     /// ImGui がサンプルできるよう描画先を PIXEL_SHADER_RESOURCE に戻す

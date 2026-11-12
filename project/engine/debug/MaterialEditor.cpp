@@ -167,14 +167,10 @@ namespace Tako {
     }
 
     preview_.BeginPass();
-
-    // プレビュー用の描画物だけをプレビューカメラ視点で描く
-    Renderer* renderer = Renderer::GetInstance();
-    renderer->RenderImmediate(renderer->MakeView(preview_.GetCamera(), preview_.GetSize()), [this] {
+    preview_.Render([this] {
       floorObject_->Draw();
       previewObject_->Draw();
     });
-
     preview_.EndPass();
   }
 
@@ -355,9 +351,9 @@ namespace Tako {
       if (!IsMeshShader(*material->GetShader())) {
         ImGui::TextDisabled("This shader is not for meshes (showing the default material)");
       }
-      else if (ReadsOpaqueTexture(*material->GetShader())) {
-        // ponytail: プレビューでは写していないので黒を読む。要るなら PreviewViewport で床を描いた後の描画先を写して渡す
-        ImGui::TextDisabled("gOpaqueTexture is black in the preview");
+      else if (material->GetRenderQueue() < ShaderAsset::kQueueTransparent && ReadsOpaqueTexture(*material->GetShader())) {
+        // 不透明の段の描画物には渡されず、ゲームでも黒を読む
+        ImGui::TextDisabled("gOpaqueTexture is passed only to queue 3000+ (Transparent)");
       }
     }
     return inputCaptured;

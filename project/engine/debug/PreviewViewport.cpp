@@ -117,8 +117,23 @@ namespace Tako {
     commandList->ClearDepthStencilView(dsvHandle_, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
   }
 
+  void PreviewViewport::CaptureOpaqueTexture()
+  {
+    RenderGraph&          graph = RenderPipeline::GetInstance()->GetGraph();
+    const PostEffectFrame frame{ .dx12 = dx12_, .graph = &graph, .width = width_, .height = height_ };
+    opaqueTexture_ = &CopyToTemporary(frame, *sceneTarget_);
+    dx12_->BindSceneRenderTarget({ sceneTarget_->rtvHandle, dsvHandle_, width_, height_ });
+    Renderer::GetInstance()->SetOpaqueTexture(opaqueTexture_->srvIndex);
+  }
+
   void PreviewViewport::EndPass(const PostProcessStack* stack, const Camera* camera)
   {
+    if (opaqueTexture_) {
+      Renderer::GetInstance()->SetOpaqueTexture(0);
+      RenderPipeline::GetInstance()->GetGraph().Release(*opaqueTexture_);
+      opaqueTexture_ = nullptr;
+    }
+
     if (sceneTarget_ != &color_) {
       RenderGraph& graph = RenderPipeline::GetInstance()->GetGraph();
       const D3D12_GPU_VIRTUAL_ADDRESS view = camera ? Renderer::GetInstance()->MakeView(*camera, GetSize()).constants : 0;
