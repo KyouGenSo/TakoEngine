@@ -14,7 +14,7 @@
 - プロジェクトの作成（File > New Project、`TakoEditor.exe --new 場所 名前`）と、File > Open Project / Open Recent
 - プロジェクトの印 `名前.takoproject`（最後に開いたエンジンのバージョンと、保存形式の番号）
 - 保存形式の移行の仕組み（`editor/ProjectMigration.cpp` の表）。古い形式のプロジェクトは、バックアップを取ってから直す
-- `UpdateEngine.bat`（エンジンを入れる・更新する）
+- `UpdateEngine.bat`（エンジンを入れる・更新する）。`-Zip <ファイル>` で、手元で作った SDK の zip を入れられる（リリース前のエンジンを試す用）
 - 新しいリリースの通知（Engine Settings > Editor > Check for Updates。1 日 1 回）
 - 配置ファイル（imgui.ini）が無いときの既定のウィンドウの並び
 - クラッシュ対策。未保存のシーンの中身を `Generated/Recovery/` に書いておき（Play の前・コンパイルの前・未保存のまま 2 分ごと）、正常に終了しなかった次の起動で、読み込むか捨てるかを聞く

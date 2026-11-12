@@ -1,0 +1,23 @@
+[*.{cpp,h}]
+indent_style = space
+indent_size = 4
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = false
+
+# Spelling check settings for Visual Studio
+# スペルミスをintellisense上での「エラー」として扱う
+spelling_error_severity = error
+# チェック対象を「識別子(変数名など)」と「コメント」に限定する
+spelling_checkable_types = identifiers,comments
+# 辞書を英語(米国)に固定する
+spelling_languages = en-us
+# 自分の辞書を作れるように標準の除外辞書設定はそのまま使用
+spelling_use_default_exclusion_dictionary = true
+# 自分の除外辞書を指定
+spelling_exclusion_path = exclusion.dic
+
+# External/Third-party libraries - スペルチェック無効化
+[project/externals/**]
+spelling_checkable_types = none
