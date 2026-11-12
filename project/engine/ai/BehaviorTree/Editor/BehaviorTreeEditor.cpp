@@ -73,8 +73,6 @@ void BehaviorTreeEditor::Initialize(const EditorConfig& config) {
   }
 
   editorConfig_ = std::make_unique<ed::Config>();
-  editorConfig_->NavigateButtonIndex = 1;        // マウス中ボタンでナビゲート
-  editorConfig_->ContextMenuButtonIndex = 2;     // マウス右ボタンでコンテキストメニュー
   editorConfig_->SettingsFile = nullptr;
 
   currentTreeName_ = config_.initialTreeFile.empty()
@@ -158,6 +156,7 @@ void BehaviorTreeEditor::Update() {
 
       HandleLinkCreation();
       HandleDeletion();
+      DrawContextMenu();
 
       // 選択ノードの取得は ed::End() 前に実行必須
       {
@@ -218,12 +217,12 @@ void BehaviorTreeEditor::Clear() {
 std::span<const ShortcutBinding<BehaviorTreeEditor>> BehaviorTreeEditor::Shortcuts() {
   static constexpr ShortcutBinding<BehaviorTreeEditor> kShortcuts[] = {
     { ImGuiMod_Ctrl | ImGuiKey_S, ImGuiInputFlags_None, "Save the tree", [](BehaviorTreeEditor& editor) { editor.SaveTree(editor.currentTreeName_); } },
-    // 以下は imgui-node-editor の処理（ed::Config のボタン割り当て）
+    // 以下は imgui-node-editor の処理（ボタンは ed::Config の既定。右ボタンは動かせばパン、動かさずに離せばメニュー）
     { ImGuiKey_Delete, ImGuiInputFlags_None, "Delete the selected nodes and links" },
     { ImGuiKey_F,      ImGuiInputFlags_None, "Zoom to the selection (Shift: with margin)" },
     { .description = "Pan",          .keyLabel = "RMB drag" },
     { .description = "Zoom",         .keyLabel = "Wheel" },
-    { .description = "Context menu", .keyLabel = "MMB click" },
+    { .description = "Context menu", .keyLabel = "RMB click" },
   };
   return kShortcuts;
 }
@@ -701,19 +700,46 @@ void BehaviorTreeEditor::HandleDeletion() {
 void BehaviorTreeEditor::DrawContextMenu() {
   ed::Suspend();
 
-  if (ed::ShowBackgroundContextMenu()) {
+  // ed は右クリックでは選択を変えないので、選択の外で開いたら、それだけを選び直す
+  ed::NodeId contextNodeId;
+  ed::LinkId contextLinkId;
+  if (ed::ShowNodeContextMenu(&contextNodeId)) {
+    if (!ed::IsNodeSelected(contextNodeId)) {
+      ed::SelectNode(contextNodeId);
+    }
+    ImGui::OpenPopup("SelectionMenu");
+  }
+  else if (ed::ShowLinkContextMenu(&contextLinkId)) {
+    if (!ed::IsLinkSelected(contextLinkId)) {
+      ed::SelectLink(contextLinkId);
+    }
+    ImGui::OpenPopup("SelectionMenu");
+  }
+  else if (ed::ShowBackgroundContextMenu()) {
     ImGui::OpenPopup("CreateNodeMenu");
   }
 
-  ed::NodeId contextNodeId;
-  if (ed::ShowNodeContextMenu(&contextNodeId)) {
-    ImGui::OpenPopup("NodeContextMenu");
-    ImGui::SetNextWindowSize(ImVec2(200, 0));
+  if (ImGui::BeginPopup("SelectionMenu")) {
+    if (ImGui::MenuItem(ICON_FA_TRASH_CAN "  Delete", "Del")) {
+      // Delete キーと同じく選択中のノードとリンクを ed に予約し、次のフレームの HandleDeletion が受ける（Undo の 1 手もそこで積む）
+      const int count = ed::GetSelectedObjectCount();
+      std::vector<ed::NodeId> nodes(count);
+      std::vector<ed::LinkId> links(count);
+      nodes.resize(ed::GetSelectedNodes(nodes.data(), count));
+      links.resize(ed::GetSelectedLinks(links.data(), count));
+      for (ed::LinkId id : links) {
+        ed::DeleteLink(id);
+      }
+      for (ed::NodeId id : nodes) {
+        ed::DeleteNode(id);
+      }
+    }
+    ImGui::EndPopup();
   }
 
   if (ImGui::BeginPopup("CreateNodeMenu")) {
-    ImVec2 mousePos = ImGui::GetMousePos();
-    ImVec2 canvasPos = ed::ScreenToCanvas(mousePos);
+    // 項目を押した位置ではなく、右クリックした位置に置く
+    ImVec2 canvasPos = ed::ScreenToCanvas(ImGui::GetMousePosOnOpeningCurrentPopup());
 
     ImGui::Text("Create Node");
     ImGui::Separator();
