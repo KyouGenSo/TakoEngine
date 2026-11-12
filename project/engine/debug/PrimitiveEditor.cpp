@@ -2,7 +2,6 @@
 #include "EditorUI.h"
 #include "DebugUIManager.h"
 #include "Object3d.h"
-#include "Renderer.h"
 #include "Camera.h"
 #include "Model.h"
 #include "PrimitiveBuilder.h"
@@ -185,16 +184,12 @@ namespace Tako {
     }
 
     preview_.BeginPass();
-
-    // プレビュー用の描画物だけをプレビューカメラ視点で描く
-    Renderer* renderer = Renderer::GetInstance();
-    renderer->RenderImmediate(renderer->MakeView(preview_.GetCamera(), preview_.GetSize()), [this] {
+    preview_.Render([this] {
       if (showFloor_ && floorObject_) {
         floorObject_->Draw();
       }
       previewObject_->Draw();
     });
-
     preview_.EndPass();
   }
 
