@@ -3,7 +3,7 @@
 #include <string>
 #include <unordered_map>
 #include <functional>
-#include "transition/ITransitionEffect.h"
+#include "ITransitionEffect.h"
 
 namespace Tako {
 

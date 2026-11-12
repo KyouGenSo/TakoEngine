@@ -1,8 +1,8 @@
 #include "SceneManager.h"
 #include "TransitionManager.h"
-#include "transition/ITransitionEffect.h"
-#include "transition/FadeTransition.h"
-#include "transition/ScaleTransition.h"
+#include "ITransitionEffect.h"
+#include "FadeTransition.h"
+#include "ScaleTransition.h"
 #include "FrameTimer.h"
 #include "Logger.h"
 

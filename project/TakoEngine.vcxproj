@@ -50,13 +50,13 @@
     <OutDir>$(SolutionDir)\Generated\outputs\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\Generated\obj\$(ProjectName)\$(Configuration)\</IntDir>
     <IncludePath>$(IncludePath)</IncludePath>
-    <PublicIncludeDirectories>$(ProjectDir)engine\3d\Camera;$(ProjectDir)engine\3d\Decal;$(ProjectDir)engine\3d\Light;$(ProjectDir)engine\3d\Model;$(ProjectDir)engine\3d\Object;$(ProjectDir)engine\3d\Shadow;$(ProjectDir)engine\3d\Skybox;$(ProjectDir)engine\3d\Primitive;$(ProjectDir)engine\effect\PostEffect;$(ProjectDir)engine\effect\Particle;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\render;$(ProjectDir)engine\math;$(ProjectDir)engine\2d;$(ProjectDir)engine\animation;$(ProjectDir)engine\3d;$(ProjectDir)engine\audio;$(ProjectDir)engine\base;$(ProjectDir)engine\effect;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\func;$(ProjectDir)engine\imgui;$(ProjectDir)engine\io;$(ProjectDir)engine\scene;$(ProjectDir)engine\reflection;$(ProjectDir)engine\collision;$(ProjectDir)engine\debug;$(ProjectDir)engine\time;$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\IconFontCppHeaders;$(ProjectDir)externals\assimp\include;$(ProjectDir)engine\ai;$(ProjectDir)engine\ai\BehaviorTree\Core;$(ProjectDir)engine\ai\BehaviorTree\Composites;$(ProjectDir)engine\ai\BehaviorTree\Runtime;$(ProjectDir)engine\ai\BehaviorTree\Nodes;$(ProjectDir)engine\ai\BehaviorTree\Editor;$(ProjectDir)externals\imgui-node-editor;$(PublicIncludeDirectories)</PublicIncludeDirectories>
+    <PublicIncludeDirectories>$(ProjectDir)engine\graphics\3d\Camera;$(ProjectDir)engine\graphics\3d\Decal;$(ProjectDir)engine\graphics\3d\Light;$(ProjectDir)engine\graphics\3d\Model;$(ProjectDir)engine\graphics\3d\Object;$(ProjectDir)engine\graphics\3d\Shadow;$(ProjectDir)engine\graphics\3d\SkyBox;$(ProjectDir)engine\graphics\3d\Primitive;$(ProjectDir)engine\graphics\effect\PostEffect;$(ProjectDir)engine\graphics\effect\Particle;$(ProjectDir)engine\graphics\effect\Particle\Emitter;$(ProjectDir)engine\graphics\DX12;$(ProjectDir)engine\graphics\render;$(ProjectDir)engine\core\math;$(ProjectDir)engine\graphics\2d;$(ProjectDir)engine\graphics\3d\Line;$(ProjectDir)engine\graphics\animation;$(ProjectDir)engine\graphics\3d;$(ProjectDir)engine\gameplay\audio;$(ProjectDir)engine\core\base;$(ProjectDir)engine\graphics\effect;$(ProjectDir)engine\core\utility;$(ProjectDir)engine\editor\UI;$(ProjectDir)engine\editor\imgui;$(ProjectDir)engine\core\io;$(ProjectDir)engine\gameplay\actor;$(ProjectDir)engine\gameplay\component;$(ProjectDir)engine\gameplay\scene;$(ProjectDir)engine\gameplay\scene\transition;$(ProjectDir)engine\core\reflection;$(ProjectDir)engine\gameplay\collision;$(ProjectDir)engine\editor;$(ProjectDir)engine\core\time;$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\IconFontCppHeaders;$(ProjectDir)externals\assimp\include;$(ProjectDir)engine\gameplay\ai;$(ProjectDir)engine\gameplay\ai\BehaviorTree\Core;$(ProjectDir)engine\gameplay\ai\BehaviorTree\Composites;$(ProjectDir)engine\gameplay\ai\BehaviorTree\Runtime;$(ProjectDir)engine\gameplay\ai\BehaviorTree\Nodes;$(ProjectDir)engine\editor\BehaviorTree;$(ProjectDir)externals\imgui-node-editor;$(PublicIncludeDirectories)</PublicIncludeDirectories>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)\Generated\outputs\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\Generated\obj\$(ProjectName)\$(Configuration)\</IntDir>
     <IncludePath>$(IncludePath)</IncludePath>
-    <PublicIncludeDirectories>$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\IconFontCppHeaders;$(ProjectDir)externals\assimp\include;$(ProjectDir)engine\math;$(ProjectDir)engine\2d;$(ProjectDir)engine\animation;$(ProjectDir)engine\3d;$(ProjectDir)engine\3d\Decal;$(ProjectDir)engine\3d\Camera;$(ProjectDir)engine\3d\Light;$(ProjectDir)engine\3d\Model;$(ProjectDir)engine\3d\Object;$(ProjectDir)engine\3d\Shadow;$(ProjectDir)engine\3d\Skybox;$(ProjectDir)engine\3d\Primitive;$(ProjectDir)engine\audio;$(ProjectDir)engine\base;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\render;$(ProjectDir)engine\collision;$(ProjectDir)engine\effect;$(ProjectDir)engine\effect\PostEffect;$(ProjectDir)engine\effect\Particle;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\func;$(ProjectDir)engine\io;$(ProjectDir)engine\scene;$(ProjectDir)engine\reflection;$(ProjectDir)engine\time;$(ProjectDir)engine\ai;$(ProjectDir)engine\ai\BehaviorTree\Core;$(ProjectDir)engine\ai\BehaviorTree\Composites;$(ProjectDir)engine\ai\BehaviorTree\Runtime;$(ProjectDir)engine\ai\BehaviorTree\Nodes;$(PublicIncludeDirectories)</PublicIncludeDirectories>
+    <PublicIncludeDirectories>$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\IconFontCppHeaders;$(ProjectDir)externals\assimp\include;$(ProjectDir)engine\core\math;$(ProjectDir)engine\graphics\2d;$(ProjectDir)engine\graphics\3d\Line;$(ProjectDir)engine\graphics\render;$(ProjectDir)engine\graphics\animation;$(ProjectDir)engine\graphics\3d;$(ProjectDir)engine\graphics\3d\Decal;$(ProjectDir)engine\graphics\3d\Camera;$(ProjectDir)engine\graphics\3d\Light;$(ProjectDir)engine\graphics\3d\Model;$(ProjectDir)engine\graphics\3d\Object;$(ProjectDir)engine\graphics\3d\Shadow;$(ProjectDir)engine\graphics\3d\SkyBox;$(ProjectDir)engine\graphics\3d\Primitive;$(ProjectDir)engine\gameplay\audio;$(ProjectDir)engine\core\base;$(ProjectDir)engine\graphics\DX12;$(ProjectDir)engine\gameplay\collision;$(ProjectDir)engine\graphics\effect;$(ProjectDir)engine\graphics\effect\PostEffect;$(ProjectDir)engine\graphics\effect\Particle;$(ProjectDir)engine\graphics\effect\Particle\Emitter;$(ProjectDir)engine\core\utility;$(ProjectDir)engine\core\io;$(ProjectDir)engine\gameplay\actor;$(ProjectDir)engine\gameplay\component;$(ProjectDir)engine\gameplay\scene;$(ProjectDir)engine\gameplay\scene\transition;$(ProjectDir)engine\core\reflection;$(ProjectDir)engine\core\time;$(ProjectDir)engine\gameplay\ai;$(ProjectDir)engine\gameplay\ai\BehaviorTree\Core;$(ProjectDir)engine\gameplay\ai\BehaviorTree\Composites;$(ProjectDir)engine\gameplay\ai\BehaviorTree\Runtime;$(ProjectDir)engine\gameplay\ai\BehaviorTree\Nodes;$(PublicIncludeDirectories)</PublicIncludeDirectories>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -69,7 +69,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(ProjectDir)engine\debug;$(ProjectDir)engine\3d\Decal;$(ProjectDir)engine\3d\Camera;$(ProjectDir)engine\3d\Light;$(ProjectDir)engine\3d\Model;$(ProjectDir)engine\3d\Object;$(ProjectDir)engine\3d\Shadow;$(ProjectDir)engine\3d\Skybox;$(ProjectDir)engine\3d\Primitive;$(ProjectDir)engine\time;$(ProjectDir)engine\effect;$(ProjectDir)engine\effect\Particle;$(ProjectDir)engine\effect\PostEffect;$(ProjectDir)engine\scene;$(ProjectDir)engine\reflection;$(ProjectDir)engine\audio;$(ProjectDir)engine\collision;$(ProjectDir)engine\imgui;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\render;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)engine\animation;$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\IconFontCppHeaders;$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\miniaudio;$(ProjectDir)externals\imgui-node-editor;$(ProjectDir)engine\ai;$(ProjectDir)engine\ai\BehaviorTree\Core;$(ProjectDir)engine\ai\BehaviorTree\Composites;$(ProjectDir)engine\ai\BehaviorTree\Runtime;$(ProjectDir)engine\ai\BehaviorTree\Nodes;$(ProjectDir)engine\ai\BehaviorTree\Editor;$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)engine\editor;$(ProjectDir)engine\graphics\3d\Decal;$(ProjectDir)engine\graphics\3d\Camera;$(ProjectDir)engine\graphics\3d\Light;$(ProjectDir)engine\graphics\3d\Model;$(ProjectDir)engine\graphics\3d\Object;$(ProjectDir)engine\graphics\3d\Shadow;$(ProjectDir)engine\graphics\3d\SkyBox;$(ProjectDir)engine\graphics\3d\Primitive;$(ProjectDir)engine\core\time;$(ProjectDir)engine\graphics\effect;$(ProjectDir)engine\graphics\effect\Particle;$(ProjectDir)engine\graphics\effect\Particle\Emitter;$(ProjectDir)engine\graphics\effect\PostEffect;$(ProjectDir)engine\gameplay\actor;$(ProjectDir)engine\gameplay\component;$(ProjectDir)engine\gameplay\scene;$(ProjectDir)engine\gameplay\scene\transition;$(ProjectDir)engine\core\reflection;$(ProjectDir)engine\gameplay\audio;$(ProjectDir)engine\gameplay\collision;$(ProjectDir)engine\editor\UI;$(ProjectDir)engine\editor\imgui;$(ProjectDir)engine\core\math;$(ProjectDir)engine\core\utility;$(ProjectDir)engine\core\io;$(ProjectDir)engine\graphics\DX12;$(ProjectDir)engine\graphics\render;$(ProjectDir)engine\core\base;$(ProjectDir)engine\graphics\3d;$(ProjectDir)engine\graphics\2d;$(ProjectDir)engine\graphics\3d\Line;$(ProjectDir)engine\graphics\animation;$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\IconFontCppHeaders;$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\miniaudio;$(ProjectDir)externals\imgui-node-editor;$(ProjectDir)engine\gameplay\ai;$(ProjectDir)engine\gameplay\ai\BehaviorTree\Core;$(ProjectDir)engine\gameplay\ai\BehaviorTree\Composites;$(ProjectDir)engine\gameplay\ai\BehaviorTree\Runtime;$(ProjectDir)engine\gameplay\ai\BehaviorTree\Nodes;$(ProjectDir)engine\editor\BehaviorTree;$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -101,7 +101,7 @@
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)engine\3d\Camera;$(ProjectDir)engine\3d\Decal;$(ProjectDir)engine\3d\Light;$(ProjectDir)engine\3d\Model;$(ProjectDir)engine\3d\Object;$(ProjectDir)engine\3d\Shadow;$(ProjectDir)engine\3d\Skybox;$(ProjectDir)engine\3d\Primitive;$(ProjectDir)engine\time;$(ProjectDir)engine\effect;$(ProjectDir)engine\effect\Particle;$(ProjectDir)engine\effect\PostEffect;$(ProjectDir)engine\scene;$(ProjectDir)engine\reflection;$(ProjectDir)engine\audio;$(ProjectDir)engine\collision;$(ProjectDir)engine\math;$(ProjectDir)engine\func\mathFunc;$(ProjectDir)engine\func\commonFunc;$(ProjectDir)engine\io;$(ProjectDir)engine\base\DX12;$(ProjectDir)engine\render;$(ProjectDir)engine\base;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)engine\animation;$(ProjectDir)externals\miniaudio;$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\IconFontCppHeaders;$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\imgui-node-editor;$(ProjectDir)engine\ai;$(ProjectDir)engine\ai\BehaviorTree\Core;$(ProjectDir)engine\ai\BehaviorTree\Composites;$(ProjectDir)engine\ai\BehaviorTree\Runtime;$(ProjectDir)engine\ai\BehaviorTree\Nodes;$(ProjectDir)engine\ai\BehaviorTree\Editor;$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)engine\graphics\3d\Camera;$(ProjectDir)engine\graphics\3d\Decal;$(ProjectDir)engine\graphics\3d\Light;$(ProjectDir)engine\graphics\3d\Model;$(ProjectDir)engine\graphics\3d\Object;$(ProjectDir)engine\graphics\3d\Shadow;$(ProjectDir)engine\graphics\3d\SkyBox;$(ProjectDir)engine\graphics\3d\Primitive;$(ProjectDir)engine\core\time;$(ProjectDir)engine\graphics\effect;$(ProjectDir)engine\graphics\effect\Particle;$(ProjectDir)engine\graphics\effect\Particle\Emitter;$(ProjectDir)engine\graphics\effect\PostEffect;$(ProjectDir)engine\gameplay\actor;$(ProjectDir)engine\gameplay\component;$(ProjectDir)engine\gameplay\scene;$(ProjectDir)engine\gameplay\scene\transition;$(ProjectDir)engine\core\reflection;$(ProjectDir)engine\gameplay\audio;$(ProjectDir)engine\gameplay\collision;$(ProjectDir)engine\core\math;$(ProjectDir)engine\core\utility;$(ProjectDir)engine\core\io;$(ProjectDir)engine\graphics\DX12;$(ProjectDir)engine\graphics\render;$(ProjectDir)engine\core\base;$(ProjectDir)engine\graphics\3d;$(ProjectDir)engine\graphics\2d;$(ProjectDir)engine\graphics\3d\Line;$(ProjectDir)engine\graphics\animation;$(ProjectDir)externals\miniaudio;$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\IconFontCppHeaders;$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\imgui-node-editor;$(ProjectDir)engine\gameplay\ai;$(ProjectDir)engine\gameplay\ai\BehaviorTree\Core;$(ProjectDir)engine\gameplay\ai\BehaviorTree\Composites;$(ProjectDir)engine\gameplay\ai\BehaviorTree\Runtime;$(ProjectDir)engine\gameplay\ai\BehaviorTree\Nodes;$(ProjectDir)engine\editor\BehaviorTree;$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -121,345 +121,345 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="engine\scene\BehaviorTreeComponent.cpp" />
-    <ClCompile Include="engine\ai\BehaviorTree\Nodes\BTActorNodes.cpp" />
-    <ClCompile Include="engine\debug\NewScript.cpp" />
-    <ClCompile Include="engine\scene\SceneSelfTest.cpp" />
-    <ClCompile Include="engine\scene\UILayoutComponent.cpp" />
-    <ClCompile Include="engine\scene\AudioSourceComponent.cpp" />
-    <ClCompile Include="engine\scene\AnimatorComponent.cpp" />
-    <ClCompile Include="engine\scene\ParticleSystemComponent.cpp" />
-    <ClCompile Include="engine\scene\PostProcessComponent.cpp" />
-    <ClCompile Include="engine\scene\SkyBoxComponent.cpp" />
-    <ClCompile Include="engine\scene\LightComponent.cpp" />
-    <ClCompile Include="engine\scene\CameraComponent.cpp" />
-    <ClCompile Include="engine\reflection\GameSettings.cpp" />
-    <ClCompile Include="engine\scene\ScriptComponent.cpp" />
-    <ClCompile Include="engine\debug\SceneEditor.cpp">
+    <ClCompile Include="engine\gameplay\component\BehaviorTreeComponent.cpp" />
+    <ClCompile Include="engine\gameplay\ai\BehaviorTree\Nodes\BTActorNodes.cpp" />
+    <ClCompile Include="engine\editor\NewScript.cpp" />
+    <ClCompile Include="engine\gameplay\scene\SceneSelfTest.cpp" />
+    <ClCompile Include="engine\gameplay\component\UILayoutComponent.cpp" />
+    <ClCompile Include="engine\gameplay\component\AudioSourceComponent.cpp" />
+    <ClCompile Include="engine\gameplay\component\AnimatorComponent.cpp" />
+    <ClCompile Include="engine\gameplay\component\ParticleSystemComponent.cpp" />
+    <ClCompile Include="engine\gameplay\component\PostProcessComponent.cpp" />
+    <ClCompile Include="engine\gameplay\component\SkyBoxComponent.cpp" />
+    <ClCompile Include="engine\gameplay\component\LightComponent.cpp" />
+    <ClCompile Include="engine\gameplay\component\CameraComponent.cpp" />
+    <ClCompile Include="engine\core\reflection\GameSettings.cpp" />
+    <ClCompile Include="engine\gameplay\actor\ScriptComponent.cpp" />
+    <ClCompile Include="engine\editor\SceneEditor.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="engine\scene\Prefab.cpp" />
-    <ClCompile Include="engine\scene\ColliderComponent.cpp" />
-    <ClCompile Include="engine\scene\MeshComponent.cpp" />
-    <ClCompile Include="engine\scene\Actor.cpp" />
-    <ClCompile Include="engine\scene\BaseScene.cpp" />
-    <ClCompile Include="engine\ai\BehaviorTree\Core\BTNode.cpp" />
-    <ClCompile Include="engine\imgui\ImGuiPropertyVisitor.cpp">
+    <ClCompile Include="engine\gameplay\scene\Prefab.cpp" />
+    <ClCompile Include="engine\gameplay\component\ColliderComponent.cpp" />
+    <ClCompile Include="engine\gameplay\component\MeshComponent.cpp" />
+    <ClCompile Include="engine\gameplay\actor\Actor.cpp" />
+    <ClCompile Include="engine\gameplay\scene\BaseScene.cpp" />
+    <ClCompile Include="engine\gameplay\ai\BehaviorTree\Core\BTNode.cpp" />
+    <ClCompile Include="engine\editor\UI\ImGuiPropertyVisitor.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="engine\reflection\ReflectionSelfTest.cpp" />
-    <ClCompile Include="engine\reflection\JsonPropertyVisitor.cpp" />
-    <ClCompile Include="engine\reflection\TypeRegistry.cpp" />
-    <ClCompile Include="engine\reflection\TObject.cpp" />
-    <ClCompile Include="engine\render\MaterialPropertyBlock.cpp" />
-    <ClCompile Include="engine\debug\RenderPipelineWindow.cpp" />
-    <ClCompile Include="engine\debug\ShaderEditor.cpp" />
-    <ClCompile Include="engine\debug\ObjectOverridesEditor.cpp" />
-    <ClCompile Include="engine\3d\Object\ObjectOverrides.cpp" />
-    <ClCompile Include="engine\3d\Decal\Decal.cpp" />
-    <ClCompile Include="engine\3d\Decal\DecalManager.cpp" />
-    <ClCompile Include="engine\3d\Model\BoneTracker.cpp" />
-    <ClCompile Include="engine\3d\Object\InstancedObject3d.cpp" />
-    <ClCompile Include="engine\3d\Shadow\ShadowMap.cpp" />
-    <ClCompile Include="engine\3d\Shadow\ShadowRenderer.cpp" />
-    <ClCompile Include="engine\3d\SkyBox\SkyBox.cpp" />
-    <ClCompile Include="engine\3d\Primitive\PrimitiveBuilder.cpp" />
-    <ClCompile Include="engine\collision\AABBCollider.cpp" />
-    <ClCompile Include="engine\collision\Collider.cpp" />
-    <ClCompile Include="engine\collision\CollisionManager.cpp" />
-    <ClCompile Include="engine\collision\OBBCollider.cpp" />
-    <ClCompile Include="engine\collision\SphereCollider.cpp" />
-    <ClCompile Include="engine\debug\DebugUIManager.cpp">
+    <ClCompile Include="engine\core\reflection\ReflectionSelfTest.cpp" />
+    <ClCompile Include="engine\core\reflection\JsonPropertyVisitor.cpp" />
+    <ClCompile Include="engine\core\reflection\TypeRegistry.cpp" />
+    <ClCompile Include="engine\core\reflection\TObject.cpp" />
+    <ClCompile Include="engine\graphics\render\MaterialPropertyBlock.cpp" />
+    <ClCompile Include="engine\editor\RenderPipelineWindow.cpp" />
+    <ClCompile Include="engine\editor\ShaderEditor.cpp" />
+    <ClCompile Include="engine\editor\ObjectOverridesEditor.cpp" />
+    <ClCompile Include="engine\graphics\3d\Object\ObjectOverrides.cpp" />
+    <ClCompile Include="engine\graphics\3d\Decal\Decal.cpp" />
+    <ClCompile Include="engine\graphics\3d\Decal\DecalManager.cpp" />
+    <ClCompile Include="engine\graphics\3d\Model\BoneTracker.cpp" />
+    <ClCompile Include="engine\graphics\3d\Object\InstancedObject3d.cpp" />
+    <ClCompile Include="engine\graphics\3d\Shadow\ShadowMap.cpp" />
+    <ClCompile Include="engine\graphics\3d\Shadow\ShadowRenderer.cpp" />
+    <ClCompile Include="engine\graphics\3d\SkyBox\SkyBox.cpp" />
+    <ClCompile Include="engine\graphics\3d\Primitive\PrimitiveBuilder.cpp" />
+    <ClCompile Include="engine\gameplay\collision\AABBCollider.cpp" />
+    <ClCompile Include="engine\gameplay\collision\Collider.cpp" />
+    <ClCompile Include="engine\gameplay\collision\CollisionManager.cpp" />
+    <ClCompile Include="engine\gameplay\collision\OBBCollider.cpp" />
+    <ClCompile Include="engine\gameplay\collision\SphereCollider.cpp" />
+    <ClCompile Include="engine\editor\DebugUIManager.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="engine\debug\ParticleEditor.cpp">
+    <ClCompile Include="engine\editor\ParticleEditor.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="engine\debug\PrimitiveEditor.cpp">
+    <ClCompile Include="engine\editor\PrimitiveEditor.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="engine\debug\DebugViewport.cpp">
+    <ClCompile Include="engine\editor\DebugViewport.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="engine\debug\EngineSettingsWindow.cpp">
+    <ClCompile Include="engine\editor\EngineSettingsWindow.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="engine\debug\AssetBrowser.cpp">
+    <ClCompile Include="engine\editor\AssetBrowser.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="engine\debug\UILayoutEditor.cpp">
+    <ClCompile Include="engine\editor\UILayoutEditor.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="engine\debug\CameraAnimationEditor.cpp">
+    <ClCompile Include="engine\editor\CameraAnimationEditor.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="engine\debug\CameraAnimationTimeline.cpp">
+    <ClCompile Include="engine\editor\CameraAnimationTimeline.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="engine\debug\CameraAnimationCurveEditor.cpp">
+    <ClCompile Include="engine\editor\CameraAnimationCurveEditor.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="engine\debug\AnimationEditor.cpp">
+    <ClCompile Include="engine\editor\AnimationEditor.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="engine\debug\AnimationTimeline.cpp">
+    <ClCompile Include="engine\editor\AnimationTimeline.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="engine\debug\ViewportCameraController.cpp">
+    <ClCompile Include="engine\editor\ViewportCameraController.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="engine\debug\PreviewPanel.cpp">
+    <ClCompile Include="engine\editor\PreviewPanel.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="engine\debug\PreviewViewport.cpp">
+    <ClCompile Include="engine\editor\PreviewViewport.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="engine\debug\CodeGenerator.cpp">
+    <ClCompile Include="engine\editor\CodeGenerator.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="engine\2d\LineRenderer.cpp" />
-    <ClCompile Include="engine\audio\Audio.cpp" />
-    <ClCompile Include="engine\3d\Camera\Camera.cpp" />
-    <ClCompile Include="engine\3d\Camera\CameraAnimation.cpp" />
-    <ClCompile Include="engine\animation\AnimationClip.cpp" />
-    <ClCompile Include="engine\animation\AnimationPlayer.cpp" />
-    <ClCompile Include="engine\effect\Particle\BoxEmitter.cpp" />
-    <ClCompile Include="engine\effect\Particle\EmitterManager.cpp" />
-    <ClCompile Include="engine\effect\Particle\ForceFieldManager.cpp" />
-    <ClCompile Include="engine\effect\Particle\GPUParticle.cpp" />
-    <ClCompile Include="engine\effect\Particle\GPUParticleEmitter.cpp" />
-    <ClCompile Include="engine\effect\Particle\MeshEmitter.cpp" />
-    <ClCompile Include="engine\effect\Particle\SphereEmitter.cpp" />
-    <ClCompile Include="engine\effect\Particle\TriangleEmitter.cpp" />
-    <ClCompile Include="engine\effect\PostEffect\PostEffectManager.cpp" />
-    <ClCompile Include="engine\imgui\ImGuiManager.cpp">
+    <ClCompile Include="engine\graphics\3d\Line\LineRenderer.cpp" />
+    <ClCompile Include="engine\gameplay\audio\Audio.cpp" />
+    <ClCompile Include="engine\graphics\3d\Camera\Camera.cpp" />
+    <ClCompile Include="engine\graphics\3d\Camera\CameraAnimation.cpp" />
+    <ClCompile Include="engine\graphics\animation\AnimationClip.cpp" />
+    <ClCompile Include="engine\graphics\animation\AnimationPlayer.cpp" />
+    <ClCompile Include="engine\graphics\effect\Particle\Emitter\BoxEmitter.cpp" />
+    <ClCompile Include="engine\graphics\effect\Particle\Emitter\EmitterManager.cpp" />
+    <ClCompile Include="engine\graphics\effect\Particle\Emitter\ForceFieldManager.cpp" />
+    <ClCompile Include="engine\graphics\effect\Particle\GPUParticle.cpp" />
+    <ClCompile Include="engine\graphics\effect\Particle\Emitter\GPUParticleEmitter.cpp" />
+    <ClCompile Include="engine\graphics\effect\Particle\Emitter\MeshEmitter.cpp" />
+    <ClCompile Include="engine\graphics\effect\Particle\Emitter\SphereEmitter.cpp" />
+    <ClCompile Include="engine\graphics\effect\Particle\Emitter\TriangleEmitter.cpp" />
+    <ClCompile Include="engine\graphics\effect\PostEffect\PostEffectManager.cpp" />
+    <ClCompile Include="engine\editor\imgui\ImGuiManager.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="engine\imgui\ImGuiThemes.cpp">
+    <ClCompile Include="engine\editor\imgui\ImGuiThemes.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="engine\base\DX12\D3DResourceLeakChecker.cpp" />
-    <ClCompile Include="engine\base\DX12\DX12Basic.cpp" />
-    <ClCompile Include="engine\io\Input.cpp" />
-    <ClCompile Include="engine\io\ProjectSettings.cpp" />
-    <ClCompile Include="engine\func\commonFunc\Logger.cpp" />
-    <ClCompile Include="engine\3d\Light\Light.cpp" />
-    <ClCompile Include="engine\math\RandomEngine.cpp" />
-    <ClCompile Include="engine\scene\TransitionManager.cpp" />
-    <ClCompile Include="engine\scene\transition\ScaleTransition.cpp" />
-    <ClCompile Include="engine\scene\transition\FadeTransition.cpp" />
-    <ClCompile Include="engine\time\FrameTimer.cpp" />
-    <ClCompile Include="engine\func\mathFunc\Mat4x4Func.cpp" />
-    <ClCompile Include="engine\3d\Model\Model.cpp" />
-    <ClCompile Include="engine\3d\Model\ModelBasic.cpp" />
-    <ClCompile Include="engine\3d\Model\ModelManager.cpp" />
-    <ClCompile Include="engine\3d\Object\Object3d.cpp" />
-    <ClCompile Include="engine\2d\Sprite.cpp" />
-    <ClCompile Include="engine\2d\UILayout.cpp" />
-    <ClCompile Include="engine\func\commonFunc\StringUtility.cpp" />
-    <ClCompile Include="engine\2d\TextureManager.cpp" />
-    <ClCompile Include="engine\func\mathFunc\EaseFunc.cpp" />
-    <ClCompile Include="engine\func\mathFunc\Vec3Func.cpp" />
-    <ClCompile Include="engine\func\mathFunc\ColorFunc.cpp" />
-    <ClCompile Include="engine\base\WinApp.cpp" />
-    <ClCompile Include="engine\base\DX12\DescriptorHeap.cpp" />
-    <ClCompile Include="engine\base\DX12\RtvManager.cpp" />
-    <ClCompile Include="engine\base\DX12\DsvManager.cpp" />
-    <ClCompile Include="engine\base\DX12\SrvManager.cpp" />
-    <ClCompile Include="engine\base\TakoFramework.cpp" />
-    <ClCompile Include="engine\base\WinMain.cpp" />
-    <ClCompile Include="engine\scene\SceneManager.cpp" />
-    <ClCompile Include="engine\func\mathFunc\QuatFunc.cpp" />
-    <ClCompile Include="engine\3d\Model\Mesh.cpp" />
-    <ClCompile Include="engine\ai\BehaviorTree\Core\BTComposite.cpp" />
-    <ClCompile Include="engine\ai\BehaviorTree\Composites\BTSequence.cpp" />
-    <ClCompile Include="engine\ai\BehaviorTree\Composites\BTSelector.cpp" />
-    <ClCompile Include="engine\ai\BehaviorTree\Composites\BTRandomSelector.cpp" />
-    <ClCompile Include="engine\ai\BehaviorTree\Composites\BTParallel.cpp" />
-    <ClCompile Include="engine\ai\BehaviorTree\Composites\BTOnce.cpp" />
-    <ClCompile Include="engine\ai\BehaviorTree\Runtime\BehaviorTree.cpp" />
-    <ClCompile Include="engine\ai\BehaviorTree\Editor\BehaviorTreeEditor.cpp">
+    <ClCompile Include="engine\graphics\DX12\D3DResourceLeakChecker.cpp" />
+    <ClCompile Include="engine\graphics\DX12\DX12Basic.cpp" />
+    <ClCompile Include="engine\core\io\Input.cpp" />
+    <ClCompile Include="engine\core\io\ProjectSettings.cpp" />
+    <ClCompile Include="engine\core\utility\Logger.cpp" />
+    <ClCompile Include="engine\graphics\3d\Light\Light.cpp" />
+    <ClCompile Include="engine\core\math\RandomEngine.cpp" />
+    <ClCompile Include="engine\gameplay\scene\transition\TransitionManager.cpp" />
+    <ClCompile Include="engine\gameplay\scene\transition\ScaleTransition.cpp" />
+    <ClCompile Include="engine\gameplay\scene\transition\FadeTransition.cpp" />
+    <ClCompile Include="engine\core\time\FrameTimer.cpp" />
+    <ClCompile Include="engine\core\math\Mat4x4Func.cpp" />
+    <ClCompile Include="engine\graphics\3d\Model\Model.cpp" />
+    <ClCompile Include="engine\graphics\3d\Model\ModelBasic.cpp" />
+    <ClCompile Include="engine\graphics\3d\Model\ModelManager.cpp" />
+    <ClCompile Include="engine\graphics\3d\Object\Object3d.cpp" />
+    <ClCompile Include="engine\graphics\2d\Sprite.cpp" />
+    <ClCompile Include="engine\graphics\2d\UILayout.cpp" />
+    <ClCompile Include="engine\core\utility\StringUtility.cpp" />
+    <ClCompile Include="engine\graphics\render\TextureManager.cpp" />
+    <ClCompile Include="engine\core\math\EaseFunc.cpp" />
+    <ClCompile Include="engine\core\math\Vec3Func.cpp" />
+    <ClCompile Include="engine\core\math\ColorFunc.cpp" />
+    <ClCompile Include="engine\core\base\WinApp.cpp" />
+    <ClCompile Include="engine\graphics\DX12\DescriptorHeap.cpp" />
+    <ClCompile Include="engine\graphics\DX12\RtvManager.cpp" />
+    <ClCompile Include="engine\graphics\DX12\DsvManager.cpp" />
+    <ClCompile Include="engine\graphics\DX12\SrvManager.cpp" />
+    <ClCompile Include="engine\core\base\TakoFramework.cpp" />
+    <ClCompile Include="engine\core\base\WinMain.cpp" />
+    <ClCompile Include="engine\gameplay\scene\SceneManager.cpp" />
+    <ClCompile Include="engine\core\math\QuatFunc.cpp" />
+    <ClCompile Include="engine\graphics\3d\Model\Mesh.cpp" />
+    <ClCompile Include="engine\gameplay\ai\BehaviorTree\Core\BTComposite.cpp" />
+    <ClCompile Include="engine\gameplay\ai\BehaviorTree\Composites\BTSequence.cpp" />
+    <ClCompile Include="engine\gameplay\ai\BehaviorTree\Composites\BTSelector.cpp" />
+    <ClCompile Include="engine\gameplay\ai\BehaviorTree\Composites\BTRandomSelector.cpp" />
+    <ClCompile Include="engine\gameplay\ai\BehaviorTree\Composites\BTParallel.cpp" />
+    <ClCompile Include="engine\gameplay\ai\BehaviorTree\Composites\BTOnce.cpp" />
+    <ClCompile Include="engine\gameplay\ai\BehaviorTree\Runtime\BehaviorTree.cpp" />
+    <ClCompile Include="engine\editor\BehaviorTree\BehaviorTreeEditor.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="engine\base\DX12\CommandContext.cpp" />
-    <ClCompile Include="engine\base\DX12\ShaderLibrary.cpp" />
-    <ClCompile Include="engine\base\DX12\ShaderBindingLayout.cpp" />
-    <ClCompile Include="engine\base\DX12\PipelineCache.cpp" />
-    <ClCompile Include="engine\render\Material.cpp" />
-    <ClCompile Include="engine\render\Renderer.cpp" />
-    <ClCompile Include="engine\render\RenderGraph.cpp" />
-    <ClCompile Include="engine\render\PostProcess.cpp" />
-    <ClCompile Include="engine\render\RenderPipeline.cpp" />
-    <ClCompile Include="engine\render\MaterialPropertyLayout.cpp" />
-    <ClCompile Include="engine\render\MaterialLibrary.cpp" />
-    <ClCompile Include="engine\debug\MaterialEditor.cpp" />
+    <ClCompile Include="engine\graphics\DX12\CommandContext.cpp" />
+    <ClCompile Include="engine\graphics\DX12\ShaderLibrary.cpp" />
+    <ClCompile Include="engine\graphics\DX12\ShaderBindingLayout.cpp" />
+    <ClCompile Include="engine\graphics\DX12\PipelineCache.cpp" />
+    <ClCompile Include="engine\graphics\render\Material.cpp" />
+    <ClCompile Include="engine\graphics\render\Renderer.cpp" />
+    <ClCompile Include="engine\graphics\render\RenderGraph.cpp" />
+    <ClCompile Include="engine\graphics\render\PostProcess.cpp" />
+    <ClCompile Include="engine\graphics\render\RenderPipeline.cpp" />
+    <ClCompile Include="engine\graphics\render\MaterialPropertyLayout.cpp" />
+    <ClCompile Include="engine\graphics\render\MaterialLibrary.cpp" />
+    <ClCompile Include="engine\editor\MaterialEditor.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="engine\scene\BehaviorTreeComponent.h" />
-    <ClInclude Include="engine\ai\BehaviorTree\Nodes\BTActorNodes.h" />
-    <ClInclude Include="engine\debug\NewScript.h" />
-    <ClInclude Include="engine\scene\SceneSelfTest.h" />
-    <ClInclude Include="engine\scene\ActorRef.h" />
-    <ClInclude Include="engine\scene\UILayoutComponent.h" />
-    <ClInclude Include="engine\scene\AudioSourceComponent.h" />
-    <ClInclude Include="engine\scene\AnimatorComponent.h" />
-    <ClInclude Include="engine\scene\ParticleSystemComponent.h" />
-    <ClInclude Include="engine\scene\PostProcessComponent.h" />
-    <ClInclude Include="engine\scene\SkyBoxComponent.h" />
-    <ClInclude Include="engine\scene\LightComponent.h" />
-    <ClInclude Include="engine\scene\CameraComponent.h" />
-    <ClInclude Include="engine\reflection\GameSettings.h" />
-    <ClInclude Include="engine\scene\Script.h" />
-    <ClInclude Include="engine\scene\ScriptComponent.h" />
-    <ClInclude Include="engine\debug\SceneEditor.h" />
-    <ClInclude Include="engine\scene\Prefab.h" />
-    <ClInclude Include="engine\scene\ColliderComponent.h" />
-    <ClInclude Include="engine\scene\MeshComponent.h" />
-    <ClInclude Include="engine\scene\Actor.h" />
-    <ClInclude Include="engine\scene\Component.h" />
-    <ClInclude Include="engine\imgui\ImGuiPropertyVisitor.h" />
-    <ClInclude Include="engine\reflection\ReflectionSelfTest.h" />
-    <ClInclude Include="engine\reflection\JsonPropertyVisitor.h" />
-    <ClInclude Include="engine\reflection\PropertyVisitor.h" />
-    <ClInclude Include="engine\reflection\TypeRegistry.h" />
-    <ClInclude Include="engine\reflection\TObject.h" />
-    <ClInclude Include="engine\reflection\Reflection.h" />
-    <ClInclude Include="engine\render\MaterialPropertyBlock.h" />
-    <ClInclude Include="engine\imgui\OverrideField.h" />
-    <ClInclude Include="engine\debug\RenderPipelineWindow.h" />
-    <ClInclude Include="engine\debug\ShaderEditor.h" />
-    <ClInclude Include="engine\debug\ObjectOverridesEditor.h" />
-    <ClInclude Include="engine\3d\Object\ObjectOverrides.h" />
-    <ClInclude Include="engine\3d\Decal\Decal.h" />
-    <ClInclude Include="engine\3d\Decal\DecalManager.h" />
-    <ClInclude Include="engine\3d\Model\BoneTracker.h" />
-    <ClInclude Include="engine\3d\Object\InstancedObject3d.h" />
-    <ClInclude Include="engine\3d\Shadow\ShadowMap.h" />
-    <ClInclude Include="engine\3d\Shadow\ShadowRenderer.h" />
-    <ClInclude Include="engine\3d\SkyBox\SkyBox.h" />
-    <ClInclude Include="engine\3d\Primitive\PrimitiveBuilder.h" />
-    <ClInclude Include="engine\base\EnginePaths.h" />
-    <ClInclude Include="engine\collision\AABBCollider.h" />
-    <ClInclude Include="engine\collision\Collider.h" />
-    <ClInclude Include="engine\collision\CollisionManager.h" />
-    <ClInclude Include="engine\collision\OBBCollider.h" />
-    <ClInclude Include="engine\collision\SphereCollider.h" />
-    <ClInclude Include="engine\debug\DebugUIManager.h" />
-    <ClInclude Include="engine\debug\ParticleEditor.h" />
-    <ClInclude Include="engine\debug\PrimitiveEditor.h" />
-    <ClInclude Include="engine\debug\DebugViewport.h" />
-    <ClInclude Include="engine\debug\EngineSettingsWindow.h" />
-    <ClInclude Include="engine\debug\AssetBrowser.h" />
-    <ClInclude Include="engine\debug\UILayoutEditor.h" />
-    <ClInclude Include="engine\debug\CameraAnimationEditor.h" />
-    <ClInclude Include="engine\debug\CameraAnimationTimeline.h" />
-    <ClInclude Include="engine\debug\CameraAnimationCurveEditor.h" />
-    <ClInclude Include="engine\debug\AnimationEditor.h" />
-    <ClInclude Include="engine\debug\AnimationTimeline.h" />
-    <ClInclude Include="engine\debug\ViewportCameraController.h" />
-    <ClInclude Include="engine\debug\PreviewPanel.h" />
-    <ClInclude Include="engine\debug\PreviewViewport.h" />
-    <ClInclude Include="engine\debug\CodeGenerator.h" />
-    <ClInclude Include="engine\effect\Particle\BoxEmitter.h" />
-    <ClInclude Include="engine\effect\Particle\EmitterManager.h" />
-    <ClInclude Include="engine\effect\Particle\ForceFieldManager.h" />
-    <ClInclude Include="engine\effect\Particle\GPUParticle.h" />
-    <ClInclude Include="engine\effect\Particle\GPUParticleEmitter.h" />
-    <ClInclude Include="engine\effect\Particle\MeshEmitter.h" />
-    <ClInclude Include="engine\effect\Particle\ParticleStruct.h" />
-    <ClInclude Include="engine\effect\Particle\SphereEmitter.h" />
-    <ClInclude Include="engine\effect\Particle\TriangleEmitter.h" />
-    <ClInclude Include="engine\effect\PostEffect\PostEffectManager.h" />
-    <ClInclude Include="engine\effect\PostEffect\PostEffectStruct.h" />
-    <ClInclude Include="engine\io\ProjectSettings.h" />
-    <ClInclude Include="engine\math\AABB.h" />
-    <ClInclude Include="engine\2d\LineRenderer.h" />
-    <ClInclude Include="engine\math\OBB.h" />
-    <ClInclude Include="engine\math\Quaternion.h" />
-    <ClInclude Include="engine\math\RandomEngine.h" />
-    <ClInclude Include="engine\scene\BaseScene.h" />
-    <ClInclude Include="engine\audio\Audio.h" />
-    <ClInclude Include="engine\3d\Camera\Camera.h" />
-    <ClInclude Include="engine\3d\Camera\CameraAnimation.h" />
-    <ClInclude Include="engine\animation\AnimationClip.h" />
-    <ClInclude Include="engine\animation\AnimationPlayer.h" />
-    <ClInclude Include="engine\3d\Camera\CameraKeyframe.h" />
-    <ClInclude Include="engine\imgui\ImGuiManager.h" />
-    <ClInclude Include="engine\imgui\ImGuiThemes.h" />
-    <ClInclude Include="engine\imgui\EditTracker.h" />
-    <ClInclude Include="engine\imgui\EditorUI.h" />
-    <ClInclude Include="engine\imgui\ShortcutTable.h" />
-    <ClInclude Include="engine\imgui\UnsavedChangesModal.h" />
-    <ClInclude Include="engine\base\DX12\D3DResourceLeakChecker.h" />
-    <ClInclude Include="engine\base\DX12\DX12Basic.h" />
-    <ClInclude Include="engine\io\Input.h" />
-    <ClInclude Include="engine\func\commonFunc\Hash.h" />
-    <ClInclude Include="engine\func\commonFunc\Logger.h" />
-    <ClInclude Include="engine\math\Matrix4x4.h" />
-    <ClInclude Include="engine\func\mathFunc\Mat4x4Func.h" />
-    <ClInclude Include="engine\3d\Model\Model.h" />
-    <ClInclude Include="engine\3d\Model\ModelBasic.h" />
-    <ClInclude Include="engine\3d\Model\ModelManager.h" />
-    <ClInclude Include="engine\3d\Object\Object3d.h" />
-    <ClInclude Include="engine\2d\Sprite.h" />
-    <ClInclude Include="engine\2d\UILayout.h" />
-    <ClInclude Include="engine\func\commonFunc\StringUtility.h" />
-    <ClInclude Include="engine\2d\TextureManager.h" />
-    <ClInclude Include="engine\math\Vector2.h" />
-    <ClInclude Include="engine\math\Vector3.h" />
-    <ClInclude Include="engine\func\mathFunc\EaseFunc.h" />
-    <ClInclude Include="engine\func\mathFunc\Vec3Func.h" />
-    <ClInclude Include="engine\func\mathFunc\ColorFunc.h" />
-    <ClInclude Include="engine\math\Vector4.h" />
-    <ClInclude Include="engine\base\WinApp.h" />
-    <ClInclude Include="engine\base\DX12\DescriptorHeap.h" />
-    <ClInclude Include="engine\base\DX12\RtvManager.h" />
-    <ClInclude Include="engine\base\DX12\DsvManager.h" />
-    <ClInclude Include="engine\base\DX12\SrvManager.h" />
-    <ClInclude Include="engine\base\TakoFramework.h" />
-    <ClInclude Include="engine\scene\SceneManager.h" />
-    <ClInclude Include="engine\math\Matrix3x3.h" />
-    <ClInclude Include="engine\3d\Light\Light.h" />
-    <ClInclude Include="engine\3d\Model\ModelStruct.h" />
-    <ClInclude Include="engine\func\mathFunc\QuatFunc.h" />
-    <ClInclude Include="engine\math\Transform.h" />
-    <ClInclude Include="engine\scene\TransitionManager.h" />
-    <ClInclude Include="engine\scene\transition\ScaleTransition.h" />
-    <ClInclude Include="engine\scene\transition\FadeTransition.h" />
-    <ClInclude Include="engine\scene\transition\ITransitionEffect.h" />
-    <ClInclude Include="engine\time\FrameTimer.h" />
-    <ClInclude Include="engine\base\IWndProcHandler.h" />
-    <ClInclude Include="engine\3d\Model\Mesh.h" />
-    <ClInclude Include="engine\ai\BehaviorTree\Core\BTNode.h" />
-    <ClInclude Include="engine\ai\BehaviorTree\Core\BTBlackboard.h" />
-    <ClInclude Include="engine\ai\BehaviorTree\Core\BTComposite.h" />
-    <ClInclude Include="engine\ai\BehaviorTree\Composites\BTSequence.h" />
-    <ClInclude Include="engine\ai\BehaviorTree\Composites\BTSelector.h" />
-    <ClInclude Include="engine\ai\BehaviorTree\Composites\BTRandomSelector.h" />
-    <ClInclude Include="engine\ai\BehaviorTree\Composites\BTParallel.h" />
-    <ClInclude Include="engine\ai\BehaviorTree\Composites\BTOnce.h" />
-    <ClInclude Include="engine\ai\BehaviorTree\Runtime\BTChildSort.h" />
-    <ClInclude Include="engine\ai\BehaviorTree\Runtime\BehaviorTree.h" />
-    <ClInclude Include="engine\ai\BehaviorTree\Editor\EditorTypes.h" />
-    <ClInclude Include="engine\ai\BehaviorTree\Editor\BehaviorTreeEditor.h" />
-    <ClInclude Include="engine\base\DX12\CommandContext.h" />
-    <ClInclude Include="engine\base\DX12\GpuResource.h" />
-    <ClInclude Include="engine\base\DX12\UploadAllocator.h" />
-    <ClInclude Include="engine\base\DX12\ShaderLibrary.h" />
-    <ClInclude Include="engine\base\DX12\ShaderBindingLayout.h" />
-    <ClInclude Include="engine\base\DX12\PipelineCache.h" />
-    <ClInclude Include="engine\base\DX12\RenderState.h" />
-    <ClInclude Include="engine\render\DrawList.h" />
-    <ClInclude Include="engine\render\Material.h" />
-    <ClInclude Include="engine\render\Renderer.h" />
-    <ClInclude Include="engine\render\ShaderAsset.h" />
-    <ClInclude Include="engine\render\RenderGraph.h" />
-    <ClInclude Include="engine\render\PostProcess.h" />
-    <ClInclude Include="engine\render\RenderPipeline.h" />
-    <ClInclude Include="engine\render\RenderEvent.h" />
-    <ClInclude Include="engine\render\MaterialPropertyLayout.h" />
-    <ClInclude Include="engine\render\MaterialLibrary.h" />
-    <ClInclude Include="engine\debug\MaterialEditor.h" />
+    <ClInclude Include="engine\gameplay\component\BehaviorTreeComponent.h" />
+    <ClInclude Include="engine\gameplay\ai\BehaviorTree\Nodes\BTActorNodes.h" />
+    <ClInclude Include="engine\editor\NewScript.h" />
+    <ClInclude Include="engine\gameplay\scene\SceneSelfTest.h" />
+    <ClInclude Include="engine\gameplay\actor\ActorRef.h" />
+    <ClInclude Include="engine\gameplay\component\UILayoutComponent.h" />
+    <ClInclude Include="engine\gameplay\component\AudioSourceComponent.h" />
+    <ClInclude Include="engine\gameplay\component\AnimatorComponent.h" />
+    <ClInclude Include="engine\gameplay\component\ParticleSystemComponent.h" />
+    <ClInclude Include="engine\gameplay\component\PostProcessComponent.h" />
+    <ClInclude Include="engine\gameplay\component\SkyBoxComponent.h" />
+    <ClInclude Include="engine\gameplay\component\LightComponent.h" />
+    <ClInclude Include="engine\gameplay\component\CameraComponent.h" />
+    <ClInclude Include="engine\core\reflection\GameSettings.h" />
+    <ClInclude Include="engine\gameplay\actor\Script.h" />
+    <ClInclude Include="engine\gameplay\actor\ScriptComponent.h" />
+    <ClInclude Include="engine\editor\SceneEditor.h" />
+    <ClInclude Include="engine\gameplay\scene\Prefab.h" />
+    <ClInclude Include="engine\gameplay\component\ColliderComponent.h" />
+    <ClInclude Include="engine\gameplay\component\MeshComponent.h" />
+    <ClInclude Include="engine\gameplay\actor\Actor.h" />
+    <ClInclude Include="engine\gameplay\actor\Component.h" />
+    <ClInclude Include="engine\editor\UI\ImGuiPropertyVisitor.h" />
+    <ClInclude Include="engine\core\reflection\ReflectionSelfTest.h" />
+    <ClInclude Include="engine\core\reflection\JsonPropertyVisitor.h" />
+    <ClInclude Include="engine\core\reflection\PropertyVisitor.h" />
+    <ClInclude Include="engine\core\reflection\TypeRegistry.h" />
+    <ClInclude Include="engine\core\reflection\TObject.h" />
+    <ClInclude Include="engine\core\reflection\Reflection.h" />
+    <ClInclude Include="engine\graphics\render\MaterialPropertyBlock.h" />
+    <ClInclude Include="engine\editor\UI\OverrideField.h" />
+    <ClInclude Include="engine\editor\RenderPipelineWindow.h" />
+    <ClInclude Include="engine\editor\ShaderEditor.h" />
+    <ClInclude Include="engine\editor\ObjectOverridesEditor.h" />
+    <ClInclude Include="engine\graphics\3d\Object\ObjectOverrides.h" />
+    <ClInclude Include="engine\graphics\3d\Decal\Decal.h" />
+    <ClInclude Include="engine\graphics\3d\Decal\DecalManager.h" />
+    <ClInclude Include="engine\graphics\3d\Model\BoneTracker.h" />
+    <ClInclude Include="engine\graphics\3d\Object\InstancedObject3d.h" />
+    <ClInclude Include="engine\graphics\3d\Shadow\ShadowMap.h" />
+    <ClInclude Include="engine\graphics\3d\Shadow\ShadowRenderer.h" />
+    <ClInclude Include="engine\graphics\3d\SkyBox\SkyBox.h" />
+    <ClInclude Include="engine\graphics\3d\Primitive\PrimitiveBuilder.h" />
+    <ClInclude Include="engine\core\base\EnginePaths.h" />
+    <ClInclude Include="engine\gameplay\collision\AABBCollider.h" />
+    <ClInclude Include="engine\gameplay\collision\Collider.h" />
+    <ClInclude Include="engine\gameplay\collision\CollisionManager.h" />
+    <ClInclude Include="engine\gameplay\collision\OBBCollider.h" />
+    <ClInclude Include="engine\gameplay\collision\SphereCollider.h" />
+    <ClInclude Include="engine\editor\DebugUIManager.h" />
+    <ClInclude Include="engine\editor\ParticleEditor.h" />
+    <ClInclude Include="engine\editor\PrimitiveEditor.h" />
+    <ClInclude Include="engine\editor\DebugViewport.h" />
+    <ClInclude Include="engine\editor\EngineSettingsWindow.h" />
+    <ClInclude Include="engine\editor\AssetBrowser.h" />
+    <ClInclude Include="engine\editor\UILayoutEditor.h" />
+    <ClInclude Include="engine\editor\CameraAnimationEditor.h" />
+    <ClInclude Include="engine\editor\CameraAnimationTimeline.h" />
+    <ClInclude Include="engine\editor\CameraAnimationCurveEditor.h" />
+    <ClInclude Include="engine\editor\AnimationEditor.h" />
+    <ClInclude Include="engine\editor\AnimationTimeline.h" />
+    <ClInclude Include="engine\editor\ViewportCameraController.h" />
+    <ClInclude Include="engine\editor\PreviewPanel.h" />
+    <ClInclude Include="engine\editor\PreviewViewport.h" />
+    <ClInclude Include="engine\editor\CodeGenerator.h" />
+    <ClInclude Include="engine\graphics\effect\Particle\Emitter\BoxEmitter.h" />
+    <ClInclude Include="engine\graphics\effect\Particle\Emitter\EmitterManager.h" />
+    <ClInclude Include="engine\graphics\effect\Particle\Emitter\ForceFieldManager.h" />
+    <ClInclude Include="engine\graphics\effect\Particle\GPUParticle.h" />
+    <ClInclude Include="engine\graphics\effect\Particle\Emitter\GPUParticleEmitter.h" />
+    <ClInclude Include="engine\graphics\effect\Particle\Emitter\MeshEmitter.h" />
+    <ClInclude Include="engine\graphics\effect\Particle\ParticleStruct.h" />
+    <ClInclude Include="engine\graphics\effect\Particle\Emitter\SphereEmitter.h" />
+    <ClInclude Include="engine\graphics\effect\Particle\Emitter\TriangleEmitter.h" />
+    <ClInclude Include="engine\graphics\effect\PostEffect\PostEffectManager.h" />
+    <ClInclude Include="engine\graphics\effect\PostEffect\PostEffectStruct.h" />
+    <ClInclude Include="engine\core\io\ProjectSettings.h" />
+    <ClInclude Include="engine\core\math\AABB.h" />
+    <ClInclude Include="engine\graphics\3d\Line\LineRenderer.h" />
+    <ClInclude Include="engine\core\math\OBB.h" />
+    <ClInclude Include="engine\core\math\Quaternion.h" />
+    <ClInclude Include="engine\core\math\RandomEngine.h" />
+    <ClInclude Include="engine\gameplay\scene\BaseScene.h" />
+    <ClInclude Include="engine\gameplay\audio\Audio.h" />
+    <ClInclude Include="engine\graphics\3d\Camera\Camera.h" />
+    <ClInclude Include="engine\graphics\3d\Camera\CameraAnimation.h" />
+    <ClInclude Include="engine\graphics\animation\AnimationClip.h" />
+    <ClInclude Include="engine\graphics\animation\AnimationPlayer.h" />
+    <ClInclude Include="engine\graphics\3d\Camera\CameraKeyframe.h" />
+    <ClInclude Include="engine\editor\imgui\ImGuiManager.h" />
+    <ClInclude Include="engine\editor\imgui\ImGuiThemes.h" />
+    <ClInclude Include="engine\editor\UI\EditTracker.h" />
+    <ClInclude Include="engine\editor\UI\EditorUI.h" />
+    <ClInclude Include="engine\editor\UI\ShortcutTable.h" />
+    <ClInclude Include="engine\editor\UI\UnsavedChangesModal.h" />
+    <ClInclude Include="engine\graphics\DX12\D3DResourceLeakChecker.h" />
+    <ClInclude Include="engine\graphics\DX12\DX12Basic.h" />
+    <ClInclude Include="engine\core\io\Input.h" />
+    <ClInclude Include="engine\core\utility\Hash.h" />
+    <ClInclude Include="engine\core\utility\Logger.h" />
+    <ClInclude Include="engine\core\math\Matrix4x4.h" />
+    <ClInclude Include="engine\core\math\Mat4x4Func.h" />
+    <ClInclude Include="engine\graphics\3d\Model\Model.h" />
+    <ClInclude Include="engine\graphics\3d\Model\ModelBasic.h" />
+    <ClInclude Include="engine\graphics\3d\Model\ModelManager.h" />
+    <ClInclude Include="engine\graphics\3d\Object\Object3d.h" />
+    <ClInclude Include="engine\graphics\2d\Sprite.h" />
+    <ClInclude Include="engine\graphics\2d\UILayout.h" />
+    <ClInclude Include="engine\core\utility\StringUtility.h" />
+    <ClInclude Include="engine\graphics\render\TextureManager.h" />
+    <ClInclude Include="engine\core\math\Vector2.h" />
+    <ClInclude Include="engine\core\math\Vector3.h" />
+    <ClInclude Include="engine\core\math\EaseFunc.h" />
+    <ClInclude Include="engine\core\math\Vec3Func.h" />
+    <ClInclude Include="engine\core\math\ColorFunc.h" />
+    <ClInclude Include="engine\core\math\Vector4.h" />
+    <ClInclude Include="engine\core\base\WinApp.h" />
+    <ClInclude Include="engine\graphics\DX12\DescriptorHeap.h" />
+    <ClInclude Include="engine\graphics\DX12\RtvManager.h" />
+    <ClInclude Include="engine\graphics\DX12\DsvManager.h" />
+    <ClInclude Include="engine\graphics\DX12\SrvManager.h" />
+    <ClInclude Include="engine\core\base\TakoFramework.h" />
+    <ClInclude Include="engine\gameplay\scene\SceneManager.h" />
+    <ClInclude Include="engine\core\math\Matrix3x3.h" />
+    <ClInclude Include="engine\graphics\3d\Light\Light.h" />
+    <ClInclude Include="engine\graphics\3d\Model\ModelStruct.h" />
+    <ClInclude Include="engine\core\math\QuatFunc.h" />
+    <ClInclude Include="engine\core\math\Transform.h" />
+    <ClInclude Include="engine\gameplay\scene\transition\TransitionManager.h" />
+    <ClInclude Include="engine\gameplay\scene\transition\ScaleTransition.h" />
+    <ClInclude Include="engine\gameplay\scene\transition\FadeTransition.h" />
+    <ClInclude Include="engine\gameplay\scene\transition\ITransitionEffect.h" />
+    <ClInclude Include="engine\core\time\FrameTimer.h" />
+    <ClInclude Include="engine\core\base\IWndProcHandler.h" />
+    <ClInclude Include="engine\graphics\3d\Model\Mesh.h" />
+    <ClInclude Include="engine\gameplay\ai\BehaviorTree\Core\BTNode.h" />
+    <ClInclude Include="engine\gameplay\ai\BehaviorTree\Core\BTBlackboard.h" />
+    <ClInclude Include="engine\gameplay\ai\BehaviorTree\Core\BTComposite.h" />
+    <ClInclude Include="engine\gameplay\ai\BehaviorTree\Composites\BTSequence.h" />
+    <ClInclude Include="engine\gameplay\ai\BehaviorTree\Composites\BTSelector.h" />
+    <ClInclude Include="engine\gameplay\ai\BehaviorTree\Composites\BTRandomSelector.h" />
+    <ClInclude Include="engine\gameplay\ai\BehaviorTree\Composites\BTParallel.h" />
+    <ClInclude Include="engine\gameplay\ai\BehaviorTree\Composites\BTOnce.h" />
+    <ClInclude Include="engine\gameplay\ai\BehaviorTree\Runtime\BTChildSort.h" />
+    <ClInclude Include="engine\gameplay\ai\BehaviorTree\Runtime\BehaviorTree.h" />
+    <ClInclude Include="engine\editor\BehaviorTree\EditorTypes.h" />
+    <ClInclude Include="engine\editor\BehaviorTree\BehaviorTreeEditor.h" />
+    <ClInclude Include="engine\graphics\DX12\CommandContext.h" />
+    <ClInclude Include="engine\graphics\DX12\GpuResource.h" />
+    <ClInclude Include="engine\graphics\DX12\UploadAllocator.h" />
+    <ClInclude Include="engine\graphics\DX12\ShaderLibrary.h" />
+    <ClInclude Include="engine\graphics\DX12\ShaderBindingLayout.h" />
+    <ClInclude Include="engine\graphics\DX12\PipelineCache.h" />
+    <ClInclude Include="engine\graphics\DX12\RenderState.h" />
+    <ClInclude Include="engine\graphics\render\DrawList.h" />
+    <ClInclude Include="engine\graphics\render\Material.h" />
+    <ClInclude Include="engine\graphics\render\Renderer.h" />
+    <ClInclude Include="engine\graphics\render\ShaderAsset.h" />
+    <ClInclude Include="engine\graphics\render\RenderGraph.h" />
+    <ClInclude Include="engine\graphics\render\PostProcess.h" />
+    <ClInclude Include="engine\graphics\render\RenderPipeline.h" />
+    <ClInclude Include="engine\graphics\render\RenderEvent.h" />
+    <ClInclude Include="engine\graphics\render\MaterialPropertyLayout.h" />
+    <ClInclude Include="engine\graphics\render\MaterialLibrary.h" />
+    <ClInclude Include="engine\editor\MaterialEditor.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">

@@ -1,6 +1,6 @@
 #include "TransitionManager.h"
-#include "transition/FadeTransition.h"
-#include "transition/ScaleTransition.h"
+#include "FadeTransition.h"
+#include "ScaleTransition.h"
 #include "WinApp.h"
 #include <cassert>
 
