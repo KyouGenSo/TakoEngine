@@ -213,10 +213,6 @@ namespace Tako {
 
       // frequencyTime を frequency に合わせ次フレームで即射出
       newEmitter->SetFrequencyTime(newEmitter->GetFrequency());
-#ifdef _DEBUG
-      DebugUIManager::GetInstance()->AddLog(
-        "CreateTemporaryEmitterFrom: Created temporary emitter '" + newName + "' from '" + sourceName + "' with lifetime " + std::to_string(lifeTime) + " seconds", DebugUIManager::LogType::Info);
-#endif
     }
     else {
 #ifdef _DEBUG
@@ -246,10 +242,6 @@ namespace Tako {
 
     // 寿命が尽きたエミッターを削除
     for (const auto& name : emittersToRemove) {
-#ifdef _DEBUG
-      DebugUIManager::GetInstance()->AddLog(
-        "UpdateTemporaryEmitters: Removing expired emitter '" + name + "'", DebugUIManager::LogType::Info);
-#endif
       RemoveEmitter(name);
     }
   }
@@ -382,12 +374,6 @@ namespace Tako {
   {
     auto it = emitterMap_.find(name);
     if (it != emitterMap_.end()) {
-#ifdef _DEBUG
-      DebugUIManager::GetInstance()->AddLog(
-        "RemoveEmitter: Removing emitter '" + name + "'",
-        DebugUIManager::LogType::Info);
-#endif
-
       // 非アクティブ化して描画へ即反映
       it->second->SetActive(false);
 
@@ -405,12 +391,6 @@ namespace Tako {
         auto removeIt = std::find(names.begin(), names.end(), name);
         if (removeIt != names.end()) {
           names.erase(removeIt);
-#ifdef _DEBUG
-          DebugUIManager::GetInstance()->AddLog(
-            "Removed emitter '" + name + "' from group '" + groupName + "'",
-            DebugUIManager::LogType::Info);
-#endif
-
         }
       }
     }
@@ -426,12 +406,6 @@ namespace Tako {
   void EmitterManager::RemoveAllEmitters()
   {
     if (emitterMap_.empty()) return; // すでに空の場合は何もしない
-
-#ifdef _DEBUG
-    DebugUIManager::GetInstance()->AddLog(
-      "RemoveAllEmitters: Removing all emitters (" + std::to_string(emitterMap_.size()) + " emitters)",
-      DebugUIManager::LogType::Info);
-#endif
 
     // GPUParticle へ登録解除を通知するため 1 つずつ処理する
     for (auto& val : emitterMap_ | std::views::values) {
@@ -566,21 +540,11 @@ namespace Tako {
   {
     auto it = groupMap_.find(groupName);
     if (it != groupMap_.end()) {
-#ifdef _DEBUG
-      DebugUIManager::GetInstance()->AddLog(
-        "RemoveGroup: Removing group '" + groupName + "'", DebugUIManager::LogType::Info);
-#endif
-
       // グループ内のすべてのエミッターの名前をコピー（ループ中に変更されるため）
       std::vector<std::string> emitterNames = it->second.emitterNames;
 
       // グループに属するすべてのエミッターを削除（オプション、コメントアウト可能）
       if (!emitterNames.empty()) {
-#ifdef _DEBUG
-        DebugUIManager::GetInstance()->AddLog(
-          "RemoveGroup: Removing " + std::to_string(emitterNames.size()) + " emitters in group '" + groupName + "'", DebugUIManager::LogType::Info);
-#endif
-
         // エミッターを一つずつ削除
         for (const auto& name : emitterNames) {
           RemoveEmitter(name);
@@ -662,11 +626,6 @@ namespace Tako {
     auto emitter = DeserializeEmitterFromJSON(preset);
     if (emitter) {
       AddNamedEmitter(newEmitterName, std::move(emitter));
-#ifdef _DEBUG
-      DebugUIManager::GetInstance()->AddLog(
-        "Loaded preset '" + presetName + "' as '" + newEmitterName + "'", DebugUIManager::LogType::Info);
-#endif
-
     }
   }
 
@@ -694,11 +653,6 @@ namespace Tako {
     auto emitter = DeserializeEmitterFromJSON(preset);
     if (emitter) {
       AddNamedEmitter(presetName, std::move(emitter));
-#ifdef _DEBUG
-      DebugUIManager::GetInstance()->AddLog(
-        "Loaded preset '" + presetName + "' as '" + presetName + "'", DebugUIManager::LogType::Info);
-#endif
-
     }
   }
 
@@ -725,11 +679,6 @@ namespace Tako {
     auto emitter = DeserializeEmitterFromJSON(preset, obj3d);
     if (emitter) {
       AddNamedEmitter(newEmitterName, std::move(emitter));
-#ifdef _DEBUG
-      DebugUIManager::GetInstance()->AddLog(
-        "Loaded preset '" + presetName + "' as '" + newEmitterName + "' with Object3d binding",
-        DebugUIManager::LogType::Info);
-#endif
     }
   }
 

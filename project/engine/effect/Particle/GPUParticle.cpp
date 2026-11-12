@@ -409,14 +409,6 @@ namespace Tako {
 
     RegisterEmitter(newEmitter);
 
-#ifdef _DEBUG
-    DebugUIManager::GetInstance()->AddLog("CreateTempEmitter: ID=" + std::to_string(newEmitter->GetEmitterId()) +
-      ", Active=" + std::to_string(newEmitter->IsActive() ? 1 : 0) +
-      ", Emit=" + std::to_string(newEmitter->IsEmitting() ? 1 : 0) +
-      ", FreqTime=" + std::to_string(newEmitter->GetFrequencyTime()) +
-      "/" + std::to_string(newEmitter->GetFrequency()), DebugUIManager::LogType::Info);
-#endif
-
     return newEmitter;
   }
 
