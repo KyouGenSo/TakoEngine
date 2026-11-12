@@ -24,7 +24,7 @@ namespace Tako {
   /// ビヘイビアツリーノードの基底クラス。パラメータは派生クラスの TPROPERTY で決まる
   /// </summary>
   TCLASS()
-  class BTNode : public TObject {
+  class TAKO_API BTNode : public TObject {
     GENERATED_BODY()
 
   public: //メンバー関数

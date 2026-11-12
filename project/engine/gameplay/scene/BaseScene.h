@@ -19,7 +19,7 @@ namespace Tako {
   /// <summary>
   /// シーン。Actor の入れ物で、シーンファイル（resources/Json/Scenes/名前.scene.json）から中身を読む
   /// </summary>
-  class BaseScene
+  class TAKO_API BaseScene
   {
   public: //メンバー関数
     BaseScene();

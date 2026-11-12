@@ -10,7 +10,7 @@ namespace Tako {
   /// <summary>
   /// TPROPERTY を JSON のキーへ書く。Transient は書かない
   /// </summary>
-  class JsonWriteVisitor final : public PropertyVisitor {
+  class TAKO_API JsonWriteVisitor final : public PropertyVisitor {
   public: //メンバー関数
     /// <param name="out">書き込み先。null のままなら何も書かれなかった</param>
     explicit JsonWriteVisitor(nlohmann::json& out) : stack_{ &out } {}
@@ -45,7 +45,7 @@ namespace Tako {
   /// <summary>
   /// JSON のキーから TPROPERTY へ読む。キーが無いか型が合わなければ今の値のまま
   /// </summary>
-  class JsonReadVisitor final : public PropertyVisitor {
+  class TAKO_API JsonReadVisitor final : public PropertyVisitor {
   public: //メンバー関数
     explicit JsonReadVisitor(const nlohmann::json& in) : stack_{ { &in, 0 } } {}
 
@@ -85,11 +85,11 @@ namespace Tako {
   /// <summary>
   /// object の TPROPERTY を JSON にする。TPROPERTY が無ければ null
   /// </summary>
-  nlohmann::json WriteProperties(TObject& object);
+  TAKO_API nlohmann::json WriteProperties(TObject& object);
 
   /// <summary>
   /// JSON から object の TPROPERTY を読み、PostLoad を呼ぶ
   /// </summary>
-  void ReadProperties(TObject& object, const nlohmann::json& in);
+  TAKO_API void ReadProperties(TObject& object, const nlohmann::json& in);
 
 } // namespace Tako

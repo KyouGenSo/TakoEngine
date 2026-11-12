@@ -21,7 +21,7 @@ namespace Tako {
   /// 描画物ごとの値。描くときに、マテリアルの定数の写しの同じ名前の値へ重ねる（マテリアル自体は書き換えない。Unity の MaterialPropertyBlock に相当）。
   /// シェーダーに無い名前は無視する
   /// </summary>
-  class MaterialPropertyBlock {
+  class TAKO_API MaterialPropertyBlock {
   private: //構造体
     struct Value {
       ShaderParamId         id     = 0;

@@ -11,7 +11,7 @@ namespace Tako {
   /// DSV ディスクリプタ管理クラス
   /// フリーリスト方式によるインデックス管理
   /// </summary>
-  class DsvManager {
+  class TAKO_API DsvManager {
   private: // シングルトン設定
     static std::unique_ptr<DsvManager> instance_;
 

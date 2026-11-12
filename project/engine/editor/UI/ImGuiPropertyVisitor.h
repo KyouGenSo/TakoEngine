@@ -11,7 +11,7 @@ namespace Tako {
   /// <summary>
   /// TPROPERTY の Edit / Visible を ImGui の入力欄にする。Category が変わるたびに見出しを出す
   /// </summary>
-  class ImGuiPropertyVisitor final : public PropertyVisitor {
+  class TAKO_API ImGuiPropertyVisitor final : public PropertyVisitor {
   public: //メンバー関数
     //=====================================
     //Getter
@@ -88,7 +88,7 @@ namespace Tako {
   /// object の TPROPERTY と DrawCustomImGui を描き、値が変われば PostEditChange を呼ぶ。出す TPROPERTY が無ければその旨を出す
   /// </summary>
   /// <returns>値を変えたら true</returns>
-  bool DrawProperties(TObject& object);
+  TAKO_API bool DrawProperties(TObject& object);
 
 } // namespace Tako
 

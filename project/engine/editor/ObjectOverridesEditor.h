@@ -12,7 +12,7 @@ namespace Tako {
   /// </summary>
   /// <param name="object">既定の値・メッシュ名・コードの上書きを読む Object3d（無ければ nullptr）</param>
   /// <returns>変わったら true（呼び出し側がマテリアルを解決し直す）</returns>
-  bool DrawObjectOverrides(ObjectOverrides& overrides, const Object3d* object);
+  TAKO_API bool DrawObjectOverrides(ObjectOverrides& overrides, const Object3d* object);
 
 } // namespace Tako
 

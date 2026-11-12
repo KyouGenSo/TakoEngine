@@ -45,7 +45,7 @@ namespace Tako {
   ///   Shader がポストエフェクトならポストエフェクトのマテリアル（UE の Post Process Material の Material Instance に相当）。
   ///   使うのは Values と Textures だけで、PostEffect Editor や PostEffectManager::AddMaterialEffect でスタックに置く。書かないテクスチャは .shader.json の Textures のまま
   /// </summary>
-  class MaterialLibrary {
+  class TAKO_API MaterialLibrary {
   private: //定数
     static constexpr std::chrono::milliseconds kShaderCheckInterval{ 500 };  ///< .shader.json の更新を調べる間隔
 

@@ -81,17 +81,17 @@ namespace Tako {
     uint32_t    id   = 0;     ///< AnimationClip が振る識別子。ファイルには書かない
   };
 
-  const AnimPropertyInfo& GetAnimPropertyInfo(AnimProperty property);
+  TAKO_API const AnimPropertyInfo& GetAnimPropertyInfo(AnimProperty property);
 
   /// <summary>
   /// GetAnimPropertyInfo の name の逆。該当なしなら空
   /// </summary>
-  std::optional<AnimProperty> AnimPropertyFromString(std::string_view name);
+  TAKO_API std::optional<AnimProperty> AnimPropertyFromString(std::string_view name);
 
   /// <summary>
   /// 名前付きのキーフレームアニメーション。kDirectory/name.json に保存し、同じ名前は 1 つのインスタンスを共有する
   /// </summary>
-  class AnimationClip {
+  class TAKO_API AnimationClip {
   public: //定数
     static constexpr const char* kDirectory = "resources/Json/Animations/";
 

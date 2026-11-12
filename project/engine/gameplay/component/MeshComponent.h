@@ -16,7 +16,7 @@ namespace Tako {
   /// モデルの読み替えとマテリアルの解決は描画の直前に行う（GPU が使用中の物を消さないため）
   /// </summary>
   TCLASS(DisplayName = "Mesh")
-  class MeshComponent : public Component {
+  class TAKO_API MeshComponent : public Component {
     GENERATED_BODY()
 
   public: //メンバー関数

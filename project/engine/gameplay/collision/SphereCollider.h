@@ -7,7 +7,7 @@ namespace Tako {
   /// <summary>
   /// 球体の衝突判定を行うコライダー
   /// </summary>
-  class SphereCollider : public Collider {
+  class TAKO_API SphereCollider : public Collider {
   public: //メンバー関数
     SphereCollider() : Collider(ColliderShape::Sphere) {}
     virtual ~SphereCollider() = default;

@@ -31,7 +31,7 @@ namespace Tako {
   /// 表示・時間・描画・音声などエンジン全体の設定を編集するウィンドウ
   /// ゲームに影響する設定は ProjectSettings、個人設定は %APPDATA%/TakoEngine/EditorSettings.json に保存する
   /// </summary>
-  class EngineSettingsWindow {
+  class TAKO_API EngineSettingsWindow {
   public: //定数
     static constexpr float kTimeScalePresets[] = { 0.0f, 0.25f, 0.5f, 1.0f, 2.0f };
 

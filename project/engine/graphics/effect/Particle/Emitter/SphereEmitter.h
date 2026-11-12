@@ -6,7 +6,7 @@ namespace Tako {
   /// <summary>
   /// 球形パーティクルエミッター - 球体領域からパーティクルを放出
   /// </summary>
-  class SphereEmitter : public GPUParticleEmitter
+  class TAKO_API SphereEmitter : public GPUParticleEmitter
   {
   public: //メンバー関数
     /// <summary>

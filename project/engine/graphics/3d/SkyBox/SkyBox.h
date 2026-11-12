@@ -19,7 +19,7 @@ class DX12Basic;
 /// キューブマップテクスチャを使用したスカイボックス描画クラス
 /// 環境マッピングやシーンの背景として使用される
 /// </summary>
-class SkyBox
+class TAKO_API SkyBox
 {
 public: // 構造体
   template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;

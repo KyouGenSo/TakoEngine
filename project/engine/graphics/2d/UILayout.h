@@ -94,7 +94,7 @@ namespace Tako {
   /// JSON に保存した UI 要素ツリーを読み込み、画面サイズに合わせて配置・描画する。
   /// 要素名で指定する Setter / Getter は、要素が見つからなければ Setter は何もせず、Getter は 0 / false / 空文字を返す
   /// </summary>
-  class UILayout {
+  class TAKO_API UILayout {
   public: //定数
     static constexpr const char* kDirectory        = "resources/Json/UI/";
     static constexpr const char* kTextureSlicePath = "resources/Json/TextureSlices.json";  ///< テクスチャごとの共有の 9-slice。kDirectory の中に置くとレイアウト一覧に混ざる

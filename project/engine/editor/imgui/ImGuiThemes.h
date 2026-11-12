@@ -32,17 +32,17 @@ namespace Tako {
   /// <summary>
   /// 選択可能なテーマ一覧。個人設定には name で保存するため name は一意にする
   /// </summary>
-  std::span<const ImGuiTheme> GetImGuiThemes();
+  TAKO_API std::span<const ImGuiTheme> GetImGuiThemes();
 
   /// <summary>
   /// 今のテーマに合う状態の色（ApplyImGuiTheme が決める）
   /// </summary>
-  const EditorColors& GetEditorColors();
+  TAKO_API const EditorColors& GetEditorColors();
 
   /// <summary>
   /// ImGuiStyle を共通の形に戻してから index のテーマの配色を適用する
   /// </summary>
-  void ApplyImGuiTheme(int index);
+  TAKO_API void ApplyImGuiTheme(int index);
 
 } // namespace Tako
 

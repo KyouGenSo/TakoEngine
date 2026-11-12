@@ -25,7 +25,7 @@ namespace Tako {
   /// <summary>
   /// 生存中の UILayout を編集するエディタ（Hierarchy / Inspector のウィンドウと、Game Viewport 上のギズモ）
   /// </summary>
-  class UILayoutEditor {
+  class TAKO_API UILayoutEditor {
   private: //定数
     static constexpr float  kHierarchyPaneWidth   = 240.0f;
     static constexpr float  kHandleHalfSize       = 4.0f;    ///< 角と辺のハンドルの描画・当たり判定の半径（画像上 px）

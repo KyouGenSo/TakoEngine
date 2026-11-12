@@ -27,7 +27,7 @@ namespace Tako {
     /// <summary>
     /// 編集・保存の対象になるウィンドウ設定（LoadWindow で更新される）
     /// </summary>
-    WindowSettings& GetWindowSettings();
+    TAKO_API WindowSettings& GetWindowSettings();
 
     /// <summary>
     /// Engine Settings の Save で名前から生成するヘッダ（作業ディレクトリからの相対パス。ファイル名が enum / namespace 名になる。空なら生成しない）
@@ -38,36 +38,36 @@ namespace Tako {
       std::string inputAxes;        ///< 入力軸名の定数
     };
 
-    GeneratedHeaders& GetGeneratedHeaders();
+    TAKO_API GeneratedHeaders& GetGeneratedHeaders();
 
     /// <summary>
     /// ウィンドウ設定だけを GetWindowSettings へ読み込む（WinApp には適用しない）
     /// </summary>
     /// <returns>読み込めたら true。ファイルが無い、または途中で失敗したら false</returns>
-    bool LoadWindow();
+    TAKO_API bool LoadWindow();
 
     /// <summary>
     /// JSON を読み込み各システムへ適用する（ウィンドウ設定は LoadWindow が担当）
     /// </summary>
     /// <returns>適用できたら true。ファイルが無い、または途中で失敗したら false</returns>
-    bool Load(DX12Basic* dx12);
+    TAKO_API bool Load(DX12Basic* dx12);
 
     /// <summary>
     /// 各システムの現在値とウィンドウ設定を JSON に書き出す
     /// </summary>
     /// <returns>書き込めたら true</returns>
-    bool Save(DX12Basic* dx12);
+    TAKO_API bool Save(DX12Basic* dx12);
 
     /// <summary>
     /// Save が書き込む内容（JSON 文字列）
     /// </summary>
-    std::string Serialize(DX12Basic* dx12);
+    TAKO_API std::string Serialize(DX12Basic* dx12);
 
     /// <summary>
     /// Serialize の内容を、ウィンドウ設定（GetWindowSettings）と各システムへ適用する。WinApp には適用しない
     /// </summary>
     /// <returns>適用できたら true。途中で失敗したら false（そこまでの適用は残る）</returns>
-    bool Deserialize(const std::string& text, DX12Basic* dx12);
+    TAKO_API bool Deserialize(const std::string& text, DX12Basic* dx12);
   }
 
 } // namespace Tako

@@ -16,7 +16,7 @@ namespace Tako {
   /// <summary>
   /// 衝突判定を一元管理するシングルトンマネージャー。コライダーの登録、衝突検出、衝突マスク管理を行う
   /// </summary>
-  class CollisionManager {
+  class TAKO_API CollisionManager {
   public: //定数
     static constexpr size_t kMaxLayers = 32;  ///< 層名の上限（Unity / Godot と同じ）。層ごとの当たり表は uint32_t 1 個のビット
 

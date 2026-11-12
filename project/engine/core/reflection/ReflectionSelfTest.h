@@ -13,7 +13,7 @@ namespace Tako {
   /// RunReflectionSelfTest が使う型。TakoHeaderTool が読みにくい書き方（{} 初期化、文字列の中の =、入れ子の enum / TSTRUCT、vector）を含める
   /// </summary>
   TCLASS()
-  class ReflectionSelfTestObject : public TObject {
+  class TAKO_API ReflectionSelfTestObject : public TObject {
     GENERATED_BODY()
 
   public: //構造体
@@ -21,7 +21,7 @@ namespace Tako {
     enum class Mode : uint8_t { First, Second = 5, Third };
 
     TSTRUCT()
-    struct Entry {
+    struct TAKO_API Entry {
       GENERATED_STRUCT_BODY()
 
       TPROPERTY(Edit)
@@ -65,7 +65,7 @@ namespace Tako {
   /// <summary>
   /// 生成コードと JSON の往復を assert で確かめる。Debug の起動時に 1 回呼ぶ
   /// </summary>
-  void RunReflectionSelfTest();
+  TAKO_API void RunReflectionSelfTest();
 #endif
 
 } // namespace Tako

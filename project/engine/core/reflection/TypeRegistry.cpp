@@ -25,6 +25,13 @@ namespace Tako {
     }
   }
 
+  void TypeRegistry::Unregister(std::string_view name)
+  {
+    if (auto it = types_.find(name); it != types_.end()) {
+      types_.erase(it);
+    }
+  }
+
   std::unique_ptr<TObject> TypeRegistry::Create(std::string_view name) const
   {
     const TypeInfo* type = Find(name);
@@ -44,6 +51,15 @@ namespace Tako {
       if (type->create && type->IsChildOf(base)) { result.push_back(type); }
     }
     return result;
+  }
+
+  std::vector<std::string> TypeRegistry::GetTypeNames() const
+  {
+    std::vector<std::string> names;
+    for (const auto& [name, type] : types_) {
+      names.push_back(name);
+    }
+    return names;
   }
 
 } // namespace Tako

@@ -8,6 +8,8 @@
 
 namespace Tako {
 
+  FadeTransition::~FadeTransition() = default;
+
   FadeTransition::FadeTransition()
     : fadeColor_(Color::kWhite)
     , textureName_("EngineResources/Texture/white.dds")

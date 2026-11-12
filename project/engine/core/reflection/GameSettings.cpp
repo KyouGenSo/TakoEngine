@@ -12,10 +12,19 @@
 
 namespace Tako {
 
+  namespace {
+
+    std::map<const TypeInfo*, std::unique_ptr<GameSettings>>& Instances()
+    {
+      static std::map<const TypeInfo*, std::unique_ptr<GameSettings>> instances;
+      return instances;
+    }
+
+  } // namespace
+
   GameSettings& GameSettings::Get(const TypeInfo& type)
   {
-    static std::map<const TypeInfo*, std::unique_ptr<GameSettings>> instances;
-    std::unique_ptr<GameSettings>& instance = instances[&type];
+    std::unique_ptr<GameSettings>& instance = Instances()[&type];
     if (!instance) {
       std::unique_ptr<TObject> object = TypeRegistry::GetInstance()->Create(type.name);
       assert(object && object->IsA<GameSettings>() && "GameSettings の作れる派生を渡す");
@@ -36,6 +45,11 @@ namespace Tako {
     }
     ofs << WriteProperties(*this).dump(4) << std::endl;
     return static_cast<bool>(ofs);
+  }
+
+  void GameSettings::Release(const TypeInfo& type)
+  {
+    Instances().erase(&type);
   }
 
   void GameSettings::Reload()

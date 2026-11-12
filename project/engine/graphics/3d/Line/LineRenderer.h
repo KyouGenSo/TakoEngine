@@ -16,7 +16,7 @@ namespace Tako {
   /// <summary>
   /// 3D ワールド空間のライン描画クラス。線分・矢印・球・AABB・OBB・グリッドのワイヤーフレーム描画を提供
   /// </summary>
-  class LineRenderer
+  class TAKO_API LineRenderer
   {
   private: // シングルトン設定
     static std::unique_ptr<LineRenderer> instance_;  ///< インスタンス

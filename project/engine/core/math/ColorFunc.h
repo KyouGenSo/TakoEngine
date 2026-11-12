@@ -16,17 +16,17 @@ namespace Tako {
     /// <summary>
     /// 0xRRGGBB 形式の 16 進数から色を作る
     /// </summary>
-    Vector4 FromHex(uint32_t rgb, float alpha = 1.0f);
+    TAKO_API Vector4 FromHex(uint32_t rgb, float alpha = 1.0f);
 
     /// <summary>
     /// アルファだけを差し替えた色を返す
     /// </summary>
-    Vector4 WithAlpha(const Vector4& color, float alpha);
+    TAKO_API Vector4 WithAlpha(const Vector4& color, float alpha);
 
     /// <summary>
     /// HSV から色を作る。hue は 0〜1 で 1 周し範囲外は巡回する。saturation / value は 0〜1
     /// </summary>
-    Vector4 FromHSV(float hue, float saturation, float value, float alpha = 1.0f);
+    TAKO_API Vector4 FromHSV(float hue, float saturation, float value, float alpha = 1.0f);
   }
 
 } // namespace Tako

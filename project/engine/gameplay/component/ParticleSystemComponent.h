@@ -19,7 +19,7 @@ namespace Tako {
   /// Bind To Mesh をオンにすると、Mesh エミッターのプリセットを、同じ Actor の MeshComponent のモデルの表面から出す
   /// </summary>
   TCLASS(DisplayName = "Particle System")
-  class ParticleSystemComponent : public Component {
+  class TAKO_API ParticleSystemComponent : public Component {
     GENERATED_BODY()
 
   public: //メンバー関数

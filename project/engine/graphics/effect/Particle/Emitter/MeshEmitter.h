@@ -20,13 +20,13 @@ namespace Tako {
   /// meshWorld は毎フレーム「ローカルオフセット (position / offsetRotation / offsetScale) ×
   /// バインド先 Object3d の world 行列」を合成して更新される (非バインド時はオフセットのみ)。
   /// </remarks>
-  class MeshEmitter : public GPUParticleEmitter {
+  class TAKO_API MeshEmitter : public GPUParticleEmitter {
   private: //構造体
     /// <summary>
     /// StructuredBuffer リソースと SRV インデックスの共有所有単位。
     /// Clone 間で shared_ptr 共有し、最終所有者の破棄時に SRV を返却する
     /// </summary>
-    struct SharedBufferSrv {
+    struct TAKO_API SharedBufferSrv {
       Microsoft::WRL::ComPtr<ID3D12Resource> resource;
       uint32_t                               srvIndex = 0;
 

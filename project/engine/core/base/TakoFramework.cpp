@@ -1,6 +1,7 @@
 #include "TakoFramework.h"
 
 #include "Audio.h"
+#include "GameModule.h"
 #include "Font.h"
 #include "SrvManager.h"
 #include "TextureManager.h"
@@ -31,9 +32,9 @@ namespace Tako {
 
   void TakoFramework::Initialize()
   {
-    // 保存したファイルの "type" から物を作れるよう、最初に型を登録する（RegisterTypes_Game はゲーム側の生成ファイルにある）
+    // 保存したファイルの "type" から物を作れるよう、最初に型を登録する
     RegisterTypes_Engine();
-    RegisterTypes_Game();
+    GameModule::Load();
 #ifdef _DEBUG
     RunReflectionSelfTest();
 #endif
@@ -191,6 +192,9 @@ namespace Tako {
     imguiManager_->Shutdown();
     imguiManager_.reset();
 #endif
+
+    // ゲームの型の物を持つ所（シーン・エディタ）を全部消した後で、DLL を外す
+    GameModule::Unload();
 
     SrvManager::GetInstance()->Finalize();
 

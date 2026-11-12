@@ -8,7 +8,7 @@ namespace Tako {
   /// <summary>
   /// リフレクションの根クラス。TCLASS を付けるクラスはこれを継承する
   /// </summary>
-  class TObject {
+  class TAKO_API TObject {
   public: //メンバー関数
     virtual ~TObject() = default;
 

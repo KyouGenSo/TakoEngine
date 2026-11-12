@@ -16,7 +16,7 @@ namespace Tako {
   /// <summary>
   /// フォントファイル 1 つと、使った字だけを距離場（SDF）にして足していくアトラス
   /// </summary>
-  class Font {
+  class TAKO_API Font {
   public: //定数
     static constexpr const char* kDirectory  = "resources/Fonts/";
     static constexpr const char* kDefaultKey = "EngineResources/Fonts/NotoSansJP-Regular.otf";  ///< キーが空、または読めないときに使う

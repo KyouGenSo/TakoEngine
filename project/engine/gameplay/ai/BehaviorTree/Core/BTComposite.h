@@ -9,7 +9,7 @@ namespace Tako {
   /// 複数の子ノードを持つノード (Sequence / Selector / Parallel / RandomSelector など)。
   /// </summary>
   TCLASS()
-  class BTComposite : public BTNode {
+  class TAKO_API BTComposite : public BTNode {
     GENERATED_BODY()
 
   public: //メンバー関数

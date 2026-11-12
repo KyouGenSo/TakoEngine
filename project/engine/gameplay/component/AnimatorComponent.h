@@ -12,7 +12,7 @@ namespace Tako {
   /// モデルに入っているスケルタルアニメーションは Edit 中も名前で切り替える
   /// </summary>
   TCLASS(DisplayName = "Animator")
-  class AnimatorComponent : public Component {
+  class TAKO_API AnimatorComponent : public Component {
     GENERATED_BODY()
 
   public: //メンバー関数

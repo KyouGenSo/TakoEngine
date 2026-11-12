@@ -22,7 +22,7 @@ namespace Tako {
   /// .mat.json の編集ウィンドウ。値の UI はシェーダーのリフレクションから作り、選んだマテリアルをプレビューに映す。
   /// 描画物のマテリアルは Inspector の MeshComponent > Rendering で、ポストエフェクトのマテリアルは PostEffect Editor で使う
   /// </summary>
-  class MaterialEditor {
+  class TAKO_API MaterialEditor {
   public: //メンバー関数
     MaterialEditor();
     ~MaterialEditor();

@@ -35,7 +35,7 @@ namespace Tako {
   /// <summary>
   /// フレーム時間管理クラス。デルタタイム、FPS 計測、ゲーム経過時間の管理を行う
   /// </summary>
-  class FrameTimer
+  class TAKO_API FrameTimer
   {
   private: // シングルトン設定
     static std::unique_ptr<FrameTimer> instance_;

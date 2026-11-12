@@ -22,7 +22,7 @@ namespace Tako {
   /// Actor に付ける機能の単位（UE の UActorComponent）。C++ のスクリプトは Script を継承し、ScriptComponent に入れる
   /// </summary>
   TCLASS()
-  class Component : public TObject {
+  class TAKO_API Component : public TObject {
     GENERATED_BODY()
 
   public: //メンバー関数

@@ -12,7 +12,7 @@ namespace Tako {
   /// <summary>
   /// 補間カーブを視覚編集するエディター
   /// </summary>
-  class CameraAnimationCurveEditor {
+  class TAKO_API CameraAnimationCurveEditor {
   public: //構造体
     enum class CurveType {
       POSITION_X,

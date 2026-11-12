@@ -24,7 +24,7 @@ namespace Tako {
   /// DirectX 12基盤システムクラス
   /// デバイス、コマンドキュー、スワップチェーン管理
   /// </summary>
-  class DX12Basic {
+  class TAKO_API DX12Basic {
   public: //定数
     static constexpr float       kMinRenderScale  = 0.25f;
     static constexpr DXGI_FORMAT kColorFormat     = DXGI_FORMAT_R8G8B8A8_UNORM;  ///< スワップチェインとシーン描画先のカラー

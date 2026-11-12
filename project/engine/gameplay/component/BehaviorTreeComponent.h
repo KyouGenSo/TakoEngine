@@ -14,7 +14,7 @@ namespace Tako {
   /// Blackboard の "owner"（kBTOwnerKey）にこの Actor が入る。Blackboard は作った時からあるので、スクリプトは BeginPlay で他の値を入れられる
   /// </summary>
   TCLASS(DisplayName = "Behavior Tree")
-  class BehaviorTreeComponent : public Component {
+  class TAKO_API BehaviorTreeComponent : public Component {
     GENERATED_BODY()
 
   public: //メンバー関数

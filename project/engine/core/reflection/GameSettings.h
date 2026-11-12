@@ -12,7 +12,7 @@ namespace Tako {
   /// resources/Json/GameSettings/型名.json に TPROPERTY を保存する。Debug では Engine Settings の Game 欄で編集する
   /// </summary>
   TCLASS()
-  class GameSettings : public TObject {
+  class TAKO_API GameSettings : public TObject {
     GENERATED_BODY()
 
   public: //メンバー関数
@@ -41,6 +41,11 @@ namespace Tako {
     /// ファイルから読み直す。ファイルが無いか読めなければ今の値のまま
     /// </summary>
     void Reload();
+
+    /// <summary>
+    /// type の値を捨てる。次の Get で作り直してファイルを読む。ゲームの DLL を外す前に呼ぶ（値の型は DLL の中にある）
+    /// </summary>
+    static void Release(const TypeInfo& type);
 
     //=====================================
     //Getter

@@ -17,7 +17,7 @@ namespace Tako {
   /// ゲームエンジンのメインフレームワーク
   /// アプリケーションの基底クラス
   /// </summary>
-  class TakoFramework {
+  class TAKO_API TakoFramework {
   public: //メンバー関数
 
     /// <summary>

@@ -23,7 +23,7 @@ namespace Tako {
   /// <summary>
   /// エディタプレビュー用カメラ（UE5 ビューポート準拠）。注視点・距離・回転・移動速度を保持し Camera へ反映する
   /// </summary>
-  struct ViewportCameraController {
+  struct TAKO_API ViewportCameraController {
   public: //メンバー関数
     /// <summary>
     /// 直前の ImGui アイテム（プレビュー）への入力で状態を更新する。PreviewViewport::DrawImGuiImage の直後に毎フレーム呼ぶ

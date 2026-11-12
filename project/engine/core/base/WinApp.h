@@ -18,7 +18,7 @@ namespace Tako {
   /// Windows アプリケーション管理クラス
   /// ウィンドウ生成とメッセージ処理を担当
   /// </summary>
-  class WinApp {
+  class TAKO_API WinApp {
   private: // シングルトン設定
     static std::unique_ptr<WinApp> instance_;
 

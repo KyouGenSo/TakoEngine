@@ -18,7 +18,7 @@ namespace Tako {
   /// <summary>
   /// シェーダーと、その描画設定・定数・テクスチャの組。描画物はマテリアルを差し替えるだけで別のシェーダーで描ける
   /// </summary>
-  class Material {
+  class TAKO_API Material {
   public: //メンバー関数
     /// <summary>
     /// 描画設定と描画キューはシェーダーの値を使う（Set* で上書きできる）

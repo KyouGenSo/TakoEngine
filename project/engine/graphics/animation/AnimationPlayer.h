@@ -10,7 +10,7 @@ namespace Tako {
   /// <summary>
   /// 複数のクリップを同時に再生し、要素名ごとの上乗せの値を合成する
   /// </summary>
-  class AnimationPlayer {
+  class TAKO_API AnimationPlayer {
   public: //構造体
     struct PlayOptions {
       float                                   delay        = 0.0f;   ///< 秒。待っている間は 0 秒の姿勢を表示する

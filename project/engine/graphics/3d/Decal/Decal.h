@@ -23,7 +23,7 @@ namespace Tako {
   /// 個別デカールインスタンスクラス
   /// Projective Decal の位置、形状、カラーなどを管理
   /// </summary>
-  class Decal {
+  class TAKO_API Decal {
     friend class DecalManager;
 
   public: //メンバー関数

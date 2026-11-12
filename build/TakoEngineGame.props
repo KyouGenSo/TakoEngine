@@ -2,13 +2,21 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <!-- ===================================================
+       ゲームのプロジェクトが import する設定。
+       エンジンの場所・include パス・リンクの形（Debug は DLL、Release は 1 つの exe）は
+       TakoEngineCommon.props にある。
+       =================================================== -->
+  <Import Project="$(MSBuildThisFileDirectory)TakoEngineCommon.props" />
+
+  <!-- ===================================================
        共有プロパティ
-       MSBuildThisFileDirectory はこの .props 自身の場所を指すので、
-       import 元の物理パスに依存しない。
+       ゲームのプロジェクトは <ルート>\GameProject に置く決まりなので、
+       ルートは ProjectDir の 1 つ上。ソリューションを通さず vcxproj だけを
+       ビルドしても（エディタからのコンパイル）同じ場所に出る。
        =================================================== -->
   <PropertyGroup>
-    <TakoEngineRoot>$(MSBuildThisFileDirectory)..</TakoEngineRoot>
-    <EngineResourcesSrc>$(TakoEngineRoot)\project\engine\resources</EngineResourcesSrc>
+    <TakoProjectRoot>$([MSBuild]::NormalizeDirectory('$(ProjectDir)..'))</TakoProjectRoot>
+    <EngineResourcesSrc>$(TakoEngineSrc)resources</EngineResourcesSrc>
     <EngineResourcesDirName>EngineResources</EngineResourcesDirName>
     <GameResourcesSrc>$(ProjectDir)resources</GameResourcesSrc>
     <GameResourcesDirName>resources</GameResourcesDirName>
@@ -16,40 +24,43 @@
 
   <!-- ===================================================
        出力 / 中間ディレクトリ規約
-       全ゲームプロジェクトで $(SolutionDir)\Generated\... 配下に統一。
-       OutDir は Configuration 単位でフラット（DLL/exe/リソース同居）、
-       IntDir は ProjectName で分離して複数ゲーム同時ビルドにも対応。
-       Debug/Release で同じ式なので Condition 不要。
+       全ゲームプロジェクトで <ルート>\Generated\... 配下に統一。
+       Debug の出力は Game.dll（TakoEditor.exe がこの名前で探す）、
+       Release の出力はプロジェクト名の exe。
        =================================================== -->
   <PropertyGroup>
-    <OutDir>$(SolutionDir)\Generated\outputs\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)\Generated\obj\$(ProjectName)\$(Configuration)\</IntDir>
+    <OutDir>$(TakoProjectRoot)Generated\outputs\$(Configuration)\</OutDir>
+    <IntDir>$(TakoProjectRoot)Generated\obj\$(ProjectName)\$(Configuration)\</IntDir>
     <IncludePath>$(WindowsSDK_IncludePath);$(ProjectDir);$(VC_IncludePath);$(IncludePath)</IncludePath>
+    <TargetName Condition="'$(TakoShared)'=='true'">Game</TargetName>
+    <TakoCopyDxc Condition="'$(TakoShared)'!='true'">true</TakoCopyDxc>
   </PropertyGroup>
 
   <!-- ===================================================
-       Visual Studio から F5 起動した時の作業ディレクトリ
-       Debug: VS 既定の $(ProjectDir)。エディタ（Assets・GameSettings・
-              各種プリセット）の保存先がソースの resources になる。
-              EngineResources は PreBuildEvent で ProjectDir にも複製する。
+       Visual Studio から F5 起動した時の設定
+       Debug: TakoEditor.exe がプロジェクトを開く。作業ディレクトリは VS 既定の
+              $(ProjectDir) で、エディタ（Assets・GameSettings・各種プリセット）の
+              保存先がソースの resources になる。
        Release: exe の隣（= OutDir）。exe ダブルクリックと同じ
               相対パス解決で配布物を確認する。
 
        注意: $(OutDir) は .props 評価時点ではまだ未定義のため
-       eager 評価で空になる。$(SolutionDir) と $(Configuration) は
-       MSBuild の予約プロパティで先に確定するため、これらを使って
-       OutDir 規約を直接記述する。
+       eager 評価で空になる。上で決めた規約を直接記述する。
        =================================================== -->
   <PropertyGroup>
-    <LocalDebuggerWorkingDirectory Condition="'$(Configuration)'=='Release'">$(SolutionDir)Generated\outputs\$(Configuration)\</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerCommand Condition="'$(TakoShared)'=='true'">$(TakoEngineBinDir)TakoEditor.exe</LocalDebuggerCommand>
+    <LocalDebuggerCommandArguments Condition="'$(TakoShared)'=='true'">--project "$(TakoProjectRoot)."</LocalDebuggerCommandArguments>
+    <LocalDebuggerWorkingDirectory Condition="'$(Configuration)'=='Release'">$(TakoProjectRoot)Generated\outputs\$(Configuration)\</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 
   <!-- ===================================================
        共通 C++ コンパイラ / リンカ設定
        Debug/Release 両方に適用される最大公約数。
-       Configuration 固有の差分（最適化や RuntimeLibrary）は
+       Configuration 固有の差分（最適化やプリプロセッサ）は
        下の ItemDefinitionGroup（Debug|Release）で個別指定する。
+       C4251 / C4275 は、STL のメンバーや基底を持つエンジンのクラスを
+       DLL から使うと出る警告。エンジンと同じコンパイラ・CRT でビルドするので切る。
        =================================================== -->
   <ItemDefinitionGroup>
     <ClCompile>
@@ -58,8 +69,11 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(TakoEngineIncludes);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>$(TakoRuntimeLibrary)</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <TreatWarningAsError>true</TreatWarningAsError>
+      <DisableSpecificWarnings>4251;4275;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -68,27 +82,35 @@
   </ItemDefinitionGroup>
 
   <!-- ===================================================
-       Debug 固有: RuntimeLibrary（MTd）+ プリプロセッサ
+       Debug 固有: エンジンの DLL から型と ImGui を受け取る
+       PDBALTPATH: DLL に PDB のファイル名だけを書く。エディタは Game.dll と Game.pdb を
+       別のフォルダーへ写してから読むので、デバッガーが写しの隣の PDB を使うようになり、
+       デバッグ中でも元の Game.pdb をビルドで書き換えられる。
        =================================================== -->
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;TAKO_SHARED;TAKO_API=__declspec(dllimport);IMGUI_API=__declspec(dllimport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <Link>
+      <AdditionalDependencies>$(TakoEngineBinDir)TakoEngine.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions>/PDBALTPATH:%_PDB% %(AdditionalOptions)</AdditionalOptions>
+    </Link>
   </ItemDefinitionGroup>
 
   <!-- ===================================================
-       Release 固有: RuntimeLibrary（MT）+ 最適化 + プリプロセッサ
+       Release 固有: 最適化 + プリプロセッサ + エンジンの静的ライブラリ
        /O1 系（MinSpace）はサイズ優先。速度優先なら MaxSpeed に切替。
        =================================================== -->
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <Optimization>MinSpace</Optimization>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;TAKO_API=;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <Link>
+      <AdditionalDependencies>$(TakoEngineBinDir)TakoEngine.lib;$(TakoEngineBinDir)DirectXTex.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
   </ItemDefinitionGroup>
 
   <!-- ===================================================
@@ -97,11 +119,21 @@
   <Import Project="$(MSBuildThisFileDirectory)TakoReflection.props" />
 
   <!-- ===================================================
-       PreBuildEvent: リソースを OutDir 直下にミラー
+       PreBuildEvent: リソースをミラー
+       Debug: エンジンのリソースを作業ディレクトリ（ProjectDir）へ。
+       Release: それに加えて、エンジンとゲームのリソースを exe の隣（OutDir）へ。
        /XO により更新分だけコピーするので増分ビルドに優しい。
        robocopy の終了コード 0..7 は成功扱い、8 以上だけ真のエラー。
        =================================================== -->
-  <ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <PreBuildEvent>
+      <Command>robocopy "$(EngineResourcesSrc)" "$(ProjectDir)$(EngineResourcesDirName)" /E /XO /NFL /NDL /NJH /NJS /NP /NS /NC
+IF %ERRORLEVEL% GEQ 8 EXIT /B %ERRORLEVEL%
+EXIT /B 0</Command>
+      <Message>Copying engine resources to $(ProjectDir)</Message>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <PreBuildEvent>
       <Command>robocopy "$(EngineResourcesSrc)" "$(OutDir)$(EngineResourcesDirName)" /E /XO /NFL /NDL /NJH /NJS /NP /NS /NC
 IF %ERRORLEVEL% GEQ 8 EXIT /B %ERRORLEVEL%
@@ -112,23 +144,6 @@ IF %ERRORLEVEL% GEQ 8 EXIT /B %ERRORLEVEL%
 EXIT /B 0</Command>
       <Message>Copying engine resources to $(OutDir) and $(ProjectDir), and game resources to $(OutDir)</Message>
     </PreBuildEvent>
-  </ItemDefinitionGroup>
-
-  <!-- ===================================================
-       PostBuildEvent: DXC ランタイム DLL を exe の隣に配置
-       全 DX12 ゲームに必須なので .props で集約。
-       =================================================== -->
-  <ItemDefinitionGroup>
-    <PostBuildEvent>
-      <Command>copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxcompiler.dll" "$(TargetDir)dxcompiler.dll"
-rem dxil.dll は SDK 26100 世代で bin\(SDKバージョン)\x64 から Redist\D3D\x64 へ移動したため両レイアウトを探索する
-if exist "$(WindowsSdkDir)Redist\D3D\x64\dxil.dll" (
-copy /Y "$(WindowsSdkDir)Redist\D3D\x64\dxil.dll" "$(TargetDir)dxil.dll"
-) else (
-copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dxil.dll"
-)</Command>
-      <Message>Copying DXC runtime DLLs</Message>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
 
 </Project>

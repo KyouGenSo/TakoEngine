@@ -15,7 +15,7 @@ namespace Tako {
   /// <summary>
   /// ゲームカメラとは独立した自由視点カメラでシーンを再描画するデバッグ用ビューポート
   /// </summary>
-  class DebugViewport {
+  class TAKO_API DebugViewport {
   public: //メンバー関数
     DebugViewport();
     ~DebugViewport();

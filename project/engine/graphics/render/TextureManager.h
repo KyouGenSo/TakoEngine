@@ -17,7 +17,7 @@ namespace Tako {
   /// <summary>
   /// テクスチャの読み込みと管理を行うシングルトンクラス。テクスチャのキャッシュと SRV 管理を担当
   /// </summary>
-  class TextureManager {
+  class TAKO_API TextureManager {
   private: // シングルトン設定
     static std::unique_ptr<TextureManager> instance_;
 

@@ -13,7 +13,7 @@ namespace Tako {
   /// <summary>
   /// AnimationClip のドープシートと、選択トラックの値グラフ。キーとイベントの追加・移動は clip を直接書き換える
   /// </summary>
-  class AnimationTimeline {
+  class TAKO_API AnimationTimeline {
   private: //定数
     static constexpr float kRulerHeight        = 22.0f;
     static constexpr float kRowHeight          = 22.0f;

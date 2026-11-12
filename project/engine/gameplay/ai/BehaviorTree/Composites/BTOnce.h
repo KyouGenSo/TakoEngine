@@ -10,7 +10,7 @@ namespace Tako {
   /// 子が Success を返した時のみ消費し、Failure / Running は透過する。
   /// </summary>
   TCLASS(DisplayName = "Once", Category = "Decorator", Color = 0xCCCC4D)
-  class BTOnce : public BTComposite {
+  class TAKO_API BTOnce : public BTComposite {
     GENERATED_BODY()
 
   public: //メンバー関数

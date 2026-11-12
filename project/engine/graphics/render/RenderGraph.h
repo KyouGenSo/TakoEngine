@@ -17,7 +17,7 @@ namespace Tako {
   /// <summary>
   /// RTV と SRV を持つ描画先テクスチャ
   /// </summary>
-  struct RenderTexture {
+  struct TAKO_API RenderTexture {
     GpuResource                 resource;
     D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle{};
     uint32_t                    rtvIndex    = 0;
@@ -47,7 +47,7 @@ namespace Tako {
   /// パスが使う一時 RT を貸し出し、パスが読み書きするリソースを宣言どおりの状態にしてから実行する
   /// ponytail: パスは AddPass の時点で実行する（記録してから並べ替える段は持たない）。パスの省略や RT のメモリ共有が要るなら記録→実行の 2 段に分ける
   /// </summary>
-  class RenderGraph {
+  class TAKO_API RenderGraph {
   public: //構造体
     struct TextureDesc {
       uint32_t    width        = 0;
@@ -67,6 +67,11 @@ namespace Tako {
     };
 
   public: //メンバー関数
+    RenderGraph() = default;
+    // pool_ の要素が unique_ptr を持つので複製しない
+    RenderGraph(const RenderGraph&) = delete;
+    RenderGraph& operator=(const RenderGraph&) = delete;
+
     void Initialize(DX12Basic* dx12) { dx12_ = dx12; }
 
     /// <summary>

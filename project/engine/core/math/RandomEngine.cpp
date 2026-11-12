@@ -4,9 +4,13 @@
 
 namespace Tako {
 
-  // スレッドローカル変数の定義
-  thread_local std::mt19937 RandomEngine::generator_;
-  thread_local bool RandomEngine::initialized_ = false;
+  namespace {
+
+    // スレッドごとにジェネレータを持つ
+    thread_local std::mt19937 generator;
+    thread_local bool         isInitialized = false;
+
+  } // namespace
 
   RandomEngine::RandomEngine() {
 
@@ -15,7 +19,7 @@ namespace Tako {
   RandomEngine* RandomEngine::GetInstance() {
     static RandomEngine instance;
     // スレッドローカルなジェネレータが初期化されていない場合は初期化
-    if (!initialized_) {
+    if (!isInitialized) {
       instance.InitializeGenerator();
     }
     return &instance;
@@ -24,23 +28,23 @@ namespace Tako {
   void RandomEngine::InitializeGenerator() {
     // ランダムデバイスからシードを取得
     std::random_device rd;
-    generator_ = std::mt19937(rd());
-    initialized_ = true;
+    generator = std::mt19937(rd());
+    isInitialized = true;
   }
 
   float RandomEngine::GetFloat(float min, float max) {
     std::uniform_real_distribution<float> dist(min, max);
-    return dist(generator_);
+    return dist(generator);
   }
 
   int RandomEngine::GetInt(int min, int max) {
     std::uniform_int_distribution<int> dist(min, max);
-    return dist(generator_);
+    return dist(generator);
   }
 
   float RandomEngine::GetNormalized() {
     std::uniform_real_distribution<float> dist(0.0f, 1.0f);
-    return dist(generator_);
+    return dist(generator);
   }
 
   float RandomEngine::GetAngle() {
@@ -108,8 +112,8 @@ namespace Tako {
   }
 
   void RandomEngine::SetSeed(unsigned int seed) {
-    generator_ = std::mt19937(seed);
-    initialized_ = true;
+    generator = std::mt19937(seed);
+    isInitialized = true;
   }
 
   void RandomEngine::SetRandomSeed() {

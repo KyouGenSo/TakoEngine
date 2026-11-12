@@ -9,7 +9,7 @@ namespace Tako {
   /// <summary>
   /// 有向境界ボックス(Oriented Bounding Box)の衝突判定を行うコライダー
   /// </summary>
-  class OBBCollider : public Collider {
+  class TAKO_API OBBCollider : public Collider {
   public: //メンバー関数
     OBBCollider();
     virtual ~OBBCollider() = default;

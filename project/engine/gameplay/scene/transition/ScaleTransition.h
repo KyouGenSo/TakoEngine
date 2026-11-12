@@ -13,7 +13,7 @@ namespace Tako {
   /// 円形トランジション
   /// 円形のマスクが拡大/縮小しながら画面を覆う演出
   /// </summary>
-  class ScaleTransition : public ITransitionEffect
+  class TAKO_API ScaleTransition : public ITransitionEffect
   {
   private: //定数
     static constexpr float MIN_SCALE = 0.01f;  ///< 最小スケール
@@ -43,7 +43,7 @@ namespace Tako {
     /// <summary>
     /// デストラクタ
     /// </summary>
-    ~ScaleTransition() override = default;
+    ~ScaleTransition() override;
 
     /// <summary>
     /// 初期化

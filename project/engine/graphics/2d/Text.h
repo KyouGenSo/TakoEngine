@@ -16,7 +16,7 @@ namespace Tako {
   /// <summary>
   /// 文字列 1 つを、フォントのアトラスの字を並べた四角で描く。長さの単位は呼び出し側が決め、拡大で画面 px に合わせる
   /// </summary>
-  class Text {
+  class TAKO_API Text {
   public: //構造体
     /// <summary>
     /// 字の並びを決める値。変わったときだけ頂点を作り直す

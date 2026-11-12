@@ -14,7 +14,7 @@ namespace Tako {
   /// デフォルトテクスチャ "white.dds" を自動で割り当てる。
   /// ExportObj で任意の Model を Wavefront OBJ(+MTL) として書き出せる。
   /// </summary>
-  class PrimitiveBuilder
+  class TAKO_API PrimitiveBuilder
   {
   public: //構造体
 

@@ -116,64 +116,64 @@ namespace Tako {
   /// <summary>
   /// 定義を名前で登録する（同名は上書き）
   /// </summary>
-  void RegisterPostEffect(const std::string& name, PostEffectDefinition definition);
+  TAKO_API void RegisterPostEffect(const std::string& name, PostEffectDefinition definition);
 
   /// <summary>
   /// 名前の定義を外す（無ければ何もしない）。スタックに残ったインスタンスは描かれなくなる
   /// </summary>
-  void UnregisterPostEffect(std::string_view name);
+  TAKO_API void UnregisterPostEffect(std::string_view name);
 
   /// <summary>
   /// 名前の定義（無ければ nullptr）
   /// </summary>
-  const PostEffectDefinition* FindPostEffect(std::string_view name);
+  TAKO_API const PostEffectDefinition* FindPostEffect(std::string_view name);
 
   /// <summary>
   /// 登録順の定義の名前
   /// </summary>
-  std::span<const std::string> GetPostEffectNames();
+  TAKO_API std::span<const std::string> GetPostEffectNames();
 
   /// <summary>
   /// 定義が PropertyBlock なら、effect.param を定義の既定値に material と overrides を重ねて作り直す（型付きの定義なら何もしない）。
   /// material のシェーダーを替えていれば name も追従させる
   /// </summary>
-  void ResolvePostEffectValues(PostEffectInstance& effect);
+  TAKO_API void ResolvePostEffectValues(PostEffectInstance& effect);
 
   /// <summary>
   /// FullScreen.VS と psFile で全画面三角形を描くパイプライン
   /// </summary>
-  GraphicsPipelineDesc MakeFullScreenPipeline(ShaderLibrary& library, std::wstring_view psFile);
+  TAKO_API GraphicsPipelineDesc MakeFullScreenPipeline(ShaderLibrary& library, std::wstring_view psFile);
 
   /// <summary>
   /// FullScreen.VS と ps で全画面三角形を描くパイプライン
   /// </summary>
-  GraphicsPipelineDesc MakeFullScreenPipeline(ShaderLibrary& library, const Shader& ps);
+  TAKO_API GraphicsPipelineDesc MakeFullScreenPipeline(ShaderLibrary& library, const Shader& ps);
 
   /// <summary>
   /// output を描画先・ビューポートにし、FullScreen.VS と psFile のパイプラインを設定する。値を渡してから DrawFullScreen を呼ぶ
   /// </summary>
   /// <param name="blend">output への合成方法</param>
-  CommandContext::ShaderBinder BeginFullScreen(const PostEffectFrame& frame, std::wstring_view psFile, RenderTexture& output, BlendMode blend = BlendMode::Opaque);
+  TAKO_API CommandContext::ShaderBinder BeginFullScreen(const PostEffectFrame& frame, std::wstring_view psFile, RenderTexture& output, BlendMode blend = BlendMode::Opaque);
 
   /// <summary>
   /// BeginFullScreen と同じだが、エントリポイントや define を指定してコンパイルした ps を使う
   /// </summary>
-  CommandContext::ShaderBinder BeginFullScreen(const PostEffectFrame& frame, const Shader& ps, RenderTexture& output, BlendMode blend = BlendMode::Opaque);
+  TAKO_API CommandContext::ShaderBinder BeginFullScreen(const PostEffectFrame& frame, const Shader& ps, RenderTexture& output, BlendMode blend = BlendMode::Opaque);
 
   /// <summary>
   /// 全画面三角形を描く
   /// </summary>
-  void DrawFullScreen(const PostEffectFrame& frame);
+  TAKO_API void DrawFullScreen(const PostEffectFrame& frame);
 
   /// <summary>
   /// source を一時 RT へ写して返す（返した RT はシェーダーリソース、source は描画先の状態になる）。使い終えたら frame.graph へ Release する
   /// </summary>
-  RenderTexture& CopyToTemporary(const PostEffectFrame& frame, RenderTexture& source);
+  TAKO_API RenderTexture& CopyToTemporary(const PostEffectFrame& frame, RenderTexture& source);
 
   /// <summary>
   /// ポストエフェクトを並べた順に掛ける（Unity の Volume の Override 一覧に相当）
   /// </summary>
-  class PostProcessStack {
+  class TAKO_API PostProcessStack {
   public: //メンバー関数
     /// <summary>
     /// 定義の既定値でエフェクトを末尾に追加する

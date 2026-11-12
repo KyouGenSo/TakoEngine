@@ -14,7 +14,7 @@ namespace Tako {
     /// 文字列をログ出力
     /// </summary>
     /// <param name="messege">出力するメッセージ</param>
-    void Log(const std::string& messege);
+    TAKO_API void Log(const std::string& messege);
 
     /// <summary>
     /// 可変長引数でフォーマット済み文字列をログ出力
@@ -22,7 +22,7 @@ namespace Tako {
     /// </summary>
     /// <param name="format">フォーマット文字列</param>
     /// <param name="...">可変長引数</param>
-    void Log(const char* format, ...);
+    TAKO_API void Log(const char* format, ...);
 
     using Sink = void (*)(const std::string& message);
 
@@ -30,7 +30,7 @@ namespace Tako {
     /// Log の内容をもう 1 か所（エディタの Console）にも渡す。nullptr で外す
     /// </summary>
     /// <returns>前に渡してあった物（一時的に外して、戻すときに使う）</returns>
-    Sink SetSink(Sink sink);
+    TAKO_API Sink SetSink(Sink sink);
   }
 
 } // namespace Tako

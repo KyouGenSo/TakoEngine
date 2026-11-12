@@ -17,7 +17,7 @@ namespace Tako {
   /// <summary>
   /// エディタの 3D プレビュー。オフスクリーンの描画先・カメラ・カメラ操作・ライトと、その ImGui 表示をまとめる
   /// </summary>
-  class PreviewPanel {
+  class TAKO_API PreviewPanel {
   public: //メンバー関数
     PreviewPanel();
     ~PreviewPanel();

@@ -12,7 +12,7 @@ namespace Tako {
   /// <summary>
   /// キーフレーム間補間でカメラを動かすアニメーション
   /// </summary>
-  class CameraAnimation {
+  class TAKO_API CameraAnimation {
   public: //定数
     static constexpr const char* kDirectory = "resources/Json/CameraAnimations/";
 

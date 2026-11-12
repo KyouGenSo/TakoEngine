@@ -14,7 +14,7 @@ namespace Tako {
   /// コマンドリスト 1 本の記録窓口。バリアは溜めておき、GPU がリソースを触るコマンドの直前にまとめて発行する。
   /// パイプラインは描画先に依存しない設定だけを受け取り、PSO は描画時に現在の描画先フォーマットで解決する
   /// </summary>
-  class CommandContext {
+  class TAKO_API CommandContext {
   private: //構造体
     /// <summary>
     /// グラフィックス / コンピュートそれぞれのルートシグネチャと束縛状況
@@ -30,7 +30,7 @@ namespace Tako {
     /// <summary>
     /// 現在のパイプラインのシェーダーリソースへ名前で値を渡す窓口。シェーダーが使っていない名前は無視する
     /// </summary>
-    class ShaderBinder {
+    class TAKO_API ShaderBinder {
     public: //メンバー関数
       void BindCBV(ShaderParamId id, D3D12_GPU_VIRTUAL_ADDRESS address);
 

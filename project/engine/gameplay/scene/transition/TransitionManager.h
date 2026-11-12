@@ -11,7 +11,7 @@ namespace Tako {
   /// トランジション効果の管理クラス
   /// 各種トランジション効果の生成・管理を行う
   /// </summary>
-  class TransitionManager
+  class TAKO_API TransitionManager
   {
   private: // シングルトン設定
     static std::unique_ptr<TransitionManager> instance_; ///< インスタンス

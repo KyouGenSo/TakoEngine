@@ -20,7 +20,7 @@ namespace Tako {
   /// シングルトンパターンで実装
   /// PSO / RootSignature / 単位キューブメッシュ / 深度SRV を管理
   /// </summary>
-  class DecalManager {
+  class TAKO_API DecalManager {
   private: // シングルトン設定
 
     static std::unique_ptr<DecalManager> instance_;

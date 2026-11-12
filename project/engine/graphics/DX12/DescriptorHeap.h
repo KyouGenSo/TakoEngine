@@ -11,7 +11,7 @@ namespace Tako {
   /// <summary>
   /// ディスクリプタヒープ1枚とフリーリスト式インデックスアロケータの汎用基盤
   /// </summary>
-  class DescriptorHeap {
+  class TAKO_API DescriptorHeap {
   public: //定数
     static constexpr uint32_t kInvalidIndex = 0;  ///< 無効番兵。index 0 は予約し割り当てない
 

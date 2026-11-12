@@ -11,7 +11,7 @@ namespace Tako {
   /// 乱数生成エンジン
   /// シングルトンパターンで実装され、アプリケーション全体で統一された乱数生成を提供
   /// </summary>
-  class RandomEngine final {
+  class TAKO_API RandomEngine final {
   public:
     /// <summary>
     /// インスタンスの取得
@@ -123,10 +123,6 @@ namespace Tako {
     /// ジェネレータの初期化
     /// </summary>
     void InitializeGenerator();
-
-    //スレッドローカルストレージでジェネレータを管理
-    static thread_local std::mt19937 generator_;
-    static thread_local bool         initialized_;
 
     // π定数
     static constexpr float kPi = std::numbers::pi_v<float>;

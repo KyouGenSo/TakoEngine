@@ -62,7 +62,7 @@ namespace Tako {
   /// resources/Json/RenderPasses.json（オブジェクトパス。並びは同じ位置での実行順）
   ///   { "Passes": [ { "Name": "PlayerXRay", "Event": "AfterTransparent", "Enabled": true, "Queue": "All", "Objects": ["Player"], "Material": "XRay", "Replace": false } ] }
   /// </summary>
-  class RenderPipeline {
+  class TAKO_API RenderPipeline {
   private: // シングルトン設定
     static std::unique_ptr<RenderPipeline> instance_;
 

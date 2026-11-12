@@ -18,7 +18,7 @@ namespace Tako {
   /// 通常描画とインスタンシング描画の両方でシャドウをサポート
   /// PCF フィルタリング、動的品質調整、ImGui デバッグ UI 統合機能を提供
   /// </summary>
-  class ShadowRenderer
+  class TAKO_API ShadowRenderer
   {
   private: // シングルトン設定
     // インスタンス

@@ -13,7 +13,7 @@ namespace Tako {
   /// モデル基盤クラス
   /// コンピュートシェーダーによるスキニング処理を管理
   /// </summary>
-  class ModelBasic
+  class TAKO_API ModelBasic
   {
   public: //メンバー関数
     /// <summary>

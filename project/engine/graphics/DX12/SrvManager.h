@@ -12,7 +12,7 @@ namespace Tako {
   /// SRV/UAV ディスクリプタ管理クラス
   /// フリーリスト方式によるインデックス管理
   /// </summary>
-  class SrvManager {
+  class TAKO_API SrvManager {
   private: // シングルトン設定
     static std::unique_ptr<SrvManager> instance_;
 

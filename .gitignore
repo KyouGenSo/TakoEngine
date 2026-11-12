@@ -336,3 +336,7 @@ settings.local.json
 nul
 
 project/application/imgui.ini
+
+# エンジンのビルド結果（TakoEngineCommon.props の TakoEngineBinDir / TakoEngineObjDir）
+/bin/
+/obj/

@@ -13,7 +13,7 @@ namespace Tako {
   /// <summary>
   /// シーン管理を行うシングルトンクラス。シーンの切り替え、更新、描画を統括
   /// </summary>
-  class SceneManager
+  class TAKO_API SceneManager
   {
   private: //構造体
     enum class PlayRequest { None, Play, Stop };

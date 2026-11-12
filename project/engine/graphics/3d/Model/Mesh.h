@@ -18,7 +18,7 @@ namespace Tako {
   /// 3D モデルのメッシュデータとスキニングアニメーション処理を管理するクラス
   /// 頂点データ、インデックス、マテリアル、GPU スキニングを統合管理
   /// </summary>
-  class Mesh {
+  class TAKO_API Mesh {
 
   public: //メンバー関数
 

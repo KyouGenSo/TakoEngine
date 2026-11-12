@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!-- ===================================================
+       エンジンのプロジェクト（TakoEngine・TakoEditor・externals）と、
+       ゲームの props（TakoEngineGame.props）の両方が読む共通の値。
+       MSBuildThisFileDirectory はこの .props 自身の場所を指すので、
+       import 元の物理パスに依存しない。
+       =================================================== -->
+  <PropertyGroup>
+    <TakoEngineRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..'))</TakoEngineRoot>
+    <TakoEngineSrc>$(TakoEngineRoot)project\engine\</TakoEngineSrc>
+    <TakoEngineExternals>$(TakoEngineRoot)project\externals\</TakoEngineExternals>
+    <!-- エンジンのビルド結果はエンジンのフォルダーに出す（ソースでも SDK でも同じ形になる）。 -->
+    <TakoEngineBinDir>$(TakoEngineRoot)bin\$(Configuration)\</TakoEngineBinDir>
+    <TakoEngineObjDir>$(TakoEngineRoot)obj\$(ProjectName)\$(Configuration)\</TakoEngineObjDir>
+  </PropertyGroup>
+
+  <!-- ===================================================
+       リンクの形
+       Debug（エディタ）: TakoEditor.exe + TakoEngine.dll + Game.dll。ゲームの DLL を実行中に差し替える。
+       Release: エンジンを静的リンクした 1 つの exe。
+       DLL をまたいで std::string や unique_ptr を渡すので、Debug は CRT も DLL 版（/MDd）にそろえる。
+       =================================================== -->
+  <PropertyGroup>
+    <TakoShared Condition="'$(Configuration)'=='Debug'">true</TakoShared>
+    <TakoRuntimeLibrary>MultiThreaded</TakoRuntimeLibrary>
+    <TakoRuntimeLibrary Condition="'$(TakoShared)'=='true'">MultiThreadedDebugDLL</TakoRuntimeLibrary>
+  </PropertyGroup>
+
+  <!-- ===================================================
+       include パス
+       エンジンのヘッダーはファイル名だけで include するので、フォルダーを 1 つずつ並べる。
+       engine 以下にフォルダーを足したら、ここに 1 行足す。
+       =================================================== -->
+  <PropertyGroup>
+    <TakoEngineRuntimeIncludes>
+      $(TakoEngineSrc)core\base;
+      $(TakoEngineSrc)core\io;
+      $(TakoEngineSrc)core\math;
+      $(TakoEngineSrc)core\reflection;
+      $(TakoEngineSrc)core\time;
+      $(TakoEngineSrc)core\utility;
+      $(TakoEngineSrc)graphics\2d;
+      $(TakoEngineSrc)graphics\3d;
+      $(TakoEngineSrc)graphics\3d\Camera;
+      $(TakoEngineSrc)graphics\3d\Decal;
+      $(TakoEngineSrc)graphics\3d\Light;
+      $(TakoEngineSrc)graphics\3d\Line;
+      $(TakoEngineSrc)graphics\3d\Model;
+      $(TakoEngineSrc)graphics\3d\Object;
+      $(TakoEngineSrc)graphics\3d\Primitive;
+      $(TakoEngineSrc)graphics\3d\Shadow;
+      $(TakoEngineSrc)graphics\3d\SkyBox;
+      $(TakoEngineSrc)graphics\animation;
+      $(TakoEngineSrc)graphics\DX12;
+      $(TakoEngineSrc)graphics\effect;
+      $(TakoEngineSrc)graphics\effect\Particle;
+      $(TakoEngineSrc)graphics\effect\Particle\Emitter;
+      $(TakoEngineSrc)graphics\effect\PostEffect;
+      $(TakoEngineSrc)graphics\render;
+      $(TakoEngineSrc)gameplay\actor;
+      $(TakoEngineSrc)gameplay\ai;
+      $(TakoEngineSrc)gameplay\ai\BehaviorTree\Core;
+      $(TakoEngineSrc)gameplay\ai\BehaviorTree\Composites;
+      $(TakoEngineSrc)gameplay\ai\BehaviorTree\Runtime;
+      $(TakoEngineSrc)gameplay\ai\BehaviorTree\Nodes;
+      $(TakoEngineSrc)gameplay\audio;
+      $(TakoEngineSrc)gameplay\collision;
+      $(TakoEngineSrc)gameplay\component;
+      $(TakoEngineSrc)gameplay\scene;
+      $(TakoEngineSrc)gameplay\scene\transition;
+      $(TakoEngineExternals)nlohmann;
+      $(TakoEngineExternals)IconFontCppHeaders;
+      $(TakoEngineExternals)assimp\include;
+      $(TakoEngineExternals)DirectXTex
+    </TakoEngineRuntimeIncludes>
+    <!-- エディタは Debug にしか無い -->
+    <TakoEngineEditorIncludes>
+      $(TakoEngineSrc)editor;
+      $(TakoEngineSrc)editor\UI;
+      $(TakoEngineSrc)editor\imgui;
+      $(TakoEngineSrc)editor\BehaviorTree;
+      $(TakoEngineExternals)imgui;
+      $(TakoEngineExternals)imgui-node-editor
+    </TakoEngineEditorIncludes>
+    <TakoEngineIncludes>$(TakoEngineRuntimeIncludes)</TakoEngineIncludes>
+    <TakoEngineIncludes Condition="'$(Configuration)'=='Debug'">$(TakoEngineRuntimeIncludes);$(TakoEngineEditorIncludes)</TakoEngineIncludes>
+  </PropertyGroup>
+
+  <!-- ===================================================
+       PostBuildEvent: DXC のランタイム DLL を exe の隣に置く
+       シェーダーを実行時にコンパイルする exe のプロジェクトが TakoCopyDxc=true にする。
+       $(TargetDir) はこの .props を読む時点では未定義なので、プロパティではなく
+       ItemDefinitionGroup（全プロパティが決まった後に評価される）に書く。
+       =================================================== -->
+  <ItemDefinitionGroup Condition="'$(TakoCopyDxc)'=='true'">
+    <PostBuildEvent>
+      <Command>copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxcompiler.dll" "$(TargetDir)dxcompiler.dll"
+rem dxil.dll は SDK 26100 世代で bin\(SDKバージョン)\x64 から Redist\D3D\x64 へ移動したため両レイアウトを探索する
+if exist "$(WindowsSdkDir)Redist\D3D\x64\dxil.dll" (
+copy /Y "$(WindowsSdkDir)Redist\D3D\x64\dxil.dll" "$(TargetDir)dxil.dll"
+) else (
+copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dxil.dll"
+)</Command>
+      <Message>Copying DXC runtime DLLs</Message>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+
+</Project>

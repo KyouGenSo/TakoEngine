@@ -10,7 +10,7 @@ namespace Tako {
   /// 終了判定は Policy に応じて切り替える。
   /// </summary>
   TCLASS(DisplayName = "Parallel", Category = "Composite", Color = 0x66B366)
-  class BTParallel : public BTComposite {
+  class TAKO_API BTParallel : public BTComposite {
     GENERATED_BODY()
 
   public: //構造体

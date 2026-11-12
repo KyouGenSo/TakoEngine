@@ -21,7 +21,7 @@ namespace Tako {
   /// 3D モデル管理クラス
   /// アニメーション、スキニング、マテリアル対応
   /// </summary>
-  class Model
+  class TAKO_API Model
   {
   public: //メンバー関数
     Model() = default;

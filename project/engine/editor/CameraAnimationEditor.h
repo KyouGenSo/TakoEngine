@@ -22,7 +22,7 @@ namespace Tako {
   /// CameraAnimation の JSON をタイムライン・カーブ・インスペクターで編集するエディタ。
   /// シーンが読み込んだアニメーションはそのインスタンスを直接編集し、読み込んでいないファイルはエディタ自前のインスタンスで開く
   /// </summary>
-  class CameraAnimationEditor {
+  class TAKO_API CameraAnimationEditor {
   private: //定数
     static constexpr int kPathDivision = 24;    ///< 経路線の描画で1区間を何本の線分に分けるか
 

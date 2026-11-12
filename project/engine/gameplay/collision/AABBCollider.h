@@ -8,7 +8,7 @@ namespace Tako {
   /// <summary>
   /// 軸平行境界ボックス(Axis-Aligned Bounding Box)の衝突判定を行うコライダー
   /// </summary>
-  class AABBCollider : public Collider {
+  class TAKO_API AABBCollider : public Collider {
   public: //メンバー関数
     AABBCollider() : Collider(ColliderShape::AABB) {}
     virtual ~AABBCollider() = default;

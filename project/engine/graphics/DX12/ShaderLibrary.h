@@ -31,7 +31,7 @@ namespace Tako {
   /// <summary>
   /// コンパイル済みシェーダー。ホットリロードで中身が差し替わってもアドレスは変わらない
   /// </summary>
-  class Shader {
+  class TAKO_API Shader {
   public: //メンバー関数
     //=====================================
     //Getter
@@ -66,7 +66,7 @@ namespace Tako {
   /// <summary>
   /// DXC によるシェーダーのコンパイルとキャッシュ。Debug ではファイルの更新を検出して再コンパイルする
   /// </summary>
-  class ShaderLibrary {
+  class TAKO_API ShaderLibrary {
   private: //定数
     static constexpr std::chrono::milliseconds kReloadCheckInterval{ 500 };
 
@@ -74,7 +74,7 @@ namespace Tako {
     /// <summary>
     /// 既定のインクルードハンドラへ委譲しつつ、読んだファイルを記録する
     /// </summary>
-    class RecordingIncludeHandler : public IDxcIncludeHandler {
+    class TAKO_API RecordingIncludeHandler : public IDxcIncludeHandler {
     public:
       HRESULT STDMETHODCALLTYPE LoadSource(LPCWSTR fileName, IDxcBlob** includeSource) override;
       HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** object) override;
@@ -86,6 +86,11 @@ namespace Tako {
     };
 
   public: //メンバー関数
+    ShaderLibrary() = default;
+    // shaders_ が unique_ptr を持つので複製しない
+    ShaderLibrary(const ShaderLibrary&) = delete;
+    ShaderLibrary& operator=(const ShaderLibrary&) = delete;
+
     /// <summary>
     /// DXC コンパイラを生成する
     /// </summary>

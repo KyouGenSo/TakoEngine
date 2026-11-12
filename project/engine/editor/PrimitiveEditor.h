@@ -22,7 +22,7 @@ namespace Tako {
   /// <summary>
   /// PrimitiveBuilder のパラメータをプレビューしながら調整し、C++ コード / JSON プリセット / OBJ として出力するエディタ
   /// </summary>
-  class PrimitiveEditor {
+  class TAKO_API PrimitiveEditor {
   public: //構造体
     /// <summary>
     /// 編集対象のプリミティブ種別

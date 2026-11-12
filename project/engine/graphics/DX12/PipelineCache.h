@@ -46,7 +46,7 @@ namespace Tako {
   /// <summary>
   /// シェーダーの組ごとのルートシグネチャと、描画設定 × 描画先ごとの PSO を必要になった時点で作って保持する
   /// </summary>
-  class PipelineCache {
+  class TAKO_API PipelineCache {
   private: //構造体
     struct LayoutEntry {
       std::unique_ptr<ShaderBindingLayout> layout;
@@ -60,7 +60,7 @@ namespace Tako {
       bool operator==(const GraphicsKey&) const = default;
     };
 
-    struct GraphicsKeyHash {
+    struct TAKO_API GraphicsKeyHash {
       size_t operator()(const GraphicsKey& key) const;
     };
 
@@ -69,11 +69,16 @@ namespace Tako {
       uint32_t                                    versions[2] = {};
     };
 
-    struct ShaderPairHash {
+    struct TAKO_API ShaderPairHash {
       size_t operator()(const std::pair<const Shader*, const Shader*>& pair) const;
     };
 
   public: //メンバー関数
+    PipelineCache() = default;
+    // layouts_ の要素が unique_ptr を持つので複製しない
+    PipelineCache(const PipelineCache&) = delete;
+    PipelineCache& operator=(const PipelineCache&) = delete;
+
     void Initialize(ID3D12Device* device) { device_ = device; }
 
     /// <summary>

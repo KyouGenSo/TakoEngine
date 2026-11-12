@@ -16,7 +16,7 @@ namespace Tako {
   /// 保存ではスクリプトの値を "script"（型名）と同じ階層に並べるので、スクリプトは "script" という名前のプロパティを持てない
   /// </summary>
   TCLASS()
-  class ScriptComponent final : public Component {
+  class TAKO_API ScriptComponent final : public Component {
     GENERATED_BODY()
 
   public: //メンバー関数

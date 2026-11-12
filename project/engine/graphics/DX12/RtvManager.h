@@ -11,7 +11,7 @@ namespace Tako {
   /// RTV ディスクリプタ管理クラス
   /// フリーリスト方式によるインデックス管理
   /// </summary>
-  class RtvManager {
+  class TAKO_API RtvManager {
   private: // シングルトン設定
     static std::unique_ptr<RtvManager> instance_;
 

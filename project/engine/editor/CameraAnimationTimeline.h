@@ -13,7 +13,7 @@ namespace Tako {
   /// <summary>
   /// キーフレームを視覚表示・操作するタイムライン UI
   /// </summary>
-  class CameraAnimationTimeline {
+  class TAKO_API CameraAnimationTimeline {
   public: //構造体
     enum class TrackType {
       SUMMARY,        ///< 全キーフレームをまとめて表示

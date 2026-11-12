@@ -13,7 +13,7 @@ namespace Tako {
   /// フォースフィールド管理クラス
   /// GPUParticle が保持するフォースフィールドの JSON 永続化（個別プリセット保存/読込）。
   /// </summary>
-  class ForceFieldManager
+  class TAKO_API ForceFieldManager
   {
   public: //メンバー関数
     /// <summary>

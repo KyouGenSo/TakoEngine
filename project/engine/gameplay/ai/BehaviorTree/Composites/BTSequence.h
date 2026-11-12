@@ -9,7 +9,7 @@ namespace Tako {
   /// 子ノードを順に実行し、最初の Failure で停止する。全成功なら Success を返す。
   /// </summary>
   TCLASS(DisplayName = "Sequence", Category = "Composite", Color = 0x4D80B3)
-  class BTSequence : public BTComposite {
+  class TAKO_API BTSequence : public BTComposite {
     GENERATED_BODY()
 
   public: //メンバー関数

@@ -18,7 +18,7 @@ class ModelInstance;
 /// インスタンシング描画管理クラス
 /// 同一モデルの大量描画を効率的に処理
 /// </summary>
-class InstancedObject3d {
+class TAKO_API InstancedObject3d {
 public: //定数
     static constexpr uint32_t MAX_INSTANCES = 5000;  ///< 最大インスタンス数
 
@@ -173,7 +173,7 @@ private: //メンバー変数
 /// 軽量インスタンスハンドル
 /// 個別のインスタンスを操作するためのクラス
 /// </summary>
-class ModelInstance {
+class TAKO_API ModelInstance {
 public: //メンバー関数
     /// <summary>
     /// コンストラクタ

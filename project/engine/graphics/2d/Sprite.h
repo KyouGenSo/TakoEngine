@@ -18,7 +18,7 @@ namespace Tako {
   /// <summary>
   /// 2D スプライト描画クラス。テクスチャの表示、切り抜き、反転などの機能を提供
   /// </summary>
-  class Sprite {
+  class TAKO_API Sprite {
   public: //定数
     static constexpr int kRegionCount = 9;  ///< 9-slice の区画数。並びは行順（0:左上 … 4:中央 … 8:右下）
 

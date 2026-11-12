@@ -9,6 +9,8 @@
 
 namespace Tako {
 
+  ScaleTransition::~ScaleTransition() = default;
+
   ScaleTransition::ScaleTransition()
     : center_(static_cast<float>(WinApp::clientWidth) * 0.5f, static_cast<float>(WinApp::clientHeight) * 0.5f)
     , expandOut_(true)

@@ -11,7 +11,7 @@ namespace Tako {
   /// 指定した秒数だけ Running を返し、その後 Success を返す
   /// </summary>
   TCLASS(DisplayName = "Wait", Category = "Action", Color = 0x8C8C8C)
-  class BTWait : public BTNode {
+  class TAKO_API BTWait : public BTNode {
     GENERATED_BODY()
 
   public: //メンバー関数
@@ -30,7 +30,7 @@ namespace Tako {
   /// ツリーを動かしている Actor を、target の Actor へ一定の速さで近づける。止まる距離まで来たら Success
   /// </summary>
   TCLASS(DisplayName = "Move To Actor", Category = "Action", Color = 0x4DB380)
-  class BTMoveToActor : public BTNode {
+  class TAKO_API BTMoveToActor : public BTNode {
     GENERATED_BODY()
 
   public: //メンバー関数
@@ -52,7 +52,7 @@ namespace Tako {
   /// ツリーを動かしている Actor と target の Actor の距離が、最小と最大の間なら Success
   /// </summary>
   TCLASS(DisplayName = "Actor Distance", Category = "Condition", Color = 0x33B2B2)
-  class BTActorDistanceCondition : public BTNode {
+  class TAKO_API BTActorDistanceCondition : public BTNode {
     GENERATED_BODY()
 
   public: //メンバー関数

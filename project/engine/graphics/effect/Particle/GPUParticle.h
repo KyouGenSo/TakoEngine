@@ -28,7 +28,7 @@ namespace Tako {
   /// GPU パーティクルシステムクラス
   /// Compute Shader で最大10万パーティクルの高速処理を実現
   /// </summary>
-  class GPUParticle
+  class TAKO_API GPUParticle
   {
   private: // シングルトン設定
     /// <summary>

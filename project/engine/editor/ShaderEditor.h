@@ -22,7 +22,7 @@ namespace Tako {
   /// <summary>
   /// .shader.json の作成・編集ウィンドウ。新規作成ではひな形の HLSL も書き、HLSL は外部エディタで開く
   /// </summary>
-  class ShaderEditor {
+  class TAKO_API ShaderEditor {
   private: //構造体
     enum class Kind : int { Object, PostEffect };
 

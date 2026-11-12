@@ -13,7 +13,7 @@ namespace Tako {
   /// UI レイアウト（UI Editor で作るもの）を画面に出す（Unity の Canvas、UE の HUD に置く Widget）
   /// </summary>
   TCLASS(DisplayName = "UI Layout")
-  class UILayoutComponent : public Component {
+  class TAKO_API UILayoutComponent : public Component {
     GENERATED_BODY()
 
   public: //メンバー関数

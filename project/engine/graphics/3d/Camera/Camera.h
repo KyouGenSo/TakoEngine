@@ -9,7 +9,7 @@ namespace Tako {
   /// カメラシステムクラス
   /// ビュー・プロジェクション行列管理
   /// </summary>
-  class Camera
+  class TAKO_API Camera
   {
   public: //定数
     static constexpr float kDefaultFovY     = 0.45f;  ///< rad

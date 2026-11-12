@@ -10,7 +10,7 @@ namespace Tako {
   /// Actor の位置と向きから見るカメラ（UE の UCameraComponent）。シーンの中で priority が一番高いものが、Edit 中も Play 中も毎フレーム Renderer のカメラへ写す
   /// </summary>
   TCLASS(DisplayName = "Camera")
-  class CameraComponent : public Component {
+  class TAKO_API CameraComponent : public Component {
     GENERATED_BODY()
 
   public: //メンバー関数

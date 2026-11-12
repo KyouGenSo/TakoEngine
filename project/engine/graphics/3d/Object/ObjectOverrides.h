@@ -48,7 +48,7 @@ namespace Tako {
   ///     "Meshes": { "Sword": { "Visible": false, "Material": "XRay", "Values": {}, "Textures": {} } } }
   ///   Values と Textures はマテリアルを書き換えず、描くときにそのメッシュを描くマテリアルの同じ名前の値へ重ねる
   /// </summary>
-  struct ObjectOverrides : MaterialOverrides {
+  struct TAKO_API ObjectOverrides : MaterialOverrides {
     std::optional<bool>                                  visible;
     std::optional<uint32_t>                              maskId;
     std::optional<int32_t>                               sortingOrder;

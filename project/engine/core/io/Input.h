@@ -55,7 +55,7 @@ namespace Tako {
   /// 統合入力管理クラス
   /// DirectInput と XInput でキーボード、マウス、ゲームパッド入力を処理
   /// </summary>
-  class Input {
+  class TAKO_API Input {
   private: 	// シングルトン
     static std::unique_ptr<Input> instance_;
 

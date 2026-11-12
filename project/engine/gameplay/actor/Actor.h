@@ -22,12 +22,15 @@ namespace Tako {
   /// シーンに置く物（UE の AActor）。見た目や動きはコンポーネントで足す。継承して独自の Actor も作れる
   /// </summary>
   TCLASS()
-  class Actor : public TObject {
+  class TAKO_API Actor : public TObject {
     GENERATED_BODY()
 
   public: //メンバー関数
     Actor();
     ~Actor() override;
+    // components_ が unique_ptr を持つので複製しない
+    Actor(const Actor&) = delete;
+    Actor& operator=(const Actor&) = delete;
 
     /// <summary>
     /// T を作って足す。name が空なら型名（重なれば連番を付ける）

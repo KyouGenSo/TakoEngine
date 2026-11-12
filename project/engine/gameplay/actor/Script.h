@@ -8,7 +8,7 @@ namespace Tako {
   /// クラス名とファイル名（.h）を同じにする。Assets からのドロップとファイルを開く処理が名前で探すため
   /// </summary>
   TCLASS()
-  class Script : public Component {
+  class TAKO_API Script : public Component {
     GENERATED_BODY()
 
   protected: //メンバー関数

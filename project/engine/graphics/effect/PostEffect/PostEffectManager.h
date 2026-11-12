@@ -22,7 +22,7 @@ namespace Tako {
   /// <summary>
   /// 本編のポストエフェクトスタックの窓口。組み込みエフェクトの登録・一時エフェクトのフェード・プロファイルの保存と読み込み・編集 UI を受け持つ
   /// </summary>
-  class PostEffectManager {
+  class TAKO_API PostEffectManager {
   private: // シングルトン設定
     static std::unique_ptr<PostEffectManager> instance_;
 

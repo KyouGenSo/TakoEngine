@@ -26,7 +26,7 @@ namespace Tako {
   /// 既存の EmitterManager を活用し、ボーン位置の自動更新を実現
   /// キャラクターの手足や武器装着位置などへのエフェクト配置に有用
   /// </summary>
-  class BoneTracker
+  class TAKO_API BoneTracker
   {
   public: //メンバー関数
     /// <summary>

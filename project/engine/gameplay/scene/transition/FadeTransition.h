@@ -13,7 +13,7 @@ namespace Tako {
   /// フェードトランジション
   /// 画面全体を指定色でフェードイン/アウトする演出
   /// </summary>
-  class FadeTransition : public ITransitionEffect
+  class TAKO_API FadeTransition : public ITransitionEffect
   {
   public: //メンバー関数
     /// <summary>
@@ -36,7 +36,7 @@ namespace Tako {
     /// <summary>
     /// デストラクタ
     /// </summary>
-    ~FadeTransition() override = default;
+    ~FadeTransition() override;
 
     /// <summary>
     /// 初期化

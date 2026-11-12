@@ -15,7 +15,7 @@ namespace Tako {
 /// <summary>
 /// オーディオ管理クラス。XAudio2を使用して WAVE/MP3ファイルの読み込み、再生、音量/ピッチ制御を行う
 /// </summary>
-class Audio
+class TAKO_API Audio
 {
 
 private: // シングルトン設定

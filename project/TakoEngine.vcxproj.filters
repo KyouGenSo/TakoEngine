@@ -156,6 +156,9 @@
     <ClCompile Include="engine\editor\NewScript.cpp">
       <Filter>editor</Filter>
     </ClCompile>
+    <ClCompile Include="engine\editor\Project.cpp">
+      <Filter>editor</Filter>
+    </ClCompile>
     <ClCompile Include="engine\gameplay\scene\SceneSelfTest.cpp">
       <Filter>gameplay\scene</Filter>
     </ClCompile>
@@ -307,6 +310,9 @@
       <Filter>gameplay\audio</Filter>
     </ClCompile>
     <ClCompile Include="engine\core\base\TakoFramework.cpp">
+      <Filter>core\base</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\core\base\GameModule.cpp">
       <Filter>core\base</Filter>
     </ClCompile>
     <ClCompile Include="engine\core\base\WinMain.cpp">
@@ -554,6 +560,9 @@
     <ClInclude Include="engine\editor\NewScript.h">
       <Filter>editor</Filter>
     </ClInclude>
+    <ClInclude Include="engine\editor\Project.h">
+      <Filter>editor</Filter>
+    </ClInclude>
     <ClInclude Include="engine\gameplay\scene\SceneSelfTest.h">
       <Filter>gameplay\scene</Filter>
     </ClInclude>
@@ -699,6 +708,9 @@
       <Filter>core\base</Filter>
     </ClInclude>
     <ClInclude Include="engine\core\base\TakoFramework.h">
+      <Filter>core\base</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\core\base\GameModule.h">
       <Filter>core\base</Filter>
     </ClInclude>
     <ClInclude Include="engine\core\base\WinApp.h">

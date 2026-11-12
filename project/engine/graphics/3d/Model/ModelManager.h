@@ -17,7 +17,7 @@ namespace Tako {
   /// モデルリソースの一元管理を行うシングルトンクラス
   /// モデルのキャッシュ管理と Assimp ベースのモデル読み込みを提供
   /// </summary>
-  class ModelManager
+  class TAKO_API ModelManager
   {
   private: //シングルトン設定
     static std::unique_ptr<ModelManager> instance_;

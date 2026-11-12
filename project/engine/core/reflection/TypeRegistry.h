@@ -14,7 +14,7 @@ namespace Tako {
   /// <summary>
   /// TCLASS 1 つ分の型情報。生成される StaticType() が static に持つ
   /// </summary>
-  struct TypeInfo {
+  struct TAKO_API TypeInfo {
     using CreateFunc = std::unique_ptr<TObject>(*)();
 
     const char*     name;
@@ -48,7 +48,7 @@ namespace Tako {
   /// <summary>
   /// 型の名前から TypeInfo を引く表。保存したファイルの "type" から物を作るときに使う
   /// </summary>
-  class TypeRegistry {
+  class TAKO_API TypeRegistry {
   public: //メンバー関数
     static TypeRegistry* GetInstance();
 
@@ -56,6 +56,11 @@ namespace Tako {
     /// 型を登録する。同じ名前の別の型があれば警告して上書きしない
     /// </summary>
     void Register(const TypeInfo& type);
+
+    /// <summary>
+    /// 登録を外す。ゲームの DLL を外す前に、その DLL の型を全部外す（TypeInfo は DLL の中にある）
+    /// </summary>
+    void Unregister(std::string_view name);
 
     /// <summary>
     /// 名前から作る。未登録か作れない型なら nullptr
@@ -72,11 +77,16 @@ namespace Tako {
     /// </summary>
     std::vector<const TypeInfo*> GetCreatableTypes(const TypeInfo& base) const;
 
+    /// <summary>
+    /// 登録されている型の名前（名前順）
+    /// </summary>
+    std::vector<std::string> GetTypeNames() const;
+
   private: //メンバー変数
     std::map<std::string, const TypeInfo*, std::less<>> types_;
   };
 
-  // 生成された TakoReflection.gen.cpp が定義する。TakoFramework::Initialize が両方呼ぶ
+  // 生成された TakoReflection.gen.cpp が定義する。Engine は TakoFramework::Initialize、Game は GameModule::Load が呼ぶ
   void RegisterTypes_Engine();
   void RegisterTypes_Game();
 

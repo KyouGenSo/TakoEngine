@@ -15,7 +15,7 @@ namespace Tako {
   /// <summary>
   /// 平行光源・点光源・スポットライトを管理するクラス
   /// </summary>
-  class Light
+  class TAKO_API Light
   {
   public: //定数
     // ライトの最大数

@@ -12,7 +12,7 @@ namespace Tako {
   /// キューブマップの空を描く。テクスチャの差し替えは描画の直前に行う
   /// </summary>
   TCLASS(DisplayName = "Sky Box")
-  class SkyBoxComponent : public Component {
+  class TAKO_API SkyBoxComponent : public Component {
     GENERATED_BODY()
 
   public: //メンバー関数

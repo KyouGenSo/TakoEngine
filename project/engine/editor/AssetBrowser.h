@@ -17,7 +17,7 @@ namespace Tako {
   /// <summary>
   /// resources / Script / EngineResources 配下のファイルをフォルダツリーとサムネイルで閲覧するウィンドウ
   /// </summary>
-  class AssetBrowser {
+  class TAKO_API AssetBrowser {
   public: //定数
     static constexpr const char* kAssetPayload = "TAKO_ASSET";  ///< ファイルの D&D ペイロード型。データは作業ディレクトリからの終端付き UTF-8 パス（区切りは /）
 
@@ -171,17 +171,17 @@ namespace Tako {
   /// <summary>
   /// OS の関連付けアプリで開く（フォルダはエクスプローラー）
   /// </summary>
-  void OpenWithShell(const std::filesystem::path& path);
+  TAKO_API void OpenWithShell(const std::filesystem::path& path);
 
   /// <summary>
   /// ソースファイルを、そのファイルをプロジェクトに含むソリューションを開いている VS で開く。そういう VS が無ければ OpenWithShell
   /// </summary>
-  void OpenSourceFile(const std::filesystem::path& path);
+  TAKO_API void OpenSourceFile(const std::filesystem::path& path);
 
   /// <summary>
   /// Script フォルダから「型名.h」を探して OpenSourceFile で開く
   /// </summary>
-  void OpenScriptFile(std::string_view typeName);
+  TAKO_API void OpenScriptFile(std::string_view typeName);
 
   // アセットの種類（kind）："Texture" "Cubemap" "Model" "Material" "Scene" "Prefab" "ParticlePreset" "AnimationClip" "UILayout" "BehaviorTree"
   // "PostEffectProfile" "Sound" "Font" "Script"。値（value）は、その種類を読む関数に渡す文字列（テクスチャのキー・モデルのパス・名前・型名など）
@@ -189,37 +189,37 @@ namespace Tako {
   /// <summary>
   /// path が kind のファイルなら値。違えば nullopt
   /// </summary>
-  std::optional<std::string> ToAssetValue(std::string_view kind, const std::filesystem::path& path);
+  TAKO_API std::optional<std::string> ToAssetValue(std::string_view kind, const std::filesystem::path& path);
 
   /// <summary>
   /// 値のファイルのパス。見つからなければ空
   /// </summary>
-  std::filesystem::path ToAssetPath(std::string_view kind, std::string_view value);
+  TAKO_API std::filesystem::path ToAssetPath(std::string_view kind, std::string_view value);
 
   /// <summary>
   /// kind のファイルの値の一覧（名前順）
   /// </summary>
-  std::vector<std::string> ListAssets(std::string_view kind);
+  TAKO_API std::vector<std::string> ListAssets(std::string_view kind);
 
   /// <summary>
   /// 開いているドロップ先（BeginDragDropTarget の中）で、kind のファイルを受け取る。違う種類は受け取らず、ドロップ先も光らせない。落とされたフレームだけ値を返す
   /// </summary>
-  std::optional<std::string> AcceptAssetPayload(std::string_view kind);
+  TAKO_API std::optional<std::string> AcceptAssetPayload(std::string_view kind);
 
   /// <summary>
   /// 直前のアイテムへの kind のファイルのドロップ。落とされたフレームだけ値を返す
   /// </summary>
-  std::optional<std::string> AcceptAssetDrop(std::string_view kind);
+  TAKO_API std::optional<std::string> AcceptAssetDrop(std::string_view kind);
 
   /// <summary>
   /// kind のファイルを開く処理を登録する（Assets のダブルクリックとアセットの欄の Open が使う）
   /// </summary>
-  void SetAssetOpener(std::string_view kind, std::function<void(const std::string& value)> opener);
+  TAKO_API void SetAssetOpener(std::string_view kind, std::function<void(const std::string& value)> opener);
 
   /// <summary>
   /// 値のファイルを開く。kind の処理が登録されていなければ、ソースファイルは VS で、他は関連付けで開く
   /// </summary>
-  void OpenAsset(std::string_view kind, const std::string& value);
+  TAKO_API void OpenAsset(std::string_view kind, const std::string& value);
 
 } // namespace Tako
 

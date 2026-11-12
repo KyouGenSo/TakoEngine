@@ -33,7 +33,7 @@ struct ObjectOverrides;
 ///   3. 既定（マテリアルの値・モデルの既定のマテリアル・DrawItem の初期値）
 /// 値（色など）は描くときにマテリアルの同じ名前の値へ重ねるので、どのマテリアルで描いても効く
 /// </summary>
-class Object3d {
+class TAKO_API Object3d {
 
 public: // 構造体
   // 座標変換行列データ（VP は Renderer が渡す視点 CB 側で掛ける）

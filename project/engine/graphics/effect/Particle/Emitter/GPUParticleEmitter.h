@@ -18,7 +18,7 @@ namespace Tako {
   /// パーティクル射出タイミング制御、色・速度・スケールの範囲指定、一時エミッター機能をサポート
   /// std::enable_shared_from_this により安全な shared_ptr の生成を実現
   /// </summary>
-  class GPUParticleEmitter : public std::enable_shared_from_this<GPUParticleEmitter>
+  class TAKO_API GPUParticleEmitter : public std::enable_shared_from_this<GPUParticleEmitter>
   {
   public: //メンバー関数
     /// <summary>

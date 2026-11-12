@@ -15,7 +15,7 @@ namespace Tako {
   /// <summary>
   /// 描画パスの編集ウィンドウ。オブジェクトパス（RenderPasses.json）の追加・並べ替えと、前のフレームの描画の手順の一覧を出す
   /// </summary>
-  class RenderPipelineWindow {
+  class TAKO_API RenderPipelineWindow {
   public: //メンバー関数
     /// <summary>
     /// 初期化

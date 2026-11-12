@@ -49,6 +49,7 @@ public class TakoHeaderTool : Task
         public List<string> Namespaces = new List<string>();
         public List<KeyValuePair<string, string>> Specifiers = new List<KeyValuePair<string, string>>();
         public bool HasGeneratedBody;
+        public bool HasApi;  // class の後ろに TAKO_API がある（DLL の外から使える）
         public List<PropertyDecl> Properties = new List<PropertyDecl>();
         public string File;
         public int Line;
@@ -406,7 +407,7 @@ public class TakoHeaderTool : Task
         decl.Specifiers.Add(new KeyValuePair<string, string>(key, value));
     }
 
-    // class/struct 名 [final] [: 継承] { まで読む。成功すると j は "{" を指す
+    // class/struct [TAKO_API] 名 [final] [: 継承] { まで読む。成功すると j は "{" を指す
     private ClassDecl ParseClassHead(string path, List<Token> tokens, ref int j, int[] lineStarts, string marker)
     {
         if (j >= tokens.Count || (tokens[j].Text != "class" && tokens[j].Text != "struct"))
@@ -416,12 +417,14 @@ public class TakoHeaderTool : Task
         }
         int line = LineOf(lineStarts, tokens[j].Start);
         j++;
+        bool hasApi = j < tokens.Count && tokens[j].Text == "TAKO_API";
+        if (hasApi) j++;
         if (j >= tokens.Count || tokens[j].Kind != TokenKind.Identifier)
         {
             Error(path, line, marker + " のクラス名が読めない");
             return null;
         }
-        var decl = new ClassDecl { Name = tokens[j].Text, File = path, Line = line };
+        var decl = new ClassDecl { Name = tokens[j].Text, File = path, Line = line, HasApi = hasApi };
         j++;
         if (j < tokens.Count && tokens[j].Text == "final") j++;
         if (j < tokens.Count && tokens[j].Text == ":")
@@ -617,6 +620,13 @@ public class TakoHeaderTool : Task
                     : "TCLASS " + c.Name + " の本体に GENERATED_BODY() が無い");
                 continue;
             }
+            // エンジンの型の定義は TakoEngine.dll に入る。印が無いと、ゲームの DLL のリンクで初めて分かる
+            if (ModuleName == "Engine" && !c.HasApi)
+            {
+                string keyword = c.IsStruct ? "struct" : "class";
+                Error(c.File, c.Line, c.Name + " に TAKO_API が無い（" + keyword + " TAKO_API " + c.Name + " と書く）");
+                continue;
+            }
             if (c.IsStruct) GenerateStruct(sb, c);
             else GenerateClass(sb, c);
         }
@@ -637,6 +647,17 @@ public class TakoHeaderTool : Task
         sb.AppendLine("  }");
         sb.AppendLine();
         sb.AppendLine("} // namespace Tako");
+        if (ModuleName != "Engine")
+        {
+            // DLL のビルドで、エンジン（GameModule）が名前で探す入口
+            sb.AppendLine();
+            sb.AppendLine("#ifdef TAKO_SHARED");
+            sb.AppendLine("extern \"C\" __declspec(dllexport) void TakoRegisterGameTypes()");
+            sb.AppendLine("{");
+            sb.AppendLine("  Tako::RegisterTypes_" + ModuleName + "();");
+            sb.AppendLine("}");
+            sb.AppendLine("#endif");
+        }
         return sb.ToString().Replace("\r\n", "\n");
     }
 

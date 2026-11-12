@@ -38,7 +38,7 @@ struct EditorConfig {
 /// imgui-node-editor を直接使用してビヘイビアツリーを視覚的に編集する。
 /// ノードの型と表示名・分類・色は、TCLASS を付けた BTNode の派生から集める。
 /// </summary>
-class BehaviorTreeEditor {
+class TAKO_API BehaviorTreeEditor {
 public: //メンバー関数
   /// <summary>
   /// コンストラクタ。Initialize() を別途呼ぶこと。

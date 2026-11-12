@@ -25,7 +25,7 @@ namespace Tako {
   /// <summary>
   /// GPU パーティクルのエミッター / フォースフィールド / グループを編集するエディタ（3ペイン: リスト / プレビュー / インスペクタ）
   /// </summary>
-  class ParticleEditor {
+  class TAKO_API ParticleEditor {
   public: //構造体
     /// <summary>
     /// インスペクタ表示対象

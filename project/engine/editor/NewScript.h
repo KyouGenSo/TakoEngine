@@ -13,18 +13,18 @@ namespace Tako {
   /// <param name="name">クラス名（ファイル名と同じになる）</param>
   /// <param name="directory">作業フォルダからの相対パス（Script かその下）</param>
   /// <returns>失敗した理由。成功なら空</returns>
-  std::string CreateScriptFiles(const std::string& name, const std::string& directory);
+  TAKO_API std::string CreateScriptFiles(const std::string& name, const std::string& directory);
 
   /// <summary>
   /// 名前を入れる窓を、次の DrawNewScriptPopup で開く
   /// </summary>
   /// <param name="directory">作る場所（作業フォルダからの相対パス）</param>
-  void RequestNewScriptPopup(const std::string& directory);
+  TAKO_API void RequestNewScriptPopup(const std::string& directory);
 
   /// <summary>
   /// 名前を入れる窓を描く。毎フレーム 1 回、他のウィンドウの外で呼ぶ
   /// </summary>
-  void DrawNewScriptPopup();
+  TAKO_API void DrawNewScriptPopup();
 
 } // namespace Tako
 

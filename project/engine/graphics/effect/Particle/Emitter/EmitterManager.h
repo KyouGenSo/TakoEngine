@@ -33,7 +33,7 @@ namespace Tako {
   /// グループ機能、プリセット保存/読み込み、コピー&ペースト機能を提供
   /// JSON 形式でのエミッター設定の永続化に対応
   /// </summary>
-  class EmitterManager
+  class TAKO_API EmitterManager
   {
   public: //定数
     static constexpr int kCopySlotCount = 5;  ///< コピーバッファのスロット数

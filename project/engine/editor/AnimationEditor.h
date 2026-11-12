@@ -22,7 +22,7 @@ namespace Tako {
   /// AnimationClip をドープシートとインスペクターで編集するエディタ。
   /// クリップは名前ごとに共有のインスタンスなので、編集はゲーム側の再生にもすぐ反映される
   /// </summary>
-  class AnimationEditor {
+  class TAKO_API AnimationEditor {
   private: //定数
     static constexpr float kSpeedOptions[] = { 0.25f, 0.5f, 1.0f, 2.0f };
     static constexpr float kSnapOptions[]  = { 0.0f, 0.01f, 0.02f, 0.05f, 0.1f, 0.25f };  ///< 秒。0 はスナップなし

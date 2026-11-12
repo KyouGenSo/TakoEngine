@@ -24,7 +24,7 @@ namespace Tako {
   /// <summary>
   /// 描画物の登録を受け付け、シェーダーのパスごとに並べ替えて描く。視点・ライト・シャドウなど描画物に共通の値も渡す
   /// </summary>
-  class Renderer {
+  class TAKO_API Renderer {
   private: // シングルトン設定
     static std::unique_ptr<Renderer> instance_;
 

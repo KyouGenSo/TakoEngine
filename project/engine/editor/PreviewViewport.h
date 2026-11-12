@@ -20,7 +20,7 @@ namespace Tako {
   /// <summary>
   /// エディタプレビュー用オフスクリーン描画先一式（カラーRT/深度/RTV/DSV/SRV）と ImGui 表示ヘルパ
   /// </summary>
-  class PreviewViewport {
+  class TAKO_API PreviewViewport {
   public: //メンバー関数
     PreviewViewport() = default;
     ~PreviewViewport();

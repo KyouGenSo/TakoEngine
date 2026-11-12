@@ -15,7 +15,7 @@ class SrvManager;
 /// 深度テクスチャ（DSV/SRV）・ビューポート・解像度ポリシー・リソース状態遷移を管理する。
 /// 品質プリセットと PCF カーネルサイズによる動的な解像度変更（遅延再作成）に対応。
 /// </summary>
-class ShadowMap
+class TAKO_API ShadowMap
 {
 public: //定数
     static const uint32_t DEFAULT_SHADOW_MAP_SIZE = 2048; ///< デフォルトのシャドウマップ解像度（2048x2048）

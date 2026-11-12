@@ -30,7 +30,7 @@ namespace Tako {
   /// 今のシーンの Actor を Hierarchy と Inspector で編集する。シーンを変える操作は予約し、Update（描画の前）で行う。
   /// 複数選べる（Ctrl / Shift クリック）。Inspector とギズモの相手は、最後に選んだ 1 つ
   /// </summary>
-  class SceneEditor {
+  class TAKO_API SceneEditor {
   public: //メンバー関数
     SceneEditor() = default;
     // tracker_ が this を持つので複製しない

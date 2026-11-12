@@ -32,7 +32,7 @@ namespace Tako {
   /// <summary>
   /// デバッグ UI の統合管理クラス。シーンヒエラルキー、インスペクター、コンソール、パフォーマンスモニターなどを提供
   /// </summary>
-  class DebugUIManager {
+  class TAKO_API DebugUIManager {
   public: //構造体
     /// <summary>
     /// ログタイプ

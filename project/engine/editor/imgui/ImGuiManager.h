@@ -17,7 +17,7 @@ namespace Tako {
   /// <summary>
   /// ImGui の DirectX 12統合管理クラス。初期化、描画、スタイル設定を担当
   /// </summary>
-  class ImGuiManager
+  class TAKO_API ImGuiManager
   {
   public: //定数
     // 大きいアイコンのフォントに焼く字。GetLargeIconFont で描くアイコンはここに足す

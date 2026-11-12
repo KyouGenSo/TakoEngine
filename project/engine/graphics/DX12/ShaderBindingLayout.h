@@ -49,7 +49,7 @@ namespace Tako {
   /// パイプラインを構成するシェーダー群のリフレクションから作るルートシグネチャの内容。
   /// CBV はルート CBV、SRV/UAV はディスクリプタ 1 つ分のテーブル、サンプラーは Common.hlsli の固定 static sampler
   /// </summary>
-  class ShaderBindingLayout {
+  class TAKO_API ShaderBindingLayout {
   public: //定数
     static constexpr uint32_t kMaxParameters = 64;  ///< 束縛済みかどうかを 64bit マスクで持つ上限
 

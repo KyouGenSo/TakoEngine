@@ -15,7 +15,7 @@ namespace Tako {
   /// ルートノードとブラックボードを保持し、Tick() で 1 フレーム実行する。
   /// ツリーのファイルは BehaviorTreeEditor が書き、LoadFromJSON が読む。
   /// </summary>
-  class BehaviorTree {
+  class TAKO_API BehaviorTree {
   public: //メンバー関数
     /// <summary>
     /// コンストラクタ。内部ブラックボードを生成する。

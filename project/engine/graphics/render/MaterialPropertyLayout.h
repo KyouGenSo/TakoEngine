@@ -37,7 +37,7 @@ namespace Tako {
   /// <summary>
   /// マテリアル（またはポストエフェクト）が持つ値の並び。定数バッファのメンバーとテクスチャを名前で引ける
   /// </summary>
-  struct MaterialPropertyLayout {
+  struct TAKO_API MaterialPropertyLayout {
     uint32_t                      constantSize = 0;  ///< 定数バッファの大きさ（0 なら定数なし）
     std::vector<MaterialProperty> properties;
     std::vector<std::string>      textures;          ///< Texture2D と TextureCube の名前（エンジンが描画時に渡すものは除く）
