@@ -1185,7 +1185,9 @@ void ed::EditorContext::Begin(const char* id, const ImVec2& size)
         m_NavigateAction.StopMoveOverEdge();
 
     auto previousSize        = m_Canvas.Rect().GetSize();
-    auto previousVisibleRect = m_Canvas.ViewRect();
+    // [TakoEngine] Was m_Canvas.ViewRect(), the view applied to the canvas at the previous Begin().
+    // A view set after that (zero-duration NavigateTo, panning) was overwritten with that stale rect when the canvas size changed.
+    auto previousVisibleRect = m_NavigateAction.GetViewRect();
     m_IsCanvasVisible = m_Canvas.Begin(id, canvasSize);
 
     //ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0, 0, 0, 0));
