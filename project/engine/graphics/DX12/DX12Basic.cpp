@@ -159,7 +159,10 @@ namespace Tako {
     //------------------------------------------------------DXGI ファクトリの生成------------------------------------------------------
     UINT dxgiFactoryFlags = 0;
 #ifdef _DEBUG
-    dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
+    // デバッグレイヤーが入っていない PC（Windows の「グラフィックス ツール」が無い）では、DEBUG 付きの生成が失敗する
+    if (debugController) {
+      dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
+    }
 #endif
     hr = CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&dxgiFactory_));
     assert(SUCCEEDED(hr));
