@@ -341,3 +341,5 @@ nul
 
 # tools/package_sdk.ps1 が作る SDK の zip
 /dist/
+
+Docs/
