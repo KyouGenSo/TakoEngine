@@ -8,15 +8,15 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ソリューション項目
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "02_Engine", "TakoEngine.vcxproj", "{5667D840-F080-4F39-B016-FD2C1B9375E7}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TakoEditor", "editor_app\TakoEditor.vcxproj", "{D2423785-7BBF-406B-9E55-037159CF84FE}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TakoEngine", "TakoEngine.vcxproj", "{5667D840-F080-4F39-B016-FD2C1B9375E7}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DirectXTex", "externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj", "{371B9FA9-4C90-4AC6-A123-ACED756D6C77}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "imgui", "externals\imgui\imgui.vcxproj", "{FFA51982-471D-4530-909E-C8FB8FE4F342}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "imgui-node-editor", "externals\imgui-node-editor\imgui-node-editor.vcxproj", "{0517D071-8CDD-4F0B-BDC1-05FCF6331BCC}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TakoEditor", "editor_app\TakoEditor.vcxproj", "{D2423785-7BBF-406B-9E55-037159CF84FE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
