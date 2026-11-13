@@ -244,28 +244,49 @@ namespace Tako::Project {
     }
 
     /// <summary>
-    /// 場所と名前を選ぶダイアログを出し、そこにプロジェクトを作る
+    /// 場所と名前を選ぶダイアログを出し、作る場所を確かめてから、そこにプロジェクトを作る
     /// </summary>
-    /// <returns>作ったプロジェクトのルート。取り消したか失敗したら空</returns>
+    /// <returns>作ったプロジェクトのルート。取り消したら空</returns>
     fs::path BrowseForNewProject()
     {
-      wchar_t       buffer[MAX_PATH] = L"MyGame";
-      OPENFILENAMEW dialog{};
-      dialog.lStructSize = sizeof(dialog);
-      dialog.lpstrTitle  = L"New Project: choose the folder and type the project name";
-      dialog.lpstrFile   = buffer;
-      dialog.nMaxFile    = MAX_PATH;
-      dialog.Flags       = OFN_NOCHANGEDIR | OFN_PATHMUSTEXIST;
-      if (!GetSaveFileNameW(&dialog)) {
-        return {};
+      // 最初はドキュメントを開く（エディタの exe があるエンジンのフォルダーから始めない）
+      PWSTR        documents = nullptr;
+      std::wstring initialFolder;
+      if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_Documents, 0, nullptr, &documents))) {
+        initialFolder = documents;
       }
-      const fs::path    target = buffer;
-      const std::string error  = Create(ToUtf8(target.filename()), target.parent_path());
-      if (!error.empty()) {
-        ShowError(error);
-        return {};
+      // 失敗時も解放が必要
+      CoTaskMemFree(documents);
+
+      // 作れるまで、場所を選び直せる
+      while (true) {
+        wchar_t       buffer[MAX_PATH] = L"MyGame";
+        OPENFILENAMEW dialog{};
+        dialog.lStructSize     = sizeof(dialog);
+        dialog.lpstrTitle      = L"New Project: choose the folder and type the project name";
+        dialog.lpstrFile       = buffer;
+        dialog.nMaxFile        = MAX_PATH;
+        dialog.lpstrInitialDir = initialFolder.c_str();
+        dialog.Flags           = OFN_NOCHANGEDIR | OFN_PATHMUSTEXIST;
+        if (!GetSaveFileNameW(&dialog)) {
+          return {};
+        }
+        const fs::path     target  = buffer;
+        const std::wstring message = StringUtility::ConvertString(std::format(
+          "Create the project here?\n\n    {}\n\nIt uses this engine by a link (not a copy):\n    {}\n\nNo: choose another location",
+          ToUtf8(target), ToUtf8(GetEngineRoot())));
+        const int answer = MessageBoxW(nullptr, message.c_str(), kDialogTitle, MB_YESNOCANCEL | MB_ICONQUESTION);
+        if (answer == IDCANCEL) {
+          return {};
+        }
+        if (answer == IDYES) {
+          const std::string error = Create(ToUtf8(target.filename()), target.parent_path());
+          if (error.empty()) {
+            return target;
+          }
+          ShowError(error);
+        }
       }
-      return target;
     }
 
     /// <summary>
@@ -343,6 +364,12 @@ namespace Tako::Project {
     const fs::path  templateRoot = engineRoot / "templates" / "Default";
     if (!fs::is_directory(templateRoot, error)) {
       return "The project template was not found: " + ToUtf8(templateRoot);
+    }
+    // エンジンのフォルダーの中に作ると、プロジェクトのエンジンへのリンクが自分の親を指す
+    for (fs::path folder = target; folder.has_relative_path(); folder = folder.parent_path()) {
+      if (fs::equivalent(folder, engineRoot, error)) {
+        return "A project cannot be created inside the engine folder (" + ToUtf8(engineRoot) + "). Choose another location";
+      }
     }
     if (fs::exists(target, error) && !fs::is_empty(target, error)) {
       return "The folder already exists and is not empty: " + ToUtf8(target);
