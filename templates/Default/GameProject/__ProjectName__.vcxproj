@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" InitialTargets="TakoCheckEngine" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
@@ -39,7 +39,7 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\Engine\TakoEngine\build\TakoEngineGame.props" />
+    <Import Project="..\Engine\TakoEngine\build\TakoEngineGame.props" Condition="exists('$(MSBuildProjectDirectory)\..\Engine\TakoEngine\build\TakoEngineGame.props')" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <ItemGroup>
@@ -48,6 +48,11 @@
   <ItemGroup>
     <ClInclude Include="Script\Sample\Spinner.h" />
   </ItemGroup>
+  <!-- エンジンが無い（clone した直後など）と設定ファイルを読めないので、ビルドの最初に、やることを伝えて止める。
+       Visual Studio が裏で行う設計時ビルドでは出さない（プロジェクトを開いただけでエラーが並ばないように） -->
+  <Target Name="TakoCheckEngine" Condition="'$(DesignTimeBuild)' != 'true' and !exists('$(MSBuildProjectDirectory)\..\Engine\TakoEngine\build\TakoEngineGame.props')">
+    <Error Text="TakoEngine is not installed in this project. Run UpdateEngine.bat in the project root, then build again. (エンジンがありません。プロジェクトのルートの UpdateEngine.bat を実行してから、もう一度ビルドしてください)" />
+  </Target>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

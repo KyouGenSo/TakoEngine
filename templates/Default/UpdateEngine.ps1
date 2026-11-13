@@ -5,7 +5,7 @@
 #   UpdateEngine.bat -Zip <ファイル>   手元の SDK の zip（エンジンの tools\package_sdk.ps1 が作る）を入れる。バージョンが同じでも入れ替える
 #
 # Engine\TakoEngine の中身で、やり方が決まる:
-#   ジャンクション   別の場所のエンジンを共有している。そのフォルダーで更新するよう知らせて終わる
+#   ジャンクション   別の場所のエンジンをリンクで共有している。何も変えず、共有先と更新のしかたを知らせて終わる
 #   .git がある      ソース。タグ v<バージョン> に切り替えて、エンジンをビルドする
 #   それ以外         SDK。GitHub のリリースの zip に入れ替える
 param([string]$Version = "", [switch]$Source, [string]$Zip = "")
@@ -33,8 +33,21 @@ $current = ""
 if (Test-Path "$engine\VERSION") { $current = (Get-Content "$engine\VERSION" -TotalCount 1).Trim() }
 
 if ($item -and $item.LinkType -eq "Junction") {
-  Write-Host "Engine\TakoEngine は、別の場所のエンジンを指しています: $($item.Target)"
-  Write-Host "エンジンの更新は、そのフォルダーで行ってください（今のバージョン: $current）。"
+  $shared = "$($item.Target)"
+  Write-Host "このプロジェクトは、エンジンを自分の中に持たず、別の場所のエンジンをリンクで共有しています（何も変更していません）。"
+  Write-Host "  共有しているエンジン: $shared （バージョン: $current）"
+  Write-Host ""
+  Write-Host "エンジンを更新するには:"
+  if (Test-Path "$shared\.git") {
+    Write-Host "  そのフォルダーで git pull し、project\TakoEngine.sln をビルドし直します（git で取ったエンジンです）。"
+  }
+  else {
+    Write-Host "  新しいリリースの zip（https://github.com/$repository/releases）を、そのフォルダーに開き直します。"
+  }
+  Write-Host "  同じエンジンを共有している他のプロジェクトも、一緒に新しくなります。"
+  Write-Host ""
+  Write-Host "このプロジェクトだけにエンジンを持たせるには、リンクを外してから、もう一度 UpdateEngine.bat を実行します:"
+  Write-Host "  cmd /c rmdir `"$engine`""
   exit 0
 }
 
@@ -90,7 +103,8 @@ else {
   }
   $package = $Zip
   if ($package -eq "") {
-    $package = Join-Path $env:TEMP "TakoEngine-$target.zip"
+    # 同時に流した別の UpdateEngine とぶつからないよう、名前にプロセス ID を入れる
+    $package = Join-Path $env:TEMP "TakoEngine-$target-$PID.zip"
     $url     = "https://github.com/$repository/releases/download/v$target/TakoEngine-$target.zip"
     Write-Host "ダウンロード: $url"
     try { Invoke-WebRequest $url -OutFile $package -UseBasicParsing } catch { Fail "ダウンロードできませんでした: $($_.Exception.Message)" }
