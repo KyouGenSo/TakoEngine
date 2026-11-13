@@ -27,6 +27,7 @@ namespace Tako::Project {
 
   /// <summary>
   /// エンジンの templates/Default から、location/name にプロジェクトを作る。エンジンは、動いているエンジンへのジャンクションでつなぐ
+  /// （IsEngineInsideProject なら、つながずに写しを持たせる）。エンジンのフォルダーの中には作れない
   /// </summary>
   /// <param name="name">プロジェクトの名前（英数字と _。フォルダーとファイルの名前になる）</param>
   /// <returns>失敗の理由。成功なら空</returns>
@@ -58,6 +59,12 @@ namespace Tako::Project {
   /// エンジンのルート（bin・build・project・templates のあるフォルダー）
   /// </summary>
   TAKO_API std::filesystem::path GetEngineRoot();
+
+  /// <summary>
+  /// 動いているエンジンが、別のプロジェクトの中にある写し（UpdateEngine.bat が入れた物）なら true。
+  /// このエンジンで作るプロジェクトは、エンジンへリンクせず、自分の写しを持つ
+  /// </summary>
+  TAKO_API bool IsEngineInsideProject();
 
   /// <summary>
   /// エンジンの VERSION ファイルの中身（例: 2.1.0）

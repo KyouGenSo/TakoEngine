@@ -23,6 +23,7 @@ namespace Tako {
     constexpr float       kFieldWidth = 460.0f;
 
     bool        isPopupRequested = false;
+    bool        copiesEngine     = false;  // 窓を開いた時点の Project::IsEngineInsideProject（毎フレーム、フォルダーを調べない）
     std::string popupError;
     char        nameBuffer[64]{};
     char        locationBuffer[512]{};
@@ -59,6 +60,7 @@ namespace Tako {
     if (isPopupRequested) {
       isPopupRequested = false;
       popupError.clear();
+      copiesEngine  = Project::IsEngineInsideProject();
       nameBuffer[0] = '\0';
       // 今のプロジェクトの隣を既定にする
       strncpy_s(locationBuffer, ToUtf8(Project::GetRoot().parent_path()).c_str(), _TRUNCATE);
@@ -78,8 +80,8 @@ namespace Tako {
     ImGui::SetNextItemWidth(kFieldWidth);
     ImGui::InputText("##Location", locationBuffer, sizeof(locationBuffer));
     ImGui::PushTextWrapPos(kFieldWidth);
-    ImGui::TextDisabled("%s", std::format("Creates {} and links it to this engine (TakoEngine {})", ToUtf8(FromUtf8(locationBuffer) / (nameBuffer[0] ? nameBuffer : "<name>")),
-                                         Project::GetEngineVersion()).c_str());
+    ImGui::TextDisabled("%s", std::format("Creates {} and {} (TakoEngine {})", ToUtf8(FromUtf8(locationBuffer) / (nameBuffer[0] ? nameBuffer : "<name>")),
+                                         copiesEngine ? "copies this engine into it" : "links it to this engine", Project::GetEngineVersion()).c_str());
     ImGui::PopTextWrapPos();
     if (!popupError.empty()) {
       ImGui::PushTextWrapPos(kFieldWidth);

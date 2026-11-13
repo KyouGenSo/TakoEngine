@@ -67,6 +67,16 @@ namespace Tako::Project {
     }
 
     /// <summary>
+    /// 動いているエンジンの実体（リンク越しに起動されていても、リンク先のフォルダー）
+    /// </summary>
+    fs::path RealEngineRoot()
+    {
+      std::error_code error;
+      const fs::path  real = fs::canonical(GetEngineRoot(), error);
+      return error ? GetEngineRoot() : real;
+    }
+
+    /// <summary>
     /// folder にある .takoproject
     /// </summary>
     /// <returns>無ければ空</returns>
@@ -273,8 +283,9 @@ namespace Tako::Project {
         }
         const fs::path     target  = buffer;
         const std::wstring message = StringUtility::ConvertString(std::format(
-          "Create the project here?\n\n    {}\n\nIt uses this engine by a link (not a copy):\n    {}\n\nNo: choose another location",
-          ToUtf8(target), ToUtf8(GetEngineRoot())));
+          "Create the project here?\n\n    {}\n\n{}\n    {}\n\nNo: choose another location", ToUtf8(target),
+          IsEngineInsideProject() ? "This engine is copied into the project (it belongs to another project):" : "It uses this engine by a link (not a copy):",
+          ToUtf8(RealEngineRoot())));
         const int answer = MessageBoxW(nullptr, message.c_str(), kDialogTitle, MB_YESNOCANCEL | MB_ICONQUESTION);
         if (answer == IDCANCEL) {
           return {};
@@ -360,7 +371,7 @@ namespace Tako::Project {
     }
     std::error_code error;
     const fs::path  target       = fs::weakly_canonical(location, error) / name;
-    const fs::path  engineRoot   = GetEngineRoot();
+    const fs::path  engineRoot   = RealEngineRoot();
     const fs::path  templateRoot = engineRoot / "templates" / "Default";
     if (!fs::is_directory(templateRoot, error)) {
       return "The project template was not found: " + ToUtf8(templateRoot);
@@ -410,12 +421,18 @@ namespace Tako::Project {
       return "Could not copy the engine resources to " + ToUtf8(target / "GameProject" / "EngineResources");
     }
 
-    // エンジンは写さず、動いているエンジンをジャンクションでつなぐ（管理者の権限が要らず、すぐ終わる）
+    const fs::path engineFolder = target / "Engine" / "TakoEngine";
     fs::create_directories(target / "Engine", error);
+    if (IsEngineInsideProject()) {
+      // 動いているエンジンは、別のプロジェクトの持ち物。リンクすると、そのプロジェクトがエンジンを更新したり消えたりしたときに巻き込まれるので、写しを持たせる
+      fs::copy(engineRoot, engineFolder, fs::copy_options::recursive, error);
+      return error ? "Could not copy the engine to " + ToUtf8(engineFolder) : std::string();
+    }
+    // エンジンは写さず、動いているエンジンをジャンクションでつなぐ（管理者の権限が要らず、すぐ終わる）
     int exitCode = -1;
-    ChildProcess::Run(std::format(L"cmd.exe /c mklink /J \"{}\" \"{}\"", (target / "Engine" / "TakoEngine").wstring(), engineRoot.wstring()), &exitCode);
+    ChildProcess::Run(std::format(L"cmd.exe /c mklink /J \"{}\" \"{}\"", engineFolder.wstring(), engineRoot.wstring()), &exitCode);
     if (exitCode != 0) {
-      return "Could not link the engine to " + ToUtf8(target / "Engine" / "TakoEngine");
+      return "Could not link the engine to " + ToUtf8(engineFolder);
     }
     return {};
   }
@@ -482,6 +499,14 @@ namespace Tako::Project {
     GetModuleFileNameW(GetModuleHandleW(L"TakoEngine.dll"), path, MAX_PATH);
     // <エンジン>/bin/Debug/TakoEngine.dll
     return fs::path(path).parent_path().parent_path().parent_path();
+  }
+
+  bool IsEngineInsideProject()
+  {
+    // <プロジェクト>/Engine/TakoEngine に UpdateEngine.bat が入れた写し。git で取ったエンジンは数えない（作業中のソースで、写すには大きい）
+    const fs::path  engine = RealEngineRoot();
+    std::error_code error;
+    return engine.parent_path().filename() == "Engine" && !FindMarker(engine.parent_path().parent_path()).empty() && !fs::exists(engine / ".git", error);
   }
 
   std::string GetEngineVersion()
