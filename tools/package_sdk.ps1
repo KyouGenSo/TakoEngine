@@ -29,13 +29,15 @@ if (-not $SkipBuild) {
 if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
 if (Test-Path $zip) { Remove-Item $zip -Force }
 
-# 入れない物: git の管理・中間ファイル・エンジンのビルドにしか要らない物（assimp の lib、TakoEngine.dll に入った後の静的ライブラリ）
+# 入れない物: git の管理・中間ファイル・エンジンのビルドにしか要らない物（assimp の lib、TakoEngine.dll に入った後の静的ライブラリ）・
+# エンジンの開発にしか要らない物（git の対象外の Docs など・Visual Studio の作業フォルダー .vs）
 $excludeDirs = @(
-  "$root\.git", "$root\.github", "$root\.claude", "$root\obj", "$root\bin", "$root\dist", "$root\Generated",
+  "$root\.git", "$root\.github", "$root\.claude", "$root\obj", "$root\bin", "$root\dist", "$root\Generated", "$root\Docs", ".vs",
   "$root\project\externals\assimp\lib", "$root\project\externals\DirectXTex\Bin"
 )
-$excludeFiles = @("*.user", ".git", ".gitignore", ".gitattributes")
-robocopy $root $stage /E /XD $excludeDirs /XF $excludeFiles /NFL /NDL /NJH /NJS /NP | Out-Null
+$excludeFiles = @("*.user", ".git", ".gitignore", ".gitattributes", "CLAUDE.md")
+# /R /W: 他のプロセスが掴んでいるファイルは 2 回だけやり直して、失敗にする（robocopy の既定は 30 秒おきに 100 万回で、終わらない）
+robocopy $root $stage /E /XD $excludeDirs /XF $excludeFiles /R:2 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null
 if ($LASTEXITCODE -ge 8) { throw "robocopy 失敗 (exit code: $LASTEXITCODE)" }
 
 # bin は配る物だけを入れる。Release は /GL なしでビルドした方を、bin\Release として入れる
@@ -43,9 +45,9 @@ $releaseBin = "$root\bin\Release$releaseSuffix"
 if (-not (Test-Path "$releaseBin\TakoEngine.lib")) { throw "$releaseBin がありません。-SkipBuild なしで流してください" }
 $intermediate = @("*.ilk", "*.idb", "*.exp", "*.iobj", "*.ipdb", "imgui.*", "imgui-node-editor.*")
 # Debug の DirectXTex は TakoEngine.dll に入っている。Release の DirectXTex.lib は、ゲームがリンクするので入れる
-robocopy "$root\bin\Debug" "$stage\bin\Debug" /E /XF ($intermediate + "DirectXTex.*") /NFL /NDL /NJH /NJS /NP | Out-Null
+robocopy "$root\bin\Debug" "$stage\bin\Debug" /E /XF ($intermediate + "DirectXTex.*") /R:2 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null
 if ($LASTEXITCODE -ge 8) { throw "robocopy 失敗 (exit code: $LASTEXITCODE)" }
-robocopy $releaseBin "$stage\bin\Release" /E /XF $intermediate /NFL /NDL /NJH /NJS /NP | Out-Null
+robocopy $releaseBin "$stage\bin\Release" /E /XF $intermediate /R:2 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null
 if ($LASTEXITCODE -ge 8) { throw "robocopy 失敗 (exit code: $LASTEXITCODE)" }
 
 $required = @(
