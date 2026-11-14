@@ -74,6 +74,17 @@ namespace Tako {
     TAKO_API ColorHSV ToHSV() const;
 
     /// <summary>
+    /// sRGB の色（画面に出る値）をリニアの色（光の強さ）にする。a は変えない
+    /// RGB の最大 m が 1 を超える色（HDR）は、色合いを sRGB のまま、m をリニアの強さの倍率として扱う
+    /// </summary>
+    TAKO_API Color ToLinear() const;
+
+    /// <summary>
+    /// ToLinear の逆。往復すると元の色に戻る
+    /// </summary>
+    TAKO_API Color ToSRGB() const;
+
+    /// <summary>
     /// 0〜255 の色。各成分を 0〜1 に丸めてから変換する
     /// </summary>
     constexpr Color32 ToColor32() const;

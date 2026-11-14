@@ -16,6 +16,7 @@
 - `Gradient`（色の段階。`Evaluate(t)` がその位置の色を返す。`TPROPERTY` にすると、Inspector で段階を編集でき、段階の上に色の帯が出る。`Gradient.h`）
 - `RandomEngine` の `GetHueColor`（色相だけランダム）・`GetColor(from, to)`（2 色の間のランダム）
 - `TPROPERTY` に `Tako::Color` と `Tako::Gradient` を使える。`Color` は、`Color` の指定子が無くても色の欄になる
+- `Color::ToLinear`・`ToSRGB`（1 を超える色は、色合いを sRGB のまま、強さをリニアの倍率として扱う）。シェーダーの `Common.hlsli` に `SRGBToLinear`・`LinearToSRGB`
 
 ### 変更
 - スクリプトのコンパイルのエラーと警告で、日本語が文字化けしていたのを直した（MSBuild は UTF-8 で書くのに、Shift_JIS として読んでいた）。行の末尾の `[プロジェクトのパス]` も、落ちるようになった

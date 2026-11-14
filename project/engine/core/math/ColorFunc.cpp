@@ -11,6 +11,25 @@
 
 namespace Tako
 {
+  namespace {
+
+    // sRGB の規格（IEC 61966-2-1）の区分式。暗い所だけ直線になる
+    float SRGBToLinear(float c) { return c <= 0.04045f ? c / 12.92f : std::pow((c + 0.055f) / 1.055f, 2.4f); }
+    float LinearToSRGB(float c) { return c <= 0.0031308f ? c * 12.92f : 1.055f * std::pow(c, 1.0f / 2.4f) - 0.055f; }
+
+  } // namespace
+
+  Color Color::ToLinear() const {
+    const float scale = (std::max)({ r, g, b, 1.0f });
+    return { SRGBToLinear(r / scale) * scale, SRGBToLinear(g / scale) * scale, SRGBToLinear(b / scale) * scale, a };
+  }
+
+  Color Color::ToSRGB() const {
+    // ToLinear は最大の成分を 1 → 1 に写すので、リニアの側でも最大の成分が同じ倍率になる
+    const float scale = (std::max)({ r, g, b, 1.0f });
+    return { LinearToSRGB(r / scale) * scale, LinearToSRGB(g / scale) * scale, LinearToSRGB(b / scale) * scale, a };
+  }
+
   Color Color::FromHSV(float hue, float saturation, float value, float alpha) {
     return ColorHSV(hue, saturation, value, alpha).ToColor();
   }
@@ -111,6 +130,13 @@ namespace Tako
     // 緑から赤の真ん中は黄。灰色の側は相手の色相を使う
     assert(IsNear(Color::LerpHSV(Color::kGreen, Color::kRed, 0.5f), Color::kYellow));
     assert(IsNear(Color::LerpHSV(Color::kWhite, Color::kBlue, 0.5f), Color(0.5f, 0.5f, 1.0f)));
+
+    // sRGB とリニア。1 を超える色は往復で戻る
+    const float half = 128.0f / 255.0f;
+    assert(IsNear(Color(half, half, half).ToLinear(), Color(0.2159f, 0.2159f, 0.2159f), 0.0005f));
+    assert(IsNear(Color(0.5f, 0.5f, 0.5f, 0.25f).ToSRGB(), Color(0.7354f, 0.7354f, 0.7354f, 0.25f), 0.0005f));
+    assert(IsNear(Color(4.0f, 2.0f, 0.5f).ToLinear(), Color(4.0f, 0.8562f, 0.0574f)));
+    assert(IsNear(Color(4.0f, 2.0f, 0.5f).ToLinear().ToSRGB(), Color(4.0f, 2.0f, 0.5f)));
 
     assert(IsNear(Color::FromKelvin(6600.0f), Color::kWhite));
     assert(IsNear(Color::FromKelvin(2000.0f), Color(1.0f, 0.537f, 0.055f), 0.01f));
