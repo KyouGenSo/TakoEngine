@@ -28,7 +28,7 @@
 - エンジンの色の引数・戻り値・データを、`Vector4` から `Color` にした（`SetColor`・`SetMaterialColor`・`GetMaterialColor`・`DrawLine` など。GPU に送る構造体の色の欄も）。`Vector4` と `Color` は互いに自動で変わるので、`Vector4` で書いたゲームのコードはそのまま動く。保存の形（4 つの数の配列）は変えていない
 - `Color::kWhite`・`kClear` の型と、`Color::FromHex`・`FromHSV` の戻り値を、`Vector4` から `Color` にした（`Color` は名前空間から構造体になった）
 - `Vector4` の `==`・`!=` を、メンバーから名前空間の関数にした（`Color` どうしや、`Color` と `Vector4` を比べられるように。中身は同じ）
-- マテリアルの定数を CPU のメモリに持ち、描くたびに 1 フレーム用のバッファ（`UploadAllocator`）へ写して渡すようにした
+- マテリアルの定数を CPU のメモリに持ち、描くたびに 1 フレーム用のバッファ（`UploadAllocator`）へ写して渡すようにした。このバッファは、4 MB のページが尽きるとページを足す（今までは 4 MB を超えると、Release では確かめずにバッファの外へ書いていた）
 - `TextureManager::GetSRVGPUHandle`（ImGui 用）は、ファイルの値のまま読むビューを返す
 
 ### 直しが要る変更（ゲーム側）

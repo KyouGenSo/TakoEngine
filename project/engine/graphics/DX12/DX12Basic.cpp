@@ -271,7 +271,19 @@ namespace Tako {
 
     context_.Initialize(device_.Get(), &pipelineCache_, &uploadAllocator_);
 
-    uploadAllocator_.Initialize(device_.Get(), kUploadAllocatorCapacity);
+    uploadAllocator_.Initialize(device_.Get(), kUploadPageSize);
+
+#ifdef _DEBUG
+    // ページが尽きたら別のページへ移り、Reset で最初のページの先頭へ戻ることを確かめる
+    UploadAllocator check;
+    check.Initialize(device_.Get(), 512);
+    const D3D12_GPU_VIRTUAL_ADDRESS first = check.Allocate(256).gpu;
+    check.Allocate(256);
+    const D3D12_GPU_VIRTUAL_ADDRESS third = check.Allocate(256).gpu;
+    assert((third < first || third >= first + 512) && "UploadAllocator: wrote past the page");
+    check.Reset();
+    assert(check.Allocate(256).gpu == first && "UploadAllocator: Reset did not return to the first page");
+#endif
   }
 
   void DX12Basic::CreateSwapChain()

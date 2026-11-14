@@ -32,7 +32,7 @@ namespace Tako {
     static constexpr DXGI_FORMAT kDepthReadFormat = DXGI_FORMAT_R32_FLOAT;       ///< シーン深度を SRV で読むとき
 
   private: //定数
-    static constexpr size_t kUploadAllocatorCapacity = 4 * 1024 * 1024;  ///< 1 フレームの一時定数の総量（バイト）
+    static constexpr size_t kUploadPageSize = 4 * 1024 * 1024;  ///< 1 フレームの一時定数のページの大きさ（バイト）。足りなければページが増える
 
   public: //構造体
     /// <summary>
