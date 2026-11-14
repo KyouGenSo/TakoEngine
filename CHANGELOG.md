@@ -13,7 +13,7 @@
 - リリースを公開したとき、Discord に通知する（`.github/workflows/Release.yml`。ウェブフックの URL は、リポジトリの Secrets の `DISCORD_WEBHOOK`。無ければ送らない）
 - ライセンス（MIT。`LICENSE`）。SDK の zip にも入る
 - 色の構造体 `Color`（RGBA）・`ColorHSV`・`Color32`（0〜255）と、変換（`ToHSV`・`ToColor`・`ToColor32`・`Color32::FromHex`・`ToHex`）。名前の付いた色（`Color::kRed` など 10 個）、`WithAlpha`・`Lerp`・`LerpHSV`（色相環に沿って補間）・`FromKelvin`（色温度）・`+ - * /`（`ColorFunc.h`）
-- `Gradient`（色の段階。`Evaluate(t)` がその位置の色を返す。`TPROPERTY` にすると、Inspector で段階を編集できる。`Gradient.h`）
+- `Gradient`（色の段階。`Evaluate(t)` がその位置の色を返す。`TPROPERTY` にすると、Inspector で段階を編集でき、段階の上に色の帯が出る。`Gradient.h`）
 - `RandomEngine` の `GetHueColor`（色相だけランダム）・`GetColor(from, to)`（2 色の間のランダム）
 - `TPROPERTY` に `Tako::Color` と `Tako::Gradient` を使える。`Color` は、`Color` の指定子が無くても色の欄になる
 

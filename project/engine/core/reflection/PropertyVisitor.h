@@ -79,6 +79,7 @@ namespace Tako {
   };
 
   class PropertyVisitor;
+  struct Gradient;
 
   template<class T>
   struct IsStdVector : std::false_type {};
@@ -114,6 +115,9 @@ namespace Tako {
         VisitVector(key, value, meta);
       } else if constexpr (ReflectedStruct<T>) {
         if (BeginStruct(key, meta)) {
+          if constexpr (std::is_same_v<T, Gradient>) {
+            PreviewGradient(value);
+          }
           value.Reflect(*this);
           EndStruct();
         }
@@ -135,6 +139,11 @@ namespace Tako {
     /// </summary>
     virtual bool BeginStruct(const char* key, const PropertyMeta& meta) = 0;
     virtual void EndStruct() = 0;
+
+    /// <summary>
+    /// Gradient の中へ入った直後、段階より前に呼ぶ。Inspector が色の帯を描く（保存と読み込みは何もしない）
+    /// </summary>
+    virtual void PreviewGradient(const Gradient&) {}
 
     /// <summary>
     /// std::vector の中へ入る。count を書き換えると要素数がその数になる

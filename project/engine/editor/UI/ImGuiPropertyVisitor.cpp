@@ -5,6 +5,7 @@
 #include "Actor.h"
 #include "AssetBrowser.h"
 #include "BaseScene.h"
+#include "Gradient.h"
 #include "SceneEditor.h"
 #include "SceneManager.h"
 #include "TObject.h"
@@ -12,6 +13,7 @@
 
 #include "imgui.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <format>
@@ -120,6 +122,23 @@ namespace Tako {
   void ImGuiPropertyVisitor::EndStruct()
   {
     LeaveNested();
+  }
+
+  void ImGuiPropertyVisitor::PreviewGradient(const Gradient& gradient)
+  {
+    UI::Label("Preview");
+    const ImVec2 min = ImGui::GetCursorScreenPos();
+    const ImVec2 max = { min.x + ImGui::CalcItemWidth(), min.y + ImGui::GetFrameHeight() };
+    ImGui::Dummy(ImVec2(max.x - min.x, max.y - min.y));
+
+    // 透明な所が分かるよう、ColorButton と同じ市松模様を下に敷く
+    ImDrawList* drawList = ImGui::GetWindowDrawList();
+    ImGui::RenderColorRectWithAlphaCheckerboard(drawList, min, max, 0, (max.y - min.y) * 0.5f, ImVec2(0.0f, 0.0f));
+    // 1 px ごとに Evaluate の色で塗る（同じ位置に重ねた段階の、色の切り替わりもそのまま出る）
+    for (float x = min.x; x < max.x; x += 1.0f) {
+      const Color color = gradient.Evaluate((x - min.x + 0.5f) / (max.x - min.x));
+      drawList->AddRectFilled(ImVec2(x, min.y), ImVec2((std::min)(x + 1.0f, max.x), max.y), ImGui::ColorConvertFloat4ToU32(ImVec4(color.r, color.g, color.b, color.a)));
+    }
   }
 
   bool ImGuiPropertyVisitor::BeginArray(const char* key, const PropertyMeta& meta, size_t& count)

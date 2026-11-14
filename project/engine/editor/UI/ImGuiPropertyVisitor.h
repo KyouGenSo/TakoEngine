@@ -25,6 +25,11 @@ namespace Tako {
     void EndStruct() override;
 
     /// <summary>
+    /// 段階の色を、左（0）から右（1）への帯で描く
+    /// </summary>
+    void PreviewGradient(const Gradient& gradient) override;
+
+    /// <summary>
     /// 「名前 (個数)」の見出しと + / - を出す。+ / - で count を変える
     /// </summary>
     bool BeginArray(const char* key, const PropertyMeta& meta, size_t& count) override;
