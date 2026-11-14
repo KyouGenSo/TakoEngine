@@ -65,7 +65,7 @@ namespace Tako {
 #endif // _DEBUG
   }
 
-  void LineRenderer::DrawLine(const Vector3& start, const Vector3& end, const Vector4& color)
+  void LineRenderer::DrawLine(const Vector3& start, const Vector3& end, const Color& color)
   {
 #ifdef _DEBUG
     // プレビューバッチ中はプレビュー専用バッファへ振り向ける
@@ -105,7 +105,7 @@ namespace Tako {
     lineIndex_ += kVertexCountLine;
   }
 
-  void LineRenderer::DrawArrow(const Vector3& start, const Vector3& end, const Vector4& color, float headSize)
+  void LineRenderer::DrawArrow(const Vector3& start, const Vector3& end, const Color& color, float headSize)
   {
     // 本体の線を描画
     DrawLine(start, end, color);
@@ -135,7 +135,7 @@ namespace Tako {
     DrawLine(end, headBase - upPerp * halfHead, color);
   }
 
-  void LineRenderer::DrawSphere(const Vector3& center, const float radius, const Vector4& color, uint32_t subdivision)
+  void LineRenderer::DrawSphere(const Vector3& center, const float radius, const Color& color, uint32_t subdivision)
   {
     const float kLonEvery = 2.0f * std::numbers::pi_v<float> / static_cast<float>(subdivision);
     const float kLatEvery = std::numbers::pi_v<float> / static_cast<float>(subdivision);
@@ -168,7 +168,7 @@ namespace Tako {
     }
   }
 
-  void LineRenderer::DrawAABB(const AABB& aabb, const Vector4& color)
+  void LineRenderer::DrawAABB(const AABB& aabb, const Color& color)
   {
     Vector3 min = aabb.min;
     Vector3 max = aabb.max;
@@ -201,7 +201,7 @@ namespace Tako {
     DrawLine(p4, p8, color);
   }
 
-  void LineRenderer::DrawOBB(const OBB& obb, const Vector4& color)
+  void LineRenderer::DrawOBB(const OBB& obb, const Color& color)
   {
     // OBB の8つの頂点を取得
     std::array<Vector3, 8> vertices = obb.GetVertices();
@@ -225,7 +225,7 @@ namespace Tako {
     DrawLine(vertices[3], vertices[7], color);
   }
 
-  void LineRenderer::DrawGrid(const float size, const float cellSize, const Vector4& color, float height)
+  void LineRenderer::DrawGrid(const float size, const float cellSize, const Color& color, float height)
   {
     // 手編集された設定ファイル由来の 0・負値・NaN を弾く
     if (!(size > 0.0f) || !(cellSize > 0.0f)) {

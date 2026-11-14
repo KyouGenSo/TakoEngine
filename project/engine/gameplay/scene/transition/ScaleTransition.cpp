@@ -37,7 +37,7 @@ namespace Tako {
   {
   }
 
-  ScaleTransition::ScaleTransition(const Vector2& center, const Vector4& color, bool expandOut)
+  ScaleTransition::ScaleTransition(const Vector2& center, const Color& color, bool expandOut)
     : center_(center)
     , expandOut_(expandOut)
     , color_(color)
@@ -209,7 +209,7 @@ namespace Tako {
     }
   }
 
-  void ScaleTransition::SetColor(const Vector4& color)
+  void ScaleTransition::SetColor(const Color& color)
   {
     color_ = color;
   }

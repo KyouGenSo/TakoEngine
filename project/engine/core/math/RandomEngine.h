@@ -2,6 +2,7 @@
 #include <numbers>
 #include <random>
 #include <thread>
+#include "ColorFunc.h"
 #include "Vector2.h"
 #include "Vector3.h"
 
@@ -96,6 +97,16 @@ namespace Tako {
     /// <param name="probability">確率（0.0～1.0）</param>
     /// <returns>判定結果</returns>
     bool GetBool(float probability = 0.5f);
+
+    /// <summary>
+    /// 色相だけがランダムな色
+    /// </summary>
+    Color GetHueColor(float saturation = 1.0f, float value = 1.0f);
+
+    /// <summary>
+    /// from と to を結ぶ線の上のランダムな色
+    /// </summary>
+    Color GetColor(const Color& from, const Color& to);
 
     /// <summary>
     /// シードの設定（デバッグ用）

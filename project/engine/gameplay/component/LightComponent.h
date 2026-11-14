@@ -1,6 +1,6 @@
 #pragma once
 #include "Component.h"
-#include "Vector4.h"
+#include "ColorFunc.h"
 
 #include <numbers>
 
@@ -30,8 +30,8 @@ namespace Tako {
   private: //メンバー変数
     TPROPERTY(Edit)
     Type    type_           = Type::Directional;
-    TPROPERTY(Edit, Color)
-    Vector4 color_          = { 1.0f, 1.0f, 1.0f, 1.0f };
+    TPROPERTY(Edit)
+    Color   color_          = { 1.0f, 1.0f, 1.0f, 1.0f };
     TPROPERTY(Edit, ClampMin = 0, Speed = 0.01)
     float   intensity_      = 1.0f;
     TPROPERTY(Edit, Tooltip = "点光源・スポットライトの届く距離", ClampMin = 0, Speed = 0.1)

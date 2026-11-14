@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "GpuResource.h"
-#include "Vector4.h"
+#include "ColorFunc.h"
 
 namespace Tako {
 
@@ -35,7 +35,7 @@ namespace Tako {
     /// <param name="textureFormat">ピクセルフォーマット</param>
     /// <param name="clearColor">クリアカラー</param>
     /// <param name="forceOpaqueAlpha">SRV の α を常に 1 として読ませる (最終表示用 RT 向け)</param>
-    void Create(DX12Basic* dx12, uint32_t textureWidth, uint32_t textureHeight, DXGI_FORMAT textureFormat, const Vector4& clearColor, bool forceOpaqueAlpha = false);
+    void Create(DX12Basic* dx12, uint32_t textureWidth, uint32_t textureHeight, DXGI_FORMAT textureFormat, const Color& clearColor, bool forceOpaqueAlpha = false);
 
     /// <summary>
     /// リソース解放と RTV/SRV インデックスの返却
@@ -53,7 +53,7 @@ namespace Tako {
       uint32_t    width        = 0;
       uint32_t    height       = 0;
       DXGI_FORMAT format       = DXGI_FORMAT_R8G8B8A8_UNORM;
-      Vector4     clearColor{};                               ///< 最適化クリア値（これ以外の色でクリアするとデバッグレイヤーが警告する）
+      Color       clearColor{};                               ///< 最適化クリア値（これ以外の色でクリアするとデバッグレイヤーが警告する）
 
       bool operator==(const TextureDesc&) const = default;
     };

@@ -119,7 +119,7 @@ namespace Tako {
     void SetShininess(float shininess);
     void SetEnableLighting(bool enableLighting);
     void SetEnableHighlight(bool enableHighlight);
-    void SetMaterialColor(const Vector4& color);
+    void SetMaterialColor(const Color& color);
     void SetUvTransform(const Transform& uvTransform);
     void SetEnvironmentTexture(uint32_t textureIndex);
     void SetEnableEnvMap(bool enableEnvMap);
@@ -217,7 +217,7 @@ namespace Tako {
     /// マテリアルカラーを取得
     /// </summary>
     /// <returns>マテリアルカラー（RGBA）</returns>
-    Vector4 GetMaterialColor() const;
+    Color GetMaterialColor() const;
 
     /// <summary>
     /// 登録されているアニメーション名のリストを取得

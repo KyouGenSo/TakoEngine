@@ -10,7 +10,7 @@
 
 #include "RenderEvent.h"
 #include "RenderGraph.h"
-#include "Vector4.h"
+#include "ColorFunc.h"
 
 namespace Tako {
 
@@ -153,12 +153,12 @@ namespace Tako {
     /// <summary>
     /// シーン色のクリア色を設定し、RT の最適化クリア値を揃えるため作り直しを要求する
     /// </summary>
-    void SetClearColor(const Vector4& color);
+    void SetClearColor(const Color& color);
 
     //=========================================
     //Getter
     //=========================================
-    const Vector4& GetClearColor() const { return clearColor_; }
+    const Color& GetClearColor() const { return clearColor_; }
     RenderGraph& GetGraph() { return graph_; }
     RenderTexture& GetSceneColor() { return sceneColor_; }
     std::vector<ObjectPassSettings>& GetObjectPasses() { return objectPassSettings_; }
@@ -196,7 +196,7 @@ namespace Tako {
     RenderTexture sceneColor_;                                     ///< ポストエフェクト前のシーン（シーン解像度）
     RenderTexture final_;                                          ///< ポストエフェクト後に UI を重ねた結果（ウィンドウ解像度）
     uint32_t      depthSrvIndex_ = 0;                              ///< シーン深度の SRV（ポストエフェクトが読む）
-    Vector4       clearColor_    = { 0.17f, 0.17f, 0.17f, 1.0f };
+    Color         clearColor_    = { 0.17f, 0.17f, 0.17f, 1.0f };
 
     //差し込んだパス
     std::vector<InjectedPass>       passes_;

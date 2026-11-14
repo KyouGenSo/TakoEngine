@@ -21,7 +21,7 @@ namespace Tako {
   {
   }
 
-  FadeTransition::FadeTransition(const Vector4& color)
+  FadeTransition::FadeTransition(const Color& color)
     : fadeColor_(color)
     , textureName_("EngineResources/Texture/white.dds")
     , state_(NONE)
@@ -144,7 +144,7 @@ namespace Tako {
     }
   }
 
-  void FadeTransition::SetColor(const Vector4& color)
+  void FadeTransition::SetColor(const Color& color)
   {
     fadeColor_ = color;
     if (fadeSprite_) {

@@ -1,5 +1,7 @@
 #pragma once
 #include "ActorRef.h"
+#include "ColorFunc.h"
+#include "Gradient.h"
 #include "TObject.h"
 #include "Vector3.h"
 
@@ -59,6 +61,10 @@ namespace Tako {
     std::vector<Mode> modes_;
     TPROPERTY(Edit)
     ActorRef target_;
+    TPROPERTY(Edit)
+    Color tint_ = Color::kWhite;
+    TPROPERTY(Edit)
+    Gradient gradient_;
   };
 
 #ifdef _DEBUG

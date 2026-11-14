@@ -35,6 +35,8 @@ namespace Tako {
   static void from_json(const json& j, Vector2& v) { v = { j.at(0).get<float>(), j.at(1).get<float>() }; }
   static void to_json(json& j, const Vector4& v) { j = { v.x, v.y, v.z, v.w }; }
   static void from_json(const json& j, Vector4& v) { v = { j.at(0).get<float>(), j.at(1).get<float>(), j.at(2).get<float>(), j.at(3).get<float>() }; }
+  static void to_json(json& j, const Color& c) { j = { c.r, c.g, c.b, c.a }; }
+  static void from_json(const json& j, Color& c) { c = { j.at(0).get<float>(), j.at(1).get<float>(), j.at(2).get<float>(), j.at(3).get<float>() }; }
   static void to_json(json& j, const UISlice& s) { j = { { "border", s.border }, { "visible", s.regionVisible }, { "textures", s.regionTextures } }; }
   static void from_json(const json& j, UISlice& s) {
     const UISlice defaults;
@@ -565,7 +567,7 @@ namespace Tako {
     }
   }
 
-  void UILayout::SetColor(const std::string& name, const Vector4& color) {
+  void UILayout::SetColor(const std::string& name, const Color& color) {
     if (UIElement* element = Find(name)) {
       element->color = color;
     }
@@ -573,7 +575,7 @@ namespace Tako {
 
   void UILayout::SetAlpha(const std::string& name, float alpha) {
     if (UIElement* element = Find(name)) {
-      element->color.w = alpha;
+      element->color.a = alpha;
     }
   }
 
@@ -641,14 +643,14 @@ namespace Tako {
     return element ? element->rotation : 0.0f;
   }
 
-  Vector4 UILayout::GetColor(const std::string& name) const {
+  Color UILayout::GetColor(const std::string& name) const {
     const UIElement* element = Find(name);
-    return element ? element->color : Vector4{};
+    return element ? element->color : Color{};
   }
 
   float UILayout::GetAlpha(const std::string& name) const {
     const UIElement* element = Find(name);
-    return element ? element->color.w : 0.0f;
+    return element ? element->color.a : 0.0f;
   }
 
   Vector2 UILayout::GetAnchorMin(const std::string& name) const {

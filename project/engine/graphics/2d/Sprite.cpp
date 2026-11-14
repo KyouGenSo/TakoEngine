@@ -297,7 +297,7 @@ namespace Tako {
 
     // 色設定
     if (materialData_) {
-      UI::ColorEdit4("Color", &materialData_->color.x);
+      UI::ColorEdit4("Color", &materialData_->color.r);
     }
 
     // フリップ設定

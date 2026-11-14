@@ -1,5 +1,6 @@
 #pragma once
 #include "ActorRef.h"
+#include "ColorFunc.h"
 #include "Transform.h"
 #include "Vector2.h"
 #include "Vector3.h"
@@ -99,7 +100,7 @@ namespace Tako {
     virtual ~PropertyVisitor() = default;
 
     /// <summary>
-    /// 生成された Reflect が呼ぶ入口。enum は int64_t にして渡し、TSTRUCT と std::vector は中へ降りる
+    /// 生成された Reflect が呼ぶ入口。enum は int64_t、Color は Vector4 にして渡し、TSTRUCT と std::vector は中へ降りる
     /// </summary>
     /// <param name="key">保存キー。nullptr なら配列の要素</param>
     template<class T>
@@ -116,6 +117,13 @@ namespace Tako {
           value.Reflect(*this);
           EndStruct();
         }
+      } else if constexpr (std::is_same_v<T, Color>) {
+        // Vector4 と同じ形で保存し、Color の指定子が無くても色の欄にする
+        PropertyMeta colorMeta = meta;
+        colorMeta.flags |= kPropColor;
+        Vector4 raw = value;
+        Visit(key, raw, colorMeta);
+        value = raw;
       } else {
         Visit(key, value, meta);
       }

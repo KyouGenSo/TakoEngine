@@ -76,14 +76,14 @@ namespace Tako {
     void ApplyPalette(ImGuiStyle& style, const Palette& palette) {
       static_assert(ImGuiCol_COUNT == 58, "ImGuiCol が増減したら割り当てを見直す");
 
-      const Vector4 mantle   = Color::FromHex(palette.mantle);
-      const Vector4 base     = Color::FromHex(palette.base);
-      const Vector4 surface0 = Color::FromHex(palette.surface0);
-      const Vector4 surface1 = Color::FromHex(palette.surface1);
-      const Vector4 surface2 = Color::FromHex(palette.surface2);
-      const Vector4 text     = Color::FromHex(palette.text);
-      const Vector4 accent   = Color::FromHex(palette.accent);
-      const Vector4 accent2  = Color::FromHex(palette.accent2);
+      const Color   mantle   = Color::FromHex(palette.mantle);
+      const Color   base     = Color::FromHex(palette.base);
+      const Color   surface0 = Color::FromHex(palette.surface0);
+      const Color   surface1 = Color::FromHex(palette.surface1);
+      const Color   surface2 = Color::FromHex(palette.surface2);
+      const Color   text     = Color::FromHex(palette.text);
+      const Color   accent   = Color::FromHex(palette.accent);
+      const Color   accent2  = Color::FromHex(palette.accent2);
 
       Vector4 colors[ImGuiCol_COUNT] = {};
       colors[ImGuiCol_Text]                      = text;
@@ -115,11 +115,11 @@ namespace Tako {
       colors[ImGuiCol_HeaderHovered]             = Vector4::Lerp(surface1, surface2, 0.5f);
       colors[ImGuiCol_HeaderActive]              = surface2;
       colors[ImGuiCol_Separator]                 = surface1;
-      colors[ImGuiCol_SeparatorHovered]          = Color::WithAlpha(accent, 0.78f);
+      colors[ImGuiCol_SeparatorHovered]          = accent.WithAlpha(0.78f);
       colors[ImGuiCol_SeparatorActive]           = accent;
-      colors[ImGuiCol_ResizeGrip]                = Color::WithAlpha(accent, 0.2f);
-      colors[ImGuiCol_ResizeGripHovered]         = Color::WithAlpha(accent, 0.67f);
-      colors[ImGuiCol_ResizeGripActive]          = Color::WithAlpha(accent, 0.95f);
+      colors[ImGuiCol_ResizeGrip]                = accent.WithAlpha(0.2f);
+      colors[ImGuiCol_ResizeGripHovered]         = accent.WithAlpha(0.67f);
+      colors[ImGuiCol_ResizeGripActive]          = accent.WithAlpha(0.95f);
       colors[ImGuiCol_TabHovered]                = surface1;
       colors[ImGuiCol_Tab]                       = surface0;
       colors[ImGuiCol_TabSelected]               = surface1;
@@ -127,7 +127,7 @@ namespace Tako {
       colors[ImGuiCol_TabDimmed]                 = mantle;
       colors[ImGuiCol_TabDimmedSelected]         = surface0;
       colors[ImGuiCol_TabDimmedSelectedOverline] = Color::kClear;
-      colors[ImGuiCol_DockingPreview]            = Color::WithAlpha(accent, 0.7f);
+      colors[ImGuiCol_DockingPreview]            = accent.WithAlpha(0.7f);
       colors[ImGuiCol_DockingEmptyBg]            = mantle;
       colors[ImGuiCol_PlotLines]                 = accent;
       colors[ImGuiCol_PlotLinesHovered]          = accent2;
@@ -137,14 +137,14 @@ namespace Tako {
       colors[ImGuiCol_TableBorderStrong]         = surface1;
       colors[ImGuiCol_TableBorderLight]          = surface0;
       colors[ImGuiCol_TableRowBg]                = Color::kClear;
-      colors[ImGuiCol_TableRowBgAlt]             = Color::WithAlpha(text, 0.04f);
+      colors[ImGuiCol_TableRowBgAlt]             = text.WithAlpha(0.04f);
       colors[ImGuiCol_TextLink]                  = accent;
-      colors[ImGuiCol_TextSelectedBg]            = Color::WithAlpha(accent, 0.35f);
-      colors[ImGuiCol_DragDropTarget]            = Color::WithAlpha(accent2, 0.9f);
+      colors[ImGuiCol_TextSelectedBg]            = accent.WithAlpha(0.35f);
+      colors[ImGuiCol_DragDropTarget]            = accent2.WithAlpha(0.9f);
       colors[ImGuiCol_NavCursor]                 = accent;
-      colors[ImGuiCol_NavWindowingHighlight]     = Color::WithAlpha(text, 0.7f);
-      colors[ImGuiCol_NavWindowingDimBg]         = Color::WithAlpha(text, 0.2f);
-      colors[ImGuiCol_ModalWindowDimBg]          = Color::WithAlpha(text, 0.35f);
+      colors[ImGuiCol_NavWindowingHighlight]     = text.WithAlpha(0.7f);
+      colors[ImGuiCol_NavWindowingDimBg]         = text.WithAlpha(0.2f);
+      colors[ImGuiCol_ModalWindowDimBg]          = text.WithAlpha(0.35f);
 
       for (int i = 0; i < ImGuiCol_COUNT; ++i) {
         style.Colors[i] = ImVec4(colors[i].x, colors[i].y, colors[i].z, colors[i].w);

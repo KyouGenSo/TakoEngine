@@ -114,7 +114,7 @@ namespace Tako {
 
     // === Rendering ===
     ImGui::Text("Rendering");
-    UI::ColorEdit4("Color", &color_.x);
+    UI::ColorEdit4("Color", &color_.r);
     UI::Checkbox("Visible", &isVisible_);
     UI::Checkbox("DebugViewVisible", &isDebugViewVisible_);
 

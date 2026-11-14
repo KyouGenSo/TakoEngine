@@ -1,4 +1,5 @@
 #pragma once
+#include "ColorFunc.h"
 #include"Vector4.h"
 #include"Vector2.h"
 #include"Vector3.h"
@@ -53,7 +54,7 @@ namespace Tako {
     /// </summary>
     struct MaterialConstants
     {
-      Vector4 color;
+      Color   color;
       Matrix4x4 uvTransform;
     };
 
@@ -107,8 +108,8 @@ namespace Tako {
     //Setter
     //============================================================
     void SetTransform(const Transform& transform) { transform_ = transform; }
-    void SetColor(const Vector4& color) { materialData_->color = color; }
-    void SetAlpha(const float alpha) { materialData_->color.w = alpha; }
+    void SetColor(const Color& color) { materialData_->color = color; }
+    void SetAlpha(const float alpha) { materialData_->color.a = alpha; }
     void SetPos(const Vector2& pos) { pos_ = pos; }
     void SetRotation(const float rotation) { rotation_ = rotation; }
     void SetSize(const Vector2& size) { size_ = size; }
@@ -157,7 +158,7 @@ namespace Tako {
     [[nodiscard]] Transform GetTransform() const { return transform_; }
     [[nodiscard]] MaterialConstants* GetMaterialData() const { return materialData_; }
     [[nodiscard]] Material& GetMaterial() const { return *material_; }
-    [[nodiscard]] Vector4 GetColor() const { return materialData_->color; }
+    [[nodiscard]] Color GetColor() const { return materialData_->color; }
     [[nodiscard]] Vector2 GetPos() const { return pos_; }
     [[nodiscard]] float GetRotation() const { return rotation_; }
     [[nodiscard]] Vector2 GetSize() const { return size_; }

@@ -313,22 +313,22 @@ namespace Tako {
     if (auto* e = FindEmitter(name)) e->SetAngularVelocityRange(min, max);
   }
 
-  void EmitterManager::SetEmitterColor(const std::string& name, const Vector4& color)
+  void EmitterManager::SetEmitterColor(const std::string& name, const Color& color)
   {
     if (auto* e = FindEmitter(name)) e->SetColor(color);
   }
 
-  void EmitterManager::SetEmitterStartColor(const std::string& name, const Vector4& color)
+  void EmitterManager::SetEmitterStartColor(const std::string& name, const Color& color)
   {
     if (auto* e = FindEmitter(name)) e->SetStartColor(color);
   }
 
-  void EmitterManager::SetEmitterEndColor(const std::string& name, const Vector4& color)
+  void EmitterManager::SetEmitterEndColor(const std::string& name, const Color& color)
   {
     if (auto* e = FindEmitter(name)) e->SetEndColor(color);
   }
 
-  void EmitterManager::SetEmitterColors(const std::string& name, const Vector4& startColor, const Vector4& endColor)
+  void EmitterManager::SetEmitterColors(const std::string& name, const Color& startColor, const Color& endColor)
   {
     if (auto* e = FindEmitter(name)) e->SetColors(startColor, endColor);
   }
@@ -965,8 +965,8 @@ namespace Tako {
     json["lockDamping"] = emitter->GetLockDamping();
 
     // 色パラメータ
-    json["startColor"] = { emitter->GetStartColor().x, emitter->GetStartColor().y, emitter->GetStartColor().z, emitter->GetStartColor().w };
-    json["endColor"] = { emitter->GetEndColor().x, emitter->GetEndColor().y, emitter->GetEndColor().z, emitter->GetEndColor().w };
+    json["startColor"] = { emitter->GetStartColor().r, emitter->GetStartColor().g, emitter->GetStartColor().b, emitter->GetStartColor().a };
+    json["endColor"] = { emitter->GetEndColor().r, emitter->GetEndColor().g, emitter->GetEndColor().b, emitter->GetEndColor().a };
 
     // フラグ
     json["isActive"] = emitter->IsActive();

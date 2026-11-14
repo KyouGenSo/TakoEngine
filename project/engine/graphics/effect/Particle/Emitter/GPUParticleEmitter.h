@@ -1,6 +1,6 @@
 #pragma once
 #include "Vector3.h"
-#include "Vector4.h"
+#include "ColorFunc.h"
 #include "ParticleStruct.h"
 #include <memory>
 #include <string>
@@ -122,10 +122,10 @@ namespace Tako {
     void SetParticleCount(uint32_t count);
     void SetFrequency(float frequency);
     void SetFrequencyTime(float frequencyTime);
-    void SetColor(const Vector4& color);
-    void SetStartColor(const Vector4& color);
-    void SetEndColor(const Vector4& color);
-    void SetColors(const Vector4& startColor, const Vector4& endColor);
+    void SetColor(const Color& color);
+    void SetStartColor(const Color& color);
+    void SetEndColor(const Color& color);
+    void SetColors(const Color& startColor, const Color& endColor);
     void SetScaleRange(const Vector2& rangeX, const Vector2& rangeY);
     void SetScaleRangeX(const Vector2& range);
     void SetScaleRangeY(const Vector2& range);
@@ -342,8 +342,8 @@ namespace Tako {
     [[nodiscard]] const Vector3& GetRotateMax() const { return data_.rotateMax; }
     [[nodiscard]] const Vector3& GetAngularVelMin() const { return data_.angularVelMin; }
     [[nodiscard]] const Vector3& GetAngularVelMax() const { return data_.angularVelMax; }
-    [[nodiscard]] const Vector4& GetStartColor() const { return data_.startColorTint; }
-    [[nodiscard]] const Vector4& GetEndColor() const { return data_.endColorTint; }
+    [[nodiscard]] const Color& GetStartColor() const { return data_.startColorTint; }
+    [[nodiscard]] const Color& GetEndColor() const { return data_.endColorTint; }
     [[nodiscard]] uint32_t GetParticleCount() const { return data_.count; }
     [[nodiscard]] float GetFrequencyTime() const { return data_.frequencyTime; }
     [[nodiscard]] float GetFrequency() const { return data_.frequency; }

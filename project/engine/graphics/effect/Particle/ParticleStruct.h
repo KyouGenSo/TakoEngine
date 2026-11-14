@@ -2,7 +2,7 @@
 #include <cstdint>
 #include "vector2.h"
 #include "vector3.h"
-#include "vector4.h"
+#include "ColorFunc.h"
 #include "Matrix4x4.h"
 #include "RenderState.h"
 
@@ -92,8 +92,8 @@ namespace Tako {
     Vector3  endScale;      ///< 終了時スケール（PFLAG_SCALE_FADE が立っているときのみ補間先として使用）
     Vector3  rotate;        ///< 回転（オイラー角、ラジアン）
     Vector3  velocity;      ///< 速度ベクトル
-    Vector4  startColor;    ///< 開始時の色（アルファ値含む）
-    Vector4  endColor;      ///< 終了時の色（アルファ値含む）
+    Color    startColor;    ///< 開始時の色（アルファ値含む）
+    Color    endColor;      ///< 終了時の色（アルファ値含む）
     float    lifeTime;      ///< 寿命（秒）
     float    currentTime;   ///< 生成からの経過時間（秒）
     float    mass;          ///< 質量（衝突応答用）
@@ -216,8 +216,8 @@ namespace Tako {
     Vector3 rotateMax;       ///< 初期回転の最大値（XYZ、度数法）
     Vector3 angularVelMin;   ///< 角速度の最小値（XYZ、度/秒）
     Vector3 angularVelMax;   ///< 角速度の最大値（XYZ、度/秒）
-    Vector4 startColorTint;  ///< 開始色の色調補正（RGBA）
-    Vector4 endColorTint;    ///< 終了色の色調補正（RGBA）
+    Color   startColorTint;  ///< 開始色の色調補正（RGBA）
+    Color   endColorTint;    ///< 終了色の色調補正（RGBA）
 
     uint32_t count;          ///< 1回の射出で生成するパーティクル数
     float    frequency;      ///< 射出頻度（秒）

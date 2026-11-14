@@ -32,6 +32,8 @@ namespace Tako {
     source.weights_ = { 5.0f };
     source.modes_   = { Mode::Third, Mode::First };
     source.target_  = { 12 };
+    source.tint_    = { 0.25f, 0.5f, 0.75f, 1.0f };
+    source.gradient_.keys = { { 0.0f, Color::kRed }, { 1.0f, Color::kBlue } };
 
     const nlohmann::json json = WriteProperties(source);
     assert(json["value"] == 4.5f);
@@ -44,6 +46,9 @@ namespace Tako {
     assert(json["weights"] == nlohmann::json::array({ 5.0f }));
     assert(json["modes"] == nlohmann::json::array({ "Third", "First" }));
     assert(json["target"]["actor"] == 12);
+    // Color は Vector4 と同じ 4 つの数の配列
+    assert(json["tint"] == nlohmann::json::array({ 0.25f, 0.5f, 0.75f, 1.0f }));
+    assert(json["gradient"]["keys"].size() == 2 && json["gradient"]["keys"][1]["color"] == nlohmann::json::array({ 0.0f, 0.0f, 1.0f, 1.0f }));
 
     ReflectionSelfTestObject loaded;
     ReadProperties(loaded, json);
@@ -62,6 +67,8 @@ namespace Tako {
     assert(loaded.weights_ == source.weights_);
     assert(loaded.modes_ == source.modes_);
     assert(loaded.target_.id == 12);
+    assert(loaded.tint_ == source.tint_);
+    assert(loaded.gradient_.keys.size() == 2 && loaded.gradient_.keys[1].time == 1.0f && loaded.gradient_.keys[1].color == Color::kBlue);
 
     // キーが無ければ既定値のまま。enum は数値でも読める
     ReflectionSelfTestObject partial;
@@ -71,6 +78,7 @@ namespace Tako {
     assert(partial.mode_ == Mode::First);
     assert(partial.entry_.weight == 1.0f && partial.entry_.values == std::vector<int32_t>{ 3 });
     assert(partial.weights_.size() == 2);
+    assert(partial.tint_ == Color::kWhite && partial.gradient_.keys.empty());
 
     assert(TypeRegistry::GetInstance()->Find("ReflectionSelfTestObject") == &ReflectionSelfTestObject::StaticType());
     assert(TypeRegistry::GetInstance()->Create("ReflectionSelfTestObject") != nullptr);

@@ -1,6 +1,6 @@
 #pragma once
 #include "DX12Basic.h"
-#include "Vector4.h"
+#include "ColorFunc.h"
 #include "Vector3.h"
 #include "Mat4x4Func.h"
 #include <algorithm>
@@ -49,7 +49,7 @@ namespace Tako {
     struct VertexData
     {
       Vector3 position; ///< 頂点位置
-      Vector4 color;    ///< 頂点色
+      Color   color;    ///< 頂点色
     };
 
     /// <summary>
@@ -105,7 +105,7 @@ namespace Tako {
     /// <param name="start">開始点</param>
     /// <param name="end">終了点</param>
     /// <param name="color">描画色</param>
-    void DrawLine(const Vector3& start, const Vector3& end, const Vector4& color);
+    void DrawLine(const Vector3& start, const Vector3& end, const Color& color);
 
     /// <summary>
     /// 矢印の描画（線 + 十字型の先端）
@@ -114,7 +114,7 @@ namespace Tako {
     /// <param name="end">矢印の先端</param>
     /// <param name="color">描画色</param>
     /// <param name="headSize">矢印の先端サイズ</param>
-    void DrawArrow(const Vector3& start, const Vector3& end, const Vector4& color, float headSize = 0.2f);
+    void DrawArrow(const Vector3& start, const Vector3& end, const Color& color, float headSize = 0.2f);
 
     /// <summary>
     /// 球体の描画
@@ -122,21 +122,21 @@ namespace Tako {
     /// <param name="center">中心座標</param>
     /// <param name="radius">半径</param>
     /// <param name="color">描画色</param>
-    void DrawSphere(const Vector3& center, const float radius, const Vector4& color, uint32_t subdivision = 10);
+    void DrawSphere(const Vector3& center, const float radius, const Color& color, uint32_t subdivision = 10);
 
     /// <summary>
     /// AABB の描画
     /// </summary>
     /// <param name="aabb">AABB 境界ボックス</param>
     /// <param name="color">描画色</param>
-    void DrawAABB(const AABB& aabb, const Vector4& color);
+    void DrawAABB(const AABB& aabb, const Color& color);
 
     /// <summary>
     /// OBB の描画
     /// </summary>
     /// <param name="obb">OBB 境界ボックス</param>
     /// <param name="color">描画色</param>
-    void DrawOBB(const struct OBB& obb, const Vector4& color);
+    void DrawOBB(const struct OBB& obb, const Color& color);
 
     /// <summary>
     /// グリッドの描画
@@ -145,7 +145,7 @@ namespace Tako {
     /// <param name="cellSize">1 マスの幅</param>
     /// <param name="color">描画色</param>
     /// <param name="height">グリッドを置く Y 座標（深度テストありで床と重ねるときのちらつき回避用）</param>
-    void DrawGrid(const float size, const float cellSize, const Vector4& color, float height = 0.0f);
+    void DrawGrid(const float size, const float cellSize, const Color& color, float height = 0.0f);
 
     /// <summary>
     /// 描画

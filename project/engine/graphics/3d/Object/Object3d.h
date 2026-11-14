@@ -9,7 +9,7 @@
 #include <vector>
 #include "vector2.h"
 #include "vector3.h"
-#include "vector4.h"
+#include "ColorFunc.h"
 #include "Mat4x4Func.h"
 #include "AABB.h"
 #include "Transform.h"
@@ -143,7 +143,7 @@ public: // メンバー関数
   /// マテリアルの "color" を上書きする（どのマテリアルで描いても、同じ名前の値に効く）
   /// </summary>
   /// <param name="color">RGBA（std::nullopt で上書きを外す）</param>
-  void SetMaterialColor(const std::optional<Vector4>& color);
+  void SetMaterialColor(const std::optional<Color>& color);
 
   /// <summary>
   /// 半透明描画モードを設定 (両面描画 + 深度書き込み無効で、半透明キューの奥から順に描く)
@@ -271,12 +271,12 @@ public: // メンバー関数
   /// 最初のメッシュを描く色（コード ＞ 設定 ＞ マテリアルの値。アニメーションの上乗せは含まない）
   /// </summary>
   /// <returns>マテリアルカラー（RGBA）</returns>
-  Vector4 GetMaterialColor() const;
+  Color GetMaterialColor() const;
 
   /// <summary>
   /// コードで Set した色を除いた、最初のメッシュの色（設定の Values ＞ 描くマテリアルの値）。点滅やフェードの基準に使う
   /// </summary>
-  Vector4 GetBaseMaterialColor() const;
+  Color GetBaseMaterialColor() const;
 
   // コード ＞ 設定 ＞ 既定 で決まった値
   bool IsTransparent() const;
@@ -336,7 +336,7 @@ private: // プライベートメンバー関数
   /// <summary>
   /// アニメーションの上乗せの色が変わったら、次の描画で "color" に掛け直させる
   /// </summary>
-  void ApplyAnimationColor(const Vector4& color);
+  void ApplyAnimationColor(const Color& color);
 
   /// <summary>
   /// Draw が描く状態か（モデルがあり、アニメーションと設定で非表示になっていない）
@@ -389,7 +389,7 @@ private: // メンバー変数
 
   //アニメーションの上乗せ
   AnimationPlayer animator_;
-  Vector4         animColor_          = { 1.0f, 1.0f, 1.0f, 1.0f };  ///< "color" に掛ける上乗せの色
+  Color           animColor_          = { 1.0f, 1.0f, 1.0f, 1.0f };  ///< "color" に掛ける上乗せの色
   bool            isAnimationVisible_ = true;
 };
 

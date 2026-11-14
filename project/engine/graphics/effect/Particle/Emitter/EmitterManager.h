@@ -380,21 +380,21 @@ namespace Tako {
     /// </summary>
     /// <param name="name">エミッター名</param>
     /// <param name="color">色</param>
-    void SetEmitterColor(const std::string& name, const Vector4& color);
+    void SetEmitterColor(const std::string& name, const Color& color);
 
     /// <summary>
     /// エミッターの開始色を設定
     /// </summary>
     /// <param name="name">エミッター名</param>
     /// <param name="color">開始色</param>
-    void SetEmitterStartColor(const std::string& name, const Vector4& color);
+    void SetEmitterStartColor(const std::string& name, const Color& color);
 
     /// <summary>
     /// エミッターの終了色を設定
     /// </summary>
     /// <param name="name">エミッター名</param>
     /// <param name="color">終了色</param>
-    void SetEmitterEndColor(const std::string& name, const Vector4& color);
+    void SetEmitterEndColor(const std::string& name, const Color& color);
 
     /// <summary>
     /// エミッターの開始色と終了色を設定
@@ -402,7 +402,7 @@ namespace Tako {
     /// <param name="name">エミッター名</param>
     /// <param name="startColor">開始色</param>
     /// <param name="endColor">終了色</param>
-    void SetEmitterColors(const std::string& name, const Vector4& startColor, const Vector4& endColor);
+    void SetEmitterColors(const std::string& name, const Color& startColor, const Color& endColor);
 
     /// <summary>
     /// エミッターの半径を設定（球形エミッター専用）

@@ -5,7 +5,6 @@
 #include <memory>
 #include "ModelStruct.h"
 #include "Transform.h"
-#include "Vector4.h"
 #include "Mat4x4Func.h"
 #include "ColorFunc.h"
 
@@ -54,7 +53,7 @@ public: //メンバー関数
     /// <param name="transform">初期トランスフォーム</param>
     /// <param name="color">インスタンスのカラー</param>
     /// <returns>インスタンス ID（削除時に使用）</returns>
-    uint32_t AddInstance(const Transform& transform, const Vector4& color = Color::kWhite);
+    uint32_t AddInstance(const Transform& transform, const Color& color = Color::kWhite);
 
     /// <summary>
     /// インスタンスを削除
@@ -70,7 +69,7 @@ public: //メンバー関数
     /// <summary>
     /// インスタンスのカラーを更新
     /// </summary>
-    void UpdateInstanceColor(uint32_t instanceId, const Vector4& color);
+    void UpdateInstanceColor(uint32_t instanceId, const Color& color);
 
     /// <summary>
     /// 全インスタンスを GPU バッファに反映
@@ -85,7 +84,7 @@ public: //メンバー関数
     /// <summary>
     /// ModelInstance ハンドルを作成
     /// </summary>
-    std::unique_ptr<ModelInstance> CreateInstance(const Transform& transform, const Vector4& color = Color::kWhite);
+    std::unique_ptr<ModelInstance> CreateInstance(const Transform& transform, const Color& color = Color::kWhite);
 
     //============================================================
     //Setter
@@ -126,7 +125,7 @@ public: //メンバー関数
     /// </summary>
     /// <param name="instanceId">インスタンス ID</param>
     /// <returns>カラー参照</returns>
-    const Vector4& GetInstanceColor(uint32_t instanceId) const;
+    const Color& GetInstanceColor(uint32_t instanceId) const;
 
 private: //構造体
     /// <summary>
@@ -134,7 +133,7 @@ private: //構造体
     /// </summary>
     struct InternalInstanceData {
         Transform transform;  ///< トランスフォーム情報
-        Vector4 color;  ///< カラー情報
+        Color   color;  ///< カラー情報
         bool active;  ///< アクティブフラグ
         uint32_t id;  ///< 一意の ID
     };
@@ -235,7 +234,7 @@ public: //メンバー関数
     /// カラーを設定
     /// </summary>
     /// <param name="color">新しいカラー</param>
-    void SetColor(const Vector4& color);
+    void SetColor(const Color& color);
 
     //============================================================
     //Getter
@@ -250,7 +249,7 @@ public: //メンバー関数
     /// カラーを取得
     /// </summary>
     /// <returns>現在のカラー</returns>
-    Vector4 GetColor() const;
+    Color GetColor() const;
 
     bool IsValid() const { return parent_ != nullptr && instanceId_ != UINT32_MAX; }
 

@@ -5,7 +5,7 @@
 #include "Matrix4x4.h"
 #include "Vector2.h"
 #include "vector3.h"
-#include "Vector4.h"
+#include "ColorFunc.h"
 #include "MaterialPropertyLayout.h"
 
 namespace Tako {
@@ -49,7 +49,7 @@ namespace Tako {
 
   struct FogParam
   {
-    Vector4 color;
+    Color   color;
     float   density;
   };
 
@@ -105,7 +105,7 @@ namespace Tako {
     float   threshold;      ///< 溶解のしきい値（0.0〜1.0）
     float   edgeThickness;  ///< 縁取りの太さ
     float   padding[2];
-    Vector4 edgeColor;      ///< RGBA
+    Color   edgeColor;      ///< RGBA
   };
 
   /// <summary>

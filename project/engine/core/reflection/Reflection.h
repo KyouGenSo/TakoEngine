@@ -15,13 +15,13 @@ namespace Tako {
 //   TSTRUCT()            : 値として持つ構造体の直前。継承できない。TCLASS / TSTRUCT の中にも書ける
 //   TENUM()              : enum の直前。Inspector と保存で列挙子の名前を使う
 //   TPROPERTY(指定子...) : メンバー変数の直前の行
-//     型は bool / int32_t / uint32_t / float / Vector2〜4 / std::string / Transform / TENUM / TSTRUCT と、それらの std::vector
+//     型は bool / int32_t / uint32_t / float / Vector2〜4 / Color / std::string / Transform / TENUM / TSTRUCT と、それらの std::vector
 //     （vector の要素は配列の指定子をそのまま使う）
 //     Edit / Visible      : Inspector で編集できる / 読み取り専用で出す（どちらも無ければ保存だけ）
 //     Transient           : 保存しない
 //     Category = "..."    : Inspector で同じ見出しにまとめる
 //     ClampMin / ClampMax / Speed = 式 : ドラッグの範囲と速さ（式はクラスの中で評価される）
-//     Color               : Vector3 / Vector4 を色として編集する
+//     Color               : Vector3 / Vector4 を色として編集する（Color 型には要らない）
 //     Angle               : ラジアンの float を度で編集する（ClampMin / ClampMax / Speed も度）
 //     EnumAsInt           : enum を名前でなく数値で保存する
 //     Tooltip / DisplayName = "..." : 説明と表示名（表示名の既定はメンバー名を単語に分けたもの）

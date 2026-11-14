@@ -114,7 +114,7 @@ namespace Tako {
     context.Transition(depth, D3D12_RESOURCE_STATE_DEPTH_WRITE);
     dx12_->BindSceneRenderTarget(sceneTarget);
     ID3D12GraphicsCommandList* commandList = context.GetCommandList();
-    commandList->ClearRenderTargetView(sceneColor_.rtvHandle, &clearColor_.x, 0, nullptr);
+    commandList->ClearRenderTargetView(sceneColor_.rtvHandle, &clearColor_.r, 0, nullptr);
     commandList->ClearDepthStencilView(sceneDsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
     RunPasses(RenderEvent::BeforeShadow, frame, sceneColor_, sceneDsv);
@@ -314,7 +314,7 @@ namespace Tako {
     }
   }
 
-  void RenderPipeline::SetClearColor(const Vector4& color)
+  void RenderPipeline::SetClearColor(const Color& color)
   {
     clearColor_ = color;
     // 作成時と異なる色でクリアするとデバッグレイヤーの警告で止まるため、次フレーム先頭で RT ごと作り直す

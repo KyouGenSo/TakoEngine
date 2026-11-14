@@ -12,6 +12,10 @@
 - `UpdateEngine.bat`：エンジンを入れた後、エンジンの中のテンプレート（`templates/Default/UpdateEngine.ps1`）の方が新しければ、プロジェクトの `UpdateEngine.ps1` も入れ替える（プロジェクトの git に差分が出るので、コミットする）。`UpdateEngine.bat` は入れ替えない
 - リリースを公開したとき、Discord に通知する（`.github/workflows/Release.yml`。ウェブフックの URL は、リポジトリの Secrets の `DISCORD_WEBHOOK`。無ければ送らない）
 - ライセンス（MIT。`LICENSE`）。SDK の zip にも入る
+- 色の構造体 `Color`（RGBA）・`ColorHSV`・`Color32`（0〜255）と、変換（`ToHSV`・`ToColor`・`ToColor32`・`Color32::FromHex`・`ToHex`）。名前の付いた色（`Color::kRed` など 10 個）、`WithAlpha`・`Lerp`・`LerpHSV`（色相環に沿って補間）・`FromKelvin`（色温度）・`+ - * /`（`ColorFunc.h`）
+- `Gradient`（色の段階。`Evaluate(t)` がその位置の色を返す。`TPROPERTY` にすると、Inspector で段階を編集できる。`Gradient.h`）
+- `RandomEngine` の `GetHueColor`（色相だけランダム）・`GetColor(from, to)`（2 色の間のランダム）
+- `TPROPERTY` に `Tako::Color` と `Tako::Gradient` を使える。`Color` は、`Color` の指定子が無くても色の欄になる
 
 ### 変更
 - スクリプトのコンパイルのエラーと警告で、日本語が文字化けしていたのを直した（MSBuild は UTF-8 で書くのに、Shift_JIS として読んでいた）。行の末尾の `[プロジェクトのパス]` も、落ちるようになった
@@ -19,9 +23,15 @@
 - `UpdateEngine.bat`：更新の後に出す変更履歴を、Markdown の記号を外し、見出しに色を付けて出すようにした。最後に、リリースページの URL を出す
 - リリースの本文を、`CHANGELOG.md` のそのバージョンの節にした（今までは「See CHANGELOG.md」だけだった）。節が無いタグは、リリースのビルドの前に失敗する
 - `README.md` を英語にし、日本語は `README.ja.md` に分けた。特徴・使っているライブラリ・エディタの画像を足し、ロゴの画像を外した
+- エンジンの色の引数・戻り値・データを、`Vector4` から `Color` にした（`SetColor`・`SetMaterialColor`・`GetMaterialColor`・`DrawLine` など。GPU に送る構造体の色の欄も）。`Vector4` と `Color` は互いに自動で変わるので、`Vector4` で書いたゲームのコードはそのまま動く。保存の形（4 つの数の配列）は変えていない
+- `Color::kWhite`・`kClear` の型と、`Color::FromHex`・`FromHSV` の戻り値を、`Vector4` から `Color` にした（`Color` は名前空間から構造体になった）
+- `Vector4` の `==`・`!=` を、メンバーから名前空間の関数にした（`Color` どうしや、`Color` と `Vector4` を比べられるように。中身は同じ）
 
 ### 直しが要る変更（ゲーム側）
-- 無し。ただし、既にあるプロジェクトの `UpdateEngine.ps1`（2.1.1 までの物）は、そのまま動くが、自分を入れ替えない。新しい表示・バー・入れ替えの仕組みを入れるなら、1 回だけ `templates/Default/UpdateEngine.ps1` をプロジェクトのルートへ写し直す（それ以降は、自動で入れ替わる）
+- `Color::WithAlpha(色, a)` は `色.WithAlpha(a)` にする
+- 三項演算子の左右に `Vector4` と `Color` を混ぜると（`条件 ? vector4 : Color::kWhite` など）、どちらの型にするかが決まらず、コンパイルエラーになる。どちらかにそろえる
+- 色の Getter や `Color::kWhite` を `auto` で受けて `.x`〜`.w` を使っている所は、`.r`〜`.a` にする
+- 既にあるプロジェクトの `UpdateEngine.ps1`（2.1.1 までの物）は、そのまま動くが、自分を入れ替えない。新しい表示・バー・入れ替えの仕組みを入れるなら、1 回だけ `templates/Default/UpdateEngine.ps1` をプロジェクトのルートへ写し直す（それ以降は、自動で入れ替わる）
 
 ## [2.1.1] - 2026-11-13
 

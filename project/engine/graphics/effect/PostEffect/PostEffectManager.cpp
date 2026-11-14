@@ -35,8 +35,8 @@ namespace Tako {
   static void from_json(const json& j, Vector2& v) { v = { j.at(0).get<float>(), j.at(1).get<float>() }; }
   static void to_json(json& j, const Vector3& v) { j = { v.x, v.y, v.z }; }
   static void from_json(const json& j, Vector3& v) { v = { j.at(0).get<float>(), j.at(1).get<float>(), j.at(2).get<float>() }; }
-  static void to_json(json& j, const Vector4& v) { j = { v.x, v.y, v.z, v.w }; }
-  static void from_json(const json& j, Vector4& v) { v = { j.at(0).get<float>(), j.at(1).get<float>(), j.at(2).get<float>(), j.at(3).get<float>() }; }
+  static void to_json(json& j, const Color& c) { j = { c.r, c.g, c.b, c.a }; }
+  static void from_json(const json& j, Color& c) { c = { j.at(0).get<float>(), j.at(1).get<float>(), j.at(2).get<float>(), j.at(3).get<float>() }; }
 
   // 実行時に決まる値（投影逆行列・画面サイズ・時間・ブラー方向）と padding は保存しない
   NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(VignetteParam, power, range, color)
@@ -203,7 +203,7 @@ namespace Tako {
 
     void DrawParam(FogParam& param)
     {
-      UI::ColorEdit4("FogColor", &param.color.x);
+      UI::ColorEdit4("FogColor", &param.color.r);
       UI::DragFloat("Density", &param.density, 0.001f, 0.0f, 1.0f);
     }
 
@@ -241,7 +241,7 @@ namespace Tako {
     {
       UI::DragFloat("Dissolve Threshold", &param.threshold, 0.01f, 0.0f, 1.0f);
       UI::DragFloat("Edge Thickness", &param.edgeThickness, 0.01f, 0.0f, 1.0f);
-      UI::ColorEdit4("Edge Color", &param.edgeColor.x);
+      UI::ColorEdit4("Edge Color", &param.edgeColor.r);
     }
 
     void DrawParam(HalfToneParam& param)

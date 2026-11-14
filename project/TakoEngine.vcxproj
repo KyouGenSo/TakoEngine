@@ -424,6 +424,7 @@
     <ClInclude Include="engine\core\math\EaseFunc.h" />
     <ClInclude Include="engine\core\math\Vec3Func.h" />
     <ClInclude Include="engine\core\math\ColorFunc.h" />
+    <ClInclude Include="engine\core\math\Gradient.h" />
     <ClInclude Include="engine\core\math\Vector4.h" />
     <ClInclude Include="engine\core\base\WinApp.h" />
     <ClInclude Include="engine\graphics\DX12\DescriptorHeap.h" />

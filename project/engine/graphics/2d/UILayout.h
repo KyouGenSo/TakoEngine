@@ -1,6 +1,7 @@
 #pragma once
 #include "AnimationPlayer.h"
 #include "Vector2.h"
+#include "ColorFunc.h"
 #include "Vector4.h"
 #include <array>
 #include <cstdint>
@@ -37,7 +38,7 @@ namespace Tako {
     Vector2     align        = {};                          ///< 要素の矩形の中の寄せ方 (0..1)。x は 0 で左・1 で右、y は 0 で上・1 で下
     float       lineSpacing  = 1.0f;                        ///< 行送りの倍率
     bool        wrap         = true;                        ///< 矩形の幅で折り返すか（収まらない 1 語ははみ出す）
-    Vector4     outlineColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+    Color       outlineColor = { 0.0f, 0.0f, 0.0f, 1.0f };
     float       outlineWidth = 0.0f;                        ///< 0 なら縁取りなし
 
     bool operator==(const UIText&) const = default;
@@ -59,7 +60,7 @@ namespace Tako {
     Vector2     position          = {};                          ///< アンカー基準点から pivot までのずれ（基準解像度 px）
     Vector2     size              = { 100.0f, 100.0f };          ///< 伸縮しない軸はサイズ、伸縮する軸はアンカー幅との差分（基準解像度 px）
     float       rotation          = 0.0f;                        ///< 度数法。子には継承しない
-    Vector4     color             = { 1.0f, 1.0f, 1.0f, 1.0f };
+    Color       color             = { 1.0f, 1.0f, 1.0f, 1.0f };
     Vector2     uvLeftTop         = {};                          ///< テクスチャ上の切り出し位置（px）
     Vector2     uvSize            = {};                          ///< テクスチャ上の切り出しサイズ（px）
     bool        isSliced          = false;                       ///< false なら 9-slice を使わず、画像を要素の大きさに引き伸ばす
@@ -87,7 +88,7 @@ namespace Tako {
     //アニメーションの上乗せ（実行時データ。Update で毎回求め直す）
     AnimationPose animPose;
     Vector2       animScale = { 1.0f, 1.0f };              ///< 親から受け継いだ分を含む拡大率。子の position と size に掛ける
-    Vector4       animColor = { 1.0f, 1.0f, 1.0f, 1.0f };  ///< 親から受け継いだ分を含む色。color に掛ける
+    Color         animColor = { 1.0f, 1.0f, 1.0f, 1.0f };  ///< 親から受け継いだ分を含む色。color に掛ける
   };
 
   /// <summary>
@@ -281,7 +282,7 @@ namespace Tako {
     /// </summary>
     void SetRotation(const std::string& name, float rotation);
 
-    void SetColor(const std::string& name, const Vector4& color);
+    void SetColor(const std::string& name, const Color& color);
 
     /// <summary>
     /// 色のアルファだけを変える
@@ -345,7 +346,7 @@ namespace Tako {
     /// </summary>
     float GetRotation(const std::string& name) const;
 
-    Vector4 GetColor(const std::string& name) const;
+    Color GetColor(const std::string& name) const;
     float GetAlpha(const std::string& name) const;
     Vector2 GetAnchorMin(const std::string& name) const;
     Vector2 GetAnchorMax(const std::string& name) const;

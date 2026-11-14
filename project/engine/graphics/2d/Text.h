@@ -2,6 +2,7 @@
 #include "Material.h"
 #include "Matrix4x4.h"
 #include "Vector2.h"
+#include "ColorFunc.h"
 #include "Vector4.h"
 #include <cstdint>
 #include <d3d12.h>
@@ -44,8 +45,8 @@ namespace Tako {
     /// Text.PS.hlsl の gMaterial
     /// </summary>
     struct MaterialConstants {
-      Vector4 color;
-      Vector4 outlineColor;
+      Color   color;
+      Color   outlineColor;
       Vector2 unitRange;     ///< SDF の値 0〜1 が表す距離（アトラスの UV）
       float   outline;       ///< 縁取りの太さ（SDF の値）
       float   padding;
@@ -82,12 +83,12 @@ namespace Tako {
     /// </summary>
     void SetScale(const Vector2& scale) { scale_ = scale; }
 
-    void SetColor(const Vector4& color) { color_ = color; }
+    void SetColor(const Color& color) { color_ = color; }
 
     /// <summary>
     /// 縁取り。太さは Layout の size と同じ単位で、0 なら付けない（上限は size × Font::kSpread ÷ Font::kBakeSize 弱）
     /// </summary>
-    void SetOutline(const Vector4& color, float width) { outlineColor_ = color; outlineWidth_ = width; }
+    void SetOutline(const Color& color, float width) { outlineColor_ = color; outlineWidth_ = width; }
 
     /// <summary>
     /// 同じ描画キューの中での描画順（小さいほど先）
@@ -122,8 +123,8 @@ namespace Tako {
     Vector2 pos_          = {};
     float   rotation_     = 0.0f;                        ///< ラジアン
     Vector2 scale_        = { 1.0f, 1.0f };
-    Vector4 color_        = { 1.0f, 1.0f, 1.0f, 1.0f };
-    Vector4 outlineColor_ = { 0.0f, 0.0f, 0.0f, 1.0f };
+    Color   color_        = { 1.0f, 1.0f, 1.0f, 1.0f };
+    Color   outlineColor_ = { 0.0f, 0.0f, 0.0f, 1.0f };
     float   outlineWidth_ = 0.0f;
     int32_t sortingOrder_ = 0;
 

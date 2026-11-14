@@ -4,7 +4,7 @@
 #include <vector>
 #include "vector2.h"
 #include "vector3.h"
-#include "vector4.h"
+#include "ColorFunc.h"
 #include "Matrix4x4.h"
 
 namespace Tako {
@@ -29,7 +29,7 @@ namespace Tako {
     /// </summary>
     struct DirectionalLight
     {
-      Vector4 color;
+      Color   color;
       Vector3 direction;
       int32_t lightType;  ///< 0:Lambert 1:Half-Lambert
       float intensity;
@@ -44,7 +44,7 @@ namespace Tako {
     /// </summary>
     struct PointLight
     {
-      Vector4 color;
+      Color   color;
       Vector3 position;
       float intensity;
       float radius;
@@ -57,7 +57,7 @@ namespace Tako {
     /// </summary>
     struct SpotLight
     {
-      Vector4 color;
+      Color   color;
       Vector3 position;
       float intensity;
       Vector3 direction;
@@ -122,13 +122,13 @@ namespace Tako {
     /// <summary>
     /// 平行光源をまとめて設定（自動更新時は位置をシーン中心へリセット）
     /// </summary>
-    void SetDirectionalLight(const Vector3& direction, const Vector4& color, int32_t lightType, float intensity);
+    void SetDirectionalLight(const Vector3& direction, const Color& color, int32_t lightType, float intensity);
 
     /// <summary>
     /// 平行光源の方向を設定（自動更新時は位置をシーン中心へリセット）
     /// </summary>
     void SetDirectionalLightDirection(const Vector3& direction);
-    void SetDirectionalLightColor(const Vector4& color) { directionalLightData_->color = color; }
+    void SetDirectionalLightColor(const Color& color) { directionalLightData_->color = color; }
     void SetDirectionalLightType(int32_t lightType) { directionalLightData_->lightType = lightType; }
     void SetDirectionalLightIntensity(float intensity) { directionalLightData_->intensity = intensity; }
     void SetDirectionalLightPosition(const Vector3& position) { directionalLightData_->position = position; }

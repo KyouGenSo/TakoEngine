@@ -444,14 +444,14 @@ namespace Tako {
     }
   }
 
-  void Model::SetMaterialColor(const Vector4& color)
+  void Model::SetMaterialColor(const Color& color)
   {
     for (auto& mesh : meshes_) {
       mesh->SetMaterialColor(color);
     }
   }
 
-  Vector4 Model::GetMaterialColor() const
+  Color Model::GetMaterialColor() const
   {
     if (!meshes_.empty()) {
       return meshes_[0]->GetMaterialColor();

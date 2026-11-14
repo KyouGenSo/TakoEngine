@@ -11,7 +11,7 @@
 #include <utility>
 #include <vector>
 
-#include"Vector4.h"
+#include "ColorFunc.h"
 #include "CommandContext.h"
 #include "GpuResource.h"
 #include "PipelineCache.h"
@@ -114,7 +114,7 @@ namespace Tako {
     /// <param name="height">テクスチャの高さ（ピクセル）</param>
     /// <param name="format">ピクセルフォーマット（例: DXGI_FORMAT_R8G8B8A8_UNORM）</param>
     /// <param name="clearColor">クリアカラー（RGBA、各要素0.0-1.0）</param>
-    void CreateRenderTextureResource(GpuResource& rendertextureResource, uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4& clearColor);
+    void CreateRenderTextureResource(GpuResource& rendertextureResource, uint32_t width, uint32_t height, DXGI_FORMAT format, const Color& clearColor);
 
     /// <summary>
     /// ビューポートとシザリング矩形をセット

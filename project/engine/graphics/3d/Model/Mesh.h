@@ -91,7 +91,7 @@ namespace Tako {
     void SetShininess(float shininess) { materialData_->shininess = shininess; }
     void SetEnableLighting(bool enableLighting) { materialData_->enableLighting = enableLighting; }
     void SetEnableHighlight(bool enableHighlight) { materialData_->enableHighlight = enableHighlight; }
-    void SetMaterialColor(const Vector4& color) { materialData_->color = color; }
+    void SetMaterialColor(const Color& color) { materialData_->color = color; }
     /// <summary>
     /// 環境マップを設定する（0 なら既定の白テクスチャ）
     /// </summary>
@@ -125,7 +125,7 @@ namespace Tako {
     //============================================================
     //Getter
     //============================================================
-    Vector4 GetMaterialColor() const { return materialData_->color; }
+    Color GetMaterialColor() const { return materialData_->color; }
     float GetShininess() const { return materialData_->shininess; }
     const TextureData& GetTextureData() const { return textureData_; }
     bool HasSkinning() const { return hasSkinning_; }

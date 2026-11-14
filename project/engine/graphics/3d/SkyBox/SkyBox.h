@@ -8,6 +8,7 @@
 #include "TextureManager.h"
 #include "Transform.h"
 #include "Vector2.h"
+#include "ColorFunc.h"
 #include "Vector4.h"
 
 namespace Tako {
@@ -31,7 +32,7 @@ public: // 構造体
 
   struct MaterialConstants
   {
-    Vector4 color;
+    Color   color;
   };
 
   struct TransformationMatrix

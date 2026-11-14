@@ -794,6 +794,9 @@
     <ClInclude Include="engine\core\math\ColorFunc.h">
       <Filter>core\math</Filter>
     </ClInclude>
+    <ClInclude Include="engine\core\math\Gradient.h">
+      <Filter>core\math</Filter>
+    </ClInclude>
     <ClInclude Include="engine\core\math\Mat4x4Func.h">
       <Filter>core\math</Filter>
     </ClInclude>

@@ -334,7 +334,7 @@ const std::vector<Object3d*>& Object3d::GetLiveObjects()
 }
 #endif
 
-void Object3d::SetMaterialColor(const std::optional<Vector4>& color)
+void Object3d::SetMaterialColor(const std::optional<Color>& color)
 {
   if (color) {
     code_.properties.SetVector("color", *color);
@@ -344,7 +344,7 @@ void Object3d::SetMaterialColor(const std::optional<Vector4>& color)
   }
 }
 
-Vector4 Object3d::GetMaterialColor() const
+Color Object3d::GetMaterialColor() const
 {
   if (const std::optional<Vector4> color = code_.properties.GetVector("color")) {
     return *color;
@@ -352,7 +352,7 @@ Vector4 Object3d::GetMaterialColor() const
   return GetBaseMaterialColor();
 }
 
-Vector4 Object3d::GetBaseMaterialColor() const
+Color Object3d::GetBaseMaterialColor() const
 {
   if (!model_ || model_->GetMeshCount() == 0) {
     return Color::kWhite;
@@ -361,7 +361,7 @@ Vector4 Object3d::GetBaseMaterialColor() const
   return resolved.properties.GetVector("color").value_or(ReadColor(GetSlotMaterial(0, overrides_)));
 }
 
-void Object3d::ApplyAnimationColor(const Vector4& color)
+void Object3d::ApplyAnimationColor(const Color& color)
 {
   if (color != animColor_) {
     animColor_ = color;

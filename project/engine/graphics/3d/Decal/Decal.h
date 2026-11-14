@@ -5,7 +5,7 @@
 #include <string>
 
 #include "Transform.h"
-#include "Vector4.h"
+#include "ColorFunc.h"
 #include "Matrix4x4.h"
 
 namespace Tako {
@@ -45,7 +45,7 @@ namespace Tako {
     void SetTranslate(const Vector3& translate) { transform_.translate = translate; }
     void SetRotate(const Vector3& rotate) { transform_.rotate = rotate; }
     void SetScale(const Vector3& scale) { transform_.scale = scale; }
-    void SetColor(const Vector4& color) { color_ = color; }
+    void SetColor(const Color& color) { color_ = color; }
     void SetShape(DecalShape shape) { shape_ = shape; }
 
     /// <summary>
@@ -66,7 +66,7 @@ namespace Tako {
     //Getter
     //==========================================
     const Transform& GetTransform() const { return transform_; }
-    const Vector4& GetColor() const { return color_; }
+    const Color& GetColor() const { return color_; }
     DecalShape GetShape() const { return shape_; }
     float GetFanHalfAngle() const { return fanHalfAngle_; }
     float GetEdgeSoftness() const { return edgeSoftness_; }
@@ -80,7 +80,7 @@ namespace Tako {
     struct DecalDataGPU {
       Matrix4x4 decalWorldInverse; ///< ワールド→デカールローカル変換
       Matrix4x4 decalWorld;        ///< キューブのワールド行列（VP は描画時の ViewData 側）
-      Vector4 color;               ///< デカールカラー
+      Color   color;               ///< デカールカラー
       int32_t shapeType;           ///< 形状タイプ
       float fanHalfAngle;          ///< 扇形の半角
       float edgeSoftness;          ///< エッジのぼかし量
@@ -112,7 +112,7 @@ namespace Tako {
 
   private: //メンバー変数
     Transform transform_{ {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} };  ///< 位置/回転/スケール
-    Vector4   color_{ 1.0f, 0.2f, 0.1f, 0.5f };                                          ///< デカールカラー（デフォルト: 赤系半透明）
+    Color     color_{ 1.0f, 0.2f, 0.1f, 0.5f };                                          ///< デカールカラー（デフォルト: 赤系半透明）
 
     DecalShape shape_              = DecalShape::Circle;  ///< 形状
     float      fanHalfAngle_       = 1.5708f;             ///< 扇形の半角（デフォルト: π/2 = 90°）

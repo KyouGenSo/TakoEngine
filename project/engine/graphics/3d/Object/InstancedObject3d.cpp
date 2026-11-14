@@ -96,7 +96,7 @@ void InstancedObject3d::CreateInstanceBuffer() {
   dx12->GetDevice()->CreateShaderResourceView(instanceBuffer_.Get(), &srvDesc, cpuHandle);
 }
 
-uint32_t InstancedObject3d::AddInstance(const Transform& transform, const Vector4& color) {
+uint32_t InstancedObject3d::AddInstance(const Transform& transform, const Color& color) {
   if (instances_.size() >= MAX_INSTANCES) {
 #ifdef _DEBUG
     DebugUIManager::GetInstance()->AddLog(
@@ -153,7 +153,7 @@ void InstancedObject3d::UpdateInstance(uint32_t instanceId, const Transform& tra
   }
 }
 
-void InstancedObject3d::UpdateInstanceColor(uint32_t instanceId, const Vector4& color) {
+void InstancedObject3d::UpdateInstanceColor(uint32_t instanceId, const Color& color) {
   auto it = std::find_if(instances_.begin(), instances_.end(),
     [instanceId](const InternalInstanceData& data) {
       return data.id == instanceId && data.active;
@@ -219,7 +219,7 @@ void InstancedObject3d::ClearAllInstances() {
   UpdateAllInstances();
 }
 
-std::unique_ptr<ModelInstance> InstancedObject3d::CreateInstance(const Transform& transform, const Vector4& color) {
+std::unique_ptr<ModelInstance> InstancedObject3d::CreateInstance(const Transform& transform, const Color& color) {
   uint32_t id = AddInstance(transform, color);
   if (id == UINT32_MAX) {
     return nullptr;
@@ -240,13 +240,13 @@ const Transform& InstancedObject3d::GetInstanceTransform(uint32_t instanceId) co
   return defaultTransform;
 }
 
-const Vector4& InstancedObject3d::GetInstanceColor(uint32_t instanceId) const {
+const Color& InstancedObject3d::GetInstanceColor(uint32_t instanceId) const {
   auto it = std::find_if(instances_.begin(), instances_.end(),
     [instanceId](const InternalInstanceData& data) {
       return data.id == instanceId && data.active;
     });
 
-  static Vector4 defaultColor = Color::kWhite;
+  static Color defaultColor = Color::kWhite;
   if (it != instances_.end()) {
     return it->color;
   }
@@ -338,7 +338,7 @@ void ModelInstance::SetScale(const Vector3& scale) {
   }
 }
 
-void ModelInstance::SetColor(const Vector4& color) {
+void ModelInstance::SetColor(const Color& color) {
   if (parent_ && instanceId_ != UINT32_MAX) {
     parent_->UpdateInstanceColor(instanceId_, color);
   }
@@ -351,7 +351,7 @@ Transform ModelInstance::GetTransform() const {
   return Transform{};
 }
 
-Vector4 ModelInstance::GetColor() const {
+Color ModelInstance::GetColor() const {
   if (parent_ && instanceId_ != UINT32_MAX) {
     return parent_->GetInstanceColor(instanceId_);
   }

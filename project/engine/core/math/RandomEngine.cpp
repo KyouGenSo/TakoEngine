@@ -111,6 +111,14 @@ namespace Tako {
     return GetNormalized() < probability;
   }
 
+  Color RandomEngine::GetHueColor(float saturation, float value) {
+    return Color::FromHSV(GetNormalized(), saturation, value);
+  }
+
+  Color RandomEngine::GetColor(const Color& from, const Color& to) {
+    return Color::Lerp(from, to, GetNormalized());
+  }
+
   void RandomEngine::SetSeed(unsigned int seed) {
     generator = std::mt19937(seed);
     isInitialized = true;

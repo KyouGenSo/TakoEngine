@@ -111,22 +111,22 @@ namespace Tako {
     SetFlag(EFLAG_USE_DEPTH_COLLISION, useDepthCollision);
   }
 
-  void GPUParticleEmitter::SetColor(const Vector4& color)
+  void GPUParticleEmitter::SetColor(const Color& color)
   {
     SetColors(color, color);
   }
 
-  void GPUParticleEmitter::SetStartColor(const Vector4& color)
+  void GPUParticleEmitter::SetStartColor(const Color& color)
   {
     data_.startColorTint = color;
   }
 
-  void GPUParticleEmitter::SetEndColor(const Vector4& color)
+  void GPUParticleEmitter::SetEndColor(const Color& color)
   {
     data_.endColorTint = color;
   }
 
-  void GPUParticleEmitter::SetColors(const Vector4& startColor, const Vector4& endColor)
+  void GPUParticleEmitter::SetColors(const Color& startColor, const Color& endColor)
   {
     data_.startColorTint = startColor;
     data_.endColorTint = endColor;

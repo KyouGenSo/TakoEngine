@@ -625,7 +625,7 @@ namespace Tako {
     uavResource.state = D3D12_RESOURCE_STATE_COMMON;
   }
 
-  void DX12Basic::CreateRenderTextureResource(GpuResource& rendertextureResource, uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4& clearColor)
+  void DX12Basic::CreateRenderTextureResource(GpuResource& rendertextureResource, uint32_t width, uint32_t height, DXGI_FORMAT format, const Color& clearColor)
   {
     // テクスチャの設定
     D3D12_RESOURCE_DESC resourceDesc{};
@@ -645,10 +645,10 @@ namespace Tako {
     // クリア値の設定
     D3D12_CLEAR_VALUE clearValue{};
     clearValue.Format = format;
-    clearValue.Color[0] = clearColor.x;
-    clearValue.Color[1] = clearColor.y;
-    clearValue.Color[2] = clearColor.z;
-    clearValue.Color[3] = clearColor.w;
+    clearValue.Color[0] = clearColor.r;
+    clearValue.Color[1] = clearColor.g;
+    clearValue.Color[2] = clearColor.b;
+    clearValue.Color[3] = clearColor.a;
 
     // Resource の生成
     HRESULT hr = device_->CreateCommittedResource(

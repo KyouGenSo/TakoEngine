@@ -1380,7 +1380,7 @@ namespace Tako {
     UI::DragFloat("Rotation", &element.rotation, 0.5f, -360.0f, 360.0f, "%.1f deg");
 
     ImGui::SeparatorText("Appearance");
-    UI::ColorEdit4("Color", &element.color.x);
+    UI::ColorEdit4("Color", &element.color.r);
     if (!element.text) {
       ImGui::Checkbox("Flip X", &element.flipX);
       ImGui::SameLine();
@@ -1500,7 +1500,7 @@ namespace Tako {
     // 距離場が持つ範囲（Font::kSpread）より太くはできない
     const float maxOutline = text.size * static_cast<float>(Font::kSpread) / Font::kBakeSize * 0.9f;
     UI::DragFloat("Outline Width", &text.outlineWidth, 0.1f, 0.0f, maxOutline, "%.1f px");
-    UI::ColorEdit4("Outline Color", &text.outlineColor.x);
+    UI::ColorEdit4("Outline Color", &text.outlineColor.r);
   }
 
   void UILayoutEditor::DrawSliceUsers(const UIElement& element) {
@@ -1989,7 +1989,7 @@ namespace Tako {
 
     const Vector2           texSize  = { static_cast<float>(metadata.width), static_cast<float>(metadata.height) };
     const Sprite::SliceGrid grid     = Sprite::CalcSliceGrid(size, slice.border, layout.GetScale(), element.uvLeftTop, element.uvSize, texSize);
-    const ImU32             tint     = ImGui::ColorConvertFloat4ToU32(ImVec4(element.color.x, element.color.y, element.color.z, element.color.w));
+    const ImU32             tint     = ImGui::ColorConvertFloat4ToU32(ImVec4(element.color.r, element.color.g, element.color.b, element.color.a));
     ImDrawList*             drawList = ImGui::GetWindowDrawList();
     drawList->PushClipRect(canvasMin, ImVec2(canvasMin.x + avail.x, canvasMin.y + avail.y), true);
 

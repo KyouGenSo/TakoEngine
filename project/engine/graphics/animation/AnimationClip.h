@@ -2,7 +2,7 @@
 #include "EaseFunc.h"
 #include "Vector2.h"
 #include "Vector3.h"
-#include "Vector4.h"
+#include "ColorFunc.h"
 #include <json.hpp>
 #include <cstdint>
 #include <optional>
@@ -42,7 +42,7 @@ namespace Tako {
     Vector3 translate = { 0.0f, 0.0f, 0.0f };        ///< 加算
     Vector3 rotate    = { 0.0f, 0.0f, 0.0f };        ///< 加算。度
     Vector3 scale     = { 1.0f, 1.0f, 1.0f };        ///< 乗算。UI は pivot が中心
-    Vector4 color     = { 1.0f, 1.0f, 1.0f, 1.0f };  ///< 乗算
+    Color   color     = { 1.0f, 1.0f, 1.0f, 1.0f };  ///< 乗算
     int     frame     = -1;                          ///< 切り出し範囲を columns×rows に分けたコマ番号（左上から行順）。-1 なら切り替えない
     int     columns   = 1;
     int     rows      = 1;

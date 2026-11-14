@@ -8,7 +8,7 @@
 
 namespace Tako {
 
-  void RenderTexture::Create(DX12Basic* dx12, uint32_t textureWidth, uint32_t textureHeight, DXGI_FORMAT textureFormat, const Vector4& clearColor, bool forceOpaqueAlpha)
+  void RenderTexture::Create(DX12Basic* dx12, uint32_t textureWidth, uint32_t textureHeight, DXGI_FORMAT textureFormat, const Color& clearColor, bool forceOpaqueAlpha)
   {
     width = textureWidth;
     height = textureHeight;

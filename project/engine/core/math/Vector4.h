@@ -144,27 +144,6 @@ namespace Tako {
     }
 
     /// <summary>
-    /// 等価演算子(イプシロン比較)
-    /// </summary>
-    /// <param name="v">比較するベクトル</param>
-    /// <returns>ほぼ等しい場合 true</returns>
-    bool operator==(const Vector4& v) const {
-      return (std::abs(x - v.x) <= std::numeric_limits<float>::epsilon() &&
-        std::abs(y - v.y) <= std::numeric_limits<float>::epsilon() &&
-        std::abs(z - v.z) <= std::numeric_limits<float>::epsilon() &&
-        std::abs(w - v.w) <= std::numeric_limits<float>::epsilon());
-    }
-
-    /// <summary>
-    /// 非等価演算子
-    /// </summary>
-    /// <param name="v">比較するベクトル</param>
-    /// <returns>等しくない場合 true</returns>
-    bool operator!=(const Vector4& v) const {
-      return !(*this == v);
-    }
-
-    /// <summary>
     /// 正規化ベクトルを取得
     /// </summary>
     /// <returns>正規化されたベクトル(長さが1のベクトル)。ゼロベクトルの場合はゼロベクトルを返す</returns>
@@ -253,5 +232,26 @@ namespace Tako {
       };
     }
   };
+
+  // メンバーにしない：Color は Vector4 に自動で変わり、Color どうし・Color と Vector4 の比較もこれを使う
+
+  /// <summary>
+  /// 等価演算子(イプシロン比較)
+  /// </summary>
+  /// <returns>ほぼ等しい場合 true</returns>
+  inline bool operator==(const Vector4& a, const Vector4& b) {
+    return (std::abs(a.x - b.x) <= std::numeric_limits<float>::epsilon() &&
+      std::abs(a.y - b.y) <= std::numeric_limits<float>::epsilon() &&
+      std::abs(a.z - b.z) <= std::numeric_limits<float>::epsilon() &&
+      std::abs(a.w - b.w) <= std::numeric_limits<float>::epsilon());
+  }
+
+  /// <summary>
+  /// 非等価演算子
+  /// </summary>
+  /// <returns>等しくない場合 true</returns>
+  inline bool operator!=(const Vector4& a, const Vector4& b) {
+    return !(a == b);
+  }
 
 } // namespace Tako

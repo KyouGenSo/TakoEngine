@@ -254,10 +254,10 @@ namespace Tako {
       case AnimProperty::ScaleX:     pose.scale.x *= value; break;
       case AnimProperty::ScaleY:     pose.scale.y *= value; break;
       case AnimProperty::ScaleZ:     pose.scale.z *= value; break;
-      case AnimProperty::ColorR:     pose.color.x *= value; break;
-      case AnimProperty::ColorG:     pose.color.y *= value; break;
-      case AnimProperty::ColorB:     pose.color.z *= value; break;
-      case AnimProperty::ColorA:     pose.color.w *= value; break;
+      case AnimProperty::ColorR:     pose.color.r *= value; break;
+      case AnimProperty::ColorG:     pose.color.g *= value; break;
+      case AnimProperty::ColorB:     pose.color.b *= value; break;
+      case AnimProperty::ColorA:     pose.color.a *= value; break;
       case AnimProperty::Frame:
         pose.frame   = (std::max)(static_cast<int>(std::floor(value)), 0);
         pose.columns = (std::max)(track.columns, 1);

@@ -3,7 +3,7 @@
 #include <memory>
 #include <string>
 #include "Vector2.h"
-#include "Vector4.h"
+#include "ColorFunc.h"
 
 namespace Tako {
 
@@ -25,7 +25,7 @@ namespace Tako {
     /// 色指定コンストラクタ
     /// </summary>
     /// <param name="color">フェード色（RGBA）</param>
-    explicit FadeTransition(const Vector4& color);
+    explicit FadeTransition(const Color& color);
 
     /// <summary>
     /// テクスチャ指定コンストラクタ
@@ -70,7 +70,7 @@ namespace Tako {
     /// フェード色の設定
     /// </summary>
     /// <param name="color">新しいフェード色</param>
-    void SetColor(const Vector4& color);
+    void SetColor(const Color& color);
 
     //=====================================
     //Getter
@@ -92,7 +92,7 @@ namespace Tako {
 
     //表示
     float       alpha_;
-    Vector4     fadeColor_;
+    Color       fadeColor_;
     std::string textureName_;
 
     std::unique_ptr<Sprite> fadeSprite_;  ///< スプライト

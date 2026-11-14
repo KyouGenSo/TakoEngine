@@ -71,7 +71,7 @@ namespace Tako {
     binder.BindCBV("LightConstants"_id, lightConstantsResource_->GetGPUVirtualAddress());
   }
 
-  void Light::SetDirectionalLight(const Vector3& direction, const Vector4& color, int32_t lightType, float intensity)
+  void Light::SetDirectionalLight(const Vector3& direction, const Color& color, int32_t lightType, float intensity)
   {
     directionalLightData_->direction = direction;
     directionalLightData_->color = color;

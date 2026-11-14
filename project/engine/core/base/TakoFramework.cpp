@@ -21,6 +21,7 @@
 #include "ProjectSettings.h"
 #include "StringUtility.h"
 #include "TypeRegistry.h"
+#include "ColorFunc.h"
 #include "ReflectionSelfTest.h"
 #include "SceneSelfTest.h"
 
@@ -44,6 +45,7 @@ namespace Tako {
     GameModule::Load();
 #ifdef _DEBUG
     RunReflectionSelfTest();
+    RunColorSelfTest();
 #endif
 
 #pragma region ウィンドウの初期化-------------------------------------------------------------------------------------------------------------------

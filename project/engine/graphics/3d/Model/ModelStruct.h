@@ -11,6 +11,7 @@
 
 #include "vector2.h"
 #include "vector3.h"
+#include "ColorFunc.h"
 #include "vector4.h"
 #include "Matrix4x4.h"
 #include "Quaternion.h"
@@ -49,7 +50,7 @@ namespace Tako {
   struct TextureData {
     std::string texturePath;   ///< テクスチャファイルのパス
     uint32_t    textureIndex;  ///< TextureManager でのインデックス
-    Vector4     baseColor;     ///< 基本色（テクスチャと乗算される）
+    Color       baseColor;     ///< 基本色（テクスチャと乗算される）
   };
 
   /// <summary>
@@ -100,7 +101,7 @@ namespace Tako {
   /// </summary>
   struct MaterialConstants
   {
-    Vector4   color;              ///< マテリアルカラー（RGBA）
+    Color     color;              ///< マテリアルカラー（RGBA）
     int32_t   enableLighting;     ///< ライティング有効フラグ（0=無効, 1=有効）
     float     padding1[3];        ///< 16バイトアライメント用パディング
     Matrix4x4 uvTransform;        ///< UV 座標変換行列（テクスチャアニメーション用）
@@ -252,7 +253,7 @@ namespace Tako {
   struct InstanceData {
     Matrix4x4 world;              ///< ワールド変換行列
     Matrix4x4 worldInvTranspose;  ///< ワールド逆転置行列（法線変換用）
-    Vector4   color;              ///< インスタンス固有のカラー
+    Color     color;              ///< インスタンス固有のカラー
     float     padding[12];        ///< 16バイトアラインメント用パディング（定数バッファは256バイト境界）
   };
 

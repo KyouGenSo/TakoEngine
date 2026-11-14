@@ -3,7 +3,7 @@
 #include <memory>
 #include <string>
 #include "Vector2.h"
-#include "Vector4.h"
+#include "ColorFunc.h"
 
 namespace Tako {
 
@@ -38,7 +38,7 @@ namespace Tako {
     /// <param name="center">円の中心位置</param>
     /// <param name="color">背景色</param>
     /// <param name="expandOut">拡大方向</param>
-    ScaleTransition(const Vector2& center, const Vector4& color, bool expandOut = true);
+    ScaleTransition(const Vector2& center, const Color& color, bool expandOut = true);
 
     /// <summary>
     /// デストラクタ
@@ -79,7 +79,7 @@ namespace Tako {
     /// <param name="center">新しい中心位置</param>
     void SetCenter(const Vector2& center);
 
-    void SetColor(const Vector4& color);
+    void SetColor(const Color& color);
 
     //=====================================
     //Getter
@@ -101,7 +101,7 @@ namespace Tako {
     //パラメータ
     Vector2 center_;     ///< 円の中心位置
     bool    expandOut_;  ///< 拡大方向（true: 内→外, false: 外→内）
-    Vector4 color_;      ///< 背景色
+    Color   color_;      ///< 背景色
 
     //現在の値
     float currentRadius_;  ///< 現在の半径（スケール値として使用）
