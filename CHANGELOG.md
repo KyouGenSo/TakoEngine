@@ -1,16 +1,11 @@
 # 変更履歴
 
-エンジンを更新したときに、ゲーム側で直す所が分かるように書く。バージョンごとに「追加」「変更」「直しが要る変更」の順。
-
-`UpdateEngine.bat` は、更新する前のバージョンより新しい分をここから抜き出して表示する。リリースの本文と Discord の通知も、そのバージョンの節をここから抜き出す。見出しは `## [バージョン] - 日付` の形にする。
-
 ## [2.1.2] - 2026-11-14
 
 ### 追加
-- スクリプトのコンパイル中、画面の右下に、動くバーと今コンパイルしているファイル名・経過秒を出す（割合は出さない。MSBuild は全部で何ファイルかを出さないため）
-- `UpdateEngine.bat`：ダウンロードの進み具合を、1 行のバーで出す（`curl.exe` を使う。Windows 10 以降に入っている）
+- スクリプトのコンパイル中、画面の右下に、動くバーと今コンパイルしているファイル名・経過秒を出す
+- `UpdateEngine.bat`：ダウンロードの進み具合を、1 行のバーで出す
 - `UpdateEngine.bat`：エンジンを入れた後、エンジンの中のテンプレート（`templates/Default/UpdateEngine.ps1`）の方が新しければ、プロジェクトの `UpdateEngine.ps1` も入れ替える（プロジェクトの git に差分が出るので、コミットする）。`UpdateEngine.bat` は入れ替えない
-- リリースを公開したとき、Discord に通知する（`.github/workflows/Release.yml`。ウェブフックの URL は、リポジトリの Secrets の `DISCORD_WEBHOOK`。無ければ送らない）
 - ライセンス（MIT。`LICENSE`）。SDK の zip にも入る
 - 色の構造体 `Color`（RGBA）・`ColorHSV`・`Color32`（0〜255）と、変換（`ToHSV`・`ToColor`・`ToColor32`・`Color32::FromHex`・`ToHex`）。名前の付いた色（`Color::kRed` など 10 個）、`WithAlpha`・`Lerp`・`LerpHSV`（色相環に沿って補間）・`FromKelvin`（色温度）・`+ - * /`（`ColorFunc.h`）
 - `Gradient`（色の段階。`Evaluate(t)` がその位置の色を返す。`TPROPERTY` にすると、Inspector で段階を編集でき、段階の上に色の帯が出る。`Gradient.h`）
@@ -22,25 +17,20 @@
 - `TPROPERTY` の指定子 `HDR`（色の欄で 1 を超える値を入れられる）。Particle Editor の Start Color・End Color も 1 を超えられる
 
 ### 変更
-- スクリプトのコンパイルのエラーと警告で、日本語が文字化けしていたのを直した（MSBuild は UTF-8 で書くのに、Shift_JIS として読んでいた）。行の末尾の `[プロジェクトのパス]` も、落ちるようになった
+- スクリプトのコンパイルのエラーと警告で、日本語が文字化けしていたのを直した。行の末尾の `[プロジェクトのパス]` も、落ちるようになった
 - エディタでプロジェクトを開くときに、足りない空のフォルダー（`Source`、`resources` の `Texture`・`Model`・`Sound`・`Fonts` など 15 個）を作るようにした（git は空のフォルダーを持てないので、clone した人の所には無かった）。わざと消したフォルダーも、次に開いたときに戻る
 - `UpdateEngine.bat`：更新の後に出す変更履歴を、Markdown の記号を外し、見出しに色を付けて出すようにした。最後に、リリースページの URL を出す
-- リリースの本文を、`CHANGELOG.md` のそのバージョンの節にした（今までは「See CHANGELOG.md」だけだった）。節が無いタグは、リリースのビルドの前に失敗する
-- `README.md` を英語にし、日本語は `README.ja.md` に分けた。特徴・使っているライブラリ・エディタの画像を足し、ロゴの画像を外した
-- エンジンの色の引数・戻り値・データを、`Vector4` から `Color` にした（`SetColor`・`SetMaterialColor`・`GetMaterialColor`・`DrawLine` など。GPU に送る構造体の色の欄も）。`Vector4` と `Color` は互いに自動で変わるので、`Vector4` で書いたゲームのコードはそのまま動く。保存の形（4 つの数の配列）は変えていない
+- `README.md` を英語にし、日本語は `README.ja.md` に分けた
+- エンジンの色の引数・戻り値・データを、`Vector4` から `Color` にした（`SetColor`・`SetMaterialColor`・`GetMaterialColor`・`DrawLine` など）。`Vector4` と `Color` は互いに自動で変わるので、`Vector4` で書いたゲームのコードはそのまま動く。保存の形（4 つの数の配列）は変えていない
 - `Color::kWhite`・`kClear` の型と、`Color::FromHex`・`FromHSV` の戻り値を、`Vector4` から `Color` にした（`Color` は名前空間から構造体になった）
-- `Vector4` の `==`・`!=` を、メンバーから名前空間の関数にした（`Color` どうしや、`Color` と `Vector4` を比べられるように。中身は同じ）
-- 画像が、ファイルどおりの色で出るようになった（今までは sRGB の画像をリニアに直したまま画面へ書いていて、暗く出ていた。128 が 55 になっていた）。Assets のサムネイルも同じ
+- 画像が、ファイルどおりの色で出るようになった（今までは暗く出ていた。128 が 55 になっていた）。Assets のサムネイルと、`TextureManager::GetSRVGPUHandle` で ImGui に出す画像も同じ
 - 色の値（`Color`・Inspector・JSON・16 進数）は、今までどおり sRGB で書く。シーンへ描くときにエンジンがリニアに直す（マテリアルの定数とポストエフェクトの `gParam` のうち名前に color を含む float3/float4、ライト・デカール・線・粒子・インスタンシングの色、Bloom の tint、クリア色）
-- UI（描画キューが Overlay 以上）と、AfterPostProcess 以降のパス・ポストエフェクトは、今までどおりガンマで描く（色も画像も値のまま。半透明の重なり方も今と同じ）
+- UI（描画キューが Overlay 以上）と、AfterPostProcess・BeforeUI・AfterUI に差し込むパスとポストエフェクトは、今までどおりガンマで描く（色も画像も値のまま。半透明の重なり方も今と同じ）。postEffect をオンにした UI（UILayout）には、シーンと一緒にトーンマップも掛かる（None なら値は今と同じ）
 - ライト・半透明の重なり・加算・ブルーム・空の見た目が変わる（リニアで計算するため。ライトの当たり方は明るく柔らかくなる）
-- glTF（`.gltf`・`.glb`）のベースカラーは、仕様どおりリニアとして読み、sRGB に直して持つ
-- FXAA は、明るさを sRGB に直してから縁を探す。Bloom の合成の 8 bit 用のディザを外した（最後のトーンマップでまとめて掛ける）
-- ポストエフェクトがあるときも、最後にトーンマップの全画面のパスを 1 回描く（今までは、最後のエフェクトが最終結果へ直接書いていた）
+- glTF（`.gltf`・`.glb`）のベースカラーを、仕様どおりリニアの値として読む（今までより明るく、仕様どおりの色で出る。Inspector には見た目どおりの値が出る）
 - エディタのプレビュー（Debug Viewport・各エディタ）も、本編と同じトーンマップで出す
-- マテリアルの定数を CPU のメモリに持ち、描くたびに 1 フレーム用のバッファ（`UploadAllocator`）へ写して渡すようにした。このバッファは、4 MB のページが尽きるとページを足す（今までは 4 MB を超えると、Release では確かめずにバッファの外へ書いていた）
-- `TextureManager::GetSRVGPUHandle`（ImGui 用）は、ファイルの値のまま読むビューを返す
-- Particle Editor で、動いているエミッターを開いたりクリックしたりしただけで未保存（` *`）になり、終了時に確認が出ていたのを直した（毎フレーム変わる射出のタイマーと射出中の印まで、編集の前後で比べていた）。値を戻したときや、Undo で保存した所まで戻したときも、` *` が消える
+- Release で、1 フレームに約 16,000 回を超えて描くと、メモリを壊す恐れがあったのを直した
+- Particle Editor で、動いているエミッターを開いたりクリックしたりしただけで未保存（` *`）になり、終了時に確認が出ていたのを直した。値を戻したときや、Undo で保存した所まで戻したときも、` *` が消える
 
 ### 直しが要る変更（ゲーム側）
 - `Color::WithAlpha(色, a)` は `色.WithAlpha(a)` にする
@@ -50,15 +40,12 @@
 - 見た目が変わるので、ライトの色と強さ、半透明・加算のエフェクト、ブルームのしきい値と強さ、0〜1 を前提にしたポストエフェクト（BWFilter・HalfTone・WhiteNoise・GrayScale など）を見直す
 - ノイズ・マスク・法線など、色でない画像は、Assets の右クリックで Color (sRGB) を外す
 - 自作のシェーダーには、リニアの値が入る。gMaterial・gParam の、名前に color を含む float3/float4 は自動で直る。それ以外の色は `Common.hlsli` の `SRGBToLinear` で直す
-- .shader.json の途中のパスの Format に 8 bit の形式を指定したポストエフェクトは、1 を超える明るさが切れる
-- AfterPostProcess・BeforeUI・AfterUI に差し込むパスは、ガンマ（sRGB の値）の描き先に描く。postEffect をオンにした UI（UILayout）には、シーンと一緒にトーンマップも掛かる（None なら値は今と同じ）
-- `Material(dx12, shader)` は `Material(shader)` にする。`PreviewViewport::BeginPass(bool)` は引数なしにする。`TextureManager::ReleaseIntermediateResources()` は `EndFrame()` にする
-- `Light::GetDirectionalLight().color` は、GPU に渡すリニアの値になった
+- .shader.json の途中のパスの Format に 8 bit の形式を指定したポストエフェクトは、1 を超える明るさが切れる。残すなら Format を外す（入力と同じになる）か、`R16G16B16A16_FLOAT` にする
+- `Light::GetDirectionalLight()` の `color` は、GPU に渡すリニアの値になった。その色を `SetDirectionalLight`・`SetDirectionalLightColor` に渡し直すときは、`ToSRGB()` で戻してから渡す（そのまま渡すと 2 回直されて暗くなる）
 
 ## [2.1.1] - 2026-11-13
 
 ### 変更
-- エンジンのプロジェクト名を `02_Engine` から `TakoEngine` にした。`TakoEngine.sln` の最初のプロジェクトを `TakoEditor` にした（開いて F5 を押すと、エディタが起動する）
 - エンジンのフォルダーの中には、プロジェクトを作れないようにした（作ると、プロジェクトのエンジンへのリンクが自分の親を指していた）
 - プロジェクトを指定せずに `TakoEditor.exe` を起動して作るとき、作る場所と、使うエンジンを出して確かめるようにした。場所を選ぶダイアログは、ドキュメントから始まる
 - プロジェクトの中のエンジン（`UpdateEngine.bat` が入れた写し）のエディタで New Project すると、新しいプロジェクトにエンジンを写すようにした（今までは、元のプロジェクトの中のエンジンへリンクしていた。元のプロジェクトがエンジンを更新したり、消えたりすると、巻き込まれていた）
@@ -66,10 +53,8 @@
 - `UpdateEngine.bat`：エンジンをリンクで共有しているプロジェクトでは、共有先・更新のしかた（git なら pull してビルド、zip なら開き直す）・このプロジェクトだけにエンジンを持たせる手順を出す
 - `UpdateEngine.bat`：ダウンロードする一時ファイルの名前を、実行ごとに変えた（2 つ同時に流すと「ファイルが使用中」で失敗していた）
 - テンプレートの vcxproj：エンジンが無い状態（clone した直後など）でビルドすると、「UpdateEngine.bat を実行する」と出して止まるようにした（今までは、設定ファイルが見つからないというエラーだけだった）
-- Debug で、デバッグレイヤーを取れなかったときは、DXGI ファクトリに DEBUG を付けないようにした（Windows の「グラフィックス ツール」が入っていない PC で、起動時に止まる恐れがあった）
+- Windows の「グラフィックス ツール」が入っていない PC で、Debug の起動時に止まる恐れがあったのを直した
 - `README.md` に、フォルダーの見分け方と始め方（新しいゲームを作る・チームのゲームに参加する・エンジンを開発する）を書いた
-- `tools/package_sdk.ps1`：Visual Studio でエンジンを開いたまま流すと終わらなかったのを直した（`.vs` を写そうとして、Visual Studio が掴んでいるファイルを待ち続けていた）。`.vs` と、git の対象外の開発用の物（`Docs` など）は zip に入れず、掴まれたファイルは 2 回やり直して失敗にする
-- リリースの手順を 1 つにした `tools/release.ps1` を足した
 
 ### 直しが要る変更（ゲーム側）
 - 無し。既にあるプロジェクトの `UpdateEngine.ps1` と vcxproj は、作ったときの写しのまま動く。新しい案内と「エンジンが無いときのエラー」を入れるなら、`templates/Default/UpdateEngine.ps1` を写し直し、vcxproj に `TakoCheckEngine`（`templates/Default/GameProject/__ProjectName__.vcxproj` の `InitialTargets`・`Import` の `Condition`・`Target`）を足す
@@ -83,25 +68,20 @@
 - Auto Compile（Engine Settings > Editor）。エディタのウィンドウが前面に戻ったとき、`Script/`・`Source/` に変更があればコンパイルする
 - プロジェクトの作成（File > New Project、`TakoEditor.exe --new 場所 名前`）と、File > Open Project / Open Recent
 - プロジェクトの印 `名前.takoproject`（最後に開いたエンジンのバージョンと、保存形式の番号）
-- 保存形式の移行の仕組み（`editor/ProjectMigration.cpp` の表）。古い形式のプロジェクトは、バックアップを取ってから直す
+- 保存形式の移行。古い形式のプロジェクトを開くと、`resources/Json` の写しを `Generated/Backup` に取ってから、今の形式に直す
 - `UpdateEngine.bat`（エンジンを入れる・更新する）。`-Zip <ファイル>` で、手元で作った SDK の zip を入れられる（リリース前のエンジンを試す用）
 - 新しいリリースの通知（Engine Settings > Editor > Check for Updates。1 日 1 回）
 - 配置ファイル（imgui.ini）が無いときの既定のウィンドウの並び
 - クラッシュ対策。未保存のシーンの中身を `Generated/Recovery/` に書いておき（Play の前・コンパイルの前・未保存のまま 2 分ごと）、正常に終了しなかった次の起動で、読み込むか捨てるかを聞く
 - 落ちたときに `Generated/Crashes/` へミニダンプを書く（Visual Studio で開くと、落ちた場所と呼び出し履歴が見える）。落ちた次の起動は、Play ではなく Edit で始まる
-- 配る用の zip（SDK）を作る `tools/package_sdk.ps1` と、zip だけでプロジェクトを作ってビルドできるかを確かめる `tools/test_sdk.ps1`。タグ `v*` の push で両方を流してリリースに添付するワークフロー（`.github/workflows/Release.yml`）
 
 ### 変更
 - エンジンのビルド結果は、エンジンのフォルダーの `bin/`・`obj/` に出る（ゲームの `Generated/` には出ない）
-- エンジンの include パスの一覧は `build/TakoEngineCommon.props` の 1 か所になった。engine 以下にフォルダーを足したら、ここに 1 行足す
 - ゲームのビルドは、エンジンのライブラリを `Engine/TakoEngine/bin/` から直接リンクする（プロジェクト参照は要らない）
-- `RandomEngine` の乱数ジェネレータは `.cpp` の中に移した（使い方は変わらない）
-- Debug でエンジンのシェーダーのソースを探す場所を、ビルドしたときのパスではなく、動いているエンジンのフォルダーから決めるようにした（SDK は、SDK の中のシェーダーを読む）
 
 ### 直しが要る変更（ゲーム側）
 - ゲームの `.vcxproj`：Debug の `ConfigurationType` を `DynamicLibrary` にする。エンジン・imgui・DirectXTex への `ProjectReference` を消す
 - ゲームの `.sln`：エンジンのプロジェクトを持つなら `editor_app/TakoEditor.vcxproj` を足し、ゲームのプロジェクトの依存に入れる（エンジンのプロジェクトを持たない形でもよい）
 - プロジェクトのルートに `名前.takoproject`（`{ "engineVersion": "2.1.0", "formatVersion": 1 }`）を置く
 - Debug で起動する exe の名前が `TakoEditor.exe` になった。exe の名前で設定している外部のツール（ウィンドウマネージャーの除外など）は直す
-- エンジンのクラスを増やすときは `class TAKO_API 名前` と書く（TCLASS に無ければ、ビルドの時点でエラーになる）
 - ゲームがエンジンの全体の表に登録した物（`RegisterPostEffect`・`RenderPipeline::AddRenderPass`・`TransitionManager::SetCurrentEffect`）は、`EndPlay` で外す。ホットリロードで古い DLL のコードを指したまま残るため
