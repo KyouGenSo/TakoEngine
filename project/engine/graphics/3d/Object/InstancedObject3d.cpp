@@ -182,7 +182,7 @@ void InstancedObject3d::UpdateAllInstances() {
 
       mappedInstanceData_[activeCount].world = worldMatrix;
       mappedInstanceData_[activeCount].worldInvTranspose = Mat4x4::InverseTranspose(worldMatrix);
-      mappedInstanceData_[activeCount].color = instance.color;
+      mappedInstanceData_[activeCount].color = instance.color.ToLinear();
       activeCount++;
     }
   }

@@ -128,7 +128,7 @@ namespace Tako {
     /// 平行光源の方向を設定（自動更新時は位置をシーン中心へリセット）
     /// </summary>
     void SetDirectionalLightDirection(const Vector3& direction);
-    void SetDirectionalLightColor(const Color& color) { directionalLightData_->color = color; }
+    void SetDirectionalLightColor(const Color& color) { directionalLightData_->color = color.ToLinear(); }
     void SetDirectionalLightType(int32_t lightType) { directionalLightData_->lightType = lightType; }
     void SetDirectionalLightIntensity(float intensity) { directionalLightData_->intensity = intensity; }
     void SetDirectionalLightPosition(const Vector3& position) { directionalLightData_->position = position; }
@@ -140,6 +140,9 @@ namespace Tako {
     //============================================================
     //Getter
     //============================================================
+    /// <summary>
+    /// GPU に渡している値（color は Set* で渡した色をリニアに直した後の値）
+    /// </summary>
     const DirectionalLight& GetDirectionalLight() const { return *directionalLightData_; }
     bool GetAutoUpdatePosition() const { return autoUpdatePosition_; }
     Vector3 GetSceneCenter() const { return sceneCenter_; }

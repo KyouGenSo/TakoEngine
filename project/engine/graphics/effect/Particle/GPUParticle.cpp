@@ -563,6 +563,9 @@ namespace Tako {
       if (activeEmitters_[i]) {
         const EmitterData& ed = activeEmitters_[i]->GetData();
         gpuEmitters[i] = ed;
+        // 粒子はシーン（リニア）にだけ描くので、色は GPU に渡すときにリニアにする
+        gpuEmitters[i].startColorTint = ed.startColorTint.ToLinear();
+        gpuEmitters[i].endColorTint   = ed.endColorTint.ToLinear();
         // 描画テンプレート: 描画モデルの index 数 (= 1パーティクルあたりの描画頂点数)。
         // 描画モデル未指定 (renderIndexCount==0) のエミッターはデフォルト板ポリ。
         if (emitterIndexCountData_) {

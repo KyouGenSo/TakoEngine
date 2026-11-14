@@ -30,9 +30,10 @@
 - `Color::kWhite`・`kClear` の型と、`Color::FromHex`・`FromHSV` の戻り値を、`Vector4` から `Color` にした（`Color` は名前空間から構造体になった）
 - `Vector4` の `==`・`!=` を、メンバーから名前空間の関数にした（`Color` どうしや、`Color` と `Vector4` を比べられるように。中身は同じ）
 - 画像が、ファイルどおりの色で出るようになった（今までは sRGB の画像をリニアに直したまま画面へ書いていて、暗く出ていた。128 が 55 になっていた）。Assets のサムネイルも同じ
-- 色の値（`Color`・Inspector・JSON・16 進数）は、今までどおり sRGB で書く。シーンへ描くときにエンジンがリニアに直す（マテリアルの定数とポストエフェクトの `gParam` のうち名前に color を含む float3/float4、Bloom の tint、クリア色）
+- 色の値（`Color`・Inspector・JSON・16 進数）は、今までどおり sRGB で書く。シーンへ描くときにエンジンがリニアに直す（マテリアルの定数とポストエフェクトの `gParam` のうち名前に color を含む float3/float4、ライト・デカール・線・粒子・インスタンシングの色、Bloom の tint、クリア色）
 - UI（描画キューが Overlay 以上）と、AfterPostProcess 以降のパス・ポストエフェクトは、今までどおりガンマで描く（色も画像も値のまま。半透明の重なり方も今と同じ）
 - ライト・半透明の重なり・加算・ブルーム・空の見た目が変わる（リニアで計算するため。ライトの当たり方は明るく柔らかくなる）
+- glTF（`.gltf`・`.glb`）のベースカラーは、仕様どおりリニアとして読み、sRGB に直して持つ
 - FXAA は、明るさを sRGB に直してから縁を探す。Bloom の合成の 8 bit 用のディザを外した（最後のトーンマップでまとめて掛ける）
 - ポストエフェクトがあるときも、最後にトーンマップの全画面のパスを 1 回描く（今までは、最後のエフェクトが最終結果へ直接書いていた）
 - エディタのプレビュー（Debug Viewport・各エディタ）も、本編と同じトーンマップで出す
@@ -50,6 +51,7 @@
 - .shader.json の途中のパスの Format に 8 bit の形式を指定したポストエフェクトは、1 を超える明るさが切れる
 - AfterPostProcess・BeforeUI・AfterUI に差し込むパスは、ガンマ（sRGB の値）の描き先に描く。postEffect をオンにした UI（UILayout）には、シーンと一緒にトーンマップも掛かる（None なら値は今と同じ）
 - `Material(dx12, shader)` は `Material(shader)` にする。`PreviewViewport::BeginPass(bool)` は引数なしにする。`TextureManager::ReleaseIntermediateResources()` は `EndFrame()` にする
+- `Light::GetDirectionalLight().color` は、GPU に渡すリニアの値になった
 
 ## [2.1.1] - 2026-11-13
 

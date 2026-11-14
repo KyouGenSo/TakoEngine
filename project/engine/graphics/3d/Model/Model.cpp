@@ -15,7 +15,9 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cctype>
 #include <cmath>
+#include <filesystem>
 #include <fstream>
 #include <set>
 #include <sstream>
@@ -216,6 +218,11 @@ namespace Tako {
     );
     assert(scene->HasMeshes());
 
+    // glTF の色はリニアで書く決まりなので、エンジンの色（sRGB）に直して持つ
+    std::string extension = std::filesystem::path(fileName).extension().string();
+    std::ranges::transform(extension, extension.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    const bool linearColors = extension == ".gltf" || extension == ".glb";
+
     // アニメーションの有無を自動判定
     hasAnimation_ = scene->HasAnimations();
 
@@ -327,14 +334,11 @@ namespace Tako {
       if (mesh->mMaterialIndex < scene->mNumMaterials) {
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-        // ベースカラーの読み込み
+        // ベースカラーの読み込み（PBR マテリアルの場合は BASE_COLOR も試す）
         aiColor4D baseColor;
-        if (material->Get(AI_MATKEY_COLOR_DIFFUSE, baseColor) == AI_SUCCESS) {
-          textureData.baseColor = Vector4(baseColor.r, baseColor.g, baseColor.b, baseColor.a);
-        }
-        // PBR マテリアルの場合は BASE_COLOR も試す
-        else if (material->Get(AI_MATKEY_BASE_COLOR, baseColor) == AI_SUCCESS) {
-          textureData.baseColor = Vector4(baseColor.r, baseColor.g, baseColor.b, baseColor.a);
+        if (material->Get(AI_MATKEY_COLOR_DIFFUSE, baseColor) == AI_SUCCESS || material->Get(AI_MATKEY_BASE_COLOR, baseColor) == AI_SUCCESS) {
+          const Color color(baseColor.r, baseColor.g, baseColor.b, baseColor.a);
+          textureData.baseColor = linearColors ? color.ToSRGB() : color;
         }
 
         // テクスチャの読み込み

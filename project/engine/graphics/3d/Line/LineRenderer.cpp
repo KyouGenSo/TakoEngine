@@ -65,8 +65,10 @@ namespace Tako {
 #endif // _DEBUG
   }
 
-  void LineRenderer::DrawLine(const Vector3& start, const Vector3& end, const Color& color)
+  void LineRenderer::DrawLine(const Vector3& start, const Vector3& end, const Color& srgbColor)
   {
+    // 線はシーン（リニア）にだけ描くので、頂点の色は積むときにリニアにする
+    const Color color = srgbColor.ToLinear();
 #ifdef _DEBUG
     // プレビューバッチ中はプレビュー専用バッファへ振り向ける
     if (previewBatchMode_) {

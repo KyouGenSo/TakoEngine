@@ -35,6 +35,7 @@ namespace Tako {
     int& count = lightConstantsData_->numPointLights;
     if (count < MAX_POINT_LIGHT) {
       pointLightData_[count] = light;
+      pointLightData_[count].color = light.color.ToLinear();
       pointLightData_[count].enable = true;
       ++count;
     }
@@ -45,6 +46,7 @@ namespace Tako {
     int& count = lightConstantsData_->numSpotLights;
     if (count < MAX_SPOT_LIGHT) {
       spotLightData_[count] = light;
+      spotLightData_[count].color = light.color.ToLinear();
       spotLightData_[count].enable = true;
       ++count;
     }
@@ -74,7 +76,7 @@ namespace Tako {
   void Light::SetDirectionalLight(const Vector3& direction, const Color& color, int32_t lightType, float intensity)
   {
     directionalLightData_->direction = direction;
-    directionalLightData_->color = color;
+    directionalLightData_->color = color.ToLinear();
     directionalLightData_->lightType = lightType;
     directionalLightData_->intensity = intensity;
 

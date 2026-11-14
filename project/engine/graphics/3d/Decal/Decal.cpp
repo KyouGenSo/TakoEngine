@@ -51,7 +51,7 @@ namespace Tako {
     // 定数バッファに書き込み（視点に依存しないため本編/デバッグビューで共用できる）
     decalDataMapped_->decalWorldInverse = worldInverse;
     decalDataMapped_->decalWorld = worldMatrix;
-    decalDataMapped_->color = color_;
+    decalDataMapped_->color = color_.ToLinear();
     decalDataMapped_->shapeType = static_cast<int32_t>(shape_);
     decalDataMapped_->fanHalfAngle = fanHalfAngle_;
     decalDataMapped_->edgeSoftness = edgeSoftness_;
