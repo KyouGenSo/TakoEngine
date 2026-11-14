@@ -1,5 +1,6 @@
 name: Release
 # v で始まるタグを push すると、SDK の zip を作ってリリースに添付する（UpdateEngine.bat と、エディタの更新の通知がこれを見る）
+# リリースの本文は CHANGELOG.md のそのバージョンの節。同じ文を Discord にも送る（Secrets の DISCORD_WEBHOOK。無ければ送らない）
 on:
   push:
    tags:
@@ -22,6 +23,16 @@ jobs:
       $version = (Get-Content VERSION -TotalCount 1).Trim()
       if ("v$version" -ne "${{ github.ref_name }}") { throw "tag ${{ github.ref_name }} does not match VERSION ($version)" }
 
+   # 節が無いときに、ビルドの前に止める
+   - name: Extract the release notes from CHANGELOG.md
+     shell: pwsh
+     run: |
+      $version = "${{ github.ref_name }}".TrimStart("v")
+      $changelog = (Get-Content CHANGELOG.md -Raw) -replace "`r", ""
+      $section = [regex]::Match($changelog, "(?ms)^## \[$([regex]::Escape($version))\][^\n]*\n(.*?)(?=^## \[|\z)")
+      if (-not $section.Success) { throw "CHANGELOG.md has no section for $version" }
+      Set-Content "$env:RUNNER_TEMP/release_notes.md" $section.Groups[1].Value.Trim() -NoNewline
+
    - name: Build and package the SDK
      shell: pwsh
      run: ./tools/package_sdk.ps1
@@ -34,4 +45,20 @@ jobs:
      shell: pwsh
      env:
       GH_TOKEN: ${{ github.token }}
-     run: gh release create "${{ github.ref_name }}" (Get-Item dist/*.zip).FullName --title "TakoEngine ${{ github.ref_name }}" --notes "See CHANGELOG.md"
+     run: gh release create "${{ github.ref_name }}" (Get-Item dist/*.zip).FullName --title "TakoEngine ${{ github.ref_name }}" --notes-file "$env:RUNNER_TEMP/release_notes.md"
+
+   # 通知に失敗しても、リリースは失敗にしない
+   - name: Notify Discord
+     continue-on-error: true
+     shell: pwsh
+     env:
+      DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+     run: |
+      if (-not $env:DISCORD_WEBHOOK) { Write-Host "DISCORD_WEBHOOK is not set"; exit 0 }
+      $notes = Get-Content "$env:RUNNER_TEMP/release_notes.md" -Raw
+      # Discord の embed の description は 4096 文字まで
+      if ($notes.Length -gt 4000) { $notes = $notes.Substring(0, 4000) + "`n…" }
+      $url = "${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
+      $message = "TakoEngine ${{ github.ref_name }} をリリースしました。プロジェクトのフォルダーにある ``UpdateEngine.bat`` を実行すると更新できます。"
+      $body = @{ content = $message; embeds = @(@{ title = "TakoEngine ${{ github.ref_name }}"; url = $url; description = $notes }) } | ConvertTo-Json -Depth 3
+      Invoke-RestMethod $env:DISCORD_WEBHOOK -Method Post -ContentType "application/json" -Body ([Text.Encoding]::UTF8.GetBytes($body))
