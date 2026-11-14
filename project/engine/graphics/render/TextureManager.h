@@ -38,13 +38,12 @@ namespace Tako {
     /// </summary>
     struct TextureData
     {
-      std::string fileName;
-      DirectX::TexMetadata metadata;
-      GpuResource resource;
+      std::string                            fileName;
+      DirectX::TexMetadata                   metadata;                  ///< format は色の画像なら _SRGB（リソースは TYPELESS で作る）
+      GpuResource                            resource;
       Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource;
-      uint32_t srvIndex;
-      D3D12_CPU_DESCRIPTOR_HANDLE srvCpuHandle;
-      D3D12_GPU_DESCRIPTOR_HANDLE srvGpuHandle;
+      uint32_t                               srvIndex             = 0;  ///< シーン用。色の画像は GPU がリニアに直して読む
+      uint32_t                               rawSrvIndex          = 0;  ///< 表示用（ToRawSRV で初めて頼まれたときに作る）
     };
 
   public: //メンバー関数
@@ -87,10 +86,28 @@ namespace Tako {
     void Unload(const std::string& fileName);
 
     /// <summary>
-    /// 全テクスチャのアップロード用中間リソースを解放する。
-    /// ロードを行ったフレームの EndDraw（GPU 待機）より後に呼ぶこと
+    /// アップロード用の中間リソースを解放し、SetColorTexture で設定を変えた画像を読み直す（転送は次のフレームの先頭）。
+    /// フレームの EndDraw（GPU 待機）より後に呼ぶこと
     /// </summary>
-    void ReleaseIntermediateResources();
+    void EndFrame();
+
+    /// <summary>
+    /// 表示用の描き先（UI・ImGui。ガンマのまま描く）で使う、ファイルの値のまま読む SRV。
+    /// 色の画像でない・TextureManager の物でない番号は、そのまま返す
+    /// </summary>
+    uint32_t ToRawSRV(uint32_t srvIndex);
+
+    /// <summary>
+    /// 色の画像か（false ならノイズ・マスクなどのデータとして、リニアに直さずに読む）。
+    /// プロジェクトの画像は resources/Json/TextureSettings.json で決まる（既定は true）
+    /// </summary>
+    bool IsColorTexture(const std::string& fileName) const;
+
+    /// <summary>
+    /// 色の画像かを決めて設定ファイルに書く。読み込み済みなら、このフレームの後で同じ SRV の番号のまま読み直す。
+    /// EngineResources の画像は変えない
+    /// </summary>
+    void SetColorTexture(const std::string& fileName, bool isColor);
 
     //============================================================
     //Getter
@@ -181,6 +198,19 @@ namespace Tako {
     const TextureData* Acquire(const std::string& fileName);
 
     /// <summary>
+    /// data.fileName の画像を設定どおりの形式で読み、リソースを作って転送を積む（SRV は作らない）
+    /// </summary>
+    /// <returns>読めなければ false（data は変えない）</returns>
+    bool ReadTexture(TextureData& data);
+
+    /// <summary>
+    /// data の SRV（作ってあれば raw の SRV も）を、今のリソースで作り直す
+    /// </summary>
+    void CreateViews(TextureData& data);
+
+    void CreateSRV(uint32_t srvIndex, const TextureData& data, DXGI_FORMAT format);
+
+    /// <summary>
     /// COPY_DEST 状態のテクスチャリソースを生成する
     /// </summary>
     /// <param name="metaData">テクスチャのメタデータ（サイズ、フォーマット等）</param>
@@ -201,8 +231,11 @@ namespace Tako {
 
     std::string directoryPath_;  ///< テクスチャ格納ディレクトリ
 
-    std::unordered_map<std::string, TextureData> textureData_;  ///< テクスチャデータ配列
-    std::unordered_set<std::string>              failedFiles_;  ///< 読めなかったキー（毎フレーム読み直さない）
+    std::unordered_map<std::string, TextureData> textureData_;     ///< テクスチャデータ配列
+    std::unordered_map<uint32_t, TextureData*>   bySrv_;           ///< srvIndex から引く（unordered_map の要素は再ハッシュでも動かない）
+    std::unordered_set<std::string>              failedFiles_;     ///< 読めなかったキー（毎フレーム読み直さない）
+    std::unordered_set<std::string>              dataTextures_;    ///< 色の画像でないキー（TextureSettings.json の sRGB: false）
+    std::vector<std::string>                     pendingReloads_;  ///< EndFrame で読み直すキー
 
   };
 

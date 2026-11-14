@@ -359,7 +359,7 @@ namespace Tako {
     dx12_->EndDraw();
 
     // EndDraw で GPU 完了を待った後なので、このフレームまでに積んだアップロードは転送済み
-    TextureManager::GetInstance()->ReleaseIntermediateResources();
+    TextureManager::GetInstance()->EndFrame();
   }
 
   void TakoFramework::Run()

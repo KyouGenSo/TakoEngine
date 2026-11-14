@@ -1015,6 +1015,14 @@ namespace Tako {
 
     ImGui::Separator();
     const bool isEngineCopy = IsEngineCopy(path);
+    if (!textureKey.empty()) {
+      TextureManager* textureManager = TextureManager::GetInstance();
+      bool            isColor        = textureManager->IsColorTexture(textureKey);
+      if (ImGui::MenuItem(ICON_FA_PALETTE "  Color (sRGB)", nullptr, &isColor, !isEngineCopy)) {
+        textureManager->SetColorTexture(textureKey, isColor);
+      }
+      ImGui::SetItemTooltip("Turn off for non-color data such as noise and masks");
+    }
     // ルート（親を持たない）は名前変更・削除させない
     const bool canModify = !isEngineCopy && path.has_parent_path();
     if (isDirectory && ImGui::MenuItem(ICON_FA_FOLDER_PLUS "  New Folder", nullptr, false, !isEngineCopy)) {
