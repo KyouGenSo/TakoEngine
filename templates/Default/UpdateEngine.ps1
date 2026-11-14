@@ -8,9 +8,13 @@
 #   ジャンクション   別の場所のエンジンをリンクで共有している。何も変えず、共有先と更新のしかたを知らせて終わる
 #   .git がある      ソース。タグ v<バージョン> に切り替えて、エンジンをビルドする
 #   それ以外         SDK。GitHub のリリースの zip に入れ替える
+#
+# エンジンを入れた後、エンジンの中のテンプレート（templates\Default\UpdateEngine.ps1）の方が新しければ、このファイルも入れ替える
 param([string]$Version = "", [switch]$Source, [string]$Zip = "")
 
 $ErrorActionPreference = "Stop"
+# このファイルを直したら 1 つ上げる（エンジンの中のテンプレートの番号の方が大きいときだけ、このファイルを入れ替える）
+$scriptRevision = 1
 $repository = "KyouGenSo/TakoEngine"
 $root       = $PSScriptRoot
 $engine     = Join-Path $root "Engine\TakoEngine"
@@ -107,7 +111,12 @@ else {
     $package = Join-Path $env:TEMP "TakoEngine-$target-$PID.zip"
     $url     = "https://github.com/$repository/releases/download/v$target/TakoEngine-$target.zip"
     Write-Host "ダウンロード: $url"
-    try { Invoke-WebRequest $url -OutFile $package -UseBasicParsing } catch { Fail "ダウンロードできませんでした: $($_.Exception.Message)" }
+    # curl は Windows 10 以降に入っている。-L: 転送先を追う。-f: 404 などを失敗にする。-#: 進み具合を 1 行のバーで出す
+    curl.exe -L -f -# -o $package $url
+    if ($LASTEXITCODE -ne 0) {
+      Remove-Item $package -Force -ErrorAction SilentlyContinue
+      Fail "ダウンロードできませんでした（curl の終了コード: $LASTEXITCODE）: $url"
+    }
   }
   $fresh = "$engine.new"
   if (Test-Path $fresh) { Remove-Item $fresh -Recurse -Force }
@@ -124,15 +133,53 @@ else {
   if ($Zip -eq "") { Remove-Item $package -Force }
 }
 
-# 前のバージョンより新しい分の変更履歴を出す
+# 前のバージョンより新しい分の変更履歴を出す。Markdown の記号を外して、見出しに色を付ける
 $changelog = "$engine\CHANGELOG.md"
 if (Test-Path $changelog) {
-  Write-Host ""
-  $show = $false
+  $show  = $false
+  $shown = $false
   foreach ($line in Get-Content $changelog -Encoding UTF8) {
-    if ($line -match '^## \[(\d+\.\d+\.\d+)\]') { $show = ($current -eq "") -or ([version]$Matches[1] -gt [version]$current) }
-    if ($show) { Write-Host $line }
+    if ($line -match '^## \[(\d+\.\d+\.\d+)\](?: - (.+))?') {
+      $show = ($current -eq "") -or ([version]$Matches[1] -gt [version]$current)
+      if ($show) {
+        $heading = "$($Matches[1]) "
+        if ($Matches[2]) { $heading = "$($Matches[1])（$($Matches[2])）" }
+        Write-Host ""
+        Write-Host "━━ $heading━━" -ForegroundColor Cyan
+        $shown = $true
+      }
+    }
+    elseif (-not $show -or $line.Trim() -eq "") { }
+    elseif ($line -match '^### (.+)') {
+      # ゲーム側で直す所は、色を変えて目立たせる
+      $color = "Yellow"
+      if ($Matches[1] -like "直しが要る変更*") { $color = "Magenta" }
+      Write-Host ""
+      Write-Host "[$($Matches[1])]" -ForegroundColor $color
+    }
+    else {
+      # `コード` は、記号を外して色を変える（` で分けると、奇数番目がコード）
+      $parts = ($line -replace '^- ', '  ・') -split '`'
+      for ($i = 0; $i -lt $parts.Count; $i++) {
+        if ($i % 2 -eq 1) { Write-Host $parts[$i] -NoNewline -ForegroundColor DarkCyan }
+        else { Write-Host $parts[$i] -NoNewline }
+      }
+      Write-Host ""
+    }
   }
+  # -Zip はリリース前の版のことがあり、ページが無い
+  if ($shown -and $Zip -eq "") {
+    Write-Host ""
+    Write-Host "Markdown で読む: https://github.com/$repository/releases/tag/v$target"
+  }
+}
+
+# 古いテンプレート（番号が無い・小さい）では、入れ替えない。実行中でも、PowerShell は全体を読み終えているので上書きできる
+$newScript = "$engine\templates\Default\UpdateEngine.ps1"
+if ((Test-Path $newScript) -and (Get-Content $newScript -Raw -Encoding UTF8) -match '(?m)^\$scriptRevision\s*=\s*(\d+)' -and [int]$Matches[1] -gt $scriptRevision) {
+  Copy-Item $newScript $PSCommandPath -Force
+  Write-Host ""
+  Write-Host "UpdateEngine.ps1 を、新しいエンジンの物に入れ替えました（プロジェクトの git に差分が出ます）。"
 }
 
 # engineVersion の値だけを書き換える（ConvertTo-Json で書き直すと、BOM が付き、キーの順と字下げが変わる）
