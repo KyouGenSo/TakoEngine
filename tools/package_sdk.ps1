@@ -51,7 +51,7 @@ robocopy $releaseBin "$stage\bin\Release" /E /XF $intermediate /R:2 /W:1 /NFL /N
 if ($LASTEXITCODE -ge 8) { throw "robocopy 失敗 (exit code: $LASTEXITCODE)" }
 
 $required = @(
-  "VERSION", "CHANGELOG.md",
+  "VERSION", "CHANGELOG.md", "LICENSE",
   "bin\Debug\TakoEditor.exe", "bin\Debug\TakoEngine.dll", "bin\Debug\TakoEngine.lib", "bin\Debug\dxcompiler.dll", "bin\Debug\dxil.dll",
   "bin\Release\TakoEngine.lib", "bin\Release\DirectXTex.lib",
   "build\TakoEngineGame.props", "build\TakoEngineCommon.props", "build\TakoReflection.props", "build\TakoHeaderTool.cs",

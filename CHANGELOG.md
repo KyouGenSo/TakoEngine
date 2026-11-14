@@ -4,6 +4,23 @@
 
 `UpdateEngine.bat` は、更新する前のバージョンより新しい分をここから抜き出して表示する。リリースの本文と Discord の通知も、そのバージョンの節をここから抜き出す。見出しは `## [バージョン] - 日付` の形にする。
 
+## [2.1.2] - 2026-11-14
+
+### 追加
+- `UpdateEngine.bat`：ダウンロードの進み具合を、1 行のバーで出す（`curl.exe` を使う。Windows 10 以降に入っている）
+- `UpdateEngine.bat`：エンジンを入れた後、エンジンの中のテンプレート（`templates/Default/UpdateEngine.ps1`）の方が新しければ、プロジェクトの `UpdateEngine.ps1` も入れ替える（プロジェクトの git に差分が出るので、コミットする）。`UpdateEngine.bat` は入れ替えない
+- リリースを公開したとき、Discord に通知する（`.github/workflows/Release.yml`。ウェブフックの URL は、リポジトリの Secrets の `DISCORD_WEBHOOK`。無ければ送らない）
+- ライセンス（MIT。`LICENSE`）。SDK の zip にも入る
+
+### 変更
+- エディタでプロジェクトを開くときに、足りない空のフォルダー（`Source`、`resources` の `Texture`・`Model`・`Sound`・`Fonts` など 15 個）を作るようにした（git は空のフォルダーを持てないので、clone した人の所には無かった）。わざと消したフォルダーも、次に開いたときに戻る
+- `UpdateEngine.bat`：更新の後に出す変更履歴を、Markdown の記号を外し、見出しに色を付けて出すようにした。最後に、リリースページの URL を出す
+- リリースの本文を、`CHANGELOG.md` のそのバージョンの節にした（今までは「See CHANGELOG.md」だけだった）。節が無いタグは、リリースのビルドの前に失敗する
+- `README.md` を英語にし、日本語は `README.ja.md` に分けた。特徴・使っているライブラリ・エディタの画像を足し、ロゴの画像を外した
+
+### 直しが要る変更（ゲーム側）
+- 無し。ただし、既にあるプロジェクトの `UpdateEngine.ps1`（2.1.1 までの物）は、そのまま動くが、自分を入れ替えない。新しい表示・バー・入れ替えの仕組みを入れるなら、1 回だけ `templates/Default/UpdateEngine.ps1` をプロジェクトのルートへ写し直す（それ以降は、自動で入れ替わる）
+
 ## [2.1.1] - 2026-11-13
 
 ### 変更

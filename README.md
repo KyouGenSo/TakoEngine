@@ -1,55 +1,114 @@
-[![DebugBuild](https://github.com/KyouGenSo/TakoEngine/actions/workflows/DebugBuild.yml/badge.svg?event=push)](https://github.com/KyouGenSo/TakoEngine/actions/workflows/DebugBuild.yml)
-[![ReleaseBuild](https://github.com/KyouGenSo/TakoEngine/actions/workflows/ReleaseBuild.yml/badge.svg?event=push)](https://github.com/KyouGenSo/TakoEngine/actions/workflows/ReleaseBuild.yml)
-***
-![ロゴ](./.github/images/TakoEngineLogo.png)
-
 # TakoEngine
 
-DirectX 12 のゲームエンジン。エディタ（TakoEditor）でシーンを作り、C++ のスクリプトを書いてゲームを作る。スクリプトは、エディタを閉じずにコンパイルして差し替えられる。
+[![DebugBuild](https://github.com/KyouGenSo/TakoEngine/actions/workflows/DebugBuild.yml/badge.svg?event=push)](https://github.com/KyouGenSo/TakoEngine/actions/workflows/DebugBuild.yml)
+[![ReleaseBuild](https://github.com/KyouGenSo/TakoEngine/actions/workflows/ReleaseBuild.yml/badge.svg?event=push)](https://github.com/KyouGenSo/TakoEngine/actions/workflows/ReleaseBuild.yml)
+[![Release](https://img.shields.io/github/v/release/KyouGenSo/TakoEngine)](https://github.com/KyouGenSo/TakoEngine/releases)
 
-## フォルダーの見分け方
+**English** | [日本語](README.ja.md)
 
-| 種類 | 見分け方 |
+A DirectX 12 game engine for Windows. Build scenes in the editor (TakoEditor) and write gameplay in C++ scripts, which are recompiled and swapped in without closing the editor.
+
+![TakoEditor](.github/images/editor.png)
+
+## Contents
+
+- [Features](#features)
+- [Requirements](#requirements)
+- [Getting Started](#getting-started)
+- [Developing the Engine](#developing-the-engine)
+- [Third-Party Libraries](#third-party-libraries)
+- [Changelog](#changelog)
+- [License](#license)
+
+## Features
+
+**Editor**
+- Scene editor built on Actors and Components, with nested prefabs and multi-selection
+- One Undo / Redo history shared by every editor
+- Shader, Material, Particle, Animation, Camera Animation, UI Layout, Behavior Tree and Render Pipeline editors
+- Crash recovery: unsaved scenes can be restored on the next launch, and a minidump is written to `Generated/Crashes/`
+
+**C++ Scripting**
+- Hot reload: compile from the editor (Ctrl+B, or Auto Compile when the editor regains focus) and swap in the new `Game.dll`. Property values and selection are kept
+- Reflection with `TCLASS` / `TPROPERTY`: properties show up in the Inspector and are saved to scene files without extra code
+- Built-in components: Mesh, Camera, Light, Collider (AABB / OBB / Sphere), AudioSource, Animator, BehaviorTree, ParticleSystem, PostProcess, SkyBox, UILayout
+
+**Rendering**
+- DirectX 12 with a render graph; the render pipeline can be edited in the editor
+- Root signatures and resource bindings generated from shader reflection
+- Materials, shadow maps, decals, skinned animation
+- GPU particles and multi-pass post effects
+- SDF text for in-game UI
+
+**Distribution**
+- Release builds produce a single exe
+- Prebuilt SDK zips on [Releases](https://github.com/KyouGenSo/TakoEngine/releases); game projects install and update the engine with `UpdateEngine.bat`
+- Projects saved in an older format are migrated automatically, after a backup
+
+## Requirements
+
+- Windows 10 / 11 (64-bit) and a GPU that supports DirectX 12
+- Visual Studio 2026 with the "Desktop development with C++" workload (used to compile scripts)
+
+## Getting Started
+
+### Engine and projects
+
+| Folder | How to tell |
 |---|---|
-| エンジン | `bin`・`build`・`project`・`templates` がある（このリポジトリか、リリースの zip を開いた物） |
-| プロジェクト（ゲーム） | `名前.takoproject`・`名前.sln`・`GameProject` がある |
+| Engine | Has `bin`, `build`, `project` and `templates` (this repository, or an extracted release zip) |
+| Project (game) | Has `<Name>.takoproject`, `<Name>.sln` and `GameProject` |
 
-プロジェクトは、自分の中の `Engine\TakoEngine` を通してエンジンを使う。中身は 2 通りある。
+A project uses the engine through its `Engine\TakoEngine` folder, which is one of:
 
-- **リンク**：エディタで作ったプロジェクト。エンジンを写さず、作成に使ったエンジンを指す。エンジンを新しくすると、リンクしているプロジェクトは全部新しくなる
-- **写し**：`UpdateEngine.bat` が入れた物。そのプロジェクトだけのエンジンで、`UpdateEngine.bat` で新しくする
+- **Link**: projects created in the editor point to the engine that created them. Updating that engine updates every linked project
+- **Copy**: installed by `UpdateEngine.bat`. It belongs to that project only and is updated with `UpdateEngine.bat`
 
-## 要る物
+### Create a new game
 
-- Windows 10 / 11（64 ビット）と、DirectX 12 に対応した GPU
-- Visual Studio 2026 の「C++ によるデスクトップ開発」（スクリプトのコンパイルに使う）
+1. Download `TakoEngine-<version>.zip` from [Releases](https://github.com/KyouGenSo/TakoEngine/releases) and extract it where it will stay. This is the engine; don't move it later
+2. Run `bin\Debug\TakoEditor.exe`. When it says "No project was specified", choose **No** to create a new project
+3. Choose a location and a name **outside** the engine folder
+4. Open `<Name>.sln` in Visual Studio and press F5 to launch the editor
+5. Put scripts in `GameProject\Script` (in Assets, open `Script` and right-click > **New Script**). Saving and returning to the editor compiles them automatically (Ctrl+B to compile manually)
+6. To ship, build the **Release** configuration. The exe is written to `Generated\outputs\Release`
 
-## 新しいゲームを作る
+To update the engine, extract the new zip to the same place and rebuild the game's sln.
 
-1. [Releases](https://github.com/KyouGenSo/TakoEngine/releases) から `TakoEngine-<バージョン>.zip` を落とし、置き場所を決めて開く。これがエンジンで、後から動かさない
-2. `bin\Debug\TakoEditor.exe` を起動する。「No project was specified」と出るので、No（新しいプロジェクトを作る）を選ぶ
-3. 場所と名前を選ぶ。**エンジンのフォルダーの外**に作る
-4. できたプロジェクトの `名前.sln` を Visual Studio で開き、F5 でエディタを起動する
-5. スクリプトは `GameProject\Script` に置く（エディタの Assets で `Script` を開き、右クリック > New Script）。保存してエディタに戻ると、自動でコンパイルされる（手動は Ctrl+B）
-6. 配る物は、構成を Release にしてビルドする。`Generated\outputs\Release` に exe ができる
+### Join a team project
 
-エンジンを新しくするときは、新しい zip を同じ場所に開き直してから、ゲームの sln をビルドし直す。
+1. Clone the game repository (or download it as a zip)
+2. Run `UpdateEngine.bat` at the root. It installs the engine version written in `.takoproject` into `Engine\TakoEngine`
+3. Open `<Name>.sln` in Visual Studio and press F5 to launch the editor
 
-## チームで作っているゲームに参加する
+Run `UpdateEngine.bat` again to update to the latest release (`UpdateEngine.bat -Version 2.1.0` picks a version).
 
-1. ゲームのリポジトリを clone する（zip で落としてもよい）
-2. ルートの `UpdateEngine.bat` を実行する。`.takoproject` に書いてあるバージョンのエンジンが `Engine\TakoEngine` に入る
-3. `名前.sln` を Visual Studio で開き、F5 でエディタを起動する
+> [!NOTE]
+> Launch a project from its own sln. Opening it with another engine's editor can crash, because the game code does not match that engine.
 
-エンジンを新しくするときは、もう一度 `UpdateEngine.bat` を実行する（最新のリリースになる。`UpdateEngine.bat -Version 2.1.0` でバージョンを指定できる）。
+## Developing the Engine
 
-プロジェクトは、自分の sln から起動する。別のエンジンのエディタで開くと、ゲームのコードと合わずに落ちることがある。
+1. Clone this repository, open `project\TakoEngine.sln` in Visual Studio and build. F5 launches the editor
+2. Create a test project outside the engine: `bin\Debug\TakoEditor.exe --new <location> <name>`. It links to this engine, so rebuilding the engine takes effect immediately (rebuild the game's sln as well when headers change)
+3. Build the distribution zip with `pwsh tools\package_sdk.ps1`, and check that the zip works on its own with `pwsh tools\test_sdk.ps1`
+4. To release, update `VERSION` and `CHANGELOG.md`, commit, then run `pwsh tools\release.ps1`
 
-## エンジンを開発する
+## Third-Party Libraries
 
-1. このリポジトリを clone し、`project\TakoEngine.sln` を Visual Studio で開いてビルドする。F5 でエディタが起動する
-2. テスト用のプロジェクトを、エンジンの外に作る：`bin\Debug\TakoEditor.exe --new <場所> <名前>`。エンジンへのリンクになるので、エンジンをビルドし直すとすぐ反映される（ヘッダーを変えたら、ゲームの sln もビルドし直す）
-3. 配る用の zip は `pwsh tools\package_sdk.ps1` で作り、zip だけで使えるかを `pwsh tools\test_sdk.ps1` で確かめる
-4. リリースは、`VERSION` と `CHANGELOG.md` を直してコミットしてから `pwsh tools\release.ps1`
+| Library | Used for | License |
+|---|---|---|
+| [Dear ImGui](https://github.com/ocornut/imgui) | Editor UI | MIT |
+| [imgui-node-editor](https://github.com/thedmd/imgui-node-editor) | Behavior Tree editor | MIT |
+| [Assimp](https://github.com/assimp/assimp) | Model loading | BSD-3-Clause |
+| [DirectXTex](https://github.com/microsoft/DirectXTex) | Texture loading | MIT |
+| [miniaudio](https://github.com/mackron/miniaudio) | Audio | Public Domain / MIT-0 |
+| [nlohmann/json](https://github.com/nlohmann/json) | JSON | MIT |
+| [IconFontCppHeaders](https://github.com/juliettef/IconFontCppHeaders) | Editor icons | zlib |
 
-変更の記録は [CHANGELOG.md](CHANGELOG.md)。
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) (written in Japanese).
+
+## License
+
+TakoEngine is released under the [MIT License](LICENSE). Third-party libraries are under their own licenses (see [Third-Party Libraries](#third-party-libraries)).
