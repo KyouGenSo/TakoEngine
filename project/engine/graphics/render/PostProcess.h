@@ -35,6 +35,9 @@ namespace Tako {
     uint32_t       height     = 0;
 
     D3D12_GPU_VIRTUAL_ADDRESS view = 0;  ///< gView（Renderer::MakeView。0 なら渡さない）
+
+    bool            linear  = true;  ///< 入力がシーンの色（リニアの HDR）か。false なら表示用の色（sRGB の値。AfterPostProcess 以降）で、gParam の色をリニアに直さない
+    ToneMapSettings toneMap;         ///< PostProcessStack::Execute の最後に掛ける
   };
 
   /// <summary>
@@ -171,6 +174,12 @@ namespace Tako {
   TAKO_API RenderTexture& CopyToTemporary(const PostEffectFrame& frame, RenderTexture& source);
 
   /// <summary>
+  /// source（シーンの色。リニアの HDR）に frame.toneMap の露出とトーンマップを掛け、sRGB の値にして output（表示用）へ書く。
+  /// 大きさが違えば線形補間で拡大・縮小する
+  /// </summary>
+  TAKO_API void ToneMapToDisplay(const PostEffectFrame& frame, RenderTexture& source, RenderTexture& output);
+
+  /// <summary>
   /// ポストエフェクトを並べた順に掛ける（Unity の Volume の Override 一覧に相当）
   /// </summary>
   class TAKO_API PostProcessStack {
@@ -197,10 +206,10 @@ namespace Tako {
     void ResolveValues();
 
     /// <summary>
-    /// maskId が 0 で定義に event の無い有効なエフェクトを順に input→output へ掛ける。大きさが違えば最後に拡大コピーする
+    /// maskId が 0 で定義に event の無い有効なエフェクトを順に input に掛け、最後に ToneMapToDisplay で output（表示用）へ書く
     /// </summary>
-    /// <param name="antiAliasing">最後に FXAA を掛ける</param>
-    /// <param name="afterEffects">エフェクトを掛け終えた input と同じ解像度の結果を受け取り、拡大コピーの前に描き足す（空なら呼ばない）</param>
+    /// <param name="antiAliasing">トーンマップの前に FXAA を掛ける</param>
+    /// <param name="afterEffects">エフェクトを掛け終えた input と同じ解像度の結果を受け取り、トーンマップの前に描き足す（空なら呼ばない）</param>
     void Execute(const PostEffectFrame& frame, RenderTexture& input, RenderTexture& output, bool antiAliasing = false,
                  const std::function<void(RenderTexture&)>& afterEffects = {}) const;
 

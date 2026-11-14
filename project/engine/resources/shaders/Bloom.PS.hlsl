@@ -95,11 +95,6 @@ float4 Combine(VertexShaderOutput input) : SV_TARGET
     const float4 base = gTexture.Sample(gLinearClamp, input.texCoord);
     const float3 bloom = gBloomTexture.Sample(gLinearClamp, input.texCoord).rgb * gParam.tint * gParam.intensity;
 
-    // 8bit の描画先で薄い光の階調が縞にならないよう、1 階調に満たないノイズで散らす（Interleaved Gradient Noise）。
-    // 光の無い画素は入力のまま返すので、光が 1/16 階調に届くまではノイズも弱める
-    const float noise = frac(52.9829189f * frac(dot(input.position.xy, float2(0.06711056f, 0.00583715f))));
-    const float dither = (noise - 0.5f) / 255.0f * saturate(max(bloom.r, max(bloom.g, bloom.b)) * (255.0f * 16.0f));
-
-    // α は入力のまま。描画物の外では α=0 で光だけ残り、重ねるときに加算になる
-    return float4(base.rgb + bloom + dither, base.a);
+    // 薄い光の縞は、最後のトーンマップ（ToneMap.PS）の揺らぎで消える。α は入力のまま。描画物の外では α=0 で光だけ残り、重ねるときに加算になる
+    return float4(base.rgb + bloom, base.a);
 }

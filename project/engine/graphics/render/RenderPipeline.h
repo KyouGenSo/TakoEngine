@@ -151,14 +151,25 @@ namespace Tako {
     //Setter
     //=========================================
     /// <summary>
-    /// シーン色のクリア色を設定し、RT の最適化クリア値を揃えるため作り直しを要求する
+    /// シーン色のクリア色（sRGB）を設定し、RT の最適化クリア値を揃えるため作り直しを要求する
     /// </summary>
     void SetClearColor(const Color& color);
+
+    /// <summary>
+    /// シーンを画面の色へ直すときの、明るい所の縮め方（既定は None）
+    /// </summary>
+    void SetToneMapping(ToneMapping mode) { toneMap_.mode = mode; }
+
+    /// <summary>
+    /// 露出（EV）。1 上げると 2 倍の明るさ（既定は 0）。トーンマップの前に掛ける
+    /// </summary>
+    void SetExposure(float exposure) { toneMap_.exposure = exposure; }
 
     //=========================================
     //Getter
     //=========================================
     const Color& GetClearColor() const { return clearColor_; }
+    const ToneMapSettings& GetToneMap() const { return toneMap_; }
     RenderGraph& GetGraph() { return graph_; }
     RenderTexture& GetSceneColor() { return sceneColor_; }
     std::vector<ObjectPassSettings>& GetObjectPasses() { return objectPassSettings_; }
@@ -191,12 +202,13 @@ namespace Tako {
     void RecordStep(std::string_view label, uint32_t firstDraw, uint8_t depth = 0, bool isEvent = false);
 
   private: //メンバー変数
-    DX12Basic*    dx12_          = nullptr;
-    RenderGraph   graph_;
-    RenderTexture sceneColor_;                                     ///< ポストエフェクト前のシーン（シーン解像度）
-    RenderTexture final_;                                          ///< ポストエフェクト後に UI を重ねた結果（ウィンドウ解像度）
-    uint32_t      depthSrvIndex_ = 0;                              ///< シーン深度の SRV（ポストエフェクトが読む）
-    Color         clearColor_    = { 0.17f, 0.17f, 0.17f, 1.0f };
+    DX12Basic*      dx12_          = nullptr;
+    RenderGraph     graph_;
+    RenderTexture   sceneColor_;                                     ///< ポストエフェクト前のシーン（シーン解像度・リニアの HDR）
+    RenderTexture   final_;                                          ///< トーンマップの後に UI を重ねた結果（ウィンドウ解像度・sRGB の値）
+    uint32_t        depthSrvIndex_ = 0;                              ///< シーン深度の SRV（ポストエフェクトが読む）
+    Color           clearColor_    = { 0.17f, 0.17f, 0.17f, 1.0f };  ///< sRGB。シーンへはリニアに直してクリアする
+    ToneMapSettings toneMap_;
 
     //差し込んだパス
     std::vector<InjectedPass>       passes_;

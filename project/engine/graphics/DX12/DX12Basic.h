@@ -26,10 +26,11 @@ namespace Tako {
   /// </summary>
   class TAKO_API DX12Basic {
   public: //定数
-    static constexpr float       kMinRenderScale  = 0.25f;
-    static constexpr DXGI_FORMAT kColorFormat     = DXGI_FORMAT_R8G8B8A8_UNORM;  ///< スワップチェインとシーン描画先のカラー
-    static constexpr DXGI_FORMAT kDepthFormat     = DXGI_FORMAT_D32_FLOAT;       ///< シーン深度の DSV
-    static constexpr DXGI_FORMAT kDepthReadFormat = DXGI_FORMAT_R32_FLOAT;       ///< シーン深度を SRV で読むとき
+    static constexpr float       kMinRenderScale   = 0.25f;
+    static constexpr DXGI_FORMAT kColorFormat      = DXGI_FORMAT_R8G8B8A8_UNORM;      ///< 表示用（スワップチェイン・最終結果・UI）。値は sRGB のまま書く
+    static constexpr DXGI_FORMAT kSceneColorFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;  ///< シーン用（ポストエフェクトの途中まで）。値はリニアで、1 を超えてもよい
+    static constexpr DXGI_FORMAT kDepthFormat      = DXGI_FORMAT_D32_FLOAT;           ///< シーン深度の DSV
+    static constexpr DXGI_FORMAT kDepthReadFormat  = DXGI_FORMAT_R32_FLOAT;           ///< シーン深度を SRV で読むとき
 
   private: //定数
     static constexpr size_t kUploadPageSize = 4 * 1024 * 1024;  ///< 1 フレームの一時定数のページの大きさ（バイト）。足りなければページが増える
@@ -45,10 +46,10 @@ namespace Tako {
     /// </summary>
     struct SceneRenderTarget {
       D3D12_CPU_DESCRIPTOR_HANDLE rtv{};
-      D3D12_CPU_DESCRIPTOR_HANDLE dsv{};                       ///< ptr == 0 なら深度なし
+      D3D12_CPU_DESCRIPTOR_HANDLE dsv{};                     ///< ptr == 0 なら深度なし
       uint32_t                    width     = 0;
       uint32_t                    height    = 0;
-      DXGI_FORMAT                 rtvFormat = kColorFormat;
+      DXGI_FORMAT                 rtvFormat = kColorFormat;  ///< シーン用の描き先では kSceneColorFormat を渡す（Renderer は描き先の形式で色の扱いを決める）
       DXGI_FORMAT                 dsvFormat = kDepthFormat;
     };
 

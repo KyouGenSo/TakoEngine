@@ -17,7 +17,6 @@
 namespace Tako {
 
   namespace {
-    constexpr DXGI_FORMAT kColorFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
     constexpr DXGI_FORMAT kDepthFormat = DXGI_FORMAT_D32_FLOAT;
   }
 
@@ -40,7 +39,7 @@ namespace Tako {
     const std::wstring namePrefix = debugName;
 
     // RT。半透明描画で RT のアルファが 1 未満になると ImGui::Image がウィンドウ背景とブレンドしてしまうため、SRV はアルファ強制 1.0 で作る
-    color_.Create(dx12_, width_, height_, kColorFormat, clearColor_, true);
+    color_.Create(dx12_, width_, height_, DX12Basic::kColorFormat, clearColor_, true);
     color_.resource->SetName((namePrefix + L"RT").c_str());
 
     // 深度バッファ
@@ -103,17 +102,18 @@ namespace Tako {
     dx12_ = nullptr;
   }
 
-  void PreviewViewport::BeginPass(bool postProcess)
+  void PreviewViewport::BeginPass()
   {
-    // ポストエフェクトを掛けるときはシーンを一時 RT へ描き、EndPass で color_ へ書き出す
-    sceneTarget_ = postProcess ? &RenderPipeline::GetInstance()->GetGraph().Acquire({ width_, height_, kColorFormat, clearColor_ }) : &color_;
+    // 本編と同じく、シーンはリニアの HDR の一時 RT へ描き、EndPass でトーンマップして color_ へ書き出す
+    const Color clearColor = Color(clearColor_).ToLinear();
+    sceneTarget_ = &RenderPipeline::GetInstance()->GetGraph().Acquire({ width_, height_, DX12Basic::kSceneColorFormat, clearColor });
 
     dx12_->GetContext().Transition(sceneTarget_->resource, D3D12_RESOURCE_STATE_RENDER_TARGET);
     dx12_->GetContext().Transition(depthBuffer_, D3D12_RESOURCE_STATE_DEPTH_WRITE);
     // RT サイズのビューポートで記録し、途中のシャドウ/デカールパスがここへ戻れるようにする
-    dx12_->BindSceneRenderTarget({ sceneTarget_->rtvHandle, dsvHandle_, width_, height_ });
+    dx12_->BindSceneRenderTarget({ sceneTarget_->rtvHandle, dsvHandle_, width_, height_, sceneTarget_->format });
     ID3D12GraphicsCommandList* commandList = dx12_->GetCommandList();
-    commandList->ClearRenderTargetView(sceneTarget_->rtvHandle, &clearColor_.x, 0, nullptr);
+    commandList->ClearRenderTargetView(sceneTarget_->rtvHandle, &clearColor.r, 0, nullptr);
     commandList->ClearDepthStencilView(dsvHandle_, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
   }
 
@@ -122,7 +122,7 @@ namespace Tako {
     RenderGraph&          graph = RenderPipeline::GetInstance()->GetGraph();
     const PostEffectFrame frame{ .dx12 = dx12_, .graph = &graph, .width = width_, .height = height_ };
     opaqueTexture_ = &CopyToTemporary(frame, *sceneTarget_);
-    dx12_->BindSceneRenderTarget({ sceneTarget_->rtvHandle, dsvHandle_, width_, height_ });
+    dx12_->BindSceneRenderTarget({ sceneTarget_->rtvHandle, dsvHandle_, width_, height_, sceneTarget_->format });
     Renderer::GetInstance()->SetOpaqueTexture(opaqueTexture_->srvIndex);
   }
 
@@ -134,13 +134,17 @@ namespace Tako {
       opaqueTexture_ = nullptr;
     }
 
-    if (sceneTarget_ != &color_) {
-      RenderGraph& graph = RenderPipeline::GetInstance()->GetGraph();
-      const D3D12_GPU_VIRTUAL_ADDRESS view = camera ? Renderer::GetInstance()->MakeView(*camera, GetSize()).constants : 0;
-      const PostEffectFrame frame{ dx12_, &graph, camera, &depthBuffer_, depthSrvIndex_, width_, height_, view };
+    RenderPipeline*                 pipeline = RenderPipeline::GetInstance();
+    RenderGraph&                    graph    = pipeline->GetGraph();
+    const D3D12_GPU_VIRTUAL_ADDRESS view     = stack && camera ? Renderer::GetInstance()->MakeView(*camera, GetSize()).constants : 0;
+    const PostEffectFrame frame{ dx12_, &graph, camera, &depthBuffer_, depthSrvIndex_, width_, height_, view, true, pipeline->GetToneMap() };
+    if (stack) {
       stack->Execute(frame, *sceneTarget_, color_);
-      graph.Release(*sceneTarget_);
     }
+    else {
+      ToneMapToDisplay(frame, *sceneTarget_, color_);
+    }
+    graph.Release(*sceneTarget_);
     sceneTarget_ = nullptr;
     dx12_->GetContext().Transition(color_.resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
   }

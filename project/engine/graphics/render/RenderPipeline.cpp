@@ -81,8 +81,9 @@ namespace Tako {
     CommandContext&                   context    = dx12_->GetContext();
     GpuResource&                      depth      = dx12_->GetDepthStencilResource();
     const D3D12_CPU_DESCRIPTOR_HANDLE sceneDsv   = dx12_->GetMainDSVHandle();
-    const DX12Basic::SceneRenderTarget sceneTarget{ sceneColor_.rtvHandle, sceneDsv, sceneColor_.width, sceneColor_.height };
-    const PostEffectFrame frame{ dx12_, &graph_, *renderer->GetCamera(), &depth, depthSrvIndex_, sceneColor_.width, sceneColor_.height, view.constants };
+    const DX12Basic::SceneRenderTarget sceneTarget{ sceneColor_.rtvHandle, sceneDsv, sceneColor_.width, sceneColor_.height, sceneColor_.format };
+    const PostEffectFrame frame{ dx12_, &graph_, *renderer->GetCamera(), &depth, depthSrvIndex_, sceneColor_.width, sceneColor_.height, view.constants, true, toneMap_ };
+    const Color           sceneClearColor = clearColor_.ToLinear();
 
     // マスク付きのエフェクトが掛かる描画物は、本編の不透明・半透明から外して別に描く
     const std::vector<uint32_t> maskIds = postEffect->GetMaskIds();
@@ -114,7 +115,7 @@ namespace Tako {
     context.Transition(depth, D3D12_RESOURCE_STATE_DEPTH_WRITE);
     dx12_->BindSceneRenderTarget(sceneTarget);
     ID3D12GraphicsCommandList* commandList = context.GetCommandList();
-    commandList->ClearRenderTargetView(sceneColor_.rtvHandle, &clearColor_.r, 0, nullptr);
+    commandList->ClearRenderTargetView(sceneColor_.rtvHandle, &sceneClearColor.r, 0, nullptr);
     commandList->ClearDepthStencilView(sceneDsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
     RunPasses(RenderEvent::BeforeShadow, frame, sceneColor_, sceneDsv);
@@ -136,7 +137,7 @@ namespace Tako {
       step(effectLabel(std::format("Mask {}", maskId), maskId), [&] {
         RenderTexture& layer = graph_.Acquire(RenderGraph::DescOf(sceneColor_));
         graph_.AddPass({ RenderGraph::Write(layer.resource), RenderGraph::DepthWrite(depth) }, [&] {
-          dx12_->BindSceneRenderTarget({ layer.rtvHandle, sceneDsv, layer.width, layer.height });
+          dx12_->BindSceneRenderTarget({ layer.rtvHandle, sceneDsv, layer.width, layer.height, layer.format });
           const float zero[4] = {};
           context.GetCommandList()->ClearRenderTargetView(layer.rtvHandle, zero, 0, nullptr);
           renderer->RenderList(scene, view, { .excludeNameIds = replacedIds_, .maskIds = std::span(&maskId, 1), .postEffect = true });
@@ -181,7 +182,7 @@ namespace Tako {
     if (std::ranges::any_of(scene.GetItems(), [](const DrawItem& item) { return !item.postEffect; })) {
       drawNoPostEffect = [&](RenderTexture& target) {
         graph_.AddPass({ RenderGraph::Write(target.resource), RenderGraph::DepthWrite(depth) }, [&] {
-          dx12_->BindSceneRenderTarget({ target.rtvHandle, sceneDsv, target.width, target.height });
+          dx12_->BindSceneRenderTarget({ target.rtvHandle, sceneDsv, target.width, target.height, target.format });
           renderer->RenderList(scene, view, { .maxQueue = ShaderAsset::kQueueOverlay, .excludeNameIds = replacedIds_, .postEffect = false });
         });
       };
@@ -189,11 +190,12 @@ namespace Tako {
     step(effectLabel("Post Process", 0), [&] { postEffect->Execute(frame, sceneColor_, final_, drawNoPostEffect); });
 
     //------------------------------ UI ------------------------------//
+    // ここから先の描き先は表示用（sRGB の値）なので、UI はガンマのまま描く（色も画像も値のまま。Renderer が描き先の形式で決める）。
     // 縮小解像度でなければ UI もシーンの深度を使う（縮小中はウィンドウ解像度の専用深度を、差し込んだパスより前にクリアする）
     const D3D12_CPU_DESCRIPTOR_HANDLE uiDsv = dx12_->GetNonEffectDSVHandle();
     context.Transition(final_.resource, D3D12_RESOURCE_STATE_RENDER_TARGET);
     context.Transition(depth, D3D12_RESOURCE_STATE_DEPTH_WRITE);
-    dx12_->BindSceneRenderTarget({ final_.rtvHandle, uiDsv, final_.width, final_.height });
+    dx12_->BindSceneRenderTarget({ final_.rtvHandle, uiDsv, final_.width, final_.height, final_.format });
     if (uiDsv.ptr != sceneDsv.ptr) {
       context.GetCommandList()->ClearDepthStencilView(uiDsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
     }
@@ -324,7 +326,7 @@ namespace Tako {
   void RenderPipeline::CreateRenderTargets()
   {
     // ポストエフェクトは乗算済み α を受けるので、全画面の入力は α=1 で読ませる（クリア色や不透明ブレンドのシェーダーが書いた α に左右されない）
-    sceneColor_.Create(dx12_, dx12_->GetSceneWidth(), dx12_->GetSceneHeight(), DX12Basic::kColorFormat, clearColor_, true);
+    sceneColor_.Create(dx12_, dx12_->GetSceneWidth(), dx12_->GetSceneHeight(), DX12Basic::kSceneColorFormat, clearColor_.ToLinear(), true);
     sceneColor_.resource->SetName(L"SceneColor");
 
     // 最終表示用なので SRV は α=1 固定で読ませ、ImGui 表示での背景透けを防ぐ
@@ -379,12 +381,14 @@ namespace Tako {
     PostEffectFrame    eventFrame = frame;
     eventFrame.width = target.width;
     eventFrame.height = target.height;
+    // ポストエフェクトの段より後は表示用の色に掛ける（UE のトーンマップの後の後処理と同じ）
+    eventFrame.linear = target.format != DX12Basic::kColorFormat;
     const uint32_t firstDraw = context.GetDrawCount();
     if (!postEffect->ExecuteAt(eventFrame, event, target)) {
       return;
     }
     context.Transition(dx12_->GetDepthStencilResource(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
-    dx12_->BindSceneRenderTarget({ target.rtvHandle, dsv, target.width, target.height });
+    dx12_->BindSceneRenderTarget({ target.rtvHandle, dsv, target.width, target.height, target.format });
 
     std::string label = "Post Effects";
 #ifdef _DEBUG

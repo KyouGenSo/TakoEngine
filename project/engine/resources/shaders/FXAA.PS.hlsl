@@ -14,6 +14,12 @@ float3 SampleRGB(float2 uv)
     return gTexture.SampleLevel(gLinearClamp, uv, 0.0f).rgb;
 }
 
+// 入力はリニアの HDR。FXAA は見た目の明るさの差で縁を探すので、画面の値（sRGB）にしてから量る
+float Luma(float3 rgb)
+{
+    return dot(LinearToSRGB(saturate(rgb)), kLuma);
+}
+
 float4 main(VertexShaderOutput input) : SV_TARGET
 {
     float2 size;
@@ -22,11 +28,11 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     const float2 uv = input.texCoord;
 
     const float4 center = gTexture.SampleLevel(gLinearClamp, uv, 0.0f);
-    const float lumaNW = dot(SampleRGB(uv + float2(-1.0f, -1.0f) * texel), kLuma);
-    const float lumaNE = dot(SampleRGB(uv + float2(1.0f, -1.0f) * texel), kLuma);
-    const float lumaSW = dot(SampleRGB(uv + float2(-1.0f, 1.0f) * texel), kLuma);
-    const float lumaSE = dot(SampleRGB(uv + float2(1.0f, 1.0f) * texel), kLuma);
-    const float lumaM = dot(center.rgb, kLuma);
+    const float lumaNW = Luma(SampleRGB(uv + float2(-1.0f, -1.0f) * texel));
+    const float lumaNE = Luma(SampleRGB(uv + float2(1.0f, -1.0f) * texel));
+    const float lumaSW = Luma(SampleRGB(uv + float2(-1.0f, 1.0f) * texel));
+    const float lumaSE = Luma(SampleRGB(uv + float2(1.0f, 1.0f) * texel));
+    const float lumaM = Luma(center.rgb);
 
     const float lumaMin = min(lumaM, min(min(lumaNW, lumaNE), min(lumaSW, lumaSE)));
     const float lumaMax = max(lumaM, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE)));
@@ -41,7 +47,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     const float3 rgbB = rgbA * 0.5f + 0.25f * (SampleRGB(uv - dir * 0.5f) + SampleRGB(uv + dir * 0.5f));
 
     // 広く取った rgbB が周囲の輝度範囲を外れたら別のエッジを跨いでいるので狭い rgbA を使う
-    const float lumaB = dot(rgbB, kLuma);
+    const float lumaB = Luma(rgbB);
     const float3 rgb = (lumaB < lumaMin || lumaB > lumaMax) ? rgbA : rgbB;
     return float4(rgb, center.a);
 }

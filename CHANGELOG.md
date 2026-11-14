@@ -16,6 +16,7 @@
 - `Gradient`（色の段階。`Evaluate(t)` がその位置の色を返す。`TPROPERTY` にすると、Inspector で段階を編集でき、段階の上に色の帯が出る。`Gradient.h`）
 - `RandomEngine` の `GetHueColor`（色相だけランダム）・`GetColor(from, to)`（2 色の間のランダム）
 - `TPROPERTY` に `Tako::Color` と `Tako::Gradient` を使える。`Color` は、`Color` の指定子が無くても色の欄になる
+- リニアの HDR の描画。シーンを `R16G16B16A16_FLOAT` に描き（1 を超える明るさも残る）、ポストエフェクトの最後に露出とトーンマップを掛けて sRGB にする。トーンマップは `None`（1 で切る。既定）と `ACES`。`RenderPipeline::SetToneMapping`・`SetExposure` で変える
 - 画像ごとの「色の画像か」の設定。Assets の画像の右クリックの Color (sRGB) で切り替え、`resources/Json/TextureSettings.json` に書く（既定のオンと違う物だけ）。オフの画像は、リニアに直さずに読む。エンジンの `noise0.png`・`noise1.png` はオフ
 - `Color::ToLinear`・`ToSRGB`（1 を超える色は、色合いを sRGB のまま、強さをリニアの倍率として扱う）。シェーダーの `Common.hlsli` に `SRGBToLinear`・`LinearToSRGB`
 
@@ -28,6 +29,13 @@
 - エンジンの色の引数・戻り値・データを、`Vector4` から `Color` にした（`SetColor`・`SetMaterialColor`・`GetMaterialColor`・`DrawLine` など。GPU に送る構造体の色の欄も）。`Vector4` と `Color` は互いに自動で変わるので、`Vector4` で書いたゲームのコードはそのまま動く。保存の形（4 つの数の配列）は変えていない
 - `Color::kWhite`・`kClear` の型と、`Color::FromHex`・`FromHSV` の戻り値を、`Vector4` から `Color` にした（`Color` は名前空間から構造体になった）
 - `Vector4` の `==`・`!=` を、メンバーから名前空間の関数にした（`Color` どうしや、`Color` と `Vector4` を比べられるように。中身は同じ）
+- 画像が、ファイルどおりの色で出るようになった（今までは sRGB の画像をリニアに直したまま画面へ書いていて、暗く出ていた。128 が 55 になっていた）。Assets のサムネイルも同じ
+- 色の値（`Color`・Inspector・JSON・16 進数）は、今までどおり sRGB で書く。シーンへ描くときにエンジンがリニアに直す（マテリアルの定数とポストエフェクトの `gParam` のうち名前に color を含む float3/float4、Bloom の tint、クリア色）
+- UI（描画キューが Overlay 以上）と、AfterPostProcess 以降のパス・ポストエフェクトは、今までどおりガンマで描く（色も画像も値のまま。半透明の重なり方も今と同じ）
+- ライト・半透明の重なり・加算・ブルーム・空の見た目が変わる（リニアで計算するため。ライトの当たり方は明るく柔らかくなる）
+- FXAA は、明るさを sRGB に直してから縁を探す。Bloom の合成の 8 bit 用のディザを外した（最後のトーンマップでまとめて掛ける）
+- ポストエフェクトがあるときも、最後にトーンマップの全画面のパスを 1 回描く（今までは、最後のエフェクトが最終結果へ直接書いていた）
+- エディタのプレビュー（Debug Viewport・各エディタ）も、本編と同じトーンマップで出す
 - マテリアルの定数を CPU のメモリに持ち、描くたびに 1 フレーム用のバッファ（`UploadAllocator`）へ写して渡すようにした。このバッファは、4 MB のページが尽きるとページを足す（今までは 4 MB を超えると、Release では確かめずにバッファの外へ書いていた）
 - `TextureManager::GetSRVGPUHandle`（ImGui 用）は、ファイルの値のまま読むビューを返す
 
@@ -36,8 +44,12 @@
 - 三項演算子の左右に `Vector4` と `Color` を混ぜると（`条件 ? vector4 : Color::kWhite` など）、どちらの型にするかが決まらず、コンパイルエラーになる。どちらかにそろえる
 - 色の Getter や `Color::kWhite` を `auto` で受けて `.x`〜`.w` を使っている所は、`.r`〜`.a` にする
 - 既にあるプロジェクトの `UpdateEngine.ps1`（2.1.1 までの物）は、そのまま動くが、自分を入れ替えない。新しい表示・バー・入れ替えの仕組みを入れるなら、1 回だけ `templates/Default/UpdateEngine.ps1` をプロジェクトのルートへ写し直す（それ以降は、自動で入れ替わる）
+- 見た目が変わるので、ライトの色と強さ、半透明・加算のエフェクト、ブルームのしきい値と強さ、0〜1 を前提にしたポストエフェクト（BWFilter・HalfTone・WhiteNoise・GrayScale など）を見直す
 - ノイズ・マスク・法線など、色でない画像は、Assets の右クリックで Color (sRGB) を外す
-- `Material(dx12, shader)` は `Material(shader)` にする。`TextureManager::ReleaseIntermediateResources()` は `EndFrame()` にする
+- 自作のシェーダーには、リニアの値が入る。gMaterial・gParam の、名前に color を含む float3/float4 は自動で直る。それ以外の色は `Common.hlsli` の `SRGBToLinear` で直す
+- .shader.json の途中のパスの Format に 8 bit の形式を指定したポストエフェクトは、1 を超える明るさが切れる
+- AfterPostProcess・BeforeUI・AfterUI に差し込むパスは、ガンマ（sRGB の値）の描き先に描く。postEffect をオンにした UI（UILayout）には、シーンと一緒にトーンマップも掛かる（None なら値は今と同じ）
+- `Material(dx12, shader)` は `Material(shader)` にする。`PreviewViewport::BeginPass(bool)` は引数なしにする。`TextureManager::ReleaseIntermediateResources()` は `EndFrame()` にする
 
 ## [2.1.1] - 2026-11-13
 

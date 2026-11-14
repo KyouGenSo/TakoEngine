@@ -116,9 +116,14 @@ namespace Tako {
       // 8 段目の 1 テクセルは入力の 256 画素。1080p ではこれで光が画面全体に届く
       constexpr int kMaxMips = 8;
 
-      const BloomParam& bloom   = std::get<BloomParam>(param);
-      RenderGraph&      graph   = *frame.graph;
-      ShaderLibrary&    library = frame.dx12->GetShaderLibrary();
+      BloomParam     bloom   = std::get<BloomParam>(param);
+      RenderGraph&   graph   = *frame.graph;
+      ShaderLibrary& library = frame.dx12->GetShaderLibrary();
+      // tint は名前に color を含まないので、Run の自動の変換に掛からない
+      if (frame.linear) {
+        const Color tint = Color(bloom.tint.x, bloom.tint.y, bloom.tint.z).ToLinear();
+        bloom.tint = { tint.r, tint.g, tint.b };
+      }
       const auto        shader  = [&library](const wchar_t* entry) -> const Shader& { return *library.Get({ L"Bloom.PS.hlsl", ShaderStage::Pixel, entry }); };
 
       // 半分の解像度から始め、長い辺が 4 画素を下回る前に止める（Unity URP と同じ数え方）

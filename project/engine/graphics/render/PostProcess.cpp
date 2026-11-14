@@ -1,10 +1,12 @@
 #include "PostProcess.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <type_traits>
 
 #include "DX12Basic.h"
+#include "MaterialPropertyLayout.h"
 
 namespace Tako {
 
@@ -41,7 +43,8 @@ namespace Tako {
       }
 
       const auto draw = [&] {
-        CommandContext::ShaderBinder binder = BeginFullScreen(frame, definition.pixelShader, output);
+        const Shader&                ps     = *frame.dx12->GetShaderLibrary().Get(definition.pixelShader, ShaderStage::Pixel);
+        CommandContext::ShaderBinder binder = BeginFullScreen(frame, ps, output);
         binder.BindSRV("gTexture"_id, input.srvIndex);
         if (definition.usesDepth) {
           binder.BindSRV("gDepthTexture"_id, frame.depthSrv);
@@ -54,15 +57,22 @@ namespace Tako {
         if (definition.setup) {
           definition.setup(frame, value, binder);
         }
-        std::visit([&]<class T>(const T& constants) {
+        // 色の値（名前に color を含む float3/float4）は sRGB で持つので、シーンの色に掛けるときはリニアに直す
+        std::visit([&]<class T>(T& constants) {
           if constexpr (std::is_same_v<T, PropertyBlock>) {
             if (!constants.bytes.empty()) {
+              if (frame.linear && constants.layout) {
+                constants.layout->ToLinearColors(constants.bytes);
+              }
               const UploadAllocator::Allocation allocation = frame.dx12->GetUploadAllocator().Allocate(constants.bytes.size());
               std::memcpy(allocation.cpu, constants.bytes.data(), constants.bytes.size());
               binder.BindCBV("gParam"_id, allocation.gpu);
             }
           }
           else if constexpr (!std::is_same_v<T, std::monostate>) {
+            if (frame.linear) {
+              MaterialPropertyLayout::ForShader(ps, "gParam")->ToLinearColors(std::span(reinterpret_cast<uint8_t*>(&constants), sizeof(T)));
+            }
             binder.BindConstants("gParam"_id, constants);
           }
         }, value);
@@ -92,16 +102,15 @@ namespace Tako {
     }
 
     /// <summary>
-    /// steps を順に掛ける。途中は input の解像度の一時 RT へ交互に書く
+    /// steps を順に掛ける。input の解像度・形式の一時 RT へ交互に書く
     /// </summary>
-    /// <param name="last">nullptr でなければ最後の手順はここへ書く</param>
-    /// <returns>最後に書いた RT（手順が無ければ input）。input・last 以外なら呼び出し側が Release する</returns>
-    RenderTexture* RunSteps(const PostEffectFrame& frame, std::span<const Step> steps, RenderTexture& input, RenderTexture* last)
+    /// <returns>最後に書いた RT（手順が無ければ input）。input でなければ呼び出し側が Release する</returns>
+    RenderTexture* RunSteps(const PostEffectFrame& frame, std::span<const Step> steps, RenderTexture& input)
     {
       RenderGraph&   graph  = *frame.graph;
       RenderTexture* source = &input;
       for (size_t i = 0; i < steps.size(); ++i) {
-        RenderTexture& target = (last && i + 1 == steps.size()) ? *last : graph.Acquire(RenderGraph::DescOf(input));
+        RenderTexture& target = graph.Acquire(RenderGraph::DescOf(input));
         Run(frame, *steps[i].definition, *steps[i].param, *source, target);
         if (source != &input) {
           graph.Release(*source);
@@ -201,6 +210,22 @@ namespace Tako {
     return copy;
   }
 
+  void ToneMapToDisplay(const PostEffectFrame& frame, RenderTexture& source, RenderTexture& output)
+  {
+    // ToneMap.PS の ToneMapParam と同じ並び
+    struct ToneMapConstants {
+      float    exposureScale;
+      uint32_t mode;
+      float    padding[2];
+    };
+    frame.graph->AddPass({ RenderGraph::Read(source.resource), RenderGraph::Write(output.resource) }, [&] {
+      CommandContext::ShaderBinder binder = BeginFullScreen(frame, L"ToneMap.PS.hlsl", output);
+      binder.BindSRV("gTexture"_id, source.srvIndex);
+      binder.BindConstants("gParam"_id, ToneMapConstants{ std::exp2(frame.toneMap.exposure), static_cast<uint32_t>(frame.toneMap.mode), {} });
+      DrawFullScreen(frame);
+    });
+  }
+
   uint32_t PostProcessStack::Add(std::string_view name, uint32_t maskId)
   {
     const PostEffectDefinition* definition = FindPostEffect(name);
@@ -261,18 +286,14 @@ namespace Tako {
       steps.push_back({ &kAntiAliasing, &kNoParam });
     }
 
-    // 出力と同じ大きさなら最後のエフェクトは出力へ直接書く
-    const bool     sameSize = input.width == output.width && input.height == output.height;
-    RenderTexture* source   = RunSteps(frame, steps, input, sameSize ? &output : nullptr);
-    // source はここでは常に input の解像度（同じ大きさなら output そのもの）
+    // エフェクトはシーンの色（リニアの HDR）のまま掛け、表示用の output へは最後のトーンマップだけが書く
+    RenderTexture* source = RunSteps(frame, steps, input);
     if (afterEffects) {
       afterEffects(*source);
     }
-    if (source != &output) {
-      Run(frame, kCopy, kNoParam, *source, output);
-      if (source != &input) {
-        frame.graph->Release(*source);
-      }
+    ToneMapToDisplay(frame, *source, output);
+    if (source != &input) {
+      frame.graph->Release(*source);
     }
   }
 
@@ -283,7 +304,7 @@ namespace Tako {
       return false;
     }
     // 読みながら同じ RT へは書けないので、一時 RT に書いてから写す（URP の Full Screen Pass も入力をコピーする）
-    RenderTexture* result = RunSteps(frame, steps, target, nullptr);
+    RenderTexture* result = RunSteps(frame, steps, target);
     Run(frame, kCopy, kNoParam, *result, target);
     frame.graph->Release(*result);
     return true;
@@ -291,7 +312,7 @@ namespace Tako {
 
   void PostProcessStack::ExecuteMasked(const PostEffectFrame& frame, uint32_t maskId, RenderTexture& layer, RenderTexture& target) const
   {
-    RenderTexture* effected = RunSteps(frame, CollectSteps(effects_, maskId), layer, nullptr);
+    RenderTexture* effected = RunSteps(frame, CollectSteps(effects_, maskId), layer);
     // 描画物の外の (0,0,0,0) は何も変えず、α=0 で色だけある画素（Bloom の光など）は加算になる
     frame.graph->AddPass({ RenderGraph::Read(effected->resource), RenderGraph::Write(target.resource) }, [&] {
       CommandContext::ShaderBinder binder = BeginFullScreen(frame, kCopy.pixelShader, target, BlendMode::Premultiplied);

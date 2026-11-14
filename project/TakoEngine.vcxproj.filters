@@ -1129,6 +1129,9 @@
     <FxCompile Include="engine\resources\shaders\FXAA.PS.hlsl">
       <Filter>shader\PostEffect</Filter>
     </FxCompile>
+    <FxCompile Include="engine\resources\shaders\ToneMap.PS.hlsl">
+      <Filter>shader\PostEffect</Filter>
+    </FxCompile>
     <FxCompile Include="engine\resources\shaders\GrayScale.PS.hlsl">
       <Filter>shader\PostEffect</Filter>
     </FxCompile>

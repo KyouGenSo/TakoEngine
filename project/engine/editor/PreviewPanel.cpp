@@ -46,7 +46,7 @@ namespace Tako {
   }
 
   void PreviewPanel::BeginPass() {
-    viewport_->BeginPass(postProcess_.HasEnabledEffects());
+    viewport_->BeginPass();
   }
 
   void PreviewPanel::Render(const std::function<void()>& submit) {

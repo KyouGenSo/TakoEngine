@@ -285,12 +285,16 @@ namespace Tako {
     {
       RenderGraph& graph = *frame.graph;
 
-      // 定数は 1 回だけ書き、全パスで同じものを渡す
+      // 定数は 1 回だけ書き、全パスで同じものを渡す。色の値は、シーンの色に掛けるときはリニアに直す
       const PropertyBlock*      block     = std::get_if<PropertyBlock>(&param);
       D3D12_GPU_VIRTUAL_ADDRESS constants = 0;
       if (block && !block->bytes.empty()) {
-        const UploadAllocator::Allocation allocation = frame.dx12->GetUploadAllocator().Allocate(block->bytes.size());
-        std::memcpy(allocation.cpu, block->bytes.data(), block->bytes.size());
+        std::vector<uint8_t> bytes = block->bytes;
+        if (frame.linear && block->layout) {
+          block->layout->ToLinearColors(bytes);
+        }
+        const UploadAllocator::Allocation allocation = frame.dx12->GetUploadAllocator().Allocate(bytes.size());
+        std::memcpy(allocation.cpu, bytes.data(), bytes.size());
         constants = allocation.gpu;
       }
 
@@ -319,7 +323,7 @@ namespace Tako {
           for (const auto& [slot, index] : pass.inputs) {
             binder.BindSRV(slot, source(index).srvIndex);
           }
-          // マテリアルが同じスロットのテクスチャを持てば、.shader.json の Textures の代わりに渡す
+          // マテリアルが同じスロットのテクスチャを持てば、.shader.json の Textures の代わりに渡す。表示用の色に掛けるときは、画像を値のまま読む
           for (const auto& [slot, srvIndex] : pass.textures) {
             uint32_t srv = srvIndex;
             if (block) {
@@ -327,7 +331,7 @@ namespace Tako {
                 srv = replaced->second;
               }
             }
-            binder.BindSRV(slot, srv);
+            binder.BindSRV(slot, frame.linear ? srv : TextureManager::GetInstance()->ToRawSRV(srv));
           }
           if (pass.usesDepth) {
             binder.BindSRV("gDepthTexture"_id, frame.depthSrv);

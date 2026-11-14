@@ -37,10 +37,9 @@ namespace Tako {
     void Finalize();
 
     /// <summary>
-    /// 描画先を RENDER_TARGET へ遷移し、OM 設定・クリア・RT サイズのビューポート/シザー設定を行う
+    /// 描画先（リニアの HDR の一時 RT）を借りて RENDER_TARGET へ遷移し、OM 設定・クリア・RT サイズのビューポート/シザー設定を行う
     /// </summary>
-    /// <param name="postProcess">EndPass でポストエフェクトを掛ける（描画先は一時 RT になる）</param>
-    void BeginPass(bool postProcess = false);
+    void BeginPass();
 
     /// <summary>
     /// BeginPass〜EndPass の間に呼ぶ。ここまで描いた画面を写し、以降の描画物へ gOpaqueTexture として渡す（EndPass で外す）
@@ -48,10 +47,10 @@ namespace Tako {
     void CaptureOpaqueTexture();
 
     /// <summary>
-    /// BeginPass で postProcess を指定していれば stack を掛けてプレビューの RT へ書き、ImGui がサンプルするため PIXEL_SHADER_RESOURCE へ遷移する。
+    /// stack があれば掛け、トーンマップ（本編の設定）してプレビューの RT へ書き、ImGui がサンプルするため PIXEL_SHADER_RESOURCE へ遷移する。
     /// RT/ビューポートの復帰は後段パスに任せる
     /// </summary>
-    /// <param name="stack">掛けるポストエフェクト（BeginPass で postProcess を指定したときのみ使う）</param>
+    /// <param name="stack">掛けるポストエフェクト（nullptr ならトーンマップだけ）</param>
     /// <param name="camera">プレビューのカメラ（深度を読むエフェクトが使う）</param>
     void EndPass(const PostProcessStack* stack = nullptr, const Camera* camera = nullptr);
 
@@ -74,7 +73,7 @@ namespace Tako {
   private: //メンバー変数
     DX12Basic*                  dx12_          = nullptr;  ///< Finalize 時に使う（Renderer より後に破棄され得るため生成時に保持）
     RenderTexture               color_;                    ///< ImGui に表示する RT
-    RenderTexture*              sceneTarget_   = nullptr;  ///< BeginPass〜EndPass の描画先（color_ か、ポストエフェクト前の一時 RT）
+    RenderTexture*              sceneTarget_   = nullptr;  ///< BeginPass〜EndPass の描画先（トーンマップ前の一時 RT）
     RenderTexture*              opaqueTexture_ = nullptr;  ///< CaptureOpaqueTexture で写した一時 RT（EndPass で返す）
     GpuResource                 depthBuffer_;
     D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle_{};
