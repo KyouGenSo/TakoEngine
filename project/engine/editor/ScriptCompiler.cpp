@@ -58,10 +58,13 @@ namespace Tako {
     }
 
     /// <summary>
-    /// MSBuild が書いた 1 行（コンソールのコードページ）を UTF-8 にする
+    /// MSBuild が書いた 1 行を UTF-8 にする。Visual Studio 18 の MSBuild は UTF-8 で書くので、UTF-8 として読めない行だけ、コンソールのコードページから変換する
     /// </summary>
     std::string ConsoleToUtf8(const std::string& line)
     {
+      if (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, line.data(), static_cast<int>(line.size()), nullptr, 0) > 0) {
+        return line;
+      }
       const int    length = MultiByteToWideChar(CP_OEMCP, 0, line.data(), static_cast<int>(line.size()), nullptr, 0);
       std::wstring wide(static_cast<size_t>(length), L'\0');
       MultiByteToWideChar(CP_OEMCP, 0, line.data(), static_cast<int>(line.size()), wide.data(), length);
