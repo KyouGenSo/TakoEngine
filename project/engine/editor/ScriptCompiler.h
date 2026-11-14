@@ -40,6 +40,16 @@ namespace Tako {
 
     bool IsAutoCompile() const { return isAutoCompile_; }
 
+    /// <summary>
+    /// MSBuild が最後に出した、エラーでも警告でもない行（コンパイル中のファイル名など）。まだ無ければ空
+    /// </summary>
+    const std::string& GetCurrentStep() const { return currentStep_; }
+
+    /// <summary>
+    /// ビルドを始めてからの秒数
+    /// </summary>
+    float GetElapsedSeconds() const { return std::chrono::duration<float>(std::chrono::steady_clock::now() - startTime_).count(); }
+
   private: //非公開関数
     /// <summary>
     /// 子プロセスの出力を、今ある分だけ読む（待たない）。エラーと警告の行を Console に出す
@@ -57,6 +67,7 @@ namespace Tako {
     void*                                 process_             = nullptr;  ///< MSBuild のプロセス（HANDLE）。nullptr ならビルドしていない
     void*                                 outputRead_          = nullptr;  ///< MSBuild の出力を読む側のパイプ（HANDLE）
     std::string                           pendingOutput_;                  ///< 改行がまだ来ていない出力
+    std::string                           currentStep_;
     int                                   errorCount_          = 0;
     std::chrono::steady_clock::time_point startTime_;
     std::filesystem::file_time_type       attemptedSourceTime_;            ///< 最後にビルドを始めたときの、一番新しいソースの更新時刻（同じ内容でやり直さない）

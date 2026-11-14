@@ -282,6 +282,11 @@ namespace Tako {
     void DrawPlaybackToolbar();
 
     /// <summary>
+    /// スクリプトのコンパイル中だけ、画面の右下に動くバーと今のファイル名・経過秒を重ねる
+    /// </summary>
+    void DrawCompileProgress();
+
+    /// <summary>
     /// シーンヒエラルキーウィンドウを描画
     /// </summary>
     void DrawSceneHierarchy();

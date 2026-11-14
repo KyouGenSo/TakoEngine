@@ -349,6 +349,7 @@ namespace Tako {
       PostEffectManager::GetInstance()->DrawImgui(&WindowFlag(Window::PostEffect));
     }
 
+    DrawCompileProgress();
     DrawExitConfirmation();
     DrawRecoveryPrompt();
     DrawNewScriptPopup();
@@ -721,6 +722,31 @@ namespace Tako {
       scriptCompiler_.Compile();
     }
     ImGui::EndDisabled();
+  }
+
+  void DebugUIManager::DrawCompileProgress() {
+    if (!scriptCompiler_.IsCompiling()) {
+      return;
+    }
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+    const float          margin   = ImGui::GetStyle().WindowPadding.x * 2.0f;
+    ImGui::SetNextWindowPos(ImVec2(viewport->WorkPos.x + viewport->WorkSize.x - margin, viewport->WorkPos.y + viewport->WorkSize.y - margin), ImGuiCond_Always, ImVec2(1.0f, 1.0f));
+    ImGui::SetNextWindowViewport(viewport->ID);
+    // 下の窓のクリックを取らない
+    constexpr ImGuiWindowFlags kFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoSavedSettings |
+                                        ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_AlwaysAutoResize;
+    if (ImGui::Begin("##CompileProgress", nullptr, kFlags)) {
+      ImGui::Text(ICON_FA_HAMMER "  Compiling scripts  %.1f s", scriptCompiler_.GetElapsedSeconds());
+      // MSBuild は全部で何ファイルかを出さないので、割合の無い動くバーにする
+      const float width = ImGui::GetFontSize() * 20.0f;
+      ImGui::ProgressBar(-1.0f * static_cast<float>(ImGui::GetTime()), ImVec2(width, ImGui::GetFontSize() * 0.5f));
+      // パスを含む長い行で枠の幅が変わらないよう、バーの幅で切って描く
+      const ImVec2 textPos = ImGui::GetCursorScreenPos();
+      const ImVec4 clipRect(textPos.x, textPos.y, textPos.x + width, textPos.y + ImGui::GetTextLineHeight());
+      ImGui::GetWindowDrawList()->AddText(nullptr, 0.0f, textPos, ImGui::GetColorU32(ImGuiCol_TextDisabled), scriptCompiler_.GetCurrentStep().c_str(), nullptr, 0.0f, &clipRect);
+      ImGui::Dummy(ImVec2(width, ImGui::GetTextLineHeight()));
+    }
+    ImGui::End();
   }
 
   void DebugUIManager::SetGamePaused(bool paused) {

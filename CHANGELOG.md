@@ -7,6 +7,7 @@
 ## [2.1.2] - 2026-11-14
 
 ### 追加
+- スクリプトのコンパイル中、画面の右下に、動くバーと今コンパイルしているファイル名・経過秒を出す（割合は出さない。MSBuild は全部で何ファイルかを出さないため）
 - `UpdateEngine.bat`：ダウンロードの進み具合を、1 行のバーで出す（`curl.exe` を使う。Windows 10 以降に入っている）
 - `UpdateEngine.bat`：エンジンを入れた後、エンジンの中のテンプレート（`templates/Default/UpdateEngine.ps1`）の方が新しければ、プロジェクトの `UpdateEngine.ps1` も入れ替える（プロジェクトの git に差分が出るので、コミットする）。`UpdateEngine.bat` は入れ替えない
 - リリースを公開したとき、Discord に通知する（`.github/workflows/Release.yml`。ウェブフックの URL は、リポジトリの Secrets の `DISCORD_WEBHOOK`。無ければ送らない）

@@ -106,6 +106,7 @@ namespace Tako {
     }
     errorCount_ = 0;
     pendingOutput_.clear();
+    currentStep_.clear();
     startTime_ = std::chrono::steady_clock::now();
     LogToConsole(std::format("Compile started: {}", StringUtility::ConvertString(project.filename().wstring())));
   }
@@ -156,11 +157,15 @@ namespace Tako {
   {
     const bool isError   = line.find(": error ") != std::string::npos || line.find(": fatal error ") != std::string::npos;
     const bool isWarning = line.find(": warning ") != std::string::npos;
+    const size_t first = line.find_first_not_of(" \t\r\n");
+    if (first == std::string::npos) {
+      return;
+    }
     if (!isError && !isWarning) {
+      currentStep_ = line.substr(first, line.find_last_not_of(" \t\r\n") + 1 - first);
       return;
     }
     // 行の頭の空白と、末尾の [プロジェクトのパス] を落とす（ファイル(行) で始まる形にして、Console のダブルクリックで開けるようにする）
-    const size_t first = line.find_first_not_of(" \t");
     size_t       last  = line.rfind(" [");
     if (last == std::string::npos || line.find(".vcxproj]", last) == std::string::npos) {
       last = line.find_last_not_of("\r\n") + 1;
@@ -178,9 +183,8 @@ namespace Tako {
     process_    = nullptr;
     outputRead_ = nullptr;
 
-    const float seconds = std::chrono::duration<float>(std::chrono::steady_clock::now() - startTime_).count();
     if (exitCode == 0) {
-      LogToConsole(std::format("Compile succeeded ({:.1f} s)", seconds));
+      LogToConsole(std::format("Compile succeeded ({:.1f} s)", GetElapsedSeconds()));
     }
     else {
       LogToConsole(std::format("Compile failed: {} error(s). The running scripts were not replaced", errorCount_), LogType::Error);
