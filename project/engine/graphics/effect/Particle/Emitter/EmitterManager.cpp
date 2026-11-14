@@ -1040,7 +1040,9 @@ namespace Tako {
     emitter->SetColors(startColor, endColor);
 
     emitter->SetActive(json["isActive"]);
-    emitter->SetEmitting(json["isEmitting"]);
+    if (json.contains("isEmitting")) {
+      emitter->SetEmitting(json["isEmitting"]);
+    }
     emitter->SetNormalize(json["isNormalize"]);
 
     if (json.contains("speedRange")) {

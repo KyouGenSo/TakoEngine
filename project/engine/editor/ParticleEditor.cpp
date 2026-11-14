@@ -39,12 +39,14 @@ namespace Tako {
     using LogType = DebugUIManager::LogType;
 
     /// <summary>
-    /// プリセットと同じ形式の JSON（emitter が null なら null）
+    /// 編集の比較と Undo に使う、プリセットと同じ形式の JSON（emitter が null なら null）。実行中に毎フレーム変わる射出のタイマーと射出中の印は入れない
     /// </summary>
     nlohmann::json SerializeEmitter(const EmitterManager& emitterManager, const std::shared_ptr<GPUParticleEmitter>& emitter) {
       nlohmann::json json;
       if (emitter) {
         emitterManager.SerializeEmitterToJSON(emitter, json);
+        json.erase("frequencyTime");
+        json.erase("isEmitting");
       }
       return json;
     }
@@ -83,6 +85,7 @@ namespace Tako {
       }
       else {
         // 選択中のエミッターの編集を、1 回の操作の前後の保存内容の変化で検出する（UI を描く区間ではゲームのコードが値を変えない）
+        // ponytail: 押してから離すまでの間にゲームのコードが変えた値（Actor に付いて動くエミッターの位置、BindTargetPosition の目標など）も編集に数える。直すなら、フレームごとに UI の区間の前後だけを比べる
         if (editGate_.BeginOperation()) {
           const std::shared_ptr<GPUParticleEmitter> emitter = emitterManager_->GetEmitterByName(selectedEmitterName_);
           operationStart_ = { selectedEmitterName_, emitter, SerializeEmitter(*emitterManager_, emitter).dump() };
