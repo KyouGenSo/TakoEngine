@@ -814,10 +814,12 @@ namespace Tako {
       Vector4 startColor = emitter->GetStartColor();
       Vector4 endColor = emitter->GetEndColor();
 
-      if (UI::ColorEdit4("Start Color", &startColor.x)) {
+      // 光る粒子にできるよう、1 を超える値も入れられる
+      constexpr ImGuiColorEditFlags kHDRColor = ImGuiColorEditFlags_HDR | ImGuiColorEditFlags_Float;
+      if (UI::ColorEdit4("Start Color", &startColor.x, kHDRColor)) {
         emitter->SetStartColor(startColor);
       }
-      if (UI::ColorEdit4("End Color", &endColor.x)) {
+      if (UI::ColorEdit4("End Color", &endColor.x, kHDRColor)) {
         emitter->SetEndColor(endColor);
       }
     }

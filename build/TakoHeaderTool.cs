@@ -65,7 +65,7 @@ public class TakoHeaderTool : Task
     private readonly List<EnumDecl> enums_ = new List<EnumDecl>();
     private readonly List<string> reflectedHeaders_ = new List<string>();
 
-    private static readonly HashSet<string> kFlagSpecifiers = new HashSet<string> { "Edit", "Visible", "Transient", "Color", "EnumAsInt", "Angle", "Required" };
+    private static readonly HashSet<string> kFlagSpecifiers = new HashSet<string> { "Edit", "Visible", "Transient", "Color", "EnumAsInt", "Angle", "Required", "HDR" };
     private static readonly HashSet<string> kStringSpecifiers = new HashSet<string> { "Category", "Tooltip", "DisplayName", "Asset", "ActorWith" };
     private static readonly HashSet<string> kNumberSpecifiers = new HashSet<string> { "ClampMin", "ClampMax", "Speed" };
 

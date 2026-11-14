@@ -19,6 +19,7 @@
 - リニアの HDR の描画。シーンを `R16G16B16A16_FLOAT` に描き（1 を超える明るさも残る）、ポストエフェクトの最後に露出とトーンマップを掛けて sRGB にする。トーンマップは `None`（1 で切る。既定）と `ACES`。Engine Settings > Rendering > Output の Tone Mapping・Exposure、`RenderPipeline::SetToneMapping`・`SetExposure`（`ProjectSettings.json` の Rendering の `ToneMapping`・`Exposure`）
 - 画像ごとの「色の画像か」の設定。Assets の画像の右クリックの Color (sRGB) で切り替え、`resources/Json/TextureSettings.json` に書く（既定のオンと違う物だけ）。オフの画像は、リニアに直さずに読む。エンジンの `noise0.png`・`noise1.png` はオフ
 - `Color::ToLinear`・`ToSRGB`（1 を超える色は、色合いを sRGB のまま、強さをリニアの倍率として扱う）。シェーダーの `Common.hlsli` に `SRGBToLinear`・`LinearToSRGB`
+- `TPROPERTY` の指定子 `HDR`（色の欄で 1 を超える値を入れられる）。Particle Editor の Start Color・End Color も 1 を超えられる
 
 ### 変更
 - スクリプトのコンパイルのエラーと警告で、日本語が文字化けしていたのを直した（MSBuild は UTF-8 で書くのに、Shift_JIS として読んでいた）。行の末尾の `[プロジェクトのパス]` も、落ちるようになった

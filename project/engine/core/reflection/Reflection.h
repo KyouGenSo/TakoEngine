@@ -28,6 +28,7 @@ namespace Tako {
 //     Asset = "Model"     : std::string をアセットの欄（一覧から選ぶ・Assets からドロップ・Open）で編集する。種類は AssetBrowser.h の kind
 //     ActorWith = "型名"  : ActorRef の一覧を、その型（派生も含む）のコンポーネントかスクリプトを持つ Actor に絞る
 //     Required            : ActorRef / std::string が空の間、Inspector で欄を赤くする
+//     HDR                 : 色の欄で 1 を超える値（光る色）を入れられるようにする
 #define TCLASS(...)
 #define TSTRUCT(...)
 #define TENUM(...)

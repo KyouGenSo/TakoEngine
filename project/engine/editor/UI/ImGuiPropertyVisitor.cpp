@@ -54,6 +54,14 @@ namespace Tako {
     }
 
     /// <summary>
+    /// HDR の指定子があれば、1 を超える値を入れられる色の欄にする（数値で編集する）
+    /// </summary>
+    ImGuiColorEditFlags ColorEditFlags(const PropertyMeta& meta)
+    {
+      return (meta.flags & kPropHDR) ? ImGuiColorEditFlags_HDR | ImGuiColorEditFlags_Float : ImGuiColorEditFlags_None;
+    }
+
+    /// <summary>
     /// Required の欄が空なら、枠を赤くする
     /// </summary>
     /// <returns>true なら、欄を描いた後に PopStyleColor を呼ぶ</returns>
@@ -237,14 +245,14 @@ namespace Tako {
   void ImGuiPropertyVisitor::Visit(const char* key, Vector3& value, const PropertyMeta& meta)
   {
     if (!Begin(key, meta)) { return; }
-    const bool changed = (meta.flags & kPropColor) ? UI::ColorEdit3(label_, &value.x) : DragFloats(label_, &value.x, 3, meta);
+    const bool changed = (meta.flags & kPropColor) ? UI::ColorEdit3(label_, &value.x, ColorEditFlags(meta)) : DragFloats(label_, &value.x, 3, meta);
     End(meta, changed);
   }
 
   void ImGuiPropertyVisitor::Visit(const char* key, Vector4& value, const PropertyMeta& meta)
   {
     if (!Begin(key, meta)) { return; }
-    const bool changed = (meta.flags & kPropColor) ? UI::ColorEdit4(label_, &value.x) : DragFloats(label_, &value.x, 4, meta);
+    const bool changed = (meta.flags & kPropColor) ? UI::ColorEdit4(label_, &value.x, ColorEditFlags(meta)) : DragFloats(label_, &value.x, 4, meta);
     End(meta, changed);
   }
 

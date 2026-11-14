@@ -24,6 +24,7 @@ namespace Tako {
   inline constexpr uint32_t kPropEnumAsInt = 1u << 4;
   inline constexpr uint32_t kPropAngle     = 1u << 5;
   inline constexpr uint32_t kPropRequired  = 1u << 6;
+  inline constexpr uint32_t kPropHDR       = 1u << 7;
 
   /// <summary>
   /// TENUM の列挙子 1 つ
