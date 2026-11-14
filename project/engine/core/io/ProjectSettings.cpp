@@ -231,6 +231,11 @@ namespace Tako {
         const auto antiAliasing = Input::FindCode<PostEffectManager::AntiAliasing>(kAntiAliasingTable, rendering.value("AntiAliasing", std::string("None")));
         postEffect->SetAntiAliasing(antiAliasing.value_or(PostEffectManager::AntiAliasing::None));
         dx12->SetRenderScale(rendering.value("RenderScale", dx12->GetRenderScale()));
+        RenderPipeline*   pipeline    = RenderPipeline::GetInstance();
+        const std::string toneMapping = rendering.value("ToneMapping", std::string(kToneMappingNames[0]));
+        const auto        toneMapName = std::ranges::find_if(kToneMappingNames, [&](std::string_view name) { return name == toneMapping; });
+        pipeline->SetToneMapping(toneMapName != std::end(kToneMappingNames) ? static_cast<ToneMapping>(toneMapName - std::begin(kToneMappingNames)) : ToneMapping::None);
+        pipeline->SetExposure(rendering.value("Exposure", pipeline->GetToneMap().exposure));
 
         LoadPhysics(Section(root, "Physics"));
         LoadInput(Section(root, "Input"));
@@ -325,6 +330,7 @@ namespace Tako {
       ShadowRenderer*       shadow     = ShadowRenderer::GetInstance();
       PostEffectManager*    postEffect = PostEffectManager::GetInstance();
       const Vector4&        clearColor = RenderPipeline::GetInstance()->GetClearColor();
+      const ToneMapSettings toneMap    = RenderPipeline::GetInstance()->GetToneMap();
 
       json root;
       root["Application"] = {
@@ -350,6 +356,8 @@ namespace Tako {
         { "ClearColor",        { clearColor.x, clearColor.y, clearColor.z, clearColor.w } },
         { "AntiAliasing",      Input::FindName<PostEffectManager::AntiAliasing>(kAntiAliasingTable, postEffect->GetAntiAliasing()) },
         { "RenderScale",       dx12->GetRenderScale() },
+        { "ToneMapping",       kToneMappingNames[static_cast<size_t>(toneMap.mode)] },
+        { "Exposure",          toneMap.exposure },
       };
       root["Physics"] = SavePhysics();
       root["Input"]   = SaveInput();

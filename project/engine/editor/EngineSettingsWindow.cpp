@@ -720,6 +720,18 @@ namespace Tako {
       postEffect->SetAntiAliasing(static_cast<PostEffectManager::AntiAliasing>(antiAliasing));
     }
 
+    RenderPipeline* pipeline    = RenderPipeline::GetInstance();
+    int             toneMapping = static_cast<int>(pipeline->GetToneMap().mode);
+    if (UI::Combo("Tone Mapping", &toneMapping, kToneMappingNames, IM_ARRAYSIZE(kToneMappingNames))) {
+      pipeline->SetToneMapping(static_cast<ToneMapping>(toneMapping));
+    }
+    ImGui::SetItemTooltip("How brightness above 1 is shown. None clips it; ACES compresses it smoothly");
+    float exposure = pipeline->GetToneMap().exposure;
+    if (UI::SliderFloat("Exposure", &exposure, -5.0f, 5.0f, "%.2f EV")) {
+      pipeline->SetExposure(exposure);
+    }
+    ImGui::SetItemTooltip("+1 EV doubles the brightness. Applied before tone mapping");
+
     if (!isRenderScaleDirty_) {
       renderScaleEdit_ = dx12->GetRenderScale();
     }

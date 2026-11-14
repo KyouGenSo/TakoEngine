@@ -16,7 +16,7 @@
 - `Gradient`（色の段階。`Evaluate(t)` がその位置の色を返す。`TPROPERTY` にすると、Inspector で段階を編集でき、段階の上に色の帯が出る。`Gradient.h`）
 - `RandomEngine` の `GetHueColor`（色相だけランダム）・`GetColor(from, to)`（2 色の間のランダム）
 - `TPROPERTY` に `Tako::Color` と `Tako::Gradient` を使える。`Color` は、`Color` の指定子が無くても色の欄になる
-- リニアの HDR の描画。シーンを `R16G16B16A16_FLOAT` に描き（1 を超える明るさも残る）、ポストエフェクトの最後に露出とトーンマップを掛けて sRGB にする。トーンマップは `None`（1 で切る。既定）と `ACES`。`RenderPipeline::SetToneMapping`・`SetExposure` で変える
+- リニアの HDR の描画。シーンを `R16G16B16A16_FLOAT` に描き（1 を超える明るさも残る）、ポストエフェクトの最後に露出とトーンマップを掛けて sRGB にする。トーンマップは `None`（1 で切る。既定）と `ACES`。Engine Settings > Rendering > Output の Tone Mapping・Exposure、`RenderPipeline::SetToneMapping`・`SetExposure`（`ProjectSettings.json` の Rendering の `ToneMapping`・`Exposure`）
 - 画像ごとの「色の画像か」の設定。Assets の画像の右クリックの Color (sRGB) で切り替え、`resources/Json/TextureSettings.json` に書く（既定のオンと違う物だけ）。オフの画像は、リニアに直さずに読む。エンジンの `noise0.png`・`noise1.png` はオフ
 - `Color::ToLinear`・`ToSRGB`（1 を超える色は、色合いを sRGB のまま、強さをリニアの倍率として扱う）。シェーダーの `Common.hlsli` に `SRGBToLinear`・`LinearToSRGB`
 
