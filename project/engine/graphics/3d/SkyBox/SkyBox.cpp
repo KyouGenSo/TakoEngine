@@ -135,7 +135,7 @@ void SkyBox::CreateIndexData()
 
 void SkyBox::CreateMaterialData()
 {
-  material_ = std::make_unique<Material>(dx12_, Renderer::GetInstance()->FindShader("SkyBox"));
+  material_ = std::make_unique<Material>(Renderer::GetInstance()->FindShader("SkyBox"));
   materialData_ = &material_->Constants<MaterialConstants>();
   materialData_->color = Color::kWhite;
 }

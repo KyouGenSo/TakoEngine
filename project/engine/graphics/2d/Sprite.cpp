@@ -228,7 +228,7 @@ namespace Tako {
   void Sprite::CreateMaterialData()
   {
     Renderer* renderer = Renderer::GetInstance();
-    material_ = std::make_unique<Material>(renderer->GetDX12Basic(), renderer->FindShader("Sprite"));
+    material_ = std::make_unique<Material>(renderer->FindShader("Sprite"));
     materialData_ = &material_->Constants<MaterialConstants>();
 
     // マテリアルデータの初期値を書き込む

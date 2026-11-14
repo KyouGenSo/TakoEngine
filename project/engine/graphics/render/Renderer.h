@@ -188,10 +188,10 @@ namespace Tako {
     void DrawItemGeometry(const DrawItem& item, const Material* material);
 
     /// <summary>
-    /// 描画物ごとの値を重ねた定数とテクスチャを、マテリアルの分の上から渡す
+    /// マテリアルの定数に描画物の値を重ねて gMaterial として渡し、マテリアル・描画物のテクスチャを渡す
+    /// 描き先がシーン用ならリニアの色と sRGB のビューを、表示用（DX12Basic::kColorFormat）なら値そのままと raw のビューを渡す
     /// </summary>
-    /// <param name="instanced">インスタンシング版のパスで描くか（値の並びを読む PS が変わる）</param>
-    void BindProperties(const MaterialPropertyBlock& properties, const Material& material, bool instanced, CommandContext::ShaderBinder& binder);
+    void BindMaterial(const DrawItem& item, const Material& material, CommandContext::ShaderBinder& binder);
 
   private: //メンバー変数
     DX12Basic*             dx12_             = nullptr;
@@ -208,6 +208,7 @@ namespace Tako {
     DrawList               sceneList_;              ///< 本編の描画物（描画キューが kQueueOverlay 以上の物はポストエフェクトの後に描く）
     DrawList*              current_     = nullptr;  ///< Submit の登録先
     std::vector<SortEntry> sortEntries_;            ///< RenderList の作業領域
+    std::vector<uint8_t>   constants_;              ///< BindMaterial の作業領域（アップロード用のメモリは読むと遅いので、ここで組んでから写す）
 
     std::unordered_map<std::string, std::unique_ptr<ShaderAsset>> shaders_;
   };

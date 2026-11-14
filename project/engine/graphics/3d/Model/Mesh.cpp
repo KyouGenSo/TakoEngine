@@ -388,7 +388,7 @@ namespace Tako {
 
   void Mesh::CreateMaterialData()
   {
-    material_ = std::make_unique<Material>(dx12_, Renderer::GetInstance()->FindShader("Lit"));
+    material_ = std::make_unique<Material>(Renderer::GetInstance()->FindShader("Lit"));
     materialData_ = &material_->Constants<MaterialConstants>();
     material_->SetTexture("gTexture"_id, textureData_.textureIndex);
     SetEnvironmentTexture(0);

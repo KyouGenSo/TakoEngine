@@ -491,7 +491,7 @@ namespace Tako {
     Asset& asset = assets_[name];
     asset.post.reset();
     if (!asset.material) {
-      asset.material = std::make_shared<Material>(dx12_, shader);
+      asset.material = std::make_shared<Material>(shader);
     }
     else {
       asset.material->SetShader(shader);

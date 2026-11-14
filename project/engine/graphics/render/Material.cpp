@@ -1,14 +1,10 @@
 #include "Material.h"
 
 #include <algorithm>
-#include <cstring>
-
-#include "DX12Basic.h"
 
 namespace Tako {
 
-  Material::Material(DX12Basic* dx12, const ShaderAsset* shader)
-    : dx12_(dx12)
+  Material::Material(const ShaderAsset* shader)
   {
     SetShader(shader);
   }
@@ -21,19 +17,15 @@ namespace Tako {
 
   std::span<uint8_t> Material::GetConstantBytes(size_t size)
   {
-    if (size != constantSize_ && size != 0) {
-      // 記録済みのコマンドが古い定数バッファを指していることがあるので、フレームの終わりまで残す
-      if (constantBuffer_) {
-        dx12_->ReleaseAfterFrame(std::move(constantBuffer_));
-      }
-      AllocateConstants(size);
+    if (size != constants_.size() && size != 0) {
+      constants_.assign(size, 0);
     }
-    return { constants_, constantSize_ };
+    return constants_;
   }
 
   std::unique_ptr<Material> Material::Clone() const
   {
-    auto clone = std::make_unique<Material>(dx12_, shader_);
+    auto clone = std::make_unique<Material>(shader_);
     clone->CopyFrom(*this);
     return clone;
   }
@@ -44,18 +36,8 @@ namespace Tako {
     stateOverride_ = source.stateOverride_;
     queueOverride_ = source.queueOverride_;
     textures_ = source.textures_;
-    if (source.constants_) {
-      std::memcpy(GetConstantBytes(source.constantSize_).data(), source.constants_, source.constantSize_);
-    }
-  }
-
-  void Material::Bind(CommandContext::ShaderBinder& binder) const
-  {
-    if (constantBuffer_) {
-      binder.BindCBV("gMaterial"_id, constantBuffer_->GetGPUVirtualAddress());
-    }
-    for (const auto& [id, srvIndex] : textures_) {
-      binder.BindSRV(id, srvIndex);
+    if (!source.constants_.empty()) {
+      std::ranges::copy(source.constants_, GetConstantBytes(source.constants_.size()).begin());
     }
   }
 
@@ -99,15 +81,6 @@ namespace Tako {
   {
     auto it = std::find_if(textures_.begin(), textures_.end(), [id](const auto& texture) { return texture.first == id; });
     return it != textures_.end() ? it->second : 0;
-  }
-
-  void Material::AllocateConstants(size_t size)
-  {
-    const size_t capacity = (size + D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1) & ~static_cast<size_t>(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1);
-    constantBuffer_ = dx12_->MakeBufferResource(capacity);
-    constantBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&constants_));
-    std::memset(constants_, 0, capacity);
-    constantSize_ = size;
   }
 
 } // namespace Tako

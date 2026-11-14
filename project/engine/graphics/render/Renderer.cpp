@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstring>
 #include <tuple>
 
 #include "Camera.h"
@@ -328,20 +329,43 @@ namespace Tako {
     ShadowRenderer::GetInstance()->SetShadowForMainPass(view.light == nullptr);
   }
 
-  void Renderer::BindProperties(const MaterialPropertyBlock& properties, const Material& material, bool instanced, CommandContext::ShaderBinder& binder)
+  void Renderer::BindMaterial(const DrawItem& item, const Material& material, CommandContext::ShaderBinder& binder)
   {
+    const bool linear = dx12_->GetContext().GetRenderTargetFormats().color != DX12Basic::kColorFormat;
+
     // マテリアルの定数の写しに描画物の値を重ね、この描画だけの gMaterial として渡す（マテリアル自体は書き換えない）
     const std::span<const uint8_t> constants = material.GetConstantBytes();
-    const GraphicsPipelineDesc*    forward   = material.GetShader()->GetPass(ShaderPass::Forward, instanced);
-    if (properties.HasValues() && !constants.empty() && forward && forward->ps) {
-      const UploadAllocator::Allocation allocation = dx12_->GetUploadAllocator().Allocate(constants.size());
-      const std::span<uint8_t>          copy(static_cast<uint8_t*>(allocation.cpu), constants.size());
-      std::ranges::copy(constants, copy.begin());
-      properties.Apply(*MaterialPropertyLayout::ForShader(*forward->ps), copy);
+    if (!constants.empty()) {
+      constants_.assign(constants.begin(), constants.end());
+      const GraphicsPipelineDesc* forward = material.GetShader()->GetPass(ShaderPass::Forward, item.instanceSrv != 0);
+      if (forward && forward->ps) {
+        const std::shared_ptr<const MaterialPropertyLayout> layout = MaterialPropertyLayout::ForShader(*forward->ps);
+        if (item.properties) {
+          item.properties->Apply(*layout, constants_);
+        }
+        if (linear) {
+          layout->ToLinearColors(constants_);
+        }
+      }
+      const UploadAllocator::Allocation allocation = dx12_->GetUploadAllocator().Allocate(constants_.size());
+      std::memcpy(allocation.cpu, constants_.data(), constants_.size());
       binder.BindCBV("gMaterial"_id, allocation.gpu);
     }
-    for (const auto& [id, srvIndex] : properties.GetTextures()) {
-      binder.BindSRV(id, srvIndex);
+
+    TextureManager* textureManager = TextureManager::GetInstance();
+    const auto bindTexture = [&](ShaderParamId id, uint32_t srvIndex) {
+      binder.BindSRV(id, linear ? srvIndex : textureManager->ToRawSRV(srvIndex));
+    };
+    for (const auto& [id, srvIndex] : material.GetTextures()) {
+      bindTexture(id, srvIndex);
+    }
+    if (item.textureOverride != 0 && &material == item.material) {
+      bindTexture("gTexture"_id, item.textureOverride);
+    }
+    if (item.properties) {
+      for (const auto& [id, srvIndex] : item.properties->GetTextures()) {
+        bindTexture(id, srvIndex);
+      }
     }
   }
 
@@ -360,13 +384,7 @@ namespace Tako {
       binder.BindSRV("gInstanceData"_id, item.instanceSrv);
     }
     if (material) {
-      material->Bind(binder);
-      if (item.textureOverride != 0 && material == item.material) {
-        binder.BindSRV("gTexture"_id, item.textureOverride);
-      }
-      if (item.properties) {
-        BindProperties(*item.properties, *material, item.instanceSrv != 0, binder);
-      }
+      BindMaterial(item, *material, binder);
     }
     context.DrawIndexedInstanced(item.indexCount, item.instanceCount, item.startIndex, 0, 0);
   }

@@ -49,14 +49,19 @@ namespace Tako {
     static std::shared_ptr<MaterialPropertyLayout> Reflect(ID3D12ShaderReflection* ps, std::string_view cbufferName, const std::map<std::string, std::pair<float, float>>& ranges);
 
     /// <summary>
-    /// ps の gMaterial の並び（編集範囲なし）。PS ごとに持ち、ホットリロードでバージョンが上がったら作り直す
+    /// ps の cbufferName の並び（編集範囲なし）。PS と名前ごとに持ち、ホットリロードでバージョンが上がったら作り直す
     /// </summary>
-    static std::shared_ptr<const MaterialPropertyLayout> ForShader(const Shader& ps);
+    static std::shared_ptr<const MaterialPropertyLayout> ForShader(const Shader& ps, std::string_view cbufferName = "gMaterial");
 
     /// <summary>
     /// 名前の ID のプロパティ（無ければ nullptr）
     /// </summary>
     const MaterialProperty* Find(ShaderParamId id) const;
+
+    /// <summary>
+    /// 色の値（isColor）を sRGB からリニアに直す（Color::ToLinear）。シーン用の描き先へ渡す直前に、写しに対して呼ぶ
+    /// </summary>
+    void ToLinearColors(std::span<uint8_t> constants) const;
 
     /// <summary>
     /// 値を名前で JSON にする（Unsupported の型は書かない）

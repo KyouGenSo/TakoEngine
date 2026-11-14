@@ -71,7 +71,7 @@ namespace Tako {
     Renderer*  renderer = Renderer::GetInstance();
     DX12Basic* dx12     = renderer->GetDX12Basic();
 
-    material_ = std::make_unique<Material>(dx12, renderer->FindShader("Text"));
+    material_ = std::make_unique<Material>(renderer->FindShader("Text"));
     MaterialConstants& constants = material_->Constants<MaterialConstants>();
     constants.color        = color_;
     constants.outlineColor = outlineColor_;

@@ -6,8 +6,8 @@
 #include <d3d12shader.h>
 #include <format>
 #include <string>
-#include <unordered_map>
 
+#include "ColorFunc.h"
 #include "ShaderLibrary.h"
 
 #ifdef _DEBUG
@@ -115,17 +115,17 @@ namespace Tako {
     return layout;
   }
 
-  std::shared_ptr<const MaterialPropertyLayout> MaterialPropertyLayout::ForShader(const Shader& ps)
+  std::shared_ptr<const MaterialPropertyLayout> MaterialPropertyLayout::ForShader(const Shader& ps, std::string_view cbufferName)
   {
     struct Entry {
       uint32_t                                      version = 0;
       std::shared_ptr<const MaterialPropertyLayout> layout;
     };
     // Shader は ShaderLibrary が終了まで持ち、ホットリロードでも同じアドレスのまま中身を替える
-    static std::unordered_map<const Shader*, Entry> cache;
-    Entry& entry = cache[&ps];
+    static std::map<std::pair<const Shader*, ShaderParamId>, Entry> cache;
+    Entry& entry = cache[{ &ps, MakeShaderParamId(cbufferName) }];
     if (!entry.layout || entry.version != ps.GetVersion()) {
-      entry.layout  = Reflect(ps.GetReflection(), "gMaterial", {});
+      entry.layout  = Reflect(ps.GetReflection(), cbufferName, {});
       entry.version = ps.GetVersion();
     }
     return entry.layout;
@@ -135,6 +135,19 @@ namespace Tako {
   {
     const auto it = std::ranges::find(properties, id, &MaterialProperty::id);
     return it != properties.end() ? &*it : nullptr;
+  }
+
+  void MaterialPropertyLayout::ToLinearColors(std::span<uint8_t> constants) const
+  {
+    for (const MaterialProperty& property : properties) {
+      if (!property.isColor || !Fits(property, constants.size())) {
+        continue;
+      }
+      Color color = Color::kWhite;
+      std::memcpy(&color, constants.data() + property.offset, property.components * sizeof(float));
+      color = color.ToLinear();
+      std::memcpy(constants.data() + property.offset, &color, property.components * sizeof(float));
+    }
   }
 
   json MaterialPropertyLayout::SerializeValues(std::span<const uint8_t> constants) const
