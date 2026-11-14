@@ -35,7 +35,7 @@ namespace Tako::Project {
     constexpr const char*    kMarkerExtension   = ".takoproject";
     constexpr size_t         kMaxRecentProjects = 10;
 
-    // 新しいプロジェクトに作っておく空のフォルダー（git は空のフォルダーを持てないので、テンプレートには入れられない）
+    // プロジェクトに作っておく空のフォルダー（git は空のフォルダーを持てないので、テンプレートには入れられず、clone した先にも届かない。作るときと開くときに作る）
     constexpr const char* kEmptyFolders[] = {
       "GameProject/Source",
       "GameProject/resources/Texture",
@@ -167,6 +167,17 @@ namespace Tako::Project {
     }
 
     /// <summary>
+    /// kEmptyFolders のうち、無い物を作る（作れなくても続ける）
+    /// </summary>
+    void MakeEmptyFolders(const fs::path& projectRoot)
+    {
+      std::error_code error;
+      for (const char* folder : kEmptyFolders) {
+        fs::create_directories(projectRoot / folder, error);
+      }
+    }
+
+    /// <summary>
     /// .takoproject を読み、保存形式が古ければ直し、エンジンのバージョンを今の物に進める
     /// </summary>
     /// <returns>開いてよければ true（だめな理由は表示してある）</returns>
@@ -244,6 +255,7 @@ namespace Tako::Project {
       if (!CheckVersions()) {
         return false;
       }
+      MakeEmptyFolders(root);
       // 普段はゲームのビルドが写す。ビルドする前でも起動できるよう、無ければここで写す
       if (!fs::exists("EngineResources", error) && !CopyEngineResources(root / "GameProject")) {
         ShowError("Could not copy the engine resources to:\n" + ToUtf8(root / "GameProject" / "EngineResources"));
@@ -414,9 +426,7 @@ namespace Tako::Project {
     if (error) {
       return "Could not read the project template: " + ToUtf8(templateRoot);
     }
-    for (const char* folder : kEmptyFolders) {
-      fs::create_directories(target / folder, error);
-    }
+    MakeEmptyFolders(target);
     if (!CopyEngineResources(target / "GameProject")) {
       return "Could not copy the engine resources to " + ToUtf8(target / "GameProject" / "EngineResources");
     }
