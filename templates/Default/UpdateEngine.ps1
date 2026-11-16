@@ -14,7 +14,7 @@ param([string]$Version = "", [switch]$Source, [string]$Zip = "")
 
 $ErrorActionPreference = "Stop"
 # このファイルを直したら 1 つ上げる（エンジンの中のテンプレートの番号の方が大きいときだけ、このファイルを入れ替える）
-$scriptRevision = 1
+$scriptRevision = 2
 $repository = "KyouGenSo/TakoEngine"
 $root       = $PSScriptRoot
 $engine     = Join-Path $root "Engine\TakoEngine"
@@ -68,7 +68,11 @@ if ($Zip -eq "" -and $target -eq "") {
     $tag = git -C $engine tag --list "v*" --sort=-v:refname | Select-Object -First 1
   }
   else {
-    try { $tag = (Invoke-RestMethod "https://api.github.com/repos/$repository/releases/latest").tag_name } catch { $tag = $null }
+    # GitHub の API（認証なしは、同じ IP から 1 時間に 60 回まで）を使わず、releases/latest の転送先（.../releases/tag/v2.1.2）からタグを取る
+    # -o NUL: 本文を捨てる。-w: 転送先の URL だけを出す。-m 15: 15 秒で諦める
+    $latest = curl.exe -s -m 15 -o NUL -w "%{redirect_url}" "https://github.com/$repository/releases/latest"
+    if ($LASTEXITCODE -ne 0) { Fail "GitHub に繋がりませんでした（curl の終了コード: $LASTEXITCODE）。ネットワークを確かめてください。" }
+    if ($latest -match '/releases/tag/(v[^/]+)$') { $tag = $Matches[1] }
   }
   if (-not $tag) { Fail "リリース（v で始まるタグ）が見つかりません。" }
   $target = $tag.TrimStart("v")
