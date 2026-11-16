@@ -26,7 +26,7 @@ namespace Tako {
     DsvManager& operator=(const DsvManager&) = delete;
 
   public: //定数
-    static constexpr uint32_t kMaxDSVCount = 8;  ///< 最大 DSV 数
+    static constexpr uint32_t kMaxDSVCount = 16;  ///< 最大 DSV 数
     static constexpr uint32_t kInvalidIndex = DescriptorHeap::kInvalidIndex;  ///< 無効番兵。Allocate 失敗時もこの値を返す
 
   public: //メンバー関数

@@ -42,6 +42,8 @@ namespace Tako {
     float   spotAngle_      = std::numbers::pi_v<float> / 3.0f;
     TPROPERTY(Edit, Tooltip = "平行光源の影を落とす、カメラからの距離", ClampMin = 1, Speed = 1)
     float   shadowDistance_ = 0.0f;
+    TPROPERTY(Edit, Tooltip = "点光源・スポットライトが影を落とすか（平行光源は常に落とす）")
+    bool    castShadow_     = false;
   };
 
 } // namespace Tako

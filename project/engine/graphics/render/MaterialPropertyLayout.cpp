@@ -22,7 +22,7 @@ namespace Tako {
   namespace {
 
     // エンジンが描画のたびに渡すテクスチャ。マテリアルの値ではない
-    constexpr std::string_view kEngineTextures[] = { "gShadowMap", "gDepthTexture", "gOpaqueTexture" };
+    constexpr std::string_view kEngineTextures[] = { "gShadowMap", "gLocalShadowMap", "gDepthTexture", "gOpaqueTexture" };
 
     bool ContainsIgnoreCase(std::string_view text, std::string_view word)
     {

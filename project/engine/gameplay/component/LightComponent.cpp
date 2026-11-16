@@ -25,7 +25,7 @@ namespace Tako {
         ShadowRenderer::GetInstance()->SetMaxShadowDistance(shadowDistance_);
         break;
       case Type::Point:
-        light->AddPointLight({ .color = color_, .position = position, .intensity = intensity_, .radius = range_, .decay = decay_ });
+        light->AddPointLight({ .color = color_, .position = position, .intensity = intensity_, .radius = range_, .decay = decay_ }, castShadow_);
         break;
       case Type::Spot:
         light->AddSpotLight({ .color     = color_,
@@ -34,7 +34,8 @@ namespace Tako {
                               .direction = direction,
                               .distance  = range_,
                               .decay     = decay_,
-                              .cosAngle  = std::cos(spotAngle_) });
+                              .cosAngle  = std::cos(spotAngle_) },
+                            castShadow_);
         break;
     }
   }

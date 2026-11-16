@@ -1278,5 +1278,8 @@
     <None Include="engine\resources\shaders\Common.hlsli">
       <Filter>shader</Filter>
     </None>
+    <None Include="engine\resources\shaders\Shadow.hlsli">
+      <Filter>shader</Filter>
+    </None>
   </ItemGroup>
 </Project>

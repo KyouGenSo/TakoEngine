@@ -12,7 +12,7 @@ class SrvManager;
 
 /// <summary>
 /// シャドウマッピング用の深度バッファ管理クラス
-/// 深度テクスチャ（DSV/SRV）・ビューポート・解像度ポリシー・リソース状態遷移を管理する。
+/// 深度テクスチャ（DSV/SRV）・解像度ポリシー・リソース状態遷移を管理する。1 枚を区画に分けて、複数の影を並べて描ける。
 /// 品質プリセットと PCF カーネルサイズによる動的な解像度変更（遅延再作成）に対応。
 /// </summary>
 class TAKO_API ShadowMap
@@ -29,7 +29,7 @@ public: //構造体
         Medium = 1,  ///< 1024x1024, PCF 3x3 - 標準品質
         High = 2,    ///< 2048x2048, PCF 5x5 - 高品質（デフォルト）
         Ultra = 3,   ///< 4096x4096, PCF 7x7 - 超高品質
-        Super = 4    ///< 8192x8192, PCF 9x9 - 最高品質（ハイエンド GPU 向け）
+        Super = 4    ///< 8192x8192, PCF 7x7 - 最高品質（ハイエンド GPU 向け）
     };
 
 public: //メンバー関数
@@ -50,9 +50,11 @@ public: //メンバー関数
     void BeginFrame();
 
     /// <summary>
-    /// シャドウマップレンダリング開始（DEPTH_WRITE へ遷移し深度をクリア）
+    /// 区画 1 つへの描画を始める（DEPTH_WRITE へ遷移し、区画の中だけ深度をクリアする）
     /// </summary>
-    void BeginShadowMapRender();
+    /// <param name="x">区画の左上（画素）</param>
+    /// <param name="size">区画の 1 辺（画素）</param>
+    void BeginTile(uint32_t x, uint32_t y, uint32_t size);
 
     /// <summary>
     /// シャドウマップレンダリング終了（PIXEL_SHADER_RESOURCE へ遷移）
@@ -75,7 +77,7 @@ public: //メンバー関数
     void SetShadowMapSize(uint32_t size);
 
     /// <summary>
-    /// PCF カーネルサイズの設定（1, 3, 5, 7, 9 のいずれか）
+    /// PCF カーネルサイズの設定（1, 3, 5, 7 のいずれか。それより大きい値は 7 にする）
     /// </summary>
     /// <param name="kernelSize">PCF カーネルサイズ</param>
     void SetPCFKernelSize(int kernelSize);
@@ -123,9 +125,6 @@ private: //メンバー変数
 
     bool     pendingRecreation_    = false;                    ///< 次フレームで再作成を行うフラグ（遅延実行用）
     uint32_t pendingShadowMapSize_ = DEFAULT_SHADOW_MAP_SIZE;  ///< 次フレームで適用する解像度
-
-    D3D12_VIEWPORT viewport_{};     ///< シャドウマップレンダリング用ビューポート
-    D3D12_RECT     scissorRect_{};  ///< シャドウマップレンダリング用シザー矩形
 };
 
 } // namespace Tako

@@ -41,63 +41,41 @@ namespace Tako {
 
   std::array<Vector3, 8> Camera::GetFrustumCorners() const
   {
-    std::array<Vector3, 8> corners;
-
-    // 視錐台の near 面と far 面のサイズを計算
-    float tanHalfFovY = std::tanf(fovY_ * 0.5f);
-    float nearHeight = tanHalfFovY * nearZ_ * 2.0f;
-    float nearWidth = nearHeight * aspect_;
-    float farHeight = tanHalfFovY * farZ_ * 2.0f;
-    float farWidth = farHeight * aspect_;
-
-    // カメラのローカル座標系でのコーナー位置を計算
-    // Near 面の4つの頂点（カメラ空間）
-    corners[0] = Vector3(-nearWidth * 0.5f, -nearHeight * 0.5f, nearZ_); // 左下
-    corners[1] = Vector3(nearWidth * 0.5f, -nearHeight * 0.5f, nearZ_); // 右下
-    corners[2] = Vector3(nearWidth * 0.5f, nearHeight * 0.5f, nearZ_); // 右上
-    corners[3] = Vector3(-nearWidth * 0.5f, nearHeight * 0.5f, nearZ_); // 左上
-
-    // Far 面の4つの頂点（カメラ空間）
-    corners[4] = Vector3(-farWidth * 0.5f, -farHeight * 0.5f, farZ_); // 左下
-    corners[5] = Vector3(farWidth * 0.5f, -farHeight * 0.5f, farZ_); // 右下
-    corners[6] = Vector3(farWidth * 0.5f, farHeight * 0.5f, farZ_); // 右上
-    corners[7] = Vector3(-farWidth * 0.5f, farHeight * 0.5f, farZ_); // 左上
-
-    // カメラ空間からワールド空間に変換
-    for (int i = 0; i < 8; ++i) {
-      corners[i] = Mat4x4::Transform(worldMatrix_, corners[i]);
-    }
-
-    return corners;
+    return GetFrustumCorners(nearZ_, farZ_);
   }
 
   std::array<Vector3, 8> Camera::GetFrustumCornersWithCustomFar(float customFar) const
   {
-    std::array<Vector3, 8> corners;
-
     // カスタム far クリップを使用（元の farZ_を超えないように制限）
     float limitedFar = min(customFar, farZ_);
     limitedFar = max(limitedFar, nearZ_);  // near より大きいことを保証
 
-    // 視錐台の near 面と far 面のサイズを計算
+    return GetFrustumCorners(nearZ_, limitedFar);
+  }
+
+  std::array<Vector3, 8> Camera::GetFrustumCorners(float nearZ, float farZ) const
+  {
+    std::array<Vector3, 8> corners;
+
+    // 手前の面と奥の面のサイズを計算
     float tanHalfFovY = std::tanf(fovY_ * 0.5f);
-    float nearHeight = tanHalfFovY * nearZ_ * 2.0f;
+    float nearHeight = tanHalfFovY * nearZ * 2.0f;
     float nearWidth = nearHeight * aspect_;
-    float farHeight = tanHalfFovY * limitedFar * 2.0f;  // カスタム far を使用
+    float farHeight = tanHalfFovY * farZ * 2.0f;
     float farWidth = farHeight * aspect_;
 
     // カメラのローカル座標系でのコーナー位置を計算
-    // Near 面の4つの頂点（カメラ空間）
-    corners[0] = Vector3(-nearWidth * 0.5f, -nearHeight * 0.5f, nearZ_); // 左下
-    corners[1] = Vector3(nearWidth * 0.5f, -nearHeight * 0.5f, nearZ_); // 右下
-    corners[2] = Vector3(nearWidth * 0.5f, nearHeight * 0.5f, nearZ_); // 右上
-    corners[3] = Vector3(-nearWidth * 0.5f, nearHeight * 0.5f, nearZ_); // 左上
+    // 手前の面の4つの頂点（カメラ空間）
+    corners[0] = Vector3(-nearWidth * 0.5f, -nearHeight * 0.5f, nearZ); // 左下
+    corners[1] = Vector3(nearWidth * 0.5f, -nearHeight * 0.5f, nearZ); // 右下
+    corners[2] = Vector3(nearWidth * 0.5f, nearHeight * 0.5f, nearZ); // 右上
+    corners[3] = Vector3(-nearWidth * 0.5f, nearHeight * 0.5f, nearZ); // 左上
 
-    // Far 面の4つの頂点（カメラ空間）- カスタム far を使用
-    corners[4] = Vector3(-farWidth * 0.5f, -farHeight * 0.5f, limitedFar); // 左下
-    corners[5] = Vector3(farWidth * 0.5f, -farHeight * 0.5f, limitedFar); // 右下
-    corners[6] = Vector3(farWidth * 0.5f, farHeight * 0.5f, limitedFar); // 右上
-    corners[7] = Vector3(-farWidth * 0.5f, farHeight * 0.5f, limitedFar); // 左上
+    // 奥の面の4つの頂点（カメラ空間）
+    corners[4] = Vector3(-farWidth * 0.5f, -farHeight * 0.5f, farZ); // 左下
+    corners[5] = Vector3(farWidth * 0.5f, -farHeight * 0.5f, farZ); // 右下
+    corners[6] = Vector3(farWidth * 0.5f, farHeight * 0.5f, farZ); // 右上
+    corners[7] = Vector3(-farWidth * 0.5f, farHeight * 0.5f, farZ); // 左上
 
     // カメラ空間からワールド空間に変換
     for (int i = 0; i < 8; ++i) {

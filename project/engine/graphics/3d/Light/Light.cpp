@@ -2,9 +2,7 @@
 #include "DX12Basic.h"
 #include "SrvManager.h"
 
-#include "Mat4x4Func.h"
 #include "ColorFunc.h"
-#include "Camera.h"
 
 namespace Tako {
 
@@ -28,27 +26,51 @@ namespace Tako {
   {
     lightConstantsData_->numPointLights = 0;
     lightConstantsData_->numSpotLights  = 0;
+    shadowRequests_.clear();
   }
 
-  void Light::AddPointLight(const PointLight& light)
+  void Light::AddPointLight(const PointLight& light, bool castShadow)
   {
     int& count = lightConstantsData_->numPointLights;
     if (count < MAX_POINT_LIGHT) {
       pointLightData_[count] = light;
       pointLightData_[count].color = light.color.ToLinear();
       pointLightData_[count].enable = true;
+      pointLightData_[count].shadowSlice = -1;
+      if (castShadow) {
+        shadowRequests_.push_back({ .isSpot = false, .lightIndex = static_cast<uint32_t>(count), .position = light.position, .range = light.radius });
+      }
       ++count;
     }
   }
 
-  void Light::AddSpotLight(const SpotLight& light)
+  void Light::AddSpotLight(const SpotLight& light, bool castShadow)
   {
     int& count = lightConstantsData_->numSpotLights;
     if (count < MAX_SPOT_LIGHT) {
       spotLightData_[count] = light;
       spotLightData_[count].color = light.color.ToLinear();
       spotLightData_[count].enable = true;
+      spotLightData_[count].shadowSlice = -1;
+      if (castShadow) {
+        shadowRequests_.push_back({ .isSpot     = true,
+                                    .lightIndex = static_cast<uint32_t>(count),
+                                    .position   = light.position,
+                                    .direction  = light.direction,
+                                    .range      = light.distance,
+                                    .cosAngle   = light.cosAngle });
+      }
       ++count;
+    }
+  }
+
+  void Light::SetShadowSlice(const ShadowRequest& request, int32_t slice)
+  {
+    if (request.isSpot) {
+      spotLightData_[request.lightIndex].shadowSlice = slice;
+    }
+    else {
+      pointLightData_[request.lightIndex].shadowSlice = slice;
     }
   }
 
@@ -58,10 +80,6 @@ namespace Tako {
     directionalLightData_->color          = Color::kWhite;
     directionalLightData_->lightType      = 1;  // 0:Lambert 1:Half-Lambert
     directionalLightData_->intensity      = 1.0f;
-    directionalLightData_->position       = sceneCenter_;
-    directionalLightData_->viewMatrix     = Mat4x4::MakeIdentity();
-    directionalLightData_->projMatrix     = Mat4x4::MakeIdentity();
-    directionalLightData_->viewProjMatrix = Mat4x4::MakeIdentity();
   }
 
   void Light::PreDraw() const
@@ -79,19 +97,6 @@ namespace Tako {
     directionalLightData_->color = color.ToLinear();
     directionalLightData_->lightType = lightType;
     directionalLightData_->intensity = intensity;
-
-    if (autoUpdatePosition_) {
-      directionalLightData_->position = sceneCenter_;
-    }
-  }
-
-  void Light::SetDirectionalLightDirection(const Vector3& direction)
-  {
-    directionalLightData_->direction = direction;
-
-    if (autoUpdatePosition_) {
-      directionalLightData_->position = sceneCenter_;
-    }
   }
 
   void Light::CreateDirectionalLightData()
@@ -132,67 +137,6 @@ namespace Tako {
     lightConstantsData_->numPointLights = 0;
 
     lightConstantsData_->numSpotLights = 0;
-  }
-
-  void Light::UpdateDirectionalLightShadowMatrices(const Camera* camera, float maxShadowDistance)
-  {
-    if (!camera) {
-      return;
-    }
-
-    Vector3 lightDirection = directionalLightData_->direction;
-    lightDirection = lightDirection.Normalize();
-
-    // カメラから光方向の逆へ離した位置にライトカメラを置く
-    Vector3 cameraPosition = camera->GetTranslate();
-    float tempDistance = 100.0f;
-    Vector3 lightPosition = cameraPosition - lightDirection * tempDistance;
-
-    // ライトのビュー行列を作成
-    Vector3 scale = { 1.0f, 1.0f, 1.0f };
-    Vector3 rotate = { 0.0f, 0.0f, 0.0f };
-
-    // Y 軸まわりの回転角度を計算（XZ 平面での方向から）
-    rotate.y = std::atan2f(lightDirection.x, lightDirection.z);
-
-    // X 軸まわりの回転角度を計算（ピッチ角）
-    float horizontalLength = std::sqrtf(lightDirection.x * lightDirection.x + lightDirection.z * lightDirection.z);
-    rotate.x = std::atan2f(-lightDirection.y, horizontalLength);
-
-    // ライトのワールド行列を作成
-    Matrix4x4 lightWorldMatrix = Mat4x4::MakeAffine(scale, rotate, lightPosition);
-
-    // ビュー行列はワールド行列の逆行列
-    directionalLightData_->viewMatrix = Mat4x4::Inverse(lightWorldMatrix);
-
-    // maxShadowDistance で制限された視錐台の境界ボックスをライト空間で取得
-    auto [minBounds, maxBounds] = camera->GetFrustumBoundingBoxWithCustomFar(maxShadowDistance, &directionalLightData_->viewMatrix);
-
-    // 視錐台を制限された範囲でカバーする正射影パラメータを計算
-    float orthoLeft = minBounds.x;
-    float orthoRight = maxBounds.x;
-    float orthoBottom = minBounds.y;
-    float orthoTop = maxBounds.y;
-    float orthoNear = minBounds.z - 20.0f; // 余裕を持たせる（最も近い点から少し手前）
-    float orthoFar = maxBounds.z + 20.0f;  // 余裕を持たせる（最も遠い点から少し奥）
-
-    // 安全性チェック（near/far が逆転しないように）
-    if (orthoNear >= orthoFar) {
-      orthoNear = 0.1f;
-      orthoFar = 1000.0f;
-    }
-
-    // 正射影行列の作成
-    directionalLightData_->projMatrix = Mat4x4::MakeOrtho(
-      orthoLeft, orthoTop,
-      orthoRight, orthoBottom,
-      orthoNear, orthoFar);
-
-    directionalLightData_->viewProjMatrix = Mat4x4::Multiply(directionalLightData_->viewMatrix, directionalLightData_->projMatrix);
-
-    if (autoUpdatePosition_) {
-      directionalLightData_->position = lightPosition;
-    }
   }
 
 } // namespace Tako

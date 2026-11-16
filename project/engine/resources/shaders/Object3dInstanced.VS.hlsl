@@ -11,7 +11,6 @@ struct InstanceData
 
 StructuredBuffer<InstanceData> gInstanceData : register(t5);
 ConstantBuffer<View> gView : register(b2);
-ConstantBuffer<ShadowConstants> gShadowConstants : register(b4);
 
 struct VertexShaderInput
 {
@@ -35,9 +34,6 @@ VertexShaderOutput main(VertexShaderInput input, uint instanceID : SV_InstanceID
     output.normal = normalize(mul(input.normal, (float3x3)instance.WorldInvTranspose));
     
     output.texcoord = input.texcoord;
-    
-    // ライト空間での位置を計算（シャドウマップ用）
-    output.lightSpacePos = mul(worldPos, gShadowConstants.lightViewProj);
     
     output.instanceColor = instance.Color;
     

@@ -71,27 +71,33 @@ namespace Tako {
 
   void Renderer::RenderShadows(const DrawList& list)
   {
+    // 影を止めていても、受ける側へ渡す定数（影なし）はここで更新する
     ShadowRenderer* shadow = ShadowRenderer::GetInstance();
-    if (!shadow->IsEnabled()) {
+    shadow->Prepare();
+    const std::span<const ShadowRenderer::ShadowView> views = shadow->GetViews();
+    if (views.empty()) {
       return;
     }
 
-    shadow->BeginShadowPass();
     CommandContext& context = dx12_->GetContext();
-    GraphicsPipelineDesc current{};
-    bool hasCurrent = false;
-    for (const DrawItem& item : list.GetItems()) {
-      GraphicsPipelineDesc pipeline;
-      if (!item.castShadow || !item.material->GetPipeline(ShaderPass::ShadowCaster, item.instanceSrv != 0, pipeline)) {
-        continue;
+    for (const ShadowRenderer::ShadowView& view : views) {
+      shadow->BeginView(view);
+      GraphicsPipelineDesc current{};
+      bool hasCurrent = false;
+      for (const DrawItem& item : list.GetItems()) {
+        GraphicsPipelineDesc pipeline;
+        if (!item.castShadow || !view.Intersects(item.boundsCenter, item.boundsRadius) ||
+            !item.material->GetPipeline(ShaderPass::ShadowCaster, item.instanceSrv != 0, pipeline)) {
+          continue;
+        }
+        if (!hasCurrent || !(pipeline == current)) {
+          context.SetGraphicsPipeline(pipeline);
+          context.Graphics().BindCBV("gShadowCaster"_id, view.constants);
+          current = pipeline;
+          hasCurrent = true;
+        }
+        DrawItemGeometry(item, nullptr);
       }
-      if (!hasCurrent || !(pipeline == current)) {
-        context.SetGraphicsPipeline(pipeline);
-        context.Graphics().BindCBV("gShadowConstants"_id, shadow->GetShadowConstantsAddress());
-        current = pipeline;
-        hasCurrent = true;
-      }
-      DrawItemGeometry(item, nullptr);
     }
     shadow->EndShadowPass();
   }
@@ -271,11 +277,11 @@ namespace Tako {
     litInstanced.vs = library.Get(L"Object3dInstanced.VS.hlsl", ShaderStage::Vertex);
     litInstanced.ps = library.Get(L"Object3dInstanced.PS.hlsl", ShaderStage::Pixel);
 
-    // フロントフェースカリングでピーターパニングを緩和する。深度だけを書くのでピクセルシェーダーは使わない
+    // 1 枚板のような閉じていないメッシュも影を落とすよう、両面を描く（縞は Shadow.hlsli のバイアスで抑える）。深度だけを書くのでピクセルシェーダーは使わない
     GraphicsPipelineDesc shadowCaster;
     shadowCaster.vs = library.Get(L"ShadowMap.VS.hlsl", ShaderStage::Vertex);
     shadowCaster.vertexLayout = VertexLayout::Position;
-    shadowCaster.renderState.cull = CullMode::Front;
+    shadowCaster.renderState.cull = CullMode::None;
     shadowCaster.renderState.depthFunc = D3D12_COMPARISON_FUNC_LESS;
 
     GraphicsPipelineDesc shadowCasterInstanced = shadowCaster;

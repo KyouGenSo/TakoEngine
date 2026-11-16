@@ -76,6 +76,12 @@ namespace Tako {
     [[nodiscard]] std::array<Vector3, 8> GetFrustumCornersWithCustomFar(float customFar) const;
 
     /// <summary>
+    /// 視錐台を奥行き nearZ〜farZ で切った部分の8つの頂点を取得（ワールド空間）
+    /// </summary>
+    /// <returns>切片の8頂点（0-3:手前の面、4-7:奥の面）</returns>
+    [[nodiscard]] std::array<Vector3, 8> GetFrustumCorners(float nearZ, float farZ) const;
+
+    /// <summary>
     /// 視錐台の境界ボックスを取得（min, max）
     /// </summary>
     /// <param name="viewMatrix">変換に使用するビュー行列（省略時はワールド空間）</param>

@@ -2,8 +2,32 @@
 
 ## [2.1.3] - 2026-11-16
 
+### 追加
+- 平行光源の影のカスケード。カメラからの距離ごとに、1〜4 枚（既定 4）のシャドウマップに分けて描くので、近くの影が細かくなる。Engine Settings > Rendering > Shadows の Cascade Count・Cascade Split（`ProjectSettings.json` の Rendering の `ShadowCascadeCount`・`ShadowCascadeSplit`）
+- 点光源とスポットライトの影。Light コンポーネントの Cast Shadow をオンにしたライトが影を落とす（既定はオフ）。コードからは `Light::AddPointLight(light, true)`・`AddSpotLight(light, true)`
+  - 影を落とせるのは、スポットライトを 1 枚・点光源を 6 枚と数えて、合わせて 16 枚まで。足りないときは、カメラから遠いライトが影なしになり、Console に 1 回出る
+  - 解像度は Engine Settings の Local Shadow Map Size（`LocalShadowMapSize`。既定 2048 で、1 枚は 512）
+- Engine Settings > Rendering > Shadows の Stagger Far Cascades（`ShadowStaggerFarCascades`。既定オン）。3・4 枚目のカスケードを 1 フレームおきに描き直して、影の描画を減らす。その範囲で動く物の影は 1 フレーム遅れる
+- Engine Settings > Rendering > Shadows の Show Cascades（カスケードごとの色分け）と Shadow Maps（シャドウマップの画像）
+- 自作のシェーダーで影を受けるための `Shadow.hlsli`（`DirectionalShadow`・`SpotShadow`・`PointShadow`）
+
 ### 変更
 - `UpdateEngine.bat`：新しいリリースがあるのに「リリース（v で始まるタグ）が見つかりません。」と出て止まることがあったのを直した（同じネットワークから GitHub へ 1 時間に 60 回を超えて問い合わせると起きていた）。GitHub に繋がらないときは、そう出す
+- 影の見た目が変わる
+  - カメラを動かしても、止まっている物の影の縁がちらつかない
+  - 影の距離（Light コンポーネントの Shadow Distance）の手前 10% で薄くなって消える（今までは急に切れていた）
+  - 1 枚板のような閉じていないメッシュも、影を落とす
+  - 影の範囲からライト側へ遠く離れた物（高い所の物など）の影が、切れなくなった
+  - 平行光源の向きを変えたフレームから、影もその向きになる（今までは 1 フレーム遅れていた）
+- Shadow Map Size は、カスケードが 2 枚以上のとき、1 枚がその半分の辺になる（2048 なら 1024）。遠くの影が粗いときは 4096 にする
+- PCF Kernel Size は 7x7 までになった（9x9 を保存してあれば 7x7 になる）
+- 影のバイアスの設定は、Depth Bias・Normal Bias（どちらもテクセル単位。`ShadowDepthBias`・`ShadowNormalBias`）になった。`ProjectSettings.json` の `ShadowBias` は読まない（既定の値になる）
+
+### 直しが要る変更（ゲーム側）
+- 自作の頂点シェーダーで、`VertexShaderOutput` の `lightSpacePos` に値を入れている行は消す（`Object3d.hlsli`・`Object3dInstanced.hlsli` から無くなった。残っているとコンパイルエラーになる）
+- 自作のピクセルシェーダーで `gShadowConstants`・`gShadowMap` を直接読んでいる物は、`Shadow.hlsli` を include して `DirectionalShadow(worldPos, normal, gDirectionalLight.direction)` の戻り値（1 = 光が当たる、0 = 影）を使う形に直す
+- `Light` の `SetAutoUpdatePosition`・`SetSceneCenter`・`SetDirectionalLightPosition`・`UpdateDirectionalLightShadowMatrices` と、`GetDirectionalLight()` の `viewMatrix`・`projMatrix`・`viewProjMatrix`・`position` は無くなった（影の範囲はカメラから自動で決まる）。呼んでいる行は消す
+- `ShadowRenderer::SetShadowBias`・`GetShadowBias` は、`SetDepthBias`・`SetNormalBias`（テクセル単位）に替える
 
 ## [2.1.2] - 2026-11-15
 

@@ -1,16 +1,15 @@
 #pragma once
 #include <d3d12.h>
 #include<wrl.h>
+#include <span>
 #include <vector>
 #include "vector2.h"
 #include "vector3.h"
 #include "ColorFunc.h"
-#include "Matrix4x4.h"
 
 namespace Tako {
 
   class DX12Basic;
-  class Camera;
 
   /// <summary>
   /// 平行光源・点光源・スポットライトを管理するクラス
@@ -33,10 +32,7 @@ namespace Tako {
       Vector3 direction;
       int32_t lightType;  ///< 0:Lambert 1:Half-Lambert
       float intensity;
-      Matrix4x4 viewMatrix;  ///< シャドウマップ用
-      Matrix4x4 projMatrix;  ///< シャドウマップ用
-      Matrix4x4 viewProjMatrix;  ///< シャドウマップ用
-      Vector3 position;  ///< シャドウマップ用
+      float padding[3];  ///< 定数バッファの 16 バイト境界まで
     };
 
     /// <summary>
@@ -50,6 +46,7 @@ namespace Tako {
       float radius;
       float decay;
       bool enable;
+      int32_t shadowSlice;  ///< 影の区画の番号（6 面の先頭）。負なら影なし。ShadowRenderer が書く
     };
 
     /// <summary>
@@ -65,6 +62,20 @@ namespace Tako {
       float decay;
       float cosAngle;  ///< コーン半角のコサイン
       bool enable;
+      int32_t shadowSlice;  ///< 影の区画の番号。負なら影なし。ShadowRenderer が書く
+    };
+
+    /// <summary>
+    /// このフレームに影を落とすと登録された点光源・スポットライト 1 つ
+    /// </summary>
+    struct ShadowRequest
+    {
+      bool     isSpot;
+      uint32_t lightIndex;  ///< 点光源・スポットライトそれぞれの配列の中の番号
+      Vector3  position;
+      Vector3  direction;   ///< スポットライトの向き
+      float    range;
+      float    cosAngle;    ///< スポットライトのコーン半角のコサイン
     };
 
     /// <summary>
@@ -91,12 +102,14 @@ namespace Tako {
     /// <summary>
     /// このフレームの点光源に足す（MAX_POINT_LIGHT を超えた分は捨てる）
     /// </summary>
-    void AddPointLight(const PointLight& light);
+    /// <param name="castShadow">影を落とすか（区画が足りなければ、カメラから遠いライトは影なしになる）</param>
+    void AddPointLight(const PointLight& light, bool castShadow = false);
 
     /// <summary>
     /// このフレームのスポットライトに足す（MAX_SPOT_LIGHT を超えた分は捨てる）
     /// </summary>
-    void AddSpotLight(const SpotLight& light);
+    /// <param name="castShadow">影を落とすか（区画が足りなければ、カメラから遠いライトは影なしになる）</param>
+    void AddSpotLight(const SpotLight& light, bool castShadow = false);
 
     /// <summary>
     /// 平行光源を初期値（真下向き・白・強さ 1・Half-Lambert）に戻す
@@ -108,34 +121,20 @@ namespace Tako {
     /// </summary>
     void PreDraw() const;
 
-    /// <summary>
-    /// カメラ視錐台を覆う平行光源のシャドウ行列（view/proj/viewProj）を計算する
-    /// </summary>
-    /// <param name="camera">基準カメラ。nullptr なら何もしない</param>
-    /// <param name="maxShadowDistance">影を収める視錐台の最大奥行き</param>
-    void UpdateDirectionalLightShadowMatrices(const Camera* camera, float maxShadowDistance = 1000.0f);
-
     //============================================================
     //Setter
     //============================================================
     // DirectionalLight
-    /// <summary>
-    /// 平行光源をまとめて設定（自動更新時は位置をシーン中心へリセット）
-    /// </summary>
     void SetDirectionalLight(const Vector3& direction, const Color& color, int32_t lightType, float intensity);
-
-    /// <summary>
-    /// 平行光源の方向を設定（自動更新時は位置をシーン中心へリセット）
-    /// </summary>
-    void SetDirectionalLightDirection(const Vector3& direction);
+    void SetDirectionalLightDirection(const Vector3& direction) { directionalLightData_->direction = direction; }
     void SetDirectionalLightColor(const Color& color) { directionalLightData_->color = color.ToLinear(); }
     void SetDirectionalLightType(int32_t lightType) { directionalLightData_->lightType = lightType; }
     void SetDirectionalLightIntensity(float intensity) { directionalLightData_->intensity = intensity; }
-    void SetDirectionalLightPosition(const Vector3& position) { directionalLightData_->position = position; }
 
-    // 自動更新
-    void SetAutoUpdatePosition(bool enable) { autoUpdatePosition_ = enable; }
-    void SetSceneCenter(const Vector3& center) { sceneCenter_ = center; }
+    /// <summary>
+    /// request のライトが読む影の区画の番号を書く
+    /// </summary>
+    void SetShadowSlice(const ShadowRequest& request, int32_t slice);
 
     //============================================================
     //Getter
@@ -144,8 +143,11 @@ namespace Tako {
     /// GPU に渡している値（color は Set* で渡した色をリニアに直した後の値）
     /// </summary>
     const DirectionalLight& GetDirectionalLight() const { return *directionalLightData_; }
-    bool GetAutoUpdatePosition() const { return autoUpdatePosition_; }
-    Vector3 GetSceneCenter() const { return sceneCenter_; }
+
+    /// <summary>
+    /// このフレームに影を落とすと登録された点光源・スポットライト
+    /// </summary>
+    std::span<const ShadowRequest> GetShadowRequests() const { return shadowRequests_; }
 
   private: //非公開関数
     void CreateDirectionalLightData();
@@ -173,9 +175,8 @@ namespace Tako {
     uint32_t pointLightSrvIndex_ = 0;
     uint32_t spotLightSrvIndex_  = 0;
 
-    //シャドウマップ自動更新
-    bool    autoUpdatePosition_ = true;
-    Vector3 sceneCenter_        = { 0.0f, 0.0f, 0.0f };
+    //影
+    std::vector<ShadowRequest> shadowRequests_;
   };
 
 } // namespace Tako

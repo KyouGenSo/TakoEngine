@@ -46,6 +46,20 @@ namespace Tako {
       return std::abs(determinant) < kMinDeterminant;
     }
 
+    /// <summary>
+    /// メッシュのローカルの箱を囲む球を、meshWorld でワールドへ移して描画物の範囲にする
+    /// </summary>
+    void SetBounds(DrawItem& item, const Mesh& mesh, const Matrix4x4& meshWorld)
+    {
+      const Vector3 localCenter = (mesh.GetAABBLocalMin() + mesh.GetAABBLocalMax()) * 0.5f;
+      const float   localRadius = (mesh.GetAABBLocalMax() - mesh.GetAABBLocalMin()).Length() * 0.5f;
+      // 軸ごとに拡大が違っても球が足りるよう、一番大きい軸の拡大を掛ける
+      const auto& m = meshWorld.m;
+      const float scale = (std::max)({ Vector3{ m[0][0], m[0][1], m[0][2] }.Length(), Vector3{ m[1][0], m[1][1], m[1][2] }.Length(), Vector3{ m[2][0], m[2][1], m[2][2] }.Length() });
+      item.boundsCenter = Mat4x4::Transform(meshWorld, localCenter);
+      item.boundsRadius = localRadius * scale;
+    }
+
   } // namespace
 
   // 静的メンバー変数の定義
@@ -158,7 +172,12 @@ namespace Tako {
     if (hasSkeleton_ || meshes_.size() <= 1) {
       // スキニングモデルと単一メッシュは描画物の変換行列でそのまま描く
       for (size_t i = 0; i < meshes_.size(); ++i) {
-        SubmitMesh(i, item, slots);
+        DrawItem meshItem = item;
+        // ponytail: スキニング付きは、アニメーションで箱の外へ出るので範囲なし（常に描く）。影の描画が重くなったら、ボーンから毎フレーム箱を作る
+        if (!hasSkeleton_) {
+          SetBounds(meshItem, *meshes_[i], world);
+        }
+        SubmitMesh(i, meshItem, slots);
       }
     }
     else {
@@ -583,6 +602,7 @@ namespace Tako {
         meshes_[meshIndex]->UpdateTransformation(meshWorldMatrix);
         DrawItem meshItem = item;
         meshItem.transform = meshes_[meshIndex]->GetTransformAddress();
+        SetBounds(meshItem, *meshes_[meshIndex], meshWorldMatrix);
         SubmitMesh(meshIndex, meshItem, slots);
       }
     }

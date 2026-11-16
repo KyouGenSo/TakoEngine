@@ -1,6 +1,7 @@
 #include "Object3d.hlsli"
 #include "View.hlsli"
 #include "Common.hlsli"
+#include "Shadow.hlsli"
 
 struct Material
 {
@@ -29,6 +30,7 @@ struct PointLight
     float radius;
     float decay;
     int enable;
+    int shadowSlice; // gShadowConstants.slices の番号（6 面の先頭）。負なら影なし
 };
 
 struct SpotLight
@@ -41,6 +43,7 @@ struct SpotLight
     float decay;
     float cosAngle;
     int enable;
+    int shadowSlice; // gShadowConstants.slices の番号。負なら影なし
 };
 
 cbuffer LightConstants : register(b3)
@@ -57,7 +60,6 @@ struct PixelShaderOutput
 ConstantBuffer<Material> gMaterial : register(b0);
 ConstantBuffer<DirectionalLight> gDirectionalLight : register(b1);
 ConstantBuffer<View> gView : register(b2);
-ConstantBuffer<ShadowConstants> gShadowConstants : register(b4);
 
 Texture2D<float4> gTexture : register(t0);
 
@@ -65,62 +67,6 @@ StructuredBuffer<PointLight> gPointLights : register(t1);
 StructuredBuffer<SpotLight> gSpotLight : register(t2);
 
 TextureCube<float4> gEnvironmentMap : register(t3);
-Texture2D<float> gShadowMap : register(t4); // シャドウマップ
-
-// シャドウファクターを計算（動的PCF）
-float CalculateShadowFactor(float3 worldPos, float3 normal)
-{
-    float3 N = normalize(normal);
-    float3 L = normalize(-gDirectionalLight.direction); // 面から光源へ向かうベクトル
-    float NdotL = dot(N, L);
-
-    // 光に背を向けた面はライトから直接見えない＝自己影なので影なしとする（シャドウマップのサンプリングも不要）
-    if (NdotL <= 0.0)
-    {
-        return 1.0;
-    }
-
-    // 受光点をそのままライト空間へ変換する
-    float4 lightSpacePos = mul(float4(worldPos, 1.0), gShadowConstants.lightViewProj);
-    float3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
-    
-    // NDC空間からテクスチャ座標に変換
-    float2 shadowTexCoord;
-    shadowTexCoord.x = projCoords.x * 0.5 + 0.5;
-    shadowTexCoord.y = -projCoords.y * 0.5 + 0.5;
-    
-    // シャドウマップの範囲外チェック
-    if (shadowTexCoord.x < 0.0 || shadowTexCoord.x > 1.0 ||
-        shadowTexCoord.y < 0.0 || shadowTexCoord.y > 1.0 ||
-        projCoords.z < 0.0 || projCoords.z > 1.0)
-    {
-        return 1.0; // シャドウマップの範囲外は照明
-    }
-    
-    float currentDepth = projCoords.z - gShadowConstants.shadowBias;
-    
-    // 動的PCF
-    float shadowFactor = 0.0;
-    float2 texelSize = 1.0 / gShadowConstants.shadowMapSize;
-    
-    // カーネルサイズに基づくサンプリング範囲
-    int kernelRadius = int(gShadowConstants.pcfKernelSize) / 2;
-    float sampleCount = 0.0;
-    
-    for (int x = -kernelRadius; x <= kernelRadius; ++x)
-    {
-        for (int y = -kernelRadius; y <= kernelRadius; ++y)
-        {
-            float2 offset = float2(x, y) * texelSize;
-            shadowFactor += gShadowMap.SampleCmpLevelZero(gShadowCmp,
-                           shadowTexCoord + offset, currentDepth);
-            sampleCount += 1.0;
-        }
-    }
-    shadowFactor /= sampleCount; // サンプル数で平均
-    
-    return shadowFactor;
-}
 
 PixelShaderOutput main(VertexShaderOutput input)
 {
@@ -129,12 +75,7 @@ PixelShaderOutput main(VertexShaderOutput input)
     float4 transformedUV = mul(float4(input.texcoord, 0, 1), gMaterial.uvTransform);
     float4 texColor = gTexture.Sample(gLinearWrap, transformedUV.xy);
     
-    // シャドウファクターを計算
-    float shadowFactor = 1.0; // デフォルトでは影なし
-    if (gShadowConstants.enableShadow != 0)
-    {
-        shadowFactor = CalculateShadowFactor(input.worldPos, input.normal);
-    }
+    float shadowFactor = DirectionalShadow(input.worldPos, input.normal, gDirectionalLight.direction);
     
     if (gMaterial.enableLighting != 0)
     {
@@ -188,15 +129,19 @@ PixelShaderOutput main(VertexShaderOutput input)
         
                 float distance = length(gPointLights[i].position - input.worldPos);
                 float factor = pow(saturate(-distance / gPointLights[i].radius + 1.0f), gPointLights[i].decay);
-                float3 pointLightColor = gPointLights[i].color.rgb * gPointLights[i].intensity * factor;
+                float pointShadow = 1.0;
+                if (factor > 0.0)
+                {
+                    pointShadow = PointShadow(gPointLights[i].shadowSlice, gPointLights[i].position, input.worldPos, input.normal);
+                }
+                float3 pointLightColor = gPointLights[i].color.rgb * gPointLights[i].intensity * factor * pointShadow;
         
                 // 拡散反射
-                // SHADOWマップの点光源は通常、影を考慮しないため、shadowFactorは適用しない
                 float NdotL = saturate(dot(normalize(input.normal), -pointLightDir));
                 totalPointLightDiffuse += texColor.rgb * gMaterial.color.rgb * pointLightColor * NdotL;
         
                 // 鏡面反射
-                totalPointLightSpecular += gPointLights[i].color.rgb * gPointLights[i].intensity * specularPow * float3(1.0f, 1.0f, 1.0f);
+                totalPointLightSpecular += gPointLights[i].color.rgb * gPointLights[i].intensity * specularPow * float3(1.0f, 1.0f, 1.0f) * pointShadow;
             }
         }
         
@@ -220,15 +165,19 @@ PixelShaderOutput main(VertexShaderOutput input)
                 float cosAngle = dot(spotLightDirOnSurface, gSpotLight[j].direction);
                 float falloffFactor = saturate((cosAngle - gSpotLight[j].cosAngle) / (1.0f - gSpotLight[j].cosAngle));
                 
-                float3 spotLightColor = gSpotLight[j].color.rgb * gSpotLight[j].intensity * factor * falloffFactor;
+                float spotShadow = 1.0;
+                if (factor * falloffFactor > 0.0)
+                {
+                    spotShadow = SpotShadow(gSpotLight[j].shadowSlice, gSpotLight[j].position, input.worldPos, input.normal);
+                }
+                float3 spotLightColor = gSpotLight[j].color.rgb * gSpotLight[j].intensity * factor * falloffFactor * spotShadow;
                 
                 // 拡散反射
-                // SHADOWマップのスポットライトは通常、影を考慮しないため、shadowFactorは適用しない
                 float NdotL = saturate(dot(normalize(input.normal), -spotLightDirOnSurface));
                 spotLightDiffuse += texColor.rgb * gMaterial.color.rgb * spotLightColor * NdotL;
                 
                 // 鏡面反射
-                spotLightSpecular += gSpotLight[j].color.rgb * gSpotLight[j].intensity * specularPow * float3(1.0f, 1.0f, 1.0f);
+                spotLightSpecular += gSpotLight[j].color.rgb * gSpotLight[j].intensity * specularPow * float3(1.0f, 1.0f, 1.0f) * spotShadow;
             }
         }
         
@@ -241,6 +190,7 @@ PixelShaderOutput main(VertexShaderOutput input)
             output.color.rgb += directionalLightSpecular + totalPointLightSpecular + spotLightSpecular;
 
         }
+        output.color.rgb *= ShadowCascadeDebugTint(input.worldPos);
         
         output.color.a = gMaterial.color.a * texColor.a;
 

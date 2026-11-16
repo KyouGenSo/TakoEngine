@@ -222,8 +222,14 @@ namespace Tako {
         const json& rendering = Section(root, "Rendering");
         shadow->SetEnabled(rendering.value("ShadowEnabled", shadow->IsEnabled()));
         shadow->SetShadowMapSize(rendering.value("ShadowMapSize", shadow->GetShadowMapSize()));
+        shadow->SetLocalShadowMapSize(rendering.value("LocalShadowMapSize", shadow->GetLocalShadowMapSize()));
         shadow->SetPCFKernelSize(rendering.value("PCFKernelSize", shadow->GetPCFKernelSize()));
-        shadow->SetShadowBias(rendering.value("ShadowBias", shadow->GetShadowBias()));
+        shadow->SetCascadeCount(rendering.value("ShadowCascadeCount", shadow->GetCascadeCount()));
+        shadow->SetCascadeSplit(rendering.value("ShadowCascadeSplit", shadow->GetCascadeSplit()));
+        shadow->SetStaggerFarCascades(rendering.value("ShadowStaggerFarCascades", shadow->IsStaggerFarCascades()));
+        // 古い "ShadowBias"（深度の値）は単位が違うので読まない
+        shadow->SetDepthBias(rendering.value("ShadowDepthBias", shadow->GetDepthBias()));
+        shadow->SetNormalBias(rendering.value("ShadowNormalBias", shadow->GetNormalBias()));
         if (rendering.contains("ClearColor")) {
           const auto color = rendering["ClearColor"].get<std::array<float, 4>>();
           RenderPipeline::GetInstance()->SetClearColor({ color[0], color[1], color[2], color[3] });
@@ -349,15 +355,20 @@ namespace Tako {
         { "MaxDeltaTime", FrameTimer::GetInstance()->GetMaxDeltaTime() },
       };
       root["Rendering"] = {
-        { "ShadowEnabled",     shadow->IsEnabled() },
-        { "ShadowMapSize",     shadow->GetShadowMapSize() },
-        { "PCFKernelSize",     shadow->GetPCFKernelSize() },
-        { "ShadowBias",        shadow->GetShadowBias() },
-        { "ClearColor",        { clearColor.x, clearColor.y, clearColor.z, clearColor.w } },
-        { "AntiAliasing",      Input::FindName<PostEffectManager::AntiAliasing>(kAntiAliasingTable, postEffect->GetAntiAliasing()) },
-        { "RenderScale",       dx12->GetRenderScale() },
-        { "ToneMapping",       kToneMappingNames[static_cast<size_t>(toneMap.mode)] },
-        { "Exposure",          toneMap.exposure },
+        { "ShadowEnabled",            shadow->IsEnabled() },
+        { "ShadowMapSize",            shadow->GetShadowMapSize() },
+        { "LocalShadowMapSize",       shadow->GetLocalShadowMapSize() },
+        { "PCFKernelSize",            shadow->GetPCFKernelSize() },
+        { "ShadowCascadeCount",       shadow->GetCascadeCount() },
+        { "ShadowCascadeSplit",       shadow->GetCascadeSplit() },
+        { "ShadowStaggerFarCascades", shadow->IsStaggerFarCascades() },
+        { "ShadowDepthBias",          shadow->GetDepthBias() },
+        { "ShadowNormalBias",         shadow->GetNormalBias() },
+        { "ClearColor",               { clearColor.x, clearColor.y, clearColor.z, clearColor.w } },
+        { "AntiAliasing",             Input::FindName<PostEffectManager::AntiAliasing>(kAntiAliasingTable, postEffect->GetAntiAliasing()) },
+        { "RenderScale",              dx12->GetRenderScale() },
+        { "ToneMapping",              kToneMappingNames[static_cast<size_t>(toneMap.mode)] },
+        { "Exposure",                 toneMap.exposure },
       };
       root["Physics"] = SavePhysics();
       root["Input"]   = SaveInput();

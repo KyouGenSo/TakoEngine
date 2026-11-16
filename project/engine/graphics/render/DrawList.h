@@ -40,6 +40,10 @@ namespace Tako {
     bool    castShadow   = true;  ///< シャドウマップへ描くか（シェーダーが ShadowCaster パスを持つ場合）
     bool    postEffect   = true;  ///< false なら画面全体のポストエフェクトの後に、シーンの深度で前後を判定して描く（マスク付きのエフェクトも掛からない）
 
+    //範囲（影の視点ごとのカリングに使う）
+    Vector3 boundsCenter{};         ///< 描画物を囲む球の中心（ワールド）
+    float   boundsRadius   = 0.0f;  ///< 球の半径。0 なら範囲が分からない物として、カリングせず常に描く
+
     //オブジェクト単位のポストエフェクト・描画パスの絞り込み
     uint32_t maskId = 0;  ///< 同じ maskId の有効なポストエフェクトがあれば、シーンとは別の RT に描いてエフェクトを掛けてから重ねる（1〜255）
     uint32_t nameId = 0;  ///< Object3d の名前の FNV-1a（0 は名前なし）

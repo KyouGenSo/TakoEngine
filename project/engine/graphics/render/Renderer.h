@@ -102,7 +102,7 @@ namespace Tako {
     void Submit(const DrawItem& item);
 
     /// <summary>
-    /// 影を落とす描画物をシャドウマップへ描く。終わると呼び出し前の描画先へ戻る
+    /// 影を落とす描画物を、影の視点（カスケード・スポットライト・点光源の面）ごとにシャドウマップへ描く。終わると呼び出し前の描画先へ戻る
     /// </summary>
     void RenderShadows(const DrawList& list);
 

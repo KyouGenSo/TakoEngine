@@ -2,6 +2,7 @@
 #include "DX12Basic.h"
 #include "SrvManager.h"
 #include "DsvManager.h"
+#include <algorithm>
 #include <cassert>
 
 namespace Tako {
@@ -29,19 +30,6 @@ void ShadowMap::Initialize(DX12Basic* dx12)
 
   // SRV の作成
   CreateShaderResourceView();
-
-  // ビューポートとシザー矩形の設定
-  viewport_.Width = static_cast<float>(shadowMapSize_);
-  viewport_.Height = static_cast<float>(shadowMapSize_);
-  viewport_.TopLeftX = 0.0f;
-  viewport_.TopLeftY = 0.0f;
-  viewport_.MinDepth = 0.0f;
-  viewport_.MaxDepth = 1.0f;
-
-  scissorRect_.left = 0;
-  scissorRect_.top = 0;
-  scissorRect_.right = shadowMapSize_;
-  scissorRect_.bottom = shadowMapSize_;
 }
 
 void ShadowMap::Finalize()
@@ -79,18 +67,12 @@ void ShadowMap::BeginFrame()
     CreateDepthStencilView();
     CreateShaderResourceView();
 
-    // ビューポートとシザー矩形を更新
-    viewport_.Width = static_cast<float>(shadowMapSize_);
-    viewport_.Height = static_cast<float>(shadowMapSize_);
-    scissorRect_.right = shadowMapSize_;
-    scissorRect_.bottom = shadowMapSize_;
-
     // フラグをクリア
     pendingRecreation_ = false;
   }
 }
 
-void ShadowMap::BeginShadowMapRender()
+void ShadowMap::BeginTile(uint32_t x, uint32_t y, uint32_t size)
 {
   dx12_->GetContext().Transition(shadowMapResource_, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 
@@ -99,12 +81,13 @@ void ShadowMap::BeginShadowMapRender()
 
   ID3D12GraphicsCommandList* commandList = dx12_->GetCommandList();
 
-  // 深度バッファをクリア
-  commandList->ClearDepthStencilView(dsvHandle_, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+  const D3D12_VIEWPORT viewport{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(size), static_cast<float>(size), 0.0f, 1.0f };
+  const D3D12_RECT     rect{ static_cast<LONG>(x), static_cast<LONG>(y), static_cast<LONG>(x + size), static_cast<LONG>(y + size) };
 
-  // ビューポートとシザー矩形を設定
-  commandList->RSSetViewports(1, &viewport_);
-  commandList->RSSetScissorRects(1, &scissorRect_);
+  // ほかの区画は前に描いた内容を残すので、この区画だけ消す
+  commandList->ClearDepthStencilView(dsvHandle_, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 1, &rect);
+  commandList->RSSetViewports(1, &viewport);
+  commandList->RSSetScissorRects(1, &rect);
 }
 
 void ShadowMap::EndShadowMapRender()
@@ -182,7 +165,7 @@ void ShadowMap::SetShadowQuality(ShadowQuality quality)
     case ShadowQuality::Medium: newSize = 1024; pcfKernelSize_ = 3; break;
     case ShadowQuality::High:   newSize = 2048; pcfKernelSize_ = 5; break;
     case ShadowQuality::Ultra:  newSize = 4096; pcfKernelSize_ = 7; break;
-    case ShadowQuality::Super:  newSize = 8192; pcfKernelSize_ = 9; break;
+    case ShadowQuality::Super:  newSize = 8192; pcfKernelSize_ = 7; break;
   }
 
   // サイズが変更される場合は次フレームで再作成（PCF カーネルサイズは即時反映）
@@ -214,9 +197,9 @@ void ShadowMap::SetShadowMapSize(uint32_t size)
 
 void ShadowMap::SetPCFKernelSize(int kernelSize)
 {
-  // 奇数値のみ許可（1, 3, 5, 7, 9）
-  if (kernelSize >= 1 && kernelSize <= 9 && kernelSize % 2 == 1) {
-    pcfKernelSize_ = kernelSize;
+  // 奇数値のみ許可（1, 3, 5, 7）。古い設定の 9 は 7 として読む
+  if (kernelSize >= 1 && kernelSize % 2 == 1) {
+    pcfKernelSize_ = (std::min)(kernelSize, 7);
   }
 }
 

@@ -9,7 +9,6 @@ struct TransformationMatrix
 
 ConstantBuffer<TransformationMatrix> gTransformationMatrix : register(b0);
 ConstantBuffer<View> gView : register(b2);
-ConstantBuffer<ShadowConstants> gShadowConstants : register(b4);
 
 struct VertexShaderInput
 {
@@ -27,8 +26,5 @@ VertexShaderOutput main( VertexShaderInput input )
     output.normal = normalize(mul(input.normal, (float3x3) gTransformationMatrix.WorldIT));
     output.worldPos = worldPos.xyz;
 
-    // ライト空間での位置を計算
-    output.lightSpacePos = mul(worldPos, gShadowConstants.lightViewProj);
-    
     return output;
 }
