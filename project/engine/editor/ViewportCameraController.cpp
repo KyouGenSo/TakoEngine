@@ -1,6 +1,6 @@
 #include "ViewportCameraController.h"
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 
 #include "Camera.h"
 #include "Mat4x4Func.h"
@@ -157,4 +157,4 @@ namespace Tako {
 
 } // namespace Tako
 
-#endif // _DEBUG
+#endif // TAKO_EDITOR

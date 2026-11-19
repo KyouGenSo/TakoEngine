@@ -38,9 +38,9 @@ namespace Tako {
     static constexpr uint32_t kLineMaxCount     = 100000;  ///< 線の最大数
     static constexpr uint32_t kVertexCountLine  = 2;       ///< 線の頂点数
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     static constexpr uint32_t kPreviewLineMaxCount = 8192;  ///< プレビュー用線分の最大数
-#endif // _DEBUG
+#endif // TAKO_EDITOR
 
   public: //構造体
     /// <summary>
@@ -175,7 +175,7 @@ namespace Tako {
     /// <param name="mark">GetBatchMark の戻り値</param>
     void RollbackBatch(uint32_t mark) { lineIndex_ = (std::min)(lineIndex_, mark); }
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     /// <summary>
     /// 以降の DrawLine 系呼び出しをプレビュー用バッファへ振り向ける
     /// </summary>
@@ -192,7 +192,7 @@ namespace Tako {
     /// </summary>
     /// <param name="viewProjection">プレビューカメラのビュープロジェクション行列</param>
     void DrawPreviewLines(const Matrix4x4& viewProjection);
-#endif // _DEBUG
+#endif // TAKO_EDITOR
 
     //============================
     //Setter
@@ -234,14 +234,14 @@ namespace Tako {
 
     std::unique_ptr<LineData> lineData_;  ///< 線データ
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     //エディタプレビュー用線分描画
     std::unique_ptr<LineData> previewLineData_;            ///< プレビュー専用頂点バッファ（メインバッチと GPU 実行前の上書き競合を避けるため分離）
     GraphicsPipelineDesc      previewPipeline_{};          ///< 深度テストあり（書き込みなし）のプレビュー用
     uint32_t                  previewLineIndex_  = 0;
     uint32_t                  previewDrawStart_  = 0;      ///< 次の DrawPreviewLines が描き始める頂点（同一フレームの前回描画分を除く）
     bool                      previewBatchMode_  = false;  ///< true 中は DrawLine 系がプレビューバッファへ書く
-#endif // _DEBUG
+#endif // TAKO_EDITOR
   };
 
 } // namespace Tako

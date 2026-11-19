@@ -1,6 +1,6 @@
 ﻿# package_sdk.ps1 が作った zip だけで、プロジェクトを作ってビルドできるかを確かめる（リリースの前と CI で流す）。
 #   pwsh tools/test_sdk.ps1 [-Zip <zip>] [-WorkDir <作業フォルダー>]
-# zip を作業フォルダーへ開き、そこの TakoEditor.exe でプロジェクトを作り、Debug と Release をビルドする。エンジンのソースのフォルダーは使わない。
+# zip を作業フォルダーへ開き、そこの TakoEditor.exe でプロジェクトを作り、Debug・Develop・Release をビルドする。エンジンのソースのフォルダーは使わない。
 param([string]$Zip = "", [string]$WorkDir = "")
 
 $ErrorActionPreference = "Stop"
@@ -29,11 +29,11 @@ if ($create.ExitCode -ne 0) { throw "プロジェクトを作れませんでし�
 $msbuild = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -prerelease -requires Microsoft.Component.MSBuild -find "MSBuild\**\Bin\MSBuild.exe" | Select-Object -First 1
 if (-not $msbuild) { throw "MSBuild が見つかりません" }
 $project = Join-Path $WorkDir "SmokeGame"
-foreach ($configuration in "Debug", "Release") {
+foreach ($configuration in "Debug", "Develop", "Release") {
   & $msbuild "$project\SmokeGame.sln" -m -nologo -v:minimal "-p:Configuration=$configuration" -p:Platform=x64
   if ($LASTEXITCODE -ne 0) { throw "ゲームのビルド（$configuration）に失敗しました" }
 }
-$outputs = @("Generated\outputs\Debug\Game.dll", "Generated\outputs\Release\SmokeGame.exe", "Generated\outputs\Release\EngineResources", "GameProject\EngineResources")
+$outputs = @("Generated\outputs\Debug\Game.dll", "Generated\outputs\Develop\Game.dll", "Generated\outputs\Release\SmokeGame.exe", "Generated\outputs\Release\EngineResources", "GameProject\EngineResources")
 $missing = $outputs | Where-Object { -not (Test-Path (Join-Path $project $_)) }
 if ($missing) { throw "ビルドの結果が足りません: $($missing -join ', ')" }
 

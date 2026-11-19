@@ -21,6 +21,7 @@ namespace Tako {
 
     deltaTime_ = 0.0f;
     fps_ = 0.0f;
+    displayFPS_ = 0.0f;
 
     timeScale_ = 1.0f;
     timeScaleDuration_ = 0.0f;

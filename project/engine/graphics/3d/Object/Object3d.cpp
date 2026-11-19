@@ -62,7 +62,7 @@ Vector4 ReadColor(const Material& material)
   return color;
 }
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 std::vector<Object3d*>& LiveObjects()
 {
   static std::vector<Object3d*> objects;
@@ -74,14 +74,14 @@ std::vector<Object3d*>& LiveObjects()
 
 Object3d::Object3d()
 {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
   LiveObjects().push_back(this);
 #endif
 }
 
 Object3d::~Object3d()
 {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
   std::erase(LiveObjects(), this);
 #endif
   if (model_) {
@@ -327,7 +327,7 @@ void Object3d::SetModel(std::unique_ptr<Model> model)
   slotsDirty_ = true;
 }
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 const std::vector<Object3d*>& Object3d::GetLiveObjects()
 {
   return LiveObjects();

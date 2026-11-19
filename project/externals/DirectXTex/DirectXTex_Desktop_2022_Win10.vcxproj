@@ -5,6 +5,11 @@
       <Configuration>Debug</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+    <!-- [TakoEngine] Develop is a copy of Release (the CRT comes from TakoEngineCommon.props) -->
+    <ProjectConfiguration Include="Develop|x64">
+      <Configuration>Develop</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Profile|x64">
       <Configuration>Profile</Configuration>
       <Platform>x64</Platform>
@@ -34,6 +39,11 @@
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v145</PlatformToolset>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Develop|X64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v145</PlatformToolset>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Profile|X64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
@@ -50,6 +60,9 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Develop|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
@@ -62,6 +75,13 @@
     <PublicIncludeDirectories>$(ProjectDir);$(PublicIncludeDirectories)</PublicIncludeDirectories>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|X64'">
+    <OutDir>$(TakoEngineBinDir)</OutDir>
+    <IntDir>$(TakoEngineObjDir)</IntDir>
+    <TargetName>DirectXTex</TargetName>
+    <GenerateManifest>true</GenerateManifest>
+    <PublicIncludeDirectories>$(ProjectDir);$(PublicIncludeDirectories)</PublicIncludeDirectories>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Develop|X64'">
     <OutDir>$(TakoEngineBinDir)</OutDir>
     <IntDir>$(TakoEngineObjDir)</IntDir>
     <TargetName>DirectXTex</TargetName>
@@ -109,6 +129,35 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|X64'">
+    <ClCompile>
+      <WarningLevel>Level2</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <OpenMPSupport>true</OpenMPSupport>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <AdditionalOptions>/Zc:twoPhase- /Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
+      <PreprocessorDefinitions>_UNICODE;UNICODE;WIN32;NDEBUG;_LIB;_WIN32_WINNT=0x0A00;_CRT_STDIO_ARBITRARY_WIDE_SPECIFIERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>DirectXTexP.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Shaders\Compiled;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <ExternalWarningLevel>Level4</ExternalWarningLevel>
+      <GuardEHContMetadata>true</GuardEHContMetadata>
+      <RuntimeLibrary>$(TakoRuntimeLibrary)</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+    </Link>
+    <Manifest>
+      <EnableDPIAwareness>false</EnableDPIAwareness>
+    </Manifest>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Develop|X64'">
     <ClCompile>
       <WarningLevel>Level2</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
@@ -206,6 +255,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="DirectXTexWIC.cpp" />
   </ItemGroup>

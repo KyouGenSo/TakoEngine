@@ -1,6 +1,6 @@
 #include "UILayoutEditor.h"
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "EditorUI.h"
 
 #include "UILayout.h"
@@ -2486,4 +2486,4 @@ namespace Tako {
 
 } // namespace Tako
 
-#endif // _DEBUG
+#endif // TAKO_EDITOR

@@ -5,7 +5,7 @@
 #include "SrvManager.h"
 #include "Mat4x4Func.h"
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "DebugUIManager.h"
 #endif
 

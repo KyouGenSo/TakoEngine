@@ -9,7 +9,7 @@
 #include <cmath>
 #include <unordered_map>
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "ImGuiManager.h"
 #endif
 
@@ -182,7 +182,7 @@ namespace Tako {
   }
 
   void CollisionManager::DrawImGui() {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     ImGui::Begin("CollisionManager Debug");
 
     // 基本情報

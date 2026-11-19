@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 
 #include "AnimationClip.h"
 #include "AnimationTimeline.h"
@@ -269,4 +269,4 @@ namespace Tako {
 
 } // namespace Tako
 
-#endif // _DEBUG
+#endif // TAKO_EDITOR

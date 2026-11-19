@@ -1,5 +1,5 @@
 #pragma once
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 
 #include <filesystem>
 #include <string>
@@ -17,4 +17,4 @@ namespace Tako::ProjectMigration {
 
 } // namespace Tako::ProjectMigration
 
-#endif // _DEBUG
+#endif // TAKO_EDITOR

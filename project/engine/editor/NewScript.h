@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 
 #include <string>
 
@@ -28,4 +28,4 @@ namespace Tako {
 
 } // namespace Tako
 
-#endif // _DEBUG
+#endif // TAKO_EDITOR

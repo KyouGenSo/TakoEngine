@@ -2,7 +2,7 @@
 #include "JsonPropertyVisitor.h"
 #include "TypeRegistry.h"
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "ImGuiPropertyVisitor.h"
 #endif
 
@@ -39,7 +39,7 @@ namespace Tako {
     return WriteProperties(const_cast<BTNode&>(*this));
   }
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
   bool BTNode::DrawImGui()
   {
     return DrawProperties(*this);

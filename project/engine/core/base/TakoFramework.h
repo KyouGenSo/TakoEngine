@@ -3,10 +3,11 @@
 #include "DX12Basic.h"
 #include "D3DResourceLeakChecker.h"
 #include "Camera.h"
+#include "ProfileOverlay.h"
 
 #include <memory>
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "ImGuiManager.h"
 #endif
 
@@ -80,11 +81,13 @@ namespace Tako {
 
     std::unique_ptr<DX12Basic> dx12_;  ///< DirectX 12基盤システムへのポインタ
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     std::unique_ptr<ImGuiManager> imguiManager_;  ///< ImGui マネージャー（デバッグ UI 用）
 #endif
 
     std::unique_ptr<Camera> defaultCamera_;  ///< デフォルトカメラ
+
+    std::unique_ptr<ProfileOverlay> profileOverlay_;  ///< --profile を付けて起動したときだけ作る
 
     uint32_t rendererOnResizeId_ = 0;
 

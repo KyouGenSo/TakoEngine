@@ -393,7 +393,7 @@ namespace Tako {
 
   void MaterialLibrary::Update()
   {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     // 追加・保存された .shader.json を読み直す
     const auto now = std::chrono::steady_clock::now();
     if (now - lastShaderCheck_ >= kShaderCheckInterval) {

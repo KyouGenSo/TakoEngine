@@ -1,6 +1,6 @@
 #include "ShaderEditor.h"
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "EditorUI.h"
 
 #include <algorithm>
@@ -795,4 +795,4 @@ float4 main(VertexShaderOutput input) : SV_TARGET
 
 } // namespace Tako
 
-#endif // _DEBUG
+#endif // TAKO_EDITOR

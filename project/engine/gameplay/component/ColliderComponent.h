@@ -45,7 +45,7 @@ namespace Tako {
 
     void PostEditChange() override;
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     /// <summary>
     /// Layer 欄（Engine Settings の Physics で付けた層の名前から選ぶ）
     /// </summary>

@@ -1,4 +1,4 @@
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 
 #include "BehaviorTreeEditor.h"
 #include "EditorUI.h"
@@ -1497,4 +1497,4 @@ bool BehaviorTreeEditor::CreateLink(int sourceNodeId, int targetNodeId) {
 
 } // namespace Tako
 
-#endif // _DEBUG
+#endif // TAKO_EDITOR

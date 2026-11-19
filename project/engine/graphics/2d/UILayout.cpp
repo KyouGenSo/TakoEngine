@@ -7,7 +7,7 @@
 #include "WinApp.h"
 #include "Logger.h"
 #include "Hash.h"
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "DebugUIManager.h"
 #endif
 
@@ -77,12 +77,12 @@ namespace Tako {
 
     void LogWarning(const std::string& message) {
       Logger::Log(message + "\n");
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(message, DebugUIManager::LogType::Warning);
 #endif
     }
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     std::vector<UILayout*>& Instances() {
       static std::vector<UILayout*> instances;
       return instances;
@@ -321,18 +321,18 @@ namespace Tako {
   UIElement::~UIElement() = default;
 
   UILayout::UILayout() {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     Instances().push_back(this);
 #endif
   }
 
   UILayout::~UILayout() {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     std::erase(Instances(), this);
 #endif
   }
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
   const std::vector<UILayout*>& UILayout::GetInstances() {
     return Instances();
   }

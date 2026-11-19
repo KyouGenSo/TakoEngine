@@ -69,7 +69,7 @@ namespace Tako {
 
   AnimationPose AnimationPlayer::Evaluate(const std::string& name) const {
     AnimationPose pose;
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     if (previewClip_) {
       previewClip_->EvaluateInto(previewTime_, name, previewTarget_, pose);
       return pose;
@@ -81,7 +81,7 @@ namespace Tako {
     return pose;
   }
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
   void AnimationPlayer::SetPreview(const AnimationClip* clip, const std::string& target, float time) {
     previewClip_   = clip;
     previewTarget_ = target;

@@ -38,7 +38,7 @@ namespace Tako {
     /// <param name="out">書いた JSON。TPROPERTY が無ければ null</param>
     virtual void PostSave([[maybe_unused]] nlohmann::json& out) {}
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     /// <summary>
     /// 自動の UI の後に描く追加の UI
     /// </summary>

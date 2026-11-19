@@ -6,7 +6,7 @@
 #include "SrvManager.h"
 #include "ColorFunc.h"
 #include <algorithm>
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "EditorUI.h"
 #include "ImGuiManager.h"
 #endif
@@ -276,7 +276,7 @@ namespace Tako {
 
   void Sprite::DrawImGui()
   {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     // Transform 設定
     ImGui::Text("Transform Settings");
     UI::DragFloat2("Position", &pos_.x, 1.0f);
@@ -324,7 +324,7 @@ namespace Tako {
     ImGui::Text("Current Transform");
     ImGui::Text("Translate: (%.2f, %.2f, %.2f)", transform_.translate.x, transform_.translate.y, transform_.translate.z);
     ImGui::Text("Scale: (%.2f, %.2f, %.2f)", transform_.scale.x, transform_.scale.y, transform_.scale.z);
-#endif // _DEBUG
+#endif // TAKO_EDITOR
   }
 
 } // namespace Tako

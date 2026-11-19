@@ -6,7 +6,7 @@
 #include "SrvManager.h"
 #include "TextureManager.h"
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "DebugUIManager.h"
 #endif
 

@@ -1,10 +1,10 @@
 #include "CommandContext.h"
 
 #include <cassert>
-#include <crtdbg.h>
 #include <iterator>
 #include <string>
 
+#include "Logger.h"
 #include "SrvManager.h"
 
 namespace Tako {
@@ -258,19 +258,21 @@ namespace Tako {
 
   void CommandContext::ValidateBindings([[maybe_unused]] const BindState& state) const
   {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     const uint64_t missing = state.layout->GetRequiredMask() & ~state.boundMask;
     if (missing == 0) {
       return;
     }
-    std::wstring message = L"CommandContext: unbound shader parameters:";
+    std::string message = "CommandContext: unbound shader parameters:";
     const auto parameters = state.layout->GetParameters();
     for (uint32_t i = 0; i < parameters.size(); ++i) {
       if (missing & (1ull << i)) {
-        message += L" " + std::wstring(parameters[i].name.begin(), parameters[i].name.end());
+        message += " " + parameters[i].name;
       }
     }
-    _ASSERT_EXPR(false, message.c_str());
+    // assert は式の文字列しか出せないので、足りない名前は先にログ（VS の出力と Console）へ出す
+    Logger::Log(message + "\n");
+    assert(false && "CommandContext: unbound shader parameters (the names are in the log)");
 #endif
   }
 

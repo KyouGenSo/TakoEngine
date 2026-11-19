@@ -6,7 +6,7 @@
 #include <fstream>
 #include <iomanip>
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "DebugUIManager.h"
 #endif
 
@@ -38,7 +38,7 @@ namespace Tako {
 
     const auto& fields = particleSystem_->GetForceFields();
     if (forceFieldIndex >= fields.size()) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "SavePreset: ForceField index out of range: " + std::to_string(forceFieldIndex),
         DebugUIManager::LogType::Warning);
@@ -58,13 +58,13 @@ namespace Tako {
     if (ofs.is_open()) {
       ofs << std::setw(2) << preset << std::endl;
       ofs.close();
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "Saved force field preset: " + presetName, DebugUIManager::LogType::Info);
 #endif
     }
     else {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "Failed to save force field preset: " + filepath, DebugUIManager::LogType::Error);
 #endif
@@ -78,7 +78,7 @@ namespace Tako {
     const std::string filepath = std::string(kPresetDirectory) + presetName + ".json";
     std::ifstream ifs(filepath);
     if (!ifs.is_open()) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "Failed to load force field preset: " + presetName, DebugUIManager::LogType::Error);
 #endif
@@ -90,7 +90,7 @@ namespace Tako {
       ifs >> preset;
     }
     catch ([[maybe_unused]] const json::exception& e) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         std::string("Force field preset JSON parse error: ") + e.what(), DebugUIManager::LogType::Error);
 #endif
@@ -100,7 +100,7 @@ namespace Tako {
 
     ForceFieldData field{};
     if (!DeserializeForceFieldFromJSON(preset, field)) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "Force field preset is malformed: " + presetName, DebugUIManager::LogType::Error);
 #endif
@@ -109,7 +109,7 @@ namespace Tako {
 
     const int32_t addedIndex = particleSystem_->AddForceField(field);
     if (addedIndex < 0) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "AddForceField failed (max " + std::to_string(GPUParticle::kMaxForceFields) + " reached)",
         DebugUIManager::LogType::Warning);
@@ -117,7 +117,7 @@ namespace Tako {
       return;
     }
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     DebugUIManager::GetInstance()->AddLog(
       "Loaded force field preset '" + presetName + "' (index " + std::to_string(addedIndex) + ")",
       DebugUIManager::LogType::Info);
@@ -135,7 +135,7 @@ namespace Tako {
     const std::string filepath = std::string(kPresetDirectory) + presetName + ".json";
     std::ifstream ifs(filepath);
     if (!ifs.is_open()) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "LoadPresetToData: Failed to open: " + filepath, DebugUIManager::LogType::Error);
 #endif
@@ -147,7 +147,7 @@ namespace Tako {
       ifs >> preset;
     }
     catch ([[maybe_unused]] const json::exception& e) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         std::string("LoadPresetToData JSON parse error: ") + e.what(),
         DebugUIManager::LogType::Error);

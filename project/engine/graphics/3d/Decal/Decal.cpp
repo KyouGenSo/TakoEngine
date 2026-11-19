@@ -7,7 +7,7 @@
 #include "Mat4x4Func.h"
 #include "ColorFunc.h"
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "EditorUI.h"
 #include "ImGuiManager.h"
 #include "LineRenderer.h"
@@ -89,7 +89,7 @@ namespace Tako {
 
   void Decal::DrawImGui()
   {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     // === Transform ===
     ImGui::Text("Transform");
     UI::DragFloat3("Translate", &transform_.translate.x, 0.1f);
@@ -146,12 +146,12 @@ namespace Tako {
     if (useTexture_) {
       ImGui::Text("SRV Index: %u", textureSrvIndex_);
     }
-#endif // _DEBUG
+#endif // TAKO_EDITOR
   }
 
   void Decal::DrawDebug()
   {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     if (!isDebugViewVisible_) return;
 
     // OBB を構築

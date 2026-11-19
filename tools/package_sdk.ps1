@@ -1,5 +1,5 @@
 ﻿# エンジンをビルドして、配る用の zip（SDK）を作る。
-#   pwsh tools/package_sdk.ps1              Debug と Release をビルドしてから、dist/TakoEngine-<バージョン>.zip を作る
+#   pwsh tools/package_sdk.ps1              Debug・Develop・Release をビルドしてから、dist/TakoEngine-<バージョン>.zip を作る
 #   pwsh tools/package_sdk.ps1 -SkipBuild   前に流したときのビルド結果をそのまま入れる（手元で形を確かめる用）
 #
 # zip の中は、エンジンのフォルダーと同じ形（VERSION・bin・build・project・templates）。
@@ -18,8 +18,10 @@ $releaseSuffix = "-NoLTCG"
 if (-not $SkipBuild) {
   $msbuild = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -prerelease -requires Microsoft.Component.MSBuild -find "MSBuild\**\Bin\MSBuild.exe" | Select-Object -First 1
   if (-not $msbuild) { throw "MSBuild が見つかりません" }
-  & $msbuild "$root\project\TakoEngine.sln" -m -nologo -v:minimal -p:Configuration=Debug -p:Platform=x64
-  if ($LASTEXITCODE -ne 0) { throw "Debug のビルドに失敗しました" }
+  foreach ($configuration in "Debug", "Develop") {
+    & $msbuild "$root\project\TakoEngine.sln" -m -nologo -v:minimal "-p:Configuration=$configuration" -p:Platform=x64
+    if ($LASTEXITCODE -ne 0) { throw "$configuration のビルドに失敗しました" }
+  }
   # /GL（プログラム全体の最適化）付きの静的ライブラリは、作ったのと同じ版のコンパイラでしかリンクできないので、配る物は /GL なしで作る。
   # 普段の Release と混ざらないよう、別のフォルダー（bin\Release-NoLTCG）に出す。Rebuild は使わない（Clean が DirectXTex のコンパイル済みシェーダーを消す）
   & $msbuild "$root\project\TakoEngine.sln" -m -nologo -v:minimal -p:Configuration=Release -p:Platform=x64 -p:WholeProgramOptimization=false "-p:TakoBuildSuffix=$releaseSuffix"
@@ -44,15 +46,18 @@ if ($LASTEXITCODE -ge 8) { throw "robocopy 失敗 (exit code: $LASTEXITCODE)" }
 $releaseBin = "$root\bin\Release$releaseSuffix"
 if (-not (Test-Path "$releaseBin\TakoEngine.lib")) { throw "$releaseBin がありません。-SkipBuild なしで流してください" }
 $intermediate = @("*.ilk", "*.idb", "*.exp", "*.iobj", "*.ipdb", "imgui.*", "imgui-node-editor.*")
-# Debug の DirectXTex は TakoEngine.dll に入っている。Release の DirectXTex.lib は、ゲームがリンクするので入れる
-robocopy "$root\bin\Debug" "$stage\bin\Debug" /E /XF ($intermediate + "DirectXTex.*") /R:2 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null
-if ($LASTEXITCODE -ge 8) { throw "robocopy 失敗 (exit code: $LASTEXITCODE)" }
+# Debug と Develop の DirectXTex は TakoEngine.dll に入っている。Release の DirectXTex.lib は、ゲームがリンクするので入れる
+foreach ($configuration in "Debug", "Develop") {
+  robocopy "$root\bin\$configuration" "$stage\bin\$configuration" /E /XF ($intermediate + "DirectXTex.*") /R:2 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null
+  if ($LASTEXITCODE -ge 8) { throw "robocopy 失敗 (exit code: $LASTEXITCODE)" }
+}
 robocopy $releaseBin "$stage\bin\Release" /E /XF $intermediate /R:2 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null
 if ($LASTEXITCODE -ge 8) { throw "robocopy 失敗 (exit code: $LASTEXITCODE)" }
 
 $required = @(
   "VERSION", "CHANGELOG.md", "LICENSE",
   "bin\Debug\TakoEditor.exe", "bin\Debug\TakoEngine.dll", "bin\Debug\TakoEngine.lib", "bin\Debug\dxcompiler.dll", "bin\Debug\dxil.dll",
+  "bin\Develop\TakoEditor.exe", "bin\Develop\TakoEngine.dll", "bin\Develop\TakoEngine.lib", "bin\Develop\dxcompiler.dll", "bin\Develop\dxil.dll",
   "bin\Release\TakoEngine.lib", "bin\Release\DirectXTex.lib",
   "build\TakoEngineGame.props", "build\TakoEngineCommon.props", "build\TakoReflection.props", "build\TakoHeaderTool.cs",
   "project\engine\core\base\TakoFramework.h", "project\engine\resources\shaders", "project\externals\imgui\imgui.h",

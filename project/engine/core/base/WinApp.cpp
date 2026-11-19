@@ -7,7 +7,7 @@
 
 #include <algorithm>
 #include <cassert>
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include"imgui_impl_win32.h"
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 #endif
@@ -120,7 +120,7 @@ namespace Tako {
       handler->OnWndProc(hWnd, msg, wparam, lparam);
     }
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wparam, lparam)) {
       return true;
     }

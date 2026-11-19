@@ -6,7 +6,7 @@
 
 #include "EnginePaths.h"
 #include "StringUtility.h"
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "DebugUIManager.h"
 #include "Project.h"
 #endif
@@ -40,7 +40,7 @@ namespace Tako {
 
     void Log([[maybe_unused]] const std::string& message, [[maybe_unused]] LogLevel level)
     {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       const DebugUIManager::LogType type = (level == LogLevel::Error)   ? DebugUIManager::LogType::Error
                                          : (level == LogLevel::Warning) ? DebugUIManager::LogType::Warning
                                                                         : DebugUIManager::LogType::Info;
@@ -92,7 +92,7 @@ namespace Tako {
     assert(SUCCEEDED(hr));
 
     engineShaderDir_ = std::filesystem::path(EnginePaths::kEngineShadersW);
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     // 作業ディレクトリのシェーダーはビルド時のコピーなので、編集が即反映されるようソースを直接読む。
     // 場所は動いているエンジンから決める（ビルドしたときのパスだと、SDK が別の場所にある開発用のソースを読む）
     const std::filesystem::path sourceDir = Project::GetEngineRoot() / L"project" / L"engine" / L"resources" / L"shaders";

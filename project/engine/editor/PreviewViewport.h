@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 
 #include <cstdint>
 #include <d3d12.h>
@@ -86,4 +86,4 @@ namespace Tako {
 
 } // namespace Tako
 
-#endif // _DEBUG
+#endif // TAKO_EDITOR

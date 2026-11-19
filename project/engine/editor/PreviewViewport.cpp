@@ -1,6 +1,6 @@
 #include "PreviewViewport.h"
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 
 #include "DX12Basic.h"
 #include "SrvManager.h"
@@ -181,4 +181,4 @@ namespace Tako {
 
 } // namespace Tako
 
-#endif // _DEBUG
+#endif // TAKO_EDITOR

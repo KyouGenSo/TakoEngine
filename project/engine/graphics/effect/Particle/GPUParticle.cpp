@@ -12,10 +12,10 @@
 #include "Mesh.h"
 #include "ModelManager.h"
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "DebugUIManager.h"
 #include "ImGuiManager.h"
-#endif // _DEBUG
+#endif // TAKO_EDITOR
 
 #include <numbers>
 
@@ -70,7 +70,7 @@ namespace Tako {
     CreateIndirectResources();
     CreateCommandSignature();
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     // Readback バッファの生成（アクティブパーティクル数取得用）
     CreateFreeListReadbackResource();
 #endif
@@ -87,7 +87,7 @@ namespace Tako {
 
   void GPUParticle::Update()
   {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #endif
 
     // PerFrame の更新
@@ -110,7 +110,9 @@ namespace Tako {
 
   void GPUParticle::Draw()
   {
-    CommandContext& context = dx12_->GetContext();
+    CommandContext& context       = dx12_->GetContext();
+    FrameProfiler&  profiler      = dx12_->GetProfiler();
+    const uint32_t  simulateScope = profiler.BeginScope("Simulate");
 
     /// ================================== ///
     ///            ComputerShader          ///
@@ -219,7 +221,7 @@ namespace Tako {
     context.UavBarrier(particleResource_);
     context.UavBarrier(perEmitterCountResource_); // BuildDrawArgs が読む前に per-emitter 生存数の書き込みを同期
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     // アクティブパーティクル数の Readback
     ReadbackActiveParticleCount();
 #endif
@@ -258,10 +260,13 @@ namespace Tako {
     }
     context.UavBarrier(drawIndexResource_);
 
+    profiler.EndScope(simulateScope);
+
     /// ======================== ///
     ///           描画    　     ///
     /// ======================= ///
 
+    const ProfileScope drawScope(profiler, "Draw");
     DrawParticleGraphics(perViewResource_->GetGPUVirtualAddress(), -1);
   }
 
@@ -317,7 +322,7 @@ namespace Tako {
     context.Transition(particleResource_, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
   }
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
   void GPUParticle::DrawForCamera(const Camera& camera, int32_t slotFilter)
   {
     // UpdatePerView と同式を指定カメラで計算
@@ -428,7 +433,7 @@ namespace Tako {
     }
     else {
       if (activeEmitters_.size() >= kNumMaxEmitter) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
         DebugUIManager::GetInstance()->AddLog(
           "RegisterEmitter: emitter slots exhausted (max " + std::to_string(kNumMaxEmitter) + ")",
           DebugUIManager::LogType::Error);
@@ -551,7 +556,7 @@ namespace Tako {
 
     // バッファサイズが足りるか確認
     if (activeEmitters_.size() > kNumMaxEmitter) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog("Warning: Too many active emitters! Max: " + std::to_string(kNumMaxEmitter) +
         ", Current: " + std::to_string(activeEmitters_.size()), DebugUIManager::LogType::Warning);
 #endif
@@ -783,7 +788,7 @@ namespace Tako {
     assert(SUCCEEDED(hr));
   }
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
   void GPUParticle::CreateFreeListReadbackResource()
   {
     D3D12_RESOURCE_DESC bufferDesc = {};

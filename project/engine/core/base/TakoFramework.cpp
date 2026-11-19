@@ -25,7 +25,10 @@
 #include "ReflectionSelfTest.h"
 #include "SceneSelfTest.h"
 
-#ifdef _DEBUG
+#include <chrono>
+#include <cwchar>
+
+#ifdef TAKO_EDITOR
 #include "CrashHandler.h"
 #include "DebugUIManager.h"
 #endif
@@ -34,7 +37,7 @@ namespace Tako {
 
   void TakoFramework::Initialize()
   {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     // ゲームの DLL を読む前に入れる（スクリプトの static の初期化で落ちたときも書けるように）
     InstallCrashHandler();
     const bool hasCrashedLastTime = ConsumeCrashMarker();
@@ -46,6 +49,7 @@ namespace Tako {
 #ifdef _DEBUG
     RunReflectionSelfTest();
     RunColorSelfTest();
+    RunFrameProfilerSelfTest();
 #endif
 
 #pragma region ウィンドウの初期化-------------------------------------------------------------------------------------------------------------------
@@ -81,7 +85,7 @@ namespace Tako {
     // エディタのプレビューがエフェクトを名前で引くので、エディタより先に登録する
     PostEffectManager::GetInstance()->Initialize(dx12_.get());
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     // ImGuiManager の初期化（SrvManager のディスクリプタヒープを使用）
     imguiManager_ = std::make_unique<ImGuiManager>();
     imguiManager_->Initialize(winApp_, dx12_.get(), true);
@@ -138,6 +142,12 @@ namespace Tako {
     // 設定の適用先（Audio・Shadow 等）が揃ってから読み込む
     ProjectSettings::Load(dx12_.get());
 
+    // --profile を付けて起動すると、フレームの時間を測って画面に重ねて出す（エディタの無い Release で見る用）
+    if (std::wcsstr(GetCommandLineW(), L"--profile")) {
+      dx12_->GetProfiler().SetEnabled(true);
+      profileOverlay_ = std::make_unique<ProfileOverlay>();
+    }
+
     // Debug ではこの後に読む個人設定の Fullscreen が優先される
     if (ProjectSettings::GetWindowSettings().startFullscreen) {
       ToggleFullScreen();
@@ -145,7 +155,9 @@ namespace Tako {
 
 #ifdef _DEBUG
     RunSceneSelfTest();
+#endif
 
+#ifdef TAKO_EDITOR
     // 初期コンソールログ
     DebugUIManager::GetInstance()->AddLog("TakoEngine Initialized", DebugUIManager::LogType::Info);
     DebugUIManager::GetInstance()->AddLog("DirectX 12 Ready", DebugUIManager::LogType::Info);
@@ -154,7 +166,7 @@ namespace Tako {
     DebugUIManager::GetInstance()->LoadEditorSettings();
 #endif
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     if (hasCrashedLastTime) {
       // スクリプトが Play 中に落ちたのなら、Play で始めると同じ所でまた落ちる。Edit で始めて、直してから Play できるようにする
       SceneManager::GetInstance()->StartInEdit();
@@ -170,6 +182,9 @@ namespace Tako {
   {
     // シーンマネージャーの終了処理（最初に実行）
     SceneManager::GetInstance()->Finalize();
+
+    // 文字のバッファとマテリアルを持つので、Renderer と Font より先に消す
+    profileOverlay_.reset();
 
     winApp_->UnregisterOnResizeFunc(rendererOnResizeId_);
 
@@ -202,7 +217,7 @@ namespace Tako {
 
     TextureManager::GetInstance()->Finalize();
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     // ImGui は SrvManager の SRV index を保持するため SrvManager より先に破棄する
     DebugUIManager::GetInstance()->Finalize();
 
@@ -240,7 +255,7 @@ namespace Tako {
       return;
     }
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     // GPU は前フレームを描き終えているので、ここで PSO を作り直してよい
     dx12_->GetShaderLibrary().ReloadChangedShaders();
     MaterialLibrary::GetInstance()->Update();
@@ -279,7 +294,7 @@ namespace Tako {
 
     PostEffectManager::GetInstance()->Update(FrameTimer::GetInstance()->GetDeltaTime());
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     DebugUIManager::GetInstance()->Update();
 #endif
 
@@ -289,39 +304,55 @@ namespace Tako {
 
     ShadowRenderer::GetInstance()->Update();
 
+    if (profileOverlay_) {
+      profileOverlay_->Update(dx12_->GetProfiler());
+    }
+
   }
 
   void TakoFramework::Draw()
   {
     SrvManager::GetInstance()->BeginDraw();
 
+    FrameProfiler& profiler = dx12_->GetProfiler();
+
     // 描画物を全て登録してから、まとめて描く。ポストエフェクトの前後は描画キューで分かれる（kQueueOverlay 以上が後）
     Renderer* renderer = Renderer::GetInstance();
     renderer->BeginFrame();
+    // スキニングの計算（コンピュート）は、描画物の登録の中で積まれる
+    const uint32_t submitScope = profiler.BeginScope("Submit");
     renderer->BeginSubmit(renderer->GetSceneList());
     SceneManager::GetInstance()->Draw();
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     // シーンの HUD と同じ RT へ、UI Editor のプレビューを重ねる
     DebugUIManager::GetInstance()->DrawUILayoutPreviewPass();
 #endif
     TransitionManager::GetInstance()->Draw();
+    if (profileOverlay_) {
+      profileOverlay_->Draw();
+    }
     renderer->EndSubmit();
+    profiler.EndScope(submitScope);
 
     RenderPipeline::GetInstance()->Render();
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     // 本編で積んだ線分を別視点でも描くため Reset より前に行う
+    const uint32_t debugViewportScope = profiler.BeginScope("Debug Viewport");
     DebugUIManager::GetInstance()->DrawDebugViewportPass();
+    profiler.EndScope(debugViewportScope);
 #endif
 
     LineRenderer::GetInstance()->Reset();
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     // 各エディターのプレビューをオフスクリーン RT へ描画
+    const uint32_t previewScope = profiler.BeginScope("Editor Previews");
     DebugUIManager::GetInstance()->DrawPrimitivePreviewPass();
     DebugUIManager::GetInstance()->DrawParticlePreviewPass();
     DebugUIManager::GetInstance()->DrawAnimationPreviewPass();
     DebugUIManager::GetInstance()->DrawMaterialPreviewPass();
+    profiler.EndScope(previewScope);
 #endif
 
     /// ============================================= ///
@@ -329,18 +360,21 @@ namespace Tako {
     /// ============================================= ///
     bool isDrawToSwapChain = true;
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     isDrawToSwapChain = !DebugUIManager::GetInstance()->IsWindowVisible(DebugUIManager::Window::GameViewport);
 #endif
 
+    const uint32_t presentScope = profiler.BeginScope("Present");
     RenderPipeline::GetInstance()->Present(isDrawToSwapChain);
+    profiler.EndScope(presentScope);
 
 
     /// ========================================= ///
     ///-------------------ImGui-------------------///
     /// ========================================= ///
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 
+    const uint32_t imguiScope = profiler.BeginScope("ImGui");
     imguiManager_->Begin();
 
     DebugUIManager::GetInstance()->Draw();
@@ -350,6 +384,7 @@ namespace Tako {
     imguiManager_->End();
 
     imguiManager_->Draw();
+    profiler.EndScope(imguiScope);
 
     // ImGui はコマンドリストを直接操作するので、記憶しているパイプラインと束縛を捨てる
     dx12_->GetContext().InvalidateState();
@@ -367,13 +402,18 @@ namespace Tako {
     Initialize();
 
     while (true) {
+      const auto updateStart = std::chrono::steady_clock::now();
       Update();
 
       if (GetEndFlag()) {
         break;
       }
 
+      const auto drawStart = std::chrono::steady_clock::now();
       Draw();
+      const auto drawEnd = std::chrono::steady_clock::now();
+      dx12_->GetProfiler().AddCpuTimes(std::chrono::duration<float, std::milli>(drawStart - updateStart).count(),
+                                       std::chrono::duration<float, std::milli>(drawEnd - drawStart).count());
     }
 
     Finalize();
@@ -404,7 +444,7 @@ namespace Tako {
     // カメラのアスペクト比を更新
     defaultCamera_->UpdateProjectionMatrix();
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     imguiManager_->OnWindowResize();
 #endif
   }

@@ -7,7 +7,7 @@
 #include "ColorFunc.h"
 #include "Logger.h"
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "DebugUIManager.h"
 #endif
 

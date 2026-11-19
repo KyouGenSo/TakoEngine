@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 
 #include "imgui.h"
 #include "imgui_internal.h"
@@ -232,4 +232,4 @@ namespace Tako::UI {
 
 } // namespace Tako::UI
 
-#endif // _DEBUG
+#endif // TAKO_EDITOR

@@ -74,7 +74,7 @@ namespace Tako {
     /// </summary>
     void Draw();
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     /// <summary>
     /// 本フレームのコンパクション結果を別カメラ視点で再描画する（デバッグビュー/エディタプレビュー用）。
     /// RT/DSV/ビューポートは呼び出し側で設定済み、Draw() 実行後に呼ぶこと
@@ -171,7 +171,7 @@ namespace Tako {
     //============================================================
     [[nodiscard]] uint32_t GetEmitterCount() const { return static_cast<uint32_t>(activeEmitters_.size()); }
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     [[nodiscard]] uint32_t GetActiveParticleCount() const { return activeParticleCount_; }
     [[nodiscard]] static uint32_t GetMaxParticleCount() { return kNumMaxParticle; }
 #endif
@@ -289,7 +289,7 @@ namespace Tako {
     /// </summary>
     void CreateDepthSRV();
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     /// <summary>
     /// FreeListIndex の Readback バッファを作成
     /// </summary>
@@ -358,7 +358,7 @@ namespace Tako {
     GpuResource freeListResource_;           ///< FreeList 用 GPU リソース
     uint32_t    freeListUavIndex_      = 0;  ///< FreeList の UAV インデックス
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     //Readback: アクティブパーティクル数取得
     Microsoft::WRL::ComPtr<ID3D12Resource> freeListIndexReadbackResource_;       ///< FreeListIndex の Readback バッファ（D3D12_HEAP_TYPE_READBACK）
     uint32_t                               activeParticleCount_           = 0;   ///< CPU 側で読み取ったアクティブパーティクル数（表示用キャッシュ）

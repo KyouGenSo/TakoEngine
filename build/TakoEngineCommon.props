@@ -21,14 +21,16 @@
 
   <!-- ===================================================
        リンクの形
-       Debug（エディタ）: TakoEditor.exe + TakoEngine.dll + Game.dll。ゲームの DLL を実行中に差し替える。
+       Debug / Develop（エディタ）: TakoEditor.exe + TakoEngine.dll + Game.dll。ゲームの DLL を実行中に差し替える。
+         Debug は最適化なしで、デバッグ用の CRT（/MDd）。Develop は最適化ありで、Release 用の CRT（/MD）。
        Release: エンジンを静的リンクした 1 つの exe。
-       DLL をまたいで std::string や unique_ptr を渡すので、Debug は CRT も DLL 版（/MDd）にそろえる。
+       DLL をまたいで std::string や unique_ptr を渡すので、エディタの構成は CRT も DLL 版にそろえる。
        =================================================== -->
   <PropertyGroup>
-    <TakoShared Condition="'$(Configuration)'=='Debug'">true</TakoShared>
+    <TakoShared Condition="'$(Configuration)'=='Debug' or '$(Configuration)'=='Develop'">true</TakoShared>
     <TakoRuntimeLibrary>MultiThreaded</TakoRuntimeLibrary>
-    <TakoRuntimeLibrary Condition="'$(TakoShared)'=='true'">MultiThreadedDebugDLL</TakoRuntimeLibrary>
+    <TakoRuntimeLibrary Condition="'$(Configuration)'=='Debug'">MultiThreadedDebugDLL</TakoRuntimeLibrary>
+    <TakoRuntimeLibrary Condition="'$(Configuration)'=='Develop'">MultiThreadedDLL</TakoRuntimeLibrary>
   </PropertyGroup>
 
   <!-- ===================================================
@@ -78,7 +80,7 @@
       $(TakoEngineExternals)assimp\include;
       $(TakoEngineExternals)DirectXTex
     </TakoEngineRuntimeIncludes>
-    <!-- エディタは Debug にしか無い -->
+    <!-- エディタは Debug と Develop にしか無い -->
     <TakoEngineEditorIncludes>
       $(TakoEngineSrc)editor;
       $(TakoEngineSrc)editor\UI;
@@ -88,7 +90,7 @@
       $(TakoEngineExternals)imgui-node-editor
     </TakoEngineEditorIncludes>
     <TakoEngineIncludes>$(TakoEngineRuntimeIncludes)</TakoEngineIncludes>
-    <TakoEngineIncludes Condition="'$(Configuration)'=='Debug'">$(TakoEngineRuntimeIncludes);$(TakoEngineEditorIncludes)</TakoEngineIncludes>
+    <TakoEngineIncludes Condition="'$(TakoShared)'=='true'">$(TakoEngineRuntimeIncludes);$(TakoEngineEditorIncludes)</TakoEngineIncludes>
   </PropertyGroup>
 
   <!-- ===================================================

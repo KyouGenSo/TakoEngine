@@ -69,7 +69,7 @@ namespace Tako {
     /// <returns>パラメータ JSON</returns>
     virtual nlohmann::json ExtractParameters() const;
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     /// <summary>
     /// ImGui でパラメータ編集 UI を描画 (Debug ビルド限定、エディタ用)。既定は TPROPERTY の自動 UI
     /// </summary>

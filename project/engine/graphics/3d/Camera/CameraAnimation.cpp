@@ -11,7 +11,7 @@
 #include <format>
 #include <utility>
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "DebugUIManager.h"
 #endif
 
@@ -30,7 +30,7 @@ namespace Tako {
       return path;
     }
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     std::vector<CameraAnimation*>& Instances() {
       static std::vector<CameraAnimation*> instances;
       return instances;
@@ -40,18 +40,18 @@ namespace Tako {
   } // namespace
 
   CameraAnimation::CameraAnimation() {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     Instances().push_back(this);
 #endif
   }
 
   CameraAnimation::~CameraAnimation() {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     std::erase(Instances(), this);
 #endif
   }
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
   const std::vector<CameraAnimation*>& CameraAnimation::GetInstances() {
     return Instances();
   }
@@ -659,7 +659,7 @@ namespace Tako {
       FromJson(json);
       animationName_ = jsonPath.stem().string();
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       LogToConsole(std::format("CameraAnimation: loaded '{}' from {}", animationName_, jsonPath.string()));
 #endif
 
@@ -689,7 +689,7 @@ namespace Tako {
       file << json.dump(4);
       file.close();
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       LogToConsole(std::format("CameraAnimation: saved '{}' to {}", jsonPath.stem().string(), jsonPath.string()));
 #endif
 

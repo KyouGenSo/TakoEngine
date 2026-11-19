@@ -11,7 +11,7 @@
 #include <numbers>
 #include "Mat4x4Func.h"
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "EditorUI.h"
 #include "DebugUIManager.h"
 #include "ImGuiManager.h"
@@ -366,7 +366,7 @@ void ShadowRenderer::SetCascadeSplit(float split)
 
 void ShadowRenderer::DrawImGui()
 {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     UI::Checkbox("Enable Shadow", &shadowEnabled_);
 
     // シャドウ品質プリセット
@@ -475,7 +475,7 @@ void ShadowRenderer::DrawImGui()
         }
     }
 
-#endif // _DEBUG
+#endif // TAKO_EDITOR
 }
 
 } // namespace Tako

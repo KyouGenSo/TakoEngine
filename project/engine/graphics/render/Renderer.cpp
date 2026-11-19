@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cassert>
 #include <cstring>
+#include <format>
+#include <string>
 #include <tuple>
 
 #include "Camera.h"
@@ -79,8 +81,16 @@ namespace Tako {
       return;
     }
 
-    CommandContext& context = dx12_->GetContext();
+    CommandContext& context  = dx12_->GetContext();
+    FrameProfiler&  profiler = dx12_->GetProfiler();
     for (const ShadowRenderer::ShadowView& view : views) {
+      // 名前はアトラスの区画の番号にする（1 フレームおきに描き直すカスケードも、同じ名前のままになる）
+      std::string label;
+      if (profiler.IsEnabled() && view.size > 0) {
+        const uint32_t grid = view.isLocal ? ShadowRenderer::kLocalGrid : ShadowRenderer::kCascadeGrid;
+        label = std::format("{} {}", view.isLocal ? "Local" : "Cascade", (view.y / view.size) * grid + view.x / view.size);
+      }
+      const ProfileScope scope(profiler, label);
       shadow->BeginView(view);
       GraphicsPipelineDesc current{};
       bool hasCurrent = false;

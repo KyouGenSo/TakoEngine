@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <string_view>
 #include <type_traits>
 
 #include "DX12Basic.h"
@@ -29,6 +30,7 @@ namespace Tako {
     struct Step {
       const PostEffectDefinition* definition;
       const EffectParam*          param;
+      std::string_view            name;  ///< 計測の区間の名前
     };
 
     const EffectParam          kNoParam;
@@ -95,7 +97,7 @@ namespace Tako {
       for (const PostEffectInstance& effect : effects) {
         const PostEffectDefinition* definition = FindPostEffect(effect.name);
         if (effect.enabled && definition && effect.maskId == maskId && (maskId != 0 || definition->event == event)) {
-          steps.push_back({ definition, &effect.param });
+          steps.push_back({ definition, &effect.param, effect.name });
         }
       }
       return steps;
@@ -111,6 +113,7 @@ namespace Tako {
       RenderTexture* source = &input;
       for (size_t i = 0; i < steps.size(); ++i) {
         RenderTexture& target = graph.Acquire(RenderGraph::DescOf(input));
+        const ProfileScope scope(frame.dx12->GetProfiler(), steps[i].name);
         Run(frame, *steps[i].definition, *steps[i].param, *source, target);
         if (source != &input) {
           graph.Release(*source);
@@ -212,6 +215,7 @@ namespace Tako {
 
   void ToneMapToDisplay(const PostEffectFrame& frame, RenderTexture& source, RenderTexture& output)
   {
+    const ProfileScope scope(frame.dx12->GetProfiler(), "Tone Map");
     // ToneMap.PS の ToneMapParam と同じ並び
     struct ToneMapConstants {
       float    exposureScale;
@@ -283,12 +287,13 @@ namespace Tako {
   {
     std::vector<Step> steps = CollectSteps(effects_, 0);
     if (antiAliasing) {
-      steps.push_back({ &kAntiAliasing, &kNoParam });
+      steps.push_back({ &kAntiAliasing, &kNoParam, "FXAA" });
     }
 
     // エフェクトはシーンの色（リニアの HDR）のまま掛け、表示用の output へは最後のトーンマップだけが書く
     RenderTexture* source = RunSteps(frame, steps, input);
     if (afterEffects) {
+      const ProfileScope scope(frame.dx12->GetProfiler(), "No Post Effect Objects");
       afterEffects(*source);
     }
     ToneMapToDisplay(frame, *source, output);
@@ -303,9 +308,13 @@ namespace Tako {
     if (steps.empty()) {
       return false;
     }
+    FrameProfiler&     profiler = frame.dx12->GetProfiler();
+    const ProfileScope scope(profiler, "Post Effects");
     // 読みながら同じ RT へは書けないので、一時 RT に書いてから写す（URP の Full Screen Pass も入力をコピーする）
-    RenderTexture* result = RunSteps(frame, steps, target);
+    RenderTexture* result    = RunSteps(frame, steps, target);
+    const uint32_t copyScope = profiler.BeginScope("Copy");
     Run(frame, kCopy, kNoParam, *result, target);
+    profiler.EndScope(copyScope);
     frame.graph->Release(*result);
     return true;
   }
@@ -314,11 +323,13 @@ namespace Tako {
   {
     RenderTexture* effected = RunSteps(frame, CollectSteps(effects_, maskId), layer);
     // 描画物の外の (0,0,0,0) は何も変えず、α=0 で色だけある画素（Bloom の光など）は加算になる
+    const uint32_t compositeScope = frame.dx12->GetProfiler().BeginScope("Composite");
     frame.graph->AddPass({ RenderGraph::Read(effected->resource), RenderGraph::Write(target.resource) }, [&] {
       CommandContext::ShaderBinder binder = BeginFullScreen(frame, kCopy.pixelShader, target, BlendMode::Premultiplied);
       binder.BindSRV("gTexture"_id, effected->srvIndex);
       DrawFullScreen(frame);
     });
+    frame.dx12->GetProfiler().EndScope(compositeScope);
     if (effected != &layer) {
       frame.graph->Release(*effected);
     }

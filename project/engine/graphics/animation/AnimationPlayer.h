@@ -56,7 +56,7 @@ namespace Tako {
     /// </summary>
     [[nodiscard]] AnimationPose Evaluate(const std::string& name) const;
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     /// <summary>
     /// ゲーム側の再生の代わりに clip の time の姿勢を使う（エディタのプレビュー用）。nullptr で戻す
     /// </summary>
@@ -77,7 +77,7 @@ namespace Tako {
   private: //メンバー変数
     std::vector<Playback> playbacks_;
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     //エディタのプレビュー
     const AnimationClip* previewClip_   = nullptr;
     std::string          previewTarget_;

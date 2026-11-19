@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 
 #include <functional>
 #include <vector>
@@ -367,4 +367,4 @@ private: //メンバー変数
 
 } // namespace Tako
 
-#endif // _DEBUG
+#endif // TAKO_EDITOR

@@ -1,4 +1,4 @@
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 
 #include "UpdateChecker.h"
 #include "ChildProcess.h"
@@ -102,4 +102,4 @@ namespace Tako {
 
 } // namespace Tako
 
-#endif // _DEBUG
+#endif // TAKO_EDITOR

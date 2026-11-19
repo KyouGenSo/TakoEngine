@@ -309,7 +309,7 @@ namespace Tako {
   }
 
   void DebugUIManager::Draw() {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     isPreviewInputCaptured_ = false;
 
     // どのウィンドウにフォーカスがあっても効かせる。文字の入力中は入力欄に任せる
@@ -618,7 +618,7 @@ namespace Tako {
         ImGui::EndMenu();
       }
 
-      static const std::string engineName = "TakoEngine " + Project::GetEngineVersion();
+      static const std::string engineName = std::format("TakoEngine {} ({})", Project::GetEngineVersion(), Project::GetConfigurationName());
       ImGui::SetCursorPosX((ImGui::GetWindowWidth() - ImGui::CalcTextSize(engineName.c_str()).x) * 0.5f);
       ImGui::TextDisabled("%s", engineName.c_str());
 
@@ -932,6 +932,21 @@ namespace Tako {
     avgFPS /= 100.0f;
 
     UI::Value("Min / Max / Avg", "%.1f / %.1f / %.1f", minFPS, maxFPS, avgFPS);
+
+    // FPS の上限や VSync の待ちを除いた、実際に掛かった時間
+    if (ImGui::CollapsingHeader("Frame Time", ImGuiTreeNodeFlags_DefaultOpen)) {
+      const FrameTimes& times = Renderer::GetInstance()->GetDX12Basic()->GetProfiler().GetFrameTimes();
+      UI::Value("CPU Update", "%.2f ms", times.updateMs);
+      UI::Value("CPU Render", "%.2f ms", times.recordMs);
+      ImGui::SetItemTooltip("Time to record the draw commands of a frame");
+      UI::Value("GPU", "%.2f ms", times.gpuMs);
+      ImGui::SetItemTooltip("Time the GPU takes to run the commands of a frame (see Render Pipeline > Frame)");
+      UI::Value("Wait for GPU", "%.2f ms", times.gpuWaitMs);
+      ImGui::SetItemTooltip("The CPU waits here until the GPU finishes the frame (overlaps GPU).\nIt can be much longer than GPU when VSync is on");
+      UI::Value("Idle", "%.2f ms", times.idleMs);
+      ImGui::SetItemTooltip("Waiting for the FPS limit, and the time Present takes");
+      ImGui::TextDisabled("Averages over the last 0.5 s");
+    }
 
     if (ImGui::CollapsingHeader("Resources", ImGuiTreeNodeFlags_DefaultOpen)) {
       // index 0 は無効番兵のため使用可能数は最大数 - 1

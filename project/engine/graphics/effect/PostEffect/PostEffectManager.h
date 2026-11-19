@@ -10,7 +10,7 @@
 
 #include "PostEffectStruct.h"
 #include "PostProcess.h"
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "EditTracker.h"
 #include "ShortcutTable.h"
 #endif
@@ -169,7 +169,7 @@ namespace Tako {
     /// </summary>
     void CollectUnsavedChanges(std::vector<std::string>& out) const;
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     /// <summary>
     /// キー操作の表。DrawImgui のキー処理と About の一覧が使う
     /// </summary>
@@ -227,7 +227,7 @@ namespace Tako {
     /// </summary>
     void Resolve(PostEffectInstance& effect);
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     /// <summary>
     /// .shader.json のエフェクトのマテリアルと、値ごとの上書きの欄
     /// </summary>
@@ -276,7 +276,7 @@ namespace Tako {
     std::string          selectedAvailableMaterial_;    ///< 追加するマテリアルの名前（selectedAvailableEffect_ と片方だけ使う）
     uint32_t             selectedActiveEffect_    = 0;  ///< 選択中のインスタンス id
     std::array<char, 64> profileName_{};                ///< プロファイル名入力欄。LoadProfile で読み込んだ名前になる
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     EditTracker<>        profileTracker_{ "PostEffect Editor", { [this] { return SerializeProfile(); }, [this](const std::string& profile) { ApplyProfile(profile); } } };
     UnsavedChangesPrompt unsavedPrompt_;  ///< 未保存のまま別のプロファイルを読み込むときの確認
 #endif

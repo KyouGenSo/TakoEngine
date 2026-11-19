@@ -1,6 +1,6 @@
 #include "MaterialEditor.h"
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "EditorUI.h"
 
 #include <algorithm>
@@ -485,4 +485,4 @@ namespace Tako {
 
 } // namespace Tako
 
-#endif // _DEBUG
+#endif // TAKO_EDITOR

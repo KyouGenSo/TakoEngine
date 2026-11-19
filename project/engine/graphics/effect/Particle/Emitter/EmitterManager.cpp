@@ -14,7 +14,7 @@
 #include <fstream>
 #include <iomanip>
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "DebugUIManager.h"
 #include <set>
 #endif
@@ -35,7 +35,7 @@ namespace Tako {
   {
     // 同名エミッターは警告を出して置き換える
     if (emitterMap_.contains(name)) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "Emitter name '" + name + "' already exists. Overwriting.", DebugUIManager::LogType::Warning);
 #endif
@@ -62,7 +62,7 @@ namespace Tako {
     // 先にモデルをロードし、成功を確認してから既存 emitter を置き換える。
     Model* model = particleSystem_->AcquireModel(modelPath);
     if (model == nullptr) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "CreateMeshEmitterFromModel: failed to load model '" + modelPath + "'", DebugUIManager::LogType::Error);
 #endif
@@ -78,7 +78,7 @@ namespace Tako {
   {
     // null の Object3d は三角形数 0 の無効エミッタとして登録されてしまうため、登録前に弾く
     if (obj3d == nullptr) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "CreateMeshEmitter: Object3d is null for emitter '" + name + "'", DebugUIManager::LogType::Error);
 #endif
@@ -110,7 +110,7 @@ namespace Tako {
         if (frequency > 0.0f) sphereEmitter->SetFrequency(frequency);
       }
       else {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
         DebugUIManager::GetInstance()->AddLog(
           "UpdateSphereEmitter: Emitter '" + name + "' is not a SphereEmitter", DebugUIManager::LogType::Warning);
 #endif
@@ -118,7 +118,7 @@ namespace Tako {
 
     }
     else {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "UpdateSphereEmitter: Emitter '" + name + "' not found", DebugUIManager::LogType::Warning);
 #endif
@@ -140,7 +140,7 @@ namespace Tako {
         if (frequency > 0.0f) boxEmitter->SetFrequency(frequency);
       }
       else {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
         DebugUIManager::GetInstance()->AddLog(
           "UpdateBoxEmitter: Emitter '" + name + "' is not a BoxEmitter", DebugUIManager::LogType::Warning);
 #endif
@@ -148,7 +148,7 @@ namespace Tako {
 
     }
     else {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "UpdateBoxEmitter: Emitter '" + name + "' not found", DebugUIManager::LogType::Warning);
 #endif
@@ -169,7 +169,7 @@ namespace Tako {
         if (frequency > 0.0f) triangleEmitter->SetFrequency(frequency);
       }
       else {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
         DebugUIManager::GetInstance()->AddLog(
           "UpdateTriangleEmitter: Emitter '" + name + "' is not a TriangleEmitter", DebugUIManager::LogType::Warning);
 #endif
@@ -177,7 +177,7 @@ namespace Tako {
 
     }
     else {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "UpdateTriangleEmitter: Emitter '" + name + "' not found", DebugUIManager::LogType::Warning);
 #endif
@@ -188,7 +188,7 @@ namespace Tako {
   {
     auto sourceIt = emitterMap_.find(sourceName);
     if (sourceIt == emitterMap_.end()) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "CreateTemporaryEmitterFrom: Source emitter '" + sourceName + "' not found", DebugUIManager::LogType::Error);
 #endif
@@ -196,7 +196,7 @@ namespace Tako {
     }
 
     if (emitterMap_.contains(newName)) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "Emitter name '" + newName + "' already exists. Overwriting.", DebugUIManager::LogType::Warning);
 #endif
@@ -215,7 +215,7 @@ namespace Tako {
       newEmitter->SetFrequencyTime(newEmitter->GetFrequency());
     }
     else {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "CreateTemporaryEmitterFrom: Failed to create emitter from '" + sourceName + "'", DebugUIManager::LogType::Error);
 #endif
@@ -257,7 +257,7 @@ namespace Tako {
     if (it != emitterMap_.end()) {
       return it->second.get();
     }
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     // 毎フレーム呼ばれる Set 系から来るので、同じ名前は 1 回だけ出す
     // ponytail: 起動中ずっと覚える。シーンごとに出し直すなら、メンバーにして RemoveAllEmitters で消す
     static std::set<std::string> warned;
@@ -344,7 +344,7 @@ namespace Tako {
         sphereEmitter->SetRadius(radius);
       }
       else {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
         DebugUIManager::GetInstance()->AddLog(
           "UpdateSphereEmitter: Emitter '" + name + "' is not a SphereEmitter", DebugUIManager::LogType::Warning);
 #endif
@@ -352,7 +352,7 @@ namespace Tako {
 
     }
     else {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "UpdateSphereEmitter: Emitter '" + name + "' not found", DebugUIManager::LogType::Warning);
 #endif
@@ -395,7 +395,7 @@ namespace Tako {
       }
     }
     else {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "RemoveEmitter: Emitter '" + name + "' not found",
         DebugUIManager::LogType::Warning);
@@ -425,7 +425,7 @@ namespace Tako {
   void EmitterManager::CreateGroup(const std::string& groupName)
   {
     if (groupMap_.contains(groupName)) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "Group name '" + groupName + "' already exists.", DebugUIManager::LogType::Warning);
 #endif
@@ -442,7 +442,7 @@ namespace Tako {
   {
     auto groupIt = groupMap_.find(groupName);
     if (groupIt == groupMap_.end()) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "Group '" + groupName + "' not found. Creating new group.", DebugUIManager::LogType::Warning);
 #endif
@@ -452,7 +452,7 @@ namespace Tako {
     }
 
     if (!emitterMap_.contains(emitterName)) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "Emitter '" + emitterName + "' not found. Cannot add to group.", DebugUIManager::LogType::Warning);
 #endif
@@ -556,7 +556,7 @@ namespace Tako {
 
     }
     else {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "RemoveGroup: Group '" + groupName + "' not found", DebugUIManager::LogType::Warning);
 #endif
@@ -572,7 +572,7 @@ namespace Tako {
   {
     auto it = emitterMap_.find(emitterName);
     if (it == emitterMap_.end()) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "SavePreset: Emitter '" + emitterName + "' not found", DebugUIManager::LogType::Warning);
 #endif
@@ -595,7 +595,7 @@ namespace Tako {
     if (ofs.is_open()) {
       ofs << std::setw(2) << preset << std::endl;
       ofs.close();
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog("Saved preset: " + presetName, DebugUIManager::LogType::Info);
 #endif
 
@@ -612,7 +612,7 @@ namespace Tako {
     std::ifstream ifs(filepath);
 
     if (!ifs.is_open()) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog("Failed to load preset: " + presetName, DebugUIManager::LogType::Error);
 #endif
 
@@ -639,7 +639,7 @@ namespace Tako {
     std::ifstream ifs(filepath);
 
     if (!ifs.is_open()) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog("Failed to load preset: " + presetName, DebugUIManager::LogType::Error);
 #endif
 
@@ -665,7 +665,7 @@ namespace Tako {
 
     std::ifstream ifs(filepath);
     if (!ifs.is_open()) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog("Failed to load preset: " + presetName, DebugUIManager::LogType::Error);
 #endif
       return;
@@ -712,7 +712,7 @@ namespace Tako {
       return false;
     }
     if (emitterMap_.contains(newName)) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "Emitter name '" + newName + "' already exists. Rename aborted.", DebugUIManager::LogType::Warning);
 #endif
@@ -797,7 +797,7 @@ namespace Tako {
 
     case PasteMode::All:
       if (!ApplyAllSettings(*targetEmitter, json)) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
         DebugUIManager::GetInstance()->AddLog(
           "Paste: emitter type mismatch. Type-specific params skipped.", DebugUIManager::LogType::Info);
 #endif

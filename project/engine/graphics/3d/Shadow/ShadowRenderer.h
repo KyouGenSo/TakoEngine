@@ -44,12 +44,12 @@ namespace Tako {
     static constexpr float    kDefaultMaxShadowDistance = 50.0f;
     static constexpr int32_t  kMaxCascades              = 4;   ///< 平行光源のカスケードの上限
     static constexpr uint32_t kMaxLocalSlices           = 16;  ///< スポットライト（1 枚）と点光源（6 枚）に使える区画の数
+    static constexpr uint32_t kCascadeGrid              = 2;   ///< カスケードが 2 枚以上のときの、アトラスの 1 辺の区画数
+    static constexpr uint32_t kLocalGrid                = 4;   ///< スポットライト・点光源用のアトラスの 1 辺の区画数
 
   private: //定数
     static constexpr uint32_t kFirstLocalSlice = kMaxCascades;  ///< 区画の並びは、カスケードの後ろにスポットライト・点光源
     static constexpr uint32_t kMaxSlices       = kFirstLocalSlice + kMaxLocalSlices;
-    static constexpr uint32_t kCascadeGrid     = 2;  ///< カスケードが 2 枚以上のときの、アトラスの 1 辺の区画数
-    static constexpr uint32_t kLocalGrid       = 4;  ///< スポットライト・点光源用のアトラスの 1 辺の区画数
     static constexpr uint32_t kPointLightFaces = 6;
 
   public: //構造体

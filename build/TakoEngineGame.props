@@ -3,7 +3,7 @@
 
   <!-- ===================================================
        ゲームのプロジェクトが import する設定。
-       エンジンの場所・include パス・リンクの形（Debug は DLL、Release は 1 つの exe）は
+       エンジンの場所・include パス・リンクの形（Debug と Develop は DLL、Release は 1 つの exe）は
        TakoEngineCommon.props にある。
        =================================================== -->
   <Import Project="$(MSBuildThisFileDirectory)TakoEngineCommon.props" />
@@ -25,7 +25,7 @@
   <!-- ===================================================
        出力 / 中間ディレクトリ規約
        全ゲームプロジェクトで <ルート>\Generated\... 配下に統一。
-       Debug の出力は Game.dll（TakoEditor.exe がこの名前で探す）、
+       Debug と Develop の出力は Game.dll（TakoEditor.exe がこの名前で探す）、
        Release の出力はプロジェクト名の exe。
        =================================================== -->
   <PropertyGroup>
@@ -38,7 +38,7 @@
 
   <!-- ===================================================
        Visual Studio から F5 起動した時の設定
-       Debug: TakoEditor.exe がプロジェクトを開く。作業ディレクトリは VS 既定の
+       Debug / Develop: TakoEditor.exe がプロジェクトを開く。作業ディレクトリは VS 既定の
               $(ProjectDir) で、エディタ（Assets・GameSettings・各種プリセット）の
               保存先がソースの resources になる。
        Release: exe の隣（= OutDir）。exe ダブルクリックと同じ
@@ -56,9 +56,9 @@
 
   <!-- ===================================================
        共通 C++ コンパイラ / リンカ設定
-       Debug/Release 両方に適用される最大公約数。
+       全部の構成に適用される最大公約数。
        Configuration 固有の差分（最適化やプリプロセッサ）は
-       下の ItemDefinitionGroup（Debug|Release）で個別指定する。
+       下の ItemDefinitionGroup で個別指定する。
        C4251 / C4275 は、STL のメンバーや基底を持つエンジンのクラスを
        DLL から使うと出る警告。エンジンと同じコンパイラ・CRT でビルドするので切る。
        =================================================== -->
@@ -82,19 +82,36 @@
   </ItemDefinitionGroup>
 
   <!-- ===================================================
-       Debug 固有: エンジンの DLL から型と ImGui を受け取る
+       Debug / Develop（エディタ）固有: エンジンの DLL から型と ImGui を受け取る
        PDBALTPATH: DLL に PDB のファイル名だけを書く。エディタは Game.dll と Game.pdb を
        別のフォルダーへ写してから読むので、デバッガーが写しの隣の PDB を使うようになり、
        デバッグ中でも元の Game.pdb をビルドで書き換えられる。
        =================================================== -->
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+  <ItemDefinitionGroup Condition="'$(TakoShared)'=='true'">
     <ClCompile>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;TAKO_SHARED;TAKO_API=__declspec(dllimport);IMGUI_API=__declspec(dllimport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>TAKO_EDITOR;_CONSOLE;TAKO_SHARED;TAKO_API=__declspec(dllimport);IMGUI_API=__declspec(dllimport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalDependencies>$(TakoEngineBinDir)TakoEngine.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/PDBALTPATH:%_PDB% %(AdditionalOptions)</AdditionalOptions>
     </Link>
+  </ItemDefinitionGroup>
+
+  <!-- ===================================================
+       Debug だけ: デバッグ時の検査（_DEBUG）
+       Develop だけ: 最適化
+       =================================================== -->
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
+    <ClCompile>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Develop'">
+    <ClCompile>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <Optimization>MaxSpeed</Optimization>
+    </ClCompile>
   </ItemDefinitionGroup>
 
   <!-- ===================================================
@@ -120,12 +137,12 @@
 
   <!-- ===================================================
        PreBuildEvent: リソースをミラー
-       Debug: エンジンのリソースを作業ディレクトリ（ProjectDir）へ。
+       Debug / Develop: エンジンのリソースを作業ディレクトリ（ProjectDir）へ。
        Release: それに加えて、エンジンとゲームのリソースを exe の隣（OutDir）へ。
        /XO により更新分だけコピーするので増分ビルドに優しい。
        robocopy の終了コード 0..7 は成功扱い、8 以上だけ真のエラー。
        =================================================== -->
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+  <ItemDefinitionGroup Condition="'$(TakoShared)'=='true'">
     <PreBuildEvent>
       <Command>robocopy "$(EngineResourcesSrc)" "$(ProjectDir)$(EngineResourcesDirName)" /E /XO /NFL /NDL /NJH /NJS /NP /NS /NC
 IF %ERRORLEVEL% GEQ 8 EXIT /B %ERRORLEVEL%

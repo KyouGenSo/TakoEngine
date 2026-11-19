@@ -1,4 +1,4 @@
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 
 #include "Project.h"
 #include "ChildProcess.h"
@@ -507,7 +507,7 @@ namespace Tako::Project {
   {
     wchar_t path[MAX_PATH]{};
     GetModuleFileNameW(GetModuleHandleW(L"TakoEngine.dll"), path, MAX_PATH);
-    // <エンジン>/bin/Debug/TakoEngine.dll
+    // <エンジン>/bin/<構成>/TakoEngine.dll
     return fs::path(path).parent_path().parent_path().parent_path();
   }
 
@@ -542,10 +542,19 @@ namespace Tako::Project {
     return folder;
   }
 
+  const char* GetConfigurationName()
+  {
+#ifdef _DEBUG
+    return "Debug";
+#else
+    return "Develop";
+#endif
+  }
+
   fs::path GetGameModulePath()
   {
-    // DLL でビルドするのは Debug だけ（TakoEngineCommon.props の TakoShared）
-    return root / "Generated" / "outputs" / "Debug" / "Game.dll";
+    // DLL でビルドするのは、エディタのある構成だけ（TakoEngineCommon.props の TakoShared）
+    return root / "Generated" / "outputs" / GetConfigurationName() / "Game.dll";
   }
 
   fs::path GetProjectFile()
@@ -576,4 +585,4 @@ namespace Tako::Project {
 
 } // namespace Tako::Project
 
-#endif // _DEBUG
+#endif // TAKO_EDITOR

@@ -1,4 +1,4 @@
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 
 #include "AnimationTimeline.h"
 #include "EditorUI.h"
@@ -823,4 +823,4 @@ namespace Tako {
 
 } // namespace Tako
 
-#endif // _DEBUG
+#endif // TAKO_EDITOR

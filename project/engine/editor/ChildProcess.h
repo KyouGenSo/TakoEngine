@@ -1,5 +1,5 @@
 #pragma once
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 
 #include <string>
 
@@ -29,4 +29,4 @@ namespace Tako::ChildProcess {
 
 } // namespace Tako::ChildProcess
 
-#endif // _DEBUG
+#endif // TAKO_EDITOR

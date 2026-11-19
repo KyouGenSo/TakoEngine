@@ -14,7 +14,7 @@
 #include <algorithm>
 #include <json.hpp>
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "DebugUIManager.h"
 #endif
 
@@ -43,7 +43,7 @@ namespace Tako {
     SrvManager* srvManager = particleSystem_->GetSrvManager();
     DX12Basic* dx12 = particleSystem_->GetDx12();
     if (srvManager == nullptr || dx12 == nullptr) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "MeshEmitter: SrvManager/DX12Basic unavailable. Spawn shape not built.",
         DebugUIManager::LogType::Error);
@@ -117,7 +117,7 @@ namespace Tako {
     }
 
     if (aggregatedVertices.empty() || aggregatedIndices.empty()) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "MeshEmitter: model has no valid mesh data. Spawn shape not built.",
         DebugUIManager::LogType::Warning);
@@ -125,7 +125,7 @@ namespace Tako {
       return;
     }
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     if (hasSkinnedMesh) {
       DebugUIManager::GetInstance()->AddLog(
         "MeshEmitter: aggregated mode does not support skinning. Spawning from bind pose.",
@@ -221,7 +221,7 @@ namespace Tako {
     if (!spawnModelPath_.empty()) {
       json["meshModelPath"] = spawnModelPath_;
     }
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     else if (!std::exchange(hasWarnedNoModelPath_, true)) {
       DebugUIManager::GetInstance()->AddLog(
         "Serialize: MeshEmitter has no meshModelPath; restorable only via LoadPreset(Object3d*).",
@@ -263,7 +263,7 @@ namespace Tako {
       const std::string meshModelPath = json["meshModelPath"].get<std::string>();
       Model* model = particleSystem->AcquireModel(meshModelPath);
       if (model == nullptr) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
         DebugUIManager::GetInstance()->AddLog(
           "Deserialize: failed to load meshModelPath '" + meshModelPath + "'.",
           DebugUIManager::LogType::Error);
@@ -274,7 +274,7 @@ namespace Tako {
       emitter->SetSpawnModelPath(meshModelPath);
     }
     else {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "Deserialize: Mesh emitter has no 'meshModelPath' and no bind target. Skipping.",
         DebugUIManager::LogType::Warning);

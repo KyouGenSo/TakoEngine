@@ -386,7 +386,7 @@ namespace Tako {
     /// </summary>
     static const UISlice& GetEffectiveSlice(const UIElement& element);
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     /// <summary>
     /// 生存中のレイアウト一覧（エディタ用。生成順）
     /// </summary>

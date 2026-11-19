@@ -1,5 +1,5 @@
 #pragma once
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 
 #include <filesystem>
 #include <optional>
@@ -78,6 +78,11 @@ namespace Tako::Project {
   TAKO_API std::filesystem::path GetUserSettingsFolder();
 
   /// <summary>
+  /// このエディタの構成の名前（"Debug" か "Develop"）。ゲームの DLL も同じ構成でビルドした物を読む
+  /// </summary>
+  TAKO_API const char* GetConfigurationName();
+
+  /// <summary>
   /// ビルドしたゲームの DLL の場所
   /// </summary>
   TAKO_API std::filesystem::path GetGameModulePath();
@@ -95,4 +100,4 @@ namespace Tako::Project {
 
 } // namespace Tako::Project
 
-#endif // _DEBUG
+#endif // TAKO_EDITOR

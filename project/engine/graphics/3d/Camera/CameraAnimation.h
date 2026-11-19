@@ -159,7 +159,7 @@ namespace Tako {
     /// <returns>イージング後の係数</returns>
     static float ApplyEasing(float t, CameraKeyframe::InterpolationType type, const Vector2& p1, const Vector2& p2);
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     /// <summary>
     /// 生存中のアニメーション一覧（エディタ用。生成順）
     /// </summary>

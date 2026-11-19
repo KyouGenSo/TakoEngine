@@ -4,7 +4,7 @@
 #include "Model.h"
 #include "Object3d.h"
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "ObjectOverridesEditor.h"
 #include "imgui.h"
 #endif
@@ -96,7 +96,7 @@ namespace Tako {
     }
   }
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
   bool MeshComponent::DrawCustomImGui()
   {
     if (!ImGui::TreeNode("Rendering")) {

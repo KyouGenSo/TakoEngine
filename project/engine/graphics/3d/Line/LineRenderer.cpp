@@ -4,10 +4,10 @@
 #include <cmath>
 #include <numbers>
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "DebugUIManager.h"
 #include "ImGuiManager.h"
-#endif // DEBUG
+#endif // TAKO_EDITOR
 
 namespace Tako {
 
@@ -31,11 +31,11 @@ namespace Tako {
     lineData_ = std::make_unique<LineData>();
     CreateLineVertexData(lineData_.get());
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     // エディタプレビュー用の第2バッファ（メインバッチと同一フレームで別視点を併存させるため分離）
     previewLineData_ = std::make_unique<LineData>();
     CreateLineVertexData(previewLineData_.get(), kPreviewLineMaxCount);
-#endif // _DEBUG
+#endif // TAKO_EDITOR
   }
 
   void LineRenderer::Finalize()
@@ -43,33 +43,33 @@ namespace Tako {
     // unique_ptr がデストラクト時に ComPtr も自動解放するので
     // reset()だけで完全にクリーンアップされる
     lineData_.reset();
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     previewLineData_.reset();
-#endif // _DEBUG
+#endif // TAKO_EDITOR
 
     instance_.reset();
   }
 
   void LineRenderer::Update()
   {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     previewLineIndex_ = 0;
     previewDrawStart_ = 0;
-#endif // _DEBUG
+#endif // TAKO_EDITOR
   }
 
   void LineRenderer::ImGui()
   {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 
-#endif // _DEBUG
+#endif // TAKO_EDITOR
   }
 
   void LineRenderer::DrawLine(const Vector3& start, const Vector3& end, const Color& srgbColor)
   {
     // 線はシーン（リニア）にだけ描くので、頂点の色は積むときにリニアにする
     const Color color = srgbColor.ToLinear();
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     // プレビューバッチ中はプレビュー専用バッファへ振り向ける
     if (previewBatchMode_) {
       if (previewLineIndex_ + kVertexCountLine > kPreviewLineMaxCount * kVertexCountLine) {
@@ -82,11 +82,11 @@ namespace Tako {
       previewLineIndex_ += kVertexCountLine;
       return;
     }
-#endif // _DEBUG
+#endif // TAKO_EDITOR
 
     // 上限超過分は破棄する（Map 済み領域外への書き込み防止）
     if (lineIndex_ + kVertexCountLine > kLineMaxCount * kVertexCountLine) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       static bool overflowWarned = false;
       if (!overflowWarned) {
         DebugUIManager::GetInstance()->AddLog("LineRenderer: line buffer overflow, lines dropped", DebugUIManager::LogType::Error);
@@ -281,14 +281,14 @@ namespace Tako {
     lineIndex_ = 0;
   }
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
   void LineRenderer::DrawPreviewLines(const Matrix4x4& viewProjection)
   {
     // 同一フレームの先行描画分はまだ GPU が読むので上書きせず、その後ろだけ描く
     DrawRange(*previewLineData_, previewDrawStart_, previewLineIndex_ - previewDrawStart_, viewProjection, previewPipeline_);
     previewDrawStart_ = previewLineIndex_;
   }
-#endif // _DEBUG
+#endif // TAKO_EDITOR
 
   void LineRenderer::CreatePipelines()
   {
@@ -299,11 +299,11 @@ namespace Tako {
     pipeline_.renderState = { .blend = BlendMode::Alpha, .cull = CullMode::None, .depthTest = false, .depthWrite = false };
     pipeline_.topology = D3D_PRIMITIVE_TOPOLOGY_LINELIST;
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     // プレビュー用: グリッドや視錐台がモデルの手前に透けないよう深度テストだけ行う
     previewPipeline_ = pipeline_;
     previewPipeline_.renderState.depthTest = true;
-#endif // _DEBUG
+#endif // TAKO_EDITOR
   }
 
   void LineRenderer::CreateLineVertexData(LineData* lineData, uint32_t lineCount)

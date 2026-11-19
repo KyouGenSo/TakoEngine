@@ -5,7 +5,7 @@
 #include "Script.h"
 #include "TypeRegistry.h"
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "ImGuiThemes.h"
 #include "ImGuiPropertyVisitor.h"
 #include "imgui.h"
@@ -126,7 +126,7 @@ namespace Tako {
     }
   }
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
   bool ScriptComponent::DrawCustomImGui()
   {
     if (instance_ && builtScript_ == script_) {

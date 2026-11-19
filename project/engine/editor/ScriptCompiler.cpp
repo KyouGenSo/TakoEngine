@@ -1,4 +1,4 @@
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 
 #include "ScriptCompiler.h"
 #include "ChildProcess.h"
@@ -10,6 +10,9 @@
 #include <Windows.h>
 #include <algorithm>
 #include <format>
+#include <fstream>
+#include <iterator>
+#include <string>
 #include <system_error>
 
 namespace Tako {
@@ -94,6 +97,16 @@ namespace Tako {
       LogToConsole("Compile: the working folder must contain exactly one .vcxproj", LogType::Error);
       return;
     }
+    // この構成を持たない vcxproj（Develop が無い頃に作ったプロジェクトなど）は MSBuild が MSB8013 で止まるので、直し方を先に知らせる
+    const std::string configuration = Project::GetConfigurationName();
+    std::ifstream     projectFile(project);
+    const std::string projectText((std::istreambuf_iterator<char>(projectFile)), std::istreambuf_iterator<char>());
+    if (projectText.find("\"" + configuration + "|x64\"") == std::string::npos) {
+      LogToConsole(std::format("Compile: {} has no {}|x64 configuration. Add it as described in the engine's CHANGELOG.md",
+                               StringUtility::ConvertString(project.filename().wstring()), configuration), LogType::Error);
+      return;
+    }
+
     const std::wstring& msbuild = FindMSBuild();
     if (msbuild.empty()) {
       LogToConsole("Compile: MSBuild was not found. Install Visual Studio with the C++ workload", LogType::Error);
@@ -101,7 +114,8 @@ namespace Tako {
     }
 
     // nr:false: ビルドの後に MSBuild のプロセスを残さない（残ると、TakoHeaderTool の古い版を持ち続ける）
-    const std::wstring command = std::format(L"\"{}\" \"{}\" /p:Configuration=Debug /p:Platform=x64 /nologo /v:m /nr:false", msbuild, fs::absolute(project).wstring());
+    const std::wstring command = std::format(L"\"{}\" \"{}\" /p:Configuration={} /p:Platform=x64 /nologo /v:m /nr:false", msbuild, fs::absolute(project).wstring(),
+                                             StringUtility::ConvertString(configuration));
     if (!ChildProcess::Spawn(command, process_, outputRead_)) {
       process_ = nullptr;
       LogToConsole(std::format("Compile: could not start MSBuild (error {})", GetLastError()), LogType::Error);
@@ -196,4 +210,4 @@ namespace Tako {
 
 } // namespace Tako
 
-#endif // _DEBUG
+#endif // TAKO_EDITOR

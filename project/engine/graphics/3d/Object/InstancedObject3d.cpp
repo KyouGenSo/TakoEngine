@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <cassert>
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "DebugUIManager.h"
 #endif
 
@@ -98,7 +98,7 @@ void InstancedObject3d::CreateInstanceBuffer() {
 
 uint32_t InstancedObject3d::AddInstance(const Transform& transform, const Color& color) {
   if (instances_.size() >= MAX_INSTANCES) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     DebugUIManager::GetInstance()->AddLog(
       "Maximum instance count reached",
       DebugUIManager::LogType::Warning);

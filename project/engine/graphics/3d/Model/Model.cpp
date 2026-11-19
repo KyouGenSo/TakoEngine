@@ -22,7 +22,7 @@
 #include <set>
 #include <sstream>
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "EditorUI.h"
 #include "DebugUIManager.h"
 #include <imgui.h>
@@ -214,7 +214,7 @@ namespace Tako {
     }
 
     // skeleton の描画
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     if (hasSkeleton_ && s_showSkeletonDebug) {
       DrawSkeleton(world);
     }
@@ -225,7 +225,7 @@ namespace Tako {
   {
     // インスタンシング描画ではスキニングは未対応
     if (hasSkeleton_) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "Warning: Instanced drawing is not supported for skinned models",
         DebugUIManager::LogType::Warning);
@@ -569,7 +569,7 @@ namespace Tako {
     if (Mesh* mesh = GetMeshByName(name)) {
       mesh->SetVisible(visible);
     }
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     else {
       DebugUIManager::GetInstance()->AddLog(
         "Warning: Mesh '" + name + "' not found in model '" + modelFileName_ + "'",
@@ -595,7 +595,7 @@ namespace Tako {
     auto it = skeleton_.jointMap.find(jointName);
     if (it == skeleton_.jointMap.end()) {
       // Joint が見つからない場合は単位行列を返す
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "Warning: Joint '" + jointName + "' not found in skeleton",
         DebugUIManager::LogType::Warning);
@@ -770,7 +770,7 @@ namespace Tako {
 
   void Model::DrawImGui()
   {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     // ホバー中のジョイントインデックスをリセット
     hoveredJointIndex_ = -1;
 
@@ -926,7 +926,7 @@ namespace Tako {
 
   void Model::DrawJointHierarchy(int32_t jointIndex, int depth)
   {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     if (jointIndex < 0 || jointIndex >= skeleton_.joints.size()) return;
 
     const Joint& joint = skeleton_.joints[jointIndex];
@@ -1024,7 +1024,7 @@ namespace Tako {
 
   void Model::DrawNodeHierarchyImGui(const Node& node, int depth)
   {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     // インデント量の設定
     const float indentAmount = 12.0f;
     ImGui::Indent(indentAmount * depth);
@@ -1625,7 +1625,7 @@ namespace Tako {
       isTransitioning_ = false;  // 即座に切り替えるため遷移フラグをオフ
     }
     else {
-#ifdef  _DEBUG
+#ifdef  TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "Warning: Animation '" + animationName + "' not found in model '" + modelFileName_ + "'",
         DebugUIManager::LogType::Warning);
@@ -1653,7 +1653,7 @@ namespace Tako {
       isTransitioning_ = true;
     }
     else {
-#ifdef  _DEBUG
+#ifdef  TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "Warning: Animation '" + animationName + "' not found in model '" + modelFileName_ + "'",
         DebugUIManager::LogType::Warning);

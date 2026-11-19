@@ -70,9 +70,6 @@ namespace Tako {
   void RenderPipeline::Render()
   {
     graph_.BeginFrame();
-#ifdef _DEBUG
-    frameSteps_.clear();
-#endif
 
     Renderer*                         renderer   = Renderer::GetInstance();
     PostEffectManager*                postEffect = PostEffectManager::GetInstance();
@@ -88,25 +85,11 @@ namespace Tako {
     // マスク付きのエフェクトが掛かる描画物は、本編の不透明・半透明から外して別に描く
     const std::vector<uint32_t> maskIds = postEffect->GetMaskIds();
 
-    // 手順を 1 つ行い、名前と描画回数を記録する
-    const auto step = [&](std::string_view label, const auto& draw) {
-      const uint32_t firstDraw = context.GetDrawCount();
+    // 手順を 1 つの区間として行う（名前・描画回数・時間が FrameProfiler に残る）
+    FrameProfiler& profiler = dx12_->GetProfiler();
+    const auto     step     = [&](std::string_view label, const auto& draw) {
+      const ProfileScope scope(profiler, label);
       draw();
-      RecordStep(label, firstDraw);
-    };
-
-    // 手順の名前に、その段で掛ける maskId のエフェクトを並べる（エフェクトごとの描画回数は数えない）
-    const auto effectLabel = [&](std::string label, [[maybe_unused]] uint32_t maskId) {
-#ifdef _DEBUG
-      const char* separator = ": ";
-      for (const PostEffectInstance& effect : postEffect->GetStack().GetEffects()) {
-        if (effect.enabled && effect.maskId == maskId) {
-          label += separator + effect.name;
-          separator = ", ";
-        }
-      }
-#endif
-      return label;
     };
 
     //------------------------------ シーン ------------------------------//
@@ -125,7 +108,7 @@ namespace Tako {
 
     step("Decals", [&] {
       DecalManager::GetInstance()->DrawAll();
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DecalManager::GetInstance()->DrawAllDebug();
 #endif
     });
@@ -134,7 +117,7 @@ namespace Tako {
     // maskId ごとに (0,0,0,0) の RT へ描いて（シーンの深度で隠れた部分は描かず、深度は書く）エフェクトを掛け、シーンへ重ねる。
     // 奥の背景はシーンに描いてあるので、エフェクトで描画物の外へ広がった・ずれた所にも背景が正しく出る
     for (const uint32_t& maskId : maskIds) {
-      step(effectLabel(std::format("Mask {}", maskId), maskId), [&] {
+      step(std::format("Mask {}", maskId), [&] {
         RenderTexture& layer = graph_.Acquire(RenderGraph::DescOf(sceneColor_));
         graph_.AddPass({ RenderGraph::Write(layer.resource), RenderGraph::DepthWrite(depth) }, [&] {
           dx12_->BindSceneRenderTarget({ layer.rtvHandle, sceneDsv, layer.width, layer.height, layer.format });
@@ -187,7 +170,7 @@ namespace Tako {
         });
       };
     }
-    step(effectLabel("Post Process", 0), [&] { postEffect->Execute(frame, sceneColor_, final_, drawNoPostEffect); });
+    step("Post Process", [&] { postEffect->Execute(frame, sceneColor_, final_, drawNoPostEffect); });
 
     //------------------------------ UI ------------------------------//
     // ここから先の描き先は表示用（sRGB の値）なので、UI はガンマのまま描く（色も画像も値のまま。Renderer が描き先の形式で決める）。
@@ -344,14 +327,15 @@ namespace Tako {
 
   void RenderPipeline::RunPasses(RenderEvent event, const PostEffectFrame& frame, RenderTexture& target, D3D12_CPU_DESCRIPTOR_HANDLE dsv)
   {
-    CommandContext& context = dx12_->GetContext();
-    RecordStep(kRenderEventNames[static_cast<size_t>(event)], context.GetDrawCount(), 0, true);
+    CommandContext& context  = dx12_->GetContext();
+    FrameProfiler&  profiler = dx12_->GetProfiler();
+    // 差し込める位置は、中のパスを字下げして見せるための区間（時間は取らない）
+    const ProfileScope eventScope(profiler, kRenderEventNames[static_cast<size_t>(event)], true);
 
     for (const InjectedPass& pass : passes_) {
       if (pass.event == event) {
-        const uint32_t firstDraw = context.GetDrawCount();
+        const ProfileScope scope(profiler, pass.name);
         pass.execute();
-        RecordStep(pass.name, firstDraw, 1);
       }
     }
 
@@ -371,9 +355,8 @@ namespace Tako {
       else if (settings.queue == QueueFilter::Transparent) {
         filter.minQueue = ShaderAsset::kQueueTransparent;
       }
-      const uint32_t firstDraw = context.GetDrawCount();
+      const ProfileScope scope(profiler, settings.name);
       renderer->RenderList(renderer->GetSceneList(), renderer->GetMainView(), filter);
-      RecordStep(settings.name, firstDraw, 1);
     }
 
     // この位置のポストエフェクトは、ここまでに描いた結果へ掛けて target へ戻す
@@ -383,32 +366,11 @@ namespace Tako {
     eventFrame.height = target.height;
     // ポストエフェクトの段より後は表示用の色に掛ける（UE のトーンマップの後の後処理と同じ）
     eventFrame.linear = target.format != DX12Basic::kColorFormat;
-    const uint32_t firstDraw = context.GetDrawCount();
     if (!postEffect->ExecuteAt(eventFrame, event, target)) {
       return;
     }
     context.Transition(dx12_->GetDepthStencilResource(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
     dx12_->BindSceneRenderTarget({ target.rtvHandle, dsv, target.width, target.height, target.format });
-
-    std::string label = "Post Effects";
-#ifdef _DEBUG
-    const char* separator = ": ";
-    for (const PostEffectInstance& effect : postEffect->GetStack().GetEffects()) {
-      const PostEffectDefinition* definition = FindPostEffect(effect.name);
-      if (effect.enabled && effect.maskId == 0 && definition && definition->event == event) {
-        label += separator + effect.name;
-        separator = ", ";
-      }
-    }
-#endif
-    RecordStep(label, firstDraw, 1);
-  }
-
-  void RenderPipeline::RecordStep([[maybe_unused]] std::string_view label, [[maybe_unused]] uint32_t firstDraw, [[maybe_unused]] uint8_t depth, [[maybe_unused]] bool isEvent)
-  {
-#ifdef _DEBUG
-    frameSteps_.push_back({ std::string(label), dx12_->GetContext().GetDrawCount() - firstDraw, depth, isEvent });
-#endif
   }
 
 } // namespace Tako

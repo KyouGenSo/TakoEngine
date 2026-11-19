@@ -1,4 +1,4 @@
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 
 #include "ChildProcess.h"
 
@@ -89,4 +89,4 @@ namespace Tako::ChildProcess {
 
 } // namespace Tako::ChildProcess
 
-#endif // _DEBUG
+#endif // TAKO_EDITOR

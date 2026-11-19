@@ -4,14 +4,14 @@
 #include <cmath>
 #include <format>
 #include <thread>
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "DebugUIManager.h"
 #endif
 #include "StringUtility.h"
 #include "RtvManager.h"
 #include "DsvManager.h"
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include"imgui.h"
 #include"imgui_impl_win32.h"
 #include"imgui_impl_dx12.h"
@@ -59,6 +59,9 @@ namespace Tako {
     InitScissorRect();
 
     shaderLibrary_.Initialize();
+
+    profiler_.Initialize(device_.Get(), commandQueue_.Get(), &context_);
+    profiler_.BeginFrame();
 
   }
 
@@ -113,21 +116,29 @@ namespace Tako {
     context_.Transition(swapChainResources_[backBufferIndex], D3D12_RESOURCE_STATE_PRESENT);
     context_.Transition(depthStencilResource_, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 
+    profiler_.Resolve();
     context_.Close();
 
+    const auto submitTime = std::chrono::steady_clock::now();
     ID3D12CommandList* commandLists[] = { context_.GetCommandList() };
     commandQueue_->ExecuteCommandLists(_countof(commandLists), commandLists);
 
     WaitForGPU();
+    const auto completeTime = std::chrono::steady_clock::now();
+    profiler_.ReadBack();
 
     UpdateFPSLimiter();
 
     swapChain_->Present(vsync_ ? 1 : 0, (!vsync_ && isTearingSupported_) ? DXGI_PRESENT_ALLOW_TEARING : 0);
+    const auto presentTime = std::chrono::steady_clock::now();
+    profiler_.AddWaitTimes(std::chrono::duration<float, std::milli>(completeTime - submitTime).count(),
+                           std::chrono::duration<float, std::milli>(presentTime - completeTime).count());
 
     // GPU の完了を待ったので、このフレームのコマンドと一時定数はもう読まれない
     context_.Reset();
     uploadAllocator_.Reset();
     pendingReleases_.clear();
+    profiler_.BeginFrame();
   }
 
   void DX12Basic::WaitForGPU()
@@ -176,7 +187,7 @@ namespace Tako {
       assert(SUCCEEDED(hr));
 
       if (!(desc.Flags & DXGI_ADAPTER_FLAG3_SOFTWARE)) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
         DebugUIManager::GetInstance()->AddLog(
           "Use Adapter:" + StringUtility::ConvertString(desc.Description),
           DebugUIManager::LogType::Info);
@@ -205,7 +216,7 @@ namespace Tako {
     for (size_t i = 0; i < _countof(featureLevels); ++i) {
       hr = D3D12CreateDevice(useAdapter.Get(), featureLevels[i], IID_PPV_ARGS(&device_));
       if (SUCCEEDED(hr)) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
         DebugUIManager::GetInstance()->AddLog(
           "Feature Level: " + std::string(featureLevelNames[i]),
           DebugUIManager::LogType::Info);
@@ -216,7 +227,7 @@ namespace Tako {
     }
     assert(device_ != nullptr);
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     DebugUIManager::GetInstance()->AddLog("D3D12Device Created", DebugUIManager::LogType::Info);
 #endif
 

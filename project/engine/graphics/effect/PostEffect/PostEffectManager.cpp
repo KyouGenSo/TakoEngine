@@ -8,7 +8,7 @@
 #include "MaterialLibrary.h"
 #include "MaterialPropertyBlock.h"
 #include "TextureManager.h"
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "EditorUI.h"
 #include "DebugUIManager.h"
 #include "ImGuiManager.h"
@@ -167,7 +167,7 @@ namespace Tako {
       }
     }
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     std::vector<std::string> ProfileNames() {
       std::vector<std::string> names;
       std::error_code ec;
@@ -405,7 +405,7 @@ namespace Tako {
     for (const PostEffectInstance& effect : stack_.GetEffects()) {
       if (!FindPostEffect(effect.name)) {
         orphaned.push_back(effect.id);
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
         LogToConsole(std::format("PostEffect: '{}' was removed from the stack because it is no longer registered", effect.name), DebugUIManager::LogType::Warning);
 #endif
       }
@@ -598,7 +598,7 @@ namespace Tako {
 
   void PostEffectManager::CollectUnsavedChanges(std::vector<std::string>& out) const
   {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     if (profileTracker_.IsEdited()) {
       out.push_back(std::format("PostEffect Editor: {}", profileName_[0] != '\0' ? profileName_.data() : "(unnamed profile)"));
     }
@@ -620,7 +620,7 @@ namespace Tako {
       return false;
     }
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     if (profileTracker_.IsEdited()) {
       LogToConsole(std::format("PostEffect: unsaved profile changes were overwritten by loading '{}'", name), DebugUIManager::LogType::Warning);
     }
@@ -691,7 +691,7 @@ namespace Tako {
 
   //------------------------------- 編集 UI -------------------------------//
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
   std::span<const ShortcutBinding<PostEffectManager>> PostEffectManager::Shortcuts()
   {
     static constexpr ShortcutBinding<PostEffectManager> kShortcuts[] = {
@@ -718,7 +718,7 @@ namespace Tako {
 
   void PostEffectManager::DrawImgui(bool* isOpen)
   {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     ImGui::Begin(WindowTitle::kPostEffectEditor, isOpen);
 
     // UI を描く区間の前後で保存内容を比べて編集を検出する（この区間ではゲームのコードがスタックを変えない）
@@ -746,7 +746,7 @@ namespace Tako {
 #endif
   }
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
   void PostEffectManager::DrawStackTab()
   {
     auto loadProfile = [this](const std::string& name) {

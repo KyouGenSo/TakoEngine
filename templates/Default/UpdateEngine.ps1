@@ -14,7 +14,7 @@ param([string]$Version = "", [switch]$Source, [string]$Zip = "")
 
 $ErrorActionPreference = "Stop"
 # このファイルを直したら 1 つ上げる（エンジンの中のテンプレートの番号の方が大きいときだけ、このファイルを入れ替える）
-$scriptRevision = 2
+$scriptRevision = 3
 $repository = "KyouGenSo/TakoEngine"
 $root       = $PSScriptRoot
 $engine     = Join-Path $root "Engine\TakoEngine"
@@ -98,7 +98,7 @@ if ($isGit) {
   }
   $msbuild = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -prerelease -requires Microsoft.Component.MSBuild -find "MSBuild\**\Bin\MSBuild.exe" | Select-Object -First 1
   if (-not $msbuild) { Fail "MSBuild が見つかりません。Visual Studio（C++ によるデスクトップ開発）を入れてください。" }
-  foreach ($configuration in "Debug", "Release") {
+  foreach ($configuration in "Debug", "Develop", "Release") {
     Write-Host "エンジンをビルドします（$configuration）..."
     & $msbuild "$engine\project\TakoEngine.sln" -m -nologo -v:minimal "-p:Configuration=$configuration" -p:Platform=x64
     if ($LASTEXITCODE -ne 0) { Fail "エンジンのビルド（$configuration）に失敗しました。" }

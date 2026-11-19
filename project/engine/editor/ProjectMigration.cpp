@@ -1,4 +1,4 @@
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 
 #include "ProjectMigration.h"
 #include "Logger.h"
@@ -64,4 +64,4 @@ namespace Tako::ProjectMigration {
 
 } // namespace Tako::ProjectMigration
 
-#endif // _DEBUG
+#endif // TAKO_EDITOR

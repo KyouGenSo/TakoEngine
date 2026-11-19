@@ -5,6 +5,10 @@
       <Configuration>Debug</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Develop|x64">
+      <Configuration>Develop</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Release|x64">
       <Configuration>Release</Configuration>
       <Platform>x64</Platform>
@@ -25,6 +29,12 @@
     <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Develop|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v145</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
@@ -42,6 +52,9 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
@@ -51,11 +64,11 @@
     <IntDir>$(TakoEngineObjDir)</IntDir>
     <TargetName>TakoEngine</TargetName>
   </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+  <ItemDefinitionGroup Condition="'$(TakoShared)'=='true'">
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_WINDOWS;TAKO_SHARED;TAKO_API=__declspec(dllexport);IMGUI_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>TAKO_EDITOR;_WINDOWS;TAKO_SHARED;TAKO_API=__declspec(dllexport);IMGUI_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
@@ -69,11 +82,29 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
-      <AdditionalLibraryDirectories>$(ProjectDir)externals\assimp\lib\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>assimp-vc143-mdd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <!-- WHOLEARCHIVE: エンジンが使っていない ImGui の関数も、ゲームの DLL から呼べるように全部入れる。
            ignore:4099: 取り込んだ assimp のライブラリに PDB が付いていない -->
       <AdditionalOptions>/WHOLEARCHIVE:imgui.lib /ignore:4099 %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>$(ProjectDir)externals\assimp\lib\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>assimp-vc143-mdd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">
+    <ClCompile>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <Optimization>MaxSpeed</Optimization>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>$(ProjectDir)externals\assimp\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>assimp-vc143-md.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -256,6 +287,7 @@
     <ClCompile Include="engine\graphics\2d\Font.cpp" />
     <ClCompile Include="engine\graphics\2d\Sprite.cpp" />
     <ClCompile Include="engine\graphics\2d\Text.cpp" />
+    <ClCompile Include="engine\graphics\2d\ProfileOverlay.cpp" />
     <ClCompile Include="engine\graphics\2d\UILayout.cpp" />
     <ClCompile Include="engine\core\utility\StringUtility.cpp" />
     <ClCompile Include="engine\graphics\render\TextureManager.cpp" />
@@ -269,7 +301,7 @@
     <ClCompile Include="engine\graphics\DX12\SrvManager.cpp" />
     <ClCompile Include="engine\core\base\TakoFramework.cpp" />
     <ClCompile Include="engine\core\base\WinMain.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(TakoShared)'=='true'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="engine\core\base\GameModule.cpp" />
     <ClCompile Include="engine\gameplay\scene\SceneManager.cpp" />
@@ -286,6 +318,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="engine\graphics\DX12\CommandContext.cpp" />
+    <ClCompile Include="engine\graphics\DX12\FrameProfiler.cpp" />
     <ClCompile Include="engine\graphics\DX12\ShaderLibrary.cpp" />
     <ClCompile Include="engine\graphics\DX12\ShaderBindingLayout.cpp" />
     <ClCompile Include="engine\graphics\DX12\PipelineCache.cpp" />
@@ -417,6 +450,7 @@
     <ClInclude Include="engine\graphics\2d\Font.h" />
     <ClInclude Include="engine\graphics\2d\Sprite.h" />
     <ClInclude Include="engine\graphics\2d\Text.h" />
+    <ClInclude Include="engine\graphics\2d\ProfileOverlay.h" />
     <ClInclude Include="engine\graphics\2d\UILayout.h" />
     <ClInclude Include="engine\core\utility\StringUtility.h" />
     <ClInclude Include="engine\graphics\render\TextureManager.h" />
@@ -460,6 +494,7 @@
     <ClInclude Include="engine\editor\BehaviorTree\EditorTypes.h" />
     <ClInclude Include="engine\editor\BehaviorTree\BehaviorTreeEditor.h" />
     <ClInclude Include="engine\graphics\DX12\CommandContext.h" />
+    <ClInclude Include="engine\graphics\DX12\FrameProfiler.h" />
     <ClInclude Include="engine\graphics\DX12\GpuResource.h" />
     <ClInclude Include="engine\graphics\DX12\UploadAllocator.h" />
     <ClInclude Include="engine\graphics\DX12\ShaderLibrary.h" />
@@ -482,185 +517,142 @@
     <ProjectReference Include="externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">
       <Project>{371b9fa9-4c90-4ac6-a123-aced756d6c77}</Project>
     </ProjectReference>
-    <ProjectReference Include="externals\imgui\imgui.vcxproj" Condition="'$(Configuration)'=='Debug'">
+    <ProjectReference Include="externals\imgui\imgui.vcxproj" Condition="'$(TakoShared)'=='true'">
       <Project>{ffa51982-471d-4530-909e-c8fb8fe4f342}</Project>
     </ProjectReference>
-    <ProjectReference Include="externals\imgui-node-editor\imgui-node-editor.vcxproj" Condition="'$(Configuration)'=='Debug'">
+    <ProjectReference Include="externals\imgui-node-editor\imgui-node-editor.vcxproj" Condition="'$(TakoShared)'=='true'">
       <Project>{0517d071-8cdd-4f0b-bdc1-05fcf6331bcc}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="engine\resources\shaders\LineRenderer.PS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\LineRenderer.VS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\Bloom.PS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\BWFilter.PS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\Decal.PS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\Decal.VS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\DepthBasedOutline.PS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\Dissolve.PS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\EmitParticle.CS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\Fog.PS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\FullScreen.VS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\GaussianBlur.PS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\GPUParticle.PS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\GPUParticle.VS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\ResetCounters.CS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\BuildDrawArgs.CS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\ScatterCompact.CS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\FXAA.PS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\GrayScale.PS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\HalfTone.PS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\InitParticle.CS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\IntegrateAll.CS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\LuminanceBasedOutline.PS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\NoEffect.PS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\NoTex.PS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\ToneMap.PS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\NoTex.VS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\Object3d.PS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\Object3D.VS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\Object3dInstanced.PS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\Object3dInstanced.VS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\RadialBlur.PS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\ShadowMap.VS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\ShadowMapInstanced.VS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\Skinning.CS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\SkinningObject3d.VS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\SkyBox.PS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\SkyBox.VS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\Sprite.PS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\Sprite.VS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\Text.PS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\Vignette.PS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\WhiteNoise.PS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

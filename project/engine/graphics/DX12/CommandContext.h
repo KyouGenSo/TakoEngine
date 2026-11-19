@@ -160,7 +160,7 @@ namespace Tako {
     void PrepareDispatch();
 
     /// <summary>
-    /// 束縛していないルートパラメータがあれば名前を出して止める（Debug のみ）
+    /// 束縛していないルートパラメータがあれば、名前をログに出して止める（エディタのある構成のみ）
     /// </summary>
     void ValidateBindings(const BindState& state) const;
 

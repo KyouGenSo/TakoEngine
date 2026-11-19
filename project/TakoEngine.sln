@@ -21,27 +21,38 @@ EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
+		Develop|x64 = Develop|x64
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{5667D840-F080-4F39-B016-FD2C1B9375E7}.Debug|x64.ActiveCfg = Debug|x64
 		{5667D840-F080-4F39-B016-FD2C1B9375E7}.Debug|x64.Build.0 = Debug|x64
+		{5667D840-F080-4F39-B016-FD2C1B9375E7}.Develop|x64.ActiveCfg = Develop|x64
+		{5667D840-F080-4F39-B016-FD2C1B9375E7}.Develop|x64.Build.0 = Develop|x64
 		{5667D840-F080-4F39-B016-FD2C1B9375E7}.Release|x64.ActiveCfg = Release|x64
 		{5667D840-F080-4F39-B016-FD2C1B9375E7}.Release|x64.Build.0 = Release|x64
 		{371B9FA9-4C90-4AC6-A123-ACED756D6C77}.Debug|x64.ActiveCfg = Debug|x64
 		{371B9FA9-4C90-4AC6-A123-ACED756D6C77}.Debug|x64.Build.0 = Debug|x64
+		{371B9FA9-4C90-4AC6-A123-ACED756D6C77}.Develop|x64.ActiveCfg = Develop|x64
+		{371B9FA9-4C90-4AC6-A123-ACED756D6C77}.Develop|x64.Build.0 = Develop|x64
 		{371B9FA9-4C90-4AC6-A123-ACED756D6C77}.Release|x64.ActiveCfg = Release|x64
 		{371B9FA9-4C90-4AC6-A123-ACED756D6C77}.Release|x64.Build.0 = Release|x64
 		{FFA51982-471D-4530-909E-C8FB8FE4F342}.Debug|x64.ActiveCfg = Debug|x64
 		{FFA51982-471D-4530-909E-C8FB8FE4F342}.Debug|x64.Build.0 = Debug|x64
+		{FFA51982-471D-4530-909E-C8FB8FE4F342}.Develop|x64.ActiveCfg = Develop|x64
+		{FFA51982-471D-4530-909E-C8FB8FE4F342}.Develop|x64.Build.0 = Develop|x64
 		{FFA51982-471D-4530-909E-C8FB8FE4F342}.Release|x64.ActiveCfg = Release|x64
 		{FFA51982-471D-4530-909E-C8FB8FE4F342}.Release|x64.Build.0 = Release|x64
 		{0517D071-8CDD-4F0B-BDC1-05FCF6331BCC}.Debug|x64.ActiveCfg = Debug|x64
 		{0517D071-8CDD-4F0B-BDC1-05FCF6331BCC}.Debug|x64.Build.0 = Debug|x64
+		{0517D071-8CDD-4F0B-BDC1-05FCF6331BCC}.Develop|x64.ActiveCfg = Develop|x64
+		{0517D071-8CDD-4F0B-BDC1-05FCF6331BCC}.Develop|x64.Build.0 = Develop|x64
 		{0517D071-8CDD-4F0B-BDC1-05FCF6331BCC}.Release|x64.ActiveCfg = Release|x64
 		{0517D071-8CDD-4F0B-BDC1-05FCF6331BCC}.Release|x64.Build.0 = Release|x64
 		{D2423785-7BBF-406B-9E55-037159CF84FE}.Debug|x64.ActiveCfg = Debug|x64
 		{D2423785-7BBF-406B-9E55-037159CF84FE}.Debug|x64.Build.0 = Debug|x64
+		{D2423785-7BBF-406B-9E55-037159CF84FE}.Develop|x64.ActiveCfg = Develop|x64
+		{D2423785-7BBF-406B-9E55-037159CF84FE}.Develop|x64.Build.0 = Develop|x64
 		{D2423785-7BBF-406B-9E55-037159CF84FE}.Release|x64.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution

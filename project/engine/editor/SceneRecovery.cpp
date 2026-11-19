@@ -1,4 +1,4 @@
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 
 #include "SceneRecovery.h"
 #include "Project.h"
@@ -69,4 +69,4 @@ namespace Tako::SceneRecovery {
 
 } // namespace Tako::SceneRecovery
 
-#endif // _DEBUG
+#endif // TAKO_EDITOR

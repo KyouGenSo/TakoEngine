@@ -13,6 +13,7 @@
 
 #include "ColorFunc.h"
 #include "CommandContext.h"
+#include "FrameProfiler.h"
 #include "GpuResource.h"
 #include "PipelineCache.h"
 #include "ShaderLibrary.h"
@@ -205,6 +206,8 @@ namespace Tako {
 
     CommandContext& GetContext() { return context_; }
 
+    FrameProfiler& GetProfiler() { return profiler_; }
+
     ShaderLibrary& GetShaderLibrary() { return shaderLibrary_; }
 
     UploadAllocator& GetUploadAllocator() { return uploadAllocator_; }
@@ -380,6 +383,8 @@ namespace Tako {
     PipelineCache pipelineCache_;  ///< ルートシグネチャと PSO のキャッシュ（context_ が描画時に引く）
 
     CommandContext context_;  ///< 唯一のコマンドリストとバリアの予約
+
+    FrameProfiler profiler_;  ///< フレームの区間ごとの CPU・GPU 時間の計測
 
     UploadAllocator uploadAllocator_;  ///< 1 フレームだけ使う定数の置き場（EndDraw で空に戻す）
 

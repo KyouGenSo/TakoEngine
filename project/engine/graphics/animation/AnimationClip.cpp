@@ -1,6 +1,6 @@
 #include "AnimationClip.h"
 #include "Logger.h"
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "DebugUIManager.h"
 #endif
 
@@ -47,7 +47,7 @@ namespace Tako {
 
     void LogWarning(const std::string& message) {
       Logger::Log(message + "\n");
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(message, DebugUIManager::LogType::Warning);
 #endif
     }

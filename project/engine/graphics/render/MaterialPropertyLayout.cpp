@@ -10,7 +10,7 @@
 #include "ColorFunc.h"
 #include "ShaderLibrary.h"
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "EditorUI.h"
 #include "imgui.h"
 #endif
@@ -212,7 +212,7 @@ namespace Tako {
 
   bool MaterialPropertyLayout::DrawPropertyImGui(const MaterialProperty& property, std::span<uint8_t> constants) const
   {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     if (!Fits(property, constants.size())) {
       ImGui::TextDisabled("%s (unsupported type)", property.name.c_str());
       return false;

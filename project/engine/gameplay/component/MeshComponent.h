@@ -40,7 +40,7 @@ namespace Tako {
     /// </summary>
     void PostSave(nlohmann::json& out) override;
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     /// <summary>
     /// Rendering の欄（描画フラグと、マテリアル・値・テクスチャの上書き）
     /// </summary>

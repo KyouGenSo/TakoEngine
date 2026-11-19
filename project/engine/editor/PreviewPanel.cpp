@@ -1,6 +1,6 @@
 #include "PreviewPanel.h"
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 
 #include "PreviewViewport.h"
 #include "Camera.h"
@@ -100,4 +100,4 @@ namespace Tako {
 
 } // namespace Tako
 
-#endif // _DEBUG
+#endif // TAKO_EDITOR

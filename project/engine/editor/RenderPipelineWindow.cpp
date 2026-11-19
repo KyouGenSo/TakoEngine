@@ -1,17 +1,21 @@
 #include "RenderPipelineWindow.h"
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "EditorUI.h"
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <format>
 #include <iterator>
 
 #include "DebugUIManager.h"
+#include "DX12Basic.h"
 #include "ImGuiManager.h"
+#include "ImGuiThemes.h"
 #include "MaterialLibrary.h"
 #include "Object3d.h"
+#include "Renderer.h"
 
 namespace Tako {
 
@@ -229,36 +233,89 @@ namespace Tako {
 
   void RenderPipelineWindow::DrawFrameTab() const
   {
-    ImGui::TextDisabled("Steps of the previous frame. Gray rows are the events where passes can be added");
-    if (ImGui::BeginTable("Steps##RenderPipeline", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollY)) {
+    FrameProfiler&    profiler = Renderer::GetInstance()->GetDX12Basic()->GetProfiler();
+    const FrameTimes& times    = profiler.GetFrameTimes();
+
+    bool isMeasuring = profiler.IsEnabled();
+    if (ImGui::Checkbox("Measure", &isMeasuring)) {
+      profiler.SetEnabled(isMeasuring);
+    }
+    ImGui::SetItemTooltip("Measure the time of each step. Not saved: it is on whenever the editor starts");
+    // 止めている間は、出す値が無い
+    if (!profiler.IsEnabled()) {
+      return;
+    }
+
+    ImGui::PushTextWrapPos(0.0f);
+    ImGui::TextDisabled("Averages per frame over the last 0.5 s. Gray rows are the events where passes can be added");
+#ifdef _DEBUG
+    ImGui::TextColored(GetEditorColors().warning, "Debug build: the debug layer and unoptimized shaders make these times longer. Measure in Develop");
+#endif
+    ImGui::PopTextWrapPos();
+    if (ImGui::BeginTable("Steps##RenderPipeline", 4, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollY)) {
       ImGui::TableSetupScrollFreeze(0, 1);
       ImGui::TableSetupColumn("Step", ImGuiTableColumnFlags_WidthStretch);
       ImGui::TableSetupColumn("Draws", ImGuiTableColumnFlags_WidthFixed, 60.0f);
+      ImGui::TableSetupColumn("CPU ms", ImGuiTableColumnFlags_WidthFixed, 70.0f);
+      ImGui::TableSetupColumn("GPU ms", ImGuiTableColumnFlags_WidthFixed, 70.0f);
       ImGui::TableHeadersRow();
-      for (const FrameStep& step : RenderPipeline::GetInstance()->GetFrameSteps()) {
+      for (const ProfileSample& sample : profiler.GetSamples()) {
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
-        if (step.depth > 0) {
-          ImGui::Indent();
+        // Indent(0) は既定の幅で字下げするので、深さ 0 では呼ばない
+        const float indent = ImGui::GetStyle().IndentSpacing * static_cast<float>(sample.depth);
+        if (indent > 0.0f) {
+          ImGui::Indent(indent);
         }
-        if (step.isEvent) {
-          ImGui::TextDisabled("%s", step.label.c_str());
+        if (sample.isEvent) {
+          ImGui::TextDisabled("%s", sample.label.c_str());
         }
         else {
-          ImGui::TextUnformatted(step.label.c_str());
+          ImGui::TextUnformatted(sample.label.c_str());
         }
-        if (step.depth > 0) {
-          ImGui::Unindent();
+        if (indent > 0.0f) {
+          ImGui::Unindent(indent);
+        }
+        if (sample.isEvent) {
+          continue;
         }
         ImGui::TableNextColumn();
-        if (!step.isEvent) {
-          ImGui::Text("%u", step.drawCalls);
+        // 1 フレームおきにしか通らない区間は、平均が半端になる。そのときだけ小数を出す
+        if (std::abs(sample.drawCalls - std::round(sample.drawCalls)) < 0.05f) {
+          ImGui::Text("%.0f", sample.drawCalls);
+        }
+        else {
+          ImGui::Text("%.1f", sample.drawCalls);
+        }
+        ImGui::TableNextColumn();
+        ImGui::Text("%.3f", sample.cpuMs);
+        ImGui::TableNextColumn();
+        if (sample.hasGpuTime) {
+          ImGui::Text("%.3f", sample.gpuMs);
         }
       }
+
+      // どの区間にも入っていない GPU 時間（区間の間のクリアやバリアなど）
+      ImGui::TableNextRow();
+      ImGui::TableNextColumn();
+      ImGui::TextDisabled("Other");
+      ImGui::TableNextColumn();
+      ImGui::TableNextColumn();
+      ImGui::TableNextColumn();
+      ImGui::Text("%.3f", times.otherGpuMs);
+
+      ImGui::TableNextRow();
+      ImGui::TableNextColumn();
+      ImGui::TextUnformatted("Frame");
+      ImGui::TableNextColumn();
+      ImGui::TableNextColumn();
+      ImGui::Text("%.3f", times.updateMs + times.recordMs);
+      ImGui::TableNextColumn();
+      ImGui::Text("%.3f", times.gpuMs);
       ImGui::EndTable();
     }
   }
 
 } // namespace Tako
 
-#endif // _DEBUG
+#endif // TAKO_EDITOR

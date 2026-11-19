@@ -3,9 +3,7 @@
 #include <functional>
 #include <iterator>
 #include <memory>
-#include <span>
 #include <string>
-#include <string_view>
 #include <vector>
 
 #include "RenderEvent.h"
@@ -43,16 +41,6 @@ namespace Tako {
     std::vector<std::string> objects;   ///< Object3d の名前（空なら全ての描画物）
     std::string              material;  ///< resources/Materials のマテリアル名（空なら各描画物のマテリアル）
     bool                     replace = false;  ///< objects を本来の描画（不透明・半透明）から外し、このパスでだけ描く（影とマスクは本来のまま）
-  };
-
-  /// <summary>
-  /// 1 フレームの描画の手順 1 つ（エディタの一覧用）
-  /// </summary>
-  struct FrameStep {
-    std::string label;
-    uint32_t    drawCalls = 0;
-    uint8_t     depth     = 0;      ///< 0 は組み込みの手順、1 は直前の位置に差し込んだパス
-    bool        isEvent   = false;  ///< パスを差し込める位置
   };
 
   /// <summary>
@@ -179,11 +167,6 @@ namespace Tako {
     /// </summary>
     uint32_t GetFinalSrvIndex() const { return final_.srvIndex; }
 
-    /// <summary>
-    /// 前のフレームに行った描画の手順（Debug のみ記録する）
-    /// </summary>
-    std::span<const FrameStep> GetFrameSteps() const { return frameSteps_; }
-
   private: //非公開関数
     void CreateRenderTargets();
 
@@ -194,12 +177,6 @@ namespace Tako {
     /// </summary>
     /// <param name="target">その位置の描画先の色。ポストエフェクトはここへ掛け、掛けたら target と dsv を描画先に戻す</param>
     void RunPasses(RenderEvent event, const PostEffectFrame& frame, RenderTexture& target, D3D12_CPU_DESCRIPTOR_HANDLE dsv);
-
-    /// <summary>
-    /// 手順を記録する（Debug のみ）
-    /// </summary>
-    /// <param name="firstDraw">手順を始めたときの CommandContext::GetDrawCount</param>
-    void RecordStep(std::string_view label, uint32_t firstDraw, uint8_t depth = 0, bool isEvent = false);
 
   private: //メンバー変数
     DX12Basic*      dx12_          = nullptr;
@@ -216,8 +193,6 @@ namespace Tako {
     std::vector<ObjectPassSettings> objectPassSettings_;
     std::vector<ObjectPass>         objectPasses_;      ///< objectPassSettings_ と同じ並び
     std::vector<uint32_t>           replacedIds_;       ///< Replace のパスで描くので、本来の描画から外す名前の FNV-1a
-
-    std::vector<FrameStep> frameSteps_;
   };
 
 } // namespace Tako

@@ -58,7 +58,7 @@ namespace Tako {
     /// </summary>
     void PostSave(nlohmann::json& out) override;
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     /// <summary>
     /// スクリプトのプロパティ（Script 欄は Asset 指定子の欄）
     /// </summary>

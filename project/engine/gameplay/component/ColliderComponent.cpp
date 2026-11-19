@@ -4,7 +4,7 @@
 #include "OBBCollider.h"
 #include "SphereCollider.h"
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "EditorUI.h"
 #include "imgui.h"
 
@@ -137,7 +137,7 @@ namespace Tako {
     }
   }
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
   bool ColliderComponent::DrawCustomImGui()
   {
     const std::vector<std::string>& names = CollisionManager::GetInstance()->GetLayerNames();

@@ -260,7 +260,7 @@ public: // メンバー関数
 
   const std::string& GetName() const { return name_; }
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
   /// <summary>
   /// 生存中の Object3d（Render Pipeline ウィンドウが、名前の一覧に使う）
   /// </summary>

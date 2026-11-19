@@ -1,5 +1,5 @@
 #pragma once
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 
 #include <string>
 #include <vector>
@@ -26,4 +26,4 @@ namespace Tako::SceneRecovery {
 
 } // namespace Tako::SceneRecovery
 
-#endif // _DEBUG
+#endif // TAKO_EDITOR

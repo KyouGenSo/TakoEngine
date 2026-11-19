@@ -1,5 +1,5 @@
 #include "BoneTracker.h"
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "DebugUIManager.h"
 #endif
 
@@ -22,7 +22,7 @@ namespace Tako {
     emitterManager_ = emitterManager;
 
     if (!model_->HasSkeleton()) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog("BoneTracker - Model does not have skeleton", DebugUIManager::LogType::Warning);
 #endif
     }
@@ -34,7 +34,7 @@ namespace Tako {
     const Vector3& offset)
   {
     if (!model_ || !emitterManager_) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog("BoneTracker not initialized", DebugUIManager::LogType::Error);
 #endif
       return;
@@ -42,7 +42,7 @@ namespace Tako {
 
     // エミッターが存在するか確認
     if (!emitterManager_->GetEmitterByName(emitterName)) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog("Emitter '" + emitterName + "' not found in EmitterManager", DebugUIManager::LogType::Error);
 #endif
       return;
@@ -51,7 +51,7 @@ namespace Tako {
     // ボーンインデックスを検索
     int32_t boneIndex = FindBoneIndex(boneName);
     if (boneIndex < 0) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog("Bone '" + boneName + "' not found in model", DebugUIManager::LogType::Error);
 #endif
       return;
@@ -68,7 +68,7 @@ namespace Tako {
     // リンクを登録
     links_[linkName] = link;
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     DebugUIManager::GetInstance()->AddLog("BoneTracker: Linked bone '" + boneName + "' to emitter '" + emitterName + "' (link: '" + linkName + "')", DebugUIManager::LogType::Info);
 #endif
   }
@@ -79,7 +79,7 @@ namespace Tako {
     const Vector3& offset)
   {
     if (!emitterManager_) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog("EmitterManager not set", DebugUIManager::LogType::Error);
 #endif
       return;
@@ -103,7 +103,7 @@ namespace Tako {
     const Vector3& offset)
   {
     if (!emitterManager_) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog("EmitterManager not set", DebugUIManager::LogType::Error);
 #endif
       return;
@@ -175,7 +175,7 @@ namespace Tako {
       }
     }
     else {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog("Link '" + linkName + "' not found", DebugUIManager::LogType::Warning);
 #endif
     }
@@ -188,7 +188,7 @@ namespace Tako {
       it->second.offset = offset;
     }
     else {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog("Link '" + linkName + "' not found", DebugUIManager::LogType::Warning);
 #endif
     }
@@ -204,7 +204,7 @@ namespace Tako {
       }
 
       links_.erase(it);
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog("BoneTracker: Removed link '" + linkName + "'", DebugUIManager::LogType::Info);
 #endif
     }
@@ -220,7 +220,7 @@ namespace Tako {
     }
 
     links_.clear();
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
     DebugUIManager::GetInstance()->AddLog("BoneTracker: Cleared all links", DebugUIManager::LogType::Info);
 #endif
   }

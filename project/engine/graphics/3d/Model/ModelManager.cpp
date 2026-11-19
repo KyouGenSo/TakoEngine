@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <filesystem>
 
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
 #include "DebugUIManager.h"
 #endif
 
@@ -55,7 +55,7 @@ namespace Tako {
 
     // すでにロード済みのファイル名をチェック
     if (models_.contains(fileName)) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "ModelManager: Model already loaded: " + fileName,
         DebugUIManager::LogType::Info);
@@ -120,7 +120,7 @@ namespace Tako {
     const std::string key = std::string(EnginePaths::kEngineModels) + fileName;
 
     if (models_.contains(key)) {
-#ifdef _DEBUG
+#ifdef TAKO_EDITOR
       DebugUIManager::GetInstance()->AddLog(
         "ModelManager: Engine model already loaded: " + fileName,
         DebugUIManager::LogType::Info);
