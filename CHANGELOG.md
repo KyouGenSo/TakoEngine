@@ -1,6 +1,6 @@
 # 変更履歴
 
-## [2.1.3] - 2026-11-16
+## [2.1.3] - 2026-11-20
 
 ### 追加
 - 平行光源の影のカスケード。カメラからの距離ごとに、1〜4 枚（既定 4）のシャドウマップに分けて描くので、近くの影が細かくなる。Engine Settings > Rendering > Shadows の Cascade Count・Cascade Split（`ProjectSettings.json` の Rendering の `ShadowCascadeCount`・`ShadowCascadeSplit`）
