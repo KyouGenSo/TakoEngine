@@ -37,7 +37,7 @@ namespace Tako {
 
   private: //非公開関数
     /// <summary>
-    /// 最新のリリースのタグ（v2.2.0 など）を受け取り、このエンジンより新しければ newVersion_ に入れて Console に出す
+    /// 最新のリリースのタグを受け取り、このエンジンより新しければ newVersion_ に入れて Console に出す
     /// </summary>
     void SetLatest(const std::string& tag);
 
