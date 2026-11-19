@@ -5,6 +5,7 @@
 #include "FrameTimer.h"
 #include "PostEffectManager.h"
 #include "RenderPipeline.h"
+#include "Renderer.h"
 #include "CollisionManager.h"
 #include "Input.h"
 #include "Logger.h"
@@ -242,6 +243,8 @@ namespace Tako {
         const auto        toneMapName = std::ranges::find_if(kToneMappingNames, [&](std::string_view name) { return name == toneMapping; });
         pipeline->SetToneMapping(toneMapName != std::end(kToneMappingNames) ? static_cast<ToneMapping>(toneMapName - std::begin(kToneMappingNames)) : ToneMapping::None);
         pipeline->SetExposure(rendering.value("Exposure", pipeline->GetToneMap().exposure));
+        Renderer* renderer = Renderer::GetInstance();
+        renderer->SetFrustumCulling(rendering.value("FrustumCulling", renderer->IsFrustumCullingEnabled()));
 
         LoadPhysics(Section(root, "Physics"));
         LoadInput(Section(root, "Input"));
@@ -369,6 +372,7 @@ namespace Tako {
         { "RenderScale",              dx12->GetRenderScale() },
         { "ToneMapping",              kToneMappingNames[static_cast<size_t>(toneMap.mode)] },
         { "Exposure",                 toneMap.exposure },
+        { "FrustumCulling",           Renderer::GetInstance()->IsFrustumCullingEnabled() },
       };
       root["Physics"] = SavePhysics();
       root["Input"]   = SaveInput();

@@ -72,12 +72,13 @@ namespace Tako {
     SceneEditor*        sceneEditor_ = nullptr;  ///< DebugUIManager 所有
 
     //ビュー
-    std::unique_ptr<PreviewViewport> viewport_;                  ///< オフスクリーン RT 一式（ウィンドウ表示中のみ生存）
+    std::unique_ptr<PreviewViewport> viewport_;                    ///< オフスクリーン RT 一式（ウィンドウ表示中のみ生存）
     std::unique_ptr<Camera>          camera_;
     ViewportCameraController         cameraController_;
-    bool                             showGrid_         = true;
-    bool                             showGameCamera_   = true;   ///< ゲームカメラの視錐台を表示
-    bool                             isGizmoHot_       = false;  ///< 前のフレームでギズモの上にカーソルがあった・掴んでいた
+    bool                             showGrid_           = true;
+    bool                             showGameCamera_     = true;   ///< ゲームカメラの視錐台を表示
+    bool                             cullWithGameCamera_ = false;  ///< ゲームカメラの視錐台でカリングして描く（本編で描かれない物が、この視点でも消える）
+    bool                             isGizmoHot_         = false;  ///< 前のフレームでギズモの上にカーソルがあった・掴んでいた
   };
 
 } // namespace Tako

@@ -750,6 +750,14 @@ namespace Tako {
       }
     }
 
+    ImGui::SeparatorText("Culling");
+    Renderer* renderer       = Renderer::GetInstance();
+    bool      frustumCulling = renderer->IsFrustumCullingEnabled();
+    if (UI::Checkbox("Frustum Culling", &frustumCulling)) {
+      renderer->SetFrustumCulling(frustumCulling);
+    }
+    ImGui::SetItemTooltip("Skip objects whose bounds are outside the view (game view, Debug Viewport, shadow views).\nTurn off to check whether a missing object was culled");
+
     ImGui::SeparatorText("Shadows");
     ShadowRenderer::GetInstance()->DrawImGui();
   }

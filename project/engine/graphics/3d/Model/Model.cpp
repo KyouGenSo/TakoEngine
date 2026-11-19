@@ -47,17 +47,42 @@ namespace Tako {
     }
 
     /// <summary>
-    /// メッシュのローカルの箱を囲む球を、meshWorld でワールドへ移して描画物の範囲にする
+    /// 行列（平行移動を除く）が、長さを最大で何倍に伸ばすか。球の半径に掛けると、移した先でも球が足りる
     /// </summary>
-    void SetBounds(DrawItem& item, const Mesh& mesh, const Matrix4x4& meshWorld)
+    float MaxStretch(const Matrix4x4& matrix)
     {
-      const Vector3 localCenter = (mesh.GetAABBLocalMin() + mesh.GetAABBLocalMax()) * 0.5f;
-      const float   localRadius = (mesh.GetAABBLocalMax() - mesh.GetAABBLocalMin()).Length() * 0.5f;
-      // 軸ごとに拡大が違っても球が足りるよう、一番大きい軸の拡大を掛ける
-      const auto& m = meshWorld.m;
-      const float scale = (std::max)({ Vector3{ m[0][0], m[0][1], m[0][2] }.Length(), Vector3{ m[1][0], m[1][1], m[1][2] }.Length(), Vector3{ m[2][0], m[2][1], m[2][2] }.Length() });
-      item.boundsCenter = Mat4x4::Transform(meshWorld, localCenter);
-      item.boundsRadius = localRadius * scale;
+      const auto&   m = matrix.m;
+      const Vector3 x{ m[0][0], m[0][1], m[0][2] };
+      const Vector3 y{ m[1][0], m[1][1], m[1][2] };
+      const Vector3 z{ m[2][0], m[2][1], m[2][2] };
+      const float   longest = (std::max)({ x.LengthSquared(), y.LengthSquared(), z.LengthSquared() });
+      // 3 軸が直交していれば、一番長い軸の長さがそのまま答え。
+      // 直交していないとき（軸ごとに拡大した親の下で子が回っている）は軸の長さより伸びる向きがあるので、必ず足りる値（3 軸の長さの 2 乗和の平方根）にする
+      constexpr float kOrthogonalTolerance = 1.0e-4f;
+      const bool      isOrthogonal         = std::abs(x.Dot(y)) + std::abs(y.Dot(z)) + std::abs(z.Dot(x)) <= kOrthogonalTolerance * longest;
+      return std::sqrt(isOrthogonal ? longest : x.LengthSquared() + y.LengthSquared() + z.LengthSquared());
+    }
+
+    /// <summary>
+    /// bounds を、box も入る大きさに広げる（bounds が値なしなら box にする）
+    /// </summary>
+    void Extend(std::optional<AABB>& bounds, const AABB& box)
+    {
+      if (!bounds) {
+        bounds = box;
+        return;
+      }
+      bounds->min = { (std::min)(bounds->min.x, box.min.x), (std::min)(bounds->min.y, box.min.y), (std::min)(bounds->min.z, box.min.z) };
+      bounds->max = { (std::max)(bounds->max.x, box.max.x), (std::max)(bounds->max.y, box.max.y), (std::max)(bounds->max.z, box.max.z) };
+    }
+
+    /// <summary>
+    /// ローカルの箱を囲む球を、world でワールドへ移して描画物の範囲にする
+    /// </summary>
+    void SetBounds(DrawItem& item, const AABB& local, const Matrix4x4& world)
+    {
+      item.boundsCenter = Mat4x4::Transform(world, (local.min + local.max) * 0.5f);
+      item.boundsRadius = (local.max - local.min).Length() * 0.5f * MaxStretch(world);
     }
 
   } // namespace
@@ -108,6 +133,7 @@ namespace Tako {
           meshes_[i]->InitializeSkinning(meshSkinClusterData_[i].skinClusterData, skeleton_.jointMap);
         }
       }
+      InitializeJointBounds();
     }
   }
 
@@ -171,12 +197,12 @@ namespace Tako {
 
     if (hasSkeleton_ || meshes_.size() <= 1) {
       // スキニングモデルと単一メッシュは描画物の変換行列でそのまま描く
+      const std::optional<AABB> poseBounds = GetPoseBounds();
       for (size_t i = 0; i < meshes_.size(); ++i) {
-        DrawItem meshItem = item;
-        // ponytail: スキニング付きは、アニメーションで箱の外へ出るので範囲なし（常に描く）。影の描画が重くなったら、ボーンから毎フレーム箱を作る
-        if (!hasSkeleton_) {
-          SetBounds(meshItem, *meshes_[i], world);
-        }
+        DrawItem    meshItem = item;
+        const Mesh& mesh     = *meshes_[i];
+        // スキニングで動く頂点はポーズの箱で、動かない頂点はメッシュの箱で囲む
+        SetBounds(meshItem, poseBounds && mesh.HasSkinning() ? *poseBounds : AABB{ mesh.GetAABBLocalMin(), mesh.GetAABBLocalMax() }, world);
         SubmitMesh(i, meshItem, slots);
       }
     }
@@ -421,6 +447,7 @@ namespace Tako {
     if (this->hasSkeleton_) {
       newModel->skeleton_ = this->skeleton_;
       newModel->skinClusterData_ = this->skinClusterData_;
+      newModel->jointBounds_ = this->jointBounds_;
       newModel->InitializeMatrixPalette();
     }
 
@@ -602,7 +629,7 @@ namespace Tako {
         meshes_[meshIndex]->UpdateTransformation(meshWorldMatrix);
         DrawItem meshItem = item;
         meshItem.transform = meshes_[meshIndex]->GetTransformAddress();
-        SetBounds(meshItem, *meshes_[meshIndex], meshWorldMatrix);
+        SetBounds(meshItem, AABB{ meshes_[meshIndex]->GetAABBLocalMin(), meshes_[meshIndex]->GetAABBLocalMax() }, meshWorldMatrix);
         SubmitMesh(meshIndex, meshItem, slots);
       }
     }
@@ -1190,6 +1217,7 @@ namespace Tako {
       Matrix4x4 normalMatrix = Mat4x4::Transpose(Mat4x4::Inverse(mappedPalette_[jointIndex].skeletonSpaceMat));
       mappedPalette_[jointIndex].skeletonSpaceMatrixInvTransposeMat = normalMatrix;
     }
+    isPoseApplied_ = true;
 
     // UAV バリアを設定
     for (auto& mesh : meshes_) {
@@ -1222,6 +1250,58 @@ namespace Tako {
       // スキニング計算を実行
       mesh->SkinningCompute();
     }
+  }
+
+  void Model::InitializeJointBounds()
+  {
+    jointBounds_.assign(skeleton_.joints.size(), std::nullopt);
+    for (size_t meshIndex = 0; meshIndex < meshes_.size() && meshIndex < meshSkinClusterData_.size(); ++meshIndex) {
+      const std::vector<VertexData>& vertices = meshes_[meshIndex]->GetVertices();
+      for (const auto& [jointName, weightData] : meshSkinClusterData_[meshIndex].skinClusterData) {
+        const auto joint = skeleton_.jointMap.find(jointName);
+        if (joint == skeleton_.jointMap.end()) {
+          continue;
+        }
+        // パレットが使うのと同じ逆バインド行列で、頂点をボーンのローカルへ移す
+        const Matrix4x4& toJoint = inverseBindMatrices_[joint->second];
+        for (const VertexWeightData& weight : weightData.vertexWeights) {
+          if (weight.weight <= 0.0f || weight.vertexIndex >= vertices.size()) {
+            continue;
+          }
+          const Vector4& position = vertices[weight.vertexIndex].position;
+          const Vector3  local    = Mat4x4::Transform(toJoint, Vector3{ position.x, position.y, position.z });
+          Extend(jointBounds_[joint->second], { local, local });
+        }
+      }
+    }
+  }
+
+  std::optional<AABB> Model::GetPoseBounds() const
+  {
+    if (!isPoseApplied_) {
+      return std::nullopt;
+    }
+
+    // スキニングした頂点は、影響を受ける各ボーンで動かした位置をウェイトで混ぜた点。
+    // 各ボーンで動かした位置は、そのボーンの箱を今の行列で移した中にあるので、混ぜた点も、移した箱を全部囲む箱に入る
+    std::optional<AABB> bounds;
+    for (size_t jointIndex = 0; jointIndex < skeleton_.joints.size(); ++jointIndex) {
+      if (!jointBounds_[jointIndex]) {
+        continue;
+      }
+      const AABB&   local  = *jointBounds_[jointIndex];
+      const auto&   m      = skeleton_.joints[jointIndex].skeletonSpaceMatrix.m;
+      const Vector3 center = Mat4x4::Transform(skeleton_.joints[jointIndex].skeletonSpaceMatrix, (local.min + local.max) * 0.5f);
+      const Vector3 half   = (local.max - local.min) * 0.5f;
+      // 回した箱を囲む軸平行の箱の幅は、各軸の幅に行列の成分の絶対値を掛けて足した値
+      const Vector3 extent{
+        half.x * std::abs(m[0][0]) + half.y * std::abs(m[1][0]) + half.z * std::abs(m[2][0]),
+        half.x * std::abs(m[0][1]) + half.y * std::abs(m[1][1]) + half.z * std::abs(m[2][1]),
+        half.x * std::abs(m[0][2]) + half.y * std::abs(m[1][2]) + half.z * std::abs(m[2][2]),
+      };
+      Extend(bounds, { center - extent, center + extent });
+    }
+    return bounds;
   }
 
   void Model::InitializeMatrixPalette() {

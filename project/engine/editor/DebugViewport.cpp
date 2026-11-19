@@ -69,9 +69,13 @@ namespace Tako {
     viewport_->BeginPass();
 
     // 本編で登録したシーンの描画物を、本編と同じ順（不透明→デカール→半透明）でデバッグカメラ視点で描く。画面の UI（kQueueOverlay 以上）は描かない
-    Renderer*                  renderer = Renderer::GetInstance();
-    const Renderer::RenderView view     = renderer->MakeView(*camera_, viewport_->GetSize());
-    const DrawFilter           transparent{ .minQueue = ShaderAsset::kQueueTransparent, .maxQueue = ShaderAsset::kQueueOverlay };
+    Renderer*            renderer = Renderer::GetInstance();
+    Renderer::RenderView view     = renderer->MakeView(*camera_, viewport_->GetSize());
+    if (cullWithGameCamera_) {
+      // 本編で描かれない物を、この視点でも描かない（カリングの結果を外から見る）
+      view.frustum = renderer->GetMainView().frustum;
+    }
+    const DrawFilter transparent{ .minQueue = ShaderAsset::kQueueTransparent, .maxQueue = ShaderAsset::kQueueOverlay };
     renderer->RenderList(renderer->GetSceneList(), view, { .maxQueue = ShaderAsset::kQueueTransparent });
     DecalManager::GetInstance()->DrawAllForView(*camera_, viewport_->GetDepthResource(), viewport_->GetDepthSrvIndex());
     // 本編と同じく、半透明の段のシェーダーが gOpaqueTexture を読むなら、ここまでの画面を写して渡す
@@ -124,6 +128,8 @@ namespace Tako {
       UI::IconToggle(ICON_FA_BORDER_ALL "##Grid", "Grid", &showGrid_);
       ImGui::SameLine();
       UI::IconToggle(ICON_FA_VIDEO "##GameCamera", "Show the game camera", &showGameCamera_);
+      ImGui::SameLine();
+      UI::IconToggle(ICON_FA_CROP_SIMPLE "##GameCulling", "Cull with the game camera (hide what the game view does not draw)", &cullWithGameCamera_);
       ImGui::SameLine();
       if (UI::IconButton(ICON_FA_CAMERA_ROTATE, "Move this view to the game camera")) {
         if (const Camera* gameCamera = *Renderer::GetInstance()->GetCamera()) {

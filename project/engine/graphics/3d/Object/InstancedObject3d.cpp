@@ -205,6 +205,7 @@ void InstancedObject3d::Draw() {
     return;
   }
 
+  // ponytail: 範囲（boundsRadius）を入れないので、視点の外でも常に描く。大きなシーンで使うなら、全インスタンスを囲む球を入れるか、インスタンスごとに絞る
   DrawItem item;
   item.instanceCount = static_cast<uint32_t>(instances_.size());
   item.instanceSrv = instanceSrvIndex_;

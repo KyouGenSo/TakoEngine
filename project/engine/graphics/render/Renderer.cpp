@@ -86,7 +86,8 @@ namespace Tako {
       bool hasCurrent = false;
       for (const DrawItem& item : list.GetItems()) {
         GraphicsPipelineDesc pipeline;
-        if (!item.castShadow || !view.Intersects(item.boundsCenter, item.boundsRadius) ||
+        // 影の視点は 1 回ずつしか描かないので、DrawList の使い回しを通さずその場で判定する
+        if (!item.castShadow || (frustumCulling_ && !view.frustum.Intersects(item.boundsCenter, item.boundsRadius)) ||
             !item.material->GetPipeline(ShaderPass::ShadowCaster, item.instanceSrv != 0, pipeline)) {
           continue;
         }
@@ -105,9 +106,14 @@ namespace Tako {
   void Renderer::RenderList(const DrawList& list, const RenderView& view, const DrawFilter& filter)
   {
     const std::span<const DrawItem> items = list.GetItems();
+    // 同じ視点で何回もパスを描くので、範囲の判定は一覧が覚えている結果を使う（空なら全部描く）
+    const std::span<const uint8_t> visibility = frustumCulling_ ? list.GetVisibility(view.frustum) : std::span<const uint8_t>{};
 
     sortEntries_.clear();
     for (uint32_t i = 0; i < items.size(); ++i) {
+      if (!visibility.empty() && !visibility[i]) {
+        continue;
+      }
       const DrawItem&              item  = items[i];
       const std::optional<int32_t> queue = FilterQueue(item, filter);
       if (!queue) {
@@ -229,7 +235,7 @@ namespace Tako {
       .projectionInverse     = Mat4x4::Inverse(camera.GetProjectionMatrix()),
       .screenSize            = screenSize,
     };
-    return { dx12_->GetUploadAllocator().Push(constants), camera.GetTranslate() };
+    return { .constants = dx12_->GetUploadAllocator().Push(constants), .position = camera.GetTranslate(), .frustum = Frustum::FromViewProjection(viewProjection) };
   }
 
   ShaderAsset& Renderer::RegisterShader(const std::string& name)

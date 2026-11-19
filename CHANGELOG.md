@@ -10,6 +10,11 @@
 - Engine Settings > Rendering > Shadows の Stagger Far Cascades（`ShadowStaggerFarCascades`。既定オン）。3・4 枚目のカスケードを 1 フレームおきに描き直して、影の描画を減らす。その範囲で動く物の影は 1 フレーム遅れる
 - Engine Settings > Rendering > Shadows の Show Cascades（カスケードごとの色分け）と Shadow Maps（シャドウマップの画像）
 - 自作のシェーダーで影を受けるための `Shadow.hlsli`（`DirectionalShadow`・`SpotShadow`・`PointShadow`）
+- 視錐台カリング。カメラに映らない位置にあるモデル（Mesh コンポーネント・`Object3d`）を描かない。ゲームの画面・Debug Viewport・エディタのプレビューで、それぞれの視点で決める。影を描くときも、影の範囲の外のモデルは描かない
+  - スキニング付きのモデルは、今のポーズで決める
+  - `InstancedObject3d`・スプライト・文字・スカイボックスは、今までどおり常に描く
+  - 自作の頂点シェーダーで頂点をメッシュの外へ大きく動かしているモデルは、画面の端で消えることがある。そのときは Engine Settings > Rendering > Culling の Frustum Culling をオフにする（全部描く。`ProjectSettings.json` の Rendering の `FrustumCulling`、コードからは `Renderer::SetFrustumCulling`。既定オン）
+- Debug Viewport のツールバーの「Cull with the game camera」。オンにすると、ゲームのカメラで描かれないモデルが Debug Viewport でも消える（何がカリングされているかを外から見る）
 
 ### 変更
 - `UpdateEngine.bat`：新しいリリースがあるのに「リリース（v で始まるタグ）が見つかりません。」と出て止まることがあったのを直した（同じネットワークから GitHub へ 1 時間に 60 回を超えて問い合わせると起きていた）。GitHub に繋がらないときは、そう出す

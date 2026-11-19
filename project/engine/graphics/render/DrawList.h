@@ -5,6 +5,7 @@
 #include <span>
 #include <vector>
 
+#include "Frustum.h"
 #include "Vector3.h"
 
 namespace Tako {
@@ -40,7 +41,8 @@ namespace Tako {
     bool    castShadow   = true;  ///< シャドウマップへ描くか（シェーダーが ShadowCaster パスを持つ場合）
     bool    postEffect   = true;  ///< false なら画面全体のポストエフェクトの後に、シーンの深度で前後を判定して描く（マスク付きのエフェクトも掛からない）
 
-    //範囲（影の視点ごとのカリングに使う）
+    //範囲（視点ごとのカリングに使う。本編・Debug Viewport・影）
+    // ponytail: 球で判定するので、細長い物は緩い（描かなくていい物を描く側に倒れる）。締めるなら箱も持たせて、面との判定を箱で行う
     Vector3 boundsCenter{};         ///< 描画物を囲む球の中心（ワールド）
     float   boundsRadius   = 0.0f;  ///< 球の半径。0 なら範囲が分からない物として、カリングせず常に描く
 
@@ -77,17 +79,47 @@ namespace Tako {
   /// </summary>
   class DrawList {
   public: //メンバー関数
-    void Add(const DrawItem& item) { items_.push_back(item); }
+    void Add(const DrawItem& item)
+    {
+      items_.push_back(item);
+      visibilityValid_ = false;
+    }
 
-    void Clear() { items_.clear(); }
+    void Clear()
+    {
+      items_.clear();
+      visibilityValid_ = false;
+    }
 
     //=========================================
     //Getter
     //=========================================
     std::span<const DrawItem> GetItems() const { return items_; }
 
+    /// <summary>
+    /// frustum に掛かる描画物の印（GetItems と同じ並び。1 なら掛かる）
+    /// 同じ frustum で続けて呼ぶと、前の結果を返す（1 つの視点で何回もパスを描いても、判定は 1 回）
+    /// </summary>
+    std::span<const uint8_t> GetVisibility(const Frustum& frustum) const
+    {
+      if (!visibilityValid_ || !(visibilityFrustum_ == frustum)) {
+        visibility_.resize(items_.size());
+        for (size_t i = 0; i < items_.size(); ++i) {
+          visibility_[i] = frustum.Intersects(items_[i].boundsCenter, items_[i].boundsRadius);
+        }
+        visibilityFrustum_ = frustum;
+        visibilityValid_   = true;
+      }
+      return visibility_;
+    }
+
   private: //メンバー変数
     std::vector<DrawItem> items_;
+
+    //GetVisibility の結果（描画物を足す・消すと無効になる）
+    mutable std::vector<uint8_t> visibility_;
+    mutable Frustum              visibilityFrustum_{};
+    mutable bool                 visibilityValid_ = false;
   };
 
 } // namespace Tako

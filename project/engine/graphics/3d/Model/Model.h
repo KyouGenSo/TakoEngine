@@ -348,6 +348,17 @@ namespace Tako {
     void ReleaseSkinningSRVIndex();
 
     /// <summary>
+    /// ボーンごとに、影響する頂点を囲む箱（jointBounds_）を求める
+    /// </summary>
+    void InitializeJointBounds();
+
+    /// <summary>
+    /// 今のポーズでスキニングした頂点を全部囲む箱（スケルトン空間）
+    /// パレットにポーズを書く前（頂点がバインドポーズのまま）と、ボーンに付いた頂点が無いときは値なし
+    /// </summary>
+    std::optional<AABB> GetPoseBounds() const;
+
+    /// <summary>
     /// ジョイント階層を再帰的に表示（ImGui 用）
     /// </summary>
     /// <param name="jointIndex">表示するジョイントのインデックス</param>
@@ -398,12 +409,14 @@ namespace Tako {
     bool                             hasSkeleton_          = false;  ///< スケルトン有無フラグ
 
     //スキニング関連
-    std::vector<Matrix4x4>                 inverseBindMatrices_;      ///< 逆バインド行列配列
-    Microsoft::WRL::ComPtr<ID3D12Resource> paletteResource_;          ///< スキニング用パレットリソース
-    std::span<WellForGPU>                  mappedPalette_;            ///< マップされたパレットメモリ
-    uint32_t                               paletteSrvIndex_     = 0;  ///< パレット SRV インデックス
-    std::map<std::string, JointWeightData> skinClusterData_;          ///< スキンクラスターデータマップ
-    std::vector<MeshSkinClusterData>       meshSkinClusterData_;      ///< メッシュごとのスキンクラスターデータ
+    std::vector<Matrix4x4>                 inverseBindMatrices_;          ///< 逆バインド行列配列
+    Microsoft::WRL::ComPtr<ID3D12Resource> paletteResource_;              ///< スキニング用パレットリソース
+    std::span<WellForGPU>                  mappedPalette_;                ///< マップされたパレットメモリ
+    uint32_t                               paletteSrvIndex_     = 0;      ///< パレット SRV インデックス
+    std::map<std::string, JointWeightData> skinClusterData_;              ///< スキンクラスターデータマップ
+    std::vector<MeshSkinClusterData>       meshSkinClusterData_;          ///< メッシュごとのスキンクラスターデータ
+    std::vector<std::optional<AABB>>       jointBounds_;                  ///< ボーンごとの、影響する頂点を囲む箱（ボーンのローカル。影響する頂点が無ければ値なし）
+    bool                                   isPoseApplied_       = false;  ///< パレットにポーズを書いたか（書くまで、頂点はバインドポーズのまま）
 
     //デバッグ表示用
     static bool s_showSkeletonDebug;       ///< 全体的なスケルトン表示 ON/OFF

@@ -11,6 +11,7 @@
 
 #include "CommandContext.h"
 #include "DrawList.h"
+#include "Frustum.h"
 #include "Light.h"
 #include "Matrix4x4.h"
 #include "ShaderAsset.h"
@@ -59,6 +60,7 @@ namespace Tako {
       D3D12_GPU_VIRTUAL_ADDRESS constants = 0;        ///< gView
       Vector3                   position{};           ///< 半透明の並べ替えに使うカメラ位置
       const Light*              light     = nullptr;  ///< この視点だけのライト（nullptr なら本編のライト）。指定すると本編の影は受けない
+      Frustum                   frustum{};            ///< 視点の範囲。境界球がこの外にある描画物は描かない（面が 0 枚なら全部描く）
     };
 
   private: //構造体
@@ -107,7 +109,7 @@ namespace Tako {
     void RenderShadows(const DrawList& list);
 
     /// <summary>
-    /// filter に合う描画物を、描画キュー・sortingOrder・奥行きの順に並べて現在の描画先へ描く
+    /// filter に合い、view の範囲に掛かる描画物を、描画キュー・sortingOrder・奥行きの順に並べて現在の描画先へ描く
     /// </summary>
     void RenderList(const DrawList& list, const RenderView& view, const DrawFilter& filter = {});
 
@@ -122,7 +124,7 @@ namespace Tako {
     void RenderImmediate(const RenderView& view, const std::function<void()>& submit);
 
     /// <summary>
-    /// カメラの視点定数をこのフレームのアップロード領域に書く
+    /// カメラの視点定数をこのフレームのアップロード領域に書き、カリング用の範囲を作る
     /// </summary>
     /// <param name="screenSize">描画先の画素数（シェーダーの gView.screenSize）</param>
     RenderView MakeView(const Camera& camera, const Vector2& screenSize);
@@ -147,9 +149,15 @@ namespace Tako {
     /// </summary>
     void SetOpaqueTexture(uint32_t srvIndex) { opaqueTextureSrv_ = srvIndex; }
 
+    /// <summary>
+    /// 視点の範囲の外にある描画物を描かないか（本編・Debug Viewport・プレビュー・影の視点。false なら全部描く）
+    /// </summary>
+    void SetFrustumCulling(bool enabled) { frustumCulling_ = enabled; }
+
     //=========================================
     //Getter
     //=========================================
+    bool IsFrustumCullingEnabled() const { return frustumCulling_; }
     DX12Basic* GetDX12Basic() const { return dx12_; }
     Camera** GetCamera() { return &camera_; }
     Light* GetLight() const { return light_.get(); }
@@ -199,6 +207,7 @@ namespace Tako {
     std::unique_ptr<Light> light_;
     RenderView             mainView_{};                  ///< Update で本編カメラから作る
     uint32_t               opaqueTextureSrv_ = 0;        ///< gOpaqueTexture（0 なら黒）
+    bool                   frustumCulling_   = true;
 
     //スクリーン空間（スプライト）
     Matrix4x4 screenView_{};

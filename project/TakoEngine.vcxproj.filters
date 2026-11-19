@@ -725,6 +725,9 @@
     <ClInclude Include="engine\core\math\AABB.h">
       <Filter>core\math</Filter>
     </ClInclude>
+    <ClInclude Include="engine\core\math\Frustum.h">
+      <Filter>core\math</Filter>
+    </ClInclude>
     <ClInclude Include="engine\graphics\render\TextureManager.h">
       <Filter>graphics\render</Filter>
     </ClInclude>

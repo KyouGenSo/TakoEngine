@@ -6,6 +6,7 @@
 #include <memory>
 #include <span>
 #include <vector>
+#include "Frustum.h"
 #include "Matrix4x4.h"
 #include "Vector2.h"
 #include "Vector3.h"
@@ -61,25 +62,7 @@ namespace Tako {
       uint32_t                  x          = 0;      ///< 区画の左上（画素）
       uint32_t                  y          = 0;
       uint32_t                  size       = 0;      ///< 区画の 1 辺（画素）
-      std::array<Vector4, 6>    planes{};            ///< 範囲の境の面（内側が正、法線は正規化済み）。左・右・下・上・奥・手前の順
-      uint32_t                  planeCount = 0;      ///< 判定に使う面の数（平行光源は手前の面を使わない）
-
-      /// <summary>
-      /// 球が視点の範囲に掛かるか（radius が 0 以下なら常に掛かる）
-      /// </summary>
-      bool Intersects(const Vector3& center, float radius) const
-      {
-        if (radius <= 0.0f) {
-          return true;
-        }
-        for (uint32_t i = 0; i < planeCount; ++i) {
-          const Vector4& plane = planes[i];
-          if (plane.x * center.x + plane.y * center.y + plane.z * center.z + plane.w < -radius) {
-            return false;
-          }
-        }
-        return true;
-      }
+      Frustum                   frustum{};           ///< 影を描く範囲。境界球がこの外にある描画物は描かない（平行光源は手前の面を使わない）
     };
 
   private: //構造体

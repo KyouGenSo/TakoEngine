@@ -385,6 +385,7 @@
     <ClInclude Include="engine\graphics\effect\PostEffect\PostEffectStruct.h" />
     <ClInclude Include="engine\core\io\ProjectSettings.h" />
     <ClInclude Include="engine\core\math\AABB.h" />
+    <ClInclude Include="engine\core\math\Frustum.h" />
     <ClInclude Include="engine\graphics\3d\Line\LineRenderer.h" />
     <ClInclude Include="engine\core\math\OBB.h" />
     <ClInclude Include="engine\core\math\Quaternion.h" />

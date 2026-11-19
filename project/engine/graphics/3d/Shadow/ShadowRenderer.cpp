@@ -43,20 +43,6 @@ namespace {
         const float pitch = std::atan2(-direction.y, std::sqrt(direction.x * direction.x + direction.z * direction.z));
         return Mat4x4::MakeAffine({ 1.0f, 1.0f, 1.0f }, Vector3{ pitch, yaw, 0.0f }, position);
     }
-
-    /// <summary>
-    /// viewProj の列 column の成分に sign を掛けて w の列へ足した面（内側が正）を、法線の長さ 1 にして返す
-    /// </summary>
-    Vector4 MakePlane(const Matrix4x4& viewProj, int column, float sign, bool addW)
-    {
-        Vector4 plane{};
-        float* elements[] = { &plane.x, &plane.y, &plane.z, &plane.w };
-        for (int row = 0; row < 4; ++row) {
-            *elements[row] = viewProj.m[row][column] * sign + (addW ? viewProj.m[row][3] : 0.0f);
-        }
-        const float length = std::sqrt(plane.x * plane.x + plane.y * plane.y + plane.z * plane.z);
-        return length > 0.0f ? plane / length : plane;
-    }
 }
 
 // 静的メンバ変数の定義
@@ -269,11 +255,9 @@ void ShadowRenderer::AddSlice(uint32_t sliceIndex, const Matrix4x4& viewProj, bo
     view.x       = (tileIndex % grid) * tileSize;
     view.y       = (tileIndex / grid) * tileSize;
     view.size    = tileSize;
-    view.planes  = { MakePlane(viewProj, 0, 1.0f, true),  MakePlane(viewProj, 0, -1.0f, true), MakePlane(viewProj, 1, 1.0f, true),
-                     MakePlane(viewProj, 1, -1.0f, true), MakePlane(viewProj, 2, -1.0f, true), MakePlane(viewProj, 2, 1.0f, false) };
     // 平行光源は、範囲よりライト側にある物も影を落とす（near 面へ押し付けて描く）ので、手前の面では捨てない
-    view.planeCount = perspective ? 6 : 5;
-    view.constants  = dx12_->GetUploadAllocator().Push(ShadowCasterConstants{ .lightViewProj = viewProj, .pancake = perspective ? 0.0f : 1.0f });
+    view.frustum   = Frustum::FromViewProjection(viewProj, perspective);
+    view.constants = dx12_->GetUploadAllocator().Push(ShadowCasterConstants{ .lightViewProj = viewProj, .pancake = perspective ? 0.0f : 1.0f });
     views_.push_back(view);
 
     // クリップ空間（x, y は -1〜1、y は上が正）を、アトラスの中の区画の UV へ移す

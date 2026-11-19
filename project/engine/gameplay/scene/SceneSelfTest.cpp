@@ -4,6 +4,8 @@
 
 #include "Actor.h"
 #include "BaseScene.h"
+#include "DrawList.h"
+#include "Frustum.h"
 #include "Logger.h"
 #include "Mat4x4Func.h"
 #include "MeshComponent.h"
@@ -108,6 +110,29 @@ namespace Tako {
     Transform       decomposed;
     Mat4x4::Decompose(matrix, decomposed.translate, decomposed.rotate, decomposed.scale);
     assert(IsNear(matrix, Mat4x4::MakeAffine(decomposed.scale, decomposed.rotate, decomposed.translate)));
+
+    // 視錐台と球：原点から +Z を見る視点（上下左右 45 度、奥行き 1〜100）。範囲に掛かる球だけが残る
+    const Frustum frustum = Frustum::FromViewProjection(Mat4x4::MakePerspective(std::numbers::pi_v<float> * 0.5f, 1.0f, 1.0f, 100.0f));
+    assert(frustum.Intersects({ 0.0f, 0.0f, 10.0f }, 1.0f));
+    assert(!frustum.Intersects({ 0.0f, 0.0f, -10.0f }, 1.0f));
+    assert(!frustum.Intersects({ 0.0f, 0.0f, 110.0f }, 1.0f));
+    assert(!frustum.Intersects({ 20.0f, 0.0f, 10.0f }, 1.0f) && !frustum.Intersects({ 0.0f, -20.0f, 10.0f }, 1.0f));
+    // 中心が外でも、球が境の面に届けば掛かる。半径 0（範囲が分からない物）と、面の無い視錐台は何も捨てない
+    assert(frustum.Intersects({ 11.0f, 0.0f, 10.0f }, 1.0f) && !frustum.Intersects({ 12.0f, 0.0f, 10.0f }, 1.0f));
+    assert(frustum.Intersects({ 0.0f, 0.0f, -10.0f }, 0.0f) && Frustum{}.Intersects({ 0.0f, 0.0f, -10.0f }, 1.0f));
+    // 手前の面を使わなければ、near より手前の物も残る（平行光源の影）
+    assert(Frustum::FromViewProjection(Mat4x4::MakeOrtho(-5.0f, 5.0f, 5.0f, -5.0f, 0.0f, 50.0f), false).Intersects({ 0.0f, 0.0f, -30.0f }, 1.0f));
+    assert(!Frustum::FromViewProjection(Mat4x4::MakeOrtho(-5.0f, 5.0f, 5.0f, -5.0f, 0.0f, 50.0f), true).Intersects({ 0.0f, 0.0f, -30.0f }, 1.0f));
+
+    // 一覧が覚える判定：同じ視錐台なら同じ結果、描画物を足すと作り直す、視錐台を替えると結果も替わる
+    DrawList drawList;
+    drawList.Add({ .boundsCenter = { 0.0f, 0.0f, 10.0f }, .boundsRadius = 1.0f });
+    drawList.Add({ .boundsCenter = { 0.0f, 0.0f, -10.0f }, .boundsRadius = 1.0f });
+    assert(drawList.GetVisibility(frustum).size() == 2 && drawList.GetVisibility(frustum)[0] && !drawList.GetVisibility(frustum)[1]);
+    drawList.Add({ .boundsCenter = { 0.0f, 0.0f, 20.0f }, .boundsRadius = 1.0f });
+    assert(drawList.GetVisibility(frustum).size() == 3 && drawList.GetVisibility(frustum)[2]);
+    assert(drawList.GetVisibility(Frustum{})[1]);
+    assert(!drawList.GetVisibility(frustum)[1]);
 
     BaseScene scene;
     Actor*    parent     = scene.Spawn("Actor");
