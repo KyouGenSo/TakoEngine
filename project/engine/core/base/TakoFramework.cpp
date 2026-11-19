@@ -255,12 +255,16 @@ namespace Tako {
       return;
     }
 
+    FrameProfiler& profiler = dx12_->GetProfiler();
+
 #ifdef TAKO_EDITOR
+    const uint32_t hotReloadScope = profiler.BeginCpuScope("Hot Reload");
     // GPU は前フレームを描き終えているので、ここで PSO を作り直してよい
     dx12_->GetShaderLibrary().ReloadChangedShaders();
     MaterialLibrary::GetInstance()->Update();
     // シーンを消して作り直すので、このフレームの更新が始まる前に行う
     DebugUIManager::GetInstance()->UpdateGameModule();
+    profiler.EndScope(hotReloadScope);
 #endif
 
     // 前フレームの GPU 処理は EndDraw で完了済みなので、ここなら RT を作り直せる。
@@ -280,7 +284,9 @@ namespace Tako {
     Font::BeginFrame();
 
     // Actor の生成・削除と Play / Stop は、一時停止中もここで行う（前のフレームの GPU 処理は EndDraw で終わっている）
+    const uint32_t spawnScope = profiler.BeginCpuScope("Spawn / Destroy");
     SceneManager::GetInstance()->UpdateAlways();
+    profiler.EndScope(spawnScope);
 
     // 一時停止中はシーン更新だけ止める。以降の更新は deltaTime が 0 になるため止まって見える
     // (GPUParticle/Decal は Debug Viewport 用リングのリセットを含むので毎フレーム呼ぶ)
@@ -288,14 +294,20 @@ namespace Tako {
       SceneManager::GetInstance()->Update();
     }
 
+    const uint32_t particleScope = profiler.BeginCpuScope("Particles");
     GPUParticle::GetInstance()->Update();
+    profiler.EndScope(particleScope);
 
+    const uint32_t decalScope = profiler.BeginCpuScope("Decals");
     DecalManager::GetInstance()->UpdateAll();
+    profiler.EndScope(decalScope);
 
     PostEffectManager::GetInstance()->Update(FrameTimer::GetInstance()->GetDeltaTime());
 
 #ifdef TAKO_EDITOR
+    const uint32_t editorScope = profiler.BeginCpuScope("Editor");
     DebugUIManager::GetInstance()->Update();
+    profiler.EndScope(editorScope);
 #endif
 
     LineRenderer::GetInstance()->Update();

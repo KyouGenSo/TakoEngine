@@ -281,11 +281,11 @@ namespace Tako {
         }
         ImGui::TableNextColumn();
         // 1 フレームおきにしか通らない区間は、平均が半端になる。そのときだけ小数を出す
-        if (std::abs(sample.drawCalls - std::round(sample.drawCalls)) < 0.05f) {
-          ImGui::Text("%.0f", sample.drawCalls);
+        if (std::abs(sample.count - std::round(sample.count)) < 0.05f) {
+          ImGui::Text("%.0f", sample.count);
         }
         else {
-          ImGui::Text("%.1f", sample.drawCalls);
+          ImGui::Text("%.1f", sample.count);
         }
         ImGui::TableNextColumn();
         ImGui::Text("%.3f", sample.cpuMs);

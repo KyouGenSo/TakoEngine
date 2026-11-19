@@ -17,8 +17,8 @@ namespace Tako {
   /// </summary>
   struct ProfileSample {
     std::string label;
-    float       drawCalls  = 0.0f;
-    float       cpuMs      = 0.0f;   ///< 区間の中でコマンドを積むのに掛かった時間
+    float       count      = 0.0f;   ///< 描画回数。CPU だけの区間では、処理した個数（渡されていなければ 0）
+    float       cpuMs      = 0.0f;   ///< 区間の中で CPU が掛けた時間（描画の区間では、コマンドを積むのに掛かった時間）
     float       gpuMs      = 0.0f;   ///< GPU が区間のコマンドを実行した時間（hasGpuTime が false なら 0）
     uint8_t     depth      = 0;      ///< 入れ子の深さ（0 が一番外）
     bool        isEvent    = false;  ///< パスを差し込める位置
@@ -29,16 +29,18 @@ namespace Tako {
   /// 1 フレームの時間の内訳（ms。計測期間の平均）
   /// </summary>
   struct FrameTimes {
-    float updateMs   = 0.0f;  ///< CPU：更新
-    float recordMs   = 0.0f;  ///< CPU：描画コマンドを積んで GPU へ渡すまで
-    float gpuMs      = 0.0f;  ///< GPU：1 フレームのコマンド全部の実行
-    float otherGpuMs = 0.0f;  ///< gpuMs のうち、どの区間にも入っていない分
-    float gpuWaitMs  = 0.0f;  ///< CPU：GPU の完了待ち
-    float idleMs     = 0.0f;  ///< CPU：FPS 上限の待ちと Present
+    float updateMs      = 0.0f;  ///< CPU：更新
+    float otherUpdateMs = 0.0f;  ///< updateMs のうち、どの区間にも入っていない分
+    float recordMs      = 0.0f;  ///< CPU：描画コマンドを積んで GPU へ渡すまで
+    float gpuMs         = 0.0f;  ///< GPU：1 フレームのコマンド全部の実行
+    float otherGpuMs    = 0.0f;  ///< gpuMs のうち、どの区間にも入っていない分
+    float gpuWaitMs     = 0.0f;  ///< CPU：GPU の完了待ち
+    float idleMs        = 0.0f;  ///< CPU：FPS 上限の待ちと Present
   };
 
   /// <summary>
   /// フレームを区間に分けて、CPU がコマンドを積む時間と、GPU がそれを実行する時間（タイムスタンプ）を測る。区間は ProfileScope で囲む。
+  /// 更新の処理は、CPU の時間だけを測る区間（BeginCpuScope）で囲む。
   /// 結果は計測期間（既定 0.5 秒）ごとの平均で、1 フレームおきにしか通らない区間は、1 回分の半分の時間になる
   /// ponytail: GPU の結果は、フレームごとに GPU の完了を待つ（DX12Basic::EndDraw）前提でその場で読む。待たない作りにしたら、数フレーム遅れて読むリングが要る
   /// </summary>
@@ -54,6 +56,12 @@ namespace Tako {
   private: //構造体
     using Clock = std::chrono::steady_clock;
 
+    enum class ScopeKind : uint8_t {
+      Gpu,    ///< CPU と GPU の時間、描画回数を測る
+      Event,  ///< 子を字下げするための入れ物（タイムスタンプを取らない）
+      Cpu,    ///< CPU の時間だけを測る
+    };
+
     /// <summary>
     /// 今のフレームで開いた区間
     /// </summary>
@@ -61,11 +69,11 @@ namespace Tako {
       std::string       label;
       Clock::time_point cpuBegin;
       float             cpuMs     = 0.0f;
-      uint32_t          drawBegin = 0;         ///< 開いたときの CommandContext::GetDrawCount
-      uint32_t          drawCalls = 0;
-      uint32_t          query     = kNoQuery;  ///< 開始のタイムスタンプの番号（終了は +1）
+      uint32_t          drawBegin = 0;               ///< 開いたときの CommandContext::GetDrawCount
+      uint32_t          count     = 0;               ///< 描画回数。Cpu では、渡された個数
+      uint32_t          query     = kNoQuery;        ///< 開始のタイムスタンプの番号（終了は +1）
       uint8_t           depth     = 0;
-      bool              isEvent   = false;
+      ScopeKind         kind      = ScopeKind::Gpu;
     };
 
     /// <summary>
@@ -75,10 +83,10 @@ namespace Tako {
       std::string label;
       float       cpuMs      = 0.0f;
       float       gpuMs      = 0.0f;
-      uint32_t    drawCalls  = 0;
-      uint32_t    frames     = 0;      ///< この期間に通ったフレームの数（0 のまま期間を終えたら行を消す）
+      uint32_t    count      = 0;
+      uint32_t    frames     = 0;               ///< この期間に通ったフレームの数（0 のまま期間を終えたら行を消す）
       uint8_t     depth      = 0;
-      bool        isEvent    = false;
+      ScopeKind   kind       = ScopeKind::Gpu;
       bool        hasGpuTime = false;
     };
 
@@ -100,7 +108,23 @@ namespace Tako {
     /// <returns>EndScope に渡す番号（無効なら kInvalidScope）</returns>
     uint32_t BeginScope(std::string_view label, bool isEvent = false);
 
-    void EndScope(uint32_t scope);
+    /// <summary>
+    /// CPU の時間だけを測る区間を開く（タイムスタンプを取らず、描画回数も数えない）。一番外で開いた区間とその中は、GetSamples ではなく GetCpuSamples に出る
+    /// </summary>
+    /// <returns>EndScope に渡す番号（無効なら kInvalidScope）</returns>
+    uint32_t BeginCpuScope(std::string_view label);
+
+    /// <summary>
+    /// 区間を閉じる
+    /// </summary>
+    /// <param name="count">CPU だけの区間で処理した個数（表示用。それ以外の区間では使わない）</param>
+    void EndScope(uint32_t scope, uint32_t count = 0);
+
+    /// <summary>
+    /// 測り終えた CPU の時間を、今開いている区間の子として足す。
+    /// 同じ種類の処理が他の処理と入り混じって何回も走るとき（型ごとの Tick など）に、呼ぶ側で合計してから渡す
+    /// </summary>
+    void AddCpuSample(std::string_view label, float cpuMs, uint32_t count);
 
     /// <summary>
     /// このフレームのタイムスタンプを読み戻し用のバッファへ書くコマンドを積む。コマンドリストを閉じる前に呼ぶ
@@ -140,6 +164,11 @@ namespace Tako {
     //==========================================================================
     bool IsEnabled() const { return isEnabled_; }
     std::span<const ProfileSample> GetSamples() const { return samples_; }
+
+    /// <summary>
+    /// BeginCpuScope で一番外に開いた区間と、その中の区間（更新の処理）
+    /// </summary>
+    std::span<const ProfileSample> GetCpuSamples() const { return cpuSamples_; }
     const FrameTimes& GetFrameTimes() const { return frameTimes_; }
 
     /// <summary>
@@ -148,6 +177,8 @@ namespace Tako {
     uint32_t GetPublishCount() const { return publishCount_; }
 
   private: //非公開関数
+    uint32_t OpenScope(std::string_view label, ScopeKind kind);
+
     /// <summary>
     /// 期間の合計を 1 フレームあたりの平均にして公開し、次の期間を始める
     /// </summary>
@@ -191,6 +222,7 @@ namespace Tako {
 
     //公開する結果
     std::vector<ProfileSample> samples_;
+    std::vector<ProfileSample> cpuSamples_;
     FrameTimes                 frameTimes_;
     uint32_t                   publishCount_ = 0;
   };
@@ -212,7 +244,7 @@ namespace Tako {
 
 #ifdef _DEBUG
   /// <summary>
-  /// 目盛りから ms への変換と、区間の並び・入れ子・消える行を assert で確かめる。Debug の起動時に 1 回呼ぶ
+  /// 目盛りから ms への変換と、区間の並び・入れ子・消える行・CPU だけの区間の振り分けを assert で確かめる。Debug の起動時に 1 回呼ぶ
   /// </summary>
   TAKO_API void RunFrameProfilerSelfTest();
 #endif

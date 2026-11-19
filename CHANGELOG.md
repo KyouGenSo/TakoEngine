@@ -13,7 +13,11 @@
   - Frame タブの Measure のチェックを外すと、計測を止める（保存はされず、エディタを起動するたびにオンに戻る）
   - Debug のエディタでは、デバッグレイヤーと、シェーダーを最適化しないぶん、時間が長く出る。実際の値は Develop のエディタで見る
 - Performance ウィンドウの Frame Time。1 フレームの内訳（CPU Update・CPU Render・GPU・Wait for GPU・Idle）が出る。FPS の上限で待っている時間（Idle）と、実際に掛かっている時間を分けて見られる
+  - その下の CPU Update の欄に、更新の内訳が出る。コンポーネントとスクリプトは型ごと（スクリプトはクラスの名前）に 1 行で、Tick と LateTick を合わせた時間と、その型の有効なコンポーネントの個数が出る。どのスクリプトが重いかを見られる
+  - 当たり判定は Collision の行に出る。その下の Callbacks は、`OnCollisionEnter` などの通知に掛かった時間（受け取る側のコードの時間）
 - 起動の引数 `--profile`。Release の exe に付けて起動すると、同じ計測の結果を画面の左上に、FPS を右上に重ねて出す（付けなければ計測しない）
+  - 左上には表が 2 つ並ぶ（左：1 フレームの内訳と更新の内訳、右：描画の内訳）。更新の内訳の型ごとの行は、時間の長い順に 5 個まで出る
+  - 新しく作るプロジェクトのルートには `RunProfile.bat` が入っている。実行すると、Release の exe を `--profile` 付きで起動する（先に Release をビルドしておく）。今あるプロジェクトでは、エンジンのひな形 `Engine\TakoEngine\templates\Default\RunProfile.bat` をプロジェクトのルートに写し、中の `__ProjectName__` をすべて exe の名前（拡張子なし）に替える
 
 ### 変更
 - シェーダーが使う値を渡さずに描いたときに止まる検査は、Debug と Develop の両方で動く。足りない名前は、エディタの Console と Visual Studio の出力に出る（今までは、止まったときの窓に出ていた）

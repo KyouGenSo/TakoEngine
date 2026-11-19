@@ -40,6 +40,7 @@
 #include <chrono>
 #include <format>
 #include <span>
+#include <cmath>
 
 namespace Tako {
 
@@ -946,6 +947,49 @@ namespace Tako {
       UI::Value("Idle", "%.2f ms", times.idleMs);
       ImGui::SetItemTooltip("Waiting for the FPS limit, and the time Present takes");
       ImGui::TextDisabled("Averages over the last 0.5 s");
+    }
+
+    // 更新の内訳（一番外の行の合計と Other を足すと、CPU Update になる）
+    if (ImGui::CollapsingHeader("CPU Update", ImGuiTreeNodeFlags_DefaultOpen)) {
+      const FrameProfiler& profiler = Renderer::GetInstance()->GetDX12Basic()->GetProfiler();
+      if (!profiler.IsEnabled()) {
+        ImGui::TextDisabled("Measure is off (Render Pipeline > Frame)");
+      }
+      else if (ImGui::BeginTable("Steps##CpuUpdate", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV)) {
+        ImGui::TableSetupColumn("Step", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn("Count", ImGuiTableColumnFlags_WidthFixed, 60.0f);
+        ImGui::TableSetupColumn("CPU ms", ImGuiTableColumnFlags_WidthFixed, 70.0f);
+        ImGui::TableHeadersRow();
+        for (const ProfileSample& sample : profiler.GetCpuSamples()) {
+          ImGui::TableNextRow();
+          ImGui::TableNextColumn();
+          // Indent(0) は既定の幅で字下げするので、深さ 0 では呼ばない
+          const float indent = ImGui::GetStyle().IndentSpacing * static_cast<float>(sample.depth);
+          if (indent > 0.0f) {
+            ImGui::Indent(indent);
+          }
+          ImGui::TextUnformatted(sample.label.c_str());
+          if (indent > 0.0f) {
+            ImGui::Unindent(indent);
+          }
+          ImGui::TableNextColumn();
+          // 個数を渡さない区間は空欄。期間の途中で増減すると平均が半端になるので、そのときだけ小数を出す
+          if (sample.count > 0.0f) {
+            ImGui::Text(std::abs(sample.count - std::round(sample.count)) < 0.05f ? "%.0f" : "%.1f", sample.count);
+          }
+          ImGui::TableNextColumn();
+          ImGui::Text("%.3f", sample.cpuMs);
+        }
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::TextDisabled("Other");
+        ImGui::SetItemTooltip("Input, audio, window messages and everything else outside the steps above");
+        ImGui::TableNextColumn();
+        ImGui::TableNextColumn();
+        ImGui::Text("%.3f", profiler.GetFrameTimes().otherUpdateMs);
+        ImGui::EndTable();
+      }
     }
 
     if (ImGui::CollapsingHeader("Resources", ImGuiTreeNodeFlags_DefaultOpen)) {

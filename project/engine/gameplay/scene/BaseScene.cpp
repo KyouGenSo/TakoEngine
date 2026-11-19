@@ -2,8 +2,10 @@
 #include "Actor.h"
 #include "Camera.h"
 #include "CollisionManager.h"
+#include "DX12Basic.h"
 #include "EmitterManager.h"
 #include "ForceFieldManager.h"
+#include "FrameProfiler.h"
 #include "GPUParticle.h"
 #include "Light.h"
 #include "Logger.h"
@@ -18,6 +20,7 @@
 #include <json.hpp>
 
 #include <algorithm>
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -89,6 +92,19 @@ namespace Tako {
       }
     }
 
+    /// <summary>
+    /// 計測の行に出す型。Script コンポーネントは、中のスクリプトの型
+    /// </summary>
+    const TypeInfo& ProfiledType(const Component& component)
+    {
+      if (component.IsA<ScriptComponent>()) {
+        if (const Script* script = static_cast<const ScriptComponent&>(component).GetScript()) {
+          return script->GetType();
+        }
+      }
+      return component.GetType();
+    }
+
   } // namespace
 
   BaseScene::BaseScene()
@@ -129,17 +145,58 @@ namespace Tako {
     const auto ticks = [isPaused](const Component* component) {
       return (!isPaused || component->TickWhilePaused()) && component->GetOwner()->IsActiveInHierarchy();
     };
+
+    // 型ごとの時間（計測中だけ）。型が入り混じって並ぶので区間では囲めず、1 個ずつ測って型ごとに足す
+    using Clock = std::chrono::steady_clock;
+    struct TypeTime {
+      const TypeInfo* type;
+      Clock::duration time{};
+      uint32_t        count = 0;
+    };
+    FrameProfiler&    profiler    = Renderer::GetInstance()->GetDX12Basic()->GetProfiler();
+    const bool        isProfiling = profiler.IsEnabled();
+    const uint32_t    scope       = profiler.BeginCpuScope("Components");
+    Clock::time_point lapStart    = isProfiling ? Clock::now() : Clock::time_point{};
+    // スクリプトの DLL を差し替えると TypeInfo のポインタが変わるので、フレームをまたいで持たない
+    std::vector<TypeTime> typeTimes;
+    // 前の計測の終わりを次の始まりに使い、時刻を読むのを 1 個につき 1 回にする（飛ばした物とループの分は、次の型の時間に入る）
+    const auto addLap = [&typeTimes, &lapStart](const Component& component, uint32_t count) {
+      const Clock::time_point now   = Clock::now();
+      const TypeInfo*         type  = &ProfiledType(component);
+      auto                    found = std::ranges::find(typeTimes, type, &TypeTime::type);
+      if (found == typeTimes.end()) {
+        found = typeTimes.insert(found, TypeTime{ .type = type });
+      }
+      found->time  += now - lapStart;
+      found->count += count;
+      lapStart      = now;
+    };
+
     for (Component* component : components) {
       if (ticks(component)) {
         ForSelfAndScript(*component, [deltaTime](Component& target) { target.AdvanceTimers(deltaTime); });
         component->Tick(deltaTime);
+        if (isProfiling) {
+          addLap(*component, 1);
+        }
       }
     }
     for (Component* component : components) {
       if (ticks(component)) {
         component->LateTick(deltaTime);
+        if (isProfiling) {
+          addLap(*component, 0);
+        }
       }
     }
+
+    uint32_t tickedCount = 0;
+    for (const TypeTime& typeTime : typeTimes) {
+      profiler.AddCpuSample(typeTime.type->name, std::chrono::duration<float, std::milli>(typeTime.time).count(), typeTime.count);
+      tickedCount += typeTime.count;
+    }
+    profiler.EndScope(scope, tickedCount);
+
     // 当たり判定は、ポーズに入ったフレームから止める
     if (!isPaused_) {
       Update();

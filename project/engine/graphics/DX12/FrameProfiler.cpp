@@ -63,6 +63,7 @@ namespace Tako {
     if (isEnabled_ && !isEnabledRequested_) {
       rows_.clear();
       samples_.clear();
+      cpuSamples_.clear();
       frameTimes_ = {};
     }
     if (!isEnabled_ && isEnabledRequested_) {
@@ -81,6 +82,16 @@ namespace Tako {
 
   uint32_t FrameProfiler::BeginScope(std::string_view label, bool isEvent)
   {
+    return OpenScope(label, isEvent ? ScopeKind::Event : ScopeKind::Gpu);
+  }
+
+  uint32_t FrameProfiler::BeginCpuScope(std::string_view label)
+  {
+    return OpenScope(label, ScopeKind::Cpu);
+  }
+
+  uint32_t FrameProfiler::OpenScope(std::string_view label, ScopeKind kind)
+  {
     if (!isEnabled_) {
       return kInvalidScope;
     }
@@ -91,10 +102,10 @@ namespace Tako {
     Scope&         scope = scopes_[id];
     scope.label.assign(label);
     scope.depth     = depth_++;
-    scope.isEvent   = isEvent;
+    scope.kind      = kind;
     scope.query     = kNoQuery;
     scope.drawBegin = context_ ? context_->GetDrawCount() : 0;
-    if (!isEvent && queryHeap_ && queryCount_ + 2 <= kQueryCount) {
+    if (kind == ScopeKind::Gpu && queryHeap_ && queryCount_ + 2 <= kQueryCount) {
       scope.query = queryCount_;
       queryCount_ += 2;
       commandList_->EndQuery(queryHeap_.Get(), D3D12_QUERY_TYPE_TIMESTAMP, scope.query);
@@ -103,18 +114,35 @@ namespace Tako {
     return id;
   }
 
-  void FrameProfiler::EndScope(uint32_t id)
+  void FrameProfiler::EndScope(uint32_t id, uint32_t count)
   {
     if (id == kInvalidScope) {
       return;
     }
     Scope& scope = scopes_[id];
-    scope.cpuMs     = ToMs(Clock::now() - scope.cpuBegin);
-    scope.drawCalls = (context_ ? context_->GetDrawCount() : 0) - scope.drawBegin;
+    scope.cpuMs = ToMs(Clock::now() - scope.cpuBegin);
+    scope.count = scope.kind == ScopeKind::Cpu ? count : (context_ ? context_->GetDrawCount() : 0) - scope.drawBegin;
     if (scope.query != kNoQuery) {
       commandList_->EndQuery(queryHeap_.Get(), D3D12_QUERY_TYPE_TIMESTAMP, scope.query + 1);
     }
     --depth_;
+  }
+
+  void FrameProfiler::AddCpuSample(std::string_view label, float cpuMs, uint32_t count)
+  {
+    if (!isEnabled_) {
+      return;
+    }
+    if (scopeCount_ == scopes_.size()) {
+      scopes_.emplace_back();
+    }
+    Scope& scope = scopes_[scopeCount_++];
+    scope.label.assign(label);
+    scope.depth = depth_;
+    scope.kind  = ScopeKind::Cpu;
+    scope.query = kNoQuery;
+    scope.cpuMs = cpuMs;
+    scope.count = count;
   }
 
   void FrameProfiler::Resolve()
@@ -163,9 +191,9 @@ namespace Tako {
       }
 
       Row& row = rows_[found];
-      row.isEvent    = scope.isEvent;
-      row.cpuMs     += scope.cpuMs;
-      row.drawCalls += scope.drawCalls;
+      row.kind   = scope.kind;
+      row.cpuMs += scope.cpuMs;
+      row.count += scope.count;
       ++row.frames;
       if (ticks && scope.query != kNoQuery) {
         row.gpuMs     += TicksToMs(ticks[scope.query], ticks[scope.query + 1], frequency_);
@@ -218,13 +246,28 @@ namespace Tako {
     const float perFrame = 1.0f / static_cast<float>(windowFrames_);
 
     samples_.clear();
-    float accountedGpuMs = 0.0f;
-    int   timedDepth     = -1;  // GPU 時間を持つ行の中にいる間の、その行の深さ
+    cpuSamples_.clear();
+    float accountedGpuMs    = 0.0f;
+    float accountedUpdateMs = 0.0f;
+    int   timedDepth        = -1;     // GPU 時間を持つ行の中にいる間の、その行の深さ
+    bool  isCpuTree         = false;  // 一番外が CPU だけの区間の、その中にいる間
     for (const Row& row : rows_) {
       if (row.frames == 0) {
         continue;
       }
-      samples_.push_back({ row.label, static_cast<float>(row.drawCalls) * perFrame, row.cpuMs * perFrame, row.gpuMs * perFrame, row.depth, row.isEvent, row.hasGpuTime });
+      if (row.depth == 0) {
+        isCpuTree = row.kind == ScopeKind::Cpu;
+      }
+      ProfileSample sample{ row.label, static_cast<float>(row.count) * perFrame, row.cpuMs * perFrame, row.gpuMs * perFrame, row.depth, row.kind == ScopeKind::Event,
+                            row.hasGpuTime };
+      if (isCpuTree) {
+        if (row.depth == 0) {
+          accountedUpdateMs += sample.cpuMs;
+        }
+        cpuSamples_.push_back(std::move(sample));
+        continue;
+      }
+      samples_.push_back(std::move(sample));
 
       // 内側の区間は外側の時間に含まれるので、一番外の区間だけを足す
       if (timedDepth >= 0 && row.depth <= timedDepth) {
@@ -236,13 +279,14 @@ namespace Tako {
       }
     }
 
-    const float drawMs     = cpuFrames_ > 0 ? drawSum_ / static_cast<float>(cpuFrames_) : 0.0f;
-    frameTimes_.updateMs   = cpuFrames_ > 0 ? updateSum_ / static_cast<float>(cpuFrames_) : 0.0f;
-    frameTimes_.gpuWaitMs  = waitFrames_ > 0 ? gpuWaitSum_ / static_cast<float>(waitFrames_) : 0.0f;
-    frameTimes_.idleMs     = waitFrames_ > 0 ? idleSum_ / static_cast<float>(waitFrames_) : 0.0f;
-    frameTimes_.recordMs   = (std::max)(drawMs - frameTimes_.gpuWaitMs - frameTimes_.idleMs, 0.0f);
-    frameTimes_.gpuMs      = gpuSum_ * perFrame;
-    frameTimes_.otherGpuMs = (std::max)(frameTimes_.gpuMs - accountedGpuMs, 0.0f);
+    const float drawMs        = cpuFrames_ > 0 ? drawSum_ / static_cast<float>(cpuFrames_) : 0.0f;
+    frameTimes_.updateMs      = cpuFrames_ > 0 ? updateSum_ / static_cast<float>(cpuFrames_) : 0.0f;
+    frameTimes_.otherUpdateMs = (std::max)(frameTimes_.updateMs - accountedUpdateMs, 0.0f);
+    frameTimes_.gpuWaitMs     = waitFrames_ > 0 ? gpuWaitSum_ / static_cast<float>(waitFrames_) : 0.0f;
+    frameTimes_.idleMs        = waitFrames_ > 0 ? idleSum_ / static_cast<float>(waitFrames_) : 0.0f;
+    frameTimes_.recordMs      = (std::max)(drawMs - frameTimes_.gpuWaitMs - frameTimes_.idleMs, 0.0f);
+    frameTimes_.gpuMs         = gpuSum_ * perFrame;
+    frameTimes_.otherGpuMs    = (std::max)(frameTimes_.gpuMs - accountedGpuMs, 0.0f);
 
     ++publishCount_;
     std::erase_if(rows_, [](const Row& row) { return row.frames == 0; });
@@ -254,7 +298,7 @@ namespace Tako {
     for (Row& row : rows_) {
       row.cpuMs      = 0.0f;
       row.gpuMs      = 0.0f;
-      row.drawCalls  = 0;
+      row.count      = 0;
       row.frames     = 0;
       row.hasGpuTime = false;
     }
@@ -283,6 +327,10 @@ namespace Tako {
 
     const auto runFrame = [&profiler](bool hasFarCascade) {
       profiler.BeginFrame();
+      const uint32_t components = profiler.BeginCpuScope("Components");
+      profiler.AddCpuSample("Mesh", 0.5f, 3);
+      profiler.EndScope(components, 3);
+      profiler.EndScope(profiler.BeginCpuScope("Collision"));
       const uint32_t shadows = profiler.BeginScope("Shadows");
       profiler.EndScope(profiler.BeginScope("Cascade 0"));
       if (hasFarCascade) {
@@ -308,6 +356,13 @@ namespace Tako {
     assert(samples[3].label == "AfterOpaque" && samples[3].depth == 0 && samples[3].isEvent);
     assert(samples[4].label == "Pass" && samples[4].depth == 1 && !samples[4].hasGpuTime);
 
+    // CPU だけの区間は別の一覧に出る。足した時間は開いている区間の子になり、個数は 1 フレームあたりの平均になる
+    std::span<const ProfileSample> cpuSamples = profiler.GetCpuSamples();
+    assert(cpuSamples.size() == 3);
+    assert(cpuSamples[0].label == "Components" && cpuSamples[0].depth == 0 && cpuSamples[0].count == 3.0f);
+    assert(cpuSamples[1].label == "Mesh" && cpuSamples[1].depth == 1 && cpuSamples[1].cpuMs == 0.5f && cpuSamples[1].count == 3.0f);
+    assert(cpuSamples[2].label == "Collision" && cpuSamples[2].depth == 0 && cpuSamples[2].count == 0.0f && !cpuSamples[2].hasGpuTime);
+
     // 期間の中で 1 回も通らなかった行は消える
     runFrame(false);
     runFrame(false);
@@ -331,7 +386,8 @@ namespace Tako {
     profiler.SetEnabled(false);
     profiler.BeginFrame();
     assert(profiler.BeginScope("Shadows") == FrameProfiler::kInvalidScope);
-    assert(profiler.GetSamples().empty());
+    assert(profiler.BeginCpuScope("Components") == FrameProfiler::kInvalidScope);
+    assert(profiler.GetSamples().empty() && profiler.GetCpuSamples().empty());
   }
 #endif
 

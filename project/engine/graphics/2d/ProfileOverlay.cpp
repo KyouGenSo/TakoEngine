@@ -1,9 +1,12 @@
 #include "ProfileOverlay.h"
 
+#include <algorithm>
 #include <format>
+#include <functional>
 #include <span>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "FrameProfiler.h"
 #include "FrameTimer.h"
@@ -15,15 +18,19 @@ namespace Tako {
 
   namespace {
 
-    constexpr float   kTextSize     = 18.0f;      // px
-    constexpr float   kOutlineWidth = 1.5f;       // px
-    constexpr float   kOriginX      = 16.0f;      // 画面の左上から（px）
-    constexpr float   kOriginY      = 16.0f;
-    constexpr float   kNameWidth    = 260.0f;     // 名前の列の幅（px）
-    constexpr float   kValueWidth   = 90.0f;      // 数字の列の幅（px）
-    constexpr float   kFpsWidth     = 160.0f;     // FPS の箱の幅（px）
-    constexpr int32_t kSortingOrder = 1'000'000;  // ゲームの UI より手前
-    constexpr uint8_t kMaxDepth     = 1;          // これより深い区間は出さない
+    constexpr float   kTextSize       = 18.0f;                                  // px
+    constexpr float   kOutlineWidth   = 1.5f;                                   // px
+    constexpr float   kOriginX        = 16.0f;                                  // 画面の左上から（px）
+    constexpr float   kOriginY        = 16.0f;
+    constexpr float   kNameWidth      = 260.0f;                                 // 名前の列の幅（px）
+    constexpr float   kValueWidth     = 90.0f;                                  // 数字の列の幅（px）
+    constexpr float   kTableGap       = 40.0f;                                  // 左の表と右の表の間（px）
+    constexpr float   kRenderTableX   = kNameWidth + kValueWidth + kTableGap;   // 右の表の左端
+    constexpr float   kFpsWidth       = 160.0f;                                 // FPS の箱の幅（px）
+    constexpr int32_t kSortingOrder   = 1'000'000;                              // ゲームの UI より手前
+    constexpr uint8_t kMaxDepth       = 1;                                      // 描画の区間は、これより深い物を出さない
+    constexpr size_t  kMaxNameLength  = 22;                                     // 名前はこのバイト数で切る（長いと数字の列に重なる）
+    constexpr size_t  kMaxCpuChildren = 5;                                      // 更新の区間 1 つにつき、中の区間を時間の長い順にこの数まで出す
 
     std::unique_ptr<Text> MakeColumn(float x)
     {
@@ -35,10 +42,33 @@ namespace Tako {
       return text;
     }
 
+    /// <summary>
+    /// 深さの分だけ字下げした、表に出す名前
+    /// </summary>
+    std::string RowName(const ProfileSample& sample)
+    {
+      size_t length = (std::min)(sample.label.size(), kMaxNameLength);
+      // UTF-8 の文字の途中で切らない
+      while (length > 0 && length < sample.label.size() && (static_cast<unsigned char>(sample.label[length]) & 0xC0) == 0x80) {
+        --length;
+      }
+      return std::string(static_cast<size_t>(sample.depth) * 2, ' ').append(sample.label, 0, length);
+    }
+
+    std::string Ms(float value)
+    {
+      return std::format("{:.2f}", value);
+    }
+
   } // anonymous namespace
 
   ProfileOverlay::ProfileOverlay()
-    : names_(MakeColumn(0.0f)), cpuValues_(MakeColumn(kNameWidth)), gpuValues_(MakeColumn(kNameWidth + kValueWidth)), fps_(MakeColumn(0.0f))
+    : frameNames_(MakeColumn(0.0f))
+    , frameValues_(MakeColumn(kNameWidth))
+    , renderNames_(MakeColumn(kRenderTableX))
+    , renderCpuValues_(MakeColumn(kRenderTableX + kNameWidth))
+    , renderGpuValues_(MakeColumn(kRenderTableX + kNameWidth + kValueWidth))
+    , fps_(MakeColumn(0.0f))
   {
   }
 
@@ -48,27 +78,53 @@ namespace Tako {
   {
     if (publishCount_ != profiler.GetPublishCount()) {
       publishCount_ = profiler.GetPublishCount();
-
-      // 3 つの列は別々の文字列なので、行の数がずれないよう必ず 1 行ずつ足す
-      std::string names;
-      std::string cpu;
-      std::string gpu;
-      const auto addLine = [&](std::string_view name, std::string_view cpuText, std::string_view gpuText) {
-        names.append(name).push_back('\n');
-        cpu.append(cpuText).push_back('\n');
-        gpu.append(gpuText).push_back('\n');
-      };
-      const auto ms = [](float value) { return std::format("{:.2f}", value); };
-
       const FrameTimes& times = profiler.GetFrameTimes();
-      addLine("", "CPU ms", "GPU ms");
-      addLine("CPU Update", ms(times.updateMs), "");
-      addLine("CPU Render", ms(times.recordMs), "");
-      addLine("GPU", "", ms(times.gpuMs));
-      addLine("Wait for GPU", ms(times.gpuWaitMs), "");
-      addLine("Idle", ms(times.idleMs), "");
-      addLine("", "", "");
 
+      // 1 つの表の列は別々の文字列なので、行の数がずれないよう必ず 1 行ずつ足す
+      std::string frameNames;
+      std::string frameValues;
+      const auto addFrameLine = [&](std::string_view name, std::string_view value) {
+        frameNames.append(name).push_back('\n');
+        frameValues.append(value).push_back('\n');
+      };
+      addFrameLine("Frame", "ms");
+      addFrameLine("CPU Update", Ms(times.updateMs));
+      addFrameLine("CPU Render", Ms(times.recordMs));
+      addFrameLine("GPU", Ms(times.gpuMs));
+      addFrameLine("Wait for GPU", Ms(times.gpuWaitMs));
+      addFrameLine("Idle", Ms(times.idleMs));
+      addFrameLine("", "");
+
+      // 更新の区間（CPU Update の内訳）。一番外の区間と、その直下の区間を出す
+      addFrameLine("Update", "");
+      const std::span<const ProfileSample> cpuSamples = profiler.GetCpuSamples();
+      std::vector<const ProfileSample*>    children;
+      for (size_t i = 0; i < cpuSamples.size();) {
+        addFrameLine(RowName(cpuSamples[i]), Ms(cpuSamples[i].cpuMs));
+        children.clear();
+        for (++i; i < cpuSamples.size() && cpuSamples[i].depth > 0; ++i) {
+          if (cpuSamples[i].depth == 1) {
+            children.push_back(&cpuSamples[i]);
+          }
+        }
+        // 型の多いゲームで縦に伸びないよう、時間の長い順に並べて頭だけ出す
+        const size_t shownCount = (std::min)(children.size(), kMaxCpuChildren);
+        std::ranges::partial_sort(children, children.begin() + static_cast<std::ptrdiff_t>(shownCount), std::ranges::greater{}, &ProfileSample::cpuMs);
+        for (size_t child = 0; child < shownCount; ++child) {
+          addFrameLine(RowName(*children[child]), Ms(children[child]->cpuMs));
+        }
+      }
+      addFrameLine("Other", Ms(times.otherUpdateMs));
+
+      std::string renderNames;
+      std::string renderCpu;
+      std::string renderGpu;
+      const auto addRenderLine = [&](std::string_view name, std::string_view cpuText, std::string_view gpuText) {
+        renderNames.append(name).push_back('\n');
+        renderCpu.append(cpuText).push_back('\n');
+        renderGpu.append(gpuText).push_back('\n');
+      };
+      addRenderLine("Render", "CPU ms", "GPU ms");
       const std::span<const ProfileSample> samples = profiler.GetSamples();
       for (size_t i = 0; i < samples.size(); ++i) {
         const ProfileSample& sample   = samples[i];
@@ -77,14 +133,18 @@ namespace Tako {
         if (sample.depth > kMaxDepth || (sample.isEvent && !hasChild)) {
           continue;
         }
-        addLine(std::string(static_cast<size_t>(sample.depth) * 2, ' ') + sample.label, sample.isEvent ? std::string() : ms(sample.cpuMs),
-                sample.hasGpuTime ? ms(sample.gpuMs) : std::string());
+        addRenderLine(RowName(sample), sample.isEvent ? std::string() : Ms(sample.cpuMs), sample.hasGpuTime ? Ms(sample.gpuMs) : std::string());
       }
-      addLine("Other", "", ms(times.otherGpuMs));
+      addRenderLine("Other", "", Ms(times.otherGpuMs));
 
-      names_->SetLayout({ .string = names, .size = kTextSize, .wrap = false });
-      cpuValues_->SetLayout({ .string = cpu, .size = kTextSize, .boxSize = { kValueWidth, 0.0f }, .align = { 1.0f, 0.0f }, .wrap = false });
-      gpuValues_->SetLayout({ .string = gpu, .size = kTextSize, .boxSize = { kValueWidth, 0.0f }, .align = { 1.0f, 0.0f }, .wrap = false });
+      const auto setValues = [](Text& text, const std::string& values) {
+        text.SetLayout({ .string = values, .size = kTextSize, .boxSize = { kValueWidth, 0.0f }, .align = { 1.0f, 0.0f }, .wrap = false });
+      };
+      frameNames_->SetLayout({ .string = frameNames, .size = kTextSize, .wrap = false });
+      renderNames_->SetLayout({ .string = renderNames, .size = kTextSize, .wrap = false });
+      setValues(*frameValues_, frameValues);
+      setValues(*renderCpuValues_, renderCpu);
+      setValues(*renderGpuValues_, renderGpu);
     }
 
     // FPS は 1 秒ごとの値（FrameTimer が表示用に持つ物）を、箱の右上を画面の右上に合わせて出す
@@ -97,18 +157,16 @@ namespace Tako {
     fps_->SetPos({ static_cast<float>(WinApp::clientWidth) - kOriginX, kOriginY });
 
     // まだ作れていない字と、窓の大きさの変更に追従するため、文字が同じでも毎フレーム呼ぶ
-    names_->Update();
-    cpuValues_->Update();
-    gpuValues_->Update();
-    fps_->Update();
+    for (Text* text : { frameNames_.get(), frameValues_.get(), renderNames_.get(), renderCpuValues_.get(), renderGpuValues_.get(), fps_.get() }) {
+      text->Update();
+    }
   }
 
   void ProfileOverlay::Draw()
   {
-    names_->Draw();
-    cpuValues_->Draw();
-    gpuValues_->Draw();
-    fps_->Draw();
+    for (Text* text : { frameNames_.get(), frameValues_.get(), renderNames_.get(), renderCpuValues_.get(), renderGpuValues_.get(), fps_.get() }) {
+      text->Draw();
+    }
   }
 
 } // namespace Tako

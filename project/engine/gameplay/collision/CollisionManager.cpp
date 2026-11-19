@@ -4,6 +4,9 @@
 #include "OBBCollider.h"
 #include "LineRenderer.h"
 #include "ColorFunc.h"
+#include "DX12Basic.h"
+#include "FrameProfiler.h"
+#include "Renderer.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -44,7 +47,9 @@ namespace Tako {
   }
 
   void CollisionManager::CheckAllCollisions() {
-    const auto start = std::chrono::steady_clock::now();
+    FrameProfiler& profiler       = Renderer::GetInstance()->GetDX12Basic()->GetProfiler();
+    const uint32_t collisionScope = profiler.BeginCpuScope("Collision");
+    const auto     start          = std::chrono::steady_clock::now();
 
     std::swap(previousCollisions_, currentCollisions_);
     currentCollisions_.clear();
@@ -83,6 +88,8 @@ namespace Tako {
 
     lastCheckMs_ = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - start).count();
 
+    // Enter / Stay / Exit の通知（受け取る側のコードの時間）
+    const uint32_t callbackScope = profiler.BeginCpuScope("Callbacks");
     for (const auto& pair : currentCollisions_) {
       if (previousCollisions_.find(pair) == previousCollisions_.end()) {
         pair.first->OnCollisionEnter(pair.second);
@@ -100,6 +107,8 @@ namespace Tako {
         pair.second->OnCollisionExit(pair.first);
       }
     }
+    profiler.EndScope(callbackScope);
+    profiler.EndScope(collisionScope);
   }
 
   void CollisionManager::AddCollider(Collider* collider) {
