@@ -918,9 +918,16 @@ namespace Tako {
       return true;
     });
 
+    // 書いていないスロットは白を仮に入れる（Mesh は、gTexture が仮のままならモデルのテクスチャで描く）
     for (const std::string& slot : slots) {
-      const auto file = asset.textures.find(slot);
-      material.SetTexture(MakeShaderParamId(slot), ResolveTexture(file != asset.textures.end() ? file->second : std::string()));
+      const ShaderParamId id   = MakeShaderParamId(slot);
+      const auto          file = asset.textures.find(slot);
+      if (file != asset.textures.end() && !file->second.empty()) {
+        material.SetTexture(id, ResolveTexture(file->second));
+      }
+      else {
+        material.SetPlaceholderTexture(id, ResolveTexture(std::string()));
+      }
     }
   }
 

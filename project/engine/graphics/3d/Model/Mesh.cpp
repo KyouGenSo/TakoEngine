@@ -154,7 +154,13 @@ namespace Tako {
 
   void Mesh::Submit(DrawItem item) const
   {
-    item.material = item.material ? item.material : &GetMaterial();
+    if (!item.material) {
+      item.material = &GetMaterial();
+    }
+    // 差し替えたマテリアルが gTexture を指定していなければ、モデルのテクスチャで描く
+    if (item.material != material_.get() && item.textureOverride == 0 && !item.material->HasTexture("gTexture"_id)) {
+      item.textureOverride = textureData_.textureIndex;
+    }
     item.vertexBuffer = hasSkinning_ ? &skinnedVertexBufferView_ : &vertexBufferView_;
     item.indexBuffer = &indexBufferView_;
     item.indexCount = static_cast<uint32_t>(indices_.size());

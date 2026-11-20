@@ -77,6 +77,11 @@ namespace Tako {
     /// </summary>
     void SetTexture(ShaderParamId id, uint32_t srvIndex);
 
+    /// <summary>
+    /// 画像を指定していないスロットに、仮の画像を割り当てる（Mesh は、gTexture が仮の画像のマテリアルで描くとき、モデルのテクスチャを渡す）
+    /// </summary>
+    void SetPlaceholderTexture(ShaderParamId id, uint32_t srvIndex);
+
     void SetBlendMode(BlendMode blend) { stateOverride_.blend = blend; }
     void SetCullMode(CullMode cull) { stateOverride_.cull = cull; }
     void SetDepthTest(bool depthTest) { stateOverride_.depthTest = depthTest; }
@@ -123,6 +128,11 @@ namespace Tako {
     /// </summary>
     uint32_t GetTexture(ShaderParamId id) const;
 
+    /// <summary>
+    /// 名前に画像を指定してあるか（未割り当てと仮の画像は false）
+    /// </summary>
+    bool HasTexture(ShaderParamId id) const;
+
   private: //メンバー変数
     const ShaderAsset* shader_ = nullptr;
 
@@ -130,8 +140,9 @@ namespace Tako {
     RenderStateOverride    stateOverride_;
     std::optional<int32_t> queueOverride_;  ///< 無ければシェーダーの描画キュー
 
-    std::vector<uint8_t>                            constants_;  ///< gMaterial の中身（色は sRGB のまま）
-    std::vector<std::pair<ShaderParamId, uint32_t>> textures_;   ///< シェーダーの名前と SRV インデックス
+    std::vector<uint8_t>                            constants_;     ///< gMaterial の中身（色は sRGB のまま）
+    std::vector<std::pair<ShaderParamId, uint32_t>> textures_;      ///< シェーダーの名前と SRV インデックス
+    std::vector<ShaderParamId>                      placeholders_;  ///< textures_ のうち、仮の画像のスロット
   };
 
 } // namespace Tako

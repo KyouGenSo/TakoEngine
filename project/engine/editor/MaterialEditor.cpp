@@ -425,7 +425,7 @@ namespace Tako {
         std::array<char, 128> file{};
         current["Textures"].value(slot, std::string()).copy(file.data(), file.size() - 1);
         // 打ち終えたときか、アセットウィンドウから落とされたときだけ読み込む（途中の名前で TextureManager を探さない）
-        UI::InputTextWithHint(slot.c_str(), "white.png", file.data(), file.size());
+        UI::InputTextWithHint(slot.c_str(), slot == "gTexture" ? "(model's texture)" : "white.png", file.data(), file.size());
         const std::optional<std::string> dropped = AcceptAssetDrop("Texture");
         if (ImGui::IsItemDeactivatedAfterEdit() || dropped) {
           current["Textures"][slot] = dropped.value_or(file.data());

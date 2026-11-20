@@ -36,6 +36,7 @@ namespace Tako {
     stateOverride_ = source.stateOverride_;
     queueOverride_ = source.queueOverride_;
     textures_ = source.textures_;
+    placeholders_ = source.placeholders_;
     if (!source.constants_.empty()) {
       std::ranges::copy(source.constants_, GetConstantBytes(source.constants_.size()).begin());
     }
@@ -62,6 +63,7 @@ namespace Tako {
 
   void Material::SetTexture(ShaderParamId id, uint32_t srvIndex)
   {
+    std::erase(placeholders_, id);
     auto it = std::find_if(textures_.begin(), textures_.end(), [id](const auto& texture) { return texture.first == id; });
     if (srvIndex == 0) {
       if (it != textures_.end()) {
@@ -77,10 +79,23 @@ namespace Tako {
     }
   }
 
+  void Material::SetPlaceholderTexture(ShaderParamId id, uint32_t srvIndex)
+  {
+    SetTexture(id, srvIndex);
+    if (srvIndex != 0) {
+      placeholders_.push_back(id);
+    }
+  }
+
   uint32_t Material::GetTexture(ShaderParamId id) const
   {
     auto it = std::find_if(textures_.begin(), textures_.end(), [id](const auto& texture) { return texture.first == id; });
     return it != textures_.end() ? it->second : 0;
+  }
+
+  bool Material::HasTexture(ShaderParamId id) const
+  {
+    return GetTexture(id) != 0 && std::ranges::find(placeholders_, id) == placeholders_.end();
   }
 
 } // namespace Tako

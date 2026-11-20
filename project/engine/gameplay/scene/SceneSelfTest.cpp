@@ -8,6 +8,7 @@
 #include "Frustum.h"
 #include "Logger.h"
 #include "Mat4x4Func.h"
+#include "Material.h"
 #include "MeshComponent.h"
 #include "Model.h"
 #include "Object3d.h"
@@ -133,6 +134,15 @@ namespace Tako {
     assert(drawList.GetVisibility(frustum).size() == 3 && drawList.GetVisibility(frustum)[2]);
     assert(drawList.GetVisibility(Frustum{})[1]);
     assert(!drawList.GetVisibility(frustum)[1]);
+
+    // 仮の画像：割り当ては読めるが「指定あり」ではない。指定すると印が外れ、複製は印を写す
+    const ShaderAsset placeholderShader("SelfTest");
+    Material          placeholderMaterial(&placeholderShader);
+    placeholderMaterial.SetPlaceholderTexture("gTexture"_id, 5);
+    assert(placeholderMaterial.GetTexture("gTexture"_id) == 5 && !placeholderMaterial.HasTexture("gTexture"_id));
+    assert(placeholderMaterial.Clone()->GetTexture("gTexture"_id) == 5 && !placeholderMaterial.Clone()->HasTexture("gTexture"_id));
+    placeholderMaterial.SetTexture("gTexture"_id, 7);
+    assert(placeholderMaterial.HasTexture("gTexture"_id) && !placeholderMaterial.HasTexture("gNoise"_id));
 
     BaseScene scene;
     Actor*    parent     = scene.Spawn("Actor");

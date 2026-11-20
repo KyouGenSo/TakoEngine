@@ -5,9 +5,11 @@
 ### 追加・変更
 - 描画物用のシェーダー `HalfTone` を追加。光が弱い所ほど大きいドットで陰を描く（平行光源・点光源・スポットライトと影に反応する）。Material Editor で Shader に HalfTone を選んだマテリアルを作り、Mesh コンポーネントの Material に指定する
 - 自作のシェーダーでライトを読むための `Light.hlsli` を追加（ライトの構造体と宣言、距離の減衰の `PointLightAttenuation`・`SpotLightAttenuation`）
+- マテリアルを差し替えたモデル（Mesh コンポーネントの Material・`Object3d::SetMaterial`）は、そのマテリアルが `gTexture` を指定していなければ、モデルのテクスチャで描く（今までは白）。マテリアルや Mesh コンポーネントの Textures に画像を指定すれば、今までどおりその画像で描く
 
 ### 直しが要る変更（ゲーム側）
 - ポストエフェクトの `HalfTone` を削除（上の描画物用のシェーダーに置き換えた）。プロファイルに HalfTone があれば、読み込んだときに外れるので保存し直す。コードで `HalfToneParam` を使っている所は消す
+- 差し替えたマテリアルで、テクスチャ付きのモデルを白のまま描きたいときは、マテリアルの Textures の `gTexture` に `white.png` を指定する
 
 ## [2.1.4] - 2026-11-20
 
