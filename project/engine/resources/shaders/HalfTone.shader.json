@@ -1,0 +1,23 @@
+{
+    "Name": "HalfTone",
+    "Fallback": "Lit",
+    "Forward": {
+        "PS": "HalfTone.PS.hlsl"
+    },
+    "Properties": {
+        "dotSize": [2, 64],
+        "angle": [0, 90],
+        "toneMin": [0, 1],
+        "toneMax": [0, 1],
+        "dotShape": [0, 2]
+    },
+    "Defaults": {
+        "color": [1, 1, 1, 1],
+        "shadeColor": [0.1, 0.1, 0.2],
+        "dotSize": 10,
+        "angle": 45,
+        "toneMin": 0.05,
+        "toneMax": 0.5,
+        "dotShape": 0
+    }
+}

@@ -48,7 +48,6 @@ namespace Tako {
   NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DepthOutlineParam, outlineThickness)
   NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(FogParam, color, density)
   NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DissolveParam, threshold, edgeThickness, edgeColor)
-  NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(HalfToneParam, dotSize, contrast, angle, dotPattern, colorMode, threshold)
   NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GaussianBlurParam, sigma, kernelSize)
 
   namespace {
@@ -247,20 +246,6 @@ namespace Tako {
       UI::DragFloat("Dissolve Threshold", &param.threshold, 0.01f, 0.0f, 1.0f);
       UI::DragFloat("Edge Thickness", &param.edgeThickness, 0.01f, 0.0f, 1.0f);
       UI::ColorEdit4("Edge Color", &param.edgeColor.r);
-    }
-
-    void DrawParam(HalfToneParam& param)
-    {
-      UI::DragFloat("Dot Size", &param.dotSize, 1.0f, 1.0f, 50.0f);
-      UI::DragFloat("Contrast", &param.contrast, 0.01f, 0.1f, 3.0f);
-      UI::DragFloat("Angle", &param.angle, 0.01f, 0.0f, 6.28f);
-      UI::DragFloat("Threshold", &param.threshold, 0.01f, 0.0f, 1.0f);
-
-      const char* patterns[] = { "Circle", "Square", "Diamond" };
-      UI::Combo("Dot Pattern", &param.dotPattern, patterns, 3);
-
-      const char* colorModes[] = { "Monochrome", "CMYK" };
-      UI::Combo("Color Mode", &param.colorMode, colorModes, 2);
     }
 
     void DrawParam(GaussianBlurParam& param)
@@ -532,14 +517,6 @@ namespace Tako {
       .defaultParam = WhiteNoiseParam{},
       .setup        = [](const PostEffectFrame&, EffectParam& param, CommandContext::ShaderBinder&) {
         std::get<WhiteNoiseParam>(param).time = FrameTimer::GetInstance()->GetGameTime();
-      },
-    });
-
-    RegisterPostEffect("HalfTone", {
-      .pixelShader  = L"HalfTone.PS.hlsl",
-      .defaultParam = HalfToneParam{ .dotSize = 8.0f, .contrast = 1.0f },
-      .setup        = [](const PostEffectFrame& frame, EffectParam& param, CommandContext::ShaderBinder&) {
-        std::get<HalfToneParam>(param).screenSize = { static_cast<float>(frame.width), static_cast<float>(frame.height) };
       },
     });
 

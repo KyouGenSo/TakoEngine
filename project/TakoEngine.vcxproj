@@ -710,6 +710,7 @@
     </None>
     <None Include="engine\resources\shaders\Common.hlsli" />
     <None Include="engine\resources\shaders\Shadow.hlsli" />
+    <None Include="engine\resources\shaders\Light.hlsli" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

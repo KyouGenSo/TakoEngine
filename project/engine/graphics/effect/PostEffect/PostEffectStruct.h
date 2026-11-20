@@ -118,22 +118,6 @@ namespace Tako {
   };
 
   /// <summary>
-  /// ハーフトーン効果パラメータ
-  /// 印刷物のようなドットパターン効果
-  /// </summary>
-  struct HalfToneParam
-  {
-    float   dotSize;     ///< ドットのサイズ（大きいほど粗い）
-    float   contrast;
-    float   angle;       ///< ドットグリッドの回転角度（ラジアン）
-    int32_t dotPattern;  ///< 0=円, 1=四角, 2=ダイヤモンド
-    Vector2 screenSize;  ///< スクリーン解像度（ピクセル）
-    int32_t colorMode;   ///< 0=モノクロ, 1=CMYK 風
-    float   threshold;   ///< 明暗の閾値
-    float   padding;
-  };
-
-  /// <summary>
   /// エフェクトのパラメータ（std::monostate はパラメータを持たないエフェクト、PropertyBlock は .shader.json で登録したエフェクト）。中身はそのまま gParam の定数バッファになる
   /// </summary>
   using EffectParam = std::variant<
@@ -148,7 +132,6 @@ namespace Tako {
     DepthOutlineParam,
     DissolveParam,
     WhiteNoiseParam,
-    HalfToneParam,
     GaussianBlurParam,
     PropertyBlock
   >;

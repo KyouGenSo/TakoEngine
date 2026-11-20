@@ -1151,7 +1151,7 @@
       <Filter>shader\PostEffect</Filter>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\HalfTone.PS.hlsl">
-      <Filter>shader\PostEffect</Filter>
+      <Filter>shader\3D</Filter>
     </FxCompile>
     <FxCompile Include="engine\resources\shaders\LuminanceBasedOutline.PS.hlsl">
       <Filter>shader\PostEffect</Filter>
@@ -1294,6 +1294,9 @@
       <Filter>shader</Filter>
     </None>
     <None Include="engine\resources\shaders\Shadow.hlsli">
+      <Filter>shader</Filter>
+    </None>
+    <None Include="engine\resources\shaders\Light.hlsli">
       <Filter>shader</Filter>
     </None>
   </ItemGroup>

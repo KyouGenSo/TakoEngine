@@ -1,6 +1,7 @@
 #include "Object3d.hlsli"
 #include "View.hlsli"
 #include "Common.hlsli"
+#include "Light.hlsli"
 #include "Shadow.hlsli"
 
 struct Material
@@ -14,57 +15,15 @@ struct Material
     int enableEnvMap;
 };
 
-struct DirectionalLight
-{
-    float4 color;
-    float3 direction;
-    int lightType;
-    float intensity;
-};
-
-struct PointLight
-{
-    float4 color;
-    float3 position;
-    float intensity;
-    float radius;
-    float decay;
-    int enable;
-    int shadowSlice; // gShadowConstants.slices の番号（6 面の先頭）。負なら影なし
-};
-
-struct SpotLight
-{
-    float4 color;
-    float3 position;
-    float intensity;
-    float3 direction;
-    float radius;
-    float decay;
-    float cosAngle;
-    int enable;
-    int shadowSlice; // gShadowConstants.slices の番号。負なら影なし
-};
-
-cbuffer LightConstants : register(b3)
-{
-    int gNumPointLights;
-    int gNumSpotLights;
-};
-
 struct PixelShaderOutput
 {
     float4 color : SV_TARGET0;
 };
 
 ConstantBuffer<Material> gMaterial : register(b0);
-ConstantBuffer<DirectionalLight> gDirectionalLight : register(b1);
 ConstantBuffer<View> gView : register(b2);
 
 Texture2D<float4> gTexture : register(t0);
-
-StructuredBuffer<PointLight> gPointLights : register(t1);
-StructuredBuffer<SpotLight> gSpotLight : register(t2);
 
 TextureCube<float4> gEnvironmentMap : register(t3);
 
@@ -127,8 +86,7 @@ PixelShaderOutput main(VertexShaderOutput input)
                 float NdotH = dot(normalize(input.normal), halfVector);
                 float specularPow = pow(saturate(NdotH), gMaterial.shininess);
         
-                float distance = length(gPointLights[i].position - input.worldPos);
-                float factor = pow(saturate(-distance / gPointLights[i].radius + 1.0f), gPointLights[i].decay);
+                float factor = PointLightAttenuation(gPointLights[i], input.worldPos);
                 float pointShadow = 1.0;
                 if (factor > 0.0)
                 {
@@ -159,18 +117,13 @@ PixelShaderOutput main(VertexShaderOutput input)
                 float NdotH = dot(normalize(input.normal), halfVector);
                 float specularPow = pow(saturate(NdotH), gMaterial.shininess);
                 
-                float distance = length(gSpotLight[j].position - input.worldPos);
-                float factor = pow(saturate(-distance / gSpotLight[j].radius + 1.0f), gSpotLight[j].decay);
-                
-                float cosAngle = dot(spotLightDirOnSurface, gSpotLight[j].direction);
-                float falloffFactor = saturate((cosAngle - gSpotLight[j].cosAngle) / (1.0f - gSpotLight[j].cosAngle));
-                
+                float factor = SpotLightAttenuation(gSpotLight[j], input.worldPos);
                 float spotShadow = 1.0;
-                if (factor * falloffFactor > 0.0)
+                if (factor > 0.0)
                 {
                     spotShadow = SpotShadow(gSpotLight[j].shadowSlice, gSpotLight[j].position, input.worldPos, input.normal);
                 }
-                float3 spotLightColor = gSpotLight[j].color.rgb * gSpotLight[j].intensity * factor * falloffFactor * spotShadow;
+                float3 spotLightColor = gSpotLight[j].color.rgb * gSpotLight[j].intensity * factor * spotShadow;
                 
                 // 拡散反射
                 float NdotL = saturate(dot(normalize(input.normal), -spotLightDirOnSurface));
