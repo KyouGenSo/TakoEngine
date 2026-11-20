@@ -2,32 +2,17 @@
 
 ## [2.1.4] - 2026-11-20
 
-### 追加
-- ビルドの構成 Develop。Debug と同じくエディタ（`TakoEditor.exe`）で動き、スクリプトのコンパイルと差し替えもできる。C++ の最適化が効いていて、DirectX のデバッグレイヤーを使わないので、Debug より速い（エンジンのテスト用のシーンで、1 フレームが約 4 ms から約 1.3 ms になった）。普段の作業は Develop、デバッガーで 1 行ずつ追うときと、デバッグレイヤーの検査が要るときは Debug を使う
-  - Visual Studio の構成を Develop にして実行すると、Develop のエディタが開く。ゲームの DLL は `Generated\outputs\Develop\Game.dll` にできる
-  - `assert` は Develop でも効く
-  - エディタのメニューバーの中央に、構成の名前が出る（`TakoEngine 2.1.4 (Develop)`）
-- マクロ `TAKO_EDITOR`。エディタがある構成（Debug と Develop）で定義される。`_DEBUG` は今までどおり、Debug だけで定義される
-- 描画の時間の計測。Render Pipeline ウィンドウの Frame タブに、手順ごとの描画回数・CPU の時間（描画のコマンドを積むのに掛かった時間）・GPU の時間が出る（直近 0.5 秒の、1 フレームあたりの平均）
-  - 影は視点ごと（Cascade・Local）、ポストエフェクトはエフェクトごと、パーティクルは計算（Simulate）と描画（Draw）に分かれる。`RenderPipeline::AddRenderPass` で足したパスも、その名前の行で出る。エディタの分（Debug Viewport・プレビュー・ImGui）も出る
-  - Frame タブの Measure のチェックを外すと、計測を止める（保存はされず、エディタを起動するたびにオンに戻る）
-  - Debug のエディタでは、デバッグレイヤーと、シェーダーを最適化しないぶん、時間が長く出る。実際の値は Develop のエディタで見る
-- Performance ウィンドウの Frame Time。1 フレームの内訳（CPU Update・CPU Render・GPU・Wait for GPU・Idle）が出る。FPS の上限で待っている時間（Idle）と、実際に掛かっている時間を分けて見られる
-  - その下の CPU Update の欄に、更新の内訳が出る。コンポーネントとスクリプトは型ごと（スクリプトはクラスの名前）に 1 行で、Tick と LateTick を合わせた時間と、その型の有効なコンポーネントの個数が出る。どのスクリプトが重いかを見られる
-  - 当たり判定は Collision の行に出る。その下の Callbacks は、`OnCollisionEnter` などの通知に掛かった時間（受け取る側のコードの時間）
-- 起動の引数 `--profile`。Release の exe に付けて起動すると、同じ計測の結果を画面の左上に、FPS を右上に重ねて出す（付けなければ計測しない）
-  - 左上には表が 2 つ並ぶ（左：1 フレームの内訳と更新の内訳、右：描画の内訳）。更新の内訳の型ごとの行は、時間の長い順に 5 個まで出る
-  - 新しく作るプロジェクトのルートには `RunProfile.bat` が入っている。実行すると、Release の exe を `--profile` 付きで起動する（先に Release をビルドしておく）。今あるプロジェクトでは、エンジンのひな形 `Engine\TakoEngine\templates\Default\RunProfile.bat` をプロジェクトのルートに写し、中の `__ProjectName__` をすべて exe の名前（拡張子なし）に替える
-
-### 変更
-- シェーダーが使う値を渡さずに描いたときに止まる検査は、Debug と Develop の両方で動く。足りない名前は、エディタの Console と Visual Studio の出力に出る（今までは、止まったときの窓に出ていた）
+### 追加・変更
+- ビルドの構成 Develop を追加。最適化が効いたエディタで、Debug より速く動く（エンジンのテスト用のシーンで、1 フレームが約 4 ms から約 1.3 ms）。普段の作業は Develop、デバッガーで 1 行ずつ追うときは Debug を使う
+- マクロ `TAKO_EDITOR` を追加。エディタがある構成（Debug と Develop）で定義される。`_DEBUG` は今までどおり Debug だけ
+- 描画の時間の計測を追加。Render Pipeline ウィンドウの Frame タブに、描画の手順ごとの描画回数・CPU の時間・GPU の時間が出るので、どの描画が重いかを見られる
+- 更新の時間の計測を追加。Performance ウィンドウに、1 フレームの内訳（Frame Time）と、更新の内訳（CPU Update）が出る。スクリプトはクラスごと、当たり判定は別の行で出るので、どのスクリプトが重いかを見られる
+- 起動の引数 `--profile` を追加。Release の exe に付けて起動すると、同じ計測の結果と FPS を画面に重ねて出す。新しく作るプロジェクトには、これで起動する `RunProfile.bat` が入っている
+- シェーダーが使う値を渡さずに描いたときに止まる検査が、Develop でも動くようにした。足りない名前は、エディタの Console と Visual Studio の出力に出る
 
 ### 直しが要る変更（ゲーム側）
-- エディタ用のコード（`DrawCustomImGui`・`#include "imgui.h"` など）を囲んでいる `#ifdef _DEBUG` を、`#ifdef TAKO_EDITOR` に替える。替えなくてもビルドは通り、Debug と Release は今までどおり動くが、Develop のエディタではその表示が出ない
-- 今あるプロジェクトで Develop を使うには、プロジェクトに構成を足す（新しく作るプロジェクトには最初から入っている。足さなくても Debug と Release は今までどおり使えるが、Develop のエディタでは、ゲームのスクリプトを読めず、コンパイルもできない）
-  - `GameProject\<名前>.vcxproj`：エンジンのひな形 `Engine\TakoEngine\templates\Default\GameProject\__ProjectName__.vcxproj` で `Develop|x64` が付いている 2 つの組（`ProjectConfiguration` と `PropertyGroup`）を、それぞれ Debug の組の後ろに写す
-  - `<名前>.sln`：ひな形 `Engine\TakoEngine\templates\Default\__ProjectName__.sln` の `Develop|x64` の 3 行を写す（`{__GUID__}` は、そのプロジェクトの Debug の行と同じ物にする）
-  - `<名前>.slnx` を使っているプロジェクト：`<Configurations>` の中に `<BuildType Name="Debug" />`・`<BuildType Name="Develop" />`・`<BuildType Name="Release" />` を足す
+- エディタ用のコードを囲んでいる `#ifdef _DEBUG` を、`#ifdef TAKO_EDITOR` に替える。替えないと、Develop のエディタでその表示が出ない（Debug と Release は今までどおり動く）
+- 今あるプロジェクトで Develop を使うには、`.vcxproj` と `.sln` に構成 `Develop|x64` を足す。エンジンのひな形（`Engine\TakoEngine\templates\Default`）の同じファイルから、`Develop` の付いた所を写す。`.slnx` のプロジェクトは、`<Configurations>` に Debug・Develop・Release の `BuildType` を並べる。足さなくても、Debug と Release は今までどおり使える
 
 ## [2.1.3] - 2026-11-20
 
