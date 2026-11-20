@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title><!--TITLE--></title>
+<meta name="description" content="<!--DESCRIPTION-->">
+<meta property="og:type" content="website">
+<meta property="og:title" content="<!--TITLE-->">
+<meta property="og:description" content="<!--DESCRIPTION-->">
+<meta property="og:url" content="<!--URL-->">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐙</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDGothic:wght@400;700&family=BIZ+UDPGothic:wght@400;700&family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@700;900&display=swap">
+<script>
+// 描く前にテーマを決める（保存が無ければ OS の設定に従う）
+try { const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch {}
+</script>
+<style>
+:root {
+  --bg: #f4f6f9; --surface: #ffffff; --ink: #1a2030; --muted: #586276; --rule: #d9dee7;
+  --accent: #2350b5; --accent-soft: #e6ecfa;
+  --code-bg: #eef1f6; --code-ink: #1d2433;
+  --tk-key: #7a2ea8; --tk-str: #1d7444; --tk-com: #6f7889; --tk-num: #b0421a; --tk-type: #1c5ca3; --tk-title: #875000; --tk-meta: #9c3667;
+
+  --f-display: "Zen Kaku Gothic New", "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic UI", sans-serif;
+  --f-body: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif;
+  --f-code: "JetBrains Mono", "BIZ UDGothic", ui-monospace, "Consolas", monospace;
+  --f-grid: "BIZ UDGothic", "MS Gothic", ui-monospace, monospace;
+
+  --step-0: 1rem; --step-1: 1.15rem; --step-2: 1.4rem; --step-3: 1.9rem;
+  --nav-w: 270px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10131a; --surface: #171b24; --ink: #e2e6ee; --muted: #97a0b1; --rule: #2a3140;
+    --accent: #8ba8ff; --accent-soft: #1c2640;
+    --code-bg: #0c0f14; --code-ink: #d6dbe4;
+    --tk-key: #cf9bff; --tk-str: #8fd19e; --tk-com: #7d879a; --tk-num: #f2a272; --tk-type: #82b7ff; --tk-title: #f0c674; --tk-meta: #f08bbd;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #10131a; --surface: #171b24; --ink: #e2e6ee; --muted: #97a0b1; --rule: #2a3140;
+  --accent: #8ba8ff; --accent-soft: #1c2640;
+  --code-bg: #0c0f14; --code-ink: #d6dbe4;
+  --tk-key: #cf9bff; --tk-str: #8fd19e; --tk-com: #7d879a; --tk-num: #f2a272; --tk-type: #82b7ff; --tk-title: #f0c674; --tk-meta: #f08bbd;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: var(--f-body); font-size: var(--step-0); line-height: 1.85; line-break: strict;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px));
+}
+a { color: var(--accent); text-underline-offset: 0.2em; }
+a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+.shell { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: var(--nav-w) minmax(0, 1fr); column-gap: 40px; }
+
+/* 上端：名前・対象のバージョン・リポジトリへのリンク・テーマの切り替え */
+.masthead {
+  grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 24px;
+  padding-block: 20px 16px; border-bottom: 1px solid var(--rule);
+}
+.brand { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; min-width: 0; text-decoration: none; color: var(--ink); }
+.brand .name { font-family: var(--f-display); font-weight: 900; font-size: var(--step-1); line-height: 1.3; }
+.brand .eyebrow { font-family: var(--f-code); font-size: 0.72rem; letter-spacing: 0.08em; color: var(--muted); }
+.links { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; font-size: 0.86rem; }
+.links a, .links button {
+  font: inherit; color: var(--ink); text-decoration: none; cursor: pointer;
+  padding: 3px 10px; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface);
+}
+.links a:hover, .links button:hover { border-color: var(--accent); color: var(--accent); }
+.links .version { font-family: var(--f-code); font-size: 0.78rem; color: var(--accent); background: var(--accent-soft); border-color: transparent; }
+
+/* 目次 */
+.nav { padding-block: 24px; min-width: 0; }
+#navbox > summary { cursor: pointer; font-weight: 700; padding: 10px 14px; border: 1px solid var(--rule); border-radius: 8px; background: var(--surface); }
+.toc { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+.toc a { display: block; padding: 4px 10px; border-radius: 6px; text-decoration: none; color: var(--ink); line-height: 1.5; font-size: 0.9rem; }
+.toc .h3 a { padding-left: 24px; font-size: 0.82rem; color: var(--muted); }
+.toc a:hover { background: var(--accent-soft); }
+.toc a[aria-current="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+@media (min-width: 960px) {
+  .nav { position: sticky; top: 0; align-self: start; max-height: 100vh; overflow-y: auto; }
+  #navbox > summary { display: none; }
+}
+@media (max-width: 959px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .nav { padding-block: 16px 0; }
+  .toc { margin-top: 10px; }
+}
+
+/* 本文 */
+main { min-width: 0; padding-block: 28px 64px; max-width: 54em; }
+main > * { margin-block: 0 1em; }
+main h1, main h2, main h3 { scroll-margin-top: 16px; text-wrap: balance; word-break: auto-phrase; line-height: 1.45; }
+main h1 { font-family: var(--f-display); font-weight: 900; font-size: var(--step-3); margin-block: 0.4em 0.8em; }
+main h2 { font-family: var(--f-display); font-weight: 700; font-size: var(--step-2); margin-block: 2.4em 0.8em; padding-top: 1em; border-top: 1px solid var(--rule); }
+main h3 { font-size: var(--step-1); font-weight: 700; margin-block: 2em 0.6em; }
+main p, main li { overflow-wrap: break-word; }
+main ul, main ol { padding-left: 1.4em; }
+main li + li { margin-top: 0.2em; }
+main :not(pre) > code {
+  font-family: var(--f-code); font-size: 0.86em; background: var(--code-bg); color: var(--code-ink);
+  padding: 0.08em 0.36em; border-radius: 4px; overflow-wrap: anywhere;
+}
+/* 見出しへのリンク（その節を人に渡す用） */
+.anchor { margin-left: 0.4em; color: var(--muted); text-decoration: none; opacity: 0; font-weight: 400; }
+:is(h2, h3):hover .anchor, .anchor:focus-visible { opacity: 1; }
+
+/* コード。cpp はビルド時に pygments が色を付ける。言語の無い図は、全角と半角が 2:1 になる字体 */
+.code { position: relative; margin-block: 0 1.2em; }
+.code pre {
+  margin: 0; padding: 14px 16px; overflow-x: auto;
+  background: var(--code-bg); color: var(--code-ink); border: 1px solid var(--rule); border-radius: 8px;
+  font-family: var(--f-code); font-size: 0.82rem; line-height: 1.6; tab-size: 4;
+}
+.code pre code { font: inherit; }
+.code pre:has(code.language-text) { font-family: var(--f-grid); font-size: 0.84rem; line-height: 1.5; background: var(--surface); }
+.code .copy {
+  position: absolute; top: 6px; right: 6px; font: inherit; font-size: 0.72rem; cursor: pointer;
+  padding: 1px 8px; border: 1px solid var(--rule); border-radius: 5px; background: var(--surface); color: var(--muted); opacity: 0;
+}
+.code:hover .copy, .code .copy:focus-visible { opacity: 1; }
+@media (hover: none) { .code .copy { opacity: 1; } }
+
+.k, .kd, .kn, .kp, .kr, .kc, .ow { color: var(--tk-key); }
+.kt, .nc, .nn, .nb { color: var(--tk-type); }
+.s, .s1, .s2, .sc, .se, .cpf { color: var(--tk-str); }
+.c, .c1, .cm, .cs, .ch { color: var(--tk-com); }
+.m, .mf, .mi, .mh, .mb, .mo, .il { color: var(--tk-num); }
+.nf, .fm { color: var(--tk-title); }
+.cp { color: var(--tk-meta); }
+
+/* 表 */
+.table-wrap { overflow-x: auto; margin-block: 0 1.2em; border: 1px solid var(--rule); border-radius: 8px; background: var(--surface); }
+.table-wrap table { border-collapse: collapse; width: 100%; font-size: 0.88rem; line-height: 1.65; }
+.table-wrap th, .table-wrap td { padding: 8px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--rule); min-width: 7em; }
+.table-wrap th { background: var(--code-bg); font-weight: 700; white-space: nowrap; }
+.table-wrap tr:last-child td { border-bottom: 0; }
+/* 表の中の名前は、列の幅が足りる限り途中で折らない（足りなければ表ごと横にスクロールする） */
+.table-wrap :not(pre) > code { overflow-wrap: break-word; }
+
+footer { grid-column: 1 / -1; border-top: 1px solid var(--rule); padding-block: 16px 32px; font-size: 0.82rem; color: var(--muted); }
+
+@media (max-width: 600px) {
+  :root { --step-2: 1.25rem; --step-3: 1.55rem; }
+  .code pre { font-size: 0.76rem; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+@media print {
+  .nav, .links, .copy, .anchor { display: none; }
+  .shell { display: block; }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="masthead">
+    <a class="brand" href="#">
+      <span class="name">TakoEngine</span>
+      <span class="eyebrow">C++ SCRIPTING MANUAL</span>
+    </a>
+    <div class="links">
+      <a class="version" href="https://github.com/KyouGenSo/TakoEngine/releases">v<!--VERSION--></a>
+      <a href="https://github.com/KyouGenSo/TakoEngine">GitHub</a>
+      <a href="https://github.com/KyouGenSo/TakoEngine/releases">Releases</a>
+      <button id="theme" type="button" aria-label="ライトとダークを切り替える">◐</button>
+    </div>
+  </header>
+
+  <nav class="nav" aria-label="目次">
+    <details id="navbox" open>
+      <summary>目次</summary>
+      <ol class="toc">
+<!--TOC-->
+      </ol>
+    </details>
+  </nav>
+
+  <main>
+<!--CONTENT-->
+  </main>
+
+  <footer>TakoEngine <!--VERSION--> ・ <a href="https://github.com/KyouGenSo/TakoEngine">KyouGenSo/TakoEngine</a></footer>
+</div>
+
+<script>
+const root = document.documentElement;
+const narrow = matchMedia("(max-width: 959px)");
+const navbox = document.getElementById("navbox");
+
+// テーマ：今の見た目の逆にして、覚える
+document.getElementById("theme").addEventListener("click", () => {
+  const isDark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  root.dataset.theme = isDark ? "light" : "dark";
+  try { localStorage.setItem("theme", root.dataset.theme); } catch {}
+});
+
+// 狭い画面では目次を畳んでおき、選んだら閉じる
+if (narrow.matches) navbox.open = false;
+navbox.addEventListener("click", (event) => {
+  if (event.target.closest("a") && narrow.matches) navbox.open = false;
+});
+
+// コードのコピー
+for (const box of document.querySelectorAll(".code")) {
+  const button = document.createElement("button");
+  button.className = "copy";
+  button.type = "button";
+  button.textContent = "コピー";
+  button.addEventListener("click", async () => {
+    await navigator.clipboard.writeText(box.querySelector("code").textContent);
+    button.textContent = "コピーしました";
+    setTimeout(() => { button.textContent = "コピー"; }, 1200);
+  });
+  box.append(button);
+}
+
+// 見出しへのリンクと、今読んでいる節の印
+const tocLinks = new Map([...document.querySelectorAll(".toc a")].map((a) => [decodeURIComponent(a.hash.slice(1)), a]));
+const headings = [...document.querySelectorAll("main :is(h2, h3)[id]")];
+for (const heading of headings) {
+  const anchor = document.createElement("a");
+  anchor.className = "anchor";
+  anchor.href = "#" + encodeURIComponent(heading.id);
+  anchor.textContent = "#";
+  anchor.setAttribute("aria-label", "この節へのリンク");
+  heading.append(anchor);
+}
+let current = null;
+const mark = () => {
+  // 画面の上端を過ぎた最後の見出しが、今の節
+  let now = headings[0];
+  for (const heading of headings) {
+    if (heading.getBoundingClientRect().top > 80) break;
+    now = heading;
+  }
+  const link = tocLinks.get(now.id);
+  if (link === current) return;
+  current?.removeAttribute("aria-current");
+  link?.setAttribute("aria-current", "true");
+  current = link;
+  if (!narrow.matches) link?.scrollIntoView({ block: "nearest" });
+};
+addEventListener("scroll", mark, { passive: true });
+mark();
+</script>
+</body>
+</html>

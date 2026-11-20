@@ -3,6 +3,7 @@
 [![DebugBuild](https://github.com/KyouGenSo/TakoEngine/actions/workflows/DebugBuild.yml/badge.svg?event=push)](https://github.com/KyouGenSo/TakoEngine/actions/workflows/DebugBuild.yml)
 [![ReleaseBuild](https://github.com/KyouGenSo/TakoEngine/actions/workflows/ReleaseBuild.yml/badge.svg?event=push)](https://github.com/KyouGenSo/TakoEngine/actions/workflows/ReleaseBuild.yml)
 [![Release](https://img.shields.io/github/v/release/KyouGenSo/TakoEngine)](https://github.com/KyouGenSo/TakoEngine/releases)
+[![Manual](https://img.shields.io/badge/manual-C%2B%2B%20scripting-2350b5)](https://kyougenso.github.io/TakoEngine/)
 
 **English** | [日本語](README.ja.md)
 
@@ -15,6 +16,7 @@ A DirectX 12 game engine for Windows. Build scenes in the editor (TakoEditor) an
 - [Features](#features)
 - [Requirements](#requirements)
 - [Getting Started](#getting-started)
+- [Documentation](#documentation)
 - [Developing the Engine](#developing-the-engine)
 - [Third-Party Libraries](#third-party-libraries)
 - [Changelog](#changelog)
@@ -86,12 +88,17 @@ Run `UpdateEngine.bat` again to update to the latest release (`UpdateEngine.bat 
 > [!NOTE]
 > Launch a project from its own sln. Opening it with another engine's editor can crash, because the game code does not match that engine.
 
+## Documentation
+
+- [C++ Scripting Manual](https://kyougenso.github.io/TakoEngine/) (written in Japanese): creating scripts, properties, working with actors and scenes, input, collision, and the functions of the built-in components
+
 ## Developing the Engine
 
 1. Clone this repository, open `project\TakoEngine.sln` in Visual Studio and build. F5 launches the editor
 2. Create a test project outside the engine: `bin\Debug\TakoEditor.exe --new <location> <name>`. It links to this engine, so rebuilding the engine takes effect immediately (rebuild the game's sln as well when headers change)
 3. Build the distribution zip with `pwsh tools\package_sdk.ps1`, and check that the zip works on its own with `pwsh tools\test_sdk.ps1`
 4. To release, update `VERSION` and `CHANGELOG.md`, commit, then run `pwsh tools\release.ps1`
+5. The manual's source is `manual\ScriptingManual.md`. `python tools\manual_site\build.py` builds the site into `dist\manual_site` (needs Python and `pip install markdown-it-py pygments`). `release.ps1` publishes it on each release
 
 ## Third-Party Libraries
 

@@ -1,10 +1,11 @@
 ﻿# エンジンの新しいバージョンをリリースする。VERSION と CHANGELOG.md を直してコミットしてから流す。
-#   pwsh tools/release.ps1            確かめる → 今のブランチを push → その CI を待つ → タグ v<VERSION> を push → リリースができるのを待つ
+#   pwsh tools/release.ps1            確かめる → 今のブランチを push → その CI を待つ → タグ v<VERSION> を push → リリースができるのを待つ → マニュアルのサイトを公開する
 #   pwsh tools/release.ps1 -DryRun    確かめるだけ（何も push しない）
 #
 # タグは、ブランチの CI が通ってから出す（出したタグでリリースのビルドが失敗すると、公開したタグを付け直すことになる）。
 # zip を作ってリリースに添付するのは、タグの push で動く .github/workflows/Release.yml。
 # CI の結果を見るのに gh（GitHub CLI）を使うので、先に gh auth login でログインしておく。
+# マニュアルのサイト（manual/ScriptingManual.md → https://kyougenso.github.io/TakoEngine/）を作るのに、Python と markdown-it-py・pygments を使う。
 param([switch]$DryRun)
 
 $ErrorActionPreference = "Stop"
@@ -53,6 +54,11 @@ if (-not $branch) { Fail "ブランチの上で流してください（今は、
 if (git tag --list $tag) { Fail "タグ $tag は、もうあります。VERSION を上げてください。" }
 if (git ls-remote --tags origin "refs/tags/$tag") { Fail "タグ $tag は、リモートにもうあります。VERSION を上げてください。" }
 if (-not (Get-Command gh -ErrorAction SilentlyContinue)) { Fail "gh（GitHub CLI）が見つかりません。" }
+# マニュアルのサイトを作れるかは、タグを出す前に確かめる（リンク切れや、足りないライブラリを先に見つける）。出力は dist の下で、git の対象外
+if (-not (Get-Command python -ErrorAction SilentlyContinue)) { Fail "python が見つかりません（マニュアルのサイトを作るのに使います）。" }
+$manualSite = "$PSScriptRoot\manual_site\build.py"
+python $manualSite
+if ($LASTEXITCODE -ne 0) { Fail "マニュアルのサイトを作れませんでした（足りないライブラリは pip install markdown-it-py pygments で入ります）。" }
 
 $commit = git rev-parse HEAD
 Write-Host "TakoEngine $version をリリースします（$branch の $($commit.Substring(0, 7))）"
@@ -73,4 +79,10 @@ Write-Host "リリースのワークフローを待ちます"
 Wait-Runs $commit "Release"
 
 Write-Host ("リリースしました: " + (gh release view $tag --json url -q .url)) -ForegroundColor Green
+
+# リリースは済んでいるので、サイトを出せなくても失敗にはせず、やり直し方を伝える
+python $manualSite --publish
+if ($LASTEXITCODE -ne 0) {
+  Write-Host "マニュアルのサイトを公開できませんでした。python tools\manual_site\build.py --publish でやり直せます。" -ForegroundColor Yellow
+}
 exit 0

@@ -3,6 +3,7 @@
 [![DebugBuild](https://github.com/KyouGenSo/TakoEngine/actions/workflows/DebugBuild.yml/badge.svg?event=push)](https://github.com/KyouGenSo/TakoEngine/actions/workflows/DebugBuild.yml)
 [![ReleaseBuild](https://github.com/KyouGenSo/TakoEngine/actions/workflows/ReleaseBuild.yml/badge.svg?event=push)](https://github.com/KyouGenSo/TakoEngine/actions/workflows/ReleaseBuild.yml)
 [![Release](https://img.shields.io/github/v/release/KyouGenSo/TakoEngine)](https://github.com/KyouGenSo/TakoEngine/releases)
+[![Manual](https://img.shields.io/badge/manual-C%2B%2B%20scripting-2350b5)](https://kyougenso.github.io/TakoEngine/)
 
 [English](README.md) | **日本語**
 
@@ -15,6 +16,7 @@ Windows 向けの DirectX 12 のゲームエンジン。エディタ（TakoEdito
 - [特徴](#特徴)
 - [要る物](#要る物)
 - [はじめかた](#はじめかた)
+- [マニュアル](#マニュアル)
 - [エンジンを開発する](#エンジンを開発する)
 - [使っているライブラリ](#使っているライブラリ)
 - [変更履歴](#変更履歴)
@@ -86,12 +88,17 @@ Windows 向けの DirectX 12 のゲームエンジン。エディタ（TakoEdito
 > [!NOTE]
 > プロジェクトは、自分の sln から起動する。別のエンジンのエディタで開くと、ゲームのコードと合わずに落ちることがある。
 
+## マニュアル
+
+- [C++ スクリプト マニュアル](https://kyougenso.github.io/TakoEngine/)：スクリプトの作り方、プロパティ、Actor とシーンの操作、入力、当たり判定、コンポーネントの関数
+
 ## エンジンを開発する
 
 1. このリポジトリを clone し、`project\TakoEngine.sln` を Visual Studio で開いてビルドする。F5 でエディタが起動する
 2. テスト用のプロジェクトを、エンジンの外に作る：`bin\Debug\TakoEditor.exe --new <場所> <名前>`。エンジンへのリンクになるので、エンジンをビルドし直すとすぐ反映される（ヘッダーを変えたら、ゲームの sln もビルドし直す）
 3. 配る用の zip は `pwsh tools\package_sdk.ps1` で作り、zip だけで使えるかを `pwsh tools\test_sdk.ps1` で確かめる
 4. リリースは、`VERSION` と `CHANGELOG.md` を直してコミットしてから `pwsh tools\release.ps1`
+5. マニュアルの元は `manual\ScriptingManual.md`。`python tools\manual_site\build.py` で、サイトが `dist\manual_site` にできる（Python と `pip install markdown-it-py pygments` が要る）。公開は、リリースのときに `release.ps1` が行う
 
 ## 使っているライブラリ
 
