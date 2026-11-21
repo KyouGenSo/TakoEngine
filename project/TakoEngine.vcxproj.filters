@@ -219,6 +219,9 @@
     <ClCompile Include="engine\gameplay\scene\Prefab.cpp">
       <Filter>gameplay\scene</Filter>
     </ClCompile>
+    <ClCompile Include="engine\gameplay\scene\SceneFile.cpp">
+      <Filter>gameplay\scene</Filter>
+    </ClCompile>
     <ClCompile Include="engine\gameplay\component\ColliderComponent.cpp">
       <Filter>gameplay\component</Filter>
     </ClCompile>
@@ -654,6 +657,9 @@
       <Filter>editor</Filter>
     </ClInclude>
     <ClInclude Include="engine\gameplay\scene\Prefab.h">
+      <Filter>gameplay\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\gameplay\scene\SceneFile.h">
       <Filter>gameplay\scene</Filter>
     </ClInclude>
     <ClInclude Include="engine\gameplay\component\ColliderComponent.h">

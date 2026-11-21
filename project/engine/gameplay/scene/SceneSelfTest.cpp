@@ -13,6 +13,7 @@
 #include "Model.h"
 #include "Object3d.h"
 #include "Prefab.h"
+#include "SceneFile.h"
 #include "TypeRegistry.h"
 
 #include <json.hpp>
@@ -20,6 +21,8 @@
 #include <any>
 #include <cassert>
 #include <cmath>
+#include <filesystem>
+#include <fstream>
 #include <numbers>
 #include <optional>
 #include <string>
@@ -379,6 +382,12 @@ namespace Tako {
     assert(grownScene.GetActors().size() == 3 && tail && tail->GetParent() == grownScene.FindActor(placed->GetId()) && tail->GetPrefabNode() == 3);
     assert(grownScene.FindActor(placedArm->GetId())->GetTransform().translate.y == 2.0f);
 
+    // 足された Actor の ID は、開くたびに同じ（開いた人ごとに違う ID を保存しない）
+    BaseScene grownAgain;
+    grownAgain.Load(placedSaved);
+    grownAgain.UpdateAlways();
+    assert(grownAgain.FindActor("Tail") && grownAgain.FindActor("Tail")->GetId() == tail->GetId());
+
     // プレハブの根を動かしても、置いた根は動かない（根の Transform はいつも差分として持つ）
     grown["actors"][0]["properties"]["transform"]["translate"] = { 9.0f, 9.0f, 9.0f };
     SetPrefabInMemory(kGroup, grown);
@@ -464,6 +473,60 @@ namespace Tako {
     const Logger::Sink console = Logger::SetSink(nullptr);
     assert(GetPrefabNodes(kOuter).size() == 2 && GetPrefabNodes(kInner).size() == 1);
     Logger::SetSink(console);
+
+    // シーンのファイル：Actor ごとのファイルと order.txt に書いて、同じ並びで読める。id と type が先頭で、数字の配列は 1 行、float は短い表記
+    {
+      namespace fs = std::filesystem;
+      const fs::path folder = fs::temp_directory_path() / "TakoSceneSelfTest.scene";
+      fs::remove_all(folder);
+      const auto writeText = [](const fs::path& path, const char* text) { std::ofstream(path) << text; };
+
+      // シーンを書いて読み直すと、同じ中身に戻る（float を短く書いても、値は変わらない）
+      body->GetTransform().rotate = { 0.7f, -1.1f, 2.4f };
+      const nlohmann::json stageSaved = stage.Save();
+      assert(SceneFile::WriteActors(folder, stageSaved["actors"]));
+      BaseScene restored;
+      restored.Load({ { "actors", SceneFile::ReadActors(folder) } });
+      restored.UpdateAlways();
+      assert(restored.GetActors().size() == 4 && restored.Save() == stageSaved);
+      fs::remove_all(folder);
+
+      const nlohmann::json written = nlohmann::json::array({
+        { { "id", ActorId{ 7 } }, { "type", "Actor" }, { "properties", { { "name", "First" }, { "translate", { 0.28f, 1.0f, -24.0f } } } } },
+        { { "id", ActorId{ 3000000000 } }, { "parent", ActorId{ 7 } }, { "type", "Actor" }, { "properties", { { "name", "Second" } } } },
+        { { "id", ActorId{ 5 } }, { "prefab", "P" }, { "node", ActorId{ 1 } }, { "overrides", nlohmann::json::array() } },
+      });
+      assert(SceneFile::WriteActors(folder, written));
+      const nlohmann::json read = SceneFile::ReadActors(folder);
+      assert(read.size() == 3 && read[0]["id"] == 7 && read[1] == written[1] && read[2] == written[2]);
+      assert(read[0]["properties"]["translate"][0].get<float>() == 0.28f);
+      const std::string text = SceneFile::ToText(written[0]);
+      assert(text == "{\n  \"id\": 7,\n  \"type\": \"Actor\",\n  \"properties\": {\n    \"name\": \"First\",\n    \"translate\": [0.28, 1.0, -24.0]\n  }\n}\n");
+      assert(SceneFile::ToText(nlohmann::json::parse(text)) == text);
+
+      // 同じ中身をもう一度書いても、ファイルは書き直さない
+      const fs::file_time_type firstWrite = fs::last_write_time(folder / "7.json");
+      assert(SceneFile::WriteActors(folder, written) && fs::last_write_time(folder / "7.json") == firstWrite);
+
+      // マージの後の order.txt：競合マーカー・同じ ID の行・ファイルの無い ID があっても、残りを並びどおりに読む
+      writeText(folder / "order.txt", "<<<<<<< HEAD\n5\n=======\n7\n5\n404\n>>>>>>> theirs\n3000000000\n");
+      const nlohmann::json merged = SceneFile::ReadActors(folder);
+      assert(merged.size() == 3 && merged[0]["id"] == 5 && merged[1]["id"] == 7 && merged[2]["id"] == 3000000000);
+
+      // order.txt に無いファイルは読まず、保存でも消さない。わざと出す警告は Console に出さない
+      const Logger::Sink sink = Logger::SetSink(nullptr);
+      writeText(folder / "order.txt", "7\n5\n");
+      assert(SceneFile::ReadActors(folder).size() == 2);
+      assert(SceneFile::WriteActors(folder, nlohmann::json::array({ written[0] })));
+      assert(fs::exists(folder / "3000000000.json") && !fs::exists(folder / "5.json"));
+
+      // 消すことになるファイルが読めなければ、保存を断る（直す前のファイルを消さない）
+      writeText(folder / "7.json", "<<<<<<< HEAD\n{}\n");
+      assert(SceneFile::ReadActors(folder).empty());
+      assert(!SceneFile::WriteActors(folder, nlohmann::json::array()) && fs::exists(folder / "7.json"));
+      Logger::SetSink(sink);
+      fs::remove_all(folder);
+    }
 
     for (const char* name : { kGroup, kSingle, kInner, kOuter }) {
       SetPrefabInMemory(name, nullptr);

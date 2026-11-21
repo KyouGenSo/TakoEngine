@@ -169,6 +169,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="engine\gameplay\scene\Prefab.cpp" />
+    <ClCompile Include="engine\gameplay\scene\SceneFile.cpp" />
     <ClCompile Include="engine\gameplay\component\ColliderComponent.cpp" />
     <ClCompile Include="engine\gameplay\component\MeshComponent.cpp" />
     <ClCompile Include="engine\gameplay\actor\Actor.cpp" />
@@ -358,6 +359,7 @@
     <ClInclude Include="engine\gameplay\actor\ScriptComponent.h" />
     <ClInclude Include="engine\editor\SceneEditor.h" />
     <ClInclude Include="engine\gameplay\scene\Prefab.h" />
+    <ClInclude Include="engine\gameplay\scene\SceneFile.h" />
     <ClInclude Include="engine\gameplay\component\ColliderComponent.h" />
     <ClInclude Include="engine\gameplay\component\MeshComponent.h" />
     <ClInclude Include="engine\gameplay\actor\Actor.h" />

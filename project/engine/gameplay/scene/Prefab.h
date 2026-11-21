@@ -57,6 +57,11 @@ namespace Tako {
   TAKO_API PrefabLink GetNestedPrefabLink(std::string_view name, ActorId node);
 
   /// <summary>
+  /// プレハブに後から足された Actor に振る、シーンの ID（32 ビット）。同じ（組の根の ID, プレハブの中の番号）からは、誰が開いても同じ値になる
+  /// </summary>
+  TAKO_API ActorId MakePlacedActorId(ActorId root, ActorId node);
+
+  /// <summary>
   /// Actor::Save に、プレハブとのつながり（prefab / node / root）を添えた 1 件
   /// </summary>
   TAKO_API nlohmann::json SaveActorEntry(Actor& actor);

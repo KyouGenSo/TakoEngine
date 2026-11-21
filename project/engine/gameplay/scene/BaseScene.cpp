@@ -12,6 +12,7 @@
 #include "PostEffectManager.h"
 #include "Prefab.h"
 #include "Renderer.h"
+#include "SceneFile.h"
 #include "Script.h"
 #include "ScriptComponent.h"
 #include "ShadowRenderer.h"
@@ -22,8 +23,9 @@
 #include <algorithm>
 #include <chrono>
 #include <filesystem>
-#include <fstream>
 #include <iterator>
+#include <random>
+#include <unordered_set>
 
 namespace Tako {
 
@@ -125,8 +127,7 @@ namespace Tako {
       Load(*snapshot);
     } else if (HasSceneFile(sceneName_)) {
       try {
-        std::ifstream file(GetScenePath(sceneName_));
-        Load(nlohmann::json::parse(file));
+        Load(SceneFile::Read(sceneName_));
       } catch (const nlohmann::json::exception& e) {
         Logger::Log("BaseScene: failed to read %s: %s\n", GetScenePath(sceneName_).c_str(), e.what());
       }
@@ -206,6 +207,7 @@ namespace Tako {
   void BaseScene::UpdateAlways()
   {
     retired_.clear();
+    issuedIds_.clear();
 
     // 親と子を一緒に消すとき、先に消えた方を EndPlay の中で触らないよう、全部の EndPlay を済ませてから消す
     for (Actor* destroyed : pendingDestroys_) {
@@ -319,7 +321,7 @@ namespace Tako {
     const std::vector<ActorId> nodes = GetPrefabNodes(typeOrPrefab);
     ActorIdMap ids;
     for (ActorId node : nodes) {
-      ids[node] = nextId_++;
+      ids[node] = NewActorId();
     }
     Actor* root = nullptr;
     for (ActorId node : nodes) {
@@ -350,7 +352,7 @@ namespace Tako {
     ActorIdMap     ids;
     for (const nlohmann::json& entry : entries) {
       if (const ActorId id = entry.value("id", ActorId{ 0 }); id != 0) {
-        ids[id] = nextId_++;
+        ids[id] = NewActorId();
       }
     }
     RemapActorIds(entries, ids, keepsOuterRefs);
@@ -457,15 +459,21 @@ namespace Tako {
       list->clear();
     }
     pendingDestroys_.clear();
-    nextId_ = 1;
 
     if (auto it = json.find("actors"); it != json.end() && it->is_array()) {
-      // 先に保存された ID を全部取っておき、無い物や重なった物だけ振り直す
+      std::unordered_set<ActorId> used;
       for (const nlohmann::json& entry : *it) {
-        nextId_ = (std::max)(nextId_, entry.value("id", ActorId{ 0 }) + 1);
+        used.insert(entry.value("id", ActorId{ 0 }));
       }
-      // プレハブから置いた物を全部の値に開く。プレハブに後から足された Actor には、新しい ID を振る
-      const nlohmann::json entries = ExpandPlacedActors(*it, [this](ActorId, ActorId) { return nextId_++; });
+      // プレハブから置いた物を全部の値に開く。プレハブに後から足された Actor の ID は、乱数にせず計算で決める
+      // （同じシーンを開いた人ごとに違う ID を保存すると、マージで同じ Actor が 2 件になる）
+      const nlohmann::json entries = ExpandPlacedActors(*it, [&used](ActorId root, ActorId node) {
+        ActorId id = MakePlacedActorId(root, node);
+        while (id == 0 || !used.insert(id).second) {
+          id = (id + 1) & 0xffffffffull;
+        }
+        return id;
+      });
       for (const nlohmann::json& entry : entries) {
         if (std::unique_ptr<Actor> actor = CreateActor(entry)) {
           AddPending(std::move(actor));
@@ -478,13 +486,7 @@ namespace Tako {
 
   bool BaseScene::SaveFile()
   {
-    std::filesystem::create_directories(kScenesDirectory);
-    std::ofstream file(GetScenePath(sceneName_));
-    if (!file) {
-      return false;
-    }
-    file << Save().dump(2);
-    return true;
+    return SceneFile::Write(sceneName_, Save());
   }
 
   std::string BaseScene::GetScenePath(std::string_view sceneName)
@@ -561,14 +563,24 @@ namespace Tako {
     actor->scene_ = this;
     // ID が無いか、他の Actor と重なれば振り直す（複製・貼り付け・プレハブからの生成）
     if (actor->id_ == 0 || FindActor(actor->id_)) {
-      actor->id_ = nextId_++;
-    } else {
-      nextId_ = (std::max)(nextId_, actor->id_ + 1);
+      actor->id_ = NewActorId();
     }
     Actor* raw = actor.get();
     pendingSpawns_.push_back(std::move(actor));
     MarkChanged();
     return raw;
+  }
+
+  ActorId BaseScene::NewActorId()
+  {
+    // 連番にしない。別々のブランチで足した Actor の ID（シーンのファイル名になる）が、マージで重ならないように
+    static std::mt19937 engine{ std::random_device{}() };
+    ActorId             id = 0;
+    do {
+      id = engine();
+    } while (id == 0 || FindActor(id) || std::ranges::find(issuedIds_, id) != issuedIds_.end());
+    issuedIds_.push_back(id);
+    return id;
   }
 
 } // namespace Tako

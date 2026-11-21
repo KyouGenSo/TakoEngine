@@ -1,6 +1,7 @@
 #include "Prefab.h"
 #include "Actor.h"
 #include "Logger.h"
+#include "SceneFile.h"
 #include "TypeRegistry.h"
 
 #include <json.hpp>
@@ -59,11 +60,10 @@ namespace Tako {
     }
 
     /// <summary>
-    /// 中に置いたプレハブに後から足された Actor の番号。同じ (根, 内側の番号) からは、いつも同じ番号になる
+    /// (根, 番号) の FNV-1a
     /// </summary>
-    ActorId MakeImplicitNode(ActorId root, ActorId node)
+    uint64_t HashRootAndNode(ActorId root, ActorId node)
     {
-      // ponytail: FNV-1a の 63 ビット。違う組み合わせが同じ番号になる可能性は 0 ではない。起きたら、外側のプレハブを Apply し直して番号をファイルに書く
       uint64_t hash = 14695981039346656037ull;
       for (const uint64_t value : { root, node }) {
         for (int shift = 0; shift < 64; shift += 8) {
@@ -71,7 +71,16 @@ namespace Tako {
           hash *= 1099511628211ull;
         }
       }
-      return kImplicitPrefabNode | hash;
+      return hash;
+    }
+
+    /// <summary>
+    /// 中に置いたプレハブに後から足された Actor の番号。同じ (根, 内側の番号) からは、いつも同じ番号になる
+    /// </summary>
+    ActorId MakeImplicitNode(ActorId root, ActorId node)
+    {
+      // ponytail: FNV-1a の 63 ビット。違う組み合わせが同じ番号になる可能性は 0 ではない。起きたら、外側のプレハブを Apply し直して番号をファイルに書く
+      return kImplicitPrefabNode | HashRootAndNode(root, node);
     }
 
     /// <summary>
@@ -267,6 +276,12 @@ namespace Tako {
       }
     }
     return {};
+  }
+
+  ActorId MakePlacedActorId(ActorId root, ActorId node)
+  {
+    const uint64_t hash = HashRootAndNode(root, node);
+    return (hash ^ (hash >> 32)) & 0xffffffffull;
   }
 
   nlohmann::json SaveActorEntry(Actor& actor)
@@ -507,7 +522,7 @@ namespace Tako {
     if (!file) {
       return false;
     }
-    file << content.dump(2);
+    file << SceneFile::ToText(content);
     // 他のプレハブが中に置いているかもしれないので、全部を作り直す
     NormalizedCache().clear();
     return true;

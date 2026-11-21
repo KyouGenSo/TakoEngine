@@ -1,0 +1,4 @@
+* text=auto
+
+# シーンの並びのファイルは、両方のブランチが足した行を両方残す（同じシーンに別々の Actor を足しても競合しない）
+**/Scenes/*.scene/order.txt merge=union

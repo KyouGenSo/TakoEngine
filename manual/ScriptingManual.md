@@ -32,7 +32,7 @@ Actor に **Script コンポーネント**を付け、その中にスクリプ�
 
 | 言葉 | 意味 |
 |---|---|
-| シーン | Actor の入れ物。`GameProject\resources\Json\Scenes\名前.scene.json` に保存される |
+| シーン | Actor の入れ物。`GameProject\resources\Json\Scenes\名前.scene.json` と、隣の `名前.scene` フォルダー（Actor 1 つが 1 ファイル）に保存される |
 | Actor | シーンに置く物。名前・Transform・タグを持つ。見た目や動きは、コンポーネントで足す |
 | コンポーネント | Actor に付ける機能の単位（Mesh・Collider・Light など）。エンジンが用意している |
 | スクリプト | ゲームが書くコンポーネント。Script コンポーネントの中に入る |

@@ -182,6 +182,21 @@ namespace Tako {
       ShellExecuteW(nullptr, L"open", L"explorer.exe", arguments.c_str(), nullptr, SW_SHOWNORMAL);
     }
 
+    /// <summary>
+    /// シーンの Actor のファイルを入れるフォルダー（名前.scene.json → 名前.scene）。path がシーンのファイルでなければ空
+    /// </summary>
+    fs::path SceneFolderOf(const fs::path& path) {
+      return path.filename().wstring().ends_with(L".scene.json") ? fs::path(path).replace_extension() : fs::path();
+    }
+
+    /// <summary>
+    /// シーンの Actor のファイルを入れるフォルダーか。中身はエディタが書くので、一覧と木には出さない
+    /// </summary>
+    bool IsSceneFolder(const fs::directory_entry& item) {
+      std::error_code ec;
+      return item.is_directory(ec) && item.path().extension() == L".scene";
+    }
+
     void MoveToRecycleBin(const std::vector<fs::path>& paths) {
       // pFrom は null 区切り・二重 null 終端のリスト
       std::wstring from;
@@ -499,6 +514,10 @@ namespace Tako {
       std::error_code ec;
       for (fs::recursive_directory_iterator it(FromUtf8(std::string(root.dir)), ec), end; !ec && it != end; it.increment(ec)) {
         if (!it->is_regular_file(ec)) {
+          // Actor の数だけファイルがあり、どの種類のアセットでもない
+          if (IsSceneFolder(*it)) {
+            it.disable_recursion_pending();
+          }
           continue;
         }
         if (std::optional<std::string> value = ToAssetValue(kindName, it->path())) {
@@ -664,7 +683,7 @@ namespace Tako {
 
     std::error_code ec;
     for (const fs::directory_entry& item : fs::directory_iterator(path, ec)) {
-      if (item.is_directory(ec)) {
+      if (item.is_directory(ec) && !IsSceneFolder(item)) {
         folder.children.push_back(BuildFolder(item.path()));
       }
     }
@@ -717,6 +736,9 @@ namespace Tako {
 
     std::error_code ec;
     for (const fs::directory_entry& item : fs::directory_iterator(currentDir_, ec)) {
+      if (IsSceneFolder(item)) {
+        continue;
+      }
       const bool isDirectory = item.is_directory(ec);
       const bool isSelected  = std::ranges::binary_search(selected, item.path());
       entries_.push_back({ item.path(), ToUtf8(item.path().filename()), isDirectory ? std::string() : ToAssetValue("Texture", item.path()).value_or(std::string()),
@@ -1136,10 +1158,27 @@ namespace Tako {
       LogToConsole(std::format("Assets: {} already exists", ToUtf8(destination)), LogType::Warning);
       return;
     }
+    // シーンは、Actor のファイルのフォルダーも同じ名前に変える
+    const fs::path sceneFolder    = SceneFolderOf(renameTarget_);
+    const fs::path newSceneFolder = SceneFolderOf(destination);
+    const bool     movesFolder    = !sceneFolder.empty() && fs::is_directory(sceneFolder, ec);
+    if (movesFolder && (newSceneFolder.empty() || (fs::exists(newSceneFolder, ec) && !fs::equivalent(sceneFolder, newSceneFolder, ec)))) {
+      LogToConsole(std::format("Assets: Cannot rename the scene to \"{}\" (keep the .scene.json extension, and use a name whose folder does not exist)", newName), LogType::Warning);
+      return;
+    }
     fs::rename(renameTarget_, destination, ec);
     if (ec) {
       LogToConsole(std::format("Assets: Failed to rename {} (error {})", ToUtf8(renameTarget_), ec.value()), LogType::Error);
       return;
+    }
+    if (movesFolder) {
+      fs::rename(sceneFolder, newSceneFolder, ec);
+      if (ec) {
+        // ファイルだけ名前が変わると、中身の無いシーンとして開いてしまう
+        LogToConsole(std::format("Assets: Failed to rename {} (error {})", ToUtf8(sceneFolder), ec.value()), LogType::Error);
+        fs::rename(destination, renameTarget_, ec);
+        return;
+      }
     }
 
     // 次の ScanEntries は選択をパスで引き継ぐので、名前が変わった分を先に付け替えておく
@@ -1171,7 +1210,15 @@ namespace Tako {
   }
 
   void AssetBrowser::ApplyDelete() {
-    MoveToRecycleBin(deleteTargets_);
+    // シーンは、Actor のファイルのフォルダーも一緒に消す（確認の画面とログには、選んだファイルだけを出す）
+    std::vector<fs::path> paths = deleteTargets_;
+    for (const fs::path& target : deleteTargets_) {
+      std::error_code ec;
+      if (const fs::path sceneFolder = SceneFolderOf(target); !sceneFolder.empty() && fs::is_directory(sceneFolder, ec)) {
+        paths.push_back(sceneFolder);
+      }
+    }
+    MoveToRecycleBin(paths);
 
     // 一括操作は一部だけ成功し得るので、成否は対象ごとに実体の有無で判定する
     std::error_code ec;

@@ -6,8 +6,12 @@
 - 描画物用のシェーダー `HalfTone` を追加。光が弱い所ほど大きいドットで陰を描く（平行光源・点光源・スポットライトと影に反応する）。Material Editor で Shader に HalfTone を選んだマテリアルを作り、Mesh コンポーネントの Material に指定する
 - 自作のシェーダーでライトを読むための `Light.hlsli` を追加（ライトの構造体と宣言、距離の減衰の `PointLightAttenuation`・`SpotLightAttenuation`）
 - マテリアルを差し替えたモデル（Mesh コンポーネントの Material・`Object3d::SetMaterial`）は、そのマテリアルが `gTexture` を指定していなければ、モデルのテクスチャで描く（今までは白）。マテリアルや Mesh コンポーネントの Textures に画像を指定すれば、今までどおりその画像で描く
+- シーンを、Actor ごとのファイルに保存するようにした（`Scenes\名前.scene` フォルダーに Actor 1 つが 1 ファイル、並びは `order.txt`）。チームで同じシーンに別々の Actor を足しても、git で競合しない。今までのシーンはそのまま開け、保存すると新しい形になる
+- 新しく作る Actor の ID を、連番から乱数にした（別々のブランチで足した Actor の ID が重ならない）。今ある Actor の ID は変わらない
 
 ### 直しが要る変更（ゲーム側）
+- シーンを保存すると `名前.scene` フォルダーができるので、`名前.scene.json` と一緒にコミットする。チームで使っているシーンは、全員のシーンの変更を取り込んでから、1 人が保存し直してコミットする（古い形のシーンを直しているブランチが残っていると、マージで競合する）
+- リポジトリの `.gitattributes` に `**/Scenes/*.scene/order.txt merge=union` を足す（ひな形 `Engine\TakoEngine\templates\Default\.gitattributes` と同じ行）。足すと、2 人が同じシーンに Actor を足したときに、並びのファイルも自動でマージされる
 - ポストエフェクトの `HalfTone` を削除（上の描画物用のシェーダーに置き換えた）。プロファイルに HalfTone があれば、読み込んだときに外れるので保存し直す。コードで `HalfToneParam` を使っている所は消す
 - 差し替えたマテリアルで、テクスチャ付きのモデルを白のまま描きたいときは、マテリアルの Textures の `gTexture` に `white.png` を指定する
 

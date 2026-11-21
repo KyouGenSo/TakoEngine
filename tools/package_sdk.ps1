@@ -41,6 +41,8 @@ $excludeFiles = @("*.user", ".git", ".gitignore", ".gitattributes", "CLAUDE.md")
 # /R /W: 他のプロセスが掴んでいるファイルは 2 回だけやり直して、失敗にする（robocopy の既定は 30 秒おきに 100 万回で、終わらない）
 robocopy $root $stage /E /XD $excludeDirs /XF $excludeFiles /R:2 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null
 if ($LASTEXITCODE -ge 8) { throw "robocopy 失敗 (exit code: $LASTEXITCODE)" }
+# ひな形の .gitignore と .gitattributes は、新しいプロジェクトに写す物なので入れる（上の /XF は、同じ名前のファイルをどのフォルダーでも外す）
+Copy-Item "$root\templates\Default\.gitignore", "$root\templates\Default\.gitattributes" "$stage\templates\Default\"
 
 # bin は配る物だけを入れる。Release は /GL なしでビルドした方を、bin\Release として入れる
 $releaseBin = "$root\bin\Release$releaseSuffix"
@@ -61,7 +63,7 @@ $required = @(
   "bin\Release\TakoEngine.lib", "bin\Release\DirectXTex.lib",
   "build\TakoEngineGame.props", "build\TakoEngineCommon.props", "build\TakoReflection.props", "build\TakoHeaderTool.cs",
   "project\engine\core\base\TakoFramework.h", "project\engine\resources\shaders", "project\externals\imgui\imgui.h",
-  "templates\Default\__ProjectName__.sln"
+  "templates\Default\__ProjectName__.sln", "templates\Default\.gitignore", "templates\Default\.gitattributes"
 )
 $missing = $required | Where-Object { -not (Test-Path (Join-Path $stage $_)) }
 if ($missing) { throw "SDK に入っていない物があります: $($missing -join ', ')" }

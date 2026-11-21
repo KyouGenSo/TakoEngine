@@ -17,7 +17,7 @@ namespace Tako {
   using ActorId = uint64_t;
 
   /// <summary>
-  /// シーン。Actor の入れ物で、シーンファイル（resources/Json/Scenes/名前.scene.json）から中身を読む
+  /// シーン。Actor の入れ物で、シーンファイル（resources/Json/Scenes/名前.scene.json と 名前.scene フォルダー。SceneFile.h）から中身を読む
   /// </summary>
   class TAKO_API BaseScene
   {
@@ -190,6 +190,11 @@ namespace Tako {
     /// </summary>
     Actor* AddPending(std::unique_ptr<Actor> actor);
 
+    /// <summary>
+    /// シーンの Actor と、このフレームに出した ID のどれとも重ならない、32 ビットの乱数の ID
+    /// </summary>
+    ActorId NewActorId();
+
   private: //メンバー変数
     // Actor のコンポーネントがエミッターを消すので、Actor より先に宣言して後に消す
     std::unique_ptr<ForceFieldManager>  forceFieldManager_;
@@ -199,7 +204,7 @@ namespace Tako {
     std::vector<std::unique_ptr<Actor>> pendingSpawns_;
     std::vector<Actor*>                 pendingDestroys_;
     std::vector<std::unique_ptr<Actor>> retired_;                    ///< Load で外した Actor。次の UpdateAlways で消す
-    ActorId                             nextId_            = 1;
+    std::vector<ActorId>                issuedIds_;                  ///< このフレームに出した ID。プレハブの組は、Actor を作る前に ID をまとめて出す
     uint64_t                            revision_          = 0;
     bool                                isPlaying_         = false;
     bool                                isPaused_          = false;
