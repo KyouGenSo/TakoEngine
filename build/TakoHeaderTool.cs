@@ -665,6 +665,9 @@ public class TakoHeaderTool : Task
     {
         foreach (string ns in c.Namespaces) sb.AppendLine("namespace " + ns + " {");
         sb.AppendLine();
+        // 引数なしで作れない型は、エラーなしでエディタの一覧から消えるので、ビルドで止める
+        sb.AppendLine("static_assert(::Tako::IsRegistrableType<" + c.Name + ">(), \"TCLASS " + c.Name + " を引数なしで作れない（コンストラクタに引数があるか、メンバーに引数なしで作れない型がある）。エディタの一覧に出ず、シーンからも作れない\");");
+        sb.AppendLine();
         sb.AppendLine("const ::Tako::TypeInfo& " + c.Name + "::StaticType()");
         sb.AppendLine("{");
         Func<string, string, string> specifier = (key, fallback) =>

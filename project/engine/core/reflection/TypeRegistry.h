@@ -19,7 +19,7 @@ namespace Tako {
 
     const char*     name;
     const TypeInfo* base;
-    CreateFunc      create;            ///< 抽象クラスと既定コンストラクタの無いクラスは nullptr
+    CreateFunc      create;            ///< 抽象クラスと、引数なしで作れないクラス（既定コンストラクタが protected の基底など）は nullptr
     const char*     displayName = "";  ///< TCLASS(DisplayName = "...")。エディタの一覧に出す名前。空なら name を使う
     const char*     category    = "";  ///< TCLASS(Category = "...")。エディタの一覧の分類
     uint32_t        color       = 0;   ///< TCLASS(Color = 0xRRGGBB)。エディタで見分ける色。0 は指定なし
@@ -42,6 +42,23 @@ namespace Tako {
       return nullptr;
     } else {
       return []() -> std::unique_ptr<TObject> { return std::make_unique<T>(); };
+    }
+  }
+
+  /// <summary>
+  /// TCLASS として登録してよい型か。引数なしで作れない具象クラスだけ false（抽象クラスと、既定コンストラクタが protected の基底は true）
+  /// </summary>
+  template<class T>
+  consteval bool IsRegistrableType()
+  {
+    if constexpr (std::is_abstract_v<T> || std::is_default_constructible_v<T>) {
+      return true;
+    } else if constexpr (std::is_final_v<T>) {
+      return false;
+    } else {
+      // 派生から作れるなら、既定コンストラクタは protected
+      struct Derived : T {};
+      return std::is_default_constructible_v<Derived>;
     }
   }
 

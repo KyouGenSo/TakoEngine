@@ -9,6 +9,33 @@
 
 namespace Tako {
 
+  namespace {
+
+    // IsRegistrableType の確認
+    struct NoDefaultConstructor {
+      explicit NoDefaultConstructor(int) {}
+    };
+    struct CreatableType {};
+    struct ProtectedConstructorBase {
+    protected:
+      ProtectedConstructorBase() = default;
+    };
+    struct AbstractType {
+      virtual ~AbstractType() = default;
+      virtual void Run() = 0;
+    };
+    struct MemberBlocksType {
+      NoDefaultConstructor member;
+    };
+    struct ArgumentOnlyFinalType final {
+      explicit ArgumentOnlyFinalType(int) {}
+    };
+
+    static_assert(IsRegistrableType<CreatableType>() && IsRegistrableType<ProtectedConstructorBase>() && IsRegistrableType<AbstractType>());
+    static_assert(!IsRegistrableType<MemberBlocksType>() && !IsRegistrableType<ArgumentOnlyFinalType>());
+
+  } // namespace
+
   void RunReflectionSelfTest()
   {
     using Mode = ReflectionSelfTestObject::Mode;

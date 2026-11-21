@@ -155,6 +155,7 @@ F9 で Play に入ると、Actor が行って戻るのを繰り返します。�
 | スクリプトでないコード（設定・計算・状態など）は `GameProject\Source` に置く | 自動コンパイルが変更を見るのは `Script` と `Source` の 2 つ |
 | クラスの直前に `TCLASS()`、本体の先頭に `GENERATED_BODY()` を書く | この 2 つを読んで、ビルドのときに型の登録のコードが作られる |
 | `Tako::Script` を継承する | Add Component の `Scripts` に出るのは、`Script` の派生だけ |
+| 引数なしで作れるクラスにする | エンジンは、スクリプトを引数なしで作る。スクリプトのコンストラクタに引数を付けない。メンバーの型が引数ありのコンストラクタしか持たないなら、宣言で初期値を渡す（`Foo foo_{ 1, 2 };`） |
 | ファイルを `.vcxproj` に登録する | `New Script...` で作れば、自動で登録される。手で作ったファイルは、Visual Studio の「既存の項目の追加」で足す |
 
 include の書き方です。
@@ -989,6 +990,7 @@ Blackboard には、`BeginPlay` から値を入れられます。キー `"owner"
 | | ファイルが `.vcxproj` に入っていない | `New Script...` で作るか、Visual Studio で「既存の項目の追加」をする |
 | Assets からスクリプトを開けない、Script の欄にドロップできない | ファイル名とクラス名が違う、`Script` フォルダーの外にある | 名前をそろえて、`GameProject\Script` の中に置く |
 | ビルドで `TAKO001` のエラーが出る | `TCLASS`・`TPROPERTY` の書き方の間違い | エラーの文のとおりに直す（[3. 決まり](#3-決まり)の表） |
+| ビルドで「TCLASS 名前 を引数なしで作れない」と出る | スクリプトのコンストラクタに引数がある。または、引数ありのコンストラクタしか無い型をメンバーに持ち、初期値を渡していない | スクリプトのコンストラクタから引数を外す。メンバーは、宣言で初期値を渡す（`Foo foo_{ 1, 2 };`）か、その型に引数なしのコンストラクタを足す |
 | Debug は通るのに、Release のビルドが通らない | `DrawCustomImGui` や `imgui.h` を `#ifdef TAKO_EDITOR` で囲んでいない | 宣言・定義・include を囲む。区切りのよい所で、Release もビルドして確かめる |
 | Develop のエディタで、Inspector の追加の表示が出ない | `DrawCustomImGui` を `#ifdef _DEBUG` で囲んでいる（`_DEBUG` は Debug だけ） | `#ifdef TAKO_EDITOR` に替える |
 | Develop のエディタでコンパイルすると、Console に `has no Develop\|x64 configuration` と出る | ゲームの `.vcxproj` に、構成 Develop が無い（2.1.4 より前に作ったプロジェクト） | エンジンのひな形（`Engine\TakoEngine\templates\Default`）の `.vcxproj` と `.sln` から、`Develop` の付いた所を写す（エンジンの `CHANGELOG.md` の 2.1.4 に書いてある） |
