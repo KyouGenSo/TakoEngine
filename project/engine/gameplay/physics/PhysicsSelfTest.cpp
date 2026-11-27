@@ -1026,6 +1026,103 @@ namespace Tako {
       assert(physics->GetBodyCount() == 0);
     }
 
+    /// <summary>
+    /// Character Controller の足元と形：足元の面の向きと Actor が取れる。動く Kinematic の床の上で、Ride Moving Ground がオフなら置いていかれ、オンなら付いていく。
+    /// 低い天井の下では SetHeight で立てず、何も無い所では足元を保って伸びる。急な坂の上では IsOnSteepGround
+    /// </summary>
+    void CheckCharacterGround()
+    {
+      PhysicsWorld* physics = PhysicsWorld::GetInstance();
+      if (!physics->CanCollide(ColliderComponent::kActorLayer, ColliderComponent::kActorLayer)) {
+        return;
+      }
+      const auto isNear        = [](float a, float b, float tolerance) { return std::abs(a - b) < tolerance; };
+      const auto addController = [](Actor* actor) {
+        return static_cast<CharacterControllerComponent*>(actor->AddComponent(std::make_unique<CharacterControllerComponent>(), "CharacterController"));
+      };
+      const auto spawnBox = [](BaseScene& scene, const Vector3& position, const Vector3& scale) {
+        const ColliderProbe box = SpawnSolid(scene, position, ColliderComponent::Shape::Box);
+        box.actor->GetTransform().scale = scale;
+        return box.actor;
+      };
+
+      BaseScene scene;
+      scene.BeginPlay();
+      // 動く足場（Kinematic、上の面が y = 0）を 2 枚と、それぞれの上にキャラクター（カプセルの中心が Actor の位置。全長 2）
+      const auto spawnPlatform = [&](float z) {
+        Actor* platform = spawnBox(scene, { 0.0f, -0.5f, z }, { 6.0f, 1.0f, 4.0f });
+        AddRigidbody(platform)->SetBodyType(RigidbodyComponent::BodyType::Kinematic);
+        return platform;
+      };
+      Actor*                        plainPlatform  = spawnPlatform(0.0f);
+      Actor*                        ridingPlatform = spawnPlatform(20.0f);
+      const Probe                   left           = SpawnProbe(scene, { 0.0f, 1.2f, 0.0f });
+      CharacterControllerComponent* leftBehind     = addController(left.actor);
+      const Probe                   rider          = SpawnProbe(scene, { 0.0f, 1.2f, 20.0f });
+      CharacterControllerComponent* riding         = addController(rider.actor);
+      riding->SetRidesMovingGround(true);
+
+      // 床（上の面が y = 0）と、その上の低い天井（下の面が y = 1.5、x は -2〜2）。全長 1 にしたキャラクターを、天井の下に立たせる
+      spawnBox(scene, { 0.0f, -0.5f, 40.0f }, { 12.0f, 1.0f, 6.0f });
+      spawnBox(scene, { 0.0f, 2.0f, 40.0f }, { 4.0f, 1.0f, 6.0f });
+      const Probe                   croucher  = SpawnProbe(scene, { 0.0f, 1.2f, 40.0f });
+      CharacterControllerComponent* crouching = addController(croucher.actor);
+      [[maybe_unused]] const bool isShortened = crouching->SetHeight(1.0f);
+      assert(isShortened && crouching->GetHeight() == 1.0f);
+
+      // 60 度の坂（登れる角度の既定は 50 度）と、その上に落とすキャラクター
+      Actor* ramp = spawnBox(scene, { 0.0f, 3.0f, 60.0f }, { 8.0f, 0.5f, 4.0f });
+      ramp->GetTransform().rotate = { 0.0f, 0.0f, 1.0472f };
+      const Probe                   slider  = SpawnProbe(scene, { 0.0f, 5.5f, 60.0f });
+      CharacterControllerComponent* sliding = addController(slider.actor);
+      scene.UpdateAlways();
+
+      // 落ちて立つまでの間に、坂の上のキャラクターは急な面に乗る（立ってはいない。面の向きは、坂の面）
+      bool wasOnSteepGround = false;
+      for (int frame = 0; frame < 60; ++frame) {
+        scene.UpdateFrame(PhysicsWorld::kFixedDeltaTime);
+        if (sliding->IsOnSteepGround()) {
+          wasOnSteepGround = true;
+          assert(!sliding->IsGrounded() && isNear(sliding->GetGroundNormal().y, 0.5f, 0.05f) && sliding->GetGroundActor() == ramp);
+        }
+      }
+      assert(wasOnSteepGround);
+
+      // 足元：面の向きは上、Actor は乗っている足場
+      assert(leftBehind->IsGrounded() && riding->IsGrounded() && !riding->IsOnSteepGround());
+      assert(IsNear(riding->GetGroundNormal(), { 0.0f, 1.0f, 0.0f }) && riding->GetGroundActor() == ridingPlatform);
+      assert(leftBehind->GetGroundActor() == plainPlatform);
+
+      // 足場を +X へ 2 動かす。オフのキャラクターは置いていかれ、オンのキャラクターは付いていく（控えている速度には、床の分は入らない）
+      for (int step = 0; step < 100; ++step) {
+        plainPlatform->GetTransform().translate.x += 0.02f;
+        ridingPlatform->GetTransform().translate.x += 0.02f;
+        scene.UpdateFrame(PhysicsWorld::kFixedDeltaTime);
+      }
+      RunFrames(scene, 10);
+      assert(std::abs(left.actor->GetTransform().translate.x) < 0.3f && leftBehind->IsGrounded());
+      assert(isNear(rider.actor->GetTransform().translate.x, 2.0f, 0.1f) && riding->IsGrounded());
+      assert(isNear(riding->GetVelocity().x, 0.0f, 0.001f));
+
+      // 低い天井の下では、立てない（形は変わらない）
+      assert(crouching->IsGrounded() && isNear(croucher.actor->GetTransform().translate.y, 1.0f, 0.05f));
+      assert(!crouching->SetHeight(2.0f) && crouching->GetHeight() == 1.0f);
+
+      // 天井の外へ出ると立てる。足元は動かず、頭が 1 上がる（上からのレイが、頭に当たる）
+      croucher.actor->GetTransform().translate.x = 4.0f;
+      RunFrames(scene, 5);
+      [[maybe_unused]] const bool isStanding = crouching->SetHeight(2.0f);
+      assert(isStanding && crouching->GetHeight() == 2.0f);
+      RunFrames(scene, 30);
+      const Vector3 stood = croucher.actor->GetTransform().translate;
+      assert(crouching->IsGrounded() && isNear(stood.y, 1.0f, 0.05f));
+      const std::optional<PhysicsWorld::RaycastHit> head = physics->Raycast({ 4.0f, 10.0f, 40.0f }, { 0.0f, -1.0f, 0.0f }, 20.0f, 0xffffffff, false);
+      assert(head && head->actor == croucher.actor && isNear(head->point.y, stood.y + 1.0f, 0.05f));
+
+      scene.Shutdown();
+      assert(physics->GetBodyCount() == 0);
+    }
+
 #ifdef TAKO_EDITOR
     /// <summary>
     /// 形式 1 のプロジェクトの移行：isTrigger の無いコライダー（1 ファイルのシーン・Actor ごとのファイル・プレハブ・置いた物の差分）に true が入り、書いてある値と読めないファイルは変わらない
@@ -1097,6 +1194,7 @@ namespace Tako {
     CheckJoints();
     CheckCharacterController();
     CheckCharacterMass();
+    CheckCharacterGround();
 #ifdef TAKO_EDITOR
     CheckColliderMigration();
 #endif

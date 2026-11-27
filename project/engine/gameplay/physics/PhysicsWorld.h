@@ -120,6 +120,7 @@ namespace Tako {
       float      gravityScale  = 1.0f;           ///< 重力の倍率（0 = 重力を受けない）
       float      pushStrength  = 100.0f;         ///< 歩いて当たった Dynamic のボディを押す力の上限（N）。0 なら押さずに、壁のように止まる
       float      mass          = 70.0f;          ///< 立っている Dynamic のボディに掛かる重さ（kg）。0 なら掛けない
+      bool       ridesGround   = false;          ///< 立っている床（動く Kinematic のボディなど）の速度を、動きに足す（動く足場に付いていく）
     };
 
     enum class JointType : uint8_t {
@@ -311,6 +312,17 @@ namespace Tako {
     /// </summary>
     void SetCharacterMass(CharacterHandle character, float mass);
 
+    /// <summary>
+    /// 立っている床の速度を、動きに足すか（CharacterSettings::ridesGround）を変える
+    /// </summary>
+    void SetCharacterRidesGround(CharacterHandle character, bool ridesGround);
+
+    /// <summary>
+    /// カプセルの全長を変える（しゃがむ・立つ）。足元（カプセルの下の端）の位置は変えず、中心を動かす。キャラクターは作り直さない（速度は残る）
+    /// </summary>
+    /// <returns>伸ばした先が何かにふさがれていたら、変えずに false</returns>
+    bool SetCharacterHeight(CharacterHandle character, float height);
+
     //============================================================
     //ジョイント
     //============================================================
@@ -471,6 +483,21 @@ namespace Tako {
     /// 最後のステップで、立てる面（maxSlopeAngle より緩い面）の上に居たか
     /// </summary>
     bool IsCharacterGrounded(CharacterHandle character) const;
+
+    /// <summary>
+    /// 最後のステップで、登れない急な面（maxSlopeAngle より急な面）の上に居たか
+    /// </summary>
+    bool IsCharacterOnSteepGround(CharacterHandle character) const;
+
+    /// <summary>
+    /// 最後のステップで足元にあった面の向き（何の上にも居なければ 0）
+    /// </summary>
+    Vector3 GetCharacterGroundNormal(CharacterHandle character) const;
+
+    /// <summary>
+    /// 最後のステップで足元にあったボディの Actor（何の上にも居なければ nullptr）
+    /// </summary>
+    Actor* GetCharacterGroundActor(CharacterHandle character) const;
 
     bool IsDebugDrawEnabled() const { return debugDrawEnabled_; }
 

@@ -57,6 +57,17 @@ namespace Tako {
     /// </summary>
     void SetMass(float mass);
 
+    /// <summary>
+    /// 立っている床（動く足場など）の動きに付いていくか
+    /// </summary>
+    void SetRidesMovingGround(bool ridesMovingGround);
+
+    /// <summary>
+    /// カプセルの全長を変える（しゃがむ・立つ）。足元の位置は変わらず、中心（Offset）が動く。Play 中に呼んでも、速度は残る
+    /// </summary>
+    /// <returns>伸ばした先が何かにふさがれていたら（低い天井の下で立とうとした、など）、変えずに false</returns>
+    bool SetHeight(float height);
+
     //=====================================
     //Getter
     //=====================================
@@ -70,6 +81,25 @@ namespace Tako {
     /// </summary>
     bool IsGrounded() const;
 
+    /// <summary>
+    /// 登れない急な面（Max Slope Angle より急な面）の上に居るか（滑り落ちている間）
+    /// </summary>
+    bool IsOnSteepGround() const;
+
+    /// <summary>
+    /// 足元の面の向き（何の上にも居なければ 0）
+    /// </summary>
+    Vector3 GetGroundNormal() const;
+
+    /// <summary>
+    /// 足元にある Collider（か Character Controller）の Actor（何の上にも居なければ nullptr）
+    /// </summary>
+    Actor* GetGroundActor() const;
+
+    float GetHeight() const { return height_; }
+
+    bool RidesMovingGround() const { return ridesMovingGround_; }
+
     float GetPushStrength() const { return pushStrength_; }
 
     float GetMass() const { return mass_; }
@@ -81,23 +111,25 @@ namespace Tako {
 
   private: //メンバー変数
     TPROPERTY(Edit, ClampMin = 0, Speed = 0.05)
-    float    radius_        = 0.5f;
+    float    radius_            = 0.5f;
     TPROPERTY(Edit, Tooltip = "カプセルの全長（両端の半球を含む）", ClampMin = 0, Speed = 0.05)
-    float    height_        = 2.0f;
+    float    height_            = 2.0f;
     TPROPERTY(Edit, Tooltip = "Actor から見た、カプセルの中心", Speed = 0.05)
     Vector3  offset_{};
     TPROPERTY(Edit, Angle, Tooltip = "登れる坂の角度。これより急な面は、壁として滑る", ClampMin = 0, ClampMax = 90)
-    float    maxSlopeAngle_ = 0.8726646f;
+    float    maxSlopeAngle_     = 0.8726646f;
     TPROPERTY(Edit, Tooltip = "乗り越えられる段差の高さ", ClampMin = 0, Speed = 0.01)
-    float    stepHeight_    = 0.4f;
+    float    stepHeight_        = 0.4f;
     TPROPERTY(Edit, Tooltip = "重力の倍率（0 = 重力を受けない）", Speed = 0.05)
-    float    gravityScale_  = 1.0f;
+    float    gravityScale_      = 1.0f;
     TPROPERTY(Edit, Tooltip = "歩いて当たった Dynamic の Rigidbody を押す力の上限（ニュートン）。0 なら押さずに、壁のように止まる", ClampMin = 0, Speed = 1)
-    float    pushStrength_  = 100.0f;
+    float    pushStrength_      = 100.0f;
     TPROPERTY(Edit, Tooltip = "上に乗った Dynamic の Rigidbody に掛かる重さ（kg）。0 なら掛けない", ClampMin = 0, Speed = 0.5)
-    float    mass_          = 70.0f;
+    float    mass_              = 70.0f;
+    TPROPERTY(Edit, DisplayName = "Ride Moving Ground", Tooltip = "オンなら、立っている床（動く足場など）の動きに付いていく")
+    bool     ridesMovingGround_ = false;
     TPROPERTY()
-    uint32_t layer_         = PhysicsWorld::kDefaultLayer;
+    uint32_t layer_             = PhysicsWorld::kDefaultLayer;
 
     PhysicsWorld::CharacterHandle character_ = PhysicsWorld::kInvalidCharacter;
   };

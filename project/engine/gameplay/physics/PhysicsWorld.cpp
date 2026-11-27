@@ -339,6 +339,7 @@ namespace Tako {
       bool                            isInWorld = true;
       Vector3                         shapeScale{ 1.0f, 1.0f, 1.0f };  ///< 今の形を作ったときの scale
       Vector3                         lastTranslate{};                 ///< 最後に Actor へ書いた（か、Actor から読んだ）位置。違っていれば、外から書き換えられた
+      Vector3                         groundVelocity{};                ///< 最後のステップで動きに足した、床の速度（ridesGround のとき。床から離れたステップで、キャラクターの速度へ渡す）
 
       //直前の 2 ステップの位置（その間を補間して Actor へ書く）
       Vector3 previousPosition{};
@@ -977,8 +978,20 @@ namespace Tako {
       if (character.GetGroundState() == JPH::CharacterBase::EGroundState::OnGround && velocity.GetY() < 0.0f) {
         velocity.SetY(0.0f);
       }
+      // 床に付いていく：何かの上に居る間は、その床の速度を足して動かす（控える速度には入れない）。床から離れたステップで、それまでの床の速度を 1 回だけ渡す
+      JPH::Vec3 groundVelocity = JPH::Vec3::sZero();
+      if (settings.ridesGround) {
+        if (character.IsSupported()) {
+          character.UpdateGroundVelocity();
+          groundVelocity = character.GetGroundVelocity();
+        } else {
+          velocity += ToJolt(record.groundVelocity);
+        }
+        record.groundVelocity = ToEngine(groundVelocity);
+      }
       velocity += gravity * kFixedDeltaTime;
-      character.SetLinearVelocity(velocity);
+      const JPH::Vec3 movement = velocity + groundVelocity;
+      character.SetLinearVelocity(movement);
 
       // 段差の高さは、登るときと、下りで床から離れないよう吸い付くときの両方に使う
       JPH::CharacterVirtual::ExtendedUpdateSettings update;
@@ -990,7 +1003,7 @@ namespace Tako {
 
       // 触れている実体を控える（Trigger は除く）。向きは、このステップで動こうとした向き
       if (settings.owner) {
-        const Vector3 moveDirection = ToEngine(velocity.NormalizedOr(JPH::Vec3::sZero()));
+        const Vector3 moveDirection = ToEngine(movement.NormalizedOr(JPH::Vec3::sZero()));
         for (const JPH::CharacterContact& contact : character.GetActiveContacts()) {
           if (!contact.mHadCollision || contact.mWasDiscarded || contact.mIsSensorB) {
             continue;
@@ -1008,9 +1021,11 @@ namespace Tako {
 
       const Vector3 position = ToEngine(character.GetPosition());
       // 上へ動こうとして半分も進めなかったら、天井に当たっている。上向きの速さを捨てる（捨てないと、落ち始めるまで天井に張り付く）
-      if (velocity.GetY() > 0.0f && position.y - record.currentPosition.y < velocity.GetY() * kFixedDeltaTime * 0.5f) {
-        character.SetLinearVelocity(character.GetLinearVelocity() * JPH::Vec3(1.0f, 0.0f, 1.0f));
+      if (movement.GetY() > 0.0f && position.y - record.currentPosition.y < movement.GetY() * kFixedDeltaTime * 0.5f) {
+        velocity.SetY((std::min)(velocity.GetY(), 0.0f));
       }
+      // 控える速度には、床の分を入れない
+      character.SetLinearVelocity(velocity);
       record.currentPosition = position;
       record.needsWriteBack  = true;
     }
@@ -1583,6 +1598,38 @@ namespace Tako {
     }
   }
 
+  void PhysicsWorld::SetCharacterRidesGround(CharacterHandle character, bool ridesGround)
+  {
+    if (const auto found = impl_->characters.find(character); found != impl_->characters.end()) {
+      found->second.settings.ridesGround = ridesGround;
+    }
+  }
+
+  bool PhysicsWorld::SetCharacterHeight(CharacterHandle character, float height)
+  {
+    const auto found = impl_->characters.find(character);
+    if (found == impl_->characters.end()) {
+      return false;
+    }
+    CharacterRecord&  record  = found->second;
+    CharacterSettings resized = record.settings;
+    // 足元（カプセルの下の端）を保つ：伸びた分の半分だけ、中心を上げる
+    resized.offset.y += (height - resized.height) * 0.5f;
+    resized.height    = height;
+    const JPH::RefConst<JPH::Shape> shape = MakeCharacterShape(resized, record.shapeScale);
+
+    // 新しい形が何かに重なるなら、Jolt は形を替えずに false を返す（Jolt のサンプルと同じ許容の深さ）
+    const LayerMaskFilter  layerFilter(collisionMask_[(std::min)(resized.layer, static_cast<uint32_t>(kMaxLayers - 1))]);
+    const OtherActorFilter bodyFilter(resized.actor);
+    const float            maxPenetration = 1.5f * impl_->system.GetPhysicsSettings().mPenetrationSlop;
+    if (!record.character->SetShape(shape, maxPenetration, {}, layerFilter, bodyFilter, {}, impl_->tempAllocator)) {
+      return false;
+    }
+    record.character->SetInnerBodyShape(shape);
+    record.settings = resized;
+    return true;
+  }
+
   PhysicsWorld::JointHandle PhysicsWorld::CreateJoint(const JointSettings& settings)
   {
     const auto body      = impl_->bodies.find(settings.body);
@@ -1880,6 +1927,31 @@ namespace Tako {
     const auto found = impl_->characters.find(character);
     return found != impl_->characters.end() && found->second.isInWorld
         && found->second.character->GetGroundState() == JPH::CharacterBase::EGroundState::OnGround;
+  }
+
+  bool PhysicsWorld::IsCharacterOnSteepGround(CharacterHandle character) const
+  {
+    const auto found = impl_->characters.find(character);
+    return found != impl_->characters.end() && found->second.isInWorld
+        && found->second.character->GetGroundState() == JPH::CharacterBase::EGroundState::OnSteepGround;
+  }
+
+  Vector3 PhysicsWorld::GetCharacterGroundNormal(CharacterHandle character) const
+  {
+    const auto found = impl_->characters.find(character);
+    const bool isSupported = found != impl_->characters.end() && found->second.isInWorld && found->second.character->IsSupported();
+    return isSupported ? ToEngine(found->second.character->GetGroundNormal()) : Vector3{};
+  }
+
+  Actor* PhysicsWorld::GetCharacterGroundActor(CharacterHandle character) const
+  {
+    const auto found = impl_->characters.find(character);
+    if (found == impl_->characters.end() || !found->second.isInWorld || !found->second.character->IsSupported()) {
+      return nullptr;
+    }
+    const JPH::CharacterVirtual& virtualCharacter = *found->second.character;
+    const Component*             owner            = impl_->FindOwner(virtualCharacter.GetGroundBodyID(), virtualCharacter.GetGroundSubShapeID());
+    return owner ? owner->GetOwner() : nullptr;
   }
 
   size_t PhysicsWorld::GetBodyCount() const

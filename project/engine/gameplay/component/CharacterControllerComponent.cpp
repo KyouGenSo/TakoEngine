@@ -73,6 +73,23 @@ namespace Tako {
     PhysicsWorld::GetInstance()->SetCharacterMass(character_, mass);
   }
 
+  void CharacterControllerComponent::SetRidesMovingGround(bool ridesMovingGround)
+  {
+    ridesMovingGround_ = ridesMovingGround;
+    PhysicsWorld::GetInstance()->SetCharacterRidesGround(character_, ridesMovingGround);
+  }
+
+  bool CharacterControllerComponent::SetHeight(float height)
+  {
+    if (character_ != PhysicsWorld::kInvalidCharacter && !PhysicsWorld::GetInstance()->SetCharacterHeight(character_, height)) {
+      return false;
+    }
+    // 足元（カプセルの下の端）を保つ：伸びた分の半分だけ、中心を上げる
+    offset_.y += (height - height_) * 0.5f;
+    height_    = height;
+    return true;
+  }
+
   Vector3 CharacterControllerComponent::GetVelocity() const
   {
     return PhysicsWorld::GetInstance()->GetCharacterVelocity(character_);
@@ -81,6 +98,21 @@ namespace Tako {
   bool CharacterControllerComponent::IsGrounded() const
   {
     return PhysicsWorld::GetInstance()->IsCharacterGrounded(character_);
+  }
+
+  bool CharacterControllerComponent::IsOnSteepGround() const
+  {
+    return PhysicsWorld::GetInstance()->IsCharacterOnSteepGround(character_);
+  }
+
+  Vector3 CharacterControllerComponent::GetGroundNormal() const
+  {
+    return PhysicsWorld::GetInstance()->GetCharacterGroundNormal(character_);
+  }
+
+  Actor* CharacterControllerComponent::GetGroundActor() const
+  {
+    return PhysicsWorld::GetInstance()->GetCharacterGroundActor(character_);
   }
 
   void CharacterControllerComponent::CreateCharacter()
@@ -97,6 +129,7 @@ namespace Tako {
     settings.gravityScale  = gravityScale_;
     settings.pushStrength  = pushStrength_;
     settings.mass          = mass_;
+    settings.ridesGround   = ridesMovingGround_;
 
     PhysicsWorld* physics = PhysicsWorld::GetInstance();
     character_ = physics->CreateCharacter(settings);
