@@ -46,21 +46,23 @@ namespace Tako {
     /// </summary>
     class ContactRecorder final : public Component {
     public: //メンバー関数
-      void OnCollisionEnter(Actor* other) override { Record('E', other); }
-      void OnCollisionStay(Actor* other) override { Record('S', other); }
-      void OnCollisionExit(Actor* other) override { Record('X', other); }
+      void OnCollisionEnter(const Collision& collision) override { Record('E', collision); }
+      void OnCollisionStay(const Collision& collision) override { Record('S', collision); }
+      void OnCollisionExit(const Collision& collision) override { Record('X', collision); }
       void OnControllerColliderHit(const ControllerColliderHit& hit) override { hits.push_back(hit); }
 
     public: //メンバー変数
       std::string                        log;
+      std::vector<Collision>             collisions;      ///< 届いた値（log の同じ位置の文字の分）
       Actor*                             last = nullptr;
       std::vector<ControllerColliderHit> hits;            ///< 届いた OnControllerColliderHit（届いた順）
 
     private: //非公開関数
-      void Record(char kind, Actor* other)
+      void Record(char kind, const Collision& collision)
       {
         log += kind;
-        last = other;
+        collisions.push_back(collision);
+        last = collision.actor;
       }
     };
 
@@ -615,6 +617,66 @@ namespace Tako {
     }
 
     /// <summary>
+    /// 当たりの知らせに入る値。落ちた球の Enter：触れた位置が床の面、向きが床から球へ（上）、速度の差が上向き、力積が正。床の側は、向きと速度の差が逆。
+    /// Stay は力積が 0、Exit は相手だけ。Trigger の重なりでも、触れた位置が入る（力積は 0）
+    /// </summary>
+    void CheckCollisionInfo()
+    {
+      PhysicsWorld* physics = PhysicsWorld::GetInstance();
+      if (!physics->CanCollide(ColliderComponent::kActorLayer, ColliderComponent::kActorLayer)) {
+        return;
+      }
+      const auto isNear = [](float a, float b, float tolerance) { return std::abs(a - b) < tolerance; };
+
+      BaseScene scene;
+      scene.BeginPlay();
+      const ColliderProbe floor = SpawnSolid(scene, { 0.0f, -0.5f, 0.0f }, ColliderComponent::Shape::Box);
+      floor.actor->GetTransform().scale = { 1000.0f, 1.0f, 1000.0f };
+      // 半径 0.5 の球を、中心の高さ 2 から床（上の面が y = 0）へ落とす
+      const ColliderProbe ball = SpawnSolid(scene, { 0.0f, 2.0f, 0.0f }, ColliderComponent::Shape::Sphere);
+      AddRigidbody(ball.actor);
+      // 半径 1 の Trigger（上の端が y = 11）へ、上から球を落とす
+      const ColliderProbe zone    = SpawnTrigger(scene, { 30.0f, 10.0f, 0.0f });
+      const ColliderProbe dropped = SpawnSolid(scene, { 30.0f, 12.0f, 0.0f }, ColliderComponent::Shape::Sphere);
+      AddRigidbody(dropped.actor);
+      scene.UpdateAlways();
+      RunFrames(scene, 60);
+
+      // 球の側：相手は床。触れた位置は床の面で、向きは床から球へ。床が球へ近づく向きの速度の差と、ぶつかった強さが入る
+      assert(!ball.recorder->log.empty() && ball.recorder->log.front() == 'E');
+      const Collision landed = ball.recorder->collisions.front();
+      assert(landed.actor == floor.actor && isNear(landed.point.x, 0.0f, 0.05f) && isNear(landed.point.y, 0.0f, 0.05f));
+      assert(IsNear(landed.normal, { 0.0f, 1.0f, 0.0f }) && landed.relativeVelocity.y > 3.0f && landed.impulse > 1.0f);
+
+      // 床の側：同じ接触を、逆の向きで受け取る
+      assert(!floor.recorder->log.empty() && floor.recorder->log.front() == 'E');
+      const Collision struck = floor.recorder->collisions.front();
+      assert(struck.actor == ball.actor && IsNear(struck.point, landed.point) && IsNear(struck.normal, { 0.0f, -1.0f, 0.0f }));
+      assert(struck.relativeVelocity.y < -3.0f && isNear(struck.impulse, landed.impulse, 0.001f));
+
+      // Stay：位置と向きは入り、力積は 0
+      const size_t stay = ball.recorder->log.find('S');
+      assert(stay != std::string::npos && ball.recorder->collisions[stay].actor == floor.actor);
+      assert(IsNear(ball.recorder->collisions[stay].normal, { 0.0f, 1.0f, 0.0f }) && ball.recorder->collisions[stay].impulse == 0.0f);
+
+      // Exit：相手だけが入る
+      ball.actor->GetTransform().translate = { 0.0f, 50.0f, 0.0f };
+      RunFrames(scene, 3);
+      assert(ball.recorder->log.back() == 'X');
+      const Collision left = ball.recorder->collisions.back();
+      assert(left.actor == floor.actor && IsNear(left.point, {}) && IsNear(left.normal, {}) && IsNear(left.relativeVelocity, {}) && left.impulse == 0.0f);
+
+      // Trigger の側：入ってきた球に触れた位置（Trigger の上の端のあたり）が入る。向きは球から Trigger へ（下）、力積は 0
+      assert(!zone.recorder->log.empty() && zone.recorder->log.front() == 'E');
+      const Collision entered = zone.recorder->collisions.front();
+      assert(entered.actor == dropped.actor && isNear(entered.point.x, 30.0f, 0.1f) && entered.point.y > 10.8f && entered.point.y < 11.1f);
+      assert(entered.normal.y < -0.9f && entered.relativeVelocity.y < -1.0f && entered.impulse == 0.0f);
+
+      scene.Shutdown();
+      assert(physics->GetBodyCount() == 0);
+    }
+
+    /// <summary>
     /// モデルから作る形：Mesh の床に球と凸包が乗る（三角形の表が外を向いている）、上からのレイが上の面に当たる、Dynamic の下の Mesh は形にならない
     /// </summary>
     void CheckMeshShapes()
@@ -963,6 +1025,7 @@ namespace Tako {
     CheckScaleFollowsActor();
     CheckColliderComponent();
     CheckRigidbody();
+    CheckCollisionInfo();
     CheckMeshShapes();
     CheckJoints();
     CheckCharacterController();

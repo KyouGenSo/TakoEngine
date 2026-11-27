@@ -72,19 +72,19 @@ namespace Tako {
     if (instance_) { instance_->OnSiblingRemoved(removed); }
   }
 
-  void ScriptComponent::OnCollisionEnter(Actor* other)
+  void ScriptComponent::OnCollisionEnter(const Collision& collision)
   {
-    if (instance_) { instance_->OnCollisionEnter(other); }
+    if (instance_) { instance_->OnCollisionEnter(collision); }
   }
 
-  void ScriptComponent::OnCollisionStay(Actor* other)
+  void ScriptComponent::OnCollisionStay(const Collision& collision)
   {
-    if (instance_) { instance_->OnCollisionStay(other); }
+    if (instance_) { instance_->OnCollisionStay(collision); }
   }
 
-  void ScriptComponent::OnCollisionExit(Actor* other)
+  void ScriptComponent::OnCollisionExit(const Collision& collision)
   {
-    if (instance_) { instance_->OnCollisionExit(other); }
+    if (instance_) { instance_->OnCollisionExit(collision); }
   }
 
   void ScriptComponent::OnControllerColliderHit(const ControllerColliderHit& hit)

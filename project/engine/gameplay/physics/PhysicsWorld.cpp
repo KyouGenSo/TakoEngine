@@ -13,6 +13,7 @@
 #include <Jolt/Physics/Collision/CollideShape.h>
 #include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
 #include <Jolt/Physics/Collision/ContactListener.h>
+#include <Jolt/Physics/Collision/EstimateCollisionResponse.h>
 #include <Jolt/Physics/Collision/RayCast.h>
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
@@ -84,7 +85,20 @@ namespace Tako {
 
     // 当たっている 2 つの通知先。ポインタの小さい方が first
     using OwnerPair = std::pair<Component*, Component*>;
-    using PairList  = std::vector<OwnerPair>;
+
+    /// <summary>
+    /// 当たっている組 1 つと、最後に調べた接触の値。一覧を並べる・比べるのは、組だけ
+    /// </summary>
+    struct Contact {
+      OwnerPair pair;
+      Vector3   point{};             ///< 触れた位置（ワールド。接触点の平均）
+      Vector3   normal{};            ///< first の形から second の形へ向く向き
+      Vector3   relativeVelocity{};  ///< second の速度 − first の速度（ぶつかる前）
+      float     impulse = 0.0f;      ///< ぶつかりを解くのに掛かる力積の見積もり。当たり始めた接触にだけ入る
+    };
+    using ContactList = std::vector<Contact>;
+
+    enum class ContactEvent : uint8_t { Enter, Stay, Exit };
 
     JPH::Vec3 ToJolt(const Vector3& v) { return JPH::Vec3(v.x, v.y, v.z); }
     JPH::Quat ToJolt(const Quaternion& q) { return JPH::Quat(q.x, q.y, q.z, q.w); }
@@ -152,22 +166,47 @@ namespace Tako {
     /// </summary>
     class ContactCollector final : public JPH::ContactListener {
     public: //メンバー関数
-      void OnContactAdded(const JPH::Body& a, const JPH::Body& b, const JPH::ContactManifold& manifold, JPH::ContactSettings&) override { Collect(a, b, manifold); }
-      void OnContactPersisted(const JPH::Body& a, const JPH::Body& b, const JPH::ContactManifold& manifold, JPH::ContactSettings&) override { Collect(a, b, manifold); }
+      void OnContactAdded(const JPH::Body& a, const JPH::Body& b, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings) override { Collect(a, b, manifold, &settings); }
+      void OnContactPersisted(const JPH::Body& a, const JPH::Body& b, const JPH::ContactManifold& manifold, JPH::ContactSettings&) override { Collect(a, b, manifold, nullptr); }
 
     public: //メンバー変数
-      PairList pairs;  ///< ステップの外で、メインスレッドが読んで空にする
+      ContactList contacts;  ///< ステップの外で、メインスレッドが読んで空にする
 
     private: //非公開関数
-      void Collect(const JPH::Body& a, const JPH::Body& b, const JPH::ContactManifold& manifold) {
+      /// <param name="added">当たり始めた接触なら、その設定（力積を見積もる）。続いている接触は nullptr</param>
+      void Collect(const JPH::Body& a, const JPH::Body& b, const JPH::ContactManifold& manifold, const JPH::ContactSettings* added) {
         auto* ownerA = reinterpret_cast<Component*>(a.GetShape()->GetSubShapeUserData(manifold.mSubShapeID1));
         auto* ownerB = reinterpret_cast<Component*>(b.GetShape()->GetSubShapeUserData(manifold.mSubShapeID2));
         // 通知先の無い形と、同じ Actor の形どうしは知らせない
         if (!ownerA || !ownerB || ownerA->GetOwner() == ownerB->GetOwner()) {
           return;
         }
+
+        Contact   contact;
+        JPH::Vec3 sum = JPH::Vec3::sZero();
+        for (const JPH::Vec3& point : manifold.mRelativeContactPointsOn1) {
+          sum += point;
+        }
+        const float count = static_cast<float>((std::max)(manifold.mRelativeContactPointsOn1.size(), JPH::ContactPoints::size_type(1)));
+        contact.pair             = { ownerA, ownerB };
+        contact.point            = ToEngine(manifold.mBaseOffset + sum / count);
+        contact.normal           = ToEngine(manifold.mWorldSpaceNormal);
+        contact.relativeVelocity = ToEngine(b.GetLinearVelocity() - a.GetLinearVelocity());
+        if (added && !added->mIsSensor) {
+          JPH::CollisionEstimationResult estimate;
+          JPH::EstimateCollisionResponse(a, b, manifold, estimate, *added);
+          for (const float impulse : estimate.mContactImpulse) {
+            contact.impulse += impulse;
+          }
+        }
+        // 組は、ポインタの小さい方を first にする。入れ替えたら、向きも逆になる
+        if (ownerB < ownerA) {
+          contact.pair             = { ownerB, ownerA };
+          contact.normal           = -contact.normal;
+          contact.relativeVelocity = -contact.relativeVelocity;
+        }
         const std::lock_guard lock(mutex_);
-        pairs.push_back(std::minmax(ownerA, ownerB));
+        contacts.push_back(contact);
       }
 
     private: //メンバー変数
@@ -557,9 +596,9 @@ namespace Tako {
     bool IsResting(Component* owner) const;
 
     /// <summary>
-    /// pairs の両方の Actor の全コンポーネントに handler を呼ぶ。pairs は、呼んだ先で書き換わらない物を渡す
+    /// contacts の両方の Actor の全コンポーネントに、event の通知（OnCollision〜）を呼ぶ。contacts は、呼んだ先で書き換わらない物を渡す
     /// </summary>
-    void Dispatch(const PairList& pairs, void (Component::* handler)(Actor*), FrameStats& stats);
+    void Dispatch(const ContactList& contacts, ContactEvent event, FrameStats& stats);
 
     void DispatchPendingExits(FrameStats& stats);
 
@@ -647,11 +686,11 @@ namespace Tako {
     std::vector<ControllerHit> controllerHits;   ///< このステップでキャラクターが触れた所
     std::vector<ControllerHit> dispatchingHits;  ///< 配っている間の入れ物（確保を使い回す）
 
-    //当たりの通知。どれも、通知先の組の一覧
-    PairList touching;          ///< 今当たっている組（並べ替え済み）
-    PairList pendingExits;      ///< 世界から出したボディの組。次の配布で Exit を出す
-    PairList enteredThisFrame;  ///< このフレームに当たり始めた組（Stay は次のフレームから）
-    PairList staying;           ///< Stay を配る間の写し（毎フレーム使うので、確保を使い回す）
+    //当たりの通知。どれも、通知先の組と、その接触の値の一覧
+    ContactList touching;          ///< 今当たっている組（並べ替え済み）
+    ContactList pendingExits;      ///< 世界から出したボディの組。次の配布で Exit を出す
+    ContactList enteredThisFrame;  ///< このフレームに当たり始めた組（Stay は次のフレームから）
+    ContactList staying;           ///< Stay を配る間の写し（毎フレーム使うので、確保を使い回す）
   };
 
   void PhysicsWorld::Impl::Teleport(BodyRecord& record, const Pose& pose)
@@ -791,7 +830,7 @@ namespace Tako {
 
   void PhysicsWorld::Impl::ForgetOwners(std::span<Component* const> owners)
   {
-    const auto involves = [owners](const OwnerPair& pair) { return Involves(pair, owners); };
+    const auto involves = [owners](const Contact& contact) { return Involves(contact.pair, owners); };
     std::erase_if(touching, involves);
     std::erase_if(pendingExits, involves);
     std::erase_if(enteredThisFrame, involves);
@@ -806,23 +845,38 @@ namespace Tako {
     return body != ownerBodies.end() && !system.GetBodyInterface().IsActive(JPH::BodyID(body->second));
   }
 
-  void PhysicsWorld::Impl::Dispatch(const PairList& pairs, void (Component::* handler)(Actor*), FrameStats& stats)
+  void PhysicsWorld::Impl::Dispatch(const ContactList& contacts, ContactEvent event, FrameStats& stats)
   {
-    if (pairs.empty()) {
+    if (contacts.empty()) {
       return;
     }
+    void (Component::* handler)(const Collision&) = &Component::OnCollisionExit;
+    if (event == ContactEvent::Enter) {
+      handler = &Component::OnCollisionEnter;
+    } else if (event == ContactEvent::Stay) {
+      handler = &Component::OnCollisionStay;
+    }
     const Clock::time_point start = Clock::now();
-    for (const OwnerPair& pair : pairs) {
+    for (const Contact& contact : contacts) {
       // 前の通知の中でボディを消された通知先には、知らせない
-      if (!ownerBodies.contains(pair.first) || !ownerBodies.contains(pair.second)) {
+      if (!ownerBodies.contains(contact.pair.first) || !ownerBodies.contains(contact.pair.second)) {
         continue;
       }
-      Actor* const actors[2] = { pair.first->GetOwner(), pair.second->GetOwner() };
+      Actor* const actors[2] = { contact.pair.first->GetOwner(), contact.pair.second->GetOwner() };
       for (int side = 0; side < 2; ++side) {
+        // 控えてある向きは first → second、速度の差は second − first。受け手から見た値に直す
+        Collision collision;
+        collision.actor = actors[1 - side];
+        if (event != ContactEvent::Exit) {
+          collision.point            = contact.point;
+          collision.normal           = side == 0 ? -contact.normal : contact.normal;
+          collision.relativeVelocity = side == 0 ? contact.relativeVelocity : -contact.relativeVelocity;
+          collision.impulse          = event == ContactEvent::Enter ? contact.impulse : 0.0f;
+        }
         // 受け手がコンポーネントを足しても壊れないよう、添字で回す
         const auto& components = actors[side]->GetComponents();
         for (size_t i = 0; i < components.size(); ++i) {
-          (components[i].get()->*handler)(actors[1 - side]);
+          (components[i].get()->*handler)(collision);
         }
       }
       ++stats.callbackCount;
@@ -833,9 +887,9 @@ namespace Tako {
   void PhysicsWorld::Impl::DispatchPendingExits(FrameStats& stats)
   {
     // 通知の中でまた止められても壊れないよう、取り出してから配る
-    PairList exits;
+    ContactList exits;
     exits.swap(pendingExits);
-    Dispatch(exits, &Component::OnCollisionExit, stats);
+    Dispatch(exits, ContactEvent::Exit, stats);
   }
 
   void PhysicsWorld::Impl::DispatchControllerHits(FrameStats& stats)
@@ -865,7 +919,7 @@ namespace Tako {
 
   void PhysicsWorld::Impl::MoveToPendingExits(std::span<Component* const> owners)
   {
-    const auto moved = std::ranges::stable_partition(touching, [owners](const OwnerPair& pair) { return !Involves(pair, owners); });
+    const auto moved = std::ranges::stable_partition(touching, [owners](const Contact& contact) { return !Involves(contact.pair, owners); });
     pendingExits.insert(pendingExits.end(), moved.begin(), moved.end());
     touching.erase(moved.begin(), moved.end());
   }
@@ -1122,7 +1176,7 @@ namespace Tako {
     impl_->SyncBodies(true);
 
     const Clock::time_point start    = Clock::now();
-    PairList&               reported = impl_->contactCollector.pairs;
+    ContactList&            reported = impl_->contactCollector.contacts;
     reported.clear();
     // キャラクターは、世界の計算より先に動かす（Jolt のサンプルと同じ順）
     impl_->StepCharacters(collisionMask_);
@@ -1148,32 +1202,32 @@ namespace Tako {
       record.needsWriteBack  = true;
     }
 
-    // このステップで触れていた組と、前から当たっていた組を比べる
-    std::ranges::sort(reported);
-    const auto duplicates = std::ranges::unique(reported);
+    // このステップで触れていた組と、前から当たっていた組を比べる。同じ組の接触が 2 つ以上あれば、力積の大きい 1 つを残す
+    std::ranges::sort(reported, [](const Contact& a, const Contact& b) { return a.pair != b.pair ? a.pair < b.pair : a.impulse > b.impulse; });
+    const auto duplicates = std::ranges::unique(reported, {}, &Contact::pair);
     reported.erase(duplicates.begin(), duplicates.end());
 
-    PairList entered;
-    std::ranges::set_difference(reported, impl_->touching, std::back_inserter(entered));
-    PairList exited;
-    PairList touching = reported;
-    for (const OwnerPair& pair : impl_->touching) {
-      if (std::ranges::binary_search(reported, pair)) {
+    ContactList entered;
+    std::ranges::set_difference(reported, impl_->touching, std::back_inserter(entered), {}, &Contact::pair, &Contact::pair);
+    ContactList exited;
+    ContactList touching = reported;
+    for (const Contact& contact : impl_->touching) {
+      if (std::ranges::binary_search(reported, contact.pair, {}, &Contact::pair)) {
         continue;
       }
-      // 寝ているボディどうしは Jolt が調べないので、報告が来ない。離れたのではないので、当たっている扱いを続ける
-      if (impl_->IsResting(pair.first) && impl_->IsResting(pair.second)) {
-        touching.push_back(pair);
+      // 寝ているボディどうしは Jolt が調べないので、報告が来ない。離れたのではないので、当たっている扱いを続ける（接触の値は、前のまま）
+      if (impl_->IsResting(contact.pair.first) && impl_->IsResting(contact.pair.second)) {
+        touching.push_back(contact);
       } else {
-        exited.push_back(pair);
+        exited.push_back(contact);
       }
     }
-    std::ranges::sort(touching);
+    std::ranges::sort(touching, {}, &Contact::pair);
     impl_->touching = std::move(touching);
     impl_->enteredThisFrame.insert(impl_->enteredThisFrame.end(), entered.begin(), entered.end());
 
-    impl_->Dispatch(entered, &Component::OnCollisionEnter, frameStats_);
-    impl_->Dispatch(exited, &Component::OnCollisionExit, frameStats_);
+    impl_->Dispatch(entered, ContactEvent::Enter, frameStats_);
+    impl_->Dispatch(exited, ContactEvent::Exit, frameStats_);
     impl_->DispatchControllerHits(frameStats_);
   }
 
@@ -1213,12 +1267,12 @@ namespace Tako {
     impl_->DispatchPendingExits(frameStats_);
 
     // 当たり続けている組に Stay。このフレームに当たり始めた組は、次のフレームから
-    PairList& staying = impl_->staying;
+    ContactList& staying = impl_->staying;
     staying.clear();
-    std::ranges::sort(impl_->enteredThisFrame);
-    std::ranges::set_difference(impl_->touching, impl_->enteredThisFrame, std::back_inserter(staying));
+    std::ranges::sort(impl_->enteredThisFrame, {}, &Contact::pair);
+    std::ranges::set_difference(impl_->touching, impl_->enteredThisFrame, std::back_inserter(staying), {}, &Contact::pair, &Contact::pair);
     impl_->enteredThisFrame.clear();
-    impl_->Dispatch(staying, &Component::OnCollisionStay, frameStats_);
+    impl_->Dispatch(staying, ContactEvent::Stay, frameStats_);
   }
 
   PhysicsWorld::BodyHandle PhysicsWorld::CreateBody(const BodySettings& settings, std::span<const Shape> shapes)

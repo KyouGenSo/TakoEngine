@@ -46,9 +46,9 @@ namespace Tako {
 
     void OnSiblingRemoved(Component* removed) override;
 
-    void OnCollisionEnter(Actor* other) override;
-    void OnCollisionStay(Actor* other) override;
-    void OnCollisionExit(Actor* other) override;
+    void OnCollisionEnter(const Collision& collision) override;
+    void OnCollisionStay(const Collision& collision) override;
+    void OnCollisionExit(const Collision& collision) override;
     void OnControllerColliderHit(const ControllerColliderHit& hit) override;
 
     /// <summary>

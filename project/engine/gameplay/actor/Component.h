@@ -15,6 +15,17 @@ namespace Tako {
   class Actor;
 
   /// <summary>
+  /// Component::OnCollisionEnter / Stay / Exit に渡される、当たった相手と触れた所（Unity の Collision）
+  /// </summary>
+  struct Collision {
+    Actor*  actor = nullptr;     ///< 相手の Actor
+    Vector3 point{};             ///< 触れた位置（ワールド。何か所かで触れていれば、その平均）。Stay では最後に調べた値、Exit では 0
+    Vector3 normal{};            ///< 相手の面の向き（ワールド。相手から自分へ向く。床に落ちた物なら上向き）。Stay では最後に調べた値、Exit では 0
+    Vector3 relativeVelocity{};  ///< 相手の速度から、自分の速度を引いた値（ぶつかる前）。Exit では 0
+    float   impulse = 0.0f;      ///< ぶつかった強さ（力積、N·s。重い物が速くぶつかるほど大きい）。入るのは Enter だけで、Trigger の重なりでは 0
+  };
+
+  /// <summary>
   /// Component::OnControllerColliderHit に渡される、Character Controller が実体に触れた所（Unity の ControllerColliderHit）
   /// </summary>
   struct ControllerColliderHit {
@@ -94,19 +105,19 @@ namespace Tako {
     virtual void OnSiblingRemoved([[maybe_unused]] Component* removed) {}
 
     /// <summary>
-    /// 同じ Actor のコライダーが、other のコライダーと当たり始めた（Trigger なら重なり始めた）。物理のステップの後に呼ばれる
+    /// 同じ Actor のコライダーが、collision.actor のコライダーと当たり始めた（Trigger なら重なり始めた）。物理のステップの後に呼ばれる
     /// </summary>
-    virtual void OnCollisionEnter([[maybe_unused]] Actor* other) {}
+    virtual void OnCollisionEnter([[maybe_unused]] const Collision& collision) {}
 
     /// <summary>
     /// 当たっている間、毎フレーム 1 回呼ばれる（当たり始めたフレームは除く。物理のステップが無いフレームにも呼ばれる）
     /// </summary>
-    virtual void OnCollisionStay([[maybe_unused]] Actor* other) {}
+    virtual void OnCollisionStay([[maybe_unused]] const Collision& collision) {}
 
     /// <summary>
     /// 離れた。どちらかのコライダーが止められた（SetActive(false)・Actor がオフ）ときも呼ばれ、消されたときは呼ばれない
     /// </summary>
-    virtual void OnCollisionExit([[maybe_unused]] Actor* other) {}
+    virtual void OnCollisionExit([[maybe_unused]] const Collision& collision) {}
 
     /// <summary>
     /// 同じ Actor の Character Controller が、実体（壁・床・Rigidbody・他の Character Controller）に触れている間、物理のステップの後に 1 か所ごとに呼ばれる（Unity の OnControllerColliderHit）。Trigger では呼ばれない
