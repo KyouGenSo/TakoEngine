@@ -50,12 +50,14 @@ namespace Tako {
       void OnCollisionStay(const Collision& collision) override { Record('S', collision); }
       void OnCollisionExit(const Collision& collision) override { Record('X', collision); }
       void OnControllerColliderHit(const ControllerColliderHit& hit) override { hits.push_back(hit); }
+      void OnJointBreak(float breakForce) override { breakForces.push_back(breakForce); }
 
     public: //メンバー変数
       std::string                        log;
       std::vector<Collision>             collisions;      ///< 届いた値（log の同じ位置の文字の分）
       Actor*                             last = nullptr;
       std::vector<ControllerColliderHit> hits;            ///< 届いた OnControllerColliderHit（届いた順）
+      std::vector<float>                 breakForces;     ///< 届いた OnJointBreak の力（届いた順）
 
     private: //非公開関数
       void Record(char kind, const Collision& collision)
@@ -867,6 +869,129 @@ namespace Tako {
     }
 
     /// <summary>
+    /// Joint の追加の設定と、当たらない組：つないだ相手とは当たらず、Enable Collision で当たる・IgnoreCollision した相手を素通りし、解くと当たる（キャラクターも）・
+    /// モーターで回り、つなぎ直さずに速さを変えられる・摩擦で止まる・ばねで伸びる・Break Force より強い力で外れて、OnJointBreak が届く
+    /// </summary>
+    void CheckJointFeatures()
+    {
+      using enum JointComponent::JointType;
+      PhysicsWorld* physics = PhysicsWorld::GetInstance();
+      if (!physics->CanCollide(ColliderComponent::kActorLayer, ColliderComponent::kActorLayer)) {
+        return;
+      }
+      const auto isNear   = [](float a, float b, float tolerance) { return std::abs(a - b) < tolerance; };
+      const auto addJoint = [](Actor* actor, JointComponent::JointType type, const Actor* connected) {
+        auto* joint = static_cast<JointComponent*>(actor->AddComponent(std::make_unique<JointComponent>(), "Joint"));
+        joint->SetType(type);
+        joint->SetConnectedActor(connected);
+        return joint;
+      };
+      const auto distance = [](const ColliderProbe& a, const ColliderProbe& b) {
+        return (a.actor->GetTransform().translate - b.actor->GetTransform().translate).Length();
+      };
+
+      BaseScene scene;
+      scene.BeginPlay();
+      const auto spawnBall = [&scene](const Vector3& position) {
+        const ColliderProbe ball = SpawnSolid(scene, position, ColliderComponent::Shape::Sphere);
+        AddRigidbody(ball.actor);
+        return ball;
+      };
+      const ColliderProbe floor = SpawnSolid(scene, { 0.0f, -0.5f, 0.0f }, ColliderComponent::Shape::Box);
+      floor.actor->GetTransform().scale = { 1000.0f, 1.0f, 1000.0f };
+
+      // 半径 0.5 の球 2 つを、0.4 だけ離して（重ねて）宙に置き、ゆるい Distance（0〜5）でつなぐ
+      const auto spawnOverlapped = [&](float x, bool enablesCollision) {
+        const ColliderProbe first  = spawnBall({ x, 50.0f, 0.0f });
+        const ColliderProbe second = spawnBall({ x + 0.4f, 50.0f, 0.0f });
+        JointComponent*     rope   = addJoint(second.actor, Distance, first.actor);
+        rope->SetDistanceLimits(0.0f, 5.0f);
+        rope->SetEnableCollision(enablesCollision);
+        return std::pair{ first, second };
+      };
+      const auto [apartA, apartB]   = spawnOverlapped(0.0f, true);
+      const auto [mergedA, mergedB] = spawnOverlapped(10.0f, false);
+
+      // 台（上の面が y = 5.25）と、その上に落とす球とキャラクター。どちらも、台とは当たらない組にする
+      const ColliderProbe table = SpawnSolid(scene, { 20.0f, 5.0f, 0.0f }, ColliderComponent::Shape::Box);
+      table.actor->GetTransform().scale = { 4.0f, 0.5f, 2.0f };
+      const ColliderProbe ghost       = spawnBall({ 19.0f, 6.0f, 0.0f });
+      const Probe         ghostWalker = SpawnProbe(scene, { 21.0f, 6.5f, 0.0f });
+      auto*               walker      = static_cast<CharacterControllerComponent*>(
+        ghostWalker.actor->AddComponent(std::make_unique<CharacterControllerComponent>(), "CharacterController"));
+      physics->IgnoreCollision(ghost.actor, table.actor);
+      physics->IgnoreCollision(table.actor, ghostWalker.actor);
+
+      // 中心を Z 軸の蝶番でワールドにつないだ箱を、モーターで回す
+      const ColliderProbe rotor     = SpawnSolid(scene, { 40.0f, 50.0f, 0.0f }, ColliderComponent::Shape::Box);
+      RigidbodyComponent* rotorBody = AddRigidbody(rotor.actor);
+      JointComponent*     motor     = addJoint(rotor.actor, Hinge, nullptr);
+      motor->SetAxis({ 0.0f, 0.0f, 1.0f });
+      motor->SetMotor(2.0f, 1000.0f);
+
+      // 横の点を蝶番で留めた箱（振り子）。摩擦が重さ（約 9.8 N·m）に勝つので、下がらない
+      const ColliderProbe stiffDoor  = SpawnSolid(scene, { 60.0f, 50.0f, 0.0f }, ColliderComponent::Shape::Box);
+      AddRigidbody(stiffDoor.actor);
+      JointComponent* stiffHinge = addJoint(stiffDoor.actor, Hinge, nullptr);
+      stiffHinge->SetAnchor({ -1.0f, 0.0f, 0.0f });
+      stiffHinge->SetAxis({ 0.0f, 0.0f, 1.0f });
+      stiffHinge->SetFriction(1000.0f);
+
+      // 動かない hook から、距離 2 のばね（20 N/m）で吊るした球（1 kg）。重さの分（約 0.49）だけ伸びた所で止まる
+      const ColliderProbe hook = SpawnSolid(scene, { 80.0f, 50.0f, 0.0f }, ColliderComponent::Shape::Sphere);
+      AddRigidbody(hook.actor)->SetBodyType(RigidbodyComponent::BodyType::Kinematic);
+      const ColliderProbe bob = spawnBall({ 80.0f, 48.0f, 0.0f });
+      addJoint(bob.actor, Distance, hook.actor)->SetSpring(20.0f, 5.0f);
+
+      // ワールドに固めた球（重さ 約 9.8 N）。Break Force が 5 なら外れて落ち、50 なら外れない
+      const ColliderProbe weak      = spawnBall({ 100.0f, 50.0f, 0.0f });
+      JointComponent*     weakJoint = addJoint(weak.actor, Fixed, nullptr);
+      weakJoint->SetBreakForce(5.0f);
+      const ColliderProbe strong      = spawnBall({ 110.0f, 50.0f, 0.0f });
+      JointComponent*     strongJoint = addJoint(strong.actor, Fixed, nullptr);
+      strongJoint->SetBreakForce(50.0f);
+      scene.UpdateAlways();
+      RunFrames(scene, 30);
+
+      // 当たる組は押し合って離れ、当たらない組（既定）は重なったままで、知らせも届かない
+      assert(distance(apartA, apartB) > 0.95f && !apartA.recorder->log.empty());
+      assert(isNear(distance(mergedA, mergedB), 0.4f, 0.01f) && mergedA.recorder->log.empty() && mergedB.recorder->log.empty());
+
+      // 弱いジョイントは外れて、その Actor に知らせが届く。強い方は、そのまま
+      assert(weak.recorder->breakForces.size() == 1 && weak.recorder->breakForces[0] > 5.0f && weakJoint->IsBroken());
+      assert(weak.actor->GetTransform().translate.y < 49.5f);
+      assert(strong.recorder->breakForces.empty() && !strongJoint->IsBroken() && IsNear(strong.actor->GetTransform().translate, { 110.0f, 50.0f, 0.0f }));
+
+      // モーター：決めた速さで、軸の周りに回る。速さは、つなぎ直さずに変えられる
+      assert(isNear(rotorBody->GetAngularVelocity().z, 2.0f, 0.1f));
+      motor->SetMotor(-2.0f, 1000.0f);
+      RunFrames(scene, 30);
+      assert(isNear(rotorBody->GetAngularVelocity().z, -2.0f, 0.1f) && IsNear(rotor.actor->GetTransform().translate, { 40.0f, 50.0f, 0.0f }));
+      assert(isNear(stiffDoor.actor->GetTransform().translate.y, 50.0f, 0.01f));
+
+      // 当たらない組の球とキャラクターは、台を素通りして床まで落ちる
+      RunFrames(scene, 60);
+      assert(ghost.actor->GetTransform().translate.y < 1.0f && ghost.recorder->last == floor.actor && table.recorder->log.empty());
+      assert(walker->IsGrounded() && isNear(ghostWalker.actor->GetTransform().translate.y, 1.0f, 0.05f) && walker->GetGroundActor() == floor.actor);
+
+      // 解いてから台の上へ戻すと、台に乗る
+      physics->IgnoreCollision(ghost.actor, table.actor, false);
+      physics->IgnoreCollision(ghostWalker.actor, table.actor, false);
+      ghost.actor->GetTransform().translate       = { 19.0f, 6.0f, 0.0f };
+      ghostWalker.actor->GetTransform().translate = { 21.0f, 6.5f, 0.0f };
+      RunFrames(scene, 90);
+      assert(isNear(ghost.actor->GetTransform().translate.y, 5.75f, 0.05f) && ghost.recorder->last == table.actor);
+      assert(isNear(ghostWalker.actor->GetTransform().translate.y, 6.25f, 0.05f) && walker->GetGroundActor() == table.actor);
+
+      // ばね：重さの分だけ伸びて止まる
+      RunFrames(scene, 60);
+      assert(distance(hook, bob) > 2.3f && distance(hook, bob) < 2.7f);
+
+      scene.Shutdown();
+      assert(physics->GetBodyCount() == 0);
+    }
+
+    /// <summary>
     /// Character Controller：床に立つ・段差を登る・壁で止まる・トリガーに知らせが届く・レイが当たる・他のキャラクターと重ならない・
     /// 自分の Actor の Collider には当たらない・位置を書き換えると置き直る・Actor をオフにすると Exit が届く・
     /// Push Strength が 0 なら Dynamic を押さず、既定なら押す
@@ -1192,6 +1317,7 @@ namespace Tako {
     CheckCollisionInfo();
     CheckMeshShapes();
     CheckJoints();
+    CheckJointFeatures();
     CheckCharacterController();
     CheckCharacterMass();
     CheckCharacterGround();

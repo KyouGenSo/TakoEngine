@@ -144,6 +144,14 @@ namespace Tako {
       float      maxAngle        = 3.1415927f;            ///< Hinge の回る範囲の上限（ラジアン、0〜π）
       float      minDistance     = -1.0f;                 ///< Distance の範囲。負なら、つないだときの距離
       float      maxDistance     = -1.0f;
+      float      motorSpeed      = 0.0f;                  ///< Hinge のモーターが目指す、回る速さ（ラジアン / 秒。body が、軸の周りに SetAngularVelocity と同じ向きに回る）
+      float      motorTorque     = 0.0f;                  ///< Hinge のモーターの力の上限（N·m）。0 なら、モーターなし
+      float      friction        = 0.0f;                  ///< Hinge の回りにくさ（N·m。モーターが無いときに効く）
+      float      spring          = 0.0f;                  ///< Distance のばねの強さ（N/m）。0 なら、範囲の端で固く止まる
+      float      damper          = 0.0f;                  ///< Distance のばねの、揺れの収まり方（N·s/m）
+      float      breakForce      = 0.0f;                  ///< つないだ点に、これより強い力（N）が掛かると外れる。0 なら外れない
+      bool       enableCollision = false;                 ///< つないだ 2 つのボディどうしが当たるか（Unity と同じく、既定は当たらない）
+      Component* owner           = nullptr;               ///< 外れたときに、owner の Actor の全コンポーネントへ OnJointBreak が届く
     };
 
     /// <summary>
@@ -334,6 +342,11 @@ namespace Tako {
 
     void DestroyJoint(JointHandle joint);
 
+    /// <summary>
+    /// Hinge のモーターの、目指す速さと力の上限を変える（つなぎ直さない）。maxTorque が 0 なら、モーターを止める
+    /// </summary>
+    void SetJointMotor(JointHandle joint, float speed, float maxTorque);
+
     //============================================================
     //問い合わせ
     //============================================================
@@ -401,6 +414,20 @@ namespace Tako {
     /// 2 つの層の名前と当たり表を入れ替える（ボディに設定済みの層の番号は変わらない）
     /// </summary>
     void SwapLayers(uint32_t layerA, uint32_t layerB);
+
+    //============================================================
+    //当たらない組
+    //============================================================
+    /// <summary>
+    /// a のボディと b のボディを、当たらなくする・戻す（押し合わず、OnCollision〜 も届かない）。ボディを持つのは、Collider だけの Actor・Rigidbody の Actor・Character Controller の Actor
+    /// （Rigidbody にまとめられた子の Collider は、Rigidbody の Actor を渡す）。レイキャストなどの問い合わせには関係しない
+    /// </summary>
+    void IgnoreCollision(const Actor* a, const Actor* b, bool ignore = true);
+
+    /// <summary>
+    /// actor を含む IgnoreCollision の組を、全部解く。Collider・Rigidbody・Character Controller が、EndPlay で呼ぶ
+    /// </summary>
+    void ClearIgnoredCollisions(const Actor* actor);
 
     //============================================================
     //デバッグ描画
@@ -498,6 +525,11 @@ namespace Tako {
     /// 最後のステップで足元にあったボディの Actor（何の上にも居なければ nullptr）
     /// </summary>
     Actor* GetCharacterGroundActor(CharacterHandle character) const;
+
+    /// <summary>
+    /// ジョイントが、まだつながっているか（DestroyJoint・ボディの削除・破断で外れると false）
+    /// </summary>
+    bool HasJoint(JointHandle joint) const;
 
     bool IsDebugDrawEnabled() const { return debugDrawEnabled_; }
 

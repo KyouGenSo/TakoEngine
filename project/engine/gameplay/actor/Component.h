@@ -124,6 +124,12 @@ namespace Tako {
     /// </summary>
     virtual void OnControllerColliderHit([[maybe_unused]] const ControllerColliderHit& hit) {}
 
+    /// <summary>
+    /// 同じ Actor の Joint が、Break Force より強い力を受けて外れた。物理のステップの後に呼ばれる（Unity の OnJointBreak）
+    /// </summary>
+    /// <param name="breakForce">外れたときに、つないだ点に掛かっていた力（N）</param>
+    virtual void OnJointBreak([[maybe_unused]] float breakForce) {}
+
 #ifdef TAKO_EDITOR
     /// <summary>
     /// エディタで Actor（か、その親）を選んでいる間、デバッグビューを描くたびに呼ばれる。当たりの形のように、目に見えない物を LineRenderer の線で描く

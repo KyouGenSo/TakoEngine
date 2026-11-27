@@ -101,6 +101,27 @@ namespace Tako {
 
     enum class ContactEvent : uint8_t { Enter, Stay, Exit };
 
+    // 当たらない 2 つの Actor。ポインタの小さい方が first
+    using ActorPair = std::pair<const Actor*, const Actor*>;
+
+    ActorPair MakeActorPair(const Actor* a, const Actor* b) { return std::less<>{}(b, a) ? ActorPair{ b, a } : ActorPair{ a, b }; }
+
+    /// <summary>
+    /// 当たらない Actor の組。ステップの間は計算用のスレッドが読むので、書き換えるのはステップの外だけ
+    /// </summary>
+    struct IgnoredPairs {
+      bool Contains(const Actor* a, const Actor* b) const {
+        if (byRequest.empty() && byJoint.empty()) {
+          return false;
+        }
+        const ActorPair pair = MakeActorPair(a, b);
+        return std::ranges::find(byRequest, pair) != byRequest.end() || std::ranges::find(byJoint, pair) != byJoint.end();
+      }
+
+      std::vector<ActorPair> byRequest;  ///< IgnoreCollision の分（同じ組は 1 つ）
+      std::vector<ActorPair> byJoint;    ///< Enable Collision がオフのジョイントの分（ジョイントごとに 1 つ。同じ組が 2 つ以上入る事がある）
+    };
+
     JPH::Vec3 ToJolt(const Vector3& v) { return JPH::Vec3(v.x, v.y, v.z); }
     JPH::Quat ToJolt(const Quaternion& q) { return JPH::Quat(q.x, q.y, q.z, q.w); }
     Vector3 ToEngine(JPH::Vec3Arg v) { return { v.GetX(), v.GetY(), v.GetZ() }; }
@@ -163,10 +184,17 @@ namespace Tako {
     };
 
     /// <summary>
-    /// ステップの間に触れていた組を集める。計算用のスレッドから同時に呼ばれ、ボディは読むだけ
+    /// ステップの間に触れていた組を集める。当たらない組の接触は、ここで捨てる。計算用のスレッドから同時に呼ばれ、ボディは読むだけ
     /// </summary>
     class ContactCollector final : public JPH::ContactListener {
     public: //メンバー関数
+      explicit ContactCollector(const IgnoredPairs& ignored) : ignored_(ignored) {}
+
+      JPH::ValidateResult OnContactValidate(const JPH::Body& a, const JPH::Body& b, JPH::RVec3Arg, const JPH::CollideShapeResult&) override {
+        const bool isIgnored = ignored_.Contains(reinterpret_cast<const Actor*>(a.GetUserData()), reinterpret_cast<const Actor*>(b.GetUserData()));
+        return isIgnored ? JPH::ValidateResult::RejectAllContactsForThisBodyPair : JPH::ValidateResult::AcceptAllContactsForThisBodyPair;
+      }
+
       void OnContactAdded(const JPH::Body& a, const JPH::Body& b, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings) override { Collect(a, b, manifold, &settings); }
       void OnContactPersisted(const JPH::Body& a, const JPH::Body& b, const JPH::ContactManifold& manifold, JPH::ContactSettings&) override { Collect(a, b, manifold, nullptr); }
 
@@ -211,7 +239,8 @@ namespace Tako {
       }
 
     private: //メンバー変数
-      std::mutex mutex_;
+      std::mutex          mutex_;
+      const IgnoredPairs& ignored_;
     };
 
     /// <summary>
@@ -256,14 +285,18 @@ namespace Tako {
     };
 
     /// <summary>
-    /// キャラクターは、自分の Actor とその子孫に付いたボディには当たらない（一緒に動くボディに、押し出され続けないように）
+    /// キャラクターは、自分の Actor とその子孫に付いたボディには当たらない（一緒に動くボディに、押し出され続けないように）。当たらない組の相手にも当たらない
     /// </summary>
     class OtherActorFilter final : public JPH::BodyFilter {
     public: //メンバー関数
-      explicit OtherActorFilter(const Actor* actor) : actor_(actor) {}
+      OtherActorFilter(const Actor* actor, const IgnoredPairs& ignored) : actor_(actor), ignored_(ignored) {}
 
       bool ShouldCollideLocked(const JPH::Body& body) const override {
-        for (const Actor* owner = reinterpret_cast<const Actor*>(body.GetUserData()); owner; owner = owner->GetParent()) {
+        const auto* bodyActor = reinterpret_cast<const Actor*>(body.GetUserData());
+        if (ignored_.Contains(actor_, bodyActor)) {
+          return false;
+        }
+        for (const Actor* owner = bodyActor; owner; owner = owner->GetParent()) {
           if (owner == actor_) {
             return false;
           }
@@ -272,7 +305,8 @@ namespace Tako {
       }
 
     private: //メンバー変数
-      const Actor* actor_;
+      const Actor*        actor_;
+      const IgnoredPairs& ignored_;
     };
 
 #ifdef JPH_DEBUG_RENDERER
@@ -361,7 +395,41 @@ namespace Tako {
     struct JointRecord {
       JPH::Ref<JPH::TwoBodyConstraint> constraint;
       PhysicsWorld::BodyHandle         bodies[2]{ PhysicsWorld::kInvalidBody, PhysicsWorld::kInvalidBody };  ///< 2 つ目が kInvalidBody なら、相手はワールド
+      PhysicsWorld::JointType          type       = PhysicsWorld::JointType::Fixed;
+      float                            breakForce = 0.0f;     ///< これより強い力（N）が掛かると外す。0 なら外さない
+      Component*                       owner      = nullptr;  ///< 外したときの通知先
+      ActorPair                        ignoredPair{};         ///< 当たらなくした 2 つの Actor（当てるジョイントと、相手がワールドのジョイントは、両方 nullptr）
     };
+
+    /// <summary>
+    /// 前のステップで、つないだ点を保つのに掛かった力（N）
+    /// </summary>
+    float JointForce(const JointRecord& joint) {
+      // Jolt が持っているのは力積（N·s）なので、1 ステップの時間で割る
+      const JPH::TwoBodyConstraint* constraint = joint.constraint;
+      float                         impulse    = 0.0f;
+      switch (joint.type) {
+      case PhysicsWorld::JointType::Fixed:    impulse = static_cast<const JPH::FixedConstraint*>(constraint)->GetTotalLambdaPosition().Length(); break;
+      case PhysicsWorld::JointType::Point:    impulse = static_cast<const JPH::PointConstraint*>(constraint)->GetTotalLambdaPosition().Length(); break;
+      case PhysicsWorld::JointType::Hinge:    impulse = static_cast<const JPH::HingeConstraint*>(constraint)->GetTotalLambdaPosition().Length(); break;
+      case PhysicsWorld::JointType::Distance: impulse = std::abs(static_cast<const JPH::DistanceConstraint*>(constraint)->GetTotalLambdaPosition()); break;
+      }
+      return impulse / PhysicsWorld::kFixedDeltaTime;
+    }
+
+    /// <summary>
+    /// Hinge のモーターを、1 つ目のボディが軸の周りに speed（ラジアン / 秒）で回るように動かす。maxTorque が 0 以下なら止める
+    /// </summary>
+    void ApplyHingeMotor(JPH::HingeConstraint& hinge, float speed, float maxTorque) {
+      if (maxTorque <= 0.0f) {
+        hinge.SetMotorState(JPH::EMotorState::Off);
+        return;
+      }
+      hinge.GetMotorSettings().SetTorqueLimit(maxTorque);
+      // Jolt の速さは「1 つ目から見た、2 つ目の回る速さ」なので、符号を逆にする
+      hinge.SetTargetAngularVelocity(-speed);
+      hinge.SetMotorState(JPH::EMotorState::Velocity);
+    }
 
     /// <summary>
     /// Actor の今のワールドの Transform
@@ -564,7 +632,7 @@ namespace Tako {
   /// メンバーは下から順に壊れる。世界は、フィルターとスレッドを参照しているので、それらより後に置く
   /// </summary>
   struct PhysicsWorld::Impl {
-    explicit Impl(const PhysicsWorld& world) : objectLayerFilter(world) {}
+    explicit Impl(const PhysicsWorld& world) : objectLayerFilter(world), contactCollector(ignoredPairs) {}
 
     /// <summary>
     /// ボディを pose へ置き直す（速度では追わせない）。scale が変わっていれば、形も作り直す
@@ -649,9 +717,14 @@ namespace Tako {
     void RefreshJoints(BodyHandle handle);
 
     /// <summary>
-    /// ジョイントを世界から外し、つながれていたボディを起こす（支えが外れた物が、動き出すように）
+    /// ジョイントを世界から外し、つながれていたボディを起こす（支えが外れた物が、動き出すように）。当たらなくしていた組も戻す
     /// </summary>
     void RemoveJoint(const JointRecord& joint);
+
+    /// <summary>
+    /// Break Force より強い力が掛かったジョイントを外し、通知先の Actor の全コンポーネントに OnJointBreak を配る
+    /// </summary>
+    void BreakOverloadedJoints(FrameStats& stats);
 
     /// <summary>
     /// ボディの形のうち、subShape の形の通知先（無ければ nullptr）
@@ -682,6 +755,7 @@ namespace Tako {
     BroadPhaseLayers                         broadPhaseLayers;
     ObjectVsBroadPhaseFilter                 objectVsBroadPhaseFilter;
     ObjectLayerFilter                        objectLayerFilter;
+    IgnoredPairs                             ignoredPairs;
     ContactCollector                         contactCollector;
     JPH::TempAllocatorImplWithMallocFallback tempAllocator{ kTempAllocatorBytes };
     JPH::JobSystemThreadPool                 jobSystem{ JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers };
@@ -998,7 +1072,7 @@ namespace Tako {
       update.mWalkStairsStepUp     = JPH::Vec3(0.0f, (std::max)(settings.stepHeight, 0.0f), 0.0f);
       update.mStickToFloorStepDown = -update.mWalkStairsStepUp;
       const LayerMaskFilter  layerFilter(collisionMasks[(std::min)(settings.layer, static_cast<uint32_t>(kMaxLayers - 1))]);
-      const OtherActorFilter bodyFilter(settings.actor);
+      const OtherActorFilter bodyFilter(settings.actor, ignoredPairs);
       character.ExtendedUpdate(kFixedDeltaTime, gravity, update, {}, layerFilter, bodyFilter, {}, tempAllocator);
 
       // 触れている実体を控える（Trigger は除く）。向きは、このステップで動こうとした向き
@@ -1056,8 +1130,52 @@ namespace Tako {
   void PhysicsWorld::Impl::RemoveJoint(const JointRecord& joint)
   {
     system.RemoveConstraint(joint.constraint);
+    if (joint.ignoredPair.first) {
+      if (const auto found = std::ranges::find(ignoredPairs.byJoint, joint.ignoredPair); found != ignoredPairs.byJoint.end()) {
+        ignoredPairs.byJoint.erase(found);
+      }
+    }
     WakeBody(joint.bodies[0]);
     WakeBody(joint.bodies[1]);
+  }
+
+  void PhysicsWorld::Impl::BreakOverloadedJoints(FrameStats& stats)
+  {
+    // 外す物を先に決める（知らせの中でジョイントが足されても消されても、壊れないように）
+    struct Broken {
+      Component* owner;
+      float      force;
+    };
+    std::vector<Broken> broken;
+    std::erase_if(joints, [&](const auto& entry) {
+      const JointRecord& joint = entry.second;
+      if (joint.breakForce <= 0.0f || !joint.constraint->GetEnabled()) {
+        return false;
+      }
+      const float force = JointForce(joint);
+      if (force <= joint.breakForce) {
+        return false;
+      }
+      RemoveJoint(joint);
+      broken.push_back({ joint.owner, force });
+      return true;
+    });
+    if (broken.empty()) {
+      return;
+    }
+    const Clock::time_point start = Clock::now();
+    for (const Broken& entry : broken) {
+      if (!entry.owner) {
+        continue;
+      }
+      // 受け手がコンポーネントを足しても壊れないよう、添字で回す
+      const auto& components = entry.owner->GetOwner()->GetComponents();
+      for (size_t i = 0; i < components.size(); ++i) {
+        components[i]->OnJointBreak(entry.force);
+      }
+      ++stats.callbackCount;
+    }
+    stats.callbackMs += std::chrono::duration<float, std::milli>(Clock::now() - start).count();
   }
 
   Component* PhysicsWorld::Impl::FindOwner(const JPH::BodyID& body, const JPH::SubShapeID& subShape) const
@@ -1257,6 +1375,7 @@ namespace Tako {
     impl_->Dispatch(entered, ContactEvent::Enter, frameStats_);
     impl_->Dispatch(exited, ContactEvent::Exit, frameStats_);
     impl_->DispatchControllerHits(frameStats_);
+    impl_->BreakOverloadedJoints(frameStats_);
   }
 
   void PhysicsWorld::EndFrame(float alpha)
@@ -1528,6 +1647,8 @@ namespace Tako {
     record.lastTranslate    = settings.actor->GetTransform().translate;
     record.previousPosition = record.currentPosition = pose.position;
     record.character        = new JPH::CharacterVirtual(creation, ToJolt(pose.position), JPH::Quat::sIdentity(), &impl_->system);
+    // 中のボディにも、他のボディと同じく Actor を持たせる（当たらない組を、Actor で引く）
+    record.character->SetUserData(reinterpret_cast<JPH::uint64>(settings.actor));
 
     const JPH::BodyID inner = record.character->GetInnerBodyID();
     if (inner.IsInvalid()) {
@@ -1620,7 +1741,7 @@ namespace Tako {
 
     // 新しい形が何かに重なるなら、Jolt は形を替えずに false を返す（Jolt のサンプルと同じ許容の深さ）
     const LayerMaskFilter  layerFilter(collisionMask_[(std::min)(resized.layer, static_cast<uint32_t>(kMaxLayers - 1))]);
-    const OtherActorFilter bodyFilter(resized.actor);
+    const OtherActorFilter bodyFilter(resized.actor, impl_->ignoredPairs);
     const float            maxPenetration = 1.5f * impl_->system.GetPhysicsSettings().mPenetrationSlop;
     if (!record.character->SetShape(shape, maxPenetration, {}, layerFilter, bodyFilter, {}, impl_->tempAllocator)) {
       return false;
@@ -1664,9 +1785,10 @@ namespace Tako {
       hinge.mHingeAxis1 = hinge.mHingeAxis2 = ToJolt(settings.axis).NormalizedOr(JPH::Vec3::sAxisY());
       hinge.mNormalAxis1 = hinge.mNormalAxis2 = hinge.mHingeAxis1.GetNormalizedPerpendicular();
       // Jolt の決まり：下限は -π〜0、上限は 0〜π で、同じ値（動けない）にはできない
-      hinge.mLimitsMin  = std::clamp(settings.minAngle, -JPH::JPH_PI, 0.0f);
-      hinge.mLimitsMax  = std::clamp(settings.maxAngle, hinge.mLimitsMin < 0.0f ? 0.0f : 0.001f, JPH::JPH_PI);
-      record.constraint = bodyInterface.CreateConstraint(&hinge, ids[0], ids[1]);
+      hinge.mLimitsMin         = std::clamp(settings.minAngle, -JPH::JPH_PI, 0.0f);
+      hinge.mLimitsMax         = std::clamp(settings.maxAngle, hinge.mLimitsMin < 0.0f ? 0.0f : 0.001f, JPH::JPH_PI);
+      hinge.mMaxFrictionTorque = (std::max)(settings.friction, 0.0f);
+      record.constraint        = bodyInterface.CreateConstraint(&hinge, ids[0], ids[1]);
       break;
     }
     case JointType::Distance: {
@@ -1677,12 +1799,29 @@ namespace Tako {
       const float current   = (settings.connectedAnchor - settings.anchor).Length();
       distance.mMinDistance = settings.minDistance < 0.0f ? current : settings.minDistance;
       distance.mMaxDistance = (std::max)(settings.maxDistance < 0.0f ? current : settings.maxDistance, distance.mMinDistance);
-      record.constraint     = bodyInterface.CreateConstraint(&distance, ids[0], ids[1]);
+      // ばね：範囲の端で固く止めずに、ばねで引き戻す
+      if (settings.spring > 0.0f) {
+        distance.mLimitsSpringSettings.mMode      = JPH::ESpringMode::StiffnessAndDamping;
+        distance.mLimitsSpringSettings.mStiffness = settings.spring;
+        distance.mLimitsSpringSettings.mDamping   = (std::max)(settings.damper, 0.0f);
+      }
+      record.constraint = bodyInterface.CreateConstraint(&distance, ids[0], ids[1]);
       break;
     }
     }
-    record.bodies[0] = settings.body;
-    record.bodies[1] = hasConnected ? settings.connectedBody : kInvalidBody;
+    record.bodies[0]  = settings.body;
+    record.bodies[1]  = hasConnected ? settings.connectedBody : kInvalidBody;
+    record.type       = settings.type;
+    record.breakForce = settings.breakForce;
+    record.owner      = settings.owner;
+    if (settings.type == JointType::Hinge) {
+      ApplyHingeMotor(static_cast<JPH::HingeConstraint&>(*record.constraint), settings.motorSpeed, settings.motorTorque);
+    }
+    // Unity と同じ：つないだ 2 つのボディは、当てると決めない限り当たらない
+    if (hasConnected && !settings.enableCollision) {
+      record.ignoredPair = MakeActorPair(body->second.settings.actor, connected->second.settings.actor);
+      impl_->ignoredPairs.byJoint.push_back(record.ignoredPair);
+    }
     impl_->system.AddConstraint(record.constraint);
 
     const JointHandle handle = impl_->nextJoint++;
@@ -1699,6 +1838,17 @@ namespace Tako {
       impl_->RemoveJoint(found->second);
       impl_->joints.erase(found);
     }
+  }
+
+  void PhysicsWorld::SetJointMotor(JointHandle joint, float speed, float maxTorque)
+  {
+    const auto found = impl_->joints.find(joint);
+    if (found == impl_->joints.end() || found->second.type != JointType::Hinge) {
+      return;
+    }
+    ApplyHingeMotor(static_cast<JPH::HingeConstraint&>(*found->second.constraint), speed, maxTorque);
+    impl_->WakeBody(found->second.bodies[0]);
+    impl_->WakeBody(found->second.bodies[1]);
   }
 
   std::optional<PhysicsWorld::RaycastHit> PhysicsWorld::Raycast(const Vector3& origin, const Vector3& direction, float maxDistance, uint32_t layerMask, bool hitsTriggers) const
@@ -1819,6 +1969,32 @@ namespace Tako {
       }
     }
     collisionMask_ = remapped;
+  }
+
+  void PhysicsWorld::IgnoreCollision(const Actor* a, const Actor* b, bool ignore)
+  {
+    if (!a || !b || a == b) {
+      return;
+    }
+    const ActorPair         pair  = MakeActorPair(a, b);
+    std::vector<ActorPair>& pairs = impl_->ignoredPairs.byRequest;
+    const auto              found = std::ranges::find(pairs, pair);
+    if (ignore && found == pairs.end()) {
+      pairs.push_back(pair);
+    } else if (!ignore && found != pairs.end()) {
+      pairs.erase(found);
+    }
+    // 寝ているボディは接触を調べ直さないので、起こす
+    for (const auto& [handle, record] : impl_->bodies) {
+      if (record.settings.actor == a || record.settings.actor == b) {
+        impl_->WakeBody(handle);
+      }
+    }
+  }
+
+  void PhysicsWorld::ClearIgnoredCollisions(const Actor* actor)
+  {
+    std::erase_if(impl_->ignoredPairs.byRequest, [actor](const ActorPair& pair) { return pair.first == actor || pair.second == actor; });
   }
 
   void PhysicsWorld::DrawDebug([[maybe_unused]] const Vector3& cameraPosition)
@@ -1952,6 +2128,11 @@ namespace Tako {
     const JPH::CharacterVirtual& virtualCharacter = *found->second.character;
     const Component*             owner            = impl_->FindOwner(virtualCharacter.GetGroundBodyID(), virtualCharacter.GetGroundSubShapeID());
     return owner ? owner->GetOwner() : nullptr;
+  }
+
+  bool PhysicsWorld::HasJoint(JointHandle joint) const
+  {
+    return impl_->joints.contains(joint);
   }
 
   size_t PhysicsWorld::GetBodyCount() const

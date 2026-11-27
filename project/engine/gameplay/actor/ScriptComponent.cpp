@@ -92,6 +92,11 @@ namespace Tako {
     if (instance_) { instance_->OnControllerColliderHit(hit); }
   }
 
+  void ScriptComponent::OnJointBreak(float breakForce)
+  {
+    if (instance_) { instance_->OnJointBreak(breakForce); }
+  }
+
   void ScriptComponent::PostLoad(const nlohmann::json& raw)
   {
     RebuildInstance(raw);

@@ -16,6 +16,7 @@ namespace Tako {
   void JointComponent::BeginPlay()
   {
     isPlaying_ = true;
+    isBroken_  = false;
     CreateJoint();
   }
 
@@ -27,9 +28,18 @@ namespace Tako {
 
   void JointComponent::PostEditChange()
   {
-    if (isPlaying_) {
+    if (isPlaying_ && !isBroken_) {
       DestroyJoint();
       CreateJoint();
+    }
+  }
+
+  void JointComponent::OnJointBreak(float)
+  {
+    // 同じ Actor の他の Joint が外れたときにも呼ばれるので、自分のジョイントを確かめる
+    if (joint_ != PhysicsWorld::kInvalidJoint && !PhysicsWorld::GetInstance()->HasJoint(joint_)) {
+      joint_    = PhysicsWorld::kInvalidJoint;
+      isBroken_ = true;
     }
   }
 
@@ -77,6 +87,38 @@ namespace Tako {
     PostEditChange();
   }
 
+  void JointComponent::SetEnableCollision(bool enableCollision)
+  {
+    enableCollision_ = enableCollision;
+    PostEditChange();
+  }
+
+  void JointComponent::SetFriction(float friction)
+  {
+    friction_ = friction;
+    PostEditChange();
+  }
+
+  void JointComponent::SetSpring(float spring, float damper)
+  {
+    spring_ = spring;
+    damper_ = damper;
+    PostEditChange();
+  }
+
+  void JointComponent::SetBreakForce(float breakForce)
+  {
+    breakForce_ = breakForce;
+    PostEditChange();
+  }
+
+  void JointComponent::SetMotor(float speed, float maxTorque)
+  {
+    motorSpeed_  = speed;
+    motorTorque_ = maxTorque;
+    PhysicsWorld::GetInstance()->SetJointMotor(joint_, speed, maxTorque);
+  }
+
   void JointComponent::CreateJoint()
   {
     Actor*                    owner     = GetOwner();
@@ -103,6 +145,14 @@ namespace Tako {
     settings.maxAngle        = maxAngle_;
     settings.minDistance     = minDistance_;
     settings.maxDistance     = maxDistance_;
+    settings.motorSpeed      = motorSpeed_;
+    settings.motorTorque     = motorTorque_;
+    settings.friction        = friction_;
+    settings.spring          = spring_;
+    settings.damper          = damper_;
+    settings.breakForce      = breakForce_;
+    settings.enableCollision = enableCollision_;
+    settings.owner           = this;
 
     if (const Actor* connected = owner->Resolve(connectedBody_)) {
       const RigidbodyComponent* connectedRigidbody = connected->GetComponent<RigidbodyComponent>();

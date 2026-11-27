@@ -42,6 +42,7 @@ namespace Tako {
       return;
     }
     isPlaying_ = false;
+    PhysicsWorld::GetInstance()->ClearIgnoredCollisions(GetOwner());
     PhysicsWorld::GetInstance()->DestroyBody(body_);
     body_ = PhysicsWorld::kInvalidBody;
 

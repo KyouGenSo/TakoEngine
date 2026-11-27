@@ -35,6 +35,11 @@ namespace Tako {
 
     void PostEditChange() override;
 
+    /// <summary>
+    /// 自分のジョイントが Break Force で外れていたら、つなぎ直さない状態にする（次の Play まで）
+    /// </summary>
+    void OnJointBreak(float breakForce) override;
+
     //=====================================
     //Setter（Play 中に呼ぶと、今の位置でつなぎ直す）
     //=====================================
@@ -70,6 +75,40 @@ namespace Tako {
     /// </summary>
     void SetDistanceLimits(float minDistance, float maxDistance);
 
+    /// <summary>
+    /// つないだ相手の Rigidbody とも当たるか（既定は、当たらない）
+    /// </summary>
+    void SetEnableCollision(bool enableCollision);
+
+    /// <summary>
+    /// Hinge の回りにくさ（N·m）。モーターが無いときに効く
+    /// </summary>
+    void SetFriction(float friction);
+
+    /// <summary>
+    /// Distance のばねの強さ（N/m。0 なら、範囲の端で固く止まる）と、揺れの収まり方（N·s/m）
+    /// </summary>
+    void SetSpring(float spring, float damper);
+
+    /// <summary>
+    /// つないだ点に、これより強い力（N）が掛かると外れる。0 なら外れない
+    /// </summary>
+    void SetBreakForce(float breakForce);
+
+    /// <summary>
+    /// Hinge のモーター：この Actor を、軸の周りに speed（ラジアン / 秒。向きは SetAngularVelocity と同じ）で回す。maxTorque（N·m）が 0 なら、モーターを止める。
+    /// Play 中に呼んでも、つなぎ直さない
+    /// </summary>
+    void SetMotor(float speed, float maxTorque);
+
+    //=====================================
+    //Getter
+    //=====================================
+    /// <summary>
+    /// Break Force より強い力で外れたか（次の Play で、またつながる）
+    /// </summary>
+    bool IsBroken() const { return isBroken_; }
+
   private: //非公開関数
     void CreateJoint();
 
@@ -94,9 +133,24 @@ namespace Tako {
     float                           minDistance_       = -1.0f;
     TPROPERTY(Edit, Tooltip = "Distance の一番長い距離。負の値なら、つないだときの距離", Speed = 0.05)
     float                           maxDistance_       = -1.0f;
+    TPROPERTY(Edit, Tooltip = "Distance のばねの強さ（N/m）。0 なら、範囲の端で固く止まる", ClampMin = 0, Speed = 1)
+    float                           spring_            = 0.0f;
+    TPROPERTY(Edit, Tooltip = "Distance のばねの、揺れの収まり方（N·s/m）", ClampMin = 0, Speed = 0.1)
+    float                           damper_            = 0.0f;
+    TPROPERTY(Edit, Angle, Tooltip = "Hinge のモーターが目指す、回る速さ（1 秒あたりの角度）。Motor Torque が 0 なら回らない")
+    float                           motorSpeed_        = 0.0f;
+    TPROPERTY(Edit, Tooltip = "Hinge のモーターの力の上限（N·m）。0 なら、モーターなし", ClampMin = 0, Speed = 0.5)
+    float                           motorTorque_       = 0.0f;
+    TPROPERTY(Edit, Tooltip = "Hinge の回りにくさ（N·m）。大きいほど早く止まる。モーターが無いときに効く", ClampMin = 0, Speed = 0.05)
+    float                           friction_          = 0.0f;
+    TPROPERTY(Edit, Tooltip = "つないだ点に、これより強い力（N）が掛かると外れる。0 なら外れない", ClampMin = 0, Speed = 1)
+    float                           breakForce_        = 0.0f;
+    TPROPERTY(Edit, Tooltip = "オンなら、つないだ相手の Rigidbody とも当たる（オフなら、扉と枠のように重ねてつないでも押し合わない）")
+    bool                            enableCollision_   = false;
 
     PhysicsWorld::JointHandle joint_     = PhysicsWorld::kInvalidJoint;
     bool                      isPlaying_ = false;
+    bool                      isBroken_  = false;
   };
 
 } // namespace Tako

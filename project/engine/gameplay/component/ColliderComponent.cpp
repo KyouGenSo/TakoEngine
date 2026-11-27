@@ -39,6 +39,7 @@ namespace Tako {
       return;
     }
     isPlaying_ = false;
+    PhysicsWorld::GetInstance()->ClearIgnoredCollisions(GetOwner());
     meshData_.reset();
     DestroyOwnBody();
     // 預けていた Rigidbody から、自分の形を外してもらう

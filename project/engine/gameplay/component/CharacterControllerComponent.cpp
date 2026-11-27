@@ -20,6 +20,9 @@ namespace Tako {
 
   void CharacterControllerComponent::EndPlay()
   {
+    if (character_ != PhysicsWorld::kInvalidCharacter) {
+      PhysicsWorld::GetInstance()->ClearIgnoredCollisions(GetOwner());
+    }
     DestroyCharacter();
   }
 
