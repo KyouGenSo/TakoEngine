@@ -10,6 +10,7 @@
 #include <Jolt/Physics/Body/BodyLock.h>
 #include <Jolt/Physics/Character/CharacterVirtual.h>
 #include <Jolt/Physics/Collision/CastResult.h>
+#include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
 #include <Jolt/Physics/Collision/ContactListener.h>
 #include <Jolt/Physics/Collision/RayCast.h>
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
@@ -1372,10 +1373,15 @@ namespace Tako {
     const JPH::RRayCast     ray(ToJolt(origin), ToJolt(direction) * (maxDistance / length));
     const LayerMaskFilter   layerFilter(layerMask);
     const TriggerBodyFilter bodyFilter(hitsTriggers);
-    JPH::RayCastResult      result;
-    if (!impl_->system.GetNarrowPhaseQuery().CastRay(ray, result, {}, layerFilter, bodyFilter)) {
+    // Unity と同じ：始点を中に含む形には当たらない（Jolt の既定は、中から始まると距離 0 で当たる）。形の裏面にも当たらない（設定の既定）
+    JPH::RayCastSettings rayCastSettings;
+    rayCastSettings.mTreatConvexAsSolid = false;
+    JPH::ClosestHitCollisionCollector<JPH::CastRayCollector> collector;
+    impl_->system.GetNarrowPhaseQuery().CastRay(ray, rayCastSettings, collector, {}, layerFilter, bodyFilter);
+    if (!collector.HadHit()) {
       return std::nullopt;
     }
+    const JPH::RayCastResult& result = collector.mHit;
     const JPH::BodyLockRead lock(impl_->system.GetBodyLockInterface(), result.mBodyID);
     if (!lock.Succeeded()) {
       return std::nullopt;

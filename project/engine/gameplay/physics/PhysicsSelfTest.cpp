@@ -227,6 +227,7 @@ namespace Tako {
       BaseScene     scene;
       const Probe   wall = SpawnProbe(scene, { 0.0f, 0.0f, 5.0f });
       const Probe   veil = SpawnProbe(scene, { 0.0f, 0.0f, 2.0f });
+      const Probe   wrap = SpawnProbe(scene, { 0.0f, 0.0f, 0.0f });
       scene.UpdateAlways();
       const PhysicsWorld::BodyHandle wallBody = CreateBody(wall, Static, kLayerA, MakeBox(wall, { 2.0f, 2.0f, 2.0f }));
       const PhysicsWorld::BodyHandle veilBody = CreateBody(veil, Trigger, kLayerA, MakeSphere(veil, 0.5f));
@@ -242,6 +243,19 @@ namespace Tako {
       assert(!physics->Raycast({ 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, 3.0f, 1u << kLayerA, false));
       assert(!physics->Raycast({ 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, 100.0f, 1u << kLayerB));
       assert(!physics->Raycast({ 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, -1.0f }, 100.0f, 1u << kLayerA));
+
+      // 始点を中に含む形（実体でも Trigger でも）には当たらず、その先の物に当たる（Unity と同じ）
+      const PhysicsWorld::Shape wraps[] = { MakeSphere(wrap, 1.0f), MakeBox(wrap, { 2.0f, 2.0f, 2.0f }), MakeCapsule(wrap, 0.5f, 3.0f) };
+      for (const PhysicsWorld::BodyKind kind : { Static, Trigger }) {
+        for (const PhysicsWorld::Shape& shape : wraps) {
+          const PhysicsWorld::BodyHandle                wrapBody = CreateBody(wrap, kind, kLayerA, shape);
+          const std::optional<PhysicsWorld::RaycastHit> beyond   = physics->Raycast({ 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, 100.0f, 1u << kLayerA);
+          assert(beyond);
+          assert(beyond->actor != wrap.actor);
+          assert(beyond->actor == veil.actor && std::abs(beyond->distance - 1.5f) < 0.01f);
+          physics->DestroyBody(wrapBody);
+        }
+      }
 
       physics->DestroyBody(wallBody);
       physics->DestroyBody(veilBody);
@@ -577,6 +591,8 @@ namespace Tako {
 
       const std::optional<PhysicsWorld::RaycastHit> hit = physics->Raycast({ -5.0f, 50.0f, -5.0f }, { 0.0f, -1.0f, 0.0f }, 100.0f);
       assert(hit && hit->actor == ground.actor && isNear(hit->point.y, top) && IsNear(hit->normal, { 0.0f, 1.0f, 0.0f }));
+      // 三角形の裏面には当たらない：床のメッシュの中から下へ飛ばしたレイは、底の面を抜ける
+      assert(!physics->Raycast({ -5.0f, 0.0f, -5.0f }, { 0.0f, -1.0f, 0.0f }, 100.0f));
 
       scene.Shutdown();
       assert(physics->GetBodyCount() == 0);
@@ -675,7 +691,7 @@ namespace Tako {
       BaseScene scene;
       scene.BeginPlay();
       // 床（上の面が y = 0）、高さ 0.3 の段（x = 2〜4.5）、その奥の壁（手前の面が x = 4.5）
-      spawnBox(scene, { 0.0f, -0.5f, 0.0f }, { 1000.0f, 1.0f, 1000.0f });
+      const ColliderProbe floor = spawnBox(scene, { 0.0f, -0.5f, 0.0f }, { 1000.0f, 1.0f, 1000.0f });
       spawnBox(scene, { 3.25f, 0.15f, 0.0f }, { 2.5f, 0.3f, 10.0f });
       spawnBox(scene, { 5.0f, 1.5f, 0.0f }, { 1.0f, 3.0f, 10.0f });
       // walker には、実体の球の Collider も付いている（自分の Actor の Collider には当たらない）
@@ -693,6 +709,11 @@ namespace Tako {
       RunFrames(scene, 60);
       assert(controller->IsGrounded() && isNear(walker.actor->GetTransform().translate.y, standing, 0.05f));
       assert(isNear(walker.actor->GetTransform().translate.x, 0.0f, 0.001f));
+
+      // 自分の位置から下へ飛ばしたレイは、自分のカプセルと Collider を素通りして、床に当たる
+      const Vector3                                 feetOrigin = walker.actor->GetTransform().translate;
+      const std::optional<PhysicsWorld::RaycastHit> below      = physics->Raycast(feetOrigin, { 0.0f, -1.0f, 0.0f }, 10.0f);
+      assert(below && below->actor == floor.actor && isNear(below->distance, feetOrigin.y, 0.01f));
 
       // +X へ歩くと、段を登って、壁の手前で止まる。途中のトリガーから知らせが届く
       controller->SetVelocity({ 3.0f, 0.0f, 0.0f });

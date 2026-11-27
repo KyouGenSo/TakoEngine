@@ -719,6 +719,8 @@ if (const auto hit = Tako::PhysicsWorld::GetInstance()->Raycast(origin, { 0.0f, 
 | `distance` | 始点からの距離 |
 
 - 調べるのは、Play 中の Collider です
+- 始点を中に含む Collider には当たりません。自分の Actor の位置から飛ばした線は、自分の Collider と Character Controller を素通りします
+- Mesh の形には、三角形の表（描画で見える側）からだけ当たります
 - Collider の位置は、そのフレームの物理の時点の物です。同じフレームの `Tick` で動かした分は、次のフレームから入ります
 
 ### 11.5 剛体（Rigidbody）

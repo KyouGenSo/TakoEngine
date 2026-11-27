@@ -305,7 +305,7 @@ namespace Tako {
     //問い合わせ
     //============================================================
     /// <summary>
-    /// origin から direction へ maxDistance までの間で、最初に当たるボディを返す。ボディの位置は、最後の BeginFrame か Step の時点
+    /// origin から direction へ maxDistance までの間で、最初に当たるボディを返す。始点を中に含む形と、メッシュの三角形の裏面には当たらない（Unity と同じ）。ボディの位置は、最後の BeginFrame か Step の時点
     /// </summary>
     /// <param name="layerMask">当たる層のビット（ビット n = 層 n）</param>
     /// <param name="hitsTriggers">false なら、Trigger を素通りする（Unity と同じく、既定では当たる）</param>
