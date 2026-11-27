@@ -62,15 +62,20 @@ namespace Tako {
 #ifdef TAKO_EDITOR
   bool ColliderComponent::DrawCustomImGui()
   {
+    return DrawLayerCombo(layer_);
+  }
+
+  bool ColliderComponent::DrawLayerCombo(uint32_t& layer)
+  {
     const std::vector<std::string>& names = PhysicsWorld::GetInstance()->GetLayerNames();
-    auto label = [&](uint32_t layer) {
-      return layer < names.size() && !names[layer].empty() ? std::format("{}: {}", layer, names[layer]) : std::format("{}: Layer {}", layer, layer);
+    auto label = [&](uint32_t index) {
+      return index < names.size() && !names[index].empty() ? std::format("{}: {}", index, names[index]) : std::format("{}: Layer {}", index, index);
     };
     bool changed = false;
-    if (UI::BeginCombo("Layer", label(layer_).c_str())) {
-      for (uint32_t layer = 0; layer < PhysicsWorld::kMaxLayers; ++layer) {
-        if (ImGui::Selectable(label(layer).c_str(), layer == layer_) && layer != layer_) {
-          layer_  = layer;
+    if (UI::BeginCombo("Layer", label(layer).c_str())) {
+      for (uint32_t index = 0; index < PhysicsWorld::kMaxLayers; ++index) {
+        if (ImGui::Selectable(label(index).c_str(), index == layer) && index != layer) {
+          layer   = index;
           changed = true;
         }
       }

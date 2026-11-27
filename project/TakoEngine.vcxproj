@@ -175,6 +175,8 @@
     <ClCompile Include="engine\gameplay\scene\SceneFile.cpp" />
     <ClCompile Include="engine\gameplay\component\ColliderComponent.cpp" />
     <ClCompile Include="engine\gameplay\component\RigidbodyComponent.cpp" />
+    <ClCompile Include="engine\gameplay\component\CharacterControllerComponent.cpp" />
+    <ClCompile Include="engine\gameplay\component\JointComponent.cpp" />
     <ClCompile Include="engine\gameplay\component\MeshComponent.cpp" />
     <ClCompile Include="engine\gameplay\actor\Actor.cpp" />
     <ClCompile Include="engine\gameplay\scene\BaseScene.cpp" />
@@ -363,6 +365,8 @@
     <ClInclude Include="engine\gameplay\scene\SceneFile.h" />
     <ClInclude Include="engine\gameplay\component\ColliderComponent.h" />
     <ClInclude Include="engine\gameplay\component\RigidbodyComponent.h" />
+    <ClInclude Include="engine\gameplay\component\CharacterControllerComponent.h" />
+    <ClInclude Include="engine\gameplay\component\JointComponent.h" />
     <ClInclude Include="engine\gameplay\component\MeshComponent.h" />
     <ClInclude Include="engine\gameplay\actor\Actor.h" />
     <ClInclude Include="engine\gameplay\actor\Component.h" />

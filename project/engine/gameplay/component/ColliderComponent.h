@@ -44,9 +44,15 @@ namespace Tako {
 
 #ifdef TAKO_EDITOR
     /// <summary>
-    /// Layer 欄（Engine Settings の Physics で付けた層の名前から選ぶ）
+    /// Layer 欄
     /// </summary>
     bool DrawCustomImGui() override;
+
+    /// <summary>
+    /// 層を、Engine Settings の Physics で付けた名前から選ぶ欄。層を持つ他のコンポーネントも使う
+    /// </summary>
+    /// <returns>値が変わったか</returns>
+    static bool DrawLayerCombo(uint32_t& layer);
 #endif
 
     //=====================================

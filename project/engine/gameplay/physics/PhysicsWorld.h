@@ -22,10 +22,12 @@ namespace Tako {
   /// </summary>
   class TAKO_API PhysicsWorld {
   public: //定数
-    static constexpr size_t   kMaxLayers      = 32;            ///< 層の上限（Unity / Godot と同じ）。層ごとの当たり表は uint32_t 1 個のビット
-    static constexpr uint32_t kDefaultLayer   = 31;            ///< 層を選んでいないボディの層
-    static constexpr float    kFixedDeltaTime = 1.0f / 60.0f;  ///< 1 ステップで進める時間（秒）
-    static constexpr uint32_t kInvalidBody    = 0xffffffff;
+    static constexpr size_t   kMaxLayers        = 32;            ///< 層の上限（Unity / Godot と同じ）。層ごとの当たり表は uint32_t 1 個のビット
+    static constexpr uint32_t kDefaultLayer     = 31;            ///< 層を選んでいないボディの層
+    static constexpr float    kFixedDeltaTime   = 1.0f / 60.0f;  ///< 1 ステップで進める時間（秒）
+    static constexpr uint32_t kInvalidBody      = 0xffffffff;
+    static constexpr uint32_t kInvalidCharacter = 0xffffffff;
+    static constexpr uint32_t kInvalidJoint     = 0xffffffff;
 
     // BodySettings::lockedAxes のビット。Dynamic のボディが動けない軸（ワールドの軸）
     static constexpr uint32_t kLockPositionX = 1u << 0;
@@ -36,7 +38,9 @@ namespace Tako {
     static constexpr uint32_t kLockRotationZ = 1u << 5;
 
   public: //構造体
-    using BodyHandle = uint32_t;
+    using BodyHandle      = uint32_t;
+    using CharacterHandle = uint32_t;
+    using JointHandle     = uint32_t;
 
     enum class BodyKind : uint8_t {
       Static,     ///< 動かない実体。Actor の Transform が変わったら、その位置へ置き直す
@@ -101,6 +105,44 @@ namespace Tako {
     };
 
     /// <summary>
+    /// 壁と床に沿って動くキャラクター。形は、ワールドの Y 軸に立ったカプセル（Actor が回っても傾かない）
+    /// </summary>
+    struct CharacterSettings {
+      Actor*     actor         = nullptr;        ///< 位置の元で、動いた結果を書く先（向きは読み書きしない）
+      Component* owner         = nullptr;        ///< 当たりの通知先
+      uint32_t   layer         = kDefaultLayer;
+      float      radius        = 0.5f;           ///< scale は X と Z の大きい方
+      float      height        = 2.0f;           ///< 全長（両端の半球を含む）。scale は Y
+      Vector3    offset        = {};             ///< Actor から見た、カプセルの中心（scale は軸ごと）
+      float      maxSlopeAngle = 0.8726646f;     ///< 登れる坂の角度（ラジアン）。これより急な面は、壁として滑る
+      float      stepHeight    = 0.4f;           ///< 乗り越えられる段差の高さ。下りでは、この高さまで床に吸い付く
+      float      gravityScale  = 1.0f;           ///< 重力の倍率（0 = 重力を受けない）
+    };
+
+    enum class JointType : uint8_t {
+      Fixed,     ///< 相手との位置と向きを、今のまま固める
+      Point,     ///< 1 点でつなぐ（向きは自由）
+      Hinge,     ///< 1 点でつなぎ、軸の周りだけ回る
+      Distance,  ///< 2 点の距離を保つ
+    };
+
+    /// <summary>
+    /// 2 つのボディ（か、ボディとワールド）をつなぐ決まり。点と軸は、つなぐときのワールドの値
+    /// </summary>
+    struct JointSettings {
+      JointType  type            = JointType::Fixed;
+      BodyHandle body            = kInvalidBody;
+      BodyHandle connectedBody   = kInvalidBody;          ///< kInvalidBody なら、ワールドにつなぐ
+      Vector3    anchor          = {};                    ///< つなぐ点（Fixed は使わない）
+      Vector3    connectedAnchor = {};                    ///< Distance の、相手の側の点
+      Vector3    axis            = { 0.0f, 1.0f, 0.0f };  ///< Hinge の軸
+      float      minAngle        = -3.1415927f;           ///< Hinge の回る範囲の下限（ラジアン、-π〜0。つないだときの向きが 0）
+      float      maxAngle        = 3.1415927f;            ///< Hinge の回る範囲の上限（ラジアン、0〜π）
+      float      minDistance     = -1.0f;                 ///< Distance の範囲。負なら、つないだときの距離
+      float      maxDistance     = -1.0f;
+    };
+
+    /// <summary>
     /// BeginFrame から後の合計（計測の表示用）
     /// </summary>
     struct FrameStats {
@@ -114,7 +156,7 @@ namespace Tako {
     /// 世界の今の状態（デバッグ表示用）
     /// </summary>
     struct WorldStats {
-      size_t                           bodyCount         = 0;  ///< 作ってあるボディ
+      size_t                           bodyCount         = 0;  ///< 作ってあるボディ（キャラクターも 1 つと数える）
       size_t                           enabledCount      = 0;  ///< そのうち、世界に入っているボディ
       uint32_t                         awakeCount        = 0;  ///< そのうち、寝ていないボディ（Trigger は寝ない）
       size_t                           touchingPairCount = 0;  ///< 当たっている通知先の組
@@ -213,6 +255,41 @@ namespace Tako {
     void SetAngularVelocity(BodyHandle body, const Vector3& velocity);
 
     //============================================================
+    //キャラクター
+    //============================================================
+    /// <summary>
+    /// キャラクターを作って世界に入れる。位置と形の拡大は、settings.actor のワールドの Transform
+    /// </summary>
+    /// <returns>作れなければ kInvalidCharacter</returns>
+    CharacterHandle CreateCharacter(const CharacterSettings& settings);
+
+    /// <summary>
+    /// キャラクターを消す。当たっていた相手に Exit は届かない
+    /// </summary>
+    void DestroyCharacter(CharacterHandle character);
+
+    /// <summary>
+    /// キャラクターを世界から出す・戻す。出すと、当たっていた相手との間に Exit が届く（戻して重なっていれば、Enter が出直す）
+    /// </summary>
+    void SetCharacterEnabled(CharacterHandle character, bool enabled);
+
+    /// <summary>
+    /// 動く速度。毎ステップ、ここに重力が足されてから動く（立っている間は、下向きの分を溜めない）
+    /// </summary>
+    void SetCharacterVelocity(CharacterHandle character, const Vector3& velocity);
+
+    //============================================================
+    //ジョイント
+    //============================================================
+    /// <summary>
+    /// 2 つのボディを、今の位置でつなぐ。どちらかのボディを消すと、ジョイントも消える。どちらかを世界から出している間は、効かない
+    /// </summary>
+    /// <returns>settings.body が無ければ kInvalidJoint</returns>
+    JointHandle CreateJoint(const JointSettings& settings);
+
+    void DestroyJoint(JointHandle joint);
+
+    //============================================================
     //問い合わせ
     //============================================================
     /// <summary>
@@ -303,12 +380,19 @@ namespace Tako {
 
     Vector3 GetAngularVelocity(BodyHandle body) const;
 
+    Vector3 GetCharacterVelocity(CharacterHandle character) const;
+
+    /// <summary>
+    /// 最後のステップで、立てる面（maxSlopeAngle より緩い面）の上に居たか
+    /// </summary>
+    bool IsCharacterGrounded(CharacterHandle character) const;
+
     bool IsDebugDrawEnabled() const { return debugDrawEnabled_; }
 
     const FrameStats& GetFrameStats() const { return frameStats_; }
 
     /// <summary>
-    /// 作ってあるボディの数（世界から出してある物も含む）
+    /// 作ってあるボディとキャラクターの数（世界から出してある物も含む）
     /// </summary>
     size_t GetBodyCount() const;
 

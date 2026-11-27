@@ -4,8 +4,10 @@
 
 #include "Actor.h"
 #include "BaseScene.h"
+#include "CharacterControllerComponent.h"
 #include "ColliderComponent.h"
 #include "Component.h"
+#include "JointComponent.h"
 #include "Logger.h"
 #include "Mat4x4Func.h"
 #include "Mesh.h"
@@ -580,6 +582,157 @@ namespace Tako {
       assert(physics->GetBodyCount() == 0);
     }
 
+    /// <summary>
+    /// Joint：Fixed はワールドに留める・Distance は吊るした物の距離を保つ・Hinge は軸の周りだけ回す・
+    /// つないだ Actor をオフにして戻しても続く・相手を消すと、支えが外れて落ちる
+    /// </summary>
+    void CheckJoints()
+    {
+      PhysicsWorld* physics  = PhysicsWorld::GetInstance();
+      const auto    isNear   = [](float a, float b, float tolerance) { return std::abs(a - b) < tolerance; };
+      const auto    addJoint = [](Actor* actor, JointComponent::JointType type, const Actor* connected) {
+        auto* joint = static_cast<JointComponent*>(actor->AddComponent(std::make_unique<JointComponent>(), "Joint"));
+        joint->SetType(type);
+        joint->SetConnectedActor(connected);
+        return joint;
+      };
+
+      BaseScene scene;
+      scene.BeginPlay();
+      // ワールドに固めた球は、落ちない
+      const ColliderProbe pinned = SpawnSolid(scene, { 0.0f, 10.0f, 0.0f }, ColliderComponent::Shape::Sphere);
+      AddRigidbody(pinned.actor);
+      addJoint(pinned.actor, JointComponent::JointType::Fixed, nullptr);
+
+      // 動かない hook から upper を、upper から lower を、距離 2 で吊るす
+      const ColliderProbe hook = SpawnSolid(scene, { 20.0f, 10.0f, 0.0f }, ColliderComponent::Shape::Sphere);
+      AddRigidbody(hook.actor)->SetBodyType(RigidbodyComponent::BodyType::Kinematic);
+      const ColliderProbe upper = SpawnSolid(scene, { 20.0f, 8.0f, 0.0f }, ColliderComponent::Shape::Sphere);
+      AddRigidbody(upper.actor);
+      addJoint(upper.actor, JointComponent::JointType::Distance, hook.actor);
+      const ColliderProbe lower = SpawnSolid(scene, { 20.0f, 6.0f, 0.0f }, ColliderComponent::Shape::Sphere);
+      AddRigidbody(lower.actor);
+      addJoint(lower.actor, JointComponent::JointType::Distance, upper.actor);
+
+      // 箱の横の点を、Z 軸の蝶番でワールドにつなぐと、XY の面の中で振り子になる
+      const Vector3       pivot{ 39.0f, 10.0f, 0.0f };
+      const ColliderProbe door = SpawnSolid(scene, { 40.0f, 10.0f, 0.0f }, ColliderComponent::Shape::Box);
+      AddRigidbody(door.actor);
+      JointComponent* hinge = addJoint(door.actor, JointComponent::JointType::Hinge, nullptr);
+      hinge->SetAnchor({ -1.0f, 0.0f, 0.0f });
+      hinge->SetAxis({ 0.0f, 0.0f, 1.0f });
+      scene.UpdateAlways();
+
+      // 両方が起きている間に、つないだ片方をオフにして戻す（オフの間、ジョイントは効かない）
+      RunFrames(scene, 10);
+      lower.actor->SetActive(false);
+      scene.UpdateAlways();
+      RunFrames(scene, 5);
+      lower.actor->SetActive(true);
+      scene.UpdateAlways();
+      RunFrames(scene, 105);
+
+      assert(IsNear(pinned.actor->GetTransform().translate, { 0.0f, 10.0f, 0.0f }));
+      assert(isNear(upper.actor->GetTransform().translate.y, 8.0f, 0.05f) && isNear(lower.actor->GetTransform().translate.y, 6.0f, 0.05f));
+      const Transform swung = door.actor->GetTransform();
+      const Vector3   arm   = swung.translate - pivot;
+      assert(isNear(arm.Length(), 1.0f, 0.02f) && isNear(arm.z, 0.0f, 0.01f) && swung.translate.y < 9.9f);
+      assert(isNear(swung.rotate.x, 0.0f, 0.01f) && isNear(swung.rotate.y, 0.0f, 0.01f));
+
+      // つないだ相手を消すと、ジョイントも外れて、寝ていた物が落ち始める
+      scene.Destroy(hook.actor);
+      scene.UpdateAlways();
+      RunFrames(scene, 60);
+      assert(upper.actor->GetTransform().translate.y < 7.0f && lower.actor->GetTransform().translate.y < 5.0f);
+
+      scene.Shutdown();
+      assert(physics->GetBodyCount() == 0);
+    }
+
+    /// <summary>
+    /// Character Controller：床に立つ・段差を登る・壁で止まる・トリガーに知らせが届く・レイが当たる・他のキャラクターと重ならない・
+    /// 自分の Actor の Collider には当たらない・位置を書き換えると置き直る・Actor をオフにすると Exit が届く
+    /// </summary>
+    void CheckCharacterController()
+    {
+      PhysicsWorld* physics = PhysicsWorld::GetInstance();
+      if (!physics->CanCollide(ColliderComponent::kActorLayer, ColliderComponent::kActorLayer)) {
+        return;
+      }
+      const auto isNear        = [](float a, float b, float tolerance) { return std::abs(a - b) < tolerance; };
+      const auto addController = [](Actor* actor) {
+        return static_cast<CharacterControllerComponent*>(actor->AddComponent(std::make_unique<CharacterControllerComponent>(), "CharacterController"));
+      };
+      const auto spawnBox = [](BaseScene& scene, const Vector3& position, const Vector3& scale) {
+        const ColliderProbe box = SpawnSolid(scene, position, ColliderComponent::Shape::Box);
+        box.actor->GetTransform().scale = scale;
+        return box;
+      };
+      // カプセル（半径 0.5・全長 2）の中心が Actor の位置。床からは、Jolt が少し（0.02）浮かせて立たせる
+      const float standing = 1.0f;
+
+      BaseScene scene;
+      scene.BeginPlay();
+      // 床（上の面が y = 0）、高さ 0.3 の段（x = 2〜4.5）、その奥の壁（手前の面が x = 4.5）
+      spawnBox(scene, { 0.0f, -0.5f, 0.0f }, { 1000.0f, 1.0f, 1000.0f });
+      spawnBox(scene, { 3.25f, 0.15f, 0.0f }, { 2.5f, 0.3f, 10.0f });
+      spawnBox(scene, { 5.0f, 1.5f, 0.0f }, { 1.0f, 3.0f, 10.0f });
+      // walker には、実体の球の Collider も付いている（自分の Actor の Collider には当たらない）
+      const ColliderProbe           walker     = SpawnSolid(scene, { 0.0f, 1.5f, 0.0f }, ColliderComponent::Shape::Sphere);
+      CharacterControllerComponent* controller = addController(walker.actor);
+      const Probe                   blocker    = SpawnProbe(scene, { -3.0f, 1.5f, 0.0f });
+      addController(blocker.actor);
+      const ColliderProbe zone    = SpawnTrigger(scene, { 3.3f, 1.9f, 0.0f });
+      const ColliderProbe farZone = SpawnTrigger(scene, { 50.0f, 2.0f, 0.0f });
+      scene.UpdateAlways();
+
+      // 落ちて、床に立つ
+      RunFrames(scene, 60);
+      assert(controller->IsGrounded() && isNear(walker.actor->GetTransform().translate.y, standing, 0.05f));
+      assert(isNear(walker.actor->GetTransform().translate.x, 0.0f, 0.001f));
+
+      // +X へ歩くと、段を登って、壁の手前で止まる。途中のトリガーから知らせが届く
+      controller->SetVelocity({ 3.0f, 0.0f, 0.0f });
+      RunFrames(scene, 180);
+      const Vector3 atWall = walker.actor->GetTransform().translate;
+      assert(atWall.x > 3.9f && atWall.x < 4.01f && isNear(atWall.y, standing + 0.3f, 0.06f));
+      assert(!walker.recorder->log.empty() && walker.recorder->log.front() == 'E' && walker.recorder->last == zone.actor);
+
+      // 上からのレイは、カプセルの頭に当たる
+      const std::optional<PhysicsWorld::RaycastHit> hit = physics->Raycast({ atWall.x, 10.0f, 0.0f }, { 0.0f, -1.0f, 0.0f }, 20.0f, 0xffffffff, false);
+      assert(hit && hit->actor == walker.actor && isNear(hit->point.y, atWall.y + 1.0f, 0.05f));
+
+      // -X へ歩くと、段を下りて、立っている他のキャラクターの手前で止まる（押しのけない）
+      controller->SetVelocity({ -3.0f, 0.0f, 0.0f });
+      RunFrames(scene, 300);
+      const Vector3 atBlocker = walker.actor->GetTransform().translate;
+      assert(isNear(blocker.actor->GetTransform().translate.x, -3.0f, 0.05f));
+      assert(atBlocker.x - blocker.actor->GetTransform().translate.x > 0.95f && atBlocker.x < -1.9f && isNear(atBlocker.y, standing, 0.05f));
+      assert(walker.recorder->log.find('X') != std::string::npos);
+
+      // 位置を書き換えると、その位置へ置き直されて、そこから落ちる
+      controller->SetVelocity({});
+      walker.actor->GetTransform().translate = { 50.0f, 5.0f, 0.0f };
+      RunFrames(scene, 3);
+      assert(isNear(walker.actor->GetTransform().translate.x, 50.0f, 0.001f));
+      assert(walker.actor->GetTransform().translate.y < 5.0f && walker.actor->GetTransform().translate.y > 4.9f);
+
+      // 落ちた先のトリガーに入る。Actor をオフにすると Exit が届き、戻すと Enter が出直す
+      RunFrames(scene, 120);
+      assert(controller->IsGrounded() && farZone.recorder->log.front() == 'E' && farZone.recorder->log.back() == 'S');
+      walker.actor->SetActive(false);
+      scene.UpdateAlways();
+      RunFrames(scene, 2);
+      assert(farZone.recorder->log.back() == 'X');
+      walker.actor->SetActive(true);
+      scene.UpdateAlways();
+      RunFrames(scene, 2);
+      assert(farZone.recorder->log.back() != 'X' && farZone.recorder->last == walker.actor);
+
+      scene.Shutdown();
+      assert(physics->GetBodyCount() == 0);
+    }
+
 #ifdef TAKO_EDITOR
     /// <summary>
     /// 形式 1 のプロジェクトの移行：isTrigger の無いコライダー（1 ファイルのシーン・Actor ごとのファイル・プレハブ・置いた物の差分）に true が入り、書いてある値と読めないファイルは変わらない
@@ -645,6 +798,8 @@ namespace Tako {
     CheckColliderComponent();
     CheckRigidbody();
     CheckMeshShapes();
+    CheckJoints();
+    CheckCharacterController();
 #ifdef TAKO_EDITOR
     CheckColliderMigration();
 #endif

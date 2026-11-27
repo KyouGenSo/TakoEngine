@@ -7,6 +7,9 @@
 - Rigidbody コンポーネントを追加。Dynamic は重力と当たりで動き、Kinematic は Actor の動きに付いていって Dynamic を押す。形は、同じ Actor と子の Actor の Collider（Trigger を除く）をまとめた物
 - Rigidbody は、スクリプトの `AddForce`・`AddImpulse`・`AddTorque`・`SetLinearVelocity`・`SetAngularVelocity` で動かす。質量・減衰・重力の倍率・動きを止める軸・連続衝突（速くても通り抜けない）は Inspector で決める
 - Collider に `Is Trigger` を追加。オン（今までの動き）は重なりを知らせるだけ、オフ（新しく作る Collider の既定）は押し合う実体になる。形に Capsule、滑りにくさの Friction、跳ね返りの Restitution、スクリプトから形を選ぶ `SetShape` を追加
+- Collider の形に Mesh と Convex Hull を追加。Collider の Model の欄のモデル（空なら、同じ Actor の Mesh コンポーネントのモデル）から形を作る。Mesh は動かない物と Kinematic 用で、Dynamic の Rigidbody には Convex Hull を使う
+- Character Controller コンポーネントを追加。カプセルの形のキャラクターが、壁と床に沿って動き、坂と段差を登る。スクリプトは `SetVelocity`・`GetVelocity`・`IsGrounded` で動かす（重力は物理が足す）
+- Joint コンポーネントを追加。Rigidbody を、他の Rigidbody かワールドにつなぐ（位置と向きを固める Fixed、1 点でつなぐ Point、軸の周りだけ回る Hinge、距離を保つ Distance）
 - Collider の大きさと Offset に、Actor の Scale が掛かる（Unity と同じ決まり。Box は軸ごと、Sphere は 3 軸の最大、Capsule の半径は X と Z の大きい方・高さは Y）。Play 中に Scale を変えても付いていく
 - スクリプトに `FixedTick(float fixedDeltaTime)` を追加。物理が 1 ステップ（1/60 秒）進む直前に呼ばれる（1 フレームに 0 回のことも、2 回以上のこともある）
 - `PhysicsWorld::GetInstance()->Raycast(始点, 向き, 長さ, 層のマスク)` を追加。最初に当たった Actor・位置・法線・距離が返る。Trigger にも当たり、5 番目の引数を `false` にすると素通りする

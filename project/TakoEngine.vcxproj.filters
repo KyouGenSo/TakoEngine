@@ -234,6 +234,12 @@
     <ClCompile Include="engine\gameplay\component\RigidbodyComponent.cpp">
       <Filter>gameplay\component</Filter>
     </ClCompile>
+    <ClCompile Include="engine\gameplay\component\CharacterControllerComponent.cpp">
+      <Filter>gameplay\component</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\gameplay\component\JointComponent.cpp">
+      <Filter>gameplay\component</Filter>
+    </ClCompile>
     <ClCompile Include="engine\gameplay\component\MeshComponent.cpp">
       <Filter>gameplay\component</Filter>
     </ClCompile>
@@ -666,6 +672,12 @@
       <Filter>gameplay\component</Filter>
     </ClInclude>
     <ClInclude Include="engine\gameplay\component\RigidbodyComponent.h">
+      <Filter>gameplay\component</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\gameplay\component\CharacterControllerComponent.h">
+      <Filter>gameplay\component</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\gameplay\component\JointComponent.h">
       <Filter>gameplay\component</Filter>
     </ClInclude>
     <ClInclude Include="engine\gameplay\component\MeshComponent.h">

@@ -8,6 +8,7 @@
 #include <Jolt/Core/TempAllocator.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Body/BodyLock.h>
+#include <Jolt/Physics/Character/CharacterVirtual.h>
 #include <Jolt/Physics/Collision/CastResult.h>
 #include <Jolt/Physics/Collision/ContactListener.h>
 #include <Jolt/Physics/Collision/RayCast.h>
@@ -16,9 +17,14 @@
 #include <Jolt/Physics/Collision/Shape/ConvexHullShape.h>
 #include <Jolt/Physics/Collision/Shape/EmptyShape.h>
 #include <Jolt/Physics/Collision/Shape/MeshShape.h>
+#include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
 #include <Jolt/Physics/Collision/Shape/ScaledShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
 #include <Jolt/Physics/Collision/Shape/StaticCompoundShape.h>
+#include <Jolt/Physics/Constraints/DistanceConstraint.h>
+#include <Jolt/Physics/Constraints/FixedConstraint.h>
+#include <Jolt/Physics/Constraints/HingeConstraint.h>
+#include <Jolt/Physics/Constraints/PointConstraint.h>
 #include <Jolt/Physics/PhysicsSystem.h>
 #include <Jolt/RegisterTypes.h>
 #ifdef JPH_DEBUG_RENDERER
@@ -35,6 +41,7 @@
 #endif
 
 #include <algorithm>
+#include <cfloat>
 #include <chrono>
 #include <cmath>
 #include <cstdarg>
@@ -187,6 +194,26 @@ namespace Tako {
       bool hitsTriggers_;
     };
 
+    /// <summary>
+    /// キャラクターは、自分の Actor とその子孫に付いたボディには当たらない（一緒に動くボディに、押し出され続けないように）
+    /// </summary>
+    class OtherActorFilter final : public JPH::BodyFilter {
+    public: //メンバー関数
+      explicit OtherActorFilter(const Actor* actor) : actor_(actor) {}
+
+      bool ShouldCollideLocked(const JPH::Body& body) const override {
+        for (const Actor* owner = reinterpret_cast<const Actor*>(body.GetUserData()); owner; owner = owner->GetParent()) {
+          if (owner == actor_) {
+            return false;
+          }
+        }
+        return true;
+      }
+
+    private: //メンバー変数
+      const Actor* actor_;
+    };
+
 #ifdef JPH_DEBUG_RENDERER
     /// <summary>
     /// Jolt のデバッグ描画を、エンジンの線で描く
@@ -240,6 +267,27 @@ namespace Tako {
       Vector3    currentPosition{};
       Quaternion currentRotation{ 0.0f, 0.0f, 0.0f, 1.0f };
       bool       needsWriteBack = false;
+    };
+
+    /// <summary>
+    /// 世界に作ったキャラクター 1 つ。動かすのは CharacterVirtual（世界のボディではない）で、レイ・トリガー・他のボディには、中に持たせた同じ形のボディが見える
+    /// </summary>
+    struct CharacterRecord {
+      JPH::Ref<JPH::CharacterVirtual> character;
+      PhysicsWorld::CharacterSettings settings;
+      bool                            isInWorld = true;
+      Vector3                         shapeScale{ 1.0f, 1.0f, 1.0f };  ///< 今の形を作ったときの scale
+      Vector3                         lastTranslate{};                 ///< 最後に Actor へ書いた（か、Actor から読んだ）位置。違っていれば、外から書き換えられた
+
+      //直前の 2 ステップの位置（その間を補間して Actor へ書く）
+      Vector3 previousPosition{};
+      Vector3 currentPosition{};
+      bool    needsWriteBack = false;
+    };
+
+    struct JointRecord {
+      JPH::Ref<JPH::TwoBodyConstraint> constraint;
+      PhysicsWorld::BodyHandle         bodies[2]{ PhysicsWorld::kInvalidBody, PhysicsWorld::kInvalidBody };  ///< 2 つ目が kInvalidBody なら、相手はワールド
     };
 
     /// <summary>
@@ -388,6 +436,20 @@ namespace Tako {
       return properties;
     }
 
+    /// <summary>
+    /// キャラクターの形（Y 軸に立ったカプセル）。scale の掛け方は、Capsule の形と同じ
+    /// </summary>
+    JPH::RefConst<JPH::Shape> MakeCharacterShape(const PhysicsWorld::CharacterSettings& settings, const Vector3& scale) {
+      PhysicsWorld::Shape capsule;
+      capsule.type   = PhysicsWorld::ShapeType::Capsule;
+      capsule.radius = settings.radius;
+      capsule.height = settings.height;
+      capsule.owner  = settings.owner;
+      // 中心をずらす入れ物は、通知先を中の形から返す
+      const Vector3 offset{ settings.offset.x * scale.x, settings.offset.y * scale.y, settings.offset.z * scale.z };
+      return new JPH::RotatedTranslatedShape(ToJolt(offset), JPH::Quat::sIdentity(), MakeLeaf(capsule, scale).GetPtr());
+    }
+
     bool Involves(const OwnerPair& pair, std::span<Component* const> owners) {
       return std::ranges::find(owners, pair.first) != owners.end() || std::ranges::find(owners, pair.second) != owners.end();
     }
@@ -469,6 +531,38 @@ namespace Tako {
 
     void DispatchPendingExits(FrameStats& stats);
 
+    /// <summary>
+    /// owners の当たっている組を、次の配布で Exit を出す側へ移す
+    /// </summary>
+    void MoveToPendingExits(std::span<Component* const> owners);
+
+    /// <summary>
+    /// Actor の位置か scale が外から書き換えられていたら、キャラクターをその位置へ置き直す。向きは見ない
+    /// </summary>
+    /// <param name="isForced">書き換えられていなくても置き直す</param>
+    void SyncCharacter(CharacterRecord& record, bool isForced);
+
+    /// <summary>
+    /// 全部のキャラクターを 1 ステップ動かす（重力を足し、壁と床に沿わせ、段差を越える）
+    /// </summary>
+    /// <param name="collisionMasks">層の当たり表（添字 = 層 A、ビット b = 層 B と当たる）</param>
+    void StepCharacters(const std::array<uint32_t, kMaxLayers>& collisionMasks);
+
+    /// <summary>
+    /// 世界に入っている Dynamic のボディを起こす
+    /// </summary>
+    void WakeBody(BodyHandle handle);
+
+    /// <summary>
+    /// handle につないだジョイントを、両方のボディが世界に入っているときだけ効かせる（世界から出したボディを、Jolt に触らせない）
+    /// </summary>
+    void RefreshJoints(BodyHandle handle);
+
+    /// <summary>
+    /// ジョイントを世界から外し、つながれていたボディを起こす（支えが外れた物が、動き出すように）
+    /// </summary>
+    void RemoveJoint(const JointRecord& joint);
+
     BroadPhaseLayers                         broadPhaseLayers;
     ObjectVsBroadPhaseFilter                 objectVsBroadPhaseFilter;
     ObjectLayerFilter                        objectLayerFilter;
@@ -481,7 +575,11 @@ namespace Tako {
     JPH::PhysicsSystem                       system;
 
     std::unordered_map<BodyHandle, BodyRecord> bodies;
-    std::unordered_map<Component*, BodyHandle> ownerBodies;  ///< 通知先 → その形を持つボディ
+    std::unordered_map<Component*, BodyHandle> ownerBodies;  ///< 通知先 → その形を持つボディ（キャラクターは、中に持たせたボディ）
+
+    std::unordered_map<CharacterHandle, CharacterRecord> characters;     ///< キーは、中に持たせたボディの ID
+    std::unordered_map<JointHandle, JointRecord>         joints;
+    JointHandle                                          nextJoint = 0;
 
     //当たりの通知。どれも、通知先の組の一覧
     PairList touching;          ///< 今当たっている組（並べ替え済み）
@@ -674,6 +772,103 @@ namespace Tako {
     Dispatch(exits, &Component::OnCollisionExit, stats);
   }
 
+  void PhysicsWorld::Impl::MoveToPendingExits(std::span<Component* const> owners)
+  {
+    const auto moved = std::ranges::stable_partition(touching, [owners](const OwnerPair& pair) { return !Involves(pair, owners); });
+    pendingExits.insert(pendingExits.end(), moved.begin(), moved.end());
+    touching.erase(moved.begin(), moved.end());
+  }
+
+  void PhysicsWorld::Impl::SyncCharacter(CharacterRecord& record, bool isForced)
+  {
+    const Actor& actor    = *record.settings.actor;
+    const Pose   pose     = ReadPose(actor);
+    const bool   isScaled = !IsSameScale(pose.scale, record.shapeScale);
+    // カプセルは傾かないので、スクリプトが Actor を回しても置き直さない（置き直すと、補間が途切れる）
+    if (!isForced && !isScaled && HasSameBits(actor.GetTransform().translate, record.lastTranslate)) {
+      return;
+    }
+    if (isScaled) {
+      record.shapeScale = pose.scale;
+      const JPH::RefConst<JPH::Shape> shape = MakeCharacterShape(record.settings, pose.scale);
+      // 重なりは調べずに差し替える（重なった分は、次のステップで押し戻される）
+      record.character->SetShape(shape, FLT_MAX, {}, {}, {}, {}, tempAllocator);
+      record.character->SetInnerBodyShape(shape);
+    }
+    record.character->SetPosition(ToJolt(pose.position));
+    record.lastTranslate    = actor.GetTransform().translate;
+    record.previousPosition = record.currentPosition = pose.position;
+    record.needsWriteBack   = false;
+  }
+
+  void PhysicsWorld::Impl::StepCharacters(const std::array<uint32_t, kMaxLayers>& collisionMasks)
+  {
+    const JPH::Vec3 worldGravity = system.GetGravity();
+    for (auto& [handle, record] : characters) {
+      if (!record.isInWorld) {
+        continue;
+      }
+      SyncCharacter(record, false);
+      record.previousPosition = record.currentPosition;
+
+      JPH::CharacterVirtual&   character = *record.character;
+      const CharacterSettings& settings  = record.settings;
+      const JPH::Vec3          gravity   = worldGravity * settings.gravityScale;
+      // 立っている間は、落ちる速さを溜めない
+      JPH::Vec3 velocity = character.GetLinearVelocity();
+      if (character.GetGroundState() == JPH::CharacterBase::EGroundState::OnGround && velocity.GetY() < 0.0f) {
+        velocity.SetY(0.0f);
+      }
+      velocity += gravity * kFixedDeltaTime;
+      character.SetLinearVelocity(velocity);
+
+      // 段差の高さは、登るときと、下りで床から離れないよう吸い付くときの両方に使う
+      JPH::CharacterVirtual::ExtendedUpdateSettings update;
+      update.mWalkStairsStepUp     = JPH::Vec3(0.0f, (std::max)(settings.stepHeight, 0.0f), 0.0f);
+      update.mStickToFloorStepDown = -update.mWalkStairsStepUp;
+      const LayerMaskFilter  layerFilter(collisionMasks[(std::min)(settings.layer, static_cast<uint32_t>(kMaxLayers - 1))]);
+      const OtherActorFilter bodyFilter(settings.actor);
+      character.ExtendedUpdate(kFixedDeltaTime, gravity, update, {}, layerFilter, bodyFilter, {}, tempAllocator);
+
+      const Vector3 position = ToEngine(character.GetPosition());
+      // 上へ動こうとして半分も進めなかったら、天井に当たっている。上向きの速さを捨てる（捨てないと、落ち始めるまで天井に張り付く）
+      if (velocity.GetY() > 0.0f && position.y - record.currentPosition.y < velocity.GetY() * kFixedDeltaTime * 0.5f) {
+        character.SetLinearVelocity(character.GetLinearVelocity() * JPH::Vec3(1.0f, 0.0f, 1.0f));
+      }
+      record.currentPosition = position;
+      record.needsWriteBack  = true;
+    }
+  }
+
+  void PhysicsWorld::Impl::WakeBody(BodyHandle handle)
+  {
+    const auto found = bodies.find(handle);
+    if (found != bodies.end() && found->second.isInWorld && found->second.settings.kind == BodyKind::Dynamic) {
+      system.GetBodyInterface().ActivateBody(found->second.id);
+    }
+  }
+
+  void PhysicsWorld::Impl::RefreshJoints(BodyHandle handle)
+  {
+    // 相手がワールドのジョイントは、2 つ目が kInvalidBody（見つからない）
+    const auto isInWorld = [this](BodyHandle body) {
+      const auto found = bodies.find(body);
+      return found == bodies.end() || found->second.isInWorld;
+    };
+    for (auto& [id, joint] : joints) {
+      if (joint.bodies[0] == handle || joint.bodies[1] == handle) {
+        joint.constraint->SetEnabled(isInWorld(joint.bodies[0]) && isInWorld(joint.bodies[1]));
+      }
+    }
+  }
+
+  void PhysicsWorld::Impl::RemoveJoint(const JointRecord& joint)
+  {
+    system.RemoveConstraint(joint.constraint);
+    WakeBody(joint.bodies[0]);
+    WakeBody(joint.bodies[1]);
+  }
+
   std::unique_ptr<PhysicsWorld> PhysicsWorld::instance_ = nullptr;
 
   PhysicsWorld::PhysicsWorld(Token)
@@ -722,6 +917,11 @@ namespace Tako {
     frameStats_ = {};
     impl_->DispatchPendingExits(frameStats_);
     impl_->SyncBodies(false);
+    for (auto& [handle, record] : impl_->characters) {
+      if (record.isInWorld) {
+        impl_->SyncCharacter(record, false);
+      }
+    }
   }
 
   void PhysicsWorld::Step()
@@ -733,6 +933,8 @@ namespace Tako {
     const Clock::time_point start    = Clock::now();
     PairList&               reported = impl_->contactCollector.pairs;
     reported.clear();
+    // キャラクターは、世界の計算より先に動かす（Jolt のサンプルと同じ順）
+    impl_->StepCharacters(collisionMask_);
     const JPH::EPhysicsUpdateError error = impl_->system.Update(kFixedDeltaTime, 1, &impl_->tempAllocator, &impl_->jobSystem);
     if (error != JPH::EPhysicsUpdateError::None) {
       // 上限（kMaxBodyPairs・kMaxContactConstraints）を越えた分の接触は、このステップでは無視されている
@@ -805,6 +1007,17 @@ namespace Tako {
       record.needsWriteBack = !HasSameBits(record.previousPosition, record.currentPosition) || !HasSameBits(record.previousRotation, record.currentRotation);
     }
 
+    // キャラクターの位置も、同じように補間して書く（向きと scale は、Actor の値のまま）
+    for (auto& [handle, record] : impl_->characters) {
+      if (!record.needsWriteBack || !record.isInWorld) {
+        continue;
+      }
+      Actor& actor = *record.settings.actor;
+      actor.SetWorldPosition(record.previousPosition + (record.currentPosition - record.previousPosition) * alpha);
+      record.lastTranslate  = actor.GetTransform().translate;
+      record.needsWriteBack = !HasSameBits(record.previousPosition, record.currentPosition);
+    }
+
     impl_->DispatchPendingExits(frameStats_);
 
     // 当たり続けている組に Stay。このフレームに当たり始めた組は、次のフレームから
@@ -844,6 +1057,7 @@ namespace Tako {
     creation.mIsSensor                     = isTrigger;
     creation.mCollideKinematicVsNonDynamic = isTrigger;
     creation.mUseManifoldReduction         = record.shapes.size() <= 1;
+    creation.mUserData                     = reinterpret_cast<JPH::uint64>(settings.actor);
     if (isDynamic) {
       // 形が無くても作れるよう、質量と回りにくさはここで渡す（軸の固定などは、下の ApplySettings が入れる）
       creation.mOverrideMassProperties = JPH::EOverrideMassProperties::MassAndInertiaProvided;
@@ -871,6 +1085,16 @@ namespace Tako {
     if (found == impl_->bodies.end()) {
       return;
     }
+    // このボディにつないだジョイントを、先に外す（拘束は、ボディを生のポインタで持っている）
+    std::erase_if(impl_->joints, [&](const auto& entry) {
+      const JointRecord& joint = entry.second;
+      if (joint.bodies[0] != body && joint.bodies[1] != body) {
+        return false;
+      }
+      impl_->RemoveJoint(joint);
+      return true;
+    });
+
     JPH::BodyInterface& bodies = impl_->system.GetBodyInterface();
     if (found->second.isInWorld) {
       bodies.RemoveBody(found->second.id);
@@ -898,13 +1122,13 @@ namespace Tako {
         impl_->SyncBody(record, false);
       }
       bodies.AddBody(record.id, ActivationOf(record.settings.kind));
+      impl_->RefreshJoints(body);
       return;
     }
+    impl_->RefreshJoints(body);
     bodies.RemoveBody(record.id);
     // 当たっていた組は、次の配布で Exit を出す
-    const auto moved = std::ranges::stable_partition(impl_->touching, [&record](const OwnerPair& pair) { return !Involves(pair, record.owners); });
-    impl_->pendingExits.insert(impl_->pendingExits.end(), moved.begin(), moved.end());
-    impl_->touching.erase(moved.begin(), moved.end());
+    impl_->MoveToPendingExits(record.owners);
   }
 
   void PhysicsWorld::SetBodyShapes(BodyHandle body, std::span<const Shape> shapes)
@@ -975,6 +1199,149 @@ namespace Tako {
   {
     if (const JPH::BodyID id = impl_->FindMovable(body); !id.IsInvalid()) {
       impl_->system.GetBodyInterface().SetAngularVelocity(id, ToJolt(velocity));
+    }
+  }
+
+  PhysicsWorld::CharacterHandle PhysicsWorld::CreateCharacter(const CharacterSettings& settings)
+  {
+    const Pose                      pose  = ReadPose(*settings.actor);
+    const JPH::RefConst<JPH::Shape> shape = MakeCharacterShape(settings, pose.scale);
+
+    const JPH::Ref<JPH::CharacterVirtualSettings> creation = new JPH::CharacterVirtualSettings();
+    creation->mShape         = shape;
+    creation->mMaxSlopeAngle = settings.maxSlopeAngle;
+    // キャラクター自身は世界のボディではないので、同じ形のボディを中に持たせる（レイ・トリガー・他のボディに見える）
+    creation->mInnerBodyShape = shape;
+    creation->mInnerBodyLayer = ToObjectLayer(BodyKind::Kinematic, settings.layer);
+
+    CharacterRecord record;
+    record.settings         = settings;
+    record.shapeScale       = pose.scale;
+    record.lastTranslate    = settings.actor->GetTransform().translate;
+    record.previousPosition = record.currentPosition = pose.position;
+    record.character        = new JPH::CharacterVirtual(creation, ToJolt(pose.position), JPH::Quat::sIdentity(), &impl_->system);
+
+    const JPH::BodyID inner = record.character->GetInnerBodyID();
+    if (inner.IsInvalid()) {
+      Logger::Log("PhysicsWorld: too many bodies (max %u). The character was not created", kMaxBodies);
+      return kInvalidCharacter;
+    }
+    const CharacterHandle handle = inner.GetIndexAndSequenceNumber();
+    if (settings.owner) {
+      impl_->ownerBodies[settings.owner] = handle;
+    }
+    impl_->characters.emplace(handle, std::move(record));
+    return handle;
+  }
+
+  void PhysicsWorld::DestroyCharacter(CharacterHandle character)
+  {
+    const auto found = impl_->characters.find(character);
+    if (found == impl_->characters.end()) {
+      return;
+    }
+    Component* const owners[] = { found->second.settings.owner };
+    impl_->ForgetOwners(owners);
+    // 中に持たせたボディは、CharacterVirtual が消す
+    impl_->characters.erase(found);
+  }
+
+  void PhysicsWorld::SetCharacterEnabled(CharacterHandle character, bool enabled)
+  {
+    const auto found = impl_->characters.find(character);
+    if (found == impl_->characters.end() || found->second.isInWorld == enabled) {
+      return;
+    }
+    CharacterRecord&    record = found->second;
+    JPH::BodyInterface& bodies = impl_->system.GetBodyInterface();
+    record.isInWorld = enabled;
+    if (enabled) {
+      // 出ている間に Actor が動いた分を写してから戻す
+      impl_->SyncCharacter(record, true);
+      bodies.AddBody(record.character->GetInnerBodyID(), JPH::EActivation::Activate);
+      return;
+    }
+    bodies.RemoveBody(record.character->GetInnerBodyID());
+    // 当たっていた組は、次の配布で Exit を出す
+    Component* const owners[] = { record.settings.owner };
+    impl_->MoveToPendingExits(owners);
+  }
+
+  void PhysicsWorld::SetCharacterVelocity(CharacterHandle character, const Vector3& velocity)
+  {
+    if (const auto found = impl_->characters.find(character); found != impl_->characters.end()) {
+      found->second.character->SetLinearVelocity(ToJolt(velocity));
+    }
+  }
+
+  PhysicsWorld::JointHandle PhysicsWorld::CreateJoint(const JointSettings& settings)
+  {
+    const auto body      = impl_->bodies.find(settings.body);
+    const auto connected = impl_->bodies.find(settings.connectedBody);
+    if (body == impl_->bodies.end() || settings.body == settings.connectedBody) {
+      return kInvalidJoint;
+    }
+    // 相手が無ければ、無効な ID を渡す（Jolt が、ワールドに固定されたボディを相手にする）
+    const bool        hasConnected = connected != impl_->bodies.end();
+    const JPH::BodyID ids[2]       = { body->second.id, hasConnected ? connected->second.id : JPH::BodyID() };
+    const JPH::Vec3   anchor       = ToJolt(settings.anchor);
+
+    JPH::BodyInterface& bodyInterface = impl_->system.GetBodyInterface();
+    JointRecord         record;
+    switch (settings.type) {
+    case JointType::Fixed: {
+      // 今の位置と向きのまま固める
+      JPH::FixedConstraintSettings fixed;
+      fixed.mAutoDetectPoint = true;
+      record.constraint      = bodyInterface.CreateConstraint(&fixed, ids[0], ids[1]);
+      break;
+    }
+    case JointType::Point: {
+      JPH::PointConstraintSettings point;
+      point.mPoint1 = point.mPoint2 = anchor;
+      record.constraint             = bodyInterface.CreateConstraint(&point, ids[0], ids[1]);
+      break;
+    }
+    case JointType::Hinge: {
+      JPH::HingeConstraintSettings hinge;
+      hinge.mPoint1 = hinge.mPoint2 = anchor;
+      hinge.mHingeAxis1 = hinge.mHingeAxis2 = ToJolt(settings.axis).NormalizedOr(JPH::Vec3::sAxisY());
+      hinge.mNormalAxis1 = hinge.mNormalAxis2 = hinge.mHingeAxis1.GetNormalizedPerpendicular();
+      // Jolt の決まり：下限は -π〜0、上限は 0〜π で、同じ値（動けない）にはできない
+      hinge.mLimitsMin  = std::clamp(settings.minAngle, -JPH::JPH_PI, 0.0f);
+      hinge.mLimitsMax  = std::clamp(settings.maxAngle, hinge.mLimitsMin < 0.0f ? 0.0f : 0.001f, JPH::JPH_PI);
+      record.constraint = bodyInterface.CreateConstraint(&hinge, ids[0], ids[1]);
+      break;
+    }
+    case JointType::Distance: {
+      JPH::DistanceConstraintSettings distance;
+      distance.mPoint1 = anchor;
+      distance.mPoint2 = ToJolt(settings.connectedAnchor);
+      // 負の値は、今の距離
+      const float current   = (settings.connectedAnchor - settings.anchor).Length();
+      distance.mMinDistance = settings.minDistance < 0.0f ? current : settings.minDistance;
+      distance.mMaxDistance = (std::max)(settings.maxDistance < 0.0f ? current : settings.maxDistance, distance.mMinDistance);
+      record.constraint     = bodyInterface.CreateConstraint(&distance, ids[0], ids[1]);
+      break;
+    }
+    }
+    record.bodies[0] = settings.body;
+    record.bodies[1] = hasConnected ? settings.connectedBody : kInvalidBody;
+    impl_->system.AddConstraint(record.constraint);
+
+    const JointHandle handle = impl_->nextJoint++;
+    impl_->joints.emplace(handle, std::move(record));
+    impl_->RefreshJoints(settings.body);
+    impl_->WakeBody(settings.body);
+    impl_->WakeBody(settings.connectedBody);
+    return handle;
+  }
+
+  void PhysicsWorld::DestroyJoint(JointHandle joint)
+  {
+    if (const auto found = impl_->joints.find(joint); found != impl_->joints.end()) {
+      impl_->RemoveJoint(found->second);
+      impl_->joints.erase(found);
     }
   }
 
@@ -1072,6 +1439,7 @@ namespace Tako {
     JPH::BodyManager::DrawSettings settings;
     settings.mDrawShapeWireframe = true;
     impl_->system.DrawBodies(settings, &impl_->debugRenderer);
+    impl_->system.DrawConstraints(&impl_->debugRenderer);
 #endif
   }
 
@@ -1131,21 +1499,38 @@ namespace Tako {
     return id.IsInvalid() ? Vector3{} : ToEngine(impl_->system.GetBodyInterface().GetAngularVelocity(id));
   }
 
+  Vector3 PhysicsWorld::GetCharacterVelocity(CharacterHandle character) const
+  {
+    const auto found = impl_->characters.find(character);
+    return found == impl_->characters.end() ? Vector3{} : ToEngine(found->second.character->GetLinearVelocity());
+  }
+
+  bool PhysicsWorld::IsCharacterGrounded(CharacterHandle character) const
+  {
+    const auto found = impl_->characters.find(character);
+    return found != impl_->characters.end() && found->second.isInWorld
+        && found->second.character->GetGroundState() == JPH::CharacterBase::EGroundState::OnGround;
+  }
+
   size_t PhysicsWorld::GetBodyCount() const
   {
-    return impl_->bodies.size();
+    return impl_->bodies.size() + impl_->characters.size();
   }
 
   PhysicsWorld::WorldStats PhysicsWorld::GetWorldStats() const
   {
     WorldStats stats;
-    stats.bodyCount         = impl_->bodies.size();
+    stats.bodyCount         = GetBodyCount();
     stats.awakeCount        = impl_->system.GetNumActiveBodies(JPH::EBodyType::RigidBody);
     stats.touchingPairCount = impl_->touching.size();
     const JPH::BodyInterface& bodies = impl_->system.GetBodyInterface();
     for (const auto& [handle, record] : impl_->bodies) {
       stats.enabledCount += record.isInWorld ? 1 : 0;
       ++stats.layerBodyCounts[bodies.GetObjectLayer(record.id) & kLayerBits];
+    }
+    for (const auto& [handle, record] : impl_->characters) {
+      stats.enabledCount += record.isInWorld ? 1 : 0;
+      ++stats.layerBodyCounts[(std::min)(record.settings.layer, static_cast<uint32_t>(kMaxLayers - 1))];
     }
     return stats;
   }

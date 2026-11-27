@@ -649,7 +649,7 @@ void ScoreCounter::Awake() {
 
 - 当たる **両方** の Actor に、Collider が要ります
 - 引数の `other` は、相手の Actor です
-- 形は、Sphere・Box・Capsule から選びます
+- 形は、Sphere・Box・Capsule と、モデルから作る Mesh・Convex Hull（[11.6](#116-モデルの形mesh-と-convex-hull)）から選びます
 - 大きさと Offset には、Actor の Scale が掛かります（親の Scale も含む）。Box は軸ごと、Sphere は 3 軸のうち一番大きい値、Capsule の半径は X と Z の大きい方、高さは Y です
 
 ### 11.1 Trigger と実体
@@ -765,6 +765,87 @@ void Rocket::OnCollisionEnter(Tako::Actor*) {
 - Play 中に、Collider の付いた子の Actor を親に対して動かしても、形は付いていきません（形が作り直されるのは、Collider の値や Active を変えたとき）
 - Collider が 1 つも無い Rigidbody は、何にも当たらずに落ちます
 
+### 11.6 モデルの形（Mesh と Convex Hull）
+
+Collider の `Shape` を Mesh か Convex Hull にすると、モデルの形で当たります。モデルは Collider の `Model` の欄で選びます。空なら、同じ Actor の Mesh コンポーネントのモデルを使います（Mesh コンポーネントの Offset も含む）。
+
+| Shape | 形 | 使う所 |
+|---|---|---|
+| Mesh | モデルの三角形そのまま（へこみや穴もそのまま） | 動かない物と、Kinematic の Rigidbody。地形や建物に使う |
+| Convex Hull | モデルの頂点を包む、へこみの無い形 | Dynamic の Rigidbody に、モデルに近い形を持たせるときに使う |
+
+- Dynamic の Rigidbody の下の Mesh は、形になりません（Console に記録が出ます）。Convex Hull にするか、Sphere・Box・Capsule を組み合わせます
+- 大きさには、Actor の Scale が軸ごとに掛かります
+- Rigidbody は、Mesh の三角形の表（描画で見える側）からだけ当たります。板 1 枚のモデルは、裏からは通り抜けます
+- スキニング付きのモデルは、動かす前の形（バインドポーズ）で当たります。アニメーションには付いていきません
+- モデルが見つからないときは、形の無い Collider になり、Console に記録が出ます
+
+### 11.7 キャラクター（Character Controller）
+
+**Character Controller** コンポーネントは、壁と床に沿って動くキャラクターです。形はカプセルで、Actor が回っても傾きません。Rigidbody と違って、当たっても倒れず、坂と段差を登ります。プレイヤーや敵のように、スクリプトで動かす物に使います。
+
+スクリプトは、速度を決めるだけです。重力は物理が足し、動いた結果は Actor の位置に書かれます。
+
+```cpp
+#include "CharacterControllerComponent.h"
+#include "Input.h"
+
+void Hero::BeginPlay() {
+    controller_ = GetOwner()->GetComponent<Tako::CharacterControllerComponent>();
+}
+
+// 押した瞬間の入力は Tick で読んで覚えておく（FixedTick は、1 フレームに 0 回のことも 2 回以上のこともある）
+void Hero::Tick(float) {
+    wantsJump_ |= Tako::Input::GetInstance()->TriggerKey(DIK_SPACE);
+}
+
+void Hero::FixedTick(float) {
+    const Tako::Input* input = Tako::Input::GetInstance();
+    // y（落ちる速さ）は残して、歩く向きの x と z だけを入れる
+    Tako::Vector3 velocity = controller_->GetVelocity();
+    velocity.x = (input->PushKey(DIK_D) ? speed_ : 0.0f) - (input->PushKey(DIK_A) ? speed_ : 0.0f);
+    velocity.z = (input->PushKey(DIK_W) ? speed_ : 0.0f) - (input->PushKey(DIK_S) ? speed_ : 0.0f);
+    // 立っているときだけ、上向きの速さを入れて跳ぶ
+    if (wantsJump_ && controller_->IsGrounded()) {
+        velocity.y = jumpSpeed_;
+    }
+    wantsJump_ = false;
+    controller_->SetVelocity(velocity);
+}
+```
+
+| Inspector の欄 | 意味 |
+|---|---|
+| `Radius`、`Height` | カプセルの半径と全長（両端の半球を含む）。Actor の Scale が掛かる（Capsule の Collider と同じ決まり） |
+| `Offset` | Actor から見た、カプセルの中心。足元が原点のモデルなら、Y を `Height` の半分にする |
+| `Max Slope Angle` | 登れる坂の角度。これより急な面は、壁として滑る |
+| `Step Height` | 乗り越えられる段差の高さ。下りでは、この高さまで床に吸い付く |
+| `Gravity Scale` | 重力の倍率。0 で重力を受けない |
+| `Layer` | 層（[11.3](#113-層)） |
+
+- 位置は物理が書きます。スクリプトで Actor の位置を書き換えると、その位置へ置き直されます（瞬間移動）。向きと Scale は、スクリプトで自由に変えられます
+- 実体の Collider（壁・床・Rigidbody）と、他の Character Controller では止まります
+- Trigger に入ると、Collider と同じように `OnCollisionEnter` などが届きます。レイキャストにも当たります
+- 同じ Actor と、その子の Actor に付いた Collider には当たりません
+- Rigidbody と一緒には付けません（どちらも、Actor の位置を書きます）
+
+### 11.8 ジョイント（Joint）
+
+**Joint** コンポーネントは、同じ Actor の Rigidbody を、他の Rigidbody かワールドにつなぎます。`Connected Body` に相手の Actor（Rigidbody を持つ物）を選びます。空なら、ワールドにつなぎます。つながるのは Play を始めたときで、そのときの位置と向きが基準になります。
+
+| Type | 動き | 使う欄 |
+|---|---|---|
+| Fixed | 相手との位置と向きを、今のまま固める | なし |
+| Point | 1 点でつなぐ。向きは自由（鎖、振り子） | `Anchor` |
+| Hinge | 1 点でつなぎ、軸の周りだけ回る（扉、車輪） | `Anchor`、`Axis`、`Min Angle`、`Max Angle` |
+| Distance | 2 点の距離を保つ（棒、吊るした物） | `Anchor`、`Connected Anchor`、`Min Distance`、`Max Distance` |
+
+- `Anchor` と `Axis` は、この Actor から見た位置と向きです。`Connected Anchor` は、相手の Actor から見た位置です（相手が無ければ、ワールドの位置）
+- Hinge の角度は、つないだときの向きが 0 です。`Min Angle` は -180〜0、`Max Angle` は 0〜180 で決めます
+- Distance の `Min Distance`・`Max Distance` を負の値にすると、つないだときの距離になります
+- つないだ相手の Actor を消すと、ジョイントも外れます。どちらかの Actor がオフの間は、効きません
+- Play 中に Rigidbody の `Body Type` を変えると、その Rigidbody につないだジョイントは外れます
+
 ## 12. 調整値
 
 ゲーム全体で 1 つだけあればよい値（重力、敵を出す間隔など）は、`Tako::GameSettings` を継承したクラスに置きます。スクリプトごとに違ってよい値（この敵の HP など）は、スクリプトの `TPROPERTY` にします。
@@ -878,6 +959,8 @@ bool ScoreCounter::DrawCustomImGui() {
 | Mesh | `MeshComponent` | Actor の位置にモデルを描く |
 | Collider | `ColliderComponent` | 当たり判定（[11. 当たり判定](#11-当たり判定)） |
 | Rigidbody | `RigidbodyComponent` | 剛体（[11.5](#115-剛体rigidbody)） |
+| Character Controller | `CharacterControllerComponent` | 壁と床に沿って動くキャラクター（[11.7](#117-キャラクターcharacter-controller)） |
+| Joint | `JointComponent` | Rigidbody を、他の Rigidbody かワールドにつなぐ（[11.8](#118-ジョイントjoint)） |
 | Animator | `AnimatorComponent` | 同じ Actor の Mesh のモデルを動かす |
 | Audio Source | `AudioSourceComponent` | 音を鳴らす（位置による聞こえ方の違いは無い） |
 | Camera | `CameraComponent` | Actor の位置と向きから見るカメラ。複数あるときは、Priority が一番大きい物が使われる |
@@ -930,7 +1013,7 @@ Animator・Light・Sky Box には、スクリプトから呼ぶ関数はあり�
 |---|---|
 | `SetActive(active)`、`IsActive()` | 当たり判定を一時的に止める・戻す（攻撃の間だけ当てる、などに使う） |
 | `SetTrigger(isTrigger)`、`IsTrigger()` | 重なりを知らせるだけ（Trigger）か、押し合う実体か |
-| `SetShape(shape)` | 形を選ぶ（`Tako::ColliderComponent::Shape::Sphere`・`Box`・`Capsule`） |
+| `SetShape(shape)` | 形を選ぶ（`Tako::ColliderComponent::Shape::Sphere`・`Box`・`Capsule`・`Mesh`・`ConvexHull`） |
 | `SetRadius(radius)` | Sphere と Capsule の半径を変える |
 | `SetHeight(height)` | Capsule の全長（両端の半球を含む）を変える |
 | `SetSize(size)` | Box の全長を変える |
@@ -950,6 +1033,26 @@ Animator・Light・Sky Box には、スクリプトから呼ぶ関数はあり�
 | `SetLockedAxes(axes)`、`GetLockedAxes()` | 動きを止める軸（`Tako::PhysicsWorld::kLockPositionX` 〜 `kLockRotationZ` のビット） |
 
 - 力・衝撃・速度の関数は、Dynamic にだけ効きます
+
+### Character Controller
+
+| 関数 | 意味 |
+|---|---|
+| `SetVelocity(velocity)` | 動く速度（1 秒あたり）。重力は物理が足すので、歩くときは `GetVelocity()` の y を残して x と z だけを入れる |
+| `GetVelocity()` | `SetVelocity` で入れた速度に、重力が足された値。立っている間は下向きの分が、天井に当たると上向きの分が 0 に戻る |
+| `IsGrounded()` | 立てる面（`Max Slope Angle` より緩い面）の上に居るか |
+
+### Joint
+
+| 関数 | 意味 |
+|---|---|
+| `SetType(type)` | `Tako::JointComponent::JointType::Fixed`・`Point`・`Hinge`・`Distance` |
+| `SetConnectedActor(actor)` | つなぐ相手（Rigidbody を持つ Actor）。`nullptr` なら、ワールドにつなぐ |
+| `SetAnchor(anchor)`、`SetConnectedAnchor(anchor)` | つなぐ点（この Actor から見た位置）と、Distance の相手の側の点 |
+| `SetAxis(axis)`、`SetAngleLimits(minAngle, maxAngle)` | Hinge の軸と、回る範囲（ラジアン） |
+| `SetDistanceLimits(minDistance, maxDistance)` | Distance の範囲。負の値なら、つないだときの距離 |
+
+- Play 中に呼ぶと、今の位置でつなぎ直します
 
 ### Audio Source
 
@@ -1135,6 +1238,7 @@ Blackboard には、`BeginPlay` から値を入れられます。キー `"owner"
 | Collider の大きさが、Inspector の値と合わない | Actor（か親）の Scale が掛かっている | Scale を 1 にするか、Size・Radius を Scale で割った値にする |
 | Rigidbody が床を通り抜ける | 床に Collider が無い。または、床の Collider が Trigger になっている | 床に、`Is Trigger` がオフの Collider を付ける |
 | | 速すぎて、1 ステップの間に通り抜けている | Rigidbody の `Is Continuous` をオンにする |
+| Character Controller が、`SetVelocity` を呼んでも動かない | Actor の位置を、スクリプトが毎フレーム書き換えている（その位置へ置き直される） | 位置は書かずに、`SetVelocity` だけで動かす |
 | Rigidbody の Actor を `Tick` で動かしても、元の動きに戻らない | Dynamic の Transform を書くと、その位置へ置き直される | `AddForce`・`AddImpulse`・`SetLinearVelocity` で動かす。スクリプトで動かしたい物は、Kinematic にする |
 | `GetAxis`・`PushAction` で止まる（assert） | 作っていない名前を渡している | Engine Settings の Input で作った名前と、綴りをそろえる |
 | 消したはずの Actor を触って落ちる | Actor のポインタを、メンバーに持ち続けている | `ActorRef` で持ち、使うたびに `Resolve` する |
@@ -1160,7 +1264,7 @@ Blackboard には、`BeginPlay` から値を入れられます。キー `"owner"
 | `gameplay/scene/SceneManager.h` | シーンの切り替え、シーンをまたぐ値 |
 | `gameplay/scene/transition/TransitionManager.h` | シーンの切り替えの演出 |
 | `gameplay/component/*.h` | エンジンのコンポーネント |
-| `gameplay/physics/PhysicsWorld.h` | レイキャスト、当たり判定の層と当たる組み合わせ |
+| `gameplay/physics/PhysicsWorld.h` | レイキャスト、当たり判定の層と当たる組み合わせ、重力 |
 | `gameplay/ai/BehaviorTree/Runtime/BehaviorTree.h`、`Core/BTBlackboard.h` | ビヘイビアツリーと Blackboard |
 | `core/reflection/Reflection.h` | `TCLASS`・`TPROPERTY` などの印と、指定子の説明 |
 | `core/reflection/TObject.h` | `PostEditChange`・`PostLoad`・`PostSave`・`DrawCustomImGui` |

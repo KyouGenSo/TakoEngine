@@ -98,6 +98,11 @@ namespace Tako {
     /// </summary>
     bool IsPlaying() const { return isPlaying_; }
 
+    /// <summary>
+    /// 物理の世界のボディ（Awake から EndPlay までの間）。Play 中に Body Type を変えると作り直され、つないでいたジョイントは外れる
+    /// </summary>
+    PhysicsWorld::BodyHandle GetBody() const { return body_; }
+
   private: //非公開関数
     /// <summary>
     /// actor と、Rigidbody を持たない子孫の Collider を colliders_ に集め、当たる状態の物の形を shapes に足す
