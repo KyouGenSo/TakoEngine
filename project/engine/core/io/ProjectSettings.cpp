@@ -6,7 +6,7 @@
 #include "PostEffectManager.h"
 #include "RenderPipeline.h"
 #include "Renderer.h"
-#include "CollisionManager.h"
+#include "PhysicsWorld.h"
 #include "Input.h"
 #include "Logger.h"
 
@@ -160,14 +160,18 @@ namespace Tako {
       }
 
       void LoadPhysics(const json& physics) {
-        CollisionManager* collision = CollisionManager::GetInstance();
+        PhysicsWorld* world = PhysicsWorld::GetInstance();
+        if (physics.contains("Gravity")) {
+          const auto gravity = physics["Gravity"].get<std::array<float, 3>>();
+          world->SetGravity({ gravity[0], gravity[1], gravity[2] });
+        }
         std::string& header = GetGeneratedHeaders().collisionLayers;
         header = physics.value("LayerEnumHeader", header);
         if (physics.contains("Layers")) {
-          collision->SetLayerNames(physics["Layers"].get<std::vector<std::string>>());
+          world->SetLayerNames(physics["Layers"].get<std::vector<std::string>>());
         }
-        // 層名が無いプロジェクトはマスクをコードで設定している前提なので触らない（Reload で消さないため）
-        const std::vector<std::string>& names = collision->GetLayerNames();
+        // 層名が無いプロジェクトは、表を触らない（最初の「全部の層どうしが当たる」か、コードで決めた値のまま）
+        const std::vector<std::string>& names = world->GetLayerNames();
         if (names.empty() || !physics.contains("CollisionPairs")) {
           return;
         }
@@ -177,12 +181,18 @@ namespace Tako {
           return it != names.end() ? std::optional<uint32_t>(static_cast<uint32_t>(it - names.begin())) : std::nullopt;
         };
 
-        collision->ClearCollisionMasks();
+        // 表に出る層（名前のある層）どうしの組は、保存した物だけにする。名前の無い層は、全部の層と当たるまま
+        const uint32_t namedCount = static_cast<uint32_t>(names.size());
+        for (uint32_t a = 0; a < namedCount; ++a) {
+          for (uint32_t b = a; b < namedCount; ++b) {
+            world->SetCollisionMask(a, b, false);
+          }
+        }
         for (const json& pair : physics["CollisionPairs"]) {
           const auto a = layerId(pair.at(0));
           const auto b = layerId(pair.at(1));
           if (a && b) {
-            collision->SetCollisionMask(*a, *b, true);
+            world->SetCollisionMask(*a, *b, true);
           }
           else {
             Logger::Log("Project settings: unknown collision layer in %s", pair.dump().c_str());
@@ -251,19 +261,25 @@ namespace Tako {
       }
 
       json SavePhysics() {
-        CollisionManager* collision = CollisionManager::GetInstance();
-        const std::vector<std::string>& names = collision->GetLayerNames();
+        PhysicsWorld* world = PhysicsWorld::GetInstance();
+        const std::vector<std::string>& names = world->GetLayerNames();
 
         // 名前のない型 ID の組み合わせは保存できないので、層名の範囲だけ書き出す
         json pairs = json::array();
         for (uint32_t a = 0; a < names.size(); ++a) {
           for (uint32_t b = a; b < names.size(); ++b) {
-            if (collision->CanCollide(a, b)) {
+            if (world->CanCollide(a, b)) {
               pairs.push_back({ names[a], names[b] });
             }
           }
         }
-        return { { "LayerEnumHeader", GetGeneratedHeaders().collisionLayers }, { "Layers", names }, { "CollisionPairs", pairs } };
+        const Vector3 gravity = world->GetGravity();
+        return {
+          { "Gravity", { gravity.x, gravity.y, gravity.z } },
+          { "LayerEnumHeader", GetGeneratedHeaders().collisionLayers },
+          { "Layers", names },
+          { "CollisionPairs", pairs },
+        };
       }
     }
 

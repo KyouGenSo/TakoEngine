@@ -8,7 +8,7 @@
 #include "FrameTimer.h"
 #include "ShadowRenderer.h"
 #include "Audio.h"
-#include "CollisionManager.h"
+#include "PhysicsWorld.h"
 #include "LineRenderer.h"
 #include "PostEffectManager.h"
 #include "RenderPipeline.h"
@@ -429,9 +429,9 @@ namespace Tako {
       isMuted_      = audio.value("Mute", isMuted_);
       ApplyMasterVolume();
 
-      CollisionManager* collision = CollisionManager::GetInstance();
+      PhysicsWorld* physicsWorld = PhysicsWorld::GetInstance();
       const json& physics = root.contains("Physics") ? root["Physics"] : empty;
-      collision->SetDebugDrawEnabled(physics.value("ColliderDebugDraw", collision->IsDebugDrawEnabled()));
+      physicsWorld->SetDebugDrawEnabled(physics.value("ColliderDebugDraw", physicsWorld->IsDebugDrawEnabled()));
 
       ImGuiIO& io = ImGui::GetIO();
       const json& editor = root.contains("Editor") ? root["Editor"] : empty;
@@ -585,7 +585,7 @@ namespace Tako {
       { "Mute",         isMuted_ },
     };
     root["Physics"] = {
-      { "ColliderDebugDraw", CollisionManager::GetInstance()->IsDebugDrawEnabled() },
+      { "ColliderDebugDraw", PhysicsWorld::GetInstance()->IsDebugDrawEnabled() },
     };
     root["Editor"] = {
       { "UIScale",            ImGui::GetIO().FontGlobalScale },
@@ -772,18 +772,24 @@ namespace Tako {
   }
 
   void EngineSettingsWindow::DrawPhysics() {
-    CollisionManager* collision = CollisionManager::GetInstance();
-    bool debugDraw = collision->IsDebugDrawEnabled();
+    PhysicsWorld* physics = PhysicsWorld::GetInstance();
+    bool debugDraw = physics->IsDebugDrawEnabled();
     if (UI::Checkbox("Collider Debug Draw", &debugDraw)) {
-      collision->SetDebugDrawEnabled(debugDraw);
+      physics->SetDebugDrawEnabled(debugDraw);
     }
+
+    Vector3 gravity = physics->GetGravity();
+    if (UI::DragFloat3("Gravity", &gravity.x, 0.1f)) {
+      physics->SetGravity(gravity);
+    }
+    ImGui::SetItemTooltip("Acceleration applied to dynamic bodies (units / s^2)");
 
     DrawCollisionLayers();
   }
 
   void EngineSettingsWindow::DrawCollisionLayers() {
-    CollisionManager*         collision = CollisionManager::GetInstance();
-    std::vector<std::string>& names     = collision->GetLayerNames();
+    PhysicsWorld*             physics = PhysicsWorld::GetInstance();
+    std::vector<std::string>& names   = physics->GetLayerNames();
 
     // 名前の追加・削除・並べ替えに合わせて動かすので、ずれていたら（初回・Reload 後）今の名前を基準にする
     if (!layerOrigins_ || layerOrigins_->size() != names.size()) {
@@ -833,18 +839,23 @@ namespace Tako {
 
     // ループ中に names を書き換えないよう、操作はまとめて後で適用する
     if (removeIndex) {
-      collision->RemoveLayer(static_cast<uint32_t>(*removeIndex));
+      physics->RemoveLayer(static_cast<uint32_t>(*removeIndex));
       layerOrigins_->erase(layerOrigins_->begin() + *removeIndex);
       isLayerIdChanged_ = true;
     }
     if (swapIndex) {
-      collision->SwapLayers(static_cast<uint32_t>(*swapIndex), static_cast<uint32_t>(*swapIndex + 1));
+      physics->SwapLayers(static_cast<uint32_t>(*swapIndex), static_cast<uint32_t>(*swapIndex + 1));
       std::swap((*layerOrigins_)[*swapIndex], (*layerOrigins_)[*swapIndex + 1]);
       isLayerIdChanged_ = true;
     }
 
-    ImGui::BeginDisabled(names.size() >= CollisionManager::kMaxLayers);
+    ImGui::BeginDisabled(names.size() >= PhysicsWorld::kMaxLayers);
     if (ImGui::Button(ICON_FA_PLUS "  Add Layer")) {
+      // 新しい層は、Unity と同じく、最初は全部の層と当たる
+      const uint32_t added = static_cast<uint32_t>(names.size());
+      for (uint32_t layer = 0; layer < PhysicsWorld::kMaxLayers; ++layer) {
+        physics->SetCollisionMask(added, layer, true);
+      }
       names.push_back(std::format("Layer{}", names.size()));
       layerOrigins_->emplace_back();
     }
@@ -880,9 +891,9 @@ namespace Tako {
           ImGui::PushID(row * count + column);
           const uint32_t typeA      = static_cast<uint32_t>(row);
           const uint32_t typeB      = static_cast<uint32_t>(column);
-          bool           canCollide = collision->CanCollide(typeA, typeB);
+          bool           canCollide = physics->CanCollide(typeA, typeB);
           if (ImGui::Checkbox("##Pair", &canCollide)) {
-            collision->SetCollisionMask(typeA, typeB, canCollide);
+            physics->SetCollisionMask(typeA, typeB, canCollide);
           }
           ImGui::SetItemTooltip("%s x %s", names[row].c_str(), names[column].c_str());
           ImGui::PopID();
@@ -895,7 +906,7 @@ namespace Tako {
   void EngineSettingsWindow::SaveGeneratedHeaders() {
     const ProjectSettings::GeneratedHeaders& headers = ProjectSettings::GetGeneratedHeaders();
 
-    const std::vector<std::string>& layers = CollisionManager::GetInstance()->GetLayerNames();
+    const std::vector<std::string>& layers = PhysicsWorld::GetInstance()->GetLayerNames();
     CodeGenerator::RenameMap        layerRenames;
     if (layerOrigins_) {
       for (size_t i = 0; i < layers.size() && i < layerOrigins_->size(); ++i) {

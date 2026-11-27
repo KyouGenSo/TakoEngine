@@ -14,7 +14,7 @@
 namespace Tako::Project {
 
   // プロジェクトの保存形式の番号。保存の形を変えたら 1 つ上げ、ProjectMigration.cpp の表に、古い形から直す手順を足す
-  inline constexpr int kFormatVersion = 1;
+  inline constexpr int kFormatVersion = 2;
 
   /// <summary>
   /// コマンドラインを読んでプロジェクトを開き、作業フォルダーを GameProject に移す。

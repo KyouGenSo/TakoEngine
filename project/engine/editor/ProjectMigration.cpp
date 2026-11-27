@@ -3,11 +3,16 @@
 #include "ProjectMigration.h"
 #include "Logger.h"
 #include "Project.h"
+#include "SceneFile.h"
 #include "StringUtility.h"
+
+#include <json.hpp>
 
 #include <ctime>
 #include <exception>
 #include <format>
+#include <fstream>
+#include <stdexcept>
 #include <vector>
 
 namespace Tako::ProjectMigration {
@@ -22,9 +27,65 @@ namespace Tako::ProjectMigration {
       void (*apply)(const fs::path& gameProject);  ///< 失敗は例外で知らせる
     };
 
+    /// <summary>
+    /// json の中の全部の ColliderComponent（シーン・プレハブ・置いた物の差分のどこにあっても）に、isTrigger が無ければ true を入れる
+    /// </summary>
+    /// <returns>1 つでも入れたら true</returns>
+    bool MarkCollidersAsTriggers(nlohmann::json& json)
+    {
+      bool isChanged = false;
+      if (json.is_object()) {
+        const auto type = json.find("type");
+        if (type != json.end() && type->is_string() && type->get_ref<const std::string&>() == "ColliderComponent") {
+          nlohmann::json& properties = json["properties"];
+          if (!properties.contains("isTrigger")) {
+            properties["isTrigger"] = true;
+            isChanged               = true;
+          }
+        }
+      }
+      if (json.is_structured()) {
+        for (nlohmann::json& child : json) {
+          isChanged |= MarkCollidersAsTriggers(child);
+        }
+      }
+      return isChanged;
+    }
+
+    /// <summary>
+    /// 形式 1 までのコライダーは、どれも重なりを知らせるだけだった。新しい既定（押し合う実体）にならないよう、保存済みの物に Trigger の印を付ける
+    /// </summary>
+    void MigrateCollidersToTriggers(const fs::path& gameProject)
+    {
+      for (const char* folder : { "Scenes", "Prefabs" }) {
+        const fs::path directory = gameProject / "resources" / "Json" / folder;
+        if (!fs::is_directory(directory)) {
+          continue;
+        }
+        for (const fs::directory_entry& entry : fs::recursive_directory_iterator(directory)) {
+          if (!entry.is_regular_file() || entry.path().extension() != ".json") {
+            continue;
+          }
+          std::ifstream  input(entry.path());
+          nlohmann::json json = nlohmann::json::parse(input, nullptr, false);
+          input.close();
+          // 読めないファイルは触らない（開いたときに、読む側が知らせる）
+          if (json.is_discarded() || !MarkCollidersAsTriggers(json)) {
+            continue;
+          }
+          std::ofstream output(entry.path());
+          output << SceneFile::ToText(json);
+          if (!output) {
+            throw std::runtime_error("Could not write " + StringUtility::ConvertString(entry.path().wstring()));
+          }
+        }
+      }
+    }
+
     // 保存の形を変えたら、Project::kFormatVersion を 1 つ上げて、古い形から直す手順をここへ足す（番号の小さい順）。
-    // 例: { 2, "Scenes: rename \"tags\" to \"labels\"", RenameTagsToLabels },
-    const std::vector<Step> kSteps = {};
+    const std::vector<Step> kSteps = {
+      { 2, "Scenes / Prefabs: mark the existing colliders as triggers", MigrateCollidersToTriggers },
+    };
 
   } // namespace
 

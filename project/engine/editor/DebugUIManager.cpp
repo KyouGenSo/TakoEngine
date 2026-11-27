@@ -6,7 +6,7 @@
 #include "TextureManager.h"
 #include "Renderer.h"
 #include "Input.h"
-#include "CollisionManager.h"
+#include "PhysicsWorld.h"
 #include "PostEffectManager.h"
 #include "RenderPipeline.h"
 #include "WinApp.h"
@@ -582,10 +582,10 @@ namespace Tako {
         }
         ImGui::Separator();
 
-        CollisionManager* collision = CollisionManager::GetInstance();
-        bool colliderVisible = collision->IsDebugDrawEnabled();
+        PhysicsWorld* physics = PhysicsWorld::GetInstance();
+        bool colliderVisible = physics->IsDebugDrawEnabled();
         if (ImGui::MenuItem("Collider Visibility", nullptr, &colliderVisible)) {
-          collision->SetDebugDrawEnabled(colliderVisible);
+          physics->SetDebugDrawEnabled(colliderVisible);
         }
 
         ShadowRenderer* shadow = ShadowRenderer::GetInstance();
@@ -1006,7 +1006,7 @@ namespace Tako {
       ImGui::Separator();
       UI::Value("Textures", "%zu", TextureManager::GetInstance()->GetLoadedTextureCount());
       UI::Value("Models", "%zu", ModelManager::GetInstance()->GetLoadedModelCount());
-      UI::Value("Colliders", "%zu", CollisionManager::GetInstance()->GetColliderCount());
+      UI::Value("Physics Bodies", "%zu", PhysicsWorld::GetInstance()->GetBodyCount());
 
       GPUParticle* particle = GPUParticle::GetInstance();
       UI::Value("Emitters", "%u", particle->GetEmitterCount());
@@ -1193,127 +1193,64 @@ namespace Tako {
   void DebugUIManager::DrawCollisionDebug() {
     ImGui::Begin(WindowTitle::kCollisionDebug, &WindowFlag(Window::CollisionDebug));
 
-    CollisionManager* collisionManager = CollisionManager::GetInstance();
+    PhysicsWorld* physics = PhysicsWorld::GetInstance();
 
-    bool debugDraw = collisionManager->IsDebugDrawEnabled();
+    bool debugDraw = physics->IsDebugDrawEnabled();
     if (UI::Checkbox("Debug Draw", &debugDraw)) {
-      collisionManager->SetDebugDrawEnabled(debugDraw);
+      physics->SetDebugDrawEnabled(debugDraw);
     }
 
-    // 統計情報
     if (ImGui::CollapsingHeader("Statistics", ImGuiTreeNodeFlags_DefaultOpen)) {
-      size_t totalColliders = collisionManager->GetColliderCount();
+      const PhysicsWorld::WorldStats stats = physics->GetWorldStats();
+      UI::Value("Bodies", "%zu", stats.bodyCount);
+      UI::Value("In World", "%zu", stats.enabledCount);
+      UI::Value("Awake", "%u", stats.awakeCount);
+      UI::Value("Touching Pairs", "%zu", stats.touchingPairCount);
 
-      // アクティブなコライダー数をカウント
-      size_t activeCount = 0;
-      size_t inactiveCount = 0;
-      std::unordered_map<uint32_t, int> typeCountMap;
-      const auto& colliders = collisionManager->GetColliders();
-
-      for (const auto* collider : colliders) {
-        if (collider) {
-          if (collider->IsActive()) {
-            activeCount++;
-            uint32_t typeID = collider->GetTypeID();
-            typeCountMap[typeID]++;
-          }
-          else {
-            inactiveCount++;
-          }
-        }
-      }
-
-      UI::Value("Total Colliders", "%zu", totalColliders);
-
-      // アクティブ/非アクティブの比率表示
-      if (totalColliders > 0) {
-        float activeRatio = (float)activeCount / (float)totalColliders;
-        ImGui::ProgressBar(activeRatio, ImVec2(-1, 0),
-          ("Active: " + std::to_string(activeCount) + " / Inactive: " + std::to_string(inactiveCount)).c_str());
-      }
-
-      // Type ID 別の分布（汎用的な表示）
-      if (!typeCountMap.empty()) {
-        ImGui::Spacing();
-        ImGui::Text("Type ID Distribution:");
-
-        // Type ID でソートして表示
-        std::map<uint32_t, int> sortedTypeMap(typeCountMap.begin(), typeCountMap.end());
-
-        for (const auto& [typeID, count] : sortedTypeMap) {
-          ImGui::Text("  %02u %s: %d collider%s",
-            typeID, collisionManager->GetLayerLabel(typeID).c_str(), count, count > 1 ? "s" : "");
+      // 層ごとのボディの数
+      for (uint32_t layer = 0; layer < PhysicsWorld::kMaxLayers; ++layer) {
+        if (stats.layerBodyCounts[layer] > 0) {
+          ImGui::Text("  %02u %s: %u", layer, physics->GetLayerLabel(layer).c_str(), stats.layerBodyCounts[layer]);
         }
       }
     }
 
-    // コリジョンマスク情報
     if (ImGui::CollapsingHeader("Collision Masks")) {
-      // マスクは対称なので typeA <= typeB の組だけ集める
+      // 名前のある層の、当たる組（マスクは対称なので layerA <= layerB の組だけ）
+      const uint32_t namedCount = static_cast<uint32_t>(physics->GetLayerNames().size());
       std::vector<std::pair<uint32_t, uint32_t>> collisionPairs;
-      for (uint32_t typeA = 0; typeA < CollisionManager::kMaxLayers; ++typeA) {
-        for (uint32_t typeB = typeA; typeB < CollisionManager::kMaxLayers; ++typeB) {
-          if (collisionManager->CanCollide(typeA, typeB)) {
-            collisionPairs.push_back({ typeA, typeB });
+      for (uint32_t layerA = 0; layerA < namedCount; ++layerA) {
+        for (uint32_t layerB = layerA; layerB < namedCount; ++layerB) {
+          if (physics->CanCollide(layerA, layerB)) {
+            collisionPairs.push_back({ layerA, layerB });
           }
         }
       }
 
+      ImGui::TextDisabled("Layers without a name collide with every layer");
       if (collisionPairs.empty()) {
-        ImGui::TextDisabled("No collision masks configured");
+        ImGui::TextDisabled("No named layers collide with each other");
       }
       else {
-        ImGui::Text("Active collision pairs:");
-        ImGui::Spacing();
-
-        // コリジョンペアを表示
-        for (const auto& [typeA, typeB] : collisionPairs) {
-          const std::string labelA = collisionManager->GetLayerLabel(typeA);
-          if (typeA == typeB) {
+        for (const auto& [layerA, layerB] : collisionPairs) {
+          const std::string labelA = physics->GetLayerLabel(layerA);
+          if (layerA == layerB) {
             ImGui::BulletText("%s (self-collision)", labelA.c_str());
           }
           else {
-            ImGui::BulletText("%s <-> %s", labelA.c_str(), collisionManager->GetLayerLabel(typeB).c_str());
+            ImGui::BulletText("%s <-> %s", labelA.c_str(), physics->GetLayerLabel(layerB).c_str());
           }
         }
-
-        ImGui::Spacing();
-        ImGui::Text("Total mask pairs: %zu", collisionPairs.size());
       }
     }
 
-    // パフォーマンス情報
-    if (ImGui::CollapsingHeader("Performance")) {
-      // 層ごとに分けて当たる層の組だけ判定するので、総当たり数ではなく実際に判定したペア数を出す
-      const size_t        testedPairs = collisionManager->GetTestedPairCount();
-      const EditorColors& colors      = GetEditorColors();
-      UI::Value("Tested Pairs", "%zu", testedPairs);
-      UI::Value("Check Time", "%.3f ms", collisionManager->GetLastCheckMs());
-
-      const auto& masks = collisionManager->GetCollisionMasks();
-      if (std::ranges::all_of(masks, [](uint32_t mask) { return mask == 0; })) {
-        ImGui::TextColored(colors.warning, "No masks configured");
-        ImGui::TextDisabled("No pairs are tested");
-      }
-
-      // 判定したペア数の目安
-      const ImVec4* loadColor = &colors.error;
-      const char*   loadText  = "Heavy";
-      if (testedPairs < 100) {
-        loadColor = &colors.success;
-        loadText  = "Excellent";
-      }
-      else if (testedPairs < 500) {
-        loadColor = &colors.success;
-        loadText  = "Good";
-      }
-      else if (testedPairs < 2000) {
-        loadColor = &colors.warning;
-        loadText  = "Moderate";
-      }
-      UI::Label("Load");
-      ImGui::AlignTextToFramePadding();
-      ImGui::TextColored(*loadColor, "%s", loadText);
+    // 直前のフレームの値。平均は Performance > CPU Update の Physics の行に出る
+    if (ImGui::CollapsingHeader("Last Frame")) {
+      const PhysicsWorld::FrameStats& frame = physics->GetFrameStats();
+      UI::Value("Steps", "%u", frame.stepCount);
+      UI::Value("Step Time", "%.3f ms", frame.stepMs);
+      UI::Value("Callbacks", "%u", frame.callbackCount);
+      UI::Value("Callback Time", "%.3f ms", frame.callbackMs);
     }
 
     ImGui::End();
