@@ -1,7 +1,6 @@
 #include "BaseScene.h"
 #include "Actor.h"
 #include "Camera.h"
-#include "CollisionManager.h"
 #include "DX12Basic.h"
 #include "EmitterManager.h"
 #include "ForceFieldManager.h"
@@ -9,6 +8,7 @@
 #include "GPUParticle.h"
 #include "Light.h"
 #include "Logger.h"
+#include "PhysicsWorld.h"
 #include "PostEffectManager.h"
 #include "Prefab.h"
 #include "Renderer.h"
@@ -147,15 +147,47 @@ namespace Tako {
       return (!isPaused || component->TickWhilePaused()) && component->GetOwner()->IsActiveInHierarchy();
     };
 
-    // 型ごとの時間（計測中だけ）。型が入り混じって並ぶので区間では囲めず、1 個ずつ測って型ごとに足す
     using Clock = std::chrono::steady_clock;
+    FrameProfiler& profiler    = Renderer::GetInstance()->GetDX12Basic()->GetProfiler();
+    const bool     isProfiling = profiler.IsEnabled();
+
+    // 物理は Tick の前に、固定の刻みで進める（Unity の FixedUpdate と同じ順）。ポーズ中は進めず、時間も溜めない
+    if (!isPaused) {
+      PhysicsWorld*   physics        = PhysicsWorld::GetInstance();
+      const uint32_t  physicsScope   = profiler.BeginCpuScope("Physics");
+      Clock::duration fixedTickTime{};
+      uint32_t        fixedTickCount = 0;
+      physics->BeginFrame();
+      physicsAccumulator_ += deltaTime;
+      while (physicsAccumulator_ >= PhysicsWorld::kFixedDeltaTime) {
+        physicsAccumulator_ -= PhysicsWorld::kFixedDeltaTime;
+        const Clock::time_point fixedTickStart = isProfiling ? Clock::now() : Clock::time_point{};
+        for (Component* component : components) {
+          if (ticks(component)) {
+            component->FixedTick(PhysicsWorld::kFixedDeltaTime);
+            ++fixedTickCount;
+          }
+        }
+        if (isProfiling) {
+          fixedTickTime += Clock::now() - fixedTickStart;
+        }
+        physics->Step();
+      }
+      physics->EndFrame(physicsAccumulator_ / PhysicsWorld::kFixedDeltaTime);
+      // FixedTick・ステップ・通知は交互に走るので区間では囲めず、合計を足す
+      const PhysicsWorld::FrameStats& stats = physics->GetFrameStats();
+      profiler.AddCpuSample("FixedTick", std::chrono::duration<float, std::milli>(fixedTickTime).count(), fixedTickCount);
+      profiler.AddCpuSample("Step", stats.stepMs, stats.stepCount);
+      profiler.AddCpuSample("Callbacks", stats.callbackMs, stats.callbackCount);
+      profiler.EndScope(physicsScope, stats.stepCount);
+    }
+
+    // 型ごとの時間（計測中だけ）。型が入り混じって並ぶので区間では囲めず、1 個ずつ測って型ごとに足す
     struct TypeTime {
       const TypeInfo* type;
       Clock::duration time{};
       uint32_t        count = 0;
     };
-    FrameProfiler&    profiler    = Renderer::GetInstance()->GetDX12Basic()->GetProfiler();
-    const bool        isProfiling = profiler.IsEnabled();
     const uint32_t    scope       = profiler.BeginCpuScope("Components");
     Clock::time_point lapStart    = isProfiling ? Clock::now() : Clock::time_point{};
     // スクリプトの DLL を差し替えると TypeInfo のポインタが変わるので、フレームをまたいで持たない
@@ -198,9 +230,9 @@ namespace Tako {
     }
     profiler.EndScope(scope, tickedCount);
 
-    // 当たり判定は、ポーズに入ったフレームから止める
+    // 一時エミッターの寿命は、ポーズに入ったフレームから止める
     if (!isPaused_) {
-      Update();
+      emitterManager_->Update();
     }
   }
 
@@ -279,6 +311,9 @@ namespace Tako {
     for (const std::unique_ptr<Actor>& actor : actors_) {
       actor->Draw();
     }
+    if (const Camera* camera = *Renderer::GetInstance()->GetCamera()) {
+      PhysicsWorld::GetInstance()->DrawDebug(camera->GetTranslate());
+    }
   }
 
   void BaseScene::Shutdown()
@@ -300,12 +335,6 @@ namespace Tako {
       actors.push_back(actor.get());
     }
     BeginPlayActors(actors);
-  }
-
-  void BaseScene::Update()
-  {
-    CollisionManager::GetInstance()->CheckAllCollisions();
-    emitterManager_->Update();
   }
 
   Actor* BaseScene::Spawn(std::string_view typeOrPrefab)

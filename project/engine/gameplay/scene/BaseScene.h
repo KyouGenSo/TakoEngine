@@ -38,8 +38,8 @@ namespace Tako {
     void Start(const std::string& sceneName, const nlohmann::json* snapshot, bool playing);
 
     /// <summary>
-    /// Play 中だけ呼ぶ。全 Actor の Tick → 全 Actor の LateTick → 当たり判定と、一時エミッターの寿命。
-    /// ポーズ中は TickWhilePaused のコンポーネントだけ動かし、当たり判定は呼ばない
+    /// Play 中だけ呼ぶ。物理（溜まった時間の分だけ、全 Actor の FixedTick → 1 ステップ → 当たりの通知）→ 全 Actor の Tick → 全 Actor の LateTick → 一時エミッターの寿命。
+    /// ポーズ中は TickWhilePaused のコンポーネントだけ動かし、物理は進めない
     /// </summary>
     void UpdateFrame(float deltaTime);
 
@@ -176,11 +176,6 @@ namespace Tako {
 
   private: //非公開関数
     /// <summary>
-    /// CollisionManager の当たり判定と、一時エミッターの寿命
-    /// </summary>
-    void Update();
-
-    /// <summary>
     /// 全部の値が入った JSON 1 件（Actor::Save の形。prefab / node / root があれば、プレハブとのつながりも張る）から Actor を作る
     /// </summary>
     std::unique_ptr<Actor> CreateActor(const nlohmann::json& json);
@@ -203,11 +198,12 @@ namespace Tako {
     std::vector<std::unique_ptr<Actor>> actors_;
     std::vector<std::unique_ptr<Actor>> pendingSpawns_;
     std::vector<Actor*>                 pendingDestroys_;
-    std::vector<std::unique_ptr<Actor>> retired_;                    ///< Load で外した Actor。次の UpdateAlways で消す
-    std::vector<ActorId>                issuedIds_;                  ///< このフレームに出した ID。プレハブの組は、Actor を作る前に ID をまとめて出す
-    uint64_t                            revision_          = 0;
-    bool                                isPlaying_         = false;
-    bool                                isPaused_          = false;
+    std::vector<std::unique_ptr<Actor>> retired_;                     ///< Load で外した Actor。次の UpdateAlways で消す
+    std::vector<ActorId>                issuedIds_;                   ///< このフレームに出した ID。プレハブの組は、Actor を作る前に ID をまとめて出す
+    uint64_t                            revision_           = 0;
+    float                               physicsAccumulator_ = 0.0f;   ///< 物理のステップにまだ使っていない時間（秒）
+    bool                                isPlaying_          = false;
+    bool                                isPaused_           = false;
   };
 
 } // namespace Tako

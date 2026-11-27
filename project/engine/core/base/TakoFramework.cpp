@@ -19,11 +19,13 @@
 #include "DecalManager.h"
 #include "Input.h"
 #include "ProjectSettings.h"
+#include "PhysicsWorld.h"
 #include "StringUtility.h"
 #include "TypeRegistry.h"
 #include "ColorFunc.h"
 #include "ReflectionSelfTest.h"
 #include "SceneSelfTest.h"
+#include "PhysicsSelfTest.h"
 
 #include <chrono>
 #include <cwchar>
@@ -137,6 +139,8 @@ namespace Tako {
 
     GPUParticle::GetInstance()->Initialize(dx12_.get(), defaultCamera_.get());
 
+    PhysicsWorld::GetInstance()->Initialize();
+
 #pragma endregion
 
     // 設定の適用先（Audio・Shadow 等）が揃ってから読み込む
@@ -155,6 +159,7 @@ namespace Tako {
 
 #ifdef _DEBUG
     RunSceneSelfTest();
+    RunPhysicsSelfTest();
 #endif
 
 #ifdef TAKO_EDITOR
@@ -224,6 +229,9 @@ namespace Tako {
     imguiManager_->Shutdown();
     imguiManager_.reset();
 #endif
+
+    // ボディを持つ物（シーン・エディタ）を全部消した後で、世界を壊してスレッドを止める
+    PhysicsWorld::GetInstance()->Finalize();
 
     // ゲームの型の物を持つ所（シーン・エディタ）を全部消した後で、DLL を外す
     GameModule::Unload();

@@ -41,12 +41,18 @@ namespace Tako {
     virtual void BeginPlay() {}
 
     /// <summary>
+    /// Play 中、物理を 1 ステップ（PhysicsWorld::kFixedDeltaTime 秒）進める直前に呼ばれる。1 フレームに 0 回のことも、2 回以上のこともある。
+    /// 剛体に力を加える処理を書く（フレームレートが変わっても結果が同じになる）。そのフレームの Tick より前で、ポーズ中は呼ばれない
+    /// </summary>
+    virtual void FixedTick([[maybe_unused]] float fixedDeltaTime) {}
+
+    /// <summary>
     /// Play 中だけ毎フレーム呼ばれる。Tick の中で足されたコンポーネントは、次のフレームから呼ばれる
     /// </summary>
     virtual void Tick([[maybe_unused]] float deltaTime) {}
 
     /// <summary>
-    /// 全 Actor の Tick の後、シーンの Update（当たり判定）の前に呼ばれる。他の Actor が動いた後の位置を使う処理を書く
+    /// 全 Actor の Tick の後に呼ばれる。他の Actor が動いた後の位置を使う処理を書く
     /// </summary>
     virtual void LateTick([[maybe_unused]] float deltaTime) {}
 
@@ -77,12 +83,18 @@ namespace Tako {
     virtual void OnSiblingRemoved([[maybe_unused]] Component* removed) {}
 
     /// <summary>
-    /// 同じ Actor の ColliderComponent が当たり始めた。other は相手の Actor（Actor でないコライダーなら nullptr）
+    /// 同じ Actor のコライダーが、other のコライダーと当たり始めた（Trigger なら重なり始めた）。物理のステップの後に呼ばれる
     /// </summary>
     virtual void OnCollisionEnter([[maybe_unused]] Actor* other) {}
 
+    /// <summary>
+    /// 当たっている間、毎フレーム 1 回呼ばれる（当たり始めたフレームは除く。物理のステップが無いフレームにも呼ばれる）
+    /// </summary>
     virtual void OnCollisionStay([[maybe_unused]] Actor* other) {}
 
+    /// <summary>
+    /// 離れた。どちらかのコライダーが止められた（SetActive(false)・Actor がオフ）ときも呼ばれ、消されたときは呼ばれない
+    /// </summary>
     virtual void OnCollisionExit([[maybe_unused]] Actor* other) {}
 
     /// <summary>

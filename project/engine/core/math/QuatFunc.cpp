@@ -123,6 +123,15 @@ namespace Tako {
     };
   }
 
+  Quaternion Quat::FromEuler(const Vector3& euler)
+  {
+    const Quaternion x = MakeRotateAxisAngle({ 1.0f, 0.0f, 0.0f }, euler.x);
+    const Quaternion y = MakeRotateAxisAngle({ 0.0f, 1.0f, 0.0f }, euler.y);
+    const Quaternion z = MakeRotateAxisAngle({ 0.0f, 0.0f, 1.0f }, euler.z);
+    // 積は右から効くので、先に回す X を右に置く
+    return Multiply(z, Multiply(y, x));
+  }
+
   Vector3 Quat::ToVec3(const Quaternion& q)
   {
     float sinY = 2 * (q.w * q.y - q.z * q.x);

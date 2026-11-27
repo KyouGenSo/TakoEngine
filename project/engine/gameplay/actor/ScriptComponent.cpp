@@ -28,6 +28,11 @@ namespace Tako {
     if (instance_) { instance_->BeginPlay(); }
   }
 
+  void ScriptComponent::FixedTick(float fixedDeltaTime)
+  {
+    if (instance_) { instance_->FixedTick(fixedDeltaTime); }
+  }
+
   void ScriptComponent::Tick(float deltaTime)
   {
     if (instance_) { instance_->Tick(deltaTime); }

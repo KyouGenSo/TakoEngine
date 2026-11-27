@@ -14,6 +14,7 @@
 #include "Model.h"
 #include "Object3d.h"
 #include "Prefab.h"
+#include "QuatFunc.h"
 #include "SceneFile.h"
 #include "TypeRegistry.h"
 
@@ -50,12 +51,13 @@ namespace Tako {
     };
 
     /// <summary>
-    /// Tick と LateTick が呼ばれた回数を数える
+    /// FixedTick・Tick・LateTick が呼ばれた回数を数える
     /// </summary>
     class TickCounter final : public Component {
     public: //メンバー関数
       explicit TickCounter(bool ticksWhilePaused) : ticksWhilePaused_(ticksWhilePaused) {}
 
+      void FixedTick([[maybe_unused]] float fixedDeltaTime) override { ++fixedTicks; }
       void Tick([[maybe_unused]] float deltaTime) override { ++ticks; }
       void LateTick([[maybe_unused]] float deltaTime) override { ++lateTicks; }
       bool TickWhilePaused() const override { return ticksWhilePaused_; }
@@ -66,6 +68,7 @@ namespace Tako {
       }
 
     public: //メンバー変数
+      int  fixedTicks    = 0;
       int  ticks         = 0;
       int  lateTicks     = 0;
       int  activeChanges = 0;
@@ -115,6 +118,11 @@ namespace Tako {
     Transform       decomposed;
     Mat4x4::Decompose(matrix, decomposed.translate, decomposed.rotate, decomposed.scale);
     assert(IsNear(matrix, Mat4x4::MakeAffine(decomposed.scale, decomposed.rotate, decomposed.translate)));
+
+    // オイラー角 → クォータニオンは、オイラー角 → 行列と同じ回転になり、オイラー角へ戻しても同じ（物理へ渡す回転と、Actor の回転の約束が合っている）
+    const Matrix4x4 rotation = Mat4x4::MakeRotateXYZ(source.rotate);
+    assert(IsNear(Quat::ToMatrix(Quat::FromEuler(source.rotate)), rotation));
+    assert(IsNear(Mat4x4::MakeRotateXYZ(Mat4x4::ExtractEulerAngles(Quat::ToMatrix(Quat::FromEuler(source.rotate)))), rotation));
 
     // 視錐台と球：原点から +Z を見る視点（上下左右 45 度、奥行き 1〜100）。範囲に掛かる球だけが残る
     const Frustum frustum = Frustum::FromViewProjection(Mat4x4::MakePerspective(std::numbers::pi_v<float> * 0.5f, 1.0f, 1.0f, 100.0f));
@@ -309,6 +317,25 @@ namespace Tako {
       playing.UpdateFrame(0.01f);
     }
     assert(once == 2 && repeated == 3);
+
+    // 固定の刻み：溜まった時間が 1/60 秒を越えるたびに FixedTick。足りないフレームは 0 回で、余りは次へ持ち越す。ポーズ中は呼ばず、時間も溜めない
+    {
+      BaseScene fixedScene;
+      fixedScene.BeginPlay();
+      auto* fixedCounter = static_cast<TickCounter*>(fixedScene.Spawn("Actor")->AddComponent(std::make_unique<TickCounter>(true), "Counter"));
+      fixedScene.UpdateAlways();
+      fixedScene.UpdateFrame(0.034f);
+      assert(fixedCounter->fixedTicks == 2 && fixedCounter->ticks == 1);
+      fixedScene.UpdateFrame(0.01f);
+      assert(fixedCounter->fixedTicks == 2);
+      fixedScene.UpdateFrame(0.01f);
+      assert(fixedCounter->fixedTicks == 3);
+      fixedScene.SetPaused(true);
+      fixedScene.UpdateFrame(0.1f);
+      fixedScene.SetPaused(false);
+      fixedScene.UpdateFrame(0.001f);
+      assert(fixedCounter->fixedTicks == 3 && fixedCounter->ticks == 5);
+    }
 
     // イベント：受け取ると決めた名前だけが届き、コンポーネントを外すと届かなくなる
     int heard = 0;

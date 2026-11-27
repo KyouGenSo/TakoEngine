@@ -67,6 +67,11 @@ namespace Tako {
     TAKO_API Quaternion MakeRotateAxisAngle(const Vector3& axis, float angle);
 
     /// <summary>
+    /// オイラー角（ラジアン）から作る。回す順は Mat4x4::MakeRotateXYZ と同じ（X → Y → Z）
+    /// </summary>
+    TAKO_API Quaternion FromEuler(const Vector3& euler);
+
+    /// <summary>
     /// クォータニオンをベクトル（虚部）に変換
     /// </summary>
     TAKO_API Vector3 ToVec3(const Quaternion& q);
