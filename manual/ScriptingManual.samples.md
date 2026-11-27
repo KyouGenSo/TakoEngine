@@ -722,6 +722,8 @@ void ActorSamples::UseComponents() {
     Tako::Component* explode = owner->FindComponent("Explode");
     // 実行中に足す・外す。外れるのは次のフレームの頭
     Tako::ColliderComponent* collider = owner->AddComponent<Tako::ColliderComponent>();
+    // 重なりを知らせるだけの Collider にする（呼ばなければ、押し合う実体になる）
+    collider->SetTrigger(true);
     collider->SetRadius(0.5f);
     if (explode) {
         owner->RemoveComponent(explode);
@@ -854,6 +856,7 @@ private: //非公開関数
     void UseBehaviorTree();
     void UseCamera();
     void UseScript();
+    void UseRaycast();
 };
 ```
 
@@ -875,6 +878,7 @@ private: //非公開関数
 #include "MeshComponent.h"
 #include "Object3d.h"
 #include "ParticleSystemComponent.h"
+#include "PhysicsWorld.h"
 #include "SceneManager.h"
 #include "ScriptComponent.h"
 #include "UILayout.h"
@@ -896,6 +900,7 @@ void ComponentSamples::BeginPlay() {
     UseBehaviorTree();
     UseCamera();
     UseScript();
+    UseRaycast();
 }
 
 void ComponentSamples::UseMesh() {
@@ -922,6 +927,14 @@ void ComponentSamples::UseCollider() {
     collider->SetOffset({ 0.0f, 1.0f, 0.0f });
     // 当たり判定を一時的に止める（攻撃の間だけ当てる、などに使う）
     collider->SetActive(false);
+}
+
+void ComponentSamples::UseRaycast() {
+    // 足元から下へ、10 の長さまで調べる
+    const Tako::Vector3 origin = GetOwner()->GetWorldPosition();
+    if (const auto hit = Tako::PhysicsWorld::GetInstance()->Raycast(origin, { 0.0f, -1.0f, 0.0f }, 10.0f)) {
+        Tako::Logger::Log("hit %s at distance %.2f\n", hit->actor->GetName().c_str(), hit->distance);
+    }
 }
 
 void ComponentSamples::UseAudio() {
@@ -1132,5 +1145,127 @@ void ToneMapSample::EndPlay() {
         Tako::RenderPipeline::GetInstance()->SetToneMapping(saved_.mode);
         Tako::RenderPipeline::GetInstance()->SetExposure(saved_.exposure);
     }
+}
+```
+
+## Script/Rocket.h
+
+```cpp
+// Script/Rocket.h
+#pragma once
+#include "Script.h"
+
+namespace Tako {
+    class RigidbodyComponent;
+}
+
+/// <summary>
+/// Rigidbody を、上向きの力で押し続ける。何かに当たると、手前へ弾かれる
+/// </summary>
+TCLASS(Requires = "RigidbodyComponent")
+class Rocket : public Tako::Script {
+    GENERATED_BODY()
+
+public: //メンバー関数
+    void BeginPlay() override;
+
+    void FixedTick(float fixedDeltaTime) override;
+
+    void OnCollisionEnter(Tako::Actor* other) override;
+
+private: //メンバー変数
+    Tako::RigidbodyComponent* body_ = nullptr;
+};
+```
+
+## Script/Rocket.cpp
+
+```cpp
+// Script/Rocket.cpp
+#include "Rocket.h"
+#include "Actor.h"
+#include "RigidbodyComponent.h"
+
+void Rocket::BeginPlay() {
+    body_ = GetOwner()->GetComponent<Tako::RigidbodyComponent>();
+}
+
+// 押し続ける力は、FixedTick で毎回掛ける（フレームレートが変わっても、同じ強さになる）
+void Rocket::FixedTick(float) {
+    body_->AddForce({ 0.0f, 30.0f, 0.0f });
+}
+
+// 1 回だけの衝撃は、AddImpulse で掛ける（ジャンプ、弾が当たった、など）
+void Rocket::OnCollisionEnter(Tako::Actor*) {
+    body_->AddImpulse({ 0.0f, 0.0f, -5.0f });
+}
+```
+
+## Script/Hero.h
+
+```cpp
+// Script/Hero.h
+#pragma once
+#include "Script.h"
+
+namespace Tako {
+    class CharacterControllerComponent;
+}
+
+/// <summary>
+/// Character Controller の付いた Actor を、W / A / S / D で歩かせて、Space で跳ばせる
+/// </summary>
+TCLASS(Requires = "CharacterControllerComponent")
+class Hero : public Tako::Script {
+    GENERATED_BODY()
+
+public: //メンバー関数
+    void BeginPlay() override;
+
+    void Tick(float deltaTime) override;
+
+    void FixedTick(float fixedDeltaTime) override;
+
+private: //メンバー変数
+    TPROPERTY(Edit, Tooltip = "歩く速さ（1 秒あたり）", ClampMin = 0, Speed = 0.1)
+    float speed_ = 5.0f;
+    TPROPERTY(Edit, Tooltip = "跳ぶときの、上向きの速さ", ClampMin = 0, Speed = 0.1)
+    float jumpSpeed_ = 6.0f;
+
+    Tako::CharacterControllerComponent* controller_ = nullptr;
+    bool                                wantsJump_  = false;
+};
+```
+
+## Script/Hero.cpp
+
+```cpp
+// Script/Hero.cpp
+#include "Hero.h"
+#include "Actor.h"
+#include "CharacterControllerComponent.h"
+#include "Input.h"
+
+void Hero::BeginPlay() {
+    controller_ = GetOwner()->GetComponent<Tako::CharacterControllerComponent>();
+}
+
+// 押した瞬間の入力は Tick で読んで覚えておく（FixedTick は、1 フレームに 0 回のことも 2 回以上のこともある）
+void Hero::Tick(float) {
+    wantsJump_ |= Tako::Input::GetInstance()->TriggerKey(DIK_SPACE);
+}
+
+void Hero::FixedTick(float) {
+    const Tako::Input* input = Tako::Input::GetInstance();
+    // y（落ちる速さ）は残して、歩く向きの x と z だけを入れる
+    Tako::Vector3 velocity = controller_->GetVelocity();
+    velocity.x = (input->PushKey(DIK_D) ? speed_ : 0.0f) - (input->PushKey(DIK_A) ? speed_ : 0.0f);
+    velocity.z = (input->PushKey(DIK_W) ? speed_ : 0.0f) - (input->PushKey(DIK_S) ? speed_ : 0.0f);
+    // 立っているときだけ、上向きの速さを入れて跳ぶ
+    if (wantsJump_ && controller_->IsGrounded()) {
+        velocity.y = jumpSpeed_;
+    }
+    wantsJump_ = false;
+    controller_->SetVelocity(velocity);
 }
 ```

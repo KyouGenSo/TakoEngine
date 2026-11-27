@@ -326,6 +326,13 @@ namespace Tako {
     /// <param name="cameraPosition">遠い形を粗く描くための、視点の位置</param>
     void DrawDebug(const Vector3& cameraPosition);
 
+    /// <summary>
+    /// shapes を、actor の位置に置いたボディの形として線で描く（世界に入れていない形も描ける。エディタのある構成だけ）
+    /// </summary>
+    /// <param name="cameraPosition">遠い形を粗く描くための、視点の位置</param>
+    /// <param name="isUpright">actor の向きを使わない（キャラクターのカプセル）</param>
+    void DrawShapes(const Actor& actor, std::span<const Shape> shapes, const Vector3& cameraPosition, bool isUpright = false);
+
     //============================================================
     //Setter
     //============================================================
@@ -392,6 +399,11 @@ namespace Tako {
     const FrameStats& GetFrameStats() const { return frameStats_; }
 
     /// <summary>
+    /// 最後の DrawDebug が描いた線の数（LineRenderer::kLineMaxCount を越えた分は、描かれない）
+    /// </summary>
+    uint32_t GetDebugLineCount() const { return debugLineCount_; }
+
+    /// <summary>
     /// 作ってあるボディとキャラクターの数（世界から出してある物も含む）
     /// </summary>
     size_t GetBodyCount() const;
@@ -418,6 +430,7 @@ namespace Tako {
 
     FrameStats frameStats_;
     bool       debugDrawEnabled_ = false;
+    uint32_t   debugLineCount_   = 0;
 
     static std::unique_ptr<PhysicsWorld> instance_;  ///< シングルトン
   };

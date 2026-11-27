@@ -33,7 +33,8 @@ Windows 向けの DirectX 12 のゲームエンジン。エディタ（TakoEdito
 **C++ スクリプト**
 - ホットリロード：エディタからコンパイルし（Ctrl+B か、エディタに戻ったときの Auto Compile）、新しい `Game.dll` に差し替える。プロパティの値と選択は残る
 - `TCLASS` / `TPROPERTY` のリフレクション：書くだけで、インスペクターに出て、シーンのファイルに保存される
-- 組み込みのコンポーネント：Mesh・Camera・Light・Collider（AABB / OBB / Sphere）・AudioSource・Animator・BehaviorTree・ParticleSystem・PostProcess・SkyBox・UILayout
+- 組み込みのコンポーネント：Mesh・Camera・Light・Collider・Rigidbody・CharacterController・Joint・AudioSource・Animator・BehaviorTree・ParticleSystem・PostProcess・SkyBox・UILayout
+- 物理（Jolt Physics）：剛体・Trigger・層の当たり表・レイキャスト・キャラクターコントローラ・ジョイント。固定の 60 Hz で進める（`FixedTick`）
 
 **描画**
 - DirectX 12 とレンダーグラフ。描画の流れ（Render Pipeline）はエディタで変えられる
@@ -109,6 +110,7 @@ Windows 向けの DirectX 12 のゲームエンジン。エディタ（TakoEdito
 | [Assimp](https://github.com/assimp/assimp) | モデルの読み込み | BSD-3-Clause |
 | [DirectXTex](https://github.com/microsoft/DirectXTex) | テクスチャの読み込み | MIT |
 | [miniaudio](https://github.com/mackron/miniaudio) | 音 | Public Domain / MIT-0 |
+| [Jolt Physics](https://github.com/jrouwe/JoltPhysics) | 物理 | MIT |
 | [nlohmann/json](https://github.com/nlohmann/json) | JSON | MIT |
 | [IconFontCppHeaders](https://github.com/juliettef/IconFontCppHeaders) | エディタのアイコン | zlib |
 

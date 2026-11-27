@@ -53,6 +53,11 @@ namespace Tako {
     /// </summary>
     /// <returns>値が変わったか</returns>
     static bool DrawLayerCombo(uint32_t& layer);
+
+    /// <summary>
+    /// 形を線で描く（Sphere・Box・Capsule だけ）
+    /// </summary>
+    void DrawSelectionGizmo(const Vector3& cameraPosition) override;
 #endif
 
     //=====================================
@@ -152,11 +157,11 @@ namespace Tako {
 
     std::shared_ptr<const PhysicsWorld::MeshData> meshData_;  ///< Mesh と ConvexHull の頂点。値を変えたら（PostEditChange）作り直す
 
-    RigidbodyComponent*      rigidbody_     = nullptr;                       ///< 形を預けている Rigidbody。無ければ、body_ を自分で持つ
+    RigidbodyComponent*      rigidbody_     = nullptr;                     ///< 形を預けている Rigidbody。無ければ、body_ を自分で持つ
     PhysicsWorld::BodyHandle body_          = PhysicsWorld::kInvalidBody;
-    bool                     isPlaying_     = false;                         ///< Awake から EndPlay までの間
+    bool                     isPlaying_     = false;                       ///< Awake から EndPlay までの間
     bool                     isActive_      = true;
-    bool                     isBodyTrigger_ = false;                         ///< body_ を作ったときの isTrigger_（変わっていたら、ボディを作り直す）
+    bool                     isBodyTrigger_ = false;                       ///< body_ を作ったときの isTrigger_（変わっていたら、ボディを作り直す）
   };
 
 } // namespace Tako

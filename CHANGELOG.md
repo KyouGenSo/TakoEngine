@@ -13,7 +13,8 @@
 - Collider の大きさと Offset に、Actor の Scale が掛かる（Unity と同じ決まり。Box は軸ごと、Sphere は 3 軸の最大、Capsule の半径は X と Z の大きい方・高さは Y）。Play 中に Scale を変えても付いていく
 - スクリプトに `FixedTick(float fixedDeltaTime)` を追加。物理が 1 ステップ（1/60 秒）進む直前に呼ばれる（1 フレームに 0 回のことも、2 回以上のこともある）
 - `PhysicsWorld::GetInstance()->Raycast(始点, 向き, 長さ, 層のマスク)` を追加。最初に当たった Actor・位置・法線・距離が返る。Trigger にも当たり、5 番目の引数を `false` にすると素通りする
-- Debug > Collider Visibility（Engine Settings > Physics の Collider Debug Draw）で、Play 中のコライダーの形が線で出る（今までは、オンにしても何も出なかった）
+- Debug > Collider Visibility（Engine Settings > Physics の Collider Debug Draw）で、Play 中のコライダーの形とジョイントが線で出る（今までは、オンにしても何も出なかった）
+- エディタで Actor を選ぶと、Collider（Sphere・Box・Capsule）と Character Controller の形が、Debug Viewport に緑の線で出る（Edit 中にも出る）
 - 層の当たり表（Engine Settings > Physics の Collision Matrix）の既定を、Unity と同じにした。決めていない組は当たり、足した層は最初から全部の層と当たる（今までは、チェックを入れた組だけが当たった）
 - Engine Settings > Physics に、重力の Gravity を追加
 

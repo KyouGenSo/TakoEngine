@@ -71,18 +71,21 @@ namespace Tako {
 
     // コンポーネントの型ごとのアイコン。上にある物ほど、Hierarchy の行のアイコンに優先して使う（Actor の見た目を決める物が上）
     constexpr ComponentIcon kComponentIcons[] = {
-      { "CameraComponent",         ICON_FA_VIDEO },
-      { "LightComponent",          ICON_FA_LIGHTBULB },
-      { "SkyBoxComponent",         ICON_FA_CLOUD },
-      { "PostProcessComponent",    ICON_FA_WAND_MAGIC_SPARKLES },
-      { "MeshComponent",           ICON_FA_CUBE },
-      { "ParticleSystemComponent", ICON_FA_BURST },
-      { "UILayoutComponent",       ICON_FA_OBJECT_GROUP },
-      { "AudioSourceComponent",    ICON_FA_VOLUME_HIGH },
-      { "AnimatorComponent",       ICON_FA_PERSON_RUNNING },
-      { "BehaviorTreeComponent",   ICON_FA_DIAGRAM_PROJECT },
-      { "ColliderComponent",       ICON_FA_VECTOR_SQUARE },
-      { "ScriptComponent",         ICON_FA_CODE },
+      { "CameraComponent",              ICON_FA_VIDEO },
+      { "LightComponent",               ICON_FA_LIGHTBULB },
+      { "SkyBoxComponent",              ICON_FA_CLOUD },
+      { "PostProcessComponent",         ICON_FA_WAND_MAGIC_SPARKLES },
+      { "MeshComponent",                ICON_FA_CUBE },
+      { "ParticleSystemComponent",      ICON_FA_BURST },
+      { "UILayoutComponent",            ICON_FA_OBJECT_GROUP },
+      { "AudioSourceComponent",         ICON_FA_VOLUME_HIGH },
+      { "AnimatorComponent",            ICON_FA_PERSON_RUNNING },
+      { "BehaviorTreeComponent",        ICON_FA_DIAGRAM_PROJECT },
+      { "ColliderComponent",            ICON_FA_VECTOR_SQUARE },
+      { "RigidbodyComponent",           ICON_FA_WEIGHT_HANGING },
+      { "CharacterControllerComponent", ICON_FA_PERSON_WALKING },
+      { "JointComponent",               ICON_FA_LINK },
+      { "ScriptComponent",              ICON_FA_CODE },
     };
 
     constexpr const char* kPrefabIcon = ICON_FA_CUBES;  // Assets のプレハブと同じ
@@ -654,7 +657,7 @@ namespace Tako {
     return true;
   }
 
-  void SceneEditor::DrawSelectionBoxes() const
+  void SceneEditor::DrawSelectionBoxes(const Vector3& cameraPosition) const
   {
     BaseScene* scene = GetScene();
     if (!scene) {
@@ -667,6 +670,9 @@ namespace Tako {
       }
       std::optional<AABB> bounds;
       const auto visit = [&](const auto& self, const Actor& actor) -> void {
+        for (const std::unique_ptr<Component>& component : actor.GetComponents()) {
+          component->DrawSelectionGizmo(cameraPosition);
+        }
         ForEachDrawnMesh(actor, [&](MeshComponent& mesh) {
           const std::optional<AABB> box = mesh.GetObject3d()->GetWorldBounds();
           if (!box) {

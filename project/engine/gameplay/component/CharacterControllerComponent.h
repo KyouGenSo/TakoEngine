@@ -32,6 +32,11 @@ namespace Tako {
     /// Layer 欄
     /// </summary>
     bool DrawCustomImGui() override;
+
+    /// <summary>
+    /// カプセルを線で描く
+    /// </summary>
+    void DrawSelectionGizmo(const Vector3& cameraPosition) override;
 #endif
 
     //=====================================

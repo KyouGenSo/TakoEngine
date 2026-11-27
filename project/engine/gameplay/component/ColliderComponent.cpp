@@ -65,6 +65,16 @@ namespace Tako {
     return DrawLayerCombo(layer_);
   }
 
+  void ColliderComponent::DrawSelectionGizmo(const Vector3& cameraPosition)
+  {
+    // ponytail: Mesh と Convex Hull は、形を作るのが重いので描かない（Play 中は Collider Visibility で出る）。要るなら、作った形を覚えておく
+    if (shape_ == Shape::Mesh || shape_ == Shape::ConvexHull) {
+      return;
+    }
+    const PhysicsWorld::Shape shape = MakeShape();
+    PhysicsWorld::GetInstance()->DrawShapes(*GetOwner(), std::span<const PhysicsWorld::Shape>(&shape, 1), cameraPosition);
+  }
+
   bool ColliderComponent::DrawLayerCombo(uint32_t& layer)
   {
     const std::vector<std::string>& names = PhysicsWorld::GetInstance()->GetLayerNames();

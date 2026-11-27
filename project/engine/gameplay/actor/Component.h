@@ -12,6 +12,7 @@
 namespace Tako {
 
   class Actor;
+  struct Vector3;
 
   /// <summary>
   /// Component::SetTimer が返す番号。0 は無効
@@ -96,6 +97,14 @@ namespace Tako {
     /// 離れた。どちらかのコライダーが止められた（SetActive(false)・Actor がオフ）ときも呼ばれ、消されたときは呼ばれない
     /// </summary>
     virtual void OnCollisionExit([[maybe_unused]] Actor* other) {}
+
+#ifdef TAKO_EDITOR
+    /// <summary>
+    /// エディタで Actor（か、その親）を選んでいる間、デバッグビューを描くたびに呼ばれる。当たりの形のように、目に見えない物を LineRenderer の線で描く
+    /// </summary>
+    /// <param name="cameraPosition">描いているビューの視点の位置</param>
+    virtual void DrawSelectionGizmo([[maybe_unused]] const Vector3& cameraPosition) {}
+#endif
 
     /// <summary>
     /// seconds 秒後に callback を呼ぶ。loops なら seconds 秒ごとに呼び続ける。

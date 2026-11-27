@@ -651,6 +651,7 @@ void ScoreCounter::Awake() {
 - 引数の `other` は、相手の Actor です
 - 形は、Sphere・Box・Capsule と、モデルから作る Mesh・Convex Hull（[11.6](#116-モデルの形mesh-と-convex-hull)）から選びます
 - 大きさと Offset には、Actor の Scale が掛かります（親の Scale も含む）。Box は軸ごと、Sphere は 3 軸のうち一番大きい値、Capsule の半径は X と Z の大きい方、高さは Y です
+- 形を目で確かめるには、エディタで Actor を選びます。Sphere・Box・Capsule と Character Controller の形が、Debug Viewport に緑の線で出ます。Play 中は、Debug > Collider Visibility をオンにすると、全部の形とジョイントが線で出ます
 
 ### 11.1 Trigger と実体
 
@@ -824,7 +825,7 @@ void Hero::FixedTick(float) {
 | `Layer` | 層（[11.3](#113-層)） |
 
 - 位置は物理が書きます。スクリプトで Actor の位置を書き換えると、その位置へ置き直されます（瞬間移動）。向きと Scale は、スクリプトで自由に変えられます
-- 実体の Collider（壁・床・Rigidbody）と、他の Character Controller では止まります
+- 動かない実体の Collider（壁・床）、Kinematic の Rigidbody、他の Character Controller では止まります。Dynamic の Rigidbody は、押して動かします
 - Trigger に入ると、Collider と同じように `OnCollisionEnter` などが届きます。レイキャストにも当たります
 - 同じ Actor と、その子の Actor に付いた Collider には当たりません
 - Rigidbody と一緒には付けません（どちらも、Actor の位置を書きます）

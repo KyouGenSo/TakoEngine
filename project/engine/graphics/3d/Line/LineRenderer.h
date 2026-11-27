@@ -32,14 +32,13 @@ namespace Tako {
     explicit LineRenderer(Token) {}
 
   public: //定数
-    static constexpr uint32_t kGridMaxCellCount = 1000;  ///< DrawGrid の 1 辺あたり最大マス数（2 枚でもプレビュー線バッファに収まる）
-
-  private: //定数
+    static constexpr uint32_t kGridMaxCellCount = 1000;    ///< DrawGrid の 1 辺あたり最大マス数（2 枚でもプレビュー線バッファに収まる）
     static constexpr uint32_t kLineMaxCount     = 100000;  ///< 線の最大数
     static constexpr uint32_t kVertexCountLine  = 2;       ///< 線の頂点数
 
+  private: //定数
 #ifdef TAKO_EDITOR
-    static constexpr uint32_t kPreviewLineMaxCount = 8192;  ///< プレビュー用線分の最大数
+    static constexpr uint32_t kPreviewLineMaxCount = 65536;  ///< プレビュー用線分の最大数（グリッド 2 枚と、選んだ Actor の当たりの形。近くの球 1 個が約 6000 本）
 #endif // TAKO_EDITOR
 
   public: //構造体

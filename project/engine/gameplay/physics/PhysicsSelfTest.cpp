@@ -651,7 +651,7 @@ namespace Tako {
 
     /// <summary>
     /// Character Controller：床に立つ・段差を登る・壁で止まる・トリガーに知らせが届く・レイが当たる・他のキャラクターと重ならない・
-    /// 自分の Actor の Collider には当たらない・位置を書き換えると置き直る・Actor をオフにすると Exit が届く
+    /// 自分の Actor の Collider には当たらない・位置を書き換えると置き直る・Actor をオフにすると Exit が届く・Dynamic を押す
     /// </summary>
     void CheckCharacterController()
     {
@@ -684,6 +684,8 @@ namespace Tako {
       addController(blocker.actor);
       const ColliderProbe zone    = SpawnTrigger(scene, { 3.3f, 1.9f, 0.0f });
       const ColliderProbe farZone = SpawnTrigger(scene, { 50.0f, 2.0f, 0.0f });
+      const ColliderProbe ball    = SpawnSolid(scene, { 52.0f, 0.5f, 0.0f }, ColliderComponent::Shape::Sphere);
+      AddRigidbody(ball.actor);
       scene.UpdateAlways();
 
       // 落ちて、床に立つ
@@ -728,6 +730,11 @@ namespace Tako {
       scene.UpdateAlways();
       RunFrames(scene, 2);
       assert(farZone.recorder->log.back() != 'X' && farZone.recorder->last == walker.actor);
+
+      // 歩いて当たった Dynamic の球は、押されて動く
+      controller->SetVelocity({ 2.0f, 0.0f, 0.0f });
+      RunFrames(scene, 120);
+      assert(ball.actor->GetTransform().translate.x > 52.5f && walker.actor->GetTransform().translate.x > 51.5f);
 
       scene.Shutdown();
       assert(physics->GetBodyCount() == 0);

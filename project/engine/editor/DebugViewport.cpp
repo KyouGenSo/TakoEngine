@@ -105,7 +105,7 @@ namespace Tako {
         lineRenderer->DrawLine(corners[i], corners[i + 4], kGameCameraColor);
       }
     }
-    sceneEditor_->DrawSelectionBoxes();
+    sceneEditor_->DrawSelectionBoxes(camera_->GetTranslate());
     lineRenderer->EndPreviewLines();
     lineRenderer->DrawPreviewLines(viewProjection);
 

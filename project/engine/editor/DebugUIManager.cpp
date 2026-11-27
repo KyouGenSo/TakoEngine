@@ -1206,6 +1206,7 @@ namespace Tako {
       UI::Value("In World", "%zu", stats.enabledCount);
       UI::Value("Awake", "%u", stats.awakeCount);
       UI::Value("Touching Pairs", "%zu", stats.touchingPairCount);
+      UI::Value("Debug Lines", "%u / %u", physics->GetDebugLineCount(), LineRenderer::kLineMaxCount);
 
       // 層ごとのボディの数
       for (uint32_t layer = 0; layer < PhysicsWorld::kMaxLayers; ++layer) {

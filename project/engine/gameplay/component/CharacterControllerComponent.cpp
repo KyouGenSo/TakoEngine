@@ -2,6 +2,8 @@
 #include "Actor.h"
 #include "ColliderComponent.h"
 
+#include <span>
+
 namespace Tako {
 
   CharacterControllerComponent::CharacterControllerComponent() = default;
@@ -41,6 +43,16 @@ namespace Tako {
   bool CharacterControllerComponent::DrawCustomImGui()
   {
     return ColliderComponent::DrawLayerCombo(layer_);
+  }
+
+  void CharacterControllerComponent::DrawSelectionGizmo(const Vector3& cameraPosition)
+  {
+    PhysicsWorld::Shape capsule;
+    capsule.type     = PhysicsWorld::ShapeType::Capsule;
+    capsule.radius   = radius_;
+    capsule.height   = height_;
+    capsule.position = offset_;
+    PhysicsWorld::GetInstance()->DrawShapes(*GetOwner(), std::span<const PhysicsWorld::Shape>(&capsule, 1), cameraPosition, true);
   }
 #endif
 

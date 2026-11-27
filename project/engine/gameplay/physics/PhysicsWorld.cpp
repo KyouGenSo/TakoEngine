@@ -1431,15 +1431,33 @@ namespace Tako {
   void PhysicsWorld::DrawDebug([[maybe_unused]] const Vector3& cameraPosition)
   {
 #ifdef JPH_DEBUG_RENDERER
+    debugLineCount_ = 0;
     if (!debugDrawEnabled_) {
       return;
     }
+    const LineRenderer* lines       = LineRenderer::GetInstance();
+    const uint32_t      firstVertex = lines->GetBatchMark();
     // 視点から遠い形は、Jolt が粗い形で描く（線の数を抑える）
     impl_->debugRenderer.SetCameraPos(ToJolt(cameraPosition));
     JPH::BodyManager::DrawSettings settings;
     settings.mDrawShapeWireframe = true;
     impl_->system.DrawBodies(settings, &impl_->debugRenderer);
     impl_->system.DrawConstraints(&impl_->debugRenderer);
+    debugLineCount_ = (lines->GetBatchMark() - firstVertex) / LineRenderer::kVertexCountLine;
+#endif
+  }
+
+  void PhysicsWorld::DrawShapes([[maybe_unused]] const Actor& actor, [[maybe_unused]] std::span<const Shape> shapes,
+                                [[maybe_unused]] const Vector3& cameraPosition, [[maybe_unused]] bool isUpright)
+  {
+#ifdef JPH_DEBUG_RENDERER
+    const Pose                      pose     = ReadPose(actor);
+    const JPH::RefConst<JPH::Shape> shape    = MakeShape(shapes, pose.scale);
+    const JPH::Quat                 rotation = isUpright ? JPH::Quat::sIdentity() : ToJolt(pose.rotation);
+    impl_->debugRenderer.SetCameraPos(ToJolt(cameraPosition));
+    // Jolt の形は重心が原点なので、ボディの原点から重心までを足す
+    const JPH::RMat44 transform = JPH::RMat44::sRotationTranslation(rotation, ToJolt(pose.position)).PreTranslated(shape->GetCenterOfMass());
+    shape->Draw(&impl_->debugRenderer, transform, JPH::Vec3::sReplicate(1.0f), JPH::Color::sGreen, false, true);
 #endif
   }
 
