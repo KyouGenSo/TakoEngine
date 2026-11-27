@@ -184,16 +184,17 @@ include の書き方です。
 |---|---|
 | `void Awake()` | `BeginPlay` の前に 1 回。同時にシーンへ入る全部の Actor の `Awake` が済んでから、`BeginPlay` が始まる。他のスクリプトの `BeginPlay` から使われる物は、ここで用意する |
 | `void BeginPlay()` | Play が始まったとき、または Play 中にシーンへ足されたときに 1 回 |
+| `void FixedTick(float fixedDeltaTime)` | 物理が 1 ステップ（1/60 秒）進む直前。Rigidbody に力を掛ける処理など、フレームレートに関係なく決まった間隔で行う処理を書く。1 フレームに 0 回のことも、2 回以上のこともある |
 | `void Tick(float deltaTime)` | Play 中の毎フレーム |
 | `void LateTick(float deltaTime)` | 全部の `Tick` の後。他の Actor が動いた後の位置を使う処理（追いかけるカメラなど）を書く |
 | `void EndPlay()` | Play が終わるとき、または Actor が消される・コンポーネントが外されるとき（`BeginPlay` が呼ばれた物だけ） |
 | `void Draw()` | 毎フレーム。Edit 中と一時停止中も呼ばれる。描画物の登録を書く |
-| `void OnCollisionEnter(Tako::Actor* other)` | 同じ Actor の Collider が、他のコライダーに当たり始めた |
-| `void OnCollisionStay(Tako::Actor* other)` | 当たっている間、毎フレーム |
-| `void OnCollisionExit(Tako::Actor* other)` | 離れた |
+| `void OnCollisionEnter(Tako::Actor* other)` | 同じ Actor の Collider が、他の Collider に当たり始めた（Trigger なら、重なり始めた） |
+| `void OnCollisionStay(Tako::Actor* other)` | 当たっている間、毎フレーム（当たり始めたフレームを除く） |
+| `void OnCollisionExit(Tako::Actor* other)` | 離れた。どちらかの Collider が止められたときも呼ばれる（[11.2](#112-知らせが届く時)） |
 | `void OnActiveChanged(bool active)` | Actor の Active（自分か親のどれか）が切り替わった次のフレームの頭。Edit 中も呼ばれる |
 | `void OnSiblingRemoved(Tako::Component* removed)` | 同じ Actor の他のコンポーネントが、これから外される。Edit 中も呼ばれる |
-| `bool TickWhilePaused() const` | `true` を返すと、シーンのポーズ中も `Tick` と `LateTick` が呼ばれる |
+| `bool TickWhilePaused() const` | `true` を返すと、シーンのポーズ中も `Tick` と `LateTick` が呼ばれる（`FixedTick` は呼ばれない） |
 | `void PostEditChange()` | Inspector で値が変わった後。他の値に合わせた補正を書く |
 | `void PostLoad(const nlohmann::json& raw)` | 保存した値を読んだ後。古いキーの読み替えなどに使う |
 | `void PostSave(nlohmann::json& out)` | 値を保存した後。`TPROPERTY` で表せない中身を足す |
@@ -210,16 +211,19 @@ Play 中の 1 フレームは、次の順に進みます。
   3. 予約されていた Spawn        … シーンに入れる → 入った全部の Awake → 入った全部の BeginPlay
   4. Active が変わった Actor に OnActiveChanged
 更新（Play 中だけ）
-  5. コンポーネントごとに、タイマー → Tick
-  6. 全部の LateTick
-  7. 当たり判定                  … OnCollisionEnter / Stay / Exit（ポーズ中は行わない）
+  5. 物理（ポーズ中は行わない）  … 溜まった時間が 1/60 秒を越えるたびに「全部の FixedTick → 物理の 1 ステップ → OnCollisionEnter / Exit」。
+                                   その後に OnCollisionStay
+  6. コンポーネントごとに、タイマー → Tick
+  7. 全部の LateTick
 描画（Edit 中も）
   8. 全部の Draw
 ```
 
 - `Destroy`・`RemoveComponent`・`Spawn` は、呼んだその場では行われません。次のフレームの頭にまとめて行われます。そのため、`Tick` や当たりの途中でも安全に呼べます
-- Actor がオフ（自分か親の Active がオフ）の間は、`Tick`・`LateTick`・`Draw` が呼ばれず、タイマーも進みません
+- Actor がオフ（自分か親の Active がオフ）の間は、`FixedTick`・`Tick`・`LateTick`・`Draw` が呼ばれず、タイマーも進みません
 - ポーズ中は、`TickWhilePaused` が `true` のスクリプトだけ `Tick` と `LateTick` が呼ばれます
+- 物理は `Tick` より前に進みます。`Tick` で Actor を動かした結果の `OnCollisionEnter` は、次のフレームに届きます
+- 物理のステップは 1/60 秒ごとです。描画が 60 FPS より速いと、ステップが 0 回のフレームがあります。そのフレームには、`FixedTick` と新しい `OnCollisionEnter` がありません
 
 ### 4.2 呼ぶ順を決める
 
@@ -565,7 +569,7 @@ void ScoreCounter::Awake() {
 
 ### 8.4 ポーズ
 
-`GetOwner()->GetScene()->SetPaused(true)` で、シーンの `Tick`・`LateTick`・当たり判定・タイマーが止まります。描画は続きます。
+`GetOwner()->GetScene()->SetPaused(true)` で、シーンの `FixedTick`・`Tick`・`LateTick`・物理（当たりの知らせを含む）・タイマーが止まります。描画は続きます。
 ポーズ中も動かしたいスクリプト（メニューなど）は、`TickWhilePaused` で `true` を返します。
 
 ```cpp
@@ -641,17 +645,125 @@ void ScoreCounter::Awake() {
 
 ## 11. 当たり判定
 
-当たり判定は、Actor に **Collider** コンポーネントを付けて行います。当たると、同じ Actor の全部のコンポーネントとスクリプトの `OnCollisionEnter`・`OnCollisionStay`・`OnCollisionExit` が呼ばれます（例は [8.2](#82-イベントで知らせる) の `Coin`）。
+当たり判定は、Actor に **Collider** コンポーネントを付けて行います。当たると、同じ Actor の全部のコンポーネントとスクリプトの `OnCollisionEnter`・`OnCollisionStay`・`OnCollisionExit` が呼ばれます（例は [8.2](#82-イベントで知らせる) の `Coin`）。当たり判定は、物理エンジン（Jolt Physics）の上で動いています。
 
 - 当たる **両方** の Actor に、Collider が要ります
-- 引数の `other` は、相手の Actor です。相手が Actor に付いていないコライダー（ゲームがコードで作った物）なら、`nullptr` です
-- エンジンが行うのは、当たったことを知らせる所までです。押し戻しや跳ね返りは、スクリプトで書きます
+- 引数の `other` は、相手の Actor です
+- 形は、Sphere・Box・Capsule から選びます
+- 大きさと Offset には、Actor の Scale が掛かります（親の Scale も含む）。Box は軸ごと、Sphere は 3 軸のうち一番大きい値、Capsule の半径は X と Z の大きい方、高さは Y です
 
-どのコライダーどうしが当たるかは、層（Layer）で決まります。
+### 11.1 Trigger と実体
+
+Collider の `Is Trigger` で、当たったときの動きが変わります。
+
+| Is Trigger | 動き |
+|---|---|
+| オン | 重なったことを知らせるだけで、押し合わない。攻撃の範囲、拾う物、エリアへの出入りに使う |
+| オフ（新しく作る Collider の既定） | 押し合う実体。壁や床に使う |
+
+- 知らせが届くのは、少なくとも片方が Trigger か、片方に Dynamic の Rigidbody（[11.5](#115-剛体rigidbody)）がある組です。動かない実体どうしは、当たっても知らされません
+- 滑りにくさは `Friction`（0 で滑る）、跳ね返りは `Restitution`（0 で跳ねない、1 で同じ速さで跳ね返る）で決めます
+- スクリプトで足した Collider（`AddComponent<Tako::ColliderComponent>()`）を Trigger にするには、`SetTrigger(true)` を呼びます
+
+### 11.2 知らせが届く時
+
+| 関数 | 届く時 |
+|---|---|
+| `OnCollisionEnter` | 当たり始めた、物理のステップの後（[4.1](#41-1-フレームの順番)） |
+| `OnCollisionStay` | 当たっている間、毎フレーム 1 回（当たり始めたフレームを除く） |
+| `OnCollisionExit` | 離れた、物理のステップの後。Collider を `SetActive(false)` にしたときと、Actor をオフにしたときは、次のフレームの頭 |
+
+- `SetActive(false)` の後で `SetActive(true)` にすると、重なっていれば `OnCollisionEnter` がもう一度届きます（攻撃のたびに、当たりを取り直せます）
+- Collider や Actor が消されたときは、相手に `OnCollisionExit` は届きません
+- 時間の倍率が 0 の間（ヒットストップなど）は物理が進まないので、新しい `OnCollisionEnter` は届きません。`OnCollisionStay` は届きます
+- 速い物は、1 ステップの間に相手を通り抜けることがあります（1/60 秒に進む距離が、相手の厚みより大きいとき）
+
+### 11.3 層
+
+どの Collider どうしが当たるかは、層（Layer）で決まります。
 
 - 層の名前と、層どうしが当たるかどうかの表（`Collision Matrix`）は、Engine Settings の Physics で決めます
-- Collider の `Layer` の欄で、そのコライダーの層を選びます
-- 何も変えなければ、Collider は専用の層（番号 31）に入り、その層どうしだけが当たります
+- Collider の `Layer` の欄で、その Collider の層を選びます
+- 最初は、全部の層どうしが当たります。当てたくない組のチェックを、表で外します。足した層は、最初から全部の層と当たります
+- 何も変えなければ、Collider は層 31 に入ります。名前を付けていない層は表に出ないので、全部の層と当たるままです
+
+### 11.4 レイキャスト
+
+点から線を飛ばして、最初に当たる Collider を調べます（足元の地面、視線が通るか、など）。
+
+```cpp
+#include "PhysicsWorld.h"
+
+// 足元から下へ、10 の長さまで調べる
+const Tako::Vector3 origin = GetOwner()->GetWorldPosition();
+if (const auto hit = Tako::PhysicsWorld::GetInstance()->Raycast(origin, { 0.0f, -1.0f, 0.0f }, 10.0f)) {
+    Tako::Logger::Log("hit %s at distance %.2f\n", hit->actor->GetName().c_str(), hit->distance);
+}
+```
+
+| 引数 | 意味 |
+|---|---|
+| `origin`、`direction` | 始点と向き（向きは、長さ 1 でなくてよい） |
+| `maxDistance` | 調べる長さ |
+| `layerMask`（省略できる） | 当てる層。ビット n が層 n（`1u << 3` なら層 3 だけ）。省略すると、全部の層 |
+| `hitsTriggers`（省略できる） | `false` にすると、Trigger を素通りする。省略すると、Trigger にも当たる |
+
+当たらなければ、空が返ります。当たったときの中身は次のとおりです。
+
+| メンバー | 意味 |
+|---|---|
+| `actor` | 当たった Collider の Actor |
+| `point` | 当たった位置 |
+| `normal` | 当たった面の向き |
+| `distance` | 始点からの距離 |
+
+- 調べるのは、Play 中の Collider です
+- Collider の位置は、そのフレームの物理の時点の物です。同じフレームの `Tick` で動かした分は、次のフレームから入ります
+
+### 11.5 剛体（Rigidbody）
+
+Actor に **Rigidbody** コンポーネントを付けると、その Actor が剛体になります。形は、同じ Actor と、子の Actor の Collider（Trigger を除く）をまとめた物です。
+
+| Body Type | 動き |
+|---|---|
+| Dynamic | 重力と当たりで動く。Actor の Transform は、物理が毎フレーム書く |
+| Kinematic | スクリプトが Actor の Transform を動かすと付いていき、当たった Dynamic を押す。自分は押されない。動く床や扉に使う |
+
+Dynamic は、Transform を直接書かずに、力か速度で動かします。
+
+```cpp
+#include "RigidbodyComponent.h"
+
+void Rocket::BeginPlay() {
+    body_ = GetOwner()->GetComponent<Tako::RigidbodyComponent>();
+}
+
+// 押し続ける力は、FixedTick で毎回掛ける（フレームレートが変わっても、同じ強さになる）
+void Rocket::FixedTick(float) {
+    body_->AddForce({ 0.0f, 30.0f, 0.0f });
+}
+
+// 1 回だけの衝撃は、AddImpulse で掛ける（ジャンプ、弾が当たった、など）
+void Rocket::OnCollisionEnter(Tako::Actor*) {
+    body_->AddImpulse({ 0.0f, 0.0f, -5.0f });
+}
+```
+
+| Inspector の欄 | 意味 |
+|---|---|
+| `Mass` | 質量。大きいほど、力と衝撃が効きにくい |
+| `Linear Damping`、`Angular Damping` | 動きと回転の減り方（空気の抵抗のような物） |
+| `Gravity Scale` | 重力の倍率。0 で重力を受けない。重力そのものは、Engine Settings の Physics の `Gravity` |
+| `Is Continuous` | 速く動いても、実体を通り抜けない（計算は重くなる）。弾のような速い物に使う |
+| `Freeze Position X` 〜 `Freeze Rotation Z` | 動きを止める軸（ワールドの軸）。倒れてほしくない物は、Rotation の X と Z を止める |
+
+- Dynamic の Transform をスクリプトで書き換えると、その位置へ置き直されます（瞬間移動）。速度は残ります
+- Dynamic の Actor に見える位置は、物理の直前の 2 ステップの間を補間した位置です（描画が 60 FPS より速くても、滑らかに動きます）
+- Dynamic は、親の Actor が動いても付いていきません
+- Kinematic を動かす処理は `FixedTick` に書くと、上に乗った物が滑らかに運ばれます
+- 層・`Friction`・`Restitution` は、ボディごとに 1 つです。Collider を 2 つ以上まとめた Rigidbody は、最初の Collider の値を使います
+- Play 中に、Collider の付いた子の Actor を親に対して動かしても、形は付いていきません（形が作り直されるのは、Collider の値や Active を変えたとき）
+- Collider が 1 つも無い Rigidbody は、何にも当たらずに落ちます
 
 ## 12. 調整値
 
@@ -748,7 +860,9 @@ bool ScoreCounter::DrawCustomImGui() {
 | 行 | 意味 |
 |---|---|
 | `Components` の下の、クラス名の行 | そのクラスの `Tick`・`LateTick`・タイマーの関数に掛かった時間（`CPU ms`）と、動いている個数（`Count`）。スクリプトは、スクリプトのクラスごとに出る |
-| `Collision` | 当たり判定 |
+| `Physics` | 物理の全体。下の 3 行は、その内訳 |
+| `FixedTick` | 全部の `FixedTick` の呼び出し |
+| `Step` | 物理の計算。`Count` は、1 フレームあたりのステップの数 |
 | `Callbacks` | `OnCollisionEnter`・`OnCollisionStay`・`OnCollisionExit` の呼び出し |
 
 - 時間は Develop で見ます。Debug は最適化が無いので、長く出ます
@@ -763,6 +877,7 @@ bool ScoreCounter::DrawCustomImGui() {
 |---|---|---|
 | Mesh | `MeshComponent` | Actor の位置にモデルを描く |
 | Collider | `ColliderComponent` | 当たり判定（[11. 当たり判定](#11-当たり判定)） |
+| Rigidbody | `RigidbodyComponent` | 剛体（[11.5](#115-剛体rigidbody)） |
 | Animator | `AnimatorComponent` | 同じ Actor の Mesh のモデルを動かす |
 | Audio Source | `AudioSourceComponent` | 音を鳴らす（位置による聞こえ方の違いは無い） |
 | Camera | `CameraComponent` | Actor の位置と向きから見るカメラ。複数あるときは、Priority が一番大きい物が使われる |
@@ -814,10 +929,27 @@ Animator・Light・Sky Box には、スクリプトから呼ぶ関数はあり�
 | 関数 | 意味 |
 |---|---|
 | `SetActive(active)`、`IsActive()` | 当たり判定を一時的に止める・戻す（攻撃の間だけ当てる、などに使う） |
-| `SetRadius(radius)` | 球（Sphere）の半径を変える |
-| `SetSize(size)` | 箱（Box）の全長を変える |
+| `SetTrigger(isTrigger)`、`IsTrigger()` | 重なりを知らせるだけ（Trigger）か、押し合う実体か |
+| `SetShape(shape)` | 形を選ぶ（`Tako::ColliderComponent::Shape::Sphere`・`Box`・`Capsule`） |
+| `SetRadius(radius)` | Sphere と Capsule の半径を変える |
+| `SetHeight(height)` | Capsule の全長（両端の半球を含む）を変える |
+| `SetSize(size)` | Box の全長を変える |
 | `SetOffset(offset)` | Actor からのずれを変える |
 | `GetLayer()` | 層の番号 |
+
+### Rigidbody
+
+| 関数 | 意味 |
+|---|---|
+| `AddForce(force)` | 次の 1 ステップの間、力を掛ける。押し続けるには、`FixedTick` で毎回呼ぶ |
+| `AddTorque(torque)` | 次の 1 ステップの間、回す力を掛ける（向きが軸、長さが強さ） |
+| `AddImpulse(impulse)` | 速度をその場で変える（ジャンプ、弾が当たった衝撃） |
+| `SetLinearVelocity(velocity)`、`GetLinearVelocity()` | 速度 |
+| `SetAngularVelocity(velocity)`、`GetAngularVelocity()` | 回転の速度（向きが軸、長さがラジアン / 秒） |
+| `SetBodyType(type)`、`GetBodyType()` | `Tako::RigidbodyComponent::BodyType::Dynamic` か `Kinematic` |
+| `SetLockedAxes(axes)`、`GetLockedAxes()` | 動きを止める軸（`Tako::PhysicsWorld::kLockPositionX` 〜 `kLockRotationZ` のビット） |
+
+- 力・衝撃・速度の関数は、Dynamic にだけ効きます
 
 ### Audio Source
 
@@ -995,11 +1127,15 @@ Blackboard には、`BeginPlay` から値を入れられます。キー `"owner"
 | Develop のエディタで、Inspector の追加の表示が出ない | `DrawCustomImGui` を `#ifdef _DEBUG` で囲んでいる（`_DEBUG` は Debug だけ） | `#ifdef TAKO_EDITOR` に替える |
 | Develop のエディタでコンパイルすると、Console に `has no Develop\|x64 configuration` と出る | ゲームの `.vcxproj` に、構成 Develop が無い（2.1.4 より前に作ったプロジェクト） | エンジンのひな形（`Engine\TakoEngine\templates\Default`）の `.vcxproj` と `.sln` から、`Develop` の付いた所を写す（エンジンの `CHANGELOG.md` の 2.1.4 に書いてある） |
 | `BeginPlay` で、他のスクリプトが用意するはずの物がまだ無い | 相手の `BeginPlay` が、自分より後に呼ばれている | 用意する側を `Awake` に移すか、`TCLASS(Order = n)` で順を決める |
-| `BeginPlay` で全体をリセットしたら、当たらなくなった | Collider は `Awake` で登録される。`BeginPlay` で `CollisionManager::Reset()` を呼ぶと、登録が全部消える | シーンをまたぐ物を消すのは、`EndPlay` で行う |
 | 当たり判定が呼ばれない | 片方にしか Collider が無い | 両方の Actor に Collider を付ける |
+| | どちらの Collider も Trigger でなく、Dynamic の Rigidbody も無い | 知らせを受けたい側の `Is Trigger` をオンにする（[11.1](#111-trigger-と実体)） |
 | | 層の組み合わせが、当たらない設定になっている | Engine Settings の Physics の `Collision Matrix` を見る |
 | | Actor か Collider がオフ、または Edit 中 | Active を見る。当たり判定は Play 中だけ働く |
-| `OnCollisionEnter` で落ちる | `other` が `nullptr`（相手が Actor に付いていないコライダー） | 最初に `if (!other) return;` を書く |
+| | 速すぎて、1 ステップの間に通り抜けている | Collider を進む向きに長くするか、遅くする |
+| Collider の大きさが、Inspector の値と合わない | Actor（か親）の Scale が掛かっている | Scale を 1 にするか、Size・Radius を Scale で割った値にする |
+| Rigidbody が床を通り抜ける | 床に Collider が無い。または、床の Collider が Trigger になっている | 床に、`Is Trigger` がオフの Collider を付ける |
+| | 速すぎて、1 ステップの間に通り抜けている | Rigidbody の `Is Continuous` をオンにする |
+| Rigidbody の Actor を `Tick` で動かしても、元の動きに戻らない | Dynamic の Transform を書くと、その位置へ置き直される | `AddForce`・`AddImpulse`・`SetLinearVelocity` で動かす。スクリプトで動かしたい物は、Kinematic にする |
 | `GetAxis`・`PushAction` で止まる（assert） | 作っていない名前を渡している | Engine Settings の Input で作った名前と、綴りをそろえる |
 | 消したはずの Actor を触って落ちる | Actor のポインタを、メンバーに持ち続けている | `ActorRef` で持ち、使うたびに `Resolve` する |
 | Play 中に変えた値が、Stop で戻る | 仕様（Stop は、Play の前の中身に戻す） | 残したい物は、コンポーネントの見出しの右クリックで `Keep Values on Stop` を選ぶ |
@@ -1024,7 +1160,7 @@ Blackboard には、`BeginPlay` から値を入れられます。キー `"owner"
 | `gameplay/scene/SceneManager.h` | シーンの切り替え、シーンをまたぐ値 |
 | `gameplay/scene/transition/TransitionManager.h` | シーンの切り替えの演出 |
 | `gameplay/component/*.h` | エンジンのコンポーネント |
-| `gameplay/collision/CollisionManager.h` | 当たり判定の層と、当たる組み合わせ |
+| `gameplay/physics/PhysicsWorld.h` | レイキャスト、当たり判定の層と当たる組み合わせ |
 | `gameplay/ai/BehaviorTree/Runtime/BehaviorTree.h`、`Core/BTBlackboard.h` | ビヘイビアツリーと Blackboard |
 | `core/reflection/Reflection.h` | `TCLASS`・`TPROPERTY` などの印と、指定子の説明 |
 | `core/reflection/TObject.h` | `PostEditChange`・`PostLoad`・`PostSave`・`DrawCustomImGui` |

@@ -61,11 +61,11 @@
     <Filter Include="gameplay\audio">
       <UniqueIdentifier>{4b3f1bc5-f86e-47c0-b56a-29faa372a669}</UniqueIdentifier>
     </Filter>
-    <Filter Include="gameplay\collision">
-      <UniqueIdentifier>{95c1e16d-f9ec-4d8f-8cfb-c439b7c002a9}</UniqueIdentifier>
-    </Filter>
     <Filter Include="gameplay\component">
       <UniqueIdentifier>{37066a03-2a95-4e1f-b6f7-72979e646f7d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="gameplay\physics">
+      <UniqueIdentifier>{40e656da-02b2-417b-aa69-75e9e2401877}</UniqueIdentifier>
     </Filter>
     <Filter Include="gameplay\scene">
       <UniqueIdentifier>{06348465-2e63-40d0-858b-86fb0255eb19}</UniqueIdentifier>
@@ -183,6 +183,12 @@
     <ClCompile Include="engine\gameplay\scene\SceneSelfTest.cpp">
       <Filter>gameplay\scene</Filter>
     </ClCompile>
+    <ClCompile Include="engine\gameplay\physics\PhysicsSelfTest.cpp">
+      <Filter>gameplay\physics</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\gameplay\physics\PhysicsWorld.cpp">
+      <Filter>gameplay\physics</Filter>
+    </ClCompile>
     <ClCompile Include="engine\gameplay\component\UILayoutComponent.cpp">
       <Filter>gameplay\component</Filter>
     </ClCompile>
@@ -223,6 +229,9 @@
       <Filter>gameplay\scene</Filter>
     </ClCompile>
     <ClCompile Include="engine\gameplay\component\ColliderComponent.cpp">
+      <Filter>gameplay\component</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\gameplay\component\RigidbodyComponent.cpp">
       <Filter>gameplay\component</Filter>
     </ClCompile>
     <ClCompile Include="engine\gameplay\component\MeshComponent.cpp">
@@ -356,21 +365,6 @@
     </ClCompile>
     <ClCompile Include="engine\core\time\FrameTimer.cpp">
       <Filter>core\time</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\gameplay\collision\AABBCollider.cpp">
-      <Filter>gameplay\collision</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\gameplay\collision\Collider.cpp">
-      <Filter>gameplay\collision</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\gameplay\collision\CollisionManager.cpp">
-      <Filter>gameplay\collision</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\gameplay\collision\SphereCollider.cpp">
-      <Filter>gameplay\collision</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\gameplay\collision\OBBCollider.cpp">
-      <Filter>gameplay\collision</Filter>
     </ClCompile>
     <ClCompile Include="engine\editor\DebugUIManager.cpp">
       <Filter>editor</Filter>
@@ -617,6 +611,12 @@
     <ClInclude Include="engine\gameplay\scene\SceneSelfTest.h">
       <Filter>gameplay\scene</Filter>
     </ClInclude>
+    <ClInclude Include="engine\gameplay\physics\PhysicsSelfTest.h">
+      <Filter>gameplay\physics</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\gameplay\physics\PhysicsWorld.h">
+      <Filter>gameplay\physics</Filter>
+    </ClInclude>
     <ClInclude Include="engine\gameplay\actor\ActorRef.h">
       <Filter>gameplay\actor</Filter>
     </ClInclude>
@@ -663,6 +663,9 @@
       <Filter>gameplay\scene</Filter>
     </ClInclude>
     <ClInclude Include="engine\gameplay\component\ColliderComponent.h">
+      <Filter>gameplay\component</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\gameplay\component\RigidbodyComponent.h">
       <Filter>gameplay\component</Filter>
     </ClInclude>
     <ClInclude Include="engine\gameplay\component\MeshComponent.h">
@@ -854,23 +857,8 @@
     <ClInclude Include="engine\core\time\FrameTimer.h">
       <Filter>core\time</Filter>
     </ClInclude>
-    <ClInclude Include="engine\gameplay\collision\AABBCollider.h">
-      <Filter>gameplay\collision</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\gameplay\collision\Collider.h">
-      <Filter>gameplay\collision</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\gameplay\collision\CollisionManager.h">
-      <Filter>gameplay\collision</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\gameplay\collision\SphereCollider.h">
-      <Filter>gameplay\collision</Filter>
-    </ClInclude>
     <ClInclude Include="engine\core\math\OBB.h">
       <Filter>core\math</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\gameplay\collision\OBBCollider.h">
-      <Filter>gameplay\collision</Filter>
     </ClInclude>
     <ClInclude Include="engine\editor\DebugUIManager.h">
       <Filter>editor</Filter>

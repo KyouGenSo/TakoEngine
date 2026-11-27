@@ -1,5 +1,28 @@
 # 変更履歴
 
+## [2.1.6] - 2026-11-27
+
+### 追加・変更
+- 物理エンジン（Jolt Physics）を追加。当たり判定はこの上で動く。Collider コンポーネントの関数と、`OnCollisionEnter` / `OnCollisionStay` / `OnCollisionExit` は今までどおり使える
+- Rigidbody コンポーネントを追加。Dynamic は重力と当たりで動き、Kinematic は Actor の動きに付いていって Dynamic を押す。形は、同じ Actor と子の Actor の Collider（Trigger を除く）をまとめた物
+- Rigidbody は、スクリプトの `AddForce`・`AddImpulse`・`AddTorque`・`SetLinearVelocity`・`SetAngularVelocity` で動かす。質量・減衰・重力の倍率・動きを止める軸・連続衝突（速くても通り抜けない）は Inspector で決める
+- Collider に `Is Trigger` を追加。オン（今までの動き）は重なりを知らせるだけ、オフ（新しく作る Collider の既定）は押し合う実体になる。形に Capsule、滑りにくさの Friction、跳ね返りの Restitution、スクリプトから形を選ぶ `SetShape` を追加
+- Collider の大きさと Offset に、Actor の Scale が掛かる（Unity と同じ決まり。Box は軸ごと、Sphere は 3 軸の最大、Capsule の半径は X と Z の大きい方・高さは Y）。Play 中に Scale を変えても付いていく
+- スクリプトに `FixedTick(float fixedDeltaTime)` を追加。物理が 1 ステップ（1/60 秒）進む直前に呼ばれる（1 フレームに 0 回のことも、2 回以上のこともある）
+- `PhysicsWorld::GetInstance()->Raycast(始点, 向き, 長さ, 層のマスク)` を追加。最初に当たった Actor・位置・法線・距離が返る。Trigger にも当たり、5 番目の引数を `false` にすると素通りする
+- Debug > Collider Visibility（Engine Settings > Physics の Collider Debug Draw）で、Play 中のコライダーの形が線で出る（今までは、オンにしても何も出なかった）
+- 層の当たり表（Engine Settings > Physics の Collision Matrix）の既定を、Unity と同じにした。決めていない組は当たり、足した層は最初から全部の層と当たる（今までは、チェックを入れた組だけが当たった）
+- Engine Settings > Physics に、重力の Gravity を追加
+
+### 直しが要る変更（ゲーム側）
+- エンジンを入れ替えたら、エディタでプロジェクトを 1 回開く。保存形式の変換の確認が出て、今あるシーンとプレハブの Collider に `Is Trigger` のオンが付く（今までどおり、重なりを知らせる）。変換されたファイルはコミットする
+- `CollisionManager`・`Collider`・`AABBCollider`・`OBBCollider`・`SphereCollider` を削除。これらの `#include` と前方宣言、`CollisionManager::GetInstance()->Reset()` と `DrawColliders()` の呼び出しを消す。層の関数（`SetCollisionMask` など）は `PhysicsWorld::GetInstance()` にある
+- コードで足した Collider（`AddComponent<ColliderComponent>()`）は、押し合う実体になる。重なりを知らせるだけにするには `SetTrigger(true)` を呼ぶ。Trigger でも Rigidbody でもない Collider どうしは、当たっても知らされない
+- 名前を付けていない層の Collider（層を選んでいない Collider の層 31 など）は、全部の層と当たる（今までは、層 31 どうしだけ）。当てたくない組は、Engine Settings の Physics で層に名前を付けて、Collision Matrix のチェックを外す
+- コードの `SetCollisionMask(a, b, true)` で当たる組を決めていたゲームは、先に `PhysicsWorld::GetInstance()->ClearCollisionMasks()` を呼ぶ（最初は、全部の層どうしが当たる）
+- `OnCollisionEnter` と `OnCollisionExit` は、物理のステップ（1/60 秒ごと）の後に届く。`Tick` で動かした・`SetActive(true)` にした Collider の Enter は次のフレームになり、時間の倍率が 0 の間（ヒットストップ）は新しい Enter が届かない。`OnCollisionStay` は今までどおり毎フレーム届く
+- Collider の付いた Actor の Scale が 1 でないときは、Collider の Size・Radius・Offset を Scale で割った値に直す（今までは Scale が掛からなかった）
+
 ## [2.1.5] - 2026-11-27
 
 ### 追加・変更

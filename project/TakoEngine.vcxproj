@@ -68,7 +68,7 @@
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>TAKO_EDITOR;_WINDOWS;TAKO_SHARED;TAKO_API=__declspec(dllexport);IMGUI_API=__declspec(dllexport);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>TAKO_EDITOR;_WINDOWS;TAKO_SHARED;TAKO_API=__declspec(dllexport);IMGUI_API=__declspec(dllexport);$(TakoJoltDefines);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
@@ -76,7 +76,7 @@
       <RuntimeLibrary>$(TakoRuntimeLibrary)</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
       <DisableSpecificWarnings>4251;4275;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>$(TakoEngineIncludes);$(TakoEngineExternals)miniaudio;$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(TakoEngineIncludes);$(TakoEngineExternals)miniaudio;$(TakoEngineExternals)JoltPhysics;$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -113,17 +113,18 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_WINDOWS;TAKO_API=;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;TAKO_API=;$(TakoJoltDefines);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>$(TakoRuntimeLibrary)</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(TakoEngineIncludes);$(TakoEngineSrc)editor\BehaviorTree;$(TakoEngineExternals)imgui-node-editor;$(TakoEngineExternals)miniaudio;$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(TakoEngineIncludes);$(TakoEngineSrc)editor\BehaviorTree;$(TakoEngineExternals)imgui-node-editor;$(TakoEngineExternals)miniaudio;$(TakoEngineExternals)JoltPhysics;$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Lib>
       <AdditionalLibraryDirectories>$(ProjectDir)externals\assimp\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <!-- 静的ライブラリの ProjectReference は TakoEngine.lib に入らないので、Jolt はここで入れる（ゲームは TakoEngine.lib だけをリンクする） -->
+      <AdditionalDependencies>$(TakoEngineBinDir)Jolt.lib;assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -155,6 +156,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="engine\gameplay\scene\SceneSelfTest.cpp" />
+    <ClCompile Include="engine\gameplay\physics\PhysicsSelfTest.cpp" />
+    <ClCompile Include="engine\gameplay\physics\PhysicsWorld.cpp" />
     <ClCompile Include="engine\gameplay\component\UILayoutComponent.cpp" />
     <ClCompile Include="engine\gameplay\component\AudioSourceComponent.cpp" />
     <ClCompile Include="engine\gameplay\component\AnimatorComponent.cpp" />
@@ -171,6 +174,7 @@
     <ClCompile Include="engine\gameplay\scene\Prefab.cpp" />
     <ClCompile Include="engine\gameplay\scene\SceneFile.cpp" />
     <ClCompile Include="engine\gameplay\component\ColliderComponent.cpp" />
+    <ClCompile Include="engine\gameplay\component\RigidbodyComponent.cpp" />
     <ClCompile Include="engine\gameplay\component\MeshComponent.cpp" />
     <ClCompile Include="engine\gameplay\actor\Actor.cpp" />
     <ClCompile Include="engine\gameplay\scene\BaseScene.cpp" />
@@ -195,11 +199,6 @@
     <ClCompile Include="engine\graphics\3d\Shadow\ShadowRenderer.cpp" />
     <ClCompile Include="engine\graphics\3d\SkyBox\SkyBox.cpp" />
     <ClCompile Include="engine\graphics\3d\Primitive\PrimitiveBuilder.cpp" />
-    <ClCompile Include="engine\gameplay\collision\AABBCollider.cpp" />
-    <ClCompile Include="engine\gameplay\collision\Collider.cpp" />
-    <ClCompile Include="engine\gameplay\collision\CollisionManager.cpp" />
-    <ClCompile Include="engine\gameplay\collision\OBBCollider.cpp" />
-    <ClCompile Include="engine\gameplay\collision\SphereCollider.cpp" />
     <ClCompile Include="engine\editor\DebugUIManager.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
@@ -345,6 +344,8 @@
     <ClInclude Include="engine\editor\CrashHandler.h" />
     <ClInclude Include="engine\editor\ScriptCompiler.h" />
     <ClInclude Include="engine\gameplay\scene\SceneSelfTest.h" />
+    <ClInclude Include="engine\gameplay\physics\PhysicsSelfTest.h" />
+    <ClInclude Include="engine\gameplay\physics\PhysicsWorld.h" />
     <ClInclude Include="engine\gameplay\actor\ActorRef.h" />
     <ClInclude Include="engine\gameplay\component\UILayoutComponent.h" />
     <ClInclude Include="engine\gameplay\component\AudioSourceComponent.h" />
@@ -361,6 +362,7 @@
     <ClInclude Include="engine\gameplay\scene\Prefab.h" />
     <ClInclude Include="engine\gameplay\scene\SceneFile.h" />
     <ClInclude Include="engine\gameplay\component\ColliderComponent.h" />
+    <ClInclude Include="engine\gameplay\component\RigidbodyComponent.h" />
     <ClInclude Include="engine\gameplay\component\MeshComponent.h" />
     <ClInclude Include="engine\gameplay\actor\Actor.h" />
     <ClInclude Include="engine\gameplay\actor\Component.h" />
@@ -386,11 +388,6 @@
     <ClInclude Include="engine\graphics\3d\SkyBox\SkyBox.h" />
     <ClInclude Include="engine\graphics\3d\Primitive\PrimitiveBuilder.h" />
     <ClInclude Include="engine\core\base\EnginePaths.h" />
-    <ClInclude Include="engine\gameplay\collision\AABBCollider.h" />
-    <ClInclude Include="engine\gameplay\collision\Collider.h" />
-    <ClInclude Include="engine\gameplay\collision\CollisionManager.h" />
-    <ClInclude Include="engine\gameplay\collision\OBBCollider.h" />
-    <ClInclude Include="engine\gameplay\collision\SphereCollider.h" />
     <ClInclude Include="engine\editor\DebugUIManager.h" />
     <ClInclude Include="engine\editor\ParticleEditor.h" />
     <ClInclude Include="engine\editor\PrimitiveEditor.h" />
@@ -519,6 +516,9 @@
   <ItemGroup>
     <ProjectReference Include="externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">
       <Project>{371b9fa9-4c90-4ac6-a123-aced756d6c77}</Project>
+    </ProjectReference>
+    <ProjectReference Include="externals\JoltPhysics\Jolt.vcxproj">
+      <Project>{472fad90-e921-4a87-9f15-57c6ce5f2b64}</Project>
     </ProjectReference>
     <ProjectReference Include="externals\imgui\imgui.vcxproj" Condition="'$(TakoShared)'=='true'">
       <Project>{ffa51982-471d-4530-909e-c8fb8fe4f342}</Project>
