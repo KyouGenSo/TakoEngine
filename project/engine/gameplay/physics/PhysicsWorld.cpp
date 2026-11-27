@@ -10,6 +10,7 @@
 #include <Jolt/Physics/Body/BodyLock.h>
 #include <Jolt/Physics/Character/CharacterVirtual.h>
 #include <Jolt/Physics/Collision/CastResult.h>
+#include <Jolt/Physics/Collision/CollideShape.h>
 #include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
 #include <Jolt/Physics/Collision/ContactListener.h>
 #include <Jolt/Physics/Collision/RayCast.h>
@@ -22,6 +23,7 @@
 #include <Jolt/Physics/Collision/Shape/ScaledShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
 #include <Jolt/Physics/Collision/Shape/StaticCompoundShape.h>
+#include <Jolt/Physics/Collision/ShapeCast.h>
 #include <Jolt/Physics/Constraints/DistanceConstraint.h>
 #include <Jolt/Physics/Constraints/FixedConstraint.h>
 #include <Jolt/Physics/Constraints/HingeConstraint.h>
@@ -193,6 +195,24 @@ namespace Tako {
 
     private: //メンバー変数
       bool hitsTriggers_;
+    };
+
+    /// <summary>
+    /// 動かした形が最初に当たる所を取る。動かす前から重なっている形（進んだ割合が 0）は取らない（Unity と同じ）
+    /// </summary>
+    class FirstMovingHitCollector final : public JPH::CastShapeCollector {
+    public: //メンバー関数
+      void AddHit(const JPH::ShapeCastResult& result) override {
+        if (result.mFraction > 0.0f && result.mFraction < GetEarlyOutFraction()) {
+          hit    = result;
+          hasHit = true;
+          UpdateEarlyOutFraction(result.mFraction);
+        }
+      }
+
+    public: //メンバー変数
+      JPH::ShapeCastResult hit;
+      bool                 hasHit = false;
     };
 
     /// <summary>
@@ -580,6 +600,32 @@ namespace Tako {
     /// </summary>
     void RemoveJoint(const JointRecord& joint);
 
+    /// <summary>
+    /// ボディの形のうち、subShape の形の通知先（無ければ nullptr）
+    /// </summary>
+    Component* FindOwner(const JPH::BodyID& body, const JPH::SubShapeID& subShape) const;
+
+    /// <summary>
+    /// レイの当たりを collector に集める。Unity と同じく、始点を中に含む形には当たらない（Jolt の既定は、中から始まると距離 0 で当たる）。形の裏面にも当たらない（設定の既定）
+    /// </summary>
+    void CastRay(const JPH::RRayCast& ray, JPH::CastRayCollector& collector, uint32_t layerMask, bool hitsTriggers) const;
+
+    /// <summary>
+    /// レイの当たり 1 つを、返す形に直す
+    /// </summary>
+    std::optional<RaycastHit> ToRaycastHit(const JPH::RRayCast& ray, const JPH::RayCastResult& result, float maxDistance) const;
+
+    /// <summary>
+    /// shape（owner と position は使わない）を position から direction へ maxDistance まで動かして、最初に当たる所を返す
+    /// </summary>
+    std::optional<RaycastHit> CastShape(const Shape& shape, const Vector3& position, const Quaternion& rotation, const Vector3& direction,
+                                        float maxDistance, uint32_t layerMask, bool hitsTriggers) const;
+
+    /// <summary>
+    /// position に置いた shape に重なっているボディの Actor（重複なし）
+    /// </summary>
+    std::vector<Actor*> CollideShape(const Shape& shape, const Vector3& position, const Quaternion& rotation, uint32_t layerMask, bool hitsTriggers) const;
+
     BroadPhaseLayers                         broadPhaseLayers;
     ObjectVsBroadPhaseFilter                 objectVsBroadPhaseFilter;
     ObjectLayerFilter                        objectLayerFilter;
@@ -930,6 +976,88 @@ namespace Tako {
     system.RemoveConstraint(joint.constraint);
     WakeBody(joint.bodies[0]);
     WakeBody(joint.bodies[1]);
+  }
+
+  Component* PhysicsWorld::Impl::FindOwner(const JPH::BodyID& body, const JPH::SubShapeID& subShape) const
+  {
+    const JPH::BodyLockRead lock(system.GetBodyLockInterface(), body);
+    return lock.Succeeded() ? reinterpret_cast<Component*>(lock.GetBody().GetShape()->GetSubShapeUserData(subShape)) : nullptr;
+  }
+
+  void PhysicsWorld::Impl::CastRay(const JPH::RRayCast& ray, JPH::CastRayCollector& collector, uint32_t layerMask, bool hitsTriggers) const
+  {
+    const LayerMaskFilter   layerFilter(layerMask);
+    const TriggerBodyFilter bodyFilter(hitsTriggers);
+    JPH::RayCastSettings    settings;
+    settings.mTreatConvexAsSolid = false;
+    system.GetNarrowPhaseQuery().CastRay(ray, settings, collector, {}, layerFilter, bodyFilter);
+  }
+
+  std::optional<PhysicsWorld::RaycastHit> PhysicsWorld::Impl::ToRaycastHit(const JPH::RRayCast& ray, const JPH::RayCastResult& result, float maxDistance) const
+  {
+    const JPH::BodyLockRead lock(system.GetBodyLockInterface(), result.mBodyID);
+    if (!lock.Succeeded()) {
+      return std::nullopt;
+    }
+    const JPH::Body& body  = lock.GetBody();
+    const JPH::RVec3 point = ray.GetPointOnRay(result.mFraction);
+    const auto*      owner = reinterpret_cast<const Component*>(body.GetShape()->GetSubShapeUserData(result.mSubShapeID2));
+    return RaycastHit{
+      .actor    = owner ? owner->GetOwner() : nullptr,
+      .point    = ToEngine(point),
+      .normal   = ToEngine(body.GetWorldSpaceSurfaceNormal(result.mSubShapeID2, point)),
+      .distance = result.mFraction * maxDistance,
+    };
+  }
+
+  std::optional<PhysicsWorld::RaycastHit> PhysicsWorld::Impl::CastShape(const Shape& shape, const Vector3& position, const Quaternion& rotation, const Vector3& direction,
+                                                                        float maxDistance, uint32_t layerMask, bool hitsTriggers) const
+  {
+    const float length = direction.Length();
+    if (length <= 0.0f || maxDistance <= 0.0f) {
+      return std::nullopt;
+    }
+    const JPH::Ref<JPH::Shape>    leaf  = MakeLeaf(shape, { 1.0f, 1.0f, 1.0f });
+    const JPH::RMat44             start = JPH::RMat44::sRotationTranslation(ToJolt(Quat::Normalize(rotation)), ToJolt(position));
+    const JPH::RShapeCast         cast  = JPH::RShapeCast::sFromWorldTransform(leaf.GetPtr(), JPH::Vec3::sReplicate(1.0f), start, ToJolt(direction) * (maxDistance / length));
+    const LayerMaskFilter         layerFilter(layerMask);
+    const TriggerBodyFilter       bodyFilter(hitsTriggers);
+    const JPH::ShapeCastSettings  settings;
+    FirstMovingHitCollector       collector;
+    system.GetNarrowPhaseQuery().CastShape(cast, settings, JPH::RVec3::sZero(), collector, {}, layerFilter, bodyFilter);
+    if (!collector.hasHit) {
+      return std::nullopt;
+    }
+    const JPH::ShapeCastResult& result = collector.hit;
+    const Component*            owner  = FindOwner(result.mBodyID2, result.mSubShapeID2);
+    return RaycastHit{
+      .actor    = owner ? owner->GetOwner() : nullptr,
+      .point    = ToEngine(result.mContactPointOn2),
+      // Jolt の向きは、動かした形 → 当たった形
+      .normal   = ToEngine(-result.mPenetrationAxis.NormalizedOr(JPH::Vec3::sZero())),
+      .distance = result.mFraction * maxDistance,
+    };
+  }
+
+  std::vector<Actor*> PhysicsWorld::Impl::CollideShape(const Shape& shape, const Vector3& position, const Quaternion& rotation, uint32_t layerMask, bool hitsTriggers) const
+  {
+    const JPH::Ref<JPH::Shape>      leaf      = MakeLeaf(shape, { 1.0f, 1.0f, 1.0f });
+    const JPH::RMat44               transform = JPH::RMat44::sRotationTranslation(ToJolt(Quat::Normalize(rotation)), ToJolt(position));
+    const LayerMaskFilter           layerFilter(layerMask);
+    const TriggerBodyFilter         bodyFilter(hitsTriggers);
+    const JPH::CollideShapeSettings settings;
+    JPH::AllHitCollisionCollector<JPH::CollideShapeCollector> collector;
+    system.GetNarrowPhaseQuery().CollideShape(leaf.GetPtr(), JPH::Vec3::sReplicate(1.0f), transform, settings, JPH::RVec3::sZero(), collector, {}, layerFilter, bodyFilter);
+
+    // 形を 2 つ以上持つボディとメッシュは、形や三角形ごとに当たりが来る
+    std::vector<Actor*> actors;
+    for (const JPH::CollideShapeResult& result : collector.mHits) {
+      const Component* owner = FindOwner(result.mBodyID2, result.mSubShapeID2);
+      if (owner && std::ranges::find(actors, owner->GetOwner()) == actors.end()) {
+        actors.push_back(owner->GetOwner());
+      }
+    }
+    return actors;
   }
 
   std::unique_ptr<PhysicsWorld> PhysicsWorld::instance_ = nullptr;
@@ -1433,31 +1561,63 @@ namespace Tako {
     if (length <= 0.0f || maxDistance <= 0.0f) {
       return std::nullopt;
     }
-    const JPH::RRayCast     ray(ToJolt(origin), ToJolt(direction) * (maxDistance / length));
-    const LayerMaskFilter   layerFilter(layerMask);
-    const TriggerBodyFilter bodyFilter(hitsTriggers);
-    // Unity と同じ：始点を中に含む形には当たらない（Jolt の既定は、中から始まると距離 0 で当たる）。形の裏面にも当たらない（設定の既定）
-    JPH::RayCastSettings rayCastSettings;
-    rayCastSettings.mTreatConvexAsSolid = false;
+    const JPH::RRayCast ray(ToJolt(origin), ToJolt(direction) * (maxDistance / length));
     JPH::ClosestHitCollisionCollector<JPH::CastRayCollector> collector;
-    impl_->system.GetNarrowPhaseQuery().CastRay(ray, rayCastSettings, collector, {}, layerFilter, bodyFilter);
-    if (!collector.HadHit()) {
-      return std::nullopt;
+    impl_->CastRay(ray, collector, layerMask, hitsTriggers);
+    return collector.HadHit() ? impl_->ToRaycastHit(ray, collector.mHit, maxDistance) : std::nullopt;
+  }
+
+  std::vector<PhysicsWorld::RaycastHit> PhysicsWorld::RaycastAll(const Vector3& origin, const Vector3& direction, float maxDistance, uint32_t layerMask, bool hitsTriggers) const
+  {
+    std::vector<RaycastHit> hits;
+    const float             length = direction.Length();
+    if (length <= 0.0f || maxDistance <= 0.0f) {
+      return hits;
     }
-    const JPH::RayCastResult& result = collector.mHit;
-    const JPH::BodyLockRead lock(impl_->system.GetBodyLockInterface(), result.mBodyID);
-    if (!lock.Succeeded()) {
-      return std::nullopt;
+    const JPH::RRayCast ray(ToJolt(origin), ToJolt(direction) * (maxDistance / length));
+    JPH::AllHitCollisionCollector<JPH::CastRayCollector> collector;
+    impl_->CastRay(ray, collector, layerMask, hitsTriggers);
+    collector.Sort();
+    for (const JPH::RayCastResult& result : collector.mHits) {
+      // 形を 2 つ以上持つボディとメッシュは、形や三角形ごとに当たりが来る。Actor ごとに、一番近い 1 つだけを残す
+      const std::optional<RaycastHit> hit = impl_->ToRaycastHit(ray, result, maxDistance);
+      if (hit && std::ranges::none_of(hits, [&hit](const RaycastHit& kept) { return kept.actor == hit->actor; })) {
+        hits.push_back(*hit);
+      }
     }
-    const JPH::Body& body  = lock.GetBody();
-    const JPH::RVec3 point = ray.GetPointOnRay(result.mFraction);
-    const auto*      owner = reinterpret_cast<const Component*>(body.GetShape()->GetSubShapeUserData(result.mSubShapeID2));
-    return RaycastHit{
-      .actor    = owner ? owner->GetOwner() : nullptr,
-      .point    = ToEngine(point),
-      .normal   = ToEngine(body.GetWorldSpaceSurfaceNormal(result.mSubShapeID2, point)),
-      .distance = result.mFraction * maxDistance,
-    };
+    return hits;
+  }
+
+  std::optional<PhysicsWorld::RaycastHit> PhysicsWorld::SphereCast(const Vector3& origin, float radius, const Vector3& direction, float maxDistance, uint32_t layerMask, bool hitsTriggers) const
+  {
+    return impl_->CastShape({ .type = ShapeType::Sphere, .radius = radius }, origin, { 0.0f, 0.0f, 0.0f, 1.0f }, direction, maxDistance, layerMask, hitsTriggers);
+  }
+
+  std::optional<PhysicsWorld::RaycastHit> PhysicsWorld::BoxCast(const Vector3& center, const Vector3& size, const Quaternion& rotation, const Vector3& direction,
+                                                                float maxDistance, uint32_t layerMask, bool hitsTriggers) const
+  {
+    return impl_->CastShape({ .type = ShapeType::Box, .size = size }, center, rotation, direction, maxDistance, layerMask, hitsTriggers);
+  }
+
+  std::optional<PhysicsWorld::RaycastHit> PhysicsWorld::CapsuleCast(const Vector3& center, float radius, float height, const Quaternion& rotation, const Vector3& direction,
+                                                                    float maxDistance, uint32_t layerMask, bool hitsTriggers) const
+  {
+    return impl_->CastShape({ .type = ShapeType::Capsule, .radius = radius, .height = height }, center, rotation, direction, maxDistance, layerMask, hitsTriggers);
+  }
+
+  std::vector<Actor*> PhysicsWorld::OverlapSphere(const Vector3& center, float radius, uint32_t layerMask, bool hitsTriggers) const
+  {
+    return impl_->CollideShape({ .type = ShapeType::Sphere, .radius = radius }, center, { 0.0f, 0.0f, 0.0f, 1.0f }, layerMask, hitsTriggers);
+  }
+
+  std::vector<Actor*> PhysicsWorld::OverlapBox(const Vector3& center, const Vector3& size, const Quaternion& rotation, uint32_t layerMask, bool hitsTriggers) const
+  {
+    return impl_->CollideShape({ .type = ShapeType::Box, .size = size }, center, rotation, layerMask, hitsTriggers);
+  }
+
+  std::vector<Actor*> PhysicsWorld::OverlapCapsule(const Vector3& center, float radius, float height, const Quaternion& rotation, uint32_t layerMask, bool hitsTriggers) const
+  {
+    return impl_->CollideShape({ .type = ShapeType::Capsule, .radius = radius, .height = height }, center, rotation, layerMask, hitsTriggers);
   }
 
   void PhysicsWorld::RemoveLayer(uint32_t index)

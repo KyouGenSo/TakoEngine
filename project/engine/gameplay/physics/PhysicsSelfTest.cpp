@@ -266,6 +266,75 @@ namespace Tako {
     }
 
     /// <summary>
+    /// 形の問い合わせ：SphereCast・BoxCast・CapsuleCast は、動かす前から重なっている形を素通りして、最初に当たる所を返す。
+    /// RaycastAll は近い順。Overlap は、重なっている Actor を 1 回ずつ返す。どれも、Trigger の扱いと層のマスクに従う
+    /// </summary>
+    void CheckShapeQueries()
+    {
+      using enum PhysicsWorld::BodyKind;
+      PhysicsWorld*    physics = PhysicsWorld::GetInstance();
+      const uint32_t   mask    = 1u << kLayerA;
+      const Quaternion upright{ 0.0f, 0.0f, 0.0f, 1.0f };
+      const Quaternion lying{ 0.70710678f, 0.0f, 0.0f, 0.70710678f };  // X の周りに 90 度（Y の軸が Z を向く）
+      const Vector3    forward{ 0.0f, 0.0f, 1.0f };
+      const auto       isNear  = [](float a, float b) { return std::abs(a - b) < 0.01f; };
+      BaseScene        scene;
+      // 原点を包む球、手前の Trigger（手前の端が z = 1.5）、奥の壁（手前の面が z = 4）
+      const Probe wrap = SpawnProbe(scene, { 0.0f, 0.0f, 0.0f });
+      const Probe veil = SpawnProbe(scene, { 0.0f, 0.0f, 2.0f });
+      const Probe wall = SpawnProbe(scene, { 0.0f, 0.0f, 5.0f });
+      scene.UpdateAlways();
+      const PhysicsWorld::BodyHandle wrapBody = CreateBody(wrap, Static, kLayerA, MakeSphere(wrap, 1.0f));
+      const PhysicsWorld::BodyHandle veilBody = CreateBody(veil, Trigger, kLayerA, MakeSphere(veil, 0.5f));
+      const PhysicsWorld::BodyHandle wallBody = CreateBody(wall, Static, kLayerA, MakeBox(wall, { 2.0f, 2.0f, 2.0f }));
+
+      // 半径 0.5 の球を +Z へ：動かす前から重なっている wrap を素通りして、Trigger に触れる所（中心が 1.0 進んだ所）で当たる
+      const std::optional<PhysicsWorld::RaycastHit> veilHit = physics->SphereCast({}, 0.5f, forward, 100.0f, mask);
+      assert(veilHit && veilHit->actor == veil.actor && isNear(veilHit->distance, 1.0f));
+
+      // Trigger を素通りにすると、壁に触れる所。触れた位置は壁の面で、向きは壁から球へ。向きは正規化していなくてよい
+      const std::optional<PhysicsWorld::RaycastHit> wallHit = physics->SphereCast({}, 0.5f, { 0.0f, 0.0f, 2.0f }, 100.0f, mask, false);
+      assert(wallHit && wallHit->actor == wall.actor && isNear(wallHit->distance, 3.5f));
+      assert(IsNear(wallHit->point, { 0.0f, 0.0f, 4.0f }) && IsNear(wallHit->normal, { 0.0f, 0.0f, -1.0f }));
+      assert(!physics->SphereCast({}, 0.5f, forward, 3.0f, mask, false));
+      assert(!physics->SphereCast({}, 0.5f, forward, 100.0f, 1u << kLayerB));
+      assert(!physics->SphereCast({}, 0.5f, { 0.0f, 0.0f, -1.0f }, 100.0f, mask));
+
+      // 箱（全長 1）とカプセル（半径 0.5）も、前の端が壁に触れる所まで進む。寝かせたカプセル（全長 2）は、端が 1.0 先にある
+      const std::optional<PhysicsWorld::RaycastHit> boxHit = physics->BoxCast({}, { 1.0f, 1.0f, 1.0f }, upright, forward, 100.0f, mask, false);
+      assert(boxHit && boxHit->actor == wall.actor && isNear(boxHit->distance, 3.5f));
+      const std::optional<PhysicsWorld::RaycastHit> capsuleHit = physics->CapsuleCast({}, 0.5f, 2.0f, upright, forward, 100.0f, mask, false);
+      assert(capsuleHit && capsuleHit->actor == wall.actor && isNear(capsuleHit->distance, 3.5f));
+      const std::optional<PhysicsWorld::RaycastHit> lyingHit = physics->CapsuleCast({}, 0.5f, 2.0f, lying, forward, 100.0f, mask, false);
+      assert(lyingHit && lyingHit->actor == wall.actor && isNear(lyingHit->distance, 3.0f));
+
+      // RaycastAll：始点を含む wrap は入らず、近い順に Trigger・壁
+      const std::vector<PhysicsWorld::RaycastHit> all = physics->RaycastAll({}, forward, 100.0f, mask);
+      assert(all.size() == 2 && all[0].actor == veil.actor && all[1].actor == wall.actor);
+      assert(isNear(all[0].distance, 1.5f) && isNear(all[1].distance, 4.0f));
+      assert(physics->RaycastAll({}, forward, 100.0f, mask, false).size() == 1);
+      assert(physics->RaycastAll({}, forward, 100.0f, 1u << kLayerB).empty());
+
+      // Overlap：原点の半径 1.6 の球は、wrap と Trigger に重なり、壁には届かない
+      const std::vector<Actor*> overlaps = physics->OverlapSphere({}, 1.6f, mask);
+      assert(overlaps.size() == 2 && std::ranges::find(overlaps, wrap.actor) != overlaps.end() && std::ranges::find(overlaps, veil.actor) != overlaps.end());
+      const std::vector<Actor*> solids = physics->OverlapSphere({}, 1.6f, mask, false);
+      assert(solids.size() == 1 && solids[0] == wrap.actor);
+      assert(physics->OverlapSphere({}, 1.6f, 1u << kLayerB).empty());
+
+      // Trigger と壁の間に置いた箱とカプセル：小さければどちらにも届かず、Z に長ければ両方に重なる
+      const Vector3 between{ 0.0f, 0.0f, 3.2f };
+      assert(physics->OverlapBox(between, { 1.0f, 1.0f, 1.0f }, upright, mask).empty());
+      assert(physics->OverlapBox(between, { 1.0f, 1.0f, 2.0f }, upright, mask).size() == 2);
+      assert(physics->OverlapCapsule(between, 0.25f, 3.0f, upright, mask).empty());
+      assert(physics->OverlapCapsule(between, 0.25f, 3.0f, lying, mask).size() == 2);
+
+      physics->DestroyBody(wrapBody);
+      physics->DestroyBody(veilBody);
+      physics->DestroyBody(wallBody);
+    }
+
+    /// <summary>
     /// 形の位置は、Actor の回転と親の Transform で、エンジンの行列と同じ所へ行く。親を動かすと、子のボディも付いていく
     /// </summary>
     void CheckPoseFollowsActor()
@@ -889,6 +958,7 @@ namespace Tako {
     CheckTriggerEvents();
     CheckLayersAndKinds();
     CheckRaycast();
+    CheckShapeQueries();
     CheckPoseFollowsActor();
     CheckScaleFollowsActor();
     CheckColliderComponent();

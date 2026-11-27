@@ -311,6 +311,46 @@ namespace Tako {
     /// <param name="hitsTriggers">false なら、Trigger を素通りする（Unity と同じく、既定では当たる）</param>
     std::optional<RaycastHit> Raycast(const Vector3& origin, const Vector3& direction, float maxDistance, uint32_t layerMask = 0xffffffff, bool hitsTriggers = true) const;
 
+    /// <summary>
+    /// Raycast と同じ決まりで、レイが当たる全部の Actor を近い順に返す（Actor ごとに、一番近い 1 か所）
+    /// </summary>
+    std::vector<RaycastHit> RaycastAll(const Vector3& origin, const Vector3& direction, float maxDistance, uint32_t layerMask = 0xffffffff, bool hitsTriggers = true) const;
+
+    /// <summary>
+    /// 球を origin から direction へ maxDistance まで動かして、最初に当たるボディを返す（太さのあるレイ）。動かす前から重なっている形と、メッシュの三角形の裏面には当たらない（Unity と同じ）
+    /// </summary>
+    /// <returns>distance は球の中心が進んだ距離、point は触れた位置、normal は触れた所から球へ向く向き</returns>
+    std::optional<RaycastHit> SphereCast(const Vector3& origin, float radius, const Vector3& direction, float maxDistance, uint32_t layerMask = 0xffffffff, bool hitsTriggers = true) const;
+
+    /// <summary>
+    /// SphereCast の、箱を動かす版
+    /// </summary>
+    /// <param name="size">箱の全長</param>
+    std::optional<RaycastHit> BoxCast(const Vector3& center, const Vector3& size, const Quaternion& rotation, const Vector3& direction, float maxDistance, uint32_t layerMask = 0xffffffff, bool hitsTriggers = true) const;
+
+    /// <summary>
+    /// SphereCast の、カプセルを動かす版
+    /// </summary>
+    /// <param name="height">全長（両端の半球を含む）。軸は、rotation で回した Y</param>
+    std::optional<RaycastHit> CapsuleCast(const Vector3& center, float radius, float height, const Quaternion& rotation, const Vector3& direction, float maxDistance, uint32_t layerMask = 0xffffffff, bool hitsTriggers = true) const;
+
+    /// <summary>
+    /// 球に重なっているボディの Actor を返す（同じ Actor は 1 回だけ。順は決まっていない）。メッシュは、三角形の表から重なっているときだけ入る
+    /// </summary>
+    std::vector<Actor*> OverlapSphere(const Vector3& center, float radius, uint32_t layerMask = 0xffffffff, bool hitsTriggers = true) const;
+
+    /// <summary>
+    /// OverlapSphere の、箱の版
+    /// </summary>
+    /// <param name="size">箱の全長</param>
+    std::vector<Actor*> OverlapBox(const Vector3& center, const Vector3& size, const Quaternion& rotation, uint32_t layerMask = 0xffffffff, bool hitsTriggers = true) const;
+
+    /// <summary>
+    /// OverlapSphere の、カプセルの版
+    /// </summary>
+    /// <param name="height">全長（両端の半球を含む）。軸は、rotation で回した Y</param>
+    std::vector<Actor*> OverlapCapsule(const Vector3& center, float radius, float height, const Quaternion& rotation, uint32_t layerMask = 0xffffffff, bool hitsTriggers = true) const;
+
     //============================================================
     //層
     //============================================================
