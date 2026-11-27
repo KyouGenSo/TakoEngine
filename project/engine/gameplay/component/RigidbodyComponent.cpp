@@ -105,6 +105,26 @@ namespace Tako {
     PhysicsWorld::GetInstance()->AddImpulse(body_, impulse);
   }
 
+  void RigidbodyComponent::AddForceAtPosition(const Vector3& force, const Vector3& position)
+  {
+    PhysicsWorld::GetInstance()->AddForceAtPosition(body_, force, position);
+  }
+
+  void RigidbodyComponent::AddImpulseAtPosition(const Vector3& impulse, const Vector3& position)
+  {
+    PhysicsWorld::GetInstance()->AddImpulseAtPosition(body_, impulse, position);
+  }
+
+  void RigidbodyComponent::WakeUp()
+  {
+    PhysicsWorld::GetInstance()->WakeBody(body_);
+  }
+
+  void RigidbodyComponent::Sleep()
+  {
+    PhysicsWorld::GetInstance()->SleepBody(body_);
+  }
+
   void RigidbodyComponent::RebuildShapes()
   {
     if (body_ == PhysicsWorld::kInvalidBody) {
@@ -146,6 +166,12 @@ namespace Tako {
     PhysicsWorld::GetInstance()->SetAngularVelocity(body_, velocity);
   }
 
+  void RigidbodyComponent::SetCenterOfMass(const Vector3& offset)
+  {
+    centerOfMass_ = offset;
+    PostEditChange();
+  }
+
   Vector3 RigidbodyComponent::GetLinearVelocity() const
   {
     return PhysicsWorld::GetInstance()->GetLinearVelocity(body_);
@@ -154,6 +180,11 @@ namespace Tako {
   Vector3 RigidbodyComponent::GetAngularVelocity() const
   {
     return PhysicsWorld::GetInstance()->GetAngularVelocity(body_);
+  }
+
+  bool RigidbodyComponent::IsSleeping() const
+  {
+    return PhysicsWorld::GetInstance()->IsBodySleeping(body_);
   }
 
   void RigidbodyComponent::CollectShapes(Actor& actor, const Matrix4x4& toBody, std::vector<PhysicsWorld::Shape>& shapes)
@@ -215,12 +246,13 @@ namespace Tako {
       settings.friction    = colliders_.front()->friction_;
       settings.restitution = colliders_.front()->restitution_;
     }
-    settings.mass           = mass_;
-    settings.linearDamping  = linearDamping_;
-    settings.angularDamping = angularDamping_;
-    settings.gravityScale   = gravityScale_;
-    settings.lockedAxes     = lockedAxes_;
-    settings.isContinuous   = isContinuous_;
+    settings.mass               = mass_;
+    settings.linearDamping      = linearDamping_;
+    settings.angularDamping     = angularDamping_;
+    settings.gravityScale       = gravityScale_;
+    settings.lockedAxes         = lockedAxes_;
+    settings.isContinuous       = isContinuous_;
+    settings.centerOfMassOffset = centerOfMass_;
     return settings;
   }
 

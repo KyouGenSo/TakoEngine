@@ -20,6 +20,7 @@
 #include <Jolt/Physics/Collision/Shape/ConvexHullShape.h>
 #include <Jolt/Physics/Collision/Shape/EmptyShape.h>
 #include <Jolt/Physics/Collision/Shape/MeshShape.h>
+#include <Jolt/Physics/Collision/Shape/OffsetCenterOfMassShape.h>
 #include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
 #include <Jolt/Physics/Collision/Shape/ScaledShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
@@ -499,6 +500,18 @@ namespace Tako {
     }
 
     /// <summary>
+    /// ボディの形。Dynamic は、重心を settings.centerOfMassOffset だけずらす（通知先は、中の形から返る）
+    /// </summary>
+    JPH::RefConst<JPH::Shape> MakeBodyShape(const BodyRecord& record) {
+      const JPH::RefConst<JPH::Shape> shape  = MakeShape(record.shapes, record.shapeScale);
+      const JPH::Vec3                 offset = ToJolt(record.settings.centerOfMassOffset) * ToJolt(record.shapeScale);
+      if (record.settings.kind != PhysicsWorld::BodyKind::Dynamic || offset.IsNearZero()) {
+        return shape;
+      }
+      return new JPH::OffsetCenterOfMassShape(shape, offset);
+    }
+
+    /// <summary>
     /// 質量を mass にした、shape の質量と回りにくさ（回りにくさは、形の大きさから決まる）
     /// </summary>
     JPH::MassProperties MakeMassProperties(const JPH::Shape& shape, float mass) {
@@ -764,7 +777,7 @@ namespace Tako {
   void PhysicsWorld::Impl::RebuildShape(BodyRecord& record)
   {
     JPH::BodyInterface& bodyInterface = system.GetBodyInterface();
-    bodyInterface.SetShape(record.id, MakeShape(record.shapes, record.shapeScale), false, ActivationOf(record.settings.kind));
+    bodyInterface.SetShape(record.id, MakeBodyShape(record), false, ActivationOf(record.settings.kind));
     // 形を 2 つ以上持つボディは、接触を 1 つにまとめさせない（どの形が当たったかを、形ごとに知らせるため）
     bodyInterface.SetUseManifoldReduction(record.id, record.shapes.size() <= 1);
     // 質量は変えずに、回りにくさを新しい形に合わせる
@@ -1297,7 +1310,7 @@ namespace Tako {
     } else if (isDynamic) {
       motion = JPH::EMotionType::Dynamic;
     }
-    const JPH::RefConst<JPH::Shape> shape = MakeShape(record.shapes, record.shapeScale);
+    const JPH::RefConst<JPH::Shape> shape = MakeBodyShape(record);
     JPH::BodyCreationSettings       creation(shape, ToJolt(pose.position), ToJolt(pose.rotation), motion, ToObjectLayer(settings.kind, settings.layer));
     // Trigger は、動かない実体や他の Trigger との重なりも知らせる
     creation.mIsSensor                     = isTrigger;
@@ -1404,13 +1417,19 @@ namespace Tako {
     if (found == impl_->bodies.end()) {
       return;
     }
-    BodyRecord&    record = found->second;
-    const BodyKind kind   = record.settings.kind;
-    Actor* const   actor  = record.settings.actor;
+    BodyRecord&    record        = found->second;
+    const BodyKind kind          = record.settings.kind;
+    Actor* const   actor         = record.settings.actor;
+    const bool     isCenterMoved = !HasSameBits(record.settings.centerOfMassOffset, settings.centerOfMassOffset);
     record.settings       = settings;
     record.settings.kind  = kind;
     record.settings.actor = actor;
-    impl_->ApplySettings(record);
+    // 重心のずれは形に入っているので、変わったら形から作り直す（Dynamic は、その中で設定も入れ直す）
+    if (isCenterMoved && kind == BodyKind::Dynamic) {
+      impl_->RebuildShape(record);
+    } else {
+      impl_->ApplySettings(record);
+    }
   }
 
   void PhysicsWorld::AddForce(BodyHandle body, const Vector3& force)
@@ -1434,6 +1453,20 @@ namespace Tako {
     }
   }
 
+  void PhysicsWorld::AddForceAtPosition(BodyHandle body, const Vector3& force, const Vector3& position)
+  {
+    if (const JPH::BodyID id = impl_->FindMovable(body); !id.IsInvalid()) {
+      impl_->system.GetBodyInterface().AddForce(id, ToJolt(force), ToJolt(position));
+    }
+  }
+
+  void PhysicsWorld::AddImpulseAtPosition(BodyHandle body, const Vector3& impulse, const Vector3& position)
+  {
+    if (const JPH::BodyID id = impl_->FindMovable(body); !id.IsInvalid()) {
+      impl_->system.GetBodyInterface().AddImpulse(id, ToJolt(impulse), ToJolt(position));
+    }
+  }
+
   void PhysicsWorld::SetLinearVelocity(BodyHandle body, const Vector3& velocity)
   {
     if (const JPH::BodyID id = impl_->FindMovable(body); !id.IsInvalid()) {
@@ -1445,6 +1478,18 @@ namespace Tako {
   {
     if (const JPH::BodyID id = impl_->FindMovable(body); !id.IsInvalid()) {
       impl_->system.GetBodyInterface().SetAngularVelocity(id, ToJolt(velocity));
+    }
+  }
+
+  void PhysicsWorld::WakeBody(BodyHandle body)
+  {
+    impl_->WakeBody(body);
+  }
+
+  void PhysicsWorld::SleepBody(BodyHandle body)
+  {
+    if (const JPH::BodyID id = impl_->FindMovable(body); !id.IsInvalid()) {
+      impl_->system.GetBodyInterface().DeactivateBody(id);
     }
   }
 
@@ -1816,6 +1861,12 @@ namespace Tako {
   {
     const JPH::BodyID id = impl_->FindMovable(body);
     return id.IsInvalid() ? Vector3{} : ToEngine(impl_->system.GetBodyInterface().GetAngularVelocity(id));
+  }
+
+  bool PhysicsWorld::IsBodySleeping(BodyHandle body) const
+  {
+    const JPH::BodyID id = impl_->FindMovable(body);
+    return !id.IsInvalid() && !impl_->system.GetBodyInterface().IsActive(id);
   }
 
   Vector3 PhysicsWorld::GetCharacterVelocity(CharacterHandle character) const

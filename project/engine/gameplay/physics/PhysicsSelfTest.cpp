@@ -617,6 +617,72 @@ namespace Tako {
     }
 
     /// <summary>
+    /// Rigidbody の操作：重心から外れた位置への衝撃と力で回り始める・寝かせると宙で止まり、起こすと落ちる・重心を下げた箱は、傾けて置いても起き上がる
+    /// </summary>
+    void CheckRigidbodyControls()
+    {
+      PhysicsWorld* physics = PhysicsWorld::GetInstance();
+      if (!physics->CanCollide(ColliderComponent::kActorLayer, ColliderComponent::kActorLayer)) {
+        return;
+      }
+      BaseScene scene;
+      scene.BeginPlay();
+      const ColliderProbe floor = SpawnSolid(scene, { 0.0f, -0.5f, 0.0f }, ColliderComponent::Shape::Box);
+      floor.actor->GetTransform().scale = { 1000.0f, 1.0f, 1000.0f };
+      // 宙に置いた、大きさ 1 の箱 2 つと球
+      const ColliderProbe flicked     = SpawnSolid(scene, { 0.0f, 20.0f, 0.0f }, ColliderComponent::Shape::Box);
+      RigidbodyComponent* flickedBody = AddRigidbody(flicked.actor);
+      const ColliderProbe pushed      = SpawnSolid(scene, { 10.0f, 20.0f, 0.0f }, ColliderComponent::Shape::Box);
+      RigidbodyComponent* pushedBody  = AddRigidbody(pushed.actor);
+      const ColliderProbe sleeper     = SpawnSolid(scene, { 20.0f, 20.0f, 0.0f }, ColliderComponent::Shape::Sphere);
+      RigidbodyComponent* sleeperBody = AddRigidbody(sleeper.actor);
+      // 細長い箱（0.5 × 2 × 0.5）を 40 度傾けて、角が床に付く高さに置く。重心が真ん中なら倒れ、底の近くまで下げてあれば起き上がる
+      const auto spawnTilted = [&scene](float x, float centerOfMassY) {
+        const ColliderProbe box = SpawnSolid(scene, { x, 0.95f, 0.0f }, ColliderComponent::Shape::Box);
+        box.actor->GetTransform().scale  = { 0.5f, 2.0f, 0.5f };
+        box.actor->GetTransform().rotate = { 0.0f, 0.0f, 0.7f };
+        AddRigidbody(box.actor)->SetCenterOfMass({ 0.0f, centerOfMassY, 0.0f });
+        return box.actor;
+      };
+      const Actor* plain   = spawnTilted(40.0f, 0.0f);
+      const Actor* lowered = spawnTilted(60.0f, -0.45f);
+      scene.UpdateAlways();
+      RunFrames(scene, 2);
+
+      // 重心から +X へ外れた位置を上へ弾くと、上へ動きながら、Z の周りに回り始める
+      const Vector3 edge{ 0.5f, 0.0f, 0.0f };
+      flickedBody->AddImpulseAtPosition({ 0.0f, 2.0f, 0.0f }, flicked.actor->GetTransform().translate + edge);
+      assert(flickedBody->GetAngularVelocity().z > 1.0f && flickedBody->GetLinearVelocity().y > 1.0f);
+
+      // 力は、次の 1 ステップの間に効く
+      pushedBody->AddForceAtPosition({ 0.0f, 120.0f, 0.0f }, pushed.actor->GetTransform().translate + edge);
+      assert(IsNear(pushedBody->GetAngularVelocity(), {}));
+      RunFrames(scene, 1);
+      assert(pushedBody->GetAngularVelocity().z > 1.0f);
+
+      // 寝かせた球は、宙で止まったまま動かない。起こすと落ちる
+      assert(!sleeperBody->IsSleeping());
+      sleeperBody->Sleep();
+      assert(sleeperBody->IsSleeping());
+      RunFrames(scene, 2);
+      const float heldHeight = sleeper.actor->GetTransform().translate.y;
+      RunFrames(scene, 30);
+      assert(sleeperBody->IsSleeping() && sleeper.actor->GetTransform().translate.y == heldHeight);
+      sleeperBody->WakeUp();
+      assert(!sleeperBody->IsSleeping());
+      RunFrames(scene, 30);
+      assert(sleeper.actor->GetTransform().translate.y < heldHeight - 0.5f);
+
+      // 倒れた箱は中心が低く（0.25）、立った箱は高い（1.0）
+      RunFrames(scene, 240);
+      assert(plain->GetTransform().translate.y < 0.5f && std::abs(plain->GetTransform().rotate.z) > 1.2f);
+      assert(lowered->GetTransform().translate.y > 0.9f && std::abs(lowered->GetTransform().rotate.z) < 0.2f);
+
+      scene.Shutdown();
+      assert(physics->GetBodyCount() == 0);
+    }
+
+    /// <summary>
     /// 当たりの知らせに入る値。落ちた球の Enter：触れた位置が床の面、向きが床から球へ（上）、速度の差が上向き、力積が正。床の側は、向きと速度の差が逆。
     /// Stay は力積が 0、Exit は相手だけ。Trigger の重なりでも、触れた位置が入る（力積は 0）
     /// </summary>
@@ -1025,6 +1091,7 @@ namespace Tako {
     CheckScaleFollowsActor();
     CheckColliderComponent();
     CheckRigidbody();
+    CheckRigidbodyControls();
     CheckCollisionInfo();
     CheckMeshShapes();
     CheckJoints();

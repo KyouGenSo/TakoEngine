@@ -89,12 +89,13 @@ namespace Tako {
       float    restitution = 0.0f;     ///< 跳ね返り（0 = 跳ねない、1 = 同じ速さで跳ね返る）。当たった相手の値の大きい方が使われる
 
       //Dynamic だけ
-      float    mass           = 1.0f;
-      float    linearDamping  = 0.05f;  ///< 動きの減り方（1 秒あたりに失う速さの割合）
-      float    angularDamping = 0.05f;  ///< 回転の減り方
-      float    gravityScale   = 1.0f;   ///< 重力の倍率（0 = 重力を受けない）
-      uint32_t lockedAxes     = 0;      ///< kLock〜 のビット
-      bool     isContinuous   = false;  ///< 速く動いても、実体を通り抜けない（計算は重くなる）
+      float    mass               = 1.0f;
+      float    linearDamping      = 0.05f;  ///< 動きの減り方（1 秒あたりに失う速さの割合）
+      float    angularDamping     = 0.05f;  ///< 回転の減り方
+      float    gravityScale       = 1.0f;   ///< 重力の倍率（0 = 重力を受けない）
+      uint32_t lockedAxes         = 0;      ///< kLock〜 のビット
+      bool     isContinuous       = false;  ///< 速く動いても、実体を通り抜けない（計算は重くなる）
+      Vector3  centerOfMassOffset = {};     ///< 形から自動で求めた重心からのずれ（ボディから見た向き。scale は軸ごと）
     };
 
     struct RaycastHit {
@@ -249,12 +250,32 @@ namespace Tako {
     /// </summary>
     void AddImpulse(BodyHandle body, const Vector3& impulse);
 
+    /// <summary>
+    /// AddForce の、力を掛ける位置（ワールド）を決める版。重心から外れた位置に掛けると、回す力にもなる
+    /// </summary>
+    void AddForceAtPosition(BodyHandle body, const Vector3& force, const Vector3& position);
+
+    /// <summary>
+    /// AddImpulse の、衝撃を掛ける位置（ワールド）を決める版
+    /// </summary>
+    void AddImpulseAtPosition(BodyHandle body, const Vector3& impulse, const Vector3& position);
+
     void SetLinearVelocity(BodyHandle body, const Vector3& velocity);
 
     /// <summary>
     /// 向きが回転の軸、長さが速さ（ラジアン / 秒）
     /// </summary>
     void SetAngularVelocity(BodyHandle body, const Vector3& velocity);
+
+    /// <summary>
+    /// 寝ている Dynamic のボディを起こす。動きの止まったボディは、計算を省くために寝る（力や衝撃を掛けたとき・何かが当たったときは、自分で起きる）
+    /// </summary>
+    void WakeBody(BodyHandle body);
+
+    /// <summary>
+    /// Dynamic のボディを、今すぐ寝かせる（速度は 0 になり、何かが当たるか、力を掛けるまで動かない）
+    /// </summary>
+    void SleepBody(BodyHandle body);
 
     //============================================================
     //キャラクター
@@ -438,6 +459,11 @@ namespace Tako {
     Vector3 GetLinearVelocity(BodyHandle body) const;
 
     Vector3 GetAngularVelocity(BodyHandle body) const;
+
+    /// <summary>
+    /// 世界に入っている Dynamic のボディが、寝ているか
+    /// </summary>
+    bool IsBodySleeping(BodyHandle body) const;
 
     Vector3 GetCharacterVelocity(CharacterHandle character) const;
 

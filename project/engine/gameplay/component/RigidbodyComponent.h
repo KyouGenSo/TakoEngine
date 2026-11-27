@@ -61,6 +61,26 @@ namespace Tako {
     void AddImpulse(const Vector3& impulse);
 
     /// <summary>
+    /// AddForce の、力を掛ける位置（ワールド）を決める版。重心から外れた位置に掛けると、回す力にもなる
+    /// </summary>
+    void AddForceAtPosition(const Vector3& force, const Vector3& position);
+
+    /// <summary>
+    /// AddImpulse の、衝撃を掛ける位置（ワールド）を決める版
+    /// </summary>
+    void AddImpulseAtPosition(const Vector3& impulse, const Vector3& position);
+
+    /// <summary>
+    /// 寝ているボディを起こす。動きの止まった Dynamic のボディは、計算を省くために寝る（力や衝撃を掛けたとき・何かが当たったときは、自分で起きる）
+    /// </summary>
+    void WakeUp();
+
+    /// <summary>
+    /// 今すぐ寝かせる（速度は 0 になり、何かが当たるか、力を掛けるまで動かない）
+    /// </summary>
+    void Sleep();
+
+    /// <summary>
     /// Collider を集め直して、形を作り直す。Collider が、自分の形や有効・無効が変わったときに呼ぶ
     /// </summary>
     void RebuildShapes();
@@ -82,6 +102,11 @@ namespace Tako {
     /// </summary>
     void SetAngularVelocity(const Vector3& velocity);
 
+    /// <summary>
+    /// 重心のずれ（形から自動で求めた重心から。向きと Scale は、この Actor の物）。下げると倒れにくくなる
+    /// </summary>
+    void SetCenterOfMass(const Vector3& offset);
+
     //=====================================
     //Getter
     //=====================================
@@ -92,6 +117,10 @@ namespace Tako {
     Vector3 GetLinearVelocity() const;
 
     Vector3 GetAngularVelocity() const;
+
+    Vector3 GetCenterOfMass() const { return centerOfMass_; }
+
+    bool IsSleeping() const;
 
     /// <summary>
     /// Awake から EndPlay までの間（Collider は、この間の Rigidbody にだけ形を預ける）
@@ -125,6 +154,8 @@ namespace Tako {
     float    gravityScale_   = 1.0f;
     TPROPERTY(Edit, Tooltip = "速く動いても、実体を通り抜けない（計算は重くなる）")
     bool     isContinuous_   = false;
+    TPROPERTY(Edit, Tooltip = "重心のずれ（形から自動で求めた重心から。向きと Scale は、この Actor の物）。下げると倒れにくくなる", Speed = 0.01)
+    Vector3  centerOfMass_{};
     TPROPERTY()
     uint32_t lockedAxes_     = 0;
 
