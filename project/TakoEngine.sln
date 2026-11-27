@@ -18,6 +18,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "imgui", "externals\imgui\im
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "imgui-node-editor", "externals\imgui-node-editor\imgui-node-editor.vcxproj", "{0517D071-8CDD-4F0B-BDC1-05FCF6331BCC}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Jolt", "externals\JoltPhysics\Jolt.vcxproj", "{472FAD90-E921-4A87-9F15-57C6CE5F2B64}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -49,6 +51,12 @@ Global
 		{0517D071-8CDD-4F0B-BDC1-05FCF6331BCC}.Develop|x64.Build.0 = Develop|x64
 		{0517D071-8CDD-4F0B-BDC1-05FCF6331BCC}.Release|x64.ActiveCfg = Release|x64
 		{0517D071-8CDD-4F0B-BDC1-05FCF6331BCC}.Release|x64.Build.0 = Release|x64
+		{472FAD90-E921-4A87-9F15-57C6CE5F2B64}.Debug|x64.ActiveCfg = Debug|x64
+		{472FAD90-E921-4A87-9F15-57C6CE5F2B64}.Debug|x64.Build.0 = Debug|x64
+		{472FAD90-E921-4A87-9F15-57C6CE5F2B64}.Develop|x64.ActiveCfg = Develop|x64
+		{472FAD90-E921-4A87-9F15-57C6CE5F2B64}.Develop|x64.Build.0 = Develop|x64
+		{472FAD90-E921-4A87-9F15-57C6CE5F2B64}.Release|x64.ActiveCfg = Release|x64
+		{472FAD90-E921-4A87-9F15-57C6CE5F2B64}.Release|x64.Build.0 = Release|x64
 		{D2423785-7BBF-406B-9E55-037159CF84FE}.Debug|x64.ActiveCfg = Debug|x64
 		{D2423785-7BBF-406B-9E55-037159CF84FE}.Debug|x64.Build.0 = Debug|x64
 		{D2423785-7BBF-406B-9E55-037159CF84FE}.Develop|x64.ActiveCfg = Develop|x64

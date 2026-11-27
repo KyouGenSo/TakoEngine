@@ -34,6 +34,17 @@
   </PropertyGroup>
 
   <!-- ===================================================
+       Jolt Physics のマクロ
+       Jolt.vcxproj と、Jolt のヘッダーを include する TakoEngine.vcxproj が同じ値を使う。
+       食い違うと、RegisterTypes が起動時に止めるか、クラスの形が合わなくなる（JPH_DEBUG は RegisterTypes の検査の対象外）。
+       JPH_DEBUG_RENDERER: デバッグ描画（エディタのある構成だけ）。JPH_DEBUG: Jolt の中の検査と assert（Debug だけ）。
+       =================================================== -->
+  <PropertyGroup>
+    <TakoJoltDefines Condition="'$(TakoShared)'=='true'">JPH_DEBUG_RENDERER</TakoJoltDefines>
+    <TakoJoltDefines Condition="'$(Configuration)'=='Debug'">$(TakoJoltDefines);JPH_DEBUG</TakoJoltDefines>
+  </PropertyGroup>
+
+  <!-- ===================================================
        include パス
        エンジンのヘッダーはファイル名だけで include するので、フォルダーを 1 つずつ並べる。
        engine 以下にフォルダーを足したら、ここに 1 行足す。
@@ -71,8 +82,8 @@
       $(TakoEngineSrc)gameplay\ai\BehaviorTree\Runtime;
       $(TakoEngineSrc)gameplay\ai\BehaviorTree\Nodes;
       $(TakoEngineSrc)gameplay\audio;
-      $(TakoEngineSrc)gameplay\collision;
       $(TakoEngineSrc)gameplay\component;
+      $(TakoEngineSrc)gameplay\physics;
       $(TakoEngineSrc)gameplay\scene;
       $(TakoEngineSrc)gameplay\scene\transition;
       $(TakoEngineExternals)nlohmann;

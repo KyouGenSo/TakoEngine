@@ -48,12 +48,13 @@ Copy-Item "$root\templates\Default\.gitignore", "$root\templates\Default\.gitatt
 $releaseBin = "$root\bin\Release$releaseSuffix"
 if (-not (Test-Path "$releaseBin\TakoEngine.lib")) { throw "$releaseBin がありません。-SkipBuild なしで流してください" }
 $intermediate = @("*.ilk", "*.idb", "*.exp", "*.iobj", "*.ipdb", "imgui.*", "imgui-node-editor.*")
-# Debug と Develop の DirectXTex は TakoEngine.dll に入っている。Release の DirectXTex.lib は、ゲームがリンクするので入れる
+# Debug と Develop の DirectXTex と Jolt は TakoEngine.dll に入っている。Release の DirectXTex.lib は、ゲームがリンクするので入れる
 foreach ($configuration in "Debug", "Develop") {
-  robocopy "$root\bin\$configuration" "$stage\bin\$configuration" /E /XF ($intermediate + "DirectXTex.*") /R:2 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null
+  robocopy "$root\bin\$configuration" "$stage\bin\$configuration" /E /XF ($intermediate + "DirectXTex.*" + "Jolt.*") /R:2 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null
   if ($LASTEXITCODE -ge 8) { throw "robocopy 失敗 (exit code: $LASTEXITCODE)" }
 }
-robocopy $releaseBin "$stage\bin\Release" /E /XF $intermediate /R:2 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null
+# Release の Jolt は TakoEngine.lib に入っているので、Jolt.lib は入れない。Jolt.pdb は、ゲームのリンクが型の情報を引くので入れる
+robocopy $releaseBin "$stage\bin\Release" /E /XF ($intermediate + "Jolt.lib") /R:2 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null
 if ($LASTEXITCODE -ge 8) { throw "robocopy 失敗 (exit code: $LASTEXITCODE)" }
 
 $required = @(
