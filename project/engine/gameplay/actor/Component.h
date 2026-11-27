@@ -1,5 +1,6 @@
 #pragma once
 #include "TObject.h"
+#include "Vector3.h"
 
 #include <any>
 #include <cstdint>
@@ -12,7 +13,16 @@
 namespace Tako {
 
   class Actor;
-  struct Vector3;
+
+  /// <summary>
+  /// Component::OnControllerColliderHit に渡される、Character Controller が実体に触れた所（Unity の ControllerColliderHit）
+  /// </summary>
+  struct ControllerColliderHit {
+    Actor*  actor = nullptr;  ///< 触れた Collider（か Character Controller）の Actor
+    Vector3 point;            ///< 触れた位置（ワールド）
+    Vector3 normal;           ///< 触れた面の向き（ワールド。床なら上向き、壁なら壁からキャラクターへ）
+    Vector3 moveDirection;    ///< そのステップで動こうとしていた向き（長さ 1。動いていなければ 0）
+  };
 
   /// <summary>
   /// Component::SetTimer が返す番号。0 は無効
@@ -97,6 +107,11 @@ namespace Tako {
     /// 離れた。どちらかのコライダーが止められた（SetActive(false)・Actor がオフ）ときも呼ばれ、消されたときは呼ばれない
     /// </summary>
     virtual void OnCollisionExit([[maybe_unused]] Actor* other) {}
+
+    /// <summary>
+    /// 同じ Actor の Character Controller が、実体（壁・床・Rigidbody・他の Character Controller）に触れている間、物理のステップの後に 1 か所ごとに呼ばれる（Unity の OnControllerColliderHit）。Trigger では呼ばれない
+    /// </summary>
+    virtual void OnControllerColliderHit([[maybe_unused]] const ControllerColliderHit& hit) {}
 
 #ifdef TAKO_EDITOR
     /// <summary>

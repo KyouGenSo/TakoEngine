@@ -87,6 +87,11 @@ namespace Tako {
     if (instance_) { instance_->OnCollisionExit(other); }
   }
 
+  void ScriptComponent::OnControllerColliderHit(const ControllerColliderHit& hit)
+  {
+    if (instance_) { instance_->OnControllerColliderHit(hit); }
+  }
+
   void ScriptComponent::PostLoad(const nlohmann::json& raw)
   {
     RebuildInstance(raw);

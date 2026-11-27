@@ -1226,6 +1226,8 @@ public: //メンバー関数
 
     void FixedTick(float fixedDeltaTime) override;
 
+    void OnControllerColliderHit(const Tako::ControllerColliderHit& hit) override;
+
 private: //メンバー変数
     TPROPERTY(Edit, Tooltip = "歩く速さ（1 秒あたり）", ClampMin = 0, Speed = 0.1)
     float speed_ = 5.0f;
@@ -1245,6 +1247,7 @@ private: //メンバー変数
 #include "Actor.h"
 #include "CharacterControllerComponent.h"
 #include "Input.h"
+#include "Logger.h"
 
 void Hero::BeginPlay() {
     controller_ = GetOwner()->GetComponent<Tako::CharacterControllerComponent>();
@@ -1267,5 +1270,16 @@ void Hero::FixedTick(float) {
     }
     wantsJump_ = false;
     controller_->SetVelocity(velocity);
+}
+
+// 触れている実体（壁・床・Rigidbody・他の Character Controller）ごとに、物理のステップの後で呼ばれる。Trigger では呼ばれない
+void Hero::OnControllerColliderHit(const Tako::ControllerColliderHit& hit) {
+    // 上向きの面（足元の床）は飛ばして、横や上からぶつかった相手だけを見る
+    if (hit.normal.y > 0.5f) {
+        return;
+    }
+    if (hit.actor->HasTag("Enemy")) {
+        Tako::Logger::Log("%s touched %s\n", GetOwner()->GetName().c_str(), hit.actor->GetName().c_str());
+    }
 }
 ```

@@ -10,6 +10,7 @@
 - Collider の形に Mesh と Convex Hull を追加。Collider の Model の欄のモデル（空なら、同じ Actor の Mesh コンポーネントのモデル）から形を作る。Mesh は動かない物と Kinematic 用で、Dynamic の Rigidbody には Convex Hull を使う
 - Character Controller コンポーネントを追加。カプセルの形のキャラクターが、壁と床に沿って動き、坂と段差を登る。スクリプトは `SetVelocity`・`GetVelocity`・`IsGrounded` で動かす（重力は物理が足す）
 - Character Controller は、歩いて当たった Dynamic の Rigidbody を押す。押す強さ（Push Strength）と、上に乗った物に掛かる重さ（Mass）は Inspector で決める
+- スクリプトに `OnControllerColliderHit(const Tako::ControllerColliderHit& hit)` を追加（Unity の同じ名前の関数に当たる）。同じ Actor の Character Controller が実体（壁・床・Rigidbody・他の Character Controller）に触れている間、物理のステップごとに呼ばれ、相手の Actor・位置・面の向き・動こうとしていた向きが渡される
 - Joint コンポーネントを追加。Rigidbody を、他の Rigidbody かワールドにつなぐ（位置と向きを固める Fixed、1 点でつなぐ Point、軸の周りだけ回る Hinge、距離を保つ Distance）
 - Collider の大きさと Offset に、Actor の Scale が掛かる（Unity と同じ決まり。Box は軸ごと、Sphere は 3 軸の最大、Capsule の半径は X と Z の大きい方・高さは Y）。Play 中に Scale を変えても付いていく
 - スクリプトに `FixedTick(float fixedDeltaTime)` を追加。物理が 1 ステップ（1/60 秒）進む直前に呼ばれる（1 フレームに 0 回のことも、2 回以上のこともある）

@@ -286,6 +286,17 @@ namespace Tako {
       bool    needsWriteBack = false;
     };
 
+    /// <summary>
+    /// キャラクターが実体に触れた所 1 件。世界の計算の後で、キャラクターの Actor に OnControllerColliderHit を配る
+    /// </summary>
+    struct ControllerHit {
+      Component* controller;  ///< キャラクターの通知先
+      Component* other;       ///< 触れた形の通知先
+      Vector3    point;
+      Vector3    normal;
+      Vector3    moveDirection;
+    };
+
     struct JointRecord {
       JPH::Ref<JPH::TwoBodyConstraint> constraint;
       PhysicsWorld::BodyHandle         bodies[2]{ PhysicsWorld::kInvalidBody, PhysicsWorld::kInvalidBody };  ///< 2 つ目が kInvalidBody なら、相手はワールド
@@ -533,6 +544,11 @@ namespace Tako {
     void DispatchPendingExits(FrameStats& stats);
 
     /// <summary>
+    /// StepCharacters が控えた「キャラクターが触れた所」を、キャラクターの Actor の全コンポーネントに配る
+    /// </summary>
+    void DispatchControllerHits(FrameStats& stats);
+
+    /// <summary>
     /// owners の当たっている組を、次の配布で Exit を出す側へ移す
     /// </summary>
     void MoveToPendingExits(std::span<Component* const> owners);
@@ -581,6 +597,9 @@ namespace Tako {
     std::unordered_map<CharacterHandle, CharacterRecord> characters;     ///< キーは、中に持たせたボディの ID
     std::unordered_map<JointHandle, JointRecord>         joints;
     JointHandle                                          nextJoint = 0;
+
+    std::vector<ControllerHit> controllerHits;   ///< このステップでキャラクターが触れた所
+    std::vector<ControllerHit> dispatchingHits;  ///< 配っている間の入れ物（確保を使い回す）
 
     //当たりの通知。どれも、通知先の組の一覧
     PairList touching;          ///< 今当たっている組（並べ替え済み）
@@ -773,6 +792,31 @@ namespace Tako {
     Dispatch(exits, &Component::OnCollisionExit, stats);
   }
 
+  void PhysicsWorld::Impl::DispatchControllerHits(FrameStats& stats)
+  {
+    if (controllerHits.empty()) {
+      return;
+    }
+    // 通知の中でキャラクターが作られても壊れないよう、取り出してから配る
+    dispatchingHits.clear();
+    dispatchingHits.swap(controllerHits);
+    const Clock::time_point start = Clock::now();
+    for (const ControllerHit& entry : dispatchingHits) {
+      // 前の通知の中で消された物には、知らせない
+      if (!ownerBodies.contains(entry.controller) || !ownerBodies.contains(entry.other)) {
+        continue;
+      }
+      const ControllerColliderHit hit{ entry.other->GetOwner(), entry.point, entry.normal, entry.moveDirection };
+      // 受け手がコンポーネントを足しても壊れないよう、添字で回す
+      const auto& components = entry.controller->GetOwner()->GetComponents();
+      for (size_t i = 0; i < components.size(); ++i) {
+        components[i]->OnControllerColliderHit(hit);
+      }
+      ++stats.callbackCount;
+    }
+    stats.callbackMs += std::chrono::duration<float, std::milli>(Clock::now() - start).count();
+  }
+
   void PhysicsWorld::Impl::MoveToPendingExits(std::span<Component* const> owners)
   {
     const auto moved = std::ranges::stable_partition(touching, [owners](const OwnerPair& pair) { return !Involves(pair, owners); });
@@ -830,6 +874,24 @@ namespace Tako {
       const LayerMaskFilter  layerFilter(collisionMasks[(std::min)(settings.layer, static_cast<uint32_t>(kMaxLayers - 1))]);
       const OtherActorFilter bodyFilter(settings.actor);
       character.ExtendedUpdate(kFixedDeltaTime, gravity, update, {}, layerFilter, bodyFilter, {}, tempAllocator);
+
+      // 触れている実体を控える（Trigger は除く）。向きは、このステップで動こうとした向き
+      if (settings.owner) {
+        const Vector3 moveDirection = ToEngine(velocity.NormalizedOr(JPH::Vec3::sZero()));
+        for (const JPH::CharacterContact& contact : character.GetActiveContacts()) {
+          if (!contact.mHadCollision || contact.mWasDiscarded || contact.mIsSensorB) {
+            continue;
+          }
+          const JPH::BodyLockRead lock(system.GetBodyLockInterface(), contact.mBodyB);
+          if (!lock.Succeeded()) {
+            continue;
+          }
+          auto* other = reinterpret_cast<Component*>(lock.GetBody().GetShape()->GetSubShapeUserData(contact.mSubShapeIDB));
+          if (other) {
+            controllerHits.push_back({ settings.owner, other, ToEngine(contact.mPosition), ToEngine(contact.mSurfaceNormal), moveDirection });
+          }
+        }
+      }
 
       const Vector3 position = ToEngine(character.GetPosition());
       // 上へ動こうとして半分も進めなかったら、天井に当たっている。上向きの速さを捨てる（捨てないと、落ち始めるまで天井に張り付く）
@@ -984,6 +1046,7 @@ namespace Tako {
 
     impl_->Dispatch(entered, &Component::OnCollisionEnter, frameStats_);
     impl_->Dispatch(exited, &Component::OnCollisionExit, frameStats_);
+    impl_->DispatchControllerHits(frameStats_);
   }
 
   void PhysicsWorld::EndFrame(float alpha)

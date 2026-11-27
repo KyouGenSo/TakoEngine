@@ -192,6 +192,7 @@ include の書き方です。
 | `void OnCollisionEnter(Tako::Actor* other)` | 同じ Actor の Collider が、他の Collider に当たり始めた（Trigger なら、重なり始めた） |
 | `void OnCollisionStay(Tako::Actor* other)` | 当たっている間、毎フレーム（当たり始めたフレームを除く） |
 | `void OnCollisionExit(Tako::Actor* other)` | 離れた。どちらかの Collider が止められたときも呼ばれる（[11.2](#112-知らせが届く時)） |
+| `void OnControllerColliderHit(const Tako::ControllerColliderHit& hit)` | 同じ Actor の Character Controller が、壁・床などの実体に触れている間、物理のステップの後（[11.7](#117-キャラクターcharacter-controller)） |
 | `void OnActiveChanged(bool active)` | Actor の Active（自分か親のどれか）が切り替わった次のフレームの頭。Edit 中も呼ばれる |
 | `void OnSiblingRemoved(Tako::Component* removed)` | 同じ Actor の他のコンポーネントが、これから外される。Edit 中も呼ばれる |
 | `bool TickWhilePaused() const` | `true` を返すと、シーンのポーズ中も `Tick` と `LateTick` が呼ばれる（`FixedTick` は呼ばれない） |
@@ -833,6 +834,34 @@ void Hero::FixedTick(float) {
 - Trigger に入ると、Collider と同じように `OnCollisionEnter` などが届きます。レイキャストにも当たります
 - 同じ Actor と、その子の Actor に付いた Collider には当たりません
 - Rigidbody と一緒には付けません（どちらも、Actor の位置を書きます）
+
+Character Controller が触れた実体は、`OnControllerColliderHit` で分かります（Unity の同じ名前の関数に当たります）。Character Controller の付いた Actor のスクリプトに、触れている 1 か所ごとに届きます。
+
+```cpp
+// 触れている実体（壁・床・Rigidbody・他の Character Controller）ごとに、物理のステップの後で呼ばれる。Trigger では呼ばれない
+void Hero::OnControllerColliderHit(const Tako::ControllerColliderHit& hit) {
+    // 上向きの面（足元の床）は飛ばして、横や上からぶつかった相手だけを見る
+    if (hit.normal.y > 0.5f) {
+        return;
+    }
+    if (hit.actor->HasTag("Enemy")) {
+        Tako::Logger::Log("%s touched %s\n", GetOwner()->GetName().c_str(), hit.actor->GetName().c_str());
+    }
+}
+```
+
+| `hit` のメンバー | 意味 |
+|---|---|
+| `actor` | 触れた Collider（か Character Controller）の Actor |
+| `point` | 触れた位置 |
+| `normal` | 触れた面の向き。床なら上向き、壁なら壁からキャラクターへの向き |
+| `moveDirection` | そのステップで動こうとしていた向き（長さ 1）。立っているだけのときは、重力の向き |
+
+- 触れている間、物理のステップ（1/60 秒）ごとに呼ばれます。立っている間は、床について呼ばれ続けます
+- 壁・床・他の Character Controller に触れても、`OnCollisionEnter` は届きません。実体に触れた事は、この関数で調べます
+- Trigger では呼ばれません（Trigger との重なりは、`OnCollisionEnter` などで届きます）
+- 届くのは、Character Controller の側だけです。触れられた側のスクリプトには届きません
+- Unity の `moveLength`・`rigidbody`・`controller` に当たるメンバーはありません。Rigidbody は `hit.actor->GetComponent<Tako::RigidbodyComponent>()` で取ります
 
 ### 11.8 ジョイント（Joint）
 

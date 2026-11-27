@@ -22,6 +22,7 @@
 
 #include <json.hpp>
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <filesystem>
@@ -30,6 +31,7 @@
 #include <memory>
 #include <span>
 #include <string>
+#include <vector>
 
 namespace Tako {
 
@@ -47,10 +49,12 @@ namespace Tako {
       void OnCollisionEnter(Actor* other) override { Record('E', other); }
       void OnCollisionStay(Actor* other) override { Record('S', other); }
       void OnCollisionExit(Actor* other) override { Record('X', other); }
+      void OnControllerColliderHit(const ControllerColliderHit& hit) override { hits.push_back(hit); }
 
     public: //メンバー変数
-      std::string log;
-      Actor*      last = nullptr;
+      std::string                        log;
+      Actor*                             last = nullptr;
+      std::vector<ControllerColliderHit> hits;            ///< 届いた OnControllerColliderHit（届いた順）
 
     private: //非公開関数
       void Record(char kind, Actor* other)
@@ -693,7 +697,7 @@ namespace Tako {
       // 床（上の面が y = 0）、高さ 0.3 の段（x = 2〜4.5）、その奥の壁（手前の面が x = 4.5）
       const ColliderProbe floor = spawnBox(scene, { 0.0f, -0.5f, 0.0f }, { 1000.0f, 1.0f, 1000.0f });
       spawnBox(scene, { 3.25f, 0.15f, 0.0f }, { 2.5f, 0.3f, 10.0f });
-      spawnBox(scene, { 5.0f, 1.5f, 0.0f }, { 1.0f, 3.0f, 10.0f });
+      const ColliderProbe wall = spawnBox(scene, { 5.0f, 1.5f, 0.0f }, { 1.0f, 3.0f, 10.0f });
       // walker には、実体の球の Collider も付いている（自分の Actor の Collider には当たらない）
       const ColliderProbe           walker     = SpawnSolid(scene, { 0.0f, 1.5f, 0.0f }, ColliderComponent::Shape::Sphere);
       CharacterControllerComponent* controller = addController(walker.actor);
@@ -715,24 +719,41 @@ namespace Tako {
       const std::optional<PhysicsWorld::RaycastHit> below      = physics->Raycast(feetOrigin, { 0.0f, -1.0f, 0.0f }, 10.0f);
       assert(below && below->actor == floor.actor && isNear(below->distance, feetOrigin.y, 0.01f));
 
+      // 立っている間、床に触れている知らせ（OnControllerColliderHit）が、キャラクターの Actor にだけ届く
+      assert(!walker.recorder->hits.empty() && floor.recorder->hits.empty());
+      const ControllerColliderHit standingOn = walker.recorder->hits.back();
+      assert(standingOn.actor == floor.actor && IsNear(standingOn.normal, { 0.0f, 1.0f, 0.0f }) && isNear(standingOn.point.y, 0.0f, 0.05f));
+      assert(IsNear(standingOn.moveDirection, { 0.0f, -1.0f, 0.0f }));
+      const auto touched = [&walker](const Actor* actor) {
+        return std::ranges::find_if(walker.recorder->hits, [actor](const ControllerColliderHit& hit) { return hit.actor == actor; });
+      };
+
       // +X へ歩くと、段を登って、壁の手前で止まる。途中のトリガーから知らせが届く
+      walker.recorder->hits.clear();
       controller->SetVelocity({ 3.0f, 0.0f, 0.0f });
       RunFrames(scene, 180);
       const Vector3 atWall = walker.actor->GetTransform().translate;
       assert(atWall.x > 3.9f && atWall.x < 4.01f && isNear(atWall.y, standing + 0.3f, 0.06f));
       assert(!walker.recorder->log.empty() && walker.recorder->log.front() == 'E' && walker.recorder->last == zone.actor);
 
+      // 壁に押し当てている間は、壁に触れた知らせが届く（面の向きは、壁からキャラクターへ）。Trigger は、この知らせには入らない
+      const auto wallHit = touched(wall.actor);
+      assert(wallHit != walker.recorder->hits.end() && wallHit->normal.x < -0.9f && wallHit->moveDirection.x > 0.9f);
+      assert(touched(zone.actor) == walker.recorder->hits.end());
+
       // 上からのレイは、カプセルの頭に当たる
       const std::optional<PhysicsWorld::RaycastHit> hit = physics->Raycast({ atWall.x, 10.0f, 0.0f }, { 0.0f, -1.0f, 0.0f }, 20.0f, 0xffffffff, false);
       assert(hit && hit->actor == walker.actor && isNear(hit->point.y, atWall.y + 1.0f, 0.05f));
 
-      // -X へ歩くと、段を下りて、立っている他のキャラクターの手前で止まる（押しのけない）
+      // -X へ歩くと、段を下りて、立っている他のキャラクターの手前で止まる（押しのけない）。触れた知らせは、相手のキャラクターについても届く
+      walker.recorder->hits.clear();
       controller->SetVelocity({ -3.0f, 0.0f, 0.0f });
       RunFrames(scene, 300);
       const Vector3 atBlocker = walker.actor->GetTransform().translate;
       assert(isNear(blocker.actor->GetTransform().translate.x, -3.0f, 0.05f));
       assert(atBlocker.x - blocker.actor->GetTransform().translate.x > 0.95f && atBlocker.x < -1.9f && isNear(atBlocker.y, standing, 0.05f));
       assert(walker.recorder->log.find('X') != std::string::npos);
+      assert(touched(blocker.actor) != walker.recorder->hits.end());
 
       // 位置を書き換えると、その位置へ置き直されて、そこから落ちる
       controller->SetVelocity({});

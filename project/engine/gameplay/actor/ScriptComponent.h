@@ -49,6 +49,7 @@ namespace Tako {
     void OnCollisionEnter(Actor* other) override;
     void OnCollisionStay(Actor* other) override;
     void OnCollisionExit(Actor* other) override;
+    void OnControllerColliderHit(const ControllerColliderHit& hit) override;
 
     /// <summary>
     /// "script" の型でスクリプトを作り、同じ JSON からスクリプトの値を読む
