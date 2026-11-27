@@ -45,7 +45,21 @@ namespace Tako {
       Dynamic,    ///< 力と当たりで動く実体。位置と向きは物理が決めて、Actor の Transform へ書く
     };
 
-    enum class ShapeType : uint8_t { Sphere, Box, Capsule };
+    enum class ShapeType : uint8_t {
+      Sphere,
+      Box,
+      Capsule,
+      Mesh,        ///< 三角形のメッシュそのまま。動かない物と Kinematic に使う（Dynamic の形にはできない）
+      ConvexHull,  ///< 頂点を包む、へこみの無い形。Dynamic にも使える
+    };
+
+    /// <summary>
+    /// Mesh と ConvexHull の元になる頂点と三角形（scale を掛ける前の値）
+    /// </summary>
+    struct MeshData {
+      std::vector<Vector3>  positions;
+      std::vector<uint32_t> indices;    ///< 3 つで三角形 1 枚（ConvexHull は使わない）
+    };
 
     /// <summary>
     /// ボディに付ける形 1 つ。大きさと位置には、ボディの Actor のワールドの scale が掛かる（Unity と同じ決まり。Play 中に scale を変えても付いていく）
@@ -59,6 +73,8 @@ namespace Tako {
       Quaternion rotation = { 0.0f, 0.0f, 0.0f, 1.0f };  ///< ボディから見た向き
       Vector3    scale    = { 1.0f, 1.0f, 1.0f };        ///< ボディの Actor から見た、形の Actor の scale（子の Actor に付いた形のとき）
       Component* owner    = nullptr;                     ///< 当たりの通知先。owner の Actor の全コンポーネントに OnCollision〜 が届く
+
+      std::shared_ptr<const MeshData> mesh;  ///< Mesh と ConvexHull の頂点（scale は軸ごと）
     };
 
     struct BodySettings {

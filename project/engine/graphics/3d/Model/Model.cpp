@@ -689,6 +689,19 @@ namespace Tako {
     return nearest;
   }
 
+  void Model::AppendTriangles(const Matrix4x4& world, std::vector<Vector3>& positions, std::vector<uint32_t>& indices) const
+  {
+    ForEachVisibleMesh(world, {}, [&](const Mesh& mesh, const Matrix4x4& meshWorld) {
+      const uint32_t base = static_cast<uint32_t>(positions.size());
+      for (const VertexData& vertex : mesh.GetVertices()) {
+        positions.push_back(Mat4x4::Transform(meshWorld, { vertex.position.x, vertex.position.y, vertex.position.z }));
+      }
+      for (const uint32_t index : mesh.GetIndices()) {
+        indices.push_back(base + index);
+      }
+    });
+  }
+
   std::optional<AABB> Model::GetWorldBounds(const Matrix4x4& world, std::span<const MeshDrawSlot> slots) const
   {
     std::optional<AABB> bounds;

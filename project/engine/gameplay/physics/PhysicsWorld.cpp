@@ -13,7 +13,10 @@
 #include <Jolt/Physics/Collision/RayCast.h>
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
+#include <Jolt/Physics/Collision/Shape/ConvexHullShape.h>
 #include <Jolt/Physics/Collision/Shape/EmptyShape.h>
+#include <Jolt/Physics/Collision/Shape/MeshShape.h>
+#include <Jolt/Physics/Collision/Shape/ScaledShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
 #include <Jolt/Physics/Collision/Shape/StaticCompoundShape.h>
 #include <Jolt/Physics/PhysicsSystem.h>
@@ -275,9 +278,54 @@ namespace Tako {
     }
 
     /// <summary>
+    /// 頂点から作る形（Mesh と ConvexHull）。scale は軸ごとに掛かる。作れなければ nullptr
+    /// </summary>
+    JPH::Ref<JPH::Shape> MakeMeshLeaf(const PhysicsWorld::Shape& shape, const Vector3& scale) {
+      if (!shape.mesh || shape.mesh->positions.empty()) {
+        return nullptr;
+      }
+      JPH::ShapeSettings::ShapeResult result;
+      if (shape.type == PhysicsWorld::ShapeType::ConvexHull) {
+        JPH::Array<JPH::Vec3> points;
+        points.reserve(shape.mesh->positions.size());
+        for (const Vector3& position : shape.mesh->positions) {
+          points.push_back(ToJolt(position));
+        }
+        result = JPH::ConvexHullShapeSettings(points).Create();
+      } else {
+        JPH::VertexList          vertices;
+        JPH::IndexedTriangleList triangles;
+        vertices.reserve(shape.mesh->positions.size());
+        triangles.reserve(shape.mesh->indices.size() / 3);
+        for (const Vector3& position : shape.mesh->positions) {
+          vertices.push_back(JPH::Float3(position.x, position.y, position.z));
+        }
+        const std::vector<uint32_t>& indices = shape.mesh->indices;
+        for (size_t i = 0; i + 2 < indices.size(); i += 3) {
+          triangles.push_back(JPH::IndexedTriangle(indices[i], indices[i + 1], indices[i + 2], 0));
+        }
+        result = JPH::MeshShapeSettings(std::move(vertices), std::move(triangles)).Create();
+      }
+      if (result.HasError()) {
+        Logger::Log("PhysicsWorld: failed to build a mesh shape: %s", result.GetError().c_str());
+        return nullptr;
+      }
+      // 通知先は、中の形に持たせる（scale の入れ物は、中の形の値を返す）
+      JPH::Ref<JPH::Shape> leaf = result.Get();
+      leaf->SetUserData(reinterpret_cast<JPH::uint64>(shape.owner));
+      if (!IsSameScale(scale, { 1.0f, 1.0f, 1.0f })) {
+        leaf = new JPH::ScaledShape(leaf, ToJolt(scale));
+      }
+      return leaf;
+    }
+
+    /// <summary>
     /// scale の掛け方は Unity と同じ：Box は軸ごと、Sphere は 3 軸の最大、Capsule の半径は X と Z の大きい方・高さは Y
     /// </summary>
     JPH::Ref<JPH::Shape> MakeLeaf(const PhysicsWorld::Shape& shape, const Vector3& scale) {
+      if (shape.type == PhysicsWorld::ShapeType::Mesh || shape.type == PhysicsWorld::ShapeType::ConvexHull) {
+        return MakeMeshLeaf(shape, scale);
+      }
       const Vector3        size{ std::abs(scale.x), std::abs(scale.y), std::abs(scale.z) };
       JPH::Ref<JPH::Shape> leaf;
       switch (shape.type) {
@@ -298,7 +346,7 @@ namespace Tako {
         }
         break;
       }
-      case PhysicsWorld::ShapeType::Sphere:
+      default:
         leaf = new JPH::SphereShape((std::max)(shape.radius * (std::max)({ size.x, size.y, size.z }), kMinShapeSize));
         break;
       }
@@ -310,15 +358,18 @@ namespace Tako {
     /// shapes を、Actor の scale を掛けて 1 つの形にまとめる。形が 1 つなら、複合にはならない（Jolt が中の形をそのまま返す）
     /// </summary>
     JPH::RefConst<JPH::Shape> MakeShape(std::span<const PhysicsWorld::Shape> shapes, const Vector3& scale) {
-      // 形の無いボディ（Trigger しか持たない Rigidbody など）は、何にも当たらない
-      if (shapes.empty()) {
-        return new JPH::EmptyShape();
-      }
       JPH::StaticCompoundShapeSettings compound;
       for (const PhysicsWorld::Shape& shape : shapes) {
         const Vector3 position{ shape.position.x * scale.x, shape.position.y * scale.y, shape.position.z * scale.z };
         const Vector3 shapeScale{ shape.scale.x * scale.x, shape.scale.y * scale.y, shape.scale.z * scale.z };
-        compound.AddShape(ToJolt(position), ToJolt(Quat::Normalize(shape.rotation)), MakeLeaf(shape, shapeScale).GetPtr());
+        // モデルの無い Mesh など、作れなかった形は飛ばす
+        if (const JPH::Ref<JPH::Shape> leaf = MakeLeaf(shape, shapeScale)) {
+          compound.AddShape(ToJolt(position), ToJolt(Quat::Normalize(shape.rotation)), leaf.GetPtr());
+        }
+      }
+      // 形の無いボディ（Trigger しか持たない Rigidbody など）は、何にも当たらない
+      if (compound.mSubShapes.empty()) {
+        return new JPH::EmptyShape();
       }
       const JPH::ShapeSettings::ShapeResult result = compound.Create();
       if (result.HasError()) {

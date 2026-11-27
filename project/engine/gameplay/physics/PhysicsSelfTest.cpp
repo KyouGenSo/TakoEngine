@@ -8,6 +8,10 @@
 #include "Component.h"
 #include "Logger.h"
 #include "Mat4x4Func.h"
+#include "Mesh.h"
+#include "MeshComponent.h"
+#include "Model.h"
+#include "Object3d.h"
 #include "PhysicsWorld.h"
 #include "RigidbodyComponent.h"
 #ifdef TAKO_EDITOR
@@ -521,6 +525,61 @@ namespace Tako {
       assert(physics->GetBodyCount() == 0);
     }
 
+    /// <summary>
+    /// モデルから作る形：Mesh の床に球と凸包が乗る（三角形の表が外を向いている）、上からのレイが上の面に当たる、Dynamic の下の Mesh は形にならない
+    /// </summary>
+    void CheckMeshShapes()
+    {
+      PhysicsWorld* physics = PhysicsWorld::GetInstance();
+      if (!physics->CanCollide(ColliderComponent::kActorLayer, ColliderComponent::kActorLayer)) {
+        return;
+      }
+      const char* const kCube  = "EngineResources/Model/white_cube.gltf";
+      const auto        isNear = [](float a, float b) { return std::abs(a - b) < 0.05f; };
+      const auto        addCube = [kCube](const ColliderProbe& probe) {
+        auto* mesh = static_cast<MeshComponent*>(probe.actor->AddComponent(std::make_unique<MeshComponent>(), "Mesh"));
+        mesh->SetModel(kCube);
+        return mesh;
+      };
+
+      BaseScene scene;
+      scene.BeginPlay();
+      // 箱のモデルを Scale で広げた物が、Mesh の形の床
+      const ColliderProbe ground     = SpawnSolid(scene, { 0.0f, 0.0f, 0.0f }, ColliderComponent::Shape::Mesh);
+      MeshComponent*      groundMesh = addCube(ground);
+      ground.actor->GetTransform().scale = { 50.0f, 1.0f, 50.0f };
+      const Mesh* box    = groundMesh->GetObject3d()->GetModel()->GetMesh();
+      const float top    = box->GetAABBLocalMax().y;
+      const float bottom = box->GetAABBLocalMin().y;
+
+      const ColliderProbe ball = SpawnSolid(scene, { 0.0f, top + 3.0f, 0.0f }, ColliderComponent::Shape::Sphere);
+      AddRigidbody(ball.actor);
+      const ColliderProbe hull = SpawnSolid(scene, { 5.0f, top + 3.0f, 0.0f }, ColliderComponent::Shape::ConvexHull);
+      addCube(hull);
+      AddRigidbody(hull.actor);
+      const ColliderProbe hollow = SpawnSolid(scene, { 10.0f, top + 3.0f, 0.0f }, ColliderComponent::Shape::Mesh);
+      addCube(hollow);
+      AddRigidbody(hollow.actor);
+
+      // Dynamic の下の Mesh を飛ばした事の記録は、Console に出さない
+      const Logger::Sink console = Logger::SetSink(nullptr);
+      scene.UpdateAlways();
+      Logger::SetSink(console);
+      RunFrames(scene, 240);
+
+      // 球は半径の分、凸包の箱は底までの分だけ、床の上の面より上で止まる
+      assert(isNear(ball.actor->GetTransform().translate.y, top + 0.5f));
+      assert(isNear(hull.actor->GetTransform().translate.y, top - bottom));
+      // 形の無い剛体は、床を抜けて落ち続ける
+      assert(hollow.actor->GetTransform().translate.y < bottom - 10.0f);
+
+      const std::optional<PhysicsWorld::RaycastHit> hit = physics->Raycast({ -5.0f, 50.0f, -5.0f }, { 0.0f, -1.0f, 0.0f }, 100.0f);
+      assert(hit && hit->actor == ground.actor && isNear(hit->point.y, top) && IsNear(hit->normal, { 0.0f, 1.0f, 0.0f }));
+
+      scene.Shutdown();
+      assert(physics->GetBodyCount() == 0);
+    }
+
 #ifdef TAKO_EDITOR
     /// <summary>
     /// 形式 1 のプロジェクトの移行：isTrigger の無いコライダー（1 ファイルのシーン・Actor ごとのファイル・プレハブ・置いた物の差分）に true が入り、書いてある値と読めないファイルは変わらない
@@ -585,6 +644,7 @@ namespace Tako {
     CheckScaleFollowsActor();
     CheckColliderComponent();
     CheckRigidbody();
+    CheckMeshShapes();
 #ifdef TAKO_EDITOR
     CheckColliderMigration();
 #endif

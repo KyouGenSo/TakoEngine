@@ -1,6 +1,7 @@
 #include "RigidbodyComponent.h"
 #include "Actor.h"
 #include "ColliderComponent.h"
+#include "Logger.h"
 #include "Mat4x4Func.h"
 #include "QuatFunc.h"
 
@@ -174,6 +175,11 @@ namespace Tako {
       }
       colliders_.push_back(collider);
       if (!collider->IsEnabled()) {
+        continue;
+      }
+      // 三角形のメッシュは、動く剛体の形にできない（物理エンジンの決まり。Unity も同じ）
+      if (type_ == BodyType::Dynamic && collider->shape_ == ColliderComponent::Shape::Mesh) {
+        Logger::Log("Rigidbody: the Mesh collider of %s was skipped, because a Dynamic body cannot have a Mesh shape. Use Convex Hull, or set Body Type to Kinematic", actor.GetName().c_str());
         continue;
       }
 

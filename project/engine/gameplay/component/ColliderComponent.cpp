@@ -1,5 +1,11 @@
 #include "ColliderComponent.h"
 #include "Actor.h"
+#include "Logger.h"
+#include "Mat4x4Func.h"
+#include "MeshComponent.h"
+#include "Model.h"
+#include "ModelManager.h"
+#include "Object3d.h"
 #include "RigidbodyComponent.h"
 
 #include <span>
@@ -33,6 +39,7 @@ namespace Tako {
       return;
     }
     isPlaying_ = false;
+    meshData_.reset();
     DestroyOwnBody();
     // 預けていた Rigidbody から、自分の形を外してもらう
     if (RigidbodyComponent* rigidbody = std::exchange(rigidbody_, nullptr)) {
@@ -47,6 +54,8 @@ namespace Tako {
 
   void ColliderComponent::PostEditChange()
   {
+    // モデルの欄が変わったかもしれないので、頂点は作り直す
+    meshData_.reset();
     Refresh();
   }
 
@@ -191,9 +200,17 @@ namespace Tako {
   {
     PhysicsWorld::Shape shape;
     switch (shape_) {
-    case Shape::Sphere:  shape.type = PhysicsWorld::ShapeType::Sphere; break;
-    case Shape::Box:     shape.type = PhysicsWorld::ShapeType::Box; break;
-    case Shape::Capsule: shape.type = PhysicsWorld::ShapeType::Capsule; break;
+    case Shape::Sphere:     shape.type = PhysicsWorld::ShapeType::Sphere; break;
+    case Shape::Box:        shape.type = PhysicsWorld::ShapeType::Box; break;
+    case Shape::Capsule:    shape.type = PhysicsWorld::ShapeType::Capsule; break;
+    case Shape::Mesh:       shape.type = PhysicsWorld::ShapeType::Mesh; break;
+    case Shape::ConvexHull: shape.type = PhysicsWorld::ShapeType::ConvexHull; break;
+    }
+    if (shape_ == Shape::Mesh || shape_ == Shape::ConvexHull) {
+      if (!meshData_) {
+        meshData_ = BuildMeshData();
+      }
+      shape.mesh = meshData_;
     }
     shape.radius   = radius_;
     shape.height   = height_;
@@ -201,6 +218,26 @@ namespace Tako {
     shape.position = offset_;
     shape.owner    = this;
     return shape;
+  }
+
+  std::shared_ptr<const PhysicsWorld::MeshData> ColliderComponent::BuildMeshData() const
+  {
+    auto data = std::make_shared<PhysicsWorld::MeshData>();
+    if (!model_.empty()) {
+      if (const std::unique_ptr<Model> model = ModelManager::GetInstance()->GetModel(model_)) {
+        model->AppendTriangles(Mat4x4::MakeIdentity(), data->positions, data->indices);
+        model->Finalize();
+      }
+    } else if (MeshComponent* mesh = GetOwner()->GetComponent<MeshComponent>()) {
+      if (const Model* model = mesh->GetObject3d()->GetModel()) {
+        const Transform& offset = mesh->GetOffset();
+        model->AppendTriangles(Mat4x4::MakeAffine(offset.scale, offset.rotate, offset.translate), data->positions, data->indices);
+      }
+    }
+    if (data->positions.empty()) {
+      Logger::Log("Collider: %s has no model for its Mesh / Convex Hull shape. Set Model, or add a Mesh component with a model", GetOwner()->GetName().c_str());
+    }
+    return data;
   }
 
   PhysicsWorld::BodySettings ColliderComponent::MakeSettings() const

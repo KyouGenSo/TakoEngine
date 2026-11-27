@@ -80,6 +80,11 @@ namespace Tako {
     std::optional<float> Raycast(const Vector3& origin, const Vector3& direction, const Matrix4x4& world, std::span<const MeshDrawSlot> slots = {}) const;
 
     /// <summary>
+    /// 表示中のメッシュの全部の三角形を、world で移した頂点と添字（3 つで 1 枚）として足す。スキニング付きのモデルは、バインドポーズの形
+    /// </summary>
+    void AppendTriangles(const Matrix4x4& world, std::vector<Vector3>& positions, std::vector<uint32_t>& indices) const;
+
+    /// <summary>
     /// 表示中のメッシュを全部囲む、ワールドの箱。Draw と同じ行列で求め、表示中のメッシュが無ければ値なし
     /// </summary>
     /// <param name="world">Draw に渡すのと同じワールド行列</param>

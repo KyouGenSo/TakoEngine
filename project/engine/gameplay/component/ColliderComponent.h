@@ -4,6 +4,8 @@
 #include "Vector3.h"
 
 #include <cstdint>
+#include <memory>
+#include <string>
 
 namespace Tako {
 
@@ -23,7 +25,7 @@ namespace Tako {
 
   public: //構造体
     TENUM()
-    enum class Shape { Sphere, Box, Capsule };
+    enum class Shape { Sphere, Box, Capsule, Mesh, ConvexHull };
 
   public: //メンバー関数
     ColliderComponent();
@@ -115,6 +117,11 @@ namespace Tako {
 
     PhysicsWorld::BodySettings MakeSettings() const;
 
+    /// <summary>
+    /// Mesh と ConvexHull の頂点を、Model の欄のモデル（空なら、同じ Actor の Mesh コンポーネントのモデルと Offset）から作る
+    /// </summary>
+    std::shared_ptr<const PhysicsWorld::MeshData> BuildMeshData() const;
+
   private: //メンバー変数
     TPROPERTY(Edit)
     Shape                           shape_       = Shape::Sphere;
@@ -126,6 +133,8 @@ namespace Tako {
     float                           height_      = 2.0f;
     TPROPERTY(Edit, Tooltip = "Box の全長", ClampMin = 0, Speed = 0.05)
     Vector3 size_{ 1.0f, 1.0f, 1.0f };
+    TPROPERTY(Edit, Tooltip = "Mesh と Convex Hull の形にするモデル。空なら、同じ Actor の Mesh コンポーネントのモデル", Asset = "Model")
+    std::string                     model_;
     TPROPERTY(Edit, Speed = 0.05)
     Vector3                         offset_{};
     TPROPERTY(Edit, Tooltip = "滑りにくさ（0 = 滑る）。Rigidbody の形のときは、最初の Collider の値が使われる", ClampMin = 0, Speed = 0.01)
@@ -134,6 +143,8 @@ namespace Tako {
     float                           restitution_ = 0.0f;
     TPROPERTY()
     uint32_t                        layer_       = kActorLayer;
+
+    std::shared_ptr<const PhysicsWorld::MeshData> meshData_;  ///< Mesh と ConvexHull の頂点。値を変えたら（PostEditChange）作り直す
 
     RigidbodyComponent*      rigidbody_     = nullptr;                       ///< 形を預けている Rigidbody。無ければ、body_ を自分で持つ
     PhysicsWorld::BodyHandle body_          = PhysicsWorld::kInvalidBody;
