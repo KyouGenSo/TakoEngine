@@ -1210,6 +1210,8 @@ namespace Tako {
     const JPH::Ref<JPH::CharacterVirtualSettings> creation = new JPH::CharacterVirtualSettings();
     creation->mShape         = shape;
     creation->mMaxSlopeAngle = settings.maxSlopeAngle;
+    creation->mMaxStrength   = (std::max)(settings.pushStrength, 0.0f);
+    creation->mMass          = (std::max)(settings.mass, 0.0f);
     // キャラクター自身は世界のボディではないので、同じ形のボディを中に持たせる（レイ・トリガー・他のボディに見える）
     creation->mInnerBodyShape = shape;
     creation->mInnerBodyLayer = ToObjectLayer(BodyKind::Kinematic, settings.layer);
@@ -1271,6 +1273,22 @@ namespace Tako {
   {
     if (const auto found = impl_->characters.find(character); found != impl_->characters.end()) {
       found->second.character->SetLinearVelocity(ToJolt(velocity));
+    }
+  }
+
+  void PhysicsWorld::SetCharacterPushStrength(CharacterHandle character, float pushStrength)
+  {
+    if (const auto found = impl_->characters.find(character); found != impl_->characters.end()) {
+      found->second.settings.pushStrength = pushStrength;
+      found->second.character->SetMaxStrength((std::max)(pushStrength, 0.0f));
+    }
+  }
+
+  void PhysicsWorld::SetCharacterMass(CharacterHandle character, float mass)
+  {
+    if (const auto found = impl_->characters.find(character); found != impl_->characters.end()) {
+      found->second.settings.mass = mass;
+      found->second.character->SetMass((std::max)(mass, 0.0f));
     }
   }
 

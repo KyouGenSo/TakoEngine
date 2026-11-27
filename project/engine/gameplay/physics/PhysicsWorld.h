@@ -117,6 +117,8 @@ namespace Tako {
       float      maxSlopeAngle = 0.8726646f;     ///< 登れる坂の角度（ラジアン）。これより急な面は、壁として滑る
       float      stepHeight    = 0.4f;           ///< 乗り越えられる段差の高さ。下りでは、この高さまで床に吸い付く
       float      gravityScale  = 1.0f;           ///< 重力の倍率（0 = 重力を受けない）
+      float      pushStrength  = 100.0f;         ///< 歩いて当たった Dynamic のボディを押す力の上限（N）。0 なら押さずに、壁のように止まる
+      float      mass          = 70.0f;          ///< 立っている Dynamic のボディに掛かる重さ（kg）。0 なら掛けない
     };
 
     enum class JointType : uint8_t {
@@ -277,6 +279,16 @@ namespace Tako {
     /// 動く速度。毎ステップ、ここに重力が足されてから動く（立っている間は、下向きの分を溜めない）
     /// </summary>
     void SetCharacterVelocity(CharacterHandle character, const Vector3& velocity);
+
+    /// <summary>
+    /// 歩いて当たった Dynamic のボディを押す力の上限（N）を変える。キャラクターは作り直さない（速度は残る）
+    /// </summary>
+    void SetCharacterPushStrength(CharacterHandle character, float pushStrength);
+
+    /// <summary>
+    /// 立っている Dynamic のボディに掛かる重さ（kg）を変える。キャラクターは作り直さない
+    /// </summary>
+    void SetCharacterMass(CharacterHandle character, float mass);
 
     //============================================================
     //ジョイント

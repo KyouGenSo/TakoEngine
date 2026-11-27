@@ -61,6 +61,18 @@ namespace Tako {
     PhysicsWorld::GetInstance()->SetCharacterVelocity(character_, velocity);
   }
 
+  void CharacterControllerComponent::SetPushStrength(float pushStrength)
+  {
+    pushStrength_ = pushStrength;
+    PhysicsWorld::GetInstance()->SetCharacterPushStrength(character_, pushStrength);
+  }
+
+  void CharacterControllerComponent::SetMass(float mass)
+  {
+    mass_ = mass;
+    PhysicsWorld::GetInstance()->SetCharacterMass(character_, mass);
+  }
+
   Vector3 CharacterControllerComponent::GetVelocity() const
   {
     return PhysicsWorld::GetInstance()->GetCharacterVelocity(character_);
@@ -83,6 +95,8 @@ namespace Tako {
     settings.maxSlopeAngle = maxSlopeAngle_;
     settings.stepHeight    = stepHeight_;
     settings.gravityScale  = gravityScale_;
+    settings.pushStrength  = pushStrength_;
+    settings.mass          = mass_;
 
     PhysicsWorld* physics = PhysicsWorld::GetInstance();
     character_ = physics->CreateCharacter(settings);

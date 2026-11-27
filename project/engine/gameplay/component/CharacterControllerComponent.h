@@ -47,6 +47,16 @@ namespace Tako {
     /// </summary>
     void SetVelocity(const Vector3& velocity);
 
+    /// <summary>
+    /// 歩いて当たった Dynamic の Rigidbody を押す力の上限（ニュートン）。0 なら押さずに、壁のように止まる
+    /// </summary>
+    void SetPushStrength(float pushStrength);
+
+    /// <summary>
+    /// 上に乗った Dynamic の Rigidbody に掛かる重さ（kg）。0 なら掛けない
+    /// </summary>
+    void SetMass(float mass);
+
     //=====================================
     //Getter
     //=====================================
@@ -59,6 +69,10 @@ namespace Tako {
     /// 立てる面（Max Slope Angle より緩い面）の上に居るか
     /// </summary>
     bool IsGrounded() const;
+
+    float GetPushStrength() const { return pushStrength_; }
+
+    float GetMass() const { return mass_; }
 
   private: //非公開関数
     void CreateCharacter();
@@ -78,6 +92,10 @@ namespace Tako {
     float    stepHeight_    = 0.4f;
     TPROPERTY(Edit, Tooltip = "重力の倍率（0 = 重力を受けない）", Speed = 0.05)
     float    gravityScale_  = 1.0f;
+    TPROPERTY(Edit, Tooltip = "歩いて当たった Dynamic の Rigidbody を押す力の上限（ニュートン）。0 なら押さずに、壁のように止まる", ClampMin = 0, Speed = 1)
+    float    pushStrength_  = 100.0f;
+    TPROPERTY(Edit, Tooltip = "上に乗った Dynamic の Rigidbody に掛かる重さ（kg）。0 なら掛けない", ClampMin = 0, Speed = 0.5)
+    float    mass_          = 70.0f;
     TPROPERTY()
     uint32_t layer_         = PhysicsWorld::kDefaultLayer;
 

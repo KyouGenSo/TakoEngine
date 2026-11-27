@@ -651,7 +651,8 @@ namespace Tako {
 
     /// <summary>
     /// Character Controller：床に立つ・段差を登る・壁で止まる・トリガーに知らせが届く・レイが当たる・他のキャラクターと重ならない・
-    /// 自分の Actor の Collider には当たらない・位置を書き換えると置き直る・Actor をオフにすると Exit が届く・Dynamic を押す
+    /// 自分の Actor の Collider には当たらない・位置を書き換えると置き直る・Actor をオフにすると Exit が届く・
+    /// Push Strength が 0 なら Dynamic を押さず、既定なら押す
     /// </summary>
     void CheckCharacterController()
     {
@@ -731,10 +732,56 @@ namespace Tako {
       RunFrames(scene, 2);
       assert(farZone.recorder->log.back() != 'X' && farZone.recorder->last == walker.actor);
 
-      // 歩いて当たった Dynamic の球は、押されて動く
+      // Push Strength が 0 なら、歩いて当たった Dynamic の球を押さずに、手前で止まる
+      controller->SetPushStrength(0.0f);
       controller->SetVelocity({ 2.0f, 0.0f, 0.0f });
+      RunFrames(scene, 90);
+      assert(isNear(ball.actor->GetTransform().translate.x, 52.0f, 0.05f) && walker.actor->GetTransform().translate.x < 51.1f);
+
+      // 既定の強さに戻すと、球は押されて動く
+      controller->SetPushStrength(100.0f);
       RunFrames(scene, 120);
       assert(ball.actor->GetTransform().translate.x > 52.5f && walker.actor->GetTransform().translate.x > 51.5f);
+
+      scene.Shutdown();
+      assert(physics->GetBodyCount() == 0);
+    }
+
+    /// <summary>
+    /// Character Controller の Mass：中心を蝶番で留めた Dynamic の板の端に立つと、重さの分だけ板が傾く。0 なら傾かない
+    /// </summary>
+    void CheckCharacterMass()
+    {
+      PhysicsWorld* physics = PhysicsWorld::GetInstance();
+      if (!physics->CanCollide(ColliderComponent::kActorLayer, ColliderComponent::kActorLayer)) {
+        return;
+      }
+      BaseScene scene;
+      scene.BeginPlay();
+      const auto spawnSeesaw = [&scene](float x, float mass) {
+        // 4 × 0.2 × 1 の板。中心を Z 軸の蝶番でワールドにつなぎ、傾きは 0.5 ラジアンまで
+        const ColliderProbe plank = SpawnSolid(scene, { x, 3.0f, 0.0f }, ColliderComponent::Shape::Box);
+        plank.actor->GetTransform().scale = { 4.0f, 0.2f, 1.0f };
+        AddRigidbody(plank.actor);
+        auto* hinge = static_cast<JointComponent*>(plank.actor->AddComponent(std::make_unique<JointComponent>(), "Joint"));
+        hinge->SetType(JointComponent::JointType::Hinge);
+        hinge->SetAxis({ 0.0f, 0.0f, 1.0f });
+        hinge->SetAngleLimits(-0.5f, 0.5f);
+
+        // 板の端の上に、キャラクターを立たせる
+        const Probe rider      = SpawnProbe(scene, { x + 1.2f, 4.3f, 0.0f });
+        auto*       controller = static_cast<CharacterControllerComponent*>(
+          rider.actor->AddComponent(std::make_unique<CharacterControllerComponent>(), "CharacterController"));
+        controller->SetMass(mass);
+        return plank.actor;
+      };
+      const Actor* heavy      = spawnSeesaw(0.0f, 70.0f);
+      const Actor* weightless = spawnSeesaw(20.0f, 0.0f);
+      scene.UpdateAlways();
+
+      RunFrames(scene, 90);
+      assert(std::abs(heavy->GetTransform().rotate.z) > 0.1f);
+      assert(std::abs(weightless->GetTransform().rotate.z) < 0.02f);
 
       scene.Shutdown();
       assert(physics->GetBodyCount() == 0);
@@ -807,6 +854,7 @@ namespace Tako {
     CheckMeshShapes();
     CheckJoints();
     CheckCharacterController();
+    CheckCharacterMass();
 #ifdef TAKO_EDITOR
     CheckColliderMigration();
 #endif

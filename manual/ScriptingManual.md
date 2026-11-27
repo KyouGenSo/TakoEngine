@@ -822,10 +822,12 @@ void Hero::FixedTick(float) {
 | `Max Slope Angle` | 登れる坂の角度。これより急な面は、壁として滑る |
 | `Step Height` | 乗り越えられる段差の高さ。下りでは、この高さまで床に吸い付く |
 | `Gravity Scale` | 重力の倍率。0 で重力を受けない |
+| `Push Strength` | 歩いて当たった Dynamic の Rigidbody を押す力の上限（ニュートン）。0 で押さずに、壁のように止まる |
+| `Mass` | 上に乗った Dynamic の Rigidbody に掛かる重さ（kg）。0 で掛けない |
 | `Layer` | 層（[11.3](#113-層)） |
 
 - 位置は物理が書きます。スクリプトで Actor の位置を書き換えると、その位置へ置き直されます（瞬間移動）。向きと Scale は、スクリプトで自由に変えられます
-- 動かない実体の Collider（壁・床）、Kinematic の Rigidbody、他の Character Controller では止まります。Dynamic の Rigidbody は、押して動かします
+- 動かない実体の Collider（壁・床）、Kinematic の Rigidbody、他の Character Controller では止まります。Dynamic の Rigidbody は、押して動かします（強さは `Push Strength`）
 - Trigger に入ると、Collider と同じように `OnCollisionEnter` などが届きます。レイキャストにも当たります
 - 同じ Actor と、その子の Actor に付いた Collider には当たりません
 - Rigidbody と一緒には付けません（どちらも、Actor の位置を書きます）
@@ -1042,6 +1044,8 @@ Animator・Light・Sky Box には、スクリプトから呼ぶ関数はあり�
 | `SetVelocity(velocity)` | 動く速度（1 秒あたり）。重力は物理が足すので、歩くときは `GetVelocity()` の y を残して x と z だけを入れる |
 | `GetVelocity()` | `SetVelocity` で入れた速度に、重力が足された値。立っている間は下向きの分が、天井に当たると上向きの分が 0 に戻る |
 | `IsGrounded()` | 立てる面（`Max Slope Angle` より緩い面）の上に居るか |
+| `SetPushStrength(strength)`、`GetPushStrength()` | 歩いて当たった Dynamic の Rigidbody を押す力の上限（ニュートン）。0 で押さない |
+| `SetMass(mass)`、`GetMass()` | 上に乗った Dynamic の Rigidbody に掛かる重さ（kg）。0 で掛けない |
 
 ### Joint
 
