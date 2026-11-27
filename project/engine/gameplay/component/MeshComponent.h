@@ -47,6 +47,11 @@ namespace Tako {
     bool DrawCustomImGui() override;
 #endif
 
+    /// <summary>
+    /// 描画設定のマテリアルを、次の Draw で読み直す（マテリアルのファイルが消えたとき用）
+    /// </summary>
+    void RefreshRenderSettings() { overridesDirty_ = true; }
+
     //=====================================
     //Setter
     //=====================================

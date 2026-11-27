@@ -11,6 +11,7 @@
 #include "PostEffectStruct.h"
 #include "PostProcess.h"
 #ifdef TAKO_EDITOR
+#include "ConfirmPrompt.h"
 #include "EditTracker.h"
 #include "ShortcutTable.h"
 #endif
@@ -174,6 +175,11 @@ namespace Tako {
     /// キー操作の表。DrawImgui のキー処理と About の一覧が使う
     /// </summary>
     static std::span<const ShortcutBinding<PostEffectManager>> Shortcuts();
+
+    /// <summary>
+    /// エフェクト effect を、マテリアルを通さずに直接使っているプロファイルの名前（resources/Json/PostEffects のファイルを読む）
+    /// </summary>
+    static std::vector<std::string> FindProfilesUsingEffect(const std::string& effect);
 #endif
 
     //============================================================
@@ -240,6 +246,11 @@ namespace Tako {
     /// </summary>
     bool SaveCurrentProfile();
 
+    /// <summary>
+    /// profileName_ の名前のプロファイルの削除を、確認してから行う。読み込み中のプロファイルなら、スタックも空にする
+    /// </summary>
+    void RequestDeleteProfile();
+
     void DrawStackTab();
 
     void DrawEffectParametersTab();
@@ -279,6 +290,7 @@ namespace Tako {
 #ifdef TAKO_EDITOR
     EditTracker<>        profileTracker_{ "PostEffect Editor", { [this] { return SerializeProfile(); }, [this](const std::string& profile) { ApplyProfile(profile); } } };
     UnsavedChangesPrompt unsavedPrompt_;  ///< 未保存のまま別のプロファイルを読み込むときの確認
+    ConfirmPrompt        deletePrompt_;   ///< プロファイルを消すときの確認
 #endif
   };
 

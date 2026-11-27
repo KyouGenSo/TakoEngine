@@ -822,6 +822,7 @@ namespace Tako {
       info.ranges = std::move(ranges);
       info.defaults = root.value("Defaults", json::object());
       info.layout.reset();
+      info.hasForward |= forward != root.end();
 
       // 描画物のシェーダー
       if (forward != root.end()) {
@@ -877,6 +878,54 @@ namespace Tako {
       }
     }
   }
+
+#ifdef TAKO_EDITOR
+  void MaterialLibrary::Unload(const std::string& name)
+  {
+    assets_.erase(name);
+  }
+
+  std::vector<std::string> MaterialLibrary::FindMaterialsUsingShader(const std::string& shader) const
+  {
+    std::vector<std::string> names;
+    for (const std::string& name : GetMaterialFileNames()) {
+      const std::optional<std::string> text = ReadText(MaterialPath(name));
+      const json                       root = text ? json::parse(*text, nullptr, false) : json();
+      const auto                       it   = root.find("Shader");
+      if (it != root.end() && it->is_string() && it->get<std::string>() == shader) {
+        names.push_back(name);
+      }
+    }
+    // 保存していない変更で、シェーダーを替えた物
+    for (const auto& [name, asset] : assets_) {
+      const bool isUsing = asset.material ? asset.material->GetShader()->GetName() == shader : (asset.post && asset.post->shader == shader);
+      if (isUsing && std::ranges::find(names, name) == names.end()) {
+        names.push_back(name);
+      }
+    }
+    return names;
+  }
+
+  void MaterialLibrary::UnloadShaderFile(const std::string& path)
+  {
+    for (auto it = shaders_.begin(); it != shaders_.end();) {
+      if (it->second.path != path) {
+        ++it;
+        continue;
+      }
+      if (!it->second.postEffectShaders.empty()) {
+        UnregisterPostEffect(it->first);
+      }
+      // 値の範囲だけを足すファイル（Forward なし）は、C++ が登録したシェーダーを外さない
+      if (it->second.hasForward) {
+        Renderer::GetInstance()->UnregisterShader(it->first);
+      }
+      it = shaders_.erase(it);
+    }
+    shaderFileTimes_.erase(path);
+    loadErrors_.erase(path);
+  }
+#endif
 
   const std::string* MaterialLibrary::FindLoadError(const std::string& path) const
   {

@@ -839,6 +839,9 @@
     <ClInclude Include="engine\editor\UI\UnsavedChangesModal.h">
       <Filter>editor\UI</Filter>
     </ClInclude>
+    <ClInclude Include="engine\editor\UI\ConfirmPrompt.h">
+      <Filter>editor\UI</Filter>
+    </ClInclude>
     <ClInclude Include="engine\core\io\Input.h">
       <Filter>core\io</Filter>
     </ClInclude>

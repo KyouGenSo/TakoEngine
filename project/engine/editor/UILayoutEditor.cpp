@@ -338,6 +338,10 @@ namespace Tako {
   UILayoutEditor::~UILayoutEditor() = default;
 
   void UILayoutEditor::Update() {
+    if (!pendingDeleteLayout_.empty()) {
+      DeleteLayout(std::exchange(pendingDeleteLayout_, std::string()));
+    }
+
     if (!discardLayout_.empty()) {
       if (UILayout* gameLayout = FindGameLayout(discardLayout_)) {
         gameLayout->Load(discardLayout_);
@@ -766,6 +770,22 @@ namespace Tako {
     return true;
   }
 
+  void UILayoutEditor::DeleteLayout(const std::string& name) {
+    const std::string path = LayoutFilePath(name);
+    if (!MoveToRecycleBin({ path })) {
+      LogToConsole("UILayout delete failed: " + path, DebugUIManager::LogType::Error);
+      return;
+    }
+    // 読み込み済みのインスタンスも、ファイルが無いときと同じ空のレイアウトにする（名前が空の物は描かれず、一覧にも出ない）
+    for (UILayout* layout : UILayout::GetInstances()) {
+      if (layout->GetName() == name) {
+        layout->Create(std::string());
+      }
+    }
+    LogToConsole("UILayout deleted: " + path);
+    Open({});
+  }
+
   void UILayoutEditor::CollectUnsavedChanges(std::vector<std::string>& out) const {
     if (editedLayout_) {
       out.push_back("UI Editor: " + layoutName_);
@@ -879,6 +899,7 @@ namespace Tako {
       save = [this, layout] { return SaveLayout(*layout); };
     }
     unsavedPrompt_.Draw("Unsaved Changes##UIEditor", save);
+    deletePrompt_.Draw("Delete Layout##UIEditor");
 
     ImGui::BeginDisabled(!layout);
     ImGui::SameLine();
@@ -893,6 +914,13 @@ namespace Tako {
       Request(PendingOp::Reload, {});
     }
     ImGui::SetItemTooltip("Discard unsaved changes to the layout and the shared texture 9-slice settings.");
+    ImGui::SameLine();
+    if (ImGui::Button(ICON_FA_TRASH_CAN "  Delete")) {
+      // スプライトの破棄を伴うので、確認の後も次の Update まで待つ
+      deletePrompt_.Request(std::format("Delete layout '{}'?\n{} will be moved to the Recycle Bin.", layoutName_, LayoutFilePath(layoutName_)),
+                            ICON_FA_TRASH_CAN "  Delete", [this, name = layoutName_] { pendingDeleteLayout_ = name; });
+    }
+    ImGui::SetItemTooltip("Delete the layout file. Layouts loaded by the scene are emptied too.");
     ImGui::EndDisabled();
 
     UI::IconToggle(ICON_FA_ARROW_POINTER "##ViewportEdit", "Viewport Edit: select and move elements in the Game Viewport", &isViewportEditEnabled_);

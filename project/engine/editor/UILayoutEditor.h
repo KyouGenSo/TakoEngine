@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 #include "imgui.h"
+#include "ConfirmPrompt.h"
 #include "EditTracker.h"
 #include "ShortcutTable.h"
 #include "Vector2.h"
@@ -227,6 +228,11 @@ namespace Tako {
     bool SaveLayout(const UILayout& layout);
 
     /// <summary>
+    /// name のレイアウトのファイルをごみ箱へ移し、読み込み済みの同名のインスタンスも空にする。スプライトを破棄するので Update から呼ぶ
+    /// </summary>
+    void DeleteLayout(const std::string& name);
+
+    /// <summary>
     /// Inspector で編集する要素（選択の末尾）
     /// </summary>
     UIElement* FindSelected(UILayout& layout) const;
@@ -403,6 +409,7 @@ namespace Tako {
     std::unique_ptr<UILayout> preview_;
     bool                      isPreviewMode_       = false;  ///< 編集対象をプレビューで開くか
     std::string               pendingNewLayout_;             ///< 次の Update で作る新規レイアウト名
+    std::string               pendingDeleteLayout_;          ///< 次の Update で消すレイアウト名
     char                      newLayoutBuffer_[64] = "";
     std::string               newLayoutError_;               ///< 新規作成ポップアップに出す検証エラー
 
@@ -411,6 +418,7 @@ namespace Tako {
     std::string          cleanSnapshot_;                 ///< editedLayout_ が付く直前の内容。編集でここへ戻れば未保存を外す
     std::string          cleanSliceSnapshot_;            ///< isSliceTableEdited_ が付く直前の共有の 9-slice の内容
     UnsavedChangesPrompt unsavedPrompt_;                 ///< 未保存のまま別のレイアウトへ切り替えるときの確認
+    ConfirmPrompt        deletePrompt_;
     std::string          discardLayout_;                 ///< 次の Update でファイルから読み直して編集を捨てるゲーム側のレイアウト
 
     //編集の検出（Serialize は重いので、ハッシュが変わったときだけ作り直す）

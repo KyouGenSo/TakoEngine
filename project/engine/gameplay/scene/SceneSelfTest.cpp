@@ -3,6 +3,7 @@
 #ifdef _DEBUG
 
 #include "Actor.h"
+#include "AnimationClip.h"
 #include "BaseScene.h"
 #include "DrawList.h"
 #include "Frustum.h"
@@ -531,6 +532,18 @@ namespace Tako {
     for (const char* name : { kGroup, kSingle, kInner, kOuter }) {
       SetPrefabInMemory(name, nullptr);
     }
+
+#ifdef TAKO_EDITOR
+    // 外したクリップは、空のまま読める（再生中のプレイヤーのポインタが切れない）。同じ名前は、新しいクリップになる
+    {
+      const std::string name    = "TakoSceneSelfTestClip";
+      AnimationClip*    removed = AnimationClip::Create(name);
+      AnimationClip::Unload(name);
+      assert(removed->GetTracks().empty());
+      assert(AnimationClip::Create(name) != removed);
+      AnimationClip::Unload(name);
+    }
+#endif
   }
 
 } // namespace Tako

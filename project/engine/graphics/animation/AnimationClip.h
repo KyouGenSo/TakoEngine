@@ -120,6 +120,13 @@ namespace Tako {
     /// </summary>
     static AnimationClip* Create(const std::string& name);
 
+#ifdef TAKO_EDITOR
+    /// <summary>
+    /// name のクリップを、読み込み済みの一覧から外す（ファイルを消したとき用）。再生中のプレイヤーのために、中身を空にして残す
+    /// </summary>
+    static void Unload(const std::string& name);
+#endif
+
     /// <summary>
     /// kDirectory/name.json で中身を置き換える（未保存の変更は捨てる）
     /// </summary>

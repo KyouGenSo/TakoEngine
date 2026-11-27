@@ -6,6 +6,7 @@
 #include "CameraKeyframe.h"
 #include "CameraAnimationTimeline.h"
 #include "CameraAnimationCurveEditor.h"
+#include "ConfirmPrompt.h"
 #include "EditTracker.h"
 #include "ShortcutTable.h"
 #include <memory>
@@ -112,6 +113,11 @@ namespace Tako {
     /// </summary>
     void RequestReload();
 
+    /// <summary>
+    /// 開いているアニメーションの削除を、確認してから行う。ファイルをごみ箱へ移し、読み込み済みの同名のインスタンスも空にする
+    /// </summary>
+    void RequestDelete();
+
     bool Save();
 
     /// <summary>
@@ -203,6 +209,7 @@ namespace Tako {
     EditTracker<>        tracker_{ "Camera Animation Editor", { [this] { return animation_ ? animation_->ToJson().dump() : std::string(); },
                                                                 [this](const std::string& state) { if (animation_) animation_->FromJson(nlohmann::json::parse(state)); } } };
     UnsavedChangesPrompt unsavedPrompt_;  ///< 未保存のまま別のアニメーションを開く・読み直すときの確認
+    ConfirmPrompt        deletePrompt_;
 
     //名前入力ポップアップ
     NamePopup namePopup_            = NamePopup::None;

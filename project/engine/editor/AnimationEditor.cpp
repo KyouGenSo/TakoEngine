@@ -2,6 +2,7 @@
 
 #include "AnimationEditor.h"
 #include "EditorUI.h"
+#include "AssetBrowser.h"
 #include "DebugUIManager.h"
 #include "FrameTimer.h"
 #include "Model.h"
@@ -137,8 +138,15 @@ namespace Tako {
     const bool needsOwnedLayout = previewMode_ == PreviewMode::UI && !layoutName_.empty() && !FindSceneLayout(layoutName_);
     if (needsOwnedLayout && (!ownedLayout_ || ownedLayout_->GetName() != layoutName_)) {
       ReleaseLayoutPreview();
-      ownedLayout_ = std::make_unique<UILayout>();
-      ownedLayout_->Load(layoutName_);
+      ownedLayout_.reset();
+      // 無いファイル（UI Editor で消されたレイアウトなど）は、空のレイアウトを作らずに選択を外す
+      if (std::filesystem::is_regular_file(std::string(UILayout::kDirectory) + layoutName_ + ".json")) {
+        ownedLayout_ = std::make_unique<UILayout>();
+        ownedLayout_->Load(layoutName_);
+      }
+      else {
+        layoutName_.clear();
+      }
     }
     else if (!needsOwnedLayout && ownedLayout_) {
       if (previewedLayout_ == ownedLayout_.get()) {
@@ -316,6 +324,9 @@ namespace Tako {
       if (ImGui::MenuItem("Reload", nullptr, false, clip_ != nullptr)) {
         RequestReload();
       }
+      if (ImGui::MenuItem("Delete...", nullptr, false, clip_ != nullptr)) {
+        RequestDelete();
+      }
       ImGui::Separator();
       if (ImGui::MenuItem("Close")) {
         *isOpen_ = false;
@@ -398,6 +409,11 @@ namespace Tako {
       RequestReload();
     }
     ImGui::SetItemTooltip("Discard unsaved changes and read the file again.");
+    ImGui::SameLine();
+    if (ImGui::Button(ICON_FA_TRASH_CAN "  Delete")) {
+      RequestDelete();
+    }
+    ImGui::SetItemTooltip("Delete the clip file. The game stops playing it too.");
     ImGui::EndDisabled();
 
     if (clip_) {
@@ -422,6 +438,7 @@ namespace Tako {
       save = [this] { return Save(); };
     }
     unsavedPrompt_.Draw("Unsaved Changes##AnimationEditor", save);
+    deletePrompt_.Draw("Delete Clip##AnimationEditor");
   }
 
   void AnimationEditor::DrawNamePopup() {
@@ -881,6 +898,28 @@ namespace Tako {
       else {
         LogToConsole(std::format("Animation Editor: failed to reload '{}'", name_), LogType::Error);
       }
+    });
+  }
+
+  void AnimationEditor::RequestDelete() {
+    const std::string path = (std::filesystem::path(AnimationClip::kDirectory) / (name_ + ".json")).generic_string();
+    deletePrompt_.Request(std::format("Delete clip '{}'?\n{} will be moved to the Recycle Bin.", name_, path), ICON_FA_TRASH_CAN "  Delete",
+                          [this, name = name_, path] {
+      if (!MoveToRecycleBin({ path })) {
+        LogToConsole(std::format("Animation Editor: failed to delete '{}'", name), LogType::Error);
+        return;
+      }
+      AnimationClip::Unload(name);
+      LogToConsole(std::format("Animation Editor: deleted '{}'", name));
+
+      clip_ = nullptr;
+      name_.clear();
+      timeline_.ClearSelection();
+      timeline_.SetSelectedTrack(-1);
+      playhead_    = 0.0f;
+      playElapsed_ = 0.0f;
+      isPlaying_   = false;
+      tracker_.Reset();
     });
   }
 

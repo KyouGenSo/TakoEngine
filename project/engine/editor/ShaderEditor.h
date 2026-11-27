@@ -11,6 +11,7 @@
 
 #include <json.hpp>
 
+#include "ConfirmPrompt.h"
 #include "EditTracker.h"
 #include "ShortcutTable.h"
 #include "UnsavedChangesModal.h"
@@ -63,6 +64,11 @@ namespace Tako {
     /// </summary>
     void ApplyDocument();
 
+    /// <summary>
+    /// 選択中のシェーダーの削除を、確認してから行う。マテリアルか PostEffect のプロファイルが使っているシェーダーは消さず、使っている物を知らせる
+    /// </summary>
+    void RequestDelete();
+
     void DrawListPane();
 
     void DrawShaderPane();
@@ -107,6 +113,7 @@ namespace Tako {
     EditTracker<>        tracker_{ "Shader Editor", { [this] { return document_.dump(4); },
                                                       [this](const std::string& text) { document_ = nlohmann::json::parse(text, nullptr, false); ApplyDocument(); } } };
     UnsavedChangesPrompt unsavedPrompt_;  ///< 未保存のまま別のファイルを開くときの確認
+    ConfirmPrompt        deletePrompt_;
   };
 
 } // namespace Tako

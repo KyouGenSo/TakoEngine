@@ -438,6 +438,7 @@
     <ClInclude Include="engine\editor\UI\EditorUI.h" />
     <ClInclude Include="engine\editor\UI\ShortcutTable.h" />
     <ClInclude Include="engine\editor\UI\UnsavedChangesModal.h" />
+    <ClInclude Include="engine\editor\UI\ConfirmPrompt.h" />
     <ClInclude Include="engine\graphics\DX12\D3DResourceLeakChecker.h" />
     <ClInclude Include="engine\graphics\DX12\DX12Basic.h" />
     <ClInclude Include="engine\core\io\Input.h" />

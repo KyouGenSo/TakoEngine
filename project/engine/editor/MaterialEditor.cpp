@@ -4,21 +4,28 @@
 #include "EditorUI.h"
 
 #include <algorithm>
+#include <cctype>
 #include <format>
 #include <iterator>
 #include <json.hpp>
 
+#include "Actor.h"
 #include "AssetBrowser.h"
+#include "BaseScene.h"
 #include "DebugUIManager.h"
 #include "ImGuiManager.h"
 #include "Material.h"
+#include "MeshComponent.h"
 #include "Model.h"
 #include "ModelManager.h"
 #include "Object3d.h"
 #include "OverrideField.h"
+#include "PostEffectManager.h"
 #include "PostProcess.h"
 #include "PrimitiveBuilder.h"
 #include "Renderer.h"
+#include "RenderPipeline.h"
+#include "SceneManager.h"
 #include "ShaderLibrary.h"
 
 namespace Tako {
@@ -200,6 +207,10 @@ namespace Tako {
             Save();
           }
           ImGui::SameLine();
+          if (UI::IconButton(ICON_FA_TRASH_CAN, "Delete the material (moves the file to the Recycle Bin)")) {
+            RequestDelete();
+          }
+          ImGui::SameLine();
           ImGui::AlignTextToFramePadding();
           ImGui::Text("%s%s", selected_.c_str(), tracker_.IsEdited() ? " *" : "");
 
@@ -223,6 +234,7 @@ namespace Tako {
       ImGui::EndChild();
 
       unsavedPrompt_.Draw("Unsaved Changes##MatEditor", [this] { return Save(); });
+      deletePrompt_.Draw("Delete Material##MatEditor");
 
       tracker_.EndSection();
       ProcessShortcuts(Shortcuts(), *this);
@@ -273,11 +285,58 @@ namespace Tako {
                                 [this, name] { Select(name); });
   }
 
+  void MaterialEditor::RequestDelete()
+  {
+    const std::filesystem::path path = ToAssetPath("Material", selected_);
+    deletePrompt_.Request(std::format("Delete material '{}'?\n{} will be moved to the Recycle Bin.", selected_, path.generic_string()),
+                          ICON_FA_TRASH_CAN "  Delete", [this, path] { DeleteSelected(path); });
+  }
+
+  void MaterialEditor::DeleteSelected(const std::filesystem::path& path)
+  {
+    const std::string name = selected_;
+    if (!path.empty() && !MoveToRecycleBin({ path })) {
+      LogToConsole(std::format("Material delete failed: {}", name), DebugUIManager::LogType::Error);
+      return;
+    }
+    MaterialLibrary::GetInstance()->Unload(name);
+
+    // 読み込み済みの側も、ファイルが無いときの状態にする（Mesh はモデル自身のマテリアルに戻り、パスとエフェクトは外れる）
+    if (const BaseScene* scene = SceneManager::GetInstance()->GetCurrentScene()) {
+      for (const std::unique_ptr<Actor>& actor : scene->GetActors()) {
+        for (const std::unique_ptr<Component>& component : actor->GetComponents()) {
+          if (component->IsA<MeshComponent>()) {
+            static_cast<MeshComponent*>(component.get())->RefreshRenderSettings();
+          }
+        }
+      }
+    }
+    RenderPipeline::GetInstance()->RefreshObjectPasses();
+
+    PostEffectManager*    postEffects = PostEffectManager::GetInstance();
+    std::vector<uint32_t> removedIds;
+    for (const PostEffectInstance& effect : postEffects->GetStack().GetEffects()) {
+      if (effect.material && effect.material->name == name) {
+        removedIds.push_back(effect.id);
+      }
+    }
+    for (const uint32_t id : removedIds) {
+      postEffects->RemoveEffect(id);
+    }
+
+    LogToConsole(std::format("Material deleted: {}", name));
+    selected_.clear();
+    tracker_.Reset();
+  }
+
   void MaterialEditor::DrawListPane()
   {
+    MaterialLibrary*               library   = MaterialLibrary::GetInstance();
+    const std::vector<std::string> fileNames = library->GetMaterialFileNames();
+
     ImGui::SeparatorText("Materials");
-    for (const std::string& name : MaterialLibrary::GetInstance()->GetMaterialFileNames()) {
-      const std::string label = MaterialLibrary::GetInstance()->IsPostEffectMaterial(name) ? std::format("{}  (PostEffect)##{}", name, name) : name;
+    for (const std::string& name : fileNames) {
+      const std::string label = library->IsPostEffectMaterial(name) ? std::format("{}  (PostEffect)##{}", name, name) : name;
       if (ImGui::Selectable(label.c_str(), name == selected_)) {
         RequestOpen(name);
       }
@@ -303,16 +362,25 @@ namespace Tako {
       }
       ImGui::EndCombo();
     }
-    ImGui::BeginDisabled(newName_[0] == '\0');
+
+    // Create は同名のマテリアルを初期値に戻して保存するので、既にある名前では作らせない（Windows のファイル名は大文字と小文字を区別しない）
+    const std::string name    = newName_.data();
+    const bool        isTaken = library->Find(name) || library->IsPostEffectMaterial(name) || std::ranges::any_of(fileNames, [&name](const std::string& fileName) {
+      return std::ranges::equal(fileName, name, [](unsigned char a, unsigned char b) { return std::tolower(a) == std::tolower(b); });
+    });
+    ImGui::BeginDisabled(name.empty() || isTaken);
     if (ImGui::Button(ICON_FA_PLUS "  Create", ImVec2(-1.0f, 0.0f))) {
-      const std::string name = newName_.data();
       unsavedPrompt_.RunOrConfirm(tracker_.IsEdited(), std::format("Material '{}' has unsaved changes.", selected_), "Create", [this, name] {
         if (MaterialLibrary::GetInstance()->Create(name, newShader_) && MaterialLibrary::GetInstance()->Save(name)) {
           Select(name);
+          newName_.fill('\0');
         }
       });
     }
     ImGui::EndDisabled();
+    if (isTaken) {
+      ImGui::TextDisabled("The name is already used");
+    }
   }
 
   bool MaterialEditor::DrawPreview()

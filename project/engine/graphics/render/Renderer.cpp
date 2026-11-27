@@ -262,6 +262,16 @@ namespace Tako {
     screenProjection_ = Mat4x4::MakeOrtho(0.0f, 0.0f, size.x, size.y, 0.0f, 100.0f);
   }
 
+  void Renderer::UnregisterShader(const std::string& name)
+  {
+    const auto it = shaders_.find(name);
+    if (it == shaders_.end()) {
+      return;
+    }
+    unregisteredShaders_.push_back(std::move(it->second));
+    shaders_.erase(it);
+  }
+
   const ShaderAsset* Renderer::FindShader(std::string_view name) const
   {
     auto it = shaders_.find(std::string(name));

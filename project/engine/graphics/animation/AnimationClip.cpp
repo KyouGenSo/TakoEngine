@@ -92,6 +92,22 @@ namespace Tako {
     return slot.get();
   }
 
+#ifdef TAKO_EDITOR
+  void AnimationClip::Unload(const std::string& name) {
+    auto&      clips = Clips();
+    const auto it    = clips.find(name);
+    if (it == clips.end()) {
+      return;
+    }
+    // 再生中のプレイヤーが同じポインタを持っているので、解放せずに中身だけ空にして取っておく
+    // ponytail: 外した数だけ終了まで残る。編集中に消す数は少ないので、増えて困るならプレイヤーの一覧を持って解放する
+    static std::vector<std::unique_ptr<AnimationClip>> unloaded;
+    it->second->FromJson(json::object());
+    unloaded.push_back(std::move(it->second));
+    clips.erase(it);
+  }
+#endif
+
   bool AnimationClip::Load() {
     const std::filesystem::path path = FilePath(name_);
     std::ifstream               file(path);

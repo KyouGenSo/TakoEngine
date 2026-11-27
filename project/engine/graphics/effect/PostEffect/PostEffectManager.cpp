@@ -10,6 +10,7 @@
 #include "TextureManager.h"
 #ifdef TAKO_EDITOR
 #include "EditorUI.h"
+#include "AssetBrowser.h"
 #include "DebugUIManager.h"
 #include "ImGuiManager.h"
 #include "OverrideField.h"
@@ -691,6 +692,53 @@ namespace Tako {
     }
     return saved;
   }
+
+  void PostEffectManager::RequestDeleteProfile()
+  {
+    const std::string name = profileName_.data();
+    const std::string path = ProfilePath(name).generic_string();
+    std::error_code   ec;
+    if (!std::filesystem::exists(path, ec)) {
+      LogToConsole(std::format("PostEffect profile not found: {}", name), DebugUIManager::LogType::Warning);
+      return;
+    }
+    deletePrompt_.Request(std::format("Delete profile '{}'?\n{} will be moved to the Recycle Bin.", name, path), ICON_FA_TRASH_CAN "  Delete",
+                          [this, name, path] {
+      if (!MoveToRecycleBin({ path })) {
+        LogToConsole(std::format("PostEffect profile delete failed: {}", name), DebugUIManager::LogType::Error);
+        return;
+      }
+      // 読み込み中のプロファイルなら、ファイルが無いときと同じ空のスタックにする
+      if (loadedProfile_ == name) {
+        ClearEffects();
+        profileTracker_.Reset();
+      }
+      profileName_.fill('\0');
+      LogToConsole(std::format("PostEffect profile deleted: {}", name));
+    });
+  }
+
+  std::vector<std::string> PostEffectManager::FindProfilesUsingEffect(const std::string& effect)
+  {
+    std::vector<std::string> names;
+    for (const std::string& name : ProfileNames()) {
+      std::ifstream ifs(ProfilePath(name));
+      const json    root    = json::parse(ifs, nullptr, false);
+      const auto    effects = root.find("Effects");
+      if (effects == root.end() || !effects->is_array()) {
+        continue;
+      }
+      // Material のある項目は、マテリアルの今のシェーダーで置かれる（MaterialLibrary::FindMaterialsUsingShader が見る）
+      const bool isUsing = std::ranges::any_of(*effects, [&effect](const json& entry) {
+        const auto entryName = entry.find("Name");
+        return !entry.contains("Material") && entryName != entry.end() && entryName->is_string() && entryName->get<std::string>() == effect;
+      });
+      if (isUsing) {
+        names.push_back(name);
+      }
+    }
+    return names;
+  }
 #endif
 
   void PostEffectManager::DrawImgui(bool* isOpen)
@@ -743,6 +791,10 @@ namespace Tako {
     if (UI::IconButton(ICON_FA_FLOPPY_DISK, "Save the profile (Ctrl+S)")) {
       SaveCurrentProfile();
     }
+    ImGui::SameLine();
+    if (UI::IconButton(ICON_FA_TRASH_CAN, "Delete the profile file (moves it to the Recycle Bin)")) {
+      RequestDeleteProfile();
+    }
     ImGui::EndDisabled();
     ImGui::SameLine();
     ImGui::SetNextItemWidth(160.0f);
@@ -761,6 +813,7 @@ namespace Tako {
       save = [this] { return SaveCurrentProfile(); };
     }
     unsavedPrompt_.Draw("Unsaved Changes##PostEffect", save);
+    deletePrompt_.Draw("Delete Profile##PostEffect");
 
     ImGui::Separator();
     ImGui::Columns(2, "EffectColumns", true);

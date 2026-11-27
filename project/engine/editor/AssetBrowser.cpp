@@ -197,21 +197,6 @@ namespace Tako {
       return item.is_directory(ec) && item.path().extension() == L".scene";
     }
 
-    void MoveToRecycleBin(const std::vector<fs::path>& paths) {
-      // pFrom は null 区切り・二重 null 終端のリスト
-      std::wstring from;
-      for (const fs::path& path : paths) {
-        from += AbsolutePath(path).wstring();
-        from.push_back(L'\0');
-      }
-
-      SHFILEOPSTRUCTW operation{};
-      operation.wFunc  = FO_DELETE;
-      operation.pFrom  = from.c_str();
-      operation.fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI;
-      SHFileOperationW(&operation);
-    }
-
     /// <summary>
     /// 大きいアイコン 1 字を [min, max] の中央に描く（icon は ImGuiManager::kLargeIcons にある字）
     /// </summary>
@@ -577,6 +562,25 @@ namespace Tako {
     else {
       OpenWithShell(path);
     }
+  }
+
+  bool MoveToRecycleBin(const std::vector<std::filesystem::path>& paths) {
+    // pFrom は null 区切り・二重 null 終端のリスト
+    std::wstring from;
+    for (const fs::path& path : paths) {
+      from += AbsolutePath(path).wstring();
+      from.push_back(L'\0');
+    }
+
+    SHFILEOPSTRUCTW operation{};
+    operation.wFunc  = FO_DELETE;
+    operation.pFrom  = from.c_str();
+    operation.fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI;
+    SHFileOperationW(&operation);
+
+    // 一括操作は一部だけ成功し得るので、成否は実体の有無で判定する
+    std::error_code ec;
+    return std::ranges::none_of(paths, [&ec](const fs::path& path) { return fs::exists(path, ec); });
   }
 
   AssetBrowser::~AssetBrowser() {

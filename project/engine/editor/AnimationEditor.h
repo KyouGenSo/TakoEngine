@@ -4,6 +4,7 @@
 
 #include "AnimationClip.h"
 #include "AnimationTimeline.h"
+#include "ConfirmPrompt.h"
 #include "EditTracker.h"
 #include "PreviewPanel.h"
 #include "ShortcutTable.h"
@@ -124,6 +125,11 @@ namespace Tako {
     /// 未保存なら確認してからファイルの内容に戻す
     /// </summary>
     void RequestReload();
+
+    /// <summary>
+    /// 開いているクリップの削除を、確認してから行う。ファイルをごみ箱へ移し、読み込み済みの一覧からも外す
+    /// </summary>
+    void RequestDelete();
 
     /// <summary>
     /// 未保存の変更をファイルの内容に戻す（共有のクリップなので、捨てた内容をゲームが再生し続けないように）
@@ -257,6 +263,7 @@ namespace Tako {
     EditTracker<>        tracker_{ "Animation Editor", { [this] { return clip_ ? clip_->ToJson().dump() : std::string(); },
                                                          [this](const std::string& state) { if (clip_) clip_->FromJson(nlohmann::json::parse(state)); } } };
                                      UnsavedChangesPrompt                                                                             unsavedPrompt_;  ///< 未保存のまま別のクリップを開く・読み直すときの確認
+    ConfirmPrompt        deletePrompt_;
 
     //名前入力ポップアップ
     NamePopup namePopup_            = NamePopup::None;

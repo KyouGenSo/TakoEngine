@@ -2,6 +2,7 @@
 
 #include "CameraAnimationEditor.h"
 #include "EditorUI.h"
+#include "AssetBrowser.h"
 #include "DebugUIManager.h"
 #include "DebugViewport.h"
 #include "FrameTimer.h"
@@ -219,6 +220,10 @@ namespace Tako {
         RequestReload();
       }
 
+      if (ImGui::MenuItem("Delete...", nullptr, false, animation_ != nullptr)) {
+        RequestDelete();
+      }
+
       ImGui::Separator();
 
       if (ImGui::MenuItem("Close")) {
@@ -336,7 +341,7 @@ namespace Tako {
       std::vector<std::string> sceneNames;
       for (CameraAnimation* candidate : CameraAnimation::GetInstances()) {
         const std::string& name = candidate->GetAnimationName();
-        if (candidate == ownedAnimation_.get() || std::ranges::find(sceneNames, name) != sceneNames.end()) {
+        if (candidate == ownedAnimation_.get() || name.empty() || std::ranges::find(sceneNames, name) != sceneNames.end()) {
           continue;
         }
         sceneNames.push_back(name);
@@ -375,6 +380,11 @@ namespace Tako {
       RequestReload();
     }
     ImGui::SetItemTooltip("Discard unsaved changes and read the file again.");
+    ImGui::SameLine();
+    if (ImGui::Button(ICON_FA_TRASH_CAN "  Delete")) {
+      RequestDelete();
+    }
+    ImGui::SetItemTooltip("Delete the animation file. Animations loaded by the scene are emptied too.");
     ImGui::EndDisabled();
 
     DrawNamePopup();
@@ -384,6 +394,7 @@ namespace Tako {
       save = [this] { return Save(); };
     }
     unsavedPrompt_.Draw("Unsaved Changes##CameraAnimationEditor", save);
+    deletePrompt_.Draw("Delete Animation##CameraAnimationEditor");
   }
 
   void CameraAnimationEditor::DrawNamePopup() {
@@ -882,6 +893,36 @@ namespace Tako {
       else {
         LogToConsole(std::format("Camera Animation Editor: failed to reload '{}'", name_), LogType::Error);
       }
+    });
+  }
+
+  void CameraAnimationEditor::RequestDelete() {
+    const std::string path = (std::filesystem::path(CameraAnimation::kDirectory) / (name_ + ".json")).generic_string();
+    deletePrompt_.Request(std::format("Delete animation '{}'?\n{} will be moved to the Recycle Bin.", name_, path), ICON_FA_TRASH_CAN "  Delete",
+                          [this, name = name_, path] {
+      if (!MoveToRecycleBin({ path })) {
+        LogToConsole(std::format("Camera Animation Editor: failed to delete '{}'", name), LogType::Error);
+        return;
+      }
+      // 読み込み済みのインスタンスも空にして、名前を外す（一覧に出ず、ゲームが再生しても動かない）
+      for (CameraAnimation* animation : CameraAnimation::GetInstances()) {
+        if (animation->GetAnimationName() == name) {
+          animation->Stop();
+          animation->FromJson(nlohmann::json::object());
+          animation->SetAnimationName(std::string());
+        }
+      }
+      LogToConsole(std::format("Camera Animation Editor: deleted '{}'", name));
+
+      ownedAnimation_.reset();
+      animation_ = nullptr;
+      name_.clear();
+      timeline_.Initialize(nullptr);
+      curveEditor_.Initialize(nullptr);
+      selectedKeyframes_.clear();
+      playhead_  = 0.0f;
+      isPlaying_ = false;
+      tracker_.Reset();
     });
   }
 

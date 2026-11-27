@@ -71,12 +71,13 @@ namespace Tako {
     };
 
     struct ShaderInfo {
-      std::map<std::string, std::pair<float, float>>  ranges;                 ///< .shader.json の Properties
-      nlohmann::json                                  defaults;               ///< .shader.json の Defaults（値の初期値）
+      std::map<std::string, std::pair<float, float>>  ranges;                     ///< .shader.json の Properties
+      nlohmann::json                                  defaults;                   ///< .shader.json の Defaults（値の初期値）
       std::shared_ptr<const MaterialPropertyLayout>   layout;
-      uint32_t                                        version           = 0;  ///< layout を作ったときの PS のバージョン
-      std::string                                     path;                   ///< 読んだ .shader.json
-      std::vector<std::pair<const Shader*, uint32_t>> postEffectShaders;      ///< ポストエフェクトの各パスの PS と、登録したときのバージョン
+      uint32_t                                        version           = 0;      ///< layout を作ったときの PS のバージョン
+      std::string                                     path;                       ///< 読んだ .shader.json
+      std::vector<std::pair<const Shader*, uint32_t>> postEffectShaders;          ///< ポストエフェクトの各パスの PS と、登録したときのバージョン
+      bool                                            hasForward        = false;  ///< .shader.json の Forward で描画物のシェーダーを登録した
     };
 
   public: //メンバー関数
@@ -158,6 +159,23 @@ namespace Tako {
     /// </summary>
     /// <param name="file">TextureManager のキー（テクスチャフォルダからの相対パスか、EngineResources/ から始まるパス）</param>
     static uint32_t ResolveTexture(const std::string& file);
+
+#ifdef TAKO_EDITOR
+    /// <summary>
+    /// name のマテリアルを、読み込み済みの一覧から外す（ファイルを消したとき用）。使っている側は、持っている間そのまま使える
+    /// </summary>
+    void Unload(const std::string& name);
+
+    /// <summary>
+    /// path の .shader.json が登録したシェーダーとポストエフェクトを外す（ファイルを消したとき用）
+    /// </summary>
+    void UnloadShaderFile(const std::string& path);
+
+    /// <summary>
+    /// シェーダー shader を使うマテリアルの名前（読み込んでいない .mat.json も含む）
+    /// </summary>
+    std::vector<std::string> FindMaterialsUsingShader(const std::string& shader) const;
+#endif
 
     //=========================================
     //Getter

@@ -222,6 +222,12 @@ namespace Tako {
   /// </summary>
   TAKO_API void OpenAsset(std::string_view kind, const std::string& value);
 
+  /// <summary>
+  /// ファイルやフォルダーをごみ箱へ移す
+  /// </summary>
+  /// <returns>全部移せたら true（元から無い物は、移せた扱い）</returns>
+  TAKO_API bool MoveToRecycleBin(const std::vector<std::filesystem::path>& paths);
+
 } // namespace Tako
 
 #endif // TAKO_EDITOR

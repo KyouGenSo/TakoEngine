@@ -3,11 +3,13 @@
 #ifdef TAKO_EDITOR
 
 #include <array>
+#include <filesystem>
 #include <memory>
 #include <span>
 #include <string>
 #include <vector>
 
+#include "ConfirmPrompt.h"
 #include "EditTracker.h"
 #include "MaterialLibrary.h"
 #include "PreviewPanel.h"
@@ -83,6 +85,17 @@ namespace Tako {
 
     bool Save();
 
+    /// <summary>
+    /// 選択中のマテリアルの削除を、確認してから行う
+    /// </summary>
+    void RequestDelete();
+
+    /// <summary>
+    /// 選択中のマテリアルのファイルをごみ箱へ移し、読み込み済みの側（ライブラリ・シーンの Mesh・描画パス・ポストエフェクト）からも外す
+    /// </summary>
+    /// <param name="path">マテリアルのファイル。空なら、ファイルは消さない</param>
+    void DeleteSelected(const std::filesystem::path& path);
+
     void DrawListPane();
 
     /// <summary>
@@ -108,6 +121,7 @@ namespace Tako {
     EditTracker<>        tracker_{ "Material Editor", { [this] { return MaterialLibrary::GetInstance()->Serialize(selected_); },
                                                         [this](const std::string& text) { MaterialLibrary::GetInstance()->Apply(selected_, text); } } };
     UnsavedChangesPrompt unsavedPrompt_;  ///< 未保存のまま別のマテリアルを開くときの確認
+    ConfirmPrompt        deletePrompt_;
 
     //プレビュー
     PreviewPanel              preview_;

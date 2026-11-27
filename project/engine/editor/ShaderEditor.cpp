@@ -17,6 +17,7 @@
 #include "ImGuiManager.h"
 #include "MaterialLibrary.h"
 #include "MaterialPropertyLayout.h"
+#include "PostEffectManager.h"
 #include "PostProcess.h"
 #include "Renderer.h"
 #include "ShaderLibrary.h"
@@ -308,6 +309,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET
       ImGui::EndChild();
 
       unsavedPrompt_.Draw("Unsaved Changes##ShaderEditor", [this] { return Save(); });
+      deletePrompt_.Draw("Delete Shader##ShaderEditor");
 
       tracker_.EndSection();
       ProcessShortcuts(Shortcuts(), *this);
@@ -375,6 +377,46 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     }
   }
 
+  void ShaderEditor::RequestDelete()
+  {
+    const std::string name = document_.value("Name", std::string());
+
+    // シェーダーが無いと、マテリアルは読めなくなり、プロファイルは読むときにそのエフェクトと値を落とす。先に使っている側を片付けてもらう
+    std::vector<std::string> users;
+    for (const std::string& material : MaterialLibrary::GetInstance()->FindMaterialsUsingShader(name)) {
+      users.push_back("Material: " + material);
+    }
+    for (const std::string& profile : PostEffectManager::FindProfilesUsingEffect(name)) {
+      users.push_back("PostEffect profile: " + profile);
+    }
+    if (!users.empty()) {
+      constexpr size_t kMaxListed = 10;
+      std::string      message    = std::format("Shader '{}' is used by these. Delete them or stop using the shader in them first.", name);
+      for (size_t i = 0; i < (std::min)(users.size(), kMaxListed); ++i) {
+        message += "\n  " + users[i];
+      }
+      if (users.size() > kMaxListed) {
+        message += std::format("\n  ...and {} more", users.size() - kMaxListed);
+      }
+      deletePrompt_.Request(std::move(message), {}, {});
+      return;
+    }
+
+    deletePrompt_.Request(std::format("Delete shader '{}'?\n{} will be moved to the Recycle Bin. The HLSL files are kept.", name, selected_),
+                          ICON_FA_TRASH_CAN "  Delete", [this, path = selected_] {
+      if (!MoveToRecycleBin({ path })) {
+        LogToConsole(std::format("Shader delete failed: {}", path), DebugUIManager::LogType::Error);
+        return;
+      }
+      MaterialLibrary::GetInstance()->UnloadShaderFile(path);
+      LogToConsole(std::format("Shader deleted: {}", path));
+      selected_.clear();
+      document_ = json();
+      fileTime_ = {};
+      tracker_.Reset();
+    });
+  }
+
   void ShaderEditor::DrawListPane()
   {
     ImGui::SeparatorText("Shaders");
@@ -432,6 +474,12 @@ float4 main(VertexShaderOutput input) : SV_TARGET
     if (UI::IconButton(ICON_FA_ROTATE, "Compile the HLSL again and re-register (use after fixing a compile error)")) {
       ApplyDocument();
     }
+    ImGui::SameLine();
+    ImGui::BeginDisabled(readOnly);
+    if (UI::IconButton(ICON_FA_TRASH_CAN, readOnly ? "Engine shaders are read-only" : "Delete the shader (moves the .shader.json to the Recycle Bin)")) {
+      RequestDelete();
+    }
+    ImGui::EndDisabled();
     ImGui::SameLine();
     ImGui::AlignTextToFramePadding();
     ImGui::Text("%s%s", name.c_str(), tracker_.IsEdited() ? " *" : "");

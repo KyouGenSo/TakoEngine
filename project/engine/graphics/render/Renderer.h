@@ -135,6 +135,11 @@ namespace Tako {
     ShaderAsset& RegisterShader(const std::string& name);
 
     /// <summary>
+    /// name のシェーダーを登録から外す（.shader.json を消したとき用）。マテリアルが指しているので、ShaderAsset は解放しない
+    /// </summary>
+    void UnregisterShader(const std::string& name);
+
+    /// <summary>
     /// ウィンドウサイズに合わせてスクリーン空間の射影を作り直す
     /// </summary>
     void OnResize(const Vector2& size);
@@ -220,6 +225,7 @@ namespace Tako {
     std::vector<uint8_t>   constants_;              ///< BindMaterial の作業領域（アップロード用のメモリは読むと遅いので、ここで組んでから写す）
 
     std::unordered_map<std::string, std::unique_ptr<ShaderAsset>> shaders_;
+    std::vector<std::unique_ptr<ShaderAsset>>                     unregisteredShaders_;  ///< 登録から外したシェーダー（マテリアルが指しているので、終了まで持つ）
   };
 
 } // namespace Tako
