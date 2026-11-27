@@ -1,0 +1,2336 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TakoEngine C++ スクリプト マニュアル</title>
+<meta name="description" content="TakoEngine でゲームの動きを書くための手引き。スクリプトの作り方、プロパティ、Actor とシーンの操作、入力、当たり判定、コンポーネントの関数。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="TakoEngine C++ スクリプト マニュアル">
+<meta property="og:description" content="TakoEngine でゲームの動きを書くための手引き。スクリプトの作り方、プロパティ、Actor とシーンの操作、入力、当たり判定、コンポーネントの関数。">
+<meta property="og:url" content="https://kyougenso.github.io/TakoEngine/">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐙</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDGothic:wght@400;700&family=BIZ+UDPGothic:wght@400;700&family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@700;900&display=swap">
+<script>
+// 描く前にテーマを決める（保存が無ければ OS の設定に従う）
+try { const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch {}
+</script>
+<style>
+:root {
+  --bg: #f4f6f9; --surface: #ffffff; --ink: #1a2030; --muted: #586276; --rule: #d9dee7;
+  --accent: #2350b5; --accent-soft: #e6ecfa;
+  --code-bg: #eef1f6; --code-ink: #1d2433;
+  --tk-key: #7a2ea8; --tk-str: #1d7444; --tk-com: #6f7889; --tk-num: #b0421a; --tk-type: #1c5ca3; --tk-title: #875000; --tk-meta: #9c3667;
+
+  --f-display: "Zen Kaku Gothic New", "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic UI", sans-serif;
+  --f-body: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif;
+  --f-code: "JetBrains Mono", "BIZ UDGothic", ui-monospace, "Consolas", monospace;
+  --f-grid: "BIZ UDGothic", "MS Gothic", ui-monospace, monospace;
+
+  --step-0: 1rem; --step-1: 1.15rem; --step-2: 1.4rem; --step-3: 1.9rem;
+  --nav-w: 270px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10131a; --surface: #171b24; --ink: #e2e6ee; --muted: #97a0b1; --rule: #2a3140;
+    --accent: #8ba8ff; --accent-soft: #1c2640;
+    --code-bg: #0c0f14; --code-ink: #d6dbe4;
+    --tk-key: #cf9bff; --tk-str: #8fd19e; --tk-com: #7d879a; --tk-num: #f2a272; --tk-type: #82b7ff; --tk-title: #f0c674; --tk-meta: #f08bbd;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #10131a; --surface: #171b24; --ink: #e2e6ee; --muted: #97a0b1; --rule: #2a3140;
+  --accent: #8ba8ff; --accent-soft: #1c2640;
+  --code-bg: #0c0f14; --code-ink: #d6dbe4;
+  --tk-key: #cf9bff; --tk-str: #8fd19e; --tk-com: #7d879a; --tk-num: #f2a272; --tk-type: #82b7ff; --tk-title: #f0c674; --tk-meta: #f08bbd;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: var(--f-body); font-size: var(--step-0); line-height: 1.85; line-break: strict;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px));
+}
+a { color: var(--accent); text-underline-offset: 0.2em; }
+a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+.shell { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: var(--nav-w) minmax(0, 1fr); column-gap: 40px; }
+
+/* 上端：名前・対象のバージョン・リポジトリへのリンク・テーマの切り替え */
+.masthead {
+  grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 24px;
+  padding-block: 20px 16px; border-bottom: 1px solid var(--rule);
+}
+.brand { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; min-width: 0; text-decoration: none; color: var(--ink); }
+.brand .name { font-family: var(--f-display); font-weight: 900; font-size: var(--step-1); line-height: 1.3; }
+.brand .eyebrow { font-family: var(--f-code); font-size: 0.72rem; letter-spacing: 0.08em; color: var(--muted); }
+.links { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; font-size: 0.86rem; }
+.links a, .links button {
+  font: inherit; color: var(--ink); text-decoration: none; cursor: pointer;
+  padding: 3px 10px; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface);
+}
+.links a:hover, .links button:hover { border-color: var(--accent); color: var(--accent); }
+.links .version { font-family: var(--f-code); font-size: 0.78rem; color: var(--accent); background: var(--accent-soft); border-color: transparent; }
+
+/* 目次 */
+.nav { padding-block: 24px; min-width: 0; }
+#navbox > summary { cursor: pointer; font-weight: 700; padding: 10px 14px; border: 1px solid var(--rule); border-radius: 8px; background: var(--surface); }
+.toc { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+.toc a { display: block; padding: 4px 10px; border-radius: 6px; text-decoration: none; color: var(--ink); line-height: 1.5; font-size: 0.9rem; }
+.toc .h3 a { padding-left: 24px; font-size: 0.82rem; color: var(--muted); }
+.toc a:hover { background: var(--accent-soft); }
+.toc a[aria-current="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+@media (min-width: 960px) {
+  .nav { position: sticky; top: 0; align-self: start; max-height: 100vh; overflow-y: auto; }
+  #navbox > summary { display: none; }
+}
+@media (max-width: 959px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .nav { padding-block: 16px 0; }
+  .toc { margin-top: 10px; }
+}
+
+/* 本文 */
+main { min-width: 0; padding-block: 28px 64px; max-width: 54em; }
+main > * { margin-block: 0 1em; }
+main h1, main h2, main h3 { scroll-margin-top: 16px; text-wrap: balance; word-break: auto-phrase; line-height: 1.45; }
+main h1 { font-family: var(--f-display); font-weight: 900; font-size: var(--step-3); margin-block: 0.4em 0.8em; }
+main h2 { font-family: var(--f-display); font-weight: 700; font-size: var(--step-2); margin-block: 2.4em 0.8em; padding-top: 1em; border-top: 1px solid var(--rule); }
+main h3 { font-size: var(--step-1); font-weight: 700; margin-block: 2em 0.6em; }
+main p, main li { overflow-wrap: break-word; }
+main ul, main ol { padding-left: 1.4em; }
+main li + li { margin-top: 0.2em; }
+main :not(pre) > code {
+  font-family: var(--f-code); font-size: 0.86em; background: var(--code-bg); color: var(--code-ink);
+  padding: 0.08em 0.36em; border-radius: 4px; overflow-wrap: anywhere;
+}
+/* 見出しへのリンク（その節を人に渡す用） */
+.anchor { margin-left: 0.4em; color: var(--muted); text-decoration: none; opacity: 0; font-weight: 400; }
+:is(h2, h3):hover .anchor, .anchor:focus-visible { opacity: 1; }
+
+/* コード。cpp はビルド時に pygments が色を付ける。言語の無い図は、全角と半角が 2:1 になる字体 */
+.code { position: relative; margin-block: 0 1.2em; }
+.code pre {
+  margin: 0; padding: 14px 16px; overflow-x: auto;
+  background: var(--code-bg); color: var(--code-ink); border: 1px solid var(--rule); border-radius: 8px;
+  font-family: var(--f-code); font-size: 0.82rem; line-height: 1.6; tab-size: 4;
+}
+.code pre code { font: inherit; }
+.code pre:has(code.language-text) { font-family: var(--f-grid); font-size: 0.84rem; line-height: 1.5; background: var(--surface); }
+.code .copy {
+  position: absolute; top: 6px; right: 6px; font: inherit; font-size: 0.72rem; cursor: pointer;
+  padding: 1px 8px; border: 1px solid var(--rule); border-radius: 5px; background: var(--surface); color: var(--muted); opacity: 0;
+}
+.code:hover .copy, .code .copy:focus-visible { opacity: 1; }
+@media (hover: none) { .code .copy { opacity: 1; } }
+
+.k, .kd, .kn, .kp, .kr, .kc, .ow { color: var(--tk-key); }
+.kt, .nc, .nn, .nb { color: var(--tk-type); }
+.s, .s1, .s2, .sc, .se, .cpf { color: var(--tk-str); }
+.c, .c1, .cm, .cs, .ch { color: var(--tk-com); }
+.m, .mf, .mi, .mh, .mb, .mo, .il { color: var(--tk-num); }
+.nf, .fm { color: var(--tk-title); }
+.cp { color: var(--tk-meta); }
+
+/* 表 */
+.table-wrap { overflow-x: auto; margin-block: 0 1.2em; border: 1px solid var(--rule); border-radius: 8px; background: var(--surface); }
+.table-wrap table { border-collapse: collapse; width: 100%; font-size: 0.88rem; line-height: 1.65; }
+.table-wrap th, .table-wrap td { padding: 8px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--rule); min-width: 7em; }
+.table-wrap th { background: var(--code-bg); font-weight: 700; white-space: nowrap; }
+.table-wrap tr:last-child td { border-bottom: 0; }
+/* 表の中の名前は、列の幅が足りる限り途中で折らない（足りなければ表ごと横にスクロールする） */
+.table-wrap :not(pre) > code { overflow-wrap: break-word; }
+
+footer { grid-column: 1 / -1; border-top: 1px solid var(--rule); padding-block: 16px 32px; font-size: 0.82rem; color: var(--muted); }
+
+@media (max-width: 600px) {
+  :root { --step-2: 1.25rem; --step-3: 1.55rem; }
+  .code pre { font-size: 0.76rem; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+@media print {
+  .nav, .links, .copy, .anchor { display: none; }
+  .shell { display: block; }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="masthead">
+    <a class="brand" href="#">
+      <span class="name">TakoEngine</span>
+      <span class="eyebrow">C++ SCRIPTING MANUAL</span>
+    </a>
+    <div class="links">
+      <a class="version" href="https://github.com/KyouGenSo/TakoEngine/releases">v2.1.5</a>
+      <a href="https://github.com/KyouGenSo/TakoEngine">GitHub</a>
+      <a href="https://github.com/KyouGenSo/TakoEngine/releases">Releases</a>
+      <button id="theme" type="button" aria-label="ライトとダークを切り替える">◐</button>
+    </div>
+  </header>
+
+  <nav class="nav" aria-label="目次">
+    <details id="navbox" open>
+      <summary>目次</summary>
+      <ol class="toc">
+        <li class="h2"><a href="#1-基本">1. 基本</a></li>
+        <li class="h2"><a href="#2-最初のスクリプト">2. 最初のスクリプト</a></li>
+        <li class="h3"><a href="#21-作る">2.1 作る</a></li>
+        <li class="h3"><a href="#22-書く">2.2 書く</a></li>
+        <li class="h3"><a href="#23-コンパイルする">2.3 コンパイルする</a></li>
+        <li class="h3"><a href="#24-actor-に付ける">2.4 Actor に付ける</a></li>
+        <li class="h3"><a href="#25-動かす">2.5 動かす</a></li>
+        <li class="h2"><a href="#3-決まり">3. 決まり</a></li>
+        <li class="h2"><a href="#4-呼ばれる関数">4. 呼ばれる関数</a></li>
+        <li class="h3"><a href="#41-1-フレームの順番">4.1 1 フレームの順番</a></li>
+        <li class="h3"><a href="#42-呼ぶ順を決める">4.2 呼ぶ順を決める</a></li>
+        <li class="h2"><a href="#5-プロパティ">5. プロパティ</a></li>
+        <li class="h3"><a href="#51-使える型">5.1 使える型</a></li>
+        <li class="h3"><a href="#52-指定子">5.2 指定子</a></li>
+        <li class="h3"><a href="#53-保存のされ方">5.3 保存のされ方</a></li>
+        <li class="h3"><a href="#54-アセットの欄">5.4 アセットの欄</a></li>
+        <li class="h3"><a href="#55-actor-を指す">5.5 Actor を指す</a></li>
+        <li class="h2"><a href="#6-tclass-の指定子">6. TCLASS の指定子</a></li>
+        <li class="h2"><a href="#7-actor-を操作する">7. Actor を操作する</a></li>
+        <li class="h3"><a href="#71-位置回転大きさ">7.1 位置・回転・大きさ</a></li>
+        <li class="h3"><a href="#72-親子activeタグ">7.2 親子・Active・タグ</a></li>
+        <li class="h3"><a href="#73-他の-actor-を探す">7.3 他の Actor を探す</a></li>
+        <li class="h3"><a href="#74-コンポーネントとスクリプトを取る">7.4 コンポーネントとスクリプトを取る</a></li>
+        <li class="h2"><a href="#8-シーンを操作する">8. シーンを操作する</a></li>
+        <li class="h3"><a href="#81-actor-を出す">8.1 Actor を出す</a></li>
+        <li class="h3"><a href="#82-イベントで知らせる">8.2 イベントで知らせる</a></li>
+        <li class="h3"><a href="#83-シーンを替える">8.3 シーンを替える</a></li>
+        <li class="h3"><a href="#84-ポーズ">8.4 ポーズ</a></li>
+        <li class="h2"><a href="#9-タイマー">9. タイマー</a></li>
+        <li class="h2"><a href="#10-入力">10. 入力</a></li>
+        <li class="h3"><a href="#101-アクションと軸">10.1 アクションと軸</a></li>
+        <li class="h2"><a href="#11-当たり判定">11. 当たり判定</a></li>
+        <li class="h2"><a href="#12-調整値">12. 調整値</a></li>
+        <li class="h2"><a href="#13-色">13. 色</a></li>
+        <li class="h2"><a href="#14-ログとデバッグ表示">14. ログとデバッグ表示</a></li>
+        <li class="h3"><a href="#141-ログ">14.1 ログ</a></li>
+        <li class="h3"><a href="#142-inspector-に追加の表示を出す">14.2 Inspector に追加の表示を出す</a></li>
+        <li class="h3"><a href="#143-処理の時間を見る">14.3 処理の時間を見る</a></li>
+        <li class="h2"><a href="#15-コンポーネントの関数">15. コンポーネントの関数</a></li>
+        <li class="h3"><a href="#mesh">Mesh</a></li>
+        <li class="h3"><a href="#collider">Collider</a></li>
+        <li class="h3"><a href="#audio-source">Audio Source</a></li>
+        <li class="h3"><a href="#camera">Camera</a></li>
+        <li class="h3"><a href="#particle-system">Particle System</a></li>
+        <li class="h3"><a href="#post-process">Post Process</a></li>
+        <li class="h3"><a href="#ui-layout">UI Layout</a></li>
+        <li class="h3"><a href="#behavior-tree">Behavior Tree</a></li>
+        <li class="h3"><a href="#script">Script</a></li>
+        <li class="h2"><a href="#16-よくある失敗">16. よくある失敗</a></li>
+        <li class="h2"><a href="#付録-ヘッダーの場所">付録 ヘッダーの場所</a></li>
+      </ol>
+    </details>
+  </nav>
+
+  <main>
+<h1 id="takoengine-c-スクリプト-マニュアル">TakoEngine C++ スクリプト マニュアル</h1>
+<p>TakoEngine でゲームの動きを書くための手引きです。C++ は書けるが、このエンジンは初めて、という人に向けて書いています。
+プロジェクトの始め方は、<a href="https://github.com/KyouGenSo/TakoEngine">エンジンのリポジトリ</a>の README を見てください。</p>
+<p>コードの例は、Debug・Develop・Release の 3 つの構成でコンパイルできることを確かめてあります。関数の細かい決まりは、ヘッダーのコメントに書いてあります（<a href="#%E4%BB%98%E9%8C%B2-%E3%83%98%E3%83%83%E3%83%80%E3%83%BC%E3%81%AE%E5%A0%B4%E6%89%80">付録 ヘッダーの場所</a>）。</p>
+<h2 id="1-基本">1. 基本</h2>
+<p>スクリプトは、<code>Tako::Script</code> を継承した C++ のクラスです（Unity の MonoBehaviour に当たります）。
+Actor に <strong>Script コンポーネント</strong>を付け、その中にスクリプトを 1 つ入れて使います。1 つの Actor に、Script コンポーネントをいくつも付けられます。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>言葉</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>シーン</td>
+<td>Actor の入れ物。<code>GameProject\resources\Json\Scenes\名前.scene.json</code> と、隣の <code>名前.scene</code> フォルダー（Actor 1 つが 1 ファイル）に保存される</td>
+</tr>
+<tr>
+<td>Actor</td>
+<td>シーンに置く物。名前・Transform・タグを持つ。見た目や動きは、コンポーネントで足す</td>
+</tr>
+<tr>
+<td>コンポーネント</td>
+<td>Actor に付ける機能の単位（Mesh・Collider・Light など）。エンジンが用意している</td>
+</tr>
+<tr>
+<td>スクリプト</td>
+<td>ゲームが書くコンポーネント。Script コンポーネントの中に入る</td>
+</tr>
+<tr>
+<td>プレハブ</td>
+<td>Actor（と子）をひとまとめにして保存した物。実行中に <code>Spawn</code> で出せる</td>
+</tr>
+<tr>
+<td>Hierarchy</td>
+<td>エディタの、シーンの Actor の一覧</td>
+</tr>
+<tr>
+<td>Inspector</td>
+<td>エディタの、選んだ Actor の値を編集する窓</td>
+</tr>
+</tbody>
+</table></div>
+<p>エディタには、Edit と Play の 2 つの状態があります。</p>
+<ul>
+<li><strong>Edit</strong>：シーンを編集する状態。スクリプトの <code>Tick</code> は呼ばれません</li>
+<li><strong>Play</strong>：ゲームが動いている状態。F9 か、ツールバーの再生ボタンで切り替えます。Stop すると、シーンは Play を始める前の中身に戻ります</li>
+</ul>
+<p>エディタは、起動した直後は Play で始まります（前の回に落ちたときだけ、Edit で始まります）。シーンを編集するときは、先に F9 で Stop します。</p>
+<p>ビルドの構成は 3 つです。Debug と Develop では、スクリプトを、エディタを閉じずにコンパイルして差し替えられます。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>構成</th>
+<th>中身</th>
+<th>使いどころ</th>
+<th>定義されるマクロ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Debug</td>
+<td>エディタ。最適化なし</td>
+<td>デバッガーで 1 行ずつ追うとき</td>
+<td><code>TAKO_EDITOR</code>、<code>_DEBUG</code></td>
+</tr>
+<tr>
+<td>Develop</td>
+<td>エディタ。最適化あり</td>
+<td>普段の作業</td>
+<td><code>TAKO_EDITOR</code></td>
+</tr>
+<tr>
+<td>Release</td>
+<td>配る用の 1 つの exe（<code>Generated\outputs\Release</code> にできる）。エディタは付かない</td>
+<td>配る物を作るとき</td>
+<td>どちらも無し</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="2-最初のスクリプト">2. 最初のスクリプト</h2>
+<p>Actor を行って戻らせるスクリプト <code>Mover</code> を作ります。</p>
+<h3 id="21-作る">2.1 作る</h3>
+<ol>
+<li>エディタの Assets で <code>Script</code> フォルダーを開き、何も無い所を右クリックして <code>New Script...</code> を選びます</li>
+<li>クラス名に <code>Mover</code> と入れて、<code>Create</code> を押します</li>
+</ol>
+<p><code>Mover.h</code> と <code>Mover.cpp</code> ができ、ゲームのプロジェクト（<code>.vcxproj</code>）に登録されて、コンパイルが始まります。Visual Studio を開いていると、プロジェクトの再読み込みを聞かれます。</p>
+<h3 id="22-書く">2.2 書く</h3>
+<div class="code"><pre><code class="language-cpp"><span class="c1">// Script/Mover.h</span>
+<span class="cp">#pragma once</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;Script.h&quot;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;Vector3.h&quot;</span>
+
+<span class="c1">/// &lt;summary&gt;</span>
+<span class="c1">/// BeginPlay の位置から offset まで行って戻るのを繰り返す</span>
+<span class="c1">/// &lt;/summary&gt;</span>
+<span class="n">TCLASS</span><span class="p">()</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Mover</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Tako</span><span class="o">::</span><span class="n">Script</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">GENERATED_BODY</span><span class="p">()</span>
+
+<span class="k">public</span><span class="o">:</span><span class="w"> </span><span class="c1">//メンバー関数</span>
+<span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="n">BeginPlay</span><span class="p">()</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">Tick</span><span class="p">(</span><span class="kt">float</span><span class="w"> </span><span class="n">deltaTime</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
+
+<span class="k">private</span><span class="o">:</span><span class="w"> </span><span class="c1">//メンバー変数</span>
+<span class="w">    </span><span class="n">TPROPERTY</span><span class="p">(</span><span class="n">Edit</span><span class="p">,</span><span class="w"> </span><span class="n">Tooltip</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;BeginPlay の位置から一番遠くまでの移動量&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Speed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.05</span><span class="p">)</span>
+<span class="w">    </span><span class="n">Tako</span><span class="o">::</span><span class="n">Vector3</span><span class="w"> </span><span class="n">offset_</span><span class="p">{</span><span class="w"> </span><span class="mf">0.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">0.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">5.0f</span><span class="w"> </span><span class="p">};</span>
+<span class="w">    </span><span class="n">TPROPERTY</span><span class="p">(</span><span class="n">Edit</span><span class="p">,</span><span class="w"> </span><span class="n">Tooltip</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;往復 1 回の秒数&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">ClampMin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.01</span><span class="p">,</span><span class="w"> </span><span class="n">Speed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.05</span><span class="p">)</span>
+<span class="w">    </span><span class="kt">float</span><span class="w"> </span><span class="n">period_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2.0f</span><span class="p">;</span>
+
+<span class="w">    </span><span class="n">Tako</span><span class="o">::</span><span class="n">Vector3</span><span class="w"> </span><span class="n">origin_</span><span class="p">{};</span>
+<span class="w">    </span><span class="kt">float</span><span class="w">         </span><span class="n">time_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0f</span><span class="p">;</span>
+<span class="p">};</span>
+</code></pre>
+</div>
+<div class="code"><pre><code class="language-cpp"><span class="c1">// Script/Mover.cpp</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;Mover.h&quot;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;Actor.h&quot;</span>
+
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cmath&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;numbers&gt;</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="nf">Mover::BeginPlay</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">origin_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GetOwner</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">GetTransform</span><span class="p">().</span><span class="n">translate</span><span class="p">;</span>
+<span class="w">    </span><span class="n">time_</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0f</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="nf">Mover::Tick</span><span class="p">(</span><span class="kt">float</span><span class="w"> </span><span class="n">deltaTime</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">time_</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">deltaTime</span><span class="p">;</span>
+<span class="w">    </span><span class="c1">// 0 → 1 → 0 と動く（1 - cos の半分）</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mf">1.0f</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cos</span><span class="p">(</span><span class="mf">2.0f</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">numbers</span><span class="o">::</span><span class="n">pi_v</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">time_</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">period_</span><span class="p">))</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mf">0.5f</span><span class="p">;</span>
+<span class="w">    </span><span class="n">GetOwner</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">GetTransform</span><span class="p">().</span><span class="n">translate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">origin_</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">offset_</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">t</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+<ul>
+<li><code>TCLASS()</code> と <code>GENERATED_BODY()</code> は、このクラスをエンジンに知らせる印です。これが無いと、エディタの一覧に出ません</li>
+<li><code>BeginPlay</code> は Play が始まったときに 1 回、<code>Tick</code> は Play 中の毎フレーム呼ばれます。<code>deltaTime</code> は前のフレームからの秒数です</li>
+<li><code>GetOwner()</code> は、このスクリプトが付いている Actor を返します</li>
+<li><code>TPROPERTY(Edit, …)</code> を付けたメンバーは、Inspector で編集でき、シーンファイルに保存されます。付けていない <code>origin_</code> と <code>time_</code> は、Inspector に出ず、保存もされません</li>
+</ul>
+<h3 id="23-コンパイルする">2.3 コンパイルする</h3>
+<p>ファイルを保存してエディタのウィンドウに戻ると、自動でコンパイルが始まります（手動は Ctrl+B）。Visual Studio でゲームのプロジェクトをビルドしても、同じです。</p>
+<ul>
+<li>終わると、Console に <code>Scripts reloaded</code> と出ます</li>
+<li>Play 中にコンパイルすると、Play は止まって Edit に戻ります</li>
+<li>コンパイルエラーは Console に出ます。エラーの行をダブルクリックすると、Visual Studio でその場所が開きます</li>
+</ul>
+<h3 id="24-actor-に付ける">2.4 Actor に付ける</h3>
+<ol>
+<li>Edit の状態にします（Play 中に付けた物は、Stop で消えます）</li>
+<li>Hierarchy で Actor を選び、Inspector の <code>Add Component</code> を押します</li>
+<li>一覧の <code>Scripts</code> の下から <code>Mover</code> を選びます</li>
+</ol>
+<p>Inspector に、<code>Offset</code> と <code>Period</code> の欄が出ます。</p>
+<h3 id="25-動かす">2.5 動かす</h3>
+<p>F9 で Play に入ると、Actor が行って戻るのを繰り返します。もう一度 F9 を押すと Stop します。</p>
+<ul>
+<li>Play 中に Inspector で変えた値は、Stop で捨てられます。残したいときは、コンポーネントの見出しを右クリックして <code>Keep Values on Stop</code> を選んでおきます</li>
+<li>シーンの保存は、Edit 中に Hierarchy で Ctrl+S です</li>
+</ul>
+<h2 id="3-決まり">3. 決まり</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>決まり</th>
+<th>理由</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>クラス名とファイル名（<code>.h</code>）を同じにする</td>
+<td>Assets からのドロップと、スクリプトを開く処理が、名前でファイルを探すため</td>
+</tr>
+<tr>
+<td>スクリプトは <code>GameProject\Script</code> の中に置く（サブフォルダーに分けてよい）</td>
+<td>Assets がスクリプトとして扱うのは、このフォルダーの <code>.h</code> と <code>.cpp</code> だけ</td>
+</tr>
+<tr>
+<td>スクリプトでないコード（設定・計算・状態など）は <code>GameProject\Source</code> に置く</td>
+<td>自動コンパイルが変更を見るのは <code>Script</code> と <code>Source</code> の 2 つ</td>
+</tr>
+<tr>
+<td>クラスの直前に <code>TCLASS()</code>、本体の先頭に <code>GENERATED_BODY()</code> を書く</td>
+<td>この 2 つを読んで、ビルドのときに型の登録のコードが作られる</td>
+</tr>
+<tr>
+<td><code>Tako::Script</code> を継承する</td>
+<td>Add Component の <code>Scripts</code> に出るのは、<code>Script</code> の派生だけ</td>
+</tr>
+<tr>
+<td>引数なしで作れるクラスにする</td>
+<td>エンジンは、スクリプトを引数なしで作る。スクリプトのコンストラクタに引数を付けない。メンバーの型が引数ありのコンストラクタしか持たないなら、宣言で初期値を渡す（<code>Foo foo_{ 1, 2 };</code>）</td>
+</tr>
+<tr>
+<td>ファイルを <code>.vcxproj</code> に登録する</td>
+<td><code>New Script...</code> で作れば、自動で登録される。手で作ったファイルは、Visual Studio の「既存の項目の追加」で足す</td>
+</tr>
+</tbody>
+</table></div>
+<p>include の書き方です。</p>
+<ul>
+<li>エンジンのヘッダーと、同じフォルダーのヘッダーは、ファイル名だけで書けます：<code>#include &quot;Actor.h&quot;</code></li>
+<li>ゲームの中の別のフォルダーのヘッダーは、<code>GameProject</code> からのパスで書きます：<code>#include &quot;Source/Settings/GameTuning.h&quot;</code>、<code>#include &quot;Script/Mover.h&quot;</code></li>
+</ul>
+<p><code>TCLASS</code> や <code>TPROPERTY</code> の書き方が間違っていると、ビルドのときに、コード <code>TAKO001</code> のエラーが出ます。主な物です。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>エラーの文</th>
+<th>直し方</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TCLASS には GENERATED_BODY() を書く</td>
+<td>クラスの本体の先頭に <code>GENERATED_BODY()</code> を足す</td>
+</tr>
+<tr>
+<td>TCLASS 名前 は TObject かその派生を継承する</td>
+<td><code>Tako::Script</code>（か <code>Tako::GameSettings</code> など）を継承する</td>
+</tr>
+<tr>
+<td>TCLASS を他のクラスの中に書けない</td>
+<td>クラスを外に出す（<code>TSTRUCT</code> と <code>TENUM</code> は、クラスの中に書ける）</td>
+</tr>
+<tr>
+<td>TPROPERTY は TCLASS / TSTRUCT の本体の直下に書く</td>
+<td>関数の中や、入れ子の無名の構造体の中に書かない</td>
+</tr>
+<tr>
+<td>TPROPERTY を static メンバーに付けられない</td>
+<td><code>static</code> と <code>constexpr</code> のメンバーには付けない</td>
+</tr>
+<tr>
+<td>TPROPERTY に配列は使えない</td>
+<td><code>float a[3]</code> ではなく <code>std::vector&lt;float&gt;</code> か <code>Vector3</code> を使う</td>
+</tr>
+<tr>
+<td>知らない TPROPERTY の指定子: 名前</td>
+<td>指定子の綴りを直す（<a href="#5-%E3%83%97%E3%83%AD%E3%83%91%E3%83%86%E3%82%A3">5. プロパティ</a>）</td>
+</tr>
+<tr>
+<td>TCLASS を #if の中に書けない</td>
+<td><code>TCLASS</code>・<code>TPROPERTY</code> などの印を、<code>#if</code> や <code>#ifdef</code> で囲まない</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="4-呼ばれる関数">4. 呼ばれる関数</h2>
+<p>スクリプトは、次の関数を override して使います。どれも、書かなければ何もしません。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>関数</th>
+<th>いつ呼ばれるか</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>void Awake()</code></td>
+<td><code>BeginPlay</code> の前に 1 回。同時にシーンへ入る全部の Actor の <code>Awake</code> が済んでから、<code>BeginPlay</code> が始まる。他のスクリプトの <code>BeginPlay</code> から使われる物は、ここで用意する</td>
+</tr>
+<tr>
+<td><code>void BeginPlay()</code></td>
+<td>Play が始まったとき、または Play 中にシーンへ足されたときに 1 回</td>
+</tr>
+<tr>
+<td><code>void Tick(float deltaTime)</code></td>
+<td>Play 中の毎フレーム</td>
+</tr>
+<tr>
+<td><code>void LateTick(float deltaTime)</code></td>
+<td>全部の <code>Tick</code> の後。他の Actor が動いた後の位置を使う処理（追いかけるカメラなど）を書く</td>
+</tr>
+<tr>
+<td><code>void EndPlay()</code></td>
+<td>Play が終わるとき、または Actor が消される・コンポーネントが外されるとき（<code>BeginPlay</code> が呼ばれた物だけ）</td>
+</tr>
+<tr>
+<td><code>void Draw()</code></td>
+<td>毎フレーム。Edit 中と一時停止中も呼ばれる。描画物の登録を書く</td>
+</tr>
+<tr>
+<td><code>void OnCollisionEnter(Tako::Actor* other)</code></td>
+<td>同じ Actor の Collider が、他のコライダーに当たり始めた</td>
+</tr>
+<tr>
+<td><code>void OnCollisionStay(Tako::Actor* other)</code></td>
+<td>当たっている間、毎フレーム</td>
+</tr>
+<tr>
+<td><code>void OnCollisionExit(Tako::Actor* other)</code></td>
+<td>離れた</td>
+</tr>
+<tr>
+<td><code>void OnActiveChanged(bool active)</code></td>
+<td>Actor の Active（自分か親のどれか）が切り替わった次のフレームの頭。Edit 中も呼ばれる</td>
+</tr>
+<tr>
+<td><code>void OnSiblingRemoved(Tako::Component* removed)</code></td>
+<td>同じ Actor の他のコンポーネントが、これから外される。Edit 中も呼ばれる</td>
+</tr>
+<tr>
+<td><code>bool TickWhilePaused() const</code></td>
+<td><code>true</code> を返すと、シーンのポーズ中も <code>Tick</code> と <code>LateTick</code> が呼ばれる</td>
+</tr>
+<tr>
+<td><code>void PostEditChange()</code></td>
+<td>Inspector で値が変わった後。他の値に合わせた補正を書く</td>
+</tr>
+<tr>
+<td><code>void PostLoad(const nlohmann::json&amp; raw)</code></td>
+<td>保存した値を読んだ後。古いキーの読み替えなどに使う</td>
+</tr>
+<tr>
+<td><code>void PostSave(nlohmann::json&amp; out)</code></td>
+<td>値を保存した後。<code>TPROPERTY</code> で表せない中身を足す</td>
+</tr>
+<tr>
+<td><code>bool DrawCustomImGui()</code></td>
+<td>Inspector の、自動で出る欄の後。エディタがある構成だけ（<a href="#14-%E3%83%AD%E3%82%B0%E3%81%A8%E3%83%87%E3%83%90%E3%83%83%E3%82%B0%E8%A1%A8%E7%A4%BA">14. ログとデバッグ表示</a>）</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="41-1-フレームの順番">4.1 1 フレームの順番</h3>
+<p>Play 中の 1 フレームは、次の順に進みます。</p>
+<div class="code"><pre><code class="language-text">フレームの頭
+  1. 予約されていた Destroy      … EndPlay を呼んでから、シーンから消す
+  2. 予約されていた RemoveComponent
+  3. 予約されていた Spawn        … シーンに入れる → 入った全部の Awake → 入った全部の BeginPlay
+  4. Active が変わった Actor に OnActiveChanged
+更新（Play 中だけ）
+  5. コンポーネントごとに、タイマー → Tick
+  6. 全部の LateTick
+  7. 当たり判定                  … OnCollisionEnter / Stay / Exit（ポーズ中は行わない）
+描画（Edit 中も）
+  8. 全部の Draw
+</code></pre>
+</div>
+<ul>
+<li><code>Destroy</code>・<code>RemoveComponent</code>・<code>Spawn</code> は、呼んだその場では行われません。次のフレームの頭にまとめて行われます。そのため、<code>Tick</code> や当たりの途中でも安全に呼べます</li>
+<li>Actor がオフ（自分か親の Active がオフ）の間は、<code>Tick</code>・<code>LateTick</code>・<code>Draw</code> が呼ばれず、タイマーも進みません</li>
+<li>ポーズ中は、<code>TickWhilePaused</code> が <code>true</code> のスクリプトだけ <code>Tick</code> と <code>LateTick</code> が呼ばれます</li>
+</ul>
+<h3 id="42-呼ぶ順を決める">4.2 呼ぶ順を決める</h3>
+<p><code>Awake</code>・<code>BeginPlay</code>・<code>Tick</code>・<code>LateTick</code> を呼ぶ順は、次のように決まります。</p>
+<ol>
+<li><code>TCLASS(Order = n)</code> の <code>n</code> が小さい順（書かなければ 0）</li>
+<li>同じ値なら、Hierarchy の並び順</li>
+<li>同じ Actor の中では、コンポーネントの並び順</li>
+</ol>
+<p>順番が要るスクリプトは、<code>Order</code> で決めます。Hierarchy の並びは、編集しているうちに変わります。</p>
+<div class="code"><pre><code class="language-cpp"><span class="n">TCLASS</span><span class="p">(</span><span class="n">Order</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">-100</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ScoreCounter</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Tako</span><span class="o">::</span><span class="n">Script</span><span class="w"> </span><span class="p">{</span>
+</code></pre>
+</div>
+<p><code>Draw</code> だけは、Hierarchy の並び順に呼ばれます（<code>Order</code> は効きません）。</p>
+<h2 id="5-プロパティ">5. プロパティ</h2>
+<p>メンバー変数の直前の行に <code>TPROPERTY(...)</code> を書くと、その値が Inspector に出て、シーンファイルとプレハブに保存されます。</p>
+<h3 id="51-使える型">5.1 使える型</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>型</th>
+<th>Inspector での見え方</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bool</code></td>
+<td>チェックボックス</td>
+</tr>
+<tr>
+<td><code>int32_t</code>、<code>uint32_t</code>、<code>float</code></td>
+<td>数値（ドラッグで変える）</td>
+</tr>
+<tr>
+<td><code>Tako::Vector2</code>、<code>Tako::Vector3</code>、<code>Tako::Vector4</code></td>
+<td>成分ごとの数値。<code>Color</code> を付けると色</td>
+</tr>
+<tr>
+<td><code>Tako::Color</code></td>
+<td>色（<a href="#13-%E8%89%B2">13. 色</a>）</td>
+</tr>
+<tr>
+<td><code>Tako::Gradient</code></td>
+<td>色の段階の一覧。<code>Evaluate(t)</code> で、位置 <code>t</code>（0〜1）の色を取る</td>
+</tr>
+<tr>
+<td><code>std::string</code></td>
+<td>文字。<code>Asset</code> を付けるとアセットの欄</td>
+</tr>
+<tr>
+<td><code>Tako::Transform</code></td>
+<td>位置・回転・大きさ</td>
+</tr>
+<tr>
+<td><code>Tako::ActorRef</code></td>
+<td>同じシーンの Actor を選ぶ欄</td>
+</tr>
+<tr>
+<td><code>TENUM()</code> を付けた enum</td>
+<td>列挙子の名前から選ぶ</td>
+</tr>
+<tr>
+<td><code>TSTRUCT()</code> を付けた構造体</td>
+<td>中の <code>TPROPERTY</code> をまとめて出す</td>
+</tr>
+<tr>
+<td>上の型の <code>std::vector</code></td>
+<td>要素を並べた一覧</td>
+</tr>
+</tbody>
+</table></div>
+<p>この表に無い型（<code>double</code>・<code>uint64_t</code>・ポインタ・生の配列など）には付けられません。</p>
+<h3 id="52-指定子">5.2 指定子</h3>
+<p><code>TPROPERTY(Edit, ClampMin = 0, Speed = 0.05)</code> のように、コンマで並べます。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>指定子</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Edit</code></td>
+<td>Inspector で編集できる</td>
+</tr>
+<tr>
+<td><code>Visible</code></td>
+<td>Inspector に、読み取り専用で出す</td>
+</tr>
+<tr>
+<td>（<code>Edit</code> も <code>Visible</code> も無し）</td>
+<td>Inspector に出さず、保存だけする</td>
+</tr>
+<tr>
+<td><code>Transient</code></td>
+<td>保存しない</td>
+</tr>
+<tr>
+<td><code>Category = &quot;名前&quot;</code></td>
+<td>Inspector で、同じ名前の物を 1 つの見出しにまとめる</td>
+</tr>
+<tr>
+<td><code>Tooltip = &quot;説明&quot;</code></td>
+<td>欄にカーソルを載せたときの説明</td>
+</tr>
+<tr>
+<td><code>DisplayName = &quot;名前&quot;</code></td>
+<td>欄の名前。書かなければ、メンバー名を単語に分けた物（<code>stopDistance_</code> なら Stop Distance）</td>
+</tr>
+<tr>
+<td><code>ClampMin = 値</code>、<code>ClampMax = 値</code></td>
+<td>入れられる範囲</td>
+</tr>
+<tr>
+<td><code>Speed = 値</code></td>
+<td>ドラッグしたときの変わる速さ</td>
+</tr>
+<tr>
+<td><code>Color</code></td>
+<td><code>Vector3</code>・<code>Vector4</code> を、色として編集する（<code>Tako::Color</code> には要らない）</td>
+</tr>
+<tr>
+<td><code>HDR</code></td>
+<td>色の欄で、1 を超える値を入れられるようにする（<a href="#13-%E8%89%B2">13. 色</a>）</td>
+</tr>
+<tr>
+<td><code>Angle</code></td>
+<td>ラジアンの <code>float</code> を、度で編集する（<code>ClampMin</code>・<code>ClampMax</code>・<code>Speed</code> も度で書く）</td>
+</tr>
+<tr>
+<td><code>EnumAsInt</code></td>
+<td>enum を、名前でなく数値で保存する</td>
+</tr>
+<tr>
+<td><code>Asset = &quot;種類&quot;</code></td>
+<td><code>std::string</code> を、アセットの欄にする（<a href="#54-%E3%82%A2%E3%82%BB%E3%83%83%E3%83%88%E3%81%AE%E6%AC%84">5.4</a>）</td>
+</tr>
+<tr>
+<td><code>ActorWith = &quot;型名&quot;</code></td>
+<td><code>ActorRef</code> の一覧を、その型のコンポーネントかスクリプトを持つ Actor に絞る</td>
+</tr>
+<tr>
+<td><code>Required</code></td>
+<td><code>ActorRef</code>・<code>std::string</code> が空の間、欄を赤くする</td>
+</tr>
+</tbody>
+</table></div>
+<div class="code"><pre><code class="language-cpp"><span class="w">    </span><span class="n">TPROPERTY</span><span class="p">(</span><span class="n">Edit</span><span class="p">,</span><span class="w"> </span><span class="n">Category</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;Move&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Tooltip</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;1 秒あたりの移動量&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">ClampMin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">Speed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.05</span><span class="p">)</span>
+<span class="w">    </span><span class="kt">float</span><span class="w"> </span><span class="n">speed_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">3.0f</span><span class="p">;</span>
+<span class="w">    </span><span class="n">TPROPERTY</span><span class="p">(</span><span class="n">Edit</span><span class="p">,</span><span class="w"> </span><span class="n">Category</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;Move&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Angle</span><span class="p">,</span><span class="w"> </span><span class="n">Tooltip</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;1 秒あたりの回転。欄は度、値はラジアン&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="kt">float</span><span class="w"> </span><span class="n">turnSpeed_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">numbers</span><span class="o">::</span><span class="n">pi_v</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="w">    </span><span class="n">TPROPERTY</span><span class="p">(</span><span class="n">Edit</span><span class="p">,</span><span class="w"> </span><span class="n">Tooltip</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;巡回する位置&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tako</span><span class="o">::</span><span class="n">Vector3</span><span class="o">&gt;</span><span class="w"> </span><span class="n">waypoints_</span><span class="p">;</span>
+<span class="w">    </span><span class="n">TPROPERTY</span><span class="p">(</span><span class="n">Edit</span><span class="p">,</span><span class="w"> </span><span class="n">Asset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;Prefab&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">bulletPrefab_</span><span class="p">;</span>
+<span class="w">    </span><span class="n">TPROPERTY</span><span class="p">(</span><span class="n">Edit</span><span class="p">,</span><span class="w"> </span><span class="n">Required</span><span class="p">,</span><span class="w"> </span><span class="n">ActorWith</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;ColliderComponent&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="n">Tako</span><span class="o">::</span><span class="n">ActorRef</span><span class="w"> </span><span class="n">target_</span><span class="p">;</span>
+<span class="w">    </span><span class="n">TPROPERTY</span><span class="p">(</span><span class="n">Visible</span><span class="p">)</span>
+<span class="w">    </span><span class="kt">int32_t</span><span class="w"> </span><span class="n">killCount_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</code></pre>
+</div>
+<p>enum と構造体は、次のように書きます（スクリプトのクラスの中に書けます）。</p>
+<div class="code"><pre><code class="language-cpp"><span class="w">    </span><span class="n">TENUM</span><span class="p">()</span>
+<span class="w">    </span><span class="k">enum</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">Mode</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">Idle</span><span class="p">,</span><span class="w"> </span><span class="n">Patrol</span><span class="p">,</span><span class="w"> </span><span class="n">Chase</span><span class="w"> </span><span class="p">};</span>
+
+<span class="w">    </span><span class="n">TSTRUCT</span><span class="p">()</span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">Wave</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">GENERATED_STRUCT_BODY</span><span class="p">()</span>
+
+<span class="w">        </span><span class="n">TPROPERTY</span><span class="p">(</span><span class="n">Edit</span><span class="p">,</span><span class="w"> </span><span class="n">ClampMin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="w">        </span><span class="kt">int32_t</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span>
+<span class="w">        </span><span class="n">TPROPERTY</span><span class="p">(</span><span class="n">Edit</span><span class="p">,</span><span class="w"> </span><span class="n">ClampMin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">Speed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.1</span><span class="p">)</span>
+<span class="w">        </span><span class="kt">float</span><span class="w"> </span><span class="n">interval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0f</span><span class="p">;</span>
+<span class="w">    </span><span class="p">};</span>
+</code></pre>
+</div>
+<h3 id="53-保存のされ方">5.3 保存のされ方</h3>
+<ul>
+<li>保存のキーは、メンバー名から末尾の <code>_</code> を外した名前です（<code>speed_</code> は <code>&quot;speed&quot;</code>）。メンバー名を変えると、前に保存した値は読まれなくなります</li>
+<li>スクリプトの値は、Script コンポーネントの <code>&quot;script&quot;</code>（スクリプトの型名）と同じ階層に並びます。そのため、スクリプトは <code>script_</code> という名前のプロパティを持てません</li>
+<li><code>TPROPERTY</code> の無いメンバーは保存されません。Stop したときとコンパイルの後は、スクリプトが作り直されるので、初期値に戻ります</li>
+</ul>
+<h3 id="54-アセットの欄">5.4 アセットの欄</h3>
+<p><code>TPROPERTY(Edit, Asset = &quot;種類&quot;)</code> を <code>std::string</code> に付けると、一覧から選ぶ・Assets からドロップする・<code>Open</code> でエディタを開く、ができる欄になります。
+値として入る文字列は、その種類を読む関数にそのまま渡せます。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>種類</th>
+<th>指す物</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Texture</code>、<code>Cubemap</code></td>
+<td>テクスチャ、キューブマップ</td>
+</tr>
+<tr>
+<td><code>Model</code></td>
+<td>モデル</td>
+</tr>
+<tr>
+<td><code>Material</code></td>
+<td>マテリアル</td>
+</tr>
+<tr>
+<td><code>Scene</code></td>
+<td>シーン（<code>SceneManager::ChangeScene</code> に渡す名前）</td>
+</tr>
+<tr>
+<td><code>Prefab</code></td>
+<td>プレハブ（<code>BaseScene::Spawn</code> に渡す名前）</td>
+</tr>
+<tr>
+<td><code>ParticlePreset</code></td>
+<td>パーティクルのプリセット</td>
+</tr>
+<tr>
+<td><code>AnimationClip</code></td>
+<td>Animation Editor で作ったクリップ</td>
+</tr>
+<tr>
+<td><code>UILayout</code></td>
+<td>UI Editor で作ったレイアウト</td>
+</tr>
+<tr>
+<td><code>BehaviorTree</code></td>
+<td>ビヘイビアツリー</td>
+</tr>
+<tr>
+<td><code>PostEffectProfile</code></td>
+<td>ポストエフェクトのプロファイル</td>
+</tr>
+<tr>
+<td><code>Sound</code></td>
+<td>音</td>
+</tr>
+<tr>
+<td><code>Font</code></td>
+<td>フォント</td>
+</tr>
+<tr>
+<td><code>Script</code></td>
+<td>スクリプトの型名</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="55-actor-を指す">5.5 Actor を指す</h3>
+<p>他の Actor を指すには、ポインタではなく <code>Tako::ActorRef</code> を使います。Actor の ID で保存されるので、シーンを開き直しても同じ相手を指します。
+Inspector では、一覧から選ぶか、Hierarchy の行を欄にドロップします。</p>
+<div class="code"><pre><code class="language-cpp"><span class="w">    </span><span class="n">TPROPERTY</span><span class="p">(</span><span class="n">Edit</span><span class="p">,</span><span class="w"> </span><span class="n">Tooltip</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;追う相手。Hierarchy の行をここへドロップしても入る&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="n">Tako</span><span class="o">::</span><span class="n">ActorRef</span><span class="w"> </span><span class="n">target_</span><span class="p">;</span>
+</code></pre>
+</div>
+<p>相手は、<code>Actor::Resolve</code> で取ります。指していないか、相手がもう居なければ <code>nullptr</code> が返ります。</p>
+<div class="code"><pre><code class="language-cpp"><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">Tako</span><span class="o">::</span><span class="n">Actor</span><span class="o">*</span><span class="w"> </span><span class="n">target</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GetOwner</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">Resolve</span><span class="p">(</span><span class="n">target_</span><span class="p">);</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">target</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre>
+</div>
+<p>Actor のポインタを、フレームをまたいでメンバーに持ち続けないでください。相手が <code>Destroy</code> されると、無効になります。<code>ActorRef</code> で持ち、使うたびに <code>Resolve</code> します。</p>
+<h2 id="6-tclass-の指定子">6. TCLASS の指定子</h2>
+<p><code>TCLASS(Order = -50, Requires = &quot;ColliderComponent&quot;)</code> のように書きます。どれも省けます。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>指定子</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Order = n</code></td>
+<td><code>Awake</code>・<code>BeginPlay</code>・<code>Tick</code>・<code>LateTick</code> を呼ぶ順。小さいほど先（<a href="#42-%E5%91%BC%E3%81%B6%E9%A0%86%E3%82%92%E6%B1%BA%E3%82%81%E3%82%8B">4.2</a>）</td>
+</tr>
+<tr>
+<td><code>Requires = &quot;型名&quot;</code></td>
+<td>同じ Actor に要るコンポーネント。無ければ、Inspector が警告と、足すボタンを出す</td>
+</tr>
+<tr>
+<td><code>DisplayName = &quot;名前&quot;</code></td>
+<td>エディタの一覧に出す名前</td>
+</tr>
+<tr>
+<td><code>Category = &quot;分類&quot;</code></td>
+<td>エディタの一覧の分類（ビヘイビアツリーのノードで使う）</td>
+</tr>
+<tr>
+<td><code>Color = 0xRRGGBB</code></td>
+<td>エディタで見分ける色（ビヘイビアツリーのノードで使う）</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="7-actor-を操作する">7. Actor を操作する</h2>
+<p>スクリプトが付いている Actor は、<code>GetOwner()</code> で取れます。ヘッダーは <code>Actor.h</code> です。</p>
+<h3 id="71-位置回転大きさ">7.1 位置・回転・大きさ</h3>
+<div class="code"><pre><code class="language-cpp"><span class="w">    </span><span class="n">Tako</span><span class="o">::</span><span class="n">Actor</span><span class="o">*</span><span class="w"> </span><span class="n">owner</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GetOwner</span><span class="p">();</span>
+<span class="w">    </span><span class="c1">// Transform は親からの相対（親が無ければワールド）。rotate はラジアン</span>
+<span class="w">    </span><span class="n">Tako</span><span class="o">::</span><span class="n">Transform</span><span class="o">&amp;</span><span class="w"> </span><span class="n">transform</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">owner</span><span class="o">-&gt;</span><span class="n">GetTransform</span><span class="p">();</span>
+<span class="w">    </span><span class="n">transform</span><span class="p">.</span><span class="n">translate</span><span class="p">.</span><span class="n">y</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mf">1.0f</span><span class="p">;</span>
+<span class="w">    </span><span class="n">transform</span><span class="p">.</span><span class="n">rotate</span><span class="p">.</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">numbers</span><span class="o">::</span><span class="n">pi_v</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mf">0.5f</span><span class="p">;</span>
+<span class="w">    </span><span class="n">transform</span><span class="p">.</span><span class="n">scale</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="mf">2.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">2.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">2.0f</span><span class="w"> </span><span class="p">};</span>
+<span class="w">    </span><span class="c1">// 親があっても、ワールドの位置で読み書きできる</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">Tako</span><span class="o">::</span><span class="n">Vector3</span><span class="w"> </span><span class="n">world</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">owner</span><span class="o">-&gt;</span><span class="n">GetWorldPosition</span><span class="p">();</span>
+<span class="w">    </span><span class="n">owner</span><span class="o">-&gt;</span><span class="n">SetWorldPosition</span><span class="p">(</span><span class="n">world</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Tako</span><span class="o">::</span><span class="n">Vector3</span><span class="p">{</span><span class="w"> </span><span class="mf">0.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">0.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">1.0f</span><span class="w"> </span><span class="p">});</span>
+</code></pre>
+</div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>関数</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GetTransform()</code></td>
+<td>親からの相対の位置・回転・大きさ（<code>translate</code>・<code>rotate</code>・<code>scale</code>）。参照なので、そのまま書き換えられる</td>
+</tr>
+<tr>
+<td><code>SetTransform(transform)</code></td>
+<td>Transform をまとめて入れる</td>
+</tr>
+<tr>
+<td><code>GetWorldPosition()</code>、<code>SetWorldPosition(position)</code></td>
+<td>ワールドでの位置</td>
+</tr>
+<tr>
+<td><code>GetWorldTransform()</code>、<code>SetWorldTransform(world)</code></td>
+<td>ワールドでの位置・回転・大きさ。<code>SetWorldTransform</code> は、親の大きさが 0 の間は何もしない</td>
+</tr>
+<tr>
+<td><code>GetWorldMatrix()</code></td>
+<td>Transform に、親のワールド行列を掛けた行列</td>
+</tr>
+</tbody>
+</table></div>
+<p>回転はオイラー角（ラジアン）です。行ベクトルで、X → Y → Z の順に掛けます。</p>
+<h3 id="72-親子activeタグ">7.2 親子・Active・タグ</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>関数</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GetParent()</code></td>
+<td>親の Actor。無ければ <code>nullptr</code></td>
+</tr>
+<tr>
+<td><code>SetParent(parent, keepWorld = true)</code></td>
+<td>親を替える（<code>nullptr</code> で外す）。<code>keepWorld</code> が <code>true</code> なら、見た目の位置・向き・大きさは変わらない。自分の子孫は親にできない。替えられなければ <code>false</code></td>
+</tr>
+<tr>
+<td><code>GetChildren()</code></td>
+<td>直接の子の一覧</td>
+</tr>
+<tr>
+<td><code>FindChild(name)</code></td>
+<td>直接の子を名前で探す。無ければ <code>nullptr</code></td>
+</tr>
+<tr>
+<td><code>SetActive(active)</code>、<code>IsActive()</code></td>
+<td>自分の Active。オフにすると、自分と子は動かず、描かれず、当たらない</td>
+</tr>
+<tr>
+<td><code>IsActiveInHierarchy()</code></td>
+<td>自分と親が全部オンなら <code>true</code></td>
+</tr>
+<tr>
+<td><code>HasTag(tag)</code></td>
+<td>Inspector の <code>Tags</code> に、その印があれば <code>true</code></td>
+</tr>
+<tr>
+<td><code>GetName()</code>、<code>SetName(name)</code></td>
+<td>Actor の名前</td>
+</tr>
+<tr>
+<td><code>GetId()</code></td>
+<td>シーンの中で一意の ID</td>
+</tr>
+<tr>
+<td><code>GetScene()</code></td>
+<td>入っているシーン</td>
+</tr>
+<tr>
+<td><code>Destroy()</code></td>
+<td>シーンから消す。子も一緒に消える</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="73-他の-actor-を探す">7.3 他の Actor を探す</h3>
+<div class="code"><pre><code class="language-cpp"><span class="w">    </span><span class="n">Tako</span><span class="o">::</span><span class="n">Actor</span><span class="o">*</span><span class="w">     </span><span class="n">owner</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GetOwner</span><span class="p">();</span>
+<span class="w">    </span><span class="n">Tako</span><span class="o">::</span><span class="n">BaseScene</span><span class="o">*</span><span class="w"> </span><span class="n">scene</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">owner</span><span class="o">-&gt;</span><span class="n">GetScene</span><span class="p">();</span>
+<span class="w">    </span><span class="c1">// 名前で探す（最初に見つかった 1 つ。無ければ nullptr）</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">Tako</span><span class="o">::</span><span class="n">Actor</span><span class="o">*</span><span class="w"> </span><span class="n">player</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">scene</span><span class="o">-&gt;</span><span class="n">FindActor</span><span class="p">(</span><span class="s">&quot;Player&quot;</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">Tako</span><span class="o">::</span><span class="n">Logger</span><span class="o">::</span><span class="n">Log</span><span class="p">(</span><span class="s">&quot;player is at y = %f</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">player</span><span class="o">-&gt;</span><span class="n">GetWorldPosition</span><span class="p">().</span><span class="n">y</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="c1">// タグで探す（Inspector の Tags に書いた印）</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tako</span><span class="o">::</span><span class="n">Actor</span><span class="o">*&gt;</span><span class="w"> </span><span class="n">enemies</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">scene</span><span class="o">-&gt;</span><span class="n">FindActorsWithTag</span><span class="p">(</span><span class="s">&quot;Enemy&quot;</span><span class="p">);</span>
+</code></pre>
+</div>
+<p>決まった相手は、<code>ActorRef</code> のプロパティにして Inspector で指すのが確実です（<a href="#55-actor-%E3%82%92%E6%8C%87%E3%81%99">5.5</a>）。名前で探す方法は、名前を変えると動かなくなります。</p>
+<h3 id="74-コンポーネントとスクリプトを取る">7.4 コンポーネントとスクリプトを取る</h3>
+<div class="code"><pre><code class="language-cpp"><span class="w">    </span><span class="n">Tako</span><span class="o">::</span><span class="n">Actor</span><span class="o">*</span><span class="w"> </span><span class="n">owner</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GetOwner</span><span class="p">();</span>
+<span class="w">    </span><span class="c1">// 同じ Actor のコンポーネントを、型で取る（無ければ nullptr）</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">Tako</span><span class="o">::</span><span class="n">MeshComponent</span><span class="o">*</span><span class="w"> </span><span class="n">mesh</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">owner</span><span class="o">-&gt;</span><span class="n">GetComponent</span><span class="o">&lt;</span><span class="n">Tako</span><span class="o">::</span><span class="n">MeshComponent</span><span class="o">&gt;</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">mesh</span><span class="o">-&gt;</span><span class="n">SetVisible</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="c1">// 同じ Actor の他のスクリプトを、型で取る</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">owner</span><span class="o">-&gt;</span><span class="n">GetScript</span><span class="o">&lt;</span><span class="n">Mover</span><span class="o">&gt;</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">Tako</span><span class="o">::</span><span class="n">Logger</span><span class="o">::</span><span class="n">Log</span><span class="p">(</span><span class="s">&quot;%s has a Mover</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">owner</span><span class="o">-&gt;</span><span class="n">GetName</span><span class="p">().</span><span class="n">c_str</span><span class="p">());</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre>
+</div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>関数</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GetComponent&lt;T&gt;()</code></td>
+<td><code>T</code> か <code>T</code> の派生の、最初のコンポーネント。無ければ <code>nullptr</code></td>
+</tr>
+<tr>
+<td><code>GetScript&lt;T&gt;()</code></td>
+<td>Script コンポーネントに入っている、<code>T</code> か <code>T</code> の派生のスクリプト。無ければ <code>nullptr</code></td>
+</tr>
+<tr>
+<td><code>FindComponent(name)</code></td>
+<td>コンポーネントを名前で探す（同じ型を 2 つ付けたときに使う）。無ければ <code>nullptr</code></td>
+</tr>
+<tr>
+<td><code>GetComponents()</code></td>
+<td>全部のコンポーネント</td>
+</tr>
+<tr>
+<td><code>AddComponent&lt;T&gt;(name = {})</code></td>
+<td><code>T</code> を作って足す。Play 中なら <code>Awake</code> と <code>BeginPlay</code> も呼ばれる。名前が空なら型名になる</td>
+</tr>
+<tr>
+<td><code>RemoveComponent(component)</code></td>
+<td>コンポーネントを外す</td>
+</tr>
+<tr>
+<td><code>Resolve(ref)</code></td>
+<td><code>ActorRef</code> が指す Actor（<a href="#55-actor-%E3%82%92%E6%8C%87%E3%81%99">5.5</a>）</td>
+</tr>
+</tbody>
+</table></div>
+<p>スクリプトは Script コンポーネントの中に入っているので、<code>GetComponent&lt;Mover&gt;()</code> では取れません。<code>GetScript&lt;Mover&gt;()</code> を使います。
+相手の Actor のスクリプトの関数を呼ぶときも同じです：<code>other-&gt;GetScript&lt;Player&gt;()-&gt;OnHit(damage)</code>。</p>
+<h2 id="8-シーンを操作する">8. シーンを操作する</h2>
+<p>シーンは <code>GetOwner()-&gt;GetScene()</code> で取れます。ヘッダーは <code>BaseScene.h</code> です。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>関数</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Spawn(typeOrPrefab)</code></td>
+<td>プレハブ名（か Actor の型名）から Actor を作る。プレハブなら、子も全部作る。返るのは根の Actor。作れなければ <code>nullptr</code></td>
+</tr>
+<tr>
+<td><code>Destroy(actor)</code></td>
+<td>Actor を消す。子も一緒に消える（<code>actor-&gt;Destroy()</code> と同じ）</td>
+</tr>
+<tr>
+<td><code>FindActor(name)</code>、<code>FindActor(id)</code></td>
+<td>名前か ID で探す。無ければ <code>nullptr</code></td>
+</tr>
+<tr>
+<td><code>FindActorsWithTag(tag)</code></td>
+<td>そのタグを持つ全部の Actor</td>
+</tr>
+<tr>
+<td><code>SendEvent(name, payload = {})</code></td>
+<td>その名前を <code>Subscribe</code> している全部のコンポーネントとスクリプトの関数を、その場で呼ぶ</td>
+</tr>
+<tr>
+<td><code>SetPaused(paused)</code>、<code>IsPaused()</code></td>
+<td>ゲームの進行を止める・戻す。描画は続く</td>
+</tr>
+<tr>
+<td><code>GetEmitterManager()</code></td>
+<td>このシーンのパーティクルのエミッター</td>
+</tr>
+<tr>
+<td><code>GetForceFieldManager()</code></td>
+<td>このシーンのフォースフィールド（パーティクルに掛かる力）</td>
+</tr>
+<tr>
+<td><code>GetSceneName()</code></td>
+<td>シーンファイルの名前</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="81-actor-を出す">8.1 Actor を出す</h3>
+<p>実行中に出す物は、プレハブにしておきます。プレハブは、Hierarchy で Actor を右クリックし、メニューの Prefab の欄に名前を入れて <code>Save as Prefab</code> で作ります。</p>
+<div class="code"><pre><code class="language-cpp"><span class="w">    </span><span class="n">TPROPERTY</span><span class="p">(</span><span class="n">Edit</span><span class="p">,</span><span class="w"> </span><span class="n">Asset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;Prefab&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Required</span><span class="p">)</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">prefab_</span><span class="p">;</span>
+</code></pre>
+</div>
+<p><code>Spawn</code> が返した Actor には、すぐに値を入れられます。</p>
+<div class="code"><pre><code class="language-cpp"><span class="w">    </span><span class="n">Tako</span><span class="o">::</span><span class="n">Actor</span><span class="o">*</span><span class="w"> </span><span class="n">actor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">scene</span><span class="o">-&gt;</span><span class="n">Spawn</span><span class="p">(</span><span class="n">prefab_</span><span class="p">);</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">actor</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// プレハブが無い。出し続けても同じなので、タイマーを止める</span>
+<span class="w">        </span><span class="n">ClearTimer</span><span class="p">(</span><span class="n">timer_</span><span class="p">);</span>
+<span class="w">        </span><span class="k">return</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">Tako</span><span class="o">::</span><span class="n">Vector3</span><span class="w"> </span><span class="n">offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Tako</span><span class="o">::</span><span class="n">RandomEngine</span><span class="o">::</span><span class="n">GetInstance</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">GetRandomDirectionXZ</span><span class="p">()</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">radius_</span><span class="p">;</span>
+<span class="w">    </span><span class="n">actor</span><span class="o">-&gt;</span><span class="n">GetTransform</span><span class="p">().</span><span class="n">translate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GetOwner</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">GetWorldPosition</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">offset</span><span class="p">;</span>
+</code></pre>
+</div>
+<h3 id="82-イベントで知らせる">8.2 イベントで知らせる</h3>
+<p>スクリプトどうしを直接つながずに知らせ合うには、イベントを使います。</p>
+<ul>
+<li>受け取る側：<code>Subscribe(名前, 関数)</code>。スクリプトが消えると、受け取りも終わります</li>
+<li>送る側：<code>GetOwner()-&gt;GetScene()-&gt;SendEvent(名前, 値)</code></li>
+</ul>
+<p>値は <code>std::any</code> で渡ります。型は、送る側と受け取る側で決めておき、<code>std::any_cast</code> で取り出します。</p>
+<p>コインに当たったら点を知らせる例です。送る <code>Coin</code> は、誰が点を数えているかを知りません。</p>
+<div class="code"><pre><code class="language-cpp"><span class="kt">void</span><span class="w"> </span><span class="nf">Coin::OnCollisionEnter</span><span class="p">(</span><span class="n">Tako</span><span class="o">::</span><span class="n">Actor</span><span class="o">*</span><span class="w"> </span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// other は相手の Actor。Actor に付いていないコライダーなら nullptr</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">other</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="o">!</span><span class="n">other</span><span class="o">-&gt;</span><span class="n">HasTag</span><span class="p">(</span><span class="s">&quot;Player&quot;</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="n">GetOwner</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">GetScene</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">SendEvent</span><span class="p">(</span><span class="s">&quot;CoinCollected&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">point_</span><span class="p">);</span>
+<span class="w">    </span><span class="n">GetOwner</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">Destroy</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+<p>受け取る <code>ScoreCounter</code> です。点が目標に届いたら、次のシーンへ移ります。</p>
+<div class="code"><pre><code class="language-cpp"><span class="kt">void</span><span class="w"> </span><span class="nf">ScoreCounter::Awake</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// 他のスクリプトが BeginPlay の中で送っても受け取れるよう、Awake で待ち始める</span>
+<span class="w">    </span><span class="n">Subscribe</span><span class="p">(</span><span class="s">&quot;CoinCollected&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="k">this</span><span class="p">](</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">any</span><span class="o">&amp;</span><span class="w"> </span><span class="n">payload</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">score_</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">any_cast</span><span class="o">&lt;</span><span class="kt">int32_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">payload</span><span class="p">);</span>
+<span class="w">        </span><span class="n">Tako</span><span class="o">::</span><span class="n">Logger</span><span class="o">::</span><span class="n">Log</span><span class="p">(</span><span class="s">&quot;Score: %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">score_</span><span class="p">);</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">score_</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">Tako</span><span class="o">::</span><span class="n">GameSettings</span><span class="o">::</span><span class="n">Get</span><span class="o">&lt;</span><span class="n">GameTuning</span><span class="o">&gt;</span><span class="p">().</span><span class="n">clearScore</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">return</span><span class="p">;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="c1">// シーンを替えても残したい値は、SessionData に入れる</span>
+<span class="w">        </span><span class="n">Tako</span><span class="o">::</span><span class="n">SceneManager</span><span class="o">::</span><span class="n">GetInstance</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">GetSessionData</span><span class="p">()[</span><span class="s">&quot;score&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">score_</span><span class="p">;</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">nextScene_</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">Tako</span><span class="o">::</span><span class="n">SceneManager</span><span class="o">::</span><span class="n">GetInstance</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">ChangeScene</span><span class="p">(</span><span class="n">nextScene_</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">});</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+<h3 id="83-シーンを替える">8.3 シーンを替える</h3>
+<p>ヘッダーは <code>SceneManager.h</code> です。<code>Tako::SceneManager::GetInstance()</code> から呼びます。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>関数</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ChangeScene(sceneName)</code></td>
+<td>次のシーンへ移る（既定のフェード）。名前は、シーンファイルの名前</td>
+</tr>
+<tr>
+<td><code>ChangeScene(sceneName, transitionTime)</code></td>
+<td>遷移の秒数を指定する</td>
+</tr>
+<tr>
+<td><code>ChangeScene(sceneName, effectType, transitionTime)</code></td>
+<td>演出を選ぶ。<code>Tako::TransitionManager::EffectType</code> の <code>Fade</code>（白）・<code>BlackFade</code>（黒）・<code>ScaleExpand</code>・<code>ScaleShrink</code></td>
+</tr>
+<tr>
+<td><code>GetCurrentScene()</code>、<code>GetCurrentSceneName()</code></td>
+<td>今のシーン</td>
+</tr>
+<tr>
+<td><code>GetSceneNames()</code></td>
+<td>シーンファイルの名前の一覧</td>
+</tr>
+<tr>
+<td><code>GetSessionData()</code></td>
+<td>シーンを替えても残る値（<code>nlohmann::json</code>）。キーと値は、ゲームが決める</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>遷移の途中でもう一度 <code>ChangeScene</code> を呼んでも、2 回目からは無視されます</li>
+<li><code>GetSessionData()</code> の中身は、エディタの Stop で空に戻ります。使う <code>.cpp</code> で <code>&lt;json.hpp&gt;</code> を include します</li>
+</ul>
+<p>次のシーンで値を読む例です。</p>
+<div class="code"><pre><code class="language-cpp"><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">int32_t</span><span class="w"> </span><span class="n">score</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Tako</span><span class="o">::</span><span class="n">SceneManager</span><span class="o">::</span><span class="n">GetInstance</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">GetSessionData</span><span class="p">().</span><span class="n">value</span><span class="p">(</span><span class="s">&quot;score&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</code></pre>
+</div>
+<h3 id="84-ポーズ">8.4 ポーズ</h3>
+<p><code>GetOwner()-&gt;GetScene()-&gt;SetPaused(true)</code> で、シーンの <code>Tick</code>・<code>LateTick</code>・当たり判定・タイマーが止まります。描画は続きます。
+ポーズ中も動かしたいスクリプト（メニューなど）は、<code>TickWhilePaused</code> で <code>true</code> を返します。</p>
+<div class="code"><pre><code class="language-cpp"><span class="w">    </span><span class="c1">// ポーズ中も Tick を呼んでもらう（そうしないと、再開のキーを読めない）</span>
+<span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="nf">TickWhilePaused</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</code></pre>
+</div>
+<h2 id="9-タイマー">9. タイマー</h2>
+<p>「何秒後に 1 回」「何秒ごとに」は、<code>Tick</code> で時間を数えずに、タイマーで書けます。<code>Script</code> の関数なので、そのまま呼べます。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>関数</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SetTimer(seconds, callback, loops = false)</code></td>
+<td><code>seconds</code> 秒後に <code>callback</code> を呼ぶ。<code>loops</code> が <code>true</code> なら、<code>seconds</code> 秒ごとに呼び続ける。戻り値は、止めるときに使う番号（<code>Tako::TimerId</code>）</td>
+</tr>
+<tr>
+<td><code>ClearTimer(id)</code></td>
+<td>タイマーを取り消す。タイマーの関数の中からも呼べる</td>
+</tr>
+</tbody>
+</table></div>
+<div class="code"><pre><code class="language-cpp"><span class="w">    </span><span class="c1">// 3 つ目の引数が true なら、止めるまで spawnInterval 秒ごとに呼ばれる</span>
+<span class="w">    </span><span class="n">timer_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SetTimer</span><span class="p">(</span><span class="n">tuning</span><span class="p">.</span><span class="n">spawnInterval</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="k">this</span><span class="p">]</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">SpawnOne</span><span class="p">();</span><span class="w"> </span><span class="p">},</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span>
+</code></pre>
+</div>
+<p>スクリプトが消えると、タイマーも一緒に消えます。<code>EndPlay</code> で止める必要はありません。</p>
+<h2 id="10-入力">10. 入力</h2>
+<p>ヘッダーは <code>Input.h</code> です。<code>Tako::Input::GetInstance()</code> から呼びます。どの種類にも、3 つの読み方があります。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>読み方</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Push…</code></td>
+<td>押している間、ずっと <code>true</code></td>
+</tr>
+<tr>
+<td><code>Trigger…</code></td>
+<td>押した瞬間の 1 フレームだけ <code>true</code></td>
+</tr>
+<tr>
+<td><code>Release…</code></td>
+<td>離した瞬間の 1 フレームだけ <code>true</code></td>
+</tr>
+</tbody>
+</table></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>関数</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PushKey(key)</code>、<code>TriggerKey(key)</code>、<code>ReleaseKey(key)</code></td>
+<td>キーボード。キーは DirectInput の <code>DIK_</code> で指定する（<code>DIK_SPACE</code>・<code>DIK_W</code> など）</td>
+</tr>
+<tr>
+<td><code>PushMouse(button)</code>、<code>TriggerMouse(button)</code>、<code>ReleaseMouse(button)</code></td>
+<td>マウスのボタン。0 が左、1 が右、2 が中央</td>
+</tr>
+<tr>
+<td><code>GetMousePos()</code></td>
+<td>マウスの位置（スクリーン座標）</td>
+</tr>
+<tr>
+<td><code>PushButton(button)</code>、<code>TriggerButton(button)</code>、<code>ReleaseButton(button)</code></td>
+<td>ゲームパッド。ボタンは <code>Tako::GamepadButton::A</code> など</td>
+</tr>
+<tr>
+<td><code>GetLeftStick()</code>、<code>GetRightStick()</code></td>
+<td>スティック。-1 〜 1 の <code>Vector2</code>。デッドゾーンの中は 0</td>
+</tr>
+<tr>
+<td><code>GetLeftTrigger()</code>、<code>GetRightTrigger()</code></td>
+<td>トリガー。0 〜 1</td>
+</tr>
+<tr>
+<td><code>IsConnect()</code></td>
+<td>ゲームパッドがつながっていれば <code>true</code></td>
+</tr>
+<tr>
+<td><code>SetVibration(leftMotor, rightMotor, duration = 0)</code>、<code>StopVibration()</code></td>
+<td>振動。強さは 0 〜 1、<code>duration</code> は秒（0 以下なら止めるまで）</td>
+</tr>
+<tr>
+<td><code>PushAction(name)</code>、<code>TriggerAction(name)</code>、<code>ReleaseAction(name)</code></td>
+<td>アクション（名前を付けたキーとボタンの組）</td>
+</tr>
+<tr>
+<td><code>GetAxis(name)</code></td>
+<td>軸（4 方向のキーとスティックを合わせた <code>Vector2</code>）</td>
+</tr>
+</tbody>
+</table></div>
+<p><code>GamepadButton</code> には、<code>A</code>・<code>B</code>・<code>X</code>・<code>Y</code>・<code>DPad_Up</code>・<code>DPad_Down</code>・<code>DPad_Left</code>・<code>DPad_Right</code>・<code>L_Shoulder</code>・<code>R_Shoulder</code>・<code>L_Thumbstick</code>・<code>R_Thumbstick</code>・<code>Start</code>・<code>Back</code> があります。</p>
+<div class="code"><pre><code class="language-cpp"><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">Tako</span><span class="o">::</span><span class="n">Input</span><span class="o">*</span><span class="w"> </span><span class="n">input</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Tako</span><span class="o">::</span><span class="n">Input</span><span class="o">::</span><span class="n">GetInstance</span><span class="p">();</span>
+
+<span class="w">    </span><span class="n">Tako</span><span class="o">::</span><span class="n">Vector2</span><span class="w"> </span><span class="n">move</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">input</span><span class="o">-&gt;</span><span class="n">GetLeftStick</span><span class="p">();</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">input</span><span class="o">-&gt;</span><span class="n">PushKey</span><span class="p">(</span><span class="n">DIK_D</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">move</span><span class="p">.</span><span class="n">x</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mf">1.0f</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">input</span><span class="o">-&gt;</span><span class="n">PushKey</span><span class="p">(</span><span class="n">DIK_A</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">move</span><span class="p">.</span><span class="n">x</span><span class="w"> </span><span class="o">-=</span><span class="w"> </span><span class="mf">1.0f</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">input</span><span class="o">-&gt;</span><span class="n">PushKey</span><span class="p">(</span><span class="n">DIK_W</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">move</span><span class="p">.</span><span class="n">y</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mf">1.0f</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">input</span><span class="o">-&gt;</span><span class="n">PushKey</span><span class="p">(</span><span class="n">DIK_S</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">move</span><span class="p">.</span><span class="n">y</span><span class="w"> </span><span class="o">-=</span><span class="w"> </span><span class="mf">1.0f</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</code></pre>
+</div>
+<h3 id="101-アクションと軸">10.1 アクションと軸</h3>
+<p>キーやボタンをコードに直接書く代わりに、名前を付けて割り当てておけます。割り当ては、Engine Settings の Input の <code>Actions</code> と <code>Axes</code> で行います。</p>
+<div class="code"><pre><code class="language-cpp"><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">Tako</span><span class="o">::</span><span class="n">Input</span><span class="o">*</span><span class="w">  </span><span class="n">input</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Tako</span><span class="o">::</span><span class="n">Input</span><span class="o">::</span><span class="n">GetInstance</span><span class="p">();</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">Tako</span><span class="o">::</span><span class="n">Vector2</span><span class="w"> </span><span class="n">move</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">input</span><span class="o">-&gt;</span><span class="n">GetAxis</span><span class="p">(</span><span class="s">&quot;Move&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">float</span><span class="w">         </span><span class="n">speed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">input</span><span class="o">-&gt;</span><span class="n">PushAction</span><span class="p">(</span><span class="s">&quot;Dash&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">dashSpeed_</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">speed_</span><span class="p">;</span>
+</code></pre>
+</div>
+<ul>
+<li>アクションは、割り当てたキーやボタンの <strong>どれか 1 つ</strong> でも押されていれば、押されている扱いです</li>
+<li>軸は、4 方向のキー（それぞれ -1 / 0 / 1）とスティックの和です。長さは 1 に丸められません</li>
+<li>作っていない名前を渡すと、assert で止まります</li>
+<li>Engine Settings の <code>Name Header</code> にヘッダーのパスを書いておくと、名前の定数を並べたヘッダーが書き出されます。文字列を直接書く代わりに、その定数を使えます</li>
+</ul>
+<h2 id="11-当たり判定">11. 当たり判定</h2>
+<p>当たり判定は、Actor に <strong>Collider</strong> コンポーネントを付けて行います。当たると、同じ Actor の全部のコンポーネントとスクリプトの <code>OnCollisionEnter</code>・<code>OnCollisionStay</code>・<code>OnCollisionExit</code> が呼ばれます（例は <a href="#82-%E3%82%A4%E3%83%99%E3%83%B3%E3%83%88%E3%81%A7%E7%9F%A5%E3%82%89%E3%81%9B%E3%82%8B">8.2</a> の <code>Coin</code>）。</p>
+<ul>
+<li>当たる <strong>両方</strong> の Actor に、Collider が要ります</li>
+<li>引数の <code>other</code> は、相手の Actor です。相手が Actor に付いていないコライダー（ゲームがコードで作った物）なら、<code>nullptr</code> です</li>
+<li>エンジンが行うのは、当たったことを知らせる所までです。押し戻しや跳ね返りは、スクリプトで書きます</li>
+</ul>
+<p>どのコライダーどうしが当たるかは、層（Layer）で決まります。</p>
+<ul>
+<li>層の名前と、層どうしが当たるかどうかの表（<code>Collision Matrix</code>）は、Engine Settings の Physics で決めます</li>
+<li>Collider の <code>Layer</code> の欄で、そのコライダーの層を選びます</li>
+<li>何も変えなければ、Collider は専用の層（番号 31）に入り、その層どうしだけが当たります</li>
+</ul>
+<h2 id="12-調整値">12. 調整値</h2>
+<p>ゲーム全体で 1 つだけあればよい値（重力、敵を出す間隔など）は、<code>Tako::GameSettings</code> を継承したクラスに置きます。スクリプトごとに違ってよい値（この敵の HP など）は、スクリプトの <code>TPROPERTY</code> にします。</p>
+<ul>
+<li>型ごとに、値は 1 つだけです。<code>GameProject\resources\Json\GameSettings\型名.json</code> に保存されます</li>
+<li>エディタでは、Engine Settings の左の一覧の <code>Game</code> の下に型の名前が出て、そこで編集できます</li>
+<li>スクリプトではないので、<code>Script</code> ではなく <code>Source</code> に置きます</li>
+</ul>
+<div class="code"><pre><code class="language-cpp"><span class="n">TCLASS</span><span class="p">()</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">GameTuning</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Tako</span><span class="o">::</span><span class="n">GameSettings</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">GENERATED_BODY</span><span class="p">()</span>
+
+<span class="k">public</span><span class="o">:</span><span class="w"> </span><span class="c1">//メンバー変数</span>
+<span class="w">    </span><span class="n">TPROPERTY</span><span class="p">(</span><span class="n">Edit</span><span class="p">,</span><span class="w"> </span><span class="n">Category</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;Spawn&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Tooltip</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;敵を出す間隔（秒）&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">ClampMin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.1</span><span class="p">,</span><span class="w"> </span><span class="n">Speed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.05</span><span class="p">)</span>
+<span class="w">    </span><span class="kt">float</span><span class="w"> </span><span class="n">spawnInterval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2.0f</span><span class="p">;</span>
+<span class="w">    </span><span class="n">TPROPERTY</span><span class="p">(</span><span class="n">Edit</span><span class="p">,</span><span class="w"> </span><span class="n">Category</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;Spawn&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Tooltip</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;同時に出しておく数の上限&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">ClampMin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="w">    </span><span class="kt">int32_t</span><span class="w"> </span><span class="n">maxEnemies</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span>
+<span class="w">    </span><span class="n">TPROPERTY</span><span class="p">(</span><span class="n">Edit</span><span class="p">,</span><span class="w"> </span><span class="n">Category</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;Score&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Tooltip</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;次のシーンへ進む点&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">ClampMin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">    </span><span class="kt">int32_t</span><span class="w"> </span><span class="n">clearScore</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p">;</span>
+<span class="p">};</span>
+</code></pre>
+</div>
+<p>読むときは、<code>Tako::GameSettings::Get&lt;型&gt;()</code> です（ヘッダーは <code>GameSettings.h</code>）。初めて呼ばれたときに、ファイルから読まれます。</p>
+<div class="code"><pre><code class="language-cpp"><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">GameTuning</span><span class="o">&amp;</span><span class="w"> </span><span class="n">tuning</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Tako</span><span class="o">::</span><span class="n">GameSettings</span><span class="o">::</span><span class="n">Get</span><span class="o">&lt;</span><span class="n">GameTuning</span><span class="o">&gt;</span><span class="p">();</span>
+</code></pre>
+</div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>関数</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Tako::GameSettings::Get&lt;T&gt;()</code></td>
+<td><code>T</code> のただ 1 つの値（参照）</td>
+</tr>
+<tr>
+<td><code>Save()</code></td>
+<td>今の値をファイルに書く。書けなければ <code>false</code></td>
+</tr>
+<tr>
+<td><code>Reload()</code></td>
+<td>ファイルから読み直す</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="13-色">13. 色</h2>
+<p>色は <code>Tako::Color</code>（<code>r</code>・<code>g</code>・<code>b</code>・<code>a</code>）で表します。ヘッダーは <code>ColorFunc.h</code> です。エンジンの色の関数（<code>SetMaterialColor</code>・<code>SetColor</code> など）は、どれも <code>Color</code> を受け取ります。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>書き方</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Tako::Color(r, g, b, a = 1)</code></td>
+<td>0〜1 の数から作る</td>
+</tr>
+<tr>
+<td><code>Color::kWhite</code>・<code>kBlack</code>・<code>kClear</code>・<code>kRed</code>・<code>kGreen</code>・<code>kBlue</code>・<code>kYellow</code>・<code>kCyan</code>・<code>kMagenta</code>・<code>kGray</code></td>
+<td>名前の付いた色（<code>kClear</code> は透明、<code>kGray</code> は 0.5）</td>
+</tr>
+<tr>
+<td><code>Color::FromHex(0xRRGGBB, a = 1)</code></td>
+<td>16 進数から作る</td>
+</tr>
+<tr>
+<td><code>Tako::Color32(r, g, b, a = 255)</code></td>
+<td>0〜255 の整数から作る。<code>Color</code> に自動で変わる</td>
+</tr>
+<tr>
+<td><code>Color::FromHSV(h, s, v, a = 1)</code></td>
+<td>HSV から作る。どれも 0〜1（<code>h</code> は 1 で 1 周）</td>
+</tr>
+<tr>
+<td><code>WithAlpha(a)</code></td>
+<td>アルファだけを替えた色</td>
+</tr>
+<tr>
+<td><code>Color::Lerp(from, to, t)</code>、<code>Color::LerpHSV(from, to, t)</code></td>
+<td>2 色の間。<code>Lerp</code> は成分ごと、<code>LerpHSV</code> は色相環に沿う</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>色の値は、画面に出る値（sRGB）で書きます。Inspector の色の欄・16 進数・<code>Color32</code> も同じです</li>
+<li><code>Color</code> と <code>Vector4</code> は、互いに自動で変わります。ただし、三項演算子（<code>条件 ? a : b</code>）の左右に混ぜると、コンパイルエラーになります</li>
+<li>1 を超える色は光る色で、ブルームの元になります。Inspector の欄で 1 を超える値を入れるには、<code>HDR</code> の指定子を付けます</li>
+</ul>
+<div class="code"><pre><code class="language-cpp"><span class="w">    </span><span class="n">TPROPERTY</span><span class="p">(</span><span class="n">Edit</span><span class="p">,</span><span class="w"> </span><span class="n">HDR</span><span class="p">,</span><span class="w"> </span><span class="n">Tooltip</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;1 を超えると光る（シーンでは 1 を超えたまま計算され、ブルームの元になる）&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="n">Tako</span><span class="o">::</span><span class="n">Color</span><span class="w"> </span><span class="n">glowColor_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Tako</span><span class="o">::</span><span class="n">Color</span><span class="p">(</span><span class="mf">4.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">2.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">0.5f</span><span class="p">);</span>
+</code></pre>
+</div>
+<h2 id="14-ログとデバッグ表示">14. ログとデバッグ表示</h2>
+<h3 id="141-ログ">14.1 ログ</h3>
+<p>ヘッダーは <code>Logger.h</code> です。出した文字は、エディタの Console と、Visual Studio の出力ウィンドウに出ます。<code>printf</code> と同じ書式で、行の終わりには <code>\n</code> を書きます。</p>
+<div class="code"><pre><code class="language-cpp"><span class="w">    </span><span class="n">Tako</span><span class="o">::</span><span class="n">Logger</span><span class="o">::</span><span class="n">Log</span><span class="p">(</span><span class="s">&quot;Score: %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">score_</span><span class="p">);</span>
+</code></pre>
+</div>
+<h3 id="142-inspector-に追加の表示を出す">14.2 Inspector に追加の表示を出す</h3>
+<p><code>DrawCustomImGui</code> を override すると、Inspector の、自動で出る欄の下に、好きな表示やボタンを足せます。ImGui をそのまま使います。</p>
+<div class="code"><pre><code class="language-cpp"><span class="cp">#ifdef TAKO_EDITOR</span>
+<span class="kt">bool</span><span class="w"> </span><span class="nf">ScoreCounter::DrawCustomImGui</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">ImGui</span><span class="o">::</span><span class="n">Text</span><span class="p">(</span><span class="s">&quot;Score: %d&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">score_</span><span class="p">);</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ImGui</span><span class="o">::</span><span class="n">Button</span><span class="p">(</span><span class="s">&quot;Add 1&quot;</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="o">++</span><span class="n">score_</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="cp">#endif</span>
+</code></pre>
+</div>
+<ul>
+<li><code>DrawCustomImGui</code> があるのは、エディタがある構成（Debug と Develop）だけです。宣言・定義・<code>#include &quot;imgui.h&quot;</code> を、どれも <code>#ifdef TAKO_EDITOR</code> で囲みます。囲まないと、Release のビルドが通りません</li>
+<li>戻り値は、値を変えたら <code>true</code> です。表示だけなら <code>false</code> を返します</li>
+<li>この関数の中で <code>ImGui::Begin</code> を呼んで、別の窓を作らないでください（表示が点滅します）</li>
+</ul>
+<h3 id="143-処理の時間を見る">14.3 処理の時間を見る</h3>
+<p>どのスクリプトが重いかは、エディタの Performance ウィンドウ（F6）の <code>CPU Update</code> で見られます。値は、直近 0.5 秒の、1 フレームあたりの平均です。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>行</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Components</code> の下の、クラス名の行</td>
+<td>そのクラスの <code>Tick</code>・<code>LateTick</code>・タイマーの関数に掛かった時間（<code>CPU ms</code>）と、動いている個数（<code>Count</code>）。スクリプトは、スクリプトのクラスごとに出る</td>
+</tr>
+<tr>
+<td><code>Collision</code></td>
+<td>当たり判定</td>
+</tr>
+<tr>
+<td><code>Callbacks</code></td>
+<td><code>OnCollisionEnter</code>・<code>OnCollisionStay</code>・<code>OnCollisionExit</code> の呼び出し</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>時間は Develop で見ます。Debug は最適化が無いので、長く出ます</li>
+<li><code>Measure is off</code> と出ているときは、Render Pipeline ウィンドウの Frame タブで <code>Measure</code> をオンにします</li>
+<li>Release では、exe に <code>--profile</code> を付けて起動すると、同じ内訳と FPS が画面に重ねて出ます（新しく作ったプロジェクトには、これで起動する <code>RunProfile.bat</code> がルートに入っています）</li>
+</ul>
+<h2 id="15-コンポーネントの関数">15. コンポーネントの関数</h2>
+<p>エンジンが用意しているコンポーネントです。Inspector の <code>Add Component</code> で Actor に付け、スクリプトからは <code>GetOwner()-&gt;GetComponent&lt;Tako::型名&gt;()</code> で取ります。ヘッダーの名前は、型名と同じです（<code>MeshComponent.h</code> など）。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>一覧での名前</th>
+<th>型名</th>
+<th>すること</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mesh</td>
+<td><code>MeshComponent</code></td>
+<td>Actor の位置にモデルを描く</td>
+</tr>
+<tr>
+<td>Collider</td>
+<td><code>ColliderComponent</code></td>
+<td>当たり判定（<a href="#11-%E5%BD%93%E3%81%9F%E3%82%8A%E5%88%A4%E5%AE%9A">11. 当たり判定</a>）</td>
+</tr>
+<tr>
+<td>Animator</td>
+<td><code>AnimatorComponent</code></td>
+<td>同じ Actor の Mesh のモデルを動かす</td>
+</tr>
+<tr>
+<td>Audio Source</td>
+<td><code>AudioSourceComponent</code></td>
+<td>音を鳴らす（位置による聞こえ方の違いは無い）</td>
+</tr>
+<tr>
+<td>Camera</td>
+<td><code>CameraComponent</code></td>
+<td>Actor の位置と向きから見るカメラ。複数あるときは、Priority が一番大きい物が使われる</td>
+</tr>
+<tr>
+<td>Light</td>
+<td><code>LightComponent</code></td>
+<td>Actor の位置から、Actor の +Z の向きへ照らす。平行光源は、シーンに 1 つだけ効く。点光源とスポットライトは、Cast Shadow をオンにすると影を落とす（スポットライトを 1 枚・点光源を 6 枚と数えて、合わせて 16 枚まで）</td>
+</tr>
+<tr>
+<td>Particle System</td>
+<td><code>ParticleSystemComponent</code></td>
+<td>パーティクルのプリセットを、Actor の位置から出す（Play 中だけ）</td>
+</tr>
+<tr>
+<td>Post Process</td>
+<td><code>PostProcessComponent</code></td>
+<td>シーンのポストエフェクトを、プロファイルで決める</td>
+</tr>
+<tr>
+<td>Sky Box</td>
+<td><code>SkyBoxComponent</code></td>
+<td>キューブマップの空を描く</td>
+</tr>
+<tr>
+<td>UI Layout</td>
+<td><code>UILayoutComponent</code></td>
+<td>UI Editor で作ったレイアウトを、画面に出す</td>
+</tr>
+<tr>
+<td>Behavior Tree</td>
+<td><code>BehaviorTreeComponent</code></td>
+<td>Actor をビヘイビアツリーで動かす</td>
+</tr>
+<tr>
+<td>Script</td>
+<td><code>ScriptComponent</code></td>
+<td>スクリプトを 1 つ入れる</td>
+</tr>
+</tbody>
+</table></div>
+<p>Animator・Light・Sky Box には、スクリプトから呼ぶ関数はありません。値は Inspector で決めます。</p>
+<h3 id="mesh">Mesh</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>関数</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SetModel(model)</code></td>
+<td>モデルを替える</td>
+</tr>
+<tr>
+<td><code>SetVisible(visible)</code>、<code>IsVisible()</code></td>
+<td>描く・描かない（描かない間は、影も落とさない）</td>
+</tr>
+<tr>
+<td><code>SetOffset(offset)</code>、<code>GetOffset()</code></td>
+<td>Actor からのずれ。Actor の位置を変えずに、見た目だけを動かす（揺らす演出など）</td>
+</tr>
+<tr>
+<td><code>SetGeneratedModel(model)</code></td>
+<td>ファイルではなく、コードで作ったモデルを描く。Inspector の Model の欄は空にしておく</td>
+</tr>
+<tr>
+<td><code>GetObject3d()</code></td>
+<td>描画物（<code>Tako::Object3d</code>）。<code>BeginPlay</code> からも使える</td>
+</tr>
+</tbody>
+</table></div>
+<div class="code"><pre><code class="language-cpp"><span class="w">    </span><span class="n">Tako</span><span class="o">::</span><span class="n">MeshComponent</span><span class="o">*</span><span class="w"> </span><span class="n">mesh</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GetOwner</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">GetComponent</span><span class="o">&lt;</span><span class="n">Tako</span><span class="o">::</span><span class="n">MeshComponent</span><span class="o">&gt;</span><span class="p">();</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">mesh</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="c1">// 描画物（Object3d）を取って、色を変える</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">Tako</span><span class="o">::</span><span class="n">Object3d</span><span class="o">*</span><span class="w"> </span><span class="n">object</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mesh</span><span class="o">-&gt;</span><span class="n">GetObject3d</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">object</span><span class="o">-&gt;</span><span class="n">SetMaterialColor</span><span class="p">(</span><span class="n">Tako</span><span class="o">::</span><span class="n">Color</span><span class="p">(</span><span class="mf">1.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">0.3f</span><span class="p">,</span><span class="w"> </span><span class="mf">0.3f</span><span class="p">));</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre>
+</div>
+<p><code>Object3d</code>（<code>Object3d.h</code>）の、よく使う関数です。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>関数</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SetMaterialColor(color)</code>、<code>GetMaterialColor()</code></td>
+<td>マテリアルの色を上書きする。<code>std::nullopt</code> を渡すと、元に戻す</td>
+</tr>
+<tr>
+<td><code>SetTransparent(isTransparent)</code></td>
+<td>半透明として描く</td>
+</tr>
+<tr>
+<td><code>SetCastShadow(castShadow)</code></td>
+<td>影を落とす・落とさない</td>
+</tr>
+<tr>
+<td><code>SetTexture(fileName)</code></td>
+<td>テクスチャを差し替える。空の文字列で、元に戻す</td>
+</tr>
+<tr>
+<td><code>SetMeshVisible(name, visible)</code>、<code>GetMeshNames()</code></td>
+<td>モデルの中のメッシュを、名前で出す・隠す</td>
+</tr>
+<tr>
+<td><code>GetWorldMatrix()</code></td>
+<td>ワールド行列</td>
+</tr>
+<tr>
+<td><code>GetAnimator()</code></td>
+<td>このモデルを動かす <code>Tako::AnimationPlayer</code>（関数は <a href="#ui-layout">UI Layout</a> の表）</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="collider">Collider</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>関数</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SetActive(active)</code>、<code>IsActive()</code></td>
+<td>当たり判定を一時的に止める・戻す（攻撃の間だけ当てる、などに使う）</td>
+</tr>
+<tr>
+<td><code>SetRadius(radius)</code></td>
+<td>球（Sphere）の半径を変える</td>
+</tr>
+<tr>
+<td><code>SetSize(size)</code></td>
+<td>箱（Box）の全長を変える</td>
+</tr>
+<tr>
+<td><code>SetOffset(offset)</code></td>
+<td>Actor からのずれを変える</td>
+</tr>
+<tr>
+<td><code>GetLayer()</code></td>
+<td>層の番号</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="audio-source">Audio Source</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>関数</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Play()</code></td>
+<td>最初から鳴らす（鳴っていれば、止めてから）</td>
+</tr>
+<tr>
+<td><code>Stop()</code></td>
+<td>止める</td>
+</tr>
+</tbody>
+</table></div>
+<p>Actor をオフにすると止まり、オンに戻すと（Play On Start なら）最初から鳴ります。</p>
+<h3 id="camera">Camera</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>関数</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SetFovY(fovY)</code></td>
+<td>縦の視野角（ラジアン）</td>
+</tr>
+</tbody>
+</table></div>
+<p>カメラを動かすには、Actor の Transform を動かします。</p>
+<h3 id="particle-system">Particle System</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>関数</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SetActive(active)</code></td>
+<td>出す・止める</td>
+</tr>
+<tr>
+<td><code>EmitTemporary(lifeTime)</code></td>
+<td>今の位置にエミッターの写しを作り、<code>lifeTime</code> 秒だけ出す。このコンポーネントが消えても、最後まで出る</td>
+</tr>
+<tr>
+<td><code>GetEmitter()</code></td>
+<td>エミッター（<code>std::shared_ptr&lt;Tako::GPUParticleEmitter&gt;</code>）。プリセットが空か、読めなければ <code>nullptr</code></td>
+</tr>
+</tbody>
+</table></div>
+<div class="code"><pre><code class="language-cpp"><span class="w">    </span><span class="n">Tako</span><span class="o">::</span><span class="n">ParticleSystemComponent</span><span class="o">*</span><span class="w"> </span><span class="n">particle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GetOwner</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">GetComponent</span><span class="o">&lt;</span><span class="n">Tako</span><span class="o">::</span><span class="n">ParticleSystemComponent</span><span class="o">&gt;</span><span class="p">();</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">particle</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="c1">// 今の位置にエミッターの写しを作り、0.5 秒だけ出す（爆発など、1 回きりの演出）</span>
+<span class="w">    </span><span class="n">particle</span><span class="o">-&gt;</span><span class="n">EmitTemporary</span><span class="p">(</span><span class="mf">0.5f</span><span class="p">);</span>
+<span class="w">    </span><span class="c1">// エミッターそのものを取って、数や頻度を変える</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Tako</span><span class="o">::</span><span class="n">GPUParticleEmitter</span><span class="o">&gt;</span><span class="w"> </span><span class="n">emitter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">particle</span><span class="o">-&gt;</span><span class="n">GetEmitter</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">emitter</span><span class="o">-&gt;</span><span class="n">SetParticleCount</span><span class="p">(</span><span class="mi">64</span><span class="p">);</span>
+<span class="w">        </span><span class="n">emitter</span><span class="o">-&gt;</span><span class="n">SetFrequency</span><span class="p">(</span><span class="mf">0.1f</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="c1">// Emitter Name を付けたエミッターは、シーンの EmitterManager から名前で操作できる</span>
+<span class="w">    </span><span class="n">Tako</span><span class="o">::</span><span class="n">EmitterManager</span><span class="o">&amp;</span><span class="w"> </span><span class="n">emitters</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GetOwner</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">GetScene</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">GetEmitterManager</span><span class="p">();</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">emitters</span><span class="p">.</span><span class="n">HasEmitter</span><span class="p">(</span><span class="s">&quot;Explosion&quot;</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">emitters</span><span class="p">.</span><span class="n">SetEmitterActive</span><span class="p">(</span><span class="s">&quot;Explosion&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre>
+</div>
+<p><code>GPUParticleEmitter</code>（<code>GPUParticleEmitter.h</code>）の、よく使う関数です。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>関数</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SetActive(isActive)</code>、<code>SetEmitting(cond)</code></td>
+<td>エミッターを動かす・止める、出す・止める</td>
+</tr>
+<tr>
+<td><code>SetParticleCount(count)</code>、<code>SetFrequency(frequency)</code></td>
+<td>1 回に出す数と、出す間隔</td>
+</tr>
+<tr>
+<td><code>SetPosition(position)</code></td>
+<td>位置</td>
+</tr>
+<tr>
+<td><code>SetColor(color)</code>、<code>SetColors(startColor, endColor)</code></td>
+<td>色</td>
+</tr>
+<tr>
+<td><code>SetLifeTimeRange(range)</code>、<code>SetSpeedRange(range)</code></td>
+<td>寿命と速さの範囲</td>
+</tr>
+</tbody>
+</table></div>
+<p><code>EmitterManager</code>（<code>EmitterManager.h</code>）の、よく使う関数です。名前は、Inspector の <code>Emitter Name</code> です。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>関数</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>HasEmitter(name)</code>、<code>GetEmitterByName(name)</code></td>
+<td>名前のエミッターがあるか、取る</td>
+</tr>
+<tr>
+<td><code>SetEmitterActive(name, isActive)</code></td>
+<td>出す・止める</td>
+</tr>
+<tr>
+<td><code>SetEmitterPosition(name, position)</code></td>
+<td>動かす</td>
+</tr>
+<tr>
+<td><code>SetEmitterCount(name, count)</code></td>
+<td>1 回に出す数</td>
+</tr>
+<tr>
+<td><code>CreateTemporaryEmitterFrom(sourceName, newName, lifeTime)</code></td>
+<td>写しを作って、<code>lifeTime</code> 秒だけ出す</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="post-process">Post Process</h3>
+<p>このコンポーネントには、スクリプトから呼ぶ関数はありません。スクリプトからエフェクトを足す・外すときは、<code>Tako::PostEffectManager::GetInstance()</code>（<code>PostEffectManager.h</code>）を使います。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>関数</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AddEffect(name, param)</code></td>
+<td>エフェクトを足し、番号を返す（<code>&quot;Bloom&quot;</code> と <code>Tako::BloomParam</code> など。値の構造体は <code>PostEffectStruct.h</code>）。無い名前なら 0</td>
+</tr>
+<tr>
+<td><code>RemoveEffect(id)</code></td>
+<td><code>AddEffect</code> が返した番号のエフェクトを外す</td>
+</tr>
+</tbody>
+</table></div>
+<p>足したエフェクトは、シーンが始まるとき（シーンの切り替え・Play と Stop）と、Post Process がプロファイルを読むときに消えます。</p>
+<h3 id="ui-layout">UI Layout</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>関数</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GetLayout()</code></td>
+<td>レイアウト（<code>Tako::UILayout&amp;</code>）。<code>BeginPlay</code> からも使える</td>
+</tr>
+<tr>
+<td><code>SetVisible(visible)</code>、<code>IsVisible()</code></td>
+<td>レイアウト全体を出す・隠す</td>
+</tr>
+</tbody>
+</table></div>
+<div class="code"><pre><code class="language-cpp"><span class="w">    </span><span class="n">Tako</span><span class="o">::</span><span class="n">UILayoutComponent</span><span class="o">*</span><span class="w"> </span><span class="n">ui</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GetOwner</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">GetComponent</span><span class="o">&lt;</span><span class="n">Tako</span><span class="o">::</span><span class="n">UILayoutComponent</span><span class="o">&gt;</span><span class="p">();</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">ui</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="c1">// 要素は、UI Editor で付けた名前で指す。無い名前を渡しても、何も起きない</span>
+<span class="w">    </span><span class="n">Tako</span><span class="o">::</span><span class="n">UILayout</span><span class="o">&amp;</span><span class="w"> </span><span class="n">layout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ui</span><span class="o">-&gt;</span><span class="n">GetLayout</span><span class="p">();</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">int32_t</span><span class="w"> </span><span class="n">score</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Tako</span><span class="o">::</span><span class="n">SceneManager</span><span class="o">::</span><span class="n">GetInstance</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">GetSessionData</span><span class="p">().</span><span class="n">value</span><span class="p">(</span><span class="s">&quot;score&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="w">    </span><span class="n">layout</span><span class="p">.</span><span class="n">SetText</span><span class="p">(</span><span class="s">&quot;ScoreText&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Score: &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">to_string</span><span class="p">(</span><span class="n">score</span><span class="p">));</span>
+<span class="w">    </span><span class="n">layout</span><span class="p">.</span><span class="n">SetVisible</span><span class="p">(</span><span class="s">&quot;PausePanel&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">);</span>
+<span class="w">    </span><span class="n">layout</span><span class="p">.</span><span class="n">SetColor</span><span class="p">(</span><span class="s">&quot;StartButton&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="mf">1.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">0.8f</span><span class="p">,</span><span class="w"> </span><span class="mf">0.2f</span><span class="p">,</span><span class="w"> </span><span class="mf">1.0f</span><span class="w"> </span><span class="p">});</span>
+<span class="w">    </span><span class="c1">// Animation Editor で作ったクリップを、要素に再生する</span>
+<span class="w">    </span><span class="n">layout</span><span class="p">.</span><span class="n">GetAnimator</span><span class="p">().</span><span class="n">Play</span><span class="p">(</span><span class="s">&quot;PopScale&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;StartButton&quot;</span><span class="p">);</span>
+</code></pre>
+</div>
+<p><code>UILayout</code>（<code>UILayout.h</code>）の、よく使う関数です。どれも、要素を名前で指します。見つからなければ、入れる関数は何もせず、読む関数は 0・<code>false</code>・空の文字列を返します。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>関数</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SetVisible(name, visible)</code>、<code>IsVisible(name)</code></td>
+<td>要素を出す・隠す（子も一緒に）</td>
+</tr>
+<tr>
+<td><code>SetText(name, text)</code>、<code>GetText(name)</code></td>
+<td>文字の要素の文字列（UTF-8）</td>
+</tr>
+<tr>
+<td><code>SetColor(name, color)</code>、<code>SetAlpha(name, alpha)</code></td>
+<td>色と、不透明度</td>
+</tr>
+<tr>
+<td><code>SetPosition(name, position)</code>、<code>SetSize(name, size)</code></td>
+<td>位置と大きさ（基準解像度の px）</td>
+</tr>
+<tr>
+<td><code>SetRotation(name, rotation)</code></td>
+<td>回転（度）</td>
+</tr>
+<tr>
+<td><code>SetTexture(name, texture)</code></td>
+<td>画像を差し替える</td>
+</tr>
+<tr>
+<td><code>GetScreenRectMin(name)</code>、<code>GetScreenRectSize(name)</code></td>
+<td>画面上の矩形（クリックの判定などに使う）</td>
+</tr>
+<tr>
+<td><code>GetAnimator()</code></td>
+<td>要素を動かす <code>Tako::AnimationPlayer</code></td>
+</tr>
+</tbody>
+</table></div>
+<p><code>AnimationPlayer</code>（<code>AnimationPlayer.h</code>）の関数です。Animation Editor で作ったクリップを再生します。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>関数</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Play(clipName, target = &quot;&quot;, options = {})</code></td>
+<td>クリップを最初から再生する。<code>target</code> は要素の名前。クリップが見つからなければ再生せず、Console に警告を出す</td>
+</tr>
+<tr>
+<td><code>Stop(clipName, target = &quot;&quot;)</code>、<code>StopAll()</code></td>
+<td>止める</td>
+</tr>
+<tr>
+<td><code>IsPlaying(clipName, target = &quot;&quot;)</code></td>
+<td>再生中なら <code>true</code></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="behavior-tree">Behavior Tree</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>関数</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GetTree()</code></td>
+<td>実行中のツリー（<code>Tako::BehaviorTree&amp;</code>）</td>
+</tr>
+<tr>
+<td><code>GetTreeName()</code></td>
+<td>ツリーの名前</td>
+</tr>
+</tbody>
+</table></div>
+<div class="code"><pre><code class="language-cpp"><span class="w">    </span><span class="n">Tako</span><span class="o">::</span><span class="n">BehaviorTreeComponent</span><span class="o">*</span><span class="w"> </span><span class="n">behavior</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GetOwner</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">GetComponent</span><span class="o">&lt;</span><span class="n">Tako</span><span class="o">::</span><span class="n">BehaviorTreeComponent</span><span class="o">&gt;</span><span class="p">();</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">behavior</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="c1">// ツリーのノードと値をやり取りする入れ物（Blackboard）に、値を入れる</span>
+<span class="w">    </span><span class="n">Tako</span><span class="o">::</span><span class="n">BTBlackboard</span><span class="o">*</span><span class="w"> </span><span class="n">blackboard</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">behavior</span><span class="o">-&gt;</span><span class="n">GetTree</span><span class="p">().</span><span class="n">GetBlackboard</span><span class="p">();</span>
+<span class="w">    </span><span class="n">blackboard</span><span class="o">-&gt;</span><span class="n">SetFloat</span><span class="p">(</span><span class="s">&quot;attackRange&quot;</span><span class="p">,</span><span class="w"> </span><span class="mf">3.0f</span><span class="p">);</span>
+<span class="w">    </span><span class="n">blackboard</span><span class="o">-&gt;</span><span class="n">SetVector3</span><span class="p">(</span><span class="s">&quot;home&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">GetOwner</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">GetWorldPosition</span><span class="p">());</span>
+</code></pre>
+</div>
+<p>Blackboard には、<code>BeginPlay</code> から値を入れられます。キー <code>&quot;owner&quot;</code> には、この Actor が入っています。</p>
+<p><code>BehaviorTree</code>（<code>BehaviorTree.h</code>）と <code>BTBlackboard</code>（<code>BTBlackboard.h</code>）の、よく使う関数です。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>関数</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Tick(deltaTime)</code></td>
+<td>ツリーを 1 フレーム実行する（Inspector の Auto Tick を外したとき）</td>
+</tr>
+<tr>
+<td><code>Reset()</code></td>
+<td>ツリー全体を最初に戻す</td>
+</tr>
+<tr>
+<td><code>GetBlackboard()</code></td>
+<td>Blackboard</td>
+</tr>
+<tr>
+<td><code>SetInt(key, value)</code>、<code>GetInt(key, defaultValue = 0)</code></td>
+<td>整数</td>
+</tr>
+<tr>
+<td><code>SetFloat(key, value)</code>、<code>GetFloat(key, defaultValue = 0)</code></td>
+<td>小数</td>
+</tr>
+<tr>
+<td><code>SetVector3(key, value)</code>、<code>GetVector3(key)</code></td>
+<td>ベクトル</td>
+</tr>
+<tr>
+<td><code>SetValue(key, value)</code>、<code>GetValue&lt;T&gt;(key)</code></td>
+<td>好きな型の値。<code>GetValue</code> は、無ければ <code>std::nullopt</code></td>
+</tr>
+<tr>
+<td><code>SetPtr(key, ptr)</code>、<code>GetPtr&lt;T&gt;(key)</code></td>
+<td>ポインタ。<code>GetPtr</code> は、無ければ <code>nullptr</code></td>
+</tr>
+<tr>
+<td><code>HasKey(key)</code>、<code>RemoveKey(key)</code></td>
+<td>キーがあるか、消す</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="script">Script</h3>
+<p>普通は、Script コンポーネントを直接は触りません。<code>Actor::GetScript&lt;T&gt;()</code> で、中のスクリプトを取ります。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>関数</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GetScript()</code></td>
+<td>中のスクリプト（<code>Tako::Script*</code>）。無ければ <code>nullptr</code></td>
+</tr>
+<tr>
+<td><code>GetScriptName()</code></td>
+<td>スクリプトの型名</td>
+</tr>
+<tr>
+<td><code>SetScript(typeName)</code></td>
+<td>スクリプトを替える。同じキーの値は引き継ぐ</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="16-よくある失敗">16. よくある失敗</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>症状</th>
+<th>原因</th>
+<th>直し方</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>スクリプトが <code>Add Component</code> の一覧に出ない</td>
+<td>コンパイルが通っていない</td>
+<td>Console のエラーを直して、もう一度コンパイルする（Ctrl+B）</td>
+</tr>
+<tr>
+<td></td>
+<td><code>TCLASS()</code> か <code>GENERATED_BODY()</code> が無い、<code>Tako::Script</code> を継承していない</td>
+<td><a href="#3-%E6%B1%BA%E3%81%BE%E3%82%8A">3. 決まり</a>のとおりに書く</td>
+</tr>
+<tr>
+<td></td>
+<td>ファイルが <code>.vcxproj</code> に入っていない</td>
+<td><code>New Script...</code> で作るか、Visual Studio で「既存の項目の追加」をする</td>
+</tr>
+<tr>
+<td>Assets からスクリプトを開けない、Script の欄にドロップできない</td>
+<td>ファイル名とクラス名が違う、<code>Script</code> フォルダーの外にある</td>
+<td>名前をそろえて、<code>GameProject\Script</code> の中に置く</td>
+</tr>
+<tr>
+<td>ビルドで <code>TAKO001</code> のエラーが出る</td>
+<td><code>TCLASS</code>・<code>TPROPERTY</code> の書き方の間違い</td>
+<td>エラーの文のとおりに直す（<a href="#3-%E6%B1%BA%E3%81%BE%E3%82%8A">3. 決まり</a>の表）</td>
+</tr>
+<tr>
+<td>ビルドで「TCLASS 名前 を引数なしで作れない」と出る</td>
+<td>スクリプトのコンストラクタに引数がある。または、引数ありのコンストラクタしか無い型をメンバーに持ち、初期値を渡していない</td>
+<td>スクリプトのコンストラクタから引数を外す。メンバーは、宣言で初期値を渡す（<code>Foo foo_{ 1, 2 };</code>）か、その型に引数なしのコンストラクタを足す</td>
+</tr>
+<tr>
+<td>Debug は通るのに、Release のビルドが通らない</td>
+<td><code>DrawCustomImGui</code> や <code>imgui.h</code> を <code>#ifdef TAKO_EDITOR</code> で囲んでいない</td>
+<td>宣言・定義・include を囲む。区切りのよい所で、Release もビルドして確かめる</td>
+</tr>
+<tr>
+<td>Develop のエディタで、Inspector の追加の表示が出ない</td>
+<td><code>DrawCustomImGui</code> を <code>#ifdef _DEBUG</code> で囲んでいる（<code>_DEBUG</code> は Debug だけ）</td>
+<td><code>#ifdef TAKO_EDITOR</code> に替える</td>
+</tr>
+<tr>
+<td>Develop のエディタでコンパイルすると、Console に <code>has no Develop|x64 configuration</code> と出る</td>
+<td>ゲームの <code>.vcxproj</code> に、構成 Develop が無い（2.1.4 より前に作ったプロジェクト）</td>
+<td>エンジンのひな形（<code>Engine\TakoEngine\templates\Default</code>）の <code>.vcxproj</code> と <code>.sln</code> から、<code>Develop</code> の付いた所を写す（エンジンの <code>CHANGELOG.md</code> の 2.1.4 に書いてある）</td>
+</tr>
+<tr>
+<td><code>BeginPlay</code> で、他のスクリプトが用意するはずの物がまだ無い</td>
+<td>相手の <code>BeginPlay</code> が、自分より後に呼ばれている</td>
+<td>用意する側を <code>Awake</code> に移すか、<code>TCLASS(Order = n)</code> で順を決める</td>
+</tr>
+<tr>
+<td><code>BeginPlay</code> で全体をリセットしたら、当たらなくなった</td>
+<td>Collider は <code>Awake</code> で登録される。<code>BeginPlay</code> で <code>CollisionManager::Reset()</code> を呼ぶと、登録が全部消える</td>
+<td>シーンをまたぐ物を消すのは、<code>EndPlay</code> で行う</td>
+</tr>
+<tr>
+<td>当たり判定が呼ばれない</td>
+<td>片方にしか Collider が無い</td>
+<td>両方の Actor に Collider を付ける</td>
+</tr>
+<tr>
+<td></td>
+<td>層の組み合わせが、当たらない設定になっている</td>
+<td>Engine Settings の Physics の <code>Collision Matrix</code> を見る</td>
+</tr>
+<tr>
+<td></td>
+<td>Actor か Collider がオフ、または Edit 中</td>
+<td>Active を見る。当たり判定は Play 中だけ働く</td>
+</tr>
+<tr>
+<td><code>OnCollisionEnter</code> で落ちる</td>
+<td><code>other</code> が <code>nullptr</code>（相手が Actor に付いていないコライダー）</td>
+<td>最初に <code>if (!other) return;</code> を書く</td>
+</tr>
+<tr>
+<td><code>GetAxis</code>・<code>PushAction</code> で止まる（assert）</td>
+<td>作っていない名前を渡している</td>
+<td>Engine Settings の Input で作った名前と、綴りをそろえる</td>
+</tr>
+<tr>
+<td>消したはずの Actor を触って落ちる</td>
+<td>Actor のポインタを、メンバーに持ち続けている</td>
+<td><code>ActorRef</code> で持ち、使うたびに <code>Resolve</code> する</td>
+</tr>
+<tr>
+<td>Play 中に変えた値が、Stop で戻る</td>
+<td>仕様（Stop は、Play の前の中身に戻す）</td>
+<td>残したい物は、コンポーネントの見出しの右クリックで <code>Keep Values on Stop</code> を選ぶ</td>
+</tr>
+<tr>
+<td>コンパイルの後に、値が消える</td>
+<td><code>TPROPERTY</code> の無いメンバーと、ゲームのコードの <code>static</code> 変数・グローバル変数は、コンパイルのたびに作り直される</td>
+<td>残したい値に <code>TPROPERTY</code> を付ける</td>
+</tr>
+<tr>
+<td>コンパイルの後に、エディタが落ちる</td>
+<td>ゲームが <code>RegisterPostEffect</code>・<code>RenderPipeline::AddRenderPass</code>・<code>TransitionManager::SetCurrentEffect</code> でエンジンに登録した物が、古いコードを指したまま残っている</td>
+<td>登録した物は、<code>EndPlay</code> で外す</td>
+</tr>
+<tr>
+<td>メンバー名を変えたら、Inspector の値が初期値に戻った</td>
+<td>保存のキーは、メンバー名から決まる</td>
+<td>名前を戻すか、<code>PostLoad</code> で古いキーを読み替える</td>
+</tr>
+<tr>
+<td>クラス名を変えたら、Actor のスクリプトが見つからなくなった</td>
+<td>Script コンポーネントは、スクリプトを型名で覚えている</td>
+<td>名前を戻すか、Script の欄で選び直す（保存してあった値は捨てられず、シーンファイルに残る）</td>
+</tr>
+<tr>
+<td>Inspector の表示が点滅する</td>
+<td><code>DrawCustomImGui</code> の中で <code>ImGui::Begin</code> を呼んでいる</td>
+<td>別の窓を作らず、Inspector の中に描く</td>
+</tr>
+<tr>
+<td>エンジンを新しくしたら、エディタが落ちる</td>
+<td>古い <code>Game.dll</code> が、新しいエンジンと合っていない</td>
+<td>ゲームをビルドし直してから、エディタを開く</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="付録-ヘッダーの場所">付録 ヘッダーの場所</h2>
+<p>どれも、プロジェクトの <code>Engine\TakoEngine\project\engine</code> からのパスです。include するときは、ファイル名だけを書きます。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>ヘッダー</th>
+<th>中身</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>gameplay/actor/Script.h</code></td>
+<td>スクリプトの基底クラス</td>
+</tr>
+<tr>
+<td><code>gameplay/actor/Component.h</code></td>
+<td>呼ばれる関数、タイマー、<code>Subscribe</code></td>
+</tr>
+<tr>
+<td><code>gameplay/actor/Actor.h</code>、<code>ActorRef.h</code></td>
+<td>Actor と、Actor を指す値</td>
+</tr>
+<tr>
+<td><code>gameplay/actor/ScriptComponent.h</code></td>
+<td>Script コンポーネント</td>
+</tr>
+<tr>
+<td><code>gameplay/scene/BaseScene.h</code></td>
+<td>シーン（<code>Spawn</code>・<code>FindActor</code>・<code>SendEvent</code>・ポーズ）</td>
+</tr>
+<tr>
+<td><code>gameplay/scene/SceneManager.h</code></td>
+<td>シーンの切り替え、シーンをまたぐ値</td>
+</tr>
+<tr>
+<td><code>gameplay/scene/transition/TransitionManager.h</code></td>
+<td>シーンの切り替えの演出</td>
+</tr>
+<tr>
+<td><code>gameplay/component/*.h</code></td>
+<td>エンジンのコンポーネント</td>
+</tr>
+<tr>
+<td><code>gameplay/collision/CollisionManager.h</code></td>
+<td>当たり判定の層と、当たる組み合わせ</td>
+</tr>
+<tr>
+<td><code>gameplay/ai/BehaviorTree/Runtime/BehaviorTree.h</code>、<code>Core/BTBlackboard.h</code></td>
+<td>ビヘイビアツリーと Blackboard</td>
+</tr>
+<tr>
+<td><code>core/reflection/Reflection.h</code></td>
+<td><code>TCLASS</code>・<code>TPROPERTY</code> などの印と、指定子の説明</td>
+</tr>
+<tr>
+<td><code>core/reflection/TObject.h</code></td>
+<td><code>PostEditChange</code>・<code>PostLoad</code>・<code>PostSave</code>・<code>DrawCustomImGui</code></td>
+</tr>
+<tr>
+<td><code>core/reflection/GameSettings.h</code></td>
+<td>調整値の基底クラス</td>
+</tr>
+<tr>
+<td><code>core/io/Input.h</code></td>
+<td>入力</td>
+</tr>
+<tr>
+<td><code>core/utility/Logger.h</code></td>
+<td>ログ</td>
+</tr>
+<tr>
+<td><code>core/math/Vector2.h</code>、<code>Vector3.h</code>、<code>Vector4.h</code>、<code>Transform.h</code></td>
+<td>ベクトルと Transform</td>
+</tr>
+<tr>
+<td><code>core/math/ColorFunc.h</code>、<code>Gradient.h</code></td>
+<td>色（<code>Color</code>・<code>ColorHSV</code>・<code>Color32</code>）と、色の段階（<code>Gradient</code>）</td>
+</tr>
+<tr>
+<td><code>core/math/RandomEngine.h</code></td>
+<td>乱数（<code>GetFloat(min, max)</code>・<code>GetInt(min, max)</code>・<code>GetBool(probability)</code>・<code>GetRandomDirectionXZ()</code>・<code>GetHueColor(s, v)</code> など）</td>
+</tr>
+<tr>
+<td><code>core/math/EaseFunc.h</code></td>
+<td>イージング</td>
+</tr>
+<tr>
+<td><code>core/time/FrameTimer.h</code></td>
+<td>時間（<code>GetDeltaTime()</code>・<code>SetTimeScale(scale)</code>・<code>SetTimeScaleForDuration(scale, duration)</code>）</td>
+</tr>
+<tr>
+<td><code>graphics/2d/UILayout.h</code></td>
+<td>UI のレイアウト</td>
+</tr>
+<tr>
+<td><code>graphics/3d/Object/Object3d.h</code></td>
+<td>モデルの描画物</td>
+</tr>
+<tr>
+<td><code>graphics/animation/AnimationPlayer.h</code></td>
+<td>Animation Editor のクリップの再生</td>
+</tr>
+<tr>
+<td><code>graphics/effect/Particle/Emitter/EmitterManager.h</code>、<code>GPUParticleEmitter.h</code></td>
+<td>パーティクルのエミッター</td>
+</tr>
+<tr>
+<td><code>graphics/effect/PostEffect/PostEffectManager.h</code>、<code>PostEffectStruct.h</code></td>
+<td>ポストエフェクトを足す・外す、エフェクトの値（<code>BloomParam</code> など）</td>
+</tr>
+</tbody>
+</table></div>
+
+  </main>
+
+  <footer>TakoEngine 2.1.5 ・ <a href="https://github.com/KyouGenSo/TakoEngine">KyouGenSo/TakoEngine</a></footer>
+</div>
+
+<script>
+const root = document.documentElement;
+const narrow = matchMedia("(max-width: 959px)");
+const navbox = document.getElementById("navbox");
+
+// テーマ：今の見た目の逆にして、覚える
+document.getElementById("theme").addEventListener("click", () => {
+  const isDark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  root.dataset.theme = isDark ? "light" : "dark";
+  try { localStorage.setItem("theme", root.dataset.theme); } catch {}
+});
+
+// 狭い画面では目次を畳んでおき、選んだら閉じる
+if (narrow.matches) navbox.open = false;
+navbox.addEventListener("click", (event) => {
+  if (event.target.closest("a") && narrow.matches) navbox.open = false;
+});
+
+// コードのコピー
+for (const box of document.querySelectorAll(".code")) {
+  const button = document.createElement("button");
+  button.className = "copy";
+  button.type = "button";
+  button.textContent = "コピー";
+  button.addEventListener("click", async () => {
+    await navigator.clipboard.writeText(box.querySelector("code").textContent);
+    button.textContent = "コピーしました";
+    setTimeout(() => { button.textContent = "コピー"; }, 1200);
+  });
+  box.append(button);
+}
+
+// 見出しへのリンクと、今読んでいる節の印
+const tocLinks = new Map([...document.querySelectorAll(".toc a")].map((a) => [decodeURIComponent(a.hash.slice(1)), a]));
+const headings = [...document.querySelectorAll("main :is(h2, h3)[id]")];
+for (const heading of headings) {
+  const anchor = document.createElement("a");
+  anchor.className = "anchor";
+  anchor.href = "#" + encodeURIComponent(heading.id);
+  anchor.textContent = "#";
+  anchor.setAttribute("aria-label", "この節へのリンク");
+  heading.append(anchor);
+}
+let current = null;
+const mark = () => {
+  // 画面の上端を過ぎた最後の見出しが、今の節
+  let now = headings[0];
+  for (const heading of headings) {
+    if (heading.getBoundingClientRect().top > 80) break;
+    now = heading;
+  }
+  const link = tocLinks.get(now.id);
+  if (link === current) return;
+  current?.removeAttribute("aria-current");
+  link?.setAttribute("aria-current", "true");
+  current = link;
+  if (!narrow.matches) link?.scrollIntoView({ block: "nearest" });
+};
+addEventListener("scroll", mark, { passive: true });
+mark();
+</script>
+</body>
+</html>
