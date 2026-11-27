@@ -34,7 +34,7 @@ A DirectX 12 game engine for Windows. Build scenes in the editor (TakoEditor) an
 - Hot reload: compile from the editor (Ctrl+B, or Auto Compile when the editor regains focus) and swap in the new `Game.dll`. Property values and selection are kept
 - Reflection with `TCLASS` / `TPROPERTY`: properties show up in the Inspector and are saved to scene files without extra code
 - Built-in components: Mesh, Camera, Light, Collider, Rigidbody, CharacterController, Joint, AudioSource, Animator, BehaviorTree, ParticleSystem, PostProcess, SkyBox, UILayout
-- Physics with Jolt Physics: rigid bodies, triggers, a layer collision matrix, raycasts, character controllers and joints, stepped at a fixed 60 Hz (`FixedTick`)
+- Physics with Jolt Physics: rigid bodies, triggers, a layer collision matrix, raycasts and shape queries, character controllers and joints, stepped at a fixed 60 Hz (`FixedTick`)
 
 **Rendering**
 - DirectX 12 with a render graph; the render pipeline can be edited in the editor

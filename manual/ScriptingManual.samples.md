@@ -265,7 +265,7 @@ class Coin : public Tako::Script {
     GENERATED_BODY()
 
 public: //メンバー関数
-    void OnCollisionEnter(Tako::Actor* other) override;
+    void OnCollisionEnter(const Tako::Collision& collision) override;
 
 private: //メンバー変数
     TPROPERTY(Edit, ClampMin = 1)
@@ -281,9 +281,9 @@ private: //メンバー変数
 #include "Actor.h"
 #include "BaseScene.h"
 
-void Coin::OnCollisionEnter(Tako::Actor* other) {
-    // other は相手の Actor。Actor に付いていないコライダーなら nullptr
-    if (!other || !other->HasTag("Player")) {
+void Coin::OnCollisionEnter(const Tako::Collision& collision) {
+    // collision.actor は、相手の Actor
+    if (!collision.actor->HasTag("Player")) {
         return;
     }
     GetOwner()->GetScene()->SendEvent("CoinCollected", point_);
@@ -560,7 +560,7 @@ class DestroyOnHit : public Tako::Script {
     GENERATED_BODY()
 
 public: //メンバー関数
-    void OnCollisionEnter(Tako::Actor* other) override;
+    void OnCollisionEnter(const Tako::Collision& collision) override;
 
 private: //メンバー変数
     TPROPERTY(Edit, Tooltip = "空ならどの Actor でも消える。名前を書くと、その名前の Actor に当たったときだけ消える")
@@ -575,8 +575,8 @@ private: //メンバー変数
 #include "DestroyOnHit.h"
 #include "Actor.h"
 
-void DestroyOnHit::OnCollisionEnter(Tako::Actor* other) {
-    if (!other || (!otherName_.empty() && other->GetName() != otherName_)) {
+void DestroyOnHit::OnCollisionEnter(const Tako::Collision& collision) {
+    if (!otherName_.empty() && collision.actor->GetName() != otherName_) {
         return;
     }
     GetOwner()->Destroy();
@@ -857,6 +857,8 @@ private: //非公開関数
     void UseCamera();
     void UseScript();
     void UseRaycast();
+    void UseShapeQueries();
+    void UseIgnoreCollision();
 };
 ```
 
@@ -901,6 +903,8 @@ void ComponentSamples::BeginPlay() {
     UseCamera();
     UseScript();
     UseRaycast();
+    UseShapeQueries();
+    UseIgnoreCollision();
 }
 
 void ComponentSamples::UseMesh() {
@@ -934,6 +938,26 @@ void ComponentSamples::UseRaycast() {
     const Tako::Vector3 origin = GetOwner()->GetWorldPosition();
     if (const auto hit = Tako::PhysicsWorld::GetInstance()->Raycast(origin, { 0.0f, -1.0f, 0.0f }, 10.0f)) {
         Tako::Logger::Log("hit %s at distance %.2f\n", hit->actor->GetName().c_str(), hit->distance);
+    }
+}
+
+void ComponentSamples::UseShapeQueries() {
+    Tako::PhysicsWorld* physics = Tako::PhysicsWorld::GetInstance();
+    const Tako::Vector3 origin  = GetOwner()->GetWorldPosition();
+    // 半径 0.3 の球を、前へ 5 の長さまで飛ばす（太さのある視線、カメラが壁にめり込まない位置、など）
+    if (const auto hit = physics->SphereCast(origin, 0.3f, { 0.0f, 0.0f, 1.0f }, 5.0f)) {
+        Tako::Logger::Log("sphere hit %s at distance %.2f\n", hit->actor->GetName().c_str(), hit->distance);
+    }
+    // 半径 3 の球に重なっている Actor を、全部調べる（爆発の範囲、近くの敵、など）
+    for (const Tako::Actor* actor : physics->OverlapSphere(origin, 3.0f)) {
+        Tako::Logger::Log("near %s\n", actor->GetName().c_str());
+    }
+}
+
+void ComponentSamples::UseIgnoreCollision() {
+    // 親の Actor とは、当たらないようにする（弾が、撃った本人に当たらないようにする、など）
+    if (const Tako::Actor* parent = GetOwner()->GetParent()) {
+        Tako::PhysicsWorld::GetInstance()->IgnoreCollision(GetOwner(), parent);
     }
 }
 
@@ -1160,7 +1184,7 @@ namespace Tako {
 }
 
 /// <summary>
-/// Rigidbody を、上向きの力で押し続ける。何かに当たると、手前へ弾かれる
+/// Rigidbody を、上向きの力で押し続ける。何かに当たると、当たった面から離れる向きへ弾かれる
 /// </summary>
 TCLASS(Requires = "RigidbodyComponent")
 class Rocket : public Tako::Script {
@@ -1171,7 +1195,7 @@ public: //メンバー関数
 
     void FixedTick(float fixedDeltaTime) override;
 
-    void OnCollisionEnter(Tako::Actor* other) override;
+    void OnCollisionEnter(const Tako::Collision& collision) override;
 
 private: //メンバー変数
     Tako::RigidbodyComponent* body_ = nullptr;
@@ -1195,9 +1219,9 @@ void Rocket::FixedTick(float) {
     body_->AddForce({ 0.0f, 30.0f, 0.0f });
 }
 
-// 1 回だけの衝撃は、AddImpulse で掛ける（ジャンプ、弾が当たった、など）
-void Rocket::OnCollisionEnter(Tako::Actor*) {
-    body_->AddImpulse({ 0.0f, 0.0f, -5.0f });
+// 1 回だけの衝撃は、AddImpulse で掛ける（ジャンプ、弾が当たった、など）。ここでは、当たった面から離れる向きへ弾く
+void Rocket::OnCollisionEnter(const Tako::Collision& collision) {
+    body_->AddImpulse(collision.normal * 5.0f);
 }
 ```
 

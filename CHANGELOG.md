@@ -3,7 +3,8 @@
 ## [2.1.6] - 2026-11-27
 
 ### 追加・変更
-- 物理エンジン（Jolt Physics）を追加。当たり判定はこの上で動く。Collider コンポーネントの関数と、`OnCollisionEnter` / `OnCollisionStay` / `OnCollisionExit` は今までどおり使える
+- 物理エンジン（Jolt Physics）を追加。当たり判定はこの上で動く。Collider コンポーネントの関数は、今までどおり使える
+- `OnCollisionEnter` / `OnCollisionStay` / `OnCollisionExit` の引数を、`const Tako::Collision& collision` にした（Unity の `Collision` に当たる）。相手の Actor（`collision.actor`）に加えて、触れた位置・相手の面の向き・速度の差・ぶつかった強さ（`impulse`、Enter だけ）が渡される
 - Rigidbody コンポーネントを追加。Dynamic は重力と当たりで動き、Kinematic は Actor の動きに付いていって Dynamic を押す。形は、同じ Actor と子の Actor の Collider（Trigger を除く）をまとめた物
 - Rigidbody は、スクリプトの `AddForce`・`AddImpulse`・`AddTorque`・`SetLinearVelocity`・`SetAngularVelocity` で動かす。質量・減衰・重力の倍率・動きを止める軸・連続衝突（速くても通り抜けない）は Inspector で決める
 - Collider に `Is Trigger` を追加。オン（今までの動き）は重なりを知らせるだけ、オフ（新しく作る Collider の既定）は押し合う実体になる。形に Capsule、滑りにくさの Friction、跳ね返りの Restitution、スクリプトから形を選ぶ `SetShape` を追加
@@ -16,6 +17,12 @@
 - スクリプトに `FixedTick(float fixedDeltaTime)` を追加。物理が 1 ステップ（1/60 秒）進む直前に呼ばれる（1 フレームに 0 回のことも、2 回以上のこともある）
 - `PhysicsWorld::GetInstance()->Raycast(始点, 向き, 長さ, 層のマスク)` を追加。最初に当たった Actor・位置・法線・距離が返る。Trigger にも当たり、5 番目の引数を `false` にすると素通りする
 - レイキャストは、始点を中に含む Collider（自分の Collider など）と、Mesh の形の裏面には当たらない（Unity と同じ決まり）
+- `PhysicsWorld` に、形を飛ばす `SphereCast`・`BoxCast`・`CapsuleCast`、重なっている Actor を調べる `OverlapSphere`・`OverlapBox`・`OverlapCapsule`、線が当たる全部を近い順に返す `RaycastAll` を追加。飛ばす前から重なっている Collider には当たらない（Unity と同じ決まり）
+- Rigidbody に、位置を決めて掛ける `AddForceAtPosition`・`AddImpulseAtPosition`、寝ているかを調べる・起こす・寝かせる `IsSleeping`・`WakeUp`・`Sleep`、重心をずらす Inspector の `Center Of Mass`（`SetCenterOfMass`）を追加
+- Character Controller に、足元を調べる `GetGroundNormal`・`GetGroundActor`・`IsOnSteepGround`、Play 中に全長を変える `SetHeight`（しゃがむ・立つ。ふさがっていれば `false`）、動く床に付いていく Inspector の `Ride Moving Ground`（既定はオフ）を追加
+- Joint でつないだ 2 つの Rigidbody は、お互いに当たらない（Unity と同じ決まり）。当てるには、Joint の `Enable Collision` をオンにする
+- Joint に、Hinge のモーター（`Motor Speed`・`Motor Torque`、スクリプトの `SetMotor`）と摩擦（`Friction`）、Distance のばね（`Spring`・`Damper`）、強い力で外れる `Break Force` を追加。外れると、その Actor のスクリプトの `OnJointBreak(float breakForce)` が呼ばれる
+- `PhysicsWorld::GetInstance()->IgnoreCollision(actorA, actorB)` を追加。その 2 つの Actor は押し合わず、当たりの知らせも届かない（弾が、撃った本人に当たらないようにする、など）
 - Debug > Collider Visibility（Engine Settings > Physics の Collider Debug Draw）で、Play 中のコライダーの形とジョイントが線で出る（今までは、オンにしても何も出なかった）
 - エディタで Actor を選ぶと、Collider（Sphere・Box・Capsule）と Character Controller の形が、Debug Viewport に緑の線で出る（Edit 中にも出る）
 - 層の当たり表（Engine Settings > Physics の Collision Matrix）の既定を、Unity と同じにした。決めていない組は当たり、足した層は最初から全部の層と当たる（今までは、チェックを入れた組だけが当たった）
@@ -27,6 +34,7 @@
 - コードで足した Collider（`AddComponent<ColliderComponent>()`）は、押し合う実体になる。重なりを知らせるだけにするには `SetTrigger(true)` を呼ぶ。Trigger でも Rigidbody でもない Collider どうしは、当たっても知らされない
 - 名前を付けていない層の Collider（層を選んでいない Collider の層 31 など）は、全部の層と当たる（今までは、層 31 どうしだけ）。当てたくない組は、Engine Settings の Physics で層に名前を付けて、Collision Matrix のチェックを外す
 - コードの `SetCollisionMask(a, b, true)` で当たる組を決めていたゲームは、先に `PhysicsWorld::GetInstance()->ClearCollisionMasks()` を呼ぶ（最初は、全部の層どうしが当たる）
+- `OnCollisionEnter` / `OnCollisionStay` / `OnCollisionExit` の引数を、`Tako::Actor* other` から `const Tako::Collision& collision` に変える（ヘッダーと .cpp の両方）。中で使っている `other` は `collision.actor` に置き換えるか、関数の頭に `Tako::Actor* other = collision.actor;` を足す
 - `OnCollisionEnter` と `OnCollisionExit` は、物理のステップ（1/60 秒ごと）の後に届く。`Tick` で動かした・`SetActive(true)` にした Collider の Enter は次のフレームになり、時間の倍率が 0 の間（ヒットストップ）は新しい Enter が届かない。`OnCollisionStay` は今までどおり毎フレーム届く
 - Collider の付いた Actor の Scale が 1 でないときは、Collider の Size・Radius・Offset を Scale で割った値に直す（今までは Scale が掛からなかった）
 

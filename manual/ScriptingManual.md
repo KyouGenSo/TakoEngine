@@ -189,10 +189,11 @@ include の書き方です。
 | `void LateTick(float deltaTime)` | 全部の `Tick` の後。他の Actor が動いた後の位置を使う処理（追いかけるカメラなど）を書く |
 | `void EndPlay()` | Play が終わるとき、または Actor が消される・コンポーネントが外されるとき（`BeginPlay` が呼ばれた物だけ） |
 | `void Draw()` | 毎フレーム。Edit 中と一時停止中も呼ばれる。描画物の登録を書く |
-| `void OnCollisionEnter(Tako::Actor* other)` | 同じ Actor の Collider が、他の Collider に当たり始めた（Trigger なら、重なり始めた） |
-| `void OnCollisionStay(Tako::Actor* other)` | 当たっている間、毎フレーム（当たり始めたフレームを除く） |
-| `void OnCollisionExit(Tako::Actor* other)` | 離れた。どちらかの Collider が止められたときも呼ばれる（[11.2](#112-知らせが届く時)） |
+| `void OnCollisionEnter(const Tako::Collision& collision)` | 同じ Actor の Collider が、他の Collider に当たり始めた（Trigger なら、重なり始めた）。相手の Actor と、触れた位置などが渡される（[11.2](#112-知らせが届く時)） |
+| `void OnCollisionStay(const Tako::Collision& collision)` | 当たっている間、毎フレーム（当たり始めたフレームを除く） |
+| `void OnCollisionExit(const Tako::Collision& collision)` | 離れた。どちらかの Collider が止められたときも呼ばれる |
 | `void OnControllerColliderHit(const Tako::ControllerColliderHit& hit)` | 同じ Actor の Character Controller が、壁・床などの実体に触れている間、物理のステップの後（[11.7](#117-キャラクターcharacter-controller)） |
+| `void OnJointBreak(float breakForce)` | 同じ Actor の Joint が、`Break Force` より強い力を受けて外れた（[11.8](#118-ジョイントjoint)） |
 | `void OnActiveChanged(bool active)` | Actor の Active（自分か親のどれか）が切り替わった次のフレームの頭。Edit 中も呼ばれる |
 | `void OnSiblingRemoved(Tako::Component* removed)` | 同じ Actor の他のコンポーネントが、これから外される。Edit 中も呼ばれる |
 | `bool TickWhilePaused() const` | `true` を返すと、シーンのポーズ中も `Tick` と `LateTick` が呼ばれる（`FixedTick` は呼ばれない） |
@@ -516,9 +517,9 @@ Actor のポインタを、フレームをまたいでメンバーに持ち続�
 コインに当たったら点を知らせる例です。送る `Coin` は、誰が点を数えているかを知りません。
 
 ```cpp
-void Coin::OnCollisionEnter(Tako::Actor* other) {
-    // other は相手の Actor。Actor に付いていないコライダーなら nullptr
-    if (!other || !other->HasTag("Player")) {
+void Coin::OnCollisionEnter(const Tako::Collision& collision) {
+    // collision.actor は、相手の Actor
+    if (!collision.actor->HasTag("Player")) {
         return;
     }
     GetOwner()->GetScene()->SendEvent("CoinCollected", point_);
@@ -649,7 +650,7 @@ void ScoreCounter::Awake() {
 当たり判定は、Actor に **Collider** コンポーネントを付けて行います。当たると、同じ Actor の全部のコンポーネントとスクリプトの `OnCollisionEnter`・`OnCollisionStay`・`OnCollisionExit` が呼ばれます（例は [8.2](#82-イベントで知らせる) の `Coin`）。当たり判定は、物理エンジン（Jolt Physics）の上で動いています。
 
 - 当たる **両方** の Actor に、Collider が要ります
-- 引数の `other` は、相手の Actor です
+- 引数の `collision` には、相手の Actor（`collision.actor`）と、触れた位置などが入っています（[11.2](#112-知らせが届く時)）
 - 形は、Sphere・Box・Capsule と、モデルから作る Mesh・Convex Hull（[11.6](#116-モデルの形mesh-と-convex-hull)）から選びます
 - 大きさと Offset には、Actor の Scale が掛かります（親の Scale も含む）。Box は軸ごと、Sphere は 3 軸のうち一番大きい値、Capsule の半径は X と Z の大きい方、高さは Y です
 - 形を目で確かめるには、エディタで Actor を選びます。Sphere・Box・Capsule と Character Controller の形が、Debug Viewport に緑の線で出ます。Play 中は、Debug > Collider Visibility をオンにすると、全部の形とジョイントが線で出ます
@@ -679,6 +680,21 @@ Collider の `Is Trigger` で、当たったときの動きが変わります。
 - Collider や Actor が消されたときは、相手に `OnCollisionExit` は届きません
 - 時間の倍率が 0 の間（ヒットストップなど）は物理が進まないので、新しい `OnCollisionEnter` は届きません。`OnCollisionStay` は届きます
 - 速い物は、1 ステップの間に相手を通り抜けることがあります（1/60 秒に進む距離が、相手の厚みより大きいとき）
+
+引数の `collision`（`Tako::Collision`。Unity の `Collision` に当たります）の中身は、次のとおりです。
+
+| メンバー | 意味 |
+|---|---|
+| `actor` | 相手の Actor |
+| `point` | 触れた位置（何か所かで触れていれば、その平均） |
+| `normal` | 相手の面の向き（相手から自分へ向く）。床に落ちた物なら、上向き |
+| `relativeVelocity` | 相手の速度から、自分の速度を引いた値（ぶつかる前） |
+| `impulse` | ぶつかった強さ（力積、N·s）。重い物が速くぶつかるほど大きい |
+
+- `point`・`normal`・`relativeVelocity` は、`OnCollisionEnter` と `OnCollisionStay` で入ります（Stay は、最後に調べた値）。`OnCollisionExit` では、`actor` だけが入ります
+- `impulse` が入るのは、`OnCollisionEnter` だけです。Trigger との重なりでは 0 です
+- Trigger との重なりでも、`point` と `normal` は入ります（攻撃の範囲が当たった位置に、エフェクトを出せます）
+- 使う例は、[11.5](#115-剛体rigidbody) の `Rocket` にあります
 
 ### 11.3 層
 
@@ -724,6 +740,35 @@ if (const auto hit = Tako::PhysicsWorld::GetInstance()->Raycast(origin, { 0.0f, 
 - Mesh の形には、三角形の表（描画で見える側）からだけ当たります
 - Collider の位置は、そのフレームの物理の時点の物です。同じフレームの `Tick` で動かした分は、次のフレームから入ります
 
+線の代わりに太さのある形を飛ばす関数と、重なっている物を調べる関数もあります。
+
+```cpp
+Tako::PhysicsWorld* physics = Tako::PhysicsWorld::GetInstance();
+const Tako::Vector3 origin  = GetOwner()->GetWorldPosition();
+// 半径 0.3 の球を、前へ 5 の長さまで飛ばす（太さのある視線、カメラが壁にめり込まない位置、など）
+if (const auto hit = physics->SphereCast(origin, 0.3f, { 0.0f, 0.0f, 1.0f }, 5.0f)) {
+    Tako::Logger::Log("sphere hit %s at distance %.2f\n", hit->actor->GetName().c_str(), hit->distance);
+}
+// 半径 3 の球に重なっている Actor を、全部調べる（爆発の範囲、近くの敵、など）
+for (const Tako::Actor* actor : physics->OverlapSphere(origin, 3.0f)) {
+    Tako::Logger::Log("near %s\n", actor->GetName().c_str());
+}
+```
+
+| 関数 | 調べる事 |
+|---|---|
+| `RaycastAll(origin, direction, maxDistance)` | 線が当たる全部の Collider（近い順。Actor ごとに、一番近い 1 か所） |
+| `SphereCast(origin, radius, direction, maxDistance)` | 球を飛ばして、最初に当たる所 |
+| `BoxCast(center, size, rotation, direction, maxDistance)` | 箱を飛ばす。`size` は全長 |
+| `CapsuleCast(center, radius, height, rotation, direction, maxDistance)` | カプセルを飛ばす。`height` は全長（両端の半球を含む）で、軸は `rotation` で回した Y |
+| `OverlapSphere(center, radius)` | 球に重なっている Collider の Actor の一覧 |
+| `OverlapBox(center, size, rotation)`、`OverlapCapsule(center, radius, height, rotation)` | 箱とカプセルの版 |
+
+- どの関数も、最後に `layerMask` と `hitsTriggers` を付けられます（`Raycast` と同じ）
+- 形を飛ばす関数が返す `distance` は、形の中心が進んだ距離です。`point` は触れた位置、`normal` は触れた所から形へ向く向きです
+- 飛ばす前から重なっている Collider には、当たりません。床に接している球を下へ飛ばしても、その床には当たらないので、少し上から飛ばします
+- 重なりを調べる関数は、同じ Actor を 1 回だけ返します。順は決まっていません
+
 ### 11.5 剛体（Rigidbody）
 
 Actor に **Rigidbody** コンポーネントを付けると、その Actor が剛体になります。形は、同じ Actor と、子の Actor の Collider（Trigger を除く）をまとめた物です。
@@ -747,9 +792,9 @@ void Rocket::FixedTick(float) {
     body_->AddForce({ 0.0f, 30.0f, 0.0f });
 }
 
-// 1 回だけの衝撃は、AddImpulse で掛ける（ジャンプ、弾が当たった、など）
-void Rocket::OnCollisionEnter(Tako::Actor*) {
-    body_->AddImpulse({ 0.0f, 0.0f, -5.0f });
+// 1 回だけの衝撃は、AddImpulse で掛ける（ジャンプ、弾が当たった、など）。ここでは、当たった面から離れる向きへ弾く
+void Rocket::OnCollisionEnter(const Tako::Collision& collision) {
+    body_->AddImpulse(collision.normal * 5.0f);
 }
 ```
 
@@ -759,6 +804,7 @@ void Rocket::OnCollisionEnter(Tako::Actor*) {
 | `Linear Damping`、`Angular Damping` | 動きと回転の減り方（空気の抵抗のような物） |
 | `Gravity Scale` | 重力の倍率。0 で重力を受けない。重力そのものは、Engine Settings の Physics の `Gravity` |
 | `Is Continuous` | 速く動いても、実体を通り抜けない（計算は重くなる）。弾のような速い物に使う |
+| `Center Of Mass` | 重心のずれ（形から自動で求めた重心から。向きと Scale は、この Actor の物）。Y を下げると、倒れにくくなる |
 | `Freeze Position X` 〜 `Freeze Rotation Z` | 動きを止める軸（ワールドの軸）。倒れてほしくない物は、Rotation の X と Z を止める |
 
 - Dynamic の Transform をスクリプトで書き換えると、その位置へ置き直されます（瞬間移動）。速度は残ります
@@ -768,6 +814,8 @@ void Rocket::OnCollisionEnter(Tako::Actor*) {
 - 層・`Friction`・`Restitution` は、ボディごとに 1 つです。Collider を 2 つ以上まとめた Rigidbody は、最初の Collider の値を使います
 - Play 中に、Collider の付いた子の Actor を親に対して動かしても、形は付いていきません（形が作り直されるのは、Collider の値や Active を変えたとき）
 - Collider が 1 つも無い Rigidbody は、何にも当たらずに落ちます
+- `AddForceAtPosition`・`AddImpulseAtPosition` は、掛ける位置（ワールド）を決められます。重心から外れた位置に掛けると、回す力にもなります
+- 動きの止まった Dynamic は、計算を省くために寝ます。力や衝撃を掛けたとき・何かが当たったときは、自分で起きます。スクリプトからは、`IsSleeping`・`WakeUp`・`Sleep` で調べる・起こす・寝かせる事ができます
 
 ### 11.6 モデルの形（Mesh と Convex Hull）
 
@@ -827,6 +875,7 @@ void Hero::FixedTick(float) {
 | `Gravity Scale` | 重力の倍率。0 で重力を受けない |
 | `Push Strength` | 歩いて当たった Dynamic の Rigidbody を押す力の上限（ニュートン）。0 で押さずに、壁のように止まる |
 | `Mass` | 上に乗った Dynamic の Rigidbody に掛かる重さ（kg）。0 で掛けない |
+| `Ride Moving Ground` | オンなら、立っている床（Kinematic の Rigidbody で作った、動く足場など）の動きに付いていく。オフ（既定）なら、床だけが動く |
 | `Layer` | 層（[11.3](#113-層)） |
 
 - 位置は物理が書きます。スクリプトで Actor の位置を書き換えると、その位置へ置き直されます（瞬間移動）。向きと Scale は、スクリプトで自由に変えられます
@@ -834,6 +883,9 @@ void Hero::FixedTick(float) {
 - Trigger に入ると、Collider と同じように `OnCollisionEnter` などが届きます。レイキャストにも当たります
 - 同じ Actor と、その子の Actor に付いた Collider には当たりません
 - Rigidbody と一緒には付けません（どちらも、Actor の位置を書きます）
+- 足元は、`GetGroundNormal`（面の向き）・`GetGroundActor`（足元の Collider の Actor）・`IsOnSteepGround`（登れない急な面の上で、滑っている）で調べられます
+- `SetHeight(height)` で、Play 中にカプセルの全長を変えられます（しゃがむ・立つ）。足元の位置は変わらず、`Offset` が動きます。伸ばした先がふさがっていると（低い天井の下で立とうとした、など）、変えずに `false` を返します
+- `Ride Moving Ground` がオンでも、`GetVelocity` が返すのは、スクリプトが入れた速度です（床の分は入りません）。床から離れた（跳んだ・落ちた）ときは、それまでの床の速度が 1 回だけ足されます
 
 Character Controller が触れた実体は、`OnControllerColliderHit` で分かります（Unity の同じ名前の関数に当たります）。Character Controller の付いた Actor のスクリプトに、触れている 1 か所ごとに届きます。
 
@@ -871,14 +923,43 @@ void Hero::OnControllerColliderHit(const Tako::ControllerColliderHit& hit) {
 |---|---|---|
 | Fixed | 相手との位置と向きを、今のまま固める | なし |
 | Point | 1 点でつなぐ。向きは自由（鎖、振り子） | `Anchor` |
-| Hinge | 1 点でつなぎ、軸の周りだけ回る（扉、車輪） | `Anchor`、`Axis`、`Min Angle`、`Max Angle` |
-| Distance | 2 点の距離を保つ（棒、吊るした物） | `Anchor`、`Connected Anchor`、`Min Distance`、`Max Distance` |
+| Hinge | 1 点でつなぎ、軸の周りだけ回る（扉、車輪） | `Anchor`、`Axis`、`Min Angle`、`Max Angle`、`Motor Speed`、`Motor Torque`、`Friction` |
+| Distance | 2 点の距離を保つ（棒、吊るした物、ばね） | `Anchor`、`Connected Anchor`、`Min Distance`、`Max Distance`、`Spring`、`Damper` |
 
 - `Anchor` と `Axis` は、この Actor から見た位置と向きです。`Connected Anchor` は、相手の Actor から見た位置です（相手が無ければ、ワールドの位置）
 - Hinge の角度は、つないだときの向きが 0 です。`Min Angle` は -180〜0、`Max Angle` は 0〜180 で決めます
 - Distance の `Min Distance`・`Max Distance` を負の値にすると、つないだときの距離になります
 - つないだ相手の Actor を消すと、ジョイントも外れます。どちらかの Actor がオフの間は、効きません
 - Play 中に Rigidbody の `Body Type` を変えると、その Rigidbody につないだジョイントは外れます
+
+どの Type でも使う欄と、Hinge・Distance の追加の欄は、次のとおりです。
+
+| 欄 | 意味 |
+|---|---|
+| `Enable Collision` | オンなら、つないだ相手の Rigidbody とも当たる。オフ（既定）なら当たらないので、扉と枠のように重ねてつないでも押し合わない |
+| `Break Force` | つないだ点に、これより強い力（N）が掛かると外れる。0（既定）なら外れない |
+| `Motor Speed`、`Motor Torque` | Hinge のモーター。この Actor を、軸の周りに `Motor Speed`（1 秒あたりの角度）で回す。`Motor Torque` は力の上限（N·m）で、0 ならモーターなし |
+| `Friction` | Hinge の回りにくさ（N·m）。大きいほど、早く止まる。モーターが無いときに効く |
+| `Spring`、`Damper` | Distance のばねの強さ（N/m）と、揺れの収まり方（N·s/m）。`Spring` が 0 なら、範囲の端で固く止まる |
+
+- ジョイントが `Break Force` で外れると、その Actor のスクリプトの `OnJointBreak(float breakForce)` が呼ばれます（`breakForce` は、外れたときに掛かっていた力）。外れた Joint は、次の Play まで、つなぎ直されません（`IsBroken()` で調べられます）
+- モーターの速さは、スクリプトの `SetMotor(speed, maxTorque)` で、つなぎ直さずに変えられます（`speed` はラジアン / 秒）
+- ばねは、`Min Distance`〜`Max Distance` の範囲の外へ出た分を引き戻します。つないだときの距離を保つ既定の設定なら、その距離を中心に伸び縮みします
+
+### 11.9 当たらない組（IgnoreCollision）
+
+特定の 2 つの Actor だけを当たらなくするには、`IgnoreCollision` を使います（弾が、撃った本人に当たらないようにする、など）。層を分けるほどではない組に使います。
+
+```cpp
+// 親の Actor とは、当たらないようにする（弾が、撃った本人に当たらないようにする、など）
+if (const Tako::Actor* parent = GetOwner()->GetParent()) {
+    Tako::PhysicsWorld::GetInstance()->IgnoreCollision(GetOwner(), parent);
+}
+```
+
+- その 2 つは押し合わなくなり、`OnCollisionEnter` なども届かなくなります。レイキャストなどの問い合わせには、関係しません
+- 渡すのは、ボディを持つ Actor です（Collider だけの Actor、Rigidbody の Actor、Character Controller の Actor）。Rigidbody にまとめられた子の Actor の Collider は、Rigidbody の Actor を渡します
+- 3 番目の引数を `false` にすると、戻ります。どちらかの Actor が消えたときと、Play が終わったときは、自動で解けます
 
 ## 12. 調整値
 
@@ -1061,10 +1142,13 @@ Animator・Light・Sky Box には、スクリプトから呼ぶ関数はあり�
 | `AddForce(force)` | 次の 1 ステップの間、力を掛ける。押し続けるには、`FixedTick` で毎回呼ぶ |
 | `AddTorque(torque)` | 次の 1 ステップの間、回す力を掛ける（向きが軸、長さが強さ） |
 | `AddImpulse(impulse)` | 速度をその場で変える（ジャンプ、弾が当たった衝撃） |
+| `AddForceAtPosition(force, position)`、`AddImpulseAtPosition(impulse, position)` | 掛ける位置（ワールド）を決める版。重心から外れた位置に掛けると、回す力にもなる |
 | `SetLinearVelocity(velocity)`、`GetLinearVelocity()` | 速度 |
 | `SetAngularVelocity(velocity)`、`GetAngularVelocity()` | 回転の速度（向きが軸、長さがラジアン / 秒） |
 | `SetBodyType(type)`、`GetBodyType()` | `Tako::RigidbodyComponent::BodyType::Dynamic` か `Kinematic` |
 | `SetLockedAxes(axes)`、`GetLockedAxes()` | 動きを止める軸（`Tako::PhysicsWorld::kLockPositionX` 〜 `kLockRotationZ` のビット） |
+| `SetCenterOfMass(offset)`、`GetCenterOfMass()` | 重心のずれ（形から自動で求めた重心から） |
+| `IsSleeping()`、`WakeUp()`、`Sleep()` | 寝ている（動きが止まって、計算を省いている）か調べる・起こす・今すぐ寝かせる |
 
 - 力・衝撃・速度の関数は、Dynamic にだけ効きます
 
@@ -1077,6 +1161,10 @@ Animator・Light・Sky Box には、スクリプトから呼ぶ関数はあり�
 | `IsGrounded()` | 立てる面（`Max Slope Angle` より緩い面）の上に居るか |
 | `SetPushStrength(strength)`、`GetPushStrength()` | 歩いて当たった Dynamic の Rigidbody を押す力の上限（ニュートン）。0 で押さない |
 | `SetMass(mass)`、`GetMass()` | 上に乗った Dynamic の Rigidbody に掛かる重さ（kg）。0 で掛けない |
+| `SetHeight(height)`、`GetHeight()` | カプセルの全長を変える（しゃがむ・立つ）。足元の位置は変わらない。伸ばした先がふさがっていれば、変えずに `false` を返す |
+| `GetGroundNormal()`、`GetGroundActor()` | 足元の面の向きと、足元の Collider の Actor（何の上にも居なければ、0 と `nullptr`） |
+| `IsOnSteepGround()` | 登れない急な面（`Max Slope Angle` より急な面）の上に居るか |
+| `SetRidesMovingGround(rides)`、`RidesMovingGround()` | 立っている床の動きに付いていくか（Inspector の `Ride Moving Ground`） |
 
 ### Joint
 
@@ -1087,8 +1175,12 @@ Animator・Light・Sky Box には、スクリプトから呼ぶ関数はあり�
 | `SetAnchor(anchor)`、`SetConnectedAnchor(anchor)` | つなぐ点（この Actor から見た位置）と、Distance の相手の側の点 |
 | `SetAxis(axis)`、`SetAngleLimits(minAngle, maxAngle)` | Hinge の軸と、回る範囲（ラジアン） |
 | `SetDistanceLimits(minDistance, maxDistance)` | Distance の範囲。負の値なら、つないだときの距離 |
+| `SetEnableCollision(enable)` | つないだ相手の Rigidbody とも当たるか |
+| `SetFriction(friction)`、`SetSpring(spring, damper)` | Hinge の回りにくさと、Distance のばね |
+| `SetBreakForce(force)`、`IsBroken()` | 外れる力（0 なら外れない）と、外れたか |
+| `SetMotor(speed, maxTorque)` | Hinge のモーター（`speed` はラジアン / 秒。`maxTorque` が 0 なら止める）。つなぎ直さない |
 
-- Play 中に呼ぶと、今の位置でつなぎ直します
+- `SetMotor` の他は、Play 中に呼ぶと、今の位置でつなぎ直します
 
 ### Audio Source
 
@@ -1274,6 +1366,8 @@ Blackboard には、`BeginPlay` から値を入れられます。キー `"owner"
 | Collider の大きさが、Inspector の値と合わない | Actor（か親）の Scale が掛かっている | Scale を 1 にするか、Size・Radius を Scale で割った値にする |
 | Rigidbody が床を通り抜ける | 床に Collider が無い。または、床の Collider が Trigger になっている | 床に、`Is Trigger` がオフの Collider を付ける |
 | | 速すぎて、1 ステップの間に通り抜けている | Rigidbody の `Is Continuous` をオンにする |
+| `SphereCast` などが、足元の床に当たらない | 飛ばす前から重なっている Collider には、当たらない | 形が床に触れない所（少し上）から飛ばす |
+| Joint でつないだ 2 つが、お互いを通り抜ける | つないだ相手とは、既定で当たらない | Joint の `Enable Collision` をオンにする |
 | Character Controller が、`SetVelocity` を呼んでも動かない | Actor の位置を、スクリプトが毎フレーム書き換えている（その位置へ置き直される） | 位置は書かずに、`SetVelocity` だけで動かす |
 | Rigidbody の Actor を `Tick` で動かしても、元の動きに戻らない | Dynamic の Transform を書くと、その位置へ置き直される | `AddForce`・`AddImpulse`・`SetLinearVelocity` で動かす。スクリプトで動かしたい物は、Kinematic にする |
 | `GetAxis`・`PushAction` で止まる（assert） | 作っていない名前を渡している | Engine Settings の Input で作った名前と、綴りをそろえる |
