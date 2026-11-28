@@ -2029,8 +2029,13 @@ namespace Tako {
     const uint32_t      firstVertex = lines->GetBatchMark();
     // 視点から遠い形は、Jolt が粗い形で描く（線の数を抑える）
     impl_->debugRenderer.SetCameraPos(ToJolt(cameraPosition));
+    static_assert(static_cast<int>(DebugColor::Island) == static_cast<int>(JPH::BodyManager::EShapeColor::IslandColor), "DebugColor の並びが Jolt の EShapeColor とずれている");
     JPH::BodyManager::DrawSettings settings;
-    settings.mDrawShapeWireframe = true;
+    settings.mDrawShapeWireframe        = true;
+    settings.mDrawShapeColor            = static_cast<JPH::BodyManager::EShapeColor>(debugDrawOptions_.color);
+    settings.mDrawVelocity              = debugDrawOptions_.drawsVelocity;
+    settings.mDrawCenterOfMassTransform = debugDrawOptions_.drawsCenterOfMass;
+    settings.mDrawBoundingBox           = debugDrawOptions_.drawsBoundingBox;
     impl_->system.DrawBodies(settings, &impl_->debugRenderer);
     impl_->system.DrawConstraints(&impl_->debugRenderer);
     debugLineCount_ = (lines->GetBatchMark() - firstVertex) / LineRenderer::kVertexCountLine;

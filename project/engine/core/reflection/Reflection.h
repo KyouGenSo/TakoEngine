@@ -29,6 +29,7 @@ namespace Tako {
 //     ActorWith = "型名"  : ActorRef の一覧を、その型（派生も含む）のコンポーネントかスクリプトを持つ Actor に絞る
 //     Required            : ActorRef / std::string が空の間、Inspector で欄を赤くする
 //     HDR                 : 色の欄で 1 を超える値（光る色）を入れられるようにする
+//     ShowIf = 式         : 式が false の間、Inspector に出さない（保存はする。式はクラスの中で評価される。例: ShowIf = shape_ == Shape::Box）
 #define TCLASS(...)
 #define TSTRUCT(...)
 #define TENUM(...)

@@ -107,6 +107,14 @@ namespace Tako {
     assert(partial.weights_.size() == 2);
     assert(partial.tint_ == Color::kWhite && partial.gradient_.keys.empty());
 
+    // ShowIf で Inspector から隠れている欄も、保存と読み込みはされる
+    ReflectionSelfTestObject hidden;
+    hidden.mode_          = Mode::First;
+    hidden.shownForThird_ = 2.5f;
+    ReflectionSelfTestObject hiddenLoaded;
+    ReadProperties(hiddenLoaded, WriteProperties(hidden));
+    assert(hiddenLoaded.shownForThird_ == 2.5f);
+
     assert(TypeRegistry::GetInstance()->Find("ReflectionSelfTestObject") == &ReflectionSelfTestObject::StaticType());
     assert(TypeRegistry::GetInstance()->Create("ReflectionSelfTestObject") != nullptr);
     assert(loaded.IsA<TObject>());

@@ -144,17 +144,17 @@ namespace Tako {
   private: //メンバー変数
     TPROPERTY(Edit, Tooltip = "Dynamic は物理が動かす。Kinematic は Actor の動きに付いていき、Dynamic を押す")
     BodyType type_           = BodyType::Dynamic;
-    TPROPERTY(Edit, ClampMin = 0.001, Speed = 0.05)
+    TPROPERTY(Edit, ClampMin = 0.001, Speed = 0.05, ShowIf = type_ == BodyType::Dynamic)
     float    mass_           = 1.0f;
-    TPROPERTY(Edit, Tooltip = "動きの減り方（1 秒あたりに失う速さの割合）", ClampMin = 0, Speed = 0.01)
+    TPROPERTY(Edit, Tooltip = "動きの減り方（1 秒あたりに失う速さの割合）", ClampMin = 0, Speed = 0.01, ShowIf = type_ == BodyType::Dynamic)
     float    linearDamping_  = 0.05f;
-    TPROPERTY(Edit, Tooltip = "回転の減り方", ClampMin = 0, Speed = 0.01)
+    TPROPERTY(Edit, Tooltip = "回転の減り方", ClampMin = 0, Speed = 0.01, ShowIf = type_ == BodyType::Dynamic)
     float    angularDamping_ = 0.05f;
-    TPROPERTY(Edit, Tooltip = "重力の倍率（0 = 重力を受けない）", Speed = 0.05)
+    TPROPERTY(Edit, Tooltip = "重力の倍率（0 = 重力を受けない）", Speed = 0.05, ShowIf = type_ == BodyType::Dynamic)
     float    gravityScale_   = 1.0f;
-    TPROPERTY(Edit, Tooltip = "速く動いても、実体を通り抜けない（計算は重くなる）")
+    TPROPERTY(Edit, Tooltip = "速く動いても、実体を通り抜けない（計算は重くなる）", ShowIf = type_ == BodyType::Dynamic)
     bool     isContinuous_   = false;
-    TPROPERTY(Edit, Tooltip = "重心のずれ（形から自動で求めた重心から。向きと Scale は、この Actor の物）。下げると倒れにくくなる", Speed = 0.01)
+    TPROPERTY(Edit, Tooltip = "重心のずれ（形から自動で求めた重心から。向きと Scale は、この Actor の物）。下げると倒れにくくなる", Speed = 0.01, ShowIf = type_ == BodyType::Dynamic)
     Vector3  centerOfMass_{};
     TPROPERTY()
     uint32_t lockedAxes_     = 0;

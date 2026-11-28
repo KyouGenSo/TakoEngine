@@ -287,6 +287,7 @@ class ScoreCounter : public Tako::Script {
 | `Asset = "種類"` | `std::string` を、アセットの欄にする（[5.4](#54-アセットの欄)） |
 | `ActorWith = "型名"` | `ActorRef` の一覧を、その型のコンポーネントかスクリプトを持つ Actor に絞る |
 | `Required` | `ActorRef`・`std::string` が空の間、欄を赤くする |
+| `ShowIf = 式` | 式が `false` の間、欄を Inspector に出さない（値は残り、保存もされる）。式には、同じクラスのメンバーを書ける |
 
 ```cpp
     TPROPERTY(Edit, Category = "Move", Tooltip = "1 秒あたりの移動量", ClampMin = 0, Speed = 0.05)
@@ -299,6 +300,10 @@ class ScoreCounter : public Tako::Script {
     std::string bulletPrefab_;
     TPROPERTY(Edit, Required, ActorWith = "ColliderComponent")
     Tako::ActorRef target_;
+    TPROPERTY(Edit)
+    bool usesTimer_ = false;
+    TPROPERTY(Edit, ShowIf = usesTimer_, Tooltip = "Uses Timer がオンのときだけ出る")
+    float timerSeconds_ = 3.0f;
     TPROPERTY(Visible)
     int32_t killCount_ = 0;
 ```
@@ -653,6 +658,8 @@ void ScoreCounter::Awake() {
 - 形は、Sphere・Box・Capsule と、モデルから作る Mesh・Convex Hull（[11.6](#116-モデルの形mesh-と-convex-hull)）から選びます
 - 大きさと Offset には、Actor の Scale が掛かります（親の Scale も含む）。Box は軸ごと、Sphere は 3 軸のうち一番大きい値、Capsule の半径は X と Z の大きい方、高さは Y です
 - 形を目で確かめるには、エディタで Actor を選びます。Sphere・Box・Capsule と Character Controller の形が、Debug Viewport に緑の線で出ます。Play 中は、Debug > Collider Visibility をオンにすると、全部の形とジョイントが線で出ます
+- Play 中の線は、Engine Settings > Physics（か Collision Debug の窓）で変えられます。`Debug Color` を `Sleep` にすると、寝ている Rigidbody が赤、起きている Dynamic が黄で出ます。`Draw Velocity`・`Draw Center Of Mass`・`Draw Bounding Box` で、速度の矢印・重心の軸・ボディを囲む箱の線を足せます
+- Collider・Rigidbody・Joint の Inspector には、今の設定（Shape・Is Trigger・Body Type・Type）で使う欄だけが出ます。隠れた欄の値は残り、設定を戻すとまた出ます
 
 ### 11.1 Trigger と実体
 

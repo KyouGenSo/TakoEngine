@@ -77,6 +77,7 @@ namespace Tako {
     const EnumInfo*       enumInfo    = nullptr;  ///< TENUM の enum だけ
     const char*           asset       = "";       ///< アセットの種類（AssetBrowser.h の kind）。空でなければ文字列をアセットの欄で編集する
     const char*           actorWith   = "";       ///< ActorRef の一覧を、この型（派生も含む）のコンポーネントかスクリプトを持つ Actor に絞る
+    bool                  isShown     = true;     ///< ShowIf の式の値。false なら Inspector に出さない（保存と読み込みはする）
   };
 
   class PropertyVisitor;

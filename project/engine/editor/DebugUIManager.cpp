@@ -1195,10 +1195,7 @@ namespace Tako {
 
     PhysicsWorld* physics = PhysicsWorld::GetInstance();
 
-    bool debugDraw = physics->IsDebugDrawEnabled();
-    if (UI::Checkbox("Debug Draw", &debugDraw)) {
-      physics->SetDebugDrawEnabled(debugDraw);
-    }
+    EngineSettingsWindow::DrawPhysicsDebugDraw();
 
     if (ImGui::CollapsingHeader("Statistics", ImGuiTreeNodeFlags_DefaultOpen)) {
       const PhysicsWorld::WorldStats stats = physics->GetWorldStats();

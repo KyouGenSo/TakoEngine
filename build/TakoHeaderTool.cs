@@ -67,7 +67,7 @@ public class TakoHeaderTool : Task
 
     private static readonly HashSet<string> kFlagSpecifiers = new HashSet<string> { "Edit", "Visible", "Transient", "Color", "EnumAsInt", "Angle", "Required", "HDR" };
     private static readonly HashSet<string> kStringSpecifiers = new HashSet<string> { "Category", "Tooltip", "DisplayName", "Asset", "ActorWith" };
-    private static readonly HashSet<string> kNumberSpecifiers = new HashSet<string> { "ClampMin", "ClampMax", "Speed" };
+    private static readonly HashSet<string> kExpressionSpecifiers = new HashSet<string> { "ClampMin", "ClampMax", "Speed", "ShowIf" };
 
     public override bool Execute()
     {
@@ -583,7 +583,7 @@ public class TakoHeaderTool : Task
         {
             if (value == null || !value.StartsWith("\"")) Error(path, line, key + " には文字列を書く（例: " + key + " = \"...\"）");
         }
-        else if (kNumberSpecifiers.Contains(key))
+        else if (kExpressionSpecifiers.Contains(key))
         {
             if (value == null) Error(path, line, key + " には値を書く（例: " + key + " = 0）");
         }
@@ -745,6 +745,7 @@ public class TakoHeaderTool : Task
         string speed = null;
         string asset = null;
         string actorWith = null;
+        string showIf = null;
         var flags = new List<string>();
         foreach (KeyValuePair<string, string> s in p.Specifiers)
         {
@@ -758,6 +759,7 @@ public class TakoHeaderTool : Task
                 case "Speed": speed = s.Value; break;
                 case "Asset": asset = s.Value; break;
                 case "ActorWith": actorWith = s.Value; break;
+                case "ShowIf": showIf = s.Value; break;
                 default: flags.Add("::Tako::kProp" + s.Key); break;
             }
         }
@@ -786,6 +788,7 @@ public class TakoHeaderTool : Task
         if (enumDecl != null) fields.Add(".enumInfo = &kEnumInfo_" + key);
         if (asset != null) fields.Add(".asset = " + asset);
         if (actorWith != null) fields.Add(".actorWith = " + actorWith);
+        if (showIf != null) fields.Add(".isShown = static_cast<bool>(" + showIf + ")");
         sb.AppendLine("  v(\"" + key + "\", " + p.Member + ", { " + string.Join(", ", fields) + " });");
     }
 

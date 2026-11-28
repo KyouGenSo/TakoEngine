@@ -28,6 +28,9 @@
 - エディタで Actor を選ぶと、Collider（Sphere・Box・Capsule）と Character Controller の形が、Debug Viewport に緑の線で出る（Edit 中にも出る）
 - 層の当たり表（Engine Settings > Physics の Collision Matrix）の既定を、Unity と同じにした。決めていない組は当たり、足した層は最初から全部の層と当たる（今までは、チェックを入れた組だけが当たった）
 - Engine Settings > Physics に、重力の Gravity を追加
+- Engine Settings > Physics（と Collision Debug の窓）に、Collider Debug Draw の選択肢を追加。色分け（`Debug Color`。`Sleep` なら、寝ている Rigidbody が赤で出る）と、速度・重心・ボディを囲む箱の線を足せる
+- Collider・Rigidbody・Joint の Inspector に、今の設定で使う欄だけが出る（Shape が Box なら Size、Body Type が Kinematic なら Mass などは出ない、など）。隠れた欄の値は残る
+- TPROPERTY に `ShowIf = 式` を追加。式が `false` の間、その欄を Inspector に出さない（例：`TPROPERTY(Edit, ShowIf = usesTimer_)`）
 
 ### 直しが要る変更（ゲーム側）
 - エンジンを入れ替えたら、エディタでプロジェクトを 1 回開く。保存形式の変換の確認が出て、今あるシーンとプレハブの Collider に `Is Trigger` のオンが付く（今までどおり、重なりを知らせる）。変換されたファイルはコミットする

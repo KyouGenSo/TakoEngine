@@ -65,6 +65,8 @@ namespace Tako {
     Color tint_ = Color::kWhite;
     TPROPERTY(Edit)
     Gradient gradient_;
+    TPROPERTY(Edit, ShowIf = mode_ == Mode::Third)
+    float shownForThird_ = 0.0f;
   };
 
 #ifdef _DEBUG

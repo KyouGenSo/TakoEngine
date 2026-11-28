@@ -80,6 +80,10 @@ namespace Tako {
 #ifdef TAKO_EDITOR
   bool RigidbodyComponent::DrawCustomImGui()
   {
+    // Kinematic は Actor の動きに付いていくだけで、軸を止める設定は効かない
+    if (type_ != BodyType::Dynamic) {
+      return false;
+    }
     bool changed = false;
     changed |= UI::CheckboxFlags("Freeze Position X", &lockedAxes_, PhysicsWorld::kLockPositionX);
     changed |= UI::CheckboxFlags("Freeze Position Y", &lockedAxes_, PhysicsWorld::kLockPositionY);

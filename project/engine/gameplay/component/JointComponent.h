@@ -119,29 +119,29 @@ namespace Tako {
     JointType                       type_              = JointType::Fixed;
     TPROPERTY(Edit, Tooltip = "つなぐ相手。空なら、ワールドの今の位置に留める", ActorWith = "RigidbodyComponent")
     ActorRef                        connectedBody_;
-    TPROPERTY(Edit, Tooltip = "つなぐ点（この Actor から見た位置）。Fixed は使わない", Speed = 0.05)
+    TPROPERTY(Edit, Tooltip = "つなぐ点（この Actor から見た位置）。Fixed は使わない", Speed = 0.05, ShowIf = type_ != JointType::Fixed)
     Vector3                         anchor_{};
-    TPROPERTY(Edit, Tooltip = "Distance の、相手の側の点（相手の Actor から見た位置。相手が無ければワールドの位置）", Speed = 0.05)
+    TPROPERTY(Edit, Tooltip = "Distance の、相手の側の点（相手の Actor から見た位置。相手が無ければワールドの位置）", Speed = 0.05, ShowIf = type_ == JointType::Distance)
     Vector3                         connectedAnchor_{};
-    TPROPERTY(Edit, Tooltip = "Hinge の軸（この Actor から見た向き）", Speed = 0.05)
+    TPROPERTY(Edit, Tooltip = "Hinge の軸（この Actor から見た向き）", Speed = 0.05, ShowIf = type_ == JointType::Hinge)
     Vector3 axis_{ 0.0f, 1.0f, 0.0f };
-    TPROPERTY(Edit, Angle, Tooltip = "Hinge の回る範囲の下限（つないだときの向きが 0）", ClampMin = -180, ClampMax = 0)
+    TPROPERTY(Edit, Angle, Tooltip = "Hinge の回る範囲の下限（つないだときの向きが 0）", ClampMin = -180, ClampMax = 0, ShowIf = type_ == JointType::Hinge)
     float                           minAngle_          = -3.1415927f;
-    TPROPERTY(Edit, Angle, Tooltip = "Hinge の回る範囲の上限（つないだときの向きが 0）", ClampMin = 0, ClampMax = 180)
+    TPROPERTY(Edit, Angle, Tooltip = "Hinge の回る範囲の上限（つないだときの向きが 0）", ClampMin = 0, ClampMax = 180, ShowIf = type_ == JointType::Hinge)
     float                           maxAngle_          = 3.1415927f;
-    TPROPERTY(Edit, Tooltip = "Distance の一番短い距離。負の値なら、つないだときの距離", Speed = 0.05)
+    TPROPERTY(Edit, Tooltip = "Distance の一番短い距離。負の値なら、つないだときの距離", Speed = 0.05, ShowIf = type_ == JointType::Distance)
     float                           minDistance_       = -1.0f;
-    TPROPERTY(Edit, Tooltip = "Distance の一番長い距離。負の値なら、つないだときの距離", Speed = 0.05)
+    TPROPERTY(Edit, Tooltip = "Distance の一番長い距離。負の値なら、つないだときの距離", Speed = 0.05, ShowIf = type_ == JointType::Distance)
     float                           maxDistance_       = -1.0f;
-    TPROPERTY(Edit, Tooltip = "Distance のばねの強さ（N/m）。0 なら、範囲の端で固く止まる", ClampMin = 0, Speed = 1)
+    TPROPERTY(Edit, Tooltip = "Distance のばねの強さ（N/m）。0 なら、範囲の端で固く止まる", ClampMin = 0, Speed = 1, ShowIf = type_ == JointType::Distance)
     float                           spring_            = 0.0f;
-    TPROPERTY(Edit, Tooltip = "Distance のばねの、揺れの収まり方（N·s/m）", ClampMin = 0, Speed = 0.1)
+    TPROPERTY(Edit, Tooltip = "Distance のばねの、揺れの収まり方（N·s/m）", ClampMin = 0, Speed = 0.1, ShowIf = type_ == JointType::Distance)
     float                           damper_            = 0.0f;
-    TPROPERTY(Edit, Angle, Tooltip = "Hinge のモーターが目指す、回る速さ（1 秒あたりの角度）。Motor Torque が 0 なら回らない")
+    TPROPERTY(Edit, Angle, Tooltip = "Hinge のモーターが目指す、回る速さ（1 秒あたりの角度）。Motor Torque が 0 なら回らない", ShowIf = type_ == JointType::Hinge)
     float                           motorSpeed_        = 0.0f;
-    TPROPERTY(Edit, Tooltip = "Hinge のモーターの力の上限（N·m）。0 なら、モーターなし", ClampMin = 0, Speed = 0.5)
+    TPROPERTY(Edit, Tooltip = "Hinge のモーターの力の上限（N·m）。0 なら、モーターなし", ClampMin = 0, Speed = 0.5, ShowIf = type_ == JointType::Hinge)
     float                           motorTorque_       = 0.0f;
-    TPROPERTY(Edit, Tooltip = "Hinge の回りにくさ（N·m）。大きいほど早く止まる。モーターが無いときに効く", ClampMin = 0, Speed = 0.05)
+    TPROPERTY(Edit, Tooltip = "Hinge の回りにくさ（N·m）。大きいほど早く止まる。モーターが無いときに効く", ClampMin = 0, Speed = 0.05, ShowIf = type_ == JointType::Hinge)
     float                           friction_          = 0.0f;
     TPROPERTY(Edit, Tooltip = "つないだ点に、これより強い力（N）が掛かると外れる。0 なら外れない", ClampMin = 0, Speed = 1)
     float                           breakForce_        = 0.0f;

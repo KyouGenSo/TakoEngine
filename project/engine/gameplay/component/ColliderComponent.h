@@ -138,19 +138,19 @@ namespace Tako {
     Shape                           shape_       = Shape::Sphere;
     TPROPERTY(Edit, Tooltip = "オンなら、重なりを知らせるだけで押し合わない")
     bool                            isTrigger_   = false;
-    TPROPERTY(Edit, Tooltip = "Sphere と Capsule の半径", ClampMin = 0, Speed = 0.05)
+    TPROPERTY(Edit, Tooltip = "Sphere と Capsule の半径", ClampMin = 0, Speed = 0.05, ShowIf = shape_ == Shape::Sphere || shape_ == Shape::Capsule)
     float                           radius_      = 1.0f;
-    TPROPERTY(Edit, Tooltip = "Capsule の全長（両端の半球を含む。軸は Y）", ClampMin = 0, Speed = 0.05)
+    TPROPERTY(Edit, Tooltip = "Capsule の全長（両端の半球を含む。軸は Y）", ClampMin = 0, Speed = 0.05, ShowIf = shape_ == Shape::Capsule)
     float                           height_      = 2.0f;
-    TPROPERTY(Edit, Tooltip = "Box の全長", ClampMin = 0, Speed = 0.05)
+    TPROPERTY(Edit, Tooltip = "Box の全長", ClampMin = 0, Speed = 0.05, ShowIf = shape_ == Shape::Box)
     Vector3 size_{ 1.0f, 1.0f, 1.0f };
-    TPROPERTY(Edit, Tooltip = "Mesh と Convex Hull の形にするモデル。空なら、同じ Actor の Mesh コンポーネントのモデル", Asset = "Model")
+    TPROPERTY(Edit, Tooltip = "Mesh と Convex Hull の形にするモデル。空なら、同じ Actor の Mesh コンポーネントのモデル", Asset = "Model", ShowIf = shape_ == Shape::Mesh || shape_ == Shape::ConvexHull)
     std::string                     model_;
     TPROPERTY(Edit, Speed = 0.05)
     Vector3                         offset_{};
-    TPROPERTY(Edit, Tooltip = "滑りにくさ（0 = 滑る）。Rigidbody の形のときは、最初の Collider の値が使われる", ClampMin = 0, Speed = 0.01)
+    TPROPERTY(Edit, Tooltip = "滑りにくさ（0 = 滑る）。Rigidbody の形のときは、最初の Collider の値が使われる", ClampMin = 0, Speed = 0.01, ShowIf = !isTrigger_)
     float                           friction_    = 0.5f;
-    TPROPERTY(Edit, Tooltip = "跳ね返り（0 = 跳ねない、1 = 同じ速さで跳ね返る）", ClampMin = 0, ClampMax = 1, Speed = 0.01)
+    TPROPERTY(Edit, Tooltip = "跳ね返り（0 = 跳ねない、1 = 同じ速さで跳ね返る）", ClampMin = 0, ClampMax = 1, Speed = 0.01, ShowIf = !isTrigger_)
     float                           restitution_ = 0.0f;
     TPROPERTY()
     uint32_t                        layer_       = kActorLayer;

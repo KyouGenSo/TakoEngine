@@ -77,7 +77,7 @@ namespace Tako {
 
   bool ImGuiPropertyVisitor::Begin(const char* key, const PropertyMeta& meta)
   {
-    if ((meta.flags & (kPropEdit | kPropVisible)) == 0) { return false; }
+    if ((meta.flags & (kPropEdit | kPropVisible)) == 0 || !meta.isShown) { return false; }
     if (key) {
       if (meta.category[0] != '\0' && std::strcmp(meta.category, category_) != 0) {
         ImGui::SeparatorText(meta.category);

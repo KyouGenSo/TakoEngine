@@ -106,6 +106,11 @@ namespace Tako {
     /// </summary>
     static std::span<const ShortcutBinding<EngineSettingsWindow>> Shortcuts();
 
+    /// <summary>
+    /// コライダーのデバッグ描画のオン・オフと、色分け・足す線の欄。Engine Settings の Physics と、Collision Debug の窓が使う
+    /// </summary>
+    static void DrawPhysicsDebugDraw();
+
     //======================================================
     //Setter
     //======================================================

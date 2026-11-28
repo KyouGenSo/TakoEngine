@@ -175,6 +175,27 @@ namespace Tako {
       std::array<uint32_t, kMaxLayers> layerBodyCounts{};      ///< 添字 = 層
     };
 
+    /// <summary>
+    /// デバッグ描画の、形の色の決め方（Trigger は、どれを選んでも黄）。並びは Jolt の EShapeColor と同じ
+    /// </summary>
+    enum class DebugColor : uint8_t {
+      Instance,    ///< ボディごとに違う色
+      ShapeType,   ///< ボディの一番外の形の種類ごと（Sphere・Box・Capsule・Convex Hull = 緑、Offset 付き = 青、Collider が複数 = 橙、Mesh = 赤、Scale を掛けた Mesh・Convex Hull = 黄、Center Of Mass をずらした Dynamic = 水色）
+      MotionType,  ///< 動かない実体 = 灰、Kinematic = 緑、Dynamic = ボディごとに違う色
+      Sleep,       ///< 動かない実体 = 灰、Kinematic = 緑、Dynamic = 黄、寝ているボディ = 赤
+      Island,      ///< 一緒に計算されるボディの集まりごとに違う色（寝ているボディ = 明るい灰）
+    };
+
+    /// <summary>
+    /// DrawDebug が、形の線に足して描く物
+    /// </summary>
+    struct DebugDrawOptions {
+      DebugColor color             = DebugColor::MotionType;
+      bool       drawsVelocity     = false;                   ///< 重心からの矢印（緑 = 1 秒に動く向きと長さ、赤 = 回転の軸で、長さがラジアン / 秒）
+      bool       drawsCenterOfMass = false;                   ///< 重心の位置と向き（赤・緑・青の 3 本の軸）
+      bool       drawsBoundingBox  = false;                   ///< ボディを囲む、ワールドの軸に沿った箱
+    };
+
   private: //構造体
     struct Impl;      ///< Jolt の型を持つ中身。このヘッダに Jolt を出さないよう、PhysicsWorld.cpp に置く
     struct Token {};  ///< 外部からの直接生成を防ぐ生成キー
@@ -533,6 +554,11 @@ namespace Tako {
 
     bool IsDebugDrawEnabled() const { return debugDrawEnabled_; }
 
+    /// <summary>
+    /// デバッグ描画の選択肢。エディタの欄が、直接書き換える
+    /// </summary>
+    DebugDrawOptions& GetDebugDrawOptions() { return debugDrawOptions_; }
+
     const FrameStats& GetFrameStats() const { return frameStats_; }
 
     /// <summary>
@@ -565,9 +591,10 @@ namespace Tako {
     std::array<uint32_t, kMaxLayers> collisionMask_{};  ///< 添字 = 層 A、ビット b = 層 B と当たる（対称に保つ）
     std::vector<std::string>         layerNames_;       ///< 添字 = 層の番号。意味付けはゲーム側の層の定義に合わせる
 
-    FrameStats frameStats_;
-    bool       debugDrawEnabled_ = false;
-    uint32_t   debugLineCount_   = 0;
+    FrameStats       frameStats_;
+    bool             debugDrawEnabled_ = false;
+    DebugDrawOptions debugDrawOptions_;
+    uint32_t         debugLineCount_   = 0;
 
     static std::unique_ptr<PhysicsWorld> instance_;  ///< シングルトン
   };

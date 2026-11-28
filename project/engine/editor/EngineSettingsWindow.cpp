@@ -109,6 +109,9 @@ namespace Tako {
       return Renderer::GetInstance()->GetDX12Basic();
     }
 
+    // Debug Color の欄と保存に使う名前。並びは PhysicsWorld::DebugColor と同じ
+    constexpr const char* kDebugColorNames[] = { "Instance", "Shape Type", "Motion Type", "Sleep", "Island" };
+
     json GridToJson(const GridSettings& grid) {
       return { { "Size", grid.size }, { "CellSize", grid.cellSize } };
     }
@@ -432,6 +435,16 @@ namespace Tako {
       PhysicsWorld* physicsWorld = PhysicsWorld::GetInstance();
       const json& physics = root.contains("Physics") ? root["Physics"] : empty;
       physicsWorld->SetDebugDrawEnabled(physics.value("ColliderDebugDraw", physicsWorld->IsDebugDrawEnabled()));
+      PhysicsWorld::DebugDrawOptions& debugDraw = physicsWorld->GetDebugDrawOptions();
+      const json& debugDrawJson = physics.contains("DebugDraw") ? physics["DebugDraw"] : empty;
+      // 知らない名前なら、今の色分けのまま
+      const auto colorName = std::ranges::find(kDebugColorNames, debugDrawJson.value("Color", std::string()));
+      if (colorName != std::end(kDebugColorNames)) {
+        debugDraw.color = static_cast<PhysicsWorld::DebugColor>(colorName - std::begin(kDebugColorNames));
+      }
+      debugDraw.drawsVelocity     = debugDrawJson.value("Velocity", debugDraw.drawsVelocity);
+      debugDraw.drawsCenterOfMass = debugDrawJson.value("CenterOfMass", debugDraw.drawsCenterOfMass);
+      debugDraw.drawsBoundingBox  = debugDrawJson.value("BoundingBox", debugDraw.drawsBoundingBox);
 
       ImGuiIO& io = ImGui::GetIO();
       const json& editor = root.contains("Editor") ? root["Editor"] : empty;
@@ -584,8 +597,10 @@ namespace Tako {
       { "MasterVolume", masterVolume_ },
       { "Mute",         isMuted_ },
     };
+    const PhysicsWorld::DebugDrawOptions& debugDraw = PhysicsWorld::GetInstance()->GetDebugDrawOptions();
     root["Physics"] = {
       { "ColliderDebugDraw", PhysicsWorld::GetInstance()->IsDebugDrawEnabled() },
+      { "DebugDraw",         { { "Color", kDebugColorNames[static_cast<size_t>(debugDraw.color)] }, { "Velocity", debugDraw.drawsVelocity }, { "CenterOfMass", debugDraw.drawsCenterOfMass }, { "BoundingBox", debugDraw.drawsBoundingBox } } },
     };
     root["Editor"] = {
       { "UIScale",            ImGui::GetIO().FontGlobalScale },
@@ -771,12 +786,39 @@ namespace Tako {
     }
   }
 
-  void EngineSettingsWindow::DrawPhysics() {
+  void EngineSettingsWindow::DrawPhysicsDebugDraw() {
     PhysicsWorld* physics = PhysicsWorld::GetInstance();
     bool debugDraw = physics->IsDebugDrawEnabled();
     if (UI::Checkbox("Collider Debug Draw", &debugDraw)) {
       physics->SetDebugDrawEnabled(debugDraw);
     }
+    ImGui::SetItemTooltip("While playing, draw every collider shape and joint as lines (same as Debug > Collider Visibility)");
+
+    PhysicsWorld::DebugDrawOptions& options = physics->GetDebugDrawOptions();
+    ImGui::BeginDisabled(!debugDraw);
+    int color = static_cast<int>(options.color);
+    if (UI::Combo("Debug Color", &color, kDebugColorNames, IM_ARRAYSIZE(kDebugColorNames))) {
+      options.color = static_cast<PhysicsWorld::DebugColor>(color);
+    }
+    ImGui::SetItemTooltip("Instance: one color per body\n"
+                          "Shape Type: sphere / box / capsule / convex hull = green, with Offset = blue, several colliders = orange, mesh = red,\n"
+                          "    scaled mesh or convex hull = yellow, Rigidbody with Center Of Mass set = cyan\n"
+                          "Motion Type: static = grey, kinematic = green, dynamic = one color per body\n"
+                          "Sleep: static = grey, kinematic = green, dynamic = yellow, sleeping = red\n"
+                          "Island: bodies simulated together share a color, sleeping = light grey\n"
+                          "Triggers are always yellow");
+    UI::Checkbox("Draw Velocity", &options.drawsVelocity);
+    ImGui::SetItemTooltip("Arrows from the center of mass. Green: movement per second. Red: rotation axis, length = radians per second");
+    UI::Checkbox("Draw Center Of Mass", &options.drawsCenterOfMass);
+    ImGui::SetItemTooltip("Axes (red X, green Y, blue Z) at the center of mass of each body");
+    UI::Checkbox("Draw Bounding Box", &options.drawsBoundingBox);
+    ImGui::SetItemTooltip("World-axis box around each body");
+    ImGui::EndDisabled();
+  }
+
+  void EngineSettingsWindow::DrawPhysics() {
+    PhysicsWorld* physics = PhysicsWorld::GetInstance();
+    DrawPhysicsDebugDraw();
 
     Vector3 gravity = physics->GetGravity();
     if (UI::DragFloat3("Gravity", &gravity.x, 0.1f)) {
