@@ -110,7 +110,8 @@ namespace Tako {
     virtual void OnCollisionEnter([[maybe_unused]] const Collision& collision) {}
 
     /// <summary>
-    /// 当たっている間、毎フレーム 1 回呼ばれる（当たり始めたフレームは除く。物理のステップが無いフレームにも呼ばれる）
+    /// 当たっている間、物理のステップの後に 1 回ずつ呼ばれる（当たり始めたステップは除く。1 フレームに 0 回のことも、2 回以上のこともある。Unity と同じ）。
+    /// 寝ている Rigidbody の組には届かない（起きると、また届く）
     /// </summary>
     virtual void OnCollisionStay([[maybe_unused]] const Collision& collision) {}
 

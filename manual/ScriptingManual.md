@@ -190,7 +190,7 @@ include の書き方です。
 | `void EndPlay()` | Play が終わるとき、または Actor が消される・コンポーネントが外されるとき（`BeginPlay` が呼ばれた物だけ） |
 | `void Draw()` | 毎フレーム。Edit 中と一時停止中も呼ばれる。描画物の登録を書く |
 | `void OnCollisionEnter(const Tako::Collision& collision)` | 同じ Actor の Collider が、他の Collider に当たり始めた（Trigger なら、重なり始めた）。相手の Actor と、触れた位置などが渡される（[11.2](#112-知らせが届く時)） |
-| `void OnCollisionStay(const Tako::Collision& collision)` | 当たっている間、毎フレーム（当たり始めたフレームを除く） |
+| `void OnCollisionStay(const Tako::Collision& collision)` | 当たっている間、物理のステップの後に 1 回ずつ（当たり始めたステップを除く。1 フレームに 0 回のことも、2 回以上のこともある） |
 | `void OnCollisionExit(const Tako::Collision& collision)` | 離れた。どちらかの Collider が止められたときも呼ばれる |
 | `void OnControllerColliderHit(const Tako::ControllerColliderHit& hit)` | 同じ Actor の Character Controller が、壁・床などの実体に触れている間、物理のステップの後（[11.7](#117-キャラクターcharacter-controller)） |
 | `void OnJointBreak(float breakForce)` | 同じ Actor の Joint が、`Break Force` より強い力を受けて外れた（[11.8](#118-ジョイントjoint)） |
@@ -213,8 +213,7 @@ Play 中の 1 フレームは、次の順に進みます。
   3. 予約されていた Spawn        … シーンに入れる → 入った全部の Awake → 入った全部の BeginPlay
   4. Active が変わった Actor に OnActiveChanged
 更新（Play 中だけ）
-  5. 物理（ポーズ中は行わない）  … 溜まった時間が 1/60 秒を越えるたびに「全部の FixedTick → 物理の 1 ステップ → OnCollisionEnter / Exit」。
-                                   その後に OnCollisionStay
+  5. 物理（ポーズ中は行わない）  … 溜まった時間が 1/60 秒を越えるたびに「全部の FixedTick → 物理の 1 ステップ → OnCollisionEnter / Exit / Stay」
   6. コンポーネントごとに、タイマー → Tick
   7. 全部の LateTick
 描画（Edit 中も）
@@ -673,12 +672,14 @@ Collider の `Is Trigger` で、当たったときの動きが変わります。
 | 関数 | 届く時 |
 |---|---|
 | `OnCollisionEnter` | 当たり始めた、物理のステップの後（[4.1](#41-1-フレームの順番)） |
-| `OnCollisionStay` | 当たっている間、毎フレーム 1 回（当たり始めたフレームを除く） |
+| `OnCollisionStay` | 当たっている間、物理のステップの後に 1 回ずつ（当たり始めたステップを除く） |
 | `OnCollisionExit` | 離れた、物理のステップの後。Collider を `SetActive(false)` にしたときと、Actor をオフにしたときは、次のフレームの頭 |
 
 - `SetActive(false)` の後で `SetActive(true)` にすると、重なっていれば `OnCollisionEnter` がもう一度届きます（攻撃のたびに、当たりを取り直せます）
 - Collider や Actor が消されたときは、相手に `OnCollisionExit` は届きません
-- 時間の倍率が 0 の間（ヒットストップなど）は物理が進まないので、新しい `OnCollisionEnter` は届きません。`OnCollisionStay` は届きます
+- 時間の倍率が 0 の間（ヒットストップなど）は物理が進まないので、`OnCollisionEnter` も `OnCollisionStay` も届きません
+- `OnCollisionStay` は、1 フレームに 0 回のことも、2 回以上のこともあります（Unity と同じ決まりです）。中で毎回足す値（ダメージ・タイマーなど）は、1 回を `Tako::PhysicsWorld::kFixedDeltaTime` 秒（1/60 秒）として数えます
+- 動きが止まった Rigidbody は寝て（[11.5](#115-剛体rigidbody)）、その間は `OnCollisionStay` が届きません（Unity と同じ決まりです）。離れたのではないので `OnCollisionExit` は届かず、起きるとまた届きます。届け続けたいときは、`FixedTick` で `WakeUp()` を呼びます。Trigger どうしと、Character Controller と Trigger の組は、止まっていても届きます
 - 速い物は、1 ステップの間に相手を通り抜けることがあります（1/60 秒に進む距離が、相手の厚みより大きいとき）
 
 引数の `collision`（`Tako::Collision`。Unity の `Collision` に当たります）の中身は、次のとおりです。

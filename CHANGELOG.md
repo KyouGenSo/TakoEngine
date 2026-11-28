@@ -19,6 +19,7 @@
 - レイキャストは、始点を中に含む Collider（自分の Collider など）と、Mesh の形の裏面には当たらない（Unity と同じ決まり）
 - `PhysicsWorld` に、形を飛ばす `SphereCast`・`BoxCast`・`CapsuleCast`、重なっている Actor を調べる `OverlapSphere`・`OverlapBox`・`OverlapCapsule`、線が当たる全部を近い順に返す `RaycastAll` を追加。飛ばす前から重なっている Collider には当たらない（Unity と同じ決まり）
 - Rigidbody に、位置を決めて掛ける `AddForceAtPosition`・`AddImpulseAtPosition`、寝ているかを調べる・起こす・寝かせる `IsSleeping`・`WakeUp`・`Sleep`、重心をずらす Inspector の `Center Of Mass`（`SetCenterOfMass`）を追加
+- 動きが止まって寝た Rigidbody の組には、`OnCollisionStay` が届かない（Unity と同じ決まり。離れたのではないので Exit は届かず、起きるとまた届く）。届け続けたいときは、`FixedTick` で `WakeUp()` を呼ぶ
 - Character Controller に、足元を調べる `GetGroundNormal`・`GetGroundActor`・`IsOnSteepGround`、Play 中に全長を変える `SetHeight`（しゃがむ・立つ。ふさがっていれば `false`）、動く床に付いていく Inspector の `Ride Moving Ground`（既定はオフ）を追加
 - Joint でつないだ 2 つの Rigidbody は、お互いに当たらない（Unity と同じ決まり）。当てるには、Joint の `Enable Collision` をオンにする
 - Joint に、Hinge のモーター（`Motor Speed`・`Motor Torque`、スクリプトの `SetMotor`）と摩擦（`Friction`）、Distance のばね（`Spring`・`Damper`）、強い力で外れる `Break Force` を追加。外れると、その Actor のスクリプトの `OnJointBreak(float breakForce)` が呼ばれる
@@ -35,7 +36,8 @@
 - 名前を付けていない層の Collider（層を選んでいない Collider の層 31 など）は、全部の層と当たる（今までは、層 31 どうしだけ）。当てたくない組は、Engine Settings の Physics で層に名前を付けて、Collision Matrix のチェックを外す
 - コードの `SetCollisionMask(a, b, true)` で当たる組を決めていたゲームは、先に `PhysicsWorld::GetInstance()->ClearCollisionMasks()` を呼ぶ（最初は、全部の層どうしが当たる）
 - `OnCollisionEnter` / `OnCollisionStay` / `OnCollisionExit` の引数を、`Tako::Actor* other` から `const Tako::Collision& collision` に変える（ヘッダーと .cpp の両方）。中で使っている `other` は `collision.actor` に置き換えるか、関数の頭に `Tako::Actor* other = collision.actor;` を足す
-- `OnCollisionEnter` と `OnCollisionExit` は、物理のステップ（1/60 秒ごと）の後に届く。`Tick` で動かした・`SetActive(true)` にした Collider の Enter は次のフレームになり、時間の倍率が 0 の間（ヒットストップ）は新しい Enter が届かない。`OnCollisionStay` は今までどおり毎フレーム届く
+- `OnCollisionEnter`・`OnCollisionStay`・`OnCollisionExit` は、物理のステップ（1/60 秒ごと）の後に届く（Unity と同じ決まり）。`Tick` で動かした・`SetActive(true)` にした Collider の Enter は次のフレームになり、時間の倍率が 0 の間（ヒットストップ）は Enter も Stay も届かない
+- `OnCollisionStay` は、1 フレームに 0 回のことも 2 回以上のこともある（今までは毎フレーム 1 回）。中で毎回足している値（ダメージ・タイマーなど）は、1 回を `Tako::PhysicsWorld::kFixedDeltaTime` 秒として数える
 - Collider の付いた Actor の Scale が 1 でないときは、Collider の Size・Radius・Offset を Scale で割った値に直す（今までは Scale が掛からなかった）
 
 ## [2.1.5] - 2026-11-27

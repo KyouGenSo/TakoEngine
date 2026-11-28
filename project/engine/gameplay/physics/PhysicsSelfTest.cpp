@@ -132,7 +132,7 @@ namespace Tako {
     bool IsNear(const Vector3& a, const Vector3& b) { return (a - b).Length() < 0.01f; }
 
     /// <summary>
-    /// Trigger どうしの Enter / Stay / Exit。Stay と、止めたボディの Exit は、ステップが 0 回のフレームでも届く
+    /// Trigger どうしの Enter / Stay / Exit。Stay はステップごとに届き（0 回のフレームには届かない）、止めたボディの Exit は、ステップが 0 回のフレームでも届く
     /// </summary>
     void CheckTriggerEvents()
     {
@@ -148,45 +148,48 @@ namespace Tako {
       const PhysicsWorld::BodyHandle bodyB = CreateBody(b, Trigger, kLayerA, MakeSphere(b, 1.0f));
       assert(bodyA != PhysicsWorld::kInvalidBody && bodyB != PhysicsWorld::kInvalidBody);
 
-      // 当たり始めたフレームは Enter だけ。Stay は次のフレームからで、ステップの無いフレームにも届く
+      // 当たり始めたステップは Enter だけ。Stay は次のステップからで、ステップごとに 1 回（ステップの無いフレームには届かず、2 ステップのフレームには 2 回届く）
       RunFrame(1);
       assert(a.recorder->log == "E" && b.recorder->log == "E" && a.recorder->last == b.actor && b.recorder->last == a.actor);
       RunFrame(0);
+      assert(a.recorder->log == "E" && b.recorder->log == "E");
       RunFrame(1);
-      assert(a.recorder->log == "ESS" && b.recorder->log == "ESS");
+      assert(a.recorder->log == "ES" && b.recorder->log == "ES");
+      RunFrame(2);
+      assert(a.recorder->log == "ESSS" && b.recorder->log == "ESSS");
 
       // Actor を動かすと、ボディが付いていく
       b.actor->GetTransform().translate.x = 10.0f;
       RunFrame(1);
-      assert(a.recorder->log == "ESSX" && b.recorder->log == "ESSX");
+      assert(a.recorder->log == "ESSSX" && b.recorder->log == "ESSSX");
       b.actor->GetTransform().translate.x = 1.5f;
       RunFrame(1);
-      assert(a.recorder->log == "ESSXE");
+      assert(a.recorder->log == "ESSSXE");
 
       // 世界から出すと、ステップを待たずに Exit。戻すと Enter が出直す
       physics->SetBodyEnabled(bodyB, false);
       RunFrame(0);
-      assert(a.recorder->log == "ESSXEX" && b.recorder->log == "ESSXEX");
+      assert(a.recorder->log == "ESSSXEX" && b.recorder->log == "ESSSXEX");
       physics->SetBodyEnabled(bodyB, true);
       RunFrame(1);
-      assert(a.recorder->log == "ESSXEXE");
+      assert(a.recorder->log == "ESSSXEXE");
 
       // 同じフレームの中で出して戻しても、Exit の後に Enter
       physics->SetBodyEnabled(bodyB, false);
       physics->SetBodyEnabled(bodyB, true);
       RunFrame(1);
-      assert(a.recorder->log == "ESSXEXEXE" && b.recorder->log == "ESSXEXEXE");
+      assert(a.recorder->log == "ESSSXEXEXE" && b.recorder->log == "ESSSXEXEXE");
 
       // 形を作り直しても、当たっている組は続く
       const PhysicsWorld::Shape bigger = MakeSphere(b, 1.2f);
       physics->SetBodyShapes(bodyB, std::span(&bigger, 1));
       RunFrame(1);
-      assert(a.recorder->log == "ESSXEXEXES");
+      assert(a.recorder->log == "ESSSXEXEXES");
 
       // 消したボディの相手には、Exit も Stay も届かない
       physics->DestroyBody(bodyB);
       RunFrame(1);
-      assert(a.recorder->log == "ESSXEXEXES");
+      assert(a.recorder->log == "ESSSXEXEXES");
       physics->DestroyBody(bodyA);
       physics->SetCollisionMask(kLayerA, kLayerA, hadPair);
     }
@@ -566,7 +569,16 @@ namespace Tako {
       const size_t settled = ball.recorder->log.size();
       RunFrames(scene, 180);
       assert(physics->GetWorldStats().awakeCount == 0);
-      assert(ball.recorder->log.size() > settled && ball.recorder->log.find('X', settled) == std::string::npos);
+      assert(ball.recorder->log.find('S') != std::string::npos && ball.recorder->log.find('X', settled) == std::string::npos);
+
+      // 寝ている間は Stay が届かない（球にも、床にも）。起こすと、Enter の出直しなしで、Stay がまた届く
+      const size_t asleep      = ball.recorder->log.size();
+      const size_t floorAsleep = floor.recorder->log.size();
+      RunFrames(scene, 30);
+      assert(ball.recorder->log.size() == asleep && floor.recorder->log.size() == floorAsleep);
+      ballBody->WakeUp();
+      RunFrames(scene, 3);
+      assert(ball.recorder->log.size() > asleep && ball.recorder->log.find_first_not_of('S', asleep) == std::string::npos);
 
       // Transform を書き換えると、その位置へ置き直されて、そこからまた落ちる
       ball.actor->GetTransform().translate = { 5.0f, 4.0f, 0.0f };

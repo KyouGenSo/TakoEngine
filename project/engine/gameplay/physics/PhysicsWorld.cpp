@@ -678,6 +678,11 @@ namespace Tako {
     bool IsResting(Component* owner) const;
 
     /// <summary>
+    /// owner のボディが、寝ている Dynamic か（Unity と同じく、寝ている Rigidbody の組には Stay を配らない）
+    /// </summary>
+    bool IsSleepingRigidbody(Component* owner) const;
+
+    /// <summary>
     /// contacts の両方の Actor の全コンポーネントに、event の通知（OnCollision〜）を呼ぶ。contacts は、呼んだ先で書き換わらない物を渡す
     /// </summary>
     void Dispatch(const ContactList& contacts, ContactEvent event, FrameStats& stats);
@@ -775,10 +780,9 @@ namespace Tako {
     std::vector<ControllerHit> dispatchingHits;  ///< 配っている間の入れ物（確保を使い回す）
 
     //当たりの通知。どれも、通知先の組と、その接触の値の一覧
-    ContactList touching;          ///< 今当たっている組（並べ替え済み）
-    ContactList pendingExits;      ///< 世界から出したボディの組。次の配布で Exit を出す
-    ContactList enteredThisFrame;  ///< このフレームに当たり始めた組（Stay は次のフレームから）
-    ContactList staying;           ///< Stay を配る間の写し（毎フレーム使うので、確保を使い回す）
+    ContactList touching;      ///< 今当たっている組（並べ替え済み）
+    ContactList pendingExits;  ///< 世界から出したボディの組。次の配布で Exit を出す
+    ContactList staying;       ///< Stay を配る間の写し（毎ステップ使うので、確保を使い回す）
   };
 
   void PhysicsWorld::Impl::Teleport(BodyRecord& record, const Pose& pose)
@@ -921,7 +925,6 @@ namespace Tako {
     const auto involves = [owners](const Contact& contact) { return Involves(contact.pair, owners); };
     std::erase_if(touching, involves);
     std::erase_if(pendingExits, involves);
-    std::erase_if(enteredThisFrame, involves);
     for (Component* owner : owners) {
       ownerBodies.erase(owner);
     }
@@ -931,6 +934,17 @@ namespace Tako {
   {
     const auto body = ownerBodies.find(owner);
     return body != ownerBodies.end() && !system.GetBodyInterface().IsActive(JPH::BodyID(body->second));
+  }
+
+  bool PhysicsWorld::Impl::IsSleepingRigidbody(Component* owner) const
+  {
+    // キャラクターの中のボディは bodies に無いので、ここでは寝ている扱いにならない
+    const auto body = ownerBodies.find(owner);
+    if (body == ownerBodies.end()) {
+      return false;
+    }
+    const auto record = bodies.find(body->second);
+    return record != bodies.end() && record->second.settings.kind == BodyKind::Dynamic && !system.GetBodyInterface().IsActive(record->second.id);
   }
 
   void PhysicsWorld::Impl::Dispatch(const ContactList& contacts, ContactEvent event, FrameStats& stats)
@@ -1370,10 +1384,25 @@ namespace Tako {
     }
     std::ranges::sort(touching, {}, &Contact::pair);
     impl_->touching = std::move(touching);
-    impl_->enteredThisFrame.insert(impl_->enteredThisFrame.end(), entered.begin(), entered.end());
 
     impl_->Dispatch(entered, ContactEvent::Enter, frameStats_);
     impl_->Dispatch(exited, ContactEvent::Exit, frameStats_);
+
+    // 当たり続けている組に Stay（Unity と同じく、ステップごと）。このステップで当たり始めた組は次のステップからで、寝ている Rigidbody の組には配らない。
+    // 上の通知の中で止められたボディの組は、もう touching に無い
+    ContactList& staying = impl_->staying;
+    staying.clear();
+    for (const Contact& contact : impl_->touching) {
+      if (std::ranges::binary_search(entered, contact.pair, {}, &Contact::pair)) {
+        continue;
+      }
+      if (impl_->IsSleepingRigidbody(contact.pair.first) || impl_->IsSleepingRigidbody(contact.pair.second)) {
+        continue;
+      }
+      staying.push_back(contact);
+    }
+    impl_->Dispatch(staying, ContactEvent::Stay, frameStats_);
+
     impl_->DispatchControllerHits(frameStats_);
     impl_->BreakOverloadedJoints(frameStats_);
   }
@@ -1412,14 +1441,6 @@ namespace Tako {
     }
 
     impl_->DispatchPendingExits(frameStats_);
-
-    // 当たり続けている組に Stay。このフレームに当たり始めた組は、次のフレームから
-    ContactList& staying = impl_->staying;
-    staying.clear();
-    std::ranges::sort(impl_->enteredThisFrame, {}, &Contact::pair);
-    std::ranges::set_difference(impl_->touching, impl_->enteredThisFrame, std::back_inserter(staying), {}, &Contact::pair, &Contact::pair);
-    impl_->enteredThisFrame.clear();
-    impl_->Dispatch(staying, ContactEvent::Stay, frameStats_);
   }
 
   PhysicsWorld::BodyHandle PhysicsWorld::CreateBody(const BodySettings& settings, std::span<const Shape> shapes)

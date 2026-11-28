@@ -205,12 +205,12 @@ namespace Tako {
     void BeginFrame();
 
     /// <summary>
-    /// 世界を kFixedDeltaTime 秒だけ進め、当たり始めた組に Enter、離れた組に Exit を配る
+    /// 世界を kFixedDeltaTime 秒だけ進め、当たり始めた組に Enter、離れた組に Exit、当たり続けている組に Stay を配る（寝ている Rigidbody の組の Stay は除く）
     /// </summary>
     void Step();
 
     /// <summary>
-    /// ステップの後に呼ぶ。Dynamic の姿勢を Actor へ書き、止めたボディの Exit と、当たり続けている組の Stay を配る（ステップが 0 回のフレームでも行う）
+    /// ステップの後に呼ぶ。Dynamic の姿勢を Actor へ書き、止めたボディの Exit を配る（ステップが 0 回のフレームでも行う）
     /// </summary>
     /// <param name="alpha">次のステップまでの進み具合（0〜1）。直前の 2 ステップの姿勢を、この割合で補間して書く</param>
     void EndFrame(float alpha);
